@@ -2742,7 +2742,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
       /* default behavior: return first-matching result. */
       goto finish;
-      NEXT;
 
     CASE(OP_EXACT1)  MOP_IN(OP_EXACT1);
       DATA_ENSURE(1);
@@ -3316,40 +3315,36 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
         if (ON_STR_BEGIN(s) || !ONIGENC_IS_MBC_WORD(encode, sprev, end)) {
           MOP_OUT;
           JUMP;
-        }
+	}
       }
       goto fail;
-      NEXT;
 
     CASE(OP_ASCII_WORD_BEGIN)  MOP_IN(OP_ASCII_WORD_BEGIN);
       if (DATA_ENSURE_CHECK1 && ONIGENC_IS_MBC_ASCII_WORD(encode, s, end)) {
         if (ON_STR_BEGIN(s) || !ONIGENC_IS_MBC_ASCII_WORD(encode, sprev, end)) {
           MOP_OUT;
           JUMP;
-        }
+	}
       }
       goto fail;
-      NEXT;
 
     CASE(OP_WORD_END)  MOP_IN(OP_WORD_END);
       if (!ON_STR_BEGIN(s) && ONIGENC_IS_MBC_WORD(encode, sprev, end)) {
         if (ON_STR_END(s) || !ONIGENC_IS_MBC_WORD(encode, s, end)) {
           MOP_OUT;
           JUMP;
-        }
+	}
       }
       goto fail;
-      NEXT;
 
     CASE(OP_ASCII_WORD_END)  MOP_IN(OP_ASCII_WORD_END);
       if (!ON_STR_BEGIN(s) && ONIGENC_IS_MBC_ASCII_WORD(encode, sprev, end)) {
         if (ON_STR_END(s) || !ONIGENC_IS_MBC_ASCII_WORD(encode, s, end)) {
           MOP_OUT;
           JUMP;
-        }
+	}
       }
       goto fail;
-      NEXT;
 #endif
 
     CASE(OP_BEGIN_BUF)  MOP_IN(OP_BEGIN_BUF);
@@ -3379,10 +3374,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #endif
                 && !ON_STR_END(s)) {
         MOP_OUT;
-        JUMP;
+	JUMP;
       }
       goto fail;
-      NEXT;
 
     CASE(OP_END_LINE)  MOP_IN(OP_END_LINE);
       if (ON_STR_END(s)) {
@@ -3398,10 +3392,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       }
       else if (ONIGENC_IS_MBC_NEWLINE_EX(encode, s, str, end, option, 1)) {
         MOP_OUT;
-        JUMP;
+	JUMP;
       }
       goto fail;
-      NEXT;
 
     CASE(OP_SEMI_END_BUF)  MOP_IN(OP_SEMI_END_BUF);
       if (ON_STR_END(s)) {
@@ -3433,7 +3426,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #endif
       }
       goto fail;
-      NEXT;
 
     CASE(OP_BEGIN_POSITION)  MOP_IN(OP_BEGIN_POSITION);
       if (s != msa->gpos)
@@ -3499,12 +3491,10 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     CASE(OP_BACKREF1)  MOP_IN(OP_BACKREF1);
       mem = 1;
       goto backref;
-      NEXT;
 
     CASE(OP_BACKREF2)  MOP_IN(OP_BACKREF2);
       mem = 2;
       goto backref;
-      NEXT;
 
     CASE(OP_BACKREFN)  MOP_IN(OP_BACKREFN);
       GET_MEMNUM_INC(mem, p);
@@ -3934,7 +3924,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       STACK_GET_REPEAT(mem, stkp);
       si = GET_STACK_INDEX(stkp);
       goto repeat_inc;
-      NEXT;
 
     CASE(OP_REPEAT_INC_NG)  MOP_IN(OP_REPEAT_INC_NG);
       GET_MEMNUM_INC(mem, p); /* mem: OP_REPEAT ID */
@@ -3970,7 +3959,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       STACK_GET_REPEAT(mem, stkp);
       si = GET_STACK_INDEX(stkp);
       goto repeat_inc_ng;
-      NEXT;
 
     CASE(OP_PUSH_POS)  MOP_IN(OP_PUSH_POS);
       STACK_PUSH_POS(s, sprev, pkeep);
@@ -3995,7 +3983,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     CASE(OP_FAIL_POS)  MOP_IN(OP_FAIL_POS);
       STACK_POP_TIL_POS_NOT;
       goto fail;
-      NEXT;
 
     CASE(OP_PUSH_STOP_BT)  MOP_IN(OP_PUSH_STOP_BT);
       STACK_PUSH_STOP_BT;
@@ -4036,7 +4023,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     CASE(OP_FAIL_LOOK_BEHIND_NOT)  MOP_IN(OP_FAIL_LOOK_BEHIND_NOT);
       STACK_POP_TIL_LOOK_BEHIND_NOT;
       goto fail;
-      NEXT;
 
     CASE(OP_PUSH_ABSENT_POS)  MOP_IN(OP_PUSH_ABSENT_POS);
       /* Save the absent-start-pos and the original end-pos. */
@@ -4098,7 +4084,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #endif
       STACK_POP_TIL_ABSENT;
       goto fail;
-      NEXT;
 
 #ifdef USE_SUBEXP_CALL
     CASE(OP_CALL)  MOP_IN(OP_CALL);
@@ -4128,7 +4113,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     CASE(OP_FINISH)
       goto finish;
-      NEXT;
 
     CASE(OP_FAIL)
       if (0) {
