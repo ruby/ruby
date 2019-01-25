@@ -1,20 +1,15 @@
-#!/usr/bin/env ruby -w
-# encoding: UTF-8
+# -*- coding: utf-8 -*-
 # frozen_string_literal: false
-
-# tc_features.rb
-#
-# Created by James Edward Gray II on 2005-10-31.
 
 begin
   require "zlib"
 rescue LoadError
 end
 
-require_relative "base"
+require_relative "helper"
 require "tempfile"
 
-class TestCSV::Features < TestCSV
+class TestCSVFeatures < Test::Unit::TestCase
   extend DifferentOFS
 
   TEST_CASES = [ [%Q{a,b},               ["a", "b"]],
@@ -168,70 +163,6 @@ line,4,jkl
     assert_equal(3, count)
   end
 
-  def test_liberal_parsing_middle_quote_start
-    input = '"Johnson, Dwayne",Dwayne "The Rock" Johnson'
-    error = assert_raise(CSV::MalformedCSVError) do
-        CSV.parse_line(input)
-    end
-    assert_equal("Illegal quoting in line 1.",
-                 error.message)
-    assert_equal(["Johnson, Dwayne", 'Dwayne "The Rock" Johnson'],
-                 CSV.parse_line(input, liberal_parsing: true))
-  end
-
-  def test_liberal_parsing_middle_quote_end
-    input = '"quoted" field'
-    error = assert_raise(CSV::MalformedCSVError) do
-        CSV.parse_line(input)
-    end
-    assert_equal("Do not allow except col_sep_split_separator " +
-                 "after quoted fields in line 1.",
-                 error.message)
-    assert_equal(['"quoted" field'],
-                 CSV.parse_line(input, liberal_parsing: true))
-  end
-
-  def test_liberal_parsing_quote_after_column_separator
-    error = assert_raise(CSV::MalformedCSVError) do
-      CSV.parse_line('is,this "three," or four,fields', liberal_parsing: true)
-    end
-    assert_equal("Unclosed quoted field in line 1.",
-                 error.message)
-  end
-
-  def test_liberal_parsing_quote_before_column_separator
-    assert_equal(["is", 'this "three', ' or four"', "fields"],
-                 CSV.parse_line('is,this "three, or four",fields',
-                                liberal_parsing: true))
-  end
-
-  def test_liberal_parsing_backslash_quote
-    assert_equal([
-                   "1",
-                   "\"Hamlet says, \\\"Seems",
-                   "\\\" madam! Nay it is; I know not \\\"seems.\\\"\"",
-                 ],
-                 CSV.parse_line('1,' +
-                                '"Hamlet says, \"Seems,' +
-                                '\" madam! Nay it is; I know not \"seems.\""',
-                                liberal_parsing: true))
-  end
-
-  def test_liberal_parsing_space_quote
-    input = <<~CSV
-      Los Angeles,   34°03'N,    118°15'W
-      New York City, 40°42'46"N, 74°00'21"W
-      Paris,         48°51'24"N, 2°21'03"E
-    CSV
-    assert_equal(
-                 [
-                   ["Los Angeles", "   34°03'N", "    118°15'W"],
-                   ["New York City", " 40°42'46\"N", " 74°00'21\"W"],
-                   ["Paris", "         48°51'24\"N", " 2°21'03\"E"],
-                 ],
-                 CSV.parse(input, liberal_parsing: true))
-  end
-
   def test_csv_behavior_readers
     %w[ unconverted_fields return_headers write_headers
         skip_blanks        force_quotes ].each do |behavior|
@@ -287,16 +218,6 @@ line,4,jkl
     csv.each {|row| assert_predicate row, :header_row?}
     csv.rewind
     csv.each {|row| assert_predicate row, :header_row?}
-  end
-
-  # reported by Dave Burt
-  def test_leading_empty_fields_with_multibyte_col_sep
-    data = <<-CSV
-<=><=>A<=>B<=>C
-1<=>2<=>3
-    CSV
-    parsed = CSV.parse(data, col_sep: "<=>")
-    assert_equal([[nil, nil, "A", "B", "C"], ["1", "2", "3"]], parsed)
   end
 
   def test_gzip_reader

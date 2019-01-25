@@ -1,14 +1,9 @@
-#!/usr/bin/env ruby -w
-# encoding: UTF-8
+# -*- coding: utf-8 -*-
 # frozen_string_literal: false
 
-# tc_encodings.rb
-#
-# Created by James Edward Gray II on 2005-10-31.
+require_relative "helper"
 
-require_relative "base"
-
-class TestCSV::Encodings < TestCSV
+class TestCSVEncodings < Test::Unit::TestCase
   extend DifferentOFS
 
   def setup

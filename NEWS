@@ -26,6 +26,11 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib updates (outstanding ones only)
 
+[CSV]
+
+  * Upgrade to 3.0.4.
+    See https://github.com/ruby/csv/blob/master/NEWS.md.
+
 [RSS]
 
   * Upgrade to RSS 0.2.8.
