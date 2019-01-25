@@ -687,10 +687,8 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	  MODIFIED;
 	  if (flags & ONIGENC_CASE_FOLD_TURKISH_AZERI && code == 'i')
 	    code = I_WITH_DOT_ABOVE;
-          else {
-            code -= 'a';
-            code += 'A';
-          }
+          else
+            code -= 'a' - 'A';
 	}
       }
       else if (code >= 'A' && code <= 'Z') {
