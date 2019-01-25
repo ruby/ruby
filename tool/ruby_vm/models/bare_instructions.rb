@@ -131,6 +131,14 @@ class RubyVM::BareInstructions
     sprintf "#<%s %s@%s:%d>", self.class.name, @name, @loc[0], @loc[1]
   end
 
+  def has_ope? var
+    return @opes.any? {|i| i[:name] == var[:name] }
+  end
+
+  def has_pop? var
+    return @pops.any? {|i| i[:name] == var[:name] }
+  end
+
   private
 
   def generate_attribute t, k, v
