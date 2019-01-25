@@ -1615,6 +1615,29 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(RegexpError, bug12418){ Regexp.new('(0?0|(?(5)||)|(?(5)||))?') }
   end
 
+  def test_ss_in_look_behind
+    assert_match_at("(?i:ss)", "ss", [[0, 2]])
+    assert_match_at("(?i:ss)", "Ss", [[0, 2]])
+    assert_match_at("(?i:ss)", "SS", [[0, 2]])
+    assert_match_at("(?i:ss)", "\u017fS", [[0, 2]])  # LATIN SMALL LETTER LONG S
+    assert_match_at("(?i:ss)", "s\u017f", [[0, 2]])
+    assert_match_at("(?i:ss)", "\u00df", [[0, 1]])   # LATIN SMALL LETTER SHARP S
+    assert_match_at("(?i:ss)", "\u1e9e", [[0, 1]])   # LATIN CAPITAL LETTER SHARP S
+    assert_match_at("(?i:xssy)", "xssy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "xSsy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "xSSy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "x\u017fSy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "xs\u017fy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "x\u00dfy", [[0, 3]])
+    assert_match_at("(?i:xssy)", "x\u1e9ey", [[0, 3]])
+    assert_match_at("(?i:\u00df)", "ss", [[0, 2]])
+    assert_match_at("(?i:\u00df)", "SS", [[0, 2]])
+    assert_match_at("(?i:[\u00df])", "ss", [[0, 2]])
+    assert_match_at("(?i:[\u00df])", "SS", [[0, 2]])
+    assert_match_at("(?i)(?<!ss)\u2728", "qq\u2728", [[2, 3]])     # Issue #92
+    assert_match_at("(?i)(?<!xss)\u2728", "qq\u2728", [[2, 3]])
+  end
+
   def test_options_in_look_behind
     assert_nothing_raised {
       assert_match_at("(?<=(?i)ab)cd", "ABcd", [[2,4]])

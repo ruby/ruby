@@ -3301,6 +3301,14 @@ setup_subexp_call(Node* node, ScanEnv* env)
 }
 #endif
 
+#define IN_ALT          (1<<0)
+#define IN_NOT          (1<<1)
+#define IN_REPEAT       (1<<2)
+#define IN_VAR_REPEAT   (1<<3)
+#define IN_CALL         (1<<4)
+#define IN_RECCALL      (1<<5)
+#define IN_LOOK_BEHIND  (1<<6)
+
 /* divide different length alternatives in look-behind.
   (?<=A|B) ==> (?<=A)|(?<=B)
   (?<!A|B) ==> (?<!A)(?<!B)
@@ -3597,23 +3605,28 @@ expand_case_fold_string_alt(int item_num, OnigCaseFoldCodeItem items[],
   return ONIGERR_MEMORY;
 }
 
-static int
-expand_case_fold_string(Node* node, regex_t* reg)
-{
 #define THRESHOLD_CASE_FOLD_ALT_FOR_EXPANSION  8
 
+static int
+expand_case_fold_string(Node* node, regex_t* reg, int state)
+{
   int r, n, len, alt_num;
   int varlen = 0;
+  int is_in_look_behind;
   UChar *start, *end, *p;
   Node *top_root, *root, *snode, *prev_node;
   OnigCaseFoldCodeItem items[ONIGENC_GET_CASE_FOLD_CODES_MAX_NUM];
-  StrNode* sn = NSTR(node);
+  StrNode* sn;
 
   if (NSTRING_IS_AMBIG(node)) return 0;
+
+  sn = NSTR(node);
 
   start = sn->s;
   end   = sn->end;
   if (start >= end) return 0;
+
+  is_in_look_behind = (state & IN_LOOK_BEHIND) != 0;
 
   r = 0;
   top_root = root = prev_node = snode = NULL_NODE;
@@ -3630,7 +3643,7 @@ expand_case_fold_string(Node* node, regex_t* reg)
     len = enclen(reg->enc, p, end);
 
     varlen = is_case_fold_variable_len(n, items, len);
-    if (n == 0 || varlen == 0) {
+    if (n == 0 || varlen == 0 || is_in_look_behind) {
       if (IS_NULL(snode)) {
 	if (IS_NULL(root) && IS_NOT_NULL(prev_node)) {
           onig_node_free(top_root);
@@ -3889,13 +3902,6 @@ setup_comb_exp_check(Node* node, int state, ScanEnv* env)
 }
 #endif
 
-#define IN_ALT        (1<<0)
-#define IN_NOT        (1<<1)
-#define IN_REPEAT     (1<<2)
-#define IN_VAR_REPEAT (1<<3)
-#define IN_CALL       (1<<4)
-#define IN_RECCALL    (1<<5)
-
 /* setup_tree does the following work.
  1. check empty loop. (set qn->target_empty_info)
  2. expand ignore-case in char class.
@@ -3937,7 +3943,7 @@ restart:
 
   case NT_STR:
     if (IS_IGNORECASE(reg->options) && !NSTRING_IS_RAW(node)) {
-      r = expand_case_fold_string(node, reg);
+      r = expand_case_fold_string(node, reg, state);
     }
     break;
 
@@ -4180,7 +4186,7 @@ restart:
 	  if (r < 0) return r;
 	  if (r > 0) return ONIGERR_INVALID_LOOK_BEHIND_PATTERN;
 	  if (NTYPE(node) != NT_ANCHOR) goto restart;
-	  r = setup_tree(an->target, reg, state, env);
+          r = setup_tree(an->target, reg, (state | IN_LOOK_BEHIND), env);
 	  if (r != 0) return r;
 	  r = setup_look_behind(node, reg, env);
 	}
@@ -4193,7 +4199,8 @@ restart:
 	  if (r < 0) return r;
 	  if (r > 0) return ONIGERR_INVALID_LOOK_BEHIND_PATTERN;
 	  if (NTYPE(node) != NT_ANCHOR) goto restart;
-	  r = setup_tree(an->target, reg, (state | IN_NOT), env);
+          r = setup_tree(an->target, reg, (state | IN_NOT | IN_LOOK_BEHIND),
+                         env);
 	  if (r != 0) return r;
 	  r = setup_look_behind(node, reg, env);
 	}
