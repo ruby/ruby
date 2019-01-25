@@ -137,6 +137,7 @@ enum vm_regan_acttype {
 
 #if VM_CHECK_MODE > 0
 #define SETUP_CANARY() \
+    VALUE * canary; \
     if (leaf) { \
         canary = GET_SP(); \
         SET_SV(vm_stack_canary); \

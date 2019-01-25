@@ -25,7 +25,7 @@
 
 % # JIT: Set const expressions for `RubyVM::OperandsUnifications` insn
 % insn.preamble.each do |amble|
-        fprintf(f, "<%= amble.expr %>\n");
+        fprintf(f, "<%= amble.expr.sub(/const \S+\s+/, '') %>\n");
 % end
 %
 % # JIT: Initialize operands
