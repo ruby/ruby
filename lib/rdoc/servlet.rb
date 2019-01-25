@@ -145,11 +145,14 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
   # +generator+ is used to create the page.
 
   def documentation_page store, generator, path, req, res
-    name = path.sub(/.html$/, '').gsub '/', '::'
+    text_name = path.sub /.html$/, ''
+    name = text_name.gsub '/', '::'
 
     if klass = store.find_class_or_module(name) then
       res.body = generator.generate_class klass
     elsif page = store.find_text_page(name.sub(/_([^_]*)$/, '.\1')) then
+      res.body = generator.generate_page page
+    elsif page = store.find_text_page(text_name.sub(/_([^_]*)$/, '.\1')) then
       res.body = generator.generate_page page
     else
       not_found generator, req, res
