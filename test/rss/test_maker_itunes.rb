@@ -250,14 +250,21 @@ module RSS
                                       feed_readers)
         _assert_maker_itunes_duration(0, 4, 5, "4:05", maker_readers,
                                       feed_readers)
+        _assert_maker_itunes_duration(0, 0, 5, "0:05", maker_readers,
+                                      feed_readers)
+        _assert_maker_itunes_duration_by_value(0, 5, 15, "315", maker_readers,
+                                               feed_readers)
+        _assert_maker_itunes_duration_by_value(1, 0, 1, "3601", maker_readers,
+                                               feed_readers)
 
-        _assert_maker_itunes_duration_invalid_value("5", maker_readers)
         _assert_maker_itunes_duration_invalid_value("09:07:14:05", maker_readers)
         _assert_maker_itunes_duration_invalid_value("10:5", maker_readers)
         _assert_maker_itunes_duration_invalid_value("10:03:5", maker_readers)
         _assert_maker_itunes_duration_invalid_value("10:3:05", maker_readers)
 
         _assert_maker_itunes_duration_invalid_value("xx:xx:xx", maker_readers)
+
+        _assert_maker_itunes_duration_invalid_value("", maker_readers)
       end
     end
 

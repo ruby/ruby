@@ -68,10 +68,6 @@ require_relative "converter"
 require_relative "xml-stylesheet"
 
 module RSS
-
-  # The current version of RSS
-  VERSION = "0.2.7"
-
   # The URI of the RSS 1.0 specification
   URI = "http://purl.org/rss/1.0/"
 

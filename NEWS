@@ -26,6 +26,11 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib updates (outstanding ones only)
 
+[RSS]
+
+  * Upgrade to RSS 0.2.8.
+    See https://github.com/ruby/rss/blob/master/NEWS.md.
+
 === Compatibility issues (excluding feature bug fixes)
 
 === Stdlib compatibility issues (excluding feature bug fixes)
