@@ -191,6 +191,12 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(:hogehoge, _test_to_proc_arg_with_refinements_call(&:hoge))
   end
 
+  def test_to_proc_arg_with_refinements_undefined
+    assert_raise(NoMethodError) do
+      _test_to_proc_arg_with_refinements_call(&:foo)
+    end
+  end
+
   private def return_from_proc
     Proc.new { return 1 }.tap(&:call)
   end
