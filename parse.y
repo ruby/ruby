@@ -4689,6 +4689,7 @@ parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
 
     pt = (p->ruby_sourceline == yylloc->end_pos.lineno) ?
 	    p->lex.pbeg + yylloc->end_pos.column : p->lex.pend;
+    if ((p->lex.pbeg < pt) && (*(pt-1) == '\n')) pt--;
     ptr = ptr_end = pt < pend ? pt : pend;
     lim = ptr - p->lex.pbeg > max_line_margin ? ptr - max_line_margin : p->lex.pbeg;
     while ((lim < ptr) && (*(ptr-1) != '\n')) ptr--;

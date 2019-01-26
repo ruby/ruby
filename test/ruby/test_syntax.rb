@@ -1142,6 +1142,12 @@ eom
     end;
   end
 
+  def test_syntax_error_at_newline
+    expected = "\n        ^"
+    assert_syntax_error("%[abcdef", expected)
+    assert_syntax_error("%[abcdef\n", expected)
+  end
+
   def test_invalid_jump
     assert_in_out_err(%w[-e redo], "", [], /^-e:1: /)
   end
