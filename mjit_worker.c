@@ -247,9 +247,9 @@ static char *libruby_pathflag;
 # define MJIT_CFLAGS_PIPE 0
 #endif
 
-// Use `-nodefaultlibs -nostdlib` for GCC where possible, which does not work on mingw and cygwin.
+// Use `-nodefaultlibs -nostdlib` for GCC where possible, which does not work on mingw, cygwin, AIX, and OpenBSD.
 // This seems to improve MJIT performance on GCC.
-#if defined __GNUC__ && !defined __clang__ && !defined(_WIN32) && !defined(__CYGWIN__)
+#if defined __GNUC__ && !defined __clang__ && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(_AIX) && !defined(__OpenBSD__)
 # define GCC_NOSTDLIB_FLAGS "-nodefaultlibs", "-nostdlib",
 #else
 # define GCC_NOSTDLIB_FLAGS /* empty */
@@ -266,7 +266,7 @@ static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
 static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL};
 static const char *const CC_DLDFLAGS_ARGS[] = {
     MJIT_DLDFLAGS
-#if defined __GNUC__ && !defined __clang__
+#if defined __GNUC__ && !defined __clang__ && !defined(__OpenBSD__)
     "-nostartfiles",
 #endif
     GCC_NOSTDLIB_FLAGS NULL
