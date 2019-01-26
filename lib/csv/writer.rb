@@ -31,7 +31,10 @@ class CSV
       @headers ||= row if @use_headers
       @lineno += 1
 
-      line = row.collect(&@quote).join(@column_separator) + @row_separator
+      converted_row = row.collect do |field|
+        quote(field)
+      end
+      line = converted_row.join(@column_separator) + @row_separator
       if @output_encoding
         line = line.encode(@output_encoding)
       end
@@ -90,37 +93,16 @@ class CSV
       else
         @row_separator = row_separator.to_s.encode(@encoding)
       end
-      quote_character = @options[:quote_character]
-      quote = lambda do |field|
-        field = String(field)
-        encoded_quote_character = quote_character.encode(field.encoding)
-        encoded_quote_character +
-          field.gsub(encoded_quote_character,
-                     encoded_quote_character * 2) +
-          encoded_quote_character
-      end
-      if @options[:force_quotes]
-        @quote = quote
-      else
-        quotable_pattern =
+      @quote_character = @options[:quote_character]
+      @force_quotes = @options[:force_quotes]
+      unless @force_quotes
+        @quotable_pattern =
           Regexp.new("[\r\n".encode(@encoding) +
                      Regexp.escape(@column_separator) +
-                     Regexp.escape(quote_character.encode(@encoding)) +
+                     Regexp.escape(@quote_character.encode(@encoding)) +
                      "]".encode(@encoding))
-        @quote = lambda do |field|
-          if field.nil?  # represent +nil+ fields as empty unquoted fields
-            ""
-          else
-            field = String(field)  # Stringify fields
-            # represent empty fields as empty quoted fields
-            if field.empty? or quotable_pattern.match?(field)
-              quote.call(field)
-            else
-              field  # unquoted field
-            end
-          end
-        end
       end
+      @quote_empty = @options.fetch(:quote_empty, true)
     end
 
     def prepare_output
@@ -136,6 +118,33 @@ class CSV
           if compatible_encoding
             @output.set_encoding(compatible_encoding)
             @output.seek(0, IO::SEEK_END)
+          end
+        end
+      end
+    end
+
+    def quote_field(field)
+      field = String(field)
+      encoded_quote_character = @quote_character.encode(field.encoding)
+      encoded_quote_character +
+        field.gsub(encoded_quote_character,
+                   encoded_quote_character * 2) +
+        encoded_quote_character
+    end
+
+    def quote(field)
+      if @force_quotes
+        quote_field(field)
+      else
+        if field.nil?  # represent +nil+ fields as empty unquoted fields
+          ""
+        else
+          field = String(field)  # Stringify fields
+          # represent empty fields as empty quoted fields
+          if (@quote_empty and field.empty?) or @quotable_pattern.match?(field)
+            quote_field(field)
+          else
+            field  # unquoted field
           end
         end
       end

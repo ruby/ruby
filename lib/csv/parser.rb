@@ -170,6 +170,7 @@ class CSV
       @input = input
       @options = options
       @samples = []
+      @parsed = false
 
       prepare
     end
@@ -229,6 +230,8 @@ class CSV
     def parse(&block)
       return to_enum(__method__) unless block_given?
 
+      return if @parsed
+
       if @return_headers and @headers
         headers = Row.new(@headers, @raw_headers, true)
         if @unconverted_fields
@@ -262,10 +265,10 @@ class CSV
             skip_needless_lines
             start_row
           elsif @scanner.eos?
-            return if row.empty? and value.nil?
+            break if row.empty? and value.nil?
             row << value
             emit_row(row, &block)
-            return
+            break
           else
             if @quoted_column_value
               message = "Do not allow except col_sep_split_separator " +
@@ -287,6 +290,12 @@ class CSV
         message = "Invalid byte sequence in #{@encoding}"
         raise MalformedCSVError.new(message, @lineno + 1)
       end
+
+      @parsed = true
+    end
+
+    def use_headers?
+      @use_headers
     end
 
     private
@@ -300,7 +309,18 @@ class CSV
 
     def prepare_variable
       @encoding = @options[:encoding]
-      @liberal_parsing = @options[:liberal_parsing]
+      liberal_parsing = @options[:liberal_parsing]
+      if liberal_parsing
+        @liberal_parsing = true
+        if liberal_parsing.is_a?(Hash)
+          @double_quote_outside_quote =
+            liberal_parsing[:double_quote_outside_quote]
+        else
+          @double_quote_outside_quote = false
+        end
+      else
+        @liberal_parsing = false
+      end
       @unconverted_fields = @options[:unconverted_fields]
       @field_size_limit = @options[:field_size_limit]
       @skip_blanks = @options[:skip_blanks]
@@ -318,6 +338,7 @@ class CSV
       end
 
       escaped_column_separator = Regexp.escape(@column_separator)
+      escaped_first_column_separator = Regexp.escape(@column_separator[0])
       escaped_row_separator = Regexp.escape(@row_separator)
       escaped_quote_character = Regexp.escape(@quote_character)
 
@@ -341,8 +362,11 @@ class CSV
         @column_ends = @column_separator.each_char.collect do |char|
           Regexp.new(Regexp.escape(char))
         end
+        @first_column_separators = Regexp.new(escaped_first_column_separator +
+                                              "+".encode(@encoding))
       else
         @column_ends = nil
+        @first_column_separators = nil
       end
       @row_end = Regexp.new(escaped_row_separator)
       if @row_separator.size > 1
@@ -359,12 +383,12 @@ class CSV
                                  "]+".encode(@encoding))
       if @liberal_parsing
         @unquoted_value = Regexp.new("[^".encode(@encoding) +
-                                     escaped_column_separator +
+                                     escaped_first_column_separator +
                                      "\r\n]+".encode(@encoding))
       else
         @unquoted_value = Regexp.new("[^".encode(@encoding) +
                                      escaped_quote_character +
-                                     escaped_column_separator +
+                                     escaped_first_column_separator +
                                      "\r\n]+".encode(@encoding))
       end
       @cr_or_lf = Regexp.new("[\r\n]".encode(@encoding))
@@ -583,6 +607,13 @@ class CSV
         if quoted_value
           unquoted_value = parse_unquoted_column_value
           if unquoted_value
+            if @double_quote_outside_quote
+              unquoted_value = unquoted_value.gsub(@quote_character * 2,
+                                                   @quote_character)
+              if quoted_value.empty? # %Q{""...} case
+                return @quote_character + unquoted_value
+              end
+            end
             @quote_character + quoted_value + @quote_character + unquoted_value
           else
             quoted_value
@@ -601,7 +632,25 @@ class CSV
 
     def parse_unquoted_column_value
       value = @scanner.scan_all(@unquoted_value)
-      @unquoted_column_value = true if value
+      return nil unless value
+
+      @unquoted_column_value = true
+      if @first_column_separators
+        while true
+          @scanner.keep_start
+          is_column_end = @column_ends.all? do |column_end|
+            @scanner.scan(column_end)
+          end
+          @scanner.keep_back
+          break if is_column_end
+          sub_separator = @scanner.scan_all(@first_column_separators)
+          break if sub_separator.nil?
+          value << sub_separator
+          sub_value = @scanner.scan_all(@unquoted_value)
+          break if sub_value.nil?
+          value << sub_value
+        end
+      end
       value
     end
 

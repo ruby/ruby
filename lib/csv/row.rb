@@ -130,6 +130,7 @@ class CSV
     alias_method :include?, :has_key?
     alias_method :key?,     :has_key?
     alias_method :member?,  :has_key?
+    alias_method :header?,  :has_key?
 
     #
     # :call-seq:
@@ -285,12 +286,6 @@ class CSV
       # return the index at the right offset, if we found one
       index.nil? ? nil : index + minimum_index
     end
-
-    # Returns +true+ if +name+ is a header for this row, and +false+ otherwise.
-    def header?(name)
-      headers.include? name
-    end
-    alias_method :include?, :header?
 
     #
     # Returns +true+ if +data+ matches a field in this row, and +false+

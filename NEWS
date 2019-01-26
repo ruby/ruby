@@ -517,6 +517,11 @@ sufficient information, see the ChangeLog file or Redmine
 
     * <code>"name(#{NODE_SET})"</code> case
 
+[CSV]
+
+  * Upgrade to 3.0.4.
+    See https://github.com/ruby/csv/blob/master/NEWS.md.
+
 [RSS]
 
   [New options]
