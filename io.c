@@ -10970,8 +10970,8 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
     int ret;
 
     if (stp->copy_length >= (off_t)0) {
-	/* copy_length can't be specified in copyfile(3) */
-	return 0;
+        /* copy_length can't be specified in copyfile(3) */
+        return 0;
     }
 
     ret = fstat(stp->src_fd, &sb);
@@ -10996,15 +10996,15 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
     if (stp->src_offset > (off_t)0) {
         off_t r;
 
-	/* get current offset */
-	errno = 0;
-	cur = lseek(stp->src_fd, 0, SEEK_CUR);
-	if (cur < (off_t)0 && errno) {
-	    stp->error_no = errno;
+        /* get current offset */
+        errno = 0;
+        cur = lseek(stp->src_fd, 0, SEEK_CUR);
+        if (cur < (off_t)0 && errno) {
+            stp->error_no = errno;
             return 1;
-	}
+        }
 
-	errno = 0;
+        errno = 0;
         r = lseek(stp->src_fd, stp->src_offset, SEEK_SET);
         if (r < (off_t)0 && errno) {
             stp->error_no = errno;
@@ -11017,22 +11017,22 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
     copyfile_state_get(stp->copyfile_state, COPYFILE_STATE_COPIED, &ss); /* get copied bytes */
 
     if (ret == 0) { /* success */
-	stp->total = ss;
-	if (stp->src_offset > (off_t)0) {
-	    off_t r;
-	    errno = 0;
-	    /* reset offset */
-	    r = lseek(stp->src_fd, cur, SEEK_SET);
-	    if (r < (off_t)0 && errno) {
-		stp->error_no = errno;
-		return 1;
-	    }
-	}
+        stp->total = ss;
+        if (stp->src_offset > (off_t)0) {
+            off_t r;
+            errno = 0;
+            /* reset offset */
+            r = lseek(stp->src_fd, cur, SEEK_SET);
+            if (r < (off_t)0 && errno) {
+                stp->error_no = errno;
+                return 1;
+            }
+        }
     } else {
         switch (errno) {
-	  case ENOTSUP:
-	  case EPERM:
-	  case EINVAL:
+          case ENOTSUP:
+          case EPERM:
+          case EINVAL:
             return 0;
         }
         stp->syserr = "fcopyfile";
@@ -11355,7 +11355,7 @@ nogvl_copy_stream_func(void *arg)
 #ifdef HAVE_FCOPYFILE
     ret = nogvl_fcopyfile(stp);
     if (ret != 0)
-	goto finish; /* error or success */
+        goto finish; /* error or success */
 #endif
 
 #ifdef USE_SENDFILE
@@ -11568,7 +11568,7 @@ copy_stream_finalize(VALUE arg)
 
 #ifdef HAVE_FCOPYFILE
     if (stp->copyfile_state) {
-	copyfile_state_free(stp->copyfile_state);
+        copyfile_state_free(stp->copyfile_state);
     }
 #endif
 
