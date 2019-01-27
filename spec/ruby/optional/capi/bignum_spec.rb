@@ -97,6 +97,16 @@ describe "CApiBignumSpecs" do
     end
   end
 
+  describe "RBIGNUM_SIGN" do
+    it "returns 1 for a positive Bignum" do
+      @s.RBIGNUM_SIGN(bignum_value(1)).should == 1
+    end
+
+    it "returns 0 for a negative Bignum" do
+      @s.RBIGNUM_SIGN(-bignum_value(1)).should == 0
+    end
+  end
+
   describe "rb_big_cmp" do
     it "compares a Bignum with a Bignum" do
       @s.rb_big_cmp(bignum_value, bignum_value(1)).should == -1

@@ -183,3 +183,27 @@ describe "StringIO#initialize when passed no arguments" do
     @io.string.should == ""
   end
 end
+
+describe "StringIO#initialize sets the encoding to" do
+  before :each do
+    @external = Encoding.default_external
+    Encoding.default_external = Encoding::ISO_8859_2
+  end
+
+  after :each do
+    Encoding.default_external = @external
+  end
+
+  it "Encoding.default_external when passed no arguments" do
+    io = StringIO.new
+    io.external_encoding.should == Encoding::ISO_8859_2
+    io.string.encoding.should == Encoding::ISO_8859_2
+  end
+
+  it "the same as the encoding of the String when passed a String" do
+    s = ''.force_encoding(Encoding::EUC_JP)
+    io = StringIO.new(s)
+    io.external_encoding.should == Encoding::EUC_JP
+    io.string.encoding.should == Encoding::EUC_JP
+  end
+end

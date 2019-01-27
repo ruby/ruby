@@ -158,6 +158,10 @@ describe "String#chomp" do
     it "does not taint the result when the argument is tainted" do
       "abc".chomp("abc".taint).tainted?.should be_false
     end
+
+    it "returns an empty String when the argument equals self" do
+      "abc".chomp("abc").should == ""
+    end
   end
 end
 

@@ -440,6 +440,32 @@ describe "C-API Kernel function" do
       proc = @s.rb_block_proc() { 1+1 }
       proc.should be_kind_of(Proc)
       proc.call.should == 2
+      proc.lambda?.should == false
+    end
+
+    it "passes through an existing lambda and does not convert to a proc" do
+      b = -> { 1+1 }
+      proc = @s.rb_block_proc(&b)
+      proc.should equal(b)
+      proc.call.should == 2
+      proc.lambda?.should == true
+    end
+  end
+
+  describe "rb_block_lambda" do
+    it "converts the implicit block into a Proc but does not convert it to a lambda" do
+      proc = @s.rb_block_proc { 1+1 }
+      proc.should be_kind_of(Proc)
+      proc.call.should == 2
+      proc.lambda?.should == false
+    end
+
+    it "passes through an existing Proc and does not convert to a lambda" do
+      b = proc { 1+1 }
+      proc = @s.rb_block_proc(&b)
+      proc.should equal(b)
+      proc.call.should == 2
+      proc.lambda?.should == false
     end
   end
 

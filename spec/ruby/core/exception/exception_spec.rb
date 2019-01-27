@@ -66,6 +66,22 @@ describe "Exception#exception" do
     e2.message.should == "message"
   end
 
+  it "when raised will be rescued as the new exception" do
+    begin
+      begin
+        raised_first = StandardError.new('first')
+        raise raised_first
+      rescue => caught_first
+        raised_second = raised_first.exception('second')
+        raise raised_second
+      end
+    rescue => caught_second
+    end
+
+    raised_first.should == caught_first
+    raised_second.should == caught_second
+  end
+
   class CustomArgumentError < StandardError
     attr_reader :val
     def initialize(val)
