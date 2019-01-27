@@ -27,6 +27,19 @@ describe :string_each_line, shared: true do
     c.should == ["hello\n", "\n", "\n", "world"]
   end
 
+  it "splits strings containing multibyte characters" do
+    s = <<~EOS
+      foo
+      🤡🤡🤡🤡🤡🤡🤡
+      bar
+      baz
+    EOS
+
+    b = []
+    s.send(@method) { |part| b << part }
+    b.should == ["foo\n", "🤡🤡🤡🤡🤡🤡🤡\n", "bar\n", "baz\n"]
+  end
+
   it "taints substrings that are passed to the block if self is tainted" do
     "one\ntwo\r\nthree".taint.send(@method) { |s| s.tainted?.should == true }
 

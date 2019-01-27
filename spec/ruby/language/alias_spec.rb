@@ -38,14 +38,14 @@ describe "The alias keyword" do
     @obj.a.should == 5
   end
 
-  it "works with a doubule quoted symbol on the left-hand side" do
+  it "works with a double quoted symbol on the left-hand side" do
     @meta.class_eval do
       alias :"a" value
     end
     @obj.a.should == 5
   end
 
-  it "works with an interoplated symbol on the left-hand side" do
+  it "works with an interpolated symbol on the left-hand side" do
     @meta.class_eval do
       alias :"#{'a'}" value
     end
@@ -66,14 +66,14 @@ describe "The alias keyword" do
     @obj.a.should == 5
   end
 
-  it "works with a doubule quoted symbol on the right-hand side" do
+  it "works with a double quoted symbol on the right-hand side" do
     @meta.class_eval do
       alias a :"value"
     end
     @obj.a.should == 5
   end
 
-  it "works with an interoplated symbol on the right-hand side" do
+  it "works with an interpolated symbol on the right-hand side" do
     @meta.class_eval do
       alias a :"#{'value'}"
     end
