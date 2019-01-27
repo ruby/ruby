@@ -95,10 +95,6 @@
 # include <sys/wait.h>		/* for WNOHANG on BSD */
 #endif
 
-#ifdef HAVE_COPYFILE_H
-# include <copyfile.h>
-#endif
-
 #include "ruby/util.h"
 
 #ifndef O_ACCMODE
@@ -10703,9 +10699,6 @@ struct copy_stream_struct {
     const char *syserr;
     const char *notimp;
     VALUE th;
-#ifdef HAVE_FCOPYFILE
-    copyfile_state_t copyfile_state;
-#endif
 };
 
 static void *
@@ -10956,88 +10949,6 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
         stp->syserr = "copy_file_range";
         stp->error_no = errno;
         return (int)ss;
-    }
-    return 1;
-}
-#endif
-
-#ifdef HAVE_FCOPYFILE
-static int
-nogvl_fcopyfile(struct copy_stream_struct *stp)
-{
-    struct stat sb;
-    off_t src_size, cur, ss = 0;
-    int ret;
-
-    if (stp->copy_length >= (off_t)0) {
-        /* copy_length can't be specified in copyfile(3) */
-        return 0;
-    }
-
-    ret = fstat(stp->src_fd, &sb);
-    if (ret < 0) {
-        stp->syserr = "fstat";
-        stp->error_no = errno;
-        return ret;
-    }
-    if (!S_ISREG(sb.st_mode))
-        return 0;
-
-    src_size = sb.st_size;
-    ret = fstat(stp->dst_fd, &sb);
-    if (ret < 0) {
-        stp->syserr = "fstat";
-        stp->error_no = errno;
-        return ret;
-    }
-    if (!S_ISREG(sb.st_mode))
-        return 0;
-
-    if (stp->src_offset > (off_t)0) {
-        off_t r;
-
-        /* get current offset */
-        errno = 0;
-        cur = lseek(stp->src_fd, 0, SEEK_CUR);
-        if (cur < (off_t)0 && errno) {
-            stp->error_no = errno;
-            return 1;
-        }
-
-        errno = 0;
-        r = lseek(stp->src_fd, stp->src_offset, SEEK_SET);
-        if (r < (off_t)0 && errno) {
-            stp->error_no = errno;
-            return 1;
-        }
-    }
-
-    stp->copyfile_state = copyfile_state_alloc(); /* this will be freed by copy_stream_finalize() */
-    ret = fcopyfile(stp->src_fd, stp->dst_fd, stp->copyfile_state, COPYFILE_DATA);
-    copyfile_state_get(stp->copyfile_state, COPYFILE_STATE_COPIED, &ss); /* get copied bytes */
-
-    if (ret == 0) { /* success */
-        stp->total = ss;
-        if (stp->src_offset > (off_t)0) {
-            off_t r;
-            errno = 0;
-            /* reset offset */
-            r = lseek(stp->src_fd, cur, SEEK_SET);
-            if (r < (off_t)0 && errno) {
-                stp->error_no = errno;
-                return 1;
-            }
-        }
-    } else {
-        switch (errno) {
-          case ENOTSUP:
-          case EPERM:
-          case EINVAL:
-            return 0;
-        }
-        stp->syserr = "fcopyfile";
-        stp->error_no = errno;
-        return (int)ret;
     }
     return 1;
 }
@@ -11352,12 +11263,6 @@ nogvl_copy_stream_func(void *arg)
 	goto finish; /* error or success */
 #endif
 
-#ifdef HAVE_FCOPYFILE
-    ret = nogvl_fcopyfile(stp);
-    if (ret != 0)
-        goto finish; /* error or success */
-#endif
-
 #ifdef USE_SENDFILE
     ret = nogvl_copy_stream_sendfile(stp);
     if (ret != 0)
@@ -11565,12 +11470,6 @@ static VALUE
 copy_stream_finalize(VALUE arg)
 {
     struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
-
-#ifdef HAVE_FCOPYFILE
-    if (stp->copyfile_state) {
-        copyfile_state_free(stp->copyfile_state);
-    }
-#endif
 
     if (stp->close_src) {
         rb_io_close_m(stp->src);
