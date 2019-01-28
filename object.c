@@ -2688,7 +2688,6 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 		return Qfalse;
 	    mod = rb_const_get_at(mod, id);
 	}
-	recur = Qfalse;
 
 	if (p < pend && !RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
 	    rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
