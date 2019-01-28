@@ -1743,6 +1743,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(RegexpError, bug12418){ Regexp.new('(0?0|(?(5)||)|(?(5)||))?') }
   end
 
+  def test_quick_search
+    assert_match_at('(?i) *TOOKY', 'Mozilla/5.0 (Linux; Android 4.0.3; TOOKY', [[34, 40]])   # Issue #120
+  end
+
   def test_ss_in_look_behind
     assert_match_at("(?i:ss)", "ss", [[0, 2]])
     assert_match_at("(?i:ss)", "Ss", [[0, 2]])

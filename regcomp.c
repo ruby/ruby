@@ -4309,8 +4309,6 @@ set_bm_skip(UChar* s, UChar* end, regex_t* reg,
 
   len = end - s;
   if (len < ONIG_CHAR_TABLE_SIZE) {
-    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++) skip[i] = (UChar )(len + 1);
-
     if (ignore_case) {
       for (i = 0; i < len; i += clen) {
         p = s + i;
@@ -4339,6 +4337,8 @@ endcheck:
     }
 
     len = end - s;
+    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++)
+      skip[i] = (UChar )(len + 1);
     n = 0;
     for (i = 0; i < len; i += clen) {
       p = s + i;
