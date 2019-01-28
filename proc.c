@@ -1413,7 +1413,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
 	if (me->defined_class) {
 	    VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
 	    id = me->def->original_id;
-	    me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
+            me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
 	}
 	else {
 	    VALUE klass = RCLASS_SUPER(me->owner);
@@ -1448,10 +1448,10 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     VALUE iclass = Qnil;
 
     if (obj == Qundef) { /* UnboundMethod */
-	me = rb_method_entry_with_refinements(klass, id, &iclass);
+        me = rb_method_entry_with_refinements(klass, id, &iclass);
     }
     else {
-	me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
+        me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
     }
     return mnew_from_me(me, klass, iclass, obj, id, mclass, scope);
 }
