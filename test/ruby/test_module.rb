@@ -338,6 +338,17 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) {self.class.const_defined?(const)}
   end
 
+  def test_nested_defined_inheritance
+    assert_send([Object, :const_defined?, [self.class.name, 'User', 'MIXIN'].join('::')])
+    assert_send([self.class, :const_defined?, 'User::MIXIN'])
+    assert_send([Object, :const_defined?, 'File::SEEK_SET'])
+
+    # const_defined? with `false`
+    assert_not_send([Object, :const_defined?, [self.class.name, 'User', 'MIXIN'].join('::'), false])
+    assert_not_send([self.class, :const_defined?, 'User::MIXIN', false])
+    assert_not_send([Object, :const_defined?, 'File::SEEK_SET', false])
+  end
+
   def test_nested_defined_bad_class
     assert_raise(TypeError) do
       self.class.const_defined?('User::USER::Foo')
