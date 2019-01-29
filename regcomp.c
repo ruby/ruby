@@ -4225,64 +4225,59 @@ set_bm_skip(UChar* s, UChar* end, regex_t* reg,
   OnigEncoding enc = reg->enc;
 
   len = end - s;
-  if (len < ONIG_CHAR_TABLE_SIZE) {
-    if (ignore_case) {
-      for (i = 0; i < len; i += clen) {
-        p = s + i;
-        n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
-            p, end, items);
-        clen = enclen(enc, p, end);
-        if (p + clen > end)
-          clen = (int )(end - p);
+  if (len >= ONIG_CHAR_TABLE_SIZE) {
+    /* This should not happen. */
+    return ONIGERR_TYPE_BUG;
+  }
 
-        for (j = 0; j < n; j++) {
-          if ((items[j].code_len != 1) || (items[j].byte_len != clen)) {
-            /* Different length isn't supported. Stop optimization at here. */
-            end = p;
-            goto endcheck;
-          }
-          flen = ONIGENC_CODE_TO_MBC(enc, items[j].code[0], buf);
-          if (flen != clen) {
-            /* Different length isn't supported. Stop optimization at here. */
-            end = p;
-            goto endcheck;
-          }
-        }
-      }
-endcheck:
-      ;
-    }
-
-    len = end - s;
-    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++)
-      skip[i] = (UChar )(len + 1);
-    n = 0;
+  if (ignore_case) {
     for (i = 0; i < len; i += clen) {
       p = s + i;
-      if (ignore_case)
-        n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
-                                               p, end, items);
+      n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
+	  p, end, items);
       clen = enclen(enc, p, end);
       if (p + clen > end)
         clen = (int )(end - p);
 
-      for (j = 0; j < clen; j++) {
-        skip[s[i + j]] = (UChar )(len - i - j);
-        for (k = 0; k < n; k++) {
-          ONIGENC_CODE_TO_MBC(enc, items[k].code[0], buf);
-          skip[buf[j]] = (UChar )(len - i - j);
-        }
+      for (j = 0; j < n; j++) {
+	if ((items[j].code_len != 1) || (items[j].byte_len != clen)) {
+	  /* Different length isn't supported. Stop optimization at here. */
+	  end = p;
+	  goto endcheck;
+	}
+	flen = ONIGENC_CODE_TO_MBC(enc, items[j].code[0], buf);
+	if (flen != clen) {
+	  /* Different length isn't supported. Stop optimization at here. */
+	  end = p;
+	  goto endcheck;
+	}
+      }
+    }
+endcheck:
+    len = end - s;
+  }
+
+  for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++)
+    skip[i] = (UChar )(len + 1);
+  n = 0;
+  for (i = 0; i < len; i += clen) {
+    p = s + i;
+    if (ignore_case)
+      n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
+					     p, end, items);
+    clen = enclen(enc, p, end);
+    if (p + clen > end)
+      clen = (int )(end - p);
+
+    for (j = 0; j < clen; j++) {
+      skip[s[i + j]] = (UChar )(len - i - j);
+      for (k = 0; k < n; k++) {
+	ONIGENC_CODE_TO_MBC(enc, items[k].code[0], buf);
+	skip[buf[j]] = (UChar )(len - i - j);
       }
     }
   }
-  else {
-# if OPT_EXACT_MAXLEN < ONIG_CHAR_TABLE_SIZE
-    /* This should not happen. */
-    return ONIGERR_TYPE_BUG;
-# else
-#  error OPT_EXACT_MAXLEN exceeds ONIG_CHAR_TABLE_SIZE.
-# endif
-  }
+
   return (int)len;
 }
 
