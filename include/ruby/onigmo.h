@@ -789,7 +789,7 @@ typedef struct re_pattern_buffer {
   unsigned char *exact;
   unsigned char *exact_end;
   unsigned char  map[ONIG_CHAR_TABLE_SIZE]; /* used as BM skip or char-map */
-  int           *int_map;                   /* BM skip for exact_len > 255 */
+  int           *reserved1;
   int           *int_map_backward;          /* BM skip for backward search */
   OnigDistance   dmin;                      /* min-distance of exact or map */
   OnigDistance   dmax;                      /* max-distance of exact or map */

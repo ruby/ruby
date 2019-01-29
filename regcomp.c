@@ -4216,7 +4216,7 @@ restart:
 /* set skip map for Sunday's quick search */
 static int
 set_bm_skip(UChar* s, UChar* end, regex_t* reg,
-            UChar skip[], int** int_skip, int ignore_case)
+            UChar skip[], int ignore_case)
 {
   OnigDistance i, len;
   int clen, flen, n, j, k;
@@ -4280,36 +4280,7 @@ endcheck:
     /* This should not happen. */
     return ONIGERR_TYPE_BUG;
 # else
-    if (IS_NULL(*int_skip)) {
-      *int_skip = (int* )xmalloc(sizeof(int) * ONIG_CHAR_TABLE_SIZE);
-      if (IS_NULL(*int_skip)) return ONIGERR_MEMORY;
-    }
-    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++) (*int_skip)[i] = (int )(len + 1);
-
-    n = 0;
-    for (i = 0; i < len; i += clen) {
-      p = s + i;
-      if (ignore_case)
-        n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
-                                               p, end, items);
-      clen = enclen(enc, p, end);
-      if (p + clen > end)
-        clen = (int )(end - p);
-
-      for (j = 0; j < n; j++) {
-        if ((items[j].code_len != 1) || (items[j].byte_len != clen))
-          return 1;  /* different length isn't supported. */
-        flen = ONIGENC_CODE_TO_MBC(enc, items[j].code[0], buf[j]);
-        if (flen != clen)
-          return 1;  /* different length isn't supported. */
-      }
-      for (j = 0; j < clen; j++) {
-        (*int_skip)[s[i + j]] = (int )(len - i - j);
-        for (k = 0; k < n; k++) {
-          (*int_skip)[buf[k][j]] = (int )(len - i - j);
-        }
-      }
-    }
+#  error OPT_EXACT_MAXLEN exceeds ONIG_CHAR_TABLE_SIZE.
 # endif
   }
   return (int)len;
@@ -5299,7 +5270,7 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
   if (e->ignore_case > 0) {
     if (e->len >= 3 || (e->len >= 2 && allow_reverse)) {
       e->len = set_bm_skip(reg->exact, reg->exact_end, reg,
-                      reg->map, &(reg->int_map), 1);
+                           reg->map, 1);
       reg->exact_end = reg->exact + e->len;
       if (e->len >= 3) {
         reg->optimize = (allow_reverse != 0
@@ -5318,7 +5289,7 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
   else {
     if (e->len >= 3 || (e->len >= 2 && allow_reverse)) {
       set_bm_skip(reg->exact, reg->exact_end, reg,
-                  reg->map, &(reg->int_map), 0);
+                  reg->map, 0);
       reg->optimize = (allow_reverse != 0
                      ? ONIG_OPTIMIZE_EXACT_BM : ONIG_OPTIMIZE_EXACT_BM_NOT_REV);
     }
@@ -5601,7 +5572,6 @@ onig_free_body(regex_t* reg)
   if (IS_NOT_NULL(reg)) {
     xfree(reg->p);
     xfree(reg->exact);
-    xfree(reg->int_map);
     xfree(reg->int_map_backward);
     xfree(reg->repeat_range);
     onig_free(reg->chain);
@@ -5649,10 +5619,6 @@ onig_reg_copy(regex_t** nreg, regex_t* oreg)
       (reg)->exact_end = (reg)->exact + exact_size;
     }
 
-    if (IS_NOT_NULL(reg->int_map)) {
-      if (COPY_FAILED(int_map, sizeof(int) * ONIG_CHAR_TABLE_SIZE))
-        goto err_int_map;
-    }
     if (IS_NOT_NULL(reg->int_map_backward)) {
       if (COPY_FAILED(int_map_backward, sizeof(int) * ONIG_CHAR_TABLE_SIZE))
         goto err_int_map_backward;
@@ -5685,8 +5651,6 @@ onig_reg_copy(regex_t** nreg, regex_t* oreg)
   err_p:
     xfree(reg->int_map_backward);
   err_int_map_backward:
-    xfree(reg->int_map);
-  err_int_map:
     xfree(reg->exact);
   err:
     xfree(reg);
@@ -5703,7 +5667,6 @@ onig_memsize(const regex_t *reg)
     if (IS_NULL(reg)) return 0;
     if (IS_NOT_NULL(reg->p))                size += reg->alloc;
     if (IS_NOT_NULL(reg->exact))            size += reg->exact_end - reg->exact;
-    if (IS_NOT_NULL(reg->int_map))          size += sizeof(int) * ONIG_CHAR_TABLE_SIZE;
     if (IS_NOT_NULL(reg->int_map_backward)) size += sizeof(int) * ONIG_CHAR_TABLE_SIZE;
     if (IS_NOT_NULL(reg->repeat_range))     size += reg->repeat_range_alloc * sizeof(OnigRepeatRange);
     if (IS_NOT_NULL(reg->chain))            size += onig_memsize(reg->chain);
@@ -5989,7 +5952,6 @@ onig_reg_init(regex_t* reg, OnigOptionType option,
   (reg)->syntax           = syntax;
   (reg)->optimize         = 0;
   (reg)->exact            = (UChar* )NULL;
-  (reg)->int_map          = (int* )NULL;
   (reg)->int_map_backward = (int* )NULL;
   (reg)->chain            = (regex_t* )NULL;
 

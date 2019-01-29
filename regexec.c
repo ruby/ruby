@@ -4401,39 +4401,19 @@ bm_search_notrev(regex_t* reg, const UChar* target, const UChar* target_end,
 
   s = text;
 
-  if (IS_NULL(reg->int_map)) {
-    while (s < end) {
-      p = se = s + tlen1;
-      t = tail;
-      while (*p == *t) {
-        if (t == target) return (UChar* )s;
-        p--; t--;
-      }
-      if (s + 1 >= end) break;
-      skip = reg->map[se[1]];
-      t = s;
-      do {
-        s += enclen(enc, s, end);
-      } while ((s - t) < skip && s < end);
+  while (s < end) {
+    p = se = s + tlen1;
+    t = tail;
+    while (*p == *t) {
+      if (t == target) return (UChar* )s;
+      p--; t--;
     }
-  }
-  else {
-# if OPT_EXACT_MAXLEN >= ONIG_CHAR_TABLE_SIZE
-    while (s < end) {
-      p = se = s + tlen1;
-      t = tail;
-      while (*p == *t) {
-        if (t == target) return (UChar* )s;
-        p--; t--;
-      }
-      if (s + 1 >= end) break;
-      skip = reg->int_map[se[1]];
-      t = s;
-      do {
-        s += enclen(enc, s, end);
-      } while ((s - t) < skip && s < end);
-    }
-# endif
+    if (s + 1 >= end) break;
+    skip = reg->map[se[1]];
+    t = s;
+    do {
+      s += enclen(enc, s, end);
+    } while ((s - t) < skip && s < end);
   }
 
   return (UChar* )NULL;
@@ -4460,32 +4440,17 @@ bm_search(regex_t* reg, const UChar* target, const UChar* target_end,
     end = text_end;
 
   s = text + tlen1;
-  if (IS_NULL(reg->int_map)) {
-    while (s < end) {
-      p = s;
-      t = tail;
-      while (*p == *t) {
-        if (t == target) return (UChar* )p;
-        p--; t--;
-      }
-      if (s + 1 >= end) break;
-      s += reg->map[s[1]];
+  while (s < end) {
+    p = s;
+    t = tail;
+    while (*p == *t) {
+      if (t == target) return (UChar* )p;
+      p--; t--;
     }
+    if (s + 1 >= end) break;
+    s += reg->map[s[1]];
   }
-  else { /* see int_map[] */
-# if OPT_EXACT_MAXLEN >= ONIG_CHAR_TABLE_SIZE
-    while (s < end) {
-      p = s;
-      t = tail;
-      while (*p == *t) {
-        if (t == target) return (UChar* )p;
-        p--; t--;
-      }
-      if (s + 1 >= end) break;
-      s += reg->int_map[s[1]];
-    }
-# endif
-  }
+
   return (UChar* )NULL;
 }
 
@@ -4514,35 +4479,17 @@ bm_search_notrev_ic(regex_t* reg, const UChar* target, const UChar* target_end,
 
   s = text;
 
-  if (IS_NULL(reg->int_map)) {
-    while (s < end) {
-      se = s + tlen1;
-      if (str_lower_case_match(enc, case_fold_flag, target, target_end,
-                               s, se + 1))
-        return (UChar* )s;
-      if (s + 1 >= end) break;
-      skip = reg->map[se[1]];
-      t = s;
-      do {
-        s += enclen(enc, s, end);
-      } while ((s - t) < skip && s < end);
-    }
-  }
-  else {
-# if OPT_EXACT_MAXLEN >= ONIG_CHAR_TABLE_SIZE
-    while (s < end) {
-      se = s + tlen1;
-      if (str_lower_case_match(enc, case_fold_flag, target, target_end,
-                               s, se + 1))
-        return (UChar* )s;
-      if (s + 1 >= end) break;
-      skip = reg->int_map[se[1]];
-      t = s;
-      do {
-        s += enclen(enc, s, end);
-      } while ((s - t) < skip && s < end);
-    }
-# endif
+  while (s < end) {
+    se = s + tlen1;
+    if (str_lower_case_match(enc, case_fold_flag, target, target_end,
+                             s, se + 1))
+      return (UChar* )s;
+    if (s + 1 >= end) break;
+    skip = reg->map[se[1]];
+    t = s;
+    do {
+      s += enclen(enc, s, end);
+    } while ((s - t) < skip && s < end);
   }
 
   return (UChar* )NULL;
@@ -4571,28 +4518,15 @@ bm_search_ic(regex_t* reg, const UChar* target, const UChar* target_end,
     end = text_end;
 
   s = text + tlen1;
-  if (IS_NULL(reg->int_map)) {
-    while (s < end) {
-      p = s - tlen1;
-      if (str_lower_case_match(enc, case_fold_flag, target, target_end,
-                               p, s + 1))
-        return (UChar* )p;
-      if (s + 1 >= end) break;
-      s += reg->map[s[1]];
-    }
+  while (s < end) {
+    p = s - tlen1;
+    if (str_lower_case_match(enc, case_fold_flag, target, target_end,
+                             p, s + 1))
+      return (UChar* )p;
+    if (s + 1 >= end) break;
+    s += reg->map[s[1]];
   }
-  else { /* see int_map[] */
-# if OPT_EXACT_MAXLEN >= ONIG_CHAR_TABLE_SIZE
-    while (s < end) {
-      p = s - tlen1;
-      if (str_lower_case_match(enc, case_fold_flag, target, target_end,
-                               p, s + 1))
-        return (UChar* )p;
-      if (s + 1 >= end) break;
-      s += reg->int_map[s[1]];
-    }
-# endif
-  }
+
   return (UChar* )NULL;
 }
 
