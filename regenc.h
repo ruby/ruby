@@ -134,11 +134,13 @@ typedef struct {
 #define roomof(x, y) (((x) + (y) - 1) / (y))
 #define type_roomof(x, y) roomof(sizeof(x), sizeof(y))
 
+/* config */
 #define USE_CRNL_AS_LINE_TERMINATOR
 #define USE_UNICODE_PROPERTIES
 #define USE_UNICODE_AGE_PROPERTIES
 /* #define USE_UNICODE_CASE_FOLD_TURKISH_AZERI */
 /* #define USE_UNICODE_ALL_LINE_TERMINATORS */  /* see Unicode.org UTS #18 */
+#define USE_CASE_MAP_API
 
 
 #define ONIG_ENCODING_INIT_DEFAULT           ONIG_ENCODING_ASCII
