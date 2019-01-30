@@ -147,6 +147,14 @@ rb_hash(VALUE obj)
 
 long rb_objid_hash(st_index_t index);
 
+static st_index_t
+dbl_to_index(double d)
+{
+    union {double d; st_index_t i;} u;
+    u.d = d;
+    return u.i;
+}
+
 long
 rb_dbl_long_hash(double d)
 {
@@ -155,12 +163,7 @@ rb_dbl_long_hash(double d)
 #if SIZEOF_INT == SIZEOF_VOIDP
     return rb_memhash(&d, sizeof(d));
 #else
-    {
-	union {double d; uint64_t i;} u;
-
-	u.d = d;
-        return rb_objid_hash(u.i);
-    }
+    return rb_objid_hash(dbl_to_index(d));
 #endif
 }
 
@@ -293,9 +296,7 @@ rb_ident_hash(st_data_t n)
      *   many integers get interpreted as 2.0 or -2.0 [Bug #10761]
      */
     if (FLONUM_P(n)) {
-        union { double d; st_data_t i; } u;
-        u.d = rb_float_value(n);
-        n ^= u.i;
+        n ^= dbl_to_index(rb_float_value(n));
     }
 #endif
 
