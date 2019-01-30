@@ -260,16 +260,19 @@ key64_hash(uint64_t key, uint32_t seed)
     return mult_and_mix(key + seed, prime1);
 }
 
+/* Should cast down the result for each purpose */
+#define st_index_hash(index) key64_hash(rb_hash_start(index), prime2)
+
 long
 rb_objid_hash(st_index_t index)
 {
-    return (long)key64_hash(rb_hash_start(index), prime2);
+    return (long)st_index_hash(index);
 }
 
 static st_index_t
 objid_hash(VALUE obj)
 {
-    return rb_objid_hash((st_index_t)obj);
+    return (st_index_t)st_index_hash((st_index_t)obj);
 }
 
 VALUE
@@ -300,7 +303,7 @@ rb_ident_hash(st_data_t n)
     }
 #endif
 
-    return (st_index_t)key64_hash(rb_hash_start((st_index_t)n), prime2);
+    return (st_index_t)st_index_hash((st_index_t)n);
 }
 
 static const struct st_hash_type identhash = {
