@@ -2836,7 +2836,7 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
 
     n = NUM2LONG(argv[0]);
     if (n < 0) {
-	rb_raise(rb_eArgError, "attempt to take negative size");
+        rb_raise(rb_eArgError, "attempt to take negative size");
     }
     if (n == 0) {
         return rb_ary_new_capa(0);
