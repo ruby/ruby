@@ -159,7 +159,7 @@ rb_dbl_long_hash(double d)
 	union {double d; uint64_t i;} u;
 
 	u.d = d;
-	return rb_objid_hash(u.i);
+        return rb_objid_hash(u.i);
     }
 #endif
 }
