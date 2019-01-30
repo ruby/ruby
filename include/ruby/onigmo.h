@@ -38,8 +38,8 @@ extern "C" {
 #endif
 
 #define ONIGMO_VERSION_MAJOR   6
-#define ONIGMO_VERSION_MINOR   1
-#define ONIGMO_VERSION_TEENY   3
+#define ONIGMO_VERSION_MINOR   2
+#define ONIGMO_VERSION_TEENY   0
 
 #ifndef ONIG_EXTERN
 # ifdef RUBY_EXTERN
