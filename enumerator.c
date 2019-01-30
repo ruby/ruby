@@ -2832,7 +2832,7 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
         return b;
     }
 
-    // TODO: the following code should be extracted as arith_seq_take
+    /* TODO: the following code should be extracted as arith_seq_take */
 
     n = NUM2LONG(argv[0]);
     if (n < 0) {
@@ -2849,7 +2849,7 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
         ary = rb_ary_new_capa(n);
         while (n > 0 && FIXABLE(i)) {
             rb_ary_push(ary, LONG2FIX(i));
-            i += unit;  // FIXABLE + FIXABLE never overflow;
+            i += unit;  /* FIXABLE + FIXABLE never overflow; */
             --n;
         }
         if (n > 0) {
