@@ -1669,6 +1669,7 @@ enum ruby_num_rounding_mode {
 
 int rb_num_to_uint(VALUE val, unsigned int *ret);
 VALUE ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl);
+double ruby_float_step_size(double beg, double end, double unit, int excl);
 int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl, int allow_endless);
 double ruby_float_mod(double x, double y);
 int rb_num_negative_p(VALUE);
