@@ -2481,7 +2481,7 @@ num_truncate(int argc, VALUE *argv, VALUE num)
     return flo_truncate(argc, argv, rb_Float(num));
 }
 
-static double
+double
 ruby_float_step_size(double beg, double end, double unit, int excl)
 {
     const double epsilon = DBL_EPSILON;
