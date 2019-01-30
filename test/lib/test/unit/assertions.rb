@@ -510,7 +510,13 @@ EOT
         else
           line = 1
         end
-        yield(code, fname, line, mesg)
+        yield(code, fname, line, message(mesg) {
+                if code.end_with?("\n")
+                  "```\n#{code}```\n"
+                else
+                  "```\n#{code}\n```\n""no-newline"
+                end
+              })
       ensure
         $VERBOSE = verbose
       end
