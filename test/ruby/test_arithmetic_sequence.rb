@@ -141,10 +141,29 @@ class TestArithmeticSequence < Test::Unit::TestCase
     assert_equal([], seq.first(1))
     assert_equal([], seq.first(3))
 
+    seq = 1.step(10, by: 0)
+    assert_equal(1, seq.first)
+    assert_equal([1], seq.first(1))
+    assert_equal([1, 1, 1], seq.first(3))
+
     seq = 10.0.step(-1.0, by: -2.0)
     assert_equal(10.0, seq.first)
     assert_equal([10.0], seq.first(1))
     assert_equal([10.0, 8.0, 6.0], seq.first(3))
+  end
+
+  def test_first_bug15518
+    bug15518 = '[Bug #15518]'
+    seq = (1 .. 10.0).step(1)
+    five_float_classes = Array.new(5) { Float }
+    assert_equal(five_float_classes, seq.first(5).map(&:class), bug15518)
+    assert_equal([1.0, 2.0, 3.0, 4.0, 5.0], seq.first(5), bug15518)
+    seq = (1 .. Float::INFINITY).step(1)
+    assert_equal(five_float_classes, seq.first(5).map(&:class), bug15518)
+    assert_equal([1.0, 2.0, 3.0, 4.0, 5.0], seq.first(5), bug15518)
+    seq = (1 .. Float::INFINITY).step(1r)
+    assert_equal(five_float_classes, seq.first(5).map(&:class), bug15518)
+    assert_equal([1.0, 2.0, 3.0, 4.0, 5.0], seq.first(5), bug15518)
   end
 
   def test_last
