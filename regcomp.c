@@ -5982,6 +5982,14 @@ onig_reg_init(regex_t* reg, OnigOptionType option,
   if (IS_NULL(reg))
     return ONIGERR_INVALID_ARGUMENT;
 
+  (reg)->exact            = (UChar* )NULL;
+  (reg)->int_map          = (int* )NULL;
+  (reg)->int_map_backward = (int* )NULL;
+  (reg)->chain            = (regex_t* )NULL;
+  (reg)->p                = (UChar* )NULL;
+  (reg)->name_table       = (void* )NULL;
+  (reg)->repeat_range     = (OnigRepeatRange* )NULL;
+
   if (ONIGENC_IS_UNDEF(enc))
     return ONIGERR_DEFAULT_ENCODING_IS_NOT_SET;
 
@@ -6001,15 +6009,9 @@ onig_reg_init(regex_t* reg, OnigOptionType option,
   (reg)->options          = option;
   (reg)->syntax           = syntax;
   (reg)->optimize         = 0;
-  (reg)->exact            = (UChar* )NULL;
-  (reg)->int_map          = (int* )NULL;
-  (reg)->int_map_backward = (int* )NULL;
-  (reg)->chain            = (regex_t* )NULL;
 
-  (reg)->p                = (UChar* )NULL;
   (reg)->alloc            = 0;
   (reg)->used             = 0;
-  (reg)->name_table       = (void* )NULL;
 
   (reg)->case_fold_flag   = case_fold_flag;
 
