@@ -3150,8 +3150,12 @@ econv_s_search_convpath(int argc, VALUE *argv, VALUE klass)
     convpath = Qnil;
     transcode_search_path(sname, dname, search_convpath_i, &convpath);
 
-    if (NIL_P(convpath))
-        rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
+    if (NIL_P(convpath)) {
+	VALUE exc = rb_econv_open_exc(sname, dname, ecflags);
+	RB_GC_GUARD(snamev);
+	RB_GC_GUARD(dnamev);
+	rb_exc_raise(exc);
+    }
 
     if (decorate_convpath(convpath, ecflags) == -1) {
 	VALUE exc = rb_econv_open_exc(sname, dname, ecflags);
