@@ -6,7 +6,8 @@
 %# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 %# details.
 %
-% map = RubyVM::Typemap.each_pair.map {|k, (c, t)| sprintf "%s = '%s'", t, c }
 enum ruby_insn_type_chars {
-    <%=  map.join(",\n    ") %>
+% RubyVM::Typemap.each_value do |(c, t)|
+    <%= t %> = '<%= c %>',
+% end
 };
