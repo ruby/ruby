@@ -2574,6 +2574,29 @@ time_arg(int argc, VALUE *argv, struct vtm *vtm)
 	vtm->mday = obj2ubits(v[2], 5);
     }
 
+    /* normalize month-mday */
+    switch (vtm->mon) {
+      case 2:
+        {
+            /* this drops higher bits but it's not a problem to calc leap year */
+            unsigned int mday2 = leap_year_v_p(vtm->year) ? 29 : 28;
+            if (vtm->mday > mday2) {
+                vtm->mday -= mday2;
+                vtm->mon++;
+            }
+        }
+        break;
+      case 4:
+      case 6:
+      case 9:
+      case 11:
+        if (vtm->mday == 31) {
+            vtm->mon++;
+            vtm->mday = 1;
+        }
+        break;
+    }
+
     vtm->hour = NIL_P(v[3])?0:obj2ubits(v[3], 5);
 
     vtm->min  = NIL_P(v[4])?0:obj2ubits(v[4], 6);
