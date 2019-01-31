@@ -1,8 +1,6 @@
 require 'test/unit'
 require 'tempfile'
 
-return
-
 class TestISeq < Test::Unit::TestCase
   ISeq = RubyVM::InstructionSequence
 
