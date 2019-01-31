@@ -163,6 +163,12 @@ class TestFloat < Test::Unit::TestCase
       assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*268)+".0p-2099"))
       assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*600)+".0p-3427"))
     end
+
+    z = "0" * (Float::DIG * 4 + 10)
+    ["long invalid string", "1.0", "1.0e", "1.0e-", "1.0e+"].each do |n|
+      assert_raise(ArgumentError, n += z + "A") {Float(n)}
+      assert_raise(ArgumentError, n += z + ".0") {Float(n)}
+    end
   end
 
   def test_divmod

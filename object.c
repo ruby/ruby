@@ -2816,30 +2816,53 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 	return d;
     }
     if (*end) {
-	char buf[DBL_DIG * 4 + 10];
-	char *n = buf;
-	char *e = buf + sizeof(buf) - 1;
-	char prev = 0;
+        char buf[DBL_DIG * 4 + 10];
+        char *n = buf;
+        char *const init_e = buf + DBL_DIG * 4;
+        char *e = init_e;
+        char prev = 0;
+        int dot_seen = FALSE;
 
-	while (p < end && n < e) prev = *n++ = *p++;
-	while (*p) {
-	    if (*p == '_') {
-		/* remove underscores between digits */
-		if (badcheck) {
-		    if (n == buf || !ISDIGIT(prev)) goto bad;
-		    ++p;
-		    if (!ISDIGIT(*p)) goto bad;
-		}
-		else {
-		    while (*++p == '_');
-		    continue;
-		}
-	    }
-	    prev = *p++;
-	    if (n < e) *n++ = prev;
-	}
-	*n = '\0';
-	p = buf;
+        switch (*p) {case '+': case '-': prev = *n++ = *p++;}
+        if (*p == '0') {
+            prev = *n++ = '0';
+            while (*++p == '0');
+        }
+        while (p < end && n < e) prev = *n++ = *p++;
+        while (*p) {
+            if (*p == '_') {
+                /* remove an underscore between digits */
+                if (n == buf || !ISDIGIT(prev) || (++p, !ISDIGIT(*p))) {
+                    if (badcheck) goto bad;
+                    break;
+                }
+            }
+            prev = *p++;
+            if (e == init_e && (prev == 'e' || prev == 'E' || prev == 'p' || prev == 'P')) {
+                e = buf + sizeof(buf) - 1;
+                *n++ = prev;
+                switch (*p) {case '+': case '-': prev = *n++ = *p++;}
+                if (*p == '0') {
+                    prev = *n++ = '0';
+                    while (*++p == '0');
+                }
+                continue;
+            }
+            else if (ISSPACE(prev)) {
+                while (ISSPACE(*p)) ++p;
+                if (*p) {
+                    if (badcheck) goto bad;
+                    break;
+                }
+            }
+            else if (prev == '.' ? dot_seen++ : !ISDIGIT(prev)) {
+                if (badcheck) goto bad;
+                break;
+            }
+            if (n < e) *n++ = prev;
+        }
+        *n = '\0';
+        p = buf;
 
 	if (!badcheck && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
 	    return 0.0;
