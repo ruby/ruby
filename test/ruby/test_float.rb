@@ -164,6 +164,8 @@ class TestFloat < Test::Unit::TestCase
       assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*600)+".0p-3427"))
     end
 
+    assert_equal(1.0e10, Float("1.0_"+"00000"*Float::DIG+"e10"))
+
     z = "0" * (Float::DIG * 4 + 10)
     ["long invalid string", "1.0", "1.0e", "1.0e-", "1.0e+"].each do |n|
       assert_raise(ArgumentError, n += z + "A") {Float(n)}
