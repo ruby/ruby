@@ -1660,20 +1660,6 @@ rb_fiber_s_current(VALUE klass)
 
 
 
-#ifdef HAVE_WORKING_FORK
-void
-rb_fiber_atfork(rb_thread_t *th)
-{
-    if (th->root_fiber) {
-        if (&th->root_fiber->cont.saved_ec != th->ec) {
-            th->root_fiber = th->ec->fiber_ptr;
-            th->root_fiber->cont.type = ROOT_FIBER_CONTEXT;
-        }
-        th->root_fiber->prev = 0;
-    }
-}
-#endif
-
 /*
  *  Document-class: FiberError
  *
