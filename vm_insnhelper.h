@@ -137,14 +137,22 @@ enum vm_regan_acttype {
 
 #if VM_CHECK_MODE > 0
 #define SETUP_CANARY() \
-    VALUE * canary; \
+    VALUE *canary; \
     if (leaf) { \
         canary = GET_SP(); \
         SET_SV(vm_stack_canary); \
+    } \
+    else {\
+        SET_SV(Qfalse); /* cleanup */ \
     }
 #define CHECK_CANARY() \
-    if (leaf && (*canary != vm_stack_canary)) { \
-        vm_canary_is_found_dead(INSN_ATTR(bin), *canary); \
+    if (leaf) { \
+        if (*canary == vm_stack_canary) { \
+            *canary = Qfalse; /* cleanup */ \
+        } \
+        else { \
+            vm_canary_is_found_dead(INSN_ATTR(bin), *canary); \
+        } \
     }
 #else
 #define SETUP_CANARY()          /* void */

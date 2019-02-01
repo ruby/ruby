@@ -116,6 +116,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 	    int i;
 
 	    CHECK_VM_STACK_OVERFLOW(reg_cfp, calling->argc + 1);
+            vm_check_canary(ec, reg_cfp->sp);
 
 	    *reg_cfp->sp++ = calling->recv;
 	    for (i = 0; i < calling->argc; i++) {

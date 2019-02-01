@@ -1090,6 +1090,7 @@ invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_bl
     stack_check(ec);
 
     CHECK_VM_STACK_OVERFLOW(cfp, argc);
+    vm_check_canary(ec, sp);
     cfp->sp = sp + argc;
     for (i=0; i<argc; i++) {
 	sp[i] = argv[i];
