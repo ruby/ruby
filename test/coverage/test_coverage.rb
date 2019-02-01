@@ -171,8 +171,8 @@ class TestCoverage < Test::Unit::TestCase
     result = {
       :branches => {
         [:"&.", 0, 1, 0, 1, 8] => {
-          [:then, 1, 1, 0, 1, 8] => 1,
-          [:else, 2, 1, 0, 1, 8] => 0,
+          [:then, 1, 1, 0, 1, 8] => 0,
+          [:else, 2, 1, 0, 1, 8] => 1,
         },
       },
     }
