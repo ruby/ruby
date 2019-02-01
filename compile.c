@@ -2709,7 +2709,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     optimize_checktype(iseq, iobj);
 
     if (IS_INSN_ID(iobj, jump)) {
-	INSN *niobj, *diobj, *piobj;
+        INSN *niobj, *diobj, *piobj;
 	diobj = (INSN *)get_destination_insn(iobj);
 	niobj = (INSN *)get_next_insn(iobj);
 
@@ -2740,7 +2740,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    remove_unreachable_chunk(iseq, iobj->link.next);
 	    goto again;
 	}
-	else if (IS_INSN_ID(diobj, leave)) {
+        else if (IS_INSN_ID(diobj, leave)) {
 	    INSN *pop;
 	    /*
 	     *  jump LABEL
@@ -2756,12 +2756,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     */
 	    /* replace */
 	    unref_destination(iobj, 0);
-	    iobj->insn_id = BIN(leave);
+            iobj->insn_id = BIN(leave);
 	    iobj->operand_size = 0;
 	    iobj->insn_info = diobj->insn_info;
 	    /* adjust stack depth */
 	    pop = new_insn_body(iseq, diobj->insn_info.line_no, BIN(pop), 0);
-	    ELEM_INSERT_NEXT(&iobj->link, &pop->link);
+            ELEM_INSERT_NEXT(&iobj->link, &pop->link);
 	    goto again;
 	}
 	else if ((piobj = (INSN *)get_prev_insn(iobj)) != 0 &&
