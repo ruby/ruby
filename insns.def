@@ -1421,7 +1421,7 @@ opt_regexpmatch1
 (VALUE recv)
 (VALUE obj)
 (VALUE val)
-// attr bool leaf = BASIC_OP_UNREDEFINED_P(BOP_MATCH, REGEXP_REDEFINED_OP_FLAG);
+// attr bool leaf = false; /* rb_reg_prepare_enc() may rb_raise() that calls rb_funcallv() */
 {
     val = vm_opt_regexpmatch1(recv, obj);
 }
