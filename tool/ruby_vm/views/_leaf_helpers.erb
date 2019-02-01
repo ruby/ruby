@@ -22,7 +22,7 @@ leafness_of_getglobal(VALUE gentry)
         static rb_gvar_getter_t *const allowlist[] = {
             rb_gvar_val_getter,
             rb_gvar_var_getter,
-            rb_gvar_undef_getter,
+            /* rb_gvar_undef_getter issues rb_warning() */
         };
         rb_gvar_getter_t *f = rb_gvar_getter_function_of(e);
         int i;
@@ -49,7 +49,7 @@ leafness_of_setglobal(VALUE gentry)
          * case label cannot be a function pointer. */
         static rb_gvar_setter_t *const allowlist[] = {
             rb_gvar_val_setter,
-            rb_gvar_readonly_setter,
+            /* rb_gvar_readonly_setter issues rb_name_error() */
             rb_gvar_var_setter,
             rb_gvar_undef_setter,
         };
