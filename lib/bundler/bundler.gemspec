@@ -5,7 +5,7 @@ begin
   require File.expand_path("../lib/bundler/version", __FILE__)
 rescue LoadError
   # for Ruby core repository
-  require File.expand_path("../bundler/version", __FILE__)
+  require File.expand_path("../version", __FILE__)
 end
 
 Gem::Specification.new do |s|
