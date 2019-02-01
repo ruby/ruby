@@ -201,7 +201,55 @@ vm_check_frame(VALUE type,
     }
 #undef CHECK
 }
+
+static VALUE vm_stack_canary; /* Initialized later */
+static bool vm_stack_canary_was_born = false;
+
+static void
+vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
+{
+    const struct rb_control_frame_struct *reg_cfp = ec->cfp;
+    const struct rb_iseq_struct *iseq;
+
+    if (! LIKELY(vm_stack_canary_was_born)) {
+        return; /* :FIXME: isn't it rather fatal to enter this branch?  */
+    }
+    else if (! (iseq = GET_ISEQ())) {
+        return;
+    }
+    else if (LIKELY(sp[0] != vm_stack_canary)) {
+        return;
+    }
+    else {
+        /* we are going to call metods below; squash the canary to
+         * prevent infinite loop. */
+        sp[0] = Qundef;
+    }
+
+    const VALUE *orig = rb_iseq_original_iseq(iseq);
+    const VALUE *encoded = iseq->body->iseq_encoded;
+    const ptrdiff_t pos = GET_PC() - encoded;
+    const enum ruby_vminsn_type insn = (enum ruby_vminsn_type)orig[pos];
+    const char *name = insn_name(insn);
+    const VALUE iseqw = rb_iseqw_new(iseq);
+    const VALUE inspection = rb_inspect(iseqw);
+    const char *stri = rb_str_to_cstr(inspection);
+    const VALUE disasm = rb_iseq_disasm(iseq);
+    const char *strd = "";/* rb_str_to_cstr(disasm); */
+
+    /* rb_bug() is not capable of outputting this large contents.  It
+       is designed to run form a SIGSEGV handler, which tends to be
+       very restricted. */
+    fprintf(stderr,
+        "We are killing the stack canary set by %s, "
+        "at %s@pc=%"PRIdPTR"\n"
+        "watch out the C stack trace.\n"
+        "%s",
+        name, stri, pos, strd);
+    rb_bug("see above.");
+}
 #else
+#define vm_check_canary(ec, sp)
 #define vm_check_frame(a, b, c, d)
 #endif /* VM_CHECK_MODE > 0 */
 
@@ -225,6 +273,7 @@ vm_push_frame(rb_execution_context_t *ec,
 
     /* check stack overflow */
     CHECK_VM_STACK_OVERFLOW0(cfp, sp, local_size + stack_max);
+    vm_check_canary(ec, sp);
 
     ec->cfp = cfp;
 
@@ -2153,6 +2202,7 @@ vm_call_method_missing(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, 
 
     /* shift arguments: m(a, b, c) #=> method_missing(:m, a, b, c) */
     CHECK_VM_STACK_OVERFLOW(reg_cfp, 1);
+    vm_check_canary(ec, reg_cfp->sp);
     if (argc > 1) {
 	MEMMOVE(argv+1, argv, VALUE, argc-1);
     }
@@ -4087,7 +4137,6 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
 #if VM_CHECK_MODE > 0
 static NORETURN( NOINLINE( COLDFUNC
 void vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)));
-static VALUE vm_stack_canary;
 
 void
 Init_vm_stack_canary(void)
@@ -4095,6 +4144,7 @@ Init_vm_stack_canary(void)
     /* This has to be called _after_ our PRNG is properly set up. */
     int n = ruby_fill_random_bytes(&vm_stack_canary, sizeof vm_stack_canary, false);
 
+    vm_stack_canary_was_born = true;
     VM_ASSERT(n == 0);
 }
 

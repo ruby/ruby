@@ -525,6 +525,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     VALUE * const orig_sp = ec->cfp->sp;
     unsigned int i;
 
+    vm_check_canary(ec, orig_sp);
     /*
      * Extend SP for GC.
      *
@@ -782,6 +783,7 @@ vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calli
     VALUE *argv = cfp->sp - argc;
     VALUE ary = argv[argc-1];
 
+    vm_check_canary(GET_EC(), cfp->sp);
     cfp->sp--;
 
     if (!NIL_P(ary)) {

@@ -418,5 +418,5 @@ tests.compact.each {|(insn, expr, *a)| assert_equal 'true', expr, insn, *a }
 # with trace
 tests.compact.each {|(insn, expr, *a)|
   progn = "set_trace_func(proc{})\n" + expr
-  assert_equal 'true', progn, insn, *a
+  assert_equal 'true', progn, 'trace_' + insn, *a
 }
