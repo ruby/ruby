@@ -188,6 +188,8 @@ getspecial
 (rb_num_t key, rb_num_t type)
 ()
 (VALUE val)
+/* `$~ = MatchData.allocate; $&` can raise. */
+// attr bool leaf = (type == 0) ? true : false;
 {
     val = vm_getspecial(ec, GET_LEP(), key, type);
 }
@@ -220,6 +222,7 @@ setinstancevariable
 (ID id, IC ic)
 (VALUE val)
 ()
+// attr bool leaf = false; /* has rb_check_frozen_internal() */
 {
     vm_setinstancevariable(GET_SELF(), id, val, ic);
 }
@@ -382,6 +385,9 @@ concatstrings
 (rb_num_t num)
 (...)
 (VALUE val)
+/* This instruction can concat UTF-8 and binary strings, resulting in
+ * Encoding::CompatiblityError. */
+// attr bool leaf = false; /* has rb_enc_cr_str_buf_cat() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
     val = rb_str_concat_literals(num, STACK_ADDR_FROM_TOP(num));
@@ -415,9 +421,9 @@ toregexp
 (rb_num_t opt, rb_num_t cnt)
 (...)
 (VALUE val)
-/* This instruction has StringValue(), which is a method call.  But it
- * seems that path is never covered. */
-// attr bool leaf = true; /* yes it is */
+/* This instruction can raise RegexpError, thus can call
+ * RegexpError#initialize */
+// attr bool leaf = false;
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)cnt;
 {
     const VALUE ary = rb_ary_tmp_new_from_values(0, cnt, STACK_ADDR_FROM_TOP(cnt));
@@ -1098,6 +1104,9 @@ opt_div
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+/* In case of division by zero, it raises. Thus
+ * ZeroDivisionError#initialize is called.  */
+// attr bool leaf = false;
 {
     val = vm_opt_div(recv, obj);
 
@@ -1112,6 +1121,8 @@ opt_mod
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+/* Same discussion as opt_mod. */
+// attr bool leaf = false;
 {
     val = vm_opt_mod(recv, obj);
 
@@ -1216,6 +1227,10 @@ opt_ltlt
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+/* This instruction can append an integer, as a codepoint, into a
+ * string.  Then what happens if that codepoint does not exist in the
+ * string's encoding?  Of course an exception.  That's not a leaf. */
+// attr bool leaf = false; /* has "invalid codepoint" exception */
 {
     val = vm_opt_ltlt(recv, obj);
 
