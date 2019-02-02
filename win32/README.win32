@@ -19,7 +19,8 @@
     * lib
     * dumpbin
 
-4.  If you want to build from SVN source, following commands are required.
+4.  If you want to build from SVN or GIT source, following commands
+    are required.
     * bison
     * patch
     * sed
@@ -47,7 +48,8 @@
     And add _RUBYW_INSTALL_NAME_ to change the name of the
     executable without console window if also you want.
 
-3.  Run `<tt>nmake up</tt>' if you are building from SVN source.
+3.  Run `<tt>nmake up</tt>' if you are building from SVN or GIT
+    source.
 
 4.  Run `<tt>nmake</tt>'
 
