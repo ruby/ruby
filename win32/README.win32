@@ -6,13 +6,13 @@
 
 2.  Visual C++ 6.0 or later. (strongly recommended VC++ 10 or later)
 
-    Note:: if you want to build x64 or ia64 version, use native compiler for
+    [Note] if you want to build x64 or ia64 version, use native compiler for
            x64/ia64.
 
 3.  Please set environment variable +INCLUDE+, +LIB+, +PATH+
     to run required commands properly from the command line.
 
-    Note:: building ruby requires following commands.
+    [Note] building ruby requires following commands.
     * nmake
     * cl
     * lib
