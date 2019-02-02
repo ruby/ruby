@@ -89,7 +89,7 @@ def sync_default_gems(gem)
     `rm -rf lib/bundler* libexec/bundler libexec/bundle libexec/bundle_ruby spec/bundler man/bundle* man/gemfile*`
     `cp -r ../../bundler/bundler/lib/bundler* ./lib`
     `cp -r ../../bundler/bundler/exe/bundle* ./libexec`
-    `cp ../../bundler/bundler/bundler.gemspec ./lib`
+    `cp ../../bundler/bundler/bundler.gemspec ./lib/bundler`
     `cp -r ../../bundler/bundler/spec spec/bundler`
     `cp -r ../../bundler/bundler/man/*.{1,5,1\.txt,5\.txt,ronn} ./man`
     `rm -rf spec/bundler/support/artifice/vcr_cassettes`
