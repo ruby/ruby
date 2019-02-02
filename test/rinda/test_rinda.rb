@@ -8,6 +8,9 @@ require 'rinda/tuplespace'
 require 'timeout'
 require 'singleton'
 
+DRb.start_service
+
+
 module Rinda
 
 class MockClock
@@ -795,6 +798,7 @@ class TestRingServer < Test::Unit::TestCase
       mth.raise(Timeout::Error)
     end
     tl0 << th
+    yield
   rescue Timeout::Error => e
     if tl
       bt = e.backtrace
