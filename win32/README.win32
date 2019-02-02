@@ -15,6 +15,7 @@
     [Note] building ruby requires following commands.
     * nmake
     * cl
+    * ml
     * lib
     * dumpbin
 
@@ -22,7 +23,7 @@
     * bison
     * patch
     * sed
-    * ruby 1.8 or later
+    * ruby 2.0 or later
 
 5.  Enable Command Extension of your command line.  It's the default behavior
     of +cmd.exe+.  If you want to enable it explicitly, run +cmd.exe+ with
@@ -36,7 +37,10 @@
     You can also specify the install directory.
     For example, run `<tt>configure --prefix=<install_directory></tt>'
     Default of the install directory is /usr .
-    The default _PLATFORM_ is `+i386-mswin32+'.
+    The default _PLATFORM_ is `+i386-mswin32_+_MSRTVERSION_' on 32-bit
+    platforms, or `+x64-mswin64_+_MSRTVERSION_' on x64 platforms.
+    _MSRTVERSION_ is the 2- or 3-digits version of the Microsoft
+    Runtime Library.
 
 2.  Change _RUBY_INSTALL_NAME_ and _RUBY_SO_NAME_ in +Makefile+
     if you want to change the name of the executable files.
