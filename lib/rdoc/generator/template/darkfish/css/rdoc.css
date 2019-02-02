@@ -261,6 +261,11 @@ ul.link-list .type {
   -webkit-border-radius: 5px;
 }
 
+dl.label-list dt {
+  float: left;
+  margin-right: 1em;
+}
+
 .calls-super {
   background: url(images/arrow_up.png) no-repeat right center;
 }
