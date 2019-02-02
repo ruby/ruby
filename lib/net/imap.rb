@@ -1089,7 +1089,7 @@ module Net
       @sock = tcp_socket(@host, @port)
       begin
         if options[:ssl]
-          start_tls_session(options[:ssl])
+          start_tls_session(options[:ssl], @host)
           @usessl = true
         else
           @usessl = false
@@ -1511,7 +1511,7 @@ module Net
       return params
     end
 
-    def start_tls_session(params = {})
+    def start_tls_session(params = {}, hostname = nil)
       unless defined?(OpenSSL::SSL)
         raise "SSL extension not installed"
       end
@@ -1530,6 +1530,9 @@ module Net
       end
       @sock = SSLSocket.new(@sock, context)
       @sock.sync_close = true
+      unless hostname.nil?
+        @sock.hostname = hostname
+      end
       ssl_socket_connect(@sock, @open_timeout)
       if context.verify_mode != VERIFY_NONE
         @sock.post_connection_check(@host)
