@@ -10703,6 +10703,8 @@ struct copy_stream_struct {
     const char *syserr;
     const char *notimp;
     VALUE th;
+    struct stat src_stat;
+    struct stat dst_stat;
 #ifdef HAVE_FCOPYFILE
     copyfile_state_t copyfile_state;
 #endif
@@ -10854,28 +10856,12 @@ simple_copy_file_range(int in_fd, off_t *in_offset, int out_fd, off_t *out_offse
 static int
 nogvl_copy_file_range(struct copy_stream_struct *stp)
 {
-    struct stat sb;
     ssize_t ss;
     off_t src_size;
-    int ret;
     off_t copy_length, src_offset, *src_offset_ptr;
 
-    ret = fstat(stp->src_fd, &sb);
-    if (ret < 0) {
-        stp->syserr = "fstat";
-        stp->error_no = errno;
-        return ret;
-    }
-    if (!S_ISREG(sb.st_mode))
+    if (!S_ISREG(stp->src_stat.st_mode))
         return 0;
-
-    src_size = sb.st_size;
-    ret = fstat(stp->dst_fd, &sb);
-    if (ret < 0) {
-        stp->syserr = "fstat";
-        stp->error_no = errno;
-        return ret;
-    }
 
     src_offset = stp->src_offset;
     if (src_offset >= (off_t)0) {
@@ -10965,7 +10951,6 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
 static int
 nogvl_fcopyfile(struct copy_stream_struct *stp)
 {
-    struct stat sb;
     off_t src_size, cur, ss = 0;
     int ret;
 
@@ -10974,23 +10959,11 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
         return 0;
     }
 
-    ret = fstat(stp->src_fd, &sb);
-    if (ret < 0) {
-        stp->syserr = "fstat";
-        stp->error_no = errno;
-        return ret;
-    }
-    if (!S_ISREG(sb.st_mode))
+    if (!S_ISREG(stp->src_stat.st_mode))
         return 0;
 
-    src_size = sb.st_size;
-    ret = fstat(stp->dst_fd, &sb);
-    if (ret < 0) {
-        stp->syserr = "fstat";
-        stp->error_no = errno;
-        return ret;
-    }
-    if (!S_ISREG(sb.st_mode))
+    src_size = stp->src_stat.st_size;
+    if (!S_ISREG(stp->dst_stat.st_mode))
         return 0;
     if (lseek(stp->dst_fd, 0, SEEK_CUR) > (off_t)0) /* if dst IO was already written */
         return 0;
@@ -11096,32 +11069,18 @@ simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
 static int
 nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 {
-    struct stat sb;
     ssize_t ss;
-    int ret;
     off_t src_size;
     off_t copy_length;
     off_t src_offset;
     int use_pread;
 
-    ret = fstat(stp->src_fd, &sb);
-    if (ret < 0) {
-        stp->syserr = "fstat";
-        stp->error_no = errno;
-        return ret;
-    }
-    if (!S_ISREG(sb.st_mode))
+    if (!S_ISREG(stp->src_stat.st_mode))
         return 0;
 
-    src_size = sb.st_size;
-    ret = fstat(stp->dst_fd, &sb);
-    if (ret < 0) {
-        stp->syserr = "fstat";
-        stp->error_no = errno;
-        return ret;
-    }
+    src_size = stp->src_stat.st_size;
 #ifndef __linux__
-    if ((sb.st_mode & S_IFMT) != S_IFSOCK)
+    if ((stp->dst_stat.st_mode & S_IFMT) != S_IFSOCK)
 	return 0;
 #endif
 
@@ -11470,6 +11429,7 @@ copy_stream_body(VALUE arg)
 	src_fd = -1;
     }
     else {
+        int stat_ret;
 	VALUE tmp_io = rb_io_check_io(src_io);
 	if (!NIL_P(tmp_io)) {
 	    src_io = tmp_io;
@@ -11486,6 +11446,13 @@ copy_stream_body(VALUE arg)
 	GetOpenFile(src_io, src_fptr);
 	rb_io_check_byte_readable(src_fptr);
 	src_fd = src_fptr->fd;
+
+        stat_ret = fstat(src_fd, &stp->src_stat);
+        if (stat_ret < 0) {
+            stp->syserr = "fstat";
+            stp->error_no = errno;
+            return Qnil;
+        }
     }
     stp->src_fd = src_fd;
 
@@ -11496,7 +11463,8 @@ copy_stream_body(VALUE arg)
 	dst_fd = -1;
     }
     else {
-	VALUE tmp_io = rb_io_check_io(dst_io);
+        int stat_ret;
+        VALUE tmp_io = rb_io_check_io(dst_io);
 	if (!NIL_P(tmp_io)) {
 	    dst_io = GetWriteIO(tmp_io);
 	}
@@ -11517,6 +11485,13 @@ copy_stream_body(VALUE arg)
 	GetOpenFile(dst_io, dst_fptr);
 	rb_io_check_writable(dst_fptr);
 	dst_fd = dst_fptr->fd;
+
+        stat_ret = fstat(dst_fd, &stp->dst_stat);
+        if (stat_ret < 0) {
+            stp->syserr = "fstat";
+            stp->error_no = errno;
+            return Qnil;
+        }
     }
     stp->dst_fd = dst_fd;
 
