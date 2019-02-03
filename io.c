@@ -10863,6 +10863,7 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
     if (!S_ISREG(stp->src_stat.st_mode))
         return 0;
 
+    src_size = stp->src_stat.st_size;
     src_offset = stp->src_offset;
     if (src_offset >= (off_t)0) {
 	src_offset_ptr = &src_offset;
