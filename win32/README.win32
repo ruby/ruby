@@ -2,9 +2,9 @@
 
 == Requirement
 
-1.  Windows XP or later.
+1.  Windows 7 or later.
 
-2.  Visual C++ 6.0 or later. (strongly recommended VC++ 10 or later)
+2.  Visual C++ 12.0 (2013) or later.
 
     [Note] if you want to build x64 or ia64 version, use native compiler for
            x64/ia64.
