@@ -5922,6 +5922,21 @@ qcall_branch_end(rb_iseq_t *iseq, LINK_ANCHOR *const ret, LABEL *else_label, VAL
 }
 
 static int
+check_yield_place(const rb_iseq_t *iseq)
+{
+    switch (iseq->body->local_iseq->body->type) {
+      case ISEQ_TYPE_TOP:
+      case ISEQ_TYPE_MAIN:
+        return FALSE;
+      case ISEQ_TYPE_CLASS:
+        rb_warn("`yield' in class syntax will not be supported from Ruby 3.0. [Feature #15575]");
+        return TRUE;
+      default:
+        return TRUE;
+    }
+}
+
+static int
 iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
 {
     const int line = (int)nd_line(node);
@@ -6827,11 +6842,11 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	struct rb_call_info_kw_arg *keywords = NULL;
 
 	INIT_ANCHOR(args);
-	if (body->type == ISEQ_TYPE_TOP ||
-	    body->type == ISEQ_TYPE_MAIN) {
+
+        if (check_yield_place(iseq) == FALSE) {
 	    COMPILE_ERROR(ERROR_ARGS "Invalid yield");
-	    goto ng;
-	}
+            goto ng;
+        }
 
 	if (node->nd_head) {
 	    argc = setup_args(iseq, args, node->nd_head, &flag, &keywords);
