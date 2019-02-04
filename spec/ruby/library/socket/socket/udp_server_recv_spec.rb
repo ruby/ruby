@@ -26,6 +26,10 @@ describe 'Socket.udp_server_recv' do
       IO.select([@server])
     end
 
+    # TODO: remove it after debugging
+    # https://gist.github.com/ko1/0efd60ce78724d1c3bf313fc4b712c59#file-brlog-trunk-test-spec-20190204-141218-L402
+    msg = :unset
+
     Socket.udp_server_recv([@server]) do |message, source|
       msg = message
       src = source
