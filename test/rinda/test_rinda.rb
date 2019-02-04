@@ -788,6 +788,7 @@ class TestRingServer < Test::Unit::TestCase
   private
 
   def with_timeout(n)
+    n *= 10 if RubyVM::MJIT.enabled? # for --jit-wait
     aoe = Thread.abort_on_exception
     Thread.abort_on_exception = true
     tl0 = Thread.list
