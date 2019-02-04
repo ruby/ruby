@@ -2,7 +2,7 @@ def _(&b)$><<->(x){x ? (String===x ?x.upcase:
 (Class===x ? x : x.class).name[$a?0:($a=5)]):
 " "}[ begin b[];rescue Exception;$!;end ] end
 
-_ {                  yield                  }
+_ {                  1.tap                  }
 _ {            method(:p).unbind            }
 _ {                eval "{ "                }
 _ {           Thread.current.join           }
