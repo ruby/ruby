@@ -86,8 +86,6 @@ describe 'Socket#accept_nonblock' do
             @client = Socket.new(family, :STREAM, 0)
 
             @client.connect(addr)
-
-            platform_is(:darwin, :freebsd, :solaris) { IO.select([@server]) }
           end
 
           after do
@@ -96,6 +94,7 @@ describe 'Socket#accept_nonblock' do
           end
 
           it 'returns an Array containing a Socket and an Addrinfo' do
+            IO.select([@server])
             @socket, addrinfo = @server.accept_nonblock
 
             @socket.should be_an_instance_of(Socket)
@@ -104,6 +103,7 @@ describe 'Socket#accept_nonblock' do
 
           describe 'the returned Addrinfo' do
             before do
+              IO.select([@server])
               @socket, @addr = @server.accept_nonblock
             end
 
