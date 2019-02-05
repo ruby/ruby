@@ -20,15 +20,8 @@ describe 'Socket.udp_server_recv' do
 
     @client.write('hello')
 
-    # FreeBSD sockets are not instanteous over loopback and
-    # will EAGAIN on recv.
-    platform_is :darwin, :freebsd do
-      IO.select([@server])
-    end
-
-    # TODO: remove it after debugging
-    # https://gist.github.com/ko1/0efd60ce78724d1c3bf313fc4b712c59#file-brlog-trunk-test-spec-20190204-141218-L402
-    msg = :unset
+    readable, _, _ = IO.select([@server])
+    readable.count.should == 1
 
     Socket.udp_server_recv([@server]) do |message, source|
       msg = message
