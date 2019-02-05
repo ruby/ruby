@@ -261,6 +261,15 @@ RSpec.describe Bundler::SharedHelpers do
       subject.set_bundle_environment
     end
 
+    it "ignores if bundler_ruby_lib is same as rubylibdir" do
+      allow(Bundler::SharedHelpers).to receive(:bundler_ruby_lib).and_return(RbConfig::CONFIG["rubylibdir"])
+
+      subject.set_bundle_environment
+
+      paths = (ENV["RUBYLIB"]).split(File::PATH_SEPARATOR)
+      expect(paths.count(RbConfig::CONFIG["rubylibdir"])).to eq(0)
+    end
+
     it "exits if bundle path contains the unix-like path separator" do
       if Gem.respond_to?(:path_separator)
         allow(Gem).to receive(:path_separator).and_return(":")
