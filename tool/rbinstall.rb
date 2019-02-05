@@ -614,6 +614,69 @@ install?(:local, :comm, :man) do
 end
 
 module RbInstall
+  module Specs
+    class FileCollector
+      def initialize(gemspec)
+        @gemspec = gemspec
+        @base_dir = File.dirname(gemspec)
+      end
+
+      def collect
+        (ruby_libraries + built_libraries).sort
+      end
+
+      private
+      def type
+        /\/(ext|lib)?\/.*?\z/ =~ @base_dir
+        $1
+      end
+
+      def ruby_libraries
+        case type
+        when "ext"
+          prefix = "#{$extout}/common/"
+          base = "#{prefix}#{relative_base}"
+        when "lib"
+          base = @base_dir
+          prefix = base.sub(/lib\/.*?\z/, "") + "lib/"
+        end
+
+        if base
+          Dir.glob("#{base}{.rb,/**/*.rb}").collect do |ruby_source|
+            remove_prefix(prefix, ruby_source)
+          end
+        else
+          [remove_prefix(File.dirname(@gemspec) + '/', @gemspec.gsub(/gemspec/, 'rb'))]
+        end
+      end
+
+      def built_libraries
+        case type
+        when "ext"
+          prefix = "#{$extout}/#{CONFIG['arch']}/"
+          base = "#{prefix}#{relative_base}"
+          dlext = CONFIG['DLEXT']
+          Dir.glob("#{base}{.#{dlext},/**/*.#{dlext}}").collect do |built_library|
+            remove_prefix(prefix, built_library)
+          end
+        when "lib"
+          []
+        else
+          []
+        end
+      end
+
+      def relative_base
+        /\/#{Regexp.escape(type)}\/(.*?)\z/ =~ @base_dir
+        $1
+      end
+
+      def remove_prefix(prefix, string)
+        string.sub(/\A#{Regexp.escape(prefix)}/, "")
+      end
+    end
+  end
+
   class UnpackedInstaller < Gem::Installer
     module DirPackage
       def extract_files(destination_dir, pattern = "*")
@@ -703,17 +766,7 @@ install?(:ext, :comm, :gem, :'default-gems', :'default-gems-comm') do
   install_default_gem('lib', srcdir)
 end
 install?(:ext, :arch, :gem, :'default-gems', :'default-gems-arch') do
-  install_default_gem('ext', srcdir) do |path|
-    # assume that gemspec and extconf.rb are placed in the same directory
-    success = false
-    begin
-      IO.foreach(File.dirname(path[(srcdir.size+1)..-1]) + "/Makefile") do |l|
-        break success = true if /^TARGET\s*=/ =~ l
-      end
-    rescue Errno::ENOENT
-    end
-    success
-  end
+  install_default_gem('ext', srcdir)
 end
 
 def load_gemspec(file)
@@ -740,8 +793,12 @@ def install_default_gem(dir, srcdir)
   makedirs(default_spec_dir)
 
   gems = Dir.glob("#{srcdir}/#{dir}/**/*.gemspec").map {|src|
-    next if block_given? and !yield(src)
-    load_gemspec(src)
+    spec = load_gemspec(src)
+    file_collector = RbInstall::Specs::FileCollector.new(src)
+    files = file_collector.collect
+    next if files.empty?
+    spec.files = files
+    spec
   }
   gems.compact.sort_by(&:name).each do |gemspec|
     full_name = "#{gemspec.name}-#{gemspec.version}"
