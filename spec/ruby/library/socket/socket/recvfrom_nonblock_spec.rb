@@ -36,12 +36,11 @@ describe 'Socket#recvfrom_nonblock' do
       describe 'with data available' do
         before do
           @client.write('hello')
-
-          platform_is(:darwin, :freebsd) { IO.select([@server]) }
         end
 
         platform_is_not :windows do
           it 'returns an Array containing the data and an Addrinfo' do
+            IO.select([@server])
             ret = @server.recvfrom_nonblock(1)
 
             ret.should be_an_instance_of(Array)
@@ -54,8 +53,7 @@ describe 'Socket#recvfrom_nonblock' do
             5.times do
               @client.write('hello')
 
-              platform_is(:darwin, :freebsd) { IO.select([@server]) }
-
+              IO.select([@server])
               msg, _ = @server.recvfrom_nonblock(5)
 
               msg.should == 'hello'
@@ -66,6 +64,7 @@ describe 'Socket#recvfrom_nonblock' do
         platform_is_not :windows do
           describe 'the returned Array' do
             before do
+              IO.select([@server])
               @array = @server.recvfrom_nonblock(1)
             end
 
@@ -80,6 +79,7 @@ describe 'Socket#recvfrom_nonblock' do
 
           describe 'the returned Addrinfo' do
             before do
+              IO.select([@server])
               @addr = @server.recvfrom_nonblock(1)[1]
             end
 
