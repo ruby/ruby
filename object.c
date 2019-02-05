@@ -1139,7 +1139,7 @@ rb_obj_tap(VALUE obj)
  * Not documented
  */
 
-static VALUE
+VALUE
 rb_obj_dummy(void)
 {
     return Qnil;

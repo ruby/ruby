@@ -1814,6 +1814,9 @@ VALUE rb_immutable_obj_clone(int, VALUE *, VALUE);
 VALUE rb_obj_not_equal(VALUE obj1, VALUE obj2);
 VALUE rb_convert_type_with_id(VALUE,int,const char*,ID);
 VALUE rb_check_convert_type_with_id(VALUE,int,const char*,ID);
+MJIT_SYMBOL_EXPORT_BEGIN
+VALUE rb_obj_dummy(void);
+MJIT_SYMBOL_EXPORT_END
 
 struct RBasicRaw {
     VALUE flags;

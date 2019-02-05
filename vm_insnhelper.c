@@ -1675,6 +1675,7 @@ static inline VALUE vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_c
 static VALUE vm_call_super_method(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
 static VALUE vm_call_method_nome(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
 static VALUE vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
+static VALUE vm_call_rb_obj_dummy(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
 static inline VALUE vm_call_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
 
 static vm_call_handler vm_call_iseq_setup_func(const struct rb_call_info *ci, const int param_size, const int local_size);
@@ -2338,15 +2339,114 @@ refined_method_callable_without_refinement(const rb_callable_method_entry_t *me)
 }
 
 static VALUE
+vm_call_rb_obj_dummy(
+    rb_execution_context_t *ec,
+    rb_control_frame_t *reg_cfp,
+    struct rb_calling_info *calling,
+    const struct rb_call_info *ci,
+    struct rb_call_cache *cc)
+{
+    if (UNLIKELY(calling->argc)) {
+        /* rb_obj_dummy can still raise an ArgumentError, and in doing
+         * so we need a CFUNC frame.  Resort to vm_call_cfunc in that
+         * case. */
+        switch (cc->me->def->type) {
+          default:
+            UNREACHABLE_RETURN(Qundef);
+
+          case VM_METHOD_TYPE_CFUNC:
+            return vm_call_cfunc(ec, reg_cfp, calling, ci, cc);
+
+          case VM_METHOD_TYPE_ISEQ:
+            return vm_call_iseq_setup(ec, reg_cfp, calling, ci, cc);
+        }
+    }
+    else {
+        const struct rb_callable_method_entry_struct *me = cc->me;
+        const ID oid = me->def->original_id;
+        const ID mid = ci->mid;
+        const VALUE owner = me->owner;
+        const VALUE recv = calling->recv;
+        RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, owner, oid);
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, recv, oid, mid, owner, Qundef);
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, recv, oid, mid, owner, Qnil);
+        RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, owner, oid);
+
+        DEC_SP(1);              /* pop the receiver */
+        return Qnil;
+    }
+}
+
+static vm_call_handler
+vm_method_is_dummy(const struct rb_callable_method_entry_struct *me)
+{
+    switch (me->def->type) {
+      default:
+        UNREACHABLE_RETURN(0);
+
+      case VM_METHOD_TYPE_CFUNC:
+        if (check_cfunc(me, rb_obj_dummy)) {
+            return vm_call_rb_obj_dummy;
+        }
+        else {
+            return vm_call_cfunc;
+        }
+
+      case VM_METHOD_TYPE_ISEQ: ;
+        const struct rb_iseq_struct *i = me->def->body.iseq.iseqptr;
+        const struct rb_iseq_constant_body *b = i->body;
+        const VALUE *ptr;
+
+        if (! b) {
+            /* not a real iseq */
+            return vm_call_iseq_setup;
+        }
+        else if (b->catch_except_p) {
+            /* catches exception, cannot be a dummy */
+            return vm_call_iseq_setup;
+        }
+        else if (b->param.lead_num) {
+            /* takes argument(s), cannot be a dummy */
+            return vm_call_iseq_setup;
+        }
+        else if (! rb_simple_iseq_p(i)) {
+            /* ditto */
+            return vm_call_iseq_setup;
+        }
+        else if (! LIKELY(FL_TEST(i, ISEQ_TRANSLATED))) {
+            static const VALUE buf[] = { BIN(putnil), BIN(leave) };
+            ptr = &buf[0];
+        }
+        else {
+            static VALUE buf[] = { BIN(putnil), BIN(leave) };
+            if (buf[0] == BIN(putnil)) {
+                VALUE e = rb_fstring_cstr("");
+                const rb_iseq_t *tmp = rb_iseq_compile(e, e, LONG2FIX(~0L));
+                VM_ASSERT(tmp->body->iseq_size == 2); /* putnil; leave */
+                memcpy(buf, tmp->body->iseq_encoded, sizeof(buf));
+            }
+            ptr = &buf[0];
+        }
+        if (memcmp(ptr, b->iseq_encoded, 2 * sizeof(VALUE))) {
+            return vm_call_iseq_setup;
+        }
+        else {
+            return vm_call_rb_obj_dummy;
+        }
+    }
+}
+
+static VALUE
 vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
 {
     switch (cc->me->def->type) {
       case VM_METHOD_TYPE_ISEQ:
-        CC_SET_FASTPATH(cc, vm_call_iseq_setup, TRUE);
-	return vm_call_iseq_setup(ec, cfp, calling, ci, cc);
+      case VM_METHOD_TYPE_CFUNC: ;
+        vm_call_handler call = vm_method_is_dummy(cc->me);
+        CC_SET_FASTPATH(cc, call, TRUE);
+        return call(ec, cfp, calling, ci, cc);
 
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
-      case VM_METHOD_TYPE_CFUNC:
         CC_SET_FASTPATH(cc, vm_call_cfunc, TRUE);
 	return vm_call_cfunc(ec, cfp, calling, ci, cc);
 
