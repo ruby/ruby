@@ -15,15 +15,15 @@ describe 'Socket.udp_server_recv' do
   end
 
   it 'yields the message and a Socket::UDPSource' do
-    msg = nil
-    src = nil
+    msg = :unset
+    src = :unset
 
     @client.write('hello')
 
     readable, _, _ = IO.select([@server])
-    readable.count.should == 1
+    readable.size.should == 1
 
-    Socket.udp_server_recv([@server]) do |message, source|
+    Socket.udp_server_recv(readable) do |message, source|
       msg = message
       src = source
       break
