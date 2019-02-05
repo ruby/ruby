@@ -822,6 +822,7 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def wait_for(n)
+    n *= 10 if RubyVM::MJIT.enabled? # for --jit-wait
     t = n + Process.clock_gettime(Process::CLOCK_MONOTONIC, :second)
     until yield
       if t < Process.clock_gettime(Process::CLOCK_MONOTONIC, :second)
