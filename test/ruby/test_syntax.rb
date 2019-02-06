@@ -981,6 +981,13 @@ eom
     assert_syntax_error("a&.x,=0", /multiple assignment destination/)
   end
 
+  def test_fluent_dot_with_empty_lines_between
+    assert_valid_syntax("a #\n #\n.foo")
+    assert_valid_syntax("a #\n #\n&.foo")
+    # assert_valid_syntax("a\n\n.foo")
+    # assert_valid_syntax("a \n \n &.foo")
+  end
+
   def test_no_warning_logop_literal
     assert_warning("") do
       eval("true||raise;nil")
