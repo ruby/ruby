@@ -1157,7 +1157,7 @@ bisect-ruby: PHONY
 COMPARE_RUBY = $(BASERUBY)
 BENCH_RUBY = $(MINIRUBY)
 ITEM =
-ARGS = $$(find $(srcdir)/benchmark -maxdepth 1 -name '*$(ITEM)*.yml' -o -name '*$(ITEM)*.rb' | sort)
+ARGS = $$(ls $(srcdir)/benchmark/*$(ITEM)*.{yml,rb} 2>/dev/null)
 OPTS =
 
 # You can pass several options through OPTS environment variable.
