@@ -8680,6 +8680,7 @@ parser_yylex(struct parser_params *p)
 	      case '\13': /* '\v' */
 		space_seen = 1;
 		break;
+	      case '\n':
 	      case '#':
 		SET_LEX_STATE(EXPR_EMPTYLN);
 		pushback(p, c);
