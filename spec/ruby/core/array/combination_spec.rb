@@ -58,7 +58,7 @@ describe "Array#combination" do
           @array.combination(-1).size.should == 0
           [].combination(-2).size.should == 0
         end
-        it "returns the binomial coeficient between the array size the number of combinations" do
+        it "returns the binomial coefficient between the array size the number of combinations" do
           @array.combination(5).size.should == 0
           @array.combination(4).size.should == 1
           @array.combination(3).size.should == 4

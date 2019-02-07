@@ -19,7 +19,7 @@ describe "REXML::Attribute#initialize" do
     copy.should == @name
   end
 
-  it "recives a parent node" do
+  it "receives a parent node" do
     last_name = REXML::Attribute.new("last_name", "McBrain", @e)
     last_name.element.should == @e
 

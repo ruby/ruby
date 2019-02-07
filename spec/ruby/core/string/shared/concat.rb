@@ -50,7 +50,7 @@ describe :string_concat, shared: true do
   end
 
   describe "with Integer" do
-    it "concatencates the argument interpreted as a codepoint" do
+    it "concatenates the argument interpreted as a codepoint" do
       b = "".send(@method, 33)
       b.should == "!"
 

@@ -22,7 +22,7 @@ describe "DateTime#to_time" do
     it "preserves the same time regardless of local time or zone" do
       date = DateTime.new(2012, 12, 24, 12, 23, 00, '+03:00')
 
-      with_timezone("Pactific/Pago_Pago", -11) do
+      with_timezone("Pacific/Pago_Pago", -11) do
         time = date.to_time
 
         time.utc_offset.should == 3 * 3600

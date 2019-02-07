@@ -38,7 +38,7 @@ describe "File.new" do
   end
 
   it "creates the file and returns writable descriptor when called with 'w' mode and r-o permissions" do
-    # it should be possible to write to such a file via returned descriptior,
+    # it should be possible to write to such a file via returned descriptor,
     # even though the file permissions are r-r-r.
 
     rm_r @file

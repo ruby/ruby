@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Time#getlocal" do
   it "returns a new time which is the local representation of time" do
@@ -99,15 +100,69 @@ describe "Time#getlocal" do
   ruby_version_is "2.6" do
     describe "with a timezone argument" do
       it "returns a Time in the timezone" do
-        zone = mock('timezone')
-        zone.should_receive(:utc_to_local).and_return(Time.utc(2000, 1, 1, 17, 30, 0))
-        t = Time.utc(2000, 1, 1, 12, 0, 0)
-        tv = t.to_i
-        t = t.getlocal(zone)
-        t.to_a[0, 6].should == [0, 30, 17, 1, 1, 2000]
-        t.utc_offset.should == 19800
-        t.to_i.should == tv
-        t.zone.should == zone
+        zone = TimeSpecs::Timezone.new(offset: (5*3600+30*60))
+        time = Time.utc(2000, 1, 1, 12, 0, 0).getlocal(zone)
+
+        time.zone.should == zone
+        time.utc_offset.should == 5*3600+30*60
+      end
+
+      it "accepts timezone argument that must have #local_to_utc and #utc_to_local methods" do
+        zone = Object.new
+        def zone.utc_to_local(time)
+          time
+        end
+        def zone.local_to_utc(time)
+          time
+        end
+
+        lambda {
+          Time.utc(2000, 1, 1, 12, 0, 0).getlocal(zone).should be_kind_of(Time)
+        }.should_not raise_error
+      end
+
+      it "raises TypeError if timezone does not implement #utc_to_local method" do
+        zone = Object.new
+        def zone.local_to_utc(time)
+          time
+        end
+
+        lambda {
+          Time.utc(2000, 1, 1, 12, 0, 0).getlocal(zone)
+        }.should raise_error(TypeError, /can't convert \w+ into an exact number/)
+      end
+
+      it "does not raise exception if timezone does not implement #local_to_utc method" do
+        zone = Object.new
+        def zone.utc_to_local(time)
+          time
+        end
+
+        lambda {
+          Time.utc(2000, 1, 1, 12, 0, 0).getlocal(zone).should be_kind_of(Time)
+        }.should_not raise_error
+      end
+
+      context "subject's class implements .find_timezone method" do
+        it "calls .find_timezone to build a time object if passed zone name as a timezone argument" do
+          time = TimeSpecs::TimeWithFindTimezone.utc(2000, 1, 1, 12, 0, 0).getlocal("Asia/Colombo")
+          time.zone.should be_kind_of TimeSpecs::TimezoneWithName
+          time.zone.name.should == "Asia/Colombo"
+
+          time = TimeSpecs::TimeWithFindTimezone.utc(2000, 1, 1, 12, 0, 0).getlocal("some invalid zone name")
+          time.zone.should be_kind_of TimeSpecs::TimezoneWithName
+          time.zone.name.should == "some invalid zone name"
+        end
+
+        it "does not call .find_timezone if passed any not string/numeric/timezone timezone argument" do
+          [Object.new, [], {}, :"some zone"].each do |zone|
+            time = TimeSpecs::TimeWithFindTimezone.utc(2000, 1, 1, 12, 0, 0)
+
+            lambda {
+              time.getlocal(zone)
+            }.should raise_error(TypeError, /can't convert \w+ into an exact number/)
+          end
+        end
       end
     end
   end

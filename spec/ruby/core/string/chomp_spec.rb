@@ -30,7 +30,7 @@ describe "String#chomp" do
       "abc\r\r".chomp.should == "abc\r"
     end
 
-    it "removes one trailing carrige return, newline pair" do
+    it "removes one trailing carriage return, newline pair" do
       "abc\r\n\r\n".chomp.should == "abc\r\n"
     end
 
@@ -111,7 +111,7 @@ describe "String#chomp" do
       "abc\r\r".chomp("\n").should == "abc\r"
     end
 
-    it "removes one trailing carrige return, newline pair" do
+    it "removes one trailing carriage return, newline pair" do
       "abc\r\n\r\n".chomp("\n").should == "abc\r\n"
     end
 
@@ -193,7 +193,7 @@ describe "String#chomp!" do
       "abc\r\r".chomp!.should == "abc\r"
     end
 
-    it "removes one trailing carrige return, newline pair" do
+    it "removes one trailing carriage return, newline pair" do
       "abc\r\n\r\n".chomp!.should == "abc\r\n"
     end
 
@@ -265,7 +265,7 @@ describe "String#chomp!" do
       "abc\r\r".chomp!("\n").should == "abc\r"
     end
 
-    it "removes one trailing carrige return, newline pair" do
+    it "removes one trailing carriage return, newline pair" do
       "abc\r\n\r\n".chomp!("\n").should == "abc\r\n"
     end
 

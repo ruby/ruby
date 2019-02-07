@@ -6,7 +6,7 @@ describe "Set#^" do
     @set = Set[1, 2, 3, 4]
   end
 
-  it "returns a new Set containing elements that are not in both self and the passed Enumberable" do
+  it "returns a new Set containing elements that are not in both self and the passed Enumerable" do
     (@set ^ Set[3, 4, 5]).should == Set[1, 2, 5]
     (@set ^ [3, 4, 5]).should == Set[1, 2, 5]
   end

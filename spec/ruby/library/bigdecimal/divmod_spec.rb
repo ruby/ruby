@@ -163,7 +163,7 @@ describe "BigDecimal#divmod" do
     end
   end
 
-  it "returns an array of two zero if the diviend is zero" do
+  it "returns an array of two zero if the dividend is zero" do
     @zeroes.each do |zero|
       @regular_vals.each do |val|
         zero.divmod(val).should == [@zero, @zero]

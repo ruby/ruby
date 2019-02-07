@@ -156,7 +156,7 @@ with_feature :encoding do
       @io.internal_encoding.should be_nil
     end
 
-    it "ignores the internal encoding if the same as external when passed encoding names separanted by ':'" do
+    it "ignores the internal encoding if the same as external when passed encoding names separated by ':'" do
       @io.set_encoding("utf-8:utf-8")
       @io.external_encoding.should == Encoding::UTF_8
       @io.internal_encoding.should be_nil

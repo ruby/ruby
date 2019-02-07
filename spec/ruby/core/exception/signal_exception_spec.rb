@@ -27,7 +27,7 @@ describe "SignalException.new" do
   end
 
   it "raises an exception with an invalid signal name" do
-    lambda { SignalException.new("NONEXISTANT") }.should raise_error(ArgumentError)
+    lambda { SignalException.new("NONEXISTENT") }.should raise_error(ArgumentError)
   end
 
   it "takes a signal symbol without SIG prefix as the first argument" do
@@ -45,7 +45,7 @@ describe "SignalException.new" do
   end
 
   it "raises an exception with an invalid signal name" do
-    lambda { SignalException.new(:NONEXISTANT) }.should raise_error(ArgumentError)
+    lambda { SignalException.new(:NONEXISTENT) }.should raise_error(ArgumentError)
   end
 
   it "takes an optional message argument with a signal number" do

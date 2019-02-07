@@ -128,7 +128,7 @@ describe "File.open" do
   end
 
   it "creates the file and returns writable descriptor when called with 'w' mode and r-o permissions" do
-    # it should be possible to write to such a file via returned descriptior,
+    # it should be possible to write to such a file via returned descriptor,
     # even though the file permissions are r-r-r.
 
     File.open(@file, "w", 0444) { |f| f.write("test") }
@@ -236,7 +236,7 @@ describe "File.open" do
     File.exist?(@file).should == true
   end
 
-  # Check the grants associated to the differents open modes combinations.
+  # Check the grants associated to the different open modes combinations.
   it "raises an ArgumentError exception when call with an unknown mode" do
     lambda { File.open(@file, "q") }.should raise_error(ArgumentError)
   end

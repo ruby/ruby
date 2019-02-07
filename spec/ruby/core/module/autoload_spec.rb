@@ -636,7 +636,7 @@ describe "Module#autoload" do
     end.should raise_error(TypeError)
   end
 
-  it "raises a TypeError if not passed a String or object respodning to #to_path for the filename" do
+  it "raises a TypeError if not passed a String or object responding to #to_path for the filename" do
     name = mock("autoload_name.rb")
 
     lambda { ModuleSpecs::Autoload.autoload :Str, name }.should raise_error(TypeError)

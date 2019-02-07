@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Time#-" do
   it "decrements the time by the specified amount" do
@@ -87,6 +88,25 @@ describe "Time#-" do
 
   it "returns a time with the same fixed offset as self" do
     (Time.new(2012, 1, 1, 0, 0, 0, 3600) - 10).utc_offset.should == 3600
+  end
+
+  it "preserves time zone" do
+    time_with_zone = Time.now.utc
+    time_with_zone.zone.should == (time_with_zone - 60*60).zone
+
+    time_with_zone = Time.now
+    time_with_zone.zone.should == (time_with_zone - 60*60).zone
+  end
+
+  ruby_version_is "2.6" do
+    context "zone is a timezone object" do
+      it "preserves time zone" do
+        zone = TimeSpecs::Timezone.new(offset: (5*3600+30*60))
+        time = Time.new(2012, 1, 1, 12, 0, 0, zone) - 60*60
+
+        time.zone.should == zone
+      end
+    end
   end
 
   it "does not return a subclass instance" do

@@ -36,7 +36,7 @@ describe "A block yielded a single" do
       m([1, 2]) { |a=5, b=4, c=3| [a, b, c] }.should == [1, 2, 3]
     end
 
-    it "assgins elements to post arguments" do
+    it "assigns elements to post arguments" do
       m([1, 2]) { |a=5, b, c, d| [a, b, c, d] }.should == [5, 1, 2, nil]
     end
 
@@ -250,7 +250,7 @@ describe "A block" do
   end
 
   describe "taking |a, b| arguments" do
-    it "assgins nil to the arguments when no values are yielded" do
+    it "assigns nil to the arguments when no values are yielded" do
       @y.z { |a, b| [a, b] }.should == [nil, nil]
     end
 
@@ -454,7 +454,7 @@ describe "A block" do
       @y.z { |a, | a }.should be_nil
     end
 
-    it "assgins the argument a single value yielded" do
+    it "assigns the argument a single value yielded" do
       @y.s(1) { |a, | a }.should == 1
     end
 

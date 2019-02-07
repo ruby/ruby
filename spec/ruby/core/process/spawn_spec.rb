@@ -451,7 +451,7 @@ describe "Process.spawn" do
 
   # redirection
 
-  it "redirects STDOUT to the given file descriptior if out: Fixnum" do
+  it "redirects STDOUT to the given file descriptor if out: Fixnum" do
     File.open(@name, 'w') do |file|
       lambda do
         Process.wait Process.spawn("echo glark", out: file.fileno)
@@ -477,7 +477,7 @@ describe "Process.spawn" do
     File.read(@name).should == "glark\n"
   end
 
-  it "redirects STDERR to the given file descriptior if err: Fixnum" do
+  it "redirects STDERR to the given file descriptor if err: Fixnum" do
     File.open(@name, 'w') do |file|
       lambda do
         Process.wait Process.spawn("echo glark>&2", err: file.fileno)
@@ -506,7 +506,7 @@ describe "Process.spawn" do
     end
   end
 
-  it "redirects both STDERR and STDOUT to the given file descriptior" do
+  it "redirects both STDERR and STDOUT to the given file descriptor" do
     File.open(@name, 'w') do |file|
       lambda do
         Process.wait Process.spawn(ruby_cmd("print(:glark); STDOUT.flush; STDERR.print(:bang)"),

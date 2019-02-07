@@ -273,11 +273,11 @@ describe :dir_glob, shared: true do
          subdir_two/nondotfile.ext]
   end
 
-  it "ignores matching through directories that doen't exist" do
+  it "ignores matching through directories that doesn't exist" do
     Dir.send(@method, "deeply/notthere/blah*/whatever").should == []
   end
 
-  it "ignores matching only directories under an nonexistant path" do
+  it "ignores matching only directories under an nonexistent path" do
     Dir.send(@method, "deeply/notthere/blah/").should == []
   end
 
@@ -312,7 +312,7 @@ describe :dir_glob, shared: true do
         Dir.send(@method, "*", base: path).sort.should == %w( d y )
       end
 
-      it "accepts both relative and absolute pathes" do
+      it "accepts both relative and absolute paths" do
         require 'pathname'
 
         path_abs = File.join(@mock_dir, "a/b/c")
@@ -339,7 +339,7 @@ describe :dir_glob, shared: true do
         Dir.send(@method, "*", base: path).should == []
       end
 
-      it "raises TypeError whene cannot convert value to string" do
+      it "raises TypeError when cannot convert value to string" do
         -> {
           Dir.send(@method, "*", base: [])
         }.should raise_error(TypeError)

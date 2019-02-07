@@ -54,7 +54,7 @@ describe "String#setbyte" do
     lambda { "?".setbyte(1, 97) }.should raise_error(IndexError)
   end
 
-  it "raises an IndexError if the nexgative index is greater magnitude than the String bytesize" do
+  it "raises an IndexError if the negative index is greater magnitude than the String bytesize" do
     lambda { "???".setbyte(-5, 97) }.should raise_error(IndexError)
   end
 

@@ -497,7 +497,7 @@ with_feature :encoding do
       buf.encoding.should equal(Encoding::ISO_8859_1)
     end
 
-    it "trucates the buffer but does not change the buffer's encoding when no data remains" do
+    it "truncates the buffer but does not change the buffer's encoding when no data remains" do
       buf = "abc".force_encoding Encoding::ISO_8859_1
       @io.read
 

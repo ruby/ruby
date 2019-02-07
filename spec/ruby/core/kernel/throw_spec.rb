@@ -10,7 +10,7 @@ describe "Kernel.throw" do
     end.should be_nil
   end
 
-  it "transfers control to the innermost catch block waiting for the same sympol" do
+  it "transfers control to the innermost catch block waiting for the same symbol" do
     one = two = three = 0
     catch :duplicate do
       catch :duplicate do

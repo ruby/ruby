@@ -22,7 +22,7 @@ describe "Float#<=>" do
     (infinity_value <=> Float::MAX.to_i*2).should == 1
   end
 
-  it "returns -1 when self is negative and other is Infinty" do
+  it "returns -1 when self is negative and other is Infinity" do
     (-Float::MAX.to_i*2 <=> infinity_value).should == -1
   end
 

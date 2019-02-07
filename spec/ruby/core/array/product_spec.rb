@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 describe "Array#product" do
   it "returns converted arguments using :to_ary" do
     lambda{ [1].product(2..3) }.should raise_error(TypeError)
-    ar = ArraySpecs::ArrayConvertable.new(2,3)
+    ar = ArraySpecs::ArrayConvertible.new(2,3)
     [1].product(ar).should == [[1,2],[1,3]]
     ar.called.should == :to_ary
   end

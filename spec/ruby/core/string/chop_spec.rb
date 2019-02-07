@@ -19,7 +19,7 @@ describe "String#chop" do
     "abc\r\n".chop.should == "abc"
   end
 
-  it "removes the carrige return, newline if they are the only characters" do
+  it "removes the carriage return, newline if they are the only characters" do
     "\r\n".chop.should == ""
   end
 
@@ -83,7 +83,7 @@ describe "String#chop!" do
     "abc\r\n".chop!.should == "abc"
   end
 
-  it "removes the carrige return, newline if they are the only characters" do
+  it "removes the carriage return, newline if they are the only characters" do
     "\r\n".chop!.should == ""
   end
 

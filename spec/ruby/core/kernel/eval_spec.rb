@@ -24,7 +24,7 @@ describe "Kernel#eval" do
     EvalSpecs::A::B.name.should == "EvalSpecs::A::B"
   end
 
-  it "evaluates such that consts are scoped to the class of the eval" do
+  it "evaluates such that constants are scoped to the class of the eval" do
     EvalSpecs::A::C.name.should == "EvalSpecs::A::C"
   end
 

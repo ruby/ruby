@@ -11,7 +11,7 @@ describe "Matrix::EigenvalueDecomposition#eigenvectors" do
     ]
   end
 
-  it "returns an array of real eigenvectors for a symetric matrix" do
+  it "returns an array of real eigenvectors for a symmetric matrix" do
     # Fix me: should test for linearity, not for equality
     Matrix[[1, 2],
            [2, 1]].eigensystem.eigenvectors.should ==

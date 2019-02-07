@@ -45,7 +45,7 @@ describe "The private keyword" do
     lambda { f.foo }.should raise_error(NoMethodError)
   end
 
-  it "changes visiblity of previously called methods with same send/call site" do
+  it "changes visibility of previously called methods with same send/call site" do
     g = ::Private::G.new
     lambda {
       2.times do

@@ -63,7 +63,7 @@ describe "Hash#shift" do
   end
 
   it "works when the hash is at capacity" do
-    # We try a wide range of sizes in hopes that this will cover all implementationss base Hash size.
+    # We try a wide range of sizes in hopes that this will cover all implementations' base Hash size.
     results = []
     1.upto(100) do |n|
       h = {}

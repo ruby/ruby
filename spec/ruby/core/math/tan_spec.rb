@@ -13,7 +13,7 @@ describe "Math.tan" do
     Math.tan(-9.65).should be_close(-0.229109052606441, TOLERANCE)
   end
 
-  it "returns NaN if called with +-Infinitty" do
+  it "returns NaN if called with +-Infinity" do
     Math.tan(infinity_value).nan?.should == true
     Math.tan(-infinity_value).nan?.should == true
   end

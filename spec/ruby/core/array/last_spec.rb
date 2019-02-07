@@ -53,7 +53,7 @@ describe "Array#last" do
     array.last.should equal(array)
   end
 
-  it "tries to convert the passed argument to an Integer usinig #to_int" do
+  it "tries to convert the passed argument to an Integer using #to_int" do
     obj = mock('to_int')
     obj.should_receive(:to_int).and_return(2)
     [1, 2, 3, 4, 5].last(obj).should == [4, 5]

@@ -100,7 +100,7 @@ describe "Regexp#match" do
     $~.should be_nil
   end
 
-  it "raises TypeError when the given argument cannot be coarce to String" do
+  it "raises TypeError when the given argument cannot be coerced to String" do
     f = 1
     lambda { /foo/.match(f)[0] }.should raise_error(TypeError)
   end

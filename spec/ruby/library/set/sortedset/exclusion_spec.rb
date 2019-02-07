@@ -6,7 +6,7 @@ describe "SortedSet#^" do
     @set = SortedSet[1, 2, 3, 4]
   end
 
-  it "returns a new SortedSet containing elements that are not in both self and the passed Enumberable" do
+  it "returns a new SortedSet containing elements that are not in both self and the passed Enumerable" do
     (@set ^ SortedSet[3, 4, 5]).should == SortedSet[1, 2, 5]
     (@set ^ [3, 4, 5]).should == SortedSet[1, 2, 5]
   end

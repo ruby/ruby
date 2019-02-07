@@ -19,7 +19,7 @@ describe "GetoptLong#terminate" do
     end
   end
 
-  it "returns self when option processsing is terminated" do
+  it "returns self when option processing is terminated" do
     @opts.terminate.should == @opts
   end
 

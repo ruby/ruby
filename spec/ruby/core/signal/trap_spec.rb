@@ -78,7 +78,7 @@ platform_is_not :windows do
       Signal.trap("SIGHUP", @saved_trap).should equal(@proc)
     end
 
-    it "acceps short names as Strings" do
+    it "accepts short names as Strings" do
       Signal.trap "HUP", @proc
       Signal.trap("HUP", @saved_trap).should equal(@proc)
     end

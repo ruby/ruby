@@ -65,7 +65,7 @@ ruby_version_is "2.5" do
       children.first.encoding.should equal(Encoding::EUC_KR)
     end
 
-    it "raises a SystemCallError if called with a nonexistent diretory" do
+    it "raises a SystemCallError if called with a nonexistent directory" do
       lambda { Dir.children DirSpecs.nonexistent }.should raise_error(SystemCallError)
     end
   end

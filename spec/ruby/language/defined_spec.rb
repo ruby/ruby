@@ -30,12 +30,12 @@ describe "The defined? keyword for literals" do
     end
 
     it "returns nil if one element is not defined" do
-      ret = defined?([NonExistantConstant, Array])
+      ret = defined?([NonExistentConstant, Array])
       ret.should == nil
     end
 
     it "returns nil if all elements are not defined" do
-      ret = defined?([NonExistantConstant, AnotherNonExistantConstant])
+      ret = defined?([NonExistentConstant, AnotherNonExistentConstant])
       ret.should == nil
     end
 

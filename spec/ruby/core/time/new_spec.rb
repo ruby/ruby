@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 require_relative 'shared/now'
 require_relative 'shared/local'
 require_relative 'shared/time_params'
@@ -116,12 +117,211 @@ end
 
 ruby_version_is "2.6" do
   describe "Time.new with a timezone argument" do
-    it "returns a Time correspoinding to UTC time returned by local_to_utc" do
-      zone = TimeSpecs::Timezone.new("Asia/Colombo", "MMT", (5*3600+30*60))
-      t = Time.new(2000, 1, 1, 12, 0, 0, zone)
-      t.to_a[0, 6].should == [0, 0, 12, 1, 1, 2000]
-      t.utc_offset.should == 19800
-      t.zone.should == zone
+    it "returns a Time in the timezone" do
+      zone = TimeSpecs::Timezone.new(offset: (5*3600+30*60))
+      time = Time.new(2000, 1, 1, 12, 0, 0, zone)
+
+      time.zone.should == zone
+      time.utc_offset.should == 5*3600+30*60
+    end
+
+    it "accepts timezone argument that must have #local_to_utc and #utc_to_local methods" do
+      zone = Object.new
+      def zone.utc_to_local(time)
+        time
+      end
+      def zone.local_to_utc(time)
+        time
+      end
+
+      lambda {
+        Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
+      }.should_not raise_error
+    end
+
+    it "raises TypeError if timezone does not implement #local_to_utc method" do
+      zone = Object.new
+      def zone.utc_to_local(time)
+        time
+      end
+
+      lambda {
+        Time.new(2000, 1, 1, 12, 0, 0, zone)
+      }.should raise_error(TypeError, /can't convert \w+ into an exact number/)
+    end
+
+    it "does not raise exception if timezone does not implement #utc_to_local method" do
+      zone = Object.new
+      def zone.local_to_utc(time)
+        time
+      end
+
+      lambda {
+        Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
+      }.should_not raise_error
+    end
+
+    # The result also should be a Time or Time-like object (not necessary to be the same class)
+    # The zone of the result is just ignored
+    describe "returned value by #utc_to_local and #local_to_utc methods" do
+      it "could be Time instance" do
+        zone = Object.new
+        def zone.local_to_utc(t)
+          Time.utc(t.year, t.mon, t.day, t.hour - 1, t.min, t.sec)
+        end
+
+        lambda {
+          Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
+          Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 60*60
+        }.should_not raise_error
+      end
+
+      it "could be Time subclass instance" do
+        zone = Object.new
+        def zone.local_to_utc(t)
+          Class.new(Time).utc(t.year, t.mon, t.day, t.hour - 1, t.min, t.sec)
+        end
+
+        lambda {
+          Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
+          Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 60*60
+        }.should_not raise_error
+      end
+
+      it "could be any object with #to_i method" do
+        zone = Object.new
+        def zone.local_to_utc(time)
+          Struct.new(:to_i).new(time.to_i - 60*60)
+        end
+
+        lambda {
+          Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
+          Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 60*60
+        }.should_not raise_error
+      end
+
+      it "could have any #zone and #utc_offset because they are ignored" do
+        zone = Object.new
+        def zone.local_to_utc(time)
+          Struct.new(:to_i, :zone, :utc_offset).new(time.to_i, 'America/New_York', -5*60*60)
+        end
+        Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 0
+
+        zone = Object.new
+        def zone.local_to_utc(time)
+          Struct.new(:to_i, :zone, :utc_offset).new(time.to_i, 'Asia/Tokyo', 9*60*60)
+        end
+        Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 0
+      end
+
+      it "leads to raising Argument error if difference between argument and result is too large" do
+        zone = Object.new
+        def zone.local_to_utc(t)
+          Time.utc(t.year, t.mon, t.day + 1, t.hour, t.min, t.sec)
+        end
+
+        lambda {
+          Time.new(2000, 1, 1, 12, 0, 0, zone)
+        }.should raise_error(ArgumentError, "utc_offset out of range")
+      end
+    end
+
+    # https://github.com/ruby/ruby/blob/v2_6_0/time.c#L5330
+    #
+    # Time-like argument to these methods is similar to a Time object in UTC without sub-second;
+    # it has attribute readers for the parts, e.g. year, month, and so on, and epoch time readers, to_i
+    #
+    # The sub-second attributes are fixed as 0, and utc_offset, zone, isdst, and their aliases are same as a Time object in UTC
+    describe "Time-like argument of #utc_to_local and #local_to_utc methods" do
+      before do
+        @obj = TimeSpecs::TimeLikeArgumentRecorder.result
+        @obj.should_not == nil
+      end
+
+      it "implements subset of Time methods" do
+        [
+          :year, :mon, :month, :mday, :hour, :min, :sec,
+          :tv_sec, :tv_usec, :usec, :tv_nsec, :nsec, :subsec,
+          :to_i, :to_f, :to_r, :+, :-,
+          :isdst, :dst?, :zone, :gmtoff, :gmt_offset, :utc_offset, :utc?, :gmt?,
+          :to_s, :inspect, :to_a, :to_time,
+        ].each do |name|
+          @obj.respond_to?(name).should == true
+        end
+      end
+
+      it "has attribute values the same as a Time object in UTC" do
+        @obj.usec.should == 0
+        @obj.nsec.should == 0
+        @obj.subsec.should == 0
+        @obj.tv_usec.should == 0
+        @obj.tv_nsec.should == 0
+
+        @obj.utc_offset.should == 0
+        @obj.zone.should == "UTC"
+        @obj.isdst.should == Time.new.utc.isdst
+      end
+    end
+
+    context "#name method" do
+      it "uses the optional #name method for marshaling" do
+        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo", offset: (5*3600+30*60))
+        time = Time.new(2000, 1, 1, 12, 0, 0, zone)
+        time_loaded = Marshal.load(Marshal.dump(time))
+
+        time_loaded.zone.should == "Asia/Colombo"
+        time_loaded.utc_offset.should == 5*3600+30*60
+      end
+
+      it "cannot marshal Time if #name method isn't implemented" do
+        zone = TimeSpecs::Timezone.new(offset: (5*3600+30*60))
+        time = Time.new(2000, 1, 1, 12, 0, 0, zone)
+
+        lambda {
+          Marshal.dump(time)
+        }.should raise_error(NoMethodError, /undefined method `name' for/)
+      end
+    end
+
+    it "the #abbr method is used by '%Z' in #strftime" do
+      zone = TimeSpecs::TimezoneWithAbbr.new(abbr: "MMT", offset: (5*3600+30*60))
+      time = Time.new(2000, 1, 1, 12, 0, 0, zone)
+
+      time.strftime("%Z").should == "MMT"
+    end
+
+    # At loading marshaled data, a timezone name will be converted to a timezone object
+    # by find_timezone class method, if the method is defined.
+    # Similary, that class method will be called when a timezone argument does not have
+    # the necessary methods mentioned above.
+    context "subject's class implements .find_timezone method" do
+      it "calls .find_timezone to build a time object at loading marshaled data" do
+        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo", offset: (5*3600+30*60))
+        time = TimeSpecs::TimeWithFindTimezone.new(2000, 1, 1, 12, 0, 0, zone)
+        time_loaded = Marshal.load(Marshal.dump(time))
+
+        time_loaded.zone.should be_kind_of TimeSpecs::TimezoneWithName
+        time_loaded.zone.name.should == "Asia/Colombo"
+        time_loaded.utc_offset.should == 5*3600+30*60
+      end
+
+      it "calls .find_timezone to build a time object if passed zone name as a timezone argument" do
+        time = TimeSpecs::TimeWithFindTimezone.new(2000, 1, 1, 12, 0, 0, "Asia/Colombo")
+        time.zone.should be_kind_of TimeSpecs::TimezoneWithName
+        time.zone.name.should == "Asia/Colombo"
+
+        time = TimeSpecs::TimeWithFindTimezone.new(2000, 1, 1, 12, 0, 0, "some invalid zone name")
+        time.zone.should be_kind_of TimeSpecs::TimezoneWithName
+        time.zone.name.should == "some invalid zone name"
+      end
+
+      it "does not call .find_timezone if passed any not string/numeric/timezone timezone argument" do
+        [Object.new, [], {}, :"some zone"].each do |zone|
+          lambda {
+            TimeSpecs::TimeWithFindTimezone.new(2000, 1, 1, 12, 0, 0, zone)
+          }.should raise_error(TypeError, /can't convert \w+ into an exact number/)
+        end
+      end
     end
   end
 end

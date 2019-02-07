@@ -21,7 +21,7 @@ describe "Process.wait" do
   end
 
   platform_is_not :windows do
-    it "returns its childs pid" do
+    it "returns its child pid" do
       pid = Process.spawn(ruby_cmd('exit'))
       Process.wait.should == pid
     end

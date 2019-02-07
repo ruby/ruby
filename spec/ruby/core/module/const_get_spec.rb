@@ -66,7 +66,7 @@ describe "Module#const_get" do
     end.should raise_error(NameError)
   end
 
-  it "raises a NameError if the constant is defined in the receiver's supperclass and the inherit flag is false" do
+  it "raises a NameError if the constant is defined in the receiver's superclass and the inherit flag is false" do
     lambda do
       ConstantSpecs::ContainerA::ChildA.const_get(:CS_CONST4, false)
     end.should raise_error(NameError)

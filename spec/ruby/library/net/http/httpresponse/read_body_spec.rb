@@ -76,7 +76,7 @@ describe "Net::HTTPResponse#read_body" do
   end
 
   describe "when passed buffer and block" do
-    it "rauses an ArgumentError" do
+    it "raises an ArgumentError" do
       @res.reading_body(@socket, true) do
         lambda { @res.read_body("") {} }.should raise_error(ArgumentError)
       end

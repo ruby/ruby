@@ -67,7 +67,7 @@ describe "Regexps with escape characters" do
     /\cJ/.match("\r").should be_nil
 
     # Parsing precedence
-    /\cJ+/.match("\n\n").to_a.should == ["\n\n"] # Quantifers apply to entire escape sequence
+    /\cJ+/.match("\n\n").to_a.should == ["\n\n"] # Quantifiers apply to entire escape sequence
     /\\cJ/.match("\\cJ").to_a.should == ["\\cJ"]
     lambda { eval('/[abc\x]/') }.should raise_error(SyntaxError) # \x is treated as a escape sequence even inside a character class
     # Syntax error
