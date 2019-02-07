@@ -332,9 +332,9 @@ win32/win32.{c,h}::
     You may distribute under the terms of either the GNU General Public
     License or the Artistic License, as specified in the perl README file.
 
-random.c::
+missing/mt19937.c::
 
-  This file contains the source code under the new-style BSD license.
+  This file is under the new-style BSD license.
 
   >>>
     A C-program for MT19937, with initialization improved 2002/2/10.
