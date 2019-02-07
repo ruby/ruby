@@ -940,13 +940,13 @@ tally_up(VALUE hash, VALUE group)
 {
     VALUE tally = rb_hash_aref(hash, group);
     if (NIL_P(tally)) {
-	tally = INT2FIX(1);
+        tally = INT2FIX(1);
     }
     else if (FIXNUM_P(tally) && tally < INT2FIX(FIXNUM_MAX)) {
-	tally += INT2FIX(1) & ~FIXNUM_FLAG;
+        tally += INT2FIX(1) & ~FIXNUM_FLAG;
     }
     else {
-	tally = rb_big_plus(tally, INT2FIX(1));
+        tally = rb_big_plus(tally, INT2FIX(1));
     }
     rb_hash_aset(hash, group, tally);
 }
