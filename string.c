@@ -8547,7 +8547,7 @@ chopped_length(VALUE str)
 
     beg = RSTRING_PTR(str);
     end = beg + RSTRING_LEN(str);
-    if (beg > end) return 0;
+    if (beg >= end) return 0;
     p = rb_enc_prev_char(beg, end, end, enc);
     if (!p) return 0;
     if (p > beg && rb_enc_ascget(p, end, 0, enc) == '\n') {
