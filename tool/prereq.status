@@ -30,7 +30,6 @@ s,@RMDIR@,rmdir,g
 s,@RMDIRS@,$(RMDIR) -p,g
 s,@RUBY@,$(BASERUBY),g
 s,@RUNRUBY@,$(MINIRUBY),g
-s,@UNICODE_FILES@,,g
 s,@arch@,noarch,g
 s,@bindir@,,g
 s,@configure_args@,,g
