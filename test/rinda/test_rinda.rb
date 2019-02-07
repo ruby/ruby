@@ -657,6 +657,7 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_do_reply_local
+    skip 'timeout-based test becomes unstable with --jit-wait' if RubyVM::MJIT.enabled?
     with_timeout(10) {_test_do_reply_local}
   end
 
@@ -788,7 +789,6 @@ class TestRingServer < Test::Unit::TestCase
   private
 
   def with_timeout(n)
-    n *= 10 if RubyVM::MJIT.enabled? # for --jit-wait
     aoe = Thread.abort_on_exception
     Thread.abort_on_exception = true
     tl0 = Thread.list
@@ -822,7 +822,6 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def wait_for(n)
-    n *= 10 if RubyVM::MJIT.enabled? # for --jit-wait
     t = n + Process.clock_gettime(Process::CLOCK_MONOTONIC, :second)
     until yield
       if t < Process.clock_gettime(Process::CLOCK_MONOTONIC, :second)
