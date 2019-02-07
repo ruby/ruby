@@ -278,9 +278,9 @@ parse.c::
     This special exception was added by the Free Software Foundation in
     version 2.2 of Bison.
 
-util.c (partly)::
+missing/dtoa.c::
 
-  This file contains the source code under these licenses.
+  This file is under these licenses.
 
   >>>
     Copyright (c) 1991, 2000, 2001 by Lucent Technologies.
