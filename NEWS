@@ -24,6 +24,12 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Core classes updates (outstanding ones only)
 
+Enumerable::
+
+  New method::
+
+   * Added Enumerable#tally.  [Feature #11076]
+
 === Stdlib updates (outstanding ones only)
 
 CSV::

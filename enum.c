@@ -935,6 +935,48 @@ enum_group_by(VALUE obj)
     return enum_hashify(obj, 0, 0, group_by_i);
 }
 
+static void
+tally_up(VALUE hash, VALUE group)
+{
+    VALUE tally = rb_hash_aref(hash, group);
+    if (NIL_P(tally)) {
+	tally = INT2FIX(1);
+    }
+    else if (FIXNUM_P(tally) && tally < INT2FIX(FIXNUM_MAX)) {
+	tally += INT2FIX(1) & ~FIXNUM_FLAG;
+    }
+    else {
+	tally = rb_big_plus(tally, INT2FIX(1));
+    }
+    rb_hash_aset(hash, group, tally);
+}
+
+static VALUE
+tally_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
+{
+    ENUM_WANT_SVALUE();
+    tally_up(hash, i);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.tally -> a_hash
+ *
+ *  Tallys the collection.  Returns a hash where the keys are the
+ *  elements and the values are numbers of elements in the collection
+ *  that correspond to the key.
+ *
+ *     (1..6).tally { |i| i%3 }   #=> {0=>2, 1=>2, 2=>2}
+ *
+ */
+
+static VALUE
+enum_tally(VALUE obj)
+{
+    return enum_hashify(obj, 0, 0, tally_i);
+}
+
 static VALUE
 first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, params))
 {
@@ -4070,6 +4112,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "reduce", enum_inject, -1);
     rb_define_method(rb_mEnumerable, "partition", enum_partition, 0);
     rb_define_method(rb_mEnumerable, "group_by", enum_group_by, 0);
+    rb_define_method(rb_mEnumerable, "tally", enum_tally, 0);
     rb_define_method(rb_mEnumerable, "first", enum_first, -1);
     rb_define_method(rb_mEnumerable, "all?", enum_all, -1);
     rb_define_method(rb_mEnumerable, "any?", enum_any, -1);
