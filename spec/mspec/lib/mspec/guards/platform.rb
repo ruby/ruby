@@ -18,20 +18,20 @@ class PlatformGuard < SpecGuard
     implementation? :ruby
   end
 
-  HOST_OS = begin
+  PLATFORM = if RUBY_ENGINE == "jruby"
     require 'rbconfig'
-    RbConfig::CONFIG['host_os'] || RUBY_PLATFORM
-  rescue LoadError
+    "#{RbConfig::CONFIG['host_cpu']}-#{RbConfig::CONFIG['host_os']}"
+  else
     RUBY_PLATFORM
-  end.downcase
+  end
 
   def self.os?(*oses)
     oses.any? do |os|
       raise ":java is not a valid OS" if os == :java
       if os == :windows
-        HOST_OS =~ /(mswin|mingw)/
+        PLATFORM =~ /(mswin|mingw)/
       else
-        HOST_OS.include?(os.to_s)
+        PLATFORM.include?(os.to_s)
       end
     end
   end
