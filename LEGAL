@@ -382,9 +382,9 @@ missing/mt19937.c::
 
   The Wayback Machine url: http://web.archive.org/web/19990429082237/http://www.math.keio.ac.jp/matumoto/emt.html
 
-vm_dump.c:procstat_vm::
+missing/procstat_vm.c::
 
-  This file contains the source code under the new-style BSD license.
+  This file is under the new-style BSD license.
 
   >>>
     Copyright (c) 2007 Robert N. M. Watson  

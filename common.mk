@@ -3195,6 +3195,7 @@ vm_dump.$(OBJEXT): {$(VPATH)}missing.h
 vm_dump.$(OBJEXT): {$(VPATH)}node.h
 vm_dump.$(OBJEXT): {$(VPATH)}onigmo.h
 vm_dump.$(OBJEXT): {$(VPATH)}oniguruma.h
+vm_dump.$(OBJEXT): {$(VPATH)}procstat_vm.c
 vm_dump.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm_dump.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_dump.$(OBJEXT): {$(VPATH)}st.h
