@@ -294,6 +294,11 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(h, @obj.each_with_index.group_by(&cond))
   end
 
+  def test_tally
+    h = {1 => 2, 2 => 2, 3 => 1}
+    assert_equal(h, @obj.tally)
+  end
+
   def test_first
     assert_equal(1, @obj.first)
     assert_equal([1, 2, 3], @obj.first(3))
