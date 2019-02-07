@@ -398,6 +398,7 @@ def package(vcs, rev, destdir, tmp = nil)
         "MAJOR"=>api_major_version,
         "MINOR"=>api_minor_version,
         "TEENY"=>version_teeny,
+        "ALWAYS_UPDATE_UNICODE"=>"yes",
       }
       status.scan(/^s([%,])@([A-Za-z_][A-Za-z_0-9]*)@\1(.*?)\1g$/) do
         vars[$2] ||= $3
