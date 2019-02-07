@@ -1,9 +1,11 @@
 module ClassSpecs
 
   def self.sclass_with_block
+    eval <<-RUBY
     class << self
       yield
     end
+    RUBY
   end
 
   def self.sclass_with_return
