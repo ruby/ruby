@@ -28,7 +28,7 @@ describe "Tempfile#initialize" do
   end
 
   platform_is_not :windows do
-    it "sets the permisssions on the tempfile to 0600" do
+    it "sets the permissions on the tempfile to 0600" do
       @tempfile.send(:initialize, "basename", tmp(""))
       File.stat(@tempfile.path).mode.should == 0100600
     end

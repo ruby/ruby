@@ -99,7 +99,7 @@ describe "Dir.mktmpdir when passed [Array]" do
     Dir.rmdir @tmpdir if File.directory? @tmpdir
   end
 
-  it "uses the first element of the passed Array as a prefix and the scond element as a suffix to the tmp-directory" do
+  it "uses the first element of the passed Array as a prefix and the second element as a suffix to the tmp-directory" do
     prefix = "before"
     suffix = "after"
 

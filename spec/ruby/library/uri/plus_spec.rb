@@ -31,7 +31,7 @@ describe "URI#+" do
     (URI.parse('http://a/b/c/../../../') + ".").should == URI("http://a/")
   end
 
-  it "doesn't conconicalize the path when adding to the empty string" do
+  it "doesn't canonicalize the path when adding to the empty string" do
     (URI.parse('http://a/b/c/../') + "").should == URI("http://a/b/c/../")
   end
 

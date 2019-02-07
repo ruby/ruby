@@ -14,7 +14,7 @@ describe "OpenStruct.new when frozen" do
     @os.name.should == "John Smith"
   end
 
-  it "is not writeable" do
+  it "is not writable" do
     lambda{ @os.age = 42 }.should raise_error( RuntimeError )
   end
 

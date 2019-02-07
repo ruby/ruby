@@ -37,7 +37,7 @@ describe "Logger#new" do
     lambda { Logger.new(@log_file, 1).close }.should_not raise_error
   end
 
-  it "receivs a maximum logfile size as third argument" do
+  it "receives a maximum logfile size as third argument" do
     # This should create 2 small log files, logfile_test and logfile_test.0
     # in /tmp, each one with a different message.
     path = tmp("logfile_test.log")

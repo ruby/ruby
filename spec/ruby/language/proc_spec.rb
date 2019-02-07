@@ -21,7 +21,7 @@ describe "A Proc" do
       @l.call.should == 1
     end
 
-    it "raises an ArgumentErro if a value is passed" do
+    it "raises an ArgumentError if a value is passed" do
       lambda { @l.call(0) }.should raise_error(ArgumentError)
     end
   end

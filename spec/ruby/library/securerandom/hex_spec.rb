@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 require 'securerandom'
 
 describe "SecureRandom.hex" do
-  it "generates a random hex string of length twice the specified argement" do
+  it "generates a random hex string of length twice the specified argument" do
     (1..64).each do |idx|
       hex = SecureRandom.hex(idx)
       hex.should be_kind_of(String)

@@ -23,7 +23,7 @@ platform_is_not :windows do
         }.should output_to_fd("rubyspec: Hello\nrubyspec: World\n", $stderr)
       end
 
-      it "accepts undefined priorites" do
+      it "accepts undefined priorities" do
         lambda {
           Syslog.open("rubyspec", Syslog::LOG_PERROR) do |s|
             s.log(1337, "Hello")

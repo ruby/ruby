@@ -17,9 +17,11 @@ describe "File::Stat#rdev_major" do
     end
   end
 
-  platform_is_not :windows do
-    it "returns the major part of File::Stat#rdev" do
-      File.stat(@name).rdev_major.should be_kind_of(Integer)
+  ruby_version_is "2.4" do
+    platform_is_not :windows do
+      it "returns the major part of File::Stat#rdev" do
+        File.stat(@name).rdev_major.should be_kind_of(Integer)
+      end
     end
   end
 

@@ -87,7 +87,7 @@ describe "BigDecimal#sqrt" do
     }.should raise_error(FloatDomainError)
   end
 
-  it "returns positive infitinity for infinity" do
+  it "returns positive infinity for infinity" do
     @infinity.sqrt(1).should == @infinity
   end
 

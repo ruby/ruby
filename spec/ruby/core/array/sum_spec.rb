@@ -18,7 +18,7 @@ ruby_version_is '2.4' do
       [].sum.should == 0
     end
 
-    it "adds init value to the sum of elemens" do
+    it "adds init value to the sum of elements" do
       [1, 2, 3].sum(10).should == 16
     end
 

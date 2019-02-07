@@ -6,10 +6,10 @@ require_relative 'fixtures/send'
 # will verify special and generic arity code paths for all impls.
 #
 # Method naming conventions:
-# M - Manditory Args
+# M - Mandatory Args
 # O - Optional Arg
 # R - Rest Arg
-# Q - Post Manditory Args
+# Q - Post Mandatory Args
 
 specs = LangSendSpecs
 

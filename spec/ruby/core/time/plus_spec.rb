@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Time#+" do
   it "increments the time by the specified amount" do
@@ -47,16 +48,22 @@ describe "Time#+" do
     (Time.new(2012, 1, 1, 0, 0, 0, 3600) + 10).utc_offset.should == 3600
   end
 
+  it "preserves time zone" do
+    time_with_zone = Time.now.utc
+    time_with_zone.zone.should == (time_with_zone + 60*60).zone
+
+    time_with_zone = Time.now
+    time_with_zone.zone.should == (time_with_zone + 60*60).zone
+  end
+
   ruby_version_is "2.6" do
-    it "returns a time with the same timezone as self" do
-      zone = mock("timezone")
-      zone.should_receive(:local_to_utc).and_return(Time.utc(2012, 1, 1, 6, 30, 0))
-      zone.should_receive(:utc_to_local).and_return(Time.utc(2012, 1, 1, 12, 0, 10))
-      t = Time.new(2012, 1, 1, 12, 0, 0, zone) + 10
-      t.zone.should == zone
-      t.utc_offset.should == 19800
-      t.to_a[0, 6].should == [10, 0, 12, 1, 1, 2012]
-      t.should == Time.utc(2012, 1, 1, 6, 30, 10)
+    context "zone is a timezone object" do
+      it "preserves time zone" do
+        zone = TimeSpecs::Timezone.new(offset: (5*3600+30*60))
+        time = Time.new(2012, 1, 1, 12, 0, 0, zone) + 60*60
+
+        time.zone.should == zone
+      end
     end
   end
 

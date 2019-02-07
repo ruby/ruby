@@ -8,7 +8,7 @@ describe "WeakRef#weakref_alive?" do
     ref.weakref_alive?.should == true
   end
 
-  it "returns a falsey value if the object is no longer reachable" do
+  it "returns a falsy value if the object is no longer reachable" do
     ref = WeakRefSpec.make_dead_weakref
     [false, nil].should include(ref.weakref_alive?)
   end

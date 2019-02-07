@@ -10,7 +10,7 @@ describe "Matrix::EigenvalueDecomposition#eigenvector_matrix" do
            [Complex(0, 1), Complex(0, -1)]]
   end
 
-  it "returns an real eigenvector matrix for a symetric matrix" do
+  it "returns an real eigenvector matrix for a symmetric matrix" do
     # Fix me: should test for linearity, not for equality
     Matrix[[1, 2],
            [2, 1]].eigensystem.eigenvector_matrix.should ==

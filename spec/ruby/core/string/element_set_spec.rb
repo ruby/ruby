@@ -36,7 +36,7 @@ describe "String#[]= with Fixnum index" do
     lambda { ""[-1] = "bam" }.should raise_error(IndexError)
   end
 
-  # Behaviour verfieid correct by matz in
+  # Behaviour is verified by matz in
   # http://redmine.ruby-lang.org/issues/show/1750
   it "allows assignment to the zero'th element of an empty String" do
     str = ""

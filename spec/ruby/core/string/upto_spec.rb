@@ -8,7 +8,7 @@ describe "String#upto" do
     a.should == ["*+", "*,", "*-", "*.", "*/", "*0", "*1", "*2", "*3"]
   end
 
-  it "calls the block once even when start eqals stop" do
+  it "calls the block once even when start equals stop" do
     a = []
     "abc".upto("abc") { |s| a << s }
     a.should == ["abc"]

@@ -35,7 +35,7 @@ describe "File.sticky?" do
   end
 
   platform_is :bsd do
-    # FreeBSD and NetBSD can't set stiky bit to a normal file
+    # FreeBSD and NetBSD can't set sticky bit to a normal file
     it "cannot set sticky bit to a normal file" do
       filename = tmp("i_exist")
       touch(filename)

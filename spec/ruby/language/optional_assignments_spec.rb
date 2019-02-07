@@ -251,7 +251,7 @@ describe 'Optional variable assignments' do
     end
   end
 
-  describe 'using compunded constants' do
+  describe 'using compounded constants' do
     before :each do
       Object.send(:remove_const, :A) if defined? Object::A
     end

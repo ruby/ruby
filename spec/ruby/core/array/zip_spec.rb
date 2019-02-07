@@ -42,7 +42,7 @@ describe "Array#zip" do
     [1, 2].zip(10.upto(Float::INFINITY)).should == [[1, 10], [2, 11]]
   end
 
-  it "fills nil when the given enumereator is shorter than self" do
+  it "fills nil when the given enumerator is shorter than self" do
     obj = Object.new
     def obj.each
       yield 10

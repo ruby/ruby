@@ -14,7 +14,7 @@ describe "Signal.signame" do
   end
 
   platform_is_not :windows do
-    it "the original should take precendence over alias when looked up by number" do
+    it "the original should take precedence over alias when looked up by number" do
       Signal.signame(Signal.list["ABRT"]).should == "ABRT"
       Signal.signame(Signal.list["CHLD"]).should == "CHLD"
     end

@@ -87,7 +87,7 @@ describe :file_fnmatch, shared: true do
     File.send(@method, '[a-z]', 'D', File::FNM_CASEFOLD).should == true
   end
 
-  it "does not match characters outside of the range of the bracket expresion" do
+  it "does not match characters outside of the range of the bracket expression" do
     File.send(@method, 'ca[x-z]', 'cat').should == false
     File.send(@method, '/ca[s][s-t]/rul[a-b]/[z]he/[x-Z]orld', '/cats/rule/the/World').should == false
   end

@@ -17,7 +17,7 @@ describe "Delegator when frozen" do
     @delegate.frozen?.should be_true
   end
 
-  it "is not writeable" do
+  it "is not writable" do
     lambda{ @delegate[0] += 2 }.should raise_error( RuntimeError )
   end
 

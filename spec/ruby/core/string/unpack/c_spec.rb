@@ -20,7 +20,7 @@ describe :string_unpack_8bit, shared: true do
     "abc".unpack(unpack_format('*')).should == [97, 98, 99]
   end
 
-  it "decodes the remaining bytes when passed the '*' modifer after another directive" do
+  it "decodes the remaining bytes when passed the '*' modifier after another directive" do
     "abc".unpack(unpack_format()+unpack_format('*')).should == [97, 98, 99]
   end
 

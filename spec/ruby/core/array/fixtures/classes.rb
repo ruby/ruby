@@ -81,7 +81,7 @@ module ArraySpecs
     end
   end
 
-  class ArrayConvertable
+  class ArrayConvertible
     attr_accessor :called
     def initialize(*values, &block)
       @values = values;
@@ -426,7 +426,7 @@ module ArraySpecs
  "assert_no_queries",
  "test_change_column_quotes_column_names",
  "assert_match",
- "test_keeping_default_and_notnull_constaint_on_change",
+ "test_keeping_default_and_notnull_constraint_on_change",
  "methods",
  "connection_allow_concurrency_setup",
  "connection_allow_concurrency_teardown",
@@ -476,7 +476,7 @@ module ArraySpecs
  "test_create_table_without_id",
  "test_finds_migrations",
  "test_finds_pending_migrations",
- "test_keeping_default_and_notnull_constaint_on_change",
+ "test_keeping_default_and_notnull_constraint_on_change",
  "test_migrator",
  "test_migrator_db_has_no_schema_migrations_table",
  "test_migrator_double_down",

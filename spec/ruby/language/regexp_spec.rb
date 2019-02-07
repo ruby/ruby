@@ -97,7 +97,7 @@ describe "Literal Regexps" do
 
   it "supports (?> ) (embedded subexpression)" do
     /(?>foo)(?>bar)/.match("foobar").to_a.should == ["foobar"]
-    /(?>foo*)obar/.match("foooooooobar").should be_nil # it is possesive
+    /(?>foo*)obar/.match("foooooooobar").should be_nil # it is possessive
   end
 
   it "supports (?# )" do

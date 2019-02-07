@@ -220,7 +220,7 @@ describe "The until modifier with begin .. end block" do
     a.should == [0, 1, 2, 4]
   end
 
-  it "restart the current iteration without reevaluting condition with redo" do
+  it "restart the current iteration without reevaluating condition with redo" do
     a = []
     i = 0
     j = 0

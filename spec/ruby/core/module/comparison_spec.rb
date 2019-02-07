@@ -16,7 +16,7 @@ describe "Module#<=>" do
     (ModuleSpecs::Super  <=> ModuleSpecs::Super).should == 0
   end
 
-  it "returns +1 if self is a superclas of or included by the given module" do
+  it "returns +1 if self is a superclass of or included by the given module" do
     (ModuleSpecs::Parent <=> ModuleSpecs::Child).should == +1
     (ModuleSpecs::Basic  <=> ModuleSpecs::Child).should == +1
     (ModuleSpecs::Super  <=> ModuleSpecs::Child).should == +1

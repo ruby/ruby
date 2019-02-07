@@ -54,7 +54,7 @@ describe "Module#attr" do
     o.attr3 = "test3 updated"
   end
 
-  it "creates a getter and setter for the given attribute name if called with and without writeable is true" do
+  it "creates a getter and setter for the given attribute name if called with and without writable is true" do
     c = Class.new do
       attr :attr, true
       attr :attr

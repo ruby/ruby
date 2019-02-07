@@ -30,7 +30,7 @@ describe "Float#round" do
     12.345678.round(3.999).should == 12.346
   end
 
-  it "returns zero when passed a negative argument with magitude greater the magitude of the whole number portion of the Float" do
+  it "returns zero when passed a negative argument with magnitude greater than magnitude of the whole number portion of the Float" do
     0.8346268.round(-1).should eql(0)
   end
 

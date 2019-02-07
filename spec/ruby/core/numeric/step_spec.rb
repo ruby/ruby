@@ -114,7 +114,7 @@ describe "Numeric#step" do
             1.step(to: Float::INFINITY, by: 42).size.should == infinity_value
           end
 
-          it "should return infinity_value when decending towards a limit of -Float::INFINITY" do
+          it "should return infinity_value when descending towards a limit of -Float::INFINITY" do
             1.step(to: -Float::INFINITY, by: -42).size.should == infinity_value
           end
 
