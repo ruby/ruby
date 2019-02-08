@@ -8,9 +8,6 @@ require 'rinda/tuplespace'
 require 'timeout'
 require 'singleton'
 
-DRb.start_service
-
-
 module Rinda
 
 class MockClock
@@ -622,6 +619,7 @@ class TestRingServer < Test::Unit::TestCase
 
     @ts = Rinda::TupleSpace.new
     @rs = Rinda::RingServer.new(@ts, [], @port)
+    @server = DRb.start_service("druby://localhost:0")
   end
   def teardown
     # implementation-dependent
@@ -632,6 +630,7 @@ class TestRingServer < Test::Unit::TestCase
       end
     }
     @rs.shutdown
+    @server.stop_service
   end
 
   def test_do_reply
