@@ -157,16 +157,14 @@ FILES_NEED_VPATH = %w[
 # It is not good idea to refer them using VPATH.
 # Files in FILES_SAME_NAME_INC is referenced using $(hdrdir).
 # Files in FILES_SAME_NAME_TOP is referenced using $(top_srcdir).
-# include/ruby.h is referenced using $(top_srcdir) because mkmf.rb replaces
-# $(hdrdir)/ruby.h to $(hdrdir)/ruby/ruby.h
 
 FILES_SAME_NAME_INC = %w[
+  include/ruby.h
   include/ruby/ruby.h
   include/ruby/version.h
 ]
 
 FILES_SAME_NAME_TOP = %w[
-  include/ruby.h
   version.h
 ]
 
