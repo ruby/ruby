@@ -262,7 +262,9 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_invalid_yield_from_class_definition
-    assert_raise(LocalJumpError) { eval("class C; yield; end") }
+    assert_raise(LocalJumpError) {
+      EnvUtil.suppress_warning {eval("class C; yield; end")}
+    }
   end
 
   def test_clone
