@@ -242,23 +242,23 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_invalid_next_from_class_definition
-    assert_raise(SyntaxError) { eval("class C; next; end") }
+    assert_syntax_error("class C; next; end", /Invalid next/)
   end
 
   def test_invalid_break_from_class_definition
-    assert_raise(SyntaxError) { eval("class C; break; end") }
+    assert_syntax_error("class C; break; end", /Invalid break/)
   end
 
   def test_invalid_redo_from_class_definition
-    assert_raise(SyntaxError) { eval("class C; redo; end") }
+    assert_syntax_error("class C; redo; end", /Invalid redo/)
   end
 
   def test_invalid_retry_from_class_definition
-    assert_raise(SyntaxError) { eval("class C; retry; end") }
+    assert_syntax_error("class C; retry; end", /Invalid retry/)
   end
 
   def test_invalid_return_from_class_definition
-    assert_raise(SyntaxError) { eval("class C; return; end") }
+    assert_syntax_error("class C; return; end", /Invalid return/)
   end
 
   def test_invalid_yield_from_class_definition
