@@ -3553,7 +3553,8 @@ Init_Proc(void)
  *  and possibly an iterator block that can be accessed in this context
  *  are all retained. Binding objects can be created using
  *  <code>Kernel#binding</code>, and are made available to the callback
- *  of <code>Kernel#set_trace_func</code>.
+ *  of <code>Kernel#set_trace_func</code> and instances of
+ *  <code>TracePoint</code>.
  *
  *  These binding objects can be passed as the second argument of the
  *  <code>Kernel#eval</code> method, establishing an environment for the
