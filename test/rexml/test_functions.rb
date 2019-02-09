@@ -237,8 +237,11 @@ module REXMLTests
       </root>
       XML
 
-      m = REXML::XPath.match(doc, "//foo[@bar=$n]", nil, { "n" => nil })
-      assert_equal( 1, m.size )
+      assert_equal([doc.root.elements[2]],
+                   REXML::XPath.match(doc,
+                                      "//foo[@bar=$n]",
+                                      nil,
+                                      {"n" => nil}))
     end
 
     def test_unregistered_method
