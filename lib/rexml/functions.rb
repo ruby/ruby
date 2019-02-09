@@ -135,8 +135,7 @@ module REXML
     #
     # An object of a type other than the four basic types is converted to a
     # string in a way that is dependent on that type.
-    def Functions::string( object=nil )
-      object = @@context[:node] if object.nil?
+    def Functions::string( object=@@context[:node] )
       if object.respond_to?(:node_type)
         case object.node_type
         when :attribute
@@ -165,8 +164,6 @@ module REXML
               object.to_s
             end
           end
-        when nil
-          ""
         else
           object.to_s
         end
