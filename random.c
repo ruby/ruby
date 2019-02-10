@@ -320,6 +320,19 @@ fill_random_bytes_urandom(void *seed, size_t size)
 # define fill_random_bytes_urandom(seed, size) -1
 #endif
 
+#if defined HAVE_GETRANDOM
+# include <sys/random.h>
+#elif defined __linux__ && defined __NR_getrandom
+# include <linux/random.h>
+
+# ifndef GRND_NONBLOCK
+#   define GRND_NONBLOCK 0x0001	/* not defined in musl libc */
+# endif
+# define getrandom(ptr, size, flags) \
+    (ssize_t)syscall(__NR_getrandom, (ptr), (size), (flags))
+# define HAVE_GETRANDOM 1
+#endif
+
 #if 0
 #elif defined MAC_OS_X_VERSION_10_7 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
 #include <Security/Security.h>
@@ -391,51 +404,18 @@ fill_random_bytes_syscall(void *seed, size_t size, int unused)
     return 0;
 }
 #elif defined HAVE_GETRANDOM
-#include <sys/random.h>
-
 static int
 fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
 {
     static rb_atomic_t try_syscall = 1;
     if (try_syscall) {
-        ssize_t ret;
-        size_t offset = 0;
-        int flags = 0;
-        if (!need_secure)
-            flags = GRND_NONBLOCK;
-        do {
-            errno = 0;
-            ret = getrandom(((char*)seed) + offset, size - offset, flags);
-            if (ret == -1) {
-                ATOMIC_SET(try_syscall, 0);
-                return -1;
-            }
-            offset += (size_t)ret;
-        } while(offset < size);
-        return 0;
-    }
-    return -1;
-}
-#elif defined __linux__ && defined __NR_getrandom
-#include <linux/random.h>
-
-# ifndef GRND_NONBLOCK
-#   define GRND_NONBLOCK 0x0001	/* not defined in musl libc */
-# endif
-
-static int
-fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
-{
-    static rb_atomic_t try_syscall = 1;
-    if (try_syscall) {
-	long ret;
 	size_t offset = 0;
 	int flags = 0;
 	if (!need_secure)
 	    flags = GRND_NONBLOCK;
 	do {
 	    errno = 0;
-	    ret = syscall(__NR_getrandom, ((char*)seed) + offset, size - offset, flags);
+            ssize_t ret = getrandom(((char*)seed) + offset, size - offset, flags);
 	    if (ret == -1) {
 		ATOMIC_SET(try_syscall, 0);
 		return -1;
