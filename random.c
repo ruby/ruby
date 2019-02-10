@@ -398,21 +398,21 @@ fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
 {
     static rb_atomic_t try_syscall = 1;
     if (try_syscall) {
-	ssize_t ret;
-	size_t offset = 0;
-	int flags = 0;
-	if (!need_secure)
-	    flags = GRND_NONBLOCK;
-	do {
-	    errno = 0;
-	    ret = getrandom(((char*)seed) + offset, size - offset, flags);
-	    if (ret == -1) {
-		ATOMIC_SET(try_syscall, 0);
-		return -1;
-	    }
-	    offset += (size_t)ret;
-	} while(offset < size);
-	return 0;
+        ssize_t ret;
+        size_t offset = 0;
+        int flags = 0;
+        if (!need_secure)
+            flags = GRND_NONBLOCK;
+        do {
+            errno = 0;
+            ret = getrandom(((char*)seed) + offset, size - offset, flags);
+            if (ret == -1) {
+                ATOMIC_SET(try_syscall, 0);
+                return -1;
+            }
+            offset += (size_t)ret;
+        } while(offset < size);
+        return 0;
     }
     return -1;
 }
