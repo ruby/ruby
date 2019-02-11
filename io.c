@@ -10952,18 +10952,17 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
 static int
 nogvl_fcopyfile(struct copy_stream_struct *stp)
 {
-    off_t src_size, cur, ss = 0;
+    off_t cur, ss = 0;
     int ret;
 
     if (stp->copy_length >= (off_t)0) {
-        /* copy_length can't be specified in copyfile(3) */
+        /* copy_length can't be specified in fcopyfile(3) */
         return 0;
     }
 
     if (!S_ISREG(stp->src_stat.st_mode))
         return 0;
 
-    src_size = stp->src_stat.st_size;
     if (!S_ISREG(stp->dst_stat.st_mode))
         return 0;
     if (lseek(stp->dst_fd, 0, SEEK_CUR) > (off_t)0) /* if dst IO was already written */
