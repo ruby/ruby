@@ -337,6 +337,7 @@ def read_single_cc_deps(path_i, cwd)
     next if /\A\# \d+ "(.*)"/ !~ line
     dep = $1
     next if %r{\A<.*>\z} =~ dep # omit <command-line>, etc.
+    next if /\.erb\z/ =~ dep
     compiler_wd ||= dep
     files[dep] = true
   }
