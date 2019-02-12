@@ -213,6 +213,7 @@ enc/emacs_mule.$(OBJEXT): onigmo.h
 enc/emacs_mule.$(OBJEXT): oniguruma.h
 enc/emacs_mule.$(OBJEXT): st.h
 enc/emacs_mule.$(OBJEXT): subst.h
+enc/encdb.$(OBJEXT): $(hdrdir)/ruby.h
 enc/encdb.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/encdb.$(OBJEXT): $(top_srcdir)/include/ruby.h
 enc/encdb.$(OBJEXT): $(top_srcdir)/internal.h
