@@ -205,6 +205,7 @@ def in_makefile(target, source)
     when *FILES_SAME_NAME_TOP then source2 = "$(top_srcdir)/#{source}"
     when %r{\A\.ext/include/[^/]+/ruby/} then source2 = $'
     when %r{\Ainclude/ruby/} then source2 = $'
+    when %r{\Aenc/unicode/[\d.]+/} then source2 = '$(UNICODE_HDR_DIR)/' + $'
     when %r{\Aenc/} then source2 = source
     else source2 = "$(top_srcdir)/#{source}"
     end
