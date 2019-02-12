@@ -3356,8 +3356,10 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	break;
       case T_HASH:
         if (RHASH_AR_TABLE_P(obj)) {
-            size_t rb_hash_ar_table_size();
-            size += rb_hash_ar_table_size();
+            if (RHASH_AR_TABLE(obj) != NULL) {
+                size_t rb_hash_ar_table_size();
+                size += rb_hash_ar_table_size();
+            }
 	}
         else {
             VM_ASSERT(RHASH_ST_TABLE(obj) != NULL);
