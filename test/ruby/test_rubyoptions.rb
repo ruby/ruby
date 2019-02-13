@@ -669,7 +669,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   module SEGVTest
     opts = {}
-    if /mswin|mingw/ =~ RUBY_PLATFORM
+    if /mswin|mingw|darwin/ =~ RUBY_PLATFORM
       additional = /[\s\w\.\']*/
     else
       opts[:rlimit_core] = 0
@@ -688,21 +688,32 @@ class TestRubyOptions < Test::Unit::TestCase
         (?:--\s(?:.+\n)*\n)?
         --\sControl\sframe\sinformation\s-+\n
         (?:c:.*\n)*
+        \n
       )x,
       %r(
         (?:
         --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
         -e:1:in\s\`<main>\'\n
         -e:1:in\s\`kill\'\n
+        \n
         )?
+      )x,
+      %r(
+        (?:--\sMachine(?:.+\n)*\n)?
       )x,
       %r(
         (?:
           --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
-          (?:(?:.*\s)?\[0x\h+\]\n)*\n
+          (?:(?:.*\s)?\[0x\h+\].*\n|.*:\d+\n)*\n
         )?
       )x,
-      :*,
+      %r(
+        (?:--\sOther\sruntime\sinformation\s-+\n
+          (?:\n\*\s.*\n
+            (?:\n(?:\s.*\n)+)?
+          )*
+        )?
+      )x,
     ]
     ExpectedStderrList << additional if additional
   end
