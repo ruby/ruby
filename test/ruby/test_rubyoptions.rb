@@ -669,11 +669,8 @@ class TestRubyOptions < Test::Unit::TestCase
 
   module SEGVTest
     opts = {}
-    if /mswin|mingw|darwin/ =~ RUBY_PLATFORM
-      additional = /[\s\w\.\']*/
-    else
+    unless /mswin|mingw/ =~ RUBY_PLATFORM
       opts[:rlimit_core] = 0
-      additional = nil
     end
     ExecOptions = opts.freeze
 
@@ -709,13 +706,10 @@ class TestRubyOptions < Test::Unit::TestCase
       )x,
       %r(
         (?:--\sOther\sruntime\sinformation\s-+\n
-          (?:\n\*\s.*\n
-            (?:\n(?:\s.*\n)+)?
-          )*
+          (?:.*\n)*
         )?
       )x,
     ]
-    ExpectedStderrList << additional if additional
   end
 
   def assert_segv(args, message=nil)
