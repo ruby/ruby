@@ -703,19 +703,6 @@ class TestRubyOptions < Test::Unit::TestCase
         )?
       )x,
       :*,
-      %r(
-        \[NOTE\]\n
-        You\smay\shave\sencountered\sa\sbug\sin\sthe\sRuby\sinterpreter\sor\sextension\slibraries.\n
-        Bug\sreports\sare\swelcome.\n
-        (?:.*\n)?
-        For\sdetails:\shttps:\/\/.*\.ruby-lang\.org/.*\n
-        \n
-        (?:
-          \[IMPORTANT\]\n
-          (?:.+\n)+
-          \n
-        )?
-      )x,
     ]
     ExpectedStderrList << additional if additional
   end
