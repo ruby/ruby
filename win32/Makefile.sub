@@ -1202,7 +1202,7 @@ ext/clean gems/clean ext/distclean gems/distclean ext/realclean gems/realclean::
 		    $(MAKE) $(MFLAGS) $(@F) & \
 		    cd %CD% & \
 		    $(RMDIRS) %I \
-		) )
+		) ) || @
 
 ext/distclean gems/distclean ext/realclean gems/realclean::
 		$(Q)cd $(@D) && for /R $(EXTS) %I in (exts.mk*) \
