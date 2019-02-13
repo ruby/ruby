@@ -60,15 +60,6 @@ static ID id_warn;
 
 extern const char ruby_description[];
 
-static const char REPORTBUG_MSG[] =
-	"[NOTE]\n" \
-	"You may have encountered a bug in the Ruby interpreter" \
-	" or extension libraries.\n" \
-	"Bug reports are welcome.\n" \
-	""
-	"For details: https://www.ruby-lang.org/bugreport.html\n\n" \
-    ;
-
 static const char *
 rb_strerrno(int err)
 {
@@ -548,7 +539,6 @@ bug_report_end(FILE *out)
 	    (*reporter->func)(out, reporter->data);
 	}
     }
-    fputs(REPORTBUG_MSG, out);
     postscript_dump(out);
 }
 
@@ -652,8 +642,6 @@ rb_async_bug_errno(const char *mesg, int errno_arg)
     }
     WRITE_CONST(2, "\n\n");
     write_or_abort(2, ruby_description, strlen(ruby_description));
-    WRITE_CONST(2, "\n\n");
-    WRITE_CONST(2, REPORTBUG_MSG);
     abort();
 }
 
