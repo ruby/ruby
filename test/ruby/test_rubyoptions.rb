@@ -690,7 +690,7 @@ class TestRubyOptions < Test::Unit::TestCase
       %r(
         (?:
         --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
-        -e:1:in\s\`<main>\'\n
+        (?:-e:1:in\s\`(?:block\sin\s)?<main>\'\n)*
         -e:1:in\s\`kill\'\n
         \n
         )?
