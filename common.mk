@@ -662,9 +662,9 @@ distclean-ext:: ext/distclean gems/distclean timestamp/distclean
 realclean-ext:: ext/realclean gems/realclean timestamp/realclean
 
 ext/clean.mk ext/distclean.mk ext/realclean.mk::
-ext/clean gems/clean:: ext/clean.mk
-ext/distclean gems/distclean:: ext/distclean.mk
-ext/realclean gems/realclean:: ext/realclean.mk
+ext/clean:: ext/clean.mk
+ext/distclean:: ext/distclean.mk
+ext/realclean:: ext/realclean.mk
 
 timestamp/clean:: ext/clean gems/clean
 timestamp/distclean:: ext/distclean gems/distclean
