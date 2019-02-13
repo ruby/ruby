@@ -618,7 +618,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
     VALUE hash = setup_hash(argc, argv);
 
     if (imemo_type_ids[0] == 0) {
-	imemo_type_ids[0] = rb_intern("imemo_env");
+        imemo_type_ids[0] = rb_intern("imemo_env");
 	imemo_type_ids[1] = rb_intern("imemo_cref");
 	imemo_type_ids[2] = rb_intern("imemo_svar");
 	imemo_type_ids[3] = rb_intern("imemo_throw_data");
@@ -628,7 +628,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
 	imemo_type_ids[7] = rb_intern("imemo_iseq");
 	imemo_type_ids[8] = rb_intern("imemo_tmpbuf");
         imemo_type_ids[9] = rb_intern("imemo_ast");
-	imemo_type_ids[10] = rb_intern("imemo_parser_strterm");
+        imemo_type_ids[10] = rb_intern("imemo_parser_strterm");
     }
 
     rb_objspace_each_objects(count_imemo_objects_i, (void *)hash);
