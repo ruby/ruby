@@ -478,9 +478,9 @@ distclean-local::
 	-$(Q)$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h verconf.h
 	-$(Q)$(RMDIRS) $(arch_hdrdir)/ruby 2> /dev/null || true
 
-ext/clean.sub gems/clean.sub:: ext/clean.mk
-ext/distclean.sub gems/distclean.sub:: ext/distclean.mk
-ext/realclean.sub gems/realclean.sub:: ext/realclean.mk
+ext/clean.sub:: ext/clean.mk
+ext/distclean.sub:: ext/distclean.mk
+ext/realclean.sub:: ext/realclean.mk
 
 ext/clean.mk ext/distclean.mk ext/realclean.mk::
 	-$(Q) if [ -f $(EXTS_MK) ]; then exec $(MAKE) -f $(EXTS_MK) $(@F:.mk=); fi
