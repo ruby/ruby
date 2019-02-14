@@ -280,7 +280,7 @@ class TestGemSecurity < Gem::TestCase
 
     assert_path_exists path
 
-    key_from_file =  OpenSSL::PKey::RSA.new File.read(path), passphrase
+    key_from_file = OpenSSL::PKey::RSA.new File.read(path), passphrase
 
     assert_equal key.to_pem, key_from_file.to_pem
   end

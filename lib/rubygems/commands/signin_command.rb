@@ -3,6 +3,7 @@ require 'rubygems/command'
 require 'rubygems/gemcutter_utilities'
 
 class Gem::Commands::SigninCommand < Gem::Command
+
   include Gem::GemcutterUtilities
 
   def initialize

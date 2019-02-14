@@ -402,4 +402,5 @@ class Gem::RemoteFetcher
 
     [id, secret]
   end
+
 end

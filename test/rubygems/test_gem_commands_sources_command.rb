@@ -40,9 +40,9 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
       fetcher.spec 'a', 1
     end
 
-    specs = Gem::Specification.map { |spec|
+    specs = Gem::Specification.map do |spec|
       [spec.name, spec.version, spec.original_platform]
-    }
+    end
 
     specs_dump_gz = StringIO.new
     Zlib::GzipWriter.wrap specs_dump_gz do |io|
@@ -167,9 +167,9 @@ source http://gems.example.com/ already present in the cache
       fetcher.spec 'a', 1
     end
 
-    specs = Gem::Specification.map { |spec|
+    specs = Gem::Specification.map do |spec|
       [spec.name, spec.version, spec.original_platform]
-    }
+    end
 
     specs_dump_gz = StringIO.new
     Zlib::GzipWriter.wrap specs_dump_gz do |io|

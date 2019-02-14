@@ -72,7 +72,7 @@ class Gem::Security::Signer
     @options = DEFAULT_OPTIONS.merge(options)
 
     unless @key
-      default_key  = File.join Gem.default_key_path
+      default_key = File.join Gem.default_key_path
       @key = default_key if File.exist? default_key
     end
 

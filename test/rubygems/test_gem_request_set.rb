@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/request_set'
 
 class TestGemRequestSet < Gem::TestCase
+
   def setup
     super
 
@@ -311,8 +312,14 @@ ruby "0"
   end
 
   def test_resolve_development_shallow
-    a = util_spec 'a', 1 do |s| s.add_development_dependency 'b' end
-    b = util_spec 'b', 1 do |s| s.add_development_dependency 'c' end
+    a = util_spec 'a', 1 do |s|
+      s.add_development_dependency 'b'
+    end
+
+    b = util_spec 'b', 1 do |s|
+      s.add_development_dependency 'c'
+    end
+
     c = util_spec 'c', 1
 
     a_spec = Gem::Resolver::SpecSpecification.new nil, a
@@ -528,8 +535,14 @@ ruby "0"
   end
 
   def test_sorted_requests_development_shallow
-    a = util_spec 'a', 1 do |s| s.add_development_dependency 'b' end
-    b = util_spec 'b', 1 do |s| s.add_development_dependency 'c' end
+    a = util_spec 'a', 1 do |s|
+      s.add_development_dependency 'b'
+    end
+
+    b = util_spec 'b', 1 do |s|
+      s.add_development_dependency 'c'
+    end
+
     c = util_spec 'c', 1
 
     rs = Gem::RequestSet.new
@@ -547,8 +560,14 @@ ruby "0"
   end
 
   def test_tsort_each_child_development
-    a = util_spec 'a', 1 do |s| s.add_development_dependency 'b' end
-    b = util_spec 'b', 1 do |s| s.add_development_dependency 'c' end
+    a = util_spec 'a', 1 do |s|
+      s.add_development_dependency 'b'
+    end
+
+    b = util_spec 'b', 1 do |s|
+      s.add_development_dependency 'c'
+    end
+
     c = util_spec 'c', 1
 
     rs = Gem::RequestSet.new
@@ -570,8 +589,14 @@ ruby "0"
   end
 
   def test_tsort_each_child_development_shallow
-    a = util_spec 'a', 1 do |s| s.add_development_dependency 'b' end
-    b = util_spec 'b', 1 do |s| s.add_development_dependency 'c' end
+    a = util_spec 'a', 1 do |s|
+      s.add_development_dependency 'b'
+    end
+
+    b = util_spec 'b', 1 do |s|
+      s.add_development_dependency 'c'
+    end
+
     c = util_spec 'c', 1
 
     rs = Gem::RequestSet.new

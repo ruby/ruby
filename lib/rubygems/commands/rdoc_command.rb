@@ -5,6 +5,7 @@ require 'rubygems/rdoc'
 require 'fileutils'
 
 class Gem::Commands::RdocCommand < Gem::Command
+
   include Gem::VersionOption
 
   def initialize

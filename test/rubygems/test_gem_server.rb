@@ -4,10 +4,13 @@ require 'rubygems/server'
 require 'stringio'
 
 class Gem::Server
+
   attr_reader :server
+
 end
 
 class TestGemServer < Gem::TestCase
+
   def process_based_port
     0
   end
@@ -242,7 +245,9 @@ class TestGemServer < Gem::TestCase
   end
 
   def test_quick_marshal_a_1_mswin32_gemspec_rz
-    quick_gem 'a', '1' do |s| s.platform = Gem::Platform.local end
+    quick_gem 'a', '1' do |s|
+      s.platform = Gem::Platform.local
+    end
 
     data = StringIO.new "GET /quick/Marshal.#{Gem.marshal_version}/a-1-#{Gem::Platform.local}.gemspec.rz HTTP/1.0\r\n\r\n"
     @req.parse data
@@ -604,4 +609,5 @@ class TestGemServer < Gem::TestCase
 
     @server.instance_variable_set :@server, webrick
   end
+
 end

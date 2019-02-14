@@ -3,7 +3,9 @@ require 'rubygems/test_case'
 require 'rubygems'
 
 class TestGemRequire < Gem::TestCase
+
   class Latch
+
     def initialize(count = 1)
       @count = count
       @lock  = Monitor.new
@@ -22,6 +24,7 @@ class TestGemRequire < Gem::TestCase
         @cv.wait_while { @count > 0 }
       end
     end
+
   end
 
   def setup
@@ -331,8 +334,10 @@ class TestGemRequire < Gem::TestCase
   def test_try_activate_error_unlocks_require_monitor
     silence_warnings do
       class << ::Gem
+
         alias old_try_activate try_activate
         def try_activate(*); raise 'raised from try_activate'; end
+
       end
     end
 
@@ -343,7 +348,9 @@ class TestGemRequire < Gem::TestCase
   ensure
     silence_warnings do
       class << ::Gem
+
         alias try_activate old_try_activate
+
       end
     end
     Kernel::RUBYGEMS_ACTIVATION_MONITOR.exit
@@ -436,4 +443,5 @@ class TestGemRequire < Gem::TestCase
   ensure
     $VERBOSE = old_verbose
   end
+
 end

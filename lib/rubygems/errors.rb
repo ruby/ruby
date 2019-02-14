@@ -13,11 +13,13 @@ module Gem
   # already activated gems or that RubyGems is otherwise unable to activate.
 
   class LoadError < ::LoadError
+
     # Name of gem
     attr_accessor :name
 
     # Version requirement of gem
     attr_accessor :requirement
+
   end
 
   ##
@@ -25,6 +27,7 @@ module Gem
   # system.  Instead of rescuing from this class, make sure to rescue from the
   # superclass Gem::LoadError to catch all types of load errors.
   class MissingSpecError < Gem::LoadError
+
     def initialize(name, requirement)
       @name        = name
       @requirement = requirement
@@ -41,6 +44,7 @@ module Gem
       total = Gem::Specification.stubs.size
       "Could not find '#{name}' (#{requirement}) among #{total} total gem(s)\n"
     end
+
   end
 
   ##
@@ -48,6 +52,7 @@ module Gem
   # not the requested version. Instead of rescuing from this class, make sure to
   # rescue from the superclass Gem::LoadError to catch all types of load errors.
   class MissingSpecVersionError < MissingSpecError
+
     attr_reader :specs
 
     def initialize(name, requirement, specs)
@@ -64,6 +69,7 @@ module Gem
       names = specs.map(&:full_name)
       "Could not find '#{name}' (#{requirement}) - did find: [#{names.join ','}]\n"
     end
+
   end
 
   # Raised when there are conflicting gem specs loaded
@@ -86,14 +92,15 @@ module Gem
       @conflicts = conflicts
       @name      = target.name
 
-      reason = conflicts.map { |act, dependencies|
+      reason = conflicts.map do |act, dependencies|
         "#{act.full_name} conflicts with #{dependencies.join(", ")}"
-      }.join ", "
+      end.join ", "
 
       # TODO: improve message by saying who activated `con`
 
       super("Unable to activate #{target.full_name}, because #{reason}")
     end
+
   end
 
   class ErrorReason; end
@@ -143,6 +150,7 @@ module Gem
          @platforms.size == 1 ? '' : 's',
          @platforms.join(' ,')]
     end
+
   end
 
   ##
@@ -181,5 +189,6 @@ module Gem
     # The "exception" alias allows you to call raise on a SourceFetchProblem.
 
     alias exception error
+
   end
 end

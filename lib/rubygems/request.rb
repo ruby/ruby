@@ -13,7 +13,7 @@ class Gem::Request
   def self.create_with_proxy(uri, request_class, last_modified, proxy) # :nodoc:
     cert_files = get_cert_files
     proxy ||= get_proxy_from_env(uri.scheme)
-    pool       = ConnectionPools.new proxy_uri(proxy), cert_files
+    pool = ConnectionPools.new proxy_uri(proxy), cert_files
 
     new(uri, request_class, last_modified, pool.pool_for(uri))
   end
@@ -168,9 +168,10 @@ class Gem::Request
 
     no_env_proxy = env_proxy.nil? || env_proxy.empty?
 
-    return :no_proxy if scheme == 'https' && no_env_proxy
-    return get_proxy_from_env 'http' if no_env_proxy and _scheme != 'http'
-    return :no_proxy                 if no_env_proxy
+    if no_env_proxy
+      return (_scheme == 'https' || _scheme == 'http') ?
+        :no_proxy : get_proxy_from_env('http')
+    end
 
     uri = URI(Gem::UriFormatter.new(env_proxy).normalize)
 

@@ -16,7 +16,7 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
       Gem::Source::Lock.new source
     end
 
-    @specs   = []
+    @specs = []
   end
 
   ##

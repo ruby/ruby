@@ -7,6 +7,7 @@ require "rubygems/command_manager"
 require File.expand_path('../rubygems_plugin', __FILE__)
 
 class TestGemCommandsHelpCommand < Gem::TestCase
+
   # previously this was calc'd in setup, but 1.8.7 had
   # intermittent failures, but no issues with above require
   PLUGIN = File.expand_path('../rubygems_plugin.rb', __FILE__)
@@ -75,4 +76,5 @@ class TestGemCommandsHelpCommand < Gem::TestCase
 
     yield @ui.output, @ui.error
   end
+
 end

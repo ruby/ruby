@@ -7,6 +7,7 @@
 require 'rubygems/platform'
 
 class Gem::NameTuple
+
   def initialize(name, version, platform="ruby")
     @name = name
     @version = version

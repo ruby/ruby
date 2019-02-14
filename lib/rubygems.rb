@@ -271,9 +271,9 @@ module Gem
 
     specs = dep.matching_specs(true)
 
-    specs = specs.find_all { |spec|
+    specs = specs.find_all do |spec|
       spec.executables.include? exec_name
-    } if exec_name
+    end if exec_name
 
     unless spec = specs.first
       msg = "can't find gem #{dep} with executable #{exec_name}"
@@ -521,9 +521,9 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.find_files_from_load_path(glob) # :nodoc:
     glob_with_suffixes = "#{glob}#{Gem.suffix_pattern}"
-    $LOAD_PATH.map { |load_path|
+    $LOAD_PATH.map do |load_path|
       Gem::Util.glob_files_in_dir(glob_with_suffixes, load_path)
-    }.flatten.select { |file| File.file? file.untaint }
+    end.flatten.select { |file| File.file? file.untaint }
   end
 
   ##
@@ -593,8 +593,10 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   class << self
+
     extend Gem::Deprecate
     deprecate :gunzip, "Gem::Util.gunzip", 2018, 12
+
   end
 
   ##
@@ -605,8 +607,10 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   class << self
+
     extend Gem::Deprecate
     deprecate :gzip, "Gem::Util.gzip", 2018, 12
+
   end
 
   ##
@@ -617,8 +621,10 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   class << self
+
     extend Gem::Deprecate
     deprecate :inflate, "Gem::Util.inflate", 2018, 12
+
   end
 
   ##
@@ -1015,11 +1021,11 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   def self.suffixes
     @suffixes ||= ['',
                    '.rb',
-                   *%w(DLEXT DLEXT2).map { |key|
+                   *%w(DLEXT DLEXT2).map do |key|
                      val = RbConfig::CONFIG[key]
                      next unless val and not val.empty?
                      ".#{val}"
-                   }
+                   end
                   ].compact.uniq
   end
 
@@ -1211,6 +1217,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   class << self
+
     ##
     # TODO remove with RubyGems 4.0
 
@@ -1218,6 +1225,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     extend Gem::Deprecate
     deprecate :detect_gemdeps, "Gem.use_gemdeps", 2018, 12
+
   end
 
   # FIX: Almost everywhere else we use the `def self.` way of defining class
@@ -1337,6 +1345,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     # work
 
     attr_reader :pre_uninstall_hooks
+
   end
 
   ##

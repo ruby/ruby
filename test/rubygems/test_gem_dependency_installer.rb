@@ -26,18 +26,22 @@ class TestGemDependencyInstaller < Gem::TestCase
   end
 
   def util_setup_gems
-    @a1, @a1_gem         = util_gem 'a', '1' do |s| s.executables << 'a_bin' end
+    @a1, @a1_gem = util_gem 'a', '1' do |s|
+      s.executables << 'a_bin'
+    end
+
     @a1_pre, @a1_pre_gem = util_gem 'a', '1.a'
+
     @b1, @b1_gem         = util_gem 'b', '1' do |s|
       s.add_dependency 'a'
       s.add_development_dependency 'aa'
     end
 
-    @c1, @c1_gem         = util_gem 'c', '1' do |s|
+    @c1, @c1_gem = util_gem 'c', '1' do |s|
       s.add_development_dependency 'b'
     end
 
-    @d1, @d1_gem         = util_gem 'd', '1' do |s|
+    @d1, @d1_gem = util_gem 'd', '1' do |s|
       s.add_development_dependency 'c'
     end
 
@@ -872,8 +876,13 @@ class TestGemDependencyInstaller < Gem::TestCase
     a1_data = nil
     a2_o_data = nil
 
-    File.open @a1_gem, 'rb' do |fp| a1_data = fp.read end
-    File.open a2_o_gem, 'rb' do |fp| a2_o_data = fp.read end
+    File.open @a1_gem, 'rb' do |fp|
+      a1_data = fp.read
+    end
+
+    File.open a2_o_gem, 'rb' do |fp|
+      a2_o_data = fp.read
+    end
 
     @fetcher.data["http://gems.example.com/gems/#{@a1.file_name}"] =
       a1_data
@@ -1235,4 +1244,5 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     util_clear_gems
   end
+
 end

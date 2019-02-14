@@ -84,7 +84,7 @@ gems:
   # Generated via:
   #   x = OpenSSL::PKey::DH.new(2048) # wait a while...
   #   x.to_s => pem
-  TEST_KEY_DH2048 =  OpenSSL::PKey::DH.new <<-_end_of_pem_
+  TEST_KEY_DH2048 = OpenSSL::PKey::DH.new <<-_end_of_pem_
 -----BEGIN DH PARAMETERS-----
 MIIBCAKCAQEA3Ze2EHSfYkZLUn557torAmjBgPsqzbodaRaGZtgK1gEU+9nNJaFV
 G1JKhmGUiEDyIW7idsBpe4sX/Wqjnp48Lr8IeI/SlEzLdoGpf05iRYXC8Cm9o8aM
@@ -117,7 +117,10 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     FileUtils.mkdir @gems_dir
 
     # TODO: why does the remote fetcher need it written to disk?
-    @a1, @a1_gem = util_gem 'a', '1' do |s| s.executables << 'a_bin' end
+    @a1, @a1_gem = util_gem 'a', '1' do |s|
+      s.executables << 'a_bin'
+    end
+
     @a1.loaded_from = File.join(@gemhome, 'specifications', @a1.full_name)
 
     Gem::RemoteFetcher.fetcher = nil
@@ -786,7 +789,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     ssl_server = self.class.start_ssl_server({
       :SSLVerifyClient =>
-        OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
+        OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
 
     temp_ca_cert = File.join(DIR, 'ca_cert.pem')
     temp_client_cert = File.join(DIR, 'client.pem')
@@ -803,7 +806,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     ssl_server = self.class.start_ssl_server({
       :SSLVerifyClient =>
-        OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
+        OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
 
     temp_ca_cert = File.join(DIR, 'ca_cert.pem')
     temp_client_cert = File.join(DIR, 'invalid_client.pem')
@@ -895,11 +898,14 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   class NilLog < WEBrick::Log
+
     def log(level, data) #Do nothing
     end
+
   end
 
   class << self
+
     attr_reader :normal_server, :proxy_server
     attr_accessor :enable_zip, :enable_yaml
 
@@ -959,12 +965,12 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         :SSLVerifyClient => nil,
         :SSLCertName => nil
       }.merge(config))
-      server.mount_proc("/yaml") { |req, res|
+      server.mount_proc("/yaml") do |req, res|
         res.body = "--- true\n"
-      }
-      server.mount_proc("/insecure_redirect") { |req, res|
+      end
+      server.mount_proc("/insecure_redirect") do |req, res|
         res.set_redirect(WEBrick::HTTPStatus::MovedPermanently, req.query['to'])
-      }
+      end
       server.ssl_context.tmp_dh_callback = proc { TEST_KEY_DH2048 }
       t = Thread.new do
         begin
@@ -999,7 +1005,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         :AccessLog       => null_logger
       )
       s.mount_proc("/kill") { |req, res| s.shutdown }
-      s.mount_proc("/yaml") { |req, res|
+      s.mount_proc("/yaml") do |req, res|
         if req["X-Captain"]
           res.body = req["X-Captain"]
         elsif @enable_yaml
@@ -1011,8 +1017,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
           res.body = "<h1>NOT FOUND</h1>"
           res['Content-Type'] = 'text/html'
         end
-      }
-      s.mount_proc("/yaml.Z") { |req, res|
+      end
+      s.mount_proc("/yaml.Z") do |req, res|
         if @enable_zip
           res.body = Zlib::Deflate.deflate(data)
           res['Content-Type'] = 'text/plain'
@@ -1021,7 +1027,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
           res.body = "<h1>NOT FOUND</h1>"
           res['Content-Type'] = 'text/html'
         end
-      }
+      end
       th = Thread.new do
         begin
           s.start
@@ -1042,6 +1048,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     def key(filename)
       OpenSSL::PKey::RSA.new(File.read(File.join(DIR, filename)))
     end
+
   end
 
   def test_correct_for_windows_path

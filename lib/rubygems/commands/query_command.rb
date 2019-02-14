@@ -39,7 +39,7 @@ class Gem::Commands::QueryCommand < Gem::Command
       options[:details] = value
     end
 
-    add_option(      '--[no-]versions',
+    add_option('--[no-]versions',
                'Display only gem names') do |value, options|
       options[:versions] = value
       options[:details] = false unless value
@@ -56,7 +56,7 @@ class Gem::Commands::QueryCommand < Gem::Command
       options[:exact] = value
     end
 
-    add_option(      '--[no-]prerelease',
+    add_option('--[no-]prerelease',
                'Display prerelease versions') do |value, options|
       options[:prerelease] = value
     end
@@ -141,9 +141,9 @@ is too hard to use.
 
       display_header 'LOCAL'
 
-      specs = Gem::Specification.find_all { |s|
+      specs = Gem::Specification.find_all do |s|
         s.name =~ name and req =~ s.version
-      }
+      end
 
       spec_tuples = specs.map do |spec|
         [spec.name_tuple, spec]

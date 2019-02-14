@@ -16,13 +16,23 @@ class TestGemDependencyList < Gem::TestCase
     @a2 = util_spec 'a', '2'
     @a3 = util_spec 'a', '3'
 
-    @b1 = util_spec 'b', '1' do |s| s.add_dependency 'a', '>= 1' end
-    @b2 = util_spec 'b', '2' do |s| s.add_dependency 'a', '>= 1' end
+    @b1 = util_spec 'b', '1' do |s|
+      s.add_dependency 'a', '>= 1'
+    end
 
-    @c1 = util_spec 'c', '1' do |s| s.add_dependency 'b', '>= 1' end
+    @b2 = util_spec 'b', '2' do |s|
+      s.add_dependency 'a', '>= 1'
+    end
+
+    @c1 = util_spec 'c', '1' do |s|
+      s.add_dependency 'b', '>= 1'
+    end
+
     @c2 = util_spec 'c', '2'
 
-    @d1 = util_spec 'd', '1' do |s| s.add_dependency 'c', '>= 1' end
+    @d1 = util_spec 'd', '1' do |s|
+      s.add_dependency 'c', '>= 1'
+    end
   end
 
   def test_active_count
@@ -165,8 +175,13 @@ class TestGemDependencyList < Gem::TestCase
     a1 = util_spec 'a', '1'
     a2 = util_spec 'a', '2'
 
-    b = util_spec 'b', '1' do |s| s.add_dependency 'a', '= 1' end
-    c = util_spec 'c', '1' do |s| s.add_dependency 'a', '= 2' end
+    b = util_spec 'b', '1' do |s|
+      s.add_dependency 'a', '= 1'
+    end
+
+    c = util_spec 'c', '1' do |s|
+      s.add_dependency 'a', '= 2'
+    end
 
     d = util_spec 'd', '1' do |s|
       s.add_dependency 'b'

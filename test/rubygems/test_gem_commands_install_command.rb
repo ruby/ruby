@@ -1142,4 +1142,59 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_equal [:test, :development], @cmd.options[:without_groups]
   end
 
+  def test_explain_platform_local
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2
+
+      fetcher.spec 'a', 2 do |s|
+        s.platform = local
+      end
+    end
+
+    @cmd.options[:explain] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Gems to install:", out.shift
+    assert_equal "  a-2-#{local}", out.shift
+    assert_empty out
+  end
+
+  def test_explain_platform_ruby
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2
+
+      fetcher.spec 'a', 2 do |s|
+        s.platform = local
+      end
+    end
+
+    # equivalent to --platform=ruby
+    Gem.platforms = [Gem::Platform::RUBY]
+
+    @cmd.options[:explain] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Gems to install:", out.shift
+    assert_equal "  a-2", out.shift
+    assert_empty out
+  end
+
 end

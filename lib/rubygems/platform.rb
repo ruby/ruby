@@ -202,4 +202,5 @@ class Gem::Platform
   # This will be replaced with Gem::Platform::local.
 
   CURRENT = 'current'.freeze
+
 end

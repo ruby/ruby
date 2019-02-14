@@ -194,7 +194,7 @@ command to remove old versions.
     }
 
     gems_to_update = which_to_update hig, options[:args], :system
-    _, up_ver   = gems_to_update.first
+    _, up_ver = gems_to_update.first
 
     target = if update_latest
                up_ver

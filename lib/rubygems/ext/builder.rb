@@ -240,7 +240,9 @@ EOF
 
     FileUtils.mkdir_p @spec.extension_dir
 
-    File.open destination, 'wb' do |io| io.puts output end
+    File.open destination, 'wb' do |io|
+      io.puts output
+    end
 
     destination
   end

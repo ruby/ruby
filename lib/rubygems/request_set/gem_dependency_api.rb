@@ -43,11 +43,12 @@ class Gem::RequestSet::GemDependencyAPI
     :mri_20       => %w[ruby],
     :mri_21       => %w[ruby],
     :rbx          => %w[rbx],
-    :ruby         => %w[ruby rbx maglev],
-    :ruby_18      => %w[ruby rbx maglev],
-    :ruby_19      => %w[ruby rbx maglev],
-    :ruby_20      => %w[ruby rbx maglev],
-    :ruby_21      => %w[ruby rbx maglev],
+    :truffleruby  => %w[truffleruby],
+    :ruby         => %w[ruby rbx maglev truffleruby],
+    :ruby_18      => %w[ruby rbx maglev truffleruby],
+    :ruby_19      => %w[ruby rbx maglev truffleruby],
+    :ruby_20      => %w[ruby rbx maglev truffleruby],
+    :ruby_21      => %w[ruby rbx maglev truffleruby],
   }.freeze
 
   mswin     = Gem::Platform.new 'x86-mswin32'
@@ -85,6 +86,7 @@ class Gem::RequestSet::GemDependencyAPI
     :ruby_19      => Gem::Platform::RUBY,
     :ruby_20      => Gem::Platform::RUBY,
     :ruby_21      => Gem::Platform::RUBY,
+    :truffleruby  => Gem::Platform::RUBY,
     :x64_mingw    => x64_mingw,
     :x64_mingw_20 => x64_mingw,
     :x64_mingw_21 => x64_mingw
@@ -126,6 +128,7 @@ class Gem::RequestSet::GemDependencyAPI
     :ruby_19      => tilde_gt_1_9_0,
     :ruby_20      => tilde_gt_2_0_0,
     :ruby_21      => tilde_gt_2_1_0,
+    :truffleruby  => gt_eq_0,
     :x64_mingw    => gt_eq_0,
     :x64_mingw_20 => tilde_gt_2_0_0,
     :x64_mingw_21 => tilde_gt_2_1_0,
@@ -440,7 +443,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
 Gem dependencies file #{@path} includes git reference for both ref and branch but only ref is used.
       WARNING
     end
-    if (ref||branch) && tag
+    if (ref || branch) && tag
       warn <<-WARNING
 Gem dependencies file #{@path} includes git reference for both ref/branch and tag but only ref/branch is used.
       WARNING
@@ -480,7 +483,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
 
   def gem_group(name, options) # :nodoc:
     g = options.delete :group
-    all_groups  = g ? Array(g) : []
+    all_groups = g ? Array(g) : []
 
     groups = options.delete :groups
     all_groups |= groups if groups

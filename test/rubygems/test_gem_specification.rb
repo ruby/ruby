@@ -143,9 +143,9 @@ end
       num_of_version_per_pkg = 3
       packages = (0..num_of_pkg).map do |pkgi|
         (0..num_of_version_per_pkg).map do |pkg_version|
-          deps = Hash[((pkgi + 1)..num_of_pkg).map { |deppkgi|
+          deps = Hash[((pkgi + 1)..num_of_pkg).map do |deppkgi|
             ["pkg#{deppkgi}", ">= 0"]
-          }]
+          end]
           util_spec "pkg#{pkgi}", pkg_version.to_s, deps
         end
       end
@@ -156,9 +156,9 @@ end
       install_specs base
       base.activate
 
-      tms = Benchmark.measure {
+      tms = Benchmark.measure do
         assert_raises(LoadError) { require 'no_such_file_foo' }
-      }
+      end
       assert_operator tms.total, :<=, 10
     end
   end
@@ -384,7 +384,7 @@ end
   #     [B] ~> 1.0 (satisfied by 1.0)
 
   def test_self_activate_checks_dependencies
-    a  = util_spec 'a', '1.0'
+    a = util_spec 'a', '1.0'
     a.add_dependency 'c', '= 1.0'
     a.add_dependency 'b', '~> 1.0'
 
@@ -1823,6 +1823,7 @@ dependencies: []
       RbConfig::CONFIG['ENABLE_SHARED'], 'no'
 
     class << Gem
+
       alias orig_default_ext_dir_for default_ext_dir_for
 
       remove_method :default_ext_dir_for
@@ -1830,6 +1831,7 @@ dependencies: []
       def Gem.default_ext_dir_for(base_dir)
         'elsewhere'
       end
+
     end
 
     ext_spec
@@ -1843,9 +1845,11 @@ dependencies: []
     RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
 
     class << Gem
+
       remove_method :default_ext_dir_for
 
       alias default_ext_dir_for orig_default_ext_dir_for
+
     end
   end
 
@@ -2135,9 +2139,11 @@ dependencies: []
 
   def test_require_paths_default_ext_dir_for
     class << Gem
+
       send :alias_method, :orig_default_ext_dir_for, :default_ext_dir_for
 
       remove_method :default_ext_dir_for
+
     end
 
     def Gem.default_ext_dir_for(base_dir)
@@ -2153,9 +2159,11 @@ dependencies: []
     end
   ensure
     class << Gem
+
       send :remove_method, :default_ext_dir_for
       send :alias_method,  :default_ext_dir_for, :orig_default_ext_dir_for
       send :remove_method, :orig_default_ext_dir_for
+
     end
   end
 
@@ -2316,8 +2324,8 @@ dependencies: []
     s2 = util_spec 'b', '1'
 
     assert_equal(-1, (s1 <=> s2))
-    assert_equal( 0, (s1 <=> s1))
-    assert_equal( 1, (s2 <=> s1))
+    assert_equal(0, (s1 <=> s1))
+    assert_equal(1, (s2 <=> s1))
   end
 
   def test_spaceship_platform
@@ -2326,18 +2334,18 @@ dependencies: []
       s.platform = Gem::Platform.new 'x86-my_platform1'
     end
 
-    assert_equal( -1, (s1 <=> s2))
-    assert_equal(  0, (s1 <=> s1))
-    assert_equal(  1, (s2 <=> s1))
+    assert_equal(-1, (s1 <=> s2))
+    assert_equal(0, (s1 <=> s1))
+    assert_equal(1, (s2 <=> s1))
   end
 
   def test_spaceship_version
     s1 = util_spec 'a', '1'
     s2 = util_spec 'a', '2'
 
-    assert_equal( -1, (s1 <=> s2))
-    assert_equal(  0, (s1 <=> s1))
-    assert_equal(  1, (s2 <=> s1))
+    assert_equal(-1, (s1 <=> s2))
+    assert_equal(0, (s1 <=> s1))
+    assert_equal(1, (s2 <=> s1))
   end
 
   def test_spec_file
@@ -2870,7 +2878,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     util_setup_validate
 
     FileUtils.mkdir_p File.join(@tempdir, 'bin')
-    File.open File.join(@tempdir, 'bin', 'exec'), 'w' do end
+    File.open File.join(@tempdir, 'bin', 'exec'), 'w'
     FileUtils.mkdir_p File.join(@tempdir, 'exec')
 
     use_ui @ui do
@@ -3811,4 +3819,5 @@ end
   ensure
     $VERBOSE = old_verbose
   end
+
 end

@@ -466,4 +466,5 @@ DEPENDENCIES
 
     assert_equal 'hello', File.read(gem_deps_lock_file)
   end
+
 end

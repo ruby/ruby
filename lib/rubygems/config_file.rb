@@ -484,4 +484,5 @@ if you believe they were disclosed to a third party.
 
   attr_reader :hash
   protected :hash
+
 end

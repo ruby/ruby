@@ -11,6 +11,7 @@ require 'rubygems/util/list'
 # all the requirements.
 
 class Gem::Resolver
+
   require 'rubygems/resolver/molinillo'
 
   ##
@@ -234,11 +235,11 @@ class Gem::Resolver
     groups = Hash.new { |hash, key| hash[key] = [] }
 
     # create groups & sources in the same loop
-    sources = possibles.map { |spec|
+    sources = possibles.map do |spec|
       source = spec.source
       groups[source] << spec
       source
-    }.uniq.reverse
+    end.uniq.reverse
 
     activation_requests = []
 

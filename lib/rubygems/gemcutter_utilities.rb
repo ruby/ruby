@@ -63,7 +63,7 @@ module Gem::GemcutterUtilities
         env_rubygems_host = nil if
           env_rubygems_host and env_rubygems_host.empty?
 
-        env_rubygems_host|| configured_host
+        env_rubygems_host || configured_host
       end
   end
 
@@ -116,7 +116,7 @@ module Gem::GemcutterUtilities
     say "Don't have an account yet? " +
         "Create one at #{sign_in_host}/sign_up"
 
-    email    =              ask "   Email: "
+    email = ask "   Email: "
     password = ask_for_password "Password: "
     say "\n"
 
