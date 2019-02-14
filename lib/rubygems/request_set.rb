@@ -457,9 +457,9 @@ class Gem::RequestSet
     node.spec.dependencies.each do |dep|
       next if dep.type == :development and not @development
 
-      match = @requests.find { |r|
+      match = @requests.find do |r|
         dep.match? r.spec.name, r.spec.version, @prerelease
-      }
+      end
 
       unless match
         next if dep.type == :development and @development_shallow

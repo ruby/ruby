@@ -53,6 +53,7 @@ class Gem::Package
   class Error < Gem::Exception; end
 
   class FormatError < Error
+
     attr_reader :path
 
     def initialize(message, source = nil)
@@ -68,10 +69,12 @@ class Gem::Package
   end
 
   class PathError < Error
+
     def initialize(destination, destination_dir)
       super "installing into parent path %s of %s is not allowed" %
               [destination, destination_dir]
     end
+
   end
 
   class NonSeekableIO < Error; end

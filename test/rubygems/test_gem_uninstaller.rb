@@ -368,7 +368,10 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_prompts_about_broken_deps
-    quick_gem 'r', '1' do |s| s.add_dependency 'q', '= 1' end
+    quick_gem 'r', '1' do |s|
+      s.add_dependency 'q', '= 1'
+    end
+
     quick_gem 'q', '1'
 
     un = Gem::Uninstaller.new('q')
@@ -390,8 +393,14 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_only_lists_unsatisfied_deps
-    quick_gem 'r', '1' do |s| s.add_dependency 'q', '~> 1.0' end
-    quick_gem 'x', '1' do |s| s.add_dependency 'q', '= 1.0'  end
+    quick_gem 'r', '1' do |s|
+      s.add_dependency 'q', '~> 1.0'
+    end
+
+    quick_gem 'x', '1' do |s|
+      s.add_dependency 'q', '= 1.0'
+    end
+
     quick_gem 'q', '1.0'
     quick_gem 'q', '1.1'
 
@@ -414,7 +423,10 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_doesnt_prompt_when_other_gem_satisfies_requirement
-    quick_gem 'r', '1' do |s| s.add_dependency 'q', '~> 1.0' end
+    quick_gem 'r', '1' do |s|
+      s.add_dependency 'q', '~> 1.0'
+    end
+
     quick_gem 'q', '1.0'
     quick_gem 'q', '1.1'
 
@@ -431,7 +443,10 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_doesnt_prompt_when_removing_a_dev_dep
-    quick_gem 'r', '1' do |s| s.add_development_dependency 'q', '= 1.0' end
+    quick_gem 'r', '1' do |s|
+      s.add_development_dependency 'q', '= 1.0'
+    end
+
     quick_gem 'q', '1.0'
 
     un = Gem::Uninstaller.new('q', :version => "1.0")
@@ -447,7 +462,10 @@ create_makefile '#{@spec.name}'
   end
 
   def test_uninstall_doesnt_prompt_and_raises_when_abort_on_dependent_set
-    quick_gem 'r', '1' do |s| s.add_dependency 'q', '= 1' end
+    quick_gem 'r', '1' do |s|
+      s.add_dependency 'q', '= 1'
+    end
+
     quick_gem 'q', '1'
 
     un = Gem::Uninstaller.new('q', :abort_on_dependent => true)
@@ -502,4 +520,5 @@ create_makefile '#{@spec.name}'
       end
     end
   end
+
 end

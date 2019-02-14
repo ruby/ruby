@@ -55,9 +55,9 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
 
     found = find_all request
 
-    found.delete_if { |s|
+    found.delete_if do |s|
       s.version.prerelease? and not s.local?
-    } unless dependency.prerelease?
+    end unless dependency.prerelease?
 
     found = found.select do |s|
       Gem::Source::SpecificFile === s.source or
@@ -115,7 +115,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   def find_all(req)
     res = []
 
-    dep  = req.dependency
+    dep = req.dependency
 
     return res if @ignore_dependencies and
               @always_install.none? { |spec| dep.match? spec }

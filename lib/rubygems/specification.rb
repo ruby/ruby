@@ -85,14 +85,14 @@ class Gem::Specification < Gem::BasicSpecification
       'Deprecated "test_suite_file" in favor of the new, but equivalent, "test_files"',
       '"test_file=x" is a shortcut for "test_files=[x]"'
     ],
-    2  => [
+    2 => [
       'Added "required_rubygems_version"',
       'Now forward-compatible with future versions',
     ],
-    3  => [
+    3 => [
       'Added Fixnum validation to the specification_version'
     ],
-    4  => [
+    4 => [
       'Added sandboxed freeform metadata to the specification version.'
     ]
   }.freeze
@@ -183,9 +183,9 @@ class Gem::Specification < Gem::BasicSpecification
 
   @@attributes = @@default_value.keys.sort_by { |s| s.to_s }
   @@array_attributes = @@default_value.reject { |k,v| v != [] }.keys
-  @@nil_attributes, @@non_nil_attributes = @@default_value.keys.partition { |k|
+  @@nil_attributes, @@non_nil_attributes = @@default_value.keys.partition do |k|
     @@default_value[k].nil?
-  }
+  end
 
   @@stubs_by_name = {}
 
@@ -792,11 +792,11 @@ class Gem::Specification < Gem::BasicSpecification
   private_class_method :installed_stubs
 
   def self.map_stubs(dirs, pattern) # :nodoc:
-    dirs.flat_map { |dir|
+    dirs.flat_map do |dir|
       base_dir = File.dirname dir
       gems_dir = File.join base_dir, "gems"
       gemspec_stubs_in(dir, pattern) { |path| yield path, base_dir, gems_dir }
-    }
+    end
   end
   private_class_method :map_stubs
 
@@ -854,11 +854,11 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def self._resort!(specs) # :nodoc:
-    specs.sort! { |a, b|
+    specs.sort! do |a, b|
       names = a.name <=> b.name
       next names if names.nonzero?
       b.version <=> a.version
-    }
+    end
   end
 
   ##
@@ -974,9 +974,9 @@ class Gem::Specification < Gem::BasicSpecification
   # Return the directories that Specification uses to find specs.
 
   def self.dirs
-    @@dirs ||= Gem.path.collect { |dir|
+    @@dirs ||= Gem.path.collect do |dir|
       File.join dir.dup.untaint, "specifications"
-    }
+    end
   end
 
   ##
@@ -1038,10 +1038,10 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.find_by_path(path)
     path = path.dup.freeze
-    spec = @@spec_with_requirable_file[path] ||= (stubs.find { |s|
+    spec = @@spec_with_requirable_file[path] ||= (stubs.find do |s|
       next unless Gem::BundlerVersionFinder.compatible?(s)
       s.contains_requirable_file? path
-    } || NOT_FOUND)
+    end || NOT_FOUND)
     spec.to_spec
   end
 
@@ -1050,18 +1050,18 @@ class Gem::Specification < Gem::BasicSpecification
   # amongst the specs that are not activated.
 
   def self.find_inactive_by_path(path)
-    stub = stubs.find { |s|
+    stub = stubs.find do |s|
       next if s.activated?
       next unless Gem::BundlerVersionFinder.compatible?(s)
       s.contains_requirable_file? path
-    }
+    end
     stub && stub.to_spec
   end
 
   def self.find_active_stub_by_path(path)
-    stub = @@active_stub_with_requirable_file[path] ||= (stubs.find { |s|
+    stub = @@active_stub_with_requirable_file[path] ||= (stubs.find do |s|
       s.activated? and s.contains_requirable_file? path
-    } || NOT_FOUND)
+    end || NOT_FOUND)
     stub.this
   end
 
@@ -1142,10 +1142,10 @@ class Gem::Specification < Gem::BasicSpecification
       result[spec.name][spec.platform] = spec
     end
 
-    result.map(&:last).map(&:values).flatten.reject { |spec|
+    result.map(&:last).map(&:values).flatten.reject do |spec|
       minimum = native[spec.name]
       minimum && spec.version < minimum
-    }.sort_by{ |tup| tup.name }
+    end.sort_by{ |tup| tup.name }
   end
 
   ##
@@ -1311,6 +1311,8 @@ class Gem::Specification < Gem::BasicSpecification
   # Load custom marshal format, re-initializing defaults as needed
 
   def self._load(str)
+    Gem.load_yaml
+
     array = Marshal.load str
 
     spec = Gem::Specification.new
@@ -1678,12 +1680,12 @@ class Gem::Specification < Gem::BasicSpecification
 
   def conflicts
     conflicts = {}
-    self.runtime_dependencies.each { |dep|
+    self.runtime_dependencies.each do |dep|
       spec = Gem.loaded_specs[dep.name]
       if spec and not spec.satisfies_requirement? dep
         (conflicts[spec] ||= []) << dep
       end
-    }
+    end
     env_req = Gem.env_requirement(name)
     (conflicts[self] ||= []) << env_req unless env_req.satisfied_by? version
     conflicts
@@ -1693,9 +1695,9 @@ class Gem::Specification < Gem::BasicSpecification
   # return true if there will be conflict when spec if loaded together with the list of specs.
 
   def conficts_when_loaded_with?(list_of_specs) # :nodoc:
-    result = list_of_specs.any? { |spec|
+    result = list_of_specs.any? do |spec|
       spec.dependencies.any? { |dep| dep.runtime? && (dep.name == name) && !satisfies_requirement?(dep) }
-    }
+    end
     result
   end
 
@@ -1704,14 +1706,14 @@ class Gem::Specification < Gem::BasicSpecification
 
   def has_conflicts?
     return true unless Gem.env_requirement(name).satisfied_by?(version)
-    self.dependencies.any? { |dep|
+    self.dependencies.any? do |dep|
       if dep.runtime?
         spec = Gem.loaded_specs[dep.name]
         spec and not spec.satisfies_requirement? dep
       else
         false
       end
-    }
+    end
   end
 
   # The date this gem was created.
@@ -2591,6 +2593,8 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def to_yaml(opts = {}) # :nodoc:
+    Gem.load_yaml
+
     # Because the user can switch the YAML engine behind our
     # back, we have to check again here to make sure that our
     # psych code was properly loaded, and load it if not.

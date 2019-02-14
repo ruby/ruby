@@ -26,7 +26,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   end
 
   def test_execute_when_already_signed_in_with_same_host
-    host            = 'http://some-gemcutter-compatible-host.org'
+    host = 'http://some-gemcutter-compatible-host.org'
 
     util_capture(nil, host) { @cmd.execute }
     old_credentials = YAML.load_file Gem.configuration.credentials_path
@@ -38,10 +38,10 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   end
 
   def test_execute_when_already_signed_in_with_different_host
-    api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf04045xxxx'
+    api_key = 'a5fdbb6ba150cbb83aad2bb2fede64cf04045xxxx'
 
     util_capture(nil, nil, api_key) { @cmd.execute }
-    host        = 'http://some-gemcutter-compatible-host.org'
+    host = 'http://some-gemcutter-compatible-host.org'
 
     util_capture(nil, host, api_key) { @cmd.execute }
     credentials = YAML.load_file Gem.configuration.credentials_path
@@ -95,4 +95,5 @@ class TestGemCommandsSigninCommand < Gem::TestCase
 
     sign_in_ui
   end
+
 end

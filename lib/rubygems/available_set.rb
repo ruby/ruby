@@ -162,4 +162,5 @@ class Gem::AvailableSet
   def inject_into_list(dep_list)
     @set.each { |t| dep_list.add t.spec }
   end
+
 end

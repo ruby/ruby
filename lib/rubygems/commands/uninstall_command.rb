@@ -185,4 +185,5 @@ that is a dependency of an existing gem.  You can use the
   def uninstall(gem_name)
     Gem::Uninstaller.new(gem_name, options).uninstall
   end
+
 end

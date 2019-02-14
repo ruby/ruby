@@ -14,7 +14,6 @@ $LOAD_PATH.map! do |path|
 end
 
 class TestGem < Gem::TestCase
-  RUBY_INSTALL_NAME = RbConfig::CONFIG['RUBY_INSTALL_NAME']
 
   PLUGINS_LOADED = [] # rubocop:disable Style/MutableConstant
 
@@ -151,35 +150,40 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_install_permissions_with_format_executable
-    @format_executable = true
-    assert_self_install_permissions
+    assert_self_install_permissions(format_executable: true)
   end
 
-  def assert_self_install_permissions
+  def test_self_install_permissions_with_format_executable_and_non_standard_ruby_install_name
+    Gem::Installer.exec_format = nil
+    ruby_install_name 'ruby27' do
+      assert_self_install_permissions(format_executable: true)
+    end
+  ensure
+    Gem::Installer.exec_format = nil
+  end
+
+  def assert_self_install_permissions(format_executable: false)
     mask = win_platform? ? 0700 : 0777
     options = {
       :dir_mode => 0500,
-      :prog_mode => 0510,
+      :prog_mode => win_platform? ? 0410 : 0510,
       :data_mode => 0640,
       :wrappers => true,
-      :format_executable => !!(@format_executable if defined?(@format_executable))
+      :format_executable => format_executable
     }
     Dir.chdir @tempdir do
       Dir.mkdir 'bin'
-      File.open 'bin/foo.cmd', 'w' do |fp|
-        fp.chmod(0755)
-        fp.puts 'p'
-      end
-
       Dir.mkdir 'data'
-      File.open 'data/foo.txt', 'w' do |fp|
-        fp.puts 'blah'
-      end
+
+      File.write 'bin/foo', "#!/usr/bin/env ruby\n"
+      File.chmod 0755, 'bin/foo'
+
+      File.write 'data/foo.txt', "blah\n"
 
       spec_fetcher do |f|
         f.gem 'foo', 1 do |s|
-          s.executables = ['foo.cmd']
-          s.files = %w[bin/foo.cmd data/foo.txt]
+          s.executables = ['foo']
+          s.files = %w[bin/foo data/foo.txt]
         end
       end
       Gem.install 'foo', Gem::Requirement.default, options
@@ -188,19 +192,18 @@ class TestGem < Gem::TestCase
     prog_mode = (options[:prog_mode] & mask).to_s(8)
     dir_mode = (options[:dir_mode] & mask).to_s(8)
     data_mode = (options[:data_mode] & mask).to_s(8)
-    prog_name = 'foo.cmd'
-    prog_name = RUBY_INSTALL_NAME.sub('ruby', 'foo.cmd') if options[:format_executable]
+    prog_name = 'foo'
+    prog_name = RbConfig::CONFIG['ruby_install_name'].sub('ruby', 'foo') if options[:format_executable]
     expected = {
       "bin/#{prog_name}" => prog_mode,
       'gems/foo-1' => dir_mode,
       'gems/foo-1/bin' => dir_mode,
       'gems/foo-1/data' => dir_mode,
-      'gems/foo-1/bin/foo.cmd' => prog_mode,
+      'gems/foo-1/bin/foo' => prog_mode,
       'gems/foo-1/data/foo.txt' => data_mode,
     }
-    # below is for intermittent errors on Appveyor & Travis 2019-01,
-    # see https://github.com/rubygems/rubygems/pull/2568
-    sleep 0.2
+    # add Windows script
+    expected["bin/#{prog_name}.bat"] = mask.to_s(8) if win_platform?
     result = {}
     Dir.chdir @gemhome do
       expected.each_key do |n|
@@ -209,7 +212,7 @@ class TestGem < Gem::TestCase
     end
     assert_equal(expected, result)
   ensure
-    File.chmod(0755, *Dir.glob(@gemhome+'/gems/**/').map {|path| path.untaint})
+    File.chmod(0755, *Dir.glob(@gemhome + '/gems/**/').map {|path| path.untaint})
   end
 
   def test_require_missing
@@ -413,7 +416,10 @@ class TestGem < Gem::TestCase
         fp.puts 'blah'
       end
 
-      foo = util_spec 'foo' do |s| s.files = %w[data/foo.txt] end
+      foo = util_spec 'foo' do |s|
+        s.files = %w[data/foo.txt]
+      end
+
       install_gem foo
     end
 
@@ -631,7 +637,7 @@ class TestGem < Gem::TestCase
 
     discover_path = File.join 'lib', 'sff', 'discover.rb'
 
-    foo1, foo2 = %w(1 2).map { |version|
+    foo1, foo2 = %w(1 2).map do |version|
       spec = quick_gem 'sff', version do |s|
         s.files << discover_path
       end
@@ -641,7 +647,7 @@ class TestGem < Gem::TestCase
       end
 
       spec
-    }
+    end
 
     Gem.refresh
 
@@ -663,7 +669,7 @@ class TestGem < Gem::TestCase
 
     discover_path = File.join 'lib', 'sff', 'discover.rb'
 
-    foo1, _ = %w(1 2).map { |version|
+    foo1, _ = %w(1 2).map do |version|
       spec = quick_gem 'sff', version do |s|
         s.files << discover_path
       end
@@ -673,7 +679,7 @@ class TestGem < Gem::TestCase
       end
 
       spec
-    }
+    end
     Gem.refresh
 
     write_file(File.join Dir.pwd, 'Gemfile') do |fp|
@@ -699,7 +705,7 @@ class TestGem < Gem::TestCase
 
     discover_path = File.join 'lib', 'sff', 'discover.rb'
 
-    _, foo2 = %w(1 2).map { |version|
+    _, foo2 = %w(1 2).map do |version|
       spec = quick_gem 'sff', version do |s|
         s.files << discover_path
       end
@@ -709,7 +715,7 @@ class TestGem < Gem::TestCase
       end
 
       spec
-    }
+    end
 
     Gem.refresh
 
@@ -1087,7 +1093,7 @@ class TestGem < Gem::TestCase
   def test_self_post_build
     assert_equal 1, Gem.post_build_hooks.length
 
-    Gem.post_build do |installer| end
+    Gem.post_build { |installer| }
 
     assert_equal 2, Gem.post_build_hooks.length
   end
@@ -1095,7 +1101,7 @@ class TestGem < Gem::TestCase
   def test_self_post_install
     assert_equal 1, Gem.post_install_hooks.length
 
-    Gem.post_install do |installer| end
+    Gem.post_install { |installer| }
 
     assert_equal 2, Gem.post_install_hooks.length
   end
@@ -1103,7 +1109,7 @@ class TestGem < Gem::TestCase
   def test_self_done_installing
     assert_empty Gem.done_installing_hooks
 
-    Gem.done_installing do |gems| end
+    Gem.done_installing { |gems| }
 
     assert_equal 1, Gem.done_installing_hooks.length
   end
@@ -1119,7 +1125,7 @@ class TestGem < Gem::TestCase
   def test_self_post_uninstall
     assert_equal 1, Gem.post_uninstall_hooks.length
 
-    Gem.post_uninstall do |installer| end
+    Gem.post_uninstall { |installer| }
 
     assert_equal 2, Gem.post_uninstall_hooks.length
   end
@@ -1127,7 +1133,7 @@ class TestGem < Gem::TestCase
   def test_self_pre_install
     assert_equal 1, Gem.pre_install_hooks.length
 
-    Gem.pre_install do |installer| end
+    Gem.pre_install { |installer| }
 
     assert_equal 2, Gem.pre_install_hooks.length
   end
@@ -1143,7 +1149,7 @@ class TestGem < Gem::TestCase
   def test_self_pre_uninstall
     assert_equal 1, Gem.pre_uninstall_hooks.length
 
-    Gem.pre_uninstall do |installer| end
+    Gem.pre_uninstall { |installer| }
 
     assert_equal 2, Gem.pre_uninstall_hooks.length
   end
@@ -1328,7 +1334,7 @@ class TestGem < Gem::TestCase
       a = util_spec "a", "1"
       b = util_spec "b", "1", "c" => nil
       c = util_spec "c", "2"
-      d =  util_spec "d", "1", {'e' => '= 1'}, "lib/d.rb"
+      d = util_spec "d", "1", {'e' => '= 1'}, "lib/d.rb"
       e = util_spec "e", "1"
 
       install_specs a, c, b, e, d
@@ -1943,4 +1949,5 @@ You may need to `gem install -g` to install missing gems
   def util_cache_dir
     File.join Gem.dir, "cache"
   end
+
 end

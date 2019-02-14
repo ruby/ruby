@@ -283,6 +283,14 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
       refute_empty set.dependencies
     end
 
+    with_engine_version 'truffleruby', '2.0.0' do
+      set = Gem::RequestSet.new
+      gda = @GDA.new set, 'gem.deps.rb'
+      gda.gem 'a', :platforms => :ruby
+
+      refute_empty set.dependencies
+    end
+
     with_engine_version 'jruby', '1.7.6' do
       set = Gem::RequestSet.new
       gda = @GDA.new set, 'gem.deps.rb'
@@ -310,6 +318,12 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
       assert_empty @set.dependencies
     end
+
+    with_engine_version 'truffleruby', '1.2.3' do
+      @gda.gem 'a', :platforms => :mri
+
+      assert_empty @set.dependencies
+    end
   end
 
   def test_gem_platforms_maglev
@@ -330,6 +344,22 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     end
   ensure
     Gem.win_platform = win_platform
+  end
+
+  def test_gem_platforms_truffleruby
+    with_engine_version 'truffleruby', '1.0.0' do
+      set = Gem::RequestSet.new
+      gda = @GDA.new set, 'gem.deps.rb'
+      gda.gem 'a', :platforms => :truffleruby
+
+      refute_empty set.dependencies
+
+      set = Gem::RequestSet.new
+      gda = @GDA.new set, 'gem.deps.rb'
+      gda.gem 'a', :platforms => :maglev
+
+      assert_empty set.dependencies
+    end
   end
 
   def test_gem_platforms_multiple
@@ -736,6 +766,12 @@ end
     with_engine_version 'jruby', '1.7.6' do
       assert @gda.ruby RUBY_VERSION,
                :engine => 'jruby', :engine_version => '1.7.6'
+
+    end
+
+    with_engine_version 'truffleruby', '1.0.0-rc11' do
+      assert @gda.ruby RUBY_VERSION,
+               :engine => 'truffleruby', :engine_version => '1.0.0-rc11'
 
     end
   end

@@ -58,6 +58,7 @@ class Gem::Installer
   # Available through requiring rubygems/installer_test_case
 
   attr_writer :wrappers
+
 end
 
 ##
@@ -150,10 +151,15 @@ class Gem::InstallerTestCase < Gem::TestCase
       FileUtils.mkdir_p 'bin'
       FileUtils.mkdir_p 'lib'
       FileUtils.mkdir_p File.join('ext', 'a')
+
       File.open File.join('bin', 'executable'), 'w' do |f|
         f.puts "raise 'ran executable'"
       end
-      File.open File.join('lib', 'code.rb'), 'w' do |f| f.puts '1' end
+
+      File.open File.join('lib', 'code.rb'), 'w' do |f|
+        f.puts '1'
+      end
+
       File.open File.join('ext', 'a', 'mkrf_conf.rb'), 'w' do |f|
         f << <<-EOF
           File.open 'Rakefile', 'w' do |rf| rf.puts "task :default" end

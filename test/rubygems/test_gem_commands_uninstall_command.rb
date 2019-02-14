@@ -54,7 +54,10 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
 
     util_build_gem c
     installer = util_installer c, @gemhome
-    use_ui @ui do installer.install end
+
+    use_ui @ui do
+      installer.install
+    end
 
     ui = Gem::MockGemUi.new
 
@@ -92,7 +95,9 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     # Evil hack to prevent false removal success
     FileUtils.rm_f @executable
 
-    File.open @executable, "wb+" do |f| f.puts "binary" end
+    File.open @executable, "wb+" do |f|
+      f.puts "binary"
+    end
 
     @cmd.options[:executables] = true
     @cmd.options[:args] = [@spec.name]
@@ -366,4 +371,5 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     assert_empty @ui.output
     assert_match %r!Error: unable to successfully uninstall '#{@spec.name}'!, @ui.error
   end
+
 end

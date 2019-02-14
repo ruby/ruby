@@ -607,13 +607,13 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
     Gem::Specification.each do |spec|
       total_file_count += spec.files.size
-      deps = spec.dependencies.map { |dep|
+      deps = spec.dependencies.map do |dep|
         {
           "name"    => dep.name,
           "type"    => dep.type,
           "version" => dep.requirement.to_s,
         }
-      }
+      end
 
       deps = deps.sort_by { |dep| [dep["name"].downcase, dep["version"]] }
       deps.last["is_last"] = true unless deps.empty?
@@ -754,9 +754,9 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   # documentation - just put it underneath the main doc folder.
 
   def show_rdoc_for_pattern(pattern, res)
-    found_gems = Dir.glob("{#{@gem_dirs.join ','}}/doc/#{pattern}").select {|path|
+    found_gems = Dir.glob("{#{@gem_dirs.join ','}}/doc/#{pattern}").select do |path|
       File.exist? File.join(path, 'rdoc/index.html')
-    }
+    end
     case found_gems.length
     when 0
       return false
@@ -875,4 +875,5 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
     system("#{@launch} http://#{host}:#{@port}")
   end
+
 end

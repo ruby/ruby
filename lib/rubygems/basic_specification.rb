@@ -329,4 +329,5 @@ class Gem::BasicSpecification
       false
     end
   end
+
 end

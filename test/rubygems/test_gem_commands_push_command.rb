@@ -28,11 +28,13 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @cmd = Gem::Commands::PushCommand.new
 
     class << Gem
+
       alias_method :orig_latest_rubygems_version, :latest_rubygems_version
 
       def latest_rubygems_version
         Gem.rubygems_version
       end
+
     end
   end
 
@@ -40,8 +42,10 @@ class TestGemCommandsPushCommand < Gem::TestCase
     super
 
     class << Gem
+
       remove_method :latest_rubygems_version
       alias_method :latest_rubygems_version, :orig_latest_rubygems_version
+
     end
   end
 
@@ -132,7 +136,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     ENV["RUBYGEMS_HOST"] = @host
     Gem.configuration.disable_default_gem_server = true
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
 
     send_battery
   end
@@ -160,14 +164,14 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
 
     send_battery
   end
 
   def test_sending_gem
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
 
     send_battery
   end
@@ -195,7 +199,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
     send_battery
   end
 
@@ -210,7 +214,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     ENV["GEM_HOST_API_KEY"] = "PRIVKEY"
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
     send_battery
   end
 
@@ -237,7 +241,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
     send_battery
   end
 
@@ -311,7 +315,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{host}/api/v1/gems"]  = [@response, 200, 'OK']
+    @fetcher.data["#{host}/api/v1/gems"] = [@response, 200, 'OK']
 
     # do not set @host
     use_ui(@ui) { @cmd.send_gem(@path) }

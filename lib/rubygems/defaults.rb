@@ -2,8 +2,8 @@
 module Gem
   DEFAULT_HOST = "https://rubygems.org".freeze
 
-  @post_install_hooks   ||= []
-  @done_installing_hooks  ||= []
+  @post_install_hooks ||= []
+  @done_installing_hooks ||= []
   @post_uninstall_hooks ||= []
   @pre_uninstall_hooks  ||= []
   @pre_install_hooks    ||= []

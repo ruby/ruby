@@ -134,6 +134,7 @@ install:
 
   def test_build_extensions_install_ext_only
     class << Gem
+
       alias orig_install_extension_in_lib install_extension_in_lib
 
       remove_method :install_extension_in_lib
@@ -141,6 +142,7 @@ install:
       def Gem.install_extension_in_lib
         false
       end
+
     end
 
     @spec.extensions << 'ext/extconf.rb'
@@ -177,9 +179,11 @@ install:
     refute_path_exists File.join @spec.gem_dir, 'lib', 'a', 'b.rb'
   ensure
     class << Gem
+
       remove_method :install_extension_in_lib
 
       alias install_extension_in_lib orig_install_extension_in_lib
+
     end
   end
 

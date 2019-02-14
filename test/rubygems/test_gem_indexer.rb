@@ -37,6 +37,13 @@ class TestGemIndexer < Gem::TestCase
     @indexer = Gem::Indexer.new(@tempdir)
   end
 
+  def teardown
+    super
+
+    util_clear_gems
+    util_clear_default_gems
+  end
+
   def test_initialize
     assert_equal @tempdir, @indexer.dest_directory
     assert_match %r{#{Dir.mktmpdir('gem_generate_index').match(/.*-/)}}, @indexer.directory

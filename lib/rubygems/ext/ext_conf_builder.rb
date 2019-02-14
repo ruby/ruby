@@ -10,6 +10,7 @@ require 'tempfile'
 require 'shellwords'
 
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
+
   FileEntry = FileUtils::Entry_ # :nodoc:
 
   def self.build(extension, dest_path, results, args=[], lib_dir=nil)
@@ -88,7 +89,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
   private
   def self.get_relative_path(path)
-    path[0..Dir.pwd.length-1] = '.' if path.start_with?(Dir.pwd)
+    path[0..Dir.pwd.length - 1] = '.' if path.start_with?(Dir.pwd)
     path
   end
 

@@ -2,6 +2,7 @@
 require 'rubygems/request_set/lockfile/parser'
 
 class Gem::RequestSet::Lockfile::Tokenizer
+
   Token = Struct.new :type, :value, :column, :line
   EOF   = Token.new :EOF
 
@@ -109,4 +110,5 @@ class Gem::RequestSet::Lockfile::Tokenizer
 
     @tokens
   end
+
 end

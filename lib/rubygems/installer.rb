@@ -108,6 +108,7 @@ class Gem::Installer
   end
 
   class FakePackage
+
     attr_accessor :spec
 
     attr_accessor :dir_mode
@@ -125,12 +126,15 @@ class Gem::Installer
         file = File.join destination_dir, file
         next if File.exist? file
         FileUtils.mkdir_p File.dirname(file)
-        File.open file, 'w' do |fp| fp.puts "# #{file}" end
+        File.open file, 'w' do |fp|
+          fp.puts "# #{file}"
+        end
       end
     end
 
     def copy_to(path)
     end
+
   end
 
   ##
@@ -467,7 +471,7 @@ class Gem::Installer
 
   def generate_windows_script(filename, bindir)
     if Gem.win_platform?
-      script_name = filename + ".bat"
+      script_name = formatted_program_filename(filename) + ".bat"
       script_path = File.join bindir, File.basename(script_name)
       File.open script_path, 'w' do |file|
         file.puts windows_stub_script(bindir, filename)

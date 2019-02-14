@@ -29,7 +29,7 @@ class Gem::DependencyInstaller
     :wrappers            => true,
     :build_args          => nil,
     :build_docs_in_background => false,
-    :install_as_default  => false
+    :install_as_default => false
   }.freeze
 
   ##
@@ -336,15 +336,15 @@ class Gem::DependencyInstaller
 
     # REFACTOR maybe abstract away using Gem::Specification.include? so
     # that this isn't dependent only on the currently installed gems
-    dependency_list.specs.reject! { |spec|
+    dependency_list.specs.reject! do |spec|
       not keep_names.include?(spec.full_name) and
       Gem::Specification.include?(spec)
-    }
+    end
 
     unless dependency_list.ok? or @ignore_dependencies or @force
-      reason = dependency_list.why_not_ok?.map { |k,v|
+      reason = dependency_list.why_not_ok?.map do |k,v|
         "#{k} requires #{v.join(", ")}"
-      }.join("; ")
+      end.join("; ")
       raise Gem::DependencyError, "Unable to resolve dependencies: #{reason}"
     end
 

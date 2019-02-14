@@ -56,8 +56,13 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
   end
 
   def test_execute_all_dependencies
-    @b_1 = util_spec 'b', 1 do |s| s.add_dependency 'a', '1' end
-    @b_2 = util_spec 'b', 2 do |s| s.add_dependency 'a', '2' end
+    @b_1 = util_spec 'b', 1 do |s|
+      s.add_dependency 'a', '1'
+    end
+
+    @b_2 = util_spec 'b', 2 do |s|
+      s.add_dependency 'a', '2'
+    end
 
     install_gem @b_1
     install_gem @b_2
@@ -71,8 +76,13 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
   end
 
   def test_execute_dev_dependencies
-    @b_1 = util_spec 'b', 1 do |s| s.add_development_dependency 'a', '1' end
-    @c_1 = util_spec 'c', 1 do |s| s.add_development_dependency 'a', '2' end
+    @b_1 = util_spec 'b', 1 do |s|
+      s.add_development_dependency 'a', '1'
+    end
+
+    @c_1 = util_spec 'c', 1 do |s|
+      s.add_development_dependency 'a', '2'
+    end
 
     install_gem @b_1
     install_gem @c_1
@@ -85,8 +95,13 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
   end
 
   def test_execute_without_dev_dependencies
-    @b_1 = util_spec 'b', 1 do |s| s.add_development_dependency 'a', '1' end
-    @c_1 = util_spec 'c', 1 do |s| s.add_development_dependency 'a', '2' end
+    @b_1 = util_spec 'b', 1 do |s|
+      s.add_development_dependency 'a', '1'
+    end
+
+    @c_1 = util_spec 'c', 1 do |s|
+      s.add_development_dependency 'a', '2'
+    end
 
     install_gem @b_1
     install_gem @c_1
@@ -263,4 +278,5 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     assert_path_exists d_1.gem_dir
     assert_path_exists d_2.gem_dir
   end
+
 end

@@ -2,6 +2,7 @@
 require 'rubygems/command'
 
 class Gem::Commands::WhichCommand < Gem::Command
+
   def initialize
     super 'which', 'Find the location of a library file you can require',
           :search_gems_first => false, :show_all => false

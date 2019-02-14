@@ -5,6 +5,7 @@ require 'rubygems/version_option'
 require 'rubygems/gemcutter_utilities'
 
 class Gem::Commands::YankCommand < Gem::Command
+
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
   include Gem::GemcutterUtilities

@@ -416,4 +416,5 @@ class TestGemRequirement < Gem::TestCase
     refute req(requirement).satisfied_by?(v(version)),
       "#{requirement} is not satisfied by #{version}"
   end
+
 end

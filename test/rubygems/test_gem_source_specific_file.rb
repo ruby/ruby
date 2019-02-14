@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/source'
 
 class TestGemSourceSpecificFile < Gem::TestCase
+
   def setup
     super
 
@@ -45,16 +46,16 @@ class TestGemSourceSpecificFile < Gem::TestCase
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
 
-    assert_equal( 0, specific. <=>(specific),  'specific  <=> specific')
+    assert_equal(0, specific. <=>(specific),  'specific  <=> specific')
 
     assert_equal(-1, remote.   <=>(specific),  'remote    <=> specific')
-    assert_equal( 1, specific. <=>(remote),    'specific  <=> remote')
+    assert_equal(1, specific. <=>(remote),    'specific  <=> remote')
 
     assert_equal(-1, specific. <=>(local),     'specific  <=> local')
-    assert_equal( 1, local.    <=>(specific),  'local     <=> specific')
+    assert_equal(1, local.    <=>(specific),  'local     <=> specific')
 
     assert_equal(-1, specific. <=>(installed), 'specific  <=> installed')
-    assert_equal( 1, installed.<=>(specific),  'installed <=> specific')
+    assert_equal(1, installed.<=>(specific),  'installed <=> specific')
 
     a2 = quick_gem 'a', '2'
     util_build_gem a2
@@ -69,8 +70,8 @@ class TestGemSourceSpecificFile < Gem::TestCase
     assert_nil       a1_source.<=>(b1_source), 'a1_source <=> b1_source'
 
     assert_equal(-1, a1_source.<=>(a2_source), 'a1_source <=> a2_source')
-    assert_equal( 0, a1_source.<=>(a1_source), 'a1_source <=> a1_source')
-    assert_equal( 1, a2_source.<=>(a1_source), 'a2_source <=> a1_source')
+    assert_equal(0, a1_source.<=>(a1_source), 'a1_source <=> a1_source')
+    assert_equal(1, a2_source.<=>(a1_source), 'a2_source <=> a1_source')
   end
 
 end

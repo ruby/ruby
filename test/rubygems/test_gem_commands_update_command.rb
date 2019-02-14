@@ -66,7 +66,9 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_system
     spec_fetcher do |fetcher|
-      fetcher.download 'rubygems-update', 9 do |s| s.files = %w[setup.rb] end
+      fetcher.download 'rubygems-update', 9 do |s|
+        s.files = %w[setup.rb]
+      end
     end
 
     @cmd.options[:args]          = []
@@ -107,8 +109,13 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_system_multiple
     spec_fetcher do |fetcher|
-      fetcher.download 'rubygems-update', 8 do |s| s.files = %w[setup.rb] end
-      fetcher.download 'rubygems-update', 9 do |s| s.files = %w[setup.rb] end
+      fetcher.download 'rubygems-update', 8 do |s|
+        s.files = %w[setup.rb]
+      end
+
+      fetcher.download 'rubygems-update', 9 do |s|
+        s.files = %w[setup.rb]
+      end
     end
 
     @cmd.options[:args]          = []
@@ -128,8 +135,13 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_system_specific
     spec_fetcher do |fetcher|
-      fetcher.download 'rubygems-update', 8 do |s| s.files = %w[setup.rb] end
-      fetcher.download 'rubygems-update', 9 do |s| s.files = %w[setup.rb] end
+      fetcher.download 'rubygems-update', 8 do |s|
+        s.files = %w[setup.rb]
+      end
+
+      fetcher.download 'rubygems-update', 9 do |s|
+        s.files = %w[setup.rb]
+      end
     end
 
     @cmd.options[:args]          = []
@@ -149,8 +161,13 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_system_specifically_to_latest_version
     spec_fetcher do |fetcher|
-      fetcher.download 'rubygems-update', 8 do |s| s.files = %w[setup.rb] end
-      fetcher.download 'rubygems-update', 9 do |s| s.files = %w[setup.rb] end
+      fetcher.download 'rubygems-update', 8 do |s|
+        s.files = %w[setup.rb]
+      end
+
+      fetcher.download 'rubygems-update', 9 do |s|
+        s.files = %w[setup.rb]
+      end
     end
 
     @cmd.options[:args]          = []
@@ -387,7 +404,10 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     specs = spec_fetcher do |fetcher|
       fetcher.spec 'a', 1
       fetcher.spec 'a', 2
-      fetcher.spec 'a', 2 do |s| s.platform = platform end
+
+      fetcher.spec 'a', 2 do |s|
+        s.platform = platform
+      end
     end
 
     expected = [
@@ -522,4 +542,5 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_equal "  a-2", out.shift
     assert_empty out
   end
+
 end

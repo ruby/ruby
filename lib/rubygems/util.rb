@@ -28,7 +28,9 @@ module Gem::Util
     zipped = StringIO.new(String.new, 'w')
     zipped.set_encoding Encoding::BINARY
 
-    Zlib::GzipWriter.wrap zipped do |io| io.write data end
+    Zlib::GzipWriter.wrap zipped do |io|
+      io.write data
+    end
 
     zipped.string
   end

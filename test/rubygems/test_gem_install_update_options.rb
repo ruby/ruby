@@ -180,4 +180,5 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
     assert_equal true, @cmd.options[:post_install_message]
   end
+
 end

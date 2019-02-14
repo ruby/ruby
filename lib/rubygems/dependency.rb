@@ -277,16 +277,16 @@ class Gem::Dependency
 
   def matching_specs(platform_only = false)
     env_req = Gem.env_requirement(name)
-    matches = Gem::Specification.stubs_for(name).find_all { |spec|
+    matches = Gem::Specification.stubs_for(name).find_all do |spec|
       requirement.satisfied_by?(spec.version) && env_req.satisfied_by?(spec.version)
-    }.map(&:to_spec)
+    end.map(&:to_spec)
 
     Gem::BundlerVersionFinder.filter!(matches) if name == "bundler".freeze
 
     if platform_only
-      matches.reject! { |spec|
+      matches.reject! do |spec|
         spec.nil? || !Gem::Platform.match(spec.platform)
-      }
+      end
     end
 
     matches
@@ -333,4 +333,5 @@ class Gem::Dependency
 
     matches.first
   end
+
 end

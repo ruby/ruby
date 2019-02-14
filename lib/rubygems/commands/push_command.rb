@@ -5,6 +5,7 @@ require 'rubygems/gemcutter_utilities'
 require 'rubygems/package'
 
 class Gem::Commands::PushCommand < Gem::Command
+
   include Gem::LocalRemoteOptions
   include Gem::GemcutterUtilities
 
@@ -145,4 +146,5 @@ You can upgrade or downgrade to the latest release version with:
       gem_metadata["allowed_push_host"]
     ]
   end
+
 end

@@ -147,4 +147,5 @@ class Gem::SourceList
       @sources.delete_if { |x| x.uri.to_s == source.to_s }
     end
   end
+
 end

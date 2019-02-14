@@ -129,8 +129,13 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     FileUtils.mkdir_p 'lib/empty'
 
-    File.open 'lib/code.rb',  'w' do |io| io.write '# lib/code.rb'  end
-    File.open 'lib/extra.rb', 'w' do |io| io.write '# lib/extra.rb' end
+    File.open 'lib/code.rb',  'w' do |io|
+      io.write '# lib/code.rb'
+    end
+
+    File.open 'lib/extra.rb', 'w' do |io|
+      io.write '# lib/extra.rb'
+    end
 
     package = Gem::Package.new 'bogus.gem'
     package.spec = spec
@@ -157,7 +162,10 @@ class TestGemPackage < Gem::Package::TarTestCase
     spec.files = %w[lib/code.rb lib/code_sym.rb lib/code_sym2.rb]
 
     FileUtils.mkdir_p 'lib'
-    File.open 'lib/code.rb',  'w' do |io| io.write '# lib/code.rb'  end
+
+    File.open 'lib/code.rb',  'w' do |io|
+      io.write '# lib/code.rb'
+    end
 
     # NOTE: 'code.rb' is correct, because it's relative to lib/code_sym.rb
     begin
@@ -433,7 +441,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_extract_files_empty
-    data_tgz = util_tar_gz do end
+    data_tgz = util_tar_gz { }
 
     gem = util_tar do |tar|
       tar.add_file 'data.tar.gz', 0644 do |io|
@@ -462,7 +470,9 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file '/absolute.rb', 0644 do |io| io.write 'hi' end
+      tar.add_file '/absolute.rb', 0644 do |io|
+        io.write 'hi'
+      end
     end
 
     e = assert_raises Gem::Package::PathError do
@@ -477,7 +487,10 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file    'relative.rb', 0644 do |io| io.write 'hi' end
+      tar.add_file    'relative.rb', 0644 do |io|
+        io.write 'hi'
+      end
+
       tar.mkdir       'lib',         0755
       tar.add_symlink 'lib/foo.rb', '../relative.rb', 0644
     end
@@ -506,7 +519,9 @@ class TestGemPackage < Gem::Package::TarTestCase
     tgz_io = util_tar_gz do |tar|
       tar.mkdir       'lib',               0755
       tar.add_symlink 'lib/link', '../..', 0644
-      tar.add_file    'lib/link/outside.txt', 0644 do |io| io.write 'hi' end
+      tar.add_file    'lib/link/outside.txt', 0644 do |io|
+        io.write 'hi'
+      end
     end
 
     # Extract into a subdirectory of @destination; if this test fails it writes
@@ -534,7 +549,9 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     tgz_io = util_tar_gz do |tar|
       tar.mkdir    'lib',        0755
-      tar.add_file 'lib/foo.rb', 0644 do |io| io.write 'hi' end
+      tar.add_file 'lib/foo.rb', 0644 do |io|
+        io.write 'hi'
+      end
       tar.mkdir    'lib/foo',    0755
     end
 
@@ -551,7 +568,9 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file './dot_slash.rb', 0644 do |io| io.write 'hi' end
+      tar.add_file './dot_slash.rb', 0644 do |io|
+        io.write 'hi'
+      end
     end
 
     package.extract_tar_gz tgz_io, @destination
@@ -564,7 +583,9 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file '.dot_file.rb', 0644 do |io| io.write 'hi' end
+      tar.add_file '.dot_file.rb', 0644 do |io|
+        io.write 'hi'
+      end
     end
 
     package.extract_tar_gz tgz_io, @destination
@@ -578,7 +599,9 @@ class TestGemPackage < Gem::Package::TarTestCase
       package = Gem::Package.new @gem
 
       tgz_io = util_tar_gz do |tar|
-        tar.add_file 'foo/file.rb', 0644 do |io| io.write 'hi' end
+        tar.add_file 'foo/file.rb', 0644 do |io|
+          io.write 'hi'
+        end
       end
 
       package.extract_tar_gz tgz_io, @destination.upcase
@@ -1043,7 +1066,9 @@ class TestGemPackage < Gem::Package::TarTestCase
     tgz_io = StringIO.new
 
     # can't wrap TarWriter because it seeks
-    Zlib::GzipWriter.wrap tgz_io do |io| io.write tar_io.string end
+    Zlib::GzipWriter.wrap tgz_io do |io|
+      io.write tar_io.string
+    end
 
     StringIO.new tgz_io.string
   end

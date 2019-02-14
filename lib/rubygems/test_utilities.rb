@@ -366,4 +366,5 @@ class TempIO < Tempfile
     flush
     Gem.read_binary path
   end
+
 end

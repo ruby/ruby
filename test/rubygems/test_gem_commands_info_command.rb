@@ -41,4 +41,5 @@ class TestGemCommandsInfoCommand < Gem::TestCase
     assert_match %r%#{@gem.summary}\n%, @ui.output
     assert_match "", @ui.error
   end
+
 end
