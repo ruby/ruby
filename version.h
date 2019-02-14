@@ -6,7 +6,7 @@
 
 #define RUBY_RELEASE_YEAR 2019
 #define RUBY_RELEASE_MONTH 2
-#define RUBY_RELEASE_DAY 14
+#define RUBY_RELEASE_DAY 15
 
 #include "ruby/version.h"
 
