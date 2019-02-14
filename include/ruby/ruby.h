@@ -903,10 +903,15 @@ VALUE rb_obj_reveal(VALUE obj, VALUE klass); /* do not use this API to change kl
 
 #define RBASIC_CLASS(obj) (RBASIC(obj)->klass)
 
+#define RVALUE_EMBED_LEN_MAX RVALUE_EMBED_LEN_MAX
+enum ruby_rvalue_flags {
+    RVALUE_EMBED_LEN_MAX = 3,
+};
+
 #define ROBJECT_EMBED_LEN_MAX ROBJECT_EMBED_LEN_MAX
 #define ROBJECT_EMBED ROBJECT_EMBED
 enum ruby_robject_flags {
-    ROBJECT_EMBED_LEN_MAX = 3,
+    ROBJECT_EMBED_LEN_MAX = RVALUE_EMBED_LEN_MAX,
     ROBJECT_EMBED = RUBY_FL_USER1,
 
     ROBJECT_ENUM_END
@@ -972,7 +977,7 @@ enum ruby_rstring_flags {
     RSTRING_EMBED_LEN_MASK = (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|
 			      RUBY_FL_USER5|RUBY_FL_USER6),
     RSTRING_EMBED_LEN_SHIFT = (RUBY_FL_USHIFT+2),
-    RSTRING_EMBED_LEN_MAX = (int)((sizeof(VALUE)*3)/sizeof(char)-1),
+    RSTRING_EMBED_LEN_MAX = (int)((sizeof(VALUE)*RVALUE_EMBED_LEN_MAX)/sizeof(char)-1),
     RSTRING_FSTR = RUBY_FL_USER17,
 
     RSTRING_ENUM_END
@@ -1018,7 +1023,7 @@ struct RString {
 #endif
 
 enum ruby_rarray_flags {
-    RARRAY_EMBED_LEN_MAX = 3,
+    RARRAY_EMBED_LEN_MAX = RVALUE_EMBED_LEN_MAX,
     RARRAY_EMBED_FLAG = RUBY_FL_USER1,
     /* RUBY_FL_USER2 is for ELTS_SHARED */
     RARRAY_EMBED_LEN_MASK = (RUBY_FL_USER4|RUBY_FL_USER3),
