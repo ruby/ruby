@@ -215,7 +215,6 @@ enc/emacs_mule.$(OBJEXT): st.h
 enc/emacs_mule.$(OBJEXT): subst.h
 enc/encdb.$(OBJEXT): $(hdrdir)/ruby.h
 enc/encdb.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-enc/encdb.$(OBJEXT): $(top_srcdir)/include/ruby.h
 enc/encdb.$(OBJEXT): $(top_srcdir)/internal.h
 enc/encdb.$(OBJEXT): backward.h
 enc/encdb.$(OBJEXT): config.h
@@ -640,8 +639,6 @@ enc/unicode.$(OBJEXT): $(top_srcdir)/regint.h
 enc/unicode.$(OBJEXT): config.h
 enc/unicode.$(OBJEXT): defines.h
 enc/unicode.$(OBJEXT): enc/unicode.c
-enc/unicode.$(OBJEXT): enc/unicode/10.0.0/casefold.h
-enc/unicode.$(OBJEXT): enc/unicode/10.0.0/name2ctype.h
 enc/unicode.$(OBJEXT): intern.h
 enc/unicode.$(OBJEXT): missing.h
 enc/unicode.$(OBJEXT): onigmo.h
