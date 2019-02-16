@@ -20,8 +20,6 @@ big2str_generic(VALUE x, VALUE vbase)
     return rb_big2str_generic(big(x), base);
 }
 
-#define POW2_P(x) (((x)&((x)-1))==0)
-
 static VALUE
 big2str_poweroftwo(VALUE x, VALUE vbase)
 {

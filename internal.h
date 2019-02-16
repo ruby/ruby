@@ -2451,6 +2451,8 @@ rb_obj_builtin_type(VALUE obj)
 }
 #endif
 
+#define POW2_P(x) (((x)&((x)-1))==0)
+
 /* A macro for defining a flexible array, like: VALUE ary[FLEX_ARY_LEN]; */
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
 # define FLEX_ARY_LEN   /* VALUE ary[]; */

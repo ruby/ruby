@@ -70,7 +70,6 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #define LSHIFTX(d, n) (!LSHIFTABLE(d, n) ? 0 : ((d) << (!LSHIFTABLE(d, n) ? 0 : (n))))
 #define CLEAR_LOWBITS(d, numbits) ((d) & LSHIFTX(~((d)*0), (numbits)))
 #define FILL_LOWBITS(d, numbits) ((d) | (LSHIFTX(((d)*0+1), (numbits))-1))
-#define POW2_P(x) (((x)&((x)-1))==0)
 
 #define BDIGITS(x) (BIGNUM_DIGITS(x))
 #define BITSPERDIG (SIZEOF_BDIGIT*CHAR_BIT)

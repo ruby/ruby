@@ -69,6 +69,8 @@ ITEM_SET_KEY(struct rb_id_table *tbl, int i, id_key_t key)
 static inline int
 round_capa(int capa)
 {
+    /* let power of 2 ints >= 4 not increase capa */
+    if ((capa >= 4) && POW2_P(capa)) return capa;
     /* minsize is 4 */
     capa >>= 2;
     capa |= capa >> 1;
