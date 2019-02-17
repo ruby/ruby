@@ -160,8 +160,8 @@ define rp
       printf "st len=%ld ", ((struct RHash *)($arg0))->as.st->num_entries
     else
       printf "li len=%ld bound=%ld ", \
-        ((((struct RHash *)($arg0))->basic->flags & RHASH_ARRAY_LEN_MASK) >> RHASH_ARRAY_LEN_SHIFT), \
-        ((((struct RHash *)($arg0))->basic->flags & RHASH_ARRAY_BOUND_MASK) >> RHASH_ARRAY_BOUND_SHIFT)
+        ((((struct RHash *)($arg0))->basic->flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT), \
+        ((((struct RHash *)($arg0))->basic->flags & RHASH_AR_TABLE_BOUND_MASK) >> RHASH_AR_TABLE_BOUND_SHIFT)
     end
     print (struct RHash *)($arg0)
   else
