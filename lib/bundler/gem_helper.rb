@@ -74,7 +74,8 @@ module Bundler
 
     def build_gem
       file_name = nil
-      sh("gem build -V '#{spec_path}'") do
+      gem = ENV["BUNDLE_GEM"] ? ENV["BUNDLE_GEM"] : "gem"
+      sh("#{gem} build -V '#{spec_path}'") do
         file_name = File.basename(built_gem_path)
         SharedHelpers.filesystem_access(File.join(base, "pkg")) {|p| FileUtils.mkdir_p(p) }
         FileUtils.mv(built_gem_path, "pkg")
@@ -85,7 +86,8 @@ module Bundler
 
     def install_gem(built_gem_path = nil, local = false)
       built_gem_path ||= build_gem
-      out, _ = sh_with_code("gem install '#{built_gem_path}'#{" --local" if local}")
+      gem = ENV["BUNDLE_GEM"] ? ENV["BUNDLE_GEM"] : "gem"
+      out, _ = sh_with_code("#{gem} install '#{built_gem_path}'#{" --local" if local}")
       raise "Couldn't install gem, run `gem install #{built_gem_path}' for more detailed output" unless out[/Successfully installed/]
       Bundler.ui.confirm "#{name} (#{version}) installed."
     end
