@@ -876,7 +876,7 @@ end
 
       FileUtils.ln_s(bundler_dir, File.join(gems_dir, "bundler-#{Bundler::VERSION}"))
 
-      gemspec_file = ruby_core? ? "#{bundler_dir}/lib/bundler.gemspec" : "#{bundler_dir}/bundler.gemspec"
+      gemspec_file = ruby_core? ? "#{bundler_dir}/lib/bundler/bundler.gemspec" : "#{bundler_dir}/bundler.gemspec"
       gemspec = File.read(gemspec_file).
                 sub("Bundler::VERSION", %("#{Bundler::VERSION}"))
       gemspec = gemspec.lines.reject {|line| line =~ %r{lib/bundler/version} }.join
