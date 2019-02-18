@@ -225,7 +225,16 @@ RSpec.describe "The library itself" do
   it "can still be built" do
     Dir.chdir(root) do
       begin
-        gem_command! :build, gemspec
+        if ruby_core?
+          spec = Gem::Specification.load(gemspec.to_s)
+          spec.bindir = "libexec"
+          File.open(root.join("bundler.gemspec").to_s, "w"){|f| f.write spec.to_ruby }
+          gem_command! :build, root.join("bundler.gemspec").to_s
+          FileUtils.rm(root.join("bundler.gemspec").to_s)
+        else
+          gem_command! :build, gemspec
+        end
+
         if Bundler.rubygems.provides?(">= 2.4")
           # there's no way aroudn this warning
           last_command.stderr.sub!(/^YAML safe loading.*/, "")
@@ -236,8 +245,7 @@ RSpec.describe "The library itself" do
         end
       ensure
         # clean up the .gem generated
-        path_prefix = ruby_core? ? "lib/" : "./"
-        FileUtils.rm("#{path_prefix}bundler-#{Bundler::VERSION}.gem")
+        FileUtils.rm("bundler-#{Bundler::VERSION}.gem")
       end
     end
   end
