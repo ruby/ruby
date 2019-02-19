@@ -1112,6 +1112,72 @@ stat_without_gvl(const char *path, struct stat *st)
 						  RUBY_UBF_IO, NULL);
 }
 
+#ifdef HAVE_STATX
+typedef struct no_gvl_statx_data {
+    struct statx *stx;
+    int fd;
+    const char *path;
+    int flags;
+    unsigned int mask;
+} no_gvl_statx_data;
+
+static VALUE
+no_gvl_statx(void *data)
+{
+    no_gvl_statx_data *arg = data;
+    return (VALUE)statx(arg->fd, arg->path, arg->flags, arg->mask, arg->stx);
+}
+
+static int
+statx_without_gvl(int fd, const char *path, int flags, unsigned int mask, struct statx *stx)
+{
+    no_gvl_statx_data data;
+
+    data.stx = stx;
+    data.fd = fd;
+    data.path = path;
+    data.flags = flags;
+    data.mask = mask;
+
+    if (path) {
+        /* call statx(2) with pathname */
+        return (int)(VALUE)rb_thread_call_without_gvl((void *)no_gvl_statx, &data,
+                                                      RUBY_UBF_IO, NULL);
+    }
+    else {
+        return (int)(VALUE)rb_thread_io_blocking_region(no_gvl_statx, &data, fd);
+    }
+}
+
+static int
+rb_statx(VALUE file, struct statx *stx, unsigned int mask)
+{
+    VALUE tmp;
+    int result;
+
+    tmp = rb_check_convert_type_with_id(file, T_FILE, "IO", idTo_io);
+    if (!NIL_P(tmp)) {
+        rb_io_t *fptr;
+        GetOpenFile(tmp, fptr);
+        result = statx_without_gvl(fptr->fd, NULL, AT_EMPTY_PATH, mask, stx);
+        file = tmp;
+    }
+    else {
+        FilePathValue(file);
+        file = rb_str_encode_ospath(file);
+        result = statx_without_gvl(AT_FDCWD, RSTRING_PTR(file), 0, mask, stx);
+    }
+    RB_GC_GUARD(file);
+    return result;
+}
+
+static VALUE
+statx_birthtime(struct statx *stx)
+{
+    return rb_time_nano_new(stx->stx_btime.tv_sec, stx->stx_btime.tv_nsec);
+}
+#endif
+
 static int
 rb_stat(VALUE file, struct stat *st)
 {
@@ -2280,7 +2346,6 @@ rb_file_ctime(VALUE obj)
     return stat_ctime(&st);
 }
 
-#if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
  *     File.birthtime(file_name)  -> time
@@ -2295,6 +2360,7 @@ rb_file_ctime(VALUE obj)
  *
  */
 
+#if defined(HAVE_STAT_BIRTHTIME)
 static VALUE
 rb_file_s_birthtime(VALUE klass, VALUE fname)
 {
@@ -2306,6 +2372,23 @@ rb_file_s_birthtime(VALUE klass, VALUE fname)
 	rb_syserr_fail_path(e, fname);
     }
     return stat_birthtime(&st);
+}
+#elif defined(HAVE_STATX)
+static VALUE
+rb_file_s_birthtime(VALUE klass, VALUE fname)
+{
+    struct statx stx;
+
+    if (rb_statx(fname, &stx, STATX_BTIME) < 0) {
+	int e = errno;
+	FilePathValue(fname);
+	rb_syserr_fail_path(e, fname);
+    }
+    if (!(stx.stx_mask & STATX_BTIME)) {
+        /* birthtime is not supported on the filesystem */
+        rb_notimplement();
+    }
+    return statx_birthtime(&stx);
 }
 #else
 # define rb_file_s_birthtime rb_f_notimplement
