@@ -1432,6 +1432,7 @@ opt_regexpmatch2
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE obj2, VALUE obj1)
 (VALUE val)
+// attr bool leaf = false; /* match_at() has rb_thread_check_ints() */
 {
     val = vm_opt_regexpmatch2(obj2, obj1);
 
