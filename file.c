@@ -2380,9 +2380,9 @@ rb_file_s_birthtime(VALUE klass, VALUE fname)
     struct statx stx;
 
     if (rb_statx(fname, &stx, STATX_BTIME) < 0) {
-	int e = errno;
-	FilePathValue(fname);
-	rb_syserr_fail_path(e, fname);
+        int e = errno;
+        FilePathValue(fname);
+        rb_syserr_fail_path(e, fname);
     }
     if (!(stx.stx_mask & STATX_BTIME)) {
         /* birthtime is not supported on the filesystem */
