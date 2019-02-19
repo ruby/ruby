@@ -840,8 +840,12 @@ def install_default_gem(dir, srcdir)
       gemspec.to_ruby
     end
 
+    specific_gem_dir = File.join(gem_dir, 'gems', full_name)
+
+    makedirs(specific_gem_dir)
+
     unless gemspec.executables.empty? then
-      bin_dir = File.join(gem_dir, 'gems', full_name, gemspec.bindir)
+      bin_dir = File.join(specific_gem_dir, gemspec.bindir)
       makedirs(bin_dir)
 
       gemspec.executables.map {|exec|
