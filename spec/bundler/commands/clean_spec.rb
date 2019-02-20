@@ -464,7 +464,7 @@ RSpec.describe "bundle clean" do
 
     gem = ruby_core? ? ENV["BUNDLE_GEM"] : "gem"
     sys_exec! "#{gem} list"
-  expect(out).to include("foo (1.0.1, 1.0)")
+    expect(out).to include("foo (1.0.1, 1.0)")
   end
 
   it "cleans system gems when --force is used" do
