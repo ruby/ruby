@@ -789,10 +789,15 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_birthtime
-    assert_kind_of(Time, Pathname(__FILE__).birthtime)
-  rescue NotImplementedError
-    assert_raise(NotImplementedError) do
-      File.birthtime(__FILE__)
+    # Check under a (probably) local filesystem.
+    # Remote filesystems often may not support birthtime.
+    with_tmpchdir('rubytest-pathname') do |dir|
+      open("a", "w") {}
+      assert_kind_of(Time, Pathname("a").birthtime)
+    rescue NotImplementedError
+      assert_raise(NotImplementedError) do
+        File.birthtime("a")
+      end
     end
   end
 
