@@ -4,9 +4,9 @@ ruby_version_is "2.6" do
   describe "Enumerator::Chain#rewind" do
     before(:each) do
       @obj = mock('obj')
-      @obj.should_receive(:each).any_number_of_times.and_yield(42)
+      @obj.should_receive(:each).any_number_of_times.and_yield
       @second = mock('obj')
-      @second.should_receive(:each).any_number_of_times.and_yield(:second)
+      @second.should_receive(:each).any_number_of_times.and_yield
       @enum = Enumerator::Chain.new(@obj, @second)
     end
 
