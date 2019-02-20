@@ -794,6 +794,9 @@ class TestPathname < Test::Unit::TestCase
     with_tmpchdir('rubytest-pathname') do |dir|
       open("a", "w") {}
       assert_kind_of(Time, Pathname("a").birthtime)
+    rescue Errno::EPERM
+      # Docker prohibits statx syscall by the default.
+      skip("statx(2) is prohibited by seccomp")
     rescue NotImplementedError
       assert_raise(NotImplementedError) do
         File.birthtime("a")
