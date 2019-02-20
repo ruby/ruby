@@ -1126,7 +1126,7 @@ static inline int
 statx(int dirfd, const char *pathname, int flags,
       unsigned int mask, struct statx *statxbuf)
 {
-    return syscall(__NR_statx, dirfd, pathname, flags, mask, statxbuf);
+    return (int)syscall(__NR_statx, dirfd, pathname, flags, mask, statxbuf);
 }
 #   endif
 # endif
