@@ -8385,12 +8385,12 @@ rb_io_autoclose_p(VALUE io)
  *     f = open("/dev/null")
  *     IO.for_fd(f.fileno)
  *     # ...
- *     f.gets # may cause IOError
+ *     f.gets # may cause Errno::EBADF
  *
  *     f = open("/dev/null")
- *     IO.for_fd(f.fileno).autoclose = true
+ *     IO.for_fd(f.fileno).autoclose = false
  *     # ...
- *     f.gets # won't cause IOError
+ *     f.gets # won't cause Errno::EBADF
  */
 
 static VALUE
@@ -8402,7 +8402,7 @@ rb_io_set_autoclose(VALUE io, VALUE autoclose)
 	fptr->mode |= FMODE_PREP;
     else
 	fptr->mode &= ~FMODE_PREP;
-    return io;
+    return autoclose;
 }
 
 static void
