@@ -1113,6 +1113,24 @@ stat_without_gvl(const char *path, struct stat *st)
 }
 
 #ifdef HAVE_STATX
+
+# if HAVE_STATX == 0
+#   ifdef HAVE_SYSCALL_H
+#     include <syscall.h>
+#   elif defined HAVE_SYS_SYSCALL_H
+#     include <sys/syscall.h>
+#   endif
+#   if defined __linux__
+#     include <linux/stat.h>
+static inline int
+statx(int dirfd, const char *pathname, int flags,
+      unsigned int mask, struct statx *statxbuf)
+{
+    return syscall(__NR_statx, dirfd, pathname, flags, mask, statxbuf);
+}
+#   endif
+# endif
+
 typedef struct no_gvl_statx_data {
     struct statx *stx;
     int fd;
@@ -2360,9 +2378,10 @@ rb_file_ctime(VALUE obj)
  *
  */
 
-#if defined(HAVE_STAT_BIRTHTIME)
-static VALUE
+#if defined(HAVE_STAT_BIRTHTIME) || defined(HAVE_STATX)
+RUBY_FUNC_EXPORTED VALUE
 rb_file_s_birthtime(VALUE klass, VALUE fname)
+# if defined(HAVE_STAT_BIRTHTIME)
 {
     struct stat st;
 
@@ -2373,9 +2392,7 @@ rb_file_s_birthtime(VALUE klass, VALUE fname)
     }
     return stat_birthtime(&st);
 }
-#elif defined(HAVE_STATX)
-static VALUE
-rb_file_s_birthtime(VALUE klass, VALUE fname)
+# elif defined(HAVE_STATX)
 {
     struct statx stx;
 
@@ -2390,6 +2407,9 @@ rb_file_s_birthtime(VALUE klass, VALUE fname)
     }
     return statx_birthtime(&stx);
 }
+# else
+#   error Not implemented
+# endif
 #else
 # define rb_file_s_birthtime rb_f_notimplement
 #endif
