@@ -70,13 +70,10 @@ static inline int
 round_capa(int capa)
 {
     /* minsize is 4 */
-    capa >>= 2;
-    capa |= capa >> 1;
-    capa |= capa >> 2;
-    capa |= capa >> 4;
-    capa |= capa >> 8;
-    capa |= capa >> 16;
-    return (capa + 1) << 2;
+    if(capa <= 4) {
+        return 4;
+    }
+    return 1 << ((SIZEOF_INT * CHAR_BIT) - nlz_int(capa - 1));
 }
 
 static struct rb_id_table *
