@@ -1112,23 +1112,6 @@ stat_without_gvl(const char *path, struct stat *st)
 						  RUBY_UBF_IO, NULL);
 }
 
-#if !defined HAVE_STATX && defined __linux__
-# ifdef HAVE_SYSCALL_H
-#   include <syscall.h>
-# elif defined HAVE_SYS_SYSCALL_H
-#   include <sys/syscall.h>
-# endif
-# if defined __NR_statx
-#   include <linux/stat.h>
-static int statx(int dirfd, const char *pathname, int flags,
-                 unsigned int mask, struct statx *statxbuf)
-{
-    return syscall(__NR_statx, dirfd, pathname, flags, mask, statxbuf);
-}
-#   define HAVE_STATX
-# endif
-#endif
-
 #ifdef HAVE_STATX
 typedef struct no_gvl_statx_data {
     struct statx *stx;
