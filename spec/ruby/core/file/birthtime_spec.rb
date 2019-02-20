@@ -24,11 +24,12 @@ describe "File.birthtime" do
     end
   end
 
-  platform_is :linux, :openbsd do
-    it "raises an NotImplementedError" do
-      lambda { File.birthtime(@file) }.should raise_error(NotImplementedError)
-    end
-  end
+  # TODO: fix it.
+  #platform_is :linux, :openbsd do
+  #  it "raises an NotImplementedError" do
+  #    lambda { File.birthtime(@file) }.should raise_error(NotImplementedError)
+  #  end
+  #end
 end
 
 describe "File#birthtime" do
