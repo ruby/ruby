@@ -24,7 +24,12 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+class LeakError < StandardError
+end
+
 class LeakChecker
+  attr_reader :leaks
+
   def initialize
     @fd_info = find_fds
     @tempfile_info = find_tempfiles
@@ -34,19 +39,18 @@ class LeakChecker
     @encoding_info = find_encodings
   end
 
-  def check(test_name)
-    @no_leaks = true
-    leaks = [
-      check_fd_leak(test_name),
-      check_tempfile_leak(test_name),
-      check_thread_leak(test_name),
-      check_process_leak(test_name),
-      check_env(test_name),
-      check_argv(test_name),
-      check_encodings(test_name)
-    ]
-    GC.start if leaks.any?
-    return leaks.none?
+  def check(state)
+    @state = state
+    @leaks = []
+    check_fd_leak
+    check_tempfile_leak
+    check_thread_leak
+    check_process_leak
+    check_env
+    check_argv
+    check_encodings
+    GC.start if !@leaks.empty?
+    @leaks.empty?
   end
 
   private
@@ -66,8 +70,7 @@ class LeakChecker
     end
   end
 
-  def check_fd_leak(test_name)
-    leaked = false
+  def check_fd_leak
     live1 = @fd_info
     if IO.respond_to?(:console) and (m = IO.method(:console)).arity.nonzero?
       m[:close]
@@ -76,12 +79,11 @@ class LeakChecker
     fd_closed = live1 - live2
     if !fd_closed.empty?
       fd_closed.each {|fd|
-        puts "Closed file descriptor: #{test_name}: #{fd}"
+        leak "Closed file descriptor: #{fd}"
       }
     end
     fd_leaked = live2 - live1
     if !fd_leaked.empty?
-      leaked = true
       h = {}
       ObjectSpace.each_object(IO) {|io|
         inspect = io.inspect
@@ -105,19 +107,18 @@ class LeakChecker
             str << s
           }
         end
-        puts "Leaked file descriptor: #{test_name}: #{fd}#{str}"
+        leak "Leaked file descriptor: #{fd}#{str}"
       }
       #system("lsof -p #$$") if !fd_leaked.empty?
       h.each {|fd, list|
         next if list.length <= 1
         if 1 < list.count {|io, autoclose, inspect| autoclose }
           str = list.map {|io, autoclose, inspect| " #{inspect}" + (autoclose ? "(autoclose)" : "") }.sort.join
-          puts "Multiple autoclose IO object for a file descriptor:#{str}"
+          leak "Multiple autoclose IO object for a file descriptor:#{str}"
         end
       }
     end
     @fd_info = live2
-    return leaked
   end
 
   def extend_tempfile_counter
@@ -152,22 +153,19 @@ class LeakChecker
     end
   end
 
-  def check_tempfile_leak(test_name)
+  def check_tempfile_leak
     return false unless defined? Tempfile
     count1, initial_tempfiles = @tempfile_info
     count2, current_tempfiles = find_tempfiles(count1)
-    leaked = false
     tempfiles_leaked = current_tempfiles - initial_tempfiles
     if !tempfiles_leaked.empty?
-      leaked = true
       list = tempfiles_leaked.map {|t| t.inspect }.sort
       list.each {|str|
-        puts "Leaked tempfile: #{test_name}: #{str}"
+        leak "Leaked tempfile: #{str}"
       }
       tempfiles_leaked.each {|t| t.close! }
     end
     @tempfile_info = [count2, initial_tempfiles]
-    return leaked
   end
 
   def find_threads
@@ -176,108 +174,98 @@ class LeakChecker
     }
   end
 
-  def check_thread_leak(test_name)
+  def check_thread_leak
     live1 = @thread_info
     live2 = find_threads
     thread_finished = live1 - live2
-    leaked = false
     if !thread_finished.empty?
       list = thread_finished.map {|t| t.inspect }.sort
       list.each {|str|
-        puts "Finished thread: #{test_name}: #{str}"
+        leak "Finished thread: #{str}"
       }
     end
     thread_leaked = live2 - live1
     if !thread_leaked.empty?
-      leaked = true
       list = thread_leaked.map {|t| t.inspect }.sort
       list.each {|str|
-        puts "Leaked thread: #{test_name}: #{str}"
+        leak "Leaked thread: #{str}"
       }
     end
     @thread_info = live2
-    return leaked
   end
 
-  def check_process_leak(test_name)
+  def check_process_leak
     subprocesses_leaked = Process.waitall
     subprocesses_leaked.each { |pid, status|
-      puts "Leaked subprocess: #{pid}: #{status}"
+      leak "Leaked subprocess: #{pid}: #{status}"
     }
-    return !subprocesses_leaked.empty?
   end
 
   def find_env
     ENV.to_h
   end
 
-  def check_env(test_name)
+  def check_env
     old_env = @env_info
     new_env = find_env
-    return false if old_env == new_env
+    return if old_env == new_env
+
     (old_env.keys | new_env.keys).sort.each {|k|
       if old_env.has_key?(k)
         if new_env.has_key?(k)
           if old_env[k] != new_env[k]
-            puts "Environment variable changed: #{test_name} : #{k.inspect} changed : #{old_env[k].inspect} -> #{new_env[k].inspect}"
+            leak "Environment variable changed : #{k.inspect} changed : #{old_env[k].inspect} -> #{new_env[k].inspect}"
           end
         else
-          puts "Environment variable changed: #{test_name} : #{k.inspect} deleted"
+          leak "Environment variable changed: #{k.inspect} deleted"
         end
       else
         if new_env.has_key?(k)
-          puts "Environment variable changed: #{test_name} : #{k.inspect} added"
+          leak "Environment variable changed: #{k.inspect} added"
         else
           flunk "unreachable"
         end
       end
     }
     @env_info = new_env
-    return true
   end
 
   def find_argv
     ARGV.map { |e| e.dup }
   end
 
-  def check_argv(test_name)
+  def check_argv
     old_argv = @argv_info
     new_argv = find_argv
-    leaked = false
     if new_argv != old_argv
-      puts "ARGV changed: #{test_name} : #{old_argv.inspect} to #{new_argv.inspect}"
+      leak "ARGV changed: #{old_argv.inspect} to #{new_argv.inspect}"
       @argv_info = new_argv
-      leaked = true
     end
-    return leaked
   end
 
   def find_encodings
     [Encoding.default_internal, Encoding.default_external]
   end
 
-  def check_encodings(test_name)
+  def check_encodings
     old_internal, old_external = @encoding_info
     new_internal, new_external = find_encodings
-    leaked = false
     if new_internal != old_internal
-      leaked = true
-      puts "Encoding.default_internal changed: #{test_name} : #{old_internal.inspect} to #{new_internal.inspect}"
+      leak "Encoding.default_internal changed: #{old_internal.inspect} to #{new_internal.inspect}"
     end
     if new_external != old_external
-      leaked = true
-      puts "Encoding.default_external changed: #{test_name} : #{old_external.inspect} to #{new_external.inspect}"
+      leak "Encoding.default_external changed: #{old_external.inspect} to #{new_external.inspect}"
     end
     @encoding_info = [new_internal, new_external]
-    return leaked
   end
 
-  def puts(*args)
-    if @no_leaks
-      @no_leaks = false
-      print "\n"
+  def leak(message)
+    if @leaks.empty?
+      $stderr.puts "\n"
+      $stderr.puts @state.description
     end
-    super(*args)
+    @leaks << message
+    $stderr.puts message
   end
 end
 
@@ -292,9 +280,14 @@ class LeakCheckerAction
   end
 
   def after(state)
-    unless @checker.check(state.description)
+    unless @checker.check(state)
+      leak_messages = @checker.leaks
+      location = state.description
       if state.example
-        puts state.example.source_location.join(':')
+        location = "#{location}\n#{state.example.source_location.join(':')}"
+      end
+      MSpec.protect(location) do
+        raise LeakError, leak_messages.join("\n")
       end
     end
   end
