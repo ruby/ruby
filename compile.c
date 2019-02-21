@@ -4982,7 +4982,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     DECL_ANCHOR(then_seq);
     DECL_ANCHOR(else_seq);
     LABEL *then_label, *else_label, *end_label;
-    VALUE branches = 0;
+    VALUE branches = Qfalse;
     int ci_size, ci_kw_size;
 
     INIT_ANCHOR(cond_seq);
@@ -5069,7 +5069,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
     VALUE literals = rb_hash_new();
     int line, lineno, column, last_lineno, last_column;
     enum node_type type;
-    VALUE branches = 0;
+    VALUE branches = Qfalse;
 
     INIT_ANCHOR(head);
     INIT_ANCHOR(body_seq);
@@ -5185,7 +5185,7 @@ compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
     const NODE *node = orig_node->nd_body;
     LABEL *endlabel;
     DECL_ANCHOR(body_seq);
-    VALUE branches = 0;
+    VALUE branches = Qfalse;
 
     DECL_BRANCH_BASE(branches, nd_first_lineno(orig_node), nd_first_column(orig_node), nd_last_lineno(orig_node), nd_last_column(orig_node), "case");
 
@@ -5270,7 +5270,7 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
     LABEL *prev_redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label;
     int prev_loopval_popped = ISEQ_COMPILE_DATA(iseq)->loopval_popped;
-    VALUE branches = 0;
+    VALUE branches = Qfalse;
 
     struct iseq_compile_data_ensure_node_stack enl;
 
@@ -5869,29 +5869,6 @@ compile_evstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     return COMPILE_OK;
 }
 
-static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped);
-/**
-  compile each node
-
-  self:  InstructionSequence
-  node:  Ruby compiled node
-  popped: This node will be popped
- */
-static int
-iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *node, int popped)
-{
-    if (node == 0) {
-	if (!popped) {
-	    int lineno = ISEQ_COMPILE_DATA(iseq)->last_line;
-	    if (lineno == 0) lineno = FIX2INT(rb_iseq_first_lineno(iseq));
-	    debugs("node: NODE_NIL(implicit)\n");
-	    ADD_INSN(ret, lineno, putnil);
-	}
-	return COMPILE_OK;
-    }
-    return iseq_compile_each0(iseq, ret, node, popped);
-}
-
 static LABEL *
 qcall_branch_start(rb_iseq_t *iseq, LINK_ANCHOR *const recv, VALUE *branches, const NODE *node, int line)
 {
@@ -5922,6 +5899,218 @@ qcall_branch_end(rb_iseq_t *iseq, LINK_ANCHOR *const ret, LABEL *else_label, VAL
 }
 
 static int
+compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int line, int popped)
+{
+    /* optimization shortcut
+     *   "literal".freeze -> opt_str_freeze("literal")
+     */
+    if (node->nd_recv && nd_type(node->nd_recv) == NODE_STR &&
+        (node->nd_mid == idFreeze || node->nd_mid == idUMinus) &&
+        node->nd_args == NULL &&
+        ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
+        ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
+        VALUE str = freeze_literal(iseq, node->nd_recv->nd_lit);
+        if (node->nd_mid == idUMinus) {
+            ADD_INSN3(ret, line, opt_str_uminus, str,
+                      new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE),
+                      Qundef /* CALL_CACHE */);
+        }
+        else {
+            ADD_INSN3(ret, line, opt_str_freeze, str,
+                      new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE),
+                      Qundef /* CALL_CACHE */);
+        }
+        if (popped) {
+            ADD_INSN(ret, line, pop);
+        }
+        return TRUE;
+    }
+    /* optimization shortcut
+     *   obj["literal"] -> opt_aref_with(obj, "literal")
+     */
+    if (node->nd_mid == idAREF && !private_recv_p(node) && node->nd_args &&
+        nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 1 &&
+        nd_type(node->nd_args->nd_head) == NODE_STR &&
+        ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
+        !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
+        ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
+        VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
+        CHECK(COMPILE(ret, "recv", node->nd_recv));
+        ADD_INSN3(ret, line, opt_aref_with, str,
+                  new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE),
+                  NULL/* CALL_CACHE */);
+        if (popped) {
+            ADD_INSN(ret, line, pop);
+        }
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static int
+compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int type, int line, int popped)
+{
+    /* call:  obj.method(...)
+     * fcall: func(...)
+     * vcall: func
+     */
+    DECL_ANCHOR(recv);
+    DECL_ANCHOR(args);
+    ID mid = node->nd_mid;
+    VALUE argc;
+    unsigned int flag = 0;
+    struct rb_call_info_kw_arg *keywords = NULL;
+    const rb_iseq_t *parent_block = ISEQ_COMPILE_DATA(iseq)->current_block;
+    LABEL *else_label = NULL;
+    VALUE branches = Qfalse;
+
+    ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
+
+    INIT_ANCHOR(recv);
+    INIT_ANCHOR(args);
+#if SUPPORT_JOKE
+    if (nd_type(node) == NODE_VCALL) {
+        ID id_bitblt;
+        ID id_answer;
+
+        CONST_ID(id_bitblt, "bitblt");
+        CONST_ID(id_answer, "the_answer_to_life_the_universe_and_everything");
+
+        if (mid == id_bitblt) {
+            ADD_INSN(ret, line, bitblt);
+            return COMPILE_OK;
+        }
+        else if (mid == id_answer) {
+            ADD_INSN(ret, line, answer);
+            return COMPILE_OK;
+        }
+    }
+    /* only joke */
+    {
+        ID goto_id;
+        ID label_id;
+
+        CONST_ID(goto_id, "__goto__");
+        CONST_ID(label_id, "__label__");
+
+        if (nd_type(node) == NODE_FCALL &&
+            (mid == goto_id || mid == label_id)) {
+            LABEL *label;
+            st_data_t data;
+            st_table *labels_table = ISEQ_COMPILE_DATA(iseq)->labels_table;
+            VALUE label_name;
+
+            if (!labels_table) {
+                labels_table = st_init_numtable();
+                ISEQ_COMPILE_DATA(iseq)->labels_table = labels_table;
+            }
+            if (nd_type(node->nd_args->nd_head) == NODE_LIT &&
+                SYMBOL_P(node->nd_args->nd_head->nd_lit)) {
+
+                label_name = node->nd_args->nd_head->nd_lit;
+                if (!st_lookup(labels_table, (st_data_t)label_name, &data)) {
+                    label = NEW_LABEL(line);
+                    label->position = line;
+                    st_insert(labels_table, (st_data_t)label_name, (st_data_t)label);
+                }
+                else {
+                    label = (LABEL *)data;
+                }
+            }
+            else {
+                COMPILE_ERROR(ERROR_ARGS "invalid goto/label format");
+                goto ng;
+            }
+
+
+            if (mid == goto_id) {
+                ADD_INSNL(ret, line, jump, label);
+            }
+            else {
+                ADD_LABEL(ret, label);
+            }
+            return COMPILE_OK;
+        }
+    }
+#endif
+    /* receiver */
+    if (type == NODE_CALL || type == NODE_OPCALL || type == NODE_QCALL) {
+        int idx, level;
+
+        if (mid == idCall &&
+            nd_type(node->nd_recv) == NODE_LVAR &&
+            iseq_block_param_id_p(iseq, node->nd_recv->nd_vid, &idx, &level)) {
+            ADD_INSN2(recv, nd_line(node->nd_recv), getblockparamproxy, INT2FIX(idx + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+        }
+        else {
+            CHECK(COMPILE(recv, "recv", node->nd_recv));
+        }
+
+        if (type == NODE_QCALL) {
+            else_label = qcall_branch_start(iseq, recv, &branches, node, line);
+        }
+    }
+    else if (type == NODE_FCALL || type == NODE_VCALL) {
+        ADD_CALL_RECEIVER(recv, line);
+    }
+
+    /* args */
+    if (type != NODE_VCALL) {
+        argc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
+        CHECK(!NIL_P(argc));
+    }
+    else {
+        argc = INT2FIX(0);
+    }
+
+    ADD_SEQ(ret, recv);
+    ADD_SEQ(ret, args);
+
+    debugp_param("call args argc", argc);
+    debugp_param("call method", ID2SYM(mid));
+
+    switch ((int)type) {
+      case NODE_VCALL:
+        flag |= VM_CALL_VCALL;
+        /* VCALL is funcall, so fall through */
+      case NODE_FCALL:
+        flag |= VM_CALL_FCALL;
+    }
+
+    ADD_SEND_R(ret, line, mid, argc, parent_block, INT2FIX(flag), keywords);
+
+    qcall_branch_end(iseq, ret, else_label, branches, node, line);
+    if (popped) {
+        ADD_INSN(ret, line, pop);
+    }
+    return COMPILE_OK;
+}
+
+
+static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped);
+/**
+  compile each node
+
+  self:  InstructionSequence
+  node:  Ruby compiled node
+  popped: This node will be popped
+ */
+static int
+iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *node, int popped)
+{
+    if (node == 0) {
+	if (!popped) {
+	    int lineno = ISEQ_COMPILE_DATA(iseq)->last_line;
+	    if (lineno == 0) lineno = FIX2INT(rb_iseq_first_lineno(iseq));
+	    debugs("node: NODE_NIL(implicit)\n");
+	    ADD_INSN(ret, lineno, putnil);
+	}
+	return COMPILE_OK;
+    }
+    return iseq_compile_each0(iseq, ret, node, popped);
+}
+
+static int
 check_yield_place(const rb_iseq_t *iseq, int line)
 {
     VALUE file;
@@ -5945,8 +6134,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
     const int line = (int)nd_line(node);
     const enum node_type type = nd_type(node);
     struct rb_iseq_constant_body *const body = iseq->body;
-    LABEL *else_label = 0;
-    VALUE branches = 0;
 
     if (ISEQ_COMPILE_DATA(iseq)->last_line == line) {
 	/* ignore */
@@ -6479,187 +6666,16 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	}
 	break;
       }
-      case NODE_CALL:
-      case NODE_OPCALL:
-	/* optimization shortcut
-	 *   "literal".freeze -> opt_str_freeze("literal")
-	 */
-	if (node->nd_recv && nd_type(node->nd_recv) == NODE_STR &&
-	    (node->nd_mid == idFreeze || node->nd_mid == idUMinus) &&
-	    node->nd_args == NULL &&
-	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
-	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-	    VALUE str = freeze_literal(iseq, node->nd_recv->nd_lit);
-	    if (node->nd_mid == idUMinus) {
-		ADD_INSN3(ret, line, opt_str_uminus, str,
-                          new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE),
-                          Qundef /* CALL_CACHE */);
-	    }
-	    else {
-		ADD_INSN3(ret, line, opt_str_freeze, str,
-                          new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE),
-                          Qundef /* CALL_CACHE */);
-	    }
-	    if (popped) {
-		ADD_INSN(ret, line, pop);
-	    }
-	    break;
-	}
-	/* optimization shortcut
-	 *   obj["literal"] -> opt_aref_with(obj, "literal")
-	 */
-	if (node->nd_mid == idAREF && !private_recv_p(node) && node->nd_args &&
-	    nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 1 &&
-	    nd_type(node->nd_args->nd_head) == NODE_STR &&
-	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
-            !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
-	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-	    VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
-	    CHECK(COMPILE(ret, "recv", node->nd_recv));
-	    ADD_INSN3(ret, line, opt_aref_with, str,
-		      new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE),
-		      NULL/* CALL_CACHE */);
-	    if (popped) {
-		ADD_INSN(ret, line, pop);
-	    }
-	    break;
-	}
-      case NODE_QCALL:
-      case NODE_FCALL:
-      case NODE_VCALL:{		/* VCALL: variable or call */
-	/*
-	  call:  obj.method(...)
-	  fcall: func(...)
-	  vcall: func
-	*/
-	DECL_ANCHOR(recv);
-	DECL_ANCHOR(args);
-	ID mid = node->nd_mid;
-	VALUE argc;
-	unsigned int flag = 0;
-	struct rb_call_info_kw_arg *keywords = NULL;
-	const rb_iseq_t *parent_block = ISEQ_COMPILE_DATA(iseq)->current_block;
-	ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
-
-	INIT_ANCHOR(recv);
-	INIT_ANCHOR(args);
-#if SUPPORT_JOKE
-	if (nd_type(node) == NODE_VCALL) {
-            ID id_bitblt;
-	    ID id_answer;
-
-            CONST_ID(id_bitblt, "bitblt");
-	    CONST_ID(id_answer, "the_answer_to_life_the_universe_and_everything");
-
-            if (mid == id_bitblt) {
-                ADD_INSN(ret, line, bitblt);
-                break;
-            }
-            else if (mid == id_answer) {
-		ADD_INSN(ret, line, answer);
-		break;
-	    }
-	}
-	/* only joke */
-	{
-	    ID goto_id;
-	    ID label_id;
-
-	    CONST_ID(goto_id, "__goto__");
-	    CONST_ID(label_id, "__label__");
-
-	    if (nd_type(node) == NODE_FCALL &&
-		(mid == goto_id || mid == label_id)) {
-		LABEL *label;
-		st_data_t data;
-		st_table *labels_table = ISEQ_COMPILE_DATA(iseq)->labels_table;
-		VALUE label_name;
-
-		if (!labels_table) {
-		    labels_table = st_init_numtable();
-		    ISEQ_COMPILE_DATA(iseq)->labels_table = labels_table;
-		}
-		if (nd_type(node->nd_args->nd_head) == NODE_LIT &&
-		    SYMBOL_P(node->nd_args->nd_head->nd_lit)) {
-
-		    label_name = node->nd_args->nd_head->nd_lit;
-		    if (!st_lookup(labels_table, (st_data_t)label_name, &data)) {
-			label = NEW_LABEL(line);
-			label->position = line;
-			st_insert(labels_table, (st_data_t)label_name, (st_data_t)label);
-		    }
-		    else {
-			label = (LABEL *)data;
-		    }
-		}
-		else {
-		    COMPILE_ERROR(ERROR_ARGS "invalid goto/label format");
-		    goto ng;
-		}
-
-
-		if (mid == goto_id) {
-		    ADD_INSNL(ret, line, jump, label);
-		}
-		else {
-		    ADD_LABEL(ret, label);
-		}
-		break;
-	    }
-	}
-#endif
-	/* receiver */
-	if (type == NODE_CALL || type == NODE_OPCALL || type == NODE_QCALL) {
-	    int idx, level;
-
-	    if (mid == idCall &&
-		nd_type(node->nd_recv) == NODE_LVAR &&
-		iseq_block_param_id_p(iseq, node->nd_recv->nd_vid, &idx, &level)) {
-		ADD_INSN2(recv, nd_line(node->nd_recv), getblockparamproxy, INT2FIX(idx + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
-	    }
-	    else {
-		CHECK(COMPILE(recv, "recv", node->nd_recv));
-	    }
-
-	    if (type == NODE_QCALL) {
-                else_label = qcall_branch_start(iseq, recv, &branches, node, line);
-	    }
-	}
-	else if (type == NODE_FCALL || type == NODE_VCALL) {
-	    ADD_CALL_RECEIVER(recv, line);
-	}
-
-	/* args */
-	if (type != NODE_VCALL) {
-	    argc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
-	    CHECK(!NIL_P(argc));
-	}
-	else {
-	    argc = INT2FIX(0);
-	}
-
-	ADD_SEQ(ret, recv);
-	ADD_SEQ(ret, args);
-
-	debugp_param("call args argc", argc);
-	debugp_param("call method", ID2SYM(mid));
-
-	switch ((int)type) {
-	  case NODE_VCALL:
-	    flag |= VM_CALL_VCALL;
-	    /* VCALL is funcall, so fall through */
-	  case NODE_FCALL:
-	    flag |= VM_CALL_FCALL;
-	}
-
-	ADD_SEND_R(ret, line, mid, argc, parent_block, INT2FIX(flag), keywords);
-
-        qcall_branch_end(iseq, ret, else_label, branches, node, line);
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
-	}
-	break;
-      }
+      case NODE_CALL:   /* obj.foo */
+      case NODE_OPCALL: /* foo[] */
+        if (compile_call_precheck_freeze(iseq, ret, node, line, popped) == TRUE) {
+            break;
+        }
+      case NODE_QCALL: /* obj&.foo */
+      case NODE_FCALL: /* foo() */
+      case NODE_VCALL: /* foo (variable or call) */
+        compile_call(iseq, ret, node, type, line, popped);
+        break;
       case NODE_SUPER:
       case NODE_ZSUPER:{
 	DECL_ANCHOR(args);
@@ -7483,6 +7499,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	unsigned int flag = 0;
 	ID mid = node->nd_mid;
 	VALUE argc;
+        LABEL *else_label = NULL;
+        VALUE branches = Qfalse;
 
 	/* optimization shortcut
 	 *   obj["literal"] = value -> opt_aset_with(obj, "literal", value)
