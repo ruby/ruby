@@ -27,4 +27,10 @@ describe "Enumerator::Lazy#force" do
       ScratchPad.recorded.should == [:before_yield]
     end
   end
+
+  it "works with an infinite enumerable" do
+    s = 0..Float::INFINITY
+    s.lazy.take(100).force.should ==
+      s.take(100)
+  end
 end

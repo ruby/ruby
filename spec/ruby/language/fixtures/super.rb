@@ -1,4 +1,4 @@
-module Super
+module SuperSpecs
   module S1
     class A
       def foo(a)

@@ -98,6 +98,23 @@ In similar fashion, the following commands run the respective specs:
     $ ../mspec/bin/mspec :library
     $ ../mspec/bin/mspec :capi
 
+### Sanity Checks When Running Specs
+
+A number of checks for various kind of "leaks" (file descriptors, temporary files,
+threads, subprocesses, `ENV`, `ARGV`, global encodings, top-level constants) can be
+enabled with `CHECK_LEAKS=true`:
+
+    $ CHECK_LEAKS=true ../mspec/bin/mspec
+
+New top-level constants should only be introduced when needed or follow the
+pattern `<ClassBeingTested>Specs` such as `module StringSpecs`.
+Other constants used for testing should be nested under such a module.
+
+Exceptions to these rules are contained in the file `.mspec.constants`.
+MSpec can automatically add new top-level constants in this file with:
+
+    $ CHECK_LEAKS=save mspec ../mspec/bin/mspec file
+
 ### Contributing and Writing Specs
 
 See [CONTRIBUTING.md](https://github.com/ruby/spec/blob/master/CONTRIBUTING.md) for documentation about contributing and writing specs (guards, matchers, etc).

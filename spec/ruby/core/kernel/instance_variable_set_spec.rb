@@ -3,32 +3,32 @@ require_relative 'fixtures/classes'
 
 describe "Kernel#instance_variable_set" do
   it "sets the value of the specified instance variable" do
-    class Dog
+    dog = Class.new do
       def initialize(p1, p2)
         @a, @b = p1, p2
       end
     end
-    Dog.new('cat', 99).instance_variable_set(:@a, 'dog').should == "dog"
+    dog.new('cat', 99).instance_variable_set(:@a, 'dog').should == "dog"
   end
 
   it "sets the value of the instance variable when no instance variables exist yet" do
-    class NoVariables; end
-    NoVariables.new.instance_variable_set(:@a, "new").should == "new"
+    no_variables = Class.new
+    no_variables.new.instance_variable_set(:@a, "new").should == "new"
   end
 
   it "raises a NameError exception if the argument is not of form '@x'" do
-    class NoDog; end
-    lambda { NoDog.new.instance_variable_set(:c, "cat") }.should raise_error(NameError)
+    no_dog = Class.new
+    lambda { no_dog.new.instance_variable_set(:c, "cat") }.should raise_error(NameError)
   end
 
   it "raises a NameError exception if the argument is an invalid instance variable name" do
-    class DigitDog; end
-    lambda { DigitDog.new.instance_variable_set(:"@0", "cat") }.should raise_error(NameError)
+    digit_dog = Class.new
+    lambda { digit_dog.new.instance_variable_set(:"@0", "cat") }.should raise_error(NameError)
   end
 
   it "raises a NameError when the argument is '@'" do
-    class DogAt; end
-    lambda { DogAt.new.instance_variable_set(:"@", "cat") }.should raise_error(NameError)
+    dog_at = Class.new
+    lambda { dog_at.new.instance_variable_set(:"@", "cat") }.should raise_error(NameError)
   end
 
   it "raises a TypeError if the instance variable name is a Fixnum" do

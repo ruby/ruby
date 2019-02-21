@@ -1,53 +1,49 @@
 require_relative '../../spec_helper'
 
 describe 'TracePoint#enable' do
-  def test; end
+  # def test; end
 
   describe 'without a block' do
     it 'returns true if trace was enabled' do
-      event_name = nil
-      trace = TracePoint.new(:call) do |tp|
-        event_name = tp.event
+      called = false
+      trace = TracePoint.new(:line) do |tp|
+        called = true
       end
 
-      test
-      event_name.should == nil
+      line_event = true
+      called.should == false
 
       trace.enable
       begin
-        test
-        event_name.should equal(:call)
+        line_event = true
+        called.should == true
       ensure
         trace.disable
       end
     end
 
     it 'returns false if trace was disabled' do
-      event_name, method_name = nil, nil
-      trace = TracePoint.new(:call) do |tp|
-        event_name = tp.event
-        method_name = tp.method_id
+      called = false
+      trace = TracePoint.new(:line) do |tp|
+        called = true
       end
 
-      trace.enable.should be_false
+      trace.enable.should == false
       begin
-        event_name.should equal(:call)
-        test
-        method_name.equal?(:test).should be_true
+        line_event = true
+        called.should == true
       ensure
         trace.disable
       end
 
-      event_name, method_name = nil
-      test
-      method_name.equal?(:test).should be_false
-      event_name.should equal(nil)
+      called = false
+      line_event = true
+      called.should == false
 
-      trace.enable.should be_false
+      trace.enable.should == false
       begin
-        event_name.should equal(:call)
-        test
-        method_name.equal?(:test).should be_true
+        line_event = true
+        called.should == true
       ensure
         trace.disable
       end
@@ -70,7 +66,7 @@ describe 'TracePoint#enable' do
           event_name.should equal(:line)
           args.should == []
         end
-        trace.enabled?.should be_false
+        trace.enabled?.should == false
       end
     end
 
@@ -86,17 +82,19 @@ describe 'TracePoint#enable' do
       end
     end
 
-    it 'returns value returned by the block' do
+    it 'returns the return value of the block' do
       trace = TracePoint.new(:line) {}
-      trace.enable { true; 'test' }.should == 'test'
+      trace.enable { 42 }.should == 42
     end
 
     it 'disables the trace object outside the block' do
-      event_name = nil
-      trace = TracePoint.new(:line) { |tp|event_name = tp.event }
-      trace.enable { '2 + 2' }
-      event_name.should equal(:line)
-      trace.enabled?.should be_false
+      called = false
+      trace = TracePoint.new(:line) { called = true }
+      trace.enable {
+        line_event = true
+      }
+      called.should == true
+      trace.enabled?.should == false
     end
   end
 

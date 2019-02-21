@@ -81,4 +81,10 @@ describe "Enumerator::Lazy#grep_v" do
       end
     end
   end
+
+  it "works with an infinite enumerable" do
+    s = 0..Float::INFINITY
+    s.lazy.grep_v(String).first(100).should ==
+      s.first(100).grep_v(String)
+  end
 end

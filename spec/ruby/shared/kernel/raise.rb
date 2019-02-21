@@ -13,7 +13,7 @@ describe :kernel_raise, shared: true do
   end
 
   it "raises RuntimeError if no exception class is given" do
-    lambda { @object.raise }.should raise_error(RuntimeError)
+    lambda { @object.raise }.should raise_error(RuntimeError, "")
   end
 
   it "raises a given Exception instance" do

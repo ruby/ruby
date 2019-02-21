@@ -81,6 +81,14 @@ describe "Integer#div" do
       (10**50).div(-(10**40 + 1)).should == -10000000000
     end
 
+    it "handles fixnum_min / -1" do
+      (fixnum_min / -1).should == -fixnum_min
+      (fixnum_min / -1).should > 0
+
+      int_min = -2147483648
+      (int_min / -1).should == 2147483648
+    end
+
     it "calls #coerce and #div if argument responds to #coerce" do
       x = mock("x")
       y = mock("y")

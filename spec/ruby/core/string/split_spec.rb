@@ -413,15 +413,17 @@ describe "String#split with Regexp" do
     end
 
     describe "for a String subclass" do
-      a = []
-      StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
-      first, last = a
+      it "yields instances of the same subclass" do
+        a = []
+        StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
+        first, last = a
 
-      first.should be_an_instance_of(StringSpecs::MyString)
-      first.should == "a"
+        first.should be_an_instance_of(StringSpecs::MyString)
+        first.should == "a"
 
-      last.should be_an_instance_of(StringSpecs::MyString)
-      last.should == "b"
+        last.should be_an_instance_of(StringSpecs::MyString)
+        last.should == "b"
+      end
     end
   end
 end

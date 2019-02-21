@@ -423,12 +423,12 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload::U::V::X.should == :autoload_uvx
   end
 
-  it "loads the file that defines subclass XX::YY < YY and YY is a top level constant" do
+  it "loads the file that defines subclass XX::CS_CONST_AUTOLOAD < CS_CONST_AUTOLOAD and CS_CONST_AUTOLOAD is a top level constant" do
     module ModuleSpecs::Autoload::XX
-      autoload :YY, fixture(__FILE__, "autoload_subclass.rb")
+      autoload :CS_CONST_AUTOLOAD, fixture(__FILE__, "autoload_subclass.rb")
     end
 
-    ModuleSpecs::Autoload::XX::YY.superclass.should == YY
+    ModuleSpecs::Autoload::XX::CS_CONST_AUTOLOAD.superclass.should == CS_CONST_AUTOLOAD
   end
 
   describe "after autoloading searches for the constant like the original lookup" do

@@ -46,7 +46,7 @@ class MSpecScript
 
   set :toplevel_constants_excludes, [
     /\wSpecs?$/,
-    /^CS_CONST\d/,
+    /^CS_CONST/,
   ]
 
   # Enable features

@@ -9,7 +9,7 @@ describe "IO#ioctl" do
   end
 
   platform_is :linux do
-    platform_is "86" do # x86 / x86_64
+    guard -> { RUBY_PLATFORM.include?("86") } do # x86 / x86_64
       it "resizes an empty String to match the output size" do
         File.open(__FILE__, 'r') do |f|
           buffer = ''

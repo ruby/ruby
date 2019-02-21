@@ -32,14 +32,13 @@ describe "The for expression" do
   end
 
   it "iterates over any object responding to 'each'" do
-    class XYZ
-      def each
-        (0..10).each { |i| yield i }
-      end
+    obj = Object.new
+    def obj.each
+      (0..10).each { |i| yield i }
     end
 
     j = 0
-    for i in XYZ.new
+    for i in obj
       j += i
     end
     j.should == 55

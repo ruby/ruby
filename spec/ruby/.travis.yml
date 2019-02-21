@@ -13,7 +13,7 @@ matrix:
       env: CHECK_LEAKS=true
     - rvm: 2.5.3
       env: CHECK_LEAKS=true
-    - rvm: 2.6.0
+    - rvm: 2.6.1
       env: CHECK_LEAKS=true
     - env: RUBOCOP=true
       rvm: 2.4.5

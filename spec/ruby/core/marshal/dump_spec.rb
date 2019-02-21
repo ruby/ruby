@@ -475,6 +475,24 @@ describe "Marshal.dump" do
       obj.set_backtrace(["foo/bar.rb:10"])
       Marshal.dump(obj).should == "\x04\bo:\x0EException\a:\tmesg\"\bfoo:\abt[\x06\"\x12foo/bar.rb:10"
     end
+
+    it "dumps the cause for the exception" do
+      exc = nil
+      begin
+        raise StandardError, "the cause"
+      rescue StandardError => cause
+        begin
+          raise RuntimeError, "the consequence"
+        rescue RuntimeError => e
+          e.cause.should equal(cause)
+          exc = e
+        end
+      end
+
+      reloaded = Marshal.load(Marshal.dump(exc))
+      reloaded.cause.should be_an_instance_of(StandardError)
+      reloaded.cause.message.should == "the cause"
+    end
   end
 
   it "dumps subsequent appearances of a symbol as a link" do
