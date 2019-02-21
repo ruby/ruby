@@ -69,4 +69,10 @@ describe :enumerator_lazy_collect_concat, shared: true do
       end
     end
   end
+
+  it "works with an infinite enumerable" do
+    s = 0..Float::INFINITY
+    s.lazy.send(@method) { |n| [-n, +n] }.first(200).should ==
+      s.first(100).send(@method) { |n| [-n, +n] }.to_a
+  end
 end

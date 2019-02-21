@@ -72,5 +72,11 @@ ruby_version_is '2.4' do
         @lazy.uniq { |_, label| label.downcase }.force.should == [[0, 'foo'], [2, 'bar']]
       end
     end
+
+    it "works with an infinite enumerable" do
+      s = 0..Float::INFINITY
+      s.lazy.uniq.first(100).should ==
+        s.first(100).uniq
+    end
   end
 end

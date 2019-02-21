@@ -102,6 +102,15 @@ describe "Range#step" do
         ScratchPad.recorded.should eql([1.0, 2.8, 4.6, 6.4, 1.0, 2.3, 3.6,
                                        4.9, 6.2, 7.5, 8.8, 10.1, 11.4, 12.7])
       end
+
+      it "handles infinite values at either end" do
+        (-Float::INFINITY..0.0).step(2) { |x| ScratchPad << x; break if ScratchPad.recorded.size == 3 }
+        ScratchPad.recorded.should eql([-Float::INFINITY, -Float::INFINITY, -Float::INFINITY])
+
+        ScratchPad.record []
+        (0.0..Float::INFINITY).step(2) { |x| ScratchPad << x; break if ScratchPad.recorded.size == 3 }
+        ScratchPad.recorded.should eql([0.0, 2.0, 4.0])
+      end
     end
 
     describe "and Integer, Float values" do
@@ -202,6 +211,15 @@ describe "Range#step" do
         (1.0...6.4).step(1.8) { |x| ScratchPad << x }
         (1.0...55.6).step(18.2) { |x| ScratchPad << x }
         ScratchPad.recorded.should eql([1.0, 2.8, 4.6, 1.0, 19.2, 37.4])
+      end
+
+      it "handles infinite values at either end" do
+        (-Float::INFINITY...0.0).step(2) { |x| ScratchPad << x; break if ScratchPad.recorded.size == 3 }
+        ScratchPad.recorded.should eql([-Float::INFINITY, -Float::INFINITY, -Float::INFINITY])
+
+        ScratchPad.record []
+        (0.0...Float::INFINITY).step(2) { |x| ScratchPad << x; break if ScratchPad.recorded.size == 3 }
+        ScratchPad.recorded.should eql([0.0, 2.0, 4.0])
       end
     end
 

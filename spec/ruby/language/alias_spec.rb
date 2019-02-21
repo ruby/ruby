@@ -204,7 +204,7 @@ describe "The alias keyword" do
   end
 
   it "operates on methods with splat arguments defined in a superclass using text block for class eval" do
-    class Sub < AliasObject;end
+    subclass = Class.new(AliasObject)
     AliasObject.class_eval <<-code
       def test(*args)
         4
@@ -215,7 +215,7 @@ describe "The alias keyword" do
       alias test_without_check test
       alias test test_with_check
     code
-    Sub.new.test("testing").should == 4
+    subclass.new.test("testing").should == 4
   end
 
   it "is not allowed against Fixnum or String instances" do

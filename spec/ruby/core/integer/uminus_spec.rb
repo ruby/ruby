@@ -11,8 +11,10 @@ describe "Integer#-@" do
     end
 
     it "negates self at Fixnum/Bignum boundaries" do
-      fixnum_max.send(:-@).should == (0 - fixnum_max)
-      fixnum_min.send(:-@).should == (0 - fixnum_min)
+      (-fixnum_max).should == (0 - fixnum_max)
+      (-fixnum_max).should < 0
+      (-fixnum_min).should == (0 - fixnum_min)
+      (-fixnum_min).should > 0
     end
   end
 

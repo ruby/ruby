@@ -13,6 +13,7 @@ describe "Heredoc string" do
 foo bar#{@ip}
 HERE
     s.should == "foo barxxx\n"
+    s.encoding.should == Encoding::US_ASCII
   end
 
   it 'allow HEREDOC with <<"identifier", interpolated' do
@@ -20,6 +21,7 @@ HERE
 foo bar#{@ip}
 HERE
     s.should == "foo barxxx\n"
+    s.encoding.should == Encoding::US_ASCII
   end
 
   it "allows HEREDOC with <<'identifier', no interpolation" do
@@ -27,6 +29,7 @@ HERE
 foo bar#{@ip}
 HERE
     s.should == 'foo bar#{@ip}' + "\n"
+    s.encoding.should == Encoding::US_ASCII
   end
 
   it "allows HEREDOC with <<-identifier, allowing to indent identifier, interpolated" do
@@ -35,6 +38,7 @@ HERE
     HERE
 
     s.should == "    foo barxxx\n"
+    s.encoding.should == Encoding::US_ASCII
   end
 
   it 'allows HEREDOC with <<-"identifier", allowing to indent identifier, interpolated' do
@@ -43,6 +47,7 @@ HERE
     HERE
 
     s.should == "    foo barxxx\n"
+    s.encoding.should == Encoding::US_ASCII
   end
 
   it "allows HEREDOC with <<-'identifier', allowing to indent identifier, no interpolation" do
@@ -51,6 +56,7 @@ HERE
     HERE
 
     s.should == '    foo bar#{@ip}' + "\n"
+    s.encoding.should == Encoding::US_ASCII
   end
 
   it "allows HEREDOC with <<~'identifier', allowing to indent identifier and content" do

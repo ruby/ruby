@@ -1,6 +1,12 @@
 require_relative '../../spec_helper'
 require 'bigdecimal'
 
+describe "BigDecimal" do
+  it "is not defined unless it is required" do
+    ruby_exe('puts Object.const_defined?(:BigDecimal)').should == "false\n"
+  end
+end
+
 describe "Kernel#BigDecimal" do
 
   it "creates a new object of class BigDecimal" do

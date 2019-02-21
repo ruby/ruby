@@ -210,16 +210,16 @@ describe "A class definition" do
   describe "within a block creates a new class in the lexical scope" do
     it "for named classes at the toplevel" do
       klass = Class.new do
-        class Howdy
+        class CS_CONST_CLASS_SPECS
         end
 
         def self.get_class_name
-          Howdy.name
+          CS_CONST_CLASS_SPECS.name
         end
       end
 
-      Howdy.name.should == 'Howdy'
-      klass.get_class_name.should == 'Howdy'
+      klass.get_class_name.should == 'CS_CONST_CLASS_SPECS'
+      ::CS_CONST_CLASS_SPECS.name.should == 'CS_CONST_CLASS_SPECS'
     end
 
     it "for named classes in a module" do

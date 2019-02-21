@@ -5,6 +5,12 @@ describe :time_gmt_offset, shared: true do
     end
   end
 
+  it "returns 0 when the date is UTC" do
+    with_timezone("AST", 3) do
+      Time.new.utc.send(@method).should == 0
+    end
+  end
+
   platform_is_not :windows do
     it "returns the correct offset for US Eastern time zone around daylight savings time change" do
       # "2010-03-14 01:59:59 -0500" + 1 ==> "2010-03-14 03:00:00 -0400"

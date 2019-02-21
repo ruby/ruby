@@ -46,10 +46,10 @@ describe "Kernel#extend" do
   end
 
   it "makes the class a kind_of? the argument" do
-    class C
+    c = Class.new do
       extend KernelSpecs::M
     end
-    (C.kind_of? KernelSpecs::M).should == true
+    (c.kind_of? KernelSpecs::M).should == true
   end
 
   it "raises an ArgumentError when no arguments given" do

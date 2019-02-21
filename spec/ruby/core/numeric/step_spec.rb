@@ -60,6 +60,11 @@ describe "Numeric#step" do
               enum.size.should == Float::INFINITY
             end
           end
+
+          it "defaults to an infinite size" do
+            enum = 1.step
+            enum.size.should == Float::INFINITY
+          end
         end
 
         describe "type" do

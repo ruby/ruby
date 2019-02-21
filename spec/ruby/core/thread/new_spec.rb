@@ -53,4 +53,31 @@ describe "Thread.new" do
     ScratchPad.recorded.should == [:good, :in_thread]
   end
 
+  it "releases Mutexes held by the Thread when the Thread finishes" do
+    m1 = Mutex.new
+    m2 = Mutex.new
+    t = Thread.new {
+      m1.lock
+      m1.locked?.should == true
+      m2.lock
+      m2.locked?.should == true
+    }
+    t.join
+    m1.locked?.should == false
+    m2.locked?.should == false
+  end
+
+  it "releases Mutexes held by the Thread when the Thread finishes, also with Mutex#synchronize" do
+    m = Mutex.new
+    t = Thread.new {
+      m.synchronize {
+        m.unlock
+        m.lock
+      }
+      m.lock
+      m.locked?.should == true
+    }
+    t.join
+    m.locked?.should == false
+  end
 end

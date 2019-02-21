@@ -77,6 +77,15 @@ describe "Kernel#warn" do
     }.should output(nil, /\n/)
   end
 
+  it "writes to_s representation if passed a non-string" do
+    obj = mock("obj")
+    obj.should_receive(:to_s).and_return("to_s called")
+    lambda {
+      $VERBOSE = true
+      warn(obj)
+    }.should output(nil, "to_s called\n")
+  end
+
   ruby_version_is "2.5" do
     describe ":uplevel keyword argument" do
       before :each do

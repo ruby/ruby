@@ -71,4 +71,16 @@ describe "Enumerator::Lazy#zip" do
       end
     end
   end
+
+  it "works with an infinite enumerable and an array" do
+    s = 0..Float::INFINITY
+    s.lazy.zip(0..1000).first(100).should ==
+      s.first(100).zip(0..100)
+  end
+
+  it "works with two infinite enumerables" do
+    s = 0..Float::INFINITY
+    s.lazy.zip(s).first(100).should ==
+      s.first(100).zip(s)
+  end
 end

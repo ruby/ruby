@@ -57,4 +57,10 @@ describe :enumerator_lazy_select, shared: true do
       end
     end
   end
+
+  it "works with an infinite enumerable" do
+    s = 0..Float::INFINITY
+    s.lazy.send(@method) { |n| true }.first(100).should ==
+      s.first(100).send(@method) { |n| true }
+  end
 end

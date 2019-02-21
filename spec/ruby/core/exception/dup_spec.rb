@@ -58,4 +58,17 @@ describe "Exception#dup" do
 
     @obj.dup.backtrace.should == @obj.backtrace
   end
+
+  it "does copy the cause" do
+    begin
+      raise StandardError, "the cause"
+    rescue StandardError => cause
+      begin
+        raise RuntimeError, "the consequence"
+      rescue RuntimeError => e
+        e.cause.should equal(cause)
+        e.dup.cause.should equal(cause)
+      end
+    end
+  end
 end

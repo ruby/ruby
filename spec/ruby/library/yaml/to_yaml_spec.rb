@@ -13,8 +13,7 @@ describe "Object#to_yaml" do
   end
 
   it "returns the YAML representation of a Class object" do
-    FooBar.new("baz").to_yaml.should match_yaml("--- !ruby/object:FooBar\nname: baz\n")
-
+    YAMLSpecs::Example.new("baz").to_yaml.should match_yaml("--- !ruby/object:YAMLSpecs::Example\nname: baz\n")
   end
 
   it "returns the YAML representation of a Date object" do

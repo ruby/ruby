@@ -2,14 +2,11 @@ require_relative '../../spec_helper'
 require 'ipaddr'
 
 describe "IPAddr Operator" do
-  IN6MASK32  = "ffff:ffff::"
-  IN6MASK128 = "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"
-
   before do
     @in6_addr_any = IPAddr.new()
     @a = IPAddr.new("3ffe:505:2::/48")
     @b = IPAddr.new("0:0:0:1::")
-    @c = IPAddr.new(IN6MASK32)
+    @c = IPAddr.new("ffff:ffff::")
   end
 
   it "bitwises or" do
@@ -48,7 +45,7 @@ describe "IPAddr Operator" do
 
   it "inverts" do
     a = ~@in6_addr_any
-    a.to_s.should == IN6MASK128
+    a.to_s.should == "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"
     @in6_addr_any.to_s.should == "::"
   end
 

@@ -53,8 +53,9 @@ describe "File.split" do
   end
 
   it "coerces the argument with to_str if it is not a String type" do
-    class C; def to_str; "/rubinius/better/than/ruby"; end; end
-    File.split(C.new).should == ["/rubinius/better/than", "ruby"]
+    obj = mock("str")
+    obj.should_receive(:to_str).and_return("/one/two/three")
+    File.split(obj).should == ["/one/two", "three"]
   end
 
   it "accepts an object that has a #to_path method" do

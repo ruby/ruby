@@ -232,6 +232,11 @@ VALUE string_spec_rb_str_times(VALUE self, VALUE str, VALUE times) {
   return rb_str_times(str, times);
 }
 
+VALUE string_spec_rb_str_modify_expand(VALUE self, VALUE str, VALUE size) {
+  rb_str_modify_expand(str, FIX2LONG(size));
+  return str;
+}
+
 VALUE string_spec_rb_str_resize(VALUE self, VALUE str, VALUE size) {
   return rb_str_resize(str, FIX2INT(size));
 }
@@ -435,6 +440,7 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_tainted_str_new2", string_spec_rb_tainted_str_new2, 1);
   rb_define_method(cls, "rb_str_plus", string_spec_rb_str_plus, 2);
   rb_define_method(cls, "rb_str_times", string_spec_rb_str_times, 2);
+  rb_define_method(cls, "rb_str_modify_expand", string_spec_rb_str_modify_expand, 2);
   rb_define_method(cls, "rb_str_resize", string_spec_rb_str_resize, 2);
   rb_define_method(cls, "rb_str_resize_RSTRING_LEN", string_spec_rb_str_resize_RSTRING_LEN, 2);
   rb_define_method(cls, "rb_str_set_len", string_spec_rb_str_set_len, 2);

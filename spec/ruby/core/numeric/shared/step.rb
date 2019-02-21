@@ -16,6 +16,14 @@ describe :numeric_step, :shared => true do
     ScratchPad.recorded.should eql [1, 2, 3, 4, 5]
   end
 
+  it "defaults to an infinite limit with a step size of 1 for Integers" do
+    1.step.first(5).should == [1, 2, 3, 4, 5]
+  end
+
+  it "defaults to an infinite limit with a step size of 1.0 for Floats" do
+    1.0.step.first(5).should == [1.0, 2.0, 3.0, 4.0, 5.0]
+  end
+
   describe "when self, stop and step are Fixnums" do
     it "yields only Fixnums" do
       1.send(@method, *@step_args.call(5, 1)) { |x| x.should be_an_instance_of(Fixnum) }
