@@ -1140,31 +1140,35 @@ typedef struct no_gvl_statx_data {
 } no_gvl_statx_data;
 
 static VALUE
-no_gvl_statx(void *data)
+io_blocking_statx(void *data)
 {
     no_gvl_statx_data *arg = data;
     return (VALUE)statx(arg->fd, arg->path, arg->flags, arg->mask, arg->stx);
 }
 
-static int
-statx_without_gvl(int fd, const char *path, int flags, unsigned int mask, struct statx *stx)
+static void *
+no_gvl_statx(void *data)
 {
-    no_gvl_statx_data data;
+    return (void *)io_blocking_statx(data);
+}
 
-    data.stx = stx;
-    data.fd = fd;
-    data.path = path;
-    data.flags = flags;
-    data.mask = mask;
+static int
+statx_without_gvl(const char *path, struct statx *stx, unsigned int mask)
+{
+    no_gvl_statx_data data = {stx, AT_FDCWD, path, 0, mask};
 
-    if (path) {
-        /* call statx(2) with pathname */
-        return (int)(VALUE)rb_thread_call_without_gvl((void *)no_gvl_statx, &data,
-                                                      RUBY_UBF_IO, NULL);
-    }
-    else {
-        return (int)(VALUE)rb_thread_io_blocking_region(no_gvl_statx, &data, fd);
-    }
+    /* call statx(2) with pathname */
+    return (int)(VALUE)rb_thread_call_without_gvl(no_gvl_statx, &data,
+                                                  RUBY_UBF_IO, NULL);
+}
+
+static int
+fstatx_without_gvl(int fd, struct statx *stx, unsigned int mask)
+{
+    no_gvl_statx_data data = {stx, fd, NULL, AT_EMPTY_PATH, mask};
+
+    /* call statx(2) with fd */
+    return (int)rb_thread_io_blocking_region(io_blocking_statx, &data, fd);
 }
 
 static int
@@ -1177,13 +1181,13 @@ rb_statx(VALUE file, struct statx *stx, unsigned int mask)
     if (!NIL_P(tmp)) {
         rb_io_t *fptr;
         GetOpenFile(tmp, fptr);
-        result = statx_without_gvl(fptr->fd, NULL, AT_EMPTY_PATH, mask, stx);
+        result = fstatx_without_gvl(fptr->fd, stx, mask);
         file = tmp;
     }
     else {
         FilePathValue(file);
         file = rb_str_encode_ospath(file);
-        result = statx_without_gvl(AT_FDCWD, RSTRING_PTR(file), 0, mask, stx);
+        result = statx_without_gvl(RSTRING_PTR(file), stx, mask);
     }
     RB_GC_GUARD(file);
     return result;
