@@ -495,7 +495,7 @@ get_stat(VALUE self)
     return st;
 }
 
-static struct timespec stat_mtimespec(struct stat *st);
+static struct timespec stat_mtimespec(const struct stat *st);
 
 /*
  *  call-seq:
@@ -820,7 +820,7 @@ rb_stat_blocks(VALUE self)
 }
 
 static struct timespec
-stat_atimespec(struct stat *st)
+stat_atimespec(const struct stat *st)
 {
     struct timespec ts;
     ts.tv_sec = st->st_atime;
@@ -837,14 +837,14 @@ stat_atimespec(struct stat *st)
 }
 
 static VALUE
-stat_atime(struct stat *st)
+stat_atime(const struct stat *st)
 {
     struct timespec ts = stat_atimespec(st);
     return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
 }
 
 static struct timespec
-stat_mtimespec(struct stat *st)
+stat_mtimespec(const struct stat *st)
 {
     struct timespec ts;
     ts.tv_sec = st->st_mtime;
@@ -861,14 +861,14 @@ stat_mtimespec(struct stat *st)
 }
 
 static VALUE
-stat_mtime(struct stat *st)
+stat_mtime(const struct stat *st)
 {
     struct timespec ts = stat_mtimespec(st);
     return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
 }
 
 static struct timespec
-stat_ctimespec(struct stat *st)
+stat_ctimespec(const struct stat *st)
 {
     struct timespec ts;
     ts.tv_sec = st->st_ctime;
@@ -885,7 +885,7 @@ stat_ctimespec(struct stat *st)
 }
 
 static VALUE
-stat_ctime(struct stat *st)
+stat_ctime(const struct stat *st)
 {
     struct timespec ts = stat_ctimespec(st);
     return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
@@ -894,9 +894,9 @@ stat_ctime(struct stat *st)
 #define HAVE_STAT_BIRTHTIME
 #if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC)
 static VALUE
-stat_birthtime(struct stat *st)
+stat_birthtime(const struct stat *st)
 {
-    struct timespec *ts = &st->st_birthtimespec;
+    const struct timespec *ts = &st->st_birthtimespec;
     return rb_time_nano_new(ts->tv_sec, ts->tv_nsec);
 }
 #elif defined(_WIN32)
@@ -1194,7 +1194,7 @@ rb_statx(VALUE file, struct statx *stx, unsigned int mask)
 }
 
 static VALUE
-statx_birthtime(struct statx *stx)
+statx_birthtime(const struct statx *stx)
 {
     return rb_time_nano_new(stx->stx_btime.tv_sec, stx->stx_btime.tv_nsec);
 }
