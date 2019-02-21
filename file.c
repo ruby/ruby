@@ -1165,7 +1165,7 @@ statx_without_gvl(const char *path, struct statx *stx, unsigned int mask)
 static int
 fstatx_without_gvl(int fd, struct statx *stx, unsigned int mask)
 {
-    no_gvl_statx_data data = {stx, fd, NULL, AT_EMPTY_PATH, mask};
+    no_gvl_statx_data data = {stx, fd, "", AT_EMPTY_PATH, mask};
 
     /* call statx(2) with fd */
     return (int)rb_thread_io_blocking_region(io_blocking_statx, &data, fd);
