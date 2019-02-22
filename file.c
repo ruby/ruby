@@ -1208,6 +1208,8 @@ statx_birthtime(const struct statx *stx, VALUE fname)
 }
 
 typedef struct statx statx_data;
+# define HAVE_STAT_BIRTHTIME
+
 #elif defined(HAVE_STAT_BIRTHTIME)
 # define statx_without_gvl(path, st, mask) stat_without_gvl(path, st)
 # define fstatx_without_gvl(fd, st, mask) fstat_without_gvl(fd, st)
@@ -2434,13 +2436,13 @@ static VALUE
 rb_file_birthtime(VALUE obj)
 {
     rb_io_t *fptr;
-    struct stat st;
+    statx_data st;
 
     GetOpenFile(obj, fptr);
-    if (fstat(fptr->fd, &st) == -1) {
+    if (fstatx_without_gvl(fptr->fd, &st, STATX_BTIME) == -1) {
 	rb_sys_fail_path(fptr->pathv);
     }
-    return stat_birthtime(&st);
+    return statx_birthtime(&st, fptr->pathv);
 }
 #else
 # define rb_file_birthtime rb_f_notimplement
