@@ -630,7 +630,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_kind_of(Time, t1)
       assert_kind_of(Time, t2)
       assert_equal(t1, t2)
-    rescue Errno::ENOSYS
+    rescue Errno::ENOSYS, Errno::EPERM
       # ignore unsupporting filesystems
     end
     assert_raise(Errno::ENOENT) { File.birthtime(nofile) }
