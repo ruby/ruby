@@ -191,7 +191,7 @@ lookup_method_table(VALUE klass, ID id)
 }
 
 static VALUE
-(*call_cfunc_invoker_func(int argc))(VALUE (*func)(ANYARGS), VALUE recv, int argc, const VALUE *)
+(*call_cfunc_invoker_func(int argc))(VALUE recv, int argc, const VALUE *, VALUE (*func)(ANYARGS))
 {
     switch (argc) {
       case -2: return &call_cfunc_m2;
