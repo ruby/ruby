@@ -797,6 +797,8 @@ class TestPathname < Test::Unit::TestCase
     rescue Errno::EPERM
       # Docker prohibits statx syscall by the default.
       skip("statx(2) is prohibited by seccomp")
+    rescue Errno::ENOSYS
+      skip("statx(2) is not supported on this filesystem")
     rescue NotImplementedError
       # assert_raise(NotImplementedError) do
       #   File.birthtime("a")
