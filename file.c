@@ -893,6 +893,7 @@ stat_ctime(const struct stat *st)
 
 #define HAVE_STAT_BIRTHTIME
 #if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC)
+typedef struct stat statx_data;
 static VALUE
 stat_birthtime(const struct stat *st)
 {
@@ -900,6 +901,7 @@ stat_birthtime(const struct stat *st)
     return rb_time_nano_new(ts->tv_sec, ts->tv_nsec);
 }
 #elif defined(_WIN32)
+typedef struct stat statx_data;
 # define stat_birthtime stat_ctime
 #else
 # undef HAVE_STAT_BIRTHTIME
@@ -1112,7 +1114,7 @@ stat_without_gvl(const char *path, struct stat *st)
 						  RUBY_UBF_IO, NULL);
 }
 
-#ifdef HAVE_STATX
+#if !defined(HAVE_STAT_BIRTHTIME) && defined(HAVE_STATX)
 
 # if HAVE_STATX == 0
 #   ifdef HAVE_SYSCALL_H
@@ -1193,11 +1195,27 @@ rb_statx(VALUE file, struct statx *stx, unsigned int mask)
     return result;
 }
 
+# define statx_has_birthtime(st) ((st)->stx_mask & STATX_BTIME)
+
 static VALUE
-statx_birthtime(const struct statx *stx)
+statx_birthtime(const struct statx *stx, VALUE fname)
 {
+    if (!statx_has_birthtime(stx)) {
+        /* birthtime is not supported on the filesystem */
+        rb_syserr_fail_path(ENOSYS, fname);
+    }
     return rb_time_nano_new(stx->stx_btime.tv_sec, stx->stx_btime.tv_nsec);
 }
+
+typedef struct statx statx_data;
+#elif defined(HAVE_STAT_BIRTHTIME)
+# define statx_without_gvl(path, st, mask) stat_without_gvl(path, st)
+# define fstatx_without_gvl(fd, st, mask) fstat_without_gvl(fd, st)
+# define statx_birthtime(st, fname) stat_birthtime(st)
+# define statx_has_birthtime(st) 1
+# define rb_statx(file, st, mask) rb_stat(file, st)
+#else
+# define statx_has_birthtime(st) 0
 #endif
 
 static int
@@ -2385,35 +2403,16 @@ rb_file_ctime(VALUE obj)
 #if defined(HAVE_STAT_BIRTHTIME) || defined(HAVE_STATX)
 RUBY_FUNC_EXPORTED VALUE
 rb_file_s_birthtime(VALUE klass, VALUE fname)
-# if defined(HAVE_STAT_BIRTHTIME)
 {
-    struct stat st;
+    statx_data st;
 
-    if (rb_stat(fname, &st) < 0) {
+    if (rb_statx(fname, &st, STATX_BTIME) < 0) {
 	int e = errno;
 	FilePathValue(fname);
 	rb_syserr_fail_path(e, fname);
     }
-    return stat_birthtime(&st);
+    return statx_birthtime(&st, fname);
 }
-# elif defined(HAVE_STATX)
-{
-    struct statx stx;
-
-    if (rb_statx(fname, &stx, STATX_BTIME) < 0) {
-        int e = errno;
-        FilePathValue(fname);
-        rb_syserr_fail_path(e, fname);
-    }
-    if (!(stx.stx_mask & STATX_BTIME)) {
-        /* birthtime is not supported on the filesystem */
-        rb_notimplement();
-    }
-    return statx_birthtime(&stx);
-}
-# else
-#   error Not implemented
-# endif
 #else
 # define rb_file_s_birthtime rb_f_notimplement
 #endif
