@@ -9,15 +9,18 @@ describe 'RbConfig::CONFIG' do
     end
   end
 
-  it "['rubylibdir'] returns the directory containing Ruby standard libraries" do
-    rubylibdir = RbConfig::CONFIG['rubylibdir']
-    File.directory?(rubylibdir).should == true
-    File.exist?("#{rubylibdir}/fileutils.rb").should == true
-  end
+  # On MinGW, RbConfig points to installed dir, and these tests fail when testing this from build dir on AppVeyor.
+  platform_is_not :mingw do
+    it "['rubylibdir'] returns the directory containing Ruby standard libraries" do
+      rubylibdir = RbConfig::CONFIG['rubylibdir']
+      File.directory?(rubylibdir).should == true
+      File.exist?("#{rubylibdir}/fileutils.rb").should == true
+    end
 
-  it "['archdir'] returns the directory containing standard libraries C extensions" do
-    archdir = RbConfig::CONFIG['archdir']
-    File.directory?(archdir).should == true
-    File.exist?("#{archdir}/etc.#{RbConfig::CONFIG['DLEXT']}").should == true
+    it "['archdir'] returns the directory containing standard libraries C extensions" do
+      archdir = RbConfig::CONFIG['archdir']
+      File.directory?(archdir).should == true
+      File.exist?("#{archdir}/etc.#{RbConfig::CONFIG['DLEXT']}").should == true
+    end
   end
 end
