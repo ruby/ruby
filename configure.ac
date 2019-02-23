@@ -1897,18 +1897,6 @@ AC_CHECK_FUNCS(sigaltstack)
 AC_CHECK_FUNCS(sigprocmask)
 AC_CHECK_FUNCS(sinh)
 AC_CHECK_FUNCS(spawnv)
-AC_CHECK_FUNCS(statx, [],
-    [AS_CASE(["$target_os"], [linux*],
-	[AC_CHECK_DECLS([__NR_statx], [ac_cv_func_statx=syscall], [],
-	[
-	@%:@ ifdef HAVE_SYSCALL_H
-	@%:@   include <syscall.h>
-	@%:@ elif defined HAVE_SYS_SYSCALL_H
-	@%:@   include <sys/syscall.h>
-	@%:@ endif
-	])
-    ])
-])
 AC_CHECK_FUNCS(symlink)
 AC_CHECK_FUNCS(syscall)
 AC_CHECK_FUNCS(sysconf)
@@ -1924,6 +1912,18 @@ AC_CHECK_FUNCS(utimes)
 AC_CHECK_FUNCS(wait4)
 AC_CHECK_FUNCS(waitpid)
 
+AS_CASE(["$target_os"],[aix*],[ac_cv_func_statx=no],[AC_CHECK_FUNCS(statx)])
+AS_IF([test "$ac_cv_func_statx" = no], [AS_CASE(["$target_os"], [linux*],
+  [AC_CHECK_DECLS([__NR_statx], [ac_cv_func_statx=syscall], [],
+    [
+@%:@ ifdef HAVE_SYSCALL_H
+@%:@   include <syscall.h>
+@%:@ elif defined HAVE_SYS_SYSCALL_H
+@%:@   include <sys/syscall.h>
+@%:@ endif
+    ])
+  ])
+])
 AS_IF([test "$ac_cv_func_statx" = syscall], [AC_DEFINE(HAVE_STATX, 0)])
 
 AS_CASE(["$ac_cv_func_memset_s:$ac_cv_func_qsort_s"], [*yes*],
