@@ -1267,7 +1267,7 @@ static VALUE cState_allow_nan_p(VALUE self)
 /*
  * call-seq: ascii_only?
  *
- * Returns true, if NaN, Infinity, and -Infinity should be generated, otherwise
+ * Returns true, if only ASCII characters should be generated. Otherwise
  * returns false.
  */
 static VALUE cState_ascii_only_p(VALUE self)
