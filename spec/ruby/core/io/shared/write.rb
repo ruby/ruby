@@ -85,9 +85,11 @@ describe :io_write, shared: true do
       @r.read.should == "foo"
     end
 
-    it "raises Errno::EPIPE if the read end is closed and does not die from SIGPIPE" do
-      @r.close
-      -> { @w.send(@method, "foo") }.should raise_error(Errno::EPIPE, /Broken pipe/)
+    without_feature :mjit do # [ruby-core:90895] MJIT worker may leave fd open in a forked child. TODO: consider acquiring GVL from MJIT worker.
+      it "raises Errno::EPIPE if the read end is closed and does not die from SIGPIPE" do
+        @r.close
+        -> { @w.send(@method, "foo") }.should raise_error(Errno::EPIPE, /Broken pipe/)
+      end
     end
   end
 end
