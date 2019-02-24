@@ -1114,9 +1114,10 @@ stat_without_gvl(const char *path, struct stat *st)
 						  RUBY_UBF_IO, NULL);
 }
 
-#if !defined(HAVE_STAT_BIRTHTIME) && defined(HAVE_STATX)
+#if !defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) && \
+    defined(HAVE_STRUCT_STATX_STX_BTIME)
 
-# if HAVE_STATX == 0
+# ifndef HAVE_STATX
 #   ifdef HAVE_SYSCALL_H
 #     include <syscall.h>
 #   elif defined HAVE_SYS_SYSCALL_H
@@ -2402,7 +2403,7 @@ rb_file_ctime(VALUE obj)
  *
  */
 
-#if defined(HAVE_STAT_BIRTHTIME) || defined(HAVE_STATX)
+#if defined(HAVE_STAT_BIRTHTIME)
 RUBY_FUNC_EXPORTED VALUE
 rb_file_s_birthtime(VALUE klass, VALUE fname)
 {

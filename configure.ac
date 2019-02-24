@@ -1563,6 +1563,8 @@ AC_CHECK_MEMBERS([struct stat.st_ctim])
 AC_CHECK_MEMBERS([struct stat.st_ctimespec])
 AC_CHECK_MEMBERS([struct stat.st_ctimensec])
 AC_CHECK_MEMBERS([struct stat.st_birthtimespec])
+AS_IF([test "x$ac_cv_member_struct_stat_st_birthtimespec" != xyes],
+    [AC_CHECK_MEMBERS([struct statx.stx_btime])])
 
 AC_CHECK_TYPES([struct timeval], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@include <time.h>
@@ -1885,19 +1887,8 @@ AC_CHECK_FUNCS(utimes)
 AC_CHECK_FUNCS(wait4)
 AC_CHECK_FUNCS(waitpid)
 
-AS_CASE(["$target_os"],[aix*],[ac_cv_func_statx=no],[AC_CHECK_FUNCS(statx)])
-AS_IF([test "$ac_cv_func_statx" = no], [AS_CASE(["$target_os"], [linux*],
-  [AC_CHECK_DECLS([__NR_statx], [ac_cv_func_statx=syscall], [],
-    [
-@%:@ ifdef HAVE_SYSCALL_H
-@%:@   include <syscall.h>
-@%:@ elif defined HAVE_SYS_SYSCALL_H
-@%:@   include <sys/syscall.h>
-@%:@ endif
-    ])
-  ])
-])
-AS_IF([test "$ac_cv_func_statx" = syscall], [AC_DEFINE(HAVE_STATX, 0)])
+AS_IF([test "x$ac_cv_member_struct_statx_stx_btime" = xyes],
+    [AC_CHECK_FUNCS(statx)])
 
 AS_CASE(["$ac_cv_func_memset_s:$ac_cv_func_qsort_s"], [*yes*],
     [RUBY_DEFINE_IF([!defined __STDC_WANT_LIB_EXT1__], [__STDC_WANT_LIB_EXT1__], 1)])
