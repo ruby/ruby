@@ -872,8 +872,8 @@ class TestJIT < Test::Unit::TestCase
       # min_calls: 2 to skip fork block
       out, err = eval_with_jit({ "TMPDIR" => dir }, "#{<<~"begin;"}\n#{<<~"end;"}", min_calls: 2, verbose: 1)
       begin;
-        def before_fork; end
-        def after_fork; end
+        def before_fork; :before_fork; end
+        def after_fork; :after_fork; end
 
         before_fork; before_fork # the child should not delete this .o file
         pid = Process.fork do # this child should not delete shared .pch file

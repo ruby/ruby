@@ -17,13 +17,13 @@ class TestRubyVMMJIT < Test::Unit::TestCase
     out, err = eval_with_jit(<<~'EOS', verbose: 1, min_calls: 1, wait: false)
       i = 0
       while i < 5
-        eval("def mjit#{i}; end; mjit#{i}")
+        eval("def mjit#{i}; true; end; mjit#{i}")
         i += 1
       end
       print RubyVM::MJIT.pause
       print RubyVM::MJIT.pause
       while i < 10
-        eval("def mjit#{i}; end; mjit#{i}")
+        eval("def mjit#{i}; true; end; mjit#{i}")
         i += 1
       end
       print RubyVM::MJIT.pause # no JIT here
