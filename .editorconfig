@@ -11,6 +11,12 @@ trim_trailing_whitespace = true
 [*.bat]
 end_of_line = crlf
 
+[reg*]
+indent_size = 2
+
+[enc/*]
+indent_size = 2
+
 [*.gemspec]
 indent_size = 2
 
