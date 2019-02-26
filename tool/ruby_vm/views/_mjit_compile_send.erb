@@ -54,7 +54,7 @@
 % end
             fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
             fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
-            fprintf(f, "        calling.popped = false;\n");
+            fprintf(f, "        calling.compiled_frame_bits = 0;\n");
 
 % # JIT: Special CALL_METHOD. Bypass cc_copy->call and inline vm_call_iseq_setup_normal for vm_call_iseq_setup_func FASTPATH.
             fprintf(f, "        {\n");

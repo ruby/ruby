@@ -24,7 +24,7 @@ sp_inc_of_sendish(const struct rb_call_info *ci)
     const int argc = ci->orig_argc;
     const int recv = 1;
     const int retn = 1;
-    const int popn = (ci->flag & VM_CALL_POPIT) ? 1 : 0;
+    const int popn = (ci->compiled_frame_bits & VM_FRAME_FLAG_POPIT) ? 1 : 0;
 
     /*         1.     2.     3.     5.     6.    */
     return 0 - argb - argc - recv + retn - popn;

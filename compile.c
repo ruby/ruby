@@ -1152,6 +1152,7 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, struct rb_cal
     ci->mid = mid;
     ci->flag = flag;
     ci->orig_argc = argc;
+    ci->compiled_frame_bits = 0;
 
     if (kw_arg) {
 	ci->flag |= VM_CALL_KWARG;
@@ -3536,7 +3537,7 @@ iseq_sendpop_optimization_phase1(const LINK_ANCHOR *anchor)
             continue;
         }
         else {
-            ci->flag |= VM_CALL_POPIT;
+            ci->compiled_frame_bits |= VM_FRAME_FLAG_POPIT;
         }
     }
 }
@@ -3549,7 +3550,7 @@ iseq_sendpop_optimization_phase2(INSN *iobj)
     if (! ci) {
         return COMPILE_OK;
     }
-    else if (! (ci->flag & VM_CALL_POPIT)) {
+    else if (! (ci->compiled_frame_bits & VM_FRAME_FLAG_POPIT)) {
         return COMPILE_OK;
     }
     else switch (iobj->insn_id) {
@@ -3604,7 +3605,7 @@ iseq_sendpop_optimization_phase3(const LINK_ANCHOR *anchor, int do_si)
         if (! ci) {
             continue;
         }
-        else if (! (ci->flag & VM_CALL_POPIT)) {
+        else if (! (ci->compiled_frame_bits & VM_FRAME_FLAG_POPIT)) {
             continue;
         }
         else if (! IS_INSN(e->next)) {
@@ -3612,16 +3613,36 @@ iseq_sendpop_optimization_phase3(const LINK_ANCHOR *anchor, int do_si)
         }
         else if (! LIKELY(do_si)) {
             /* We don't optimize. Be tidy. */
-            ci->flag &= ~(unsigned int)VM_CALL_POPIT;
+            ci->compiled_frame_bits &= ~VM_FRAME_FLAG_POPIT;
         }
         else if (! LIKELY(IS_INSN_ID(e->next, pop))) {
             /* Don't know if we reach here but the flag shall be
              * wiped because we do use the return value this case.
              */
-            ci->flag &= ~(unsigned int)VM_CALL_POPIT;
+            ci->compiled_frame_bits &= ~VM_FRAME_FLAG_POPIT;
         }
         else {
             ELEM_REMOVE(e->next);
+        }
+    }
+}
+
+static void
+iseq_construct_compiled_frame_bits(const LINK_ANCHOR *anchor)
+{
+    for (const LINK_ELEMENT *e = FIRST_ELEMENT(anchor); e->next; e = e->next) {
+        struct rb_call_info *ci = elem2ci(e);
+
+        if (ci) {
+            const LINK_ELEMENT *i = get_next_insn((INSN *)e);
+
+            if (i && IS_INSN_ID(i, pop)) {
+                ci->compiled_frame_bits |= VM_FRAME_FLAG_POPPED;
+            }
+            else if (ci->compiled_frame_bits & VM_FRAME_FLAG_POPIT) {
+                /* POPIT implies POPED */
+                ci->compiled_frame_bits |= VM_FRAME_FLAG_POPPED;
+            }
         }
     }
 }
@@ -3648,7 +3669,7 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	    }
 	    if (do_si) {
 		iseq_specialized_instruction(iseq, (INSN *)list);
-		iseq_sendpop_optimization_phase2((INSN *)list);
+                iseq_sendpop_optimization_phase2((INSN *)list);
 	    }
 	    if (do_ou) {
 		insn_operands_unification((INSN *)list);
@@ -3670,6 +3691,7 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     iseq_sendpop_optimization_phase3(anchor, do_si);
     iseq_insert_bailouts(iseq, anchor);
+    iseq_construct_compiled_frame_bits(anchor);
     return COMPILE_OK;
 }
 
@@ -8002,6 +8024,8 @@ insn_data_to_s_detail(INSN *iobj)
 		    struct rb_call_info *ci = (struct rb_call_info *)OPERAND_AT(iobj, j);
 		    rb_str_cat2(str, "<callinfo:");
 		    if (ci->mid) rb_str_catf(str, "%"PRIsVALUE, rb_id2str(ci->mid));
+                    if (ci->compiled_frame_bits)
+                        rb_str_catf(str, "(%#x)", ci->compiled_frame_bits);
 		    rb_str_catf(str, ", %d>", ci->orig_argc);
 		    break;
 		}

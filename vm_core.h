@@ -247,6 +247,7 @@ struct rb_call_info {
     ID mid;
     unsigned int flag;
     int orig_argc;
+    unsigned int compiled_frame_bits;
 };
 
 struct rb_call_info_kw_arg {
@@ -263,7 +264,7 @@ struct rb_calling_info {
     VALUE block_handler;
     VALUE recv;
     int argc;
-    int popped;
+    unsigned int compiled_frame_bits;
 };
 
 struct rb_call_cache;
@@ -1078,7 +1079,6 @@ enum vm_call_flag_bits {
     VM_CALL_SUPER_bit,          /* super */
     VM_CALL_ZSUPER_bit,         /* zsuper */
     VM_CALL_OPT_SEND_bit,       /* internal flag */
-    VM_CALL_POPIT_bit,          /* ;m(...); */
     VM_CALL__END
 };
 
@@ -1094,7 +1094,6 @@ enum vm_call_flag_bits {
 #define VM_CALL_SUPER           (0x01 << VM_CALL_SUPER_bit)
 #define VM_CALL_ZSUPER          (0x01 << VM_CALL_ZSUPER_bit)
 #define VM_CALL_OPT_SEND        (0x01 << VM_CALL_OPT_SEND_bit)
-#define VM_CALL_POPIT           (0x01 << VM_CALL_POPIT_bit)
 
 enum vm_special_object_type {
     VM_SPECIAL_OBJECT_VMCORE = 1,
