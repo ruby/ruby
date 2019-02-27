@@ -4549,8 +4549,10 @@ env_name(volatile VALUE *s)
 
 #define env_name(s) env_name(&(s))
 
+static VALUE env_aset(VALUE nm, VALUE val);
+
 static VALUE
-env_delete(VALUE obj, VALUE name)
+env_delete(VALUE name)
 {
     const char *nam, *val;
 
@@ -4586,7 +4588,7 @@ env_delete_m(VALUE obj, VALUE name)
 {
     VALUE val;
 
-    val = env_delete(obj, name);
+    val = env_delete(name);
     if (NIL_P(val) && rb_block_given_p()) rb_yield(name);
     return val;
 }
@@ -4917,12 +4919,18 @@ ruby_unsetenv(const char *name)
  *
  */
 static VALUE
-env_aset(VALUE obj, VALUE nm, VALUE val)
+env_aset_m(VALUE obj, VALUE nm, VALUE val)
+{
+    return env_aset(nm, val);
+}
+
+static VALUE
+env_aset(VALUE nm, VALUE val)
 {
     char *name, *value;
 
     if (NIL_P(val)) {
-	env_delete(obj, nm);
+	env_delete(nm);
 	return Qnil;
     }
     SafeStringValue(nm);
@@ -5131,7 +5139,7 @@ env_reject_bang(VALUE ehash)
 	if (!NIL_P(val)) {
 	    if (RTEST(rb_yield_values(2, RARRAY_AREF(keys, i), val))) {
 		FL_UNSET(RARRAY_AREF(keys, i), FL_TAINT);
-		env_delete(Qnil, RARRAY_AREF(keys, i));
+		env_delete(RARRAY_AREF(keys, i));
 		del++;
 	    }
 	}
@@ -5241,7 +5249,7 @@ env_select_bang(VALUE ehash)
 	if (!NIL_P(val)) {
 	    if (!RTEST(rb_yield_values(2, RARRAY_AREF(keys, i), val))) {
 		FL_UNSET(RARRAY_AREF(keys, i), FL_TAINT);
-		env_delete(Qnil, RARRAY_AREF(keys, i));
+		env_delete(RARRAY_AREF(keys, i));
 		del++;
 	    }
 	}
@@ -5313,7 +5321,7 @@ rb_env_clear(void)
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	VALUE val = rb_f_getenv(Qnil, RARRAY_AREF(keys, i));
 	if (!NIL_P(val)) {
-	    env_delete(Qnil, RARRAY_AREF(keys, i));
+	    env_delete(RARRAY_AREF(keys, i));
 	}
     }
     RB_GC_GUARD(keys);
@@ -5672,7 +5680,7 @@ env_shift(void)
 	if (s) {
 	    VALUE key = env_str_new(*env, s-*env);
 	    VALUE val = env_str_new2(getenv(RSTRING_PTR(key)));
-	    env_delete(Qnil, key);
+	    env_delete(key);
 	    result = rb_assoc_new(key, val);
 	}
     }
@@ -5696,7 +5704,7 @@ env_invert(void)
 static int
 env_replace_i(VALUE key, VALUE val, VALUE keys)
 {
-    env_aset(Qnil, key, val);
+    env_aset(key, val);
     if (rb_ary_includes(keys, key)) {
 	rb_ary_delete(keys, key);
     }
@@ -5722,7 +5730,7 @@ env_replace(VALUE env, VALUE hash)
     rb_hash_foreach(hash, env_replace_i, keys);
 
     for (i=0; i<RARRAY_LEN(keys); i++) {
-	env_delete(env, RARRAY_AREF(keys, i));
+	env_delete(RARRAY_AREF(keys, i));
     }
     RB_GC_GUARD(keys);
     return env;
@@ -5734,7 +5742,7 @@ env_update_i(VALUE key, VALUE val)
     if (rb_block_given_p()) {
 	val = rb_yield_values(3, key, rb_f_getenv(Qnil, key), val);
     }
-    env_aset(Qnil, key, val);
+    env_aset(key, val);
     return ST_CONTINUE;
 }
 
@@ -5990,8 +5998,8 @@ Init_Hash(void)
 
     rb_define_singleton_method(envtbl, "[]", rb_f_getenv, 1);
     rb_define_singleton_method(envtbl, "fetch", env_fetch, -1);
-    rb_define_singleton_method(envtbl, "[]=", env_aset, 2);
-    rb_define_singleton_method(envtbl, "store", env_aset, 2);
+    rb_define_singleton_method(envtbl, "[]=", env_aset_m, 2);
+    rb_define_singleton_method(envtbl, "store", env_aset_m, 2);
     rb_define_singleton_method(envtbl, "each", env_each_pair, 0);
     rb_define_singleton_method(envtbl, "each_pair", env_each_pair, 0);
     rb_define_singleton_method(envtbl, "each_key", env_each_key, 0);
