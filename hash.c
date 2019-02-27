@@ -4930,7 +4930,7 @@ env_aset(VALUE nm, VALUE val)
     char *name, *value;
 
     if (NIL_P(val)) {
-	env_delete(nm);
+        env_delete(nm);
 	return Qnil;
     }
     SafeStringValue(nm);
@@ -5139,7 +5139,7 @@ env_reject_bang(VALUE ehash)
 	if (!NIL_P(val)) {
 	    if (RTEST(rb_yield_values(2, RARRAY_AREF(keys, i), val))) {
 		FL_UNSET(RARRAY_AREF(keys, i), FL_TAINT);
-		env_delete(RARRAY_AREF(keys, i));
+                env_delete(RARRAY_AREF(keys, i));
 		del++;
 	    }
 	}
@@ -5249,7 +5249,7 @@ env_select_bang(VALUE ehash)
 	if (!NIL_P(val)) {
 	    if (!RTEST(rb_yield_values(2, RARRAY_AREF(keys, i), val))) {
 		FL_UNSET(RARRAY_AREF(keys, i), FL_TAINT);
-		env_delete(RARRAY_AREF(keys, i));
+                env_delete(RARRAY_AREF(keys, i));
 		del++;
 	    }
 	}
@@ -5321,7 +5321,7 @@ rb_env_clear(void)
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	VALUE val = rb_f_getenv(Qnil, RARRAY_AREF(keys, i));
 	if (!NIL_P(val)) {
-	    env_delete(RARRAY_AREF(keys, i));
+            env_delete(RARRAY_AREF(keys, i));
 	}
     }
     RB_GC_GUARD(keys);
@@ -5680,7 +5680,7 @@ env_shift(void)
 	if (s) {
 	    VALUE key = env_str_new(*env, s-*env);
 	    VALUE val = env_str_new2(getenv(RSTRING_PTR(key)));
-	    env_delete(key);
+            env_delete(key);
 	    result = rb_assoc_new(key, val);
 	}
     }
@@ -5730,7 +5730,7 @@ env_replace(VALUE env, VALUE hash)
     rb_hash_foreach(hash, env_replace_i, keys);
 
     for (i=0; i<RARRAY_LEN(keys); i++) {
-	env_delete(RARRAY_AREF(keys, i));
+        env_delete(RARRAY_AREF(keys, i));
     }
     RB_GC_GUARD(keys);
     return env;
