@@ -60,6 +60,10 @@ RSpec.describe Bundler::Source do
             before { Bundler.ui = Bundler::UI::Shell.new }
 
             it "should return a string with the spec name and version and locked spec version" do
+              if Bundler.ui.instance_variable_get(:@shell).is_a?(Bundler::Thor::Shell::Basic)
+                skip "tty color is not supported with Thor::Shell::Basic environment."
+              end
+
               expect(subject.version_message(spec)).to eq("nokogiri >= 1.6\e[32m (was < 1.5)\e[0m")
             end
           end
@@ -79,6 +83,10 @@ RSpec.describe Bundler::Source do
             before { Bundler.ui = Bundler::UI::Shell.new }
 
             it "should return a string with the locked spec version in yellow" do
+              if Bundler.ui.instance_variable_get(:@shell).is_a?(Bundler::Thor::Shell::Basic)
+                skip "tty color is not supported with Thor::Shell::Basic environment."
+              end
+
               expect(subject.version_message(spec)).to eq("nokogiri 1.6.1\e[33m (was 1.7.0)\e[0m")
             end
           end
@@ -92,6 +100,10 @@ RSpec.describe Bundler::Source do
             before { Bundler.ui = Bundler::UI::Shell.new }
 
             it "should return a string with the locked spec version in green" do
+              if Bundler.ui.instance_variable_get(:@shell).is_a?(Bundler::Thor::Shell::Basic)
+                skip "tty color is not supported with Thor::Shell::Basic environment."
+              end
+
               expect(subject.version_message(spec)).to eq("nokogiri 1.7.1\e[32m (was 1.7.0)\e[0m")
             end
           end
