@@ -1,0 +1,134 @@
+jobs:
+- job: Linux
+  pool:
+    vmImage: 'ubuntu-16.04'
+  strategy:
+    matrix:
+      bundled_gems:
+        task: test-bundled-gems
+      bundler:
+        task: test-bundler
+  steps:
+  - task: UseRubyVersion@0
+    inputs:
+      versionSpec: '2.5.1'
+  - script: sudo apt update -qy && sudo apt-get build-dep ruby2.3
+  - script: |
+      autoconf
+      ./configure
+      make
+    displayName: 'make'
+  - script: |
+      TRAVIS=1 make $(task)
+    displayName: "test"
+
+- job: macOS
+  pool:
+    vmImage: 'macos-10.13'
+  strategy:
+    matrix:
+#      test:
+#        task: test test-all
+#      spec:
+#        task: test-spec
+      bundled_gems:
+        task: test-bundled-gems
+      bundler:
+        task: test-bundler
+  steps:
+  - script: brew update && brew install autoconf bison openssl
+  - script: |
+      autoconf
+      ./configure --with-openssl-dir=/usr/local/opt/openssl
+      make
+    displayName: 'make'
+  - script: |
+      TRAVIS=1 make $(task)
+    displayName: "test"
+
+# - job: vs2015
+#   pool:
+#     vmImage: "vs2015-win2012r2"
+#   strategy:
+#     matrix:
+#       test:
+#         task: test test-all
+#       spec:
+#         task: test-spec
+#       bundled_gems:
+#         task: test-bundled-gems
+#       bundler:
+#         task: test-bundler
+#   steps:
+#   - script: vcpkg --triplet x64-windows install openssl zlib
+#   - script: |
+#       call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\vcvarsx86_amd64.bat"
+#       cinst winflexbison
+#       win32/configure.bat --without-ext=+,dbm,gdbm,readline --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
+#     displayName: 'configure'
+#   - script: |
+#       call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\vcvarsx86_amd64.bat"
+#       set YACC=win_bison
+#       nmake up
+#       nmake
+#       set TRAVIS=1
+#       nmake $(task)
+#     displayName: "nmake"
+
+- job: vs2017
+  pool:
+    vmImage: 'vs2017-win2016'
+#  strategy:
+#    matrix:
+#      test:
+#        task: test test-all
+#      spec:
+#        task: test-spec
+#      bundled_gems:
+#        task: test-bundled-gems
+#      bundler:
+#        task: test-bundler
+  steps:
+  - script: vcpkg --triplet x64-windows install openssl zlib
+  - script: |
+      call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+      cinst winflexbison
+      win32/configure.bat --without-ext=+,dbm,gdbm,readline --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
+    displayName: 'configure'
+  - script: |
+      call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+      set YACC=win_bison
+      nmake up
+      nmake
+#      set TRAVIS=1
+#      nmake $(task)
+    displayName: "nmake"
+
+# - job: vs2019
+#   pool:
+#     vmImage: "windows-2019"
+#   strategy:
+#     matrix:
+#       test:
+#         task: test test-all
+#       spec:
+#         task: test-spec
+#       bundled_gems:
+#         task: test-bundled-gems
+#       bundler:
+#         task: test-bundler
+#   steps:
+#   - script: vcpkg --triplet x64-windows install openssl zlib
+#   - script: |
+#       call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Preview\VC\Auxiliary\Build\vcvars64.bat"
+#       cinst winflexbison
+#       win32/configure.bat --without-ext=+,dbm,gdbm,readline --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
+#     displayName: 'configure'
+#   - script: |
+#       call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Preview\VC\Auxiliary\Build\vcvars64.bat"
+#       set YACC=win_bison
+#       nmake up
+#       nmake
+#       set TRAVIS=1
+#       nmake $(task)
+#     displayName: "nmake"
