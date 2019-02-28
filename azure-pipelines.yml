@@ -43,7 +43,7 @@ jobs:
       make
     displayName: 'make'
   - script: |
-      TRAVIS=1 make $(task)
+      make $(task)
     displayName: "test"
 
 # - job: vs2015
