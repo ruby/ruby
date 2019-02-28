@@ -95,7 +95,6 @@ jobs:
   steps:
   - script: vcpkg --triplet x64-windows install openssl zlib
   - checkout: self
-    clean: true
     fetchDepth: 1
   - script: |
       call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
