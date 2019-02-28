@@ -6187,7 +6187,14 @@ parser_tokadd_string(struct parser_params *parser,
 	    switch (c) {
 	      case '\n':
 		if (func & STR_FUNC_QWORDS) break;
-		if (func & STR_FUNC_EXPAND) continue;
+		if (func & STR_FUNC_EXPAND) {
+		    if (!(func & STR_FUNC_INDENT) || (heredoc_indent < 0))
+			continue;
+		    if (c == term) {
+			c = '\\';
+			goto terminate;
+		    }
+		}
 		tokadd('\\');
 		break;
 
@@ -6265,6 +6272,7 @@ parser_tokadd_string(struct parser_params *parser,
         }
 	tokadd(c);
     }
+  terminate:
     *encp = enc;
     return c;
 }
@@ -6718,6 +6726,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
     long len;
     VALUE str = 0;
     rb_encoding *enc = current_enc;
+    int bol;
 
     eos = RSTRING_PTR(here->nd_lit);
     len = RSTRING_LEN(here->nd_lit) - 1;
@@ -6754,7 +6763,14 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	heredoc_restore(lex_strterm);
 	return 0;
     }
-    if (was_bol() && whole_match_p(eos, len, indent)) {
+    bol = was_bol();
+    /* `heredoc_line_indent == -1` means
+     * - "after an interpolation in the same line", or
+     * - "in a continuing line"
+     */
+    if (bol &&
+	(heredoc_line_indent != -1 || (heredoc_line_indent = 0)) &&
+	whole_match_p( eos, len, indent)) {
 	dispatch_heredoc_end();
 	heredoc_restore(lex_strterm);
 	return tSTRING_END;
@@ -6825,6 +6841,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 		goto restore;
 	    }
 	    if (c != '\n') {
+		if (c == '\\') heredoc_line_indent = -1;
 	      flush:
 		set_yylval_str(STR_NEW3(tok(), toklen(), enc, func));
 		flush_string_content(enc);
