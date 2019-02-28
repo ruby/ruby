@@ -13,6 +13,8 @@ jobs:
     inputs:
       versionSpec: '2.5.1'
   - script: sudo apt update -qy && sudo apt-get build-dep ruby2.3
+  - checkout: self
+    fetchDepth: 1
   - script: |
       autoconf
       ./configure
@@ -37,6 +39,8 @@ jobs:
         task: test-bundler
   steps:
   - script: brew update && brew install autoconf bison openssl
+  - checkout: self
+    fetchDepth: 1
   - script: |
       autoconf
       ./configure --with-openssl-dir=/usr/local/opt/openssl
@@ -90,6 +94,8 @@ jobs:
 #        task: test-bundler
   steps:
   - script: vcpkg --triplet x64-windows install openssl zlib
+  - checkout: self
+    fetchDepth: 1
   - script: |
       call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
       cinst winflexbison
