@@ -5,7 +5,7 @@ require 'mkmf'
 require 'rbconfig'
 
 def main
-  unless find_executable('bison')
+  unless find_executable(ENV["YACC"] || 'bison')
     unless File.exist?('ripper.c') or File.exist?("#{$srcdir}/ripper.c")
       raise 'missing bison; abort'
     end
@@ -16,7 +16,9 @@ def main
   $defs << '-DRIPPER_DEBUG' if $debug
   $VPATH << '$(topdir)' << '$(top_srcdir)'
   $INCFLAGS << ' -I$(topdir) -I$(top_srcdir)'
-  create_makefile 'ripper'
+  create_makefile 'ripper' do |conf|
+    conf << "BISON = #{ENV['YACC'] || 'bison'}"
+  end
 end
 
 main
