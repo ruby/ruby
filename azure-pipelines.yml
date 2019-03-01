@@ -109,7 +109,6 @@ jobs:
 #      set TRAVIS=1
 #      nmake $(task)
     displayName: "nmake"
-    continueOnError: true # this step is known to be broken for now. TODO: remove this line once it's fixed.
 
 # - job: vs2019
 #   pool:
