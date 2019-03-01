@@ -1,7 +1,6 @@
 GEN  = $(srcdir)/tools/generate.rb
 SRC1 = $(top_srcdir)/parse.y
 SRC2 = $(srcdir)/eventids2.c
-BISON = bison
 
 .SUFFIXES: .y
 
