@@ -110,9 +110,9 @@ jobs:
 #      nmake $(task)
     displayName: "nmake"
 
-# - job: vs2019
-#   pool:
-#     vmImage: "windows-2019"
+- job: vs2019
+  pool:
+    vmImage: "windows-2019"
 #   strategy:
 #     matrix:
 #       test:
@@ -123,18 +123,18 @@ jobs:
 #         task: test-bundled-gems
 #       bundler:
 #         task: test-bundler
-#   steps:
+  steps:
 #   - script: vcpkg --triplet x64-windows install openssl zlib
-#   - script: |
-#       call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Preview\VC\Auxiliary\Build\vcvars64.bat"
-#       cinst winflexbison
-#       win32/configure.bat --without-ext=+,dbm,gdbm,readline --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
-#     displayName: 'configure'
-#   - script: |
-#       call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Preview\VC\Auxiliary\Build\vcvars64.bat"
-#       set YACC=win_bison
-#       nmake up
-#       nmake
+  - script: |
+      call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Preview\VC\Auxiliary\Build\vcvars64.bat"
+      cinst winflexbison
+      win32/configure.bat --without-ext=+,dbm,gdbm,readline --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
+    displayName: 'configure'
+  - script: |
+      call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Preview\VC\Auxiliary\Build\vcvars64.bat"
+      set YACC=win_bison
+      nmake up
+      nmake
 #       set TRAVIS=1
 #       nmake $(task)
-#     displayName: "nmake"
+    displayName: "nmake"
