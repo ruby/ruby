@@ -69,11 +69,11 @@ jobs:
 #       call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\vcvarsx86_amd64.bat"
 #       cinst winflexbison
 #       win32/configure.bat --without-ext=+,dbm,gdbm,readline --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
+#       nmake up
 #     displayName: 'configure'
 #   - script: |
 #       call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\vcvarsx86_amd64.bat"
 #       set YACC=win_bison
-#       nmake up
 #       nmake
 #       set TRAVIS=1
 #       nmake $(task)
@@ -100,11 +100,11 @@ jobs:
       call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
       cinst winflexbison
       win32/configure.bat --without-ext=+,dbm,gdbm,readline --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
+      nmake up
     displayName: 'configure'
   - script: |
       call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
       set YACC=win_bison
-      nmake up
       nmake
 #      set TRAVIS=1
 #      nmake $(task)
@@ -129,11 +129,11 @@ jobs:
       call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Preview\VC\Auxiliary\Build\vcvars64.bat"
       cinst winflexbison
       win32/configure.bat --without-ext=+,dbm,gdbm,readline --enable-bundled-libffi --with-opt-dir=C:/vcpkg/installed/x64-windows
+      nmake up
     displayName: 'configure'
   - script: |
       call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Preview\VC\Auxiliary\Build\vcvars64.bat"
       set YACC=win_bison
-      nmake up
       nmake
 #       set TRAVIS=1
 #       nmake $(task)
