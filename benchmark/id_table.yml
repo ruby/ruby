@@ -1,0 +1,3 @@
+benchmark:
+  Struct.new(*('a'..'z').map { |x| x.to_sym })
+loop_count: 100000
