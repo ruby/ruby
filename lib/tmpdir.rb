@@ -84,9 +84,9 @@ class Dir
   #
   def self.mktmpdir(prefix_suffix=nil, *rest)
     base = nil
-    path = Tmpname.create(prefix_suffix || "d", *rest) {|path, _, _, d|
+    path = Tmpname.create(prefix_suffix || "d", *rest) {|pth, _, _, d|
       base = d
-      mkdir(path, 0700)
+      mkdir(pth, 0700)
     }
     if block_given?
       begin
