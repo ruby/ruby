@@ -67,12 +67,6 @@ switch (insn) {
     break;
 % end
 %
-% RubyVM::SendpopInstructions.to_a.each do |insn|
-  case BIN(<%= insn.name %>):
-<%= render 'mjit_compile_insn', locals: { insn: insn } -%>
-    break;
-% end
-%
 % # We don't support InstructionsUnifications yet because it's not used for now.
 % # We don't support TraceInstructions yet. There is no blocker for it but it's just not implemented.
   default:

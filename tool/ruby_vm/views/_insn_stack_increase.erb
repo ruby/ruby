@@ -15,7 +15,7 @@ insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
     static const signed char t[] = {
 % RubyVM::Instructions.each_slice 8 do |a|
         <%= a.map { |i|
-          if i.has_attribute?('sp_inc')
+          if i.has_attribute?('sp_inc') or i.sendish?
             '-127'
           else
             sprintf("%4d", i.rets.size - i.pops.size)
@@ -33,7 +33,7 @@ insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
     default:
         UNREACHABLE;
 % RubyVM::Instructions.each do |i|
-%   next unless i.has_attribute?('sp_inc')
+%   next unless i.has_attribute?('sp_inc') or i.sendish?
     case <%= i.bin %>:
         return attr_sp_inc_<%= i.name %>(<%=
           i.opes.map.with_index do |v, j|

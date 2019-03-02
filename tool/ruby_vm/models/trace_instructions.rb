@@ -59,6 +59,8 @@ class RubyVM::TraceInstructions
     return false
   end
 
+  alias sendish? has_attribute?
+
   private
 
   @instances = RubyVM::Instructions \

@@ -176,12 +176,7 @@ enum vm_regan_acttype {
     rb_snum_t y = attr_width_opt_send_without_block(0, 0); \
     rb_snum_t z = x - y; \
     ADD_PC(z); \
-    if (INSN_CLASS == RUBYVM_SENDPOP_INSTRUCTIONS) { \
-        DISPATCH_ORIGINAL_INSN(opt_sendpop_opt_send_without_block); \
-    } \
-    else { \
-        DISPATCH_ORIGINAL_INSN(opt_send_without_block); \
-    } \
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block); \
 } while (0)
 #endif
 

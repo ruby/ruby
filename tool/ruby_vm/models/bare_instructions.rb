@@ -143,6 +143,10 @@ class RubyVM::BareInstructions
     return @pops.any? {|i| i[:name] == var[:name] }
   end
 
+  def sendish?
+    return %r/#{RubyVM::Typemap["CALL_INFO"].first}/o =~ operands_info
+  end
+
   private
 
   def generate_attribute t, k, v
@@ -162,11 +166,23 @@ class RubyVM::BareInstructions
     generate_attribute 'rb_num_t', 'popn', pops.size
     generate_attribute 'rb_num_t', 'retn', rets.size
     generate_attribute 'rb_num_t', 'width', width
-    generate_attribute 'rb_snum_t', 'sp_inc', rets.size - pops.size
+    generate_attribute 'rb_snum_t', 'sp_inc', default_definition_of_sp_inc
     generate_attribute 'bool', 'handles_sp', default_definition_of_handles_sp
     generate_attribute 'bool', 'leaf', default_definition_of_leaf
     generate_attribute 'enum ruby_vminsn_type', 'trace_equivalent', trace_bin
     generate_attribute 'enum rb_insn_purity', 'purity', default_definition_of_purity
+  end
+
+  def default_definition_of_sp_inc
+    if sendish?
+      return <<-end.gsub(/^\s{8}/, '').chomp
+        (ci->compiled_frame_bits & VM_FRAME_FLAG_POPIT)
+                 ? -#{pops.size}
+                 : #{rets.size - pops.size}
+      end
+    else
+      return rets.size - pops.size
+    end
   end
 
   def default_definition_of_handles_sp

@@ -3542,60 +3542,6 @@ iseq_sendpop_optimization_phase1(const LINK_ANCHOR *anchor)
     }
 }
 
-static int
-iseq_sendpop_optimization_phase2(INSN *iobj)
-{
-    const struct rb_call_info *ci = elem2ci(&iobj->link);
-
-    if (! ci) {
-        return COMPILE_OK;
-    }
-    else if (! (ci->compiled_frame_bits & VM_FRAME_FLAG_POPIT)) {
-        return COMPILE_OK;
-    }
-    else switch (iobj->insn_id) {
-#define SP_INSN(opt) \
-      case BIN(opt): \
-        iobj->insn_id = BIN(opt_sendpop_ ## opt); \
-        return COMPILE_OK
-        SP_INSN(invokeblock);
-        SP_INSN(invokesuper);
-        SP_INSN(opt_RubyVM_return_value_is_used_);
-        SP_INSN(opt_and);
-        SP_INSN(opt_aref);
-        SP_INSN(opt_aref_with);
-        SP_INSN(opt_aset);
-        SP_INSN(opt_aset_with);
-        SP_INSN(opt_div);
-        SP_INSN(opt_empty_p);
-        SP_INSN(opt_eq);
-        SP_INSN(opt_ge);
-        SP_INSN(opt_gt);
-        SP_INSN(opt_le);
-        SP_INSN(opt_length);
-        SP_INSN(opt_lt);
-        SP_INSN(opt_ltlt);
-        SP_INSN(opt_minus);
-        SP_INSN(opt_mod);
-        SP_INSN(opt_mult);
-        SP_INSN(opt_neq);
-        SP_INSN(opt_not);
-        SP_INSN(opt_or);
-        SP_INSN(opt_plus);
-        SP_INSN(opt_regexpmatch2);
-        SP_INSN(opt_send_without_block);
-        SP_INSN(opt_size);
-        SP_INSN(opt_str_freeze);
-        SP_INSN(opt_str_uminus);
-        SP_INSN(opt_succ);
-        SP_INSN(send);
-#undef  SP_INSN
-      default: ;
-        const char *name = insn_name(iobj->insn_id);
-        rb_bug("unknown BIN %s for sendpop optimization", name);
-    }
-}
-
 static void
 iseq_sendpop_optimization_phase3(const LINK_ANCHOR *anchor, int do_si)
 {
@@ -3669,7 +3615,6 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	    }
 	    if (do_si) {
 		iseq_specialized_instruction(iseq, (INSN *)list);
-                iseq_sendpop_optimization_phase2((INSN *)list);
 	    }
 	    if (do_ou) {
 		insn_operands_unification((INSN *)list);
