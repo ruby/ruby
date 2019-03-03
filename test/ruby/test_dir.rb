@@ -458,10 +458,10 @@ class TestDir < Test::Unit::TestCase
       Process.setrlimit(Process::RLIMIT_NOFILE, 50)
       begin
         fs = []
-        tap {tap {tap {(0..100).map {fs << open(IO::NULL)}}}}
+        tap {tap {tap {(0..100).each {fs << open(IO::NULL)}}}}
       rescue Errno::EMFILE
       ensure
-        fs.each{|f| f.close}
+        fs.clear
       end
       list = Dir.glob("*").sort
       assert_not_empty(list)
