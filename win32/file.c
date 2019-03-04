@@ -189,6 +189,20 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, size_t buffer_size)
 	pos--;
     }
 
+    if ((pos >= *wfullpath + 2) &&
+        (*wfullpath)[0] == L'\\' && (*wfullpath)[1] == L'\\') {
+        /* UNC path: no short file name, and needs Network Share
+         * Management functions instead of FindFirstFile. */
+        if (pos == *wfullpath + 2) {
+            /* //host only */
+            return size;
+        }
+        if (!wmemchr(*wfullpath + 2, L'\\', pos - *wfullpath - 2)) {
+            /* //host/share only */
+            return size;
+        }
+    }
+
     find_handle = FindFirstFileW(*wfullpath, &find_data);
     if (find_handle != INVALID_HANDLE_VALUE) {
 	size_t trail_pos = pos - *wfullpath + IS_DIR_SEPARATOR_P(*pos);
