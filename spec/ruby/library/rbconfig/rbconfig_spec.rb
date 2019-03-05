@@ -9,8 +9,8 @@ describe 'RbConfig::CONFIG' do
     end
   end
 
-  # On MinGW, RbConfig points to installed dir, and these tests fail when testing this from build dir on AppVeyor.
-  platform_is_not :mingw do
+  # These directories have no meanings before the installation.
+  if RbConfig::TOPDIR
     it "['rubylibdir'] returns the directory containing Ruby standard libraries" do
       rubylibdir = RbConfig::CONFIG['rubylibdir']
       File.directory?(rubylibdir).should == true
