@@ -135,7 +135,7 @@ class Gem::DependencyList
   end
 
   ##
-  # Is is ok to remove a gemspec from the dependency list?
+  # It is ok to remove a gemspec from the dependency list?
   #
   # If removing the gemspec creates breaks a currently ok dependency, then it
   # is NOT ok to remove the gemspec.

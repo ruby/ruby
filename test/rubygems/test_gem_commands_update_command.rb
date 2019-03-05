@@ -543,4 +543,59 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_empty out
   end
 
+  def test_explain_platform_local
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.download 'a', 2
+
+      fetcher.download 'a', 2 do |s|
+        s.platform = local
+      end
+
+      fetcher.spec 'a', 1
+    end
+
+    @cmd.options[:explain] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Gems to update:", out.shift
+    assert_equal "  a-2-#{local}", out.shift
+    assert_empty out
+  end
+
+  def test_explain_platform_ruby
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.download 'a', 2
+
+      fetcher.download 'a', 2 do |s|
+        s.platform = local
+      end
+
+      fetcher.spec 'a', 1
+    end
+
+    # equivalent to --platform=ruby
+    Gem.platforms = [Gem::Platform::RUBY]
+
+    @cmd.options[:explain] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Gems to update:", out.shift
+    assert_equal "  a-2", out.shift
+    assert_empty out
+  end
+
 end

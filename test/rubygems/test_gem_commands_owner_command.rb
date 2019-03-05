@@ -239,10 +239,10 @@ EOF
     response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
     response_success = "Owner added successfully."
 
-    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = proc do
-      @call_count ||= 0
-      (@call_count += 1).odd? ? [response_fail, 401, 'Unauthorized'] : [response_success, 200, 'OK']
-    end
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [
+      [response_fail, 401, 'Unauthorized'],
+      [response_success, 200, 'OK']
+    ]
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
     use_ui @otp_ui do

@@ -7,12 +7,15 @@
 
 require 'rubygems/util'
 require 'rubygems/deprecate'
+require 'rubygems/text'
 
 ##
 # Module that defines the default UserInteraction.  Any class including this
 # module will have access to the +ui+ method that returns the default UI.
 
 module Gem::DefaultUserInteraction
+
+  include Gem::Text
 
   ##
   # The default UI is a class variable of the singleton class for this
@@ -162,7 +165,7 @@ module Gem::UserInteraction
   # is true.
 
   def verbose(msg = nil)
-    say(msg || yield) if Gem.configuration.really_verbose
+    say(clean_text(msg || yield)) if Gem.configuration.really_verbose
   end
 end
 

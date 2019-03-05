@@ -35,7 +35,6 @@ class TestGemRequirement < Gem::TestCase
     assert_requirement_equal "= 2", ["2"]
     assert_requirement_equal "= 2", v(2)
     assert_requirement_equal "2.0", "2"
-    assert_requirement_equal ["= 2", ">= 2"], [">= 2", "= 2"]
   end
 
   def test_create

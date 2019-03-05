@@ -120,9 +120,9 @@ class Gem::InstallerTestCase < Gem::TestCase
   # The executable is also written to the bin dir in @tmpdir and the installed
   # gem directory for +spec+.
 
-  def util_make_exec(spec = @spec, shebang = "#!/usr/bin/ruby")
+  def util_make_exec(spec = @spec, shebang = "#!/usr/bin/ruby", bindir = "bin")
     spec.executables = %w[executable]
-    spec.files << 'bin/executable'
+    spec.bindir = bindir
 
     exec_path = spec.bin_file "executable"
     write_file exec_path do |io|

@@ -103,6 +103,16 @@ class TestGemCommandManager < Gem::TestCase
     assert_match(/invalid option: --bad-arg/i, @ui.error)
   end
 
+  def test_process_args_bad_no_ri
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::TermError do
+        @command_manager.process_args %w[--no-ri]
+      end
+    end
+
+    assert_match(/invalid option: --no-ri. Use --no-document instead./i, @ui.error)
+  end
+
   # HACK move to install command test
   def test_process_args_install
     #capture all install options
