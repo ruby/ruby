@@ -103,8 +103,8 @@ class TestGemIndexer < Gem::TestCase
     quickdir = File.join @tempdir, 'quick'
     marshal_quickdir = File.join quickdir, "Marshal.#{@marshal_version}"
 
-    assert File.directory?(quickdir)
-    assert File.directory?(marshal_quickdir)
+    assert_directory_exists quickdir
+    assert_directory_exists marshal_quickdir
 
     assert_indexed marshal_quickdir, "#{File.basename(@a1.spec_file)}.rz"
     assert_indexed marshal_quickdir, "#{File.basename(@a2.spec_file)}.rz"
@@ -133,8 +133,8 @@ class TestGemIndexer < Gem::TestCase
     quickdir = File.join @tempdir, 'quick'
     marshal_quickdir = File.join quickdir, "Marshal.#{@marshal_version}"
 
-    assert File.directory?(quickdir), 'quickdir should be directory'
-    assert File.directory?(marshal_quickdir)
+    assert_directory_exists quickdir, 'quickdir should be directory'
+    assert_directory_exists marshal_quickdir
 
     refute_indexed quickdir, "index"
     refute_indexed quickdir, "index.rz"
@@ -179,8 +179,8 @@ class TestGemIndexer < Gem::TestCase
     quickdir = File.join @tempdir, 'quick'
     marshal_quickdir = File.join quickdir, "Marshal.#{@marshal_version}"
 
-    assert File.directory?(quickdir)
-    assert File.directory?(marshal_quickdir)
+    assert_directory_exists quickdir
+    assert_directory_exists marshal_quickdir
 
     assert_indexed marshal_quickdir, "#{File.basename(@a1.spec_file)}.rz"
     assert_indexed marshal_quickdir, "#{File.basename(@a2.spec_file)}.rz"
@@ -315,8 +315,8 @@ class TestGemIndexer < Gem::TestCase
     quickdir = File.join @tempdir, 'quick'
     marshal_quickdir = File.join quickdir, "Marshal.#{@marshal_version}"
 
-    assert File.directory?(quickdir)
-    assert File.directory?(marshal_quickdir)
+    assert_directory_exists quickdir
+    assert_directory_exists marshal_quickdir
 
     @d2_1 = util_spec 'd', '2.1'
     util_build_gem @d2_1

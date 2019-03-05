@@ -2544,6 +2544,14 @@ end
     assert_equal @c1, same_spec
   end
 
+  def test_to_ruby_keeps_requirements_as_originally_specified
+    spec = util_spec 'a', '1' do |s|
+      s.add_dependency 'b', ['~> 1.0', '>= 1.0.0']
+    end
+
+    assert_includes spec.to_ruby, '"~> 1.0", ">= 1.0.0"'
+  end
+
   def test_to_ruby_legacy
     gemspec1 = Gem::Deprecate.skip_during do
       eval LEGACY_RUBY_SPEC

@@ -134,6 +134,12 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     assert File.exist?(path), msg
   end
 
+  def assert_directory_exists(path, msg = nil)
+    msg = message(msg) { "Expected path '#{path}' to be a directory" }
+    assert_path_exists path
+    assert File.directory?(path), msg
+  end
+
   ##
   # Sets the ENABLE_SHARED entry in RbConfig::CONFIG to +value+ and restores
   # the original value when the block ends
