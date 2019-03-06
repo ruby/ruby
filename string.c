@@ -657,12 +657,13 @@ rb_enc_str_coderange(VALUE str)
     if (cr == ENC_CODERANGE_UNKNOWN) {
 	int encidx = ENCODING_GET(str);
 	rb_encoding *enc = rb_enc_from_index(encidx);
-	if (rb_enc_mbminlen(enc) > 1 && rb_enc_dummy_p(enc)) {
+	if (rb_enc_mbminlen(enc) > 1 && rb_enc_dummy_p(enc) &&
+            rb_enc_mbminlen(enc = get_actual_encoding(encidx, str)) == 1) {
 	    cr = ENC_CODERANGE_BROKEN;
 	}
 	else {
 	    cr = coderange_scan(RSTRING_PTR(str), RSTRING_LEN(str),
-				get_actual_encoding(encidx, str));
+                                enc);
 	}
         ENC_CODERANGE_SET(str, cr);
     }
