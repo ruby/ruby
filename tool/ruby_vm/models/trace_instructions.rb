@@ -61,7 +61,9 @@ class RubyVM::TraceInstructions
 
   private
 
-  @instances = RubyVM::Instructions.map {|i| new i }
+  @instances = RubyVM::Instructions \
+    . reject {|i| i.has_attribute? 'trace_equivalent' } \
+    . map    {|i| new i }
 
   def self.to_a
     @instances

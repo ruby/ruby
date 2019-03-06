@@ -48,6 +48,10 @@ class RubyVM::BareInstructions
     return "BIN(#{name})"
   end
 
+  def trace_bin
+    return "BIN(trace_#{name})"
+  end
+
   def call_attribute name
     return sprintf 'attr_%s_%s(%s)', name, @name, \
                    @opes.map {|i| i[:name] }.compact.join(', ')
@@ -162,6 +166,7 @@ class RubyVM::BareInstructions
     generate_attribute 'rb_snum_t', 'sp_inc', rets.size - pops.size
     generate_attribute 'bool', 'handles_sp', default_definition_of_handles_sp
     generate_attribute 'bool', 'leaf', default_definition_of_leaf
+    generate_attribute 'enum ruby_vminsn_type', 'trace_equivalent', trace_bin
   end
 
   def default_definition_of_handles_sp

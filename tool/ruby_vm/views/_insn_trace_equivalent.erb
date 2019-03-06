@@ -1,0 +1,26 @@
+%# -*- C -*-
+%# Copyright (c) 2019 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+%#
+MAYBE_UNUSED(CONSTFUNC(static enum ruby_vminsn_type insn_trace_equivalent(enum ruby_vminsn_type insn)));
+
+enum ruby_vminsn_type
+insn_trace_equivalent(enum ruby_vminsn_type insn)
+{
+    /* :TODO: This can be a table lookup -- but is it worth? */
+    switch(insn) {
+    default:
+      return VM_INSTRUCTION_SIZE;
+% RubyVM::Instructions.each do |i|
+%   break if RubyVM::TraceInstructions === i
+    case <%= i.bin %>:
+      return attr_trace_equivalent_<%= i.name %>(<%=
+        i.opes.map { "0" }.join(", ") # operands never make sense for this.
+      %>);
+% end
+    }
+}
