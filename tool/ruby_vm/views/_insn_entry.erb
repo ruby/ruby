@@ -12,7 +12,9 @@
 INSN_ENTRY(<%= insn.name %>)
 {
     /* ###  Declare that we have just entered into an instruction. ### */
+% unless insn.has_attribute?('trace_equivalent')
     START_OF_ORIGINAL_INSN(<%= insn.name %>);
+% end
     DEBUG_ENTER_INSN(<%=cstr insn.name %>);
 
     /* ###  Declare and assign variables. ### */

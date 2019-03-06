@@ -50,6 +50,10 @@
          not introduce new stack frame on top of it.
          If an instruction handles sp, that can never be a leaf.
 
+       * trace_equivalent: some instructions can be seen as special
+         cases of another ones.  Trace instructions can look at them
+         instead, if specified by this attribute.
+
    - Attributes can access operands, but not stack (push/pop) variables.
 
    - An instruction's body is a pure C block, copied verbatimly into
@@ -1069,6 +1073,7 @@ opt_plus
 /* Array + anything can be handled inside of opt_plus, and that
  * anything is converted into array using #to_ary. */
 // attr bool leaf = false; /* has rb_to_array_type() */
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_plus(recv, obj);
 
@@ -1083,6 +1088,7 @@ opt_minus
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_minus(recv, obj);
 
@@ -1097,6 +1103,7 @@ opt_mult
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_mult(recv, obj);
 
@@ -1114,6 +1121,7 @@ opt_div
 /* In case of division by zero, it raises. Thus
  * ZeroDivisionError#initialize is called.  */
 // attr bool leaf = false;
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_div(recv, obj);
 
@@ -1130,6 +1138,7 @@ opt_mod
 (VALUE val)
 /* Same discussion as opt_mod. */
 // attr bool leaf = false;
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_mod(recv, obj);
 
@@ -1148,6 +1157,7 @@ opt_eq
  * (somewhat) coerces the non-string into a string, via a method
  * call. */
 // attr bool leaf = false; /* has rb_str_equal() */
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = opt_eq_func(recv, obj, ci, cc);
 
@@ -1178,6 +1188,7 @@ opt_lt
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_lt(recv, obj);
 
@@ -1192,6 +1203,7 @@ opt_le
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_le(recv, obj);
 
@@ -1206,6 +1218,7 @@ opt_gt
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_gt(recv, obj);
 
@@ -1220,6 +1233,7 @@ opt_ge
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_ge(recv, obj);
 
@@ -1238,6 +1252,7 @@ opt_ltlt
  * string.  Then what happens if that codepoint does not exist in the
  * string's encoding?  Of course an exception.  That's not a leaf. */
 // attr bool leaf = false; /* has "invalid codepoint" exception */
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_ltlt(recv, obj);
 
@@ -1252,6 +1267,7 @@ opt_and
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_and(recv, obj);
 
@@ -1266,6 +1282,7 @@ opt_or
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_or(recv, obj);
 
@@ -1285,6 +1302,7 @@ opt_aref
  * default_proc.  This is a method call.  So opt_aref is
  * (surprisingly) not leaf. */
 // attr bool leaf = false; /* has rb_funcall() */ /* calls #yield */
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_aref(recv, obj);
 
@@ -1302,6 +1320,7 @@ opt_aset
 /* This is another story than opt_aref.  When vm_opt_aset() resorts
  * to rb_hash_aset(), which should call #hash for `obj`. */
 // attr bool leaf = false; /* has rb_funcall() */ /* calls #hash */
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_aset(recv, obj, set);
 
@@ -1358,6 +1377,7 @@ opt_length
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv)
 (VALUE val)
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_length(recv, BOP_LENGTH);
 
@@ -1372,6 +1392,7 @@ opt_size
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv)
 (VALUE val)
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_length(recv, BOP_SIZE);
 
@@ -1386,6 +1407,7 @@ opt_empty_p
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv)
 (VALUE val)
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_empty_p(recv);
 
@@ -1400,6 +1422,7 @@ opt_succ
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv)
 (VALUE val)
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_succ(recv);
 
@@ -1414,6 +1437,7 @@ opt_not
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv)
 (VALUE val)
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_not(ci, cc, recv);
 
@@ -1440,6 +1464,7 @@ opt_regexpmatch2
 (VALUE obj2, VALUE obj1)
 (VALUE val)
 // attr bool leaf = false; /* match_at() has rb_thread_check_ints() */
+// attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 {
     val = vm_opt_regexpmatch2(obj2, obj1);
 

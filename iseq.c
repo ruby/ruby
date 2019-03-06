@@ -2559,7 +2559,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     VALUE exception = rb_ary_new(); /* [[....]] */
     VALUE misc = rb_hash_new();
 
-    static ID insn_syms[VM_INSTRUCTION_SIZE/2]; /* w/o-trace only */
+    static ID insn_syms[VM_INSTRUCTION_SIZE];
     struct st_table *labels_table = st_init_numtable();
 
     DECL_SYMBOL(top);
@@ -3006,12 +3006,12 @@ rb_iseq_defined_string(enum defined_type type)
 
 static st_table *encoded_insn_data;
 typedef struct insn_data_struct {
-    int insn;
+    enum ruby_vminsn_type insn;
     int insn_len;
     void *notrace_encoded_insn;
     void *trace_encoded_insn;
 } insn_data_t;
-static insn_data_t insn_data[VM_INSTRUCTION_SIZE/2];
+static insn_data_t insn_data[VM_INSTRUCTION_SIZE];
 
 void
 rb_vm_encoded_insn_data_table_init(void)
@@ -3022,20 +3022,32 @@ rb_vm_encoded_insn_data_table_init(void)
 #else
 #define INSN_CODE(insn) (insn)
 #endif
-    st_data_t insn;
     encoded_insn_data = st_init_numtable_with_size(VM_INSTRUCTION_SIZE / 2);
 
-    for (insn = 0; insn < VM_INSTRUCTION_SIZE/2; insn++) {
-        st_data_t key1 = (st_data_t)INSN_CODE(insn);
-        st_data_t key2 = (st_data_t)INSN_CODE(insn + VM_INSTRUCTION_SIZE/2);
+    for (enum ruby_vminsn_type insn = 0; insn < VM_INSTRUCTION_SIZE; insn++) {
+        enum ruby_vminsn_type tracer = insn_trace_equivalent(insn);
+        RUBY_ASSERT(tracer >= 0);
+        RUBY_ASSERT(tracer <= VM_INSTRUCTION_SIZE);
 
-        insn_data[insn].insn = (int)insn;
-        insn_data[insn].insn_len = insn_len(insn);
-        insn_data[insn].notrace_encoded_insn = (void *) key1;
-        insn_data[insn].trace_encoded_insn = (void *) key2;
+        if (tracer == VM_INSTRUCTION_SIZE) {
+            return;              /* end of non-trace insn */
+        }
+        else {
+            st_data_t key1 = (st_data_t)INSN_CODE(insn);
+            st_data_t key2 = (st_data_t)INSN_CODE(tracer);
+            insn_data_t *ptr = &insn_data[insn];
+            *ptr = (insn_data_t) {
+                .insn = insn,
+                .insn_len = insn_len(insn),
+                .notrace_encoded_insn = (void *)key1,
+                .trace_encoded_insn = (void *)key2,
+            };
+            st_add_direct(encoded_insn_data, key1, (st_data_t)ptr);
 
-        st_add_direct(encoded_insn_data, key1, (st_data_t)&insn_data[insn]);
-        st_add_direct(encoded_insn_data, key2, (st_data_t)&insn_data[insn]);
+            if (!(st_lookup(encoded_insn_data, key2, NULL))) {
+                st_add_direct(encoded_insn_data, key2, (st_data_t)ptr);
+            }
+        }
     }
 }
 
@@ -3048,6 +3060,19 @@ rb_vm_insn_addr2insn(const void *addr)
     if (st_lookup(encoded_insn_data, key, &val)) {
         insn_data_t *e = (insn_data_t *)val;
         return (int)e->insn;
+    }
+    else { /* try hard inspecting what this is */
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+        const void *const *table = rb_vm_get_insns_address_table();
+#endif
+
+        for (enum ruby_vminsn_type i = 0; i < VM_INSTRUCTION_SIZE; i++) {
+            const void *p = (const void *)INSN_CODE(i);
+
+            if (p == addr) {
+                rb_bug("rb_vm_insn_addr2insn: insn not registered: %s", insn_name(i));
+            }
+        }
     }
 
     rb_bug("rb_vm_insn_addr2insn: invalid insn address: %p", addr);
@@ -3063,6 +3088,18 @@ encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon)
         insn_data_t *e = (insn_data_t *)val;
         *iseq_encoded_insn = (VALUE) (turnon ? e->trace_encoded_insn : e->notrace_encoded_insn);
         return e->insn_len;
+    }
+    else { /* try hard inspecting what this is */
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+        const void *const *table = rb_vm_get_insns_address_table();
+#endif
+
+        for (enum ruby_vminsn_type i = 0; i < VM_INSTRUCTION_SIZE; i++) {
+            const VALUE p = INSN_CODE(i);
+            if (p == *iseq_encoded_insn) {
+                rb_bug("trace_instrument: insn not registered: %s", insn_name(i));
+            }
+        }
     }
 
     rb_bug("trace_instrument: invalid insn address: %p", (void *)*iseq_encoded_insn);
