@@ -254,6 +254,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     @orig_gem_env_requirements = ENV.to_hash
 
     ENV['GEM_VENDOR'] = nil
+    ENV['SOURCE_DATE_EPOCH'] = nil
 
     @current_dir = Dir.pwd
     @fetcher     = nil

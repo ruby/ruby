@@ -1719,8 +1719,11 @@ dependencies: []
   end
 
   def test_date_use_env_source_date_epoch
+    epoch = ENV["SOURCE_DATE_EPOCH"]
     ENV["SOURCE_DATE_EPOCH"] = "123456789"
     assert_equal Time.utc(1973,11,29,0,0,0), @a1.date
+  ensure
+    ENV["SOURCE_DATE_EPOCH"] = epoch
   end
 
   def test_dependencies

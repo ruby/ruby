@@ -2,8 +2,11 @@
 require 'rubygems/command'
 require 'rubygems/local_remote_options'
 require 'rubygems/gemcutter_utilities'
+require 'rubygems/text'
 
 class Gem::Commands::OwnerCommand < Gem::Command
+
+  include Gem::Text
   include Gem::LocalRemoteOptions
   include Gem::GemcutterUtilities
 
@@ -65,7 +68,7 @@ permission to.
     end
 
     with_response response do |resp|
-      owners = Gem::SafeYAML.load resp.body
+      owners = Gem::SafeYAML.load clean_text(resp.body)
 
       say "Owners for gem: #{name}"
       owners.each do |owner|

@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 require 'rubygems/remote_fetcher'
+require 'rubygems/text'
 
 ##
 # Utility methods for using the RubyGems API.
 
 module Gem::GemcutterUtilities
+
+  include Gem::Text
 
   # TODO: move to Gem::Command
   OptionParser.accept Symbol do |value|
@@ -162,13 +165,13 @@ module Gem::GemcutterUtilities
       if block_given?
         yield response
       else
-        say response.body
+        say clean_text(response.body)
       end
     else
       message = response.body
       message = "#{error_prefix}: #{message}" if error_prefix
 
-      say message
+      say clean_text(message)
       terminate_interaction 1 # TODO: question this
     end
   end
