@@ -1387,6 +1387,15 @@ mnew_missing(VALUE klass, VALUE obj, ID id, VALUE mclass)
 }
 
 static VALUE
+mnew_missing_by_name(VALUE klass, VALUE obj, VALUE *name, int scope, VALUE mclass)
+{
+    VALUE vid = rb_str_intern(*name);
+    *name = vid;
+    if (!respond_to_missing_p(klass, obj, vid, scope)) return Qfalse;
+    return mnew_missing(klass, obj, SYM2ID(vid), mclass);
+}
+
+static VALUE
 mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
 	      VALUE obj, ID id, VALUE mclass, int scope, int error)
 {
@@ -1690,10 +1699,8 @@ obj_method(VALUE obj, VALUE vid, int scope)
     const VALUE mclass = rb_cMethod;
 
     if (!id) {
-	if (respond_to_missing_p(klass, obj, vid, scope)) {
-	    id = rb_intern_str(vid);
-	    return mnew_missing(klass, obj, id, mclass);
-	}
+        VALUE m = mnew_missing_by_name(klass, obj, &vid, scope, mclass);
+        if (m) return m;
 	rb_method_name_error(klass, vid);
     }
     return mnew(klass, obj, id, mclass, scope);
@@ -1795,10 +1802,8 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
 			  obj, vid);
     }
     if (!id) {
-	if (respond_to_missing_p(klass, obj, vid, FALSE)) {
-	    id = rb_intern_str(vid);
-	    return mnew_missing(klass, obj, id, rb_cMethod);
-	}
+        VALUE m = mnew_missing_by_name(klass, obj, &vid, FALSE, rb_cMethod);
+        if (m) return m;
 	goto undef;
     }
     me = rb_method_entry_at(klass, id);
