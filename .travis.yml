@@ -22,8 +22,6 @@ dist: xenial
 
 osx_image: xcode10.1
 
-sudo: false
-
 git:
   quiet: true
 
@@ -195,7 +193,6 @@ env:
   - &i686-linux
     name: i686-linux
     <<: *linux
-    sudo: required
     env:
       - GCC_FLAGS=-m32
       - debugflags=-g0
