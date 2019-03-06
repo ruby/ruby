@@ -494,6 +494,22 @@ class TestMethod < Test::Unit::TestCase
     assert_include mmethods, :meth, 'normal methods are public by default'
   end
 
+  def test_respond_to_missing_argument
+    obj = Struct.new(:mid).new
+    def obj.respond_to_missing?(id, *)
+      self.mid = id
+      true
+    end
+    assert_kind_of(Method, obj.method("bug15640"))
+    assert_kind_of(Symbol, obj.mid)
+    assert_equal("bug15640", obj.mid.to_s)
+
+    arg = Struct.new(:to_str).new("bug15640_2")
+    assert_kind_of(Method, obj.method(arg))
+    assert_kind_of(Symbol, obj.mid)
+    assert_equal("bug15640_2", obj.mid.to_s)
+  end
+
   define_method(:pm0) {||}
   define_method(:pm1) {|a|}
   define_method(:pm2) {|a, b|}
