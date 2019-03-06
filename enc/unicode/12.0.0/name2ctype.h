@@ -43,7 +43,7 @@ static const OnigCodePoint CR_NEWLINE[] = {
 
 /* 'Alpha': [[:Alpha:]] */
 static const OnigCodePoint CR_Alpha[] = {
-	676,
+	679,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
 	0x00aa, 0x00aa,
@@ -227,16 +227,10 @@ static const OnigCodePoint CR_Alpha[] = {
 	0x0e4d, 0x0e4d,
 	0x0e81, 0x0e82,
 	0x0e84, 0x0e84,
-	0x0e87, 0x0e88,
-	0x0e8a, 0x0e8a,
-	0x0e8d, 0x0e8d,
-	0x0e94, 0x0e97,
-	0x0e99, 0x0e9f,
-	0x0ea1, 0x0ea3,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
 	0x0ea5, 0x0ea5,
-	0x0ea7, 0x0ea7,
-	0x0eaa, 0x0eab,
-	0x0ead, 0x0eb9,
+	0x0ea7, 0x0eb9,
 	0x0ebb, 0x0ebd,
 	0x0ec0, 0x0ec4,
 	0x0ec6, 0x0ec6,
@@ -251,11 +245,8 @@ static const OnigCodePoint CR_Alpha[] = {
 	0x1000, 0x1036,
 	0x1038, 0x1038,
 	0x103b, 0x103f,
-	0x1050, 0x1062,
-	0x1065, 0x1068,
-	0x106e, 0x1086,
-	0x108e, 0x108e,
-	0x109c, 0x109d,
+	0x1050, 0x108f,
+	0x109a, 0x109d,
 	0x10a0, 0x10c5,
 	0x10c7, 0x10c7,
 	0x10cd, 0x10cd,
@@ -276,7 +267,6 @@ static const OnigCodePoint CR_Alpha[] = {
 	0x12d8, 0x1310,
 	0x1312, 0x1315,
 	0x1318, 0x135a,
-	0x135f, 0x135f,
 	0x1380, 0x138f,
 	0x13a0, 0x13f5,
 	0x13f8, 0x13fd,
@@ -317,7 +307,7 @@ static const OnigCodePoint CR_Alpha[] = {
 	0x1bac, 0x1baf,
 	0x1bba, 0x1be5,
 	0x1be7, 0x1bf1,
-	0x1c00, 0x1c35,
+	0x1c00, 0x1c36,
 	0x1c4d, 0x1c4f,
 	0x1c5a, 0x1c7d,
 	0x1c80, 0x1c88,
@@ -326,6 +316,7 @@ static const OnigCodePoint CR_Alpha[] = {
 	0x1ce9, 0x1cec,
 	0x1cee, 0x1cf3,
 	0x1cf5, 0x1cf6,
+	0x1cfa, 0x1cfa,
 	0x1d00, 0x1dbf,
 	0x1de7, 0x1df4,
 	0x1e00, 0x1f15,
@@ -410,31 +401,28 @@ static const OnigCodePoint CR_Alpha[] = {
 	0xa67f, 0xa6ef,
 	0xa717, 0xa71f,
 	0xa722, 0xa788,
-	0xa78b, 0xa7b9,
-	0xa7f7, 0xa801,
-	0xa803, 0xa805,
-	0xa807, 0xa80a,
-	0xa80c, 0xa827,
+	0xa78b, 0xa7bf,
+	0xa7c2, 0xa7c6,
+	0xa7f7, 0xa805,
+	0xa807, 0xa827,
 	0xa840, 0xa873,
 	0xa880, 0xa8c3,
 	0xa8c5, 0xa8c5,
 	0xa8f2, 0xa8f7,
 	0xa8fb, 0xa8fb,
-	0xa8fd, 0xa8fe,
+	0xa8fd, 0xa8ff,
 	0xa90a, 0xa92a,
 	0xa930, 0xa952,
 	0xa960, 0xa97c,
 	0xa980, 0xa9b2,
 	0xa9b4, 0xa9bf,
 	0xa9cf, 0xa9cf,
-	0xa9e0, 0xa9e4,
-	0xa9e6, 0xa9ef,
+	0xa9e0, 0xa9ef,
 	0xa9fa, 0xa9fe,
 	0xaa00, 0xaa36,
 	0xaa40, 0xaa4d,
 	0xaa60, 0xaa76,
-	0xaa7a, 0xaa7a,
-	0xaa7e, 0xaabe,
+	0xaa7a, 0xaabe,
 	0xaac0, 0xaac0,
 	0xaac2, 0xaac2,
 	0xaadb, 0xaadd,
@@ -446,7 +434,7 @@ static const OnigCodePoint CR_Alpha[] = {
 	0xab20, 0xab26,
 	0xab28, 0xab2e,
 	0xab30, 0xab5a,
-	0xab5c, 0xab65,
+	0xab5c, 0xab67,
 	0xab70, 0xabea,
 	0xac00, 0xd7a3,
 	0xd7b0, 0xd7c6,
@@ -534,6 +522,7 @@ static const OnigCodePoint CR_Alpha[] = {
 	0x10f00, 0x10f1c,
 	0x10f27, 0x10f27,
 	0x10f30, 0x10f45,
+	0x10fe0, 0x10ff6,
 	0x11000, 0x11045,
 	0x11082, 0x110b8,
 	0x110d0, 0x110e8,
@@ -571,6 +560,7 @@ static const OnigCodePoint CR_Alpha[] = {
 	0x11400, 0x11441,
 	0x11443, 0x11445,
 	0x11447, 0x1144a,
+	0x1145f, 0x1145f,
 	0x11480, 0x114c1,
 	0x114c4, 0x114c5,
 	0x114c7, 0x114c7,
@@ -581,15 +571,20 @@ static const OnigCodePoint CR_Alpha[] = {
 	0x11640, 0x11640,
 	0x11644, 0x11644,
 	0x11680, 0x116b5,
+	0x116b8, 0x116b8,
 	0x11700, 0x1171a,
 	0x1171d, 0x1172a,
 	0x11800, 0x11838,
 	0x118a0, 0x118df,
 	0x118ff, 0x118ff,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d7,
+	0x119da, 0x119df,
+	0x119e1, 0x119e1,
+	0x119e3, 0x119e4,
 	0x11a00, 0x11a32,
 	0x11a35, 0x11a3e,
-	0x11a50, 0x11a83,
-	0x11a86, 0x11a97,
+	0x11a50, 0x11a97,
 	0x11a9d, 0x11a9d,
 	0x11ac0, 0x11af8,
 	0x11c00, 0x11c08,
@@ -622,18 +617,21 @@ static const OnigCodePoint CR_Alpha[] = {
 	0x16800, 0x16a38,
 	0x16a40, 0x16a5e,
 	0x16ad0, 0x16aed,
-	0x16b00, 0x16b36,
+	0x16b00, 0x16b2f,
 	0x16b40, 0x16b43,
 	0x16b63, 0x16b77,
 	0x16b7d, 0x16b8f,
 	0x16e40, 0x16e7f,
-	0x16f00, 0x16f44,
-	0x16f50, 0x16f7e,
-	0x16f93, 0x16f9f,
+	0x16f00, 0x16f4a,
+	0x16f4f, 0x16f87,
+	0x16f8f, 0x16f9f,
 	0x16fe0, 0x16fe1,
-	0x17000, 0x187f1,
+	0x16fe3, 0x16fe3,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 	0x1b000, 0x1b11e,
+	0x1b150, 0x1b152,
+	0x1b164, 0x1b167,
 	0x1b170, 0x1b2fb,
 	0x1bc00, 0x1bc6a,
 	0x1bc70, 0x1bc7c,
@@ -675,9 +673,14 @@ static const OnigCodePoint CR_Alpha[] = {
 	0x1e01b, 0x1e021,
 	0x1e023, 0x1e024,
 	0x1e026, 0x1e02a,
+	0x1e100, 0x1e12c,
+	0x1e137, 0x1e13d,
+	0x1e14e, 0x1e14e,
+	0x1e2c0, 0x1e2eb,
 	0x1e800, 0x1e8c4,
 	0x1e900, 0x1e943,
 	0x1e947, 0x1e947,
+	0x1e94b, 0x1e94b,
 	0x1ee00, 0x1ee03,
 	0x1ee05, 0x1ee1f,
 	0x1ee21, 0x1ee22,
@@ -744,7 +747,7 @@ static const OnigCodePoint CR_Cntrl[] = {
 
 /* 'Digit': [[:Digit:]] */
 static const OnigCodePoint CR_Digit[] = {
-	57,
+	59,
 	0x0030, 0x0039,
 	0x0660, 0x0669,
 	0x06f0, 0x06f9,
@@ -801,12 +804,14 @@ static const OnigCodePoint CR_Digit[] = {
 	0x16a60, 0x16a69,
 	0x16b50, 0x16b59,
 	0x1d7ce, 0x1d7ff,
+	0x1e140, 0x1e149,
+	0x1e2f0, 0x1e2f9,
 	0x1e950, 0x1e959,
 }; /* CR_Digit */
 
 /* 'Graph': [[:Graph:]] */
 static const OnigCodePoint CR_Graph[] = {
-	663,
+	672,
 	0x0021, 0x007e,
 	0x00a1, 0x0377,
 	0x037a, 0x037f,
@@ -917,7 +922,7 @@ static const OnigCodePoint CR_Graph[] = {
 	0x0c58, 0x0c5a,
 	0x0c60, 0x0c63,
 	0x0c66, 0x0c6f,
-	0x0c78, 0x0c8c,
+	0x0c77, 0x0c8c,
 	0x0c8e, 0x0c90,
 	0x0c92, 0x0ca8,
 	0x0caa, 0x0cb3,
@@ -954,17 +959,10 @@ static const OnigCodePoint CR_Graph[] = {
 	0x0e3f, 0x0e5b,
 	0x0e81, 0x0e82,
 	0x0e84, 0x0e84,
-	0x0e87, 0x0e88,
-	0x0e8a, 0x0e8a,
-	0x0e8d, 0x0e8d,
-	0x0e94, 0x0e97,
-	0x0e99, 0x0e9f,
-	0x0ea1, 0x0ea3,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
 	0x0ea5, 0x0ea5,
-	0x0ea7, 0x0ea7,
-	0x0eaa, 0x0eab,
-	0x0ead, 0x0eb9,
-	0x0ebb, 0x0ebd,
+	0x0ea7, 0x0ebd,
 	0x0ec0, 0x0ec4,
 	0x0ec6, 0x0ec6,
 	0x0ec8, 0x0ecd,
@@ -1041,7 +1039,7 @@ static const OnigCodePoint CR_Graph[] = {
 	0x1c4d, 0x1c88,
 	0x1c90, 0x1cba,
 	0x1cbd, 0x1cc7,
-	0x1cd0, 0x1cf9,
+	0x1cd0, 0x1cfa,
 	0x1d00, 0x1df9,
 	0x1dfb, 0x1f15,
 	0x1f18, 0x1f1d,
@@ -1073,9 +1071,7 @@ static const OnigCodePoint CR_Graph[] = {
 	0x2440, 0x244a,
 	0x2460, 0x2b73,
 	0x2b76, 0x2b95,
-	0x2b98, 0x2bc8,
-	0x2bca, 0x2bfe,
-	0x2c00, 0x2c2e,
+	0x2b98, 0x2c2e,
 	0x2c30, 0x2c5e,
 	0x2c60, 0x2cf3,
 	0x2cf9, 0x2d25,
@@ -1092,7 +1088,7 @@ static const OnigCodePoint CR_Graph[] = {
 	0x2dc8, 0x2dce,
 	0x2dd0, 0x2dd6,
 	0x2dd8, 0x2dde,
-	0x2de0, 0x2e4e,
+	0x2de0, 0x2e4f,
 	0x2e80, 0x2e99,
 	0x2e9b, 0x2ef3,
 	0x2f00, 0x2fd5,
@@ -1112,7 +1108,8 @@ static const OnigCodePoint CR_Graph[] = {
 	0xa490, 0xa4c6,
 	0xa4d0, 0xa62b,
 	0xa640, 0xa6f7,
-	0xa700, 0xa7b9,
+	0xa700, 0xa7bf,
+	0xa7c2, 0xa7c6,
 	0xa7f7, 0xa82b,
 	0xa830, 0xa839,
 	0xa840, 0xa877,
@@ -1133,7 +1130,7 @@ static const OnigCodePoint CR_Graph[] = {
 	0xab11, 0xab16,
 	0xab20, 0xab26,
 	0xab28, 0xab2e,
-	0xab30, 0xab65,
+	0xab30, 0xab67,
 	0xab70, 0xabed,
 	0xabf0, 0xabf9,
 	0xac00, 0xd7a3,
@@ -1240,6 +1237,7 @@ static const OnigCodePoint CR_Graph[] = {
 	0x10e60, 0x10e7e,
 	0x10f00, 0x10f27,
 	0x10f30, 0x10f59,
+	0x10fe0, 0x10ff6,
 	0x11000, 0x1104d,
 	0x11052, 0x1106f,
 	0x1107f, 0x110c1,
@@ -1278,7 +1276,7 @@ static const OnigCodePoint CR_Graph[] = {
 	0x11370, 0x11374,
 	0x11400, 0x11459,
 	0x1145b, 0x1145b,
-	0x1145d, 0x1145e,
+	0x1145d, 0x1145f,
 	0x11480, 0x114c7,
 	0x114d0, 0x114d9,
 	0x11580, 0x115b5,
@@ -1286,7 +1284,7 @@ static const OnigCodePoint CR_Graph[] = {
 	0x11600, 0x11644,
 	0x11650, 0x11659,
 	0x11660, 0x1166c,
-	0x11680, 0x116b7,
+	0x11680, 0x116b8,
 	0x116c0, 0x116c9,
 	0x11700, 0x1171a,
 	0x1171d, 0x1172b,
@@ -1294,9 +1292,11 @@ static const OnigCodePoint CR_Graph[] = {
 	0x11800, 0x1183b,
 	0x118a0, 0x118f2,
 	0x118ff, 0x118ff,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d7,
+	0x119da, 0x119e4,
 	0x11a00, 0x11a47,
-	0x11a50, 0x11a83,
-	0x11a86, 0x11aa2,
+	0x11a50, 0x11aa2,
 	0x11ac0, 0x11af8,
 	0x11c00, 0x11c08,
 	0x11c0a, 0x11c36,
@@ -1319,11 +1319,13 @@ static const OnigCodePoint CR_Graph[] = {
 	0x11d93, 0x11d98,
 	0x11da0, 0x11da9,
 	0x11ee0, 0x11ef8,
-	0x12000, 0x12399,
+	0x11fc0, 0x11ff1,
+	0x11fff, 0x12399,
 	0x12400, 0x1246e,
 	0x12470, 0x12474,
 	0x12480, 0x12543,
 	0x13000, 0x1342e,
+	0x13430, 0x13438,
 	0x14400, 0x14646,
 	0x16800, 0x16a38,
 	0x16a40, 0x16a5e,
@@ -1337,13 +1339,15 @@ static const OnigCodePoint CR_Graph[] = {
 	0x16b63, 0x16b77,
 	0x16b7d, 0x16b8f,
 	0x16e40, 0x16e9a,
-	0x16f00, 0x16f44,
-	0x16f50, 0x16f7e,
+	0x16f00, 0x16f4a,
+	0x16f4f, 0x16f87,
 	0x16f8f, 0x16f9f,
-	0x16fe0, 0x16fe1,
-	0x17000, 0x187f1,
+	0x16fe0, 0x16fe3,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 	0x1b000, 0x1b11e,
+	0x1b150, 0x1b152,
+	0x1b164, 0x1b167,
 	0x1b170, 0x1b2fb,
 	0x1bc00, 0x1bc6a,
 	0x1bc70, 0x1bc7c,
@@ -1385,12 +1389,19 @@ static const OnigCodePoint CR_Graph[] = {
 	0x1e01b, 0x1e021,
 	0x1e023, 0x1e024,
 	0x1e026, 0x1e02a,
+	0x1e100, 0x1e12c,
+	0x1e130, 0x1e13d,
+	0x1e140, 0x1e149,
+	0x1e14e, 0x1e14f,
+	0x1e2c0, 0x1e2f9,
+	0x1e2ff, 0x1e2ff,
 	0x1e800, 0x1e8c4,
 	0x1e8c7, 0x1e8d6,
-	0x1e900, 0x1e94a,
+	0x1e900, 0x1e94b,
 	0x1e950, 0x1e959,
 	0x1e95e, 0x1e95f,
 	0x1ec71, 0x1ecb4,
+	0x1ed01, 0x1ed3d,
 	0x1ee00, 0x1ee03,
 	0x1ee05, 0x1ee1f,
 	0x1ee21, 0x1ee22,
@@ -1432,33 +1443,36 @@ static const OnigCodePoint CR_Graph[] = {
 	0x1f0c1, 0x1f0cf,
 	0x1f0d1, 0x1f0f5,
 	0x1f100, 0x1f10c,
-	0x1f110, 0x1f16b,
+	0x1f110, 0x1f16c,
 	0x1f170, 0x1f1ac,
 	0x1f1e6, 0x1f202,
 	0x1f210, 0x1f23b,
 	0x1f240, 0x1f248,
 	0x1f250, 0x1f251,
 	0x1f260, 0x1f265,
-	0x1f300, 0x1f6d4,
+	0x1f300, 0x1f6d5,
 	0x1f6e0, 0x1f6ec,
-	0x1f6f0, 0x1f6f9,
+	0x1f6f0, 0x1f6fa,
 	0x1f700, 0x1f773,
 	0x1f780, 0x1f7d8,
+	0x1f7e0, 0x1f7eb,
 	0x1f800, 0x1f80b,
 	0x1f810, 0x1f847,
 	0x1f850, 0x1f859,
 	0x1f860, 0x1f887,
 	0x1f890, 0x1f8ad,
 	0x1f900, 0x1f90b,
-	0x1f910, 0x1f93e,
-	0x1f940, 0x1f970,
+	0x1f90d, 0x1f971,
 	0x1f973, 0x1f976,
-	0x1f97a, 0x1f97a,
-	0x1f97c, 0x1f9a2,
-	0x1f9b0, 0x1f9b9,
-	0x1f9c0, 0x1f9c2,
-	0x1f9d0, 0x1f9ff,
+	0x1f97a, 0x1f9a2,
+	0x1f9a5, 0x1f9aa,
+	0x1f9ae, 0x1f9ca,
+	0x1f9cd, 0x1fa53,
 	0x1fa60, 0x1fa6d,
+	0x1fa70, 0x1fa73,
+	0x1fa78, 0x1fa7a,
+	0x1fa80, 0x1fa82,
+	0x1fa90, 0x1fa95,
 	0x20000, 0x2a6d6,
 	0x2a700, 0x2b734,
 	0x2b740, 0x2b81d,
@@ -1474,7 +1488,7 @@ static const OnigCodePoint CR_Graph[] = {
 
 /* 'Lower': [[:Lower:]] */
 static const OnigCodePoint CR_Lower[] = {
-	645,
+	649,
 	0x0061, 0x007a,
 	0x00aa, 0x00aa,
 	0x00b5, 0x00b5,
@@ -2079,9 +2093,13 @@ static const OnigCodePoint CR_Lower[] = {
 	0xa7b5, 0xa7b5,
 	0xa7b7, 0xa7b7,
 	0xa7b9, 0xa7b9,
+	0xa7bb, 0xa7bb,
+	0xa7bd, 0xa7bd,
+	0xa7bf, 0xa7bf,
+	0xa7c3, 0xa7c3,
 	0xa7f8, 0xa7fa,
 	0xab30, 0xab5a,
-	0xab5c, 0xab65,
+	0xab5c, 0xab67,
 	0xab70, 0xabbf,
 	0xfb00, 0xfb06,
 	0xfb13, 0xfb17,
@@ -2124,7 +2142,7 @@ static const OnigCodePoint CR_Lower[] = {
 
 /* 'Print': [[:Print:]] */
 static const OnigCodePoint CR_Print[] = {
-	660,
+	669,
 	0x0020, 0x007e,
 	0x00a0, 0x0377,
 	0x037a, 0x037f,
@@ -2235,7 +2253,7 @@ static const OnigCodePoint CR_Print[] = {
 	0x0c58, 0x0c5a,
 	0x0c60, 0x0c63,
 	0x0c66, 0x0c6f,
-	0x0c78, 0x0c8c,
+	0x0c77, 0x0c8c,
 	0x0c8e, 0x0c90,
 	0x0c92, 0x0ca8,
 	0x0caa, 0x0cb3,
@@ -2272,17 +2290,10 @@ static const OnigCodePoint CR_Print[] = {
 	0x0e3f, 0x0e5b,
 	0x0e81, 0x0e82,
 	0x0e84, 0x0e84,
-	0x0e87, 0x0e88,
-	0x0e8a, 0x0e8a,
-	0x0e8d, 0x0e8d,
-	0x0e94, 0x0e97,
-	0x0e99, 0x0e9f,
-	0x0ea1, 0x0ea3,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
 	0x0ea5, 0x0ea5,
-	0x0ea7, 0x0ea7,
-	0x0eaa, 0x0eab,
-	0x0ead, 0x0eb9,
-	0x0ebb, 0x0ebd,
+	0x0ea7, 0x0ebd,
 	0x0ec0, 0x0ec4,
 	0x0ec6, 0x0ec6,
 	0x0ec8, 0x0ecd,
@@ -2358,7 +2369,7 @@ static const OnigCodePoint CR_Print[] = {
 	0x1c4d, 0x1c88,
 	0x1c90, 0x1cba,
 	0x1cbd, 0x1cc7,
-	0x1cd0, 0x1cf9,
+	0x1cd0, 0x1cfa,
 	0x1d00, 0x1df9,
 	0x1dfb, 0x1f15,
 	0x1f18, 0x1f1d,
@@ -2388,9 +2399,7 @@ static const OnigCodePoint CR_Print[] = {
 	0x2440, 0x244a,
 	0x2460, 0x2b73,
 	0x2b76, 0x2b95,
-	0x2b98, 0x2bc8,
-	0x2bca, 0x2bfe,
-	0x2c00, 0x2c2e,
+	0x2b98, 0x2c2e,
 	0x2c30, 0x2c5e,
 	0x2c60, 0x2cf3,
 	0x2cf9, 0x2d25,
@@ -2407,7 +2416,7 @@ static const OnigCodePoint CR_Print[] = {
 	0x2dc8, 0x2dce,
 	0x2dd0, 0x2dd6,
 	0x2dd8, 0x2dde,
-	0x2de0, 0x2e4e,
+	0x2de0, 0x2e4f,
 	0x2e80, 0x2e99,
 	0x2e9b, 0x2ef3,
 	0x2f00, 0x2fd5,
@@ -2427,7 +2436,8 @@ static const OnigCodePoint CR_Print[] = {
 	0xa490, 0xa4c6,
 	0xa4d0, 0xa62b,
 	0xa640, 0xa6f7,
-	0xa700, 0xa7b9,
+	0xa700, 0xa7bf,
+	0xa7c2, 0xa7c6,
 	0xa7f7, 0xa82b,
 	0xa830, 0xa839,
 	0xa840, 0xa877,
@@ -2448,7 +2458,7 @@ static const OnigCodePoint CR_Print[] = {
 	0xab11, 0xab16,
 	0xab20, 0xab26,
 	0xab28, 0xab2e,
-	0xab30, 0xab65,
+	0xab30, 0xab67,
 	0xab70, 0xabed,
 	0xabf0, 0xabf9,
 	0xac00, 0xd7a3,
@@ -2555,6 +2565,7 @@ static const OnigCodePoint CR_Print[] = {
 	0x10e60, 0x10e7e,
 	0x10f00, 0x10f27,
 	0x10f30, 0x10f59,
+	0x10fe0, 0x10ff6,
 	0x11000, 0x1104d,
 	0x11052, 0x1106f,
 	0x1107f, 0x110c1,
@@ -2593,7 +2604,7 @@ static const OnigCodePoint CR_Print[] = {
 	0x11370, 0x11374,
 	0x11400, 0x11459,
 	0x1145b, 0x1145b,
-	0x1145d, 0x1145e,
+	0x1145d, 0x1145f,
 	0x11480, 0x114c7,
 	0x114d0, 0x114d9,
 	0x11580, 0x115b5,
@@ -2601,7 +2612,7 @@ static const OnigCodePoint CR_Print[] = {
 	0x11600, 0x11644,
 	0x11650, 0x11659,
 	0x11660, 0x1166c,
-	0x11680, 0x116b7,
+	0x11680, 0x116b8,
 	0x116c0, 0x116c9,
 	0x11700, 0x1171a,
 	0x1171d, 0x1172b,
@@ -2609,9 +2620,11 @@ static const OnigCodePoint CR_Print[] = {
 	0x11800, 0x1183b,
 	0x118a0, 0x118f2,
 	0x118ff, 0x118ff,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d7,
+	0x119da, 0x119e4,
 	0x11a00, 0x11a47,
-	0x11a50, 0x11a83,
-	0x11a86, 0x11aa2,
+	0x11a50, 0x11aa2,
 	0x11ac0, 0x11af8,
 	0x11c00, 0x11c08,
 	0x11c0a, 0x11c36,
@@ -2634,11 +2647,13 @@ static const OnigCodePoint CR_Print[] = {
 	0x11d93, 0x11d98,
 	0x11da0, 0x11da9,
 	0x11ee0, 0x11ef8,
-	0x12000, 0x12399,
+	0x11fc0, 0x11ff1,
+	0x11fff, 0x12399,
 	0x12400, 0x1246e,
 	0x12470, 0x12474,
 	0x12480, 0x12543,
 	0x13000, 0x1342e,
+	0x13430, 0x13438,
 	0x14400, 0x14646,
 	0x16800, 0x16a38,
 	0x16a40, 0x16a5e,
@@ -2652,13 +2667,15 @@ static const OnigCodePoint CR_Print[] = {
 	0x16b63, 0x16b77,
 	0x16b7d, 0x16b8f,
 	0x16e40, 0x16e9a,
-	0x16f00, 0x16f44,
-	0x16f50, 0x16f7e,
+	0x16f00, 0x16f4a,
+	0x16f4f, 0x16f87,
 	0x16f8f, 0x16f9f,
-	0x16fe0, 0x16fe1,
-	0x17000, 0x187f1,
+	0x16fe0, 0x16fe3,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 	0x1b000, 0x1b11e,
+	0x1b150, 0x1b152,
+	0x1b164, 0x1b167,
 	0x1b170, 0x1b2fb,
 	0x1bc00, 0x1bc6a,
 	0x1bc70, 0x1bc7c,
@@ -2700,12 +2717,19 @@ static const OnigCodePoint CR_Print[] = {
 	0x1e01b, 0x1e021,
 	0x1e023, 0x1e024,
 	0x1e026, 0x1e02a,
+	0x1e100, 0x1e12c,
+	0x1e130, 0x1e13d,
+	0x1e140, 0x1e149,
+	0x1e14e, 0x1e14f,
+	0x1e2c0, 0x1e2f9,
+	0x1e2ff, 0x1e2ff,
 	0x1e800, 0x1e8c4,
 	0x1e8c7, 0x1e8d6,
-	0x1e900, 0x1e94a,
+	0x1e900, 0x1e94b,
 	0x1e950, 0x1e959,
 	0x1e95e, 0x1e95f,
 	0x1ec71, 0x1ecb4,
+	0x1ed01, 0x1ed3d,
 	0x1ee00, 0x1ee03,
 	0x1ee05, 0x1ee1f,
 	0x1ee21, 0x1ee22,
@@ -2747,33 +2771,36 @@ static const OnigCodePoint CR_Print[] = {
 	0x1f0c1, 0x1f0cf,
 	0x1f0d1, 0x1f0f5,
 	0x1f100, 0x1f10c,
-	0x1f110, 0x1f16b,
+	0x1f110, 0x1f16c,
 	0x1f170, 0x1f1ac,
 	0x1f1e6, 0x1f202,
 	0x1f210, 0x1f23b,
 	0x1f240, 0x1f248,
 	0x1f250, 0x1f251,
 	0x1f260, 0x1f265,
-	0x1f300, 0x1f6d4,
+	0x1f300, 0x1f6d5,
 	0x1f6e0, 0x1f6ec,
-	0x1f6f0, 0x1f6f9,
+	0x1f6f0, 0x1f6fa,
 	0x1f700, 0x1f773,
 	0x1f780, 0x1f7d8,
+	0x1f7e0, 0x1f7eb,
 	0x1f800, 0x1f80b,
 	0x1f810, 0x1f847,
 	0x1f850, 0x1f859,
 	0x1f860, 0x1f887,
 	0x1f890, 0x1f8ad,
 	0x1f900, 0x1f90b,
-	0x1f910, 0x1f93e,
-	0x1f940, 0x1f970,
+	0x1f90d, 0x1f971,
 	0x1f973, 0x1f976,
-	0x1f97a, 0x1f97a,
-	0x1f97c, 0x1f9a2,
-	0x1f9b0, 0x1f9b9,
-	0x1f9c0, 0x1f9c2,
-	0x1f9d0, 0x1f9ff,
+	0x1f97a, 0x1f9a2,
+	0x1f9a5, 0x1f9aa,
+	0x1f9ae, 0x1f9ca,
+	0x1f9cd, 0x1fa53,
 	0x1fa60, 0x1fa6d,
+	0x1fa70, 0x1fa73,
+	0x1fa78, 0x1fa7a,
+	0x1fa80, 0x1fa82,
+	0x1fa90, 0x1fa95,
 	0x20000, 0x2a6d6,
 	0x2a700, 0x2b734,
 	0x2b740, 0x2b81d,
@@ -2789,7 +2816,7 @@ static const OnigCodePoint CR_Print[] = {
 
 /* 'XPosixPunct': [[:Punct:]] */
 static const OnigCodePoint CR_XPosixPunct[] = {
-	173,
+	177,
 	0x0021, 0x002f,
 	0x003a, 0x0040,
 	0x005b, 0x0060,
@@ -2824,6 +2851,7 @@ static const OnigCodePoint CR_XPosixPunct[] = {
 	0x09fd, 0x09fd,
 	0x0a76, 0x0a76,
 	0x0af0, 0x0af0,
+	0x0c77, 0x0c77,
 	0x0c84, 0x0c84,
 	0x0df4, 0x0df4,
 	0x0e4f, 0x0e4f,
@@ -2838,7 +2866,7 @@ static const OnigCodePoint CR_XPosixPunct[] = {
 	0x10fb, 0x10fb,
 	0x1360, 0x1368,
 	0x1400, 0x1400,
-	0x166d, 0x166e,
+	0x166e, 0x166e,
 	0x169b, 0x169c,
 	0x16eb, 0x16ed,
 	0x1735, 0x1736,
@@ -2873,7 +2901,7 @@ static const OnigCodePoint CR_XPosixPunct[] = {
 	0x2cfe, 0x2cff,
 	0x2d70, 0x2d70,
 	0x2e00, 0x2e2e,
-	0x2e30, 0x2e4e,
+	0x2e30, 0x2e4f,
 	0x3001, 0x3003,
 	0x3008, 0x3011,
 	0x3014, 0x301f,
@@ -2948,18 +2976,21 @@ static const OnigCodePoint CR_XPosixPunct[] = {
 	0x11660, 0x1166c,
 	0x1173c, 0x1173e,
 	0x1183b, 0x1183b,
+	0x119e2, 0x119e2,
 	0x11a3f, 0x11a46,
 	0x11a9a, 0x11a9c,
 	0x11a9e, 0x11aa2,
 	0x11c41, 0x11c45,
 	0x11c70, 0x11c71,
 	0x11ef7, 0x11ef8,
+	0x11fff, 0x11fff,
 	0x12470, 0x12474,
 	0x16a6e, 0x16a6f,
 	0x16af5, 0x16af5,
 	0x16b37, 0x16b3b,
 	0x16b44, 0x16b44,
 	0x16e97, 0x16e9a,
+	0x16fe2, 0x16fe2,
 	0x1bc9f, 0x1bc9f,
 	0x1da87, 0x1da8b,
 	0x1e95e, 0x1e95f,
@@ -2982,7 +3013,7 @@ static const OnigCodePoint CR_Space[] = {
 
 /* 'Upper': [[:Upper:]] */
 static const OnigCodePoint CR_Upper[] = {
-	636,
+	641,
 	0x0041, 0x005a,
 	0x00c0, 0x00d6,
 	0x00d8, 0x00de,
@@ -3578,6 +3609,11 @@ static const OnigCodePoint CR_Upper[] = {
 	0xa7b0, 0xa7b4,
 	0xa7b6, 0xa7b6,
 	0xa7b8, 0xa7b8,
+	0xa7ba, 0xa7ba,
+	0xa7bc, 0xa7bc,
+	0xa7be, 0xa7be,
+	0xa7c2, 0xa7c2,
+	0xa7c4, 0xa7c6,
 	0xff21, 0xff3a,
 	0x10400, 0x10427,
 	0x104b0, 0x104d3,
@@ -3631,7 +3667,7 @@ static const OnigCodePoint CR_XDigit[] = {
 
 /* 'Word': [[:Word:]] */
 static const OnigCodePoint CR_Word[] = {
-	710,
+	716,
 	0x0030, 0x0039,
 	0x0041, 0x005a,
 	0x005f, 0x005f,
@@ -3816,17 +3852,10 @@ static const OnigCodePoint CR_Word[] = {
 	0x0e50, 0x0e59,
 	0x0e81, 0x0e82,
 	0x0e84, 0x0e84,
-	0x0e87, 0x0e88,
-	0x0e8a, 0x0e8a,
-	0x0e8d, 0x0e8d,
-	0x0e94, 0x0e97,
-	0x0e99, 0x0e9f,
-	0x0ea1, 0x0ea3,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
 	0x0ea5, 0x0ea5,
-	0x0ea7, 0x0ea7,
-	0x0eaa, 0x0eab,
-	0x0ead, 0x0eb9,
-	0x0ebb, 0x0ebd,
+	0x0ea7, 0x0ebd,
 	0x0ec0, 0x0ec4,
 	0x0ec6, 0x0ec6,
 	0x0ec8, 0x0ecd,
@@ -3917,7 +3946,7 @@ static const OnigCodePoint CR_Word[] = {
 	0x1c90, 0x1cba,
 	0x1cbd, 0x1cbf,
 	0x1cd0, 0x1cd2,
-	0x1cd4, 0x1cf9,
+	0x1cd4, 0x1cfa,
 	0x1d00, 0x1df9,
 	0x1dfb, 0x1f15,
 	0x1f18, 0x1f1d,
@@ -4003,7 +4032,8 @@ static const OnigCodePoint CR_Word[] = {
 	0xa67f, 0xa6f1,
 	0xa717, 0xa71f,
 	0xa722, 0xa788,
-	0xa78b, 0xa7b9,
+	0xa78b, 0xa7bf,
+	0xa7c2, 0xa7c6,
 	0xa7f7, 0xa827,
 	0xa840, 0xa873,
 	0xa880, 0xa8c5,
@@ -4030,7 +4060,7 @@ static const OnigCodePoint CR_Word[] = {
 	0xab20, 0xab26,
 	0xab28, 0xab2e,
 	0xab30, 0xab5a,
-	0xab5c, 0xab65,
+	0xab5c, 0xab67,
 	0xab70, 0xabea,
 	0xabec, 0xabed,
 	0xabf0, 0xabf9,
@@ -4132,6 +4162,7 @@ static const OnigCodePoint CR_Word[] = {
 	0x10f00, 0x10f1c,
 	0x10f27, 0x10f27,
 	0x10f30, 0x10f50,
+	0x10fe0, 0x10ff6,
 	0x11000, 0x11046,
 	0x11066, 0x1106f,
 	0x1107f, 0x110ba,
@@ -4173,7 +4204,7 @@ static const OnigCodePoint CR_Word[] = {
 	0x11370, 0x11374,
 	0x11400, 0x1144a,
 	0x11450, 0x11459,
-	0x1145e, 0x1145e,
+	0x1145e, 0x1145f,
 	0x11480, 0x114c5,
 	0x114c7, 0x114c7,
 	0x114d0, 0x114d9,
@@ -4183,7 +4214,7 @@ static const OnigCodePoint CR_Word[] = {
 	0x11600, 0x11640,
 	0x11644, 0x11644,
 	0x11650, 0x11659,
-	0x11680, 0x116b7,
+	0x11680, 0x116b8,
 	0x116c0, 0x116c9,
 	0x11700, 0x1171a,
 	0x1171d, 0x1172b,
@@ -4191,10 +4222,13 @@ static const OnigCodePoint CR_Word[] = {
 	0x11800, 0x1183a,
 	0x118a0, 0x118e9,
 	0x118ff, 0x118ff,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d7,
+	0x119da, 0x119e1,
+	0x119e3, 0x119e4,
 	0x11a00, 0x11a3e,
 	0x11a47, 0x11a47,
-	0x11a50, 0x11a83,
-	0x11a86, 0x11a99,
+	0x11a50, 0x11a99,
 	0x11a9d, 0x11a9d,
 	0x11ac0, 0x11af8,
 	0x11c00, 0x11c08,
@@ -4234,13 +4268,16 @@ static const OnigCodePoint CR_Word[] = {
 	0x16b63, 0x16b77,
 	0x16b7d, 0x16b8f,
 	0x16e40, 0x16e7f,
-	0x16f00, 0x16f44,
-	0x16f50, 0x16f7e,
+	0x16f00, 0x16f4a,
+	0x16f4f, 0x16f87,
 	0x16f8f, 0x16f9f,
 	0x16fe0, 0x16fe1,
-	0x17000, 0x187f1,
+	0x16fe3, 0x16fe3,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 	0x1b000, 0x1b11e,
+	0x1b150, 0x1b152,
+	0x1b164, 0x1b167,
 	0x1b170, 0x1b2fb,
 	0x1bc00, 0x1bc6a,
 	0x1bc70, 0x1bc7c,
@@ -4295,9 +4332,14 @@ static const OnigCodePoint CR_Word[] = {
 	0x1e01b, 0x1e021,
 	0x1e023, 0x1e024,
 	0x1e026, 0x1e02a,
+	0x1e100, 0x1e12c,
+	0x1e130, 0x1e13d,
+	0x1e140, 0x1e149,
+	0x1e14e, 0x1e14e,
+	0x1e2c0, 0x1e2f9,
 	0x1e800, 0x1e8c4,
 	0x1e8d0, 0x1e8d6,
-	0x1e900, 0x1e94a,
+	0x1e900, 0x1e94b,
 	0x1e950, 0x1e959,
 	0x1ee00, 0x1ee03,
 	0x1ee05, 0x1ee1f,
@@ -4346,7 +4388,7 @@ static const OnigCodePoint CR_Word[] = {
 
 /* 'Alnum': [[:Alnum:]] */
 static const OnigCodePoint CR_Alnum[] = {
-	713,
+	715,
 	0x0030, 0x0039,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
@@ -4539,16 +4581,10 @@ static const OnigCodePoint CR_Alnum[] = {
 	0x0e50, 0x0e59,
 	0x0e81, 0x0e82,
 	0x0e84, 0x0e84,
-	0x0e87, 0x0e88,
-	0x0e8a, 0x0e8a,
-	0x0e8d, 0x0e8d,
-	0x0e94, 0x0e97,
-	0x0e99, 0x0e9f,
-	0x0ea1, 0x0ea3,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
 	0x0ea5, 0x0ea5,
-	0x0ea7, 0x0ea7,
-	0x0eaa, 0x0eab,
-	0x0ead, 0x0eb9,
+	0x0ea7, 0x0eb9,
 	0x0ebb, 0x0ebd,
 	0x0ec0, 0x0ec4,
 	0x0ec6, 0x0ec6,
@@ -4565,12 +4601,7 @@ static const OnigCodePoint CR_Alnum[] = {
 	0x1000, 0x1036,
 	0x1038, 0x1038,
 	0x103b, 0x1049,
-	0x1050, 0x1062,
-	0x1065, 0x1068,
-	0x106e, 0x1086,
-	0x108e, 0x108e,
-	0x1090, 0x1099,
-	0x109c, 0x109d,
+	0x1050, 0x109d,
 	0x10a0, 0x10c5,
 	0x10c7, 0x10c7,
 	0x10cd, 0x10cd,
@@ -4591,7 +4622,6 @@ static const OnigCodePoint CR_Alnum[] = {
 	0x12d8, 0x1310,
 	0x1312, 0x1315,
 	0x1318, 0x135a,
-	0x135f, 0x135f,
 	0x1380, 0x138f,
 	0x13a0, 0x13f5,
 	0x13f8, 0x13fd,
@@ -4637,7 +4667,7 @@ static const OnigCodePoint CR_Alnum[] = {
 	0x1b80, 0x1ba9,
 	0x1bac, 0x1be5,
 	0x1be7, 0x1bf1,
-	0x1c00, 0x1c35,
+	0x1c00, 0x1c36,
 	0x1c40, 0x1c49,
 	0x1c4d, 0x1c7d,
 	0x1c80, 0x1c88,
@@ -4646,6 +4676,7 @@ static const OnigCodePoint CR_Alnum[] = {
 	0x1ce9, 0x1cec,
 	0x1cee, 0x1cf3,
 	0x1cf5, 0x1cf6,
+	0x1cfa, 0x1cfa,
 	0x1d00, 0x1dbf,
 	0x1de7, 0x1df4,
 	0x1e00, 0x1f15,
@@ -4729,32 +4760,28 @@ static const OnigCodePoint CR_Alnum[] = {
 	0xa67f, 0xa6ef,
 	0xa717, 0xa71f,
 	0xa722, 0xa788,
-	0xa78b, 0xa7b9,
-	0xa7f7, 0xa801,
-	0xa803, 0xa805,
-	0xa807, 0xa80a,
-	0xa80c, 0xa827,
+	0xa78b, 0xa7bf,
+	0xa7c2, 0xa7c6,
+	0xa7f7, 0xa805,
+	0xa807, 0xa827,
 	0xa840, 0xa873,
 	0xa880, 0xa8c3,
 	0xa8c5, 0xa8c5,
 	0xa8d0, 0xa8d9,
 	0xa8f2, 0xa8f7,
 	0xa8fb, 0xa8fb,
-	0xa8fd, 0xa8fe,
-	0xa900, 0xa92a,
+	0xa8fd, 0xa92a,
 	0xa930, 0xa952,
 	0xa960, 0xa97c,
 	0xa980, 0xa9b2,
 	0xa9b4, 0xa9bf,
 	0xa9cf, 0xa9d9,
-	0xa9e0, 0xa9e4,
-	0xa9e6, 0xa9fe,
+	0xa9e0, 0xa9fe,
 	0xaa00, 0xaa36,
 	0xaa40, 0xaa4d,
 	0xaa50, 0xaa59,
 	0xaa60, 0xaa76,
-	0xaa7a, 0xaa7a,
-	0xaa7e, 0xaabe,
+	0xaa7a, 0xaabe,
 	0xaac0, 0xaac0,
 	0xaac2, 0xaac2,
 	0xaadb, 0xaadd,
@@ -4766,7 +4793,7 @@ static const OnigCodePoint CR_Alnum[] = {
 	0xab20, 0xab26,
 	0xab28, 0xab2e,
 	0xab30, 0xab5a,
-	0xab5c, 0xab65,
+	0xab5c, 0xab67,
 	0xab70, 0xabea,
 	0xabf0, 0xabf9,
 	0xac00, 0xd7a3,
@@ -4858,6 +4885,7 @@ static const OnigCodePoint CR_Alnum[] = {
 	0x10f00, 0x10f1c,
 	0x10f27, 0x10f27,
 	0x10f30, 0x10f45,
+	0x10fe0, 0x10ff6,
 	0x11000, 0x11045,
 	0x11066, 0x1106f,
 	0x11082, 0x110b8,
@@ -4900,6 +4928,7 @@ static const OnigCodePoint CR_Alnum[] = {
 	0x11443, 0x11445,
 	0x11447, 0x1144a,
 	0x11450, 0x11459,
+	0x1145f, 0x1145f,
 	0x11480, 0x114c1,
 	0x114c4, 0x114c5,
 	0x114c7, 0x114c7,
@@ -4912,6 +4941,7 @@ static const OnigCodePoint CR_Alnum[] = {
 	0x11644, 0x11644,
 	0x11650, 0x11659,
 	0x11680, 0x116b5,
+	0x116b8, 0x116b8,
 	0x116c0, 0x116c9,
 	0x11700, 0x1171a,
 	0x1171d, 0x1172a,
@@ -4919,10 +4949,14 @@ static const OnigCodePoint CR_Alnum[] = {
 	0x11800, 0x11838,
 	0x118a0, 0x118e9,
 	0x118ff, 0x118ff,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d7,
+	0x119da, 0x119df,
+	0x119e1, 0x119e1,
+	0x119e3, 0x119e4,
 	0x11a00, 0x11a32,
 	0x11a35, 0x11a3e,
-	0x11a50, 0x11a83,
-	0x11a86, 0x11a97,
+	0x11a50, 0x11a97,
 	0x11a9d, 0x11a9d,
 	0x11ac0, 0x11af8,
 	0x11c00, 0x11c08,
@@ -4959,19 +4993,22 @@ static const OnigCodePoint CR_Alnum[] = {
 	0x16a40, 0x16a5e,
 	0x16a60, 0x16a69,
 	0x16ad0, 0x16aed,
-	0x16b00, 0x16b36,
+	0x16b00, 0x16b2f,
 	0x16b40, 0x16b43,
 	0x16b50, 0x16b59,
 	0x16b63, 0x16b77,
 	0x16b7d, 0x16b8f,
 	0x16e40, 0x16e7f,
-	0x16f00, 0x16f44,
-	0x16f50, 0x16f7e,
-	0x16f93, 0x16f9f,
+	0x16f00, 0x16f4a,
+	0x16f4f, 0x16f87,
+	0x16f8f, 0x16f9f,
 	0x16fe0, 0x16fe1,
-	0x17000, 0x187f1,
+	0x16fe3, 0x16fe3,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 	0x1b000, 0x1b11e,
+	0x1b150, 0x1b152,
+	0x1b164, 0x1b167,
 	0x1b170, 0x1b2fb,
 	0x1bc00, 0x1bc6a,
 	0x1bc70, 0x1bc7c,
@@ -5014,9 +5051,16 @@ static const OnigCodePoint CR_Alnum[] = {
 	0x1e01b, 0x1e021,
 	0x1e023, 0x1e024,
 	0x1e026, 0x1e02a,
+	0x1e100, 0x1e12c,
+	0x1e137, 0x1e13d,
+	0x1e140, 0x1e149,
+	0x1e14e, 0x1e14e,
+	0x1e2c0, 0x1e2eb,
+	0x1e2f0, 0x1e2f9,
 	0x1e800, 0x1e8c4,
 	0x1e900, 0x1e943,
 	0x1e947, 0x1e947,
+	0x1e94b, 0x1e94b,
 	0x1e950, 0x1e959,
 	0x1ee00, 0x1ee03,
 	0x1ee05, 0x1ee1f,
@@ -5070,7 +5114,7 @@ static const OnigCodePoint CR_ASCII[] = {
 
 /* 'Punct' */
 static const OnigCodePoint CR_Punct[] = {
-	178,
+	182,
 	0x0021, 0x0023,
 	0x0025, 0x002a,
 	0x002c, 0x002f,
@@ -5110,6 +5154,7 @@ static const OnigCodePoint CR_Punct[] = {
 	0x09fd, 0x09fd,
 	0x0a76, 0x0a76,
 	0x0af0, 0x0af0,
+	0x0c77, 0x0c77,
 	0x0c84, 0x0c84,
 	0x0df4, 0x0df4,
 	0x0e4f, 0x0e4f,
@@ -5124,7 +5169,7 @@ static const OnigCodePoint CR_Punct[] = {
 	0x10fb, 0x10fb,
 	0x1360, 0x1368,
 	0x1400, 0x1400,
-	0x166d, 0x166e,
+	0x166e, 0x166e,
 	0x169b, 0x169c,
 	0x16eb, 0x16ed,
 	0x1735, 0x1736,
@@ -5159,7 +5204,7 @@ static const OnigCodePoint CR_Punct[] = {
 	0x2cfe, 0x2cff,
 	0x2d70, 0x2d70,
 	0x2e00, 0x2e2e,
-	0x2e30, 0x2e4e,
+	0x2e30, 0x2e4f,
 	0x3001, 0x3003,
 	0x3008, 0x3011,
 	0x3014, 0x301f,
@@ -5234,18 +5279,21 @@ static const OnigCodePoint CR_Punct[] = {
 	0x11660, 0x1166c,
 	0x1173c, 0x1173e,
 	0x1183b, 0x1183b,
+	0x119e2, 0x119e2,
 	0x11a3f, 0x11a46,
 	0x11a9a, 0x11a9c,
 	0x11a9e, 0x11aa2,
 	0x11c41, 0x11c45,
 	0x11c70, 0x11c71,
 	0x11ef7, 0x11ef8,
+	0x11fff, 0x11fff,
 	0x12470, 0x12474,
 	0x16a6e, 0x16a6f,
 	0x16af5, 0x16af5,
 	0x16b37, 0x16b3b,
 	0x16b44, 0x16b44,
 	0x16e97, 0x16e9a,
+	0x16fe2, 0x16fe2,
 	0x1bc9f, 0x1bc9f,
 	0x1da87, 0x1da8b,
 	0x1e95e, 0x1e95f,
@@ -5260,7 +5308,7 @@ static const OnigCodePoint CR_Any[] = {
 
 /* 'Assigned': - */
 static const OnigCodePoint CR_Assigned[] = {
-	658,
+	667,
 	0x0000, 0x0377,
 	0x037a, 0x037f,
 	0x0384, 0x038a,
@@ -5370,7 +5418,7 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x0c58, 0x0c5a,
 	0x0c60, 0x0c63,
 	0x0c66, 0x0c6f,
-	0x0c78, 0x0c8c,
+	0x0c77, 0x0c8c,
 	0x0c8e, 0x0c90,
 	0x0c92, 0x0ca8,
 	0x0caa, 0x0cb3,
@@ -5407,17 +5455,10 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x0e3f, 0x0e5b,
 	0x0e81, 0x0e82,
 	0x0e84, 0x0e84,
-	0x0e87, 0x0e88,
-	0x0e8a, 0x0e8a,
-	0x0e8d, 0x0e8d,
-	0x0e94, 0x0e97,
-	0x0e99, 0x0e9f,
-	0x0ea1, 0x0ea3,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
 	0x0ea5, 0x0ea5,
-	0x0ea7, 0x0ea7,
-	0x0eaa, 0x0eab,
-	0x0ead, 0x0eb9,
-	0x0ebb, 0x0ebd,
+	0x0ea7, 0x0ebd,
 	0x0ec0, 0x0ec4,
 	0x0ec6, 0x0ec6,
 	0x0ec8, 0x0ecd,
@@ -5493,7 +5534,7 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x1c4d, 0x1c88,
 	0x1c90, 0x1cba,
 	0x1cbd, 0x1cc7,
-	0x1cd0, 0x1cf9,
+	0x1cd0, 0x1cfa,
 	0x1d00, 0x1df9,
 	0x1dfb, 0x1f15,
 	0x1f18, 0x1f1d,
@@ -5522,9 +5563,7 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x2440, 0x244a,
 	0x2460, 0x2b73,
 	0x2b76, 0x2b95,
-	0x2b98, 0x2bc8,
-	0x2bca, 0x2bfe,
-	0x2c00, 0x2c2e,
+	0x2b98, 0x2c2e,
 	0x2c30, 0x2c5e,
 	0x2c60, 0x2cf3,
 	0x2cf9, 0x2d25,
@@ -5541,7 +5580,7 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x2dc8, 0x2dce,
 	0x2dd0, 0x2dd6,
 	0x2dd8, 0x2dde,
-	0x2de0, 0x2e4e,
+	0x2de0, 0x2e4f,
 	0x2e80, 0x2e99,
 	0x2e9b, 0x2ef3,
 	0x2f00, 0x2fd5,
@@ -5561,7 +5600,8 @@ static const OnigCodePoint CR_Assigned[] = {
 	0xa490, 0xa4c6,
 	0xa4d0, 0xa62b,
 	0xa640, 0xa6f7,
-	0xa700, 0xa7b9,
+	0xa700, 0xa7bf,
+	0xa7c2, 0xa7c6,
 	0xa7f7, 0xa82b,
 	0xa830, 0xa839,
 	0xa840, 0xa877,
@@ -5582,7 +5622,7 @@ static const OnigCodePoint CR_Assigned[] = {
 	0xab11, 0xab16,
 	0xab20, 0xab26,
 	0xab28, 0xab2e,
-	0xab30, 0xab65,
+	0xab30, 0xab67,
 	0xab70, 0xabed,
 	0xabf0, 0xabf9,
 	0xac00, 0xd7a3,
@@ -5689,6 +5729,7 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x10e60, 0x10e7e,
 	0x10f00, 0x10f27,
 	0x10f30, 0x10f59,
+	0x10fe0, 0x10ff6,
 	0x11000, 0x1104d,
 	0x11052, 0x1106f,
 	0x1107f, 0x110c1,
@@ -5727,7 +5768,7 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x11370, 0x11374,
 	0x11400, 0x11459,
 	0x1145b, 0x1145b,
-	0x1145d, 0x1145e,
+	0x1145d, 0x1145f,
 	0x11480, 0x114c7,
 	0x114d0, 0x114d9,
 	0x11580, 0x115b5,
@@ -5735,7 +5776,7 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x11600, 0x11644,
 	0x11650, 0x11659,
 	0x11660, 0x1166c,
-	0x11680, 0x116b7,
+	0x11680, 0x116b8,
 	0x116c0, 0x116c9,
 	0x11700, 0x1171a,
 	0x1171d, 0x1172b,
@@ -5743,9 +5784,11 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x11800, 0x1183b,
 	0x118a0, 0x118f2,
 	0x118ff, 0x118ff,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d7,
+	0x119da, 0x119e4,
 	0x11a00, 0x11a47,
-	0x11a50, 0x11a83,
-	0x11a86, 0x11aa2,
+	0x11a50, 0x11aa2,
 	0x11ac0, 0x11af8,
 	0x11c00, 0x11c08,
 	0x11c0a, 0x11c36,
@@ -5768,11 +5811,13 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x11d93, 0x11d98,
 	0x11da0, 0x11da9,
 	0x11ee0, 0x11ef8,
-	0x12000, 0x12399,
+	0x11fc0, 0x11ff1,
+	0x11fff, 0x12399,
 	0x12400, 0x1246e,
 	0x12470, 0x12474,
 	0x12480, 0x12543,
 	0x13000, 0x1342e,
+	0x13430, 0x13438,
 	0x14400, 0x14646,
 	0x16800, 0x16a38,
 	0x16a40, 0x16a5e,
@@ -5786,13 +5831,15 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x16b63, 0x16b77,
 	0x16b7d, 0x16b8f,
 	0x16e40, 0x16e9a,
-	0x16f00, 0x16f44,
-	0x16f50, 0x16f7e,
+	0x16f00, 0x16f4a,
+	0x16f4f, 0x16f87,
 	0x16f8f, 0x16f9f,
-	0x16fe0, 0x16fe1,
-	0x17000, 0x187f1,
+	0x16fe0, 0x16fe3,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 	0x1b000, 0x1b11e,
+	0x1b150, 0x1b152,
+	0x1b164, 0x1b167,
 	0x1b170, 0x1b2fb,
 	0x1bc00, 0x1bc6a,
 	0x1bc70, 0x1bc7c,
@@ -5834,12 +5881,19 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x1e01b, 0x1e021,
 	0x1e023, 0x1e024,
 	0x1e026, 0x1e02a,
+	0x1e100, 0x1e12c,
+	0x1e130, 0x1e13d,
+	0x1e140, 0x1e149,
+	0x1e14e, 0x1e14f,
+	0x1e2c0, 0x1e2f9,
+	0x1e2ff, 0x1e2ff,
 	0x1e800, 0x1e8c4,
 	0x1e8c7, 0x1e8d6,
-	0x1e900, 0x1e94a,
+	0x1e900, 0x1e94b,
 	0x1e950, 0x1e959,
 	0x1e95e, 0x1e95f,
 	0x1ec71, 0x1ecb4,
+	0x1ed01, 0x1ed3d,
 	0x1ee00, 0x1ee03,
 	0x1ee05, 0x1ee1f,
 	0x1ee21, 0x1ee22,
@@ -5881,33 +5935,36 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x1f0c1, 0x1f0cf,
 	0x1f0d1, 0x1f0f5,
 	0x1f100, 0x1f10c,
-	0x1f110, 0x1f16b,
+	0x1f110, 0x1f16c,
 	0x1f170, 0x1f1ac,
 	0x1f1e6, 0x1f202,
 	0x1f210, 0x1f23b,
 	0x1f240, 0x1f248,
 	0x1f250, 0x1f251,
 	0x1f260, 0x1f265,
-	0x1f300, 0x1f6d4,
+	0x1f300, 0x1f6d5,
 	0x1f6e0, 0x1f6ec,
-	0x1f6f0, 0x1f6f9,
+	0x1f6f0, 0x1f6fa,
 	0x1f700, 0x1f773,
 	0x1f780, 0x1f7d8,
+	0x1f7e0, 0x1f7eb,
 	0x1f800, 0x1f80b,
 	0x1f810, 0x1f847,
 	0x1f850, 0x1f859,
 	0x1f860, 0x1f887,
 	0x1f890, 0x1f8ad,
 	0x1f900, 0x1f90b,
-	0x1f910, 0x1f93e,
-	0x1f940, 0x1f970,
+	0x1f90d, 0x1f971,
 	0x1f973, 0x1f976,
-	0x1f97a, 0x1f97a,
-	0x1f97c, 0x1f9a2,
-	0x1f9b0, 0x1f9b9,
-	0x1f9c0, 0x1f9c2,
-	0x1f9d0, 0x1f9ff,
+	0x1f97a, 0x1f9a2,
+	0x1f9a5, 0x1f9aa,
+	0x1f9ae, 0x1f9ca,
+	0x1f9cd, 0x1fa53,
 	0x1fa60, 0x1fa6d,
+	0x1fa70, 0x1fa73,
+	0x1fa78, 0x1fa7a,
+	0x1fa80, 0x1fa82,
+	0x1fa90, 0x1fa95,
 	0x20000, 0x2a6d6,
 	0x2a700, 0x2b734,
 	0x2b740, 0x2b81d,
@@ -5923,7 +5980,7 @@ static const OnigCodePoint CR_Assigned[] = {
 
 /* 'C': Major Category */
 static const OnigCodePoint CR_C[] = {
-	661,
+	669,
 	0x0000, 0x001f,
 	0x007f, 0x009f,
 	0x00ad, 0x00ad,
@@ -6037,7 +6094,7 @@ static const OnigCodePoint CR_C[] = {
 	0x0c57, 0x0c57,
 	0x0c5b, 0x0c5f,
 	0x0c64, 0x0c65,
-	0x0c70, 0x0c77,
+	0x0c70, 0x0c76,
 	0x0c8d, 0x0c8d,
 	0x0c91, 0x0c91,
 	0x0ca9, 0x0ca9,
@@ -6074,17 +6131,10 @@ static const OnigCodePoint CR_C[] = {
 	0x0e3b, 0x0e3e,
 	0x0e5c, 0x0e80,
 	0x0e83, 0x0e83,
-	0x0e85, 0x0e86,
-	0x0e89, 0x0e89,
-	0x0e8b, 0x0e8c,
-	0x0e8e, 0x0e93,
-	0x0e98, 0x0e98,
-	0x0ea0, 0x0ea0,
+	0x0e85, 0x0e85,
+	0x0e8b, 0x0e8b,
 	0x0ea4, 0x0ea4,
 	0x0ea6, 0x0ea6,
-	0x0ea8, 0x0ea9,
-	0x0eac, 0x0eac,
-	0x0eba, 0x0eba,
 	0x0ebe, 0x0ebf,
 	0x0ec5, 0x0ec5,
 	0x0ec7, 0x0ec7,
@@ -6161,7 +6211,7 @@ static const OnigCodePoint CR_C[] = {
 	0x1c89, 0x1c8f,
 	0x1cbb, 0x1cbc,
 	0x1cc8, 0x1ccf,
-	0x1cfa, 0x1cff,
+	0x1cfb, 0x1cff,
 	0x1dfa, 0x1dfa,
 	0x1f16, 0x1f17,
 	0x1f1e, 0x1f1f,
@@ -6192,8 +6242,6 @@ static const OnigCodePoint CR_C[] = {
 	0x244b, 0x245f,
 	0x2b74, 0x2b75,
 	0x2b96, 0x2b97,
-	0x2bc9, 0x2bc9,
-	0x2bff, 0x2bff,
 	0x2c2f, 0x2c2f,
 	0x2c5f, 0x2c5f,
 	0x2cf4, 0x2cf8,
@@ -6211,7 +6259,7 @@ static const OnigCodePoint CR_C[] = {
 	0x2dcf, 0x2dcf,
 	0x2dd7, 0x2dd7,
 	0x2ddf, 0x2ddf,
-	0x2e4f, 0x2e7f,
+	0x2e50, 0x2e7f,
 	0x2e9a, 0x2e9a,
 	0x2ef4, 0x2eff,
 	0x2fd6, 0x2fef,
@@ -6231,7 +6279,8 @@ static const OnigCodePoint CR_C[] = {
 	0xa4c7, 0xa4cf,
 	0xa62c, 0xa63f,
 	0xa6f8, 0xa6ff,
-	0xa7ba, 0xa7f6,
+	0xa7c0, 0xa7c1,
+	0xa7c7, 0xa7f6,
 	0xa82c, 0xa82f,
 	0xa83a, 0xa83f,
 	0xa878, 0xa87f,
@@ -6252,7 +6301,7 @@ static const OnigCodePoint CR_C[] = {
 	0xab17, 0xab1f,
 	0xab27, 0xab27,
 	0xab2f, 0xab2f,
-	0xab66, 0xab6f,
+	0xab68, 0xab6f,
 	0xabee, 0xabef,
 	0xabfa, 0xabff,
 	0xd7a4, 0xd7af,
@@ -6357,7 +6406,8 @@ static const OnigCodePoint CR_C[] = {
 	0x10d3a, 0x10e5f,
 	0x10e7f, 0x10eff,
 	0x10f28, 0x10f2f,
-	0x10f5a, 0x10fff,
+	0x10f5a, 0x10fdf,
+	0x10ff7, 0x10fff,
 	0x1104e, 0x11051,
 	0x11070, 0x1107e,
 	0x110bd, 0x110bd,
@@ -6396,7 +6446,7 @@ static const OnigCodePoint CR_C[] = {
 	0x11375, 0x113ff,
 	0x1145a, 0x1145a,
 	0x1145c, 0x1145c,
-	0x1145f, 0x1147f,
+	0x11460, 0x1147f,
 	0x114c8, 0x114cf,
 	0x114da, 0x1157f,
 	0x115b6, 0x115b7,
@@ -6404,16 +6454,18 @@ static const OnigCodePoint CR_C[] = {
 	0x11645, 0x1164f,
 	0x1165a, 0x1165f,
 	0x1166d, 0x1167f,
-	0x116b8, 0x116bf,
+	0x116b9, 0x116bf,
 	0x116ca, 0x116ff,
 	0x1171b, 0x1171c,
 	0x1172c, 0x1172f,
 	0x11740, 0x117ff,
 	0x1183c, 0x1189f,
 	0x118f3, 0x118fe,
-	0x11900, 0x119ff,
+	0x11900, 0x1199f,
+	0x119a8, 0x119a9,
+	0x119d8, 0x119d9,
+	0x119e5, 0x119ff,
 	0x11a48, 0x11a4f,
-	0x11a84, 0x11a85,
 	0x11aa3, 0x11abf,
 	0x11af9, 0x11bff,
 	0x11c09, 0x11c09,
@@ -6436,7 +6488,8 @@ static const OnigCodePoint CR_C[] = {
 	0x11d92, 0x11d92,
 	0x11d99, 0x11d9f,
 	0x11daa, 0x11edf,
-	0x11ef9, 0x11fff,
+	0x11ef9, 0x11fbf,
+	0x11ff2, 0x11ffe,
 	0x1239a, 0x123ff,
 	0x1246f, 0x1246f,
 	0x12475, 0x1247f,
@@ -6455,13 +6508,15 @@ static const OnigCodePoint CR_C[] = {
 	0x16b78, 0x16b7c,
 	0x16b90, 0x16e3f,
 	0x16e9b, 0x16eff,
-	0x16f45, 0x16f4f,
-	0x16f7f, 0x16f8e,
+	0x16f4b, 0x16f4e,
+	0x16f88, 0x16f8e,
 	0x16fa0, 0x16fdf,
-	0x16fe2, 0x16fff,
-	0x187f2, 0x187ff,
+	0x16fe4, 0x16fff,
+	0x187f8, 0x187ff,
 	0x18af3, 0x1afff,
-	0x1b11f, 0x1b16f,
+	0x1b11f, 0x1b14f,
+	0x1b153, 0x1b163,
+	0x1b168, 0x1b16f,
 	0x1b2fc, 0x1bbff,
 	0x1bc6b, 0x1bc6f,
 	0x1bc7d, 0x1bc7f,
@@ -6503,13 +6558,20 @@ static const OnigCodePoint CR_C[] = {
 	0x1e019, 0x1e01a,
 	0x1e022, 0x1e022,
 	0x1e025, 0x1e025,
-	0x1e02b, 0x1e7ff,
+	0x1e02b, 0x1e0ff,
+	0x1e12d, 0x1e12f,
+	0x1e13e, 0x1e13f,
+	0x1e14a, 0x1e14d,
+	0x1e150, 0x1e2bf,
+	0x1e2fa, 0x1e2fe,
+	0x1e300, 0x1e7ff,
 	0x1e8c5, 0x1e8c6,
 	0x1e8d7, 0x1e8ff,
-	0x1e94b, 0x1e94f,
+	0x1e94c, 0x1e94f,
 	0x1e95a, 0x1e95d,
 	0x1e960, 0x1ec70,
-	0x1ecb5, 0x1edff,
+	0x1ecb5, 0x1ed00,
+	0x1ed3e, 0x1edff,
 	0x1ee04, 0x1ee04,
 	0x1ee20, 0x1ee20,
 	0x1ee23, 0x1ee23,
@@ -6551,33 +6613,36 @@ static const OnigCodePoint CR_C[] = {
 	0x1f0d0, 0x1f0d0,
 	0x1f0f6, 0x1f0ff,
 	0x1f10d, 0x1f10f,
-	0x1f16c, 0x1f16f,
+	0x1f16d, 0x1f16f,
 	0x1f1ad, 0x1f1e5,
 	0x1f203, 0x1f20f,
 	0x1f23c, 0x1f23f,
 	0x1f249, 0x1f24f,
 	0x1f252, 0x1f25f,
 	0x1f266, 0x1f2ff,
-	0x1f6d5, 0x1f6df,
+	0x1f6d6, 0x1f6df,
 	0x1f6ed, 0x1f6ef,
-	0x1f6fa, 0x1f6ff,
+	0x1f6fb, 0x1f6ff,
 	0x1f774, 0x1f77f,
-	0x1f7d9, 0x1f7ff,
+	0x1f7d9, 0x1f7df,
+	0x1f7ec, 0x1f7ff,
 	0x1f80c, 0x1f80f,
 	0x1f848, 0x1f84f,
 	0x1f85a, 0x1f85f,
 	0x1f888, 0x1f88f,
 	0x1f8ae, 0x1f8ff,
-	0x1f90c, 0x1f90f,
-	0x1f93f, 0x1f93f,
-	0x1f971, 0x1f972,
+	0x1f90c, 0x1f90c,
+	0x1f972, 0x1f972,
 	0x1f977, 0x1f979,
-	0x1f97b, 0x1f97b,
-	0x1f9a3, 0x1f9af,
-	0x1f9ba, 0x1f9bf,
-	0x1f9c3, 0x1f9cf,
-	0x1fa00, 0x1fa5f,
-	0x1fa6e, 0x1ffff,
+	0x1f9a3, 0x1f9a4,
+	0x1f9ab, 0x1f9ad,
+	0x1f9cb, 0x1f9cc,
+	0x1fa54, 0x1fa5f,
+	0x1fa6e, 0x1fa6f,
+	0x1fa74, 0x1fa77,
+	0x1fa7b, 0x1fa7f,
+	0x1fa83, 0x1fa8f,
+	0x1fa96, 0x1ffff,
 	0x2a6d7, 0x2a6ff,
 	0x2b735, 0x2b73f,
 	0x2b81e, 0x2b81f,
@@ -6592,7 +6657,7 @@ static const OnigCodePoint CR_C[] = {
 
 /* 'Cf': General Category */
 static const OnigCodePoint CR_Cf[] = {
-	19,
+	20,
 	0x00ad, 0x00ad,
 	0x0600, 0x0605,
 	0x061c, 0x061c,
@@ -6608,6 +6673,7 @@ static const OnigCodePoint CR_Cf[] = {
 	0xfff9, 0xfffb,
 	0x110bd, 0x110bd,
 	0x110cd, 0x110cd,
+	0x13430, 0x13438,
 	0x1bca0, 0x1bca3,
 	0x1d173, 0x1d17a,
 	0xe0001, 0xe0001,
@@ -6616,7 +6682,7 @@ static const OnigCodePoint CR_Cf[] = {
 
 /* 'Cn': General Category */
 static const OnigCodePoint CR_Cn[] = {
-	658,
+	667,
 	0x0378, 0x0379,
 	0x0380, 0x0383,
 	0x038b, 0x038b,
@@ -6725,7 +6791,7 @@ static const OnigCodePoint CR_Cn[] = {
 	0x0c57, 0x0c57,
 	0x0c5b, 0x0c5f,
 	0x0c64, 0x0c65,
-	0x0c70, 0x0c77,
+	0x0c70, 0x0c76,
 	0x0c8d, 0x0c8d,
 	0x0c91, 0x0c91,
 	0x0ca9, 0x0ca9,
@@ -6762,17 +6828,10 @@ static const OnigCodePoint CR_Cn[] = {
 	0x0e3b, 0x0e3e,
 	0x0e5c, 0x0e80,
 	0x0e83, 0x0e83,
-	0x0e85, 0x0e86,
-	0x0e89, 0x0e89,
-	0x0e8b, 0x0e8c,
-	0x0e8e, 0x0e93,
-	0x0e98, 0x0e98,
-	0x0ea0, 0x0ea0,
+	0x0e85, 0x0e85,
+	0x0e8b, 0x0e8b,
 	0x0ea4, 0x0ea4,
 	0x0ea6, 0x0ea6,
-	0x0ea8, 0x0ea9,
-	0x0eac, 0x0eac,
-	0x0eba, 0x0eba,
 	0x0ebe, 0x0ebf,
 	0x0ec5, 0x0ec5,
 	0x0ec7, 0x0ec7,
@@ -6849,7 +6908,7 @@ static const OnigCodePoint CR_Cn[] = {
 	0x1c89, 0x1c8f,
 	0x1cbb, 0x1cbc,
 	0x1cc8, 0x1ccf,
-	0x1cfa, 0x1cff,
+	0x1cfb, 0x1cff,
 	0x1dfa, 0x1dfa,
 	0x1f16, 0x1f17,
 	0x1f1e, 0x1f1f,
@@ -6878,8 +6937,6 @@ static const OnigCodePoint CR_Cn[] = {
 	0x244b, 0x245f,
 	0x2b74, 0x2b75,
 	0x2b96, 0x2b97,
-	0x2bc9, 0x2bc9,
-	0x2bff, 0x2bff,
 	0x2c2f, 0x2c2f,
 	0x2c5f, 0x2c5f,
 	0x2cf4, 0x2cf8,
@@ -6897,7 +6954,7 @@ static const OnigCodePoint CR_Cn[] = {
 	0x2dcf, 0x2dcf,
 	0x2dd7, 0x2dd7,
 	0x2ddf, 0x2ddf,
-	0x2e4f, 0x2e7f,
+	0x2e50, 0x2e7f,
 	0x2e9a, 0x2e9a,
 	0x2ef4, 0x2eff,
 	0x2fd6, 0x2fef,
@@ -6917,7 +6974,8 @@ static const OnigCodePoint CR_Cn[] = {
 	0xa4c7, 0xa4cf,
 	0xa62c, 0xa63f,
 	0xa6f8, 0xa6ff,
-	0xa7ba, 0xa7f6,
+	0xa7c0, 0xa7c1,
+	0xa7c7, 0xa7f6,
 	0xa82c, 0xa82f,
 	0xa83a, 0xa83f,
 	0xa878, 0xa87f,
@@ -6938,7 +6996,7 @@ static const OnigCodePoint CR_Cn[] = {
 	0xab17, 0xab1f,
 	0xab27, 0xab27,
 	0xab2f, 0xab2f,
-	0xab66, 0xab6f,
+	0xab68, 0xab6f,
 	0xabee, 0xabef,
 	0xabfa, 0xabff,
 	0xd7a4, 0xd7af,
@@ -7044,7 +7102,8 @@ static const OnigCodePoint CR_Cn[] = {
 	0x10d3a, 0x10e5f,
 	0x10e7f, 0x10eff,
 	0x10f28, 0x10f2f,
-	0x10f5a, 0x10fff,
+	0x10f5a, 0x10fdf,
+	0x10ff7, 0x10fff,
 	0x1104e, 0x11051,
 	0x11070, 0x1107e,
 	0x110c2, 0x110cc,
@@ -7083,7 +7142,7 @@ static const OnigCodePoint CR_Cn[] = {
 	0x11375, 0x113ff,
 	0x1145a, 0x1145a,
 	0x1145c, 0x1145c,
-	0x1145f, 0x1147f,
+	0x11460, 0x1147f,
 	0x114c8, 0x114cf,
 	0x114da, 0x1157f,
 	0x115b6, 0x115b7,
@@ -7091,16 +7150,18 @@ static const OnigCodePoint CR_Cn[] = {
 	0x11645, 0x1164f,
 	0x1165a, 0x1165f,
 	0x1166d, 0x1167f,
-	0x116b8, 0x116bf,
+	0x116b9, 0x116bf,
 	0x116ca, 0x116ff,
 	0x1171b, 0x1171c,
 	0x1172c, 0x1172f,
 	0x11740, 0x117ff,
 	0x1183c, 0x1189f,
 	0x118f3, 0x118fe,
-	0x11900, 0x119ff,
+	0x11900, 0x1199f,
+	0x119a8, 0x119a9,
+	0x119d8, 0x119d9,
+	0x119e5, 0x119ff,
 	0x11a48, 0x11a4f,
-	0x11a84, 0x11a85,
 	0x11aa3, 0x11abf,
 	0x11af9, 0x11bff,
 	0x11c09, 0x11c09,
@@ -7123,12 +7184,14 @@ static const OnigCodePoint CR_Cn[] = {
 	0x11d92, 0x11d92,
 	0x11d99, 0x11d9f,
 	0x11daa, 0x11edf,
-	0x11ef9, 0x11fff,
+	0x11ef9, 0x11fbf,
+	0x11ff2, 0x11ffe,
 	0x1239a, 0x123ff,
 	0x1246f, 0x1246f,
 	0x12475, 0x1247f,
 	0x12544, 0x12fff,
-	0x1342f, 0x143ff,
+	0x1342f, 0x1342f,
+	0x13439, 0x143ff,
 	0x14647, 0x167ff,
 	0x16a39, 0x16a3f,
 	0x16a5f, 0x16a5f,
@@ -7142,13 +7205,15 @@ static const OnigCodePoint CR_Cn[] = {
 	0x16b78, 0x16b7c,
 	0x16b90, 0x16e3f,
 	0x16e9b, 0x16eff,
-	0x16f45, 0x16f4f,
-	0x16f7f, 0x16f8e,
+	0x16f4b, 0x16f4e,
+	0x16f88, 0x16f8e,
 	0x16fa0, 0x16fdf,
-	0x16fe2, 0x16fff,
-	0x187f2, 0x187ff,
+	0x16fe4, 0x16fff,
+	0x187f8, 0x187ff,
 	0x18af3, 0x1afff,
-	0x1b11f, 0x1b16f,
+	0x1b11f, 0x1b14f,
+	0x1b153, 0x1b163,
+	0x1b168, 0x1b16f,
 	0x1b2fc, 0x1bbff,
 	0x1bc6b, 0x1bc6f,
 	0x1bc7d, 0x1bc7f,
@@ -7189,13 +7254,20 @@ static const OnigCodePoint CR_Cn[] = {
 	0x1e019, 0x1e01a,
 	0x1e022, 0x1e022,
 	0x1e025, 0x1e025,
-	0x1e02b, 0x1e7ff,
+	0x1e02b, 0x1e0ff,
+	0x1e12d, 0x1e12f,
+	0x1e13e, 0x1e13f,
+	0x1e14a, 0x1e14d,
+	0x1e150, 0x1e2bf,
+	0x1e2fa, 0x1e2fe,
+	0x1e300, 0x1e7ff,
 	0x1e8c5, 0x1e8c6,
 	0x1e8d7, 0x1e8ff,
-	0x1e94b, 0x1e94f,
+	0x1e94c, 0x1e94f,
 	0x1e95a, 0x1e95d,
 	0x1e960, 0x1ec70,
-	0x1ecb5, 0x1edff,
+	0x1ecb5, 0x1ed00,
+	0x1ed3e, 0x1edff,
 	0x1ee04, 0x1ee04,
 	0x1ee20, 0x1ee20,
 	0x1ee23, 0x1ee23,
@@ -7237,33 +7309,36 @@ static const OnigCodePoint CR_Cn[] = {
 	0x1f0d0, 0x1f0d0,
 	0x1f0f6, 0x1f0ff,
 	0x1f10d, 0x1f10f,
-	0x1f16c, 0x1f16f,
+	0x1f16d, 0x1f16f,
 	0x1f1ad, 0x1f1e5,
 	0x1f203, 0x1f20f,
 	0x1f23c, 0x1f23f,
 	0x1f249, 0x1f24f,
 	0x1f252, 0x1f25f,
 	0x1f266, 0x1f2ff,
-	0x1f6d5, 0x1f6df,
+	0x1f6d6, 0x1f6df,
 	0x1f6ed, 0x1f6ef,
-	0x1f6fa, 0x1f6ff,
+	0x1f6fb, 0x1f6ff,
 	0x1f774, 0x1f77f,
-	0x1f7d9, 0x1f7ff,
+	0x1f7d9, 0x1f7df,
+	0x1f7ec, 0x1f7ff,
 	0x1f80c, 0x1f80f,
 	0x1f848, 0x1f84f,
 	0x1f85a, 0x1f85f,
 	0x1f888, 0x1f88f,
 	0x1f8ae, 0x1f8ff,
-	0x1f90c, 0x1f90f,
-	0x1f93f, 0x1f93f,
-	0x1f971, 0x1f972,
+	0x1f90c, 0x1f90c,
+	0x1f972, 0x1f972,
 	0x1f977, 0x1f979,
-	0x1f97b, 0x1f97b,
-	0x1f9a3, 0x1f9af,
-	0x1f9ba, 0x1f9bf,
-	0x1f9c3, 0x1f9cf,
-	0x1fa00, 0x1fa5f,
-	0x1fa6e, 0x1ffff,
+	0x1f9a3, 0x1f9a4,
+	0x1f9ab, 0x1f9ad,
+	0x1f9cb, 0x1f9cc,
+	0x1fa54, 0x1fa5f,
+	0x1fa6e, 0x1fa6f,
+	0x1fa74, 0x1fa77,
+	0x1fa7b, 0x1fa7f,
+	0x1fa83, 0x1fa8f,
+	0x1fa96, 0x1ffff,
 	0x2a6d7, 0x2a6ff,
 	0x2b735, 0x2b73f,
 	0x2b81e, 0x2b81f,
@@ -7293,7 +7368,7 @@ static const OnigCodePoint CR_Cs[] = {
 
 /* 'L': Major Category */
 static const OnigCodePoint CR_L[] = {
-	599,
+	609,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
 	0x00aa, 0x00aa,
@@ -7438,16 +7513,10 @@ static const OnigCodePoint CR_L[] = {
 	0x0e40, 0x0e46,
 	0x0e81, 0x0e82,
 	0x0e84, 0x0e84,
-	0x0e87, 0x0e88,
-	0x0e8a, 0x0e8a,
-	0x0e8d, 0x0e8d,
-	0x0e94, 0x0e97,
-	0x0e99, 0x0e9f,
-	0x0ea1, 0x0ea3,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
 	0x0ea5, 0x0ea5,
-	0x0ea7, 0x0ea7,
-	0x0eaa, 0x0eab,
-	0x0ead, 0x0eb0,
+	0x0ea7, 0x0eb0,
 	0x0eb2, 0x0eb3,
 	0x0ebd, 0x0ebd,
 	0x0ec0, 0x0ec4,
@@ -7528,8 +7597,9 @@ static const OnigCodePoint CR_L[] = {
 	0x1c90, 0x1cba,
 	0x1cbd, 0x1cbf,
 	0x1ce9, 0x1cec,
-	0x1cee, 0x1cf1,
+	0x1cee, 0x1cf3,
 	0x1cf5, 0x1cf6,
+	0x1cfa, 0x1cfa,
 	0x1d00, 0x1dbf,
 	0x1e00, 0x1f15,
 	0x1f18, 0x1f1d,
@@ -7610,7 +7680,8 @@ static const OnigCodePoint CR_L[] = {
 	0xa6a0, 0xa6e5,
 	0xa717, 0xa71f,
 	0xa722, 0xa788,
-	0xa78b, 0xa7b9,
+	0xa78b, 0xa7bf,
+	0xa7c2, 0xa7c6,
 	0xa7f7, 0xa801,
 	0xa803, 0xa805,
 	0xa807, 0xa80a,
@@ -7648,7 +7719,7 @@ static const OnigCodePoint CR_L[] = {
 	0xab20, 0xab26,
 	0xab28, 0xab2e,
 	0xab30, 0xab5a,
-	0xab5c, 0xab65,
+	0xab5c, 0xab67,
 	0xab70, 0xabe2,
 	0xac00, 0xd7a3,
 	0xd7b0, 0xd7c6,
@@ -7735,6 +7806,7 @@ static const OnigCodePoint CR_L[] = {
 	0x10f00, 0x10f1c,
 	0x10f27, 0x10f27,
 	0x10f30, 0x10f45,
+	0x10fe0, 0x10ff6,
 	0x11003, 0x11037,
 	0x11083, 0x110af,
 	0x110d0, 0x110e8,
@@ -7765,6 +7837,7 @@ static const OnigCodePoint CR_L[] = {
 	0x1135d, 0x11361,
 	0x11400, 0x11434,
 	0x11447, 0x1144a,
+	0x1145f, 0x1145f,
 	0x11480, 0x114af,
 	0x114c4, 0x114c5,
 	0x114c7, 0x114c7,
@@ -7773,16 +7846,20 @@ static const OnigCodePoint CR_L[] = {
 	0x11600, 0x1162f,
 	0x11644, 0x11644,
 	0x11680, 0x116aa,
+	0x116b8, 0x116b8,
 	0x11700, 0x1171a,
 	0x11800, 0x1182b,
 	0x118a0, 0x118df,
 	0x118ff, 0x118ff,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d0,
+	0x119e1, 0x119e1,
+	0x119e3, 0x119e3,
 	0x11a00, 0x11a00,
 	0x11a0b, 0x11a32,
 	0x11a3a, 0x11a3a,
 	0x11a50, 0x11a50,
-	0x11a5c, 0x11a83,
-	0x11a86, 0x11a89,
+	0x11a5c, 0x11a89,
 	0x11a9d, 0x11a9d,
 	0x11ac0, 0x11af8,
 	0x11c00, 0x11c08,
@@ -7810,13 +7887,16 @@ static const OnigCodePoint CR_L[] = {
 	0x16b63, 0x16b77,
 	0x16b7d, 0x16b8f,
 	0x16e40, 0x16e7f,
-	0x16f00, 0x16f44,
+	0x16f00, 0x16f4a,
 	0x16f50, 0x16f50,
 	0x16f93, 0x16f9f,
 	0x16fe0, 0x16fe1,
-	0x17000, 0x187f1,
+	0x16fe3, 0x16fe3,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 	0x1b000, 0x1b11e,
+	0x1b150, 0x1b152,
+	0x1b164, 0x1b167,
 	0x1b170, 0x1b2fb,
 	0x1bc00, 0x1bc6a,
 	0x1bc70, 0x1bc7c,
@@ -7852,8 +7932,13 @@ static const OnigCodePoint CR_L[] = {
 	0x1d78a, 0x1d7a8,
 	0x1d7aa, 0x1d7c2,
 	0x1d7c4, 0x1d7cb,
+	0x1e100, 0x1e12c,
+	0x1e137, 0x1e13d,
+	0x1e14e, 0x1e14e,
+	0x1e2c0, 0x1e2eb,
 	0x1e800, 0x1e8c4,
 	0x1e900, 0x1e943,
+	0x1e94b, 0x1e94b,
 	0x1ee00, 0x1ee03,
 	0x1ee05, 0x1ee1f,
 	0x1ee21, 0x1ee22,
@@ -7897,7 +7982,7 @@ static const OnigCodePoint CR_L[] = {
 
 /* 'LC': General Category */
 static const OnigCodePoint CR_LC[] = {
-	130,
+	131,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
 	0x00b5, 0x00b5,
@@ -7981,10 +8066,11 @@ static const OnigCodePoint CR_LC[] = {
 	0xa722, 0xa76f,
 	0xa771, 0xa787,
 	0xa78b, 0xa78e,
-	0xa790, 0xa7b9,
+	0xa790, 0xa7bf,
+	0xa7c2, 0xa7c6,
 	0xa7fa, 0xa7fa,
 	0xab30, 0xab5a,
-	0xab60, 0xab65,
+	0xab60, 0xab67,
 	0xab70, 0xabbf,
 	0xfb00, 0xfb06,
 	0xfb13, 0xfb17,
@@ -8032,7 +8118,7 @@ static const OnigCodePoint CR_LC[] = {
 
 /* 'Ll': General Category */
 static const OnigCodePoint CR_Ll[] = {
-	638,
+	642,
 	0x0061, 0x007a,
 	0x00b5, 0x00b5,
 	0x00df, 0x00f6,
@@ -8630,9 +8716,13 @@ static const OnigCodePoint CR_Ll[] = {
 	0xa7b5, 0xa7b5,
 	0xa7b7, 0xa7b7,
 	0xa7b9, 0xa7b9,
+	0xa7bb, 0xa7bb,
+	0xa7bd, 0xa7bd,
+	0xa7bf, 0xa7bf,
+	0xa7c3, 0xa7c3,
 	0xa7fa, 0xa7fa,
 	0xab30, 0xab5a,
-	0xab60, 0xab65,
+	0xab60, 0xab67,
 	0xab70, 0xabbf,
 	0xfb00, 0xfb06,
 	0xfb13, 0xfb17,
@@ -8675,7 +8765,7 @@ static const OnigCodePoint CR_Ll[] = {
 
 /* 'Lm': General Category */
 static const OnigCodePoint CR_Lm[] = {
-	57,
+	60,
 	0x02b0, 0x02c1,
 	0x02c6, 0x02d1,
 	0x02e0, 0x02e4,
@@ -8733,11 +8823,14 @@ static const OnigCodePoint CR_Lm[] = {
 	0x16b40, 0x16b43,
 	0x16f93, 0x16f9f,
 	0x16fe0, 0x16fe1,
+	0x16fe3, 0x16fe3,
+	0x1e137, 0x1e13d,
+	0x1e94b, 0x1e94b,
 }; /* CR_Lm */
 
 /* 'Lo': General Category */
 static const OnigCodePoint CR_Lo[] = {
-	470,
+	476,
 	0x00aa, 0x00aa,
 	0x00ba, 0x00ba,
 	0x01bb, 0x01bb,
@@ -8856,16 +8949,10 @@ static const OnigCodePoint CR_Lo[] = {
 	0x0e40, 0x0e45,
 	0x0e81, 0x0e82,
 	0x0e84, 0x0e84,
-	0x0e87, 0x0e88,
-	0x0e8a, 0x0e8a,
-	0x0e8d, 0x0e8d,
-	0x0e94, 0x0e97,
-	0x0e99, 0x0e9f,
-	0x0ea1, 0x0ea3,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
 	0x0ea5, 0x0ea5,
-	0x0ea7, 0x0ea7,
-	0x0eaa, 0x0eab,
-	0x0ead, 0x0eb0,
+	0x0ea7, 0x0eb0,
 	0x0eb2, 0x0eb3,
 	0x0ebd, 0x0ebd,
 	0x0ec0, 0x0ec4,
@@ -8935,8 +9022,9 @@ static const OnigCodePoint CR_Lo[] = {
 	0x1c4d, 0x1c4f,
 	0x1c5a, 0x1c77,
 	0x1ce9, 0x1cec,
-	0x1cee, 0x1cf1,
+	0x1cee, 0x1cf3,
 	0x1cf5, 0x1cf6,
+	0x1cfa, 0x1cfa,
 	0x2135, 0x2138,
 	0x2d30, 0x2d67,
 	0x2d80, 0x2d96,
@@ -9086,6 +9174,7 @@ static const OnigCodePoint CR_Lo[] = {
 	0x10f00, 0x10f1c,
 	0x10f27, 0x10f27,
 	0x10f30, 0x10f45,
+	0x10fe0, 0x10ff6,
 	0x11003, 0x11037,
 	0x11083, 0x110af,
 	0x110d0, 0x110e8,
@@ -9116,6 +9205,7 @@ static const OnigCodePoint CR_Lo[] = {
 	0x1135d, 0x11361,
 	0x11400, 0x11434,
 	0x11447, 0x1144a,
+	0x1145f, 0x1145f,
 	0x11480, 0x114af,
 	0x114c4, 0x114c5,
 	0x114c7, 0x114c7,
@@ -9124,15 +9214,19 @@ static const OnigCodePoint CR_Lo[] = {
 	0x11600, 0x1162f,
 	0x11644, 0x11644,
 	0x11680, 0x116aa,
+	0x116b8, 0x116b8,
 	0x11700, 0x1171a,
 	0x11800, 0x1182b,
 	0x118ff, 0x118ff,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d0,
+	0x119e1, 0x119e1,
+	0x119e3, 0x119e3,
 	0x11a00, 0x11a00,
 	0x11a0b, 0x11a32,
 	0x11a3a, 0x11a3a,
 	0x11a50, 0x11a50,
-	0x11a5c, 0x11a83,
-	0x11a86, 0x11a89,
+	0x11a5c, 0x11a89,
 	0x11a9d, 0x11a9d,
 	0x11ac0, 0x11af8,
 	0x11c00, 0x11c08,
@@ -9158,16 +9252,21 @@ static const OnigCodePoint CR_Lo[] = {
 	0x16b00, 0x16b2f,
 	0x16b63, 0x16b77,
 	0x16b7d, 0x16b8f,
-	0x16f00, 0x16f44,
+	0x16f00, 0x16f4a,
 	0x16f50, 0x16f50,
-	0x17000, 0x187f1,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 	0x1b000, 0x1b11e,
+	0x1b150, 0x1b152,
+	0x1b164, 0x1b167,
 	0x1b170, 0x1b2fb,
 	0x1bc00, 0x1bc6a,
 	0x1bc70, 0x1bc7c,
 	0x1bc80, 0x1bc88,
 	0x1bc90, 0x1bc99,
+	0x1e100, 0x1e12c,
+	0x1e14e, 0x1e14e,
+	0x1e2c0, 0x1e2eb,
 	0x1e800, 0x1e8c4,
 	0x1ee00, 0x1ee03,
 	0x1ee05, 0x1ee1f,
@@ -9227,7 +9326,7 @@ static const OnigCodePoint CR_Lt[] = {
 
 /* 'Lu': General Category */
 static const OnigCodePoint CR_Lu[] = {
-	631,
+	636,
 	0x0041, 0x005a,
 	0x00c0, 0x00d6,
 	0x00d8, 0x00de,
@@ -9821,6 +9920,11 @@ static const OnigCodePoint CR_Lu[] = {
 	0xa7b0, 0xa7b4,
 	0xa7b6, 0xa7b6,
 	0xa7b8, 0xa7b8,
+	0xa7ba, 0xa7ba,
+	0xa7bc, 0xa7bc,
+	0xa7be, 0xa7be,
+	0xa7c2, 0xa7c2,
+	0xa7c4, 0xa7c6,
 	0xff21, 0xff3a,
 	0x10400, 0x10427,
 	0x104b0, 0x104d3,
@@ -9863,7 +9967,7 @@ static const OnigCodePoint CR_Lu[] = {
 
 /* 'M': Major Category */
 static const OnigCodePoint CR_M[] = {
-	275,
+	280,
 	0x0300, 0x036f,
 	0x0483, 0x0489,
 	0x0591, 0x05bd,
@@ -9959,8 +10063,7 @@ static const OnigCodePoint CR_M[] = {
 	0x0e34, 0x0e3a,
 	0x0e47, 0x0e4e,
 	0x0eb1, 0x0eb1,
-	0x0eb4, 0x0eb9,
-	0x0ebb, 0x0ebc,
+	0x0eb4, 0x0ebc,
 	0x0ec8, 0x0ecd,
 	0x0f18, 0x0f19,
 	0x0f35, 0x0f35,
@@ -10008,7 +10111,7 @@ static const OnigCodePoint CR_M[] = {
 	0x1cd0, 0x1cd2,
 	0x1cd4, 0x1ce8,
 	0x1ced, 0x1ced,
-	0x1cf2, 0x1cf4,
+	0x1cf4, 0x1cf4,
 	0x1cf7, 0x1cf9,
 	0x1dc0, 0x1df9,
 	0x1dfb, 0x1dff,
@@ -10095,6 +10198,9 @@ static const OnigCodePoint CR_M[] = {
 	0x116ab, 0x116b7,
 	0x1171d, 0x1172b,
 	0x1182c, 0x1183a,
+	0x119d1, 0x119d7,
+	0x119da, 0x119e0,
+	0x119e4, 0x119e4,
 	0x11a01, 0x11a0a,
 	0x11a33, 0x11a39,
 	0x11a3b, 0x11a3e,
@@ -10116,7 +10222,8 @@ static const OnigCodePoint CR_M[] = {
 	0x11ef3, 0x11ef6,
 	0x16af0, 0x16af4,
 	0x16b30, 0x16b36,
-	0x16f51, 0x16f7e,
+	0x16f4f, 0x16f4f,
+	0x16f51, 0x16f87,
 	0x16f8f, 0x16f92,
 	0x1bc9d, 0x1bc9e,
 	0x1d165, 0x1d169,
@@ -10136,6 +10243,8 @@ static const OnigCodePoint CR_M[] = {
 	0x1e01b, 0x1e021,
 	0x1e023, 0x1e024,
 	0x1e026, 0x1e02a,
+	0x1e130, 0x1e136,
+	0x1e2ec, 0x1e2ef,
 	0x1e8d0, 0x1e8d6,
 	0x1e944, 0x1e94a,
 	0xe0100, 0xe01ef,
@@ -10143,7 +10252,7 @@ static const OnigCodePoint CR_M[] = {
 
 /* 'Mc': General Category */
 static const OnigCodePoint CR_Mc[] = {
-	166,
+	168,
 	0x0903, 0x0903,
 	0x093b, 0x093b,
 	0x093e, 0x0940,
@@ -10230,7 +10339,6 @@ static const OnigCodePoint CR_Mc[] = {
 	0x1c24, 0x1c2b,
 	0x1c34, 0x1c35,
 	0x1ce1, 0x1ce1,
-	0x1cf2, 0x1cf3,
 	0x1cf7, 0x1cf7,
 	0x302e, 0x302f,
 	0xa823, 0xa824,
@@ -10241,7 +10349,7 @@ static const OnigCodePoint CR_Mc[] = {
 	0xa983, 0xa983,
 	0xa9b4, 0xa9b5,
 	0xa9ba, 0xa9bb,
-	0xa9bd, 0xa9c0,
+	0xa9be, 0xa9c0,
 	0xaa2f, 0xaa30,
 	0xaa33, 0xaa34,
 	0xaa4d, 0xaa4d,
@@ -10295,6 +10403,9 @@ static const OnigCodePoint CR_Mc[] = {
 	0x11726, 0x11726,
 	0x1182c, 0x1182e,
 	0x11838, 0x11838,
+	0x119d1, 0x119d3,
+	0x119dc, 0x119df,
+	0x119e4, 0x119e4,
 	0x11a39, 0x11a39,
 	0x11a57, 0x11a58,
 	0x11a97, 0x11a97,
@@ -10307,7 +10418,7 @@ static const OnigCodePoint CR_Mc[] = {
 	0x11d93, 0x11d94,
 	0x11d96, 0x11d96,
 	0x11ef5, 0x11ef6,
-	0x16f51, 0x16f7e,
+	0x16f51, 0x16f87,
 	0x1d165, 0x1d166,
 	0x1d16d, 0x1d172,
 }; /* CR_Mc */
@@ -10324,7 +10435,7 @@ static const OnigCodePoint CR_Me[] = {
 
 /* 'Mn': General Category */
 static const OnigCodePoint CR_Mn[] = {
-	313,
+	318,
 	0x0300, 0x036f,
 	0x0483, 0x0487,
 	0x0591, 0x05bd,
@@ -10413,8 +10524,7 @@ static const OnigCodePoint CR_Mn[] = {
 	0x0e34, 0x0e3a,
 	0x0e47, 0x0e4e,
 	0x0eb1, 0x0eb1,
-	0x0eb4, 0x0eb9,
-	0x0ebb, 0x0ebc,
+	0x0eb4, 0x0ebc,
 	0x0ec8, 0x0ecd,
 	0x0f18, 0x0f19,
 	0x0f35, 0x0f35,
@@ -10512,7 +10622,7 @@ static const OnigCodePoint CR_Mn[] = {
 	0xa980, 0xa982,
 	0xa9b3, 0xa9b3,
 	0xa9b6, 0xa9b9,
-	0xa9bc, 0xa9bc,
+	0xa9bc, 0xa9bd,
 	0xa9e5, 0xa9e5,
 	0xaa29, 0xaa2e,
 	0xaa31, 0xaa32,
@@ -10591,6 +10701,9 @@ static const OnigCodePoint CR_Mn[] = {
 	0x11727, 0x1172b,
 	0x1182f, 0x11837,
 	0x11839, 0x1183a,
+	0x119d4, 0x119d7,
+	0x119da, 0x119db,
+	0x119e0, 0x119e0,
 	0x11a01, 0x11a0a,
 	0x11a33, 0x11a38,
 	0x11a3b, 0x11a3e,
@@ -10617,6 +10730,7 @@ static const OnigCodePoint CR_Mn[] = {
 	0x11ef3, 0x11ef4,
 	0x16af0, 0x16af4,
 	0x16b30, 0x16b36,
+	0x16f4f, 0x16f4f,
 	0x16f8f, 0x16f92,
 	0x1bc9d, 0x1bc9e,
 	0x1d167, 0x1d169,
@@ -10635,6 +10749,8 @@ static const OnigCodePoint CR_Mn[] = {
 	0x1e01b, 0x1e021,
 	0x1e023, 0x1e024,
 	0x1e026, 0x1e02a,
+	0x1e130, 0x1e136,
+	0x1e2ec, 0x1e2ef,
 	0x1e8d0, 0x1e8d6,
 	0x1e944, 0x1e94a,
 	0xe0100, 0xe01ef,
@@ -10642,7 +10758,7 @@ static const OnigCodePoint CR_Mn[] = {
 
 /* 'N': Major Category */
 static const OnigCodePoint CR_N[] = {
-	125,
+	130,
 	0x0030, 0x0039,
 	0x00b2, 0x00b3,
 	0x00b9, 0x00b9,
@@ -10754,6 +10870,7 @@ static const OnigCodePoint CR_N[] = {
 	0x11c50, 0x11c6c,
 	0x11d50, 0x11d59,
 	0x11da0, 0x11da9,
+	0x11fc0, 0x11fd4,
 	0x12400, 0x1246e,
 	0x16a60, 0x16a69,
 	0x16b50, 0x16b59,
@@ -10762,11 +10879,15 @@ static const OnigCodePoint CR_N[] = {
 	0x1d2e0, 0x1d2f3,
 	0x1d360, 0x1d378,
 	0x1d7ce, 0x1d7ff,
+	0x1e140, 0x1e149,
+	0x1e2f0, 0x1e2f9,
 	0x1e8c7, 0x1e8cf,
 	0x1e950, 0x1e959,
 	0x1ec71, 0x1ecab,
 	0x1ecad, 0x1ecaf,
 	0x1ecb1, 0x1ecb4,
+	0x1ed01, 0x1ed2d,
+	0x1ed2f, 0x1ed3d,
 	0x1f100, 0x1f10c,
 }; /* CR_N */
 
@@ -10792,7 +10913,7 @@ static const OnigCodePoint CR_Nl[] = {
 
 /* 'No': General Category */
 static const OnigCodePoint CR_No[] = {
-	67,
+	70,
 	0x00b2, 0x00b3,
 	0x00b9, 0x00b9,
 	0x00bc, 0x00be,
@@ -10851,6 +10972,7 @@ static const OnigCodePoint CR_No[] = {
 	0x1173a, 0x1173b,
 	0x118ea, 0x118f2,
 	0x11c5a, 0x11c6c,
+	0x11fc0, 0x11fd4,
 	0x16b5b, 0x16b61,
 	0x16e80, 0x16e96,
 	0x1d2e0, 0x1d2f3,
@@ -10859,6 +10981,8 @@ static const OnigCodePoint CR_No[] = {
 	0x1ec71, 0x1ecab,
 	0x1ecad, 0x1ecaf,
 	0x1ecb1, 0x1ecb4,
+	0x1ed01, 0x1ed2d,
+	0x1ed2f, 0x1ed3d,
 	0x1f100, 0x1f10c,
 }; /* CR_No */
 
@@ -11008,7 +11132,7 @@ static const OnigCodePoint CR_Pi[] = {
 
 /* 'Po': General Category */
 static const OnigCodePoint CR_Po[] = {
-	175,
+	179,
 	0x0021, 0x0023,
 	0x0025, 0x0027,
 	0x002a, 0x002a,
@@ -11044,6 +11168,7 @@ static const OnigCodePoint CR_Po[] = {
 	0x09fd, 0x09fd,
 	0x0a76, 0x0a76,
 	0x0af0, 0x0af0,
+	0x0c77, 0x0c77,
 	0x0c84, 0x0c84,
 	0x0df4, 0x0df4,
 	0x0e4f, 0x0e4f,
@@ -11056,7 +11181,7 @@ static const OnigCodePoint CR_Po[] = {
 	0x104a, 0x104f,
 	0x10fb, 0x10fb,
 	0x1360, 0x1368,
-	0x166d, 0x166e,
+	0x166e, 0x166e,
 	0x16eb, 0x16ed,
 	0x1735, 0x1736,
 	0x17d4, 0x17d6,
@@ -11095,7 +11220,7 @@ static const OnigCodePoint CR_Po[] = {
 	0x2e30, 0x2e39,
 	0x2e3c, 0x2e3f,
 	0x2e41, 0x2e41,
-	0x2e43, 0x2e4e,
+	0x2e43, 0x2e4f,
 	0x3001, 0x3003,
 	0x303d, 0x303d,
 	0x30fb, 0x30fb,
@@ -11169,18 +11294,21 @@ static const OnigCodePoint CR_Po[] = {
 	0x11660, 0x1166c,
 	0x1173c, 0x1173e,
 	0x1183b, 0x1183b,
+	0x119e2, 0x119e2,
 	0x11a3f, 0x11a46,
 	0x11a9a, 0x11a9c,
 	0x11a9e, 0x11aa2,
 	0x11c41, 0x11c45,
 	0x11c70, 0x11c71,
 	0x11ef7, 0x11ef8,
+	0x11fff, 0x11fff,
 	0x12470, 0x12474,
 	0x16a6e, 0x16a6f,
 	0x16af5, 0x16af5,
 	0x16b37, 0x16b3b,
 	0x16b44, 0x16b44,
 	0x16e97, 0x16e9a,
+	0x16fe2, 0x16fe2,
 	0x1bc9f, 0x1bc9f,
 	0x1da87, 0x1da8b,
 	0x1e95e, 0x1e95f,
@@ -11268,7 +11396,7 @@ static const OnigCodePoint CR_Ps[] = {
 
 /* 'S': Major Category */
 static const OnigCodePoint CR_S[] = {
-	220,
+	227,
 	0x0024, 0x0024,
 	0x002b, 0x002b,
 	0x003c, 0x003e,
@@ -11324,6 +11452,7 @@ static const OnigCodePoint CR_S[] = {
 	0x0fd5, 0x0fd8,
 	0x109e, 0x109f,
 	0x1390, 0x1399,
+	0x166d, 0x166d,
 	0x17db, 0x17db,
 	0x1940, 0x1940,
 	0x19de, 0x19ff,
@@ -11368,8 +11497,7 @@ static const OnigCodePoint CR_S[] = {
 	0x29dc, 0x29fb,
 	0x29fe, 0x2b73,
 	0x2b76, 0x2b95,
-	0x2b98, 0x2bc8,
-	0x2bca, 0x2bfe,
+	0x2b98, 0x2bff,
 	0x2ce5, 0x2cea,
 	0x2e80, 0x2e99,
 	0x2e9b, 0x2ef3,
@@ -11425,6 +11553,7 @@ static const OnigCodePoint CR_S[] = {
 	0x10877, 0x10878,
 	0x10ac8, 0x10ac8,
 	0x1173f, 0x1173f,
+	0x11fd5, 0x11ff1,
 	0x16b3c, 0x16b3f,
 	0x16b45, 0x16b45,
 	0x1bc9c, 0x1bc9c,
@@ -11453,8 +11582,11 @@ static const OnigCodePoint CR_S[] = {
 	0x1da6d, 0x1da74,
 	0x1da76, 0x1da83,
 	0x1da85, 0x1da86,
+	0x1e14f, 0x1e14f,
+	0x1e2ff, 0x1e2ff,
 	0x1ecac, 0x1ecac,
 	0x1ecb0, 0x1ecb0,
+	0x1ed2e, 0x1ed2e,
 	0x1eef0, 0x1eef1,
 	0x1f000, 0x1f02b,
 	0x1f030, 0x1f093,
@@ -11462,38 +11594,41 @@ static const OnigCodePoint CR_S[] = {
 	0x1f0b1, 0x1f0bf,
 	0x1f0c1, 0x1f0cf,
 	0x1f0d1, 0x1f0f5,
-	0x1f110, 0x1f16b,
+	0x1f110, 0x1f16c,
 	0x1f170, 0x1f1ac,
 	0x1f1e6, 0x1f202,
 	0x1f210, 0x1f23b,
 	0x1f240, 0x1f248,
 	0x1f250, 0x1f251,
 	0x1f260, 0x1f265,
-	0x1f300, 0x1f6d4,
+	0x1f300, 0x1f6d5,
 	0x1f6e0, 0x1f6ec,
-	0x1f6f0, 0x1f6f9,
+	0x1f6f0, 0x1f6fa,
 	0x1f700, 0x1f773,
 	0x1f780, 0x1f7d8,
+	0x1f7e0, 0x1f7eb,
 	0x1f800, 0x1f80b,
 	0x1f810, 0x1f847,
 	0x1f850, 0x1f859,
 	0x1f860, 0x1f887,
 	0x1f890, 0x1f8ad,
 	0x1f900, 0x1f90b,
-	0x1f910, 0x1f93e,
-	0x1f940, 0x1f970,
+	0x1f90d, 0x1f971,
 	0x1f973, 0x1f976,
-	0x1f97a, 0x1f97a,
-	0x1f97c, 0x1f9a2,
-	0x1f9b0, 0x1f9b9,
-	0x1f9c0, 0x1f9c2,
-	0x1f9d0, 0x1f9ff,
+	0x1f97a, 0x1f9a2,
+	0x1f9a5, 0x1f9aa,
+	0x1f9ae, 0x1f9ca,
+	0x1f9cd, 0x1fa53,
 	0x1fa60, 0x1fa6d,
+	0x1fa70, 0x1fa73,
+	0x1fa78, 0x1fa7a,
+	0x1fa80, 0x1fa82,
+	0x1fa90, 0x1fa95,
 }; /* CR_S */
 
 /* 'Sc': General Category */
 static const OnigCodePoint CR_Sc[] = {
-	19,
+	21,
 	0x0024, 0x0024,
 	0x00a2, 0x00a5,
 	0x058f, 0x058f,
@@ -11512,6 +11647,8 @@ static const OnigCodePoint CR_Sc[] = {
 	0xff04, 0xff04,
 	0xffe0, 0xffe1,
 	0xffe5, 0xffe6,
+	0x11fdd, 0x11fe0,
+	0x1e2ff, 0x1e2ff,
 	0x1ecb0, 0x1ecb0,
 }; /* CR_Sc */
 
@@ -11620,7 +11757,7 @@ static const OnigCodePoint CR_Sm[] = {
 
 /* 'So': General Category */
 static const OnigCodePoint CR_So[] = {
-	174,
+	181,
 	0x00a6, 0x00a6,
 	0x00a9, 0x00a9,
 	0x00ae, 0x00ae,
@@ -11652,6 +11789,7 @@ static const OnigCodePoint CR_So[] = {
 	0x0fd5, 0x0fd8,
 	0x109e, 0x109f,
 	0x1390, 0x1399,
+	0x166d, 0x166d,
 	0x1940, 0x1940,
 	0x19de, 0x19ff,
 	0x1b61, 0x1b6a,
@@ -11700,8 +11838,7 @@ static const OnigCodePoint CR_So[] = {
 	0x2b45, 0x2b46,
 	0x2b4d, 0x2b73,
 	0x2b76, 0x2b95,
-	0x2b98, 0x2bc8,
-	0x2bca, 0x2bfe,
+	0x2b98, 0x2bff,
 	0x2ce5, 0x2cea,
 	0x2e80, 0x2e99,
 	0x2e9b, 0x2ef3,
@@ -11742,6 +11879,8 @@ static const OnigCodePoint CR_So[] = {
 	0x10877, 0x10878,
 	0x10ac8, 0x10ac8,
 	0x1173f, 0x1173f,
+	0x11fd5, 0x11fdc,
+	0x11fe1, 0x11ff1,
 	0x16b3c, 0x16b3f,
 	0x16b45, 0x16b45,
 	0x1bc9c, 0x1bc9c,
@@ -11760,14 +11899,16 @@ static const OnigCodePoint CR_So[] = {
 	0x1da6d, 0x1da74,
 	0x1da76, 0x1da83,
 	0x1da85, 0x1da86,
+	0x1e14f, 0x1e14f,
 	0x1ecac, 0x1ecac,
+	0x1ed2e, 0x1ed2e,
 	0x1f000, 0x1f02b,
 	0x1f030, 0x1f093,
 	0x1f0a0, 0x1f0ae,
 	0x1f0b1, 0x1f0bf,
 	0x1f0c1, 0x1f0cf,
 	0x1f0d1, 0x1f0f5,
-	0x1f110, 0x1f16b,
+	0x1f110, 0x1f16c,
 	0x1f170, 0x1f1ac,
 	0x1f1e6, 0x1f202,
 	0x1f210, 0x1f23b,
@@ -11775,26 +11916,29 @@ static const OnigCodePoint CR_So[] = {
 	0x1f250, 0x1f251,
 	0x1f260, 0x1f265,
 	0x1f300, 0x1f3fa,
-	0x1f400, 0x1f6d4,
+	0x1f400, 0x1f6d5,
 	0x1f6e0, 0x1f6ec,
-	0x1f6f0, 0x1f6f9,
+	0x1f6f0, 0x1f6fa,
 	0x1f700, 0x1f773,
 	0x1f780, 0x1f7d8,
+	0x1f7e0, 0x1f7eb,
 	0x1f800, 0x1f80b,
 	0x1f810, 0x1f847,
 	0x1f850, 0x1f859,
 	0x1f860, 0x1f887,
 	0x1f890, 0x1f8ad,
 	0x1f900, 0x1f90b,
-	0x1f910, 0x1f93e,
-	0x1f940, 0x1f970,
+	0x1f90d, 0x1f971,
 	0x1f973, 0x1f976,
-	0x1f97a, 0x1f97a,
-	0x1f97c, 0x1f9a2,
-	0x1f9b0, 0x1f9b9,
-	0x1f9c0, 0x1f9c2,
-	0x1f9d0, 0x1f9ff,
+	0x1f97a, 0x1f9a2,
+	0x1f9a5, 0x1f9aa,
+	0x1f9ae, 0x1f9ca,
+	0x1f9cd, 0x1fa53,
 	0x1fa60, 0x1fa6d,
+	0x1fa70, 0x1fa73,
+	0x1fa78, 0x1fa7a,
+	0x1fa80, 0x1fa82,
+	0x1fa90, 0x1fa95,
 }; /* CR_So */
 
 /* 'Z': Major Category */
@@ -11988,7 +12132,7 @@ static const OnigCodePoint CR_Math[] = {
 
 /* 'Cased': Derived Property */
 static const OnigCodePoint CR_Cased[] = {
-	139,
+	140,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
 	0x00aa, 0x00aa,
@@ -12078,10 +12222,11 @@ static const OnigCodePoint CR_Cased[] = {
 	0xa680, 0xa69d,
 	0xa722, 0xa787,
 	0xa78b, 0xa78e,
-	0xa790, 0xa7b9,
+	0xa790, 0xa7bf,
+	0xa7c2, 0xa7c6,
 	0xa7f8, 0xa7fa,
 	0xab30, 0xab5a,
-	0xab5c, 0xab65,
+	0xab5c, 0xab67,
 	0xab70, 0xabbf,
 	0xfb00, 0xfb06,
 	0xfb13, 0xfb17,
@@ -12132,7 +12277,7 @@ static const OnigCodePoint CR_Cased[] = {
 
 /* 'Case_Ignorable': Derived Property */
 static const OnigCodePoint CR_Case_Ignorable[] = {
-	394,
+	401,
 	0x0027, 0x0027,
 	0x002e, 0x002e,
 	0x003a, 0x003a,
@@ -12238,8 +12383,7 @@ static const OnigCodePoint CR_Case_Ignorable[] = {
 	0x0e34, 0x0e3a,
 	0x0e46, 0x0e4e,
 	0x0eb1, 0x0eb1,
-	0x0eb4, 0x0eb9,
-	0x0ebb, 0x0ebc,
+	0x0eb4, 0x0ebc,
 	0x0ec6, 0x0ec6,
 	0x0ec8, 0x0ecd,
 	0x0f18, 0x0f19,
@@ -12374,7 +12518,7 @@ static const OnigCodePoint CR_Case_Ignorable[] = {
 	0xa980, 0xa982,
 	0xa9b3, 0xa9b3,
 	0xa9b6, 0xa9b9,
-	0xa9bc, 0xa9bc,
+	0xa9bc, 0xa9bd,
 	0xa9cf, 0xa9cf,
 	0xa9e5, 0xa9e6,
 	0xaa29, 0xaa2e,
@@ -12474,6 +12618,9 @@ static const OnigCodePoint CR_Case_Ignorable[] = {
 	0x11727, 0x1172b,
 	0x1182f, 0x11837,
 	0x11839, 0x1183a,
+	0x119d4, 0x119d7,
+	0x119da, 0x119db,
+	0x119e0, 0x119e0,
 	0x11a01, 0x11a0a,
 	0x11a33, 0x11a38,
 	0x11a3b, 0x11a3e,
@@ -12498,11 +12645,14 @@ static const OnigCodePoint CR_Case_Ignorable[] = {
 	0x11d95, 0x11d95,
 	0x11d97, 0x11d97,
 	0x11ef3, 0x11ef4,
+	0x13430, 0x13438,
 	0x16af0, 0x16af4,
 	0x16b30, 0x16b36,
 	0x16b40, 0x16b43,
+	0x16f4f, 0x16f4f,
 	0x16f8f, 0x16f9f,
 	0x16fe0, 0x16fe1,
+	0x16fe3, 0x16fe3,
 	0x1bc9d, 0x1bc9e,
 	0x1bca0, 0x1bca3,
 	0x1d167, 0x1d169,
@@ -12521,8 +12671,10 @@ static const OnigCodePoint CR_Case_Ignorable[] = {
 	0x1e01b, 0x1e021,
 	0x1e023, 0x1e024,
 	0x1e026, 0x1e02a,
+	0x1e130, 0x1e13d,
+	0x1e2ec, 0x1e2ef,
 	0x1e8d0, 0x1e8d6,
-	0x1e944, 0x1e94a,
+	0x1e944, 0x1e94b,
 	0x1f3fb, 0x1f3ff,
 	0xe0001, 0xe0001,
 	0xe0020, 0xe007f,
@@ -12531,7 +12683,7 @@ static const OnigCodePoint CR_Case_Ignorable[] = {
 
 /* 'Changes_When_Lowercased': Derived Property */
 static const OnigCodePoint CR_Changes_When_Lowercased[] = {
-	594,
+	599,
 	0x0041, 0x005a,
 	0x00c0, 0x00d6,
 	0x00d8, 0x00de,
@@ -13119,6 +13271,11 @@ static const OnigCodePoint CR_Changes_When_Lowercased[] = {
 	0xa7b0, 0xa7b4,
 	0xa7b6, 0xa7b6,
 	0xa7b8, 0xa7b8,
+	0xa7ba, 0xa7ba,
+	0xa7bc, 0xa7bc,
+	0xa7be, 0xa7be,
+	0xa7c2, 0xa7c2,
+	0xa7c4, 0xa7c6,
 	0xff21, 0xff3a,
 	0x10400, 0x10427,
 	0x104b0, 0x104d3,
@@ -13130,7 +13287,7 @@ static const OnigCodePoint CR_Changes_When_Lowercased[] = {
 
 /* 'Changes_When_Uppercased': Derived Property */
 static const OnigCodePoint CR_Changes_When_Uppercased[] = {
-	611,
+	616,
 	0x0061, 0x007a,
 	0x00b5, 0x00b5,
 	0x00df, 0x00f6,
@@ -13287,7 +13444,7 @@ static const OnigCodePoint CR_Changes_When_Uppercased[] = {
 	0x0275, 0x0275,
 	0x027d, 0x027d,
 	0x0280, 0x0280,
-	0x0283, 0x0283,
+	0x0282, 0x0283,
 	0x0287, 0x028c,
 	0x0292, 0x0292,
 	0x029d, 0x029e,
@@ -13422,6 +13579,7 @@ static const OnigCodePoint CR_Changes_When_Uppercased[] = {
 	0x1c80, 0x1c88,
 	0x1d79, 0x1d79,
 	0x1d7d, 0x1d7d,
+	0x1d8e, 0x1d8e,
 	0x1e01, 0x1e01,
 	0x1e03, 0x1e03,
 	0x1e05, 0x1e05,
@@ -13717,7 +13875,7 @@ static const OnigCodePoint CR_Changes_When_Uppercased[] = {
 	0xa787, 0xa787,
 	0xa78c, 0xa78c,
 	0xa791, 0xa791,
-	0xa793, 0xa793,
+	0xa793, 0xa794,
 	0xa797, 0xa797,
 	0xa799, 0xa799,
 	0xa79b, 0xa79b,
@@ -13731,6 +13889,10 @@ static const OnigCodePoint CR_Changes_When_Uppercased[] = {
 	0xa7b5, 0xa7b5,
 	0xa7b7, 0xa7b7,
 	0xa7b9, 0xa7b9,
+	0xa7bb, 0xa7bb,
+	0xa7bd, 0xa7bd,
+	0xa7bf, 0xa7bf,
+	0xa7c3, 0xa7c3,
 	0xab53, 0xab53,
 	0xab70, 0xabbf,
 	0xfb00, 0xfb06,
@@ -13746,7 +13908,7 @@ static const OnigCodePoint CR_Changes_When_Uppercased[] = {
 
 /* 'Changes_When_Titlecased': Derived Property */
 static const OnigCodePoint CR_Changes_When_Titlecased[] = {
-	610,
+	615,
 	0x0061, 0x007a,
 	0x00b5, 0x00b5,
 	0x00df, 0x00f6,
@@ -13904,7 +14066,7 @@ static const OnigCodePoint CR_Changes_When_Titlecased[] = {
 	0x0275, 0x0275,
 	0x027d, 0x027d,
 	0x0280, 0x0280,
-	0x0283, 0x0283,
+	0x0282, 0x0283,
 	0x0287, 0x028c,
 	0x0292, 0x0292,
 	0x029d, 0x029e,
@@ -14037,6 +14199,7 @@ static const OnigCodePoint CR_Changes_When_Titlecased[] = {
 	0x1c80, 0x1c88,
 	0x1d79, 0x1d79,
 	0x1d7d, 0x1d7d,
+	0x1d8e, 0x1d8e,
 	0x1e01, 0x1e01,
 	0x1e03, 0x1e03,
 	0x1e05, 0x1e05,
@@ -14332,7 +14495,7 @@ static const OnigCodePoint CR_Changes_When_Titlecased[] = {
 	0xa787, 0xa787,
 	0xa78c, 0xa78c,
 	0xa791, 0xa791,
-	0xa793, 0xa793,
+	0xa793, 0xa794,
 	0xa797, 0xa797,
 	0xa799, 0xa799,
 	0xa79b, 0xa79b,
@@ -14346,6 +14509,10 @@ static const OnigCodePoint CR_Changes_When_Titlecased[] = {
 	0xa7b5, 0xa7b5,
 	0xa7b7, 0xa7b7,
 	0xa7b9, 0xa7b9,
+	0xa7bb, 0xa7bb,
+	0xa7bd, 0xa7bd,
+	0xa7bf, 0xa7bf,
+	0xa7c3, 0xa7c3,
 	0xab53, 0xab53,
 	0xab70, 0xabbf,
 	0xfb00, 0xfb06,
@@ -14361,7 +14528,7 @@ static const OnigCodePoint CR_Changes_When_Titlecased[] = {
 
 /* 'Changes_When_Casefolded': Derived Property */
 static const OnigCodePoint CR_Changes_When_Casefolded[] = {
-	607,
+	612,
 	0x0041, 0x005a,
 	0x00b5, 0x00b5,
 	0x00c0, 0x00d6,
@@ -14959,6 +15126,11 @@ static const OnigCodePoint CR_Changes_When_Casefolded[] = {
 	0xa7b0, 0xa7b4,
 	0xa7b6, 0xa7b6,
 	0xa7b8, 0xa7b8,
+	0xa7ba, 0xa7ba,
+	0xa7bc, 0xa7bc,
+	0xa7be, 0xa7be,
+	0xa7c2, 0xa7c2,
+	0xa7c4, 0xa7c6,
 	0xab70, 0xabbf,
 	0xfb00, 0xfb06,
 	0xfb13, 0xfb17,
@@ -14973,7 +15145,7 @@ static const OnigCodePoint CR_Changes_When_Casefolded[] = {
 
 /* 'Changes_When_Casemapped': Derived Property */
 static const OnigCodePoint CR_Changes_When_Casemapped[] = {
-	121,
+	123,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
 	0x00b5, 0x00b5,
@@ -15001,7 +15173,7 @@ static const OnigCodePoint CR_Changes_When_Casemapped[] = {
 	0x0275, 0x0275,
 	0x027d, 0x027d,
 	0x0280, 0x0280,
-	0x0283, 0x0283,
+	0x0282, 0x0283,
 	0x0287, 0x028c,
 	0x0292, 0x0292,
 	0x029d, 0x029e,
@@ -15033,6 +15205,7 @@ static const OnigCodePoint CR_Changes_When_Casemapped[] = {
 	0x1cbd, 0x1cbf,
 	0x1d79, 0x1d79,
 	0x1d7d, 0x1d7d,
+	0x1d8e, 0x1d8e,
 	0x1e00, 0x1e9b,
 	0x1e9e, 0x1e9e,
 	0x1ea0, 0x1f15,
@@ -15078,9 +15251,10 @@ static const OnigCodePoint CR_Changes_When_Casemapped[] = {
 	0xa732, 0xa76f,
 	0xa779, 0xa787,
 	0xa78b, 0xa78d,
-	0xa790, 0xa793,
+	0xa790, 0xa794,
 	0xa796, 0xa7ae,
-	0xa7b0, 0xa7b9,
+	0xa7b0, 0xa7bf,
+	0xa7c2, 0xa7c6,
 	0xab53, 0xab53,
 	0xab70, 0xabbf,
 	0xfb00, 0xfb06,
@@ -15099,7 +15273,7 @@ static const OnigCodePoint CR_Changes_When_Casemapped[] = {
 
 /* 'ID_Start': Derived Property */
 static const OnigCodePoint CR_ID_Start[] = {
-	599,
+	609,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
 	0x00aa, 0x00aa,
@@ -15244,16 +15418,10 @@ static const OnigCodePoint CR_ID_Start[] = {
 	0x0e40, 0x0e46,
 	0x0e81, 0x0e82,
 	0x0e84, 0x0e84,
-	0x0e87, 0x0e88,
-	0x0e8a, 0x0e8a,
-	0x0e8d, 0x0e8d,
-	0x0e94, 0x0e97,
-	0x0e99, 0x0e9f,
-	0x0ea1, 0x0ea3,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
 	0x0ea5, 0x0ea5,
-	0x0ea7, 0x0ea7,
-	0x0eaa, 0x0eab,
-	0x0ead, 0x0eb0,
+	0x0ea7, 0x0eb0,
 	0x0eb2, 0x0eb3,
 	0x0ebd, 0x0ebd,
 	0x0ec0, 0x0ec4,
@@ -15333,8 +15501,9 @@ static const OnigCodePoint CR_ID_Start[] = {
 	0x1c90, 0x1cba,
 	0x1cbd, 0x1cbf,
 	0x1ce9, 0x1cec,
-	0x1cee, 0x1cf1,
+	0x1cee, 0x1cf3,
 	0x1cf5, 0x1cf6,
+	0x1cfa, 0x1cfa,
 	0x1d00, 0x1dbf,
 	0x1e00, 0x1f15,
 	0x1f18, 0x1f1d,
@@ -15414,7 +15583,8 @@ static const OnigCodePoint CR_ID_Start[] = {
 	0xa6a0, 0xa6ef,
 	0xa717, 0xa71f,
 	0xa722, 0xa788,
-	0xa78b, 0xa7b9,
+	0xa78b, 0xa7bf,
+	0xa7c2, 0xa7c6,
 	0xa7f7, 0xa801,
 	0xa803, 0xa805,
 	0xa807, 0xa80a,
@@ -15452,7 +15622,7 @@ static const OnigCodePoint CR_ID_Start[] = {
 	0xab20, 0xab26,
 	0xab28, 0xab2e,
 	0xab30, 0xab5a,
-	0xab5c, 0xab65,
+	0xab5c, 0xab67,
 	0xab70, 0xabe2,
 	0xac00, 0xd7a3,
 	0xd7b0, 0xd7c6,
@@ -15540,6 +15710,7 @@ static const OnigCodePoint CR_ID_Start[] = {
 	0x10f00, 0x10f1c,
 	0x10f27, 0x10f27,
 	0x10f30, 0x10f45,
+	0x10fe0, 0x10ff6,
 	0x11003, 0x11037,
 	0x11083, 0x110af,
 	0x110d0, 0x110e8,
@@ -15570,6 +15741,7 @@ static const OnigCodePoint CR_ID_Start[] = {
 	0x1135d, 0x11361,
 	0x11400, 0x11434,
 	0x11447, 0x1144a,
+	0x1145f, 0x1145f,
 	0x11480, 0x114af,
 	0x114c4, 0x114c5,
 	0x114c7, 0x114c7,
@@ -15578,16 +15750,20 @@ static const OnigCodePoint CR_ID_Start[] = {
 	0x11600, 0x1162f,
 	0x11644, 0x11644,
 	0x11680, 0x116aa,
+	0x116b8, 0x116b8,
 	0x11700, 0x1171a,
 	0x11800, 0x1182b,
 	0x118a0, 0x118df,
 	0x118ff, 0x118ff,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d0,
+	0x119e1, 0x119e1,
+	0x119e3, 0x119e3,
 	0x11a00, 0x11a00,
 	0x11a0b, 0x11a32,
 	0x11a3a, 0x11a3a,
 	0x11a50, 0x11a50,
-	0x11a5c, 0x11a83,
-	0x11a86, 0x11a89,
+	0x11a5c, 0x11a89,
 	0x11a9d, 0x11a9d,
 	0x11ac0, 0x11af8,
 	0x11c00, 0x11c08,
@@ -15616,13 +15792,16 @@ static const OnigCodePoint CR_ID_Start[] = {
 	0x16b63, 0x16b77,
 	0x16b7d, 0x16b8f,
 	0x16e40, 0x16e7f,
-	0x16f00, 0x16f44,
+	0x16f00, 0x16f4a,
 	0x16f50, 0x16f50,
 	0x16f93, 0x16f9f,
 	0x16fe0, 0x16fe1,
-	0x17000, 0x187f1,
+	0x16fe3, 0x16fe3,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 	0x1b000, 0x1b11e,
+	0x1b150, 0x1b152,
+	0x1b164, 0x1b167,
 	0x1b170, 0x1b2fb,
 	0x1bc00, 0x1bc6a,
 	0x1bc70, 0x1bc7c,
@@ -15658,8 +15837,13 @@ static const OnigCodePoint CR_ID_Start[] = {
 	0x1d78a, 0x1d7a8,
 	0x1d7aa, 0x1d7c2,
 	0x1d7c4, 0x1d7cb,
+	0x1e100, 0x1e12c,
+	0x1e137, 0x1e13d,
+	0x1e14e, 0x1e14e,
+	0x1e2c0, 0x1e2eb,
 	0x1e800, 0x1e8c4,
 	0x1e900, 0x1e943,
+	0x1e94b, 0x1e94b,
 	0x1ee00, 0x1ee03,
 	0x1ee05, 0x1ee1f,
 	0x1ee21, 0x1ee22,
@@ -15703,7 +15887,7 @@ static const OnigCodePoint CR_ID_Start[] = {
 
 /* 'ID_Continue': Derived Property */
 static const OnigCodePoint CR_ID_Continue[] = {
-	707,
+	713,
 	0x0030, 0x0039,
 	0x0041, 0x005a,
 	0x005f, 0x005f,
@@ -15889,17 +16073,10 @@ static const OnigCodePoint CR_ID_Continue[] = {
 	0x0e50, 0x0e59,
 	0x0e81, 0x0e82,
 	0x0e84, 0x0e84,
-	0x0e87, 0x0e88,
-	0x0e8a, 0x0e8a,
-	0x0e8d, 0x0e8d,
-	0x0e94, 0x0e97,
-	0x0e99, 0x0e9f,
-	0x0ea1, 0x0ea3,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
 	0x0ea5, 0x0ea5,
-	0x0ea7, 0x0ea7,
-	0x0eaa, 0x0eab,
-	0x0ead, 0x0eb9,
-	0x0ebb, 0x0ebd,
+	0x0ea7, 0x0ebd,
 	0x0ec0, 0x0ec4,
 	0x0ec6, 0x0ec6,
 	0x0ec8, 0x0ecd,
@@ -15991,7 +16168,7 @@ static const OnigCodePoint CR_ID_Continue[] = {
 	0x1c90, 0x1cba,
 	0x1cbd, 0x1cbf,
 	0x1cd0, 0x1cd2,
-	0x1cd4, 0x1cf9,
+	0x1cd4, 0x1cfa,
 	0x1d00, 0x1df9,
 	0x1dfb, 0x1f15,
 	0x1f18, 0x1f1d,
@@ -16075,7 +16252,8 @@ static const OnigCodePoint CR_ID_Continue[] = {
 	0xa67f, 0xa6f1,
 	0xa717, 0xa71f,
 	0xa722, 0xa788,
-	0xa78b, 0xa7b9,
+	0xa78b, 0xa7bf,
+	0xa7c2, 0xa7c6,
 	0xa7f7, 0xa827,
 	0xa840, 0xa873,
 	0xa880, 0xa8c5,
@@ -16102,7 +16280,7 @@ static const OnigCodePoint CR_ID_Continue[] = {
 	0xab20, 0xab26,
 	0xab28, 0xab2e,
 	0xab30, 0xab5a,
-	0xab5c, 0xab65,
+	0xab5c, 0xab67,
 	0xab70, 0xabea,
 	0xabec, 0xabed,
 	0xabf0, 0xabf9,
@@ -16204,6 +16382,7 @@ static const OnigCodePoint CR_ID_Continue[] = {
 	0x10f00, 0x10f1c,
 	0x10f27, 0x10f27,
 	0x10f30, 0x10f50,
+	0x10fe0, 0x10ff6,
 	0x11000, 0x11046,
 	0x11066, 0x1106f,
 	0x1107f, 0x110ba,
@@ -16245,7 +16424,7 @@ static const OnigCodePoint CR_ID_Continue[] = {
 	0x11370, 0x11374,
 	0x11400, 0x1144a,
 	0x11450, 0x11459,
-	0x1145e, 0x1145e,
+	0x1145e, 0x1145f,
 	0x11480, 0x114c5,
 	0x114c7, 0x114c7,
 	0x114d0, 0x114d9,
@@ -16255,7 +16434,7 @@ static const OnigCodePoint CR_ID_Continue[] = {
 	0x11600, 0x11640,
 	0x11644, 0x11644,
 	0x11650, 0x11659,
-	0x11680, 0x116b7,
+	0x11680, 0x116b8,
 	0x116c0, 0x116c9,
 	0x11700, 0x1171a,
 	0x1171d, 0x1172b,
@@ -16263,10 +16442,13 @@ static const OnigCodePoint CR_ID_Continue[] = {
 	0x11800, 0x1183a,
 	0x118a0, 0x118e9,
 	0x118ff, 0x118ff,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d7,
+	0x119da, 0x119e1,
+	0x119e3, 0x119e4,
 	0x11a00, 0x11a3e,
 	0x11a47, 0x11a47,
-	0x11a50, 0x11a83,
-	0x11a86, 0x11a99,
+	0x11a50, 0x11a99,
 	0x11a9d, 0x11a9d,
 	0x11ac0, 0x11af8,
 	0x11c00, 0x11c08,
@@ -16306,13 +16488,16 @@ static const OnigCodePoint CR_ID_Continue[] = {
 	0x16b63, 0x16b77,
 	0x16b7d, 0x16b8f,
 	0x16e40, 0x16e7f,
-	0x16f00, 0x16f44,
-	0x16f50, 0x16f7e,
+	0x16f00, 0x16f4a,
+	0x16f4f, 0x16f87,
 	0x16f8f, 0x16f9f,
 	0x16fe0, 0x16fe1,
-	0x17000, 0x187f1,
+	0x16fe3, 0x16fe3,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 	0x1b000, 0x1b11e,
+	0x1b150, 0x1b152,
+	0x1b164, 0x1b167,
 	0x1b170, 0x1b2fb,
 	0x1bc00, 0x1bc6a,
 	0x1bc70, 0x1bc7c,
@@ -16367,9 +16552,14 @@ static const OnigCodePoint CR_ID_Continue[] = {
 	0x1e01b, 0x1e021,
 	0x1e023, 0x1e024,
 	0x1e026, 0x1e02a,
+	0x1e100, 0x1e12c,
+	0x1e130, 0x1e13d,
+	0x1e140, 0x1e149,
+	0x1e14e, 0x1e14e,
+	0x1e2c0, 0x1e2f9,
 	0x1e800, 0x1e8c4,
 	0x1e8d0, 0x1e8d6,
-	0x1e900, 0x1e94a,
+	0x1e900, 0x1e94b,
 	0x1e950, 0x1e959,
 	0x1ee00, 0x1ee03,
 	0x1ee05, 0x1ee1f,
@@ -16415,7 +16605,7 @@ static const OnigCodePoint CR_ID_Continue[] = {
 
 /* 'XID_Start': Derived Property */
 static const OnigCodePoint CR_XID_Start[] = {
-	606,
+	616,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
 	0x00aa, 0x00aa,
@@ -16560,16 +16750,10 @@ static const OnigCodePoint CR_XID_Start[] = {
 	0x0e40, 0x0e46,
 	0x0e81, 0x0e82,
 	0x0e84, 0x0e84,
-	0x0e87, 0x0e88,
-	0x0e8a, 0x0e8a,
-	0x0e8d, 0x0e8d,
-	0x0e94, 0x0e97,
-	0x0e99, 0x0e9f,
-	0x0ea1, 0x0ea3,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
 	0x0ea5, 0x0ea5,
-	0x0ea7, 0x0ea7,
-	0x0eaa, 0x0eab,
-	0x0ead, 0x0eb0,
+	0x0ea7, 0x0eb0,
 	0x0eb2, 0x0eb2,
 	0x0ebd, 0x0ebd,
 	0x0ec0, 0x0ec4,
@@ -16649,8 +16833,9 @@ static const OnigCodePoint CR_XID_Start[] = {
 	0x1c90, 0x1cba,
 	0x1cbd, 0x1cbf,
 	0x1ce9, 0x1cec,
-	0x1cee, 0x1cf1,
+	0x1cee, 0x1cf3,
 	0x1cf5, 0x1cf6,
+	0x1cfa, 0x1cfa,
 	0x1d00, 0x1dbf,
 	0x1e00, 0x1f15,
 	0x1f18, 0x1f1d,
@@ -16730,7 +16915,8 @@ static const OnigCodePoint CR_XID_Start[] = {
 	0xa6a0, 0xa6ef,
 	0xa717, 0xa71f,
 	0xa722, 0xa788,
-	0xa78b, 0xa7b9,
+	0xa78b, 0xa7bf,
+	0xa7c2, 0xa7c6,
 	0xa7f7, 0xa801,
 	0xa803, 0xa805,
 	0xa807, 0xa80a,
@@ -16768,7 +16954,7 @@ static const OnigCodePoint CR_XID_Start[] = {
 	0xab20, 0xab26,
 	0xab28, 0xab2e,
 	0xab30, 0xab5a,
-	0xab5c, 0xab65,
+	0xab5c, 0xab67,
 	0xab70, 0xabe2,
 	0xac00, 0xd7a3,
 	0xd7b0, 0xd7c6,
@@ -16863,6 +17049,7 @@ static const OnigCodePoint CR_XID_Start[] = {
 	0x10f00, 0x10f1c,
 	0x10f27, 0x10f27,
 	0x10f30, 0x10f45,
+	0x10fe0, 0x10ff6,
 	0x11003, 0x11037,
 	0x11083, 0x110af,
 	0x110d0, 0x110e8,
@@ -16893,6 +17080,7 @@ static const OnigCodePoint CR_XID_Start[] = {
 	0x1135d, 0x11361,
 	0x11400, 0x11434,
 	0x11447, 0x1144a,
+	0x1145f, 0x1145f,
 	0x11480, 0x114af,
 	0x114c4, 0x114c5,
 	0x114c7, 0x114c7,
@@ -16901,16 +17089,20 @@ static const OnigCodePoint CR_XID_Start[] = {
 	0x11600, 0x1162f,
 	0x11644, 0x11644,
 	0x11680, 0x116aa,
+	0x116b8, 0x116b8,
 	0x11700, 0x1171a,
 	0x11800, 0x1182b,
 	0x118a0, 0x118df,
 	0x118ff, 0x118ff,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d0,
+	0x119e1, 0x119e1,
+	0x119e3, 0x119e3,
 	0x11a00, 0x11a00,
 	0x11a0b, 0x11a32,
 	0x11a3a, 0x11a3a,
 	0x11a50, 0x11a50,
-	0x11a5c, 0x11a83,
-	0x11a86, 0x11a89,
+	0x11a5c, 0x11a89,
 	0x11a9d, 0x11a9d,
 	0x11ac0, 0x11af8,
 	0x11c00, 0x11c08,
@@ -16939,13 +17131,16 @@ static const OnigCodePoint CR_XID_Start[] = {
 	0x16b63, 0x16b77,
 	0x16b7d, 0x16b8f,
 	0x16e40, 0x16e7f,
-	0x16f00, 0x16f44,
+	0x16f00, 0x16f4a,
 	0x16f50, 0x16f50,
 	0x16f93, 0x16f9f,
 	0x16fe0, 0x16fe1,
-	0x17000, 0x187f1,
+	0x16fe3, 0x16fe3,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 	0x1b000, 0x1b11e,
+	0x1b150, 0x1b152,
+	0x1b164, 0x1b167,
 	0x1b170, 0x1b2fb,
 	0x1bc00, 0x1bc6a,
 	0x1bc70, 0x1bc7c,
@@ -16981,8 +17176,13 @@ static const OnigCodePoint CR_XID_Start[] = {
 	0x1d78a, 0x1d7a8,
 	0x1d7aa, 0x1d7c2,
 	0x1d7c4, 0x1d7cb,
+	0x1e100, 0x1e12c,
+	0x1e137, 0x1e13d,
+	0x1e14e, 0x1e14e,
+	0x1e2c0, 0x1e2eb,
 	0x1e800, 0x1e8c4,
 	0x1e900, 0x1e943,
+	0x1e94b, 0x1e94b,
 	0x1ee00, 0x1ee03,
 	0x1ee05, 0x1ee1f,
 	0x1ee21, 0x1ee22,
@@ -17026,7 +17226,7 @@ static const OnigCodePoint CR_XID_Start[] = {
 
 /* 'XID_Continue': Derived Property */
 static const OnigCodePoint CR_XID_Continue[] = {
-	714,
+	720,
 	0x0030, 0x0039,
 	0x0041, 0x005a,
 	0x005f, 0x005f,
@@ -17212,17 +17412,10 @@ static const OnigCodePoint CR_XID_Continue[] = {
 	0x0e50, 0x0e59,
 	0x0e81, 0x0e82,
 	0x0e84, 0x0e84,
-	0x0e87, 0x0e88,
-	0x0e8a, 0x0e8a,
-	0x0e8d, 0x0e8d,
-	0x0e94, 0x0e97,
-	0x0e99, 0x0e9f,
-	0x0ea1, 0x0ea3,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
 	0x0ea5, 0x0ea5,
-	0x0ea7, 0x0ea7,
-	0x0eaa, 0x0eab,
-	0x0ead, 0x0eb9,
-	0x0ebb, 0x0ebd,
+	0x0ea7, 0x0ebd,
 	0x0ec0, 0x0ec4,
 	0x0ec6, 0x0ec6,
 	0x0ec8, 0x0ecd,
@@ -17314,7 +17507,7 @@ static const OnigCodePoint CR_XID_Continue[] = {
 	0x1c90, 0x1cba,
 	0x1cbd, 0x1cbf,
 	0x1cd0, 0x1cd2,
-	0x1cd4, 0x1cf9,
+	0x1cd4, 0x1cfa,
 	0x1d00, 0x1df9,
 	0x1dfb, 0x1f15,
 	0x1f18, 0x1f1d,
@@ -17399,7 +17592,8 @@ static const OnigCodePoint CR_XID_Continue[] = {
 	0xa67f, 0xa6f1,
 	0xa717, 0xa71f,
 	0xa722, 0xa788,
-	0xa78b, 0xa7b9,
+	0xa78b, 0xa7bf,
+	0xa7c2, 0xa7c6,
 	0xa7f7, 0xa827,
 	0xa840, 0xa873,
 	0xa880, 0xa8c5,
@@ -17426,7 +17620,7 @@ static const OnigCodePoint CR_XID_Continue[] = {
 	0xab20, 0xab26,
 	0xab28, 0xab2e,
 	0xab30, 0xab5a,
-	0xab5c, 0xab65,
+	0xab5c, 0xab67,
 	0xab70, 0xabea,
 	0xabec, 0xabed,
 	0xabf0, 0xabf9,
@@ -17534,6 +17728,7 @@ static const OnigCodePoint CR_XID_Continue[] = {
 	0x10f00, 0x10f1c,
 	0x10f27, 0x10f27,
 	0x10f30, 0x10f50,
+	0x10fe0, 0x10ff6,
 	0x11000, 0x11046,
 	0x11066, 0x1106f,
 	0x1107f, 0x110ba,
@@ -17575,7 +17770,7 @@ static const OnigCodePoint CR_XID_Continue[] = {
 	0x11370, 0x11374,
 	0x11400, 0x1144a,
 	0x11450, 0x11459,
-	0x1145e, 0x1145e,
+	0x1145e, 0x1145f,
 	0x11480, 0x114c5,
 	0x114c7, 0x114c7,
 	0x114d0, 0x114d9,
@@ -17585,7 +17780,7 @@ static const OnigCodePoint CR_XID_Continue[] = {
 	0x11600, 0x11640,
 	0x11644, 0x11644,
 	0x11650, 0x11659,
-	0x11680, 0x116b7,
+	0x11680, 0x116b8,
 	0x116c0, 0x116c9,
 	0x11700, 0x1171a,
 	0x1171d, 0x1172b,
@@ -17593,10 +17788,13 @@ static const OnigCodePoint CR_XID_Continue[] = {
 	0x11800, 0x1183a,
 	0x118a0, 0x118e9,
 	0x118ff, 0x118ff,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d7,
+	0x119da, 0x119e1,
+	0x119e3, 0x119e4,
 	0x11a00, 0x11a3e,
 	0x11a47, 0x11a47,
-	0x11a50, 0x11a83,
-	0x11a86, 0x11a99,
+	0x11a50, 0x11a99,
 	0x11a9d, 0x11a9d,
 	0x11ac0, 0x11af8,
 	0x11c00, 0x11c08,
@@ -17636,13 +17834,16 @@ static const OnigCodePoint CR_XID_Continue[] = {
 	0x16b63, 0x16b77,
 	0x16b7d, 0x16b8f,
 	0x16e40, 0x16e7f,
-	0x16f00, 0x16f44,
-	0x16f50, 0x16f7e,
+	0x16f00, 0x16f4a,
+	0x16f4f, 0x16f87,
 	0x16f8f, 0x16f9f,
 	0x16fe0, 0x16fe1,
-	0x17000, 0x187f1,
+	0x16fe3, 0x16fe3,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 	0x1b000, 0x1b11e,
+	0x1b150, 0x1b152,
+	0x1b164, 0x1b167,
 	0x1b170, 0x1b2fb,
 	0x1bc00, 0x1bc6a,
 	0x1bc70, 0x1bc7c,
@@ -17697,9 +17898,14 @@ static const OnigCodePoint CR_XID_Continue[] = {
 	0x1e01b, 0x1e021,
 	0x1e023, 0x1e024,
 	0x1e026, 0x1e02a,
+	0x1e100, 0x1e12c,
+	0x1e130, 0x1e13d,
+	0x1e140, 0x1e149,
+	0x1e14e, 0x1e14e,
+	0x1e2c0, 0x1e2f9,
 	0x1e800, 0x1e8c4,
 	0x1e8d0, 0x1e8d6,
-	0x1e900, 0x1e94a,
+	0x1e900, 0x1e94b,
 	0x1e950, 0x1e959,
 	0x1ee00, 0x1ee03,
 	0x1ee05, 0x1ee1f,
@@ -17767,7 +17973,7 @@ static const OnigCodePoint CR_Default_Ignorable_Code_Point[] = {
 
 /* 'Grapheme_Extend': Derived Property */
 static const OnigCodePoint CR_Grapheme_Extend[] = {
-	331,
+	335,
 	0x0300, 0x036f,
 	0x0483, 0x0489,
 	0x0591, 0x05bd,
@@ -17866,8 +18072,7 @@ static const OnigCodePoint CR_Grapheme_Extend[] = {
 	0x0e34, 0x0e3a,
 	0x0e47, 0x0e4e,
 	0x0eb1, 0x0eb1,
-	0x0eb4, 0x0eb9,
-	0x0ebb, 0x0ebc,
+	0x0eb4, 0x0ebc,
 	0x0ec8, 0x0ecd,
 	0x0f18, 0x0f19,
 	0x0f35, 0x0f35,
@@ -17918,8 +18123,7 @@ static const OnigCodePoint CR_Grapheme_Extend[] = {
 	0x1a7f, 0x1a7f,
 	0x1ab0, 0x1abe,
 	0x1b00, 0x1b03,
-	0x1b34, 0x1b34,
-	0x1b36, 0x1b3a,
+	0x1b34, 0x1b3a,
 	0x1b3c, 0x1b3c,
 	0x1b42, 0x1b42,
 	0x1b6b, 0x1b73,
@@ -17964,7 +18168,7 @@ static const OnigCodePoint CR_Grapheme_Extend[] = {
 	0xa980, 0xa982,
 	0xa9b3, 0xa9b3,
 	0xa9b6, 0xa9b9,
-	0xa9bc, 0xa9bc,
+	0xa9bc, 0xa9bd,
 	0xa9e5, 0xa9e5,
 	0xaa29, 0xaa2e,
 	0xaa31, 0xaa32,
@@ -18049,6 +18253,9 @@ static const OnigCodePoint CR_Grapheme_Extend[] = {
 	0x11727, 0x1172b,
 	0x1182f, 0x11837,
 	0x11839, 0x1183a,
+	0x119d4, 0x119d7,
+	0x119da, 0x119db,
+	0x119e0, 0x119e0,
 	0x11a01, 0x11a0a,
 	0x11a33, 0x11a38,
 	0x11a3b, 0x11a3e,
@@ -18075,6 +18282,7 @@ static const OnigCodePoint CR_Grapheme_Extend[] = {
 	0x11ef3, 0x11ef4,
 	0x16af0, 0x16af4,
 	0x16b30, 0x16b36,
+	0x16f4f, 0x16f4f,
 	0x16f8f, 0x16f92,
 	0x1bc9d, 0x1bc9e,
 	0x1d165, 0x1d165,
@@ -18095,6 +18303,8 @@ static const OnigCodePoint CR_Grapheme_Extend[] = {
 	0x1e01b, 0x1e021,
 	0x1e023, 0x1e024,
 	0x1e026, 0x1e02a,
+	0x1e130, 0x1e136,
+	0x1e2ec, 0x1e2ef,
 	0x1e8d0, 0x1e8d6,
 	0x1e944, 0x1e94a,
 	0xe0020, 0xe007f,
@@ -18103,7 +18313,7 @@ static const OnigCodePoint CR_Grapheme_Extend[] = {
 
 /* 'Grapheme_Base': Derived Property */
 static const OnigCodePoint CR_Grapheme_Base[] = {
-	806,
+	820,
 	0x0020, 0x007e,
 	0x00a0, 0x00ac,
 	0x00ae, 0x02ff,
@@ -18238,7 +18448,7 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x0c58, 0x0c5a,
 	0x0c60, 0x0c61,
 	0x0c66, 0x0c6f,
-	0x0c78, 0x0c80,
+	0x0c77, 0x0c80,
 	0x0c82, 0x0c8c,
 	0x0c8e, 0x0c90,
 	0x0c92, 0x0ca8,
@@ -18281,16 +18491,10 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x0e4f, 0x0e5b,
 	0x0e81, 0x0e82,
 	0x0e84, 0x0e84,
-	0x0e87, 0x0e88,
-	0x0e8a, 0x0e8a,
-	0x0e8d, 0x0e8d,
-	0x0e94, 0x0e97,
-	0x0e99, 0x0e9f,
-	0x0ea1, 0x0ea3,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
 	0x0ea5, 0x0ea5,
-	0x0ea7, 0x0ea7,
-	0x0eaa, 0x0eab,
-	0x0ead, 0x0eb0,
+	0x0ea7, 0x0eb0,
 	0x0eb2, 0x0eb3,
 	0x0ebd, 0x0ebd,
 	0x0ec0, 0x0ec4,
@@ -18388,7 +18592,6 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x1a90, 0x1a99,
 	0x1aa0, 0x1aad,
 	0x1b04, 0x1b33,
-	0x1b35, 0x1b35,
 	0x1b3b, 0x1b3b,
 	0x1b3d, 0x1b41,
 	0x1b43, 0x1b4b,
@@ -18413,6 +18616,7 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x1ce9, 0x1cec,
 	0x1cee, 0x1cf3,
 	0x1cf5, 0x1cf7,
+	0x1cfa, 0x1cfa,
 	0x1d00, 0x1dbf,
 	0x1e00, 0x1f15,
 	0x1f18, 0x1f1d,
@@ -18442,9 +18646,7 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x2440, 0x244a,
 	0x2460, 0x2b73,
 	0x2b76, 0x2b95,
-	0x2b98, 0x2bc8,
-	0x2bca, 0x2bfe,
-	0x2c00, 0x2c2e,
+	0x2b98, 0x2c2e,
 	0x2c30, 0x2c5e,
 	0x2c60, 0x2cee,
 	0x2cf2, 0x2cf3,
@@ -18462,7 +18664,7 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x2dc8, 0x2dce,
 	0x2dd0, 0x2dd6,
 	0x2dd8, 0x2dde,
-	0x2e00, 0x2e4e,
+	0x2e00, 0x2e4f,
 	0x2e80, 0x2e99,
 	0x2e9b, 0x2ef3,
 	0x2f00, 0x2fd5,
@@ -18487,7 +18689,8 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0xa67e, 0xa69d,
 	0xa6a0, 0xa6ef,
 	0xa6f2, 0xa6f7,
-	0xa700, 0xa7b9,
+	0xa700, 0xa7bf,
+	0xa7c2, 0xa7c6,
 	0xa7f7, 0xa801,
 	0xa803, 0xa805,
 	0xa807, 0xa80a,
@@ -18505,7 +18708,7 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0xa983, 0xa9b2,
 	0xa9b4, 0xa9b5,
 	0xa9ba, 0xa9bb,
-	0xa9bd, 0xa9cd,
+	0xa9be, 0xa9cd,
 	0xa9cf, 0xa9d9,
 	0xa9de, 0xa9e4,
 	0xa9e6, 0xa9fe,
@@ -18530,7 +18733,7 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0xab11, 0xab16,
 	0xab20, 0xab26,
 	0xab28, 0xab2e,
-	0xab30, 0xab65,
+	0xab30, 0xab67,
 	0xab70, 0xabe4,
 	0xabe6, 0xabe7,
 	0xabe9, 0xabec,
@@ -18639,6 +18842,7 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x10f00, 0x10f27,
 	0x10f30, 0x10f45,
 	0x10f51, 0x10f59,
+	0x10fe0, 0x10ff6,
 	0x11000, 0x11000,
 	0x11002, 0x11037,
 	0x11047, 0x1104d,
@@ -18692,6 +18896,7 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x11447, 0x11459,
 	0x1145b, 0x1145b,
 	0x1145d, 0x1145d,
+	0x1145f, 0x1145f,
 	0x11480, 0x114af,
 	0x114b1, 0x114b2,
 	0x114b9, 0x114b9,
@@ -18715,6 +18920,7 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x116ac, 0x116ac,
 	0x116ae, 0x116af,
 	0x116b6, 0x116b6,
+	0x116b8, 0x116b8,
 	0x116c0, 0x116c9,
 	0x11700, 0x1171a,
 	0x11720, 0x11721,
@@ -18725,14 +18931,17 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x1183b, 0x1183b,
 	0x118a0, 0x118f2,
 	0x118ff, 0x118ff,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d3,
+	0x119dc, 0x119df,
+	0x119e1, 0x119e4,
 	0x11a00, 0x11a00,
 	0x11a0b, 0x11a32,
 	0x11a39, 0x11a3a,
 	0x11a3f, 0x11a46,
 	0x11a50, 0x11a50,
 	0x11a57, 0x11a58,
-	0x11a5c, 0x11a83,
-	0x11a86, 0x11a89,
+	0x11a5c, 0x11a89,
 	0x11a97, 0x11a97,
 	0x11a9a, 0x11aa2,
 	0x11ac0, 0x11af8,
@@ -18759,7 +18968,8 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x11da0, 0x11da9,
 	0x11ee0, 0x11ef2,
 	0x11ef5, 0x11ef8,
-	0x12000, 0x12399,
+	0x11fc0, 0x11ff1,
+	0x11fff, 0x12399,
 	0x12400, 0x1246e,
 	0x12470, 0x12474,
 	0x12480, 0x12543,
@@ -18778,13 +18988,15 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x16b63, 0x16b77,
 	0x16b7d, 0x16b8f,
 	0x16e40, 0x16e9a,
-	0x16f00, 0x16f44,
-	0x16f50, 0x16f7e,
+	0x16f00, 0x16f4a,
+	0x16f50, 0x16f87,
 	0x16f93, 0x16f9f,
-	0x16fe0, 0x16fe1,
-	0x17000, 0x187f1,
+	0x16fe0, 0x16fe3,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 	0x1b000, 0x1b11e,
+	0x1b150, 0x1b152,
+	0x1b164, 0x1b167,
 	0x1b170, 0x1b2fb,
 	0x1bc00, 0x1bc6a,
 	0x1bc70, 0x1bc7c,
@@ -18830,12 +19042,21 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x1da6d, 0x1da74,
 	0x1da76, 0x1da83,
 	0x1da85, 0x1da8b,
+	0x1e100, 0x1e12c,
+	0x1e137, 0x1e13d,
+	0x1e140, 0x1e149,
+	0x1e14e, 0x1e14f,
+	0x1e2c0, 0x1e2eb,
+	0x1e2f0, 0x1e2f9,
+	0x1e2ff, 0x1e2ff,
 	0x1e800, 0x1e8c4,
 	0x1e8c7, 0x1e8cf,
 	0x1e900, 0x1e943,
+	0x1e94b, 0x1e94b,
 	0x1e950, 0x1e959,
 	0x1e95e, 0x1e95f,
 	0x1ec71, 0x1ecb4,
+	0x1ed01, 0x1ed3d,
 	0x1ee00, 0x1ee03,
 	0x1ee05, 0x1ee1f,
 	0x1ee21, 0x1ee22,
@@ -18877,33 +19098,36 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x1f0c1, 0x1f0cf,
 	0x1f0d1, 0x1f0f5,
 	0x1f100, 0x1f10c,
-	0x1f110, 0x1f16b,
+	0x1f110, 0x1f16c,
 	0x1f170, 0x1f1ac,
 	0x1f1e6, 0x1f202,
 	0x1f210, 0x1f23b,
 	0x1f240, 0x1f248,
 	0x1f250, 0x1f251,
 	0x1f260, 0x1f265,
-	0x1f300, 0x1f6d4,
+	0x1f300, 0x1f6d5,
 	0x1f6e0, 0x1f6ec,
-	0x1f6f0, 0x1f6f9,
+	0x1f6f0, 0x1f6fa,
 	0x1f700, 0x1f773,
 	0x1f780, 0x1f7d8,
+	0x1f7e0, 0x1f7eb,
 	0x1f800, 0x1f80b,
 	0x1f810, 0x1f847,
 	0x1f850, 0x1f859,
 	0x1f860, 0x1f887,
 	0x1f890, 0x1f8ad,
 	0x1f900, 0x1f90b,
-	0x1f910, 0x1f93e,
-	0x1f940, 0x1f970,
+	0x1f90d, 0x1f971,
 	0x1f973, 0x1f976,
-	0x1f97a, 0x1f97a,
-	0x1f97c, 0x1f9a2,
-	0x1f9b0, 0x1f9b9,
-	0x1f9c0, 0x1f9c2,
-	0x1f9d0, 0x1f9ff,
+	0x1f97a, 0x1f9a2,
+	0x1f9a5, 0x1f9aa,
+	0x1f9ae, 0x1f9ca,
+	0x1f9cd, 0x1fa53,
 	0x1fa60, 0x1fa6d,
+	0x1fa70, 0x1fa73,
+	0x1fa78, 0x1fa7a,
+	0x1fa80, 0x1fa82,
+	0x1fa90, 0x1fa95,
 	0x20000, 0x2a6d6,
 	0x2a700, 0x2b734,
 	0x2b740, 0x2b81d,
@@ -18914,7 +19138,7 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 
 /* 'Grapheme_Link': Derived Property */
 static const OnigCodePoint CR_Grapheme_Link[] = {
-	50,
+	52,
 	0x094d, 0x094d,
 	0x09cd, 0x09cd,
 	0x0a4d, 0x0a4d,
@@ -18927,6 +19151,7 @@ static const OnigCodePoint CR_Grapheme_Link[] = {
 	0x0d4d, 0x0d4d,
 	0x0dca, 0x0dca,
 	0x0e3a, 0x0e3a,
+	0x0eba, 0x0eba,
 	0x0f84, 0x0f84,
 	0x1039, 0x103a,
 	0x1714, 0x1714,
@@ -18959,6 +19184,7 @@ static const OnigCodePoint CR_Grapheme_Link[] = {
 	0x116b6, 0x116b6,
 	0x1172b, 0x1172b,
 	0x11839, 0x11839,
+	0x119e0, 0x119e0,
 	0x11a34, 0x11a34,
 	0x11a47, 0x11a47,
 	0x11a99, 0x11a99,
@@ -18969,7 +19195,7 @@ static const OnigCodePoint CR_Grapheme_Link[] = {
 
 /* 'Common': Script */
 static const OnigCodePoint CR_Common[] = {
-	166,
+	171,
 	0x0000, 0x0040,
 	0x005b, 0x0060,
 	0x007b, 0x00a9,
@@ -19005,6 +19231,7 @@ static const OnigCodePoint CR_Common[] = {
 	0x1ce9, 0x1cec,
 	0x1cee, 0x1cf3,
 	0x1cf5, 0x1cf7,
+	0x1cfa, 0x1cfa,
 	0x2000, 0x200b,
 	0x200e, 0x2064,
 	0x2066, 0x2070,
@@ -19022,9 +19249,8 @@ static const OnigCodePoint CR_Common[] = {
 	0x2460, 0x27ff,
 	0x2900, 0x2b73,
 	0x2b76, 0x2b95,
-	0x2b98, 0x2bc8,
-	0x2bca, 0x2bfe,
-	0x2e00, 0x2e4e,
+	0x2b98, 0x2bff,
+	0x2e00, 0x2e4f,
 	0x2ff0, 0x2ffb,
 	0x3000, 0x3004,
 	0x3006, 0x3006,
@@ -19066,6 +19292,7 @@ static const OnigCodePoint CR_Common[] = {
 	0x10190, 0x1019b,
 	0x101d0, 0x101fc,
 	0x102e1, 0x102fb,
+	0x16fe2, 0x16fe3,
 	0x1bca0, 0x1bca3,
 	0x1d000, 0x1d0f5,
 	0x1d100, 0x1d126,
@@ -19099,6 +19326,7 @@ static const OnigCodePoint CR_Common[] = {
 	0x1d6a8, 0x1d7cb,
 	0x1d7ce, 0x1d7ff,
 	0x1ec71, 0x1ecb4,
+	0x1ed01, 0x1ed3d,
 	0x1f000, 0x1f02b,
 	0x1f030, 0x1f093,
 	0x1f0a0, 0x1f0ae,
@@ -19106,7 +19334,7 @@ static const OnigCodePoint CR_Common[] = {
 	0x1f0c1, 0x1f0cf,
 	0x1f0d1, 0x1f0f5,
 	0x1f100, 0x1f10c,
-	0x1f110, 0x1f16b,
+	0x1f110, 0x1f16c,
 	0x1f170, 0x1f1ac,
 	0x1f1e6, 0x1f1ff,
 	0x1f201, 0x1f202,
@@ -19114,33 +19342,36 @@ static const OnigCodePoint CR_Common[] = {
 	0x1f240, 0x1f248,
 	0x1f250, 0x1f251,
 	0x1f260, 0x1f265,
-	0x1f300, 0x1f6d4,
+	0x1f300, 0x1f6d5,
 	0x1f6e0, 0x1f6ec,
-	0x1f6f0, 0x1f6f9,
+	0x1f6f0, 0x1f6fa,
 	0x1f700, 0x1f773,
 	0x1f780, 0x1f7d8,
+	0x1f7e0, 0x1f7eb,
 	0x1f800, 0x1f80b,
 	0x1f810, 0x1f847,
 	0x1f850, 0x1f859,
 	0x1f860, 0x1f887,
 	0x1f890, 0x1f8ad,
 	0x1f900, 0x1f90b,
-	0x1f910, 0x1f93e,
-	0x1f940, 0x1f970,
+	0x1f90d, 0x1f971,
 	0x1f973, 0x1f976,
-	0x1f97a, 0x1f97a,
-	0x1f97c, 0x1f9a2,
-	0x1f9b0, 0x1f9b9,
-	0x1f9c0, 0x1f9c2,
-	0x1f9d0, 0x1f9ff,
+	0x1f97a, 0x1f9a2,
+	0x1f9a5, 0x1f9aa,
+	0x1f9ae, 0x1f9ca,
+	0x1f9cd, 0x1fa53,
 	0x1fa60, 0x1fa6d,
+	0x1fa70, 0x1fa73,
+	0x1fa78, 0x1fa7a,
+	0x1fa80, 0x1fa82,
+	0x1fa90, 0x1fa95,
 	0xe0001, 0xe0001,
 	0xe0020, 0xe007f,
 }; /* CR_Common */
 
 /* 'Latin': Script */
 static const OnigCodePoint CR_Latin[] = {
-	30,
+	32,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
 	0x00aa, 0x00aa,
@@ -19164,10 +19395,12 @@ static const OnigCodePoint CR_Latin[] = {
 	0x2160, 0x2188,
 	0x2c60, 0x2c7f,
 	0xa722, 0xa787,
-	0xa78b, 0xa7b9,
+	0xa78b, 0xa7bf,
+	0xa7c2, 0xa7c6,
 	0xa7f7, 0xa7ff,
 	0xab30, 0xab5a,
 	0xab5c, 0xab64,
+	0xab66, 0xab67,
 	0xfb00, 0xfb06,
 	0xff21, 0xff3a,
 	0xff41, 0xff5a,
@@ -19332,7 +19565,7 @@ static const OnigCodePoint CR_Thaana[] = {
 static const OnigCodePoint CR_Devanagari[] = {
 	4,
 	0x0900, 0x0950,
-	0x0953, 0x0963,
+	0x0955, 0x0963,
 	0x0966, 0x097f,
 	0xa8e0, 0xa8ff,
 }; /* CR_Devanagari */
@@ -19417,7 +19650,7 @@ static const OnigCodePoint CR_Oriya[] = {
 
 /* 'Tamil': Script */
 static const OnigCodePoint CR_Tamil[] = {
-	16,
+	18,
 	0x0b82, 0x0b83,
 	0x0b85, 0x0b8a,
 	0x0b8e, 0x0b90,
@@ -19434,6 +19667,8 @@ static const OnigCodePoint CR_Tamil[] = {
 	0x0bd0, 0x0bd0,
 	0x0bd7, 0x0bd7,
 	0x0be6, 0x0bfa,
+	0x11fc0, 0x11ff1,
+	0x11fff, 0x11fff,
 }; /* CR_Tamil */
 
 /* 'Telugu': Script */
@@ -19450,7 +19685,7 @@ static const OnigCodePoint CR_Telugu[] = {
 	0x0c58, 0x0c5a,
 	0x0c60, 0x0c63,
 	0x0c66, 0x0c6f,
-	0x0c78, 0x0c7f,
+	0x0c77, 0x0c7f,
 }; /* CR_Telugu */
 
 /* 'Kannada': Script */
@@ -19511,20 +19746,13 @@ static const OnigCodePoint CR_Thai[] = {
 
 /* 'Lao': Script */
 static const OnigCodePoint CR_Lao[] = {
-	18,
+	11,
 	0x0e81, 0x0e82,
 	0x0e84, 0x0e84,
-	0x0e87, 0x0e88,
-	0x0e8a, 0x0e8a,
-	0x0e8d, 0x0e8d,
-	0x0e94, 0x0e97,
-	0x0e99, 0x0e9f,
-	0x0ea1, 0x0ea3,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
 	0x0ea5, 0x0ea5,
-	0x0ea7, 0x0ea7,
-	0x0eaa, 0x0eab,
-	0x0ead, 0x0eb9,
-	0x0ebb, 0x0ebd,
+	0x0ea7, 0x0ebd,
 	0x0ec0, 0x0ec4,
 	0x0ec6, 0x0ec6,
 	0x0ec8, 0x0ecd,
@@ -19674,16 +19902,17 @@ static const OnigCodePoint CR_Mongolian[] = {
 
 /* 'Hiragana': Script */
 static const OnigCodePoint CR_Hiragana[] = {
-	4,
+	5,
 	0x3041, 0x3096,
 	0x309d, 0x309f,
 	0x1b001, 0x1b11e,
+	0x1b150, 0x1b152,
 	0x1f200, 0x1f200,
 }; /* CR_Hiragana */
 
 /* 'Katakana': Script */
 static const OnigCodePoint CR_Katakana[] = {
-	8,
+	9,
 	0x30a1, 0x30fa,
 	0x30fd, 0x30ff,
 	0x31f0, 0x31ff,
@@ -19692,6 +19921,7 @@ static const OnigCodePoint CR_Katakana[] = {
 	0xff66, 0xff6f,
 	0xff71, 0xff9d,
 	0x1b000, 0x1b000,
+	0x1b164, 0x1b167,
 }; /* CR_Katakana */
 
 /* 'Bopomofo': Script */
@@ -19757,7 +19987,7 @@ static const OnigCodePoint CR_Inherited[] = {
 	0x0485, 0x0486,
 	0x064b, 0x0655,
 	0x0670, 0x0670,
-	0x0951, 0x0952,
+	0x0951, 0x0954,
 	0x1ab0, 0x1abe,
 	0x1cd0, 0x1cd2,
 	0x1cd4, 0x1ce0,
@@ -20084,8 +20314,9 @@ static const OnigCodePoint CR_Avestan[] = {
 
 /* 'Egyptian_Hieroglyphs': Script */
 static const OnigCodePoint CR_Egyptian_Hieroglyphs[] = {
-	1,
+	2,
 	0x13000, 0x1342e,
+	0x13430, 0x13438,
 }; /* CR_Egyptian_Hieroglyphs */
 
 /* 'Samaritan': Script */
@@ -20210,8 +20441,8 @@ static const OnigCodePoint CR_Meroitic_Hieroglyphs[] = {
 /* 'Miao': Script */
 static const OnigCodePoint CR_Miao[] = {
 	3,
-	0x16f00, 0x16f44,
-	0x16f50, 0x16f7e,
+	0x16f00, 0x16f4a,
+	0x16f4f, 0x16f87,
 	0x16f8f, 0x16f9f,
 }; /* CR_Miao */
 
@@ -20232,7 +20463,7 @@ static const OnigCodePoint CR_Sora_Sompeng[] = {
 /* 'Takri': Script */
 static const OnigCodePoint CR_Takri[] = {
 	2,
-	0x11680, 0x116b7,
+	0x11680, 0x116b8,
 	0x116c0, 0x116c9,
 }; /* CR_Takri */
 
@@ -20464,7 +20695,7 @@ static const OnigCodePoint CR_SignWriting[] = {
 /* 'Adlam': Script */
 static const OnigCodePoint CR_Adlam[] = {
 	3,
-	0x1e900, 0x1e94a,
+	0x1e900, 0x1e94b,
 	0x1e950, 0x1e959,
 	0x1e95e, 0x1e95f,
 }; /* CR_Adlam */
@@ -20491,7 +20722,7 @@ static const OnigCodePoint CR_Newa[] = {
 	3,
 	0x11400, 0x11459,
 	0x1145b, 0x1145b,
-	0x1145d, 0x1145e,
+	0x1145d, 0x1145f,
 }; /* CR_Newa */
 
 /* 'Osage': Script */
@@ -20505,7 +20736,7 @@ static const OnigCodePoint CR_Osage[] = {
 static const OnigCodePoint CR_Tangut[] = {
 	3,
 	0x16fe0, 0x16fe0,
-	0x17000, 0x187f1,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 }; /* CR_Tangut */
 
@@ -20530,9 +20761,8 @@ static const OnigCodePoint CR_Nushu[] = {
 
 /* 'Soyombo': Script */
 static const OnigCodePoint CR_Soyombo[] = {
-	2,
-	0x11a50, 0x11a83,
-	0x11a86, 0x11aa2,
+	1,
+	0x11a50, 0x11aa2,
 }; /* CR_Soyombo */
 
 /* 'Zanabazar_Square': Script */
@@ -20588,6 +20818,36 @@ static const OnigCodePoint CR_Old_Sogdian[] = {
 	1,
 	0x10f00, 0x10f27,
 }; /* CR_Old_Sogdian */
+
+/* 'Elymaic': Script */
+static const OnigCodePoint CR_Elymaic[] = {
+	1,
+	0x10fe0, 0x10ff6,
+}; /* CR_Elymaic */
+
+/* 'Nandinagari': Script */
+static const OnigCodePoint CR_Nandinagari[] = {
+	3,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d7,
+	0x119da, 0x119e4,
+}; /* CR_Nandinagari */
+
+/* 'Nyiakeng_Puachue_Hmong': Script */
+static const OnigCodePoint CR_Nyiakeng_Puachue_Hmong[] = {
+	4,
+	0x1e100, 0x1e12c,
+	0x1e130, 0x1e13d,
+	0x1e140, 0x1e149,
+	0x1e14e, 0x1e14f,
+}; /* CR_Nyiakeng_Puachue_Hmong */
+
+/* 'Wancho': Script */
+static const OnigCodePoint CR_Wancho[] = {
+	2,
+	0x1e2c0, 0x1e2f9,
+	0x1e2ff, 0x1e2ff,
+}; /* CR_Wancho */
 
 /* 'White_Space': Binary Property */
 #define CR_White_Space CR_Space
@@ -20693,7 +20953,7 @@ static const OnigCodePoint CR_Terminal_Punctuation[] = {
 	0x0f0d, 0x0f12,
 	0x104a, 0x104b,
 	0x1361, 0x1368,
-	0x166d, 0x166e,
+	0x166e, 0x166e,
 	0x16eb, 0x16ed,
 	0x1735, 0x1736,
 	0x17d4, 0x17d6,
@@ -20712,7 +20972,7 @@ static const OnigCodePoint CR_Terminal_Punctuation[] = {
 	0x2e3c, 0x2e3c,
 	0x2e41, 0x2e41,
 	0x2e4c, 0x2e4c,
-	0x2e4e, 0x2e4e,
+	0x2e4e, 0x2e4f,
 	0x3001, 0x3002,
 	0xa4fe, 0xa4ff,
 	0xa60d, 0xa60f,
@@ -20928,7 +21188,7 @@ static const OnigCodePoint CR_Hex_Digit[] = {
 
 /* 'Other_Alphabetic': Binary Property */
 static const OnigCodePoint CR_Other_Alphabetic[] = {
-	213,
+	221,
 	0x0345, 0x0345,
 	0x05b0, 0x05bd,
 	0x05bf, 0x05bf,
@@ -21026,12 +21286,12 @@ static const OnigCodePoint CR_Other_Alphabetic[] = {
 	0x103b, 0x103e,
 	0x1056, 0x1059,
 	0x105e, 0x1060,
-	0x1062, 0x1062,
-	0x1067, 0x1068,
+	0x1062, 0x1064,
+	0x1067, 0x106d,
 	0x1071, 0x1074,
-	0x1082, 0x1086,
-	0x109c, 0x109d,
-	0x135f, 0x135f,
+	0x1082, 0x108d,
+	0x108f, 0x108f,
+	0x109a, 0x109d,
 	0x1712, 0x1713,
 	0x1732, 0x1733,
 	0x1752, 0x1753,
@@ -21050,24 +21310,28 @@ static const OnigCodePoint CR_Other_Alphabetic[] = {
 	0x1ba1, 0x1ba9,
 	0x1bac, 0x1bad,
 	0x1be7, 0x1bf1,
-	0x1c24, 0x1c35,
-	0x1cf2, 0x1cf3,
+	0x1c24, 0x1c36,
 	0x1de7, 0x1df4,
 	0x24b6, 0x24e9,
 	0x2de0, 0x2dff,
 	0xa674, 0xa67b,
 	0xa69e, 0xa69f,
+	0xa802, 0xa802,
+	0xa80b, 0xa80b,
 	0xa823, 0xa827,
 	0xa880, 0xa881,
 	0xa8b4, 0xa8c3,
 	0xa8c5, 0xa8c5,
+	0xa8ff, 0xa8ff,
 	0xa926, 0xa92a,
 	0xa947, 0xa952,
 	0xa980, 0xa983,
 	0xa9b4, 0xa9bf,
+	0xa9e5, 0xa9e5,
 	0xaa29, 0xaa36,
 	0xaa43, 0xaa43,
 	0xaa4c, 0xaa4d,
+	0xaa7b, 0xaa7d,
 	0xaab0, 0xaab0,
 	0xaab2, 0xaab4,
 	0xaab7, 0xaab8,
@@ -21111,6 +21375,9 @@ static const OnigCodePoint CR_Other_Alphabetic[] = {
 	0x116ab, 0x116b5,
 	0x1171d, 0x1172a,
 	0x1182c, 0x11838,
+	0x119d1, 0x119d7,
+	0x119da, 0x119df,
+	0x119e4, 0x119e4,
 	0x11a01, 0x11a0a,
 	0x11a35, 0x11a39,
 	0x11a3b, 0x11a3e,
@@ -21130,8 +21397,9 @@ static const OnigCodePoint CR_Other_Alphabetic[] = {
 	0x11d90, 0x11d91,
 	0x11d93, 0x11d96,
 	0x11ef3, 0x11ef6,
-	0x16b30, 0x16b36,
-	0x16f51, 0x16f7e,
+	0x16f4f, 0x16f4f,
+	0x16f51, 0x16f87,
+	0x16f8f, 0x16f92,
 	0x1bc9e, 0x1bc9e,
 	0x1e000, 0x1e006,
 	0x1e008, 0x1e018,
@@ -21154,7 +21422,7 @@ static const OnigCodePoint CR_Ideographic[] = {
 	0x4e00, 0x9fef,
 	0xf900, 0xfa6d,
 	0xfa70, 0xfad9,
-	0x17000, 0x187f1,
+	0x17000, 0x187f7,
 	0x18800, 0x18af2,
 	0x1b170, 0x1b2fb,
 	0x20000, 0x2a6d6,
@@ -21167,7 +21435,7 @@ static const OnigCodePoint CR_Ideographic[] = {
 
 /* 'Diacritic': Binary Property */
 static const OnigCodePoint CR_Diacritic[] = {
-	163,
+	171,
 	0x005e, 0x005e,
 	0x0060, 0x0060,
 	0x00a8, 0x00a8,
@@ -21219,6 +21487,7 @@ static const OnigCodePoint CR_Diacritic[] = {
 	0x0dca, 0x0dca,
 	0x0e47, 0x0e4c,
 	0x0e4e, 0x0e4e,
+	0x0eba, 0x0eba,
 	0x0ec8, 0x0ecc,
 	0x0f18, 0x0f19,
 	0x0f35, 0x0f35,
@@ -21230,9 +21499,12 @@ static const OnigCodePoint CR_Diacritic[] = {
 	0x0fc6, 0x0fc6,
 	0x1037, 0x1037,
 	0x1039, 0x103a,
+	0x1063, 0x1064,
+	0x1069, 0x106d,
 	0x1087, 0x108d,
 	0x108f, 0x108f,
 	0x109a, 0x109b,
+	0x135d, 0x135f,
 	0x17c9, 0x17d3,
 	0x17dd, 0x17dd,
 	0x1939, 0x193b,
@@ -21269,8 +21541,8 @@ static const OnigCodePoint CR_Diacritic[] = {
 	0xa67f, 0xa67f,
 	0xa69c, 0xa69d,
 	0xa6f0, 0xa6f1,
-	0xa717, 0xa721,
-	0xa788, 0xa788,
+	0xa700, 0xa721,
+	0xa788, 0xa78a,
 	0xa7f8, 0xa7f9,
 	0xa8c4, 0xa8c4,
 	0xa8e0, 0xa8f1,
@@ -21314,6 +21586,7 @@ static const OnigCodePoint CR_Diacritic[] = {
 	0x116b6, 0x116b7,
 	0x1172b, 0x1172b,
 	0x11839, 0x1183a,
+	0x119e0, 0x119e0,
 	0x11a34, 0x11a34,
 	0x11a47, 0x11a47,
 	0x11a99, 0x11a99,
@@ -21322,12 +21595,15 @@ static const OnigCodePoint CR_Diacritic[] = {
 	0x11d44, 0x11d45,
 	0x11d97, 0x11d97,
 	0x16af0, 0x16af4,
+	0x16b30, 0x16b36,
 	0x16f8f, 0x16f9f,
 	0x1d167, 0x1d169,
 	0x1d16d, 0x1d172,
 	0x1d17b, 0x1d182,
 	0x1d185, 0x1d18b,
 	0x1d1aa, 0x1d1ad,
+	0x1e130, 0x1e136,
+	0x1e2ec, 0x1e2ef,
 	0x1e8d0, 0x1e8d6,
 	0x1e944, 0x1e946,
 	0x1e948, 0x1e94a,
@@ -21335,7 +21611,7 @@ static const OnigCodePoint CR_Diacritic[] = {
 
 /* 'Extender': Binary Property */
 static const OnigCodePoint CR_Extender[] = {
-	29,
+	31,
 	0x00b7, 0x00b7,
 	0x02d0, 0x02d1,
 	0x0640, 0x0640,
@@ -21364,6 +21640,8 @@ static const OnigCodePoint CR_Extender[] = {
 	0x11a98, 0x11a98,
 	0x16b42, 0x16b43,
 	0x16fe0, 0x16fe1,
+	0x16fe3, 0x16fe3,
+	0x1e13c, 0x1e13d,
 	0x1e944, 0x1e946,
 }; /* CR_Extender */
 
@@ -21427,7 +21705,7 @@ static const OnigCodePoint CR_Noncharacter_Code_Point[] = {
 
 /* 'Other_Grapheme_Extend': Binary Property */
 static const OnigCodePoint CR_Other_Grapheme_Extend[] = {
-	23,
+	24,
 	0x09be, 0x09be,
 	0x09d7, 0x09d7,
 	0x0b3e, 0x0b3e,
@@ -21440,6 +21718,7 @@ static const OnigCodePoint CR_Other_Grapheme_Extend[] = {
 	0x0d57, 0x0d57,
 	0x0dcf, 0x0dcf,
 	0x0ddf, 0x0ddf,
+	0x1b35, 0x1b35,
 	0x200c, 0x200c,
 	0x302e, 0x302f,
 	0xff9e, 0xff9f,
@@ -21737,7 +22016,7 @@ static const OnigCodePoint CR_Regional_Indicator[] = {
 
 /* 'Emoji': Emoji */
 static const OnigCodePoint CR_Emoji[] = {
-	147,
+	151,
 	0x0023, 0x0023,
 	0x002a, 0x002a,
 	0x0030, 0x0039,
@@ -21870,26 +22149,30 @@ static const OnigCodePoint CR_Emoji[] = {
 	0x1f5fa, 0x1f64f,
 	0x1f680, 0x1f6c5,
 	0x1f6cb, 0x1f6d2,
+	0x1f6d5, 0x1f6d5,
 	0x1f6e0, 0x1f6e5,
 	0x1f6e9, 0x1f6e9,
 	0x1f6eb, 0x1f6ec,
 	0x1f6f0, 0x1f6f0,
-	0x1f6f3, 0x1f6f9,
-	0x1f910, 0x1f93a,
-	0x1f93c, 0x1f93e,
-	0x1f940, 0x1f945,
-	0x1f947, 0x1f970,
+	0x1f6f3, 0x1f6fa,
+	0x1f7e0, 0x1f7eb,
+	0x1f90d, 0x1f93a,
+	0x1f93c, 0x1f945,
+	0x1f947, 0x1f971,
 	0x1f973, 0x1f976,
-	0x1f97a, 0x1f97a,
-	0x1f97c, 0x1f9a2,
-	0x1f9b0, 0x1f9b9,
-	0x1f9c0, 0x1f9c2,
-	0x1f9d0, 0x1f9ff,
+	0x1f97a, 0x1f9a2,
+	0x1f9a5, 0x1f9aa,
+	0x1f9ae, 0x1f9ca,
+	0x1f9cd, 0x1f9ff,
+	0x1fa70, 0x1fa73,
+	0x1fa78, 0x1fa7a,
+	0x1fa80, 0x1fa82,
+	0x1fa90, 0x1fa95,
 }; /* CR_Emoji */
 
 /* 'Emoji_Presentation': Emoji */
 static const OnigCodePoint CR_Emoji_Presentation[] = {
-	77,
+	81,
 	0x231a, 0x231b,
 	0x23e9, 0x23ec,
 	0x23f0, 0x23f0,
@@ -21955,18 +22238,22 @@ static const OnigCodePoint CR_Emoji_Presentation[] = {
 	0x1f680, 0x1f6c5,
 	0x1f6cc, 0x1f6cc,
 	0x1f6d0, 0x1f6d2,
+	0x1f6d5, 0x1f6d5,
 	0x1f6eb, 0x1f6ec,
-	0x1f6f4, 0x1f6f9,
-	0x1f910, 0x1f93a,
-	0x1f93c, 0x1f93e,
-	0x1f940, 0x1f945,
-	0x1f947, 0x1f970,
+	0x1f6f4, 0x1f6fa,
+	0x1f7e0, 0x1f7eb,
+	0x1f90d, 0x1f93a,
+	0x1f93c, 0x1f945,
+	0x1f947, 0x1f971,
 	0x1f973, 0x1f976,
-	0x1f97a, 0x1f97a,
-	0x1f97c, 0x1f9a2,
-	0x1f9b0, 0x1f9b9,
-	0x1f9c0, 0x1f9c2,
-	0x1f9d0, 0x1f9ff,
+	0x1f97a, 0x1f9a2,
+	0x1f9a5, 0x1f9aa,
+	0x1f9ae, 0x1f9ca,
+	0x1f9cd, 0x1f9ff,
+	0x1fa70, 0x1fa73,
+	0x1fa78, 0x1fa7a,
+	0x1fa80, 0x1fa82,
+	0x1fa90, 0x1fa95,
 }; /* CR_Emoji_Presentation */
 
 /* 'Emoji_Modifier': Emoji */
@@ -21977,7 +22264,7 @@ static const OnigCodePoint CR_Emoji_Modifier[] = {
 
 /* 'Emoji_Modifier_Base': Emoji */
 static const OnigCodePoint CR_Emoji_Modifier_Base[] = {
-	34,
+	36,
 	0x261d, 0x261d,
 	0x26f9, 0x26f9,
 	0x270a, 0x270d,
@@ -21987,12 +22274,12 @@ static const OnigCodePoint CR_Emoji_Modifier_Base[] = {
 	0x1f3ca, 0x1f3cc,
 	0x1f442, 0x1f443,
 	0x1f446, 0x1f450,
-	0x1f466, 0x1f469,
-	0x1f46e, 0x1f46e,
-	0x1f470, 0x1f478,
+	0x1f466, 0x1f478,
 	0x1f47c, 0x1f47c,
 	0x1f481, 0x1f483,
 	0x1f485, 0x1f487,
+	0x1f48f, 0x1f48f,
+	0x1f491, 0x1f491,
 	0x1f4aa, 0x1f4aa,
 	0x1f574, 0x1f575,
 	0x1f57a, 0x1f57a,
@@ -22004,13 +22291,15 @@ static const OnigCodePoint CR_Emoji_Modifier_Base[] = {
 	0x1f6b4, 0x1f6b6,
 	0x1f6c0, 0x1f6c0,
 	0x1f6cc, 0x1f6cc,
-	0x1f918, 0x1f91c,
-	0x1f91e, 0x1f91f,
+	0x1f90f, 0x1f90f,
+	0x1f918, 0x1f91f,
 	0x1f926, 0x1f926,
 	0x1f930, 0x1f939,
-	0x1f93d, 0x1f93e,
+	0x1f93c, 0x1f93e,
 	0x1f9b5, 0x1f9b6,
 	0x1f9b8, 0x1f9b9,
+	0x1f9bb, 0x1f9bb,
+	0x1f9cd, 0x1f9cf,
 	0x1f9d1, 0x1f9dd,
 }; /* CR_Emoji_Modifier_Base */
 
@@ -22113,7 +22402,7 @@ static const OnigCodePoint CR_Extended_Pictographic[] = {
 
 /* 'Unknown': Script */
 static const OnigCodePoint CR_Unknown[] = {
-	656,
+	665,
 	0x0378, 0x0379,
 	0x0380, 0x0383,
 	0x038b, 0x038b,
@@ -22222,7 +22511,7 @@ static const OnigCodePoint CR_Unknown[] = {
 	0x0c57, 0x0c57,
 	0x0c5b, 0x0c5f,
 	0x0c64, 0x0c65,
-	0x0c70, 0x0c77,
+	0x0c70, 0x0c76,
 	0x0c8d, 0x0c8d,
 	0x0c91, 0x0c91,
 	0x0ca9, 0x0ca9,
@@ -22259,17 +22548,10 @@ static const OnigCodePoint CR_Unknown[] = {
 	0x0e3b, 0x0e3e,
 	0x0e5c, 0x0e80,
 	0x0e83, 0x0e83,
-	0x0e85, 0x0e86,
-	0x0e89, 0x0e89,
-	0x0e8b, 0x0e8c,
-	0x0e8e, 0x0e93,
-	0x0e98, 0x0e98,
-	0x0ea0, 0x0ea0,
+	0x0e85, 0x0e85,
+	0x0e8b, 0x0e8b,
 	0x0ea4, 0x0ea4,
 	0x0ea6, 0x0ea6,
-	0x0ea8, 0x0ea9,
-	0x0eac, 0x0eac,
-	0x0eba, 0x0eba,
 	0x0ebe, 0x0ebf,
 	0x0ec5, 0x0ec5,
 	0x0ec7, 0x0ec7,
@@ -22346,7 +22628,7 @@ static const OnigCodePoint CR_Unknown[] = {
 	0x1c89, 0x1c8f,
 	0x1cbb, 0x1cbc,
 	0x1cc8, 0x1ccf,
-	0x1cfa, 0x1cff,
+	0x1cfb, 0x1cff,
 	0x1dfa, 0x1dfa,
 	0x1f16, 0x1f17,
 	0x1f1e, 0x1f1f,
@@ -22375,8 +22657,6 @@ static const OnigCodePoint CR_Unknown[] = {
 	0x244b, 0x245f,
 	0x2b74, 0x2b75,
 	0x2b96, 0x2b97,
-	0x2bc9, 0x2bc9,
-	0x2bff, 0x2bff,
 	0x2c2f, 0x2c2f,
 	0x2c5f, 0x2c5f,
 	0x2cf4, 0x2cf8,
@@ -22394,7 +22674,7 @@ static const OnigCodePoint CR_Unknown[] = {
 	0x2dcf, 0x2dcf,
 	0x2dd7, 0x2dd7,
 	0x2ddf, 0x2ddf,
-	0x2e4f, 0x2e7f,
+	0x2e50, 0x2e7f,
 	0x2e9a, 0x2e9a,
 	0x2ef4, 0x2eff,
 	0x2fd6, 0x2fef,
@@ -22414,7 +22694,8 @@ static const OnigCodePoint CR_Unknown[] = {
 	0xa4c7, 0xa4cf,
 	0xa62c, 0xa63f,
 	0xa6f8, 0xa6ff,
-	0xa7ba, 0xa7f6,
+	0xa7c0, 0xa7c1,
+	0xa7c7, 0xa7f6,
 	0xa82c, 0xa82f,
 	0xa83a, 0xa83f,
 	0xa878, 0xa87f,
@@ -22435,7 +22716,7 @@ static const OnigCodePoint CR_Unknown[] = {
 	0xab17, 0xab1f,
 	0xab27, 0xab27,
 	0xab2f, 0xab2f,
-	0xab66, 0xab6f,
+	0xab68, 0xab6f,
 	0xabee, 0xabef,
 	0xabfa, 0xabff,
 	0xd7a4, 0xd7af,
@@ -22541,7 +22822,8 @@ static const OnigCodePoint CR_Unknown[] = {
 	0x10d3a, 0x10e5f,
 	0x10e7f, 0x10eff,
 	0x10f28, 0x10f2f,
-	0x10f5a, 0x10fff,
+	0x10f5a, 0x10fdf,
+	0x10ff7, 0x10fff,
 	0x1104e, 0x11051,
 	0x11070, 0x1107e,
 	0x110c2, 0x110cc,
@@ -22580,7 +22862,7 @@ static const OnigCodePoint CR_Unknown[] = {
 	0x11375, 0x113ff,
 	0x1145a, 0x1145a,
 	0x1145c, 0x1145c,
-	0x1145f, 0x1147f,
+	0x11460, 0x1147f,
 	0x114c8, 0x114cf,
 	0x114da, 0x1157f,
 	0x115b6, 0x115b7,
@@ -22588,16 +22870,18 @@ static const OnigCodePoint CR_Unknown[] = {
 	0x11645, 0x1164f,
 	0x1165a, 0x1165f,
 	0x1166d, 0x1167f,
-	0x116b8, 0x116bf,
+	0x116b9, 0x116bf,
 	0x116ca, 0x116ff,
 	0x1171b, 0x1171c,
 	0x1172c, 0x1172f,
 	0x11740, 0x117ff,
 	0x1183c, 0x1189f,
 	0x118f3, 0x118fe,
-	0x11900, 0x119ff,
+	0x11900, 0x1199f,
+	0x119a8, 0x119a9,
+	0x119d8, 0x119d9,
+	0x119e5, 0x119ff,
 	0x11a48, 0x11a4f,
-	0x11a84, 0x11a85,
 	0x11aa3, 0x11abf,
 	0x11af9, 0x11bff,
 	0x11c09, 0x11c09,
@@ -22620,12 +22904,14 @@ static const OnigCodePoint CR_Unknown[] = {
 	0x11d92, 0x11d92,
 	0x11d99, 0x11d9f,
 	0x11daa, 0x11edf,
-	0x11ef9, 0x11fff,
+	0x11ef9, 0x11fbf,
+	0x11ff2, 0x11ffe,
 	0x1239a, 0x123ff,
 	0x1246f, 0x1246f,
 	0x12475, 0x1247f,
 	0x12544, 0x12fff,
-	0x1342f, 0x143ff,
+	0x1342f, 0x1342f,
+	0x13439, 0x143ff,
 	0x14647, 0x167ff,
 	0x16a39, 0x16a3f,
 	0x16a5f, 0x16a5f,
@@ -22639,13 +22925,15 @@ static const OnigCodePoint CR_Unknown[] = {
 	0x16b78, 0x16b7c,
 	0x16b90, 0x16e3f,
 	0x16e9b, 0x16eff,
-	0x16f45, 0x16f4f,
-	0x16f7f, 0x16f8e,
+	0x16f4b, 0x16f4e,
+	0x16f88, 0x16f8e,
 	0x16fa0, 0x16fdf,
-	0x16fe2, 0x16fff,
-	0x187f2, 0x187ff,
+	0x16fe4, 0x16fff,
+	0x187f8, 0x187ff,
 	0x18af3, 0x1afff,
-	0x1b11f, 0x1b16f,
+	0x1b11f, 0x1b14f,
+	0x1b153, 0x1b163,
+	0x1b168, 0x1b16f,
 	0x1b2fc, 0x1bbff,
 	0x1bc6b, 0x1bc6f,
 	0x1bc7d, 0x1bc7f,
@@ -22686,13 +22974,20 @@ static const OnigCodePoint CR_Unknown[] = {
 	0x1e019, 0x1e01a,
 	0x1e022, 0x1e022,
 	0x1e025, 0x1e025,
-	0x1e02b, 0x1e7ff,
+	0x1e02b, 0x1e0ff,
+	0x1e12d, 0x1e12f,
+	0x1e13e, 0x1e13f,
+	0x1e14a, 0x1e14d,
+	0x1e150, 0x1e2bf,
+	0x1e2fa, 0x1e2fe,
+	0x1e300, 0x1e7ff,
 	0x1e8c5, 0x1e8c6,
 	0x1e8d7, 0x1e8ff,
-	0x1e94b, 0x1e94f,
+	0x1e94c, 0x1e94f,
 	0x1e95a, 0x1e95d,
 	0x1e960, 0x1ec70,
-	0x1ecb5, 0x1edff,
+	0x1ecb5, 0x1ed00,
+	0x1ed3e, 0x1edff,
 	0x1ee04, 0x1ee04,
 	0x1ee20, 0x1ee20,
 	0x1ee23, 0x1ee23,
@@ -22734,33 +23029,36 @@ static const OnigCodePoint CR_Unknown[] = {
 	0x1f0d0, 0x1f0d0,
 	0x1f0f6, 0x1f0ff,
 	0x1f10d, 0x1f10f,
-	0x1f16c, 0x1f16f,
+	0x1f16d, 0x1f16f,
 	0x1f1ad, 0x1f1e5,
 	0x1f203, 0x1f20f,
 	0x1f23c, 0x1f23f,
 	0x1f249, 0x1f24f,
 	0x1f252, 0x1f25f,
 	0x1f266, 0x1f2ff,
-	0x1f6d5, 0x1f6df,
+	0x1f6d6, 0x1f6df,
 	0x1f6ed, 0x1f6ef,
-	0x1f6fa, 0x1f6ff,
+	0x1f6fb, 0x1f6ff,
 	0x1f774, 0x1f77f,
-	0x1f7d9, 0x1f7ff,
+	0x1f7d9, 0x1f7df,
+	0x1f7ec, 0x1f7ff,
 	0x1f80c, 0x1f80f,
 	0x1f848, 0x1f84f,
 	0x1f85a, 0x1f85f,
 	0x1f888, 0x1f88f,
 	0x1f8ae, 0x1f8ff,
-	0x1f90c, 0x1f90f,
-	0x1f93f, 0x1f93f,
-	0x1f971, 0x1f972,
+	0x1f90c, 0x1f90c,
+	0x1f972, 0x1f972,
 	0x1f977, 0x1f979,
-	0x1f97b, 0x1f97b,
-	0x1f9a3, 0x1f9af,
-	0x1f9ba, 0x1f9bf,
-	0x1f9c3, 0x1f9cf,
-	0x1fa00, 0x1fa5f,
-	0x1fa6e, 0x1ffff,
+	0x1f9a3, 0x1f9a4,
+	0x1f9ab, 0x1f9ad,
+	0x1f9cb, 0x1f9cc,
+	0x1fa54, 0x1fa5f,
+	0x1fa6e, 0x1fa6f,
+	0x1fa74, 0x1fa77,
+	0x1fa7b, 0x1fa7f,
+	0x1fa83, 0x1fa8f,
+	0x1fa96, 0x1ffff,
 	0x2a6d7, 0x2a6ff,
 	0x2b735, 0x2b73f,
 	0x2b81e, 0x2b81f,
@@ -32551,6 +32849,688 @@ static const OnigCodePoint CR_Age_11_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_11_0 */
 
+/* 'Age_12_0': Derived Age 12.0 */
+static const OnigCodePoint CR_Age_12_0[] = {
+	677,
+	0x0000, 0x0377,
+	0x037a, 0x037f,
+	0x0384, 0x038a,
+	0x038c, 0x038c,
+	0x038e, 0x03a1,
+	0x03a3, 0x052f,
+	0x0531, 0x0556,
+	0x0559, 0x058a,
+	0x058d, 0x058f,
+	0x0591, 0x05c7,
+	0x05d0, 0x05ea,
+	0x05ef, 0x05f4,
+	0x0600, 0x061c,
+	0x061e, 0x070d,
+	0x070f, 0x074a,
+	0x074d, 0x07b1,
+	0x07c0, 0x07fa,
+	0x07fd, 0x082d,
+	0x0830, 0x083e,
+	0x0840, 0x085b,
+	0x085e, 0x085e,
+	0x0860, 0x086a,
+	0x08a0, 0x08b4,
+	0x08b6, 0x08bd,
+	0x08d3, 0x0983,
+	0x0985, 0x098c,
+	0x098f, 0x0990,
+	0x0993, 0x09a8,
+	0x09aa, 0x09b0,
+	0x09b2, 0x09b2,
+	0x09b6, 0x09b9,
+	0x09bc, 0x09c4,
+	0x09c7, 0x09c8,
+	0x09cb, 0x09ce,
+	0x09d7, 0x09d7,
+	0x09dc, 0x09dd,
+	0x09df, 0x09e3,
+	0x09e6, 0x09fe,
+	0x0a01, 0x0a03,
+	0x0a05, 0x0a0a,
+	0x0a0f, 0x0a10,
+	0x0a13, 0x0a28,
+	0x0a2a, 0x0a30,
+	0x0a32, 0x0a33,
+	0x0a35, 0x0a36,
+	0x0a38, 0x0a39,
+	0x0a3c, 0x0a3c,
+	0x0a3e, 0x0a42,
+	0x0a47, 0x0a48,
+	0x0a4b, 0x0a4d,
+	0x0a51, 0x0a51,
+	0x0a59, 0x0a5c,
+	0x0a5e, 0x0a5e,
+	0x0a66, 0x0a76,
+	0x0a81, 0x0a83,
+	0x0a85, 0x0a8d,
+	0x0a8f, 0x0a91,
+	0x0a93, 0x0aa8,
+	0x0aaa, 0x0ab0,
+	0x0ab2, 0x0ab3,
+	0x0ab5, 0x0ab9,
+	0x0abc, 0x0ac5,
+	0x0ac7, 0x0ac9,
+	0x0acb, 0x0acd,
+	0x0ad0, 0x0ad0,
+	0x0ae0, 0x0ae3,
+	0x0ae6, 0x0af1,
+	0x0af9, 0x0aff,
+	0x0b01, 0x0b03,
+	0x0b05, 0x0b0c,
+	0x0b0f, 0x0b10,
+	0x0b13, 0x0b28,
+	0x0b2a, 0x0b30,
+	0x0b32, 0x0b33,
+	0x0b35, 0x0b39,
+	0x0b3c, 0x0b44,
+	0x0b47, 0x0b48,
+	0x0b4b, 0x0b4d,
+	0x0b56, 0x0b57,
+	0x0b5c, 0x0b5d,
+	0x0b5f, 0x0b63,
+	0x0b66, 0x0b77,
+	0x0b82, 0x0b83,
+	0x0b85, 0x0b8a,
+	0x0b8e, 0x0b90,
+	0x0b92, 0x0b95,
+	0x0b99, 0x0b9a,
+	0x0b9c, 0x0b9c,
+	0x0b9e, 0x0b9f,
+	0x0ba3, 0x0ba4,
+	0x0ba8, 0x0baa,
+	0x0bae, 0x0bb9,
+	0x0bbe, 0x0bc2,
+	0x0bc6, 0x0bc8,
+	0x0bca, 0x0bcd,
+	0x0bd0, 0x0bd0,
+	0x0bd7, 0x0bd7,
+	0x0be6, 0x0bfa,
+	0x0c00, 0x0c0c,
+	0x0c0e, 0x0c10,
+	0x0c12, 0x0c28,
+	0x0c2a, 0x0c39,
+	0x0c3d, 0x0c44,
+	0x0c46, 0x0c48,
+	0x0c4a, 0x0c4d,
+	0x0c55, 0x0c56,
+	0x0c58, 0x0c5a,
+	0x0c60, 0x0c63,
+	0x0c66, 0x0c6f,
+	0x0c77, 0x0c8c,
+	0x0c8e, 0x0c90,
+	0x0c92, 0x0ca8,
+	0x0caa, 0x0cb3,
+	0x0cb5, 0x0cb9,
+	0x0cbc, 0x0cc4,
+	0x0cc6, 0x0cc8,
+	0x0cca, 0x0ccd,
+	0x0cd5, 0x0cd6,
+	0x0cde, 0x0cde,
+	0x0ce0, 0x0ce3,
+	0x0ce6, 0x0cef,
+	0x0cf1, 0x0cf2,
+	0x0d00, 0x0d03,
+	0x0d05, 0x0d0c,
+	0x0d0e, 0x0d10,
+	0x0d12, 0x0d44,
+	0x0d46, 0x0d48,
+	0x0d4a, 0x0d4f,
+	0x0d54, 0x0d63,
+	0x0d66, 0x0d7f,
+	0x0d82, 0x0d83,
+	0x0d85, 0x0d96,
+	0x0d9a, 0x0db1,
+	0x0db3, 0x0dbb,
+	0x0dbd, 0x0dbd,
+	0x0dc0, 0x0dc6,
+	0x0dca, 0x0dca,
+	0x0dcf, 0x0dd4,
+	0x0dd6, 0x0dd6,
+	0x0dd8, 0x0ddf,
+	0x0de6, 0x0def,
+	0x0df2, 0x0df4,
+	0x0e01, 0x0e3a,
+	0x0e3f, 0x0e5b,
+	0x0e81, 0x0e82,
+	0x0e84, 0x0e84,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
+	0x0ea5, 0x0ea5,
+	0x0ea7, 0x0ebd,
+	0x0ec0, 0x0ec4,
+	0x0ec6, 0x0ec6,
+	0x0ec8, 0x0ecd,
+	0x0ed0, 0x0ed9,
+	0x0edc, 0x0edf,
+	0x0f00, 0x0f47,
+	0x0f49, 0x0f6c,
+	0x0f71, 0x0f97,
+	0x0f99, 0x0fbc,
+	0x0fbe, 0x0fcc,
+	0x0fce, 0x0fda,
+	0x1000, 0x10c5,
+	0x10c7, 0x10c7,
+	0x10cd, 0x10cd,
+	0x10d0, 0x1248,
+	0x124a, 0x124d,
+	0x1250, 0x1256,
+	0x1258, 0x1258,
+	0x125a, 0x125d,
+	0x1260, 0x1288,
+	0x128a, 0x128d,
+	0x1290, 0x12b0,
+	0x12b2, 0x12b5,
+	0x12b8, 0x12be,
+	0x12c0, 0x12c0,
+	0x12c2, 0x12c5,
+	0x12c8, 0x12d6,
+	0x12d8, 0x1310,
+	0x1312, 0x1315,
+	0x1318, 0x135a,
+	0x135d, 0x137c,
+	0x1380, 0x1399,
+	0x13a0, 0x13f5,
+	0x13f8, 0x13fd,
+	0x1400, 0x169c,
+	0x16a0, 0x16f8,
+	0x1700, 0x170c,
+	0x170e, 0x1714,
+	0x1720, 0x1736,
+	0x1740, 0x1753,
+	0x1760, 0x176c,
+	0x176e, 0x1770,
+	0x1772, 0x1773,
+	0x1780, 0x17dd,
+	0x17e0, 0x17e9,
+	0x17f0, 0x17f9,
+	0x1800, 0x180e,
+	0x1810, 0x1819,
+	0x1820, 0x1878,
+	0x1880, 0x18aa,
+	0x18b0, 0x18f5,
+	0x1900, 0x191e,
+	0x1920, 0x192b,
+	0x1930, 0x193b,
+	0x1940, 0x1940,
+	0x1944, 0x196d,
+	0x1970, 0x1974,
+	0x1980, 0x19ab,
+	0x19b0, 0x19c9,
+	0x19d0, 0x19da,
+	0x19de, 0x1a1b,
+	0x1a1e, 0x1a5e,
+	0x1a60, 0x1a7c,
+	0x1a7f, 0x1a89,
+	0x1a90, 0x1a99,
+	0x1aa0, 0x1aad,
+	0x1ab0, 0x1abe,
+	0x1b00, 0x1b4b,
+	0x1b50, 0x1b7c,
+	0x1b80, 0x1bf3,
+	0x1bfc, 0x1c37,
+	0x1c3b, 0x1c49,
+	0x1c4d, 0x1c88,
+	0x1c90, 0x1cba,
+	0x1cbd, 0x1cc7,
+	0x1cd0, 0x1cfa,
+	0x1d00, 0x1df9,
+	0x1dfb, 0x1f15,
+	0x1f18, 0x1f1d,
+	0x1f20, 0x1f45,
+	0x1f48, 0x1f4d,
+	0x1f50, 0x1f57,
+	0x1f59, 0x1f59,
+	0x1f5b, 0x1f5b,
+	0x1f5d, 0x1f5d,
+	0x1f5f, 0x1f7d,
+	0x1f80, 0x1fb4,
+	0x1fb6, 0x1fc4,
+	0x1fc6, 0x1fd3,
+	0x1fd6, 0x1fdb,
+	0x1fdd, 0x1fef,
+	0x1ff2, 0x1ff4,
+	0x1ff6, 0x1ffe,
+	0x2000, 0x2064,
+	0x2066, 0x2071,
+	0x2074, 0x208e,
+	0x2090, 0x209c,
+	0x20a0, 0x20bf,
+	0x20d0, 0x20f0,
+	0x2100, 0x218b,
+	0x2190, 0x2426,
+	0x2440, 0x244a,
+	0x2460, 0x2b73,
+	0x2b76, 0x2b95,
+	0x2b98, 0x2c2e,
+	0x2c30, 0x2c5e,
+	0x2c60, 0x2cf3,
+	0x2cf9, 0x2d25,
+	0x2d27, 0x2d27,
+	0x2d2d, 0x2d2d,
+	0x2d30, 0x2d67,
+	0x2d6f, 0x2d70,
+	0x2d7f, 0x2d96,
+	0x2da0, 0x2da6,
+	0x2da8, 0x2dae,
+	0x2db0, 0x2db6,
+	0x2db8, 0x2dbe,
+	0x2dc0, 0x2dc6,
+	0x2dc8, 0x2dce,
+	0x2dd0, 0x2dd6,
+	0x2dd8, 0x2dde,
+	0x2de0, 0x2e4f,
+	0x2e80, 0x2e99,
+	0x2e9b, 0x2ef3,
+	0x2f00, 0x2fd5,
+	0x2ff0, 0x2ffb,
+	0x3000, 0x303f,
+	0x3041, 0x3096,
+	0x3099, 0x30ff,
+	0x3105, 0x312f,
+	0x3131, 0x318e,
+	0x3190, 0x31ba,
+	0x31c0, 0x31e3,
+	0x31f0, 0x321e,
+	0x3220, 0x32fe,
+	0x3300, 0x4db5,
+	0x4dc0, 0x9fef,
+	0xa000, 0xa48c,
+	0xa490, 0xa4c6,
+	0xa4d0, 0xa62b,
+	0xa640, 0xa6f7,
+	0xa700, 0xa7bf,
+	0xa7c2, 0xa7c6,
+	0xa7f7, 0xa82b,
+	0xa830, 0xa839,
+	0xa840, 0xa877,
+	0xa880, 0xa8c5,
+	0xa8ce, 0xa8d9,
+	0xa8e0, 0xa953,
+	0xa95f, 0xa97c,
+	0xa980, 0xa9cd,
+	0xa9cf, 0xa9d9,
+	0xa9de, 0xa9fe,
+	0xaa00, 0xaa36,
+	0xaa40, 0xaa4d,
+	0xaa50, 0xaa59,
+	0xaa5c, 0xaac2,
+	0xaadb, 0xaaf6,
+	0xab01, 0xab06,
+	0xab09, 0xab0e,
+	0xab11, 0xab16,
+	0xab20, 0xab26,
+	0xab28, 0xab2e,
+	0xab30, 0xab67,
+	0xab70, 0xabed,
+	0xabf0, 0xabf9,
+	0xac00, 0xd7a3,
+	0xd7b0, 0xd7c6,
+	0xd7cb, 0xd7fb,
+	0xd800, 0xfa6d,
+	0xfa70, 0xfad9,
+	0xfb00, 0xfb06,
+	0xfb13, 0xfb17,
+	0xfb1d, 0xfb36,
+	0xfb38, 0xfb3c,
+	0xfb3e, 0xfb3e,
+	0xfb40, 0xfb41,
+	0xfb43, 0xfb44,
+	0xfb46, 0xfbc1,
+	0xfbd3, 0xfd3f,
+	0xfd50, 0xfd8f,
+	0xfd92, 0xfdc7,
+	0xfdd0, 0xfdfd,
+	0xfe00, 0xfe19,
+	0xfe20, 0xfe52,
+	0xfe54, 0xfe66,
+	0xfe68, 0xfe6b,
+	0xfe70, 0xfe74,
+	0xfe76, 0xfefc,
+	0xfeff, 0xfeff,
+	0xff01, 0xffbe,
+	0xffc2, 0xffc7,
+	0xffca, 0xffcf,
+	0xffd2, 0xffd7,
+	0xffda, 0xffdc,
+	0xffe0, 0xffe6,
+	0xffe8, 0xffee,
+	0xfff9, 0x1000b,
+	0x1000d, 0x10026,
+	0x10028, 0x1003a,
+	0x1003c, 0x1003d,
+	0x1003f, 0x1004d,
+	0x10050, 0x1005d,
+	0x10080, 0x100fa,
+	0x10100, 0x10102,
+	0x10107, 0x10133,
+	0x10137, 0x1018e,
+	0x10190, 0x1019b,
+	0x101a0, 0x101a0,
+	0x101d0, 0x101fd,
+	0x10280, 0x1029c,
+	0x102a0, 0x102d0,
+	0x102e0, 0x102fb,
+	0x10300, 0x10323,
+	0x1032d, 0x1034a,
+	0x10350, 0x1037a,
+	0x10380, 0x1039d,
+	0x1039f, 0x103c3,
+	0x103c8, 0x103d5,
+	0x10400, 0x1049d,
+	0x104a0, 0x104a9,
+	0x104b0, 0x104d3,
+	0x104d8, 0x104fb,
+	0x10500, 0x10527,
+	0x10530, 0x10563,
+	0x1056f, 0x1056f,
+	0x10600, 0x10736,
+	0x10740, 0x10755,
+	0x10760, 0x10767,
+	0x10800, 0x10805,
+	0x10808, 0x10808,
+	0x1080a, 0x10835,
+	0x10837, 0x10838,
+	0x1083c, 0x1083c,
+	0x1083f, 0x10855,
+	0x10857, 0x1089e,
+	0x108a7, 0x108af,
+	0x108e0, 0x108f2,
+	0x108f4, 0x108f5,
+	0x108fb, 0x1091b,
+	0x1091f, 0x10939,
+	0x1093f, 0x1093f,
+	0x10980, 0x109b7,
+	0x109bc, 0x109cf,
+	0x109d2, 0x10a03,
+	0x10a05, 0x10a06,
+	0x10a0c, 0x10a13,
+	0x10a15, 0x10a17,
+	0x10a19, 0x10a35,
+	0x10a38, 0x10a3a,
+	0x10a3f, 0x10a48,
+	0x10a50, 0x10a58,
+	0x10a60, 0x10a9f,
+	0x10ac0, 0x10ae6,
+	0x10aeb, 0x10af6,
+	0x10b00, 0x10b35,
+	0x10b39, 0x10b55,
+	0x10b58, 0x10b72,
+	0x10b78, 0x10b91,
+	0x10b99, 0x10b9c,
+	0x10ba9, 0x10baf,
+	0x10c00, 0x10c48,
+	0x10c80, 0x10cb2,
+	0x10cc0, 0x10cf2,
+	0x10cfa, 0x10d27,
+	0x10d30, 0x10d39,
+	0x10e60, 0x10e7e,
+	0x10f00, 0x10f27,
+	0x10f30, 0x10f59,
+	0x10fe0, 0x10ff6,
+	0x11000, 0x1104d,
+	0x11052, 0x1106f,
+	0x1107f, 0x110c1,
+	0x110cd, 0x110cd,
+	0x110d0, 0x110e8,
+	0x110f0, 0x110f9,
+	0x11100, 0x11134,
+	0x11136, 0x11146,
+	0x11150, 0x11176,
+	0x11180, 0x111cd,
+	0x111d0, 0x111df,
+	0x111e1, 0x111f4,
+	0x11200, 0x11211,
+	0x11213, 0x1123e,
+	0x11280, 0x11286,
+	0x11288, 0x11288,
+	0x1128a, 0x1128d,
+	0x1128f, 0x1129d,
+	0x1129f, 0x112a9,
+	0x112b0, 0x112ea,
+	0x112f0, 0x112f9,
+	0x11300, 0x11303,
+	0x11305, 0x1130c,
+	0x1130f, 0x11310,
+	0x11313, 0x11328,
+	0x1132a, 0x11330,
+	0x11332, 0x11333,
+	0x11335, 0x11339,
+	0x1133b, 0x11344,
+	0x11347, 0x11348,
+	0x1134b, 0x1134d,
+	0x11350, 0x11350,
+	0x11357, 0x11357,
+	0x1135d, 0x11363,
+	0x11366, 0x1136c,
+	0x11370, 0x11374,
+	0x11400, 0x11459,
+	0x1145b, 0x1145b,
+	0x1145d, 0x1145f,
+	0x11480, 0x114c7,
+	0x114d0, 0x114d9,
+	0x11580, 0x115b5,
+	0x115b8, 0x115dd,
+	0x11600, 0x11644,
+	0x11650, 0x11659,
+	0x11660, 0x1166c,
+	0x11680, 0x116b8,
+	0x116c0, 0x116c9,
+	0x11700, 0x1171a,
+	0x1171d, 0x1172b,
+	0x11730, 0x1173f,
+	0x11800, 0x1183b,
+	0x118a0, 0x118f2,
+	0x118ff, 0x118ff,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d7,
+	0x119da, 0x119e4,
+	0x11a00, 0x11a47,
+	0x11a50, 0x11aa2,
+	0x11ac0, 0x11af8,
+	0x11c00, 0x11c08,
+	0x11c0a, 0x11c36,
+	0x11c38, 0x11c45,
+	0x11c50, 0x11c6c,
+	0x11c70, 0x11c8f,
+	0x11c92, 0x11ca7,
+	0x11ca9, 0x11cb6,
+	0x11d00, 0x11d06,
+	0x11d08, 0x11d09,
+	0x11d0b, 0x11d36,
+	0x11d3a, 0x11d3a,
+	0x11d3c, 0x11d3d,
+	0x11d3f, 0x11d47,
+	0x11d50, 0x11d59,
+	0x11d60, 0x11d65,
+	0x11d67, 0x11d68,
+	0x11d6a, 0x11d8e,
+	0x11d90, 0x11d91,
+	0x11d93, 0x11d98,
+	0x11da0, 0x11da9,
+	0x11ee0, 0x11ef8,
+	0x11fc0, 0x11ff1,
+	0x11fff, 0x12399,
+	0x12400, 0x1246e,
+	0x12470, 0x12474,
+	0x12480, 0x12543,
+	0x13000, 0x1342e,
+	0x13430, 0x13438,
+	0x14400, 0x14646,
+	0x16800, 0x16a38,
+	0x16a40, 0x16a5e,
+	0x16a60, 0x16a69,
+	0x16a6e, 0x16a6f,
+	0x16ad0, 0x16aed,
+	0x16af0, 0x16af5,
+	0x16b00, 0x16b45,
+	0x16b50, 0x16b59,
+	0x16b5b, 0x16b61,
+	0x16b63, 0x16b77,
+	0x16b7d, 0x16b8f,
+	0x16e40, 0x16e9a,
+	0x16f00, 0x16f4a,
+	0x16f4f, 0x16f87,
+	0x16f8f, 0x16f9f,
+	0x16fe0, 0x16fe3,
+	0x17000, 0x187f7,
+	0x18800, 0x18af2,
+	0x1b000, 0x1b11e,
+	0x1b150, 0x1b152,
+	0x1b164, 0x1b167,
+	0x1b170, 0x1b2fb,
+	0x1bc00, 0x1bc6a,
+	0x1bc70, 0x1bc7c,
+	0x1bc80, 0x1bc88,
+	0x1bc90, 0x1bc99,
+	0x1bc9c, 0x1bca3,
+	0x1d000, 0x1d0f5,
+	0x1d100, 0x1d126,
+	0x1d129, 0x1d1e8,
+	0x1d200, 0x1d245,
+	0x1d2e0, 0x1d2f3,
+	0x1d300, 0x1d356,
+	0x1d360, 0x1d378,
+	0x1d400, 0x1d454,
+	0x1d456, 0x1d49c,
+	0x1d49e, 0x1d49f,
+	0x1d4a2, 0x1d4a2,
+	0x1d4a5, 0x1d4a6,
+	0x1d4a9, 0x1d4ac,
+	0x1d4ae, 0x1d4b9,
+	0x1d4bb, 0x1d4bb,
+	0x1d4bd, 0x1d4c3,
+	0x1d4c5, 0x1d505,
+	0x1d507, 0x1d50a,
+	0x1d50d, 0x1d514,
+	0x1d516, 0x1d51c,
+	0x1d51e, 0x1d539,
+	0x1d53b, 0x1d53e,
+	0x1d540, 0x1d544,
+	0x1d546, 0x1d546,
+	0x1d54a, 0x1d550,
+	0x1d552, 0x1d6a5,
+	0x1d6a8, 0x1d7cb,
+	0x1d7ce, 0x1da8b,
+	0x1da9b, 0x1da9f,
+	0x1daa1, 0x1daaf,
+	0x1e000, 0x1e006,
+	0x1e008, 0x1e018,
+	0x1e01b, 0x1e021,
+	0x1e023, 0x1e024,
+	0x1e026, 0x1e02a,
+	0x1e100, 0x1e12c,
+	0x1e130, 0x1e13d,
+	0x1e140, 0x1e149,
+	0x1e14e, 0x1e14f,
+	0x1e2c0, 0x1e2f9,
+	0x1e2ff, 0x1e2ff,
+	0x1e800, 0x1e8c4,
+	0x1e8c7, 0x1e8d6,
+	0x1e900, 0x1e94b,
+	0x1e950, 0x1e959,
+	0x1e95e, 0x1e95f,
+	0x1ec71, 0x1ecb4,
+	0x1ed01, 0x1ed3d,
+	0x1ee00, 0x1ee03,
+	0x1ee05, 0x1ee1f,
+	0x1ee21, 0x1ee22,
+	0x1ee24, 0x1ee24,
+	0x1ee27, 0x1ee27,
+	0x1ee29, 0x1ee32,
+	0x1ee34, 0x1ee37,
+	0x1ee39, 0x1ee39,
+	0x1ee3b, 0x1ee3b,
+	0x1ee42, 0x1ee42,
+	0x1ee47, 0x1ee47,
+	0x1ee49, 0x1ee49,
+	0x1ee4b, 0x1ee4b,
+	0x1ee4d, 0x1ee4f,
+	0x1ee51, 0x1ee52,
+	0x1ee54, 0x1ee54,
+	0x1ee57, 0x1ee57,
+	0x1ee59, 0x1ee59,
+	0x1ee5b, 0x1ee5b,
+	0x1ee5d, 0x1ee5d,
+	0x1ee5f, 0x1ee5f,
+	0x1ee61, 0x1ee62,
+	0x1ee64, 0x1ee64,
+	0x1ee67, 0x1ee6a,
+	0x1ee6c, 0x1ee72,
+	0x1ee74, 0x1ee77,
+	0x1ee79, 0x1ee7c,
+	0x1ee7e, 0x1ee7e,
+	0x1ee80, 0x1ee89,
+	0x1ee8b, 0x1ee9b,
+	0x1eea1, 0x1eea3,
+	0x1eea5, 0x1eea9,
+	0x1eeab, 0x1eebb,
+	0x1eef0, 0x1eef1,
+	0x1f000, 0x1f02b,
+	0x1f030, 0x1f093,
+	0x1f0a0, 0x1f0ae,
+	0x1f0b1, 0x1f0bf,
+	0x1f0c1, 0x1f0cf,
+	0x1f0d1, 0x1f0f5,
+	0x1f100, 0x1f10c,
+	0x1f110, 0x1f16c,
+	0x1f170, 0x1f1ac,
+	0x1f1e6, 0x1f202,
+	0x1f210, 0x1f23b,
+	0x1f240, 0x1f248,
+	0x1f250, 0x1f251,
+	0x1f260, 0x1f265,
+	0x1f300, 0x1f6d5,
+	0x1f6e0, 0x1f6ec,
+	0x1f6f0, 0x1f6fa,
+	0x1f700, 0x1f773,
+	0x1f780, 0x1f7d8,
+	0x1f7e0, 0x1f7eb,
+	0x1f800, 0x1f80b,
+	0x1f810, 0x1f847,
+	0x1f850, 0x1f859,
+	0x1f860, 0x1f887,
+	0x1f890, 0x1f8ad,
+	0x1f900, 0x1f90b,
+	0x1f90d, 0x1f971,
+	0x1f973, 0x1f976,
+	0x1f97a, 0x1f9a2,
+	0x1f9a5, 0x1f9aa,
+	0x1f9ae, 0x1f9ca,
+	0x1f9cd, 0x1fa53,
+	0x1fa60, 0x1fa6d,
+	0x1fa70, 0x1fa73,
+	0x1fa78, 0x1fa7a,
+	0x1fa80, 0x1fa82,
+	0x1fa90, 0x1fa95,
+	0x1fffe, 0x2a6d6,
+	0x2a700, 0x2b734,
+	0x2b740, 0x2b81d,
+	0x2b820, 0x2cea1,
+	0x2ceb0, 0x2ebe0,
+	0x2f800, 0x2fa1d,
+	0x2fffe, 0x2ffff,
+	0x3fffe, 0x3ffff,
+	0x4fffe, 0x4ffff,
+	0x5fffe, 0x5ffff,
+	0x6fffe, 0x6ffff,
+	0x7fffe, 0x7ffff,
+	0x8fffe, 0x8ffff,
+	0x9fffe, 0x9ffff,
+	0xafffe, 0xaffff,
+	0xbfffe, 0xbffff,
+	0xcfffe, 0xcffff,
+	0xdfffe, 0xdffff,
+	0xe0001, 0xe0001,
+	0xe0020, 0xe007f,
+	0xe0100, 0xe01ef,
+	0xefffe, 0x10ffff,
+}; /* CR_Age_12_0 */
+
 #endif /* USE_UNICODE_AGE_PROPERTIES */
 /* 'Grapheme_Cluster_Break_Prepend': Grapheme_Cluster_Break=Prepend */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_Prepend[] = {
@@ -32564,7 +33544,7 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_Prepend[] = {
 	0x110cd, 0x110cd,
 	0x111c2, 0x111c3,
 	0x11a3a, 0x11a3a,
-	0x11a86, 0x11a89,
+	0x11a84, 0x11a89,
 	0x11d46, 0x11d46,
 }; /* CR_Grapheme_Cluster_Break_Prepend */
 
@@ -32591,9 +33571,9 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_Control[] = {
 	0x200e, 0x200f,
 	0x2028, 0x202e,
 	0x2060, 0x206f,
-	0xd800, 0xdfff,
 	0xfeff, 0xfeff,
 	0xfff0, 0xfffb,
+	0x13430, 0x13438,
 	0x1bca0, 0x1bca3,
 	0x1d173, 0x1d17a,
 	0xe0000, 0xe001f,
@@ -32603,7 +33583,7 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_Control[] = {
 
 /* 'Grapheme_Cluster_Break_Extend': Grapheme_Cluster_Break=Extend */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_Extend[] = {
-	332,
+	336,
 	0x0300, 0x036f,
 	0x0483, 0x0489,
 	0x0591, 0x05bd,
@@ -32702,8 +33682,7 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_Extend[] = {
 	0x0e34, 0x0e3a,
 	0x0e47, 0x0e4e,
 	0x0eb1, 0x0eb1,
-	0x0eb4, 0x0eb9,
-	0x0ebb, 0x0ebc,
+	0x0eb4, 0x0ebc,
 	0x0ec8, 0x0ecd,
 	0x0f18, 0x0f19,
 	0x0f35, 0x0f35,
@@ -32754,8 +33733,7 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_Extend[] = {
 	0x1a7f, 0x1a7f,
 	0x1ab0, 0x1abe,
 	0x1b00, 0x1b03,
-	0x1b34, 0x1b34,
-	0x1b36, 0x1b3a,
+	0x1b34, 0x1b3a,
 	0x1b3c, 0x1b3c,
 	0x1b42, 0x1b42,
 	0x1b6b, 0x1b73,
@@ -32800,7 +33778,7 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_Extend[] = {
 	0xa980, 0xa982,
 	0xa9b3, 0xa9b3,
 	0xa9b6, 0xa9b9,
-	0xa9bc, 0xa9bc,
+	0xa9bc, 0xa9bd,
 	0xa9e5, 0xa9e5,
 	0xaa29, 0xaa2e,
 	0xaa31, 0xaa32,
@@ -32885,6 +33863,9 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_Extend[] = {
 	0x11727, 0x1172b,
 	0x1182f, 0x11837,
 	0x11839, 0x1183a,
+	0x119d4, 0x119d7,
+	0x119da, 0x119db,
+	0x119e0, 0x119e0,
 	0x11a01, 0x11a0a,
 	0x11a33, 0x11a38,
 	0x11a3b, 0x11a3e,
@@ -32911,6 +33892,7 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_Extend[] = {
 	0x11ef3, 0x11ef4,
 	0x16af0, 0x16af4,
 	0x16b30, 0x16b36,
+	0x16f4f, 0x16f4f,
 	0x16f8f, 0x16f92,
 	0x1bc9d, 0x1bc9e,
 	0x1d165, 0x1d165,
@@ -32931,6 +33913,8 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_Extend[] = {
 	0x1e01b, 0x1e021,
 	0x1e023, 0x1e024,
 	0x1e026, 0x1e02a,
+	0x1e130, 0x1e136,
+	0x1e2ec, 0x1e2ef,
 	0x1e8d0, 0x1e8d6,
 	0x1e944, 0x1e94a,
 	0x1f3fb, 0x1f3ff,
@@ -32943,7 +33927,7 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_Extend[] = {
 
 /* 'Grapheme_Cluster_Break_SpacingMark': Grapheme_Cluster_Break=SpacingMark */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_SpacingMark[] = {
-	151,
+	152,
 	0x0903, 0x0903,
 	0x093b, 0x093b,
 	0x093e, 0x0940,
@@ -33003,7 +33987,6 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_SpacingMark[] = {
 	0x1a57, 0x1a57,
 	0x1a6d, 0x1a72,
 	0x1b04, 0x1b04,
-	0x1b35, 0x1b35,
 	0x1b3b, 0x1b3b,
 	0x1b3d, 0x1b41,
 	0x1b43, 0x1b44,
@@ -33018,7 +34001,6 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_SpacingMark[] = {
 	0x1c24, 0x1c2b,
 	0x1c34, 0x1c35,
 	0x1ce1, 0x1ce1,
-	0x1cf2, 0x1cf3,
 	0x1cf7, 0x1cf7,
 	0xa823, 0xa824,
 	0xa827, 0xa827,
@@ -33028,7 +34010,7 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_SpacingMark[] = {
 	0xa983, 0xa983,
 	0xa9b4, 0xa9b5,
 	0xa9ba, 0xa9bb,
-	0xa9bd, 0xa9c0,
+	0xa9be, 0xa9c0,
 	0xaa2f, 0xaa30,
 	0xaa33, 0xaa34,
 	0xaa4d, 0xaa4d,
@@ -33080,6 +34062,9 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_SpacingMark[] = {
 	0x11726, 0x11726,
 	0x1182c, 0x1182e,
 	0x11838, 0x11838,
+	0x119d1, 0x119d3,
+	0x119dc, 0x119df,
+	0x119e4, 0x119e4,
 	0x11a39, 0x11a39,
 	0x11a57, 0x11a58,
 	0x11a97, 0x11a97,
@@ -33092,7 +34077,7 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_SpacingMark[] = {
 	0x11d93, 0x11d94,
 	0x11d96, 0x11d96,
 	0x11ef5, 0x11ef6,
-	0x16f51, 0x16f7e,
+	0x16f51, 0x16f87,
 	0x1d166, 0x1d166,
 	0x1d16d, 0x1d16d,
 }; /* CR_Grapheme_Cluster_Break_SpacingMark */
@@ -35144,6 +36129,12 @@ static const OnigCodePoint CR_In_Sogdian[] = {
 	0x10f30, 0x10f6f,
 }; /* CR_In_Sogdian */
 
+/* 'In_Elymaic': Block */
+static const OnigCodePoint CR_In_Elymaic[] = {
+	1,
+	0x10fe0, 0x10fff,
+}; /* CR_In_Elymaic */
+
 /* 'In_Brahmi': Block */
 static const OnigCodePoint CR_In_Brahmi[] = {
 	1,
@@ -35264,6 +36255,12 @@ static const OnigCodePoint CR_In_Warang_Citi[] = {
 	0x118a0, 0x118ff,
 }; /* CR_In_Warang_Citi */
 
+/* 'In_Nandinagari': Block */
+static const OnigCodePoint CR_In_Nandinagari[] = {
+	1,
+	0x119a0, 0x119ff,
+}; /* CR_In_Nandinagari */
+
 /* 'In_Zanabazar_Square': Block */
 static const OnigCodePoint CR_In_Zanabazar_Square[] = {
 	1,
@@ -35312,6 +36309,12 @@ static const OnigCodePoint CR_In_Makasar[] = {
 	0x11ee0, 0x11eff,
 }; /* CR_In_Makasar */
 
+/* 'In_Tamil_Supplement': Block */
+static const OnigCodePoint CR_In_Tamil_Supplement[] = {
+	1,
+	0x11fc0, 0x11fff,
+}; /* CR_In_Tamil_Supplement */
+
 /* 'In_Cuneiform': Block */
 static const OnigCodePoint CR_In_Cuneiform[] = {
 	1,
@@ -35335,6 +36338,12 @@ static const OnigCodePoint CR_In_Egyptian_Hieroglyphs[] = {
 	1,
 	0x13000, 0x1342f,
 }; /* CR_In_Egyptian_Hieroglyphs */
+
+/* 'In_Egyptian_Hieroglyph_Format_Controls': Block */
+static const OnigCodePoint CR_In_Egyptian_Hieroglyph_Format_Controls[] = {
+	1,
+	0x13430, 0x1343f,
+}; /* CR_In_Egyptian_Hieroglyph_Format_Controls */
 
 /* 'In_Anatolian_Hieroglyphs': Block */
 static const OnigCodePoint CR_In_Anatolian_Hieroglyphs[] = {
@@ -35408,6 +36417,12 @@ static const OnigCodePoint CR_In_Kana_Extended_A[] = {
 	0x1b100, 0x1b12f,
 }; /* CR_In_Kana_Extended_A */
 
+/* 'In_Small_Kana_Extension': Block */
+static const OnigCodePoint CR_In_Small_Kana_Extension[] = {
+	1,
+	0x1b130, 0x1b16f,
+}; /* CR_In_Small_Kana_Extension */
+
 /* 'In_Nushu': Block */
 static const OnigCodePoint CR_In_Nushu[] = {
 	1,
@@ -35480,6 +36495,18 @@ static const OnigCodePoint CR_In_Glagolitic_Supplement[] = {
 	0x1e000, 0x1e02f,
 }; /* CR_In_Glagolitic_Supplement */
 
+/* 'In_Nyiakeng_Puachue_Hmong': Block */
+static const OnigCodePoint CR_In_Nyiakeng_Puachue_Hmong[] = {
+	1,
+	0x1e100, 0x1e14f,
+}; /* CR_In_Nyiakeng_Puachue_Hmong */
+
+/* 'In_Wancho': Block */
+static const OnigCodePoint CR_In_Wancho[] = {
+	1,
+	0x1e2c0, 0x1e2ff,
+}; /* CR_In_Wancho */
+
 /* 'In_Mende_Kikakui': Block */
 static const OnigCodePoint CR_In_Mende_Kikakui[] = {
 	1,
@@ -35497,6 +36524,12 @@ static const OnigCodePoint CR_In_Indic_Siyaq_Numbers[] = {
 	1,
 	0x1ec70, 0x1ecbf,
 }; /* CR_In_Indic_Siyaq_Numbers */
+
+/* 'In_Ottoman_Siyaq_Numbers': Block */
+static const OnigCodePoint CR_In_Ottoman_Siyaq_Numbers[] = {
+	1,
+	0x1ed00, 0x1ed4f,
+}; /* CR_In_Ottoman_Siyaq_Numbers */
 
 /* 'In_Arabic_Mathematical_Alphabetic_Symbols': Block */
 static const OnigCodePoint CR_In_Arabic_Mathematical_Alphabetic_Symbols[] = {
@@ -35588,6 +36621,12 @@ static const OnigCodePoint CR_In_Chess_Symbols[] = {
 	0x1fa00, 0x1fa6f,
 }; /* CR_In_Chess_Symbols */
 
+/* 'In_Symbols_and_Pictographs_Extended_A': Block */
+static const OnigCodePoint CR_In_Symbols_and_Pictographs_Extended_A[] = {
+	1,
+	0x1fa70, 0x1faff,
+}; /* CR_In_Symbols_and_Pictographs_Extended_A */
+
 /* 'In_CJK_Unified_Ideographs_Extension_B': Block */
 static const OnigCodePoint CR_In_CJK_Unified_Ideographs_Extension_B[] = {
 	1,
@@ -35650,7 +36689,7 @@ static const OnigCodePoint CR_In_Supplementary_Private_Use_Area_B[] = {
 
 /* 'In_No_Block': Block */
 static const OnigCodePoint CR_In_No_Block[] = {
-	51,
+	53,
 	0x0870, 0x089f,
 	0x2fe0, 0x2fef,
 	0x10200, 0x1027f,
@@ -35664,39 +36703,41 @@ static const OnigCodePoint CR_In_No_Block[] = {
 	0x10c50, 0x10c7f,
 	0x10d40, 0x10e5f,
 	0x10e80, 0x10eff,
-	0x10f70, 0x10fff,
+	0x10f70, 0x10fdf,
 	0x11250, 0x1127f,
 	0x11380, 0x113ff,
 	0x114e0, 0x1157f,
 	0x116d0, 0x116ff,
 	0x11740, 0x117ff,
 	0x11850, 0x1189f,
-	0x11900, 0x119ff,
+	0x11900, 0x1199f,
 	0x11ab0, 0x11abf,
 	0x11b00, 0x11bff,
 	0x11cc0, 0x11cff,
 	0x11db0, 0x11edf,
-	0x11f00, 0x11fff,
+	0x11f00, 0x11fbf,
 	0x12550, 0x12fff,
-	0x13430, 0x143ff,
+	0x13440, 0x143ff,
 	0x14680, 0x167ff,
 	0x16a70, 0x16acf,
 	0x16b90, 0x16e3f,
 	0x16ea0, 0x16eff,
 	0x16fa0, 0x16fdf,
 	0x18b00, 0x1afff,
-	0x1b130, 0x1b16f,
 	0x1b300, 0x1bbff,
 	0x1bcb0, 0x1cfff,
 	0x1d250, 0x1d2df,
 	0x1d380, 0x1d3ff,
 	0x1dab0, 0x1dfff,
-	0x1e030, 0x1e7ff,
+	0x1e030, 0x1e0ff,
+	0x1e150, 0x1e2bf,
+	0x1e300, 0x1e7ff,
 	0x1e8e0, 0x1e8ff,
 	0x1e960, 0x1ec6f,
-	0x1ecc0, 0x1edff,
+	0x1ecc0, 0x1ecff,
+	0x1ed50, 0x1edff,
 	0x1ef00, 0x1efff,
-	0x1fa70, 0x1ffff,
+	0x1fb00, 0x1ffff,
 	0x2a6e0, 0x2a6ff,
 	0x2ebf0, 0x2f7ff,
 	0x2fa20, 0xdffff,
@@ -35930,6 +36971,10 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_Hanifi_Rohingya,
   CR_Sogdian,
   CR_Old_Sogdian,
+  CR_Elymaic,
+  CR_Nandinagari,
+  CR_Nyiakeng_Puachue_Hmong,
+  CR_Wancho,
   CR_White_Space,
   CR_Bidi_Control,
   CR_Join_Control,
@@ -35992,6 +37037,7 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_Age_9_0,
   CR_Age_10_0,
   CR_Age_11_0,
+  CR_Age_12_0,
 #endif /* USE_UNICODE_AGE_PROPERTIES */
   CR_Grapheme_Cluster_Break_Prepend,
   CR_Grapheme_Cluster_Break_CR,
@@ -36213,6 +37259,7 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_In_Rumi_Numeral_Symbols,
   CR_In_Old_Sogdian,
   CR_In_Sogdian,
+  CR_In_Elymaic,
   CR_In_Brahmi,
   CR_In_Kaithi,
   CR_In_Sora_Sompeng,
@@ -36233,6 +37280,7 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_In_Ahom,
   CR_In_Dogra,
   CR_In_Warang_Citi,
+  CR_In_Nandinagari,
   CR_In_Zanabazar_Square,
   CR_In_Soyombo,
   CR_In_Pau_Cin_Hau,
@@ -36241,10 +37289,12 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_In_Masaram_Gondi,
   CR_In_Gunjala_Gondi,
   CR_In_Makasar,
+  CR_In_Tamil_Supplement,
   CR_In_Cuneiform,
   CR_In_Cuneiform_Numbers_and_Punctuation,
   CR_In_Early_Dynastic_Cuneiform,
   CR_In_Egyptian_Hieroglyphs,
+  CR_In_Egyptian_Hieroglyph_Format_Controls,
   CR_In_Anatolian_Hieroglyphs,
   CR_In_Bamum_Supplement,
   CR_In_Mro,
@@ -36257,6 +37307,7 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_In_Tangut_Components,
   CR_In_Kana_Supplement,
   CR_In_Kana_Extended_A,
+  CR_In_Small_Kana_Extension,
   CR_In_Nushu,
   CR_In_Duployan,
   CR_In_Shorthand_Format_Controls,
@@ -36269,9 +37320,12 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_In_Mathematical_Alphanumeric_Symbols,
   CR_In_Sutton_SignWriting,
   CR_In_Glagolitic_Supplement,
+  CR_In_Nyiakeng_Puachue_Hmong,
+  CR_In_Wancho,
   CR_In_Mende_Kikakui,
   CR_In_Adlam,
   CR_In_Indic_Siyaq_Numbers,
+  CR_In_Ottoman_Siyaq_Numbers,
   CR_In_Arabic_Mathematical_Alphabetic_Symbols,
   CR_In_Mahjong_Tiles,
   CR_In_Domino_Tiles,
@@ -36287,6 +37341,7 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_In_Supplemental_Arrows_C,
   CR_In_Supplemental_Symbols_and_Pictographs,
   CR_In_Chess_Symbols,
+  CR_In_Symbols_and_Pictographs_Extended_A,
   CR_In_CJK_Unified_Ideographs_Extension_B,
   CR_In_CJK_Unified_Ideographs_Extension_C,
   CR_In_CJK_Unified_Ideographs_Extension_D,
@@ -36321,15 +37376,15 @@ static const struct uniname2ctype_struct *uniname2ctype_p(
 /* maximum key range = 15, duplicates = 0 */
 #else /* USE_UNICODE_PROPERTIES */
 #ifndef USE_UNICODE_AGE_PROPERTIES
-#define TOTAL_KEYWORDS 797
+#define TOTAL_KEYWORDS 814
 #else /* USE_UNICODE_AGE_PROPERTIES */
-#define TOTAL_KEYWORDS 817
+#define TOTAL_KEYWORDS 835
 #endif /* USE_UNICODE_AGE_PROPERTIES */
 #define MIN_WORD_LENGTH 1
 #define MAX_WORD_LENGTH 44
 #define MIN_HASH_VALUE 11
-#define MAX_HASH_VALUE 5676
-/* maximum key range = 5666, duplicates = 0 */
+#define MAX_HASH_VALUE 6098
+/* maximum key range = 6088, duplicates = 0 */
 #endif /* USE_UNICODE_PROPERTIES */
 
 #ifdef __GNUC__
@@ -36363,24 +37418,24 @@ uniname2ctype_hash (register const char *str, register size_t len)
        2,  1,  1, 21,  1,  7,  4,  6, 21,  1,
        4, 21, 21, 21, 21, 21, 21, 21
 #else /* USE_UNICODE_PROPERTIES */
-      5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677,
-      5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677,
-      5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677,
-      5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677,
+      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
+      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
+      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
+      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
 #ifndef USE_UNICODE_AGE_PROPERTIES
-      5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677,
-      5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677,
+      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
+      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
 #else /* USE_UNICODE_AGE_PROPERTIES */
-      5677, 5677, 5677, 5677, 5677, 5677,    1, 5677,    2,    1,
-         5,   17,   26,   15,    9,   19,    7,    1, 5677, 5677,
+      6099, 6099, 6099, 6099, 6099, 6099,    7, 6099,    3,    1,
+         2,   21,    3,   24,   13,   14,    9,    4, 6099, 6099,
 #endif /* USE_UNICODE_AGE_PROPERTIES */
-      5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677,
-      5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677,
-      5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677, 5677,
-      5677, 5677, 5677, 5677, 5677, 5677, 5677,    1, 1422,  116,
-       365,    6, 1026,  929,  819,    4, 1250,   18,  428,   85,
-         8,   17, 1128, 1210,   50,  147,  306,  544, 1096,  631,
-       449, 1646,   10,    1,   15, 5677, 5677, 5677, 5677, 5677
+      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
+      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
+      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
+      6099, 6099, 6099, 6099, 6099, 6099, 6099,    1, 1425,  113,
+       437,   37, 1023, 1071, 1051,    4, 1492,    9,  500,   88,
+         8,   18, 1371,  797,   54,  203,  310,  619, 1608,  603,
+       364, 1438,   20,    1,    3, 6099, 6099, 6099, 6099, 6099
 #endif /* USE_UNICODE_PROPERTIES */
     };
 #ifndef USE_UNICODE_PROPERTIES
@@ -36445,832 +37500,850 @@ struct uniname2ctype_pool_t
     char uniname2ctype_pool_str20[sizeof("blank")];
 #else /* USE_UNICODE_PROPERTIES */
     char uniname2ctype_pool_str11[sizeof("yi")];
-    char uniname2ctype_pool_str16[sizeof("ci")];
     char uniname2ctype_pool_str17[sizeof("yiii")];
     char uniname2ctype_pool_str22[sizeof("lana")];
-    char uniname2ctype_pool_str24[sizeof("cn")];
+    char uniname2ctype_pool_str24[sizeof("z")];
     char uniname2ctype_pool_str25[sizeof("lina")];
-    char uniname2ctype_pool_str26[sizeof("z")];
-    char uniname2ctype_pool_str31[sizeof("me")];
-    char uniname2ctype_pool_str34[sizeof("mani")];
-    char uniname2ctype_pool_str35[sizeof("mn")];
-    char uniname2ctype_pool_str40[sizeof("loe")];
-    char uniname2ctype_pool_str41[sizeof("maka")];
-    char uniname2ctype_pool_str42[sizeof("co")];
-    char uniname2ctype_pool_str43[sizeof("miao")];
-    char uniname2ctype_pool_str44[sizeof("lo")];
-    char uniname2ctype_pool_str46[sizeof("lao")];
-    char uniname2ctype_pool_str47[sizeof("laoo")];
-    char uniname2ctype_pool_str49[sizeof("zzzz")];
-    char uniname2ctype_pool_str60[sizeof("pi")];
-    char uniname2ctype_pool_str64[sizeof("pe")];
-    char uniname2ctype_pool_str65[sizeof("cari")];
-    char uniname2ctype_pool_str67[sizeof("gran")];
-    char uniname2ctype_pool_str68[sizeof("meeteimayek")];
-    char uniname2ctype_pool_str70[sizeof("inkannada")];
-    char uniname2ctype_pool_str73[sizeof("innko")];
-    char uniname2ctype_pool_str75[sizeof("mendekikakui")];
-    char uniname2ctype_pool_str79[sizeof("lineara")];
-    char uniname2ctype_pool_str80[sizeof("carian")];
-    char uniname2ctype_pool_str81[sizeof("geor")];
-    char uniname2ctype_pool_str82[sizeof("grek")];
-    char uniname2ctype_pool_str86[sizeof("po")];
-    char uniname2ctype_pool_str90[sizeof("mark")];
-    char uniname2ctype_pool_str94[sizeof("mero")];
-    char uniname2ctype_pool_str99[sizeof("kana")];
-    char uniname2ctype_pool_str101[sizeof("greek")];
-    char uniname2ctype_pool_str103[sizeof("m")];
-    char uniname2ctype_pool_str104[sizeof("mro")];
-    char uniname2ctype_pool_str105[sizeof("mroo")];
-    char uniname2ctype_pool_str114[sizeof("cakm")];
-    char uniname2ctype_pool_str115[sizeof("inkharoshthi")];
-    char uniname2ctype_pool_str118[sizeof("gonm")];
-    char uniname2ctype_pool_str123[sizeof("c")];
-    char uniname2ctype_pool_str136[sizeof("inarmenian")];
-    char uniname2ctype_pool_str139[sizeof("inosmanya")];
-    char uniname2ctype_pool_str147[sizeof("common")];
-    char uniname2ctype_pool_str150[sizeof("inmro")];
-    char uniname2ctype_pool_str151[sizeof("inmanichaean")];
-    char uniname2ctype_pool_str152[sizeof("inmiao")];
-    char uniname2ctype_pool_str154[sizeof("mandaic")];
-    char uniname2ctype_pool_str157[sizeof("qaai")];
-    char uniname2ctype_pool_str166[sizeof("cans")];
-    char uniname2ctype_pool_str170[sizeof("inchakma")];
-    char uniname2ctype_pool_str178[sizeof("prependedconcatenationmark")];
-    char uniname2ctype_pool_str179[sizeof("inmyanmar")];
-    char uniname2ctype_pool_str180[sizeof("lm")];
-    char uniname2ctype_pool_str184[sizeof("inideographicsymbolsandpunctuation")];
-    char uniname2ctype_pool_str188[sizeof("marc")];
-    char uniname2ctype_pool_str189[sizeof("inmakasar")];
-    char uniname2ctype_pool_str190[sizeof("connectorpunctuation")];
-    char uniname2ctype_pool_str192[sizeof("inkhmer")];
-    char uniname2ctype_pool_str193[sizeof("merc")];
-    char uniname2ctype_pool_str195[sizeof("perm")];
-    char uniname2ctype_pool_str197[sizeof("inavestan")];
-    char uniname2ctype_pool_str201[sizeof("combiningmark")];
-    char uniname2ctype_pool_str203[sizeof("inipaextensions")];
-    char uniname2ctype_pool_str210[sizeof("incuneiformnumbersandpunctuation")];
-    char uniname2ctype_pool_str211[sizeof("inrunic")];
-    char uniname2ctype_pool_str212[sizeof("incarian")];
-    char uniname2ctype_pool_str214[sizeof("incherokee")];
-    char uniname2ctype_pool_str220[sizeof("inahom")];
-    char uniname2ctype_pool_str234[sizeof("insharada")];
-    char uniname2ctype_pool_str236[sizeof("masaramgondi")];
-    char uniname2ctype_pool_str240[sizeof("cc")];
-    char uniname2ctype_pool_str241[sizeof("makasar")];
-    char uniname2ctype_pool_str242[sizeof("lc")];
-    char uniname2ctype_pool_str249[sizeof("inarrows")];
-    char uniname2ctype_pool_str251[sizeof("mc")];
-    char uniname2ctype_pool_str252[sizeof("incuneiform")];
-    char uniname2ctype_pool_str253[sizeof("lineseparator")];
-    char uniname2ctype_pool_str259[sizeof("armi")];
-    char uniname2ctype_pool_str263[sizeof("armn")];
-    char uniname2ctype_pool_str265[sizeof("inzanabazarsquare")];
-    char uniname2ctype_pool_str269[sizeof("qaac")];
-    char uniname2ctype_pool_str274[sizeof("qmark")];
-    char uniname2ctype_pool_str278[sizeof("insamaritan")];
-    char uniname2ctype_pool_str279[sizeof("armenian")];
-    char uniname2ctype_pool_str284[sizeof("pc")];
-    char uniname2ctype_pool_str285[sizeof("inmasaramgondi")];
-    char uniname2ctype_pool_str294[sizeof("inmarchen")];
-    char uniname2ctype_pool_str302[sizeof("cs")];
-    char uniname2ctype_pool_str307[sizeof("inscriptionalparthian")];
-    char uniname2ctype_pool_str311[sizeof("zs")];
-    char uniname2ctype_pool_str313[sizeof("inkhmersymbols")];
-    char uniname2ctype_pool_str316[sizeof("ri")];
-    char uniname2ctype_pool_str319[sizeof("incham")];
-    char uniname2ctype_pool_str322[sizeof("incyrillic")];
-    char uniname2ctype_pool_str327[sizeof("latn")];
-    char uniname2ctype_pool_str336[sizeof("latin")];
-    char uniname2ctype_pool_str337[sizeof("mtei")];
-    char uniname2ctype_pool_str339[sizeof("pcm")];
-    char uniname2ctype_pool_str343[sizeof("inthaana")];
-    char uniname2ctype_pool_str346[sizeof("ps")];
-    char uniname2ctype_pool_str347[sizeof("inthai")];
-    char uniname2ctype_pool_str351[sizeof("insyriac")];
-    char uniname2ctype_pool_str362[sizeof("inkatakana")];
-    char uniname2ctype_pool_str366[sizeof("inkaithi")];
-    char uniname2ctype_pool_str371[sizeof("initialpunctuation")];
-    char uniname2ctype_pool_str385[sizeof("inideographicdescriptioncharacters")];
-    char uniname2ctype_pool_str392[sizeof("ascii")];
-    char uniname2ctype_pool_str395[sizeof("mand")];
-    char uniname2ctype_pool_str400[sizeof("mend")];
-    char uniname2ctype_pool_str407[sizeof("modi")];
-    char uniname2ctype_pool_str409[sizeof("arabic")];
-    char uniname2ctype_pool_str410[sizeof("ideo")];
-    char uniname2ctype_pool_str411[sizeof("intakri")];
-    char uniname2ctype_pool_str414[sizeof("prti")];
-    char uniname2ctype_pool_str418[sizeof("inruminumeralsymbols")];
-    char uniname2ctype_pool_str420[sizeof("katakana")];
-    char uniname2ctype_pool_str421[sizeof("xidcontinue")];
-    char uniname2ctype_pool_str424[sizeof("brai")];
-    char uniname2ctype_pool_str427[sizeof("privateuse")];
-    char uniname2ctype_pool_str432[sizeof("letter")];
-    char uniname2ctype_pool_str434[sizeof("inkanaextendeda")];
-    char uniname2ctype_pool_str437[sizeof("l")];
-    char uniname2ctype_pool_str451[sizeof("inmyanmarextendeda")];
-    char uniname2ctype_pool_str452[sizeof("inspecials")];
-    char uniname2ctype_pool_str454[sizeof("incjkcompatibilityforms")];
-    char uniname2ctype_pool_str459[sizeof("incjkcompatibilityideographs")];
-    char uniname2ctype_pool_str460[sizeof("inmeeteimayek")];
-    char uniname2ctype_pool_str461[sizeof("vai")];
-    char uniname2ctype_pool_str462[sizeof("vaii")];
-    char uniname2ctype_pool_str463[sizeof("knda")];
-    char uniname2ctype_pool_str468[sizeof("kannada")];
-    char uniname2ctype_pool_str473[sizeof("inchesssymbols")];
-    char uniname2ctype_pool_str478[sizeof("inlineara")];
-    char uniname2ctype_pool_str488[sizeof("letternumber")];
-    char uniname2ctype_pool_str490[sizeof("inmodi")];
-    char uniname2ctype_pool_str492[sizeof("inoldnortharabian")];
-    char uniname2ctype_pool_str493[sizeof("inlao")];
-    char uniname2ctype_pool_str499[sizeof("xidc")];
-    char uniname2ctype_pool_str501[sizeof("inmiscellaneousmathematicalsymbolsa")];
-    char uniname2ctype_pool_str504[sizeof("mongolian")];
-    char uniname2ctype_pool_str507[sizeof("inmedefaidrin")];
-    char uniname2ctype_pool_str513[sizeof("inemoticons")];
-    char uniname2ctype_pool_str514[sizeof("intransportandmapsymbols")];
-    char uniname2ctype_pool_str515[sizeof("brahmi")];
-    char uniname2ctype_pool_str520[sizeof("inmendekikakui")];
-    char uniname2ctype_pool_str522[sizeof("kali")];
-    char uniname2ctype_pool_str529[sizeof("psalterpahlavi")];
-    char uniname2ctype_pool_str530[sizeof("xids")];
-    char uniname2ctype_pool_str532[sizeof("grlink")];
-    char uniname2ctype_pool_str533[sizeof("control")];
-    char uniname2ctype_pool_str539[sizeof("inolditalic")];
-    char uniname2ctype_pool_str542[sizeof("inancientsymbols")];
-    char uniname2ctype_pool_str548[sizeof("inadlam")];
-    char uniname2ctype_pool_str551[sizeof("meroiticcursive")];
-    char uniname2ctype_pool_str558[sizeof("patternwhitespace")];
-    char uniname2ctype_pool_str563[sizeof("insundanese")];
-    char uniname2ctype_pool_str568[sizeof("palm")];
-    char uniname2ctype_pool_str569[sizeof("gothic")];
-    char uniname2ctype_pool_str572[sizeof("incommonindicnumberforms")];
-    char uniname2ctype_pool_str580[sizeof("so")];
-    char uniname2ctype_pool_str582[sizeof("sk")];
-    char uniname2ctype_pool_str583[sizeof("inoldsogdian")];
-    char uniname2ctype_pool_str590[sizeof("inlycian")];
-    char uniname2ctype_pool_str609[sizeof("inmandaic")];
-    char uniname2ctype_pool_str613[sizeof("incjkstrokes")];
-    char uniname2ctype_pool_str616[sizeof("sora")];
-    char uniname2ctype_pool_str618[sizeof("idc")];
-    char uniname2ctype_pool_str622[sizeof("lt")];
-    char uniname2ctype_pool_str626[sizeof("bamum")];
-    char uniname2ctype_pool_str628[sizeof("incjkcompatibilityideographssupplement")];
-    char uniname2ctype_pool_str631[sizeof("inoldsoutharabian")];
-    char uniname2ctype_pool_str632[sizeof("idsbinaryoperator")];
-    char uniname2ctype_pool_str636[sizeof("inmalayalam")];
-    char uniname2ctype_pool_str640[sizeof("inlinearbideograms")];
-    char uniname2ctype_pool_str646[sizeof("indominotiles")];
-    char uniname2ctype_pool_str656[sizeof("patws")];
-    char uniname2ctype_pool_str657[sizeof("inmusicalsymbols")];
-    char uniname2ctype_pool_str664[sizeof("bass")];
-    char uniname2ctype_pool_str671[sizeof("inmodifiertoneletters")];
-    char uniname2ctype_pool_str673[sizeof("innewa")];
-    char uniname2ctype_pool_str677[sizeof("grext")];
-    char uniname2ctype_pool_str680[sizeof("ids")];
-    char uniname2ctype_pool_str684[sizeof("samr")];
-    char uniname2ctype_pool_str685[sizeof("insylotinagri")];
-    char uniname2ctype_pool_str686[sizeof("joinc")];
-    char uniname2ctype_pool_str687[sizeof("inkanasupplement")];
-    char uniname2ctype_pool_str692[sizeof("s")];
-    char uniname2ctype_pool_str694[sizeof("batk")];
-    char uniname2ctype_pool_str696[sizeof("inmiscellaneoussymbols")];
+    char uniname2ctype_pool_str33[sizeof("maka")];
+    char uniname2ctype_pool_str35[sizeof("mani")];
+    char uniname2ctype_pool_str36[sizeof("mn")];
+    char uniname2ctype_pool_str45[sizeof("miao")];
+    char uniname2ctype_pool_str46[sizeof("lo")];
+    char uniname2ctype_pool_str47[sizeof("ci")];
+    char uniname2ctype_pool_str48[sizeof("lao")];
+    char uniname2ctype_pool_str49[sizeof("laoo")];
+    char uniname2ctype_pool_str52[sizeof("inkannada")];
+    char uniname2ctype_pool_str55[sizeof("cn")];
+    char uniname2ctype_pool_str64[sizeof("pi")];
+    char uniname2ctype_pool_str66[sizeof("innko")];
+    char uniname2ctype_pool_str67[sizeof("zzzz")];
+    char uniname2ctype_pool_str71[sizeof("gran")];
+    char uniname2ctype_pool_str75[sizeof("co")];
+    char uniname2ctype_pool_str83[sizeof("lineara")];
+    char uniname2ctype_pool_str86[sizeof("mark")];
+    char uniname2ctype_pool_str92[sizeof("po")];
+    char uniname2ctype_pool_str94[sizeof("me")];
+    char uniname2ctype_pool_str100[sizeof("cari")];
+    char uniname2ctype_pool_str101[sizeof("inkharoshthi")];
+    char uniname2ctype_pool_str102[sizeof("kana")];
+    char uniname2ctype_pool_str103[sizeof("loe")];
+    char uniname2ctype_pool_str107[sizeof("m")];
+    char uniname2ctype_pool_str108[sizeof("grek")];
+    char uniname2ctype_pool_str111[sizeof("mro")];
+    char uniname2ctype_pool_str112[sizeof("mroo")];
+    char uniname2ctype_pool_str115[sizeof("carian")];
+    char uniname2ctype_pool_str117[sizeof("geor")];
+    char uniname2ctype_pool_str118[sizeof("greek")];
+    char uniname2ctype_pool_str122[sizeof("gonm")];
+    char uniname2ctype_pool_str129[sizeof("mendekikakui")];
+    char uniname2ctype_pool_str130[sizeof("pe")];
+    char uniname2ctype_pool_str131[sizeof("mero")];
+    char uniname2ctype_pool_str134[sizeof("inosmanya")];
+    char uniname2ctype_pool_str139[sizeof("cakm")];
+    char uniname2ctype_pool_str145[sizeof("inmanichaean")];
+    char uniname2ctype_pool_str146[sizeof("inmro")];
+    char uniname2ctype_pool_str148[sizeof("inmiao")];
+    char uniname2ctype_pool_str149[sizeof("inchakma")];
+    char uniname2ctype_pool_str151[sizeof("c")];
+    char uniname2ctype_pool_str152[sizeof("mandaic")];
+    char uniname2ctype_pool_str153[sizeof("meeteimayek")];
+    char uniname2ctype_pool_str161[sizeof("inarmenian")];
+    char uniname2ctype_pool_str177[sizeof("inmyanmar")];
+    char uniname2ctype_pool_str178[sizeof("inmakasar")];
+    char uniname2ctype_pool_str183[sizeof("common")];
+    char uniname2ctype_pool_str186[sizeof("lm")];
+    char uniname2ctype_pool_str190[sizeof("marc")];
+    char uniname2ctype_pool_str203[sizeof("inrunic")];
+    char uniname2ctype_pool_str204[sizeof("incarian")];
+    char uniname2ctype_pool_str210[sizeof("inideographicsymbolsandpunctuation")];
+    char uniname2ctype_pool_str212[sizeof("inkhmer")];
+    char uniname2ctype_pool_str213[sizeof("qaai")];
+    char uniname2ctype_pool_str218[sizeof("inahom")];
+    char uniname2ctype_pool_str226[sizeof("merc")];
+    char uniname2ctype_pool_str231[sizeof("combiningmark")];
+    char uniname2ctype_pool_str236[sizeof("lc")];
+    char uniname2ctype_pool_str237[sizeof("perm")];
+    char uniname2ctype_pool_str246[sizeof("mc")];
+    char uniname2ctype_pool_str250[sizeof("connectorpunctuation")];
+    char uniname2ctype_pool_str253[sizeof("cans")];
+    char uniname2ctype_pool_str260[sizeof("incuneiformnumbersandpunctuation")];
+    char uniname2ctype_pool_str263[sizeof("armi")];
+    char uniname2ctype_pool_str265[sizeof("cc")];
+    char uniname2ctype_pool_str267[sizeof("armn")];
+    char uniname2ctype_pool_str268[sizeof("incherokee")];
+    char uniname2ctype_pool_str270[sizeof("prependedconcatenationmark")];
+    char uniname2ctype_pool_str274[sizeof("incuneiform")];
+    char uniname2ctype_pool_str275[sizeof("inavestan")];
+    char uniname2ctype_pool_str281[sizeof("inipaextensions")];
+    char uniname2ctype_pool_str282[sizeof("pc")];
+    char uniname2ctype_pool_str283[sizeof("armenian")];
+    char uniname2ctype_pool_str285[sizeof("insharada")];
+    char uniname2ctype_pool_str289[sizeof("inmarchen")];
+    char uniname2ctype_pool_str293[sizeof("makasar")];
+    char uniname2ctype_pool_str297[sizeof("masaramgondi")];
+    char uniname2ctype_pool_str301[sizeof("inarrows")];
+    char uniname2ctype_pool_str311[sizeof("incyrillic")];
+    char uniname2ctype_pool_str313[sizeof("incham")];
+    char uniname2ctype_pool_str315[sizeof("qmark")];
+    char uniname2ctype_pool_str320[sizeof("ri")];
+    char uniname2ctype_pool_str322[sizeof("qaac")];
+    char uniname2ctype_pool_str328[sizeof("insamaritan")];
+    char uniname2ctype_pool_str331[sizeof("latn")];
+    char uniname2ctype_pool_str335[sizeof("inmasaramgondi")];
+    char uniname2ctype_pool_str338[sizeof("inthaana")];
+    char uniname2ctype_pool_str340[sizeof("latin")];
+    char uniname2ctype_pool_str342[sizeof("inthai")];
+    char uniname2ctype_pool_str345[sizeof("lineseparator")];
+    char uniname2ctype_pool_str346[sizeof("pcm")];
+    char uniname2ctype_pool_str348[sizeof("inkatakana")];
+    char uniname2ctype_pool_str352[sizeof("inkaithi")];
+    char uniname2ctype_pool_str357[sizeof("inzanabazarsquare")];
+    char uniname2ctype_pool_str362[sizeof("inscriptionalparthian")];
+    char uniname2ctype_pool_str366[sizeof("initialpunctuation")];
+    char uniname2ctype_pool_str373[sizeof("mtei")];
+    char uniname2ctype_pool_str376[sizeof("vai")];
+    char uniname2ctype_pool_str377[sizeof("vaii")];
+    char uniname2ctype_pool_str386[sizeof("inkhmersymbols")];
+    char uniname2ctype_pool_str399[sizeof("insyriac")];
+    char uniname2ctype_pool_str401[sizeof("intakri")];
+    char uniname2ctype_pool_str404[sizeof("arabic")];
+    char uniname2ctype_pool_str411[sizeof("zs")];
+    char uniname2ctype_pool_str418[sizeof("katakana")];
+    char uniname2ctype_pool_str426[sizeof("prti")];
+    char uniname2ctype_pool_str442[sizeof("ascii")];
+    char uniname2ctype_pool_str445[sizeof("cs")];
+    char uniname2ctype_pool_str462[sizeof("ps")];
+    char uniname2ctype_pool_str468[sizeof("mand")];
+    char uniname2ctype_pool_str470[sizeof("privateuse")];
+    char uniname2ctype_pool_str475[sizeof("inruminumeralsymbols")];
+    char uniname2ctype_pool_str480[sizeof("inmyanmarextendeda")];
+    char uniname2ctype_pool_str481[sizeof("modi")];
+    char uniname2ctype_pool_str486[sizeof("incjkcompatibilityforms")];
+    char uniname2ctype_pool_str488[sizeof("inkanaextendeda")];
+    char uniname2ctype_pool_str491[sizeof("incjkcompatibilityideographs")];
+    char uniname2ctype_pool_str500[sizeof("brai")];
+    char uniname2ctype_pool_str504[sizeof("mend")];
+    char uniname2ctype_pool_str505[sizeof("ideo")];
+    char uniname2ctype_pool_str506[sizeof("letter")];
+    char uniname2ctype_pool_str509[sizeof("l")];
+    char uniname2ctype_pool_str511[sizeof("inmeeteimayek")];
+    char uniname2ctype_pool_str520[sizeof("inideographicdescriptioncharacters")];
+    char uniname2ctype_pool_str535[sizeof("xidcontinue")];
+    char uniname2ctype_pool_str538[sizeof("knda")];
+    char uniname2ctype_pool_str541[sizeof("innandinagari")];
+    char uniname2ctype_pool_str543[sizeof("kannada")];
+    char uniname2ctype_pool_str556[sizeof("inmodi")];
+    char uniname2ctype_pool_str558[sizeof("inlao")];
+    char uniname2ctype_pool_str560[sizeof("inoldnortharabian")];
+    char uniname2ctype_pool_str565[sizeof("intransportandmapsymbols")];
+    char uniname2ctype_pool_str566[sizeof("letternumber")];
+    char uniname2ctype_pool_str568[sizeof("gothic")];
+    char uniname2ctype_pool_str572[sizeof("inlineara")];
+    char uniname2ctype_pool_str577[sizeof("inmendekikakui")];
+    char uniname2ctype_pool_str578[sizeof("xidc")];
+    char uniname2ctype_pool_str579[sizeof("mongolian")];
+    char uniname2ctype_pool_str582[sizeof("inmiscellaneousmathematicalsymbolsa")];
+    char uniname2ctype_pool_str583[sizeof("inspecials")];
+    char uniname2ctype_pool_str590[sizeof("grlink")];
+    char uniname2ctype_pool_str594[sizeof("brahmi")];
+    char uniname2ctype_pool_str596[sizeof("inemoticons")];
+    char uniname2ctype_pool_str597[sizeof("kali")];
+    char uniname2ctype_pool_str600[sizeof("inolditalic")];
+    char uniname2ctype_pool_str604[sizeof("inmedefaidrin")];
+    char uniname2ctype_pool_str605[sizeof("inchesssymbols")];
+    char uniname2ctype_pool_str608[sizeof("incjkcompatibilityideographssupplement")];
+    char uniname2ctype_pool_str614[sizeof("inadlam")];
+    char uniname2ctype_pool_str624[sizeof("psalterpahlavi")];
+    char uniname2ctype_pool_str625[sizeof("incommonindicnumberforms")];
+    char uniname2ctype_pool_str630[sizeof("lt")];
+    char uniname2ctype_pool_str636[sizeof("innewa")];
+    char uniname2ctype_pool_str639[sizeof("sk")];
+    char uniname2ctype_pool_str642[sizeof("control")];
+    char uniname2ctype_pool_str645[sizeof("inancientsymbols")];
+    char uniname2ctype_pool_str647[sizeof("palm")];
+    char uniname2ctype_pool_str650[sizeof("inlycian")];
+    char uniname2ctype_pool_str657[sizeof("so")];
+    char uniname2ctype_pool_str660[sizeof("patternwhitespace")];
+    char uniname2ctype_pool_str668[sizeof("xids")];
+    char uniname2ctype_pool_str672[sizeof("inmandaic")];
+    char uniname2ctype_pool_str675[sizeof("idc")];
+    char uniname2ctype_pool_str678[sizeof("meroiticcursive")];
+    char uniname2ctype_pool_str695[sizeof("inwarangciti")];
+    char uniname2ctype_pool_str696[sizeof("sora")];
     char uniname2ctype_pool_str697[sizeof("inopticalcharacterrecognition")];
-    char uniname2ctype_pool_str701[sizeof("samaritan")];
-    char uniname2ctype_pool_str705[sizeof("inmiscellaneoussymbolsandarrows")];
-    char uniname2ctype_pool_str707[sizeof("lisu")];
-    char uniname2ctype_pool_str710[sizeof("inmiscellaneoussymbolsandpictographs")];
-    char uniname2ctype_pool_str713[sizeof("batak")];
-    char uniname2ctype_pool_str715[sizeof("pauc")];
-    char uniname2ctype_pool_str716[sizeof("sm")];
-    char uniname2ctype_pool_str721[sizeof("print")];
-    char uniname2ctype_pool_str727[sizeof("alnum")];
-    char uniname2ctype_pool_str728[sizeof("inwarangciti")];
-    char uniname2ctype_pool_str734[sizeof("inancientgreekmusicalnotation")];
-    char uniname2ctype_pool_str736[sizeof("intaitham")];
-    char uniname2ctype_pool_str742[sizeof("incontrolpictures")];
-    char uniname2ctype_pool_str745[sizeof("vs")];
-    char uniname2ctype_pool_str747[sizeof("inugaritic")];
-    char uniname2ctype_pool_str757[sizeof("ital")];
-    char uniname2ctype_pool_str761[sizeof("lower")];
-    char uniname2ctype_pool_str777[sizeof("intaile")];
-    char uniname2ctype_pool_str778[sizeof("sc")];
-    char uniname2ctype_pool_str781[sizeof("insaurashtra")];
-    char uniname2ctype_pool_str782[sizeof("pd")];
-    char uniname2ctype_pool_str790[sizeof("inlatinextendeda")];
-    char uniname2ctype_pool_str800[sizeof("inlatinextendede")];
-    char uniname2ctype_pool_str802[sizeof("bali")];
-    char uniname2ctype_pool_str819[sizeof("bengali")];
-    char uniname2ctype_pool_str822[sizeof("balinese")];
-    char uniname2ctype_pool_str829[sizeof("idcontinue")];
-    char uniname2ctype_pool_str832[sizeof("inspacingmodifierletters")];
-    char uniname2ctype_pool_str835[sizeof("blank")];
-    char uniname2ctype_pool_str837[sizeof("lowercase")];
-    char uniname2ctype_pool_str838[sizeof("incaucasianalbanian")];
-    char uniname2ctype_pool_str839[sizeof("inlydian")];
-    char uniname2ctype_pool_str840[sizeof("idst")];
-    char uniname2ctype_pool_str841[sizeof("inoldturkic")];
-    char uniname2ctype_pool_str842[sizeof("cwcm")];
-    char uniname2ctype_pool_str850[sizeof("zinh")];
-    char uniname2ctype_pool_str856[sizeof("intamil")];
-    char uniname2ctype_pool_str858[sizeof("inmultani")];
-    char uniname2ctype_pool_str859[sizeof("indeseret")];
-    char uniname2ctype_pool_str865[sizeof("inancientgreeknumbers")];
-    char uniname2ctype_pool_str866[sizeof("ll")];
-    char uniname2ctype_pool_str873[sizeof("zl")];
-    char uniname2ctype_pool_str876[sizeof("patternsyntax")];
-    char uniname2ctype_pool_str879[sizeof("inhanifirohingya")];
-    char uniname2ctype_pool_str880[sizeof("cherokee")];
-    char uniname2ctype_pool_str882[sizeof("inearlydynasticcuneiform")];
-    char uniname2ctype_pool_str885[sizeof("cher")];
-    char uniname2ctype_pool_str888[sizeof("canadianaboriginal")];
-    char uniname2ctype_pool_str889[sizeof("cased")];
-    char uniname2ctype_pool_str894[sizeof("idstart")];
-    char uniname2ctype_pool_str897[sizeof("plrd")];
-    char uniname2ctype_pool_str904[sizeof("graphemebase")];
-    char uniname2ctype_pool_str905[sizeof("inmeeteimayekextensions")];
-    char uniname2ctype_pool_str907[sizeof("inhiragana")];
-    char uniname2ctype_pool_str908[sizeof("marchen")];
-    char uniname2ctype_pool_str912[sizeof("runr")];
-    char uniname2ctype_pool_str915[sizeof("cham")];
-    char uniname2ctype_pool_str916[sizeof("phoenician")];
-    char uniname2ctype_pool_str919[sizeof("chakma")];
-    char uniname2ctype_pool_str923[sizeof("kaithi")];
-    char uniname2ctype_pool_str925[sizeof("sind")];
-    char uniname2ctype_pool_str928[sizeof("graphemelink")];
-    char uniname2ctype_pool_str945[sizeof("inmahajani")];
-    char uniname2ctype_pool_str953[sizeof("khojki")];
-    char uniname2ctype_pool_str955[sizeof("inogham")];
-    char uniname2ctype_pool_str959[sizeof("khar")];
-    char uniname2ctype_pool_str962[sizeof("gong")];
-    char uniname2ctype_pool_str964[sizeof("incountingrodnumerals")];
-    char uniname2ctype_pool_str968[sizeof("inkhudawadi")];
-    char uniname2ctype_pool_str971[sizeof("bidic")];
-    char uniname2ctype_pool_str974[sizeof("ingrantha")];
-    char uniname2ctype_pool_str975[sizeof("mong")];
-    char uniname2ctype_pool_str976[sizeof("georgian")];
-    char uniname2ctype_pool_str979[sizeof("manichaean")];
-    char uniname2ctype_pool_str981[sizeof("inethiopic")];
-    char uniname2ctype_pool_str986[sizeof("inosage")];
-    char uniname2ctype_pool_str988[sizeof("innewtailue")];
-    char uniname2ctype_pool_str991[sizeof("inolchiki")];
-    char uniname2ctype_pool_str993[sizeof("sinhala")];
-    char uniname2ctype_pool_str997[sizeof("insiddham")];
-    char uniname2ctype_pool_str998[sizeof("adlm")];
-    char uniname2ctype_pool_str999[sizeof("bamu")];
-    char uniname2ctype_pool_str1000[sizeof("xidstart")];
-    char uniname2ctype_pool_str1001[sizeof("xdigit")];
-    char uniname2ctype_pool_str1004[sizeof("glagolitic")];
-    char uniname2ctype_pool_str1005[sizeof("gunjalagondi")];
-    char uniname2ctype_pool_str1006[sizeof("ingeneralpunctuation")];
-    char uniname2ctype_pool_str1008[sizeof("casedletter")];
-    char uniname2ctype_pool_str1009[sizeof("multani")];
-    char uniname2ctype_pool_str1010[sizeof("insinhala")];
-    char uniname2ctype_pool_str1020[sizeof("inlatinextendedc")];
-    char uniname2ctype_pool_str1021[sizeof("joincontrol")];
-    char uniname2ctype_pool_str1030[sizeof("incyrillicextendeda")];
-    char uniname2ctype_pool_str1031[sizeof("sterm")];
-    char uniname2ctype_pool_str1035[sizeof("dia")];
-    char uniname2ctype_pool_str1036[sizeof("di")];
-    char uniname2ctype_pool_str1039[sizeof("uideo")];
-    char uniname2ctype_pool_str1040[sizeof("ingeorgian")];
-    char uniname2ctype_pool_str1041[sizeof("ahom")];
-    char uniname2ctype_pool_str1043[sizeof("khmr")];
-    char uniname2ctype_pool_str1044[sizeof("emoji")];
-    char uniname2ctype_pool_str1045[sizeof("intaixuanjingsymbols")];
+    char uniname2ctype_pool_str703[sizeof("inoldsogdian")];
+    char uniname2ctype_pool_str705[sizeof("inmalayalam")];
+    char uniname2ctype_pool_str707[sizeof("bamum")];
+    char uniname2ctype_pool_str708[sizeof("inkanasupplement")];
+    char uniname2ctype_pool_str713[sizeof("insundanese")];
+    char uniname2ctype_pool_str720[sizeof("grext")];
+    char uniname2ctype_pool_str737[sizeof("print")];
+    char uniname2ctype_pool_str738[sizeof("intaitham")];
+    char uniname2ctype_pool_str742[sizeof("lower")];
+    char uniname2ctype_pool_str753[sizeof("joinc")];
+    char uniname2ctype_pool_str755[sizeof("inoldsoutharabian")];
+    char uniname2ctype_pool_str760[sizeof("incjkstrokes")];
+    char uniname2ctype_pool_str761[sizeof("batk")];
+    char uniname2ctype_pool_str766[sizeof("samr")];
+    char uniname2ctype_pool_str767[sizeof("inwancho")];
+    char uniname2ctype_pool_str771[sizeof("batak")];
+    char uniname2ctype_pool_str772[sizeof("vs")];
+    char uniname2ctype_pool_str776[sizeof("patws")];
+    char uniname2ctype_pool_str783[sizeof("samaritan")];
+    char uniname2ctype_pool_str787[sizeof("idsbinaryoperator")];
+    char uniname2ctype_pool_str791[sizeof("pauc")];
+    char uniname2ctype_pool_str794[sizeof("insmallkanaextension")];
+    char uniname2ctype_pool_str797[sizeof("sm")];
+    char uniname2ctype_pool_str799[sizeof("indominotiles")];
+    char uniname2ctype_pool_str802[sizeof("alnum")];
+    char uniname2ctype_pool_str809[sizeof("insylotinagri")];
+    char uniname2ctype_pool_str814[sizeof("inugaritic")];
+    char uniname2ctype_pool_str818[sizeof("incontrolpictures")];
+    char uniname2ctype_pool_str821[sizeof("inlinearbideograms")];
+    char uniname2ctype_pool_str822[sizeof("inmusicalsymbols")];
+    char uniname2ctype_pool_str823[sizeof("s")];
+    char uniname2ctype_pool_str824[sizeof("ital")];
+    char uniname2ctype_pool_str825[sizeof("inmodifiertoneletters")];
+    char uniname2ctype_pool_str828[sizeof("inancientgreekmusicalnotation")];
+    char uniname2ctype_pool_str834[sizeof("patternsyntax")];
+    char uniname2ctype_pool_str838[sizeof("lisu")];
+    char uniname2ctype_pool_str842[sizeof("lowercase")];
+    char uniname2ctype_pool_str845[sizeof("cwcm")];
+    char uniname2ctype_pool_str847[sizeof("sc")];
+    char uniname2ctype_pool_str848[sizeof("bass")];
+    char uniname2ctype_pool_str855[sizeof("ids")];
+    char uniname2ctype_pool_str857[sizeof("inlatinextendeda")];
+    char uniname2ctype_pool_str862[sizeof("oriya")];
+    char uniname2ctype_pool_str875[sizeof("intaile")];
+    char uniname2ctype_pool_str886[sizeof("inmiscellaneoussymbols")];
+    char uniname2ctype_pool_str895[sizeof("inmiscellaneoussymbolsandarrows")];
+    char uniname2ctype_pool_str898[sizeof("incaucasianalbanian")];
+    char uniname2ctype_pool_str900[sizeof("inmiscellaneoussymbolsandpictographs")];
+    char uniname2ctype_pool_str906[sizeof("inoldturkic")];
+    char uniname2ctype_pool_str907[sizeof("insaurashtra")];
+    char uniname2ctype_pool_str924[sizeof("idcontinue")];
+    char uniname2ctype_pool_str926[sizeof("intamil")];
+    char uniname2ctype_pool_str928[sizeof("inmultani")];
+    char uniname2ctype_pool_str929[sizeof("inlatinextendede")];
+    char uniname2ctype_pool_str930[sizeof("pd")];
+    char uniname2ctype_pool_str946[sizeof("bali")];
+    char uniname2ctype_pool_str961[sizeof("blank")];
+    char uniname2ctype_pool_str963[sizeof("idst")];
+    char uniname2ctype_pool_str974[sizeof("inlydian")];
+    char uniname2ctype_pool_str986[sizeof("innewtailue")];
+    char uniname2ctype_pool_str994[sizeof("bengali")];
+    char uniname2ctype_pool_str995[sizeof("runr")];
+    char uniname2ctype_pool_str1005[sizeof("zl")];
+    char uniname2ctype_pool_str1009[sizeof("incyrillicextendeda")];
+    char uniname2ctype_pool_str1010[sizeof("ll")];
+    char uniname2ctype_pool_str1013[sizeof("indeseret")];
+    char uniname2ctype_pool_str1014[sizeof("intaixuanjingsymbols")];
+    char uniname2ctype_pool_str1015[sizeof("inancientgreeknumbers")];
+    char uniname2ctype_pool_str1021[sizeof("idstart")];
+    char uniname2ctype_pool_str1025[sizeof("inmeeteimayekextensions")];
+    char uniname2ctype_pool_str1028[sizeof("balinese")];
+    char uniname2ctype_pool_str1032[sizeof("dia")];
+    char uniname2ctype_pool_str1033[sizeof("di")];
+    char uniname2ctype_pool_str1035[sizeof("inspacingmodifierletters")];
+    char uniname2ctype_pool_str1036[sizeof("inearlydynasticcuneiform")];
+    char uniname2ctype_pool_str1049[sizeof("plrd")];
+    char uniname2ctype_pool_str1067[sizeof("canadianaboriginal")];
+    char uniname2ctype_pool_str1070[sizeof("zinh")];
+    char uniname2ctype_pool_str1072[sizeof("sind")];
+    char uniname2ctype_pool_str1080[sizeof("osage")];
+    char uniname2ctype_pool_str1081[sizeof("inlatinextendedc")];
+    char uniname2ctype_pool_str1085[sizeof("uideo")];
+    char uniname2ctype_pool_str1087[sizeof("incountingrodnumerals")];
+    char uniname2ctype_pool_str1090[sizeof("xidstart")];
+    char uniname2ctype_pool_str1091[sizeof("xdigit")];
+    char uniname2ctype_pool_str1093[sizeof("osma")];
+    char uniname2ctype_pool_str1097[sizeof("inkhudawadi")];
+    char uniname2ctype_pool_str1102[sizeof("inhanifirohingya")];
+    char uniname2ctype_pool_str1105[sizeof("gong")];
+    char uniname2ctype_pool_str1107[sizeof("ingrantha")];
+    char uniname2ctype_pool_str1109[sizeof("bidic")];
+    char uniname2ctype_pool_str1119[sizeof("mong")];
+    char uniname2ctype_pool_str1120[sizeof("cased")];
+    char uniname2ctype_pool_str1121[sizeof("incyrillicextendedc")];
+    char uniname2ctype_pool_str1134[sizeof("inhiragana")];
+    char uniname2ctype_pool_str1140[sizeof("sinhala")];
+    char uniname2ctype_pool_str1142[sizeof("adlm")];
+    char uniname2ctype_pool_str1146[sizeof("glagolitic")];
+    char uniname2ctype_pool_str1147[sizeof("sterm")];
+    char uniname2ctype_pool_str1149[sizeof("bamu")];
+    char uniname2ctype_pool_str1150[sizeof("georgian")];
+    char uniname2ctype_pool_str1151[sizeof("inosage")];
+    char uniname2ctype_pool_str1152[sizeof("gunjalagondi")];
+    char uniname2ctype_pool_str1153[sizeof("phoenician")];
+    char uniname2ctype_pool_str1157[sizeof("multani")];
+    char uniname2ctype_pool_str1158[sizeof("kaithi")];
+    char uniname2ctype_pool_str1164[sizeof("joincontrol")];
+    char uniname2ctype_pool_str1168[sizeof("runic")];
+    char uniname2ctype_pool_str1170[sizeof("ingeneralpunctuation")];
+    char uniname2ctype_pool_str1171[sizeof("inmahajani")];
+    char uniname2ctype_pool_str1174[sizeof("incyrillicsupplement")];
+    char uniname2ctype_pool_str1175[sizeof("lowercaseletter")];
+    char uniname2ctype_pool_str1176[sizeof("marchen")];
+    char uniname2ctype_pool_str1177[sizeof("graphemelink")];
+    char uniname2ctype_pool_str1178[sizeof("ingeorgian")];
+    char uniname2ctype_pool_str1180[sizeof("khojki")];
+    char uniname2ctype_pool_str1181[sizeof("cham")];
+    char uniname2ctype_pool_str1182[sizeof("inogham")];
+    char uniname2ctype_pool_str1183[sizeof("cher")];
+    char uniname2ctype_pool_str1185[sizeof("chakma")];
+    char uniname2ctype_pool_str1190[sizeof("emoji")];
+    char uniname2ctype_pool_str1191[sizeof("insiddham")];
+    char uniname2ctype_pool_str1197[sizeof("cherokee")];
+    char uniname2ctype_pool_str1198[sizeof("khar")];
+    char uniname2ctype_pool_str1203[sizeof("inmongolian")];
+    char uniname2ctype_pool_str1207[sizeof("incherokeesupplement")];
+    char uniname2ctype_pool_str1208[sizeof("diacritic")];
+    char uniname2ctype_pool_str1209[sizeof("manichaean")];
+    char uniname2ctype_pool_str1210[sizeof("xsux")];
+    char uniname2ctype_pool_str1212[sizeof("inolchiki")];
+    char uniname2ctype_pool_str1227[sizeof("quotationmark")];
+    char uniname2ctype_pool_str1231[sizeof("adlam")];
+    char uniname2ctype_pool_str1232[sizeof("inethiopic")];
+    char uniname2ctype_pool_str1233[sizeof("graphemebase")];
 #ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1061[sizeof("age=1.1")];
-    char uniname2ctype_pool_str1062[sizeof("age=9.0")];
-    char uniname2ctype_pool_str1063[sizeof("age=11.0")];
-    char uniname2ctype_pool_str1064[sizeof("age=10.0")];
-    char uniname2ctype_pool_str1065[sizeof("age=2.1")];
-    char uniname2ctype_pool_str1066[sizeof("age=2.0")];
+    char uniname2ctype_pool_str1234[sizeof("age=11.0")];
+    char uniname2ctype_pool_str1235[sizeof("age=12.0")];
+    char uniname2ctype_pool_str1236[sizeof("age=10.0")];
+    char uniname2ctype_pool_str1237[sizeof("age=1.1")];
+    char uniname2ctype_pool_str1238[sizeof("age=2.1")];
+    char uniname2ctype_pool_str1239[sizeof("age=4.1")];
+    char uniname2ctype_pool_str1240[sizeof("age=2.0")];
+    char uniname2ctype_pool_str1241[sizeof("age=4.0")];
+    char uniname2ctype_pool_str1242[sizeof("age=9.0")];
 #endif /* USE_UNICODE_AGE_PROPERTIES */
-    char uniname2ctype_pool_str1067[sizeof("inmongolian")];
+    char uniname2ctype_pool_str1243[sizeof("casedletter")];
+    char uniname2ctype_pool_str1244[sizeof("ingurmukhi")];
+    char uniname2ctype_pool_str1245[sizeof("odi")];
+    char uniname2ctype_pool_str1246[sizeof("incjkunifiedideographsextensiona")];
 #ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1068[sizeof("age=8.0")];
-    char uniname2ctype_pool_str1069[sizeof("age=6.1")];
-    char uniname2ctype_pool_str1070[sizeof("age=6.0")];
+    char uniname2ctype_pool_str1247[sizeof("age=8.0")];
 #endif /* USE_UNICODE_AGE_PROPERTIES */
-    char uniname2ctype_pool_str1071[sizeof("inscriptionalpahlavi")];
-    char uniname2ctype_pool_str1072[sizeof("incyrillicsupplement")];
+    char uniname2ctype_pool_str1248[sizeof("lu")];
 #ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1073[sizeof("age=6.2")];
+    char uniname2ctype_pool_str1249[sizeof("age=6.1")];
+    char uniname2ctype_pool_str1250[sizeof("age=6.2")];
+    char uniname2ctype_pool_str1251[sizeof("age=6.0")];
+    char uniname2ctype_pool_str1252[sizeof("age=7.0")];
 #endif /* USE_UNICODE_AGE_PROPERTIES */
-    char uniname2ctype_pool_str1074[sizeof("incherokeesupplement")];
+    char uniname2ctype_pool_str1254[sizeof("intamilsupplement")];
+    char uniname2ctype_pool_str1256[sizeof("unknown")];
 #ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1075[sizeof("age=5.1")];
-    char uniname2ctype_pool_str1076[sizeof("age=5.0")];
-    char uniname2ctype_pool_str1077[sizeof("age=3.1")];
-    char uniname2ctype_pool_str1078[sizeof("age=3.0")];
-    char uniname2ctype_pool_str1079[sizeof("age=5.2")];
-    char uniname2ctype_pool_str1080[sizeof("age=7.0")];
-    char uniname2ctype_pool_str1081[sizeof("age=3.2")];
+    char uniname2ctype_pool_str1257[sizeof("age=3.1")];
+    char uniname2ctype_pool_str1258[sizeof("age=3.2")];
+    char uniname2ctype_pool_str1259[sizeof("age=3.0")];
+    char uniname2ctype_pool_str1260[sizeof("age=5.1")];
+    char uniname2ctype_pool_str1261[sizeof("age=5.2")];
+    char uniname2ctype_pool_str1262[sizeof("age=5.0")];
 #endif /* USE_UNICODE_AGE_PROPERTIES */
-    char uniname2ctype_pool_str1083[sizeof("kharoshthi")];
-    char uniname2ctype_pool_str1084[sizeof("adlam")];
+    char uniname2ctype_pool_str1263[sizeof("cwt")];
+    char uniname2ctype_pool_str1266[sizeof("unassigned")];
 #ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1085[sizeof("age=6.3")];
-    char uniname2ctype_pool_str1086[sizeof("age=4.1")];
-    char uniname2ctype_pool_str1087[sizeof("age=4.0")];
+    char uniname2ctype_pool_str1269[sizeof("age=6.3")];
 #endif /* USE_UNICODE_AGE_PROPERTIES */
-    char uniname2ctype_pool_str1094[sizeof("khmer")];
-    char uniname2ctype_pool_str1095[sizeof("runic")];
-    char uniname2ctype_pool_str1096[sizeof("quotationmark")];
-    char uniname2ctype_pool_str1098[sizeof("lu")];
-    char uniname2ctype_pool_str1104[sizeof("ingurmukhi")];
-    char uniname2ctype_pool_str1118[sizeof("taile")];
-    char uniname2ctype_pool_str1119[sizeof("incjkunifiedideographsextensiona")];
-    char uniname2ctype_pool_str1120[sizeof("sundanese")];
-    char uniname2ctype_pool_str1124[sizeof("incjkunifiedideographsextensione")];
-    char uniname2ctype_pool_str1128[sizeof("takri")];
-    char uniname2ctype_pool_str1135[sizeof("invai")];
-    char uniname2ctype_pool_str1137[sizeof("n")];
-    char uniname2ctype_pool_str1138[sizeof("inmiscellaneoustechnical")];
-    char uniname2ctype_pool_str1143[sizeof("saur")];
-    char uniname2ctype_pool_str1145[sizeof("incyrillicextendedc")];
-    char uniname2ctype_pool_str1146[sizeof("guru")];
-    char uniname2ctype_pool_str1147[sizeof("math")];
-    char uniname2ctype_pool_str1150[sizeof("goth")];
-    char uniname2ctype_pool_str1154[sizeof("xsux")];
-    char uniname2ctype_pool_str1156[sizeof("logicalorderexception")];
-    char uniname2ctype_pool_str1160[sizeof("paucinhau")];
-    char uniname2ctype_pool_str1164[sizeof("no")];
-    char uniname2ctype_pool_str1165[sizeof("xpeo")];
-    char uniname2ctype_pool_str1166[sizeof("unassigned")];
-    char uniname2ctype_pool_str1169[sizeof("takr")];
-    char uniname2ctype_pool_str1171[sizeof("anatolianhieroglyphs")];
-    char uniname2ctype_pool_str1172[sizeof("gurmukhi")];
-    char uniname2ctype_pool_str1174[sizeof("insorasompeng")];
-    char uniname2ctype_pool_str1179[sizeof("p")];
-    char uniname2ctype_pool_str1181[sizeof("cntrl")];
-    char uniname2ctype_pool_str1182[sizeof("inenclosedalphanumerics")];
-    char uniname2ctype_pool_str1183[sizeof("nko")];
-    char uniname2ctype_pool_str1184[sizeof("nkoo")];
-    char uniname2ctype_pool_str1188[sizeof("grantha")];
-    char uniname2ctype_pool_str1189[sizeof("emojimodifier")];
-    char uniname2ctype_pool_str1190[sizeof("limbu")];
-    char uniname2ctype_pool_str1193[sizeof("lowercaseletter")];
-    char uniname2ctype_pool_str1205[sizeof("inphoenician")];
-    char uniname2ctype_pool_str1210[sizeof("diacritic")];
-    char uniname2ctype_pool_str1211[sizeof("intirhuta")];
-    char uniname2ctype_pool_str1217[sizeof("inhatran")];
-    char uniname2ctype_pool_str1218[sizeof("kthi")];
-    char uniname2ctype_pool_str1219[sizeof("punct")];
-    char uniname2ctype_pool_str1224[sizeof("radical")];
-    char uniname2ctype_pool_str1226[sizeof("inlatinextendedadditional")];
-    char uniname2ctype_pool_str1232[sizeof("ingreekandcoptic")];
-    char uniname2ctype_pool_str1234[sizeof("incjkunifiedideographsextensionc")];
-    char uniname2ctype_pool_str1239[sizeof("brah")];
-    char uniname2ctype_pool_str1241[sizeof("term")];
-    char uniname2ctype_pool_str1248[sizeof("saurashtra")];
-    char uniname2ctype_pool_str1252[sizeof("cwt")];
-    char uniname2ctype_pool_str1253[sizeof("inoldhungarian")];
-    char uniname2ctype_pool_str1255[sizeof("incjkunifiedideographs")];
-    char uniname2ctype_pool_str1262[sizeof("lepc")];
-    char uniname2ctype_pool_str1265[sizeof("graphemeextend")];
-    char uniname2ctype_pool_str1267[sizeof("hani")];
-    char uniname2ctype_pool_str1270[sizeof("han")];
-    char uniname2ctype_pool_str1271[sizeof("oriya")];
-    char uniname2ctype_pool_str1273[sizeof("inherited")];
-    char uniname2ctype_pool_str1276[sizeof("sd")];
-    char uniname2ctype_pool_str1279[sizeof("inmeroitichieroglyphs")];
-    char uniname2ctype_pool_str1280[sizeof("hano")];
-    char uniname2ctype_pool_str1282[sizeof("sidd")];
-    char uniname2ctype_pool_str1285[sizeof("braille")];
-    char uniname2ctype_pool_str1287[sizeof("inshavian")];
-    char uniname2ctype_pool_str1293[sizeof("inphaistosdisc")];
-    char uniname2ctype_pool_str1295[sizeof("inkangxiradicals")];
-    char uniname2ctype_pool_str1296[sizeof("emojimodifierbase")];
-    char uniname2ctype_pool_str1298[sizeof("enclosingmark")];
-    char uniname2ctype_pool_str1299[sizeof("mult")];
-    char uniname2ctype_pool_str1303[sizeof("decimalnumber")];
-    char uniname2ctype_pool_str1305[sizeof("phli")];
-    char uniname2ctype_pool_str1306[sizeof("bidicontrol")];
-    char uniname2ctype_pool_str1308[sizeof("hanunoo")];
-    char uniname2ctype_pool_str1309[sizeof("hira")];
-    char uniname2ctype_pool_str1312[sizeof("beng")];
+    char uniname2ctype_pool_str1274[sizeof("ahom")];
+    char uniname2ctype_pool_str1282[sizeof("incjkunifiedideographsextensione")];
+    char uniname2ctype_pool_str1285[sizeof("khmr")];
+    char uniname2ctype_pool_str1289[sizeof("insinhala")];
+    char uniname2ctype_pool_str1292[sizeof("inmiscellaneoustechnical")];
+    char uniname2ctype_pool_str1297[sizeof("saur")];
+    char uniname2ctype_pool_str1300[sizeof("guru")];
+    char uniname2ctype_pool_str1301[sizeof("sundanese")];
+    char uniname2ctype_pool_str1306[sizeof("punct")];
+    char uniname2ctype_pool_str1314[sizeof("paucinhau")];
+    char uniname2ctype_pool_str1317[sizeof("gurmukhi")];
     char uniname2ctype_pool_str1319[sizeof("variationselector")];
-    char uniname2ctype_pool_str1320[sizeof("unknown")];
-    char uniname2ctype_pool_str1323[sizeof("inkhojki")];
-    char uniname2ctype_pool_str1328[sizeof("inenclosedideographicsupplement")];
-    char uniname2ctype_pool_str1330[sizeof("phnx")];
-    char uniname2ctype_pool_str1339[sizeof("inanatolianhieroglyphs")];
-    char uniname2ctype_pool_str1350[sizeof("inenclosedalphanumericsupplement")];
-    char uniname2ctype_pool_str1351[sizeof("inimperialaramaic")];
-    char uniname2ctype_pool_str1353[sizeof("bhks")];
-    char uniname2ctype_pool_str1354[sizeof("regionalindicator")];
-    char uniname2ctype_pool_str1355[sizeof("ingreekextended")];
-    char uniname2ctype_pool_str1363[sizeof("bhaiksuki")];
-    char uniname2ctype_pool_str1366[sizeof("glag")];
-    char uniname2ctype_pool_str1374[sizeof("ingeometricshapes")];
-    char uniname2ctype_pool_str1375[sizeof("osage")];
-    char uniname2ctype_pool_str1378[sizeof("indogra")];
-    char uniname2ctype_pool_str1379[sizeof("sinh")];
-    char uniname2ctype_pool_str1384[sizeof("shavian")];
-    char uniname2ctype_pool_str1393[sizeof("coptic")];
-    char uniname2ctype_pool_str1394[sizeof("ahex")];
-    char uniname2ctype_pool_str1395[sizeof("inlowsurrogates")];
-    char uniname2ctype_pool_str1402[sizeof("insinhalaarchaicnumbers")];
-    char uniname2ctype_pool_str1418[sizeof("medf")];
-    char uniname2ctype_pool_str1423[sizeof("inhanunoo")];
-    char uniname2ctype_pool_str1424[sizeof("taiviet")];
-    char uniname2ctype_pool_str1434[sizeof("medefaidrin")];
-    char uniname2ctype_pool_str1439[sizeof("inshorthandformatcontrols")];
-    char uniname2ctype_pool_str1446[sizeof("linb")];
-    char uniname2ctype_pool_str1447[sizeof("osma")];
-    char uniname2ctype_pool_str1448[sizeof("insundanesesupplement")];
-    char uniname2ctype_pool_str1450[sizeof("zanb")];
-    char uniname2ctype_pool_str1461[sizeof("copt")];
-    char uniname2ctype_pool_str1464[sizeof("ininscriptionalpahlavi")];
-    char uniname2ctype_pool_str1465[sizeof("sund")];
-    char uniname2ctype_pool_str1468[sizeof("inbhaiksuki")];
-    char uniname2ctype_pool_str1469[sizeof("ininscriptionalparthian")];
-    char uniname2ctype_pool_str1471[sizeof("punctuation")];
-    char uniname2ctype_pool_str1472[sizeof("inelbasan")];
-    char uniname2ctype_pool_str1476[sizeof("innabataean")];
-    char uniname2ctype_pool_str1477[sizeof("emojicomponent")];
-    char uniname2ctype_pool_str1483[sizeof("incjkunifiedideographsextensiond")];
-    char uniname2ctype_pool_str1484[sizeof("insogdian")];
-    char uniname2ctype_pool_str1485[sizeof("indingbats")];
-    char uniname2ctype_pool_str1490[sizeof("inkanbun")];
-    char uniname2ctype_pool_str1494[sizeof("cprt")];
-    char uniname2ctype_pool_str1495[sizeof("ideographic")];
-    char uniname2ctype_pool_str1496[sizeof("cwl")];
-    char uniname2ctype_pool_str1500[sizeof("linearb")];
-    char uniname2ctype_pool_str1501[sizeof("imperialaramaic")];
-    char uniname2ctype_pool_str1505[sizeof("format")];
-    char uniname2ctype_pool_str1508[sizeof("indevanagari")];
-    char uniname2ctype_pool_str1510[sizeof("sogdian")];
-    char uniname2ctype_pool_str1511[sizeof("sogo")];
-    char uniname2ctype_pool_str1518[sizeof("inlatinextendedd")];
-    char uniname2ctype_pool_str1523[sizeof("limb")];
-    char uniname2ctype_pool_str1525[sizeof("asciihexdigit")];
-    char uniname2ctype_pool_str1529[sizeof("sentenceterminal")];
-    char uniname2ctype_pool_str1530[sizeof("java")];
-    char uniname2ctype_pool_str1531[sizeof("bopo")];
-    char uniname2ctype_pool_str1533[sizeof("dsrt")];
-    char uniname2ctype_pool_str1534[sizeof("caseignorable")];
-    char uniname2ctype_pool_str1535[sizeof("tale")];
-    char uniname2ctype_pool_str1540[sizeof("avestan")];
-    char uniname2ctype_pool_str1548[sizeof("deseret")];
-    char uniname2ctype_pool_str1551[sizeof("innushu")];
-    char uniname2ctype_pool_str1553[sizeof("javanese")];
-    char uniname2ctype_pool_str1561[sizeof("intags")];
-    char uniname2ctype_pool_str1564[sizeof("inoldpersian")];
-    char uniname2ctype_pool_str1574[sizeof("inarabic")];
-    char uniname2ctype_pool_str1576[sizeof("inornamentaldingbats")];
-    char uniname2ctype_pool_str1580[sizeof("hatran")];
-    char uniname2ctype_pool_str1583[sizeof("intangut")];
-    char uniname2ctype_pool_str1586[sizeof("odi")];
-    char uniname2ctype_pool_str1593[sizeof("arab")];
-    char uniname2ctype_pool_str1600[sizeof("ingeometricshapesextended")];
-    char uniname2ctype_pool_str1606[sizeof("invariationselectors")];
-    char uniname2ctype_pool_str1611[sizeof("hatr")];
-    char uniname2ctype_pool_str1613[sizeof("terminalpunctuation")];
-    char uniname2ctype_pool_str1614[sizeof("taml")];
-    char uniname2ctype_pool_str1615[sizeof("ugar")];
-    char uniname2ctype_pool_str1616[sizeof("incjksymbolsandpunctuation")];
-    char uniname2ctype_pool_str1618[sizeof("closepunctuation")];
-    char uniname2ctype_pool_str1625[sizeof("inarabicpresentationformsa")];
-    char uniname2ctype_pool_str1627[sizeof("inbasiclatin")];
-    char uniname2ctype_pool_str1637[sizeof("bopomofo")];
-    char uniname2ctype_pool_str1641[sizeof("grbase")];
-    char uniname2ctype_pool_str1651[sizeof("inkatakanaphoneticextensions")];
-    char uniname2ctype_pool_str1657[sizeof("inverticalforms")];
-    char uniname2ctype_pool_str1663[sizeof("inoldpermic")];
-    char uniname2ctype_pool_str1669[sizeof("avst")];
-    char uniname2ctype_pool_str1671[sizeof("invedicextensions")];
-    char uniname2ctype_pool_str1679[sizeof("alpha")];
-    char uniname2ctype_pool_str1682[sizeof("cuneiform")];
-    char uniname2ctype_pool_str1684[sizeof("inpalmyrene")];
-    char uniname2ctype_pool_str1685[sizeof("insyriacsupplement")];
-    char uniname2ctype_pool_str1689[sizeof("inethiopicextendeda")];
-    char uniname2ctype_pool_str1690[sizeof("space")];
-    char uniname2ctype_pool_str1695[sizeof("inlisu")];
-    char uniname2ctype_pool_str1698[sizeof("graph")];
-    char uniname2ctype_pool_str1699[sizeof("oidc")];
-    char uniname2ctype_pool_str1700[sizeof("incoptic")];
-    char uniname2ctype_pool_str1701[sizeof("inoriya")];
-    char uniname2ctype_pool_str1702[sizeof("wara")];
-    char uniname2ctype_pool_str1704[sizeof("inkayahli")];
-    char uniname2ctype_pool_str1707[sizeof("inlepcha")];
-    char uniname2ctype_pool_str1714[sizeof("spacingmark")];
-    char uniname2ctype_pool_str1715[sizeof("sorasompeng")];
-    char uniname2ctype_pool_str1720[sizeof("assigned")];
-    char uniname2ctype_pool_str1728[sizeof("cwu")];
-    char uniname2ctype_pool_str1730[sizeof("oids")];
-    char uniname2ctype_pool_str1731[sizeof("inethiopicsupplement")];
-    char uniname2ctype_pool_str1738[sizeof("sharada")];
-    char uniname2ctype_pool_str1747[sizeof("intaiviet")];
-    char uniname2ctype_pool_str1749[sizeof("inblockelements")];
-    char uniname2ctype_pool_str1767[sizeof("olower")];
-    char uniname2ctype_pool_str1770[sizeof("newa")];
-    char uniname2ctype_pool_str1775[sizeof("invariationselectorssupplement")];
-    char uniname2ctype_pool_str1776[sizeof("olck")];
-    char uniname2ctype_pool_str1777[sizeof("intibetan")];
-    char uniname2ctype_pool_str1778[sizeof("lyci")];
-    char uniname2ctype_pool_str1780[sizeof("inbatak")];
-    char uniname2ctype_pool_str1782[sizeof("shrd")];
-    char uniname2ctype_pool_str1783[sizeof("cwcf")];
-    char uniname2ctype_pool_str1785[sizeof("newtailue")];
-    char uniname2ctype_pool_str1786[sizeof("innumberforms")];
-    char uniname2ctype_pool_str1787[sizeof("olchiki")];
-    char uniname2ctype_pool_str1788[sizeof("separator")];
-    char uniname2ctype_pool_str1792[sizeof("inunifiedcanadianaboriginalsyllabics")];
-    char uniname2ctype_pool_str1793[sizeof("lycian")];
-    char uniname2ctype_pool_str1799[sizeof("modifierletter")];
-    char uniname2ctype_pool_str1802[sizeof("mymr")];
-    char uniname2ctype_pool_str1803[sizeof("phag")];
-    char uniname2ctype_pool_str1807[sizeof("myanmar")];
-    char uniname2ctype_pool_str1825[sizeof("siddham")];
-    char uniname2ctype_pool_str1827[sizeof("inhanguljamoextendeda")];
-    char uniname2ctype_pool_str1828[sizeof("inhanguljamo")];
-    char uniname2ctype_pool_str1832[sizeof("inbyzantinemusicalsymbols")];
-    char uniname2ctype_pool_str1839[sizeof("inarabicextendeda")];
-    char uniname2ctype_pool_str1841[sizeof("inmeroiticcursive")];
-    char uniname2ctype_pool_str1846[sizeof("bugi")];
-    char uniname2ctype_pool_str1852[sizeof("gujr")];
-    char uniname2ctype_pool_str1856[sizeof("intelugu")];
-    char uniname2ctype_pool_str1859[sizeof("sogd")];
-    char uniname2ctype_pool_str1860[sizeof("nd")];
-    char uniname2ctype_pool_str1861[sizeof("gujarati")];
-    char uniname2ctype_pool_str1862[sizeof("insoyombo")];
-    char uniname2ctype_pool_str1865[sizeof("insmallformvariants")];
-    char uniname2ctype_pool_str1866[sizeof("buginese")];
-    char uniname2ctype_pool_str1869[sizeof("number")];
-    char uniname2ctype_pool_str1872[sizeof("inmyanmarextendedb")];
-    char uniname2ctype_pool_str1883[sizeof("indevanagariextended")];
-    char uniname2ctype_pool_str1896[sizeof("inbalinese")];
-    char uniname2ctype_pool_str1898[sizeof("ingeorgiansupplement")];
-    char uniname2ctype_pool_str1899[sizeof("titlecaseletter")];
-    char uniname2ctype_pool_str1911[sizeof("innoblock")];
-    char uniname2ctype_pool_str1921[sizeof("thaa")];
-    char uniname2ctype_pool_str1922[sizeof("inmiscellaneousmathematicalsymbolsb")];
-    char uniname2ctype_pool_str1924[sizeof("thai")];
-    char uniname2ctype_pool_str1925[sizeof("xposixpunct")];
-    char uniname2ctype_pool_str1931[sizeof("inbraillepatterns")];
-    char uniname2ctype_pool_str1932[sizeof("thaana")];
-    char uniname2ctype_pool_str1942[sizeof("inphoneticextensions")];
-    char uniname2ctype_pool_str1944[sizeof("incopticepactnumbers")];
-    char uniname2ctype_pool_str1948[sizeof("incjkcompatibility")];
-    char uniname2ctype_pool_str1950[sizeof("inmongoliansupplement")];
-    char uniname2ctype_pool_str1956[sizeof("idsb")];
-    char uniname2ctype_pool_str1960[sizeof("inmathematicalalphanumericsymbols")];
-    char uniname2ctype_pool_str1965[sizeof("induployan")];
-    char uniname2ctype_pool_str1969[sizeof("lepcha")];
-    char uniname2ctype_pool_str1970[sizeof("inmayannumerals")];
-    char uniname2ctype_pool_str1973[sizeof("tirh")];
-    char uniname2ctype_pool_str1979[sizeof("dogra")];
-    char uniname2ctype_pool_str1986[sizeof("nl")];
-    char uniname2ctype_pool_str1993[sizeof("ext")];
-    char uniname2ctype_pool_str1995[sizeof("ugaritic")];
-    char uniname2ctype_pool_str1997[sizeof("dash")];
-    char uniname2ctype_pool_str1999[sizeof("shaw")];
-    char uniname2ctype_pool_str2008[sizeof("tirhuta")];
-    char uniname2ctype_pool_str2012[sizeof("zanabazarsquare")];
-    char uniname2ctype_pool_str2013[sizeof("taitham")];
-    char uniname2ctype_pool_str2018[sizeof("inunifiedcanadianaboriginalsyllabicsextended")];
-    char uniname2ctype_pool_str2021[sizeof("sarb")];
-    char uniname2ctype_pool_str2025[sizeof("patsyn")];
-    char uniname2ctype_pool_str2026[sizeof("dogr")];
-    char uniname2ctype_pool_str2027[sizeof("lydi")];
-    char uniname2ctype_pool_str2029[sizeof("inyiradicals")];
-    char uniname2ctype_pool_str2038[sizeof("tang")];
-    char uniname2ctype_pool_str2042[sizeof("lydian")];
-    char uniname2ctype_pool_str2043[sizeof("tamil")];
-    char uniname2ctype_pool_str2044[sizeof("tagbanwa")];
-    char uniname2ctype_pool_str2047[sizeof("insuttonsignwriting")];
-    char uniname2ctype_pool_str2052[sizeof("inethiopicextended")];
-    char uniname2ctype_pool_str2060[sizeof("cf")];
-    char uniname2ctype_pool_str2062[sizeof("ethi")];
-    char uniname2ctype_pool_str2073[sizeof("talu")];
-    char uniname2ctype_pool_str2075[sizeof("rohg")];
-    char uniname2ctype_pool_str2077[sizeof("oldpersian")];
-    char uniname2ctype_pool_str2078[sizeof("telu")];
-    char uniname2ctype_pool_str2082[sizeof("word")];
-    char uniname2ctype_pool_str2086[sizeof("idstrinaryoperator")];
-    char uniname2ctype_pool_str2091[sizeof("mahj")];
-    char uniname2ctype_pool_str2093[sizeof("khudawadi")];
-    char uniname2ctype_pool_str2094[sizeof("inphagspa")];
-    char uniname2ctype_pool_str2095[sizeof("incjkradicalssupplement")];
-    char uniname2ctype_pool_str2097[sizeof("buhd")];
-    char uniname2ctype_pool_str2099[sizeof("surrogate")];
-    char uniname2ctype_pool_str2100[sizeof("mahajani")];
-    char uniname2ctype_pool_str2101[sizeof("orkh")];
-    char uniname2ctype_pool_str2104[sizeof("pf")];
-    char uniname2ctype_pool_str2111[sizeof("inphoneticextensionssupplement")];
-    char uniname2ctype_pool_str2115[sizeof("extender")];
-    char uniname2ctype_pool_str2116[sizeof("sgnw")];
-    char uniname2ctype_pool_str2129[sizeof("inglagolitic")];
-    char uniname2ctype_pool_str2133[sizeof("deva")];
-    char uniname2ctype_pool_str2134[sizeof("cyrl")];
-    char uniname2ctype_pool_str2144[sizeof("incjkunifiedideographsextensionf")];
-    char uniname2ctype_pool_str2147[sizeof("caucasianalbanian")];
-    char uniname2ctype_pool_str2151[sizeof("devanagari")];
-    char uniname2ctype_pool_str2153[sizeof("phagspa")];
-    char uniname2ctype_pool_str2157[sizeof("hex")];
-    char uniname2ctype_pool_str2168[sizeof("nchar")];
-    char uniname2ctype_pool_str2169[sizeof("inbamum")];
-    char uniname2ctype_pool_str2175[sizeof("khoj")];
-    char uniname2ctype_pool_str2180[sizeof("mlym")];
-    char uniname2ctype_pool_str2184[sizeof("oldpermic")];
-    char uniname2ctype_pool_str2187[sizeof("malayalam")];
-    char uniname2ctype_pool_str2190[sizeof("palmyrene")];
-    char uniname2ctype_pool_str2191[sizeof("intifinagh")];
-    char uniname2ctype_pool_str2192[sizeof("hang")];
-    char uniname2ctype_pool_str2196[sizeof("spaceseparator")];
-    char uniname2ctype_pool_str2200[sizeof("intagalog")];
-    char uniname2ctype_pool_str2204[sizeof("ingothic")];
-    char uniname2ctype_pool_str2219[sizeof("ingeorgianextended")];
-    char uniname2ctype_pool_str2220[sizeof("ingujarati")];
-    char uniname2ctype_pool_str2222[sizeof("inlatin1supplement")];
-    char uniname2ctype_pool_str2228[sizeof("soyo")];
-    char uniname2ctype_pool_str2229[sizeof("ogam")];
-    char uniname2ctype_pool_str2238[sizeof("incombiningdiacriticalmarks")];
-    char uniname2ctype_pool_str2239[sizeof("ingunjalagondi")];
-    char uniname2ctype_pool_str2243[sizeof("hiragana")];
-    char uniname2ctype_pool_str2245[sizeof("meroitichieroglyphs")];
-    char uniname2ctype_pool_str2248[sizeof("incombiningdiacriticalmarksforsymbols")];
-    char uniname2ctype_pool_str2264[sizeof("inrejang")];
-    char uniname2ctype_pool_str2267[sizeof("tangut")];
-    char uniname2ctype_pool_str2273[sizeof("zp")];
-    char uniname2ctype_pool_str2276[sizeof("hmng")];
-    char uniname2ctype_pool_str2278[sizeof("inprivateusearea")];
-    char uniname2ctype_pool_str2280[sizeof("inbrahmi")];
-    char uniname2ctype_pool_str2296[sizeof("osge")];
-    char uniname2ctype_pool_str2308[sizeof("inenclosedcjklettersandmonths")];
-    char uniname2ctype_pool_str2315[sizeof("nonspacingmark")];
-    char uniname2ctype_pool_str2344[sizeof("softdotted")];
-    char uniname2ctype_pool_str2348[sizeof("changeswhencasemapped")];
-    char uniname2ctype_pool_str2356[sizeof("noncharactercodepoint")];
-    char uniname2ctype_pool_str2360[sizeof("syrc")];
-    char uniname2ctype_pool_str2369[sizeof("inpaucinhau")];
-    char uniname2ctype_pool_str2380[sizeof("inhangulsyllables")];
-    char uniname2ctype_pool_str2389[sizeof("injavanese")];
-    char uniname2ctype_pool_str2397[sizeof("inbuginese")];
-    char uniname2ctype_pool_str2398[sizeof("inbengali")];
-    char uniname2ctype_pool_str2407[sizeof("incombiningdiacriticalmarkssupplement")];
-    char uniname2ctype_pool_str2413[sizeof("inalphabeticpresentationforms")];
-    char uniname2ctype_pool_str2414[sizeof("otheridcontinue")];
-    char uniname2ctype_pool_str2420[sizeof("finalpunctuation")];
-    char uniname2ctype_pool_str2426[sizeof("inpsalterpahlavi")];
-    char uniname2ctype_pool_str2429[sizeof("phlp")];
-    char uniname2ctype_pool_str2435[sizeof("olditalic")];
-    char uniname2ctype_pool_str2437[sizeof("bassavah")];
-    char uniname2ctype_pool_str2440[sizeof("other")];
-    char uniname2ctype_pool_str2451[sizeof("incyrillicextendedb")];
-    char uniname2ctype_pool_str2454[sizeof("othernumber")];
-    char uniname2ctype_pool_str2459[sizeof("changeswhentitlecased")];
-    char uniname2ctype_pool_str2463[sizeof("buhid")];
-    char uniname2ctype_pool_str2464[sizeof("incombiningdiacriticalmarksextended")];
-    char uniname2ctype_pool_str2466[sizeof("oalpha")];
-    char uniname2ctype_pool_str2478[sizeof("currencysymbol")];
-    char uniname2ctype_pool_str2479[sizeof("syriac")];
-    char uniname2ctype_pool_str2480[sizeof("incurrencysymbols")];
-    char uniname2ctype_pool_str2497[sizeof("rjng")];
-    char uniname2ctype_pool_str2499[sizeof("graphemeclusterbreak=spacingmark")];
-    char uniname2ctype_pool_str2500[sizeof("extendedpictographic")];
-    char uniname2ctype_pool_str2503[sizeof("tavt")];
-    char uniname2ctype_pool_str2511[sizeof("emojipresentation")];
-    char uniname2ctype_pool_str2512[sizeof("inlimbu")];
-    char uniname2ctype_pool_str2522[sizeof("graphemeclusterbreak=cr")];
-    char uniname2ctype_pool_str2523[sizeof("otheralphabetic")];
-    char uniname2ctype_pool_str2537[sizeof("graphemeclusterbreak=regionalindicator")];
-    char uniname2ctype_pool_str2540[sizeof("incjkunifiedideographsextensionb")];
-    char uniname2ctype_pool_str2546[sizeof("inaegeannumbers")];
-    char uniname2ctype_pool_str2555[sizeof("mathsymbol")];
-    char uniname2ctype_pool_str2561[sizeof("inlinearbsyllabary")];
-    char uniname2ctype_pool_str2570[sizeof("intangutcomponents")];
-    char uniname2ctype_pool_str2571[sizeof("inbassavah")];
-    char uniname2ctype_pool_str2576[sizeof("digit")];
-    char uniname2ctype_pool_str2582[sizeof("paragraphseparator")];
-    char uniname2ctype_pool_str2583[sizeof("oldhungarian")];
-    char uniname2ctype_pool_str2605[sizeof("narb")];
-    char uniname2ctype_pool_str2617[sizeof("insuperscriptsandsubscripts")];
-    char uniname2ctype_pool_str2620[sizeof("inbopomofo")];
-    char uniname2ctype_pool_str2625[sizeof("changeswhenlowercased")];
-    char uniname2ctype_pool_str2638[sizeof("whitespace")];
-    char uniname2ctype_pool_str2639[sizeof("sylo")];
-    char uniname2ctype_pool_str2642[sizeof("nshu")];
-    char uniname2ctype_pool_str2643[sizeof("inbuhid")];
-    char uniname2ctype_pool_str2648[sizeof("warangciti")];
-    char uniname2ctype_pool_str2650[sizeof("inmathematicaloperators")];
-    char uniname2ctype_pool_str2657[sizeof("deprecated")];
-    char uniname2ctype_pool_str2660[sizeof("inletterlikesymbols")];
-    char uniname2ctype_pool_str2665[sizeof("hangul")];
-    char uniname2ctype_pool_str2682[sizeof("cyrillic")];
-    char uniname2ctype_pool_str2694[sizeof("intagbanwa")];
-    char uniname2ctype_pool_str2720[sizeof("incombininghalfmarks")];
-    char uniname2ctype_pool_str2722[sizeof("oldturkic")];
-    char uniname2ctype_pool_str2732[sizeof("hebr")];
-    char uniname2ctype_pool_str2735[sizeof("hung")];
-    char uniname2ctype_pool_str2741[sizeof("changeswhenuppercased")];
-    char uniname2ctype_pool_str2759[sizeof("inarabicmathematicalalphabeticsymbols")];
-    char uniname2ctype_pool_str2769[sizeof("inmahjongtiles")];
-    char uniname2ctype_pool_str2777[sizeof("graphemeclusterbreak=t")];
-    char uniname2ctype_pool_str2779[sizeof("graphemeclusterbreak=lvt")];
-    char uniname2ctype_pool_str2784[sizeof("elba")];
-    char uniname2ctype_pool_str2807[sizeof("insupplementalarrowsa")];
-    char uniname2ctype_pool_str2832[sizeof("tibt")];
-    char uniname2ctype_pool_str2834[sizeof("otherlowercase")];
-    char uniname2ctype_pool_str2836[sizeof("inbamumsupplement")];
-    char uniname2ctype_pool_str2841[sizeof("graphemeclusterbreak=extend")];
-    char uniname2ctype_pool_str2842[sizeof("graphemeclusterbreak=prepend")];
-    char uniname2ctype_pool_str2844[sizeof("tibetan")];
-    char uniname2ctype_pool_str2857[sizeof("hluw")];
-    char uniname2ctype_pool_str2861[sizeof("nbat")];
-    char uniname2ctype_pool_str2874[sizeof("otherletter")];
-    char uniname2ctype_pool_str2875[sizeof("nabataean")];
-    char uniname2ctype_pool_str2899[sizeof("graphemeclusterbreak=l")];
-    char uniname2ctype_pool_str2905[sizeof("graphemeclusterbreak=control")];
-    char uniname2ctype_pool_str2908[sizeof("inarabicsupplement")];
-    char uniname2ctype_pool_str2911[sizeof("orya")];
-    char uniname2ctype_pool_str2912[sizeof("nushu")];
-    char uniname2ctype_pool_str2918[sizeof("insupplementalmathematicaloperators")];
-    char uniname2ctype_pool_str2922[sizeof("insupplementalarrowsc")];
-    char uniname2ctype_pool_str2924[sizeof("inpahawhhmong")];
-    char uniname2ctype_pool_str2939[sizeof("omath")];
-    char uniname2ctype_pool_str2942[sizeof("elbasan")];
-    char uniname2ctype_pool_str2943[sizeof("sylotinagri")];
-    char uniname2ctype_pool_str2950[sizeof("otheruppercase")];
-    char uniname2ctype_pool_str2952[sizeof("hexdigit")];
-    char uniname2ctype_pool_str2956[sizeof("inhebrew")];
-    char uniname2ctype_pool_str2962[sizeof("tifinagh")];
-    char uniname2ctype_pool_str2967[sizeof("oldsogdian")];
-    char uniname2ctype_pool_str2971[sizeof("othersymbol")];
-    char uniname2ctype_pool_str2978[sizeof("inalchemicalsymbols")];
-    char uniname2ctype_pool_str2990[sizeof("kayahli")];
-    char uniname2ctype_pool_str2992[sizeof("upper")];
-    char uniname2ctype_pool_str2994[sizeof("oupper")];
-    char uniname2ctype_pool_str3012[sizeof("inplayingcards")];
-    char uniname2ctype_pool_str3013[sizeof("otheridstart")];
-    char uniname2ctype_pool_str3019[sizeof("inhalfwidthandfullwidthforms")];
-    char uniname2ctype_pool_str3046[sizeof("inarabicpresentationformsb")];
-    char uniname2ctype_pool_str3055[sizeof("wspace")];
-    char uniname2ctype_pool_str3063[sizeof("tfng")];
-    char uniname2ctype_pool_str3068[sizeof("uppercase")];
-    char uniname2ctype_pool_str3078[sizeof("inhighprivateusesurrogates")];
-    char uniname2ctype_pool_str3098[sizeof("signwriting")];
-    char uniname2ctype_pool_str3104[sizeof("osmanya")];
-    char uniname2ctype_pool_str3114[sizeof("cypriot")];
-    char uniname2ctype_pool_str3130[sizeof("dupl")];
-    char uniname2ctype_pool_str3133[sizeof("ogham")];
-    char uniname2ctype_pool_str3154[sizeof("symbol")];
-    char uniname2ctype_pool_str3175[sizeof("dashpunctuation")];
-    char uniname2ctype_pool_str3182[sizeof("inyijinghexagramsymbols")];
-    char uniname2ctype_pool_str3197[sizeof("inindicsiyaqnumbers")];
-    char uniname2ctype_pool_str3221[sizeof("alphabetic")];
-    char uniname2ctype_pool_str3233[sizeof("hanifirohingya")];
-    char uniname2ctype_pool_str3236[sizeof("unifiedideograph")];
-    char uniname2ctype_pool_str3248[sizeof("inhanguljamoextendedb")];
-    char uniname2ctype_pool_str3256[sizeof("ogrext")];
-    char uniname2ctype_pool_str3260[sizeof("pahawhhmong")];
-    char uniname2ctype_pool_str3289[sizeof("changeswhencasefolded")];
-    char uniname2ctype_pool_str3290[sizeof("aghb")];
-    char uniname2ctype_pool_str3291[sizeof("dep")];
-    char uniname2ctype_pool_str3293[sizeof("modifiersymbol")];
-    char uniname2ctype_pool_str3298[sizeof("othermath")];
-    char uniname2ctype_pool_str3312[sizeof("insupplementalpunctuation")];
-    char uniname2ctype_pool_str3323[sizeof("ethiopic")];
-    char uniname2ctype_pool_str3386[sizeof("tglg")];
-    char uniname2ctype_pool_str3407[sizeof("tagalog")];
-    char uniname2ctype_pool_str3409[sizeof("otherdefaultignorablecodepoint")];
-    char uniname2ctype_pool_str3413[sizeof("incypriotsyllabary")];
-    char uniname2ctype_pool_str3417[sizeof("defaultignorablecodepoint")];
-    char uniname2ctype_pool_str3419[sizeof("any")];
-    char uniname2ctype_pool_str3424[sizeof("uppercaseletter")];
-    char uniname2ctype_pool_str3434[sizeof("rejang")];
-    char uniname2ctype_pool_str3452[sizeof("tagb")];
-    char uniname2ctype_pool_str3457[sizeof("inglagoliticsupplement")];
-    char uniname2ctype_pool_str3498[sizeof("graphemeclusterbreak=lf")];
-    char uniname2ctype_pool_str3515[sizeof("oldnortharabian")];
-    char uniname2ctype_pool_str3546[sizeof("otherpunctuation")];
-    char uniname2ctype_pool_str3553[sizeof("telugu")];
-    char uniname2ctype_pool_str3567[sizeof("graphemeclusterbreak=v")];
-    char uniname2ctype_pool_str3568[sizeof("graphemeclusterbreak=lv")];
-    char uniname2ctype_pool_str3631[sizeof("inyisyllables")];
-    char uniname2ctype_pool_str3632[sizeof("inlatinextendedb")];
-    char uniname2ctype_pool_str3723[sizeof("graphemeclusterbreak=zwj")];
-    char uniname2ctype_pool_str3738[sizeof("soyombo")];
-    char uniname2ctype_pool_str3790[sizeof("inbopomofoextended")];
-    char uniname2ctype_pool_str3832[sizeof("inhighsurrogates")];
-    char uniname2ctype_pool_str3894[sizeof("insupplementaryprivateuseareaa")];
-    char uniname2ctype_pool_str3907[sizeof("inegyptianhieroglyphs")];
-    char uniname2ctype_pool_str3952[sizeof("hebrew")];
-    char uniname2ctype_pool_str4009[sizeof("oldsoutharabian")];
-    char uniname2ctype_pool_str4052[sizeof("hyphen")];
-    char uniname2ctype_pool_str4089[sizeof("othergraphemeextend")];
-    char uniname2ctype_pool_str4132[sizeof("inboxdrawing")];
-    char uniname2ctype_pool_str4228[sizeof("insupplementalarrowsb")];
-    char uniname2ctype_pool_str4345[sizeof("openpunctuation")];
-    char uniname2ctype_pool_str4374[sizeof("inhangulcompatibilityjamo")];
-    char uniname2ctype_pool_str4377[sizeof("duployan")];
-    char uniname2ctype_pool_str4563[sizeof("insupplementalsymbolsandpictographs")];
-    char uniname2ctype_pool_str4636[sizeof("egyp")];
-    char uniname2ctype_pool_str4957[sizeof("zyyy")];
-    char uniname2ctype_pool_str5315[sizeof("insupplementaryprivateuseareab")];
-    char uniname2ctype_pool_str5676[sizeof("egyptianhieroglyphs")];
+    char uniname2ctype_pool_str1331[sizeof("logicalorderexception")];
+    char uniname2ctype_pool_str1340[sizeof("khmer")];
+    char uniname2ctype_pool_str1343[sizeof("limbu")];
+    char uniname2ctype_pool_str1354[sizeof("inscriptionalpahlavi")];
+    char uniname2ctype_pool_str1355[sizeof("oidc")];
+    char uniname2ctype_pool_str1358[sizeof("incjkunifiedideographsextensionc")];
+    char uniname2ctype_pool_str1360[sizeof("cntrl")];
+    char uniname2ctype_pool_str1365[sizeof("inlatinextendedadditional")];
+    char uniname2ctype_pool_str1366[sizeof("decimalnumber")];
+    char uniname2ctype_pool_str1367[sizeof("insorasompeng")];
+    char uniname2ctype_pool_str1369[sizeof("radical")];
+    char uniname2ctype_pool_str1373[sizeof("emojimodifier")];
+    char uniname2ctype_pool_str1375[sizeof("kharoshthi")];
+    char uniname2ctype_pool_str1380[sizeof("n")];
+    char uniname2ctype_pool_str1384[sizeof("math")];
+    char uniname2ctype_pool_str1387[sizeof("goth")];
+    char uniname2ctype_pool_str1400[sizeof("anatolianhieroglyphs")];
+    char uniname2ctype_pool_str1401[sizeof("inenclosedalphanumerics")];
+    char uniname2ctype_pool_str1407[sizeof("nandinagari")];
+    char uniname2ctype_pool_str1409[sizeof("no")];
+    char uniname2ctype_pool_str1419[sizeof("nko")];
+    char uniname2ctype_pool_str1420[sizeof("nkoo")];
+    char uniname2ctype_pool_str1422[sizeof("ingreekandcoptic")];
+    char uniname2ctype_pool_str1423[sizeof("olck")];
+    char uniname2ctype_pool_str1426[sizeof("p")];
+    char uniname2ctype_pool_str1428[sizeof("grantha")];
+    char uniname2ctype_pool_str1434[sizeof("olchiki")];
+    char uniname2ctype_pool_str1438[sizeof("incjkunifiedideographs")];
+    char uniname2ctype_pool_str1441[sizeof("zanb")];
+    char uniname2ctype_pool_str1442[sizeof("intirhuta")];
+    char uniname2ctype_pool_str1445[sizeof("oids")];
+    char uniname2ctype_pool_str1448[sizeof("inhatran")];
+    char uniname2ctype_pool_str1449[sizeof("linb")];
+    char uniname2ctype_pool_str1450[sizeof("xpeo")];
+    char uniname2ctype_pool_str1451[sizeof("mult")];
+    char uniname2ctype_pool_str1454[sizeof("saurashtra")];
+    char uniname2ctype_pool_str1457[sizeof("kthi")];
+    char uniname2ctype_pool_str1462[sizeof("inbhaiksuki")];
+    char uniname2ctype_pool_str1466[sizeof("olower")];
+    char uniname2ctype_pool_str1470[sizeof("innabataean")];
+    char uniname2ctype_pool_str1471[sizeof("inphoenician")];
+    char uniname2ctype_pool_str1475[sizeof("inkanbun")];
+    char uniname2ctype_pool_str1476[sizeof("inmeroitichieroglyphs")];
+    char uniname2ctype_pool_str1478[sizeof("inkayahli")];
+    char uniname2ctype_pool_str1481[sizeof("phnx")];
+    char uniname2ctype_pool_str1485[sizeof("inoriya")];
+    char uniname2ctype_pool_str1489[sizeof("enclosingmark")];
+    char uniname2ctype_pool_str1495[sizeof("sd")];
+    char uniname2ctype_pool_str1497[sizeof("inelbasan")];
+    char uniname2ctype_pool_str1498[sizeof("wara")];
+    char uniname2ctype_pool_str1499[sizeof("inenclosedideographicsupplement")];
+    char uniname2ctype_pool_str1501[sizeof("sidd")];
+    char uniname2ctype_pool_str1507[sizeof("linearb")];
+    char uniname2ctype_pool_str1509[sizeof("hani")];
+    char uniname2ctype_pool_str1512[sizeof("han")];
+    char uniname2ctype_pool_str1517[sizeof("inenclosedalphanumericsupplement")];
+    char uniname2ctype_pool_str1519[sizeof("medf")];
+    char uniname2ctype_pool_str1520[sizeof("bidicontrol")];
+    char uniname2ctype_pool_str1523[sizeof("hano")];
+    char uniname2ctype_pool_str1524[sizeof("inphaistosdisc")];
+    char uniname2ctype_pool_str1529[sizeof("limb")];
+    char uniname2ctype_pool_str1531[sizeof("inkangxiradicals")];
+    char uniname2ctype_pool_str1533[sizeof("lepc")];
+    char uniname2ctype_pool_str1535[sizeof("medefaidrin")];
+    char uniname2ctype_pool_str1536[sizeof("braille")];
+    char uniname2ctype_pool_str1537[sizeof("regionalindicator")];
+    char uniname2ctype_pool_str1542[sizeof("inlowsurrogates")];
+    char uniname2ctype_pool_str1544[sizeof("inshorthandformatcontrols")];
+    char uniname2ctype_pool_str1547[sizeof("brah")];
+    char uniname2ctype_pool_str1548[sizeof("inkhojki")];
+    char uniname2ctype_pool_str1549[sizeof("inoldhungarian")];
+    char uniname2ctype_pool_str1552[sizeof("hanunoo")];
+    char uniname2ctype_pool_str1555[sizeof("hira")];
+    char uniname2ctype_pool_str1557[sizeof("beng")];
+    char uniname2ctype_pool_str1563[sizeof("emojimodifierbase")];
+    char uniname2ctype_pool_str1565[sizeof("inarabic")];
+    char uniname2ctype_pool_str1567[sizeof("lyci")];
+    char uniname2ctype_pool_str1569[sizeof("ahex")];
+    char uniname2ctype_pool_str1572[sizeof("inherited")];
+    char uniname2ctype_pool_str1580[sizeof("glag")];
+    char uniname2ctype_pool_str1582[sizeof("lycian")];
+    char uniname2ctype_pool_str1587[sizeof("indogra")];
+    char uniname2ctype_pool_str1594[sizeof("dsrt")];
+    char uniname2ctype_pool_str1597[sizeof("arab")];
+    char uniname2ctype_pool_str1602[sizeof("mymr")];
+    char uniname2ctype_pool_str1607[sizeof("myanmar")];
+    char uniname2ctype_pool_str1613[sizeof("phli")];
+    char uniname2ctype_pool_str1617[sizeof("inimperialaramaic")];
+    char uniname2ctype_pool_str1622[sizeof("ingreekextended")];
+    char uniname2ctype_pool_str1623[sizeof("inanatolianhieroglyphs")];
+    char uniname2ctype_pool_str1629[sizeof("punctuation")];
+    char uniname2ctype_pool_str1631[sizeof("takri")];
+    char uniname2ctype_pool_str1635[sizeof("graphemeextend")];
+    char uniname2ctype_pool_str1638[sizeof("invai")];
+    char uniname2ctype_pool_str1643[sizeof("cwl")];
+    char uniname2ctype_pool_str1654[sizeof("ingeometricshapes")];
+    char uniname2ctype_pool_str1655[sizeof("emojicomponent")];
+    char uniname2ctype_pool_str1662[sizeof("coptic")];
+    char uniname2ctype_pool_str1671[sizeof("deseret")];
+    char uniname2ctype_pool_str1675[sizeof("inarabicpresentationformsa")];
+    char uniname2ctype_pool_str1676[sizeof("takr")];
+    char uniname2ctype_pool_str1677[sizeof("inbasiclatin")];
+    char uniname2ctype_pool_str1682[sizeof("incjkunifiedideographsextensiond")];
+    char uniname2ctype_pool_str1686[sizeof("sinh")];
+    char uniname2ctype_pool_str1687[sizeof("sund")];
+    char uniname2ctype_pool_str1691[sizeof("shavian")];
+    char uniname2ctype_pool_str1692[sizeof("taile")];
+    char uniname2ctype_pool_str1699[sizeof("insundanesesupplement")];
+    char uniname2ctype_pool_str1702[sizeof("inelymaic")];
+    char uniname2ctype_pool_str1703[sizeof("insoyombo")];
+    char uniname2ctype_pool_str1704[sizeof("bhks")];
+    char uniname2ctype_pool_str1714[sizeof("bhaiksuki")];
+    char uniname2ctype_pool_str1716[sizeof("incjkcompatibility")];
+    char uniname2ctype_pool_str1722[sizeof("inhanunoo")];
+    char uniname2ctype_pool_str1724[sizeof("intangut")];
+    char uniname2ctype_pool_str1728[sizeof("sogdian")];
+    char uniname2ctype_pool_str1729[sizeof("inlatinextendedd")];
+    char uniname2ctype_pool_str1730[sizeof("sogo")];
+    char uniname2ctype_pool_str1731[sizeof("insinhalaarchaicnumbers")];
+    char uniname2ctype_pool_str1732[sizeof("ideographic")];
+    char uniname2ctype_pool_str1733[sizeof("ugar")];
+    char uniname2ctype_pool_str1740[sizeof("copt")];
+    char uniname2ctype_pool_str1742[sizeof("imperialaramaic")];
+    char uniname2ctype_pool_str1745[sizeof("insogdian")];
+    char uniname2ctype_pool_str1746[sizeof("indingbats")];
+    char uniname2ctype_pool_str1750[sizeof("format")];
+    char uniname2ctype_pool_str1752[sizeof("ininscriptionalpahlavi")];
+    char uniname2ctype_pool_str1757[sizeof("ininscriptionalparthian")];
+    char uniname2ctype_pool_str1766[sizeof("grbase")];
+    char uniname2ctype_pool_str1769[sizeof("inbatak")];
+    char uniname2ctype_pool_str1776[sizeof("cprt")];
+    char uniname2ctype_pool_str1780[sizeof("cwcf")];
+    char uniname2ctype_pool_str1788[sizeof("cuneiform")];
+    char uniname2ctype_pool_str1791[sizeof("term")];
+    char uniname2ctype_pool_str1806[sizeof("intibetan")];
+    char uniname2ctype_pool_str1810[sizeof("intags")];
+    char uniname2ctype_pool_str1811[sizeof("asciihexdigit")];
+    char uniname2ctype_pool_str1813[sizeof("sentenceterminal")];
+    char uniname2ctype_pool_str1816[sizeof("inmayannumerals")];
+    char uniname2ctype_pool_str1821[sizeof("nand")];
+    char uniname2ctype_pool_str1825[sizeof("patsyn")];
+    char uniname2ctype_pool_str1826[sizeof("hatran")];
+    char uniname2ctype_pool_str1828[sizeof("inblockelements")];
+    char uniname2ctype_pool_str1838[sizeof("inornamentaldingbats")];
+    char uniname2ctype_pool_str1842[sizeof("innumberforms")];
+    char uniname2ctype_pool_str1843[sizeof("oldpersian")];
+    char uniname2ctype_pool_str1846[sizeof("inshavian")];
+    char uniname2ctype_pool_str1848[sizeof("bopo")];
+    char uniname2ctype_pool_str1861[sizeof("hatr")];
+    char uniname2ctype_pool_str1866[sizeof("caseignorable")];
+    char uniname2ctype_pool_str1871[sizeof("inoldpersian")];
+    char uniname2ctype_pool_str1878[sizeof("modifierletter")];
+    char uniname2ctype_pool_str1881[sizeof("cwu")];
+    char uniname2ctype_pool_str1891[sizeof("lydi")];
+    char uniname2ctype_pool_str1892[sizeof("inbyzantinemusicalsymbols")];
+    char uniname2ctype_pool_str1896[sizeof("ingeometricshapesextended")];
+    char uniname2ctype_pool_str1904[sizeof("inmyanmarextendedb")];
+    char uniname2ctype_pool_str1905[sizeof("innushu")];
+    char uniname2ctype_pool_str1906[sizeof("lydian")];
+    char uniname2ctype_pool_str1911[sizeof("inunifiedcanadianaboriginalsyllabics")];
+    char uniname2ctype_pool_str1915[sizeof("orkh")];
+    char uniname2ctype_pool_str1928[sizeof("inyiradicals")];
+    char uniname2ctype_pool_str1929[sizeof("inkatakanaphoneticextensions")];
+    char uniname2ctype_pool_str1930[sizeof("inethiopicextendeda")];
+    char uniname2ctype_pool_str1932[sizeof("incoptic")];
+    char uniname2ctype_pool_str1936[sizeof("inarabicextendeda")];
+    char uniname2ctype_pool_str1947[sizeof("oldpermic")];
+    char uniname2ctype_pool_str1950[sizeof("incjksymbolsandpunctuation")];
+    char uniname2ctype_pool_str1951[sizeof("word")];
+    char uniname2ctype_pool_str1958[sizeof("bopomofo")];
+    char uniname2ctype_pool_str1961[sizeof("ogam")];
+    char uniname2ctype_pool_str1964[sizeof("inlisu")];
+    char uniname2ctype_pool_str1967[sizeof("inoldpermic")];
+    char uniname2ctype_pool_str1968[sizeof("innoblock")];
+    char uniname2ctype_pool_str1971[sizeof("taiviet")];
+    char uniname2ctype_pool_str1985[sizeof("inbraillepatterns")];
+    char uniname2ctype_pool_str1991[sizeof("alpha")];
+    char uniname2ctype_pool_str1993[sizeof("inbalinese")];
+    char uniname2ctype_pool_str1994[sizeof("sorasompeng")];
+    char uniname2ctype_pool_str1996[sizeof("closepunctuation")];
+    char uniname2ctype_pool_str2006[sizeof("inmiscellaneousmathematicalsymbolsb")];
+    char uniname2ctype_pool_str2010[sizeof("inlepcha")];
+    char uniname2ctype_pool_str2014[sizeof("insyriacsupplement")];
+    char uniname2ctype_pool_str2016[sizeof("newa")];
+    char uniname2ctype_pool_str2023[sizeof("spacingmark")];
+    char uniname2ctype_pool_str2024[sizeof("inpalmyrene")];
+    char uniname2ctype_pool_str2033[sizeof("cyrl")];
+    char uniname2ctype_pool_str2043[sizeof("assigned")];
+    char uniname2ctype_pool_str2048[sizeof("mlym")];
+    char uniname2ctype_pool_str2055[sizeof("malayalam")];
+    char uniname2ctype_pool_str2058[sizeof("ext")];
+    char uniname2ctype_pool_str2062[sizeof("newtailue")];
+    char uniname2ctype_pool_str2070[sizeof("space")];
+    char uniname2ctype_pool_str2073[sizeof("intelugu")];
+    char uniname2ctype_pool_str2078[sizeof("idsb")];
+    char uniname2ctype_pool_str2083[sizeof("indevanagari")];
+    char uniname2ctype_pool_str2084[sizeof("avestan")];
+    char uniname2ctype_pool_str2085[sizeof("cf")];
+    char uniname2ctype_pool_str2093[sizeof("palmyrene")];
+    char uniname2ctype_pool_str2095[sizeof("inethiopicsupplement")];
+    char uniname2ctype_pool_str2097[sizeof("soyo")];
+    char uniname2ctype_pool_str2098[sizeof("xposixpunct")];
+    char uniname2ctype_pool_str2102[sizeof("pf")];
+    char uniname2ctype_pool_str2103[sizeof("sarb")];
+    char uniname2ctype_pool_str2109[sizeof("zanabazarsquare")];
+    char uniname2ctype_pool_str2110[sizeof("ugaritic")];
+    char uniname2ctype_pool_str2112[sizeof("osge")];
+    char uniname2ctype_pool_str2114[sizeof("java")];
+    char uniname2ctype_pool_str2117[sizeof("sharada")];
+    char uniname2ctype_pool_str2119[sizeof("dogra")];
+    char uniname2ctype_pool_str2135[sizeof("bugi")];
+    char uniname2ctype_pool_str2137[sizeof("meroitichieroglyphs")];
+    char uniname2ctype_pool_str2145[sizeof("separator")];
+    char uniname2ctype_pool_str2146[sizeof("ingeorgiansupplement")];
+    char uniname2ctype_pool_str2149[sizeof("sogd")];
+    char uniname2ctype_pool_str2150[sizeof("tale")];
+    char uniname2ctype_pool_str2153[sizeof("inunifiedcanadianaboriginalsyllabicsextended")];
+    char uniname2ctype_pool_str2161[sizeof("terminalpunctuation")];
+    char uniname2ctype_pool_str2165[sizeof("shrd")];
+    char uniname2ctype_pool_str2166[sizeof("graph")];
+    char uniname2ctype_pool_str2167[sizeof("olditalic")];
+    char uniname2ctype_pool_str2170[sizeof("dogr")];
+    char uniname2ctype_pool_str2173[sizeof("gujr")];
+    char uniname2ctype_pool_str2181[sizeof("phag")];
+    char uniname2ctype_pool_str2182[sizeof("gujarati")];
+    char uniname2ctype_pool_str2195[sizeof("inhanguljamo")];
+    char uniname2ctype_pool_str2199[sizeof("javanese")];
+    char uniname2ctype_pool_str2201[sizeof("taml")];
+    char uniname2ctype_pool_str2204[sizeof("inphoneticextensions")];
+    char uniname2ctype_pool_str2207[sizeof("siddham")];
+    char uniname2ctype_pool_str2217[sizeof("buginese")];
+    char uniname2ctype_pool_str2218[sizeof("inmongoliansupplement")];
+    char uniname2ctype_pool_str2222[sizeof("invariationselectors")];
+    char uniname2ctype_pool_str2224[sizeof("inhanguljamoextendeda")];
+    char uniname2ctype_pool_str2225[sizeof("inverticalforms")];
+    char uniname2ctype_pool_str2228[sizeof("syrc")];
+    char uniname2ctype_pool_str2229[sizeof("number")];
+    char uniname2ctype_pool_str2235[sizeof("incopticepactnumbers")];
+    char uniname2ctype_pool_str2238[sizeof("avst")];
+    char uniname2ctype_pool_str2244[sizeof("inbamum")];
+    char uniname2ctype_pool_str2247[sizeof("nd")];
+    char uniname2ctype_pool_str2248[sizeof("insuttonsignwriting")];
+    char uniname2ctype_pool_str2252[sizeof("extender")];
+    char uniname2ctype_pool_str2258[sizeof("intaiviet")];
+    char uniname2ctype_pool_str2260[sizeof("hex")];
+    char uniname2ctype_pool_str2268[sizeof("incjkunifiedideographsextensionf")];
+    char uniname2ctype_pool_str2271[sizeof("other")];
+    char uniname2ctype_pool_str2272[sizeof("otheridcontinue")];
+    char uniname2ctype_pool_str2278[sizeof("shaw")];
+    char uniname2ctype_pool_str2282[sizeof("dash")];
+    char uniname2ctype_pool_str2285[sizeof("othernumber")];
+    char uniname2ctype_pool_str2294[sizeof("orya")];
+    char uniname2ctype_pool_str2302[sizeof("invedicextensions")];
+    char uniname2ctype_pool_str2305[sizeof("sgnw")];
+    char uniname2ctype_pool_str2312[sizeof("caucasianalbanian")];
+    char uniname2ctype_pool_str2315[sizeof("inmathematicalalphanumericsymbols")];
+    char uniname2ctype_pool_str2321[sizeof("inphoneticextensionssupplement")];
+    char uniname2ctype_pool_str2339[sizeof("invariationselectorssupplement")];
+    char uniname2ctype_pool_str2343[sizeof("induployan")];
+    char uniname2ctype_pool_str2344[sizeof("syriac")];
+    char uniname2ctype_pool_str2357[sizeof("oalpha")];
+    char uniname2ctype_pool_str2361[sizeof("innyiakengpuachuehmong")];
+    char uniname2ctype_pool_str2364[sizeof("incombiningdiacriticalmarks")];
+    char uniname2ctype_pool_str2365[sizeof("inethiopicextended")];
+    char uniname2ctype_pool_str2373[sizeof("nl")];
+    char uniname2ctype_pool_str2374[sizeof("incombiningdiacriticalmarksforsymbols")];
+    char uniname2ctype_pool_str2375[sizeof("khudawadi")];
+    char uniname2ctype_pool_str2378[sizeof("otheralphabetic")];
+    char uniname2ctype_pool_str2389[sizeof("oldhungarian")];
+    char uniname2ctype_pool_str2396[sizeof("incurrencysymbols")];
+    char uniname2ctype_pool_str2397[sizeof("incjkradicalssupplement")];
+    char uniname2ctype_pool_str2398[sizeof("inglagolitic")];
+    char uniname2ctype_pool_str2415[sizeof("intifinagh")];
+    char uniname2ctype_pool_str2416[sizeof("ingeorgianextended")];
+    char uniname2ctype_pool_str2427[sizeof("surrogate")];
+    char uniname2ctype_pool_str2433[sizeof("incyrillicextendedb")];
+    char uniname2ctype_pool_str2440[sizeof("ethi")];
+    char uniname2ctype_pool_str2451[sizeof("titlecaseletter")];
+    char uniname2ctype_pool_str2454[sizeof("rohg")];
+    char uniname2ctype_pool_str2458[sizeof("inmeroiticcursive")];
+    char uniname2ctype_pool_str2460[sizeof("idstrinaryoperator")];
+    char uniname2ctype_pool_str2470[sizeof("inphagspa")];
+    char uniname2ctype_pool_str2475[sizeof("lepcha")];
+    char uniname2ctype_pool_str2479[sizeof("intagalog")];
+    char uniname2ctype_pool_str2480[sizeof("mathsymbol")];
+    char uniname2ctype_pool_str2481[sizeof("incombiningdiacriticalmarkssupplement")];
+    char uniname2ctype_pool_str2506[sizeof("inbrahmi")];
+    char uniname2ctype_pool_str2513[sizeof("insymbolsandpictographsextendeda")];
+    char uniname2ctype_pool_str2519[sizeof("inlinearbsyllabary")];
+    char uniname2ctype_pool_str2529[sizeof("oldturkic")];
+    char uniname2ctype_pool_str2534[sizeof("inbengali")];
+    char uniname2ctype_pool_str2540[sizeof("wancho")];
+    char uniname2ctype_pool_str2542[sizeof("osmanya")];
+    char uniname2ctype_pool_str2548[sizeof("buhd")];
+    char uniname2ctype_pool_str2552[sizeof("insmallformvariants")];
+    char uniname2ctype_pool_str2561[sizeof("indevanagariextended")];
+    char uniname2ctype_pool_str2562[sizeof("softdotted")];
+    char uniname2ctype_pool_str2564[sizeof("inbuginese")];
+    char uniname2ctype_pool_str2566[sizeof("mahj")];
+    char uniname2ctype_pool_str2567[sizeof("inlatin1supplement")];
+    char uniname2ctype_pool_str2570[sizeof("ingothic")];
+    char uniname2ctype_pool_str2575[sizeof("mahajani")];
+    char uniname2ctype_pool_str2576[sizeof("hang")];
+    char uniname2ctype_pool_str2579[sizeof("sylo")];
+    char uniname2ctype_pool_str2586[sizeof("warangciti")];
+    char uniname2ctype_pool_str2595[sizeof("ingujarati")];
+    char uniname2ctype_pool_str2603[sizeof("tirhuta")];
+    char uniname2ctype_pool_str2606[sizeof("incombiningdiacriticalmarksextended")];
+    char uniname2ctype_pool_str2609[sizeof("spaceseparator")];
+    char uniname2ctype_pool_str2614[sizeof("ingunjalagondi")];
+    char uniname2ctype_pool_str2624[sizeof("wcho")];
+    char uniname2ctype_pool_str2631[sizeof("hiragana")];
+    char uniname2ctype_pool_str2634[sizeof("extendedpictographic")];
+    char uniname2ctype_pool_str2643[sizeof("inrejang")];
+    char uniname2ctype_pool_str2644[sizeof("inottomansiyaqnumbers")];
+    char uniname2ctype_pool_str2648[sizeof("nchar")];
+    char uniname2ctype_pool_str2650[sizeof("cyrillic")];
+    char uniname2ctype_pool_str2653[sizeof("khoj")];
+    char uniname2ctype_pool_str2656[sizeof("inlimbu")];
+    char uniname2ctype_pool_str2663[sizeof("hmng")];
+    char uniname2ctype_pool_str2665[sizeof("thaa")];
+    char uniname2ctype_pool_str2668[sizeof("thai")];
+    char uniname2ctype_pool_str2670[sizeof("incjkunifiedideographsextensionb")];
+    char uniname2ctype_pool_str2673[sizeof("deva")];
+    char uniname2ctype_pool_str2676[sizeof("thaana")];
+    char uniname2ctype_pool_str2688[sizeof("phagspa")];
+    char uniname2ctype_pool_str2691[sizeof("devanagari")];
+    char uniname2ctype_pool_str2692[sizeof("tang")];
+    char uniname2ctype_pool_str2694[sizeof("currencysymbol")];
+    char uniname2ctype_pool_str2698[sizeof("tagbanwa")];
+    char uniname2ctype_pool_str2701[sizeof("inenclosedcjklettersandmonths")];
+    char uniname2ctype_pool_str2702[sizeof("tamil")];
+    char uniname2ctype_pool_str2721[sizeof("tirh")];
+    char uniname2ctype_pool_str2723[sizeof("digit")];
+    char uniname2ctype_pool_str2732[sizeof("talu")];
+    char uniname2ctype_pool_str2747[sizeof("zp")];
+    char uniname2ctype_pool_str2750[sizeof("inpaucinhau")];
+    char uniname2ctype_pool_str2760[sizeof("taitham")];
+    char uniname2ctype_pool_str2764[sizeof("otherlowercase")];
+    char uniname2ctype_pool_str2768[sizeof("telu")];
+    char uniname2ctype_pool_str2769[sizeof("inaegeannumbers")];
+    char uniname2ctype_pool_str2777[sizeof("otherletter")];
+    char uniname2ctype_pool_str2780[sizeof("whitespace")];
+    char uniname2ctype_pool_str2793[sizeof("nonspacingmark")];
+    char uniname2ctype_pool_str2816[sizeof("graphemeclusterbreak=spacingmark")];
+    char uniname2ctype_pool_str2821[sizeof("inletterlikesymbols")];
+    char uniname2ctype_pool_str2834[sizeof("intagbanwa")];
+    char uniname2ctype_pool_str2841[sizeof("oldsogdian")];
+    char uniname2ctype_pool_str2848[sizeof("otheridstart")];
+    char uniname2ctype_pool_str2852[sizeof("graphemeclusterbreak=cr")];
+    char uniname2ctype_pool_str2855[sizeof("narb")];
+    char uniname2ctype_pool_str2856[sizeof("changeswhencasemapped")];
+    char uniname2ctype_pool_str2859[sizeof("inbopomofo")];
+    char uniname2ctype_pool_str2862[sizeof("tangut")];
+    char uniname2ctype_pool_str2867[sizeof("graphemeclusterbreak=regionalindicator")];
+    char uniname2ctype_pool_str2871[sizeof("noncharactercodepoint")];
+    char uniname2ctype_pool_str2883[sizeof("otheruppercase")];
+    char uniname2ctype_pool_str2885[sizeof("rjng")];
+    char uniname2ctype_pool_str2886[sizeof("sylotinagri")];
+    char uniname2ctype_pool_str2904[sizeof("inhangulsyllables")];
+    char uniname2ctype_pool_str2905[sizeof("emojipresentation")];
+    char uniname2ctype_pool_str2906[sizeof("inindicsiyaqnumbers")];
+    char uniname2ctype_pool_str2909[sizeof("inbassavah")];
+    char uniname2ctype_pool_str2912[sizeof("ogrext")];
+    char uniname2ctype_pool_str2926[sizeof("othersymbol")];
+    char uniname2ctype_pool_str2938[sizeof("oupper")];
+    char uniname2ctype_pool_str2941[sizeof("inbuhid")];
+    char uniname2ctype_pool_str2963[sizeof("hmnp")];
+    char uniname2ctype_pool_str2964[sizeof("inpsalterpahlavi")];
+    char uniname2ctype_pool_str2967[sizeof("finalpunctuation")];
+    char uniname2ctype_pool_str2980[sizeof("phlp")];
+    char uniname2ctype_pool_str2984[sizeof("inbamumsupplement")];
+    char uniname2ctype_pool_str2986[sizeof("buhid")];
+    char uniname2ctype_pool_str2987[sizeof("paragraphseparator")];
+    char uniname2ctype_pool_str2988[sizeof("inalphabeticpresentationforms")];
+    char uniname2ctype_pool_str2993[sizeof("omath")];
+    char uniname2ctype_pool_str3000[sizeof("any")];
+    char uniname2ctype_pool_str3001[sizeof("elba")];
+    char uniname2ctype_pool_str3002[sizeof("changeswhentitlecased")];
+    char uniname2ctype_pool_str3005[sizeof("incombininghalfmarks")];
+    char uniname2ctype_pool_str3006[sizeof("intangutcomponents")];
+    char uniname2ctype_pool_str3012[sizeof("hebr")];
+    char uniname2ctype_pool_str3028[sizeof("deprecated")];
+    char uniname2ctype_pool_str3045[sizeof("inarabicmathematicalalphabeticsymbols")];
+    char uniname2ctype_pool_str3055[sizeof("inprivateusearea")];
+    char uniname2ctype_pool_str3089[sizeof("kayahli")];
+    char uniname2ctype_pool_str3098[sizeof("inplayingcards")];
+    char uniname2ctype_pool_str3099[sizeof("inarabicpresentationformsb")];
+    char uniname2ctype_pool_str3100[sizeof("ogham")];
+    char uniname2ctype_pool_str3101[sizeof("elym")];
+    char uniname2ctype_pool_str3107[sizeof("graphemeclusterbreak=t")];
+    char uniname2ctype_pool_str3109[sizeof("graphemeclusterbreak=lvt")];
+    char uniname2ctype_pool_str3111[sizeof("nbat")];
+    char uniname2ctype_pool_str3125[sizeof("nabataean")];
+    char uniname2ctype_pool_str3126[sizeof("hangul")];
+    char uniname2ctype_pool_str3134[sizeof("elymaic")];
+    char uniname2ctype_pool_str3158[sizeof("inhebrew")];
+    char uniname2ctype_pool_str3165[sizeof("injavanese")];
+    char uniname2ctype_pool_str3169[sizeof("symbol")];
+    char uniname2ctype_pool_str3176[sizeof("inmathematicaloperators")];
+    char uniname2ctype_pool_str3180[sizeof("inarabicsupplement")];
+    char uniname2ctype_pool_str3185[sizeof("cypriot")];
+    char uniname2ctype_pool_str3194[sizeof("hung")];
+    char uniname2ctype_pool_str3205[sizeof("wspace")];
+    char uniname2ctype_pool_str3209[sizeof("changeswhenlowercased")];
+    char uniname2ctype_pool_str3215[sizeof("elbasan")];
+    char uniname2ctype_pool_str3218[sizeof("hluw")];
+    char uniname2ctype_pool_str3237[sizeof("insuperscriptsandsubscripts")];
+    char uniname2ctype_pool_str3239[sizeof("graphemeclusterbreak=extend")];
+    char uniname2ctype_pool_str3240[sizeof("graphemeclusterbreak=prepend")];
+    char uniname2ctype_pool_str3248[sizeof("nshu")];
+    char uniname2ctype_pool_str3254[sizeof("oldnortharabian")];
+    char uniname2ctype_pool_str3266[sizeof("inyijinghexagramsymbols")];
+    char uniname2ctype_pool_str3286[sizeof("hexdigit")];
+    char uniname2ctype_pool_str3297[sizeof("graphemeclusterbreak=l")];
+    char uniname2ctype_pool_str3303[sizeof("graphemeclusterbreak=control")];
+    char uniname2ctype_pool_str3309[sizeof("bassavah")];
+    char uniname2ctype_pool_str3317[sizeof("otherdefaultignorablecodepoint")];
+    char uniname2ctype_pool_str3328[sizeof("changeswhenuppercased")];
+    char uniname2ctype_pool_str3329[sizeof("inalchemicalsymbols")];
+    char uniname2ctype_pool_str3348[sizeof("insupplementalarrowsa")];
+    char uniname2ctype_pool_str3349[sizeof("inyisyllables")];
+    char uniname2ctype_pool_str3351[sizeof("tibt")];
+    char uniname2ctype_pool_str3360[sizeof("othermath")];
+    char uniname2ctype_pool_str3363[sizeof("tibetan")];
+    char uniname2ctype_pool_str3365[sizeof("inmahjongtiles")];
+    char uniname2ctype_pool_str3433[sizeof("signwriting")];
+    char uniname2ctype_pool_str3436[sizeof("nushu")];
+    char uniname2ctype_pool_str3439[sizeof("modifiersymbol")];
+    char uniname2ctype_pool_str3442[sizeof("inhalfwidthandfullwidthforms")];
+    char uniname2ctype_pool_str3458[sizeof("upper")];
+    char uniname2ctype_pool_str3460[sizeof("insupplementalarrowsc")];
+    char uniname2ctype_pool_str3511[sizeof("insupplementalmathematicaloperators")];
+    char uniname2ctype_pool_str3512[sizeof("incypriotsyllabary")];
+    char uniname2ctype_pool_str3517[sizeof("dupl")];
+    char uniname2ctype_pool_str3531[sizeof("tavt")];
+    char uniname2ctype_pool_str3532[sizeof("inpahawhhmong")];
+    char uniname2ctype_pool_str3533[sizeof("alphabetic")];
+    char uniname2ctype_pool_str3550[sizeof("dashpunctuation")];
+    char uniname2ctype_pool_str3558[sizeof("uppercase")];
+    char uniname2ctype_pool_str3613[sizeof("soyombo")];
+    char uniname2ctype_pool_str3614[sizeof("hanifirohingya")];
+    char uniname2ctype_pool_str3616[sizeof("otherpunctuation")];
+    char uniname2ctype_pool_str3628[sizeof("defaultignorablecodepoint")];
+    char uniname2ctype_pool_str3648[sizeof("inhanguljamoextendedb")];
+    char uniname2ctype_pool_str3664[sizeof("aghb")];
+    char uniname2ctype_pool_str3703[sizeof("tifinagh")];
+    char uniname2ctype_pool_str3705[sizeof("inlatinextendedb")];
+    char uniname2ctype_pool_str3714[sizeof("tfng")];
+    char uniname2ctype_pool_str3766[sizeof("inhighprivateusesurrogates")];
+    char uniname2ctype_pool_str3791[sizeof("changeswhencasefolded")];
+    char uniname2ctype_pool_str3805[sizeof("dep")];
+    char uniname2ctype_pool_str3819[sizeof("oldsoutharabian")];
+    char uniname2ctype_pool_str3821[sizeof("graphemeclusterbreak=lf")];
+    char uniname2ctype_pool_str3842[sizeof("pahawhhmong")];
+    char uniname2ctype_pool_str3845[sizeof("unifiedideograph")];
+    char uniname2ctype_pool_str3891[sizeof("uppercaseletter")];
+    char uniname2ctype_pool_str3924[sizeof("insupplementalpunctuation")];
+    char uniname2ctype_pool_str3942[sizeof("ethiopic")];
+    char uniname2ctype_pool_str3976[sizeof("inglagoliticsupplement")];
+    char uniname2ctype_pool_str3995[sizeof("rejang")];
+    char uniname2ctype_pool_str4087[sizeof("inbopomofoextended")];
+    char uniname2ctype_pool_str4109[sizeof("tagb")];
+    char uniname2ctype_pool_str4137[sizeof("othergraphemeextend")];
+    char uniname2ctype_pool_str4162[sizeof("inegyptianhieroglyphs")];
+    char uniname2ctype_pool_str4175[sizeof("inegyptianhieroglyphformatcontrols")];
+    char uniname2ctype_pool_str4203[sizeof("hebrew")];
+    char uniname2ctype_pool_str4254[sizeof("tglg")];
+    char uniname2ctype_pool_str4276[sizeof("tagalog")];
+    char uniname2ctype_pool_str4291[sizeof("graphemeclusterbreak=zwj")];
+    char uniname2ctype_pool_str4321[sizeof("zyyy")];
+    char uniname2ctype_pool_str4360[sizeof("hyphen")];
+    char uniname2ctype_pool_str4397[sizeof("inboxdrawing")];
+    char uniname2ctype_pool_str4405[sizeof("graphemeclusterbreak=v")];
+    char uniname2ctype_pool_str4406[sizeof("graphemeclusterbreak=lv")];
+    char uniname2ctype_pool_str4460[sizeof("telugu")];
+    char uniname2ctype_pool_str4485[sizeof("duployan")];
+    char uniname2ctype_pool_str4528[sizeof("openpunctuation")];
+    char uniname2ctype_pool_str4674[sizeof("insupplementaryprivateuseareaa")];
+    char uniname2ctype_pool_str4683[sizeof("inhighsurrogates")];
+    char uniname2ctype_pool_str4772[sizeof("insupplementalarrowsb")];
+    char uniname2ctype_pool_str4948[sizeof("insupplementalsymbolsandpictographs")];
+    char uniname2ctype_pool_str4955[sizeof("egyp")];
+    char uniname2ctype_pool_str4986[sizeof("inhangulcompatibilityjamo")];
+    char uniname2ctype_pool_str5114[sizeof("nyiakengpuachuehmong")];
+    char uniname2ctype_pool_str5608[sizeof("egyptianhieroglyphs")];
+    char uniname2ctype_pool_str6098[sizeof("insupplementaryprivateuseareab")];
 #endif /* USE_UNICODE_PROPERTIES */
   };
 static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
@@ -37279,285 +38352,267 @@ static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
     "word",
 #else /* USE_UNICODE_PROPERTIES */
     "yi",
-    "ci",
     "yiii",
     "lana",
-    "cn",
-    "lina",
     "z",
-    "me",
+    "lina",
+    "maka",
     "mani",
     "mn",
-    "loe",
-    "maka",
-    "co",
     "miao",
     "lo",
+    "ci",
     "lao",
     "laoo",
-    "zzzz",
-    "pi",
-    "pe",
-    "cari",
-    "gran",
-    "meeteimayek",
     "inkannada",
+    "cn",
+    "pi",
     "innko",
-    "mendekikakui",
+    "zzzz",
+    "gran",
+    "co",
     "lineara",
-    "carian",
-    "geor",
-    "grek",
-    "po",
     "mark",
-    "mero",
+    "po",
+    "me",
+    "cari",
+    "inkharoshthi",
     "kana",
-    "greek",
+    "loe",
     "m",
+    "grek",
     "mro",
     "mroo",
-    "cakm",
-    "inkharoshthi",
+    "carian",
+    "geor",
+    "greek",
     "gonm",
-    "c",
-    "inarmenian",
+    "mendekikakui",
+    "pe",
+    "mero",
     "inosmanya",
-    "common",
-    "inmro",
+    "cakm",
     "inmanichaean",
+    "inmro",
     "inmiao",
-    "mandaic",
-    "qaai",
-    "cans",
     "inchakma",
-    "prependedconcatenationmark",
+    "c",
+    "mandaic",
+    "meeteimayek",
+    "inarmenian",
     "inmyanmar",
-    "lm",
-    "inideographicsymbolsandpunctuation",
-    "marc",
     "inmakasar",
-    "connectorpunctuation",
-    "inkhmer",
-    "merc",
-    "perm",
-    "inavestan",
-    "combiningmark",
-    "inipaextensions",
-    "incuneiformnumbersandpunctuation",
+    "common",
+    "lm",
+    "marc",
     "inrunic",
     "incarian",
-    "incherokee",
+    "inideographicsymbolsandpunctuation",
+    "inkhmer",
+    "qaai",
     "inahom",
-    "insharada",
-    "masaramgondi",
-    "cc",
-    "makasar",
+    "merc",
+    "combiningmark",
     "lc",
-    "inarrows",
+    "perm",
     "mc",
-    "incuneiform",
-    "lineseparator",
+    "connectorpunctuation",
+    "cans",
+    "incuneiformnumbersandpunctuation",
     "armi",
+    "cc",
     "armn",
-    "inzanabazarsquare",
-    "qaac",
-    "qmark",
-    "insamaritan",
-    "armenian",
+    "incherokee",
+    "prependedconcatenationmark",
+    "incuneiform",
+    "inavestan",
+    "inipaextensions",
     "pc",
-    "inmasaramgondi",
+    "armenian",
+    "insharada",
     "inmarchen",
-    "cs",
-    "inscriptionalparthian",
-    "zs",
-    "inkhmersymbols",
-    "ri",
-    "incham",
+    "makasar",
+    "masaramgondi",
+    "inarrows",
     "incyrillic",
+    "incham",
+    "qmark",
+    "ri",
+    "qaac",
+    "insamaritan",
     "latn",
-    "latin",
-    "mtei",
-    "pcm",
+    "inmasaramgondi",
     "inthaana",
-    "ps",
+    "latin",
     "inthai",
-    "insyriac",
+    "lineseparator",
+    "pcm",
     "inkatakana",
     "inkaithi",
+    "inzanabazarsquare",
+    "inscriptionalparthian",
     "initialpunctuation",
-    "inideographicdescriptioncharacters",
-    "ascii",
-    "mand",
-    "mend",
-    "modi",
-    "arabic",
-    "ideo",
-    "intakri",
-    "prti",
-    "inruminumeralsymbols",
-    "katakana",
-    "xidcontinue",
-    "brai",
-    "privateuse",
-    "letter",
-    "inkanaextendeda",
-    "l",
-    "inmyanmarextendeda",
-    "inspecials",
-    "incjkcompatibilityforms",
-    "incjkcompatibilityideographs",
-    "inmeeteimayek",
+    "mtei",
     "vai",
     "vaii",
+    "inkhmersymbols",
+    "insyriac",
+    "intakri",
+    "arabic",
+    "zs",
+    "katakana",
+    "prti",
+    "ascii",
+    "cs",
+    "ps",
+    "mand",
+    "privateuse",
+    "inruminumeralsymbols",
+    "inmyanmarextendeda",
+    "modi",
+    "incjkcompatibilityforms",
+    "inkanaextendeda",
+    "incjkcompatibilityideographs",
+    "brai",
+    "mend",
+    "ideo",
+    "letter",
+    "l",
+    "inmeeteimayek",
+    "inideographicdescriptioncharacters",
+    "xidcontinue",
     "knda",
+    "innandinagari",
     "kannada",
-    "inchesssymbols",
-    "inlineara",
-    "letternumber",
     "inmodi",
-    "inoldnortharabian",
     "inlao",
-    "xidc",
-    "inmiscellaneousmathematicalsymbolsa",
-    "mongolian",
-    "inmedefaidrin",
-    "inemoticons",
+    "inoldnortharabian",
     "intransportandmapsymbols",
-    "brahmi",
-    "inmendekikakui",
-    "kali",
-    "psalterpahlavi",
-    "xids",
-    "grlink",
-    "control",
-    "inolditalic",
-    "inancientsymbols",
-    "inadlam",
-    "meroiticcursive",
-    "patternwhitespace",
-    "insundanese",
-    "palm",
+    "letternumber",
     "gothic",
-    "incommonindicnumberforms",
-    "so",
-    "sk",
-    "inoldsogdian",
-    "inlycian",
-    "inmandaic",
-    "incjkstrokes",
-    "sora",
-    "idc",
-    "lt",
-    "bamum",
+    "inlineara",
+    "inmendekikakui",
+    "xidc",
+    "mongolian",
+    "inmiscellaneousmathematicalsymbolsa",
+    "inspecials",
+    "grlink",
+    "brahmi",
+    "inemoticons",
+    "kali",
+    "inolditalic",
+    "inmedefaidrin",
+    "inchesssymbols",
     "incjkcompatibilityideographssupplement",
-    "inoldsoutharabian",
-    "idsbinaryoperator",
-    "inmalayalam",
-    "inlinearbideograms",
-    "indominotiles",
-    "patws",
-    "inmusicalsymbols",
-    "bass",
-    "inmodifiertoneletters",
+    "inadlam",
+    "psalterpahlavi",
+    "incommonindicnumberforms",
+    "lt",
     "innewa",
-    "grext",
-    "ids",
-    "samr",
-    "insylotinagri",
-    "joinc",
-    "inkanasupplement",
-    "s",
-    "batk",
-    "inmiscellaneoussymbols",
+    "sk",
+    "control",
+    "inancientsymbols",
+    "palm",
+    "inlycian",
+    "so",
+    "patternwhitespace",
+    "xids",
+    "inmandaic",
+    "idc",
+    "meroiticcursive",
+    "inwarangciti",
+    "sora",
     "inopticalcharacterrecognition",
-    "samaritan",
-    "inmiscellaneoussymbolsandarrows",
-    "lisu",
-    "inmiscellaneoussymbolsandpictographs",
-    "batak",
-    "pauc",
-    "sm",
+    "inoldsogdian",
+    "inmalayalam",
+    "bamum",
+    "inkanasupplement",
+    "insundanese",
+    "grext",
 #endif /* USE_UNICODE_PROPERTIES */
     "print",
 #ifndef USE_UNICODE_PROPERTIES
     "punct",
     "alpha",
-#endif /* ! USE_UNICODE_PROPERTIES */
+#else /* USE_UNICODE_PROPERTIES */
+    "intaitham",
+    "lower",
+    "joinc",
+    "inoldsoutharabian",
+    "incjkstrokes",
+    "batk",
+    "samr",
+    "inwancho",
+    "batak",
+    "vs",
+    "patws",
+    "samaritan",
+    "idsbinaryoperator",
+    "pauc",
+    "insmallkanaextension",
+    "sm",
+    "indominotiles",
+#endif /* USE_UNICODE_PROPERTIES */
     "alnum",
 #ifdef USE_UNICODE_PROPERTIES
-    "inwarangciti",
-    "inancientgreekmusicalnotation",
-    "intaitham",
-    "incontrolpictures",
-    "vs",
+    "insylotinagri",
     "inugaritic",
+    "incontrolpictures",
+    "inlinearbideograms",
+    "inmusicalsymbols",
+    "s",
     "ital",
-    "lower",
-    "intaile",
-    "sc",
-    "insaurashtra",
-    "pd",
-    "inlatinextendeda",
-    "inlatinextendede",
-    "bali",
-    "bengali",
-    "balinese",
-    "idcontinue",
-    "inspacingmodifierletters",
-    "blank",
+    "inmodifiertoneletters",
+    "inancientgreekmusicalnotation",
+    "patternsyntax",
+    "lisu",
     "lowercase",
-    "incaucasianalbanian",
-    "inlydian",
-    "idst",
-    "inoldturkic",
     "cwcm",
-    "zinh",
+    "sc",
+    "bass",
+    "ids",
+    "inlatinextendeda",
+    "oriya",
+    "intaile",
+    "inmiscellaneoussymbols",
+    "inmiscellaneoussymbolsandarrows",
+    "incaucasianalbanian",
+    "inmiscellaneoussymbolsandpictographs",
+    "inoldturkic",
+    "insaurashtra",
+    "idcontinue",
     "intamil",
     "inmultani",
-    "indeseret",
-    "inancientgreeknumbers",
-    "ll",
-    "zl",
-    "patternsyntax",
-    "inhanifirohingya",
-    "cherokee",
-    "inearlydynasticcuneiform",
-    "cher",
-    "canadianaboriginal",
-    "cased",
-    "idstart",
-    "plrd",
-    "graphemebase",
-    "inmeeteimayekextensions",
-    "inhiragana",
-    "marchen",
-    "runr",
-    "cham",
-    "phoenician",
-    "chakma",
-    "kaithi",
-    "sind",
-    "graphemelink",
-    "inmahajani",
-    "khojki",
-    "inogham",
-    "khar",
-    "gong",
-    "incountingrodnumerals",
-    "inkhudawadi",
-    "bidic",
-    "ingrantha",
-    "mong",
-    "georgian",
-    "manichaean",
-    "inethiopic",
-    "inosage",
+    "inlatinextendede",
+    "pd",
+    "bali",
+    "blank",
+    "idst",
+    "inlydian",
     "innewtailue",
-    "inolchiki",
-    "sinhala",
-    "insiddham",
-    "adlm",
-    "bamu",
+    "bengali",
+    "runr",
+    "zl",
+    "incyrillicextendeda",
+    "ll",
+    "indeseret",
+    "intaixuanjingsymbols",
+    "inancientgreeknumbers",
+    "idstart",
+    "inmeeteimayekextensions",
+    "balinese",
+    "dia",
+    "di",
+    "inspacingmodifierletters",
+    "inearlydynasticcuneiform",
+    "plrd",
+    "canadianaboriginal",
+    "zinh",
+    "sind",
+    "osage",
+    "inlatinextendedc",
+    "uideo",
+    "incountingrodnumerals",
     "xidstart",
 #endif /* USE_UNICODE_PROPERTIES */
     "xdigit",
@@ -37565,570 +38620,608 @@ static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
     "upper",
     "ascii",
 #else /* USE_UNICODE_PROPERTIES */
+    "osma",
+    "inkhudawadi",
+    "inhanifirohingya",
+    "gong",
+    "ingrantha",
+    "bidic",
+    "mong",
+    "cased",
+    "incyrillicextendedc",
+    "inhiragana",
+    "sinhala",
+    "adlm",
     "glagolitic",
-    "gunjalagondi",
-    "ingeneralpunctuation",
-    "casedletter",
-    "multani",
-    "insinhala",
-    "inlatinextendedc",
-    "joincontrol",
-    "incyrillicextendeda",
     "sterm",
-    "dia",
-    "di",
-    "uideo",
+    "bamu",
+    "georgian",
+    "inosage",
+    "gunjalagondi",
+    "phoenician",
+    "multani",
+    "kaithi",
+    "joincontrol",
+    "runic",
+    "ingeneralpunctuation",
+    "inmahajani",
+    "incyrillicsupplement",
+    "lowercaseletter",
+    "marchen",
+    "graphemelink",
     "ingeorgian",
-    "ahom",
-    "khmr",
+    "khojki",
+    "cham",
+    "inogham",
+    "cher",
+    "chakma",
     "emoji",
-    "intaixuanjingsymbols",
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    "age=1.1",
-    "age=9.0",
-    "age=11.0",
-    "age=10.0",
-    "age=2.1",
-    "age=2.0",
-#endif /* USE_UNICODE_AGE_PROPERTIES */
+    "insiddham",
+    "cherokee",
+    "khar",
     "inmongolian",
+    "incherokeesupplement",
+    "diacritic",
+    "manichaean",
+    "xsux",
+    "inolchiki",
+    "quotationmark",
+    "adlam",
+    "inethiopic",
+    "graphemebase",
+#ifdef USE_UNICODE_AGE_PROPERTIES
+    "age=11.0",
+    "age=12.0",
+    "age=10.0",
+    "age=1.1",
+    "age=2.1",
+    "age=4.1",
+    "age=2.0",
+    "age=4.0",
+    "age=9.0",
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+    "casedletter",
+    "ingurmukhi",
+    "odi",
+    "incjkunifiedideographsextensiona",
 #ifdef USE_UNICODE_AGE_PROPERTIES
     "age=8.0",
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+    "lu",
+#ifdef USE_UNICODE_AGE_PROPERTIES
     "age=6.1",
-    "age=6.0",
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    "inscriptionalpahlavi",
-    "incyrillicsupplement",
-#ifdef USE_UNICODE_AGE_PROPERTIES
     "age=6.2",
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    "incherokeesupplement",
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    "age=5.1",
-    "age=5.0",
-    "age=3.1",
-    "age=3.0",
-    "age=5.2",
+    "age=6.0",
     "age=7.0",
-    "age=3.2",
 #endif /* USE_UNICODE_AGE_PROPERTIES */
-    "kharoshthi",
-    "adlam",
+    "intamilsupplement",
+    "unknown",
+#ifdef USE_UNICODE_AGE_PROPERTIES
+    "age=3.1",
+    "age=3.2",
+    "age=3.0",
+    "age=5.1",
+    "age=5.2",
+    "age=5.0",
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+    "cwt",
+    "unassigned",
 #ifdef USE_UNICODE_AGE_PROPERTIES
     "age=6.3",
-    "age=4.1",
-    "age=4.0",
 #endif /* USE_UNICODE_AGE_PROPERTIES */
-    "khmer",
-    "runic",
-    "quotationmark",
-    "lu",
-    "ingurmukhi",
-    "taile",
-    "incjkunifiedideographsextensiona",
-    "sundanese",
+    "ahom",
     "incjkunifiedideographsextensione",
-    "takri",
-    "invai",
-    "n",
+    "khmr",
+    "insinhala",
     "inmiscellaneoustechnical",
     "saur",
-    "incyrillicextendedc",
     "guru",
-    "math",
-    "goth",
-    "xsux",
-    "logicalorderexception",
+    "sundanese",
+    "punct",
     "paucinhau",
-    "no",
-    "xpeo",
-    "unassigned",
-    "takr",
-    "anatolianhieroglyphs",
     "gurmukhi",
-    "insorasompeng",
-    "p",
+    "variationselector",
+    "logicalorderexception",
+    "khmer",
+    "limbu",
+    "inscriptionalpahlavi",
+    "oidc",
+    "incjkunifiedideographsextensionc",
 #endif /* USE_UNICODE_PROPERTIES */
     "cntrl",
 #ifdef USE_UNICODE_PROPERTIES
+    "inlatinextendedadditional",
+    "decimalnumber",
+    "insorasompeng",
+    "radical",
+    "emojimodifier",
+    "kharoshthi",
+    "n",
+    "math",
+    "goth",
+    "anatolianhieroglyphs",
     "inenclosedalphanumerics",
+    "nandinagari",
+    "no",
     "nko",
     "nkoo",
-    "grantha",
-    "emojimodifier",
-    "limbu",
-    "lowercaseletter",
-    "inphoenician",
-    "diacritic",
-    "intirhuta",
-    "inhatran",
-    "kthi",
-    "punct",
-    "radical",
-    "inlatinextendedadditional",
     "ingreekandcoptic",
-    "incjkunifiedideographsextensionc",
-    "brah",
-    "term",
-    "saurashtra",
-    "cwt",
-    "inoldhungarian",
+    "olck",
+    "p",
+    "grantha",
+    "olchiki",
     "incjkunifiedideographs",
-    "lepc",
-    "graphemeextend",
+    "zanb",
+    "intirhuta",
+    "oids",
+    "inhatran",
+    "linb",
+    "xpeo",
+    "mult",
+    "saurashtra",
+    "kthi",
+    "inbhaiksuki",
+    "olower",
+    "innabataean",
+    "inphoenician",
+    "inkanbun",
+    "inmeroitichieroglyphs",
+    "inkayahli",
+    "phnx",
+    "inoriya",
+    "enclosingmark",
+    "sd",
+    "inelbasan",
+    "wara",
+    "inenclosedideographicsupplement",
+    "sidd",
+    "linearb",
     "hani",
     "han",
-    "oriya",
-    "inherited",
-    "sd",
-    "inmeroitichieroglyphs",
-    "hano",
-    "sidd",
-    "braille",
-    "inshavian",
-    "inphaistosdisc",
-    "inkangxiradicals",
-    "emojimodifierbase",
-    "enclosingmark",
-    "mult",
-    "decimalnumber",
-    "phli",
+    "inenclosedalphanumericsupplement",
+    "medf",
     "bidicontrol",
+    "hano",
+    "inphaistosdisc",
+    "limb",
+    "inkangxiradicals",
+    "lepc",
+    "medefaidrin",
+    "braille",
+    "regionalindicator",
+    "inlowsurrogates",
+    "inshorthandformatcontrols",
+    "brah",
+    "inkhojki",
+    "inoldhungarian",
     "hanunoo",
     "hira",
     "beng",
-    "variationselector",
-    "unknown",
-    "inkhojki",
-    "inenclosedideographicsupplement",
-    "phnx",
-    "inanatolianhieroglyphs",
-    "inenclosedalphanumericsupplement",
-    "inimperialaramaic",
-    "bhks",
-    "regionalindicator",
-    "ingreekextended",
-    "bhaiksuki",
-    "glag",
-    "ingeometricshapes",
-    "osage",
-    "indogra",
-    "sinh",
-    "shavian",
-    "coptic",
+    "emojimodifierbase",
+    "inarabic",
+    "lyci",
     "ahex",
-    "inlowsurrogates",
-    "insinhalaarchaicnumbers",
-    "medf",
-    "inhanunoo",
-    "taiviet",
-    "medefaidrin",
-    "inshorthandformatcontrols",
-    "linb",
-    "osma",
-    "insundanesesupplement",
-    "zanb",
-    "copt",
-    "ininscriptionalpahlavi",
-    "sund",
-    "inbhaiksuki",
-    "ininscriptionalparthian",
+    "inherited",
+    "glag",
+    "lycian",
+    "indogra",
+    "dsrt",
+    "arab",
+    "mymr",
+    "myanmar",
+    "phli",
+    "inimperialaramaic",
+    "ingreekextended",
+    "inanatolianhieroglyphs",
     "punctuation",
-    "inelbasan",
-    "innabataean",
+    "takri",
+    "graphemeextend",
+    "invai",
+    "cwl",
+    "ingeometricshapes",
     "emojicomponent",
+    "coptic",
+    "deseret",
+    "inarabicpresentationformsa",
+    "takr",
+    "inbasiclatin",
     "incjkunifiedideographsextensiond",
+    "sinh",
+    "sund",
+    "shavian",
+    "taile",
+    "insundanesesupplement",
+    "inelymaic",
+    "insoyombo",
+    "bhks",
+    "bhaiksuki",
+    "incjkcompatibility",
+    "inhanunoo",
+    "intangut",
+    "sogdian",
+    "inlatinextendedd",
+    "sogo",
+    "insinhalaarchaicnumbers",
+    "ideographic",
+    "ugar",
+    "copt",
+    "imperialaramaic",
     "insogdian",
     "indingbats",
-    "inkanbun",
-    "cprt",
-    "ideographic",
-    "cwl",
-    "linearb",
-    "imperialaramaic",
     "format",
-    "indevanagari",
-    "sogdian",
-    "sogo",
-    "inlatinextendedd",
-    "limb",
+    "ininscriptionalpahlavi",
+    "ininscriptionalparthian",
+    "grbase",
+    "inbatak",
+    "cprt",
+    "cwcf",
+    "cuneiform",
+    "term",
+    "intibetan",
+    "intags",
     "asciihexdigit",
     "sentenceterminal",
-    "java",
-    "bopo",
-    "dsrt",
-    "caseignorable",
-    "tale",
-    "avestan",
-    "deseret",
-    "innushu",
-    "javanese",
-    "intags",
-    "inoldpersian",
-    "inarabic",
-    "inornamentaldingbats",
+    "inmayannumerals",
+    "nand",
+    "patsyn",
     "hatran",
-    "intangut",
-    "odi",
-    "arab",
-    "ingeometricshapesextended",
-    "invariationselectors",
+    "inblockelements",
+    "inornamentaldingbats",
+    "innumberforms",
+    "oldpersian",
+    "inshavian",
+    "bopo",
     "hatr",
-    "terminalpunctuation",
-    "taml",
-    "ugar",
-    "incjksymbolsandpunctuation",
-    "closepunctuation",
-    "inarabicpresentationformsa",
-    "inbasiclatin",
-    "bopomofo",
-    "grbase",
+    "caseignorable",
+    "inoldpersian",
+    "modifierletter",
+    "cwu",
+    "lydi",
+    "inbyzantinemusicalsymbols",
+    "ingeometricshapesextended",
+    "inmyanmarextendedb",
+    "innushu",
+    "lydian",
+    "inunifiedcanadianaboriginalsyllabics",
+    "orkh",
+    "inyiradicals",
     "inkatakanaphoneticextensions",
-    "inverticalforms",
-    "inoldpermic",
-    "avst",
-    "invedicextensions",
-    "alpha",
-    "cuneiform",
-    "inpalmyrene",
-    "insyriacsupplement",
     "inethiopicextendeda",
+    "incoptic",
+    "inarabicextendeda",
+    "oldpermic",
+    "incjksymbolsandpunctuation",
+    "word",
+    "bopomofo",
+    "ogam",
+    "inlisu",
+    "inoldpermic",
+    "innoblock",
+    "taiviet",
+    "inbraillepatterns",
+    "alpha",
+    "inbalinese",
+    "sorasompeng",
+    "closepunctuation",
+    "inmiscellaneousmathematicalsymbolsb",
+    "inlepcha",
+    "insyriacsupplement",
+    "newa",
+    "spacingmark",
+    "inpalmyrene",
+    "cyrl",
+    "assigned",
+    "mlym",
+    "malayalam",
+    "ext",
+    "newtailue",
 #endif /* USE_UNICODE_PROPERTIES */
     "space",
-#ifndef USE_UNICODE_PROPERTIES
+#ifdef USE_UNICODE_PROPERTIES
+    "intelugu",
+    "idsb",
+    "indevanagari",
+    "avestan",
+    "cf",
+    "palmyrene",
+    "inethiopicsupplement",
+    "soyo",
+#endif /* USE_UNICODE_PROPERTIES */
     "xposixpunct",
+#ifndef USE_UNICODE_PROPERTIES
     "lower",
 #else /* USE_UNICODE_PROPERTIES */
-    "inlisu",
+    "pf",
+    "sarb",
+    "zanabazarsquare",
+    "ugaritic",
+    "osge",
+    "java",
+    "sharada",
+    "dogra",
+    "bugi",
+    "meroitichieroglyphs",
+    "separator",
+    "ingeorgiansupplement",
+    "sogd",
+    "tale",
+    "inunifiedcanadianaboriginalsyllabicsextended",
+    "terminalpunctuation",
+    "shrd",
 #endif /* USE_UNICODE_PROPERTIES */
     "graph",
 #ifdef USE_UNICODE_PROPERTIES
-    "oidc",
-    "incoptic",
-    "inoriya",
-    "wara",
-    "inkayahli",
-    "inlepcha",
-    "spacingmark",
-    "sorasompeng",
-    "assigned",
-    "cwu",
-    "oids",
-    "inethiopicsupplement",
-    "sharada",
-    "intaiviet",
-    "inblockelements",
-    "olower",
-    "newa",
-    "invariationselectorssupplement",
-    "olck",
-    "intibetan",
-    "lyci",
-    "inbatak",
-    "shrd",
-    "cwcf",
-    "newtailue",
-    "innumberforms",
-    "olchiki",
-    "separator",
-    "inunifiedcanadianaboriginalsyllabics",
-    "lycian",
-    "modifierletter",
-    "mymr",
-    "phag",
-    "myanmar",
-    "siddham",
-    "inhanguljamoextendeda",
-    "inhanguljamo",
-    "inbyzantinemusicalsymbols",
-    "inarabicextendeda",
-    "inmeroiticcursive",
-    "bugi",
-    "gujr",
-    "intelugu",
-    "sogd",
-    "nd",
-    "gujarati",
-    "insoyombo",
-    "insmallformvariants",
-    "buginese",
-    "number",
-    "inmyanmarextendedb",
-    "indevanagariextended",
-    "inbalinese",
-    "ingeorgiansupplement",
-    "titlecaseletter",
-    "innoblock",
-    "thaa",
-    "inmiscellaneousmathematicalsymbolsb",
-    "thai",
-    "xposixpunct",
-    "inbraillepatterns",
-    "thaana",
-    "inphoneticextensions",
-    "incopticepactnumbers",
-    "incjkcompatibility",
-    "inmongoliansupplement",
-    "idsb",
-    "inmathematicalalphanumericsymbols",
-    "induployan",
-    "lepcha",
-    "inmayannumerals",
-    "tirh",
-    "dogra",
-    "nl",
-    "ext",
-    "ugaritic",
-    "dash",
-    "shaw",
-    "tirhuta",
-    "zanabazarsquare",
-    "taitham",
-    "inunifiedcanadianaboriginalsyllabicsextended",
-    "sarb",
-    "patsyn",
-    "dogr",
-    "lydi",
-    "inyiradicals",
-    "tang",
-    "lydian",
-    "tamil",
-    "tagbanwa",
-    "insuttonsignwriting",
-    "inethiopicextended",
-    "cf",
-    "ethi",
-    "talu",
-    "rohg",
-    "oldpersian",
-    "telu",
-    "word",
-    "idstrinaryoperator",
-    "mahj",
-    "khudawadi",
-    "inphagspa",
-    "incjkradicalssupplement",
-    "buhd",
-    "surrogate",
-    "mahajani",
-    "orkh",
-    "pf",
-    "inphoneticextensionssupplement",
-    "extender",
-    "sgnw",
-    "inglagolitic",
-    "deva",
-    "cyrl",
-    "incjkunifiedideographsextensionf",
-    "caucasianalbanian",
-    "devanagari",
-    "phagspa",
-    "hex",
-    "nchar",
-    "inbamum",
-    "khoj",
-    "mlym",
-    "oldpermic",
-    "malayalam",
-    "palmyrene",
-    "intifinagh",
-    "hang",
-    "spaceseparator",
-    "intagalog",
-    "ingothic",
-    "ingeorgianextended",
-    "ingujarati",
-    "inlatin1supplement",
-    "soyo",
-    "ogam",
-    "incombiningdiacriticalmarks",
-    "ingunjalagondi",
-    "hiragana",
-    "meroitichieroglyphs",
-    "incombiningdiacriticalmarksforsymbols",
-    "inrejang",
-    "tangut",
-    "zp",
-    "hmng",
-    "inprivateusearea",
-    "inbrahmi",
-    "osge",
-    "inenclosedcjklettersandmonths",
-    "nonspacingmark",
-    "softdotted",
-    "changeswhencasemapped",
-    "noncharactercodepoint",
-    "syrc",
-    "inpaucinhau",
-    "inhangulsyllables",
-    "injavanese",
-    "inbuginese",
-    "inbengali",
-    "incombiningdiacriticalmarkssupplement",
-    "inalphabeticpresentationforms",
-    "otheridcontinue",
-    "finalpunctuation",
-    "inpsalterpahlavi",
-    "phlp",
     "olditalic",
-    "bassavah",
+    "dogr",
+    "gujr",
+    "phag",
+    "gujarati",
+    "inhanguljamo",
+    "javanese",
+    "taml",
+    "inphoneticextensions",
+    "siddham",
+    "buginese",
+    "inmongoliansupplement",
+    "invariationselectors",
+    "inhanguljamoextendeda",
+    "inverticalforms",
+    "syrc",
+    "number",
+    "incopticepactnumbers",
+    "avst",
+    "inbamum",
+    "nd",
+    "insuttonsignwriting",
+    "extender",
+    "intaiviet",
+    "hex",
+    "incjkunifiedideographsextensionf",
     "other",
-    "incyrillicextendedb",
+    "otheridcontinue",
+    "shaw",
+    "dash",
     "othernumber",
-    "changeswhentitlecased",
-    "buhid",
-    "incombiningdiacriticalmarksextended",
-    "oalpha",
-    "currencysymbol",
+    "orya",
+    "invedicextensions",
+    "sgnw",
+    "caucasianalbanian",
+    "inmathematicalalphanumericsymbols",
+    "inphoneticextensionssupplement",
+    "invariationselectorssupplement",
+    "induployan",
     "syriac",
-    "incurrencysymbols",
-    "rjng",
-    "graphemeclusterbreak=spacingmark",
-    "extendedpictographic",
-    "tavt",
-    "emojipresentation",
-    "inlimbu",
-    "graphemeclusterbreak=cr",
+    "oalpha",
+    "innyiakengpuachuehmong",
+    "incombiningdiacriticalmarks",
+    "inethiopicextended",
+    "nl",
+    "incombiningdiacriticalmarksforsymbols",
+    "khudawadi",
     "otheralphabetic",
-    "graphemeclusterbreak=regionalindicator",
-    "incjkunifiedideographsextensionb",
-    "inaegeannumbers",
+    "oldhungarian",
+    "incurrencysymbols",
+    "incjkradicalssupplement",
+    "inglagolitic",
+    "intifinagh",
+    "ingeorgianextended",
+    "surrogate",
+    "incyrillicextendedb",
+    "ethi",
+    "titlecaseletter",
+    "rohg",
+    "inmeroiticcursive",
+    "idstrinaryoperator",
+    "inphagspa",
+    "lepcha",
+    "intagalog",
     "mathsymbol",
+    "incombiningdiacriticalmarkssupplement",
+    "inbrahmi",
+    "insymbolsandpictographsextendeda",
     "inlinearbsyllabary",
-    "intangutcomponents",
-    "inbassavah",
+    "oldturkic",
+    "inbengali",
+    "wancho",
+    "osmanya",
+    "buhd",
+    "insmallformvariants",
+    "indevanagariextended",
+    "softdotted",
+    "inbuginese",
+    "mahj",
+    "inlatin1supplement",
+    "ingothic",
+    "mahajani",
+    "hang",
+    "sylo",
+    "warangciti",
+    "ingujarati",
+    "tirhuta",
+    "incombiningdiacriticalmarksextended",
+    "spaceseparator",
+    "ingunjalagondi",
+    "wcho",
+    "hiragana",
+    "extendedpictographic",
+    "inrejang",
+    "inottomansiyaqnumbers",
+    "nchar",
+    "cyrillic",
+    "khoj",
+    "inlimbu",
+    "hmng",
+    "thaa",
+    "thai",
+    "incjkunifiedideographsextensionb",
+    "deva",
+    "thaana",
+    "phagspa",
+    "devanagari",
+    "tang",
+    "currencysymbol",
+    "tagbanwa",
+    "inenclosedcjklettersandmonths",
+    "tamil",
+    "tirh",
 #endif /* USE_UNICODE_PROPERTIES */
     "digit",
 #ifndef USE_UNICODE_PROPERTIES
     "blank"
 #else /* USE_UNICODE_PROPERTIES */
-    "paragraphseparator",
-    "oldhungarian",
-    "narb",
-    "insuperscriptsandsubscripts",
-    "inbopomofo",
-    "changeswhenlowercased",
+    "talu",
+    "zp",
+    "inpaucinhau",
+    "taitham",
+    "otherlowercase",
+    "telu",
+    "inaegeannumbers",
+    "otherletter",
     "whitespace",
-    "sylo",
-    "nshu",
-    "inbuhid",
-    "warangciti",
-    "inmathematicaloperators",
-    "deprecated",
+    "nonspacingmark",
+    "graphemeclusterbreak=spacingmark",
     "inletterlikesymbols",
-    "hangul",
-    "cyrillic",
     "intagbanwa",
+    "oldsogdian",
+    "otheridstart",
+    "graphemeclusterbreak=cr",
+    "narb",
+    "changeswhencasemapped",
+    "inbopomofo",
+    "tangut",
+    "graphemeclusterbreak=regionalindicator",
+    "noncharactercodepoint",
+    "otheruppercase",
+    "rjng",
+    "sylotinagri",
+    "inhangulsyllables",
+    "emojipresentation",
+    "inindicsiyaqnumbers",
+    "inbassavah",
+    "ogrext",
+    "othersymbol",
+    "oupper",
+    "inbuhid",
+    "hmnp",
+    "inpsalterpahlavi",
+    "finalpunctuation",
+    "phlp",
+    "inbamumsupplement",
+    "buhid",
+    "paragraphseparator",
+    "inalphabeticpresentationforms",
+    "omath",
+    "any",
+    "elba",
+    "changeswhentitlecased",
     "incombininghalfmarks",
-    "oldturkic",
+    "intangutcomponents",
     "hebr",
-    "hung",
-    "changeswhenuppercased",
+    "deprecated",
     "inarabicmathematicalalphabeticsymbols",
-    "inmahjongtiles",
+    "inprivateusearea",
+    "kayahli",
+    "inplayingcards",
+    "inarabicpresentationformsb",
+    "ogham",
+    "elym",
     "graphemeclusterbreak=t",
     "graphemeclusterbreak=lvt",
-    "elba",
-    "insupplementalarrowsa",
-    "tibt",
-    "otherlowercase",
-    "inbamumsupplement",
+    "nbat",
+    "nabataean",
+    "hangul",
+    "elymaic",
+    "inhebrew",
+    "injavanese",
+    "symbol",
+    "inmathematicaloperators",
+    "inarabicsupplement",
+    "cypriot",
+    "hung",
+    "wspace",
+    "changeswhenlowercased",
+    "elbasan",
+    "hluw",
+    "insuperscriptsandsubscripts",
     "graphemeclusterbreak=extend",
     "graphemeclusterbreak=prepend",
-    "tibetan",
-    "hluw",
-    "nbat",
-    "otherletter",
-    "nabataean",
+    "nshu",
+    "oldnortharabian",
+    "inyijinghexagramsymbols",
+    "hexdigit",
     "graphemeclusterbreak=l",
     "graphemeclusterbreak=control",
-    "inarabicsupplement",
-    "orya",
-    "nushu",
-    "insupplementalmathematicaloperators",
-    "insupplementalarrowsc",
-    "inpahawhhmong",
-    "omath",
-    "elbasan",
-    "sylotinagri",
-    "otheruppercase",
-    "hexdigit",
-    "inhebrew",
-    "tifinagh",
-    "oldsogdian",
-    "othersymbol",
+    "bassavah",
+    "otherdefaultignorablecodepoint",
+    "changeswhenuppercased",
     "inalchemicalsymbols",
-    "kayahli",
-    "upper",
-    "oupper",
-    "inplayingcards",
-    "otheridstart",
-    "inhalfwidthandfullwidthforms",
-    "inarabicpresentationformsb",
-    "wspace",
-    "tfng",
-    "uppercase",
-    "inhighprivateusesurrogates",
-    "signwriting",
-    "osmanya",
-    "cypriot",
-    "dupl",
-    "ogham",
-    "symbol",
-    "dashpunctuation",
-    "inyijinghexagramsymbols",
-    "inindicsiyaqnumbers",
-    "alphabetic",
-    "hanifirohingya",
-    "unifiedideograph",
-    "inhanguljamoextendedb",
-    "ogrext",
-    "pahawhhmong",
-    "changeswhencasefolded",
-    "aghb",
-    "dep",
-    "modifiersymbol",
+    "insupplementalarrowsa",
+    "inyisyllables",
+    "tibt",
     "othermath",
+    "tibetan",
+    "inmahjongtiles",
+    "signwriting",
+    "nushu",
+    "modifiersymbol",
+    "inhalfwidthandfullwidthforms",
+    "upper",
+    "insupplementalarrowsc",
+    "insupplementalmathematicaloperators",
+    "incypriotsyllabary",
+    "dupl",
+    "tavt",
+    "inpahawhhmong",
+    "alphabetic",
+    "dashpunctuation",
+    "uppercase",
+    "soyombo",
+    "hanifirohingya",
+    "otherpunctuation",
+    "defaultignorablecodepoint",
+    "inhanguljamoextendedb",
+    "aghb",
+    "tifinagh",
+    "inlatinextendedb",
+    "tfng",
+    "inhighprivateusesurrogates",
+    "changeswhencasefolded",
+    "dep",
+    "oldsoutharabian",
+    "graphemeclusterbreak=lf",
+    "pahawhhmong",
+    "unifiedideograph",
+    "uppercaseletter",
     "insupplementalpunctuation",
     "ethiopic",
+    "inglagoliticsupplement",
+    "rejang",
+    "inbopomofoextended",
+    "tagb",
+    "othergraphemeextend",
+    "inegyptianhieroglyphs",
+    "inegyptianhieroglyphformatcontrols",
+    "hebrew",
     "tglg",
     "tagalog",
-    "otherdefaultignorablecodepoint",
-    "incypriotsyllabary",
-    "defaultignorablecodepoint",
-    "any",
-    "uppercaseletter",
-    "rejang",
-    "tagb",
-    "inglagoliticsupplement",
-    "graphemeclusterbreak=lf",
-    "oldnortharabian",
-    "otherpunctuation",
-    "telugu",
+    "graphemeclusterbreak=zwj",
+    "zyyy",
+    "hyphen",
+    "inboxdrawing",
     "graphemeclusterbreak=v",
     "graphemeclusterbreak=lv",
-    "inyisyllables",
-    "inlatinextendedb",
-    "graphemeclusterbreak=zwj",
-    "soyombo",
-    "inbopomofoextended",
-    "inhighsurrogates",
-    "insupplementaryprivateuseareaa",
-    "inegyptianhieroglyphs",
-    "hebrew",
-    "oldsoutharabian",
-    "hyphen",
-    "othergraphemeextend",
-    "inboxdrawing",
-    "insupplementalarrowsb",
-    "openpunctuation",
-    "inhangulcompatibilityjamo",
+    "telugu",
     "duployan",
+    "openpunctuation",
+    "insupplementaryprivateuseareaa",
+    "inhighsurrogates",
+    "insupplementalarrowsb",
     "insupplementalsymbolsandpictographs",
     "egyp",
-    "zyyy",
-    "insupplementaryprivateuseareab",
-    "egyptianhieroglyphs"
+    "inhangulcompatibilityjamo",
+    "nyiakengpuachuehmong",
+    "egyptianhieroglyphs",
+    "insupplementaryprivateuseareab"
 #endif /* USE_UNICODE_PROPERTIES */
   };
 #define uniname2ctype_pool ((const char *) &uniname2ctype_pool_contents)
@@ -38141,1514 +39234,1657 @@ uniname2ctype_p (register const char *str, register size_t len)
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1},
       {uniname2ctype_offset(str11), 111},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str16), 61},
+      {-1}, {-1}, {-1}, {-1}, {-1},
       {uniname2ctype_offset(str17), 111},
       {-1}, {-1}, {-1}, {-1},
       {uniname2ctype_offset(str22), 152},
       {-1},
-      {uniname2ctype_offset(str24), 21},
+      {uniname2ctype_offset(str24), 52},
       {uniname2ctype_offset(str25), 184},
-      {uniname2ctype_offset(str26), 52},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str31), 33},
-      {-1}, {-1},
-      {uniname2ctype_offset(str34), 186},
-      {uniname2ctype_offset(str35), 34},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str40), 248},
-      {uniname2ctype_offset(str41), 218},
-      {uniname2ctype_offset(str42), 22},
-      {uniname2ctype_offset(str43), 173},
-      {uniname2ctype_offset(str44), 28},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str33), 218},
       {-1},
-      {uniname2ctype_offset(str46), 95},
-      {uniname2ctype_offset(str47), 95},
-      {-1},
-      {uniname2ctype_offset(str49), 263},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str60), 44},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str64), 42},
-      {uniname2ctype_offset(str65), 149},
-      {-1},
-      {uniname2ctype_offset(str67), 181},
-      {uniname2ctype_offset(str68), 160},
-      {-1},
-      {uniname2ctype_offset(str70), 325},
-      {-1}, {-1},
-      {uniname2ctype_offset(str73), 313},
-      {-1},
-      {uniname2ctype_offset(str75), 187},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str79), 184},
-      {uniname2ctype_offset(str80), 149},
-      {uniname2ctype_offset(str81), 98},
-      {uniname2ctype_offset(str82), 77},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str86), 45},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str90), 31},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str94), 172},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str99), 108},
-      {-1},
-      {uniname2ctype_offset(str101), 77},
-      {-1},
-      {uniname2ctype_offset(str103), 31},
-      {uniname2ctype_offset(str104), 189},
-      {uniname2ctype_offset(str105), 189},
+      {uniname2ctype_offset(str35), 186},
+      {uniname2ctype_offset(str36), 34},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str114), 170},
-      {uniname2ctype_offset(str115), 490},
+      {uniname2ctype_offset(str45), 173},
+      {uniname2ctype_offset(str46), 28},
+      {uniname2ctype_offset(str47), 61},
+      {uniname2ctype_offset(str48), 95},
+      {uniname2ctype_offset(str49), 95},
       {-1}, {-1},
-      {uniname2ctype_offset(str118), 212},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str123), 18},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str136), 307},
+      {uniname2ctype_offset(str52), 330},
       {-1}, {-1},
-      {uniname2ctype_offset(str139), 476},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str147), 75},
-      {-1}, {-1},
-      {uniname2ctype_offset(str150), 538},
-      {uniname2ctype_offset(str151), 493},
-      {uniname2ctype_offset(str152), 542},
-      {-1},
-      {uniname2ctype_offset(str154), 169},
-      {-1}, {-1},
-      {uniname2ctype_offset(str157), 115},
+      {uniname2ctype_offset(str55), 21},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str166), 102},
+      {uniname2ctype_offset(str64), 44},
+      {-1},
+      {uniname2ctype_offset(str66), 318},
+      {uniname2ctype_offset(str67), 267},
       {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str170), 507},
+      {uniname2ctype_offset(str71), 181},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str75), 22},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str178), 255},
-      {uniname2ctype_offset(str179), 331},
-      {uniname2ctype_offset(str180), 27},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str184), 543},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str188), 208},
-      {uniname2ctype_offset(str189), 531},
-      {uniname2ctype_offset(str190), 40},
-      {-1},
-      {uniname2ctype_offset(str192), 344},
-      {uniname2ctype_offset(str193), 171},
-      {-1},
-      {uniname2ctype_offset(str195), 194},
-      {-1},
-      {uniname2ctype_offset(str197), 494},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str201), 31},
-      {-1},
-      {uniname2ctype_offset(str203), 301},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str210), 533},
-      {uniname2ctype_offset(str211), 339},
-      {uniname2ctype_offset(str212), 467},
-      {-1},
-      {uniname2ctype_offset(str214), 336},
+      {uniname2ctype_offset(str83), 184},
+      {-1}, {-1},
+      {uniname2ctype_offset(str86), 31},
       {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str220), 521},
+      {uniname2ctype_offset(str92), 45},
+      {-1},
+      {uniname2ctype_offset(str94), 33},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str100), 149},
+      {uniname2ctype_offset(str101), 495},
+      {uniname2ctype_offset(str102), 108},
+      {uniname2ctype_offset(str103), 252},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str107), 31},
+      {uniname2ctype_offset(str108), 77},
+      {-1}, {-1},
+      {uniname2ctype_offset(str111), 189},
+      {uniname2ctype_offset(str112), 189},
+      {-1}, {-1},
+      {uniname2ctype_offset(str115), 149},
+      {-1},
+      {uniname2ctype_offset(str117), 98},
+      {uniname2ctype_offset(str118), 77},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str122), 212},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str129), 187},
+      {uniname2ctype_offset(str130), 42},
+      {uniname2ctype_offset(str131), 172},
+      {-1}, {-1},
+      {uniname2ctype_offset(str134), 481},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str139), 170},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str145), 498},
+      {uniname2ctype_offset(str146), 547},
+      {-1},
+      {uniname2ctype_offset(str148), 551},
+      {uniname2ctype_offset(str149), 513},
+      {-1},
+      {uniname2ctype_offset(str151), 18},
+      {uniname2ctype_offset(str152), 169},
+      {uniname2ctype_offset(str153), 160},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str161), 312},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str234), 509},
-      {-1},
-      {uniname2ctype_offset(str236), 212},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str240), 19},
-      {uniname2ctype_offset(str241), 218},
-      {uniname2ctype_offset(str242), 25},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str249), 374},
-      {-1},
-      {uniname2ctype_offset(str251), 32},
-      {uniname2ctype_offset(str252), 532},
-      {uniname2ctype_offset(str253), 53},
+      {uniname2ctype_offset(str177), 336},
+      {uniname2ctype_offset(str178), 538},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str183), 75},
+      {-1}, {-1},
+      {uniname2ctype_offset(str186), 27},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str190), 208},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str203), 344},
+      {uniname2ctype_offset(str204), 472},
       {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str259), 161},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str263), 79},
+      {uniname2ctype_offset(str210), 552},
       {-1},
-      {uniname2ctype_offset(str265), 524},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str269), 129},
+      {uniname2ctype_offset(str212), 349},
+      {uniname2ctype_offset(str213), 115},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str274), 228},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str278), 314},
-      {uniname2ctype_offset(str279), 79},
+      {uniname2ctype_offset(str218), 527},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str226), 171},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str284), 40},
-      {uniname2ctype_offset(str285), 529},
+      {uniname2ctype_offset(str231), 31},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str236), 25},
+      {uniname2ctype_offset(str237), 194},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str294), 528},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str302), 23},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str307), 163},
+      {uniname2ctype_offset(str246), 32},
       {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str311), 55},
+      {uniname2ctype_offset(str250), 40},
+      {-1}, {-1},
+      {uniname2ctype_offset(str253), 102},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str260), 541},
+      {-1}, {-1},
+      {uniname2ctype_offset(str263), 161},
       {-1},
-      {uniname2ctype_offset(str313), 350},
-      {-1}, {-1},
-      {uniname2ctype_offset(str316), 256},
-      {-1}, {-1},
-      {uniname2ctype_offset(str319), 435},
-      {-1}, {-1},
-      {uniname2ctype_offset(str322), 305},
+      {uniname2ctype_offset(str265), 19},
+      {-1},
+      {uniname2ctype_offset(str267), 79},
+      {uniname2ctype_offset(str268), 341},
+      {-1},
+      {uniname2ctype_offset(str270), 259},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str274), 540},
+      {uniname2ctype_offset(str275), 499},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str281), 306},
+      {uniname2ctype_offset(str282), 40},
+      {uniname2ctype_offset(str283), 79},
+      {-1},
+      {uniname2ctype_offset(str285), 515},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str289), 535},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str293), 218},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str297), 212},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str301), 379},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str311), 310},
+      {-1},
+      {uniname2ctype_offset(str313), 440},
+      {-1},
+      {uniname2ctype_offset(str315), 232},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str327), 76},
+      {uniname2ctype_offset(str320), 260},
+      {-1},
+      {uniname2ctype_offset(str322), 129},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str328), 319},
+      {-1}, {-1},
+      {uniname2ctype_offset(str331), 76},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str335), 536},
+      {-1}, {-1},
+      {uniname2ctype_offset(str338), 317},
+      {-1},
+      {uniname2ctype_offset(str340), 76},
+      {-1},
+      {uniname2ctype_offset(str342), 333},
+      {-1}, {-1},
+      {uniname2ctype_offset(str345), 53},
+      {uniname2ctype_offset(str346), 259},
+      {-1},
+      {uniname2ctype_offset(str348), 410},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str352), 511},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str357), 531},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str362), 163},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str366), 44},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str373), 160},
+      {-1}, {-1},
+      {uniname2ctype_offset(str376), 144},
+      {uniname2ctype_offset(str377), 144},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str336), 76},
-      {uniname2ctype_offset(str337), 160},
-      {-1},
-      {uniname2ctype_offset(str339), 255},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str343), 312},
-      {-1}, {-1},
-      {uniname2ctype_offset(str346), 46},
-      {uniname2ctype_offset(str347), 328},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str351), 310},
+      {uniname2ctype_offset(str386), 355},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str362), 405},
       {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str366), 505},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str371), 44},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str385), 402},
+      {uniname2ctype_offset(str399), 315},
+      {-1},
+      {uniname2ctype_offset(str401), 526},
+      {-1}, {-1},
+      {uniname2ctype_offset(str404), 81},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str392), 14},
-      {-1}, {-1},
-      {uniname2ctype_offset(str395), 169},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str400), 187},
+      {uniname2ctype_offset(str411), 55},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str407), 188},
-      {-1},
-      {uniname2ctype_offset(str409), 81},
-      {uniname2ctype_offset(str410), 234},
-      {uniname2ctype_offset(str411), 520},
-      {-1}, {-1},
-      {uniname2ctype_offset(str414), 163},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str418), 501},
-      {-1},
-      {uniname2ctype_offset(str420), 108},
-      {uniname2ctype_offset(str421), 70},
-      {-1}, {-1},
-      {uniname2ctype_offset(str424), 127},
-      {-1}, {-1},
-      {uniname2ctype_offset(str427), 22},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str432), 24},
-      {-1},
-      {uniname2ctype_offset(str434), 547},
-      {-1}, {-1},
-      {uniname2ctype_offset(str437), 24},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str451), 436},
-      {uniname2ctype_offset(str452), 459},
-      {-1},
-      {uniname2ctype_offset(str454), 455},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str459), 449},
-      {uniname2ctype_offset(str460), 442},
-      {uniname2ctype_offset(str461), 144},
-      {uniname2ctype_offset(str462), 144},
-      {uniname2ctype_offset(str463), 91},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str468), 91},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str473), 577},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str478), 480},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str488), 37},
-      {-1},
-      {uniname2ctype_offset(str490), 518},
-      {-1},
-      {uniname2ctype_offset(str492), 492},
-      {uniname2ctype_offset(str493), 329},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str499), 70},
-      {-1},
-      {uniname2ctype_offset(str501), 385},
-      {-1}, {-1},
-      {uniname2ctype_offset(str504), 106},
-      {-1}, {-1},
-      {uniname2ctype_offset(str507), 541},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str513), 570},
-      {uniname2ctype_offset(str514), 572},
-      {uniname2ctype_offset(str515), 168},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str520), 560},
-      {-1},
-      {uniname2ctype_offset(str522), 146},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str529), 195},
-      {uniname2ctype_offset(str530), 69},
-      {-1},
-      {uniname2ctype_offset(str532), 74},
-      {uniname2ctype_offset(str533), 19},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str539), 469},
-      {-1}, {-1},
-      {uniname2ctype_offset(str542), 464},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str548), 561},
-      {-1}, {-1},
-      {uniname2ctype_offset(str551), 171},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str558), 253},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str563), 355},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str568), 192},
-      {uniname2ctype_offset(str569), 113},
-      {-1}, {-1},
-      {uniname2ctype_offset(str572), 426},
+      {uniname2ctype_offset(str418), 108},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str580), 51},
-      {-1},
-      {uniname2ctype_offset(str582), 49},
-      {uniname2ctype_offset(str583), 502},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str590), 466},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str609), 315},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str613), 410},
-      {-1}, {-1},
-      {uniname2ctype_offset(str616), 175},
-      {-1},
-      {uniname2ctype_offset(str618), 68},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str622), 29},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str626), 158},
-      {-1},
-      {uniname2ctype_offset(str628), 583},
-      {-1}, {-1},
-      {uniname2ctype_offset(str631), 491},
-      {uniname2ctype_offset(str632), 241},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str636), 326},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str640), 461},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str646), 565},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str656), 253},
-      {uniname2ctype_offset(str657), 552},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str664), 178},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str671), 423},
-      {-1},
-      {uniname2ctype_offset(str673), 515},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str677), 72},
-      {-1}, {-1},
-      {uniname2ctype_offset(str680), 67},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str684), 156},
-      {uniname2ctype_offset(str685), 425},
-      {uniname2ctype_offset(str686), 225},
-      {uniname2ctype_offset(str687), 546},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str692), 47},
-      {-1},
-      {uniname2ctype_offset(str694), 167},
-      {-1},
-      {uniname2ctype_offset(str696), 383},
-      {uniname2ctype_offset(str697), 378},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str701), 156},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str705), 391},
-      {-1},
-      {uniname2ctype_offset(str707), 157},
-      {-1}, {-1},
-      {uniname2ctype_offset(str710), 569},
-      {-1}, {-1},
-      {uniname2ctype_offset(str713), 167},
-      {-1},
-      {uniname2ctype_offset(str715), 193},
-      {uniname2ctype_offset(str716), 50},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str721), 7},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str727), 13},
-      {uniname2ctype_offset(str728), 523},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str734), 553},
-      {-1},
-      {uniname2ctype_offset(str736), 352},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str742), 377},
-      {-1}, {-1},
-      {uniname2ctype_offset(str745), 252},
-      {-1},
-      {uniname2ctype_offset(str747), 472},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str757), 112},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str761), 6},
+      {uniname2ctype_offset(str426), 163},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str777), 348},
-      {uniname2ctype_offset(str778), 48},
+      {uniname2ctype_offset(str442), 14},
       {-1}, {-1},
-      {uniname2ctype_offset(str781), 428},
-      {uniname2ctype_offset(str782), 41},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str790), 299},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str800), 440},
-      {-1},
-      {uniname2ctype_offset(str802), 136},
+      {uniname2ctype_offset(str445), 23},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str819), 85},
-      {-1}, {-1},
-      {uniname2ctype_offset(str822), 136},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str829), 68},
-      {-1}, {-1},
-      {uniname2ctype_offset(str832), 302},
-      {-1}, {-1},
-      {uniname2ctype_offset(str835), 2},
-      {-1},
-      {uniname2ctype_offset(str837), 58},
-      {uniname2ctype_offset(str838), 479},
-      {uniname2ctype_offset(str839), 487},
-      {uniname2ctype_offset(str840), 242},
-      {uniname2ctype_offset(str841), 498},
-      {uniname2ctype_offset(str842), 66},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str850), 115},
+      {uniname2ctype_offset(str462), 46},
       {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str856), 323},
+      {uniname2ctype_offset(str468), 169},
       {-1},
-      {uniname2ctype_offset(str858), 512},
-      {uniname2ctype_offset(str859), 474},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str865), 463},
-      {uniname2ctype_offset(str866), 26},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str873), 53},
-      {-1}, {-1},
-      {uniname2ctype_offset(str876), 254},
-      {-1}, {-1},
-      {uniname2ctype_offset(str879), 500},
-      {uniname2ctype_offset(str880), 101},
-      {-1},
-      {uniname2ctype_offset(str882), 534},
-      {-1}, {-1},
-      {uniname2ctype_offset(str885), 101},
-      {-1}, {-1},
-      {uniname2ctype_offset(str888), 102},
-      {uniname2ctype_offset(str889), 60},
+      {uniname2ctype_offset(str470), 22},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str894), 67},
-      {-1}, {-1},
-      {uniname2ctype_offset(str897), 173},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str904), 73},
-      {uniname2ctype_offset(str905), 438},
-      {-1},
-      {uniname2ctype_offset(str907), 404},
-      {uniname2ctype_offset(str908), 208},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str912), 104},
-      {-1}, {-1},
-      {uniname2ctype_offset(str915), 151},
-      {uniname2ctype_offset(str916), 138},
-      {-1}, {-1},
-      {uniname2ctype_offset(str919), 170},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str923), 166},
-      {-1},
-      {uniname2ctype_offset(str925), 197},
-      {-1}, {-1},
-      {uniname2ctype_offset(str928), 74},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str945), 508},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str953), 183},
-      {-1},
-      {uniname2ctype_offset(str955), 338},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str959), 135},
-      {-1}, {-1},
-      {uniname2ctype_offset(str962), 217},
-      {-1},
-      {uniname2ctype_offset(str964), 556},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str968), 513},
-      {-1}, {-1},
-      {uniname2ctype_offset(str971), 224},
-      {-1}, {-1},
-      {uniname2ctype_offset(str974), 514},
-      {uniname2ctype_offset(str975), 106},
-      {uniname2ctype_offset(str976), 98},
-      {-1}, {-1},
-      {uniname2ctype_offset(str979), 186},
-      {-1},
-      {uniname2ctype_offset(str981), 334},
+      {uniname2ctype_offset(str475), 506},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str986), 477},
+      {uniname2ctype_offset(str480), 441},
+      {uniname2ctype_offset(str481), 188},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str486), 460},
       {-1},
-      {uniname2ctype_offset(str988), 349},
+      {uniname2ctype_offset(str488), 556},
       {-1}, {-1},
-      {uniname2ctype_offset(str991), 358},
-      {-1},
-      {uniname2ctype_offset(str993), 93},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str997), 517},
-      {uniname2ctype_offset(str998), 206},
-      {uniname2ctype_offset(str999), 158},
-      {uniname2ctype_offset(str1000), 69},
-      {uniname2ctype_offset(str1001), 11},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1004), 131},
-      {uniname2ctype_offset(str1005), 217},
-      {uniname2ctype_offset(str1006), 368},
-      {-1},
-      {uniname2ctype_offset(str1008), 25},
-      {uniname2ctype_offset(str1009), 203},
-      {uniname2ctype_offset(str1010), 327},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1020), 393},
-      {uniname2ctype_offset(str1021), 225},
+      {uniname2ctype_offset(str491), 454},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1030), 398},
-      {uniname2ctype_offset(str1031), 251},
+      {uniname2ctype_offset(str500), 127},
       {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1035), 235},
-      {uniname2ctype_offset(str1036), 71},
+      {uniname2ctype_offset(str504), 187},
+      {uniname2ctype_offset(str505), 238},
+      {uniname2ctype_offset(str506), 24},
       {-1}, {-1},
-      {uniname2ctype_offset(str1039), 244},
-      {uniname2ctype_offset(str1040), 332},
-      {uniname2ctype_offset(str1041), 200},
+      {uniname2ctype_offset(str509), 24},
       {-1},
-      {uniname2ctype_offset(str1043), 105},
-      {uniname2ctype_offset(str1044), 257},
-      {uniname2ctype_offset(str1045), 555},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-#ifndef USE_UNICODE_AGE_PROPERTIES
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-#else /* USE_UNICODE_AGE_PROPERTIES */
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1061), 264},
-      {uniname2ctype_offset(str1062), 281},
-      {uniname2ctype_offset(str1063), 283},
-      {uniname2ctype_offset(str1064), 282},
-      {uniname2ctype_offset(str1065), 266},
-      {uniname2ctype_offset(str1066), 265},
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1067), 345},
-#ifndef USE_UNICODE_AGE_PROPERTIES
-      {-1}, {-1}, {-1},
-#else /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1068), 280},
-      {uniname2ctype_offset(str1069), 276},
-      {uniname2ctype_offset(str1070), 275},
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1071), 164},
-      {uniname2ctype_offset(str1072), 306},
-#ifndef USE_UNICODE_AGE_PROPERTIES
-      {-1},
-#else /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1073), 277},
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1074), 441},
-#ifndef USE_UNICODE_AGE_PROPERTIES
+      {uniname2ctype_offset(str511), 447},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-#else /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1075), 273},
-      {uniname2ctype_offset(str1076), 272},
-      {uniname2ctype_offset(str1077), 268},
-      {uniname2ctype_offset(str1078), 267},
-      {uniname2ctype_offset(str1079), 274},
-      {uniname2ctype_offset(str1080), 279},
-      {uniname2ctype_offset(str1081), 269},
+      {uniname2ctype_offset(str520), 407},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str535), 70},
+      {-1}, {-1},
+      {uniname2ctype_offset(str538), 91},
+      {-1}, {-1},
+      {uniname2ctype_offset(str541), 530},
       {-1},
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1083), 135},
-      {uniname2ctype_offset(str1084), 206},
+      {uniname2ctype_offset(str543), 91},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str556), 524},
+      {-1},
+      {uniname2ctype_offset(str558), 334},
+      {-1},
+      {uniname2ctype_offset(str560), 497},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str565), 585},
+      {uniname2ctype_offset(str566), 37},
+      {-1},
+      {uniname2ctype_offset(str568), 113},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str572), 485},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str577), 572},
+      {uniname2ctype_offset(str578), 70},
+      {uniname2ctype_offset(str579), 106},
+      {-1}, {-1},
+      {uniname2ctype_offset(str582), 390},
+      {uniname2ctype_offset(str583), 464},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str590), 74},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str594), 168},
+      {-1},
+      {uniname2ctype_offset(str596), 583},
+      {uniname2ctype_offset(str597), 146},
+      {-1}, {-1},
+      {uniname2ctype_offset(str600), 474},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str604), 550},
+      {uniname2ctype_offset(str605), 590},
+      {-1}, {-1},
+      {uniname2ctype_offset(str608), 597},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str614), 573},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str624), 195},
+      {uniname2ctype_offset(str625), 431},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str630), 29},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str636), 521},
+      {-1}, {-1},
+      {uniname2ctype_offset(str639), 49},
+      {-1}, {-1},
+      {uniname2ctype_offset(str642), 19},
+      {-1}, {-1},
+      {uniname2ctype_offset(str645), 469},
+      {-1},
+      {uniname2ctype_offset(str647), 192},
+      {-1}, {-1},
+      {uniname2ctype_offset(str650), 471},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str657), 51},
+      {-1}, {-1},
+      {uniname2ctype_offset(str660), 257},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str668), 69},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str672), 320},
+      {-1}, {-1},
+      {uniname2ctype_offset(str675), 68},
+      {-1}, {-1},
+      {uniname2ctype_offset(str678), 171},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str695), 529},
+      {uniname2ctype_offset(str696), 175},
+      {uniname2ctype_offset(str697), 383},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str703), 507},
+      {-1},
+      {uniname2ctype_offset(str705), 331},
+      {-1},
+      {uniname2ctype_offset(str707), 158},
+      {uniname2ctype_offset(str708), 555},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str713), 360},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str720), 72},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str737), 7},
+      {uniname2ctype_offset(str738), 357},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str742), 6},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str753), 229},
+      {-1},
+      {uniname2ctype_offset(str755), 496},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str760), 415},
+      {uniname2ctype_offset(str761), 167},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str766), 156},
+      {uniname2ctype_offset(str767), 571},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str771), 167},
+      {uniname2ctype_offset(str772), 256},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str776), 257},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str783), 156},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str787), 245},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str791), 193},
+      {-1}, {-1},
+      {uniname2ctype_offset(str794), 557},
+      {-1}, {-1},
+      {uniname2ctype_offset(str797), 50},
+      {-1},
+      {uniname2ctype_offset(str799), 578},
+      {-1}, {-1},
+      {uniname2ctype_offset(str802), 13},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str809), 430},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str814), 477},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str818), 382},
+      {-1}, {-1},
+      {uniname2ctype_offset(str821), 466},
+      {uniname2ctype_offset(str822), 562},
+      {uniname2ctype_offset(str823), 47},
+      {uniname2ctype_offset(str824), 112},
+      {uniname2ctype_offset(str825), 428},
+      {-1}, {-1},
+      {uniname2ctype_offset(str828), 563},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str834), 258},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str838), 157},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str842), 58},
+      {-1}, {-1},
+      {uniname2ctype_offset(str845), 66},
+      {-1},
+      {uniname2ctype_offset(str847), 48},
+      {uniname2ctype_offset(str848), 178},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str855), 67},
+      {-1},
+      {uniname2ctype_offset(str857), 304},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str862), 88},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str875), 353},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str886), 388},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str895), 396},
+      {-1}, {-1},
+      {uniname2ctype_offset(str898), 484},
+      {-1},
+      {uniname2ctype_offset(str900), 582},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str906), 503},
+      {uniname2ctype_offset(str907), 433},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str924), 68},
+      {-1},
+      {uniname2ctype_offset(str926), 328},
+      {-1},
+      {uniname2ctype_offset(str928), 518},
+      {uniname2ctype_offset(str929), 445},
+      {uniname2ctype_offset(str930), 41},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str946), 136},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str961), 2},
+      {-1},
+      {uniname2ctype_offset(str963), 246},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str974), 492},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str986), 354},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str994), 85},
+      {uniname2ctype_offset(str995), 104},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1005), 53},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1009), 403},
+      {uniname2ctype_offset(str1010), 26},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1013), 479},
+      {uniname2ctype_offset(str1014), 565},
+      {uniname2ctype_offset(str1015), 468},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1021), 67},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1025), 443},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1028), 136},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1032), 239},
+      {uniname2ctype_offset(str1033), 71},
+      {-1},
+      {uniname2ctype_offset(str1035), 307},
+      {uniname2ctype_offset(str1036), 542},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1049), 173},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1067), 102},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1070), 115},
+      {-1},
+      {uniname2ctype_offset(str1072), 197},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1080), 210},
+      {uniname2ctype_offset(str1081), 398},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1085), 248},
+      {-1},
+      {uniname2ctype_offset(str1087), 566},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1090), 69},
+      {uniname2ctype_offset(str1091), 11},
+      {-1},
+      {uniname2ctype_offset(str1093), 125},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1097), 519},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1102), 505},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1105), 217},
+      {-1},
+      {uniname2ctype_offset(str1107), 520},
+      {-1},
+      {uniname2ctype_offset(str1109), 228},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1119), 106},
+      {uniname2ctype_offset(str1120), 60},
+      {uniname2ctype_offset(str1121), 364},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1134), 409},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1140), 93},
+      {-1},
+      {uniname2ctype_offset(str1142), 206},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1146), 131},
+      {uniname2ctype_offset(str1147), 255},
+      {-1},
+      {uniname2ctype_offset(str1149), 158},
+      {uniname2ctype_offset(str1150), 98},
+      {uniname2ctype_offset(str1151), 482},
+      {uniname2ctype_offset(str1152), 217},
+      {uniname2ctype_offset(str1153), 138},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1157), 203},
+      {uniname2ctype_offset(str1158), 166},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1164), 229},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1168), 104},
+      {-1},
+      {uniname2ctype_offset(str1170), 373},
+      {uniname2ctype_offset(str1171), 514},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1174), 311},
+      {uniname2ctype_offset(str1175), 26},
+      {uniname2ctype_offset(str1176), 208},
+      {uniname2ctype_offset(str1177), 74},
+      {uniname2ctype_offset(str1178), 337},
+      {-1},
+      {uniname2ctype_offset(str1180), 183},
+      {uniname2ctype_offset(str1181), 151},
+      {uniname2ctype_offset(str1182), 343},
+      {uniname2ctype_offset(str1183), 101},
+      {-1},
+      {uniname2ctype_offset(str1185), 170},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1190), 261},
+      {uniname2ctype_offset(str1191), 523},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1197), 101},
+      {uniname2ctype_offset(str1198), 135},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1203), 350},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1207), 446},
+      {uniname2ctype_offset(str1208), 239},
+      {uniname2ctype_offset(str1209), 186},
+      {uniname2ctype_offset(str1210), 137},
+      {-1},
+      {uniname2ctype_offset(str1212), 363},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1227), 232},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1231), 206},
+      {uniname2ctype_offset(str1232), 339},
+      {uniname2ctype_offset(str1233), 73},
 #ifndef USE_UNICODE_AGE_PROPERTIES
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #else /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1085), 278},
-      {uniname2ctype_offset(str1086), 271},
-      {uniname2ctype_offset(str1087), 270},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1234), 287},
+      {uniname2ctype_offset(str1235), 288},
+      {uniname2ctype_offset(str1236), 286},
+      {uniname2ctype_offset(str1237), 268},
+      {uniname2ctype_offset(str1238), 270},
+      {uniname2ctype_offset(str1239), 275},
+      {uniname2ctype_offset(str1240), 269},
+      {uniname2ctype_offset(str1241), 274},
+      {uniname2ctype_offset(str1242), 285},
 #endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1094), 105},
-      {uniname2ctype_offset(str1095), 104},
-      {uniname2ctype_offset(str1096), 228},
+      {uniname2ctype_offset(str1243), 25},
+      {uniname2ctype_offset(str1244), 325},
+      {uniname2ctype_offset(str1245), 249},
+      {uniname2ctype_offset(str1246), 419},
+#ifndef USE_UNICODE_AGE_PROPERTIES
       {-1},
-      {uniname2ctype_offset(str1098), 30},
+#else /* USE_UNICODE_AGE_PROPERTIES */
+      {uniname2ctype_offset(str1247), 284},
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+      {uniname2ctype_offset(str1248), 30},
+#ifndef USE_UNICODE_AGE_PROPERTIES
       {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1104), 320},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1118), 121},
-      {uniname2ctype_offset(str1119), 414},
-      {uniname2ctype_offset(str1120), 141},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1124), 581},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1128), 176},
+#else /* USE_UNICODE_AGE_PROPERTIES */
+      {uniname2ctype_offset(str1249), 280},
+      {uniname2ctype_offset(str1250), 281},
+      {uniname2ctype_offset(str1251), 279},
+      {uniname2ctype_offset(str1252), 283},
+      {-1},
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+      {uniname2ctype_offset(str1254), 539},
+      {-1},
+      {uniname2ctype_offset(str1256), 267},
+#ifndef USE_UNICODE_AGE_PROPERTIES
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1135), 420},
-      {-1},
-      {uniname2ctype_offset(str1137), 35},
-      {uniname2ctype_offset(str1138), 376},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1143), 145},
-      {-1},
-      {uniname2ctype_offset(str1145), 359},
-      {uniname2ctype_offset(str1146), 86},
-      {uniname2ctype_offset(str1147), 56},
+#else /* USE_UNICODE_AGE_PROPERTIES */
+      {uniname2ctype_offset(str1257), 272},
+      {uniname2ctype_offset(str1258), 273},
+      {uniname2ctype_offset(str1259), 271},
+      {uniname2ctype_offset(str1260), 277},
+      {uniname2ctype_offset(str1261), 278},
+      {uniname2ctype_offset(str1262), 276},
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+      {uniname2ctype_offset(str1263), 64},
       {-1}, {-1},
-      {uniname2ctype_offset(str1150), 113},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1154), 137},
-      {-1},
-      {uniname2ctype_offset(str1156), 248},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1160), 193},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1164), 38},
-      {uniname2ctype_offset(str1165), 134},
-      {uniname2ctype_offset(str1166), 21},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1169), 176},
-      {-1},
-      {uniname2ctype_offset(str1171), 201},
-      {uniname2ctype_offset(str1172), 86},
-      {-1},
-      {uniname2ctype_offset(str1174), 506},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1179), 39},
-      {-1},
-      {uniname2ctype_offset(str1181), 3},
-      {uniname2ctype_offset(str1182), 379},
-      {uniname2ctype_offset(str1183), 140},
-      {uniname2ctype_offset(str1184), 140},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1188), 181},
-      {uniname2ctype_offset(str1189), 259},
-      {uniname2ctype_offset(str1190), 120},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1193), 26},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1205), 486},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1210), 235},
-      {uniname2ctype_offset(str1211), 516},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1217), 485},
-      {uniname2ctype_offset(str1218), 166},
-      {uniname2ctype_offset(str1219), 15},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1224), 243},
-      {-1},
-      {uniname2ctype_offset(str1226), 366},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1232), 304},
-      {-1},
-      {uniname2ctype_offset(str1234), 579},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1239), 168},
-      {-1},
-      {uniname2ctype_offset(str1241), 229},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1248), 145},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1252), 64},
-      {uniname2ctype_offset(str1253), 499},
-      {-1},
-      {uniname2ctype_offset(str1255), 416},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1262), 142},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1265), 72},
-      {-1},
-      {uniname2ctype_offset(str1267), 110},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1270), 110},
-      {uniname2ctype_offset(str1271), 88},
-      {-1},
-      {uniname2ctype_offset(str1273), 115},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1276), 247},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1279), 488},
-      {uniname2ctype_offset(str1280), 117},
-      {-1},
-      {uniname2ctype_offset(str1282), 196},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1285), 127},
-      {-1},
-      {uniname2ctype_offset(str1287), 475},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1293), 465},
-      {-1},
-      {uniname2ctype_offset(str1295), 401},
-      {uniname2ctype_offset(str1296), 260},
-      {-1},
-      {uniname2ctype_offset(str1298), 33},
-      {uniname2ctype_offset(str1299), 203},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1303), 36},
-      {-1},
-      {uniname2ctype_offset(str1305), 164},
-      {uniname2ctype_offset(str1306), 224},
-      {-1},
-      {uniname2ctype_offset(str1308), 117},
-      {uniname2ctype_offset(str1309), 107},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1312), 85},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1319), 252},
-      {uniname2ctype_offset(str1320), 263},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1323), 511},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1328), 568},
-      {-1},
-      {uniname2ctype_offset(str1330), 138},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1339), 536},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str1350), 567},
-      {uniname2ctype_offset(str1351), 482},
-      {-1},
-      {uniname2ctype_offset(str1353), 207},
-      {uniname2ctype_offset(str1354), 256},
-      {uniname2ctype_offset(str1355), 367},
+      {uniname2ctype_offset(str1266), 21},
+#ifndef USE_UNICODE_AGE_PROPERTIES
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1363), 207},
+#else /* USE_UNICODE_AGE_PROPERTIES */
       {-1}, {-1},
-      {uniname2ctype_offset(str1366), 131},
+      {uniname2ctype_offset(str1269), 282},
+      {-1}, {-1}, {-1}, {-1},
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+      {uniname2ctype_offset(str1274), 200},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1374), 382},
-      {uniname2ctype_offset(str1375), 210},
+      {uniname2ctype_offset(str1282), 595},
       {-1}, {-1},
-      {uniname2ctype_offset(str1378), 522},
-      {uniname2ctype_offset(str1379), 93},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1384), 124},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1393), 129},
-      {uniname2ctype_offset(str1394), 232},
-      {uniname2ctype_offset(str1395), 447},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1402), 510},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1418), 219},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1423), 341},
-      {uniname2ctype_offset(str1424), 153},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1434), 219},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1439), 550},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1446), 122},
-      {uniname2ctype_offset(str1447), 125},
-      {uniname2ctype_offset(str1448), 361},
-      {-1},
-      {uniname2ctype_offset(str1450), 215},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str1461), 129},
+      {uniname2ctype_offset(str1285), 105},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1289), 332},
       {-1}, {-1},
-      {uniname2ctype_offset(str1464), 496},
-      {uniname2ctype_offset(str1465), 141},
+      {uniname2ctype_offset(str1292), 381},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1297), 145},
       {-1}, {-1},
-      {uniname2ctype_offset(str1468), 527},
-      {uniname2ctype_offset(str1469), 495},
-      {-1},
-      {uniname2ctype_offset(str1471), 39},
-      {uniname2ctype_offset(str1472), 478},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1476), 484},
-      {uniname2ctype_offset(str1477), 261},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1483), 580},
-      {uniname2ctype_offset(str1484), 503},
-      {uniname2ctype_offset(str1485), 384},
+      {uniname2ctype_offset(str1300), 86},
+      {uniname2ctype_offset(str1301), 141},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1490), 408},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1494), 126},
-      {uniname2ctype_offset(str1495), 234},
-      {uniname2ctype_offset(str1496), 62},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1500), 122},
-      {uniname2ctype_offset(str1501), 161},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1505), 20},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1508), 318},
-      {-1},
-      {uniname2ctype_offset(str1510), 221},
-      {uniname2ctype_offset(str1511), 222},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1518), 424},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1523), 120},
-      {-1},
-      {uniname2ctype_offset(str1525), 232},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1529), 251},
-      {uniname2ctype_offset(str1530), 159},
-      {uniname2ctype_offset(str1531), 109},
-      {-1},
-      {uniname2ctype_offset(str1533), 114},
-      {uniname2ctype_offset(str1534), 61},
-      {uniname2ctype_offset(str1535), 121},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1540), 154},
+      {uniname2ctype_offset(str1306), 15},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1548), 114},
+      {uniname2ctype_offset(str1314), 193},
       {-1}, {-1},
-      {uniname2ctype_offset(str1551), 548},
+      {uniname2ctype_offset(str1317), 86},
       {-1},
-      {uniname2ctype_offset(str1553), 159},
+      {uniname2ctype_offset(str1319), 256},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1331), 252},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1340), 105},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1343), 120},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str1354), 164},
+      {uniname2ctype_offset(str1355), 254},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1358), 593},
+      {-1},
+      {uniname2ctype_offset(str1360), 3},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1365), 371},
+      {uniname2ctype_offset(str1366), 36},
+      {uniname2ctype_offset(str1367), 512},
+      {-1},
+      {uniname2ctype_offset(str1369), 247},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1373), 263},
+      {-1},
+      {uniname2ctype_offset(str1375), 135},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1380), 35},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1384), 56},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1387), 113},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1400), 201},
+      {uniname2ctype_offset(str1401), 384},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1407), 224},
+      {-1},
+      {uniname2ctype_offset(str1409), 38},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1419), 140},
+      {uniname2ctype_offset(str1420), 140},
+      {-1},
+      {uniname2ctype_offset(str1422), 309},
+      {uniname2ctype_offset(str1423), 143},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1426), 39},
+      {-1},
+      {uniname2ctype_offset(str1428), 181},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1434), 143},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1438), 421},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1441), 215},
+      {uniname2ctype_offset(str1442), 522},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1445), 253},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1448), 490},
+      {uniname2ctype_offset(str1449), 122},
+      {uniname2ctype_offset(str1450), 134},
+      {uniname2ctype_offset(str1451), 203},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1454), 145},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1457), 166},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1462), 534},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1466), 241},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1470), 489},
+      {uniname2ctype_offset(str1471), 491},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1475), 413},
+      {uniname2ctype_offset(str1476), 493},
+      {-1},
+      {uniname2ctype_offset(str1478), 435},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1481), 138},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1485), 327},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1489), 33},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1495), 251},
+      {-1},
+      {uniname2ctype_offset(str1497), 483},
+      {uniname2ctype_offset(str1498), 199},
+      {uniname2ctype_offset(str1499), 581},
+      {-1},
+      {uniname2ctype_offset(str1501), 196},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1507), 122},
+      {-1},
+      {uniname2ctype_offset(str1509), 110},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1512), 110},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1517), 580},
+      {-1},
+      {uniname2ctype_offset(str1519), 219},
+      {uniname2ctype_offset(str1520), 228},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1523), 117},
+      {uniname2ctype_offset(str1524), 470},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1529), 120},
+      {-1},
+      {uniname2ctype_offset(str1531), 406},
+      {-1},
+      {uniname2ctype_offset(str1533), 142},
+      {-1},
+      {uniname2ctype_offset(str1535), 219},
+      {uniname2ctype_offset(str1536), 127},
+      {uniname2ctype_offset(str1537), 260},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1542), 452},
+      {-1},
+      {uniname2ctype_offset(str1544), 560},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1547), 168},
+      {uniname2ctype_offset(str1548), 517},
+      {uniname2ctype_offset(str1549), 504},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1552), 117},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1555), 107},
+      {-1},
+      {uniname2ctype_offset(str1557), 85},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1563), 264},
+      {-1},
+      {uniname2ctype_offset(str1565), 314},
+      {-1},
+      {uniname2ctype_offset(str1567), 148},
+      {-1},
+      {uniname2ctype_offset(str1569), 236},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1572), 115},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1561), 584},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1564), 473},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1574), 309},
+      {uniname2ctype_offset(str1580), 131},
       {-1},
-      {uniname2ctype_offset(str1576), 571},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1580), 202},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1583), 544},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1586), 245},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1593), 81},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1600), 574},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1606), 452},
+      {uniname2ctype_offset(str1582), 148},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1611), 202},
-      {-1},
-      {uniname2ctype_offset(str1613), 229},
-      {uniname2ctype_offset(str1614), 89},
-      {uniname2ctype_offset(str1615), 123},
-      {uniname2ctype_offset(str1616), 403},
-      {-1},
-      {uniname2ctype_offset(str1618), 42},
+      {uniname2ctype_offset(str1587), 528},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1625), 451},
-      {-1},
-      {uniname2ctype_offset(str1627), 297},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1637), 109},
+      {uniname2ctype_offset(str1594), 114},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1597), 81},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1602), 97},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1607), 97},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1613), 164},
       {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1641), 73},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1651), 411},
+      {uniname2ctype_offset(str1617), 487},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1622), 372},
+      {uniname2ctype_offset(str1623), 545},
       {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1657), 453},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1663), 471},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1669), 154},
+      {uniname2ctype_offset(str1629), 39},
       {-1},
-      {uniname2ctype_offset(str1671), 362},
+      {uniname2ctype_offset(str1631), 176},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1635), 72},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1638), 425},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1643), 62},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str1654), 387},
+      {uniname2ctype_offset(str1655), 265},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1662), 129},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1671), 114},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1675), 456},
+      {uniname2ctype_offset(str1676), 176},
+      {uniname2ctype_offset(str1677), 302},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1682), 594},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1686), 93},
+      {uniname2ctype_offset(str1687), 141},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1691), 124},
+      {uniname2ctype_offset(str1692), 121},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1699), 366},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1702), 509},
+      {uniname2ctype_offset(str1703), 532},
+      {uniname2ctype_offset(str1704), 207},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1714), 207},
+      {-1},
+      {uniname2ctype_offset(str1716), 418},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1722), 346},
+      {-1},
+      {uniname2ctype_offset(str1724), 553},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1728), 221},
+      {uniname2ctype_offset(str1729), 429},
+      {uniname2ctype_offset(str1730), 222},
+      {uniname2ctype_offset(str1731), 516},
+      {uniname2ctype_offset(str1732), 238},
+      {uniname2ctype_offset(str1733), 123},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1740), 129},
+      {-1},
+      {uniname2ctype_offset(str1742), 161},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1745), 508},
+      {uniname2ctype_offset(str1746), 389},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1750), 20},
+      {-1},
+      {uniname2ctype_offset(str1752), 501},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1757), 500},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1766), 73},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1769), 361},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1776), 126},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1780), 65},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1679), 1},
+      {uniname2ctype_offset(str1788), 137},
       {-1}, {-1},
-      {uniname2ctype_offset(str1682), 137},
-      {-1},
-      {uniname2ctype_offset(str1684), 483},
-      {uniname2ctype_offset(str1685), 316},
+      {uniname2ctype_offset(str1791), 233},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1806), 335},
       {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1689), 439},
-      {uniname2ctype_offset(str1690), 9},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1695), 419},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1698), 5},
-      {uniname2ctype_offset(str1699), 250},
-      {uniname2ctype_offset(str1700), 394},
-      {uniname2ctype_offset(str1701), 322},
-      {uniname2ctype_offset(str1702), 199},
+      {uniname2ctype_offset(str1810), 598},
+      {uniname2ctype_offset(str1811), 236},
       {-1},
-      {uniname2ctype_offset(str1704), 430},
+      {uniname2ctype_offset(str1813), 255},
       {-1}, {-1},
-      {uniname2ctype_offset(str1707), 357},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1714), 32},
-      {uniname2ctype_offset(str1715), 175},
+      {uniname2ctype_offset(str1816), 564},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1720), 17},
+      {uniname2ctype_offset(str1821), 224},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1825), 258},
+      {uniname2ctype_offset(str1826), 202},
+      {-1},
+      {uniname2ctype_offset(str1828), 386},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1838), 584},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1842), 378},
+      {uniname2ctype_offset(str1843), 134},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1846), 480},
+      {-1},
+      {uniname2ctype_offset(str1848), 109},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1861), 202},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1866), 61},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1871), 478},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1878), 27},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1881), 63},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1891), 150},
+      {uniname2ctype_offset(str1892), 561},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1896), 587},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1728), 63},
+      {uniname2ctype_offset(str1904), 439},
+      {uniname2ctype_offset(str1905), 558},
+      {uniname2ctype_offset(str1906), 150},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1911), 342},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1915), 165},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1928), 423},
+      {uniname2ctype_offset(str1929), 416},
+      {uniname2ctype_offset(str1930), 444},
       {-1},
-      {uniname2ctype_offset(str1730), 249},
-      {uniname2ctype_offset(str1731), 335},
+      {uniname2ctype_offset(str1932), 399},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1936), 322},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str1947), 194},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1950), 408},
+      {uniname2ctype_offset(str1951), 12},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1738), 174},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1747), 437},
-      {-1},
-      {uniname2ctype_offset(str1749), 381},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1767), 237},
+      {uniname2ctype_offset(str1958), 109},
       {-1}, {-1},
-      {uniname2ctype_offset(str1770), 209},
+      {uniname2ctype_offset(str1961), 103},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1964), 424},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1967), 476},
+      {uniname2ctype_offset(str1968), 602},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1971), 153},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1775), 585},
-      {uniname2ctype_offset(str1776), 143},
-      {uniname2ctype_offset(str1777), 330},
-      {uniname2ctype_offset(str1778), 148},
-      {-1},
-      {uniname2ctype_offset(str1780), 356},
-      {-1},
-      {uniname2ctype_offset(str1782), 174},
-      {uniname2ctype_offset(str1783), 65},
-      {-1},
-      {uniname2ctype_offset(str1785), 130},
-      {uniname2ctype_offset(str1786), 373},
-      {uniname2ctype_offset(str1787), 143},
-      {uniname2ctype_offset(str1788), 52},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1792), 337},
-      {uniname2ctype_offset(str1793), 148},
+      {uniname2ctype_offset(str1985), 392},
       {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1799), 27},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1802), 97},
-      {uniname2ctype_offset(str1803), 139},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1807), 97},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1825), 196},
+      {uniname2ctype_offset(str1991), 1},
       {-1},
-      {uniname2ctype_offset(str1827), 432},
-      {uniname2ctype_offset(str1828), 333},
+      {uniname2ctype_offset(str1993), 359},
+      {uniname2ctype_offset(str1994), 175},
+      {-1},
+      {uniname2ctype_offset(str1996), 42},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2006), 394},
       {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1832), 551},
+      {uniname2ctype_offset(str2010), 362},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2014), 321},
+      {-1},
+      {uniname2ctype_offset(str2016), 209},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1839), 317},
-      {-1},
-      {uniname2ctype_offset(str1841), 489},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1846), 128},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1852), 87},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1856), 324},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1859), 221},
-      {uniname2ctype_offset(str1860), 36},
-      {uniname2ctype_offset(str1861), 87},
-      {uniname2ctype_offset(str1862), 525},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1865), 456},
-      {uniname2ctype_offset(str1866), 128},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1869), 35},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1872), 434},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str1883), 429},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1896), 354},
-      {-1},
-      {uniname2ctype_offset(str1898), 395},
-      {uniname2ctype_offset(str1899), 29},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1911), 588},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1921), 83},
-      {uniname2ctype_offset(str1922), 389},
-      {-1},
-      {uniname2ctype_offset(str1924), 94},
-      {uniname2ctype_offset(str1925), 8},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1931), 387},
-      {uniname2ctype_offset(str1932), 83},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1942), 363},
-      {-1},
-      {uniname2ctype_offset(str1944), 468},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1948), 413},
-      {-1},
-      {uniname2ctype_offset(str1950), 519},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1956), 241},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1960), 557},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1965), 549},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1969), 142},
-      {uniname2ctype_offset(str1970), 554},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1973), 198},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1979), 216},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1986), 37},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1993), 236},
-      {-1},
-      {uniname2ctype_offset(str1995), 123},
-      {-1},
-      {uniname2ctype_offset(str1997), 226},
-      {-1},
-      {uniname2ctype_offset(str1999), 124},
+      {uniname2ctype_offset(str2023), 32},
+      {uniname2ctype_offset(str2024), 488},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2008), 198},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2012), 215},
-      {uniname2ctype_offset(str2013), 152},
+      {uniname2ctype_offset(str2033), 78},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2043), 17},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2018), 346},
+      {uniname2ctype_offset(str2048), 92},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2055), 92},
       {-1}, {-1},
-      {uniname2ctype_offset(str2021), 162},
+      {uniname2ctype_offset(str2058), 240},
       {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2025), 254},
-      {uniname2ctype_offset(str2026), 216},
-      {uniname2ctype_offset(str2027), 150},
-      {-1},
-      {uniname2ctype_offset(str2029), 418},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2038), 211},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2042), 150},
-      {uniname2ctype_offset(str2043), 89},
-      {uniname2ctype_offset(str2044), 119},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2047), 558},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2052), 397},
+      {uniname2ctype_offset(str2062), 130},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2060), 20},
-      {-1},
-      {uniname2ctype_offset(str2062), 100},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str2073), 130},
-      {-1},
-      {uniname2ctype_offset(str2075), 220},
-      {-1},
-      {uniname2ctype_offset(str2077), 134},
-      {uniname2ctype_offset(str2078), 90},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2082), 12},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2086), 242},
+      {uniname2ctype_offset(str2070), 9},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2073), 329},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2091), 185},
-      {-1},
-      {uniname2ctype_offset(str2093), 197},
-      {uniname2ctype_offset(str2094), 427},
-      {uniname2ctype_offset(str2095), 400},
-      {-1},
-      {uniname2ctype_offset(str2097), 118},
-      {-1},
-      {uniname2ctype_offset(str2099), 23},
-      {uniname2ctype_offset(str2100), 185},
-      {uniname2ctype_offset(str2101), 165},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2104), 43},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2111), 364},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2115), 236},
-      {uniname2ctype_offset(str2116), 205},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2129), 392},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2133), 84},
-      {uniname2ctype_offset(str2134), 78},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2144), 582},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2147), 177},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2151), 84},
-      {-1},
-      {uniname2ctype_offset(str2153), 139},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2157), 231},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str2168), 239},
-      {uniname2ctype_offset(str2169), 422},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2175), 183},
+      {uniname2ctype_offset(str2078), 245},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2180), 92},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2184), 194},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2187), 92},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2190), 192},
-      {uniname2ctype_offset(str2191), 396},
-      {uniname2ctype_offset(str2192), 99},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2196), 55},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2200), 340},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2204), 470},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2219), 360},
-      {uniname2ctype_offset(str2220), 321},
-      {-1},
-      {uniname2ctype_offset(str2222), 298},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2228), 214},
-      {uniname2ctype_offset(str2229), 103},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2238), 303},
-      {uniname2ctype_offset(str2239), 530},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2243), 107},
-      {-1},
-      {uniname2ctype_offset(str2245), 172},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2248), 371},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2264), 431},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2267), 211},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2273), 54},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2276), 182},
-      {-1},
-      {uniname2ctype_offset(str2278), 448},
-      {-1},
-      {uniname2ctype_offset(str2280), 504},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2296), 210},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2308), 412},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2315), 34},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str2344), 247},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2348), 66},
+      {uniname2ctype_offset(str2083), 323},
+      {uniname2ctype_offset(str2084), 154},
+      {uniname2ctype_offset(str2085), 20},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2356), 239},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2360), 82},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2369), 526},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2093), 192},
       {-1},
-      {uniname2ctype_offset(str2380), 443},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2389), 433},
+      {uniname2ctype_offset(str2095), 340},
+      {-1},
+      {uniname2ctype_offset(str2097), 214},
+      {uniname2ctype_offset(str2098), 8},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2102), 43},
+      {uniname2ctype_offset(str2103), 162},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2109), 215},
+      {uniname2ctype_offset(str2110), 123},
+      {-1},
+      {uniname2ctype_offset(str2112), 210},
+      {-1},
+      {uniname2ctype_offset(str2114), 159},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2117), 174},
+      {-1},
+      {uniname2ctype_offset(str2119), 216},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2135), 128},
+      {-1},
+      {uniname2ctype_offset(str2137), 172},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2397), 351},
-      {uniname2ctype_offset(str2398), 319},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2407), 365},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2413), 450},
-      {uniname2ctype_offset(str2414), 250},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2420), 43},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2426), 497},
+      {uniname2ctype_offset(str2145), 52},
+      {uniname2ctype_offset(str2146), 400},
       {-1}, {-1},
-      {uniname2ctype_offset(str2429), 195},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2435), 112},
-      {-1},
-      {uniname2ctype_offset(str2437), 178},
+      {uniname2ctype_offset(str2149), 221},
+      {uniname2ctype_offset(str2150), 121},
       {-1}, {-1},
-      {uniname2ctype_offset(str2440), 18},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str2451), 421},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2454), 38},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2459), 64},
+      {uniname2ctype_offset(str2153), 351},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2161), 233},
       {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2463), 118},
-      {uniname2ctype_offset(str2464), 353},
-      {-1},
-      {uniname2ctype_offset(str2466), 233},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2165), 174},
+      {uniname2ctype_offset(str2166), 5},
+      {uniname2ctype_offset(str2167), 112},
       {-1}, {-1},
-      {uniname2ctype_offset(str2478), 48},
-      {uniname2ctype_offset(str2479), 82},
-      {uniname2ctype_offset(str2480), 370},
+      {uniname2ctype_offset(str2170), 216},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2173), 87},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2181), 139},
+      {uniname2ctype_offset(str2182), 87},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2195), 338},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2199), 159},
+      {-1},
+      {uniname2ctype_offset(str2201), 89},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2204), 368},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2207), 196},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2217), 128},
+      {uniname2ctype_offset(str2218), 525},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2222), 457},
+      {-1},
+      {uniname2ctype_offset(str2224), 437},
+      {uniname2ctype_offset(str2225), 458},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2228), 82},
+      {uniname2ctype_offset(str2229), 35},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2235), 473},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2238), 154},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2244), 427},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2247), 36},
+      {uniname2ctype_offset(str2248), 568},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2252), 240},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2258), 442},
+      {-1},
+      {uniname2ctype_offset(str2260), 235},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2268), 596},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2271), 18},
+      {uniname2ctype_offset(str2272), 254},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2278), 124},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2282), 230},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2285), 38},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2294), 88},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2302), 367},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2305), 205},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2312), 177},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2315), 567},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2321), 369},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2339), 599},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2343), 559},
+      {uniname2ctype_offset(str2344), 82},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2357), 237},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2361), 570},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2364), 308},
+      {uniname2ctype_offset(str2365), 402},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2373), 37},
+      {uniname2ctype_offset(str2374), 376},
+      {uniname2ctype_offset(str2375), 197},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2378), 237},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str2389), 204},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2396), 375},
+      {uniname2ctype_offset(str2397), 405},
+      {uniname2ctype_offset(str2398), 397},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2497), 147},
+      {uniname2ctype_offset(str2415), 401},
+      {uniname2ctype_offset(str2416), 365},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1},
-      {uniname2ctype_offset(str2499), 290},
-      {uniname2ctype_offset(str2500), 262},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2503), 153},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2511), 258},
-      {uniname2ctype_offset(str2512), 347},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2522), 285},
-      {uniname2ctype_offset(str2523), 233},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2537), 289},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2540), 578},
+      {uniname2ctype_offset(str2427), 23},
       {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2546), 462},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2555), 50},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2561), 460},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2570), 545},
-      {uniname2ctype_offset(str2571), 539},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2576), 4},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2582), 54},
-      {uniname2ctype_offset(str2583), 204},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2605), 190},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2617), 369},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2620), 406},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2625), 62},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2638), 223},
-      {uniname2ctype_offset(str2639), 133},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2642), 213},
-      {uniname2ctype_offset(str2643), 342},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2648), 199},
-      {-1},
-      {uniname2ctype_offset(str2650), 375},
+      {uniname2ctype_offset(str2433), 426},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2657), 246},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2660), 372},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2665), 99},
+      {uniname2ctype_offset(str2440), 100},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2682), 78},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2694), 343},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2720), 454},
       {-1},
-      {uniname2ctype_offset(str2722), 165},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2732), 80},
+      {uniname2ctype_offset(str2451), 29},
       {-1}, {-1},
-      {uniname2ctype_offset(str2735), 204},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2741), 63},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2759), 563},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2769), 564},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2777), 293},
+      {uniname2ctype_offset(str2454), 220},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2458), 494},
       {-1},
-      {uniname2ctype_offset(str2779), 295},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2784), 180},
+      {uniname2ctype_offset(str2460), 246},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2470), 432},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2807), 386},
+      {uniname2ctype_offset(str2475), 142},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2479), 345},
+      {uniname2ctype_offset(str2480), 50},
+      {uniname2ctype_offset(str2481), 370},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2832), 96},
-      {-1},
-      {uniname2ctype_offset(str2834), 237},
-      {-1},
-      {uniname2ctype_offset(str2836), 537},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2841), 288},
-      {uniname2ctype_offset(str2842), 284},
-      {-1},
-      {uniname2ctype_offset(str2844), 96},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2857), 201},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2861), 191},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2874), 28},
-      {uniname2ctype_offset(str2875), 191},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2899), 291},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2905), 287},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2908), 311},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2911), 88},
-      {uniname2ctype_offset(str2912), 213},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2918), 390},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2922), 575},
-      {-1},
-      {uniname2ctype_offset(str2924), 540},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2939), 230},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2942), 180},
-      {uniname2ctype_offset(str2943), 133},
+      {uniname2ctype_offset(str2506), 510},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2950), 238},
-      {-1},
-      {uniname2ctype_offset(str2952), 231},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2956), 308},
+      {uniname2ctype_offset(str2513), 591},
       {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2962), 132},
+      {uniname2ctype_offset(str2519), 465},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2529), 165},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2967), 222},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2971), 51},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2978), 573},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2990), 146},
-      {-1},
-      {uniname2ctype_offset(str2992), 10},
-      {-1},
-      {uniname2ctype_offset(str2994), 238},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3012), 566},
-      {uniname2ctype_offset(str3013), 249},
+      {uniname2ctype_offset(str2534), 324},
       {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3019), 458},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2540), 226},
+      {-1},
+      {uniname2ctype_offset(str2542), 125},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2548), 118},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2552), 461},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3046), 457},
+      {uniname2ctype_offset(str2561), 434},
+      {uniname2ctype_offset(str2562), 251},
+      {-1},
+      {uniname2ctype_offset(str2564), 356},
+      {-1},
+      {uniname2ctype_offset(str2566), 185},
+      {uniname2ctype_offset(str2567), 303},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2570), 475},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2575), 185},
+      {uniname2ctype_offset(str2576), 99},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2579), 133},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2586), 199},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3055), 223},
+      {uniname2ctype_offset(str2595), 326},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3063), 132},
+      {uniname2ctype_offset(str2603), 198},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2606), 358},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2609), 55},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3068), 59},
+      {uniname2ctype_offset(str2614), 537},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3078), 446},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2624), 226},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2631), 107},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2634), 266},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2643), 436},
+      {uniname2ctype_offset(str2644), 575},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2648), 243},
       {-1},
-      {uniname2ctype_offset(str3098), 205},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3104), 125},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3114), 126},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2650), 78},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2653), 183},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2656), 352},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3130), 179},
+      {uniname2ctype_offset(str2663), 182},
+      {-1},
+      {uniname2ctype_offset(str2665), 83},
       {-1}, {-1},
-      {uniname2ctype_offset(str3133), 103},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2668), 94},
+      {-1},
+      {uniname2ctype_offset(str2670), 592},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2673), 84},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2676), 83},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1},
-      {uniname2ctype_offset(str3154), 47},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2688), 139},
       {-1}, {-1},
-      {uniname2ctype_offset(str3175), 41},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3182), 415},
+      {uniname2ctype_offset(str2691), 84},
+      {uniname2ctype_offset(str2692), 211},
+      {-1},
+      {uniname2ctype_offset(str2694), 48},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2698), 119},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2701), 417},
+      {uniname2ctype_offset(str2702), 89},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2721), 198},
+      {-1},
+      {uniname2ctype_offset(str2723), 4},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2732), 130},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3197), 562},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3221), 57},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2747), 54},
       {-1}, {-1},
-      {uniname2ctype_offset(str3233), 220},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3236), 244},
+      {uniname2ctype_offset(str2750), 533},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3248), 444},
+      {uniname2ctype_offset(str2760), 152},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2764), 241},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2768), 90},
+      {uniname2ctype_offset(str2769), 467},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3256), 240},
+      {uniname2ctype_offset(str2777), 28},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2780), 227},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3260), 182},
+      {uniname2ctype_offset(str2793), 34},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str3289), 65},
-      {uniname2ctype_offset(str3290), 177},
-      {uniname2ctype_offset(str3291), 246},
-      {-1},
-      {uniname2ctype_offset(str3293), 49},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3298), 230},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3312), 399},
+      {uniname2ctype_offset(str2816), 295},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2821), 377},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str3323), 100},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3386), 116},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2834), 348},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2841), 222},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2848), 253},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2852), 290},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2855), 190},
+      {uniname2ctype_offset(str2856), 66},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2859), 411},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2862), 211},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2867), 294},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2871), 243},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1},
-      {uniname2ctype_offset(str3407), 116},
+      {uniname2ctype_offset(str2883), 242},
       {-1},
-      {uniname2ctype_offset(str3409), 245},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3413), 481},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3417), 71},
-      {-1},
-      {uniname2ctype_offset(str3419), 16},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3424), 30},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3434), 147},
+      {uniname2ctype_offset(str2885), 147},
+      {uniname2ctype_offset(str2886), 133},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3452), 119},
+      {uniname2ctype_offset(str2904), 448},
+      {uniname2ctype_offset(str2905), 262},
+      {uniname2ctype_offset(str2906), 574},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2909), 548},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2912), 244},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3457), 559},
+      {uniname2ctype_offset(str2926), 51},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2938), 242},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2941), 347},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2963), 225},
+      {uniname2ctype_offset(str2964), 502},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2967), 43},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2980), 195},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2984), 546},
+      {-1},
+      {uniname2ctype_offset(str2986), 118},
+      {uniname2ctype_offset(str2987), 54},
+      {uniname2ctype_offset(str2988), 455},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3498), 286},
+      {uniname2ctype_offset(str2993), 234},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3000), 16},
+      {uniname2ctype_offset(str3001), 180},
+      {uniname2ctype_offset(str3002), 64},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3005), 459},
+      {uniname2ctype_offset(str3006), 554},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3012), 80},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3028), 250},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3515), 190},
+      {uniname2ctype_offset(str3045), 576},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3055), 453},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3089), 146},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3098), 579},
+      {uniname2ctype_offset(str3099), 462},
+      {uniname2ctype_offset(str3100), 103},
+      {uniname2ctype_offset(str3101), 223},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3107), 298},
+      {-1},
+      {uniname2ctype_offset(str3109), 300},
+      {-1},
+      {uniname2ctype_offset(str3111), 191},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3125), 191},
+      {uniname2ctype_offset(str3126), 99},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3134), 223},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3158), 313},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3165), 438},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3169), 47},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3176), 380},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3180), 316},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3185), 126},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3194), 204},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str3205), 227},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3209), 62},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3215), 180},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3218), 201},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3237), 374},
+      {-1},
+      {uniname2ctype_offset(str3239), 293},
+      {uniname2ctype_offset(str3240), 289},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3248), 213},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3254), 190},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3266), 420},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str3286), 235},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str3297), 296},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3303), 292},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3309), 178},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3317), 249},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str3328), 63},
+      {uniname2ctype_offset(str3329), 586},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3348), 391},
+      {uniname2ctype_offset(str3349), 422},
+      {-1},
+      {uniname2ctype_offset(str3351), 96},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3360), 234},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3363), 96},
+      {-1},
+      {uniname2ctype_offset(str3365), 577},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3433), 205},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3436), 213},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3439), 49},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3442), 463},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3458), 10},
+      {-1},
+      {uniname2ctype_offset(str3460), 588},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3511), 395},
+      {uniname2ctype_offset(str3512), 486},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3517), 179},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3531), 153},
+      {uniname2ctype_offset(str3532), 549},
+      {uniname2ctype_offset(str3533), 57},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3550), 41},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3558), 59},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3613), 214},
+      {uniname2ctype_offset(str3614), 220},
+      {-1},
+      {uniname2ctype_offset(str3616), 45},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3628), 71},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str3648), 449},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3664), 177},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3703), 132},
+      {-1},
+      {uniname2ctype_offset(str3705), 305},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3714), 132},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3766), 451},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3791), 65},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3805), 250},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3819), 162},
+      {-1},
+      {uniname2ctype_offset(str3821), 291},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3842), 182},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3845), 248},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3891), 30},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3924), 404},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3942), 100},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3976), 569},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3995), 147},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str4087), 414},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3546), 45},
+      {uniname2ctype_offset(str4109), 119},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4137), 244},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3553), 90},
+      {uniname2ctype_offset(str4162), 543},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3567), 292},
-      {uniname2ctype_offset(str3568), 294},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4175), 544},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4203), 80},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4254), 116},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4276), 116},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4291), 301},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str4321), 75},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str4360), 231},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4397), 385},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4405), 297},
+      {uniname2ctype_offset(str4406), 299},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3631), 417},
-      {uniname2ctype_offset(str3632), 300},
+      {uniname2ctype_offset(str4460), 90},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3723), 296},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3738), 214},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4485), 179},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3790), 409},
+      {uniname2ctype_offset(str4528), 46},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3832), 445},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str4674), 600},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4683), 450},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
@@ -39656,181 +40892,28 @@ uniname2ctype_p (register const char *str, register size_t len)
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3894), 586},
+      {uniname2ctype_offset(str4772), 393},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3907), 535},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3952), 80},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str4009), 162},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4052), 227},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4089), 240},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4132), 380},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4228), 388},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4345), 46},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str4374), 407},
-      {-1}, {-1},
-      {uniname2ctype_offset(str4377), 179},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4563), 576},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4636), 155},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4957), 75},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4948), 589},
 #endif /* USE_UNICODE_PROPERTIES */
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #ifndef USE_UNICODE_PROPERTIES
@@ -39850,7 +40933,28 @@ uniname2ctype_p (register const char *str, register size_t len)
       {uniname2ctype_offset(str19), 4},
       {uniname2ctype_offset(str20), 2}
 #else /* USE_UNICODE_PROPERTIES */
-      {uniname2ctype_offset(str5315), 587},
+      {uniname2ctype_offset(str4955), 155},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4986), 412},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str5114), 225},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
@@ -39891,7 +40995,78 @@ uniname2ctype_p (register const char *str, register size_t len)
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str5676), 155}
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str5608), 155},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str6098), 601}
 #endif /* USE_UNICODE_PROPERTIES */
     };
 
@@ -39922,22 +41097,22 @@ uniname2ctype(const UChar *name, unsigned int len)
   return -1;
 }
 #if defined ONIG_UNICODE_VERSION_STRING && !( \
-      ONIG_UNICODE_VERSION_MAJOR == 11 && \
+      ONIG_UNICODE_VERSION_MAJOR == 12 && \
       ONIG_UNICODE_VERSION_MINOR == 0 && \
       ONIG_UNICODE_VERSION_TEENY == 0 && \
       1)
 # error ONIG_UNICODE_VERSION_STRING mismatch
 #endif
-#define ONIG_UNICODE_VERSION_STRING "11.0.0"
-#define ONIG_UNICODE_VERSION_MAJOR 11
+#define ONIG_UNICODE_VERSION_STRING "12.0.0"
+#define ONIG_UNICODE_VERSION_MAJOR 12
 #define ONIG_UNICODE_VERSION_MINOR 0
 #define ONIG_UNICODE_VERSION_TEENY 0
 #if defined ONIG_UNICODE_EMOJI_VERSION_STRING && !( \
-      ONIG_UNICODE_EMOJI_VERSION_MAJOR == 11 && \
+      ONIG_UNICODE_EMOJI_VERSION_MAJOR == 12 && \
       ONIG_UNICODE_EMOJI_VERSION_MINOR == 0 && \
       1)
 # error ONIG_UNICODE_EMOJI_VERSION_STRING mismatch
 #endif
-#define ONIG_UNICODE_EMOJI_VERSION_STRING "11.0"
-#define ONIG_UNICODE_EMOJI_VERSION_MAJOR 11
+#define ONIG_UNICODE_EMOJI_VERSION_STRING "12.0"
+#define ONIG_UNICODE_EMOJI_VERSION_MAJOR 12
 #define ONIG_UNICODE_EMOJI_VERSION_MINOR 0

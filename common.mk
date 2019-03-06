@@ -15,8 +15,8 @@ mflags = $(MFLAGS)
 gnumake_recursive =
 enable_shared = $(ENABLE_SHARED:no=)
 
-UNICODE_VERSION = 11.0.0
-UNICODE_EMOJI_VERSION = 11.0
+UNICODE_VERSION = 12.0.0
+UNICODE_EMOJI_VERSION = 12.0
 UNICODE_BETA = NO
 
 ### set the following environment variable or uncomment the line if
