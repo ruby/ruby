@@ -695,7 +695,7 @@ module FileUtils
         f.chown euid, -1
         f.chmod 0700
       }
-    rescue EISDIR # JRuby in non-native mode can't open files as dirs
+    rescue Errno::EISDIR # JRuby in non-native mode can't open files as dirs
       File.lstat(dot_file).tap {|fstat|
         unless fu_stat_identical_entry?(st, fstat)
           # symlink (TOC-to-TOU attack?)
