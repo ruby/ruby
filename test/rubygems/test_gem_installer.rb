@@ -1498,6 +1498,8 @@ gem 'other', version
   end
 
   def test_pre_install_checks_malicious_extensions_before_eval
+    skip "mswin environment disallow to create file contained the carriage return code." if Gem.win_platform?
+
     spec = util_spec "malicious", '1'
     def spec.full_name # so the spec is buildable
       "malicious-1"
