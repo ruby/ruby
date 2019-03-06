@@ -20,21 +20,13 @@ module Test_Symbol
 
     def assert_not_interned_error(obj, meth, name, msg = nil, &block)
       e = assert_raise(NameError, msg) {obj.__send__(meth, name, &block)}
-      if Symbol === name
-        assert_not_pinneddown(name, msg)
-      else
-        assert_not_interned(name, msg)
-      end
+      assert_not_pinneddown(name, msg)
       e
     end
 
     def assert_not_interned_false(obj, meth, name, msg = nil)
       assert_not_send([obj, meth, name], msg)
-      if Symbol === name
-        assert_not_pinneddown(name, msg)
-      else
-        assert_not_interned(name, msg)
-      end
+      assert_not_pinneddown(name, msg)
     end
 
     Feature5072 = '[ruby-core:38367]'
