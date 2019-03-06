@@ -1422,7 +1422,7 @@ check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)())
 }
 
 static inline int
-vm_method_cfunc_is(CALL_INFO ci, CALL_CACHE cc,
+vm_method_cfunc_is(const struct rb_call_info *ci, CALL_CACHE cc,
 		   VALUE recv, VALUE (*func)())
 {
     vm_search_method(ci, cc, recv);
@@ -4050,6 +4050,27 @@ vm_opt_regexpmatch2(VALUE recv, VALUE obj)
     }
     else {
 	return Qundef;
+    }
+}
+
+static NOINLINE(VALUE vm_opt_RubyVM_return_value_is_used_(const struct rb_control_frame_struct *restrict reg_cfp, const struct rb_call_info *restrict ci, struct rb_call_cache *restrict cc, VALUE recv));
+
+static VALUE
+vm_opt_RubyVM_return_value_is_used_(
+    const struct rb_control_frame_struct *restrict reg_cfp,
+    const struct rb_call_info *restrict ci,
+    struct rb_call_cache *restrict cc,
+    VALUE recv)
+{
+    if (! vm_method_cfunc_is(
+            ci, cc, recv, rb_whether_the_return_value_is_used_p_m)) {
+        return Qundef;
+    }
+    else if (VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED)) {
+        return Qfalse;
+    }
+    else {
+        return Qtrue;
     }
 }
 

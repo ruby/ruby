@@ -1565,12 +1565,10 @@ opt_RubyVM_return_value_is_used_
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
 // attr enum rb_insn_purity purity = purity_of_cc(cc);
 {
-    if (vm_method_cfunc_is(ci, cc, recv,
-            rb_whether_the_return_value_is_used_p_m)) {
-        val = VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) ? Qfalse : Qtrue;
-    }
-    else {
-        DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+    val = vm_opt_RubyVM_return_value_is_used_(GET_CFP(), ci, cc, recv);
+
+    if (val == Qundef) {
+        CALL_SIMPLE_METHOD();
     }
 }
 
