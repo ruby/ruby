@@ -6,6 +6,7 @@ require 'stringio'
 require 'rubygems/ext'
 require 'rubygems/specification'
 require 'rubygems/installer'
+require 'rubygems/platform'
 
 class TestGemSpecification < Gem::TestCase
 
@@ -59,12 +60,13 @@ end
     end
   end
 
-  def ext_spec
+  def ext_spec(platform: Gem::Platform::RUBY)
     @ext = util_spec 'ext', '1' do |s|
       s.executable = 'exec'
       s.test_file = 'test/suite.rb'
       s.extensions = %w[ext/extconf.rb]
       s.license = 'MIT'
+      s.platform = platform
 
       s.mark_version
       s.files = %w[lib/code.rb]
@@ -1671,6 +1673,16 @@ dependencies: []
                "Try: gem pristine ext --version 1\n"
 
     assert_equal expected, err
+  end
+
+  def test_contains_requirable_file_eh_extension
+    ext_spec(platform: Gem::Platform.new("java"))
+
+    _, err = capture_io do
+      refute @ext.contains_requirable_file? 'nonexistent'
+    end
+
+    assert_empty err
   end
 
   def test_date
