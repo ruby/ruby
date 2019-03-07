@@ -269,6 +269,13 @@ class TestM17N < Test::Unit::TestCase
     assert_empty(encs, bug10598)
   end
 
+  def test_utf_without_bom_valid
+    encs = [Encoding::UTF_16, Encoding::UTF_32].find_all {|enc|
+      !(+"abcd").encode!(enc).force_encoding(enc).valid_encoding?
+    }
+    assert_empty(encs)
+  end
+
   def test_object_utf16_32_inspect
     EnvUtil.suppress_warning do
       begin
