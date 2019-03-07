@@ -71,8 +71,11 @@ class Gem::BasicSpecification
     elsif missing_extensions?
       @ignored = true
 
-      warn "Ignoring #{full_name} because its extensions are not built. " +
-        "Try: gem pristine #{name} --version #{version}"
+      if platform == RUBY_ENGINE
+        warn "Ignoring #{full_name} because its extensions are not built. " +
+          "Try: gem pristine #{name} --version #{version}"
+      end
+
       return false
     end
 

@@ -514,6 +514,47 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty(@ui.error)
   end
 
+  def test_execute_multi_platform
+    a = util_spec 'a' do |s|
+      s.extensions << 'ext/a/extconf.rb'
+    end
+
+    b = util_spec 'b' do |s|
+      s.extensions << 'ext/a/extconf.rb'
+      s.platform = Gem::Platform.new("java")
+    end
+
+    ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
+    write_file ext_path do |io|
+      io.write <<-'RUBY'
+      File.open "Makefile", "w" do |f|
+        f.puts "clean:\n\techo cleaned\n"
+        f.puts "all:\n\techo built\n"
+        f.puts "install:\n\techo installed\n"
+      end
+      RUBY
+    end
+
+    install_gem a
+    install_gem b
+
+    @cmd.options[:extensions]     = true
+    @cmd.options[:extensions_set] = true
+    @cmd.options[:args] = []
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal 'Restoring gems to pristine condition...', out.shift
+    assert_equal 'Building native extensions. This could take a while...',
+                 out.shift
+    assert_equal "Restored #{a.full_name}", out.shift
+    assert_empty out, out.inspect
+  end
+
   def test_handle_options
     @cmd.handle_options %w[]
 

@@ -104,6 +104,8 @@ extensions will be restored.
               end.flatten
             end
 
+    specs = specs.select{|spec| spec.platform == RUBY_ENGINE }
+
     if specs.to_a.empty?
       raise Gem::Exception,
             "Failed to find gems #{options[:args]} #{options[:version]}"
