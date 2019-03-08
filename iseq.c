@@ -1870,8 +1870,19 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	}
 	break;
 
-      case TS_CALLCACHE:
-	ret = rb_str_new2("<callcache>");
+      case TS_CALLCACHE: ;
+        const struct rb_call_cache *cc = (const struct rb_call_cache *)op;
+
+        if (cc->purity) {
+            const char *purity = name_of_purity(purity_of_VALUE(cc->purity));
+
+            ret = rb_sprintf("<callcache!%s@%"PRI_SERIALT_PREFIX"u>",
+                             purity,
+                             cc->updated_at);
+        }
+        else {
+            ret = rb_str_new2("<callcache>");
+        }
 	break;
 
       case TS_CDHASH:
@@ -2012,13 +2023,30 @@ iseq_inspect(const rb_iseq_t *iseq)
     }
     else {
 	const rb_code_location_t *loc = &body->location.code_location;
-	return rb_sprintf("#<ISeq:%"PRIsVALUE"@%"PRIsVALUE":%d (%d,%d)-(%d,%d)>",
-			  body->location.label, rb_iseq_path(iseq),
-			  loc->beg_pos.lineno,
-			  loc->beg_pos.lineno,
-			  loc->beg_pos.column,
-			  loc->end_pos.lineno,
-			  loc->end_pos.column);
+        if (body->updated_at) {
+            const char *purity = name_of_purity(purity_of_VALUE(body->purity));
+            return rb_sprintf(
+                "#<ISeq:%"PRIsVALUE"@%"PRIsVALUE":%d (%d,%d)-(%d,%d)"
+                " %s@%"PRI_SERIALT_PREFIX"u>",
+                body->location.label, rb_iseq_path(iseq),
+                loc->beg_pos.lineno,
+                loc->beg_pos.lineno,
+                loc->beg_pos.column,
+                loc->end_pos.lineno,
+                loc->end_pos.column,
+                purity,
+                body->updated_at);
+        }
+        else {
+            return rb_sprintf(
+                "#<ISeq:%"PRIsVALUE"@%"PRIsVALUE":%d (%d,%d)-(%d,%d)>",
+                body->location.label, rb_iseq_path(iseq),
+                loc->beg_pos.lineno,
+                loc->beg_pos.lineno,
+                loc->beg_pos.column,
+                loc->end_pos.lineno,
+                loc->end_pos.column);
+        }
     }
 }
 

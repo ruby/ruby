@@ -121,7 +121,13 @@ enum vm_regan_acttype {
  * because inline method cache does not care about receiver.
  */
 
+#define CC_RESET_PURITY(cc) do { \
+    (cc)->purity = Qundef; \
+    (cc)->updated_at = ruby_vm_global_timestamp - 1; \
+} while (0)
+
 #define CC_SET_FASTPATH(cc, func, enabled) do { \
+    if (LIKELY(enabled)) CC_RESET_PURITY(cc); \
     if (LIKELY(enabled)) ((cc)->call = (func)); \
 } while (0)
 

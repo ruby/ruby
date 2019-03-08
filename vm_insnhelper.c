@@ -1382,6 +1382,7 @@ rb_vm_search_method_slowpath(const struct rb_call_info *ci, struct rb_call_cache
     cc->method_state = GET_GLOBAL_METHOD_STATE();
     cc->class_serial = RCLASS_SERIAL(klass);
 #endif
+    CC_RESET_PURITY(cc);
 }
 
 static void
@@ -2132,6 +2133,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
 
     cc->me = rb_callable_method_entry_with_refinements(CLASS_OF(calling->recv), ci->mid, NULL);
     ci->flag = VM_CALL_FCALL | VM_CALL_OPT_SEND;
+    CC_RESET_PURITY(cc);
     return vm_call_method(ec, reg_cfp, calling, ci, cc);
 }
 
@@ -2221,6 +2223,7 @@ vm_call_zsuper(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
     klass = RCLASS_SUPER(klass);
     cc->me = klass ? rb_callable_method_entry(klass, ci->mid) : NULL;
 
+    CC_RESET_PURITY(cc);
     if (!cc->me) {
 	return vm_call_method_nome(ec, cfp, calling, ci, cc);
     }
@@ -2369,6 +2372,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
       case VM_METHOD_TYPE_ALIAS:
 	cc->me = aliased_callable_method_entry(cc->me);
 	VM_ASSERT(cc->me != NULL);
+        CC_RESET_PURITY(cc);
 	return vm_call_method_each_type(ec, cfp, calling, ci, cc);
 
       case VM_METHOD_TYPE_OPTIMIZED:
@@ -2415,12 +2419,14 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 		}
 	    }
 	    cc->me = ref_me;
+            CC_RESET_PURITY(cc);
 	    if (ref_me->def->type != VM_METHOD_TYPE_REFINED) {
 		return vm_call_method(ec, cfp, calling, ci, cc);
 	    }
 	}
 	else {
 	    cc->me = NULL;
+            CC_RESET_PURITY(cc);
 	    return vm_call_method_nome(ec, cfp, calling, ci, cc);
 	}
 
@@ -2432,6 +2438,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 	    VALUE klass = RCLASS_SUPER(cc->me->defined_class);
 	    cc->me = klass ? rb_callable_method_entry(klass, ci->mid) : NULL;
 	}
+        CC_RESET_PURITY(cc);
 	return vm_call_method(ec, cfp, calling, ci, cc);
       }
     }
@@ -4036,6 +4043,38 @@ vm_opt_regexpmatch2(VALUE recv, VALUE obj)
     else {
 	return Qundef;
     }
+}
+
+/* @shyouhei wonders: where is the right place to define this function? */
+bool
+vm_whether_we_can_skip_this_call_handler_p(vm_call_handler h)
+{
+    /* We cannot write this function using a switch() because a case
+     * label cannot be a function pointer. */
+
+    /* Because there are lots of call handlers such as
+     * vm_call_iseq_setup_normal_0start_2params_4locals(),
+     * we cannot whitelist them all. See also
+     * tools/mk_call_iseq_optimzied.rb */
+    static const vm_call_handler denylist[] = {
+        NULL,
+        vm_call_attrset,
+        vm_call_cfunc,
+        vm_call_general,
+        vm_call_ivar,
+        vm_call_method_missing,
+        vm_call_opt_block_call,
+        vm_call_opt_call,
+        vm_call_opt_send,
+        vm_call_super_method,
+    };
+
+    for (int i = 0; i < numberof(denylist); i++) {
+        if (h == denylist[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 rb_event_flag_t rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos);

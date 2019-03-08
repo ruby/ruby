@@ -1,0 +1,50 @@
+%# -*- C -*-
+%# Copyright (c) 2018 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+%#
+enum rb_insn_purity
+insn_purity_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
+{
+#define rb_insn_purity_is_complex -127
+%
+% ary = RubyVM::Instructions.map do |i|
+%   p = i.attributes.find {|i| i.key=='purity' }
+%   case p when NilClass then
+%     next i, 'rb_insn_is_not_pure'
+%   else
+%     case p.expr.expr when /\(/ then
+%       next i, 'rb_insn_purity_is_complex'
+%     else
+%       next i, p.expr.expr.strip.chomp(';')
+%     end
+%   end
+% end
+%
+    static const signed char t[] = {
+% ary.each do |(_, a)|
+        <%= a %>,
+% end
+    };
+    signed char c = t[insn];
+
+    ASSERT_VM_INSTRUCTION_SIZE(t);
+    if (c != rb_insn_purity_is_complex) {
+        return c;
+    }
+    else switch(insn) {
+      default:
+        UNREACHABLE;
+% ary.each do |(i, a)|
+%   next unless a == 'rb_insn_purity_is_complex'
+      case <%= i.bin %>:
+        return attr_purity_<%= i.name %>(<%=
+          i.opes.map.with_index {|v, j| "(#{v[:type]})opes[#{j}]"}.join(", ")
+        %>);
+% end
+    }
+#undef rb_insn_purity_is_complex
+}

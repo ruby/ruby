@@ -1,0 +1,701 @@
+%# -*- C -*-
+%# Copyright (c) 2018 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+%#
+%# This file actually is a plain C source code.
+%#;
+#line <%= __LINE__ + 1 %> <%=cstr __FILE__ %>
+#include "iseq.h"
+RUBY_SYMBOL_EXPORT_BEGIN
+RUBY_EXTERN rb_serial_t ruby_vm_global_timestamp; /* at vm.c */
+RUBY_EXTERN rb_serial_t ruby_vm_global_method_state; /* at vm.c */
+RUBY_SYMBOL_EXPORT_END
+
+/**
+ * The four kinds of purity.
+ */
+enum rb_insn_purity {
+    /**
+     * The instruction has "side effect"s. It touches off-stack values like
+     * global ones.
+     */
+    rb_insn_is_not_pure = 0,
+
+    /**
+     * The instruction has no side  effects.  It might manipulate stack pointer
+     * or the value pointed by that, but nothing else.
+     */
+    rb_insn_is_pure,
+
+    /**
+     * The instruction  is unpredictable _at  that moment_, maybe  because that
+     * instruction has never  been executed.  Thus when you  evaluate that part
+     * later, the purity of the instruction might vary from time to time.
+     */
+    rb_insn_purity_is_unpredictable,
+
+    /**
+     * Depends on  passed block.  This  makes sense  for method calls.   When a
+     * method itself had  no side effects, there still are  chances of breakage
+     * if the method  yields: the calling block could do  something nasty.  The
+     * purity of such  block can be checked beforehand.   This value represents
+     * such situations.
+     */
+    rb_insn_purity_depends_block
+};
+
+CONSTFUNC(MAYBE_UNUSED(
+/**
+ * name of the enum, for debug.
+ *
+ * @param [in] purity target
+ * @return C string representation of that enum
+ */
+static const char *name_of_purity(enum rb_insn_purity purity)));
+
+/**
+ * Purity of an ISeq as a whole.  An  ISeq is said to be pure if its conatining
+ * instructions are all pure.
+ *
+ * @param [in] iseq in question.
+ * @return the purity.
+ */
+static enum rb_insn_purity purity_of_iseq(const struct rb_iseq_struct *iseq);
+
+/**
+ * Like purity_of_iseq, but targets iseq_catch_table instead.
+ *
+ * @param [in] the table in quetion.
+ * @return the purity.
+ */
+static enum rb_insn_purity purity_of_catch_table(const struct iseq_catch_table *tbl);
+
+CONSTFUNC(
+/**
+ * Merge purity; a pure + pure is pure, pure + nonpure is nonpure, and so on.
+ *
+ * @param [in] p1 purity left hand side
+ * @param [in] p2 purity right hand side
+ * @return p1 + p2
+ */
+static enum rb_insn_purity purity_merge(enum rb_insn_purity p1, enum rb_insn_purity p2));
+
+PUREFUNC(
+/**
+ * Purity of the call cache's pointed entry.
+ *
+ * @param [in, out] cc call cache in question.
+ * @return purity of cc's method entry.
+ */
+static enum rb_insn_purity purity_of_cc(struct rb_call_cache *cc));
+
+PUREFUNC(
+/**
+ * Same as purity_of_cc. Internal use.
+ *
+ * @param [in, out] cc call cache in question.
+ * @return purity of cc's method entry.
+ */
+static enum rb_insn_purity purity_of_live_cc(struct rb_call_cache *cc));
+
+/**
+ * Purity might depend on global redefinition of basic methods.  This is to
+ * check those redefinitions.
+ *
+ * @param [in] op basic op
+ * @param [in] klass flags, ~0 means any class
+ * @return purity of the BOP
+ */
+static enum rb_insn_purity purity_of_BOP(int op, unsigned klass);
+
+CONSTFUNC(
+/**
+ * Very polite cast from bool to purity
+ *
+ * @param [in] b bool value
+ * @return static_cast<enum rb_insn_purity>(b);
+ */
+static enum rb_insn_purity purity_of_bool(bool b));
+
+CONSTFUNC(
+/**
+ * Very polite cast from VALUE to purity
+ *
+ * @param [in] v VALUE value
+ * @return static_cast<enum rb_insn_purity>(v);
+ */
+static enum rb_insn_purity purity_of_VALUE(VALUE v));
+
+CONSTFUNC(
+/**
+ * Very polite cast from purity to VALUE
+ *
+ * @param [in] p purity
+ * @return static_cast<VALUE>(p);
+ */
+static VALUE VALUE_of_purity(enum rb_insn_purity p));
+
+PUREFUNC(
+/**
+ * Utility attribute accessor.
+ *
+ * @param [in] def method definition
+ * @retval NULL it is not an ISeq-backended method.
+ * @retval otherwise a valid pointer to an iseq.
+ */
+static const struct rb_iseq_struct *iseq_of_def(const struct rb_method_definition_struct *def));
+
+MAYBE_UNUSED(
+/**
+ * Utility function.   A cache  entry can be  stale.  That's OK,  as far  as we
+ * don't touch the  stale cache contents because they can  already be GCed.  We
+ * need to check beforehand.
+ *
+ * @param [in] cc call cache in question
+ * @retval true it is dead.
+ * @retval false it is alive.
+ */
+static bool cc_is_stale(const struct rb_call_cache *cc));
+
+PUREFUNC(
+/**
+ * Utility function to check if a cc points to a specific C function.
+ *
+ * @param [in] cc call cache in question.
+ * @param [in] func possile function that cc might resolves to.
+ * @retval true it is dead.
+ * @retval false it is alive.
+ */
+static bool purity_cc_cfunc_is(const struct rb_call_cache *cc, VALUE (*func)()));
+
+PUREFUNC(
+/**
+ * Utility function for general opt_* instructions.
+ *
+ * @param [in] cc call cache.
+ * @param [in] bop basic op
+ */
+static enum rb_insn_purity purity_of_optinsn(int bop, struct rb_call_cache *cc));
+
+CONSTFUNC(
+/**
+ * Definition of attribute purity of general setlocal_* instructions.
+ *
+ * @param [in] nesting nesting level.
+ * @retval rb_insn_is_pure definitely pure
+ * @retval rb_insn_is_not_pure definitely not pure
+ */
+static enum rb_insn_purity purity_of_lvar_access(rb_num_t nesting));
+
+/**
+ * Calculates purity of invokeblock instruction.
+ *
+ * @param [in]  ci call info
+ * @return the purity of the instruction.
+ */
+static enum rb_insn_purity purity_of_invokeblock(const struct rb_call_info *ci);
+
+/**
+ * Calculates purity of send and similar instructions.
+ *
+ * @param [in]  ci call info
+ * @param [out] cc call cache
+ * @param [in]  blockiseq iseq, if any
+ * @return the purity of the instruction.
+ */
+static enum rb_insn_purity purity_of_sendish(const struct rb_call_info *ci, struct rb_call_cache *cc, const struct rb_iseq_struct *blockiseq);
+
+/**
+ * Calculates purity of throw instruction.
+ *
+ * @param [in] state throw state
+ * @return the purity of the instruction.
+ */
+static enum rb_insn_purity purity_of_throw(rb_num_t throw_state);
+
+/**
+ * Definition of attribute purity of instruction opt_not
+ *
+ * @param [in] cc cached method entry
+ * @return the purity of the instruction.
+ */
+static enum rb_insn_purity purity_of_opt_not(struct rb_call_cache *cc);
+
+PUREFUNC(
+/**
+ * Calculates the actual purity of an instruction and its operands.
+ *
+ * @param [in] insn the (name of) instruction.
+ * @param [in] opes operands.
+ * @return the purity.
+ */
+static enum rb_insn_purity insn_purity_dispatch(enum ruby_vminsn_type insn, const VALUE *opes));
+
+#ifdef __OPTIMIZE__
+#define DONTCARE(p) UNREACHABLE;
+#else
+#define DONTCARE(p) \
+    rb_bug("unknown purity; blame @shyouhei: %"PRIxVALUE, (VALUE)p);
+#endif
+
+const char *
+name_of_purity(enum rb_insn_purity p)
+{
+    switch (p) {
+      case rb_insn_is_pure:                 return "pure";
+      case rb_insn_is_not_pure:             return "notpure";
+      case rb_insn_purity_is_unpredictable: return "unpredictable";
+      case rb_insn_purity_depends_block:    return "dependsblock";
+      default: DONTCARE(p);
+    }
+}
+
+enum rb_insn_purity
+purity_of_bool(bool b)
+{
+#ifdef __OPTIMIZE__
+    return (enum rb_insn_purity)b;
+#else
+    if (b) {
+        return rb_insn_is_pure;
+    }
+    else {
+        return rb_insn_is_not_pure;
+    }
+#endif
+}
+
+enum rb_insn_purity
+purity_of_VALUE(VALUE v)
+{
+#ifdef __OPTIMIZE__
+    /* This use of FIX2LONG instead of FIX2INT is intentional.
+     * FIX2LONG is a macro while FIX2INT is a function.
+     * FIX2INT adds unnecessary overheads. */
+    return LIKELY(FIXNUM_P(v)) ? (int)FIX2LONG(v) : rb_insn_is_not_pure;
+#else
+    switch (v) {
+      case INT2FIX(rb_insn_is_not_pure):
+        return rb_insn_is_not_pure;
+      case INT2FIX(rb_insn_is_pure):
+        return rb_insn_is_pure;
+      case INT2FIX(rb_insn_purity_is_unpredictable):
+        return rb_insn_purity_is_unpredictable;
+      case INT2FIX(rb_insn_purity_depends_block):
+        return rb_insn_purity_depends_block;
+      default:
+        return rb_insn_is_not_pure;
+    }
+#endif
+}
+
+VALUE
+VALUE_of_purity(enum rb_insn_purity p)
+{
+#ifdef __OPTIMIZE__
+    return INT2FIX(p);
+#else
+    switch (p) {
+      case rb_insn_is_pure:
+        return INT2FIX(rb_insn_is_pure);
+      case rb_insn_is_not_pure:
+        return INT2FIX(rb_insn_is_not_pure);
+      case rb_insn_purity_is_unpredictable:
+        return INT2FIX(rb_insn_purity_is_unpredictable);
+      case rb_insn_purity_depends_block:
+        return INT2FIX(rb_insn_purity_depends_block);
+      default:
+        DONTCARE(p);
+    }
+#endif
+}
+
+enum rb_insn_purity
+purity_merge(enum rb_insn_purity p1, enum rb_insn_purity p2)
+{
+    /*
+     *       || NG | N/A | iter |  OK
+     * ======##====+=====+======+======
+     *   NG  || NG |  NG |  NG  |  NG
+     * ------++----+-----+------+------
+     *   N/A || NG | N/A |  N/A |  N/A
+     * ------++----+-----+------+------
+     *  iter || NG | N/A | iter | iter
+     * ------++----+-----+------+------
+     *   OK  || NG | N/A | iter |  OK
+     *
+     * OK:   rb_insn_is_pure
+     * NG:   rb_insn_is_not_pure
+     * N/A:  rb_insn_purity_is_unpredictable
+     * iter: rb_insn_purity_depends_block
+     */
+
+#ifdef __OPTIMIZE__
+    /* table lookup seems faster than using switch. */
+    /* This array takes only 16 bytes.  Must fit into a cache
+     * line for most modern CPUs. */
+    static RUBY_ALIGNAS(16) const char t[4][4] = {
+        /* NG: */ {
+            rb_insn_is_not_pure,             /* NG + NG */
+            rb_insn_is_not_pure,             /* NG + OK */
+            rb_insn_is_not_pure,             /* NG + N/A */
+            rb_insn_is_not_pure,             /* NG + iter */
+        },
+        /* OK: */ {
+            rb_insn_is_not_pure,             /* OK + NG */
+            rb_insn_is_pure,                 /* OK + OK */
+            rb_insn_purity_is_unpredictable, /* OK + N/A */
+            rb_insn_purity_depends_block,    /* OK + iter */
+        },
+        /* N/A: */ {
+            rb_insn_is_not_pure,             /* N/A + NG */
+            rb_insn_purity_is_unpredictable, /* N/A + OK */
+            rb_insn_purity_is_unpredictable, /* N/A + N/A */
+            rb_insn_purity_is_unpredictable, /* N/A + iter */
+        },
+        /* iter: */ {
+            rb_insn_is_not_pure,             /* iter + NG */
+            rb_insn_purity_depends_block,    /* iter + OK */
+            rb_insn_purity_is_unpredictable, /* iter + N/A */
+            rb_insn_purity_depends_block,    /* iter + iter */
+        },
+    };
+
+    return t[p1][p2];
+#else
+    switch(p1) {
+      case rb_insn_is_not_pure:
+        switch(p2) {
+          case rb_insn_is_not_pure:
+            return rb_insn_is_not_pure;
+          case rb_insn_purity_is_unpredictable:
+            return rb_insn_is_not_pure;
+          case rb_insn_purity_depends_block:
+            return rb_insn_is_not_pure;
+          case rb_insn_is_pure:
+            return rb_insn_is_not_pure;
+          default:
+            DONTCARE(p2);
+        }
+
+      case rb_insn_purity_is_unpredictable:
+        switch(p2) {
+          case rb_insn_is_not_pure:
+            return rb_insn_is_not_pure;
+          case rb_insn_purity_is_unpredictable:
+            return rb_insn_purity_is_unpredictable;
+          case rb_insn_purity_depends_block:
+            return rb_insn_purity_is_unpredictable;
+          case rb_insn_is_pure:
+            return rb_insn_purity_is_unpredictable;
+          default:
+            DONTCARE(p2);
+        }
+
+      case rb_insn_purity_depends_block:
+        switch(p2) {
+          case rb_insn_is_not_pure:
+            return rb_insn_is_not_pure;
+          case rb_insn_purity_is_unpredictable:
+            return rb_insn_purity_is_unpredictable;
+          case rb_insn_purity_depends_block:
+            return rb_insn_purity_depends_block;
+          case rb_insn_is_pure:
+            return rb_insn_purity_depends_block;
+          default:
+            DONTCARE(p2);
+        }
+
+      case rb_insn_is_pure:
+        switch(p2) {
+          case rb_insn_is_not_pure:
+            return rb_insn_is_not_pure;
+          case rb_insn_purity_is_unpredictable:
+            return rb_insn_purity_is_unpredictable;
+          case rb_insn_purity_depends_block:
+            return rb_insn_purity_depends_block;
+          case rb_insn_is_pure:
+            return rb_insn_is_pure;
+          default:
+            DONTCARE(p2);
+        }
+
+      default:
+        DONTCARE(p1);
+    }
+#endif
+}
+
+#undef DONTCARE
+
+enum rb_insn_purity
+purity_of_BOP(int bop, unsigned klass)
+{
+    return purity_of_bool(BASIC_OP_UNREDEFINED_P(bop, klass));
+}
+
+const rb_iseq_t *
+iseq_of_def(const struct rb_method_definition_struct *def)
+{
+    switch (def->type) {
+      case VM_METHOD_TYPE_ISEQ:
+        return def->body.iseq.iseqptr;
+      case VM_METHOD_TYPE_BMETHOD:
+        return rb_proc_get_iseq(def->body.bmethod.proc, 0);
+      default:
+        return NULL;
+    }
+}
+
+bool
+cc_is_stale(const struct rb_call_cache *cc)
+{
+    if (! cc->me) {
+        return true;
+    }
+    else if (cc->method_state != ruby_vm_global_method_state) {
+        return true;
+    }
+    else if (! imemo_type_p((VALUE)cc->me, imemo_ment)) {
+        return true;           /* me already GCed. */
+    }
+    else if (cc->class_serial != RCLASS_SERIAL(cc->me->defined_class)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+/* @shyouhei wonders: where is the right place to define this function? */
+CONSTFUNC(extern bool vm_whether_we_can_skip_this_call_handler_p(vm_call_handler h));
+
+enum rb_insn_purity
+purity_of_live_cc(struct rb_call_cache *cc)
+{
+    const rb_iseq_t *i;
+    enum rb_insn_purity p;
+
+    if (cc->updated_at == ruby_vm_global_timestamp) {
+        return purity_of_VALUE(cc->purity);
+    }
+    else if (! vm_whether_we_can_skip_this_call_handler_p(cc->call)) {
+        p = rb_insn_is_not_pure;
+    }
+    else if (UNLIKELY(! (i = iseq_of_def(cc->me->def)))) {
+        p = rb_insn_is_not_pure;
+    }
+    else {
+        p = purity_of_iseq(i);
+    }
+
+    cc->updated_at = ruby_vm_global_timestamp;
+    cc->purity = VALUE_of_purity(p);
+    return p;
+}
+
+enum rb_insn_purity
+purity_of_cc(struct rb_call_cache *cc)
+{
+    if (cc_is_stale(cc)) {
+        return rb_insn_purity_is_unpredictable; /* method missing */
+    }
+    else {
+        return purity_of_live_cc(cc);
+    }
+}
+
+bool
+purity_cc_cfunc_is(const struct rb_call_cache *cc, VALUE (*func)())
+{
+    /* see also vm_insnhelper.c:vm_method_cfunc_is() */
+
+    const struct rb_method_definition_struct *def = cc->me->def;
+
+    if (def->type != VM_METHOD_TYPE_CFUNC) {
+        return false;
+    }
+    else if (def->body.cfunc.func != func) {
+        return false;
+    }
+    else {
+        return true;
+    }
+}
+
+enum rb_insn_purity
+purity_of_optinsn(int bop, struct rb_call_cache *cc)
+{
+    /* If cc is filled, that means this caller site is not for a basic class.
+     * That should be honored.  Otherwise check BOP. */
+    if (cc->me) {
+        return purity_of_cc(cc);
+    }
+    else {
+        return purity_of_BOP(bop, ~0);
+    }
+}
+
+enum rb_insn_purity
+purity_of_lvar_access(rb_num_t nesting)
+{
+    /* Consider:
+     *
+     * ```ruby
+     * def foo
+     *   var = x
+     *   bar.each do |i|
+     *     var = i # <- (1)
+     *   end
+     *   return var
+     * end
+     * ```
+     *
+     * Here, the setlocal at line marked (1) should _not_ be eliminated,
+     * because doing so shall change the result of the entire method.
+     */
+    return nesting ? rb_insn_is_not_pure : rb_insn_is_pure;
+}
+
+enum rb_insn_purity
+purity_of_invokeblock(const struct rb_call_info *ci)
+{
+    if (ci->flag & VM_CALL_ARGS_BLOCKARG) {
+        /* Hard to tell if we can skip this send or not. */
+        return rb_insn_is_not_pure;
+    }
+    else {
+        return rb_insn_purity_depends_block;
+    }
+}
+
+enum rb_insn_purity
+purity_of_sendish(
+    const struct rb_call_info *ci,
+    struct rb_call_cache *cc,
+    const struct rb_iseq_struct *blockiseq)
+{
+    enum rb_insn_purity p;
+
+    if ((p = purity_of_cc(cc)) != rb_insn_purity_depends_block) {
+        return p;               /* no block call */
+    }
+    else if ((p = purity_of_invokeblock(ci)) != rb_insn_purity_depends_block) {
+        return p;               /* block param not detectable */
+    }
+    else {
+        /* This is where "depends block" dependency is resolved */
+        return purity_of_iseq(blockiseq);
+    }
+}
+
+
+enum rb_insn_purity
+purity_of_throw(rb_num_t throw_state)
+{
+    /* In spite  of its pure-ish nature  (no side effect), this  instruction is
+     * not always optimisable. Consider the following:
+     *
+     * ```ruby
+     * def foo
+     *   each do
+     *     return true # <-- (1)
+     *   end
+     *   return false
+     * end
+     * ```
+     *
+     * Here, the line marked with "(1)"  shall take effect and the return value
+     * of this method must be true, not false.  We cannot skip this block.  */
+
+    /* TODO: can we say it's pure by looking at throw_state? */
+    return rb_insn_is_not_pure;
+}
+
+enum rb_insn_purity
+purity_of_opt_not(struct rb_call_cache *cc)
+{
+    /* see also vm_insnhelper.c:vm_opt_not() */
+
+    if (UNLIKELY(cc_is_stale(cc))) {
+        return rb_insn_purity_is_unpredictable;
+    }
+    else if (purity_cc_cfunc_is(cc, rb_obj_not)) {
+        return rb_insn_is_pure; /* yes it is */
+    }
+    else {
+        return purity_of_live_cc(cc);
+    }
+}
+
+enum rb_insn_purity
+purity_of_catch_table(const struct iseq_catch_table *c)
+{
+    enum rb_insn_purity p = rb_insn_is_pure;
+
+    if (c) {
+        for (unsigned int j = 0; j < c->size; j++) {
+            const rb_iseq_t *i = c->entries[j].iseq;
+
+            if (i) {
+                enum rb_insn_purity q = purity_of_iseq(i);
+
+                p = purity_merge(p, q);
+#ifdef __OPTIMIZE__
+                if (p == rb_insn_is_not_pure) {
+                    break; /* bail out */
+                }
+#endif
+            }
+        }
+    }
+    return p;
+}
+
+enum rb_insn_purity
+purity_of_iseq(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_constant_body *b;
+
+    if (!iseq) {
+        return rb_insn_purity_is_unpredictable; /* or ...? */
+    }
+    else if (! (b = iseq->body)) {
+        return rb_insn_purity_is_unpredictable; /* or ...? */
+    }
+    else if (b->updated_at == ruby_vm_global_timestamp) {
+        return purity_of_VALUE(b->purity);
+    }
+    else if (b->iter_lev) {
+        return rb_insn_purity_is_unpredictable;
+    }
+    else {
+        const VALUE *ptr         = rb_iseq_original_iseq(iseq);
+        enum rb_insn_purity p, q = purity_of_catch_table(b->catch_table);
+
+        b->iter_lev = true;
+        for (int i = 0, j = 0, k = b->iseq_size; i < k; i += j) {
+            j = insn_len((int)ptr[i]);
+            p = insn_purity_dispatch((int)ptr[i], &ptr[i + 1]);
+            q = purity_merge(q, p);
+#ifdef __OPTIMIZE__
+            if (q == rb_insn_is_not_pure) {
+                break; /* bail out */
+            }
+#endif
+        }
+        b->iter_lev = false;
+
+        if (q != rb_insn_purity_is_unpredictable) {
+            b->updated_at = ruby_vm_global_timestamp;
+            b->purity = VALUE_of_purity(q);
+        }
+        return q;
+    }
+}
+
+#pragma RubyVM reset source

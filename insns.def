@@ -54,6 +54,10 @@
          cases of another one.  Trace instructions can look at them
          instead, if specified by this attribute.
 
+       * purity: describes if the instruction has a side effect or
+         not.  There are four kinds of purity: see insns_info.inc.
+         If an instruction is _not_ a leaf, that can never be pure.
+
    - Attributes can access operands, but not stack (push/pop) variables.
 
    - An instruction's body is a pure C block, copied verbatimly into
@@ -96,6 +100,7 @@ setlocal
 (lindex_t idx, rb_num_t level)
 (VALUE val)
 ()
+// attr enum rb_insn_purity purity = purity_of_lvar_access(level);
 {
     vm_env_write(vm_get_ep(GET_EP(), level), -(int)idx, val);
     RB_DEBUG_COUNTER_INC(lvar_set);
@@ -130,6 +135,7 @@ setblockparam
 (lindex_t idx, rb_num_t level)
 (VALUE val)
 ()
+// attr enum rb_insn_purity purity = purity_of_lvar_access(level);
 {
     const VALUE *ep = vm_get_ep(GET_EP(), level);
     VM_ASSERT(VM_ENV_LOCAL_P(ep));
@@ -296,6 +302,9 @@ getglobal
 ()
 (VALUE val)
 // attr bool leaf = leafness_of_getglobal(entry);
+/* Regardless of the leafness of a specific entry,
+ * all getglobal operations can never be pure by nature. */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     struct rb_global_entry *gentry = (void *)entry;
     val = rb_gvar_get(gentry);
@@ -308,6 +317,8 @@ setglobal
 (VALUE val)
 ()
 // attr bool leaf = leafness_of_setglobal(entry);
+/* Same discussion as getglobal */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     struct rb_global_entry *gentry = (void *)entry;
     rb_gvar_set(gentry, val);
@@ -762,6 +773,7 @@ send
 (CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
 (...)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_sendish(ci, cc, blockiseq);
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), ci, blockiseq, false);
@@ -779,6 +791,7 @@ opt_send_without_block
 (CALL_INFO ci, CALL_CACHE cc)
 (...)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_cc(cc);
 // attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
@@ -796,6 +809,7 @@ opt_str_freeze
 (VALUE str, CALL_INFO ci, CALL_CACHE cc)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_BOP(BOP_FREEZE, STRING_REDEFINED_OP_FLAG);
 {
     val = vm_opt_str_freeze(str, BOP_FREEZE, idFreeze);
 
@@ -810,6 +824,7 @@ opt_str_uminus
 (VALUE str, CALL_INFO ci, CALL_CACHE cc)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_BOP(BOP_UMINUS, STRING_REDEFINED_OP_FLAG);
 {
     val = vm_opt_str_freeze(str, BOP_UMINUS, idUMinus);
 
@@ -852,6 +867,7 @@ invokesuper
 (CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
 (...)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_sendish(ci, cc, blockiseq);
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), ci, blockiseq, true);
@@ -869,6 +885,7 @@ invokeblock
 (CALL_INFO ci)
 (...)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_invokeblock(ci);
 // attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = sp_inc_of_invokeblock(ci);
 {
@@ -895,6 +912,12 @@ leave
  * for interrupts.  If any, that should be executed on top of the
  * current execution context.  This is a method call. */
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+/* OTOH when it comes to purity, rb_threadptr_execute_interrupts()
+ * has nothing to do with the effect of this instruction because
+ * interrupt handlers know nothing about this specific stack frame.
+ * We can safely say this instruction is pure. */
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
+/* And this instruction handles SP by nature. */
 // attr bool handles_sp = true;
 {
     if (OPT_CHECKED_RUN) {
@@ -931,6 +954,7 @@ throw
 (VALUE val)
 /* Same discussion as leave. */
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr enum rb_insn_purity purity = purity_of_throw(throw_state);
 {
     RUBY_VM_CHECK_INTS(ec);
     val = vm_throw(ec, GET_CFP(), throw_state, throwobj);
@@ -950,6 +974,7 @@ jump
 ()
 /* Same discussion as leave. */
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     RUBY_VM_CHECK_INTS(ec);
     JUMP(dst);
@@ -963,6 +988,7 @@ branchif
 ()
 /* Same discussion as jump. */
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     if (RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -978,6 +1004,7 @@ branchunless
 ()
 /* Same discussion as jump. */
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     if (!RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -993,6 +1020,7 @@ branchnil
 ()
 /* Same discussion as jump. */
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     if (NIL_P(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -1082,6 +1110,7 @@ opt_minus
 (VALUE recv, VALUE obj)
 (VALUE val)
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_MINUS, cc);
 {
     val = vm_opt_minus(recv, obj);
 
@@ -1097,6 +1126,7 @@ opt_mult
 (VALUE recv, VALUE obj)
 (VALUE val)
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_MULT, cc);
 {
     val = vm_opt_mult(recv, obj);
 
@@ -1182,6 +1212,7 @@ opt_lt
 (VALUE recv, VALUE obj)
 (VALUE val)
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_LT, cc);
 {
     val = vm_opt_lt(recv, obj);
 
@@ -1197,6 +1228,7 @@ opt_le
 (VALUE recv, VALUE obj)
 (VALUE val)
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_LE, cc);
 {
     val = vm_opt_le(recv, obj);
 
@@ -1212,6 +1244,7 @@ opt_gt
 (VALUE recv, VALUE obj)
 (VALUE val)
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_GT, cc);
 {
     val = vm_opt_gt(recv, obj);
 
@@ -1227,6 +1260,7 @@ opt_ge
 (VALUE recv, VALUE obj)
 (VALUE val)
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_GE, cc);
 {
     val = vm_opt_ge(recv, obj);
 
@@ -1261,6 +1295,7 @@ opt_and
 (VALUE recv, VALUE obj)
 (VALUE val)
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_AND, cc);
 {
     val = vm_opt_and(recv, obj);
 
@@ -1276,6 +1311,7 @@ opt_or
 (VALUE recv, VALUE obj)
 (VALUE val)
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_OR, cc);
 {
     val = vm_opt_or(recv, obj);
 
@@ -1371,6 +1407,7 @@ opt_length
 (VALUE recv)
 (VALUE val)
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_LENGTH, cc);
 {
     val = vm_opt_length(recv, BOP_LENGTH);
 
@@ -1386,6 +1423,7 @@ opt_size
 (VALUE recv)
 (VALUE val)
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_SIZE, cc);
 {
     val = vm_opt_length(recv, BOP_SIZE);
 
@@ -1401,6 +1439,7 @@ opt_empty_p
 (VALUE recv)
 (VALUE val)
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_EMPTY_P, cc);
 {
     val = vm_opt_empty_p(recv);
 
@@ -1416,6 +1455,7 @@ opt_succ
 (VALUE recv)
 (VALUE val)
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_SUCC, cc);
 {
     val = vm_opt_succ(recv);
 
@@ -1431,6 +1471,7 @@ opt_not
 (VALUE recv)
 (VALUE val)
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
+// attr enum rb_insn_purity purity = purity_of_opt_not(cc);
 {
     val = vm_opt_not(ci, cc, recv);
 
@@ -1458,6 +1499,7 @@ opt_regexpmatch2
 (VALUE val)
 // attr bool leaf = false; /* match_at() has rb_thread_check_ints() */
 // attr enum ruby_vminsn_type trace_equivalent = BIN(trace_opt_send_without_block);
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_MATCH, cc);
 {
     val = vm_opt_regexpmatch2(obj2, obj1);
 
@@ -1472,6 +1514,7 @@ opt_call_c_function
 (rb_insn_func_t funcptr)
 ()
 ()
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 // attr bool leaf = false; /* anything can happen inside */
 // attr bool handles_sp = true;
 {
