@@ -4694,6 +4694,11 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
     }
 
     switch (BUILTIN_TYPE(obj)) {
+      /* Not immediates, but does not have references */
+      case T_FLOAT:
+      case T_BIGNUM:
+      case T_SYMBOL:
+    return;
       case T_NIL:
       case T_FIXNUM:
 	rb_bug("rb_gc_mark() called for broken object");
@@ -4803,11 +4808,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_REGEXP:
         gc_mark(objspace, any->as.regexp.src);
-	break;
-
-      case T_FLOAT:
-      case T_BIGNUM:
-      case T_SYMBOL:
 	break;
 
       case T_MATCH:
