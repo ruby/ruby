@@ -15,7 +15,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
   def test_event_coverage
     dispatched = Ripper::SCANNER_EVENTS.map {|event,_| event }
     dispatched.each do |e|
-      assert_equal true, respond_to?("test_#{e}", true), "event not tested: #{e}"
+      assert_respond_to(self, ["test_#{e}", true], "event not tested: #{e}")
     end
   end
 
