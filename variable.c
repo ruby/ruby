@@ -433,7 +433,7 @@ rb_path_to_class(VALUE pathname)
 	}
 	c = rb_const_search(c, id, TRUE, FALSE, FALSE);
 	if (c == Qundef) goto undefined_class;
-	if (!rb_namespace_p(c)) {
+        if (!rb_namespace_p(c)) {
 	    rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
 		     pathname);
 	}
@@ -3108,7 +3108,7 @@ cvar_front_klass(VALUE klass)
 {
     if (FL_TEST(klass, FL_SINGLETON)) {
 	VALUE obj = rb_ivar_get(klass, id__attached__);
-	if (rb_namespace_p(obj)) {
+        if (rb_namespace_p(obj)) {
 	    return obj;
 	}
     }
