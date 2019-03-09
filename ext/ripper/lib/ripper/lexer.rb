@@ -83,6 +83,12 @@ class Ripper
 
     private
 
+    unless SCANNER_EVENT_TABLE.key?(:ignored_sp)
+      SCANNER_EVENT_TABLE[:ignored_sp] = 1
+      SCANNER_EVENTS << :ignored_sp
+      EVENTS << :ignored_sp
+    end
+
     def on_heredoc_dedent(v, w)
       ignored_sp = []
       heredoc = @buf.last
