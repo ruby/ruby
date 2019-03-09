@@ -119,7 +119,7 @@ module WEBrick
     # The response's HTTP status line
 
     def status_line
-      "HTTP/#@http_version #@status #@reason_phrase #{CRLF}"
+      "HTTP/#@http_version #@status #@reason_phrase".rstrip << CRLF
     end
 
     ##

@@ -222,5 +222,12 @@ module WEBrick
       assert_match(/#{@res.reason_phrase}/, body)
       assert_match(/#{message}/, body)
     end
+
+    def test_no_extraneous_space
+      [200, 300, 400, 500].each do |status|
+        @res.status = status
+        assert_match(/\S\r\n/, @res.status_line)
+      end
+    end
   end
 end
