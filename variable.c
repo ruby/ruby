@@ -63,6 +63,16 @@ Init_var_tables(void)
     classid = rb_intern_const("__classid__");
 }
 
+static inline bool
+rb_namespace_p(VALUE obj)
+{
+    if (RB_SPECIAL_CONST_P(obj)) return false;
+    switch (RB_BUILTIN_TYPE(obj)) {
+      case T_MODULE: case T_CLASS: return true;
+    }
+    return false;
+}
+
 struct fc_result {
     ID name, preferred;
     VALUE klass;
@@ -110,7 +120,7 @@ fc_i(ID key, VALUE v, void *a)
 	res->path = fc_path(res, key);
 	return ID_TABLE_STOP;
     }
-    if (RB_TYPE_P(value, T_MODULE) || RB_TYPE_P(value, T_CLASS)) {
+    if (rb_namespace_p(value)) {
 	if (!RCLASS_CONST_TBL(value)) return ID_TABLE_CONTINUE;
 	else {
 	    struct fc_result arg;
@@ -423,7 +433,7 @@ rb_path_to_class(VALUE pathname)
 	}
 	c = rb_const_search(c, id, TRUE, FALSE, FALSE);
 	if (c == Qundef) goto undefined_class;
-	if (!RB_TYPE_P(c, T_MODULE) && !RB_TYPE_P(c, T_CLASS)) {
+	if (!rb_namespace_p(c)) {
 	    rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
 		     pathname);
 	}
@@ -2854,7 +2864,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
      * Resolve and cache class name immediately to resolve ambiguity
      * and avoid order-dependency on const_tbl
      */
-    if (rb_cObject && (RB_TYPE_P(val, T_MODULE) || RB_TYPE_P(val, T_CLASS))) {
+    if (rb_cObject && rb_namespace_p(val)) {
 	if (NIL_P(rb_class_path_cached(val))) {
 	    if (klass == rb_cObject) {
 		rb_ivar_set(val, classpath, rb_id2str(id));
@@ -3098,7 +3108,7 @@ cvar_front_klass(VALUE klass)
 {
     if (FL_TEST(klass, FL_SINGLETON)) {
 	VALUE obj = rb_ivar_get(klass, id__attached__);
-	if (RB_TYPE_P(obj, T_MODULE) || RB_TYPE_P(obj, T_CLASS)) {
+	if (rb_namespace_p(obj)) {
 	    return obj;
 	}
     }
