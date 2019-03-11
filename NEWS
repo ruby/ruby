@@ -59,6 +59,10 @@ RSS::
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
+profile.rb, Profiler__::
+
+  * Removed from standard library. No one maintains it from Ruby 2.0.0.
+
 === C API updates
 
 === Implementation improvements
