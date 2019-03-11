@@ -3905,6 +3905,7 @@ int_pow(long x, unsigned long y)
     long z = 1;
 
     if (y == 0) return INT2FIX(1);
+    if (y == 1) return LONG2NUM(x);
     if (neg) x = -x;
     if (y & 1)
 	z = x;
