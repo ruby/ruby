@@ -493,6 +493,21 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([1, 2, 3], y.yield(2, 3))
 
     assert_raise(LocalJumpError) { Enumerator::Yielder.new }
+
+    # to_proc (explicit)
+    a = []
+    y = Enumerator::Yielder.new {|x| a << x }
+    b = y.to_proc
+    assert_kind_of(Proc, b)
+    assert_equal([1], b.call(1))
+    assert_equal([1], a)
+
+    # to_proc (implicit)
+    e = Enumerator.new { |y|
+      assert_kind_of(Enumerator::Yielder, y)
+      [1, 2, 3].each(&y)
+    }
+    assert_equal([1, 2, 3], e.to_a)
   end
 
   def test_size
