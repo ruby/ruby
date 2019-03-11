@@ -110,8 +110,8 @@ VALUE rb_cEnumerator;
 static VALUE rb_cLazy;
 static ID id_rewind, id_new, id_to_enum;
 static ID id_next, id_result, id_receiver, id_arguments, id_memo, id_method, id_force;
-static ID id_begin, id_end, id_step, id_exclude_end;
-static VALUE sym_each, sym_cycle;
+static ID id_begin, id_end, id_step, id_exclude_end, id_to_proc;
+static VALUE sym_each, sym_cycle, sym_yield;
 
 #define id_call idCall
 #define id_each idEach
@@ -1286,6 +1286,26 @@ yielder_yield_push(VALUE obj, VALUE arg)
     rb_proc_call_with_block(ptr->proc, 1, &arg, Qnil);
 
     return obj;
+}
+
+/*
+ * Returns a Proc object that takes an argument and yields it.
+ *
+ * This method is implemented so that a Yielder object can be directly
+ * passed to another method as a block argument.
+ *
+ *   enum = Enumerator.new { |y|
+ *     Dir.glob("*.rb") { |file|
+ *       File.open(file) { |f| f.each_line(&y) }
+ *     }
+ *   }
+ */
+static VALUE
+yielder_to_proc(VALUE obj)
+{
+    VALUE method = rb_obj_method(obj, sym_yield);
+
+    return rb_funcall(method, id_to_proc, 0);
 }
 
 static VALUE
@@ -3380,6 +3400,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cYielder, "initialize", yielder_initialize, 0);
     rb_define_method(rb_cYielder, "yield", yielder_yield, -2);
     rb_define_method(rb_cYielder, "<<", yielder_yield_push, 1);
+    rb_define_method(rb_cYielder, "to_proc", yielder_to_proc, 0);
 
     /* Chain */
     rb_cEnumChain = rb_define_class_under(rb_cEnumerator, "Chain", rb_cEnumerator);
@@ -3430,8 +3451,10 @@ Init_Enumerator(void)
     id_end = rb_intern("end");
     id_step = rb_intern("step");
     id_exclude_end = rb_intern("exclude_end");
+    id_to_proc = rb_intern("to_proc");
     sym_each = ID2SYM(id_each);
     sym_cycle = ID2SYM(rb_intern("cycle"));
+    sym_yield = ID2SYM(rb_intern("yield"));
 
     InitVM(Enumerator);
 }
