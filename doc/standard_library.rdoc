@@ -32,8 +32,6 @@ Open3:: Provides access to stdin, stdout and stderr when running other programs
 OptionParser:: Ruby-oriented class for command-line option analysis
 PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
-profile.rb:: Runs the Ruby Profiler__
-Profiler__:: Provides a way to profile your Ruby application
 PStore:: Implements a file based persistence mechanism based on a Hash
 Racc:: A LALR(1) parser generator written in Ruby.
 RbConfig:: Information of your configure and build of Ruby

@@ -88,10 +88,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/prettyprint.rb]
   Tanaka Akira (akr)
-[lib/profile.rb]
-  _unmaintained_
-[lib/profiler.rb]
-  _unmaintained_
 [lib/pstore.rb]
   _unmaintained_
 [lib/racc/*]
