@@ -2932,9 +2932,15 @@ nsdr(void)
 }
 
 #if VM_COLLECT_USAGE_DETAILS
+static VALUE usage_analysis_insn_start(VALUE self);
+static VALUE usage_analysis_operand_start(VALUE self);
+static VALUE usage_analysis_register_start(VALUE self);
 static VALUE usage_analysis_insn_stop(VALUE self);
 static VALUE usage_analysis_operand_stop(VALUE self);
 static VALUE usage_analysis_register_stop(VALUE self);
+static VALUE usage_analysis_insn_running(VALUE self);
+static VALUE usage_analysis_operand_running(VALUE self);
+static VALUE usage_analysis_register_running(VALUE self);
 #endif
 
 /*
@@ -3157,9 +3163,15 @@ Init_VM(void)
     define_usage_analysis_hash(REGS);
     define_usage_analysis_hash(INSN_BIGRAM);
 
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_INSN_START", usage_analysis_insn_start, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_OPERAND_START", usage_analysis_operand_start, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_REGISTER_START", usage_analysis_register_start, 0);
     rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_INSN_STOP", usage_analysis_insn_stop, 0);
     rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_OPERAND_STOP", usage_analysis_operand_stop, 0);
     rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_REGISTER_STOP", usage_analysis_register_stop, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_INSN_RUNNING", usage_analysis_insn_running, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_OPERAND_RUNNING", usage_analysis_operand_running, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_REGISTER_RUNNING", usage_analysis_register_running, 0);
 #endif
 
     /* ::RubyVM::OPTS, which shows vm build options */
@@ -3501,9 +3513,33 @@ vm_analysis_register(int reg, int isset)
 
 #undef HASH_ASET
 
-static void (*ruby_vm_collect_usage_func_insn)(int insn) = vm_analysis_insn;
-static void (*ruby_vm_collect_usage_func_operand)(int insn, int n, VALUE op) = vm_analysis_operand;
-static void (*ruby_vm_collect_usage_func_register)(int reg, int isset) = vm_analysis_register;
+static void (*ruby_vm_collect_usage_func_insn)(int insn) = NULL;
+static void (*ruby_vm_collect_usage_func_operand)(int insn, int n, VALUE op) = NULL;
+static void (*ruby_vm_collect_usage_func_register)(int reg, int isset) = NULL;
+
+/* :nodoc: */
+static VALUE
+usage_analysis_insn_start(VALUE self)
+{
+    ruby_vm_collect_usage_func_insn = vm_analysis_insn;
+    return Qnil;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_operand_start(VALUE self)
+{
+    ruby_vm_collect_usage_func_operand = vm_analysis_operand;
+    return Qnil;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_register_start(VALUE self)
+{
+    ruby_vm_collect_usage_func_register = vm_analysis_register;
+    return Qnil;
+}
 
 /* :nodoc: */
 static VALUE
@@ -3527,6 +3563,30 @@ usage_analysis_register_stop(VALUE self)
 {
     ruby_vm_collect_usage_func_register = 0;
     return Qnil;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_insn_running(VALUE self)
+{
+  if (ruby_vm_collect_usage_func_insn == 0) return Qfalse;
+  return Qtrue;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_operand_running(VALUE self)
+{
+  if (ruby_vm_collect_usage_func_operand == 0) return Qfalse;
+  return Qtrue;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_register_running(VALUE self)
+{
+  if (ruby_vm_collect_usage_func_register == 0) return Qfalse;
+  return Qtrue;
 }
 
 #else
