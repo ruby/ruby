@@ -1801,57 +1801,33 @@ unknown_keyword_error(VALUE hash, const ID *table, int keywords)
     rb_keyword_error("unknown", rb_hash_keys(hash));
 }
 
-struct extract_keywords {
-    VALUE kwdhash, nonsymkey;
-};
 
 static int
 separate_symbol(st_data_t key, st_data_t value, st_data_t arg)
 {
-    struct extract_keywords *argp = (struct extract_keywords *)arg;
-    VALUE k = (VALUE)key, v = (VALUE)value;
-
-    if (argp->kwdhash) {
-        if (UNLIKELY(!SYMBOL_P(k))) {
-            argp->nonsymkey = k;
-            return ST_STOP;
-        }
-    }
-    else if (SYMBOL_P(k)) {
-        if (UNLIKELY(argp->nonsymkey != Qundef)) {
-            argp->kwdhash = Qnil;
-            return ST_STOP;
-        }
-        argp->kwdhash = rb_hash_new();
-    }
-    else {
-        if (argp->nonsymkey == Qundef)
-            argp->nonsymkey = k;
-        return ST_CONTINUE;
-    }
-    rb_hash_aset(argp->kwdhash, k, v);
+    VALUE *kwdhash = (VALUE *)arg;
+    if (!SYMBOL_P(key)) kwdhash++;
+    if (!*kwdhash) *kwdhash = rb_hash_new();
+    rb_hash_aset(*kwdhash, (VALUE)key, (VALUE)value);
     return ST_CONTINUE;
 }
 
 VALUE
 rb_extract_keywords(VALUE *orighash)
 {
-    struct extract_keywords arg = {0, Qundef};
+    VALUE parthash[2] = {0, 0};
     VALUE hash = *orighash;
 
     if (RHASH_EMPTY_P(hash)) {
 	*orighash = 0;
 	return hash;
     }
-    rb_hash_foreach(hash, separate_symbol, (st_data_t)&arg);
-    if (arg.kwdhash) {
-        if (arg.nonsymkey != Qundef) {
-            rb_raise(rb_eArgError, "non-symbol key in keyword arguments: %+"PRIsVALUE,
-                     arg.nonsymkey);
-        }
-        *orighash = 0;
+    rb_hash_foreach(hash, separate_symbol, (st_data_t)&parthash);
+    *orighash = parthash[1];
+    if (parthash[1] && RBASIC_CLASS(hash) != rb_cHash) {
+	RBASIC_SET_CLASS(parthash[1], RBASIC_CLASS(hash));
     }
-    return arg.kwdhash;
+    return parthash[0];
 }
 
 int

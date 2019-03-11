@@ -35,8 +35,6 @@ sufficient information, see the ChangeLog file or Redmine
     (1...).each {|index| block }          # infinite loop from index 1
     ary.zip(1..) {|elem, index| block }   # ary.each.with_index(1) { }
 
-* Non-Symbol keys in a keyword arguments hash cause an exception.
-
 * The "shadowing outer local variable" warning is removed.  [Feature #12490]
 
   You can now write the following without warning:
@@ -47,6 +45,9 @@ sufficient information, see the ChangeLog file or Redmine
   its backtraces and error message. [Feature #8257]
 
 * The flip-flop syntax is deprecated. [Feature #5400]
+
+* Non-Symbol keys in a keyword arguments hash was prohibited at 2.6.0, but
+  now allowed again.  [Bug #15658]
 
 === Core classes updates (outstanding ones only)
 
@@ -571,6 +572,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
+<<<<<<< .working
 * These standard libraries have been promoted to default gems.
 
   * e2mmap
@@ -588,6 +590,13 @@ sufficient information, see the ChangeLog file or Redmine
   * thwait
   * tracer
 
+||||||| .merge-left.r67216
+profile.rb, Profiler__::
+
+  * Removed from standard library. No one maintains it from Ruby 2.0.0.
+
+=======
+>>>>>>> .merge-right.r67217
 [BigDecimal]
 
   * The following methods are removed.
