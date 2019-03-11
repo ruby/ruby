@@ -254,6 +254,8 @@ vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 #define vm_check_frame(a, b, c, d)
 #endif /* VM_CHECK_MODE > 0 */
 
+static ALWAYS_INLINE(rb_control_frame_t *vm_push_frame(rb_execution_context_t *, const rb_iseq_t *, VALUE, VALUE, VALUE, VALUE, const VALUE *, VALUE *, int, int));
+
 static inline rb_control_frame_t *
 vm_push_frame(rb_execution_context_t *ec,
 	      const rb_iseq_t *iseq,
@@ -1061,6 +1063,7 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
     return rb_ivar_get(obj, id);
 }
 
+static inline ALWAYS_INLINE(VALUE vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_attr));
 static inline VALUE
 vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_attr)
 {
@@ -3443,7 +3446,7 @@ vm_invokeblock_i(
     }
 }
 
-static VALUE
+static inline VALUE
 vm_sendish(
     struct rb_execution_context_struct *ec,
     struct rb_control_frame_struct *reg_cfp,
