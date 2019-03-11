@@ -22,6 +22,9 @@ sufficient information, see the ChangeLog file or Redmine
 
 * lambda with no block in a method called with a block errs.
 
+* Non-Symbol keys in a keyword arguments hash was prohibited at 2.6.0, but
+  now allowed again.  [Bug #15658]
+
 === Core classes updates (outstanding ones only)
 
 Enumerable::
@@ -58,10 +61,6 @@ RSS::
 === Compatibility issues (excluding feature bug fixes)
 
 === Stdlib compatibility issues (excluding feature bug fixes)
-
-profile.rb, Profiler__::
-
-  * Removed from standard library. No one maintains it from Ruby 2.0.0.
 
 === C API updates
 
