@@ -315,6 +315,10 @@ static int parser_yyerror(struct parser_params*, const YYLTYPE *yylloc, const ch
 
 #define lambda_beginning_p() (p->lex.lpar_beg == p->lex.paren_nest)
 
+#ifndef RIPPER
+static const ID excessed_comma = 1;
+#endif
+
 static enum yytokentype yylex(YYSTYPE*, YYLTYPE*, struct parser_params*);
 
 #ifndef RIPPER
@@ -3050,7 +3054,6 @@ block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
 		    {
 		    /*%%%*/
 			/* magic number for rest_id in iseq_set_arguments() */
-			const ID excessed_comma = 1;
 			$$ = new_args(p, $1, Qnone, excessed_comma, Qnone, new_args_tail(p, Qnone, Qnone, Qnone, &@1), &@$);
 		    /*% %*/
 		    /*% ripper: new_args(p, $1, Qnone, excessed_comma!, Qnone, new_args_tail(p, Qnone, Qnone, Qnone, NULL), NULL) %*/
