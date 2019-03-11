@@ -527,7 +527,8 @@ module FileUtils
         end
         begin
           File.rename s, d
-        rescue Errno::EXDEV
+        rescue Errno::EXDEV,
+               Errno::EPERM # move from unencrypted to encrypted dir (ext4)
           copy_entry s, d, true
           if secure
             remove_entry_secure s, force
