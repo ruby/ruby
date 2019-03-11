@@ -3306,6 +3306,12 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, int chomp)
 		read_buffered_data(RSTRING_PTR(str)+len, pending - chomplen, fptr);
 		fptr->rbuf.off += chomplen;
 		fptr->rbuf.len -= chomplen;
+                if (pending == 1 && chomplen == 1 && len > 0) {
+                    if (RSTRING_PTR(str)[len-1] == '\r') {
+                        rb_str_resize(str, --len);
+                        break;
+                    }
+                }
 	    }
 	    len += pending - chomplen;
 	    if (cr != ENC_CODERANGE_BROKEN)
