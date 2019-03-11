@@ -1848,7 +1848,7 @@ rb_extract_keywords(VALUE *orighash)
     rb_hash_foreach(hash, separate_symbol, (st_data_t)&parthash);
     *orighash = parthash[1];
     if (parthash[1] && RBASIC_CLASS(hash) != rb_cHash) {
-	RBASIC_SET_CLASS(parthash[1], RBASIC_CLASS(hash));
+        RBASIC_SET_CLASS(parthash[1], RBASIC_CLASS(hash));
     }
     return parthash[0];
 }
