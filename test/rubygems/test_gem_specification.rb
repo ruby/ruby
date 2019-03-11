@@ -1675,7 +1675,7 @@ dependencies: []
     assert_equal expected, err
   end
 
-  def test_contains_requirable_file_eh_extension
+  def test_contains_requirable_file_eh_extension_java_platform
     ext_spec(platform: Gem::Platform.new("java"))
 
     _, err = capture_io do
