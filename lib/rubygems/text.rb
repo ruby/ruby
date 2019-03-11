@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'rubygems'
 
 ##
 # A collection of text-wrangling methods
