@@ -20,10 +20,17 @@ rb_int_to_bignum(VALUE x)
     return x;
 }
 
+static VALUE
+positive_pow(VALUE x, VALUE y)
+{
+    return rb_int_positive_pow(NUM2LONG(x), NUM2ULONG(y));
+}
+
 void
 Init_core_ext(VALUE klass)
 {
     rb_define_method(rb_cInteger, "bignum?", int_bignum_p, 0);
     rb_define_method(rb_cInteger, "fixnum?", int_fixnum_p, 0);
     rb_define_method(rb_cInteger, "to_bignum", rb_int_to_bignum, 0);
+    rb_define_method(rb_cInteger, "positive_pow", positive_pow, 1);
 }
