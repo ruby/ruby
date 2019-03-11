@@ -572,7 +572,6 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
-<<<<<<< .working
 * These standard libraries have been promoted to default gems.
 
   * e2mmap
@@ -590,13 +589,6 @@ sufficient information, see the ChangeLog file or Redmine
   * thwait
   * tracer
 
-||||||| .merge-left.r67216
-profile.rb, Profiler__::
-
-  * Removed from standard library. No one maintains it from Ruby 2.0.0.
-
-=======
->>>>>>> .merge-right.r67217
 [BigDecimal]
 
   * The following methods are removed.
