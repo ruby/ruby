@@ -480,6 +480,42 @@ class TestGemPackage < Gem::Package::TarTestCase
                  "#{destination_subdir} is not allowed", e.message)
   end
 
+  def test_extract_symlink_parent_doesnt_delete_user_dir
+    skip if RUBY_VERSION <= "1.8.7"
+
+    package = Gem::Package.new @gem
+
+    # Extract into a subdirectory of @destination; if this test fails it writes
+    # a file outside destination_subdir, but we want the file to remain inside
+    # @destination so it will be cleaned up.
+    destination_subdir = File.join @destination, 'subdir'
+    FileUtils.mkdir_p destination_subdir
+
+    destination_user_dir = File.join @destination, 'user'
+    destination_user_subdir = File.join destination_user_dir, 'dir'
+    FileUtils.mkdir_p destination_user_subdir
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_symlink 'link', destination_user_dir, 16877
+      tar.add_symlink 'link/dir', '.', 16877
+    end
+
+    e = assert_raises(Gem::Package::PathError, Errno::EACCES) do
+      package.extract_tar_gz tgz_io, destination_subdir
+    end
+
+    assert_path_exists destination_user_subdir
+
+    if Gem::Package::PathError === e
+      assert_equal("installing into parent path #{destination_user_subdir} of " +
+                  "#{destination_subdir} is not allowed", e.message)
+    elsif win_platform?
+      skip "symlink - must be admin with no UAC on Windows"
+    else
+      raise e
+    end
+  end
+
   def test_extract_tar_gz_directory
     package = Gem::Package.new @gem
 
