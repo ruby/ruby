@@ -2276,7 +2276,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 	break;
 
       case VM_METHOD_TYPE_ZSUPER:
-	return vm_call_zsuper(ec, cfp, calling, ci, cc, RCLASS_ORIGIN(cc->me->owner));
+	return vm_call_zsuper(ec, cfp, calling, ci, cc, RCLASS_ORIGIN(cc->me->defined_class));
 
       case VM_METHOD_TYPE_REFINED: {
 	const rb_cref_t *cref = rb_vm_get_cref(cfp->ep);

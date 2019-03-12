@@ -2290,6 +2290,24 @@ class TestModule < Test::Unit::TestCase
     end;
   end
 
+  def test_private_extended_module
+    assert_separately [], %q{
+      class Object
+        def bar; "Object#bar"; end
+      end
+      module M1
+        def bar; super; end
+      end
+      module M2
+        include M1
+        private(:bar)
+        def foo; bar; end
+      end
+      extend M2
+      assert_equal 'Object#bar', foo
+    }
+  end
+
   private
 
   def assert_top_method_is_private(method)
