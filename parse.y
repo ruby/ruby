@@ -5633,9 +5633,18 @@ regx_options(struct parser_params *p)
     options |= kopt;
     pushback(p, c);
     if (toklen(p)) {
+	static const char mesg[] = "unknown regexp options";
+	static const char sep[] = " - ";
+	const int mlen = (int)(sizeof(mesg) - 1 - (toklen(p) == 1));
+	const int seplen = (int)(sizeof(sep) - 1);
+	YYLTYPE loc;
+	RUBY_SET_YYLLOC(loc);
 	tokfix(p);
-	compile_error(p, "unknown regexp option%s - %*s",
-		      toklen(p) > 1 ? "s" : "", toklen(p), tok(p));
+	tokspace(p, toklen(p) + mlen + seplen);
+	memmove(tok(p) + mlen + seplen, tok(p), toklen(p) + 1);
+	memcpy(tok(p), mesg, mlen);
+	memcpy(tok(p) + mlen, sep, seplen);
+	yyerror1(&loc, tok(p));
     }
     return options | RE_OPTION_ENCODING(kcode);
 }
