@@ -120,9 +120,10 @@ class TestEncoding < Test::Unit::TestCase
     assert_separately(%w[--disable=gems], "#{<<~"begin;"}\n#{<<~'end;'}")
     bug9038 = '[ruby-core:57949] [Bug #9038]'
     begin;
-      assert_raise_with_message(SyntaxError, /unknown regexp option - Q/, bug9038) {
+      e = assert_raise_with_message(SyntaxError, /unknown regexp option - Q/, bug9038) {
         eval("/regexp/sQ")
       }
+      assert_include(e.message, "/regexp/sQ\n")
     end;
   end
 end
