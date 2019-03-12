@@ -2292,7 +2292,7 @@ rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
         RHASH(hash)->ntbl = tab = RHASH(tmp)->ntbl;
         RHASH(tmp)->ntbl = NULL;
     }
-    n = tab->num_entries + argc / 2;
+    n = tab->entries_bound + argc / 2;
     st_expand_table(tab, n);
     if (UNLIKELY(tab->num_entries))
         st_insert_generic(tab, argc, argv, hash);
