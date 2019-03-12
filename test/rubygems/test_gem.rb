@@ -209,6 +209,41 @@ class TestGem < Gem::TestCase
     assert_equal %w(a-1 b-2 c-1), loaded_spec_names
   end
 
+  def test_activate_bin_path_gives_proper_error_for_bundler
+    bundler = util_spec 'bundler', '2' do |s|
+      s.executables = ['bundle']
+    end
+
+    install_specs bundler
+
+    File.open("Gemfile.lock", "w") do |f|
+      f.write <<-L.gsub(/ {8}/, "")
+        GEM
+          remote: https://rubygems.org/
+          specs:
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+          9999
+      L
+    end
+
+    File.open("Gemfile", "w") { |f| f.puts('source "https://rubygems.org"') }
+
+    e = assert_raises Gem::GemNotFoundException do
+      load Gem.activate_bin_path("bundler", "bundle", ">= 0.a")
+    end
+
+    assert_includes e.message, "Could not find 'bundler' (9999) required by your #{File.expand_path("Gemfile.lock")}."
+    assert_includes e.message, "To update to the latest version installed on your system, run `bundle update --bundler`."
+    assert_includes e.message, "To install the missing version, run `gem install bundler:9999`"
+    refute_includes e.message, "can't find gem bundler (>= 0.a) with executable bundle"
+  end
+
   def test_self_bin_path_no_exec_name
     e = assert_raises ArgumentError do
       Gem.bin_path 'a'

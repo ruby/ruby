@@ -1,12 +1,4 @@
 module Gem::BundlerVersionFinder
-  @without_filtering = false
-
-  def self.without_filtering
-    without_filtering, @without_filtering = true, @without_filtering
-    yield
-  ensure
-    @without_filtering = without_filtering
-  end
 
   def self.bundler_version
     version, _ = bundler_version_with_reason
@@ -17,8 +9,6 @@ module Gem::BundlerVersionFinder
   end
 
   def self.bundler_version_with_reason
-    return if @without_filtering
-
     if v = ENV["BUNDLER_VERSION"]
       return [v, "`$BUNDLER_VERSION`"]
     end
@@ -36,7 +26,7 @@ module Gem::BundlerVersionFinder
     return unless vr = bundler_version_with_reason
     <<-EOS
 Could not find 'bundler' (#{vr.first}) required by #{vr.last}.
-To update to the lastest version installed on your system, run `bundle update --bundler`.
+To update to the latest version installed on your system, run `bundle update --bundler`.
 To install the missing version, run `gem install bundler:#{vr.first}`
     EOS
   end
@@ -44,20 +34,14 @@ To install the missing version, run `gem install bundler:#{vr.first}`
   def self.compatible?(spec)
     return true unless spec.name == "bundler".freeze
     return true unless bundler_version = self.bundler_version
-    if bundler_version.segments.first >= 2
-      spec.version == bundler_version
-    else # 1.x
-      spec.version.segments.first < 2
-    end
+
+    spec.version.segments.first == bundler_version.segments.first
   end
 
   def self.filter!(specs)
     return unless bundler_version = self.bundler_version
-    if bundler_version.segments.first >= 2
-      specs.reject! { |spec| spec.version != bundler_version }
-    else # 1.x
-      specs.reject! { |spec| spec.version.segments.first >= 2}
-    end
+
+    specs.reject! { |spec| spec.version.segments.first != bundler_version.segments.first }
   end
 
   def self.bundle_update_bundler_version

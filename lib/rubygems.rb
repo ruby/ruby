@@ -10,7 +10,7 @@ require 'rbconfig'
 require 'thread'
 
 module Gem
-  VERSION = "2.7.6.1"
+  VERSION = "2.7.6.2"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -270,12 +270,7 @@ module Gem
 
     return loaded if loaded && dep.matches_spec?(loaded)
 
-    find_specs = proc { dep.matching_specs(true) }
-    if dep.to_s == "bundler (>= 0.a)"
-      specs = Gem::BundlerVersionFinder.without_filtering(&find_specs)
-    else
-      specs = find_specs.call
-    end
+    specs = dep.matching_specs(true)
 
     specs = specs.find_all { |spec|
       spec.executables.include? exec_name
