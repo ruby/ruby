@@ -4676,6 +4676,7 @@ parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
     if (!yylloc) {
 	RUBY_SET_YYLLOC(current);
 	yylloc = &current;
+	token_flush(p);
     }
     else if ((p->ruby_sourceline != yylloc->beg_pos.lineno &&
 	      p->ruby_sourceline != yylloc->end_pos.lineno) ||
@@ -4765,6 +4766,7 @@ parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
 #else
     dispatch1(parse_error, STR_NEW2(msg));
     ripper_error(p);
+    token_flush(p);
 #endif /* !RIPPER */
     return 0;
 }
@@ -11195,6 +11197,7 @@ parser_compile_error(struct parser_params *p, const char *fmt, ...)
 			       rb_long2int(p->lex.pcur - p->lex.pbeg),
 			       p->enc, fmt, ap);
     va_end(ap);
+    token_flush(p);
 }
 
 static size_t
