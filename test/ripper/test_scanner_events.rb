@@ -881,6 +881,13 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('ignored_nl', "1;\r\n")
   end
 
+  def test_ignored_sp
+    assert_equal [],
+                 scan('ignored_sp', "<<~EOS\nheredoc\nEOS")
+    assert_equal ["  "],
+                 scan('ignored_sp', "<<~EOS\n  heredoc\nEOS")
+  end
+
   def test___end__
     assert_equal [],
                  scan('__end__', "")
