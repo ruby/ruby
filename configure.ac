@@ -1319,7 +1319,8 @@ AS_IF([test "x$with_jemalloc" = xyes],[
     [AC_DEFINE(HAVE_LIBJEMALLOC, 1)], [with_jemalloc=no])
   AC_CHECK_HEADER(jemalloc/jemalloc.h, [
     AC_DEFINE(RUBY_ALTERNATIVE_MALLOC_HEADER, [<jemalloc/jemalloc.h>])
-  ])
+  ],
+  [test x$with_jemalloc = xyes && with_jemalloc=no])
   AS_IF([test "x$with_jemalloc" = xno], [
     AC_CACHE_CHECK([for jemalloc with JEMALLOC_MANGLE], rb_cv_jemalloc_demangle,
       [AC_LINK_IFELSE([AC_LANG_PROGRAM([@%:@define JEMALLOC_MANGLE 1
