@@ -1670,12 +1670,40 @@ class CSV
   ### IO and StringIO Delegation ###
 
   extend Forwardable
-  def_delegators :@io, :binmode, :binmode?, :close, :close_read, :close_write,
+  def_delegators :@io, :binmode, :close, :close_read, :close_write,
                        :closed?, :eof, :eof?, :external_encoding, :fcntl,
-                       :fileno, :flock, :flush, :fsync, :internal_encoding,
-                       :ioctl, :isatty, :path, :pid, :pos, :pos=, :reopen,
-                       :seek, :stat, :string, :sync, :sync=, :tell, :to_i,
+                       :fileno, :flush, :fsync, :internal_encoding,
+                       :isatty, :pid, :pos, :pos=, :reopen,
+                       :seek, :string, :sync, :sync=, :tell, :to_i,
                        :to_io, :truncate, :tty?
+
+  def binmode? # :nodoc:
+    @io.binmode? if @io.respond_to?(:binmode?)
+  end
+
+  def flock(*args) # :nodoc:
+    @io.flock(*args) if @io.respond_to?(:flock)
+  end
+
+  def ioctl(*args) # :nodoc:
+    @io.ioctl(*args) if @io.respond_to?(:ioctl)
+  end
+
+  def path # :nodoc:
+    @io.path if @io.respond_to?(:path)
+  end
+
+  def stat(*args) # :nodoc:
+    @io.stat(*args) if @io.respond_to?(:stat)
+  end
+
+  def to_i # :nodoc:
+    @io.respond_to?(:to_i) ? @io.to_i : 0
+  end
+
+  def to_io # :nodoc:
+    @io.respond_to?(:to_io) ? @io.to_io : @io
+  end
 
   # Rewinds the underlying IO object and resets CSV's lineno() counter.
   def rewind
