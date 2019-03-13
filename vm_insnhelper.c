@@ -3362,20 +3362,6 @@ vm_sendish(
 
     method_explorer(GET_CFP(), ci, cc, recv);
 
-    if (popped &&
-        vm_whether_we_can_skip_this_call_site_p(cc, block_handler)) {
-        /* We are going to skip execution and "emulate" stack
-         * manipulations */
-        extern rb_snum_t sp_inc_of_invokeblock(const struct rb_call_info *);
-        extern rb_snum_t sp_inc_of_sendish(const struct rb_call_info *);
-        rb_snum_t (*calc)(const struct rb_call_info *) =
-            (cc->call == vm_invokeblock_i) ?
-            sp_inc_of_invokeblock :
-            sp_inc_of_sendish;
-        INC_SP(calc(ci));
-        return Qundef;          /* dummy retval (not used) */
-    }
-
     val = cc->call(ec, GET_CFP(), &calling, ci, cc);
 
     if (val != Qundef) {

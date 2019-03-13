@@ -8,12 +8,7 @@
 %;
 #line <%= __LINE__ + 1 %> <%=cstr __FILE__ %>
 
-#ifdef INSIDE_VM_INSNHELPER_C
-MJIT_FUNC_EXPORTED
-#else
-static
-#endif
-rb_snum_t
+static rb_snum_t
 sp_inc_of_sendish(const struct rb_call_info *ci)
 {
     /* Send-ish instructions will:
@@ -32,12 +27,7 @@ sp_inc_of_sendish(const struct rb_call_info *ci)
     return 0 - argb - argc - recv + retn;
 }
 
-#ifdef INSIDE_VM_INSNHELPER_C
-MJIT_FUNC_EXPORTED
-#else
-static
-#endif
-rb_snum_t
+static rb_snum_t
 sp_inc_of_invokeblock(const struct rb_call_info *ci)
 {
     /* sp_inc of invokeblock is almost identical to that of sendish
