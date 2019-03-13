@@ -4666,7 +4666,7 @@ parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
     const int max_line_margin = 30;
     const char *ptr, *ptr_end, *pt, *pb;
     const char *pre = "", *post = "", *pend;
-    const char *code = "", *caret = "", *newline = "";
+    const char *code = "", *caret = "";
     const char *lim;
     char *buf;
     long len;
@@ -4757,10 +4757,9 @@ parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
 	    p2 += (lim - ptr);
 	}
 	*p2 = '\0';
-	newline = "\n";
-	compile_error(p, "%s%s""%s%.*s%s%s""%s%s",
-		      msg, newline,
-		      pre, (int)len, code, post, newline,
+	compile_error(p, "%s\n""%s%.*s%s\n""%s%s",
+		      msg,
+		      pre, (int)len, code, post,
 		      pre, caret);
     }
 #else
