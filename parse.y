@@ -7480,9 +7480,11 @@ parse_numvar(struct parser_params *p)
 static enum yytokentype
 parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 {
+    const char *ptr = p->lex.pcur;
     register int c;
 
     SET_LEX_STATE(EXPR_END);
+    p->lex.ptok = ptr - 1; /* from '$' */
     newtok(p);
     c = nextc(p);
     switch (c) {
@@ -7560,6 +7562,7 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 
       default:
 	if (!parser_is_identchar(p)) {
+	    YYLTYPE loc = RUBY_INIT_YYLLOC();
 	    if (c == -1 || ISSPACE(c)) {
 		compile_error(p, "`$' without identifiers is not allowed as a global variable name");
 	    }
@@ -7567,6 +7570,7 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 		pushback(p, c);
 		compile_error(p, "`$%c' is not allowed as a global variable name", c);
 	    }
+	    parser_show_error_line(p, &loc);
 	    return 0;
 	}
       case '0':
