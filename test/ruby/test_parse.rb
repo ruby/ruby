@@ -377,9 +377,9 @@ class TestParse < Test::Unit::TestCase
   end
 
   def assert_disallowed_variable(type, noname, *invalid)
-    assert_syntax_error(noname, "`#{noname}' without identifiers is not allowed as #{type} variable name")
+    assert_syntax_error("a = #{noname}", "`#{noname}' without identifiers is not allowed as #{type} variable name")
     invalid.each do |name|
-      assert_syntax_error(name, "`#{name}' is not allowed as #{type} variable name")
+      assert_syntax_error("a = #{name}", "`#{name}' is not allowed as #{type} variable name")
     end
   end
 
@@ -712,7 +712,9 @@ x = __ENCODING__
     $test_parse_foobarbazqux = nil
     assert_equal(nil, $&)
     assert_equal(nil, eval('alias $& $preserve_last_match'))
-    assert_raise(SyntaxError) { eval('$#') }
+    assert_raise_with_message(SyntaxError, /as a global variable name\na = \$\#\n    \^~$/) do
+      eval('a = $#')
+    end
   end
 
   def test_invalid_instance_variable
