@@ -1479,13 +1479,13 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_invalid_instance_variable_name
     assert_equal("`@1' is not allowed as an instance variable name", compile_error('@1'))
-    assert_equal("`@%' is not allowed as an instance variable name", compile_error('@%'))
+    assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@%'))
     assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@'))
   end
 
   def test_invalid_class_variable_name
     assert_equal("`@@1' is not allowed as a class variable name", compile_error('@@1'))
-    assert_equal("`@@%' is not allowed as a class variable name", compile_error('@@%'))
+    assert_equal("`@@' without identifiers is not allowed as a class variable name", compile_error('@@%'))
     assert_equal("`@@' without identifiers is not allowed as a class variable name", compile_error('@@'))
   end
 
