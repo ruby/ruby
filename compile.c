@@ -1037,35 +1037,6 @@ APPEND_LIST(ISEQ_ARG_DECLARE LINK_ANCHOR *const anc1, LINK_ANCHOR *const anc2)
 #define APPEND_LIST(anc1, anc2) APPEND_LIST(iseq, (anc1), (anc2))
 #endif
 
-/*
- * anc1: e1, e2, e3
- * anc2: e4, e5
- *#=>
- * anc1: e4, e5, e1, e2, e3
- * anc2: e4, e5 (broken)
- */
-static void
-INSERT_LIST(ISEQ_ARG_DECLARE LINK_ANCHOR *const anc1, LINK_ANCHOR *const anc2)
-{
-    if (anc2->anchor.next) {
-	LINK_ELEMENT *first = anc1->anchor.next;
-	anc1->anchor.next = anc2->anchor.next;
-	anc1->anchor.next->prev = &anc1->anchor;
-	anc2->last->next = first;
-	if (first) {
-	    first->prev = anc2->last;
-	}
-	else {
-	    anc1->last = anc2->last;
-	}
-    }
-
-    verify_list("append", anc1);
-}
-#if CPDEBUG < 0
-#define INSERT_LIST(anc1, anc2) INSERT_LIST(iseq, (anc1), (anc2))
-#endif
-
 #if CPDEBUG && 0
 static void
 debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor)
@@ -4803,100 +4774,85 @@ add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return)
 }
 
 static VALUE
+setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
+                int dup_rest, unsigned int *flag, struct rb_call_info_kw_arg **keywords)
+{
+    if (argn) {
+        switch (nd_type(argn)) {
+          case NODE_SPLAT: {
+            COMPILE(args, "args (splat)", argn->nd_head);
+            ADD_INSN1(args, nd_line(argn), splatarray, dup_rest ? Qtrue : Qfalse);
+            if (flag) *flag |= VM_CALL_ARGS_SPLAT;
+            return INT2FIX(1);
+          }
+          case NODE_ARGSCAT:
+          case NODE_ARGSPUSH: {
+            int next_is_array = (nd_type(argn->nd_head) == NODE_ARRAY);
+            VALUE argc = setup_args_core(iseq, args, argn->nd_head, 1, NULL, NULL);
+            COMPILE(args, "args (cat: splat)", argn->nd_body);
+            if (flag) {
+                *flag |= VM_CALL_ARGS_SPLAT;
+                if (nd_type(argn->nd_body) == NODE_HASH)
+                    /* bug: https://bugs.ruby-lang.org/issues/10856#change-77095 */
+                    *flag |= VM_CALL_KW_SPLAT;
+            }
+            if (nd_type(argn) == NODE_ARGSCAT) {
+                if (next_is_array) {
+                    ADD_INSN1(args, nd_line(argn), splatarray, Qtrue);
+                    return INT2FIX(FIX2INT(argc) + 1);
+                }
+                else {
+                    ADD_INSN1(args, nd_line(argn), splatarray, Qfalse);
+                    ADD_INSN(args, nd_line(argn), concatarray);
+                    return argc;
+                }
+            }
+            else {
+                ADD_INSN1(args, nd_line(argn), newarray, INT2FIX(1));
+                ADD_INSN(args, nd_line(argn), concatarray);
+                return argc;
+            }
+          }
+          case NODE_ARRAY: {
+            int len = compile_args(iseq, args, argn, keywords, flag);
+            return INT2FIX(len);
+          }
+          default: {
+            UNKNOWN_NODE("setup_arg", argn, Qnil);
+          }
+        }
+    }
+    return INT2FIX(0);
+}
+
+static VALUE
 setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 	   unsigned int *flag, struct rb_call_info_kw_arg **keywords)
 {
-    VALUE argc = INT2FIX(0);
-    int nsplat = 0;
-    DECL_ANCHOR(arg_block);
-    DECL_ANCHOR(args_splat);
-
-    INIT_ANCHOR(arg_block);
-    INIT_ANCHOR(args_splat);
+    VALUE ret;
     if (argn && nd_type(argn) == NODE_BLOCK_PASS) {
-	COMPILE(arg_block, "block", argn->nd_body);
-	*flag |= VM_CALL_ARGS_BLOCKARG;
-	argn = argn->nd_head;
+        DECL_ANCHOR(arg_block);
+        INIT_ANCHOR(arg_block);
+        COMPILE(arg_block, "block", argn->nd_body);
+
+        *flag |= VM_CALL_ARGS_BLOCKARG;
+        ret = setup_args_core(iseq, args, argn->nd_head, 0, flag, keywords);
+
+        if (LIST_INSN_SIZE_ONE(arg_block)) {
+            LINK_ELEMENT *elem = FIRST_ELEMENT(arg_block);
+            if (elem->type == ISEQ_ELEMENT_INSN) {
+                INSN *iobj = (INSN *)elem;
+                if (iobj->insn_id == BIN(getblockparam)) {
+                    iobj->insn_id = BIN(getblockparamproxy);
+                }
+            }
+        }
+        ADD_SEQ(args, arg_block);
     }
-
-  setup_argn:
-    if (argn) {
-	switch (nd_type(argn)) {
-	  case NODE_SPLAT: {
-	    COMPILE(args, "args (splat)", argn->nd_head);
-	    ADD_INSN1(args, nd_line(argn), splatarray, nsplat ? Qtrue : Qfalse);
-	    argc = INT2FIX(1);
-	    nsplat++;
-	    *flag |= VM_CALL_ARGS_SPLAT;
-	    break;
-	  }
-	  case NODE_ARGSCAT:
-	  case NODE_ARGSPUSH: {
-	    int next_is_array = (nd_type(argn->nd_head) == NODE_ARRAY);
-	    DECL_ANCHOR(tmp);
-
-	    INIT_ANCHOR(tmp);
-	    COMPILE(tmp, "args (cat: splat)", argn->nd_body);
-	    if (nd_type(argn) == NODE_ARGSCAT) {
-		ADD_INSN1(tmp, nd_line(argn), splatarray, nsplat ? Qtrue : Qfalse);
-	    }
-	    else {
-		ADD_INSN1(tmp, nd_line(argn), newarray, INT2FIX(1));
-	    }
-	    INSERT_LIST(args_splat, tmp);
-	    nsplat++;
-	    *flag |= VM_CALL_ARGS_SPLAT;
-	    if (nd_type(argn->nd_body) == NODE_HASH)
-		*flag |= VM_CALL_KW_SPLAT;
-
-	    if (next_is_array) {
-                int len = compile_args(iseq, args, argn->nd_head, NULL, flag);
-		if (len < 0) return Qnil;
-		argc = INT2FIX(len + 1);
-	    }
-	    else {
-		argn = argn->nd_head;
-		goto setup_argn;
-	    }
-	    break;
-	  }
-	  case NODE_ARRAY:
-	    {
-                int len = compile_args(iseq, args, argn, keywords, flag);
-		if (len < 0) return Qnil;
-		argc = INT2FIX(len);
-		break;
-	    }
-	  default: {
-	    UNKNOWN_NODE("setup_arg", argn, Qnil);
-	  }
-	}
+    else {
+        ret = setup_args_core(iseq, args, argn, 0, flag, keywords);
     }
-
-    if (nsplat > 1) {
-	int i;
-	for (i=1; i<nsplat; i++) {
-	    ADD_INSN(args_splat, nd_line(argn), concatarray);
-	}
-    }
-
-    if (!LIST_INSN_SIZE_ZERO(args_splat)) {
-	ADD_SEQ(args, args_splat);
-    }
-
-    if (*flag & VM_CALL_ARGS_BLOCKARG) {
-	if (LIST_INSN_SIZE_ONE(arg_block)) {
-	    LINK_ELEMENT *elem = FIRST_ELEMENT(arg_block);
-	    if (elem->type == ISEQ_ELEMENT_INSN) {
-		INSN *iobj = (INSN *)elem;
-		if (iobj->insn_id == BIN(getblockparam)) {
-		    iobj->insn_id = BIN(getblockparamproxy);
-		}
-	    }
-	}
-	ADD_SEQ(args, arg_block);
-    }
-    return argc;
+    return ret;
 }
 
 static VALUE
