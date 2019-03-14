@@ -4664,81 +4664,110 @@ parser_precise_mbclen(struct parser_params *p, const char *ptr)
     return len;
 }
 
+#ifndef RIPPER
+static void ruby_show_error_line(VALUE errbuf, const YYLTYPE *yylloc, int lineno, VALUE str);
+
+static inline void
+parser_show_error_line(struct parser_params *p, const YYLTYPE *yylloc)
+{
+    ruby_show_error_line(p->error_buffer, yylloc, p->ruby_sourceline, p->lex.lastline);
+}
+
 static int
 parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
 {
-#ifndef RIPPER
-    const int max_line_margin = 30;
-    const char *ptr, *ptr_end, *pt, *pb;
-    const char *pre = "", *post = "", *pend;
-    const char *code = "", *caret = "";
-    const char *lim;
-    char *buf;
-    long len;
-    int i;
     YYLTYPE current;
 
     if (!yylloc) {
 	yylloc = RUBY_SET_YYLLOC(current);
-	token_flush(p);
     }
     else if ((p->ruby_sourceline != yylloc->beg_pos.lineno &&
 	      p->ruby_sourceline != yylloc->end_pos.lineno) ||
 	     (yylloc->beg_pos.lineno == yylloc->end_pos.lineno &&
 	      yylloc->beg_pos.column == yylloc->end_pos.column)) {
-	compile_error(p, "%s", msg);
-	return 0;
+	yylloc = 0;
+    }
+    compile_error(p, "%s", msg);
+    parser_show_error_line(p, yylloc);
+    return 0;
+}
+
+static void
+ruby_show_error_line(VALUE errbuf, const YYLTYPE *yylloc, int lineno, VALUE str)
+{
+    VALUE mesg;
+    const int max_line_margin = 30;
+    const char *ptr, *ptr_end, *pt, *pb;
+    const char *pre = "", *post = "", *pend;
+    const char *code = "", *caret = "";
+    const char *lim;
+    const char *const pbeg = RSTRING_PTR(str);
+    char *buf;
+    long len;
+    int i;
+
+    if (!yylloc) return;
+    pend = RSTRING_END(str);
+    if (pend > pbeg && pend[-1] == '\n') {
+	if (--pend > pbeg && pend[-1] == '\r') --pend;
     }
 
-    pend = p->lex.pend;
-    if (pend > p->lex.pbeg && pend[-1] == '\n') {
-	if (--pend > p->lex.pbeg && pend[-1] == '\r') --pend;
+    pt = pend;
+    if (lineno == yylloc->end_pos.lineno &&
+	(pend - pbeg) > yylloc->end_pos.column) {
+	pt = pbeg + yylloc->end_pos.column;
     }
 
-    pt = (p->ruby_sourceline == yylloc->end_pos.lineno) ?
-	    p->lex.pbeg + yylloc->end_pos.column : p->lex.pend;
-    if ((p->lex.pbeg < pt) && (*(pt-1) == '\n')) pt--;
-    ptr = ptr_end = pt < pend ? pt : pend;
-    lim = ptr - p->lex.pbeg > max_line_margin ? ptr - max_line_margin : p->lex.pbeg;
+    ptr = ptr_end = pt;
+    lim = ptr - pbeg > max_line_margin ? ptr - max_line_margin : pbeg;
     while ((lim < ptr) && (*(ptr-1) != '\n')) ptr--;
 
     lim = pend - ptr_end > max_line_margin ? ptr_end + max_line_margin : pend;
-    while ((ptr_end < lim) && (*ptr_end != '\n')) ptr_end++;
+    while ((ptr_end < lim) && (*ptr_end != '\n') && (*ptr_end != '\r')) ptr_end++;
 
     len = ptr_end - ptr;
     if (len > 4) {
-	if (ptr > p->lex.pbeg) {
-	    ptr = rb_enc_prev_char(p->lex.pbeg, ptr, pt, rb_enc_get(p->lex.lastline));
-	    if (ptr > p->lex.pbeg) pre = "...";
+	if (ptr > pbeg) {
+	    ptr = rb_enc_prev_char(pbeg, ptr, pt, rb_enc_get(str));
+	    if (ptr > pbeg) pre = "...";
 	}
 	if (ptr_end < pend) {
-	    ptr_end = rb_enc_prev_char(pt, ptr_end, pend, rb_enc_get(p->lex.lastline));
+	    ptr_end = rb_enc_prev_char(pt, ptr_end, pend, rb_enc_get(str));
 	    if (ptr_end < pend) post = "...";
 	}
     }
-    pb = p->lex.pbeg;
-    if (p->ruby_sourceline == yylloc->beg_pos.lineno) {
+    pb = pbeg;
+    if (lineno == yylloc->beg_pos.lineno) {
 	pb += yylloc->beg_pos.column;
 	if (pb > pt) pb = pt;
     }
     if (pb < ptr) pb = ptr;
     if (len <= 4 && yylloc->beg_pos.lineno == yylloc->end_pos.lineno) {
-	compile_error(p, "%s", msg);
+	return;
     }
-    else if (!p->error_buffer && rb_stderr_tty_p()) {
+    if (RTEST(errbuf)) {
+	mesg = rb_attr_get(errbuf, idMesg);
+	if (RSTRING_LEN(mesg) > 0 && *(RSTRING_END(mesg)-1) != '\n')
+	    rb_str_cat_cstr(mesg, "\n");
+    }
+    else {
+	mesg = rb_enc_str_new(0, 0, rb_enc_get(str));
+    }
+    if (!errbuf && rb_stderr_tty_p()) {
 #define CSI_BEGIN "\033["
 #define CSI_SGR "m"
-	compile_error(p, "%s\n"
-		      CSI_BEGIN""CSI_SGR"%s" /* pre */
-		      CSI_BEGIN"1"CSI_SGR"%.*s"
-		      CSI_BEGIN"1;4"CSI_SGR"%.*s"
-		      CSI_BEGIN";1"CSI_SGR"%.*s"
-		      CSI_BEGIN""CSI_SGR"%s" /* post */,
-		      msg, pre,
-		      (int)(pb - ptr), ptr,
-		      (int)(pt - pb), pb,
-		      (int)(ptr_end - pt), pt,
-		      post);
+	rb_str_catf(mesg,
+		    CSI_BEGIN""CSI_SGR"%s" /* pre */
+		    CSI_BEGIN"1"CSI_SGR"%.*s"
+		    CSI_BEGIN"1;4"CSI_SGR"%.*s"
+		    CSI_BEGIN";1"CSI_SGR"%.*s"
+		    CSI_BEGIN""CSI_SGR"%s" /* post */
+		    "\n",
+		    pre,
+		    (int)(pb - ptr), ptr,
+		    (int)(pt - pb), pb,
+		    (int)(ptr_end - pt), pt,
+		    post);
     }
     else {
 	char *p2;
@@ -4761,18 +4790,27 @@ parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
 	    p2 += (lim - ptr);
 	}
 	*p2 = '\0';
-	compile_error(p, "%s\n""%s%.*s%s\n""%s%s",
-		      msg,
-		      pre, (int)len, code, post,
-		      pre, caret);
+	rb_str_catf(mesg, "%s%.*s%s\n""%s%s",
+		    pre, (int)len, code, post,
+		    pre, caret);
     }
+    if (!errbuf) rb_write_error_str(mesg);
+}
 #else
+static int
+parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
+{
     dispatch1(parse_error, STR_NEW2(msg));
     ripper_error(p);
     token_flush(p);
-#endif /* !RIPPER */
     return 0;
 }
+
+static inline void
+parser_show_error_line(struct parser_params *p, const YYLTYPE *yylloc)
+{
+}
+#endif /* !RIPPER */
 
 static int
 vtable_size(const struct vtable *tbl)
@@ -5636,17 +5674,11 @@ regx_options(struct parser_params *p)
     options |= kopt;
     pushback(p, c);
     if (toklen(p)) {
-	static const char mesg[] = "unknown regexp options";
-	static const char sep[] = " - ";
-	const int mlen = (int)(sizeof(mesg) - 1 - (toklen(p) == 1));
-	const int seplen = (int)(sizeof(sep) - 1);
 	YYLTYPE loc = RUBY_INIT_YYLLOC();
 	tokfix(p);
-	tokspace(p, toklen(p) + mlen + seplen);
-	memmove(tok(p) + mlen + seplen, tok(p), toklen(p) + 1);
-	memcpy(tok(p), mesg, mlen);
-	memcpy(tok(p) + mlen, sep, seplen);
-	yyerror1(&loc, tok(p));
+	compile_error(p, "unknown regexp option%s - %*s",
+		      toklen(p) > 1 ? "s" : "", toklen(p), tok(p));
+	parser_show_error_line(p, &loc);
     }
     return options | RE_OPTION_ENCODING(kcode);
 }
