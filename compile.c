@@ -4773,6 +4773,22 @@ add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return)
     ADD_SEQ(ret, ensure);
 }
 
+static int
+check_keyword(const NODE *node)
+{
+    /* This check is essentially a code clone of compile_keyword_arg. */
+
+    if (nd_type(node) == NODE_ARRAY) {
+        while (node->nd_next) {
+            node = node->nd_next;
+        }
+        node = node->nd_head;
+    }
+
+    if (nd_type(node) == NODE_HASH && !node->nd_alen) return TRUE;
+    return FALSE;
+}
+
 static VALUE
 setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                 int dup_rest, unsigned int *flag, struct rb_call_info_kw_arg **keywords)
@@ -4792,8 +4808,9 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
             COMPILE(args, "args (cat: splat)", argn->nd_body);
             if (flag) {
                 *flag |= VM_CALL_ARGS_SPLAT;
-                if (nd_type(argn->nd_body) == NODE_HASH)
-                    /* bug: https://bugs.ruby-lang.org/issues/10856#change-77095 */
+                /* This is a dirty hack.  It traverses the AST twice.
+                 * In a long term, it should be fixed by a redesign of keyword arguments */
+                if (check_keyword(argn->nd_body))
                     *flag |= VM_CALL_KW_SPLAT;
             }
             if (nd_type(argn) == NODE_ARGSCAT) {
