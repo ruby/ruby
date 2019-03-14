@@ -322,21 +322,36 @@ class Logger
   # +DEBUG+ messages.
   def debug?; @level <= DEBUG; end
 
+  # Sets the severity to DEBUG.
+  def debug!; self.level = DEBUG; end
+
   # Returns +true+ iff the current severity level allows for the printing of
   # +INFO+ messages.
   def info?; @level <= INFO; end
+
+  # Sets the severity to INFO.
+  def info!; self.level = INFO; end
 
   # Returns +true+ iff the current severity level allows for the printing of
   # +WARN+ messages.
   def warn?; @level <= WARN; end
 
+  # Sets the severity to WARN.
+  def warn!; self.level = WARN; end
+
   # Returns +true+ iff the current severity level allows for the printing of
   # +ERROR+ messages.
   def error?; @level <= ERROR; end
 
+  # Sets the severity to ERROR.
+  def error!; self.level = ERROR; end
+
   # Returns +true+ iff the current severity level allows for the printing of
   # +FATAL+ messages.
   def fatal?; @level <= FATAL; end
+
+  # Sets the severity to FATAL.
+  def fatal!; self.level = FATAL; end
 
   #
   # :call-seq:
