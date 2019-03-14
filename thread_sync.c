@@ -1314,6 +1314,7 @@ condvar_ptr(VALUE self)
 
     /* forked children can't reach into parent thread stacks */
     if (cv->fork_gen != fork_gen) {
+        cv->fork_gen = fork_gen;
         list_head_init(&cv->waitq);
     }
 
