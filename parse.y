@@ -7596,7 +7596,8 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 	tokadd(p, '@');
 	c = nextc(p);
     }
-    if (c == -1 || ISSPACE(c)) {
+    if (c == -1 || !parser_is_identchar(p)) {
+	pushback(p, c);
 	if (result == tIVAR) {
 	    compile_error(p, "`@' without identifiers is not allowed as an instance variable name");
 	}
@@ -7605,7 +7606,7 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 	}
 	return 0;
     }
-    else if (ISDIGIT(c) || !parser_is_identchar(p)) {
+    else if (ISDIGIT(c)) {
 	pushback(p, c);
 	if (result == tIVAR) {
 	    compile_error(p, "`@%c' is not allowed as an instance variable name", c);
