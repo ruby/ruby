@@ -456,9 +456,9 @@ revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
   end
   str = open(name, "rb") {|f| f.read}
   puts "* #{$colorize.pass(name)}"
-  puts "  SIZE:   #{str.bytesize} bytes"
+  puts "      SIZE:   #{str.bytesize} bytes"
   $digests.each do |alg|
-    printf "  %-8s%s\n", "#{alg}:", Digest.const_get(alg).hexdigest(str)
+    printf "      %-8s%s\n", "#{alg}:", Digest.const_get(alg).hexdigest(str)
   end
 end
 
