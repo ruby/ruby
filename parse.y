@@ -71,6 +71,11 @@
     rb_parser_set_location_of_none(p, &(Current))
 #define RUBY_SET_YYLLOC(Current)					\
     rb_parser_set_location(p, &(Current))
+#define RUBY_INIT_YYLLOC() \
+    { \
+	{p->ruby_sourceline, (int)(p->lex.ptok - p->lex.pbeg)}, \
+	{p->ruby_sourceline, (int)(p->lex.pcur - p->lex.pbeg)}, \
+    }
 
 enum lex_state_bits {
     EXPR_BEG_bit,		/* ignore newline, +/- is a sign. */
@@ -518,9 +523,9 @@ enum lex_state_e rb_parser_trace_lex_state(struct parser_params *, enum lex_stat
 VALUE rb_parser_lex_state_name(enum lex_state_e state);
 void rb_parser_show_bitstack(struct parser_params *, stack_type, const char *, int);
 PRINTF_ARGS(void rb_parser_fatal(struct parser_params *p, const char *fmt, ...), 2, 3);
-void rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_heredoc_t *here, YYLTYPE *yylloc);
-void rb_parser_set_location_of_none(struct parser_params *p, YYLTYPE *yylloc);
-void rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc);
+YYLTYPE *rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_heredoc_t *here, YYLTYPE *yylloc);
+YYLTYPE *rb_parser_set_location_of_none(struct parser_params *p, YYLTYPE *yylloc);
+YYLTYPE *rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc);
 RUBY_SYMBOL_EXPORT_END
 
 static void parser_token_value_print(struct parser_params *p, enum yytokentype type, const YYSTYPE *valp);
@@ -4674,8 +4679,7 @@ parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
     YYLTYPE current;
 
     if (!yylloc) {
-	RUBY_SET_YYLLOC(current);
-	yylloc = &current;
+	yylloc = RUBY_SET_YYLLOC(current);
 	token_flush(p);
     }
     else if ((p->ruby_sourceline != yylloc->beg_pos.lineno &&
@@ -5636,8 +5640,7 @@ regx_options(struct parser_params *p)
 	static const char sep[] = " - ";
 	const int mlen = (int)(sizeof(mesg) - 1 - (toklen(p) == 1));
 	const int seplen = (int)(sizeof(sep) - 1);
-	YYLTYPE loc;
-	RUBY_SET_YYLLOC(loc);
+	YYLTYPE loc = RUBY_INIT_YYLLOC();
 	tokfix(p);
 	tokspace(p, toklen(p) + mlen + seplen);
 	memmove(tok(p) + mlen + seplen, tok(p), toklen(p) + 1);
@@ -9159,7 +9162,7 @@ rb_parser_fatal(struct parser_params *p, const char *fmt, ...)
     p->debug = TRUE;
 }
 
-void
+YYLTYPE *
 rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_heredoc_t *here, YYLTYPE *yylloc)
 {
     const char *eos = RSTRING_PTR(here->term);
@@ -9169,24 +9172,27 @@ rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_
     yylloc->beg_pos.column = (int)(here->u3.lastidx - term_len);
     yylloc->end_pos.lineno = (int)here->sourceline;
     yylloc->end_pos.column = (int)(here->u3.lastidx);
+    return yylloc;
 }
 
-void
+YYLTYPE *
 rb_parser_set_location_of_none(struct parser_params *p, YYLTYPE *yylloc)
 {
     yylloc->beg_pos.lineno = p->ruby_sourceline;
     yylloc->beg_pos.column = (int)(p->lex.ptok - p->lex.pbeg);
     yylloc->end_pos.lineno = p->ruby_sourceline;
     yylloc->end_pos.column = (int)(p->lex.ptok - p->lex.pbeg);
+    return yylloc;
 }
 
-void
+YYLTYPE *
 rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc)
 {
     yylloc->beg_pos.lineno = p->ruby_sourceline;
     yylloc->beg_pos.column = (int)(p->lex.ptok - p->lex.pbeg);
     yylloc->end_pos.lineno = p->ruby_sourceline;
     yylloc->end_pos.column = (int)(p->lex.pcur - p->lex.pbeg);
+    return yylloc;
 }
 #endif /* !RIPPER */
 
