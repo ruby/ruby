@@ -518,6 +518,8 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(:ok, m.f(**o), '[ruby-core:68124] [Bug #10856]')
     a = []
     assert_equal(:ok, m.f(*a, **o), '[ruby-core:83638] [Bug #10856]')
+    assert_equal(:OK, m.f1(*a, :OK, **o), '[ruby-core:91825] [Bug #10856]')
+    assert_equal({}, m.f1(*a, o), '[ruby-core:91825] [Bug #10856]')
 
     o = {a: 42}
     assert_warning(/splat keyword/, 'splat to mandatory') do
