@@ -3869,7 +3869,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 
 static int
 compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_root,
-	           struct rb_call_info_kw_arg **keywords_ptr, unsigned int *flag)
+                   struct rb_call_info_kw_arg **keywords_ptr, unsigned int *flag)
 {
     const NODE *node = node_root;
     int len = 0;
@@ -3942,7 +3942,7 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
 
 static int
 compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_root,
-	      enum compile_array_type_t type, int popped)
+              enum compile_array_type_t type, int popped)
 {
     const NODE *node = node_root;
     int line = (int)nd_line(node);
@@ -3972,7 +3972,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 		    EXPECT_NODE("compile_array", node, NODE_ARRAY, -1);
 		}
 
-		if (type == COMPILE_ARRAY_TYPE_HASH && !node->nd_head) {
+                if (type == COMPILE_ARRAY_TYPE_HASH && !node->nd_head) {
 		    kw = node->nd_next;
 		    node = 0;
 		    if (kw) {
@@ -3989,7 +3989,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
                 COMPILE_(anchor, "array element", node->nd_head, popped);
 	    }
 
-	    if (opt_p) {
+            if (opt_p) {
 		if (!popped) {
 		    VALUE ary = rb_ary_tmp_new(i);
 
@@ -4850,7 +4850,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 		*flag |= VM_CALL_KW_SPLAT;
 
 	    if (next_is_array) {
-		int len = compile_args(iseq, args, argn->nd_head, NULL, flag);
+                int len = compile_args(iseq, args, argn->nd_head, NULL, flag);
 		if (len < 0) return Qnil;
 		argc = INT2FIX(len + 1);
 	    }
@@ -4862,7 +4862,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 	  }
 	  case NODE_ARRAY:
 	    {
-		int len = compile_args(iseq, args, argn, keywords, flag);
+                int len = compile_args(iseq, args, argn, keywords, flag);
 		if (len < 0) return Qnil;
 		argc = INT2FIX(len);
 		break;
@@ -6818,7 +6818,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	break;
       }
       case NODE_ARRAY:{
-	CHECK(compile_array(iseq, ret, node, COMPILE_ARRAY_TYPE_ARRAY, popped) >= 0);
+        CHECK(compile_array(iseq, ret, node, COMPILE_ARRAY_TYPE_ARRAY, popped) >= 0);
 	break;
       }
       case NODE_ZARRAY:{
@@ -6846,7 +6846,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	INIT_ANCHOR(list);
 	switch (type) {
 	  case NODE_ARRAY:
-	    CHECK(compile_array(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH, popped) >= 0);
+            CHECK(compile_array(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH, popped) >= 0);
 	    ADD_SEQ(ret, list);
 	    break;
 
