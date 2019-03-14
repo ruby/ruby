@@ -3815,7 +3815,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
 }
 
 static int
-compile_array_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
+compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 			  const NODE *const root_node,
 			  struct rb_call_info_kw_arg **const kw_arg_ptr,
 			  unsigned int *flag)
@@ -3867,10 +3867,33 @@ compile_array_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
     return FALSE;
 }
 
+static int
+compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_root,
+	           struct rb_call_info_kw_arg **keywords_ptr, unsigned int *flag)
+{
+    const NODE *node = node_root;
+    int len = 0;
+
+    for (; node; len++, node = node->nd_next) {
+        if (CPDEBUG > 0) {
+            EXPECT_NODE("compile_args", node, NODE_ARRAY, -1);
+        }
+
+        if (node->nd_next == NULL /* last node */ &&
+            compile_keyword_arg(iseq, ret, node->nd_head, keywords_ptr, flag)) {
+            len--;
+        }
+        else {
+            COMPILE_(ret, "array element", node->nd_head, FALSE);
+        }
+    }
+
+    return len;
+}
+
 enum compile_array_type_t {
     COMPILE_ARRAY_TYPE_ARRAY,
-    COMPILE_ARRAY_TYPE_HASH,
-    COMPILE_ARRAY_TYPE_ARGS
+    COMPILE_ARRAY_TYPE_HASH
 };
 
 static inline int
@@ -3919,8 +3942,7 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
 
 static int
 compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_root,
-	      enum compile_array_type_t type, struct rb_call_info_kw_arg **keywords_ptr,
-	      unsigned int *flag, int popped)
+	      enum compile_array_type_t type, int popped)
 {
     const NODE *node = node_root;
     int line = (int)nd_line(node);
@@ -3931,7 +3953,6 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 	    switch (type) {
 	      case COMPILE_ARRAY_TYPE_ARRAY: ADD_INSN1(ret, line, newarray, INT2FIX(0)); break;
 	      case COMPILE_ARRAY_TYPE_HASH: ADD_INSN1(ret, line, newhash, INT2FIX(0)); break;
-	      case COMPILE_ARRAY_TYPE_ARGS: /* do nothing */ break;
 	    }
 	}
     }
@@ -3951,7 +3972,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 		    EXPECT_NODE("compile_array", node, NODE_ARRAY, -1);
 		}
 
-		if (type != COMPILE_ARRAY_TYPE_ARRAY && !node->nd_head) {
+		if (type == COMPILE_ARRAY_TYPE_HASH && !node->nd_head) {
 		    kw = node->nd_next;
 		    node = 0;
 		    if (kw) {
@@ -3965,17 +3986,10 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 		    opt_p = 0;
 		}
 
-		if (type == COMPILE_ARRAY_TYPE_ARGS &&
-		    node->nd_next == NULL /* last node */ &&
-		    compile_array_keyword_arg(iseq, anchor, node->nd_head, keywords_ptr, flag)) {
-		    len--;
-		}
-		else {
-		    COMPILE_(anchor, "array element", node->nd_head, popped);
-		}
+                COMPILE_(anchor, "array element", node->nd_head, popped);
 	    }
 
-	    if (opt_p && type != COMPILE_ARRAY_TYPE_ARGS) {
+	    if (opt_p) {
 		if (!popped) {
 		    VALUE ary = rb_ary_tmp_new(i);
 
@@ -4076,9 +4090,6 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 			    }
 			}
 			first = 0;
-			break;
-		      case COMPILE_ARRAY_TYPE_ARGS:
-			APPEND_LIST(ret, anchor);
 			break;
 		    }
 		}
@@ -4839,7 +4850,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 		*flag |= VM_CALL_KW_SPLAT;
 
 	    if (next_is_array) {
-		int len = compile_array(iseq, args, argn->nd_head, COMPILE_ARRAY_TYPE_ARGS, NULL, flag, FALSE);
+		int len = compile_args(iseq, args, argn->nd_head, NULL, flag);
 		if (len < 0) return Qnil;
 		argc = INT2FIX(len + 1);
 	    }
@@ -4851,7 +4862,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 	  }
 	  case NODE_ARRAY:
 	    {
-		int len = compile_array(iseq, args, argn, COMPILE_ARRAY_TYPE_ARGS, keywords, flag, FALSE);
+		int len = compile_args(iseq, args, argn, keywords, flag);
 		if (len < 0) return Qnil;
 		argc = INT2FIX(len);
 		break;
@@ -6807,7 +6818,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	break;
       }
       case NODE_ARRAY:{
-	CHECK(compile_array(iseq, ret, node, COMPILE_ARRAY_TYPE_ARRAY, NULL, NULL, popped) >= 0);
+	CHECK(compile_array(iseq, ret, node, COMPILE_ARRAY_TYPE_ARRAY, popped) >= 0);
 	break;
       }
       case NODE_ZARRAY:{
@@ -6835,7 +6846,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	INIT_ANCHOR(list);
 	switch (type) {
 	  case NODE_ARRAY:
-	    CHECK(compile_array(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH, NULL, NULL, popped) >= 0);
+	    CHECK(compile_array(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH, popped) >= 0);
 	    ADD_SEQ(ret, list);
 	    break;
 
