@@ -77,7 +77,7 @@ for:
     - mkdir \usr\local\bin
     - mkdir \usr\local\include
     - mkdir \usr\local\lib
-    - curl -fsSL -o zlib%zlib_version:.=%.zip --retry 5 https://zlib.net/zlib%zlib_version:.=%.zip
+    - curl -fsSL -o zlib%zlib_version:.=%.zip --retry 10 https://zlib.net/zlib%zlib_version:.=%.zip
     - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib%zlib_version:.=%.zip
     - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
     - mkdir %Platform%-mswin_%vs%
