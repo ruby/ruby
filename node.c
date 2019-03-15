@@ -557,7 +557,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	return;
 
       case NODE_HASH:
-	if (!node->nd_brace) {
+        if (!node->nd_brace) {
 	    ANN("keyword arguments");
 	    ANN("format: nd_head");
 	    ANN("example: a: 1, b: 2");
@@ -567,8 +567,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	    ANN("format: { [nd_head] }");
 	    ANN("example: { 1 => 2, 3 => 4 }");
 	}
-	F_CUSTOM1(nd_brace, "keyword arguments or hash literal") {
-	    switch (node->nd_brace) {
+        F_CUSTOM1(nd_brace, "keyword arguments or hash literal") {
+            switch (node->nd_brace) {
 	      case 0: A("0 (keyword argument)"); break;
 	      case 1: A("1 (hash literal)"); break;
 	    }

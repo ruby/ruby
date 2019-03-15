@@ -3801,7 +3801,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 
 	    assert(nd_type(node) == NODE_ARRAY);
 	    if (!key_node) {
-		if (flag && !root_node->nd_brace) *flag |= VM_CALL_KW_SPLAT;
+                if (flag && !root_node->nd_brace) *flag |= VM_CALL_KW_SPLAT;
 		return FALSE;
 	    }
 	    else if (nd_type(key_node) == NODE_LIT && RB_TYPE_P(key_node->nd_lit, T_SYMBOL)) {
