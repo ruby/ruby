@@ -720,13 +720,15 @@ x = __ENCODING__
   end
 
   def test_invalid_instance_variable
-    assert_raise(SyntaxError) { eval('@#') }
-    assert_raise(SyntaxError) { eval('@') }
+    pattern = /without identifiers is not allowed as an instance variable name/
+    assert_raise_with_message(SyntaxError, pattern) { eval('@%') }
+    assert_raise_with_message(SyntaxError, pattern) { eval('@') }
   end
 
   def test_invalid_class_variable
-    assert_raise(SyntaxError) { eval('@@1') }
-    assert_raise(SyntaxError) { eval('@@') }
+    pattern = /without identifiers is not allowed as a class variable name/
+    assert_raise_with_message(SyntaxError, pattern) { eval('@@%') }
+    assert_raise_with_message(SyntaxError, pattern) { eval('@@') }
   end
 
   def test_invalid_char
