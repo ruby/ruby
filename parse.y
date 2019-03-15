@@ -7586,9 +7586,12 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 static enum yytokentype
 parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 {
+    const char *ptr = p->lex.pcur;
     enum yytokentype result = tIVAR;
     register int c = nextc(p);
+    YYLTYPE loc;
 
+    p->lex.ptok = ptr - 1; /* from '@' */
     newtok(p);
     tokadd(p, '@');
     if (c == '@') {
@@ -7598,15 +7601,18 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
     }
     if (c == -1 || !parser_is_identchar(p)) {
 	pushback(p, c);
+	RUBY_SET_YYLLOC(loc);
 	if (result == tIVAR) {
 	    compile_error(p, "`@' without identifiers is not allowed as an instance variable name");
 	}
 	else {
 	    compile_error(p, "`@@' without identifiers is not allowed as a class variable name");
 	}
+	parser_show_error_line(p, &loc);
 	return 0;
     }
     else if (ISDIGIT(c)) {
+	RUBY_SET_YYLLOC(loc);
 	pushback(p, c);
 	if (result == tIVAR) {
 	    compile_error(p, "`@%c' is not allowed as an instance variable name", c);
@@ -7614,6 +7620,7 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 	else {
 	    compile_error(p, "`@@%c' is not allowed as a class variable name", c);
 	}
+	parser_show_error_line(p, &loc);
 	return 0;
     }
 

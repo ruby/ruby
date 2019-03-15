@@ -246,7 +246,7 @@ class TestISeq < Test::Unit::TestCase
       end
     end
     assert_equal([m1, e1.message], [m2, e2.message], feature11951)
-    e1, e2 = e1.message.lines
+    e1, *, e2 = e1.message.lines
     assert_send([e1, :start_with?, __FILE__])
     assert_send([e2, :start_with?, __FILE__])
   end
