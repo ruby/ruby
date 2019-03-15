@@ -266,6 +266,8 @@ typedef struct RNode {
 #define nd_orig   u2.id
 #define nd_undef  u2.node
 
+#define nd_brace u2.argc
+
 #define NEW_NODE(t,a0,a1,a2,loc) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2),loc)
 
 #define NEW_DEFN(i,a,d,loc) NEW_NODE(NODE_DEFN,0,i,NEW_SCOPE(a,d,loc),loc)
