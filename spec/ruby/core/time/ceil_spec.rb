@@ -19,7 +19,7 @@ ruby_version_is "2.7" do
     end
 
     it "ceils to 4 decimal places with an explicit argument" do
-      @time.ceil(2).should == Time.utc(2010, 3, 30, 5, 43, "25.0124".to_r)
+      @time.ceil(4).should == Time.utc(2010, 3, 30, 5, 43, "25.0124".to_r)
     end
 
     it "ceils to 7 decimal places with an explicit argument" do
