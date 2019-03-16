@@ -17,36 +17,6 @@ environment:
       vs: 140
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
   GEMS_FOR_TEST: "timezone tzinfo"
-notifications:
-  - provider: Webhook
-    url:
-      secure: iMINHMS0nZabaDsxN9omRDsekxzVvAAzEq5ev7lN6vZ6r9zNhl3/F/7POIVyahAwVFpRDeQT/iUugpAGWmOt3eGL/lZIdqiJFZ9DjPSkP68= # #alerts
-    method: POST
-    # "icon_url" is the url used by `provider: Slack`
-    body: >-
-      {{^isPullRequest}}
-        {
-          "attachments": [
-            {
-              "title": "Build {{projectName}} {{buildVersion}} {{status}}",
-              "fallback": "AppVeyor Build {{projectName}} {{buildVersion}} {{status}}",
-              "title_link": "{{buildUrl}}",
-              "text": "Commit <{{commitUrl}}|{{commitId}}> by {{commitAuthor}} on {{commitDate}}: _{{commitMessage}}_",
-              {{#passed}}
-                "color": "#44ee44"
-              {{/passed}}
-              {{#failed}}
-                "color": "#ee4444"
-              {{/failed}}
-            }
-          ],
-          "icon_url": "https://slack-files2.s3-us-west-2.amazonaws.com/bot_icons/2018-02-10/314363543719_48.png",
-          "username": "AppVeyor CI"
-        }
-      {{/isPullRequest}}
-    on_build_success: false
-    on_build_failure: true
-    on_build_status_changed: true
 for:
 -
   matrix:
@@ -143,3 +113,49 @@ for:
     # separately execute tests without -j which may crash worker with -j.
     - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor" TESTS="../ruby/test/win32ole ../ruby/test/open-uri/test_open-uri.rb"
     - mingw32-make test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
+notifications:
+  # Using "Webhook" with templated body to skip notification on Pull Request
+  - provider: Webhook
+    method: POST
+    url:
+      secure: iMINHMS0nZabaDsxN9omRDsekxzVvAAzEq5ev7lN6vb+gUETT+rbDKLGxBxBpEpxlnPlLdzroIJ+DTKlwfJA8VkGawTn9EXNsucH0OkSf2M= # AppVeyor CI
+    body: >-
+      {{^isPullRequest}}
+        {
+          "attachments": [
+            {
+              "title": "Build {{projectName}} {{buildVersion}} {{status}}",
+              "title_link": "{{buildUrl}}",
+              "fallback": "AppVeyor Build {{projectName}} {{buildVersion}} {{status}}",
+              "color": "{{#passed}}#44ee44{{/passed}}{{#failed}}#ee4444{{/failed}}",
+              "text": "Commit <{{commitUrl}}|{{commitId}}> by {{commitAuthor}} on {{commitDate}}: _{{commitMessage}}_",
+            }
+          ],
+          "channel": "#alerts"
+        }
+      {{/isPullRequest}}
+    on_build_success: false
+    on_build_failure: true
+    on_build_status_changed: true
+  - provider: Webhook
+    method: POST
+    url:
+      secure: iMINHMS0nZabaDsxN9omRDsekxzVvAAzEq5ev7lN6vb+gUETT+rbDKLGxBxBpEpxlnPlLdzroIJ+DTKlwfJA8VkGawTn9EXNsucH0OkSf2M= # AppVeyor CI
+    body: >-
+      {{^isPullRequest}}
+        {
+          "attachments": [
+            {
+              "title": "Build {{projectName}} {{buildVersion}} {{status}}",
+              "title_link": "{{buildUrl}}",
+              "fallback": "AppVeyor Build {{projectName}} {{buildVersion}} {{status}}",
+              "color": "{{#passed}}#44ee44{{/passed}}{{#failed}}#ee4444{{/failed}}",
+              "text": "Commit <{{commitUrl}}|{{commitId}}> by {{commitAuthor}} on {{commitDate}}: _{{commitMessage}}_",
+            }
+          ],
+          "channel": "#commits"
+        }
+      {{/isPullRequest}}
+    on_build_success: false
+    on_build_failure: true
+    on_build_status_changed: true
