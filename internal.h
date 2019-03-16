@@ -1251,7 +1251,7 @@ VALUE rb_gvar_defined(struct rb_global_entry *);
 #define RARY_TRANSIENT_UNSET(ary) ((void)0)
 #endif
 
-
+void rb_ary_shrink_capa(VALUE);
 VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
 void rb_ary_delete_same(VALUE, VALUE);

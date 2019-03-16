@@ -752,6 +752,14 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 	encoded[i] = (VALUE)table[insn];
 	i += len;
     }
+
+    // Exact fit resize mark array capacity on iseq translation
+    if (FL_TEST_RAW(iseq, ISEQ_USE_COMPILE_DATA)) {
+        const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
+        if (compile_data->mark_ary != Qnil) {
+            rb_ary_shrink_capa(compile_data->mark_ary);
+        }
+    }
     FL_SET(iseq, ISEQ_TRANSLATED);
 #endif
     return COMPILE_OK;
