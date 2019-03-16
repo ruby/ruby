@@ -983,7 +983,7 @@ update_char_offset(VALUE match)
     rb_encoding *enc;
     pair_t *pairs;
 
-    if (rm->char_offset_updated)
+    if (rm->char_offset_num_allocated)
         return;
 
     regs = &rm->regs;
@@ -1000,7 +1000,6 @@ update_char_offset(VALUE match)
             rm->char_offset[i].beg = BEG(i);
             rm->char_offset[i].end = END(i);
         }
-        rm->char_offset_updated = 1;
         return;
     }
 
@@ -1039,8 +1038,6 @@ update_char_offset(VALUE match)
         found = bsearch(&key, pairs, num_pos, sizeof(pair_t), pair_byte_cmp);
         rm->char_offset[i].end = found->char_pos;
     }
-
-    rm->char_offset_updated = 1;
 }
 
 static void
@@ -1066,17 +1063,13 @@ match_init_copy(VALUE obj, VALUE orig)
     if (rb_reg_region_copy(&rm->regs, RMATCH_REGS(orig)))
 	rb_memerror();
 
-    if (!RMATCH(orig)->rmatch->char_offset_updated) {
-        rm->char_offset_updated = 0;
-    }
-    else {
+    if (RMATCH(orig)->rmatch->char_offset_num_allocated) {
         if (rm->char_offset_num_allocated < rm->regs.num_regs) {
             REALLOC_N(rm->char_offset, struct rmatch_offset, rm->regs.num_regs);
             rm->char_offset_num_allocated = rm->regs.num_regs;
         }
         MEMCPY(rm->char_offset, RMATCH(orig)->rmatch->char_offset,
                struct rmatch_offset, rm->regs.num_regs);
-        rm->char_offset_updated = 1;
 	RB_GC_GUARD(orig);
     }
 
@@ -1337,7 +1330,6 @@ match_set_string(VALUE m, VALUE string, long pos, long len)
     onig_region_resize(&rmatch->regs, 1);
     rmatch->regs.beg[0] = pos;
     rmatch->regs.end[0] = pos + len;
-    rmatch->char_offset_updated = 0;
     OBJ_INFECT(match, string);
 }
 
@@ -1612,7 +1604,6 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
     }
 
     RMATCH(match)->regexp = re;
-    RMATCH(match)->rmatch->char_offset_updated = 0;
     rb_backref_set(match);
 
     OBJ_INFECT(match, re);
@@ -1695,7 +1686,6 @@ rb_reg_start_with_p(VALUE re, VALUE str)
     OBJ_INFECT(match, str);
 
     RMATCH(match)->regexp = re;
-    RMATCH(match)->rmatch->char_offset_updated = 0;
     rb_backref_set(match);
 
     OBJ_INFECT(match, re);
