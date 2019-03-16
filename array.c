@@ -635,6 +635,8 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 VALUE
 rb_ary_freeze(VALUE ary)
 {
+    if (OBJ_FROZEN(ary)) return ary;
+    rb_ary_shrink_capa(ary);
     return rb_obj_freeze(ary);
 }
 
