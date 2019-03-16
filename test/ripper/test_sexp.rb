@@ -132,4 +132,12 @@ eot
       end
     end
   end
+
+  def test_dsym
+    bug15670 = '[ruby-core:91852]'
+    _, (_, _, s) = Ripper.sexp_raw(%q{:"sym"})
+    assert_equal([:dyna_symbol, [:string_add, [:string_content], [:@tstring_content, "sym", [1, 2]]]],
+                 s,
+                 bug15670)
+  end
 end if ripper_test
