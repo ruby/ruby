@@ -75,7 +75,7 @@ profile.rb, Profiler__::
 
 JIT::
 
-  * Defalut value of --jit-max-cache is changed from 1,000 to 100
+  * Default value of --jit-max-cache is changed from 1,000 to 100
 
   * Default value of --jit-min-calls is changed from 5 to 10,000
 
