@@ -570,7 +570,7 @@ system_tmpdir(void)
 // A default threshold used to add iseq to JIT.
 #define DEFAULT_MIN_CALLS_TO_ADD 10000
 
-/* Start MJIT worker. Return TRUE if worker is sucessfully started. */
+/* Start MJIT worker. Return TRUE if worker is successfully started. */
 static bool
 start_worker(void)
 {
@@ -592,7 +592,7 @@ start_worker(void)
 
 /* Initialize MJIT.  Start a thread creating the precompiled header and
    processing ISeqs.  The function should be called first for using MJIT.
-   If everything is successfull, MJIT_INIT_P will be TRUE.  */
+   If everything is successful, MJIT_INIT_P will be TRUE.  */
 void
 mjit_init(struct mjit_options *opts)
 {
