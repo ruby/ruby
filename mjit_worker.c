@@ -382,7 +382,7 @@ clean_object_files(struct rb_mjit_unit *unit)
 
    `jit_func` value does not matter for 1 and 3 since the unit won't be used anymore.
    For the situation 2, this sets the ISeq's JIT state to NOT_COMPILED_JIT_ISEQ_FUNC
-   to prevent the situation that the same methods are continously compiled.  */
+   to prevent the situation that the same methods are continuously compiled.  */
 static void
 free_unit(struct rb_mjit_unit *unit)
 {
