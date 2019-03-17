@@ -563,13 +563,12 @@ system_tmpdir(void)
 # undef RETURN_ENV
 }
 
-/* Default permitted number of units with a JIT code kept in
-   memory.  */
-#define DEFAULT_CACHE_SIZE 1000
-/* A default threshold used to add iseq to JIT. */
-#define DEFAULT_MIN_CALLS_TO_ADD 5
-/* Minimum value for JIT cache size.  */
+// Minimum value for JIT cache size.
 #define MIN_CACHE_SIZE 10
+// Default permitted number of units with a JIT code kept in memory.
+#define DEFAULT_MAX_CACHE_SIZE 100
+// A default threshold used to add iseq to JIT.
+#define DEFAULT_MIN_CALLS_TO_ADD 10000
 
 /* Start MJIT worker. Return TRUE if worker is sucessfully started. */
 static bool
@@ -605,7 +604,7 @@ mjit_init(struct mjit_options *opts)
     if (mjit_opts.min_calls == 0)
         mjit_opts.min_calls = DEFAULT_MIN_CALLS_TO_ADD;
     if (mjit_opts.max_cache_size <= 0)
-        mjit_opts.max_cache_size = DEFAULT_CACHE_SIZE;
+        mjit_opts.max_cache_size = DEFAULT_MAX_CACHE_SIZE;
     if (mjit_opts.max_cache_size < MIN_CACHE_SIZE)
         mjit_opts.max_cache_size = MIN_CACHE_SIZE;
 
