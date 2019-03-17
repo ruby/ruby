@@ -767,20 +767,21 @@ typedef struct re_pattern_buffer {
 
   OnigOptionType    options;
 
+  OnigCaseFoldType  case_fold_flag;
+
   OnigRepeatRange* repeat_range;
 
   OnigEncoding      enc;
   const OnigSyntaxType* syntax;
   void*             name_table;
-  OnigCaseFoldType  case_fold_flag;
 
   /* optimization info (string search, char-map and anchors) */
   int            optimize;          /* optimize flag */
   int            threshold_len;     /* search str-length for apply optimize */
   int            anchor;            /* BEGIN_BUF, BEGIN_POS, (SEMI_)END_BUF */
+  int            sub_anchor;        /* start-anchor for exact or map */
   OnigDistance   anchor_dmin;       /* (SEMI_)END_BUF anchor distance */
   OnigDistance   anchor_dmax;       /* (SEMI_)END_BUF anchor distance */
-  int            sub_anchor;        /* start-anchor for exact or map */
   unsigned char *exact;
   unsigned char *exact_end;
   unsigned char  map[ONIG_CHAR_TABLE_SIZE]; /* used as BM skip or char-map */
