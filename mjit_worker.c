@@ -986,7 +986,7 @@ compile_prelude(FILE *f)
 /* Compile ISeq in UNIT and return function pointer of JIT-ed code.
    It may return NOT_COMPILED_JIT_ISEQ_FUNC if something went wrong. */
 static mjit_func_t
-convert_unit_to_func(struct rb_mjit_unit *unit, struct rb_call_cache *cc_entries, union iseq_inline_storage_entry *is_entries)
+convert_unit_to_func(struct rb_mjit_unit *unit)
 {
     char c_file_buff[MAXPATHLEN], *c_file = c_file_buff, *so_file, funcname[35]; /* TODO: reconsider `35` */
     int fd;
@@ -1067,7 +1067,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit, struct rb_call_cache *cc_entries
         verbose(2, "start compilation: %s@%s:%d -> %s", label, path, lineno, c_file);
         fprintf(f, "/* %s@%s:%d */\n\n", label, path, lineno);
     }
-    bool success = mjit_compile(f, unit->iseq->body, funcname, cc_entries, is_entries);
+    bool success = mjit_compile(f, unit->iseq, funcname);
 
     /* release blocking mjit_gc_start_hook */
     CRITICAL_SECTION_START(3, "after mjit_compile to wakeup client for GC");
@@ -1146,14 +1146,14 @@ int rb_workqueue_register(unsigned flags, rb_postponed_job_func_t , void *);
 //
 // We're lazily copying cache values from main thread because these cache values
 // could be different between ones on enqueue timing and ones on dequeue timing.
-static bool
-copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache **cc_entries, union iseq_inline_storage_entry **is_entries)
+bool
+mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache **cc_entries, union iseq_inline_storage_entry **is_entries)
 {
     mjit_copy_job_t *job = &mjit_copy_job; // just a short hand
 
-    CRITICAL_SECTION_START(3, "in copy_cache_from_main_thread");
+    CRITICAL_SECTION_START(3, "in mjit_copy_cache_from_main_thread");
     job->finish_p = true; // disable dispatching this job in mjit_copy_job_handler while it's being modified
-    CRITICAL_SECTION_FINISH(3, "in copy_cache_from_main_thread");
+    CRITICAL_SECTION_FINISH(3, "in mjit_copy_cache_from_main_thread");
 
     const struct rb_iseq_constant_body *body = iseq->body;
     job->cc_entries = NULL;
@@ -1170,10 +1170,10 @@ copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache **cc_ent
         return true;
     }
 
-    CRITICAL_SECTION_START(3, "in copy_cache_from_main_thread");
+    CRITICAL_SECTION_START(3, "in mjit_copy_cache_from_main_thread");
     job->iseq = iseq; // Prevernt GC of this ISeq from here
     job->finish_p = false; // allow dispatching this job in mjit_copy_job_handler
-    CRITICAL_SECTION_FINISH(3, "in copy_cache_from_main_thread");
+    CRITICAL_SECTION_FINISH(3, "in mjit_copy_cache_from_main_thread");
 
     if (UNLIKELY(mjit_opts.wait)) {
         mjit_copy_job_handler((void *)job);
@@ -1194,12 +1194,12 @@ copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache **cc_ent
     *is_entries = job->is_entries;
 
     bool result = job->finish_p;
-    CRITICAL_SECTION_START(3, "in copy_cache_from_main_thread");
-    job->iseq = NULL; // Skip `mjit_mark`-ing this ISeq to allow GC
+    CRITICAL_SECTION_START(3, "in mjit_copy_cache_from_main_thread");
+    job->iseq = NULL; // Allow GC of this ISeq from here
     // Disable dispatching this job in mjit_copy_job_handler while memory allocated by alloca
     // could be expired after finishing this function.
     job->finish_p = true;
-    CRITICAL_SECTION_FINISH(3, "in copy_cache_from_main_thread");
+    CRITICAL_SECTION_FINISH(3, "in mjit_copy_cache_from_main_thread");
     return result;
 }
 
@@ -1238,16 +1238,13 @@ mjit_worker(void)
         CRITICAL_SECTION_FINISH(3, "in worker dequeue");
 
         if (unit) {
-            struct rb_call_cache *cc_entries;
-            union iseq_inline_storage_entry *is_entries;
-
-            // Copy mutable values from main threads
-            if (copy_cache_from_main_thread(unit->iseq, &cc_entries, &is_entries) == false) {
-                continue; // retry postponed_job failure, or stop worker
-            }
-
             // JIT compile
-            mjit_func_t func = convert_unit_to_func(unit, cc_entries, is_entries);
+            mjit_func_t func = convert_unit_to_func(unit);
+
+            // `mjit_copy_cache_from_main_thread` in `mjit_compile` may wait for a long time
+            // and worker may be stopped during the compilation.
+            if (stop_worker_p)
+                break;
 
             CRITICAL_SECTION_START(3, "in jit func replace");
             while (in_gc) { /* Make sure we're not GC-ing when touching ISeq */
