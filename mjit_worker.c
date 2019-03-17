@@ -1126,7 +1126,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit, struct rb_call_cache *cc_entries
 }
 
 typedef struct {
-    struct rb_mjit_unit *unit;
+    const rb_iseq_t *iseq;
     struct rb_call_cache *cc_entries;
     union iseq_inline_storage_entry *is_entries;
     bool finish_p;
@@ -1134,7 +1134,7 @@ typedef struct {
 
 /* Singleton MJIT copy job. This is made global since it needs to be durable even when MJIT worker thread is stopped.
    (ex: register job -> MJIT pause -> MJIT resume -> dispatch job. Actually this should be just cancelled by finish_p check) */
-static mjit_copy_job_t mjit_copy_job;
+static mjit_copy_job_t mjit_copy_job = { .iseq = NULL, .finish_p = true };
 
 static void mjit_copy_job_handler(void *data);
 
@@ -1204,14 +1204,12 @@ mjit_worker(void)
             verbose(3, "Getting wakeup from client");
         }
         unit = get_from_list(&unit_queue);
+        if (unit) job->iseq = unit->iseq;
         job->finish_p = true; // disable dispatching this job in mjit_copy_job_handler while it's being modified
         CRITICAL_SECTION_FINISH(3, "in worker dequeue");
 
         if (unit) {
-            mjit_func_t func;
             const struct rb_iseq_constant_body *body = unit->iseq->body;
-
-            job->unit = unit;
             job->cc_entries = NULL;
             if (body->ci_size > 0 || body->ci_kw_size > 0)
                 job->cc_entries = alloca(sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size));
@@ -1226,8 +1224,8 @@ mjit_worker(void)
                 }
             }
 
-            /* JIT compile */
-            func = convert_unit_to_func(unit, job->cc_entries, job->is_entries);
+            // JIT compile
+            mjit_func_t func = convert_unit_to_func(unit, job->cc_entries, job->is_entries);
 
             CRITICAL_SECTION_START(3, "in jit func replace");
             while (in_gc) { /* Make sure we're not GC-ing when touching ISeq */

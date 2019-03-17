@@ -25,22 +25,21 @@ static void
 mjit_copy_job_handler(void *data)
 {
     mjit_copy_job_t *job = data;
-    const struct rb_iseq_constant_body *body;
     if (stop_worker_p) { /* check if mutex is still alive, before calling CRITICAL_SECTION_START. */
         return;
     }
 
     CRITICAL_SECTION_START(3, "in mjit_copy_job_handler");
-    /* Make sure that this job is never executed when:
-       1. job is being modified
-       2. alloca memory inside job is expired
-       3. ISeq is GC-ed */
-    if (job->finish_p || job->unit->iseq == NULL) {
+    // Make sure that this job is never executed when:
+    //   1. job is being modified
+    //   2. alloca memory inside job is expired
+    // Note that job->iseq is guarded from GC by `mjit_mark`.
+    if (job->finish_p) {
         CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
         return;
     }
 
-    body = job->unit->iseq->body;
+    const struct rb_iseq_constant_body *body = job->iseq->body;
     if (job->cc_entries) {
         memcpy(job->cc_entries, body->cc_entries, sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size));
     }
@@ -828,14 +827,23 @@ mjit_finish(bool close_handle_p)
 void
 mjit_mark(void)
 {
-    struct rb_mjit_unit *unit = 0;
     if (!mjit_enabled)
         return;
     RUBY_MARK_ENTER("mjit");
+
+    CRITICAL_SECTION_START(4, "mjit_mark");
+    VALUE iseq = (VALUE)mjit_copy_job.iseq;
+    CRITICAL_SECTION_FINISH(4, "mjit_mark");
+
+    // Don't wrap critical section with this. This may trigger GC,
+    // and in that case mjit_gc_start_hook causes deadlock.
+    if (iseq) rb_gc_mark(iseq);
+
+    struct rb_mjit_unit *unit = NULL;
     CRITICAL_SECTION_START(4, "mjit_mark");
     list_for_each(&unit_queue.head, unit, unode) {
         if (unit->iseq) { /* ISeq is still not GCed */
-            VALUE iseq = (VALUE)unit->iseq;
+            iseq = (VALUE)unit->iseq;
             CRITICAL_SECTION_FINISH(4, "mjit_mark rb_gc_mark");
 
             /* Don't wrap critical section with this. This may trigger GC,
@@ -846,6 +854,7 @@ mjit_mark(void)
         }
     }
     CRITICAL_SECTION_FINISH(4, "mjit_mark");
+
     RUBY_MARK_LEAVE("mjit");
 }
 
