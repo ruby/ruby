@@ -287,8 +287,8 @@ usage(const char *name, int help)
         M("--jit-wait",          "", "Wait until JIT compilation is finished everytime (for testing)"),
         M("--jit-save-temps",    "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
         M("--jit-verbose=num",   "", "Print JIT logs of level num or less to stderr (default: 0)"),
-        M("--jit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 1000)"),
-        M("--jit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 5)"),
+        M("--jit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 100)"),
+        M("--jit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 10000)"),
     };
     int i;
     const int num = numberof(usage_msg) - (help ? 1 : 0);
