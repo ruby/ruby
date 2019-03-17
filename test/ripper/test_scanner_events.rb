@@ -259,6 +259,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('embvar', '"#@ivar"')
     assert_equal ['#'],
                  scan('embvar', '"#@@cvar"')
+    assert_equal ['#'],
+                 scan('embvar', '"#@1"')
     assert_equal [],
                  scan('embvar', '"#lvar"')
     assert_equal [],
@@ -346,6 +348,13 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('ivar', '@IVAR')
     assert_equal ['@ivar'],
                  scan('ivar', 'm(lvar, @ivar, @@cvar, $gvar)')
+  end
+
+  def test_tnumparam
+    assert_equal [],
+                 scan('tnumparam', '')
+    assert_equal ['@1'],
+                 scan('tnumparam', 'proc {@1}')
   end
 
   def test_kw
@@ -742,6 +751,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_equal [" E\n\n"],
                  scan('tstring_content', "<<""'E'\n E\n\n"),
                  bug10392
+                 scan('tstring_content', "tap{<<""EOS}\n""there\n""heredoc\#@1xxx\nEOS")
   end
 
   def test_heredoc_end

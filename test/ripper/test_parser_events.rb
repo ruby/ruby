@@ -812,6 +812,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_next
   end
 
+  def test_number_arg
+    thru_number_arg = false
+    parse('proc {@1}', :on_number_arg) {thru_number_arg = true}
+    assert_equal true, thru_number_arg
+  end
+
   def test_opassign
     thru_opassign = false
     tree = parse('a += b', :on_opassign) {thru_opassign = true}
@@ -1477,8 +1483,11 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("unterminated regexp meets end of file", compile_error('/'))
   end
 
+  def test_invalid_numbered_parameter_name
+    assert_equal("leading zero is not allowed as a numbered parameter", compile_error('proc{@0}'))
+  end
+
   def test_invalid_instance_variable_name
-    assert_equal("`@1' is not allowed as an instance variable name", compile_error('@1'))
     assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@%'))
     assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@'))
   end

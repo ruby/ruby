@@ -25,6 +25,9 @@ sufficient information, see the ChangeLog file or Redmine
 * Non-Symbol keys in a keyword arguments hash was prohibited at 2.6.0, but
   now allowed again.  [Bug #15658]
 
+* Numbered parameter as the default block parameter is introduced as an
+  experimental feature.  [Feature #4475]
+
 === Core classes updates (outstanding ones only)
 
 Enumerable::

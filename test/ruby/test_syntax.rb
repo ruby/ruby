@@ -1291,6 +1291,19 @@ eom
     assert_valid_syntax('obj::foo (1) {}')
   end
 
+  def test_numbered_parameter
+    assert_valid_syntax('proc {@1}')
+    assert_equal(3, eval('[1,2].then {@1+@2}'))
+    assert_equal("12", eval('[1,2].then {"#@1#@2"}'))
+    assert_syntax_error('proc {|| @1}', /ordinary parameter is defined/)
+    assert_syntax_error('proc {|x| @1}', /ordinary parameter is defined/)
+    assert_syntax_error('proc {@1 = nil}', /Can't assign to numbered parameter @1/)
+    assert_syntax_error('proc {@01}', /leading zero/)
+    assert_syntax_error('proc {@1_}', /unexpected/)
+    assert_syntax_error('proc {@9999999999999999}', /too large/)
+    assert_syntax_error('@1', /outside block/)
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
