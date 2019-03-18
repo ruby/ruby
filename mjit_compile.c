@@ -196,14 +196,10 @@ compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct
     fprintf(f, "    return Qundef;\n");
 }
 
-extern bool mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache **cc_entries, union iseq_inline_storage_entry **is_entries);
-
 // Compile ISeq to C code in `f`. It returns true if it succeeds to compile.
 bool
-mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
+mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *funcname, struct rb_call_cache *cc_entries, union iseq_inline_storage_entry *is_entries)
 {
-    const struct rb_iseq_constant_body *body = iseq->body;
-
     struct compile_status status;
     status.success = true;
     status.local_stack_p = !body->catch_except_p;
@@ -211,8 +207,8 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
     if (status.stack_size_for_pos == NULL)
         return false;
     memset(status.stack_size_for_pos, NOT_COMPILED_STACK_SIZE, sizeof(int) * body->iseq_size);
-    if (mjit_copy_cache_from_main_thread(iseq, &status.cc_entries, &status.is_entries) == false)
-        return false;
+    status.cc_entries = cc_entries;
+    status.is_entries = is_entries;
 
     /* For performance, we verify stack size only on compilation time (mjit_compile.inc.erb) without --jit-debug */
     if (!mjit_opts.debug) {
