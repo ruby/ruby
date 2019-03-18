@@ -1141,13 +1141,14 @@ static void mjit_copy_job_handler(void *data);
 /* vm_trace.c */
 int rb_workqueue_register(unsigned flags, rb_postponed_job_func_t , void *);
 
-// Copy inline cache values of `iseq` to `*cc_entries` and `*is_entries`.
+// Copy inline cache values of `iseq` to `cc_entries` and `is_entries`.
+// These buffers should be pre-allocated properly prior to calling this function.
 // Return true if copy succeeds or is not needed.
 //
 // We're lazily copying cache values from main thread because these cache values
 // could be different between ones on enqueue timing and ones on dequeue timing.
 bool
-mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache **cc_entries, union iseq_inline_storage_entry **is_entries)
+mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache *cc_entries, union iseq_inline_storage_entry *is_entries)
 {
     mjit_copy_job_t *job = &mjit_copy_job; // just a short hand
 
@@ -1155,30 +1156,15 @@ mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache **c
     job->finish_p = true; // disable dispatching this job in mjit_copy_job_handler while it's being modified
     CRITICAL_SECTION_FINISH(3, "in mjit_copy_cache_from_main_thread");
 
-    const struct rb_iseq_constant_body *body = iseq->body;
-    job->cc_entries = NULL;
-    if (body->ci_size > 0 || body->ci_kw_size > 0) {
-        job->cc_entries = malloc(sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size));
-        if (!job->cc_entries) return false;
-    }
-    job->is_entries = NULL;
-    if (body->is_size > 0) {
-        job->is_entries = malloc(sizeof(union iseq_inline_storage_entry) * body->is_size);
-        if (!job->is_entries) {
-            free(job->cc_entries);
-            return false;
-        }
-    }
-
-    // If ISeq has no inline cache, there's no need to run a copy job.
-    if (job->cc_entries == NULL && job->is_entries == NULL) {
-        *cc_entries = job->cc_entries;
-        *is_entries = job->is_entries;
-        return true;
-    }
+    job->cc_entries = cc_entries;
+    job->is_entries = is_entries;
 
     CRITICAL_SECTION_START(3, "in mjit_copy_cache_from_main_thread");
     job->iseq = iseq; // Prevernt GC of this ISeq from here
+    VM_ASSERT(in_jit);
+    in_jit = false; // To avoid deadlock, allow running GC while waiting for copy job
+    rb_native_cond_signal(&mjit_client_wakeup); // Unblock main thread waiting in `mjit_gc_start_hook`
+
     job->finish_p = false; // allow dispatching this job in mjit_copy_job_handler
     CRITICAL_SECTION_FINISH(3, "in mjit_copy_cache_from_main_thread");
 
@@ -1196,16 +1182,14 @@ mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache **c
         CRITICAL_SECTION_FINISH(3, "in MJIT copy job wait");
     }
 
-    // Set result values.
-    *cc_entries = job->cc_entries;
-    *is_entries = job->is_entries;
-
-    bool result = job->finish_p;
     CRITICAL_SECTION_START(3, "in mjit_copy_cache_from_main_thread");
-    job->iseq = NULL; // Allow GC of this ISeq from here
+    bool result = job->finish_p;
     // Disable dispatching this job in mjit_copy_job_handler while memory allocated by alloca
     // could be expired after finishing this function.
     job->finish_p = true;
+
+    in_jit = true; // Prohibit GC during JIT compilation
+    job->iseq = NULL; // Allow future GC of this ISeq from here
     CRITICAL_SECTION_FINISH(3, "in mjit_copy_cache_from_main_thread");
     return result;
 }

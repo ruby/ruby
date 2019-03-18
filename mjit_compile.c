@@ -196,7 +196,7 @@ compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct
     fprintf(f, "    return Qundef;\n");
 }
 
-extern bool mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache **cc_entries, union iseq_inline_storage_entry **is_entries);
+extern bool mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache *cc_entries, union iseq_inline_storage_entry *is_entries);
 
 // Compile ISeq to C code in `f`. It returns true if it succeeds to compile.
 bool
@@ -211,8 +211,18 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
     if (status.stack_size_for_pos == NULL)
         return false;
     memset(status.stack_size_for_pos, NOT_COMPILED_STACK_SIZE, sizeof(int) * body->iseq_size);
-    if (mjit_copy_cache_from_main_thread(iseq, &status.cc_entries, &status.is_entries) == false)
+
+    status.cc_entries = NULL;
+    if ((body->ci_size + body->ci_kw_size) > 0)
+        status.cc_entries = alloca(sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size));
+    status.is_entries = NULL;
+    if (body->is_size > 0)
+        status.is_entries = alloca(sizeof(union iseq_inline_storage_entry) * body->is_size);
+
+    if ((status.cc_entries != NULL || status.is_entries != NULL)
+            && !mjit_copy_cache_from_main_thread(iseq, status.cc_entries, status.is_entries)) {
         return false;
+    }
 
     /* For performance, we verify stack size only on compilation time (mjit_compile.inc.erb) without --jit-debug */
     if (!mjit_opts.debug) {
@@ -252,8 +262,6 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
     fprintf(f, "\n} /* end of %s */\n", funcname);
 
     free(status.stack_size_for_pos);
-    free(status.cc_entries);
-    free(status.is_entries);
     return status.success;
 }
 
