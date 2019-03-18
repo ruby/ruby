@@ -54,6 +54,12 @@ struct mjit_options {
     int max_cache_size;
 };
 
+typedef struct {
+    bool success_p;
+    struct rb_call_cache *cc_entries;
+    union iseq_inline_storage_entry *is_entries;
+} mjit_copy_job_result_t;
+
 typedef VALUE (*mjit_func_t)(rb_execution_context_t *, rb_control_frame_t *);
 
 RUBY_SYMBOL_EXPORT_BEGIN

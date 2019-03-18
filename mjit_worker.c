@@ -1144,30 +1144,58 @@ int rb_workqueue_register(unsigned flags, rb_postponed_job_func_t , void *);
 /* We're lazily copying cache values from main thread because these cache values
    could be different between ones on enqueue timing and ones on dequeue timing.
    Return true if copy succeeds. */
-static bool
-copy_cache_from_main_thread(mjit_copy_job_t *job)
+static mjit_copy_job_result_t
+copy_cache_from_main_thread(const rb_iseq_t *iseq)
 {
+    mjit_copy_job_t *job = &mjit_copy_job; // just a shorthand
+
+    CRITICAL_SECTION_START(3, "in copy_cache_from_main_thread");
+    job->finish_p = true; // disable dispatching this job in mjit_copy_job_handler while it's being modified
+    CRITICAL_SECTION_FINISH(3, "in copy_cache_from_main_thread");
+
+    const struct rb_iseq_constant_body *body = iseq->body;
+    job->iseq = iseq;
+    job->cc_entries = NULL;
+    if (body->ci_size > 0 || body->ci_kw_size > 0)
+        job->cc_entries = alloca(sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size));
+    job->is_entries = NULL;
+    if (body->is_size > 0)
+        job->is_entries = alloca(sizeof(union iseq_inline_storage_entry) * body->is_size);
+
+    if (job->cc_entries == NULL && job->is_entries == NULL) {
+        return (mjit_copy_job_result_t){ .success_p = true, .cc_entries = NULL, .is_entries = NULL };
+    }
+
     CRITICAL_SECTION_START(3, "in copy_cache_from_main_thread");
     job->finish_p = false; // allow dispatching this job in mjit_copy_job_handler
     CRITICAL_SECTION_FINISH(3, "in copy_cache_from_main_thread");
 
     if (UNLIKELY(mjit_opts.wait)) {
         mjit_copy_job_handler((void *)job);
-        return job->finish_p;
+    } else {
+        if (!rb_workqueue_register(0, mjit_copy_job_handler, (void *)job)) {
+            // Disable dispatching this job in mjit_copy_job_handler while memory allocated by alloca
+            // could be expired after finishing this function.
+            job->finish_p = true;
+            return (mjit_copy_job_result_t){ .success_p = false };
+        }
+
+        CRITICAL_SECTION_START(3, "in MJIT copy job wait");
+        /* checking `stop_worker_p` too because `RUBY_VM_CHECK_INTS(ec)` may not
+           lush mjit_copy_job_handler when EC_EXEC_TAG() is not TAG_NONE, and then
+           `stop_worker()` could dead lock with this function. */
+        while (!job->finish_p && !stop_worker_p) {
+            rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
+            verbose(3, "Getting wakeup from client");
+        }
+        CRITICAL_SECTION_FINISH(3, "in MJIT copy job wait");
     }
 
-    if (!rb_workqueue_register(0, mjit_copy_job_handler, (void *)job))
-        return false;
-    CRITICAL_SECTION_START(3, "in MJIT copy job wait");
-    /* checking `stop_worker_p` too because `RUBY_VM_CHECK_INTS(ec)` may not
-       lush mjit_copy_job_handler when EC_EXEC_TAG() is not TAG_NONE, and then
-       `stop_worker()` could dead lock with this function. */
-    while (!job->finish_p && !stop_worker_p) {
-        rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
-        verbose(3, "Getting wakeup from client");
-    }
-    CRITICAL_SECTION_FINISH(3, "in MJIT copy job wait");
-    return job->finish_p;
+    bool finish_p = job->finish_p;
+    // Disable dispatching this job in mjit_copy_job_handler while memory allocated by alloca
+    // could be expired after finishing this function.
+    job->finish_p = true;
+    return (mjit_copy_job_result_t){ .success_p = finish_p, .cc_entries = job->cc_entries, .is_entries = job->is_entries };
 }
 
 /* The function implementing a worker. It is executed in a separate
@@ -1176,8 +1204,6 @@ copy_cache_from_main_thread(mjit_copy_job_t *job)
 void
 mjit_worker(void)
 {
-    mjit_copy_job_t *job = &mjit_copy_job; /* just a shorthand */
-
 #ifndef _MSC_VER
     if (pch_status == PCH_NOT_READY) {
         make_pch();
@@ -1204,28 +1230,17 @@ mjit_worker(void)
             verbose(3, "Getting wakeup from client");
         }
         unit = get_from_list(&unit_queue);
-        if (unit) job->iseq = unit->iseq;
-        job->finish_p = true; // disable dispatching this job in mjit_copy_job_handler while it's being modified
         CRITICAL_SECTION_FINISH(3, "in worker dequeue");
 
         if (unit) {
-            const struct rb_iseq_constant_body *body = unit->iseq->body;
-            job->cc_entries = NULL;
-            if (body->ci_size > 0 || body->ci_kw_size > 0)
-                job->cc_entries = alloca(sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size));
-            job->is_entries = NULL;
-            if (body->is_size > 0)
-                job->is_entries = alloca(sizeof(union iseq_inline_storage_entry) * body->is_size);
-
-            /* Copy ISeq's inline caches values to avoid race condition. */
-            if (job->cc_entries != NULL || job->is_entries != NULL) {
-                if (copy_cache_from_main_thread(job) == false) {
-                    continue; /* retry postponed_job failure, or stop worker */
-                }
+            // Copy mutable values from main threads
+            mjit_copy_job_result_t result = copy_cache_from_main_thread(unit->iseq);
+            if (result.success_p == false) {
+                continue; // retry postponed_job failure, or stop worker
             }
 
             // JIT compile
-            mjit_func_t func = convert_unit_to_func(unit, job->cc_entries, job->is_entries);
+            mjit_func_t func = convert_unit_to_func(unit, result.cc_entries, result.is_entries);
 
             CRITICAL_SECTION_START(3, "in jit func replace");
             while (in_gc) { /* Make sure we're not GC-ing when touching ISeq */
@@ -1247,10 +1262,6 @@ mjit_worker(void)
 #endif
         }
     }
-
-    // Disable dispatching this job in mjit_copy_job_handler while memory allocated by alloca
-    // could be expired after finishing this function.
-    job->finish_p = true;
 
     // To keep mutex unlocked when it is destroyed by mjit_finish, don't wrap CRITICAL_SECTION here.
     worker_stopped = true;
