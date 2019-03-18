@@ -278,10 +278,6 @@ env:
       - TEST_ALL_OPTS="--tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
       # Disabling -j3 because it seems to cause a hang on building Ruby: https://travis-ci.org/ruby/ruby/jobs/471021727
       - JOBS=
-      # Disabling cache because x86_64-darwin build randomly fails by "Permission denied" which we don't know why:
-      #   https://travis-ci.org/ruby/ruby/jobs/507381339
-      #   https://travis-ci.org/ruby/ruby/jobs/507392198
-      - DISABLE_CACHE=1
 
   - &universal-darwin17
     name: uinversal.x86_64h-darwin17
@@ -322,10 +318,6 @@ before_script:
   - $SETARCH uname -r
   - rm -fr .ext autom4te.cache
   - echo $TERM
-  - |-
-    if [ -n $DISABLE_CACHE ]; then
-      rm -fr ~/.downloaded-cache ~/config_2nd
-    fi
   - |-
     [ -d ~/.downloaded-cache ] ||
     mkdir ~/.downloaded-cache
