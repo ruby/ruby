@@ -6,6 +6,7 @@
 #++
 
 require 'rubygems/util'
+require 'rubygems/text'
 
 begin
   require 'io/console'
@@ -17,6 +18,8 @@ end
 # module will have access to the +ui+ method that returns the default UI.
 
 module Gem::DefaultUserInteraction
+
+  include Gem::Text
 
   ##
   # The default UI is a class variable of the singleton class for this
@@ -165,8 +168,8 @@ module Gem::UserInteraction
   # Calls +say+ with +msg+ or the results of the block if really_verbose
   # is true.
 
-  def verbose msg = nil
-    say(msg || yield) if Gem.configuration.really_verbose
+  def verbose(msg = nil)
+    say(clean_text(msg || yield)) if Gem.configuration.really_verbose
   end
 end
 
