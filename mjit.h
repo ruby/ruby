@@ -64,7 +64,7 @@ extern void mjit_add_iseq_to_process(const rb_iseq_t *iseq);
 extern VALUE mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body);
 RUBY_SYMBOL_EXPORT_END
 
-extern bool mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname);
+extern bool mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *funcname, struct rb_call_cache *cc_entries, union iseq_inline_storage_entry *is_entries);
 extern void mjit_init(struct mjit_options *opts);
 extern void mjit_postponed_job_register_start_hook(void);
 extern void mjit_postponed_job_register_finish_hook(void);
