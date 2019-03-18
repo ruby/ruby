@@ -2683,7 +2683,7 @@ rb_mod_method_location(VALUE mod, ID id)
     return rb_method_entry_location(me);
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_obj_method_location(VALUE obj, ID id)
 {
     return rb_mod_method_location(CLASS_OF(obj), id);

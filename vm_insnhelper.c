@@ -1740,13 +1740,13 @@ rb_iseq_only_kwparam_p(const rb_iseq_t *iseq)
 static inline void
 CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
                  struct rb_calling_info *restrict calling,
-                 const struct rb_call_info *restrict ci)
+                 const struct rb_call_info *restrict ci, int cfunc)
 {
     if (UNLIKELY(IS_ARGS_SPLAT(ci))) {
         vm_caller_setup_arg_splat(cfp, calling);
     }
     if (UNLIKELY(IS_ARGS_KEYWORD(ci))) {
-        vm_caller_setup_arg_kw(cfp, calling, ci);
+        vm_caller_setup_arg_kw(cfp, calling, ci, cfunc);
     }
 }
 
@@ -1856,7 +1856,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
     if (LIKELY(!(ci->flag & VM_CALL_KW_SPLAT))) {
         if (LIKELY(rb_simple_iseq_p(iseq))) {
             rb_control_frame_t *cfp = ec->cfp;
-            CALLER_SETUP_ARG(cfp, calling, ci); /* splat arg */
+            CALLER_SETUP_ARG(cfp, calling, ci, 0); /* splat arg */
 
             if (calling->argc != iseq->body->param.lead_num) {
                 argument_arity_error(ec, iseq, calling->argc, iseq->body->param.lead_num, iseq->body->param.lead_num);
@@ -1867,7 +1867,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
         }
         else if (rb_iseq_only_optparam_p(iseq)) {
             rb_control_frame_t *cfp = ec->cfp;
-            CALLER_SETUP_ARG(cfp, calling, ci); /* splat arg */
+            CALLER_SETUP_ARG(cfp, calling, ci, 0); /* splat arg */
 
             const int lead_num = iseq->body->param.lead_num;
             const int opt_num = iseq->body->param.opt_num;
@@ -2214,7 +2214,7 @@ vm_call_cfunc(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb
 {
     RB_DEBUG_COUNTER_INC(ccf_cfunc);
 
-    CALLER_SETUP_ARG(reg_cfp, calling, ci);
+    CALLER_SETUP_ARG(reg_cfp, calling, ci, 1);
     return vm_call_cfunc_with_frame(ec, reg_cfp, calling, ci, cc);
 }
 
@@ -2256,7 +2256,7 @@ vm_call_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
     VALUE *argv;
     int argc;
 
-    CALLER_SETUP_ARG(cfp, calling, ci);
+    CALLER_SETUP_ARG(cfp, calling, ci, 1);
     argc = calling->argc;
     argv = ALLOCA_N(VALUE, argc);
     MEMCPY(argv, cfp->sp - argc, VALUE, argc);
@@ -2286,7 +2286,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
     struct rb_call_info_with_kwarg ci_entry;
     struct rb_call_cache cc_entry, *cc;
 
-    CALLER_SETUP_ARG(reg_cfp, calling, orig_ci);
+    CALLER_SETUP_ARG(reg_cfp, calling, orig_ci, 1);
 
     i = calling->argc - 1;
 
@@ -2303,7 +2303,12 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
 	ci = &ci_entry.ci;
 	ci_entry.ci = *orig_ci;
     }
-    ci->flag = ci->flag & ~VM_CALL_KWARG; /* TODO: delegate kw_arg without making a Hash object */
+    unsigned int kw_splat = 0;
+    if (ci->flag & VM_CALL_KWARG) {
+        /* TODO: delegate kw_arg without making a Hash object */
+        ci->flag = ci->flag & ~VM_CALL_KWARG;
+        kw_splat = VM_CALL_KW_SPLAT;
+    }
 
     /* setup new cc */
     cc_entry = *orig_cc;
@@ -2333,7 +2338,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
     }
 
     cc->me = rb_callable_method_entry_with_refinements(CLASS_OF(calling->recv), ci->mid, NULL);
-    ci->flag = VM_CALL_FCALL | VM_CALL_OPT_SEND;
+    ci->flag = VM_CALL_FCALL | VM_CALL_OPT_SEND | kw_splat;
     return vm_call_method(ec, reg_cfp, calling, ci, cc);
 }
 
@@ -2392,7 +2397,7 @@ vm_call_method_missing(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, 
     struct rb_call_cache cc_entry, *cc;
     unsigned int argc;
 
-    CALLER_SETUP_ARG(reg_cfp, calling, orig_ci);
+    CALLER_SETUP_ARG(reg_cfp, calling, orig_ci, 0);
     argc = calling->argc+1;
 
     ci_entry.flag = VM_CALL_FCALL | VM_CALL_OPT_SEND;
@@ -2597,14 +2602,14 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 	return vm_call_cfunc(ec, cfp, calling, ci, cc);
 
       case VM_METHOD_TYPE_ATTRSET:
-	CALLER_SETUP_ARG(cfp, calling, ci);
+	CALLER_SETUP_ARG(cfp, calling, ci, 0);
 	rb_check_arity(calling->argc, 1, 1);
 	cc->aux.index = 0;
         CC_SET_FASTPATH(cc, vm_call_attrset, !((ci->flag & VM_CALL_ARGS_SPLAT) || (ci->flag & VM_CALL_KWARG)));
 	return vm_call_attrset(ec, cfp, calling, ci, cc);
 
       case VM_METHOD_TYPE_IVAR:
-	CALLER_SETUP_ARG(cfp, calling, ci);
+	CALLER_SETUP_ARG(cfp, calling, ci, 0);
 	rb_check_arity(calling->argc, 0, 0);
 	cc->aux.index = 0;
         CC_SET_FASTPATH(cc, vm_call_ivar, !(ci->flag & VM_CALL_ARGS_SPLAT));
@@ -2905,7 +2910,7 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
 	rb_control_frame_t *cfp = ec->cfp;
 	VALUE arg0;
 
-	CALLER_SETUP_ARG(cfp, calling, ci); /* splat arg */
+	CALLER_SETUP_ARG(cfp, calling, ci, 1); /* splat arg */
 
 	if (arg_setup_type == arg_setup_block &&
 	    calling->argc == 1 &&
@@ -2948,6 +2953,7 @@ vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int
     calling = &calling_entry;
     calling->argc = argc;
     calling->block_handler = block_handler;
+    calling->recv = Qundef;
 
     ci_entry.flag = 0;
     ci = &ci_entry;
@@ -2987,7 +2993,7 @@ vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 {
     VALUE val;
     int argc;
-    CALLER_SETUP_ARG(ec->cfp, calling, ci);
+    CALLER_SETUP_ARG(ec->cfp, calling, ci, 0);
     argc = calling->argc;
     val = vm_yield_with_symbol(ec, symbol, argc, STACK_ADDR_FROM_TOP(argc), calling->block_handler);
     POPN(argc);
@@ -3001,7 +3007,7 @@ vm_invoke_ifunc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 {
     VALUE val;
     int argc;
-    CALLER_SETUP_ARG(ec->cfp, calling, ci);
+    CALLER_SETUP_ARG(ec->cfp, calling, ci, 0);
     argc = calling->argc;
     val = vm_yield_with_cfunc(ec, captured, captured->self, argc, STACK_ADDR_FROM_TOP(argc), calling->block_handler, NULL);
     POPN(argc); /* TODO: should put before C/yield? */
