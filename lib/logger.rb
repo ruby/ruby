@@ -15,6 +15,7 @@ require 'logger/version'
 require 'logger/formatter'
 require 'logger/log_device'
 require 'logger/severity'
+require 'logger/errors'
 
 # == Description
 #
