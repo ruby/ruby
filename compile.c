@@ -3798,7 +3798,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 {
     if (kw_arg_ptr == NULL) return FALSE;
 
-    if (nd_type(root_node) == NODE_HASH && root_node->nd_head && nd_type(root_node->nd_head) == NODE_ARRAY) {
+    if (nd_type(root_node) == NODE_HASH && !root_node->nd_brace && root_node->nd_head && nd_type(root_node->nd_head) == NODE_ARRAY) {
 	const NODE *node = root_node->nd_head;
 
 	while (node) {
@@ -3806,13 +3806,14 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 
 	    assert(nd_type(node) == NODE_ARRAY);
 	    if (!key_node) {
-                if (flag && !root_node->nd_brace) *flag |= VM_CALL_KW_SPLAT;
+		if (flag) *flag |= VM_CALL_KW_SPLAT;
 		return FALSE;
 	    }
 	    else if (nd_type(key_node) == NODE_LIT && RB_TYPE_P(key_node->nd_lit, T_SYMBOL)) {
 		/* can be keywords */
 	    }
 	    else {
+		if (flag) *flag |= VM_CALL_KW_SPLAT;
 		return FALSE;
 	    }
 	    node = node->nd_next; /* skip value node */
@@ -7351,6 +7352,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		    ADD_INSN (args, line, concatarray);
 		    --argc;
 		}
+		flag |= VM_CALL_KW_SPLAT;
 	    }
 	    else if (local_body->param.flags.has_kwrest) {
 		int idx = local_body->local_table_size - local_kwd->rest_start;
@@ -7364,6 +7366,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		else {
 		    argc++;
 		}
+		flag |= VM_CALL_KW_SPLAT;
 	    }
 	}
 
