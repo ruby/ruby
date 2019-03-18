@@ -414,6 +414,7 @@ static NODE *new_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NO
 static NODE *new_command_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, NODE *block, const YYLTYPE *op_loc, const YYLTYPE *loc);
 static NODE *method_add_block(struct parser_params*p, NODE *m, NODE *b, const YYLTYPE *loc) {b->nd_iter = m; b->nd_loc = *loc; return b;}
 
+static bool args_info_empty_p(struct rb_args_info *args);
 static NODE *new_args(struct parser_params*,NODE*,NODE*,ID,NODE*,NODE*,const YYLTYPE*);
 static NODE *new_args_tail(struct parser_params*,NODE*,ID,ID,const YYLTYPE*);
 static NODE *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
@@ -3186,23 +3187,29 @@ lambda		:   {
 			$<num>$ = p->lex.lpar_beg;
 			p->lex.lpar_beg = p->lex.paren_nest;
 		    }
+		    {
+			$<num>$ = p->max_numparam;
+		    }
 		  f_larglist
 		    {
 			CMDARG_PUSH(0);
 		    }
 		  lambda_body
 		    {
+			int max_numparam = p->max_numparam;
 			p->lex.lpar_beg = $<num>2;
+			p->max_numparam = $<num>3;
 			CMDARG_POP();
+			$4 = args_with_numbered(p, $4, max_numparam);
 		    /*%%%*/
                         {
-                            YYLTYPE loc = code_loc_gen(&@3, &@5);
-                            $$ = NEW_LAMBDA($3, $5, &loc);
-                            nd_set_line($$->nd_body, @5.end_pos.lineno);
-                            nd_set_line($$, @3.end_pos.lineno);
+                            YYLTYPE loc = code_loc_gen(&@4, &@6);
+                            $$ = NEW_LAMBDA($4, $6, &loc);
+                            nd_set_line($$->nd_body, @6.end_pos.lineno);
+                            nd_set_line($$, @4.end_pos.lineno);
                         }
 		    /*% %*/
-		    /*% ripper: lambda!($3, $5) %*/
+		    /*% ripper: lambda!($4, $6) %*/
 			dyna_pop(p, $<vars>1);
 		    }
 		;
@@ -3211,11 +3218,16 @@ f_larglist	: '(' f_args opt_bv_decl ')'
 		    {
 		    /*%%%*/
 			$$ = $2;
+			p->max_numparam = -1;
 		    /*% %*/
 		    /*% ripper: paren!($2) %*/
 		    }
 		| f_args
 		    {
+		    /*%%%*/
+			if (!args_info_empty_p($1->nd_ainfo))
+			    p->max_numparam = -1;
+		    /*% %*/
 			$$ = $1;
 		    }
 		;
@@ -10253,6 +10265,18 @@ arg_blk_pass(NODE *node1, NODE *node2)
     return node1;
 }
 
+static bool
+args_info_empty_p(struct rb_args_info *args)
+{
+    if (args->pre_args_num) return false;
+    if (args->post_args_num) return false;
+    if (args->rest_arg) return false;
+    if (args->opt_args) return false;
+    if (args->block_arg) return false;
+    if (args->kw_args) return false;
+    if (args->kw_rest_arg) return false;
+    return true;
+}
 
 static NODE*
 new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, NODE *post_args, NODE *tail, const YYLTYPE *loc)
