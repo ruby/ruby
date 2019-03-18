@@ -4555,6 +4555,8 @@ ripper_yylval_id(struct parser_params *p, ID x)
 # define _cur_loc NULL_LOC /* dummy */
 #endif
 
+#define set_yylval_noname() set_yylval_id(keyword_nil)
+
 #ifndef RIPPER
 #define literal_flush(p, ptr) ((p)->lex.ptok = (ptr))
 #define dispatch_scan_event(p, t) ((void)0)
@@ -7617,7 +7619,8 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 		compile_error(p, "`$%c' is not allowed as a global variable name", c);
 	    }
 	    parser_show_error_line(p, &loc);
-	    return 0;
+	    set_yylval_noname();
+	    return tGVAR;
 	}
       case '0':
 	tokadd(p, '$');
@@ -7671,7 +7674,8 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 	    compile_error(p, "`@@' without identifiers is not allowed as a class variable name");
 	}
 	parser_show_error_line(p, &loc);
-	return 0;
+	set_yylval_noname();
+	return result;
     }
     else if (ISDIGIT(c)) {
 	if (result == tIVAR) {
@@ -7697,7 +7701,8 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 	    compile_error(p, "`@@%c' is not allowed as a class variable name", c);
 	}
 	parser_show_error_line(p, &loc);
-	return 0;
+	set_yylval_noname();
+	return result;
     }
 
     if (tokadd_ident(p, c)) return 0;
