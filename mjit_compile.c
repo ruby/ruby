@@ -207,9 +207,7 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
     struct compile_status status;
     status.success = true;
     status.local_stack_p = !body->catch_except_p;
-    status.stack_size_for_pos = (int *)malloc(sizeof(int) * body->iseq_size);
-    if (status.stack_size_for_pos == NULL)
-        return false;
+    status.stack_size_for_pos = (int *)alloca(sizeof(int) * body->iseq_size);
     memset(status.stack_size_for_pos, NOT_COMPILED_STACK_SIZE, sizeof(int) * body->iseq_size);
 
     status.cc_entries = NULL;
@@ -260,8 +258,6 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
     compile_insns(f, body, 0, 0, &status);
     compile_cancel_handler(f, body, &status);
     fprintf(f, "\n} /* end of %s */\n", funcname);
-
-    free(status.stack_size_for_pos);
     return status.success;
 }
 
