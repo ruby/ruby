@@ -7629,6 +7629,22 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
     return tGVAR;
 }
 
+static bool
+parser_numbered_param(struct parser_params *p, unsigned long n)
+{
+    if (DVARS_TERMINAL_P(p->lvtbl->args) || DVARS_TERMINAL_P(p->lvtbl->args->prev)) {
+	compile_error(p, "numbered parameter outside block");
+	return false;
+    }
+    if (p->max_numparam < 0) {
+	compile_error(p, "ordinary parameter is defined");
+	return false;
+    }
+    set_yylval_num((int)n);
+    SET_LEX_STATE(EXPR_ARG);
+    return true;
+}
+
 static enum yytokentype
 parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 {
@@ -7671,15 +7687,7 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 	    else if (overflow || n > NUMPARAM_MAX) {
 		compile_error(p, "too large numbered parameter");
 	    }
-	    else if (DVARS_TERMINAL_P(p->lvtbl->args) || DVARS_TERMINAL_P(p->lvtbl->args->prev)) {
-		compile_error(p, "numbered parameter outside block");
-	    }
-	    else if (p->max_numparam < 0) {
-		compile_error(p, "ordinary parameter is defined");
-	    }
-	    else {
-		set_yylval_num((int)n);
-		SET_LEX_STATE(EXPR_ARG);
+	    else if (parser_numbered_param(p, n)) {
 		return tNUMPARAM;
 	    }
 	}
