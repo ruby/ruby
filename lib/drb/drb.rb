@@ -367,6 +367,7 @@ module DRb
   class DRbIdConv
     def initialize
       @id2ref = {}
+      @mutex = Mutex.new
     end
 
     # Convert an object reference id to an object.
@@ -386,26 +387,33 @@ module DRb
     end
 
     def _clean
+      fail unless @mutex.owned?
       dead = []
       @id2ref.each {|id,weakref| dead << id unless weakref.weakref_alive?}
       dead.each {|id| @id2ref.delete(id)}
     end
 
     def _put(obj)
-      _clean
-      @id2ref[obj.__id__] = WeakRef.new(obj)
-      obj.__id__
+      id = obj.__id__
+      @mutex.lock
+      begin
+        _clean
+        @id2ref[id] = WeakRef.new(obj)
+      ensure
+        @mutex.unlock
+      end
+      id
     end
 
     def _get(id)
-      weakref = @id2ref[id]
-      if weakref
-        result = weakref.__getobj__ rescue nil
-        if result
-          return result
-        else
-          @id2ref.delete id
-        end
+      @mutex.lock
+      begin
+        weakref = @id2ref[id]
+        return weakref.__getobj__ if weakref
+      rescue WeakRef::RefError
+        @id2ref.delete id
+      ensure
+        @mutex.unlock
       end
       nil
     end
