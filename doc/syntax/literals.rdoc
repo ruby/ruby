@@ -193,7 +193,7 @@ a single codepoint in the script encoding:
   ?\C-\M-a #=> "\x81", same as above
   ?あ      #=> "あ"
 
-=== Here Documents
+=== Here Documents (heredocs)
 
 If you are writing a large block of text you may use a "here document" or
 "heredoc":
