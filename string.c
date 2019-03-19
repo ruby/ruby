@@ -10450,33 +10450,59 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
 /**********************************************************************
  * Document-class: Symbol
  *
- *  <code>Symbol</code> objects represent names and some strings
- *  inside the Ruby
- *  interpreter. They are generated using the <code>:name</code> and
- *  <code>:"string"</code> literals
- *  syntax, and by the various <code>to_sym</code> methods. The same
- *  <code>Symbol</code> object will be created for a given name or string
- *  for the duration of a program's execution, regardless of the context
- *  or meaning of that name. Thus if <code>Fred</code> is a constant in
- *  one context, a method in another, and a class in a third, the
- *  <code>Symbol</code> <code>:Fred</code> will be the same object in
- *  all three contexts.
+ *  <code>Symbol</code> objects are often used like <code>String</code>
+ *  objects to represent names.
  *
- *     module One
- *       class Fred
+ *  Symbols are generated using either of the following literal
+ *  syntaxes:
+ *
+ *  * <code>:name</code>
+ *  * <code>:"name with spaces"</code>
+ *
+ *  You can also convert some Ruby objects to symbols using common
+ *  <code>to_sym</code> conversion methods:
+ *
+ *     "some name".to_sym
+ *     => :"some name"
+ *
+ *  Symbols are often used instead of Strings because the same
+ *  <code>Symbol</code> object will be used in memory for a given
+ *  name or string for the duration of a program's execution.
+ *
+ *     class StringExample
+ *       def one
+ *         "important name"
  *       end
- *       $f1 = :Fred
+ *
+ *       def two
+ *         "important name"
+ *       end
  *     end
- *     module Two
- *       Fred = 1
- *       $f2 = :Fred
+ *
+ *     class SymbolExample
+ *       def one
+ *         :"important name"
+ *       end
+ *
+ *       def two
+ *         :"important name"
+ *       end
  *     end
- *     def Fred()
- *     end
- *     $f3 = :Fred
- *     $f1.object_id   #=> 2514190
- *     $f2.object_id   #=> 2514190
- *     $f3.object_id   #=> 2514190
+ *
+ *     StringExample.new.one.object_id   #=> 70308464584480
+ *     StringExample.new.two.object_id   #=> 70308463936920
+ *
+ * The <code>object_id</code> gives us the memory address of a specific
+ * object. Even when we define identical strings, the memory address
+ * from two string object instances defined with the same string literal
+ * declaration are different.
+ *
+ * If we use a symbol equivalent of this same string, the
+ * <code>object_id</code> return value is the same, because both point
+ * to the same object in memory:
+ *
+ *     SymbolExample.new.one.object_id   #=> 1518068
+ *     SymbolExample.new.two.object_id   #=> 1518068
  *
  */
 
