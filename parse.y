@@ -3825,7 +3825,7 @@ string_dvar	: tGVAR
 			$$ = NEW_DVAR(id, &@1);
 		    /*% %*/
 			(void)id;
-		    /*% ripper: var_ref!(number_arg!($1)) %*/
+		    /*% ripper: var_ref!($1) %*/
 		    }
 		| backref
 		;
@@ -3885,11 +3885,10 @@ user_variable	: tIDENTIFIER
 		| tNUMPARAM
 		    {
 			ID id = numparam_id(p, get_num($1));
-		    /*% ripper: number_arg!($1) %*/
 		    /*%%%*/
 			$$ = id;
 		    /*%
-			$$ = ripper_new_yylval(p, id, $$, 0);
+			$$ = ripper_new_yylval(p, id, get_value($1), 0);
 		    %*/
 		    }
 		;
