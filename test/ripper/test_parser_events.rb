@@ -58,7 +58,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal '[assign(var_field(a),ref(a))]', parse('a=a')
     assert_equal '[ref(nil)]', parse('nil')
     assert_equal '[ref(true)]', parse('true')
-    assert_include parse('proc{@1}'), '[ref(number_arg(@1))]'
+    assert_include parse('proc{@1}'), '[ref(@1)]'
   end
 
   def test_vcall
@@ -811,12 +811,6 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_next = false
     parse('a {next}', :on_next) {thru_next = true}
     assert_equal true, thru_next
-  end
-
-  def test_number_arg
-    thru_number_arg = false
-    parse('proc {@1}', :on_number_arg) {thru_number_arg = true}
-    assert_equal true, thru_number_arg
   end
 
   def test_opassign
