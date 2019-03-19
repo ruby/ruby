@@ -419,7 +419,6 @@ static NODE *new_args(struct parser_params*,NODE*,NODE*,ID,NODE*,NODE*,const YYL
 static NODE *new_args_tail(struct parser_params*,NODE*,ID,ID,const YYLTYPE*);
 static NODE *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
 static NODE *args_with_numbered(struct parser_params*,NODE*,int);
-static ID numparam_id(struct parser_params*,int);
 
 static VALUE negate_lit(struct parser_params*, VALUE);
 static NODE *ret_args(struct parser_params*,NODE*);
@@ -472,6 +471,7 @@ static int literal_concat0(struct parser_params *p, VALUE head, VALUE tail);
 static NODE *heredoc_dedent(struct parser_params*,NODE*);
 #define get_id(id) (id)
 #define get_value(val) (val)
+#define get_num(num) (num)
 #else  /* RIPPER */
 #define NODE_RIPPER NODE_CDECL
 
@@ -498,6 +498,7 @@ static ID ripper_get_id(VALUE);
 #define get_id(id) ripper_get_id(id)
 static VALUE ripper_get_value(VALUE);
 #define get_value(val) ripper_get_value(val)
+#define get_num(num) (int)get_id(num)
 static VALUE assignable(struct parser_params*,VALUE);
 static int id_is_var(struct parser_params *p, ID id);
 
@@ -533,7 +534,10 @@ PRINTF_ARGS(void rb_parser_fatal(struct parser_params *p, const char *fmt, ...),
 YYLTYPE *rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_heredoc_t *here, YYLTYPE *yylloc);
 YYLTYPE *rb_parser_set_location_of_none(struct parser_params *p, YYLTYPE *yylloc);
 YYLTYPE *rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc);
+ID rb_parser_numparam_id(struct parser_params *p, int num);
 RUBY_SYMBOL_EXPORT_END
+
+#define numparam_id rb_parser_numparam_id
 
 static void parser_token_value_print(struct parser_params *p, enum yytokentype type, const YYSTYPE *valp);
 static ID formal_argument(struct parser_params*, ID);
@@ -3816,9 +3820,11 @@ string_dvar	: tGVAR
 		    }
 		| tNUMPARAM
 		    {
+			ID id = numparam_id(p, get_num($1));
 		    /*%%%*/
-			$$ = NEW_DVAR(numparam_id(p, $1), &@1);
+			$$ = NEW_DVAR(id, &@1);
 		    /*% %*/
+			(void)id;
 		    /*% ripper: var_ref!(number_arg!($1)) %*/
 		    }
 		| backref
@@ -3878,10 +3884,13 @@ user_variable	: tIDENTIFIER
 		| tCVAR
 		| tNUMPARAM
 		    {
-		    /*%%%*/
-			$$ = numparam_id(p, $1);
-		    /*% %*/
+			ID id = numparam_id(p, get_num($1));
 		    /*% ripper: number_arg!($1) %*/
+		    /*%%%*/
+			$$ = id;
+		    /*%
+			$$ = ripper_new_yylval(p, id, $$, 0);
+		    %*/
 		    }
 		;
 
@@ -9162,6 +9171,8 @@ id_is_var(struct parser_params *p, ID id)
 	switch (id & ID_SCOPE_MASK) {
 	  case ID_GLOBAL: case ID_INSTANCE: case ID_CONST: case ID_CLASS:
 	    return 1;
+	  case ID_INTERNAL:
+	    return vtable_included(p->lvtbl->args, id);
 	  case ID_LOCAL:
 	    if (dyna_in_block(p) && dvar_defined(p, id)) return 1;
 	    if (local_id(p, id)) return 1;
@@ -9462,21 +9473,6 @@ assignable(struct parser_params *p, ID id, NODE *val, const YYLTYPE *loc)
     }
     if (err) yyerror1(loc, err);
     return NEW_BEGIN(0, loc);
-}
-
-static ID
-numparam_id(struct parser_params *p, int idx)
-{
-    struct vtable *args;
-    if (idx <= 0) return (ID)0;
-    if (p->max_numparam < idx) {
-	p->max_numparam = idx;
-    }
-    args = p->lvtbl->args;
-    while (idx > args->pos) {
-	vtable_add(args, internal_id(p));
-    }
-    return args->tbl[idx-1];
 }
 #else
 static VALUE
@@ -10371,6 +10367,21 @@ args_with_numbered(struct parser_params *p, NODE *args, int max_numparam)
 	args->nd_ainfo->rest_arg = excessed_comma;
     }
     return args;
+}
+
+ID
+rb_parser_numparam_id(struct parser_params *p, int idx)
+{
+    struct vtable *args;
+    if (idx <= 0) return (ID)0;
+    if (p->max_numparam < idx) {
+	p->max_numparam = idx;
+    }
+    args = p->lvtbl->args;
+    while (idx > args->pos) {
+	vtable_add(args, internal_id(p));
+    }
+    return args->tbl[idx-1];
 }
 
 static NODE*
