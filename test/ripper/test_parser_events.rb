@@ -58,6 +58,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal '[assign(var_field(a),ref(a))]', parse('a=a')
     assert_equal '[ref(nil)]', parse('nil')
     assert_equal '[ref(true)]', parse('true')
+    assert_include parse('proc{@1}'), '[ref(number_arg(@1))]'
   end
 
   def test_vcall
