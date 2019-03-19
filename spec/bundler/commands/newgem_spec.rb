@@ -727,8 +727,7 @@ RSpec.describe "bundle gem" do
 
   describe "uncommon gem names" do
     it "can deal with two dashes" do
-      bundle "gem a--a"
-      Bundler.clear_gemspec_cache
+      execute_bundle_gem("a--a")
 
       expect(bundled_app("a--a/a--a.gemspec")).to exist
     end
