@@ -1782,9 +1782,6 @@ Init_vm_trace(void)
     rb_define_singleton_method(rb_cTracePoint, "trace", tracepoint_trace_s, -1);
 
     rb_define_method(rb_cTracePoint, "__enable", tracepoint_enable_m, 3);
-#if 0 /* trick rdoc, defined in prelude.rb now */
-    rb_define_method(rb_cTracePoint, "enable", tracepoint_enable_m, 3);
-#endif
     rb_define_method(rb_cTracePoint, "disable", tracepoint_disable_m, 0);
     rb_define_method(rb_cTracePoint, "enabled?", rb_tracepoint_enabled_p, 0);
 
