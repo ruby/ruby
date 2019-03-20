@@ -9219,49 +9219,49 @@ rb_str_oct(VALUE str)
  *  backward compatibility with ruby scripts in earlier days.  It is
  *  bad to use in contemporary programs for several reasons:
  *
- *    * Behaviour of C's <code>crypt(3)</code> depends on the OS it is
- *      run.  The generated string lacks data portability.
+ *  * Behaviour of C's <code>crypt(3)</code> depends on the OS it is
+ *    run.  The generated string lacks data portability.
  *
- *    * On some OSes such as Mac OS, <code>crypt(3)</code> never fails
- *      (i.e. silently ends up in unexpected results).
+ *  * On some OSes such as Mac OS, <code>crypt(3)</code> never fails
+ *    (i.e. silently ends up in unexpected results).
  *
- *    * On some OSes such as Mac OS, <code>crypt(3)</code> is not
- *      thread safe.
+ *  * On some OSes such as Mac OS, <code>crypt(3)</code> is not
+ *    thread safe.
  *
- *    * So-called "traditional" usage of <code>crypt(3)</code> is very
- *      very very weak.  According to its manpage, Linux's traditional
- *      <code>crypt(3)</code> output has only 2**56 variations; too
- *      easy to brute force today.  And this is the default behaviour.
+ *  * So-called "traditional" usage of <code>crypt(3)</code> is very
+ *    very very weak.  According to its manpage, Linux's traditional
+ *    <code>crypt(3)</code> output has only 2**56 variations; too
+ *    easy to brute force today.  And this is the default behaviour.
  *
- *    * In order to make things robust some OSes implement so-called
- *      "modular" usage. To go through, you have to do a complex
- *      build-up of the <code>salt_str</code> parameter, by hand.
- *      Failure in generation of a proper salt string tends not to
- *      yield any errors; typos in parameters are normally not
- *      detectable.
+ *  * In order to make things robust some OSes implement so-called
+ *    "modular" usage. To go through, you have to do a complex
+ *    build-up of the <code>salt_str</code> parameter, by hand.
+ *    Failure in generation of a proper salt string tends not to
+ *    yield any errors; typos in parameters are normally not
+ *    detectable.
  *
- *        * For instance, in the following example, the second invocation
- *          of <code>String#crypt</code> is wrong; it has a typo in
- *          "round=" (lacks "s").  However the call does not fail and
- *          something unexpected is generated.
+ *    * For instance, in the following example, the second invocation
+ *      of <code>String#crypt</code> is wrong; it has a typo in
+ *      "round=" (lacks "s").  However the call does not fail and
+ *      something unexpected is generated.
  *
- *             "foo".crypt("$5$rounds=1000$salt$") # OK, proper usage
- *             "foo".crypt("$5$round=1000$salt$")  # Typo not detected
+ *         "foo".crypt("$5$rounds=1000$salt$") # OK, proper usage
+ *         "foo".crypt("$5$round=1000$salt$")  # Typo not detected
  *
- *    * Even in the "modular" mode, some hash functions are considered
- *      archaic and no longer recommended at all; for instance module
- *      <code>$1$</code> is officially abandoned by its author: see
- *      http://phk.freebsd.dk/sagas/md5crypt_eol.html .  For another
- *      instance module <code>$3$</code> is considered completely
- *      broken: see the manpage of FreeBSD.
+ *  * Even in the "modular" mode, some hash functions are considered
+ *    archaic and no longer recommended at all; for instance module
+ *    <code>$1$</code> is officially abandoned by its author: see
+ *    http://phk.freebsd.dk/sagas/md5crypt_eol.html .  For another
+ *    instance module <code>$3$</code> is considered completely
+ *    broken: see the manpage of FreeBSD.
  *
- *    * On some OS such as Mac OS, there is no modular mode. Yet, as
- *      written above, <code>crypt(3)</code> on Mac OS never fails.
- *      This means even if you build up a proper salt string it
- *      generates a traditional DES hash anyways, and there is no way
- *      for you to be aware of.
+ *  * On some OS such as Mac OS, there is no modular mode. Yet, as
+ *    written above, <code>crypt(3)</code> on Mac OS never fails.
+ *    This means even if you build up a proper salt string it
+ *    generates a traditional DES hash anyways, and there is no way
+ *    for you to be aware of.
  *
- *          "foo".crypt("$5$rounds=1000$salt$") # => "$5fNPQMxC5j6."
+ *        "foo".crypt("$5$rounds=1000$salt$") # => "$5fNPQMxC5j6."
  *
  *  If for some reason you cannot migrate to other secure contemporary
  *  password hashing algorithms, install the string-crypt gem and
