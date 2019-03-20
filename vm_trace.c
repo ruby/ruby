@@ -1058,7 +1058,8 @@ tracepoint_attr_path(VALUE tpval)
 }
 
 /*
- * Return the parameters of the method or block that the current hook belongs to
+ * Return the parameters definition of the method or block that the
+ * current hook belongs to. Format is the same as for Method#parameters
  */
 static VALUE
 tracepoint_attr_parameters(VALUE tpval)
@@ -1361,42 +1362,8 @@ rb_hook_list_remove_tracepoint(rb_hook_list_t *list, VALUE tpval)
     list->events = events;
 }
 
-/*
- * call-seq:
- *	trace.enable		-> true or false
- *	trace.enable { block }	-> obj
- *
- * Activates the trace
- *
- * Return true if trace was enabled.
- * Return false if trace was disabled.
- *
- *	trace.enabled?  #=> false
- *	trace.enable    #=> false (previous state)
- *                      #   trace is enabled
- *	trace.enabled?  #=> true
- *	trace.enable    #=> true (previous state)
- *                      #   trace is still enabled
- *
- * If a block is given, the trace will only be enabled within the scope of the
- * block.
- *
- *	trace.enabled?
- *	#=> false
- *
- *	trace.enable do
- *	    trace.enabled?
- *	    # only enabled for this block
- *	end
- *
- *	trace.enabled?
- *	#=> false
- *
- * Note: You cannot access event hooks within the block.
- *
- *	trace.enable { p tp.lineno }
- *	#=> RuntimeError: access from outside
- *
+/* :nodoc:
+ * Docs for the TracePointe#enable are in prelude.rb
  */
 static VALUE
 tracepoint_enable_m(VALUE tpval, VALUE target, VALUE target_line, VALUE target_thread)
@@ -1792,6 +1759,7 @@ Init_vm_trace(void)
      * +:thread_begin+:: event hook at thread beginning
      * +:thread_end+:: event hook at thread ending
      * +:fiber_switch+:: event hook at fiber switch
+     * +:script_compiled+:: new Ruby code compiled (with +eval+, +load+ or +require+)
      *
      */
     rb_cTracePoint = rb_define_class("TracePoint", rb_cObject);
