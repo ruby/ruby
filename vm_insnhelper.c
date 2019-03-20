@@ -1752,7 +1752,7 @@ vm_call_iseq_setup_normal_opt_start(rb_execution_context_t *ec, rb_control_frame
     const int lead_num = iseq->body->param.lead_num;
     const int opt = calling->argc - lead_num;
     const int opt_num = iseq->body->param.opt_num;
-    const int opt_pc = iseq->body->param.opt_table[opt];
+    const int opt_pc = (int)iseq->body->param.opt_table[opt];
     const int param = iseq->body->param.size;
     const int local = iseq->body->local_table_size;
     const int delta = opt_num - opt;
