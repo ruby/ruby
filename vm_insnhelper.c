@@ -1787,7 +1787,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                              !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED)));
             return 0;
         }
-        else if (rb_iseq_only_optparam_p(iseq) && !(ci->flag & VM_CALL_KW_SPLAT)) {
+        else if (rb_iseq_only_optparam_p(iseq)) {
             rb_control_frame_t *cfp = ec->cfp;
             CALLER_SETUP_ARG(cfp, calling, ci); /* splat arg */
 
