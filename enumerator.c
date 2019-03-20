@@ -1594,32 +1594,74 @@ lazy_generator_init(VALUE enumerator, VALUE procs)
 }
 
 /*
+ * Document-class: Enumerator::Lazy
+ * Enumerator::Lazy is a special type of Enumerator, that allows constructing
+ * chains of operations without evaluating them immediately, and evaluating
+ * values on as-needed basis. In order to do so it redefines most of Enumerable
+ * methods so that they just construct another lazy enumerator.
+ *
+ * Enumerator::Lazy can be constructed from any Enumerable with Enumerable#lazy
+ * method.
+ *
+ *
+ *    lazy = (1..Float::INFINITY).lazy.select(&:odd?).drop(10).take_while { |i| i < 30 }
+ *    # => #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: 1..Infinity>:select>:drop(10)>:take_while>
+ *
+ * The real enumeration is performed when any of non-redefined Enumerable methods
+ * is called, like Enumerable#first on Enumerable#to_a (the latter is aliased as
+ * #force for more semantical code):
+ *
+ *    lazy.first(2)
+ *    #=> [21, 23]
+ *
+ *    lazy.force
+ *    #=> [21, 23, 25, 27, 29]
+ *
+ * Note that most of Enumerable methods that could be called with or without block,
+ * on Enumerator::Lazy will always require block:
+ *
+ *    [1, 2, 3].map       #=> #<Enumerator: [1, 2, 3]:map>
+ *    [1, 2, 3].lazy.map  # ArgumentError: tried to call lazy map without a block
+ *
+ * This class allows idiomatic calculations on long or infinite sequence, as well
+ * as chaining of calculations without constructing intermediate arrays.
+ *
+ * Example of working with slowly calculated sequence:
+ *
+ *    require 'open-uri'
+ *
+ *    # This will fetch all URLs before selecting
+ *    # necessary data
+ *    URLS.map { |u| JSON.parse(open(u).read) }.
+ *      select { |data| data.key?('stats') }.
+ *      first(5)
+ *
+ *    # This will fetch URLs one-by-one, only till
+ *    # there is enough data to satisfy the condition
+ *    URLS.lazy.map { |u| JSON.parse(open(u).read) }.
+ *      select { |data| data.key?('stats') }.
+ *      first(5)
+ *
+ */
+
+/*
  * call-seq:
  *   Lazy.new(obj, size=nil) { |yielder, *values| ... }
  *
  * Creates a new Lazy enumerator. When the enumerator is actually enumerated
  * (e.g. by calling #force), +obj+ will be enumerated and each value passed
  * to the given block. The block can yield values back using +yielder+.
- * For example, to create a method +filter_map+ in both lazy and
- * non-lazy fashions:
+ * For example, to create a "filter+map" enumerator:
  *
- *   module Enumerable
- *     def filter_map(&block)
- *       map(&block).compact
+ *   def filter_map(sequence)
+ *     Lazy.new(sequence) do |yielder, *values|
+ *       result = yield *values
+ *       yielder << result if result
  *     end
  *   end
  *
- *   class Enumerator::Lazy
- *     def filter_map
- *       Lazy.new(self) do |yielder, *values|
- *         result = yield *values
- *         yielder << result if result
- *       end
- *     end
- *   end
- *
- *   (1..Float::INFINITY).lazy.filter_map{|i| i*i if i.even?}.first(5)
- *       # => [4, 16, 36, 64, 100]
+ *   filter_map(1..Float::INFINITY) {|i| i*i if i.even?}.first(5)
+ *   #=> [4, 16, 36, 64, 100]
  */
 static VALUE
 lazy_initialize(int argc, VALUE *argv, VALUE self)
@@ -1724,11 +1766,9 @@ lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
  * call-seq:
  *   e.lazy -> lazy_enumerator
  *
- * Returns a lazy enumerator, whose methods map/collect,
- * flat_map/collect_concat, select/find_all, reject, grep, grep_v, zip, take,
- * take_while, drop, and drop_while enumerate values only on an
- * as-needed basis.  However, if a block is given to zip, values
- * are enumerated immediately.
+ * Returns an Enumerator::Lazy, which redefines most of Enumerable
+ * methods to postpone enumeration and enumerate values only on an
+ * as-needed basis.
  *
  * === Example
  *
@@ -1774,11 +1814,11 @@ lazy_to_enum_i(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator
  *   lzy.to_enum(method = :each, *args) {|*args| block} -> lazy_enum
  *   lzy.enum_for(method = :each, *args){|*args| block} -> lazy_enum
  *
- * Similar to Kernel#to_enum, except it returns a lazy enumerator.
+ * Similar to Object#to_enum, except it returns a lazy enumerator.
  * This makes it easy to define Enumerable methods that will
  * naturally remain lazy if called from a lazy enumerator.
  *
- * For example, continuing from the example in Kernel#to_enum:
+ * For example, continuing from the example in Object#to_enum:
  *
  *   # See Kernel#to_enum for the definition of repeat
  *   r = 1..Float::INFINITY
@@ -1845,6 +1885,19 @@ lazy_map_size(VALUE entry, VALUE receiver)
 static const lazyenum_funcs lazy_map_funcs = {
     lazy_map_proc, lazy_map_size,
 };
+
+/*
+ *  call-seq:
+ *     lazy.collect { |obj| block } -> lazy_enumerator
+ *     lazy.map     { |obj| block } -> lazy_enumerator
+ *
+ *  Like Enumerable#map, but chains operation to be lazy-evaluated.
+ *
+ *     (1..Float::INFINITY).lazy.map {|i| i**2 }
+ *     #=> #<Enumerator::Lazy: #<Enumerator::Lazy: 1..Infinity>:map>
+ *     (1..Float::INFINITY).lazy.map {|i| i**2 }.first(3)
+ *     #=> [1, 4, 9]
+ */
 
 static VALUE
 lazy_map(VALUE obj)
@@ -1922,9 +1975,9 @@ lazy_flat_map_proc(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
  *  A value <i>x</i> returned by <i>block</i> is decomposed if either of
  *  the following conditions is true:
  *
- *    a) <i>x</i> responds to both each and force, which means that
- *       <i>x</i> is a lazy enumerator.
- *    b) <i>x</i> is an array or responds to to_ary.
+ *  * a) <i>x</i> responds to both each and force, which means that
+ *    <i>x</i> is a lazy enumerator.
+ *  * b) <i>x</i> is an array or responds to to_ary.
  *
  *  Otherwise, <i>x</i> is contained as-is in the return value.
  *
@@ -1955,6 +2008,14 @@ static const lazyenum_funcs lazy_select_funcs = {
     lazy_select_proc, 0,
 };
 
+/*
+ *  call-seq:
+ *     lazy.find_all { |obj| block } -> lazy_enumerator
+ *     lazy.select   { |obj| block } -> lazy_enumerator
+ *     lazy.filter   { |obj| block } -> lazy_enumerator
+ *
+ *  Like Enumerable#select, but chains operation to be lazy-evaluated.
+ */
 static VALUE
 lazy_select(VALUE obj)
 {
@@ -1976,6 +2037,13 @@ lazy_reject_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_i
 static const lazyenum_funcs lazy_reject_funcs = {
     lazy_reject_proc, 0,
 };
+
+/*
+ *  call-seq:
+ *     lazy.reject { |obj| block } -> lazy_enumerator
+ *
+ *  Like Enumerable#reject, but chains operation to be lazy-evaluated.
+ */
 
 static VALUE
 lazy_reject(VALUE obj)
@@ -2018,6 +2086,14 @@ static const lazyenum_funcs lazy_grep_funcs = {
     lazy_grep_proc, 0,
 };
 
+/*
+ *  call-seq:
+ *     lazy.grep(pattern)                  -> lazy_enumerator
+ *     lazy.grep(pattern) { |obj| block }  -> lazy_enumerator
+ *
+ *  Like Enumerable#grep, but chains operation to be lazy-evaluated.
+ */
+
 static VALUE
 lazy_grep(VALUE obj, VALUE pattern)
 {
@@ -2056,6 +2132,14 @@ static const lazyenum_funcs lazy_grep_v_iter_funcs = {
 static const lazyenum_funcs lazy_grep_v_funcs = {
     lazy_grep_v_proc, 0,
 };
+
+/*
+ *  call-seq:
+ *     lazy.grep_v(pattern)                  -> lazy_enumerator
+ *     lazy.grep_v(pattern) { |obj| block }  -> lazy_enumerator
+ *
+ *  Like Enumerable#grep_v, but chains operation to be lazy-evaluated.
+ */
 
 static VALUE
 lazy_grep_v(VALUE obj, VALUE pattern)
@@ -2129,6 +2213,14 @@ lazy_zip_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, zip_args))
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     lazy.zip(arg, ...)                  -> lazy_enumerator
+ *     lazy.zip(arg, ...) { |arr| block }  -> nil
+ *
+ *  Like Enumerable#zip, but chains operation to be lazy-evaluated.
+ *  However, if a block is given to zip, values are enumerated immediately.
+ */
 static VALUE
 lazy_zip(int argc, VALUE *argv, VALUE obj)
 {
@@ -2197,6 +2289,13 @@ static const lazyenum_funcs lazy_take_funcs = {
     lazy_take_proc, lazy_take_size,
 };
 
+/*
+ *  call-seq:
+ *     lazy.take(n)               -> lazy_enumerator
+ *
+ *  Like Enumerable#take, but chains operation to be lazy-evaluated.
+ */
+
 static VALUE
 lazy_take(VALUE obj, VALUE n)
 {
@@ -2231,6 +2330,13 @@ lazy_take_while_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long me
 static const lazyenum_funcs lazy_take_while_funcs = {
     lazy_take_while_proc, 0,
 };
+
+/*
+ *  call-seq:
+ *     lazy.take_while { |obj| block } -> lazy_enumerator
+ *
+ *  Like Enumerable#take_while, but chains operation to be lazy-evaluated.
+ */
 
 static VALUE
 lazy_take_while(VALUE obj)
@@ -2279,6 +2385,13 @@ static const lazyenum_funcs lazy_drop_funcs = {
     lazy_drop_proc, lazy_drop_size,
 };
 
+/*
+ *  call-seq:
+ *     lazy.drop(n)               -> lazy_enumerator
+ *
+ *  Like Enumerable#drop, but chains operation to be lazy-evaluated.
+ */
+
 static VALUE
 lazy_drop(VALUE obj, VALUE n)
 {
@@ -2315,6 +2428,13 @@ lazy_drop_while_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long me
 static const lazyenum_funcs lazy_drop_while_funcs = {
     lazy_drop_while_proc, 0,
 };
+
+/*
+ *  call-seq:
+ *     lazy.drop_while { |obj| block }  -> lazy_enumerator
+ *
+ *  Like Enumerable#drop_while, but chains operation to be lazy-evaluated.
+ */
 
 static VALUE
 lazy_drop_while(VALUE obj)
@@ -2363,6 +2483,14 @@ static const lazyenum_funcs lazy_uniq_funcs = {
     lazy_uniq_proc, 0,
 };
 
+/*
+ *  call-seq:
+ *     lazy.uniq                -> lazy_enumerator
+ *     lazy.uniq { |item| ... } -> lazy_enumerator
+ *
+ *  Like Enumerable#uniq, but chains operation to be lazy-evaluated.
+ */
+
 static VALUE
 lazy_uniq(VALUE obj)
 {
@@ -2371,11 +2499,73 @@ lazy_uniq(VALUE obj)
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, funcs);
 }
 
+#if 0 /* for RDoc */
+
+/*
+ *  call-seq:
+ *     lazy.chunk { |elt| ... }                       -> lazy_enumerator
+ *
+ *  Like Enumerable#chunk, but chains operation to be lazy-evaluated.
+ */
+static VALUE lazy_chunk(VALUE self)
+{
+}
+
+/*
+ *  call-seq:
+ *     lazy.chunk_while {|elt_before, elt_after| bool } -> lazy_enumerator
+ *
+ *  Like Enumerable#chunk_while, but chains operation to be lazy-evaluated.
+ */
+static VALUE lazy_chunk_while(VALUE self)
+{
+}
+
+/*
+ *  call-seq:
+ *     lazy.slice_after(pattern)       -> lazy_enumerator
+ *     lazy.slice_after { |elt| bool } -> lazy_enumerator
+ *
+ *  Like Enumerable#slice_after, but chains operation to be lazy-evaluated.
+ */
+static VALUE lazy_slice_after(VALUE self)
+{
+}
+
+/*
+ *  call-seq:
+ *     lazy.slice_before(pattern)       -> lazy_enumerator
+ *     lazy.slice_before { |elt| bool } -> lazy_enumerator
+ *
+ *  Like Enumerable#slice_before, but chains operation to be lazy-evaluated.
+ */
+static VALUE lazy_slice_before(VALUE self)
+{
+}
+
+/*
+ *  call-seq:
+ *     lazy.slice_when {|elt_before, elt_after| bool } -> lazy_enumerator
+ *
+ *  Like Enumerable#slice_when, but chains operation to be lazy-evaluated.
+ */
+static VALUE lazy_slice_when(VALUE self)
+{
+}
+# endif
+
 static VALUE
 lazy_super(int argc, VALUE *argv, VALUE lazy)
 {
     return enumerable_lazy(rb_call_super(argc, argv));
 }
+
+/*
+ *  call-seq:
+ *     enum.lazy -> lazy_enumerator
+ *
+ *  Returns self
+ */
 
 static VALUE
 lazy_lazy(VALUE obj)
@@ -3380,6 +3570,11 @@ InitVM_Enumerator(void)
 
 #if 0 /* for RDoc */
     rb_define_method(rb_cLazy, "to_a", lazy_to_a, 0);
+    rb_define_method(rb_cLazy, "chunk", lazy_chunk, 0);
+    rb_define_method(rb_cLazy, "chunk_while", lazy_chunk_while, 0);
+    rb_define_method(rb_cLazy, "slice_after", lazy_slice_after, 0);
+    rb_define_method(rb_cLazy, "slice_before", lazy_slice_before, 0);
+    rb_define_method(rb_cLazy, "slice_when", lazy_slice_when, 0);
 #endif
     rb_define_alias(rb_cLazy, "force", "to_a");
 
