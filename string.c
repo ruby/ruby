@@ -1883,7 +1883,7 @@ rb_str_empty(VALUE str)
  *  call-seq:
  *     str + other_str   -> new_str
  *
- *  Concatenation---Returns a new <code>String</code> containing
+ *  Concatenation---Returns a new String containing
  *  <i>other_str</i> concatenated to <i>str</i>.
  *
  *     "Hello from " + self.to_s   #=> "Hello from main"
@@ -1993,11 +1993,11 @@ rb_str_times(VALUE str, VALUE times)
  *  call-seq:
  *     str % arg   -> new_str
  *
- *  Format---Uses <i>str</i> as a format specification, and returns the result
- *  of applying it to <i>arg</i>. If the format specification contains more than
- *  one substitution, then <i>arg</i> must be an <code>Array</code> or <code>Hash</code>
- *  containing the values to be substituted. See <code>Kernel::sprintf</code> for
- *  details of the format string.
+ *  Format---Uses <i>str</i> as a format specification, and returns
+ *  the result of applying it to <i>arg</i>. If the format
+ *  specification contains more than one substitution, then <i>arg</i>
+ *  must be an Array or Hash containing the values to be
+ *  substituted. See Kernel::sprintf for details of the format string.
  *
  *     "%05d" % 123                              #=> "00123"
  *     "%-5s: %016x" % [ "ID", self.object_id ]  #=> "ID   : 00002b054ec93168"
@@ -2980,8 +2980,8 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
  *     str.concat(obj1, obj2, ...)          -> str
  *
  *  Concatenates the given object(s) to <i>str</i>. If an object is an
- *  <code>Integer</code>, it is considered a codepoint and converted
- *  to a character before concatenation.
+ *  Integer, it is considered a codepoint and converted to a character
+ *  before concatenation.
  *
  *  +concat+ can take multiple arguments, and all the arguments are
  *  concatenated in order.
@@ -3022,8 +3022,8 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
  *     str << integer  -> str
  *
  *  Appends the given object to <i>str</i>. If the object is an
- *  <code>Integer</code>, it is considered a codepoint and converted
- *  to a character before being appended.
+ *  Integer, it is considered a codepoint and converted to a character
+ *  before being appended.
  *
  *     a = "hello "
  *     a << "world"   #=> "hello world"
@@ -3321,7 +3321,7 @@ static VALUE str_casecmp_p(VALUE str1, VALUE str2);
  *  call-seq:
  *     str.casecmp(other_str)   -> -1, 0, +1, or nil
  *
- *  Case-insensitive version of <code>String#<=></code>.
+ *  Case-insensitive version of String#<=>.
  *  Currently, case-insensitivity only works on characters A-Z/a-z,
  *  not all of Unicode. This is different from String#casecmp?.
  *
@@ -3756,11 +3756,11 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *     str =~ obj   -> integer or nil
  *
- *  Match---If <i>obj</i> is a <code>Regexp</code>, use it as a pattern to match
+ *  Match---If <i>obj</i> is a Regexp, use it as a pattern to match
  *  against <i>str</i>,and returns the position the match starts, or
  *  <code>nil</code> if there is no match. Otherwise, invokes
  *  <i>obj.=~</i>, passing <i>str</i> as an argument. The default
- *  <code>=~</code> in <code>Object</code> returns <code>nil</code>.
+ *  <code>=~</code> in Object returns <code>nil</code>.
  *
  *  Note: <code>str =~ regexp</code> is not the same as
  *  <code>regexp =~ str</code>. Strings captured from named capture groups
@@ -3796,7 +3796,7 @@ static VALUE get_pat(VALUE);
  *     str.match(pattern)        -> matchdata or nil
  *     str.match(pattern, pos)   -> matchdata or nil
  *
- *  Converts <i>pattern</i> to a <code>Regexp</code> (if it isn't already one),
+ *  Converts <i>pattern</i> to a Regexp (if it isn't already one),
  *  then invokes its <code>match</code> method on <i>str</i>.  If the second
  *  parameter is present, it specifies the position in the string to begin the
  *  search.
@@ -4176,8 +4176,7 @@ str_succ(VALUE str)
  *     str.succ!   -> str
  *     str.next!   -> str
  *
- *  Equivalent to <code>String#succ</code>, but modifies the receiver in
- *  place.
+ *  Equivalent to String#succ, but modifies the receiver in place.
  */
 
 static VALUE
@@ -4211,10 +4210,11 @@ str_upto_i(VALUE str, VALUE arg)
  *     str.upto(other_str, exclusive=false)                -> an_enumerator
  *
  *  Iterates through successive values, starting at <i>str</i> and
- *  ending at <i>other_str</i> inclusive, passing each value in turn to
- *  the block. The <code>String#succ</code> method is used to generate
- *  each value.  If optional second argument exclusive is omitted or is false,
- *  the last value will be included; otherwise it will be excluded.
+ *  ending at <i>other_str</i> inclusive, passing each value in turn
+ *  to the block. The String#succ method is used to generate each
+ *  value.  If optional second argument exclusive is omitted or is
+ *  false, the last value will be included; otherwise it will be
+ *  excluded.
  *
  *  If no block is given, an enumerator is returned instead.
  *
@@ -4766,19 +4766,18 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
  *     str[regexp, name] = new_str
  *     str[other_str] = new_str
  *
- *  Element Assignment---Replaces some or all of the content of <i>str</i>. The
- *  portion of the string affected is determined using the same criteria as
- *  <code>String#[]</code>. If the replacement string is not the same length as
- *  the text it is replacing, the string will be adjusted accordingly. If the
- *  regular expression or string is used as the index doesn't match a position
- *  in the string, <code>IndexError</code> is raised. If the regular expression
- *  form is used, the optional second <code>Integer</code> allows you to specify
- *  which portion of the match to replace (effectively using the
- *  <code>MatchData</code> indexing rules. The forms that take an
- *  <code>Integer</code> will raise an <code>IndexError</code> if the value is
- *  out of range; the <code>Range</code> form will raise a
- *  <code>RangeError</code>, and the <code>Regexp</code> and <code>String</code>
- *  will raise an <code>IndexError</code> on negative match.
+ *  Element Assignment---Replaces some or all of the content of
+ *  <i>str</i>. The portion of the string affected is determined using
+ *  the same criteria as String#[]. If the replacement string is not
+ *  the same length as the text it is replacing, the string will be
+ *  adjusted accordingly. If the regular expression or string is used
+ *  as the index doesn't match a position in the string, IndexError is
+ *  raised. If the regular expression form is used, the optional
+ *  second Integer allows you to specify which portion of the match to
+ *  replace (effectively using the MatchData indexing rules. The forms
+ *  that take an Integer will raise an IndexError if the value is out
+ *  of range; the Range form will raise a RangeError, and the Regexp
+ *  and String will raise an IndexError on negative match.
  */
 
 static VALUE
@@ -5256,9 +5255,10 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
  *     str.gsub!(pattern) {|match| block }    -> str or nil
  *     str.gsub!(pattern)                     -> an_enumerator
  *
- *  Performs the substitutions of <code>String#gsub</code> in place, returning
- *  <i>str</i>, or <code>nil</code> if no substitutions were performed.
- *  If no block and no <i>replacement</i> is given, an enumerator is returned instead.
+ *  Performs the substitutions of String#gsub in place, returning
+ *  <i>str</i>, or <code>nil</code> if no substitutions were
+ *  performed.  If no block and no <i>replacement</i> is given, an
+ *  enumerator is returned instead.
  */
 
 static VALUE
@@ -5278,12 +5278,12 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *
  *  Returns a copy of <i>str</i> with <em>all</em> occurrences of
  *  <i>pattern</i> substituted for the second argument. The <i>pattern</i> is
- *  typically a <code>Regexp</code>; if given as a <code>String</code>, any
+ *  typically a Regexp; if given as a String, any
  *  regular expression metacharacters it contains will be interpreted
  *  literally, e.g. <code>'\\\d'</code> will match a backslash followed by 'd',
  *  instead of a digit.
  *
- *  If <i>replacement</i> is a <code>String</code> it will be substituted for
+ *  If <i>replacement</i> is a String it will be substituted for
  *  the matched text. It may contain back-references to the pattern's capture
  *  groups of the form <code>\\\d</code>, where <i>d</i> is a group number, or
  *  <code>\\\k<n></code>, where <i>n</i> is a group name. If it is a
@@ -5291,7 +5291,7 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *  additional backslash. However, within <i>replacement</i> the special match
  *  variables, such as <code>$&</code>, will not refer to the current match.
  *
- *  If the second argument is a <code>Hash</code>, and the matched text is one
+ *  If the second argument is a Hash, and the matched text is one
  *  of its keys, the corresponding value is the replacement string.
  *
  *  In the block form, the current match string is passed in as a parameter,
@@ -5303,7 +5303,7 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *  replacement string.
  *
  *  When neither a block nor a second argument is supplied, an
- *  <code>Enumerator</code> is returned.
+ *  Enumerator is returned.
  *
  *     "hello".gsub(/[aeiou]/, '*')                  #=> "h*ll*"
  *     "hello".gsub(/([aeiou])/, '<\1>')             #=> "h<e>ll<o>"
@@ -5549,10 +5549,10 @@ str_byte_aref(VALUE str, VALUE indx)
  *     str.byteslice(integer, integer)   -> new_str or nil
  *     str.byteslice(range)            -> new_str or nil
  *
- *  Byte Reference---If passed a single <code>Integer</code>, returns a
- *  substring of one byte at that position. If passed two <code>Integer</code>
+ *  Byte Reference---If passed a single Integer, returns a
+ *  substring of one byte at that position. If passed two Integer
  *  objects, returns a substring starting at the offset given by the first, and
- *  a length given by the second. If given a <code>Range</code>, a substring containing
+ *  a length given by the second. If given a Range, a substring containing
  *  bytes at offsets given by the range is returned. In all three cases, if
  *  an offset is negative, it is counted from the end of <i>str</i>. Returns
  *  <code>nil</code> if the initial offset falls outside the string, the length
@@ -6797,10 +6797,11 @@ rb_str_capitalize(int argc, VALUE *argv, VALUE str)
  *     str.swapcase!              -> str or nil
  *     str.swapcase!([options])   -> str or nil
  *
- *  Equivalent to <code>String#swapcase</code>, but modifies the receiver in
- *  place, returning <i>str</i>, or <code>nil</code> if no changes were made.
+ *  Equivalent to String#swapcase, but modifies the receiver in place,
+ *  returning <i>str</i>, or <code>nil</code> if no changes were made.
  *
- *  See String#downcase for meaning of +options+ and use with different encodings.
+ *  See String#downcase for meaning of +options+ and use with
+ *  different encodings.
  */
 
 static VALUE
@@ -7161,8 +7162,8 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
  *     str.tr!(from_str, to_str)   -> str or nil
  *
  *  Translates <i>str</i> in place, using the same rules as
- *  <code>String#tr</code>. Returns <i>str</i>, or <code>nil</code> if no
- *  changes were made.
+ *  String#tr. Returns <i>str</i>, or <code>nil</code> if no changes
+ *  were made.
  */
 
 static VALUE
@@ -7378,7 +7379,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
  *
  *  Returns a copy of <i>str</i> with all characters in the intersection of its
  *  arguments deleted. Uses the same rules for building the set of characters as
- *  <code>String#count</code>.
+ *  String#count.
  *
  *     "hello".delete "l","lo"        #=> "heo"
  *     "hello".delete "lo"            #=> "he"
@@ -7483,11 +7484,11 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *     str.squeeze([other_str]*)    -> new_str
  *
- *  Builds a set of characters from the <i>other_str</i> parameter(s) using the
- *  procedure described for <code>String#count</code>. Returns a new string
- *  where runs of the same character that occur in this set are replaced by a
- *  single character. If no arguments are given, all runs of identical
- *  characters are replaced by a single character.
+ *  Builds a set of characters from the <i>other_str</i> parameter(s)
+ *  using the procedure described for String#count. Returns a new
+ *  string where runs of the same character that occur in this set are
+ *  replaced by a single character. If no arguments are given, all
+ *  runs of identical characters are replaced by a single character.
  *
  *     "yellow moon".squeeze                  #=> "yelow mon"
  *     "  now   is  the".squeeze(" ")         #=> " now is the"
@@ -7507,7 +7508,7 @@ rb_str_squeeze(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *     str.tr_s!(from_str, to_str)   -> str or nil
  *
- *  Performs <code>String#tr_s</code> processing on <i>str</i> in place,
+ *  Performs String#tr_s processing on <i>str</i> in place,
  *  returning <i>str</i>, or <code>nil</code> if no changes were made.
  */
 
@@ -7522,8 +7523,8 @@ rb_str_tr_s_bang(VALUE str, VALUE src, VALUE repl)
  *  call-seq:
  *     str.tr_s(from_str, to_str)   -> new_str
  *
- *  Processes a copy of <i>str</i> as described under <code>String#tr</code>,
- *  then removes duplicate characters in regions that were affected by the
+ *  Processes a copy of <i>str</i> as described under String#tr, then
+ *  removes duplicate characters in regions that were affected by the
  *  translation.
  *
  *     "hello".tr_s('l', 'r')     #=> "hero"
@@ -7705,12 +7706,12 @@ split_string(VALUE result, VALUE str, long beg, long len, long empty_count)
  *  Divides <i>str</i> into substrings based on a delimiter, returning an array
  *  of these substrings.
  *
- *  If <i>pattern</i> is a <code>String</code>, then its contents are used as
+ *  If <i>pattern</i> is a String, then its contents are used as
  *  the delimiter when splitting <i>str</i>. If <i>pattern</i> is a single
  *  space, <i>str</i> is split on whitespace, with leading and trailing
  *  whitespace and runs of contiguous whitespace characters ignored.
  *
- *  If <i>pattern</i> is a <code>Regexp</code>, <i>str</i> is divided where the
+ *  If <i>pattern</i> is a Regexp, <i>str</i> is divided where the
  *  pattern matches. Whenever the pattern matches a zero-length string,
  *  <i>str</i> is split into individual characters. If <i>pattern</i> contains
  *  groups, the respective matches will be returned in the array as well.
@@ -8371,7 +8372,7 @@ rb_str_enumerate_codepoints(VALUE str, VALUE ary)
  *     str.each_codepoint {|integer| block }    -> str
  *     str.each_codepoint                       -> an_enumerator
  *
- *  Passes the <code>Integer</code> ordinal of each character in <i>str</i>,
+ *  Passes the Integer ordinal of each character in <i>str</i>,
  *  also known as a <i>codepoint</i> when applied to Unicode strings to the
  *  given block.  For encodings other than UTF-8/UTF-16(BE|LE)/UTF-32(BE|LE),
  *  values are directly derived from the binary representation
@@ -8397,7 +8398,7 @@ rb_str_each_codepoint(VALUE str)
  *  call-seq:
  *     str.codepoints   -> an_array
  *
- *  Returns an array of the <code>Integer</code> ordinals of the
+ *  Returns an array of the Integer ordinals of the
  *  characters in <i>str</i>.  This is a shorthand for
  *  <code>str.each_codepoint.to_a</code>.
  *
@@ -8562,9 +8563,9 @@ chopped_length(VALUE str)
  *  call-seq:
  *     str.chop!   -> str or nil
  *
- *  Processes <i>str</i> as for <code>String#chop</code>, returning <i>str</i>,
- *  or <code>nil</code> if <i>str</i> is the empty string.  See also
- *  <code>String#chomp!</code>.
+ *  Processes <i>str</i> as for String#chop, returning <i>str</i>, or
+ *  <code>nil</code> if <i>str</i> is the empty string.  See also
+ *  String#chomp!.
  */
 
 static VALUE
@@ -8589,11 +8590,12 @@ rb_str_chop_bang(VALUE str)
  *  call-seq:
  *     str.chop   -> new_str
  *
- *  Returns a new <code>String</code> with the last character removed.  If the
- *  string ends with <code>\r\n</code>, both characters are removed. Applying
- *  <code>chop</code> to an empty string returns an empty
- *  string. <code>String#chomp</code> is often a safer alternative, as it leaves
- *  the string unchanged if it doesn't end in a record separator.
+ *  Returns a new String with the last character removed.  If the
+ *  string ends with <code>\r\n</code>, both characters are
+ *  removed. Applying <code>chop</code> to an empty string returns an
+ *  empty string. String#chomp is often a safer alternative, as it
+ *  leaves the string unchanged if it doesn't end in a record
+ *  separator.
  *
  *     "string\r\n".chop   #=> "string"
  *     "string\n\r".chop   #=> "string\n"
@@ -8746,8 +8748,9 @@ rb_str_chomp_string(VALUE str, VALUE rs)
  *  call-seq:
  *     str.chomp!(separator=$/)   -> str or nil
  *
- *  Modifies <i>str</i> in place as described for <code>String#chomp</code>,
- *  returning <i>str</i>, or <code>nil</code> if no modifications were made.
+ *  Modifies <i>str</i> in place as described for String#chomp,
+ *  returning <i>str</i>, or <code>nil</code> if no modifications were
+ *  made.
  */
 
 static VALUE
@@ -8766,7 +8769,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *     str.chomp(separator=$/)   -> new_str
  *
- *  Returns a new <code>String</code> with the given record separator removed
+ *  Returns a new String with the given record separator removed
  *  from the end of <i>str</i> (if present). If <code>$/</code> has not been
  *  changed from the default Ruby record separator, then <code>chomp</code> also
  *  removes carriage return characters (that is it will remove <code>\n</code>,
@@ -9104,7 +9107,7 @@ scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
  *     str.scan(pattern) {|match, ...| block }   -> str
  *
  *  Both forms iterate through <i>str</i>, matching the pattern (which may be a
- *  <code>Regexp</code> or a <code>String</code>). For each match, a result is
+ *  Regexp or a String). For each match, a result is
  *  generated and either added to the result array or passed to the block. If
  *  the pattern contains no groups, each individual result consists of the
  *  matched string, <code>$&</code>.  If the pattern contains groups, each
@@ -9241,9 +9244,9 @@ rb_str_oct(VALUE str)
  *    detectable.
  *
  *    * For instance, in the following example, the second invocation
- *      of <code>String#crypt</code> is wrong; it has a typo in
- *      "round=" (lacks "s").  However the call does not fail and
- *      something unexpected is generated.
+ *      of String#crypt is wrong; it has a typo in "round=" (lacks
+ *      "s").  However the call does not fail and something unexpected
+ *      is generated.
  *
  *         "foo".crypt("$5$rounds=1000$salt$") # OK, proper usage
  *         "foo".crypt("$5$round=1000$salt$")  # Typo not detected
@@ -9330,7 +9333,7 @@ rb_str_crypt(VALUE str, VALUE salt)
  *  call-seq:
  *     str.ord   -> integer
  *
- *  Returns the <code>Integer</code> ordinal of a one-character string.
+ *  Returns the Integer ordinal of a one-character string.
  *
  *     "a".ord         #=> 97
  */
@@ -9348,7 +9351,7 @@ rb_str_ord(VALUE s)
  *     str.sum(n=16)   -> integer
  *
  *  Returns a basic <em>n</em>-bit checksum of the characters in <i>str</i>,
- *  where <em>n</em> is the optional <code>Integer</code> parameter, defaulting
+ *  where <em>n</em> is the optional Integer parameter, defaulting
  *  to 16. The result is simply the sum of the binary value of each byte in
  *  <i>str</i> modulo <code>2**n - 1</code>. This is not a particularly good
  *  checksum.
@@ -9507,7 +9510,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
  *     str.ljust(integer, padstr=' ')   -> new_str
  *
  *  If <i>integer</i> is greater than the length of <i>str</i>, returns a new
- *  <code>String</code> of length <i>integer</i> with <i>str</i> left justified
+ *  String of length <i>integer</i> with <i>str</i> left justified
  *  and padded with <i>padstr</i>; otherwise, returns <i>str</i>.
  *
  *     "hello".ljust(4)            #=> "hello"
@@ -9527,7 +9530,7 @@ rb_str_ljust(int argc, VALUE *argv, VALUE str)
  *     str.rjust(integer, padstr=' ')   -> new_str
  *
  *  If <i>integer</i> is greater than the length of <i>str</i>, returns a new
- *  <code>String</code> of length <i>integer</i> with <i>str</i> right justified
+ *  String of length <i>integer</i> with <i>str</i> right justified
  *  and padded with <i>padstr</i>; otherwise, returns <i>str</i>.
  *
  *     "hello".rjust(4)            #=> "hello"
@@ -10450,17 +10453,15 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
 /**********************************************************************
  * Document-class: Symbol
  *
- *  <code>Symbol</code> objects represent names and some strings
- *  inside the Ruby
+ *  Symbol objects represent names and some strings inside the Ruby
  *  interpreter. They are generated using the <code>:name</code> and
- *  <code>:"string"</code> literals
- *  syntax, and by the various <code>to_sym</code> methods. The same
- *  <code>Symbol</code> object will be created for a given name or string
- *  for the duration of a program's execution, regardless of the context
- *  or meaning of that name. Thus if <code>Fred</code> is a constant in
- *  one context, a method in another, and a class in a third, the
- *  <code>Symbol</code> <code>:Fred</code> will be the same object in
- *  all three contexts.
+ *  <code>:"string"</code> literals syntax, and by the various
+ *  <code>to_sym</code> methods. The same Symbol object will be
+ *  created for a given name or string for the duration of a program's
+ *  execution, regardless of the context or meaning of that name. Thus
+ *  if <code>Fred</code> is a constant in one context, a method in
+ *  another, and a class in a third, the Symbol <code>:Fred</code>
+ *  will be the same object in all three contexts.
  *
  *     module One
  *       class Fred
@@ -10617,7 +10618,7 @@ rb_sym_to_s(VALUE sym)
  *   sym.to_sym   -> sym
  *   sym.intern   -> sym
  *
- * In general, <code>to_sym</code> returns the <code>Symbol</code> corresponding
+ * In general, <code>to_sym</code> returns the Symbol corresponding
  * to an object. As <i>sym</i> is already a symbol, <code>self</code> is returned
  * in this case.
  */
@@ -10697,7 +10698,7 @@ sym_cmp(VALUE sym, VALUE other)
  * call-seq:
  *   sym.casecmp(other_symbol)   -> -1, 0, +1, or nil
  *
- * Case-insensitive version of <code>Symbol#<=></code>.
+ * Case-insensitive version of Symbol#<=>.
  * Currently, case-insensitivity only works on characters A-Z/a-z,
  * not all of Unicode. This is different from Symbol#casecmp?.
  *
@@ -10939,15 +10940,15 @@ rb_to_symbol(VALUE name)
 }
 
 /*
- *  A <code>String</code> object holds and manipulates an arbitrary sequence of
+ *  A String object holds and manipulates an arbitrary sequence of
  *  bytes, typically representing characters. String objects may be created
- *  using <code>String::new</code> or as literals.
+ *  using String::new or as literals.
  *
  *  Because of aliasing issues, users of strings should be aware of the methods
- *  that modify the contents of a <code>String</code> object.  Typically,
+ *  that modify the contents of a String object.  Typically,
  *  methods with names ending in ``!'' modify their receiver, while those
- *  without a ``!'' return a new <code>String</code>.  However, there are
- *  exceptions, such as <code>String#[]=</code>.
+ *  without a ``!'' return a new String.  However, there are
+ *  exceptions, such as String#[]=.
  *
  */
 
