@@ -1997,7 +1997,7 @@ rb_str_times(VALUE str, VALUE times)
  *  the result of applying it to <i>arg</i>. If the format
  *  specification contains more than one substitution, then <i>arg</i>
  *  must be an Array or Hash containing the values to be
- *  substituted. See Kernel::sprintf for details of the format string.
+ *  substituted. See Kernel#sprintf for details of the format string.
  *
  *     "%05d" % 123                              #=> "00123"
  *     "%-5s: %016x" % [ "ID", self.object_id ]  #=> "ID   : 00002b054ec93168"
