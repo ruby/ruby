@@ -1331,6 +1331,20 @@ class TestProc < Test::Unit::TestCase
     assert_equal(5, b.local_variable_get(:end))
   end
 
+  def test_local_variable_get_outside_of_a_method
+    assert_ruby_status([], <<-'end;', '[GH-2100]', timeout: 30)
+      def foo
+        x = :before
+        $bndg = binding
+        x = :after
+        x
+      end
+
+      foo
+      exit :after == $bndg.local_variable_get(:x)
+    end;
+  end
+
   def test_local_variable_set
     b = get_binding
     b.local_variable_set(:a, 10)

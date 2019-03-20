@@ -760,6 +760,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 
     cfp->ep = env_ep;
     VM_ENV_FLAGS_SET(env_ep, VM_ENV_FLAG_ESCAPED | VM_ENV_FLAG_WB_REQUIRED);
+    VM_ENV_FLAGS_UNSET(env_ep, VM_FRAME_FLAG_POPPED);
     VM_STACK_ENV_WRITE(ep, 0, (VALUE)env);		/* GC mark */
     return (VALUE)env;
 }

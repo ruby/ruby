@@ -441,6 +441,8 @@ tests.compact.each {|(insn, expr, *a)| assert_equal 'true', expr, insn, *a }
 
 # with trace
 tests.compact.each {|(insn, expr, *a)|
+  # opt_RubyVM_return_value_is_used_ is always true when traced
+  next if insn == 'opt_RubyVM_return_value_is_used_'
   progn = "set_trace_func(proc{})\n" + expr
   assert_equal 'true', progn, 'trace_' + insn, *a
 }

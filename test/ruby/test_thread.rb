@@ -533,6 +533,25 @@ class TestThread < Test::Unit::TestCase
     waiter&.kill&.join
   end
 
+  def test_spinlock
+    assert_ruby_status([], <<-'end;', '[GH-2100]', timeout: 10)
+      def start_thread
+        initialized = false
+        Thread.new do
+          nil until initialized # spin lock
+          p :ok
+          Process.exit
+        end
+        # some initialization code...
+        sleep 1
+        initialized = true
+      end
+
+      start_thread
+      sleep
+    end;
+  end
+
   def test_safe_level
     ok = false
     t = Thread.new do
