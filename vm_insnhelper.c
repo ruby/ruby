@@ -1708,10 +1708,10 @@ rb_iseq_only_optparam_p(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_opt == TRUE &&
            iseq->body->param.flags.has_rest == FALSE &&
-	   iseq->body->param.flags.has_post == FALSE &&
-	   iseq->body->param.flags.has_kw == FALSE &&
-	   iseq->body->param.flags.has_kwrest == FALSE &&
-	   iseq->body->param.flags.has_block == FALSE;
+           iseq->body->param.flags.has_post == FALSE &&
+           iseq->body->param.flags.has_kw == FALSE &&
+           iseq->body->param.flags.has_kwrest == FALSE &&
+           iseq->body->param.flags.has_block == FALSE;
 }
 
 static inline void
