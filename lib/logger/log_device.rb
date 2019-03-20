@@ -1,4 +1,4 @@
-require 'logger/period'
+require_relative 'period'
 
 class Logger
   # Device used for logging messages.

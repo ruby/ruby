@@ -11,11 +11,12 @@
 # A simple system for logging messages.  See Logger for more documentation.
 
 require 'monitor'
-require 'logger/version'
-require 'logger/formatter'
-require 'logger/log_device'
-require 'logger/severity'
-require 'logger/errors'
+
+require_relative 'logger/version'
+require_relative 'logger/formatter'
+require_relative 'logger/log_device'
+require_relative 'logger/severity'
+require_relative 'logger/errors'
 
 # == Description
 #
