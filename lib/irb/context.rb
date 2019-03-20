@@ -121,6 +121,11 @@ module IRB
       if @echo.nil?
         @echo = true
       end
+
+      @echo_on_assignment = IRB.conf[:ECHO_ON_ASSIGNMENT]
+      if @echo_on_assignment.nil?
+        @echo_on_assignment = false
+      end
     end
 
     # The top-level workspace, see WorkSpace#main
@@ -236,6 +241,15 @@ module IRB
     #     puts "omg"
     #     # omg
     attr_accessor :echo
+    # Whether to echo for assignment expressions
+    #
+    # Uses IRB.conf[:ECHO_ON_ASSIGNMENT] if available, or defaults to +false+.
+    #
+    #     a = "omg"
+    #     IRB.CurrentContext.echo_on_assignment = true
+    #     a = "omg"
+    #     #=> omg
+    attr_accessor :echo_on_assignment
     # Whether verbose messages are displayed or not.
     #
     # A copy of the default <code>IRB.conf[:VERBOSE]</code>
@@ -261,6 +275,7 @@ module IRB
     alias ignore_sigint? ignore_sigint
     alias ignore_eof? ignore_eof
     alias echo? echo
+    alias echo_on_assignment? echo_on_assignment
 
     # Returns whether messages are displayed or not.
     def verbose?
