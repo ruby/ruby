@@ -862,6 +862,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %token <id>   tCONSTANT      "constant"
 %token <id>   tCVAR          "class variable"
 %token <id>   tLABEL
+%token <id>   tNUMPARAM      "numbered parameter"
 %token <node> tINTEGER       "integer literal"
 %token <node> tFLOAT         "float literal"
 %token <node> tRATIONAL      "rational literal"
@@ -871,7 +872,6 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %token <node> tBACK_REF      "back reference"
 %token <node> tSTRING_CONTENT "literal content"
 %token <num>  tREGEXP_END
-%token <num>  tNUMPARAM      "numbered parameter"
 
 %type <node> singleton strings string string1 xstring regexp
 %type <node> string_contents xstring_contents regexp_contents string_content
@@ -3820,11 +3820,9 @@ string_dvar	: tGVAR
 		    }
 		| tNUMPARAM
 		    {
-			ID id = numparam_id(p, get_num($1));
 		    /*%%%*/
-			$$ = NEW_DVAR(id, &@1);
+			$$ = NEW_DVAR($1, &@1);
 		    /*% %*/
-			(void)id;
 		    /*% ripper: var_ref!($1) %*/
 		    }
 		| backref
@@ -3883,14 +3881,6 @@ user_variable	: tIDENTIFIER
 		| tCONSTANT
 		| tCVAR
 		| tNUMPARAM
-		    {
-			ID id = numparam_id(p, get_num($1));
-		    /*%%%*/
-			$$ = id;
-		    /*%
-			$$ = ripper_new_yylval(p, id, get_value($1), 0);
-		    %*/
-		    }
 		;
 
 keyword_variable: keyword_nil {$$ = KWD2EID(nil, $1);}
@@ -7663,7 +7653,7 @@ parser_numbered_param(struct parser_params *p, unsigned long n)
 	compile_error(p, "ordinary parameter is defined");
 	return false;
     }
-    set_yylval_num((int)n);
+    set_yylval_name(numparam_id(p, (int)n));
     SET_LEX_STATE(EXPR_ARG);
     return true;
 }
