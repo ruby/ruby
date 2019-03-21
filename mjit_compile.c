@@ -65,11 +65,12 @@ has_valid_method_type(CALL_CACHE cc)
 // Returns true if iseq is inlinable, otherwise NULL. This becomes true in the same condition
 // as CC_SET_FASTPATH (in vm_callee_setup_arg) is called from vm_call_iseq_setup.
 static bool
-inlinable_iseq_p(CALL_INFO ci, CALL_CACHE cc, const rb_iseq_t *iseq)
+inlinable_iseq_p(const CALL_INFO ci, const CALL_CACHE cc, const rb_iseq_t *iseq)
 {
     extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
     return iseq != NULL
         && !(ci->flag & VM_CALL_KW_SPLAT) && rb_simple_iseq_p(iseq) // Top of vm_callee_setup_arg. In this case, opt_pc is 0.
+        && ci->orig_argc == iseq->body->param.lead_num // exclude argument_arity_error (assumption: `calling->argc == ci->orig_argc` in send insns)
         && vm_call_iseq_optimizable_p(ci, cc); // CC_SET_FASTPATH condition
 }
 

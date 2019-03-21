@@ -18,14 +18,14 @@
 %
     if (has_valid_method_type(cc_copy)) {
         const rb_iseq_t *iseq;
-        unsigned int argc = ci->orig_argc; /* unlike `ci->orig_argc`, `argc` may include blockarg */
+        unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
 % if insn.name == 'send'
-        argc += ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0);
+        argc += ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0); // simulate `vm_caller_setup_arg_block`'s `--reg_cfp->sp`
 % end
 
-        if (!(ci->flag & VM_CALL_TAILCALL) && /* inlining non-tailcall path */
-            cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && inlinable_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def)) /* CC_SET_FASTPATH in vm_callee_setup_arg */) {
-            int param_size = iseq->body->param.size; /* TODO: check calling->argc for argument_arity_error */
+        if (!(ci->flag & VM_CALL_TAILCALL) // inlining non-tailcall path
+                && cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && inlinable_iseq_p(ci, cc_copy, iseq = def_iseq_ptr(cc_copy->me->def))) { // CC_SET_FASTPATH in vm_callee_setup_arg
+            int param_size = iseq->body->param.size;
 
             fprintf(f, "{\n");
 % # JIT: Declare stack_size to be used in some macro of _mjit_compile_insn_body.erb
