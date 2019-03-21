@@ -3,8 +3,6 @@
 RSpec.describe "the lockfile format" do
   include Bundler::GemHelpers
 
-  before { ENV["BUNDLER_SPEC_IGNORE_COMPATIBILITY_GUARD"] = "TRUE" }
-
   it "generates a simple lockfile for a single source, gem" do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
