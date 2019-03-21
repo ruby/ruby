@@ -912,6 +912,9 @@ class TestJIT < Test::Unit::TestCase
   def assert_eval_with_jit(script, stdout: nil, success_count:, min_calls: 1, insns: [], uplevel: 3)
     out, err = eval_with_jit(script, verbose: 1, min_calls: min_calls)
     actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
+    if RUBY_PLATFORM.match?(/mswin/) && success_count != actual
+      _, err2 = eval_with_jit(script, verbose: 2, min_calls: min_calls)
+    end
 
     # Make sure that the script has insns expected to be tested
     used_insns = method_insns(script)
@@ -926,7 +929,7 @@ class TestJIT < Test::Unit::TestCase
     assert_equal(
       success_count, actual,
       "Expected #{success_count} times of JIT success, but succeeded #{actual} times.\n\n"\
-      "script:\n#{code_block(script)}\nstderr:\n#{code_block(err)}",
+      "script:\n#{code_block(script)}\nstderr:\n#{code_block(err)}#{("\nstderr(verbose=2 retry):\n#{code_block(err2)}" if err2)}",
     )
     if stdout
       assert_equal(stdout, out, "Expected stdout #{out.inspect} to match #{stdout.inspect} with script:\n#{code_block(script)}")
