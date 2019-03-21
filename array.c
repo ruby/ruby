@@ -4735,7 +4735,7 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
  *     ary.max(n) {|a, b| block}   -> array
  *
  *  Returns the object in _ary_ with the maximum value. The
- *  first form assumes all objects implement <code>Comparable</code>;
+ *  first form assumes all objects implement Comparable;
  *  the second uses the block to return <em>a <=> b</em>.
  *
  *     ary = %w(albatross dog horse)
@@ -4788,7 +4788,7 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
  *     ary.min(n) {| a,b | block } -> array
  *
  *  Returns the object in _ary_ with the minimum value. The
- *  first form assumes all objects implement <code>Comparable</code>;
+ *  first form assumes all objects implement Comparable;
  *  the second uses the block to return <em>a <=> b</em>.
  *
  *     ary = %w(albatross dog horse)
