@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "bundler/compatibility_guard"
-
 require_relative "bundler/vendored_fileutils"
 require "pathname"
 require "rbconfig"

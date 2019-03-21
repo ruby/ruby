@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "compatibility_guard"
-
 require "pathname"
 require "rbconfig"
 

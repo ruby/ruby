@@ -140,7 +140,7 @@ RSpec.describe "bundle install" do
 
       simulate_bundler_version "99999999.99.1"
 
-      bundle! "check", :env => { "BUNDLER_SPEC_IGNORE_COMPATIBILITY_GUARD" => "1" }
+      bundle! "check"
       expect(out).to include("The Gemfile's dependencies are satisfied")
     end
 
@@ -153,7 +153,7 @@ RSpec.describe "bundle install" do
 
       simulate_bundler_version "99999999.99.1"
 
-      bundle! "check", :env => { "BUNDLER_SPEC_IGNORE_COMPATIBILITY_GUARD" => "1" }
+      bundle! "check"
       expect(out).to include("The Gemfile's dependencies are satisfied")
     end
 
