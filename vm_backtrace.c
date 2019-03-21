@@ -352,7 +352,7 @@ location_to_str(rb_backtrace_location_t *loc)
 	}
 	else {
 	    file = GET_VM()->progname;
-	    lineno = 0;
+            lineno = 0;
 	}
 	name = rb_id2str(loc->body.cfunc.mid);
 	break;
