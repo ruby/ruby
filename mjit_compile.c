@@ -69,8 +69,8 @@ inlinable_iseq_p(CALL_INFO ci, CALL_CACHE cc, const rb_iseq_t *iseq)
 {
     extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
     return iseq != NULL
-        && rb_simple_iseq_p(iseq) && !(ci->flag & VM_CALL_KW_SPLAT) /* Top of vm_callee_setup_arg. In this case, opt_pc is 0. */
-        && (!IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) && !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED)); /* CC_SET_FASTPATH */
+        && !(ci->flag & VM_CALL_KW_SPLAT) && rb_simple_iseq_p(iseq) // Top of vm_callee_setup_arg. In this case, opt_pc is 0.
+        && vm_call_iseq_optimizable_p(ci, cc); // CC_SET_FASTPATH condition
 }
 
 static int
