@@ -915,7 +915,7 @@ class TestJIT < Test::Unit::TestCase
     # Add --jit-verbose=2 logs for cl.exe because compiler's error message is suppressed
     # for cl.exe with --jit-verbose=1. See `start_process` in mjit_worker.c.
     if RUBY_PLATFORM.match?(/mswin/) && success_count != actual
-      _, err2 = eval_with_jit(script, verbose: 2, min_calls: min_calls)
+      out2, err2 = eval_with_jit(script, verbose: 2, min_calls: min_calls)
     end
 
     # Make sure that the script has insns expected to be tested
@@ -931,7 +931,9 @@ class TestJIT < Test::Unit::TestCase
     assert_equal(
       success_count, actual,
       "Expected #{success_count} times of JIT success, but succeeded #{actual} times.\n\n"\
-      "script:\n#{code_block(script)}\nstderr:\n#{code_block(err)}#{("\nstderr(verbose=2 retry):\n#{code_block(err2)}" if err2)}",
+      "script:\n#{code_block(script)}\nstderr:\n#{code_block(err)}#{(
+        "\nstdout(verbose=2 retry):\n#{code_block(out2)}\nstderr(verbose=2 retry):\n#{code_block(err2)}" if out2 || err2
+      )}",
     )
     if stdout
       assert_equal(stdout, out, "Expected stdout #{out.inspect} to match #{stdout.inspect} with script:\n#{code_block(script)}")
