@@ -96,7 +96,17 @@ jobs:
 #      bundler:
 #        task: test-bundler
   steps:
-  - script: vcpkg --triplet x64-windows install openssl readline zlib
+  # FIXME: Refactor this. Note that %errorlevel% does not work in for loop.
+  - script: |
+      vcpkg --triplet x64-windows install %dependencies%
+      if %errorlevel% == 0 (exit 0)
+      sleep 4
+      vcpkg --triplet x64-windows install %dependencies%
+      if %errorlevel% == 0 (exit 0)
+      sleep 25
+      vcpkg --triplet x64-windows install %dependencies%
+    env:
+      dependencies: openssl readline zlib
   - checkout: self
     fetchDepth: 10
   - script: |
