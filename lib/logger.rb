@@ -237,7 +237,7 @@ class Logger
     name = File.basename(__FILE__)
   end
   rev ||= "v#{VERSION}"
-  ProgName = "#{name}/#{rev}".freeze
+  ProgName = "#{name}/#{rev}"
 
   include Severity
 
@@ -574,7 +574,7 @@ class Logger
 private
 
   # Severity label for logging (max 5 chars).
-  SEV_LABEL = %w(DEBUG INFO WARN ERROR FATAL ANY).each(&:freeze).freeze
+  SEV_LABEL = %w(DEBUG INFO WARN ERROR FATAL ANY).freeze
 
   def format_severity(severity)
     SEV_LABEL[severity] || 'ANY'
