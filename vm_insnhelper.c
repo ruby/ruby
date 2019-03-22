@@ -1714,6 +1714,18 @@ rb_iseq_only_optparam_p(const rb_iseq_t *iseq)
            iseq->body->param.flags.has_block == FALSE;
 }
 
+static bool
+rb_iseq_only_kwparam_p(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.has_opt == FALSE &&
+           iseq->body->param.flags.has_rest == FALSE &&
+           iseq->body->param.flags.has_post == FALSE &&
+           iseq->body->param.flags.has_kw == TRUE &&
+           iseq->body->param.flags.has_kwrest == FALSE &&
+           iseq->body->param.flags.has_block == FALSE;
+}
+
+
 static inline void
 CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
                  struct rb_calling_info *restrict calling,
@@ -1769,6 +1781,57 @@ vm_call_iseq_setup_normal_opt_start(rb_execution_context_t *ec, rb_control_frame
     return vm_call_iseq_setup_normal(ec, cfp, calling, cc->me, opt_pc, param - delta, local);
 }
 
+static void
+args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq,
+                         VALUE *const passed_values, const int passed_keyword_len, const VALUE *const passed_keywords,
+			 VALUE *const locals);
+
+static VALUE
+vm_call_iseq_setup_kwparm_kwarg(rb_execution_context_t *ec, rb_control_frame_t *cfp,
+                                struct rb_calling_info *calling,
+                                const struct rb_call_info *ci, struct rb_call_cache *cc)
+{
+    VM_ASSERT(ci->flag & VM_CALL_KWARG);
+    const rb_iseq_t *iseq = def_iseq_ptr(cc->me->def);
+    const struct rb_iseq_param_keyword *kw_param = iseq->body->param.keyword;
+    const struct rb_call_info_kw_arg *kw_arg = ((struct rb_call_info_with_kwarg *)ci)->kw_arg;
+    const int ci_kw_len = kw_arg->keyword_len;
+    const VALUE * const ci_keywords = kw_arg->keywords;
+    VALUE *argv = cfp->sp - calling->argc;
+    VALUE *const klocals = argv + kw_param->bits_start - kw_param->num;
+    const int lead_num = iseq->body->param.lead_num;
+    VALUE * const ci_kws = ALLOCA_N(VALUE, ci_kw_len);
+    MEMCPY(ci_kws, argv + lead_num, VALUE, ci_kw_len);
+    args_setup_kw_parameters(ec, iseq, ci_kws, ci_kw_len, ci_keywords, klocals);
+
+    int param = iseq->body->param.size;
+    int local = iseq->body->local_table_size;
+    return vm_call_iseq_setup_normal(ec, cfp, calling, cc->me, 0, param, local);
+}
+
+static VALUE
+vm_call_iseq_setup_kwparm_nokwarg(rb_execution_context_t *ec, rb_control_frame_t *cfp,
+                                  struct rb_calling_info *calling,
+                                  const struct rb_call_info *ci, struct rb_call_cache *cc)
+{
+    VM_ASSERT((ci->flag & VM_CALL_KWARG) == 0);
+    const rb_iseq_t *iseq = def_iseq_ptr(cc->me->def);
+    const struct rb_iseq_param_keyword *kw_param = iseq->body->param.keyword;
+    VALUE * const argv = cfp->sp - calling->argc;
+    VALUE * const klocals = argv + kw_param->bits_start - kw_param->num;
+
+    for (int i=0; i<kw_param->num; i++) {
+        klocals[i] = kw_param->default_values[i];
+    }
+    /* NOTE: don't need to setup (clear) unspecified bits
+             because no code check it.
+             klocals[kw_param->num] = INT2FIX(0); */
+
+    int param = iseq->body->param.size;
+    int local = iseq->body->local_table_size;
+    return vm_call_iseq_setup_normal(ec, cfp, calling, cc->me, 0, param, local);
+}
+
 static inline int
 vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc,
 		    const rb_iseq_t *iseq, VALUE *argv, int param_size, int local_size)
@@ -1808,6 +1871,43 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                 argv[i] = Qnil;
             }
             return (int)iseq->body->param.opt_table[opt];
+        }
+        else if (rb_iseq_only_kwparam_p(iseq) && !IS_ARGS_SPLAT(ci)) {
+            const int lead_num = iseq->body->param.lead_num;
+            const int argc = calling->argc;
+            const struct rb_iseq_param_keyword *kw_param = iseq->body->param.keyword;
+
+            if (ci->flag & VM_CALL_KWARG) {
+                const struct rb_call_info_kw_arg *kw_arg = ((struct rb_call_info_with_kwarg *)ci)->kw_arg;
+
+                if (argc - kw_arg->keyword_len == lead_num) {
+                    const int ci_kw_len = kw_arg->keyword_len;
+                    const VALUE * const ci_keywords = kw_arg->keywords;
+                    VALUE * const ci_kws = ALLOCA_N(VALUE, ci_kw_len);
+                    MEMCPY(ci_kws, argv + lead_num, VALUE, ci_kw_len);
+
+                    VALUE *const klocals = argv + kw_param->bits_start - kw_param->num;
+                    args_setup_kw_parameters(ec, iseq, ci_kws, ci_kw_len, ci_keywords, klocals);
+
+                    CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_kwarg,
+                                    !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED));
+
+                    return 0;
+                }
+            }
+            else if (argc == lead_num) {
+                /* no kwarg */
+                VALUE *const klocals = argv + kw_param->bits_start - kw_param->num;
+                args_setup_kw_parameters(ec, iseq, NULL, 0, NULL, klocals);
+
+                if (klocals[kw_param->num] == INT2FIX(0)) {
+                    /* copy from default_values */
+                    CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_nokwarg,
+                                    !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED));
+                }
+
+                return 0;
+            }
         }
     }
 
