@@ -155,7 +155,7 @@ rb_warning_s_warn(VALUE mod, VALUE str)
  *  Document-module: Warning
  *
  *  The Warning module contains a single method named #warn, and the
- *  module extends itself, making <code>Warning.warn</code> available.
+ *  module extends itself, making Warning.warn available.
  *  Warning.warn is called for all warnings issued by Ruby.
  *  By default, warnings are printed to $stderr.
  *
@@ -306,7 +306,7 @@ warning_write(int argc, VALUE *argv, VALUE buf)
  * <code>-W0</code> flag), does nothing.  Otherwise,
  * converts each of the messages to strings, appends a newline
  * character to the string if the string does not end in a newline,
- * and calls <code>Warning.warn</code> with the string.
+ * and calls Warning.warn with the string.
  *
  *    warn("warning 1", "warning 2")
  *
@@ -1266,7 +1266,7 @@ try_convert_to_exception(VALUE obj)
  *  call-seq:
  *     exc == obj   -> true or false
  *
- *  Equality---If <i>obj</i> is not an <code>Exception</code>, returns
+ *  Equality---If <i>obj</i> is not an Exception, returns
  *  <code>false</code>. Otherwise, returns <code>true</code> if <i>exc</i> and
  *  <i>obj</i> share same class, messages, and backtrace.
  */
@@ -1442,7 +1442,7 @@ name_err_init_attr(VALUE exc, VALUE recv, VALUE method)
  *   NameError.new(msg=nil, name=nil, receiver: nil)  -> name_error
  *
  * Construct a new NameError exception. If given the <i>name</i>
- * parameter may subsequently be examined using the <code>NameError#name</code>
+ * parameter may subsequently be examined using the NameError#name
  * method. <i>receiver</i> parameter allows to pass object in
  * context of which the error happened. Example:
  *
@@ -1852,19 +1852,18 @@ syntax_error_initialize(int argc, VALUE *argv, VALUE self)
 /*
  *  Document-module: Errno
  *
- *  Ruby exception objects are subclasses of <code>Exception</code>.
- *  However, operating systems typically report errors using plain
- *  integers. Module <code>Errno</code> is created dynamically to map
- *  these operating system errors to Ruby classes, with each error
- *  number generating its own subclass of <code>SystemCallError</code>.
- *  As the subclass is created in module <code>Errno</code>, its name
- *  will start <code>Errno::</code>.
+ *  Ruby exception objects are subclasses of Exception.  However,
+ *  operating systems typically report errors using plain
+ *  integers. Module Errno is created dynamically to map these
+ *  operating system errors to Ruby classes, with each error number
+ *  generating its own subclass of SystemCallError.  As the subclass
+ *  is created in module Errno, its name will start
+ *  <code>Errno::</code>.
  *
- *  The names of the <code>Errno::</code> classes depend on
- *  the environment in which Ruby runs. On a typical Unix or Windows
- *  platform, there are <code>Errno</code> classes such as
- *  <code>Errno::EACCES</code>, <code>Errno::EAGAIN</code>,
- *  <code>Errno::EINTR</code>, and so on.
+ *  The names of the <code>Errno::</code> classes depend on the
+ *  environment in which Ruby runs. On a typical Unix or Windows
+ *  platform, there are Errno classes such as Errno::EACCES,
+ *  Errno::EAGAIN, Errno::EINTR, and so on.
  *
  *  The integer operating system error number corresponding to a
  *  particular error is available as the class constant
@@ -1875,7 +1874,7 @@ syntax_error_initialize(int argc, VALUE *argv, VALUE self)
  *     Errno::EINTR::Errno    #=> 4
  *
  *  The full list of operating system errors on your particular platform
- *  are available as the constants of <code>Errno</code>.
+ *  are available as the constants of Errno.
  *
  *     Errno.constants   #=> :E2BIG, :EACCES, :EADDRINUSE, :EADDRNOTAVAIL, ...
  */
@@ -1934,11 +1933,10 @@ get_syserr(int n)
  * call-seq:
  *   SystemCallError.new(msg, errno)  -> system_call_error_subclass
  *
- * If _errno_ corresponds to a known system error code, constructs
- * the appropriate <code>Errno</code> class for that error, otherwise
- * constructs a generic <code>SystemCallError</code> object. The
- * error number is subsequently available via the <code>errno</code>
- * method.
+ * If _errno_ corresponds to a known system error code, constructs the
+ * appropriate Errno class for that error, otherwise constructs a
+ * generic SystemCallError object. The error number is subsequently
+ * available via the #errno method.
  */
 
 static VALUE

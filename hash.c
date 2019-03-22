@@ -1703,9 +1703,9 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
  *
  *  Rebuilds the hash based on the current hash values for each key. If
  *  values of key objects have changed since they were inserted, this
- *  method will reindex <i>hsh</i>. If <code>Hash#rehash</code> is
+ *  method will reindex <i>hsh</i>. If Hash#rehash is
  *  called while an iterator is traversing the hash, a
- *  <code>RuntimeError</code> will be raised in the iterator.
+ *  RuntimeError will be raised in the iterator.
  *
  *     a = [ "a", "b" ]
  *     c = [ "c", "d" ]
@@ -1788,7 +1788,7 @@ rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
  *
  *  Element Reference---Retrieves the <i>value</i> object corresponding
  *  to the <i>key</i> object. If not found, returns the default value (see
- *  <code>Hash::new</code> for details).
+ *  Hash::new for details).
  *
  *     h = { "a" => 100, "b" => 200 }
  *     h["a"]   #=> 100
@@ -1835,7 +1835,7 @@ rb_hash_lookup(VALUE hash, VALUE key)
  *
  *  Returns a value from the hash for the given key. If the key can't be
  *  found, there are several options: With no other arguments, it will
- *  raise a <code>KeyError</code> exception; if <i>default</i> is given,
+ *  raise a KeyError exception; if <i>default</i> is given,
  *  then that will be returned; if the optional code block is specified,
  *  then that will be run and its result returned.
  *
@@ -1905,7 +1905,7 @@ rb_hash_fetch(VALUE hash, VALUE key)
  *
  *  Returns the default value, the value that would be returned by
  *  <i>hsh</i>[<i>key</i>] if <i>key</i> did not exist in <i>hsh</i>.
- *  See also <code>Hash::new</code> and <code>Hash#default=</code>.
+ *  See also Hash::new and Hash#default=.
  *
  *     h = Hash.new                            #=> {}
  *     h.default                               #=> nil
@@ -1942,7 +1942,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
  *
  *  Sets the default value, the value returned for a key that does not
  *  exist in the hash. It is not possible to set the default to a
- *  <code>Proc</code> that will be executed on each key lookup.
+ *  Proc that will be executed on each key lookup.
  *
  *     h = { "a" => 100, "b" => 200 }
  *     h.default = "Go fish"
@@ -1968,7 +1968,7 @@ rb_hash_set_default(VALUE hash, VALUE ifnone)
  *  call-seq:
  *     hsh.default_proc -> anObject
  *
- *  If <code>Hash::new</code> was invoked with a block, return that
+ *  If Hash::new was invoked with a block, return that
  *  block, otherwise return <code>nil</code>.
  *
  *     h = Hash.new {|h,k| h[k] = k*k }   #=> {}
@@ -2268,7 +2268,7 @@ rb_hash_delete_if(VALUE hash)
  *     hsh.reject! {| key, value | block }  -> hsh or nil
  *     hsh.reject!                          -> an_enumerator
  *
- *  Equivalent to <code>Hash#delete_if</code>, but returns
+ *  Equivalent to Hash#delete_if, but returns
  *  <code>nil</code> if no changes were made.
  */
 
@@ -2365,7 +2365,7 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
  *   hsh.values_at(key, ...)   -> array
  *
  * Return an array containing the values associated with the given keys.
- * Also see <code>Hash.select</code>.
+ * Also see Hash.select.
  *
  *   h = { "cat" => "feline", "dog" => "canine", "cow" => "bovine" }
  *   h.values_at("cow", "cat")  #=> ["bovine", "feline"]
@@ -2389,8 +2389,8 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
  *   hsh.fetch_values(key, ...) { |key| block } -> array
  *
  * Returns an array containing the values associated with the given keys
- * but also raises <code>KeyError</code> when one of keys can't be found.
- * Also see <code>Hash#values_at</code> and <code>Hash#fetch</code>.
+ * but also raises KeyError when one of keys can't be found.
+ * Also see Hash#values_at and Hash#fetch.
  *
  *   h = { "cat" => "feline", "dog" => "canine", "cow" => "bovine" }
  *
@@ -3188,7 +3188,7 @@ keys_i(VALUE key, VALUE value, VALUE ary)
  *     hsh.keys    -> array
  *
  *  Returns a new array populated with the keys from this hash. See also
- *  <code>Hash#values</code>.
+ *  Hash#values.
  *
  *     h = { "a" => 100, "b" => 200, "c" => 300, "d" => 400 }
  *     h.keys   #=> ["a", "b", "c", "d"]
@@ -3235,7 +3235,7 @@ values_i(VALUE key, VALUE value, VALUE ary)
  *     hsh.values    -> array
  *
  *  Returns a new array populated with the values from <i>hsh</i>. See
- *  also <code>Hash#keys</code>.
+ *  also Hash#keys.
  *
  *     h = { "a" => 100, "b" => 200, "c" => 300 }
  *     h.values   #=> [100, 200, 300]
@@ -3287,7 +3287,7 @@ rb_hash_values(VALUE hash)
  *     h.has_key?("a")   #=> true
  *     h.has_key?("z")   #=> false
  *
- *  Note that <code>include?</code> and <code>member?</code> do not test member
+ *  Note that #include? and #member? do not test member
  *  equality using <code>==</code> as do other Enumerables.
  *
  *  See also Enumerable#include?
@@ -3427,8 +3427,7 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
  *
  *  Equality---Two hashes are equal if they each contain the same number
  *  of keys and if each key-value pair is equal to (according to
- *  <code>Object#==</code>) the corresponding elements in the other
- *  hash.
+ *  Object#==) the corresponding elements in the other hash.
  *
  *     h1 = { "a" => 1, "c" => 2 }
  *     h2 = { 7 => 35, "c" => 2, "a" => 1 }
@@ -3796,7 +3795,7 @@ assoc_i(VALUE key, VALUE val, VALUE arg)
  *
  *  Searches through the hash comparing _obj_ with the key using <code>==</code>.
  *  Returns the key-value pair (two elements array) or +nil+
- *  if no match is found.  See <code>Array#assoc</code>.
+ *  if no match is found.  See Array#assoc.
  *
  *     h = {"colors"  => ["red", "blue", "green"],
  *          "letters" => ["a", "b", "c" ]}
@@ -3858,7 +3857,7 @@ rassoc_i(VALUE key, VALUE val, VALUE arg)
  *
  *  Searches through the hash comparing _obj_ with the value using <code>==</code>.
  *  Returns the first key-value pair (two-element array) that matches. See
- *  also <code>Array#rassoc</code>.
+ *  also Array#rassoc.
  *
  *     a = {1=> "one", 2 => "two", 3 => "three", "ii" => "two"}
  *     a.rassoc("two")    #=> [2, "two"]
@@ -4048,7 +4047,7 @@ rb_hash_compare_by_id(VALUE hash)
  *     hsh.compare_by_identity? -> true or false
  *
  *  Returns <code>true</code> if <i>hsh</i> will compare its keys by
- *  their identity.  Also see <code>Hash#compare_by_identity</code>.
+ *  their identity.  Also see Hash#compare_by_identity.
  *
  */
 

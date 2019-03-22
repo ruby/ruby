@@ -1120,8 +1120,8 @@ ruby_init_ext(const char *name, void (*init)(void))
  *  call-seq:
  *     mod.autoload(module, filename)   -> nil
  *
- *  Registers _filename_ to be loaded (using <code>Kernel::require</code>)
- *  the first time that _module_ (which may be a <code>String</code> or
+ *  Registers _filename_ to be loaded (using Kernel::require)
+ *  the first time that _module_ (which may be a String or
  *  a symbol) is accessed in the namespace of _mod_.
  *
  *     module A
@@ -1167,8 +1167,8 @@ rb_mod_autoload_p(VALUE mod, VALUE sym)
  *  call-seq:
  *     autoload(module, filename)   -> nil
  *
- *  Registers _filename_ to be loaded (using <code>Kernel::require</code>)
- *  the first time that _module_ (which may be a <code>String</code> or
+ *  Registers _filename_ to be loaded (using Kernel::require)
+ *  the first time that _module_ (which may be a String or
  *  a symbol) is accessed.
  *
  *     autoload(:MyModule, "/usr/local/lib/modules/my_module.rb")

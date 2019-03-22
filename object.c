@@ -167,15 +167,15 @@ rb_eql(VALUE obj1, VALUE obj2)
  *     obj.equal?(other)   -> true or false
  *     obj.eql?(other)     -> true or false
  *
- *  Equality --- At the <code>Object</code> level, <code>==</code> returns
- *  <code>true</code> only if +obj+ and +other+ are the same object.
- *  Typically, this method is overridden in descendant classes to provide
+ *  Equality --- At the Object level, #== returns <code>true</code>
+ *  only if +obj+ and +other+ are the same object.  Typically, this
+ *  method is overridden in descendant classes to provide
  *  class-specific meaning.
  *
- *  Unlike <code>==</code>, the <code>equal?</code> method should never be
- *  overridden by subclasses as it is used to determine object identity
- *  (that is, <code>a.equal?(b)</code> if and only if <code>a</code> is the
- *  same object as <code>b</code>):
+ *  Unlike #==, the #equal? method should never be overridden by
+ *  subclasses as it is used to determine object identity (that is,
+ *  <code>a.equal?(b)</code> if and only if <code>a</code> is the same
+ *  object as <code>b</code>):
  *
  *    obj = "a"
  *    other = obj.dup
@@ -184,14 +184,13 @@ rb_eql(VALUE obj1, VALUE obj2)
  *    obj.equal? other  #=> false
  *    obj.equal? obj    #=> true
  *
- *  The <code>eql?</code> method returns <code>true</code> if +obj+ and
- *  +other+ refer to the same hash key.  This is used by Hash to test members
- *  for equality.  For objects of class <code>Object</code>, <code>eql?</code>
- *  is synonymous with <code>==</code>.  Subclasses normally continue this
- *  tradition by aliasing <code>eql?</code> to their overridden <code>==</code>
- *  method, but there are exceptions.  <code>Numeric</code> types, for
- *  example, perform type conversion across <code>==</code>, but not across
- *  <code>eql?</code>, so:
+ *  The #eql? method returns <code>true</code> if +obj+ and +other+
+ *  refer to the same hash key.  This is used by Hash to test members
+ *  for equality.  For objects of class Object, #eql?  is synonymous
+ *  with #==.  Subclasses normally continue this tradition by aliasing
+ *  #eql? to their overridden #== method, but there are exceptions.
+ *  Numeric types, for example, perform type conversion across #==,
+ *  but not across #eql?, so:
  *
  *     1 == 1.0     #=> true
  *     1.eql? 1.0   #=> false
@@ -263,9 +262,9 @@ rb_class_real(VALUE cl)
  *  call-seq:
  *     obj.class    -> class
  *
- *  Returns the class of <i>obj</i>. This method must always be
- *  called with an explicit receiver, as <code>class</code> is also a
- *  reserved word in Ruby.
+ *  Returns the class of <i>obj</i>. This method must always be called
+ *  with an explicit receiver, as #class is also a reserved word in
+ *  Ruby.
  *
  *     1.class      #=> Integer
  *     self.class   #=> Object
@@ -375,9 +374,9 @@ special_object_p(VALUE obj)
  *
  *  Produces a shallow copy of <i>obj</i>---the instance variables of
  *  <i>obj</i> are copied, but not the objects they reference.
- *  <code>clone</code> copies the frozen (unless :freeze keyword argument
- *  is given with a false value) and tainted state of <i>obj</i>.
- *  See also the discussion under <code>Object#dup</code>.
+ *  #clone copies the frozen (unless +:freeze+ keyword argument is
+ *  given with a false value) and tainted state of <i>obj</i>.  See
+ *  also the discussion under Object#dup.
  *
  *     class Klass
  *        attr_accessor :str
@@ -484,7 +483,7 @@ rb_obj_clone(VALUE obj)
  *
  *  Produces a shallow copy of <i>obj</i>---the instance variables of
  *  <i>obj</i> are copied, but not the objects they reference.
- *  <code>dup</code> copies the tainted state of <i>obj</i>.
+ *  #dup copies the tainted state of <i>obj</i>.
  *
  *  This method may have class-specific behavior.  If so, that
  *  behavior will be documented under the #+initialize_copy+ method of
@@ -492,11 +491,10 @@ rb_obj_clone(VALUE obj)
  *
  *  === on dup vs clone
  *
- *  In general, <code>clone</code> and <code>dup</code> may have different
- *  semantics in descendant classes. While <code>clone</code> is used to
- *  duplicate an object, including its internal state, <code>dup</code>
- *  typically uses the class of the descendant object to create the new
- *  instance.
+ *  In general, #clone and #dup may have different semantics in
+ *  descendant classes. While #clone is used to duplicate an object,
+ *  including its internal state, #dup typically uses the class of the
+ *  descendant object to create the new instance.
  *
  *  When using #dup, any modules that the object has been extended with will not
  *  be copied.
@@ -637,10 +635,10 @@ rb_obj_init_dup_clone(VALUE obj, VALUE orig)
  *  call-seq:
  *     obj.to_s    -> string
  *
- *  Returns a string representing <i>obj</i>. The default
- *  <code>to_s</code> prints the object's class and an encoding of the
- *  object id. As a special case, the top-level object that is the
- *  initial execution context of Ruby programs returns ``main''.
+ *  Returns a string representing <i>obj</i>. The default #to_s prints
+ *  the object's class and an encoding of the object id. As a special
+ *  case, the top-level object that is the initial execution context
+ *  of Ruby programs returns ``main''.
  *
  *--
  * Default implementation of \c #to_s.
@@ -732,13 +730,12 @@ inspect_obj(VALUE obj, VALUE str, int recur)
  *     obj.inspect   -> string
  *
  * Returns a string containing a human-readable representation of <i>obj</i>.
- * The default <code>inspect</code> shows the object's class name,
- * an encoding of the object id, and a list of the instance variables and
- * their values (by calling #inspect on each of them).
- * User defined classes should override this method to provide a better
- * representation of <i>obj</i>.  When overriding this method, it should
- * return a string whose encoding is compatible with the default external
- * encoding.
+ * The default #inspect shows the object's class name, an encoding of
+ * the object id, and a list of the instance variables and their
+ * values (by calling #inspect on each of them).  User defined classes
+ * should override this method to provide a better representation of
+ * <i>obj</i>.  When overriding this method, it should return a string
+ * whose encoding is compatible with the default external encoding.
  *
  *     [ 1, 2, 3..4, 'five' ].inspect   #=> "[1, 2, 3..4, \"five\"]"
  *     Time.new.inspect                 #=> "2008-03-08 19:43:39 +0900"
@@ -794,7 +791,7 @@ static VALUE class_search_ancestor(VALUE cl, VALUE c);
  *     obj.instance_of?(class)    -> true or false
  *
  *  Returns <code>true</code> if <i>obj</i> is an instance of the given
- *  class. See also <code>Object#kind_of?</code>.
+ *  class. See also Object#kind_of?.
  *
  *     class A;     end
  *     class B < A; end
@@ -1322,9 +1319,9 @@ rb_obj_infect(VALUE victim, VALUE carrier)
  *     obj.freeze    -> obj
  *
  *  Prevents further modifications to <i>obj</i>. A
- *  <code>RuntimeError</code> will be raised if modification is attempted.
+ *  RuntimeError will be raised if modification is attempted.
  *  There is no way to unfreeze a frozen object. See also
- *  <code>Object#frozen?</code>.
+ *  Object#frozen?.
  *
  *  This method returns self.
  *
@@ -1496,7 +1493,7 @@ nil_match(VALUE obj1, VALUE obj2)
  *  Document-class: TrueClass
  *
  *  The global value <code>true</code> is the only instance of class
- *  <code>TrueClass</code> and represents a logically true value in
+ *  TrueClass and represents a logically true value in
  *  boolean expressions. The class provides operators allowing
  *  <code>true</code> to be used in logical expressions.
  */
@@ -1573,7 +1570,7 @@ true_xor(VALUE obj, VALUE obj2)
  *  Document-class: FalseClass
  *
  *  The global value <code>false</code> is the only instance of class
- *  <code>FalseClass</code> and represents a logically false value in
+ *  FalseClass and represents a logically false value in
  *  boolean expressions. The class provides operators allowing
  *  <code>false</code> to participate correctly in logical expressions.
  *
@@ -1715,16 +1712,16 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
  *  Returns 0 if +obj+ and +other+ are the same object
  *  or <code>obj == other</code>, otherwise nil.
  *
- *  The <code><=></code> is used by various methods to compare objects, for example
+ *  The #<=> is used by various methods to compare objects, for example
  *  Enumerable#sort, Enumerable#max etc.
  *
- *  Your implementation of <code><=></code> should return one of the following values: -1, 0,
+ *  Your implementation of #<=> should return one of the following values: -1, 0,
  *  1 or nil. -1 means self is smaller than other. 0 means self is equal to other.
  *  1 means self is bigger than other. Nil means the two values could not be
  *  compared.
  *
- *  When you define <code><=></code>, you can include Comparable to gain the methods
- *  <code><=</code>, <code><</code>, <code>==</code>, <code>>=</code>, <code>></code> and <code>between?</code>.
+ *  When you define #<=>, you can include Comparable to gain the
+ *  methods #<=, #<, #==, #>=, #> and #between?.
  */
 static VALUE
 rb_obj_cmp(VALUE obj1, VALUE obj2)
@@ -1738,16 +1735,16 @@ rb_obj_cmp(VALUE obj1, VALUE obj2)
  *
  * Document-class: Module
  *
- *  A <code>Module</code> is a collection of methods and constants. The
+ *  A Module is a collection of methods and constants. The
  *  methods in a module may be instance methods or module methods.
  *  Instance methods appear as methods in a class when the module is
  *  included, module methods do not. Conversely, module methods may be
  *  called without creating an encapsulating object, while instance
- *  methods may not. (See <code>Module#module_function</code>.)
+ *  methods may not. (See Module#module_function.)
  *
  *  In the descriptions that follow, the parameter <i>sym</i> refers
  *  to a symbol, which is either a quoted string or a
- *  <code>Symbol</code> (such as <code>:name</code>).
+ *  Symbol (such as <code>:name</code>).
  *
  *     module Mod
  *       include Math
@@ -1986,7 +1983,7 @@ rb_class_s_alloc(VALUE klass)
  *
  *  Creates a new anonymous module. If a block is given, it is passed
  *  the module object, and the block is evaluated in the context of this
- *  module like <code>module_eval</code>.
+ *  module like #module_eval.
  *
  *     fred = Module.new do
  *       def meth1
@@ -2031,12 +2028,12 @@ rb_mod_initialize_clone(VALUE clone, VALUE orig)
  *     Class.new(super_class=Object) { |mod| ... } -> a_class
  *
  *  Creates a new anonymous (unnamed) class with the given superclass
- *  (or <code>Object</code> if no parameter is given). You can give a
+ *  (or Object if no parameter is given). You can give a
  *  class a name by assigning the class object to a constant.
  *
  *  If a block is given, it is passed the class object, and the block
  *  is evaluated in the context of this class like
- *  <code>class_eval</code>.
+ *  #class_eval.
  *
  *     fred = Class.new do
  *       def meth1
@@ -2170,11 +2167,10 @@ rb_class_allocate_instance(VALUE klass)
  *  call-seq:
  *     class.new(args, ...)    ->  obj
  *
- *  Calls <code>allocate</code> to create a new object of
- *  <i>class</i>'s class, then invokes that object's
- *  <code>initialize</code> method, passing it <i>args</i>.
- *  This is the method that ends up getting called whenever
- *  an object is constructed using .new.
+ *  Calls #allocate to create a new object of <i>class</i>'s class,
+ *  then invokes that object's #initialize method, passing it
+ *  <i>args</i>.  This is the method that ends up getting called
+ *  whenever an object is constructed using <code>.new</code>.
  *
  */
 
@@ -2340,7 +2336,7 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
  *    attr(name, true) -> nil
  *    attr(name, false) -> nil
  *
- *  The first form is equivalent to <code>attr_reader</code>.
+ *  The first form is equivalent to #attr_reader.
  *  The second form is equivalent to <code>attr_accessor(name)</code> but deprecated.
  *  The last form is equivalent to <code>attr_reader(name)</code> but deprecated.
  *--
@@ -2706,7 +2702,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
  *  Returns the value of the given instance variable, or nil if the
  *  instance variable is not set. The <code>@</code> part of the
  *  variable name should be included for regular instance
- *  variables. Throws a <code>NameError</code> exception if the
+ *  variables. Throws a NameError exception if the
  *  supplied symbol is not valid as an instance variable name.
  *  String arguments are converted to symbols.
  *
@@ -2799,7 +2795,7 @@ rb_obj_ivar_defined(VALUE obj, VALUE iv)
  *     mod.class_variable_get(string)    -> obj
  *
  *  Returns the value of the given class variable (or throws a
- *  <code>NameError</code> exception). The <code>@@</code> part of the
+ *  NameError exception). The <code>@@</code> part of the
  *  variable name should be included for regular class variables.
  *  String arguments are converted to symbols.
  *
@@ -3223,15 +3219,15 @@ opts_exception_p(VALUE opts)
  *  call-seq:
  *     Integer(arg, base=0, exception: true)    -> integer or nil
  *
- *  Converts <i>arg</i> to an <code>Integer</code>.
+ *  Converts <i>arg</i> to an Integer.
  *  Numeric types are converted directly (with floating point numbers
  *  being truncated).  <i>base</i> (0, or between 2 and 36) is a base for
- *  integer string representation.  If <i>arg</i> is a <code>String</code>,
+ *  integer string representation.  If <i>arg</i> is a String,
  *  when <i>base</i> is omitted or equals zero, radix indicators
  *  (<code>0</code>, <code>0b</code>, and <code>0x</code>) are honored.
  *  In any case, strings should be strictly conformed to numeric
  *  representation. This behavior is different from that of
- *  <code>String#to_i</code>.  Non string values will be converted by first
+ *  String#to_i.  Non string values will be converted by first
  *  trying <code>to_int</code>, then <code>to_i</code>.
  *
  *  Passing <code>nil</code> raises a TypeError, while passing a String that
@@ -3585,11 +3581,13 @@ rb_Float(VALUE val)
  *  call-seq:
  *     Float(arg, exception: true)    -> float or nil
  *
- *  Returns <i>arg</i> converted to a float. Numeric types are converted
- *  directly, and with exception to string and nil the rest are converted using <i>arg</i>.to_f.
- *  Converting a <code>string</code> with invalid characters will result in a <code>ArgumentError</code>.
- *  Converting <code>nil</code> generates a <code>TypeError</code>.
- *  Exceptions can be suppressed by passing <code>exception: false</code>.
+ *  Returns <i>arg</i> converted to a float. Numeric types are
+ *  converted directly, and with exception to String and
+ *  <code>nil</code> the rest are converted using
+ *  <i>arg</i><code>.to_f</code>.  Converting a String with invalid
+ *  characters will result in a ArgumentError.  Converting
+ *  <code>nil</code> generates a TypeError.  Exceptions can be
+ *  suppressed by passing <code>exception: false</code>.
  *
  *     Float(1)                 #=> 1.0
  *     Float("123.456")         #=> 123.456
@@ -3746,7 +3744,7 @@ rb_String(VALUE val)
  *  call-seq:
  *     String(arg)   -> string
  *
- *  Returns <i>arg</i> as a <code>String</code>.
+ *  Returns <i>arg</i> as a String.
  *
  *  First tries to call its <code>to_str</code> method, then its <code>to_s</code> method.
  *
@@ -3789,7 +3787,7 @@ rb_Array(VALUE val)
  *  returns an Array of length 1 containing +arg+.
  *
  *  If <code>to_ary</code> or <code>to_a</code> returns something other than
- *  an Array, raises a <code>TypeError</code>.
+ *  an Array, raises a TypeError.
  *
  *     Array(["a", "b"])  #=> ["a", "b"]
  *     Array(1..5)        #=> [1, 2, 3, 4, 5]
@@ -3826,8 +3824,8 @@ rb_Hash(VALUE val)
  *  call-seq:
  *     Hash(arg)    -> hash
  *
- *  Converts <i>arg</i> to a <code>Hash</code> by calling
- *  <i>arg</i><code>.to_hash</code>. Returns an empty <code>Hash</code> when
+ *  Converts <i>arg</i> to a Hash by calling
+ *  <i>arg</i><code>.to_hash</code>. Returns an empty Hash when
  *  <i>arg</i> is <tt>nil</tt> or <tt>[]</tt>.
  *
  *     Hash([])          #=> {}
@@ -3910,7 +3908,7 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
  *  Document-class: Class
  *
  *  Classes in Ruby are first-class objects---each is an instance of
- *  class <code>Class</code>.
+ *  class Class.
  *
  *  Typically, you create a new class by using:
  *
@@ -3919,12 +3917,11 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
  *    end
  *
  *  When a new class is created, an object of type Class is initialized and
- *  assigned to a global constant (<code>Name</code> in this case).
+ *  assigned to a global constant (Name in this case).
  *
  *  When <code>Name.new</code> is called to create a new object, the
- *  <code>new</code> method in <code>Class</code> is run by default.
- *  This can be demonstrated by overriding <code>new</code> in
- *  <code>Class</code>:
+ *  #new method in Class is run by default.
+ *  This can be demonstrated by overriding #new in Class:
  *
  *     class Class
  *       alias old_new new
