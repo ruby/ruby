@@ -77,10 +77,10 @@ ast_parse_done(rb_ast_t *ast)
  *  call-seq:
  *     RubyVM::AbstractSyntaxTree.parse(string) -> RubyVM::AbstractSyntaxTree::Node
  *
- *  Parses the given string into an abstract syntax tree,
+ *  Parses the given _string_ into an abstract syntax tree,
  *  returning the root node of that tree.
  *
- *  SyntaxError is raised if the given string is invalid syntax.
+ *  SyntaxError is raised if the given _string_ is invalid syntax.
  *
  *    RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
  *    # => #<RubyVM::AbstractSyntaxTree::Node(NODE_SCOPE(0) 1:0, 1:9): >
@@ -105,10 +105,10 @@ rb_ast_parse_str(VALUE str)
  *  call-seq:
  *     RubyVM::AbstractSyntaxTree.parse_file(pathname) -> RubyVM::AbstractSyntaxTree::Node
  *
- *   Reads the file from <code>pathname</code>, then parses it like ::parse,
+ *   Reads the file from _pathname_, then parses it like ::parse,
  *   returning the root node of the abstract syntax tree.
  *
- *   SyntaxError is raised if <code>pathname</code>'s contents are not
+ *   SyntaxError is raised if _pathname_'s contents are not
  *   valid Ruby syntax.
  *
  *     RubyVM::AbstractSyntaxTree.parse_file("my-app/app.rb")
@@ -205,7 +205,7 @@ script_lines(VALUE path)
  *     RubyVM::AbstractSyntaxTree.of(proc)   -> RubyVM::AbstractSyntaxTree::Node
  *     RubyVM::AbstractSyntaxTree.of(method) -> RubyVM::AbstractSyntaxTree::Node
  *
- *   Returns AST nodes of the given proc or method.
+ *   Returns AST nodes of the given _proc_ or _method_.
  *
  *     RubyVM::AbstractSyntaxTree.of(proc {1 + 2})
  *     # => #<RubyVM::AbstractSyntaxTree::Node(NODE_SCOPE(0) 1:35, 1:42): >

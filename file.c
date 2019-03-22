@@ -431,8 +431,8 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
  *  For instance, the pathname becomes void when the file has been
  *  moved or deleted.
  *
- *  This method raises <code>IOError</code> for a <i>file</i> created using
- *  <code>File::Constants::TMPFILE</code> because they don't have a pathname.
+ *  This method raises IOError for a <i>file</i> created using
+ *  File::Constants::TMPFILE because they don't have a pathname.
  *
  *     File.new("testfile").path               #=> "testfile"
  *     File.new("/tmp/../tmp/xxx", "w").path   #=> "/tmp/../tmp/xxx"
@@ -912,7 +912,7 @@ typedef struct stat statx_data;
  *     stat.atime   -> time
  *
  *  Returns the last access time for this file as an object of class
- *  <code>Time</code>.
+ *  Time.
  *
  *     File.stat("testfile").atime   #=> Wed Dec 31 18:00:00 CST 1969
  *
@@ -1248,8 +1248,7 @@ rb_stat(VALUE file, struct stat *st)
  *  call-seq:
  *     File.stat(file_name)   ->  stat
  *
- *  Returns a <code>File::Stat</code> object for the named file (see
- *  <code>File::Stat</code>).
+ *  Returns a File::Stat object for the named file (see File::Stat).
  *
  *     File.stat("testfile").mtime   #=> Tue Apr 08 12:58:04 CDT 2003
  *
@@ -1273,7 +1272,7 @@ rb_file_s_stat(VALUE klass, VALUE fname)
  *     ios.stat    -> stat
  *
  *  Returns status information for <em>ios</em> as an object of type
- *  <code>File::Stat</code>.
+ *  File::Stat.
  *
  *     f = File.new("testfile")
  *     s = f.stat
@@ -1321,8 +1320,8 @@ lstat_without_gvl(const char *path, struct stat *st)
  *  call-seq:
  *     File.lstat(file_name)   -> stat
  *
- *  Same as <code>File::stat</code>, but does not follow the last symbolic
- *  link. Instead, reports on the link itself.
+ *  Same as File::stat, but does not follow the last symbolic link.
+ *  Instead, reports on the link itself.
  *
  *     File.symlink("testfile", "link2test")   #=> 0
  *     File.stat("testfile").size              #=> 66
@@ -1352,8 +1351,8 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
  *  call-seq:
  *     file.lstat   ->  stat
  *
- *  Same as <code>IO#stat</code>, but does not follow the last symbolic
- *  link. Instead, reports on the link itself.
+ *  Same as IO#stat, but does not follow the last symbolic link.
+ *  Instead, reports on the link itself.
  *
  *     File.symlink("testfile", "link2test")   #=> 0
  *     File.stat("testfile").size              #=> 66
@@ -1533,10 +1532,10 @@ rb_access(VALUE fname, int mode)
 /*
  * Document-class: FileTest
  *
- *  <code>FileTest</code> implements file test operations similar to
- *  those used in <code>File::Stat</code>. It exists as a standalone
- *  module, and its methods are also insinuated into the <code>File</code>
- *  class. (Note that this is not done by inclusion: the interpreter cheats).
+ *  FileTest implements file test operations similar to those used in
+ *  File::Stat. It exists as a standalone module, and its methods are
+ *  also insinuated into the File class. (Note that this is not done
+ *  by inclusion: the interpreter cheats).
  *
  */
 
@@ -2266,8 +2265,8 @@ rb_file_s_atime(VALUE klass, VALUE fname)
  *  call-seq:
  *     file.atime    -> time
  *
- *  Returns the last access time (a <code>Time</code> object)
- *  for <i>file</i>, or epoch if <i>file</i> has not been accessed.
+ *  Returns the last access time (a Time object) for <i>file</i>, or
+ *  epoch if <i>file</i> has not been accessed.
  *
  *     File.new("testfile").atime   #=> Wed Dec 31 18:00:00 CST 1969
  *
@@ -2512,7 +2511,7 @@ rb_file_s_chmod(int argc, VALUE *argv)
  *  Changes permission bits on <i>file</i> to the bit pattern
  *  represented by <i>mode_int</i>. Actual effects are platform
  *  dependent; on Unix systems, see <code>chmod(2)</code> for details.
- *  Follows symbolic links. Also see <code>File#lchmod</code>.
+ *  Follows symbolic links. Also see File#lchmod.
  *
  *     f = File.new("out", "w");
  *     f.chmod(0644)   #=> 0
@@ -2560,9 +2559,9 @@ lchmod_internal(const char *path, void *mode)
  *  call-seq:
  *     File.lchmod(mode_int, file_name, ...)  -> integer
  *
- *  Equivalent to <code>File::chmod</code>, but does not follow symbolic
- *  links (so it will change the permissions associated with the link,
- *  not the file referenced by the link). Often not available.
+ *  Equivalent to File::chmod, but does not follow symbolic links (so
+ *  it will change the permissions associated with the link, not the
+ *  file referenced by the link). Often not available.
  *
  */
 
@@ -2646,7 +2645,7 @@ rb_file_s_chown(int argc, VALUE *argv)
  *  change the owner of a file. The current owner of a file may change
  *  the file's group to any group to which the owner belongs. A
  *  <code>nil</code> or -1 owner or group id is ignored. Follows
- *  symbolic links. See also <code>File#lchown</code>.
+ *  symbolic links. See also File#lchown.
  *
  *     File.new("testfile").chown(502, 1000)
  *
@@ -2690,7 +2689,7 @@ lchown_internal(const char *path, void *arg)
  *  call-seq:
  *     File.lchown(owner_int, group_int, file_name,..) -> integer
  *
- *  Equivalent to <code>File::chown</code>, but does not follow symbolic
+ *  Equivalent to File::chown, but does not follow symbolic
  *  links (so it will change the owner associated with the link, not the
  *  file referenced by the link). Often not available. Returns number
  *  of files in the argument list.
@@ -2942,7 +2941,7 @@ syserr_fail2_in(const char *func, int e, VALUE s1, VALUE s2)
  *
  *  Creates a new name for an existing file using a hard link. Will not
  *  overwrite <i>new_name</i> if it already exists (raising a subclass
- *  of <code>SystemCallError</code>). Not available on all platforms.
+ *  of SystemCallError). Not available on all platforms.
  *
  *     File.link("testfile", ".testfile")   #=> 0
  *     IO.readlines(".testfile")[0]         #=> "This is line one\n"
@@ -2971,7 +2970,7 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
  *     File.symlink(old_name, new_name)   -> 0
  *
  *  Creates a symbolic link called <i>new_name</i> for the existing file
- *  <i>old_name</i>. Raises a <code>NotImplemented</code> exception on
+ *  <i>old_name</i>. Raises a NotImplemented exception on
  *  platforms that do not support symbolic links.
  *
  *     File.symlink("testfile", "link2test")   #=> 0
@@ -3091,9 +3090,9 @@ unlink_internal(const char *path, void *arg)
  *  <code>unlink(2)</code> system call, the type of
  *  exception raised depends on its error type (see
  *  https://linux.die.net/man/2/unlink) and has the form of
- *  e.g. <code>Errno::ENOENT</code>.
+ *  e.g. Errno::ENOENT.
  *
- *  See also <code>Dir::rmdir</code>.
+ *  See also Dir::rmdir.
  */
 
 static VALUE
@@ -3119,8 +3118,8 @@ no_gvl_rename(void *ptr)
  *  call-seq:
  *     File.rename(old_name, new_name)   -> 0
  *
- *  Renames the given file to the new name. Raises a
- *  <code>SystemCallError</code> if the file cannot be renamed.
+ *  Renames the given file to the new name. Raises a SystemCallError
+ *  if the file cannot be renamed.
  *
  *     File.rename("afile", "afile.bak")   #=> 0
  */
@@ -4429,12 +4428,11 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
  *
  *  Returns the last component of the filename given in
  *  <i>file_name</i> (after first stripping trailing separators),
- *  which can be formed using both <code>File::SEPARATOR</code> and
- *  <code>File::ALT_SEPARATOR</code> as the separator when
- *  <code>File::ALT_SEPARATOR</code> is not <code>nil</code>. If
- *  <i>suffix</i> is given and present at the end of <i>file_name</i>,
- *  it is removed. If <i>suffix</i> is ".*", any extension will be
- *  removed.
+ *  which can be formed using both File::SEPARATOR and
+ *  File::ALT_SEPARATOR as the separator when File::ALT_SEPARATOR is
+ *  not <code>nil</code>. If <i>suffix</i> is given and present at the
+ *  end of <i>file_name</i>, it is removed. If <i>suffix</i> is ".*",
+ *  any extension will be removed.
  *
  *     File.basename("/home/gumby/work/ruby.rb")          #=> "ruby.rb"
  *     File.basename("/home/gumby/work/ruby.rb", ".rb")   #=> "ruby"
@@ -4492,9 +4490,9 @@ rb_file_s_basename(int argc, VALUE *argv)
  *
  *  Returns all components of the filename given in <i>file_name</i>
  *  except the last one (after first stripping trailing separators).
- *  The filename can be formed using both <code>File::SEPARATOR</code>
- *  and <code>File::ALT_SEPARATOR</code> as the separator when
- *  <code>File::ALT_SEPARATOR</code> is not <code>nil</code>.
+ *  The filename can be formed using both File::SEPARATOR and
+ *  File::ALT_SEPARATOR as the separator when File::ALT_SEPARATOR is
+ *  not <code>nil</code>.
  *
  *     File.dirname("/home/gumby/work/ruby.rb")   #=> "/home/gumby/work"
  */
@@ -4676,8 +4674,8 @@ rb_file_s_path(VALUE klass, VALUE fname)
  *     File.split(file_name)   -> array
  *
  *  Splits the given string into a directory and a file component and
- *  returns them in a two-element array. See also
- *  <code>File::dirname</code> and <code>File::basename</code>.
+ *  returns them in a two-element array. See also File::dirname and
+ *  File::basename.
  *
  *     File.split("/home/gumby/.profile")   #=> ["/home/gumby", ".profile"]
  */
@@ -4957,9 +4955,9 @@ rb_thread_flock(void *data)
  *
  *  Locks or unlocks a file according to <i>locking_constant</i> (a
  *  logical <em>or</em> of the values in the table below).
- *  Returns <code>false</code> if <code>File::LOCK_NB</code> is
- *  specified and the operation would otherwise have blocked. Not
- *  available on all platforms.
+ *  Returns <code>false</code> if File::LOCK_NB is specified and the
+ *  operation would otherwise have blocked. Not available on all
+ *  platforms.
  *
  *  Locking constants (in class File):
  *
@@ -5260,15 +5258,13 @@ rb_f_test(int argc, VALUE *argv)
 /*
  *  Document-class: File::Stat
  *
- *  Objects of class <code>File::Stat</code> encapsulate common status
- *  information for <code>File</code> objects. The information is
- *  recorded at the moment the <code>File::Stat</code> object is
- *  created; changes made to the file after that point will not be
- *  reflected. <code>File::Stat</code> objects are returned by
- *  <code>IO#stat</code>, <code>File::stat</code>,
- *  <code>File#lstat</code>, and <code>File::lstat</code>. Many of these
+ *  Objects of class File::Stat encapsulate common status information
+ *  for File objects. The information is recorded at the moment the
+ *  File::Stat object is created; changes made to the file after that
+ *  point will not be reflected. File::Stat objects are returned by
+ *  IO#stat, File::stat, File#lstat, and File::lstat. Many of these
  *  methods return platform-specific values, and not all values are
- *  meaningful on all systems. See also <code>Kernel#test</code>.
+ *  meaningful on all systems. See also Kernel#test.
  */
 
 static VALUE
@@ -5389,10 +5385,9 @@ rb_stat_p(VALUE obj)
  *
  *  Returns <code>true</code> if <i>stat</i> is a symbolic link,
  *  <code>false</code> if it isn't or if the operating system doesn't
- *  support this feature. As <code>File::stat</code> automatically
- *  follows symbolic links, <code>symlink?</code> will always be
- *  <code>false</code> for an object returned by
- *  <code>File::stat</code>.
+ *  support this feature. As File::stat automatically follows symbolic
+ *  links, #symlink? will always be <code>false</code> for an object
+ *  returned by File::stat.
  *
  *     File.symlink("testfile", "alink")   #=> 0
  *     File.stat("alink").symlink?         #=> false
@@ -6283,11 +6278,10 @@ const char ruby_null_device[] =
     ;
 
 /*
- *  A <code>File</code> is an abstraction of any file object accessible
- *  by the program and is closely associated with class <code>IO</code>.
- *  <code>File</code> includes the methods of module
- *  <code>FileTest</code> as class methods, allowing you to write (for
- *  example) <code>File.exist?("foo")</code>.
+ *  A File is an abstraction of any file object accessible by the
+ *  program and is closely associated with class IO.  File includes
+ *  the methods of module FileTest as class methods, allowing you to
+ *  write (for example) <code>File.exist?("foo")</code>.
  *
  *  In the description of File methods,
  *  <em>permission bits</em> are a platform-specific

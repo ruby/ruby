@@ -2692,9 +2692,9 @@ os_obj_of(VALUE of)
  *  <i>module</i>. Returns the number of objects found. Immediate
  *  objects (<code>Fixnum</code>s, <code>Symbol</code>s
  *  <code>true</code>, <code>false</code>, and <code>nil</code>) are
- *  never returned. In the example below, <code>each_object</code>
- *  returns both the numbers we defined and several constants defined in
- *  the <code>Math</code> module.
+ *  never returned. In the example below, #each_object returns both
+ *  the numbers we defined and several constants defined in the Math
+ *  module.
  *
  *  If no block is given, an enumerator is returned instead.
  *

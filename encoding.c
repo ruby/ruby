@@ -1756,11 +1756,11 @@ rb_enc_aliases(VALUE klass)
  *   "some string".encode "ISO-8859-1"
  *   #=> "some string"
  *
- * <code>Encoding::ASCII_8BIT</code> is a special encoding that is usually
- * used for a byte string, not a character string. But as the name insists,
- * its characters in the range of ASCII are considered as ASCII characters.
- * This is useful when you use ASCII-8BIT characters with other ASCII
- * compatible characters.
+ * Encoding::ASCII_8BIT is a special encoding that is usually used for
+ * a byte string, not a character string. But as the name insists, its
+ * characters in the range of ASCII are considered as ASCII
+ * characters.  This is useful when you use ASCII-8BIT characters with
+ * other ASCII compatible characters.
  *
  * == Changing an encoding
  *
@@ -1798,11 +1798,12 @@ rb_enc_aliases(VALUE klass)
  * All Ruby script code has an associated Encoding which any String literal
  * created in the source code will be associated to.
  *
- * The default script encoding is <code>Encoding::UTF-8</code> after v2.0, but it can
- * be changed by a magic comment on the first line of the source code file (or
- * second line, if there is a shebang line on the first). The comment must
- * contain the word <code>coding</code> or <code>encoding</code>, followed
- * by a colon, space and the Encoding name or alias:
+ * The default script encoding is Encoding::UTF_8 after v2.0, but it
+ * can be changed by a magic comment on the first line of the source
+ * code file (or second line, if there is a shebang line on the
+ * first). The comment must contain the word <code>coding</code> or
+ * <code>encoding</code>, followed by a colon, space and the Encoding
+ * name or alias:
  *
  *   # encoding: UTF-8
  *
