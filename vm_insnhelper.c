@@ -1784,7 +1784,7 @@ vm_call_iseq_setup_normal_opt_start(rb_execution_context_t *ec, rb_control_frame
 static void
 args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq,
                          VALUE *const passed_values, const int passed_keyword_len, const VALUE *const passed_keywords,
-			 VALUE *const locals);
+                         VALUE *const locals);
 
 static VALUE
 vm_call_iseq_setup_kwparm_kwarg(rb_execution_context_t *ec, rb_control_frame_t *cfp,
