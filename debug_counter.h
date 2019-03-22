@@ -38,6 +38,28 @@ RB_DEBUG_COUNTER(mc_cme_complement_hit)
 RB_DEBUG_COUNTER(mc_search_super)
 
 /*
+ * call cache fastpath usage
+ */
+RB_DEBUG_COUNTER(ccf_general)
+RB_DEBUG_COUNTER(ccf_iseq_setup)
+RB_DEBUG_COUNTER(ccf_iseq_setup_0start)
+RB_DEBUG_COUNTER(ccf_iseq_setup_tailcall_0start)
+RB_DEBUG_COUNTER(ccf_iseq_fix) /* several functions created with tool/mk_call_iseq_optimized.rb */
+RB_DEBUG_COUNTER(ccf_iseq_opt)
+RB_DEBUG_COUNTER(ccf_iseq_kw1)
+RB_DEBUG_COUNTER(ccf_iseq_kw2)
+RB_DEBUG_COUNTER(ccf_cfunc)
+RB_DEBUG_COUNTER(ccf_ivar)
+RB_DEBUG_COUNTER(ccf_attrset)
+RB_DEBUG_COUNTER(ccf_method_missing)
+RB_DEBUG_COUNTER(ccf_zsuper)
+RB_DEBUG_COUNTER(ccf_bmethod)
+RB_DEBUG_COUNTER(ccf_opt_send)
+RB_DEBUG_COUNTER(ccf_opt_call)
+RB_DEBUG_COUNTER(ccf_opt_block_call)
+RB_DEBUG_COUNTER(ccf_super_method)
+
+/*
  * control frame push counts.
  *
  * * frame_push: frame push counts.
