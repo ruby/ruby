@@ -1198,12 +1198,22 @@ rb_statx(VALUE file, struct statx *stx, unsigned int mask)
 
 # define statx_has_birthtime(st) ((st)->stx_mask & STATX_BTIME)
 
+/* rb_notimplement() shows "function is unimplemented on this machine".
+   It is not applicable to statx which behavior depends on the filesystem. */
+static void
+statx_notimplement(const char *field_name)
+{
+    rb_raise(rb_eNotImpError,
+             "%s is unimplemented on this filesystem",
+             field_name);
+}
+
 static VALUE
 statx_birthtime(const struct statx *stx, VALUE fname)
 {
     if (!statx_has_birthtime(stx)) {
         /* birthtime is not supported on the filesystem */
-        rb_syserr_fail_path(ENOSYS, fname);
+        statx_notimplement("birthtime");
     }
     return rb_time_nano_new(stx->stx_btime.tv_sec, stx->stx_btime.tv_nsec);
 }
