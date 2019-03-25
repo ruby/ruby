@@ -191,7 +191,7 @@ compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct
     fprintf(f, "\ncancel:\n");
     if (status->local_stack_p) {
         for (i = 0; i < body->stack_max; i++) {
-            fprintf(f, "    *((VALUE *)reg_cfp->bp_ + %d) = stack[%d];\n", i, i);
+            fprintf(f, "    *(vm_base_ptr(reg_cfp) + %d) = stack[%d];\n", i, i);
         }
     }
     fprintf(f, "    return Qundef;\n");

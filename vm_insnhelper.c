@@ -300,7 +300,7 @@ vm_push_frame(rb_execution_context_t *ec,
 
     /* Store initial value of ep as bp to skip calculation cost of bp on JIT cancellation. */
     cfp->ep = sp;
-    cfp->bp_ = cfp->sp = sp + 1;
+    cfp->__bp__ = cfp->sp = sp + 1;
 
 #if VM_DEBUG_BP_CHECK
     cfp->bp_check = sp + 1;
@@ -1637,10 +1637,10 @@ double_cmp_ge(double a, double b)
     return a >= b ? Qtrue : Qfalse;
 }
 
-static VALUE *
+static inline VALUE *
 vm_base_ptr(const rb_control_frame_t *cfp)
 {
-#if 0
+#if 0 // we may optimize and use this once we confirm it does not spoil performance on JIT.
     const rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
     if (cfp->iseq && VM_FRAME_RUBYFRAME_P(cfp)) {
@@ -1663,7 +1663,7 @@ vm_base_ptr(const rb_control_frame_t *cfp)
 	return NULL;
     }
 #else
-    return cfp->bp_;
+    return cfp->__bp__;
 #endif
 }
 
