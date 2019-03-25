@@ -41,7 +41,7 @@
 % end
         fprintf(f, "    else {\n");
         fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-        fprintf(f, "        reg_cfp->sp = (VALUE *)reg_cfp->bp_ + %d;\n", b->stack_size);
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
 

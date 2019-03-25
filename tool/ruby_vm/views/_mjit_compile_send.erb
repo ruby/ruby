@@ -37,7 +37,7 @@
             fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc_copy->method_state);
             fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial);
             fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-            fprintf(f, "        reg_cfp->sp = (VALUE *)reg_cfp->bp_ + %d;\n", b->stack_size);
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
             fprintf(f, "        goto cancel;\n");
             fprintf(f, "    }\n");
 
@@ -77,7 +77,7 @@
 
 % # JIT: We should evaluate ISeq modified for TracePoint if it's enabled. Note: This is slow.
             fprintf(f, "    if (UNLIKELY(ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS)) {\n");
-            fprintf(f, "        reg_cfp->sp = (VALUE *)reg_cfp->bp_ + %d;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %>);
+            fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %>);
             if (!pc_moved_p) {
                 fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
             }
