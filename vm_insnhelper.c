@@ -299,8 +299,8 @@ vm_push_frame(rb_execution_context_t *ec,
     *sp   = type;       /* ep[-0] / ENV_FLAGS */
 
     /* Store initial value of ep as bp to skip calculation cost of bp on JIT cancellation. */
-    cfp->ep = cfp->bp = sp;
-    cfp->sp = sp + 1;
+    cfp->ep = sp;
+    cfp->bp_ = cfp->sp = sp + 1;
 
 #if VM_DEBUG_BP_CHECK
     cfp->bp_check = sp + 1;
@@ -1640,6 +1640,7 @@ double_cmp_ge(double a, double b)
 static VALUE *
 vm_base_ptr(const rb_control_frame_t *cfp)
 {
+#if 0
     const rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
     if (cfp->iseq && VM_FRAME_RUBYFRAME_P(cfp)) {
@@ -1661,6 +1662,9 @@ vm_base_ptr(const rb_control_frame_t *cfp)
     else {
 	return NULL;
     }
+#else
+    return cfp->bp_;
+#endif
 }
 
 /* method call processes with call_info */

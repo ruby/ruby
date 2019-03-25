@@ -763,7 +763,7 @@ typedef struct rb_control_frame_struct {
     VALUE self;			/* cfp[3] / block[0] */
     const VALUE *ep;		/* cfp[4] / block[1] */
     const void *block_code;     /* cfp[5] / block[2] */ /* iseq or ifunc */
-    const VALUE *bp;		/* cfp[6] */
+    VALUE *bp_;			/* cfp[6] */
 
 #if VM_DEBUG_BP_CHECK
     VALUE *bp_check;		/* cfp[7] */
