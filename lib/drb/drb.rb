@@ -48,7 +48,7 @@
 
 require 'socket'
 require 'io/wait'
-require 'weakref'
+require 'weakling'
 require_relative 'eq'
 
 #
@@ -367,7 +367,16 @@ module DRb
   class DRbIdConv
     def initialize
       @id2ref = {}
+      @ref_queue = WeakRef::RefQueue.new
       @mutex = Mutex.new
+    end
+
+    class IdWeakRef < Weakling::WeakRef
+      attr_accessor :id
+      def initialize(obj, queue)
+        super(obj, queue)
+        @id = obj.__id__
+      end
     end
 
     # Convert an object reference id to an object.
@@ -388,21 +397,21 @@ module DRb
 
     def _clean
       fail unless @mutex.owned?
-      dead = []
-      @id2ref.each {|id,weakref| dead << id unless weakref.weakref_alive?}
-      dead.each {|id| @id2ref.delete(id)}
+      while ref = @queue.poll
+        @id2ref.delete(ref.id)
+      end
     end
 
     def _put(obj)
-      id = obj.__id__
       @mutex.lock
       begin
         _clean
-        @id2ref[id] = WeakRef.new(obj)
+        ref = IdWeakRef.new(obj, @queue)
+        @id2ref[ref.id] = ref
+        ref.id
       ensure
         @mutex.unlock
       end
-      id
     end
 
     def _get(id)
