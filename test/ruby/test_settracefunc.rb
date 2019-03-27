@@ -1991,7 +1991,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
         tp.enable(target: code2){}
       }
     end
-    assert_equal "can't nest-enable a targetting TracePoint", ex.message
+    assert_equal "can't nest-enable a targeting TracePoint", ex.message
 
     # global TP and targetted TP
     ex = assert_raise(ArgumentError) do
@@ -2000,7 +2000,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
         tp.enable(target: code2){}
       }
     end
-    assert_equal "can't nest-enable a targetting TracePoint", ex.message
+    assert_equal "can't nest-enable a targeting TracePoint", ex.message
 
     # targetted TP and global TP
     ex = assert_raise(ArgumentError) do
@@ -2009,7 +2009,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
         tp.enable{}
       }
     end
-    assert_equal "can't nest-enable a targetting TracePoint", ex.message
+    assert_equal "can't nest-enable a targeting TracePoint", ex.message
 
     # targetted TP and disable
     ex = assert_raise(ArgumentError) do
@@ -2018,9 +2018,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
         tp.disable{}
       }
     end
-    assert_equal "can't disable a targetting TracePoint in a block", ex.message
+    assert_equal "can't disable a targeting TracePoint in a block", ex.message
 
-    ## success with two nesting targetting tracepoints
+    ## success with two nesting targeting tracepoints
     events = []
     tp1 = TracePoint.new(:line){|tp| events << :tp1}
     tp2 = TracePoint.new(:line){|tp| events << :tp2}
@@ -2032,7 +2032,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
     assert_equal [:tp2, :tp1, :___], events
 
-    # succss with two tracepoints (global/targetting)
+    # succss with two tracepoints (global/targeting)
     events = []
     tp1 = TracePoint.new(:line){|tp| events << :tp1}
     tp2 = TracePoint.new(:line){|tp| events << :tp2}
@@ -2044,7 +2044,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
     assert_equal [:tp1, :tp1, :tp1, :tp1, :tp2, :tp1, :___], events
 
-    # succss with two tracepoints (targetting/global)
+    # succss with two tracepoints (targeting/global)
     events = []
     tp1 = TracePoint.new(:line){|tp| events << :tp1}
     tp2 = TracePoint.new(:line){|tp| events << :tp2}

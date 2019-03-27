@@ -1206,7 +1206,7 @@ rb_tracepoint_enable(VALUE tpval)
     tp = tpptr(tpval);
 
     if (tp->local_target_set != Qfalse) {
-        rb_raise(rb_eArgError, "can't nest-enable a targetting TracePoint");
+        rb_raise(rb_eArgError, "can't nest-enable a targeting TracePoint");
     }
 
     if (tp->target_th) {
@@ -1244,7 +1244,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     unsigned int line = 0;
 
     if (tp->tracing > 0) {
-        rb_raise(rb_eArgError, "can't nest-enable a targetting TracePoint");
+        rb_raise(rb_eArgError, "can't nest-enable a targeting TracePoint");
     }
 
     if (!NIL_P(target_line)) {
@@ -1445,7 +1445,7 @@ tracepoint_disable_m(VALUE tpval)
 
     if (rb_block_given_p()) {
         if (tp->local_target_set != Qfalse) {
-            rb_raise(rb_eArgError, "can't disable a targetting TracePoint in a block");
+            rb_raise(rb_eArgError, "can't disable a targeting TracePoint in a block");
         }
 
         rb_tracepoint_disable(tpval);

@@ -306,7 +306,7 @@ describe 'TracePoint#enable' do
               trace.enable(target: -> {}) do
               end
             end
-          }.should raise_error(ArgumentError, /can't nest-enable a targetting TracePoint/)
+          }.should raise_error(ArgumentError, /can't nest-enable a targett?ing TracePoint/)
         end
 
         it "raises ArgumentError if trace point already enabled without target is re-enabled with target" do
@@ -318,7 +318,7 @@ describe 'TracePoint#enable' do
               trace.enable(target: -> {}) do
               end
             end
-          }.should raise_error(ArgumentError, /can't nest-enable a targetting TracePoint/)
+          }.should raise_error(ArgumentError, /can't nest-enable a targett?ing TracePoint/)
         end
 
         it "raises ArgumentError if trace point already enabled with target is re-enabled without target" do
@@ -330,7 +330,7 @@ describe 'TracePoint#enable' do
               trace.enable do
               end
             end
-          }.should raise_error(ArgumentError, /can't nest-enable a targetting TracePoint/)
+          }.should raise_error(ArgumentError, /can't nest-enable a targett?ing TracePoint/)
         end
 
         it "raises ArgumentError if trace point already enabled with target is disabled with block" do
@@ -342,7 +342,7 @@ describe 'TracePoint#enable' do
               trace.disable do
               end
             end
-          }.should raise_error(ArgumentError, /can't disable a targetting TracePoint in a block/)
+          }.should raise_error(ArgumentError, /can't disable a targett?ing TracePoint in a block/)
         end
 
         it "traces events when trace point with target is enabled in another trace point enabled without target" do
