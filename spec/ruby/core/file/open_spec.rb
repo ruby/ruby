@@ -165,19 +165,21 @@ describe "File.open" do
     File.exist?(@file).should == true
   end
 
-  it "opens a file with a file descriptor d and a block" do
-    @fh = File.open(@file)
-    @fh.should be_kind_of(File)
+  without_feature :mjit do # [ruby-core:90895] MJIT worker may leave fd open in a forked child. TODO: consider acquiring GVL from MJIT worker.
+    it "opens a file with a file descriptor d and a block" do
+      @fh = File.open(@file)
+      @fh.should be_kind_of(File)
 
-    lambda {
-      File.open(@fh.fileno) do |fh|
-        @fd = fh.fileno
-        @fh.close
-      end
-    }.should raise_error(Errno::EBADF)
-    lambda { File.open(@fd) }.should raise_error(Errno::EBADF)
+      lambda {
+        File.open(@fh.fileno) do |fh|
+          @fd = fh.fileno
+          @fh.close
+        end
+      }.should raise_error(Errno::EBADF)
+      lambda { File.open(@fd) }.should raise_error(Errno::EBADF)
 
-    File.exist?(@file).should == true
+      File.exist?(@file).should == true
+    end
   end
 
   it "opens a file that no exists when use File::WRONLY mode" do
