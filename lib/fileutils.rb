@@ -114,12 +114,14 @@ module FileUtils
   #
   # Changes the current directory to the directory +dir+.
   #
-  # If this method is called with block, resumes to the old
-  # working directory after the block execution finished.
+  # If this method is called with block, resumes to the previous
+  # working directory after the block execution has finished.
   #
-  #   FileUtils.cd('/', :verbose => true)   # chdir and report it
+  #   FileUtils.cd('/')  # change directory
   #
-  #   FileUtils.cd('/') do  # chdir
+  #   FileUtils.cd('/', :verbose => true)   # change directory and report it
+  #
+  #   FileUtils.cd('/') do  # change directory
   #     # ...               # do something
   #   end                   # return to original directory
   #
@@ -1080,11 +1082,6 @@ module FileUtils
   end
   module_function :chown_R
 
-  begin
-    require 'etc'
-  rescue LoadError # rescue LoadError for miniruby
-  end
-
   def fu_get_uid(user)   #:nodoc:
     return nil unless user
     case user
@@ -1093,6 +1090,7 @@ module FileUtils
     when /\A\d+\z/
       user.to_i
     else
+      require 'etc'
       Etc.getpwnam(user) ? Etc.getpwnam(user).uid : nil
     end
   end
@@ -1106,6 +1104,7 @@ module FileUtils
     when /\A\d+\z/
       group.to_i
     else
+      require 'etc'
       Etc.getgrnam(group) ? Etc.getgrnam(group).gid : nil
     end
   end
@@ -1275,8 +1274,15 @@ module FileUtils
     def entries
       opts = {}
       opts[:encoding] = ::Encoding::UTF_8 if fu_windows?
-      Dir.children(path, opts)\
-          .map {|n| Entry_.new(prefix(), join(rel(), n.untaint)) }
+
+      files = if Dir.respond_to?(:children)
+        Dir.children(path, opts)
+      else
+        Dir.entries(path(), opts)
+           .reject {|n| n == '.' or n == '..' }
+      end
+
+      files.map {|n| Entry_.new(prefix(), join(rel(), n.untaint)) }
     end
 
     def stat
