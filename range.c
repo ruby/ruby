@@ -359,8 +359,7 @@ range_step_size(VALUE range, VALUE args, VALUE eobj)
  *
  *  Iterates over the range, passing each <code>n</code>th element to the block.
  *  If begin and end are numeric, +n+ is added for each iteration.
- *  Otherwise <code>step</code> invokes <code>succ</code> to iterate through
- *  range elements.
+ *  Otherwise #step invokes #succ to iterate through range elements.
  *
  *  If no block is given, an enumerator is returned instead.
  *  Especially, the enumerator is an Enumerator::ArithmeticSequence
@@ -1312,9 +1311,8 @@ inspect_range(VALUE range, VALUE dummy, int recur)
  * call-seq:
  *   rng.inspect  -> string
  *
- * Convert this range object to a printable form (using
- * <code>inspect</code> to convert the begin and end
- * objects).
+ * Convert this range object to a printable form (using #inspect to
+ * convert the begin and end objects).
  */
 
 
@@ -1538,7 +1536,7 @@ range_alloc(VALUE klass)
     return rb_struct_alloc_noinit(klass);
 }
 
-/*  A <code>Range</code> represents an interval---a set of values with a
+/*  A Range represents an interval---a set of values with a
  *  beginning and an end. Ranges may be constructed using the
  *  <em>s</em><code>..</code><em>e</em> and
  *  <em>s</em><code>...</code><em>e</em> literals, or with

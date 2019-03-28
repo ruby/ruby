@@ -1357,10 +1357,10 @@ eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
  *     eval(string [, binding [, filename [,lineno]]])  -> obj
  *
  *  Evaluates the Ruby expression(s) in <em>string</em>. If
- *  <em>binding</em> is given, which must be a <code>Binding</code>
- *  object, the evaluation is performed in its context. If the
- *  optional <em>filename</em> and <em>lineno</em> parameters are
- *  present, they will be used when reporting syntax errors.
+ *  <em>binding</em> is given, which must be a Binding object, the
+ *  evaluation is performed in its context. If the optional
+ *  <em>filename</em> and <em>lineno</em> parameters are present, they
+ *  will be used when reporting syntax errors.
  *
  *     def get_binding(str)
  *       return binding
@@ -1850,7 +1850,7 @@ uncaught_throw_to_s(VALUE exc)
  *  is no +catch+ block for the _tag_. The optional second
  *  parameter supplies a return value for the +catch+ block,
  *  which otherwise defaults to +nil+. For examples, see
- *  <code>Kernel::catch</code>.
+ *  Kernel::catch.
  */
 
 static VALUE

@@ -1494,7 +1494,7 @@ rb_f_gsub(int argc, VALUE *argv)
  *     chop   -> $_
  *
  *  Equivalent to <code>($_.dup).chop!</code>, except <code>nil</code>
- *  is never returned. See <code>String#chop!</code>.
+ *  is never returned. See String#chop!.
  *  Available only when -p/-n command line option specified.
  *
  */
@@ -1514,7 +1514,7 @@ rb_f_chop(void)
  *     chomp(string)    -> $_
  *
  *  Equivalent to <code>$_ = $_.chomp(<em>string</em>)</code>. See
- *  <code>String#chomp</code>.
+ *  String#chomp.
  *  Available only when -p/-n command line option specified.
  *
  */

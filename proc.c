@@ -755,10 +755,10 @@ proc_new(VALUE klass, int8_t is_lambda)
  *     Proc.new {|...| block } -> a_proc
  *     Proc.new                -> a_proc
  *
- *  Creates a new <code>Proc</code> object, bound to the current
- *  context. <code>Proc::new</code> may be called without a block only
- *  within a method with an attached block, in which case that block is
- *  converted to the <code>Proc</code> object.
+ *  Creates a new Proc object, bound to the current context. Proc::new
+ *  may be called without a block only within a method with an
+ *  attached block, in which case that block is converted to the Proc
+ *  object.
  *
  *     def proc_from
  *       Proc.new
@@ -780,7 +780,7 @@ rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   proc   { |...| block }  -> a_proc
  *
- * Equivalent to <code>Proc.new</code>.
+ * Equivalent to Proc.new.
  */
 
 VALUE
@@ -793,8 +793,8 @@ rb_block_proc(void)
  * call-seq:
  *   lambda { |...| block }  -> a_proc
  *
- * Equivalent to <code>Proc.new</code>, except the resulting Proc objects
- * check the number of parameters passed when called.
+ * Equivalent to Proc.new, except the resulting Proc objects check the
+ * number of parameters passed when called.
  */
 
 VALUE
@@ -839,11 +839,11 @@ rb_block_lambda(void)
  *  Note that <code>prc.()</code> invokes <code>prc.call()</code> with
  *  the parameters given.  It's syntactic sugar to hide "call".
  *
- *  For procs created using <code>lambda</code> or <code>->()</code> an error
- *  is generated if the wrong number of parameters are passed to the proc.
- *  For procs created using <code>Proc.new</code> or <code>Kernel.proc</code>,
- *  extra parameters are silently discarded and missing parameters are
- *  set to +nil+.
+ *  For procs created using #lambda or <code>->()</code> an error is
+ *  generated if the wrong number of parameters are passed to the
+ *  proc.  For procs created using Proc.new or Kernel.proc, extra
+ *  parameters are silently discarded and missing parameters are set
+ *  to +nil+.
  *
  *     a_proc = proc {|a,b| [a,b] }
  *     a_proc.call(1)   #=> [1, nil]
@@ -921,8 +921,8 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE passed_pr
  *  in this latter case, returns n.
  *  Keyword arguments will be considered as a single additional argument,
  *  that argument being mandatory if any keyword argument is mandatory.
- *  A <code>proc</code> with no argument declarations
- *  is the same as a block declaring <code>||</code> as its arguments.
+ *  A #proc with no argument declarations is the same as a block
+ *  declaring <code>||</code> as its arguments.
  *
  *     proc {}.arity                  #=>  0
  *     proc { || }.arity              #=>  0
@@ -1302,9 +1302,8 @@ proc_to_s(VALUE self)
  *  call-seq:
  *     prc.to_proc -> proc
  *
- *  Part of the protocol for converting objects to <code>Proc</code>
- *  objects. Instances of class <code>Proc</code> simply return
- *  themselves.
+ *  Part of the protocol for converting objects to Proc objects.
+ *  Instances of class Proc simply return themselves.
  */
 
 static VALUE
@@ -1476,12 +1475,11 @@ method_entry_defined_class(const rb_method_entry_t *me)
  *
  * Document-class: Method
  *
- *  Method objects are created by <code>Object#method</code>, and are
- *  associated with a particular object (not just with a class). They
- *  may be used to invoke the method within the object, and as a block
- *  associated with an iterator. They may also be unbound from one
- *  object (creating an <code>UnboundMethod</code>) and bound to
- *  another.
+ *  Method objects are created by Object#method, and are associated
+ *  with a particular object (not just with a class).  They may be
+ *  used to invoke the method within the object, and as a block
+ *  associated with an iterator.  They may also be unbound from one
+ *  object (creating an UnboundMethod) and bound to another.
  *
  *     class Thing
  *       def square(n)
@@ -1567,8 +1565,8 @@ method_hash(VALUE method)
  *     meth.unbind    -> unbound_method
  *
  *  Dissociates <i>meth</i> from its current receiver. The resulting
- *  <code>UnboundMethod</code> can subsequently be bound to a new object
- *  of the same class (see <code>UnboundMethod</code>).
+ *  UnboundMethod can subsequently be bound to a new object of the
+ *  same class (see UnboundMethod).
  */
 
 static VALUE
@@ -1711,10 +1709,9 @@ obj_method(VALUE obj, VALUE vid, int scope)
  *     obj.method(sym)    -> method
  *
  *  Looks up the named method as a receiver in <i>obj</i>, returning a
- *  <code>Method</code> object (or raising <code>NameError</code>). The
- *  <code>Method</code> object acts as a closure in <i>obj</i>'s object
- *  instance, so instance variables and the value of <code>self</code>
- *  remain available.
+ *  Method object (or raising NameError). The Method object acts as a
+ *  closure in <i>obj</i>'s object instance, so instance variables and
+ *  the value of <code>self</code> remain available.
  *
  *     class Demo
  *       def initialize(n)
@@ -1733,8 +1730,8 @@ obj_method(VALUE obj, VALUE vid, int scope)
  *     m = l.method("hello")
  *     m.call   #=> "Hello, @iv = Fred"
  *
- *  Note that <code>Method</code> implements <code>to_proc</code> method,
- *  which means it can be used with iterators.
+ *  Note that Method implements <code>to_proc</code> method, which
+ *  means it can be used with iterators.
  *
  *     [ 1, 2, 3 ].each(&method(:puts)) # => prints 3 lines to stdout
  *
@@ -1881,7 +1878,7 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
  *  Defines an instance method in the receiver. The _method_
  *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
  *  If a block is specified, it is used as the method body. This block
- *  is evaluated using <code>instance_eval</code>.
+ *  is evaluated using #instance_eval.
  *
  *     class A
  *       def fred
@@ -2190,17 +2187,16 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
  *
  * Document-class: UnboundMethod
  *
- *  Ruby supports two forms of objectified methods. Class
- *  <code>Method</code> is used to represent methods that are associated
- *  with a particular object: these method objects are bound to that
- *  object. Bound method objects for an object can be created using
- *  <code>Object#method</code>.
+ *  Ruby supports two forms of objectified methods. Class Method is
+ *  used to represent methods that are associated with a particular
+ *  object: these method objects are bound to that object. Bound
+ *  method objects for an object can be created using Object#method.
  *
  *  Ruby also supports unbound methods; methods objects that are not
- *  associated with a particular object. These can be created either by
- *  calling <code>Module#instance_method</code> or by calling
- *  <code>unbind</code> on a bound method object. The result of both of
- *  these is an <code>UnboundMethod</code> object.
+ *  associated with a particular object. These can be created either
+ *  by calling Module#instance_method or by calling #unbind on a bound
+ *  method object. The result of both of these is an UnboundMethod
+ *  object.
  *
  *  Unbound methods can only be called after they are bound to an
  *  object. That object must be a kind_of? the method's original
@@ -2246,9 +2242,9 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
  *  call-seq:
  *     umeth.bind(obj) -> method
  *
- *  Bind <i>umeth</i> to <i>obj</i>. If <code>Klass</code> was the class
- *  from which <i>umeth</i> was obtained,
- *  <code>obj.kind_of?(Klass)</code> must be true.
+ *  Bind <i>umeth</i> to <i>obj</i>. If Klass was the class from which
+ *  <i>umeth</i> was obtained, <code>obj.kind_of?(Klass)</code> must
+ *  be true.
  *
  *     class A
  *       def test
@@ -2725,7 +2721,7 @@ rb_proc_new(
  *  call-seq:
  *     meth.to_proc    -> proc
  *
- *  Returns a <code>Proc</code> object corresponding to this method.
+ *  Returns a Proc object corresponding to this method.
  */
 
 static VALUE
@@ -3399,7 +3395,7 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *   end
  *   C.new.f(1,2)       #=> ArgumentError
  *
- * The wrapper <i>def2</i> receives <code>body</code> as a non-lambda proc,
+ * The wrapper <code>def2</code> receives _body_ as a non-lambda proc,
  * yet defines a method which has normal semantics.
  *
  * == Conversion of other objects to procs
@@ -3552,16 +3548,16 @@ Init_Proc(void)
 }
 
 /*
- *  Objects of class <code>Binding</code> encapsulate the execution
- *  context at some particular place in the code and retain this context
- *  for future use. The variables, methods, value of <code>self</code>,
- *  and possibly an iterator block that can be accessed in this context
+ *  Objects of class Binding encapsulate the execution context at some
+ *  particular place in the code and retain this context for future
+ *  use. The variables, methods, value of <code>self</code>, and
+ *  possibly an iterator block that can be accessed in this context
  *  are all retained. Binding objects can be created using
- *  <code>Kernel#binding</code>, and are made available to the callback
- *  of <code>Kernel#set_trace_func</code>.
+ *  Kernel#binding, and are made available to the callback of
+ *  Kernel#set_trace_func.
  *
  *  These binding objects can be passed as the second argument of the
- *  <code>Kernel#eval</code> method, establishing an environment for the
+ *  Kernel#eval method, establishing an environment for the
  *  evaluation.
  *
  *     class Demo

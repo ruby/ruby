@@ -186,7 +186,7 @@ VALUE_to_float(VALUE obj)
  *  exclamation mark (``<code>!</code>'') to use the underlying
  *  platform's native size for the specified type; otherwise, they use a
  *  platform-independent size. Spaces are ignored in the template
- *  string. See also <code>String#unpack</code>.
+ *  string. See also String#unpack.
  *
  *     a = [ "a", "b", "c" ]
  *     n = [ 65, 66, 67 ]
@@ -1805,7 +1805,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
  *  exclamation mark (``<code>!</code>'') to use the underlying
  *  platform's native size for the specified type; otherwise, it uses a
  *  platform-independent consistent size. Spaces are ignored in the
- *  format string. See also <code>String#unpack1</code>,  <code>Array#pack</code>.
+ *  format string. See also String#unpack1,  Array#pack.
  *
  *     "abc \0\0abc \0\0".unpack('A6Z6')   #=> ["abc", "abc "]
  *     "abc \0\0".unpack('a3a3')           #=> ["abc", " \000\000"]
@@ -1922,7 +1922,7 @@ pack_unpack(VALUE str, VALUE fmt)
  *
  *  Decodes <i>str</i> (which may contain binary data) according to the
  *  format string, returning the first value extracted.
- *  See also <code>String#unpack</code>, <code>Array#pack</code>.
+ *  See also String#unpack, Array#pack.
  */
 
 static VALUE

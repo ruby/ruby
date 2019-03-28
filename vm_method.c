@@ -1031,7 +1031,7 @@ rb_remove_method(VALUE klass, const char *name)
  *     remove_method(string)   -> self
  *
  *  Removes the method identified by _symbol_ from the current
- *  class. For an example, see <code>Module.undef_method</code>.
+ *  class. For an example, see Module.undef_method.
  *  String arguments are converted to symbols.
  */
 

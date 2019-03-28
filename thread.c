@@ -3255,10 +3255,10 @@ rb_thread_aref(VALUE thread, VALUE key)
  *
  *  Returns a fiber-local for the given key. If the key can't be
  *  found, there are several options: With no other arguments, it will
- *  raise a <code>KeyError</code> exception; if <i>default</i> is
- *  given, then that will be returned; if the optional code block is
- *  specified, then that will be run and its result returned.
- *  See Thread#[] and Hash#fetch.
+ *  raise a KeyError exception; if <i>default</i> is given, then that
+ *  will be returned; if the optional code block is specified, then
+ *  that will be run and its result returned.  See Thread#[] and
+ *  Hash#fetch.
  */
 static VALUE
 rb_thread_fetch(int argc, VALUE *argv, VALUE self)

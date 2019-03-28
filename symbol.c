@@ -679,8 +679,8 @@ rb_gc_free_dsymbol(VALUE sym)
  *     str.intern   -> symbol
  *     str.to_sym   -> symbol
  *
- *  Returns the <code>Symbol</code> corresponding to <i>str</i>, creating the
- *  symbol if it did not previously exist. See <code>Symbol#id2name</code>.
+ *  Returns the Symbol corresponding to <i>str</i>, creating the
+ *  symbol if it did not previously exist. See Symbol#id2name.
  *
  *     "Koala".intern         #=> :Koala
  *     s = 'cat'.to_sym       #=> :cat
