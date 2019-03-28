@@ -5462,11 +5462,9 @@ tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
     else if (codepoint >= 0x80) {
 	rb_encoding *utf8 = rb_utf8_encoding();
 	if (*encp && utf8 != *encp) {
-	    static const char mixed_utf8[] = "UTF-8 mixed within %s source";
-	    size_t len = sizeof(mixed_utf8) - 2 + strlen(rb_enc_name(*encp));
-	    char *mesg = alloca(len);
-	    snprintf(mesg, len, mixed_utf8, rb_enc_name(*encp));
-	    yyerror0(mesg);
+	    YYLTYPE loc = RUBY_INIT_YYLLOC();
+	    compile_error(p, "UTF-8 mixed within %s source", rb_enc_name(*encp));
+	    parser_show_error_line(p, &loc);
 	    return wide;
 	}
 	*encp = utf8;
@@ -5791,12 +5789,10 @@ parser_update_heredoc_indent(struct parser_params *p, int c)
 static void
 parser_mixed_error(struct parser_params *p, rb_encoding *enc1, rb_encoding *enc2)
 {
-    static const char mixed_msg[] = "%s mixed within %s source";
+    YYLTYPE loc = RUBY_INIT_YYLLOC();
     const char *n1 = rb_enc_name(enc1), *n2 = rb_enc_name(enc2);
-    const size_t len = sizeof(mixed_msg) - 4 + strlen(n1) + strlen(n2);
-    char *errbuf = ALLOCA_N(char, len);
-    snprintf(errbuf, len, mixed_msg, n1, n2);
-    yyerror0(errbuf);
+    compile_error(p, "%s mixed within %s source", n1, n2);
+    parser_show_error_line(p, &loc);
 }
 
 static void
@@ -7280,11 +7276,11 @@ parse_numeric(struct parser_params *p, int c)
   decode_num:
     pushback(p, c);
     if (nondigit) {
-	char tmp[30];
       trailing_uc:
 	literal_flush(p, p->lex.pcur - 1);
-	snprintf(tmp, sizeof(tmp), "trailing `%c' in number", nondigit);
-	yyerror0(tmp);
+	YYLTYPE loc = RUBY_INIT_YYLLOC();
+	compile_error(p, "trailing `%c' in number", nondigit);
+	parser_show_error_line(p, &loc);
     }
     tokfix(p);
     if (is_float) {
