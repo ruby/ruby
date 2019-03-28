@@ -59,6 +59,18 @@ RSpec.describe "The library itself" do
     "#{filename} has spaces on the EOL on lines #{failing_lines.join(", ")}"
   end
 
+  def check_for_straneous_quotes(filename)
+    return if File.expand_path(filename) == __FILE__
+
+    failing_lines = []
+    each_line(filename) do |line, number|
+      failing_lines << number + 1 if line =~ /’/
+    end
+
+    return if failing_lines.empty?
+    "#{filename} has an straneous quote on lines #{failing_lines.join(", ")}"
+  end
+
   def check_for_expendable_words(filename)
     failing_line_message = []
     useless_words = %w[
@@ -101,6 +113,19 @@ RSpec.describe "The library itself" do
         next if filename =~ exempt
         error_messages << check_for_tab_characters(filename)
         error_messages << check_for_extra_spaces(filename)
+      end
+    end
+    expect(error_messages.compact).to be_well_formed
+  end
+
+  it "has no estraneous quotes" do
+    exempt = /vendor|vcr_cassettes|LICENSE|rbreadline\.diff/
+    error_messages = []
+    Dir.chdir(root) do
+      files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z`
+      files.split("\x0").each do |filename|
+        next if filename =~ exempt
+        error_messages << check_for_straneous_quotes(filename)
       end
     end
     expect(error_messages.compact).to be_well_formed
