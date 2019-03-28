@@ -23,6 +23,10 @@ describe "C-API Util function" do
       lambda { @o.rb_scan_args([1, 2], "3", 0, @acc) }.should raise_error(ArgumentError)
     end
 
+    it "raises an ArgumentError if there are too many arguments" do
+      lambda { @o.rb_scan_args([1, 2, 3, 4], "3", 0, @acc) }.should raise_error(ArgumentError)
+    end
+
     it "assigns the required and optional arguments scanned" do
       @o.rb_scan_args([1, 2], "11", 2, @acc).should == 2
       ScratchPad.recorded.should == [1, 2]

@@ -72,9 +72,10 @@ describe "C-API Mutex functions" do
 
     it "sleeps when the mutex is locked" do
       @m.lock
-      start = Time.now
-      @s.rb_mutex_sleep(@m, 0.1)
-      (Time.now - start).should be_close(0.1, 0.2)
+      t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      @s.rb_mutex_sleep(@m, 0.001)
+      t2 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      (t2 - t1).should >= 0
       @m.locked?.should be_true
     end
   end

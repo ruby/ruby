@@ -4,6 +4,30 @@ require_relative '../../shared/string/times'
 
 load_extension('string')
 
+class CApiStringSpecs
+  class ValidTostrTest
+    def to_str
+      "ruby"
+    end
+  end
+
+  class InvalidTostrTest
+    def to_str
+      []
+    end
+  end
+
+  class ToSOrInspect
+    def to_s
+      'A string'
+    end
+
+    def inspect
+      'A different string'
+    end
+  end
+end
+
 describe :rb_str_new2, shared: true do
   it "returns a new string object calling strlen on the passed C string" do
     # Hardcoded to pass const char * = "hello\0invisible"
@@ -18,18 +42,6 @@ end
 describe "C-API String function" do
   before :each do
     @s = CApiStringSpecs.new
-  end
-
-  class ValidTostrTest
-    def to_str
-      "ruby"
-    end
-  end
-
-  class InvalidTostrTest
-    def to_str
-      []
-    end
   end
 
   [Encoding::BINARY, Encoding::UTF_8].each do |enc|
@@ -438,12 +450,12 @@ describe "C-API String function" do
   describe "rb_str_to_str" do
     it "calls #to_str to coerce the value to a String" do
       @s.rb_str_to_str("foo").should == "foo"
-      @s.rb_str_to_str(ValidTostrTest.new).should == "ruby"
+      @s.rb_str_to_str(CApiStringSpecs::ValidTostrTest.new).should == "ruby"
     end
 
     it "raises a TypeError if coercion fails" do
       lambda { @s.rb_str_to_str(0) }.should raise_error(TypeError)
-      lambda { @s.rb_str_to_str(InvalidTostrTest.new) }.should raise_error(TypeError)
+      lambda { @s.rb_str_to_str(CApiStringSpecs::InvalidTostrTest.new) }.should raise_error(TypeError)
     end
   end
 
@@ -875,6 +887,26 @@ describe "C-API String function" do
       s = "Awesome %s is here with %s"
       @s.rb_sprintf2(s, "string", "content").should == "Awesome string is here with content"
     end
+
+    it "formats a string VALUE using to_s if sign not specified in format" do
+      s = 'Result: A string.'
+      @s.rb_sprintf3(CApiStringSpecs::ToSOrInspect.new).should == s
+    end
+
+    it "formats a string VALUE using inspect if sign specified in format" do
+      s = 'Result: A different string.'
+      @s.rb_sprintf4(CApiStringSpecs::ToSOrInspect.new).should == s
+    end
+
+    it "formats a TrueClass VALUE as `TrueClass` if sign not specified in format" do
+      s = 'Result: TrueClass.'
+      @s.rb_sprintf3(true.class).should == s
+    end
+
+    it "formats a TrueClass VALUE as 'true' if sign specified in format" do
+      s = 'Result: true.'
+      @s.rb_sprintf4(true.class).should == s
+    end
   end
 
   describe "rb_vsprintf" do
@@ -890,11 +922,11 @@ describe "C-API String function" do
     end
 
     it "tries to convert the passed argument to a string by calling #to_str first" do
-      @s.rb_String(ValidTostrTest.new).should == "ruby"
+      @s.rb_String(CApiStringSpecs::ValidTostrTest.new).should == "ruby"
     end
 
     it "raises a TypeError if #to_str does not return a string" do
-      lambda { @s.rb_String(InvalidTostrTest.new) }.should raise_error(TypeError)
+      lambda { @s.rb_String(CApiStringSpecs::InvalidTostrTest.new) }.should raise_error(TypeError)
     end
 
     it "tries to convert the passed argument to a string by calling #to_s" do

@@ -6,14 +6,14 @@ script:
   - ../mspec/bin/mspec $MSPEC_OPTS
 matrix:
   include:
-    - rvm: 2.5.3
+    - rvm: 2.5.5
       env: MSPEC_OPTS="-R2 -ff"
     - rvm: 2.3.8
     - rvm: 2.4.5
       env: CHECK_LEAKS=true
-    - rvm: 2.5.3
+    - rvm: 2.5.5
       env: CHECK_LEAKS=true
-    - rvm: 2.6.1
+    - rvm: 2.6.2
       env: CHECK_LEAKS=true
     - env: RUBOCOP=true
       rvm: 2.4.5

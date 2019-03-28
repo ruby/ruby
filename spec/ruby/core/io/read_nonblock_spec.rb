@@ -77,6 +77,13 @@ describe "IO#read_nonblock" do
     buffer.should == "1"
   end
 
+  it "returns the passed buffer" do
+    buffer = ""
+    @write.write("1")
+    output = @read.read_nonblock(1, buffer)
+    output.should equal(buffer)
+  end
+
   it "raises IOError on closed stream" do
     lambda { IOSpecs.closed_io.read_nonblock(5) }.should raise_error(IOError)
   end

@@ -1,4 +1,5 @@
 require_relative 'spec_helper'
+require 'objspace'
 
 load_extension("typed_data")
 
@@ -6,6 +7,14 @@ describe "CApiAllocTypedSpecs (a class with an alloc func defined)" do
   it "calls the alloc func" do
     @s = CApiAllocTypedSpecs.new
     @s.typed_wrapped_data.should == 42 # not defined in initialize
+  end
+
+  it "uses the specified memsize function for ObjectSpace.memsize" do
+    @s = CApiAllocTypedSpecs.new
+    # The defined memsize function for the type should return 42 as
+    # the size, and this should be added to the size of the object as
+    # known by Ruby.
+    ObjectSpace.memsize_of(@s).should > 42
   end
 end
 

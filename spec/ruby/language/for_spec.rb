@@ -1,4 +1,5 @@
 require_relative '../spec_helper'
+require_relative 'fixtures/for_scope'
 
 # for name[, name]... in expr [do]
 #   body
@@ -128,6 +129,11 @@ describe "The for expression" do
     end
 
     a.should == 123
+  end
+
+  it "does not try to access variables outside the method" do
+    ForSpecs::ForInClassMethod.foo.should == [:bar, :baz]
+    ForSpecs::ForInClassMethod::READER.call.should == :same_variable_set_outside
   end
 
   it "returns expr" do

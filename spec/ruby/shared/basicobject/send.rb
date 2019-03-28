@@ -114,4 +114,15 @@ describe :basicobject_send, shared: true do
   it "has a negative arity" do
     method(@method).arity.should < 0
   end
+
+  it "invokes module methods with super correctly" do
+    m1 = Module.new { def foo(ary); ary << :m1; end; }
+    m2 = Module.new { def foo(ary = []); super(ary); ary << :m2; end; }
+    c2 = Class.new do
+      include m1
+      include m2
+    end
+
+    c2.new.send(@method, :foo, *[[]]).should == %i[m1 m2]
+  end
 end

@@ -35,8 +35,21 @@ describe "Thread.list" do
       t.join
     end
   end
-end
 
-describe "Thread.list" do
-  it "needs to be reviewed for spec completeness"
+  it "returns instances of Thread and not null or nil values" do
+    spawner = Thread.new do
+      Array.new(100) do
+        Thread.new {}
+      end
+    end
+
+    while spawner.alive?
+      Thread.list.each { |th|
+        th.should be_kind_of(Thread)
+      }
+    end
+
+    threads = spawner.value
+    threads.each(&:join)
+  end
 end

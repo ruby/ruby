@@ -47,4 +47,11 @@ describe "String#end_with?" do
     "céréale".end_with?("réale").should be_true
   end
 
+  it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
+    pat = "ア".encode Encoding::EUC_JP
+    lambda do
+      "あれ".end_with?(pat)
+    end.should raise_error(Encoding::CompatibilityError)
+  end
+
 end

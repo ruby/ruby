@@ -72,6 +72,53 @@ describe "Module#const_set" do
     lambda { ConstantSpecs.const_set name, 1 }.should raise_error(TypeError)
   end
 
+  describe "when overwriting an existing constant" do
+    it "warns if the previous value was a normal value" do
+      mod = Module.new
+      mod.const_set :Foo, 42
+      -> {
+        mod.const_set :Foo, 1
+      }.should complain(/already initialized constant/)
+      mod.const_get(:Foo).should == 1
+    end
+
+    it "does not warn if the previous value was an autoload" do
+      mod = Module.new
+      mod.autoload :Foo, "not-existing"
+      -> {
+        mod.const_set :Foo, 1
+      }.should_not complain
+      mod.const_get(:Foo).should == 1
+    end
+
+    it "does not warn if the previous value was undefined" do
+      path = fixture(__FILE__, "autoload_o.rb")
+      ScratchPad.record []
+      mod = Module.new
+
+      mod.autoload :Foo, path
+      -> { mod::Foo }.should raise_error(NameError)
+
+      mod.should have_constant(:Foo)
+      mod.const_defined?(:Foo).should == false
+      mod.autoload?(:Foo).should == nil
+
+      -> {
+        mod.const_set :Foo, 1
+      }.should_not complain
+      mod.const_get(:Foo).should == 1
+    end
+
+    it "does not warn if the new value is an autoload" do
+      mod = Module.new
+      mod.const_set :Foo, 42
+      -> {
+        mod.autoload :Foo, "not-existing"
+      }.should_not complain
+      mod.const_get(:Foo).should == 42
+    end
+  end
+
   describe "on a frozen module" do
     before :each do
       @frozen = Module.new.freeze

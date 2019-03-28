@@ -244,6 +244,10 @@ describe "C-API Kernel function" do
       @s.rb_yield_splat([1, 2]) { |x, y| x + y }.should == 3
     end
 
+    it "passes arguments to a block accepting splatted args" do
+      @s.rb_yield_splat([1, 2]) { |*v| v }.should == [1, 2]
+    end
+
     it "raises LocalJumpError when no block is given" do
       lambda { @s.rb_yield_splat([1, 2]) }.should raise_error(LocalJumpError)
     end

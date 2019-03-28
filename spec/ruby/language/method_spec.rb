@@ -574,6 +574,7 @@ describe "A method" do
       m(a: 1, b: 2).should == { a: 1, b: 2 }
       m(*[]).should == {}
       m(**{}).should == {}
+      m(**{a: 1, b: 2}, **{a: 4, c: 7}).should == { a: 4, b: 2, c: 7 }
       lambda { m(2) }.should raise_error(ArgumentError)
     end
 

@@ -70,6 +70,15 @@ describe :bigdecimal_modulo, shared: true do
     res.kind_of?(BigDecimal).should == true
   end
 
+  describe "with Object" do
+    it "tries to coerce the other operand to self" do
+      bd6543 = BigDecimal("6543.21")
+      object = mock("Object")
+      object.should_receive(:coerce).with(bd6543).and_return([bd6543, 137])
+      bd6543.send(@method, object, *@object).should == BigDecimal("104.21")
+    end
+  end
+
   it "returns NaN if NaN is involved" do
     @nan.send(@method, @nan).nan?.should == true
     @nan.send(@method, @one).nan?.should == true
