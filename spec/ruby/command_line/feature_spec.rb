@@ -42,8 +42,13 @@ describe "The --enable and --disable flags" do
       ruby_exe("p RubyVM::MJIT.enabled?", options: "--disable=jit").chomp.should == "false"
       ruby_exe("p RubyVM::MJIT.enabled?", options: "--disable-jit").chomp.should == "false"
 
-      warning = IO.popen([RbConfig.ruby, '--jit-warning', '-e', ''], err: [:child, :out], &:read)
-      if warning.include?('warning: MJIT support is disabled.') # ./configure --disable-jit-support
+      mjit_disabled = false
+      begin
+        warning = IO.popen([RbConfig.ruby, '--jit-warning', '-e', ''], err: [:child, :out], &:read)
+        mjit_disabled = warning.include?('warning: MJIT support is disabled.') # ./configure --disable-jit-support
+      rescue Errno::ENOENT # for msys2 https://ci.appveyor.com/project/ruby/ruby/builds/23429035/job/dvjqa34m9pxvv2nt
+      end
+      if mjit_disabled
         ruby_exe("p RubyVM::MJIT.enabled?", options: "--enable=jit").chomp.should == "false"
         ruby_exe("p RubyVM::MJIT.enabled?", options: "--enable-jit").chomp.should == "false"
       else
