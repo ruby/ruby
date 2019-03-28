@@ -94,11 +94,11 @@ RSpec.describe "The library itself" do
   end
 
   it "has no malformed whitespace" do
-    exempt = /\.gitmodules|\.marshal|fixtures|vendor|LICENSE|vcr_cassettes/
+    exempt = /\.gitmodules|\.marshal|fixtures|vendor|LICENSE|vcr_cassettes|rbreadline\.diff/
     error_messages = []
     Dir.chdir(root) do
-      lib_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z -- lib`
-      lib_files.split("\x0").each do |filename|
+      files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z`
+      files.split("\x0").each do |filename|
         next if filename =~ exempt
         error_messages << check_for_tab_characters(filename)
         error_messages << check_for_extra_spaces(filename)
@@ -111,8 +111,8 @@ RSpec.describe "The library itself" do
     exempt = %r{quality_spec.rb|support/helpers|vcr_cassettes|\.md|\.ronn}
     error_messages = []
     Dir.chdir(root) do
-      lib_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z -- lib`
-      lib_files.split("\x0").each do |filename|
+      files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z`
+      files.split("\x0").each do |filename|
         next if filename =~ exempt
         error_messages << check_for_debugging_mechanisms(filename)
       end
@@ -124,8 +124,8 @@ RSpec.describe "The library itself" do
     error_messages = []
     exempt = %r{lock/lockfile_(bundler_1_)?spec|quality_spec|vcr_cassettes|\.ronn|lockfile_parser\.rb}
     Dir.chdir(root) do
-      lib_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z -- lib`
-      lib_files.split("\x0").each do |filename|
+      files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z`
+      files.split("\x0").each do |filename|
         next if filename =~ exempt
         error_messages << check_for_git_merge_conflicts(filename)
       end
@@ -148,7 +148,7 @@ RSpec.describe "The library itself" do
 
   it "maintains language quality of sentences used in source code" do
     error_messages = []
-    exempt = /vendor/
+    exempt = /vendor|vcr_cassettes/
     Dir.chdir(root) do
       lib_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
       lib_files.split("\x0").each do |filename|
