@@ -2432,6 +2432,24 @@ push_caller(const char *path, VALUE val, void *enc)
     return status;
 }
 
+static int ruby_glob0(const char *path, int fd, const char *base, int flags,
+                      const ruby_glob_funcs_t *funcs, VALUE arg, rb_encoding *enc);
+
+struct push_glob0_args {
+    int fd;
+    const char *base;
+    int flags;
+    const ruby_glob_funcs_t *funcs;
+    VALUE arg;
+};
+
+static int
+push_glob0_caller(const char *path, VALUE val, void *enc)
+{
+    struct push_glob0_args *arg = (struct push_glob0_args *)val;
+    return ruby_glob0(path, arg->fd, arg->base, arg->flags, arg->funcs, arg->arg, enc);
+}
+
 static int
 ruby_glob0(const char *path, int fd, const char *base, int flags,
 	   const ruby_glob_funcs_t *funcs, VALUE arg,
@@ -2444,6 +2462,17 @@ ruby_glob0(const char *path, int fd, const char *base, int flags,
     int status, dirsep = FALSE;
 
     start = root = path;
+
+    if (*root == '{') {
+        struct push_glob0_args args;
+        args.fd = fd;
+        args.base = base;
+        args.flags = flags;
+        args.funcs = funcs;
+        args.arg = arg;
+        return ruby_brace_expand(path, flags, push_glob0_caller, (VALUE)&args, enc, Qfalse);
+    }
+
     flags |= FNM_SYSCASE;
 #if defined DOSISH
     root = rb_enc_path_skip_prefix(root, root + strlen(root), enc);
