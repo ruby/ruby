@@ -58,7 +58,7 @@ CSV::
 
 ERB::
 
-  * Prohibit marshabling ERB instance.
+  * Prohibit marshaling ERB instance.
 
 RSS::
 
