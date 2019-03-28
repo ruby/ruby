@@ -719,7 +719,7 @@ rb_trace_eval(VALUE cmd, VALUE val)
  *  +Proc+ object) or block is executed whenever the variable
  *  is assigned. The block or +Proc+ object receives the
  *  variable's new value as a parameter. Also see
- *  <code>Kernel::untrace_var</code>.
+ *  Kernel::untrace_var.
  *
  *     trace_var :$_, proc {|v| puts "$_ is now '#{v}'" }
  *     $_ = "hello"
@@ -2738,7 +2738,7 @@ rb_const_list(void *data)
  *    IO.constants.include?(:SYNC)        #=> true
  *    IO.constants(false).include?(:SYNC) #=> false
  *
- *  Also see <code>Module::const_defined?</code>.
+ *  Also see Module::const_defined?.
  */
 
 VALUE

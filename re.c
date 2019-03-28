@@ -521,11 +521,11 @@ static VALUE rb_reg_str_with_term(VALUE re, int term);
  *
  *  Returns a string containing the regular expression and its options (using the
  *  <code>(?opts:source)</code> notation. This string can be fed back in to
- *  <code>Regexp::new</code> to a regular expression with the same semantics as
- *  the original. (However, <code>Regexp#==</code> may not return true when
- *  comparing the two, as the source of the regular expression itself may
- *  differ, as the example shows).  <code>Regexp#inspect</code> produces a
- *  generally more readable version of <i>rxp</i>.
+ *  Regexp::new to a regular expression with the same semantics as the
+ *  original. (However, <code>Regexp#==</code> may not return true
+ *  when comparing the two, as the source of the regular expression
+ *  itself may differ, as the example shows).  Regexp#inspect produces
+ *  a generally more readable version of <i>rxp</i>.
  *
  *      r1 = /ab+c/ix           #=> /ab+c/ix
  *      s1 = r1.to_s            #=> "(?ix-m:ab+c)"
@@ -726,11 +726,11 @@ rb_reg_casefold_p(VALUE re)
  *  call-seq:
  *     rxp.options   -> integer
  *
- *  Returns the set of bits corresponding to the options used when creating this
- *  Regexp (see <code>Regexp::new</code> for details. Note that additional bits
- *  may be set in the returned options: these are used internally by the regular
- *  expression code. These extra bits are ignored if the options are passed to
- *  <code>Regexp::new</code>.
+ *  Returns the set of bits corresponding to the options used when
+ *  creating this Regexp (see Regexp::new for details. Note that
+ *  additional bits may be set in the returned options: these are used
+ *  internally by the regular expression code. These extra bits are
+ *  ignored if the options are passed to Regexp::new.
  *
  *     Regexp::IGNORECASE                  #=> 1
  *     Regexp::EXTENDED                    #=> 2
@@ -884,10 +884,9 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
 /*
  *  Document-class: MatchData
  *
- *  <code>MatchData</code> encapsulates the result of matching a Regexp against
- *  string. It is returned by Regexp#match and
- *  String#match, and also stored in a global variable returned by
- *  Regexp.last_match.
+ *  MatchData encapsulates the result of matching a Regexp against
+ *  string. It is returned by Regexp#match and String#match, and also
+ *  stored in a global variable returned by Regexp.last_match.
  *
  *  Usage:
  *
@@ -917,16 +916,16 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
  *
  *  == Global variables equivalence
  *
- *  Parts of last <code>MatchData</code> (returned by Regexp.last_match) are also
+ *  Parts of last MatchData (returned by Regexp.last_match) are also
  *  aliased as global variables:
  *
- *  * <code>$~</code> is <code>Regexp.last_match</code>;
- *  * <code>$&</code> is <code>Regexp.last_match[0]</code>;
+ *  * <code>$~</code> is Regexp.last_match;
+ *  * <code>$&</code> is Regexp.last_match<code>[0]</code>;
  *  * <code>$1</code>, <code>$2</code>, and so on are
- *    <code>Regexp.last_match[i]</code> (captures by number);
- *  * <code>$`</code> is <code>Regexp.last_match.pre_match</code>;
- *  * <code>$'</code> is <code>Regexp.last_match.post_match</code>;
- *  * <code>$+</code> is <code>Regexp.last_match[-1]</code> (the last capture).
+ *    Regexp.last_match<code>[i]</code> (captures by number);
+ *  * <code>$`</code> is Regexp.last_match<code>.pre_match</code>;
+ *  * <code>$'</code> is Regexp.last_match<code>.post_match</code>;
+ *  * <code>$+</code> is Regexp.last_match<code>[-1]</code> (the last capture).
  *
  *  See also "Special global variables" section in Regexp documentation.
  */
@@ -2009,12 +2008,12 @@ match_ary_aref(VALUE match, VALUE idx, VALUE result)
  *     mtch[range]           -> array
  *     mtch[name]            -> str or nil
  *
- *  Match Reference -- <code>MatchData</code> acts as an array, and may be
- *  accessed using the normal array indexing techniques.  <code>mtch[0]</code>
- *  is equivalent to the special variable <code>$&</code>, and returns the
- *  entire matched string.  <code>mtch[1]</code>, <code>mtch[2]</code>, and so
- *  on return the values of the matched backreferences (portions of the
- *  pattern between parentheses).
+ *  Match Reference -- MatchData acts as an array, and may be accessed
+ *  using the normal array indexing techniques.  <code>mtch[0]</code>
+ *  is equivalent to the special variable <code>$&</code>, and returns
+ *  the entire matched string.  <code>mtch[1]</code>,
+ *  <code>mtch[2]</code>, and so on return the values of the matched
+ *  backreferences (portions of the pattern between parentheses).
  *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m          #=> #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
@@ -3287,11 +3286,11 @@ rb_reg_match2(VALUE re)
  *     rxp.match(str)       -> matchdata or nil
  *     rxp.match(str,pos)   -> matchdata or nil
  *
- *  Returns a <code>MatchData</code> object describing the match, or
- *  <code>nil</code> if there was no match. This is equivalent to retrieving the
- *  value of the special variable <code>$~</code> following a normal match.
- *  If the second parameter is present, it specifies the position in the string
- *  to begin the search.
+ *  Returns a MatchData object describing the match, or
+ *  <code>nil</code> if there was no match. This is equivalent to
+ *  retrieving the value of the special variable <code>$~</code>
+ *  following a normal match.  If the second parameter is present, it
+ *  specifies the position in the string to begin the search.
  *
  *     /(.)(.)(.)/.match("abc")[2]   #=> "b"
  *     /(.)(.)/.match("abc", 1)[2]   #=> "c"
@@ -3418,7 +3417,7 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
 /*
  * Document-method: compile
  *
- * Alias for <code>Regexp.new</code>
+ * Alias for Regexp.new
  */
 
 /*
@@ -3763,11 +3762,12 @@ rb_reg_s_union(VALUE self, VALUE args0)
  *     Regexp.union(pat1, pat2, ...)            -> new_regexp
  *     Regexp.union(pats_ary)                   -> new_regexp
  *
- *  Return a <code>Regexp</code> object that is the union of the given
- *  <em>pattern</em>s, i.e., will match any of its parts. The <em>pattern</em>s
- *  can be Regexp objects, in which case their options will be preserved, or
- *  Strings. If no patterns are given, returns <code>/(?!)/</code>.
- *  The behavior is unspecified if any given <em>pattern</em> contains capture.
+ *  Return a Regexp object that is the union of the given
+ *  <em>pattern</em>s, i.e., will match any of its parts. The
+ *  <em>pattern</em>s can be Regexp objects, in which case their
+ *  options will be preserved, or Strings. If no patterns are given,
+ *  returns <code>/(?!)/</code>.  The behavior is unspecified if any
+ *  given <em>pattern</em> contains capture.
  *
  *     Regexp.union                         #=> /(?!)/
  *     Regexp.union("penzance")             #=> /penzance/
@@ -4029,9 +4029,9 @@ re_warn(const char *s)
 /*
  *  Document-class: Regexp
  *
- *  A <code>Regexp</code> holds a regular expression, used to match a pattern
- *  against strings. Regexps are created using the <code>/.../</code> and
- *  <code>%r{...}</code> literals, and by the <code>Regexp::new</code>
+ *  A Regexp holds a regular expression, used to match a pattern
+ *  against strings. Regexps are created using the <code>/.../</code>
+ *  and <code>%r{...}</code> literals, and by the Regexp::new
  *  constructor.
  *
  *  :include: doc/regexp.rdoc
