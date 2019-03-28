@@ -833,6 +833,7 @@ class ERB
     @src, @encoding, @frozen_string = *compiler.compile(str)
     @filename = nil
     @lineno = 0
+    @_init = self.class.singleton_class
   end
   NOT_GIVEN = Object.new
   private_constant :NOT_GIVEN
@@ -891,6 +892,9 @@ class ERB
   # code evaluation.
   #
   def result(b=new_toplevel)
+    unless @_init.equal?(self.class.singleton_class)
+      raise ArgumentError, "not initialized"
+    end
     if @safe_level
       proc do
         prev_safe_level = $SAFE
