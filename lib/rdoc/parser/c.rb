@@ -952,7 +952,7 @@ class RDoc::Parser::C < RDoc::Parser
   # can override the C value of the comment to give a friendly definition.
   #
   #   /* 300: The perfect score in bowling */
-  #   rb_define_const(cFoo, "PERFECT", INT2FIX(300);
+  #   rb_define_const(cFoo, "PERFECT", INT2FIX(300));
   #
   # Will override <tt>INT2FIX(300)</tt> with the value +300+ in the output
   # RDoc.  Values may include quotes and escaped colons (\:).
