@@ -2738,7 +2738,7 @@ rb_const_list(void *data)
  *    IO.constants.include?(:SYNC)        #=> true
  *    IO.constants(false).include?(:SYNC) #=> false
  *
- *  Also see Module::const_defined?.
+ *  Also see Module#const_defined?.
  */
 
 VALUE
