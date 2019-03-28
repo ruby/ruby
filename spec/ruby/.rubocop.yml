@@ -96,3 +96,7 @@ Lint/UnreachableCode:
 Lint/UriRegexp:
   Exclude:
     - 'library/uri/regexp_spec.rb'
+
+Lint/Debugger:
+  Exclude:
+    - 'core/binding/fixtures/irb.rb'

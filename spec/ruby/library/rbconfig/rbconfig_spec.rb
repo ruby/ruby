@@ -10,7 +10,7 @@ describe 'RbConfig::CONFIG' do
   end
 
   # These directories have no meanings before the installation.
-  if RbConfig::TOPDIR
+  guard -> { RbConfig::TOPDIR } do
     it "['rubylibdir'] returns the directory containing Ruby standard libraries" do
       rubylibdir = RbConfig::CONFIG['rubylibdir']
       File.directory?(rubylibdir).should == true

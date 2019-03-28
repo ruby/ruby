@@ -73,6 +73,14 @@ describe "BigDecimal#add" do
 #    BigDecimal("0.88").add(0.0, 1).should == BigDecimal("0.9")
 #  end
 
+  describe "with Object" do
+    it "tries to coerce the other operand to self" do
+      object = mock("Object")
+      object.should_receive(:coerce).with(@frac_3).and_return([@frac_3, @frac_4])
+      @frac_3.add(object, 1).should == BigDecimal("0.1E16")
+    end
+  end
+
   it "favors the precision specified in the second argument over the global limit" do
     BigDecimalSpecs.with_limit(1) do
       BigDecimal('0.888').add(@zero, 3).should == BigDecimal('0.888')

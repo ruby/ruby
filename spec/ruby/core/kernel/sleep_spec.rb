@@ -6,16 +6,20 @@ describe "Kernel#sleep" do
     Kernel.should have_private_instance_method(:sleep)
   end
 
+  it "returns an Integer" do
+    sleep(0.001).should be_kind_of(Integer)
+  end
+
   it "accepts a Float" do
-    sleep(0.1).should be_close(0, 2)
+    sleep(0.001).should >= 0
   end
 
   it "accepts a Fixnum" do
-    sleep(0).should be_close(0, 2)
+    sleep(0).should >= 0
   end
 
   it "accepts a Rational" do
-    sleep(Rational(1, 9)).should be_close(0, 2)
+    sleep(Rational(1, 999)).should >= 0
   end
 
   it "raises an ArgumentError when passed a negative duration" do

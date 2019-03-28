@@ -88,7 +88,6 @@ IncludeSpecsClass
 IncludeSpecsMiddle
 IncludeSpecsTop
 IncludesMath
-InvalidTostrTest
 JSON
 KSAutoloadA
 KSAutoloadB
@@ -177,6 +176,7 @@ StringRefinement
 StringScanner
 StringSubclass
 StructClasses
+Syck
 Syslog
 TCPServer
 TCPSocket
@@ -205,7 +205,6 @@ UserObject
 UserPreviouslyDefinedWithInitializedIvar
 UserRegexp
 UserString
-ValidTostrTest
 Vector
 WEBrick
 WIN32OLE

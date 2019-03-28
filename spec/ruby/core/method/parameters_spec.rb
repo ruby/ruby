@@ -241,4 +241,19 @@ describe "Method#parameters" do
     m = MethodSpecs::Methods.new
     m.method(:writer=).parameters.should == [[:req]]
   end
+
+  it "returns [[:rest]] for core methods with variable-length argument lists" do
+    m = "foo"
+
+    # match takes rest args
+    m.method(:match).parameters.should == [[:rest]]
+
+    # [] takes 1 to 3 args
+    m.method(:[]).parameters.should == [[:rest]]
+  end
+
+  it "returns [[:req]] for each parameter for core methods with fixed-length argument lists" do
+    m = "foo"
+    m.method(:+).parameters.should == [[:req]]
+  end
 end

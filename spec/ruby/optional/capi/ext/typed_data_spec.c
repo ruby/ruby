@@ -43,7 +43,11 @@ void sample_typed_wrapped_struct_mark(void* st) {
 }
 
 size_t sample_typed_wrapped_struct_memsize(const void* st) {
-  return sizeof(struct sample_typed_wrapped_struct);
+  if (st == NULL) {
+    return 0;
+  } else {
+    return ((struct sample_typed_wrapped_struct *)st)->foo;
+  }
 }
 
 static const rb_data_type_t sample_typed_wrapped_struct_data_type = {

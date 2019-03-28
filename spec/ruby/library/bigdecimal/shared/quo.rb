@@ -29,6 +29,14 @@ describe :bigdecimal_quo, shared: true do
     @one.send(@method, BigDecimal('2E-5555'), *@object).should == BigDecimal('0.5E5555')
   end
 
+  describe "with Object" do
+    it "tries to coerce the other operand to self" do
+      object = mock("Object")
+      object.should_receive(:coerce).with(@one).and_return([@one, @two])
+      @one.send(@method, object, *@object).should == BigDecimal("0.5")
+    end
+  end
+
   it "returns 0 if divided by Infinity" do
     @zero.send(@method, @infinity, *@object).should == 0
     @frac_2.send(@method, @infinity, *@object).should == 0

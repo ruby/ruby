@@ -23,4 +23,12 @@ describe "BigDecimal#*" do
     (@e3_minus * @e3_minus).should == BigDecimal("9E-40002")
     (@e * @one).should == @e
   end
+
+  describe "with Object" do
+    it "tries to coerce the other operand to self" do
+      object = mock("Object")
+      object.should_receive(:coerce).with(@e3_minus).and_return([@e3_minus, @e3_plus])
+      (@e3_minus * object).should == BigDecimal("9")
+    end
+  end
 end

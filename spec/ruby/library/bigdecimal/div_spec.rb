@@ -42,6 +42,14 @@ describe "BigDecimal#div" do
     }
   end
 
+  describe "with Object" do
+    it "tries to coerce the other operand to self" do
+      object = mock("Object")
+      object.should_receive(:coerce).with(@one).and_return([@one, @two])
+      @one.div(object).should == @zero
+    end
+  end
+
   it "raises FloatDomainError if NaN is involved" do
     lambda { @one.div(@nan) }.should raise_error(FloatDomainError)
     lambda { @nan.div(@one) }.should raise_error(FloatDomainError)

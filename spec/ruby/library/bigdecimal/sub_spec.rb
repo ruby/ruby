@@ -13,6 +13,8 @@ describe "BigDecimal#sub" do
     @one_minus = BigDecimal("-1")
     @frac_1 = BigDecimal("1E-99999")
     @frac_2 = BigDecimal("0.9E-99999")
+    @frac_3 = BigDecimal("12345E10")
+    @frac_4 = BigDecimal("98765E10")
   end
 
   it "returns a - b with given precision" do
@@ -30,6 +32,14 @@ describe "BigDecimal#sub" do
     in_arow_one.sub(in_arow_two, 10).should == BigDecimal("0.9E-7")
     @two.sub(@two,1).should == @zero
     @frac_1.sub(@frac_1, 1000000).should == @zero
+  end
+
+  describe "with Object" do
+    it "tries to coerce the other operand to self" do
+      object = mock("Object")
+      object.should_receive(:coerce).with(@frac_3).and_return([@frac_3, @frac_4])
+      @frac_3.sub(object, 1).should == BigDecimal("-0.9E15")
+    end
   end
 
   it "returns NaN if NaN is involved" do

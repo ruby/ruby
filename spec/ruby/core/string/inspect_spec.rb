@@ -489,4 +489,12 @@ describe "String#inspect" do
       ].should be_computed_by(:inspect)
     end
   end
+
+  describe "when the string's encoding is different than the result's encoding" do
+    describe "and the string's encoding is ASCII-compatible but the characters are non-ASCII" do
+      it "returns a string with the non-ASCII characters replaced by \\x notation" do
+        "\u{3042}".encode("EUC-JP").inspect.should == '"\\x{A4A2}"'
+      end
+    end
+  end
 end
