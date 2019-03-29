@@ -894,9 +894,9 @@ leave
 // attr bool handles_sp = true;
 {
     if (OPT_CHECKED_RUN) {
-	const VALUE *const bp = vm_base_ptr(reg_cfp);
-	if (reg_cfp->sp != bp) {
-	    vm_stack_consistency_error(ec, reg_cfp, bp);
+	const VALUE *const bp = vm_base_ptr(GET_CFP());
+	if (GET_SP() != bp) {
+	    vm_stack_consistency_error(ec, GET_CFP(), bp);
 	}
     }
 
