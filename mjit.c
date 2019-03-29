@@ -781,6 +781,12 @@ mjit_finish(bool close_handle_p)
     if (!mjit_enabled)
         return;
 
+#if USE_DEBUG_COUNTER
+    rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_unit_queue, unit_queue.length, 1);
+    rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_active_units, active_units.length, 1);
+    rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_compact_units, compact_units.length, 1);
+#endif
+
     /* Wait for pch finish */
     verbose(2, "Stopping worker thread");
     CRITICAL_SECTION_START(3, "in mjit_finish to wakeup from pch");
