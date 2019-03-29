@@ -96,13 +96,11 @@ jobs:
   steps:
   # FIXME: Refactor this. Note that %errorlevel% does not work in for loop.
   - script: |
-      vcpkg --triplet x64-windows install %dependencies%
-      if %errorlevel% == 0 (exit 0)
-      sleep 4
-      vcpkg --triplet x64-windows install %dependencies%
-      if %errorlevel% == 0 (exit 0)
-      sleep 25
-      vcpkg --triplet x64-windows install %dependencies%
+      vcpkg --triplet x64-windows install %dependencies% || (
+        sleep 4 && vcpkg --triplet x64-windows install %dependencies%
+      ) || (
+        sleep 25 && vcpkg --triplet x64-windows install %dependencies%
+      )
     env:
       dependencies: openssl readline zlib
   - checkout: self
