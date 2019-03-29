@@ -1241,6 +1241,7 @@ mjit_worker(void)
         if (unit) {
             // JIT compile
             mjit_func_t func = convert_unit_to_func(unit);
+            RB_DEBUG_COUNTER_INC_IF(mjit_compile_failures, func == (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC);
 
             // `mjit_copy_cache_from_main_thread` in `mjit_compile` may wait for a long time
             // and worker may be stopped during the compilation.
