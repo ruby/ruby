@@ -361,11 +361,11 @@ static VALUE string_spec_rb_sprintf2(VALUE self, VALUE str, VALUE repl1, VALUE r
 static VALUE string_spec_rb_sprintf3(VALUE self, VALUE str) {
   return rb_sprintf("Result: %"PRIsVALUE".", str);
 }
-  
+
 static VALUE string_spec_rb_sprintf4(VALUE self, VALUE str) {
   return rb_sprintf("Result: %+"PRIsVALUE".", str);
 }
-  
+
 static VALUE string_spec_rb_vsprintf_worker(char* fmt, ...) {
   va_list varargs;
   VALUE str;
