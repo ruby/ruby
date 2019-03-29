@@ -7906,7 +7906,7 @@ rb_clock_gettime(int argc, VALUE *argv)
  *
  *  +clock_id+ can be a symbol as +Process.clock_gettime+.
  *  However the result may not be accurate.
- *  For example, +Process.clock_getres(:GETTIMEOFDAY_BASED_CLOCK_REALTIME)+
+ *  For example, <code>Process.clock_getres(:GETTIMEOFDAY_BASED_CLOCK_REALTIME)</code>
  *  returns 1.0e-06 which means 1 microsecond, but actual resolution can be more coarse.
  *
  *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
@@ -7923,10 +7923,10 @@ rb_clock_gettime(int argc, VALUE *argv)
  *  the clock ticks per second for times() function and
  *  CLOCKS_PER_SEC for clock() function.
  *
- *  +Process.clock_getres(:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID, :hertz)+
+ *  <code>Process.clock_getres(:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID, :hertz)</code>
  *  returns the clock ticks per second.
  *
- *  +Process.clock_getres(:CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID, :hertz)+
+ *  <code>Process.clock_getres(:CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID, :hertz)</code>
  *  returns CLOCKS_PER_SEC.
  *
  *    p Process.clock_getres(Process::CLOCK_MONOTONIC)
