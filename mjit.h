@@ -10,6 +10,7 @@
 #define RUBY_MJIT_H 1
 
 #include "ruby.h"
+#include "debug_counter.h"
 
 #if USE_MJIT
 
@@ -101,6 +102,7 @@ mjit_exec(rb_execution_context_t *ec)
 
     if (!mjit_call_p)
         return Qundef;
+    RB_DEBUG_COUNTER_INC(mjit_exec);
 
     iseq = ec->cfp->iseq;
     body = iseq->body;
@@ -110,7 +112,9 @@ mjit_exec(rb_execution_context_t *ec)
     if (UNLIKELY((uintptr_t)func <= (uintptr_t)LAST_JIT_ISEQ_FUNC)) {
         switch ((enum rb_mjit_iseq_func)func) {
           case NOT_ADDED_JIT_ISEQ_FUNC:
+            RB_DEBUG_COUNTER_INC(mjit_exec_not_added);
             if (total_calls == mjit_opts.min_calls && mjit_target_iseq_p(body)) {
+                RB_DEBUG_COUNTER_INC(mjit_exec_not_added_add_iseq);
                 mjit_add_iseq_to_process(iseq);
                 if (UNLIKELY(mjit_opts.wait)) {
                     return mjit_wait_call(ec, body);
@@ -118,13 +122,17 @@ mjit_exec(rb_execution_context_t *ec)
             }
             return Qundef;
           case NOT_READY_JIT_ISEQ_FUNC:
+            RB_DEBUG_COUNTER_INC(mjit_exec_not_ready);
+            return Qundef;
           case NOT_COMPILED_JIT_ISEQ_FUNC:
+            RB_DEBUG_COUNTER_INC(mjit_exec_not_compiled);
             return Qundef;
           default: /* to avoid warning with LAST_JIT_ISEQ_FUNC */
             break;
         }
     }
 
+    RB_DEBUG_COUNTER_INC(mjit_exec_call_func);
     return func(ec, ec->cfp);
 }
 
