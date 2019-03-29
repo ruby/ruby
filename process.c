@@ -4594,13 +4594,14 @@ rb_f_system(int argc, VALUE *argv)
  *      current directory:
  *        :chdir => str
  *
- *      The 'cmdname, arg1, ...' form does not use the shell. However,
- *      on different OSes, different things are provided as built-in
- *      commands. An example of this is 'echo', which is a built-in
- *      on Windows, but is a normal program on Linux and Mac OS X.
- *      This means that `Process.spawn 'echo', '%Path%'` will display
- *      the contents of the `%Path%` environment variable on Windows,
- *      but `Process.spawn 'echo', '$PATH'` prints the literal '$PATH'.
+ *  The <code>'cmdname, arg1, ...'</code> form does not use the shell.
+ *  However, on different OSes, different things are provided as
+ *  built-in commands. An example of this is +'echo'+, which is a
+ *  built-in on Windows, but is a normal program on Linux and Mac OS X.
+ *  This means that <code>Process.spawn 'echo', '%Path%'</code> will
+ *  display the contents of the <tt>%Path%</tt> environment variable
+ *  on Windows, but <code>Process.spawn 'echo', '$PATH'</code> prints
+ *  the literal <tt>$PATH</tt>.
  *
  *  If a hash is given as +env+, the environment is
  *  updated by +env+ before <code>exec(2)</code> in the child process.
