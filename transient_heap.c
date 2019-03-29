@@ -359,6 +359,7 @@ rb_transient_heap_alloc(VALUE obj, size_t req_size)
     TH_ASSERT(RB_TYPE_P(obj, T_ARRAY)  ||
               RB_TYPE_P(obj, T_OBJECT) ||
               RB_TYPE_P(obj, T_STRUCT) ||
+              RB_TYPE_P(obj, T_IMEMO) ||
               RB_TYPE_P(obj, T_HASH)); /* supported types */
 
     if (size > TRANSIENT_HEAP_ALLOC_MAX) {
@@ -586,8 +587,10 @@ transient_heap_ptr(VALUE obj, int error)
             TH_ASSERT(RHASH_AR_TABLE_P(obj));
             ptr = (VALUE *)(RHASH(obj)->as.ar);
         }
-        else {
-            ptr = NULL;
+        break;
+      case T_IMEMO:
+        if (IMEMO_TRANSIENT_P(obj)) {
+	        ptr = RB_IMEMO_TMPBUF_PTR(obj);
         }
         break;
       default:
@@ -701,6 +704,9 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
                 break;
               case T_HASH:
                 rb_hash_transient_heap_evacuate(obj, !TRANSIENT_HEAP_DEBUG_DONT_PROMOTE);
+                break;
+              case T_IMEMO:
+                rb_imemo_transient_heap_evacuate_tmpbuf(obj, !TRANSIENT_HEAP_DEBUG_DONT_PROMOTE);
                 break;
               default:
                 rb_bug("unsupporeted: %s\n", rb_obj_info(obj));

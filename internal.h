@@ -1052,6 +1052,8 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
     }
 }
 
+VALUE *imemo_alloc_ptr(VALUE tmpbuf, size_t size);
+
 /* FL_USER0 to FL_USER3 is for type */
 #define IMEMO_FL_USHIFT (FL_USHIFT + 4)
 #define IMEMO_FL_USER0 FL_USER4
@@ -1059,6 +1061,18 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
 #define IMEMO_FL_USER2 FL_USER6
 #define IMEMO_FL_USER3 FL_USER7
 #define IMEMO_FL_USER4 FL_USER8
+#define IMEMO_FL_USER5 FL_USER9
+
+#if USE_TRANSIENT_HEAP
+#define IMEMO_TRANSIENT_FLAG IMEMO_FL_USER5
+#define IMEMO_TRANSIENT_P(imemo) FL_TEST_RAW((imemo), IMEMO_TRANSIENT_FLAG)
+#define IMEMO_SET_TRANSIENT_FLAG(imemo) FL_SET_RAW(imemo, IMEMO_TRANSIENT_FLAG)
+#define IMEMO_UNSET_TRANSIENT_FLAG(imemo) FL_UNSET_RAW(imemo, IMEMO_TRANSIENT_FLAG)
+#else
+#define IMEMO_TRANSIENT_P(imemo) 0
+#define IMEMO_SET_TRANSIENT_FLAG(imemo) ((void)0)
+#define IMEMO_UNSET_TRANSIENT_FLAG(imemo) ((void)0)
+#endif
 
 /* CREF (Class REFerence) is defined in method.h */
 
@@ -1132,20 +1146,19 @@ static inline VALUE
 rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(VALUE str)
 {
     const void *src;
+    size_t len;
     VALUE imemo;
     rb_imemo_tmpbuf_t *tmpbuf;
-    void *dst;
-    size_t len;
-
     SafeStringValue(str);
     /* create tmpbuf to keep the pointer before xmalloc */
     imemo = rb_imemo_tmpbuf_auto_free_pointer(NULL);
     tmpbuf = (rb_imemo_tmpbuf_t *)imemo;
     len = RSTRING_LEN(str);
     src = RSTRING_PTR(str);
-    dst = ruby_xmalloc(len);
-    memcpy(dst, src, len);
-    tmpbuf->ptr = dst;
+    tmpbuf->ptr = imemo_alloc_ptr(imemo, len);
+    tmpbuf->cnt = len / sizeof(VALUE);
+    memcpy(tmpbuf->ptr, src, len);
+    RB_GC_GUARD(imemo);
     return imemo;
 }
 

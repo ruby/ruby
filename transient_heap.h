@@ -41,6 +41,7 @@ void rb_ary_transient_heap_evacuate(VALUE ary, int promote);
 void rb_obj_transient_heap_evacuate(VALUE obj, int promote);
 void rb_hash_transient_heap_evacuate(VALUE hash, int promote);
 void rb_struct_transient_heap_evacuate(VALUE st, int promote);
+void rb_imemo_transient_heap_evacuate_tmpbuf(VALUE imemo, int promote);
 
 #else /* USE_TRANSIENT_HEAP */
 
@@ -55,6 +56,7 @@ void rb_struct_transient_heap_evacuate(VALUE st, int promote);
 #define rb_obj_transient_heap_evacuate(x, y) ((void)0)
 #define rb_hash_transient_heap_evacuate(x, y) ((void)0)
 #define rb_struct_transient_heap_evacuate(x, y) ((void)0)
+#define rb_imemo_transient_heap_evacuate_tmpbuf(x, y) ((void)0)
 
 #endif /* USE_TRANSIENT_HEAP */
 #endif

@@ -2048,6 +2048,48 @@ rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
     return (rb_imemo_tmpbuf_t *)rb_imemo_tmpbuf_new((VALUE)buf, (VALUE)old_heap, (VALUE)cnt, 0);
 }
 
+VALUE *imemo_alloc_ptr(VALUE imemo, size_t size)
+{
+    VALUE *ptr;
+#if USE_TRANSIENT_HEAP
+    ptr = rb_transient_heap_alloc(imemo, size);
+    if (ptr) {
+        IMEMO_SET_TRANSIENT_FLAG(imemo);
+    } else {
+#endif
+        ptr = ruby_xmalloc(size);
+#if USE_TRANSIENT_HEAP
+        IMEMO_UNSET_TRANSIENT_FLAG(imemo);
+    }
+#endif
+    return ptr;
+}
+
+#if USE_TRANSIENT_HEAP
+VALUE *
+rb_imemo_transient_heap_evacuate_ptr(VALUE imemo, const VALUE *ptr, size_t cnt, int promote)
+{
+    VALUE *new_ptr;
+    if (promote) {
+        new_ptr = ALLOC_N(VALUE, cnt);
+        IMEMO_UNSET_TRANSIENT_FLAG(imemo);
+    } else {
+        new_ptr = imemo_alloc_ptr(imemo, sizeof(VALUE) * cnt);
+    }
+    MEMCPY(new_ptr, ptr, VALUE, cnt);
+    return new_ptr;
+}
+
+void
+rb_imemo_transient_heap_evacuate_tmpbuf(VALUE imemo, int promote)
+{
+    if (IMEMO_TRANSIENT_P(imemo)) {
+        rb_imemo_tmpbuf_t *tmpbuf = (rb_imemo_tmpbuf_t *)imemo;
+        tmpbuf->ptr = rb_imemo_transient_heap_evacuate_ptr(imemo, tmpbuf->ptr, tmpbuf->cnt, promote);
+    }
+}
+#endif
+
 #if IMEMO_DEBUG
 VALUE
 rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0, const char *file, int line)
@@ -2446,8 +2488,16 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_imemo_env);
 	    break;
 	  case imemo_tmpbuf:
-	    xfree(RANY(obj)->as.imemo.alloc.ptr);
+#if USE_TRANSIENT_HEAP
+        if (IMEMO_TRANSIENT_P(obj)) {
+            RB_DEBUG_COUNTER_INC(obj_imemo_tmpbuf_transient);
+        } else {
+#endif
+        xfree(RANY(obj)->as.imemo.alloc.ptr);
             RB_DEBUG_COUNTER_INC(obj_imemo_tmpbuf);
+#if USE_TRANSIENT_HEAP
+        }
+#endif
 	    break;
 	  case imemo_ast:
 	    rb_ast_free(&RANY(obj)->as.imemo.ast);
@@ -4701,7 +4751,13 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 	{
 	    const rb_imemo_tmpbuf_t *m = &RANY(obj)->as.imemo.alloc;
 	    do {
-		rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
+         rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
+#if USE_TRANSIENT_HEAP
+         if (objspace->mark_func_data == NULL &&
+            IMEMO_TRANSIENT_P(obj)) {
+            rb_transient_heap_mark(obj, m->ptr);
+         }
+#endif
 	    } while ((m = m->next) != NULL);
 	}
 	return;
@@ -8530,7 +8586,7 @@ rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
      * get rid of potential memory leak */
     imemo = rb_imemo_tmpbuf_auto_free_maybe_mark_buffer(NULL, 0);
     *store = imemo;
-    ptr = ruby_xmalloc0(size);
+    ptr = imemo_alloc_ptr(imemo, size);
     tmpbuf = (rb_imemo_tmpbuf_t *)imemo;
     tmpbuf->ptr = ptr;
     tmpbuf->cnt = cnt;
@@ -8556,8 +8612,13 @@ rb_free_tmp_buffer(volatile VALUE *store)
     if (s) {
 	void *ptr = ATOMIC_PTR_EXCHANGE(s->ptr, 0);
 	s->cnt = 0;
-	ruby_xfree(ptr);
+#if USE_TRANSIENT_HEAP
+    if (!IMEMO_TRANSIENT_P((VALUE)s))
+#endif
+        ruby_xfree(ptr);
+#if USE_TRANSIENT_HEAP
     }
+#endif
 }
 
 #if MALLOC_ALLOCATED_SIZE
