@@ -46,7 +46,7 @@ RB_DEBUG_COUNTER(ccf_iseq_setup_0start)
 RB_DEBUG_COUNTER(ccf_iseq_setup_tailcall_0start)
 RB_DEBUG_COUNTER(ccf_iseq_fix) /* several functions created with tool/mk_call_iseq_optimized.rb */
 RB_DEBUG_COUNTER(ccf_iseq_opt) /* has_opt == TRUE (has optional parameters), but other flags are FALSE */
-RB_DEBUG_COUNTER(ccf_iseq_kw1) /* ivm_call_iseq_setup_kwparm_kwarg() */
+RB_DEBUG_COUNTER(ccf_iseq_kw1) /* vm_call_iseq_setup_kwparm_kwarg() */
 RB_DEBUG_COUNTER(ccf_iseq_kw2) /* vm_call_iseq_setup_kwparm_nokwarg() */
 RB_DEBUG_COUNTER(ccf_cfunc)
 RB_DEBUG_COUNTER(ccf_ivar) /* attr_reader */
