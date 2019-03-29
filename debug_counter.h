@@ -23,8 +23,8 @@
  *                                  (2) called from C (rb_funcall).
  * * mc_global_state_miss: inline mc miss by global_state miss.
  * * mc_class_serial_miss:            ... by mc_class_serial_miss
- * * mc_cme_complement: cme complement counts.
- * * mc_cme_complement_hit: cme cache hit counts.
+ * * mc_cme_complement: callable_method_entry complement counts.
+ * * mc_cme_complement_hit: callable_method_entry cache hit counts.
  * * mc_search_super: search_method() call counts.
  */
 RB_DEBUG_COUNTER(mc_inline_hit)
@@ -45,12 +45,12 @@ RB_DEBUG_COUNTER(ccf_iseq_setup)
 RB_DEBUG_COUNTER(ccf_iseq_setup_0start)
 RB_DEBUG_COUNTER(ccf_iseq_setup_tailcall_0start)
 RB_DEBUG_COUNTER(ccf_iseq_fix) /* several functions created with tool/mk_call_iseq_optimized.rb */
-RB_DEBUG_COUNTER(ccf_iseq_opt)
-RB_DEBUG_COUNTER(ccf_iseq_kw1)
-RB_DEBUG_COUNTER(ccf_iseq_kw2)
+RB_DEBUG_COUNTER(ccf_iseq_opt) /* has_opt == TRUE (has optional parameters), but other flags are FALSE */
+RB_DEBUG_COUNTER(ccf_iseq_kw1) /* ivm_call_iseq_setup_kwparm_kwarg() */
+RB_DEBUG_COUNTER(ccf_iseq_kw2) /* vm_call_iseq_setup_kwparm_nokwarg() */
 RB_DEBUG_COUNTER(ccf_cfunc)
-RB_DEBUG_COUNTER(ccf_ivar)
-RB_DEBUG_COUNTER(ccf_attrset)
+RB_DEBUG_COUNTER(ccf_ivar) /* attr_reader */
+RB_DEBUG_COUNTER(ccf_attrset) /* attr_writer */
 RB_DEBUG_COUNTER(ccf_method_missing)
 RB_DEBUG_COUNTER(ccf_zsuper)
 RB_DEBUG_COUNTER(ccf_bmethod)
