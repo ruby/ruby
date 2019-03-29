@@ -21,7 +21,9 @@ static const char *const debug_counter_names[] = {
 #undef RB_DEBUG_COUNTER
 };
 
+MJIT_SYMBOL_EXPORT_BEGIN
 size_t rb_debug_counter[numberof(debug_counter_names)];
+MJIT_SYMBOL_EXPORT_END
 
 void
 rb_debug_counter_show_results(const char *msg)

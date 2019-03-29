@@ -189,6 +189,7 @@ compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct
 {
     unsigned int i;
     fprintf(f, "\ncancel:\n");
+    fprintf(f, "    RB_DEBUG_COUNTER_INC(mjit_cancel);\n");
     if (status->local_stack_p) {
         for (i = 0; i < body->stack_max; i++) {
             fprintf(f, "    *(vm_base_ptr(reg_cfp) + %d) = stack[%d];\n", i, i);

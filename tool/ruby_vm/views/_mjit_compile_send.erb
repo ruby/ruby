@@ -38,6 +38,7 @@
             fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc_copy->class_serial);
             fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
             fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_send_inline);\n");
             fprintf(f, "        goto cancel;\n");
             fprintf(f, "    }\n");
 
@@ -81,6 +82,7 @@
             if (!pc_moved_p) {
                 fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
             }
+            fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_trace);\n");
             fprintf(f, "        goto cancel;\n");
             fprintf(f, "    }\n");
 
