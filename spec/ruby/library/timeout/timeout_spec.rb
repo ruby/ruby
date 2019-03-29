@@ -26,7 +26,7 @@ describe "Timeout.timeout" do
       end
     end.should raise_error(StandardError)
 
-    (Time.now - before_time).should be_close(1.0, 0.5)
+    (Time.now - before_time).should be_close(1.0, 0.8)
   end
 
   it "returns back the last value in the block" do
