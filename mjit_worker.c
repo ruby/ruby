@@ -327,6 +327,10 @@ mjit_warning(const char *format, ...)
 static void
 add_to_list(struct rb_mjit_unit *unit, struct rb_mjit_unit_list *list)
 {
+    RB_DEBUG_COUNTER_INC_IF(mjit_length_unit_queue, list == &unit_queue);
+    RB_DEBUG_COUNTER_INC_IF(mjit_length_active_units, list == &active_units);
+    RB_DEBUG_COUNTER_INC_IF(mjit_length_compact_units, list == &compact_units);
+
     list_add_tail(&list->head, &unit->unode);
     list->length++;
 }
@@ -334,6 +338,12 @@ add_to_list(struct rb_mjit_unit *unit, struct rb_mjit_unit_list *list)
 static void
 remove_from_list(struct rb_mjit_unit *unit, struct rb_mjit_unit_list *list)
 {
+#if USE_DEBUG_COUNTER
+    rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_unit_queue, -1, list == &unit_queue);
+    rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_active_units, -1, list == &active_units);
+    rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_compact_units, -1, list == &compact_units);
+#endif
+
     list_del(&unit->unode);
     list->length--;
 }
