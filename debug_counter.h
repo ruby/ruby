@@ -255,6 +255,14 @@ RB_DEBUG_COUNTER(theap_alloc)
 RB_DEBUG_COUNTER(theap_alloc_fail)
 RB_DEBUG_COUNTER(theap_evacuate)
 
+/* mjit_exec() counts */
+RB_DEBUG_COUNTER(mjit_exec)
+RB_DEBUG_COUNTER(mjit_exec_call_func)
+RB_DEBUG_COUNTER(mjit_exec_not_added)
+RB_DEBUG_COUNTER(mjit_exec_not_added_add_iseq)
+RB_DEBUG_COUNTER(mjit_exec_not_ready)
+RB_DEBUG_COUNTER(mjit_exec_not_compiled)
+
 /* load (not implemented yet) */
 /*
 RB_DEBUG_COUNTER(load_files)
