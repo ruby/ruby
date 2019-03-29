@@ -275,6 +275,9 @@ RB_DEBUG_COUNTER(mjit_length_unit_queue)
 RB_DEBUG_COUNTER(mjit_length_active_units)
 RB_DEBUG_COUNTER(mjit_length_compact_units)
 
+/* Other MJIT counters */
+RB_DEBUG_COUNTER(mjit_compile_failures)
+
 /* load (not implemented yet) */
 /*
 RB_DEBUG_COUNTER(load_files)
