@@ -263,6 +263,11 @@ RB_DEBUG_COUNTER(mjit_exec_not_added_add_iseq)
 RB_DEBUG_COUNTER(mjit_exec_not_ready)
 RB_DEBUG_COUNTER(mjit_exec_not_compiled)
 
+/* rb_mjit_unit_list length */
+RB_DEBUG_COUNTER(mjit_length_unit_queue)
+RB_DEBUG_COUNTER(mjit_length_active_units)
+RB_DEBUG_COUNTER(mjit_length_compact_units)
+
 /* load (not implemented yet) */
 /*
 RB_DEBUG_COUNTER(load_files)
