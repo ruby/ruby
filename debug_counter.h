@@ -257,11 +257,18 @@ RB_DEBUG_COUNTER(theap_evacuate)
 
 /* mjit_exec() counts */
 RB_DEBUG_COUNTER(mjit_exec)
-RB_DEBUG_COUNTER(mjit_exec_call_func)
 RB_DEBUG_COUNTER(mjit_exec_not_added)
 RB_DEBUG_COUNTER(mjit_exec_not_added_add_iseq)
 RB_DEBUG_COUNTER(mjit_exec_not_ready)
 RB_DEBUG_COUNTER(mjit_exec_not_compiled)
+RB_DEBUG_COUNTER(mjit_exec_call_func)
+
+/* MJIT cancel counters */
+RB_DEBUG_COUNTER(mjit_cancel)
+RB_DEBUG_COUNTER(mjit_cancel_ivar)
+RB_DEBUG_COUNTER(mjit_cancel_send_inline)
+RB_DEBUG_COUNTER(mjit_cancel_opt_insn) /* CALL_SIMPLE_METHOD */
+RB_DEBUG_COUNTER(mjit_cancel_trace)
 
 /* rb_mjit_unit_list length */
 RB_DEBUG_COUNTER(mjit_length_unit_queue)
