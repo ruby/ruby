@@ -357,8 +357,9 @@ before_script:
   - rm -rf ~/config_2nd
   - mv ../config_2nd ~
   - chmod u-w ..
+  - $SETARCH make -s $JOBS
   - |-
-    if ! $SETARCH make -s $JOBS; then
+    if ! make install; then
       if [ "$(uname)" = Darwin ]; then
         # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
         set -x
@@ -370,7 +371,6 @@ before_script:
       fi
       exit 1
     fi
-  - make install
   - ccache --show-stats
   - |-
     [ -z "${GEMS_FOR_TEST}" ] ||
