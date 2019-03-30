@@ -129,6 +129,23 @@ enum dump_flag_bits {
 
 typedef struct ruby_cmdline_options ruby_cmdline_options_t;
 
+typedef struct {
+    unsigned int mask;
+    unsigned int set;
+} ruby_features_t;
+
+static inline void
+rb_feature_set_to(ruby_features_t *feat, unsigned int bit_mask, unsigned int bit_set)
+{
+    feat->mask |= bit_mask;
+    feat->set = (feat->set & ~bit_mask) | bit_set;
+}
+
+#define FEATURE_SET_TO(feat, bit_mask, bit_set) \
+    rb_feature_set_to(&(feat), bit_mask, bit_set)
+#define FEATURE_SET(feat, bits) FEATURE_SET_TO(feat, bits, bits)
+#define FEATURE_SET_P(feat, bits) ((feat).set & (bits))
+
 struct ruby_cmdline_options {
     const char *script;
     VALUE script_name;
@@ -140,7 +157,7 @@ struct ruby_cmdline_options {
 	} enc;
     } src, ext, intern;
     VALUE req_list;
-    unsigned int features;
+    ruby_features_t features;
     unsigned int dump;
 #if USE_MJIT
     struct mjit_options mjit;
@@ -185,9 +202,9 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     opt->src.enc.index = src_encoding_index;
     opt->ext.enc.index = -1;
     opt->intern.enc.index = -1;
-    opt->features = DEFAULT_FEATURES;
+    opt->features.set = DEFAULT_FEATURES;
 #ifdef MJIT_FORCE_ENABLE /* to use with: ./configure cppflags="-DMJIT_FORCE_ENABLE" */
-    opt->features |= FEATURE_BIT(jit);
+    opt->features.set |= FEATURE_BIT(jit);
 #endif
     return opt;
 }
@@ -852,21 +869,21 @@ static void
 feature_option(const char *str, int len, void *arg, const unsigned int enable)
 {
     static const char list[] = EACH_FEATURES(LITERAL_NAME_ELEMENT, ", ");
-    unsigned int *argp = arg;
+    ruby_features_t *argp = arg;
     unsigned int mask = ~0U;
-#if AMBIGUOUS_FEATURE_NAMES
     unsigned int set = 0U;
+#if AMBIGUOUS_FEATURE_NAMES
     int matched = 0;
-#define SET_FEATURE(bit) \
-    if (NAME_MATCH_P(#bit, str, len)) {set |= mask = FEATURE_BIT(bit); ++matched;}
+# define FEATURE_FOUND ++matched
 #else
-#define SET_FEATURE(bit) \
-    if (NAME_MATCH_P(#bit, str, len)) {mask = FEATURE_BIT(bit); goto found;}
+# define FEATURE_FOUND goto found
 #endif
+#define SET_FEATURE(bit) \
+    if (NAME_MATCH_P(#bit, str, len)) {set |= mask = FEATURE_BIT(bit); FEATURE_FOUND;}
     EACH_FEATURES(SET_FEATURE, ;);
     if (NAME_MATCH_P("all", str, len)) {
       found:
-	*argp = (*argp & ~mask) | (mask & enable);
+        FEATURE_SET_TO(*argp, mask, (mask & enable));
 	return;
     }
 #if AMBIGUOUS_FEATURE_NAMES
@@ -908,7 +925,12 @@ static void
 debug_option(const char *str, int len, void *arg)
 {
     static const char list[] = EACH_DEBUG_FEATURES(LITERAL_NAME_ELEMENT, ", ");
-#define SET_WHEN_DEBUG(bit) SET_WHEN(#bit, DEBUG_BIT(bit), str, len)
+    ruby_features_t *argp = arg;
+#define SET_WHEN_DEBUG(bit) \
+    if (NAME_MATCH_P(#bit, str, len)) { \
+        FEATURE_SET(*argp, DEBUG_BIT(bit)); \
+        return; \
+    }
     EACH_DEBUG_FEATURES(SET_WHEN_DEBUG, ;);
 #ifdef RUBY_DEVEL
     if (ruby_patchlevel < 0 && ruby_env_debug_option(str, len, 0)) return;
@@ -1337,7 +1359,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 	    }
             else if (strncmp("jit", s, 3) == 0) {
 #if USE_MJIT
-                opt->features |= FEATURE_BIT(jit);
+                FEATURE_SET(opt->features, FEATURE_BIT(jit));
                 setup_mjit_options(s + 3, &opt->mjit);
 #else
                 rb_warn("MJIT support is disabled.");
@@ -1557,11 +1579,12 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     argc -= i;
     argv += i;
 
-    if ((opt->features & FEATURE_BIT(rubyopt)) &&
+    if ((opt->features.set & FEATURE_BIT(rubyopt)) &&
 	opt->safe_level == 0 && (s = getenv("RUBYOPT"))) {
 	VALUE src_enc_name = opt->src.enc.name;
 	VALUE ext_enc_name = opt->ext.enc.name;
 	VALUE int_enc_name = opt->intern.enc.name;
+        ruby_features_t feat = opt->features;
 
 	opt->src.enc.name = opt->ext.enc.name = opt->intern.enc.name = 0;
 	moreswitches(s, opt, 1);
@@ -1571,13 +1594,14 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    opt->ext.enc.name = ext_enc_name;
 	if (int_enc_name)
 	    opt->intern.enc.name = int_enc_name;
+        FEATURE_SET_TO(opt->features, feat.mask, feat.set & feat.mask);
     }
 
     if (opt->src.enc.name)
 	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
 #if USE_MJIT
-    if (opt->features & FEATURE_BIT(jit)) {
+    if (opt->features.set & FEATURE_BIT(jit)) {
         opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
     }
 #endif
@@ -1706,18 +1730,18 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	}
     }
     Init_ext();		/* load statically linked extensions before rubygems */
-    if (opt->features & FEATURE_BIT(gems)) {
+    if (opt->features.set & FEATURE_BIT(gems)) {
 	rb_define_module("Gem");
-	if (opt->features & FEATURE_BIT(did_you_mean)) {
+        if (opt->features.set & FEATURE_BIT(did_you_mean)) {
 	    rb_define_module("DidYouMean");
 	}
     }
     ruby_init_prelude();
-    if ((opt->features ^ DEFAULT_FEATURES) & COMPILATION_FEATURES) {
+    if (opt->features.mask & COMPILATION_FEATURES) {
 	VALUE option = rb_hash_new();
 #define SET_COMPILE_OPTION(h, o, name) \
 	rb_hash_aset((h), ID2SYM(rb_intern_const(#name)),		\
-		     ((o)->features & FEATURE_BIT(name) ? Qtrue : Qfalse));
+                     (FEATURE_SET_P(o->features, FEATURE_BIT(name)) ? Qtrue : Qfalse));
 	SET_COMPILE_OPTION(option, opt, frozen_string_literal);
 	SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
 	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
