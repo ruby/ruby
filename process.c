@@ -4594,7 +4594,7 @@ rb_f_system(int argc, VALUE *argv)
  *      current directory:
  *        :chdir => str
  *
- *  The <code>'cmdname, arg1, ...'</code> form does not use the shell.
+ *  The <code>cmdname, arg1, ...</code> form does not use the shell.
  *  However, on different OSes, different things are provided as
  *  built-in commands. An example of this is +'echo'+, which is a
  *  built-in on Windows, but is a normal program on Linux and Mac OS X.
