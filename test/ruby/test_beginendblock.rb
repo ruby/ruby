@@ -148,4 +148,26 @@ EOS
       end
     end;
   end
+
+  if defined?(fork)
+    def test_internal_errinfo_at_exit
+      # TODO: use other than break-in-fork to throw an internal
+      # error info.
+      error, pid, status = IO.pipe do |r, w|
+        pid = fork do
+          r.close
+          STDERR.reopen(w)
+          at_exit do
+            $!.class
+          end
+          break
+        end
+        w.close
+        [r.read, *Process.wait2(pid)]
+      end
+      assert_not_predicate(status, :success?)
+      assert_not_predicate(status, :signaled?)
+      assert_match(/unexpected break/, error)
+    end
+  end
 end

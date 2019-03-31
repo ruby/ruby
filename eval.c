@@ -173,6 +173,7 @@ ruby_cleanup(volatile int ex)
 
       step_0: step++;
 	errs[1] = th->errinfo;
+	if (THROW_DATA_P(th->errinfo)) th->errinfo = Qnil;
 	th->safe_level = 0;
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
