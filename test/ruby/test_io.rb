@@ -228,6 +228,19 @@ class TestIO < Test::Unit::TestCase
       assert_nil r.gets
       r.close
     end)
+
+    (0..3).each do |i|
+      pipe(proc do |w|
+        w.write("a" * ((4096 << i) - 4) + "\r\n" "a\r\n")
+        w.close
+      end,
+      proc do |r|
+        r.gets
+        assert_equal "a", r.gets(chomp: true)
+        assert_nil r.gets
+        r.close
+      end)
+    end
   end
 
   def test_gets_chomp_rs_nil
