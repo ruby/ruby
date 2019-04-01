@@ -1212,7 +1212,7 @@ parse_iso2(VALUE str, VALUE hash)
     return 1;
 }
 
-#define JAPANESE_ERA_INITIALS "mtshr"
+#define JAPANESE_ERA_INITIALS "mtsh"
 
 static int
 gengo(int c)
