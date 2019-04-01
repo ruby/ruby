@@ -39,10 +39,10 @@ describe "The --enable and --disable flags" do
 
   ruby_version_is "2.6" do
     it "can be used with jit" do
-      # Only test if it can be disabled, because MJIT does not support all platforms, and
-      # it can be disabled at build time with `./configure --disable-jit-support`.
-      ruby_exe("p RubyVM::MJIT.enabled?", options: "--disable=jit").chomp.should == "false"
-      ruby_exe("p RubyVM::MJIT.enabled?", options: "--disable-jit").chomp.should == "false"
+      ruby_exe("p :OK", options: "--enable=jit 2>&1").chomp.should == ":OK"
+      ruby_exe("p :OK", options: "--disable=jit 2>&1").chomp.should == ":OK"
+      ruby_exe("p :OK", options: "--enable-jit 2>&1").chomp.should == ":OK"
+      ruby_exe("p :OK", options: "--disable-jit 2>&1").chomp.should == ":OK"
     end
   end
 
