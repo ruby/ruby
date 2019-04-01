@@ -186,11 +186,6 @@ args_rest_array(struct args_info *args)
 static int
 keyword_hash_p(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr)
 {
-    if (*kw_hash_ptr == rb_no_keyword_hash) {
-	*kw_hash_ptr = Qnil;
-	*rest_hash_ptr = Qfalse;
-	return TRUE;
-    }
     *rest_hash_ptr = rb_check_hash_type(*kw_hash_ptr);
 
     if (!NIL_P(*rest_hash_ptr)) {
@@ -487,7 +482,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
 static inline void
 args_setup_kw_rest_parameter(VALUE keyword_hash, VALUE *locals)
 {
-    locals[0] = NIL_P(keyword_hash) ? rb_no_keyword_hash : rb_hash_dup(keyword_hash);
+    locals[0] = NIL_P(keyword_hash) ? rb_hash_new() : rb_hash_dup(keyword_hash);
 }
 
 static inline void
@@ -513,6 +508,20 @@ fill_keys_values(st_data_t key, st_data_t val, st_data_t ptr)
     return ST_CONTINUE;
 }
 
+static inline int
+ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq) {
+    if (!(iseq->body->param.flags.has_kw) &&
+	      !(iseq->body->param.flags.has_kwrest)) {
+	keyword_hash = rb_check_hash_type(keyword_hash);
+
+	if (!NIL_P(keyword_hash) && RHASH_EMPTY_P(keyword_hash)) {
+	    return 1;
+	}
+    }
+
+    return 0;
+}
+
 static inline VALUE
 get_loc(struct rb_calling_info *calling, const struct rb_call_info *ci)
 {
@@ -533,20 +542,6 @@ rb_warn_last_hash_to_keyword(struct rb_calling_info *calling, const struct rb_ca
     }
 }
 
-static inline void
-rb_warn_keyword_to_last_hash(struct rb_calling_info *calling, const struct rb_call_info *ci)
-{
-    if (calling->recv == Qundef) return;
-    VALUE loc = get_loc(calling, ci);
-    if (NIL_P(loc)) {
-        rb_warn("The keyword argument for `%s' is used as the last parameter", rb_id2name(ci->mid));
-    }
-    else {
-        rb_warn("The keyword argument for `%s' (defined at %s:%d) is used as the last parameter",
-                rb_id2name(ci->mid), RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)));
-    }
-}
-
 static int
 setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * const iseq,
 			 struct rb_calling_info *const calling,
@@ -563,7 +558,6 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     VALUE keyword_hash = Qnil;
     VALUE * const orig_sp = ec->cfp->sp;
     unsigned int i;
-    int k2n_warned = FALSE;
 
     vm_check_canary(ec, orig_sp);
     /*
@@ -619,21 +613,21 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	given_argc += RARRAY_LENINT(args->rest) - 1;
         if (kw_flag & VM_CALL_KW_SPLAT) {
             int len = RARRAY_LENINT(args->rest);
-            if (len > 0 && RARRAY_AREF(args->rest, len - 1) == rb_no_keyword_hash) {
+            if (len > 0 && ignore_keyword_hash_p(RARRAY_AREF(args->rest, len - 1), iseq)) {
                 arg_rest_dup(args);
                 rb_ary_pop(args->rest);
                 given_argc--;
                 kw_flag &= ~VM_CALL_KW_SPLAT;
-            }
+	    }
         }
     }
     else {
         if (kw_flag & VM_CALL_KW_SPLAT) {
-            if (args->argv[args->argc-1] == rb_no_keyword_hash) {
+            if (ignore_keyword_hash_p(args->argv[args->argc-1], iseq)) {
                 args->argc--;
                 given_argc--;
                 kw_flag &= ~VM_CALL_KW_SPLAT;
-            }
+	    }
         }
 	args->rest = Qfalse;
     }
@@ -655,12 +649,6 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     /* argc check */
     if (given_argc < min_argc) {
 	if (given_argc == min_argc - 1 && args->kw_argv) {
-	    /* Warn the following:
-	     * def foo(a, k:1) p [a, k] end
-	     * foo(k:42) #=> [{:k=>42}, 1]
-	     */
-            rb_warn_keyword_to_last_hash(calling, ci);
-	    k2n_warned = TRUE;
 	    args_stored_kw_argv_to_hash(args);
 	    given_argc = args_argc(args);
 	}
@@ -701,16 +689,6 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 		given_argc--;
 	    }
 	}
-    }
-    else if (!k2n_warned &&
-	    !((kw_flag & VM_CALL_KWARG) && iseq->body->param.flags.has_kw) &&
-	    given_argc > min_argc &&
-	    (kw_flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT))) {
-	/* Warn the following:
-	 * def foo(x, opt=1) p [x]; end
-	 * foo(k:42) #=> [{:k=>42}]
-	 */
-        rb_warn_keyword_to_last_hash(calling, ci);
     }
 
     if (given_argc > max_argc && max_argc != UNLIMITED_ARGUMENTS) {
@@ -880,8 +858,6 @@ vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calli
 
         CHECK_VM_STACK_OVERFLOW(cfp, len);
 
-        if (ptr[len - 1] == rb_no_keyword_hash) len--;
-
         for (i = 0; i < len; i++) {
             *cfp->sp++ = ptr[i];
         }
@@ -898,14 +874,6 @@ vm_caller_setup_arg_kw(rb_control_frame_t *cfp, struct rb_calling_info *calling,
     const VALUE h = rb_hash_new_with_size(kw_len);
     VALUE *sp = cfp->sp;
     int i;
-
-    /* Warn the following:
-     * def foo(x) p [x] end
-     * foo(k:42) #=> [{:k=>42}]
-     */
-    if (!cfunc) {
-        rb_warn_keyword_to_last_hash(calling, ci);
-    }
 
     for (i=0; i<kw_len; i++) {
 	rb_hash_aset(h, passed_keywords[i], (sp - kw_len)[i]);

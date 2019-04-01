@@ -2779,9 +2779,6 @@ static VALUE core_hash_merge_kwd(VALUE hash, VALUE kw);
 static VALUE
 core_hash_merge(VALUE hash, long argc, const VALUE *argv)
 {
-    if (hash == rb_no_keyword_hash) {
-	hash = rb_hash_new();
-    }
     Check_Type(hash, T_HASH);
     VM_ASSERT(argc % 2 == 0);
     rb_hash_bulk_insert(argc, argv, hash);
@@ -2815,8 +2812,6 @@ m_core_hash_merge_kwd(VALUE recv, VALUE hash, VALUE kw)
 static VALUE
 core_hash_merge_kwd(VALUE hash, VALUE kw)
 {
-    if (RHASH_EMPTY_P(hash) && kw == rb_no_keyword_hash)
-	return rb_no_keyword_hash;
     rb_hash_foreach(rb_to_hash_type(kw), kwmerge_i, hash);
     return hash;
 }

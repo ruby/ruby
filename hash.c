@@ -30,8 +30,6 @@
 # endif
 #endif
 
-VALUE rb_no_keyword_hash;
-
 #ifndef HASH_DEBUG
 #define HASH_DEBUG 0
 #endif
@@ -3276,8 +3274,6 @@ inspect_hash(VALUE hash, VALUE dummy, int recur)
 static VALUE
 rb_hash_inspect(VALUE hash)
 {
-    if (hash == rb_no_keyword_hash)
-	return rb_usascii_str_new2("{(NO KEYWORD)}");
     if (RHASH_EMPTY_P(hash))
 	return rb_usascii_str_new2("{}");
     return rb_exec_recursive(inspect_hash, hash, 0);
@@ -6276,10 +6272,6 @@ Init_Hash(void)
      * See ENV (the class) for more details.
      */
     rb_define_global_const("ENV", envtbl);
-
-    rb_no_keyword_hash = rb_hash_new();
-    rb_hash_freeze(rb_no_keyword_hash);
-    rb_gc_register_mark_object(rb_no_keyword_hash);
 
     /* for callcc */
     ruby_register_rollback_func_for_ensure(hash_foreach_ensure, hash_foreach_ensure_rollback);
