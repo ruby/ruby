@@ -1254,11 +1254,11 @@ parse_jis(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-	"\\b([" JAPANESE_ERA_INITIALS "])(\\d+)\\.(\\d+)\\.(\\d+)"
+        "\\b([" JAPANESE_ERA_INITIALS "])(\\d+)\\.(\\d+)\\.(\\d+)"
 #else
 	BOS
 	FPW_COM FPT_COM
-	"([" JAPANESE_ERA_INITIALS "])(\\d+)\\.(\\d+)\\.(\\d+)"
+        "([" JAPANESE_ERA_INITIALS "])(\\d+)\\.(\\d+)\\.(\\d+)"
 	TEE_FPT COM_FPW
 	EOS
 #endif
@@ -2981,7 +2981,7 @@ static int
 jisx0301(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
-	"\\A\\s*([" JAPANESE_ERA_INITIALS "])?(\\d{2})\\.(\\d{2})\\.(\\d{2})"
+        "\\A\\s*([" JAPANESE_ERA_INITIALS "])?(\\d{2})\\.(\\d{2})\\.(\\d{2})"
 	"(?:t"
 	"(?:(\\d{2}):(\\d{2})(?::(\\d{2})(?:[,.](\\d*))?)?"
 	"(z|[-+]\\d{2}(?::?\\d{2})?)?)?)?\\s*\\z";
