@@ -1011,9 +1011,16 @@ remove_coverage_i(void *vstart, void *vend, size_t stride, void *data)
 {
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
+	void *ptr = poisoned_object_p(v);
+	unpoison_object(v, false);
+
 	if (rb_obj_is_iseq(v)) {
             rb_iseq_t *iseq = (rb_iseq_t *)v;
             ISEQ_COVERAGE_SET(iseq, Qnil);
+	}
+
+	if (ptr) {
+	    poison_object(v);
 	}
     }
     return 0;
@@ -3156,8 +3163,15 @@ trace_set_i(void *vstart, void *vend, size_t stride, void *data)
 
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
+	void *ptr = poisoned_object_p(v);
+	unpoison_object(v, false);
+
 	if (rb_obj_is_iseq(v)) {
 	    rb_iseq_trace_set(rb_iseq_check((rb_iseq_t *)v), turnon_events);
+	}
+
+	if (ptr) {
+	    poison_object(v);
 	}
     }
     return 0;

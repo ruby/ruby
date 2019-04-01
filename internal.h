@@ -105,6 +105,7 @@ extern "C" {
 # define __asan_poison_memory_region(x, y)
 # define __asan_unpoison_memory_region(x, y)
 # define __asan_region_is_poisoned(x, y) 0
+# define poisoned_object_p(x) 0
 #endif
 
 #ifdef HAVE_SANITIZER_MSAN_INTERFACE_H
@@ -131,6 +132,15 @@ poison_object(VALUE obj)
     struct RVALUE *ptr = (void *)obj;
     poison_memory_region(ptr, SIZEOF_VALUE);
 }
+
+#if __has_feature(address_sanitizer)
+static inline void *
+poisoned_object_p(VALUE obj)
+{
+    struct RVALUE *ptr = (void *)obj;
+    return __asan_region_is_poisoned(ptr, SIZEOF_VALUE);
+}
+#endif
 
 static inline void
 unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p)
