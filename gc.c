@@ -1425,9 +1425,12 @@ static inline void
 heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
 {
     RVALUE *p = (RVALUE *)obj;
+    unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+
     p->as.free.flags = 0;
     p->as.free.next = page->freelist;
     page->freelist = p;
+    __asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
 
     if (RGENGC_CHECK_MODE && !is_pointer_to_heap(objspace, p)) {
 	rb_bug("heap_page_add_freeobj: %p is not rvalue.", (void *)p);
@@ -1440,23 +1443,30 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
 static inline void
 heap_add_freepage(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
 {
+    unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
     if (page->freelist) {
 	page->free_next = heap->free_pages;
 	heap->free_pages = page;
     }
+    poison_memory_region(&page->freelist, sizeof(RVALUE*));
 }
 
 #if GC_ENABLE_INCREMENTAL_MARK
 static inline int
 heap_add_poolpage(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
 {
+    unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
     if (page->freelist) {
 	page->free_next = heap->pooled_pages;
 	heap->pooled_pages = page;
 	objspace->rincgc.pooled_slots += page->free_slots;
+        poison_memory_region(&page->freelist, sizeof(RVALUE*));
+
 	return TRUE;
     }
     else {
+        poison_memory_region(&page->freelist, sizeof(RVALUE*));
+
 	return FALSE;
     }
 }
@@ -1585,6 +1595,7 @@ heap_page_allocate(rb_objspace_t *objspace)
     }
     page->free_slots = limit;
 
+    poison_memory_region(&page->freelist, sizeof(RVALUE*));
     return page;
 }
 
@@ -1594,8 +1605,10 @@ heap_page_resurrect(rb_objspace_t *objspace)
     struct heap_page *page = 0, *next;
 
     list_for_each_safe(&heap_tomb->pages, page, next, page_node) {
+        unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
 	if (page->freelist != NULL) {
 	    heap_unlink_page(objspace, heap_tomb, page);
+            poison_memory_region(&page->freelist, sizeof(RVALUE*));
 	    return page;
 	}
     }
@@ -1754,8 +1767,10 @@ heap_get_freeobj_from_next_freepage(rb_objspace_t *objspace, rb_heap_t *heap)
     heap->using_page = page;
 
     GC_ASSERT(page->free_slots != 0);
+    unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
     p = page->freelist;
     page->freelist = NULL;
+    poison_memory_region(&page->freelist, sizeof(RVALUE*));
     page->free_slots = 0;
     unpoison_object((VALUE)p, true);
     return p;
@@ -3745,11 +3760,15 @@ gc_sweep_start_heap(rb_objspace_t *objspace, rb_heap_t *heap)
     objspace->rincgc.pooled_slots = 0;
 #endif
     if (heap->using_page) {
-	RVALUE **p = &heap->using_page->freelist;
+        struct heap_page *page = heap->using_page;
+        unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+
+        RVALUE **p = &page->freelist;
 	while (*p) {
 	    p = &(*p)->as.free.next;
 	}
 	*p = heap->freelist;
+        poison_memory_region(&page->freelist, sizeof(RVALUE*));
 	heap->using_page = NULL;
     }
     heap->freelist = NULL;
@@ -5445,6 +5464,19 @@ gc_verify_heap_pages_(rb_objspace_t *objspace, struct list_head *head)
     struct heap_page *page = 0;
 
     list_for_each(head, page, page_node) {
+        unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+        RVALUE *p = page->freelist;
+        while(p) {
+            RVALUE *prev = p;
+            unpoison_object(p, false);
+            if (BUILTIN_TYPE(p) != T_NONE) {
+                fprintf(stderr, "freelist slot expected to be T_NONE but was: %s\n", obj_info((VALUE)p));
+            }
+            p = p->as.free.next;
+            poison_object(prev);
+        }
+        poison_memory_region(&page->freelist, sizeof(RVALUE*));
+
 	if (page->flags.has_remembered_objects == FALSE) {
 	    remembered_old_objects += gc_verify_heap_page(objspace, page, Qfalse);
 	}
