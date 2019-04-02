@@ -165,7 +165,7 @@ By default, this RubyGems will install gem as:
 
     remove_old_lib_files lib_dir
 
-    install_default_bundler_gem
+    install_default_bundler_gem bin_dir
 
     if mode = options[:dir_mode]
       @mkdirs.uniq!
@@ -234,21 +234,19 @@ By default, this RubyGems will install gem as:
     end
   end
 
-
   def install_executables(bin_dir)
     @bin_file_names = []
 
     prog_mode = options[:prog_mode] || 0755
 
     executables = { 'gem' => 'bin' }
-    executables['bundler'] = 'bundler/exe' if Gem::USE_BUNDLER_FOR_GEMDEPS
     executables.each do |tool, path|
       say "Installing #{tool} executable" if @verbose
 
       Dir.chdir path do
         bin_files = Dir['*']
 
-        bin_files -= %w[update_rubygems bundler bundle_ruby]
+        bin_files -= %w[update_rubygems]
 
         bin_files.each do |bin_file|
           bin_file_formatted = if options[:format_executable]
@@ -383,7 +381,7 @@ By default, this RubyGems will install gem as:
     return false
   end
 
-  def install_default_bundler_gem
+  def install_default_bundler_gem(bin_dir)
     return unless Gem::USE_BUNDLER_FOR_GEMDEPS
 
     specs_dir = Gem::Specification.default_specifications_dir
@@ -428,13 +426,12 @@ By default, this RubyGems will install gem as:
       cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_bin_dir, e)
     end
 
-    if Gem.win_platform?
-      require 'rubygems/installer'
+    require 'rubygems/installer'
 
-      installer = Gem::Installer.for_spec bundler_spec
-      bundler_spec.executables.each do |e|
-        installer.generate_windows_script e, bundler_spec.bin_dir
-      end
+    Dir.chdir("bundler") do
+      built_gem = Gem::Package.build(bundler_spec)
+      installer = Gem::Installer.at(built_gem, env_shebang: options[:env_shebang], install_as_default: true, bin_dir: bin_dir, wrappers: true)
+      installer.install
     end
 
     say "Bundler #{bundler_spec.version} installed"

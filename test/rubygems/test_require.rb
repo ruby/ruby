@@ -381,7 +381,6 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w(a-1), loaded_spec_names
   end
 
-
   def test_require_bundler
     b1 = util_spec('bundler', '1', nil, "lib/bundler/setup.rb")
     b2a = util_spec('bundler', '2.a', nil, "lib/bundler/setup.rb")

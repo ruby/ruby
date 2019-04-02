@@ -57,6 +57,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     FileUtils.mkdir_p 'default/gems'
 
     gemspec = Gem::Specification.new
+    gemspec.author = "Us"
     gemspec.name = "bundler"
     gemspec.version = BUNDLER_VERS
     gemspec.bindir = "exe"
@@ -185,16 +186,19 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   def test_install_default_bundler_gem
     @cmd.extend FileUtils
 
-    @cmd.install_default_bundler_gem
+    bin_dir = File.join(@gemhome, 'bin')
+    @cmd.install_default_bundler_gem bin_dir
 
-    if Gem.win_platform?
-      bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
-      default_spec_path = File.join(Gem::Specification.default_specifications_dir, "#{bundler_spec.full_name}.gemspec")
-      spec = Gem::Specification.load(default_spec_path)
+    bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
+    default_spec_path = File.join(Gem::Specification.default_specifications_dir, "#{bundler_spec.full_name}.gemspec")
+    spec = Gem::Specification.load(default_spec_path)
 
-      spec.executables.each do |e|
-        assert_path_exists File.join(spec.bin_dir, "#{e}.bat")
+    spec.executables.each do |e|
+      if Gem.win_platform?
+        assert_path_exists File.join(bin_dir, "#{e}.bat")
       end
+
+      assert_path_exists File.join bin_dir, e
     end
 
     default_dir = Gem::Specification.default_specifications_dir

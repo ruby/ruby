@@ -190,10 +190,6 @@ module Gem::GemcutterUtilities
   # Returns true when the user has enabled multifactor authentication from
   # +response+ text and no otp provided by options.
 
-
-
-
-
   def set_api_key(host, key)
     if host == Gem::DEFAULT_HOST
       Gem.configuration.rubygems_api_key = key

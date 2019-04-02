@@ -306,7 +306,6 @@ class TestGemIndexer < Gem::TestCase
     util_remove_gem sys_gem
   end
 
-
   def test_update_index
     use_ui @ui do
       @indexer.generate_index

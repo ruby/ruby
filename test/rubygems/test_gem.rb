@@ -954,37 +954,23 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_ruby_escaping_spaces_in_path
-    orig_bindir = RbConfig::CONFIG['bindir']
-    orig_exe_ext = RbConfig::CONFIG['EXEEXT']
-
-    RbConfig::CONFIG['bindir'] = "C:/Ruby 1.8/bin"
-    RbConfig::CONFIG['EXEEXT'] = ".exe"
-
-    ruby_install_name "ruby" do
-      with_clean_path_to_ruby do
-        assert_equal "\"C:/Ruby 1.8/bin/ruby.exe\"", Gem.ruby
+    with_clean_path_to_ruby do
+      with_bindir_and_exeext("C:/Ruby 1.8/bin", ".exe") do
+        ruby_install_name "ruby" do
+          assert_equal "\"C:/Ruby 1.8/bin/ruby.exe\"", Gem.ruby
+        end
       end
     end
-  ensure
-    RbConfig::CONFIG['bindir'] = orig_bindir
-    RbConfig::CONFIG['EXEEXT'] = orig_exe_ext
   end
 
   def test_self_ruby_path_without_spaces
-    orig_bindir = RbConfig::CONFIG['bindir']
-    orig_exe_ext = RbConfig::CONFIG['EXEEXT']
-
-    RbConfig::CONFIG['bindir'] = "C:/Ruby18/bin"
-    RbConfig::CONFIG['EXEEXT'] = ".exe"
-
-    ruby_install_name "ruby" do
-      with_clean_path_to_ruby do
-        assert_equal "C:/Ruby18/bin/ruby.exe", Gem.ruby
+    with_clean_path_to_ruby do
+      with_bindir_and_exeext("C:/Ruby18/bin", ".exe") do
+        ruby_install_name "ruby" do
+          assert_equal "C:/Ruby18/bin/ruby.exe", Gem.ruby
+        end
       end
     end
-  ensure
-    RbConfig::CONFIG['bindir'] = orig_bindir
-    RbConfig::CONFIG['EXEEXT'] = orig_exe_ext
   end
 
   def test_self_ruby_api_version
@@ -1902,6 +1888,19 @@ You may need to `gem install -g` to install missing gems
     end
   end
 
+  def with_bindir_and_exeext(bindir, exeext)
+    orig_bindir = RbConfig::CONFIG['bindir']
+    orig_exe_ext = RbConfig::CONFIG['EXEEXT']
+
+    RbConfig::CONFIG['bindir'] = bindir
+    RbConfig::CONFIG['EXEEXT'] = exeext
+
+    yield
+  ensure
+    RbConfig::CONFIG['bindir'] = orig_bindir
+    RbConfig::CONFIG['EXEEXT'] = orig_exe_ext
+  end
+
   def with_clean_path_to_ruby
     orig_ruby = Gem.ruby
 
@@ -1909,7 +1908,7 @@ You may need to `gem install -g` to install missing gems
 
     yield
   ensure
-    Gem.instance_variable_set("@ruby", orig_ruby)
+    Gem.instance_variable_set :@ruby, orig_ruby
   end
 
   def with_plugin(path)

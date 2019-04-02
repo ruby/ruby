@@ -6,7 +6,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-
 require 'rubygems/version'
 require 'rubygems/requirement'
 require 'rubygems/platform'
@@ -18,7 +17,7 @@ require 'rubygems/util/list'
 require 'stringio'
 
 ##
-# The Specification class contains the information for a Gem.  Typically
+# The Specification class contains the information for a gem.  Typically
 # defined in a .gemspec file or a Rakefile, and looks like this:
 #
 #   Gem::Specification.new do |s|
@@ -364,8 +363,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   ##
   # The metadata holds extra data for this gem that may be useful to other
-  # consumers and is settable by gem authors without requiring an update to
-  # the rubygems software.
+  # consumers and is settable by gem authors.
   #
   # Metadata items have the following restrictions:
   #
@@ -775,15 +773,6 @@ class Gem::Specification < Gem::BasicSpecification
   end
   private_class_method :gemspec_stubs_in
 
-  def self.default_stubs(pattern)
-    base_dir = Gem.default_dir
-    gems_dir = File.join base_dir, "gems"
-    gemspec_stubs_in(default_specifications_dir, pattern) do |path|
-      Gem::StubSpecification.default_gemspec_stub(path, base_dir, gems_dir)
-    end
-  end
-  private_class_method :default_stubs
-
   def self.installed_stubs(dirs, pattern)
     map_stubs(dirs, pattern) do |path, base_dir, gems_dir|
       Gem::StubSpecification.gemspec_stub(path, base_dir, gems_dir)
@@ -832,6 +821,17 @@ class Gem::Specification < Gem::BasicSpecification
     end
   end
 
+  ##
+  # Returns a Gem::StubSpecification for default gems
+
+  def self.default_stubs(pattern = "*.gemspec")
+    base_dir = Gem.default_dir
+    gems_dir = File.join base_dir, "gems"
+    gemspec_stubs_in(default_specifications_dir, pattern) do |path|
+      Gem::StubSpecification.default_gemspec_stub(path, base_dir, gems_dir)
+    end
+  end
+
   EMPTY = [].freeze # :nodoc:
 
   ##
@@ -869,51 +869,6 @@ class Gem::Specification < Gem::BasicSpecification
       # #load returns nil if the spec is bad, so we just ignore
       # it at this stage
       Gem.register_default_spec(spec)
-    end
-  end
-
-  ##
-  # Adds +spec+ to the known specifications, keeping the collection
-  # properly sorted.
-
-  def self.add_spec(spec)
-    warn "Gem::Specification.add_spec is deprecated and will be removed in RubyGems 3.0" unless Gem::Deprecate.skip
-    # TODO: find all extraneous adds
-    # puts
-    # p :add_spec => [spec.full_name, caller.reject { |s| s =~ /minitest/ }]
-
-    # TODO: flush the rest of the crap from the tests
-    # raise "no dupes #{spec.full_name} in #{all_names.inspect}" if
-    #   _all.include? spec
-
-    raise "nil spec!" unless spec # TODO: remove once we're happy with tests
-
-    return if _all.include? spec
-
-    _all << spec
-    stubs << spec
-    (@@stubs_by_name[spec.name] ||= []) << spec
-    sort_by!(@@stubs_by_name[spec.name]) { |s| s.version }
-    _resort!(_all)
-    _resort!(stubs)
-  end
-
-  ##
-  # Adds multiple specs to the known specifications.
-
-  def self.add_specs(*specs)
-    warn "Gem::Specification.add_specs is deprecated and will be removed in RubyGems 3.0" unless Gem::Deprecate.skip
-
-    raise "nil spec!" if specs.any?(&:nil?) # TODO: remove once we're happy
-
-    # TODO: this is much more efficient, but we need the extra checks for now
-    # _all.concat specs
-    # _resort!
-
-    Gem::Deprecate.skip_during do
-      specs.each do |spec| # TODO: slow
-        add_spec spec
-      end
     end
   end
 
@@ -1242,17 +1197,6 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     nil
-  end
-
-  ##
-  # Removes +spec+ from the known specs.
-
-  def self.remove_spec(spec)
-    warn "Gem::Specification.remove_spec is deprecated and will be removed in RubyGems 3.0" unless Gem::Deprecate.skip
-    _all.delete spec
-    stubs.delete_if { |s| s.full_name == spec.full_name }
-    (@@stubs_by_name[spec.name] || []).delete_if { |s| s.full_name == spec.full_name }
-    reset
   end
 
   ##
@@ -2028,8 +1972,6 @@ class Gem::Specification < Gem::BasicSpecification
     @installed_by_version ||= nil
     yaml_initialize coder.tag, coder.map
   end
-
-
 
   eval <<-RB, binding, __FILE__, __LINE__ + 1
     def set_nil_attributes_to_nil

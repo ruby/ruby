@@ -143,7 +143,9 @@ class Gem::DependencyInstaller
                   end
         end
 
-        results = find_gems_with_sources(dep)
+        results = Gem::Deprecate.skip_during do
+          find_gems_with_sources(dep)
+        end
 
         results.sorted.each do |t|
           to_do.push t.spec
@@ -166,15 +168,20 @@ class Gem::DependencyInstaller
 
   def available_set_for(dep_or_name, version) # :nodoc:
     if String === dep_or_name
-      find_spec_by_name_and_version dep_or_name, version, @prerelease
+      Gem::Deprecate.skip_during do
+        find_spec_by_name_and_version dep_or_name, version, @prerelease
+      end
     else
       dep = dep_or_name.dup
       dep.prerelease = @prerelease
-      @available = find_gems_with_sources dep
+      @available = Gem::Deprecate.skip_during do
+        find_gems_with_sources dep
+      end
     end
 
     @available.pick_best!
   end
+  deprecate :available_set_for, :none, 2019, 12
 
   ##
   # Indicated, based on the requested domain, if local
@@ -266,6 +273,7 @@ class Gem::DependencyInstaller
 
     set
   end
+  deprecate :find_gems_with_sources, :none, 2019, 12
 
   ##
   # Finds a spec and the source_uri it came from for gem +gem_name+ and
@@ -302,7 +310,10 @@ class Gem::DependencyInstaller
       dep = Gem::Dependency.new gem_name, version
       dep.prerelease = true if prerelease
 
-      set = find_gems_with_sources(dep, true)
+      set = Gem::Deprecate.skip_during do
+        find_gems_with_sources(dep, true)
+      end
+
       set.match_platform!
     end
 
@@ -312,6 +323,7 @@ class Gem::DependencyInstaller
 
     @available = set
   end
+  deprecate :find_spec_by_name_and_version, :none, 2019, 12
 
   ##
   # Gathers all dependencies necessary for the installation from local and
@@ -332,7 +344,10 @@ class Gem::DependencyInstaller
     dependency_list = Gem::DependencyList.new @development
     dependency_list.add(*specs)
     to_do = specs.dup
-    add_found_dependencies to_do, dependency_list unless @ignore_dependencies
+
+    Gem::Deprecate.skip_during do
+      add_found_dependencies to_do, dependency_list unless @ignore_dependencies
+    end
 
     # REFACTOR maybe abstract away using Gem::Specification.include? so
     # that this isn't dependent only on the currently installed gems

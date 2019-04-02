@@ -593,7 +593,6 @@ class Gem::Command
                     'Avoid loading any .gemrc file') do
   end
 
-
   # :stopdoc:
 
   HELP = <<-HELP.freeze
