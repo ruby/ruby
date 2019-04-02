@@ -9,7 +9,7 @@ class TestLLDBInit < Test::Unit::TestCase
       tf.puts <<eom
 target create ./miniruby
 command script import -r misc/lldb_cruby.py
-b rb_p
+b rb_inspect
 run -e'p #{expr}'
 rp obj
 eom
@@ -24,8 +24,12 @@ eom
     assert_rp 'Object.new', 'T_OBJECT'
   end
 
+  def test_rp_regex
+    assert_rp '/foo/', '[(]Regex'
+  end
+
   def test_rp_symbol
-    assert_rp ':abcde', /immediate\(\h+\)/
+    assert_rp ':abcde', /T_SYMBOL: \(\h+\)/
   end
 
   def test_rp_string

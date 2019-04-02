@@ -197,7 +197,7 @@ def lldb_inspect(debugger, target, result, val):
             if not imag.startswith("-"):
                 imag = "+" + imag
             print >> result, "(Complex) " + real + imag + "i"
-        elif flType == RUBY_T_REGEX:
+        elif flType == RUBY_T_REGEXP:
             tRRegex = target.FindFirstType("struct RRegexp").GetPointerType()
             val = val.Cast(tRRegex)
             print >> result, "(Regex)"
