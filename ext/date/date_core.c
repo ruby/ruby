@@ -3692,7 +3692,7 @@ rt_rewrite_frags(VALUE hash)
 {
     VALUE seconds;
 
-    seconds = ref_hash("seconds");
+    seconds = del_hash("seconds");
     if (!NIL_P(seconds)) {
 	VALUE offset, d, h, min, s, fr;
 
@@ -3717,7 +3717,6 @@ rt_rewrite_frags(VALUE hash)
 	set_hash("min", min);
 	set_hash("sec", s);
 	set_hash("sec_fraction", fr);
-	del_hash("seconds");
     }
     return hash;
 }

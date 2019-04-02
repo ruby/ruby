@@ -2177,7 +2177,7 @@ date__parse(VALUE str, VALUE comp)
 #endif
 
     {
-	if (RTEST(ref_hash("_bc"))) {
+	if (RTEST(del_hash("_bc"))) {
 	    VALUE y;
 
 	    y = ref_hash("cwyear");
@@ -2192,7 +2192,7 @@ date__parse(VALUE str, VALUE comp)
 	    }
 	}
 
-	if (RTEST(ref_hash("_comp"))) {
+	if (RTEST(del_hash("_comp"))) {
 	    VALUE y;
 
 	    y = ref_hash("cwyear");
@@ -2214,9 +2214,6 @@ date__parse(VALUE str, VALUE comp)
 	}
 
     }
-
-    del_hash("_bc");
-    del_hash("_comp");
 
     {
 	VALUE zone = ref_hash("zone");
