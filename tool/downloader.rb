@@ -285,14 +285,20 @@ class Downloader
   end
 
   def self.save_cache(cache, file, name)
-    if cache and !cache.eql?(file) and !cache.exist?
+    return unless cache or cache.eql?(file)
+    begin
+      st = cache.stat
+    rescue
       begin
         file.rename(cache)
       rescue
-      else
-        link_cache(cache, file, name)
+        return
       end
+    else
+      return unless st.mtime > file.lstat.mtime
+      file.unlink
     end
+    link_cache(cache, file, name)
   end
 
   def self.with_retry(max_times, &block)
