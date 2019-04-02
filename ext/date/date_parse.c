@@ -1212,7 +1212,7 @@ parse_iso2(VALUE str, VALUE hash)
     return 1;
 }
 
-#define JAPANESE_ERA_INITIALS "mtsh"
+#define JISX0301_ERA_INITIALS "mtsh"
 
 static int
 gengo(int c)
@@ -1254,11 +1254,11 @@ parse_jis(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 #ifndef TIGHT_PARSER
-        "\\b([" JAPANESE_ERA_INITIALS "])(\\d+)\\.(\\d+)\\.(\\d+)"
+        "\\b([" JISX0301_ERA_INITIALS "])(\\d+)\\.(\\d+)\\.(\\d+)"
 #else
 	BOS
 	FPW_COM FPT_COM
-        "([" JAPANESE_ERA_INITIALS "])(\\d+)\\.(\\d+)\\.(\\d+)"
+        "([" JISX0301_ERA_INITIALS "])(\\d+)\\.(\\d+)\\.(\\d+)"
 	TEE_FPT COM_FPW
 	EOS
 #endif
@@ -2978,7 +2978,7 @@ static int
 jisx0301(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
-        "\\A\\s*([" JAPANESE_ERA_INITIALS "])?(\\d{2})\\.(\\d{2})\\.(\\d{2})"
+        "\\A\\s*([" JISX0301_ERA_INITIALS "])?(\\d{2})\\.(\\d{2})\\.(\\d{2})"
 	"(?:t"
 	"(?:(\\d{2}):(\\d{2})(?::(\\d{2})(?:[,.](\\d*))?)?"
 	"(z|[-+]\\d{2}(?::?\\d{2})?)?)?)?\\s*\\z";
