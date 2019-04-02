@@ -1213,6 +1213,7 @@ parse_iso2(VALUE str, VALUE hash)
 }
 
 #define JISX0301_ERA_INITIALS "mtsh"
+#define JISX0301_DEFAULT_ERA 'H' /* obsolete */
 
 static int
 gengo(int c)
@@ -2953,7 +2954,7 @@ jisx0301_cb(VALUE m, VALUE hash)
 	    s[i] = rb_reg_nth_match(i, m);
     }
 
-    ep = gengo(NIL_P(s[1]) ? 'h' : *RSTRING_PTR(s[1]));
+    ep = gengo(NIL_P(s[1]) ? JISX0301_DEFAULT_ERA : *RSTRING_PTR(s[1]));
     set_hash("year", f_add(str2num(s[2]), INT2FIX(ep)));
     set_hash("mon", str2num(s[3]));
     set_hash("mday", str2num(s[4]));
