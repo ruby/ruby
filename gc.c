@@ -3461,6 +3461,42 @@ set_zero(st_data_t key, st_data_t val, st_data_t arg)
     return ST_CONTINUE;
 }
 
+static VALUE
+type_sym(size_t type)
+{
+    switch (type) {
+#define COUNT_TYPE(t) case (t): return ID2SYM(rb_intern(#t)); break;
+        COUNT_TYPE(T_NONE);
+        COUNT_TYPE(T_OBJECT);
+        COUNT_TYPE(T_CLASS);
+        COUNT_TYPE(T_MODULE);
+        COUNT_TYPE(T_FLOAT);
+        COUNT_TYPE(T_STRING);
+        COUNT_TYPE(T_REGEXP);
+        COUNT_TYPE(T_ARRAY);
+        COUNT_TYPE(T_HASH);
+        COUNT_TYPE(T_STRUCT);
+        COUNT_TYPE(T_BIGNUM);
+        COUNT_TYPE(T_FILE);
+        COUNT_TYPE(T_DATA);
+        COUNT_TYPE(T_MATCH);
+        COUNT_TYPE(T_COMPLEX);
+        COUNT_TYPE(T_RATIONAL);
+        COUNT_TYPE(T_NIL);
+        COUNT_TYPE(T_TRUE);
+        COUNT_TYPE(T_FALSE);
+        COUNT_TYPE(T_SYMBOL);
+        COUNT_TYPE(T_FIXNUM);
+        COUNT_TYPE(T_IMEMO);
+        COUNT_TYPE(T_UNDEF);
+        COUNT_TYPE(T_NODE);
+        COUNT_TYPE(T_ICLASS);
+        COUNT_TYPE(T_ZOMBIE);
+#undef COUNT_TYPE
+        default:              return INT2NUM(type); break;
+    }
+}
+
 /*
  *  call-seq:
  *     ObjectSpace.count_objects([result_hash]) -> hash
@@ -3542,37 +3578,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
     rb_hash_aset(hash, ID2SYM(rb_intern("FREE")), SIZET2NUM(freed));
 
     for (i = 0; i <= T_MASK; i++) {
-        VALUE type;
-        switch (i) {
-#define COUNT_TYPE(t) case (t): type = ID2SYM(rb_intern(#t)); break;
-	    COUNT_TYPE(T_NONE);
-	    COUNT_TYPE(T_OBJECT);
-	    COUNT_TYPE(T_CLASS);
-	    COUNT_TYPE(T_MODULE);
-	    COUNT_TYPE(T_FLOAT);
-	    COUNT_TYPE(T_STRING);
-	    COUNT_TYPE(T_REGEXP);
-	    COUNT_TYPE(T_ARRAY);
-	    COUNT_TYPE(T_HASH);
-	    COUNT_TYPE(T_STRUCT);
-	    COUNT_TYPE(T_BIGNUM);
-	    COUNT_TYPE(T_FILE);
-	    COUNT_TYPE(T_DATA);
-	    COUNT_TYPE(T_MATCH);
-	    COUNT_TYPE(T_COMPLEX);
-	    COUNT_TYPE(T_RATIONAL);
-	    COUNT_TYPE(T_NIL);
-	    COUNT_TYPE(T_TRUE);
-	    COUNT_TYPE(T_FALSE);
-	    COUNT_TYPE(T_SYMBOL);
-	    COUNT_TYPE(T_FIXNUM);
-	    COUNT_TYPE(T_IMEMO);
-	    COUNT_TYPE(T_UNDEF);
-	    COUNT_TYPE(T_ICLASS);
-	    COUNT_TYPE(T_ZOMBIE);
-#undef COUNT_TYPE
-          default:              type = INT2NUM(i); break;
-        }
+        VALUE type = type_sym(i);
         if (counts[i])
             rb_hash_aset(hash, type, SIZET2NUM(counts[i]));
     }
