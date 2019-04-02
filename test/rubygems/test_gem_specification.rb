@@ -1179,6 +1179,25 @@ dependencies: []
     Gem::Specification.class_variable_set(:@@stubs, nil)
   end
 
+  def test_self_stubs_for_lazy_loading
+    Gem.loaded_specs.clear
+    Gem::Specification.class_variable_set(:@@stubs, nil)
+
+    dir_standard_specs = File.join Gem.dir, 'specifications'
+
+    save_gemspec('a-1', '1', dir_standard_specs){|s| s.name = 'a' }
+    save_gemspec('b-1', '1', dir_standard_specs){|s| s.name = 'b' }
+
+    assert_equal ['a-1'], Gem::Specification.stubs_for('a').map { |s| s.full_name }
+    assert_equal 1, Gem::Specification.class_variable_get(:@@stubs_by_name).length
+    assert_equal ['b-1'], Gem::Specification.stubs_for('b').map { |s| s.full_name }
+    assert_equal 2, Gem::Specification.class_variable_get(:@@stubs_by_name).length
+
+    Gem.loaded_specs.delete 'a'
+    Gem.loaded_specs.delete 'b'
+    Gem::Specification.class_variable_set(:@@stubs, nil)
+  end
+
   def test_self_stubs_for_mult_platforms
     # gems for two different platforms are installed with --user-install
     # the correct one should be returned in the array
