@@ -3065,7 +3065,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     for (i = 0; i < heap_allocated_pages; i++) {
 	p = heap_pages_sorted[i]->start; pend = p + heap_pages_sorted[i]->total_slots;
 	while (p < pend) {
-            void *poisoned = poisoned_object_p(p);
+            void *poisoned = poisoned_object_p((VALUE)p);
             unpoison_object((VALUE)p, false);
 	    switch (BUILTIN_TYPE(p)) {
 	      case T_DATA:
@@ -3558,12 +3558,18 @@ count_objects(int argc, VALUE *argv, VALUE os)
 
 	p = page->start; pend = p + page->total_slots;
 	for (;p < pend; p++) {
+            void *poisoned = poisoned_object_p((VALUE)p);
+            unpoison_object((VALUE)p, false);
 	    if (p->as.basic.flags) {
 		counts[BUILTIN_TYPE(p)]++;
 	    }
 	    else {
 		freed++;
 	    }
+            if (poisoned) {
+                GC_ASSERT(BUILTIN_TYPE((VALUE)p) == T_NONE);
+                poison_object((VALUE)p);
+            }
 	}
 	total += page->total_slots;
     }
@@ -5474,12 +5480,12 @@ gc_verify_heap_pages_(rb_objspace_t *objspace, struct list_head *head)
         RVALUE *p = page->freelist;
         while(p) {
             RVALUE *prev = p;
-            unpoison_object(p, false);
+            unpoison_object((VALUE)p, false);
             if (BUILTIN_TYPE(p) != T_NONE) {
                 fprintf(stderr, "freelist slot expected to be T_NONE but was: %s\n", obj_info((VALUE)p));
             }
             p = p->as.free.next;
-            poison_object(prev);
+            poison_object((VALUE)prev);
         }
         poison_memory_region(&page->freelist, sizeof(RVALUE*));
 
