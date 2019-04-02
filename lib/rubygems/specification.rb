@@ -828,8 +828,8 @@ class Gem::Specification < Gem::BasicSpecification
   # only returns stubs that match Gem.platforms
 
   def self.stubs_for(name)
-    if @@stubs
-      @@stubs_by_name[name] || []
+    if @@stubs_by_name[name]
+      @@stubs_by_name[name]
     else
       pattern = "#{name}-*.gemspec"
       stubs = Gem.loaded_specs.values +
