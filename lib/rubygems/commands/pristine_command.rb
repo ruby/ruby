@@ -104,7 +104,7 @@ extensions will be restored.
               end.flatten
             end
 
-    specs = specs.select{|spec| spec.platform == RUBY_ENGINE }
+    specs = specs.select{|spec| RUBY_ENGINE == spec.platform || Gem::Platform.local === spec.platform }
 
     if specs.to_a.empty?
       raise Gem::Exception,

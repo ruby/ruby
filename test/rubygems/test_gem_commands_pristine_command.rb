@@ -542,8 +542,10 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     @cmd.options[:extensions_set] = true
     @cmd.options[:args] = []
 
-    use_ui @ui do
-      @cmd.execute
+    util_set_arch "x86_64-darwin" do
+      use_ui @ui do
+        @cmd.execute
+      end
     end
 
     out = @ui.output.split "\n"

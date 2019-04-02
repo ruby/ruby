@@ -67,7 +67,6 @@ class TestGemRequestSetLockfileParser < Gem::TestCase
     assert_equal File.expand_path("#{@gem_deps_file}.lock"), e.path
   end
 
-
   def test_parse
     write_lockfile <<-LOCKFILE.strip
 GEM

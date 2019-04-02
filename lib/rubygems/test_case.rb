@@ -383,8 +383,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
 
     Gem.searcher = nil
     Gem::SpecFetcher.fetcher = nil
-    @orig_BASERUBY = RbConfig::CONFIG['BASERUBY']
-    RbConfig::CONFIG['BASERUBY'] = RbConfig::CONFIG['ruby_install_name']
 
     @orig_arch = RbConfig::CONFIG['arch']
 
@@ -422,11 +420,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
       end
     end
 
-    if @orig_BASERUBY
-      RbConfig::CONFIG['BASERUBY'] = @orig_BASERUBY
-    else
-      RbConfig::CONFIG.delete('BASERUBY')
-    end
     RbConfig::CONFIG['arch'] = @orig_arch
 
     if defined? Gem::RemoteFetcher
@@ -715,7 +708,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     util_spec name, version
   end
   deprecate :quick_spec, :util_spec, 2018, 12
-
 
   ##
   # Builds a gem from +spec+ and places it in <tt>File.join @gemhome,

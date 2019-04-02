@@ -138,7 +138,6 @@ class Gem::SpecFetcher
     return [tuples, errors]
   end
 
-
   ##
   # Return all gem name tuples who's names match +obj+
 
@@ -156,7 +155,6 @@ class Gem::SpecFetcher
 
     tuples
   end
-
 
   ##
   # Find and fetch specs that match +dependency+.

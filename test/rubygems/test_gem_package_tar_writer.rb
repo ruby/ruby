@@ -125,7 +125,6 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
       assert_headers_equal(tar_file_header('x', '', 0644, 10, Time.now),
                            @io.string[0, 512])
 
-
       assert_equal "aaaaaaaaaa#{"\0" * 502}", @io.string[512, 512]
 
       digest = signer.digest_algorithm.new

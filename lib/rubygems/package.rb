@@ -86,7 +86,6 @@ class Gem::Package
 
   class TarInvalidError < Error; end
 
-
   attr_accessor :build_time # :nodoc:
 
   ##

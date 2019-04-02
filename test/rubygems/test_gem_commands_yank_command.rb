@@ -49,7 +49,6 @@ class TestGemCommandsYankCommand < Gem::TestCase
     assert_match %r%Yanking gem from http://example%, @ui.output
     assert_match %r%Successfully yanked%,      @ui.output
 
-
     platform = Gem.platforms[1]
     body = @fetcher.last_request.body.split('&').sort
     assert_equal %W[gem_name=a platform=#{platform} version=1.0], body

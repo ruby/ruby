@@ -676,7 +676,6 @@ class TestGemResolver < Gem::TestCase
   # activesupport 2.3.5, 2.3.4
   # Activemerchant needs activesupport >= 2.3.2. When you require activemerchant, it will activate the latest version that meets that requirement which is 2.3.5. Actionmailer on the other hand needs activesupport = 2.3.4. When rubygems tries to activate activesupport 2.3.4, it will raise an error.
 
-
   def test_simple_activesupport_problem
     sup1  = util_spec "activesupport", "2.3.4"
     sup2  = util_spec "activesupport", "2.3.5"

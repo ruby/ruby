@@ -115,7 +115,6 @@ class TestGemPackage < Gem::Package::TarTestCase
     spec.date = Time.at 0
     spec.rubygems_version = Gem::Version.new '0'
 
-
     package = Gem::Package.new spec.file_name
 
     assert_equal Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc, package.build_time
