@@ -2630,8 +2630,8 @@ internal_object_p(VALUE obj)
 {
     RVALUE *p = (RVALUE *)obj;
     void *ptr = __asan_region_is_poisoned(p, SIZEOF_VALUE);
-    bool used_p = p->as.basic.flags;
     unpoison_object(obj, false);
+    bool used_p = p->as.basic.flags;
 
     if (used_p) {
 	switch (BUILTIN_TYPE(p)) {
