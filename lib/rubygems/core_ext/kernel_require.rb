@@ -38,7 +38,7 @@ module Kernel
 
     resolved_path = begin
       rp = nil
-      $LOAD_PATH[0...Gem.load_path_insert_index].each do |lp|
+      $LOAD_PATH[0...Gem.load_path_insert_index || -1].each do |lp|
         Gem.suffixes.each do |s|
           full_path = File.join(lp, "#{path}#{s}")
           if File.file?(File.expand_path(full_path))
