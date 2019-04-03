@@ -380,6 +380,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1, 2, 3], a[..2])
     assert_equal(@cls[1, 2], a[...2])
     assert_equal(@cls[10, 11, 12], a[-91..-89])
+    assert_equal(@cls[98, 99, 100], a[-3..])
     assert_equal(@cls[1, 2, 3], a[..-98])
     assert_equal(@cls[1, 2], a[...-98])
 
