@@ -172,7 +172,7 @@ class TestGemRequire < Gem::TestCase
 
     install_specs b1, b2, a1
 
-    require 'test_gem_require_a'
+    assert_require 'test_gem_require_a'
     assert_equal unresolved_names, ["b (>= 1)"]
 
     refute require('benchmark'), "benchmark should have already been loaded"
