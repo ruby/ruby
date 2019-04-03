@@ -7,6 +7,8 @@ jobs:
     matrix:
       bundled_gems:
         task: test-bundled-gems
+        TEST_BUNDLED_GEMS_ALLOW_FAILURES: |
+          minitest
       bundler:
         task: test-bundler
   steps:
@@ -24,7 +26,7 @@ jobs:
   - script: |
       TRAVIS=1 make $(task)
     displayName: "test"
-    continueOnError: true # test-bundled-gems and test-bundler are failing on Linux. TODO: fix them and remove this line.
+    continueOnError: true # test-bundler is failing on Linux. TODO: fix it and remove this line.
 
 - job: macOS
   pool:
@@ -37,6 +39,8 @@ jobs:
 #        task: test-spec
       bundled_gems:
         task: test-bundled-gems
+        TEST_BUNDLED_GEMS_ALLOW_FAILURES: |
+          minitest
       bundler:
         task: test-bundler
   steps:

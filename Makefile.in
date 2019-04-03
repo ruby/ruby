@@ -529,10 +529,17 @@ enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 
 cont.$(OBJEXT): $(COROUTINE_H)
 
+# Override this to allow failure of specific gems on CI
+TEST_BUNDLED_GEMS_ALLOW_FAILURES =
+
 test-bundled-gems-run:
 	$(Q) set -e; while read gem _; do \
-	  echo testing $$gem gem && \
-	  $(XRUBY) -C $(srcdir)/gems/src/$$gem -Ilib ../../../.bundle/bin/rake; \
+	  echo testing $$gem gem; \
+	  if echo $(TEST_BUNDLED_GEMS_ALLOW_FAILURES) | grep -q $$gem; then \
+	    $(XRUBY) -C $(srcdir)/gems/src/$$gem -Ilib ../../../.bundle/bin/rake || true; \
+	  else \
+	    $(XRUBY) -C $(srcdir)/gems/src/$$gem -Ilib ../../../.bundle/bin/rake; \
+	  fi; \
 	done < $(srcdir)/gems/bundled_gems
 
 update-src::
