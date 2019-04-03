@@ -1862,26 +1862,26 @@ parse_ddd_cb(VALUE m, VALUE hash)
 	set_hash("zone", s5);
 
 	if (*cs5 == '[') {
-	    const char *s1, *s2;
+            const char *s1, *s2;
 	    VALUE zone;
 
             l5 -= 2;
-	    s1 = cs5 + 1;
-	    s2 = memchr(s1, ':', l5);
+            s1 = cs5 + 1;
+            s2 = memchr(s1, ':', l5);
 	    if (s2) {
 		s2++;
                 zone = rb_str_subseq(s5, s2 - cs5, l5 - (s2 - s1));
                 s5 = rb_str_subseq(s5, 1, s2 - s1);
 	    }
-	    else {
-		zone = rb_str_subseq(s5, 1, l5);
+            else {
+                zone = rb_str_subseq(s5, 1, l5);
                 if (isdigit((unsigned char)*s1))
                     s5 = rb_str_append(rb_str_new_cstr("+"), zone);
                 else
                     s5 = zone;
             }
 	    set_hash("zone", zone);
-	    set_hash("offset", date_zone_to_diff(s5));
+            set_hash("offset", date_zone_to_diff(s5));
 	}
 	RB_GC_GUARD(s5);
     }
