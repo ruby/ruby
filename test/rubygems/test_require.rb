@@ -66,6 +66,7 @@ class TestGemRequire < Gem::TestCase
     assert_require 'test_gem_require_a'
     assert_require 'b/c' # this should be required from -I
     assert_equal "world", ::Object::HELLO
+    assert_equal %w(a-1 b-1), loaded_spec_names
   ensure
     $LOAD_PATH.replace lp
     Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
