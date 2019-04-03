@@ -96,8 +96,6 @@ struct iseq_compile_data {
     struct iseq_label_data *end_label;
     struct iseq_label_data *redo_label;
     const rb_iseq_t *current_block;
-    VALUE ensure_node;
-    VALUE for_iseq;
     struct iseq_compile_data_ensure_node_stack *ensure_node_stack;
     struct iseq_compile_data_storage *storage_head;
     struct iseq_compile_data_storage *storage_current;
