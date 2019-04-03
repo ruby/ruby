@@ -76,6 +76,8 @@ firstline, predefined = __LINE__+1, %[\
 token_ops = %[\
   Dot2          ..      DOT2
   Dot3          ...     DOT3
+  BDot2         ..      BDOT2
+  BDot3         ...     BDOT3
   UPlus         +@      UPLUS
   UMinus        -@      UMINUS
   Pow           **      POW
