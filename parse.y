@@ -922,6 +922,8 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %token tNMATCH		RUBY_TOKEN(NMATCH) "!~"
 %token tDOT2		RUBY_TOKEN(DOT2)   ".."
 %token tDOT3		RUBY_TOKEN(DOT3)   "..."
+%token tBDOT2		RUBY_TOKEN(BDOT2)   "(.."
+%token tBDOT3		RUBY_TOKEN(BDOT3)   "(..."
 %token tAREF		RUBY_TOKEN(AREF)   "[]"
 %token tASET		RUBY_TOKEN(ASET)   "[]="
 %token tLSHFT		RUBY_TOKEN(LSHFT)  "<<"
@@ -968,7 +970,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %right '=' tOP_ASGN
 %left modifier_rescue
 %right '?' ':'
-%nonassoc tDOT2 tDOT3
+%nonassoc tDOT2 tDOT3 tBDOT2 tBDOT3
 %left  tOROP
 %left  tANDOP
 %nonassoc  tCMP tEQ tEQQ tNEQ tMATCH tNMATCH
@@ -1995,6 +1997,30 @@ arg		: lhs '=' arg_rhs
 			$$ = NEW_DOT3($1, new_nil(&loc), &@$);
 		    /*% %*/
 		    /*% ripper: dot3!($1, Qnil) %*/
+		    }
+		| tBDOT2 arg
+		    {
+		    /*%%%*/
+                        YYLTYPE loc;
+                        loc.beg_pos = @1.beg_pos;
+                        loc.end_pos = @1.beg_pos;
+
+			value_expr($2);
+			$$ = NEW_DOT2(new_nil(&loc), $2, &@$);
+		    /*% %*/
+		    /*% ripper: dot2!(Qnil, $2) %*/
+		    }
+		| tBDOT3 arg
+		    {
+		    /*%%%*/
+                        YYLTYPE loc;
+                        loc.beg_pos = @1.beg_pos;
+                        loc.end_pos = @1.beg_pos;
+
+			value_expr($2);
+			$$ = NEW_DOT3(new_nil(&loc), $2, &@$);
+		    /*% %*/
+		    /*% ripper: dot3!(Qnil, $2) %*/
 		    }
 		| arg '+' arg
 		    {
@@ -8241,15 +8267,16 @@ parser_yylex(struct parser_params *p)
 	pushback(p, c);
 	return warn_balanced('-', "-", "unary operator");
 
-      case '.':
+      case '.': {
+        int is_beg = IS_BEG();
 	SET_LEX_STATE(EXPR_BEG);
 	switch (c = nextc(p)) {
 	  case '.':
 	    if ((c = nextc(p)) == '.') {
-		return tDOT3;
+		return is_beg ? tBDOT3 : tDOT3;
 	    }
 	    pushback(p, c);
-	    return tDOT2;
+	    return is_beg ? tBDOT2 : tDOT2;
 	  case ':':
 	    switch (c = nextc(p)) {
 	      default:
@@ -8275,6 +8302,7 @@ parser_yylex(struct parser_params *p)
 	set_yylval_id('.');
 	SET_LEX_STATE(EXPR_DOT);
 	return '.';
+      }
 
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
