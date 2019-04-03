@@ -4306,16 +4306,6 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
 
     hash = date__parse(vstr, vcomp);
 
-    {
-	VALUE zone = ref_hash("zone");
-
-	if (!NIL_P(zone)) {
-	    rb_enc_copy(zone, vstr);
-	    OBJ_INFECT(zone, vstr);
-	    set_hash("zone", zone);
-	}
-    }
-
     return hash;
 }
 
