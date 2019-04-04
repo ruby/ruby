@@ -226,6 +226,8 @@ class TestRange < Test::Unit::TestCase
     assert_kind_of(Enumerator::ArithmeticSequence, (0..10).step(2))
     assert_kind_of(Enumerator::ArithmeticSequence, (0..10).step(0.5))
     assert_kind_of(Enumerator::ArithmeticSequence, (10..0).step(-1))
+    assert_kind_of(Enumerator::ArithmeticSequence, (..10).step(2))
+    assert_kind_of(Enumerator::ArithmeticSequence, (1..).step(2))
 
     assert_raise(ArgumentError) { (0..10).step(0) { } }
     assert_raise(ArgumentError) { (0..).step(-1) { } }

@@ -397,7 +397,9 @@ range_step(int argc, VALUE *argv, VALUE range)
     step = (!rb_check_arity(argc, 0, 1) ? INT2FIX(1) : argv[0]);
 
     if (!rb_block_given_p()) {
-        if (rb_obj_is_kind_of(b, rb_cNumeric) && (NIL_P(e) || rb_obj_is_kind_of(e, rb_cNumeric))) {
+        const VALUE b_num_p = rb_obj_is_kind_of(b, rb_cNumeric);
+        const VALUE e_num_p = rb_obj_is_kind_of(e, rb_cNumeric);
+        if ((b_num_p && (NIL_P(e) || e_num_p)) || (NIL_P(b) && e_num_p)) {
             return rb_arith_seq_new(range, ID2SYM(rb_frame_this_func()), argc, argv,
                     range_step_size, b, e, step, EXCL(range));
         }
