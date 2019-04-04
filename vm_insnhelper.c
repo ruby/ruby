@@ -2796,13 +2796,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_info *c
         CC_SET_FASTPATH(cc, vm_call_method_missing, TRUE);
     }
     else {
-#if OPT_INLINE_METHOD_CACHE
-        if (LIKELY(GET_GLOBAL_METHOD_STATE() == cc->method_state && RCLASS_SERIAL(klass) == cc->class_serial &&
-                   ci->mid == cc->me->def->original_id))
-            return;
-        cc->method_state = GET_GLOBAL_METHOD_STATE();
-        cc->class_serial = RCLASS_SERIAL(klass);
-#endif
+	/* TODO: use inline cache */
 	cc->me = rb_callable_method_entry(klass, ci->mid);
         CC_SET_FASTPATH(cc, vm_call_super_method, TRUE);
     }
