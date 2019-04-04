@@ -170,6 +170,16 @@ class TestArithmeticSequence < Test::Unit::TestCase
     assert_equal(10.0, seq.first)
     assert_equal([10.0], seq.first(1))
     assert_equal([10.0, 8.0, 6.0], seq.first(3))
+
+    seq = (1..).step(2)
+    assert_equal(1, seq.first)
+    assert_equal([1], seq.first(1))
+    assert_equal([1, 3, 5], seq.first(3))
+
+    seq = (..10).step(2)
+    assert_equal(nil, seq.first)
+    assert_raise(TypeError) { seq.first(1) }
+    assert_raise(TypeError) { seq.first(3) }
   end
 
   def test_first_bug15518
