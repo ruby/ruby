@@ -185,6 +185,12 @@ $(MJIT_MIN_HEADER): $(mjit_min_headers) $(PREP)
 
 endif
 
+ifneq ($(wildcard $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)),)
+.PHONY: $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time
+$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: \
+	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
+endif
+
 # GNU make treat the target as unmodified when its dependents get
 # updated but it is not updated, while others may not.
 $(srcdir)/revision.h: $(REVISION_H)
