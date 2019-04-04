@@ -3029,6 +3029,9 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
     e = arith_seq_end(self);
     s = arith_seq_step(self);
     if (argc == 0) {
+        if (NIL_P(b)) {
+            return Qnil;
+        }
         if (!NIL_P(e)) {
             VALUE zero = INT2FIX(0);
             int r = rb_cmpint(rb_num_coerce_cmp(s, zero, idCmp), s, zero);
