@@ -1148,9 +1148,9 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
 	visi = METHOD_VISI_PUBLIC;
     }
     else {
-	switch (vm_scope_visibility_get(ec)) {
+        switch (vm_scope_visibility_get(ec)) {
 	  case METHOD_VISI_PRIVATE:
-	    if (vm_scope_module_func_check(ec)) {
+            if (vm_scope_module_func_check(ec)) {
 		rb_warning("attribute accessor as module_function");
 	    }
 	    visi = METHOD_VISI_PRIVATE;
