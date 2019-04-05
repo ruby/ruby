@@ -764,9 +764,8 @@ vm_cref_replace_with_duplicated_cref(const VALUE *ep)
     }
 }
 
-
 static rb_cref_t *
-rb_vm_get_cref(const VALUE *ep)
+vm_get_cref(const VALUE *ep)
 {
     rb_cref_t *cref = vm_env_cref(ep);
 
@@ -774,14 +773,25 @@ rb_vm_get_cref(const VALUE *ep)
 	return cref;
     }
     else {
-	rb_bug("rb_vm_get_cref: unreachable");
+	rb_bug("vm_get_cref: unreachable");
     }
+}
+
+static rb_cref_t *
+vm_ec_cref(const rb_execution_context_t *ec)
+{
+    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
+
+    if (cfp == NULL) {
+        return NULL;
+    }
+    return vm_get_cref(cfp->ep);
 }
 
 static const rb_cref_t *
 vm_get_const_key_cref(const VALUE *ep)
 {
-    const rb_cref_t *cref = rb_vm_get_cref(ep);
+    const rb_cref_t *cref = vm_get_cref(ep);
     const rb_cref_t *key_cref = cref;
 
     while (cref) {
@@ -836,7 +846,7 @@ vm_cref_push(const rb_execution_context_t *ec, VALUE klass, const VALUE *ep, int
 static inline VALUE
 vm_get_cbase(const VALUE *ep)
 {
-    const rb_cref_t *cref = rb_vm_get_cref(ep);
+    const rb_cref_t *cref = vm_get_cref(ep);
     VALUE klass = Qundef;
 
     while (cref) {
@@ -852,7 +862,7 @@ vm_get_cbase(const VALUE *ep)
 static inline VALUE
 vm_get_const_base(const VALUE *ep)
 {
-    const rb_cref_t *cref = rb_vm_get_cref(ep);
+    const rb_cref_t *cref = vm_get_cref(ep);
     VALUE klass = Qundef;
 
     while (cref) {
@@ -896,7 +906,7 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, int is_defi
 
     if (orig_klass == Qnil) {
 	/* in current lexical scope */
-	const rb_cref_t *root_cref = rb_vm_get_cref(ec->cfp->ep);
+	const rb_cref_t *root_cref = vm_get_cref(ec->cfp->ep);
 	const rb_cref_t *cref;
 	VALUE klass = Qnil;
 
@@ -2600,7 +2610,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
         return vm_call_zsuper(ec, cfp, calling, ci, cc, RCLASS_ORIGIN(cc->me->defined_class));
 
       case VM_METHOD_TYPE_REFINED: {
-	const rb_cref_t *cref = rb_vm_get_cref(cfp->ep);
+	const rb_cref_t *cref = vm_get_cref(cfp->ep);
 	VALUE refinements = cref ? CREF_REFINEMENTS(cref) : Qnil;
 	VALUE refinement;
 	const rb_callable_method_entry_t *ref_me;
@@ -3131,7 +3141,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 	}
 	break;
       case DEFINED_CVAR: {
-	const rb_cref_t *cref = rb_vm_get_cref(GET_EP());
+	const rb_cref_t *cref = vm_get_cref(GET_EP());
 	klass = vm_get_cvar_base(cref, GET_CFP());
 	if (rb_cvar_defined(klass, SYM2ID(obj))) {
 	    expr_type = DEFINED_CVAR;
@@ -3494,6 +3504,60 @@ vm_find_or_create_class_by_id(ID id,
     }
 }
 
+static rb_method_visibility_t
+vm_scope_visibility_get(const rb_execution_context_t *ec)
+{
+    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
+
+    if (!vm_env_cref_by_cref(cfp->ep)) {
+	return METHOD_VISI_PUBLIC;
+    }
+    else {
+	return CREF_SCOPE_VISI(vm_ec_cref(ec))->method_visi;
+    }
+}
+
+static int
+vm_scope_module_func_check(const rb_execution_context_t *ec)
+{
+    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
+
+    if (!vm_env_cref_by_cref(cfp->ep)) {
+	return FALSE;
+    }
+    else {
+	return CREF_SCOPE_VISI(vm_ec_cref(ec))->module_func;
+    }
+}
+
+static void
+vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqval, int is_singleton)
+{
+    VALUE klass;
+    rb_method_visibility_t visi;
+    rb_cref_t *cref = vm_ec_cref(ec);
+
+    if (!is_singleton) {
+	klass = CREF_CLASS(cref);
+	visi = vm_scope_visibility_get(ec);
+    }
+    else { /* singleton */
+	klass = rb_singleton_class(obj); /* class and frozen checked in this API */
+	visi = METHOD_VISI_PUBLIC;
+    }
+
+    if (NIL_P(klass)) {
+	rb_raise(rb_eTypeError, "no class/module to add method");
+    }
+
+    rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
+
+    if (!is_singleton && vm_scope_module_func_check(ec)) {
+	klass = rb_singleton_class(klass);
+	rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, METHOD_VISI_PUBLIC);
+    }
+}
+
 static void
 vm_search_method_wrap(
     const struct rb_control_frame_struct *reg_cfp,
@@ -3663,7 +3727,7 @@ static int
 vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 {
     if (ic->ic_serial == GET_GLOBAL_CONSTANT_STATE()) {
-	return (ic->ic_cref == NULL || ic->ic_cref == rb_vm_get_cref(reg_ep));
+	return (ic->ic_cref == NULL || ic->ic_cref == vm_get_cref(reg_ep));
     }
     return FALSE;
 }

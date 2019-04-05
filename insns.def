@@ -236,7 +236,7 @@ getclassvariable
 /* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
-    val = rb_cvar_get(vm_get_cvar_base(rb_vm_get_cref(GET_EP()), GET_CFP()), id);
+    val = rb_cvar_get(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP()), id);
 }
 
 /* Set value of class variable id of klass as val. */
@@ -249,7 +249,7 @@ setclassvariable
 // attr bool leaf = false; /* has rb_warning() */
 {
     vm_ensure_not_refinement_module(GET_SELF());
-    rb_cvar_set(vm_get_cvar_base(rb_vm_get_cref(GET_EP()), GET_CFP()), id, val);
+    rb_cvar_set(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP()), id, val);
 }
 
 /* Get constant variable id. If klass is Qnil, constants
@@ -356,17 +356,6 @@ putspecialobject
 
     type = (enum vm_special_object_type)value_type;
     val = vm_get_special_object(GET_EP(), type);
-}
-
-/* put iseq value. */
-DEFINE_INSN
-putiseq
-(ISEQ iseq)
-()
-(VALUE ret)
-// attr bool handles_sp = false; /* of course it doesn't */
-{
-    ret = (VALUE)iseq;
 }
 
 /* put string val. string will be copied. */
@@ -746,6 +735,24 @@ defineclass
 		  class_iseq->body->stack_max);
     RESTORE_REGS();
     NEXT_INSN();
+}
+
+DEFINE_INSN
+definemethod
+(ID id, ISEQ iseq)
+()
+()
+{
+    vm_define_method(ec, Qnil, id, (VALUE)iseq, FALSE);
+}
+
+DEFINE_INSN
+definesmethod
+(ID id, ISEQ iseq)
+(VALUE obj)
+()
+{
+    vm_define_method(ec, obj, id, (VALUE)iseq, TRUE);
 }
 
 /**********************************************************/
