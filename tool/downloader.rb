@@ -74,6 +74,9 @@ class Downloader
     UNICODE_PUBLIC = "http://www.unicode.org/Public/"
 
     def self.download(name, dir = nil, since = true, options = {})
+      if $VERBOSE # temporary, for debugging only
+        $stdout.puts "Downloader::Unicode#download, name='#{name}', dir='#{dir}', since='#{since}', options='#{options.inspect}'"
+      end
       options = options.dup
       unicode_beta = options.delete(:unicode_beta)
       name_dir_part = name.sub(/[^\/]+$/, '')
@@ -147,6 +150,10 @@ class Downloader
   #   download 'http://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt',
   #            'UnicodeData.txt', 'enc/unicode/data'
   def self.download(url, name, dir = nil, since = true, options = {})
+    if $VERBOSE # temporary, for debugging only
+      $stdout.puts "Downloader#download, url='#{url}', name='#{name}', dir='#{dir}', since='#{since}', options='#{options.inspect}'"
+    end
+    
     options = options.dup
     url = URI(url)
     dryrun = options.delete(:dryrun)
