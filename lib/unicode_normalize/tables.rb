@@ -1388,8 +1388,7 @@ module UnicodeNormalize  # :nodoc:
     "\u3200-\u321E" \
     "\u3220-\u3247" \
     "\u3250-\u327E" \
-    "\u3280-\u32FE" \
-    "\u3300-\u33FF" \
+    "\u3280-\u33FF" \
     "\uA69C\uA69D" \
     "\uA770" \
     "\uA7F8\uA7F9" \
@@ -5493,6 +5492,7 @@ module UnicodeNormalize  # :nodoc:
     "\u32FC"=>"\u30F0",
     "\u32FD"=>"\u30F1",
     "\u32FE"=>"\u30F2",
+    "\u32FF"=>"\u4EE4\u548C",
     "\u3300"=>"\u30A2\u30D1\u30FC\u30C8",
     "\u3301"=>"\u30A2\u30EB\u30D5\u30A1",
     "\u3302"=>"\u30A2\u30F3\u30DA\u30A2",
