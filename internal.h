@@ -1107,7 +1107,9 @@ typedef struct rb_imemo_tmpbuf_struct {
     VALUE flags;
     VALUE reserved;
     VALUE *ptr; /* malloc'ed buffer */
+#ifndef RIPPER
     struct rb_imemo_tmpbuf_struct *next; /* next imemo */
+#endif
     size_t cnt; /* buffer size in VALUE */
 } rb_imemo_tmpbuf_t;
 

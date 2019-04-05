@@ -4665,9 +4665,13 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_tmpbuf:
 	{
 	    const rb_imemo_tmpbuf_t *m = &RANY(obj)->as.imemo.alloc;
+#ifndef RIPPER
 	    do {
+#endif
 		rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
+#ifndef RIPPER
 	    } while ((m = m->next) != NULL);
+#endif
 	}
 	return;
       case imemo_ast:
