@@ -330,6 +330,7 @@ end
 Downloader.https = https.freeze
 
 if $0 == __FILE__
+  puts "==== downloader.rb called with the following arguments: #{ARGV.join ' '}"    # additional output for debugging
   since = true
   options = {}
   until ARGV.empty?
