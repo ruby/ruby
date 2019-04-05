@@ -657,16 +657,14 @@ method_added(VALUE klass, ID mid)
     }
 }
 
-rb_method_entry_t *
+void
 rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_visibility_t visi)
 {
-    rb_method_entry_t *me = rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts);
+    rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts);
 
     if (type != VM_METHOD_TYPE_UNDEF && type != VM_METHOD_TYPE_REFINED) {
 	method_added(klass, mid);
     }
-
-    return me;
 }
 
 MJIT_FUNC_EXPORTED void
