@@ -7144,29 +7144,29 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       case NODE_DEFN:{
         ID mid = node->nd_mid;
 	const rb_iseq_t *method_iseq = NEW_ISEQ(node->nd_defn,
-						rb_id2str(mid),
+                                                rb_id2str(mid),
 						ISEQ_TYPE_METHOD, line);
 
 	debugp_param("defn/iseq", rb_iseqw_new(method_iseq));
         ADD_INSN2(ret, line, definemethod, ID2SYM(mid), method_iseq);
 
         if (!popped) {
-	    ADD_INSN1(ret, line, putobject, ID2SYM(mid));
+            ADD_INSN1(ret, line, putobject, ID2SYM(mid));
 	}
 
 	break;
       }
       case NODE_DEFS:{
         ID mid = node->nd_mid;
-	const rb_iseq_t * singleton_method_iseq = NEW_ISEQ(node->nd_defn,
+        const rb_iseq_t * singleton_method_iseq = NEW_ISEQ(node->nd_defn,
                                                            rb_id2str(mid),
                                                            ISEQ_TYPE_METHOD, line);
 
-	debugp_param("defs/iseq", rb_iseqw_new(singleton_method_iseq));
+        debugp_param("defs/iseq", rb_iseqw_new(singleton_method_iseq));
         CHECK(COMPILE(ret, "defs: recv", node->nd_recv));
         ADD_INSN2(ret, line, definesmethod, ID2SYM(mid), singleton_method_iseq);
 
-	if (!popped) {
+        if (!popped) {
             ADD_INSN1(ret, line, putobject, ID2SYM(mid));
         }
 	break;
