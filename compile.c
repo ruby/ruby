@@ -7142,39 +7142,33 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	break;
       }
       case NODE_DEFN:{
+        ID mid = node->nd_mid;
 	const rb_iseq_t *method_iseq = NEW_ISEQ(node->nd_defn,
-						rb_id2str(node->nd_mid),
+						rb_id2str(mid),
 						ISEQ_TYPE_METHOD, line);
 
 	debugp_param("defn/iseq", rb_iseqw_new(method_iseq));
+        ADD_INSN2(ret, line, definemethod, ID2SYM(mid), method_iseq);
 
-	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-	ADD_INSN1(ret, line, putobject, ID2SYM(node->nd_mid));
-	ADD_INSN1(ret, line, putiseq, method_iseq);
-	ADD_SEND (ret, line, id_core_define_method, INT2FIX(2));
-
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
+        if (!popped) {
+	    ADD_INSN1(ret, line, putobject, ID2SYM(mid));
 	}
 
 	break;
       }
       case NODE_DEFS:{
-	const rb_iseq_t * singleton_method = NEW_ISEQ(node->nd_defn,
-						      rb_id2str(node->nd_mid),
-						      ISEQ_TYPE_METHOD, line);
+        ID mid = node->nd_mid;
+	const rb_iseq_t * singleton_method_iseq = NEW_ISEQ(node->nd_defn,
+                                                           rb_id2str(mid),
+                                                           ISEQ_TYPE_METHOD, line);
 
-	debugp_param("defs/iseq", rb_iseqw_new(singleton_method));
+	debugp_param("defs/iseq", rb_iseqw_new(singleton_method_iseq));
+        CHECK(COMPILE(ret, "defs: recv", node->nd_recv));
+        ADD_INSN2(ret, line, definesmethod, ID2SYM(mid), singleton_method_iseq);
 
-	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-	CHECK(COMPILE(ret, "defs: recv", node->nd_recv));
-	ADD_INSN1(ret, line, putobject, ID2SYM(node->nd_mid));
-	ADD_INSN1(ret, line, putiseq, singleton_method);
-	ADD_SEND (ret, line, id_core_define_singleton_method, INT2FIX(3));
-
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
-	}
+	if (!popped) {
+            ADD_INSN1(ret, line, putobject, ID2SYM(mid));
+        }
 	break;
       }
       case NODE_ALIAS:{
@@ -8761,7 +8755,7 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct r
     for (code_index=0; code_index<iseq_size;) {
 	const VALUE insn = code[code_index++];
 	const char *types = insn_op_types(insn);
-	int op_index;
+        int op_index;
 
 	for (op_index=0; types[op_index]; op_index++, code_index++) {
 	    VALUE op = code[code_index];
@@ -8779,15 +8773,15 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct r
 		    break;
 		}
 	      case TS_ISEQ:
-	        {
-		    VALUE v = (VALUE)ibf_load_iseq(load, (const rb_iseq_t *)op);
-		    code[code_index] = v;
-		    if (!SPECIAL_CONST_P(v)) {
-			RB_OBJ_WRITTEN(iseq, Qundef, v);
-			FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
-		    }
-		    break;
-		}
+                {
+                    VALUE v = (VALUE)ibf_load_iseq(load, (const rb_iseq_t *)op);
+                    code[code_index] = v;
+                    if (!SPECIAL_CONST_P(v)) {
+                        RB_OBJ_WRITTEN(iseq, Qundef, v);
+                        FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+                    }
+                    break;
+                }
 	      case TS_ISE:
 		FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
 	      case TS_IC:

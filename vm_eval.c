@@ -1322,7 +1322,7 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
 
     /* TODO: what the code checking? */
     if (!cref && block.as.captured.code.val) {
-	rb_cref_t *orig_cref = rb_vm_get_cref(vm_block_ep(&block));
+	rb_cref_t *orig_cref = vm_get_cref(vm_block_ep(&block));
 	cref = vm_cref_dup(orig_cref);
     }
     vm_set_eval_stack(ec, iseq, cref, &block);

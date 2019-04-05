@@ -669,7 +669,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
     return me;
 }
 
-void
+MJIT_FUNC_EXPORTED void
 rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *cref, rb_method_visibility_t visi)
 {
     struct { /* should be same fields with rb_method_iseq_struct */
@@ -1117,34 +1117,6 @@ rb_method_boundp(VALUE klass, ID id, int ex)
     return 0;
 }
 
-static rb_method_visibility_t
-rb_scope_visibility_get(void)
-{
-    const rb_execution_context_t *ec = GET_EC();
-    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
-
-    if (!vm_env_cref_by_cref(cfp->ep)) {
-	return METHOD_VISI_PUBLIC;
-    }
-    else {
-	return CREF_SCOPE_VISI(rb_vm_cref())->method_visi;
-    }
-}
-
-static int
-rb_scope_module_func_check(void)
-{
-    const rb_execution_context_t *ec = GET_EC();
-    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
-
-    if (!vm_env_cref_by_cref(cfp->ep)) {
-	return FALSE;
-    }
-    else {
-	return CREF_SCOPE_VISI(rb_vm_cref())->module_func;
-    }
-}
-
 static void
 vm_cref_set_visibility(rb_method_visibility_t method_visi, int module_func)
 {
@@ -1170,14 +1142,15 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
 {
     ID attriv;
     rb_method_visibility_t visi;
+    const rb_execution_context_t *ec = GET_EC();
 
     if (!ex) {
 	visi = METHOD_VISI_PUBLIC;
     }
     else {
-	switch (rb_scope_visibility_get()) {
+	switch (vm_scope_visibility_get(ec)) {
 	  case METHOD_VISI_PRIVATE:
-	    if (rb_scope_module_func_check()) {
+	    if (vm_scope_module_func_check(ec)) {
 		rb_warning("attribute accessor as module_function");
 	    }
 	    visi = METHOD_VISI_PRIVATE;

@@ -1368,12 +1368,7 @@ rb_cref_t *
 rb_vm_cref(void)
 {
     const rb_execution_context_t *ec = GET_EC();
-    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
-
-    if (cfp == NULL) {
-	return NULL;
-    }
-    return rb_vm_get_cref(cfp->ep);
+    return vm_ec_cref(ec);
 }
 
 rb_cref_t *
@@ -1393,7 +1388,7 @@ rb_vm_cref_in_context(VALUE self, VALUE cbase)
     const rb_cref_t *cref;
     if (cfp->self != self) return NULL;
     if (!vm_env_cref_by_cref(cfp->ep)) return NULL;
-    cref = rb_vm_get_cref(cfp->ep);
+    cref = vm_get_cref(cfp->ep);
     if (CREF_CLASS(cref) != cbase) return NULL;
     return cref;
 }
@@ -2678,34 +2673,6 @@ rb_thread_alloc(VALUE klass)
     return self;
 }
 
-static void
-vm_define_method(VALUE obj, ID id, VALUE iseqval, int is_singleton)
-{
-    VALUE klass;
-    rb_method_visibility_t visi;
-    rb_cref_t *cref = rb_vm_cref();
-
-    if (!is_singleton) {
-	klass = CREF_CLASS(cref);
-	visi = rb_scope_visibility_get();
-    }
-    else { /* singleton */
-	klass = rb_singleton_class(obj); /* class and frozen checked in this API */
-	visi = METHOD_VISI_PUBLIC;
-    }
-
-    if (NIL_P(klass)) {
-	rb_raise(rb_eTypeError, "no class/module to add method");
-    }
-
-    rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
-
-    if (!is_singleton && rb_scope_module_func_check()) {
-	klass = rb_singleton_class(klass);
-	rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, METHOD_VISI_PUBLIC);
-    }
-}
-
 #define REWIND_CFP(expr) do { \
     rb_execution_context_t *ec__ = GET_EC(); \
     VALUE *const curr_sp = (ec__->cfp++)->sp; \
@@ -2714,24 +2681,6 @@ vm_define_method(VALUE obj, ID id, VALUE iseqval, int is_singleton)
     expr; \
     (ec__->cfp--)->sp = saved_sp; \
 } while (0)
-
-static VALUE
-m_core_define_method(VALUE self, VALUE sym, VALUE iseqval)
-{
-    REWIND_CFP({
-	vm_define_method(Qnil, SYM2ID(sym), iseqval, FALSE);
-    });
-    return sym;
-}
-
-static VALUE
-m_core_define_singleton_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval)
-{
-    REWIND_CFP({
-	vm_define_method(cbase, SYM2ID(sym), iseqval, TRUE);
-    });
-    return sym;
-}
 
 static VALUE
 m_core_set_method_alias(VALUE self, VALUE cbase, VALUE sym1, VALUE sym2)
@@ -2931,8 +2880,6 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_set_method_alias, m_core_set_method_alias, 3);
     rb_define_method_id(klass, id_core_set_variable_alias, m_core_set_variable_alias, 2);
     rb_define_method_id(klass, id_core_undef_method, m_core_undef_method, 2);
-    rb_define_method_id(klass, id_core_define_method, m_core_define_method, 2);
-    rb_define_method_id(klass, id_core_define_singleton_method, m_core_define_singleton_method, 3);
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);
