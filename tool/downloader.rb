@@ -153,7 +153,7 @@ class Downloader
     if $VERBOSE # temporary, for debugging only
       $stdout.puts "Downloader#download, url='#{url}', name='#{name}', dir='#{dir}', since='#{since}', options='#{options.inspect}'"
     end
-    
+
     options = options.dup
     url = URI(url)
     dryrun = options.delete(:dryrun)
