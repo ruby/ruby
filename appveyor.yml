@@ -42,7 +42,7 @@ for:
     - echo>> Makefile BUILTIN_ENCOBJS=nul
     - type win32\Makefile.sub >> Makefile
     - nmake %mflags% touch-unicode-files
-    - nmake %mflags% up incs
+    - nmake %mflags% up incs UNICODE_FILES=.
     - del Makefile
     - mkdir \usr\local\bin
     - mkdir \usr\local\include

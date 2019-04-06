@@ -85,6 +85,7 @@ class Downloader
           INDEX[:index] = IO.read index_file
         end
         file_base = File.basename(name, '.txt')
+        return if file_base == '.' # Use pre-generated headers and tables
         beta_name = INDEX[:index][/#{Regexp.quote(file_base)}(-[0-9.]+d\d+)?\.txt/]
         # make sure we always check for new versions of files,
         # because they can easily change in the beta period
