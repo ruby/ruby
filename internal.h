@@ -1132,15 +1132,21 @@ static inline VALUE
 rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(VALUE str)
 {
     const void *src;
+    VALUE imemo;
+    rb_imemo_tmpbuf_t *tmpbuf;
     void *dst;
     size_t len;
 
     SafeStringValue(str);
+    /* create tmpbuf to keep the pointer before xmalloc */
+    imemo = rb_imemo_tmpbuf_auto_free_pointer(NULL);
+    tmpbuf = (rb_imemo_tmpbuf_t *)imemo;
     len = RSTRING_LEN(str);
     src = RSTRING_PTR(str);
     dst = ruby_xmalloc(len);
     memcpy(dst, src, len);
-    return rb_imemo_tmpbuf_auto_free_pointer(dst);
+    tmpbuf->ptr = dst;
+    return imemo;
 }
 
 void rb_strterm_mark(VALUE obj);
