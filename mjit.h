@@ -110,6 +110,11 @@ mjit_exec(rb_execution_context_t *ec)
 
     func = body->jit_func;
     if (UNLIKELY((uintptr_t)func <= (uintptr_t)LAST_JIT_ISEQ_FUNC)) {
+#     ifdef MJIT_HEADER
+        RB_DEBUG_COUNTER_INC(mjit_frame_JT2VM);
+#     else
+        RB_DEBUG_COUNTER_INC(mjit_frame_VM2VM);
+#     endif
         switch ((enum rb_mjit_iseq_func)func) {
           case NOT_ADDED_JIT_ISEQ_FUNC:
             RB_DEBUG_COUNTER_INC(mjit_exec_not_added);
@@ -132,6 +137,11 @@ mjit_exec(rb_execution_context_t *ec)
         }
     }
 
+#   ifdef MJIT_HEADER
+      RB_DEBUG_COUNTER_INC(mjit_frame_JT2JT);
+#   else
+      RB_DEBUG_COUNTER_INC(mjit_frame_VM2JT);
+#   endif
     RB_DEBUG_COUNTER_INC(mjit_exec_call_func);
     return func(ec, ec->cfp);
 }

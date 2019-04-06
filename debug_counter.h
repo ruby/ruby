@@ -263,6 +263,12 @@ RB_DEBUG_COUNTER(mjit_exec_not_ready)
 RB_DEBUG_COUNTER(mjit_exec_not_compiled)
 RB_DEBUG_COUNTER(mjit_exec_call_func)
 
+/* MJIT <-> VM frame push counts */
+RB_DEBUG_COUNTER(mjit_frame_VM2VM)
+RB_DEBUG_COUNTER(mjit_frame_VM2JT)
+RB_DEBUG_COUNTER(mjit_frame_JT2JT)
+RB_DEBUG_COUNTER(mjit_frame_JT2VM)
+
 /* MJIT cancel counters */
 RB_DEBUG_COUNTER(mjit_cancel)
 RB_DEBUG_COUNTER(mjit_cancel_ivar)
