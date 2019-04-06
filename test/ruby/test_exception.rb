@@ -853,6 +853,33 @@ end.join
       alias inspect pretty_inspect
     end
 
+  def test_frozen_error_receiver
+    obj = Object.new.freeze
+    (obj.foo = 1) rescue (e = $!)
+    assert_same(obj, e.receiver)
+    obj.singleton_class.const_set(:A, 2) rescue (e = $!)
+    assert_same(obj.singleton_class, e.receiver)
+  end
+
+  def test_frozen_error_initialize
+    obj = Object.new
+    exc = FrozenError.new("bar", obj)
+    assert_equal("bar", exc.message)
+    assert_same(obj, exc.receiver)
+
+    exc = FrozenError.new("bar")
+    assert_equal("bar", exc.message)
+    assert_raise_with_message(ArgumentError, "no receiver is available") {
+      exc.receiver
+    }
+
+    exc = FrozenError.new
+    assert_equal("FrozenError", exc.message)
+    assert_raise_with_message(ArgumentError, "no receiver is available") {
+      exc.receiver
+    }
+  end
+
   def test_name_error_new_default
     error = NameError.new
     assert_equal("NameError", error.message)

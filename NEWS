@@ -66,6 +66,15 @@ Enumerator::
       can be directly passed to another method as a block
       argument.  [Feature #15618]
 
+FrozenError::
+
+  New method::
+
+    * Added FrozenError#receiver to return the frozen object that
+      modification was attempted on.  To set this object when raising
+      FrozenError in Ruby code, pass it as the second argument to
+      FrozenError.new.
+
 Integer::
 
   Modified method::

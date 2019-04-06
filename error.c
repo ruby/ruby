@@ -1396,6 +1396,32 @@ exit_success_p(VALUE exc)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *   FrozenError.new(msg=nil, receiver=nil)  -> name_error
+ *
+ * Construct a new FrozenError exception. If given the <i>receiver</i>
+ * parameter may subsequently be examined using the FrozenError#receiver
+ * method.
+ *
+ *    a = [].freeze
+ *    raise FrozenError.new("can't modify frozen array", a)
+ */
+
+static VALUE
+frozen_err_initialize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE mesg, recv;
+
+    argc = rb_scan_args(argc, argv, "02", &mesg, &recv);
+    if (argc > 1) {
+	argc--;
+	rb_ivar_set(self, id_recv, recv);
+    }
+    rb_call_super(argc, argv);
+    return self;
+}
+
 void
 rb_name_error(ID id, const char *fmt, ...)
 {
@@ -2483,6 +2509,8 @@ Init_Exception(void)
 
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eFrozenError = rb_define_class("FrozenError", rb_eRuntimeError);
+    rb_define_method(rb_eFrozenError, "initialize", frozen_err_initialize, -1);
+    rb_define_method(rb_eFrozenError, "receiver", name_err_receiver, 0);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
@@ -2846,6 +2874,20 @@ rb_error_frozen(const char *what)
 }
 
 void
+rb_frozen_error_raise(VALUE frozen_obj, const char *fmt, ...)
+{
+    va_list args;
+    VALUE exc, mesg;
+
+    va_start(args, fmt);
+    mesg = rb_vsprintf(fmt, args);
+    va_end(args);
+    exc = rb_exc_new3(rb_eFrozenError, mesg);
+    rb_ivar_set(exc, id_recv, frozen_obj);
+    rb_exc_raise(exc);
+}
+
+void
 rb_error_frozen_object(VALUE frozen_obj)
 {
     VALUE debug_info;
@@ -2855,12 +2897,13 @@ rb_error_frozen_object(VALUE frozen_obj)
 	VALUE path = rb_ary_entry(debug_info, 0);
 	VALUE line = rb_ary_entry(debug_info, 1);
 
-	rb_raise(rb_eFrozenError, "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
-		 CLASS_OF(frozen_obj), path, line);
+	rb_frozen_error_raise(frozen_obj,
+	    "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
+	    CLASS_OF(frozen_obj), path, line);
     }
     else {
-	rb_raise(rb_eFrozenError, "can't modify frozen %"PRIsVALUE,
-		 CLASS_OF(frozen_obj));
+	rb_frozen_error_raise(frozen_obj, "can't modify frozen %"PRIsVALUE,
+	    CLASS_OF(frozen_obj));
     }
 }
 
