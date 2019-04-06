@@ -183,14 +183,34 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('2', result_inspect: '2', insns: %i[putobject])
   end
 
-  def test_compile_insn_definemethod
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hello', success_count: 2, insns: %i[definemethod])
+  def test_compile_insn_definemethod_definesmethod
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'helloworld', success_count: 3, insns: %i[definemethod definesmethod])
     begin;
       print 1.times.map {
         def method_definition
           'hello'
         end
-        method_definition
+
+        def self.smethod_definition
+          'world'
+        end
+
+        method_definition + smethod_definition
+      }.join
+    end;
+  end
+
+  def test_compile_insn_putspecialobject
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'a', success_count: 2, insns: %i[putspecialobject])
+    begin;
+      print 1.times.map {
+        def a
+          'a'
+        end
+
+        alias :b :a
+
+        b
       }.join
     end;
   end
@@ -970,8 +990,7 @@ class TestJIT < Test::Unit::TestCase
     insns = iseq_array.last.select { |x| x.is_a?(Array) }.map(&:first)
     iseq_array.last.each do |(insn, *args)|
       case insn
-      when :definemethod, :definesmethod,
-           :send
+      when :definemethod, :definesmethod, :send
         insns += collect_insns(args.last)
       end
     end
