@@ -184,9 +184,9 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_definemethod
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hellohello', success_count: 2, insns: %i[definemethod])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hello', success_count: 2, insns: %i[definemethod])
     begin;
-      print 2.times.map {
+      print 1.times.map {
         def method_definition
           'hello'
         end
@@ -698,9 +698,11 @@ class TestJIT < Test::Unit::TestCase
         end
       end
 
+      verbose, $VERBOSE = $VERBOSE, false # suppress "instance variable @b not initialized"
       print(Foo.new.bar)
       print(Foo.new.bar)
       print(Foo.new.bar)
+      $VERBOSE = verbose
     end;
   end
 
@@ -729,10 +731,8 @@ class TestJIT < Test::Unit::TestCase
       p(a.undefined)
 
       # redefinition
-      class A
-        def test
-          3
-        end
+      def a.test
+        3
       end
 
       print(2 * a.test)
