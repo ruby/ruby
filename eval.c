@@ -454,7 +454,7 @@ rb_class_modify_check(VALUE klass)
 		goto noclass;
 	    }
 	}
-	rb_error_frozen(desc);
+	rb_frozen_error_raise(klass, "can't modify frozen %s", desc);
     }
 }
 
