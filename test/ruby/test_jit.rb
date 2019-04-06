@@ -183,6 +183,18 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('2', result_inspect: '2', insns: %i[putobject])
   end
 
+  def test_compile_insn_definemethod
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hellohello', success_count: 2, insns: %i[definemethod])
+    begin;
+      print 2.times.map {
+        def method_definition
+          'hello'
+        end
+        method_definition
+      }.join
+    end;
+  end
+
   def test_compile_insn_putstring_concatstrings_tostring
     assert_compile_once('"a#{}b" + "c"', result_inspect: '"abc"', insns: %i[putstring concatstrings tostring])
   end
