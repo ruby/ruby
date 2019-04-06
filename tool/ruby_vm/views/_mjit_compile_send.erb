@@ -60,7 +60,7 @@
             fprintf(f, "        {\n");
             fprintf(f, "            VALUE v;\n");
             fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
-                    (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); /* rb_simple_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE */
+                    (VALUE)cc_copy->me, param_size, iseq->body->local_table_size); /* inlinable_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE */
             if (iseq->body->catch_except_p) {
                 fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
                 fprintf(f, "            v = vm_exec(ec, TRUE);\n");
