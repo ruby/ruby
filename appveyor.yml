@@ -103,7 +103,7 @@ for:
     - sh -c "autoreconf -fi"
     - cd ..\build
     - sh ../ruby/configure --disable-install-doc --prefix=/. --build=%MINGW_CHOST% --host=%MINGW_CHOST% --target=%MINGW_CHOST%
-    - mingw32-make -j%JOBS% up
+    - mingw32-make -j%JOBS% up UNICODE_FILES=.
     - mingw32-make -j%JOBS%
     - mingw32-make DESTDIR=../install install-nodoc
     - if not "%GEMS_FOR_TEST%" == "" ..\install\bin\gem install --no-document %GEMS_FOR_TEST%
