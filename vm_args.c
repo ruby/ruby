@@ -676,18 +676,16 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 		given_argc--;
 	    }
 	}
-	else if (given_argc > max_argc && max_argc >= 0) {
-	    if (args_pop_keyword_hash(args, &keyword_hash)) {
-		/* Warn the following:
-		 * def foo(k:1) p [k]; end
-		 * foo({k:42}) #=> 42
-		 */
-		if (ec->cfp->iseq) {
-		    /* called from Ruby level */
-		    rb_warn_last_hash_to_keyword(calling, ci);
-		}
-		given_argc--;
+	else if (args_pop_keyword_hash(args, &keyword_hash)) {
+	    /* Warn the following:
+	     * def foo(k:1) p [k]; end
+	     * foo({k:42}) #=> 42
+	     */
+	    if (ec->cfp->iseq) {
+		/* called from Ruby level */
+		rb_warn_last_hash_to_keyword(calling, ci);
 	    }
+	    given_argc--;
 	}
     }
 
