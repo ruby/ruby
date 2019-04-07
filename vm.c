@@ -3104,7 +3104,7 @@ Init_VM(void)
     rb_define_const(rb_cRubyVM, "INSTRUCTION_NAMES", rb_insns_name_array());
 
     /* ::RubyVM::DEFAULT_PARAMS
-     * This constant exposes CRuby VM's default parameters.
+     * This constant exposes the VM's default parameters.
      * Note that changing these values does not affect VM execution.
      * Specification is not stable and you should not depend on this value.
      * Of course, this constant is MRI specific.
