@@ -3412,6 +3412,9 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	if (imemo_type_p(obj, imemo_tmpbuf)) {
 	    size += RANY(obj)->as.imemo.alloc.cnt * sizeof(VALUE);
 	}
+	if (imemo_type_p(obj, imemo_env)) {
+	    size += RANY(obj)->as.imemo.env.env_size * sizeof(VALUE);
+	}
 	break;
 
       case T_FLOAT:
