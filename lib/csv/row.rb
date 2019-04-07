@@ -345,7 +345,7 @@ class CSV
     #   csv_row.fields.to_csv( options )
     #
     def to_csv(**options)
-      fields.to_csv(options)
+      fields.to_csv(**options)
     end
     alias_method :to_s, :to_csv
 

@@ -513,7 +513,7 @@ EOM
       path = File.expand_path(path + File::SEPARATOR + basename)
       lstat = File.lstat path rescue nil
       if !lstat || !lstat.directory?
-        unless normalize_path(path).start_with? normalize_path(destination_dir) and (FileUtils.mkdir path, mkdir_options rescue false)
+        unless normalize_path(path).start_with? normalize_path(destination_dir) and (FileUtils.mkdir path, **mkdir_options rescue false)
           raise Gem::Package::PathError.new(file_name, destination_dir)
         end
       end
