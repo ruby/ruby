@@ -801,6 +801,8 @@ class TestRingServer < Test::Unit::TestCase
     tl0 << th
     yield
   rescue Timeout::Error => e
+    $stderr.puts "TestRingServer#with_timeout: timeout in #{n}s:"
+    $stderr.puts caller
     if tl
       bt = e.backtrace
       tl.each do |t|
