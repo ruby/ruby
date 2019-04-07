@@ -2864,9 +2864,13 @@ Init_VM(void)
     /*
      * Document-class: RubyVM
      *
-     * The RubyVM module provides some access to Ruby internals.
+     * The RubyVM module only exists on MRI. +RubyVM+ is not defined in
+     * other Ruby implementations such as JRuby and TruffleRuby.
+     *
+     * The RubyVM module provides some access to MRI internals.
      * This module is for very limited purposes, such as debugging,
      * prototyping, and research.  Normal users must not use it.
+     * This module is not portable between Ruby implementations.
      */
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
     rb_undef_alloc_func(rb_cRubyVM);
@@ -2891,7 +2895,10 @@ Init_VM(void)
     rb_gc_register_mark_object(fcore);
     rb_mRubyVMFrozenCore = fcore;
 
-    /* RubyVM::MJIT */
+    /* ::RubyVM::MJIT
+     * Provides access to the Method JIT compiler of MRI.
+     * Of course, this module is MRI specific.
+     */
     mjit = rb_define_module_under(rb_cRubyVM, "MJIT");
     rb_define_singleton_method(mjit, "enabled?", mjit_enabled_p, 0);
     rb_define_singleton_method(mjit, "pause", mjit_pause_m, -1);
@@ -3060,7 +3067,10 @@ Init_VM(void)
     rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_REGISTER_STOP", usage_analysis_register_stop, 0);
 #endif
 
-    /* ::RubyVM::OPTS, which shows vm build options */
+    /* ::RubyVM::OPTS
+     * An Array of VM build options.
+     * This constant is MRI specific.
+     */
     rb_define_const(rb_cRubyVM, "OPTS", opts = rb_ary_new());
 
 #if   OPT_DIRECT_THREADED_CODE
@@ -3087,11 +3097,14 @@ Init_VM(void)
     rb_ary_push(opts, rb_str_new2("block inlining"));
 #endif
 
-    /* ::RubyVM::INSTRUCTION_NAMES */
+    /* ::RubyVM::INSTRUCTION_NAMES
+     * A list of bytecode instruction names in MRI.
+     * This constant is MRI specific.
+     */
     rb_define_const(rb_cRubyVM, "INSTRUCTION_NAMES", rb_insns_name_array());
 
     /* ::RubyVM::DEFAULT_PARAMS
-     * This constant variable shows VM's default parameters.
+     * This constant exposes CRuby VM's default parameters.
      * Note that changing these values does not affect VM execution.
      * Specification is not stable and you should not depend on this value.
      * Of course, this constant is MRI specific.

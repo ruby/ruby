@@ -741,11 +741,16 @@ Init_ast(void)
      * AbstractSyntaxTree provides methods to parse Ruby code into
      * abstract syntax trees. The nodes in the tree
      * are instances of RubyVM::AbstractSyntaxTree::Node.
+     *
+     * This class is MRI specific as it exposes implementation details
+     * of the MRI abstract syntax tree.
      */
     rb_mAST = rb_define_module_under(rb_cRubyVM, "AbstractSyntaxTree");
     /*
      * RubyVM::AbstractSyntaxTree::Node instances are created by parse methods in
      * RubyVM::AbstractSyntaxTree.
+     *
+     * This class is MRI specific.
      */
     rb_cNode = rb_define_class_under(rb_mAST, "Node", rb_cObject);
 

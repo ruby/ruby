@@ -43,7 +43,7 @@ extern ID ruby_static_id_cause;
      (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE))
 
 /*!
- * Initializes the Ruby VM and builtin libraries.
+ * Initializes the CRuby VM and builtin libraries.
  * @retval 0 if succeeded.
  * @retval non-zero an error occurred.
  */
