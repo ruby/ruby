@@ -1456,7 +1456,7 @@ module Net
 
     if defined?(OpenSSL::SSL::SSLSocket)
       class BufferedSSLSocket <  BufferedSocket
-        def initialize(*args)
+        def initialize(*args, **options)
           super
           @is_shutdown = false
         end
