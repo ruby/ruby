@@ -273,19 +273,19 @@ class TestCSVEncodings < Test::Unit::TestCase
     orig_fields = fields
     fields = encode_ary(fields, encoding)
     data = ary_to_data(fields, options)
-    parsed = CSV.parse(data, options)
+    parsed = CSV.parse(data, **options)
     assert_equal(fields, parsed)
     parsed.flatten.each_with_index do |field, i|
       assert_equal(encoding, field.encoding, "Field[#{i + 1}] was transcoded.")
     end
     File.open(@temp_csv_path, "wb") {|f| f.print(data)}
-    CSV.open(@temp_csv_path, "rb:#{encoding}", options) do |csv|
+    CSV.open(@temp_csv_path, "rb:#{encoding}", **options) do |csv|
       csv.each_with_index do |row, i|
         assert_equal(fields[i], row)
       end
     end
     begin
-      CSV.open(@temp_csv_path, "rb:#{encoding}:#{__ENCODING__}", options) do |csv|
+      CSV.open(@temp_csv_path, "rb:#{encoding}:#{__ENCODING__}", **options) do |csv|
         csv.each_with_index do |row, i|
           assert_equal(orig_fields[i], row)
         end
@@ -293,7 +293,7 @@ class TestCSVEncodings < Test::Unit::TestCase
     rescue Encoding::ConverterNotFoundError
     end
     options[:encoding] = encoding.name
-    CSV.open(@temp_csv_path, options) do |csv|
+    CSV.open(@temp_csv_path, **options) do |csv|
       csv.each_with_index do |row, i|
         assert_equal(fields[i], row)
       end
@@ -302,7 +302,7 @@ class TestCSVEncodings < Test::Unit::TestCase
     options[:external_encoding] = encoding.name
     options[:internal_encoding] = __ENCODING__.name
     begin
-      CSV.open(@temp_csv_path, options) do |csv|
+      CSV.open(@temp_csv_path, **options) do |csv|
         csv.each_with_index do |row, i|
           assert_equal(orig_fields[i], row)
         end
