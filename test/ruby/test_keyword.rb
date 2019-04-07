@@ -254,8 +254,8 @@ class TestKeywordArguments < Test::Unit::TestCase
                   [:keyrest, :kw], [:block, :b]], p6.parameters)
   end
 
-  def m1(*args)
-    yield(*args)
+  def m1(*args, **options)
+    yield(*args, **options)
   end
 
   def test_block

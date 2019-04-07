@@ -398,7 +398,7 @@ class TestRubyOptimization < Test::Unit::TestCase
         foo
       end;1
     end;
-    status, _err = EnvUtil.invoke_ruby([], "", true, true, {}) {
+    status, _err = EnvUtil.invoke_ruby([], "", true, true, **{}) {
       |in_p, out_p, err_p, pid|
       in_p.write(script)
       in_p.close

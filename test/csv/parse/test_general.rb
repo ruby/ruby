@@ -234,10 +234,10 @@ line,5,jkl
   end
 
   private
-  def assert_parse_errors_out(*args)
+  def assert_parse_errors_out(*args, **options)
     assert_raise(CSV::MalformedCSVError) do
       Timeout.timeout(0.2) do
-        CSV.parse(*args)
+        CSV.parse(*args, **options)
         fail("Parse didn't error out")
       end
     end

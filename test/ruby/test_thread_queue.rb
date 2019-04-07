@@ -134,7 +134,7 @@ class TestThreadQueue < Test::Unit::TestCase
       timeout = 60
       total_count = 250
       begin
-        assert_normal_exit(<<-"_eom", bug5343, {:timeout => timeout, :chdir=>d})
+        assert_normal_exit(<<-"_eom", bug5343, **{:timeout => timeout, :chdir=>d})
           #{total_count}.times do |i|
             open("test_thr_kill_count", "w") {|f| f.puts i }
             queue = Queue.new

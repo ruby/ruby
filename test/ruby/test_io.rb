@@ -1395,7 +1395,7 @@ class TestIO < Test::Unit::TestCase
   def test_dup_many
     opts = {}
     opts[:rlimit_nofile] = 1024 if defined?(Process::RLIMIT_NOFILE)
-    assert_separately([], <<-'End', opts)
+    assert_separately([], <<-'End', **opts)
       a = []
       assert_raise(Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM) do
         loop {a << IO.pipe}
@@ -3644,7 +3644,7 @@ __END__
 
   def test_race_gets_and_close
     opt = { signal: :ABRT, timeout: 200 }
-    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", opt)
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", **opt)
     bug13076 = '[ruby-core:78845] [Bug #13076]'
     begin;
       10.times do |i|

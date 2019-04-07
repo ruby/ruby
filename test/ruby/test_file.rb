@@ -147,8 +147,8 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_read_all_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      Tempfile.create("test-extended-file", mode) {|f|
+    [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
+      Tempfile.create("test-extended-file", **mode) {|f|
         assert_nil(f.getc)
         f.print "a"
         f.rewind
@@ -158,8 +158,8 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_gets_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      Tempfile.create("test-extended-file", mode) {|f|
+    [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
+      Tempfile.create("test-extended-file", **mode) {|f|
         assert_nil(f.getc)
         f.print "a"
         f.rewind
@@ -169,8 +169,8 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_gets_para_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      Tempfile.create("test-extended-file", mode) {|f|
+    [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
+      Tempfile.create("test-extended-file", **mode) {|f|
         assert_nil(f.getc)
         f.print "\na"
         f.rewind
@@ -180,8 +180,8 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_each_char_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      Tempfile.create("test-extended-file", mode) {|f|
+    [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
+      Tempfile.create("test-extended-file", **mode) {|f|
         assert_nil(f.getc)
         f.print "a"
         f.rewind
@@ -193,8 +193,8 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_each_byte_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      Tempfile.create("test-extended-file", mode) {|f|
+    [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
+      Tempfile.create("test-extended-file", **mode) {|f|
         assert_nil(f.getc)
         f.print "a"
         f.rewind
@@ -206,8 +206,8 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_getc_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      Tempfile.create("test-extended-file", mode) {|f|
+    [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
+      Tempfile.create("test-extended-file", **mode) {|f|
         assert_nil(f.getc)
         f.print "a"
         f.rewind
@@ -217,8 +217,8 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_getbyte_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      Tempfile.create("test-extended-file", mode) {|f|
+    [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
+      Tempfile.create("test-extended-file", **mode) {|f|
         assert_nil(f.getc)
         f.print "a"
         f.rewind
