@@ -155,7 +155,7 @@ class TestSyntax < Test::Unit::TestCase
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
     h = {"k1"=>11, k2: 12}
-    assert_raise(TypeError) {o.kw(**h)}
+    assert_raise(ArgumentError) {o.kw(**h)}
   end
 
   def test_keyword_duplicated
