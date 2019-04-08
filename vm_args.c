@@ -184,11 +184,34 @@ args_rest_array(struct args_info *args)
 }
 
 static int
-keyword_hash_p(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr)
+keyword_hash_symbol_p(st_data_t key, st_data_t val, st_data_t arg)
+{
+    if (SYMBOL_P((VALUE)key)) {
+       return ST_CONTINUE;
+    }
+
+    *(VALUE*)arg = (VALUE)0;
+    return ST_STOP;
+}
+
+static int
+keyword_hash_only_symbol_p(VALUE hash)
+{
+    VALUE all_symbols = (VALUE)(1);
+    rb_hash_stlike_foreach(hash, keyword_hash_symbol_p, (st_data_t)(&all_symbols));
+    return (int)all_symbols;
+}
+
+static int
+keyword_hash_p(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr, int check_only_symbol)
 {
     *rest_hash_ptr = rb_check_hash_type(*kw_hash_ptr);
 
     if (!NIL_P(*rest_hash_ptr)) {
+	if (check_only_symbol && !keyword_hash_only_symbol_p(*rest_hash_ptr)) {
+	    *kw_hash_ptr = Qnil;
+	    return FALSE;
+	}
 	*kw_hash_ptr = *rest_hash_ptr;
 	*rest_hash_ptr = Qfalse;
 	return TRUE;
@@ -200,7 +223,7 @@ keyword_hash_p(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr)
 }
 
 static VALUE
-args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr)
+args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr, int check_only_symbol)
 {
     VALUE rest_hash;
 
@@ -209,7 +232,7 @@ args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr)
 	VM_ASSERT(args->argc > 0);
 	*kw_hash_ptr = args->argv[args->argc-1];
 
-	if (keyword_hash_p(kw_hash_ptr, &rest_hash)) {
+	if (keyword_hash_p(kw_hash_ptr, &rest_hash, check_only_symbol)) {
 	    if (rest_hash) {
 		args->argv[args->argc-1] = rest_hash;
 	    }
@@ -225,7 +248,7 @@ args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr)
 	if (len > 0) {
 	    *kw_hash_ptr = RARRAY_AREF(args->rest, len - 1);
 
-	    if (keyword_hash_p(kw_hash_ptr, &rest_hash)) {
+	    if (keyword_hash_p(kw_hash_ptr, &rest_hash, check_only_symbol)) {
 		if (rest_hash) {
 		    RARRAY_ASET(args->rest, len - 1, rest_hash);
 		}
@@ -672,11 +695,11 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	 (kw_splat && given_argc > max_argc)) &&
 	args->kw_argv == NULL) {
 	if (((kw_flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT)) || !ec->cfp->iseq /* called from C */)) {
-	    if (args_pop_keyword_hash(args, &keyword_hash)) {
+	    if (args_pop_keyword_hash(args, &keyword_hash, 0)) {
 		given_argc--;
 	    }
 	}
-	else if (args_pop_keyword_hash(args, &keyword_hash)) {
+	else if (args_pop_keyword_hash(args, &keyword_hash, 1)) {
 	    /* Warn the following:
 	     * def foo(k:1) p [k]; end
 	     * foo({k:42}) #=> 42
