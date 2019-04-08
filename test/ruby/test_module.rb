@@ -294,7 +294,7 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_get
-    assert_equal Other, Object.const_get([self.class, Other].join('::'))
+    assert_equal Other, Object.const_get([self.class, 'Other'].join('::'))
     assert_equal User::USER, self.class.const_get([User, 'USER'].join('::'))
   end
 
