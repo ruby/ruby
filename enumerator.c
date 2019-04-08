@@ -3345,7 +3345,7 @@ arith_seq_hash(VALUE self)
     hash = rb_hash_uint(hash, NUM2LONG(v));
     hash = rb_hash_end(hash);
 
-    return LONG2FIX(hash);
+    return ST2FIX(hash);
 }
 
 #define NUM_GE(x, y) RTEST(rb_num_coerce_relop((x), (y), idGE))
