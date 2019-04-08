@@ -1202,7 +1202,7 @@ rb_struct_hash(VALUE s)
 	h = rb_hash_uint(h, NUM2LONG(n));
     }
     h = rb_hash_end(h);
-    return INT2FIX(h);
+    return ST2FIX(h);
 }
 
 static VALUE
