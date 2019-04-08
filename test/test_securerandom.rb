@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'securerandom'
 require 'tempfile'
+require 'minitest/autorun'
 
 # This testcase does NOT aim to test cryptographically strongness and randomness.
 class TestSecureRandom < Test::Unit::TestCase

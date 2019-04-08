@@ -2,6 +2,7 @@
 
 require 'time'
 require 'test/unit'
+require 'minitest/autorun'
 
 class TestTimeExtension < Test::Unit::TestCase # :nodoc:
   def test_rfc822

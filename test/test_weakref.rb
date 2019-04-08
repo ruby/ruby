@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'weakref'
+require 'minitest/autorun'
 
 class TestWeakRef < Test::Unit::TestCase
   def make_weakref(level = 10)

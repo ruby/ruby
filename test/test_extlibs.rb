@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require "envutil"
 require "shellwords"
+require "test/unit"
 
 class TestExtLibs < Test::Unit::TestCase
   @extdir = $".grep(/\/rbconfig\.rb\z/) {break "#$`/ext"}

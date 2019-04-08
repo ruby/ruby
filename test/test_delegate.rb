@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'delegate'
+require 'minitest/autorun'
 
 class TestDelegateClass < Test::Unit::TestCase
   module PP

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'tmpdir'
+require 'minitest/autorun'
 
 class TestTmpdir < Test::Unit::TestCase
   def test_tmpdir_modifiable

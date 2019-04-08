@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'tempfile'
+require 'minitest/autorun'
 
 class TestTempfile < Test::Unit::TestCase
   def initialize(*)

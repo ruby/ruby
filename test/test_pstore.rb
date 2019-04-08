@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'pstore'
 require 'tmpdir'
+require 'minitest/autorun'
 
 class PStoreTest < Test::Unit::TestCase
   def setup

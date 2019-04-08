@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'forwardable'
+require 'minitest/autorun'
 
 class TestForwardable < Test::Unit::TestCase
   RECEIVER = BasicObject.new
