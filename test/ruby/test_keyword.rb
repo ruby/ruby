@@ -511,7 +511,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     def m.f3(**a) a; end
     def m.f4(*a) a; end
     o = {a: 1}
-    assert_raise_with_message(ArgumentError, /unknown keyword: a/) {
+    assert_raise_with_message(ArgumentError, /unknown keyword: :a/) {
       m.f(**o)
     }
     o = {}
@@ -535,7 +535,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       assert_equal([{a: 42}], m.f4(**o))
     end
 
-    assert_warning('') do
+    assert_warning(/splat keyword/) do
       assert_equal({a: 42}, m.f2("a".to_sym => 42), '[ruby-core:82291] [Bug #13793]')
     end
 
@@ -583,14 +583,14 @@ class TestKeywordArguments < Test::Unit::TestCase
         bar(k1: 1)
       end
     end
-    assert_raise_with_message(ArgumentError, /unknown keyword: k1/, bug10413) {
+    assert_raise_with_message(ArgumentError, /unknown keyword: :k1/, bug10413) {
       o.foo {raise "unreachable"}
     }
   end
 
   def test_unknown_keyword
     bug13004 = '[ruby-dev:49893] [Bug #13004]'
-    assert_raise_with_message(ArgumentError, /unknown keyword: invalid-argument/, bug13004) {
+    assert_raise_with_message(ArgumentError, /unknown keyword: :"invalid-argument"/, bug13004) {
       [].sample(random: nil, "invalid-argument": nil)
     }
   end
