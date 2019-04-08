@@ -2526,7 +2526,19 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	    name = ID2SYM(id);
 	    goto wrong_name;
 	}
-	mod = RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
+#if 0
+        mod = rb_const_get_0(mod, id, beglen > 0 || !RTEST(recur), RTEST(recur), FALSE);
+#else
+        if (!RTEST(recur)) {
+            mod = rb_const_get_at(mod, id);
+        }
+        else if (beglen == 0) {
+            mod = rb_const_get(mod, id);
+        }
+        else {
+            mod = rb_const_get_from(mod, id);
+        }
+#endif
     }
 
     return mod;
@@ -2674,16 +2686,27 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 	    name = ID2SYM(id);
 	    goto wrong_name;
 	}
-	if (RTEST(recur)) {
-	    if (!rb_const_defined(mod, id))
-		return Qfalse;
-	    mod = rb_const_get(mod, id);
-	}
-	else {
+
+#if 0
+        mod = rb_const_search(mod, id, beglen > 0 || !RTEST(recur), RTEST(recur), FALSE);
+        if (mod == Qundef) return Qfalse;
+#else
+        if (!RTEST(recur)) {
 	    if (!rb_const_defined_at(mod, id))
 		return Qfalse;
 	    mod = rb_const_get_at(mod, id);
 	}
+        else if (beglen == 0) {
+            if (!rb_const_defined(mod, id))
+                return Qfalse;
+            mod = rb_const_get(mod, id);
+        }
+        else {
+            if (!rb_const_defined_from(mod, id))
+                return Qfalse;
+            mod = rb_const_get_from(mod, id);
+        }
+#endif
 
 	if (p < pend && !RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
 	    rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
