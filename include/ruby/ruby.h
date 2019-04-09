@@ -883,11 +883,6 @@ enum ruby_fl_type {
     RUBY_FL_SINGLETON = RUBY_FL_USER0
 };
 
-struct RMoved {
-    VALUE flags;
-    VALUE destination;
-};
-
 struct RUBY_ALIGNAS(SIZEOF_VALUE) RBasic {
     VALUE flags;
     VALUE klass;
