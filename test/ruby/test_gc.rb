@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'fiddle'
 
 class TestGc < Test::Unit::TestCase
   class S
