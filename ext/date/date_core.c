@@ -4608,6 +4608,10 @@ date_s__jisx0301(VALUE klass, VALUE str)
  * some typical JIS X 0301 formats.
  *
  *    Date.jisx0301('H13.02.03')		#=> #<Date: 2001-02-03 ...>
+ *
+ * For no-era year, legacy format, Heisei is assumed.
+ *
+ *    Date.jisx0301('13.02.03') 		#=> #<Date: 2001-02-03 ...>
  */
 static VALUE
 date_s_jisx0301(int argc, VALUE *argv, VALUE klass)
@@ -8144,6 +8148,11 @@ datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
  * some typical JIS X 0301 formats.
  *
  *    DateTime.jisx0301('H13.02.03T04:05:06+07:00')
+ *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
+ *
+ * For no-era year, legacy format, Heisei is assumed.
+ *
+ *    DateTime.jisx0301('13.02.03T04:05:06+07:00')
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
  */
 static VALUE
