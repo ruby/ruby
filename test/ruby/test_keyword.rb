@@ -284,6 +284,30 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(expect.values_at(0, -1), pr.call(expect), bug8463)
   end
 
+  def opt_plus_keyword(x=1, **h)
+    [x, h]
+  end
+
+  def splat_plus_keyword(*a, **h)
+    [a, h]
+  end
+
+  def test_keyword_split
+    assert_equal([1, {:a=>1}], opt_plus_keyword(:a=>1))
+    assert_equal([1, {"a"=>1}], opt_plus_keyword("a"=>1))
+    assert_equal([1, {"a"=>1, :a=>1}], opt_plus_keyword("a"=>1, :a=>1))
+    assert_equal([1, {:a=>1}], opt_plus_keyword({:a=>1}))
+    assert_equal([{"a"=>1}, {}], opt_plus_keyword({"a"=>1}))
+    assert_equal([{"a"=>1}, {:a=>1}], opt_plus_keyword({"a"=>1, :a=>1}))
+
+    assert_equal([[], {:a=>1}], splat_plus_keyword(:a=>1))
+    assert_equal([[], {"a"=>1}], splat_plus_keyword("a"=>1))
+    assert_equal([[], {"a"=>1, :a=>1}], splat_plus_keyword("a"=>1, :a=>1))
+    assert_equal([[], {:a=>1}], splat_plus_keyword({:a=>1}))
+    assert_equal([[{"a"=>1}], {}], splat_plus_keyword({"a"=>1}))
+    assert_equal([[{"a"=>1}], {:a=>1}], splat_plus_keyword({"a"=>1, :a=>1}))
+  end
+
   def test_bare_kwrest
     # valid syntax, but its semantics is undefined
     assert_valid_syntax("def bug7662(**) end")

@@ -183,23 +183,47 @@ args_rest_array(struct args_info *args)
     return ary;
 }
 
+#define KW_HASH_HAS_NO_KEYS 0
+#define KW_HASH_HAS_SYMBOL_KEY 1
+#define KW_HASH_HAS_OTHER_KEY 2
+#define KW_HASH_HAS_BOTH_KEYS 3
+
 static int
-keyword_hash_symbol_p(st_data_t key, st_data_t val, st_data_t arg)
+keyword_hash_symbol_other_iter(st_data_t key, st_data_t val, st_data_t arg)
 {
-    if (SYMBOL_P((VALUE)key)) {
-       return ST_CONTINUE;
+    *(int*)arg |= SYMBOL_P((VALUE)key) ? KW_HASH_HAS_SYMBOL_KEY : KW_HASH_HAS_OTHER_KEY;
+
+    if ((*(int*)arg & KW_HASH_HAS_BOTH_KEYS) == KW_HASH_HAS_BOTH_KEYS) {
+	return ST_STOP;
     }
 
-    *(VALUE*)arg = (VALUE)0;
-    return ST_STOP;
+    return ST_CONTINUE;
 }
 
 static int
-keyword_hash_only_symbol_p(VALUE hash)
+keyword_hash_symbol_other(VALUE hash)
 {
-    VALUE all_symbols = (VALUE)(1);
-    rb_hash_stlike_foreach(hash, keyword_hash_symbol_p, (st_data_t)(&all_symbols));
-    return (int)all_symbols;
+    int symbol_other = KW_HASH_HAS_NO_KEYS;
+    rb_hash_stlike_foreach(hash, keyword_hash_symbol_other_iter, (st_data_t)(&symbol_other));
+    return symbol_other;
+}
+
+static int
+keyword_hash_split_iter(st_data_t key, st_data_t val, st_data_t arg)
+{
+    if (SYMBOL_P((VALUE)key)) {
+	rb_hash_aset((VALUE)arg, (VALUE)key, (VALUE)val);
+	return ST_DELETE;
+    }
+
+    return ST_CONTINUE;
+}
+
+void
+keyword_hash_split(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr)
+{
+    *kw_hash_ptr = rb_hash_new();
+    rb_hash_stlike_foreach(*rest_hash_ptr, keyword_hash_split_iter, (st_data_t)(*kw_hash_ptr));
 }
 
 static int
@@ -208,9 +232,18 @@ keyword_hash_p(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr, int check_only_symbol)
     *rest_hash_ptr = rb_check_hash_type(*kw_hash_ptr);
 
     if (!NIL_P(*rest_hash_ptr)) {
-	if (check_only_symbol && !keyword_hash_only_symbol_p(*rest_hash_ptr)) {
-	    *kw_hash_ptr = Qnil;
-	    return FALSE;
+	if (check_only_symbol) {
+	    switch(keyword_hash_symbol_other(*rest_hash_ptr)) {
+	    case KW_HASH_HAS_NO_KEYS:
+	    case KW_HASH_HAS_SYMBOL_KEY:
+		break;
+	    case KW_HASH_HAS_OTHER_KEY:
+		*kw_hash_ptr = Qnil;
+		return FALSE;
+	    case KW_HASH_HAS_BOTH_KEYS:
+		keyword_hash_split(kw_hash_ptr, rest_hash_ptr);
+		return TRUE;
+	    }
 	}
 	*kw_hash_ptr = *rest_hash_ptr;
 	*rest_hash_ptr = Qfalse;
@@ -552,6 +585,20 @@ get_loc(struct rb_calling_info *calling, const struct rb_call_info *ci)
 }
 
 static inline void
+rb_warn_split_last_hash_to_keyword(struct rb_calling_info *calling, const struct rb_call_info *ci)
+{
+    if (calling->recv == Qundef) return;
+    VALUE loc = get_loc(calling, ci);
+    if (NIL_P(loc)) {
+        rb_warn("The last argument for `%s' is split into positional and keyword parameters", rb_id2name(ci->mid));
+    }
+    else {
+        rb_warn("The last argument for `%s' (defined at %s:%d) is split into positional and keyword parameters",
+                rb_id2name(ci->mid), RSTRING_PTR(RARRAY_AREF(loc, 0)), FIX2INT(RARRAY_AREF(loc, 1)));
+    }
+}
+
+static inline void
 rb_warn_last_hash_to_keyword(struct rb_calling_info *calling, const struct rb_call_info *ci)
 {
     if (calling->recv == Qundef) return;
@@ -709,6 +756,9 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 		rb_warn_last_hash_to_keyword(calling, ci);
 	    }
 	    given_argc--;
+	}
+	else if (keyword_hash != Qnil && ec->cfp->iseq) {
+	    rb_warn_split_last_hash_to_keyword(calling, ci);
 	}
     }
 
