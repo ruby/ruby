@@ -2203,6 +2203,15 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
 /* vm */
 
 void
+rb_vm_update_references(void *ptr)
+{
+    if (ptr) {
+        rb_vm_t *vm = ptr;
+        rb_update_st_references(vm->frozen_strings);
+    }
+}
+
+void
 rb_vm_mark(void *ptr)
 {
     RUBY_MARK_ENTER("vm");
@@ -2210,12 +2219,30 @@ rb_vm_mark(void *ptr)
     if (ptr) {
 	rb_vm_t *vm = ptr;
 	rb_thread_t *th = 0;
+        long i, len;
+        const VALUE *obj_ary;
 
 	list_for_each(&vm->living_threads, th, vmlt_node) {
 	    rb_gc_mark(th->self);
 	}
 	rb_gc_mark(vm->thgroup_default);
 	rb_gc_mark(vm->mark_object_ary);
+
+        len = RARRAY_LEN(vm->mark_object_ary);
+        obj_ary = RARRAY_CONST_PTR(vm->mark_object_ary);
+        for (i=0; i < len; i++) {
+            const VALUE *ptr;
+            long j, jlen;
+
+            rb_gc_mark(*obj_ary);
+            jlen = RARRAY_LEN(*obj_ary);
+            ptr = RARRAY_CONST_PTR(*obj_ary);
+            for (j=0; j < jlen; j++) {
+                rb_gc_mark(*ptr++);
+            }
+            obj_ary++;
+        }
+
 	rb_gc_mark(vm->load_path);
 	rb_gc_mark(vm->load_path_snapshot);
 	RUBY_MARK_UNLESS_NULL(vm->load_path_check_cache);
@@ -2225,6 +2252,8 @@ rb_vm_mark(void *ptr)
 	rb_gc_mark(vm->top_self);
 	RUBY_MARK_UNLESS_NULL(vm->coverages);
 	rb_gc_mark(vm->defined_module_hash);
+        /* Prevent classes from moving */
+        rb_mark_tbl(rb_hash_tbl(vm->defined_module_hash, __FILE__, __LINE__));
 
 	if (vm->loading_table) {
 	    rb_mark_tbl(vm->loading_table);
@@ -2463,7 +2492,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 	rb_control_frame_t *cfp = ec->cfp;
 	rb_control_frame_t *limit_cfp = (void *)(ec->vm_stack + ec->vm_stack_size);
 
-	rb_gc_mark_values((long)(sp - p), p);
+        rb_gc_mark_stack_values((long)(sp - p), p);
 
 	while (cfp != limit_cfp) {
 	    const VALUE *ep = cfp->ep;
