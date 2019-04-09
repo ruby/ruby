@@ -9767,10 +9767,24 @@ wmap_mark_map(st_data_t key, st_data_t val, st_data_t arg)
 }
 #endif
 
+static int
+wmap_pin_obj(st_data_t key, st_data_t val, st_data_t arg)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)arg;
+    VALUE obj = (VALUE)val;
+    if (obj && is_live_object(objspace, obj)) {
+        gc_pin(objspace, obj);
+    } else {
+        return ST_DELETE;
+    }
+    return ST_CONTINUE;
+}
+
 static void
 wmap_mark(void *ptr)
 {
     struct weakmap *w = ptr;
+    if (w->wmap2obj) st_foreach(w->wmap2obj, wmap_pin_obj, (st_data_t)&rb_objspace);
 #if WMAP_DELETE_DEAD_OBJECT_IN_MARK
     if (w->obj2wmap) st_foreach(w->obj2wmap, wmap_mark_map, (st_data_t)&rb_objspace);
 #endif
