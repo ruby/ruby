@@ -7039,9 +7039,13 @@ jisx0301_date_format(char *fmt, size_t size, VALUE jd, VALUE y)
 	    c = 'S';
 	    s = 1925;
 	}
-	else {
+	else if (d < 2458605) {
 	    c = 'H';
 	    s = 1988;
+	}
+	else {
+	    c = 'R';
+	    s = 2018;
 	}
 	snprintf(fmt, size, "%c%02ld" ".%%m.%%d", c, FIX2INT(y) - s);
 	return fmt;

@@ -999,6 +999,9 @@ class TestDateParse < Test::Unit::TestCase
     h = Date._jisx0301('H31.05.01')
     assert_equal([2019, 5, 1, nil, nil, nil, nil],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
+    h = Date._jisx0301('R01.05.01')
+    assert_equal([2019, 5, 1, nil, nil, nil, nil],
+		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
 
     h = Date._jisx0301('H13.02.03T04:05:06')
     assert_equal([2001, 2, 3, 4, 5, 6, nil],
@@ -1036,6 +1039,19 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal([2019, 5, 1, 4, 5, 6, 0],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
     h = Date._jisx0301('H31.05.01T04:05:06.07+0100')
+    assert_equal([2019, 5, 1, 4, 5, 6, 3600],
+		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
+
+    h = Date._jisx0301('R01.05.01T04:05:06')
+    assert_equal([2019, 5, 1, 4, 5, 6, nil],
+		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
+    h = Date._jisx0301('R01.05.01T04:05:06,07')
+    assert_equal([2019, 5, 1, 4, 5, 6, nil],
+		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
+    h = Date._jisx0301('R01.05.01T04:05:06Z')
+    assert_equal([2019, 5, 1, 4, 5, 6, 0],
+		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
+    h = Date._jisx0301('R01.05.01T04:05:06.07+0100')
     assert_equal([2019, 5, 1, 4, 5, 6, 3600],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
 
@@ -1132,6 +1148,10 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal(Date.new(2019,5,1), d)
     assert_equal(Date::ITALY + 10, d.start)
 
+    d = Date.jisx0301('R01.05.01', Date::ITALY + 10)
+    assert_equal(Date.new(2019,5,1), d)
+    assert_equal(Date::ITALY + 10, d.start)
+
     d = DateTime.jisx0301('H13.02.03T04:05:06+07:00', Date::ITALY + 10)
     assert_equal(DateTime.new(2001,2,3,4,5,6,'+07:00'), d)
     assert_equal(Date::ITALY + 10, d.start)
@@ -1141,6 +1161,10 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal(Date::ITALY + 10, d.start)
 
     d = DateTime.jisx0301('H31.05.01T04:05:06+07:00', Date::ITALY + 10)
+    assert_equal(DateTime.new(2019,5,1,4,5,6,'+07:00'), d)
+    assert_equal(Date::ITALY + 10, d.start)
+
+    d = DateTime.jisx0301('R01.05.01T04:05:06+07:00', Date::ITALY + 10)
     assert_equal(DateTime.new(2019,5,1,4,5,6,'+07:00'), d)
     assert_equal(Date::ITALY + 10, d.start)
   end
