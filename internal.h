@@ -830,6 +830,11 @@ struct RHash {
 #  define RHASH_SIZE(h)      (RHASH_AR_TABLE_P(h) ? RHASH_AR_TABLE_SIZE_RAW(h) : RHASH_ST_SIZE(h))
 #endif /* #ifdef RHASH_ITER_LEV */
 
+struct RMoved {
+    VALUE flags;
+    VALUE destination;
+};
+
 /* missing/setproctitle.c */
 #ifndef HAVE_SETPROCTITLE
 extern void ruby_init_setproctitle(int argc, char *argv[]);
