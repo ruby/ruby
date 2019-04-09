@@ -23,7 +23,11 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def big_list
-    1000.times.map { Object.new } # likely next to each other
+    1000.times.map {
+      # try to make some empty slots by allocating an object and discarding
+      Object.new
+      Object.new
+    } # likely next to each other
   end
 
   # Find an object that's allocated in a slot that had a previous
