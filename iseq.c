@@ -91,7 +91,8 @@ rb_iseq_free(const rb_iseq_t *iseq)
 #if VM_INSN_INFO_TABLE_IMPL == 2
 	if (body->insns_info.succ_index_table) ruby_xfree(body->insns_info.succ_index_table);
 #endif
-	ruby_xfree((void *)body->local_table);
+        if (LIKELY(body->local_table != rb_iseq_shared_exc_local_tbl))
+            ruby_xfree((void *)body->local_table);
 	ruby_xfree((void *)body->is_entries);
 
 	if (body->ci_entries) {
