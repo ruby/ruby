@@ -1212,7 +1212,7 @@ parse_iso2(VALUE str, VALUE hash)
     return 1;
 }
 
-#define JISX0301_ERA_INITIALS "mtsh"
+#define JISX0301_ERA_INITIALS "mtshr"
 #define JISX0301_DEFAULT_ERA 'H' /* obsolete */
 
 static int
@@ -1225,6 +1225,7 @@ gengo(int c)
       case 'T': case 't': e = 1911; break;
       case 'S': case 's': e = 1925; break;
       case 'H': case 'h': e = 1988; break;
+      case 'R': case 'r': e = 2018; break;
       default:  e = 0; break;
     }
     return e;
