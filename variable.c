@@ -1201,16 +1201,6 @@ rb_mark_generic_ivar(VALUE obj)
 }
 
 void
-rb_mv_generic_ivar(VALUE rsrc, VALUE dst)
-{
-    st_data_t key = (st_data_t)rsrc;
-    struct gen_ivtbl *ivtbl;
-
-    if (st_delete(generic_iv_tbl, &key, (st_data_t *)&ivtbl))
-        st_insert(generic_iv_tbl, (st_data_t)dst, (st_data_t)ivtbl);
-}
-
-void
 rb_free_generic_ivar(VALUE obj)
 {
     st_data_t key = (st_data_t)obj;
@@ -1960,7 +1950,7 @@ rb_mod_const_missing(VALUE klass, VALUE name)
 static void
 autoload_mark(void *ptr)
 {
-    rb_mark_tbl_no_pin((st_table *)ptr);
+    rb_mark_tbl((st_table *)ptr);
 }
 
 static void
@@ -1976,15 +1966,9 @@ autoload_memsize(const void *ptr)
     return st_memsize(tbl);
 }
 
-static void
-autoload_compact(void *ptr)
-{
-    rb_gc_update_tbl_refs((st_table *)ptr);
-}
-
 static const rb_data_type_t autoload_data_type = {
     "autoload",
-    {autoload_mark, autoload_free, autoload_memsize, autoload_compact,},
+    {autoload_mark, autoload_free, autoload_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -2031,18 +2015,11 @@ struct autoload_data_i {
 };
 
 static void
-autoload_i_compact(void *ptr)
-{
-    struct autoload_data_i *p = ptr;
-    p->feature = rb_gc_new_location(p->feature);
-}
-
-static void
 autoload_i_mark(void *ptr)
 {
     struct autoload_data_i *p = ptr;
 
-    rb_gc_mark_no_pin(p->feature);
+    rb_gc_mark(p->feature);
 
     /* allow GC to free us if no modules refer to this via autoload_const.ad */
     if (list_empty(&p->constants)) {
@@ -2069,7 +2046,7 @@ autoload_i_memsize(const void *ptr)
 
 static const rb_data_type_t autoload_data_i_type = {
     "autoload_i",
-    {autoload_i_mark, autoload_i_free, autoload_i_memsize, autoload_i_compact},
+    {autoload_i_mark, autoload_i_free, autoload_i_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -2994,7 +2971,6 @@ rb_define_const(VALUE klass, const char *name, VALUE val)
     if (!rb_is_const_id(id)) {
 	rb_warn("rb_define_const: invalid name `%s' for constant", name);
     }
-    rb_gc_register_mark_object(val);
     rb_const_set(klass, id, val);
 }
 

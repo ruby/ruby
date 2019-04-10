@@ -1344,8 +1344,6 @@ void Init_generator(void)
 
     eGeneratorError = rb_path2class("JSON::GeneratorError");
     eNestingError = rb_path2class("JSON::NestingError");
-    rb_gc_register_mark_object(eGeneratorError);
-    rb_gc_register_mark_object(eNestingError);
 
     cState = rb_define_class_under(mGenerator, "State", rb_cObject);
     rb_define_alloc_func(cState, cState_s_allocate);

@@ -70,7 +70,6 @@ firstline, predefined = __LINE__+1, %[\
 
   $_                                                    LASTLINE
   $~                                                    BACKREF
-  $!                                                    ERROR_INFO
 ]
 
 # VM ID         OP      Parser Token
