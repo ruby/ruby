@@ -329,6 +329,8 @@ static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line,
     LABEL_UNREMOVABLE(ls);							\
     LABEL_REF(le);								\
     LABEL_REF(lc);								\
+    if (NIL_P(ISEQ_COMPILE_DATA(iseq)->catch_table_ary)) \
+        RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, rb_ary_tmp_new(3)); \
     rb_ary_push(ISEQ_COMPILE_DATA(iseq)->catch_table_ary, freeze_hide_obj(_e));	\
 } while (0)
 
@@ -1275,6 +1277,7 @@ static void
 iseq_insert_nop_between_end_and_cont(rb_iseq_t *iseq)
 {
     VALUE catch_table_ary = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
+    if (NIL_P(catch_table_ary)) return;
     unsigned int i, tlen = (unsigned int)RARRAY_LEN(catch_table_ary);
     const VALUE *tptr = RARRAY_CONST_PTR_TRANSIENT(catch_table_ary);
     for (i = 0; i < tlen; i++) {
@@ -2309,6 +2312,7 @@ iseq_set_exception_table(rb_iseq_t *iseq)
     unsigned int tlen, i;
     struct iseq_catch_table_entry *entry;
 
+    if (NIL_P(ISEQ_COMPILE_DATA(iseq)->catch_table_ary)) goto no_catch_table;
     tlen = (int)RARRAY_LEN(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
     tptr = RARRAY_CONST_PTR_TRANSIENT(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
 
@@ -2346,7 +2350,8 @@ iseq_set_exception_table(rb_iseq_t *iseq)
 	RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, 0); /* free */
     }
     else {
-	iseq->body->catch_table = NULL;
+        no_catch_table:
+          iseq->body->catch_table = NULL;
     }
 
     return COMPILE_OK;

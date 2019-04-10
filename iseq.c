@@ -540,7 +540,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
 	ALLOC_N(char, INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE +
 		offsetof(struct iseq_compile_data_storage, buff));
 
-    RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, rb_ary_tmp_new(3));
+    RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, Qnil);
     ISEQ_COMPILE_DATA(iseq)->storage_head->pos = 0;
     ISEQ_COMPILE_DATA(iseq)->storage_head->next = 0;
     ISEQ_COMPILE_DATA(iseq)->storage_head->size =
