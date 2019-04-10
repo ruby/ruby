@@ -18,9 +18,9 @@ jobs:
   - script: |
       set -x
       sudo sed /etc/apt/sources.list -e "s/^# deb-src/deb-src/g" -i
-      sudo cat /etc/apt/sources.list
       sudo apt-get update
       sudo apt-get build-dep ruby2.3
+    displayName: "Install dependencies"
   - checkout: self
     fetchDepth: 10
   - script: |
@@ -50,6 +50,7 @@ jobs:
         task: test-bundler
   steps:
   - script: brew update && brew install autoconf bison openssl
+    displayName: "Install dependencies"
   - checkout: self
     fetchDepth: 10
   - script: |
@@ -113,6 +114,7 @@ jobs:
       )
     env:
       dependencies: openssl readline zlib
+    displayName: "Install dependencies"
   - checkout: self
     fetchDepth: 10
   - script: |
