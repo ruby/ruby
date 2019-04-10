@@ -670,13 +670,8 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 MJIT_FUNC_EXPORTED void
 rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *cref, rb_method_visibility_t visi)
 {
-    struct { /* should be same fields with rb_method_iseq_struct */
-        const rb_iseq_t *iseqptr;
-        rb_cref_t *cref;
-    } iseq_body;
+    rb_method_iseq_t iseq_body = {(rb_iseq_t *)iseq, cref};
 
-    iseq_body.iseqptr = iseq;
-    iseq_body.cref = cref;
     rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, &iseq_body, visi);
 }
 
