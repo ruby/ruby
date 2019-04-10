@@ -624,6 +624,7 @@ VALUE rb_obj_trust(VALUE);
 VALUE rb_obj_freeze(VALUE);
 PUREFUNC(VALUE rb_obj_frozen_p(VALUE));
 VALUE rb_obj_id(VALUE);
+VALUE rb_memory_id(VALUE);
 VALUE rb_obj_class(VALUE);
 PUREFUNC(VALUE rb_class_real(VALUE));
 PUREFUNC(VALUE rb_class_inherited_p(VALUE, VALUE));
