@@ -15,7 +15,7 @@ jobs:
   - task: UseRubyVersion@0
     inputs:
       versionSpec: '2.5.1'
-  - script: sudo apt update -qy && sudo apt-get build-dep ruby2.3
+  - script: sudo apt-get build-dep ruby2.3
   - checkout: self
     fetchDepth: 10
   - script: |
