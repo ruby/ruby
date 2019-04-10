@@ -1163,7 +1163,7 @@ struct MEMO {
     union {
 	long cnt;
 	long state;
-	const VALUE value;
+        const VALUE value;
 	VALUE (*func)(ANYARGS);
     } u3;
 };

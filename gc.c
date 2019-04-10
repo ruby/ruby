@@ -2483,7 +2483,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
     }
 
     if (FL_TEST(obj, FL_FINALIZE)) {
-	make_zombie(objspace, obj, 0, 0);
+        make_zombie(objspace, obj, 0, 0);
 	return 1;
     }
     else {
@@ -4204,7 +4204,7 @@ mark_locations_array(rb_objspace_t *objspace, register const VALUE *x, register 
     VALUE v;
     while (n--) {
         v = *x;
-	gc_mark_maybe(objspace, v);
+        gc_mark_maybe(objspace, v);
 	x++;
     }
 }
@@ -4231,7 +4231,7 @@ gc_mark_values(rb_objspace_t *objspace, long n, const VALUE *values)
     long i;
 
     for (i=0; i<n; i++) {
-	gc_mark(objspace, values[i]);
+        gc_mark(objspace, values[i]);
     }
 }
 
@@ -4473,7 +4473,7 @@ gc_mark_maybe(rb_objspace_t *objspace, VALUE obj)
 
         unpoison_object(obj, false);
         type = BUILTIN_TYPE(obj);
-	if (type != T_ZOMBIE && type != T_NONE) {
+        if (type != T_ZOMBIE && type != T_NONE) {
 	    gc_mark_ptr(objspace, obj);
 	}
         if (ptr) {
@@ -4664,9 +4664,9 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 	{
 	    const rb_env_t *env = (const rb_env_t *)obj;
 	    GC_ASSERT(VM_ENV_ESCAPED_P(env->ep));
-	    gc_mark_values(objspace, (long)env->env_size, env->env);
+            gc_mark_values(objspace, (long)env->env_size, env->env);
 	    VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
-	    gc_mark(objspace, (VALUE)rb_vm_env_prev_env(env));
+            gc_mark(objspace, (VALUE)rb_vm_env_prev_env(env));
 	    gc_mark(objspace, (VALUE)env->iseq);
 	}
 	return;
@@ -4758,7 +4758,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
       case T_MODULE:
 	mark_m_tbl(objspace, RCLASS_M_TBL(obj));
 	if (!RCLASS_EXT(obj)) break;
-	mark_tbl(objspace, RCLASS_IV_TBL(obj));
+        mark_tbl(objspace, RCLASS_IV_TBL(obj));
 	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
 	gc_mark(objspace, RCLASS_SUPER((VALUE)obj));
 	break;
@@ -5365,7 +5365,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, v
 	    /* count objects */
 	    data->live_object_count++;
 
-	    rb_objspace_reachable_objects_from(obj, check_children_i, (void *)data);
+            rb_objspace_reachable_objects_from(obj, check_children_i, (void *)data);
 
 #if USE_RGENGC
 	    /* check health of children */
@@ -6998,8 +6998,8 @@ gc_count_add_each_types(VALUE hash, const char *name, const size_t *types)
     VALUE result = rb_hash_new_with_size(T_MASK);
     int i;
     for (i=0; i<T_MASK; i++) {
-	const char *type = type_name(i, 0);
-	rb_hash_aset(result, ID2SYM(rb_intern(type)), SIZET2NUM(types[i]));
+        const char *type = type_name(i, 0);
+        rb_hash_aset(result, ID2SYM(rb_intern(type)), SIZET2NUM(types[i]));
     }
     rb_hash_aset(hash, ID2SYM(rb_intern(name)), result);
 }
@@ -7042,47 +7042,47 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const int orig_
     VALUE flags = orig_flags ? orig_flags : objspace->profile.latest_gc_info;
 
     if (SYMBOL_P(hash_or_key)) {
-	key = hash_or_key;
+        key = hash_or_key;
     }
     else if (RB_TYPE_P(hash_or_key, T_HASH)) {
-	hash = hash_or_key;
+        hash = hash_or_key;
     }
     else {
-	rb_raise(rb_eTypeError, "non-hash or symbol given");
+        rb_raise(rb_eTypeError, "non-hash or symbol given");
     }
 
     if (sym_major_by == Qnil) {
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
-	S(major_by);
-	S(gc_by);
-	S(immediate_sweep);
-	S(have_finalizer);
-	S(state);
+        S(major_by);
+        S(gc_by);
+        S(immediate_sweep);
+        S(have_finalizer);
+        S(state);
 
-	S(stress);
-	S(nofree);
-	S(oldgen);
-	S(shady);
-	S(force);
+        S(stress);
+        S(nofree);
+        S(oldgen);
+        S(shady);
+        S(force);
 #if RGENGC_ESTIMATE_OLDMALLOC
-	S(oldmalloc);
+        S(oldmalloc);
 #endif
-	S(newobj);
-	S(malloc);
-	S(method);
-	S(capi);
+        S(newobj);
+        S(malloc);
+        S(method);
+        S(capi);
 
-	S(none);
-	S(marking);
-	S(sweeping);
+        S(none);
+        S(marking);
+        S(sweeping);
 #undef S
     }
 
 #define SET(name, attr) \
     if (key == sym_##name) \
-	return (attr); \
+        return (attr); \
     else if (hash != Qnil) \
-	rb_hash_aset(hash, sym_##name, (attr));
+        rb_hash_aset(hash, sym_##name, (attr));
 
     major_by =
       (flags & GPR_FLAG_MAJOR_BY_NOFREE) ? sym_nofree :
@@ -7096,25 +7096,25 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const int orig_
     SET(major_by, major_by);
 
     SET(gc_by,
-	(flags & GPR_FLAG_NEWOBJ) ? sym_newobj :
-	(flags & GPR_FLAG_MALLOC) ? sym_malloc :
-	(flags & GPR_FLAG_METHOD) ? sym_method :
-	(flags & GPR_FLAG_CAPI)   ? sym_capi :
-	(flags & GPR_FLAG_STRESS) ? sym_stress :
-	Qnil
+        (flags & GPR_FLAG_NEWOBJ) ? sym_newobj :
+        (flags & GPR_FLAG_MALLOC) ? sym_malloc :
+        (flags & GPR_FLAG_METHOD) ? sym_method :
+        (flags & GPR_FLAG_CAPI)   ? sym_capi :
+        (flags & GPR_FLAG_STRESS) ? sym_stress :
+        Qnil
     );
 
     SET(have_finalizer, (flags & GPR_FLAG_HAVE_FINALIZE) ? Qtrue : Qfalse);
     SET(immediate_sweep, (flags & GPR_FLAG_IMMEDIATE_SWEEP) ? Qtrue : Qfalse);
 
     if (orig_flags == 0) {
-	SET(state, gc_mode(objspace) == gc_mode_none ? sym_none :
-	           gc_mode(objspace) == gc_mode_marking ? sym_marking : sym_sweeping);
+        SET(state, gc_mode(objspace) == gc_mode_none ? sym_none :
+                   gc_mode(objspace) == gc_mode_marking ? sym_marking : sym_sweeping);
     }
 #undef SET
 
     if (!NIL_P(key)) {/* matched key should return above */
-	rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
+        rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
     }
 
     return hash;
@@ -7144,12 +7144,12 @@ gc_latest_gc_info(int argc, VALUE *argv, VALUE self)
 
     if (rb_check_arity(argc, 0, 1) == 1) {
         arg = argv[0];
-	if (!SYMBOL_P(arg) && !RB_TYPE_P(arg, T_HASH)) {
-	    rb_raise(rb_eTypeError, "non-hash or symbol given");
-	}
+        if (!SYMBOL_P(arg) && !RB_TYPE_P(arg, T_HASH)) {
+            rb_raise(rb_eTypeError, "non-hash or symbol given");
+        }
     }
     else {
-	arg = rb_hash_new();
+        arg = rb_hash_new();
     }
 
     return gc_info_decode(objspace, arg, 0);

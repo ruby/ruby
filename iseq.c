@@ -156,7 +156,7 @@ iseq_extract_values(const VALUE *code, size_t pos, iseq_value_itr_t * func, void
 		{
 		    VALUE op = code[pos + op_no + 1];
 		    if (!SPECIAL_CONST_P(op)) {
-			func(data, op);
+                        func(data, op);
 		    }
 		    break;
 		}
@@ -164,7 +164,7 @@ iseq_extract_values(const VALUE *code, size_t pos, iseq_value_itr_t * func, void
 		{
 		    union iseq_inline_storage_entry *const is = (union iseq_inline_storage_entry *)code[pos + op_no + 1];
 		    if (is->once.value) {
-			func(data, is->once.value);
+                        func(data, is->once.value);
 		    }
 		    break;
 		}
@@ -224,12 +224,12 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	    rb_iseq_each_value(iseq, each_insn_value, NULL);
 	}
 
-	rb_gc_mark(body->variable.coverage);
+        rb_gc_mark(body->variable.coverage);
         rb_gc_mark(body->variable.pc2branchindex);
-	rb_gc_mark(body->location.label);
-	rb_gc_mark(body->location.base_label);
-	rb_gc_mark(body->location.pathobj);
-	RUBY_MARK_UNLESS_NULL((VALUE)body->parent_iseq);
+        rb_gc_mark(body->location.label);
+        rb_gc_mark(body->location.base_label);
+        rb_gc_mark(body->location.pathobj);
+        RUBY_MARK_UNLESS_NULL((VALUE)body->parent_iseq);
 
 	if (body->param.flags.has_kw && ISEQ_COMPILE_DATA(iseq) == NULL) {
 	    const struct rb_iseq_param_keyword *const keyword = body->param.keyword;
@@ -252,7 +252,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 		const struct iseq_catch_table_entry *entry;
 		entry = &table->entries[i];
 		if (entry->iseq) {
-		    rb_gc_mark((VALUE)entry->iseq);
+                    rb_gc_mark((VALUE)entry->iseq);
 		}
 	    }
 	}
