@@ -215,13 +215,13 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
     switch (base) {
     case 0:
         ptr = StringValuePtr(str);
-	if (!BN_mpi2bn((unsigned char *)ptr, RSTRING_LENINT(str), bn)) {
+        if (!BN_mpi2bn((unsigned char *)ptr, RSTRING_LENINT(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
     case 2:
         ptr = StringValuePtr(str);
-	if (!BN_bin2bn((unsigned char *)ptr, RSTRING_LENINT(str), bn)) {
+        if (!BN_bin2bn((unsigned char *)ptr, RSTRING_LENINT(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
