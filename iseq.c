@@ -180,7 +180,7 @@ static void
 rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
 {
     unsigned int size;
-    const VALUE *code;
+    VALUE *code;
     size_t n;
     rb_vm_insns_translator_t * translator;
     const struct rb_iseq_constant_body *const body = iseq->body;
