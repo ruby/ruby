@@ -404,6 +404,7 @@ typedef struct RVALUE {
 	    VALUE flags;		/* always 0 for freed obj */
 	    struct RVALUE *next;
 	} free;
+        struct RMoved  moved;
 	struct RBasic  basic;
 	struct RObject object;
 	struct RClass  klass;
@@ -2374,6 +2375,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_RATIONAL:
       case T_COMPLEX:
+      case T_MOVED:
 	break;
       case T_ICLASS:
 	/* Basically , T_ICLASS shares table with the module */
@@ -2639,6 +2641,7 @@ internal_object_p(VALUE obj)
 	    UNEXPECTED_NODE(internal_object_p);
 	    break;
 	  case T_NONE:
+          case T_MOVED:
 	  case T_IMEMO:
 	  case T_ICLASS:
 	  case T_ZOMBIE:
@@ -3437,6 +3440,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	break;
 
       case T_ZOMBIE:
+      case T_MOVED:
 	break;
 
       default:
@@ -3493,6 +3497,7 @@ type_sym(size_t type)
         COUNT_TYPE(T_NODE);
         COUNT_TYPE(T_ICLASS);
         COUNT_TYPE(T_ZOMBIE);
+        COUNT_TYPE(T_MOVED);
 #undef COUNT_TYPE
         default:              return INT2NUM(type); break;
     }
@@ -4886,6 +4891,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 #if GC_DEBUG
 	rb_gcdebug_print_obj_condition((VALUE)obj);
 #endif
+        if (BUILTIN_TYPE(obj) == T_MOVED)   rb_bug("rb_gc_mark(): %p is T_MOVED", (void *)obj);
 	if (BUILTIN_TYPE(obj) == T_NONE)   rb_bug("rb_gc_mark(): %p is T_NONE", (void *)obj);
 	if (BUILTIN_TYPE(obj) == T_ZOMBIE) rb_bug("rb_gc_mark(): %p is T_ZOMBIE", (void *)obj);
 	rb_bug("rb_gc_mark(): unknown data type 0x%x(%p) %s",
@@ -9631,6 +9637,7 @@ type_name(int type, VALUE obj)
 	    TYPE_NAME(T_UNDEF);
 	    TYPE_NAME(T_IMEMO);
 	    TYPE_NAME(T_ICLASS);
+            TYPE_NAME(T_MOVED);
 	    TYPE_NAME(T_ZOMBIE);
       case T_DATA:
 	if (obj && rb_objspace_data_type_name(obj)) {
@@ -9679,7 +9686,7 @@ method_type_name(rb_method_type_t type)
 static void
 rb_raw_iseq_info(char *buff, const int buff_size, const rb_iseq_t *iseq)
 {
-    if (iseq->body && iseq->body->location.label) {
+    if (iseq->body && iseq->body->location.label && !RB_TYPE_P(iseq->body->location.pathobj, T_MOVED)) {
 	VALUE path = rb_iseq_path(iseq);
 	VALUE n = iseq->body->location.first_lineno;
 	snprintf(buff, buff_size, "%s %s@%s:%d", buff,
@@ -9938,6 +9945,12 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 
     fprintf(stderr, "created at: %s:%d\n", RANY(obj)->file, RANY(obj)->line);
 
+    if (BUILTIN_TYPE(obj) == T_MOVED) {
+        fprintf(stderr, "moved?: true\n");
+    }
+    else {
+        fprintf(stderr, "moved?: false\n");
+    }
     if (is_pointer_to_heap(objspace, (void *)obj)) {
         fprintf(stderr, "pointer to heap?: true\n");
     }
