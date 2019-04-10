@@ -17,7 +17,9 @@ jobs:
       versionSpec: '2.5.1'
   - script: |
       set -x
+      sudo sed /etc/apt/sources.list -e "s/^# deb-src/deb-src/g" -i
       sudo cat /etc/apt/sources.list
+      sudo apt-get update
       sudo apt-get build-dep ruby2.3
   - checkout: self
     fetchDepth: 10
