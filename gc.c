@@ -5479,7 +5479,7 @@ gc_verify_heap_pages_(rb_objspace_t *objspace, struct list_head *head)
     list_for_each(head, page, page_node) {
         unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
         RVALUE *p = page->freelist;
-        while(p) {
+        while (p) {
             RVALUE *prev = p;
             unpoison_object((VALUE)p, false);
             if (BUILTIN_TYPE(p) != T_NONE) {
