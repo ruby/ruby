@@ -266,12 +266,10 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
         if (RTEST(compile_data->mark_ary)) {
             rb_gc_mark(compile_data->mark_ary);
-            rb_gc_mark_values(RARRAY_LEN(compile_data->mark_ary), RARRAY_CONST_PTR(compile_data->mark_ary));
         }
         RUBY_MARK_UNLESS_NULL(compile_data->err_info);
         if (RTEST(compile_data->catch_table_ary)) {
             rb_gc_mark(compile_data->catch_table_ary);
-            rb_gc_mark_values(RARRAY_LEN(compile_data->catch_table_ary), RARRAY_CONST_PTR(compile_data->catch_table_ary));
         }
         VM_ASSERT(compile_data != NULL);
     }

@@ -574,7 +574,6 @@ static int
 iseq_add_mark_object_compile_time(const rb_iseq_t *iseq, VALUE v)
 {
     if (!SPECIAL_CONST_P(v)) {
-        rb_gc_writebarrier((VALUE)iseq, v);
 	rb_ary_push(ISEQ_COMPILE_DATA(iseq)->mark_ary, v);
     }
     return COMPILE_OK;
@@ -584,7 +583,6 @@ static inline VALUE
 freeze_literal(rb_iseq_t *iseq, VALUE lit)
 {
     lit = rb_fstring(lit);
-    rb_gc_writebarrier((VALUE)iseq, lit);
     rb_ary_push(ISEQ_COMPILE_DATA(iseq)->mark_ary, lit);
     return lit;
 }
