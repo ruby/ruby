@@ -194,6 +194,9 @@ static ruby_gc_params_t gc_params = {
     FALSE,
 };
 
+static st_table *id_to_obj_tbl;
+static st_table *obj_to_id_tbl;
+
 /* GC_DEBUG:
  *  enable to embed GC debugging information.
  */
@@ -10313,6 +10316,9 @@ Init_GC(void)
     VALUE rb_mObjSpace;
     VALUE rb_mProfiler;
     VALUE gc_constants;
+
+    id_to_obj_tbl = st_init_numtable();
+    obj_to_id_tbl = st_init_numtable();
 
     rb_mGC = rb_define_module("GC");
     rb_define_singleton_method(rb_mGC, "start", gc_start_internal, -1);
