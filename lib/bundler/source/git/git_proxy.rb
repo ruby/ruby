@@ -26,7 +26,11 @@ module Bundler
       end
 
       class GitCommandError < GitError
+        attr_reader :command
+
         def initialize(command, path = nil, extra_info = nil)
+          @command = command
+
           msg = String.new
           msg << "Git error: command `git #{command}` in directory #{SharedHelpers.pwd} has failed."
           msg << "\n#{extra_info}" if extra_info
@@ -35,10 +39,10 @@ module Bundler
         end
       end
 
-      class MissingGitRevisionError < GitError
-        def initialize(ref, repo)
+      class MissingGitRevisionError < GitCommandError
+        def initialize(command, path, ref, repo)
           msg = "Revision #{ref} does not exist in the repository #{repo}. Maybe you misspelled it?"
-          super msg
+          super command, path, msg
         end
       end
 
@@ -63,8 +67,8 @@ module Bundler
 
           begin
             @revision ||= find_local_revision
-          rescue GitCommandError
-            raise MissingGitRevisionError.new(ref, URICredentialsFilter.credential_filtered_uri(uri))
+          rescue GitCommandError => e
+            raise MissingGitRevisionError.new(e.command, path, ref, URICredentialsFilter.credential_filtered_uri(uri))
           end
 
           @revision
@@ -135,8 +139,8 @@ module Bundler
 
             begin
               git "reset --hard #{@revision}"
-            rescue GitCommandError
-              raise MissingGitRevisionError.new(@revision, URICredentialsFilter.credential_filtered_uri(uri))
+            rescue GitCommandError => e
+              raise MissingGitRevisionError.new(e.command, path, @revision, URICredentialsFilter.credential_filtered_uri(uri))
             end
 
             if submodules
