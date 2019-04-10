@@ -1147,7 +1147,8 @@ gc_object_moved_p(rb_objspace_t * objspace, VALUE obj)
 {
     if (RB_SPECIAL_CONST_P(obj)) {
         return FALSE;
-    } else {
+    }
+    else {
         void *poisoned = poisoned_object_p(obj);
         unpoison_object(obj, false);
 
@@ -3395,17 +3396,19 @@ rb_obj_id(VALUE obj)
     if (st_lookup(obj_to_id_tbl, (st_data_t)obj, &id)) {
         gc_report(4, &rb_objspace, "Second time object_id was called on this object: %p\n", (void*)obj);
         return id;
-    } else {
+    }
+    else {
         id = nonspecial_obj_id(obj);
 
-        while(1) {
+        while (1) {
             /* id is the object id */
             if (st_lookup(id_to_obj_tbl, (st_data_t)id, 0)) {
                 gc_report(4, &rb_objspace, "object_id called on %p, but there was a collision at %d\n", (void*)obj, NUM2INT(id));
                 rb_objspace_t *objspace = &rb_objspace;
                 objspace->profile.object_id_collisions++;
                 id += 40;
-            } else {
+            }
+            else {
                 gc_report(4, &rb_objspace, "Initial insert: %p id: %d\n", (void*)obj, NUM2INT(id));
                 st_insert(obj_to_id_tbl, (st_data_t)obj, id);
                 st_insert(id_to_obj_tbl, (st_data_t)id, obj);
@@ -4422,7 +4425,8 @@ mark_keyvalue(st_data_t key, st_data_t value, st_data_t data)
 
     if (SPECIAL_CONST_P((VALUE)key) || BUILTIN_TYPE((VALUE)key) == T_STRING) {
         gc_mark(objspace, (VALUE)key);
-    } else {
+    }
+    else {
         gc_mark_and_pin(objspace, (VALUE)key);
     }
     gc_mark(objspace, (VALUE)value);
@@ -5675,7 +5679,7 @@ gc_verify_heap_pages_(rb_objspace_t *objspace, struct list_head *head)
     list_for_each(head, page, page_node) {
         unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
         RVALUE *p = page->freelist;
-        while(p) {
+        while (p) {
             RVALUE *prev = p;
             unpoison_object((VALUE)p, false);
             if (BUILTIN_TYPE(p) != T_NONE) {
@@ -7218,7 +7222,8 @@ update_id_to_obj(st_data_t *key, st_data_t *value, st_data_t arg, int exists)
     if (exists) {
         *value = arg;
         return ST_CONTINUE;
-    } else {
+    }
+    else {
         return ST_STOP;
     }
 }
@@ -7260,7 +7265,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
 
     /* If the source object's object_id has been seen, we need to update
      * the object to object id mapping. */
-    if(st_lookup(obj_to_id_tbl, (VALUE)src, &id)) {
+    if (st_lookup(obj_to_id_tbl, (VALUE)src, &id)) {
         gc_report(4, objspace, "Moving object with seen id: %p -> %p\n", (void *)src, (void *)dest);
         st_delete(obj_to_id_tbl, (st_data_t *)&src, 0);
         st_insert(obj_to_id_tbl, (VALUE)dest, id);
@@ -7274,25 +7279,29 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
     /* Set bits for object in new location */
     if (marking) {
         MARK_IN_BITMAP(GET_HEAP_MARKING_BITS((VALUE)dest), (VALUE)dest);
-    } else {
+    }
+    else {
         CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS((VALUE)dest), (VALUE)dest);
     }
 
     if (marked) {
         MARK_IN_BITMAP(GET_HEAP_MARK_BITS((VALUE)dest), (VALUE)dest);
-    } else {
+    }
+    else {
         CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS((VALUE)dest), (VALUE)dest);
     }
 
     if (wb_unprotected) {
         MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS((VALUE)dest), (VALUE)dest);
-    } else {
+    }
+    else {
         CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS((VALUE)dest), (VALUE)dest);
     }
 
     if (uncollectible) {
         MARK_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS((VALUE)dest), (VALUE)dest);
-    } else {
+    }
+    else {
         CLEAR_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS((VALUE)dest), (VALUE)dest);
     }
 
@@ -7316,7 +7325,8 @@ advance_cursor(struct heap_cursor *free, struct heap_page **page_list)
         free->index++;
         free->page = page_list[free->index];
         free->slot = free->page->start;
-    } else {
+    }
+    else {
         free->slot++;
     }
 }
@@ -7328,7 +7338,8 @@ retreat_cursor(struct heap_cursor *scan, struct heap_page **page_list)
         scan->index--;
         scan->page = page_list[scan->index];
         scan->slot = scan->page->start + scan->page->total_slots - 1;
-    } else {
+    }
+    else {
         scan->slot--;
     }
 }
@@ -7370,7 +7381,7 @@ int count_pinned(struct heap_page *page)
     int pinned = 0;
 
     VALUE v = (VALUE)pstart;
-    for(; v != (VALUE)pend; v += sizeof(RVALUE)) {
+    for (; v != (VALUE)pend; v += sizeof(RVALUE)) {
         void *poisoned = poisoned_object_p(v);
         unpoison_object(v, false);
 
@@ -7418,7 +7429,7 @@ gc_compact_heap(rb_objspace_t *objspace)
         void *free_slot_poison = poisoned_object_p((VALUE)free_cursor.slot);
         unpoison_object((VALUE)free_cursor.slot, false);
 
-        while(BUILTIN_TYPE(free_cursor.slot) != T_NONE && not_met(&free_cursor, &scan_cursor)) {
+        while (BUILTIN_TYPE(free_cursor.slot) != T_NONE && not_met(&free_cursor, &scan_cursor)) {
             /* Re-poison slot if it's not the one we want */
             if (free_slot_poison) {
                 GC_ASSERT(BUILTIN_TYPE(free_cursor.slot) == T_NONE);
@@ -7439,7 +7450,7 @@ gc_compact_heap(rb_objspace_t *objspace)
         /* Scan cursor movement */
         objspace->rcompactor.considered_count_table[BUILTIN_TYPE((VALUE)scan_cursor.slot)]++;
 
-        while(!gc_is_moveable_obj(objspace, (VALUE)scan_cursor.slot) && not_met(&free_cursor, &scan_cursor)) {
+        while (!gc_is_moveable_obj(objspace, (VALUE)scan_cursor.slot) && not_met(&free_cursor, &scan_cursor)) {
 
             /* Re-poison slot if it's not the one we want */
             if (scan_slot_poison) {
@@ -7487,7 +7498,7 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
     len = RARRAY_LEN(v);
     if (len > 0) {
         VALUE *ptr = (VALUE *)RARRAY_CONST_PTR_TRANSIENT(v);
-        for(i = 0; i < len; i++) {
+        for (i = 0; i < len; i++) {
             UPDATE_IF_MOVED(objspace, ptr[i]);
         }
     }
@@ -7511,11 +7522,11 @@ hash_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)argp;
 
-    if(gc_object_moved_p(objspace, (VALUE)*key)) {
+    if (gc_object_moved_p(objspace, (VALUE)*key)) {
         *key = rb_gc_new_location((VALUE)*key);
     }
 
-    if(gc_object_moved_p(objspace, (VALUE)*value)) {
+    if (gc_object_moved_p(objspace, (VALUE)*value)) {
         *value = rb_gc_new_location((VALUE)*value);
     }
 
@@ -7529,11 +7540,11 @@ hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
 
     objspace = (rb_objspace_t *)argp;
 
-    if(gc_object_moved_p(objspace, (VALUE)key)) {
+    if (gc_object_moved_p(objspace, (VALUE)key)) {
         return ST_REPLACE;
     }
 
-    if(gc_object_moved_p(objspace, (VALUE)value)) {
+    if (gc_object_moved_p(objspace, (VALUE)value)) {
         return ST_REPLACE;
     }
     return ST_CONTINUE;
@@ -7666,7 +7677,7 @@ check_id_table_move(ID id, VALUE value, void *data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
 
-    if(gc_object_moved_p(objspace, (VALUE)value)) {
+    if (gc_object_moved_p(objspace, (VALUE)value)) {
         return ID_TABLE_REPLACE;
     }
 
@@ -7681,14 +7692,15 @@ rb_gc_new_location(VALUE value)
 
     VALUE destination;
 
-    if(!SPECIAL_CONST_P((void *)value)) {
+    if (!SPECIAL_CONST_P((void *)value)) {
         void *poisoned = poisoned_object_p(value);
         unpoison_object(value, false);
 
         if (BUILTIN_TYPE(value) == T_MOVED) {
             destination = (VALUE)RMOVED(value)->destination;
             assert(BUILTIN_TYPE(destination) != T_NONE);
-        } else {
+        }
+        else {
             destination = value;
         }
 
@@ -7697,7 +7709,8 @@ rb_gc_new_location(VALUE value)
             GC_ASSERT(BUILTIN_TYPE(value) == T_NONE);
             poison_object(value);
         }
-    } else {
+    }
+    else {
         destination = value;
     }
 
@@ -7709,7 +7722,7 @@ update_id_table(ID *key, VALUE * value, void *data, int existing)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
 
-    if(gc_object_moved_p(objspace, (VALUE)*value)) {
+    if (gc_object_moved_p(objspace, (VALUE)*value)) {
         *value = rb_gc_new_location((VALUE)*value);
     }
 
@@ -7730,11 +7743,11 @@ update_const_table(VALUE value, void *data)
     rb_const_entry_t *ce = (rb_const_entry_t *)value;
     rb_objspace_t * objspace = (rb_objspace_t *)data;
 
-    if(gc_object_moved_p(objspace, ce->value)) {
+    if (gc_object_moved_p(objspace, ce->value)) {
         ce->value = rb_gc_new_location(ce->value);
     }
 
-    if(gc_object_moved_p(objspace, ce->file)) {
+    if (gc_object_moved_p(objspace, ce->file)) {
         ce->file = rb_gc_new_location(ce->file);
     }
 
@@ -7813,7 +7826,8 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         case T_ARRAY:
             if (FL_TEST(obj, ELTS_SHARED)) {
                 UPDATE_IF_MOVED(objspace, any->as.array.as.heap.aux.shared);
-            } else {
+            }
+            else {
                 gc_ref_update_array(objspace, obj);
             }
             break;
@@ -7894,7 +7908,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
                 long i, len = RSTRUCT_LEN(obj);
                 VALUE *ptr = (VALUE *)RSTRUCT_CONST_PTR(obj);
 
-                for(i = 0; i < len; i++) {
+                for (i = 0; i < len; i++) {
                     UPDATE_IF_MOVED(objspace, ptr[i]);
                 }
             }
@@ -7929,14 +7943,15 @@ gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
     page->flags.has_uncollectible_shady_objects = FALSE;
 
     /* For each object on the page */
-    for(; v != (VALUE)vend; v += stride) {
+    for (; v != (VALUE)vend; v += stride) {
         if (!SPECIAL_CONST_P(v)) {
             unpoison_object(v, false);
 
             if (BUILTIN_TYPE(v) == T_NONE) {
                 heap_page_add_freeobj(objspace, page, v);
                 free_slots++;
-            } else {
+            }
+            else {
                 if (RVALUE_WB_UNPROTECTED(v)) {
                     page->flags.has_uncollectible_shady_objects = TRUE;
                 }
@@ -8041,7 +8056,8 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
     for (; v != (VALUE)vend; v += stride) {
         if (gc_object_moved_p(&rb_objspace, v)) {
             /* Moved object still on the heap, something may have a reference. */
-        } else {
+        }
+        else {
             void *poisoned = poisoned_object_p(v);
             unpoison_object(v, false);
 
@@ -9774,7 +9790,8 @@ wmap_pin_obj(st_data_t key, st_data_t val, st_data_t arg)
     VALUE obj = (VALUE)val;
     if (obj && is_live_object(objspace, obj)) {
         gc_pin(objspace, obj);
-    } else {
+    }
+    else {
         return ST_DELETE;
     }
     return ST_CONTINUE;
@@ -11101,7 +11118,8 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 
     if (BUILTIN_TYPE(obj) == T_MOVED) {
         fprintf(stderr, "moved?: true\n");
-    } else {
+    }
+    else {
         fprintf(stderr, "moved?: false\n");
     }
     if (is_pointer_to_heap(objspace, (void *)obj)) {

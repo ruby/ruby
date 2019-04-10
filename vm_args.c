@@ -36,7 +36,7 @@ enum arg_setup_type {
 static inline void
 arg_rest_dup(struct args_info *args)
 {
-    if(!args->rest_dupped) {
+    if (!args->rest_dupped) {
         args->rest = rb_ary_dup(args->rest);
         args->rest_dupped = TRUE;
     }
