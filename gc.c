@@ -683,6 +683,8 @@ struct heap_page {
 #if USE_RGENGC
     bits_t wb_unprotected_bits[HEAP_PAGE_BITMAP_LIMIT];
 #endif
+    /* If set, the object is not movable */
+    bits_t pinned_bits[HEAP_PAGE_BITMAP_LIMIT];
     /* the following three bitmaps are cleared at the beginning of full GC */
     bits_t mark_bits[HEAP_PAGE_BITMAP_LIMIT];
 #if USE_RGENGC
@@ -707,6 +709,7 @@ struct heap_page {
 
 /* getting bitmap */
 #define GET_HEAP_MARK_BITS(x)           (&GET_HEAP_PAGE(x)->mark_bits[0])
+#define GET_HEAP_PINNED_BITS(x)         (&GET_HEAP_PAGE(x)->pinned_bits[0])
 #if USE_RGENGC
 #define GET_HEAP_UNCOLLECTIBLE_BITS(x)  (&GET_HEAP_PAGE(x)->uncollectible_bits[0])
 #define GET_HEAP_WB_UNPROTECTED_BITS(x) (&GET_HEAP_PAGE(x)->wb_unprotected_bits[0])
@@ -862,8 +865,11 @@ static void gc_sweep_rest(rb_objspace_t *objspace);
 static void gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap);
 
 static inline void gc_mark(rb_objspace_t *objspace, VALUE ptr);
+static inline void gc_pin(rb_objspace_t *objspace, VALUE ptr);
+static inline void gc_mark_and_pin(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr);
 NO_SANITIZE("memory", static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr));
+static void gc_mark_and_pin_maybe(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
 
 static int gc_mark_stacked_objects_incremental(rb_objspace_t *, size_t count);
@@ -1021,6 +1027,7 @@ tick(void)
 #define FL_UNSET2(x,f) FL_CHECK2("FL_UNSET2", x, RBASIC(x)->flags &= ~(f))
 
 #define RVALUE_MARK_BITMAP(obj)           MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), (obj))
+#define RVALUE_PIN_BITMAP(obj)            MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), (obj))
 #define RVALUE_PAGE_MARKED(page, obj)     MARKED_IN_BITMAP((page)->mark_bits, (obj))
 
 #if USE_RGENGC
@@ -1119,6 +1126,13 @@ RVALUE_MARKED(VALUE obj)
 {
     check_rvalue_consistency(obj);
     return RVALUE_MARK_BITMAP(obj) != 0;
+}
+
+static inline int
+RVALUE_PINNED(VALUE obj)
+{
+    check_rvalue_consistency(obj);
+    return RVALUE_PIN_BITMAP(obj) != 0;
 }
 
 #if USE_RGENGC
@@ -4209,7 +4223,7 @@ mark_locations_array(rb_objspace_t *objspace, register const VALUE *x, register 
     VALUE v;
     while (n--) {
         v = *x;
-        gc_mark_maybe(objspace, v);
+        gc_mark_and_pin_maybe(objspace, v);
 	x++;
     }
 }
@@ -4231,12 +4245,12 @@ rb_gc_mark_locations(const VALUE *start, const VALUE *end)
 }
 
 static void
-gc_mark_values(rb_objspace_t *objspace, long n, const VALUE *values)
+gc_mark_and_pin_values(rb_objspace_t *objspace, long n, const VALUE *values)
 {
     long i;
 
     for (i=0; i<n; i++) {
-        gc_mark(objspace, values[i]);
+        gc_mark_and_pin(objspace, values[i]);
     }
 }
 
@@ -4244,15 +4258,50 @@ void
 rb_gc_mark_values(long n, const VALUE *values)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    gc_mark_values(objspace, n, values);
+    gc_mark_and_pin_values(objspace, n, values);
+}
+
+static void
+gc_mark_and_pin_stack_values(rb_objspace_t *objspace, long n, const VALUE *values)
+{
+    long i;
+
+    for (i=0; i<n; i++) {
+        /* skip MOVED objects that are on the stack */
+        if (is_markable_object(objspace, values[i]) && T_MOVED != BUILTIN_TYPE(values[i])) {
+            gc_mark_and_pin(objspace, values[i]);
+        }
+    }
+}
+
+void
+rb_gc_mark_stack_values(long n, const VALUE *values)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    gc_mark_and_pin_stack_values(objspace, n, values);
+}
+
+static int
+mark_entry_no_pin(st_data_t key, st_data_t value, st_data_t data)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+    gc_mark(objspace, (VALUE)value);
+    return ST_CONTINUE;
 }
 
 static int
 mark_entry(st_data_t key, st_data_t value, st_data_t data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
-    gc_mark(objspace, (VALUE)value);
+    gc_mark_and_pin(objspace, (VALUE)value);
     return ST_CONTINUE;
+}
+
+static void
+mark_tbl_no_pin(rb_objspace_t *objspace, st_table *tbl)
+{
+    if (!tbl || tbl->num_entries == 0) return;
+    st_foreach(tbl, mark_entry_no_pin, (st_data_t)objspace);
 }
 
 static void
@@ -4288,7 +4337,12 @@ mark_keyvalue(st_data_t key, st_data_t value, st_data_t data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
 
-    gc_mark(objspace, (VALUE)key);
+    if (SPECIAL_CONST_P((VALUE)key) || BUILTIN_TYPE((VALUE)key) == T_STRING) {
+        gc_mark(objspace, (VALUE)key);
+    }
+    else {
+        gc_mark_and_pin(objspace, (VALUE)key);
+    }
     gc_mark(objspace, (VALUE)value);
     return ST_CONTINUE;
 }
@@ -4468,8 +4522,14 @@ rb_mark_tbl(st_table *tbl)
     mark_tbl(&rb_objspace, tbl);
 }
 
+void
+rb_mark_tbl_no_pin(st_table *tbl)
+{
+    mark_tbl_no_pin(&rb_objspace, tbl);
+}
+
 static void
-gc_mark_maybe(rb_objspace_t *objspace, VALUE obj)
+gc_mark_maybe_(rb_objspace_t *objspace, VALUE obj, int pin)
 {
     (void)VALGRIND_MAKE_MEM_DEFINED(&obj, sizeof(obj));
     if (is_pointer_to_heap(objspace, (void *)obj)) {
@@ -4478,19 +4538,35 @@ gc_mark_maybe(rb_objspace_t *objspace, VALUE obj)
 
         unpoison_object(obj, false);
         type = BUILTIN_TYPE(obj);
-        if (type != T_ZOMBIE && type != T_NONE) {
+        /* Garbage can live on the stack, so do not mark or pin */
+        if (type != T_MOVED && type != T_ZOMBIE && type != T_NONE) {
+            if (pin) {
+                gc_pin(objspace, obj);
+            }
 	    gc_mark_ptr(objspace, obj);
 	}
         if (ptr) {
+            GC_ASSERT(BUILTIN_TYPE(obj) == T_NONE);
             poison_object(obj);
         }
     }
+}
+static void
+gc_mark_and_pin_maybe(rb_objspace_t *objspace, VALUE obj)
+{
+    gc_mark_maybe_(objspace, obj, TRUE);
+}
+
+static void
+gc_mark_maybe(rb_objspace_t *objspace, VALUE obj)
+{
+    gc_mark_maybe_(objspace, obj, FALSE);
 }
 
 void
 rb_gc_mark_maybe(VALUE obj)
 {
-    gc_mark_maybe(&rb_objspace, obj);
+    gc_mark_and_pin_maybe(&rb_objspace, obj);
 }
 
 static inline int
@@ -4626,6 +4702,21 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
 }
 
 static inline void
+gc_mark_and_pin(rb_objspace_t *objspace, VALUE obj)
+{
+    if (!is_markable_object(objspace, obj)) return;
+    MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
+    gc_mark_ptr(objspace, obj);
+}
+
+static inline void
+gc_pin(rb_objspace_t *objspace, VALUE obj)
+{
+    if (!is_markable_object(objspace, obj)) return;
+    MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
+}
+
+static inline void
 gc_mark(rb_objspace_t *objspace, VALUE obj)
 {
     if (!is_markable_object(objspace, obj)) return;
@@ -4633,9 +4724,15 @@ gc_mark(rb_objspace_t *objspace, VALUE obj)
 }
 
 void
-rb_gc_mark(VALUE ptr)
+rb_gc_mark_no_pin(VALUE ptr)
 {
     gc_mark(&rb_objspace, ptr);
+}
+
+void
+rb_gc_mark(VALUE ptr)
+{
+    gc_mark_and_pin(&rb_objspace, ptr);
 }
 
 /* CAUTION: THIS FUNCTION ENABLE *ONLY BEFORE* SWEEPING.
@@ -4646,6 +4743,12 @@ int
 rb_objspace_marked_object_p(VALUE obj)
 {
     return RVALUE_MARKED(obj) ? TRUE : FALSE;
+}
+
+int
+rb_objspace_pinned_object_p(VALUE obj)
+{
+    return RVALUE_PINNED(obj) ? TRUE : FALSE;
 }
 
 static inline void
@@ -4669,9 +4772,9 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 	{
 	    const rb_env_t *env = (const rb_env_t *)obj;
 	    GC_ASSERT(VM_ENV_ESCAPED_P(env->ep));
-            gc_mark_values(objspace, (long)env->env_size, env->env);
+            gc_mark_and_pin_values(objspace, (long)env->env_size, env->env);
 	    VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
-            gc_mark(objspace, (VALUE)rb_vm_env_prev_env(env));
+            gc_mark_and_pin(objspace, (VALUE)rb_vm_env_prev_env(env));
 	    gc_mark(objspace, (VALUE)env->iseq);
 	}
 	return;
@@ -4763,7 +4866,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
       case T_MODULE:
 	mark_m_tbl(objspace, RCLASS_M_TBL(obj));
 	if (!RCLASS_EXT(obj)) break;
-        mark_tbl(objspace, RCLASS_IV_TBL(obj));
+        mark_tbl_no_pin(objspace, RCLASS_IV_TBL(obj));
 	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
 	gc_mark(objspace, RCLASS_SUPER((VALUE)obj));
 	break;
@@ -6121,6 +6224,7 @@ rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap)
 
     list_for_each(&heap->pages, page, page_node) {
 	memset(&page->mark_bits[0],       0, HEAP_PAGE_BITMAP_SIZE);
+        memset(&page->pinned_bits[0],     0, HEAP_PAGE_BITMAP_SIZE);
 	memset(&page->marking_bits[0],    0, HEAP_PAGE_BITMAP_SIZE);
 	memset(&page->uncollectible_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
 	page->flags.has_uncollectible_shady_objects = FALSE;
@@ -6375,7 +6479,7 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
     size_t n = 0;
     static ID ID_marked;
 #if USE_RGENGC
-    static ID ID_wb_protected, ID_old, ID_marking, ID_uncollectible;
+    static ID ID_wb_protected, ID_old, ID_marking, ID_uncollectible, ID_pinned;
 #endif
 
     if (!ID_marked) {
@@ -6386,6 +6490,7 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
 	I(old);
 	I(marking);
 	I(uncollectible);
+        I(pinned);
 #endif
 #undef I
     }
@@ -6397,6 +6502,7 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
     if (MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj) && n<max) flags[n++] = ID_marking;
 #endif
     if (MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj) && n<max)    flags[n++] = ID_marked;
+    if (MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj) && n<max)  flags[n++] = ID_pinned;
     return n;
 }
 
@@ -8634,10 +8740,25 @@ wmap_mark_map(st_data_t key, st_data_t val, st_data_t arg)
 }
 #endif
 
+static int
+wmap_pin_obj(st_data_t key, st_data_t val, st_data_t arg)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)arg;
+    VALUE obj = (VALUE)val;
+    if (obj && is_live_object(objspace, obj)) {
+        gc_pin(objspace, obj);
+    }
+    else {
+        return ST_DELETE;
+    }
+    return ST_CONTINUE;
+}
+
 static void
 wmap_mark(void *ptr)
 {
     struct weakmap *w = ptr;
+    if (w->wmap2obj) st_foreach(w->wmap2obj, wmap_pin_obj, (st_data_t)&rb_objspace);
 #if WMAP_DELETE_DEAD_OBJECT_IN_MARK
     if (w->obj2wmap) st_foreach(w->obj2wmap, wmap_mark_map, (st_data_t)&rb_objspace);
 #endif
@@ -9717,10 +9838,11 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
 
         if (is_pointer_to_heap(&rb_objspace, (void *)obj)) {
-            snprintf(buff, buff_size, "%p [%d%s%s%s%s] %s",
+            snprintf(buff, buff_size, "%p [%d%s%s%s%s%s] %s",
                      (void *)obj, age,
                      C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
                      C(RVALUE_MARK_BITMAP(obj),           "M"),
+                     C(RVALUE_PIN_BITMAP(obj),            "P"),
                      C(RVALUE_MARKING_BITMAP(obj),        "R"),
                      C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
                      obj_type_name(obj));
@@ -9960,6 +10082,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
     }
 
     fprintf(stderr, "marked?      : %s\n", MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj) ? "true" : "false");
+    fprintf(stderr, "pinned?      : %s\n", MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj) ? "true" : "false");
 #if USE_RGENGC
     fprintf(stderr, "age?         : %d\n", RVALUE_AGE(obj));
     fprintf(stderr, "old?         : %s\n", RVALUE_OLD_P(obj) ? "true" : "false");

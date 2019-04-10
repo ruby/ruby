@@ -1950,7 +1950,7 @@ rb_mod_const_missing(VALUE klass, VALUE name)
 static void
 autoload_mark(void *ptr)
 {
-    rb_mark_tbl((st_table *)ptr);
+    rb_mark_tbl_no_pin((st_table *)ptr);
 }
 
 static void
@@ -2019,7 +2019,7 @@ autoload_i_mark(void *ptr)
 {
     struct autoload_data_i *p = ptr;
 
-    rb_gc_mark(p->feature);
+    rb_gc_mark_no_pin(p->feature);
 
     /* allow GC to free us if no modules refer to this via autoload_const.ad */
     if (list_empty(&p->constants)) {
@@ -2971,6 +2971,7 @@ rb_define_const(VALUE klass, const char *name, VALUE val)
     if (!rb_is_const_id(id)) {
 	rb_warn("rb_define_const: invalid name `%s' for constant", name);
     }
+    rb_gc_register_mark_object(val);
     rb_const_set(klass, id, val);
 }
 
