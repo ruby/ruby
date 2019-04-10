@@ -233,7 +233,7 @@ rb_iseq_update_references(rb_iseq_t *iseq)
         if (body->parent_iseq) {
             body->parent_iseq = (struct rb_iseq_struct *)rb_gc_new_location((VALUE)body->parent_iseq);
         }
-        if(FL_TEST(iseq, ISEQ_MARKABLE_ISEQ)) {
+        if (FL_TEST(iseq, ISEQ_MARKABLE_ISEQ)) {
             rb_iseq_each_value(iseq, update_each_insn_value, NULL);
         }
 

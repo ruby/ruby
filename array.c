@@ -1326,7 +1326,7 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
 MJIT_FUNC_EXPORTED VALUE
 rb_ary_behead(VALUE ary, long n)
 {
-    if(n<=0) return ary;
+    if (n<=0) return ary;
 
     rb_ary_modify_check(ary);
     if (ARY_SHARED_P(ary)) {

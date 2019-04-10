@@ -10996,7 +10996,8 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
                 return 1;
             }
         }
-    } else {
+    }
+    else {
         switch (errno) {
           case ENOTSUP:
           case EPERM:
