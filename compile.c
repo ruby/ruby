@@ -1366,12 +1366,10 @@ iseq_set_exception_local_table(rb_iseq_t *iseq)
     /* TODO: every id table is same -> share it.
      * Current problem is iseq_free().
      */
-    ID id_dollar_bang;
     ID *ids = (ID *)ALLOC_N(ID, 1);
 
-    CONST_ID(id_dollar_bang, "#$!");
     iseq->body->local_table_size = 1;
-    ids[0] = id_dollar_bang;
+    ids[0] = idERROR_INFO;
     iseq->body->local_table = ids;
     return COMPILE_OK;
 }
