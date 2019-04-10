@@ -40,9 +40,9 @@ typedef struct rb_scope_visi_struct {
 /*! CREF (Class REFerence) */
 typedef struct rb_cref_struct {
     VALUE flags;
-    VALUE refinements;
-    VALUE klass;
-    struct rb_cref_struct * next;
+    const VALUE refinements;
+    const VALUE klass;
+    struct rb_cref_struct * const next;
     const rb_scope_visibility_t scope_visi;
 } rb_cref_t;
 
@@ -50,10 +50,10 @@ typedef struct rb_cref_struct {
 
 typedef struct rb_method_entry_struct {
     VALUE flags;
-    VALUE defined_class;
+    const VALUE defined_class;
     struct rb_method_definition_struct * const def;
     ID called_id;
-    VALUE owner;
+    const VALUE owner;
 } rb_method_entry_t;
 
 typedef struct rb_callable_method_entry_struct { /* same fields with rb_method_entry_t */
@@ -123,8 +123,8 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #endif
 
 typedef struct rb_method_iseq_struct {
-    rb_iseq_t * iseqptr; /*!< iseq pointer, should be separated from iseqval */
-    rb_cref_t * cref;          /*!< class reference, should be marked */
+    const rb_iseq_t * const iseqptr; /*!< iseq pointer, should be separated from iseqval */
+    rb_cref_t * const cref;          /*!< class reference, should be marked */
 } rb_method_iseq_t; /* check rb_add_method_iseq() when modify the fields */
 
 typedef struct rb_method_cfunc_struct {
@@ -135,20 +135,20 @@ typedef struct rb_method_cfunc_struct {
 
 typedef struct rb_method_attr_struct {
     ID id;
-    VALUE location; /* should be marked */
+    const VALUE location; /* should be marked */
 } rb_method_attr_t;
 
 typedef struct rb_method_alias_struct {
-    struct rb_method_entry_struct * original_me; /* original_me->klass is original owner */
+    const struct rb_method_entry_struct * const original_me; /* original_me->klass is original owner */
 } rb_method_alias_t;
 
 typedef struct rb_method_refined_struct {
-    struct rb_method_entry_struct * orig_me;
-    VALUE owner;
+    const struct rb_method_entry_struct * const orig_me;
+    const VALUE owner;
 } rb_method_refined_t;
 
 typedef struct rb_method_bmethod_struct {
-    VALUE proc; /* should be marked */
+    const VALUE proc; /* should be marked */
     struct rb_hook_list_struct *hooks;
 } rb_method_bmethod_t;
 

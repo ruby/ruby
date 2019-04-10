@@ -234,7 +234,7 @@ struct iseq_catch_table_entry {
      *   CATCH_TYPE_REDO, CATCH_TYPE_NEXT:
      *     NULL.
      */
-    rb_iseq_t *iseq;
+    const rb_iseq_t *iseq;
 
     unsigned int start;
     unsigned int end;

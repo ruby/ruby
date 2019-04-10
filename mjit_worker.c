@@ -1180,8 +1180,7 @@ mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache *cc
 
     if (UNLIKELY(mjit_opts.wait)) {
         mjit_copy_job_handler((void *)job);
-    }
-    else if (rb_workqueue_register(0, mjit_copy_job_handler, (void *)job)) {
+    } else if (rb_workqueue_register(0, mjit_copy_job_handler, (void *)job)) {
         CRITICAL_SECTION_START(3, "in MJIT copy job wait");
         // checking `stop_worker_p` too because `RUBY_VM_CHECK_INTS(ec)` may not
         // lush mjit_copy_job_handler when EC_EXEC_TAG() is not TAG_NONE, and then

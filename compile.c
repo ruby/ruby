@@ -574,7 +574,6 @@ static int
 iseq_add_mark_object_compile_time(const rb_iseq_t *iseq, VALUE v)
 {
     if (!SPECIAL_CONST_P(v)) {
-        rb_gc_writebarrier((VALUE)iseq, v);
 	rb_ary_push(ISEQ_COMPILE_DATA(iseq)->mark_ary, v);
     }
     return COMPILE_OK;
@@ -584,7 +583,6 @@ static inline VALUE
 freeze_literal(rb_iseq_t *iseq, VALUE lit)
 {
     lit = rb_fstring(lit);
-    rb_gc_writebarrier((VALUE)iseq, lit);
     rb_ary_push(ISEQ_COMPILE_DATA(iseq)->mark_ary, lit);
     return lit;
 }
@@ -1366,10 +1364,12 @@ iseq_set_exception_local_table(rb_iseq_t *iseq)
     /* TODO: every id table is same -> share it.
      * Current problem is iseq_free().
      */
+    ID id_dollar_bang;
     ID *ids = (ID *)ALLOC_N(ID, 1);
 
+    CONST_ID(id_dollar_bang, "#$!");
     iseq->body->local_table_size = 1;
-    ids[0] = idERROR_INFO;
+    ids[0] = id_dollar_bang;
     iseq->body->local_table = ids;
     return COMPILE_OK;
 }
