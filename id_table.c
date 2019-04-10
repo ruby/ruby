@@ -279,7 +279,7 @@ rb_id_table_foreach_with_replace(struct rb_id_table *tbl, rb_id_table_foreach_fu
 
             if (ret == ID_TABLE_REPLACE) {
                 VALUE val = tbl->items[i].val;
-                ret = (*replace)(Qundef, &val, data, TRUE);
+                ret = (*replace)(NULL, &val, data, TRUE);
                 tbl->items[i].val = val;
             }
             else if (ret == ID_TABLE_STOP)
