@@ -671,8 +671,8 @@ MJIT_FUNC_EXPORTED void
 rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *cref, rb_method_visibility_t visi)
 {
     struct { /* should be same fields with rb_method_iseq_struct */
-	const rb_iseq_t *iseqptr;
-	rb_cref_t *cref;
+        const rb_iseq_t *iseqptr;
+        rb_cref_t *cref;
     } iseq_body;
 
     iseq_body.iseqptr = iseq;
