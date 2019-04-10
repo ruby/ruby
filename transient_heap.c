@@ -842,7 +842,7 @@ rb_transient_heap_update_references(void)
 
     for (i=0; i<theap->promoted_objects_index; i++) {
         VALUE obj = theap->promoted_objects[i];
-        theap->promoted_objects[i] == rb_gc_new_location(obj);
+        theap->promoted_objects[i] = rb_gc_new_location(obj);
     }
 }
 
