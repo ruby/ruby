@@ -136,8 +136,11 @@ RSpec.describe Bundler::Source::Git::GitProxy do
         expect(subject).not_to receive(:git)
 
         expect { subject.copy_to(destination, submodules) }.
-          to raise_error(Bundler::Source::Git::MissingGitRevisionError,
-            "Revision #{revision} does not exist in the repository #{uri}. Maybe you misspelled it?")
+          to raise_error(
+            Bundler::Source::Git::MissingGitRevisionError,
+            "Git error: command `git command` in directory #{destination} has failed.\n" \
+            "Revision #{revision} does not exist in the repository #{uri}. Maybe you misspelled it?" \
+          )
       end
     end
   end
