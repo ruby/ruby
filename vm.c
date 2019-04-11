@@ -2203,6 +2203,15 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
 /* vm */
 
 void
+rb_vm_update_references(void *ptr)
+{
+    if (ptr) {
+        rb_vm_t *vm = ptr;
+        rb_update_st_references(vm->frozen_strings);
+    }
+}
+
+void
 rb_vm_mark(void *ptr)
 {
     RUBY_MARK_ENTER("vm");

@@ -156,7 +156,10 @@ iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data
 		{
 		    VALUE op = code[pos + op_no + 1];
 		    if (!SPECIAL_CONST_P(op)) {
-                        func(data, op);
+                        VALUE newop = func(data, op);
+                        if (newop != op) {
+                            code[pos + op_no + 1] = newop;
+                        }
 		    }
 		    break;
 		}
@@ -164,7 +167,10 @@ iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data
 		{
 		    union iseq_inline_storage_entry *const is = (union iseq_inline_storage_entry *)code[pos + op_no + 1];
 		    if (is->once.value) {
-                        func(data, is->once.value);
+                        VALUE nv = func(data, is->once.value);
+                        if (is->once.value != nv) {
+                            is->once.value = nv;
+                        }
 		    }
 		    break;
 		}
@@ -201,6 +207,60 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
 
     for (n = 0; n < size;) {
 	n += iseq_extract_values(code, n, func, data, translator);
+    }
+}
+
+static VALUE
+update_each_insn_value(void *ctx, VALUE obj)
+{
+    return rb_gc_new_location(obj);
+}
+
+void
+rb_iseq_update_references(rb_iseq_t *iseq)
+{
+    if (iseq->body) {
+        struct rb_iseq_constant_body *body = iseq->body;
+
+        body->variable.coverage = rb_gc_new_location(body->variable.coverage);
+        body->variable.pc2branchindex = rb_gc_new_location(body->variable.pc2branchindex);
+        body->location.label = rb_gc_new_location(body->location.label);
+        body->location.base_label = rb_gc_new_location(body->location.base_label);
+        body->location.pathobj = rb_gc_new_location(body->location.pathobj);
+        if (body->local_iseq) {
+            body->local_iseq = (struct rb_iseq_struct *)rb_gc_new_location((VALUE)body->local_iseq);
+        }
+        if (body->parent_iseq) {
+            body->parent_iseq = (struct rb_iseq_struct *)rb_gc_new_location((VALUE)body->parent_iseq);
+        }
+        if (FL_TEST(iseq, ISEQ_MARKABLE_ISEQ)) {
+            rb_iseq_each_value(iseq, update_each_insn_value, NULL);
+        }
+
+        if (body->param.flags.has_kw && ISEQ_COMPILE_DATA(iseq) == NULL) {
+            int i, j;
+
+            i = body->param.keyword->required_num;
+
+            for (j = 0; i < body->param.keyword->num; i++, j++) {
+                VALUE obj = body->param.keyword->default_values[j];
+                if (obj != Qundef) {
+                    body->param.keyword->default_values[j] = rb_gc_new_location(obj);
+                }
+            }
+        }
+
+        if (body->catch_table) {
+            struct iseq_catch_table *table = body->catch_table;
+            unsigned int i;
+            for(i = 0; i < table->size; i++) {
+                struct iseq_catch_table_entry *entry;
+                entry = &table->entries[i];
+                if (entry->iseq) {
+                    entry->iseq = (rb_iseq_t *)rb_gc_new_location((VALUE)entry->iseq);
+                }
+            }
+        }
     }
 }
 
