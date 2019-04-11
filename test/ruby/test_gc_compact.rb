@@ -51,6 +51,8 @@ class TestGCCompact < Test::Unit::TestCase
     ids       = list_of_objects.map(&:object_id) # store id in map
     addresses = list_of_objects.map(&self.:memory_location)
 
+    assert_equal ids, addresses
+
     # All object ids should be equal
     assert_equal 0, assert_object_ids(list_of_objects) # should be 0
 
