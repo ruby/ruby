@@ -194,11 +194,11 @@ describe "Proc.new without a block" do
 
   ruby_version_is "2.7" do
     it "can be created if invoked from within a method with a block" do
-      lambda { ProcSpecs.new_proc_in_method { "hello" } }.should complain(/tried to create Proc object without a block/)
+      lambda { ProcSpecs.new_proc_in_method { "hello" } }.should complain(/Capturing the given block using Proc.new is deprecated/)
     end
 
     it "can be created if invoked on a subclass from within a method with a block" do
-      lambda { ProcSpecs.new_proc_subclass_in_method { "hello" } }.should complain(/tried to create Proc object without a block/)
+      lambda { ProcSpecs.new_proc_subclass_in_method { "hello" } }.should complain(/Capturing the given block using Proc.new is deprecated/)
     end
 
 
@@ -209,7 +209,7 @@ describe "Proc.new without a block" do
 
       -> {
         some_method { "hello" }
-      }.should complain(/tried to create Proc object without a block/)
+      }.should complain(/Capturing the given block using Proc.new is deprecated/)
     end
   end
 end
