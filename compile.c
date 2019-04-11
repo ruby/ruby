@@ -1363,7 +1363,7 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 static int
 iseq_set_exception_local_table(rb_iseq_t *iseq)
 {
-    iseq->body->local_table_size = 1;
+    iseq->body->local_table_size = numberof(rb_iseq_shared_exc_local_tbl);
     iseq->body->local_table = rb_iseq_shared_exc_local_tbl;
     return COMPILE_OK;
 }
