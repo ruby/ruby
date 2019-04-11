@@ -107,6 +107,7 @@ class TestArithmeticSequence < Test::Unit::TestCase
     assert_equal(seq.hash, seq.hash)
     assert_equal(seq.hash, 1.step.hash)
     assert_equal(seq.hash, 1.step(nil).hash)
+    assert_kind_of(String, seq.hash.to_s)
   end
 
   def test_first
