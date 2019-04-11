@@ -229,7 +229,7 @@ range_hash(VALUE range)
     hash = rb_hash_uint(hash, EXCL(range) << 24);
     hash = rb_hash_end(hash);
 
-    return LONG2FIX(hash);
+    return ST2FIX(hash);
 }
 
 static void
