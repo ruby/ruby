@@ -18,6 +18,33 @@ describe "Module#name" do
     m::N.name.should =~ /#<Module:0x[0-9a-f]+>::N/
   end
 
+  it "changes when the module is reachable through a constant path" do
+    m = Module.new
+    module m::N; end
+    m::N.name.should =~ /#<Module:0x[0-9a-f]+>::N/
+    ModuleSpecs::Anonymous::WasAnnon = m::N
+    m::N.name.should == "ModuleSpecs::Anonymous::WasAnnon"
+  end
+
+  it "is set after it is removed from a constant" do
+    module ModuleSpecs
+      module ModuleToRemove
+      end
+
+      mod = ModuleToRemove
+      remove_const(:ModuleToRemove)
+      mod.name.should == "ModuleSpecs::ModuleToRemove"
+    end
+  end
+
+  it "is set after it is removed from a constant under an anonymous module" do
+    m = Module.new
+    module m::Child; end
+    child = m::Child
+    m.send(:remove_const, :Child)
+    child.name.should =~ /#<Module:0x[0-9a-f]+>::Child/
+  end
+
   it "is set when opened with the module keyword" do
     ModuleSpecs.name.should == "ModuleSpecs"
   end
@@ -38,6 +65,15 @@ describe "Module#name" do
     m.name.should == "ModuleSpecs::Anonymous::B"
     ModuleSpecs::Anonymous::C = m
     m.name.should == "ModuleSpecs::Anonymous::B"
+  end
+
+  it "is not modified when assigned to a different anonymous module" do
+    m = Module.new
+    module m::M; end
+    first_name = m::M.name.dup
+    module m::N; end
+    m::N::F = m::M
+    m::M.name.should == first_name
   end
 
   # http://bugs.ruby-lang.org/issues/6067

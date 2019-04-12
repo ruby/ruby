@@ -374,8 +374,6 @@ rb_vm_inc_const_missing_count(void)
     ruby_vm_const_missing_count +=1;
 }
 
-VALUE rb_class_path_no_cache(VALUE _klass);
-
 MJIT_FUNC_EXPORTED int
 rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
 		struct ruby_dtrace_method_hook_args *args)
@@ -395,7 +393,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
     }
     type = BUILTIN_TYPE(klass);
     if (type == T_CLASS || type == T_ICLASS || type == T_MODULE) {
-	VALUE name = rb_class_path_no_cache(klass);
+	VALUE name = rb_class_path(klass);
 	const char *classname, *filename;
 	const char *methodname = rb_id2name(id);
 	if (methodname && (filename = rb_source_location_cstr(&args->line_no)) != 0) {

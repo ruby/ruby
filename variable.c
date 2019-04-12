@@ -25,7 +25,7 @@
 #include "transient_heap.h"
 
 static struct rb_id_table *rb_global_tbl;
-static ID autoload, classpath, tmp_classpath, classid;
+static ID autoload, classpath, tmp_classpath;
 static VALUE autoload_featuremap; /* feature => autoload_i */
 
 static void check_before_mod_set(VALUE, ID, VALUE, const char *);
@@ -59,8 +59,6 @@ Init_var_tables(void)
     classpath = rb_intern_const("__classpath__");
     /* __tmp_classpath__: temporary class path which contains anonymous names */
     tmp_classpath = rb_intern_const("__tmp_classpath__");
-    /* __classid__: name given to class/module under an anonymous namespace */
-    classid = rb_intern_const("__classid__");
 }
 
 static inline bool
@@ -73,163 +71,29 @@ rb_namespace_p(VALUE obj)
     return false;
 }
 
-struct fc_result {
-    ID name, preferred;
-    VALUE klass;
-    VALUE path;
-    VALUE track;
-    struct fc_result *prev;
-};
-
-static VALUE
-fc_path(struct fc_result *fc, ID name)
-{
-    VALUE path, tmp;
-
-    path = rb_id2str(name);
-    while (fc) {
-	st_data_t n;
-	if (fc->track == rb_cObject) break;
-	if (RCLASS_IV_TBL(fc->track) &&
-	    st_lookup(RCLASS_IV_TBL(fc->track), (st_data_t)classpath, &n)) {
-	    tmp = rb_str_dup((VALUE)n);
-	    rb_str_cat2(tmp, "::");
-	    rb_str_append(tmp, path);
-	    path = tmp;
-	    break;
-	}
-	tmp = rb_str_dup(rb_id2str(fc->name));
-	rb_str_cat2(tmp, "::");
-	rb_str_append(tmp, path);
-	path = tmp;
-	fc = fc->prev;
-    }
-    OBJ_FREEZE(path);
-    return path;
-}
-
-static enum rb_id_table_iterator_result
-fc_i(ID key, VALUE v, void *a)
-{
-    rb_const_entry_t *ce = (rb_const_entry_t *)v;
-    struct fc_result *res = a;
-    VALUE value = ce->value;
-    if (!rb_is_const_id(key)) return ID_TABLE_CONTINUE;
-
-    if (value == res->klass && (!res->preferred || key == res->preferred)) {
-	res->path = fc_path(res, key);
-	return ID_TABLE_STOP;
-    }
-    if (rb_namespace_p(value)) {
-	if (!RCLASS_CONST_TBL(value)) return ID_TABLE_CONTINUE;
-	else {
-	    struct fc_result arg;
-	    struct fc_result *list;
-
-	    list = res;
-	    while (list) {
-		if (list->track == value) return ID_TABLE_CONTINUE;
-		list = list->prev;
-	    }
-
-	    arg.name = key;
-	    arg.preferred = res->preferred;
-	    arg.path = 0;
-	    arg.klass = res->klass;
-	    arg.track = value;
-	    arg.prev = res;
-	    rb_id_table_foreach(RCLASS_CONST_TBL(value), fc_i, &arg);
-	    if (arg.path) {
-		res->path = arg.path;
-		return ID_TABLE_STOP;
-	    }
-	}
-    }
-    return ID_TABLE_CONTINUE;
-}
-
-/**
- * Traverse constant namespace and find +classpath+ for _klass_.  If
- * _preferred_ is not 0, choice the path whose base name is set to it.
- * If +classpath+ is found, the hidden instance variable __classpath__
- * is set to the found path, and __tmp_classpath__ is removed.
- * The path is frozen.
- */
-static VALUE
-find_class_path(VALUE klass, ID preferred)
-{
-    struct fc_result arg;
-
-    arg.preferred = preferred;
-    arg.name = 0;
-    arg.path = 0;
-    arg.klass = klass;
-    arg.track = rb_cObject;
-    arg.prev = 0;
-    if (RCLASS_CONST_TBL(rb_cObject)) {
-	rb_id_table_foreach(RCLASS_CONST_TBL(rb_cObject), fc_i, &arg);
-    }
-    if (arg.path) {
-	st_data_t tmp = tmp_classpath;
-	if (!RCLASS_IV_TBL(klass)) {
-	    RCLASS_IV_TBL(klass) = st_init_numtable();
-	}
-	rb_class_ivar_set(klass, classpath, arg.path);
-
-	st_delete(RCLASS_IV_TBL(klass), &tmp, 0);
-	return arg.path;
-    }
-    return Qnil;
-}
-
 /**
  * Returns +classpath+ of _klass_, if it is named, or +nil+ for
- * anonymous +class+/+module+.  The last part of named +classpath+ is
- * never anonymous, but anonymous +class+/+module+ names may be
- * contained.  If the path is "permanent", that means it has no
- * anonymous names, <code>*permanent</code> is set to 1.
+ * anonymous +class+/+module+. A named +classpath+ may contain
+ * an anonymous component, but the last component is guaranteed
+ * to not be anonymous. <code>*permanent</code> is set to 1
+ * if +classpath+ has no anonymous components. There is no builtin
+ * Ruby level APIs that can change a permanent +classpath+.
  */
 static VALUE
 classname(VALUE klass, int *permanent)
 {
-    VALUE path = Qnil;
+    st_table *ivtbl;
     st_data_t n;
 
-    if (!klass) klass = rb_cObject;
-    *permanent = 1;
-    if (RCLASS_IV_TBL(klass)) {
-	if (!st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classpath, &n)) {
-	    ID cid = 0;
-	    if (st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classid, &n)) {
-		VALUE cname = (VALUE)n;
-		cid = rb_check_id(&cname);
-		if (cid) path = find_class_path(klass, cid);
-	    }
-	    if (NIL_P(path)) {
-		path = find_class_path(klass, (ID)0);
-	    }
-	    if (NIL_P(path)) {
-		if (!cid) {
-		    return Qnil;
-		}
-		if (!st_lookup(RCLASS_IV_TBL(klass), (st_data_t)tmp_classpath, &n)) {
-		    path = rb_id2str(cid);
-		    return path;
-		}
-		*permanent = 0;
-		path = (VALUE)n;
-		return path;
-	    }
-	}
-	else {
-	    path = (VALUE)n;
-	}
-	if (!RB_TYPE_P(path, T_STRING)) {
-	    rb_bug("class path is not set properly");
-	}
-	return path;
+    *permanent = 0;
+    if (!RCLASS_EXT(klass)) return Qnil;
+    if (!(ivtbl = RCLASS_IV_TBL(klass))) return Qnil;
+    if (st_lookup(ivtbl, (st_data_t)classpath, &n)) {
+        *permanent = 1;
+        return (VALUE)n;
     }
-    return find_class_path(klass, (ID)0);
+    if (st_lookup(ivtbl, (st_data_t)tmp_classpath, &n)) return (VALUE)n;
+    return Qnil;
 }
 
 /*
@@ -268,21 +132,15 @@ make_temporary_path(VALUE obj, VALUE klass)
     return path;
 }
 
-typedef VALUE (*path_cache_func)(VALUE obj, VALUE name);
+typedef VALUE (*fallback_func)(VALUE obj, VALUE name);
 
 static VALUE
-rb_tmp_class_path(VALUE klass, int *permanent, path_cache_func cache_path)
+rb_tmp_class_path(VALUE klass, int *permanent, fallback_func fallback)
 {
     VALUE path = classname(klass, permanent);
-    st_data_t n = (st_data_t)path;
 
     if (!NIL_P(path)) {
 	return path;
-    }
-    if (RCLASS_IV_TBL(klass) && st_lookup(RCLASS_IV_TBL(klass),
-					  (st_data_t)tmp_classpath, &n)) {
-	*permanent = 0;
-	return (VALUE)n;
     }
     else {
 	if (RB_TYPE_P(klass, T_MODULE)) {
@@ -291,40 +149,19 @@ rb_tmp_class_path(VALUE klass, int *permanent, path_cache_func cache_path)
 	    }
 	    else {
 		int perm;
-		path = rb_tmp_class_path(RBASIC(klass)->klass, &perm, cache_path);
+		path = rb_tmp_class_path(RBASIC(klass)->klass, &perm, fallback);
 	    }
 	}
 	*permanent = 0;
-	return cache_path(klass, path);
+	return fallback(klass, path);
     }
-}
-
-static VALUE
-ivar_cache(VALUE obj, VALUE name)
-{
-    return rb_ivar_set(obj, tmp_classpath, make_temporary_path(obj, name));
 }
 
 VALUE
 rb_class_path(VALUE klass)
 {
     int permanent;
-    VALUE path = rb_tmp_class_path(klass, &permanent, ivar_cache);
-    if (!NIL_P(path)) path = rb_str_dup(path);
-    return path;
-}
-
-static VALUE
-null_cache(VALUE obj, VALUE name)
-{
-    return make_temporary_path(obj, name);
-}
-
-VALUE
-rb_class_path_no_cache(VALUE klass)
-{
-    int permanent;
-    VALUE path = rb_tmp_class_path(klass, &permanent, null_cache);
+    VALUE path = rb_tmp_class_path(klass, &permanent, make_temporary_path);
     if (!NIL_P(path)) path = rb_str_dup(path);
     return path;
 }
@@ -332,18 +169,12 @@ rb_class_path_no_cache(VALUE klass)
 VALUE
 rb_class_path_cached(VALUE klass)
 {
-    st_table *ivtbl;
-    st_data_t n;
-
-    if (!RCLASS_EXT(klass)) return Qnil;
-    if (!(ivtbl = RCLASS_IV_TBL(klass))) return Qnil;
-    if (st_lookup(ivtbl, (st_data_t)classpath, &n)) return (VALUE)n;
-    if (st_lookup(ivtbl, (st_data_t)tmp_classpath, &n)) return (VALUE)n;
-    return Qnil;
+    int permanent;
+    return classname(klass, &permanent);
 }
 
 static VALUE
-never_cache(VALUE obj, VALUE name)
+no_fallback(VALUE obj, VALUE name)
 {
     return name;
 }
@@ -352,7 +183,13 @@ VALUE
 rb_search_class_path(VALUE klass)
 {
     int permanent;
-    return rb_tmp_class_path(klass, &permanent, never_cache);
+    return rb_tmp_class_path(klass, &permanent, no_fallback);
+}
+
+static VALUE
+save_temporary_path(VALUE obj, VALUE name)
+{
+    return rb_ivar_set(obj, tmp_classpath, make_temporary_path(obj, name));
 }
 
 void
@@ -366,13 +203,12 @@ rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
     }
     else {
 	int permanent;
-	str = rb_str_dup(rb_tmp_class_path(under, &permanent, ivar_cache));
+	str = rb_str_dup(rb_tmp_class_path(under, &permanent, save_temporary_path));
 	rb_str_cat2(str, "::");
 	rb_str_append(str, name);
 	OBJ_FREEZE(str);
 	if (!permanent) {
 	    pathid = tmp_classpath;
-	    rb_ivar_set(klass, classid, rb_str_intern(name));
 	}
     }
     rb_ivar_set(klass, pathid, str);
@@ -389,12 +225,11 @@ rb_set_class_path(VALUE klass, VALUE under, const char *name)
     }
     else {
 	int permanent;
-	str = rb_str_dup(rb_tmp_class_path(under, &permanent, ivar_cache));
+	str = rb_str_dup(rb_tmp_class_path(under, &permanent, save_temporary_path));
 	rb_str_cat2(str, "::");
 	rb_str_cat2(str, name);
 	if (!permanent) {
 	    pathid = tmp_classpath;
-	    rb_ivar_set(klass, classid, rb_str_intern(rb_str_new_cstr(name)));
 	}
     }
     OBJ_FREEZE(str);
@@ -449,12 +284,6 @@ rb_path2class(const char *path)
     return rb_path_to_class(rb_str_new_cstr(path));
 }
 
-void
-rb_name_class(VALUE klass, ID id)
-{
-    rb_ivar_set(klass, classid, ID2SYM(id));
-}
-
 VALUE
 rb_class_name(VALUE klass)
 {
@@ -465,7 +294,7 @@ const char *
 rb_class2name(VALUE klass)
 {
     int permanent;
-    VALUE path = rb_tmp_class_path(rb_class_real(klass), &permanent, ivar_cache);
+    VALUE path = rb_tmp_class_path(rb_class_real(klass), &permanent, make_temporary_path);
     if (NIL_P(path)) return NULL;
     return RSTRING_PTR(path);
 }
@@ -2853,6 +2682,64 @@ check_before_mod_set(VALUE klass, ID id, VALUE val, const char *dest)
     rb_check_frozen(klass);
 }
 
+static VALUE
+build_const_path(VALUE head, ID tail)
+{
+    VALUE path = rb_str_dup(head);
+    rb_str_cat2(path, "::");
+    rb_str_append(path, rb_id2str(tail));
+    OBJ_FREEZE(path);
+    return path;
+}
+
+static void finalize_classpath_for_children(VALUE named_namespace);
+
+static enum rb_id_table_iterator_result
+finalize_classpath_i(ID id, VALUE v, void *payload)
+{
+    rb_const_entry_t *ce = (rb_const_entry_t *)v;
+    VALUE value = ce->value;
+    int has_permanent_classpath;
+    VALUE parental_path = *((VALUE *) payload);
+    if (!rb_is_const_id(id)) {
+        return ID_TABLE_CONTINUE;
+    }
+    if (!rb_namespace_p(value)) {
+        return ID_TABLE_CONTINUE;
+    }
+    classname(value, &has_permanent_classpath);
+    if (has_permanent_classpath) {
+        return ID_TABLE_CONTINUE;
+    }
+    rb_ivar_set(value, classpath, build_const_path(parental_path, id));
+    if (RCLASS_IV_TBL(value)) {
+        st_data_t tmp = tmp_classpath;
+        st_delete(RCLASS_IV_TBL(value), &tmp, 0);
+    }
+    finalize_classpath_for_children(value);
+
+    return ID_TABLE_CONTINUE;
+}
+
+/*
+ * Assign permanent classpaths to all namespaces that are directly or indirectly
+ * nested under +named_namespace+. +named_namespace+ must have a permanent
+ * classpath.
+ */
+static void
+finalize_classpath_for_children(VALUE named_namespace)
+{
+    struct rb_id_table *const_table = RCLASS_CONST_TBL(named_namespace);
+
+    if (const_table) {
+        int permanent;
+        VALUE parental_path = classname(named_namespace, &permanent);
+        VM_ASSERT(RB_TYPE_P(parental_path, T_STRING));
+        VM_ASSERT(permanent);
+        rb_id_table_foreach(const_table, finalize_classpath_i, &parental_path);
+    }
+}
+
 void
 rb_const_set(VALUE klass, ID id, VALUE val)
 {
@@ -2885,24 +2772,23 @@ rb_const_set(VALUE klass, ID id, VALUE val)
      * and avoid order-dependency on const_tbl
      */
     if (rb_cObject && rb_namespace_p(val)) {
-	if (NIL_P(rb_class_path_cached(val))) {
+        int val_path_permanent;
+        VALUE val_path = classname(val, &val_path_permanent);
+        if (NIL_P(val_path) || !val_path_permanent) {
 	    if (klass == rb_cObject) {
 		rb_ivar_set(val, classpath, rb_id2str(id));
-		rb_name_class(val, id);
+                finalize_classpath_for_children(val);
 	    }
 	    else {
-		VALUE path;
-		ID pathid;
-		st_data_t n;
-		st_table *ivtbl = RCLASS_IV_TBL(klass);
-		if (ivtbl &&
-		    (st_lookup(ivtbl, (st_data_t)(pathid = classpath), &n) ||
-		     st_lookup(ivtbl, (st_data_t)(pathid = tmp_classpath), &n))) {
-		    path = rb_str_dup((VALUE)n);
-		    rb_str_append(rb_str_cat2(path, "::"), rb_id2str(id));
-		    OBJ_FREEZE(path);
-		    rb_ivar_set(val, pathid, path);
-		    rb_name_class(val, id);
+                int parental_path_permanent;
+                VALUE parental_path = classname(klass, &parental_path_permanent);
+                if (!NIL_P(parental_path)) {
+                    if (parental_path_permanent && !val_path_permanent) {
+                        rb_ivar_set(val, classpath, build_const_path(parental_path, id));
+                        finalize_classpath_for_children(val);
+                    } else if (!parental_path_permanent && NIL_P(val_path)) {
+                        rb_ivar_set(val, tmp_classpath, build_const_path(parental_path, id));
+                    }
 		}
 	    }
 	}
