@@ -30,11 +30,9 @@ module Bundler
 
       Bundler.definition.validate_runtime!
       current_specs = Bundler.ui.silence { Bundler.definition.resolve }
-      current_dependencies = {}
-      Bundler.ui.silence do
-        Bundler.load.dependencies.each do |dep|
-          current_dependencies[dep.name] = dep
-        end
+
+      current_dependencies = Bundler.ui.silence do
+        Bundler.load.dependencies.map {|dep| [dep.name, dep] }.to_h
       end
 
       definition = if gems.empty? && sources.empty?
@@ -84,10 +82,8 @@ module Bundler
         active_spec = retrieve_active_spec(strict, definition, current_spec)
 
         next if active_spec.nil?
-        if filter_options_patch.any?
-          update_present = update_present_via_semver_portions(current_spec, active_spec, options)
-          next unless update_present
-        end
+        next if filter_options_patch.any? &&
+          !update_present_via_semver_portions(current_spec, active_spec, options)
 
         gem_outdated = Gem::Version.new(active_spec.version) > Gem::Version.new(current_spec.version)
         next unless gem_outdated || (current_spec.git_version != active_spec.git_version)
@@ -102,10 +98,7 @@ module Bundler
                                 :groups => groups }
 
         outdated_gems_by_groups[groups] ||= []
-        outdated_gems_by_groups[groups] << { :active_spec => active_spec,
-                                             :current_spec => current_spec,
-                                             :dependency => dependency,
-                                             :groups => groups }
+        outdated_gems_by_groups[groups] << outdated_gems_list[-1]
       end
 
       if outdated_gems_list.empty?
@@ -122,7 +115,7 @@ module Bundler
 
         if options_include_groups
           ordered_groups = outdated_gems_by_groups.keys.compact.sort
-          [nil, ordered_groups].flatten.each do |groups|
+          ordered_groups.insert(0, nil).each do |groups|
             gems = outdated_gems_by_groups[groups]
             contains_group = if groups
               groups.split(", ").include?(options[:group])
@@ -265,7 +258,7 @@ module Bundler
 
     def get_version_semver_portion_value(spec, version_portion_index)
       version_section = spec.version.segments[version_portion_index, 1]
-      version_section.nil? ? 0 : (version_section.first || 0)
+      version_section.to_a[0].to_i
     end
   end
 end
