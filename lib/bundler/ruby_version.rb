@@ -102,12 +102,7 @@ module Bundler
     end
 
     def self.system
-      ruby_engine = if defined?(RUBY_ENGINE) && !RUBY_ENGINE.nil?
-        RUBY_ENGINE.dup
-      else
-        # not defined in ruby 1.8.7
-        "ruby"
-      end
+      ruby_engine = RUBY_ENGINE.dup
       # :sob: mocking RUBY_VERSION breaks stuff on 1.8.7
       ruby_version = ENV.fetch("BUNDLER_SPEC_RUBY_VERSION") { RUBY_VERSION }.dup
       ruby_engine_version = case ruby_engine
