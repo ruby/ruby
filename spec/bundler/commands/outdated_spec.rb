@@ -76,7 +76,7 @@ RSpec.describe "bundle outdated" do
   end
 
   describe "with --group option" do
-    def test_group_option(group = nil, gems_list_size = 1)
+    before do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
 
@@ -87,7 +87,9 @@ RSpec.describe "bundle outdated" do
           gem 'activesupport', '2.3.5'
         end
       G
+    end
 
+    def test_group_option(group = nil, gems_list_size = 1)
       update_repo2 do
         build_gem "activesupport", "3.0"
         build_gem "terranova", "9"
@@ -103,17 +105,6 @@ RSpec.describe "bundle outdated" do
     end
 
     it "not outdated gems" do
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
-
-        gem "weakling", "~> 0.0.1"
-        gem "terranova", '8'
-        group :development, :test do
-          gem 'activesupport', '2.3.5'
-          gem "duradura", '7.0'
-        end
-      G
-
       bundle "outdated --group"
       expect(out).to include("Bundle up to date!")
     end
@@ -153,7 +144,7 @@ RSpec.describe "bundle outdated" do
   end
 
   describe "with --groups option" do
-    it "not outdated gems" do
+    before do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
 
@@ -164,23 +155,14 @@ RSpec.describe "bundle outdated" do
           gem "duradura", '7.0'
         end
       G
+    end
 
+    it "not outdated gems" do
       bundle "outdated --groups"
       expect(out).to include("Bundle up to date!")
     end
 
     it "returns a sorted list of outdated gems by groups" do
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
-
-        gem "weakling", "~> 0.0.1"
-        gem "terranova", '8'
-        group :development, :test do
-          gem 'activesupport', '2.3.5'
-          gem "duradura", '7.0'
-        end
-      G
-
       update_repo2 do
         build_gem "activesupport", "3.0"
         build_gem "terranova", "9"
