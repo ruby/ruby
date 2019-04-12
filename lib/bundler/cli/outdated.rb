@@ -133,24 +133,10 @@ module Bundler
               end
             end
 
-            gems.each do |gem|
-              print_gem(
-                gem[:current_spec],
-                gem[:active_spec],
-                gem[:dependency],
-                groups,
-              )
-            end
+            print_gems(gems)
           end
         else
-          outdated_gems_list.each do |gem|
-            print_gem(
-              gem[:current_spec],
-              gem[:active_spec],
-              gem[:dependency],
-              gem[:groups],
-            )
-          end
+          print_gems(outdated_gems_list)
         end
 
         exit 1
@@ -190,6 +176,17 @@ module Bundler
         else
           Bundler.ui.info "Bundle up to date!\n"
         end
+      end
+    end
+
+    def print_gems(gems_list)
+      gems_list.each do |gem|
+        print_gem(
+          gem[:current_spec],
+          gem[:active_spec],
+          gem[:dependency],
+          gem[:groups],
+        )
       end
     end
 
