@@ -65,7 +65,7 @@ module Spec
     end
 
     def local_ruby_engine
-      ENV["BUNDLER_SPEC_RUBY_ENGINE"] || (defined?(RUBY_ENGINE) ? RUBY_ENGINE : "ruby")
+      ENV["BUNDLER_SPEC_RUBY_ENGINE"] || RUBY_ENGINE
     end
 
     def local_engine_version
