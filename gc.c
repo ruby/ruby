@@ -11097,7 +11097,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	}
 	else {
             if (RTEST(RBASIC(obj)->klass)) {
-	    VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
+	    VALUE class_path = rb_class_path(RBASIC(obj)->klass);
 	    if (!NIL_P(class_path)) {
                 APPENDF((BUFF_ARGS, "(%s)", RSTRING_PTR(class_path)));
 	    }
@@ -11151,7 +11151,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
           case T_CLASS:
           case T_MODULE:
             {
-                VALUE class_path = rb_class_path_cached(obj);
+                VALUE class_path = rb_class_path(obj);
                 if (!NIL_P(class_path)) {
                     APPENDF((BUFF_ARGS, "%s", RSTRING_PTR(class_path)));
                 }
@@ -11159,7 +11159,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
             }
           case T_ICLASS:
             {
-                VALUE class_path = rb_class_path_cached(RBASIC_CLASS(obj));
+                VALUE class_path = rb_class_path(RBASIC_CLASS(obj));
                 if (!NIL_P(class_path)) {
                     APPENDF((BUFF_ARGS, "src:%s", RSTRING_PTR(class_path)));
                 }

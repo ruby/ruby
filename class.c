@@ -537,7 +537,6 @@ boot_defclass(const char *name, VALUE super)
     VALUE obj = rb_class_boot(super);
     ID id = rb_intern(name);
 
-    rb_name_class(obj, id);
     rb_const_set((rb_cObject ? rb_cObject : obj), id, obj);
     rb_vm_add_root_module(id, obj);
     return obj;
@@ -551,7 +550,7 @@ Init_class_hierarchy(void)
     rb_gc_register_mark_object(rb_cObject);
 
     /* resolve class name ASAP for order-independence */
-    rb_class_name(rb_cObject);
+    rb_set_class_path_string(rb_cObject, rb_cObject, rb_fstring_lit("Object"));
 
     rb_cModule = boot_defclass("Module", rb_cObject);
     rb_cClass =  boot_defclass("Class",  rb_cModule);
@@ -669,7 +668,6 @@ rb_define_class(const char *name, VALUE super)
     }
     klass = rb_define_class_id(id, super);
     rb_vm_add_root_module(id, klass);
-    rb_name_class(klass, id);
     rb_const_set(rb_cObject, id, klass);
     rb_class_inherited(super, klass);
 
@@ -767,7 +765,6 @@ rb_define_module_id(ID id)
     VALUE mdl;
 
     mdl = rb_module_new();
-    rb_name_class(mdl, id);
 
     return mdl;
 }
