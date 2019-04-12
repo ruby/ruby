@@ -192,6 +192,22 @@ save_temporary_path(VALUE obj, VALUE name)
     return rb_ivar_set(obj, tmp_classpath, make_temporary_path(obj, name));
 }
 
+static VALUE
+build_const_pathname(VALUE head, VALUE tail)
+{
+    VALUE path = rb_str_dup(head);
+    rb_str_cat2(path, "::");
+    rb_str_append(path, tail);
+    OBJ_FREEZE(path);
+    return path;
+}
+
+static VALUE
+build_const_path(VALUE head, ID tail)
+{
+    return build_const_pathname(head, rb_id2str(tail));
+}
+
 void
 rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
 {
@@ -203,10 +219,8 @@ rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
     }
     else {
 	int permanent;
-	str = rb_str_dup(rb_tmp_class_path(under, &permanent, save_temporary_path));
-	rb_str_cat2(str, "::");
-	rb_str_append(str, name);
-	OBJ_FREEZE(str);
+        str = rb_tmp_class_path(under, &permanent, save_temporary_path);
+        str = build_const_pathname(str, name);
 	if (!permanent) {
 	    pathid = tmp_classpath;
 	}
@@ -2682,16 +2696,6 @@ check_before_mod_set(VALUE klass, ID id, VALUE val, const char *dest)
     rb_check_frozen(klass);
 }
 
-static VALUE
-build_const_path(VALUE head, ID tail)
-{
-    VALUE path = rb_str_dup(head);
-    rb_str_cat2(path, "::");
-    rb_str_append(path, rb_id2str(tail));
-    OBJ_FREEZE(path);
-    return path;
-}
-
 static void finalize_classpath_for_children(VALUE named_namespace);
 
 static enum rb_id_table_iterator_result
@@ -2786,7 +2790,8 @@ rb_const_set(VALUE klass, ID id, VALUE val)
                     if (parental_path_permanent && !val_path_permanent) {
                         rb_ivar_set(val, classpath, build_const_path(parental_path, id));
                         finalize_classpath_for_children(val);
-                    } else if (!parental_path_permanent && NIL_P(val_path)) {
+                    }
+                    else if (!parental_path_permanent && NIL_P(val_path)) {
                         rb_ivar_set(val, tmp_classpath, build_const_path(parental_path, id));
                     }
 		}
