@@ -3,16 +3,8 @@ require 'test/unit'
 require 'fiddle'
 
 class TestGCCompact < Test::Unit::TestCase
-  if Fiddle::SIZEOF_LONG == Fiddle::SIZEOF_VOIDP
-    def memory_location(obj)
-      (Fiddle.dlwrap(obj) >> 1)
-    end
-  elsif Fiddle::SIZEOF_LONG_LONG == Fiddle::SIZEOF_VOIDP
-    def memory_location(obj)
-      (Fiddle.dlwrap(obj) >> 1) / 2
-    end
-  else
-    raise "Not supported"
+  def memory_location(obj)
+    (Fiddle.dlwrap(obj) >> 1)
   end
 
   def assert_object_ids(list)
