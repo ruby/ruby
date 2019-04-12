@@ -38,28 +38,27 @@ module Bundler
     ].freeze
 
     def ruby?
-      !mswin? && (!defined?(RUBY_ENGINE) || RUBY_ENGINE == "ruby" ||
-          RUBY_ENGINE == "rbx" || RUBY_ENGINE == "maglev" || RUBY_ENGINE == "truffleruby")
+      !mswin? && (RUBY_ENGINE == "ruby" || RUBY_ENGINE == "rbx" || RUBY_ENGINE == "maglev" || RUBY_ENGINE == "truffleruby")
     end
 
     def mri?
-      !mswin? && (!defined?(RUBY_ENGINE) || RUBY_ENGINE == "ruby")
+      !mswin? && RUBY_ENGINE == "ruby"
     end
 
     def rbx?
-      ruby? && defined?(RUBY_ENGINE) && RUBY_ENGINE == "rbx"
+      ruby? && RUBY_ENGINE == "rbx"
     end
 
     def jruby?
-      defined?(RUBY_ENGINE) && RUBY_ENGINE == "jruby"
+      RUBY_ENGINE == "jruby"
     end
 
     def maglev?
-      defined?(RUBY_ENGINE) && RUBY_ENGINE == "maglev"
+      RUBY_ENGINE == "maglev"
     end
 
     def truffleruby?
-      defined?(RUBY_ENGINE) && RUBY_ENGINE == "truffleruby"
+      RUBY_ENGINE == "truffleruby"
     end
 
     def mswin?
