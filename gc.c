@@ -8861,12 +8861,9 @@ wmap_each_value_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
     VALUE obj = (VALUE)val;
-    if (RB_SPECIAL_CONST_P(obj)) {
+    if (RB_SPECIAL_CONST_P(obj) ||
+            (is_id_value(objspace, obj) && is_live_object(objspace, obj))) {
         rb_yield(obj);
-    } else {
-        if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
-            rb_yield(obj);
-        }
     }
     return ST_CONTINUE;
 }
@@ -8890,12 +8887,9 @@ wmap_keys_i(st_data_t key, st_data_t val, st_data_t arg)
     rb_objspace_t *objspace = argp->objspace;
     VALUE ary = argp->value;
     VALUE obj = (VALUE)val;
-    if (RB_SPECIAL_CONST_P(obj)) {
+    if (RB_SPECIAL_CONST_P(obj) ||
+            (is_id_value(objspace, obj) && is_live_object(objspace, obj))) {
         rb_ary_push(ary, (VALUE)key);
-    } else {
-        if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
-            rb_ary_push(ary, (VALUE)key);
-        }
     }
     return ST_CONTINUE;
 }
@@ -8921,12 +8915,9 @@ wmap_values_i(st_data_t key, st_data_t val, st_data_t arg)
     rb_objspace_t *objspace = argp->objspace;
     VALUE ary = argp->value;
     VALUE obj = (VALUE)val;
-    if (RB_SPECIAL_CONST_P(obj)) {
+    if (RB_SPECIAL_CONST_P(obj) ||
+            (is_id_value(objspace, obj) && is_live_object(objspace, obj))) {
         rb_ary_push(ary, obj);
-    } else {
-        if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
-            rb_ary_push(ary, obj);
-        }
     }
     return ST_CONTINUE;
 }
