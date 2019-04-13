@@ -56,7 +56,7 @@ describe "Kernel#proc" do
 
       -> {
         some_method { "hello" }
-      }.should complain(/tried to create Proc object without a block/)
+      }.should complain(/Capturing the given block using Proc.new is deprecated/)
     end
   end
 
