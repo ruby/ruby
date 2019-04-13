@@ -2428,6 +2428,7 @@ rb_autoload_load(VALUE mod, ID id)
     }
     state.ac = ac;
     state.thread = rb_thread_current();
+    state.result = Qnil;
     if (!ele->state) {
 	ele->state = &state;
 	ele->fork_gen = GET_VM()->fork_gen;
