@@ -70,8 +70,35 @@ class Downloader
   Gems = RubyGems
 
   class Unicode < self
-    def self.download(name, *rest)
-      super("http://www.unicode.org/Public/#{name}", name, *rest)
+    INDEX = {}  # cache index file information across files in the same directory
+    UNICODE_PUBLIC = "http://www.unicode.org/Public/"
+
+    def self.download(name, dir = nil, since = true, options = {})
+      options = options.dup
+      unicode_beta = options.delete(:unicode_beta)
+      name_dir_part = name.sub(/[^\/]+$/, '')
+      if unicode_beta == 'YES'
+        if INDEX.size == 0
+          index_options = options.dup
+          index_options[:cache_save] = false # TODO: make sure caching really doesn't work for index file
+          index_file = super(UNICODE_PUBLIC+name_dir_part, "#{name_dir_part}index.html", dir, true, index_options)
+          INDEX[:index] = IO.read index_file
+        end
+        file_base = File.basename(name, '.txt')
+        return if file_base == '.' # Use pre-generated headers and tables
+        beta_name = INDEX[:index][/#{Regexp.quote(file_base)}(-[0-9.]+d\d+)?\.txt/]
+        # make sure we always check for new versions of files,
+        # because they can easily change in the beta period
+        super(UNICODE_PUBLIC+name_dir_part+beta_name, name, dir, true, options)
+      else
+        index_file = Pathname.new(under(dir, name_dir_part+'index.html'))
+        if index_file.exist?
+          raise "Although Unicode is not in beta, file #{index_file} exists. " +
+                "Remove all files in this directory and in .downloaded-cache/ " +
+                "because they may be leftovers from the beta period."
+        end
+        super(UNICODE_PUBLIC+name, name, dir, since, options)
+      end
     end
   end
 
@@ -124,10 +151,7 @@ class Downloader
     options = options.dup
     url = URI(url)
     dryrun = options.delete(:dryrun)
-
-    # remove from options (future use, see r66448), see L166
-    unicode_beta = options.delete(:unicode_beta)
-    puts "never" if unicode_beta == 'assigned but unused variable...'
+    options.delete(:unicode_beta) # just to be on the safe side for gems and gcc
 
     if name
       file = Pathname.new(under(dir, name))
@@ -262,14 +286,20 @@ class Downloader
   end
 
   def self.save_cache(cache, file, name)
-    if cache and !cache.eql?(file) and !cache.exist?
+    return unless cache or cache.eql?(file)
+    begin
+      st = cache.stat
+    rescue
       begin
         file.rename(cache)
       rescue
-      else
-        link_cache(cache, file, name)
+        return
       end
+    else
+      return unless st.mtime > file.lstat.mtime
+      file.unlink
     end
+    link_cache(cache, file, name)
   end
 
   def self.with_retry(max_times, &block)
@@ -318,12 +348,6 @@ if $0 == __FILE__
     when '--unicode-beta'
       options[:unicode_beta] = ARGV[1]
       ARGV.shift
-      # TODO: Move this code further down
-      if options[:unicode_beta]=='YES'
-        raise "Not yet able to deal with Unicode Data beta versions."
-      else
-        # TODO: deal with the case that we just switched from beta to 'regular'
-      end
     when /\A--cache-dir=(.*)/m
       options[:cache_dir] = $1
     when /\A-/
