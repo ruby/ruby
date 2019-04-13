@@ -3692,7 +3692,7 @@ rt_rewrite_frags(VALUE hash)
 {
     VALUE seconds;
 
-    seconds = ref_hash("seconds");
+    seconds = del_hash("seconds");
     if (!NIL_P(seconds)) {
 	VALUE offset, d, h, min, s, fr;
 
@@ -3717,7 +3717,6 @@ rt_rewrite_frags(VALUE hash)
 	set_hash("min", min);
 	set_hash("sec", s);
 	set_hash("sec_fraction", fr);
-	del_hash("seconds");
     }
     return hash;
 }
@@ -4307,16 +4306,6 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
 
     hash = date__parse(vstr, vcomp);
 
-    {
-	VALUE zone = ref_hash("zone");
-
-	if (!NIL_P(zone)) {
-	    rb_enc_copy(zone, vstr);
-	    OBJ_INFECT(zone, vstr);
-	    set_hash("zone", zone);
-	}
-    }
-
     return hash;
 }
 
@@ -4619,6 +4608,10 @@ date_s__jisx0301(VALUE klass, VALUE str)
  * some typical JIS X 0301 formats.
  *
  *    Date.jisx0301('H13.02.03')		#=> #<Date: 2001-02-03 ...>
+ *
+ * For no-era year, legacy format, Heisei is assumed.
+ *
+ *    Date.jisx0301('13.02.03') 		#=> #<Date: 2001-02-03 ...>
  */
 static VALUE
 date_s_jisx0301(int argc, VALUE *argv, VALUE klass)
@@ -7046,9 +7039,13 @@ jisx0301_date_format(char *fmt, size_t size, VALUE jd, VALUE y)
 	    c = 'S';
 	    s = 1925;
 	}
-	else {
+	else if (d < 2458605) {
 	    c = 'H';
 	    s = 1988;
+	}
+	else {
+	    c = 'R';
+	    s = 2018;
 	}
 	snprintf(fmt, size, "%c%02ld" ".%%m.%%d", c, FIX2INT(y) - s);
 	return fmt;
@@ -8155,6 +8152,11 @@ datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
  * some typical JIS X 0301 formats.
  *
  *    DateTime.jisx0301('H13.02.03T04:05:06+07:00')
+ *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
+ *
+ * For no-era year, legacy format, Heisei is assumed.
+ *
+ *    DateTime.jisx0301('13.02.03T04:05:06+07:00')
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
  */
 static VALUE

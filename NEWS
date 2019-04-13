@@ -529,6 +529,12 @@ sufficient information, see the ChangeLog file or Redmine
   * Upgrade to 3.0.4.
     See https://github.com/ruby/csv/blob/master/NEWS.md.
 
+Date::
+
+  * Date.jisx0301, Date#jisx0301, and Date.parse provisionally support the
+    new Japanese era as an informal extension, until the new JIS X 0301 is
+    issued.  [Feature #15742]
+
 [RSS]
 
   [New options]
