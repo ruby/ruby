@@ -11,6 +11,11 @@ class TestWeakRef < Test::Unit::TestCase
     end
   end
 
+  def test_fixnum
+    weak = WeakRef.new(10)
+    assert_equal 11, weak + 1
+  end
+
   def test_ref
     obj = Object.new
     weak = WeakRef.new(obj)
