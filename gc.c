@@ -8807,12 +8807,9 @@ wmap_each_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
     VALUE obj = (VALUE)val;
-    if (SPECIAL_CONST_P(obj)) {
+    if (RB_SPECIAL_CONST_P(obj) ||
+            (is_id_value(objspace, obj) && is_live_object(objspace, obj))) {
         rb_yield_values(2, (VALUE)key, obj);
-    } else {
-        if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
-            rb_yield_values(2, (VALUE)key, obj);
-        }
     }
     return ST_CONTINUE;
 }
@@ -8834,12 +8831,9 @@ wmap_each_key_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
     VALUE obj = (VALUE)val;
-    if (SPECIAL_CONST_P(obj)) {
+    if (RB_SPECIAL_CONST_P(obj) ||
+            (is_id_value(objspace, obj) && is_live_object(objspace, obj))) {
         rb_yield((VALUE)key);
-    } else {
-        if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
-            rb_yield((VALUE)key);
-        }
     }
     return ST_CONTINUE;
 }
