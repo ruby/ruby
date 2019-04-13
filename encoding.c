@@ -66,8 +66,6 @@ static struct {
 #define ENC_DUMMY_P(enc) ((enc)->ruby_encoding_index & ENC_DUMMY_FLAG)
 #define ENC_SET_DUMMY(enc) ((enc)->ruby_encoding_index |= ENC_DUMMY_FLAG)
 
-void rb_enc_init(void);
-
 #define ENCODING_COUNT ENCINDEX_BUILTIN_MAX
 #define UNSPECIFIED_ENCODING INT_MAX
 
@@ -557,9 +555,6 @@ rb_enc_alias(const char *alias, const char *orig)
     int idx;
 
     enc_check_duplication(alias);
-    if (!enc_table.list) {
-	rb_enc_init();
-    }
     if ((idx = rb_enc_find_index(orig)) < 0) {
 	return -1;
     }
@@ -613,9 +608,6 @@ rb_enc_init(void)
 rb_encoding *
 rb_enc_from_index(int index)
 {
-    if (!enc_table.list) {
-	rb_enc_init();
-    }
     if (index < 0 || enc_table.count <= (index &= ENC_INDEX_MASK)) {
 	return 0;
     }
@@ -1324,9 +1316,6 @@ enc_m_loader(VALUE klass, VALUE str)
 rb_encoding *
 rb_ascii8bit_encoding(void)
 {
-    if (!enc_table.list) {
-	rb_enc_init();
-    }
     return enc_table.list[ENCINDEX_ASCII].enc;
 }
 
@@ -1339,9 +1328,6 @@ rb_ascii8bit_encindex(void)
 rb_encoding *
 rb_utf8_encoding(void)
 {
-    if (!enc_table.list) {
-	rb_enc_init();
-    }
     return enc_table.list[ENCINDEX_UTF_8].enc;
 }
 
@@ -1354,9 +1340,6 @@ rb_utf8_encindex(void)
 rb_encoding *
 rb_usascii_encoding(void)
 {
-    if (!enc_table.list) {
-	rb_enc_init();
-    }
     return enc_table.list[ENCINDEX_US_ASCII].enc;
 }
 
@@ -1932,6 +1915,12 @@ rb_enc_aliases(VALUE klass)
  *   "R\u00E9sum\u00E9"
  *
  */
+
+void
+Init_encodings(void)
+{
+    rb_enc_init();
+}
 
 void
 Init_Encoding(void)
