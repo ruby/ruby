@@ -359,6 +359,38 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_branch_coverage_for_pattern_matching
+    result = {
+      :branches=> {
+        [:case, 0,  3, 4,  8, 7] => {[:in, 1,  5, 6,  5, 7]=>2, [:in, 2, 7, 6, 7, 7]=>0, [:else, 3,  3, 4,  8, 7]=>1},
+        [:case, 4, 12, 2, 17, 5] => {[:in, 5, 14, 4, 14, 5]=>2,                          [:else, 6, 16, 4, 16, 5]=>1}},
+    }
+    assert_coverage(<<~"end;", { branches: true }, result)
+      def foo(x)
+        begin
+          case x
+          in 0
+            0
+          in 1
+            1
+          end
+        rescue NoMatchingPatternError
+        end
+
+        case x
+        in 0
+          0
+        else
+          1
+        end
+      end
+
+      foo(0)
+      foo(0)
+      foo(2)
+    end;
+  end
+
   def test_branch_coverage_for_safe_method_invocation
     result = {
       :branches=>{

@@ -1451,6 +1451,7 @@ extern ID ruby_static_id_signo, ruby_static_id_status;
 void rb_class_modify_check(VALUE);
 #define id_signo ruby_static_id_signo
 #define id_status ruby_static_id_status
+NORETURN(VALUE rb_f_raise(int argc, VALUE *argv));
 
 /* eval_error.c */
 VALUE rb_get_backtrace(VALUE info);

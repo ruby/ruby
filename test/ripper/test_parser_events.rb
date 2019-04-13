@@ -1509,4 +1509,22 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_warn("") {fmt, = warn("\r;")}
     assert_match(/encountered/, fmt)
   end
+
+  def test_in
+    thru_in = false
+    parse('case 0; in 0; end', :on_in) {thru_in = true}
+    assert_equal true, thru_in
+  end
+
+  def test_aryptn
+    thru_aryptn = false
+    parse('case 0; in [0]; end', :on_aryptn) {thru_aryptn = true}
+    assert_equal true, thru_aryptn
+  end
+
+  def test_hshptn
+    thru_hshptn = false
+    parse('case 0; in {a:}; end', :on_hshptn) {thru_hshptn = true}
+    assert_equal true, thru_hshptn
+  end
 end if ripper_test

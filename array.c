@@ -6910,5 +6910,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
 
+    rb_define_method(rb_cArray, "deconstruct", rb_ary_to_a, 0);
+
     id_random = rb_intern("random");
 }

@@ -733,7 +733,7 @@ extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
  *  the +:cause+ argument.
  */
 
-static VALUE
+VALUE
 rb_f_raise(int argc, VALUE *argv)
 {
     VALUE err;

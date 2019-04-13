@@ -4311,6 +4311,12 @@ rb_hash_to_proc(VALUE hash)
     return rb_func_proc_new(hash_proc_call, hash);
 }
 
+static VALUE
+rb_hash_deconstruct_keys(VALUE hash, VALUE keys)
+{
+    return hash;
+}
+
 static int
 add_new_i(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 {
@@ -5981,6 +5987,8 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "<", rb_hash_lt, 1);
     rb_define_method(rb_cHash, ">=", rb_hash_ge, 1);
     rb_define_method(rb_cHash, ">", rb_hash_gt, 1);
+
+    rb_define_method(rb_cHash, "deconstruct_keys", rb_hash_deconstruct_keys, 1);
 
     /* Document-class: ENV
      *
