@@ -213,7 +213,7 @@ class OpenStruct
     len = args.length
     if mname = mid[/.*(?==\z)/m]
       if len != 1
-        raise ArgumentError, "wrong number of arguments (#{len} for 1)", caller(1)
+        raise ArgumentError, "wrong number of arguments (given #{len}, expected 1)", caller(1)
       end
       modifiable?[new_ostruct_member!(mname)] = args[0]
     elsif len == 0 # and /\A[a-z_]\w*\z/ =~ mid #
@@ -221,6 +221,8 @@ class OpenStruct
         new_ostruct_member!(mid) unless frozen?
         @table[mid]
       end
+    elsif @table.key?(mid)
+      raise ArgumentError, "wrong number of arguments (given #{len}, expected 0)"
     else
       begin
         super
