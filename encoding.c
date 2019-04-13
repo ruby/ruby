@@ -608,7 +608,7 @@ rb_enc_init(void)
 rb_encoding *
 rb_enc_from_index(int index)
 {
-    if (index < 0 || enc_table.count <= (index &= ENC_INDEX_MASK)) {
+    if (UNLIKELY(index < 0 || enc_table.count <= (index &= ENC_INDEX_MASK))) {
 	return 0;
     }
     return enc_table.list[index].enc;
