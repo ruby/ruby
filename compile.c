@@ -5301,8 +5301,8 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
          */
         struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
         const NODE *args = apinfo->pre_args;
-        const int pre_args_num = apinfo->pre_args ? apinfo->pre_args->nd_alen : 0;
-        const int post_args_num = apinfo->post_args ? apinfo->post_args->nd_alen : 0;
+        const int pre_args_num = apinfo->pre_args ? rb_long2int(apinfo->pre_args->nd_alen) : 0;
+        const int post_args_num = apinfo->post_args ? rb_long2int(apinfo->post_args->nd_alen) : 0;
 
         const int min_argc = pre_args_num + post_args_num;
         const int use_rest_num = apinfo->rest_arg && ((nd_type(apinfo->rest_arg) != NODE_BEGIN) ||
@@ -5526,7 +5526,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
             if (args) {
                 DECL_ANCHOR(match_values);
                 INIT_ANCHOR(match_values);
-                keys_num = args->nd_alen / 2;
+                keys_num = rb_long2int(args->nd_alen) / 2;
                 for (i = 0; i < keys_num; i++) {
                     NODE *key_node = args->nd_head;
                     NODE *value_node = args->nd_next->nd_head;
