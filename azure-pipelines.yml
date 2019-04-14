@@ -7,7 +7,6 @@ jobs:
     matrix:
       bundled_gems:
         task: test-bundled-gems
-        TEST_BUNDLED_GEMS_ALLOW_FAILURES: minitest
       bundler:
         task: test-bundler
   steps:
@@ -28,7 +27,7 @@ jobs:
       make
     displayName: 'make'
   - script: |
-      TRAVIS=1 make $(task)
+      make $(task) TRAVIS=1 TEST_BUNDLED_GEMS_ALLOW_FAILURES=minitest
     displayName: "test"
     continueOnError: true # test-bundler is failing on Linux. TODO: fix it and remove this line.
 
@@ -43,7 +42,6 @@ jobs:
 #        task: test-spec
       bundled_gems:
         task: test-bundled-gems
-        TEST_BUNDLED_GEMS_ALLOW_FAILURES: minitest
       bundler:
         task: test-bundler
   steps:
@@ -57,7 +55,7 @@ jobs:
       make
     displayName: 'make'
   - script: |
-      make $(task)
+      make $(task) TEST_BUNDLED_GEMS_ALLOW_FAILURES=minitest
     displayName: "test"
 
 # - job: vs2015
