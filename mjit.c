@@ -384,6 +384,9 @@ rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body)
 void
 rb_mjit_recompile_iseq(const rb_iseq_t *iseq)
 {
+    if ((ptrdiff_t)iseq->body->jit_func <= (ptrdiff_t)LAST_JIT_ISEQ_FUNC)
+        return;
+
     verbose(1, "JIT recompile: %s@%s:%d", RSTRING_PTR(iseq->body->location.label),
             RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno));
 
@@ -394,7 +397,9 @@ rb_mjit_recompile_iseq(const rb_iseq_t *iseq)
     CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
 
     mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info);
-    mjit_wait(iseq->body);
+    if (UNLIKELY(mjit_opts.wait)) {
+        mjit_wait(iseq->body);
+    }
 }
 
 extern VALUE ruby_archlibdir_path, ruby_prefix_path;
