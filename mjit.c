@@ -6,10 +6,10 @@
 
 **********************************************************************/
 
-/* Functions in this file are never executed on MJIT worker thread.
-   So you can safely use Ruby methods and GC in this file. */
+// Functions in this file are never executed on MJIT worker thread.
+// So you can safely use Ruby methods and GC in this file.
 
-/* To share variables privately, include mjit_worker.c instead of linking. */
+// To share variables privately, include mjit_worker.c instead of linking.
 
 #include "internal.h"
 
@@ -20,12 +20,12 @@
 #include "constant.h"
 #include "id_table.h"
 
-/* Copy ISeq's states so that race condition does not happen on compilation. */
+// Copy ISeq's states so that race condition does not happen on compilation.
 static void
 mjit_copy_job_handler(void *data)
 {
     mjit_copy_job_t *job = data;
-    if (stop_worker_p) { /* check if mutex is still alive, before calling CRITICAL_SECTION_START. */
+    if (stop_worker_p) { // check if mutex is still alive, before calling CRITICAL_SECTION_START.
         return;
     }
 
@@ -54,9 +54,9 @@ mjit_copy_job_handler(void *data)
 
 extern int rb_thread_create_mjit_thread(void (*worker_func)(void));
 
-/* Return an unique file name in /tmp with PREFIX and SUFFIX and
-   number ID.  Use getpid if ID == 0.  The return file name exists
-   until the next function call.  */
+// Return an unique file name in /tmp with PREFIX and SUFFIX and
+// number ID.  Use getpid if ID == 0.  The return file name exists
+// until the next function call.
 static char *
 get_uniq_filename(unsigned long id, const char *prefix, const char *suffix)
 {
@@ -74,8 +74,8 @@ get_uniq_filename(unsigned long id, const char *prefix, const char *suffix)
     return str;
 }
 
-/* Wait until workers don't compile any iseq.  It is called at the
-   start of GC.  */
+// Wait until workers don't compile any iseq.  It is called at the
+// start of GC.
 void
 mjit_gc_start_hook(void)
 {
@@ -91,8 +91,8 @@ mjit_gc_start_hook(void)
     CRITICAL_SECTION_FINISH(4, "mjit_gc_start_hook");
 }
 
-/* Send a signal to workers to continue iseq compilations.  It is
-   called at the end of GC.  */
+// Send a signal to workers to continue iseq compilations.  It is
+// called at the end of GC.
 void
 mjit_gc_finish_hook(void)
 {
@@ -105,8 +105,8 @@ mjit_gc_finish_hook(void)
     CRITICAL_SECTION_FINISH(4, "mjit_gc_finish_hook");
 }
 
-/* Iseqs can be garbage collected.  This function should call when it
-   happens.  It removes iseq from the unit.  */
+// Iseqs can be garbage collected.  This function should call when it
+// happens.  It removes iseq from the unit.
 void
 mjit_free_iseq(const rb_iseq_t *iseq)
 {
@@ -114,16 +114,16 @@ mjit_free_iseq(const rb_iseq_t *iseq)
         return;
     CRITICAL_SECTION_START(4, "mjit_free_iseq");
     if (iseq->body->jit_unit) {
-        /* jit_unit is not freed here because it may be referred by multiple
-           lists of units. `get_from_list` and `mjit_finish` do the job. */
+        // jit_unit is not freed here because it may be referred by multiple
+        // lists of units. `get_from_list` and `mjit_finish` do the job.
         iseq->body->jit_unit->iseq = NULL;
     }
     CRITICAL_SECTION_FINISH(4, "mjit_free_iseq");
 }
 
-/* Free unit list. This should be called only when worker is finished
-   because node of unit_queue and one of active_units may have the same unit
-   during proceeding unit. */
+// Free unit list. This should be called only when worker is finished
+// because node of unit_queue and one of active_units may have the same unit
+// during proceeding unit.
 static void
 free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
 {
@@ -137,18 +137,18 @@ free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
     list->length = 0;
 }
 
-/* MJIT info related to an existing continutaion.  */
+// MJIT info related to an existing continutaion.
 struct mjit_cont {
-    rb_execution_context_t *ec; /* continuation ec */
-    struct mjit_cont *prev, *next; /* used to form lists */
+    rb_execution_context_t *ec; // continuation ec
+    struct mjit_cont *prev, *next; // used to form lists
 };
 
-/* Double linked list of registered continuations. This is used to detect
-   units which are in use in unload_units. */
+// Double linked list of registered continuations. This is used to detect
+// units which are in use in unload_units.
 static struct mjit_cont *first_cont;
 
-/* Register a new continuation with thread TH.  Return MJIT info about
-   the continuation.  */
+// Register a new continuation with execution context `ec`. Return MJIT info about
+// the continuation.
 struct mjit_cont *
 mjit_cont_new(rb_execution_context_t *ec)
 {
@@ -172,7 +172,7 @@ mjit_cont_new(rb_execution_context_t *ec)
     return cont;
 }
 
-/* Unregister continuation CONT.  */
+// Unregister continuation `cont`.
 void
 mjit_cont_free(struct mjit_cont *cont)
 {
@@ -192,7 +192,7 @@ mjit_cont_free(struct mjit_cont *cont)
     xfree(cont);
 }
 
-/* Finish work with continuation info. */
+// Finish work with continuation info.
 static void
 finish_conts(void)
 {
@@ -204,7 +204,7 @@ finish_conts(void)
     }
 }
 
-/* Create unit for ISEQ. */
+// Create unit for `iseq`.
 static void
 create_unit(const rb_iseq_t *iseq)
 {
@@ -219,7 +219,7 @@ create_unit(const rb_iseq_t *iseq)
     iseq->body->jit_unit = unit;
 }
 
-/* Set up field used_code_p for unit iseqs whose iseq on the stack of ec. */
+// Set up field `used_code_p` for unit iseqs whose iseq on the stack of ec.
 static void
 mark_ec_units(rb_execution_context_t *ec)
 {
@@ -236,12 +236,12 @@ mark_ec_units(rb_execution_context_t *ec)
         }
 
         if (cfp == ec->cfp)
-            break; /* reached the most recent cfp */
+            break; // reached the most recent cfp
     }
 }
 
-/* Unload JIT code of some units to satisfy the maximum permitted
-   number of units with a loaded code.  */
+// Unload JIT code of some units to satisfy the maximum permitted
+// number of units with a loaded code.
 static void
 unload_units(void)
 {
@@ -251,16 +251,16 @@ unload_units(void)
     struct mjit_cont *cont;
     int delete_num, units_num = active_units.length;
 
-    /* For now, we don't unload units when ISeq is GCed. We should
-       unload such ISeqs first here. */
+    // For now, we don't unload units when ISeq is GCed. We should
+    // unload such ISeqs first here.
     list_for_each_safe(&active_units.head, unit, next, unode) {
-        if (unit->iseq == NULL) { /* ISeq is GCed. */
+        if (unit->iseq == NULL) { // ISeq is GCed.
             remove_from_list(unit, &active_units);
             free_unit(unit);
         }
     }
 
-    /* Detect units which are in use and can't be unloaded. */
+    // Detect units which are in use and can't be unloaded.
     list_for_each(&active_units.head, unit, unode) {
         assert(unit->iseq != NULL && unit->handle != NULL);
         unit->used_code_p = FALSE;
@@ -272,15 +272,15 @@ unload_units(void)
         mark_ec_units(cont->ec);
     }
 
-    /* Remove 1/10 units more to decrease unloading calls.  */
-    /* TODO: Calculate max total_calls in unit_queue and don't unload units
-       whose total_calls are larger than the max. */
+    // Remove 1/10 units more to decrease unloading calls.
+    // TODO: Calculate max total_calls in unit_queue and don't unload units
+    // whose total_calls are larger than the max.
     delete_num = active_units.length / 10;
     for (; active_units.length > mjit_opts.max_cache_size - delete_num;) {
-        /* Find one unit that has the minimum total_calls. */
+        // Find one unit that has the minimum total_calls.
         worst = NULL;
         list_for_each(&active_units.head, unit, unode) {
-            if (unit->used_code_p) /* We can't unload code on stack. */
+            if (unit->used_code_p) // We can't unload code on stack.
                 continue;
 
             if (worst == NULL || worst->iseq->body->total_calls > unit->iseq->body->total_calls) {
@@ -290,7 +290,7 @@ unload_units(void)
         if (worst == NULL)
             break;
 
-        /* Unload the worst node. */
+        // Unload the worst node.
         verbose(2, "Unloading unit %d (calls=%lu)", worst->id, worst->iseq->body->total_calls);
         assert(worst->handle != NULL);
         remove_from_list(worst, &active_units);
@@ -310,7 +310,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
     if (compile_info != NULL)
         iseq->body->jit_unit->compile_info = *compile_info;
     if (iseq->body->jit_unit == NULL)
-        /* Failure in creating the unit.  */
+        // Failure in creating the unit.
         return;
 
     CRITICAL_SECTION_START(3, "in add_iseq_to_process");
@@ -323,15 +323,15 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
     CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
 }
 
-/* Add ISEQ to be JITed in parallel with the current thread.
-   Unload some JIT codes if there are too many of them.  */
+// Add ISEQ to be JITed in parallel with the current thread.
+// Unload some JIT codes if there are too many of them.
 void
 rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq)
 {
     mjit_add_iseq_to_process(iseq, NULL);
 }
 
-/* For this timeout seconds, --jit-wait will wait for JIT compilation finish. */
+// For this timeout seconds, --jit-wait will wait for JIT compilation finish.
 #define MJIT_WAIT_TIMEOUT_SECONDS 60
 
 static void
@@ -345,7 +345,7 @@ mjit_wait(struct rb_iseq_constant_body *body)
         tries++;
         if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS || pch_status == PCH_FAILED) {
             CRITICAL_SECTION_START(3, "in mjit_wait_call to set jit_func");
-            body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; /* JIT worker seems dead. Give up. */
+            body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // JIT worker seems dead. Give up.
             CRITICAL_SECTION_FINISH(3, "in mjit_wait_call to set jit_func");
             mjit_warning("timed out to wait for JIT finish");
             break;
@@ -358,8 +358,8 @@ mjit_wait(struct rb_iseq_constant_body *body)
     }
 }
 
-/* Wait for JIT compilation finish for --jit-wait, and call the function pointer
-   if the compiled result is not NOT_COMPILED_JIT_ISEQ_FUNC. */
+// Wait for JIT compilation finish for --jit-wait, and call the function pointer
+// if the compiled result is not NOT_COMPILED_JIT_ISEQ_FUNC.
 VALUE
 mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
 {
@@ -406,7 +406,7 @@ init_header_filename(void)
 {
     int fd;
 #ifdef LOAD_RELATIVE
-    /* Root path of the running ruby process. Equal to RbConfig::TOPDIR.  */
+    // Root path of the running ruby process. Equal to RbConfig::TOPDIR.
     VALUE basedir_val;
 #endif
     const char *basedir = NULL;
@@ -429,9 +429,9 @@ init_header_filename(void)
     baselen = RSTRING_LEN(basedir_val);
 #else
     if (getenv("MJIT_SEARCH_BUILD_DIR")) {
-        /* This path is not intended to be used on production, but using build directory's
-           header file here because people want to run `make test-all` without running
-           `make install`. Don't use $MJIT_SEARCH_BUILD_DIR except for test-all. */
+        // This path is not intended to be used on production, but using build directory's
+        // header file here because people want to run `make test-all` without running
+        // `make install`. Don't use $MJIT_SEARCH_BUILD_DIR except for test-all.
 
         struct stat st;
         const char *hdr = dlsym(RTLD_DEFAULT, "MJIT_HEADER");
@@ -451,10 +451,10 @@ init_header_filename(void)
             return FALSE;
         }
         else {
-            /* Do not pass PRELOADENV to child processes, on
-             * multi-arch environment */
+            // Do not pass PRELOADENV to child processes, on
+            // multi-arch environment
             verbose(3, "PRELOADENV("PRELOADENV")=%s", getenv(PRELOADENV));
-            /* assume no other PRELOADENV in test-all */
+            // assume no other PRELOADENV in test-all
             unsetenv(PRELOADENV);
             verbose(3, "MJIT_HEADER: %s", hdr);
             header_file = ruby_strdup(hdr);
@@ -465,7 +465,7 @@ init_header_filename(void)
 #endif
 #ifndef _MSC_VER
     {
-        /* A name of the header file included in any C file generated by MJIT for iseqs. */
+        // A name of the header file included in any C file generated by MJIT for iseqs.
         static const char header_name[] = MJIT_HEADER_INSTALL_DIR "/" MJIT_MIN_HEADER_NAME;
         const size_t header_name_len = sizeof(header_name) - 1;
 
@@ -534,7 +534,7 @@ UINT rb_w32_system_tmpdir(WCHAR *path, UINT len);
 static char *
 system_default_tmpdir(void)
 {
-    /* c.f. ext/etc/etc.c:etc_systmpdir() */
+    // c.f. ext/etc/etc.c:etc_systmpdir()
 #ifdef _WIN32
     WCHAR tmppath[_MAX_PATH];
     UINT len = rb_w32_system_tmpdir(tmppath, numberof(tmppath));
@@ -610,7 +610,7 @@ system_tmpdir(void)
 // A default threshold used to add iseq to JIT.
 #define DEFAULT_MIN_CALLS_TO_ADD 10000
 
-/* Start MJIT worker. Return TRUE if worker is successfully started. */
+// Start MJIT worker. Return TRUE if worker is successfully started.
 static bool
 start_worker(void)
 {
@@ -630,9 +630,9 @@ start_worker(void)
     return true;
 }
 
-/* Initialize MJIT.  Start a thread creating the precompiled header and
-   processing ISeqs.  The function should be called first for using MJIT.
-   If everything is successful, MJIT_INIT_P will be TRUE.  */
+// Initialize MJIT.  Start a thread creating the precompiled header and
+// processing ISeqs.  The function should be called first for using MJIT.
+// If everything is successful, MJIT_INIT_P will be TRUE.
 void
 mjit_init(struct mjit_options *opts)
 {
@@ -640,7 +640,7 @@ mjit_init(struct mjit_options *opts)
     mjit_enabled = true;
     mjit_call_p = true;
 
-    /* Normalize options */
+    // Normalize options
     if (mjit_opts.min_calls == 0)
         mjit_opts.min_calls = DEFAULT_MIN_CALLS_TO_ADD;
     if (mjit_opts.max_cache_size <= 0)
@@ -648,9 +648,9 @@ mjit_init(struct mjit_options *opts)
     if (mjit_opts.max_cache_size < MIN_CACHE_SIZE)
         mjit_opts.max_cache_size = MIN_CACHE_SIZE;
 
-    /* Initialize variables for compilation */
+    // Initialize variables for compilation
 #ifdef _MSC_VER
-    pch_status = PCH_SUCCESS; /* has prebuilt precompiled header */
+    pch_status = PCH_SUCCESS; // has prebuilt precompiled header
 #else
     pch_status = PCH_NOT_READY;
 #endif
@@ -659,11 +659,11 @@ mjit_init(struct mjit_options *opts)
     cc_common_args = xmalloc(sizeof(CC_COMMON_ARGS));
     memcpy((void *)cc_common_args, CC_COMMON_ARGS, sizeof(CC_COMMON_ARGS));
 #if MJIT_CFLAGS_PIPE
-    { /* eliminate a flag incompatible with `-pipe` */
+    { // eliminate a flag incompatible with `-pipe`
         size_t i, j;
         for (i = 0, j = 0; i < sizeof(CC_COMMON_ARGS) / sizeof(char *); i++) {
             if (CC_COMMON_ARGS[i] && strncmp("-save-temps", CC_COMMON_ARGS[i], strlen("-save-temps")) == 0)
-                continue; /* skip -save-temps flag */
+                continue; // skip -save-temps flag
             cc_common_args[j] = CC_COMMON_ARGS[i];
             j++;
         }
@@ -680,14 +680,14 @@ mjit_init(struct mjit_options *opts)
     }
     pch_owner_pid = getpid();
 
-    /* Initialize mutex */
+    // Initialize mutex
     rb_native_mutex_initialize(&mjit_engine_mutex);
     rb_native_cond_initialize(&mjit_pch_wakeup);
     rb_native_cond_initialize(&mjit_client_wakeup);
     rb_native_cond_initialize(&mjit_worker_wakeup);
     rb_native_cond_initialize(&mjit_gc_wakeup);
 
-    /* Initialize class_serials cache for compilation */
+    // Initialize class_serials cache for compilation
     valid_class_serials = rb_hash_new();
     rb_obj_hide(valid_class_serials);
     rb_gc_register_mark_object(valid_class_serials);
@@ -697,7 +697,7 @@ mjit_init(struct mjit_options *opts)
         rb_id_table_foreach(RCLASS_CONST_TBL(rb_cObject), valid_class_serials_add_i, NULL);
     }
 
-    /* Initialize worker thread */
+    // Initialize worker thread
     start_worker();
 }
 
@@ -716,7 +716,7 @@ stop_worker(void)
     }
 }
 
-/* Stop JIT-compiling methods but compiled code is kept available. */
+// Stop JIT-compiling methods but compiled code is kept available.
 VALUE
 mjit_pause(bool wait_p)
 {
@@ -727,13 +727,13 @@ mjit_pause(bool wait_p)
         return Qfalse;
     }
 
-    /* Flush all queued units with no option or `wait: true` */
+    // Flush all queued units with no option or `wait: true`
     if (wait_p) {
         struct timeval tv;
         tv.tv_sec = 0;
         tv.tv_usec = 1000;
 
-        while (unit_queue.length > 0 && active_units.length < mjit_opts.max_cache_size) { /* inverse of condition that waits for mjit_worker_wakeup */
+        while (unit_queue.length > 0 && active_units.length < mjit_opts.max_cache_size) { // inverse of condition that waits for mjit_worker_wakeup
             CRITICAL_SECTION_START(3, "in mjit_pause for a worker wakeup");
             rb_native_cond_broadcast(&mjit_worker_wakeup);
             CRITICAL_SECTION_FINISH(3, "in mjit_pause for a worker wakeup");
@@ -745,7 +745,7 @@ mjit_pause(bool wait_p)
     return Qtrue;
 }
 
-/* Restart JIT-compiling methods after mjit_pause. */
+// Restart JIT-compiling methods after mjit_pause.
 VALUE
 mjit_resume(void)
 {
@@ -762,40 +762,39 @@ mjit_resume(void)
     return Qtrue;
 }
 
-/* Skip calling `clean_object_files` for units which currently exist in the list. */
+// Skip calling `clean_object_files` for units which currently exist in the list.
 static void
 skip_cleaning_object_files(struct rb_mjit_unit_list *list)
 {
     struct rb_mjit_unit *unit = NULL, *next;
 
-    /* No mutex for list, assuming MJIT worker does not exist yet since it's immediately after fork. */
+    // No mutex for list, assuming MJIT worker does not exist yet since it's immediately after fork.
     list_for_each_safe(&list->head, unit, next, unode) {
-#ifndef _MSC_VER /* Actually mswin does not reach here since it doesn't have fork */
+#ifndef _MSC_VER // Actually mswin does not reach here since it doesn't have fork
         if (unit->o_file) unit->o_file_inherited_p = true;
 #endif
 
-#if defined(_WIN32) /* mswin doesn't reach here either. This is for MinGW. */
+#if defined(_WIN32) // mswin doesn't reach here either. This is for MinGW.
         if (unit->so_file) unit->so_file = NULL;
 #endif
     }
 }
 
-/* This is called after fork initiated by Ruby's method to launch MJIT worker thread
-   for child Ruby process.
-
-   In multi-process Ruby applications, child Ruby processes do most of the jobs.
-   Thus we want child Ruby processes to enqueue ISeqs to MJIT worker's queue and
-   call the JIT-ed code.
-
-   But unfortunately current MJIT-generated code is process-specific. After the fork,
-   JIT-ed code created by parent Ruby process cannot be used in child Ruby process
-   because the code could rely on inline cache values (ivar's IC, send's CC) which
-   may vary between processes after fork or embed some process-specific addresses.
-
-   So child Ruby process can't request parent process to JIT an ISeq and use the code.
-   Instead of that, MJIT worker thread is created for all child Ruby processes, even
-   while child processes would end up with compiling the same ISeqs.
- */
+// This is called after fork initiated by Ruby's method to launch MJIT worker thread
+// for child Ruby process.
+//
+// In multi-process Ruby applications, child Ruby processes do most of the jobs.
+// Thus we want child Ruby processes to enqueue ISeqs to MJIT worker's queue and
+// call the JIT-ed code.
+//
+// But unfortunately current MJIT-generated code is process-specific. After the fork,
+// JIT-ed code created by parent Ruby process cannot be used in child Ruby process
+// because the code could rely on inline cache values (ivar's IC, send's CC) which
+// may vary between processes after fork or embed some process-specific addresses.
+//
+// So child Ruby process can't request parent process to JIT an ISeq and use the code.
+// Instead of that, MJIT worker thread is created for all child Ruby processes, even
+// while child processes would end up with compiling the same ISeqs.
 void
 mjit_child_after_fork(void)
 {
@@ -810,33 +809,33 @@ mjit_child_after_fork(void)
     start_worker();
 }
 
-/* Finish the threads processing units and creating PCH, finalize
-   and free MJIT data.  It should be called last during MJIT
-   life.
-
-   If close_handle_p is true, it calls dlclose() for JIT-ed code. So it should be false
-   if the code can still be on stack. ...But it means to leak JIT-ed handle forever (FIXME). */
+// Finish the threads processing units and creating PCH, finalize
+// and free MJIT data.  It should be called last during MJIT
+// life.
+//
+// If close_handle_p is true, it calls dlclose() for JIT-ed code. So it should be false
+// if the code can still be on stack. ...But it means to leak JIT-ed handle forever (FIXME).
 void
 mjit_finish(bool close_handle_p)
 {
     if (!mjit_enabled)
         return;
 
-    /* Wait for pch finish */
+    // Wait for pch finish
     verbose(2, "Stopping worker thread");
     CRITICAL_SECTION_START(3, "in mjit_finish to wakeup from pch");
-    /* As our threads are detached, we could just cancel them.  But it
-       is a bad idea because OS processes (C compiler) started by
-       threads can produce temp files.  And even if the temp files are
-       removed, the used C compiler still complaint about their
-       absence.  So wait for a clean finish of the threads.  */
+    // As our threads are detached, we could just cancel them.  But it
+    // is a bad idea because OS processes (C compiler) started by
+    // threads can produce temp files.  And even if the temp files are
+    // removed, the used C compiler still complaint about their
+    // absence.  So wait for a clean finish of the threads.
     while (pch_status == PCH_NOT_READY) {
         verbose(3, "Waiting wakeup from make_pch");
         rb_native_cond_wait(&mjit_pch_wakeup, &mjit_engine_mutex);
     }
     CRITICAL_SECTION_FINISH(3, "in mjit_finish to wakeup from pch");
 
-    /* Stop worker */
+    // Stop worker
     stop_worker();
 
     rb_native_mutex_destroy(&mjit_engine_mutex);
@@ -845,7 +844,7 @@ mjit_finish(bool close_handle_p)
     rb_native_cond_destroy(&mjit_worker_wakeup);
     rb_native_cond_destroy(&mjit_gc_wakeup);
 
-#ifndef _MSC_VER /* mswin has prebuilt precompiled header */
+#ifndef _MSC_VER // mswin has prebuilt precompiled header
     if (!mjit_opts.save_temps && getpid() == pch_owner_pid)
         remove_file(pch_file);
 
@@ -884,12 +883,12 @@ mjit_mark(void)
     struct rb_mjit_unit *unit = NULL;
     CRITICAL_SECTION_START(4, "mjit_mark");
     list_for_each(&unit_queue.head, unit, unode) {
-        if (unit->iseq) { /* ISeq is still not GCed */
+        if (unit->iseq) { // ISeq is still not GCed
             iseq = (VALUE)unit->iseq;
             CRITICAL_SECTION_FINISH(4, "mjit_mark rb_gc_mark");
 
-            /* Don't wrap critical section with this. This may trigger GC,
-               and in that case mjit_gc_start_hook causes deadlock. */
+            // Don't wrap critical section with this. This may trigger GC,
+            // and in that case mjit_gc_start_hook causes deadlock.
             rb_gc_mark(iseq);
 
             CRITICAL_SECTION_START(4, "mjit_mark rb_gc_mark");
@@ -900,19 +899,19 @@ mjit_mark(void)
     RUBY_MARK_LEAVE("mjit");
 }
 
-/* A hook to update valid_class_serials. */
+// A hook to update valid_class_serials.
 void
 mjit_add_class_serial(rb_serial_t class_serial)
 {
     if (!mjit_enabled)
         return;
 
-    /* Do not wrap CRITICAL_SECTION here. This function is only called in main thread
-       and guarded by GVL, and `rb_hash_aset` may cause GC and deadlock in it. */
+    // Do not wrap CRITICAL_SECTION here. This function is only called in main thread
+    // and guarded by GVL, and `rb_hash_aset` may cause GC and deadlock in it.
     rb_hash_aset(valid_class_serials, LONG2FIX(class_serial), Qtrue);
 }
 
-/* A hook to update valid_class_serials. */
+// A hook to update valid_class_serials.
 void
 mjit_remove_class_serial(rb_serial_t class_serial)
 {
