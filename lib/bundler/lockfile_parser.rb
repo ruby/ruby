@@ -23,16 +23,14 @@ module Bundler
     PATH         = "PATH".freeze
     PLUGIN       = "PLUGIN SOURCE".freeze
     SPECS        = "  specs:".freeze
-    OPTIONS      = /^  ([a-z]+): (.*)$/i
+    OPTIONS      = /^  ([a-z]+): (.*)$/i.freeze
     SOURCE       = [GIT, GEM, PATH, PLUGIN].freeze
 
     SECTIONS_BY_VERSION_INTRODUCED = {
-      # The strings have to be dup'ed for old RG on Ruby 2.3+
-      # TODO: remove dup in Bundler 2.0
-      Gem::Version.create("1.0".dup) => [DEPENDENCIES, PLATFORMS, GIT, GEM, PATH].freeze,
-      Gem::Version.create("1.10".dup) => [BUNDLED].freeze,
-      Gem::Version.create("1.12".dup) => [RUBY].freeze,
-      Gem::Version.create("1.13".dup) => [PLUGIN].freeze,
+      Gem::Version.create("1.0") => [DEPENDENCIES, PLATFORMS, GIT, GEM, PATH].freeze,
+      Gem::Version.create("1.10") => [BUNDLED].freeze,
+      Gem::Version.create("1.12") => [RUBY].freeze,
+      Gem::Version.create("1.13") => [PLUGIN].freeze,
     }.freeze
 
     KNOWN_SECTIONS = SECTIONS_BY_VERSION_INTRODUCED.values.flatten.freeze
@@ -90,7 +88,7 @@ module Bundler
           send("parse_#{@state}", line)
         end
       end
-      @sources << @rubygems_aggregate unless Bundler.feature_flag.lockfile_uses_separate_rubygems_sources?
+      @sources << @rubygems_aggregate unless Bundler.feature_flag.disable_multisource?
       @specs = @specs.values.sort_by(&:identifier)
       warn_for_outdated_bundler_version
     rescue ArgumentError => e
@@ -109,9 +107,9 @@ module Bundler
       when 0
         if current_version < bundler_version
           Bundler.ui.warn "Warning: the running version of Bundler (#{current_version}) is older " \
-               "than the version that created the lockfile (#{bundler_version}). We suggest you " \
-               "upgrade to the latest version of Bundler by running `gem " \
-               "install bundler#{prerelease_text}`.\n"
+               "than the version that created the lockfile (#{bundler_version}). We suggest you to " \
+               "upgrade to the version that created the lockfile by running `gem install " \
+               "bundler:#{bundler_version}#{prerelease_text}`.\n"
         end
       end
     end
@@ -141,7 +139,7 @@ module Bundler
             @sources << @current_source
           end
         when GEM
-          if Bundler.feature_flag.lockfile_uses_separate_rubygems_sources?
+          if Bundler.feature_flag.disable_multisource?
             @opts["remotes"] = @opts.delete("remote")
             @current_source = TYPES[@type].from_lock(@opts)
             @sources << @current_source
@@ -185,7 +183,7 @@ module Bundler
       (?:-(.*))?\))?                                     # Optional platform
       (!)?                                               # Optional pinned marker
       $                                                  # Line end
-    /xo
+    /xo.freeze
 
     def parse_dependency(line)
       return unless line =~ NAME_VERSION

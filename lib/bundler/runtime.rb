@@ -163,7 +163,7 @@ module Bundler
       gem_dirs             = Dir["#{Gem.dir}/gems/*"]
       gem_files            = Dir["#{Gem.dir}/cache/*.gem"]
       gemspec_files        = Dir["#{Gem.dir}/specifications/*.gemspec"]
-      extension_dirs       = Dir["#{Gem.dir}/extensions/*/*/*"]
+      extension_dirs       = Dir["#{Gem.dir}/extensions/*/*/*"] + Dir["#{Gem.dir}/bundler/gems/extensions/*/*/*"]
       spec_gem_paths       = []
       # need to keep git sources around
       spec_git_paths       = @definition.spec_git_paths

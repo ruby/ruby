@@ -6,7 +6,7 @@ Artifice.deactivate
 
 class EndpointApiMissing < Endpoint
   get "/fetch/actual/gem/:id" do
-    $stderr.puts params[:id]
+    warn params[:id]
     if params[:id] == "rack-1.0.gemspec.rz"
       halt 404
     else

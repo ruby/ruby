@@ -36,6 +36,7 @@ def gemfile(install = false, options = {}, &gemfile)
 
   opts = options.dup
   ui = opts.delete(:ui) { Bundler::UI::Shell.new }
+  ui.level = "silent" if opts.delete(:quiet)
   raise ArgumentError, "Unknown options: #{opts.keys.join(", ")}" unless opts.empty?
 
   old_root = Bundler.method(:root)

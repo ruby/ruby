@@ -5,7 +5,6 @@ require "bundler/compatibility_guard"
 require "bundler/vendored_fileutils"
 require "pathname"
 require "rbconfig"
-require "thread"
 
 require "bundler/errors"
 require "bundler/environment_preserver"
@@ -119,7 +118,7 @@ module Bundler
     end
 
     def environment
-      SharedHelpers.major_deprecation 3, "Bundler.environment has been removed in favor of Bundler.load"
+      SharedHelpers.major_deprecation 2, "Bundler.environment has been removed in favor of Bundler.load"
       load
     end
 
@@ -280,10 +279,19 @@ EOF
       ORIGINAL_ENV.clone
     end
 
-    # @deprecated Use `original_env` instead
-    # @return [Hash] Environment with all bundler-related variables removed
+    # @deprecated Use `unbundled_env` instead
     def clean_env
-      Bundler::SharedHelpers.major_deprecation(3, "`Bundler.clean_env` has weird edge cases, use `.original_env` instead")
+      Bundler::SharedHelpers.major_deprecation(
+        2,
+        "`Bundler.clean_env` has been deprecated in favor of `Bundler.unbundled_env`. " \
+        "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`"
+      )
+
+      unbundled_env
+    end
+
+    # @return [Hash] Environment with all bundler-related variables removed
+    def unbundled_env
       env = original_env
 
       if env.key?("BUNDLER_ORIG_MANPATH")
@@ -305,20 +313,67 @@ EOF
       env
     end
 
+    # Run block with environment present before Bundler was activated
     def with_original_env
       with_env(original_env) { yield }
     end
 
+    # @deprecated Use `with_unbundled_env` instead
     def with_clean_env
-      with_env(clean_env) { yield }
+      Bundler::SharedHelpers.major_deprecation(
+        2,
+        "`Bundler.with_clean_env` has been deprecated in favor of `Bundler.with_unbundled_env`. " \
+        "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`"
+      )
+
+      with_env(unbundled_env) { yield }
     end
 
+    # Run block with all bundler-related variables removed
+    def with_unbundled_env
+      with_env(unbundled_env) { yield }
+    end
+
+    # Run subcommand with the environment present before Bundler was activated
+    def original_system(*args)
+      with_original_env { Kernel.system(*args) }
+    end
+
+    # @deprecated Use `unbundled_system` instead
     def clean_system(*args)
-      with_clean_env { Kernel.system(*args) }
+      Bundler::SharedHelpers.major_deprecation(
+        2,
+        "`Bundler.clean_system` has been deprecated in favor of `Bundler.unbundled_system`. " \
+        "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`"
+      )
+
+      with_env(unbundled_env) { Kernel.system(*args) }
     end
 
+    # Run subcommand in an environment with all bundler related variables removed
+    def unbundled_system(*args)
+      with_unbundled_env { Kernel.system(*args) }
+    end
+
+    # Run a `Kernel.exec` to a subcommand with the environment present before Bundler was activated
+    def original_exec(*args)
+      with_original_env { Kernel.exec(*args) }
+    end
+
+    # @deprecated Use `unbundled_exec` instead
     def clean_exec(*args)
-      with_clean_env { Kernel.exec(*args) }
+      Bundler::SharedHelpers.major_deprecation(
+        2,
+        "`Bundler.clean_exec` has been deprecated in favor of `Bundler.unbundled_exec`. " \
+        "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`"
+      )
+
+      with_env(unbundled_env) { Kernel.exec(*args) }
+    end
+
+    # Run a `Kernel.exec` to a subcommand in an environment with all bundler related variables removed
+    def unbundled_exec(*args)
+      with_env(unbundled_env) { Kernel.exec(*args) }
     end
 
     def local_platform
@@ -343,7 +398,7 @@ EOF
       # system binaries. If you put '-n foo' in your .gemrc, RubyGems will
       # install binstubs there instead. Unfortunately, RubyGems doesn't expose
       # that directory at all, so rather than parse .gemrc ourselves, we allow
-      # the directory to be set as well, via `bundle config bindir foo`.
+      # the directory to be set as well, via `bundle config set bindir foo`.
       Bundler.settings[:system_bindir] || Bundler.rubygems.gem_bindir
     end
 
@@ -523,7 +578,7 @@ EOF
     rescue ScriptError, StandardError => e
       msg = "There was an error while loading `#{path.basename}`: #{e.message}"
 
-      if e.is_a?(LoadError) && RUBY_VERSION >= "1.9"
+      if e.is_a?(LoadError)
         msg += "\nDoes it try to require a relative path? That's been removed in Ruby 1.9"
       end
 

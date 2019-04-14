@@ -2,12 +2,6 @@
 
 require "pathname"
 
-if defined?(Gem::QuickLoader)
-  # Gem Prelude makes me a sad panda :'(
-  Gem::QuickLoader.load_full_rubygems_library
-end
-
-require "rubygems"
 require "rubygems/specification"
 
 begin
@@ -27,14 +21,16 @@ module Gem
   class Specification
     attr_accessor :remote, :location, :relative_loaded_from
 
-    if instance_methods(false).map(&:to_sym).include?(:source)
+    if instance_methods(false).include?(:source)
       remove_method :source
       attr_writer :source
       def source
         (defined?(@source) && @source) || Gem::Source::Installed.new
       end
     else
+      # rubocop:disable Lint/DuplicateMethods
       attr_accessor :source
+      # rubocop:enable Lint/DuplicateMethods
     end
 
     alias_method :rg_full_gem_path, :full_gem_path
@@ -85,10 +81,7 @@ module Gem
       end
     end
 
-    # RubyGems 1.8+ used only.
-    methods = instance_methods(false)
-    gem_dir = methods.first.is_a?(String) ? "gem_dir" : :gem_dir
-    remove_method :gem_dir if methods.include?(gem_dir)
+    remove_method :gem_dir if instance_methods(false).include?(:gem_dir)
     def gem_dir
       full_gem_path
     end

@@ -16,7 +16,7 @@ RSpec.describe "bundle install with a lockfile present" do
 
     context "with plugins disabled" do
       before do
-        bundle! "config plugins false"
+        bundle! "config set plugins false"
         subject
       end
 

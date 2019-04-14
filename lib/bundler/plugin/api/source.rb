@@ -37,7 +37,7 @@ module Bundler
       #
       # @!attribute [rw] dependency_names
       #   @return [Array<String>] Names of dependencies that the source should
-      #     try to resolve. It is not necessary to use this list intenally. This
+      #     try to resolve. It is not necessary to use this list internally. This
       #     is present to be compatible with `Definition` and is used by
       #     rubygems source.
       module Source

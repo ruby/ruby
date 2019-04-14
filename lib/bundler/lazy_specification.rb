@@ -77,7 +77,7 @@ module Bundler
         if search && Gem::Platform.new(search.platform) != Gem::Platform.new(platform) && !search.runtime_dependencies.-(dependencies.reject {|d| d.type == :development }).empty?
           Bundler.ui.warn "Unable to use the platform-specific (#{search.platform}) version of #{name} (#{version}) " \
             "because it has different dependencies from the #{platform} version. " \
-            "To use the platform-specific version of the gem, run `bundle config specific_platform true` and install again."
+            "To use the platform-specific version of the gem, run `bundle config set specific_platform true` and install again."
           search = source.specs.search(self).last
         end
         search.dependencies = dependencies if search && (search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification))

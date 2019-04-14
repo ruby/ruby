@@ -44,7 +44,7 @@ RSpec.describe Bundler::Fetcher::CompactIndex do
         end
       end
 
-      context "when OpenSSL is FIPS-enabled", :ruby => ">= 2.0.0" do
+      context "when OpenSSL is FIPS-enabled" do
         def remove_cached_md5_availability
           return unless Bundler::SharedHelpers.instance_variable_defined?(:@md5_available)
           Bundler::SharedHelpers.remove_instance_variable(:@md5_available)

@@ -37,7 +37,7 @@ RSpec.describe "bundle install" do
 
     it "disallows --path vendor/bundle --system", :bundler => "< 3" do
       bundle "install --path vendor/bundle --system"
-      expect(out).to include("Please choose only one option.")
+      expect(err).to include("Please choose only one option.")
       expect(exitstatus).to eq(15) if exitstatus
     end
 
@@ -51,7 +51,7 @@ RSpec.describe "bundle install" do
     end
 
     context "with path_relative_to_cwd set to true" do
-      before { bundle! "config path_relative_to_cwd true" }
+      before { bundle! "config set path_relative_to_cwd true" }
 
       it "installs the bundle relatively to current working directory", :bundler => "< 3" do
         Dir.chdir(bundled_app.parent) do
@@ -98,7 +98,7 @@ RSpec.describe "bundle install" do
       if type == :env
         ENV["BUNDLE_PATH"] = location
       elsif type == :global
-        bundle! "config path #{location}", "no-color" => nil
+        bundle! "config set path #{location}", "no-color" => nil
       end
     end
 
@@ -116,7 +116,7 @@ RSpec.describe "bundle install" do
         context "with global_path_appends_ruby_scope set", :bundler => "3" do
           it "installs gems to ." do
             set_bundle_path(type, ".")
-            bundle! "config --global disable_shared_gems true"
+            bundle! "config set --global disable_shared_gems true"
 
             bundle! :install
 
@@ -150,7 +150,7 @@ RSpec.describe "bundle install" do
         context "with global_path_appends_ruby_scope unset", :bundler => "< 3" do
           it "installs gems to ." do
             set_bundle_path(type, ".")
-            bundle! "config --global disable_shared_gems true"
+            bundle! "config set --global disable_shared_gems true"
 
             bundle! :install
 
@@ -207,7 +207,7 @@ RSpec.describe "bundle install" do
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
-    it "re-installs gems whose extensions have been deleted", :ruby_repo, :rubygems => ">= 2.3" do
+    it "re-installs gems whose extensions have been deleted", :ruby_repo do
       build_lib "very_simple_binary", "1.0.0", :to_system => true do |s|
         s.write "lib/very_simple_binary.rb", "raise 'FAIL'"
       end
@@ -226,7 +226,7 @@ RSpec.describe "bundle install" do
       vendored_gems("extensions").rmtree
 
       run "require 'very_simple_binary_c'"
-      expect(err).to include("Bundler::GemNotFound")
+      expect(last_command.stderr).to include("Bundler::GemNotFound")
 
       bundle :install, forgotten_command_line_options(:path => "./vendor/bundle")
 
@@ -250,7 +250,7 @@ RSpec.describe "bundle install" do
       G
 
       bundle :install, forgotten_command_line_options(:path => "bundle")
-      expect(out).to include("file already exists")
+      expect(err).to include("file already exists")
     end
   end
 end

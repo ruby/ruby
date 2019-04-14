@@ -38,8 +38,8 @@ RSpec.describe "bundle lock" do
             actionpack (= 2.3.2)
             activerecord (= 2.3.2)
             activeresource (= 2.3.2)
-            rake (= 10.0.2)
-          rake (10.0.2)
+            rake (= 12.3.2)
+          rake (12.3.2)
           with_license (1.0)
 
       PLATFORMS
@@ -86,14 +86,41 @@ RSpec.describe "bundle lock" do
   it "does not fetch remote specs when using the --local option" do
     bundle "lock --update --local"
 
-    expect(out).to match(/sources listed in your Gemfile|installed locally/)
+    expect(err).to match(/sources listed in your Gemfile|installed locally/)
+  end
+
+  it "works with --gemfile flag" do
+    create_file "CustomGemfile", <<-G
+      source "file://localhost#{repo}"
+      gem "foo"
+    G
+    lockfile = strip_lockfile(normalize_uri_file(<<-L))
+      GEM
+        remote: file://localhost#{repo}/
+        specs:
+          foo (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        foo
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+    bundle "lock --gemfile CustomGemfile"
+
+    expect(out).to match(/Writing lockfile to.+CustomGemfile\.lock/)
+    expect(read_lockfile("CustomGemfile.lock")).to eq(lockfile)
+    expect { read_lockfile }.to raise_error(Errno::ENOENT)
   end
 
   it "writes to a custom location using --lockfile" do
     bundle "lock --lockfile=lock"
 
     expect(out).to match(/Writing lockfile to.+lock/)
-    expect(read_lockfile "lock").to eq(@lockfile)
+    expect(read_lockfile("lock")).to eq(@lockfile)
     expect { read_lockfile }.to raise_error(Errno::ENOENT)
   end
 
@@ -106,7 +133,7 @@ RSpec.describe "bundle lock" do
   end
 
   it "update specific gems using --update" do
-    lockfile @lockfile.gsub("2.3.2", "2.3.1").gsub("10.0.2", "10.0.1")
+    lockfile @lockfile.gsub("2.3.2", "2.3.1").gsub("12.3.2", "10.0.1")
 
     bundle "lock --update rails rake"
 
@@ -117,9 +144,22 @@ RSpec.describe "bundle lock" do
     lockfile @lockfile
 
     bundle "lock --update blahblah"
-    expect(out).to eq("Could not find gem 'blahblah'.")
+    expect(err).to eq("Could not find gem 'blahblah'.")
 
     expect(read_lockfile).to eq(@lockfile)
+  end
+
+  it "can lock without downloading gems" do
+    gemfile <<-G
+      source "file://#{gem_repo1}"
+
+      gem "thin"
+      gem "rack_middleware", :group => "test"
+    G
+    bundle! "config set without test"
+    bundle! "config set path .bundle"
+    bundle! "lock"
+    expect(bundled_app(".bundle")).not_to exist
   end
 
   # see update_spec for more coverage on same options. logic is shared so it's not necessary
@@ -185,7 +225,7 @@ RSpec.describe "bundle lock" do
 
   it "warns when adding an unknown platform" do
     bundle "lock --add-platform foobarbaz"
-    expect(out).to include("The platform `foobarbaz` is unknown to RubyGems and adding it will likely lead to resolution errors")
+    expect(err).to include("The platform `foobarbaz` is unknown to RubyGems and adding it will likely lead to resolution errors")
   end
 
   it "allows removing platforms" do

@@ -8,7 +8,7 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       bundle :install
-      expect(out).to match(/no dependencies/)
+      expect(err).to match(/no dependencies/)
     end
 
     it "does not make a lockfile if the install fails" do
@@ -311,7 +311,7 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       bundle :install
-      expect(out).to include("Your Gemfile has no gem server sources")
+      expect(err).to include("Your Gemfile has no gem server sources")
     end
 
     it "creates a Gemfile.lock on a blank Gemfile" do
@@ -329,9 +329,9 @@ RSpec.describe "bundle install with gem sources" do
           gem "rack"
         G
 
-        expect(out).to include("Your Gemfile lists the gem rack (>= 0) more than once.")
-        expect(out).to include("Remove any duplicate entries and specify the gem only once (per group).")
-        expect(out).to include("While it's not a problem now, it could cause errors if you change the version of one of them later.")
+        expect(err).to include("Your Gemfile lists the gem rack (>= 0) more than once.")
+        expect(err).to include("Remove any duplicate entries and specify the gem only once (per group).")
+        expect(err).to include("While it's not a problem now, it could cause errors if you change the version of one of them later.")
       end
 
       it "with same versions" do
@@ -341,9 +341,9 @@ RSpec.describe "bundle install with gem sources" do
           gem "rack", "1.0"
         G
 
-        expect(out).to include("Your Gemfile lists the gem rack (= 1.0) more than once.")
-        expect(out).to include("Remove any duplicate entries and specify the gem only once (per group).")
-        expect(out).to include("While it's not a problem now, it could cause errors if you change the version of one of them later.")
+        expect(err).to include("Your Gemfile lists the gem rack (= 1.0) more than once.")
+        expect(err).to include("Remove any duplicate entries and specify the gem only once (per group).")
+        expect(err).to include("While it's not a problem now, it could cause errors if you change the version of one of them later.")
       end
     end
 
@@ -355,8 +355,8 @@ RSpec.describe "bundle install with gem sources" do
           gem "rack", "1.0"
         G
 
-        expect(out).to include("You cannot specify the same gem twice with different version requirements")
-        expect(out).to include("You specified: rack (>= 0) and rack (= 1.0).")
+        expect(err).to include("You cannot specify the same gem twice with different version requirements")
+        expect(err).to include("You specified: rack (>= 0) and rack (= 1.0).")
       end
 
       it "when different versions of both dependencies are specified" do
@@ -366,25 +366,25 @@ RSpec.describe "bundle install with gem sources" do
           gem "rack", "1.1"
         G
 
-        expect(out).to include("You cannot specify the same gem twice with different version requirements")
-        expect(out).to include("You specified: rack (= 1.0) and rack (= 1.1).")
+        expect(err).to include("You cannot specify the same gem twice with different version requirements")
+        expect(err).to include("You specified: rack (= 1.0) and rack (= 1.1).")
       end
     end
 
     it "gracefully handles error when rubygems server is unavailable" do
       install_gemfile <<-G, :artifice => nil
         source "file://#{gem_repo1}"
-        source "http://localhost:9384" do
+        source "http://0.0.0.0:9384" do
           gem 'foo'
         end
       G
 
       bundle :install, :artifice => nil
-      expect(out).to include("Could not fetch specs from http://localhost:9384/")
-      expect(out).not_to include("file://")
+      expect(err).to include("Could not fetch specs from http://0.0.0.0:9384/")
+      expect(err).not_to include("file://")
     end
 
-    it "fails gracefully when downloading an invalid specification from the full index", :rubygems => "2.5" do
+    it "fails gracefully when downloading an invalid specification from the full index" do
       build_repo2 do
         build_gem "ajp-rails", "0.0.0", :gemspec => false, :skip_validation => true do |s|
           bad_deps = [["ruby-ajp", ">= 0.2.0"], ["rails", ">= 0.14"]]
@@ -442,7 +442,7 @@ RSpec.describe "bundle install with gem sources" do
           ::RUBY_VERSION = '2.0.1'
           ruby '~> 2.2'
         G
-        expect(out).to include("Your Ruby version is 2.0.1, but your Gemfile specified ~> 2.2")
+        expect(err).to include("Your Ruby version is 2.0.1, but your Gemfile specified ~> 2.2")
       end
     end
 
@@ -529,8 +529,8 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       bundle :install, :quiet => true
-      expect(out).to include("Could not find gem 'rack'")
-      expect(out).to_not include("Your Gemfile has no gem server sources")
+      expect(err).to include("Could not find gem 'rack'")
+      expect(err).to_not include("Your Gemfile has no gem server sources")
     end
   end
 
@@ -547,8 +547,8 @@ RSpec.describe "bundle install with gem sources" do
       FileUtils.chmod(0o500, bundled_app("vendor"))
 
       bundle :install, forgotten_command_line_options(:path => "vendor")
-      expect(out).to include(bundled_app("vendor").to_s)
-      expect(out).to include("grant write permissions")
+      expect(err).to include(bundled_app("vendor").to_s)
+      expect(err).to include("grant write permissions")
     end
   end
 
@@ -577,10 +577,10 @@ RSpec.describe "bundle install with gem sources" do
       G
     end
 
-    it "should display a helpful messag explaining how to fix it" do
+    it "should display a helpful message explaining how to fix it" do
       bundle :install, :env => { "BUNDLE_RUBYGEMS__ORG" => "user:pass{word" }
       expect(exitstatus).to eq(17) if exitstatus
-      expect(out).to eq("Please CGI escape your usernames and passwords before " \
+      expect(err).to eq("Please CGI escape your usernames and passwords before " \
                         "setting them for authentication.")
     end
   end

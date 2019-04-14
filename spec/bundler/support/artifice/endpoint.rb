@@ -59,7 +59,7 @@ class Endpoint < Sinatra::Base
             :platform     => spec.platform.to_s,
             :dependencies => spec.dependencies.select {|dep| dep.type == :runtime }.map do |dep|
               [dep.name, dep.requirement.requirements.map {|a| a.join(" ") }.join(", ")]
-            end
+            end,
           }
         end.compact
       end

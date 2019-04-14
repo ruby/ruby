@@ -77,7 +77,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         bundle :install, :env => { "DEBUG_RESOLVER" => "1" }
 
-        expect(err).to include("Creating possibility state for net_c")
+        expect(last_command.stderr).to include("Creating possibility state for net_c")
       end
     end
 
@@ -91,7 +91,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         bundle :install, :env => { "DEBUG_RESOLVER_TREE" => "1" }
 
-        expect(err).to include(" net_b").
+        expect(last_command.stderr).to include(" net_b").
           and include("Starting resolution").
           and include("Finished resolution").
           and include("Attempting to activate")
@@ -112,6 +112,26 @@ RSpec.describe "bundle install with install-time dependencies" do
           ruby "#{RUBY_VERSION}"
           source "http://localgemserver.test/"
           gem 'rack'
+        G
+
+        expect(out).to_not include("rack-9001.0.0 requires ruby version > 9000")
+        expect(the_bundle).to include_gems("rack 1.2")
+      end
+
+      it "installs the older version under rate limiting conditions" do
+        build_repo4 do
+          build_gem "rack", "9001.0.0" do |s|
+            s.required_ruby_version = "> 9000"
+          end
+          build_gem "rack", "1.2"
+          build_gem "foo1", "1.0"
+        end
+
+        install_gemfile <<-G, :artifice => "compact_index_rate_limited", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4 }
+          ruby "#{RUBY_VERSION}"
+          source "http://localgemserver.test/"
+          gem 'rack'
+          gem 'foo1'
         G
 
         expect(out).to_not include("rack-9001.0.0 requires ruby version > 9000")
@@ -142,15 +162,14 @@ RSpec.describe "bundle install with install-time dependencies" do
           expect(out).to_not include("Gem::InstallError: require_ruby requires Ruby version > 9000")
 
           nice_error = strip_whitespace(<<-E).strip
-            Bundler could not find compatible versions for gem "ruby\0":
+            Bundler found conflicting requirements for the Ruby\0 version:
               In Gemfile:
-                ruby\0 (#{error_message_requirement})
+                Ruby\0 (#{error_message_requirement})
 
                 require_ruby was resolved to 1.0, which depends on
-                  ruby\0 (> 9000)
+                  Ruby\0 (> 9000)
 
-            Could not find gem 'ruby\0 (> 9000)', which is required by gem 'require_ruby', in any of the relevant sources:
-              the local ruby installation
+            Ruby\0 (> 9000), which is required by gem 'require_ruby', is not available in the local ruby installation
           E
           expect(last_command.bundler_err).to end_with(nice_error)
         end
@@ -188,8 +207,8 @@ RSpec.describe "bundle install with install-time dependencies" do
         gem 'require_rubygems'
       G
 
-      expect(out).to_not include("Gem::InstallError: require_rubygems requires RubyGems version > 9000")
-      expect(out).to include("require_rubygems-1.0 requires rubygems version > 9000, which is incompatible with the current version, #{Gem::VERSION}")
+      expect(err).to_not include("Gem::InstallError: require_rubygems requires RubyGems version > 9000")
+      expect(err).to include("require_rubygems-1.0 requires rubygems version > 9000, which is incompatible with the current version, #{Gem::VERSION}")
     end
   end
 end

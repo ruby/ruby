@@ -60,7 +60,6 @@ module Bundler
       @specs << value
       @lookup = nil
       @sorted = nil
-      value
     end
 
     def sort!

@@ -25,7 +25,7 @@ RSpec.describe "bundle install with groups" do
         puts ACTIVESUPPORT
       R
 
-      expect(err).to eq_err("ZOMG LOAD ERROR")
+      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
     end
 
     it "installs gems with inline :groups into those groups" do
@@ -36,7 +36,7 @@ RSpec.describe "bundle install with groups" do
         puts THIN
       R
 
-      expect(err).to eq_err("ZOMG LOAD ERROR")
+      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
     end
 
     it "sets up everything if Bundler.setup is used with no groups" do
@@ -57,7 +57,7 @@ RSpec.describe "bundle install with groups" do
         puts THIN
       RUBY
 
-      expect(err).to eq_err("ZOMG LOAD ERROR")
+      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
     end
 
     it "sets up old groups when they have previously been removed" do
@@ -207,7 +207,7 @@ RSpec.describe "bundle install with groups" do
       it "errors out when passing a group to with and without via CLI flags", :bundler => "< 3" do
         bundle :install, forgotten_command_line_options(:with => "emo debugging", :without => "emo")
         expect(last_command).to be_failure
-        expect(out).to include("The offending groups are: emo")
+        expect(err).to include("The offending groups are: emo")
       end
 
       it "allows the BUNDLE_WITH setting to override BUNDLE_WITHOUT" do

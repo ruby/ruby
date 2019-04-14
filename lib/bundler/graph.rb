@@ -117,7 +117,7 @@ module Bundler
               :style     => "filled",
               :fillcolor => "#B9B9D5",
               :shape     => "box3d",
-              :fontsize  => 16
+              :fontsize  => 16,
             }.merge(@node_options[group])
           )
         end
@@ -142,7 +142,7 @@ module Bundler
             g.output @output_format.to_sym => "#{@output_file}.#{@output_format}"
             Bundler.ui.info "#{@output_file}.#{@output_format}"
           rescue ArgumentError => e
-            $stderr.puts "Unsupported output format. See Ruby-Graphviz/lib/graphviz/constants.rb"
+            warn "Unsupported output format. See Ruby-Graphviz/lib/graphviz/constants.rb"
             raise e
           end
         end

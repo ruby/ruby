@@ -40,7 +40,7 @@ module Spec
 
         build_gem "rails", "2.3.2" do |s|
           s.executables = "rails"
-          s.add_dependency "rake",           "10.0.2"
+          s.add_dependency "rake",           "12.3.2"
           s.add_dependency "actionpack",     "2.3.2"
           s.add_dependency "activerecord",   "2.3.2"
           s.add_dependency "actionmailer",   "2.3.2"
@@ -210,12 +210,7 @@ module Spec
         # The yard gem iterates over Gem.source_index looking for plugins
         build_gem "yard" do |s|
           s.write "lib/yard.rb", <<-Y
-            if Gem::Version.new(Gem::VERSION) >= Gem::Version.new("1.8.10")
-              specs = Gem::Specification
-            else
-              specs = Gem.source_index.find_name('')
-            end
-            specs.sort_by(&:name).each do |gem|
+            Gem::Specification.sort_by(&:name).each do |gem|
               puts gem.full_name
             end
           Y
@@ -653,7 +648,8 @@ module Spec
           `git add *`
           `git config user.email "lol@wut.com"`
           `git config user.name "lolwut"`
-          `git commit -m 'OMG INITIAL COMMIT'`
+          `git config commit.gpgsign false`
+          `git commit -m "OMG INITIAL COMMIT"`
         end
       end
     end

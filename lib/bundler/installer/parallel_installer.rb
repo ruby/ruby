@@ -91,10 +91,6 @@ module Bundler
     end
 
     def call
-      # Since `autoload` has the potential for threading issues on 1.8.7
-      # TODO:  remove in bundler 2.0
-      require "bundler/gem_remote_fetcher" if RUBY_VERSION < "1.9"
-
       check_for_corrupt_lockfile
 
       if @size > 1
@@ -115,7 +111,7 @@ module Bundler
           s,
           s.missing_lockfile_dependencies(@specs.map(&:name)),
         ]
-      end.reject { |a| a.last.empty? }
+      end.reject {|a| a.last.empty? }
       return if missing_dependencies.empty?
 
       warning = []
@@ -150,7 +146,7 @@ module Bundler
     end
 
     def worker_pool
-      @worker_pool ||= Bundler::Worker.new @size, "Parallel Installer", lambda { |spec_install, worker_num|
+      @worker_pool ||= Bundler::Worker.new @size, "Parallel Installer", lambda {|spec_install, worker_num|
         do_install(spec_install, worker_num)
       }
     end

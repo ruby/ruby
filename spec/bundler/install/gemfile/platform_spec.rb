@@ -248,9 +248,9 @@ RSpec.describe "bundle install across platforms" do
       gem "facter"
     G
 
-    expect(out).to include "Unable to use the platform-specific (universal-darwin) version of facter (2.4.6) " \
+    expect(err).to include "Unable to use the platform-specific (universal-darwin) version of facter (2.4.6) " \
       "because it has different dependencies from the ruby version. " \
-      "To use the platform-specific version of the gem, run `bundle config specific_platform true` and install again."
+      "To use the platform-specific version of the gem, run `bundle config set specific_platform true` and install again."
 
     expect(the_bundle).to include_gem "facter 2.4.6"
     expect(the_bundle).not_to include_gem "CFPropertyList"
@@ -265,8 +265,7 @@ RSpec.describe "bundle install across platforms" do
 
     bundle! :install, forgotten_command_line_options(:path => "vendor/bundle")
 
-    new_version = Gem::ConfigMap[:ruby_version] == "1.8" ? "1.9.1" : "1.8"
-    FileUtils.mv(vendored_gems, bundled_app("vendor/bundle", Gem.ruby_engine, new_version))
+    FileUtils.mv(vendored_gems, bundled_app("vendor/bundle", Gem.ruby_engine, "1.8"))
 
     bundle! :install
     expect(vendored_gems("gems/rack-1.0.0")).to exist
@@ -385,13 +384,13 @@ RSpec.describe "bundle install with platform conditionals" do
 
     bundle! "install"
 
-    expect(out).to include <<-O.strip
+    expect(err).to include <<-O.strip
 The dependency #{Gem::Dependency.new("rack", ">= 0")} will be unused by any of the platforms Bundler is installing for. Bundler is installing for ruby but the dependency is only for x86-mingw32, x86-mswin32, x64-mingw32, java. To add those platforms to the bundle, run `bundle lock --add-platform x86-mingw32 x86-mswin32 x64-mingw32 java`.
     O
   end
 
   context "when disable_platform_warnings is true" do
-    before { bundle! "config disable_platform_warnings true" }
+    before { bundle! "config set disable_platform_warnings true" }
 
     it "does not print the warning when a dependency is unused on any platform" do
       simulate_platform "ruby"

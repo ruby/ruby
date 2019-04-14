@@ -121,7 +121,7 @@ RSpec.describe "Bundler.require" do
       Bundler.require
     R
 
-    expect(err).to eq_err("ZOMG LOAD ERROR")
+    expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
   end
 
   it "displays a helpful message if the required gem throws an error" do
@@ -136,8 +136,8 @@ RSpec.describe "Bundler.require" do
     G
 
     run "Bundler.require"
-    expect(err).to match("error while trying to load the gem 'faulty'")
-    expect(err).to match("Gem Internal Error Message")
+    expect(last_command.stderr).to match("error while trying to load the gem 'faulty'")
+    expect(last_command.stderr).to match("Gem Internal Error Message")
   end
 
   it "doesn't swallow the error when the library has an unrelated error" do
@@ -160,7 +160,7 @@ RSpec.describe "Bundler.require" do
     RUBY
     run(cmd)
 
-    expect(err).to eq_err("ZOMG LOAD ERROR: cannot load such file -- load-bar")
+    expect(err_without_deprecations).to eq("ZOMG LOAD ERROR: cannot load such file -- load-bar")
   end
 
   describe "with namespaced gems" do
@@ -198,7 +198,7 @@ RSpec.describe "Bundler.require" do
       RUBY
       ruby(cmd)
 
-      expect(err).to lack_errors
+      expect(last_command.stderr).to be_empty
     end
 
     it "does not mangle explicitly given requires" do
@@ -211,7 +211,7 @@ RSpec.describe "Bundler.require" do
       load_error_run <<-R, "jquery-rails"
         Bundler.require
       R
-      expect(err).to eq_err("ZOMG LOAD ERROR")
+      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
     end
 
     it "handles the case where regex fails" do
@@ -234,7 +234,7 @@ RSpec.describe "Bundler.require" do
       RUBY
       run(cmd)
 
-      expect(err).to eq_err("ZOMG LOAD ERROR")
+      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
     end
 
     it "doesn't swallow the error when the library has an unrelated error" do
@@ -258,19 +258,19 @@ RSpec.describe "Bundler.require" do
       RUBY
       run(cmd)
 
-      expect(err).to eq_err("ZOMG LOAD ERROR: cannot load such file -- load-bar")
+      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR: cannot load such file -- load-bar")
     end
   end
 
   describe "using bundle exec" do
     it "requires the locked gems" do
-      bundle "exec ruby -e 'Bundler.require'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
+      bundle "exec ruby -e 'Bundler.require'"
       expect(out).to eq("two")
 
-      bundle "exec ruby -e 'Bundler.require(:bar)'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
+      bundle "exec ruby -e 'Bundler.require(:bar)'"
       expect(out).to eq("baz\nqux")
 
-      bundle "exec ruby -e 'Bundler.require(:default, :bar)'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
+      bundle "exec ruby -e 'Bundler.require(:default, :bar)'"
       expect(out).to eq("baz\nqux\ntwo")
     end
   end
@@ -366,12 +366,12 @@ RSpec.describe "Bundler.require" do
         load_error_run <<-R, "no_such_file_omg"
           Bundler.require
         R
-        expect(err).to eq_err("ZOMG LOAD ERROR")
+        expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
       end
     end
   end
 
-  it "does not load rubygems gemspecs that are used", :rubygems => ">= 2.5.2" do
+  it "does not load rubygems gemspecs that are used" do
     install_gemfile! <<-G
       source "file://#{gem_repo1}"
       gem "rack"
@@ -394,7 +394,7 @@ RSpec.describe "Bundler.require" do
     expect(out).to eq("WIN")
   end
 
-  it "does not load git gemspecs that are used", :rubygems => ">= 2.5.2" do
+  it "does not load git gemspecs that are used" do
     build_git "foo"
 
     install_gemfile! <<-G
@@ -432,7 +432,7 @@ RSpec.describe "Bundler.require with platform specific dependencies" do
     G
 
     run "Bundler.require"
-    expect(err).to lack_errors
+    expect(last_command.stderr).to be_empty
   end
 
   it "requires gems pinned to multiple platforms, including the current one" do
@@ -447,6 +447,6 @@ RSpec.describe "Bundler.require with platform specific dependencies" do
     run "Bundler.require; puts RACK"
 
     expect(out).to eq("1.0.0")
-    expect(err).to lack_errors
+    expect(last_command.stderr).to be_empty
   end
 end

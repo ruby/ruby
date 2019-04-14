@@ -3,42 +3,10 @@
 $:.unshift File.expand_path("..", __FILE__)
 $:.unshift File.expand_path("../../lib", __FILE__)
 
-require "rubygems"
-module Gem
-  if defined?(@path_to_default_spec_map)
-    @path_to_default_spec_map.delete_if do |_path, spec|
-      spec.name == "bundler"
-    end
-  end
-end
-
-begin
-  require File.expand_path("../support/path.rb", __FILE__)
-  spec = Gem::Specification.load(Spec::Path.gemspec.to_s)
-  rspec = spec.dependencies.find {|d| d.name == "rspec" }
-  gem "rspec", rspec.requirement.to_s
-  require "rspec"
-  require "diff/lcs"
-rescue LoadError
-  abort "Run rake spec:deps to install development dependencies"
-end
-
 require "bundler/psyched_yaml"
 require "bundler/vendored_fileutils"
 require "uri"
 require "digest"
-
-# Delete the default copy of Bundler that RVM installs for us when running in CI
-require "fileutils"
-if ENV.select {|k, _v| k =~ /TRAVIS/ }.any? && Gem::Version.new(Gem::VERSION) > Gem::Version.new("2.0")
-  Dir.glob(File.join(Gem::Specification.default_specifications_dir, "bundler*.gemspec")).each do |file|
-    FileUtils.rm_rf(file)
-  end
-
-  Dir.glob(File.join(RbConfig::CONFIG["sitelibdir"], "bundler*")).each do |file|
-    FileUtils.rm_rf(file)
-  end
-end
 
 if File.expand_path(__FILE__) =~ %r{([^\w/\.:\-])}
   abort "The bundler specs cannot be run from a path that contains special characters (particularly #{$1.inspect})"
@@ -53,9 +21,8 @@ end
 
 $debug = false
 
-Spec::Manpages.setup
+Spec::Manpages.setup unless Gem.win_platform?
 Spec::Rubygems.setup
-FileUtils.rm_rf(Spec::Path.gem_repo1)
 ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.spec_dir}/support/hax.rb"
 ENV["BUNDLE_SPEC_RUN"] = "true"
 
@@ -104,13 +71,10 @@ RSpec.configure do |config|
     config.filter_run_excluding :realworld => true
   end
 
-  git_version = Bundler::Source::Git::GitProxy.new(nil, nil, nil).version
-
-  config.filter_run_excluding :ruby => LessThanProc.with(RUBY_VERSION)
-  config.filter_run_excluding :rubygems => LessThanProc.with(Gem::VERSION)
-  config.filter_run_excluding :git => LessThanProc.with(git_version)
+  config.filter_run_excluding :ruby => RequirementChecker.against(RUBY_VERSION)
+  config.filter_run_excluding :rubygems => RequirementChecker.against(Gem::VERSION)
   config.filter_run_excluding :rubygems_master => (ENV["RGV"] != "master")
-  config.filter_run_excluding :bundler => LessThanProc.with(Bundler::VERSION.split(".")[0, 2].join("."))
+  config.filter_run_excluding :bundler => RequirementChecker.against(Bundler::VERSION.split(".")[0])
   config.filter_run_excluding :ruby_repo => !(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"]).nil?
 
   config.filter_run_when_matching :focus unless ENV["CI"]
@@ -120,6 +84,10 @@ RSpec.configure do |config|
 
   config.expect_with :rspec do |c|
     c.syntax = :expect
+  end
+
+  config.mock_with :rspec do |mocks|
+    mocks.allow_message_expectations_on_nil = false
   end
 
   config.around :each do |example|

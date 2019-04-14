@@ -95,11 +95,7 @@ module Bundler
       end
 
       def slice_body(body, range)
-        if body.respond_to?(:byteslice)
-          body.byteslice(range)
-        else # pre-1.9.3
-          body.unpack("@#{range.first}a#{range.end + 1}").first
-        end
+        body.byteslice(range)
       end
 
       def checksum_for_file(path)

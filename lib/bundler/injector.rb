@@ -123,7 +123,7 @@ module Bundler
       end
     end
 
-    # evalutes a gemfile to remove the specified gem
+    # evaluates a gemfile to remove the specified gem
     # from it.
     def remove_deps(gemfile_path)
       initial_gemfile = IO.readlines(gemfile_path)
@@ -136,8 +136,8 @@ module Bundler
 
       removed_deps = remove_gems_from_dependencies(builder, @deps, gemfile_path)
 
-      # abort the opertion if no gems were removed
-      # no need to operate on gemfile furthur
+      # abort the operation if no gems were removed
+      # no need to operate on gemfile further
       return [] if removed_deps.empty?
 
       cleaned_gemfile = remove_gems_from_gemfile(@deps, gemfile_path)
@@ -153,8 +153,8 @@ module Bundler
 
     # @param [Dsl]      builder Dsl object of current Gemfile.
     # @param [Array]    gems Array of names of gems to be removed.
-    # @param [Pathname] path of the Gemfile
-    # @return [Array]   removed_deps Array of removed dependencies.
+    # @param [Pathname] gemfile_path Path of the Gemfile.
+    # @return [Array]   Array of removed dependencies.
     def remove_gems_from_dependencies(builder, gems, gemfile_path)
       removed_deps = []
 
@@ -206,7 +206,7 @@ module Bundler
         nested_blocks -= 1
 
         gemfile.each_with_index do |line, index|
-          next unless !line.nil? && line.include?(block_name)
+          next unless !line.nil? && line.strip.start_with?(block_name)
           if gemfile[index + 1] =~ /^\s*end\s*$/
             gemfile[index] = nil
             gemfile[index + 1] = nil
@@ -222,7 +222,7 @@ module Bundler
     # @param [Array] removed_deps      Array of removed dependencies.
     # @param [Array] initial_gemfile   Contents of original Gemfile before any operation.
     def cross_check_for_errors(gemfile_path, original_deps, removed_deps, initial_gemfile)
-      # evalute the new gemfile to look for any failure cases
+      # evaluate the new gemfile to look for any failure cases
       builder = Dsl.new
       builder.eval_gemfile(gemfile_path)
 

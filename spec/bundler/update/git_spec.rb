@@ -16,7 +16,7 @@ RSpec.describe "bundle update" do
         s.write "lib/foo.rb", "FOO = '1.1'"
       end
 
-      bundle "update", :all => bundle_update_requires_all?
+      bundle "update", :all => true
 
       expect(the_bundle).to include_gems "foo 1.1"
     end
@@ -88,7 +88,7 @@ RSpec.describe "bundle update" do
         gem "foo", "1.0", :git => "#{lib_path("foo_two")}"
       G
 
-      expect(err).to lack_errors
+      expect(last_command.stderr).to be_empty
       expect(out).to include("Fetching #{lib_path}/foo_two")
       expect(out).to include("Bundle complete!")
     end
@@ -111,7 +111,7 @@ RSpec.describe "bundle update" do
         gem 'foo', :git => "#{@remote.path}", :tag => "fubar"
       G
 
-      bundle "update", :all => bundle_update_requires_all?
+      bundle "update", :all => true
       expect(exitstatus).to eq(0) if exitstatus
     end
 
@@ -191,7 +191,7 @@ RSpec.describe "bundle update" do
 
       lib_path("foo-1.0").join(".git").rmtree
 
-      bundle :update, :all => bundle_update_requires_all?
+      bundle :update, :all => true
       expect(last_command.bundler_err).to include(lib_path("foo-1.0").to_s).
         and match(/Git error: command `git fetch.+has failed/)
     end
@@ -208,7 +208,7 @@ RSpec.describe "bundle update" do
         gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
       G
 
-      bundle %(config local.rack #{lib_path("local-rack")})
+      bundle %(config set local.rack #{lib_path("local-rack")})
       bundle "update rack"
       expect(out).to include("Bundle updated!")
     end
@@ -233,7 +233,7 @@ RSpec.describe "bundle update" do
           rails!
       G
 
-      bundle "update", :all => bundle_update_requires_all?
+      bundle "update", :all => true
       expect(out).to include("Using rails 3.0 (was 2.3.2) from #{lib_path("rails")} (at master@#{revision_for(lib_path("rails"))[0..6]})")
     end
   end
@@ -299,7 +299,7 @@ RSpec.describe "bundle update" do
       G
     end
 
-    it "the --source flag updates version of gems that were originally pulled in by the source", :bundler => "> 3" do
+    it "the --source flag updates version of gems that were originally pulled in by the source", :bundler => "< 3" do
       spec_lines = lib_path("bar/foo.gemspec").read.split("\n")
       spec_lines[5] = "s.version = '2.0'"
 
@@ -348,16 +348,16 @@ RSpec.describe "bundle update" do
       bundle "update --source bar"
 
       lockfile_should_be <<-G
-        GEM
-          remote: file://localhost#{gem_repo2}/
-          specs:
-            rack (1.0.0)
-
         GIT
           remote: #{@git.path}
           revision: #{ref}
           specs:
             foo (2.0)
+
+        GEM
+          remote: file://localhost#{gem_repo2}/
+          specs:
+            rack (1.0.0)
 
         PLATFORMS
           #{lockfile_platforms}

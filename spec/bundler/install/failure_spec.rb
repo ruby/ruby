@@ -121,5 +121,24 @@ In Gemfile:
       activesupport
                      M
     end
+
+    context "because the downloaded .gem was invalid" do
+      before do
+        build_repo4 do
+          build_gem "a"
+        end
+
+        gem_repo4("gems", "a-1.0.gem").open("w") {|f| f << "<html></html>" }
+      end
+
+      it "removes the downloaded .gem" do
+        install_gemfile <<-G
+          source "file:#{gem_repo4}"
+          gem "a"
+        G
+
+        expect(default_bundle_path("cache", "a-1.0.gem")).not_to exist
+      end
+    end
   end
 end

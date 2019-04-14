@@ -107,7 +107,7 @@ RSpec.describe "post bundle message" do
           gem "rack"
           gem "not-a-gem", :group => :development
         G
-        expect(out).to include("Could not find gem 'not-a-gem' in any of the gem sources listed in your Gemfile.")
+        expect(err).to include("Could not find gem 'not-a-gem' in any of the gem sources listed in your Gemfile.")
       end
 
       it "should report a helpful error message", :bundler => "3" do
@@ -116,7 +116,7 @@ RSpec.describe "post bundle message" do
           gem "rack"
           gem "not-a-gem", :group => :development
         G
-        expect(out).to include normalize_uri_file(<<-EOS.strip)
+        expect(err).to include normalize_uri_file(<<-EOS.strip)
 Could not find gem 'not-a-gem' in rubygems repository file://localhost#{gem_repo1}/ or installed locally.
 The source does not contain any versions of 'not-a-gem'
         EOS
@@ -134,7 +134,7 @@ The source does not contain any versions of 'not-a-gem'
           gem "rack"
           gem "not-a-gem", :group => :development
         G
-        expect(out).to include("Could not find gem 'not-a-gem' in").
+        expect(err).to include("Could not find gem 'not-a-gem' in").
           and include("or in gems cached in vendor/cache.")
       end
     end
@@ -177,28 +177,28 @@ The source does not contain any versions of 'not-a-gem'
 
   describe "for bundle update" do
     it "without any options" do
-      bundle! :update, :all => bundle_update_requires_all?
+      bundle! :update, :all => true
       expect(out).not_to include("Gems in the groups")
       expect(out).to include(bundle_updated_message)
     end
 
     it "with --without one group" do
       bundle! :install, forgotten_command_line_options(:without => "emo")
-      bundle! :update, :all => bundle_update_requires_all?
+      bundle! :update, :all => true
       expect(out).to include("Gems in the group emo were not installed")
       expect(out).to include(bundle_updated_message)
     end
 
     it "with --without two groups" do
       bundle! :install, forgotten_command_line_options(:without => "emo test")
-      bundle! :update, :all => bundle_update_requires_all?
+      bundle! :update, :all => true
       expect(out).to include("Gems in the groups emo and test were not installed")
       expect(out).to include(bundle_updated_message)
     end
 
     it "with --without more groups" do
       bundle! :install, forgotten_command_line_options(:without => "emo obama test")
-      bundle! :update, :all => bundle_update_requires_all?
+      bundle! :update, :all => true
       expect(out).to include("Gems in the groups emo, obama and test were not installed")
       expect(out).to include(bundle_updated_message)
     end

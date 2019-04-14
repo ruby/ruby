@@ -6,7 +6,6 @@ bundle-install(1) -- Install the dependencies specified in your Gemfile
 `bundle install` [--binstubs[=DIRECTORY]]
                  [--clean]
                  [--deployment]
-                 [--force]
                  [--frozen]
                  [--full-index]
                  [--gemfile=GEMFILE]
@@ -16,6 +15,7 @@ bundle-install(1) -- Install the dependencies specified in your Gemfile
                  [--no-prune]
                  [--path PATH]
                  [--quiet]
+                 [--redownload]
                  [--retry=NUMBER]
                  [--shebang]
                  [--standalone[=GROUP[ GROUP...]]]
@@ -47,7 +47,12 @@ To apply any of `--binstubs`, `--deployment`, `--path`, or `--without` every
 time `bundle install` is run, use `bundle config` (see bundle-config(1)).
 
 * `--binstubs[=<directory>]`:
-  Creates a directory (defaults to `~/bin`) and place any executables from the
+  Binstubs are scripts that wrap around executables. Bundler creates a small Ruby
+  file (a binstub) that loads Bundler, runs the command, and puts it in `bin/`.
+  This lets you link the binstub inside of an application to the exact gem
+  version the application needs.
+
+  Creates a directory (defaults to `~/bin`) and places any executables from the
   gem there. These executables run in Bundler's context. If used, you might add
   this directory to your environment's `PATH` variable. For instance, if the
   `rails` gem comes with a `rails` executable, this flag will create a
@@ -64,9 +69,9 @@ time `bundle install` is run, use `bundle config` (see bundle-config(1)).
   production or CI use. Please check carefully if you want to have this option
   enabled in your development environment.
 
-* `--force`:
+* `--redownload`:
   Force download every gem, even if the required versions are already available
-  locally. `--redownload` is an alias of this option.
+  locally.
 
 * `--frozen`:
   Do not allow the Gemfile.lock to be updated after this install. Exits

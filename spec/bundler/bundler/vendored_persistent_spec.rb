@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "spec_helper"
 require "bundler/vendored_persistent"
 
 RSpec.describe Bundler::PersistentHTTP do
@@ -13,7 +12,7 @@ RSpec.describe Bundler::PersistentHTTP do
 
     before do
       allow(connection).to receive(:use_ssl?).and_return(!tls_version.nil?)
-      allow(socket).to receive(:io).and_return(socket_io)
+      allow(socket).to receive(:io).and_return(socket_io) if socket
       connection.instance_variable_set(:@socket, socket)
 
       if tls_version

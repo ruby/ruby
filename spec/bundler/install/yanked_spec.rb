@@ -27,7 +27,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
         gem "foo", "10.0.0"
     G
 
-    expect(out).to include("Your bundle is locked to foo (10.0.0)")
+    expect(err).to include("Your bundle is locked to foo (10.0.0)")
   end
 
   it "throws the original error when only the Gemfile specifies a gem version that doesn't exist" do
@@ -36,8 +36,8 @@ RSpec.context "when installing a bundle that includes yanked gems" do
         gem "foo", "10.0.0"
     G
 
-    expect(out).not_to include("Your bundle is locked to foo (10.0.0)")
-    expect(out).to include("Could not find gem 'foo (= 10.0.0)' in")
+    expect(err).not_to include("Your bundle is locked to foo (10.0.0)")
+    expect(err).to include("Could not find gem 'foo (= 10.0.0)' in")
   end
 end
 
@@ -63,9 +63,9 @@ RSpec.context "when using gem before installing" do
 
     bundle :list
 
-    expect(out).to include("Could not find rack-0.9.1 in any of the sources")
-    expect(out).to_not include("Your bundle is locked to rack (0.9.1), but that version could not be found in any of the sources listed in your Gemfile.")
-    expect(out).to_not include("If you haven't changed sources, that means the author of rack (0.9.1) has removed it.")
-    expect(out).to_not include("You'll need to update your bundle to a different version of rack (0.9.1) that hasn't been removed in order to install.")
+    expect(err).to include("Could not find rack-0.9.1 in any of the sources")
+    expect(err).to_not include("Your bundle is locked to rack (0.9.1), but that version could not be found in any of the sources listed in your Gemfile.")
+    expect(err).to_not include("If you haven't changed sources, that means the author of rack (0.9.1) has removed it.")
+    expect(err).to_not include("You'll need to update your bundle to a different version of rack (0.9.1) that hasn't been removed in order to install.")
   end
 end

@@ -18,7 +18,6 @@ module Bundler
       cache_all
       cache_all_platforms
       cache_command_is_package
-      console_command
       default_install_uses_path
       deployment
       deployment_means_frozen
@@ -35,23 +34,21 @@ module Bundler
       frozen
       gem.coc
       gem.mit
+      github.https
       global_path_appends_ruby_scope
       global_gem_cache
       ignore_messages
       init_gems_rb
-      list_command
-      lockfile_upgrade_warning
-      lockfile_uses_separate_rubygems_sources
-      major_deprecations
       no_install
       no_prune
       only_update_to_newer_versions
       path_relative_to_cwd
       path.system
       plugins
-      prefer_gems_rb
+      prefer_patch
       print_only_version_number
       setup_makes_kernel_gem_public
+      silence_deprecations
       silence_root_warning
       skip_default_git_sources
       specific_platform
@@ -59,7 +56,6 @@ module Bundler
       unlock_source_unlocks_spec
       update_requires_all_flag
       use_gem_version_promoter_for_major_updates
-      viz_command
     ].freeze
 
     NUMBER_KEYS = %w[
@@ -76,7 +72,9 @@ module Bundler
     ].freeze
 
     DEFAULT_CONFIG = {
+      :silence_deprecations => false,
       :disable_version_check => true,
+      :prefer_patch => false,
       :redirect => 5,
       :retry => 3,
       :timeout => 10,
@@ -107,18 +105,6 @@ module Bundler
         temporary(key => value)
         value
       else
-        command = if value.nil?
-          "bundle config --delete #{key}"
-        else
-          "bundle config #{key} #{Array(value).join(":")}"
-        end
-
-        Bundler::SharedHelpers.major_deprecation 3,\
-          "flags passed to commands " \
-          "will no longer be automatically remembered. Instead please set flags " \
-          "you want remembered between commands using `bundle config " \
-          "<setting name> <setting value>`, i.e. `#{command}`"
-
         set_local(key, value)
       end
     end
@@ -407,20 +393,6 @@ module Bundler
       Pathname.new(@root).join("config") if @root
     end
 
-    CONFIG_REGEX = %r{ # rubocop:disable Style/RegexpLiteral
-      ^
-      (BUNDLE_.+):\s # the key
-      (?: !\s)? # optional exclamation mark found with ruby 1.9.3
-      (['"]?) # optional opening quote
-      (.* # contents of the value
-        (?: # optionally, up until the next key
-          (\n(?!BUNDLE).+)*
-        )
-      )
-      \2 # matching closing quote
-      $
-    }xo
-
     def load_config(config_file)
       return {} if !config_file || ignore_config?
       SharedHelpers.filesystem_access(config_file, :read) do |file|
@@ -442,7 +414,7 @@ module Bundler
         (https?.*?) # URI
         (\.#{Regexp.union(PER_URI_OPTIONS)})? # optional suffix key
         \z
-      /ix
+      /ix.freeze
 
     # TODO: duplicates Rubygems#normalize_uri
     # TODO: is this the correct place to validate mirror URIs?

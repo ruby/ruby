@@ -74,16 +74,16 @@ RSpec.describe "bundle cache" do
   end
 
   context "using system gems" do
-    before { bundle! "config path.system true" }
+    before { bundle! "config set path.system true" }
     it_behaves_like "when there are only gemsources"
   end
 
   context "installing into a local path" do
-    before { bundle! "config path ./.bundle" }
+    before { bundle! "config set path ./.bundle" }
     it_behaves_like "when there are only gemsources"
   end
 
-  describe "when there is a built-in gem", :ruby => "2.0" do
+  describe "when there is a built-in gem" do
     before :each do
       build_repo2 do
         build_gem "builtin_gem", "1.0.2"
@@ -97,7 +97,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "uses builtin gems when installing to system gems" do
-      bundle! "config path.system true"
+      bundle! "config set path.system true"
       install_gemfile %(gem 'builtin_gem', '1.0.2')
       expect(the_bundle).to include_gems("builtin_gem 1.0.2")
     end
@@ -129,7 +129,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "errors if the builtin gem isn't available to cache" do
-      bundle! "config path.system true"
+      bundle! "config set path.system true"
 
       install_gemfile <<-G
         gem 'builtin_gem', '1.0.2'
@@ -137,7 +137,7 @@ RSpec.describe "bundle cache" do
 
       bundle :cache
       expect(exitstatus).to_not eq(0) if exitstatus
-      expect(out).to include("builtin_gem-1.0.2 is built in to Ruby, and can't be cached")
+      expect(err).to include("builtin_gem-1.0.2 is built in to Ruby, and can't be cached")
     end
   end
 
@@ -196,7 +196,7 @@ RSpec.describe "bundle cache" do
 
     it "adds and removes when gems are updated" do
       update_repo2
-      bundle "update", :all => bundle_update_requires_all?
+      bundle "update", :all => true
       expect(cached_gem("rack-1.2")).to exist
       expect(cached_gem("rack-1.0.0")).not_to exist
     end

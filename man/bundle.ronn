@@ -10,7 +10,7 @@ bundle(1) -- Ruby Dependency Management
 Bundler manages an `application's dependencies` through its entire life
 across many machines systematically and repeatably.
 
-See [the bundler website](http://bundler.io) for information on getting
+See [the bundler website](https://bundler.io) for information on getting
 started, and Gemfile(5) for more information on the `Gemfile` format.
 
 ## OPTIONS

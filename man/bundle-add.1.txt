@@ -2,16 +2,16 @@ BUNDLE-ADD(1)							 BUNDLE-ADD(1)
 
 
 
-1mNAME0m
-       1mbundle-add 22m- Add gem to the Gemfile and run bundle install
+NAME
+       bundle-add - Add gem to the Gemfile and run bundle install
 
-1mSYNOPSIS0m
-       1mbundle     add     4m22mGEM_NAME24m	 [--group=GROUP]     [--version=VERSION]
+SYNOPSIS
+       bundle	  add	  GEM_NAME     [--group=GROUP]	   [--version=VERSION]
        [--source=SOURCE] [--skip-install] [--strict] [--optimistic]
 
-1mDESCRIPTION0m
-       Adds the named gem to the Gemfile and run 1mbundle  install22m.	1mbundle  in-0m
-       1mstall 22mcan be avoided by using the flag 1m--skip-install22m.
+DESCRIPTION
+       Adds the named gem to  the  Gemfile  and  run  bundle  install.	bundle
+       install can be avoided by using the flag --skip-install.
 
        Example:
 
@@ -26,27 +26,27 @@ BUNDLE-ADD(1)							 BUNDLE-ADD(1)
 
        bundle add rails --group "development, test"
 
-1mOPTIONS0m
-       1m--version22m, 1m-v0m
+OPTIONS
+       --version, -v
 	      Specify version requirements(s) for the added gem.
 
-       1m--group22m, 1m-g0m
+       --group, -g
 	      Specify the group(s) for the added gem. Multiple	groups	should
 	      be separated by commas.
 
-       1m--source22m, , 1m-s0m
+       --source, , -s
 	      Specify the source for the added gem.
 
-       1m--skip-install0m
+       --skip-install
 	      Adds the gem to the Gemfile but does not install it.
 
-       1m--optimistic0m
+       --optimistic
 	      Adds optimistic declaration of version
 
-       1m--strict0m
+       --strict
 	      Adds strict declaration of version
 
 
 
 
-				 November 2018			 BUNDLE-ADD(1)
+				  March 2019			 BUNDLE-ADD(1)

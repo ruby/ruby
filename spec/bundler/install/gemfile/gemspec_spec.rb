@@ -117,7 +117,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     build_lib("foo", :path => tmp.join("foo")) do |s|
       s.write("Gemfile", "source 'file://#{gem_repo1}'\ngemspec")
       s.add_dependency "actionpack", "=2.3.2"
-      s.add_development_dependency "rake", "=10.0.2"
+      s.add_development_dependency "rake", "=12.3.2"
     end
 
     Dir.chdir(tmp.join("foo")) do
@@ -239,7 +239,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     expect(the_bundle).to include_gems "foo 1.0.0"
   end
 
-  it "does not break Gem.finish_resolve with conflicts", :rubygems => ">= 2" do
+  it "does not break Gem.finish_resolve with conflicts" do
     build_lib("foo", :path => tmp.join("foo")) do |s|
       s.version = "1.0.0"
       s.add_dependency "bar", "= 1.0.0"
@@ -263,6 +263,20 @@ RSpec.describe "bundle install from an existing gemspec" do
     expect(out).to eq("WIN")
   end
 
+  it "works with only_update_to_newer_versions" do
+    build_lib "omg", "2.0", :path => lib_path("omg")
+
+    install_gemfile <<-G
+      gemspec :path => "#{lib_path("omg")}"
+    G
+
+    build_lib "omg", "1.0", :path => lib_path("omg")
+
+    bundle! :install, :env => { "BUNDLE_BUNDLE_ONLY_UPDATE_TO_NEWER_VERSIONS" => "true" }
+
+    expect(the_bundle).to include_gems "omg 1.0"
+  end
+
   context "in deployment mode" do
     context "when the lockfile was not updated after a change to the gemspec's dependencies" do
       it "reports that installation failed" do
@@ -283,7 +297,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
         bundle :install, forgotten_command_line_options(:deployment => true)
 
-        expect(out).to include("changed")
+        expect(err).to include("changed")
       end
     end
   end
@@ -433,7 +447,7 @@ RSpec.describe "bundle install from an existing gemspec" do
         end
       end
 
-      context "on ruby", :bundler => "< 3" do
+      context "on ruby" do
         before do
           simulate_platform("ruby")
           bundle :install
@@ -518,107 +532,6 @@ RSpec.describe "bundle install from an existing gemspec" do
                     platform_specific
                   platform_specific (1.0)
                   platform_specific (1.0-java)
-
-              PLATFORMS
-                java
-                ruby
-
-              DEPENDENCIES
-                foo!
-                indirect_platform_specific
-
-              BUNDLED WITH
-                 #{Bundler::VERSION}
-            L
-          end
-        end
-      end
-
-      context "on ruby", :bundler => "3" do
-        before do
-          simulate_platform("ruby")
-          bundle :install
-        end
-
-        context "as a runtime dependency" do
-          it "keeps java dependencies in the lockfile" do
-            expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 RUBY"
-            expect(lockfile).to eq normalize_uri_file(strip_whitespace(<<-L))
-              GEM
-                remote: file://localhost#{gem_repo2}/
-                specs:
-                  platform_specific (1.0)
-                  platform_specific (1.0-java)
-
-              PATH
-                remote: .
-                specs:
-                  foo (1.0)
-                    platform_specific
-
-              PLATFORMS
-                java
-                ruby
-
-              DEPENDENCIES
-                foo!
-
-              BUNDLED WITH
-                 #{Bundler::VERSION}
-            L
-          end
-        end
-
-        context "as a development dependency" do
-          let(:platform_specific_type) { :development }
-
-          it "keeps java dependencies in the lockfile" do
-            expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 RUBY"
-            expect(lockfile).to eq normalize_uri_file(strip_whitespace(<<-L))
-              GEM
-                remote: file://localhost#{gem_repo2}/
-                specs:
-                  platform_specific (1.0)
-                  platform_specific (1.0-java)
-
-              PATH
-                remote: .
-                specs:
-                  foo (1.0)
-
-              PLATFORMS
-                java
-                ruby
-
-              DEPENDENCIES
-                foo!
-                platform_specific
-
-              BUNDLED WITH
-                 #{Bundler::VERSION}
-            L
-          end
-        end
-
-        context "with an indirect platform-specific development dependency" do
-          let(:platform_specific_type) { :development }
-          let(:dependency) { "indirect_platform_specific" }
-
-          it "keeps java dependencies in the lockfile" do
-            expect(the_bundle).to include_gems "foo 1.0", "indirect_platform_specific 1.0", "platform_specific 1.0 RUBY"
-            expect(lockfile).to eq normalize_uri_file(strip_whitespace(<<-L))
-              GEM
-                remote: file://localhost#{gem_repo2}/
-                specs:
-                  indirect_platform_specific (1.0)
-                    platform_specific
-                  platform_specific (1.0)
-                  platform_specific (1.0-java)
-
-              PATH
-                remote: .
-                specs:
-                  foo (1.0)
 
               PLATFORMS
                 java

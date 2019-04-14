@@ -188,7 +188,7 @@ RSpec.describe "bundle flex_install" do
       ruby <<-RUBY
         require 'bundler/setup'
       RUBY
-      expect(err).to match(/could not find gem 'rack-obama/i)
+      expect(last_command.stderr).to match(/could not find gem 'rack-obama/i)
     end
 
     it "suggests bundle update when the Gemfile requires different versions than the lock" do
@@ -233,9 +233,9 @@ RSpec.describe "bundle flex_install" do
         bundle "install"
       end.not_to change { File.read(bundled_app("Gemfile.lock")) }
 
-      expect(out).to include("rack = 0.9.1")
-      expect(out).to include("locked at 1.0.0")
-      expect(out).to include("bundle update rack")
+      expect(err).to include("rack = 0.9.1")
+      expect(err).to include("locked at 1.0.0")
+      expect(err).to include("bundle update rack")
     end
 
     it "should work when you update" do
@@ -264,7 +264,7 @@ RSpec.describe "bundle flex_install" do
           rack (1.0.0)
 
       PLATFORMS
-        ruby
+        #{lockfile_platforms}
 
       DEPENDENCIES
         rack
@@ -345,7 +345,7 @@ RSpec.describe "bundle flex_install" do
         gem "capybara", "0.3.9"
       G
 
-      expect(out).to include("Gemfile.lock")
+      expect(err).to include("Gemfile.lock")
     end
   end
 end

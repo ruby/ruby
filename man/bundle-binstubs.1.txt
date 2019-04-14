@@ -2,47 +2,47 @@ BUNDLE-BINSTUBS(1)					    BUNDLE-BINSTUBS(1)
 
 
 
-1mNAME0m
-       1mbundle-binstubs 22m- Install the binstubs of the listed gems
+NAME
+       bundle-binstubs - Install the binstubs of the listed gems
 
-1mSYNOPSIS0m
-       1mbundle binstubs 4m22mGEM_NAME24m [--force] [--path PATH] [--standalone]
+SYNOPSIS
+       bundle binstubs GEM_NAME [--force] [--path PATH] [--standalone]
 
-1mDESCRIPTION0m
+DESCRIPTION
        Binstubs  are  scripts  that wrap around executables. Bundler creates a
        small Ruby file (a binstub) that loads Bundler, runs the  command,  and
-       puts  it  into  1mbin/22m. Binstubs are a shortcut-or alternative- to always
-       using 1mbundle exec22m. This gives you a file that can by run directly,	and
+       puts  it  into  bin/. Binstubs are a shortcut-or alternative- to always
+       using bundle exec. This gives you a file that can by run directly,  and
        one  that  will always run the correct gem version used by the applica-
        tion.
 
-       For example, if you run 1mbundle binstubs rspec-core22m, Bundler will create
-       the file 1mbin/rspec22m. That file will contain enough code to load Bundler,
+       For example, if you run bundle binstubs rspec-core, Bundler will create
+       the file bin/rspec. That file will contain enough code to load Bundler,
        tell it to load the bundled gems, and then run rspec.
 
-       This command generates binstubs for executables in  1mGEM_NAME22m.  Binstubs
-       are  put into 1mbin22m, or the 1m--path 22mdirectory if one has been set. Calling
+       This command generates binstubs for executables in  GEM_NAME.  Binstubs
+       are  put into bin, or the --path directory if one has been set. Calling
        binstubs with [GEM [GEM]] will create binstubs for all given gems.
 
-1mOPTIONS0m
-       1m--force0m
+OPTIONS
+       --force
 	      Overwrite existing binstubs if they exist.
 
-       1m--path 22mThe location to install the specified binstubs to. This defaults
-	      to 1mbin22m.
+       --path The location to install the specified binstubs to. This defaults
+	      to bin.
 
-       1m--standalone0m
+       --standalone
 	      Makes  binstubs  that  can work without depending on Rubygems or
 	      Bundler at runtime.
 
-       1m--shebang0m
+       --shebang
 	      Specify a different shebang executable  name  than  the  default
 	      (default 'ruby')
 
-1mBUNDLE INSTALL --BINSTUBS0m
+BUNDLE INSTALL --BINSTUBS
        To  create  binstubs  for  all  the  gems in the bundle you can use the
-       1m--binstubs 22mflag in bundle install(1) 4mbundle-install.1.html24m.
+       --binstubs flag in bundle install(1) bundle-install.1.html.
 
 
 
-				 November 2018		    BUNDLE-BINSTUBS(1)
+				  March 2019		    BUNDLE-BINSTUBS(1)

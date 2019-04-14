@@ -331,7 +331,7 @@ module Bundler
       # i.e., Windows with `git config core.autocrlf=true`
       contents.gsub!(/\n/, "\r\n") if @lockfile_contents.match("\r\n")
 
-      if @locked_bundler_version && Bundler.feature_flag.lockfile_upgrade_warning?
+      if @locked_bundler_version
         locked_major = @locked_bundler_version.segments.first
         current_major = Gem::Version.create(Bundler::VERSION).segments.first
 
@@ -397,9 +397,9 @@ module Bundler
 
       unless explicit_flag
         suggested_command = if Bundler.settings.locations("frozen")[:global]
-          "bundle config --delete frozen"
+          "bundle config unset frozen"
         elsif Bundler.settings.locations("deployment").keys.&([:global, :local]).any?
-          "bundle config --delete deployment"
+          "bundle config unset deployment"
         else
           "bundle install --no-deployment"
         end
@@ -643,7 +643,7 @@ module Bundler
     end
 
     def converge_rubygems_sources
-      return false if Bundler.feature_flag.lockfile_uses_separate_rubygems_sources?
+      return false if Bundler.feature_flag.disable_multisource?
 
       changes = false
 
@@ -855,8 +855,8 @@ module Bundler
           concat_ruby_version_requirements(locked_ruby_version_object) unless @unlock[:ruby]
         end
         [
-          Dependency.new("ruby\0", ruby_versions),
-          Dependency.new("rubygems\0", Gem::VERSION),
+          Dependency.new("Ruby\0", ruby_versions),
+          Dependency.new("RubyGems\0", Gem::VERSION),
         ]
       end
     end
@@ -915,7 +915,7 @@ module Bundler
       # look for that gemspec (or its dependencies)
       default = sources.default_source
       source_requirements = { :default => default }
-      default = nil unless Bundler.feature_flag.lockfile_uses_separate_rubygems_sources?
+      default = nil unless Bundler.feature_flag.disable_multisource?
       dependencies.each do |dep|
         next unless source = dep.source || default
         source_requirements[dep.name] = source
@@ -929,7 +929,7 @@ module Bundler
 
     def pinned_spec_names(skip = nil)
       pinned_names = []
-      default = Bundler.feature_flag.lockfile_uses_separate_rubygems_sources? && sources.default_source
+      default = Bundler.feature_flag.disable_multisource? && sources.default_source
       @dependencies.each do |dep|
         next unless dep_source = dep.source || default
         next if dep_source == skip
@@ -977,7 +977,9 @@ module Bundler
       dependencies_by_name = dependencies.inject({}) {|memo, dep| memo.update(dep.name => dep) }
       @locked_gems.specs.reduce({}) do |requirements, locked_spec|
         name = locked_spec.name
-        next requirements if @locked_gems.dependencies[name] != dependencies_by_name[name]
+        dependency = dependencies_by_name[name]
+        next requirements if @locked_gems.dependencies[name] != dependency
+        next requirements if dependency && dependency.source.is_a?(Source::Path)
         dep = Gem::Dependency.new(name, ">= #{locked_spec.version}")
         requirements[name] = DepProxy.new(dep, locked_spec.platform)
         requirements

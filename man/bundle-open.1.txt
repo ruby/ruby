@@ -2,16 +2,16 @@ BUNDLE-OPEN(1)							BUNDLE-OPEN(1)
 
 
 
-1mNAME0m
-       1mbundle-open 22m- Opens the source directory for a gem in your bundle
+NAME
+       bundle-open - Opens the source directory for a gem in your bundle
 
-1mSYNOPSIS0m
-       1mbundle open 22m[GEM]
+SYNOPSIS
+       bundle open [GEM]
 
-1mDESCRIPTION0m
+DESCRIPTION
        Opens the source directory of the provided GEM in your editor.
 
-       For  this to work the 1mEDITOR 22mor 1mBUNDLER_EDITOR 22menvironment variable has
+       For  this to work the EDITOR or BUNDLER_EDITOR environment variable has
        to be set.
 
        Example:
@@ -26,4 +26,4 @@ BUNDLE-OPEN(1)							BUNDLE-OPEN(1)
 
 
 
-				 November 2018			BUNDLE-OPEN(1)
+				  March 2019			BUNDLE-OPEN(1)

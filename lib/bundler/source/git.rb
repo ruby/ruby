@@ -118,18 +118,19 @@ module Bundler
       def local_override!(path)
         return false if local?
 
+        original_path = path
         path = Pathname.new(path)
         path = path.expand_path(Bundler.root) unless path.relative?
 
         unless options["branch"] || Bundler.settings[:disable_local_branch_check]
           raise GitError, "Cannot use local override for #{name} at #{path} because " \
-            ":branch is not specified in Gemfile. Specify a branch or use " \
-            "`bundle config --delete` to remove the local override"
+            ":branch is not specified in Gemfile. Specify a branch or run " \
+            "`bundle config unset local.#{override_for(original_path)}` to remove the local override"
         end
 
         unless path.exist?
           raise GitError, "Cannot use local override for #{name} because #{path} " \
-            "does not exist. Check `bundle config --delete` to remove the local override"
+            "does not exist. Run `bundle config unset local.#{override_for(original_path)}` to remove the local override"
         end
 
         set_local!(path)
@@ -260,7 +261,11 @@ module Bundler
       end
 
       def requires_checkout?
-        allow_git_ops? && !local?
+        allow_git_ops? && !local? && !cached_revision_checked_out?
+      end
+
+      def cached_revision_checked_out?
+        cached_revision && cached_revision == revision && install_path.exist?
       end
 
       def base_name
@@ -323,6 +328,10 @@ module Bundler
 
       def extension_cache_slug(_)
         extension_dir_name
+      end
+
+      def override_for(path)
+        Bundler.settings.local_overrides.key(path)
       end
     end
   end

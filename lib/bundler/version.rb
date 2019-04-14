@@ -1,13 +1,10 @@
 # frozen_string_literal: false
 
-# Ruby 1.9.3 and old RubyGems don't play nice with frozen version strings
-# rubocop:disable MutableConstant
-
 module Bundler
   # We're doing this because we might write tests that deal
   # with other versions of bundler and we are unsure how to
   # handle this better.
-  VERSION = "2.0.1" unless defined?(::Bundler::VERSION)
+  VERSION = "2.1.0.pre.1".freeze unless defined?(::Bundler::VERSION)
 
   def self.overwrite_loaded_gem_version
     begin

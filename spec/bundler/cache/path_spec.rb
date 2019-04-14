@@ -94,7 +94,7 @@
       G
 
       bundle cmd
-      expect(out).to match(/please pass the \-\-all flag/)
+      expect(err).to match(/please pass the \-\-all flag/)
       expect(bundled_app("vendor/cache/foo-1.0")).not_to exist
     end
 

@@ -81,7 +81,7 @@ end
       ref = git.ref_for("master", 11)
       expect(ref).not_to eq(old_ref)
 
-      bundle! "update", :all => bundle_update_requires_all?
+      bundle! "update", :all => true
       bundle! "#{cmd}", forgotten_command_line_options([:all, :cache_all] => true)
 
       expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).to exist
@@ -127,7 +127,7 @@ end
         gem "foo", :git => '#{lib_path("foo-invalid")}', :branch => :master
       G
 
-      bundle %(config local.foo #{lib_path("foo-1.0")})
+      bundle %(config set local.foo #{lib_path("foo-1.0")})
       bundle "install"
       bundle "#{cmd}", forgotten_command_line_options([:all, :cache_all] => true)
 
@@ -168,7 +168,7 @@ end
       expect(the_bundle).to include_gems "has_submodule 1.0"
     end
 
-    it "displays warning message when detecting git repo in Gemfile", :bundler => "< 2" do
+    it "displays warning message when detecting git repo in Gemfile", :bundler => "< 3" do
       build_git "foo"
 
       install_gemfile <<-G
@@ -177,7 +177,7 @@ end
 
       bundle "#{cmd}"
 
-      expect(out).to include("Your Gemfile contains path and git dependencies.")
+      expect(err).to include("Your Gemfile contains path and git dependencies.")
     end
 
     it "does not display warning message if cache_all is set in bundle config" do
@@ -190,7 +190,7 @@ end
       bundle cmd, forgotten_command_line_options([:all, :cache_all] => true)
       bundle cmd
 
-      expect(out).not_to include("Your Gemfile contains path and git dependencies.")
+      expect(err).not_to include("Your Gemfile contains path and git dependencies.")
     end
 
     it "caches pre-evaluated gemspecs" do

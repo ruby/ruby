@@ -93,7 +93,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       gem "platform_specific"
     G
 
-    bundle! "config force_ruby_platform true"
+    bundle! "config set force_ruby_platform true"
 
     bundle! "install"
 
@@ -108,7 +108,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         gem "platform_specific"
       G
 
-      bundle! "config force_ruby_platform true"
+      bundle! "config set force_ruby_platform true"
 
       bundle! "install"
 

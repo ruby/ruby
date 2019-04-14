@@ -1,13 +1,6 @@
 # frozen_string_literal: true
 
 require "net/http"
-if RUBY_VERSION < "1.9"
-  begin
-    require "net/https"
-  rescue LoadError
-    nil # net/https or openssl
-  end
-end # but only for 1.8
 
 CASSETTE_PATH = File.expand_path("../vcr_cassettes", __FILE__)
 CASSETTE_NAME = ENV.fetch("BUNDLER_SPEC_VCR_CASSETTE_NAME") { "realworld" }

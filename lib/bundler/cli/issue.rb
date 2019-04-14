@@ -13,10 +13,10 @@ module Bundler
         https://github.com/bundler/bundler/blob/master/doc/TROUBLESHOOTING.md
 
         2. Instructions for common Bundler uses can be found on the documentation
-        site: http://bundler.io/
+        site: https://bundler.io/
 
         3. Information about each Bundler command can be found in the Bundler
-        man pages: http://bundler.io/man/bundle.1.html
+        man pages: https://bundler.io/man/bundle.1.html
 
         Hopefully the troubleshooting steps above resolved your problem!  If things
         still aren't working the way you expect them to, please let us know so

@@ -8,7 +8,7 @@ RSpec.describe "bundle install with a mirror configured" do
 
         gem "rack"
       G
-      bundle "config --local mirror.http://gems.example.org http://gem-mirror.example.org"
+      bundle "config set --local mirror.http://gems.example.org http://gem-mirror.example.org"
     end
 
     it "installs from the normal location" do
@@ -26,7 +26,7 @@ RSpec.describe "bundle install with a mirror configured" do
 
         gem "rack"
       G
-      bundle "config --local mirror.file://localhost#{gem_repo2} file://localhost#{gem_repo1}"
+      bundle "config set --local mirror.file://localhost#{gem_repo2} file://localhost#{gem_repo1}"
     end
 
     it "installs the gem from the mirror" do

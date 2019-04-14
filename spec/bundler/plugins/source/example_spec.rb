@@ -96,15 +96,15 @@ RSpec.describe "real source plugins" do
       bundle "install"
 
       lockfile_should_be <<-G
-        GEM
-          remote: file://localhost#{gem_repo2}/
-          specs:
-
         PLUGIN SOURCE
           remote: #{lib_path("a-path-gem-1.0")}
           type: mpath
           specs:
             a-path-gem (1.0)
+
+        GEM
+          remote: file://localhost#{gem_repo2}/
+          specs:
 
         PLATFORMS
           #{lockfile_platforms}
@@ -391,16 +391,16 @@ RSpec.describe "real source plugins" do
       bundle "install"
 
       lockfile_should_be <<-G
-        GEM
-          remote: file://localhost#{gem_repo2}/
-          specs:
-
         PLUGIN SOURCE
           remote: file://#{lib_path("ma-gitp-gem-1.0")}
           type: gitp
           revision: #{revision}
           specs:
             ma-gitp-gem (1.0)
+
+        GEM
+          remote: file://localhost#{gem_repo2}/
+          specs:
 
         PLATFORMS
           #{lockfile_platforms}
