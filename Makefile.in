@@ -533,6 +533,7 @@ cont.$(OBJEXT): $(COROUTINE_H)
 TEST_BUNDLED_GEMS_ALLOW_FAILURES =
 
 test-bundled-gems-run:
+	$(ECHO) allow_failures: $(TEST_BUNDLED_GEMS_ALLOW_FAILURES)
 	$(Q) set -e; while read gem _; do \
 	  echo testing $$gem gem; \
 	  if echo $(TEST_BUNDLED_GEMS_ALLOW_FAILURES) | grep -q $$gem; then \
