@@ -6,9 +6,9 @@
 
 **********************************************************************/
 
-/* NOTE: All functions in this file are executed on MJIT worker. So don't
-   call Ruby methods (C functions that may call rb_funcall) or trigger
-   GC (using ZALLOC, xmalloc, xfree, etc.) in this file. */
+// NOTE: All functions in this file are executed on MJIT worker. So don't
+// call Ruby methods (C functions that may call rb_funcall) or trigger
+// GC (using ZALLOC, xmalloc, xfree, etc.) in this file.
 
 #include "internal.h"
 
@@ -21,13 +21,13 @@
 #include "insns_info.inc"
 #include "vm_insnhelper.h"
 
-/* Macros to check if a position is already compiled using compile_status.stack_size_for_pos */
+// Macros to check if a position is already compiled using compile_status.stack_size_for_pos
 #define NOT_COMPILED_STACK_SIZE -1
 #define ALREADY_COMPILED_P(status, pos) (status->stack_size_for_pos[pos] != NOT_COMPILED_STACK_SIZE)
 
-/* Storage to keep compiler's status.  This should have information
-   which is global during one `mjit_compile` call.  Ones conditional
-   in each branch should be stored in `compile_branch`.  */
+// Storage to keep compiler's status.  This should have information
+// which is global during one `mjit_compile` call.  Ones conditional
+// in each branch should be stored in `compile_branch`.
 struct compile_status {
     bool success; // has true if compilation has had no issue
     int *stack_size_for_pos; // stack_size_for_pos[pos] has stack size for the position (otherwise -1)
@@ -41,9 +41,9 @@ struct compile_status {
     struct rb_mjit_compile_info *compile_info;
 };
 
-/* Storage to keep data which is consistent in each conditional branch.
-   This is created and used for one `compile_insns` call and its values
-   should be copied for extra `compile_insns` call. */
+// Storage to keep data which is consistent in each conditional branch.
+// This is created and used for one `compile_insns` call and its values
+// should be copied for extra `compile_insns` call.
 struct compile_branch {
     unsigned int stack_size; // this simulates sp (stack pointer) of YARV
     bool finish_p; // if true, compilation in this branch should stop and let another branch to be compiled
@@ -92,7 +92,7 @@ compile_case_dispatch_each(VALUE key, VALUE value, VALUE arg)
     return ST_CONTINUE;
 }
 
-/* Calling rb_id2str in MJIT worker causes random SEGV. So this is disabled by default. */
+// Calling rb_id2str in MJIT worker causes random SEGV. So this is disabled by default.
 static void
 comment_id(FILE *f, ID id)
 {
@@ -120,12 +120,12 @@ comment_id(FILE *f, ID id)
 static void compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int stack_size,
                           unsigned int pos, struct compile_status *status);
 
-/* Main function of JIT compilation, vm_exec_core counterpart for JIT. Compile one insn to `f`, may modify
-   b->stack_size and return next position.
-
-   When you add a new instruction to insns.def, it would be nice to have JIT compilation support here but
-   it's optional. This JIT compiler just ignores ISeq which includes unknown instruction, and ISeq which
-   does not have it can be compiled as usual. */
+// Main function of JIT compilation, vm_exec_core counterpart for JIT. Compile one insn to `f`, may modify
+// b->stack_size and return next position.
+//
+// When you add a new instruction to insns.def, it would be nice to have JIT compilation support here but
+// it's optional. This JIT compiler just ignores ISeq which includes unknown instruction, and ISeq which
+// does not have it can be compiled as usual.
 static unsigned int
 compile_insn(FILE *f, const struct rb_iseq_constant_body *body, const int insn, const VALUE *operands,
              const unsigned int pos, struct compile_status *status, struct compile_branch *b)
@@ -136,12 +136,12 @@ compile_insn(FILE *f, const struct rb_iseq_constant_body *body, const int insn, 
  #include "mjit_compile.inc"
 /*****************/
 
-    /* If next_pos is already compiled and this branch is not finished yet,
-       next instruction won't be compiled in C code next and will need `goto`. */
+    // If next_pos is already compiled and this branch is not finished yet,
+    // next instruction won't be compiled in C code next and will need `goto`.
     if (!b->finish_p && next_pos < body->iseq_size && ALREADY_COMPILED_P(status, next_pos)) {
         fprintf(f, "goto label_%d;\n", next_pos);
 
-        /* Verify stack size assumption is the same among multiple branches */
+        // Verify stack size assumption is the same among multiple branches
         if ((unsigned int)status->stack_size_for_pos[next_pos] != b->stack_size) {
             if (mjit_opts.warnings || mjit_opts.verbose)
                 fprintf(stderr, "MJIT warning: JIT stack assumption is not the same between branches (%d != %u)\n",
@@ -153,8 +153,8 @@ compile_insn(FILE *f, const struct rb_iseq_constant_body *body, const int insn, 
     return next_pos;
 }
 
-/* Compile one conditional branch.  If it has branchXXX insn, this should be
-   called multiple times for each branch.  */
+// Compile one conditional branch.  If it has branchXXX insn, this should be
+// called multiple times for each branch.
 static void
 compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int stack_size,
               unsigned int pos, struct compile_status *status)
@@ -185,7 +185,7 @@ compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int st
     }
 }
 
-/* Print the block to cancel JIT execution. */
+// Print the block to cancel JIT execution.
 static void
 compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct compile_status *status)
 {
@@ -222,7 +222,7 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
             && !mjit_copy_cache_from_main_thread(iseq, status.cc_entries, status.is_entries))
         return false;
 
-    /* For performance, we verify stack size only on compilation time (mjit_compile.inc.erb) without --jit-debug */
+    // For performance, we verify stack size only on compilation time (mjit_compile.inc.erb) without --jit-debug
     if (!mjit_opts.debug) {
         fprintf(f, "#undef OPT_CHECKED_RUN\n");
         fprintf(f, "#define OPT_CHECKED_RUN 0\n\n");
@@ -242,8 +242,8 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
     fprintf(f, "    static const VALUE *const original_body_iseq = (VALUE *)0x%"PRIxVALUE";\n",
             (VALUE)body->iseq_encoded);
 
-    /* Simulate `opt_pc` in setup_parameters_complex. Other PCs which may be passed by catch tables
-       are not considered since vm_exec doesn't call mjit_exec for catch tables. */
+    // Simulate `opt_pc` in setup_parameters_complex. Other PCs which may be passed by catch tables
+    // are not considered since vm_exec doesn't call mjit_exec for catch tables.
     if (body->param.flags.has_opt) {
         int i;
         fprintf(f, "\n");
@@ -262,4 +262,4 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
     return status.success;
 }
 
-#endif /* USE_MJIT */
+#endif // USE_MJIT
