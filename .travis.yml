@@ -291,25 +291,7 @@ env:
 matrix:
   include:
     # to reduce time for finishing all jobs, run the slowest osx build first.
-    - <<: *x86_64-darwin17
-    - <<: *x86_64-linux
     - <<: *i686-linux
-    - <<: *jemalloc
-    - <<: *pedanticism
-    - <<: *ASAN
-    - <<: *MSAN
-    - <<: *UBSAN
-    - <<: *VM_CHECK_MODE
-    - <<: *FIBER_USE_sjlj
-    - <<: *TOKEN_THREADED_CODE
-    - <<: *CALL_THREADED_CODE
-    - <<: *NO_THREADED_CODE
-    - <<: *rubyspec
-  allow_failures:
-    - name: uinversal.x86_64h-darwin17
-    - name: -fsanitize=address
-    - name: -fsanitize=memory
-    - name: -fsanitize=undefined
   fast_finish: true
 
 before_script:
@@ -377,9 +359,7 @@ before_script:
     $RUBY_PREFIX/bin/gem install --no-document $GEMS_FOR_TEST
 
 script:
-  - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
-  - travis_wait 40 $SETARCH make -s test-all -o exts TESTOPTS="${TEST_ALL_OPTS=$TESTOPTS}" RUBYOPT="-w"
-  - $SETARCH make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
+  - $SETARCH make -s test-all -o exts TESTOPTS="-n 'TestJIT#test_compile_insn_opt_aref' -n 'TestJIT#test_inlined_undefined_ivar'"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
