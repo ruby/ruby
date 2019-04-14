@@ -37,6 +37,8 @@ struct compile_status {
     // Safely-accessible cache entries copied from main thread.
     union iseq_inline_storage_entry *is_entries;
     struct rb_call_cache *cc_entries;
+    // Mutated optimization levels
+    struct rb_mjit_compile_info *compile_info;
 };
 
 /* Storage to keep data which is consistent in each conditional branch.
@@ -213,6 +215,7 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
             alloca(sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size)) : NULL,
         .is_entries = (body->is_size > 0) ?
             alloca(sizeof(union iseq_inline_storage_entry) * body->is_size) : NULL,
+        .compile_info = rb_mjit_iseq_compile_info(body),
     };
     memset(status.stack_size_for_pos, NOT_COMPILED_STACK_SIZE, sizeof(int) * body->iseq_size);
     if ((status.cc_entries != NULL || status.is_entries != NULL)
@@ -235,6 +238,7 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
     else {
         fprintf(f, "    VALUE *stack = reg_cfp->sp;\n");
     }
+    fprintf(f, "    static const rb_iseq_t *original_iseq = 0x%"PRIxVALUE";\n", (VALUE)iseq);
     fprintf(f, "    static const VALUE *const original_body_iseq = (VALUE *)0x%"PRIxVALUE";\n",
             (VALUE)body->iseq_encoded);
 

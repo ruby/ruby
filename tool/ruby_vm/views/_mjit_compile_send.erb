@@ -16,7 +16,7 @@
 % # compiler: Use copied cc to avoid race condition
     CALL_CACHE cc_copy = status->cc_entries + (cc - body->cc_entries);
 %
-    if (has_valid_method_type(cc_copy)) {
+    if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
         const rb_iseq_t *iseq;
         unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
 % if insn.name == 'send'
@@ -39,6 +39,8 @@
             fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
             fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
             fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_send_inline);\n");
+            fprintf(f, "        rb_mjit_iseq_compile_info(original_iseq->body)->disable_send_cache = true;\n");
+            fprintf(f, "        rb_mjit_recompile_iseq(original_iseq);\n");
             fprintf(f, "        goto cancel;\n");
             fprintf(f, "    }\n");
 
