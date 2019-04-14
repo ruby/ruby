@@ -47,7 +47,16 @@ VALUE
 rb_debug_counter_reset(void)
 {
     for (int i = 0; i < RB_DEBUG_COUNTER_MAX; i++) {
-        rb_debug_counter[i] = 0;
+        switch (i) {
+          case RB_DEBUG_COUNTER_mjit_length_unit_queue:
+          case RB_DEBUG_COUNTER_mjit_length_active_units:
+          case RB_DEBUG_COUNTER_mjit_length_compact_units:
+            // These counters may be decreased and should not be reset.
+            break;
+          default:
+            rb_debug_counter[i] = 0;
+            break;
+        }
     }
     return Qnil;
 }
