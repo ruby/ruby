@@ -504,9 +504,9 @@ class CSV
   # <tt>encoding: "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file
   # but transcode it to UTF-8 before CSV parses it.
   #
-  def self.foreach(path, **options, &block)
-    return to_enum(__method__, path, options) unless block_given?
-    open(path, options) do |csv|
+  def self.foreach(path, mode="r", **options, &block)
+    return to_enum(__method__, path, mode, options) unless block_given?
+    open(path, mode, options) do |csv|
       csv.each(&block)
     end
   end
@@ -885,6 +885,10 @@ class CSV
   #                                       blank string field is replaced by
   #                                       the set object.
   # <b><tt>:quote_empty</tt></b>::        TODO
+  # <b><tt>:write_converters</tt></b>::   TODO
+  # <b><tt>:write_nil_value</tt></b>::    TODO
+  # <b><tt>:write_empty_value</tt></b>::  TODO
+  # <b><tt>:strip</tt></b>::              TODO
   #
   # See CSV::DEFAULT_OPTIONS for the default settings.
   #
@@ -911,7 +915,11 @@ class CSV
                  encoding: nil,
                  nil_value: nil,
                  empty_value: "",
-                 quote_empty: true)
+                 quote_empty: true,
+                 write_converters: nil,
+                 write_nil_value: nil,
+                 write_empty_value: "",
+                 strip: false)
     raise ArgumentError.new("Cannot parse nil as CSV") if data.nil?
 
     # create the IO object we will read from
@@ -922,8 +930,13 @@ class CSV
       nil_value: nil_value,
       empty_value: empty_value,
     }
+    @write_fields_converter_options = {
+      nil_value: write_nil_value,
+      empty_value: write_empty_value,
+    }
     @initial_converters = converters
     @initial_header_converters = header_converters
+    @initial_write_converters = write_converters
 
     @parser_options = {
       column_separator: col_sep,
@@ -939,6 +952,7 @@ class CSV
       encoding: @encoding,
       nil_value: nil_value,
       empty_value: empty_value,
+      strip: strip,
     }
     @parser = nil
 
@@ -998,7 +1012,7 @@ class CSV
   # as is.
   #
   def converters
-    fields_converter.map do |converter|
+    parser_fields_converter.map do |converter|
       name = Converters.rassoc(converter)
       name ? name.first : converter
     end
@@ -1098,12 +1112,58 @@ class CSV
   ### IO and StringIO Delegation ###
 
   extend Forwardable
-  def_delegators :@io, :binmode, :binmode?, :close, :close_read, :close_write,
-                       :closed?, :eof, :eof?, :external_encoding, :fcntl,
-                       :fileno, :flock, :flush, :fsync, :internal_encoding,
-                       :ioctl, :isatty, :path, :pid, :pos, :pos=, :reopen,
-                       :seek, :stat, :string, :sync, :sync=, :tell, :to_i,
-                       :to_io, :truncate, :tty?
+  def_delegators :@io, :binmode, :close, :close_read, :close_write,
+                       :closed?, :external_encoding, :fcntl,
+                       :fileno, :flush, :fsync, :internal_encoding,
+                       :isatty, :pid, :pos, :pos=, :reopen,
+                       :seek, :string, :sync, :sync=, :tell,
+                       :truncate, :tty?
+
+  def binmode?
+    if @io.respond_to?(:binmode?)
+      @io.binmode?
+    else
+      false
+    end
+  end
+
+  def flock(*args)
+    raise NotImplementedError unless @io.respond_to?(:flock)
+    @io.flock(*args)
+  end
+
+  def ioctl(*args)
+    raise NotImplementedError unless @io.respond_to?(:ioctl)
+    @io.ioctl(*args)
+  end
+
+  def path
+    @io.path if @io.respond_to?(:path)
+  end
+
+  def stat(*args)
+    raise NotImplementedError unless @io.respond_to?(:stat)
+    @io.stat(*args)
+  end
+
+  def to_i
+    raise NotImplementedError unless @io.respond_to?(:to_i)
+    @io.to_i
+  end
+
+  def to_io
+    @io.respond_to?(:to_io) ? @io.to_io : @io
+  end
+
+  def eof?
+    begin
+      parser_enumerator.peek
+      false
+    rescue StopIteration
+      true
+    end
+  end
+  alias_method :eof, :eof?
 
   # Rewinds the underlying IO object and resets CSV's lineno() counter.
   def rewind
@@ -1145,7 +1205,7 @@ class CSV
   # converted field or the field itself.
   #
   def convert(name = nil, &converter)
-    fields_converter.add_converter(name, &converter)
+    parser_fields_converter.add_converter(name, &converter)
   end
 
   #
@@ -1173,7 +1233,7 @@ class CSV
   # The data source must be open for reading.
   #
   def each(&block)
-    parser.parse(&block)
+    parser_enumerator.each(&block)
   end
 
   #
@@ -1204,9 +1264,8 @@ class CSV
   # The data source must be open for reading.
   #
   def shift
-    @parser_enumerator ||= parser.parse
     begin
-      @parser_enumerator.next
+      parser_enumerator.next
     rescue StopIteration
       nil
     end
@@ -1299,7 +1358,7 @@ class CSV
     if headers
       header_fields_converter.convert(fields, nil, 0)
     else
-      fields_converter.convert(fields, @headers, lineno)
+      parser_fields_converter.convert(fields, @headers, lineno)
     end
   end
 
@@ -1316,20 +1375,16 @@ class CSV
     end
   end
 
-  def fields_converter
-    @fields_converter ||= build_fields_converter
+  def parser_fields_converter
+    @parser_fields_converter ||= build_parser_fields_converter
   end
 
-  def build_fields_converter
+  def build_parser_fields_converter
     specific_options = {
       builtin_converters: Converters,
     }
     options = @base_fields_converter_options.merge(specific_options)
-    fields_converter = FieldsConverter.new(options)
-    normalize_converters(@initial_converters).each do |name, converter|
-      fields_converter.add_converter(name, &converter)
-    end
-    fields_converter
+    build_fields_converter(@initial_converters, options)
   end
 
   def header_fields_converter
@@ -1342,8 +1397,21 @@ class CSV
       accept_nil: true,
     }
     options = @base_fields_converter_options.merge(specific_options)
+    build_fields_converter(@initial_header_converters, options)
+  end
+
+  def writer_fields_converter
+    @writer_fields_converter ||= build_writer_fields_converter
+  end
+
+  def build_writer_fields_converter
+    build_fields_converter(@initial_write_converters,
+                           @write_fields_converter_options)
+  end
+
+  def build_fields_converter(initial_converters, options)
     fields_converter = FieldsConverter.new(options)
-    normalize_converters(@initial_header_converters).each do |name, converter|
+    normalize_converters(initial_converters).each do |name, converter|
       fields_converter.add_converter(name, &converter)
     end
     fields_converter
@@ -1354,8 +1422,12 @@ class CSV
   end
 
   def parser_options
-    @parser_options.merge(fields_converter: fields_converter,
-                          header_fields_converter: header_fields_converter)
+    @parser_options.merge(header_fields_converter: header_fields_converter,
+                          fields_converter: parser_fields_converter)
+  end
+
+  def parser_enumerator
+    @parser_enumerator ||= parser.parse
   end
 
   def writer
@@ -1363,7 +1435,8 @@ class CSV
   end
 
   def writer_options
-    @writer_options.merge(header_fields_converter: header_fields_converter)
+    @writer_options.merge(header_fields_converter: header_fields_converter,
+                          fields_converter: writer_fields_converter)
   end
 end
 
