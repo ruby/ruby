@@ -26,6 +26,11 @@
 %   raise 'opt_send_without_block not found'
 % end
 %
+% send_compatible_opt_insns = RubyVM::BareInstructions.to_a.select do |insn|
+%   insn.name.start_with?('opt_') && opt_send_without_block.opes == insn.opes &&
+%     insn.expr.expr.lines.any? { |l| l.match?(/\A\s+CALL_SIMPLE_METHOD\(\);\s+\z/) }
+% end.map(&:name)
+%
 % # Available variables and macros in JIT-ed function:
 % #   ec: the first argument of _mjitXXX
 % #   reg_cfp: the second argument of _mjitXXX
@@ -50,7 +55,7 @@ switch (insn) {
 %   case insn.name
 %   when 'opt_send_without_block', 'send'
 <%=   render 'mjit_compile_send', locals: { insn: insn } -%>
-%   when 'opt_aref', 'opt_aset', 'opt_mod' # TODO: automatically find them with CALL_SIMPLE_METHOD
+%   when *send_compatible_opt_insns
 %     # To avoid cancel, just emit `opt_send_without_block` instead of `opt_*` insn if call cache is populated.
 %     cc_index = insn.opes.index { |o| o.fetch(:type) == 'CALL_CACHE' }
       if (has_valid_method_type(status->cc_entries + ((CALL_CACHE)operands[<%= cc_index %>] - body->cc_entries))) {
