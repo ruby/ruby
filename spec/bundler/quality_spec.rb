@@ -235,7 +235,7 @@ RSpec.describe "The library itself" do
     end
   end
 
-  it "ships the correct set of files" do
+  it "ships the correct set of files", :ruby_repo do
     Dir.chdir(root) do
       git_list = IO.popen("git ls-files -z", &:read).split("\x0").select {|f| f.match(%r{^(lib|exe)/}) }
       git_list += %w[CHANGELOG.md LICENSE.md README.md bundler.gemspec]

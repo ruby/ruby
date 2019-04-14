@@ -173,7 +173,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
   end
 
   context "with a valid regexp for gem name" do
-    it "presents alternatives" do
+    it "presents alternatives", :ruby_repo do
       install_gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rack"
