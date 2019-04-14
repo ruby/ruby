@@ -55,7 +55,7 @@ RSpec.describe "La biblioteca si misma" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "mantiene la calidad de lenguaje de oraciones usadas en el código fuente" do
+  it "mantiene la calidad de lenguaje de oraciones usadas en el código fuente", :ruby_repo do
     error_messages = []
     exempt = /vendor/
     Dir.chdir(root) do

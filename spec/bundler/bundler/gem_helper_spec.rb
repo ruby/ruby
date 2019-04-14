@@ -49,7 +49,7 @@ RSpec.describe Bundler::GemHelper do
     end
   end
 
-  context "gem management" do
+  context "gem management", :ruby_repo do
     def mock_confirm_message(message)
       expect(Bundler.ui).to receive(:confirm).with(message)
     end
