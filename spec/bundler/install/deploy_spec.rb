@@ -64,7 +64,7 @@ RSpec.describe "install with --deployment or --frozen" do
     bundle! :install, forgotten_command_line_options(:deployment => true, :without => "test")
   end
 
-  it "works when you bundle exec bundle", :ruby_repo do
+  it "works when you bundle exec bundle" do
     bundle :install
     bundle "install --deployment"
     bundle! "exec bundle check"

@@ -530,7 +530,7 @@ RSpec.describe "bundle exec" do
     expect(out).to include("Installing foo 1.0")
   end
 
-  describe "with gems bundled via :path with invalid gemspecs", :ruby_repo do
+  describe "with gems bundled via :path with invalid gemspecs" do
     it "outputs the gemspec validation errors" do
       build_lib "foo"
 
