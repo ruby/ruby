@@ -946,9 +946,14 @@ load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit
 static void
 print_jit_result(const char *result, const struct rb_mjit_unit *unit, const double duration, const char *c_file)
 {
-    verbose(1, "JIT %s (%.1fms): %s@%s:%d -> %s", result,
-            duration, RSTRING_PTR(unit->iseq->body->location.label),
-            RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno), c_file);
+    if (unit->iseq == NULL) {
+        verbose(1, "JIT %s (%.1fms): (GCed) -> %s", result, duration, c_file);
+    }
+    else {
+        verbose(1, "JIT %s (%.1fms): %s@%s:%d -> %s", result,
+                duration, RSTRING_PTR(unit->iseq->body->location.label),
+                RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno), c_file);
+    }
 }
 
 #ifndef __clang__
