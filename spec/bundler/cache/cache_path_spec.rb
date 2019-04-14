@@ -17,7 +17,7 @@ RSpec.describe "bundle package" do
 
   context "with config cache_path" do
     it "caches gems at given path" do
-      bundle "config cache_path vendor/cache-foo"
+      bundle "config set cache_path vendor/cache-foo"
       bundle :package
       expect(bundled_app("vendor/cache-foo/rack-1.0.0.gem")).to exist
     end

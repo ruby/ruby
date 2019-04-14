@@ -61,7 +61,7 @@ class Bundler::Thor::Group
         invocations[name] = false
         invocation_blocks[name] = block if block_given?
 
-        class_eval <<-METHOD, __FILE__, __LINE__
+        class_eval <<-METHOD, __FILE__, __LINE__ + 1
           def _invoke_#{name.to_s.gsub(/\W/, '_')}
             klass, command = self.class.prepare_for_invocation(nil, #{name.inspect})
 
@@ -120,7 +120,7 @@ class Bundler::Thor::Group
         invocations[name] = true
         invocation_blocks[name] = block if block_given?
 
-        class_eval <<-METHOD, __FILE__, __LINE__
+        class_eval <<-METHOD, __FILE__, __LINE__ + 1
           def _invoke_from_option_#{name.to_s.gsub(/\W/, '_')}
             return unless options[#{name.inspect}]
 

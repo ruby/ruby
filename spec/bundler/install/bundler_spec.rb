@@ -125,8 +125,8 @@ RSpec.describe "bundle install" do
       expect(last_command.bundler_err).to include(nice_error)
     end
 
-    it "can install dependencies with newer bundler version with system gems", :ruby => "> 2" do
-      bundle! "config path.system true"
+    it "can install dependencies with newer bundler version with system gems" do
+      bundle! "config set path.system true"
       install_gemfile! <<-G
         source "file://#{gem_repo2}"
         gem "rails", "3.0"
@@ -138,9 +138,9 @@ RSpec.describe "bundle install" do
       expect(out).to include("The Gemfile's dependencies are satisfied")
     end
 
-    it "can install dependencies with newer bundler version with a local path", :ruby => "> 2" do
-      bundle! "config path .bundle"
-      bundle! "config global_path_appends_ruby_scope true"
+    it "can install dependencies with newer bundler version with a local path" do
+      bundle! "config set path .bundle"
+      bundle! "config set global_path_appends_ruby_scope true"
       install_gemfile! <<-G
         source "file://#{gem_repo2}"
         gem "rails", "3.0"
@@ -153,7 +153,7 @@ RSpec.describe "bundle install" do
     end
 
     context "with allow_bundler_dependency_conflicts set" do
-      before { bundle! "config allow_bundler_dependency_conflicts true" }
+      before { bundle! "config set allow_bundler_dependency_conflicts true" }
 
       it "are forced to the current bundler version with warnings when no compatible version is found" do
         build_repo4 do
@@ -167,7 +167,7 @@ RSpec.describe "bundle install" do
           gem "requires_nonexistant_bundler"
         G
 
-        expect(out).to include "requires_nonexistant_bundler (1.0) has dependency bundler (= 99.99.99.99), " \
+        expect(err).to include "requires_nonexistant_bundler (1.0) has dependency bundler (= 99.99.99.99), " \
                                "which is unsatisfied by the current bundler version #{Bundler::VERSION}, so the dependency is being ignored"
 
         expect(the_bundle).to include_gems "bundler #{Bundler::VERSION}", "requires_nonexistant_bundler 1.0"

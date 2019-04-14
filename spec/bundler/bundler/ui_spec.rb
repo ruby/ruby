@@ -2,7 +2,7 @@
 
 RSpec.describe Bundler::UI do
   describe Bundler::UI::Silent do
-    it "has the same instance methods as Shell", :ruby => ">= 1.9" do
+    it "has the same instance methods as Shell" do
       shell = Bundler::UI::Shell
       methods = proc do |cls|
         cls.instance_methods.map do |i|
@@ -13,7 +13,7 @@ RSpec.describe Bundler::UI do
       expect(methods.call(described_class)).to eq(methods.call(shell))
     end
 
-    it "has the same instance class as Shell", :ruby => ">= 1.9" do
+    it "has the same instance class as Shell" do
       shell = Bundler::UI::Shell
       methods = proc do |cls|
         cls.methods.map do |i|

@@ -99,7 +99,7 @@ module Spec
     end
 
     def bundler_path
-      Pathname.new(File.expand_path(root.join("lib"), __FILE__))
+      root.join("lib")
     end
 
     def global_plugin_gem(*args)

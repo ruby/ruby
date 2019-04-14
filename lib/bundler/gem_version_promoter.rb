@@ -109,7 +109,7 @@ module Bundler
           must_match = minor? ? [0] : [0, 1]
 
           matches = must_match.map {|idx| gsv.segments[idx] == lsv.segments[idx] }
-          (matches.uniq == [true]) ? (gsv >= lsv) : false
+          matches.uniq == [true] ? (gsv >= lsv) : false
         else
           true
         end

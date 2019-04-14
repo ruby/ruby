@@ -39,7 +39,13 @@ module Bundler
         until remaining_gems.empty?
           log_specs "Looking up gems #{remaining_gems.inspect}"
 
-          deps = compact_index_client.dependencies(remaining_gems)
+          deps = begin
+                   parallel_compact_index_client.dependencies(remaining_gems)
+                 rescue TooManyRequestsError
+                   @bundle_worker.stop if @bundle_worker
+                   @bundle_worker = nil # reset it.  Not sure if necessary
+                   serial_compact_index_client.dependencies(remaining_gems)
+                 end
           next_gems = deps.map {|d| d[3].map(&:first).flatten(1) }.flatten(1).uniq
           deps.each {|dep| gem_info << dep }
           complete_gems.concat(deps.map(&:first)).uniq!
@@ -80,18 +86,26 @@ module Bundler
     private
 
       def compact_index_client
-        @compact_index_client ||= begin
+        @compact_index_client ||=
           SharedHelpers.filesystem_access(cache_path) do
             CompactIndexClient.new(cache_path, client_fetcher)
-          end.tap do |client|
-            client.in_parallel = lambda do |inputs, &blk|
-              func = lambda {|object, _index| blk.call(object) }
-              worker = bundle_worker(func)
-              inputs.each {|input| worker.enq(input) }
-              inputs.map { worker.deq }
-            end
           end
+      end
+
+      def parallel_compact_index_client
+        compact_index_client.execution_mode = lambda do |inputs, &blk|
+          func = lambda {|object, _index| blk.call(object) }
+          worker = bundle_worker(func)
+          inputs.each {|input| worker.enq(input) }
+          inputs.map { worker.deq }
         end
+
+        compact_index_client
+      end
+
+      def serial_compact_index_client
+        compact_index_client.sequential_execution_mode!
+        compact_index_client
       end
 
       def bundle_worker(func = nil)

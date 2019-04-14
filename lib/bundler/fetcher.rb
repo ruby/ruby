@@ -4,6 +4,7 @@ require "bundler/vendored_persistent"
 require "cgi"
 require "securerandom"
 require "zlib"
+require "rubygems/request"
 
 module Bundler
   # Handles all the fetching with the rubygems server
@@ -15,6 +16,8 @@ module Bundler
 
     # This error is raised when it looks like the network is down
     class NetworkDownError < HTTPError; end
+    # This error is raised if we should rate limit our requests to the API
+    class TooManyRequestsError < HTTPError; end
     # This error is raised if the API returns a 413 (only printed in verbose)
     class FallbackError < HTTPError; end
     # This is the error raised if OpenSSL fails the cert verification
@@ -44,7 +47,7 @@ module Bundler
         remote_uri = filter_uri(remote_uri)
         super "Authentication is required for #{remote_uri}.\n" \
           "Please supply credentials for this source. You can do this by running:\n" \
-          " bundle config #{remote_uri} username:password"
+          " bundle config set #{remote_uri} username:password"
       end
     end
     # This error is raised if HTTP authentication is provided, but incorrect.
@@ -226,7 +229,7 @@ module Bundler
         "GO_SERVER_URL" => "go",
         "SNAP_CI" => "snap",
         "CI_NAME" => ENV["CI_NAME"],
-        "CI" => "ci"
+        "CI" => "ci",
       }
       env_cis.find_all {|env, _| ENV[env] }.map {|_, ci| ci }
     end
@@ -293,8 +296,7 @@ module Bundler
         end
       else
         store.set_default_paths
-        certs = File.expand_path("../ssl_certs/*/*.pem", __FILE__)
-        Dir.glob(certs).each {|c| store.add_file c }
+        Gem::Request.get_cert_files.each {|c| store.add_file c }
       end
       store
     end

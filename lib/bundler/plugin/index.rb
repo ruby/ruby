@@ -58,7 +58,10 @@ module Bundler
         raise SourceConflict.new(name, common) unless common.empty?
         sources.each {|k| @sources[k] = name }
 
-        hooks.each {|e| (@hooks[e] ||= []) << name }
+        hooks.each do |event|
+          event_hooks = (@hooks[event] ||= []) << name
+          event_hooks.uniq!
+        end
 
         @plugin_paths[name] = path
         @load_paths[name] = load_paths
@@ -98,6 +101,14 @@ module Bundler
 
       def installed?(name)
         @plugin_paths[name]
+      end
+
+      def installed_plugins
+        @plugin_paths.keys
+      end
+
+      def plugin_commands(plugin)
+        @commands.find_all {|_, n| n == plugin }.map(&:first)
       end
 
       def source?(source)

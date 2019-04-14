@@ -60,11 +60,11 @@ RSpec.describe "bundle executable" do
       G
 
       bundle :install, :env => { "RUBYGEMS_GEMDEPS" => "foo" }
-      expect(out).to include("RUBYGEMS_GEMDEPS")
-      expect(out).to include("conflict with Bundler")
+      expect(err).to include("RUBYGEMS_GEMDEPS")
+      expect(err).to include("conflict with Bundler")
 
       bundle :install, :env => { "RUBYGEMS_GEMDEPS" => "" }
-      expect(out).not_to include("RUBYGEMS_GEMDEPS")
+      expect(err).not_to include("RUBYGEMS_GEMDEPS")
     end
   end
 
@@ -97,7 +97,7 @@ RSpec.describe "bundle executable" do
     let(:bundler_version) { "1.1" }
     let(:latest_version) { nil }
     before do
-      bundle! "config --global disable_version_check false"
+      bundle! "config set --global disable_version_check false"
 
       simulate_bundler_version(bundler_version)
       if latest_version
@@ -132,13 +132,13 @@ To install the latest version, run `gem install bundler`
       end
 
       context "and disable_version_check is set" do
-        before { bundle! "config disable_version_check true" }
+        before { bundle! "config set disable_version_check true" }
         include_examples "no warning"
       end
 
       context "running a parseable command" do
         it "prints no warning" do
-          bundle! "config --parseable foo"
+          bundle! "config get --parseable foo"
           expect(last_command.stdboth).to eq ""
 
           bundle "platform --ruby"

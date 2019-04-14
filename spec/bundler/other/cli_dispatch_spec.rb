@@ -19,7 +19,7 @@ RSpec.describe "bundle command names" do
   end
 
   context "when cache_command_is_package is set" do
-    before { bundle! "config cache_command_is_package true" }
+    before { bundle! "config set cache_command_is_package true" }
 
     it "dispatches `bundle cache` to the package command" do
       bundle "cache --verbose"

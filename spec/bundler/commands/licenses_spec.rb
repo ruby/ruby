@@ -12,14 +12,7 @@ RSpec.describe "bundle licenses" do
   it "prints license information for all gems in the bundle" do
     bundle "licenses"
 
-    loaded_bundler_spec = Bundler.load.specs["bundler"]
-    expected = if !loaded_bundler_spec.empty?
-      loaded_bundler_spec[0].license
-    else
-      "Unknown"
-    end
-
-    expect(out).to include("bundler: #{expected}")
+    expect(err).to include("bundler: Unknown")
     expect(out).to include("with_license: MIT")
   end
 
@@ -31,7 +24,7 @@ RSpec.describe "bundle licenses" do
       gem "foo"
     G
 
-    bundle "config auto_install 1"
+    bundle "config set auto_install 1"
     bundle :licenses
     expect(out).to include("Installing foo 1.0")
   end

@@ -130,13 +130,15 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
 
   describe "#temporary" do
     it "reset after used" do
-      Bundler.settings.set_local :no_install, true
+      Bundler.settings.set_command_option :no_install, true
 
       Bundler.settings.temporary(:no_install => false) do
         expect(Bundler.settings[:no_install]).to eq false
       end
 
       expect(Bundler.settings[:no_install]).to eq true
+
+      Bundler.settings.set_command_option :no_install, nil
     end
 
     it "returns the return value of the block" do

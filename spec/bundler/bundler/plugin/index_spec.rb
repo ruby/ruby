@@ -86,6 +86,17 @@ RSpec.describe Bundler::Plugin::Index do
       expect(new_index.hook_plugins("after-bar")).to eq([plugin_name])
     end
 
+    it "only registers a gem once for an event" do
+      path = lib_path(plugin_name)
+      index.register_plugin(plugin_name,
+        path.to_s,
+        [path.join("lib").to_s],
+        commands,
+        sources,
+        hooks + hooks)
+      expect(index.hook_plugins("after-bar")).to eq([plugin_name])
+    end
+
     context "that are not registered", :focused do
       let(:file) { double("index-file") }
 

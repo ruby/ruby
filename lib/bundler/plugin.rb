@@ -47,26 +47,48 @@ module Bundler
       Bundler.ui.error "Failed to install plugin #{name}: #{e.message}\n  #{e.backtrace.join("\n ")}"
     end
 
+    # List installed plugins and commands
+    #
+    def list
+      installed_plugins = index.installed_plugins
+      if installed_plugins.any?
+        output = String.new
+        installed_plugins.each do |plugin|
+          output << "#{plugin}\n"
+          output << "-----\n"
+          index.plugin_commands(plugin).each do |command|
+            output << "  #{command}\n"
+          end
+          output << "\n"
+        end
+      else
+        output = "No plugins installed"
+      end
+      Bundler.ui.info output
+    end
+
     # Evaluates the Gemfile with a limited DSL and installs the plugins
     # specified by plugin method
     #
     # @param [Pathname] gemfile path
     # @param [Proc] block that can be evaluated for (inline) Gemfile
     def gemfile_install(gemfile = nil, &inline)
-      builder = DSL.new
-      if block_given?
-        builder.instance_eval(&inline)
-      else
-        builder.eval_gemfile(gemfile)
+      Bundler.settings.temporary(:frozen => false, :deployment => false) do
+        builder = DSL.new
+        if block_given?
+          builder.instance_eval(&inline)
+        else
+          builder.eval_gemfile(gemfile)
+        end
+        definition = builder.to_definition(nil, true)
+
+        return if definition.dependencies.empty?
+
+        plugins = definition.dependencies.map(&:name).reject {|p| index.installed? p }
+        installed_specs = Installer.new.install_definition(definition)
+
+        save_plugins plugins, installed_specs, builder.inferred_plugins
       end
-      definition = builder.to_definition(nil, true)
-
-      return if definition.dependencies.empty?
-
-      plugins = definition.dependencies.map(&:name).reject {|p| index.installed? p }
-      installed_specs = Installer.new.install_definition(definition)
-
-      save_plugins plugins, installed_specs, builder.inferred_plugins
     rescue RuntimeError => e
       unless e.is_a?(GemfileError)
         Bundler.ui.error "Failed to install plugin: #{e.message}\n  #{e.backtrace[0]}"

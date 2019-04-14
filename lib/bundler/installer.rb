@@ -221,7 +221,7 @@ module Bundler
     def processor_count
       require "etc"
       Etc.nprocessors
-    rescue
+    rescue StandardError
       1
     end
 
@@ -275,14 +275,7 @@ module Bundler
     end
 
     def can_install_in_parallel?
-      if Bundler.rubygems.provides?(">= 2.1.0")
-        true
-      else
-        Bundler.ui.warn "RubyGems #{Gem::VERSION} is not threadsafe, so your "\
-          "gems will be installed one at a time. Upgrade to RubyGems 2.1.0 " \
-          "or higher to enable parallel gem installation."
-        false
-      end
+      true
     end
 
     def install_in_parallel(size, standalone, force = false)

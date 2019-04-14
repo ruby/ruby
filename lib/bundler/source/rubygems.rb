@@ -51,7 +51,7 @@ module Bundler
       end
 
       def can_lock?(spec)
-        return super if Bundler.feature_flag.lockfile_uses_separate_rubygems_sources?
+        return super if Bundler.feature_flag.disable_multisource?
         spec.source.is_a?(Rubygems)
       end
 
@@ -106,7 +106,7 @@ module Bundler
           end
         end
 
-        if installed?(spec) && !force
+        if (installed?(spec) || Plugin.installed?(spec.name)) && !force
           print_using_message "Using #{version_message(spec)}"
           return nil # no post-install message
         end
@@ -120,8 +120,14 @@ module Bundler
           uris.uniq!
           Installer.ambiguous_gems << [spec.name, *uris] if uris.length > 1
 
-          s = Bundler.rubygems.spec_from_gem(fetch_gem(spec), Bundler.settings["trust-policy"])
-          spec.__swap__(s)
+          path = fetch_gem(spec)
+          begin
+            s = Bundler.rubygems.spec_from_gem(path, Bundler.settings["trust-policy"])
+            spec.__swap__(s)
+          rescue StandardError
+            Bundler.rm_rf(path)
+            raise
+          end
         end
 
         unless Bundler.settings[:no_install]

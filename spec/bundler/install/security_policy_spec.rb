@@ -24,18 +24,17 @@ RSpec.describe "policies with unsigned gems" do
 
   it "will fail when given invalid security policy" do
     bundle "install --trust-policy=InvalidPolicyName"
-    expect(out).to include("RubyGems doesn't know about trust policy")
+    expect(err).to include("RubyGems doesn't know about trust policy")
   end
 
   it "will fail with High Security setting due to presence of unsigned gem" do
     bundle "install --trust-policy=HighSecurity"
-    expect(out).to include("security policy didn't allow")
+    expect(err).to include("security policy didn't allow")
   end
 
-  # This spec will fail on RubyGems 2 rc1 due to a bug in policy.rb. the bug is fixed in rc3.
-  it "will fail with Medium Security setting due to presence of unsigned gem", :unless => ENV["RGV"] == "v2.0.0.rc.1" do
+  it "will fail with Medium Security setting due to presence of unsigned gem" do
     bundle "install --trust-policy=MediumSecurity"
-    expect(out).to include("security policy didn't allow")
+    expect(err).to include("security policy didn't allow")
   end
 
   it "will succeed with no policy" do
@@ -55,12 +54,12 @@ RSpec.describe "policies with signed gems and no CA" do
 
   it "will fail with High Security setting, gem is self-signed" do
     bundle "install --trust-policy=HighSecurity"
-    expect(out).to include("security policy didn't allow")
+    expect(err).to include("security policy didn't allow")
   end
 
   it "will fail with Medium Security setting, gem is self-signed" do
     bundle "install --trust-policy=MediumSecurity"
-    expect(out).to include("security policy didn't allow")
+    expect(err).to include("security policy didn't allow")
   end
 
   it "will succeed with Low Security setting, low security accepts self signed gem" do

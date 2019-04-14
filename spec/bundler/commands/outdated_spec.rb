@@ -135,6 +135,17 @@ RSpec.describe "bundle outdated" do
       expect(out).to include("activesupport")
       expect(out).to include("duradura")
     end
+
+    it "returns a sorted list of outdated gems from one group => 'test'" do
+      test_group_option("test", 2)
+
+      expect(out).not_to include("===== Group default =====")
+      expect(out).not_to include("terranova (")
+
+      expect(out).to include("===== Group development, test =====")
+      expect(out).to include("activesupport")
+      expect(out).to include("duradura")
+    end
   end
 
   describe "with --groups option" do
@@ -191,7 +202,7 @@ RSpec.describe "bundle outdated" do
         build_gem "activesupport", "2.3.4"
       end
 
-      bundle! "config clean false"
+      bundle! "config set clean false"
 
       install_gemfile <<-G
         source "file://#{gem_repo2}"
@@ -302,14 +313,15 @@ RSpec.describe "bundle outdated" do
     end
   end
 
-  describe "with --strict option" do
+  filter_strict_option = Bundler.feature_flag.bundler_2_mode? ? :"filter-strict" : :strict
+  describe "with --#{filter_strict_option} option" do
     it "only reports gems that have a newer version that matches the specified dependency version requirements" do
       update_repo2 do
         build_gem "activesupport", "3.0"
         build_gem "weakling", "0.0.5"
       end
 
-      bundle "outdated --strict"
+      bundle :outdated, filter_strict_option => true
 
       expect(out).to_not include("activesupport (newest")
       expect(out).to include("(newest 0.0.5, installed 0.0.3, requested ~> 0.0.1)")
@@ -321,7 +333,7 @@ RSpec.describe "bundle outdated" do
         gem "rack_middleware", "1.0"
       G
 
-      bundle "outdated --strict"
+      bundle :outdated, filter_strict_option => true
 
       expect(out).to_not include("rack (1.2")
     end
@@ -339,7 +351,7 @@ RSpec.describe "bundle outdated" do
           build_gem "weakling", "0.0.5"
         end
 
-        bundle "outdated --strict --filter-patch"
+        bundle :outdated, filter_strict_option => true, "filter-patch" => true
 
         expect(out).to_not include("activesupport (newest")
         expect(out).to include("(newest 0.0.5, installed 0.0.3")
@@ -357,7 +369,7 @@ RSpec.describe "bundle outdated" do
           build_gem "weakling", "0.1.5"
         end
 
-        bundle "outdated --strict --filter-minor"
+        bundle :outdated, filter_strict_option => true, "filter-minor" => true
 
         expect(out).to_not include("activesupport (newest")
         expect(out).to include("(newest 0.1.5, installed 0.0.3")
@@ -375,7 +387,7 @@ RSpec.describe "bundle outdated" do
           build_gem "weakling", "1.1.5"
         end
 
-        bundle "outdated --strict --filter-major"
+        bundle :outdated, filter_strict_option => true, "filter-major" => true
 
         expect(out).to_not include("activesupport (newest")
         expect(out).to include("(newest 1.1.5, installed 0.0.3")
@@ -386,7 +398,7 @@ RSpec.describe "bundle outdated" do
   describe "with invalid gem name" do
     it "returns could not find gem name" do
       bundle "outdated invalid_gem_name"
-      expect(out).to include("Could not find gem 'invalid_gem_name'.")
+      expect(err).to include("Could not find gem 'invalid_gem_name'.")
     end
 
     it "returns non-zero exit code" do
@@ -402,7 +414,7 @@ RSpec.describe "bundle outdated" do
       gem "foo"
     G
 
-    bundle "config auto_install 1"
+    bundle "config set auto_install 1"
     bundle :outdated
     expect(out).to include("Installing foo 1.0")
   end
@@ -422,14 +434,14 @@ RSpec.describe "bundle outdated" do
 
       bundle "outdated"
       expect(last_command).to be_failure
-      expect(out).to include("You are trying to check outdated gems in deployment mode.")
-      expect(out).to include("Run `bundle outdated` elsewhere.")
-      expect(out).to include("If this is a development machine, remove the ")
-      expect(out).to include("Gemfile freeze\nby running `bundle install --no-deployment`.")
+      expect(err).to include("You are trying to check outdated gems in deployment mode.")
+      expect(err).to include("Run `bundle outdated` elsewhere.")
+      expect(err).to include("If this is a development machine, remove the ")
+      expect(err).to include("Gemfile freeze\nby running `bundle install --no-deployment`.")
     end
   end
 
-  context "after bundle config deployment true" do
+  context "after bundle config set deployment true" do
     before do
       install_gemfile <<-G
         source "file://#{gem_repo2}"
@@ -437,7 +449,7 @@ RSpec.describe "bundle outdated" do
         gem "rack"
         gem "foo"
       G
-      bundle! "config deployment true"
+      bundle! "config set deployment true"
     end
 
     it "outputs a helpful message about being in deployment mode" do
@@ -445,10 +457,10 @@ RSpec.describe "bundle outdated" do
 
       bundle "outdated"
       expect(last_command).to be_failure
-      expect(out).to include("You are trying to check outdated gems in deployment mode.")
-      expect(out).to include("Run `bundle outdated` elsewhere.")
-      expect(out).to include("If this is a development machine, remove the ")
-      expect(out).to include("Gemfile freeze\nby running `bundle config --delete deployment`.")
+      expect(err).to include("You are trying to check outdated gems in deployment mode.")
+      expect(err).to include("Run `bundle outdated` elsewhere.")
+      expect(err).to include("If this is a development machine, remove the ")
+      expect(err).to include("Gemfile freeze\nby running `bundle config unset deployment`.")
     end
   end
 

@@ -11,7 +11,7 @@ module Bundler
   class CLI::Gem
     TEST_FRAMEWORK_VERSIONS = {
       "rspec" => "3.0",
-      "minitest" => "5.0"
+      "minitest" => "5.0",
     }.freeze
 
     attr_reader :options, :gem_name, :thor, :name, :target
@@ -57,7 +57,7 @@ module Bundler
         :ext              => options[:ext],
         :exe              => options[:exe],
         :bundler_version  => bundler_dependency_version,
-        :github_username  => github_username.empty? ? "[USERNAME]" : github_username
+        :github_username  => github_username.empty? ? "[USERNAME]" : github_username,
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -69,7 +69,7 @@ module Bundler
         "Rakefile.tt" => "Rakefile",
         "README.md.tt" => "README.md",
         "bin/console.tt" => "bin/console",
-        "bin/setup.tt" => "bin/setup"
+        "bin/setup.tt" => "bin/setup",
       }
 
       executables = %w[

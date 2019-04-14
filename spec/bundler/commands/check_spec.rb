@@ -58,7 +58,7 @@ RSpec.describe "bundle check" do
     G
 
     bundle :check
-    expect(out).to include("Bundler can't satisfy your Gemfile's dependencies.")
+    expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
 
   it "prints a generic error if a Gemfile.lock does not exist and a toplevel dependency does not exist" do
@@ -69,7 +69,7 @@ RSpec.describe "bundle check" do
 
     bundle :check
     expect(exitstatus).to be > 0 if exitstatus
-    expect(out).to include("Bundler can't satisfy your Gemfile's dependencies.")
+    expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
 
   it "prints a generic message if you changed your lockfile" do
@@ -89,7 +89,7 @@ RSpec.describe "bundle check" do
     G
 
     bundle :check
-    expect(out).to include("Bundler can't satisfy your Gemfile's dependencies.")
+    expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
 
   it "remembers --without option from install", :bundler => "< 3" do
@@ -106,7 +106,7 @@ RSpec.describe "bundle check" do
   end
 
   it "uses the without setting" do
-    bundle! "config without foo"
+    bundle! "config set without foo"
     install_gemfile! <<-G
       source "file://#{gem_repo1}"
       group :foo do
@@ -132,7 +132,7 @@ RSpec.describe "bundle check" do
     G
 
     bundle "check"
-    expect(out).to include("* rack (1.0.0)")
+    expect(err).to include("* rack (1.0.0)")
     expect(exitstatus).to eq(1) if exitstatus
   end
 
@@ -201,13 +201,13 @@ RSpec.describe "bundle check" do
   it "outputs an error when the default Gemfile is not found" do
     bundle :check
     expect(exitstatus).to eq(10) if exitstatus
-    expect(out).to include("Could not locate Gemfile")
+    expect(err).to include("Could not locate Gemfile")
   end
 
   it "does not output fatal error message" do
     bundle :check
     expect(exitstatus).to eq(10) if exitstatus
-    expect(out).not_to include("Unfortunately, a fatal error has occurred. ")
+    expect(err).not_to include("Unfortunately, a fatal error has occurred. ")
   end
 
   it "should not crash when called multiple times on a new machine" do
@@ -269,7 +269,7 @@ RSpec.describe "bundle check" do
 
       bundle "check --path vendor/bundle"
       expect(exitstatus).to eq(1) if exitstatus
-      expect(out).to match(/The following gems are missing/)
+      expect(err).to match(/The following gems are missing/)
     end
   end
 
@@ -292,8 +292,8 @@ RSpec.describe "bundle check" do
     it "shows what is missing with the current Gemfile if it is not satisfied" do
       simulate_new_machine
       bundle :check
-      expect(out).to match(/The following gems are missing/)
-      expect(out).to include("* rack (1.0")
+      expect(err).to match(/The following gems are missing/)
+      expect(err).to include("* rack (1.0")
     end
   end
 

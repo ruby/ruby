@@ -100,9 +100,8 @@ module Spec
       9999
     end
 
-    def lockfile_platforms(*platforms)
-      platforms = local_platforms if platforms.empty?
-      platforms.map(&:to_s).sort.join("\n  ")
+    def lockfile_platforms
+      local_platforms.map(&:to_s).sort.join("\n  ")
     end
 
     def local_platforms
