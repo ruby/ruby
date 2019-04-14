@@ -190,6 +190,19 @@ static void
 compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct compile_status *status)
 {
     unsigned int i;
+
+    fprintf(f, "\nsend_cancel:\n");
+    fprintf(f, "    RB_DEBUG_COUNTER_INC(mjit_cancel_send_inline);\n");
+    fprintf(f, "    rb_mjit_iseq_compile_info(original_iseq->body)->disable_send_cache = true;\n");
+    fprintf(f, "    rb_mjit_recompile_iseq(original_iseq);\n");
+    fprintf(f, "    goto cancel;\n");
+
+    fprintf(f, "\nivar_cancel:\n");
+    fprintf(f, "    RB_DEBUG_COUNTER_INC(mjit_cancel_ivar_inline);\n");
+    fprintf(f, "    rb_mjit_iseq_compile_info(original_iseq->body)->disable_ivar_cache = true;\n");
+    fprintf(f, "    rb_mjit_recompile_iseq(original_iseq);\n");
+    fprintf(f, "    goto cancel;\n");
+
     fprintf(f, "\ncancel:\n");
     fprintf(f, "    RB_DEBUG_COUNTER_INC(mjit_cancel);\n");
     if (status->local_stack_p) {
