@@ -43,6 +43,15 @@ rb_debug_counter_show_results(const char *msg)
     }
 }
 
+VALUE
+rb_debug_counter_reset(void)
+{
+    for (int i = 0; i < RB_DEBUG_COUNTER_MAX; i++) {
+        rb_debug_counter[i] = 0;
+    }
+    return Qnil;
+}
+
 __attribute__((destructor))
 static void
 debug_counter_show_results_at_exit(void)
