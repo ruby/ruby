@@ -17,7 +17,7 @@
     IC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->cache;
 %
 % # compiler: Consider cfp->self as T_OBJECT if ic_copy->ic_serial is set
-    if (ic_copy->ic_serial) {
+    if (!status->compile_info->disable_ivar_cache && ic_copy->ic_serial) {
 % # JIT: optimize away motion of sp and pc. This path does not call rb_warning() and so it's always leaf and not `handles_sp`.
 % # <%= render 'mjit_compile_pc_and_sp', locals: { insn: insn } -%>
 %
@@ -43,6 +43,8 @@
         fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_ivar);\n");
+        fprintf(f, "        rb_mjit_iseq_compile_info(original_iseq->body)->disable_ivar_cache = true;\n");
+        fprintf(f, "        rb_mjit_recompile_iseq(original_iseq);\n");
         fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
 

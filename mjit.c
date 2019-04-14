@@ -299,16 +299,16 @@ unload_units(void)
     verbose(1, "Too many JIT code -- %d units unloaded", units_num - active_units.length);
 }
 
-/* Add ISEQ to be JITed in parallel with the current thread.
-   Unload some JIT codes if there are too many of them.  */
-void
-mjit_add_iseq_to_process(const rb_iseq_t *iseq)
+static void
+mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info)
 {
     if (!mjit_enabled || pch_status == PCH_FAILED)
         return;
 
     iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
     create_unit(iseq);
+    if (compile_info != NULL)
+        iseq->body->jit_unit->compile_info = *compile_info;
     if (iseq->body->jit_unit == NULL)
         /* Failure in creating the unit.  */
         return;
@@ -323,13 +323,19 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
     CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
 }
 
+/* Add ISEQ to be JITed in parallel with the current thread.
+   Unload some JIT codes if there are too many of them.  */
+void
+rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq)
+{
+    mjit_add_iseq_to_process(iseq, NULL);
+}
+
 /* For this timeout seconds, --jit-wait will wait for JIT compilation finish. */
 #define MJIT_WAIT_TIMEOUT_SECONDS 60
 
-/* Wait for JIT compilation finish for --jit-wait, and call the function pointer
-   if the compiled result is not NOT_COMPILED_JIT_ISEQ_FUNC. */
-VALUE
-mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
+static void
+mjit_wait(struct rb_iseq_constant_body *body)
 {
     struct timeval tv;
     int tries = 0;
@@ -350,11 +356,46 @@ mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
         CRITICAL_SECTION_FINISH(3, "in mjit_wait_call for a client wakeup");
         rb_thread_wait_for(tv);
     }
+}
 
+/* Wait for JIT compilation finish for --jit-wait, and call the function pointer
+   if the compiled result is not NOT_COMPILED_JIT_ISEQ_FUNC. */
+VALUE
+mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
+{
+    mjit_wait(body);
     if ((uintptr_t)body->jit_func <= (uintptr_t)LAST_JIT_ISEQ_FUNC) {
         return Qundef;
     }
     return body->jit_func(ec, ec->cfp);
+}
+
+struct rb_mjit_compile_info*
+rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body)
+{
+    assert(body->jit_unit != NULL);
+    return &body->jit_unit->compile_info;
+}
+
+void
+rb_mjit_recompile_iseq(const rb_iseq_t *iseq)
+{
+    if ((ptrdiff_t)iseq->body->jit_func <= (ptrdiff_t)LAST_JIT_ISEQ_FUNC)
+        return;
+
+    verbose(1, "JIT recompile: %s@%s:%d", RSTRING_PTR(iseq->body->location.label),
+            RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno));
+
+    CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
+    remove_from_list(iseq->body->jit_unit, &active_units);
+    iseq->body->jit_func = (void *)NOT_ADDED_JIT_ISEQ_FUNC;
+    add_to_list(iseq->body->jit_unit, &stale_units);
+    CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
+
+    mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info);
+    if (UNLIKELY(mjit_opts.wait)) {
+        mjit_wait(iseq->body);
+    }
 }
 
 extern VALUE ruby_archlibdir_path, ruby_prefix_path;
@@ -818,6 +859,7 @@ mjit_finish(bool close_handle_p)
     free_list(&unit_queue, close_handle_p);
     free_list(&active_units, close_handle_p);
     free_list(&compact_units, close_handle_p);
+    free_list(&stale_units, close_handle_p);
     finish_conts();
 
     mjit_enabled = false;

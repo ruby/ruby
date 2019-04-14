@@ -55,14 +55,24 @@ struct mjit_options {
     int max_cache_size;
 };
 
+// State of optimization switches
+struct rb_mjit_compile_info {
+    // Disable getinstancevariable/setinstancevariable optimizations based on inline cache
+    bool disable_ivar_cache;
+    // Disable send/opt_send_without_block optimizations based on inline cache
+    bool disable_send_cache;
+};
+
 typedef VALUE (*mjit_func_t)(rb_execution_context_t *, rb_control_frame_t *);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 RUBY_EXTERN struct mjit_options mjit_opts;
 RUBY_EXTERN bool mjit_call_p;
 
-extern void mjit_add_iseq_to_process(const rb_iseq_t *iseq);
+extern void rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq);
 extern VALUE mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body);
+extern struct rb_mjit_compile_info* rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body);
+extern void rb_mjit_recompile_iseq(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
 extern bool mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname);
@@ -120,7 +130,7 @@ mjit_exec(rb_execution_context_t *ec)
             RB_DEBUG_COUNTER_INC(mjit_exec_not_added);
             if (total_calls == mjit_opts.min_calls && mjit_target_iseq_p(body)) {
                 RB_DEBUG_COUNTER_INC(mjit_exec_not_added_add_iseq);
-                mjit_add_iseq_to_process(iseq);
+                rb_mjit_add_iseq_to_process(iseq);
                 if (UNLIKELY(mjit_opts.wait)) {
                     return mjit_wait_call(ec, body);
                 }

@@ -144,6 +144,8 @@ struct rb_mjit_unit {
     /* Only used by unload_units. Flag to check this unit is currently on stack or not. */
     char used_code_p;
     struct list_node unode;
+    // mjit_compile's optimization switches
+    struct rb_mjit_compile_info compile_info;
 };
 
 /* Linked list of struct rb_mjit_unit.  */
@@ -184,6 +186,8 @@ static struct rb_mjit_unit_list unit_queue = { LIST_HEAD_INIT(unit_queue.head) }
 static struct rb_mjit_unit_list active_units = { LIST_HEAD_INIT(active_units.head) };
 /* List of compacted so files which will be cleaned up by `free_list()` in `mjit_finish()`. */
 static struct rb_mjit_unit_list compact_units = { LIST_HEAD_INIT(compact_units.head) };
+// List of units before recompilation and just waiting for dlclose().
+static struct rb_mjit_unit_list stale_units = { LIST_HEAD_INIT(stale_units.head) };
 /* The number of so far processed ISEQs, used to generate unique id.  */
 static int current_unit_num;
 /* A mutex for conitionals and critical sections.  */
