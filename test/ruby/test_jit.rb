@@ -529,9 +529,6 @@ class TestJIT < Test::Unit::TestCase
       print block.call(obj)
     end;
 
-    if RUBY_PLATFORM =~ /i686/
-      skip 'recompilation is not happening on i686'
-    end
     # send call -> optimized call (send JIT) -> optimized call
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '122', success_count: 2, min_calls: 2)
     begin;
@@ -708,9 +705,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_inlined_undefined_ivar
-    if RUBY_PLATFORM =~ /i686/
-      skip 'recompilation is not happening on i686'
-    end
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "bbb", success_count: 3, min_calls: 3)
     begin;
       class Foo
