@@ -33,8 +33,13 @@ mjit_copy_job_handler(void *data)
     // Make sure that this job is never executed when:
     //   1. job is being modified
     //   2. alloca memory inside job is expired
-    // Note that job->iseq is guarded from GC by `mjit_mark`.
+    //   3. ISeq is GC-ed
     if (job->finish_p) {
+        CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
+        return;
+    }
+    else if (job->iseq == NULL) { // ISeq GC notified in mjit_mark_iseq
+        job->finish_p = true;
         CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
         return;
     }
@@ -113,6 +118,9 @@ mjit_free_iseq(const rb_iseq_t *iseq)
     if (!mjit_enabled)
         return;
     CRITICAL_SECTION_START(4, "mjit_free_iseq");
+    if (mjit_copy_job.iseq == iseq) {
+        mjit_copy_job.iseq = NULL;
+    }
     if (iseq->body->jit_unit) {
         // jit_unit is not freed here because it may be referred by multiple
         // lists of units. `get_from_list` and `mjit_finish` do the job.

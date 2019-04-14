@@ -1195,15 +1195,17 @@ mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache *cc
     }
 
     CRITICAL_SECTION_START(3, "in mjit_copy_cache_from_main_thread");
-    bool result = job->finish_p;
+    bool success_p = job->finish_p;
     // Disable dispatching this job in mjit_copy_job_handler while memory allocated by alloca
     // could be expired after finishing this function.
     job->finish_p = true;
 
     in_jit = true; // Prohibit GC during JIT compilation
+    if (job->iseq == NULL) // ISeq GC is notified in mjit_mark_iseq
+        success_p = false;
     job->iseq = NULL; // Allow future GC of this ISeq from here
     CRITICAL_SECTION_FINISH(3, "in mjit_copy_cache_from_main_thread");
-    return result;
+    return success_p;
 }
 
 // The function implementing a worker. It is executed in a separate
