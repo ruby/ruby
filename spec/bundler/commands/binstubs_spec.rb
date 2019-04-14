@@ -202,7 +202,7 @@ RSpec.describe "bundle binstubs <gem>" do
         context "when requesting a different bundler version" do
           before { lockfile lockfile.gsub(Bundler::VERSION, "999.999.999") }
 
-          it "attempts to load that version", :ruby_repo do
+          it "attempts to load that version" do
             sys_exec bundled_app("bin/rackup").to_s
             expect(exitstatus).to eq(42) if exitstatus
             expect(last_command.stderr).to include("Activating bundler (999.999.999) failed:").
