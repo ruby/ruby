@@ -380,7 +380,7 @@ rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body)
 void
 rb_mjit_recompile_iseq(const rb_iseq_t *iseq)
 {
-    if ((ptrdiff_t)iseq->body->jit_func <= (ptrdiff_t)LAST_JIT_ISEQ_FUNC)
+    if ((uintptr_t)iseq->body->jit_func <= (uintptr_t)LAST_JIT_ISEQ_FUNC)
         return;
 
     verbose(1, "JIT recompile: %s@%s:%d", RSTRING_PTR(iseq->body->location.label),
