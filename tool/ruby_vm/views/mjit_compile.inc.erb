@@ -28,7 +28,7 @@
 %
 % send_compatible_opt_insns = RubyVM::BareInstructions.to_a.select do |insn|
 %   insn.name.start_with?('opt_') && opt_send_without_block.opes == insn.opes &&
-%     insn.expr.expr.lines.any? { |l| l.match?(/\A\s+CALL_SIMPLE_METHOD\(\);\s+\z/) }
+%     insn.expr.expr.lines.any? { |l| l.match(/\A\s+CALL_SIMPLE_METHOD\(\);\s+\z/) }
 % end.map(&:name)
 %
 % # Available variables and macros in JIT-ed function:
