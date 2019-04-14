@@ -13,6 +13,7 @@ if File.expand_path(__FILE__) =~ %r{([^\w/\.:\-])}
 end
 
 require "bundler"
+require "rspec"
 
 Dir["#{File.expand_path("../support", __FILE__)}/*.rb"].each do |file|
   file = file.gsub(%r{\A#{Regexp.escape File.expand_path("..", __FILE__)}/}, "")
