@@ -51,6 +51,7 @@ rb_debug_counter_reset(void)
           case RB_DEBUG_COUNTER_mjit_length_unit_queue:
           case RB_DEBUG_COUNTER_mjit_length_active_units:
           case RB_DEBUG_COUNTER_mjit_length_compact_units:
+          case RB_DEBUG_COUNTER_mjit_length_stale_units:
             // These counters may be decreased and should not be reset.
             break;
           default:

@@ -334,6 +334,7 @@ add_to_list(struct rb_mjit_unit *unit, struct rb_mjit_unit_list *list)
     (void)RB_DEBUG_COUNTER_INC_IF(mjit_length_unit_queue, list == &unit_queue);
     (void)RB_DEBUG_COUNTER_INC_IF(mjit_length_active_units, list == &active_units);
     (void)RB_DEBUG_COUNTER_INC_IF(mjit_length_compact_units, list == &compact_units);
+    (void)RB_DEBUG_COUNTER_INC_IF(mjit_length_stale_units, list == &stale_units);
 
     list_add_tail(&list->head, &unit->unode);
     list->length++;
@@ -346,6 +347,7 @@ remove_from_list(struct rb_mjit_unit *unit, struct rb_mjit_unit_list *list)
     rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_unit_queue, -1, list == &unit_queue);
     rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_active_units, -1, list == &active_units);
     rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_compact_units, -1, list == &compact_units);
+    rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_stale_units, -1, list == &stale_units);
 #endif
 
     list_del(&unit->unode);

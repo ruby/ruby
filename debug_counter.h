@@ -280,6 +280,7 @@ RB_DEBUG_COUNTER(mjit_cancel_trace)
 RB_DEBUG_COUNTER(mjit_length_unit_queue)
 RB_DEBUG_COUNTER(mjit_length_active_units)
 RB_DEBUG_COUNTER(mjit_length_compact_units)
+RB_DEBUG_COUNTER(mjit_length_stale_units)
 
 /* Other MJIT counters */
 RB_DEBUG_COUNTER(mjit_compile_failures)
