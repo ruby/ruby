@@ -62,7 +62,7 @@ Regexp/String::
 
 CSV::
 
-  * Upgrade to 3.0.8.
+  * Upgrade to 3.0.9.
     See https://github.com/ruby/csv/blob/master/NEWS.md.
 
 Date::
