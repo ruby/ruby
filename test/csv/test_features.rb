@@ -56,7 +56,7 @@ line,4,jkl
     error = assert_raise(CSV::MalformedCSVError) do
       CSV.parse_line("1,2,3\n,4,5\r\n", row_sep: "\r\n")
     end
-    assert_equal("Unquoted fields do not allow \\r or \\n in line 1.",
+    assert_equal("Unquoted fields do not allow new line <\"\\n\"> in line 1.",
                  error.message)
     assert_equal( ["1", "2", "3\n", "4", "5"],
                   CSV.parse_line(%Q{1,2,"3\n",4,5\r\n}, row_sep: "\r\n"))
@@ -293,78 +293,6 @@ line,4,jkl
     assert_instance_of(String, CSV::VERSION)
     assert_predicate(CSV::VERSION, :frozen?)
     assert_match(/\A\d\.\d\.\d\z/, CSV::VERSION)
-  end
-
-  def test_accepts_comment_skip_lines_option
-    assert_nothing_raised(ArgumentError) do
-      CSV.new(@sample_data, :skip_lines => /\A\s*#/)
-    end
-  end
-
-  def test_accepts_comment_defaults_to_nil
-    c = CSV.new(@sample_data)
-    assert_nil(c.skip_lines)
-  end
-
-  class RegexStub
-  end
-
-  def test_requires_skip_lines_to_call_match
-    regex_stub = RegexStub.new
-    csv = CSV.new(@sample_data, :skip_lines => regex_stub)
-    assert_raise_with_message(ArgumentError, /skip_lines/) do
-      csv.shift
-    end
-  end
-
-  class Matchable
-    def initialize(pattern)
-      @pattern = pattern
-    end
-
-    def match(line)
-      @pattern.match(line)
-    end
-  end
-
-  def test_skip_lines_match
-    csv = <<-CSV.chomp
-1
-# 2
-3
-# 4
-    CSV
-    assert_equal([["1"], ["3"]],
-                 CSV.parse(csv, :skip_lines => Matchable.new(/\A#/)))
-  end
-
-  def test_comment_rows_are_ignored
-    sample_data = "line,1,a\n#not,a,line\nline,2,b\n   #also,no,line"
-    c = CSV.new sample_data, :skip_lines => /\A\s*#/
-    assert_equal [["line", "1", "a"], ["line", "2", "b"]], c.each.to_a
-  end
-
-  def test_comment_rows_are_ignored_with_heredoc
-    sample_data = <<~EOL
-      1,foo
-      .2,bar
-      3,baz
-    EOL
-
-    c = CSV.new(sample_data, skip_lines: ".")
-    assert_equal [["1", "foo"], ["3", "baz"]], c.each.to_a
-  end
-
-  def test_quoted_skip_line_markers_are_ignored
-    sample_data = "line,1,a\n\"#not\",a,line\nline,2,b"
-    c = CSV.new sample_data, :skip_lines => /\A\s*#/
-    assert_equal [["line", "1", "a"], ["#not", "a", "line"], ["line", "2", "b"]], c.each.to_a
-  end
-
-  def test_string_works_like_a_regexp
-    sample_data = "line,1,a\n#(not,a,line\nline,2,b\n   also,#no,line"
-    c = CSV.new sample_data, :skip_lines => "#"
-    assert_equal [["line", "1", "a"], ["line", "2", "b"]], c.each.to_a
   end
 
   def test_table_nil_equality

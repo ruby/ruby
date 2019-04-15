@@ -253,7 +253,7 @@ module Bundler
           ensure
             STDERR.reopen backup_stderr
           end
-          $stderr.puts URICredentialsFilter.credential_filtered_string(captured_err, uri) if uri && !captured_err.empty?
+          Bundler.ui.warn URICredentialsFilter.credential_filtered_string(captured_err, uri) if uri && !captured_err.empty?
           return_value
         end
       end

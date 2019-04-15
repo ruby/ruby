@@ -55,7 +55,7 @@ class Bundler::Thor
 
     # Common methods that are delegated to the shell.
     SHELL_DELEGATED_METHODS.each do |method|
-      module_eval <<-METHOD, __FILE__, __LINE__
+      module_eval <<-METHOD, __FILE__, __LINE__ + 1
         def #{method}(*args,&block)
           shell.#{method}(*args,&block)
         end

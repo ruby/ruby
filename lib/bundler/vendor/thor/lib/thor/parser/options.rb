@@ -44,6 +44,7 @@ class Bundler::Thor
       @shorts = {}
       @switches = {}
       @extra = []
+      @stopped_parsing_after_extra_index = nil
 
       options.each do |option|
         @switches[option.switch_name] = option
@@ -66,6 +67,7 @@ class Bundler::Thor
       if result == OPTS_END
         shift
         @parsing_options = false
+        @stopped_parsing_after_extra_index ||= @extra.size
         super
       else
         result
@@ -99,6 +101,7 @@ class Bundler::Thor
           elsif @stop_on_unknown
             @parsing_options = false
             @extra << shifted
+            @stopped_parsing_after_extra_index ||= @extra.size
             @extra << shift while peek
             break
           elsif match
@@ -120,9 +123,11 @@ class Bundler::Thor
     end
 
     def check_unknown!
+      to_check = @stopped_parsing_after_extra_index ? @extra[0...@stopped_parsing_after_extra_index] : @extra
+
       # an unknown option starts with - or -- and has no more --'s afterward.
-      unknown = @extra.select { |str| str =~ /^--?(?:(?!--).)*$/ }
-      raise UnknownArgumentError, "Unknown switches '#{unknown.join(', ')}'" unless unknown.empty?
+      unknown = to_check.select { |str| str =~ /^--?(?:(?!--).)*$/ }
+      raise UnknownArgumentError.new(@switches.keys, unknown) unless unknown.empty?
     end
 
   protected

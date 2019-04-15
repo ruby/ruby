@@ -271,7 +271,7 @@ RB_DEBUG_COUNTER(mjit_frame_JT2VM)
 
 /* MJIT cancel counters */
 RB_DEBUG_COUNTER(mjit_cancel)
-RB_DEBUG_COUNTER(mjit_cancel_ivar)
+RB_DEBUG_COUNTER(mjit_cancel_ivar_inline)
 RB_DEBUG_COUNTER(mjit_cancel_send_inline)
 RB_DEBUG_COUNTER(mjit_cancel_opt_insn) /* CALL_SIMPLE_METHOD */
 RB_DEBUG_COUNTER(mjit_cancel_trace)
@@ -280,6 +280,7 @@ RB_DEBUG_COUNTER(mjit_cancel_trace)
 RB_DEBUG_COUNTER(mjit_length_unit_queue)
 RB_DEBUG_COUNTER(mjit_length_active_units)
 RB_DEBUG_COUNTER(mjit_length_compact_units)
+RB_DEBUG_COUNTER(mjit_length_stale_units)
 
 /* Other MJIT counters */
 RB_DEBUG_COUNTER(mjit_compile_failures)
@@ -318,6 +319,8 @@ rb_debug_counter_add(enum rb_debug_counter_type type, int add, int cond)
     }
     return cond;
 }
+
+VALUE rb_debug_counter_reset(void);
 
 #define RB_DEBUG_COUNTER_INC(type)                rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, 1)
 #define RB_DEBUG_COUNTER_INC_UNLESS(type, cond) (!rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, !(cond)))

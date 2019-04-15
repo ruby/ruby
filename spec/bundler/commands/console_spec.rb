@@ -31,7 +31,7 @@ RSpec.describe "bundle console", :bundler => "< 3" do
       source "file://#{gem_repo1}"
       gem "pry"
     G
-    bundle "config console pry"
+    bundle "config set console pry"
 
     bundle "console" do |input, _, _|
       input.puts("__method__")
@@ -41,7 +41,7 @@ RSpec.describe "bundle console", :bundler => "< 3" do
   end
 
   it "falls back to IRB if the other REPL isn't available" do
-    bundle "config console pry"
+    bundle "config set console pry"
     # make sure pry isn't there
 
     bundle "console" do |input, _, _|
@@ -94,7 +94,7 @@ RSpec.describe "bundle console", :bundler => "< 3" do
       gem "foo"
     G
 
-    bundle "config auto_install 1"
+    bundle "config set auto_install 1"
     bundle :console do |input, _, _|
       input.puts("puts 'hello'")
       input.puts("exit")

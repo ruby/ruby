@@ -10,6 +10,7 @@ class TestJIT < Test::Unit::TestCase
   include JITSupport
 
   IGNORABLE_PATTERNS = [
+    /\AJIT recompile: .+\n\z/,
     /\ASuccessful MJIT finish\n\z/,
   ]
 
@@ -529,7 +530,7 @@ class TestJIT < Test::Unit::TestCase
     end;
 
     # send call -> optimized call (send JIT) -> optimized call
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '122', success_count: 1, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '122', success_count: 2, min_calls: 2)
     begin;
       obj = Object.new
       def obj.[](h)
@@ -704,7 +705,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_inlined_undefined_ivar
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "bbb", success_count: 2, min_calls: 3)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "bbb", success_count: 3, min_calls: 3)
     begin;
       class Foo
         def initialize

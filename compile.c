@@ -106,6 +106,8 @@ struct iseq_compile_data_ensure_node_stack {
     struct ensure_range *erange;
 };
 
+const ID rb_iseq_shared_exc_local_tbl[] = {idERROR_INFO};
+
 /**
  * debug function(macro) interface depend on CPDEBUG
  * if it is less than 0, runtime option is in effect.
@@ -1361,14 +1363,8 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 static int
 iseq_set_exception_local_table(rb_iseq_t *iseq)
 {
-    /* TODO: every id table is same -> share it.
-     * Current problem is iseq_free().
-     */
-    ID *ids = (ID *)ALLOC_N(ID, 1);
-
-    iseq->body->local_table_size = 1;
-    ids[0] = idERROR_INFO;
-    iseq->body->local_table = ids;
+    iseq->body->local_table_size = numberof(rb_iseq_shared_exc_local_tbl);
+    iseq->body->local_table = rb_iseq_shared_exc_local_tbl;
     return COMPILE_OK;
 }
 

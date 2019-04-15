@@ -1,4 +1,3 @@
-# encoding: utf-8
 # frozen_string_literal: true
 
 RSpec.describe "bundle install" do
@@ -8,7 +7,7 @@ RSpec.describe "bundle install" do
         gem 'rails', '~> 4.0.0'
         gem 'rails', '~> 4.0.0'
       G
-      expect(out).to include("more than once")
+      expect(err).to include("more than once")
     end
   end
 
@@ -35,7 +34,7 @@ RSpec.describe "bundle install" do
         gem 'rack'
       G
 
-      bundle "config --local gemfile #{bundled_app("NotGemfile")}"
+      bundle "config set --local gemfile #{bundled_app("NotGemfile")}"
     end
     it "uses the gemfile to install" do
       bundle "install"
@@ -65,23 +64,7 @@ RSpec.describe "bundle install" do
       G
 
       bundle :install
-      expect(out).to match(/You passed :lib as an option for gem 'rack', but it is invalid/)
-    end
-  end
-
-  context "with prefer_gems_rb set" do
-    before { bundle! "config prefer_gems_rb true" }
-
-    it "prefers gems.rb to Gemfile" do
-      create_file("gems.rb", "gem 'bundler'")
-      create_file("Gemfile", "raise 'wrong Gemfile!'")
-
-      bundle! :install
-
-      expect(bundled_app("gems.rb")).to be_file
-      expect(bundled_app("Gemfile.lock")).not_to be_file
-
-      expect(the_bundle).to include_gem "bundler #{Bundler::VERSION}"
+      expect(err).to match(/You passed :lib as an option for gem 'rack', but it is invalid/)
     end
   end
 
@@ -116,8 +99,6 @@ RSpec.describe "bundle install" do
 
   context "with a Gemfile containing non-US-ASCII characters" do
     it "reads the Gemfile with the UTF-8 encoding by default" do
-      skip "Ruby 1.8 has no encodings" if RUBY_VERSION < "1.9"
-
       install_gemfile <<-G
         str = "Il était une fois ..."
         puts "The source encoding is: " + str.encoding.name
@@ -129,8 +110,6 @@ RSpec.describe "bundle install" do
     end
 
     it "respects the magic encoding comment" do
-      skip "Ruby 1.8 has no encodings" if RUBY_VERSION < "1.9"
-
       # NOTE: This works thanks to #eval interpreting the magic encoding comment
       install_gemfile <<-G
         # encoding: iso-8859-1

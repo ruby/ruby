@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "require 'bundler/gem_tasks'", :ruby_repo do
+RSpec.describe "require 'bundler/gem_tasks'" do
   before :each do
     bundled_app("foo.gemspec").open("w") do |f|
       f.write <<-GEMSPEC
@@ -22,7 +22,7 @@ RSpec.describe "require 'bundler/gem_tasks'", :ruby_repo do
       sys_exec "#{rake} -T"
     end
 
-    expect(err).to eq("")
+    expect(last_command.stderr).to eq("")
     expected_tasks = [
       "rake build",
       "rake clean",

@@ -6,18 +6,8 @@ RSpec.describe "bundle gem" do
     global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false"
   end
 
-  def remove_push_guard(gem_name)
-    # Remove exception that prevents public pushes on older RubyGems versions
-    if Gem::Version.new(Gem::VERSION) < Gem::Version.new("2.0")
-      path = "#{gem_name}/#{gem_name}.gemspec"
-      content = File.read(path).sub(/raise "RubyGems 2\.0 or newer.*/, "")
-      File.open(path, "w") {|f| f.write(content) }
-    end
-  end
-
-  def execute_bundle_gem(gem_name, flag = "", to_remove_push_guard = true)
+  def execute_bundle_gem(gem_name, flag = "")
     bundle! "gem #{gem_name} #{flag}"
-    remove_push_guard(gem_name) if to_remove_push_guard
     # reset gemspec cache for each test because of commit 3d4163a
     Bundler.clear_gemspec_cache
   end
@@ -96,7 +86,7 @@ RSpec.describe "bundle gem" do
 
   shared_examples_for "--coc flag" do
     before do
-      execute_bundle_gem(gem_name, "--coc", false)
+      execute_bundle_gem(gem_name, "--coc")
     end
     it "generates a gem skeleton with MIT license" do
       gem_skeleton_assertions(gem_name)
@@ -113,7 +103,7 @@ RSpec.describe "bundle gem" do
 
   shared_examples_for "--no-coc flag" do
     before do
-      execute_bundle_gem(gem_name, "--no-coc", false)
+      execute_bundle_gem(gem_name, "--no-coc")
     end
     it "generates a gem skeleton without Code of Conduct" do
       gem_skeleton_assertions(gem_name)
@@ -149,7 +139,6 @@ RSpec.describe "bundle gem" do
         reset!
         in_app_root
         bundle "gem #{gem_name}"
-        remove_push_guard(gem_name)
       end
 
       it "contribute URL set to [USERNAME]" do
@@ -173,7 +162,7 @@ RSpec.describe "bundle gem" do
       load_paths = [lib, spec]
       load_path_str = "-I#{load_paths.join(File::PATH_SEPARATOR)}"
 
-      sys_exec "PATH=\"\" #{Gem.ruby} #{load_path_str} #{bindir.join("bundle")} gem #{gem_name}"
+      sys_exec "#{Gem.ruby} #{load_path_str} #{bindir.join("bundle")} gem #{gem_name}", "PATH" => ""
     end
 
     it "creates the gem without the need for git" do
@@ -189,7 +178,7 @@ RSpec.describe "bundle gem" do
     end
   end
 
-  it "generates a valid gemspec" do
+  it "generates a valid gemspec", :ruby_repo do
     in_app_root
     bundle! "gem newgem --bin"
 
@@ -202,16 +191,13 @@ RSpec.describe "bundle gem" do
         line.gsub(/\=.*$/, "= %q{A short summary of my new gem.}")
       when /spec\.description/
         line.gsub(/\=.*$/, "= %q{A longer description of my new gem.}")
-      # Remove exception that prevents public pushes on older RubyGems versions
-      when /raise "RubyGems 2.0 or newer/
-        line.gsub(/.*/, "") if Gem::Version.new(Gem::VERSION) < Gem::Version.new("2.0")
       else
         line
       end
     end
 
     Dir.chdir(bundled_app("newgem")) do
-      gems = ["rake-10.0.2", :bundler]
+      gems = ["rake-12.3.2", :bundler]
       # for Ruby core repository, Ruby 2.6+ has bundler as standard library.
       gems.delete(:bundler) if ruby_core?
       system_gems gems, :path => :bundle_path
@@ -298,13 +284,12 @@ RSpec.describe "bundle gem" do
         reset!
         in_app_root
         bundle "gem #{gem_name}"
-        remove_push_guard(gem_name)
       end
 
       it_should_behave_like "git config is absent"
     end
 
-    it "sets gemspec metadata['allowed_push_host']", :rubygems => "2.0" do
+    it "sets gemspec metadata['allowed_push_host']" do
       expect(generated_gem.gemspec.metadata["allowed_push_host"]).
         to match(/mygemserver\.com/)
     end
@@ -318,7 +303,7 @@ RSpec.describe "bundle gem" do
     end
 
     it "runs rake without problems" do
-      system_gems ["rake-10.0.2"]
+      system_gems ["rake-12.3.2"]
 
       rakefile = strip_whitespace <<-RAKEFILE
         task :default do
@@ -396,8 +381,7 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("test_gem/spec/spec_helper.rb")).to exist
       end
 
-      it "depends on a specific version of rspec", :rubygems => ">= 1.8.1" do
-        remove_push_guard(gem_name)
+      it "depends on a specific version of rspec" do
         rspec_dep = generated_gem.gemspec.development_dependencies.find {|d| d.name == "rspec" }
         expect(rspec_dep).to be_specific
       end
@@ -415,7 +399,7 @@ RSpec.describe "bundle gem" do
       before do
         reset!
         in_app_root
-        bundle "config gem.test rspec"
+        bundle "config set gem.test rspec"
         bundle "gem #{gem_name}"
       end
 
@@ -430,7 +414,7 @@ RSpec.describe "bundle gem" do
       before do
         reset!
         in_app_root
-        bundle "config gem.test rspec"
+        bundle "config set gem.test rspec"
         bundle "gem #{gem_name} --test=minitest"
       end
 
@@ -447,8 +431,7 @@ RSpec.describe "bundle gem" do
         bundle "gem #{gem_name} --test=minitest"
       end
 
-      it "depends on a specific version of minitest", :rubygems => ">= 1.8.1" do
-        remove_push_guard(gem_name)
+      it "depends on a specific version of minitest" do
         rspec_dep = generated_gem.gemspec.development_dependencies.find {|d| d.name == "minitest" }
         expect(rspec_dep).to be_specific
       end
@@ -475,7 +458,7 @@ RSpec.describe "bundle gem" do
       before do
         reset!
         in_app_root
-        bundle "config gem.test minitest"
+        bundle "config set gem.test minitest"
         bundle "gem #{gem_name}"
       end
 
@@ -592,7 +575,6 @@ RSpec.describe "bundle gem" do
         reset!
         in_app_root
         bundle "gem #{gem_name}"
-        remove_push_guard(gem_name)
       end
 
       it_should_behave_like "git config is absent"
@@ -603,7 +585,7 @@ RSpec.describe "bundle gem" do
     end
 
     it "runs rake without problems" do
-      system_gems ["rake-10.0.2"]
+      system_gems ["rake-12.3.2"]
 
       rakefile = strip_whitespace <<-RAKEFILE
         task :default do
@@ -820,22 +802,22 @@ Usage: "bundle gem NAME [OPTIONS]"
 
     context "with an existing const name" do
       subject { "gem" }
-      it { expect(out).to include("Invalid gem name #{subject}") }
+      it { expect(err).to include("Invalid gem name #{subject}") }
     end
 
     context "with an existing hyphenated const name" do
       subject { "gem-specification" }
-      it { expect(out).to include("Invalid gem name #{subject}") }
+      it { expect(err).to include("Invalid gem name #{subject}") }
     end
 
     context "starting with an existing const name" do
       subject { "gem-somenewconstantname" }
-      it { expect(out).not_to include("Invalid gem name #{subject}") }
+      it { expect(err).not_to include("Invalid gem name #{subject}") }
     end
 
     context "ending with an existing const name" do
       subject { "somenewconstantname-gem" }
-      it { expect(out).not_to include("Invalid gem name #{subject}") }
+      it { expect(err).not_to include("Invalid gem name #{subject}") }
     end
   end
 
@@ -868,7 +850,7 @@ Usage: "bundle gem NAME [OPTIONS]"
     it "asks about MIT license" do
       global_config "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false"
 
-      bundle :config
+      bundle "config list"
 
       bundle "gem foobar" do |input, _, _|
         input.puts "yes"

@@ -129,23 +129,6 @@ RSpec.describe "Running bin/* commands" do
     expect(bundled_app("bin/rackup")).to exist
   end
 
-  it "rewrites bins on --binstubs (to maintain backwards compatibility)", :bundler => "< 2" do
-    gemfile <<-G
-      source "file://#{gem_repo1}"
-      gem "rack"
-    G
-
-    bundle! :install, forgotten_command_line_options([:binstubs, :bin] => "bin")
-
-    File.open(bundled_app("bin/rackup"), "wb") do |file|
-      file.print "OMG"
-    end
-
-    bundle "install"
-
-    expect(bundled_app("bin/rackup").read).to_not eq("OMG")
-  end
-
   it "rewrites bins on binstubs (to maintain backwards compatibility)" do
     install_gemfile! <<-G
       source "file://#{gem_repo1}"

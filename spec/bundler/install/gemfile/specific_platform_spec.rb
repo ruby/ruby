@@ -2,7 +2,7 @@
 
 RSpec.describe "bundle install with specific_platform enabled" do
   before do
-    bundle "config specific_platform true"
+    bundle "config set specific_platform true"
 
     build_repo2 do
       build_gem("google-protobuf", "3.0.0.alpha.5.0.5.1")

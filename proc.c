@@ -710,7 +710,7 @@ proc_new(VALUE klass, int8_t is_lambda)
                 rb_raise(rb_eArgError, proc_without_block);
             }
             else {
-		rb_warn(proc_without_block);
+                rb_warn("Capturing the given block using Proc.new is deprecated; use `&block` instead");
 	    }
 	}
 #else

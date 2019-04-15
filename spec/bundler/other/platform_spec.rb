@@ -149,7 +149,7 @@ G
       expect(out).to eq("ruby 1.8.7 (rbx 1.2.4)")
     end
 
-    it "handles truffleruby", :rubygems => ">= 2.1.0" do
+    it "handles truffleruby" do
       gemfile <<-G
         source "file://#{gem_repo1}"
         ruby "2.5.1", :engine => 'truffleruby', :engine_version => '1.0.0-rc6'
@@ -268,27 +268,27 @@ G
 
   def should_be_ruby_version_incorrect
     expect(exitstatus).to eq(18) if exitstatus
-    expect(out).to be_include("Your Ruby version is #{RUBY_VERSION}, but your Gemfile specified #{not_local_ruby_version}")
+    expect(err).to be_include("Your Ruby version is #{RUBY_VERSION}, but your Gemfile specified #{not_local_ruby_version}")
   end
 
   def should_be_engine_incorrect
     expect(exitstatus).to eq(18) if exitstatus
-    expect(out).to be_include("Your Ruby engine is #{local_ruby_engine}, but your Gemfile specified #{not_local_tag}")
+    expect(err).to be_include("Your Ruby engine is #{local_ruby_engine}, but your Gemfile specified #{not_local_tag}")
   end
 
   def should_be_engine_version_incorrect
     expect(exitstatus).to eq(18) if exitstatus
-    expect(out).to be_include("Your #{local_ruby_engine} version is #{local_engine_version}, but your Gemfile specified #{local_ruby_engine} #{not_local_engine_version}")
+    expect(err).to be_include("Your #{local_ruby_engine} version is #{local_engine_version}, but your Gemfile specified #{local_ruby_engine} #{not_local_engine_version}")
   end
 
   def should_be_patchlevel_incorrect
     expect(exitstatus).to eq(18) if exitstatus
-    expect(out).to be_include("Your Ruby patchlevel is #{RUBY_PATCHLEVEL}, but your Gemfile specified #{not_local_patchlevel}")
+    expect(err).to be_include("Your Ruby patchlevel is #{RUBY_PATCHLEVEL}, but your Gemfile specified #{not_local_patchlevel}")
   end
 
   def should_be_patchlevel_fixnum
     expect(exitstatus).to eq(18) if exitstatus
-    expect(out).to be_include("The Ruby patchlevel in your Gemfile must be a string")
+    expect(err).to be_include("The Ruby patchlevel in your Gemfile must be a string")
   end
 
   context "bundle install" do
@@ -511,7 +511,7 @@ G
         build_gem "activesupport", "3.0"
       end
 
-      bundle "update", :all => bundle_update_requires_all?
+      bundle "update", :all => true
       expect(the_bundle).to include_gems "rack 1.2", "rack-obama 1.0", "activesupport 3.0"
     end
 
@@ -528,7 +528,7 @@ G
           build_gem "activesupport", "3.0"
         end
 
-        bundle "update", :all => bundle_update_requires_all?
+        bundle "update", :all => true
         expect(the_bundle).to include_gems "rack 1.2", "rack-obama 1.0", "activesupport 3.0"
       end
     end
@@ -545,7 +545,7 @@ G
         build_gem "activesupport", "3.0"
       end
 
-      bundle :update, :all => bundle_update_requires_all?
+      bundle :update, :all => true
       should_be_ruby_version_incorrect
     end
 
@@ -561,7 +561,7 @@ G
         build_gem "activesupport", "3.0"
       end
 
-      bundle :update, :all => bundle_update_requires_all?
+      bundle :update, :all => true
       should_be_engine_incorrect
     end
 
@@ -578,7 +578,7 @@ G
           build_gem "activesupport", "3.0"
         end
 
-        bundle :update, :all => bundle_update_requires_all?
+        bundle :update, :all => true
         should_be_engine_version_incorrect
       end
     end
@@ -594,7 +594,7 @@ G
         build_gem "activesupport", "3.0"
       end
 
-      bundle :update, :all => bundle_update_requires_all?
+      bundle :update, :all => true
       should_be_patchlevel_incorrect
     end
   end
@@ -863,7 +863,7 @@ G
       G
 
       bundle "exec rackup"
-      expect(out).to eq("0.9.1")
+      expect(out).to include("0.9.1")
     end
 
     it "activates the correct gem when ruby version matches any engine" do
@@ -876,7 +876,7 @@ G
         G
 
         bundle "exec rackup"
-        expect(out).to eq("0.9.1")
+        expect(out).to include("0.9.1")
       end
     end
 

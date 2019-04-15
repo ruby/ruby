@@ -29,7 +29,7 @@ module Bundler
       if Bundler.definition.has_local_dependencies? && !Bundler.feature_flag.cache_all?
         Bundler.ui.warn "Your Gemfile contains path and git dependencies. If you want "    \
           "to package them as well, please pass the --all flag. This will be the default " \
-          "on Bundler 2.0."
+          "on Bundler 3.0."
       end
     end
   end

@@ -18,11 +18,6 @@ module Bundler
 
     attr_reader :directory
 
-    # @return [Lambda] A lambda that takes an array of inputs and a block, and
-    #         maps the inputs with the block in parallel.
-    #
-    attr_accessor :in_parallel
-
     def initialize(directory, fetcher)
       @directory = Pathname.new(directory)
       @updater = Updater.new(fetcher)
@@ -31,7 +26,28 @@ module Bundler
       @info_checksums_by_name = {}
       @parsed_checksums = false
       @mutex = Mutex.new
-      @in_parallel = lambda do |inputs, &blk|
+    end
+
+    def execution_mode=(block)
+      Bundler::CompactIndexClient.debug { "execution_mode=" }
+      @endpoints = Set.new
+
+      @execution_mode = block
+    end
+
+    # @return [Lambda] A lambda that takes an array of inputs and a block, and
+    #         maps the inputs with the block in parallel.
+    #
+    def execution_mode
+      @execution_mode || sequentially
+    end
+
+    def sequential_execution_mode!
+      self.execution_mode = sequentially
+    end
+
+    def sequentially
+      @sequentially ||= lambda do |inputs, &blk|
         inputs.map(&blk)
       end
     end
@@ -51,7 +67,7 @@ module Bundler
 
     def dependencies(names)
       Bundler::CompactIndexClient.debug { "dependencies(#{names})" }
-      in_parallel.call(names) do |name|
+      execution_mode.call(names) do |name|
         update_info(name)
         @cache.dependencies(name).map {|d| d.unshift(name) }
       end.flatten(1)

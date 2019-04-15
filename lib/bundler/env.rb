@@ -70,14 +70,8 @@ module Bundler
 
     def self.ruby_version
       str = String.new("#{RUBY_VERSION}")
-      if RUBY_VERSION < "1.9"
-        str << " (#{RUBY_RELEASE_DATE}"
-        str << " patchlevel #{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
-        str << ") [#{RUBY_PLATFORM}]"
-      else
-        str << "p#{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
-        str << " (#{RUBY_RELEASE_DATE} revision #{RUBY_REVISION}) [#{RUBY_PLATFORM}]"
-      end
+      str << "p#{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
+      str << " (#{RUBY_RELEASE_DATE} revision #{RUBY_REVISION}) [#{RUBY_PLATFORM}]"
     end
 
     def self.git_version

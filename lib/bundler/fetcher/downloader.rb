@@ -34,10 +34,12 @@ module Bundler
           fetch(uri, new_headers)
         when Net::HTTPRequestEntityTooLarge
           raise FallbackError, response.body
+        when Net::HTTPTooManyRequests
+          raise TooManyRequestsError, response.body
         when Net::HTTPUnauthorized
           raise AuthenticationRequiredError, uri.host
         when Net::HTTPNotFound
-          raise FallbackError, "Net::HTTPNotFound"
+          raise FallbackError, "Net::HTTPNotFound: #{URICredentialsFilter.credential_filtered_uri(uri)}"
         else
           raise HTTPError, "#{response.class}#{": #{response.body}" unless response.body.empty?}"
         end

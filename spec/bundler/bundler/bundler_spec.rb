@@ -1,4 +1,3 @@
-# encoding: utf-8
 # frozen_string_literal: true
 
 require "bundler"
@@ -313,10 +312,9 @@ EOF
     let(:bundle_path) { Pathname("#{tmpdir}/bundle") }
 
     def clear_cached_requires_sudo
-      # Private in ruby 1.8.7
       return unless Bundler.instance_variable_defined?(:@requires_sudo_ran)
-      Bundler.send(:remove_instance_variable, :@requires_sudo_ran)
-      Bundler.send(:remove_instance_variable, :@requires_sudo)
+      Bundler.remove_instance_variable(:@requires_sudo_ran)
+      Bundler.remove_instance_variable(:@requires_sudo)
     end
 
     before do
@@ -383,14 +381,8 @@ EOF
     after do
       FileUtils.rm_rf("tmp/vendor/bundle")
       FileUtils.rm_rf("tmp/vendor/bin_dir")
-      if Bundler.respond_to?(:remove_instance_variable)
-        Bundler.remove_instance_variable(:@requires_sudo_ran)
-        Bundler.remove_instance_variable(:@requires_sudo)
-      else
-        # TODO: Remove these code when Bundler drops Ruby 1.8.7 support
-        Bundler.send(:remove_instance_variable, :@requires_sudo_ran)
-        Bundler.send(:remove_instance_variable, :@requires_sudo)
-      end
+      Bundler.remove_instance_variable(:@requires_sudo_ran)
+      Bundler.remove_instance_variable(:@requires_sudo)
     end
     context "writable paths" do
       it "should return false and display nothing" do

@@ -49,7 +49,7 @@ module Bundler
       ([\d.]+) # ruby version
       (?:p(-?\d+))? # optional patchlevel
       (?:\s\((\S+)\s(.+)\))? # optional engine info
-    /xo
+    /xo.freeze
 
     # Returns a RubyVersion from the given string.
     # @param [String] the version string to match.
@@ -74,7 +74,7 @@ module Bundler
       @host ||= [
         RbConfig::CONFIG["host_cpu"],
         RbConfig::CONFIG["host_vendor"],
-        RbConfig::CONFIG["host_os"]
+        RbConfig::CONFIG["host_os"],
       ].join("-")
     end
 

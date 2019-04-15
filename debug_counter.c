@@ -43,6 +43,25 @@ rb_debug_counter_show_results(const char *msg)
     }
 }
 
+VALUE
+rb_debug_counter_reset(void)
+{
+    for (int i = 0; i < RB_DEBUG_COUNTER_MAX; i++) {
+        switch (i) {
+          case RB_DEBUG_COUNTER_mjit_length_unit_queue:
+          case RB_DEBUG_COUNTER_mjit_length_active_units:
+          case RB_DEBUG_COUNTER_mjit_length_compact_units:
+          case RB_DEBUG_COUNTER_mjit_length_stale_units:
+            // These counters may be decreased and should not be reset.
+            break;
+          default:
+            rb_debug_counter[i] = 0;
+            break;
+        }
+    }
+    return Qnil;
+}
+
 __attribute__((destructor))
 static void
 debug_counter_show_results_at_exit(void)

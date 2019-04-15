@@ -179,10 +179,22 @@ RSpec.describe "bundle package" do
 
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
+
+    it "does not prevent installing gems with bundle update" do
+      gemfile <<-D
+        source "file://#{gem_repo1}"
+        gem "rack", "1.0.0"
+      D
+
+      bundle! "package --no-install"
+      bundle! "update --all"
+
+      expect(the_bundle).to include_gems "rack 1.0.0"
+    end
   end
 
   context "with --all-platforms" do
-    it "puts the gems in vendor/cache even for other rubies", :ruby => "2.1" do
+    it "puts the gems in vendor/cache even for other rubies" do
       gemfile <<-D
         source "file://#{gem_repo1}"
         gem 'rack', :platforms => :ruby_19
@@ -205,7 +217,7 @@ RSpec.describe "bundle package" do
     subject { bundle :package, forgotten_command_line_options(:frozen => true) }
 
     it "tries to install with frozen" do
-      bundle! "config deployment true"
+      bundle! "config set deployment true"
       gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rack"
@@ -213,9 +225,9 @@ RSpec.describe "bundle package" do
       G
       subject
       expect(exitstatus).to eq(16) if exitstatus
-      expect(out).to include("deployment mode")
-      expect(out).to include("You have added to the Gemfile")
-      expect(out).to include("* rack-obama")
+      expect(err).to include("deployment mode")
+      expect(err).to include("You have added to the Gemfile")
+      expect(err).to include("* rack-obama")
       bundle "env"
       expect(out).to include("frozen").or include("deployment")
     end
@@ -266,7 +278,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       bundle :install
-      expect(err).to lack_errors
+      expect(last_command.stderr).to be_empty
       expect(the_bundle).to include_gems "rack 1.0"
     end
 
