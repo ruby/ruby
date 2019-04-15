@@ -526,7 +526,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 [CSV]
 
-  * Upgrade to 3.0.4.
+  * Upgrade to 3.0.8.
     See https://github.com/ruby/csv/blob/master/NEWS.md.
 
 Date::
