@@ -75,6 +75,10 @@ ERB::
 
   * Prohibit marshaling ERB instance.
 
+Net::IMAP::
+
+  * Add Server Name Indication (SNI) support.  [Feature #15594]
+
 RSS::
 
   * Upgrade to RSS 0.2.8.
