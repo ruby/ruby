@@ -1705,6 +1705,13 @@ CODE
     $; = fs
   end
 
+  def test_split_with_literal_true
+    assert_equal([S("a"), S("b")], S(" a  b   ").split(S(" "), literal: false))
+    assert_equal([S("a"), S("b")], S(" a  b   ").split(S(" "), literal: nil))
+    assert_equal([S(""), S("a"), S(""), S("b")], S(" a  b   ").split(S(" "), literal: true))
+    assert_equal([S(""), S("a"), S(""), S("b"), S(""), S(""), S("")], S(" a  b   ").split(S(" "), -1, literal: true))
+  end
+
   def test_split_with_block
     fs, $; = $;, nil
     result = []; S(" a   b\t c ").split {|s| result << s}

@@ -196,6 +196,9 @@ str_make_independent(VALUE str)
 /* symbols for [up|down|swap]case/capitalize options */
 static VALUE sym_ascii, sym_turkic, sym_lithuanian, sym_fold;
 
+/* symbol for strip options */
+static VALUE sym_literal;
+
 static rb_encoding *
 get_actual_encoding(const int encidx, VALUE str)
 {
@@ -7759,13 +7762,14 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     rb_encoding *enc;
     VALUE spat;
     VALUE limit;
+    VALUE opts;
     enum {awk, string, regexp, chars} split_type;
     long beg, end, i = 0, empty_count = -1;
     int lim = 0;
     VALUE result, tmp;
 
     result = rb_block_given_p() ? Qfalse : Qnil;
-    if (rb_scan_args(argc, argv, "02", &spat, &limit) == 2) {
+    if (rb_scan_args(argc, argv, "02:", &spat, &limit, &opts) == 2) {
 	lim = NUM2INT(limit);
 	if (lim <= 0) limit = Qnil;
 	else if (lim == 1) {
@@ -7805,7 +7809,9 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	    }
 	    else if (rb_enc_asciicompat(enc2) == 1) {
 		if (RSTRING_LEN(spat) == 1 && RSTRING_PTR(spat)[0] == ' ') {
-		    split_type = awk;
+                    if (NIL_P(opts) || !RTEST(rb_hash_aref(opts, sym_literal))) {
+                        split_type = awk;
+                    }
 		}
 	    }
 	    else {
@@ -11027,6 +11033,8 @@ Init_String(void)
     sym_turkic     = ID2SYM(rb_intern("turkic"));
     sym_lithuanian = ID2SYM(rb_intern("lithuanian"));
     sym_fold       = ID2SYM(rb_intern("fold"));
+
+    sym_literal    = ID2SYM(rb_intern("literal"));
 
     rb_define_method(rb_cString, "upcase", rb_str_upcase, -1);
     rb_define_method(rb_cString, "downcase", rb_str_downcase, -1);
