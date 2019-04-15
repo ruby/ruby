@@ -7,7 +7,7 @@ unless String.method_defined?(:delete_suffix)
       refine String do
         def delete_suffix(suffix)
           if end_with?(suffix)
-            self[0..(-(suffix.size + 1))]
+            self[0...-suffix.size]
           else
             self
           end
