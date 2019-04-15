@@ -10,7 +10,7 @@ class TestCSVInterfaceRead < Test::Unit::TestCase
     @data = ""
     @data << "1\t2\t3\r\n"
     @data << "4\t5\r\n"
-    @input = Tempfile.new(["interface-read", ".csv"], options: {binmode: true})
+    @input = Tempfile.new(["interface-read", ".csv"], binmode: true)
     @input << @data
     @input.rewind
     @rows = [
