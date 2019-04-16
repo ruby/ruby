@@ -202,6 +202,8 @@ compile_inlined_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body
 {
     fprintf(f, "\ncancel:\n");
     fprintf(f, "    RB_DEBUG_COUNTER_INC(mjit_cancel);\n");
+    fprintf(f, "    rb_mjit_iseq_compile_info(original_iseq->body)->disable_inlining = true;\n");
+    fprintf(f, "    rb_mjit_recompile_iseq(original_iseq);\n");
 
     // Swap pc/sp set on cancel with original pc/sp.
     fprintf(f, "    const VALUE current_pc = reg_cfp->pc;\n");
@@ -276,7 +278,8 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
     else {
         fprintf(f, "    VALUE *stack = reg_cfp->sp;\n");
     }
-    fprintf(f, "    static const rb_iseq_t *original_iseq = 0x%"PRIxVALUE";\n", (VALUE)iseq);
+    if (status->inlined_iseqs != NULL) // i.e. compile root
+        fprintf(f, "    static const rb_iseq_t *original_iseq = 0x%"PRIxVALUE";\n", (VALUE)iseq);
     fprintf(f, "    static const VALUE *const original_body_iseq = (VALUE *)0x%"PRIxVALUE";\n",
             (VALUE)body->iseq_encoded);
 
@@ -396,8 +399,8 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
                         && !mjit_copy_cache_from_main_thread(child_iseq, child_status.cc_entries, child_status.is_entries))
                     return false;
 
-                fprintf(f, "ALWAYS_INLINE(static VALUE _mjit_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self));\n", pos);
-                fprintf(f, "static inline VALUE\n_mjit_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self)\n{\n", pos);
+                fprintf(f, "ALWAYS_INLINE(static VALUE _mjit_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq));\n", pos);
+                fprintf(f, "static inline VALUE\n_mjit_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq)\n{\n", pos);
                 fprintf(f, "    const VALUE *orig_pc = reg_cfp->pc;\n");
                 fprintf(f, "    const VALUE *orig_sp = reg_cfp->sp;\n");
                 bool success = mjit_compile_body(f, child_iseq, &child_status);
@@ -428,15 +431,16 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
             && !mjit_copy_cache_from_main_thread(iseq, status.cc_entries, status.is_entries))
         return false;
 
-    bool success = precompile_inlinable_iseqs(f, iseq, &status);
-    if (!success)
-        return false;
+    if (!status.compile_info->disable_send_cache && !status.compile_info->disable_inlining) {
+        if (!precompile_inlinable_iseqs(f, iseq, &status))
+            return false;
+    }
 
 #ifdef _WIN32
     fprintf(f, "__declspec(dllexport)\n");
 #endif
     fprintf(f, "VALUE\n%s(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)\n{\n", funcname);
-    success = mjit_compile_body(f, iseq, &status);
+    bool success = mjit_compile_body(f, iseq, &status);
     fprintf(f, "\n} // end of %s\n", funcname);
     return success;
 }

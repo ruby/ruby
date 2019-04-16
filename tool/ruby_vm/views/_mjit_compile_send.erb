@@ -49,7 +49,7 @@
                 fprintf(f, "    {\n");
                 fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
                 fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
-                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self);\n", b->stack_size - argc - 1, pos);
+                fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
                 fprintf(f, "        reg_cfp->self = orig_self;\n");
                 fprintf(f, "    }\n");
             }
