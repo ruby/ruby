@@ -458,6 +458,10 @@ sufficient information, see the ChangeLog file or Redmine
     * Add Net::HTTPClientException to deprecate Net::HTTPServerException,
       whose name is misleading.  [Bug #14688]
 
+  [Net::IMAP]
+
+    * Add Server Name Indication (SNI) support.  [Feature #15594]
+
 [NKF]
 
   * Upgrade to nkf v2.1.5
@@ -529,7 +533,7 @@ sufficient information, see the ChangeLog file or Redmine
   * Upgrade to 3.0.9.
     See https://github.com/ruby/csv/blob/master/NEWS.md.
 
-Date::
+[Date]
 
   * Date.jisx0301, Date#jisx0301, and Date.parse provisionally support the
     new Japanese era as an informal extension, until the new JIS X 0301 is
