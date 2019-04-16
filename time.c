@@ -5688,11 +5688,7 @@ Init_Time(void)
 
     rb_define_method(rb_cTime, "succ", time_succ, 0);
     rb_define_method(rb_cTime, "round", time_round, -1);
-<<<<<<< HEAD
     rb_define_method(rb_cTime, "floor", time_floor, -1);
-=======
-    rb_define_method(rb_cTime, "ceil", time_ceil, -1);
->>>>>>> Add `Time#ceil`.
 
     rb_define_method(rb_cTime, "sec", time_sec, 0);
     rb_define_method(rb_cTime, "min", time_min, 0);
