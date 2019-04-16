@@ -39,6 +39,8 @@ struct compile_status {
     struct rb_call_cache *cc_entries;
     // Mutated optimization levels
     struct rb_mjit_compile_info *compile_info;
+    // If `iseq_for_pos[pos]` is not NULL, `mjit_compile_body` tries to inline ISeq there.
+    const struct rb_iseq_constant_body **iseq_for_pos;
 };
 
 // Storage to keep data which is consistent in each conditional branch.
@@ -216,25 +218,13 @@ compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct
 extern bool mjit_copy_cache_from_main_thread(const rb_iseq_t *iseq, struct rb_call_cache *cc_entries, union iseq_inline_storage_entry *is_entries);
 
 static bool
-mjit_compile_body(FILE *f, const rb_iseq_t *iseq)
+mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
 {
     const struct rb_iseq_constant_body *body = iseq->body;
-    struct compile_status status = {
-        .success = true,
-        .local_stack_p = !body->catch_except_p,
-        .stack_size_for_pos = (int *)alloca(sizeof(int) * body->iseq_size),
-        .cc_entries = (body->ci_size + body->ci_kw_size) > 0 ?
-            alloca(sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size)) : NULL,
-        .is_entries = (body->is_size > 0) ?
-            alloca(sizeof(union iseq_inline_storage_entry) * body->is_size) : NULL,
-        .compile_info = rb_mjit_iseq_compile_info(body),
-    };
-    memset(status.stack_size_for_pos, NOT_COMPILED_STACK_SIZE, sizeof(int) * body->iseq_size);
-    if ((status.cc_entries != NULL || status.is_entries != NULL)
-            && !mjit_copy_cache_from_main_thread(iseq, status.cc_entries, status.is_entries))
-        return false;
+    status->success = true;
+    status->local_stack_p = !body->catch_except_p;
 
-    if (status.local_stack_p) {
+    if (status->local_stack_p) {
         fprintf(f, "    VALUE stack[%d];\n", body->stack_max);
     }
     else {
@@ -258,9 +248,77 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq)
         fprintf(f, "    }\n");
     }
 
-    compile_insns(f, body, 0, 0, &status);
-    compile_cancel_handler(f, body, &status);
-    return status.success;
+    compile_insns(f, body, 0, 0, status);
+    compile_cancel_handler(f, body, status);
+    return status->success;
+}
+
+// This needs to be macro instead of a function because it's using `alloca`.
+#define INIT_COMPILE_STATUS(status, body, compile_root_p) do { \
+    status = (struct compile_status){ \
+        .stack_size_for_pos = (int *)alloca(sizeof(int) * body->iseq_size), \
+        .iseq_for_pos = compile_root_p ? \
+            alloca(sizeof(const struct rb_iseq_constant_body *) * body->iseq_size) : NULL, \
+        .cc_entries = (body->ci_size + body->ci_kw_size) > 0 ? \
+            alloca(sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size)) : NULL, \
+        .is_entries = (body->is_size > 0) ? \
+            alloca(sizeof(union iseq_inline_storage_entry) * body->is_size) : NULL, \
+        .compile_info = compile_root_p ? \
+            rb_mjit_iseq_compile_info(body) : alloca(sizeof(struct rb_mjit_compile_info)) \
+    }; \
+    memset(status.stack_size_for_pos, NOT_COMPILED_STACK_SIZE, sizeof(int) * body->iseq_size); \
+    if (compile_root_p) \
+        memset(status.iseq_for_pos, 0, sizeof(const struct rb_iseq_constant_body *) * body->iseq_size); \
+    else \
+        memset(status.compile_info, 0, sizeof(struct rb_mjit_compile_info)); \
+} while (0)
+
+// Compile inlinable ISeqs to C code in `f`.  It returns true if it succeeds to compile them.
+static bool
+precompile_inlinable_iseqs(FILE *f, const struct rb_iseq_constant_body *body, struct compile_status *status)
+{
+    unsigned int pos = 0;
+    while (pos < body->iseq_size) {
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+        int insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
+#else
+        int insn = (int)body->iseq_encoded[pos];
+#endif
+
+        if (insn == BIN(opt_send_without_block) || insn == BIN(send)) {
+            CALL_INFO ci = (CALL_INFO)body->iseq_encoded[pos + 1];
+            CALL_CACHE cc_copy = status->cc_entries + ((CALL_CACHE)body->iseq_encoded[pos + 2] - body->cc_entries); // use copy to avoid race condition
+
+            const rb_iseq_t *child_iseq;
+            if (has_valid_method_type(cc_copy) &&
+                    !(ci->flag & VM_CALL_TAILCALL) && // inlining only non-tailcall path
+                    cc_copy->me->def->type == VM_METHOD_TYPE_ISEQ && inlinable_iseq_p(ci, cc_copy, child_iseq = def_iseq_ptr(cc_copy->me->def)) && // CC_SET_FASTPATH in vm_callee_setup_arg
+                    !child_iseq->body->catch_except_p && // if catch_except_p, caller frame should be preserved when callee catches an exception.
+                    mjit_target_iseq_p(child_iseq->body)) {
+                status->iseq_for_pos[pos] = child_iseq->body;
+
+                if (mjit_opts.verbose >= 1) // print beforehand because ISeq may be GCed during copy job.
+                    fprintf(stderr, "JIT inline: %s@%s:%d\n", RSTRING_PTR(child_iseq->body->location.label),
+                            RSTRING_PTR(rb_iseq_path(child_iseq)), FIX2INT(child_iseq->body->location.first_lineno));
+
+                struct compile_status child_status;
+                INIT_COMPILE_STATUS(child_status, child_iseq->body, false);
+                if ((child_status.cc_entries != NULL || child_status.is_entries != NULL)
+                        && !mjit_copy_cache_from_main_thread(child_iseq, child_status.cc_entries, child_status.is_entries))
+                    return false;
+
+                fprintf(f, "ALWAYS_INLINE(static VALUE _mjit_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp));\n", pos);
+                fprintf(f, "static inline VALUE\n_mjit_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)\n{\n", pos);
+                bool success = mjit_compile_body(f, child_iseq, &child_status);
+                fprintf(f, "\n} /* end of _mjit_inlined_%d */\n\n", pos);
+
+                if (!success)
+                    return false;
+            }
+        }
+        pos += insn_len(insn);
+    }
+    return true;
 }
 
 // Compile ISeq to C code in `f`. It returns true if it succeeds to compile.
@@ -273,13 +331,23 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname)
         fprintf(f, "#define OPT_CHECKED_RUN 0\n\n");
     }
 
+    struct compile_status status;
+    INIT_COMPILE_STATUS(status, iseq->body, true);
+    if ((status.cc_entries != NULL || status.is_entries != NULL)
+            && !mjit_copy_cache_from_main_thread(iseq, status.cc_entries, status.is_entries))
+        return false;
+
+    bool success = precompile_inlinable_iseqs(f, iseq->body, &status);
+    if (!success)
+        return false;
+
 #ifdef _WIN32
     fprintf(f, "__declspec(dllexport)\n");
 #endif
     fprintf(f, "VALUE\n%s(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)\n{\n", funcname);
-    bool result = mjit_compile_body(f, iseq);
+    success = mjit_compile_body(f, iseq, &status);
     fprintf(f, "\n} // end of %s\n", funcname);
-    return result;
+    return success;
 }
 
 #endif // USE_MJIT

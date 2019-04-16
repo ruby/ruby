@@ -65,7 +65,13 @@
                 fprintf(f, "            v = vm_exec(ec, TRUE);\n");
             }
             else {
-                fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
+                if (status->iseq_for_pos != NULL && status->iseq_for_pos[pos] == iseq->body) {
+                    fprintf(f, "            v = _mjit_inlined_%d(ec, ec->cfp);\n", pos);
+                }
+                else {
+                    fprintf(f, "            v = mjit_exec(ec);\n");
+                }
+                fprintf(f, "            if (v == Qundef) {\n");
                 fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); /* This is vm_call0_body's code after vm_call_iseq_setup */
                 fprintf(f, "                v = vm_exec(ec, FALSE);\n");
                 fprintf(f, "            }\n");
