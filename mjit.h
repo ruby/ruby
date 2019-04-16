@@ -61,6 +61,8 @@ struct rb_mjit_compile_info {
     bool disable_ivar_cache;
     // Disable send/opt_send_without_block optimizations based on inline cache
     bool disable_send_cache;
+    // Disable method inlining
+    bool disable_inlining;
 };
 
 typedef VALUE (*mjit_func_t)(rb_execution_context_t *, rb_control_frame_t *);
