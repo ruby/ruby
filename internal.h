@@ -731,8 +731,8 @@ struct RBignum {
 
 struct RRational {
     struct RBasic basic;
-    const VALUE num;
-    const VALUE den;
+    VALUE num;
+    VALUE den;
 };
 
 #define RRATIONAL(obj) (R_CAST(RRational)(obj))
@@ -748,8 +748,8 @@ struct RFloat {
 
 struct RComplex {
     struct RBasic basic;
-    const VALUE real;
-    const VALUE imag;
+    VALUE real;
+    VALUE imag;
 };
 
 #define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
@@ -816,8 +816,8 @@ struct RHash {
         st_table *st;
         struct ar_table_struct *ar; /* possibly 0 */
     } as;
-    const int iter_lev;
-    const VALUE ifnone;
+    int iter_lev;
+    VALUE ifnone;
 };
 
 #ifdef RHASH_ITER_LEV
@@ -829,6 +829,11 @@ struct RHash {
 #  define RHASH_IFNONE(h)    (RHASH(h)->ifnone)
 #  define RHASH_SIZE(h)      (RHASH_AR_TABLE_P(h) ? RHASH_AR_TABLE_SIZE_RAW(h) : RHASH_ST_SIZE(h))
 #endif /* #ifdef RHASH_ITER_LEV */
+
+struct RMoved {
+    VALUE flags;
+    VALUE destination;
+};
 
 /* missing/setproctitle.c */
 #ifndef HAVE_SETPROCTITLE
@@ -947,7 +952,7 @@ struct rb_classext_struct {
      */
     rb_subclass_entry_t **module_subclasses;
     rb_serial_t class_serial;
-    const VALUE origin_;
+    VALUE origin_;
     VALUE refined_class;
     rb_alloc_func_t allocator;
 };
@@ -1065,10 +1070,10 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
 /*! SVAR (Special VARiable) */
 struct vm_svar {
     VALUE flags;
-    const VALUE cref_or_me; /*!< class reference or rb_method_entry_t */
-    const VALUE lastline;
-    const VALUE backref;
-    const VALUE others;
+    VALUE cref_or_me; /*!< class reference or rb_method_entry_t */
+    VALUE lastline;
+    VALUE backref;
+    VALUE others;
 };
 
 
@@ -1078,7 +1083,7 @@ struct vm_svar {
 struct vm_throw_data {
     VALUE flags;
     VALUE reserved;
-    const VALUE throw_obj;
+    VALUE throw_obj;
     const struct rb_control_frame_struct *catch_frame;
     VALUE throw_state;
 };
@@ -1101,7 +1106,7 @@ struct vm_ifunc {
     VALUE flags;
     VALUE reserved;
     VALUE (*func)(ANYARGS);
-    const void *data;
+    void *data;
     struct vm_ifunc_argc argc;
 };
 
@@ -1158,12 +1163,12 @@ void rb_strterm_mark(VALUE obj);
 struct MEMO {
     VALUE flags;
     VALUE reserved;
-    const VALUE v1;
-    const VALUE v2;
+    VALUE v1;
+    VALUE v2;
     union {
 	long cnt;
 	long state;
-        const VALUE value;
+        VALUE value;
 	VALUE (*func)(ANYARGS);
     } u3;
 };
@@ -1566,6 +1571,7 @@ void rb_hash_bulk_insert(long, const VALUE *, VALUE);
 int rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval);
 int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
 int rb_hash_stlike_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg);
+int rb_hash_stlike_foreach_with_replace(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func func, st_data_t arg);
 
 /* inits.c */
@@ -2330,6 +2336,7 @@ extern unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, si
 
 /* variable.c (export) */
 void rb_mark_generic_ivar(VALUE);
+void rb_mv_generic_ivar(VALUE src, VALUE dst);
 VALUE rb_const_missing(VALUE klass, VALUE name);
 int rb_class_ivar_set(VALUE klass, ID vid, VALUE value);
 st_table *rb_st_copy(VALUE obj, struct st_table *orig_tbl);
@@ -2341,9 +2348,10 @@ VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE);
 size_t rb_obj_memsize_of(VALUE);
 void rb_gc_verify_internal_consistency(void);
 
-#define RB_OBJ_GC_FLAGS_MAX 5
+#define RB_OBJ_GC_FLAGS_MAX 6
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);
 void rb_gc_mark_values(long n, const VALUE *values);
+void rb_gc_mark_stack_values(long n, const VALUE *values);
 
 #if IMEMO_DEBUG
 VALUE rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0, const char *file, int line);

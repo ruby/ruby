@@ -796,6 +796,56 @@ blocks_clear_marked_index(struct transient_heap_block* block)
     }
 }
 
+static void
+transient_heap_block_update_refs(struct transient_heap* theap, struct transient_heap_block* block)
+{
+    int i=0, n=0;
+
+    while (i<block->info.index) {
+        void *ptr = &block->buff[i];
+        struct transient_alloc_header *header = ptr;
+
+        unpoison_memory_region(header, sizeof *header, false);
+
+        void *poisoned = __asan_region_is_poisoned(header->obj, SIZEOF_VALUE);
+        unpoison_object(header->obj, false);
+
+        header->obj = rb_gc_new_location(header->obj);
+
+        if (poisoned) {
+            poison_object(header->obj);
+        }
+
+        i += header->size;
+        poison_memory_region(header, sizeof *header);
+        n++;
+    }
+}
+
+static void
+transient_heap_blocks_update_refs(struct transient_heap* theap, struct transient_heap_block *block, const char *type_str)
+{
+    while (block) {
+        transient_heap_block_update_refs(theap, block);
+        block = block->info.next_block;
+    }
+}
+
+void
+rb_transient_heap_update_references(void)
+{
+    struct transient_heap* theap = transient_heap_get();
+    int i;
+
+    transient_heap_blocks_update_refs(theap, theap->using_blocks, "using_blocks");
+    transient_heap_blocks_update_refs(theap, theap->marked_blocks, "marked_blocks");
+
+    for (i=0; i<theap->promoted_objects_index; i++) {
+        VALUE obj = theap->promoted_objects[i];
+        theap->promoted_objects[i] = rb_gc_new_location(obj);
+    }
+}
+
 void
 rb_transient_heap_start_marking(int full_marking)
 {
