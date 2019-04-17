@@ -8130,20 +8130,32 @@ gc_check_references_for_moved(VALUE dummy)
  *  make a SEGV.
  */
 static VALUE
-gc_verify_compaction_references(VALUE dummy)
+gc_verify_compaction_references(VALUE mod)
 {
-    VALUE stats;
     rb_objspace_t *objspace = &rb_objspace;
 
-    /* Double heap size */
-    heap_add_pages(objspace, heap_eden, heap_allocated_pages);
+    /* Ensure objects are pinned */
+    rb_gc();
 
-    stats = rb_gc_compact(dummy);
+    /* Drain interrupts so that THEAP has a chance to evacuate before
+     * any possible compaction. */
+    rb_thread_execute_interrupts(rb_thread_current());
 
-    gc_check_references_for_moved(dummy);
-    gc_verify_internal_consistency(dummy);
+    gc_compact_heap(objspace);
 
-    return stats;
+    heap_eden->freelist = NULL;
+    gc_update_references(objspace);
+    gc_check_references_for_moved(mod);
+
+    rb_clear_method_cache_by_class(rb_cObject);
+    rb_clear_constant_cache();
+    heap_eden->free_pages = NULL;
+    heap_eden->using_page = NULL;
+
+    /* GC after compaction to eliminate T_MOVED */
+    rb_gc();
+
+    return rb_gc_compact_stats(mod);
 }
 
 VALUE
