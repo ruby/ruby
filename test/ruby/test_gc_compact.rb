@@ -48,7 +48,7 @@ class TestGCCompact < Test::Unit::TestCase
     # All object ids should be equal
     assert_equal 0, assert_object_ids(list_of_objects) # should be 0
 
-    GC.compact
+    GC.verify_compaction_references
 
     # Some should have moved
     id_count = assert_object_ids(list_of_objects)
@@ -84,7 +84,7 @@ class TestGCCompact < Test::Unit::TestCase
     ids       = list_of_objects.map(&:object_id)
     addresses = list_of_objects.map(&self.:memory_location)
 
-    GC.compact
+    GC.verify_compaction_references
 
     new_tenants = 10.times.map {
       find_object_in_recycled_slot(addresses)
