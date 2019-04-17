@@ -7819,26 +7819,26 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         case T_CLASS:
         case T_MODULE:
             update_m_tbl(objspace, RCLASS_M_TBL(obj));
+            UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
             if (!RCLASS_EXT(obj)) break;
             if (RCLASS_IV_TBL(obj)) {
                 gc_update_table_refs(objspace, RCLASS_IV_TBL(obj));
             }
             update_class_ext(objspace, RCLASS_EXT(obj));
             update_const_tbl(objspace, RCLASS_CONST_TBL(obj));
-            UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
             break;
 
         case T_ICLASS:
             if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
                 update_m_tbl(objspace, RCLASS_M_TBL(obj));
             }
+            UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
             if (!RCLASS_EXT(obj)) break;
             if (RCLASS_IV_TBL(obj)) {
                 gc_update_table_refs(objspace, RCLASS_IV_TBL(obj));
             }
             update_class_ext(objspace, RCLASS_EXT(obj));
             update_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
-            UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
             break;
 
         case T_IMEMO:
