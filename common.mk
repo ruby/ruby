@@ -1320,7 +1320,8 @@ UNICODE_EMOJI_FILES = \
 		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-zwj-sequences.txt \
 		$(empty)
 
-update-unicode: $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
+update-unicode: $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES) \
+		$(UNICODE_AUXILIARY_FILES) $(UNICODE_EMOJI_FILES)
 
 CACHE_DIR = $(srcdir)/.downloaded-cache
 UNICODE_DOWNLOAD = \
@@ -1349,9 +1350,15 @@ $(UNICODE_PROPERTY_FILES): update-unicode-property-files
 update-unicode-property-files:
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) property files...
 	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_PROPERTY_FILES)
+
+$(UNICODE_AUXILIARY_FILES): update-unicode-auxiliary-files
+update-unicode-auxiliary-files:
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) auxiliary files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/auxiliary"
 	$(Q) $(UNICODE_AUXILIARY_DOWNLOAD) $(UNICODE_AUXILIARY_FILES)
+
+$(UNICODE_EMOJI_FILES): update-unicode-emoji-files
+update-unicode-emoji-files:
 	$(ECHO) Downloading Unicode emoji $(UNICODE_EMOJI_VERSION) files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_EMOJI_DATA_DIR)"
 	$(Q) $(UNICODE_EMOJI_DOWNLOAD) $(UNICODE_EMOJI_FILES)
@@ -1366,7 +1373,8 @@ $(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
 	$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time
 
 $(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): \
-	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
+	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES) \
+	$(UNICODE_AUXILIARY_FILES) $(UNICODE_EMOJI_FILES)
 
 touch-unicode-files:
 	$(MAKEDIRS) $(UNICODE_SRC_DATA_DIR)
