@@ -94,12 +94,15 @@ class TestPatternMatching < Test::Unit::TestCase
     end
 
     assert_block do
+      verbose, $VERBOSE = $VERBOSE, nil # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
       eval(%q{
         case true
         in a
           a
         end
       })
+    ensure
+      $VERBOSE = verbose
     end
 
     assert_block do
