@@ -955,6 +955,8 @@ class CSV
       strip: strip,
     }
     @parser = nil
+    @parser_enumerator = nil
+    @eof_error = nil
 
     @writer_options = {
       encoding: @encoding,
@@ -1156,8 +1158,12 @@ class CSV
   end
 
   def eof?
+    return false if @eof_error
     begin
       parser_enumerator.peek
+      false
+    rescue MalformedCSVError => error
+      @eof_error = error
       false
     rescue StopIteration
       true
@@ -1169,6 +1175,7 @@ class CSV
   def rewind
     @parser = nil
     @parser_enumerator = nil
+    @eof_error = nil
     @writer.rewind if @writer
     @io.rewind
   end
@@ -1264,6 +1271,10 @@ class CSV
   # The data source must be open for reading.
   #
   def shift
+    if @eof_error
+      eof_error, @eof_error = @eof_error, nil
+      raise eof_error
+    end
     begin
       parser_enumerator.next
     rescue StopIteration
