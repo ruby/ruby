@@ -81,15 +81,17 @@ class Downloader
         if INDEX.size == 0
           index_options = options.dup
           index_options[:cache_save] = false # TODO: make sure caching really doesn't work for index file
+          index_data = File.read(under(dir, "index.html")) rescue nil
           index_file = super(UNICODE_PUBLIC+name_dir_part, "#{name_dir_part}index.html", dir, true, index_options)
           INDEX[:index] = File.read(index_file)
+          since = true unless INDEX[:index] == index_data
         end
         file_base = File.basename(name, '.txt')
         return if file_base == '.' # Use pre-generated headers and tables
         beta_name = INDEX[:index][/#{Regexp.quote(file_base)}(-[0-9.]+d\d+)?\.txt/]
         # make sure we always check for new versions of files,
         # because they can easily change in the beta period
-        super(UNICODE_PUBLIC+name_dir_part+beta_name, name, dir, true, options)
+        super(UNICODE_PUBLIC+name_dir_part+beta_name, name, dir, since, options)
       else
         index_file = Pathname.new(under(dir, name_dir_part+'index.html'))
         if index_file.exist?
