@@ -1,0 +1,7 @@
+prelude: |
+  str0 = [*0..9].join("")
+benchmark:
+  to_chars-1: str0.split('')
+  to_chars-10: (str0 * 10).split('')
+  to_chars-100: (str0 * 100).split('')
+  to_chars-1000: (str0 * 1000).split('')

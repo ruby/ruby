@@ -7759,7 +7759,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     rb_encoding *enc;
     VALUE spat;
     VALUE limit;
-    enum {awk, string, regexp} split_type;
+    enum {awk, string, regexp, chars} split_type;
     long beg, end, i = 0, empty_count = -1;
     int lim = 0;
     VALUE result, tmp;
@@ -7801,8 +7801,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	    split_type = string;
 	    if (RSTRING_LEN(spat) == 0) {
 		/* Special case - split into chars */
-		spat = rb_reg_regcomp(spat);
-		split_type = regexp;
+                split_type = chars;
 	    }
 	    else if (rb_enc_asciicompat(enc2) == 1) {
 		if (RSTRING_LEN(spat) == 1 && RSTRING_PTR(spat)[0] == ' ') {
@@ -7823,9 +7822,9 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 
     if (result) result = rb_ary_new();
     beg = 0;
+    char *ptr = RSTRING_PTR(str);
+    char *eptr = RSTRING_END(str);
     if (split_type == awk) {
-	char *ptr = RSTRING_PTR(str);
-	char *eptr = RSTRING_END(str);
 	char *bptr = ptr;
 	int skip = 1;
 	unsigned int c;
@@ -7884,10 +7883,8 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	}
     }
     else if (split_type == string) {
-	char *ptr = RSTRING_PTR(str);
 	char *str_start = ptr;
 	char *substr_start = ptr;
-	char *eptr = RSTRING_END(str);
 	char *sptr = RSTRING_PTR(spat);
 	long slen = RSTRING_LEN(spat);
 
@@ -7908,8 +7905,21 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	}
 	beg = ptr - str_start;
     }
+    else if (split_type == chars) {
+        char *str_start = ptr;
+        int n;
+
+        mustnot_broken(str);
+        enc = rb_enc_get(str);
+        while (ptr < eptr &&
+               (n = rb_enc_precise_mbclen(ptr, eptr, enc)) > 0) {
+            SPLIT_STR(ptr - str_start, n);
+            ptr += n;
+            if (!NIL_P(limit) && lim <= ++i) break;
+        }
+        beg = ptr - str_start;
+    }
     else {
-	char *ptr = RSTRING_PTR(str);
 	long len = RSTRING_LEN(str);
 	long start = beg;
 	long idx;
@@ -7924,14 +7934,14 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		    break;
 		}
 		else if (last_null == 1) {
-		    SPLIT_STR(beg, rb_enc_fast_mbclen(ptr+beg, ptr+len, enc));
+                    SPLIT_STR(beg, rb_enc_fast_mbclen(ptr+beg, eptr, enc));
 		    beg = start;
 		}
 		else {
                     if (start == len)
                         start++;
                     else
-                        start += rb_enc_fast_mbclen(ptr+start,ptr+len,enc);
+                        start += rb_enc_fast_mbclen(ptr+start,eptr,enc);
 		    last_null = 1;
 		    continue;
 		}
