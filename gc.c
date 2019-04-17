@@ -3334,13 +3334,13 @@ rb_find_object_id(VALUE obj, VALUE (*get_heap_object_id)(VALUE))
     }
     else if (FLONUM_P(obj)) {
 #if SIZEOF_LONG == SIZEOF_VOIDP
-	return LONG2NUM((SIGNED_VALUE)obj);
+        return LONG2NUM((SIGNED_VALUE)obj);
 #else
-	return LL2NUM((SIGNED_VALUE)obj);
+        return LL2NUM((SIGNED_VALUE)obj);
 #endif
     }
     else if (SPECIAL_CONST_P(obj)) {
-	return LONG2NUM((SIGNED_VALUE)obj);
+        return LONG2NUM((SIGNED_VALUE)obj);
     }
 
     return get_heap_object_id(obj);
