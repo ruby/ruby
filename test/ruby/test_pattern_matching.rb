@@ -1072,4 +1072,16 @@ END
       end
     end
   end
+
+  ################################################################
+
+  def test_struct
+    assert_block do
+      s = Struct.new(:a, :b)
+      case s[0, 1]
+      in 0, 1
+        true
+      end
+    end
+  end
 end
