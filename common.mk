@@ -1346,10 +1346,11 @@ UNICODE_EMOJI_DOWNLOAD = \
 	    -p emoji/$(UNICODE_EMOJI_VERSION) \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
 
-$(UNICODE_PROPERTY_FILES): update-unicode-property-files
-update-unicode-property-files:
-	$(ECHO) Downloading Unicode $(UNICODE_VERSION) property files...
-	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_PROPERTY_FILES)
+$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES): update-unicode-files
+update-unicode-files:
+	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data and  property files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
+	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
 
 $(UNICODE_AUXILIARY_FILES): update-unicode-auxiliary-files
 update-unicode-auxiliary-files:
@@ -1362,12 +1363,6 @@ update-unicode-emoji-files:
 	$(ECHO) Downloading Unicode emoji $(UNICODE_EMOJI_VERSION) files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_EMOJI_DATA_DIR)"
 	$(Q) $(UNICODE_EMOJI_DOWNLOAD) $(UNICODE_EMOJI_FILES)
-
-$(UNICODE_FILES): update-unicode-files
-update-unicode-files:
-	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data files...
-	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
-	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_FILES)
 
 $(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
 	$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time
