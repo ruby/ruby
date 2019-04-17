@@ -1,0 +1,27 @@
+%# -*- C -*-
+%# Copyright (c) 2019 Takashi Kokubun.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+%#
+PUREFUNC(MAYBE_UNUSED(static bool insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)));
+
+static bool
+insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)
+{
+    switch (insn) {
+% RubyVM::Instructions.each do |insn|
+%   # handles_sp?:  If true, it requires to move sp in JIT
+%   # always_leaf?: If false, it may call an arbitrary method. pc should be moved
+%   #               before the call, and the method may refer to caller's pc (lineno).
+%   unless !insn.is_a?(RubyVM::TraceInstructions) && !insn.handles_sp? && insn.always_leaf?
+      case <%= insn.bin %>:
+%   end
+% end
+        return true;
+      default:
+        return false;
+    }
+}

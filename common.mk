@@ -964,7 +964,8 @@ $(srcs_vpath)insns.inc: $(srcdir)/tool/ruby_vm/views/insns.inc.erb $(inc_common_
 $(srcs_vpath)insns_info.inc: $(srcdir)/tool/ruby_vm/views/insns_info.inc.erb $(inc_common_headers) \
   $(srcdir)/tool/ruby_vm/views/_insn_type_chars.erb $(srcdir)/tool/ruby_vm/views/_insn_name_info.erb \
   $(srcdir)/tool/ruby_vm/views/_insn_len_info.erb $(srcdir)/tool/ruby_vm/views/_insn_operand_info.erb \
-  $(srcdir)/tool/ruby_vm/views/_attributes.erb $(srcdir)/tool/ruby_vm/views/_insn_stack_increase.erb
+  $(srcdir)/tool/ruby_vm/views/_attributes.erb $(srcdir)/tool/ruby_vm/views/_insn_stack_increase.erb \
+  $(srcdir)/tool/ruby_vm/views/_insn_sp_pc_dependency.erb
 $(srcs_vpath)vmtc.inc: $(srcdir)/tool/ruby_vm/views/vmtc.inc.erb $(inc_common_headers)
 $(srcs_vpath)vm.inc: $(srcdir)/tool/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
   $(srcdir)/tool/ruby_vm/views/_insn_entry.erb $(srcdir)/tool/ruby_vm/views/_trace_instruction.erb
