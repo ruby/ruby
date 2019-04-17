@@ -54,13 +54,6 @@ id_type(ID id)
 
 typedef uint32_t rb_id_serial_t;
 
-typedef struct {
-    rb_id_serial_t last_id;
-    st_table *str_sym;
-    VALUE ids;
-    VALUE dsymbol_fstr_hash;
-} rb_symbols_t;
-
 static inline rb_id_serial_t
 rb_id_to_serial(ID id)
 {

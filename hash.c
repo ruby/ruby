@@ -781,7 +781,7 @@ ar_add_direct_with_hash(VALUE hash, st_data_t key, st_data_t val, st_hash_t hash
 }
 
 static int
-ar_general_foreach(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
+ar_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
 {
     if (RHASH_AR_TABLE_SIZE(hash) > 0) {
         unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
@@ -799,20 +799,6 @@ ar_general_foreach(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *re
               case ST_CHECK:
               case ST_STOP:
                 return 0;
-              case ST_REPLACE:
-                if (replace) {
-                    VALUE key;
-                    VALUE value;
-
-                    key = cur_entry->key;
-                    value = cur_entry->record;
-                    retval = (*replace)(&key, &value, arg, TRUE);
-
-                    ar_table_entry *entry = RHASH_AR_TABLE_REF(hash, i);
-                    entry->key = key;
-                    entry->record = value;
-                }
-                break;
               case ST_DELETE:
                 ar_clear_entry(RHASH_AR_TABLE_REF(hash, i));
                 RHASH_AR_TABLE_SIZE_DEC(hash);
@@ -821,18 +807,6 @@ ar_general_foreach(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *re
         }
     }
     return 0;
-}
-
-static int
-ar_foreach_with_replace(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
-{
-    return ar_general_foreach(hash, func, replace, arg);
-}
-
-static int
-ar_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
-{
-    return ar_general_foreach(hash, func, NULL, arg);
 }
 
 static int
@@ -871,7 +845,6 @@ ar_foreach_check(VALUE hash, int (*func)(ANYARGS), st_data_t arg,
               case ST_CONTINUE:
                 break;
               case ST_STOP:
-              case ST_REPLACE:
                 return 0;
               case ST_DELETE: {
                   if (!ar_empty_entry(cur_entry)) {
@@ -1281,17 +1254,6 @@ rb_hash_stlike_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
     }
     else {
         return st_foreach(RHASH_ST_TABLE(hash), func, arg);
-    }
-}
-
-int
-rb_hash_stlike_foreach_with_replace(VALUE hash, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
-{
-    if (RHASH_AR_TABLE_P(hash)) {
-        return ar_foreach_with_replace(hash, func, replace, arg);
-    }
-    else {
-        return st_foreach_with_replace(RHASH_ST_TABLE(hash), func, replace, arg);
     }
 }
 
