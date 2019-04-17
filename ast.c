@@ -364,7 +364,11 @@ node_children(rb_ast_t *ast, NODE *node)
         return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
       case NODE_CASE2:
         return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
+      case NODE_CASE3:
+        return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
       case NODE_WHEN:
+        return rb_ary_new_from_node_args(ast, 3, node->nd_head, node->nd_body, node->nd_next);
+      case NODE_IN:
         return rb_ary_new_from_node_args(ast, 3, node->nd_head, node->nd_body, node->nd_next);
       case NODE_WHILE:
         goto loop;
@@ -621,6 +625,22 @@ node_children(rb_ast_t *ast, NODE *node)
                 rb_ary_push(locals, var_name(tbl[i]));
             }
             return rb_ary_new_from_args(3, locals, NEW_CHILD(ast, node->nd_args), NEW_CHILD(ast, node->nd_body));
+        }
+      case NODE_ARYPTN:
+        {
+            struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
+            return rb_ary_new_from_args(4,
+                                        NEW_CHILD(ast, node->nd_pconst),
+                                        NEW_CHILD(ast, apinfo->pre_args),
+                                        NEW_CHILD(ast, apinfo->rest_arg),
+                                        NEW_CHILD(ast, apinfo->post_args));
+        }
+      case NODE_HSHPTN:
+        {
+            return rb_ary_new_from_args(3,
+                                        NEW_CHILD(ast, node->nd_pconst),
+                                        NEW_CHILD(ast, node->nd_pkwargs),
+                                        NEW_CHILD(ast, node->nd_pkwrestarg));
         }
       case NODE_ARGS_AUX:
       case NODE_LAST:

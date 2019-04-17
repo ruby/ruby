@@ -417,6 +417,11 @@ static NODE *method_add_block(struct parser_params*p, NODE *m, NODE *b, const YY
 static bool args_info_empty_p(struct rb_args_info *args);
 static NODE *new_args(struct parser_params*,NODE*,NODE*,ID,NODE*,NODE*,const YYLTYPE*);
 static NODE *new_args_tail(struct parser_params*,NODE*,ID,ID,const YYLTYPE*);
+static NODE *new_array_pattern(struct parser_params *p, NODE *constant, NODE *pre_arg, NODE *aryptn, const YYLTYPE *loc);
+static NODE *new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, ID rest_arg, NODE *post_args, const YYLTYPE *loc);
+static NODE *new_hash_pattern(struct parser_params *p, NODE *constant, NODE *hshptn, const YYLTYPE *loc);
+static NODE *new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, const YYLTYPE *loc);
+
 static NODE *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
 static NODE *args_with_numbered(struct parser_params*,NODE*,int);
 
@@ -447,6 +452,7 @@ static NODE *opt_arg_append(NODE*, NODE*);
 static NODE *kwd_append(NODE*, NODE*);
 
 static NODE *new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc);
+static NODE *new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc);
 
 static NODE *new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc);
 
@@ -703,6 +709,105 @@ args_with_numbered(struct parser_params *p, VALUE args, int max_numparam)
     return args;
 }
 
+static VALUE
+new_array_pattern(struct parser_params *p, VALUE constant, VALUE pre_arg, VALUE aryptn, const YYLTYPE *loc)
+{
+    NODE *t = (NODE *)aryptn;
+    VALUE pre_args = t->u1.value, rest_arg = t->u2.value, post_args = t->u3.value;
+    if (!NIL_P(pre_arg)) {
+	if (!NIL_P(pre_args)) {
+	    rb_ary_unshift(pre_args, pre_arg);
+	}
+	else {
+	    pre_args = rb_ary_new_from_args(1, pre_arg);
+	}
+    }
+    return dispatch4(aryptn, constant, pre_args, rest_arg, post_args);
+}
+
+static VALUE
+new_array_pattern_tail(struct parser_params *p, VALUE pre_args, VALUE has_rest, VALUE rest_arg, VALUE post_args, const YYLTYPE *loc)
+{
+    NODE *t;
+    if (has_rest) {
+	rest_arg = dispatch1(var_field, rest_arg ? rest_arg : Qnil);
+    } else {
+	rest_arg = Qnil;
+    }
+    t = rb_node_newnode(NODE_ARYPTN, pre_args, rest_arg, post_args, &NULL_LOC);
+
+    add_mark_object(p, pre_args);
+    add_mark_object(p, rest_arg);
+    add_mark_object(p, post_args);
+    return (VALUE)t;
+}
+
+#define new_hash(p,h,l) rb_ary_new_from_args(0)
+
+static VALUE
+new_unique_key_hash(struct parser_params *p, VALUE ary, const YYLTYPE *loc)
+{
+    const long len = RARRAY_LEN(ary);
+    st_table *tbl;
+    long i;
+
+    tbl = st_init_strtable_with_size(len);
+    for (i = 0; i < len; i++) {
+	VALUE key, a1, a2, a3;
+	a1 = RARRAY_AREF(ary, i);
+	if (!(RB_TYPE_P(a1, T_ARRAY) && RARRAY_LEN(a1) == 2)) goto error;
+	a2 = RARRAY_AREF(a1, 0);
+	if (!RB_TYPE_P(a2, T_ARRAY)) goto error;
+	switch (RARRAY_LEN(a2)) {
+	  case 2: /* "key": */
+	    a3 = RARRAY_AREF(a2, 1);
+	    if (!(RB_TYPE_P(a3, T_ARRAY) && RARRAY_LEN(a3) == 3)) goto error;
+	    key = RARRAY_AREF(a3, 1);
+	    break;
+	  case 3: /* key: */
+	    key = RARRAY_AREF(a2, 1);
+	    break;
+	  default:
+	    goto error;
+	}
+	if (!RB_TYPE_P(key, T_STRING)) goto error;
+	if (st_lookup(tbl, (st_data_t)RSTRING_PTR(key), 0)) goto error;
+	st_insert(tbl, (st_data_t)RSTRING_PTR(key), (st_data_t)ary);
+    }
+    st_free_table(tbl);
+    return ary;
+
+  error:
+    ripper_error(p);
+    st_free_table(tbl);
+    return Qnil;
+}
+
+static VALUE
+new_hash_pattern(struct parser_params *p, VALUE constant, VALUE hshptn, const YYLTYPE *loc)
+{
+    NODE *t = (NODE *)hshptn;
+    VALUE kw_args = t->u1.value, kw_rest_arg = t->u2.value;
+    return dispatch3(hshptn, constant, kw_args, kw_rest_arg);
+}
+
+static VALUE
+new_hash_pattern_tail(struct parser_params *p, VALUE kw_args, VALUE kw_rest_arg, const YYLTYPE *loc)
+{
+    NODE *t;
+    if (kw_rest_arg) {
+	kw_rest_arg = dispatch1(var_field, kw_rest_arg);
+    }
+    else {
+	kw_rest_arg = Qnil;
+    }
+    t = rb_node_newnode(NODE_HSHPTN, kw_args, kw_rest_arg, 0, &NULL_LOC);
+
+    add_mark_object(p, kw_args);
+    add_mark_object(p, kw_rest_arg);
+    return (VALUE)t;
+}
+
 #define new_defined(p,expr,loc) dispatch1(defined, (expr))
 
 static VALUE heredoc_dedent(struct parser_params*,VALUE);
@@ -744,7 +849,7 @@ static VALUE heredoc_dedent(struct parser_params*,VALUE);
 # define rb_warning3L(l,fmt,a,b,c)   WARNING_CALL(WARNING_ARGS_L(l, fmt, 4), (a), (b), (c))
 # define rb_warning4L(l,fmt,a,b,c,d) WARNING_CALL(WARNING_ARGS_L(l, fmt, 5), (a), (b), (c), (d))
 #ifdef RIPPER
-static ID id_warn, id_warning, id_gets;
+static ID id_warn, id_warning, id_gets, id_assoc, id_or;
 # define WARN_S_L(s,l) STR_NEW(s,l)
 # define WARN_S(s) STR_NEW2(s)
 # define WARN_I(i) INT2NUM(i)
@@ -895,9 +1000,15 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %type <node> lambda f_larglist lambda_body brace_body do_body
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
+%type <node> p_case_body p_cases p_top_expr p_top_expr_body
+%type <node> p_expr p_as p_alt p_expr_basic
+%type <node> p_args p_args_head p_args_tail p_args_post p_arg
+%type <node> p_value p_primitive p_variable p_var_ref p_const
+%type <node> p_kwargs p_kwarg p_kw
 %type <id>   keyword_variable user_variable sym operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
+%type <id>   p_kwrest
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
 /* escaped chars, should be ignored otherwise */
@@ -2592,6 +2703,16 @@ primary		: literal
 		    /*% %*/
 		    /*% ripper: case!(Qnil, $3) %*/
 		    }
+		| k_case expr_value opt_terms
+		  p_case_body
+		  k_end
+		    {
+		    /*%%%*/
+			$$ = NEW_CASE3($2, $4, &@$);
+			rb_warn0L(nd_line($$), "Pattern matching is experimental, and the behavior may change in future versions of Ruby!");
+		    /*% %*/
+		    /*% ripper: case!($2, $4) %*/
+		    }
 		| k_for for_var keyword_in expr_value_do
 		  compstmt
 		  k_end
@@ -3465,6 +3586,489 @@ case_body	: k_when args then
 
 cases		: opt_else
 		| case_body
+		;
+
+p_case_body	: keyword_in
+		 {
+		     SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
+		     p->command_start = FALSE;
+		     $<num>$ = p->in_kwarg;
+		     p->in_kwarg = 1;
+		 }
+		  p_top_expr then
+		 {
+		     p->in_kwarg = !!$<num>2;
+		 }
+		  compstmt
+		  p_cases
+		    {
+		    /*%%%*/
+			$$ = NEW_IN($3, $6, $7, &@$);
+		    /*% %*/
+		    /*% ripper: in!($3, $6, escape_Qundef($7)) %*/
+		    }
+		;
+
+p_cases	: opt_else
+		| p_case_body
+		;
+
+p_top_expr	: p_top_expr_body
+		| p_top_expr_body modifier_if expr_value
+		    {
+		    /*%%%*/
+			$$ = new_if(p, $3, remove_begin($1), 0, &@$);
+			fixpos($$, $3);
+		    /*% %*/
+		    /*% ripper: if_mod!($3, $1) %*/
+		    }
+		| p_top_expr_body modifier_unless expr_value
+		    {
+		    /*%%%*/
+			$$ = new_unless(p, $3, remove_begin($1), 0, &@$);
+			fixpos($$, $3);
+		    /*% %*/
+		    /*% ripper: unless_mod!($3, $1) %*/
+		    }
+		;
+
+p_top_expr_body : p_expr
+		| p_expr ','
+		    {
+			$$ = new_array_pattern_tail(p, Qnone, 1, 0, Qnone, &@$);
+			$$ = new_array_pattern(p, Qnone, get_value($1), $$, &@$);
+		    }
+		| p_expr ',' p_args
+		    {
+			$$ = new_array_pattern(p, Qnone, get_value($1), $3, &@$);
+		    /*%%%*/
+			nd_set_first_loc($$, @1.beg_pos);
+		    /*%
+		    %*/
+		    }
+		| p_args_tail
+		    {
+			$$ = new_array_pattern(p, Qnone, Qnone, $1, &@$);
+		    }
+		| p_kwargs
+		    {
+			$$ = new_hash_pattern(p, Qnone, $1, &@$);
+		    }
+		;
+
+p_expr		: p_as
+		;
+
+p_as		: p_expr tASSOC p_variable
+		    {
+		    /*%%%*/
+			NODE *n = NEW_LIST($1, &@$);
+			n = list_append(p, n, $3);
+			$$ = new_hash(p, n, &@$);
+		    /*% %*/
+		    /*% ripper: binary!($1, STATIC_ID2SYM((id_assoc)), $3) %*/
+		    }
+		| p_alt
+		;
+
+p_alt		: p_alt '|' p_expr_basic
+		    {
+		    /*%%%*/
+			$$ = NEW_NODE(NODE_OR, $1, $3, 0, &@$);
+		    /*% %*/
+		    /*% ripper: binary!($1, STATIC_ID2SYM((id_or)), $3) %*/
+		    }
+		| p_expr_basic
+		;
+
+p_expr_basic	: p_value
+		| p_const '(' p_args rparen
+		    {
+			$$ = new_array_pattern(p, $1, Qnone, $3, &@$);
+		    /*%%%*/
+			nd_set_first_loc($$, @1.beg_pos);
+		    /*%
+		    %*/
+		    }
+		| p_const '(' p_kwargs rparen
+		    {
+			$$ = new_hash_pattern(p, $1, $3, &@$);
+		    /*%%%*/
+			nd_set_first_loc($$, @1.beg_pos);
+		    /*%
+		    %*/
+		    }
+		| p_const '(' rparen
+		    {
+			$$ = new_array_pattern_tail(p, Qnone, 0, 0, Qnone, &@$);
+			$$ = new_array_pattern(p, $1, Qnone, $$, &@$);
+		    }
+		| p_const '[' p_args rbracket
+		    {
+			$$ = new_array_pattern(p, $1, Qnone, $3, &@$);
+		    /*%%%*/
+			nd_set_first_loc($$, @1.beg_pos);
+		    /*%
+		    %*/
+		    }
+		| p_const '[' p_kwargs rbracket
+		    {
+			$$ = new_hash_pattern(p, $1, $3, &@$);
+		    /*%%%*/
+			nd_set_first_loc($$, @1.beg_pos);
+		    /*%
+		    %*/
+		    }
+		| p_const '[' rbracket
+		    {
+			$$ = new_array_pattern_tail(p, Qnone, 0, 0, Qnone, &@$);
+			$$ = new_array_pattern(p, $1, Qnone, $$, &@$);
+		    }
+		| tLBRACK p_args rbracket
+		    {
+			$$ = new_array_pattern(p, Qnone, Qnone, $2, &@$);
+		    }
+		| tLBRACK rbracket
+		    {
+			$$ = new_array_pattern_tail(p, Qnone, 0, 0, Qnone, &@$);
+			$$ = new_array_pattern(p, Qnone, Qnone, $$, &@$);
+		    }
+		| tLBRACE p_kwargs '}'
+		    {
+			$$ = new_hash_pattern(p, Qnone, $2, &@$);
+		    }
+		| tLBRACE '}'
+		    {
+			$$ = new_hash_pattern_tail(p, Qnone, 0, &@$);
+			$$ = new_hash_pattern(p, Qnone, $$, &@$);
+		    }
+		| tLPAREN p_expr rparen
+		    {
+			$$ = $2;
+		    }
+		;
+
+p_args		: p_expr
+		    {
+		    /*%%%*/
+			NODE *pre_args = NEW_LIST($1, &@$);
+			$$ = new_array_pattern_tail(p, pre_args, 0, 0, Qnone, &@$);
+		    /*%
+			$$ = new_array_pattern_tail(p, rb_ary_new_from_args(1, get_value($1)), 0, 0, Qnone, &@$);
+		    %*/
+		    }
+		| p_args_head
+		    {
+			$$ = new_array_pattern_tail(p, $1, 1, 0, Qnone, &@$);
+		    }
+		| p_args_head p_arg
+		    {
+		    /*%%%*/
+			$$ = new_array_pattern_tail(p, list_concat($1, $2), 0, 0, Qnone, &@$);
+		    /*%
+			VALUE pre_args = rb_ary_concat($1, get_value($2));
+			$$ = new_array_pattern_tail(p, pre_args, 0, 0, Qnone, &@$);
+		    %*/
+		    }
+		| p_args_head tSTAR tIDENTIFIER
+		    {
+			$$ = new_array_pattern_tail(p, $1, 1, $3, Qnone, &@$);
+		    }
+		| p_args_head tSTAR tIDENTIFIER ',' p_args_post
+		    {
+			$$ = new_array_pattern_tail(p, $1, 1, $3, $5, &@$);
+		    }
+		| p_args_head tSTAR
+		    {
+			$$ = new_array_pattern_tail(p, $1, 1, 0, Qnone, &@$);
+		    }
+		| p_args_head tSTAR ',' p_args_post
+		    {
+			$$ = new_array_pattern_tail(p, $1, 1, 0, $4, &@$);
+		    }
+		| p_args_tail
+		;
+
+p_args_head	: p_arg ','
+		    {
+			$$ = $1;
+		    }
+		| p_args_head p_arg ','
+		    {
+		    /*%%%*/
+			$$ = list_concat($1, $2);
+		    /*% %*/
+		    /*% ripper: rb_ary_concat($1, get_value($2)) %*/
+		    }
+		;
+
+p_args_tail	: tSTAR tIDENTIFIER
+		    {
+			$$ = new_array_pattern_tail(p, Qnone, 1, $2, Qnone, &@$);
+		    }
+		| tSTAR tIDENTIFIER ',' p_args_post
+		    {
+			$$ = new_array_pattern_tail(p, Qnone, 1, $2, $4, &@$);
+		    }
+		| tSTAR
+		    {
+			$$ = new_array_pattern_tail(p, Qnone, 1, 0, Qnone, &@$);
+		    }
+		| tSTAR ',' p_args_post
+		    {
+			$$ = new_array_pattern_tail(p, Qnone, 1, 0, $3, &@$);
+		    }
+
+p_args_post	: p_arg
+		| p_args_post ',' p_arg
+		    {
+		    /*%%%*/
+			$$ = list_concat($1, $3);
+		    /*% %*/
+		    /*% ripper: rb_ary_concat($1, get_value($3)) %*/
+		    }
+		;
+
+p_arg		: p_expr
+		    {
+		    /*%%%*/
+			$$ = NEW_LIST($1, &@$);
+		    /*% %*/
+		    /*% ripper: rb_ary_new_from_args(1, get_value($1)) %*/
+		    }
+		;
+
+p_kwargs	: p_kwarg ',' p_kwrest
+		    {
+			$$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), $3, &@$);
+		    }
+		| p_kwarg
+		    {
+			$$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), 0, &@$);
+		    }
+		| p_kwrest
+		    {
+			$$ =  new_hash_pattern_tail(p, new_hash(p, Qnone, &@$), $1, &@$);
+		    }
+		;
+
+p_kwarg	: p_kw
+		| p_kwarg ',' p_kw
+		    {
+		    /*%%%*/
+			$$ = list_concat($1, $3);
+		    /*% %*/
+		    /*% ripper: rb_ary_concat($1, $3) %*/
+		    }
+		;
+
+p_kw		: tLABEL p_expr
+		    {
+		    /*%%%*/
+			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@$), &@$), $2);
+		    /*% %*/
+		    /*% ripper: rb_ary_new_from_args(1, rb_ary_new_from_args(2, get_value($1), get_value($2))) %*/
+		    }
+		| tLABEL
+		    {
+			if (!is_local_id(get_id($1))) {
+			    yyerror1(&@1, "key must be valid as local variables");
+			}
+		    /*%%%*/
+			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@$), &@$), assignable(p, $1, 0, &@$));
+		    /*% %*/
+		    /*% ripper: rb_ary_new_from_args(1, rb_ary_new_from_args(2, get_value($1), Qnil)) %*/
+		    }
+		| tSTRING_BEG string_contents tLABEL_END p_expr
+		    {
+		    /*%%%*/
+			YYLTYPE loc = code_loc_gen(&@1, &@3);
+			NODE *node = dsym_node(p, $2, &loc);
+			if (nd_type(node) == NODE_LIT) {
+			    $$ = list_append(p, NEW_LIST(node, &loc), $4);
+			}
+			else {
+			    yyerror1(&loc, "symbol literal with interpolation is not allowed");
+			    $$ = 0;
+			}
+		    /*% %*/
+		    /*% ripper: rb_ary_new_from_args(1, rb_ary_new_from_args(2, $2, get_value($4))) %*/
+		    }
+		| tSTRING_BEG string_contents tLABEL_END
+		    {
+		    /*%%%*/
+			YYLTYPE loc = code_loc_gen(&@1, &@3);
+			NODE *node = dsym_node(p, $2, &loc);
+			ID id;
+			if (nd_type(node) == NODE_LIT) {
+			    id = SYM2ID(node->nd_lit);
+			    if (!is_local_id(id)) {
+				yyerror1(&loc, "key must be valid as local variables");
+			    }
+			    $$ = list_append(p, NEW_LIST(node, &loc), assignable(p, id, 0, &@$));
+			}
+			else {
+			    yyerror1(&loc, "symbol literal with interpolation is not allowed");
+			    $$ = 0;
+			}
+		    /*% %*/
+		    /*% ripper: rb_ary_new_from_args(1, rb_ary_new_from_args(2, $2, Qnil)) %*/
+		    }
+		;
+
+p_kwrest	: kwrest_mark tIDENTIFIER
+		    {
+		        $$ = $2;
+		    }
+		| kwrest_mark
+		    {
+		        $$ = 0;
+		    }
+		;
+
+p_value	: p_primitive
+		| p_primitive tDOT2 p_primitive
+		    {
+		    /*%%%*/
+			value_expr($1);
+			value_expr($3);
+			$$ = NEW_DOT2($1, $3, &@$);
+		    /*% %*/
+		    /*% ripper: dot2!($1, $3) %*/
+		    }
+		| p_primitive tDOT3 p_primitive
+		    {
+		    /*%%%*/
+			value_expr($1);
+			value_expr($3);
+			$$ = NEW_DOT3($1, $3, &@$);
+		    /*% %*/
+		    /*% ripper: dot3!($1, $3) %*/
+		    }
+		| p_primitive tDOT2
+		    {
+			/*%%%*/
+			YYLTYPE loc;
+			loc.beg_pos = @2.end_pos;
+			loc.end_pos = @2.end_pos;
+
+			value_expr($1);
+			$$ = NEW_DOT2($1, new_nil(&loc), &@$);
+		    /*% %*/
+		    /*% ripper: dot2!($1, Qnil) %*/
+		    }
+		| p_primitive tDOT3
+		    {
+		    /*%%%*/
+			YYLTYPE loc;
+			loc.beg_pos = @2.end_pos;
+			loc.end_pos = @2.end_pos;
+
+			value_expr($1);
+			$$ = NEW_DOT3($1, new_nil(&loc), &@$);
+		    /*% %*/
+		    /*% ripper: dot3!($1, Qnil) %*/
+		    }
+		| p_variable
+		| p_var_ref
+		| p_const
+		| tBDOT2 p_primitive
+		    {
+		    /*%%%*/
+			YYLTYPE loc;
+			loc.beg_pos = @1.beg_pos;
+			loc.end_pos = @1.beg_pos;
+
+			value_expr($2);
+			$$ = NEW_DOT2(new_nil(&loc), $2, &@$);
+		    /*% %*/
+		    /*% ripper: dot2!(Qnil, $2) %*/
+		    }
+		| tBDOT3 p_primitive
+		    {
+		    /*%%%*/
+			YYLTYPE loc;
+			loc.beg_pos = @1.beg_pos;
+			loc.end_pos = @1.beg_pos;
+
+			value_expr($2);
+			$$ = NEW_DOT3(new_nil(&loc), $2, &@$);
+		    /*% %*/
+		    /*% ripper: dot3!(Qnil, $2) %*/
+		    }
+		;
+
+p_primitive	: literal
+		| strings
+		| xstring
+		| regexp
+		| words
+		| qwords
+		| symbols
+		| qsymbols
+		| keyword_variable
+		    {
+		    /*%%%*/
+			if (!($$ = gettable(p, $1, &@$))) $$ = NEW_BEGIN(0, &@$);
+		    /*% %*/
+		    /*% ripper: var_ref!($1) %*/
+		    }
+		| tLAMBDA
+		    {
+			token_info_push(p, "->", &@1);
+		    }
+		  lambda
+		    {
+			$$ = $3;
+		    /*%%%*/
+			nd_set_first_loc($$, @1.beg_pos);
+		    /*% %*/
+		    }
+		;
+
+p_variable	: tIDENTIFIER
+		    {
+		    /*%%%*/
+			$$ = assignable(p, $1, 0, &@$);
+		    /*% %*/
+		    /*% ripper: assignable(p, var_field(p, $1)) %*/
+		    }
+		;
+
+p_var_ref	: '^' tIDENTIFIER
+		    {
+		    /*%%%*/
+			NODE *n = gettable(p, $2, &@$);
+			if (!(nd_type(n) == NODE_LVAR || nd_type(n) == NODE_DVAR)) {
+			    compile_error(p, "%"PRIsVALUE": no such local variable", rb_id2str($2));
+			}
+			$$ = n;
+		    /*% %*/
+		    /*% ripper: var_ref!($2) %*/
+		    }
+		;
+
+p_const	: tCOLON3 cname
+		    {
+		    /*%%%*/
+			$$ = NEW_COLON3($2, &@$);
+		    /*% %*/
+		    /*% ripper: top_const_ref!($2) %*/
+		    }
+		| p_const tCOLON2 cname
+		    {
+		    /*%%%*/
+			$$ = NEW_COLON2($1, $3, &@$);
+		    /*% %*/
+		    /*% ripper: const_path_ref!($1, $3) %*/
+		    }
+		| tCONSTANT
+		   {
+		    /*%%%*/
+			$$ = gettable(p, $1, &@$);
+		    /*% %*/
+		    /*% ripper: var_ref!($1) %*/
+		   }
 		;
 
 opt_rescue	: k_rescue exc_list exc_var then
@@ -10398,6 +11002,80 @@ rb_parser_numparam_id(struct parser_params *p, int idx)
 }
 
 static NODE*
+new_array_pattern(struct parser_params *p, NODE *constant, NODE *pre_arg, NODE *aryptn, const YYLTYPE *loc)
+{
+    struct rb_ary_pattern_info *apinfo = aryptn->nd_apinfo;
+
+    aryptn->nd_pconst = constant;
+
+    if (pre_arg) {
+	NODE *pre_args = NEW_LIST(pre_arg, loc);
+	if (apinfo->pre_args) {
+	    apinfo->pre_args = list_concat(pre_args, apinfo->pre_args);
+	} else {
+	    apinfo->pre_args = pre_args;
+	}
+    }
+    return aryptn;
+}
+
+static NODE*
+new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, ID rest_arg, NODE *post_args, const YYLTYPE *loc)
+{
+    int saved_line = p->ruby_sourceline;
+    struct rb_ary_pattern_info *apinfo;
+    NODE *node;
+    rb_imemo_tmpbuf_t *tmpbuf = new_tmpbuf();
+
+    apinfo = ZALLOC(struct rb_ary_pattern_info);
+    tmpbuf->ptr = (VALUE *)apinfo;
+    node = NEW_NODE(NODE_ARYPTN, 0, 0, apinfo, loc);
+
+    apinfo->pre_args = pre_args;
+
+    if (has_rest) {
+	if (rest_arg) {
+	    apinfo->rest_arg = assignable(p, rest_arg, 0, loc);
+	} else {
+	    apinfo->rest_arg = NEW_BEGIN(0, loc);
+	}
+    } else {
+	apinfo->rest_arg = NULL;
+    }
+
+    apinfo->post_args = post_args;
+
+    p->ruby_sourceline = saved_line;
+    return node;
+}
+
+static NODE*
+new_hash_pattern(struct parser_params *p, NODE *constant, NODE *hshptn, const YYLTYPE *loc)
+{
+    hshptn->nd_pconst = constant;
+    return hshptn;
+}
+
+static NODE*
+new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, const YYLTYPE *loc)
+{
+    int saved_line = p->ruby_sourceline;
+    NODE *node, *kw_rest_arg_node;
+
+    if (kw_rest_arg) {
+	kw_rest_arg_node = assignable(p, kw_rest_arg, 0, loc);
+    }
+    else {
+	kw_rest_arg_node = NULL;
+    }
+
+    node = NEW_NODE(NODE_HSHPTN, 0, kw_args, kw_rest_arg_node, loc);
+
+    p->ruby_sourceline = saved_line;
+    return node;
+}
+
+static NODE*
 dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
     VALUE lit;
@@ -10476,6 +11154,38 @@ static NODE *
 new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
 {
     if (hash) hash = remove_duplicate_keys(p, hash);
+    return NEW_HASH(hash, loc);
+}
+
+static void
+error_duplicate_keys(struct parser_params *p, NODE *hash)
+{
+    st_table *literal_keys = st_init_numtable_with_size(hash->nd_alen / 2);
+    while (hash && hash->nd_head && hash->nd_next) {
+	NODE *head = hash->nd_head;
+	NODE *next = hash->nd_next->nd_next;
+	VALUE key = (VALUE)head;
+	if (nd_type(head) != NODE_LIT) {
+	    yyerror1(&head->nd_loc, "key must be symbol literal");
+	}
+	if (st_lookup(literal_keys, (key = head->nd_lit), 0)) {
+	    yyerror1(&head->nd_loc, "duplicated key name");
+	}
+	else {
+	    st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
+	}
+	hash = next;
+    }
+    st_free_table(literal_keys);
+    return;
+}
+
+static NODE *
+new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
+{
+    if (hash) {
+        error_duplicate_keys(p, hash);
+    }
     return NEW_HASH(hash, loc);
 }
 #endif /* !RIPPER */
@@ -11933,6 +12643,8 @@ Init_ripper(void)
     id_warn = rb_intern_const("warn");
     id_warning = rb_intern_const("warning");
     id_gets = rb_intern_const("gets");
+    id_assoc = rb_intern_const("=>");
+    id_or = rb_intern_const("|");
 
     (void)yystpcpy; /* may not used in newer bison */
 
