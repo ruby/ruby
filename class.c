@@ -539,7 +539,6 @@ boot_defclass(const char *name, VALUE super)
 
     rb_name_class(obj, id);
     rb_const_set((rb_cObject ? rb_cObject : obj), id, obj);
-    rb_vm_add_root_module(id, obj);
     return obj;
 }
 
@@ -731,9 +730,6 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
 		     " (%"PRIsVALUE" is given but was %"PRIsVALUE")",
 		     outer, rb_id2str(id), RCLASS_SUPER(klass), super);
 	}
-        /* Class may have been defined in Ruby and not pin-rooted */
-        rb_vm_add_root_module(id, klass);
-
 	return klass;
     }
     if (!super) {
@@ -744,7 +740,6 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
     rb_set_class_path_string(klass, outer, rb_id2str(id));
     rb_const_set(outer, id, klass);
     rb_class_inherited(super, klass);
-    rb_vm_add_root_module(id, klass);
     rb_gc_register_mark_object(klass);
 
     return klass;
@@ -782,13 +777,10 @@ rb_define_module(const char *name)
 	    rb_raise(rb_eTypeError, "%s is not a module (%"PRIsVALUE")",
 		     name, rb_obj_class(module));
 	}
-        /* Module may have been defined in Ruby and not pin-rooted */
-        rb_vm_add_root_module(id, module);
 	return module;
     }
     module = rb_define_module_id(id);
     rb_vm_add_root_module(id, module);
-    rb_gc_register_mark_object(module);
     rb_const_set(rb_cObject, id, module);
 
     return module;
