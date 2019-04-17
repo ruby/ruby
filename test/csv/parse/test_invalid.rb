@@ -25,12 +25,15 @@ ggg,hhh,iii
                  csv.shift)
     assert_equal(CSV::Row.new(headers, ["aaa", "bbb", "ccc"]),
                  csv.shift)
+    assert_equal(false, csv.eof?)
     error = assert_raise(CSV::MalformedCSVError) do
       csv.shift
     end
     assert_equal("Illegal quoting in line 3.",
                  error.message)
+    assert_equal(false, csv.eof?)
     assert_equal(CSV::Row.new(headers, ["ggg", "hhh", "iii"]),
                  csv.shift)
+    assert_equal(true, csv.eof?)
   end
 end
