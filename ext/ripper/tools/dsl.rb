@@ -72,7 +72,7 @@ class DSL
   def method_missing(event, *args)
     if event.to_s =~ /!\z/
       add_event(event, args)
-    elsif args.empty? and /\Aid[A-Z]/ =~ event.to_s
+    elsif args.empty? and /\Aid[A-Z_]/ =~ event.to_s
       event
     else
       "#{ event }(#{ args.join(", ") })"
