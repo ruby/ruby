@@ -3306,13 +3306,13 @@ rb_obj_id(VALUE obj)
     }
     else if (FLONUM_P(obj)) {
 #if SIZEOF_LONG == SIZEOF_VOIDP
-	return LONG2NUM((SIGNED_VALUE)obj);
+        return LONG2NUM((SIGNED_VALUE)obj);
 #else
-	return LL2NUM((SIGNED_VALUE)obj);
+        return LL2NUM((SIGNED_VALUE)obj);
 #endif
     }
     else if (SPECIAL_CONST_P(obj)) {
-	return LONG2NUM((SIGNED_VALUE)obj);
+        return LONG2NUM((SIGNED_VALUE)obj);
     }
     return nonspecial_obj_id(obj);
 }
