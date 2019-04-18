@@ -2480,7 +2480,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_print_separators
-    $, = ':'
+    EnvUtil.suppress_warning {$, = ':'}
     $\ = "\n"
     pipe(proc do |w|
       w.print('a')

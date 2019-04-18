@@ -19,8 +19,10 @@ describe :array_join_with_default_separator, shared: true do
   end
 
   it "returns a string formed by concatenating each String element separated by $," do
-    $, = " | "
-    ["1", "2", "3"].send(@method).should == "1 | 2 | 3"
+    suppress_warning {
+      $, = " | "
+      ["1", "2", "3"].send(@method).should == "1 | 2 | 3"
+    }
   end
 
   it "attempts coercion via #to_str first" do

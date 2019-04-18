@@ -2358,11 +2358,11 @@ rb_ary_join_m(int argc, VALUE *argv, VALUE ary)
 {
     VALUE sep;
 
-    if (rb_check_arity(argc, 0, 1) == 0) {
+    if (rb_check_arity(argc, 0, 1) == 0 || NIL_P(sep = argv[0])) {
         sep = rb_output_fs;
-    }
-    else if (NIL_P(sep = argv[0])) {
-        sep = rb_output_fs;
+        if (!NIL_P(sep)) {
+            rb_warn("$, is set to non-nil value");
+        }
     }
 
     return rb_ary_join(ary, sep);
