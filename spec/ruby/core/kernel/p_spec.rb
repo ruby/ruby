@@ -7,7 +7,9 @@ describe "Kernel#p" do
   end
 
   after :each do
-    $/, $\, $, = @rs_f, @rs_b, @rs_c
+    suppress_warning {
+      $/, $\, $, = @rs_f, @rs_b, @rs_c
+    }
   end
 
   it "is a private method" do
@@ -50,7 +52,9 @@ describe "Kernel#p" do
     o = mock("Inspector Gadget")
     o.should_receive(:inspect).any_number_of_times.and_return "Next time, Gadget, NEXT TIME!"
 
-    $, = " *helicopter sound*\n"
+    suppress_warning {
+      $, = " *helicopter sound*\n"
+    }
     lambda { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
 
     $\ = " *helicopter sound*\n"

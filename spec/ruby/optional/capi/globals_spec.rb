@@ -159,7 +159,7 @@ describe "CApiGlobalSpecs" do
     end
 
     after :each do
-      $, = @dollar_comma
+      suppress_warning {$, = @dollar_comma}
     end
 
     it "returns nil by default" do
@@ -167,7 +167,7 @@ describe "CApiGlobalSpecs" do
     end
 
     it "returns the value of $\\" do
-      $, = "foo"
+      suppress_warning {$, = "foo"}
       @f.rb_output_fs.should == "foo"
     end
   end
