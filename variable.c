@@ -2696,10 +2696,10 @@ check_before_mod_set(VALUE klass, ID id, VALUE val, const char *dest)
     rb_check_frozen(klass);
 }
 
-static void finalize_classpath_for_children(VALUE named_namespace);
+static void set_namespace_path(VALUE named_namespace, VALUE name);
 
 static enum rb_id_table_iterator_result
-finalize_classpath_i(ID id, VALUE v, void *payload)
+set_namespace_path_i(ID id, VALUE v, void *payload)
 {
     rb_const_entry_t *ce = (rb_const_entry_t *)v;
     VALUE value = ce->value;
@@ -2715,12 +2715,11 @@ finalize_classpath_i(ID id, VALUE v, void *payload)
     if (has_permanent_classpath) {
         return ID_TABLE_CONTINUE;
     }
-    rb_ivar_set(value, classpath, build_const_path(parental_path, id));
+    set_namespace_path(value, build_const_path(parental_path, id));
     if (RCLASS_IV_TBL(value)) {
         st_data_t tmp = tmp_classpath;
         st_delete(RCLASS_IV_TBL(value), &tmp, 0);
     }
-    finalize_classpath_for_children(value);
 
     return ID_TABLE_CONTINUE;
 }
@@ -2731,16 +2730,13 @@ finalize_classpath_i(ID id, VALUE v, void *payload)
  * classpath.
  */
 static void
-finalize_classpath_for_children(VALUE named_namespace)
+set_namespace_path(VALUE named_namespace, VALUE namespace_path)
 {
     struct rb_id_table *const_table = RCLASS_CONST_TBL(named_namespace);
 
+    rb_ivar_set(named_namespace, classpath, namespace_path);
     if (const_table) {
-        int permanent;
-        VALUE parental_path = classname(named_namespace, &permanent);
-        VM_ASSERT(RB_TYPE_P(parental_path, T_STRING));
-        VM_ASSERT(permanent);
-        rb_id_table_foreach(const_table, finalize_classpath_i, &parental_path);
+        rb_id_table_foreach(const_table, set_namespace_path_i, &namespace_path);
     }
 }
 
@@ -2780,16 +2776,14 @@ rb_const_set(VALUE klass, ID id, VALUE val)
         VALUE val_path = classname(val, &val_path_permanent);
         if (NIL_P(val_path) || !val_path_permanent) {
 	    if (klass == rb_cObject) {
-		rb_ivar_set(val, classpath, rb_id2str(id));
-                finalize_classpath_for_children(val);
+                set_namespace_path(val, rb_id2str(id));
 	    }
 	    else {
                 int parental_path_permanent;
                 VALUE parental_path = classname(klass, &parental_path_permanent);
                 if (!NIL_P(parental_path)) {
                     if (parental_path_permanent && !val_path_permanent) {
-                        rb_ivar_set(val, classpath, build_const_path(parental_path, id));
-                        finalize_classpath_for_children(val);
+                        set_namespace_path(val, build_const_path(parental_path, id));
                     }
                     else if (!parental_path_permanent && NIL_P(val_path)) {
                         rb_ivar_set(val, tmp_classpath, build_const_path(parental_path, id));
