@@ -268,7 +268,7 @@ Zachary Scott (zzak)
   Nobuyuki Nakada (nobu)
   https://github.com/ruby/stringio
 [ext/strscan]
-  _unmaintained_
+  Kouhei Sutou (kou)
   https://github.com/ruby/strscan
 [ext/zlib]
   NARUSE, Yui (naruse)
