@@ -66,6 +66,8 @@ describe "String#split with String" do
 
   it "defaults to $; when string isn't given or nil" do
     begin
+      verbose = $VERBOSE
+      $VERBOSE = nil
       old_fs = $;
 
       [",", ":", "", "XY", nil].each do |fs|
@@ -84,6 +86,7 @@ describe "String#split with String" do
       end
     ensure
       $; = old_fs
+      $VERBOSE = verbose
     end
   end
 
@@ -239,6 +242,8 @@ describe "String#split with Regexp" do
 
   it "defaults to $; when regexp isn't given or nil" do
     begin
+      verbose = $VERBOSE
+      $VERBOSE = nil
       old_fs = $;
 
       [/,/, /:/, //, /XY/, /./].each do |fs|
@@ -257,6 +262,7 @@ describe "String#split with Regexp" do
       end
     ensure
       $; = old_fs
+      $VERBOSE = verbose
     end
   end
 

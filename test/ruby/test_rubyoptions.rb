@@ -253,7 +253,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_autosplit
-    assert_in_out_err(%w(-an -F: -e) + ["p $F"], "foo:bar:baz\nqux:quux:quuux\n",
+    assert_in_out_err(%w(-W0 -an -F: -e) + ["p $F"], "foo:bar:baz\nqux:quux:quuux\n",
                       ['["foo", "bar", "baz\n"]', '["qux", "quux", "quuux\n"]'], [])
   end
 
