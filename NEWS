@@ -36,6 +36,9 @@ sufficient information, see the ChangeLog file or Redmine
      ary[..3]  # identical to ary[0..3]
      where(sales: ..100)
 
+* Setting <code>$;</code> to non-nil value is warned now.  Use of it in
+  String#split is warned too.
+
 === Core classes updates (outstanding ones only)
 
 Enumerable::

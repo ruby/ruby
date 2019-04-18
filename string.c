@@ -7793,6 +7793,9 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     else if (!(spat = rb_fs_check(spat))) {
 	rb_raise(rb_eTypeError, "value of $; must be String or Regexp");
     }
+    else {
+        rb_warn("$; is set to non-nil value");
+    }
     if (split_type != awk) {
 	if (BUILTIN_TYPE(spat) == T_STRING) {
 	    rb_encoding *enc2 = STR_ENC_GET(spat);
@@ -9917,6 +9920,9 @@ rb_fs_setter(VALUE val, ID id, VALUE *var)
 	rb_raise(rb_eTypeError,
 		 "value of %"PRIsVALUE" must be String or Regexp",
 		 rb_id2str(id));
+    }
+    if (!NIL_P(val)) {
+        rb_warn("non-nil $; will be deprecated");
     }
     *var = val;
 }

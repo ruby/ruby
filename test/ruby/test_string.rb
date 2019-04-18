@@ -1702,7 +1702,7 @@ CODE
 
     assert_equal([], "".split(//, 1))
   ensure
-    $; = fs
+    EnvUtil.suppress_warning {$; = fs}
   end
 
   def test_split_with_block
@@ -1742,7 +1742,7 @@ CODE
     result = []; "".split(//, 1) {|s| result << s}
     assert_equal([], result)
   ensure
-    $; = fs
+    EnvUtil.suppress_warning {$; = fs}
   end
 
   def test_fs
@@ -1750,7 +1750,7 @@ CODE
       $; = []
     }
 
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately(%W[-W0], "#{<<~"begin;"}\n#{<<~'end;'}")
     bug = '[ruby-core:79582] $; must not be GCed'
     begin;
       $; = " "
@@ -1760,6 +1760,13 @@ CODE
       GC.start
       assert_equal([], "".split, bug)
     end;
+
+    begin
+      fs = $;
+      assert_warn(/\$; will be deprecated/) {$; = " "}
+    ensure
+      EnvUtil.suppress_warning {$; = fs}
+    end
   end
 
   def test_split_encoding
