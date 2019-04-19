@@ -434,7 +434,7 @@ int onigenc_str_bytelen_null(OnigEncoding enc, const OnigUChar* p);
 /* PART: regular expression */
 
 /* config parameters */
-#define ONIG_NREGION                          10
+#define ONIG_NREGION                          4
 #define ONIG_MAX_CAPTURE_GROUP_NUM         32767
 #define ONIG_MAX_BACKREF_NUM                1000
 #define ONIG_MAX_REPEAT_NUM               100000
