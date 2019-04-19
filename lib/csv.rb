@@ -888,7 +888,11 @@ class CSV
   # <b><tt>:write_converters</tt></b>::   TODO
   # <b><tt>:write_nil_value</tt></b>::    TODO
   # <b><tt>:write_empty_value</tt></b>::  TODO
-  # <b><tt>:strip</tt></b>::              TODO
+  # <b><tt>:strip</tt></b>::              When set to a +true+ value, CSV will
+  #                                       strip "\t\r\n\f\v" around the values.
+  #                                       If you specify a string instead of
+  #                                       +true+, CSV will strip string. The
+  #                                       length of string must be 1.
   #
   # See CSV::DEFAULT_OPTIONS for the default settings.
   #
