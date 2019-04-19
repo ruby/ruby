@@ -2671,6 +2671,22 @@ rb_time_timespec(VALUE time)
     return time_timespec(time, FALSE);
 }
 
+enum {
+    TMOPT_IN,
+    TMOPT_MAX_
+};
+
+static bool
+get_tmopt(VALUE opts, VALUE vals[TMOPT_MAX_])
+{
+    ID ids[TMOPT_MAX_];
+
+    if (NIL_P(opts)) return false;
+    CONST_ID(ids[TMOPT_IN], "in");
+    rb_get_kwargs(opts, ids, 0, TMOPT_MAX_, vals);
+    return true;
+}
+
 /*
  *  call-seq:
  *     Time.now -> time
@@ -2682,9 +2698,16 @@ rb_time_timespec(VALUE time)
  */
 
 static VALUE
-time_s_now(VALUE klass)
+time_s_now(int argc, VALUE *argv, VALUE klass)
 {
-    return rb_class_new_instance(0, NULL, klass);
+    VALUE vals[TMOPT_MAX_], opts, t, zone = Qundef;
+    rb_scan_args(argc, argv, ":", &opts);
+    if (get_tmopt(opts, vals)) zone = vals[TMOPT_IN];
+    t = rb_class_new_instance(0, NULL, klass);
+    if (zone != Qundef) {
+        time_zonelocal(t, zone);
+    }
+    return t;
 }
 
 static int
@@ -2746,15 +2769,11 @@ static VALUE
 time_s_at(int argc, VALUE *argv, VALUE klass)
 {
     VALUE time, t, unit = Qundef, zone = Qundef, opts;
+    VALUE vals[TMOPT_MAX_];
     wideval_t timew;
 
     argc = rb_scan_args(argc, argv, "12:", &time, &t, &unit, &opts);
-    if (!NIL_P(opts)) {
-        ID ids[1];
-        VALUE vals[numberof(ids)];
-
-        CONST_ID(ids[0], "in");
-        rb_get_kwargs(opts, ids, 0, 1, vals);
+    if (get_tmopt(opts, vals)) {
         zone = vals[0];
     }
     if (argc >= 2) {
@@ -5577,7 +5596,7 @@ Init_Time(void)
     rb_include_module(rb_cTime, rb_mComparable);
 
     rb_define_alloc_func(rb_cTime, time_s_alloc);
-    rb_define_singleton_method(rb_cTime, "now", time_s_now, 0);
+    rb_define_singleton_method(rb_cTime, "now", time_s_now, -1);
     rb_define_singleton_method(rb_cTime, "at", time_s_at, -1);
     rb_define_singleton_method(rb_cTime, "utc", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "gm", time_s_mkutc, -1);

@@ -582,6 +582,11 @@ module TestTimeTZ::WithTZ
     assert_equal(time_class.utc(2018, 9, 1, 12+h, m, 0).to_i, t.to_i)
   end
 
+  def subtest_now(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.now(in: tzarg)
+    assert_equal(tz, t.zone)
+  end
+
   def subtest_getlocal(time_class, tz, tzarg, tzname, abbr, utc_offset)
     t = time_class.utc(2018, 9, 1, 12, 0, 0).getlocal(tzarg)
     h, m = (utc_offset / 60).divmod(60)
