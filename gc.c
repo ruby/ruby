@@ -2436,6 +2436,17 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_MATCH:
 	if (RANY(obj)->as.match.rmatch) {
             struct rmatch *rm = RANY(obj)->as.match.rmatch;
+#if USE_DEBUG_COUNTER
+            if (rm->regs.num_regs >= 8) {
+                RB_DEBUG_COUNTER_INC(obj_match_ge8);
+            }
+            else if (rm->regs.num_regs >= 4) {
+                RB_DEBUG_COUNTER_INC(obj_match_ge4);
+            }
+            else if (rm->regs.num_regs >= 1) {
+                RB_DEBUG_COUNTER_INC(obj_match_under4);
+            }
+#endif
 	    onig_region_free(&rm->regs, 0);
             if (rm->char_offset)
 		xfree(rm->char_offset);
