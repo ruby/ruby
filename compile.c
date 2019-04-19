@@ -1700,6 +1700,9 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 	    body->param.keyword = keyword;
 	    body->param.flags.has_kwrest = TRUE;
 	}
+	else if (args->no_kwarg) {
+	    body->param.flags.accepts_no_kwarg = TRUE;
+	}
 
 	if (block_id) {
 	    body->param.block_start = arg_size++;

@@ -702,6 +702,10 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	args->rest = Qfalse;
     }
 
+    if (kw_flag && iseq->body->param.flags.accepts_no_kwarg) {
+	rb_raise(rb_eArgError, "no keywords accepted");
+    }
+
     switch (arg_setup_type) {
       case arg_setup_method:
 	break; /* do nothing special */

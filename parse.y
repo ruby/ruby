@@ -3245,6 +3245,10 @@ block_args_tail	: f_block_kwarg ',' f_kwrest opt_f_block_arg
 		    {
 			$$ = new_args_tail(p, Qnone, $1, $2, &@1);
 		    }
+		| f_no_kwarg opt_f_block_arg
+		    {
+			$$ = new_args_tail(p, Qnone, rb_intern("nil"), $2, &@1);
+		    }
 		| f_block_arg
 		    {
 			$$ = new_args_tail(p, Qnone, Qnone, $1, &@1);
@@ -4712,6 +4716,10 @@ args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
 		    {
 			$$ = new_args_tail(p, Qnone, $1, $2, &@1);
 		    }
+		| f_no_kwarg opt_f_block_arg
+		    {
+			$$ = new_args_tail(p, Qnone, rb_intern("nil"), $2, &@1);
+		    }
 		| f_block_arg
 		    {
 			$$ = new_args_tail(p, Qnone, Qnone, $1, &@1);
@@ -4966,6 +4974,9 @@ f_kwarg		: f_kw
 
 kwrest_mark	: tPOW
 		| tDSTAR
+		;
+
+f_no_kwarg	: kwrest_mark keyword_nil
 		;
 
 f_kwrest	: kwrest_mark tIDENTIFIER
@@ -11124,6 +11135,9 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
 
 	args->kw_rest_arg = NEW_DVAR(kw_rest_arg, loc);
 	args->kw_rest_arg->nd_cflag = kw_bits;
+    }
+    else if (kw_rest_arg == rb_intern("nil")) {
+	args->no_kwarg = 1;
     }
     else if (kw_rest_arg) {
 	args->kw_rest_arg = NEW_DVAR(kw_rest_arg, loc);
