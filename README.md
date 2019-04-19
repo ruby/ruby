@@ -133,7 +133,6 @@ in the mail body (not subject) to the address
 
     You may have to be a super user to install Ruby.
 
-
 If you fail to compile Ruby, please send the detailed error report with the
 error log and machine/OS type, to help others.
 
@@ -158,7 +157,6 @@ Bugs should be reported at https://bugs.ruby-lang.org. Read [HowToReport] for mo
 ## Contributing
 
 See the file [CONTRIBUTING.md](CONTRIBUTING.md)
-
 
 ## The Author
 
