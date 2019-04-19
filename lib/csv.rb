@@ -885,9 +885,19 @@ class CSV
   #                                       blank string field is replaced by
   #                                       the set object.
   # <b><tt>:quote_empty</tt></b>::        TODO
-  # <b><tt>:write_converters</tt></b>::   TODO
-  # <b><tt>:write_nil_value</tt></b>::    TODO
-  # <b><tt>:write_empty_value</tt></b>::  TODO
+  # <b><tt>:write_converters</tt></b>::   Converts values on each line with the
+  #                                       specified <tt>Proc</tt> object(s),
+  #                                       which receive a <tt>String</tt> value
+  #                                       and return a <tt>String</tt> or +nil+
+  #                                       value.
+  #                                       When an array is specified, each
+  #                                       converter will be applied in order.
+  # <b><tt>:write_nil_value</tt></b>::    When a <tt>String</tt> value, +nil+
+  #                                       value(s) on each line will be replaced
+  #                                       with the specified value.
+  # <b><tt>:write_empty_value</tt></b>::  When a <tt>String</tt> or +nil+ value,
+  #                                       empty value(s) on each line will be
+  #                                       replaced with the specified value.
   # <b><tt>:strip</tt></b>::              When set to a +true+ value, CSV will
   #                                       strip "\t\r\n\f\v" around the values.
   #                                       If you specify a string instead of
