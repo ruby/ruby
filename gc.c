@@ -4757,7 +4757,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
       case T_CLASS:
       case T_MODULE:
 	mark_m_tbl(objspace, RCLASS_M_TBL(obj));
-        gc_mark(objspace, RCLASS_SUPER((VALUE)obj));
+        if (RCLASS_SUPER((VALUE)obj)) {
+            gc_mark(objspace, RCLASS_SUPER((VALUE)obj));
+        }
 	if (!RCLASS_EXT(obj)) break;
         mark_tbl(objspace, RCLASS_IV_TBL(obj));
 	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
@@ -4767,7 +4769,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
 	    mark_m_tbl(objspace, RCLASS_M_TBL(obj));
 	}
-        gc_mark(objspace, RCLASS_SUPER((VALUE)obj));
+        if (RCLASS_SUPER((VALUE)obj)) {
+            gc_mark(objspace, RCLASS_SUPER((VALUE)obj));
+        }
 	if (!RCLASS_EXT(obj)) break;
 	mark_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
 	break;
