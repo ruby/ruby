@@ -385,6 +385,7 @@ struct rb_iseq_constant_body {
 	    unsigned int has_block  : 1;
 
 	    unsigned int ambiguous_param0 : 1; /* {|a|} */
+	    unsigned int accepts_no_kwarg : 1;
 	} flags;
 
 	unsigned int size;

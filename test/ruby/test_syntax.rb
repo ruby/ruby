@@ -249,6 +249,22 @@ class TestSyntax < Test::Unit::TestCase
     assert_syntax_error('def o.foo(@@foo: a) end', /class variable/)
   end
 
+  def test_keywords_specified_and_not_accepted
+    assert_syntax_error('def o.foo(a:, **nil) end', /unexpected/)
+    assert_syntax_error('def o.foo(a:, **nil, &b) end', /unexpected/)
+    assert_syntax_error('def o.foo(**a, **nil) end', /unexpected/)
+    assert_syntax_error('def o.foo(**a, **nil, &b) end', /unexpected/)
+    assert_syntax_error('def o.foo(**nil, **a) end', /unexpected/)
+    assert_syntax_error('def o.foo(**nil, **a, &b) end', /unexpected/)
+
+    assert_syntax_error('proc do |a:, **nil| end', /unexpected/)
+    assert_syntax_error('proc do |a:, **nil, &b| end', /unexpected/)
+    assert_syntax_error('proc do |**a, **nil| end', /unexpected/)
+    assert_syntax_error('proc do |**a, **nil, &b| end', /unexpected/)
+    assert_syntax_error('proc do |**nil, **a| end', /unexpected/)
+    assert_syntax_error('proc do |**nil, **a, &b| end', /unexpected/)
+  end
+
   def test_optional_self_reference
     bug9593 = '[ruby-core:61299] [Bug #9593]'
     o = Object.new

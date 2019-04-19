@@ -126,6 +126,34 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(1, f10(b: 42))
   end
 
+  def f11(**nil)
+    local_variables
+  end
+
+  def test_f11
+    h = {}
+
+    assert_equal([], f11)
+    assert_equal([], f11(**{}))
+    assert_equal([], f11(**h))
+  end
+
+  def f12(**nil, &b)
+    [b, local_variables]
+  end
+
+  def test_f12
+    h = {}
+    b = proc{}
+
+    assert_equal([nil, [:b]], f12)
+    assert_equal([nil, [:b]], f12(**{}))
+    assert_equal([nil, [:b]], f12(**h))
+    assert_equal([b, [:b]], f12(&b))
+    assert_equal([b, [:b]], f12(**{}, &b))
+    assert_equal([b, [:b]], f12(**h, &b))
+  end
+
   def test_method_parameters
     assert_equal([[:key, :str], [:key, :num]], method(:f1).parameters);
     assert_equal([[:req, :x], [:key, :str], [:key, :num]], method(:f2).parameters);

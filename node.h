@@ -450,6 +450,7 @@ struct rb_args_info {
     NODE *kw_rest_arg;
 
     NODE *opt_args;
+    int no_kwarg;
 };
 
 struct rb_ary_pattern_info {
