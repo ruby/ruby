@@ -51,6 +51,10 @@ SubversionのミラーをGitHubに公開しています． 以下のコマンド
 
     $ git clone https://github.com/ruby/ruby.git
 
+他のブランチの一覧は次のコマンドで見られます．
+
+    $ git ls-remote https://github.com/ruby/ruby.git
+
 ## ホームページ
 
 RubyのホームページのURLは
