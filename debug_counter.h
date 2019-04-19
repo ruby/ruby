@@ -177,6 +177,9 @@ RB_DEBUG_COUNTER(gc_isptr_maybe)
  *   * hash_under4:     has under 4 entries
  *   * hash_ge4:        has n entries (4<=n<8)
  *   * hash_ge8:        has n entries (8<=n)
+ *   * match_under4:    has under 4 oniguruma regions allocated
+ *   * match_ge4:       has n regions allocated (4<=n<8)
+ *   * match_ge8:       has n regions allocated (8<=n)
  *   * data_empty: T_DATA but no memory free.
  *   * data_xfree:        free'ed by xfree().
  *   * data_imm_free:     free'ed immediately.
@@ -225,6 +228,9 @@ RB_DEBUG_COUNTER(obj_data_xfree)
 RB_DEBUG_COUNTER(obj_data_imm_free)
 RB_DEBUG_COUNTER(obj_data_zombie)
 
+RB_DEBUG_COUNTER(obj_match_under4)
+RB_DEBUG_COUNTER(obj_match_ge4)
+RB_DEBUG_COUNTER(obj_match_ge8)
 RB_DEBUG_COUNTER(obj_match_ptr)
 RB_DEBUG_COUNTER(obj_file_ptr)
 RB_DEBUG_COUNTER(obj_bignum_ptr)
