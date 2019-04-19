@@ -6,9 +6,8 @@
 # What's Ruby
 
 Ruby is the interpreted scripting language for quick and easy object-oriented
-programming. It has many features to process text files and to do system
-management tasks (as in Perl). It is simple, straight-forward, and
-extensible.
+programming. It has many features to process text files and to manage system (as in Perl).
+It is simple, straight-forward, and extensible.
 
 ## Features of Ruby
 
@@ -52,13 +51,11 @@ Or if you are using git then use the following command:
 
 ## Ruby home page
 
-The URL of the Ruby home page is:
-
 https://www.ruby-lang.org/
 
 ## Mailing list
 
-There is a mailing list to talk about Ruby. To subscribe to this list, please
+There is a mailing list to discuss Ruby. To subscribe to this list, please
 send the following phrase:
 
     subscribe
@@ -67,8 +64,6 @@ in the mail body (not subject) to the address
 <ruby-talk-request@ruby-lang.org>.
 
 ## How to compile and install
-
-This is what you need to do to compile and install Ruby:
 
 1.  If you want to use Microsoft Visual C++ to compile Ruby, read
     [win32/README.win32](win32/README.win32) instead of this document.
@@ -156,7 +151,7 @@ Questions about the Ruby language can be asked on the Ruby-Talk mailing list
 (https://www.ruby-lang.org/en/community/mailing-lists) or on websites like
 (https://stackoverflow.com).
 
-Bug reports should be filed at https://bugs.ruby-lang.org. Read [HowToReport] for more information.
+Bugs should be reported at https://bugs.ruby-lang.org. Read [HowToReport] for more information.
 
 [HowToReport]: https://bugs.ruby-lang.org/projects/ruby/wiki/HowToReport
 
