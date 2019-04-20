@@ -419,7 +419,11 @@ node_children(rb_ast_t *ast, NODE *node)
         if (NODE_NAMED_REST_P(node->nd_args)) {
             return rb_ary_new_from_node_args(ast, 3, node->nd_value, node->nd_head, node->nd_args);
         }
-        return rb_ary_new_from_node_args(ast, 2, node->nd_value, node->nd_head);
+        else {
+            return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_value),
+                                        NEW_CHILD(ast, node->nd_head),
+                                        ID2SYM(rb_intern("NODE_SPECIAL_NO_NAME_REST")));
+        }
       case NODE_LASGN:
         goto asgn;
       case NODE_DASGN:
@@ -431,7 +435,7 @@ node_children(rb_ast_t *ast, NODE *node)
       case NODE_CVASGN:
       asgn:
         if (NODE_REQUIRED_KEYWORD_P(node)) {
-            return rb_ary_new_from_args(1, var_name(node->nd_vid));
+            return rb_ary_new_from_args(2, var_name(node->nd_vid), ID2SYM(rb_intern("NODE_SPECIAL_REQUIRED_KEYWORD")));
         }
         return rb_ary_new_from_args(2, var_name(node->nd_vid), NEW_CHILD(ast, node->nd_value));
       case NODE_GASGN:
@@ -600,7 +604,8 @@ node_children(rb_ast_t *ast, NODE *node)
         if (NODE_NAMED_REST_P(node->nd_1st)) {
             return rb_ary_new_from_node_args(ast, 2, node->nd_1st, node->nd_2nd);
         }
-        return rb_ary_new_from_node_args(ast, 1, node->nd_2nd);
+        return rb_ary_new_from_args(2, ID2SYM(rb_intern("NODE_SPECIAL_NO_NAME_REST")),
+                                    NEW_CHILD(ast, node->nd_2nd));
       case NODE_ARGS:
         {
             struct rb_args_info *ainfo = node->nd_ainfo;
