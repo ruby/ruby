@@ -116,9 +116,20 @@ mjit_update_references(const rb_iseq_t *iseq)
 {
     if (!mjit_enabled)
         return;
+
     CRITICAL_SECTION_START(4, "mjit_free_iseq");
     if (iseq->body->jit_unit) {
         iseq->body->jit_unit->iseq = (rb_iseq_t *)rb_gc_new_location((VALUE)iseq->body->jit_unit->iseq);
+    }
+
+    // Units in stale_units (list of over-speculated and invalidated code) are not referenced from
+    // `iseq->body->jit_unit` anymore (because new one replaces that). So we need to check them too.
+    // TODO: we should be able to reduce the number of units checked here.
+    struct rb_mjit_unit *unit = NULL;
+    list_for_each(&stale_units.head, unit, unode) {
+        if (unit->iseq == iseq) {
+            unit->iseq = (rb_iseq_t *)rb_gc_new_location((VALUE)unit->iseq);
+        }
     }
     CRITICAL_SECTION_FINISH(4, "mjit_free_iseq");
 }
