@@ -141,6 +141,7 @@ mjit_free_iseq(const rb_iseq_t *iseq)
 {
     if (!mjit_enabled)
         return;
+
     CRITICAL_SECTION_START(4, "mjit_free_iseq");
     if (mjit_copy_job.iseq == iseq) {
         mjit_copy_job.iseq = NULL;
@@ -149,6 +150,15 @@ mjit_free_iseq(const rb_iseq_t *iseq)
         // jit_unit is not freed here because it may be referred by multiple
         // lists of units. `get_from_list` and `mjit_finish` do the job.
         iseq->body->jit_unit->iseq = NULL;
+    }
+    // Units in stale_units (list of over-speculated and invalidated code) are not referenced from
+    // `iseq->body->jit_unit` anymore (because new one replaces that). So we need to check them too.
+    // TODO: we should be able to reduce the number of units checked here.
+    struct rb_mjit_unit *unit = NULL;
+    list_for_each(&stale_units.head, unit, unode) {
+        if (unit->iseq == iseq) {
+            unit->iseq = NULL;
+        }
     }
     CRITICAL_SECTION_FINISH(4, "mjit_free_iseq");
 }
