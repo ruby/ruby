@@ -128,7 +128,7 @@ struct rb_mjit_unit {
     int id;
     // Dlopen handle of the loaded object file.
     void *handle;
-    const rb_iseq_t *iseq;
+    rb_iseq_t *iseq;
 #ifndef _MSC_VER
     // This value is always set for `compact_all_jit_code`. Also used for lazy deletion.
     char *o_file;
