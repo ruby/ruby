@@ -4655,10 +4655,6 @@ gc_mark_maybe_(rb_objspace_t *objspace, VALUE obj, int pin)
         unpoison_object(obj, false);
         type = BUILTIN_TYPE(obj);
 
-        if (type == T_MOVED || type == T_ZOMBIE) {
-            gc_pin(objspace, obj);
-        }
-
         /* Garbage can live on the stack, so do not mark or pin */
         if (type != T_MOVED && type != T_ZOMBIE && type != T_NONE) {
             if (pin) {
@@ -7984,6 +7980,7 @@ gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
     page->freelist = NULL;
     poison_memory_region(&page->freelist, sizeof(RVALUE*));
     page->flags.has_uncollectible_shady_objects = FALSE;
+    page->flags.has_remembered_objects = FALSE;
 
     /* For each object on the page */
     for (; v != (VALUE)vend; v += stride) {
@@ -7997,6 +7994,9 @@ gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
             else {
                 if (RVALUE_WB_UNPROTECTED(v)) {
                     page->flags.has_uncollectible_shady_objects = TRUE;
+                }
+                if (RVALUE_PAGE_MARKING(page, v)) {
+                    page->flags.has_remembered_objects = TRUE;
                 }
                 gc_update_object_references(objspace, v);
             }
@@ -8145,6 +8145,7 @@ gc_verify_compaction_references(VALUE mod)
 
     /* Ensure objects are pinned */
     rb_gc();
+    rb_gc_disable();
 
     gc_compact_heap(objspace);
 
@@ -8157,6 +8158,8 @@ gc_verify_compaction_references(VALUE mod)
     heap_eden->free_pages = NULL;
     heap_eden->using_page = NULL;
 
+    gc_verify_internal_consistency(mod);
+    rb_gc_enable();
     /* GC after compaction to eliminate T_MOVED */
     rb_gc();
 
