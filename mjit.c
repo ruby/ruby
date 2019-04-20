@@ -404,16 +404,16 @@ mjit_wait(struct rb_iseq_constant_body *body)
     while (body->jit_func == (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC) {
         tries++;
         if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS || pch_status == PCH_FAILED) {
-            CRITICAL_SECTION_START(3, "in mjit_wait_call to set jit_func");
+            CRITICAL_SECTION_START(3, "in rb_mjit_wait_call to set jit_func");
             body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // JIT worker seems dead. Give up.
-            CRITICAL_SECTION_FINISH(3, "in mjit_wait_call to set jit_func");
+            CRITICAL_SECTION_FINISH(3, "in rb_mjit_wait_call to set jit_func");
             mjit_warning("timed out to wait for JIT finish");
             break;
         }
 
-        CRITICAL_SECTION_START(3, "in mjit_wait_call for a client wakeup");
+        CRITICAL_SECTION_START(3, "in rb_mjit_wait_call for a client wakeup");
         rb_native_cond_broadcast(&mjit_worker_wakeup);
-        CRITICAL_SECTION_FINISH(3, "in mjit_wait_call for a client wakeup");
+        CRITICAL_SECTION_FINISH(3, "in rb_mjit_wait_call for a client wakeup");
         rb_thread_wait_for(tv);
     }
 }
@@ -421,7 +421,7 @@ mjit_wait(struct rb_iseq_constant_body *body)
 // Wait for JIT compilation finish for --jit-wait, and call the function pointer
 // if the compiled result is not NOT_COMPILED_JIT_ISEQ_FUNC.
 VALUE
-mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
+rb_mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
 {
     mjit_wait(body);
     if ((uintptr_t)body->jit_func <= (uintptr_t)LAST_JIT_ISEQ_FUNC) {
