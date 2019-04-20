@@ -262,6 +262,9 @@ rb_iseq_update_references(rb_iseq_t *iseq)
                 }
             }
         }
+#if USE_MJIT
+        mjit_update_references(iseq);
+#endif
     }
 }
 

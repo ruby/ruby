@@ -110,6 +110,19 @@ mjit_gc_finish_hook(void)
     CRITICAL_SECTION_FINISH(4, "mjit_gc_finish_hook");
 }
 
+// Deal with ISeq movement from compactor
+void
+mjit_update_references(const rb_iseq_t *iseq)
+{
+    if (!mjit_enabled)
+        return;
+    CRITICAL_SECTION_START(4, "mjit_free_iseq");
+    if (iseq->body->jit_unit) {
+        iseq->body->jit_unit->iseq = (rb_iseq_t *)rb_gc_new_location(iseq->body->jit_unit->iseq);
+    }
+    CRITICAL_SECTION_FINISH(4, "mjit_free_iseq");
+}
+
 // Iseqs can be garbage collected.  This function should call when it
 // happens.  It removes iseq from the unit.
 void
