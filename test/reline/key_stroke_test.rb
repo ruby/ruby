@@ -1,4 +1,4 @@
-require 'helper'
+require_relative 'helper'
 
 class Reline::KeyStroke::Test < Reline::TestCase
   using Module.new {

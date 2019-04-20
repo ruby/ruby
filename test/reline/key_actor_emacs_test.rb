@@ -1,4 +1,4 @@
-require 'helper'
+require_relative 'helper'
 
 class Reline::KeyActor::Emacs::Test < Reline::TestCase
   def setup
