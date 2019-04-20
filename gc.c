@@ -4654,6 +4654,11 @@ gc_mark_maybe_(rb_objspace_t *objspace, VALUE obj, int pin)
 
         unpoison_object(obj, false);
         type = BUILTIN_TYPE(obj);
+
+        if (type == T_MOVED || type == T_ZOMBIE) {
+            gc_pin(objspace, obj);
+        }
+
         /* Garbage can live on the stack, so do not mark or pin */
         if (type != T_MOVED && type != T_ZOMBIE && type != T_NONE) {
             if (pin) {
