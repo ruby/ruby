@@ -177,7 +177,21 @@ free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
     list_for_each_safe(&list->head, unit, next, unode) {
         list_del(&unit->unode);
         if (!close_handle_p) unit->handle = NULL; /* Skip dlclose in free_unit() */
-        free_unit(unit);
+
+        if (list == &stale_units) { // `free_unit(unit)` crashes after GC.compact on `stale_units`
+            /*
+             * TODO: REVERT THIS BRANCH
+             * Debug the crash on stale_units w/ GC.compact and just use `free_unit(unit)`!!
+             */
+            if (unit->handle && dlclose(unit->handle)) {
+                mjit_warning("failed to close handle for u%d: %s", unit->id, dlerror());
+            }
+            clean_object_files(unit);
+            free(unit);
+        }
+        else {
+            free_unit(unit);
+        }
     }
     list->length = 0;
 }
