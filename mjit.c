@@ -117,7 +117,7 @@ mjit_update_references(const rb_iseq_t *iseq)
     if (!mjit_enabled)
         return;
 
-    CRITICAL_SECTION_START(4, "mjit_free_iseq");
+    CRITICAL_SECTION_START(4, "mjit_update_references");
     if (iseq->body->jit_unit) {
         iseq->body->jit_unit->iseq = (rb_iseq_t *)rb_gc_new_location((VALUE)iseq->body->jit_unit->iseq);
         // We need to invalidate JIT-ed code for the ISeq because it embeds pointer addresses.
@@ -134,7 +134,7 @@ mjit_update_references(const rb_iseq_t *iseq)
             unit->iseq = (rb_iseq_t *)rb_gc_new_location((VALUE)unit->iseq);
         }
     }
-    CRITICAL_SECTION_FINISH(4, "mjit_free_iseq");
+    CRITICAL_SECTION_FINISH(4, "mjit_update_references");
 }
 
 // Iseqs can be garbage collected.  This function should call when it
