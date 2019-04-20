@@ -84,6 +84,7 @@ extern void mjit_postponed_job_register_finish_hook(void);
 extern void mjit_gc_start_hook(void);
 extern void mjit_gc_finish_hook(void);
 extern void mjit_free_iseq(const rb_iseq_t *iseq);
+extern void mjit_update_references(const rb_iseq_t *iseq);
 extern void mjit_mark(void);
 extern struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec);
 extern void mjit_cont_free(struct mjit_cont *cont);
