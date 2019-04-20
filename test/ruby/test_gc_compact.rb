@@ -73,6 +73,8 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_find_collided_object
+    skip "figure out how to guarantee move"
+
     list_of_objects, addresses, new_tenant = try_to_move_objects
 
     # This is the object that used to be in new_object's position
