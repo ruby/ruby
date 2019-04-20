@@ -60,12 +60,7 @@ enum id_entry_type {
     ID_ENTRY_SIZE
 };
 
-static struct symbols {
-    rb_id_serial_t last_id;
-    st_table *str_sym;
-    VALUE ids;
-    VALUE dsymbol_fstr_hash;
-} global_symbols = {tNEXT_ID-1};
+rb_symbols_t global_symbols = {tNEXT_ID-1};
 
 static const struct st_hash_type symhash = {
     rb_str_hash_cmp,
