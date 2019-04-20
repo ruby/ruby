@@ -884,7 +884,10 @@ class CSV
   # <b><tt>:empty_value</tt></b>::        When set an object, any values of a
   #                                       blank string field is replaced by
   #                                       the set object.
-  # <b><tt>:quote_empty</tt></b>::        TODO
+  # <b><tt>:quote_empty</tt></b>::        When set to a +true+ value, CSV will
+  #                                       quote empty values with double quotes.
+  #                                       When +false+, CSV will emit an
+  #                                       empty string for an empty field value.
   # <b><tt>:write_converters</tt></b>::   Converts values on each line with the
   #                                       specified <tt>Proc</tt> object(s),
   #                                       which receive a <tt>String</tt> value
