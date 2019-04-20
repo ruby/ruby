@@ -118,7 +118,7 @@ mjit_update_references(const rb_iseq_t *iseq)
         return;
     CRITICAL_SECTION_START(4, "mjit_free_iseq");
     if (iseq->body->jit_unit) {
-        iseq->body->jit_unit->iseq = (rb_iseq_t *)rb_gc_new_location(iseq->body->jit_unit->iseq);
+        iseq->body->jit_unit->iseq = (rb_iseq_t *)rb_gc_new_location((VALUE)iseq->body->jit_unit->iseq);
     }
     CRITICAL_SECTION_FINISH(4, "mjit_free_iseq");
 }
@@ -236,7 +236,7 @@ create_unit(const rb_iseq_t *iseq)
         return;
 
     unit->id = current_unit_num++;
-    unit->iseq = iseq;
+    unit->iseq = (rb_iseq_t *)iseq;
     iseq->body->jit_unit = unit;
 }
 
