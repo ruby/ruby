@@ -79,7 +79,7 @@ class TestGCCompact < Test::Unit::TestCase
     loc = memory_location(new_tenant)
     assert loc, "should have a memory location"
 
-    if (ENV['TRAVIS'] && RUBY_PLATFORM =~ /darwin/) || ENV['WERCKER_STEP_ID']
+    if (ENV['TRAVIS'] && RUBY_PLATFORM =~ /darwin/) || RubyVM::MJIT.enabled?
       skip "tests are failing on Travis osx / Wercker from here"
     end
 
