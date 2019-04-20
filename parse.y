@@ -11037,7 +11037,7 @@ new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, ID
 	if (rest_arg) {
 	    apinfo->rest_arg = assignable(p, rest_arg, 0, loc);
 	} else {
-	    apinfo->rest_arg = NEW_BEGIN(0, loc);
+	    apinfo->rest_arg = NODE_SPECIAL_NO_NAME_REST;
 	}
     } else {
 	apinfo->rest_arg = NULL;

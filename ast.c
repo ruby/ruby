@@ -634,10 +634,12 @@ node_children(rb_ast_t *ast, NODE *node)
       case NODE_ARYPTN:
         {
             struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
+            VALUE rest = NODE_NAMED_REST_P(apinfo->rest_arg) ? NEW_CHILD(ast, apinfo->rest_arg) :
+                                                               ID2SYM(rb_intern("NODE_SPECIAL_NO_NAME_REST"));
             return rb_ary_new_from_args(4,
                                         NEW_CHILD(ast, node->nd_pconst),
                                         NEW_CHILD(ast, apinfo->pre_args),
-                                        NEW_CHILD(ast, apinfo->rest_arg),
+                                        rest,
                                         NEW_CHILD(ast, apinfo->post_args));
         }
       case NODE_HSHPTN:
