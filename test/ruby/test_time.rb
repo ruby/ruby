@@ -970,6 +970,32 @@ class TestTime < Test::Unit::TestCase
     }
   end
 
+  def test_floor
+    t = Time.utc(1999,12,31, 23,59,59)
+    t2 = (t+0.4).floor
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+0.49).floor
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+0.5).floor
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.4).floor
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.49).floor
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+    t2 = (t+1.5).floor
+    assert_equal([0,0,0, 1,1,2000, 6,1,false,"UTC"], t2.to_a)
+    assert_equal(0, t2.subsec)
+
+    t2 = (t+0.123456789).floor(4)
+    assert_equal([59,59,23, 31,12,1999, 5,365,false,"UTC"], t2.to_a)
+    assert_equal(Rational(1234,10000), t2.subsec)
+  end
+
   def test_getlocal_dont_share_eigenclass
     bug5012 = "[ruby-dev:44071]"
 
