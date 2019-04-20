@@ -76,7 +76,14 @@ class TestGCCompact < Test::Unit::TestCase
     list_of_objects, addresses, new_tenant = try_to_move_objects
 
     # This is the object that used to be in new_object's position
-    previous_tenant = list_of_objects[addresses.index(memory_location(new_tenant))]
+    loc = memory_location(new_tenant)
+    assert loc, "should have a memory location"
+
+    address_idx = addresses.index(loc)
+    assert address_idx, "should have an address index"
+
+    previous_tenant = list_of_objects[address_idx]
+    assert previous_tenant, "should have a previous tenant"
 
     assert_not_equal previous_tenant.object_id, new_tenant.object_id
 
