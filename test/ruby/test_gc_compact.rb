@@ -33,7 +33,7 @@ class TestGCCompact < Test::Unit::TestCase
 
     100_000.times do
       new_object = Object.new
-      if addresses.include? memory_location(new_object)
+      if addresses.index memory_location(new_object)
         break
       end
     end
