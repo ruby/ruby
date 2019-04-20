@@ -4232,6 +4232,75 @@ time_round(int argc, VALUE *argv, VALUE time)
 }
 
 /*
+ * call-seq:
+ *   time.floor([ndigits])   -> new_time
+ *
+ * Floors sub seconds to a given precision in decimal digits (0 digits by default).
+ * It returns a new Time object.
+ * +ndigits+ should be zero or a positive integer.
+ *
+ *     require 'time'
+ *
+ *     t = Time.utc(2010,3,30, 5,43,"25.123456789".to_r)
+ *     t.iso8601(10)           #=> "2010-03-30T05:43:25.1234567890Z"
+ *     t.floor.iso8601(10)     #=> "2010-03-30T05:43:25.0000000000Z"
+ *     t.floor(0).iso8601(10)  #=> "2010-03-30T05:43:25.0000000000Z"
+ *     t.floor(1).iso8601(10)  #=> "2010-03-30T05:43:25.1000000000Z"
+ *     t.floor(2).iso8601(10)  #=> "2010-03-30T05:43:25.1200000000Z"
+ *     t.floor(3).iso8601(10)  #=> "2010-03-30T05:43:25.1230000000Z"
+ *     t.floor(4).iso8601(10)  #=> "2010-03-30T05:43:25.1234000000Z"
+ *     t.floor(5).iso8601(10)  #=> "2010-03-30T05:43:25.1234500000Z"
+ *     t.floor(6).iso8601(10)  #=> "2010-03-30T05:43:25.1234560000Z"
+ *     t.floor(7).iso8601(10)  #=> "2010-03-30T05:43:25.1234567000Z"
+ *     t.floor(8).iso8601(10)  #=> "2010-03-30T05:43:25.1234567800Z"
+ *     t.floor(9).iso8601(10)  #=> "2010-03-30T05:43:25.1234567890Z"
+ *     t.floor(10).iso8601(10) #=> "2010-03-30T05:43:25.1234567890Z"
+ *
+ *     t = Time.utc(1999,12,31, 23,59,59)
+ *     (t + 0.4).floor.iso8601(3)    #=> "1999-12-31T23:59:59.000Z"
+ *     (t + 0.49).floor.iso8601(3)   #=> "1999-12-31T23:59:59.000Z"
+ *     (t + 0.5).floor.iso8601(3)    #=> "1999-12-31T23:59:59.000Z"
+ *     (t + 1.4).floor.iso8601(3)    #=> "2000-01-01T00:00:00.000Z"
+ *     (t + 1.49).floor.iso8601(3)   #=> "2000-01-01T00:00:00.000Z"
+ *     (t + 1.5).floor.iso8601(3)    #=> "2000-01-01T00:00:00.000Z"
+ *
+ *     t = Time.utc(1999,12,31, 23,59,59)
+ *     (t + 0.123456789).floor(4).iso8601(6)  #=> "1999-12-31T23:59:59.123400Z"
+ */
+
+static VALUE
+time_floor(int argc, VALUE *argv, VALUE time)
+{
+    VALUE ndigits, v, a, b, den;
+    long nd;
+    struct time_object *tobj;
+
+    if (!rb_check_arity(argc, 0, 1) || NIL_P(ndigits = argv[0]))
+        ndigits = INT2FIX(0);
+    else
+        ndigits = rb_to_int(ndigits);
+
+    nd = NUM2LONG(ndigits);
+    if (nd < 0)
+	rb_raise(rb_eArgError, "negative ndigits given");
+
+    GetTimeval(time, tobj);
+    v = w2v(rb_time_unmagnify(tobj->timew));
+
+    a = INT2FIX(1);
+    b = INT2FIX(10);
+    while (0 < nd) {
+        if (nd & 1)
+            a = mulv(a, b);
+        b = mulv(b, b);
+        nd = nd >> 1;
+    }
+    den = quov(INT2FIX(1), a);
+    v = modv(v, den);
+    return time_add(tobj, time, v, -1);
+}
+
+/*
  *  call-seq:
  *     time.sec -> integer
  *
@@ -5630,6 +5699,7 @@ Init_Time(void)
 
     rb_define_method(rb_cTime, "succ", time_succ, 0);
     rb_define_method(rb_cTime, "round", time_round, -1);
+    rb_define_method(rb_cTime, "floor", time_floor, -1);
 
     rb_define_method(rb_cTime, "sec", time_sec, 0);
     rb_define_method(rb_cTime, "min", time_min, 0);
