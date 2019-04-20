@@ -1,4 +1,4 @@
-require 'helper'
+require_relative 'helper'
 
 class Reline::Config::Test < Reline::TestCase
   def setup
