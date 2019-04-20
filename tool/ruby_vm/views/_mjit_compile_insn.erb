@@ -61,12 +61,12 @@
 %
 % # JIT: We should evaluate ISeq modified for TracePoint if it's enabled. Note: This is slow.
 % unless insn.always_leaf?
-        fprintf(f, "    if (UNLIKELY(ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS)) {\n");
+        fprintf(f, "    if (UNLIKELY(!mjit_call_p)) {\n");
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %>);
         if (!pc_moved_p) {
             fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);
         }
-        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_trace);\n");
+        fprintf(f, "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n");
         fprintf(f, "        goto cancel;\n");
         fprintf(f, "    }\n");
 % end

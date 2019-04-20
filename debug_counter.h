@@ -274,7 +274,7 @@ RB_DEBUG_COUNTER(mjit_cancel)
 RB_DEBUG_COUNTER(mjit_cancel_ivar_inline)
 RB_DEBUG_COUNTER(mjit_cancel_send_inline)
 RB_DEBUG_COUNTER(mjit_cancel_opt_insn) /* CALL_SIMPLE_METHOD */
-RB_DEBUG_COUNTER(mjit_cancel_trace)
+RB_DEBUG_COUNTER(mjit_cancel_invalidate_all)
 
 /* rb_mjit_unit_list length */
 RB_DEBUG_COUNTER(mjit_length_unit_queue)

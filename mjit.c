@@ -120,6 +120,9 @@ mjit_update_references(const rb_iseq_t *iseq)
     CRITICAL_SECTION_START(4, "mjit_free_iseq");
     if (iseq->body->jit_unit) {
         iseq->body->jit_unit->iseq = (rb_iseq_t *)rb_gc_new_location((VALUE)iseq->body->jit_unit->iseq);
+        // We need to invalidate JIT-ed code for the ISeq because it embeds pointer addresses.
+        // To efficiently do that, we use the same thing as TracePoint and thus everything is cancelled for now.
+        mjit_call_p = false; // TODO: instead of cancelling all, invalidate only this one and recompile it with some threshold.
     }
 
     // Units in stale_units (list of over-speculated and invalidated code) are not referenced from
@@ -313,6 +316,7 @@ unload_units(void)
     for (cont = first_cont; cont != NULL; cont = cont->next) {
         mark_ec_units(cont->ec);
     }
+    // TODO: check slale_units and unload unused ones! (note that the unit is not associated to ISeq anymore)
 
     // Remove 1/10 units more to decrease unloading calls.
     // TODO: Calculate max total_calls in unit_queue and don't unload units
