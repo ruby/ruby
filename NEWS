@@ -122,6 +122,15 @@ JIT::
 
   * Default value of +--jit-min-calls+ is changed from 5 to 10,000
 
+GC::
+
+  * New `GC.compact` method for compacting the heap.
+    This function compacts live objects in the heap so that fewer pages may
+    be used, and the heap may be more CoW friendly. [Feature #15626]
+
+    Details on the algorithm and caveats can be found here:
+    https://bugs.ruby-lang.org/issues/15626
+
 === Miscellaneous changes
 
 * Require compilers to support C99 [Misc #15347]

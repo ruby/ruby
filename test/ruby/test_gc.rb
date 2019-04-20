@@ -253,6 +253,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_profiler_clear
+    skip "for now"
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom', timeout: 30
     GC::Profiler.enable
 
