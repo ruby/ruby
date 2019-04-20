@@ -14,12 +14,16 @@ class TestGCCompact < Test::Unit::TestCase
     list.count - same_count
   end
 
-  def big_list
-    1000.times.map {
-      # try to make some empty slots by allocating an object and discarding
-      Object.new
-      Object.new
-    } # likely next to each other
+  def big_list(level = 10)
+    if level > 0
+      big_list(level - 1)
+    else
+      1000.times.map {
+        # try to make some empty slots by allocating an object and discarding
+        Object.new
+        Object.new
+      } # likely next to each other
+    end
   end
 
   # Find an object that's allocated in a slot that had a previous
@@ -37,31 +41,39 @@ class TestGCCompact < Test::Unit::TestCase
     new_object
   end
 
+  def try_to_move_objects
+    10.times do
+      list_of_objects = big_list
+
+      ids       = list_of_objects.map(&:object_id) # store id in map
+      addresses = list_of_objects.map(&self.:memory_location)
+
+      assert_equal ids, addresses
+
+      # All object ids should be equal
+      assert_equal 0, assert_object_ids(list_of_objects) # should be 0
+
+      GC.verify_compaction_references
+
+      # Some should have moved
+      id_count = assert_object_ids(list_of_objects)
+      skip "couldn't get objects to move" if id_count == 0
+      assert_operator id_count, :>, 0
+
+      new_ids = list_of_objects.map(&:object_id)
+
+      # Object ids should not change after compaction
+      assert_equal ids, new_ids
+
+      new_tenant = find_object_in_recycled_slot(addresses)
+      return [list_of_objects, addresses, new_tenant] if new_tenant
+    end
+
+    flunk "Couldn't get objects to move"
+  end
+
   def test_find_collided_object
-    list_of_objects = big_list
-
-    ids       = list_of_objects.map(&:object_id) # store id in map
-    addresses = list_of_objects.map(&self.:memory_location)
-
-    assert_equal ids, addresses
-
-    # All object ids should be equal
-    assert_equal 0, assert_object_ids(list_of_objects) # should be 0
-
-    GC.verify_compaction_references
-
-    # Some should have moved
-    id_count = assert_object_ids(list_of_objects)
-    skip "couldn't get objects to move" if id_count == 0
-    assert_operator id_count, :>, 0
-
-    new_ids = list_of_objects.map(&:object_id)
-
-    # Object ids should not change after compaction
-    assert_equal ids, new_ids
-
-    new_tenant = find_object_in_recycled_slot(addresses)
-    assert new_tenant
+    list_of_objects, addresses, new_tenant = try_to_move_objects
 
     # This is the object that used to be in new_object's position
     previous_tenant = list_of_objects[addresses.index(memory_location(new_tenant))]
