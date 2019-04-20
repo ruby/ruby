@@ -5305,8 +5305,8 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         const int post_args_num = apinfo->post_args ? rb_long2int(apinfo->post_args->nd_alen) : 0;
 
         const int min_argc = pre_args_num + post_args_num;
-        const int use_rest_num = apinfo->rest_arg && ((nd_type(apinfo->rest_arg) != NODE_BEGIN) ||
-                                                      (nd_type(apinfo->rest_arg) == NODE_BEGIN && post_args_num > 0));
+        const int use_rest_num = apinfo->rest_arg && (NODE_NAMED_REST_P(apinfo->rest_arg) ||
+                                                      (!NODE_NAMED_REST_P(apinfo->rest_arg) && post_args_num > 0));
 
         LABEL *match_failed, *type_error, *fin;
         int i;
@@ -5354,17 +5354,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         }
 
         if (apinfo->rest_arg) {
-            if (nd_type(apinfo->rest_arg) == NODE_BEGIN) {
-                if (post_args_num > 0) {
-                    ADD_INSN(ret, line, dup);
-                    ADD_SEND(ret, line, idLength, INT2FIX(0));
-                    ADD_INSN1(ret, line, putobject, INT2FIX(min_argc));
-                    ADD_SEND(ret, line, idMINUS, INT2FIX(1));
-                    ADD_INSN1(ret, line, setn, INT2FIX(2));
-                    ADD_INSN(ret, line, pop);
-                }
-            }
-            else {
+            if (NODE_NAMED_REST_P(apinfo->rest_arg)) {
                 ADD_INSN(ret, line, dup);
                 ADD_INSN1(ret, line, putobject, INT2FIX(pre_args_num));
                 ADD_INSN1(ret, line, topn, INT2FIX(1));
@@ -5376,6 +5366,16 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
 
                 iseq_compile_pattern_each(iseq, ret, apinfo->rest_arg, in_alt_pattern);
                 ADD_INSNL(ret, line, branchunless, match_failed);
+            }
+            else {
+                if (post_args_num > 0) {
+                    ADD_INSN(ret, line, dup);
+                    ADD_SEND(ret, line, idLength, INT2FIX(0));
+                    ADD_INSN1(ret, line, putobject, INT2FIX(min_argc));
+                    ADD_SEND(ret, line, idMINUS, INT2FIX(1));
+                    ADD_INSN1(ret, line, setn, INT2FIX(2));
+                    ADD_INSN(ret, line, pop);
+                }
             }
         }
 

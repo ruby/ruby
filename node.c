@@ -1040,7 +1040,12 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: [nd_pconst]([pre_args], ..., *[rest_arg], [post_args], ...)");
         F_NODE(nd_pconst, "constant");
         F_NODE(nd_apinfo->pre_args, "pre arguments");
-        F_NODE(nd_apinfo->rest_arg, "rest argument");
+        if (NODE_NAMED_REST_P(node->nd_apinfo->rest_arg)) {
+            F_NODE(nd_apinfo->rest_arg, "rest argument");
+        }
+        else {
+            F_MSG(nd_apinfo->rest_arg, "rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
+        }
         LAST_NODE;
         F_NODE(nd_apinfo->post_args, "post arguments");
         return;
