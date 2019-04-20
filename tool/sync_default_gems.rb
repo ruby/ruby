@@ -3,6 +3,7 @@
 # * https://github.com/rubygems/rubygems
 # * https://github.com/bundler/bundler
 # * https://github.com/ruby/rdoc
+# * https://github.com/aycabta/reline
 # * https://github.com/flori/json
 # * https://github.com/ruby/psych
 # * https://github.com/ruby/fileutils
@@ -42,6 +43,7 @@ $repositories = {
   rubygems: 'rubygems/rubygems',
   bundler: 'bundler/bundler',
   rdoc: 'ruby/rdoc',
+  reline: 'aycabta/reline',
   json: 'flori/json',
   psych: 'ruby/psych',
   fileutils: 'ruby/fileutils',
@@ -102,6 +104,11 @@ def sync_default_gems(gem)
     `cp -rf ../rdoc/exe/ri ./libexec`
     `rm -f lib/rdoc/markdown.kpeg lib/rdoc/markdown/literals.kpeg lib/rdoc/rd/block_parser.ry lib/rdoc/rd/inline_parser.ry`
     `git checkout lib/rdoc/.document`
+  when "reline"
+    `rm -rf lib/reline* test/reline`
+    `cp -rf ../reline/lib/reline* ./lib`
+    `cp -rf ../reline/test test/reline`
+    `cp ../reline/reline.gemspec ./lib/reline`
   when "json"
     `rm -rf ext/json test/json`
     `cp -rf ../../flori/json/ext/json/ext ext/json`
