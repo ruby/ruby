@@ -39,7 +39,6 @@ Usage:  irb.rb [options] [programfile] [arguments]
   --back-trace-limit n
 		    Display backtrace top n and tail n. The default
 		    value is 16.
-  --irb_debug n	    Set internal debug level to n (not for popular use)
   --verbose         Show details
   --noverbose       Don't show details
   -v, --version	    Print the version of irb
