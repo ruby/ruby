@@ -227,9 +227,6 @@ else
   when /--ticket=(.*)/
     tickets = $1.split(/,/).map{|num| " [Backport ##{num}]"}.join
     ARGV.shift
-  when /merge revision\(s\) ([\d,\-]+):( \[.*)/
-    tickets = $2
-    ARGV[0] = $1
   else
     tickets = ''
   end
