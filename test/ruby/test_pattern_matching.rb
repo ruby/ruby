@@ -547,6 +547,20 @@ END
     end
 
     assert_block do
+      case [0]
+      in [0,]
+        true
+      end
+    end
+
+    assert_block do
+      case [0, 1]
+      in [0,]
+        true
+      end
+    end
+
+    assert_block do
       case []
       in [0, *a]
       else
@@ -624,6 +638,21 @@ END
       case [0, 1]
       in [0, *a]
         a == [1]
+      end
+    end
+
+    assert_block do
+      case [0]
+      in [0, *, 1]
+      else
+        true
+      end
+    end
+
+    assert_block do
+      case [0, 1]
+      in [0, *, 1]
+        true
       end
     end
   end
