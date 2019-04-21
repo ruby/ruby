@@ -1369,13 +1369,13 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 "	  $$(srcdir)/defs/opt_operand.def $$(srcdir)/defs/opt_insn_unif.def \" \
 "	  $$(srcdir)/tool/insns2vm.rb" \
 "	@$$(RM) $$(PROGRAM)" \
-"	$$(BASERUBY) -Ku $$(srcdir)/tool/insns2vm.rb $$(INSNS2VMOPT) %I" \
+"	$$(Q) $$(BASERUBY) -Ku $$(srcdir)/tool/insns2vm.rb $$(INSNS2VMOPT) %I" \
 "" \
 ) do @echo.%~J>>insns_rules.mk]
 !else
 ! include insns_rules.mk
-! if [del insns_rules.mk > nul]
-! endif
+#! if [del insns_rules.mk > nul]
+#! endif
 !endif
 
 verconf.h: verconf.mk
