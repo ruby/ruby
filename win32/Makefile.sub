@@ -1374,8 +1374,8 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 ) do @echo.%~J>>insns_rules.mk]
 !else
 ! include insns_rules.mk
-#! if [del insns_rules.mk > nul]
-#! endif
+! if [del insns_rules.mk > nul]
+! endif
 !endif
 
 verconf.h: verconf.mk
