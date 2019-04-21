@@ -8,6 +8,8 @@ exec "${RUBY-ruby}" "-x" "$0" "$@" && [ ] if false
 
 require 'fileutils'
 require 'tempfile'
+require 'net/http'
+require 'uri'
 
 $repos = 'svn+ssh://svn@ci.ruby-lang.org/ruby/'
 ENV['LC_ALL'] = 'C'
@@ -229,14 +231,17 @@ else
   end
 
   q = $repos + (ARGV[1] || default_merge_branch)
-  revstr = ARGV[0].delete('^, :\-0-9')
+  revstr = ARGV[0].delete('^, :\-0-9a-fA-F')
   revs = revstr.split(/[,\s]+/)
-  log_svn = ''
+  commit_message = ''
 
   revs.each do |rev|
+    git_rev = nil
     case rev
-    when /\A\d+\z/
-      r = ['-c', rev]
+    when /\A\d{1,6}\z/
+      svn_rev = rev
+    when /\A\h{7,40}\z/
+      git_rev = rev
     when nil then
       puts "#$0 revision"
       exit
@@ -245,14 +250,27 @@ else
       exit
     end
 
-    log_svn << IO.popen(%w'svn log ' + r + [q]) { |f|
-      f.read
-    }.sub(/\A-+\nr.*/, '').sub(/\n-+\n\z/, '').gsub(/^./, "\t\\&")
+    # Merge revision from Git patch or SVN
+    if git_rev
+      git_uri = "https://git.ruby-lang.org/ruby.git/patch/?id=#{git_rev}"
+      resp = Net::HTTP.get_response(URI(git_uri))
+      if resp.code != '200'
+        abort "'#{git_uri}' returned status '#{resp.code}':\n#{resp.body}"
+      end
+      patch = resp.body
 
-    a = %w'svn merge --accept=postpone' + r + [q]
-    STDERR.puts a.join(' ')
+      message = "\n\n#{(patch.match(/^Subject: (.*)\n\ndiff --git/m)[1] || "Message not found for revision: #{git_rev}\n")}"
+      puts "+ git apply"
+      IO.popen(['git', 'apply'], 'w') { |f| f.write(patch) }
+    else
+      message = IO.popen(['svn', 'log', '-r', svn_rev, q], &:read)
 
-    system(*a)
+      cmd = ['svn', 'merge', '--accept=postpone', '-r', svn_rev, q]
+      puts "+ #{cmd.join(' ')}"
+      system(*cmd)
+    end
+
+    commit_message << message.sub(/\A-+\nr.*/, '').sub(/\n-+\n\z/, '').gsub(/^./, "\t\\&")
   end
 
   if `svn diff --diff-cmd=diff -x -upw`.empty?
@@ -263,7 +281,7 @@ else
   version_up
   f = Tempfile.new 'merger.rb'
   f.printf "merge revision(s) %s:%s", revstr, tickets
-  f.write log_svn
+  f.write commit_message
   f.flush
   f.close
 
