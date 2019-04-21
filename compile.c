@@ -5284,9 +5284,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
          *   end
          *   pattern.post_args_num.each do |i|
          *     j = pattern.pre_args_num + i
-         *     if pattern.use_rest_num?
-         *       j += rest_num
-         *     end
+         *     j += rest_num
          *     unless pattern.post_args[i].match?(d[j])
          *       goto match_failed
          *     end
@@ -5384,10 +5382,8 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
             ADD_INSN(ret, line, dup);
 
             ADD_INSN1(ret, line, putobject, INT2FIX(pre_args_num + i));
-            if (use_rest_num) {
-                ADD_INSN1(ret, line, topn, INT2FIX(3));
-                ADD_SEND(ret, line, idPLUS, INT2FIX(1));
-            }
+            ADD_INSN1(ret, line, topn, INT2FIX(3));
+            ADD_SEND(ret, line, idPLUS, INT2FIX(1));
 
             ADD_SEND(ret, line, idAREF, INT2FIX(1));
             iseq_compile_pattern_each(iseq, ret, args->nd_head, in_alt_pattern);
