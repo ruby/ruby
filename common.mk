@@ -955,7 +955,6 @@ INSNS2VMOPT = --srcdir="$(srcdir)"
 
 srcs_vpath = {$(VPATH)}
 
-# TODO: dependencies on tool/ruby_vm scripts.
 inc_common_headers = $(srcdir)/tool/ruby_vm/views/_copyright.erb $(srcdir)/tool/ruby_vm/views/_notice.erb
 $(srcs_vpath)opt_sc.inc: $(srcdir)/tool/ruby_vm/views/opt_sc.inc.erb $(inc_common_headers)
 $(srcs_vpath)optinsn.inc: $(srcdir)/tool/ruby_vm/views/optinsn.inc.erb $(inc_common_headers)
