@@ -48,7 +48,7 @@ struct compile_status {
     // Mutated optimization levels
     struct rb_mjit_compile_info *compile_info;
     // If `inlined_iseqs[pos]` is not NULL, `mjit_compile_body` tries to inline ISeq there.
-    struct rb_iseq_constant_body **inlined_iseqs;
+    const struct rb_iseq_constant_body **inlined_iseqs;
     struct inlined_call_context inline_context;
 };
 
