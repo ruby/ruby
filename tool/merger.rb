@@ -239,11 +239,6 @@ else
 
   revs.each do |rev|
     case rev
-    when /\A\d+:\d+\z/
-      r = ['-r', rev]
-    when /\A(\d+)-(\d+)\z/
-      rev = "#{$1.to_i-1}:#$2"
-      r = ['-r', rev]
     when /\A\d+\z/
       r = ['-c', rev]
     when nil then
