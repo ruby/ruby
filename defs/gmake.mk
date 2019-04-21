@@ -214,3 +214,8 @@ clean-srcs-ext::
 
 clean-srcs-extra::
 	$(Q)$(RM) $(patsubst $(srcdir)/%,%,$(EXTRA_SRCS))
+
+ifneq ($(filter $(VCS),git),)
+update-src::
+	@$(BASERUBY) $(srcdir)/tool/colorize.rb pass "Latest commit hash = $(shell $(filter-out svn,$(VCS)) -C $(srcdir) rev-parse --short HEAD)"
+endif
