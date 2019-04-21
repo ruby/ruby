@@ -116,7 +116,7 @@ JIT::
   * JIT-ed code is recompiled to less-optimized code when an optimization assumption is invalidated.
 
   * Method inlining is performed when a method is considered as pure.
-    This optimization is still experimental and many methods are NOT considred as pure yet.
+    This optimization is still experimental and many methods are NOT considered as pure yet.
 
   * Default value of +--jit-max-cache+ is changed from 1,000 to 100
 
