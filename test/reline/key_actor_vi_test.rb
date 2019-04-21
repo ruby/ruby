@@ -1,4 +1,4 @@
-require 'helper'
+require_relative 'helper'
 
 class Reline::KeyActor::ViInsert::Test < Reline::TestCase
   def setup

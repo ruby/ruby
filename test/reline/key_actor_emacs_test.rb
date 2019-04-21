@@ -1,4 +1,4 @@
-require 'helper'
+require_relative 'helper'
 require 'stringio'
 
 class Reline::KeyActor::Emacs::Test < Reline::TestCase
