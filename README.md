@@ -56,6 +56,8 @@ to see the list of branches:
 
     $ git ls-remote https://github.com/ruby/ruby.git
 
+You may also want to use https://git.ruby-lang.org/ruby.git for better latency.
+
 ## Ruby home page
 
 https://www.ruby-lang.org/
