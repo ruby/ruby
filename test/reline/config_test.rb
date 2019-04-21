@@ -2,6 +2,7 @@ require_relative 'helper'
 
 class Reline::Config::Test < Reline::TestCase
   def setup
+    @pwd = Dir.pwd
     @tmpdir = File.join(Dir.tmpdir, "test_reline_config_#{$$}")
     Dir.mkdir(@tmpdir)
     Dir.chdir(@tmpdir)
@@ -9,6 +10,7 @@ class Reline::Config::Test < Reline::TestCase
   end
 
   def teardown
+    Dir.chdir(@pwd)
     FileUtils.rm_rf(@tmpdir)
   end
 
