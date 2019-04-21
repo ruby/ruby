@@ -101,6 +101,7 @@ module IRB
       if @echo.nil?
         @echo = true
       end
+      self.debug_level = IRB.conf[:DEBUG_LEVEL]
     end
 
     # The top-level workspace, see WorkSpace#main
@@ -210,6 +211,10 @@ module IRB
     #
     # A copy of the default <code>IRB.conf[:VERBOSE]</code>
     attr_accessor :verbose
+    # The debug level of irb
+    #
+    # See #debug_level= for more information.
+    attr_reader :debug_level
 
     # The limit of backtrace lines displayed as top +n+ and tail +n+.
     #
@@ -354,6 +359,21 @@ module IRB
     def use_readline=(opt)
       print "This method is obsolete."
       print "Do nothing."
+    end
+
+    # Sets the debug level of irb
+    #
+    # Can also be set using the +--irb_debug+ command line option.
+    #
+    # See IRB@Command+line+options for more command line options.
+    def debug_level=(value)
+      @debug_level = value
+      RubyLex.debug_level = value
+    end
+
+    # Whether or not debug mode is enabled, see #debug_level=.
+    def debug?
+      @debug_level > 0
     end
 
     def evaluate(line, line_no, exception: nil) # :nodoc:

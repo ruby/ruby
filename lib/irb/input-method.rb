@@ -142,17 +142,13 @@ module IRB
         @stdout = IO.open(STDOUT.to_i, 'w', :external_encoding => IRB.conf[:LC_MESSAGES].encoding, :internal_encoding => "-")
       end
 
-      def check_termination(&block)
-        @check_termination_proc = block
-      end
-
       # Reads the next line from this input method.
       #
       # See IO#gets for more information.
       def gets
         Readline.input = @stdin
         Readline.output = @stdout
-        if l = readmultiline(@prompt, false, &@check_termination_proc)
+        if l = readline(@prompt, false)
           HISTORY.push(l) if !l.empty?
           @line[@line_no += 1] = l + "\n"
         else

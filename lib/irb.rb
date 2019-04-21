@@ -73,6 +73,7 @@ require "irb/version"
 #     --back-trace-limit n
 #                       Display backtrace top n and tail n. The default
 #                       value is 16.
+#     --irb_debug n     Set internal debug level to n (not for popular use)
 #     -v, --version     Print the version of irb
 #
 # == Configuration
@@ -100,6 +101,7 @@ require "irb/version"
 #     IRB.conf[:IGNORE_EOF] = false
 #     IRB.conf[:PROMPT_MODE] = :DEFAULT
 #     IRB.conf[:PROMPT] = {...}
+#     IRB.conf[:DEBUG_LEVEL]=0
 #
 # === Auto indentation
 #
@@ -408,7 +410,9 @@ module IRB
       @context = Context.new(self, workspace, input_method, output_method)
       @context.main.extend ExtendCommandBundle
       @signal_status = :IN_IRB
+
       @scanner = RubyLex.new
+      @scanner.exception_on_syntax_error = false
     end
 
     def run(conf = IRB.conf)

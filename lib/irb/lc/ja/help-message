@@ -41,6 +41,8 @@ Usage:  irb.rb [options] [programfile] [arguments]
 		    バックトレース表示をバックトレースの頭から n, 後ろ
 		    からnだけ行なう. デフォルトは16
 
+  --irb_debug n	    irbのデバッグレベルをnに設定する(非推奨).
+
   --verbose	    詳細なメッセージを出力する.
   --noverbose	    詳細なメッセージを出力しない(デフォルト).
   -v, --version	    irbのバージョンを表示する.
