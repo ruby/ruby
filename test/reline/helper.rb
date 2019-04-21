@@ -1,6 +1,6 @@
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 require 'reline'
-require 'test-unit'
+require 'test/unit'
 
 RELINE_TEST_ENCODING = Encoding.find(ENV['RELINE_TEST_ENCODING']) if ENV['RELINE_TEST_ENCODING']
 
