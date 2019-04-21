@@ -351,7 +351,7 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
     }; \
     memset(status.stack_size_for_pos, NOT_COMPILED_STACK_SIZE, sizeof(int) * body->iseq_size); \
     if (compile_root_p) \
-        memset(status.inlined_iseqs, 0, sizeof(const struct rb_iseq_constant_body *) * body->iseq_size); \
+        memset((void *)status.inlined_iseqs, 0, sizeof(const struct rb_iseq_constant_body *) * body->iseq_size); \
     else \
         memset(status.compile_info, 0, sizeof(struct rb_mjit_compile_info)); \
 } while (0)
