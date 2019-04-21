@@ -262,9 +262,11 @@ end
 def backport_command_string
   unless @changesets.respond_to?(:validated)
     @changesets = @changesets.select do |c|
-      # check if the revision is included in trunk
+      next false if c.match(/\A\d{1,6}\z/) # skip SVN revision
+
+      # check if the Git revision is included in trunk
       begin
-        uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/trunk/revisions/#{c}")
+        uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/ruby-git/revisions/#{c}")
         uri.read($openuri_options)
         true
       rescue
@@ -369,13 +371,21 @@ eom
 
   "rel" => proc{|args|
     # this feature requires custom redmine which allows add_related_issue API
-    raise CommandSyntaxError unless /\Ar?(\d+)\z/ =~ args
+    case args
+    when /\Ar?(\d+)\z/ # SVN
+      rev = $1
+      uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/trunk/revisions/#{rev}/issues.json")
+    when /\A\h{7,40}\z/ # Git
+      rev = args
+      uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/ruby-git/revisions/#{rev}/issues.json")
+    else
+      raise CommandSyntaxError
+    end
     unless @issue
       puts "ticket not selected"
       next
     end
-    rev = $1
-    uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/trunk/revisions/#{rev}/issues.json")
+
     Net::HTTP.start(uri.host, uri.port, http_options) do |http|
       res = http.post(uri.path, "issue_id=#@issue",
                      'X-Redmine-API-Key' => REDMINE_API_KEY)
@@ -385,7 +395,7 @@ eom
         if $!.respond_to?(:response) && $!.response.is_a?(Net::HTTPConflict)
           $stderr.puts "the revision has already related to the ticket"
         else
-          $stderr.puts "deployed redmine doesn't have https://github.com/ruby/bugs.ruby-lang.org/commit/01fbba60d68cb916ddbccc8a8710e68c5217171d\nask naruse or hsbt"
+          $stderr.puts "#{$!.class}: #{$!.message}\n\ndeployed redmine doesn't have https://github.com/ruby/bugs.ruby-lang.org/commit/01fbba60d68cb916ddbccc8a8710e68c5217171d\nask naruse or hsbt"
         end
         next
       end
