@@ -169,7 +169,6 @@ See the file [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## The Author
 
-Ruby was originally designed and developed by Yukihiro Matsumoto (Matz) in
-1995.
+Ruby was originally designed and developed by Yukihiro Matsumoto (Matz) in 1995.
 
 <matz@ruby-lang.org>
