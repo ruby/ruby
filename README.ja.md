@@ -179,6 +179,3 @@ stackoverflow (https://ja.stackoverflow.com/) などのWebサイトに投稿し�
 Rubyのオリジナル版は，1995年にまつもとゆきひろ氏によって設計・開発されました．
 
 <mailto:matz@ruby-lang.org>
-
----
-created at: Thu Aug  3 11:57:36 JST 1995
