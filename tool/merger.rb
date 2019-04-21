@@ -231,7 +231,6 @@ else
   q = $repos + (ARGV[1] || default_merge_branch)
   revstr = ARGV[0].delete('^, :\-0-9')
   revs = revstr.split(/[,\s]+/)
-  log = ''
   log_svn = ''
 
   revs.each do |rev|
@@ -246,42 +245,19 @@ else
       exit
     end
 
-    l = IO.popen %w'svn diff' + r + %w'--diff-cmd=diff -x -pU0' + [File.join(q, 'ChangeLog')] do |f|
+    log_svn << IO.popen(%w'svn log ' + r + [q]) { |f|
       f.read
-    end
-
-    log << l
-    l = l.lines.grep(/^\+\t/).join.gsub(/^\+/, '').gsub(/^\t\*/, "\n\t\*")
-
-    if l.empty?
-      l = IO.popen %w'svn log ' + r + [q] do |f|
-        f.read
-      end.sub(/\A-+\nr.*/, '').sub(/\n-+\n\z/, '').gsub(/^./, "\t\\&")
-    end
-    log_svn << l
+    }.sub(/\A-+\nr.*/, '').sub(/\n-+\n\z/, '').gsub(/^./, "\t\\&")
 
     a = %w'svn merge --accept=postpone' + r + [q]
     STDERR.puts a.join(' ')
 
     system(*a)
-    system(*%w'svn revert ChangeLog') if /^\+/ =~ l
   end
 
   if `svn diff --diff-cmd=diff -x -upw`.empty?
-    interactive 'Only ChangeLog is modified, right?' do
+    interactive 'Nothing is modified, right?' do
     end
-  end
-
-  if /^\+/ =~ log
-    system(*%w'svn revert ChangeLog')
-    IO.popen %w'patch -p0', 'wb' do |f|
-      f.write log.gsub(/\+(Mon|Tue|Wed|Thu|Fri|Sat|Sun) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ 123][0-9] [012][0-9]:[0-5][0-9]:[0-5][0-9] \d\d\d\d/,
-                       # this format-time-string was from the file local variables of ChangeLog
-                       '+'+Time.now.strftime('%a %b %e %H:%M:%S %Y'))
-    end
-    system(*%w'touch ChangeLog') # needed somehow, don't know why...
-  else
-    STDERR.puts '*** You should write ChangeLog NOW!!! ***'
   end
 
   version_up
