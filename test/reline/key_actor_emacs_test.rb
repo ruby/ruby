@@ -1095,6 +1095,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor(6)
     assert_cursor_max(6)
     assert_line('foo_ba')
+  ensure
     $stdout = STDOUT
   end
 
