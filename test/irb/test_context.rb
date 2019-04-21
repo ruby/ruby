@@ -55,6 +55,7 @@ module TestIRB
     end
 
     def test_eval_input
+      verbose, $VERBOSE = $VERBOSE, nil
       input = TestInputMethod.new([
         "raise 'Foo'\n",
         "_\n",
@@ -71,6 +72,8 @@ module TestIRB
                            :*, /0$/,
                            :*, /0$/,
                            /\s*/], out)
+    ensure
+      $VERBOSE = verbose
     end
   end
 end
