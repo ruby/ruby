@@ -95,46 +95,6 @@ class String
   end
 end
 
-def wcwidth(wc)
-  return 8 if wc == "\t"
-  n = wc.ord
-  if n < 0x20
-    0
-  elsif n < 0x80
-    1
-  else
-    2
-  end
-end
-
-def fold(str, col)
-  i = 0
-  size = str.size
-  len = 0
-  while i < size
-    case c = str[i]
-    when "\r", "\n"
-      len = 0
-    else
-      d = wcwidth(c)
-      len += d
-      if len == col
-        str.insert(i+1, "\n")
-        len = 0
-        i += 2
-        next
-      elsif len > col
-        str.insert(i, "\n")
-        len = d
-        i += 2
-        next
-      end
-    end
-    i += 1
-  end
-  str
-end
-
 class StringScanner
   # lx: limit of x (colmns of screen)
   # ly: limit of y (rows of screen)
@@ -274,10 +234,6 @@ class << Readline
     end
   end
 end unless defined?(Readline.readline)
-
-def mergeinfo
-  `svn propget svn:mergeinfo #{RUBY_REPO_PATH}`
-end
 
 def find_svn_log(pattern)
   `svn log --xml --stop-on-copy --search="#{pattern}" #{RUBY_REPO_PATH}`
