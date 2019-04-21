@@ -55,7 +55,8 @@ SubversionのミラーをGitHubに公開しています． 以下のコマンド
 
     $ git ls-remote https://github.com/ruby/ruby.git
 
-日本では https://git.ruby-lang.org/ruby.git の方が低いレイテンシで利用できるかもしれません．
+GitHubのかわりに https://git.ruby-lang.org/ruby.git を使うこともできます．
+日本ではこちらの方が低いレイテンシで利用できるかもしれません．
 
 ## ホームページ
 
