@@ -4412,7 +4412,7 @@ ar_bulk_insert(VALUE hash, long argc, const VALUE *argv)
     }
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
 {
     HASH_ASSERT(argc % 2 == 0);
