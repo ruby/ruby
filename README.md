@@ -31,21 +31,28 @@ like rvm, see:
 
 https://www.ruby-lang.org/en/downloads/
 
+### Subversion
+
 The trunk of the Ruby source tree can be checked out with the following
 command:
 
     $ svn co https://svn.ruby-lang.org/repos/ruby/trunk/ ruby
-
-Or if you are using git then use the following command:
-
-    $ git clone https://github.com/ruby/ruby.git
 
 There are some other branches under development. Try the following command
 to see the list of branches:
 
     $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
 
-Or if you are using git then use the following command:
+
+### Git
+
+The mirror of the Ruby source tree can be checked out with the following
+command:
+
+    $ git clone https://github.com/ruby/ruby.git
+
+There are some other branches under development. Try the following command
+to see the list of branches:
 
     $ git ls-remote https://github.com/ruby/ruby.git
 
