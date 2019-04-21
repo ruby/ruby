@@ -17,9 +17,6 @@ def help
 \e[1msimple backport\e[0m
   ruby #$0 1234
 
-\e[1mrange backport\e[0m
-  ruby #$0 1234:5678
-
 \e[1mbackport from other branch\e[0m
   ruby #$0 17502 mvm
 
