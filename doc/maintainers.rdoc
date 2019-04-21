@@ -98,7 +98,7 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/rinda/*]
   Masatoshi SEKI (seki)
-[lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*]
+[lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
 [lib/set.rb]
