@@ -193,11 +193,29 @@ class TestPatternMatching < Test::Unit::TestCase
   end
 
   def test_var_pattern
+    # NODE_DASGN_CURR
     assert_block do
       case [0, 1]
       in a, a
         a == 1
       end
+    end
+
+    # NODE_DASGN
+    b = 0
+    assert_block do
+      case [0, 1]
+      in b, b
+        b == 1
+      end
+    end
+
+    # NODE_LASGN
+    case [0, 1]
+    in c, c
+      assert_equal(1, c)
+    else
+      flunk
     end
 
     assert_syntax_error(%q{
