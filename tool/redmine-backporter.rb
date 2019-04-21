@@ -262,9 +262,11 @@ end
 def backport_command_string
   unless @changesets.respond_to?(:validated)
     @changesets = @changesets.select do |c|
-      # check if the revision is included in trunk
+      next false if c.match(/\A\d{1,6}\z/) # skip SVN revision
+
+      # check if the Git revision is included in trunk
       begin
-        uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/trunk/revisions/#{c}")
+        uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/ruby-git/revisions/#{c}")
         uri.read($openuri_options)
         true
       rescue
