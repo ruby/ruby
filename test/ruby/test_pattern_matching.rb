@@ -199,6 +199,12 @@ class TestPatternMatching < Test::Unit::TestCase
         a == 1
       end
     end
+
+    assert_syntax_error(%q{
+      case 0
+      in ^a
+      end
+    }, /no such local variable/)
   end
 
   def test_literal_value_pattern
