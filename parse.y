@@ -4734,6 +4734,7 @@ f_norm_arg	: f_bad_arg
 		| tIDENTIFIER
 		    {
 			formal_argument(p, get_id($1));
+			p->max_numparam = -1;
 			$$ = $1;
 		    }
 		;
