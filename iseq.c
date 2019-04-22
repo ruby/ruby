@@ -2501,10 +2501,10 @@ ruby_node_name(int node)
 }
 
 #define DECL_SYMBOL(name) \
-  static VALUE sym_##name
+  static ID sym_##name
 
 #define INIT_SYMBOL(name) \
-  sym_##name = ID2SYM(rb_intern(#name))
+  sym_##name = rb_intern(#name)
 
 static VALUE
 register_label(struct st_table *table, unsigned long idx)
@@ -2551,7 +2551,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     VALUE *seq, *iseq_original;
 
     VALUE val = rb_ary_new();
-    VALUE type; /* Symbol */
+    ID type; /* Symbol */
     VALUE locals = rb_ary_new();
     VALUE params = rb_hash_new();
     VALUE body = rb_ary_new(); /* [[:insn1, ...], ...] */
@@ -2559,7 +2559,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     VALUE exception = rb_ary_new(); /* [[....]] */
     VALUE misc = rb_hash_new();
 
-    static VALUE insn_syms[VM_INSTRUCTION_SIZE/2]; /* w/o-trace only */
+    static ID insn_syms[VM_INSTRUCTION_SIZE/2]; /* w/o-trace only */
     struct st_table *labels_table = st_init_numtable();
 
     DECL_SYMBOL(top);
@@ -2575,7 +2575,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     if (sym_top == 0) {
 	int i;
 	for (i=0; i<numberof(insn_syms); i++) {
-	    insn_syms[i] = ID2SYM(rb_intern(insn_name(i)));
+	    insn_syms[i] = rb_intern(insn_name(i));
 	}
 	INIT_SYMBOL(top);
 	INIT_SYMBOL(method);
@@ -2671,7 +2671,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 	VALUE *nseq = seq + len - 1;
 	VALUE ary = rb_ary_new2(len);
 
-	rb_ary_push(ary, insn_syms[insn%numberof(insn_syms)]);
+	rb_ary_push(ary, ID2SYM(insn_syms[insn%numberof(insn_syms)]));
 	for (j=0; j<len-1; j++, seq++) {
 	    switch (insn_op_type(insn, j)) {
 	      case TS_OFFSET: {
@@ -2865,7 +2865,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     rb_ary_push(val, rb_iseq_path(iseq));
     rb_ary_push(val, rb_iseq_realpath(iseq));
     rb_ary_push(val, iseq_body->location.first_lineno);
-    rb_ary_push(val, type);
+    rb_ary_push(val, ID2SYM(type));
     rb_ary_push(val, locals);
     rb_ary_push(val, params);
     rb_ary_push(val, exception);
