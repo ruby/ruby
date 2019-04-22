@@ -45,4 +45,34 @@ class TestCSVParseStrip < Test::Unit::TestCase
                                 strip: %Q{"},
                                 quote_char: nil))
   end
+
+  def test_do_not_strip_cr
+    assert_equal([
+                   ["a", "b "],
+                   ["a", "b "],
+                 ],
+                 CSV.parse(%Q{"a" ,"b " \r} +
+                           %Q{"a" ,"b " \r},
+                           strip: true))
+  end
+
+  def test_do_not_strip_lf
+    assert_equal([
+                   ["a", "b "],
+                   ["a", "b "],
+                 ],
+                 CSV.parse(%Q{"a" ,"b " \n} +
+                           %Q{"a" ,"b " \n},
+                           strip: true))
+  end
+
+  def test_do_not_strip_crlf
+    assert_equal([
+                   ["a", "b "],
+                   ["a", "b "],
+                 ],
+                 CSV.parse(%Q{"a" ,"b " \r\n} +
+                           %Q{"a" ,"b " \r\n},
+                           strip: true))
+  end
 end
