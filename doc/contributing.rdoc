@@ -264,7 +264,6 @@ run tests.
 You should also have access to development headers for the following
 libraries, but these are not required:
 
-* Tcl/Tk
 * NDBM/QDBM
 * GDBM
 * OpenSSL
