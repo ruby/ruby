@@ -44,6 +44,7 @@ y.tab.c
 *.gcda
 *.gcno
 *.gcov
+*.vscode
 lcov*.info
 
 # /
