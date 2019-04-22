@@ -6,7 +6,7 @@
 #++
 
 require 'uri'
-require 'rubygems'
+require_relative '../rubygems'
 
 ##
 # Mixin methods for local and remote Gem::Command options.

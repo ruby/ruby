@@ -6,11 +6,11 @@
 #++
 
 require 'fileutils'
-require 'rubygems'
-require 'rubygems/installer_uninstaller_utils'
-require 'rubygems/dependency_list'
-require 'rubygems/rdoc'
-require 'rubygems/user_interaction'
+require_relative '../rubygems'
+require_relative 'installer_uninstaller_utils'
+require_relative 'dependency_list'
+require_relative 'rdoc'
+require_relative 'user_interaction'
 
 ##
 # An Uninstaller.
@@ -360,7 +360,7 @@ class Gem::Uninstaller
     # of what it did for us to find rather than trying to recreate
     # it again.
     if @format_executable
-      require 'rubygems/installer'
+      require_relative 'installer'
       Gem::Installer.exec_format % File.basename(filename)
     else
       filename

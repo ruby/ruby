@@ -240,9 +240,9 @@ class Gem::Source
   end
 end
 
-require 'rubygems/source/git'
-require 'rubygems/source/installed'
-require 'rubygems/source/specific_file'
-require 'rubygems/source/local'
-require 'rubygems/source/lock'
-require 'rubygems/source/vendor'
+require_relative 'source/git'
+require_relative 'source/installed'
+require_relative 'source/specific_file'
+require_relative 'source/local'
+require_relative 'source/lock'
+require_relative 'source/vendor'

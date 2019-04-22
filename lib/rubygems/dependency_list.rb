@@ -6,7 +6,7 @@
 #++
 
 require 'tsort'
-require 'rubygems/deprecate'
+require_relative 'deprecate'
 
 ##
 # Gem::DependencyList is used for installing and uninstalling gems in the

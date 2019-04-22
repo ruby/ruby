@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/user_interaction'
+require_relative '../user_interaction'
 
 ##
 # A Gem::Security::Policy object encapsulates the settings for verifying

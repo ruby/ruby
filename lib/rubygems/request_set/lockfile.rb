@@ -236,4 +236,4 @@ class Gem::RequestSet::Lockfile
   end
 end
 
-require 'rubygems/request_set/lockfile/tokenizer'
+require_relative 'lockfile/tokenizer'
