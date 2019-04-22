@@ -35,7 +35,7 @@ https://www.ruby-lang.org/ja/downloads/
 
 を参照してください．
 
-### Git 
+### Git
 
 ミラーをGitHubに公開しています． 以下のコマンドでリポジトリを取得できます．
 
