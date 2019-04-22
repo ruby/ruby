@@ -383,7 +383,7 @@ class VCS
       changed = log[/\Acommit (\h+)/, 1]
       modified = log[/^Date:\s+(.*)/, 1]
       branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref HEAD]])[%r'\A(?:refs/heads/)?(.+)', 1]
-      title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 HEAD]])
+      title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 FETCH_HEAD..HEAD]])
       title = nil if title.empty?
       [last, changed, modified, branch, title]
     end
