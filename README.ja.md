@@ -35,19 +35,9 @@ https://www.ruby-lang.org/ja/downloads/
 
 を参照してください．
 
-### Subversionで
+### Git 
 
-開発先端のソースコードは次のコマンドで取得できます．
-
-    $ svn co https://svn.ruby-lang.org/repos/ruby/trunk/ ruby
-
-他に開発中のブランチの一覧は次のコマンドで見られます．
-
-    $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
-
-### Gitで
-
-SubversionのミラーをGitHubに公開しています． 以下のコマンドでリポジトリを取得できます．
+ミラーをGitHubに公開しています． 以下のコマンドでリポジトリを取得できます．
 
     $ git clone https://github.com/ruby/ruby.git
 
@@ -55,8 +45,19 @@ SubversionのミラーをGitHubに公開しています． 以下のコマンド
 
     $ git ls-remote https://github.com/ruby/ruby.git
 
-GitHubのかわりに https://git.ruby-lang.org/ruby.git を使うこともできます．
-日本ではこちらの方が低いレイテンシで利用できるかもしれません．
+GitHubのかわりに https://git.ruby-lang.org/ruby.git (本来のRubyのtrunkリポジトリ)
+を使うこともできます．日本ではこちらの方が低いレイテンシで利用できるかもしれません．
+
+### Subversion
+
+古いRubyのバージョンのソースコードは次のコマンドで取得できます．
+
+    $ svn co https://svn.ruby-lang.org/repos/ruby/branches/ruby_2_6/ ruby
+
+他に開発中のブランチの一覧は次のコマンドで見られます．
+
+    $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
+
 
 ## ホームページ
 
