@@ -1,4 +1,4 @@
-require 'rubygems/user_interaction'
+require_relative 'user_interaction'
 
 class Gem::SpecificationPolicy
   include Gem::UserInteraction

@@ -303,7 +303,7 @@ class Gem::RequestSet
       end
     end
 
-    require "rubygems/dependency_installer"
+    require_relative "dependency_installer"
     inst = Gem::DependencyInstaller.new options
     inst.installed_gems.replace specs
 
@@ -461,6 +461,6 @@ class Gem::RequestSet
   end
 end
 
-require 'rubygems/request_set/gem_dependency_api'
-require 'rubygems/request_set/lockfile'
-require 'rubygems/request_set/lockfile/tokenizer'
+require_relative 'request_set/gem_dependency_api'
+require_relative 'request_set/lockfile'
+require_relative 'request_set/lockfile/tokenizer'

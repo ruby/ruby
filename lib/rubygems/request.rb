@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require 'net/http'
-require 'rubygems/user_interaction'
+require_relative 'user_interaction'
 
 class Gem::Request
   extend Gem::UserInteraction
@@ -287,6 +287,6 @@ class Gem::Request
   end
 end
 
-require 'rubygems/request/http_pool'
-require 'rubygems/request/https_pool'
-require 'rubygems/request/connection_pools'
+require_relative 'request/http_pool'
+require_relative 'request/https_pool'
+require_relative 'request/connection_pools'

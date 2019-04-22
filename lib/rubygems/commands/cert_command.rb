@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/security'
+require_relative '../command'
+require_relative '../security'
 
 class Gem::Commands::CertCommand < Gem::Command
   def initialize

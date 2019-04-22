@@ -1,13 +1,13 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/command_manager'
-require 'rubygems/dependency_installer'
-require 'rubygems/install_update_options'
-require 'rubygems/local_remote_options'
-require 'rubygems/spec_fetcher'
-require 'rubygems/version_option'
-require 'rubygems/install_message' # must come before rdoc for messaging
-require 'rubygems/rdoc'
+require_relative '../command'
+require_relative '../command_manager'
+require_relative '../dependency_installer'
+require_relative '../install_update_options'
+require_relative '../local_remote_options'
+require_relative '../spec_fetcher'
+require_relative '../version_option'
+require_relative '../install_message' # must come before rdoc for messaging
+require_relative '../rdoc'
 
 class Gem::Commands::UpdateCommand < Gem::Command
   include Gem::InstallUpdateOptions

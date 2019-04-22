@@ -5,13 +5,13 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/command'
-require 'rubygems/installer_uninstaller_utils'
-require 'rubygems/exceptions'
-require 'rubygems/deprecate'
-require 'rubygems/package'
-require 'rubygems/ext'
-require 'rubygems/user_interaction'
+require_relative 'command'
+require_relative 'installer_uninstaller_utils'
+require_relative 'exceptions'
+require_relative 'deprecate'
+require_relative 'package'
+require_relative 'ext'
+require_relative 'user_interaction'
 
 ##
 # The installer installs the files contained in the .gem into the Gem.home.

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/package'
-require 'rubygems/installer'
-require 'rubygems/version_option'
+require_relative '../command'
+require_relative '../package'
+require_relative '../installer'
+require_relative '../version_option'
 
 class Gem::Commands::PristineCommand < Gem::Command
   include Gem::VersionOption
@@ -138,7 +138,7 @@ extensions will be restored.
       gem = spec.cache_file
 
       unless File.exist? gem or options[:only_executables] or options[:only_plugins]
-        require 'rubygems/remote_fetcher'
+        require_relative '../remote_fetcher'
 
         say "Cached gem for #{spec.full_name} not found, attempting to fetch..."
 

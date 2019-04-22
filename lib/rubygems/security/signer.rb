@@ -2,7 +2,7 @@
 ##
 # Basic OpenSSL-based package signing class.
 
-require "rubygems/user_interaction"
+require_relative "../user_interaction"
 
 class Gem::Security::Signer
   include Gem::UserInteraction

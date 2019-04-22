@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/local_remote_options'
-require 'rubygems/version_option'
-require 'rubygems/gemcutter_utilities'
+require_relative '../command'
+require_relative '../local_remote_options'
+require_relative '../version_option'
+require_relative '../gemcutter_utilities'
 
 class Gem::Commands::YankCommand < Gem::Command
   include Gem::LocalRemoteOptions

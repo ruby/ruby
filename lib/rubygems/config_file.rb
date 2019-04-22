@@ -5,7 +5,7 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/user_interaction'
+require_relative 'user_interaction'
 require 'rbconfig'
 
 ##
