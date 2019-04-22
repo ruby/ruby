@@ -4798,6 +4798,7 @@ f_label 	: tLABEL
 			ID id = get_id($1);
 			arg_var(p, formal_argument(p, id));
 			p->cur_arg = id;
+			p->max_numparam = -1;
 			$$ = $1;
 		    }
 		;
