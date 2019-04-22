@@ -54,7 +54,7 @@ parser.parse! rescue abort "#{File.basename(Program)}: #{$!}\n#{parser}"
   when :revision_h
     Proc.new {|last, changed, modified, branch, title|
       [
-        "#define RUBY_REVISION #{changed || 0}",
+        "#define RUBY_REVISION \"#{changed[0...10]}\"",
         if branch
           e = '..'
           limit = 16

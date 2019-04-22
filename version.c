@@ -33,6 +33,7 @@ const int ruby_api_version[] = {
     STRINGIZE(RUBY_VERSION_MINOR) "." \
     STRINGIZE(RUBY_VERSION_TEENY) ""
 const char ruby_version[] = RUBY_VERSION;
+const char ruby_revision[] = RUBY_REVISION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
@@ -46,7 +47,6 @@ void
 Init_version(void)
 {
     enum {ruby_patchlevel = RUBY_PATCHLEVEL};
-    enum {ruby_revision = RUBY_REVISION};
     VALUE version;
     VALUE ruby_engine_name;
     /*
@@ -69,7 +69,7 @@ Init_version(void)
     /*
      * The SVN revision for this ruby.
      */
-    rb_define_global_const("RUBY_REVISION", MKINT(revision));
+    rb_define_global_const("RUBY_REVISION", MKSTR(revision));
     /*
      * The copyright string for ruby
      */
