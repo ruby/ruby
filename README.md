@@ -31,23 +31,9 @@ like rvm, see:
 
 https://www.ruby-lang.org/en/downloads/
 
-### Subversion
+### Git 
 
-The trunk of the Ruby source tree can be checked out with the following
-command:
-
-    $ svn co https://svn.ruby-lang.org/repos/ruby/trunk/ ruby
-
-There are some other branches under development. Try the following command
-to see the list of branches:
-
-    $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
-
-
-### Git
-
-The mirror of the Ruby source tree can be checked out with the following
-command:
+The mirror of the Ruby source tree can be checked out with the following command:
 
     $ git clone https://github.com/ruby/ruby.git
 
@@ -56,7 +42,19 @@ to see the list of branches:
 
     $ git ls-remote https://github.com/ruby/ruby.git
 
-You may also want to use https://git.ruby-lang.org/ruby.git for better latency in Japan.
+You may also want to use https://git.ruby-lang.org/ruby.git (actual trunk of Ruby source)
+for better latency in Japan.
+
+### Subversion
+
+Stable branches for older Ruby versions can be checked out with the following command:
+
+    $ svn co https://svn.ruby-lang.org/repos/ruby/branches/ruby_2_6/ ruby
+
+Try the following command to see the list of branches:
+
+    $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
+
 
 ## Ruby home page
 
