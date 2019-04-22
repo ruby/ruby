@@ -21,8 +21,7 @@
     * lib
     * dumpbin
 
-4.  If you want to build from SVN or GIT source, following commands
-    are required.
+4.  If you want to build from GIT source, following commands are required.
     * bison
     * patch
     * sed
@@ -50,8 +49,7 @@
     And add _RUBYW_INSTALL_NAME_ to change the name of the
     executable without console window if also you want.
 
-3.  Run `<tt>nmake up</tt>' if you are building from SVN or GIT
-    source.
+3.  Run `<tt>nmake up</tt>' if you are building from GIT source.
 
 4.  Run `<tt>nmake</tt>'
 
@@ -89,7 +87,7 @@ in Japanese, but you can download at least.
     cd \ruby
     win32\configure --prefix=/usr/local
     nmake
-    nmake test
+    nmake exam
     nmake install
 
 * Build on the relative directory from the ruby source directory.
@@ -105,7 +103,7 @@ in Japanese, but you can download at least.
     cd mswin32
     ..\win32\configure --prefix=/usr/local
     nmake
-    nmake test
+    nmake exam
     nmake install
 
 * Build on the different drive.
@@ -119,7 +117,7 @@ in Japanese, but you can download at least.
     cd D:\build\ruby
     C:\src\ruby\win32\configure --prefix=/usr/local
     nmake
-    nmake test
+    nmake exam
     nmake install DESTDIR=C:
 
 * Build x64 version (requires native x64 VC++ compiler)
@@ -133,7 +131,7 @@ in Japanese, but you can download at least.
     cd \ruby
     win32\configure --prefix=/usr/local --target=x64-mswin64
     nmake
-    nmake test
+    nmake exam
     nmake install
 
 == Bugs
