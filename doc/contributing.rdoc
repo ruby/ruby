@@ -245,16 +245,11 @@ Status and maintainers of branches are listed on the
 In order to help resolve existing issues and contributing patches to Ruby you
 need to be able to run the test suite.
 
-CRuby uses subversion for source control, you can find installation
-instructions and lots of great info to learn subversion on the
-{svnbook.red-bean.com}[http://svnbook.red-bean.com/]. For other resources see
-the {ruby-core documentation on
+CRuby uses git for source control, the {git homepage}[https://git-scm.com/]
+has installation instructions with links to documentation for learning more
+about git. There is a mirror of the repository on {github}[https://github.com/ruby/ruby].
+. For other resources see the {ruby-core documentation on
 ruby-lang.org}[https://www.ruby-lang.org/en/community/ruby-core/].
-
-This guide will use git for contributing.  The {git
-homepage}[https://git-scm.com/] has installation instructions with links to
-documentation for learning more about git. There is a mirror of the subversion
-repository on {github}[https://github.com/ruby/ruby].
 
 Install the prerequisite dependencies for building the CRuby interpreter to
 run tests.
