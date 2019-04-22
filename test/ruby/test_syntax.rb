@@ -1301,6 +1301,7 @@ eom
     assert_syntax_error('->(){@1}', /ordinary parameter is defined/)
     assert_syntax_error('->(x){@1}', /ordinary parameter is defined/)
     assert_syntax_error('->x{@1}', /ordinary parameter is defined/)
+    assert_syntax_error('->x:@2{}', /ordinary parameter is defined/)
     assert_syntax_error('proc {@1 = nil}', /Can't assign to numbered parameter @1/)
     assert_syntax_error('proc {@01}', /leading zero/)
     assert_syntax_error('proc {@1_}', /unexpected/)
