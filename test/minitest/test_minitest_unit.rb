@@ -1122,7 +1122,7 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
   # *sigh* This is quite an odd scenario, but it is from real (albeit
   # ugly) test code in ruby-core:
   #
-  # https://svn.ruby-lang.org/cgi-bin/viewvc.cgi?view=rev&revision=29259
+  # https://github.com/ruby/ruby/commit/6bab4ea9917dc05cd2c94aead2e96eb7df7d4be1
 
   def test_assert_raises_skip
     @assertion_count = 0
