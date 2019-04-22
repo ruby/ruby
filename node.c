@@ -12,6 +12,8 @@
 #include "ruby/ruby.h"
 #include "vm_core.h"
 
+#define NODE_BUF_DEFAULT_LEN 16
+
 #define A(str) rb_str_cat2(buf, (str))
 #define AR(str) rb_str_concat(buf, (str))
 
@@ -1115,9 +1117,9 @@ struct node_buffer_struct {
 static node_buffer_t *
 rb_node_buffer_new(void)
 {
-    node_buffer_t *nb = xmalloc(sizeof(node_buffer_t) + offsetof(node_buffer_elem_t, buf) + 16 * sizeof(NODE));
+    node_buffer_t *nb = xmalloc(sizeof(node_buffer_t) + offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE));
     nb->idx = 0;
-    nb->len = 16;
+    nb->len = NODE_BUF_DEFAULT_LEN;
     nb->head = nb->last = (node_buffer_elem_t*) &nb[1];
     nb->head->next = NULL;
     nb->mark_ary = rb_ary_tmp_new(0);
@@ -1184,6 +1186,23 @@ rb_ast_free(rb_ast_t *ast)
 	rb_node_buffer_free(ast->node_buffer);
 	ast->node_buffer = 0;
     }
+}
+
+size_t
+rb_ast_memsize(const rb_ast_t *ast)
+{
+    size_t size = 0;
+    node_buffer_t *nb = ast->node_buffer;
+
+    if (nb) {
+      size += sizeof(node_buffer_t) + offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE);
+      node_buffer_elem_t *nbe = nb->head;
+      while (nbe != nb->last) {
+        nbe = nbe->next;
+        size += offsetof(node_buffer_elem_t, buf) + nb->len * sizeof(NODE);
+      }
+    }
+    return size;
 }
 
 void

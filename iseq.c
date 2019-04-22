@@ -361,8 +361,8 @@ param_keyword_size(const struct rb_iseq_param_keyword *pkw)
     return size;
 }
 
-static size_t
-iseq_memsize(const rb_iseq_t *iseq)
+size_t
+rb_iseq_memsize(const rb_iseq_t *iseq)
 {
     size_t size = 0; /* struct already counted as RVALUE size */
     const struct rb_iseq_constant_body *body = iseq->body;
@@ -1111,7 +1111,7 @@ iseqw_mark(void *ptr)
 static size_t
 iseqw_memsize(const void *ptr)
 {
-    return iseq_memsize((const rb_iseq_t *)ptr);
+    return rb_iseq_memsize((const rb_iseq_t *)ptr);
 }
 
 static const rb_data_type_t iseqw_data_type = {

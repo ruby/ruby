@@ -402,6 +402,7 @@ rb_ast_t *rb_ast_new(void);
 void rb_ast_mark(rb_ast_t*);
 void rb_ast_dispose(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
+size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_add_mark_object(rb_ast_t*, VALUE);
 NODE *rb_ast_newnode(rb_ast_t*);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);
