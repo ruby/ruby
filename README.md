@@ -31,7 +31,7 @@ like rvm, see:
 
 https://www.ruby-lang.org/en/downloads/
 
-### Git 
+### Git
 
 The mirror of the Ruby source tree can be checked out with the following command:
 
