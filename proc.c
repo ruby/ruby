@@ -3554,7 +3554,7 @@ Init_Proc(void)
  *  possibly an iterator block that can be accessed in this context
  *  are all retained. Binding objects can be created using
  *  Kernel#binding, and are made available to the callback of
- *  Kernel#set_trace_func.
+ *  Kernel#set_trace_func and instances of TracePoint.
  *
  *  These binding objects can be passed as the second argument of the
  *  Kernel#eval method, establishing an environment for the
