@@ -429,7 +429,7 @@ class CSV
         end
         @need_robust_parsing = true
       elsif @strip
-        strip_values = " \t\r\n\f\v"
+        strip_values = " \t\f\v"
         @escaped_strip = strip_values.encode(@encoding)
         if @quote_character
           @strip_value = Regexp.new("[#{strip_values}]+".encode(@encoding))
