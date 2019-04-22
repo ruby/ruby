@@ -842,6 +842,7 @@ int ruby_disable_gc = 0;
 void rb_iseq_mark(const rb_iseq_t *iseq);
 void rb_iseq_update_references(rb_iseq_t *iseq);
 void rb_iseq_free(const rb_iseq_t *iseq);
+size_t rb_iseq_memsize(const rb_iseq_t *iseq);
 void rb_vm_update_references(void *ptr);
 
 void rb_gcdebug_print_obj_condition(VALUE obj);
@@ -2157,6 +2158,40 @@ rb_imemo_tmpbuf_t *
 rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
 {
     return (rb_imemo_tmpbuf_t *)rb_imemo_tmpbuf_new((VALUE)buf, (VALUE)old_heap, (VALUE)cnt, 0);
+}
+
+static size_t
+imemo_memsize(VALUE obj)
+{
+    size_t size = 0;
+    switch (imemo_type(obj)) {
+      case imemo_ment:
+        size += sizeof(RANY(obj)->as.imemo.ment.def);
+        break;
+      case imemo_iseq:
+        size += rb_iseq_memsize((rb_iseq_t *)obj);
+        break;
+      case imemo_env:
+        size += RANY(obj)->as.imemo.env.env_size * sizeof(VALUE);
+        break;
+      case imemo_tmpbuf:
+        size += RANY(obj)->as.imemo.alloc.cnt * sizeof(VALUE);
+        break;
+      case imemo_ast:
+        size += rb_ast_memsize(&RANY(obj)->as.imemo.ast);
+        break;
+      case imemo_cref:
+      case imemo_svar:
+      case imemo_throw_data:
+      case imemo_ifunc:
+      case imemo_memo:
+      case imemo_parser_strterm:
+        break;
+      default:
+        /* unreachable */
+        break;
+    }
+    return size;
 }
 
 #if IMEMO_DEBUG
@@ -3628,9 +3663,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
       case T_COMPLEX:
         break;
       case T_IMEMO:
-	if (imemo_type_p(obj, imemo_tmpbuf)) {
-	    size += RANY(obj)->as.imemo.alloc.cnt * sizeof(VALUE);
-	}
+        size += imemo_memsize(obj);
 	break;
 
       case T_FLOAT:
