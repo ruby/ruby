@@ -134,4 +134,11 @@ GC::
 === Miscellaneous changes
 
 * Require compilers to support C99 [Misc #15347]
+
   * Details of our dialect: https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/C99
+
+* Upstream repository is changed from Subversion to Git.
+
+  * RUBY_REVISION class is changed from Integer to String.
+
+  * RUBY_DESCRIPTION includes Git revision instead of Subversion's one.

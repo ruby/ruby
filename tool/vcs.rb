@@ -374,27 +374,16 @@ class VCS
 
     def self.get_revisions(path, srcdir = nil)
       gitcmd = [COMMAND]
-      desc = cmd_read_at(srcdir, [gitcmd + %w[describe --tags --match REV_*]])
-      if /\AREV_(\d+)(?:-(\d+)-g\h+)?\Z/ =~ desc
-        last = ($1.to_i + $2.to_i).to_s
-      end
-      logcmd = gitcmd + %W[log -n1 --date=iso]
-      logcmd << "--grep=^ *git-svn-id: .*@[0-9][0-9]*" unless last
-      idpat = /git-svn-id: .*?@(\d+) \S+\Z/
-      log = cmd_read_at(srcdir, [logcmd])
-      commit = log[/\Acommit (\w+)/, 1]
-      last ||= log[idpat, 1]
+      last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', 'HEAD']]).rstrip
       if path
-        cmd = logcmd
-        cmd += [path] unless path == '.'
-        log = cmd_read_at(srcdir, [cmd])
-        changed = log[idpat, 1] || last
+        log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', path]])
       else
-        changed = last
+        log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso']])
       end
+      changed = log[/\Acommit (\h+)/, 1]
       modified = log[/^Date:\s+(.*)/, 1]
       branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref HEAD]])[%r'\A(?:refs/heads/)?(.+)', 1]
-      title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 #{commit}..HEAD]])
+      title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 HEAD]])
       title = nil if title.empty?
       [last, changed, modified, branch, title]
     end

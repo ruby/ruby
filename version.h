@@ -45,20 +45,18 @@
 #ifndef RUBY_REVISION
 # include "revision.h"
 #endif
-#ifndef RUBY_REVISION
-# define RUBY_REVISION 0
-#endif
 
-#if RUBY_REVISION
+#ifdef RUBY_REVISION
 # if RUBY_PATCHLEVEL == -1
 #  ifndef RUBY_BRANCH_NAME
 #   define RUBY_BRANCH_NAME "trunk"
 #  endif
-#  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "STRINGIZE(RUBY_REVISION)
+#  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "RUBY_REVISION
 # else
-#  define RUBY_REVISION_STR " revision "STRINGIZE(RUBY_REVISION)
+#  define RUBY_REVISION_STR " revision "RUBY_REVISION
 # endif
 #else
+# define RUBY_REVISION "HEAD"
 # define RUBY_REVISION_STR ""
 #endif
 
