@@ -484,6 +484,15 @@ class VCS
         end
       end
     end
+
+    def commit(opts = {})
+      dryrun = opts.fetch(:dryrun) {$DEBUG} if opts
+      args = [COMMAND]
+      args << "-n" if dryrun
+      args << "push"
+      system(*args) or return false
+      true
+    end
   end
 
   class GITSVN < GIT
