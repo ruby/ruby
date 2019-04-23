@@ -272,7 +272,11 @@ rb_objid_hash(st_index_t index)
 static st_index_t
 objid_hash(VALUE obj)
 {
-    return (st_index_t)st_index_hash((st_index_t)obj);
+#if SIZEOF_LONG == SIZEOF_VOIDP
+    return (st_index_t)st_index_hash((st_index_t)NUM2LONG(rb_obj_id(obj)));
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+    return (st_index_t)st_index_hash((st_index_t)NUM2LL(rb_obj_id(obj)));
+#endif
 }
 
 VALUE
