@@ -3590,16 +3590,16 @@ cases		: opt_else
 		;
 
 p_case_body	: keyword_in
-		 {
-		     SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
-		     p->command_start = FALSE;
-		     $<num>$ = p->in_kwarg;
-		     p->in_kwarg = 1;
-		 }
+		    {
+			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
+			p->command_start = FALSE;
+			$<num>$ = p->in_kwarg;
+			p->in_kwarg = 1;
+		    }
 		  p_top_expr then
-		 {
-		     p->in_kwarg = !!$<num>2;
-		 }
+		    {
+			p->in_kwarg = !!$<num>2;
+		    }
 		  compstmt
 		  p_cases
 		    {
@@ -3610,7 +3610,7 @@ p_case_body	: keyword_in
 		    }
 		;
 
-p_cases	: opt_else
+p_cases 	: opt_else
 		| p_case_body
 		;
 
@@ -3853,7 +3853,7 @@ p_kwargs	: p_kwarg ',' p_kwrest
 		    }
 		;
 
-p_kwarg	: p_kw
+p_kwarg 	: p_kw
 		| p_kwarg ',' p_kw
 		    {
 		    /*%%%*/
