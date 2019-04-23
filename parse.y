@@ -1242,6 +1242,7 @@ stmt_or_begin	: stmt
 		    {
 			$$ = $3;
 		    }
+		;
 
 stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    {
