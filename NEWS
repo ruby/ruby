@@ -48,6 +48,18 @@ sufficient information, see the ChangeLog file or Redmine
      " # This has been warned since 2.4
      EOS
 
+* Pipeline operator is added.
+
+  This code equals to the next code.
+
+     foo()
+      |> bar 1, 2
+      |> display
+
+     foo()
+      .bar(1, 2)
+      .display
+
 === Core classes updates (outstanding ones only)
 
 Enumerable::
