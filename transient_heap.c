@@ -807,7 +807,7 @@ transient_heap_block_update_refs(struct transient_heap* theap, struct transient_
 
         unpoison_memory_region(header, sizeof *header, false);
 
-        void *poisoned = __asan_region_is_poisoned(header->obj, SIZEOF_VALUE);
+        void *poisoned = __asan_region_is_poisoned((void *)header->obj, SIZEOF_VALUE);
         unpoison_object(header->obj, false);
 
         header->obj = rb_gc_new_location(header->obj);
