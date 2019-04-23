@@ -188,7 +188,7 @@ type2sym(enum ruby_value_type i)
 	CASE_TYPE(T_IMEMO);
 	CASE_TYPE(T_NODE);
 	CASE_TYPE(T_ICLASS);
-	CASE_TYPE(T_MOVED);
+        CASE_TYPE(T_MOVED);
 	CASE_TYPE(T_ZOMBIE);
 #undef CASE_TYPE
       default: rb_bug("type2sym: unknown type (%d)", i);
