@@ -2575,7 +2575,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     if (sym_top == 0) {
 	int i;
 	for (i=0; i<numberof(insn_syms); i++) {
-	    insn_syms[i] = rb_intern(insn_name(i));
+            insn_syms[i] = rb_intern(insn_name(i));
 	}
 	INIT_SYMBOL(top);
 	INIT_SYMBOL(method);
@@ -2671,7 +2671,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 	VALUE *nseq = seq + len - 1;
 	VALUE ary = rb_ary_new2(len);
 
-	rb_ary_push(ary, ID2SYM(insn_syms[insn%numberof(insn_syms)]));
+        rb_ary_push(ary, ID2SYM(insn_syms[insn%numberof(insn_syms)]));
 	for (j=0; j<len-1; j++, seq++) {
 	    switch (insn_op_type(insn, j)) {
 	      case TS_OFFSET: {
