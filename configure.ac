@@ -620,7 +620,7 @@ AS_IF([test "$GCC" = yes], [
     # ANSI (no XCFLAGS because this is C only)
     AS_CASE(["$target_os"],
     [solaris*], [
-      # Because "-std=gnu99" affects existance of functions on Solaris,
+      # Because "-std=gnu99" affects existence of functions on Solaris,
       # "-std=gnu99" will be appended to CPPFLAGS.
 	for ansi_options in -std=gnu99; do
 	    RUBY_TRY_CFLAGS(${ansi_options}, [
