@@ -1891,8 +1891,10 @@ gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb
 static inline VALUE
 newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected, rb_objspace_t *objspace, VALUE obj)
 {
+#if !__has_feature(memory_sanitizer)
     assert(BUILTIN_TYPE(obj) == T_NONE);
     assert((flags & FL_WB_PROTECTED) == 0);
+#endif
 
     /* OBJSETUP */
     RBASIC(obj)->flags = flags;
