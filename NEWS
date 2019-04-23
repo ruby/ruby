@@ -139,6 +139,8 @@ GC::
 
 * Upstream repository is changed from Subversion to Git.
 
+  * https://git.ruby-lang.org/ruby.git
+
   * RUBY_REVISION class is changed from Integer to String.
 
   * RUBY_DESCRIPTION includes Git revision instead of Subversion's one.
