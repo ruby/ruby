@@ -1379,6 +1379,13 @@ eom
     assert_syntax_error('@1', /outside block/)
   end
 
+  def test_pipeline_operator
+    assert_valid_syntax('x |> y')
+    x = nil
+    assert_equal("121", eval('x = 12 |> pow(2) |> to_s(11)'))
+    assert_equal(12, x)
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end

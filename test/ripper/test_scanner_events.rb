@@ -573,6 +573,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('op', 'obj.:foo')
     assert_equal [],
                  scan('op', %q[`make all`])
+    assert_equal %w[|>],
+                 scan('op', %q[x|>y])
   end
 
   def test_symbeg
