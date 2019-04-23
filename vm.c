@@ -2251,9 +2251,8 @@ rb_vm_mark(void *ptr)
 	rb_gc_mark(vm->loaded_features_snapshot);
 	rb_gc_mark(vm->top_self);
 	RUBY_MARK_UNLESS_NULL(vm->coverages);
-	rb_gc_mark(vm->defined_module_hash);
         /* Prevent classes from moving */
-        rb_mark_tbl(rb_hash_tbl(vm->defined_module_hash, __FILE__, __LINE__));
+        rb_mark_tbl(vm->defined_module_hash);
 
 	if (vm->loading_table) {
 	    rb_mark_tbl(vm->loading_table);
@@ -2286,7 +2285,7 @@ rb_vm_add_root_module(ID id, VALUE module)
 {
     rb_vm_t *vm = GET_VM();
 
-    rb_hash_aset(vm->defined_module_hash, ID2SYM(id), module);
+    st_insert(vm->defined_module_hash, (st_data_t)module, (st_data_t)module);
 
     return TRUE;
 }
@@ -2561,6 +2560,9 @@ thread_mark(void *ptr)
     RUBY_MARK_UNLESS_NULL(th->top_self);
     RUBY_MARK_UNLESS_NULL(th->top_wrapper);
     if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
+
+    /* Ensure EC stack objects are pinned */
+    rb_execution_context_mark(th->ec);
     RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
     RUBY_MARK_UNLESS_NULL(th->last_status);
     RUBY_MARK_UNLESS_NULL(th->locking_mutex);
@@ -3230,7 +3232,7 @@ Init_vm_objects(void)
 {
     rb_vm_t *vm = GET_VM();
 
-    vm->defined_module_hash = rb_hash_new();
+    vm->defined_module_hash = st_init_numtable();
 
     /* initialize mark object array, hash */
     vm->mark_object_ary = rb_ary_tmp_new(128);

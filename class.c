@@ -659,6 +659,9 @@ rb_define_class(const char *name, VALUE super)
 	if (rb_class_real(RCLASS_SUPER(klass)) != super) {
 	    rb_raise(rb_eTypeError, "superclass mismatch for class %s", name);
 	}
+
+        /* Class may have been defined in Ruby and not pin-rooted */
+        rb_vm_add_root_module(id, klass);
 	return klass;
     }
     if (!super) {

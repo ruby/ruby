@@ -8159,7 +8159,7 @@ gc_verify_compaction_references(VALUE mod)
     heap_eden->using_page = NULL;
 
     gc_verify_internal_consistency(mod);
-    rb_gc_enable();
+
     /* GC after compaction to eliminate T_MOVED */
     rb_gc();
 
