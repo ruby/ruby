@@ -660,7 +660,7 @@ typedef struct rb_vm_struct {
     VALUE coverages;
     int coverage_mode;
 
-    VALUE defined_module_hash;
+    st_table * defined_module_hash;
 
     struct rb_objspace *objspace;
 
