@@ -44,7 +44,18 @@ extern "C" {
 # define WARN_UNUSED_RESULT(x) x
 #endif
 
+#ifndef __has_feature
+# define __has_feature(x) 0
+#endif
+
+#ifndef __has_extension
+# define __has_extension __has_feature
+#endif
+
 #if 0
+#elif defined(NO_SANITIZE) && __has_feature(memory_sanitizer)
+# define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
+    NO_SANITIZE("memory", NO_SANITIZE("address", NOINLINE(x)))
 #elif defined(NO_SANITIZE)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
     NO_SANITIZE("address", NOINLINE(x))
@@ -86,14 +97,6 @@ extern "C" {
 #endif
 
 #define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
-
-#ifndef __has_feature
-# define __has_feature(x) 0
-#endif
-
-#ifndef __has_extension
-# define __has_extension __has_feature
-#endif
 
 #ifndef MJIT_HEADER
 
