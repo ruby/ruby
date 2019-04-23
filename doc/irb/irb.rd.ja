@@ -70,6 +70,8 @@ irbの使い方は, Rubyさえ知っていればいたって簡単です. 基本
   --back-trace-limit n
 		    バックトレース表示をバックトレースの頭から n, 後ろ
 		    からnだけ行なう. デフォルトは16
+  --irb_debug n	    irbのデバッグデバッグレベルをnに設定する(利用しな
+		    い方が無難でしょう).
   -v, --version	    irbのバージョンを表示する
 
 = コンフィギュレーション
@@ -95,6 +97,7 @@ irb起動時に``~/.irbrc''を読み込みます. もし存在しない場合は
   IRB.conf[:IGNORE_EOF] = false
   IRB.conf[:PROMPT_MODE] = :DEFAULT
   IRB.conf[:PROMPT] = {...}
+  IRB.conf[:DEBUG_LEVEL]=0
   IRB.conf[:VERBOSE]=true
 
 == プロンプトの設定
@@ -179,6 +182,9 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両
 --- Conf.back_trace_limit
     バックトレース表示をバックトレースの頭からn, 後ろからnだけ行なう.
     デフォルトは16
+
+--- conf.debug_level = N
+    irb用のデバッグレベルの設定
 
 --- conf.ignore_eof = true/false
     ^Dが入力された時の動作を設定する. trueの時は^Dを無視する, falseの

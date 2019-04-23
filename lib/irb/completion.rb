@@ -8,10 +8,11 @@
 #
 
 require "readline"
-require "rdoc"
 
 module IRB
   module InputCompletor # :nodoc:
+
+
     # Set of reserved words used by Ruby, you should not use these for
     # constants or variables
     ReservedWords = %w[
@@ -33,8 +34,6 @@ module IRB
       when while
       yield
     ]
-
-    BASIC_WORD_BREAK_CHARACTERS = " \t\n`><=;|&{("
 
     CompletionProc = proc { |input|
       bind = IRB.conf[:MAIN_CONTEXT].workspace.binding
@@ -196,14 +195,6 @@ module IRB
       end
     }
 
-    RDocRIDriver = RDoc::RI::Driver.new
-    PerfectMatchedProc = proc { |matched|
-      begin
-        RDocRIDriver.display_name(matched)
-      rescue RDoc::RI::Driver::NotFoundError
-      end
-    }
-
     # Set of available operators in Ruby
     Operators = %w[% & * ** + - / < << <= <=> == === =~ > >= >> [] []= ^ ! != !~]
 
@@ -245,3 +236,9 @@ module IRB
     end
   end
 end
+
+if Readline.respond_to?("basic_word_break_characters=")
+  Readline.basic_word_break_characters= " \t\n`><=;|&{("
+end
+Readline.completion_append_character = nil
+Readline.completion_proc = IRB::InputCompletor::CompletionProc

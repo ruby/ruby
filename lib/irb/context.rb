@@ -22,7 +22,7 @@ module IRB
     #
     # The optional +input_method+ argument:
     #
-    # +nil+::     uses stdin or Reidline or Readline
+    # +nil+::     uses stdin or Readline
     # +String+::  uses a File
     # +other+::   uses this as InputMethod
     def initialize(irb, workspace = nil, input_method = nil, output_method = nil)
@@ -40,7 +40,6 @@ module IRB
       @load_modules = IRB.conf[:LOAD_MODULES]
 
       @use_readline = IRB.conf[:USE_READLINE]
-      @use_reidline = IRB.conf[:USE_REIDLINE]
       @verbose = IRB.conf[:VERBOSE]
       @io = nil
 
@@ -65,41 +64,23 @@ module IRB
 
       case input_method
       when nil
-        @io = nil
-        case use_reidline?
+        case use_readline?
         when nil
-          if STDIN.tty? && IRB.conf[:PROMPT_MODE] != :INF_RUBY && !use_readline?
-            @io = ReidlineInputMethod.new
+          if (defined?(ReadlineInputMethod) && STDIN.tty? &&
+              IRB.conf[:PROMPT_MODE] != :INF_RUBY)
+            @io = ReadlineInputMethod.new
           else
-            @io = nil
+            @io = StdioInputMethod.new
           end
         when false
-          @io = nil
+          @io = StdioInputMethod.new
         when true
-          @io = ReidlineInputMethod.new
-        end
-        unless @io
-          case use_readline?
-          when nil
-            if (defined?(ReadlineInputMethod) && STDIN.tty? &&
-                IRB.conf[:PROMPT_MODE] != :INF_RUBY)
-              @io = ReadlineInputMethod.new
-            else
-              @io = nil
-            end
-          when false
-            @io = nil
-          when true
-            if defined?(ReadlineInputMethod)
-              @io = ReadlineInputMethod.new
-            else
-              @io = nil
-            end
+          if defined?(ReadlineInputMethod)
+            @io = ReadlineInputMethod.new
           else
-            @io = nil
+            @io = StdioInputMethod.new
           end
         end
-        @io = StdioInputMethod.new unless @io
 
       when String
         @io = FileInputMethod.new(input_method)
@@ -120,6 +101,7 @@ module IRB
       if @echo.nil?
         @echo = true
       end
+      self.debug_level = IRB.conf[:DEBUG_LEVEL]
     end
 
     # The top-level workspace, see WorkSpace#main
@@ -135,9 +117,9 @@ module IRB
     attr_reader :thread
     # The current input method
     #
-    # Can be either StdioInputMethod, ReadlineInputMethod,
-    # ReidlineInputMethod, FileInputMethod or other specified when the
-    # context is created. See ::new for more # information on +input_method+.
+    # Can be either StdioInputMethod, ReadlineInputMethod, FileInputMethod or
+    # other specified when the context is created. See ::new for more
+    # information on +input_method+.
     attr_accessor :io
 
     # Current irb session
@@ -155,12 +137,6 @@ module IRB
     # +input_method+ passed to Context.new
     attr_accessor :irb_path
 
-    # Whether +Reidline+ is enabled or not.
-    #
-    # A copy of the default <code>IRB.conf[:USE_REIDLINE]</code>
-    #
-    # See #use_reidline= for more information.
-    attr_reader :use_reidline
     # Whether +Readline+ is enabled or not.
     #
     # A copy of the default <code>IRB.conf[:USE_READLINE]</code>
@@ -235,6 +211,10 @@ module IRB
     #
     # A copy of the default <code>IRB.conf[:VERBOSE]</code>
     attr_accessor :verbose
+    # The debug level of irb
+    #
+    # See #debug_level= for more information.
+    attr_reader :debug_level
 
     # The limit of backtrace lines displayed as top +n+ and tail +n+.
     #
@@ -245,8 +225,6 @@ module IRB
     # See IRB@Command+line+options for more command line options.
     attr_accessor :back_trace_limit
 
-    # Alias for #use_reidline
-    alias use_reidline? use_reidline
     # Alias for #use_readline
     alias use_readline? use_readline
     # Alias for #rc
@@ -258,9 +236,7 @@ module IRB
     # Returns whether messages are displayed or not.
     def verbose?
       if @verbose.nil?
-        if @io.kind_of?(ReidlineInputMethod)
-          false
-        elsif defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)
+        if defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)
           false
         elsif !STDIN.tty? or @io.kind_of?(FileInputMethod)
           true
@@ -273,11 +249,9 @@ module IRB
     end
 
     # Whether #verbose? is +true+, and +input_method+ is either
-    # StdioInputMethod or ReidlineInputMethod or ReadlineInputMethod, see #io
-    # for more information.
+    # StdioInputMethod or ReadlineInputMethod, see #io for more information.
     def prompting?
       verbose? || (STDIN.tty? && @io.kind_of?(StdioInputMethod) ||
-                   @io.kind_of?(ReidlineInputMethod) ||
                    (defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)))
     end
 
@@ -385,6 +359,21 @@ module IRB
     def use_readline=(opt)
       print "This method is obsolete."
       print "Do nothing."
+    end
+
+    # Sets the debug level of irb
+    #
+    # Can also be set using the +--irb_debug+ command line option.
+    #
+    # See IRB@Command+line+options for more command line options.
+    def debug_level=(value)
+      @debug_level = value
+      RubyLex.debug_level = value
+    end
+
+    # Whether or not debug mode is enabled, see #debug_level=.
+    def debug?
+      @debug_level > 0
     end
 
     def evaluate(line, line_no, exception: nil) # :nodoc:
