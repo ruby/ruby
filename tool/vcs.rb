@@ -484,7 +484,9 @@ class VCS
         end
       end
     end
+  end
 
+  class GITSVN < GIT
     def last_changed_revision
       rev = cmd_read(%W"#{COMMAND} svn info"+[STDERR=>[:child, :out]])[/^Last Changed Rev: (\d+)/, 1]
       com = cmd_read(%W"#{COMMAND} svn find-rev r#{rev}").chomp
