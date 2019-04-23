@@ -2201,6 +2201,16 @@ extract_vtm(VALUE time, struct vtm *vtm, VALUE subsecx)
     return t;
 }
 
+static void
+zone_set_dst(VALUE zone, struct time_object *tobj, VALUE tm)
+{
+    ID id_dst_p;
+    VALUE dst;
+    CONST_ID(id_dst_p, "dst?");
+    dst = rb_check_funcall(zone, id_dst_p, 1, &tm);
+    tobj->vtm.isdst = (dst != Qundef && RTEST(dst));
+}
+
 static int
 zone_timelocal(VALUE zone, VALUE time)
 {
@@ -2220,6 +2230,7 @@ zone_timelocal(VALUE zone, VALUE time)
         s = wadd(s, v2w(tobj->vtm.subsecx));
     }
     tobj->timew = s;
+    zone_set_dst(zone, tobj, tm);
     return 1;
 }
 
@@ -2239,6 +2250,7 @@ zone_localtime(VALUE zone, VALUE time)
     s = extract_vtm(local, &tobj->vtm, subsecx);
     tobj->tm_got = 1;
     zone_set_offset(zone, tobj, s, t);
+    zone_set_dst(zone, tobj, tm);
     return 1;
 }
 
@@ -5323,6 +5335,7 @@ end_submicro: ;
     if (!NIL_P(zone)) {
         zone = mload_zone(time, zone);
 	tobj->vtm.zone = zone;
+        zone_localtime(zone, time);
     }
 
     return time;
