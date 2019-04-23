@@ -8145,7 +8145,6 @@ gc_verify_compaction_references(VALUE mod)
 
     /* Ensure objects are pinned */
     rb_gc();
-    rb_gc_disable();
 
     gc_compact_heap(objspace);
 
