@@ -121,4 +121,11 @@ class TestGCCompact < Test::Unit::TestCase
     skip "couldn't get objects to collide" if collisions == 0
     assert_operator collisions, :>, 0
   end
+
+  def test_complex_hash_keys
+    list_of_objects = big_list
+    hash = list_of_objects.hash
+    GC.verify_compaction_references
+    assert_equal hash, list_of_objects.hash
+  end
 end
