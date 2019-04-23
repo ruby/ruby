@@ -43,7 +43,7 @@ describe "RUBY_RELEASE_DATE" do
 end
 
 describe "RUBY_REVISION" do
-  ruby_version_is "".."2.6" do
+  ruby_version_is ""..."2.7" do
     it "is an Integer" do
       RUBY_REVISION.should be_kind_of(Fixnum)
     end
