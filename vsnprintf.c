@@ -535,6 +535,7 @@ static int exponent(char *, int, int);
 #define	SHORTINT	0x040		/* short integer */
 #define	ZEROPAD		0x080		/* zero (as opposed to blank) pad */
 #define FPT		0x100		/* Floating point number */
+ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static ssize_t BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap));
 static ssize_t
 BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 {
