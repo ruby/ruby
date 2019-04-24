@@ -780,6 +780,9 @@ clear_marked_index(struct transient_heap_block* block)
 
     while (marked_index != TRANSIENT_HEAP_ALLOC_MARKING_LAST) {
         struct transient_alloc_header *header = alloc_header(block, marked_index);
+        /* header is poisoned to prevent buffer overflow, should
+         * unpoison first... */
+        unpoison_memory_region(header, sizeof *header, false);
         TH_ASSERT(marked_index != TRANSIENT_HEAP_ALLOC_MARKING_FREE);
         if (0) fprintf(stderr, "clear_marked_index - block:%p mark_index:%d\n", (void *)block, marked_index);
 
