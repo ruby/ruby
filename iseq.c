@@ -2933,6 +2933,12 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 	    rb_ary_push(args, PARAM(i, req));
 	}
     }
+    if (body->param.flags.accepts_no_kwarg) {
+	ID nokey;
+	CONST_ID(nokey, "nokey");
+	PARAM_TYPE(nokey);
+	rb_ary_push(args, a);
+    }
     if (body->param.flags.has_kw) {
 	i = 0;
 	if (keyword->required_num > 0) {

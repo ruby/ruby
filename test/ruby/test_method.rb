@@ -30,6 +30,7 @@ class TestMethod < Test::Unit::TestCase
   def mk5(a, b = nil, **o) nil && o end
   def mk6(a, b = nil, c, **o) nil && o end
   def mk7(a, b = nil, *c, d, **o) nil && o end
+  def mnk(**nil) end
 
   class Base
     def foo() :base end
@@ -529,6 +530,7 @@ class TestMethod < Test::Unit::TestCase
   define_method(:pmk5) {|a, b = nil, **o|}
   define_method(:pmk6) {|a, b = nil, c, **o|}
   define_method(:pmk7) {|a, b = nil, *c, d, **o|}
+  define_method(:pmnk) {|**nil|}
 
   def test_bound_parameters
     assert_equal([], method(:m0).parameters)
@@ -549,6 +551,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], method(:mk5).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], method(:mk6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:mk7).parameters)
+    assert_equal([[:nokey]], method(:mnk).parameters)
   end
 
   def test_unbound_parameters
@@ -570,6 +573,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], self.class.instance_method(:mk5).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], self.class.instance_method(:mk6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:mk7).parameters)
+    assert_equal([[:nokey]], self.class.instance_method(:mnk).parameters)
   end
 
   def test_bmethod_bound_parameters
@@ -591,6 +595,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], method(:pmk5).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], method(:pmk6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:pmk7).parameters)
+    assert_equal([[:nokey]], method(:pmnk).parameters)
   end
 
   def test_bmethod_unbound_parameters
@@ -613,6 +618,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:keyrest, :o]], self.class.instance_method(:pmk5).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], self.class.instance_method(:pmk6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:pmk7).parameters)
+    assert_equal([[:nokey]], self.class.instance_method(:pmnk).parameters)
   end
 
   def test_hidden_parameters
