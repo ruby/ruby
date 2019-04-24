@@ -625,8 +625,8 @@ node_children(rb_ast_t *ast, NODE *node)
                                         INT2NUM(ainfo->post_args_num),
                                         NEW_CHILD(ast, ainfo->post_init),
                                         var_name(ainfo->rest_arg),
-                                        NEW_CHILD(ast, ainfo->kw_args),
-                                        NEW_CHILD(ast, ainfo->kw_rest_arg),
+                                        (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast, ainfo->kw_args)),
+                                        (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast, ainfo->kw_rest_arg)),
                                         var_name(ainfo->block_arg));
         }
       case NODE_SCOPE:
