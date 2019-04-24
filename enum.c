@@ -3997,6 +3997,10 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
         memo.f = RFLOAT_VALUE(memo.v);
         memo.c = 0.0;
     }
+    else {
+        memo.f = 0.0;
+        memo.c = 0.0;
+    }
 
     if (RTEST(rb_range_values(obj, &beg, &end, &excl))) {
         if (!memo.block_given && !memo.float_value &&
