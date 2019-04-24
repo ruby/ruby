@@ -308,4 +308,17 @@ class TestAst < Test::Unit::TestCase
     type2 = body.children[2]
     assert_not_equal(type1, type2)
   end
+
+  def test_keyword_rest
+    kwrest = lambda do |arg_str|
+      node = RubyVM::AbstractSyntaxTree.parse("def a(#{arg_str}) end")
+      node = node.children.last.children.last.children[1].children[-2]
+      node ? node.children : node
+    end
+
+    assert_equal(nil, kwrest.call(''))
+    assert_equal([nil], kwrest.call('**'))
+    assert_equal(false, kwrest.call('**nil'))
+    assert_equal([:a], kwrest.call('**a'))
+  end
 end
