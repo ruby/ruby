@@ -155,6 +155,7 @@ rb_transient_heap_dump(void)
 }
 
 #if TRANSIENT_HEAP_CHECK_MODE >= 2
+ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static void transient_heap_ptr_check(struct transient_heap *theap, VALUE obj));
 static void
 transient_heap_ptr_check(struct transient_heap *theap, VALUE obj)
 {
@@ -164,6 +165,7 @@ transient_heap_ptr_check(struct transient_heap *theap, VALUE obj)
     }
 }
 
+ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static int transient_heap_block_verify(struct transient_heap *theap, struct transient_heap_block *block));
 static int
 transient_heap_block_verify(struct transient_heap *theap, struct transient_heap_block *block)
 {
@@ -559,6 +561,7 @@ rb_transient_heap_mark(VALUE obj, const void *ptr)
     }
 }
 
+ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static const void *transient_heap_ptr(VALUE obj, int error));
 static const void *
 transient_heap_ptr(VALUE obj, int error)
 {
