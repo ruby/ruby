@@ -2571,6 +2571,8 @@ Init_heap(void)
     objspace->id_to_obj_tbl = st_init_numtable();
     objspace->obj_to_id_tbl = st_init_numtable();
 
+    dont_gc = 1;
+
     gc_stress_set(objspace, ruby_initial_gc_stress);
 
 #if RGENGC_ESTIMATE_OLDMALLOC
@@ -2582,6 +2584,14 @@ Init_heap(void)
 
     objspace->profile.invoke_time = getrusage_time();
     finalizer_table = st_init_numtable();
+}
+
+void
+Init_gc_stress(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    dont_gc = 0;
 }
 
 typedef int each_obj_callback(void *, void *, size_t, void *);

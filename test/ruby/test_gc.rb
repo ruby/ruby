@@ -384,6 +384,10 @@ class TestGc < Test::Unit::TestCase
     end;
   end
 
+  def test_gc_stress_at_startup
+    assert_in_out_err([{"RUBY_DEBUG"=>"gc_stress"}], '', [], [], '[Bug #15784]', success: true)
+  end
+
   def test_gc_disabled_start
     begin
       disabled = GC.disable
