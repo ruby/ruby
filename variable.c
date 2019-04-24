@@ -2472,6 +2472,7 @@ rb_autoload_load(VALUE mod, ID id)
     }
 
     /* autoload_data_i can be deleted by another thread while require */
+    state.result = Qfalse;
     result = rb_ensure(autoload_require, (VALUE)&state,
 		       autoload_reset, (VALUE)&state);
 
