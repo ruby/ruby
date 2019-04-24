@@ -408,7 +408,7 @@ rb_transient_heap_alloc(VALUE obj, size_t req_size)
             RB_DEBUG_COUNTER_INC(theap_alloc);
 
             /* ptr is set up; OK to unpoison. */
-            unpoison_memory_region(ptr, size, true);
+            unpoison_memory_region(ptr, size - sizeof *header, true);
             return ptr;
         }
         else {
