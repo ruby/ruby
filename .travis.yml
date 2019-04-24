@@ -372,6 +372,7 @@ before_script:
         ls -la ext
         ls -laR ext/bigdecimal
         umask
+        git status
       fi
       exit 1
     fi
