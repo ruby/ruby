@@ -2571,10 +2571,6 @@ Init_heap(void)
     objspace->id_to_obj_tbl = st_init_numtable();
     objspace->obj_to_id_tbl = st_init_numtable();
 
-    dont_gc = 1;
-
-    gc_stress_set(objspace, ruby_initial_gc_stress);
-
 #if RGENGC_ESTIMATE_OLDMALLOC
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 #endif
@@ -2591,7 +2587,7 @@ Init_gc_stress(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    dont_gc = 0;
+    gc_stress_set(objspace, ruby_initial_gc_stress);
 }
 
 typedef int each_obj_callback(void *, void *, size_t, void *);
