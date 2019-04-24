@@ -217,5 +217,5 @@ clean-srcs-extra::
 
 ifneq ($(filter $(VCS),git),)
 update-src::
-	@$(BASERUBY) $(srcdir)/tool/colorize.rb pass "Latest commit hash = $(shell $(filter-out svn,$(VCS)) -C $(srcdir) rev-parse --short HEAD)"
+	@$(BASERUBY) $(srcdir)/tool/colorize.rb pass "Latest commit hash = $(shell $(filter-out svn,$(VCS)) -C $(srcdir) rev-parse --short=10 HEAD)"
 endif
