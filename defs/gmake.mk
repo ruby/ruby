@@ -153,6 +153,33 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 		VCSUP="" ENC_MK=.top-enc.mk REVISION_FORCE=PHONY CONFIGURE="$(CONFIGURE)" -f - \
 		update-src srcs all-incs
 
+PR =
+GITHUB_RUBY_URL = https://github.com/ruby/ruby
+
+.PHONY: fetch-github
+fetch-github:
+	$(Q) if [ -z "$(PR)" ]; then \
+	  echo "usage:"; echo "  make $@ PR=1234"; \
+	  exit 1; \
+	fi
+	$(Q) if ! git config remote.github.url > /dev/null; then \
+	  echo adding $(GITHUB_RUBY_URL) as remote github; \
+	  git -C "$(srcdir)" remote add github $(GITHUB_RUBY_URL); \
+	fi
+	git -C "$(srcdir)" fetch -f github "pull/$(PR)/head:gh-$(PR)"
+
+.PHONY: merge-github
+merge-github: fetch-github
+	$(Q) $(eval GITHUB_MERGE_BASE := $(shell git -C "$(srcdir)" log -1 --format=format:%H))
+	git -C "$(srcdir)" checkout "gh-$(PR)"
+	git -C "$(srcdir)" rebase -
+	git -C "$(srcdir)" checkout -
+	git -C "$(srcdir)" merge --ff-only "gh-$(PR)"
+	git -C "$(srcdir)" branch -D "gh-$(PR)"
+	git -C "$(srcdir)" filter-branch -f --msg-filter \
+	  'cat && echo && echo "Closes: $(GITHUB_RUBY_URL)/pull/$(PR)"' \
+	  -- "$(GITHUB_MERGE_BASE)..@"
+
 ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
 extract-gems: update-gems
 endif
