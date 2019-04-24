@@ -1034,6 +1034,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
 %type <id>   p_kwrest
+%type <id>   f_no_kwarg
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
 /* escaped chars, should be ignored otherwise */
@@ -3247,7 +3248,7 @@ block_args_tail	: f_block_kwarg ',' f_kwrest opt_f_block_arg
 		    }
 		| f_no_kwarg opt_f_block_arg
 		    {
-			$$ = new_args_tail(p, Qnone, rb_intern("nil"), $2, &@1);
+			$$ = new_args_tail(p, Qnone, ID2SYM(rb_intern("nil")), $2, &@1);
 		    }
 		| f_block_arg
 		    {
@@ -4718,7 +4719,7 @@ args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
 		    }
 		| f_no_kwarg opt_f_block_arg
 		    {
-			$$ = new_args_tail(p, Qnone, rb_intern("nil"), $2, &@1);
+			$$ = new_args_tail(p, Qnone, ID2SYM(rb_intern("nil")), $2, &@1);
 		    }
 		| f_block_arg
 		    {
@@ -4977,6 +4978,11 @@ kwrest_mark	: tPOW
 		;
 
 f_no_kwarg	: kwrest_mark keyword_nil
+		    {
+		    /*%%%*/
+		    /*% %*/
+		    /*% ripper: nokw_param!(Qnil) %*/
+		    }
 		;
 
 f_kwrest	: kwrest_mark tIDENTIFIER
@@ -11136,7 +11142,7 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
 	args->kw_rest_arg = NEW_DVAR(kw_rest_arg, loc);
 	args->kw_rest_arg->nd_cflag = kw_bits;
     }
-    else if (kw_rest_arg == rb_intern("nil")) {
+    else if (kw_rest_arg == ID2SYM(rb_intern("nil"))) {
 	args->no_kwarg = 1;
     }
     else if (kw_rest_arg) {
