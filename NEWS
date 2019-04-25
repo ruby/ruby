@@ -88,6 +88,12 @@ ERB::
 
   * Prohibit marshaling ERB instance.
 
+IRB::
+
+  * Syntax-highlight inspect output for some core-class objects
+
+  * Syntax-highlight binding.irb source lines
+
 Net::IMAP::
 
   * Add Server Name Indication (SNI) support.  [Feature #15594]
