@@ -26,5 +26,19 @@ module TestIRB
         assert_equal(result, IRB::Color.colorize_code(code))
       end
     end
+
+    def test_inspect_colorable
+      {
+        1 => true,
+        2.3 => true,
+        ['foo', :bar] => true,
+        { a: 4 } => true,
+        Object.new => false,
+        Struct.new(:a) => false,
+        Struct.new(:a).new(1) => false,
+      }.each do |object, result|
+        assert_equal(result, IRB::Color.inspect_colorable?(object))
+      end
+    end
   end
 end
