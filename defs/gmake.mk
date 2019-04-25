@@ -168,6 +168,10 @@ fetch-github:
 	fi
 	git -C "$(srcdir)" fetch -f github "pull/$(PR)/head:gh-$(PR)"
 
+.PHONY: checkout-github
+checkout-github: fetch-github
+	git -C "$(srcdir)" checkout "gh-$(PR)"
+
 .PHONY: merge-github
 merge-github: fetch-github
 	$(eval GITHUB_MERGE_BASE := $(shell git -C "$(srcdir)" log -1 --format=format:%H))
