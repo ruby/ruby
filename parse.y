@@ -556,7 +556,9 @@ static void local_var(struct parser_params*, ID);
 static void arg_var(struct parser_params*, ID);
 static int  local_id(struct parser_params *p, ID id);
 static int  local_id_ref(struct parser_params*, ID, ID **);
+#ifndef RIPPER
 static ID   internal_id(struct parser_params*);
+#endif
 
 static const struct vtable *dyna_push(struct parser_params *);
 static void dyna_pop(struct parser_params*, const struct vtable *);
@@ -4759,14 +4761,12 @@ f_arg_item	: f_arg_asgn
 		    }
 		| tLPAREN f_margs rparen
 		    {
-			ID tid = internal_id(p);
 		    /*%%%*/
+			ID tid = internal_id(p);
 			YYLTYPE loc;
 			loc.beg_pos = @2.beg_pos;
 			loc.end_pos = @2.beg_pos;
-		    /*% %*/
 			arg_var(p, tid);
-		    /*%%%*/
 			if (dyna_in_block(p)) {
 			    $2->nd_value = NEW_DVAR(tid, &loc);
 			}
@@ -5500,6 +5500,7 @@ parser_show_error_line(struct parser_params *p, const YYLTYPE *yylloc)
 }
 #endif /* !RIPPER */
 
+#ifndef RIPPER
 static int
 vtable_size(const struct vtable *tbl)
 {
@@ -5510,6 +5511,7 @@ vtable_size(const struct vtable *tbl)
 	return 0;
     }
 }
+#endif
 
 static struct vtable *
 vtable_alloc_gen(struct parser_params *p, int line, struct vtable *prev)
@@ -11806,7 +11808,6 @@ rb_init_parse(void)
     (void)nodetype;
     (void)nodeline;
 }
-#endif /* !RIPPER */
 
 static ID
 internal_id(struct parser_params *p)
@@ -11815,6 +11816,7 @@ internal_id(struct parser_params *p)
     id += ((tLAST_TOKEN - ID_INTERNAL) >> ID_SCOPE_SHIFT) + 1;
     return ID_STATIC_SYM | ID_INTERNAL | (id << ID_SCOPE_SHIFT);
 }
+#endif /* !RIPPER */
 
 static void
 parser_initialize(struct parser_params *p)
