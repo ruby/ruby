@@ -161,7 +161,7 @@ REMOTE_GUTHUB_URL = $(shell git -C "$(srcdir)" config remote.github.url)
 
 .PHONY: fetch-github
 fetch-github:
-	$(call fetch-github, $(PR))
+	$(call fetch-github,$(PR))
 
 define fetch-github
 	$(if $(1),,\
@@ -183,7 +183,7 @@ checkout-github: fetch-github
 
 .PHONY: merge-github
 merge-github: fetch-github
-	$(call merge-github, $(PR))
+	$(call merge-github,$(PR))
 
 define merge-github
 	$(eval GITHUB_MERGE_BASE := $(shell git -C "$(srcdir)" log -1 --format=format:%H))
