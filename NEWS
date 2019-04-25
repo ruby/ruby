@@ -90,9 +90,8 @@ ERB::
 
 IRB::
 
-  * Syntax-highlight inspect output for some core-class objects
-
-  * Syntax-highlight binding.irb source lines
+  * Introduce syntax highlight inspired by pry.gem to inspect output for some
+    core-class objects and binding.irb source lines.
 
 Net::IMAP::
 
