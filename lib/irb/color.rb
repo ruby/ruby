@@ -28,8 +28,8 @@ module IRB # :nodoc:
       on_kw:              [[GREEN],                 [Ripper::EXPR_CLASS, Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_FNAME]],
       on_label:           [[MAGENTA],               [Ripper::EXPR_LABELED]],
       on_qwords_beg:      [[RED],                   [Ripper::EXPR_BEG]],
-      on_regexp_beg:      [[RED],                   [Ripper::EXPR_BEG]],
-      on_regexp_end:      [[RED],                   [Ripper::EXPR_BEG]],
+      on_regexp_beg:      [[RED, BOLD],             [Ripper::EXPR_BEG]],
+      on_regexp_end:      [[RED, BOLD],             [Ripper::EXPR_BEG]],
       on_symbeg:          [[BLUE, BOLD],            [Ripper::EXPR_FNAME]],
       on_tstring_beg:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_ARG, Ripper::EXPR_CMDARG]],
       on_tstring_content: [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_ARG, Ripper::EXPR_CMDARG]],
@@ -47,7 +47,7 @@ module IRB # :nodoc:
           obj.all? { |k, v| inspect_colorable?(k) && inspect_colorable?(v) }
         when Array
           obj.all? { |o| inspect_colorable?(o) }
-        when String, Symbol, Integer, Float, FalseClass, TrueClass, NilClass
+        when String, Symbol, Regexp, Integer, Float, FalseClass, TrueClass, NilClass
           true
         else
           false
