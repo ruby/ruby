@@ -371,8 +371,10 @@ before_script:
         ls -la .ext/common/bigdecimal
         ls -la ext
         ls -laR ext/bigdecimal
+        ls -la ../ext
+        ls -laR ../ext/bigdecimal
         umask
-        git status
+        (cd .. && git status)
       fi
       exit 1
     fi
