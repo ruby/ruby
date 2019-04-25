@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'tempfile'
 require 'irb/workspace'
+require 'irb/color'
 
 module TestIRB
   class TestWorkSpace < Test::Unit::TestCase
@@ -18,7 +19,7 @@ module TestIRB
         f.close
 
         workspace = eval(code, binding, f.path)
-        assert_equal(<<~EOS, workspace.code_around_binding)
+        assert_equal(<<~EOS, without_term { workspace.code_around_binding })
 
           From: #{f.path} @ line 3 :
 
@@ -55,7 +56,7 @@ module TestIRB
           script_lines[f.path] = code.split(/^/)
 
           workspace = eval(code, binding, f.path)
-          assert_equal(<<~EOS, workspace.code_around_binding)
+          assert_equal(<<~EOS, without_term { workspace.code_around_binding })
 
             From: #{f.path} @ line 1 :
 
@@ -89,6 +90,14 @@ module TestIRB
         remove_const :SCRIPT_LINES__
         const_set(:SCRIPT_LINES__, script_lines) if script_lines
       end
+    end
+
+    def without_term
+      env = ENV.to_h.dup
+      ENV.delete('TERM')
+      yield
+    ensure
+      ENV.replace(env)
     end
   end
 end

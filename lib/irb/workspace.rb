@@ -118,23 +118,26 @@ EOF
     def code_around_binding
       file, pos = @binding.source_location
 
-      unless defined?(::SCRIPT_LINES__[file]) && lines = ::SCRIPT_LINES__[file]
+      if defined?(::SCRIPT_LINES__[file]) && lines = ::SCRIPT_LINES__[file]
+        code = ::SCRIPT_LINES__[file].join('')
+      else
         begin
-          lines = File.readlines(file)
+          code = File.read(file)
         rescue SystemCallError
           return
         end
       end
+      lines = Color.colorize_code(code).lines
       pos -= 1
 
       start_pos = [pos - 5, 0].max
       end_pos   = [pos + 5, lines.size - 1].min
 
-      fmt = " %2s %#{end_pos.to_s.length}d: %s"
+      fmt = " %2s #{Color.colorize("%#{end_pos.to_s.length}d", [:BLUE, :BOLD])}: %s"
       body = (start_pos..end_pos).map do |current_pos|
         sprintf(fmt, pos == current_pos ? '=>' : '', current_pos + 1, lines[current_pos])
       end.join("")
-      "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}\n"
+      "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}#{Color.clear}\n"
     end
 
     def IRB.delete_caller

@@ -18,6 +18,7 @@ require "irb/extend-command"
 require "irb/ruby-lex"
 require "irb/input-method"
 require "irb/locale"
+require "irb/color"
 
 require "irb/version"
 
