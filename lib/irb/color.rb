@@ -38,7 +38,7 @@ module IRB # :nodoc:
 
     class << self
       def colorable?
-        $stdout.tty? && ENV.key?('TERM')
+        $stdout.tty? && ENV.key?('TERM') && ENV['TERM'] != 'dumb'
       end
 
       def inspect_colorable?(obj)
