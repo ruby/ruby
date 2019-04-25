@@ -1462,6 +1462,8 @@ update-man-date: PHONY
 	-e '$$_.sub!(/^(\.Dd ).*/){$$1+@vcs.modified(ARGF.path).strftime("%B %d, %Y")}' \
 	"$(srcdir)" "$(srcdir)"/man/*.1
 
+HELP_EXTRA_TASKS = ""
+
 help: PHONY
 	$(MESSAGE_BEGIN) \
 	"                Makefile of Ruby" \
@@ -1498,7 +1500,7 @@ help: PHONY
 	"  change:              make change log template" \
 	"  golf:                for golfers" \
 	"  goruby:              same as golf" \
-	"" \
+	$(HELP_EXTRA_TASKS) \
 	"see DeveloperHowto for more detail: " \
 	"  https://bugs.ruby-lang.org/projects/ruby/wiki/DeveloperHowto" \
 	$(MESSAGE_END)

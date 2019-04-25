@@ -209,6 +209,11 @@ fetch-github-%:
 pr-% merge-github-%: fetch-github-%
 	$(call merge-github,$*)
 
+HELP_EXTRA_TASKS = \
+	"  checkout-github:     checkout GitHub Pull Request [PR=1234]" \
+	"  merge-github:        merge GitHub Pull Request to current HEAD [PR=1234]" \
+	""
+
 ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
 extract-gems: update-gems
 endif
