@@ -188,7 +188,7 @@ merge-github: fetch-github
 define merge-github
 	$(eval GITHUB_MERGE_BASE := $(shell git -C "$(srcdir)" log -1 --format=format:%H))
 	$(eval GITHUB_MERGE_BRANCH := $(shell git -C "$(srcdir)" symbolic-ref --short HEAD))
-	$(eval GITHUB_MERGE_WORKTREE := $(shell mktemp -p "$(srcdir)" -d gh-$(1)-XXXXXX))
+	$(eval GITHUB_MERGE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(1)-XXXXXX"))
 	git -C "$(srcdir)" worktree add $(notdir $(GITHUB_MERGE_WORKTREE)) "gh-$(1)"
 	git -C "$(GITHUB_MERGE_WORKTREE)" rebase $(GITHUB_MERGE_BRANCH)
 	git -C "$(srcdir)" worktree remove $(notdir $(GITHUB_MERGE_WORKTREE))
