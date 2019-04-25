@@ -1303,6 +1303,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     def remove_unresolved_default_spec(spec)
       spec.files.each do |file|
         @path_to_default_spec_map.delete(file)
+        @path_to_default_spec_map.delete(file.sub(suffix_regexp, ""))
       end
     end
 
