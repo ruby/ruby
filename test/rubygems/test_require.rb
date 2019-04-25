@@ -41,6 +41,10 @@ class TestGemRequire < Gem::TestCase
     assert require(path), "'#{path}' was already required"
   end
 
+  def refute_require(path)
+    refute require(path), "'#{path}' was not yet required"
+  end
+
   # Providing -I on the commandline should always beat gems
   def test_dash_i_beats_gems
     a1 = util_spec "a", "1", {"b" => "= 1"}, "lib/test_gem_require_a.rb"
@@ -332,6 +336,22 @@ class TestGemRequire < Gem::TestCase
     install_default_specs(default_gem_spec)
     assert_require "default/gem"
     assert_equal %w(default-2.0.0.0), loaded_spec_names
+  end
+
+  def test_default_gem_require_activates_just_once
+    default_gem_spec = new_default_spec("default", "2.0.0.0",
+                                        nil, "default/gem.rb")
+    install_default_specs(default_gem_spec)
+
+    assert_require "default/gem"
+
+    times_called = 0
+
+    Kernel.stub(:gem, ->(name, requirement) { times_called += 1 }) do
+      refute_require "default/gem"
+    end
+
+    assert_equal 0, times_called
   end
 
   def test_realworld_default_gem
