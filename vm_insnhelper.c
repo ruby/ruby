@@ -214,6 +214,10 @@ vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
     if (! LIKELY(vm_stack_canary_was_born)) {
         return; /* :FIXME: isn't it rather fatal to enter this branch?  */
     }
+    else if ((VALUE *)reg_cfp == ec->vm_stack + ec->vm_stack_size) {
+        /* This is at the very beginning of a thread. cfp does not exist. */
+        return;
+    }
     else if (! (iseq = GET_ISEQ())) {
         return;
     }
