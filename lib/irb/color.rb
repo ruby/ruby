@@ -41,6 +41,19 @@ module IRB # :nodoc:
         $stdout.tty? && ENV.key?('TERM')
       end
 
+      def inspect_colorable?(obj)
+        case obj
+        when Hash
+          obj.all? { |k, v| inspect_colorable?(k) && inspect_colorable?(v) }
+        when Array
+          obj.all? { |o| inspect_colorable?(o) }
+        when String, Symbol, Integer, Float, FalseClass, TrueClass, NilClass
+          true
+        else
+          false
+        end
+      end
+
       def clear
         return '' unless colorable?
         "\e[#{CLEAR}m"
