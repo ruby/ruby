@@ -1415,13 +1415,9 @@ obj_ivar_heap_realloc(VALUE obj, int32_t len, size_t newsize)
 
     if (ROBJ_TRANSIENT_P(obj)) {
         const VALUE *orig_ptr = ROBJECT(obj)->as.heap.ivptr;
-        if ((newptr = obj_ivar_heap_alloc(obj, newsize)) != NULL) {
-            /* ok */
-        }
-        else {
-            newptr = ALLOC_N(VALUE, newsize);
-            ROBJ_TRANSIENT_UNSET(obj);
-        }
+        newptr = obj_ivar_heap_alloc(obj, newsize);
+
+        assert(newptr);
         ROBJECT(obj)->as.heap.ivptr = newptr;
         for (i=0; i<(int)len; i++) {
             newptr[i] = orig_ptr[i];
