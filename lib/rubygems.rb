@@ -1024,6 +1024,10 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     @suffix_pattern ||= "{#{suffixes.join(',')}}"
   end
 
+  def self.suffix_regexp
+    @suffix_regexp ||= /#{Regexp.union(suffixes)}\z/
+  end
+
   ##
   # Suffixes for require-able paths.
 
@@ -1274,8 +1278,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
         prefix_pattern = /^(#{prefix_group})/
       end
 
-      suffix_pattern = /#{Regexp.union(Gem.suffixes)}\z/
-
       spec.files.each do |file|
         if new_format
           file = file.sub(prefix_pattern, "")
@@ -1283,7 +1285,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
         end
 
         @path_to_default_spec_map[file] = spec
-        @path_to_default_spec_map[file.sub(suffix_pattern, "")] = spec
+        @path_to_default_spec_map[file.sub(suffix_regexp, "")] = spec
       end
     end
 
