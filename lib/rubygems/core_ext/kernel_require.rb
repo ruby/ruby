@@ -57,7 +57,6 @@ module Kernel
     end
 
     if spec = Gem.find_unresolved_default_spec(path)
-      Gem.remove_unresolved_default_spec(spec)
       begin
         Kernel.send(:gem, spec.name, "#{Gem::Requirement.default}.a")
       rescue Exception
