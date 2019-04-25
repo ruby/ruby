@@ -39,6 +39,9 @@ sufficient information, see the ChangeLog file or Redmine
 * Setting <code>$;</code> to non-nil value is warned now.  Use of it in
   String#split is warned too.
 
+* Setting <code>$,</code> to non-nil value is warned now.  Use of it in
+  Array#join is warned too.
+
 === Core classes updates (outstanding ones only)
 
 Enumerable::
