@@ -1756,11 +1756,14 @@ BigDecimal_fix(VALUE self)
  * round(n, mode)
  *
  * Round to the nearest integer (by default), returning the result as a
- * BigDecimal.
+ * BigDecimal if n is specified, or as Integer if it isn't.
  *
  *	BigDecimal('3.14159').round #=> 3
  *	BigDecimal('8.7').round #=> 9
  *	BigDecimal('-9.9').round #=> -10
+ *
+ *  BigDecimal('3.14159').round(2).class.name #=> "BigDecimal"
+ *  BigDecimal('3.14159').round.class.name #=> "Integer"
  *
  * If n is specified and positive, the fractional part of the result has no
  * more than that many digits.
