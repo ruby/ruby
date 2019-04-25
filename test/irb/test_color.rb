@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'irb/color'
+require 'stringio'
 
 module TestIRB
   class TestColor < Test::Unit::TestCase
@@ -23,7 +24,7 @@ module TestIRB
         'ERB.new("a#{nil}b", trim_mode: "-")' => "#{BLUE}#{BOLD}#{UNDERLINE}ERB#{CLEAR}.new(#{RED}\"#{CLEAR}#{RED}a#{CLEAR}#{RED}\#{#{CLEAR}#{CYAN}#{BOLD}nil#{CLEAR}#{RED}}#{CLEAR}#{RED}b#{CLEAR}#{RED}\"#{CLEAR}, #{MAGENTA}trim_mode:#{CLEAR} #{RED}\"#{CLEAR}#{RED}-#{CLEAR}#{RED}\"#{CLEAR})",
         "# comment" => "#{BLUE}#{BOLD}# comment#{CLEAR}",
       }.each do |code, result|
-        assert_equal(result, IRB::Color.colorize_code(code))
+        assert_equal(result, with_term { IRB::Color.colorize_code(code) })
       end
     end
 
@@ -39,6 +40,23 @@ module TestIRB
       }.each do |object, result|
         assert_equal(result, IRB::Color.inspect_colorable?(object))
       end
+    end
+
+    private
+
+    def with_term
+      stdout = $stdout
+      io = StringIO.new
+      def io.tty?; true; end
+      $stdout = io
+
+      env = ENV.to_h.dup
+      ENV['TERM'] = 'xterm-256color'
+
+      yield
+    ensure
+      $stdout = stdout
+      ENV.replace(env) if env
     end
   end
 end
