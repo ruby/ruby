@@ -25,7 +25,7 @@ module IRB # :nodoc:
       on_ident:           [[BLUE, BOLD],            [Ripper::EXPR_ENDFN]],
       on_int:             [[BLUE, BOLD],            [Ripper::EXPR_END]],
       on_float:           [[MAGENTA, BOLD],         [Ripper::EXPR_END]],
-      on_kw:              [[GREEN],                 [Ripper::EXPR_CLASS, Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_FNAME]],
+      on_kw:              [[GREEN],                 [Ripper::EXPR_ARG, Ripper::EXPR_CLASS, Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_FNAME]],
       on_label:           [[MAGENTA],               [Ripper::EXPR_LABELED]],
       on_qwords_beg:      [[RED],                   [Ripper::EXPR_BEG]],
       on_regexp_beg:      [[RED, BOLD],             [Ripper::EXPR_BEG]],
