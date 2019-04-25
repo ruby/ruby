@@ -156,16 +156,20 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 GITHUB_RUBY_URL = https://github.com/ruby/ruby
 PR =
 
+COMMIT_GPG_SIGN = $(shell git -C "$(srcdir)" config commit.gpgsign)
+REMOTE_GUTHUB_URL = $(shell git -C "$(srcdir)" config remote.github.url)
+
 .PHONY: fetch-github
 fetch-github:
-	$(Q) if [ -z "$(PR)" ]; then \
+	$(if $(PR),,\
 	  echo "usage:"; echo "  make $@ PR=1234"; \
 	  exit 1; \
-	fi
-	$(Q) if ! git -C "$(srcdir)" config remote.github.url > /dev/null; then \
+	)
+	$(eval REMOTE_GUTHUB_URL := $(REMOTE_GUTHUB_URL))
+	$(if $(REMOTE_GUTHUB_URL),, \
 	  echo adding $(GITHUB_RUBY_URL) as remote github; \
 	  git -C "$(srcdir)" remote add github $(GITHUB_RUBY_URL); \
-	fi
+	)
 	git -C "$(srcdir)" fetch -f github "pull/$(PR)/head:gh-$(PR)"
 
 .PHONY: checkout-github
@@ -185,9 +189,10 @@ merge-github: fetch-github
 	git -C "$(srcdir)" filter-branch -f \
 	  --msg-filter 'cat && echo && echo "Closes: $(GITHUB_RUBY_URL)/pull/$(PR)"' \
 	  -- "$(GITHUB_MERGE_BASE)..@"
-	$(Q) if [ "$$(git -C "$(srcdir)" config commit.gpgsign)" = true ]; then \
+	$(eval COMMIT_GPG_SIGN := $(COMMIT_GPG_SIGN))
+	$(if $(filter true,$(COMMIT_GPG_SIGN)), \
 	  git -C "$(srcdir)" rebase --exec "git commit --amend --no-edit -S" "$(GITHUB_MERGE_BASE)"; \
-	fi
+	)
 
 ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
 extract-gems: update-gems
