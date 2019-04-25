@@ -1890,7 +1890,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                             !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED));
 
             /* initialize opt vars for self-references */
-            VM_ASSERT(iseq->body->param.size == lead_num + opt_num);
+            VM_ASSERT((int)iseq->body->param.size == lead_num + opt_num);
             for (int i=argc; i<lead_num + opt_num; i++) {
                 argv[i] = Qnil;
             }
