@@ -170,10 +170,12 @@ fetch-github:
 
 .PHONY: merge-github
 merge-github: fetch-github
-	$(Q) $(eval GITHUB_MERGE_BASE := $(shell git -C "$(srcdir)" log -1 --format=format:%H))
-	git -C "$(srcdir)" checkout "gh-$(PR)"
-	git -C "$(srcdir)" rebase -
-	git -C "$(srcdir)" checkout -
+	$(eval GITHUB_MERGE_BASE := $(shell git -C "$(srcdir)" log -1 --format=format:%H))
+	$(eval GITHUB_MERGE_BRANCH := $(shell git -C "$(srcdir)" symbolic-ref --short HEAD))
+	$(eval GITHUB_MERGE_WORKTREE := $(shell mktemp -d gh-$(PR)-XXXXXX))
+	git -C "$(srcdir)" worktree add $(GITHUB_MERGE_WORKTREE) "gh-$(PR)"
+	git -C "$(GITHUB_MERGE_WORKTREE)" rebase $(GITHUB_MERGE_BRANCH)
+	git -C "$(srcdir)" worktree remove "$(GITHUB_MERGE_WORKTREE)"
 	git -C "$(srcdir)" merge --ff-only "gh-$(PR)"
 	git -C "$(srcdir)" branch -D "gh-$(PR)"
 	git -C "$(srcdir)" filter-branch -f \
