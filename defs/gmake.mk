@@ -161,7 +161,10 @@ REMOTE_GUTHUB_URL = $(shell git -C "$(srcdir)" config remote.github.url)
 
 .PHONY: fetch-github
 fetch-github:
-	$(if $(PR),,\
+	$(call fetch-github, $(PR))
+
+define fetch-github
+	$(if $(1),,\
 	  echo "usage:"; echo "  make $@ PR=1234"; \
 	  exit 1; \
 	)
@@ -169,8 +172,10 @@ fetch-github:
 	$(if $(REMOTE_GUTHUB_URL),, \
 	  echo adding $(GITHUB_RUBY_URL) as remote github; \
 	  git -C "$(srcdir)" remote add github $(GITHUB_RUBY_URL); \
+	  $(eval REMOTE_GUTHUB_URL := $(GITHUB_RUBY_URL)) \
 	)
-	git -C "$(srcdir)" fetch -f github "pull/$(PR)/head:gh-$(PR)"
+	git -C "$(srcdir)" fetch -f github "pull/$(1)/head:gh-$(1)"
+endef
 
 .PHONY: checkout-github
 checkout-github: fetch-github
@@ -178,21 +183,31 @@ checkout-github: fetch-github
 
 .PHONY: merge-github
 merge-github: fetch-github
+	$(call merge-github, $(PR))
+
+define merge-github
 	$(eval GITHUB_MERGE_BASE := $(shell git -C "$(srcdir)" log -1 --format=format:%H))
 	$(eval GITHUB_MERGE_BRANCH := $(shell git -C "$(srcdir)" symbolic-ref --short HEAD))
-	$(eval GITHUB_MERGE_WORKTREE := $(shell mktemp -p "$(srcdir)" -d gh-$(PR)-XXXXXX))
-	git -C "$(srcdir)" worktree add $(notdir $(GITHUB_MERGE_WORKTREE)) "gh-$(PR)"
+	$(eval GITHUB_MERGE_WORKTREE := $(shell mktemp -p "$(srcdir)" -d gh-$(1)-XXXXXX))
+	git -C "$(srcdir)" worktree add $(notdir $(GITHUB_MERGE_WORKTREE)) "gh-$(1)"
 	git -C "$(GITHUB_MERGE_WORKTREE)" rebase $(GITHUB_MERGE_BRANCH)
 	git -C "$(srcdir)" worktree remove $(notdir $(GITHUB_MERGE_WORKTREE))
-	git -C "$(srcdir)" merge --ff-only "gh-$(PR)"
-	git -C "$(srcdir)" branch -D "gh-$(PR)"
+	git -C "$(srcdir)" merge --ff-only "gh-$(1)"
+	git -C "$(srcdir)" branch -D "gh-$(1)"
 	git -C "$(srcdir)" filter-branch -f \
-	  --msg-filter 'cat && echo && echo "Closes: $(GITHUB_RUBY_URL)/pull/$(PR)"' \
+	  --msg-filter 'cat && echo && echo "Closes: $(GITHUB_RUBY_URL)/pull/$(1)"' \
 	  -- "$(GITHUB_MERGE_BASE)..@"
 	$(eval COMMIT_GPG_SIGN := $(COMMIT_GPG_SIGN))
 	$(if $(filter true,$(COMMIT_GPG_SIGN)), \
 	  git -C "$(srcdir)" rebase --exec "git commit --amend --no-edit -S" "$(GITHUB_MERGE_BASE)"; \
 	)
+endef
+
+fetch-github-%:
+	$(call fetch-github,$*)
+
+pr-% merge-github-%: fetch-github-%
+	$(call merge-github,$*)
 
 ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
 extract-gems: update-gems
