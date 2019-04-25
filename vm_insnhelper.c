@@ -235,7 +235,7 @@ vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
     const VALUE inspection = rb_inspect(iseqw);
     const char *stri = rb_str_to_cstr(inspection);
     const VALUE disasm = rb_iseq_disasm(iseq);
-    const char *strd = "";/* rb_str_to_cstr(disasm); */
+    const char *strd = rb_str_to_cstr(disasm);
 
     /* rb_bug() is not capable of outputting this large contents.  It
        is designed to run form a SIGSEGV handler, which tends to be
