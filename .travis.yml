@@ -226,12 +226,12 @@ env:
     <<: *clang-8
     env:
       - GEMS_FOR_TEST=
-      - cflags='-fsanitize=undefined,integer,nullability -fno-omit-frame-pointer'
+      - cflags='-fsanitize=undefined,integer,nullability -fno-sanitize=implicit-integer-sign-change,unsigned-integer-overflow'
       - cppflags=-DUNALIGNED_WORD_ACCESS=0
       - debugflags=-ggdb3
       - optflags='-O1 -march=native'
       - LD=clang-8
-      - LDFLAGS=-fsanitize=undefined,integer,nullability
+      - LDFLAGS='-fsanitize=undefined,integer,nullability -fno-sanitize=implicit-integer-sign-change,unsigned-integer-overflow'
 
   - &i686-linux
     name: i686-linux
