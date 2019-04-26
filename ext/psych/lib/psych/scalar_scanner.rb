@@ -23,7 +23,6 @@ module Psych
 
     # Create a new scanner
     def initialize class_loader
-      @string_cache = {}
       @symbol_cache = {}
       @class_loader = class_loader
     end
@@ -31,19 +30,14 @@ module Psych
     # Tokenize +string+ returning the Ruby object
     def tokenize string
       return nil if string.empty?
-      return string if @string_cache.key?(string)
       return @symbol_cache[string] if @symbol_cache.key?(string)
 
       # Check for a String type, being careful not to get caught by hash keys, hex values, and
       # special floats (e.g., -.inf).
       if string.match?(/^[^\d\.:-]?[A-Za-z_\s!@#\$%\^&\*\(\)\{\}\<\>\|\/\\~;=]+/) || string.match?(/\n/)
-        if string.length > 5
-          @string_cache[string] = true
-          return string
-        end
+        return string if string.length > 5
 
         if string.match?(/^[^ytonf~]/i)
-          @string_cache[string] = true
           string
         elsif string == '~' || string.match?(/^null$/i)
           nil
@@ -52,7 +46,6 @@ module Psych
         elsif string.match?(/^(no|false|off)$/i)
           false
         else
-          @string_cache[string] = true
           string
         end
       elsif string.match?(TIME)
@@ -94,7 +87,6 @@ module Psych
         i
       elsif string.match?(FLOAT)
         if string.match?(/\A[-+]?\.\Z/)
-          @string_cache[string] = true
           string
         else
           Float(string.gsub(/[,_]|\.([Ee]|$)/, '\1'))
@@ -103,7 +95,6 @@ module Psych
         int = parse_int string.gsub(/[,_]/, '')
         return int if int
 
-        @string_cache[string] = true
         string
       end
     end
