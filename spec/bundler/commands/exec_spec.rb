@@ -40,7 +40,7 @@ RSpec.describe "bundle exec" do
 
     bundle "exec 'cd #{tmp("gems")} && rackup'"
 
-    expect(out).to include("1.0.0")
+    expect(out).to eq("1.0.0")
   end
 
   it "works when exec'ing something else" do
@@ -458,7 +458,7 @@ RSpec.describe "bundle exec" do
       it "works when locked" do
         expect(the_bundle).to be_locked
         bundle "exec 'cd #{tmp("gems")} && rackup'"
-        expect(out).to include("1.0.0")
+        expect(out).to eq("1.0.0")
       end
     end
 
