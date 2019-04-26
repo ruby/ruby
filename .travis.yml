@@ -98,6 +98,31 @@ env:
     before_install:
       - /usr/local/opt/openssl@1.1/bin/openssl version
 
+  - &clang-8
+    compiler: clang-8
+    addons:
+      apt:
+        config:
+          retries: true
+        update: true
+        sources:
+          - llvm-toolchain-xenial-8
+        packages:
+          - clang-8
+          - llvm-8-tools
+          - libffi-dev
+          - libgdbm-dev
+          - libgmp-dev
+          - libjemalloc-dev
+          - libncurses5-dev
+          - libncursesw5-dev
+          - libreadline6-dev
+          - libssl-dev
+          - libyaml-dev
+          - openssl
+          - valgrind
+          - zlib1g-dev
+
   # --------
 
   - &x86_64-linux
@@ -163,13 +188,13 @@ env:
     <<: *linux
     #<<: *cron-only
     <<: *make-test-only
-    compiler: clang
+    <<: *clang-8
     env:
       - ASAN_OPTIONS=detect_leaks=0
       - cflags='-march=native -fsanitize=address -fno-omit-frame-pointer -fPIC'
       - debugflags=-ggdb3
       - optflags=-O1
-      - LD=clang
+      - LD=clang-8
       - LDFLAGS='-fsanitize=address -fPIC'
       - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
 
@@ -178,11 +203,11 @@ env:
     <<: *linux
     #<<: *cron-only
     <<: *make-test-only
-    compiler: clang
+    <<: *clang-8
     env:
       - cflags='-fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer -fPIC'
       - optflags=-O1
-      - LD=clang
+      - LD=clang-8
       - LDFLAGS='-fsanitize=memory -fPIC'
       - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
 
@@ -191,13 +216,13 @@ env:
     <<: *linux
     #<<: *cron-only
     <<: *make-test-only
-    compiler: clang
+    <<: *clang-8
     env:
       - cflags='-fsanitize=undefined,integer,nullability -fno-omit-frame-pointer'
       - cppflags=-DUNALIGNED_WORD_ACCESS=0
       - debugflags=-ggdb3
       - optflags='-O1 -march=native'
-      - LD=clang
+      - LD=clang-8
       - LDFLAGS=-fsanitize=undefined,integer,nullability
 
   - &i686-linux
