@@ -208,6 +208,9 @@ def sync_default_gems(gem)
 end
 
 def sync_lib(repo)
+  unless File.directory?("../#{repo}")
+    abort "Expected '../#{repo}' (#{File.expand_path("../#{repo}")}) to be a directory, but it wasn't."
+  end
   `rm -rf lib/#{repo}.rb lib/#{repo}/* test/test_#{repo}.rb`
   `cp -rf ../#{repo}/lib/* lib`
   tests = if File.directory?("test/#{repo}")
