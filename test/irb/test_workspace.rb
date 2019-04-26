@@ -7,7 +7,7 @@ require 'irb/color'
 module TestIRB
   class TestWorkSpace < Test::Unit::TestCase
     def test_code_around_binding
-      Tempfile.create do |f|
+      Tempfile.create('irb') do |f|
         code = <<~RUBY
           # 1
           # 2
@@ -37,7 +37,7 @@ module TestIRB
       skip 'chmod cannot make file unreadable on windows' if windows?
       skip 'skipped in root privilege' if Process.uid == 0
 
-      Tempfile.create do |f|
+      Tempfile.create('irb') do |f|
         code = "IRB::WorkSpace.new(binding)\n"
         f.print(code)
         f.close
@@ -51,7 +51,7 @@ module TestIRB
 
     def test_code_around_binding_with_script_lines__
       with_script_lines do |script_lines|
-        Tempfile.create do |f|
+        Tempfile.create('irb') do |f|
           code = "IRB::WorkSpace.new(binding)\n"
           script_lines[f.path] = code.split(/^/)
 
