@@ -85,8 +85,6 @@ env:
     if: (type = cron) AND (branch = trunk) AND (fork = false)
 
   - &make-test-only
-    env:
-      - GEMS_FOR_TEST=
     script:
       - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
 
@@ -144,6 +142,7 @@ env:
     #<<: *cron-only
     <<: *make-test-only
     env:
+      - GEMS_FOR_TEST=
       - cppflags='-DRUBY_DEBUG -DVM_CHECK_MODE -DTRANSIENT_HEAP_CHECK_MODE -DRGENGC_CHECK_MODE -DENC_DEBUG'
 
   - &VM_CHECK_MODE
@@ -152,6 +151,7 @@ env:
     <<: *cron-only
     <<: *make-test-only
     env:
+      - GEMS_FOR_TEST=
       - cppflags=-DVM_CHECK_MODE=0x0003
 
   - &FIBER_USE_sjlj
@@ -167,6 +167,7 @@ env:
     <<: *cron-only
     <<: *make-test-only
     env:
+      - GEMS_FOR_TEST=
       - cppflags=-DOPT_THREADED_CODE=1
 
   - &CALL_THREADED_CODE
@@ -175,6 +176,7 @@ env:
     <<: *cron-only
     <<: *make-test-only
     env:
+      - GEMS_FOR_TEST=
       - cppflags=-DOPT_THREADED_CODE=2
 
   - &NO_THREADED_CODE
@@ -183,6 +185,7 @@ env:
     <<: *cron-only
     <<: *make-test-only
     env:
+      - GEMS_FOR_TEST=
       - cppflags=-DOPT_THREADED_CODE=3
 
   - &ASAN
@@ -192,6 +195,7 @@ env:
     <<: *make-test-only
     <<: *clang-8
     env:
+      - GEMS_FOR_TEST=
       - ASAN_OPTIONS=detect_leaks=0
       - cflags='-march=native -fsanitize=address -fno-omit-frame-pointer -fPIC'
       - debugflags=-ggdb3
@@ -207,6 +211,7 @@ env:
     <<: *make-test-only
     <<: *clang-8
     env:
+      - GEMS_FOR_TEST=
       - cflags='-fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer -fPIC'
       - optflags=-O1
       - LD=clang-8
@@ -220,6 +225,7 @@ env:
     <<: *make-test-only
     <<: *clang-8
     env:
+      - GEMS_FOR_TEST=
       - cflags='-fsanitize=undefined,integer,nullability -fno-omit-frame-pointer'
       - cppflags=-DUNALIGNED_WORD_ACCESS=0
       - debugflags=-ggdb3
@@ -264,6 +270,7 @@ env:
     <<: *make-test-only
     compiler: clang
     env:
+      - GEMS_FOR_TEST=
       - GCC_FLAGS='-std=c99 -Werror=pedantic -pedantic-errors'
       - CONFIG_FLAG=
       - JOBS=
@@ -322,6 +329,7 @@ env:
     <<: *cron-only
     <<: *make-test-only
     env:
+      - GEMS_FOR_TEST=
       - CONFIG_FLAG=--with-arch=x86_64h,x86_64,i386
       - TEST_ALL_OPTS="$JOBS -q --tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
 
