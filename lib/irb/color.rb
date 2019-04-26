@@ -51,7 +51,7 @@ module IRB # :nodoc:
           obj.all? { |k, v| inspect_colorable?(k) && inspect_colorable?(v) }
         when Array
           obj.all? { |o| inspect_colorable?(o) }
-        when String, Symbol, Regexp, Integer, Float, FalseClass, TrueClass, NilClass, Class
+        when String, Symbol, Regexp, Integer, Float, FalseClass, TrueClass, NilClass
           true
         else
           false
