@@ -450,7 +450,7 @@ search_nonascii(const char *p, const char *e)
 {
     const uintptr_t *s, *t;
 
-#if defined(__STDC_VERSION) && (__STDC_VERSION__ >= 199901L)
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
 # if SIZEOF_UINTPTR_T == 8
 #  define NONASCII_MASK UINT64_C(0x8080808080808080)
 # elif SIZEOF_UINTPTR_T == 4
