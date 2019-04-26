@@ -49,7 +49,7 @@ EOF
           @binding = BINDING_QUEUE.pop
 
         when 3	# binding in function on TOPLEVEL_BINDING(default)
-          @binding = eval("self.class.remove_method(:irb_binding) if defined?(irb_binding); def irb_binding; private; binding; end; irb_binding",
+          @binding = eval("def irb_binding; private; binding; end; irb_binding",
                           TOPLEVEL_BINDING,
                           __FILE__,
                           __LINE__ - 3)
@@ -116,7 +116,11 @@ EOF
     end
 
     def code_around_binding
-      file, pos = @binding.source_location
+      if @binding.respond_to?(:source_location)
+        file, pos = @binding.source_location
+      else
+        file, pos = @binding.eval('[__FILE__, __LINE__]')
+      end
 
       if defined?(::SCRIPT_LINES__[file]) && lines = ::SCRIPT_LINES__[file]
         code = ::SCRIPT_LINES__[file].join('')

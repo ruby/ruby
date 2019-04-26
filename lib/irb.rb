@@ -750,8 +750,8 @@ class Binding
   #
   #     Potato.new
   #
-  # Running <code>ruby potato.rb</code> will open an IRB session where
-  # +binding.irb+ is called, and you will see the following:
+  # Running +ruby potato.rb+ will open an IRB session where +binding.irb+ is
+  # called, and you will see the following:
   #
   #     $ ruby potato.rb
   #
@@ -781,7 +781,7 @@ class Binding
   #     irb(#<Potato:0x00007feea1916670>):004:0> @cooked = true
   #     => true
   #
-  # You can exit the IRB session with the +exit+ command. Note that exiting will
+  # You can exit the IRB session with the `exit` command. Note that exiting will
   # resume execution where +binding.irb+ had paused it, as you can see from the
   # output printed to standard output in this example:
   #
