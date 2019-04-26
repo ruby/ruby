@@ -216,7 +216,7 @@ env:
       - optflags=-O1
       - LD=clang-8
       - LDFLAGS='-fsanitize=memory -fPIC'
-      - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
+      - CONFIG_FLAG='--with-out-ext=openssl,psych --without-gmp --without-jemalloc --without-valgrind'
 
   - &UBSAN
     name: -fsanitize=undefined
