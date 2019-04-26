@@ -14,10 +14,10 @@ module Psych
               |\.(nan|NaN|NAN)(?# not a number))$/x
 
     # Taken from http://yaml.org/type/int.html
-    INTEGER = /^(?:[-+]?0b[0-1_]+          (?# base 2)
-                  |[-+]?0[0-7_]+           (?# base 8)
-                  |[-+]?(?:0|[1-9][0-9_]*) (?# base 10)
-                  |[-+]?0x[0-9a-fA-F_]+    (?# base 16))$/x
+    INTEGER = /^(?:[-+]?0b[0-1_,]+          (?# base 2)
+                  |[-+]?0[0-7_,]+           (?# base 8)
+                  |[-+]?(?:0|[1-9][0-9_,]*) (?# base 10)
+                  |[-+]?0x[0-9a-fA-F_,]+    (?# base 16))$/x
 
     attr_reader :class_loader
 
@@ -91,10 +91,9 @@ module Psych
         else
           Float(string.gsub(/[,_]|\.([Ee]|$)/, '\1'))
         end
+      elsif string.match?(INTEGER)
+        parse_int string
       else
-        int = parse_int string.gsub(/[,_]/, '')
-        return int if int
-
         string
       end
     end
@@ -102,8 +101,7 @@ module Psych
     ###
     # Parse and return an int from +string+
     def parse_int string
-      return unless INTEGER === string
-      Integer(string)
+      Integer(string.gsub(/[,]/, ''))
     end
 
     ###
