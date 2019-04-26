@@ -383,6 +383,13 @@ check_funcall_missing(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mi
 	VALUE argbuf, *new_args = ALLOCV_N(VALUE, argbuf, argc+1);
 
 	new_args[0] = ID2SYM(mid);
+        #ifdef __GLIBC__
+        if (!argv) {
+            static const VALUE buf = Qfalse;
+            VM_ASSERT(argc == 0);
+            argv = &buf;
+        }
+        #endif
 	MEMCPY(new_args+1, argv, VALUE, argc);
 	ec->method_missing_reason = MISSING_NOENTRY;
 	args.ec = ec;
@@ -734,6 +741,13 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
 
     nargv = ALLOCV_N(VALUE, work, argc + 1);
     nargv[0] = ID2SYM(id);
+    #ifdef __GLIBC__
+    if (!argv) {
+        static const VALUE buf = Qfalse;
+        VM_ASSERT(argc == 0);
+        argv = &buf;
+    }
+    #endif
     MEMCPY(nargv + 1, argv, VALUE, argc);
     ++argc;
     argv = nargv;
