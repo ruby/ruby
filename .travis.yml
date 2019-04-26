@@ -158,11 +158,12 @@ env:
     compiler: clang
     env:
       - ASAN_OPTIONS=detect_leaks=0
-      - cflags='-march=native -fsanitize=address -fno-omit-frame-pointer'
+      - cflags='-march=native -fsanitize=address -fno-omit-frame-pointer -fPIC'
       - debugflags=-ggdb3
       - optflags=-O1
       - LD=clang
-      - LDFLAGS=-fsanitize=address
+      - LDFLAGS='-fsanitize=address -fPIC'
+      - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
 
   - &MSAN
     name: -fsanitize=memory
@@ -171,11 +172,11 @@ env:
     <<: *make-test-only
     compiler: clang
     env:
-      - cflags='-fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer'
+      - cflags='-fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer -fPIC'
       - optflags=-O1
       - LD=clang
-      - LDFLAGS=-fsanitize=memory
-      - CONFIG_FLAG=--with-out-ext=openssl
+      - LDFLAGS='-fsanitize=memory -fPIC'
+      - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
 
   - &UBSAN
     name: -fsanitize=undefined
