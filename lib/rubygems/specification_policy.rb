@@ -1,7 +1,10 @@
 require 'delegate'
 require 'uri'
+require 'rubygems/user_interaction'
 
 class Gem::SpecificationPolicy < SimpleDelegator
+
+  include Gem::UserInteraction
 
   VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/.freeze # :nodoc:
 

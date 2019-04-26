@@ -174,8 +174,6 @@ module Gem
     write_binary_errors
   end.freeze
 
-  USE_BUNDLER_FOR_GEMDEPS = !ENV['DONT_USE_BUNDLER_FOR_GEMDEPS'] # :nodoc:
-
   @@win_platform = nil
 
   @configuration = nil
@@ -253,8 +251,6 @@ module Gem
     # TODO: fails test_self_bin_path_bin_file_gone_in_latest
     # Gem::Specification.find_by_name(name, *requirements).bin_file exec_name
 
-    raise ArgumentError, "you must supply exec_name" unless exec_name
-
     requirements = Gem::Requirement.default if
       requirements.empty?
 
@@ -262,6 +258,8 @@ module Gem
   end
 
   def self.find_spec_for_exe(name, exec_name, requirements)
+    raise ArgumentError, "you must supply exec_name" unless exec_name
+
     dep = Gem::Dependency.new name, requirements
 
     loaded = Gem.loaded_specs[name]
@@ -297,8 +295,8 @@ module Gem
   #
   # This method should *only* be used in bin stub files.
 
-  def self.activate_bin_path(name, exec_name, requirement) # :nodoc:
-    spec = find_spec_for_exe name, exec_name, [requirement]
+  def self.activate_bin_path(name, exec_name = nil, *requirements) # :nodoc:
+    spec = find_spec_for_exe name, exec_name, requirements
     Gem::LOADED_SPECS_MUTEX.synchronize do
       spec.activate
       finish_resolve
@@ -1183,27 +1181,15 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       raise ArgumentError, "Unable to find gem dependencies file at #{path}"
     end
 
-    if USE_BUNDLER_FOR_GEMDEPS
-
-      ENV["BUNDLE_GEMFILE"] ||= File.expand_path(path)
-      require 'rubygems/user_interaction'
-      Gem::DefaultUserInteraction.use_ui(ui) do
-        require "bundler"
-        @gemdeps = Bundler.setup
-        Bundler.ui = nil
-        @gemdeps.requested_specs.map(&:to_spec).sort_by(&:name)
-      end
-
-    else
-
-      rs = Gem::RequestSet.new
-      @gemdeps = rs.load_gemdeps path
-
-      rs.resolve_current.map do |s|
-        s.full_spec.tap(&:activate)
-      end
-
+    ENV["BUNDLE_GEMFILE"] ||= File.expand_path(path)
+    require 'rubygems/user_interaction'
+    Gem::DefaultUserInteraction.use_ui(ui) do
+      require "bundler"
+      @gemdeps = Bundler.setup
+      Bundler.ui = nil
+      @gemdeps.requested_specs.map(&:to_spec).sort_by(&:name)
     end
+
   rescue => e
     case e
     when Gem::LoadError, Gem::UnsatisfiableDependencyError, (defined?(Bundler::GemNotFound) ? Bundler::GemNotFound : Gem::LoadError)
