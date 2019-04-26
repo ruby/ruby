@@ -621,7 +621,6 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
     sec->machine.stack_end = NULL;
 
 #ifdef __ia64
-    sec->machine.register_stack_start = NULL;
     sec->machine.register_stack_end = NULL;
 #endif
 }
