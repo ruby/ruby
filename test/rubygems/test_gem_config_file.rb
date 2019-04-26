@@ -157,8 +157,8 @@ class TestGemConfigFile < Gem::TestCase
     File.open conf3, 'w' do |fp|
       fp.puts ':verbose: :loud'
     end
-
-    ENV['GEMRC'] = conf1 + ':' + conf2 + ';' + conf3
+    ps = File::PATH_SEPARATOR
+    ENV['GEMRC'] = conf1 + ps + conf2 + ps + conf3
 
     util_config_file
 

@@ -197,9 +197,10 @@ class Gem::ConfigFile
     platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
     system_config = load_file SYSTEM_WIDE_CONFIG_FILE
     user_config = load_file config_file_name.dup.untaint
-    environment_config = (ENV['GEMRC'] || '').split(/[:;]/).inject({}) do |result, file|
-      result.merge load_file file
-    end
+    environment_config = (ENV['GEMRC'] || '')
+      .split(File::PATH_SEPARATOR).inject({}) do |result, file|
+        result.merge load_file file
+      end
 
     @hash = operating_system_config.merge platform_config
     unless arg_list.index '--norc'

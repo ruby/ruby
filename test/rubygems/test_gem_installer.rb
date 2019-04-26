@@ -901,6 +901,36 @@ gem 'other', version
     assert_includes(e.message, "can't find gem a (= 3.0)")
   end
 
+  def test_install_creates_binstub_that_prefers_user_installed_gem_to_default
+    Dir.mkdir util_inst_bindir
+
+    install_default_gems new_default_spec('default', '2')
+
+    util_setup_gem do |spec|
+      spec.name = 'default'
+      spec.version = '2'
+    end
+
+    util_clear_gems
+
+    @installer.wrappers = true
+
+    @newspec = nil
+    build_rake_in do
+      use_ui @ui do
+        @newspec = @installer.install
+      end
+    end
+
+    exe = File.join @gemhome, 'bin', 'executable'
+
+    e = assert_raises RuntimeError do
+      instance_eval File.read(exe)
+    end
+
+    assert_equal(e.message, "ran executable")
+  end
+
   def test_install_creates_binstub_that_dont_trust_encoding
     Dir.mkdir util_inst_bindir
     util_setup_gem
@@ -1724,7 +1754,9 @@ gem 'other', version
 
     dest = File.join @gemhome, 'gems', @spec.full_name
 
-    @installer.unpack dest
+    Gem::Deprecate.skip_during do
+      @installer.unpack dest
+    end
 
     assert_path_exists File.join dest, 'lib', 'code.rb'
     assert_path_exists File.join dest, 'bin', 'executable'

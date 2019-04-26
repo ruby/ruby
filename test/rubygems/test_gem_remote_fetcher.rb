@@ -53,7 +53,6 @@ gems:
     homepage: http://rake.rubyforge.org
     description: Rake is a Make-like program implemented in Ruby. Tasks and dependencies are specified in standard Ruby syntax.
     autorequire:
-    default_executable: rake
     bindir: bin
     has_rdoc: true
     required_ruby_version: !ruby/object:Gem::Version::Requirement

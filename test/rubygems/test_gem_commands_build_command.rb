@@ -351,4 +351,45 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_equal(28, cert_days_to_expire)
   end
 
+  def test_build_auto_resign_cert
+    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+
+    gem_path = File.join Gem.user_home, ".gem"
+    Dir.mkdir gem_path
+
+    Gem::Security.trust_dir
+
+    tmp_expired_cert_file = File.join gem_path, "gem-public_cert.pem"
+    File.write(tmp_expired_cert_file, File.read(EXPIRED_CERT_FILE))
+
+    tmp_private_key_file = File.join gem_path, "gem-private_key.pem"
+    File.write(tmp_private_key_file, File.read(PRIVATE_KEY_FILE))
+
+    spec = util_spec 'some_gem' do |s|
+      s.signing_key = tmp_private_key_file
+      s.cert_chain  = [tmp_expired_cert_file]
+    end
+
+    gemspec_file = File.join(@tempdir, spec.spec_name)
+
+    File.open gemspec_file, 'w' do |gs|
+      gs.write spec.to_ruby
+    end
+
+    @cmd.options[:args] = [gemspec_file]
+
+    Gem.configuration.cert_expiration_length_days = 28
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    output = @ui.output.split "\n"
+    assert_equal "INFO:  Your certificate has expired, trying to re-sign it...", output.shift
+    assert_equal "INFO:  Your cert: #{tmp_expired_cert_file } has been auto re-signed with the key: #{tmp_private_key_file}", output.shift
+    assert_match /INFO:  Your expired cert will be located at: .+\Wgem-public_cert\.pem\.expired\.[0-9]+/, output.shift
+  end
+
 end

@@ -267,6 +267,14 @@ class TestGem < Gem::TestCase
     assert_match 'a-2/bin/exec', Gem.bin_path('a', 'exec', '>= 0')
   end
 
+  def test_self_activate_bin_path_no_exec_name
+    e = assert_raises ArgumentError do
+      Gem.activate_bin_path 'a'
+    end
+
+    assert_equal 'you must supply exec_name', e.message
+  end
+
   def test_activate_bin_path_resolves_eagerly
     a1 = util_spec 'a', '1' do |s|
       s.executables = ['exec']
@@ -1548,19 +1556,15 @@ class TestGem < Gem::TestCase
 
     ENV['RUBYGEMS_GEMDEPS'] = "-"
 
-    expected_specs = [a, b, (Gem::USE_BUNDLER_FOR_GEMDEPS || nil) && util_spec("bundler", Bundler::VERSION), c].compact
+    expected_specs = [a, b, util_spec("bundler", Bundler::VERSION), c].compact
     assert_equal expected_specs, Gem.use_gemdeps.sort_by { |s| s.name }
   end
 
   LIB_PATH = File.expand_path "../../../lib".dup.untaint, __FILE__.dup.untaint
-
-  if Gem::USE_BUNDLER_FOR_GEMDEPS
-    BUNDLER_LIB_PATH = File.expand_path $LOAD_PATH.find {|lp| File.file?(File.join(lp, "bundler.rb")) }.dup.untaint
-    BUNDLER_FULL_NAME = "bundler-#{Bundler::VERSION}".freeze
-  end
+  BUNDLER_LIB_PATH = File.expand_path $LOAD_PATH.find {|lp| File.file?(File.join(lp, "bundler.rb")) }.dup.untaint
+  BUNDLER_FULL_NAME = "bundler-#{Bundler::VERSION}".freeze
 
   def add_bundler_full_name(names)
-    return names unless Gem::USE_BUNDLER_FOR_GEMDEPS
     names << BUNDLER_FULL_NAME
     names.sort!
     names
@@ -1600,7 +1604,7 @@ class TestGem < Gem::TestCase
     out = IO.popen(cmd, &:read).split(/\n/)
 
     assert_equal ["b-1", "c-1"], out - out0
-  end if Gem::USE_BUNDLER_FOR_GEMDEPS
+  end
 
   def test_looks_for_gemdeps_files_automatically_on_start_in_parent_dir
     util_clear_gems
@@ -1640,7 +1644,7 @@ class TestGem < Gem::TestCase
     Dir.rmdir "sub1"
 
     assert_equal ["b-1", "c-1"], out - out0
-  end if Gem::USE_BUNDLER_FOR_GEMDEPS
+  end
 
   def test_register_default_spec
     Gem.clear_default_specs
@@ -1819,27 +1823,19 @@ class TestGem < Gem::TestCase
     else
       platform = " #{platform}"
     end
-    expected =
-      if Gem::USE_BUNDLER_FOR_GEMDEPS
-        <<-EXPECTED
+
+    expected = <<-EXPECTED
 Could not find gem 'a#{platform}' in any of the gem sources listed in your Gemfile.
 You may need to `gem install -g` to install missing gems
 
-        EXPECTED
-      else
-        <<-EXPECTED
-Unable to resolve dependency: user requested 'a (>= 0)'
-You may need to `gem install -g` to install missing gems
-
-        EXPECTED
-      end
+    EXPECTED
 
     assert_output nil, expected do
       Gem.use_gemdeps
     end
   ensure
     ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
-  end if Gem::USE_BUNDLER_FOR_GEMDEPS
+  end
 
   def test_use_gemdeps_specific
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], 'x'

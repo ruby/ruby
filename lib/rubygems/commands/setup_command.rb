@@ -319,7 +319,7 @@ By default, this RubyGems will install gem as:
 
   def install_lib(lib_dir)
     libs = { 'RubyGems' => 'lib' }
-    libs['Bundler'] = 'bundler/lib' if Gem::USE_BUNDLER_FOR_GEMDEPS
+    libs['Bundler'] = 'bundler/lib'
     libs.each do |tool, path|
       say "Installing #{tool}" if @verbose
 
@@ -382,8 +382,6 @@ By default, this RubyGems will install gem as:
   end
 
   def install_default_bundler_gem(bin_dir)
-    return unless Gem::USE_BUNDLER_FOR_GEMDEPS
-
     specs_dir = Gem::Specification.default_specifications_dir
     specs_dir = File.join(options[:destdir], specs_dir) unless Gem.win_platform?
     mkdir_p specs_dir, :mode => 0755
@@ -430,8 +428,12 @@ By default, this RubyGems will install gem as:
 
     Dir.chdir("bundler") do
       built_gem = Gem::Package.build(bundler_spec)
-      installer = Gem::Installer.at(built_gem, env_shebang: options[:env_shebang], install_as_default: true, bin_dir: bin_dir, wrappers: true)
-      installer.install
+      begin
+        installer = Gem::Installer.at(built_gem, env_shebang: options[:env_shebang], install_as_default: true, bin_dir: bin_dir, wrappers: true)
+        installer.install
+      ensure
+        FileUtils.rm_f built_gem
+      end
     end
 
     say "Bundler #{bundler_spec.version} installed"
@@ -544,7 +546,7 @@ abort "#{deprecation_message}"
 
   def remove_old_lib_files(lib_dir)
     lib_dirs = { File.join(lib_dir, 'rubygems') => 'lib/rubygems' }
-    lib_dirs[File.join(lib_dir, 'bundler')] = 'bundler/lib/bundler' if Gem::USE_BUNDLER_FOR_GEMDEPS
+    lib_dirs[File.join(lib_dir, 'bundler')] = 'bundler/lib/bundler'
     lib_dirs.each do |old_lib_dir, new_lib_dir|
       lib_files = rb_files_in(new_lib_dir)
       lib_files.concat(template_files_in(new_lib_dir)) if new_lib_dir =~ /bundler/
