@@ -833,7 +833,9 @@ end
 
       ruby <<-R, :env => { "GEM_PATH" => symlinked_gem_home }, :no_lib => true
         TracePoint.trace(:class) do |tp|
-          puts "OMG" if tp.path.include?("bundler") && !tp.path.start_with?("#{File.expand_path("../..", __dir__)}")
+          if tp.path.include?("bundler") && !tp.path.start_with?("#{File.expand_path("../..", __dir__)}")
+            puts "OMG. Defining a class from another bundler at \#{tp.path}:\#{tp.lineno}"
+          end
         end
         gem 'bundler', '#{Bundler::VERSION}'
         require 'bundler/setup'
