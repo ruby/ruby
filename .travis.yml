@@ -85,6 +85,8 @@ env:
     if: (type = cron) AND (branch = trunk) AND (fork = false)
 
   - &make-test-only
+    env:
+      - GEMS_FOR_TEST=
     script:
       - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
 
