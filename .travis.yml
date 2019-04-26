@@ -111,6 +111,14 @@ env:
     env:
       - CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'
 
+  - &assertions
+    name: RUBY_DEBUG=1
+    <<: *linux
+    #<<: *cron-only
+    <<: *make-test-only
+    env:
+      - cppflags='-DRUBY_DEBUG -DVM_CHECK_MODE -DTRANSIENT_HEAP_CHECK_MODE -DRGENGC_CHECK_MODE -DENC_DEBUG'
+
   - &VM_CHECK_MODE
     name: VM_CHECK_MODE=3
     <<: *linux
@@ -301,6 +309,7 @@ matrix:
     - <<: *ASAN
     - <<: *MSAN
     - <<: *UBSAN
+    - <<: *assertions
     - <<: *VM_CHECK_MODE
     - <<: *FIBER_USE_sjlj
     - <<: *TOKEN_THREADED_CODE
