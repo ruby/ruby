@@ -10476,16 +10476,14 @@ static VALUE
 gc_profile_clear(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    if (GC_PROFILE_RECORD_DEFAULT_SIZE * 2 < objspace->profile.size) {
-        objspace->profile.size = GC_PROFILE_RECORD_DEFAULT_SIZE * 2;
-        objspace->profile.records = realloc(objspace->profile.records, sizeof(gc_profile_record) * objspace->profile.size);
-        if (!objspace->profile.records) {
-            rb_memerror();
-        }
-    }
-    MEMZERO(objspace->profile.records, gc_profile_record, objspace->profile.size);
+    void *p = objspace->profile.records;
+    objspace->profile.records = NULL;
+    objspace->profile.size = 0;
     objspace->profile.next_index = 0;
     objspace->profile.current_record = 0;
+    if (p) {
+        free(p);
+    }
     return Qnil;
 }
 
