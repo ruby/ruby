@@ -46,7 +46,7 @@ class Gem::Uninstaller
     # TODO document the valid options
     @gem                = gem
     @version            = options[:version] || Gem::Requirement.default
-    @gem_home           = File.expand_path(options[:install_dir] || Gem.dir)
+    @gem_home           = File.realpath(options[:install_dir] || Gem.dir)
     @force_executables  = options[:executables]
     @force_all          = options[:all]
     @force_ignore       = options[:ignore]

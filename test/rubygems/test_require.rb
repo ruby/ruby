@@ -323,6 +323,19 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w(default-3.0), loaded_spec_names
   end
 
+  def test_default_gem_prerelease
+    default_gem_spec = new_default_spec("default", "2.0.0",
+                                        nil, "default/gem.rb")
+    install_default_specs(default_gem_spec)
+
+    normal_gem_higher_prerelease_spec = util_spec("default", "3.0.0.rc2", nil,
+                                                  "lib/default/gem.rb")
+    install_default_specs(normal_gem_higher_prerelease_spec)
+
+    assert_require "default/gem"
+    assert_equal %w(default-3.0.0.rc2), loaded_spec_names
+  end
+
   def loaded_spec_names
     Gem.loaded_specs.values.map(&:full_name).sort
   end

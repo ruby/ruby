@@ -265,7 +265,6 @@ class Gem::Package
     raise ArgumentError, "skip_validation = true and strict_validation = true are incompatible" if skip_validation && strict_validation
 
     Gem.load_yaml
-    require 'rubygems/security'
 
     @spec.mark_version
     @spec.validate true, strict_validation unless skip_validation

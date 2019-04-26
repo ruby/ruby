@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require 'rubygems/command'
-require 'rubygems/installer'
 require 'rubygems/version_option'
 require 'rubygems/security_option'
 require 'rubygems/remote_fetcher'

@@ -193,7 +193,7 @@ class Gem::Installer
 
     @bin_dir = options[:bin_dir] if options[:bin_dir]
 
-    if options[:user_install] and not options[:unpack]
+    if options[:user_install]
       @gem_home = Gem.user_dir
       @bin_dir = Gem.bindir gem_home unless options[:bin_dir]
       check_that_user_bin_dir_is_in_path
@@ -428,6 +428,7 @@ class Gem::Installer
     @gem_dir = directory
     extract_files
   end
+  deprecate :unpack, :none, 2020, 04
 
   ##
   # The location of the spec file that is installed.
@@ -726,10 +727,9 @@ class Gem::Installer
     end
   end
 
-  def verify_gem_home(unpack = false) # :nodoc:
+  def verify_gem_home # :nodoc:
     FileUtils.mkdir_p gem_home, :mode => options[:dir_mode] && 0755
-    raise Gem::FilePermissionError, gem_home unless
-      unpack or File.writable?(gem_home)
+    raise Gem::FilePermissionError, gem_home unless File.writable?(gem_home)
   end
 
   def verify_spec
@@ -898,7 +898,7 @@ TEXT
   # The dependent check will be skipped if the install is ignoring dependencies.
 
   def pre_install_checks
-    verify_gem_home options[:unpack]
+    verify_gem_home
 
     # The name and require_paths must be verified first, since it could contain
     # ruby code that would be eval'ed in #ensure_loadable_spec

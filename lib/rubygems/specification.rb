@@ -654,8 +654,8 @@ class Gem::Specification < Gem::BasicSpecification
   #  # This gem will work with 1.8.6 or greater...
   #  spec.required_ruby_version = '>= 1.8.6'
   #
-  #  # Only with ruby 2.0.x
-  #  spec.required_ruby_version = '~> 2.0'
+  #  # Only with final releases of major version 2 where minor version is at least 3
+  #  spec.required_ruby_version = '~> 2.3'
   #
   #  # Only prereleases or final releases after 2.6.0.preview2
   #  spec.required_ruby_version = '> 2.6.0.preview2'
@@ -812,7 +812,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.stubs
     @@stubs ||= begin
       pattern = "*.gemspec"
-      stubs = Gem.loaded_specs.values + default_stubs(pattern) + installed_stubs(dirs, pattern)
+      stubs = Gem.loaded_specs.values + installed_stubs(dirs, pattern) + default_stubs(pattern)
       stubs = uniq_by(stubs) { |stub| stub.full_name }
 
       _resort!(stubs)
@@ -843,8 +843,9 @@ class Gem::Specification < Gem::BasicSpecification
       @@stubs_by_name[name] || []
     else
       pattern = "#{name}-*.gemspec"
-      stubs = Gem.loaded_specs.values + default_stubs(pattern) +
-        installed_stubs(dirs, pattern).select { |s| Gem::Platform.match s.platform }
+      stubs = Gem.loaded_specs.values +
+        installed_stubs(dirs, pattern).select { |s| Gem::Platform.match s.platform } +
+        default_stubs(pattern)
       stubs = uniq_by(stubs) { |stub| stub.full_name }.group_by(&:name)
       stubs.each_value { |v| _resort!(v) }
 
@@ -2594,8 +2595,6 @@ class Gem::Specification < Gem::BasicSpecification
   # checks..
 
   def validate(packaging = true, strict = false)
-    require 'rubygems/user_interaction'
-    extend Gem::UserInteraction
     normalize
 
     validation_policy = Gem::SpecificationPolicy.new(self)
