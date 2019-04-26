@@ -469,7 +469,7 @@ init_header_filename(void)
     // Root path of the running ruby process. Equal to RbConfig::TOPDIR.
     VALUE basedir_val;
 #endif
-    const char *basedir = NULL;
+    const char *basedir = "";
     size_t baselen = 0;
     char *p;
 #ifdef _WIN32
