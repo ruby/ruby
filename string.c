@@ -495,7 +495,7 @@ search_nonascii(const char *p, const char *e)
 #define aligned_ptr(value) (uintptr_t *)(value)
 #endif
 	s = aligned_ptr(p);
-	t = aligned_ptr(e - (SIZEOF_VOIDP-1));
+	t = (uintptr_t *)(e - (SIZEOF_VOIDP-1));
 #undef aligned_ptr
 	for (;s < t; s++) {
 	    if (*s & NONASCII_MASK) {
