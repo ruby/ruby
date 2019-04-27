@@ -222,6 +222,7 @@ module IRB
       end
       Reline.completion_append_character = nil
       Reline.completion_proc = IRB::InputCompletor::CompletionProc
+      Reline.dig_perfect_match_proc = IRB::InputCompletor::PerfectMatchedProc
     end
 
     def check_termination(&block)
