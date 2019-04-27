@@ -1088,44 +1088,25 @@ TRUE                 TrueClass   Synonym for true.
 =end
 
 describe "The predefined global constants" do
-  ruby_version_is ""..."2.4" do
-    it "includes TRUE" do
-      Object.const_defined?(:TRUE).should == true
+  it "includes TRUE" do
+    Object.const_defined?(:TRUE).should == true
+    -> {
       TRUE.should equal(true)
-    end
-
-    it "includes FALSE" do
-      Object.const_defined?(:FALSE).should == true
-      FALSE.should equal(false)
-    end
-
-    it "includes NIL" do
-      Object.const_defined?(:NIL).should == true
-      NIL.should equal(nil)
-    end
+    }.should complain(/constant ::TRUE is deprecated/)
   end
 
-  ruby_version_is "2.4" do
-    it "includes TRUE" do
-      Object.const_defined?(:TRUE).should == true
-      -> {
-        TRUE.should equal(true)
-      }.should complain(/constant ::TRUE is deprecated/)
-    end
+  it "includes FALSE" do
+    Object.const_defined?(:FALSE).should == true
+    -> {
+      FALSE.should equal(false)
+    }.should complain(/constant ::FALSE is deprecated/)
+  end
 
-    it "includes FALSE" do
-      Object.const_defined?(:FALSE).should == true
-      -> {
-        FALSE.should equal(false)
-      }.should complain(/constant ::FALSE is deprecated/)
-    end
-
-    it "includes NIL" do
-      Object.const_defined?(:NIL).should == true
-      -> {
-        NIL.should equal(nil)
-      }.should complain(/constant ::NIL is deprecated/)
-    end
+  it "includes NIL" do
+    Object.const_defined?(:NIL).should == true
+    -> {
+      NIL.should equal(nil)
+    }.should complain(/constant ::NIL is deprecated/)
   end
 
   it "includes STDIN" do

@@ -13,11 +13,9 @@ describe "String.new" do
     str.encoding.should == Encoding::EUC_JP
   end
 
-  ruby_version_is "2.4" do
-    it "accepts a capacity argument" do
-      String.new("", capacity: 100_000).should == ""
-      String.new("abc", capacity: 100_000).should == "abc"
-    end
+  it "accepts a capacity argument" do
+    String.new("", capacity: 100_000).should == ""
+    String.new("abc", capacity: 100_000).should == "abc"
   end
 
   it "returns a fully-formed String" do

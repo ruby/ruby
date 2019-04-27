@@ -8,6 +8,12 @@ describe "Hash#fetch" do
     it_behaves_like :key_error, ->(obj, key) { obj.fetch(key) }, {}
     it_behaves_like :key_error, ->(obj, key) { obj.fetch(key) }, Hash.new { 5 }
     it_behaves_like :key_error, ->(obj, key) { obj.fetch(key) }, Hash.new(5)
+
+    it "formats the object with #inspect in the KeyError message" do
+      -> {
+        {}.fetch('foo')
+      }.should raise_error(KeyError, 'key not found: "foo"')
+    end
   end
 
   it "returns the value for key" do

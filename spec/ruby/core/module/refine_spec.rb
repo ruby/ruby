@@ -74,29 +74,17 @@ describe "Module#refine" do
     end.should raise_error(TypeError)
   end
 
-  ruby_version_is "" ... "2.4" do
-    it "raises TypeError if passed a module" do
-      lambda do
-        Module.new do
-          refine(Enumerable) {}
+  it "accepts a module as argument" do
+    inner_self = nil
+    Module.new do
+      refine(Enumerable) do
+        def blah
         end
-      end.should raise_error(TypeError)
-    end
-  end
-
-  ruby_version_is "2.4" do
-    it "accepts a module as argument" do
-      inner_self = nil
-      Module.new do
-        refine(Enumerable) do
-          def blah
-          end
-          inner_self = self
-        end
+        inner_self = self
       end
-
-      inner_self.public_instance_methods.should include(:blah)
     end
+
+    inner_self.public_instance_methods.should include(:blah)
   end
 
   it "raises ArgumentError if not given a block" do
@@ -319,108 +307,54 @@ describe "Module#refine" do
   end
 
   context "for methods accessed indirectly" do
-    ruby_version_is "" ... "2.4" do
-      it "is not honored by Kernel#send" do
-        refinement = Module.new do
-          refine ModuleSpecs::ClassWithFoo do
-            def foo; "foo from refinement"; end
-          end
+    it "is honored by Kernel#send" do
+      refinement = Module.new do
+        refine ModuleSpecs::ClassWithFoo do
+          def foo; "foo from refinement"; end
         end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = ModuleSpecs::ClassWithFoo.new.send :foo
-        end
-
-        result.should == "foo"
       end
 
-      it "is not honored by BasicObject#__send__" do
-        refinement = Module.new do
-          refine ModuleSpecs::ClassWithFoo do
-            def foo; "foo from refinement"; end
-          end
-        end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = ModuleSpecs::ClassWithFoo.new.__send__ :foo
-        end
-
-        result.should == "foo"
+      result = nil
+      Module.new do
+        using refinement
+        result = ModuleSpecs::ClassWithFoo.new.send :foo
       end
 
-      it "is not honored by Symbol#to_proc" do
-        refinement = Module.new do
-          refine Integer do
-            def to_s
-              "(#{super})"
-            end
-          end
-        end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = [1, 2, 3].map(&:to_s)
-        end
-
-        result.should == ["1", "2", "3"]
-      end
+      result.should == "foo from refinement"
     end
 
-    ruby_version_is "2.4" do
-      it "is honored by Kernel#send" do
-        refinement = Module.new do
-          refine ModuleSpecs::ClassWithFoo do
-            def foo; "foo from refinement"; end
-          end
+    it "is honored by BasicObject#__send__" do
+      refinement = Module.new do
+        refine ModuleSpecs::ClassWithFoo do
+          def foo; "foo from refinement"; end
         end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = ModuleSpecs::ClassWithFoo.new.send :foo
-        end
-
-        result.should == "foo from refinement"
       end
 
-      it "is honored by BasicObject#__send__" do
-        refinement = Module.new do
-          refine ModuleSpecs::ClassWithFoo do
-            def foo; "foo from refinement"; end
-          end
-        end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = ModuleSpecs::ClassWithFoo.new.__send__ :foo
-        end
-
-        result.should == "foo from refinement"
+      result = nil
+      Module.new do
+        using refinement
+        result = ModuleSpecs::ClassWithFoo.new.__send__ :foo
       end
 
-      it "is honored by Symbol#to_proc" do
-        refinement = Module.new do
-          refine Integer do
-            def to_s
-              "(#{super})"
-            end
+      result.should == "foo from refinement"
+    end
+
+    it "is honored by Symbol#to_proc" do
+      refinement = Module.new do
+        refine Integer do
+          def to_s
+            "(#{super})"
           end
         end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = [1, 2, 3].map(&:to_s)
-        end
-
-        result.should == ["(1)", "(2)", "(3)"]
       end
+
+      result = nil
+      Module.new do
+        using refinement
+        result = [1, 2, 3].map(&:to_s)
+      end
+
+      result.should == ["(1)", "(2)", "(3)"]
     end
 
     ruby_version_is "" ... "2.6" do

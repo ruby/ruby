@@ -42,7 +42,7 @@ with_feature :fiber do
           f.resume
 
           # When we execute the second #resume call, the ensure block DOES exit,
-          # the ensure clause runs. This is Ruby behavior as of 2.3.1.
+          # the ensure clause runs.
           f.resume
 
           exit 0

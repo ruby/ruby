@@ -167,6 +167,16 @@ VALUE io_spec_rb_thread_wait_fd(VALUE self, VALUE io) {
   return Qnil;
 }
 
+VALUE io_spec_rb_wait_for_single_fd(VALUE self, VALUE io, VALUE events, VALUE secs, VALUE usecs) {
+  int fd = io_spec_get_fd(io);
+  struct timeval tv;
+  if (!NIL_P(secs)) {
+    tv.tv_sec = FIX2INT(secs);
+    tv.tv_usec = FIX2INT(usecs);
+  }
+  return INT2FIX(rb_wait_for_single_fd(fd, FIX2INT(events), NIL_P(secs) ? NULL : &tv));
+}
+
 VALUE io_spec_rb_thread_fd_writable(VALUE self, VALUE io) {
   rb_thread_fd_writable(io_spec_get_fd(io));
   return Qnil;
@@ -220,6 +230,7 @@ void Init_io_spec(void) {
   rb_define_method(cls, "rb_io_wait_writable", io_spec_rb_io_wait_writable, 1);
   rb_define_method(cls, "rb_thread_wait_fd", io_spec_rb_thread_wait_fd, 1);
   rb_define_method(cls, "rb_thread_fd_writable", io_spec_rb_thread_fd_writable, 1);
+  rb_define_method(cls, "rb_wait_for_single_fd", io_spec_rb_wait_for_single_fd, 4);
   rb_define_method(cls, "rb_io_binmode", io_spec_rb_io_binmode, 1);
   rb_define_method(cls, "rb_fd_fix_cloexec", io_spec_rb_fd_fix_cloexec, 1);
   rb_define_method(cls, "rb_cloexec_open", io_spec_rb_cloexec_open, 3);

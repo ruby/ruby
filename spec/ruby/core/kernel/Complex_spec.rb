@@ -175,13 +175,11 @@ describe "Kernel.Complex()" do
         end
       end
 
-      ruby_bug "#15525", "2.6"..."2.6.1" do
-        describe "and nil arguments" do
-          it "swallows an error" do
-            Complex(nil, exception: false).should == nil
-            Complex(0, nil, exception: false).should == nil
-            Complex(nil, 0, exception: false).should == nil
-          end
+      describe "and nil arguments" do
+        it "swallows an error" do
+          Complex(nil, exception: false).should == nil
+          Complex(0, nil, exception: false).should == nil
+          Complex(nil, 0, exception: false).should == nil
         end
       end
     end

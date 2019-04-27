@@ -101,10 +101,8 @@ describe "String#casecmp independent of case" do
       @lower_a_tilde.casecmp(@upper_a_tilde).should == 1
     end
 
-    ruby_version_is "2.4" do
-      it "does not case fold" do
-        "ß".casecmp("ss").should == 1
-      end
+    it "does not case fold" do
+      "ß".casecmp("ss").should == 1
     end
   end
 
@@ -129,88 +127,84 @@ describe "String#casecmp independent of case" do
   end
 end
 
-ruby_version_is "2.4" do
-  describe 'String#casecmp? independent of case' do
+describe 'String#casecmp? independent of case' do
+  it 'returns true when equal to other' do
+    'abc'.casecmp?('abc').should == true
+    'abc'.casecmp?('ABC').should == true
+  end
+
+  it 'returns false when not equal to other' do
+    'abc'.casecmp?('DEF').should == false
+    'abc'.casecmp?('def').should == false
+  end
+
+  it "tries to convert other to string using to_str" do
+    other = mock('x')
+    other.should_receive(:to_str).and_return("abc")
+
+    "abc".casecmp?(other).should == true
+  end
+
+  it "returns nil if incompatible encodings" do
+    "あれ".casecmp?("れ".encode(Encoding::EUC_JP)).should be_nil
+  end
+
+  describe 'for UNICODE characters' do
+    it 'returns true when downcase(:fold) on unicode' do
+      'äöü'.casecmp?('ÄÖÜ').should == true
+    end
+  end
+
+  describe "when comparing a subclass instance" do
     it 'returns true when equal to other' do
-      'abc'.casecmp?('abc').should == true
-      'abc'.casecmp?('ABC').should == true
+      a = StringSpecs::MyString.new "a"
+      'a'.casecmp?(a).should == true
+      'A'.casecmp?(a).should == true
     end
 
     it 'returns false when not equal to other' do
-      'abc'.casecmp?('DEF').should == false
-      'abc'.casecmp?('def').should == false
+      b = StringSpecs::MyString.new "a"
+      'b'.casecmp?(b).should == false
+      'B'.casecmp?(b).should == false
     end
+  end
 
-    it "tries to convert other to string using to_str" do
-      other = mock('x')
-      other.should_receive(:to_str).and_return("abc")
-
-      "abc".casecmp?(other).should == true
-    end
-
-    it "returns nil if incompatible encodings" do
-      "あれ".casecmp?("れ".encode(Encoding::EUC_JP)).should be_nil
-    end
-
-    describe 'for UNICODE characters' do
-      it 'returns true when downcase(:fold) on unicode' do
-        'äöü'.casecmp?('ÄÖÜ').should == true
-      end
-    end
-
-    describe "when comparing a subclass instance" do
-      it 'returns true when equal to other' do
-        a = StringSpecs::MyString.new "a"
-        'a'.casecmp?(a).should == true
-        'A'.casecmp?(a).should == true
+  describe "in UTF-8 mode" do
+    describe "for non-ASCII characters" do
+      before :each do
+        @upper_a_tilde  = "Ã"
+        @lower_a_tilde  = "ã"
+        @upper_a_umlaut = "Ä"
+        @lower_a_umlaut = "ä"
       end
 
-      it 'returns false when not equal to other' do
-        b = StringSpecs::MyString.new "a"
-        'b'.casecmp?(b).should == false
-        'B'.casecmp?(b).should == false
+      it "returns true when they are the same with normalized case" do
+        @upper_a_tilde.casecmp?(@lower_a_tilde).should == true
+      end
+
+      it "returns false when they are unrelated" do
+        @upper_a_tilde.casecmp?(@upper_a_umlaut).should == false
+      end
+
+      it "returns true when they have the same bytes" do
+        @upper_a_tilde.casecmp?(@upper_a_tilde).should == true
       end
     end
+  end
 
-    describe "in UTF-8 mode" do
-      describe "for non-ASCII characters" do
-        before :each do
-          @upper_a_tilde  = "Ã"
-          @lower_a_tilde  = "ã"
-          @upper_a_umlaut = "Ä"
-          @lower_a_umlaut = "ä"
-        end
+  it "case folds" do
+    "ß".casecmp?("ss").should be_true
+  end
 
-        it "returns true when they are the same with normalized case" do
-          @upper_a_tilde.casecmp?(@lower_a_tilde).should == true
-        end
-
-        it "returns false when they are unrelated" do
-          @upper_a_tilde.casecmp?(@upper_a_umlaut).should == false
-        end
-
-        it "returns true when they have the same bytes" do
-          @upper_a_tilde.casecmp?(@upper_a_tilde).should == true
-        end
-      end
+  ruby_version_is "2.4"..."2.5" do
+    it "raises a TypeError if other can't be converted to a string" do
+      lambda { "abc".casecmp?(mock('abc')) }.should raise_error(TypeError)
     end
+  end
 
-    ruby_version_is "2.4" do
-      it "case folds" do
-        "ß".casecmp?("ss").should be_true
-      end
-    end
-
-    ruby_version_is "2.4" ... "2.5" do
-      it "raises a TypeError if other can't be converted to a string" do
-        lambda { "abc".casecmp?(mock('abc')) }.should raise_error(TypeError)
-      end
-    end
-
-    ruby_version_is "2.5" do
-      it "returns nil if other can't be converted to a string" do
-        "abc".casecmp?(mock('abc')).should be_nil
-      end
+  ruby_version_is "2.5" do
+    it "returns nil if other can't be converted to a string" do
+      "abc".casecmp?(mock('abc')).should be_nil
     end
   end
 end

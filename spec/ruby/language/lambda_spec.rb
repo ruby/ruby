@@ -22,6 +22,16 @@ describe "A lambda literal -> () { }" do
     -> () { }.lambda?.should be_true
   end
 
+  ruby_version_is "2.6" do
+    it "may include a rescue clause" do
+      eval('-> do raise ArgumentError; rescue ArgumentError; 7; end').should be_an_instance_of(Proc)
+    end
+
+    it "may include a ensure clause" do
+      eval('-> do 1; ensure; 2; end').should be_an_instance_of(Proc)
+    end
+  end
+
   it "has its own scope for local variables" do
     l = -> arg {
       var = arg
@@ -304,6 +314,13 @@ describe "A lambda expression 'lambda { ... }'" do
   it "requires a block" do
     lambda { lambda }.should raise_error(ArgumentError)
   end
+
+  ruby_version_is "2.5" do
+    it "may include a rescue clause" do
+      eval('lambda do raise ArgumentError; rescue ArgumentError; 7; end').should be_an_instance_of(Proc)
+    end
+  end
+
 
   context "with an implicit block" do
     before do

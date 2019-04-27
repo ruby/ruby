@@ -72,28 +72,35 @@ describe :rational_round, shared: true do
     end
   end
 
-  ruby_version_is "2.4" do
-    describe "with half option" do
-      it "returns an Integer when precision is not passed" do
-        Rational(10, 4).round(half: :up).should == 3
-        Rational(10, 4).round(half: :down).should == 2
-        Rational(10, 4).round(half: :even).should == 2
-        Rational(-10, 4).round(half: :up).should == -3
-        Rational(-10, 4).round(half: :down).should == -2
-        Rational(-10, 4).round(half: :even).should == -2
-      end
+  describe "with half option" do
+    it "returns an Integer when precision is not passed" do
+      Rational(10, 4).round(half: nil).should == 3
+      Rational(10, 4).round(half: :up).should == 3
+      Rational(10, 4).round(half: :down).should == 2
+      Rational(10, 4).round(half: :even).should == 2
+      Rational(-10, 4).round(half: nil).should == -3
+      Rational(-10, 4).round(half: :up).should == -3
+      Rational(-10, 4).round(half: :down).should == -2
+      Rational(-10, 4).round(half: :even).should == -2
+    end
 
-      it "returns a Rational when the precision is greater than 0" do
-        Rational(25, 100).round(1, half: :up).should == Rational(3, 10)
-        Rational(25, 100).round(1, half: :down).should == Rational(1, 5)
-        Rational(25, 100).round(1, half: :even).should == Rational(1, 5)
-        Rational(35, 100).round(1, half: :up).should == Rational(2, 5)
-        Rational(35, 100).round(1, half: :down).should == Rational(3, 10)
-        Rational(35, 100).round(1, half: :even).should == Rational(2, 5)
-        Rational(-25, 100).round(1, half: :up).should == Rational(-3, 10)
-        Rational(-25, 100).round(1, half: :down).should == Rational(-1, 5)
-        Rational(-25, 100).round(1, half: :even).should == Rational(-1, 5)
-      end
+    it "returns a Rational when the precision is greater than 0" do
+      Rational(25, 100).round(1, half: nil).should == Rational(3, 10)
+      Rational(25, 100).round(1, half: :up).should == Rational(3, 10)
+      Rational(25, 100).round(1, half: :down).should == Rational(1, 5)
+      Rational(25, 100).round(1, half: :even).should == Rational(1, 5)
+      Rational(35, 100).round(1, half: nil).should == Rational(2, 5)
+      Rational(35, 100).round(1, half: :up).should == Rational(2, 5)
+      Rational(35, 100).round(1, half: :down).should == Rational(3, 10)
+      Rational(35, 100).round(1, half: :even).should == Rational(2, 5)
+      Rational(-25, 100).round(1, half: nil).should == Rational(-3, 10)
+      Rational(-25, 100).round(1, half: :up).should == Rational(-3, 10)
+      Rational(-25, 100).round(1, half: :down).should == Rational(-1, 5)
+      Rational(-25, 100).round(1, half: :even).should == Rational(-1, 5)
+    end
+
+    it "raise for a non-existent round mode" do
+      lambda { Rational(10, 4).round(half: :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode: nonsense")
     end
   end
 end

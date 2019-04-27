@@ -58,18 +58,9 @@ describe "Kernel#BigDecimal" do
     end
   end
 
-  ruby_version_is ""..."2.4" do
-    it "treats invalid strings as 0.0" do
-      BigDecimal("ruby").should == BigDecimal("0.0")
-      BigDecimal("  \t\n \r-\t\t\tInfinity   \n").should == BigDecimal("0.0")
-    end
-  end
-
-  ruby_version_is "2.4" do
-    it "raises ArgumentError for invalid strings" do
-      lambda { BigDecimal("ruby") }.should raise_error(ArgumentError)
-      lambda { BigDecimal("  \t\n \r-\t\t\tInfinity   \n") }.should raise_error(ArgumentError)
-    end
+  it "raises ArgumentError for invalid strings" do
+    lambda { BigDecimal("ruby") }.should raise_error(ArgumentError)
+    lambda { BigDecimal("  \t\n \r-\t\t\tInfinity   \n") }.should raise_error(ArgumentError)
   end
 
   it "allows omitting the integer part" do

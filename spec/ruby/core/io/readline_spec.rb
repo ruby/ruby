@@ -43,11 +43,9 @@ describe "IO#readline" do
     end
   end
 
-  ruby_version_is "2.4" do
-    describe "when passed chomp" do
-      it "returns the first line without a trailing newline character" do
-        @io.readline(chomp: true).should == IOSpecs.lines_without_newline_characters[0]
-      end
+  describe "when passed chomp" do
+    it "returns the first line without a trailing newline character" do
+      @io.readline(chomp: true).should == IOSpecs.lines_without_newline_characters[0]
     end
   end
 end

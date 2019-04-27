@@ -54,11 +54,9 @@ describe "IPAddr Operator" do
     @a.should_not == IPAddr.new("3ffe:505:3::")
   end
 
-  ruby_version_is '2.4' do
-    # https://bugs.ruby-lang.org/issues/12799
-    it "tests for equality correctly if object cannot be converted to IPAddr" do
-      IPAddr.new("1.1.1.1").should_not == "sometext"
-    end
+  # https://bugs.ruby-lang.org/issues/12799
+  it "tests for equality correctly if object cannot be converted to IPAddr" do
+    IPAddr.new("1.1.1.1").should_not == "sometext"
   end
 
   it "sets a mask" do

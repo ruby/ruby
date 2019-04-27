@@ -37,15 +37,6 @@ describe "The --enable and --disable flags" do
     ruby_exe("p 'foo'.frozen?", options: "--disable-frozen-string-literal").chomp.should == "false"
   end
 
-  ruby_version_is "2.6" do
-    it "can be used with jit" do
-      ruby_exe("p :OK", options: "--enable=jit 2>&1").chomp.should == ":OK"
-      ruby_exe("p :OK", options: "--disable=jit 2>&1").chomp.should == ":OK"
-      ruby_exe("p :OK", options: "--enable-jit 2>&1").chomp.should == ":OK"
-      ruby_exe("p :OK", options: "--disable-jit 2>&1").chomp.should == ":OK"
-    end
-  end
-
   it "can be used with all" do
     e = "p [defined?(Gem), defined?(DidYouMean), $VERBOSE, 'foo'.frozen?]"
     env = {'RUBYOPT' => '-w'}

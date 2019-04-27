@@ -224,9 +224,6 @@ describe :numeric_step, :shared => true do
 
   describe "when step is a String" do
     error = nil
-    ruby_version_is ""..."2.4" do
-      error = ArgumentError
-    end
     ruby_version_is "2.4"..."2.5" do
       error = TypeError
     end
@@ -305,9 +302,6 @@ describe :numeric_step, :shared => true do
       describe "size" do
         describe "when step is a String" do
           error = nil
-          ruby_version_is ""..."2.4" do
-            error = ArgumentError
-          end
           ruby_version_is "2.4"..."2.5" do
             error = TypeError
           end

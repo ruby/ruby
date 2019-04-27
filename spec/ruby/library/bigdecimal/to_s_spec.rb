@@ -15,16 +15,8 @@ describe "BigDecimal#to_s" do
     @bigneg.to_s.kind_of?(String).should == true
   end
 
-  ruby_version_is ''...'2.4' do
-    it "the default format looks like 0.xxxxEnn" do
-      @bigdec.to_s.should =~ /^0\.[0-9]*E[0-9]*$/
-    end
-  end
-
-  ruby_version_is '2.4' do
-    it "the default format looks like 0.xxxxenn" do
-      @bigdec.to_s.should =~ /^0\.[0-9]*e[0-9]*$/
-    end
+  it "the default format looks like 0.xxxxenn" do
+    @bigdec.to_s.should =~ /^0\.[0-9]*e[0-9]*$/
   end
 
   it "takes an optional argument" do

@@ -22,10 +22,8 @@ describe "Net::FTP#status" do
     @ftp.last_response.should == "211 System status, or system help reply. (STAT)\n"
   end
 
-  ruby_version_is "2.4" do
-    it "sends the STAT command with an optional parameter to the server" do
-      @ftp.status("/pub").should == "211 System status, or system help reply. (STAT /pub)\n"
-    end
+  it "sends the STAT command with an optional parameter to the server" do
+    @ftp.status("/pub").should == "211 System status, or system help reply. (STAT /pub)\n"
   end
 
   it "returns the received information" do

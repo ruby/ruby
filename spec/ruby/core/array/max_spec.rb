@@ -1,10 +1,8 @@
 require_relative '../../spec_helper'
 
 describe "Array#max" do
-  ruby_version_is "2.4" do
-    it "is defined on Array" do
-      [1].method(:max).owner.should equal Array
-    end
+  it "is defined on Array" do
+    [1].method(:max).owner.should equal Array
   end
 
   it "returns nil with no values" do

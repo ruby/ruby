@@ -362,7 +362,7 @@ describe "The return keyword" do
           END_OF_CODE
         end
 
-        ruby_bug "#14061", "2.4"..."2.6" do
+        ruby_bug "#14061", "2.4"..."2.5" do
           it "fires ensure block before returning while loads file" do
             File.write(@filename, <<-END_OF_CODE)
               ScratchPad << "before begin"

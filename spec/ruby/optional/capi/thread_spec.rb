@@ -24,7 +24,7 @@ describe "C-API Thread function" do
     it "sleeps the current thread for the give amount of time" do
       start = Time.now
       @t.rb_thread_wait_for(0, 100_000)
-      (Time.now - start).should be_close(0.1, 0.2)
+      (Time.now - start).should be_close(0.1, TIME_TOLERANCE)
     end
   end
 

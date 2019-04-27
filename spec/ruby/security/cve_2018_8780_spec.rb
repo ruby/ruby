@@ -23,12 +23,10 @@ describe "CVE-2018-8780 is resisted by" do
     }.should raise_error(ArgumentError, /(path name|string) contains null byte/)
   end
 
-  ruby_version_is "2.4" do
-    it "Dir.empty? by raising an exception when there is a NUL byte" do
-      lambda {
-        Dir.empty?(@root+"\0")
-      }.should raise_error(ArgumentError, /(path name|string) contains null byte/)
-    end
+  it "Dir.empty? by raising an exception when there is a NUL byte" do
+    lambda {
+      Dir.empty?(@root+"\0")
+    }.should raise_error(ArgumentError, /(path name|string) contains null byte/)
   end
 
   ruby_version_is "2.5" do

@@ -299,6 +299,26 @@ describe "C-API IO function" do
     end
   end
 
+  describe "rb_wait_for_single_fd" do
+    it "waits til an fd is ready for reading" do
+      start = false
+      thr = Thread.new do
+        start = true
+        sleep 0.05
+        @w_io.write "rb_io_wait_readable"
+      end
+
+      Thread.pass until start
+
+      @o.rb_wait_for_single_fd(@r_io, 1, nil, nil).should == 1
+
+      thr.join
+    end
+
+    it "polls whether an fd is ready for reading if timeout is 0" do
+      @o.rb_wait_for_single_fd(@r_io, 1, 0, 0).should == 0
+    end
+  end
 end
 
 describe "rb_fd_fix_cloexec" do

@@ -281,6 +281,15 @@ describe "C-API Kernel function" do
       end.should raise_error(NameError)
       proof[0].should == 23
     end
+
+    it "will return nil if an error was raised" do
+      proof = [] # Hold proof of work performed after the yield.
+      lambda do
+        @s.rb_protect_yield(7, proof) { |x| raise NameError}
+      end.should raise_error(NameError)
+      proof[0].should == 23
+      proof[1].should == nil
+    end
   end
 
   describe "rb_rescue" do

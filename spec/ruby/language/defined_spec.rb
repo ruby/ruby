@@ -763,10 +763,8 @@ describe "The defined? keyword for a scoped constant" do
   end
 
   ruby_version_is "2.5" do
-    ruby_bug "#14407", "2.5.0"..."2.5.1" do
-      it "returns nil when a constant is defined on top-level but not on the class" do
-        defined?(DefinedSpecs::Basic::String).should be_nil
-      end
+    it "returns nil when a constant is defined on top-level but not on the class" do
+      defined?(DefinedSpecs::Basic::String).should be_nil
     end
   end
 

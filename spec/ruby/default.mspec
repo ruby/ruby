@@ -36,12 +36,12 @@ class MSpecScript
   set :backtrace_filter, /mspec\//
 
   set :tags_patterns, [
-                        [%r(language/),     'tags/1.9/language/'],
-                        [%r(core/),         'tags/1.9/core/'],
-                        [%r(command_line/), 'tags/1.9/command_line/'],
-                        [%r(library/),      'tags/1.9/library/'],
-                        [%r(security/),     'tags/1.9/security/'],
-                        [/_spec.rb$/,       '_tags.txt']
+                        [%r(language/),     'tags/language/'],
+                        [%r(core/),         'tags/core/'],
+                        [%r(command_line/), 'tags/command_line/'],
+                        [%r(library/),      'tags/library/'],
+                        [%r(security/),     'tags/security/'],
+                        [/_spec\.rb$/,      '_tags.txt']
                       ]
 
   set :toplevel_constants_excludes, [

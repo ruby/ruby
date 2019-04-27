@@ -231,24 +231,12 @@ describe "Module#prepend" do
     }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.4' do
-    it "accepts no-arguments" do
-      lambda {
-        Module.new do
-          prepend
-        end
-      }.should_not raise_error
-    end
-  end
-
-  ruby_version_is '2.4' do
-    it "doesn't accept no-arguments" do
-      lambda {
-        Module.new do
-          prepend
-        end
-      }.should raise_error(ArgumentError)
-    end
+  it "doesn't accept no-arguments" do
+    lambda {
+      Module.new do
+        prepend
+      end
+    }.should raise_error(ArgumentError)
   end
 
   it "returns the class it's included into" do

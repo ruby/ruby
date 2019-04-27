@@ -327,6 +327,16 @@ static VALUE object_spec_rb_ivar_defined(VALUE self, VALUE obj, VALUE sym_name) 
   return rb_ivar_defined(obj, SYM2ID(sym_name));
 }
 
+static VALUE object_spec_rb_copy_generic_ivar(VALUE self, VALUE clone, VALUE obj) {
+  rb_copy_generic_ivar(clone, obj);
+  return self;
+}
+
+static VALUE object_spec_rb_free_generic_ivar(VALUE self, VALUE obj) {
+  rb_free_generic_ivar(obj);
+  return self;
+}
+
 static VALUE object_spec_rb_equal(VALUE self, VALUE a, VALUE b) {
   return rb_equal(a, b);
 }
@@ -400,6 +410,8 @@ void Init_object_spec(void) {
   rb_define_method(cls, "rb_ivar_get", object_spec_rb_ivar_get, 2);
   rb_define_method(cls, "rb_ivar_set", object_spec_rb_ivar_set, 3);
   rb_define_method(cls, "rb_ivar_defined", object_spec_rb_ivar_defined, 2);
+  rb_define_method(cls, "rb_copy_generic_ivar", object_spec_rb_copy_generic_ivar, 2);
+  rb_define_method(cls, "rb_free_generic_ivar", object_spec_rb_free_generic_ivar, 1);
 }
 
 #ifdef __cplusplus

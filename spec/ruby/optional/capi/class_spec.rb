@@ -237,12 +237,10 @@ describe "C-API Class function" do
       }.should raise_error(TypeError)
     end
 
-    ruby_version_is "2.4" do
-      it "raises a ArgumentError when given NULL as superclass" do
-        lambda {
-          @s.rb_define_class("ClassSpecDefineClass4", nil)
-        }.should raise_error(ArgumentError)
-      end
+    it "raises a ArgumentError when given NULL as superclass" do
+      lambda {
+        @s.rb_define_class("ClassSpecDefineClass4", nil)
+      }.should raise_error(ArgumentError)
     end
   end
 

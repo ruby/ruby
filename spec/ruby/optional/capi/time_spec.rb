@@ -294,7 +294,7 @@ describe "CApiTimeSpecs" do
       now = Time.now
       time = @s.rb_time_from_timespec(now.utc_offset)
       time.should be_an_instance_of(Time)
-      (time - now).should be_close(0, 10)
+      (time - now).should be_close(0, TIME_TOLERANCE)
     end
   end
 end

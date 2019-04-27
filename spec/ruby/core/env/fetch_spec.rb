@@ -14,6 +14,12 @@ describe "ENV.fetch" do
 
   context "when the key is not found" do
     it_behaves_like :key_error, ->(obj, key) { obj.fetch(key) }, ENV
+
+    it "formats the object with #inspect in the KeyError message" do
+      -> {
+        ENV.fetch('foo')
+      }.should raise_error(KeyError, 'key not found: "foo"')
+    end
   end
 
   it "provides the given default parameter" do

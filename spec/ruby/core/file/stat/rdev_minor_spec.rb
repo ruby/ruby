@@ -17,11 +17,9 @@ describe "File::Stat#rdev_minor" do
     end
   end
 
-  ruby_version_is "2.4" do
-    platform_is_not :windows do
-      it "returns the minor part of File::Stat#rdev" do
-        File.stat(@name).rdev_minor.should be_kind_of(Integer)
-      end
+  platform_is_not :windows do
+    it "returns the minor part of File::Stat#rdev" do
+      File.stat(@name).rdev_minor.should be_kind_of(Integer)
     end
   end
 
