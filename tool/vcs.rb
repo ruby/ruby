@@ -454,35 +454,21 @@ class VCS
     def export_changelog(url, from, to, path)
       range = [from, to].map do |rev|
         rev or next
-        rev = cmd_read({'LANG' => 'C', 'LC_ALL' => 'C'},
-                       %W"#{COMMAND} log -n1 --format=format:%H" <<
-                       "--grep=^ *git-svn-id: .*@#{rev} ")
+        if Integer === rev
+          rev = cmd_read({'LANG' => 'C', 'LC_ALL' => 'C'},
+                         %W"#{COMMAND} log -n1 --format=format:%H" <<
+                         "--grep=^ *git-svn-id: .*@#{rev} ")
+        end
         rev unless rev.empty?
       end.join('^..')
       cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"#{COMMAND} log --format=medium --no-notes --date=iso-local --topo-order #{range}", "rb") do |r|
-        open(path, 'w') do |w|
-          sep = "-"*72
-          w.puts sep
-          while s = r.gets('')
-            author = s[/^Author:\s*(\S+)/, 1]
-            time = s[/^Date:\s*(.+)/, 1]
-            s = r.gets('')
-            s.gsub!(/^ {4}/, '')
-            s.sub!(/^git-svn-id: .*@(\d+) .*\n+\z/, '')
-            rev = $1
-            s.gsub!(/^ {8}/, '') if /^(?! {8}|$)/ !~ s
-            s.sub!(/\n\n\z/, "\n")
-            if /\A(\d+)-(\d+)-(\d+)/ =~ time
-              date = Time.new($1.to_i, $2.to_i, $3.to_i).strftime("%a, %d %b %Y")
-            end
-            lines = s.count("\n")
-            lines = "#{lines} line#{lines == 1 ? '' : 's'}"
-            w.puts "r#{rev} | #{author} | #{time} (#{date}) | #{lines}\n\n"
-            w.puts s, sep
-          end
-        end
+        format_changelog(r, path)
       end
+    end
+
+    def format_changelog(r, path)
+      IO.copy_stream(r, path)
     end
 
     def commit(opts = {})
@@ -496,6 +482,30 @@ class VCS
   end
 
   class GITSVN < GIT
+    def format_changelog(r, path)
+      open(path, 'w') do |w|
+        sep = "-"*72
+        w.puts sep
+        while s = r.gets('')
+          author = s[/^Author:\s*(\S+)/, 1]
+          time = s[/^Date:\s*(.+)/, 1]
+          s = r.gets('')
+          s.gsub!(/^ {4}/, '')
+          s.sub!(/^git-svn-id: .*@(\d+) .*\n+\z/, '')
+          rev = $1
+          s.gsub!(/^ {8}/, '') if /^(?! {8}|$)/ !~ s
+          s.sub!(/\n\n\z/, "\n")
+          if /\A(\d+)-(\d+)-(\d+)/ =~ time
+            date = Time.new($1.to_i, $2.to_i, $3.to_i).strftime("%a, %d %b %Y")
+          end
+          lines = s.count("\n")
+          lines = "#{lines} line#{lines == 1 ? '' : 's'}"
+          w.puts "r#{rev} | #{author} | #{time} (#{date}) | #{lines}\n\n"
+          w.puts s, sep
+        end
+      end
+    end
+
     def last_changed_revision
       rev = cmd_read(%W"#{COMMAND} svn info"+[STDERR=>[:child, :out]])[/^Last Changed Rev: (\d+)/, 1]
       com = cmd_read(%W"#{COMMAND} svn find-rev r#{rev}").chomp
