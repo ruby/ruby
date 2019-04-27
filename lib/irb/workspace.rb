@@ -49,7 +49,7 @@ EOF
           @binding = BINDING_QUEUE.pop
 
         when 3	# binding in function on TOPLEVEL_BINDING(default)
-          @binding = eval("self.class.remove_method(:irb_binding) if defined?(irb_binding); def irb_binding; private; binding; end; irb_binding",
+          @binding = eval("self.class.send(:remove_method, :irb_binding) if defined?(irb_binding); def irb_binding; private; binding; end; irb_binding",
                           TOPLEVEL_BINDING,
                           __FILE__,
                           __LINE__ - 3)
