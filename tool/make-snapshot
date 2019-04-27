@@ -341,11 +341,14 @@ def package(vcs, rev, destdir, tmp = nil)
       # get last revision from previous ChangeLog archive
       last_ChangeLog = Dir["doc/ChangeLog-*"].grep(/-(\d+)\z/) {|n| [$1.to_i, n]}.max[1]
       open(last_ChangeLog) do |f|
-        f.readline
-        unless /\Ar(\d+) / =~ f.readline
+        if /\Acommit (\w+)/ =~ f.readline
+          beginning = $1
+        elsif /\Ar(\d+) / =~ f.readline
+          beginning = $1.to_i
+        else
           abort "#{File.basename $0}: Cannot find revision from '#{last_ChangeLog}'"
         end
-        vcs.export_changelog(url, $1.to_i, revision.to_i, "ChangeLog")
+        vcs.export_changelog(url, beginning, revision, "ChangeLog")
       end
     end
 
