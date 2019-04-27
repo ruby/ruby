@@ -223,7 +223,16 @@ platform_is_not :windows do
       ENV["HOME"] = @home
     end
 
-    guard -> { Etc.getlogin } do
+    guard -> {
+      # We need to check if getlogin(3) returns non-NULL,
+      # as MRI only checks getlogin(3) for expanding '~' if $HOME is not set.
+      user = ENV.delete("USER")
+      begin
+        Etc.getlogin != nil
+      ensure
+        ENV["USER"] = user
+      end
+    } do
       it "uses the user database when passed '~' if HOME is nil" do
         ENV.delete "HOME"
         File.directory?(File.expand_path("~")).should == true
