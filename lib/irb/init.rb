@@ -112,8 +112,6 @@ module IRB # :nodoc:
     @CONF[:LC_MESSAGES] = Locale.new
 
     @CONF[:AT_EXIT] = []
-
-    @CONF[:DEBUG_LEVEL] = 0
   end
 
   def IRB.init_error
@@ -191,8 +189,6 @@ module IRB # :nodoc:
         @CONF[:CONTEXT_MODE] = ($1 || argv.shift).to_i
       when "--single-irb"
         @CONF[:SINGLE_IRB] = true
-      when /^--irb_debug(?:=(.+))?/
-        @CONF[:DEBUG_LEVEL] = ($1 || argv.shift).to_i
       when "-v", "--version"
         print IRB.version, "\n"
         exit 0
