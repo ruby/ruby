@@ -1505,9 +1505,14 @@ str_duplicate(VALUE klass, VALUE str)
 	   char, embed_size);
     if (flags & STR_NOEMBED) {
 	if (UNLIKELY(!(flags & FL_FREEZE))) {
-	    str = str_new_frozen(klass, str);
-	    FL_SET_RAW(str, flags & FL_TAINT);
-	    flags = FL_TEST_RAW(str, flag_mask);
+            if (FL_TEST_RAW(str, STR_SHARED)) {
+                str = RSTRING(str)->as.heap.aux.shared;
+            }
+            else {
+                str = str_new_frozen(klass, str);
+                FL_SET_RAW(str, flags & FL_TAINT);
+                flags = FL_TEST_RAW(str, flag_mask);
+            }
 	}
 	if (flags & STR_NOEMBED) {
 	    RB_OBJ_WRITE(dup, &RSTRING(dup)->as.heap.aux.shared, str);
