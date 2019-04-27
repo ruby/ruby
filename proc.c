@@ -1647,7 +1647,7 @@ method_original_name(VALUE obj)
  *     meth.owner    -> class_or_module
  *
  *  Returns the class or module that defines the method.
- *  See also receiver.
+ *  See also Method#receiver.
  *
  *    (1..3).method(:map).owner #=> Enumerable
  */
