@@ -25,22 +25,12 @@ describe "Enumerator::Lazy#chunk" do
     Enumerator::Lazy.new(Object.new, 100) {}.chunk { |v| v }.size.should == nil
   end
 
-  ruby_version_is ""..."2.4" do
-    it "raises an ArgumentError if called without a block" do
-      lambda do
-        @yieldsmixed.chunk
-      end.should raise_error(ArgumentError)
-    end
-  end
+  it "returns an Enumerator if called without a block" do
+    chunk = @yieldsmixed.chunk
+    chunk.should be_an_instance_of(Enumerator::Lazy)
 
-  ruby_version_is "2.4" do
-    it "returns an Enumerator if called without a block" do
-      chunk = @yieldsmixed.chunk
-      chunk.should be_an_instance_of(Enumerator::Lazy)
-
-      res = chunk.each { |v| true }.force
-      res.should == [[true, EnumeratorLazySpecs::YieldsMixed.gathered_yields]]
-    end
+    res = chunk.each { |v| true }.force
+    res.should == [[true, EnumeratorLazySpecs::YieldsMixed.gathered_yields]]
   end
 
   describe "when the returned lazy enumerator is evaluated by Enumerable#first" do

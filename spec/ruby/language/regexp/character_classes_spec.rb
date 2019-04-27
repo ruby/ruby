@@ -609,25 +609,23 @@ describe "Regexp with character classes" do
     "루비(Ruby)".match(/\p{Hangul}+/u).to_a.should == ["루비"]
   end
 
-  ruby_version_is "2.4" do
-    it "supports \\X (unicode 9.0 with UTR #51 workarounds)" do
-      # simple emoji without any fancy modifier or ZWJ
-      /\X/.match("\u{1F98A}").to_a.should == ["🦊"]
+  it "supports \\X (unicode 9.0 with UTR #51 workarounds)" do
+    # simple emoji without any fancy modifier or ZWJ
+    /\X/.match("\u{1F98A}").to_a.should == ["🦊"]
 
-      # skin tone modifier
-      /\X/.match("\u{1F918}\u{1F3FD}").to_a.should == ["🤘🏽"]
+    # skin tone modifier
+    /\X/.match("\u{1F918}\u{1F3FD}").to_a.should == ["🤘🏽"]
 
-      # emoji joined with ZWJ
-      /\X/.match("\u{1F3F3}\u{FE0F}\u{200D}\u{1F308}").to_a.should == ["🏳️‍🌈"]
-      /\X/.match("\u{1F469}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}").to_a.should == ["👩‍👩‍👧‍👦"]
+    # emoji joined with ZWJ
+    /\X/.match("\u{1F3F3}\u{FE0F}\u{200D}\u{1F308}").to_a.should == ["🏳️‍🌈"]
+    /\X/.match("\u{1F469}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}").to_a.should == ["👩‍👩‍👧‍👦"]
 
-      # without the ZWJ
-      /\X+/.match("\u{1F3F3}\u{FE0F}\u{1F308}").to_a.should == ["🏳️🌈"]
-      /\X+/.match("\u{1F469}\u{1F469}\u{1F467}\u{1F466}").to_a.should == ["👩👩👧👦"]
+    # without the ZWJ
+    /\X+/.match("\u{1F3F3}\u{FE0F}\u{1F308}").to_a.should == ["🏳️🌈"]
+    /\X+/.match("\u{1F469}\u{1F469}\u{1F467}\u{1F466}").to_a.should == ["👩👩👧👦"]
 
-      # both of the ZWJ combined
-      /\X+/.match("\u{1F3F3}\u{FE0F}\u{200D}\u{1F308}\u{1F469}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}")
-        .to_a.should == ["🏳️‍🌈👩‍👩‍👧‍👦"]
-    end
+    # both of the ZWJ combined
+    /\X+/.match("\u{1F3F3}\u{FE0F}\u{200D}\u{1F308}\u{1F469}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}")
+      .to_a.should == ["🏳️‍🌈👩‍👩‍👧‍👦"]
   end
 end

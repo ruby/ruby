@@ -6,21 +6,11 @@ describe "Enumerable#chunk" do
     ScratchPad.record []
   end
 
-  ruby_version_is ""..."2.4" do
-    it "raises an ArgumentError if called without a block" do
-      lambda do
-        EnumerableSpecs::Numerous.new.chunk
-      end.should raise_error(ArgumentError)
-    end
-  end
-
-  ruby_version_is "2.4" do
-    it "returns an Enumerator if called without a block" do
-      chunk = EnumerableSpecs::Numerous.new(1, 2, 3, 1, 2).chunk
-      chunk.should be_an_instance_of(Enumerator)
-      result = chunk.with_index {|elt, i| elt - i }.to_a
-      result.should == [[1, [1, 2, 3]], [-2, [1, 2]]]
-    end
+  it "returns an Enumerator if called without a block" do
+    chunk = EnumerableSpecs::Numerous.new(1, 2, 3, 1, 2).chunk
+    chunk.should be_an_instance_of(Enumerator)
+    result = chunk.with_index {|elt, i| elt - i }.to_a
+    result.should == [[1, [1, 2, 3]], [-2, [1, 2]]]
   end
 
   it "returns an Enumerator if given a block" do

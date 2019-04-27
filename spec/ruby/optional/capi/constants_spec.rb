@@ -11,12 +11,6 @@ describe "C-API constant" do
     @s.rb_cArray.should == Array
   end
 
-  ruby_version_is ""..."2.4" do
-    specify "rb_cBignum references the Bignum class" do
-      @s.rb_cBignum.should == Bignum
-    end
-  end
-
   specify "rb_cClass references the Class class" do
     @s.rb_cClass.should == Class
   end
@@ -41,12 +35,6 @@ describe "C-API constant" do
 
   specify "rb_cFile references the File class" do
     @s.rb_cFile.should == File
-  end
-
-  ruby_version_is ""..."2.4" do
-    specify "rb_cFixnum references the Fixnum class" do
-      @s.rb_cFixnum.should == Fixnum
-    end
   end
 
   specify "rb_cFloat references the Float class" do

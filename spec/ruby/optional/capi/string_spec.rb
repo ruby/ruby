@@ -167,6 +167,10 @@ describe "C-API String function" do
       @s.rb_str_new("hello", 3).should == "hel"
     end
 
+    it "returns a non-tainted string" do
+      @s.rb_str_new("hello", 5).tainted?.should == false
+    end
+
     it "returns an empty string if len is 0" do
       @s.rb_str_new("hello", 0).should == ""
     end
@@ -876,6 +880,27 @@ describe "C-API String function" do
       s.encoding.should equal(Encoding.find("locale"))
     end
   end
+
+  describe "rb_str_export_to_enc" do
+    it "returns a copy of an ascii string converted to the new encoding" do
+      source = "A simple string".encode(Encoding::US_ASCII)
+      result = @s.rb_str_export_to_enc(source, Encoding::UTF_8)
+      result.should == source.encode(Encoding::UTF_8)
+      result.encoding.should == Encoding::UTF_8
+    end
+
+    it "returns the source string if it can not be converted" do
+      source = ["00ff"].pack("H*");
+      result = @s.rb_str_export_to_enc(source, Encoding::UTF_8)
+      result.should equal(source)
+    end
+
+    it "does not alter the source string if it can not be converted" do
+      source = ["00ff"].pack("H*");
+      result = @s.rb_str_export_to_enc(source, Encoding::UTF_8)
+      source.bytes.should == [0, 255]
+    end
+end
 
   describe "rb_sprintf" do
     it "replaces the parts like sprintf" do

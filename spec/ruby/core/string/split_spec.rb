@@ -65,28 +65,26 @@ describe "String#split with String" do
   end
 
   it "defaults to $; when string isn't given or nil" do
-    begin
-      verbose = $VERBOSE
-      $VERBOSE = nil
+    suppress_warning do
       old_fs = $;
+      begin
+        [",", ":", "", "XY", nil].each do |fs|
+          $; = fs
 
-      [",", ":", "", "XY", nil].each do |fs|
-        $; = fs
+          ["x,y,z,,,", "1:2:", "aXYbXYcXY", ""].each do |str|
+            expected = str.split(fs || " ")
 
-        ["x,y,z,,,", "1:2:", "aXYbXYcXY", ""].each do |str|
-          expected = str.split(fs || " ")
+            str.split(nil).should == expected
+            str.split.should == expected
 
-          str.split(nil).should == expected
-          str.split.should == expected
-
-          str.split(nil, -1).should == str.split(fs || " ", -1)
-          str.split(nil, 0).should == str.split(fs || " ", 0)
-          str.split(nil, 2).should == str.split(fs || " ", 2)
+            str.split(nil, -1).should == str.split(fs || " ", -1)
+            str.split(nil, 0).should == str.split(fs || " ", 0)
+            str.split(nil, 2).should == str.split(fs || " ", 2)
+          end
         end
+      ensure
+        $; = old_fs
       end
-    ensure
-      $; = old_fs
-      $VERBOSE = verbose
     end
   end
 
@@ -241,28 +239,26 @@ describe "String#split with Regexp" do
   end
 
   it "defaults to $; when regexp isn't given or nil" do
-    begin
-      verbose = $VERBOSE
-      $VERBOSE = nil
+    suppress_warning do
       old_fs = $;
+      begin
+        [/,/, /:/, //, /XY/, /./].each do |fs|
+          $; = fs
 
-      [/,/, /:/, //, /XY/, /./].each do |fs|
-        $; = fs
+          ["x,y,z,,,", "1:2:", "aXYbXYcXY", ""].each do |str|
+            expected = str.split(fs)
 
-        ["x,y,z,,,", "1:2:", "aXYbXYcXY", ""].each do |str|
-          expected = str.split(fs)
+            str.split(nil).should == expected
+            str.split.should == expected
 
-          str.split(nil).should == expected
-          str.split.should == expected
-
-          str.split(nil, -1).should == str.split(fs, -1)
-          str.split(nil, 0).should == str.split(fs, 0)
-          str.split(nil, 2).should == str.split(fs, 2)
+            str.split(nil, -1).should == str.split(fs, -1)
+            str.split(nil, 0).should == str.split(fs, 0)
+            str.split(nil, 2).should == str.split(fs, 2)
+          end
         end
+      ensure
+        $; = old_fs
       end
-    ensure
-      $; = old_fs
-      $VERBOSE = verbose
     end
   end
 

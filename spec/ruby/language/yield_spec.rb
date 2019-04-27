@@ -69,12 +69,10 @@ describe "The yield call" do
         }.should raise_error(ArgumentError)
       end
 
-      ruby_bug "#12705", ""..."2.5" do
-        it "should not destructure an Array into multiple arguments" do
-          lambda {
-            @y.s([1, 2], &lambda { |a,b| [a,b] })
-          }.should raise_error(ArgumentError)
-        end
+      it "should not destructure an Array into multiple arguments" do
+        lambda {
+          @y.s([1, 2], &lambda { |a,b| [a,b] })
+        }.should raise_error(ArgumentError)
       end
     end
   end
@@ -169,6 +167,12 @@ describe "The yield call" do
 
     it "passes the arguments to the block" do
       @y.rs([1, 2], 3, 4) { |(*a, b), c, d| [a, b, c, d] }.should == [[1], 2, 3, 4]
+    end
+  end
+
+  describe "taking a splat and a keyword argument" do
+    it "passes it as an array of the values and a hash" do
+      @y.k([1, 2]) { |*a| a }.should == [1, 2, {:b=>true}]
     end
   end
 

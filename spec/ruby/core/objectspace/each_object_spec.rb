@@ -201,7 +201,6 @@ describe "ObjectSpace.each_object" do
 
     expected = [ a, b, c, d ]
 
-    # singleton classes should be walked only on >= 2.3
     expected << c_sclass
     c_sclass.should be_kind_of(a.singleton_class)
 

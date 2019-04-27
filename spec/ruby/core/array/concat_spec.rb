@@ -110,23 +110,21 @@ describe "Array#concat" do
     ary.concat([5, 6]).should == [4, 5, 6]
   end
 
-  ruby_version_is "2.4" do
-    it "takes multiple arguments" do
-      ary = [1, 2]
-      ary.concat [3, 4]
-      ary.should == [1, 2, 3, 4]
-    end
+  it "takes multiple arguments" do
+    ary = [1, 2]
+    ary.concat [3, 4]
+    ary.should == [1, 2, 3, 4]
+  end
 
-    it "concatenates the initial value when given arguments contain 2 self" do
-      ary = [1, 2]
-      ary.concat ary, ary
-      ary.should == [1, 2, 1, 2, 1, 2]
-    end
+  it "concatenates the initial value when given arguments contain 2 self" do
+    ary = [1, 2]
+    ary.concat ary, ary
+    ary.should == [1, 2, 1, 2, 1, 2]
+  end
 
-    it "returns self when given no arguments" do
-      ary = [1, 2]
-      ary.concat.should equal(ary)
-      ary.should == [1, 2]
-    end
+  it "returns self when given no arguments" do
+    ary = [1, 2]
+    ary.concat.should equal(ary)
+    ary.should == [1, 2]
   end
 end

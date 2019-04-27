@@ -26,12 +26,10 @@ describe "CSV#readlines" do
     -> { csv.readlines }.should raise_error(CSV::MalformedCSVError)
   end
 
-  ruby_version_is '2.4' do
-    it "handles illegal input with the liberal_parsing option" do
-      illegal_input = '"Johnson, Dwayne",Dwayne "The Rock" Johnson'
-      csv = CSV.new(illegal_input, liberal_parsing: true)
-      result = csv.readlines
-      result.should == [["Johnson, Dwayne", 'Dwayne "The Rock" Johnson']]
-    end
+  it "handles illegal input with the liberal_parsing option" do
+    illegal_input = '"Johnson, Dwayne",Dwayne "The Rock" Johnson'
+    csv = CSV.new(illegal_input, liberal_parsing: true)
+    result = csv.readlines
+    result.should == [["Johnson, Dwayne", 'Dwayne "The Rock" Johnson']]
   end
 end

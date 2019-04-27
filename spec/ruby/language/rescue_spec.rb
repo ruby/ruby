@@ -449,22 +449,14 @@ describe "The rescue keyword" do
     end
   end
 
-  ruby_version_is ""..."2.4" do
-    it "fails when using 'rescue' in method arguments" do
-      lambda { eval '1.+ (1 rescue 1)' }.should raise_error(SyntaxError)
-    end
+  it "allows 'rescue' in method arguments" do
+    two = eval '1.+ (raise("Error") rescue 1)'
+    two.should == 2
   end
 
-  ruby_version_is "2.4" do
-    it "allows 'rescue' in method arguments" do
-      two = eval '1.+ (raise("Error") rescue 1)'
-      two.should == 2
-    end
-
-    it "requires the 'rescue' in method arguments to be wrapped in parens" do
-      lambda { eval '1.+(1 rescue 1)' }.should raise_error(SyntaxError)
-      eval('1.+((1 rescue 1))').should == 2
-    end
+  it "requires the 'rescue' in method arguments to be wrapped in parens" do
+    lambda { eval '1.+(1 rescue 1)' }.should raise_error(SyntaxError)
+    eval('1.+((1 rescue 1))').should == 2
   end
 
   describe "inline form" do

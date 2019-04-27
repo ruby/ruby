@@ -217,6 +217,12 @@ describe "A block" do
     it "does not raise an exception when values are yielded" do
       @y.s(0) { 1 }.should == 1
     end
+
+    ruby_version_is "2.5" do
+      it "may include a rescue clause" do
+        eval("@y.z do raise ArgumentError; rescue ArgumentError; 7; end").should == 7
+      end
+    end
   end
 
   describe "taking || arguments" do
@@ -226,6 +232,12 @@ describe "A block" do
 
     it "does not raise an exception when values are yielded" do
       @y.s(0) { || 1 }.should == 1
+    end
+
+    ruby_version_is "2.5" do
+      it "may include a rescue clause" do
+        eval('@y.z do || raise ArgumentError; rescue ArgumentError; 7; end').should == 7
+      end
     end
   end
 
@@ -251,6 +263,12 @@ describe "A block" do
 
     it "does not destructure a single Array value" do
       @y.s([1, 2]) { |a| a }.should == [1, 2]
+    end
+
+    ruby_version_is "2.5" do
+      it "may include a rescue clause" do
+        eval('@y.s(1) do |x| raise ArgumentError; rescue ArgumentError; 7; end').should == 7
+      end
     end
   end
 
@@ -623,6 +641,12 @@ describe "A block" do
 
     it "destructures a single multi-level Array value yielded" do
       @y.m(1, [[2, 3], 4]) { |a, ((b, c), d)| [a, b, c, d] }.should == [1, 2, 3, 4]
+    end
+  end
+
+  describe "taking |*a, b:|" do
+    it "merges the hash into the splatted array" do
+      @y.k { |*a, b:| [a, b] }.should == [[], true]
     end
   end
 

@@ -156,12 +156,10 @@ describe :io_each, shared: true do
     end
   end
 
-  ruby_version_is "2.4" do
-    describe "when passed chomp" do
-      it "yields each line without trailing newline characters to the passed block" do
-        @io.send(@method, chomp: true) { |s| ScratchPad << s }
-        ScratchPad.recorded.should == IOSpecs.lines_without_newline_characters
-      end
+  describe "when passed chomp" do
+    it "yields each line without trailing newline characters to the passed block" do
+      @io.send(@method, chomp: true) { |s| ScratchPad << s }
+      ScratchPad.recorded.should == IOSpecs.lines_without_newline_characters
     end
   end
 end

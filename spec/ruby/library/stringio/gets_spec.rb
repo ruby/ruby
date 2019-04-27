@@ -237,11 +237,9 @@ describe "StringIO#gets when in write-only mode" do
   end
 end
 
-ruby_version_is "2.4" do
-  describe "StringIO#gets when passed [chomp]" do
-    it "returns the data read without a trailing newline character" do
-      io = StringIO.new("this>is>an>example\n")
-      io.gets(chomp: true).should == "this>is>an>example"
-    end
+describe "StringIO#gets when passed [chomp]" do
+  it "returns the data read without a trailing newline character" do
+    io = StringIO.new("this>is>an>example\n")
+    io.gets(chomp: true).should == "this>is>an>example"
   end
 end

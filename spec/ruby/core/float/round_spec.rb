@@ -83,17 +83,35 @@ describe "Float#round" do
     -2.4e200.round(-200).should eql( -2 * 10 ** 200 )
   end
 
-  ruby_version_is "2.4" do
-    it "returns different rounded values depending on the half option" do
-      2.5.round(half: :up).should      eql(3)
-      2.5.round(half: :down).should    eql(2)
-      2.5.round(half: :even).should    eql(2)
-      3.5.round(half: :up).should      eql(4)
-      3.5.round(half: :down).should    eql(3)
-      3.5.round(half: :even).should    eql(4)
-      (-2.5).round(half: :up).should   eql(-3)
-      (-2.5).round(half: :down).should eql(-2)
-      (-2.5).round(half: :even).should eql(-2)
-    end
+  it "returns different rounded values depending on the half option" do
+    2.5.round(half: nil).should      eql(3)
+    2.5.round(half: :up).should      eql(3)
+    2.5.round(half: :down).should    eql(2)
+    2.5.round(half: :even).should    eql(2)
+    3.5.round(half: nil).should      eql(4)
+    3.5.round(half: :up).should      eql(4)
+    3.5.round(half: :down).should    eql(3)
+    3.5.round(half: :even).should    eql(4)
+    (-2.5).round(half: nil).should   eql(-3)
+    (-2.5).round(half: :up).should   eql(-3)
+    (-2.5).round(half: :down).should eql(-2)
+    (-2.5).round(half: :even).should eql(-2)
+  end
+
+  it "rounds self to an optionally given precision with a half option" do
+    5.55.round(1, half: nil).should eql(5.6)
+    5.55.round(1, half: :up).should eql(5.6)
+    5.55.round(1, half: :down).should eql(5.5)
+    5.55.round(1, half: :even).should eql(5.6)
+  end
+
+  it "raises FloatDomainError for exceptional values with a half option" do
+    lambda { (+infinity_value).round(half: :up) }.should raise_error(FloatDomainError)
+    lambda { (-infinity_value).round(half: :down) }.should raise_error(FloatDomainError)
+    lambda { nan_value.round(half: :even) }.should raise_error(FloatDomainError)
+  end
+
+  it "raise for a non-existent round mode" do
+    lambda { 14.2.round(half: :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode: nonsense")
   end
 end

@@ -58,16 +58,14 @@ describe 'TracePoint#enable' do
       end.enable { event_name.should equal(:line) }
     end
 
-    ruby_bug "#14057", ""..."2.5" do
-      it 'can accept arguments within a block but it should not yield arguments' do
-        event_name = nil
-        trace = TracePoint.new(:line) { |tp| event_name = tp.event }
-        trace.enable do |*args|
-          event_name.should equal(:line)
-          args.should == []
-        end
-        trace.enabled?.should == false
+    it 'can accept arguments within a block but it should not yield arguments' do
+      event_name = nil
+      trace = TracePoint.new(:line) { |tp| event_name = tp.event }
+      trace.enable do |*args|
+        event_name.should equal(:line)
+        args.should == []
       end
+      trace.enabled?.should == false
     end
 
     it 'enables trace object on calling with a block if it was already enabled' do
@@ -193,7 +191,7 @@ describe 'TracePoint#enable' do
       end
 
       describe 'option value' do
-        it 'excepts Method' do
+        it 'accepts Method' do
           trace = TracePoint.new(:call) do |tp|
             ScratchPad << tp.method_id
           end
@@ -208,7 +206,7 @@ describe 'TracePoint#enable' do
           ScratchPad.recorded.should == [:foo]
         end
 
-        it 'excepts UnboundMethod' do
+        it 'accepts UnboundMethod' do
           trace = TracePoint.new(:call) do |tp|
             ScratchPad << tp.method_id
           end
@@ -225,7 +223,7 @@ describe 'TracePoint#enable' do
           ScratchPad.recorded.should == [:foo]
         end
 
-        it 'excepts Proc' do
+        it 'accepts Proc' do
           trace = TracePoint.new(:b_call) do |tp|
             ScratchPad << tp.lineno
           end
@@ -240,36 +238,6 @@ describe 'TracePoint#enable' do
           ScratchPad.recorded.should == [lineno]
           lineno.should be_kind_of(Integer)
         end
-
-        it 'excepts RubyVM::InstructionSequence' do
-          trace = TracePoint.new(:call) do |tp|
-            ScratchPad << tp.method_id
-          end
-
-          obj = Object.new
-          def obj.foo; end
-
-          iseq = RubyVM::InstructionSequence.of(obj.method(:foo))
-          trace.enable(target: iseq) do
-            obj.foo
-          end
-
-          ScratchPad.recorded.should == [:foo]
-        end
-      end
-
-      it "raises ArgumentError when passed object isn't consisted of InstructionSequence (iseq)" do
-        trace = TracePoint.new(:call) do |tp|
-          ScratchPad << tp.method_id
-        end
-
-        core_method = 'foo bar'.method(:bytes)
-        RubyVM::InstructionSequence.of(core_method).should == nil
-
-        lambda {
-          trace.enable(target: core_method) do
-          end
-        }.should raise_error(ArgumentError, /specified target is not supported/)
       end
 
       it "raises ArgumentError if target object cannot trigger specified event" do
@@ -286,7 +254,7 @@ describe 'TracePoint#enable' do
         }.should raise_error(ArgumentError, /can not enable any hooks/)
       end
 
-      it "raises ArgumentError if passed not Method/UnboundMethod/Proc/RubyVM::InstructionSequence" do
+      it "raises ArgumentError if passed not Method/UnboundMethod/Proc" do
         trace = TracePoint.new(:call) do |tp|
         end
 
@@ -490,7 +458,7 @@ describe 'TracePoint#enable' do
         }.should raise_error(ArgumentError, /can not enable any hooks/)
       end
 
-      it "excepts value that could be coerced to Integer" do
+      it "accepts value that could be coerced to Integer" do
         trace = TracePoint.new(:line) do |tp|
           ScratchPad << tp.lineno
         end

@@ -853,5 +853,28 @@ describe "CApiObject" do
         @o.rb_ivar_defined(@test, :bar).should == false
       end
     end
+
+    # The `generic_iv_tbl` table and `*_generic_ivar` functions are for mutable
+    # objects which do not store ivars directly in MRI such as RString, because
+    # there is no member iv_index_tbl (ivar table) such as in RObject and RClass.
+
+    describe "rb_copy_generic_ivar for objects which do not store ivars directly" do
+      it "copies the instance variables from one object to another" do
+        original = "abc"
+        original.instance_variable_set(:@foo, :bar)
+        clone = "def"
+        @o.rb_copy_generic_ivar(clone, original)
+        clone.instance_variable_get(:@foo).should == :bar
+      end
+    end
+
+    describe "rb_free_generic_ivar for objects which do not store ivars directly" do
+      it "removes the instance variables from an object" do
+        o = "abc"
+        o.instance_variable_set(:@baz, :flibble)
+        @o.rb_free_generic_ivar(o)
+        o.instance_variables.should == []
+      end
+    end
   end
 end

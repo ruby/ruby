@@ -132,12 +132,10 @@ describe :kernel_Rational, shared: true do
         end
       end
 
-      ruby_bug "#15525", "2.6"..."2.6.1" do
-        describe "and nil arguments" do
-          it "swallows an error" do
-            Rational(nil, exception: false).should == nil
-            Rational(nil, nil, exception: false).should == nil
-          end
+      describe "and nil arguments" do
+        it "swallows an error" do
+          Rational(nil, exception: false).should == nil
+          Rational(nil, nil, exception: false).should == nil
         end
       end
     end

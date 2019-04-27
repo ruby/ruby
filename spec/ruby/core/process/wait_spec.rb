@@ -8,10 +8,8 @@ describe "Process.wait" do
     begin
       leaked = Process.waitall
       puts "leaked before wait specs: #{leaked}" unless leaked.empty?
-      with_feature :mjit do
-        # Ruby-space should not see PIDs used by mjit
-        leaked.should be_empty
-      end
+      # Ruby-space should not see PIDs used by mjit
+      leaked.should be_empty
     rescue NotImplementedError
     end
   end

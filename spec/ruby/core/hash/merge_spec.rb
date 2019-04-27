@@ -69,9 +69,12 @@ describe "Hash#merge" do
       result.should == { a: 1, b: 2, c: 3, d: 4 }
     end
 
-    it "accepts zero arguments and returns self" do
+    it "accepts zero arguments and returns a copy of self" do
       hash = { a: 1 }
-      hash.merge.should eql(hash)
+      merged = hash.merge
+
+      merged.should eql(hash)
+      merged.should_not equal(hash)
     end
   end
 end

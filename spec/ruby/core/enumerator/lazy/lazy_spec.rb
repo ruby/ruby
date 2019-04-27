@@ -14,9 +14,7 @@ describe "Enumerator::Lazy" do
       :select, :slice_after, :slice_before, :slice_when, :take, :take_while,
       :to_enum, :zip
     ]
-    ruby_version_is "2.4" do
-      lazy_methods += [:chunk_while, :uniq]
-    end
+    lazy_methods += [:chunk_while, :uniq]
 
     Enumerator::Lazy.instance_methods(false).should include(*lazy_methods)
   end

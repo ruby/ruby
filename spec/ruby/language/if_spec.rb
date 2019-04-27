@@ -1,22 +1,20 @@
 require_relative '../spec_helper'
 
 describe "The if expression" do
-  ruby_version_is '2.4' do
-    describe "accepts multiple assignments in conditional expression" do
-      before(:each) { ScratchPad.record([]) }
-      after(:each)  { ScratchPad.clear }
+  describe "accepts multiple assignments in conditional expression" do
+    before(:each) { ScratchPad.record([]) }
+    after(:each)  { ScratchPad.clear }
 
-      it 'with non-nil values' do
-        ary = [1, 2]
-        eval "if (a, b = ary); ScratchPad.record [a, b]; end"
-        ScratchPad.recorded.should == [1, 2]
-      end
+    it 'with non-nil values' do
+      ary = [1, 2]
+      eval "if (a, b = ary); ScratchPad.record [a, b]; end"
+      ScratchPad.recorded.should == [1, 2]
+    end
 
-      it 'with nil values' do
-        ary = nil
-        eval "if (a, b = ary); else; ScratchPad.record [a, b]; end"
-        ScratchPad.recorded.should == [nil, nil]
-      end
+    it 'with nil values' do
+      ary = nil
+      eval "if (a, b = ary); else; ScratchPad.record [a, b]; end"
+      ScratchPad.recorded.should == [nil, nil]
     end
   end
 
