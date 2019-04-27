@@ -8,6 +8,7 @@
 #
 
 require "readline"
+require "rdoc"
 
 module IRB
   module InputCompletor # :nodoc:
@@ -194,6 +195,14 @@ module IRB
         candidates = eval("methods | private_methods | local_variables | instance_variables | self.class.constants", bind).collect{|m| m.to_s}
 
         (candidates|ReservedWords).grep(/^#{Regexp.quote(input)}/)
+      end
+    }
+
+    RDocRIDriver = RDoc::RI::Driver.new
+    PerfectMatchedProc = proc { |matched|
+      begin
+        RDocRIDriver.display_name(matched)
+      rescue RDoc::RI::Driver::NotFoundError
       end
     }
 
