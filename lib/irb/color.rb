@@ -46,6 +46,10 @@ module IRB # :nodoc:
       end
 
       def inspect_colorable?(obj)
+        if obj.is_a?(Class) && obj.name
+          return true
+        end
+
         case obj
         when Hash
           obj.all? { |k, v| inspect_colorable?(k) && inspect_colorable?(v) }
