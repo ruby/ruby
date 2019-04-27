@@ -879,8 +879,8 @@ rb_check_to_array(VALUE ary)
  *  call-seq:
  *     Array.try_convert(obj) -> array or nil
  *
- *  Tries to convert +obj+ into an array, using +to_ary+ method.  Returns the
- *  converted array or +nil+ if +obj+ cannot be converted for any reason.
+ *  Tries to convert +obj+ into an array, using the +to_ary+ method.  Returns
+ *  the converted array or +nil+ if +obj+ cannot be converted.
  *  This method can be used to check if an argument is an array.
  *
  *     Array.try_convert([1])   #=> [1]
