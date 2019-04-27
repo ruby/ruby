@@ -2936,7 +2936,7 @@ rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
 }
 
 /*
- * call-seq: aseq.begin -> num
+ * call-seq: aseq.begin -> num or nil
  *
  * Returns the number that defines the first element of this arithmetic
  * sequence.
