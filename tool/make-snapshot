@@ -338,18 +338,11 @@ def package(vcs, rev, destdir, tmp = nil)
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
     unless File.exist?("ChangeLog")
-      # get last revision from previous ChangeLog archive
-      last_ChangeLog = Dir["doc/ChangeLog-*"].grep(/-(\d+)\z/) {|n| [$1.to_i, n]}.max[1]
-      open(last_ChangeLog) do |f|
-        if /\Acommit (\w+)/ =~ f.readline
-          beginning = $1
-        elsif /\Ar(\d+) / =~ f.readline
-          beginning = $1.to_i
-        else
-          abort "#{File.basename $0}: Cannot find revision from '#{last_ChangeLog}'"
-        end
-        vcs.export_changelog(url, beginning, revision, "ChangeLog")
+      # get the beginning revision from matz's commit
+      unless beginning = vcs.branch_beginning
+        abort "#{File.basename $0}: Cannot find revision from '#{last_ChangeLog}'"
       end
+      vcs.export_changelog(url, beginning, revision, "ChangeLog")
     end
 
     File.open(clean.add("cross.rb"), "w") do |f|

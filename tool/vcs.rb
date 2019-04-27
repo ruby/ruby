@@ -451,6 +451,12 @@ class VCS
       FileUtils.rm_rf(Dir.glob("#{dir}/.git*"))
     end
 
+    def branch_beginning
+      cmd_read(%W[ #{COMMAND} log -n1 --format=format:%H --reverse
+                   --author=matz --committer=matz --grep=start
+                   -- version.h include/ruby/version.h])
+    end
+
     def export_changelog(url, from, to, path)
       range = [from, to].map do |rev|
         rev or next
