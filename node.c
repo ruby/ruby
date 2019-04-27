@@ -218,7 +218,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("in clause");
         ANN("format: in [nd_head]; [nd_body]; (in or else) [nd_next]");
         ANN("example: case x; in 1; foo; in 2; bar; else baz; end");
-        F_NODE(nd_head, "in value");
+        F_NODE(nd_head, "in pattern");
         F_NODE(nd_body, "in body");
         LAST_NODE;
         F_NODE(nd_next, "next in clause");
