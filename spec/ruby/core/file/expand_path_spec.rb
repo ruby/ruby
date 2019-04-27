@@ -2,6 +2,7 @@
 
 require_relative '../../spec_helper'
 require_relative 'fixtures/common'
+require 'etc'
 
 describe "File.expand_path" do
   before :each do
@@ -222,14 +223,16 @@ platform_is_not :windows do
       ENV["HOME"] = @home
     end
 
-    it "uses the user database when passed '~' if HOME is nil" do
-      ENV.delete "HOME"
-      File.directory?(File.expand_path("~")).should == true
-    end
+    guard -> { Etc.getlogin } do
+      it "uses the user database when passed '~' if HOME is nil" do
+        ENV.delete "HOME"
+        File.directory?(File.expand_path("~")).should == true
+      end
 
-    it "uses the user database when passed '~/' if HOME is nil" do
-      ENV.delete "HOME"
-      File.directory?(File.expand_path("~/")).should == true
+      it "uses the user database when passed '~/' if HOME is nil" do
+        ENV.delete "HOME"
+        File.directory?(File.expand_path("~/")).should == true
+      end
     end
 
     it "raises an ArgumentError when passed '~' if HOME == ''" do
