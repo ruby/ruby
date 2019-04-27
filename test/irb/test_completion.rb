@@ -7,7 +7,7 @@ module TestIRB
       begin
         require "irb/completion"
         bug5938 = '[ruby-core:42244]'
-        cmds = %W[-rirb -rirb/completion -e IRB.setup(__FILE__)
+        cmds = %W[-W0 -rirb -rirb/completion -e IRB.setup(__FILE__)
          -e IRB.conf[:MAIN_CONTEXT]=IRB::Irb.new.context
          -e module\sFoo;def\sself.name;//;end;end
          -e IRB::InputCompletor::CompletionProc.call("[1].first.")

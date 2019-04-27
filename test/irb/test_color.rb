@@ -30,7 +30,7 @@ module TestIRB
         "# comment" => "#{BLUE}#{BOLD}# comment#{CLEAR}",
         "yield(hello)" => "#{GREEN}yield#{CLEAR}(hello)",
       }.each do |code, result|
-        assert_equal(result, with_term { IRB::Color.colorize_code(code) })
+        assert_equal(result, with_term { IRB::Color.colorize_code(code) }, "Case: colorize_code(#{code.dump})")
       end
 
       if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.6.0')
@@ -54,10 +54,11 @@ module TestIRB
         { a: 4 } => true,
         /reg/ => true,
         Object.new => false,
+        Struct => true,
         Struct.new(:a) => false,
         Struct.new(:a).new(1) => false,
       }.each do |object, result|
-        assert_equal(result, IRB::Color.inspect_colorable?(object))
+        assert_equal(result, IRB::Color.inspect_colorable?(object), "Case: inspect_colorable?(#{object.inspect})")
       end
     end
 
