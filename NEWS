@@ -14,7 +14,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Language changes
 
-* Introduce pattern matching [Feature #14912]
+* Pattern matching is introduced as an experimental feature. [Feature #14912]
 
 * Method reference operator, <code>.:</code> is introduced as an
   experimental feature.  [Feature #12125] [Feature #13581]
