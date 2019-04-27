@@ -1,0 +1,8 @@
+commit 3a0471faa0d383392ba05b3a6409b973b7b009d1
+Author: matz <matz@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
+Date:   Tue Dec 25 22:45:17 2018
+
+    version.h (RUBY_VERSION): 2.7.0 development has started.
+    
+    
+    git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@66555 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
