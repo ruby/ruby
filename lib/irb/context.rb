@@ -22,7 +22,7 @@ module IRB
     #
     # The optional +input_method+ argument:
     #
-    # +nil+::     uses stdin or Readline
+    # +nil+::     uses stdin or Reidline or Readline
     # +String+::  uses a File
     # +other+::   uses this as InputMethod
     def initialize(irb, workspace = nil, input_method = nil, output_method = nil)
@@ -40,6 +40,7 @@ module IRB
       @load_modules = IRB.conf[:LOAD_MODULES]
 
       @use_readline = IRB.conf[:USE_READLINE]
+      @use_reidline = IRB.conf[:USE_REIDLINE]
       @use_colorize = IRB.conf[:USE_COLORIZE]
       @verbose = IRB.conf[:VERBOSE]
       @io = nil
@@ -65,23 +66,41 @@ module IRB
 
       case input_method
       when nil
-        case use_readline?
+        @io = nil
+        case use_reidline?
         when nil
-          if (defined?(ReadlineInputMethod) && STDIN.tty? &&
-              IRB.conf[:PROMPT_MODE] != :INF_RUBY)
-            @io = ReadlineInputMethod.new
+          if STDIN.tty? && IRB.conf[:PROMPT_MODE] != :INF_RUBY && !use_readline?
+            @io = ReidlineInputMethod.new
           else
-            @io = StdioInputMethod.new
+            @io = nil
           end
         when false
-          @io = StdioInputMethod.new
+          @io = nil
         when true
-          if defined?(ReadlineInputMethod)
-            @io = ReadlineInputMethod.new
+          @io = ReidlineInputMethod.new
+        end
+        unless @io
+          case use_readline?
+          when nil
+            if (defined?(ReadlineInputMethod) && STDIN.tty? &&
+                IRB.conf[:PROMPT_MODE] != :INF_RUBY)
+              @io = ReadlineInputMethod.new
+            else
+              @io = nil
+            end
+          when false
+            @io = nil
+          when true
+            if defined?(ReadlineInputMethod)
+              @io = ReadlineInputMethod.new
+            else
+              @io = nil
+            end
           else
-            @io = StdioInputMethod.new
+            @io = nil
           end
         end
+        @io = StdioInputMethod.new unless @io
 
       when String
         @io = FileInputMethod.new(input_method)
@@ -117,9 +136,9 @@ module IRB
     attr_reader :thread
     # The current input method
     #
-    # Can be either StdioInputMethod, ReadlineInputMethod, FileInputMethod or
-    # other specified when the context is created. See ::new for more
-    # information on +input_method+.
+    # Can be either StdioInputMethod, ReadlineInputMethod,
+    # ReidlineInputMethod, FileInputMethod or other specified when the
+    # context is created. See ::new for more # information on +input_method+.
     attr_accessor :io
 
     # Current irb session
@@ -137,6 +156,12 @@ module IRB
     # +input_method+ passed to Context.new
     attr_accessor :irb_path
 
+    # Whether +Reidline+ is enabled or not.
+    #
+    # A copy of the default <code>IRB.conf[:USE_REIDLINE]</code>
+    #
+    # See #use_reidline= for more information.
+    attr_reader :use_reidline
     # Whether +Readline+ is enabled or not.
     #
     # A copy of the default <code>IRB.conf[:USE_READLINE]</code>
@@ -225,6 +250,8 @@ module IRB
     # See IRB@Command+line+options for more command line options.
     attr_accessor :back_trace_limit
 
+    # Alias for #use_reidline
+    alias use_reidline? use_reidline
     # Alias for #use_readline
     alias use_readline? use_readline
     # Alias for #use_colorize
@@ -238,7 +265,9 @@ module IRB
     # Returns whether messages are displayed or not.
     def verbose?
       if @verbose.nil?
-        if defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)
+        if @io.kind_of?(ReidlineInputMethod)
+          false
+        elsif defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)
           false
         elsif !STDIN.tty? or @io.kind_of?(FileInputMethod)
           true
@@ -251,9 +280,11 @@ module IRB
     end
 
     # Whether #verbose? is +true+, and +input_method+ is either
-    # StdioInputMethod or ReadlineInputMethod, see #io for more information.
+    # StdioInputMethod or ReidlineInputMethod or ReadlineInputMethod, see #io
+    # for more information.
     def prompting?
       verbose? || (STDIN.tty? && @io.kind_of?(StdioInputMethod) ||
+                   @io.kind_of?(ReidlineInputMethod) ||
                    (defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)))
     end
 

@@ -164,6 +164,10 @@ module IRB # :nodoc:
         @CONF[:USE_READLINE] = true
       when "--noreadline"
         @CONF[:USE_READLINE] = false
+      when "--reidline"
+        @CONF[:USE_REIDLINE] = true
+      when "--noreidline"
+        @CONF[:USE_REIDLINE] = false
       when "--echo"
         @CONF[:ECHO] = true
       when "--noecho"
