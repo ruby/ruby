@@ -2961,6 +2961,15 @@ CODE
   end
 =end
 
+  def test_nesting_shared
+    a = ('a' * 24).encode(Encoding::ASCII).gsub('x', '')
+    hash = {}
+    hash[a] = true
+    assert_equal(('a' * 24), a)
+    4.times { GC.start }
+    assert_equal(('a' * 24), a, '[Bug #15792]')
+  end
+
   def test_shared_force_encoding
     s = "\u{3066}\u{3059}\u{3068}".gsub(//, '')
     h = {}
