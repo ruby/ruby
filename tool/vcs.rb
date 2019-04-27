@@ -220,9 +220,17 @@ class VCS
   def after_export(dir)
   end
 
+  def revision_name(rev)
+    self.class.revision_name(rev)
+  end
+
   class SVN < self
     register(".svn")
     COMMAND = ENV['SVN'] || 'svn'
+
+    def self.revision_name(rev)
+      "r#{rev}"
+    end
 
     def self.get_revisions(path, srcdir = nil)
       if srcdir and local_path?(path)
@@ -374,18 +382,23 @@ class VCS
 
     def self.get_revisions(path, srcdir = nil)
       gitcmd = [COMMAND]
-      last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', 'HEAD']]).rstrip
+      last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', '--short', 'HEAD']]).rstrip
       if path
         log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', path]])
       else
         log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso']])
       end
       changed = log[/\Acommit (\h+)/, 1]
+      changed = changed[0, last.size]
       modified = log[/^Date:\s+(.*)/, 1]
-      branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref HEAD]])[%r'\A(?:refs/heads/)?(.+)', 1]
+      branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short HEAD]])
       title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 FETCH_HEAD..HEAD]])
       title = nil if title.empty?
       [last, changed, modified, branch, title]
+    end
+
+    def self.revision_name(rev)
+      rev
     end
 
     def initialize(*)
@@ -488,6 +501,10 @@ class VCS
   end
 
   class GITSVN < GIT
+    def self.revision_name(rev)
+      SVN.short_revision(rev)
+    end
+
     def format_changelog(r, path)
       open(path, 'w') do |w|
         sep = "-"*72

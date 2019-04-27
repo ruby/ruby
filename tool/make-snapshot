@@ -301,14 +301,14 @@ def package(vcs, rev, destdir, tmp = nil)
     unless tag.empty?
       versionhdr ||= IO.read("#{v}/version.h")
       patchlevel = versionhdr[/^\#define\s+RUBY_PATCHLEVEL\s+(\d+)/, 1]
-      tag = (patchlevel ? "p#{patchlevel}" : "r#{revision}")
+      tag = (patchlevel ? "p#{patchlevel}" : vcs.revision_name(revision))
     end
   elsif prerelease
     versionhdr ||= IO.read("#{v}/version.h")
     versionhdr.sub!(/^\#define\s+RUBY_PATCHLEVEL_STR\s+"\K.+?(?=")/, tag)
     IO.write("#{v}/version.h", versionhdr)
   else
-    tag ||= "r#{revision}"
+    tag ||= vcs.revision_name(revision)
   end
   unless v == $exported
     if $archname
