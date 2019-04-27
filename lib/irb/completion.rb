@@ -35,6 +35,8 @@ module IRB
       yield
     ]
 
+    BASIC_WORD_BREAK_CHARACTERS = " \t\n`><=;|&{("
+
     CompletionProc = proc { |input|
       bind = IRB.conf[:MAIN_CONTEXT].workspace.binding
 
@@ -236,9 +238,3 @@ module IRB
     end
   end
 end
-
-if Readline.respond_to?("basic_word_break_characters=")
-  Readline.basic_word_break_characters= " \t\n`><=;|&{("
-end
-Readline.completion_append_character = nil
-Readline.completion_proc = IRB::InputCompletor::CompletionProc

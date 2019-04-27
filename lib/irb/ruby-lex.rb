@@ -32,6 +32,7 @@ class RubyLex
     @io = io
     if @io.respond_to?(:check_termination)
       @io.check_termination do |code|
+        code.gsub!(/\s*\z/, '').concat("\n")
         @tokens = Ripper.lex(code)
         continue = process_continue
         code_block_open = check_code_block(code)
@@ -116,7 +117,7 @@ class RubyLex
       return line # multiline
     end
     code = @line + (line.nil? ? '' : line)
-    code.gsub!(/\n*$/, '').concat("\n")
+    code.gsub!(/\s*\z/, '').concat("\n")
     @tokens = Ripper.lex(code)
     @continue = process_continue
     @code_block_open = check_code_block(code)
