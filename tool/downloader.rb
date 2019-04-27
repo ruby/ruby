@@ -192,7 +192,7 @@ class Downloader
       $stdout.flush
     end
     begin
-      data = with_retry(6) do
+      data = with_retry(9) do
         url.read(options.merge(http_options(file, since.nil? ? true : since)))
       end
     rescue OpenURI::HTTPError => http_error
