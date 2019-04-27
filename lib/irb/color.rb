@@ -46,7 +46,7 @@ module IRB # :nodoc:
       end
 
       def inspect_colorable?(obj)
-        if obj.is_a?(Class) && obj.name
+        if obj.is_a?(Module) && obj.name
           return true
         end
 
