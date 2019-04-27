@@ -1,0 +1,39 @@
+# Adds tags based on error and failures output (e.g., from a CI log),
+# without running any spec code.
+
+tags_dir = %w[
+  spec/tags
+  spec/tags/ruby
+].find { |dir| Dir.exist?("#{dir}/language") }
+abort 'Could not find tags directory' unless tags_dir
+
+output = ARGF.readlines
+# Remove leading "[exec] " from JRuby logs
+output = output.map { |line| line.sub(/^\[exec\] /, '') }
+
+NUMBER = /^\d+\)$/
+ERROR_OR_FAILED = / (ERROR|FAILED)$/
+SPEC_FILE = /^(\/.+_spec\.rb)\:\d+/
+
+failures = output.slice_before(NUMBER).select { |number, error_line, *rest|
+  number =~ NUMBER and error_line =~ ERROR_OR_FAILED
+}.each { |number, error_line, *rest|
+  description = error_line.match(ERROR_OR_FAILED).pre_match
+
+  spec_file = rest.find { |line| line =~ SPEC_FILE }
+  spec_file = spec_file[SPEC_FILE, 1]
+  prefix = spec_file.index('spec/ruby')
+  spec_file = spec_file[prefix..-1]
+
+  tags_file = spec_file.sub('spec/ruby/', "#{tags_dir}/").sub(/_spec\.rb$/, '_tags.txt')
+
+  dir = File.dirname(tags_file)
+  Dir.mkdir(dir) unless Dir.exist?(dir)
+
+  tag_line = "fails:#{description}"
+  unless File.exist?(tags_file) and File.readlines(tags_file, chomp: true).include?(tag_line)
+    File.open(tags_file, 'a') do |f|
+      f.puts tag_line
+    end
+  end
+}

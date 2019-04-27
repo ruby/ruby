@@ -1,4 +1,6 @@
 TOLERANCE = 0.00003 unless Object.const_defined?(:TOLERANCE)
+# To account for GC, context switches, other processes, load, etc.
+TIME_TOLERANCE = 20.0 unless Object.const_defined?(:TIME_TOLERANCE)
 
 class BeCloseMatcher
   def initialize(expected, tolerance)
