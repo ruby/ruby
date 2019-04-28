@@ -14,8 +14,10 @@ require 'uri'
 $repos = 'svn+ssh://svn@ci.ruby-lang.org/ruby/'
 ENV['LC_ALL'] = 'C'
 
-def help
-  puts <<-end
+module Merger
+  class << self
+    def help
+      puts <<-end
 \e[1msimple backport\e[0m
   ruby #$0 1234
 
@@ -41,11 +43,10 @@ def help
   ruby #$0 removetag 2.2.9
 
 \e[33;1m* all operations shall be applied to the working directory.\e[0m
-end
-end
+      end
+    end
 
-# Prints the version of Ruby found in version.h
-
+    # Prints the version of Ruby found in version.h
 def version
   v = p = nil
   open 'version.h', 'rb' do |f|
@@ -201,20 +202,22 @@ end
 def default_merge_branch
   %r{^URL: .*/branches/ruby_1_8_} =~ `svn info` ? 'branches/ruby_1_8' : 'trunk'
 end
+  end # class << self
+end # module Merger
 
 case ARGV[0]
 when "teenyup"
-  version_up(:teeny)
+  Merger.version_up(:teeny)
   system 'svn diff version.h'
 when "up", /\A(ver|version|rev|revision|lv|level|patch\s*level)\s*up/
-  version_up
+  Merger.version_up
   system 'svn diff version.h'
 when "tag"
-  tag :interactive, ARGV[1]
+  Merger.tag :interactive, ARGV[1]
 when /\A(?:remove|rm|del)_?tag\z/
-  remove_tag :interactive, ARGV[1]
+  Merger.remove_tag :interactive, ARGV[1]
 when nil, "-h", "--help"
-  help
+  Merger.help
   exit
 else
   system 'svn up'
@@ -230,7 +233,7 @@ else
     tickets = ''
   end
 
-  q = $repos + (ARGV[1] || default_merge_branch)
+  q = $repos + (ARGV[1] || Merger.default_merge_branch)
   revstr = ARGV[0].delete('^, :\-0-9a-fA-F')
   revs = revstr.split(/[,\s]+/)
   commit_message = ''
@@ -274,18 +277,18 @@ else
   end
 
   if `svn diff --diff-cmd=diff -x -upw`.empty?
-    interactive 'Nothing is modified, right?' do
+    Merger.interactive 'Nothing is modified, right?' do
     end
   end
 
-  version_up
+  Merger.version_up
   f = Tempfile.new 'merger.rb'
   f.printf "merge revision(s) %s:%s", revstr, tickets
   f.write commit_message
   f.flush
   f.close
 
-  interactive 'conflicts resolved?', f.path do
+  Merger.interactive 'conflicts resolved?', f.path do
     IO.popen(ENV["PAGER"] || "less", "w") do |g|
       g << `svn stat`
       g << "\n\n"
