@@ -6,7 +6,6 @@ exec "${RUBY-ruby}" "-x" "$0" "$@" && [ ] if false
 # As a Ruby committer, run this in an SVN repository
 # to commit a change.
 
-require 'fileutils'
 require 'tempfile'
 require 'net/http'
 require 'uri'
@@ -178,11 +177,43 @@ class << Merger
     end
   end
 
-  def diff(file)
+  def update_revision_h
     if svn_mode?
-      system('svn', 'diff', file)
+      execute('svn', 'up')
+    end
+    execute('ruby tool/file2lastrev.rb --revision.h . > revision.tmp')
+    execute('tool/ifchange', '--timestamp=.revision.time', 'revision.h', 'revision.tmp')
+    execute('rm', '-f', 'revision.tmp')
+  end
+
+  def stat
+    if svn_mode?
+      `svn stat`
     else
-      system('git', 'diff', file)
+      `git status --short`
+    end
+  end
+
+  def diff(file = nil)
+    if svn_mode?
+      `svn diff --diff-cmd=diff -x -upw #{file&.shellescape}`
+    else
+      `git diff --color #{file&.shellescape}`
+    end
+  end
+
+  def commit(file)
+    if svn_mode?
+      begin
+        execute('svn', 'ci', '-F', file)
+      ensure
+        execute('rm', '-f', 'subversion.commitlog')
+      end
+    else
+      current_branch = IO.popen(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], &:read).strip
+      execute('git', 'add', '.') &&
+        execute('git', 'commit', '-F', file) &&
+        execute('git', 'push', 'origin', current_branch)
     end
   end
 
@@ -235,10 +266,10 @@ end
 case ARGV[0]
 when "teenyup"
   Merger.version_up(teeny: true)
-  Merger.diff('version.h')
+  puts Merger.diff('version.h')
 when "up", /\A(ver|version|rev|revision|lv|level|patch\s*level)\s*up\z/
   Merger.version_up
-  Merger.diff('version.h')
+  puts Merger.diff('version.h')
 when "tag"
   Merger.tag(ARGV[1])
 when /\A(?:remove|rm|del)_?tag\z/
@@ -247,10 +278,7 @@ when nil, "-h", "--help"
   Merger.help
   exit
 else
-  system 'svn up'
-  system 'ruby tool/file2lastrev.rb --revision.h . > revision.tmp'
-  system 'tool/ifchange "--timestamp=.revision.time" "revision.h" "revision.tmp"'
-  FileUtils.rm_f('revision.tmp')
+  Merger.update_revision_h
 
   case ARGV[0]
   when /--ticket=(.*)/
@@ -289,7 +317,7 @@ else
       patch = resp.body
 
       message = "\n\n#{(patch.match(/^Subject: (.*)\n\ndiff --git/m)&.[](1) || "Message not found for revision: #{git_rev}\n")}"
-      puts "+ git apply"
+      puts '+ git apply'
       IO.popen(['git', 'apply'], 'w') { |f| f.write(patch) }
     else
       default_merge_branch = (%r{^URL: .*/branches/ruby_1_8_} =~ `svn info` ? 'branches/ruby_1_8' : 'trunk')
@@ -304,9 +332,8 @@ else
     commit_message << message.sub(/\A-+\nr.*/, '').sub(/\n-+\n\z/, '').gsub(/^./, "\t\\&")
   end
 
-  if `svn diff --diff-cmd=diff -x -upw`.empty?
-    Merger.interactive 'Nothing is modified, right?' do
-    end
+  if Merger.diff.empty?
+    Merger.interactive('Nothing is modified, right?')
   end
 
   Merger.version_up
@@ -316,21 +343,19 @@ else
   f.flush
   f.close
 
-  Merger.interactive 'conflicts resolved?', f.path do
-    IO.popen(ENV["PAGER"] || "less", "w") do |g|
-      g << `svn stat`
+  Merger.interactive('conflicts resolved?', f.path) do
+    IO.popen(ENV['PAGER'] || ['less', '-R'], 'w') do |g|
+      g << Merger.stat
       g << "\n\n"
       f.open
       g << f.read
       f.close
       g << "\n\n"
-      g << `svn diff --diff-cmd=diff -x -upw`
+      g << Merger.diff
     end
   end
 
-  if system(*%w'svn ci -F', f.path)
-    system 'rm -f subversion.commitlog'
-  else
+  unless Merger.commit(f.path)
     puts 'commit failed; try again.'
   end
 
