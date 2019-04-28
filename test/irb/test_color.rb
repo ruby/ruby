@@ -44,6 +44,7 @@ module TestIRB
         ['foo', :bar] => true,
         { a: 4 } => true,
         /reg/ => true,
+        (1..3) => true,
         Object.new => false,
         Struct => true,
         Test => true,

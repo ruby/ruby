@@ -47,17 +47,17 @@ module IRB # :nodoc:
       end
 
       def inspect_colorable?(obj)
-        if obj.is_a?(Module) && obj.name
-          return true
-        end
-
         case obj
+        when String, Symbol, Regexp, Integer, Float, FalseClass, TrueClass, NilClass
+          true
         when Hash
           obj.all? { |k, v| inspect_colorable?(k) && inspect_colorable?(v) }
         when Array
           obj.all? { |o| inspect_colorable?(o) }
-        when String, Symbol, Regexp, Integer, Float, FalseClass, TrueClass, NilClass
-          true
+        when Range
+          inspect_colorable?(obj.begin) && inspect_colorable?(obj.end)
+        when Module
+          !obj.name.nil?
         else
           false
         end
