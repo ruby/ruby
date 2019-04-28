@@ -29,8 +29,6 @@ class MSpecScript
   set :ci_files, get(:files)
 
   # The default implementation to run the specs.
-  # TODO: this needs to be more sophisticated since the
-  # executable is not consistently named.
   set :target, 'ruby'
 
   set :backtrace_filter, /mspec\//
@@ -48,11 +46,4 @@ class MSpecScript
     /\wSpecs?$/,
     /^CS_CONST/,
   ]
-
-  # Enable features
-  MSpec.enable_feature :fiber
-  MSpec.enable_feature :fiber_library
-  MSpec.enable_feature :fork if respond_to?(:fork, true)
-  MSpec.enable_feature :encoding
-  MSpec.enable_feature :mjit if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
 end

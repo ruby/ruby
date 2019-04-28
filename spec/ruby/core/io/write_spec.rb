@@ -28,51 +28,49 @@ describe "IO#write on a file" do
     @file.write('').should == 0
   end
 
-  with_feature :encoding do
-    before :each do
-      @external = Encoding.default_external
-      @internal = Encoding.default_internal
+  before :each do
+    @external = Encoding.default_external
+    @internal = Encoding.default_internal
 
-      Encoding.default_external = Encoding::UTF_8
-    end
+    Encoding.default_external = Encoding::UTF_8
+  end
 
-    after :each do
-      Encoding.default_external = @external
-      Encoding.default_internal = @internal
-    end
+  after :each do
+    Encoding.default_external = @external
+    Encoding.default_internal = @internal
+  end
 
-    it "returns the number of bytes written" do
-      @file.write("hellø").should == 6
-    end
+  it "returns the number of bytes written" do
+    @file.write("hellø").should == 6
+  end
 
-    it "uses the encoding from the given option for non-ascii encoding" do
-      File.open(@filename, "w", encoding: Encoding::UTF_32LE) do |file|
-        file.write("hi").should == 8
-      end
-      File.binread(@filename).should == "h\u0000\u0000\u0000i\u0000\u0000\u0000"
+  it "uses the encoding from the given option for non-ascii encoding" do
+    File.open(@filename, "w", encoding: Encoding::UTF_32LE) do |file|
+      file.write("hi").should == 8
     end
+    File.binread(@filename).should == "h\u0000\u0000\u0000i\u0000\u0000\u0000"
+  end
 
-    it "uses an :open_args option" do
-      IO.write(@filename, 'hi', open_args: ["w", nil, {encoding: Encoding::UTF_32LE}]).should == 8
-    end
+  it "uses an :open_args option" do
+    IO.write(@filename, 'hi', open_args: ["w", nil, {encoding: Encoding::UTF_32LE}]).should == 8
+  end
 
-    it "raises a invalid byte sequence error if invalid bytes are being written" do
-      # pack "\xFEhi" to avoid utf-8 conflict
-      xFEhi = ([254].pack('C*') + 'hi').force_encoding('utf-8')
-      File.open(@filename, "w", encoding: Encoding::US_ASCII) do |file|
-        lambda { file.write(xFEhi) }.should raise_error(Encoding::InvalidByteSequenceError)
-      end
+  it "raises a invalid byte sequence error if invalid bytes are being written" do
+    # pack "\xFEhi" to avoid utf-8 conflict
+    xFEhi = ([254].pack('C*') + 'hi').force_encoding('utf-8')
+    File.open(@filename, "w", encoding: Encoding::US_ASCII) do |file|
+      lambda { file.write(xFEhi) }.should raise_error(Encoding::InvalidByteSequenceError)
     end
+  end
 
-    it "writes binary data if no encoding is given" do
-      File.open(@filename, "w") do |file|
-        file.write('Hëllö'.encode('ISO-8859-1'))
-      end
-      ë = ([235].pack('U')).encode('ISO-8859-1')
-      ö = ([246].pack('U')).encode('ISO-8859-1')
-      res = "H#{ë}ll#{ö}"
-      File.binread(@filename).should == res.force_encoding(Encoding::ASCII_8BIT)
+  it "writes binary data if no encoding is given" do
+    File.open(@filename, "w") do |file|
+      file.write('Hëllö'.encode('ISO-8859-1'))
     end
+    ë = ([235].pack('U')).encode('ISO-8859-1')
+    ö = ([246].pack('U')).encode('ISO-8859-1')
+    res = "H#{ë}ll#{ö}"
+    File.binread(@filename).should == res.force_encoding(Encoding::ASCII_8BIT)
   end
 end
 

@@ -22,15 +22,13 @@ describe "MatchData#post_match" do
     $'.untrusted?.should be_true
   end
 
-  with_feature :encoding do
-    it "sets the encoding to the encoding of the source String" do
-      str = "abc".force_encoding Encoding::EUC_JP
-      str.match(/b/).post_match.encoding.should equal(Encoding::EUC_JP)
-    end
+  it "sets the encoding to the encoding of the source String" do
+    str = "abc".force_encoding Encoding::EUC_JP
+    str.match(/b/).post_match.encoding.should equal(Encoding::EUC_JP)
+  end
 
-    it "sets an empty result to the encoding of the source String" do
-      str = "abc".force_encoding Encoding::ISO_8859_1
-      str.match(/c/).post_match.encoding.should equal(Encoding::ISO_8859_1)
-    end
+  it "sets an empty result to the encoding of the source String" do
+    str = "abc".force_encoding Encoding::ISO_8859_1
+    str.match(/c/).post_match.encoding.should equal(Encoding::ISO_8859_1)
   end
 end

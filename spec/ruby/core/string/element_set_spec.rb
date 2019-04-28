@@ -83,68 +83,66 @@ describe "String#[]= with Fixnum index" do
     lambda { "test"[1] = nil       }.should raise_error(TypeError)
   end
 
-  with_feature :encoding do
-    it "raises a TypeError if passed a Fixnum replacement" do
-      lambda { "abc"[1] = 65 }.should raise_error(TypeError)
-    end
+  it "raises a TypeError if passed a Fixnum replacement" do
+    lambda { "abc"[1] = 65 }.should raise_error(TypeError)
+  end
 
-    it "raises an IndexError if the index is greater than character size" do
-      lambda { "あれ"[4] = "a" }.should raise_error(IndexError)
-    end
+  it "raises an IndexError if the index is greater than character size" do
+    lambda { "あれ"[4] = "a" }.should raise_error(IndexError)
+  end
 
-    it "calls #to_int to convert the index" do
-      index = mock("string element set")
-      index.should_receive(:to_int).and_return(1)
+  it "calls #to_int to convert the index" do
+    index = mock("string element set")
+    index.should_receive(:to_int).and_return(1)
 
-      str = "あれ"
-      str[index] = "a"
-      str.should == "あa"
-    end
+    str = "あれ"
+    str[index] = "a"
+    str.should == "あa"
+  end
 
-    it "raises a TypeError if #to_int does not return an Fixnum" do
-      index = mock("string element set")
-      index.should_receive(:to_int).and_return('1')
+  it "raises a TypeError if #to_int does not return an Fixnum" do
+    index = mock("string element set")
+    index.should_receive(:to_int).and_return('1')
 
-      lambda { "abc"[index] = "d" }.should raise_error(TypeError)
-    end
+    lambda { "abc"[index] = "d" }.should raise_error(TypeError)
+  end
 
-    it "raises an IndexError if #to_int returns a value out of range" do
-      index = mock("string element set")
-      index.should_receive(:to_int).and_return(4)
+  it "raises an IndexError if #to_int returns a value out of range" do
+    index = mock("string element set")
+    index.should_receive(:to_int).and_return(4)
 
-      lambda { "ab"[index] = "c" }.should raise_error(IndexError)
-    end
+    lambda { "ab"[index] = "c" }.should raise_error(IndexError)
+  end
 
-    it "replaces a character with a multibyte character" do
-      str = "ありがとu"
-      str[4] = "う"
-      str.should == "ありがとう"
-    end
+  it "replaces a character with a multibyte character" do
+    str = "ありがとu"
+    str[4] = "う"
+    str.should == "ありがとう"
+  end
 
-    it "replaces a multibyte character with a character" do
-      str = "ありがとう"
-      str[4] = "u"
-      str.should == "ありがとu"
-    end
+  it "replaces a multibyte character with a character" do
+    str = "ありがとう"
+    str[4] = "u"
+    str.should == "ありがとu"
+  end
 
-    it "replaces a multibyte character with a multibyte character" do
-      str = "ありがとお"
-      str[4] = "う"
-      str.should == "ありがとう"
-    end
+  it "replaces a multibyte character with a multibyte character" do
+    str = "ありがとお"
+    str[4] = "う"
+    str.should == "ありがとう"
+  end
 
-    it "encodes the String in an encoding compatible with the replacement" do
-      str = " ".force_encoding Encoding::US_ASCII
-      rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
-      str[0] = rep
-      str.encoding.should equal(Encoding::ASCII_8BIT)
-    end
+  it "encodes the String in an encoding compatible with the replacement" do
+    str = " ".force_encoding Encoding::US_ASCII
+    rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
+    str[0] = rep
+    str.encoding.should equal(Encoding::ASCII_8BIT)
+  end
 
-    it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
-      str = "あれ"
-      rep = "が".encode Encoding::EUC_JP
-      lambda { str[0] = rep }.should raise_error(Encoding::CompatibilityError)
-    end
+  it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
+    str = "あれ"
+    rep = "が".encode Encoding::EUC_JP
+    lambda { str[0] = rep }.should raise_error(Encoding::CompatibilityError)
   end
 end
 
@@ -172,37 +170,35 @@ describe "String#[]= with String index" do
     lambda { str["g"] = "h" }.should raise_error(IndexError)
   end
 
-  with_feature :encoding do
-    it "replaces characters with a multibyte character" do
-      str = "ありgaとう"
-      str["ga"] = "が"
-      str.should == "ありがとう"
-    end
+  it "replaces characters with a multibyte character" do
+    str = "ありgaとう"
+    str["ga"] = "が"
+    str.should == "ありがとう"
+  end
 
-    it "replaces multibyte characters with characters" do
-      str = "ありがとう"
-      str["が"] = "ga"
-      str.should == "ありgaとう"
-    end
+  it "replaces multibyte characters with characters" do
+    str = "ありがとう"
+    str["が"] = "ga"
+    str.should == "ありgaとう"
+  end
 
-    it "replaces multibyte characters with multibyte characters" do
-      str = "ありがとう"
-      str["が"] = "か"
-      str.should == "ありかとう"
-    end
+  it "replaces multibyte characters with multibyte characters" do
+    str = "ありがとう"
+    str["が"] = "か"
+    str.should == "ありかとう"
+  end
 
-    it "encodes the String in an encoding compatible with the replacement" do
-      str = " ".force_encoding Encoding::US_ASCII
-      rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
-      str[" "] = rep
-      str.encoding.should equal(Encoding::ASCII_8BIT)
-    end
+  it "encodes the String in an encoding compatible with the replacement" do
+    str = " ".force_encoding Encoding::US_ASCII
+    rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
+    str[" "] = rep
+    str.encoding.should equal(Encoding::ASCII_8BIT)
+  end
 
-    it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
-      str = "あれ"
-      rep = "が".encode Encoding::EUC_JP
-      lambda { str["れ"] = rep }.should raise_error(Encoding::CompatibilityError)
-    end
+  it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
+    str = "あれ"
+    rep = "が".encode Encoding::EUC_JP
+    lambda { str["れ"] = rep }.should raise_error(Encoding::CompatibilityError)
   end
 end
 
@@ -287,37 +283,35 @@ describe "String#[]= with a Regexp index" do
     end
   end
 
-  with_feature :encoding do
-    it "replaces characters with a multibyte character" do
-      str = "ありgaとう"
-      str[/ga/] = "が"
-      str.should == "ありがとう"
-    end
+  it "replaces characters with a multibyte character" do
+    str = "ありgaとう"
+    str[/ga/] = "が"
+    str.should == "ありがとう"
+  end
 
-    it "replaces multibyte characters with characters" do
-      str = "ありがとう"
-      str[/が/] = "ga"
-      str.should == "ありgaとう"
-    end
+  it "replaces multibyte characters with characters" do
+    str = "ありがとう"
+    str[/が/] = "ga"
+    str.should == "ありgaとう"
+  end
 
-    it "replaces multibyte characters with multibyte characters" do
-      str = "ありがとう"
-      str[/が/] = "か"
-      str.should == "ありかとう"
-    end
+  it "replaces multibyte characters with multibyte characters" do
+    str = "ありがとう"
+    str[/が/] = "か"
+    str.should == "ありかとう"
+  end
 
-    it "encodes the String in an encoding compatible with the replacement" do
-      str = " ".force_encoding Encoding::US_ASCII
-      rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
-      str[/ /] = rep
-      str.encoding.should equal(Encoding::ASCII_8BIT)
-    end
+  it "encodes the String in an encoding compatible with the replacement" do
+    str = " ".force_encoding Encoding::US_ASCII
+    rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
+    str[/ /] = rep
+    str.encoding.should equal(Encoding::ASCII_8BIT)
+  end
 
-    it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
-      str = "あれ"
-      rep = "が".encode Encoding::EUC_JP
-      lambda { str[/れ/] = rep }.should raise_error(Encoding::CompatibilityError)
-    end
+  it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
+    str = "あれ"
+    rep = "が".encode Encoding::EUC_JP
+    lambda { str[/れ/] = rep }.should raise_error(Encoding::CompatibilityError)
   end
 end
 
@@ -392,55 +386,53 @@ describe "String#[]= with a Range index" do
     str.should == "abcxd"
   end
 
-  with_feature :encoding do
-    it "replaces characters with a multibyte character" do
-      str = "ありgaとう"
-      str[2..3] = "が"
-      str.should == "ありがとう"
-    end
+  it "replaces characters with a multibyte character" do
+    str = "ありgaとう"
+    str[2..3] = "が"
+    str.should == "ありがとう"
+  end
 
-    it "replaces multibyte characters with characters" do
-      str = "ありがとう"
-      str[2...3] = "ga"
-      str.should == "ありgaとう"
-    end
+  it "replaces multibyte characters with characters" do
+    str = "ありがとう"
+    str[2...3] = "ga"
+    str.should == "ありgaとう"
+  end
 
-    it "replaces multibyte characters by negative indexes" do
-      str = "ありがとう"
-      str[-3...-2] = "ga"
-      str.should == "ありgaとう"
-    end
+  it "replaces multibyte characters by negative indexes" do
+    str = "ありがとう"
+    str[-3...-2] = "ga"
+    str.should == "ありgaとう"
+  end
 
-    it "replaces multibyte characters with multibyte characters" do
-      str = "ありがとう"
-      str[2..2] = "か"
-      str.should == "ありかとう"
-    end
+  it "replaces multibyte characters with multibyte characters" do
+    str = "ありがとう"
+    str[2..2] = "か"
+    str.should == "ありかとう"
+  end
 
-    it "deletes a multibyte character" do
-      str = "ありとう"
-      str[2..3] = ""
-      str.should == "あり"
-    end
+  it "deletes a multibyte character" do
+    str = "ありとう"
+    str[2..3] = ""
+    str.should == "あり"
+  end
 
-    it "inserts a multibyte character" do
-      str = "ありとう"
-      str[2...2] = "が"
-      str.should == "ありがとう"
-    end
+  it "inserts a multibyte character" do
+    str = "ありとう"
+    str[2...2] = "が"
+    str.should == "ありがとう"
+  end
 
-    it "encodes the String in an encoding compatible with the replacement" do
-      str = " ".force_encoding Encoding::US_ASCII
-      rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
-      str[0..1] = rep
-      str.encoding.should equal(Encoding::ASCII_8BIT)
-    end
+  it "encodes the String in an encoding compatible with the replacement" do
+    str = " ".force_encoding Encoding::US_ASCII
+    rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
+    str[0..1] = rep
+    str.encoding.should equal(Encoding::ASCII_8BIT)
+  end
 
-    it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
-      str = "あれ"
-      rep = "が".encode Encoding::EUC_JP
-      lambda { str[0..1] = rep }.should raise_error(Encoding::CompatibilityError)
-    end
+  it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
+    str = "あれ"
+    rep = "が".encode Encoding::EUC_JP
+    lambda { str[0..1] = rep }.should raise_error(Encoding::CompatibilityError)
   end
 end
 
@@ -561,52 +553,50 @@ describe "String#[]= with Fixnum index, count" do
     lambda { "hello"[0, 2] = 33   }.should raise_error(TypeError)
   end
 
-  with_feature :encoding do
-    it "replaces characters with a multibyte character" do
-      str = "ありgaとう"
-      str[2, 2] = "が"
-      str.should == "ありがとう"
-    end
+  it "replaces characters with a multibyte character" do
+    str = "ありgaとう"
+    str[2, 2] = "が"
+    str.should == "ありがとう"
+  end
 
-    it "replaces multibyte characters with characters" do
-      str = "ありがとう"
-      str[2, 1] = "ga"
-      str.should == "ありgaとう"
-    end
+  it "replaces multibyte characters with characters" do
+    str = "ありがとう"
+    str[2, 1] = "ga"
+    str.should == "ありgaとう"
+  end
 
-    it "replaces multibyte characters with multibyte characters" do
-      str = "ありがとう"
-      str[2, 1] = "か"
-      str.should == "ありかとう"
-    end
+  it "replaces multibyte characters with multibyte characters" do
+    str = "ありがとう"
+    str[2, 1] = "か"
+    str.should == "ありかとう"
+  end
 
-    it "deletes a multibyte character" do
-      str = "ありとう"
-      str[2, 2] = ""
-      str.should == "あり"
-    end
+  it "deletes a multibyte character" do
+    str = "ありとう"
+    str[2, 2] = ""
+    str.should == "あり"
+  end
 
-    it "inserts a multibyte character" do
-      str = "ありとう"
-      str[2, 0] = "が"
-      str.should == "ありがとう"
-    end
+  it "inserts a multibyte character" do
+    str = "ありとう"
+    str[2, 0] = "が"
+    str.should == "ありがとう"
+  end
 
-    it "raises an IndexError if the character index is out of range of a multibyte String" do
-      lambda { "あれ"[3, 0] = "り" }.should raise_error(IndexError)
-    end
+  it "raises an IndexError if the character index is out of range of a multibyte String" do
+    lambda { "あれ"[3, 0] = "り" }.should raise_error(IndexError)
+  end
 
-    it "encodes the String in an encoding compatible with the replacement" do
-      str = " ".force_encoding Encoding::US_ASCII
-      rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
-      str[0, 1] = rep
-      str.encoding.should equal(Encoding::ASCII_8BIT)
-    end
+  it "encodes the String in an encoding compatible with the replacement" do
+    str = " ".force_encoding Encoding::US_ASCII
+    rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
+    str[0, 1] = rep
+    str.encoding.should equal(Encoding::ASCII_8BIT)
+  end
 
-    it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
-      str = "あれ"
-      rep = "が".encode Encoding::EUC_JP
-      lambda { str[0, 1] = rep }.should raise_error(Encoding::CompatibilityError)
-    end
+  it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
+    str = "あれ"
+    rep = "が".encode Encoding::EUC_JP
+    lambda { str[0, 1] = rep }.should raise_error(Encoding::CompatibilityError)
   end
 end

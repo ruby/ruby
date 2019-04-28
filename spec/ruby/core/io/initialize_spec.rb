@@ -13,26 +13,18 @@ describe "IO#initialize" do
     rm_r @name
   end
 
-  # File descriptor numbers are not predictable in multi-threaded code;
-  # MJIT will be opening/closing files the background
-  without_feature :mjit do
-    it "reassociates the IO instance with the new descriptor when passed a Fixnum" do
-      fd = new_fd @name, "r:utf-8"
-      @io.send :initialize, fd, 'r'
-      @io.fileno.should == fd
-      # initialize has closed the old descriptor
-      lambda { IO.for_fd(@fd).close }.should raise_error(Errno::EBADF)
-    end
+  it "reassociates the IO instance with the new descriptor when passed a Fixnum" do
+    fd = new_fd @name, "r:utf-8"
+    @io.send :initialize, fd, 'r'
+    @io.fileno.should == fd
+  end
 
-    it "calls #to_int to coerce the object passed as an fd" do
-      obj = mock('fileno')
-      fd = new_fd @name, "r:utf-8"
-      obj.should_receive(:to_int).and_return(fd)
-      @io.send :initialize, obj, 'r'
-      @io.fileno.should == fd
-      # initialize has closed the old descriptor
-      lambda { IO.for_fd(@fd).close }.should raise_error(Errno::EBADF)
-    end
+  it "calls #to_int to coerce the object passed as an fd" do
+    obj = mock('fileno')
+    fd = new_fd @name, "r:utf-8"
+    obj.should_receive(:to_int).and_return(fd)
+    @io.send :initialize, obj, 'r'
+    @io.fileno.should == fd
   end
 
   it "raises a TypeError when passed an IO" do

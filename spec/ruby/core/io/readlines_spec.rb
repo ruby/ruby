@@ -112,7 +112,7 @@ describe "IO#readlines" do
       lines.should == ["hello\n", "line2\n"]
     end
 
-    with_feature :fork do
+    platform_is_not :windows do
       it "gets data from a fork when passed -" do
         lines = IO.readlines("|-")
 
@@ -139,13 +139,13 @@ describe "IO#readlines" do
 
   it "raises an IOError if the stream is opened for append only" do
     lambda do
-      File.open(@name, fmode("a:utf-8")) { |f| f.readlines }
+      File.open(@name, "a:utf-8") { |f| f.readlines }
     end.should raise_error(IOError)
   end
 
   it "raises an IOError if the stream is opened for write only" do
     lambda do
-      File.open(@name, fmode("w:utf-8")) { |f| f.readlines }
+      File.open(@name, "w:utf-8") { |f| f.readlines }
     end.should raise_error(IOError)
   end
 end

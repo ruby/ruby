@@ -153,18 +153,16 @@ describe "File.basename" do
     end
   end
 
-  with_feature :encoding do
 
-    it "returns the extension for a multibyte filename" do
-      File.basename('/path/Офис.m4a').should == "Офис.m4a"
-    end
-
-    it "returns the basename with the same encoding as the original" do
-      basename = File.basename('C:/Users/Scuby Pagrubý'.encode(Encoding::Windows_1250))
-      basename.should == 'Scuby Pagrubý'.encode(Encoding::Windows_1250)
-      basename.encoding.should == Encoding::Windows_1250
-    end
-
+  it "returns the extension for a multibyte filename" do
+    File.basename('/path/Офис.m4a').should == "Офис.m4a"
   end
+
+  it "returns the basename with the same encoding as the original" do
+    basename = File.basename('C:/Users/Scuby Pagrubý'.encode(Encoding::Windows_1250))
+    basename.should == 'Scuby Pagrubý'.encode(Encoding::Windows_1250)
+    basename.encoding.should == Encoding::Windows_1250
+  end
+
 
 end

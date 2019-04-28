@@ -9,7 +9,7 @@ describe "C-API IO function" do
     @name = tmp("c_api_rb_io_specs")
     touch @name
 
-    @io = new_io @name, fmode("w:utf-8")
+    @io = new_io @name, "w:utf-8"
     @io.sync = true
   end
 
@@ -113,7 +113,7 @@ describe "C-API IO function" do
     @name = tmp("c_api_io_specs")
     touch @name
 
-    @io = new_io @name, fmode("r:utf-8")
+    @io = new_io @name, "r:utf-8"
   end
 
   after :each do
@@ -193,7 +193,7 @@ describe "C-API IO function" do
 
     @name = tmp("c_api_io_specs")
     touch @name
-    @rw_io = new_io @name, fmode("w+")
+    @rw_io = new_io @name, "w+"
   end
 
   after :each do
@@ -329,7 +329,7 @@ describe "rb_fd_fix_cloexec" do
     @name = tmp("c_api_rb_io_specs")
     touch @name
 
-    @io = new_io @name, fmode("w:utf-8")
+    @io = new_io @name, "w:utf-8"
     @io.close_on_exec = false
     @io.sync = true
   end

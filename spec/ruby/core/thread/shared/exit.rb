@@ -80,19 +80,17 @@ describe :thread_exit, shared: true do
     ScratchPad.recorded.should == nil
   end
 
-  with_feature :fiber do
-    it "kills the entire thread when a fiber is active" do
-      t = Thread.new do
-        Fiber.new do
-          sleep
-        end.resume
-        ScratchPad.record :fiber_resumed
-      end
-      Thread.pass while t.status and t.status != "sleep"
-      t.send(@method)
-      t.join
-      ScratchPad.recorded.should == nil
+  it "kills the entire thread when a fiber is active" do
+    t = Thread.new do
+      Fiber.new do
+        sleep
+      end.resume
+      ScratchPad.record :fiber_resumed
     end
+    Thread.pass while t.status and t.status != "sleep"
+    t.send(@method)
+    t.join
+    ScratchPad.recorded.should == nil
   end
 
   # This spec is a mess. It fails randomly, it hangs on MRI, it needs to be removed

@@ -43,10 +43,8 @@ describe "String#=~" do
     $~.should == nil
   end
 
-  with_feature :encoding do
-    it "returns the character index of a found match" do
-      ("こにちわ" =~ /に/).should == 1
-    end
+  it "returns the character index of a found match" do
+    ("こにちわ" =~ /に/).should == 1
   end
 
 end
@@ -64,10 +62,8 @@ describe "String#match" do
         "01234".match(/(.).(.)/, 1).captures.should == ["1", "3"]
       end
 
-      with_feature :encoding do
-        it "uses the start as a character offset" do
-          "零一二三四".match(/(.).(.)/, 1).captures.should == ["一", "三"]
-        end
+      it "uses the start as a character offset" do
+        "零一二三四".match(/(.).(.)/, 1).captures.should == ["一", "三"]
       end
     end
 
@@ -76,10 +72,8 @@ describe "String#match" do
         "01234".match(/(.).(.)/, -4).captures.should == ["1", "3"]
       end
 
-      with_feature :encoding do
-        it "uses the start as a character offset" do
-          "零一二三四".match(/(.).(.)/, -4).captures.should == ["一", "三"]
-        end
+      it "uses the start as a character offset" do
+        "零一二三四".match(/(.).(.)/, -4).captures.should == ["一", "三"]
       end
     end
   end

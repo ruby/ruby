@@ -18,15 +18,13 @@ describe :dir_path, shared: true do
     dir.send(@method).should == DirSpecs.mock_dir
   end
 
-  with_feature :encoding do
-    it "returns a String with the same encoding as the argument to .open" do
-      path = DirSpecs.mock_dir.force_encoding Encoding::IBM866
-      dir = Dir.open path
-      begin
-        dir.send(@method).encoding.should equal(Encoding::IBM866)
-      ensure
-        dir.close
-      end
+  it "returns a String with the same encoding as the argument to .open" do
+    path = DirSpecs.mock_dir.force_encoding Encoding::IBM866
+    dir = Dir.open path
+    begin
+      dir.send(@method).encoding.should equal(Encoding::IBM866)
+    ensure
+      dir.close
     end
   end
 end

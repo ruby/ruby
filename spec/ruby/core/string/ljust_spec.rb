@@ -87,30 +87,28 @@ describe "String#ljust with length, padding" do
     "hello".ljust(6, 'X'.taint).tainted?.should be_true
   end
 
-  with_feature :encoding do
-    describe "with width" do
-      it "returns a String in the same encoding as the original" do
-        str = "abc".force_encoding Encoding::IBM437
-        result = str.ljust 5
-        result.should == "abc  "
-        result.encoding.should equal(Encoding::IBM437)
-      end
+  describe "with width" do
+    it "returns a String in the same encoding as the original" do
+      str = "abc".force_encoding Encoding::IBM437
+      result = str.ljust 5
+      result.should == "abc  "
+      result.encoding.should equal(Encoding::IBM437)
+    end
+  end
+
+  describe "with width, pattern" do
+    it "returns a String in the compatible encoding" do
+      str = "abc".force_encoding Encoding::IBM437
+      result = str.ljust 5, "あ"
+      result.should == "abcああ"
+      result.encoding.should equal(Encoding::UTF_8)
     end
 
-    describe "with width, pattern" do
-      it "returns a String in the compatible encoding" do
-        str = "abc".force_encoding Encoding::IBM437
-        result = str.ljust 5, "あ"
-        result.should == "abcああ"
-        result.encoding.should equal(Encoding::UTF_8)
-      end
-
-      it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
-        pat = "ア".encode Encoding::EUC_JP
-        lambda do
-          "あれ".ljust 5, pat
-        end.should raise_error(Encoding::CompatibilityError)
-      end
+    it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
+      pat = "ア".encode Encoding::EUC_JP
+      lambda do
+        "あれ".ljust 5, pat
+      end.should raise_error(Encoding::CompatibilityError)
     end
   end
 end

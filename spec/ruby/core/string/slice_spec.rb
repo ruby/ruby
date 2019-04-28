@@ -72,15 +72,13 @@ describe "String#slice! with index" do
     "hello".slice!(obj).should == ?e
   end
 
-  with_feature :encoding do
 
-    it "returns the character given by the character index" do
-      "hellö there".slice!(1).should == "e"
-      "hellö there".slice!(4).should == "ö"
-      "hellö there".slice!(6).should == "t"
-    end
-
+  it "returns the character given by the character index" do
+    "hellö there".slice!(1).should == "e"
+    "hellö there".slice!(4).should == "ö"
+    "hellö there".slice!(6).should == "t"
   end
+
 end
 
 describe "String#slice! with index, length" do
@@ -148,19 +146,17 @@ describe "String#slice! with index, length" do
     s.slice!(0, 4).should be_an_instance_of(StringSpecs::MyString)
   end
 
-  with_feature :encoding do
 
-    it "returns the substring given by the character offsets" do
-      "hellö there".slice!(1,0).should == ""
-      "hellö there".slice!(1,3).should == "ell"
-      "hellö there".slice!(1,6).should == "ellö t"
-      "hellö there".slice!(1,9).should == "ellö ther"
-    end
+  it "returns the substring given by the character offsets" do
+    "hellö there".slice!(1,0).should == ""
+    "hellö there".slice!(1,3).should == "ell"
+    "hellö there".slice!(1,6).should == "ellö t"
+    "hellö there".slice!(1,9).should == "ellö ther"
+  end
 
-    it "treats invalid bytes as single bytes" do
-      xE6xCB = [0xE6,0xCB].pack('CC').force_encoding('utf-8')
-      "a#{xE6xCB}b".slice!(1, 2).should == xE6xCB
-    end
+  it "treats invalid bytes as single bytes" do
+    xE6xCB = [0xE6,0xCB].pack('CC').force_encoding('utf-8')
+    "a#{xE6xCB}b".slice!(1, 2).should == xE6xCB
   end
 end
 
@@ -236,19 +232,17 @@ describe "String#slice! Range" do
     a.slice!(range_incl).should == "OO"
   end
 
-  with_feature :encoding do
 
-    it "returns the substring given by the character offsets of the range" do
-      "hellö there".slice!(1..1).should == "e"
-      "hellö there".slice!(1..3).should == "ell"
-      "hellö there".slice!(1...3).should == "el"
-      "hellö there".slice!(-4..-2).should == "her"
-      "hellö there".slice!(-4...-2).should == "he"
-      "hellö there".slice!(5..-1).should == " there"
-      "hellö there".slice!(5...-1).should == " ther"
-    end
-
+  it "returns the substring given by the character offsets of the range" do
+    "hellö there".slice!(1..1).should == "e"
+    "hellö there".slice!(1..3).should == "ell"
+    "hellö there".slice!(1...3).should == "el"
+    "hellö there".slice!(-4..-2).should == "her"
+    "hellö there".slice!(-4...-2).should == "he"
+    "hellö there".slice!(5..-1).should == " there"
+    "hellö there".slice!(5...-1).should == " ther"
   end
+
 
   it "raises a #{frozen_error_class} on a frozen instance that is modified" do
     lambda { "hello".freeze.slice!(1..3)  }.should raise_error(frozen_error_class)
@@ -305,11 +299,9 @@ describe "String#slice! with Regexp" do
     s.slice!(/../).should be_an_instance_of(StringSpecs::MyString)
   end
 
-  with_feature :encoding do
-    it "returns the matching portion of self with a multi byte character" do
-      "hëllo there".slice!(/[ë](.)\1/).should == "ëll"
-      "".slice!(//).should == ""
-    end
+  it "returns the matching portion of self with a multi byte character" do
+    "hëllo there".slice!(/[ë](.)\1/).should == "ëll"
+    "".slice!(//).should == ""
   end
 
   it "sets $~ to MatchData when there is a match and nil when there's none" do
@@ -389,16 +381,14 @@ describe "String#slice! with Regexp, index" do
     s.slice!(/(.)(.)/, 1).should be_an_instance_of(StringSpecs::MyString)
   end
 
-  with_feature :encoding do
-    it "returns the encoding aware capture for the given index" do
-      "hår".slice!(/(.)(.)(.)/, 0).should == "hår"
-      "hår".slice!(/(.)(.)(.)/, 1).should == "h"
-      "hår".slice!(/(.)(.)(.)/, 2).should == "å"
-      "hår".slice!(/(.)(.)(.)/, 3).should == "r"
-      "hår".slice!(/(.)(.)(.)/, -1).should == "r"
-      "hår".slice!(/(.)(.)(.)/, -2).should == "å"
-      "hår".slice!(/(.)(.)(.)/, -3).should == "h"
-    end
+  it "returns the encoding aware capture for the given index" do
+    "hår".slice!(/(.)(.)(.)/, 0).should == "hår"
+    "hår".slice!(/(.)(.)(.)/, 1).should == "h"
+    "hår".slice!(/(.)(.)(.)/, 2).should == "å"
+    "hår".slice!(/(.)(.)(.)/, 3).should == "r"
+    "hår".slice!(/(.)(.)(.)/, -1).should == "r"
+    "hår".slice!(/(.)(.)(.)/, -2).should == "å"
+    "hår".slice!(/(.)(.)(.)/, -3).should == "h"
   end
 
   it "sets $~ to MatchData when there is a match and nil when there's none" do
