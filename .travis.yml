@@ -300,10 +300,10 @@ env:
       - LDFLAGS=-Wno-unused-command-line-argument
 
   - &rubyspec
-    name: ruby/spec on Ruby 2.3 # to ensure version guards are correctly added
+    name: ruby/spec on Ruby 2.4 # to ensure version guards are correctly added
     <<: *linux
     language: ruby
-    rvm: 2.3.8
+    rvm: 2.4.6
     addons:
       apt:
         packages:
