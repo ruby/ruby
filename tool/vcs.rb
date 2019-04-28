@@ -345,6 +345,15 @@ class VCS
       FileUtils.rm_rf(dir+"/.svn")
     end
 
+    def branch_beginning(url)
+      # `--limit` of svn-log is useless in this case, because it is
+      # applied before `--search`.
+      rev = IO.pread(%W[ #{COMMAND} log --xml
+                         --search=matz --search-and=has\ started
+                         -- #{url}/version.h])[/<logentry\s+revision="(\d+)"/m, 1]
+      rev.to_i if rev
+    end
+
     def export_changelog(url, from, to, path)
       range = [to, (from+1 if from)].compact.join(':')
       IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
@@ -465,7 +474,7 @@ class VCS
       FileUtils.rm_rf(Dir.glob("#{dir}/.git*"))
     end
 
-    def branch_beginning
+    def branch_beginning(url)
       cmd_read(%W[ #{COMMAND} log -n1 --format=format:%H
                    --author=matz --committer=matz --grep=has\ started
                    -- version.h include/ruby/version.h])
