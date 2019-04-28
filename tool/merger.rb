@@ -151,32 +151,31 @@ module Merger
       end
     end
 
-def remove_tag intv_p = false, relname
-  # relname:
-  #   * 2.2.0-preview1
-  #   * 2.2.0-rc1
-  #   * 2.2.0
-  #   * v2_2_0_preview1
-  #   * v2_2_0_rc1
-  #   * v2_2_0
-  if !relname && !intv_p.is_a?(String)
-    raise ArgumentError, "relname is not specified"
-  end
-  intv_p, relname = false, intv_p if !relname && intv_p.is_a?(String)
+    def remove_tag(relname)
+      # relname:
+      #   * 2.2.0-preview1
+      #   * 2.2.0-rc1
+      #   * 2.2.0
+      #   * v2_2_0_preview1
+      #   * v2_2_0_rc1
+      #   * v2_2_0
+      unless relname
+        raise ArgumentError, 'relname is not specified'
+      end
+      if /^v/ !~ relname
+        tagname = "v#{relname.gsub(/[.-]/, '_')}"
+      else
+        tagname = relname
+      end
 
-  if /^v/ !~ relname
-    tagname = 'v' + relname.tr(".-", "_")
-  else
-    tagname = relname
-  end
-  tag_url = "#{REPOS}tags/#{tagname}"
-  if intv_p
-    interactive "OK? svn rm -m \"remove tag #{tagname}\" #{tag_url}" do
-      # nothing to do here
+      if svn_mode?
+        tag_url = "#{REPOS}tags/#{tagname}"
+        execute('svn', 'rm', '-m', "remove tag #{tagname}", tag_url, interactive: true)
+      else
+        execute('git', 'tag', '-d', tagname)
+        execute('git', 'push', 'origin', ":#{tagname}", interactive: true)
+      end
     end
-  end
-  system(*%w'svn rm -m', "remove tag #{tagname}", tag_url)
-end
 
     def diff(file)
       if svn_mode?
@@ -243,7 +242,7 @@ when "up", /\A(ver|version|rev|revision|lv|level|patch\s*level)\s*up\z/
 when "tag"
   Merger.tag(ARGV[1])
 when /\A(?:remove|rm|del)_?tag\z/
-  Merger.remove_tag :interactive, ARGV[1]
+  Merger.remove_tag(ARGV[1])
 when nil, "-h", "--help"
   Merger.help
   exit
