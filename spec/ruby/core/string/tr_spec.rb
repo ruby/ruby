@@ -72,32 +72,30 @@ describe "String#tr" do
     end
   end
 
-  with_feature :encoding do
-    # http://redmine.ruby-lang.org/issues/show/1839
-    it "can replace a 7-bit ASCII character with a multibyte one" do
-      a = "uber"
-      a.encoding.should == Encoding::UTF_8
-      b = a.tr("u","ü")
-      b.should == "über"
-      b.encoding.should == Encoding::UTF_8
-    end
-
-    it "can replace a multibyte character with a single byte one" do
-      a = "über"
-      a.encoding.should == Encoding::UTF_8
-      b = a.tr("ü","u")
-      b.should == "uber"
-      b.encoding.should == Encoding::UTF_8
-    end
-
-    it "does not replace a multibyte character where part of the bytes match the tr string" do
-      str = "椎名深夏"
-      a = "\u0080\u0082\u0083\u0084\u0085\u0086\u0087\u0088\u0089\u008A\u008B\u008C\u008E\u0091\u0092\u0093\u0094\u0095\u0096\u0097\u0098\u0099\u009A\u009B\u009C\u009E\u009F"
-      b = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ"
-      str.tr(a, b).should == "椎名深夏"
-    end
-
+  # http://redmine.ruby-lang.org/issues/show/1839
+  it "can replace a 7-bit ASCII character with a multibyte one" do
+    a = "uber"
+    a.encoding.should == Encoding::UTF_8
+    b = a.tr("u","ü")
+    b.should == "über"
+    b.encoding.should == Encoding::UTF_8
   end
+
+  it "can replace a multibyte character with a single byte one" do
+    a = "über"
+    a.encoding.should == Encoding::UTF_8
+    b = a.tr("ü","u")
+    b.should == "uber"
+    b.encoding.should == Encoding::UTF_8
+  end
+
+  it "does not replace a multibyte character where part of the bytes match the tr string" do
+    str = "椎名深夏"
+    a = "\u0080\u0082\u0083\u0084\u0085\u0086\u0087\u0088\u0089\u008A\u008B\u008C\u008E\u0091\u0092\u0093\u0094\u0095\u0096\u0097\u0098\u0099\u009A\u009B\u009C\u009E\u009F"
+    b = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ"
+    str.tr(a, b).should == "椎名深夏"
+  end
+
 end
 
 describe "String#tr!" do

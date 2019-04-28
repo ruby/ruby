@@ -136,7 +136,7 @@ describe "IO.popen" do
     end
   end
 
-  with_feature :fork do
+  platform_is_not :windows do
     it "starts returns a forked process if the command is -" do
       io = IO.popen("-")
 
@@ -153,22 +153,20 @@ describe "IO.popen" do
     end
   end
 
-  with_feature :encoding do
-    it "has the given external encoding" do
-      @io = IO.popen(ruby_cmd('exit'), external_encoding: Encoding::EUC_JP)
-      @io.external_encoding.should == Encoding::EUC_JP
-    end
+  it "has the given external encoding" do
+    @io = IO.popen(ruby_cmd('exit'), external_encoding: Encoding::EUC_JP)
+    @io.external_encoding.should == Encoding::EUC_JP
+  end
 
-    it "has the given internal encoding" do
-      @io = IO.popen(ruby_cmd('exit'), internal_encoding: Encoding::EUC_JP)
-      @io.internal_encoding.should == Encoding::EUC_JP
-    end
+  it "has the given internal encoding" do
+    @io = IO.popen(ruby_cmd('exit'), internal_encoding: Encoding::EUC_JP)
+    @io.internal_encoding.should == Encoding::EUC_JP
+  end
 
-    it "sets the internal encoding to nil if it's the same as the external encoding" do
-      @io = IO.popen(ruby_cmd('exit'), external_encoding: Encoding::EUC_JP,
-                            internal_encoding: Encoding::EUC_JP)
-      @io.internal_encoding.should be_nil
-    end
+  it "sets the internal encoding to nil if it's the same as the external encoding" do
+    @io = IO.popen(ruby_cmd('exit'), external_encoding: Encoding::EUC_JP,
+                          internal_encoding: Encoding::EUC_JP)
+    @io.internal_encoding.should be_nil
   end
 
   context "with a leading ENV Hash" do

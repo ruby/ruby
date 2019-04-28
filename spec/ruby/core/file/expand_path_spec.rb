@@ -19,14 +19,12 @@ describe "File.expand_path" do
     end
   end
 
-  with_feature :encoding do
-    before :each do
-      @external = Encoding.default_external
-    end
+  before :each do
+    @external = Encoding.default_external
+  end
 
-    after :each do
-      Encoding.default_external = @external
-    end
+  after :each do
+    Encoding.default_external = @external
   end
 
   it "converts a pathname to an absolute pathname" do
@@ -136,34 +134,32 @@ describe "File.expand_path" do
     end
   end
 
-  with_feature :encoding do
-    it "returns a String in the same encoding as the argument" do
-      Encoding.default_external = Encoding::SHIFT_JIS
+  it "returns a String in the same encoding as the argument" do
+    Encoding.default_external = Encoding::SHIFT_JIS
 
-      path = "./a".force_encoding Encoding::CP1251
-      File.expand_path(path).encoding.should equal(Encoding::CP1251)
+    path = "./a".force_encoding Encoding::CP1251
+    File.expand_path(path).encoding.should equal(Encoding::CP1251)
 
-      weird_path = [222, 173, 190, 175].pack('C*')
-      File.expand_path(weird_path).encoding.should equal(Encoding::ASCII_8BIT)
+    weird_path = [222, 173, 190, 175].pack('C*')
+    File.expand_path(weird_path).encoding.should equal(Encoding::ASCII_8BIT)
+  end
+
+  platform_is_not :windows do
+    it "expands a path when the default external encoding is ASCII-8BIT" do
+      Encoding.default_external = Encoding::ASCII_8BIT
+      path_8bit = [222, 173, 190, 175].pack('C*')
+      File.expand_path( path_8bit, @rootdir).should == "#{@rootdir}" + path_8bit
     end
+  end
 
-    platform_is_not :windows do
-      it "expands a path when the default external encoding is ASCII-8BIT" do
-        Encoding.default_external = Encoding::ASCII_8BIT
-        path_8bit = [222, 173, 190, 175].pack('C*')
-        File.expand_path( path_8bit, @rootdir).should == "#{@rootdir}" + path_8bit
-      end
-    end
+  it "expands a path with multi-byte characters" do
+    File.expand_path("Ångström").should == "#{@base}/Ångström"
+  end
 
-    it "expands a path with multi-byte characters" do
-      File.expand_path("Ångström").should == "#{@base}/Ångström"
-    end
-
-    platform_is_not :windows do
-      it "raises an Encoding::CompatibilityError if the external encoding is not compatible" do
-        Encoding.default_external = Encoding::UTF_16BE
-        lambda { File.expand_path("./a") }.should raise_error(Encoding::CompatibilityError)
-      end
+  platform_is_not :windows do
+    it "raises an Encoding::CompatibilityError if the external encoding is not compatible" do
+      Encoding.default_external = Encoding::UTF_16BE
+      lambda { File.expand_path("./a") }.should raise_error(Encoding::CompatibilityError)
     end
   end
 

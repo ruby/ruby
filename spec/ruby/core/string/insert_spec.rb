@@ -63,22 +63,20 @@ describe "String#insert with index, other" do
     lambda { str.insert(4, 'X') }.should raise_error(frozen_error_class)
   end
 
-  with_feature :encoding do
-    it "inserts a character into a multibyte encoded string" do
-      "ありがとう".insert(1, 'ü').should == "あüりがとう"
-    end
+  it "inserts a character into a multibyte encoded string" do
+    "ありがとう".insert(1, 'ü').should == "あüりがとう"
+  end
 
-    it "returns a String in the compatible encoding" do
-      str = "".force_encoding(Encoding::US_ASCII)
-      str.insert(0, "ありがとう")
-      str.encoding.should == Encoding::UTF_8
-    end
+  it "returns a String in the compatible encoding" do
+    str = "".force_encoding(Encoding::US_ASCII)
+    str.insert(0, "ありがとう")
+    str.encoding.should == Encoding::UTF_8
+  end
 
-    it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
-      pat = "ア".encode Encoding::EUC_JP
-      lambda do
-        "あれ".insert 0, pat
-      end.should raise_error(Encoding::CompatibilityError)
-    end
+  it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
+    pat = "ア".encode Encoding::EUC_JP
+    lambda do
+      "あれ".insert 0, pat
+    end.should raise_error(Encoding::CompatibilityError)
   end
 end

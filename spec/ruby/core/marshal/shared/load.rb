@@ -422,38 +422,36 @@ describe :marshal_load, shared: true do
       str.should be_an_instance_of(UserCustomConstructorString)
     end
 
-    with_feature :encoding do
-      it "loads a US-ASCII String" do
-        str = "abc".force_encoding("us-ascii")
-        data = "\x04\bI\"\babc\x06:\x06EF"
-        result = Marshal.send(@method, data)
-        result.should == str
-        result.encoding.should equal(Encoding::US_ASCII)
-      end
+    it "loads a US-ASCII String" do
+      str = "abc".force_encoding("us-ascii")
+      data = "\x04\bI\"\babc\x06:\x06EF"
+      result = Marshal.send(@method, data)
+      result.should == str
+      result.encoding.should equal(Encoding::US_ASCII)
+    end
 
-      it "loads a UTF-8 String" do
-        str = "\x6d\xc3\xb6\x68\x72\x65".force_encoding("utf-8")
-        data = "\x04\bI\"\vm\xC3\xB6hre\x06:\x06ET"
-        result = Marshal.send(@method, data)
-        result.should == str
-        result.encoding.should equal(Encoding::UTF_8)
-      end
+    it "loads a UTF-8 String" do
+      str = "\x6d\xc3\xb6\x68\x72\x65".force_encoding("utf-8")
+      data = "\x04\bI\"\vm\xC3\xB6hre\x06:\x06ET"
+      result = Marshal.send(@method, data)
+      result.should == str
+      result.encoding.should equal(Encoding::UTF_8)
+    end
 
-      it "loads a String in another encoding" do
-        str = "\x6d\x00\xf6\x00\x68\x00\x72\x00\x65\x00".force_encoding("utf-16le")
-        data = "\x04\bI\"\x0Fm\x00\xF6\x00h\x00r\x00e\x00\x06:\rencoding\"\rUTF-16LE"
-        result = Marshal.send(@method, data)
-        result.should == str
-        result.encoding.should equal(Encoding::UTF_16LE)
-      end
+    it "loads a String in another encoding" do
+      str = "\x6d\x00\xf6\x00\x68\x00\x72\x00\x65\x00".force_encoding("utf-16le")
+      data = "\x04\bI\"\x0Fm\x00\xF6\x00h\x00r\x00e\x00\x06:\rencoding\"\rUTF-16LE"
+      result = Marshal.send(@method, data)
+      result.should == str
+      result.encoding.should equal(Encoding::UTF_16LE)
+    end
 
-      it "loads a String as ASCII-8BIT if no encoding is specified at the end" do
-        str = "\xC3\xB8".force_encoding("ASCII-8BIT")
-        data = "\x04\b\"\a\xC3\xB8".force_encoding("UTF-8")
-        result = Marshal.send(@method, data)
-        result.encoding.should == Encoding::ASCII_8BIT
-        result.should == str
-      end
+    it "loads a String as ASCII-8BIT if no encoding is specified at the end" do
+      str = "\xC3\xB8".force_encoding("ASCII-8BIT")
+      data = "\x04\b\"\a\xC3\xB8".force_encoding("UTF-8")
+      result = Marshal.send(@method, data)
+      result.encoding.should == Encoding::ASCII_8BIT
+      result.should == str
     end
   end
 

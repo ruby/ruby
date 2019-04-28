@@ -25,39 +25,37 @@ describe :env_each, shared: true do
   end
   it_should_behave_like :enumeratorized_with_origin_size
 
-  with_feature :encoding do
-    describe "with encoding" do
-      before :each do
-        @external = Encoding.default_external
-        @internal = Encoding.default_internal
+  describe "with encoding" do
+    before :each do
+      @external = Encoding.default_external
+      @internal = Encoding.default_internal
 
-        Encoding.default_external = Encoding::ASCII_8BIT
+      Encoding.default_external = Encoding::ASCII_8BIT
 
-        @locale_encoding = Encoding.find "locale"
+      @locale_encoding = Encoding.find "locale"
+    end
+
+    after :each do
+      Encoding.default_external = @external
+      Encoding.default_internal = @internal
+    end
+
+    it "uses the locale encoding when Encoding.default_internal is nil" do
+      Encoding.default_internal = nil
+
+      ENV.send(@method) do |key, value|
+        key.encoding.should equal(@locale_encoding)
+        value.encoding.should equal(@locale_encoding)
       end
+    end
 
-      after :each do
-        Encoding.default_external = @external
-        Encoding.default_internal = @internal
-      end
+    it "transcodes from the locale encoding to Encoding.default_internal if set" do
+      Encoding.default_internal = internal = Encoding::IBM437
 
-      it "uses the locale encoding when Encoding.default_internal is nil" do
-        Encoding.default_internal = nil
-
-        ENV.send(@method) do |key, value|
-          key.encoding.should equal(@locale_encoding)
-          value.encoding.should equal(@locale_encoding)
-        end
-      end
-
-      it "transcodes from the locale encoding to Encoding.default_internal if set" do
-        Encoding.default_internal = internal = Encoding::IBM437
-
-        ENV.send(@method) do |key, value|
-          key.encoding.should equal(internal)
-          if value.ascii_only?
-            value.encoding.should equal(internal)
-          end
+      ENV.send(@method) do |key, value|
+        key.encoding.should equal(internal)
+        if value.ascii_only?
+          value.encoding.should equal(internal)
         end
       end
     end

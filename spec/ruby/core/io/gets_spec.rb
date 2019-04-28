@@ -156,11 +156,11 @@ describe "IO#gets" do
   end
 
   it "raises an IOError if the stream is opened for append only" do
-    lambda { File.open(@name, fmode("a:utf-8")) { |f| f.gets } }.should raise_error(IOError)
+    lambda { File.open(@name, "a:utf-8") { |f| f.gets } }.should raise_error(IOError)
   end
 
   it "raises an IOError if the stream is opened for writing only" do
-    lambda { File.open(@name, fmode("w:utf-8")) { |f| f.gets } }.should raise_error(IOError)
+    lambda { File.open(@name, "w:utf-8") { |f| f.gets } }.should raise_error(IOError)
   end
 end
 
@@ -168,7 +168,7 @@ describe "IO#gets" do
   before :each do
     @name = tmp("io_gets")
     touch(@name) { |f| f.write "one\n\ntwo\n\nthree\nfour\n" }
-    @io = new_io @name, fmode("r:utf-8")
+    @io = new_io @name, "r:utf-8"
   end
 
   after :each do
@@ -232,7 +232,7 @@ describe "IO#gets" do
     # create data "朝日" + "\xE3\x81" * 100 to avoid utf-8 conflicts
     data = "朝日" + ([227,129].pack('C*') * 100).force_encoding('utf-8')
     touch(@name) { |f| f.write data }
-    @io = new_io @name, fmode("r:utf-8")
+    @io = new_io @name, "r:utf-8"
   end
 
   after :each do

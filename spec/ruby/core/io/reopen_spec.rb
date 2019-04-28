@@ -145,23 +145,6 @@ describe "IO#reopen with a String" do
     File.read(@other_name).should == "new data"
   end
 
-  # File descriptor numbers are not predictable in multi-threaded code;
-  # MJIT will be opening/closing files the background
-  without_feature :mjit do
-    it "closes the file descriptor obtained by opening the new file" do
-      @io = new_io @name, "w"
-
-      @other_io = File.open @other_name, "w"
-      max = @other_io.fileno
-      @other_io.close
-
-      @io.reopen @other_name
-
-      @other_io = File.open @other_name, "w"
-      @other_io.fileno.should == max
-    end
-  end
-
   it "always resets the close-on-exec flag to true on non-STDIO objects" do
     @io = new_io @name, "w"
 

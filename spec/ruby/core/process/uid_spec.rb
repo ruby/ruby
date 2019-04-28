@@ -18,7 +18,6 @@ describe "Process.uid" do
 end
 
 describe "Process.uid=" do
-
   platform_is_not :windows do
     it "raises TypeError if not passed an Integer" do
       lambda { Process.uid = Object.new }.should raise_error(TypeError)
@@ -36,49 +35,23 @@ describe "Process.uid=" do
 
     as_superuser do
       describe "if run by a superuser" do
-        with_feature :fork do
-          it "sets the real user id for the current process" do
-            read, write = IO.pipe
-            pid = Process.fork do
-              begin
-                read.close
-                Process.uid = 1
-                write << Process.uid
-                write.close
-              rescue Exception => e
-                write << e << e.backtrace
-              end
-              Process.exit!
-            end
-            write.close
-            uid = read.gets
-            uid.should == "1"
-            Process.wait pid
-          end
+        it "sets the real user id for the current process" do
+          code = <<-RUBY
+            Process.uid = 1
+            puts Process.uid
+          RUBY
+          ruby_exe(code).should == "1\n"
+        end
 
-          it "sets the real user id if preceded by Process.euid=id" do
-            read, write = IO.pipe
-            pid = Process.fork do
-              begin
-                read.close
-                Process.euid = 1
-                Process.uid = 1
-                write << Process.uid
-                write.close
-              rescue Exception => e
-                write << e << e.backtrace
-              end
-              Process.exit!
-            end
-            write.close
-            uid = read.gets
-            uid.should == "1"
-            Process.wait pid
-          end
+        it "sets the real user id if preceded by Process.euid=id" do
+          code = <<-RUBY
+            Process.euid = 1
+            Process.uid = 1
+            puts Process.uid
+          RUBY
+          ruby_exe(code).should == "1\n"
         end
       end
     end
   end
-
-  it "needs to be reviewed for spec completeness"
 end

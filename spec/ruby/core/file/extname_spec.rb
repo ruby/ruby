@@ -44,11 +44,9 @@ describe "File.extname" do
     lambda { File.extname("foo.bar", "foo.baz") }.should raise_error(ArgumentError)
   end
 
-  with_feature :encoding do
 
-    it "returns the extension for a multibyte filename" do
-      File.extname('Имя.m4a').should == ".m4a"
-    end
-
+  it "returns the extension for a multibyte filename" do
+    File.extname('Имя.m4a').should == ".m4a"
   end
+
 end

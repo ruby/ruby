@@ -44,15 +44,13 @@ describe "Regexp#match" do
         /(.).(.)/.match("01234", 1).captures.should == ["1", "3"]
       end
 
-      with_feature :encoding do
-        it "uses the start as a character offset" do
-          /(.).(.)/.match("零一二三四", 1).captures.should == ["一", "三"]
-        end
+      it "uses the start as a character offset" do
+        /(.).(.)/.match("零一二三四", 1).captures.should == ["一", "三"]
+      end
 
-        it "raises an ArgumentError for an invalid encoding" do
-          x96 = ([150].pack('C')).force_encoding('utf-8')
-          lambda { /(.).(.)/.match("Hello, #{x96} world!", 1) }.should raise_error(ArgumentError)
-        end
+      it "raises an ArgumentError for an invalid encoding" do
+        x96 = ([150].pack('C')).force_encoding('utf-8')
+        lambda { /(.).(.)/.match("Hello, #{x96} world!", 1) }.should raise_error(ArgumentError)
       end
     end
 
@@ -61,15 +59,13 @@ describe "Regexp#match" do
         /(.).(.)/.match("01234", -4).captures.should == ["1", "3"]
       end
 
-      with_feature :encoding do
-        it "uses the start as a character offset" do
-          /(.).(.)/.match("零一二三四", -4).captures.should == ["一", "三"]
-        end
+      it "uses the start as a character offset" do
+        /(.).(.)/.match("零一二三四", -4).captures.should == ["一", "三"]
+      end
 
-        it "raises an ArgumentError for an invalid encoding" do
-          x96 = ([150].pack('C')).force_encoding('utf-8')
-          lambda { /(.).(.)/.match("Hello, #{x96} world!", -1) }.should raise_error(ArgumentError)
-        end
+      it "raises an ArgumentError for an invalid encoding" do
+        x96 = ([150].pack('C')).force_encoding('utf-8')
+        lambda { /(.).(.)/.match("Hello, #{x96} world!", -1) }.should raise_error(ArgumentError)
       end
     end
 

@@ -27,19 +27,17 @@ describe "String#chop" do
     "abc\r\n\r\n".chop.should == "abc\r\n"
   end
 
-  with_feature :encoding do
-    it "removes a multi-byte character" do
-      "あれ".chop.should == "あ"
-    end
+  it "removes a multi-byte character" do
+    "あれ".chop.should == "あ"
+  end
 
-    it "removes the final carriage return, newline from a multibyte String" do
-      "あれ\r\n".chop.should == "あれ"
-    end
+  it "removes the final carriage return, newline from a multibyte String" do
+    "あれ\r\n".chop.should == "あれ"
+  end
 
-    it "removes the final carriage return, newline from a non-ASCII String" do
-      str = "abc\r\n".encode "utf-32be"
-      str.chop.should == "abc".encode("utf-32be")
-    end
+  it "removes the final carriage return, newline from a non-ASCII String" do
+    str = "abc\r\n".encode "utf-32be"
+    str.chop.should == "abc".encode("utf-32be")
   end
 
   it "returns an empty string when applied to an empty string" do
@@ -91,19 +89,17 @@ describe "String#chop!" do
     "abc\r\n\r\n".chop!.should == "abc\r\n"
   end
 
-  with_feature :encoding do
-    it "removes a multi-byte character" do
-      "あれ".chop!.should == "あ"
-    end
+  it "removes a multi-byte character" do
+    "あれ".chop!.should == "あ"
+  end
 
-    it "removes the final carriage return, newline from a multibyte String" do
-      "あれ\r\n".chop!.should == "あれ"
-    end
+  it "removes the final carriage return, newline from a multibyte String" do
+    "あれ\r\n".chop!.should == "あれ"
+  end
 
-    it "removes the final carriage return, newline from a non-ASCII String" do
-      str = "abc\r\n".encode "utf-32be"
-      str.chop!.should == "abc".encode("utf-32be")
-    end
+  it "removes the final carriage return, newline from a non-ASCII String" do
+    str = "abc\r\n".encode "utf-32be"
+    str.chop!.should == "abc".encode("utf-32be")
   end
 
   it "returns self if modifications were made" do

@@ -63,23 +63,4 @@ describe "Addrinfo#ip_address" do
       @ips.include?(addr.ip_address).should == true
     end
   end
-
-  # On MRI calling Addrinfo#ip_address with AF_UNSPEC as the address family is
-  # supposed to raise a SocketError. MRI however doesn't provide a way to
-  # actually initialize an Addrinfo with AF_UNSPEC, nor does it allow stubbing
-  # of any methods since Addrinfo doesn't use any Ruby methods for checking the
-  # IP address. As a result we can only run this test on Rubinius.
-  with_feature :pure_ruby_addrinfo do
-    describe 'with a non IPv4 or IPv6 address' do
-      it 'raises SocketError' do
-        sockaddr = Socket.sockaddr_in(80, '127.0.0.1')
-        addr     = Addrinfo.new(sockaddr)
-
-        addr.stub!(:ipv4?).and_return(false)
-        addr.stub!(:ipv6?).and_return(false)
-
-        lambda { addr.ip_address }.should raise_error(SocketError)
-      end
-    end
-  end
 end

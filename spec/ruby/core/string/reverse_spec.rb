@@ -15,10 +15,8 @@ describe "String#reverse" do
     "m".taint.reverse.tainted?.should == true
   end
 
-  with_feature :encoding do
-    it "reverses a string with multi byte characters" do
-      "微軟正黑體".reverse.should == "體黑正軟微"
-    end
+  it "reverses a string with multi byte characters" do
+    "微軟正黑體".reverse.should == "體黑正軟微"
   end
 
 end
@@ -42,11 +40,9 @@ describe "String#reverse!" do
     lambda { "".freeze.reverse! }.should raise_error(frozen_error_class)
   end
 
-  with_feature :encoding do
-    it "reverses a string with multi byte characters" do
-      str = "微軟正黑體"
-      str.reverse!
-      str.should == "體黑正軟微"
-    end
+  it "reverses a string with multi byte characters" do
+    str = "微軟正黑體"
+    str.reverse!
+    str.should == "體黑正軟微"
   end
 end
