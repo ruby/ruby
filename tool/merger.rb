@@ -10,6 +10,7 @@ require 'fileutils'
 require 'tempfile'
 require 'net/http'
 require 'uri'
+require 'shellwords'
 
 ENV['LC_ALL'] = 'C'
 
@@ -49,7 +50,7 @@ module Merger
 
     def interactive(str, editfile = nil)
       loop do
-        yield
+        yield if block_given?
         STDERR.puts "\e[1;33m#{str} ([y]es|[a]bort|[r]etry#{'|[e]dit' if editfile})\e[0m"
         case STDIN.gets
         when /\Aa/i then exit
@@ -103,48 +104,52 @@ module Merger
       File.unlink(fn)
     end
 
-def tag intv_p = false, relname=nil
-  # relname:
-  #   * 2.2.0-preview1
-  #   * 2.2.0-rc1
-  #   * 2.2.0
-  v, pl = version
-  x = v.join('_')
-  if relname
-    abort "patchlevel is not -1 but '#{pl}' for preview or rc" if pl != '-1' && /-(?:preview|rc)/ =~ relname
-    abort "patchlevel is not 0 but '#{pl}' for the first release" if pl != '0' && /-(?:preview|rc)/ !~ relname
-    pl = relname[/-(.*)\z/, 1]
-    curver = v.join('.') + (pl ? '-' + pl : '')
-    if relname != curver
-      abort "given relname '#{relname}' conflicts current version '#{curver}'"
+    def tag(relname)
+      # relname:
+      #   * 2.2.0-preview1
+      #   * 2.2.0-rc1
+      #   * 2.2.0
+      v, pl = version
+      if relname
+        abort "patchlevel is not -1 but '#{pl}' for preview or rc" if pl != '-1' && /-(?:preview|rc)/ =~ relname
+        abort "patchlevel is not 0 but '#{pl}' for the first release" if pl != '0' && /-(?:preview|rc)/ !~ relname
+        pl = relname[/-(.*)\z/, 1]
+        curver = "#{v.join('.')}#{("-#{pl}" if pl)}"
+        if relname != curver
+          abort "given relname '#{relname}' conflicts current version '#{curver}'"
+        end
+      else
+        if pl == '-1'
+          abort 'no relname is given and not in a release branch even if this is patch release'
+        end
+      end
+      tagname = "v#{v.join('_')}#{("_#{pl}" if v[0] < "2" || (v[0] == "2" && v[1] < "1") || /^(?:preview|rc)/ =~ pl)}"
+
+      if svn_mode?
+        if relname
+          branch_url = `svn info`[/URL: (.*)/, 1]
+        else
+          branch_url = "#{REPOS}branches/ruby_"
+          if v[0] < '2' || (v[0] == '2' && v[1] < '1')
+            abort 'patchlevel must be greater than 0 for patch release' if pl == '0'
+            branch_url << v.join('_')
+          else
+            abort 'teeny must be greater than 0 for patch release' if v[2] == '0'
+            branch_url << v.join('_').sub(/_\d+\z/, '')
+          end
+        end
+        tag_url = "#{REPOS}tags/#{tagname}"
+        unless system('svn', 'info', tag_url, out: IO::NULL, err: IO::NULL)
+          abort 'specfied tag already exists. check tag name and remove it if you want to force re-tagging'
+        end
+        execute('svn', 'cp', '-m', "add tag #{tagname}", branch_url, tag_url, interactive: true)
+      else
+        unless execute('git', 'tag', tagname)
+          abort 'specfied tag already exists. check tag name and remove it if you want to force re-tagging'
+        end
+        execute('git', 'push', 'origin', tagname, interactive: true)
+      end
     end
-    branch_url = `svn info`[/URL: (.*)/, 1]
-  else
-    if pl == '-1'
-      abort "no relname is given and not in a release branch even if this is patch release"
-    end
-    branch_url = "#{REPOS}branches/ruby_"
-    if v[0] < "2" || (v[0] == "2" && v[1] < "1")
-      abort "patchlevel must be greater than 0 for patch release" if pl == "0"
-      branch_url << x
-    else
-      abort "teeny must be greater than 0 for patch release" if v[2] == "0"
-      branch_url << x.sub(/_\d+$/, '')
-    end
-  end
-  tagname = 'v' + x + (v[0] < "2" || (v[0] == "2" && v[1] < "1") || /^(?:preview|rc)/ =~ pl ? '_' + pl : '')
-  tag_url = "#{REPOS}tags/#{tagname}"
-  system(*%w'svn info', tag_url, out: IO::NULL, err: IO::NULL)
-  if $?.success?
-    abort "specfied tag already exists. check tag name and remove it if you want to force re-tagging"
-  end
-  if intv_p
-    interactive "OK? svn cp -m \"add tag #{tagname}\" #{branch_url} #{tag_url}" do
-      # nothing to do here
-    end
-  end
-  system(*%w'svn cp -m', "add tag #{tagname}", branch_url, tag_url)
-end
 
 def remove_tag intv_p = false, relname
   # relname:
@@ -217,6 +222,14 @@ end
       end
       return v, p
     end
+
+    def execute(*cmd, interactive: false)
+      if interactive
+        Merger.interactive("OK?: #{cmd.shelljoin}")
+      end
+      puts "+ #{cmd.shelljoin}"
+      system(*cmd)
+    end
   end # class << self
 end # module Merger
 
@@ -228,7 +241,7 @@ when "up", /\A(ver|version|rev|revision|lv|level|patch\s*level)\s*up\z/
   Merger.version_up
   Merger.diff('version.h')
 when "tag"
-  Merger.tag :interactive, ARGV[1]
+  Merger.tag(ARGV[1])
 when /\A(?:remove|rm|del)_?tag\z/
   Merger.remove_tag :interactive, ARGV[1]
 when nil, "-h", "--help"
@@ -317,7 +330,6 @@ else
   end
 
   if system(*%w'svn ci -F', f.path)
-    # tag :interactive # no longer needed.
     system 'rm -f subversion.commitlog'
   else
     puts 'commit failed; try again.'
