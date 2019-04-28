@@ -2,7 +2,7 @@
 # -*- ruby -*-
 exec "${RUBY-ruby}" "-x" "$0" "$@" && [ ] if false
 #!ruby
-# This needs ruby 1.9 and subversion.
+# This needs ruby 1.9, Subversion and Git.
 # As a Ruby committer, run this in an SVN repository
 # to commit a change.
 
