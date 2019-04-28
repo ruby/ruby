@@ -185,9 +185,9 @@ class << Merger
       system('git', 'diff', file)
     end
   end
-  
+
   private
-  
+
   def svn_mode?
     return @svn_mode if defined?(@svn_mode)
     @svn_mode = system("svn info > /dev/null 2>&1")
