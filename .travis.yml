@@ -359,6 +359,7 @@ matrix:
   fast_finish: true
 
 before_script:
+  - date # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
   - echo JOBS=${JOBS} SETARCH=${SETARCH}
   - $SETARCH uname -a
   - $SETARCH uname -r
@@ -405,10 +406,12 @@ before_script:
   - chmod u-w ..
   - $SETARCH make -s $JOBS
   - |-
+    date; : # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
     if ! make install; then
       if [ "$(uname)" = Darwin ]; then
         # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
         set -x
+        date
         echo $USER
         ls -la
         ls -la .ext
@@ -419,8 +422,7 @@ before_script:
         ls -la ../ext
         ls -laR ../ext/bigdecimal
         umask
-        (cd .. && git status)
-        ./miniruby -e 'ARGV.map{[@1,File.stat(@1)]}.sort_by{@2.mtime}.each{p mtime:@2.mtime.to_f, ctime:@2.ctime.to_f, path:@1}' .ext/.timestamp/.RUBYCOMMONDIR*time .ext/common/bigdecimal/*.rb ../ext/bigdecimal/lib/bigdecimal/*.rb
+        ./miniruby -e 'ARGV.map{[@1,File.stat(@1)]}.sort_by{@2.mtime}.each{p mtime:@2.mtime.to_f, ctime:@2.ctime.to_f, path:@1}' .ext/.timestamp/.RUBYCOMMONDIR*time .ext/common/bigdecimal/*.rb ../ext/bigdecimal/lib/bigdecimal/*.rb . .. .ext .ext/common .ext/common/bigdecimal ext/bigdecimal ../ext ../ext/bigdecimal ../ext/bigdecimal/lib ../ext/bigdecimal/lib/bigdecimal
       fi
       exit 1
     fi
