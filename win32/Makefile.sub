@@ -1,4 +1,4 @@
-# -*- makefile -*-
+# -*- mode: makefile; indent-tabs-mode: t -*-
 
 SHELL = $(COMSPEC)
 ECHO1 = $(V:1=@:)

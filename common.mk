@@ -1,3 +1,5 @@
+# -*- mode: makefile-gmake; indent-tabs-mode: t -*-
+
 bin: $(PROGRAM) $(WPROGRAM)
 lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
