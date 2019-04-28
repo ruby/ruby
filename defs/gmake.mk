@@ -1,4 +1,5 @@
-# -*- makefile-gmake -*-
+# -*- mode: makefile-gmake; indent-tabs-mode: t -*-
+
 gnumake = yes
 override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
 override mflags := $(filter-out -j%,$(MFLAGS))
