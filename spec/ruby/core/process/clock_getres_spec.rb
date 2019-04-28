@@ -51,13 +51,15 @@ describe "Process.clock_getres" do
 
   # These are observed
 
-  platform_is_not :solaris do
+  platform_is_not :solaris, :aix do
     it "with Process::CLOCK_REALTIME reports at least 1 microsecond" do
       Process.clock_getres(Process::CLOCK_REALTIME, :nanosecond).should <= 1_000
     end
   end
 
-  it "with Process::CLOCK_MONOTONIC reports at least 1 microsecond" do
-    Process.clock_getres(Process::CLOCK_MONOTONIC, :nanosecond).should <= 1_000
+  platform_is_not :aix do
+    it "with Process::CLOCK_MONOTONIC reports at least 1 microsecond" do
+      Process.clock_getres(Process::CLOCK_MONOTONIC, :nanosecond).should <= 1_000
+    end
   end
 end
