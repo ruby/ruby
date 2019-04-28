@@ -16,10 +16,11 @@ ENV['LC_ALL'] = 'C'
 
 module Merger
   REPOS = 'svn+ssh://svn@ci.ruby-lang.org/ruby/'
+end
 
-  class << self
-    def help
-      puts <<-end
+class << Merger
+  def help
+    puts <<-HELP
 \e[1msimple backport\e[0m
   ruby #$0 1234
 
@@ -45,192 +46,191 @@ module Merger
   ruby #$0 removetag 2.2.9
 
 \e[33;1m* all operations shall be applied to the working directory.\e[0m
+    HELP
+  end
+
+  def interactive(str, editfile = nil)
+    loop do
+      yield if block_given?
+      STDERR.puts "\e[1;33m#{str} ([y]es|[a]bort|[r]etry#{'|[e]dit' if editfile})\e[0m"
+      case STDIN.gets
+      when /\Aa/i then exit
+      when /\Ar/i then redo
+      when /\Ay/i then break
+      when /\Ae/i then system(ENV['EDITOR'], editfile)
+      else exit
       end
     end
+  end
 
-    def interactive(str, editfile = nil)
-      loop do
-        yield if block_given?
-        STDERR.puts "\e[1;33m#{str} ([y]es|[a]bort|[r]etry#{'|[e]dit' if editfile})\e[0m"
-        case STDIN.gets
-        when /\Aa/i then exit
-        when /\Ar/i then redo
-        when /\Ay/i then break
-        when /\Ae/i then system(ENV['EDITOR'], editfile)
-        else exit
-        end
-      end
+  def version_up(teeny: false)
+    now = Time.now
+    now = now.localtime(9*60*60) # server is Japan Standard Time +09:00
+    if svn_mode?
+      system('svn', 'revert', 'version.h')
+    else
+      system('git', 'checkout', 'HEAD', 'version.h')
+    end
+    v, pl = version
+
+    if teeny
+      v[2].succ!
+    end
+    if pl != '-1' # trunk does not have patchlevel
+      pl.succ!
     end
 
-    def version_up(teeny: false)
-      now = Time.now
-      now = now.localtime(9*60*60) # server is Japan Standard Time +09:00
-      if svn_mode?
-        system('svn', 'revert', 'version.h')
-      else
-        system('git', 'checkout', 'HEAD', 'version.h')
-      end
-      v, pl = version
-
-      if teeny
-        v[2].succ!
-      end
-      if pl != '-1' # trunk does not have patchlevel
-        pl.succ!
-      end
-
-      str = open('version.h', 'rb', &:read)
-      ruby_release_date = str[/RUBY_RELEASE_YEAR_STR"-"RUBY_RELEASE_MONTH_STR"-"RUBY_RELEASE_DAY_STR/] || now.strftime('"%Y-%m-%d"')
-      [%W[RUBY_VERSION      "#{v.join('.')}"],
-       %W[RUBY_VERSION_CODE  #{v.join('')}],
-       %W[RUBY_VERSION_MAJOR #{v[0]}],
-       %W[RUBY_VERSION_MINOR #{v[1]}],
-       %W[RUBY_VERSION_TEENY #{v[2]}],
-       %W[RUBY_RELEASE_DATE #{ruby_release_date}],
-       %W[RUBY_RELEASE_CODE  #{now.strftime('%Y%m%d')}],
-       %W[RUBY_PATCHLEVEL    #{pl}],
-       %W[RUBY_RELEASE_YEAR  #{now.year}],
-       %W[RUBY_RELEASE_MONTH #{now.month}],
-       %W[RUBY_RELEASE_DAY   #{now.day}],
-      ].each do |(k, i)|
-        str.sub!(/^(#define\s+#{k}\s+).*$/, "\\1#{i}")
-      end
-      str.sub!(/\s+\z/m, '')
-      fn = sprintf('version.h.tmp.%032b', rand(1 << 31))
-      File.rename('version.h', fn)
-      open('version.h', 'wb') do |f|
-        f.puts(str)
-      end
-      File.unlink(fn)
+    str = open('version.h', 'rb', &:read)
+    ruby_release_date = str[/RUBY_RELEASE_YEAR_STR"-"RUBY_RELEASE_MONTH_STR"-"RUBY_RELEASE_DAY_STR/] || now.strftime('"%Y-%m-%d"')
+    [%W[RUBY_VERSION      "#{v.join('.')}"],
+     %W[RUBY_VERSION_CODE  #{v.join('')}],
+     %W[RUBY_VERSION_MAJOR #{v[0]}],
+     %W[RUBY_VERSION_MINOR #{v[1]}],
+     %W[RUBY_VERSION_TEENY #{v[2]}],
+     %W[RUBY_RELEASE_DATE #{ruby_release_date}],
+     %W[RUBY_RELEASE_CODE  #{now.strftime('%Y%m%d')}],
+     %W[RUBY_PATCHLEVEL    #{pl}],
+     %W[RUBY_RELEASE_YEAR  #{now.year}],
+     %W[RUBY_RELEASE_MONTH #{now.month}],
+     %W[RUBY_RELEASE_DAY   #{now.day}],
+    ].each do |(k, i)|
+      str.sub!(/^(#define\s+#{k}\s+).*$/, "\\1#{i}")
     end
+    str.sub!(/\s+\z/m, '')
+    fn = sprintf('version.h.tmp.%032b', rand(1 << 31))
+    File.rename('version.h', fn)
+    open('version.h', 'wb') do |f|
+      f.puts(str)
+    end
+    File.unlink(fn)
+  end
 
-    def tag(relname)
-      # relname:
-      #   * 2.2.0-preview1
-      #   * 2.2.0-rc1
-      #   * 2.2.0
-      v, pl = version
+  def tag(relname)
+    # relname:
+    #   * 2.2.0-preview1
+    #   * 2.2.0-rc1
+    #   * 2.2.0
+    v, pl = version
+    if relname
+      abort "patchlevel is not -1 but '#{pl}' for preview or rc" if pl != '-1' && /-(?:preview|rc)/ =~ relname
+      abort "patchlevel is not 0 but '#{pl}' for the first release" if pl != '0' && /-(?:preview|rc)/ !~ relname
+      pl = relname[/-(.*)\z/, 1]
+      curver = "#{v.join('.')}#{("-#{pl}" if pl)}"
+      if relname != curver
+        abort "given relname '#{relname}' conflicts current version '#{curver}'"
+      end
+    else
+      if pl == '-1'
+        abort 'no relname is given and not in a release branch even if this is patch release'
+      end
+    end
+    tagname = "v#{v.join('_')}#{("_#{pl}" if v[0] < "2" || (v[0] == "2" && v[1] < "1") || /^(?:preview|rc)/ =~ pl)}"
+
+    if svn_mode?
       if relname
-        abort "patchlevel is not -1 but '#{pl}' for preview or rc" if pl != '-1' && /-(?:preview|rc)/ =~ relname
-        abort "patchlevel is not 0 but '#{pl}' for the first release" if pl != '0' && /-(?:preview|rc)/ !~ relname
-        pl = relname[/-(.*)\z/, 1]
-        curver = "#{v.join('.')}#{("-#{pl}" if pl)}"
-        if relname != curver
-          abort "given relname '#{relname}' conflicts current version '#{curver}'"
-        end
+        branch_url = `svn info`[/URL: (.*)/, 1]
       else
-        if pl == '-1'
-          abort 'no relname is given and not in a release branch even if this is patch release'
-        end
-      end
-      tagname = "v#{v.join('_')}#{("_#{pl}" if v[0] < "2" || (v[0] == "2" && v[1] < "1") || /^(?:preview|rc)/ =~ pl)}"
-
-      if svn_mode?
-        if relname
-          branch_url = `svn info`[/URL: (.*)/, 1]
+        branch_url = "#{REPOS}branches/ruby_"
+        if v[0] < '2' || (v[0] == '2' && v[1] < '1')
+          abort 'patchlevel must be greater than 0 for patch release' if pl == '0'
+          branch_url << v.join('_')
         else
-          branch_url = "#{REPOS}branches/ruby_"
-          if v[0] < '2' || (v[0] == '2' && v[1] < '1')
-            abort 'patchlevel must be greater than 0 for patch release' if pl == '0'
-            branch_url << v.join('_')
-          else
-            abort 'teeny must be greater than 0 for patch release' if v[2] == '0'
-            branch_url << v.join('_').sub(/_\d+\z/, '')
-          end
+          abort 'teeny must be greater than 0 for patch release' if v[2] == '0'
+          branch_url << v.join('_').sub(/_\d+\z/, '')
         end
-        tag_url = "#{REPOS}tags/#{tagname}"
-        unless system('svn', 'info', tag_url, out: IO::NULL, err: IO::NULL)
-          abort 'specfied tag already exists. check tag name and remove it if you want to force re-tagging'
+      end
+      tag_url = "#{REPOS}tags/#{tagname}"
+      unless system('svn', 'info', tag_url, out: IO::NULL, err: IO::NULL)
+        abort 'specfied tag already exists. check tag name and remove it if you want to force re-tagging'
+      end
+      execute('svn', 'cp', '-m', "add tag #{tagname}", branch_url, tag_url, interactive: true)
+    else
+      unless execute('git', 'tag', tagname)
+        abort 'specfied tag already exists. check tag name and remove it if you want to force re-tagging'
+      end
+      execute('git', 'push', 'origin', tagname, interactive: true)
+    end
+  end
+
+  def remove_tag(relname)
+    # relname:
+    #   * 2.2.0-preview1
+    #   * 2.2.0-rc1
+    #   * 2.2.0
+    #   * v2_2_0_preview1
+    #   * v2_2_0_rc1
+    #   * v2_2_0
+    unless relname
+      raise ArgumentError, 'relname is not specified'
+    end
+    if /^v/ !~ relname
+      tagname = "v#{relname.gsub(/[.-]/, '_')}"
+    else
+      tagname = relname
+    end
+
+    if svn_mode?
+      tag_url = "#{REPOS}tags/#{tagname}"
+      execute('svn', 'rm', '-m', "remove tag #{tagname}", tag_url, interactive: true)
+    else
+      execute('git', 'tag', '-d', tagname)
+      execute('git', 'push', 'origin', ":#{tagname}", interactive: true)
+    end
+  end
+
+  def diff(file)
+    if svn_mode?
+      system('svn', 'diff', file)
+    else
+      system('git', 'diff', file)
+    end
+  end
+  
+  private
+  
+  def svn_mode?
+    return @svn_mode if defined?(@svn_mode)
+    @svn_mode = system("svn info > /dev/null 2>&1")
+  end
+
+  # Prints the version of Ruby found in version.h
+  def version
+    v = p = nil
+    open 'version.h', 'rb' do |f|
+      f.each_line do |l|
+        case l
+        when /^#define RUBY_VERSION "(\d+)\.(\d+)\.(\d+)"$/
+          v = $~.captures
+        when /^#define RUBY_VERSION_TEENY (\d+)$/
+          (v ||= [])[2] = $1
+        when /^#define RUBY_PATCHLEVEL (-?\d+)$/
+          p = $1
         end
-        execute('svn', 'cp', '-m', "add tag #{tagname}", branch_url, tag_url, interactive: true)
-      else
-        unless execute('git', 'tag', tagname)
-          abort 'specfied tag already exists. check tag name and remove it if you want to force re-tagging'
-        end
-        execute('git', 'push', 'origin', tagname, interactive: true)
       end
     end
-
-    def remove_tag(relname)
-      # relname:
-      #   * 2.2.0-preview1
-      #   * 2.2.0-rc1
-      #   * 2.2.0
-      #   * v2_2_0_preview1
-      #   * v2_2_0_rc1
-      #   * v2_2_0
-      unless relname
-        raise ArgumentError, 'relname is not specified'
-      end
-      if /^v/ !~ relname
-        tagname = "v#{relname.gsub(/[.-]/, '_')}"
-      else
-        tagname = relname
-      end
-
-      if svn_mode?
-        tag_url = "#{REPOS}tags/#{tagname}"
-        execute('svn', 'rm', '-m', "remove tag #{tagname}", tag_url, interactive: true)
-      else
-        execute('git', 'tag', '-d', tagname)
-        execute('git', 'push', 'origin', ":#{tagname}", interactive: true)
-      end
-    end
-
-    def diff(file)
-      if svn_mode?
-        system('svn', 'diff', file)
-      else
-        system('git', 'diff', file)
-      end
-    end
-
-    private
-
-    def svn_mode?
-      return @svn_mode if defined?(@svn_mode)
-      @svn_mode = system("svn info > /dev/null 2>&1")
-    end
-
-    # Prints the version of Ruby found in version.h
-    def version
-      v = p = nil
-      open 'version.h', 'rb' do |f|
+    if v and !v[0]
+      open 'include/ruby/version.h', 'rb' do |f|
         f.each_line do |l|
           case l
-          when /^#define RUBY_VERSION "(\d+)\.(\d+)\.(\d+)"$/
-            v = $~.captures
-          when /^#define RUBY_VERSION_TEENY (\d+)$/
-            (v ||= [])[2] = $1
-          when /^#define RUBY_PATCHLEVEL (-?\d+)$/
-            p = $1
+          when /^#define RUBY_API_VERSION_MAJOR (\d+)/
+            v[0] = $1
+          when /^#define RUBY_API_VERSION_MINOR (\d+)/
+            v[1] = $1
           end
         end
       end
-      if v and !v[0]
-        open 'include/ruby/version.h', 'rb' do |f|
-          f.each_line do |l|
-            case l
-            when /^#define RUBY_API_VERSION_MAJOR (\d+)/
-              v[0] = $1
-            when /^#define RUBY_API_VERSION_MINOR (\d+)/
-              v[1] = $1
-            end
-          end
-        end
-      end
-      return v, p
     end
+    return v, p
+  end
 
-    def execute(*cmd, interactive: false)
-      if interactive
-        Merger.interactive("OK?: #{cmd.shelljoin}")
-      end
-      puts "+ #{cmd.shelljoin}"
-      system(*cmd)
+  def execute(*cmd, interactive: false)
+    if interactive
+      Merger.interactive("OK?: #{cmd.shelljoin}")
     end
-  end # class << self
-end # module Merger
+    puts "+ #{cmd.shelljoin}"
+    system(*cmd)
+  end
+end
 
 case ARGV[0]
 when "teenyup"
