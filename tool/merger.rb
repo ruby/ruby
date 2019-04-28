@@ -46,36 +46,6 @@ module Merger
       end
     end
 
-    # Prints the version of Ruby found in version.h
-def version
-  v = p = nil
-  open 'version.h', 'rb' do |f|
-    f.each_line do |l|
-      case l
-      when /^#define RUBY_VERSION "(\d+)\.(\d+)\.(\d+)"$/
-        v = $~.captures
-      when /^#define RUBY_VERSION_TEENY (\d+)$/
-        (v ||= [])[2] = $1
-      when /^#define RUBY_PATCHLEVEL (-?\d+)$/
-        p = $1
-      end
-    end
-  end
-  if v and !v[0]
-    open 'include/ruby/version.h', 'rb' do |f|
-      f.each_line do |l|
-        case l
-        when /^#define RUBY_API_VERSION_MAJOR (\d+)/
-          v[0] = $1
-        when /^#define RUBY_API_VERSION_MINOR (\d+)/
-          v[1] = $1
-        end
-      end
-    end
-  end
-  return v, p
-end
-
 def interactive str, editfile = nil
   loop do
     yield
@@ -202,6 +172,38 @@ end
 def default_merge_branch
   %r{^URL: .*/branches/ruby_1_8_} =~ `svn info` ? 'branches/ruby_1_8' : 'trunk'
 end
+
+    private
+
+    # Prints the version of Ruby found in version.h
+    def version
+      v = p = nil
+      open 'version.h', 'rb' do |f|
+        f.each_line do |l|
+          case l
+          when /^#define RUBY_VERSION "(\d+)\.(\d+)\.(\d+)"$/
+            v = $~.captures
+          when /^#define RUBY_VERSION_TEENY (\d+)$/
+            (v ||= [])[2] = $1
+          when /^#define RUBY_PATCHLEVEL (-?\d+)$/
+            p = $1
+          end
+        end
+      end
+      if v and !v[0]
+        open 'include/ruby/version.h', 'rb' do |f|
+          f.each_line do |l|
+            case l
+            when /^#define RUBY_API_VERSION_MAJOR (\d+)/
+              v[0] = $1
+            when /^#define RUBY_API_VERSION_MINOR (\d+)/
+              v[1] = $1
+            end
+          end
+        end
+      end
+      return v, p
+    end
   end # class << self
 end # module Merger
 
