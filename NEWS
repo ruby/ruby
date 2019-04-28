@@ -31,7 +31,7 @@ sufficient information, see the ChangeLog file or Redmine
   experimental feature.  [Feature #4475]
 
 * A beginless range is experimentally introduced.  It might not be as useful
-  as an endless range, but would be good for DSL purpose.
+  as an endless range, but would be good for DSL purpose.  [Feature #14799]
 
      ary[..3]  # identical to ary[0..3]
      where(sales: ..100)
@@ -41,6 +41,13 @@ sufficient information, see the ChangeLog file or Redmine
 
 * Setting <code>$,</code> to non-nil value is warned now.  Use of it in
   Array#join is warned too.
+
+* <code>Integer#[]</code> now supports range operation.  [Feature #8842]
+
+     0b01001101[2, 4]  #=> 0b0011
+     0b01001100[2..5]  #=> 0b0011
+     0b01001100[2...6] #=> 0b0011
+         ^^^^
 
 === Core classes updates (outstanding ones only)
 
