@@ -6,7 +6,7 @@ module ProcessSpecs
       clocks += Process.constants.select { |c| c.to_s.start_with?('CLOCK_') }
 
       # These require CAP_WAKE_ALARM and are not documented in
-      # Process#clock_gettime they return EINVAL if the permission
+      # Process#clock_gettime. They return EINVAL if the permission
       # is not granted.
       clocks -= [:CLOCK_BOOTTIME_ALARM, :CLOCK_REALTIME_ALARM]
 
