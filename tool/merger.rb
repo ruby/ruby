@@ -2,7 +2,7 @@
 # -*- ruby -*-
 exec "${RUBY-ruby}" "-x" "$0" "$@" && [ ] if false
 #!ruby
-# This needs ruby 1.9, Subversion and Git.
+# This needs ruby 2.0, Subversion and Git.
 # As a Ruby committer, run this in an SVN repository
 # to commit a change.
 
@@ -47,58 +47,61 @@ module Merger
       end
     end
 
-def interactive str, editfile = nil
-  loop do
-    yield
-    STDERR.puts "\e[1;33m#{str} ([y]es|[a]bort|[r]etry#{'|[e]dit' if editfile})\e[0m"
-    case STDIN.gets
-    when /\Aa/i then exit
-    when /\Ar/i then redo
-    when /\Ay/i then break
-    when /\Ae/i then system(ENV["EDITOR"], editfile)
-    else exit
+    def interactive(str, editfile = nil)
+      loop do
+        yield
+        STDERR.puts "\e[1;33m#{str} ([y]es|[a]bort|[r]etry#{'|[e]dit' if editfile})\e[0m"
+        case STDIN.gets
+        when /\Aa/i then exit
+        when /\Ar/i then redo
+        when /\Ay/i then break
+        when /\Ae/i then system(ENV['EDITOR'], editfile)
+        else exit
+        end
+      end
     end
-  end
-end
 
-def version_up(inc=nil)
-  d = Time.now
-  d = d.localtime(9*60*60) # server is Japan Standard Time +09:00
-  system(*%w'svn revert version.h')
-  v, pl = version
+    def version_up(teeny: false)
+      now = Time.now
+      now = now.localtime(9*60*60) # server is Japan Standard Time +09:00
+      if svn_mode?
+        system('svn', 'revert', 'version.h')
+      else
+        system('git', 'checkout', 'HEAD', 'version.h')
+      end
+      v, pl = version
 
-  if inc == :teeny
-    v[2].succ!
-  end
-  # patchlevel
-  if pl != "-1"
-    pl.succ!
-  end
+      if teeny
+        v[2].succ!
+      end
+      if pl != '-1' # trunk does not have patchlevel
+        pl.succ!
+      end
 
-  str = open 'version.h', 'rb' do |f| f.read end
-  ruby_release_date = str[/RUBY_RELEASE_YEAR_STR"-"RUBY_RELEASE_MONTH_STR"-"RUBY_RELEASE_DAY_STR/] || d.strftime('"%Y-%m-%d"')
-  [%W[RUBY_VERSION      "#{v.join '.'}"],
-   %W[RUBY_VERSION_CODE  #{v.join ''}],
-   %W[RUBY_VERSION_MAJOR #{v[0]}],
-   %W[RUBY_VERSION_MINOR #{v[1]}],
-   %W[RUBY_VERSION_TEENY #{v[2]}],
-   %W[RUBY_RELEASE_DATE #{ruby_release_date}],
-   %W[RUBY_RELEASE_CODE  #{d.strftime '%Y%m%d'}],
-   %W[RUBY_PATCHLEVEL    #{pl}],
-   %W[RUBY_RELEASE_YEAR  #{d.year}],
-   %W[RUBY_RELEASE_MONTH #{d.month}],
-   %W[RUBY_RELEASE_DAY   #{d.day}],
-  ].each do |(k, i)|
-    str.sub!(/^(#define\s+#{k}\s+).*$/, "\\1#{i}")
-  end
-  str.sub!(/\s+\z/m, '')
-  fn = sprintf 'version.h.tmp.%032b', rand(1 << 31)
-  File.rename 'version.h', fn
-  open 'version.h', 'wb' do |f|
-    f.puts str
-  end
-  File.unlink fn
-end
+      str = open('version.h', 'rb', &:read)
+      ruby_release_date = str[/RUBY_RELEASE_YEAR_STR"-"RUBY_RELEASE_MONTH_STR"-"RUBY_RELEASE_DAY_STR/] || now.strftime('"%Y-%m-%d"')
+      [%W[RUBY_VERSION      "#{v.join('.')}"],
+       %W[RUBY_VERSION_CODE  #{v.join('')}],
+       %W[RUBY_VERSION_MAJOR #{v[0]}],
+       %W[RUBY_VERSION_MINOR #{v[1]}],
+       %W[RUBY_VERSION_TEENY #{v[2]}],
+       %W[RUBY_RELEASE_DATE #{ruby_release_date}],
+       %W[RUBY_RELEASE_CODE  #{now.strftime('%Y%m%d')}],
+       %W[RUBY_PATCHLEVEL    #{pl}],
+       %W[RUBY_RELEASE_YEAR  #{now.year}],
+       %W[RUBY_RELEASE_MONTH #{now.month}],
+       %W[RUBY_RELEASE_DAY   #{now.day}],
+      ].each do |(k, i)|
+        str.sub!(/^(#define\s+#{k}\s+).*$/, "\\1#{i}")
+      end
+      str.sub!(/\s+\z/m, '')
+      fn = sprintf('version.h.tmp.%032b', rand(1 << 31))
+      File.rename('version.h', fn)
+      open('version.h', 'wb') do |f|
+        f.puts(str)
+      end
+      File.unlink(fn)
+    end
 
 def tag intv_p = false, relname=nil
   # relname:
@@ -170,7 +173,20 @@ def remove_tag intv_p = false, relname
   system(*%w'svn rm -m', "remove tag #{tagname}", tag_url)
 end
 
+    def diff(file)
+      if svn_mode?
+        system('svn', 'diff', file)
+      else
+        system('git', 'diff', file)
+      end
+    end
+
     private
+
+    def svn_mode?
+      return @svn_mode if defined?(@svn_mode)
+      @svn_mode = system("svn info > /dev/null 2>&1")
+    end
 
     # Prints the version of Ruby found in version.h
     def version
@@ -206,11 +222,11 @@ end # module Merger
 
 case ARGV[0]
 when "teenyup"
-  Merger.version_up(:teeny)
-  system 'svn diff version.h'
-when "up", /\A(ver|version|rev|revision|lv|level|patch\s*level)\s*up/
+  Merger.version_up(teeny: true)
+  Merger.diff('version.h')
+when "up", /\A(ver|version|rev|revision|lv|level|patch\s*level)\s*up\z/
   Merger.version_up
-  system 'svn diff version.h'
+  Merger.diff('version.h')
 when "tag"
   Merger.tag :interactive, ARGV[1]
 when /\A(?:remove|rm|del)_?tag\z/
