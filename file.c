@@ -123,6 +123,12 @@ int flock(int, int);
 #define rename(f, t)	rb_w32_urename((f), (t))
 #undef symlink
 #define symlink(s, l)	rb_w32_usymlink((s), (l))
+
+#ifdef HAVE_REALPATH
+/* Don't use native realpath(3) on Windows, as the check for
+   absolute paths does not work for drive letters. */
+#undef HAVE_REALPATH
+#endif
 #else
 #define STAT(p, s)	stat((p), (s))
 #endif
@@ -138,6 +144,11 @@ int flock(int, int);
 /* utime may fail if time is out-of-range for the FS [ruby-dev:38277] */
 #if defined DOSISH || defined __CYGWIN__
 #  define UTIME_EINVAL
+#endif
+
+#ifdef HAVE_REALPATH
+#include <limits.h>
+#include <stdlib.h>
 #endif
 
 VALUE rb_cFile;
@@ -4198,7 +4209,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
 }
 
 static VALUE
-rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
+rb_check_realpath_emulate(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
 {
     long prefixlen;
     VALUE resolved;
@@ -4290,6 +4301,77 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
     RB_GC_GUARD(unresolved_path);
     RB_GC_GUARD(curdir);
     return resolved;
+}
+
+static VALUE rb_file_join(VALUE ary);
+
+static VALUE
+rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
+{
+#ifdef HAVE_REALPATH
+    VALUE unresolved_path;
+    rb_encoding *origenc;
+    char *resolved_ptr = NULL;
+    VALUE resolved;
+    struct stat st;
+
+    if (mode == RB_REALPATH_DIR) {
+	return rb_check_realpath_emulate(basedir, path, mode);
+    }
+
+    unresolved_path = rb_str_dup_frozen(path);
+    origenc = rb_enc_get(unresolved_path);
+    if (*RSTRING_PTR(unresolved_path) != '/' && !NIL_P(basedir)) {
+	unresolved_path = rb_file_join(rb_assoc_new(basedir, unresolved_path));
+    }
+    unresolved_path = TO_OSPATH(unresolved_path);
+
+    if((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), NULL)) == NULL) {
+	/* glibc realpath(3) does not allow /path/to/file.rb/../other_file.rb,
+	   returning ENOTDIR in that case.
+	   glibc realpath(3) can also return ENOENT for paths that exist,
+	   such as /dev/fd/5.
+	   Fallback to the emulated approach in either of those cases. */
+	if (errno == ENOTDIR ||
+	    (errno == ENOENT && rb_file_exist_p(0, unresolved_path))) {
+	    return rb_check_realpath_emulate(basedir, path, mode);
+
+	}
+	if (mode == RB_REALPATH_CHECK) {
+	    return Qnil;
+	}
+	rb_sys_fail_path(unresolved_path);
+    }
+    resolved = ospath_new(resolved_ptr, strlen(resolved_ptr), rb_filesystem_encoding());
+    free(resolved_ptr);
+
+    if (rb_stat(resolved, &st) < 0) {
+	if (mode == RB_REALPATH_CHECK) {
+	    return Qnil;
+	}
+	rb_sys_fail_path(unresolved_path);
+    }
+
+    if (origenc != rb_enc_get(resolved)) {
+	if (!rb_enc_str_asciionly_p(resolved)) {
+	    resolved = rb_str_conv_enc(resolved, NULL, origenc);
+	}
+	rb_enc_associate(resolved, origenc);
+    }
+
+    if(rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
+	rb_enc_associate(resolved, rb_filesystem_encoding());
+	if(rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
+	    rb_enc_associate(resolved, rb_ascii8bit_encoding());
+	}
+    }
+
+    rb_obj_taint(resolved);
+    RB_GC_GUARD(unresolved_path);
+    return resolved;
+#else
+    return rb_check_realpath_emulate(basedir, path, mode);
+#endif /* HAVE_REALPATH */
 }
 
 VALUE
@@ -4712,8 +4794,6 @@ rb_file_s_split(VALUE klass, VALUE path)
     FilePathStringValue(path);		/* get rid of converting twice */
     return rb_assoc_new(rb_file_dirname(path), rb_file_s_basename(1,&path));
 }
-
-static VALUE rb_file_join(VALUE ary);
 
 static VALUE
 file_inspect_join(VALUE ary, VALUE arg, int recur)
