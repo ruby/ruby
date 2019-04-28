@@ -20,9 +20,11 @@ module ProcessSpecs
     clocks = clock_constants
 
     # These clocks in practice on Linux do not seem to match their reported resolution.
-    clocks = clocks.reject { |clock, value|
-      [:CLOCK_REALTIME_COARSE, :CLOCK_MONOTONIC_COARSE].include?(clock)
-    }
+    platform_is :linux do
+      clocks = clocks.reject { |clock, value|
+        [:CLOCK_REALTIME_COARSE, :CLOCK_MONOTONIC_COARSE].include?(clock)
+      }
+    end
 
     # These clocks in practice on ARM on Linux do not seem to match their reported resolution.
     platform_is :armv7l, :aarch64 do
