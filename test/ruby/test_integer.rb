@@ -10,7 +10,21 @@ class TestInteger < Test::Unit::TestCase
     self.class.bdsize(x)
   end
 
+  FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
+  FIXNUM_MAX = RbConfig::LIMITS['FIXNUM_MAX']
+
   def test_aref
+
+    [
+      *-16..16,
+      *(FIXNUM_MIN-2)..(FIXNUM_MIN+2),
+      *(FIXNUM_MAX-2)..(FIXNUM_MAX+2),
+    ].each do |n|
+      (-64..64).each do |idx|
+        assert_equal((n >> idx) & 1, n[idx])
+      end
+    end
+
     # assert_equal(1, (1 << 0x40000000)[0x40000000], "[ruby-dev:31271]")
     # assert_equal(0, (-1 << 0x40000001)[0x40000000], "[ruby-dev:31271]")
     big_zero = 0x40000000.coerce(0)[0]
