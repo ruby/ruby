@@ -26,6 +26,13 @@ module ProcessSpecs
       }
     end
 
+    # These clocks in practice on macOS seem to be less precise than advertised by clock_getres
+    platform_is :darwin do
+      clocks = clocks.reject { |clock, value|
+        [:CLOCK_UPTIME_RAW_APPROX].include?(clock)
+      }
+    end
+
     # These clocks in practice on ARM on Linux do not seem to match their reported resolution.
     platform_is :armv7l, :aarch64 do
       clocks = clocks.reject { |clock, value|
