@@ -22,7 +22,8 @@ module IRB # :nodoc:
         on_CHAR:            [[BLUE, BOLD],            [Ripper::EXPR_END]],
         on_const:           [[BLUE, BOLD, UNDERLINE], [Ripper::EXPR_ARG, Ripper::EXPR_CMDARG]],
         on_embexpr_beg:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END]],
-        on_embexpr_end:     [[RED],                   [Ripper::EXPR_END, Ripper::EXPR_ENDFN]],
+        on_embexpr_end:     [[RED],                   [Ripper::EXPR_END, Ripper::EXPR_ENDFN, Ripper::EXPR_CMDARG]],
+        on_embvar:          [[RED],                   [Ripper::EXPR_BEG]],
         on_ident:           [[BLUE, BOLD],            [Ripper::EXPR_ENDFN]],
         on_int:             [[BLUE, BOLD],            [Ripper::EXPR_END]],
         on_float:           [[MAGENTA, BOLD],         [Ripper::EXPR_END]],
@@ -33,7 +34,7 @@ module IRB # :nodoc:
         on_regexp_end:      [[RED, BOLD],             [Ripper::EXPR_BEG]],
         on_symbeg:          [[BLUE, BOLD],            [Ripper::EXPR_FNAME]],
         on_tstring_beg:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_ARG, Ripper::EXPR_CMDARG]],
-        on_tstring_content: [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_ARG, Ripper::EXPR_CMDARG]],
+        on_tstring_content: [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_ARG, Ripper::EXPR_CMDARG]],
         on_tstring_end:     [[RED],                   [Ripper::EXPR_END]],
       }
     rescue NameError
