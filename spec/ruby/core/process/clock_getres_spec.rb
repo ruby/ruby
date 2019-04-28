@@ -3,7 +3,7 @@ require_relative 'fixtures/clocks'
 
 describe "Process.clock_getres" do
   platform_is_not :freebsd do # clock_getres() seems incorrect on FreeBSD
-    ProcessSpecs.clock_constants.each do |name, value|
+    ProcessSpecs.clock_constants_for_resolution_checks.each do |name, value|
       it "matches the clock in practice for Process::#{name}" do
         times = []
         10_000.times do
