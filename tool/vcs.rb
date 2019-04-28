@@ -392,6 +392,7 @@ class VCS
       changed = changed[0, last.size]
       modified = log[/^Date:\s+(.*)/, 1]
       branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short HEAD]])
+      branch.chomp!
       title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 FETCH_HEAD..HEAD]])
       title = nil if title.empty?
       [last, changed, modified, branch, title]
