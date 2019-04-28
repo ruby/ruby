@@ -169,10 +169,6 @@ def remove_tag intv_p = false, relname
   system(*%w'svn rm -m', "remove tag #{tagname}", tag_url)
 end
 
-def default_merge_branch
-  %r{^URL: .*/branches/ruby_1_8_} =~ `svn info` ? 'branches/ruby_1_8' : 'trunk'
-end
-
     private
 
     # Prints the version of Ruby found in version.h
@@ -235,7 +231,6 @@ else
     tickets = ''
   end
 
-  q = $repos + (ARGV[1] || Merger.default_merge_branch)
   revstr = ARGV[0].delete('^, :\-0-9a-fA-F')
   revs = revstr.split(/[,\s]+/)
   commit_message = ''
@@ -268,9 +263,11 @@ else
       puts "+ git apply"
       IO.popen(['git', 'apply'], 'w') { |f| f.write(patch) }
     else
-      message = IO.popen(['svn', 'log', '-r', svn_rev, q], &:read)
+      default_merge_branch = (%r{^URL: .*/branches/ruby_1_8_} =~ `svn info` ? 'branches/ruby_1_8' : 'trunk')
+      svn_src = "#{$repos}#{ARGV[1] || default_merge_branch}"
+      message = IO.popen(['svn', 'log', '-r', svn_rev, svn_src], &:read)
 
-      cmd = ['svn', 'merge', '--accept=postpone', '-r', svn_rev, q]
+      cmd = ['svn', 'merge', '--accept=postpone', '-r', svn_rev, svn_src]
       puts "+ #{cmd.join(' ')}"
       system(*cmd)
     end
