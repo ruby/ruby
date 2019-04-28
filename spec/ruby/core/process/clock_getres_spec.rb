@@ -2,30 +2,30 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/clocks'
 
 describe "Process.clock_getres" do
-  ProcessSpecs.clock_constants.each do |name, value|
-    it "matches the clock in practice for Process::#{name}" do
-      times = []
-      10_000.times do
-        times << Process.clock_gettime(value, :nanosecond)
-      end
-      reported = Process.clock_getres(value, :nanosecond)
+  platform_is_not :freebsd do # clock_getres() seems incorrect on FreeBSD
+    ProcessSpecs.clock_constants.each do |name, value|
+      it "matches the clock in practice for Process::#{name}" do
+        times = []
+        10_000.times do
+          times << Process.clock_gettime(value, :nanosecond)
+        end
+        reported = Process.clock_getres(value, :nanosecond)
 
-      platform_is_not :bsd do
         # The clock should not be more accurate than reported (times should be
         # a multiple of reported precision.)
         times.select { |t| t % reported > 0 }.should be_empty
+
+        # We're assuming precision is a multiple of ten - it may or may not
+        # be an incompatibility if it isn't but we'd like to notice this,
+        # and the spec following these wouldn't work if it isn't.
+        reported.should > 0
+        (reported == 1 || reported % 10 == 0).should be_true
+
+        # The clock should not be less accurate than reported (times should
+        # not all be a multiple of the next precision up, assuming precisions
+        # are multiples of ten.)
+        times.select { |t| t % (reported * 10) == 0  }.size.should_not == times.size
       end
-
-      # We're assuming precision is a multiple of ten - it may or may not
-      # be an incompatibility if it isn't but we'd like to notice this,
-      # and the spec following these wouldn't work if it isn't.
-      reported.should > 0
-      (reported == 1 || reported % 10 == 0).should be_true
-
-      # The clock should not be less accurate than reported (times should
-      # not all be a multiple of the next precision up, assuming precisions
-      # are multiples of ten.)
-      times.select { |t| t % (reported * 10) == 0  }.size.should_not == times.size
     end
   end
 
