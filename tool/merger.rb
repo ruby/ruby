@@ -266,9 +266,9 @@ else
     else
       default_merge_branch = (%r{^URL: .*/branches/ruby_1_8_} =~ `svn info` ? 'branches/ruby_1_8' : 'trunk')
       svn_src = "#{Merger::REPOS}#{ARGV[1] || default_merge_branch}"
-      message = IO.popen(['svn', 'log', '-r', svn_rev, svn_src], &:read)
+      message = IO.popen(['svn', 'log', '-c', svn_rev, svn_src], &:read)
 
-      cmd = ['svn', 'merge', '--accept=postpone', '-r', svn_rev, svn_src]
+      cmd = ['svn', 'merge', '--accept=postpone', '-c', svn_rev, svn_src]
       puts "+ #{cmd.join(' ')}"
       system(*cmd)
     end
