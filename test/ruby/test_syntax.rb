@@ -852,10 +852,9 @@ eom
     assert_syntax_error("puts <<""EOS\n""ng\n""EOS\r""NO\n", /can't find string "EOS" anywhere before EOF/)
   end
 
-  def test_heredoc_newline
-    assert_warn(/ends with a newline/) do
-      eval("<<\"EOS\n\"\nEOS\n")
-    end
+  def test_unterminated_heredoc
+    assert_syntax_error("<<\"EOS\n\nEOS\n", /unterminated/)
+    assert_syntax_error("<<\"EOS\n\"\nEOS\n", /unterminated/)
   end
 
   def test__END___cr
