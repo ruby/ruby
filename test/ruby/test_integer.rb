@@ -23,6 +23,31 @@ class TestInteger < Test::Unit::TestCase
       (-64..64).each do |idx|
         assert_equal((n >> idx) & 1, n[idx])
       end
+      [*-66..-62, *-34..-30, *-5..5, *30..34, *62..66].each do |idx|
+        (0..100).each do |len|
+          assert_equal((n >> idx) & ((1 << len) - 1), n[idx, len], "#{ n }[#{ idx }, #{ len }]")
+        end
+        (0..100).each do |len|
+          assert_equal((n >> idx) & ((1 << (len + 1)) - 1), n[idx..idx+len], "#{ n }[#{ idx }..#{ idx+len }]")
+          assert_equal((n >> idx) & ((1 << len) - 1), n[idx...idx+len], "#{ n }[#{ idx }...#{ idx+len }]")
+        end
+
+        # endless
+        assert_equal((n >> idx), n[idx..], "#{ n }[#{ idx }..]")
+        assert_equal((n >> idx), n[idx...], "#{ n }[#{ idx }...#]")
+
+        # beginless
+        if idx >= 0 && n & ((1 << (idx + 1)) - 1) != 0
+          assert_raise(ArgumentError, "#{ n }[..#{ idx }]") { n[..idx] }
+        else
+          assert_equal(0, n[..idx], "#{ n }[..#{ idx }]")
+        end
+        if idx >= 0 && n & ((1 << idx) - 1) != 0
+          assert_raise(ArgumentError, "#{ n }[...#{ idx }]") { n[...idx] }
+        else
+          assert_equal(0, n[...idx], "#{ n }[...#{ idx }]")
+        end
+      end
     end
 
     # assert_equal(1, (1 << 0x40000000)[0x40000000], "[ruby-dev:31271]")
