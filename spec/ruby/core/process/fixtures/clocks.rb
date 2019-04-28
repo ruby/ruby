@@ -29,7 +29,7 @@ module ProcessSpecs
     # These clocks in practice on macOS seem to be less precise than advertised by clock_getres
     platform_is :darwin do
       clocks = clocks.reject { |clock, value|
-        [:CLOCK_UPTIME_RAW_APPROX].include?(clock)
+        [:CLOCK_UPTIME_RAW_APPROX, :CLOCK_MONOTONIC_RAW_APPROX].include?(clock)
       }
     end
 
