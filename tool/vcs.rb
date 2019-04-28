@@ -466,7 +466,7 @@ class VCS
     end
 
     def branch_beginning
-      cmd_read(%W[ #{COMMAND} log -n1 --format=format:%H --reverse
+      cmd_read(%W[ #{COMMAND} log -n1 --format=format:%H
                    --author=matz --committer=matz --grep=start
                    -- version.h include/ruby/version.h])
     end
