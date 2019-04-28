@@ -4670,7 +4670,7 @@ compare_indexes(VALUE a, VALUE b)
     VALUE r = rb_funcall(a, id_cmp, 1, b);
 
     if (NIL_P(r))
-	return INT_MAX;
+        return INT_MAX;
     return rb_cmpint(r, a, b);
 }
 
@@ -4722,10 +4722,10 @@ int_aref1(VALUE num, VALUE arg)
 
 one_bit:
     if (FIXNUM_P(num)) {
-	return fix_aref(num, arg);
+        return fix_aref(num, arg);
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
-	return rb_big_aref(num, arg);
+        return rb_big_aref(num, arg);
     }
     return Qnil;
 }
@@ -4782,7 +4782,7 @@ int_aref(int const argc, VALUE * const argv, VALUE const num)
 {
     rb_check_arity(argc, 1, 2);
     if (argc == 2) {
-	return int_aref2(num, argv[0], argv[1]);
+        return int_aref2(num, argv[0], argv[1]);
     }
     return int_aref1(num, argv[0]);
 
