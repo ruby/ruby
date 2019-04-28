@@ -355,7 +355,7 @@ class VCS
     end
 
     def export_changelog(url, from, to, path)
-      range = [to, (from+1 if from)].compact.join(':')
+      range = [to || 'HEAD', (from ? from+1 : branch_beginning(url))].compact.join(':')
       IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"#{COMMAND} log -r#{range} #{url}") do |r|
         open(path, 'w') do |w|
@@ -481,7 +481,7 @@ class VCS
     end
 
     def export_changelog(url, from, to, path)
-      range = [from, to].map do |rev|
+      from, to = [from, to].map do |rev|
         rev or next
         if Integer === rev
           rev = cmd_read({'LANG' => 'C', 'LC_ALL' => 'C'},
@@ -489,7 +489,11 @@ class VCS
                          "--grep=^ *git-svn-id: .*@#{rev} ")
         end
         rev unless rev.empty?
-      end.join('^..')
+      end
+      unless (from ||= branch_beginning(url))
+        raise "cannot find the beginning revision of the branch"
+      end
+      range = [from, (to || 'HEAD')].join('^..')
       cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"#{COMMAND} log --format=medium --no-notes --date=iso-local --topo-order #{range}", "rb") do |r|
         format_changelog(r, path)
