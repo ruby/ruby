@@ -13,12 +13,10 @@ module ProcessSpecs
       # These clocks in practice on Linux do not seem to match
       # their reported resolution.
       clocks -= [:CLOCK_REALTIME_COARSE, :CLOCK_MONOTONIC_COARSE]
-
-      clocks.map! { |c|
-        [c, Process.const_get(c)]
-      }
     end
 
-    clocks
+    clocks.map { |c|
+      [c, Process.const_get(c)]
+    }
   end
 end
