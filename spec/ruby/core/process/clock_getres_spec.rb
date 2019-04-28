@@ -11,24 +11,20 @@ describe "Process.clock_getres" do
         end
         reported = Process.clock_getres(value, :nanosecond)
 
-        # CentOS seems to report a negative resolution:
-        # https://rubyci.org/logs/rubyci.s3.amazonaws.com/centos6/ruby-trunk/log/20190428T093004Z.fail.html.gz
-        unless name == :CLOCK_MONOTONIC_RAW and reported < 0
-          # The clock should not be more accurate than reported (times should be
-          # a multiple of reported precision.)
-          times.select { |t| t % reported > 0 }.should be_empty
+        # The clock should not be more accurate than reported (times should be
+        # a multiple of reported precision.)
+        times.select { |t| t % reported > 0 }.should be_empty
 
-          # We're assuming precision is a multiple of ten - it may or may not
-          # be an incompatibility if it isn't but we'd like to notice this,
-          # and the spec following these wouldn't work if it isn't.
-          reported.should > 0
-          (reported == 1 || reported % 10 == 0).should be_true
+        # We're assuming precision is a multiple of ten - it may or may not
+        # be an incompatibility if it isn't but we'd like to notice this,
+        # and the spec following these wouldn't work if it isn't.
+        reported.should > 0
+        (reported == 1 || reported % 10 == 0).should be_true
 
-          # The clock should not be less accurate than reported (times should
-          # not all be a multiple of the next precision up, assuming precisions
-          # are multiples of ten.)
-          times.select { |t| t % (reported * 10) == 0 }.size.should_not == times.size
-        end
+        # The clock should not be less accurate than reported (times should
+        # not all be a multiple of the next precision up, assuming precisions
+        # are multiples of ten.)
+        times.select { |t| t % (reported * 10) == 0 }.size.should_not == times.size
       end
     end
   end
