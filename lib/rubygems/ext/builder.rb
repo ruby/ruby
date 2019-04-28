@@ -55,11 +55,6 @@ class Gem::Ext::Builder
     end
   end
 
-  def self.redirector
-    warn "#{caller[0]}: Use IO.popen(..., err: [:child, :out])"
-    '2>&1'
-  end
-
   def self.run(command, results, command_name = nil)
     verbose = Gem.configuration.really_verbose
 
