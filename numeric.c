@@ -4630,24 +4630,6 @@ rb_int_rshift(VALUE x, VALUE y)
     return Qnil;
 }
 
-/*
- *  Document-method: Integer#[]
- *  call-seq:
- *     int[n]  ->  0, 1
- *
- *  Bit Reference---Returns the <code>n</code>th bit in the
- *  binary representation of +int+, where <code>int[0]</code>
- *  is the least significant bit.
- *
- *     a = 0b11001100101010
- *     30.downto(0) {|n| print a[n] }
- *     #=> 0000000000000000011001100101010
- *
- *     a = 9**15
- *     50.downto(0) {|n| print a[n] }
- *     #=> 000101110110100000111000011110010100111100010111001
- */
-
 static VALUE
 fix_aref(VALUE fix, VALUE idx)
 {
@@ -4675,15 +4657,135 @@ fix_aref(VALUE fix, VALUE idx)
     return INT2FIX(0);
 }
 
-static VALUE
-int_aref(VALUE num, VALUE idx)
+
+/* copied from "r_less" in range.c */
+/* compares _a_ and _b_ and returns:
+ * < 0: a < b
+ * = 0: a = b
+ * > 0: a > b or non-comparable
+ */
+static int
+compare_indexes(VALUE a, VALUE b)
 {
+    VALUE r = rb_funcall(a, id_cmp, 1, b);
+
+    if (NIL_P(r))
+	return INT_MAX;
+    return rb_cmpint(r, a, b);
+}
+
+static VALUE
+generate_mask(VALUE len) {
+    return rb_int_minus(rb_int_lshift(INT2FIX(1), len), INT2FIX(1));
+}
+
+static VALUE
+int_aref1(VALUE num, VALUE arg)
+{
+    VALUE orig_num = num, beg, end;
+    int excl;
+
+    if (rb_range_values(arg, &beg, &end, &excl)) {
+        if (NIL_P(beg)) {
+            /* beginless range */
+            if (!RTEST(num_negative_p(end))) {
+                if (!excl) end = rb_int_plus(end, INT2FIX(1));
+                VALUE mask = generate_mask(end);
+                if (RTEST(num_zero_p(rb_int_and(num, mask)))) {
+                    return INT2FIX(0);
+                }
+                else {
+                    rb_raise(rb_eArgError, "The beginless range for Integer#[] results in infinity");
+                }
+            }
+            else {
+                return INT2FIX(0);
+            }
+        }
+        num = rb_int_rshift(num, beg);
+
+        int cmp = compare_indexes(beg, end);
+        if (!NIL_P(end) && cmp < 0) {
+            VALUE len = rb_int_minus(end, beg);
+            if (!excl) len = rb_int_plus(len, INT2FIX(1));
+            VALUE mask = generate_mask(len);
+            num = rb_int_and(num, mask);
+        }
+        else if (cmp == 0) {
+            if (excl) return INT2FIX(0);
+            num = orig_num;
+            arg = beg;
+            goto one_bit;
+        }
+        return num;
+    }
+
+one_bit:
     if (FIXNUM_P(num)) {
-	return fix_aref(num, idx);
+	return fix_aref(num, arg);
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
-	return rb_big_aref(num, idx);
+	return rb_big_aref(num, arg);
     }
+    return Qnil;
+}
+
+static VALUE
+int_aref2(VALUE num, VALUE beg, VALUE len)
+{
+    num = rb_int_rshift(num, beg);
+    VALUE mask = generate_mask(len);
+    num = rb_int_and(num, mask);
+    return num;
+}
+
+/*
+ *  Document-method: Integer#[]
+ *  call-seq:
+ *     int[n]    -> 0, 1
+ *     int[n, m] -> num
+ *     int[range] -> num
+ *
+ *  Bit Reference---Returns the <code>n</code>th bit in the
+ *  binary representation of +int+, where <code>int[0]</code>
+ *  is the least significant bit.
+ *
+ *     a = 0b11001100101010
+ *     30.downto(0) {|n| print a[n] }
+ *     #=> 0000000000000000011001100101010
+ *
+ *     a = 9**15
+ *     50.downto(0) {|n| print a[n] }
+ *     #=> 000101110110100000111000011110010100111100010111001
+ *
+ *  In principle, <code>n[i]</code> is equivalent to <code>(n >> i) & 1</code>.
+ *  Thus, any negative index always returns zero:
+ *
+ *     p 255[-1] #=> 0
+ *
+ *  Range operations <code>n[i, len]</code> and <code>n[i..j]</code>
+ *  are naturally extended.
+ *
+ *  * <code>n[i, len]</code> equals to <code>(n >> i) & ((1 << len) - 1)</code>.
+ *  * <code>n[i..j]</code> equals to <code>(n >> i) & ((1 << (j - i + 1)) - 1)</code>.
+ *  * <code>n[i...j]</code> equals to <code>(n >> i) & ((1 << (j - i)) - 1)</code>.
+ *  * <code>n[i..]</code> equals to <code>(n >> i)</code>.
+ *  * <code>n[..j]</code> is zero if <code>n & ((1 << (j + 1)) - 1)</code> is zero.  Otherwise, raises an ArgumentError.
+ *  * <code>n[...j]</code> is zero if <code>n & ((1 << j) - 1)</code> is zero.  Otherwise, raises an ArgumentError.
+ *
+ *  Note that range operation may exhaust memory.
+ *  For example, <code>-1[0, 1000000000000]</code> will raise NoMemoryError.
+ */
+
+static VALUE
+int_aref(int const argc, VALUE * const argv, VALUE const num)
+{
+    rb_check_arity(argc, 1, 2);
+    if (argc == 2) {
+	return int_aref2(num, argv[0], argv[1]);
+    }
+    return int_aref1(num, argv[0]);
+
     return Qnil;
 }
 
@@ -5555,7 +5657,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "&", rb_int_and, 1);
     rb_define_method(rb_cInteger, "|", int_or,  1);
     rb_define_method(rb_cInteger, "^", int_xor, 1);
-    rb_define_method(rb_cInteger, "[]", int_aref, 1);
+    rb_define_method(rb_cInteger, "[]", int_aref, -1);
 
     rb_define_method(rb_cInteger, "<<", rb_int_lshift, 1);
     rb_define_method(rb_cInteger, ">>", rb_int_rshift, 1);
