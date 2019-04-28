@@ -339,7 +339,7 @@ def package(vcs, rev, destdir, tmp = nil)
   Dir.chdir(v) do
     unless File.exist?("ChangeLog")
       # get the beginning revision from matz's commit
-      unless beginning = vcs.branch_beginning
+      unless beginning = vcs.branch_beginning(url)
         abort "#{File.basename $0}: Cannot find revision from '#{last_ChangeLog}'"
       end
       vcs.export_changelog(url, beginning, revision, "ChangeLog")
