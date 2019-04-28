@@ -11,10 +11,11 @@ require 'tempfile'
 require 'net/http'
 require 'uri'
 
-$repos = 'svn+ssh://svn@ci.ruby-lang.org/ruby/'
 ENV['LC_ALL'] = 'C'
 
 module Merger
+  REPOS = 'svn+ssh://svn@ci.ruby-lang.org/ruby/'
+
   class << self
     def help
       puts <<-end
@@ -119,7 +120,7 @@ def tag intv_p = false, relname=nil
     if pl == '-1'
       abort "no relname is given and not in a release branch even if this is patch release"
     end
-    branch_url = $repos + 'branches/ruby_'
+    branch_url = "#{REPOS}branches/ruby_"
     if v[0] < "2" || (v[0] == "2" && v[1] < "1")
       abort "patchlevel must be greater than 0 for patch release" if pl == "0"
       branch_url << x
@@ -129,7 +130,7 @@ def tag intv_p = false, relname=nil
     end
   end
   tagname = 'v' + x + (v[0] < "2" || (v[0] == "2" && v[1] < "1") || /^(?:preview|rc)/ =~ pl ? '_' + pl : '')
-  tag_url = $repos + 'tags/' + tagname
+  tag_url = "#{REPOS}tags/#{tagname}"
   system(*%w'svn info', tag_url, out: IO::NULL, err: IO::NULL)
   if $?.success?
     abort "specfied tag already exists. check tag name and remove it if you want to force re-tagging"
@@ -160,7 +161,7 @@ def remove_tag intv_p = false, relname
   else
     tagname = relname
   end
-  tag_url = $repos + 'tags/' + tagname
+  tag_url = "#{REPOS}tags/#{tagname}"
   if intv_p
     interactive "OK? svn rm -m \"remove tag #{tagname}\" #{tag_url}" do
       # nothing to do here
@@ -264,7 +265,7 @@ else
       IO.popen(['git', 'apply'], 'w') { |f| f.write(patch) }
     else
       default_merge_branch = (%r{^URL: .*/branches/ruby_1_8_} =~ `svn info` ? 'branches/ruby_1_8' : 'trunk')
-      svn_src = "#{$repos}#{ARGV[1] || default_merge_branch}"
+      svn_src = "#{Merger::REPOS}#{ARGV[1] || default_merge_branch}"
       message = IO.popen(['svn', 'log', '-r', svn_rev, svn_src], &:read)
 
       cmd = ['svn', 'merge', '--accept=postpone', '-r', svn_rev, svn_src]
