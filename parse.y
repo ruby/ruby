@@ -6788,7 +6788,6 @@ heredoc_identifier(struct parser_params *p)
     int c = nextc(p), term, func = 0, term_len = 2;
     enum yytokentype token = tSTRING_BEG;
     long len;
-    int newline = 0;
     int indent = 0;
 
     if (c == '-') {
@@ -6821,21 +6820,12 @@ heredoc_identifier(struct parser_params *p)
 	tokadd(p, func);
 	term = c;
 	while ((c = nextc(p)) != -1 && c != term) {
+	    if (c == '\n') goto unterminated;
 	    if (tokadd_mbchar(p, c) == -1) return 0;
-	    if (!newline && c == '\n') newline = 1;
-	    else if (newline) newline = 2;
 	}
 	if (c == -1) {
+	  unterminated:
 	    yyerror(NULL, p, "unterminated here document identifier");
-	    return -1;
-	}
-	switch (newline) {
-	  case 1:
-	    rb_warn0("here document identifier ends with a newline");
-	    if (--p->tokidx > 0 && p->tokenbuf[p->tokidx] == '\r') --p->tokidx;
-	    break;
-	  case 2:
-	    compile_error(p, "here document identifier across newlines, never match");
 	    return -1;
 	}
 	break;

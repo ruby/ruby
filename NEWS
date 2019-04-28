@@ -42,6 +42,12 @@ sufficient information, see the ChangeLog file or Redmine
 * Setting <code>$,</code> to non-nil value is warned now.  Use of it in
   Array#join is warned too.
 
+* Quoted here-document identifier must end within the same line.
+
+     <<"EOS
+     " # This has been warned since 2.4
+     EOS
+
 === Core classes updates (outstanding ones only)
 
 Enumerable::
