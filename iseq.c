@@ -2183,9 +2183,10 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
 	    int li = body->local_table_size - --i - 1;
 	    long width;
 	    VALUE name = local_var_name(iseq, 0, i);
-	    char argi[0x100] = "";
-	    char opti[0x100] = "";
+            char argi[0x100];
+            char opti[0x100];
 
+            opti[0] = '\0';
 	    if (body->param.flags.has_opt) {
 		int argc = body->param.lead_num;
 		int opts = body->param.opt_num;
