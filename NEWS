@@ -42,13 +42,6 @@ sufficient information, see the ChangeLog file or Redmine
 * Setting <code>$,</code> to non-nil value is warned now.  Use of it in
   Array#join is warned too.
 
-* <code>Integer#[]</code> now supports range operation.  [Feature #8842]
-
-     0b01001101[2, 4]  #=> 0b0011
-     0b01001100[2..5]  #=> 0b0011
-     0b01001100[2...6] #=> 0b0011
-         ^^^^
-
 === Core classes updates (outstanding ones only)
 
 Enumerable::
@@ -64,6 +57,17 @@ Enumerator::
     * Added Enumerator::Yielder#to_proc so that a Yielder object
       can be directly passed to another method as a block
       argument.  [Feature #15618]
+
+Integer::
+
+  Modified method::
+
+    * Integer#[] now supports range operation.  [Feature #8842]
+
+         0b01001101[2, 4]  #=> 0b0011
+         0b01001100[2..5]  #=> 0b0011
+         0b01001100[2...6] #=> 0b0011
+             ^^^^
 
 Regexp/String::
 
