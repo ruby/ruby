@@ -613,9 +613,9 @@ struct rb_strterm_heredoc_struct {
     unsigned length	/* the length of END in `<<"END"` */
 #if HERETERM_LENGTH_BITS < SIZEOF_INT * CHAR_BIT
     : HERETERM_LENGTH_BITS
+# define HERETERM_LENGTH_MAX ((1U << HERETERM_LENGTH_BITS) - 1)
 #else
-# undef HERETERM_LENGTH_BITS
-# define HERETERM_LENGTH_BITS (SIZEOF_INT * CHAR_BIT)
+# define HERETERM_LENGTH_MAX UINT_MAX
 #endif
     ;
     unsigned quote: 1;
@@ -6850,7 +6850,7 @@ heredoc_identifier(struct parser_params *p)
     }
 
     len = p->lex.pcur - (p->lex.pbeg + offset) - quote;
-    if ((unsigned long)len >= 1LU << HERETERM_LENGTH_BITS)
+    if ((unsigned long)len >= HERETERM_LENGTH_MAX)
 	yyerror(NULL, p, "too long here document identifier");
     dispatch_scan_event(p, tHEREDOC_BEG);
     lex_goto_eol(p);
