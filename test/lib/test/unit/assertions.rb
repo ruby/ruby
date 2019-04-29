@@ -500,7 +500,9 @@ EOT
         end
       end
 
-      def prepare_syntax_check(code, fname = caller_locations(2, 1)[0], mesg = fname.to_s, verbose: nil)
+      def prepare_syntax_check(code, fname = nil, mesg = nil, verbose: nil)
+        fname ||= caller_locations(2, 1)[0]
+        mesg ||= fname.to_s
         verbose, $VERBOSE = $VERBOSE, verbose
         case
         when Array === fname
