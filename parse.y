@@ -604,15 +604,24 @@ typedef struct rb_strterm_literal_struct {
     } u3;
 } rb_strterm_literal_t;
 
+#define HERETERM_LENGTH_BITS ((SIZEOF_VALUE - 1) * CHAR_BIT - 1)
+
 struct rb_strterm_heredoc_struct {
-    SIGNED_VALUE sourceline; /* lineno of the line that contains `<<"END"` */
-    VALUE term;		/* `"END"` of `<<"END"` */
     VALUE lastline;	/* the string of line that contains `<<"END"` */
-    union {
-	VALUE dummy;
-	long lastidx;	/* the column of `<<"END"` */
-    } u3;
+    long offset;	/* the column of END in `<<"END"` */
+    int sourceline;	/* lineno of the line that contains `<<"END"` */
+    unsigned length	/* the length of END in `<<"END"` */
+#if HERETERM_LENGTH_BITS < SIZEOF_INT * CHAR_BIT
+    : HERETERM_LENGTH_BITS
+#else
+# undef HERETERM_LENGTH_BITS
+# define HERETERM_LENGTH_BITS (SIZEOF_INT * CHAR_BIT)
+#endif
+    ;
+    unsigned quote: 1;
+    uint8_t func;
 };
+STATIC_ASSERT(rb_strterm_heredoc_t, sizeof(rb_strterm_heredoc_t) <= 4 * SIZEOF_VALUE);
 
 #define STRTERM_HEREDOC IMEMO_FL_USER0
 
@@ -631,7 +640,6 @@ rb_strterm_mark(VALUE obj)
     rb_strterm_t *strterm = (rb_strterm_t*)obj;
     if (RBASIC(obj)->flags & STRTERM_HEREDOC) {
 	rb_strterm_heredoc_t *heredoc = &strterm->u.heredoc;
-	rb_gc_mark(heredoc->term);
 	rb_gc_mark(heredoc->lastline);
     }
 }
@@ -6785,48 +6793,41 @@ heredoc_identifier(struct parser_params *p)
      * term_len is length of `<<"END"` except `END`,
      * in this case term_len is 4 (<, <, " and ").
      */
-    int c = nextc(p), term, func = 0, term_len = 2;
+    long len, offset = p->lex.pcur - p->lex.pbeg;
+    int c = nextc(p), term, func = 0, quote = 0;
     enum yytokentype token = tSTRING_BEG;
-    long len;
     int indent = 0;
 
     if (c == '-') {
 	c = nextc(p);
-	term_len++;
 	func = STR_FUNC_INDENT;
+	offset++;
     }
     else if (c == '~') {
 	c = nextc(p);
-	term_len++;
 	func = STR_FUNC_INDENT;
+	offset++;
 	indent = INT_MAX;
     }
     switch (c) {
       case '\'':
-	term_len++;
 	func |= str_squote; goto quoted;
       case '"':
-	term_len++;
 	func |= str_dquote; goto quoted;
       case '`':
-	term_len++;
 	token = tXSTRING_BEG;
 	func |= str_xquote; goto quoted;
 
       quoted:
-	term_len++;
-	newtok(p);
-	tokadd(p, term_len);
-	tokadd(p, func);
+	quote++;
+	offset++;
 	term = c;
-	while ((c = nextc(p)) != -1 && c != term) {
-	    if (c == '\r' || c == '\n') goto unterminated;
-	    if (tokadd_mbchar(p, c) == -1) return 0;
-	}
-	if (c == -1) {
-	  unterminated:
-	    yyerror(NULL, p, "unterminated here document identifier");
-	    return -1;
+	len = 0;
+	while ((c = nextc(p)) != term) {
+	    if (c == -1 || c == '\r' || c == '\n') {
+		yyerror(NULL, p, "unterminated here document identifier");
+		return -1;
+	    }
 	}
 	break;
 
@@ -6838,26 +6839,30 @@ heredoc_identifier(struct parser_params *p)
 	    }
 	    return 0;
 	}
-	newtok(p);
-	tokadd(p, term_len);
-	tokadd(p, func |= str_dquote);
+	func |= str_dquote;
 	do {
-	    if (tokadd_mbchar(p, c) == -1) return 0;
+	    int n = parser_precise_mbclen(p, p->lex.pcur-1);
+	    if (n < 0) return 0;
+	    p->lex.pcur += --n;
 	} while ((c = nextc(p)) != -1 && parser_is_identchar(p));
 	pushback(p, c);
 	break;
     }
 
-    tokfix(p);
+    len = p->lex.pcur - (p->lex.pbeg + offset) - quote;
+    if ((unsigned long)len >= 1LU << HERETERM_LENGTH_BITS)
+	yyerror(NULL, p, "too long here document identifier");
     dispatch_scan_event(p, tHEREDOC_BEG);
-    len = p->lex.pcur - p->lex.pbeg;
     lex_goto_eol(p);
 
-    p->lex.strterm = new_strterm(STR_NEW(tok(p), toklen(p)), /* term */
-				 p->lex.lastline, /* lastline */
-				 len, /* lastidx */
-				 p->ruby_sourceline);
+    p->lex.strterm = new_strterm(0, 0, 0, p->lex.lastline);
     p->lex.strterm->flags |= STRTERM_HEREDOC;
+    rb_strterm_heredoc_t *here = &p->lex.strterm->u.heredoc;
+    here->offset = offset;
+    here->sourceline = p->ruby_sourceline;
+    here->length = (int)len;
+    here->quote = quote;
+    here->func = func;
 
     token_flush(p);
     p->heredoc_indent = indent;
@@ -6875,7 +6880,7 @@ heredoc_restore(struct parser_params *p, rb_strterm_heredoc_t *here)
     p->lex.lastline = line;
     p->lex.pbeg = RSTRING_PTR(line);
     p->lex.pend = p->lex.pbeg + RSTRING_LEN(line);
-    p->lex.pcur = p->lex.pbeg + here->u3.lastidx;
+    p->lex.pcur = p->lex.pbeg + here->offset + here->length + here->quote;
     p->heredoc_end = p->ruby_sourceline;
     p->ruby_sourceline = (int)here->sourceline;
     token_flush(p);
@@ -7108,14 +7113,14 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
     rb_encoding *enc = p->enc;
     int bol;
 
-    eos = RSTRING_PTR(here->term);
-    len = RSTRING_LEN(here->term) - 2; /* here->term includes term_len and func */
-    eos++; /* skip term_len */
-    indent = (func = *eos++) & STR_FUNC_INDENT;
+    eos = RSTRING_PTR(here->lastline) + here->offset;
+    len = here->length;
+    indent = (func = here->func) & STR_FUNC_INDENT;
 
     if ((c = nextc(p)) == -1) {
       error:
-	compile_error(p, "can't find string \"%s\" anywhere before EOF", eos);
+	compile_error(p, "can't find string \"%.*s\" anywhere before EOF",
+		      (int)len, eos);
 #ifdef RIPPER
 	if (!has_delayed_token(p)) {
 	    dispatch_scan_event(p, tSTRING_CONTENT);
@@ -9931,13 +9936,15 @@ rb_parser_fatal(struct parser_params *p, const char *fmt, ...)
 YYLTYPE *
 rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_heredoc_t *here, YYLTYPE *yylloc)
 {
-    const char *eos = RSTRING_PTR(here->term);
-    long term_len = RSTRING_LEN(here->term) - 2 + (unsigned char)eos[0];
+    int sourceline = here->sourceline;
+    int beg_pos = (int)here->offset - here->quote
+	- (rb_strlen_lit("<<-") - !(here->func & STR_FUNC_INDENT));
+    int end_pos = (int)here->offset + here->length + here->quote;
 
-    yylloc->beg_pos.lineno = (int)here->sourceline;
-    yylloc->beg_pos.column = (int)(here->u3.lastidx - term_len);
-    yylloc->end_pos.lineno = (int)here->sourceline;
-    yylloc->end_pos.column = (int)(here->u3.lastidx);
+    yylloc->beg_pos.lineno = sourceline;
+    yylloc->beg_pos.column = beg_pos;
+    yylloc->end_pos.lineno = sourceline;
+    yylloc->end_pos.column = end_pos;
     return yylloc;
 }
 
