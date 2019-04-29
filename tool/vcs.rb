@@ -391,7 +391,7 @@ class VCS
 
     def self.get_revisions(path, srcdir = nil)
       gitcmd = [COMMAND]
-      last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', '--short', 'HEAD']]).rstrip
+      last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', '--short=10', 'HEAD']]).rstrip
       if path
         log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', path]])
       else
