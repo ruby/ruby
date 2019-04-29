@@ -6140,26 +6140,6 @@ rb_w32_getppid(void)
     static query_func *pNtQueryInformationProcess = (query_func *)-1;
     rb_pid_t ppid = 0;
 
-    HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (hSnap != INVALID_HANDLE_VALUE) {
-        BOOL ok;
-        PROCESSENTRY32 pe;
-        DWORD pid = GetCurrentProcessId();
-        pe.dwSize = sizeof(pe);
-        ok = Process32First(hSnap, &pe);
-        while (ok) {
-            if (pe.th32ProcessID == pid) {
-                ppid = (rb_pid_t)pe.th32ParentProcessID;
-                break;
-            }
-            ok = Process32Next(hSnap, &pe);
-        }
-        CloseHandle(hSnap);
-        if (ppid != 0) {
-            return ppid;
-        }
-    }
-
     if (pNtQueryInformationProcess == (query_func *)-1)
 	pNtQueryInformationProcess = (query_func *)get_proc_address("ntdll.dll", "NtQueryInformationProcess", NULL);
     if (pNtQueryInformationProcess) {
