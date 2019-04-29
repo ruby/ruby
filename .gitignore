@@ -36,6 +36,7 @@
 .pc
 .ppack
 .svn
+.time
 Makefile
 cygruby*.def
 extconf.h
@@ -145,19 +146,16 @@ lcov*.info
 
 # /coroutine/
 !/coroutine/**/*.s
-/coroutine/**/.time
 
 # /enc/trans/
 /enc/trans/*.c
 /enc/trans/*.def
 /enc/trans/*.exp
 /enc/trans/*.lib
-/enc/trans/.time
 
 # /exe/
 /exe/goruby
 /exe/ruby
-/exe/.time
 
 # /ext/
 /ext/extinit.c
@@ -205,7 +203,6 @@ lcov*.info
 
 # /win32/
 /win32/*.ico
-/win32/.time
 
 # MJIT
 /rb_mjit_header.h
