@@ -256,7 +256,7 @@ behaves like Kernel#`:
   HEREDOC
 
 When surrounding with quotes, any characters but that quote and newline
-can be used as the identifier.
+(CR and/or LF) can be used as the identifier.
 
 To call a method on a heredoc place it after the opening identifier:
 

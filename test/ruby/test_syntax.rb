@@ -857,6 +857,12 @@ eom
     assert_syntax_error("<<\"EOS\n\"\nEOS\n", /unterminated/)
   end
 
+  def test_unterminated_heredoc_cr
+    %W[\r\n \n].each do |nl|
+      assert_syntax_error("<<\"\r\"#{nl}\r#{nl}", /unterminated/, nil, "CR with #{nl.inspect}")
+    end
+  end
+
   def test__END___cr
     assert_syntax_error("__END__\r<<<<<\n", /unexpected <</)
   end

@@ -6820,7 +6820,7 @@ heredoc_identifier(struct parser_params *p)
 	tokadd(p, func);
 	term = c;
 	while ((c = nextc(p)) != -1 && c != term) {
-	    if (c == '\n') goto unterminated;
+	    if (c == '\r' || c == '\n') goto unterminated;
 	    if (tokadd_mbchar(p, c) == -1) return 0;
 	}
 	if (c == -1) {
