@@ -221,7 +221,7 @@ class << Merger
 
   def svn_mode?
     return @svn_mode if defined?(@svn_mode)
-    @svn_mode = system("svn info > /dev/null 2>&1")
+    @svn_mode = system("svn info > #{IO::NULL} 2>&1")
   end
 
   # Prints the version of Ruby found in version.h
