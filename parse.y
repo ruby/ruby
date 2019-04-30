@@ -4335,7 +4335,7 @@ sym		: fname
 		| tCVAR
 		;
 
-dsym		: tSYMBEG xstring_contents tSTRING_END
+dsym		: tSYMBEG string_contents tSTRING_END
 		    {
 			SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
 		    /*%%%*/
