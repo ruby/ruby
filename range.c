@@ -1012,6 +1012,9 @@ range_first(int argc, VALUE *argv, VALUE range)
 {
     VALUE n, ary[2];
 
+    if (NIL_P(RANGE_BEG(range))) {
+        rb_raise(rb_eRangeError, "cannot get the first element of beginless range");
+    }
     if (argc == 0) return RANGE_BEG(range);
 
     rb_scan_args(argc, argv, "1", &n);
