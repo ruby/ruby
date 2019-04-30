@@ -490,7 +490,7 @@ class VCS
         end
         rev unless rev.empty?
       end
-      unless (from ||= branch_beginning(url))
+      unless /./.match?(from ||= branch_beginning(url))
         raise "cannot find the beginning revision of the branch"
       end
       range = [from, (to || 'HEAD')].join('^..')
