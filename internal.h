@@ -112,7 +112,9 @@ extern "C" {
 #endif
 
 #ifdef HAVE_SANITIZER_MSAN_INTERFACE_H
-# include <sanitizer/msan_interface.h>
+# if __has_feature(memory_sanitizer)
+#  include <sanitizer/msan_interface.h>
+# endif
 #endif
 
 #if !__has_feature(memory_sanitizer)
