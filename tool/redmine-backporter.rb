@@ -436,7 +436,7 @@ eom
       next
     end
 
-    if system("svn info #{RUBY_REPO_PATH&.shellescape} > /dev/null 2>&1") # SVN
+    if system("svn info #{RUBY_REPO_PATH&.shellescape} > #{IO::NULL} 2>&1") # SVN
       if log = find_svn_log("##@issue]") && /revision="(?<rev>\d+)/ =~ log
         rev = "r#{rev}"
       end
