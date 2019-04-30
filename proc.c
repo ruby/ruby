@@ -1859,16 +1859,14 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
  *  Defines an instance method in the receiver. The _method_
  *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
  *  If a block is specified, it is used as the method body. This block
- *  is evaluated using <code>instance_eval</code>, a point that is
- *  tricky to demonstrate because <code>define_method</code> is private.
- *  (This is why we resort to the +send+ hack in this example.)
+ *  is evaluated using <code>instance_eval</code>.
  *
  *     class A
  *       def fred
  *         puts "In Fred"
  *       end
  *       def create_method(name, &block)
- *         self.class.send(:define_method, name, &block)
+ *         self.class.define_method(name, &block)
  *       end
  *       define_method(:wilma) { puts "Charge it!" }
  *     end
