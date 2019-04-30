@@ -1550,7 +1550,7 @@ method_hash(VALUE method)
     hash = rb_hash_method_entry(hash, m->me);
     hash = rb_hash_end(hash);
 
-    return INT2FIX(hash);
+    return ST2FIX(hash);
 }
 
 /*
