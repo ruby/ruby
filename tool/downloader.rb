@@ -121,7 +121,7 @@ class Downloader
         options['If-Modified-Since'] = since
       end
     end
-    options['Accept-Encoding'] = '*' # to disable Net::HTTP::GenericRequest#decode_content
+    options['Accept-Encoding'] = 'identity' # to disable Net::HTTP::GenericRequest#decode_content
     options
   end
 
