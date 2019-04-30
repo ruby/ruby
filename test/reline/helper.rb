@@ -5,6 +5,8 @@ require 'test/unit'
 RELINE_TEST_ENCODING ||=
   if ENV['RELINE_TEST_ENCODING']
     Encoding.find(ENV['RELINE_TEST_ENCODING'])
+  elsif Encoding.default_external == Encoding::IBM437
+    Encoding::UTF_8
   else
     Encoding.default_external
   end
