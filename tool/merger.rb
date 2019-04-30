@@ -316,7 +316,7 @@ else
       end
       patch = resp.body
 
-      message = "\n\n#{(patch.match(/^Subject: (.*)\n\ndiff --git/m)&.[](1) || "Message not found for revision: #{git_rev}\n")}"
+      message = "\n\n#{(patch[/^Subject: (.*)\n\ndiff --git/m, 1] || "Message not found for revision: #{git_rev}\n")}"
       puts '+ git apply'
       IO.popen(['git', 'apply'], 'w') { |f| f.write(patch) }
     else
