@@ -1226,6 +1226,27 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
     return ret_iseq;
 }
 
+static void
+iseq_insert_nop_between_end_and_cont(rb_iseq_t *iseq)
+{
+    VALUE catch_table_ary = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
+    unsigned int i, tlen = (unsigned int)RARRAY_LEN(catch_table_ary);
+    const VALUE *tptr = RARRAY_CONST_PTR(catch_table_ary);
+    for (i = 0; i < tlen; i++) {
+        const VALUE *ptr = RARRAY_CONST_PTR(tptr[i]);
+        LINK_ELEMENT *end = (LINK_ELEMENT *)(ptr[2] & ~1);
+        LINK_ELEMENT *cont = (LINK_ELEMENT *)(ptr[4] & ~1);
+        LINK_ELEMENT *e;
+        for (e = end; e && (IS_LABEL(e) || IS_TRACE(e)); e = e->next) {
+            if (e == cont) {
+                INSN *nop = new_insn_core(iseq, 0, BIN(nop), 0, 0);
+                ELEM_INSERT_NEXT(end, &nop->link);
+                break;
+            }
+        }
+    }
+}
+
 static int
 iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 {
@@ -1256,6 +1277,9 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	if (compile_debug > 5)
 	    dump_disasm_list(FIRST_ELEMENT(anchor));
     }
+
+    debugs("[compile step 3.4 (iseq_insert_nop_between_end_and_cont)]\n");
+    iseq_insert_nop_between_end_and_cont(iseq);
 
     debugs("[compile step 4.1 (iseq_set_sequence)]\n");
     if (!iseq_set_sequence(iseq, anchor)) return COMPILE_NG;
@@ -5382,15 +5406,8 @@ compile_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     ADD_LABEL(ret, lstart);
     CHECK(COMPILE_(ret, "ensure head", node->nd_head, (popped | last_leave)));
     ADD_LABEL(ret, lend);
-    if (LIST_INSN_SIZE_ZERO(ensr)) {
-	ADD_INSN(ret, line, nop);
-    }
-    else {
-	ADD_SEQ(ret, ensr);
-	if (!popped && last_leave) {
-	    ADD_INSN(ret, line, putnil);
-	}
-    }
+    ADD_SEQ(ret, ensr);
+    if (!popped && last_leave) ADD_INSN(ret, line, putnil);
     ADD_LABEL(ret, lcont);
     if (last_leave) ADD_INSN(ret, line, pop);
 

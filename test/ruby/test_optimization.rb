@@ -760,4 +760,13 @@ class TestRubyOptimization < Test::Unit::TestCase
     %w(1) || 2 while (i += 1) < 100
     assert_equal(100, i)
   end
+
+  def test_optimized_empty_ensure
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 10)
+    begin;
+      assert_raise(RuntimeError) {
+        begin raise ensure nil if nil end
+      }
+    end;
+  end
 end
