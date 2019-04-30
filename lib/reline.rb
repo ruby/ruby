@@ -77,6 +77,10 @@ module Reline
     @@dig_perfect_match_proc = p
   end
 
+  def self.delete_text(start = nil, length = nil)
+    raise NotImplementedError
+  end
+
   if IS_WINDOWS
     require 'reline/windows'
   else
