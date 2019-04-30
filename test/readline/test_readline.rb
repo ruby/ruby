@@ -688,4 +688,5 @@ class TestReadline < Test::Unit::TestCase
 SRC
     return true
   end
-end if defined?(::Readline)
+end if defined?(::Readline) && !(/mswin|mingw/ =~ RUBY_PLATFORM && defined?(Reline) && Readline == Reline)
+# skip on Windows now when using reline because it causes hang of whole tests
