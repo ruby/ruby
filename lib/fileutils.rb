@@ -6,7 +6,7 @@ rescue LoadError
   # for make mjit-headers
 end
 
-require "fileutils/version"
+require_relative "fileutils/version"
 
 #
 # = fileutils.rb
