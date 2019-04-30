@@ -196,10 +196,11 @@ class << Merger
 
   def diff(file = nil)
     if svn_mode?
-      `svn diff --diff-cmd=diff -x -upw #{file&.shellescape}`
+      command = %w[svn diff --diff-cmd=diff -x -upw]
     else
-      `git diff --color #{file&.shellescape}`
+      command = %w[git diff --color]
     end
+    IO.popen(command + [file], &:read)
   end
 
   def commit(file)
