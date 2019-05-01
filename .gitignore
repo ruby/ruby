@@ -57,6 +57,7 @@ lcov*.info
 /*.rc
 /*_prelude.c
 /COPYING.LIB
+/ChangeLog
 /Doxyfile
 /GNUmakefile
 /README.atheos
