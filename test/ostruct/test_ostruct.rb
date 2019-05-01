@@ -226,4 +226,12 @@ class TC_OpenStruct < Test::Unit::TestCase
       os.foo true, true
     end
   end
+
+  def test_exception_option
+    os = OpenStruct.new({}, exception: true)
+    assert_not_respond_to(os, :a)
+    assert_raise_with_message(NoMethodError, /undefined method `a'/) do
+      os.a
+    end
+  end
 end

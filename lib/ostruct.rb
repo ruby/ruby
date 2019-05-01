@@ -88,7 +88,7 @@ class OpenStruct
   #
   #   data   # => #<OpenStruct country="Australia", capital="Canberra">
   #
-  def initialize(hash=nil)
+  def initialize(hash=nil, options={})
     @table = {}
     if hash
       hash.each_pair do |k, v|
@@ -96,6 +96,7 @@ class OpenStruct
         @table[k] = v
       end
     end
+    @exception = options[:exception]
   end
 
   # Duplicates an OpenStruct object's Hash table.
@@ -220,6 +221,8 @@ class OpenStruct
       if @table.key?(mid)
         new_ostruct_member!(mid) unless frozen?
         @table[mid]
+      elsif @exception
+        super
       end
     elsif @table.key?(mid)
       raise ArgumentError, "wrong number of arguments (given #{len}, expected 0)"
