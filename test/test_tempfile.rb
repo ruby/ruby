@@ -381,8 +381,14 @@ puts Tempfile.new('foo').path
     t = Tempfile.open([TRAVERSAL_PATH, 'foo'])
     actual = Dir.glob(TRAVERSAL_PATH + '*').count
     assert_equal expect, actual
+  rescue Errno::EINVAL
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert "ok"
+    else
+      raise $!
+    end
   ensure
-    t.close!
+    t&.close!
   end
 
   def test_new_traversal_dir
@@ -390,6 +396,12 @@ puts Tempfile.new('foo').path
     t = Tempfile.new(TRAVERSAL_PATH + 'foo')
     actual = Dir.glob(TRAVERSAL_PATH + '*').count
     assert_equal expect, actual
+  rescue Errno::EINVAL
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert "ok"
+    else
+      raise $!
+    end
   ensure
     t&.close!
   end
@@ -399,6 +411,12 @@ puts Tempfile.new('foo').path
     t = Tempfile.create(TRAVERSAL_PATH + 'foo')
     actual = Dir.glob(TRAVERSAL_PATH + '*').count
     assert_equal expect, actual
+  rescue Errno::EINVAL
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert "ok"
+    else
+      raise $!
+    end
   ensure
     if t
       t.close
