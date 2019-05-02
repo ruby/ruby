@@ -366,6 +366,9 @@ rb_serial_t ruby_vm_global_method_state = 1;
 rb_serial_t ruby_vm_global_constant_state = 1;
 rb_serial_t ruby_vm_class_serial = 1;
 
+rb_vm_t ruby_vm_storage_current_vm;
+rb_thread_t ruby_vm_storage_main_th;
+
 static void thread_free(void *ptr);
 
 void
@@ -2326,8 +2329,6 @@ ruby_vm_destruct(rb_vm_t *vm)
 	if (objspace) {
 	    rb_objspace_free(objspace);
 	}
-	/* after freeing objspace, you *can't* use ruby_xfree() */
-	ruby_mimfree(vm);
 	ruby_current_vm_ptr = NULL;
     }
     RUBY_FREE_LEAVE("vm");
@@ -2586,7 +2587,7 @@ thread_free(void *ptr)
 
     rb_threadptr_root_fiber_release(th);
 
-    if (th->vm && th->vm->main_thread == th) {
+    if (th == &ruby_vm_storage_main_th) {
 	RUBY_GC_INFO("main thread\n");
     }
     else {
@@ -3208,20 +3209,14 @@ void
 Init_BareVM(void)
 {
     /* VM bootstrap: phase 1 */
-    rb_vm_t * vm = ruby_mimmalloc(sizeof(*vm));
-    rb_thread_t * th = ruby_mimmalloc(sizeof(*th));
-    if (!vm || !th) {
-	fprintf(stderr, "[FATAL] failed to allocate memory\n");
-	exit(EXIT_FAILURE);
-    }
-    MEMZERO(th, rb_thread_t, 1);
-    vm_init2(vm);
+    ruby_current_vm_ptr = &ruby_vm_storage_current_vm;
+    rb_thread_t * th = &ruby_vm_storage_main_th;
+    vm_init2(ruby_current_vm_ptr);
 
-    vm->objspace = rb_objspace_alloc();
-    ruby_current_vm_ptr = vm;
+    ruby_current_vm_ptr->objspace = rb_objspace_alloc();
 
     Init_native_thread(th);
-    th->vm = vm;
+    th->vm = ruby_current_vm_ptr;
     th_init(th, 0);
     rb_thread_set_current_raw(th);
     ruby_thread_init_stack(th);

@@ -1507,7 +1507,6 @@ extern VALUE *ruby_initial_gc_stress_ptr;
 extern int ruby_disable_gc;
 void Init_heap(void);
 void *ruby_mimmalloc(size_t size);
-void ruby_mimfree(void *ptr);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
 #if USE_RGENGC
 void rb_gc_writebarrier_remember(VALUE obj);

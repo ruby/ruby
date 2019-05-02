@@ -9723,16 +9723,6 @@ ruby_mimmalloc(size_t size)
     return mem;
 }
 
-void
-ruby_mimfree(void *ptr)
-{
-#if CALC_EXACT_MALLOC_SIZE
-    struct malloc_obj_info *info = (struct malloc_obj_info *)ptr - 1;
-    ptr = info;
-#endif
-    free(ptr);
-}
-
 void *
 rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
 {
