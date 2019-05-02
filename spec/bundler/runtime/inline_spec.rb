@@ -291,6 +291,19 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(out).to eq "1.0.0"
   end
 
+  context "when BUNDLE_PATH is set" do
+    it "installs inline gems to the system path regardless" do
+      script <<-RUBY, :env => { "BUNDLE_PATH" => "./vendor/inline" }
+        gemfile(true) do
+          source "file://#{gem_repo1}"
+          gem "rack"
+        end
+      RUBY
+      expect(last_command).to be_success
+      expect(system_gem_path("gems/rack-1.0.0")).to exist
+    end
+  end
+
   it "skips platform warnings" do
     simulate_platform "ruby"
 
