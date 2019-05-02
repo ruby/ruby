@@ -402,7 +402,7 @@ class VCS
       modified = log[/^Date:\s+(.*)/, 1]
       branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short HEAD]])
       branch.chomp!
-      upstream = cmd_read_at(srcdir, [gitcmd + %W[branch --list --format=%(upstream:short) #${branch}]])
+      upstream = cmd_read_at(srcdir, [gitcmd + %W[branch --list --format=%(upstream:short) #{branch}]])
       upstream.chomp!
       title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 #{upstream}..HEAD]])
       title = nil if title.empty?
