@@ -200,7 +200,7 @@ class << Merger
     else
       command = %w[git diff --color]
     end
-    IO.popen(command + [file], &:read)
+    IO.popen(command + [file].compact, &:read)
   end
 
   def commit(file)
