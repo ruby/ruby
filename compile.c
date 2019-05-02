@@ -482,6 +482,7 @@ static TRACE *new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event);
 
 static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *anchor, const NODE *n, int);
 static int iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
+static int iseq_setup_insn(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 
@@ -611,6 +612,20 @@ validate_labels(rb_iseq_t *iseq, st_table *labels_table)
 }
 
 VALUE
+rb_iseq_compile_ifunc(rb_iseq_t *iseq, const struct vm_ifunc *ifunc)
+{
+    DECL_ANCHOR(ret);
+    INIT_ANCHOR(ret);
+
+    (*ifunc->func)(iseq, ret, ifunc->data);
+
+    ADD_INSN(ret, ISEQ_COMPILE_DATA(iseq)->last_line, leave);
+
+    CHECK(iseq_setup_insn(iseq, ret));
+    return iseq_setup(iseq, ret);
+}
+
+VALUE
 rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 {
     DECL_ANCHOR(ret);
@@ -723,6 +738,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 	validate_labels(iseq, labels_table);
     }
 #endif
+    CHECK(iseq_setup_insn(iseq, ret));
     return iseq_setup(iseq, ret);
 }
 
@@ -1248,7 +1264,7 @@ iseq_insert_nop_between_end_and_cont(rb_iseq_t *iseq)
 }
 
 static int
-iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
+iseq_setup_insn(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 {
     if (RTEST(ISEQ_COMPILE_DATA(iseq)->err_info))
 	return COMPILE_NG;
@@ -1280,6 +1296,15 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     debugs("[compile step 3.4 (iseq_insert_nop_between_end_and_cont)]\n");
     iseq_insert_nop_between_end_and_cont(iseq);
+
+    return COMPILE_OK;
+}
+
+static int
+iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
+{
+    if (RTEST(ISEQ_COMPILE_DATA(iseq)->err_info))
+	return COMPILE_NG;
 
     debugs("[compile step 4.1 (iseq_set_sequence)]\n");
     if (!iseq_set_sequence(iseq, anchor)) return COMPILE_NG;
