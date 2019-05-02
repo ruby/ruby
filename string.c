@@ -6518,7 +6518,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 	if (buffer_length_or_invalid < 0) {
             current_buffer = DATA_PTR(buffer_anchor);
             DATA_PTR(buffer_anchor) = 0;
-	    mapping_buffer_free(current_buffer);
+            mapping_buffer_free(current_buffer);
 	    rb_raise(rb_eArgError, "input string invalid");
 	}
 	target_length  += current_buffer->used = buffer_length_or_invalid;
@@ -6535,7 +6535,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 
 	target = rb_str_new_with_class(source, 0, target_length);
 	target_current = RSTRING_PTR(target);
-	current_buffer = DATA_PTR(buffer_anchor);
+        current_buffer = DATA_PTR(buffer_anchor);
 	while (current_buffer) {
 	    memcpy(target_current, current_buffer->space, current_buffer->used);
 	    target_current += current_buffer->used;
