@@ -6462,6 +6462,23 @@ typedef struct mapping_buffer {
     OnigUChar space[FLEX_ARY_LEN];
 } mapping_buffer;
 
+static void
+mapping_buffer_free(void *p)
+{
+    mapping_buffer *previous_buffer;
+    mapping_buffer *current_buffer = p;
+    while (current_buffer) {
+        previous_buffer = current_buffer;
+        current_buffer  = current_buffer->next;
+        ruby_sized_xfree(previous_buffer, previous_buffer->capa);
+    }
+}
+
+static const rb_data_type_t mapping_buffer_type = {
+    "mapping_buffer",
+    {0, mapping_buffer_free,}
+};
+
 static VALUE
 rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 {
@@ -6469,8 +6486,9 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 
     OnigUChar *source_current, *source_end;
     int target_length = 0;
-    mapping_buffer pre_buffer, /* only next pointer used */
-		  *current_buffer = &pre_buffer;
+    VALUE buffer_anchor;
+    mapping_buffer *current_buffer = 0;
+    mapping_buffer **pre_buffer;
     size_t buffer_count = 0;
     int buffer_length_or_invalid;
 
@@ -6479,14 +6497,17 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     source_current = (OnigUChar*)RSTRING_PTR(source);
     source_end = (OnigUChar*)RSTRING_END(source);
 
+    buffer_anchor = TypedData_Wrap_Struct(0, &mapping_buffer_type, 0);
+    pre_buffer = (mapping_buffer **)&DATA_PTR(buffer_anchor);
     while (source_current < source_end) {
 	/* increase multiplier using buffer count to converge quickly */
 	size_t capa = (size_t)(source_end-source_current)*++buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
 	if (CASEMAP_DEBUG) {
 	    fprintf(stderr, "Buffer allocation, capa is %"PRIuSIZE"\n", capa); /* for tuning */
 	}
-	current_buffer->next = xmalloc(offsetof(mapping_buffer, space) + capa);
-	current_buffer = current_buffer->next;
+        current_buffer = xmalloc(offsetof(mapping_buffer, space) + capa);
+        *pre_buffer = current_buffer;
+        pre_buffer = &current_buffer->next;
 	current_buffer->next = NULL;
 	current_buffer->capa = capa;
 	buffer_length_or_invalid = enc->case_map(flags,
@@ -6495,14 +6516,9 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 				   current_buffer->space+current_buffer->capa,
 				   enc);
 	if (buffer_length_or_invalid < 0) {
-	    mapping_buffer *previous_buffer;
-
-	    current_buffer = pre_buffer.next;
-	    while (current_buffer) {
-		previous_buffer = current_buffer;
-		current_buffer  = current_buffer->next;
-		ruby_sized_xfree(previous_buffer, previous_buffer->capa);
-	    }
+            current_buffer = DATA_PTR(buffer_anchor);
+            DATA_PTR(buffer_anchor) = 0;
+	    mapping_buffer_free(current_buffer);
 	    rb_raise(rb_eArgError, "input string invalid");
 	}
 	target_length  += current_buffer->used = buffer_length_or_invalid;
@@ -6513,23 +6529,22 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 
     if (buffer_count==1) {
 	target = rb_str_new_with_class(source, (const char*)current_buffer->space, target_length);
-	ruby_sized_xfree(current_buffer, current_buffer->capa);
     }
     else {
 	char *target_current;
-	mapping_buffer *previous_buffer;
 
 	target = rb_str_new_with_class(source, 0, target_length);
 	target_current = RSTRING_PTR(target);
-	current_buffer=pre_buffer.next;
+	current_buffer = DATA_PTR(buffer_anchor);
 	while (current_buffer) {
 	    memcpy(target_current, current_buffer->space, current_buffer->used);
 	    target_current += current_buffer->used;
-	    previous_buffer = current_buffer;
 	    current_buffer  = current_buffer->next;
-	    ruby_sized_xfree(previous_buffer, previous_buffer->capa);
 	}
     }
+    current_buffer = DATA_PTR(buffer_anchor);
+    DATA_PTR(buffer_anchor) = 0;
+    mapping_buffer_free(current_buffer);
 
     /* TODO: check about string terminator character */
     OBJ_INFECT_RAW(target, source);
