@@ -6592,8 +6592,8 @@ rb_str_ascii_casemap(VALUE source, VALUE target, OnigCaseFoldType *flags, rb_enc
     }
 
     length_or_invalid = onigenc_ascii_only_case_map(flags,
-			       &source_current, source_end,
-			       target_current, target_end, enc);
+                               &source_current, source_end,
+                               target_current, target_end, enc);
     if (length_or_invalid < 0)
         rb_raise(rb_eArgError, "input string invalid");
     if (CASEMAP_DEBUG && length_or_invalid != old_length) {
