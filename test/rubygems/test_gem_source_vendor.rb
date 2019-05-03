@@ -19,13 +19,13 @@ class TestGemSourceVendor < Gem::TestCase
     assert_equal(0, vendor.<=>(vendor),    'vendor <=> vendor')
 
     assert_equal(1, vendor.<=>(remote),    'vendor <=> remote')
-    assert_equal(-1, remote.<=>(vendor),    'remote <=> vendor')
+    assert_equal(-1, remote.<=>(vendor), 'remote <=> vendor')
 
-    assert_equal(1, vendor.<=>(git),       'vendor <=> git')
-    assert_equal(-1, git.<=>(vendor),    'git <=> vendor')
+    assert_equal(1, vendor.<=>(git), 'vendor <=> git')
+    assert_equal(-1, git.<=>(vendor), 'git <=> vendor')
 
     assert_equal(1, vendor.<=>(installed), 'vendor <=> installed')
-    assert_equal(-1, installed.<=>(vendor),    'installed <=> vendor')
+    assert_equal(-1, installed.<=>(vendor), 'installed <=> vendor')
   end
 
 end

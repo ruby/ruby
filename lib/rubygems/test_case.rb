@@ -1024,7 +1024,7 @@ Also, a list:
 
     spec_fetcher = Gem::SpecFetcher.fetcher
 
-    prerelease, all = all_specs.partition { |spec| spec.version.prerelease?  }
+    prerelease, all = all_specs.partition { |spec| spec.version.prerelease? }
     latest = Gem::Specification._latest_specs all_specs
 
     spec_fetcher.specs[@uri] = []

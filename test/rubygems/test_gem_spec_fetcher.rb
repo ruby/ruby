@@ -322,7 +322,7 @@ class TestGemSpecFetcher < Gem::TestCase
     specs, _ = @sf.available_specs(:prerelease)
 
     expected = Gem::NameTuple.from_list \
-      [['a',  v('2.a'), Gem::Platform::RUBY]]
+      [['a', v('2.a'), Gem::Platform::RUBY]]
 
     assert_equal expected, specs[@source]
   end

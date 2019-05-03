@@ -115,7 +115,7 @@ module Gem
   # The default directory for binaries
 
   def self.default_bindir
-    if defined? RUBY_FRAMEWORK_VERSION  # mac framework support
+    if defined? RUBY_FRAMEWORK_VERSION # mac framework support
       '/usr/bin'
     else # generic install
       RbConfig::CONFIG['bindir']

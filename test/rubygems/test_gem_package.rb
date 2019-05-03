@@ -151,7 +151,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     FileUtils.mkdir_p 'lib/empty'
 
-    File.open 'lib/code.rb',  'w' do |io|
+    File.open 'lib/code.rb', 'w' do |io|
       io.write '# lib/code.rb'
     end
 
@@ -185,7 +185,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     FileUtils.mkdir_p 'lib'
 
-    File.open 'lib/code.rb',  'w' do |io|
+    File.open 'lib/code.rb', 'w' do |io|
       io.write '# lib/code.rb'
     end
 
@@ -536,11 +536,11 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file    'relative.rb', 0644 do |io|
+      tar.add_file 'relative.rb', 0644 do |io|
         io.write 'hi'
       end
 
-      tar.mkdir       'lib',         0755
+      tar.mkdir       'lib', 0755
       tar.add_symlink 'lib/foo.rb', '../relative.rb', 0644
     end
 
@@ -635,7 +635,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       tar.add_file 'lib/foo.rb', 0644 do |io|
         io.write 'hi'
       end
-      tar.mkdir    'lib/foo',    0755
+      tar.mkdir    'lib/foo', 0755
     end
 
     package.extract_tar_gz tgz_io, @destination
@@ -1097,7 +1097,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       $bad_name = vm
 
       entry = Object.new
-      def entry.full_name() $bad_name  end
+      def entry.full_name() $bad_name end
 
       package = Gem::Package.new(@gem)
       package.instance_variable_set(:@files, [])

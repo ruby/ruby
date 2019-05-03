@@ -26,7 +26,7 @@ class TestGemPackageTask < Gem::TestCase
       g.summary = 'summary'
     end
 
-    pkg = Gem::PackageTask.new(gem)  do |p|
+    pkg = Gem::PackageTask.new(gem) do |p|
       p.package_files << "y"
     end
 
@@ -49,7 +49,7 @@ class TestGemPackageTask < Gem::TestCase
       g.files = Rake::FileList["x"].resolve
       g.platform = Gem::Platform::CURRENT
     end
-    pkg = Gem::PackageTask.new(gem)  do |p|
+    pkg = Gem::PackageTask.new(gem) do |p|
       p.package_files << "y"
     end
     assert_equal ["x", "y"], pkg.package_files
@@ -62,7 +62,7 @@ class TestGemPackageTask < Gem::TestCase
       g.files = Rake::FileList["x"].resolve
       g.platform = Gem::Platform::RUBY
     end
-    pkg = Gem::PackageTask.new(gem)  do |p|
+    pkg = Gem::PackageTask.new(gem) do |p|
       p.package_files << "y"
     end
     assert_equal ["x", "y"], pkg.package_files

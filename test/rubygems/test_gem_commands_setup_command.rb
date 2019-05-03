@@ -23,11 +23,11 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     FileUtils.mkdir_p 'bin'
     FileUtils.mkdir_p 'lib/rubygems/ssl_certs/rubygems.org'
 
-    File.open 'bin/gem',                   'w' do
+    File.open 'bin/gem', 'w' do
       |io| io.puts '# gem'
     end
 
-    File.open 'lib/rubygems.rb',           'w' do |io|
+    File.open 'lib/rubygems.rb', 'w' do |io|
       io.puts '# rubygems.rb'
     end
 
@@ -42,15 +42,15 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     FileUtils.mkdir_p 'bundler/exe'
     FileUtils.mkdir_p 'bundler/lib/bundler'
 
-    File.open 'bundler/exe/bundle',        'w' do |io|
+    File.open 'bundler/exe/bundle', 'w' do |io|
       io.puts '# bundle'
     end
 
-    File.open 'bundler/lib/bundler.rb',    'w' do |io|
+    File.open 'bundler/lib/bundler.rb', 'w' do |io|
       io.puts '# bundler.rb'
     end
 
-    File.open 'bundler/lib/bundler/b.rb',  'w' do |io|
+    File.open 'bundler/lib/bundler/b.rb', 'w' do |io|
       io.puts '# b.rb'
     end
 
@@ -63,7 +63,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     gemspec.bindir = "exe"
     gemspec.executables = ["bundle"]
 
-    File.open 'bundler/bundler.gemspec',   'w' do |io|
+    File.open 'bundler/bundler.gemspec', 'w' do |io|
       io.puts gemspec.to_ruby
     end
 
@@ -317,19 +317,19 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     FileUtils.mkdir_p lib_rubygems_defaults
     FileUtils.mkdir_p lib_bundler
 
-    File.open securerandom_rb,    'w' do |io|
+    File.open securerandom_rb, 'w' do |io|
       io.puts '# securerandom.rb'
     end
 
-    File.open old_builder_rb,     'w' do |io|
+    File.open old_builder_rb, 'w' do |io|
       io.puts '# builder.rb'
     end
 
-    File.open old_format_rb,      'w' do |io|
+    File.open old_format_rb, 'w' do |io|
       io.puts '# format.rb'
     end
 
-    File.open old_bundler_c_rb,   'w' do |io|
+    File.open old_bundler_c_rb, 'w' do |io|
       io.puts '# c.rb'
     end
 
@@ -337,7 +337,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       io.puts '# jruby.rb'
     end
 
-    File.open os_defaults_rb,     'w' do |io|
+    File.open os_defaults_rb, 'w' do |io|
       io.puts '# operating_system.rb'
     end
 

@@ -134,7 +134,7 @@ class TestGemDependencyList < Gem::TestCase
   end
 
   def test_why_not_ok_eh
-    assert_equal({},  @deplist.why_not_ok?)
+    assert_equal({}, @deplist.why_not_ok?)
 
     @deplist.add @b2
 
@@ -162,7 +162,7 @@ class TestGemDependencyList < Gem::TestCase
 
     @deplist.add a, b0, b1
 
-    assert_equal({},  @deplist.why_not_ok?)
+    assert_equal({}, @deplist.why_not_ok?)
   end
 
   def test_ok_eh_mismatch

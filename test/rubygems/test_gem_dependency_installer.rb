@@ -148,7 +148,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @b1_gem, @tempdir
-    FileUtils.mv  e1_gem, @tempdir
+    FileUtils.mv e1_gem, @tempdir
 
     inst = nil
 
@@ -239,7 +239,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv  a2_gem, @tempdir # not in index
     FileUtils.mv @b1_gem, @tempdir
-    FileUtils.mv  a3_gem, @tempdir
+    FileUtils.mv a3_gem, @tempdir
 
     Dir.chdir @tempdir do
       Gem::DependencyInstaller.new.install 'a', req("= 2")

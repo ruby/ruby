@@ -246,7 +246,7 @@ end
       a1 = util_spec "a", "1", "b" => "> 0"
       b1 = util_spec "b", "1", "c" => ">= 0" # unresolved
       b2 = util_spec "b", "2", "c" => ">= 0"
-      c1 = util_spec "c", "1", nil, "lib/c#{$$}.rb"  # 1st level
+      c1 = util_spec "c", "1", nil, "lib/c#{$$}.rb" # 1st level
       c2 = util_spec "c", "2", nil, "lib/c#{$$}.rb"
 
       install_specs c1, c2, b1, b2, a1
@@ -264,7 +264,7 @@ end
       a1 = util_spec "a", "1", "b" => "> 0"
       b1 = util_spec "b", "1", "c" => ">= 0" # unresolved
       b2 = util_spec "b", "2", "c" => ">= 0"
-      c1 = util_spec "c", "1", "d" => ">= 0"  # 1st level
+      c1 = util_spec "c", "1", "d" => ">= 0" # 1st level
       c2 = util_spec "c", "2", "d" => ">= 0"
       d1 = util_spec "d", "1", nil, "lib/d#{$$}.rb" # 2nd level
       d2 = util_spec "d", "2", nil, "lib/d#{$$}.rb"
@@ -520,11 +520,11 @@ end
 
   def test_self_activate_via_require_wtf
     save_loaded_features do
-      a1 = util_spec "a", "1", "b" => "> 0", "d" => "> 0"    # this
+      a1 = util_spec "a", "1", "b" => "> 0", "d" => "> 0" # this
       b1 = util_spec "b", "1", { "c" => ">= 1" }, "lib/b#{$$}.rb"
       b2 = util_spec "b", "2", { "c" => ">= 2" }, "lib/b#{$$}.rb" # this
       c1 = util_spec "c", "1"
-      c2 = util_spec "c", "2"                                # this
+      c2 = util_spec "c", "2" # this
       d1 = util_spec "d", "1", { "c" => "< 2" },  "lib/d#{$$}.rb"
       d2 = util_spec "d", "2", { "c" => "< 2" },  "lib/d#{$$}.rb" # this
 
@@ -1187,7 +1187,7 @@ dependencies: []
 
     # create user spec
     user_spec_dir = File.join Gem.user_dir, 'specifications'
-    FileUtils.mkdir_p(user_spec_dir)  unless Dir.exist? user_spec_dir
+    FileUtils.mkdir_p(user_spec_dir) unless Dir.exist? user_spec_dir
     # dirs doesn't include user ?
     Gem::Specification.dirs << user_spec_dir
 

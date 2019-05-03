@@ -30,7 +30,7 @@ module Gem::InstallUpdateOptions
       options[:bin_dir] = File.expand_path(value)
     end
 
-    add_option(:"Install/Update",       '--document [TYPES]', Array,
+    add_option(:"Install/Update", '--document [TYPES]', Array,
                'Generate documentation for installed gems',
                'List the documentation types you wish to',
                'generate.  For example: rdoc,ri') do |value, options|
@@ -88,7 +88,7 @@ module Gem::InstallUpdateOptions
       options[:ignore_dependencies] = value
     end
 
-    add_option(:"Install/Update",       '--[no-]format-executable',
+    add_option(:"Install/Update", '--[no-]format-executable',
                'Make installed executable names match Ruby.',
                'If Ruby is ruby18, foo_exec will be',
                'foo_exec18') do |value, options|

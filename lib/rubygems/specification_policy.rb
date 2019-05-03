@@ -8,7 +8,7 @@ class Gem::SpecificationPolicy
 
   SPECIAL_CHARACTERS = /\A[#{Regexp.escape('.-_')}]+/.freeze # :nodoc:
 
-  VALID_URI_PATTERN = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z}.freeze  # :nodoc:
+  VALID_URI_PATTERN = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z}.freeze # :nodoc:
 
   METADATA_LINK_KEYS = %w[
     bug_tracker_uri
@@ -281,7 +281,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
     platform = @specification.platform
 
     case platform
-    when Gem::Platform, Gem::Platform::RUBY  # ok
+    when Gem::Platform, Gem::Platform::RUBY # ok
     else
       error "invalid platform #{platform.inspect}, see Gem::Platform"
     end

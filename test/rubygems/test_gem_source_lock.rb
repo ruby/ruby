@@ -66,8 +66,8 @@ class TestGemSourceLock < Gem::TestCase
     installed = Gem::Source::Installed.new
     lock      = Gem::Source::Lock.new installed
 
-    assert_equal(1, lock.<=>(installed),  'lock <=> installed')
-    assert_equal(-1, installed.<=>(lock),       'installed <=> lock')
+    assert_equal(1, lock.<=>(installed), 'lock <=> installed')
+    assert_equal(-1, installed.<=>(lock), 'installed <=> lock')
   end
 
   def test_spaceship_local
@@ -75,7 +75,7 @@ class TestGemSourceLock < Gem::TestCase
     lock  = Gem::Source::Lock.new local # nonsense
 
     assert_equal(1, lock.<=>(local), 'lock <=> local')
-    assert_equal(-1, local.<=>(lock),  'local <=> lock')
+    assert_equal(-1, local.<=>(lock), 'local <=> lock')
   end
 
   def test_spaceship_remote
@@ -83,7 +83,7 @@ class TestGemSourceLock < Gem::TestCase
     lock   = Gem::Source::Lock.new remote
 
     assert_equal(1, lock.<=>(remote), 'lock <=> remote')
-    assert_equal(-1, remote.<=>(lock),   'remote <=> lock')
+    assert_equal(-1, remote.<=>(lock), 'remote <=> lock')
   end
 
   def test_spaceship_specific_file
@@ -92,7 +92,7 @@ class TestGemSourceLock < Gem::TestCase
     specific = Gem::Source::SpecificFile.new gem
     lock     = Gem::Source::Lock.new specific # nonsense
 
-    assert_equal(1, lock.<=>(specific),  'lock <=> specific')
+    assert_equal(1, lock.<=>(specific), 'lock <=> specific')
     assert_equal(-1, specific.<=>(lock),      'specific <=> lock')
   end
 
@@ -101,7 +101,7 @@ class TestGemSourceLock < Gem::TestCase
     lock   = Gem::Source::Lock.new vendor
 
     assert_equal(1, lock.<=>(vendor), 'lock <=> vendor')
-    assert_equal(-1, vendor.<=>(lock),   'vendor <=> lock')
+    assert_equal(-1, vendor.<=>(lock), 'vendor <=> lock')
   end
 
   def test_uri

@@ -118,7 +118,7 @@ class Gem::RemoteFetcher
 
   def download(spec, source_uri, install_dir = Gem.dir)
     cache_dir =
-      if Dir.pwd == install_dir  # see fetch_command
+      if Dir.pwd == install_dir # see fetch_command
         install_dir
       elsif File.writable? install_dir
         File.join install_dir, "cache"

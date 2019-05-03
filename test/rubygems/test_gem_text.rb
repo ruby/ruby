@@ -23,7 +23,7 @@ class TestGemText < Gem::TestCase
   end
 
   def test_format_text_no_space
-    assert_equal "texttowr\nap",     format_text("texttowrap", 8)
+    assert_equal "texttowr\nap", format_text("texttowrap", 8)
   end
 
   def test_format_text_trailing # for two spaces after .

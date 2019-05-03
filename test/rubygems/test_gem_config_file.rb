@@ -385,7 +385,7 @@ if you believe they were disclosed to a third party.
     util_config_file
 
     # These should not be written out to the config file.
-    assert_equal false, @cfg.backtrace,     'backtrace'
+    assert_equal false, @cfg.backtrace, 'backtrace'
     assert_equal Gem::ConfigFile::DEFAULT_BULK_THRESHOLD, @cfg.bulk_threshold,
                  'bulk_threshold'
     assert_equal true, @cfg.update_sources, 'update_sources'
