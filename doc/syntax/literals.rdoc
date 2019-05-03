@@ -255,7 +255,7 @@ behaves like Kernel#`:
   cat #{__FILE__}
   HEREDOC
 
-When surrounding with quotes, any characters but that quote and newline
+When surrounding with quotes, any character but that quote and newline
 (CR and/or LF) can be used as the identifier.
 
 To call a method on a heredoc place it after the opening identifier:
