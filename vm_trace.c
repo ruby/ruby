@@ -1817,11 +1817,13 @@ struct rb_workqueue_job {
     rb_postponed_job_t job;
 };
 
+rb_postponed_job_t ruby_vm_storage_postponed_job[MAX_POSTPONED_JOB];
+
 void
 Init_vm_postponed_job(void)
 {
     rb_vm_t *vm = GET_VM();
-    vm->postponed_job_buffer = ALLOC_N(rb_postponed_job_t, MAX_POSTPONED_JOB);
+    vm->postponed_job_buffer = ruby_vm_storage_postponed_job;
     vm->postponed_job_index = 0;
     /* workqueue is initialized when VM locks are initialized */
 }
