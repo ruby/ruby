@@ -1877,8 +1877,10 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
  *
  *  Defines an instance method in the receiver. The _method_
  *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
- *  If a block is specified, it is used as the method body. This block
- *  is evaluated using #instance_eval.
+ *  If a block is specified, it is used as the method body.
+ *  If a block or the _method_ parameter has parameters,
+ *  they're used as method parameters.
+ *  This block is evaluated using #instance_eval.
  *
  *     class A
  *       def fred
@@ -1888,6 +1890,7 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
  *         self.class.define_method(name, &block)
  *       end
  *       define_method(:wilma) { puts "Charge it!" }
+ *       define_method(:flint) {|name| puts "I'm #{name}!"}
  *     end
  *     class B < A
  *       define_method(:barney, instance_method(:fred))
@@ -1895,6 +1898,7 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
  *     a = B.new
  *     a.barney
  *     a.wilma
+ *     a.flint('Dino')
  *     a.create_method(:betty) { p self }
  *     a.betty
  *
@@ -1902,6 +1906,7 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
  *
  *     In Fred
  *     Charge it!
+ *     I'm Dino!
  *     #<B:0x401b39e8>
  */
 
@@ -2006,6 +2011,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
  *  Defines a singleton method in the receiver. The _method_
  *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
  *  If a block is specified, it is used as the method body.
+ *  If a block or a method has parameters, they're used as method parameters.
  *
  *     class A
  *       class << self
@@ -2022,6 +2028,10 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
  *     guy = "Bob"
  *     guy.define_singleton_method(:hello) { "#{self}: Hello there!" }
  *     guy.hello    #=>  "Bob: Hello there!"
+ *
+ *     chris = "Chris"
+ *     chris.define_singleton_method(:greet) {|greeting| "#{greeting}, I'm Chris!" }
+ *     chris.greet("Hi") #=> "Hi, I'm Chris!"
  */
 
 static VALUE
