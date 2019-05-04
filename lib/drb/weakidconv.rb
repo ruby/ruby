@@ -20,7 +20,7 @@ module DRb
       def add(obj)
         synchronize do
           begin
-            @map[obj] = self 
+            @map[obj] = self
           rescue ArgumentError
             @immutable[obj.__id__] = obj
           end
@@ -30,7 +30,7 @@ module DRb
 
       def fetch(ref)
         synchronize do
-          @immutable.fetch(ref) { 
+          @immutable.fetch(ref) {
             @map.each { |key, _|
               return key if key.__id__ == ref
             }
