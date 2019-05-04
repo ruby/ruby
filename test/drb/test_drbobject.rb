@@ -53,12 +53,4 @@ class TestDRbObjectWeakIdConv < Test::Unit::TestCase
   def setup
     DRb.start_service(nil, nil, {:idconv => DRb::WeakIdConv.new})
   end
-
-  def test_RangeError
-    proxy = DRbObject.new("string".dup)
-    GC.start
-    assert_raise(RangeError) {
-      DRb.to_obj(proxy.__drbref)
-    }
-  end
 end
