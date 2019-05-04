@@ -292,6 +292,17 @@ class TestEnv < Test::Unit::TestCase
     assert_equal({"foo"=>"bar", "baz"=>"qux"}, ENV.slice("foo", "baz"))
   end
 
+  def test_except
+    ENV.clear
+    ENV["foo"] = "bar"
+    ENV["baz"] = "qux"
+    ENV["bar"] = "rab"
+    assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, ENV.except())
+    assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, ENV.except(""))
+    assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, ENV.except("unknown"))
+    assert_equal({"bar"=>"rab"}, ENV.except("foo", "baz"))
+  end
+
   def test_clear
     ENV.clear
     assert_equal(0, ENV.size)

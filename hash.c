@@ -2403,6 +2403,33 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
 }
 
 /*
+ *  call-seq:
+ *     hsh.except(*keys) -> a_hash
+ *
+ *  Returns a hash excluding the given keys and their values.
+ *
+ *     h = { a: 100, b: 200, c: 300 }
+ *     h.except(:a)          #=> {:b=>200, :c=>300}
+ *     h.except(:b, :c, :d)  #=> {:a=>100}
+ */
+
+static VALUE
+rb_hash_except(int argc, VALUE *argv, VALUE hash)
+{
+    int i;
+    VALUE key, result;
+
+    result = rb_obj_dup(hash);
+
+    for (i = 0; i < argc; i++) {
+        key = argv[i];
+        rb_hash_delete(result, key);
+    }
+
+    return result;
+}
+
+/*
  * call-seq:
  *   hsh.values_at(key, ...)   -> array
  *
@@ -5695,6 +5722,29 @@ env_to_h(void)
 }
 
 /*
+ *  call-seq:
+ *     ENV.except(*keys) -> a_hash
+ *
+ *  Returns a hash except the given keys from ENV and their values.
+ *
+ *     ENV                       #=> {"LANG"="en_US.UTF-8", "TERM"=>"xterm-256color", "HOME"=>"/Users/rhc"}
+ *     ENV.except("TERM","HOME") #=> {"LANG"="en_US.UTF-8"}
+ */
+static VALUE
+env_except(int argc, VALUE *argv)
+{
+    int i;
+    VALUE key, hash = env_to_hash();
+
+    for (i = 0; i < argc; i++) {
+        key = argv[i];
+        rb_hash_delete(hash, key);
+    }
+
+    return hash;
+}
+
+/*
  * call-seq:
  *   ENV.reject { |name, value| block } -> Hash
  *   ENV.reject                         -> Enumerator
@@ -6000,6 +6050,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "reject", rb_hash_reject, 0);
     rb_define_method(rb_cHash, "reject!", rb_hash_reject_bang, 0);
     rb_define_method(rb_cHash, "slice", rb_hash_slice, -1);
+    rb_define_method(rb_cHash, "except", rb_hash_except, -1);
     rb_define_method(rb_cHash, "clear", rb_hash_clear, 0);
     rb_define_method(rb_cHash, "invert", rb_hash_invert, 0);
     rb_define_method(rb_cHash, "update", rb_hash_update, -1);
@@ -6057,6 +6108,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "delete_if", env_delete_if, 0);
     rb_define_singleton_method(envtbl, "keep_if", env_keep_if, 0);
     rb_define_singleton_method(envtbl, "slice", env_slice, -1);
+    rb_define_singleton_method(envtbl, "except", env_except, -1);
     rb_define_singleton_method(envtbl, "clear", rb_env_clear, 0);
     rb_define_singleton_method(envtbl, "reject", env_reject, 0);
     rb_define_singleton_method(envtbl, "reject!", env_reject_bang, 0);
