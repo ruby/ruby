@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'drb'
 require 'drb/timeridconv'
+require 'drb/weakidconv'
 
 module DRbObjectTest
   class Foo
@@ -43,5 +44,21 @@ class TestDRbObjectTimerIdConv < Test::Unit::TestCase
 
   def setup
     DRb.start_service(nil, nil, {:idconv => DRb::TimerIdConv.new})
+  end
+end
+
+class TestDRbObjectWeakIdConv < Test::Unit::TestCase
+  include DRbObjectTest
+
+  def setup
+    DRb.start_service(nil, nil, {:idconv => DRb::WeakIdConv.new})
+  end
+
+  def test_RangeError
+    proxy = DRbObject.new("string".dup)
+    GC.start
+    assert_raise(RangeError) {
+      DRb.to_obj(proxy.__drbref)
+    }
   end
 end
