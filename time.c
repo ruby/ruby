@@ -4627,6 +4627,9 @@ time_isdst(VALUE time)
 
     GetTimeval(time, tobj);
     MAKE_TM(time, tobj);
+    if (tobj->vtm.isdst == VTM_ISDST_INITVAL) {
+        rb_raise(rb_eRuntimeError, "isdst is not set yet");
+    }
     return tobj->vtm.isdst ? Qtrue : Qfalse;
 }
 
