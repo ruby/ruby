@@ -24,8 +24,8 @@ sufficient information, see the ChangeLog file or Redmine
 
 * lambda with no block in a method called with a block errs.
 
-* Non-Symbol keys in a keyword arguments hash was prohibited at 2.6.0, but
-  now allowed again.  [Bug #15658]
+* Non-Symbol keys in a keyword arguments hash were prohibited in 2.6.0,
+  but are now allowed again.  [Bug #15658]
 
 * Numbered parameter as the default block parameter is introduced as an
   experimental feature.  [Feature #4475]
