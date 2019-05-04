@@ -1,6 +1,6 @@
 class << Thread
   # call-seq:
-  #    Thread.exclusive { block }   => obj
+  #    Thread.exclusive { block }   -> obj
   #
   # Wraps the block in a single, VM-global Mutex.synchronize, returning the
   # value of the block. A thread executing inside the exclusive section will
@@ -134,13 +134,13 @@ end
 
 class TracePoint
   # call-seq:
-  #  trace.enable(target: nil, target_line: nil)    -> true or false
-  #  trace.enable(target: nil, target_line: nil) { block }  -> obj
+  #    trace.enable(target: nil, target_line: nil)    -> true or false
+  #    trace.enable(target: nil, target_line: nil) { block }  -> obj
   #
-  # Activates the trace
+  # Activates the trace.
   #
-  # Return +true+ if trace was enabled.
-  # Return +false+ if trace was disabled.
+  # Returns +true+ if trace was enabled.
+  # Returns +false+ if trace was disabled.
   #
   #   trace.enabled?  #=> false
   #   trace.enable    #=> false (previous state)
@@ -156,8 +156,8 @@ class TracePoint
   #    #=> false
   #
   #    trace.enable do
-  #        trace.enabled?
-  #        # only enabled for this block
+  #      trace.enabled?
+  #      # only enabled for this block
   #    end
   #
   #    trace.enabled?
@@ -165,16 +165,16 @@ class TracePoint
   #
   # <i>target</i> and <i>target_line</i> parameters are used to limit tracing
   # only to specified code objects. <i>target</i> should be a code object for
-  # which RubyVM::InstructionSequence.of will return instruction sequence.
+  # which RubyVM::InstructionSequence.of will return an instruction sequence.
   #
   #    t = TracePoint.new(:line) { |tp| p tp }
   #
   #    def m1
-  #        p 1
+  #      p 1
   #    end
   #
   #    def m2
-  #        p 2
+  #      p 2
   #    end
   #
   #    t.enable(target: method(:m1))
@@ -183,7 +183,6 @@ class TracePoint
   #    # prints #<TracePoint:line@test.rb:5 in `m1'>
   #    m2
   #    # prints nothing
-  #
   #
   # Note: You cannot access event hooks within the +enable+ block.
   #
