@@ -5253,6 +5253,43 @@ env_delete_if(VALUE ehash)
 }
 
 /*
+ *  call-seq:
+ *     ENV.extract {|key, value| block}   -> Hash
+ *     ENV.extract                        -> Enumerator
+ *
+ *  Removes and returns the key/value pairs for which the block evaluates to +true+.
+ *
+ *  If no block is given, an Enumerator is returned instead.
+ *
+ *     ENV.extract {|k, v| k == "PORT"} # => {"PORT"=>"3000"}
+ */
+static VALUE
+env_extract(VALUE ehash)
+{
+  VALUE result;
+  VALUE keys;
+  long i;
+
+  RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
+  result = rb_hash_new();
+  keys = env_keys();
+  RBASIC_CLEAR_CLASS(keys);
+  for (i=0; i<RARRAY_LEN(keys); i++) {
+    VALUE key = RARRAY_AREF(keys, i);
+    VALUE val = rb_f_getenv(Qnil, key);
+    if (!NIL_P(val)) {
+      if (RTEST(rb_yield_values(2, key, val))) {
+        FL_UNSET(key, FL_TAINT);
+        env_delete(key);
+        rb_hash_aset(result, key, val);
+      }
+    }
+  }
+  RB_GC_GUARD(keys);
+  return result;
+}
+
+/*
  * call-seq:
  *   ENV.values_at(name, ...) -> Array
  *
@@ -6100,6 +6137,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "clear", rb_env_clear, 0);
     rb_define_singleton_method(envtbl, "reject", env_reject, 0);
     rb_define_singleton_method(envtbl, "reject!", env_reject_bang, 0);
+    rb_define_singleton_method(envtbl, "extract", env_extract, 0);
     rb_define_singleton_method(envtbl, "select", env_select, 0);
     rb_define_singleton_method(envtbl, "select!", env_select_bang, 0);
     rb_define_singleton_method(envtbl, "filter", env_select, 0);

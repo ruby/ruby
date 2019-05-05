@@ -292,6 +292,58 @@ class TestEnv < Test::Unit::TestCase
     assert_equal({"foo"=>"bar", "baz"=>"qux"}, ENV.slice("foo", "baz"))
   end
 
+  def test_extract
+    ENV.clear
+    ENV["foo"] = "bar"
+    ENV["baz"] = "qux"
+    ENV["bar"] = "rab"
+    env_id = ENV.object_id
+
+    assert_equal({"baz" => "qux"}, ENV.extract {|k, v| v == "qux"})
+    assert_equal({"foo" => "bar", "bar" => "rab"}, ENV.to_hash)
+    assert_equal env_id, ENV.object_id
+
+    ENV.clear
+    ENV["foo"] = "bar"
+    ENV["baz"] = "qux"
+    ENV["bar"] = "rab"
+    assert_equal({}, ENV.extract {false})
+    assert_equal({"foo" => "bar", "baz" => "qux", "bar" => "rab"}, ENV.to_hash)
+
+    assert_equal({"foo" => "bar", "baz" => "qux", "bar" => "rab"}, ENV.extract {true})
+    assert_equal({}, ENV.to_hash)
+  end
+
+  def test_extract_without_block
+    ENV.clear
+    ENV["foo"] = "bar"
+    ENV["baz"] = "qux"
+    ENV["bar"] = "rab"
+    env_id = ENV.object_id
+
+    extract_enumerator = ENV.extract
+
+    assert_instance_of Enumerator, extract_enumerator
+    assert_equal ENV.size, extract_enumerator.size
+
+    extracted_hash = extract_enumerator.each {|k, v| v == "qux"}
+
+    assert_equal({"baz" => "qux"}, extracted_hash)
+    assert_equal({"foo" => "bar", "bar" => "rab"}, ENV.to_hash)
+    assert_equal env_id, ENV.object_id
+  end
+
+  def test_extract_on_empty_env
+    ENV.clear
+    env_id = ENV.object_id
+
+    new_empty_hash = ENV.extract {}
+
+    assert_equal({}, new_empty_hash)
+    assert_equal({}, ENV.to_hash)
+    assert_equal env_id, ENV.object_id
+  end
+
   def test_clear
     ENV.clear
     assert_equal(0, ENV.size)
