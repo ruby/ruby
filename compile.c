@@ -4107,13 +4107,13 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
 {
     while (vals) {
 	const NODE *val = vals->nd_head;
-	VALUE lit = rb_node_case_when_optimizable_literal(val);
+        VALUE lit = rb_node_case_when_optimizable_literal(val);
 
 	if (lit == Qundef) {
 	    only_special_literals = 0;
 	}
-	else if (NIL_P(rb_hash_lookup(literals, lit))) {
-	    rb_hash_aset(literals, lit, (VALUE)(l1) | 1);
+        else if (NIL_P(rb_hash_lookup(literals, lit))) {
+            rb_hash_aset(literals, lit, (VALUE)(l1) | 1);
 	}
 
 	ADD_INSN(cond_seq, nd_line(val), dup); /* dup target */
