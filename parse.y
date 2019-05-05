@@ -3372,6 +3372,7 @@ lambda		:   {
 		    }
 		    {
 			$<num>$ = p->max_numparam;
+			p->max_numparam = 0;
 		    }
 		  f_larglist
 		    {
