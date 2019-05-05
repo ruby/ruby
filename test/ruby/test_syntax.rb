@@ -1313,6 +1313,8 @@ eom
     assert_equal("12", eval('[1,2].then {"#@1#@2"}'))
     assert_equal(3, eval('->{@1+@2}.call(1,2)'))
     assert_syntax_error('proc {|| @1}', /ordinary parameter is defined/)
+    assert_syntax_error('proc {|;a| @1}', /ordinary parameter is defined/)
+    assert_syntax_error("proc {|\n| @1}", /ordinary parameter is defined/)
     assert_syntax_error('proc {|x| @1}', /ordinary parameter is defined/)
     assert_syntax_error('->(){@1}', /ordinary parameter is defined/)
     assert_syntax_error('->(x){@1}', /ordinary parameter is defined/)
