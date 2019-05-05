@@ -1411,8 +1411,8 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *    end
  *
  *    puts fiber.resume 10
- *    puts fiber.resume 14
- *    puts fiber.resume 18
+ *    puts fiber.resume 1_000_000
+ *    puts fiber.resume "The fiber will be dead before I can cause trouble"
  *
  *  <em>produces</em>
  *
