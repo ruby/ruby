@@ -64,10 +64,11 @@ module Spec
 
     def file_uri_for(path)
       protocol = "file://"
+      root = Gem.win_platform? ? "/" : ""
 
-      return protocol + "localhost" + path.to_s if RUBY_VERSION < "2.5"
+      return protocol + "localhost" + root + path.to_s if RUBY_VERSION < "2.5"
 
-      protocol + path.to_s
+      protocol + root + path.to_s
     end
 
     def gem_repo1(*args)
