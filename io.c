@@ -12393,11 +12393,19 @@ argf_block_call_line(ID mid, int argc, VALUE *argv, VALUE argf)
  *  a single file consisting of the concatenation of each named file. After
  *  the last line of the first file has been returned, the first line of the
  *  second file is returned. The +ARGF.filename+ and +ARGF.lineno+ methods can
- *  be used to determine the filename and line number, respectively, of the
- *  current line.
+ *  be used to determine the filename of the current line and line number of
+ *  the whole input, respectively.
  *
  *  For example, the following code prints out each line of each named file
  *  prefixed with its line number, displaying the filename once per file:
+ *
+ *     ARGF.each_line do |line|
+ *       puts ARGF.filename if ARGF.file.lineno == 1
+ *       puts "#{ARGF.file.lineno}: #{line}"
+ *     end
+ *
+ *  While the following code prints only the first file's name at first, and
+ *  the contents with line number counted through all named files.
  *
  *     ARGF.each_line do |line|
  *       puts ARGF.filename if ARGF.lineno == 1
