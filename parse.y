@@ -3307,6 +3307,7 @@ opt_block_param	: none
 block_param_def	: '|' opt_bv_decl '|'
 		    {
 			p->cur_arg = 0;
+			p->max_numparam = -1;
 		    /*%%%*/
 			$$ = 0;
 		    /*% %*/
