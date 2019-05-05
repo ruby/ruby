@@ -3569,6 +3569,61 @@ rb_ary_reject(VALUE ary)
     return rejected_ary;
 }
 
+static VALUE
+extract_i(VALUE a)
+{
+    volatile struct select_bang_arg *arg = (void *)a;
+    VALUE ary = arg->ary;
+    VALUE result = rb_ary_new();
+    long i1, i2;
+
+    for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); arg->len[0] = ++i1) {
+      VALUE v = RARRAY_AREF(ary, i1);
+      if (RTEST(rb_yield(v))) {
+        rb_ary_push(result, v);
+      } else {
+        if (i1 != i2) {
+          rb_ary_store(ary, i2, v);
+        }
+        arg->len[1] = ++i2;
+      }
+    }
+
+    return result;
+}
+
+static VALUE
+ary_extract(VALUE ary)
+{
+    struct select_bang_arg args;
+    rb_ary_modify_check(ary);
+    args.ary = ary;
+    args.len[0] = args.len[1] = 0;
+    return rb_ensure(extract_i, (VALUE)&args, select_bang_ensure, (VALUE)&args);
+}
+
+/*
+ *  call-seq:
+ *     ary.extract {|item| block} -> new_ary
+ *     ary.extract                -> Enumerator
+ *
+ *  Removes and returns the elements for which the block evaluates to +true+.
+ *
+ *  If no block is given, an Enumerator is returned instead.
+ *
+ *     numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *     odd_numbers = numbers.extract { |number| number.odd? } # => [1, 3, 5, 7, 9]
+ *     numbers # => [0, 2, 4, 6, 8]
+ */
+
+static VALUE
+rb_ary_extract(VALUE ary)
+{
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
+    rb_ary_modify(ary);
+    return ary_extract(ary);
+}
+
 /*
  *  call-seq:
  *     ary.delete_if {|item| block}    -> ary
@@ -6862,6 +6917,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);
     rb_define_method(rb_cArray, "reject", rb_ary_reject, 0);
     rb_define_method(rb_cArray, "reject!", rb_ary_reject_bang, 0);
+    rb_define_method(rb_cArray, "extract", rb_ary_extract, 0);
     rb_define_method(rb_cArray, "zip", rb_ary_zip, -1);
     rb_define_method(rb_cArray, "transpose", rb_ary_transpose, 0);
     rb_define_method(rb_cArray, "replace", rb_ary_replace, 1);
