@@ -1417,7 +1417,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *  <em>produces</em>
  *
  *    12
- *    14
+ *    1000000
  *    FiberError: dead fiber called
  *
  */
