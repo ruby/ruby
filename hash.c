@@ -2370,6 +2370,45 @@ rb_hash_reject(VALUE hash)
     return result;
 }
 
+static int
+extract_i(VALUE key, VALUE value, VALUE result)
+{
+  if (RTEST(rb_yield_values(2, key, value))) {
+    rb_hash_aset(result, key, value);
+    return ST_DELETE;
+  }
+  return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     hsh.extract {|key, value| block}   -> new_hash
+ *     hsh.extract                        -> an_enumerator
+ *
+ *  Removes and returns the key/value pairs for which the block evaluates to +true+.
+ *
+ *  If no block is given, an Enumerator is returned instead.
+ *
+ *     h = {a: 100, b: 200, c: 300}
+ *     h.extract {|k, v| v > 150} # => {:b=>200, :c=>300}
+ *     h # => {:a=>100}
+ */
+
+VALUE
+rb_hash_extract(VALUE hash)
+{
+    st_index_t n;
+    VALUE result;
+
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    rb_hash_modify(hash);
+    n = RHASH_SIZE(hash);
+    result = rb_hash_new();
+    if (!n) return result;
+    rb_hash_foreach(hash, extract_i, result);
+    return result;
+}
+
 /*
  *  call-seq:
  *     hsh.slice(*keys) -> a_hash
@@ -5999,6 +6038,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "filter!", rb_hash_select_bang, 0);
     rb_define_method(rb_cHash, "reject", rb_hash_reject, 0);
     rb_define_method(rb_cHash, "reject!", rb_hash_reject_bang, 0);
+    rb_define_method(rb_cHash, "extract", rb_hash_extract, 0);
     rb_define_method(rb_cHash, "slice", rb_hash_slice, -1);
     rb_define_method(rb_cHash, "clear", rb_hash_clear, 0);
     rb_define_method(rb_cHash, "invert", rb_hash_invert, 0);

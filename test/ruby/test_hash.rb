@@ -735,6 +735,49 @@ class TestHash < Test::Unit::TestCase
     assert_equal(h3, h)
   end
 
+  def test_extract
+    h = {a: 1, b: 2, c: 3, d: 4}
+    hash_id = h.object_id
+
+    assert_equal({c: 3, d: 4}, h.extract {|k, v| v > 2})
+    assert_equal({a: 1, b: 2}, h)
+    assert_equal hash_id, h.object_id
+
+    h = {a: 1, b: 2, c: 3, d: 4}
+    assert_equal({}, h.extract {false})
+    assert_equal({a: 1, b: 2, c: 3, d: 4}, h)
+
+    assert_equal({a: 1, b: 2, c: 3, d: 4}, h.extract {true})
+    assert_equal({}, h)
+  end
+
+  def test_extract_without_block
+    h = {a: 1, b: 2, c: 3, d: 4}
+    hash_id = h.object_id
+
+    extract_enumerator = h.extract
+
+    assert_instance_of Enumerator, extract_enumerator
+    assert_equal h.size, extract_enumerator.size
+
+    extracted_hash = extract_enumerator.each {|k, v| v > 2}
+
+    assert_equal({c: 3, d: 4}, extracted_hash)
+    assert_equal({a: 1, b: 2}, h)
+    assert_equal hash_id, h.object_id
+  end
+
+  def test_extract_on_empty_hash
+    empty_hash = {}
+    hash_id = empty_hash.object_id
+
+    new_empty_hash = empty_hash.extract {}
+
+    assert_equal({}, new_empty_hash)
+    assert_equal({}, empty_hash)
+    assert_equal hash_id, empty_hash.object_id
+  end
+
   def test_replace
     h = @cls[ 1 => 2, 3 => 4 ]
     h1 = h.replace(@cls[ 9 => 8, 7 => 6 ])
