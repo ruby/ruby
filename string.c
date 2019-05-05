@@ -6007,14 +6007,16 @@ rb_str_inspect(VALUE str)
  *  call-seq:
  *     str.dump   -> new_str
  *
- *  Produces a quoted version of +str+ with all non-printing characters replaced
- *  by <code>\xHH</code> notation and all special characters escaped.
+ *  Returns a quoted version of the string with all non-printing characters
+ *  replaced by <code>\xHH</code> notation and all special characters escaped.
  *
  *  This method can be used for round-trip: if the resulting +new_str+ is
  *  eval'ed, it will produce the original string.
  *
  *    "hello \n ''".dump     #=> "\"hello \\n ''\""
  *    "\f\x00\xff\\\"".dump  #=> "\"\\f\\x00\\xFF\\\\\\\"\""
+ *
+ *  See also String#undump.
  */
 
 VALUE
@@ -6303,8 +6305,8 @@ static VALUE rb_str_is_ascii_only_p(VALUE str);
  *  call-seq:
  *     str.undump   -> new_str
  *
- *  Produces unescaped version of +str+.
- *  See also String#dump because String#undump does inverse of String#dump.
+ *  Returns an unescaped version of the string.
+ *  This does the inverse of String#dump.
  *
  *    "\"hello \\n ''\"".undump #=> "hello \n ''"
  */
