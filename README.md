@@ -5,9 +5,10 @@
 
 # What's Ruby
 
-Ruby is the interpreted scripting language for quick and easy object-oriented
-programming. It has many features to process text files and to manage system
-(as in Perl). It is simple, straight-forward, and extensible.
+Ruby is an interpreted object-oriented programming language often
+used for web development. It also offers many scripting features
+to process plain text and serialized files, or manage system tasks.
+It is simple, straightforward, and extensible.
 
 ## Features of Ruby
 
