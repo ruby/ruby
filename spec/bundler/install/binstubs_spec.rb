@@ -9,7 +9,7 @@ RSpec.describe "bundle install" do
       gemfile <<-G
         require 'rubygems'
         def Gem.bindir; "/usr/bin"; end
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
@@ -29,7 +29,7 @@ RSpec.describe "bundle install" do
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "fake"
         gem "rack"
       G

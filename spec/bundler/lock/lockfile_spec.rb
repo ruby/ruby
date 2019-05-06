@@ -7,14 +7,14 @@ RSpec.describe "the lockfile format" do
 
   it "generates a simple lockfile for a single source, gem" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
 
       gem "rack"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -37,7 +37,7 @@ RSpec.describe "the lockfile format" do
         specs:
 
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -53,14 +53,14 @@ RSpec.describe "the lockfile format" do
     L
 
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
 
       gem "rack"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -80,7 +80,7 @@ RSpec.describe "the lockfile format" do
 
     lockfile <<-L
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -95,14 +95,14 @@ RSpec.describe "the lockfile format" do
     L
 
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
 
       gem "rack"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -120,7 +120,7 @@ RSpec.describe "the lockfile format" do
   it "updates the lockfile's bundler version if not present" do
     lockfile <<-L
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -132,14 +132,14 @@ RSpec.describe "the lockfile format" do
     L
 
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
 
       gem "rack", "> 0"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -160,7 +160,7 @@ RSpec.describe "the lockfile format" do
 
     lockfile <<-L
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -175,7 +175,7 @@ RSpec.describe "the lockfile format" do
     L
 
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
 
       gem "rack"
     G
@@ -189,7 +189,7 @@ RSpec.describe "the lockfile format" do
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -210,7 +210,7 @@ RSpec.describe "the lockfile format" do
 
     lockfile <<-L
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -225,7 +225,7 @@ RSpec.describe "the lockfile format" do
     L
 
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
 
       gem "rack"
     G
@@ -237,7 +237,7 @@ RSpec.describe "the lockfile format" do
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -254,14 +254,14 @@ RSpec.describe "the lockfile format" do
 
   it "generates a simple lockfile for a single source, gem with dependencies" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
 
       gem "rack-obama"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
           rack-obama (1.0)
@@ -280,14 +280,14 @@ RSpec.describe "the lockfile format" do
 
   it "generates a simple lockfile for a single source, gem with a version requirement" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
 
       gem "rack-obama", ">= 1.0"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
           rack-obama (1.0)
@@ -378,13 +378,13 @@ RSpec.describe "the lockfile format" do
 
   it "generates lockfiles with multiple requirements" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
       gem "net-sftp"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           net-sftp (1.1.1)
             net-ssh (>= 1.0.0, < 1.99.0)
@@ -463,7 +463,7 @@ RSpec.describe "the lockfile format" do
     build_lib "omg", :path => lib_path("omg")
 
     gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
 
       platforms :#{not_local_tag} do
         gem "omg", :path => "#{lib_path("omg")}"
@@ -479,7 +479,7 @@ RSpec.describe "the lockfile format" do
         specs:
 
       GEM
-        remote: file://localhost#{gem_repo1}//
+        remote: #{file_uri_for(gem_repo1)}//
         specs:
           rack (1.0.0)
 
@@ -650,7 +650,7 @@ RSpec.describe "the lockfile format" do
     bar = build_git "bar"
 
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
 
       gem "rack"
       gem "foo", :path => "#{lib_path("foo-1.0")}"
@@ -670,7 +670,7 @@ RSpec.describe "the lockfile format" do
           foo (1.0)
 
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -689,7 +689,7 @@ RSpec.describe "the lockfile format" do
 
   it "lists gems alphabetically" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
 
       gem "thin"
       gem "actionpack"
@@ -698,7 +698,7 @@ RSpec.describe "the lockfile format" do
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           actionpack (2.3.2)
             activesupport (= 2.3.2)
@@ -724,14 +724,14 @@ RSpec.describe "the lockfile format" do
 
   it "orders dependencies' dependencies in alphabetical order" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
 
       gem "rails"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           actionmailer (2.3.2)
             activesupport (= 2.3.2)
@@ -763,13 +763,13 @@ RSpec.describe "the lockfile format" do
 
   it "orders dependencies by version" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
       gem 'double_deps'
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           double_deps (1.0)
             net-ssh
@@ -789,14 +789,14 @@ RSpec.describe "the lockfile format" do
 
   it "does not add the :require option to the lockfile" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
 
       gem "rack-obama", ">= 1.0", :require => "rack/obama"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
           rack-obama (1.0)
@@ -815,14 +815,14 @@ RSpec.describe "the lockfile format" do
 
   it "does not add the :group option to the lockfile" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
 
       gem "rack-obama", ">= 1.0", :group => :test
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
           rack-obama (1.0)
@@ -956,7 +956,7 @@ RSpec.describe "the lockfile format" do
   it "keeps existing platforms in the lockfile", :bundler => "< 3" do
     lockfile <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -971,14 +971,14 @@ RSpec.describe "the lockfile format" do
     G
 
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
 
       gem "rack"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -997,7 +997,7 @@ RSpec.describe "the lockfile format" do
   it "keeps existing platforms in the lockfile", :bundler => "3" do
     lockfile <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -1012,14 +1012,14 @@ RSpec.describe "the lockfile format" do
     G
 
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
 
       gem "rack"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -1046,13 +1046,13 @@ RSpec.describe "the lockfile format" do
     simulate_platform "universal-java-16"
 
     install_gemfile! <<-G
-      source "file://localhost#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "platform_specific"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo2}/
+        remote: #{file_uri_for(gem_repo2)}/
         specs:
           platform_specific (1.0-java)
 
@@ -1077,13 +1077,13 @@ RSpec.describe "the lockfile format" do
     simulate_platform "universal-java-16"
 
     install_gemfile! <<-G
-      source "file://localhost#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "platform_specific"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo2}/
+        remote: #{file_uri_for(gem_repo2)}/
         specs:
           platform_specific (1.0-java)
           platform_specific (1.0-universal-java-16)
@@ -1102,19 +1102,19 @@ RSpec.describe "the lockfile format" do
 
   it "does not add duplicate gems" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
       gem "rack"
     G
 
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
       gem "rack"
       gem "activesupport"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           activesupport (2.3.5)
           rack (1.0.0)
@@ -1133,14 +1133,14 @@ RSpec.describe "the lockfile format" do
 
   it "does not add duplicate dependencies" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
       gem "rack"
       gem "rack"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -1157,14 +1157,14 @@ RSpec.describe "the lockfile format" do
 
   it "does not add duplicate dependencies with versions" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
       gem "rack", "1.0"
       gem "rack", "1.0"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -1181,14 +1181,14 @@ RSpec.describe "the lockfile format" do
 
   it "does not add duplicate dependencies in different groups" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
       gem "rack", "1.0", :group => :one
       gem "rack", "1.0", :group => :two
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (1.0.0)
 
@@ -1205,7 +1205,7 @@ RSpec.describe "the lockfile format" do
 
   it "raises if two different versions are used" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
       gem "rack", "1.0"
       gem "rack", "1.1"
     G
@@ -1216,7 +1216,7 @@ RSpec.describe "the lockfile format" do
 
   it "raises if two different sources are used" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
       gem "rack"
       gem "rack", :git => "git://hubz.com"
     G
@@ -1227,13 +1227,13 @@ RSpec.describe "the lockfile format" do
 
   it "works correctly with multiple version dependencies" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
       gem "rack", "> 0.9", "< 1.0"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (0.9.1)
 
@@ -1250,14 +1250,14 @@ RSpec.describe "the lockfile format" do
 
   it "captures the Ruby version in the lockfile" do
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
       ruby '#{RUBY_VERSION}'
       gem "rack", "> 0.9", "< 1.0"
     G
 
     lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack (0.9.1)
 
@@ -1286,7 +1286,7 @@ RSpec.describe "the lockfile format" do
     revision = revision_for(lib_path("omg"))
 
     gemfile <<-G
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
       gem "omg", :git => "#{lib_path("omg")}", :branch => 'master'
     G
 
@@ -1310,7 +1310,7 @@ RSpec.describe "the lockfile format" do
           omg (1.0)
 
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
 
       PLATFORMS
@@ -1337,7 +1337,7 @@ RSpec.describe "the lockfile format" do
           omg (1.0)
 
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
 
       PLATFORMS
@@ -1354,7 +1354,7 @@ RSpec.describe "the lockfile format" do
   it "raises a helpful error message when the lockfile is missing deps" do
     lockfile <<-L
       GEM
-        remote: file://localhost#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           rack_middleware (1.0)
 
@@ -1366,7 +1366,7 @@ RSpec.describe "the lockfile format" do
     L
 
     install_gemfile <<-G
-      source "file://localhost#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack_middleware"
     G
 
@@ -1383,7 +1383,7 @@ RSpec.describe "the lockfile format" do
       build_repo2
 
       install_gemfile <<-G
-        source "file://localhost#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rack"
       G
       set_lockfile_mtime_to_known_value
@@ -1445,7 +1445,7 @@ RSpec.describe "the lockfile format" do
   it "refuses to install if Gemfile.lock contains conflict markers" do
     lockfile <<-L
       GEM
-        remote: file://localhost#{gem_repo1}//
+        remote: #{file_uri_for(gem_repo1)}//
         specs:
       <<<<<<<
           rack (1.0.0)
@@ -1464,7 +1464,7 @@ RSpec.describe "the lockfile format" do
     L
 
     install_gemfile(<<-G)
-      source "file://localhost#{gem_repo1}/"
+      source "#{file_uri_for(gem_repo1)}/"
       gem "rack"
     G
 

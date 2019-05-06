@@ -3,7 +3,7 @@
 RSpec.describe "bundle inject", :bundler => "< 3" do
   before :each do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
   end
@@ -53,9 +53,9 @@ Usage: "bundle inject GEM VERSION"
 
   context "with source option" do
     it "add gem with source option in gemfile" do
-      bundle "inject 'foo' '>0' --source file://#{gem_repo1}"
+      bundle "inject 'foo' '>0' --source #{file_uri_for(gem_repo1)}"
       gemfile = bundled_app("Gemfile").read
-      str = "gem \"foo\", \"> 0\", :source => \"file://#{gem_repo1}\""
+      str = "gem \"foo\", \"> 0\", :source => \"#{file_uri_for(gem_repo1)}\""
       expect(gemfile).to include str
     end
   end
@@ -105,7 +105,7 @@ Usage: "bundle inject GEM VERSION"
 
     it "doesn't allow Gemfile changes" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack-obama"
       G
       bundle "inject 'rack' '> 0'"

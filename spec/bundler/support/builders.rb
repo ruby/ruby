@@ -689,7 +689,7 @@ module Spec
           elsif tag = options[:tag]
             `git tag #{Shellwords.shellescape(tag)}`
           elsif options[:remote]
-            silently("git remote add origin file://#{options[:remote]}")
+            silently("git remote add origin #{options[:remote]}")
           elsif options[:push]
             silently("git push origin #{options[:push]}")
           end

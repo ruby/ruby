@@ -4,7 +4,7 @@ RSpec.describe "Bundler.load" do
   describe "with a gemfile" do
     before(:each) do
       install_gemfile! <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
     end
@@ -28,7 +28,7 @@ RSpec.describe "Bundler.load" do
   describe "with a gems.rb file" do
     before(:each) do
       create_file "gems.rb", <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
       bundle! :install
@@ -74,7 +74,7 @@ RSpec.describe "Bundler.load" do
   describe "when called twice" do
     it "doesn't try to load the runtime twice" do
       install_gemfile! <<-G
-        source "file:#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "activesupport", :group => :test
       G
@@ -98,7 +98,7 @@ RSpec.describe "Bundler.load" do
   describe "not hurting brittle rubygems" do
     it "does not inject #source into the generated YAML of the gem specs" do
       install_gemfile! <<-G
-        source "file:#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "activerecord"
       G
 

@@ -72,7 +72,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY
       gemfile(true) do
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       end
     RUBY
@@ -157,7 +157,7 @@ RSpec.describe "bundler/inline#gemfile" do
   it "installs quietly if necessary when the install option is not set" do
     script <<-RUBY
       gemfile do
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       end
 
@@ -232,7 +232,7 @@ RSpec.describe "bundler/inline#gemfile" do
     in_app_root do
       script <<-RUBY
         gemfile do
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         end
 
@@ -247,7 +247,7 @@ RSpec.describe "bundler/inline#gemfile" do
   it "installs inline gems when frozen is set" do
     script <<-RUBY, :env => { "BUNDLE_FROZEN" => "true" }
       gemfile do
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       end
 
@@ -264,7 +264,7 @@ RSpec.describe "bundler/inline#gemfile" do
     in_app_root do
       script <<-RUBY
         gemfile do
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         end
 
@@ -281,7 +281,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY
       gemfile do
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack" # has the rackup executable
       end
 
@@ -296,7 +296,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY
       gemfile(true) do
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", platform: :jruby
       end
     RUBY

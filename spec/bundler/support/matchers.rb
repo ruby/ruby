@@ -194,7 +194,7 @@ module Spec
     RSpec::Matchers.alias_matcher :include_gem, :include_gems
 
     def have_lockfile(expected)
-      read_as(normalize_uri_file(strip_whitespace(expected)))
+      read_as(strip_whitespace(expected))
     end
 
     def plugin_should_be_installed(*names)

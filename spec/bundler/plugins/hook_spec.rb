@@ -13,12 +13,12 @@ RSpec.describe "hook plugins" do
         end
       end
 
-      bundle "plugin install before-install-all-plugin --source file://#{gem_repo2}"
+      bundle "plugin install before-install-all-plugin --source #{file_uri_for(gem_repo2)}"
     end
 
     it "runs before all rubygems are installed" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rake"
         gem "rack"
       G
@@ -39,12 +39,12 @@ RSpec.describe "hook plugins" do
         end
       end
 
-      bundle "plugin install before-install-plugin --source file://#{gem_repo2}"
+      bundle "plugin install before-install-plugin --source #{file_uri_for(gem_repo2)}"
     end
 
     it "runs before each rubygem is installed" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rake"
         gem "rack"
       G
@@ -66,12 +66,12 @@ RSpec.describe "hook plugins" do
         end
       end
 
-      bundle "plugin install after-install-all-plugin --source file://#{gem_repo2}"
+      bundle "plugin install after-install-all-plugin --source #{file_uri_for(gem_repo2)}"
     end
 
     it "runs after each rubygem is installed" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rake"
         gem "rack"
       G
@@ -92,12 +92,12 @@ RSpec.describe "hook plugins" do
         end
       end
 
-      bundle "plugin install after-install-plugin --source file://#{gem_repo2}"
+      bundle "plugin install after-install-plugin --source #{file_uri_for(gem_repo2)}"
     end
 
     it "runs after each rubygem is installed" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rake"
         gem "rack"
       G

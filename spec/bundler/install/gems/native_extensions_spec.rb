@@ -33,7 +33,7 @@ RSpec.describe "installing a gem with native extensions", :ruby_repo do
     end
 
     gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "c_extension"
     G
 

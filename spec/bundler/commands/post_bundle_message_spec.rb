@@ -3,7 +3,7 @@
 RSpec.describe "post bundle message" do
   before :each do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
       gem "activesupport", "2.3.5", :group => [:emo, :test]
       group :test do
@@ -103,7 +103,7 @@ RSpec.describe "post bundle message" do
     describe "with misspelled or non-existent gem name" do
       it "should report a helpful error message", :bundler => "< 3" do
         install_gemfile <<-G
-          source "file://localhost#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
           gem "not-a-gem", :group => :development
         G
@@ -112,25 +112,25 @@ RSpec.describe "post bundle message" do
 
       it "should report a helpful error message", :bundler => "3" do
         install_gemfile <<-G
-          source "file://localhost#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
           gem "not-a-gem", :group => :development
         G
-        expect(err).to include normalize_uri_file(<<-EOS.strip)
-Could not find gem 'not-a-gem' in rubygems repository file://localhost#{gem_repo1}/ or installed locally.
+        expect(err).to include <<-EOS.strip
+Could not find gem 'not-a-gem' in rubygems repository #{file_uri_for(gem_repo1)}/ or installed locally.
 The source does not contain any versions of 'not-a-gem'
         EOS
       end
 
       it "should report a helpful error message with reference to cache if available" do
         install_gemfile <<-G
-          source "file://localhost#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         G
         bundle :cache
         expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
         install_gemfile <<-G
-          source "file://localhost#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
           gem "not-a-gem", :group => :development
         G

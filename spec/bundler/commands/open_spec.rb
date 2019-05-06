@@ -3,7 +3,7 @@
 RSpec.describe "bundle open" do
   before :each do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rails"
     G
   end
@@ -38,7 +38,7 @@ RSpec.describe "bundle open" do
     ref = git.ref_for("master", 11)
 
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem 'foo', :git => "#{lib_path("foo-1.0")}"
     G
 
@@ -75,7 +75,7 @@ RSpec.describe "bundle open" do
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rails"
       gem "foo"
     G

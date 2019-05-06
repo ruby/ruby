@@ -4,7 +4,7 @@ RSpec.describe "bundle install" do
   describe "when prerelease gems are available" do
     it "finds prereleases" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "not_released"
       G
       expect(the_bundle).to include_gems "not_released 1.0.pre"
@@ -12,7 +12,7 @@ RSpec.describe "bundle install" do
 
     it "uses regular releases if available" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "has_prerelease"
       G
       expect(the_bundle).to include_gems "has_prerelease 1.0"
@@ -20,7 +20,7 @@ RSpec.describe "bundle install" do
 
     it "uses prereleases if requested" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "has_prerelease", "1.1.pre"
       G
       expect(the_bundle).to include_gems "has_prerelease 1.1.pre"
@@ -31,7 +31,7 @@ RSpec.describe "bundle install" do
     it "still works" do
       build_repo3
       install_gemfile <<-G
-        source "file://#{gem_repo3}"
+        source "#{file_uri_for(gem_repo3)}"
         gem "rack"
       G
 

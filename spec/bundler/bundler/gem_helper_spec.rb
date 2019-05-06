@@ -214,7 +214,7 @@ RSpec.describe Bundler::GemHelper do
 
         before do
           Dir.chdir(app_path) do
-            sys_exec("git remote add origin file://#{repo.path}")
+            sys_exec("git remote add origin #{file_uri_for(repo.path)}")
             sys_exec('git commit -a -m "initial commit"')
           end
         end
