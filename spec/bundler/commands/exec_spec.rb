@@ -130,13 +130,13 @@ RSpec.describe "bundle exec" do
     end
 
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack", "0.9.1"
     G
 
     Dir.chdir bundled_app2 do
       install_gemfile bundled_app2("Gemfile"), <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rack_two", "1.0.0"
       G
     end
@@ -184,7 +184,7 @@ RSpec.describe "bundle exec" do
         end
 
         install_gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "irb", "#{specified_irb_version}"
         G
       end
@@ -214,7 +214,7 @@ RSpec.describe "bundle exec" do
         end
 
         install_gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "gem_depending_on_old_irb"
         G
 
@@ -238,13 +238,13 @@ RSpec.describe "bundle exec" do
     bundle "config set path.system true"
 
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack", "0.9.1"
     G
 
     Dir.chdir bundled_app2 do
       install_gemfile bundled_app2("Gemfile"), <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rack_two", "1.0.0"
       G
     end
@@ -259,7 +259,7 @@ RSpec.describe "bundle exec" do
 
   it "handles gems installed with --without" do
     install_gemfile <<-G, forgotten_command_line_options(:without => "middleware")
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack" # rack 0.9.1 and 1.0 exist
 
       group :middleware do
@@ -344,7 +344,7 @@ RSpec.describe "bundle exec" do
   it "raises a helpful error when exec'ing to something outside of the bundle", :ruby_repo do
     bundle! "config set clean false" # want to keep the rackup binstub
     install_gemfile! <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "with_license"
     G
     [true, false].each do |l|
@@ -536,7 +536,7 @@ RSpec.describe "bundle exec" do
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack", "0.9.1"
       gem "foo"
     G
@@ -846,7 +846,7 @@ __FILE__: #{path.to_s.inspect}
     context "with shared gems disabled" do
       before do
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         G
         bundle :install, :system_bundler => true, :path => "vendor/bundler"

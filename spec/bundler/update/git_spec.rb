@@ -96,7 +96,7 @@ RSpec.describe "bundle update" do
     it "fetches tags from the remote" do
       build_git "foo"
       @remote = build_git("bar", :bare => true)
-      update_git "foo", :remote => @remote.path
+      update_git "foo", :remote => file_uri_for(@remote.path)
       update_git "foo", :push => "master"
 
       install_gemfile <<-G
@@ -139,7 +139,7 @@ RSpec.describe "bundle update" do
 
       it "it unlocks the source when submodules are added to a git source" do
         install_gemfile <<-G
-          source "file:#{gem_repo4}"
+          source "#{file_uri_for(gem_repo4)}"
           git "#{lib_path("has_submodule-1.0")}" do
             gem "has_submodule"
           end
@@ -149,7 +149,7 @@ RSpec.describe "bundle update" do
         expect(out).to eq("GEM")
 
         install_gemfile <<-G
-          source "file:#{gem_repo4}"
+          source "#{file_uri_for(gem_repo4)}"
           git "#{lib_path("has_submodule-1.0")}", :submodules => true do
             gem "has_submodule"
           end
@@ -161,7 +161,7 @@ RSpec.describe "bundle update" do
 
       it "unlocks the source when submodules are removed from git source", :git => ">= 2.9.0" do
         install_gemfile! <<-G
-          source "file:#{gem_repo4}"
+          source "#{file_uri_for(gem_repo4)}"
           git "#{lib_path("has_submodule-1.0")}", :submodules => true do
             gem "has_submodule"
           end
@@ -171,7 +171,7 @@ RSpec.describe "bundle update" do
         expect(out).to eq("GIT")
 
         install_gemfile! <<-G
-          source "file:#{gem_repo4}"
+          source "#{file_uri_for(gem_repo4)}"
           git "#{lib_path("has_submodule-1.0")}" do
             gem "has_submodule"
           end
@@ -204,7 +204,7 @@ RSpec.describe "bundle update" do
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
       G
 
@@ -246,7 +246,7 @@ RSpec.describe "bundle update" do
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         git "#{lib_path("foo")}" do
           gem 'foo'
         end
@@ -291,7 +291,7 @@ RSpec.describe "bundle update" do
       @git = build_git "foo", :path => lib_path("bar")
 
       install_gemfile <<-G
-        source "file://localhost#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         git "#{lib_path("bar")}" do
           gem 'foo'
         end
@@ -319,7 +319,7 @@ RSpec.describe "bundle update" do
             foo (2.0)
 
         GEM
-          remote: file://localhost#{gem_repo2}/
+          remote: #{file_uri_for(gem_repo2)}/
           specs:
             rack (1.0.0)
 
@@ -355,7 +355,7 @@ RSpec.describe "bundle update" do
             foo (2.0)
 
         GEM
-          remote: file://localhost#{gem_repo2}/
+          remote: #{file_uri_for(gem_repo2)}/
           specs:
             rack (1.0.0)
 

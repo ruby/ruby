@@ -8,7 +8,7 @@ RSpec.describe "bundle outdated" do
     end
 
     install_gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "zebra", :git => "#{lib_path("zebra")}"
       gem "foo", :git => "#{lib_path("foo")}"
       gem "activesupport", "2.3.5"
@@ -57,7 +57,7 @@ RSpec.describe "bundle outdated" do
 
     it "adds gem group to dependency output when repo is updated" do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
 
         gem "terranova", '8'
 
@@ -78,7 +78,7 @@ RSpec.describe "bundle outdated" do
   describe "with --group option" do
     def test_group_option(group = nil, gems_list_size = 1)
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
 
         gem "weakling", "~> 0.0.1"
         gem "terranova", '8'
@@ -104,7 +104,7 @@ RSpec.describe "bundle outdated" do
 
     it "not outdated gems" do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
 
         gem "weakling", "~> 0.0.1"
         gem "terranova", '8'
@@ -155,7 +155,7 @@ RSpec.describe "bundle outdated" do
   describe "with --groups option" do
     it "not outdated gems" do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
 
         gem "weakling", "~> 0.0.1"
         gem "terranova", '8'
@@ -171,7 +171,7 @@ RSpec.describe "bundle outdated" do
 
     it "returns a sorted list of outdated gems by groups" do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
 
         gem "weakling", "~> 0.0.1"
         gem "terranova", '8'
@@ -209,7 +209,7 @@ RSpec.describe "bundle outdated" do
       bundle! "config set clean false"
 
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "activesupport", "2.3.4"
       G
 
@@ -307,7 +307,7 @@ RSpec.describe "bundle outdated" do
         end
 
         install_gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "activesupport", "3.0.0.beta.1"
         G
 
@@ -333,7 +333,7 @@ RSpec.describe "bundle outdated" do
 
     it "only reports gem dependencies when they can actually be updated" do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rack_middleware", "1.0"
       G
 
@@ -345,7 +345,7 @@ RSpec.describe "bundle outdated" do
     describe "and filter options" do
       it "only reports gems that match requirement and patch filter level" do
         install_gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "activesupport", "~> 2.3"
           gem "weakling", ">= 0.0.1"
         G
@@ -363,7 +363,7 @@ RSpec.describe "bundle outdated" do
 
       it "only reports gems that match requirement and minor filter level" do
         install_gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "activesupport", "~> 2.3"
           gem "weakling", ">= 0.0.1"
         G
@@ -381,7 +381,7 @@ RSpec.describe "bundle outdated" do
 
       it "only reports gems that match requirement and major filter level" do
         install_gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "activesupport", "~> 2.3"
           gem "weakling", ">= 0.0.1"
         G
@@ -413,7 +413,7 @@ RSpec.describe "bundle outdated" do
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack", "0.9.1"
       gem "foo"
     G
@@ -426,7 +426,7 @@ RSpec.describe "bundle outdated" do
   context "after bundle install --deployment", :bundler => "< 3" do
     before do
       install_gemfile <<-G, forgotten_command_line_options(:deployment => true)
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
 
         gem "rack"
         gem "foo"
@@ -448,7 +448,7 @@ RSpec.describe "bundle outdated" do
   context "after bundle config set deployment true" do
     before do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
 
         gem "rack"
         gem "foo"
@@ -471,7 +471,7 @@ RSpec.describe "bundle outdated" do
   context "update available for a gem on a different platform" do
     before do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "laduradura", '= 5.15.2'
       G
     end
@@ -485,7 +485,7 @@ RSpec.describe "bundle outdated" do
   context "update available for a gem on the same platform while multiple platforms used for gem" do
     it "reports that updates are available if the Ruby platform is used" do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "laduradura", '= 5.15.2', :platforms => [:ruby, :jruby]
       G
 
@@ -497,7 +497,7 @@ RSpec.describe "bundle outdated" do
       simulate_ruby_engine "jruby", "1.6.7" do
         simulate_platform "jruby" do
           install_gemfile <<-G
-            source "file://#{gem_repo2}"
+            source "#{file_uri_for(gem_repo2)}"
             gem "laduradura", '= 5.15.2', :platforms => [:ruby, :jruby]
           G
 
@@ -676,7 +676,7 @@ RSpec.describe "bundle outdated" do
 
         # establish a lockfile set to 1.0.0
         install_gemfile <<-G
-        source "file://#{gem_repo4}"
+        source "#{file_uri_for(gem_repo4)}"
         gem 'patch', '1.0.0'
         gem 'minor', '1.0.0'
         gem 'major', '1.0.0'
@@ -685,7 +685,7 @@ RSpec.describe "bundle outdated" do
         # remove 1.4.3 requirement and bar altogether
         # to setup update specs below
         gemfile <<-G
-        source "file://#{gem_repo4}"
+        source "#{file_uri_for(gem_repo4)}"
         gem 'patch'
         gem 'minor'
         gem 'major'
@@ -744,7 +744,7 @@ RSpec.describe "bundle outdated" do
 
         # establish a lockfile set to 1.4.3
         install_gemfile <<-G
-          source "file://#{gem_repo4}"
+          source "#{file_uri_for(gem_repo4)}"
           gem 'foo', '1.4.3'
           gem 'bar', '2.0.3'
           gem 'qux', '1.0.0'
@@ -753,7 +753,7 @@ RSpec.describe "bundle outdated" do
         # remove 1.4.3 requirement and bar altogether
         # to setup update specs below
         gemfile <<-G
-          source "file://#{gem_repo4}"
+          source "#{file_uri_for(gem_repo4)}"
           gem 'foo'
           gem 'qux'
         G
@@ -779,13 +779,13 @@ RSpec.describe "bundle outdated" do
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo4}"
+        source "#{file_uri_for(gem_repo4)}"
         gem 'weakling', '0.2'
         gem 'bar', '2.1'
       G
 
       gemfile  <<-G
-        source "file://#{gem_repo4}"
+        source "#{file_uri_for(gem_repo4)}"
         gem 'weakling'
       G
 

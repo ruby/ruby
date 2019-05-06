@@ -373,7 +373,7 @@ RSpec.describe "Bundler.require" do
 
   it "does not load rubygems gemspecs that are used" do
     install_gemfile! <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
 
@@ -422,7 +422,7 @@ end
 RSpec.describe "Bundler.require with platform specific dependencies" do
   it "does not require the gems that are pinned to other platforms" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
 
       platforms :#{not_local_tag} do
         gem "fail", :require => "omgomg"
@@ -437,7 +437,7 @@ RSpec.describe "Bundler.require with platform specific dependencies" do
 
   it "requires gems pinned to multiple platforms, including the current one" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
 
       platforms :#{not_local_tag}, :#{local_tag} do
         gem "rack", :require => "rack"

@@ -4,7 +4,7 @@ RSpec.describe "bundle update" do
   context "with --gemfile" do
     it "finds the gemfile" do
       gemfile bundled_app("NotGemfile"), <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
       G
 
@@ -21,7 +21,7 @@ RSpec.describe "bundle update" do
   context "with gemfile set via config" do
     before do
       gemfile bundled_app("NotGemfile"), <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
       G
 

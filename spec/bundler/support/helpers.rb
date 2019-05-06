@@ -279,7 +279,7 @@ module Spec
       if contents.nil?
         File.open("Gemfile.lock", "r", &:read)
       else
-        create_file("Gemfile.lock", normalize_uri_file(contents), *args)
+        create_file("Gemfile.lock", contents, *args)
       end
     end
 
@@ -287,15 +287,6 @@ module Spec
       # Trim the leading spaces
       spaces = str[/\A\s+/, 0] || ""
       str.gsub(/^#{spaces}/, "")
-    end
-
-    def normalize_uri_file(str)
-      # URI::File of Ruby 2.6 normalize localhost variable with file protocol.
-      if defined?(URI::File)
-        str.gsub(%r{file:\/\/localhost}, "file://")
-      else
-        str
-      end
     end
 
     def install_gemfile(*args)

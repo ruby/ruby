@@ -38,7 +38,7 @@ RSpec.describe ".bundle/config" do
   describe "location" do
     before :each do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "1.0.0"
       G
     end
@@ -68,7 +68,7 @@ RSpec.describe ".bundle/config" do
   describe "global" do
     before(:each) do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "1.0.0"
       G
     end
@@ -162,7 +162,7 @@ RSpec.describe ".bundle/config" do
   describe "local" do
     before(:each) do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "1.0.0"
       G
     end
@@ -220,7 +220,7 @@ RSpec.describe ".bundle/config" do
   describe "env" do
     before(:each) do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "1.0.0"
       G
     end
@@ -293,7 +293,7 @@ RSpec.describe ".bundle/config" do
   describe "gem mirrors" do
     before(:each) do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "1.0.0"
       G
     end
@@ -360,7 +360,7 @@ E
   describe "very long lines" do
     before(:each) do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "1.0.0"
       G
     end
@@ -480,7 +480,7 @@ RSpec.describe "setting gemfile via config" do
     it "persists the gemfile location to .bundle/config" do
       File.open(bundled_app("NotGemfile"), "w") do |f|
         f.write <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem 'rack'
         G
       end

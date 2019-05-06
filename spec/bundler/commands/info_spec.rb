@@ -4,7 +4,7 @@ RSpec.describe "bundle info" do
   context "with a standard Gemfile" do
     before do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
     end
@@ -119,7 +119,7 @@ RSpec.describe "bundle info" do
   context "with a valid regexp for gem name", :ruby_repo do
     it "presents alternatives" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "rack-obama"
       G
@@ -132,7 +132,7 @@ RSpec.describe "bundle info" do
   context "with an invalid regexp for gem name" do
     it "does not find the gem" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
 

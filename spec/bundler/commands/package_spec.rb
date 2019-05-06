@@ -4,7 +4,7 @@ RSpec.describe "bundle package" do
   context "with --gemfile" do
     it "finds the gemfile" do
       gemfile bundled_app("NotGemfile"), <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
       G
 
@@ -19,7 +19,7 @@ RSpec.describe "bundle package" do
     context "without a gemspec" do
       it "caches all dependencies except bundler itself" do
         gemfile <<-D
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem 'rack'
           gem 'bundler'
         D
@@ -49,7 +49,7 @@ RSpec.describe "bundle package" do
 
         it "caches all dependencies except bundler and the gemspec specified gem" do
           gemfile <<-D
-            source "file://#{gem_repo1}"
+            source "#{file_uri_for(gem_repo1)}"
             gem 'rack'
             gemspec
           D
@@ -80,7 +80,7 @@ RSpec.describe "bundle package" do
 
         it "caches all dependencies except bundler and the gemspec specified gem" do
           gemfile <<-D
-            source "file://#{gem_repo1}"
+            source "#{file_uri_for(gem_repo1)}"
             gem 'rack'
             gemspec
           D
@@ -123,7 +123,7 @@ RSpec.describe "bundle package" do
 
       it "caches all dependencies except bundler and the gemspec specified gems" do
         gemfile <<-D
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem 'rack'
           gemspec :name => 'mygem'
           gemspec :name => 'mygem_test'
@@ -144,7 +144,7 @@ RSpec.describe "bundle package" do
   context "with --path", :bundler => "< 3" do
     it "sets root directory for gems" do
       gemfile <<-D
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
       D
 
@@ -158,7 +158,7 @@ RSpec.describe "bundle package" do
   context "with --no-install" do
     it "puts the gems in vendor/cache but does not install them" do
       gemfile <<-D
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
       D
 
@@ -170,7 +170,7 @@ RSpec.describe "bundle package" do
 
     it "does not prevent installing gems with bundle install" do
       gemfile <<-D
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
       D
 
@@ -182,7 +182,7 @@ RSpec.describe "bundle package" do
 
     it "does not prevent installing gems with bundle update" do
       gemfile <<-D
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "1.0.0"
       D
 
@@ -196,7 +196,7 @@ RSpec.describe "bundle package" do
   context "with --all-platforms" do
     it "puts the gems in vendor/cache even for other rubies" do
       gemfile <<-D
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack', :platforms => :ruby_19
       D
 
@@ -208,7 +208,7 @@ RSpec.describe "bundle package" do
   context "with --frozen" do
     before do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
       bundle "install"
@@ -219,7 +219,7 @@ RSpec.describe "bundle package" do
     it "tries to install with frozen" do
       bundle! "config set deployment true"
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "rack-obama"
       G
@@ -239,7 +239,7 @@ RSpec.describe "bundle install with gem sources" do
     it "does not hit the remote at all" do
       build_repo2
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rack"
       G
 
@@ -254,7 +254,7 @@ RSpec.describe "bundle install with gem sources" do
     it "does not hit the remote at all" do
       build_repo2
       install_gemfile! <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rack"
       G
 
@@ -268,7 +268,7 @@ RSpec.describe "bundle install with gem sources" do
 
     it "does not reinstall already-installed gems" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
       bundle :pack
@@ -285,7 +285,7 @@ RSpec.describe "bundle install with gem sources" do
     it "ignores cached gems for the wrong platform" do
       simulate_platform "java" do
         install_gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "platform_specific"
         G
         bundle :pack
@@ -295,7 +295,7 @@ RSpec.describe "bundle install with gem sources" do
 
       simulate_platform "ruby" do
         install_gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "platform_specific"
         G
         run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
@@ -305,7 +305,7 @@ RSpec.describe "bundle install with gem sources" do
 
     it "does not update the cache if --no-cache is passed" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
       bundled_app("vendor/cache").mkpath
