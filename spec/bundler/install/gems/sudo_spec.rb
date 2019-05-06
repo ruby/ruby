@@ -19,7 +19,7 @@ RSpec.describe "when using sudo", :sudo => true do
 
       it "installs" do
         install_gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         G
 
@@ -38,7 +38,7 @@ RSpec.describe "when using sudo", :sudo => true do
 
     it "installs" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", '1.0'
         gem "thin"
       G
@@ -50,7 +50,7 @@ RSpec.describe "when using sudo", :sudo => true do
 
     it "installs rake and a gem dependent on rake in the same session" do
       gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rake"
           gem "another_implicit_rake_dep"
       G
@@ -65,7 +65,7 @@ RSpec.describe "when using sudo", :sudo => true do
 
       ENV["BUNDLE_PATH"] = bundle_path.to_s
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", '1.0'
       G
 
@@ -82,7 +82,7 @@ RSpec.describe "when using sudo", :sudo => true do
 
       ENV["BUNDLE_PATH"] = bundle_path.to_s
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", '1.0'
       G
 
@@ -93,7 +93,7 @@ RSpec.describe "when using sudo", :sudo => true do
 
     it "installs extensions/" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "very_simple_binary"
       G
 
@@ -114,7 +114,7 @@ RSpec.describe "when using sudo", :sudo => true do
 
     it "installs" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", '1.0'
       G
 
@@ -129,7 +129,7 @@ RSpec.describe "when using sudo", :sudo => true do
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
       tmpdirs = Dir.glob("#{Dir.tmpdir}/bundler*")
@@ -146,7 +146,7 @@ RSpec.describe "when using sudo", :sudo => true do
       sudo "chmod ugo-w #{gem_home}"
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", '1.0'
       G
 
@@ -162,7 +162,7 @@ RSpec.describe "when using sudo", :sudo => true do
     let(:warning) { "Don't run Bundler as root." }
 
     before do
-      gemfile %(source "file://#{gem_repo1}")
+      gemfile %(source "#{file_uri_for(gem_repo1)}")
     end
 
     it "warns against that" do

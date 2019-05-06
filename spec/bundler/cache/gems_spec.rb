@@ -19,7 +19,7 @@ RSpec.describe "bundle cache" do
       build_gem "omg", :path => bundled_app("vendor/cache")
 
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "omg"
       G
 
@@ -104,7 +104,7 @@ RSpec.describe "bundle cache" do
 
     it "caches remote and builtin gems" do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem 'builtin_gem', '1.0.2'
         gem 'rack', '1.0.0'
       G
@@ -120,7 +120,7 @@ RSpec.describe "bundle cache" do
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem 'builtin_gem_2', '1.0.2'
       G
 
@@ -147,7 +147,7 @@ RSpec.describe "bundle cache" do
       system_gems "rack-1.0.0"
 
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         git "#{lib_path("foo-1.0")}" do
           gem 'foo'
         end
@@ -177,7 +177,7 @@ RSpec.describe "bundle cache" do
     before :each do
       build_repo2
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rack"
         gem "actionpack"
       G
@@ -203,7 +203,7 @@ RSpec.describe "bundle cache" do
 
     it "adds new gems and dependencies" do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rails"
       G
       expect(cached_gem("rails-2.3.2")).to exist
@@ -212,7 +212,7 @@ RSpec.describe "bundle cache" do
 
     it "removes .gems for removed gems and dependencies" do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rack"
       G
       expect(cached_gem("rack-1.0.0")).to exist
@@ -224,7 +224,7 @@ RSpec.describe "bundle cache" do
       build_git "rack"
 
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rack", :git => "#{lib_path("rack-1.0")}"
         gem "actionpack"
       G
@@ -236,7 +236,7 @@ RSpec.describe "bundle cache" do
     it "doesn't remove gems that are for another platform" do
       simulate_platform "java" do
         install_gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "platform_specific"
         G
 
@@ -246,7 +246,7 @@ RSpec.describe "bundle cache" do
 
       simulate_new_machine
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "platform_specific"
       G
 
@@ -273,7 +273,7 @@ RSpec.describe "bundle cache" do
 
     it "does not say that it is removing gems when it isn't actually doing so" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
       bundle "cache"
@@ -283,7 +283,7 @@ RSpec.describe "bundle cache" do
 
     it "does not warn about all if it doesn't have any git/path dependency" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
       bundle "cache"

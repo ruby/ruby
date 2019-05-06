@@ -13,7 +13,7 @@ RSpec.describe "process lock spec" do
       end
 
       install_gemfile! <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 

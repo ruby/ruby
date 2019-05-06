@@ -3,7 +3,7 @@
 describe "bundle install with install_if conditionals" do
   it "follows the install_if DSL" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       install_if(lambda { true }) do
         gem "activesupport", "2.3.5"
       end
@@ -20,7 +20,7 @@ describe "bundle install with install_if conditionals" do
 
     lockfile_should_be <<-L
       GEM
-        remote: file:#{gem_repo1}/
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
           activesupport (2.3.5)
           foo (1.0)

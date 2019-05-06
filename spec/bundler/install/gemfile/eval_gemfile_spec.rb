@@ -71,7 +71,7 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
       create_file "other/Gemfile-other", "gem 'rack'"
       create_file "other/Gemfile", "eval_gemfile 'Gemfile-other'"
       create_file "Gemfile-alt", <<-G
-        source "file:#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         eval_gemfile "other/Gemfile"
       G
       install_gemfile! "eval_gemfile File.expand_path('Gemfile-alt')"

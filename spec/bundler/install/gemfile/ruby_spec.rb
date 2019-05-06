@@ -10,13 +10,13 @@ RSpec.describe "ruby requirement" do
   # requirement. This test verifies the fix, committed in bfbad5c5.
   it "allows adding gems" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       ruby "#{RUBY_VERSION}"
       gem "rack"
     G
 
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       ruby "#{RUBY_VERSION}"
       gem "rack"
       gem "rack-obama"
@@ -28,7 +28,7 @@ RSpec.describe "ruby requirement" do
 
   it "allows removing the ruby version requirement" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       ruby "~> #{RUBY_VERSION}"
       gem "rack"
     G
@@ -36,7 +36,7 @@ RSpec.describe "ruby requirement" do
     expect(lockfile).to include("RUBY VERSION")
 
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
 
@@ -46,7 +46,7 @@ RSpec.describe "ruby requirement" do
 
   it "allows changing the ruby version requirement to something compatible" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       ruby ">= 1.0.0"
       gem "rack"
     G
@@ -56,7 +56,7 @@ RSpec.describe "ruby requirement" do
     simulate_ruby_version "5100"
 
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       ruby ">= 1.0.1"
       gem "rack"
     G
@@ -67,7 +67,7 @@ RSpec.describe "ruby requirement" do
 
   it "allows changing the ruby version requirement to something incompatible" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       ruby ">= 1.0.0"
       gem "rack"
     G
@@ -77,7 +77,7 @@ RSpec.describe "ruby requirement" do
     simulate_ruby_version "5100"
 
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       ruby ">= 5000.0"
       gem "rack"
     G
@@ -88,7 +88,7 @@ RSpec.describe "ruby requirement" do
 
   it "allows requirements with trailing whitespace" do
     install_gemfile! <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       ruby "#{RUBY_VERSION}\\n \t\\n"
       gem "rack"
     G
@@ -98,7 +98,7 @@ RSpec.describe "ruby requirement" do
 
   it "fails gracefully with malformed requirements" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       ruby ">= 0", "-.\\0"
       gem "rack"
     G

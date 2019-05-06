@@ -3,7 +3,7 @@
 RSpec.describe "bundle package" do
   before do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
   end

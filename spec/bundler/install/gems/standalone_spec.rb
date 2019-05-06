@@ -51,7 +51,7 @@ RSpec.shared_examples "bundle install --standalone" do
   describe "with simple gems" do
     before do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
       bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true)
@@ -70,7 +70,7 @@ RSpec.shared_examples "bundle install --standalone" do
   describe "with gems with native extension", :ruby_repo do
     before do
       install_gemfile <<-G, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true)
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "very_simple_binary"
       G
     end
@@ -118,7 +118,7 @@ RSpec.shared_examples "bundle install --standalone" do
       build_git "devise", "1.0"
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
         gem "devise", :git => "#{lib_path("devise-1.0")}"
       G
@@ -141,7 +141,7 @@ RSpec.shared_examples "bundle install --standalone" do
       build_git "devise", "1.0"
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
 
         group :test do
@@ -276,7 +276,7 @@ RSpec.shared_examples "bundle install --standalone" do
   describe "with --binstubs", :bundler => "< 3" do
     before do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
       bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true, :binstubs => true)

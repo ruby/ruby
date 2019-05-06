@@ -20,8 +20,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
       before do
         gemfile <<-G
-          source "file://localhost#{gem_repo3}"
-          source "file://localhost#{gem_repo1}"
+          source "#{file_uri_for(gem_repo3)}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack-obama"
           gem "rack"
         G
@@ -31,7 +31,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         bundle :install
 
         expect(err).to include("Warning: the gem 'rack' was found in multiple sources.")
-        expect(err).to include(normalize_uri_file("Installed from: file://localhost#{gem_repo1}"))
+        expect(err).to include("Installed from: #{file_uri_for(gem_repo1)}")
         expect(the_bundle).to include_gems("rack-obama 1.0.0", "rack 1.0.0", :source => "remote1")
       end
 
@@ -47,8 +47,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
       before do
         gemfile <<-G
-          source "file://localhost#{gem_repo3}"
-          source "file://localhost#{gem_repo1}"
+          source "#{file_uri_for(gem_repo3)}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack-obama"
           gem "rack", "1.0.0" # force it to install the working version in repo1
         G
@@ -58,7 +58,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
       it "warns about ambiguous gems, but installs anyway", :bundler => "2" do
         expect(err).to include("Warning: the gem 'rack' was found in multiple sources.")
-        expect(err).to include(normalize_uri_file("Installed from: file://localhost#{gem_repo1}"))
+        expect(err).to include("Installed from: #{file_uri_for(gem_repo1)}")
         expect(the_bundle).to include_gems("rack-obama 1.0.0", "rack 1.0.0", :source => "remote1")
       end
 
@@ -85,8 +85,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
 
         gemfile <<-G
-          source "file://#{gem_repo3}"
-          source "file://#{gem_repo1}" do
+          source "#{file_uri_for(gem_repo3)}"
+          source "#{file_uri_for(gem_repo1)}" do
             gem "thin" # comes first to test name sorting
             gem "rack"
           end
@@ -128,9 +128,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
 
         gemfile <<-G
-          source "file://#{gem_repo3}"
+          source "#{file_uri_for(gem_repo3)}"
           gem "rack-obama" # should come from repo3!
-          gem "rack", :source => "file://#{gem_repo1}"
+          gem "rack", :source => "#{file_uri_for(gem_repo1)}"
         G
       end
 
@@ -158,8 +158,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
           end
 
           gemfile <<-G
-            source "file://#{gem_repo2}"
-            source "file://#{gem_repo3}" do
+            source "#{file_uri_for(gem_repo2)}"
+            source "#{file_uri_for(gem_repo3)}" do
               gem "depends_on_rack"
             end
           G
@@ -222,8 +222,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
         context "and not in any other sources" do
           before do
             gemfile <<-G
-              source "file://#{gem_repo2}"
-              source "file://#{gem_repo3}" do
+              source "#{file_uri_for(gem_repo2)}"
+              source "#{file_uri_for(gem_repo3)}" do
                 gem "depends_on_rack"
               end
             G
@@ -239,9 +239,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
         context "and in yet another source", :bundler => "< 3" do
           before do
             gemfile <<-G
-              source "file://localhost#{gem_repo1}"
-              source "file://localhost#{gem_repo2}"
-              source "file://localhost#{gem_repo3}" do
+              source "#{file_uri_for(gem_repo1)}"
+              source "#{file_uri_for(gem_repo2)}"
+              source "#{file_uri_for(gem_repo3)}" do
                 gem "depends_on_rack"
               end
             G
@@ -251,7 +251,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
           it "installs from the other source and warns about ambiguous gems", :bundler => "2" do
             expect(err).to include("Warning: the gem 'rack' was found in multiple sources.")
-            expect(err).to include(normalize_uri_file("Installed from: file://localhost#{gem_repo2}"))
+            expect(err).to include("Installed from: #{file_uri_for(gem_repo2)}")
             expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0")
           end
 
@@ -271,11 +271,11 @@ RSpec.describe "bundle install with gems on multiple sources" do
             end
 
             gemfile <<-G
-              source "file://#{gem_repo3}" # contains depends_on_rack
-              source "file://#{gem_repo2}" # contains broken rack
+              source "#{file_uri_for(gem_repo3)}" # contains depends_on_rack
+              source "#{file_uri_for(gem_repo2)}" # contains broken rack
 
               gem "depends_on_rack" # installed from gem_repo3
-              gem "rack", :source => "file://#{gem_repo1}"
+              gem "rack", :source => "#{file_uri_for(gem_repo1)}"
             G
           end
 
@@ -321,11 +321,11 @@ RSpec.describe "bundle install with gems on multiple sources" do
           end
 
           gemfile <<-G
-            source "file://#{gem_repo2}"
+            source "#{file_uri_for(gem_repo2)}"
 
             gem "depends_on_rack"
 
-            source "file://#{gem_repo3}" do
+            source "#{file_uri_for(gem_repo3)}" do
               gem "unrelated_gem"
             end
           G
@@ -389,8 +389,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
 
         gemfile <<-G
-          source "file://#{gem_repo3}"
-          gem "not_in_repo1", :source => "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo3)}"
+          gem "not_in_repo1", :source => "#{file_uri_for(gem_repo1)}"
         G
       end
 
@@ -406,8 +406,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
         lockfile <<-L
           GEM
-            remote: file:#{gem_repo1}
-            remote: file:#{gem_repo3}
+            remote: #{file_uri_for(gem_repo1)}
+            remote: #{file_uri_for(gem_repo3)}
             specs:
               rack (0.9.1)
 
@@ -419,8 +419,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
         L
 
         gemfile <<-G
-          source "file://#{gem_repo1}"
-          source "file://#{gem_repo3}" do
+          source "#{file_uri_for(gem_repo1)}"
+          source "#{file_uri_for(gem_repo3)}" do
             gem 'rack'
           end
         G
@@ -437,7 +437,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         build_lib "foo"
 
         gemfile <<-G
-          gem "rack", :source => "file://#{gem_repo1}"
+          gem "rack", :source => "#{file_uri_for(gem_repo1)}"
           gem "foo", :path => "#{lib_path("foo-1.0")}"
         G
       end
@@ -457,7 +457,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       system_gems "rack-0.9.1"
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack" # shoud come from repo1!
       G
     end
@@ -479,10 +479,10 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
       # Installing this gemfile...
       gemfile <<-G
-        source 'file://#{gem_repo1}'
+        source '#{file_uri_for(gem_repo1)}'
         gem 'rack'
-        gem 'foo', '~> 0.1', :source => 'file://#{gem_repo4}'
-        gem 'bar', '~> 0.1', :source => 'file://#{gem_repo4}'
+        gem 'foo', '~> 0.1', :source => '#{file_uri_for(gem_repo4)}'
+        gem 'bar', '~> 0.1', :source => '#{file_uri_for(gem_repo4)}'
       G
 
       bundle! :install, forgotten_command_line_options(:path => "../gems/system")
@@ -497,10 +497,10 @@ RSpec.describe "bundle install with gems on multiple sources" do
     it "allows them to be unlocked separately" do
       # And install this gemfile, updating only foo.
       install_gemfile <<-G
-        source 'file://#{gem_repo1}'
+        source '#{file_uri_for(gem_repo1)}'
         gem 'rack'
-        gem 'foo', '~> 0.2', :source => 'file://#{gem_repo4}'
-        gem 'bar', '~> 0.1', :source => 'file://#{gem_repo4}'
+        gem 'foo', '~> 0.2', :source => '#{file_uri_for(gem_repo4)}'
+        gem 'bar', '~> 0.1', :source => '#{file_uri_for(gem_repo4)}'
       G
 
       # It should update foo to 0.2, but not the (locked) bar 0.1
@@ -518,10 +518,10 @@ RSpec.describe "bundle install with gems on multiple sources" do
         build_git "git2"
 
         install_gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rails"
 
-          source "file://#{gem_repo3}" do
+          source "#{file_uri_for(gem_repo3)}" do
             gem "rack"
           end
 
@@ -543,15 +543,15 @@ RSpec.describe "bundle install with gems on multiple sources" do
   context "when a gem is installed to system gems" do
     before do
       install_gemfile! <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
     end
 
     context "and the gemfile changes" do
       it "is still able to find that gem from remote sources" do
-        source_uri = "file://#{gem_repo1}"
-        second_uri = "file://#{gem_repo4}"
+        source_uri = "#{file_uri_for(gem_repo1)}"
+        second_uri = "#{file_uri_for(gem_repo4)}"
 
         build_repo4 do
           build_gem "rack", "2.0.1.1.forked"
@@ -589,7 +589,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
   describe "source changed to one containing a higher version of a dependency" do
     before do
       install_gemfile! <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
 
         gem "rack"
       G
@@ -603,7 +603,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rack"
         gemspec :path => "#{tmp.join("gemspec_test")}"
       G
@@ -628,17 +628,17 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       install_gemfile <<-G
-        source "file://localhost#{gem_repo4}"
-        source "file://localhost#{gem_repo1}" do
+        source "#{file_uri_for(gem_repo4)}"
+        source "#{file_uri_for(gem_repo1)}" do
           gem "thin"
         end
         gem "depends_on_rack"
       G
       expect(last_command).to be_failure
-      expect(err).to eq normalize_uri_file(strip_whitespace(<<-EOS).strip)
+      expect(err).to eq strip_whitespace(<<-EOS).strip
         The gem 'rack' was found in multiple relevant sources.
-          * rubygems repository file://localhost#{gem_repo1}/ or installed locally
-          * rubygems repository file://localhost#{gem_repo4}/ or installed locally
+          * rubygems repository #{file_uri_for(gem_repo1)}/ or installed locally
+          * rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally
         You must add this gem to the source block for the source you wish it to be installed from.
       EOS
       expect(the_bundle).not_to be_locked

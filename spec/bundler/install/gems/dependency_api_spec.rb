@@ -73,7 +73,7 @@ RSpec.describe "gemcutter's dependency API" do
 
     gemfile <<-G
       source "#{source_uri}"
-      git "file:///#{lib_path("foo-1.0")}" do
+      git "#{file_uri_for(lib_path("foo-1.0"))}" do
         gem 'foo'
       end
     G
@@ -91,7 +91,7 @@ RSpec.describe "gemcutter's dependency API" do
 
     gemfile <<-G
       source "#{source_uri}"
-      gem 'foo', :git => "file:///#{lib_path("foo-1.0")}"
+      gem 'foo', :git => "#{file_uri_for(lib_path("foo-1.0"))}"
     G
 
     bundle :install, :artifice => "endpoint"
@@ -105,7 +105,7 @@ RSpec.describe "gemcutter's dependency API" do
     build_git "foo"
     gemfile <<-G
       source "#{source_uri}"
-      gem 'foo', :git => "file:///#{lib_path("foo-1.0")}"
+      gem 'foo', :git => "#{file_uri_for(lib_path("foo-1.0"))}"
     G
 
     bundle "install", :artifice => "endpoint"
@@ -597,7 +597,7 @@ RSpec.describe "gemcutter's dependency API" do
     it "strips http basic auth creds when warning about ambiguous sources", :bundler => "< 3" do
       gemfile <<-G
         source "#{basic_auth_source_uri}"
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
