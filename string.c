@@ -6461,7 +6461,7 @@ check_case_options(int argc, VALUE *argv, OnigCaseFoldType flags)
 static inline bool
 case_option_single_p(OnigCaseFoldType flags, rb_encoding *enc, VALUE str)
 {
-    if ((flags & ONIGENC_CASE_ASCII_ONLY) && (rb_enc_mbmaxlen(enc) == 1))
+    if ((flags & ONIGENC_CASE_ASCII_ONLY) && (enc==rb_utf8_encoding() || rb_enc_mbmaxlen(enc) == 1))
         return true;
     return !(flags & ONIGENC_CASE_FOLD_TURKISH_AZERI) && ENC_CODERANGE(str) == ENC_CODERANGE_7BIT;
 }
