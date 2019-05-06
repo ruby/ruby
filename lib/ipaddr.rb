@@ -566,7 +566,7 @@ class IPAddr
         raise AddressFamilyError, "unsupported address family: #{family}"
       end
     end
-    prefix, prefixlen = addr.split('/')
+    prefix, prefixlen = addr.split('/', 2)
     if prefix =~ /\A\[(.*)\]\z/i
       prefix = $1
       family = Socket::AF_INET6
