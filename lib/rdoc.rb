@@ -121,9 +121,19 @@ module RDoc
   end
 
   def self.home
-    begin
-      File.expand_path('~/.rdoc')
-    rescue ArgumentError
+    rdoc_dir = begin
+                File.expand_path('~/.rdoc')
+              rescue ArgumentError
+              end
+
+    if File.exists?(rdoc_dir)
+      rdoc_dir
+    else
+      xdg_data_home = ENV["XDG_DATA_HOME"] || File.join(Gem.user_home, '.local', 'share')
+      unless File.exists?(xdg_data_home)
+        FileUtils.mkdir_p xdg_data_home
+      end
+      File.join xdg_data_home, "rdoc"
     end
   end
 
