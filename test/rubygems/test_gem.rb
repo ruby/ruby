@@ -1359,7 +1359,19 @@ class TestGem < Gem::TestCase
     parts = [@userhome, '.gem', Gem.ruby_engine]
     parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
 
+    FileUtils.mkdir_p File.join(parts)
+
     assert_equal File.join(parts), Gem.user_dir
+  end
+
+  def test_self_user_dir_xdg
+    parts = [@userhome, '.gem', Gem.ruby_engine]
+    parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
+
+    xdg_parts = [@userhome, ".local", "share", "gem", Gem.ruby_engine]
+    xdg_parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
+
+    assert_equal File.join(xdg_parts), Gem.user_dir
   end
 
   def test_self_user_home
