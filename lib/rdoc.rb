@@ -120,6 +120,13 @@ module RDoc
     end
   end
 
+  def self.home
+    begin
+      File.expand_path('~/.rdoc')
+    rescue ArgumentError
+    end
+  end
+
   autoload :RDoc,           'rdoc/rdoc'
 
   autoload :CrossReference, 'rdoc/cross_reference'

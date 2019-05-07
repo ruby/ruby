@@ -482,7 +482,7 @@ class RDoc::Store
     when :gem    then
       parent = File.expand_path '..', @path
       "gem #{File.basename parent}"
-    when :home   then '~/.rdoc'
+    when :home   then RDoc.home
     when :site   then 'ruby site'
     when :system then 'ruby core'
     else @path
