@@ -143,6 +143,11 @@ RB_DEBUG_COUNTER(gc_major_shady)
 RB_DEBUG_COUNTER(gc_major_force)
 RB_DEBUG_COUNTER(gc_major_oldmalloc)
 
+RB_DEBUG_COUNTER(gc_isptr_trial)
+RB_DEBUG_COUNTER(gc_isptr_range)
+RB_DEBUG_COUNTER(gc_isptr_align)
+RB_DEBUG_COUNTER(gc_isptr_maybe)
+
 /* object allocation counts:
  *
  * * obj_newobj: newobj counts

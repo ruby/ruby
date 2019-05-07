@@ -2191,8 +2191,13 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
     register struct heap_page *page;
     register size_t hi, lo, mid;
 
+    RB_DEBUG_COUNTER_INC(gc_isptr_trial);
+
     if (p < heap_pages_lomem || p > heap_pages_himem) return FALSE;
+    RB_DEBUG_COUNTER_INC(gc_isptr_range);
+
     if ((VALUE)p % sizeof(RVALUE) != 0) return FALSE;
+    RB_DEBUG_COUNTER_INC(gc_isptr_align);
 
     /* check if p looks like a pointer using bsearch*/
     lo = 0;
@@ -2202,6 +2207,7 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 	page = heap_pages_sorted[mid];
 	if (page->start <= p) {
 	    if (p < page->start + page->total_slots) {
+                RB_DEBUG_COUNTER_INC(gc_isptr_maybe);
 		return TRUE;
 	    }
 	    lo = mid + 1;
