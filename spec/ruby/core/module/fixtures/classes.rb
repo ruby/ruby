@@ -386,6 +386,12 @@ module ModuleSpecs
       end
     end
 
+    class Parent
+    end
+
+    class Child < Parent
+    end
+
     module FromThread
       module A
         autoload :B, fixture(__FILE__, "autoload_empty.rb")
