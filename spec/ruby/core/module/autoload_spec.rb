@@ -11,6 +11,18 @@ describe "Module#autoload?" do
   it "returns nil if no file has been registered for a constant" do
     ModuleSpecs::Autoload.autoload?(:Manualload).should be_nil
   end
+
+  it "returns the name of the file that will be autoloaded if an ancestor defined that autoload" do
+    ModuleSpecs::Autoload::Parent.autoload :AnotherAutoload, "another_autoload.rb"
+    ModuleSpecs::Autoload::Child.autoload?(:AnotherAutoload).should == "another_autoload.rb"
+  end
+
+  ruby_version_is "2.7" do
+    it "returns nil if an ancestor defined that autoload but recursion is disabled" do
+      ModuleSpecs::Autoload::Parent.autoload :AnotherAutoload, "another_autoload.rb"
+      ModuleSpecs::Autoload::Child.autoload?(:AnotherAutoload, false).should be_nil
+    end
+  end
 end
 
 describe "Module#autoload" do
