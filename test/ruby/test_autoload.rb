@@ -42,8 +42,10 @@ p Foo::Bar
     require 'tmpdir'
     Dir.mktmpdir('autoload') {|tmpdir|
       tmpfile = tmpdir + '/foo.rb'
+      tmpfile2 = tmpdir + '/bar.rb'
       a = Module.new do
         autoload :X, tmpfile
+        autoload :Y, tmpfile2
       end
       b = Module.new do
         include a
@@ -52,6 +54,10 @@ p Foo::Bar
       assert_equal(true, b.const_defined?(:X))
       assert_equal(tmpfile, a.autoload?(:X), bug4565)
       assert_equal(tmpfile, b.autoload?(:X), bug4565)
+      assert_equal(true, a.const_defined?("Y"))
+      assert_equal(true, b.const_defined?("Y"))
+      assert_equal(tmpfile2, a.autoload?("Y"))
+      assert_equal(tmpfile2, b.autoload?("Y"))
     }
   end
 
