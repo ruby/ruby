@@ -2694,16 +2694,19 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
         if (!RTEST(recur)) {
 	    if (!rb_const_defined_at(mod, id))
 		return Qfalse;
+            if (p == pend) return Qtrue;
 	    mod = rb_const_get_at(mod, id);
 	}
         else if (beglen == 0) {
             if (!rb_const_defined(mod, id))
                 return Qfalse;
+            if (p == pend) return Qtrue;
             mod = rb_const_get(mod, id);
         }
         else {
             if (!rb_const_defined_from(mod, id))
                 return Qfalse;
+            if (p == pend) return Qtrue;
             mod = rb_const_get_from(mod, id);
         }
 #endif
