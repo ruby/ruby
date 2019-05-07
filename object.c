@@ -2692,19 +2692,37 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
         if (mod == Qundef) return Qfalse;
 #else
         if (!RTEST(recur)) {
-	    if (!rb_const_defined_at(mod, id))
-		return Qfalse;
-	    mod = rb_const_get_at(mod, id);
-	}
-        else if (beglen == 0) {
-            if (!rb_const_defined(mod, id))
+            if (rb_const_defined_at(mod, id)) {
+                if (p < pend) {
+                    mod = rb_const_get_at(mod, id);
+                } else {
+                    return Qtrue;
+                }
+            } else {
                 return Qfalse;
-            mod = rb_const_get(mod, id);
+            }
+        }
+        else if (beglen == 0) {
+            if (rb_const_defined(mod, id)) {
+                if (p < pend) {
+                    mod = rb_const_get(mod, id);
+                } else {
+                    return Qtrue;
+                }
+            } else {
+                return Qfalse;
+            }
         }
         else {
-            if (!rb_const_defined_from(mod, id))
+            if (rb_const_defined_from(mod, id)) {
+                if (p < pend) {
+                    mod = rb_const_get_from(mod, id);
+                } else {
+                    return Qtrue;
+                }
+            } else {
                 return Qfalse;
-            mod = rb_const_get_from(mod, id);
+            }
         }
 #endif
 
