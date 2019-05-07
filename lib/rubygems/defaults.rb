@@ -74,7 +74,13 @@ module Gem
   # Path for gems in the user's home directory
 
   def self.user_dir
-    parts = [Gem.user_home, '.gem', ruby_engine]
+    gem_dir = File.join(Gem.user_home, ".gem")
+    unless File.exist?(gem_dir)
+      # XDG
+      ENV["XDG_DATA_HOME"] ||= File.join Gem.user_home, '.local', 'share'
+      gem_dir = File.join ENV["XDG_DATA_HOME"], "gem"
+    end
+    parts = [gem_dir, ruby_engine]
     parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
     File.join parts
   end
