@@ -341,7 +341,14 @@ module Gem
   # The path to standard location of the user's .gemrc file.
 
   def self.config_file
-    @config_file ||= File.join Gem.user_home, '.gemrc'
+    gemrc = File.join Gem.user_home, '.gemrc'
+    if File.exist? gemrc
+      @config_file ||= gemrc
+    else
+      # XDG
+      ENV["XDG_CONFIG_HOME"] ||= File.join Gem.user_home, '.config'
+      @config_file ||= File.join ENV["XDG_CONFIG_HOME"], "gem"
+    end
   end
 
   ##
