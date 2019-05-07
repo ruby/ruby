@@ -2200,6 +2200,7 @@ VALUE rb_search_class_path(VALUE);
 VALUE rb_attr_delete(VALUE, ID);
 VALUE rb_ivar_lookup(VALUE obj, ID id, VALUE undef);
 void rb_autoload_str(VALUE mod, ID id, VALUE file);
+VALUE rb_autoload_at_p(VALUE, ID, VALUE);
 void rb_deprecate_constant(VALUE mod, const char *name);
 NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
 rb_gvar_getter_t *rb_gvar_getter_function_of(const struct rb_global_entry *);

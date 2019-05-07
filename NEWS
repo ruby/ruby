@@ -123,6 +123,13 @@ Integer::
          0b01001100[2...6] #=> 0b0011
              ^^^^
 
+Module::
+
+  Modified method::
+
+    * Module#autoload? now takes an +inherit+ optional argument, like as
+      Module#const_defined?.  [Feature #15777]
+
 Regexp / String::
 
     * Update Unicode version and Emoji version from 11.0.0 to

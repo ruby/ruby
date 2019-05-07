@@ -1142,25 +1142,42 @@ rb_mod_autoload(VALUE mod, VALUE sym, VALUE file)
 
 /*
  *  call-seq:
- *     mod.autoload?(name)   -> String or nil
+ *     mod.autoload?(name, inherit=true)   -> String or nil
  *
  *  Returns _filename_ to be loaded if _name_ is registered as
- *  +autoload+ in the namespace of _mod_.
+ *  +autoload+ in the namespace of _mod_ or one of its ancestors.
  *
  *     module A
  *     end
  *     A.autoload(:B, "b")
  *     A.autoload?(:B)            #=> "b"
+ *
+ *  If +inherit+ is false, the lookup only checks the autoloads in the receiver:
+ *
+ *     class A
+ *       autoload :CONST, "const.rb"
+ *     end
+ *
+ *     class B < A
+ *     end
+ *
+ *     B.autoload?(:CONST)          #=> "const.rb", found in A (ancestor)
+ *     B.autoload?(:CONST, false)   #=> nil, not found in B itself
+ *
  */
 
 static VALUE
-rb_mod_autoload_p(VALUE mod, VALUE sym)
+rb_mod_autoload_p(int argc, VALUE *argv, VALUE mod)
 {
+    rb_check_arity(argc, 1, 2);
+    VALUE sym = argv[0];
+    VALUE recur = (argc == 1) ? Qtrue : argv[1];
+
     ID id = rb_check_id(&sym);
     if (!id) {
 	return Qnil;
     }
-    return rb_autoload_p(mod, id);
+    return rb_autoload_at_p(mod, id, recur);
 }
 
 /*
@@ -1186,7 +1203,7 @@ rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
 
 /*
  *  call-seq:
- *     autoload?(name)   -> String or nil
+ *     autoload?(name, inherit=true)   -> String or nil
  *
  *  Returns _filename_ to be loaded if _name_ is registered as
  *  +autoload+.
@@ -1196,14 +1213,14 @@ rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
  */
 
 static VALUE
-rb_f_autoload_p(VALUE obj, VALUE sym)
+rb_f_autoload_p(int argc, VALUE *argv, VALUE obj)
 {
     /* use rb_vm_cbase() as same as rb_f_autoload. */
     VALUE klass = rb_vm_cbase();
     if (NIL_P(klass)) {
 	return Qnil;
     }
-    return rb_mod_autoload_p(klass, sym);
+    return rb_mod_autoload_p(argc, argv, klass);
 }
 
 void
@@ -1233,9 +1250,9 @@ Init_load(void)
     rb_define_global_function("require", rb_f_require, 1);
     rb_define_global_function("require_relative", rb_f_require_relative, 1);
     rb_define_method(rb_cModule, "autoload", rb_mod_autoload, 2);
-    rb_define_method(rb_cModule, "autoload?", rb_mod_autoload_p, 1);
+    rb_define_method(rb_cModule, "autoload?", rb_mod_autoload_p, -1);
     rb_define_global_function("autoload", rb_f_autoload, 2);
-    rb_define_global_function("autoload?", rb_f_autoload_p, 1);
+    rb_define_global_function("autoload?", rb_f_autoload_p, -1);
 
     ruby_dln_librefs = rb_ary_tmp_new(0);
     rb_gc_register_mark_object(ruby_dln_librefs);
