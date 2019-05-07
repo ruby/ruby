@@ -243,10 +243,7 @@ VALUE
 rb_mod_name(VALUE mod)
 {
     int permanent;
-    VALUE path = classname(mod, &permanent);
-
-    if (!NIL_P(path)) return rb_str_dup(path);
-    return path;
+    return classname(mod, &permanent);
 }
 
 static VALUE

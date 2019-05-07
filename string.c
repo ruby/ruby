@@ -10750,7 +10750,7 @@ sym_inspect(VALUE sym)
 VALUE
 rb_sym_to_s(VALUE sym)
 {
-    return str_new_shared(rb_cString, rb_sym2str(sym));
+    return rb_sym2str(sym);
 }
 
 
