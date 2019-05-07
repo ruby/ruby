@@ -346,8 +346,8 @@ module Gem
       @config_file ||= gemrc
     else
       # XDG
-      ENV["XDG_CONFIG_HOME"] ||= File.join Gem.user_home, '.config'
-      @config_file ||= File.join ENV["XDG_CONFIG_HOME"], "gem"
+      xdg_config_home = ENV["XDG_CONFIG_HOME"] || File.join(Gem.user_home, '.config')
+      @config_file ||= File.join xdg_config_home, "gem"
     end
   end
 
