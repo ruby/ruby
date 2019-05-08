@@ -413,8 +413,10 @@ before_script:
         set -x
         date
         ./miniruby -e 'ARGV.map{[@1,File.stat(@1)]}.sort_by{@2.mtime}.each{p mtime:@2.mtime.to_f, ctime:@2.ctime.to_f, path:@1}' .ext/.timestamp/.RUBYCOMMONDIR*time .ext/common/bigdecimal/*.rb ../ext/bigdecimal/lib/bigdecimal/*.rb . .. .ext .ext/common .ext/common/bigdecimal ext/bigdecimal ../ext ../ext/bigdecimal ../ext/bigdecimal/lib ../ext/bigdecimal/lib/bigdecimal
+        make COPY='cp -f' install
+      else
+        exit 1
       fi
-      exit 1
     fi
   - ccache --show-stats
   - |-
