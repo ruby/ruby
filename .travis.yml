@@ -310,8 +310,8 @@ env:
     before_install:
     install:
     before_script: chmod -R u+w spec/ruby
-    # -j randomly hangs. Using -fs to make sure we can know problematic spec on failure.
-    script: ruby -C spec/ruby ../mspec/bin/mspec -fs .
+    # -j randomly hangs.
+    script: ruby -C spec/ruby ../mspec/bin/mspec .
 
   - &x86_64-darwin17
     name: x86_64-darwin17
