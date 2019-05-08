@@ -327,7 +327,7 @@ class IPAddr
   # into an IPv4-mapped IPv6 address.
   def ipv4_mapped
     if !ipv4?
-      raise InvalidAddressError, "not an IPv4 address"
+      raise InvalidAddressError, "not an IPv4 address: #{@addr}"
     end
     return self.clone.set(@addr | 0xffff00000000, Socket::AF_INET6)
   end
@@ -337,7 +337,7 @@ class IPAddr
   def ipv4_compat
     warn "IPAddr\##{__callee__} is obsolete", uplevel: 1 if $VERBOSE
     if !ipv4?
-      raise InvalidAddressError, "not an IPv4 address"
+      raise InvalidAddressError, "not an IPv4 address: #{@addr}"
     end
     return self.clone.set(@addr, Socket::AF_INET6)
   end
@@ -368,7 +368,7 @@ class IPAddr
   # Returns a string for DNS reverse lookup compatible with RFC3172.
   def ip6_arpa
     if !ipv6?
-      raise InvalidAddressError, "not an IPv6 address"
+      raise InvalidAddressError, "not an IPv6 address: #{@addr}"
     end
     return _reverse + ".ip6.arpa"
   end
@@ -376,7 +376,7 @@ class IPAddr
   # Returns a string for DNS reverse lookup compatible with RFC1886.
   def ip6_int
     if !ipv6?
-      raise InvalidAddressError, "not an IPv6 address"
+      raise InvalidAddressError, "not an IPv6 address: #{@addr}"
     end
     return _reverse + ".ip6.int"
   end
@@ -447,7 +447,7 @@ class IPAddr
     when Integer
       mask!(prefix)
     else
-      raise InvalidPrefixError, "prefix must be an integer"
+      raise InvalidPrefixError, "prefix must be an integer: #{@addr}"
     end
   end
 
@@ -475,11 +475,11 @@ class IPAddr
     case family[0] ? family[0] : @family
     when Socket::AF_INET
       if addr < 0 || addr > IN4MASK
-        raise InvalidAddressError, "invalid address"
+        raise InvalidAddressError, "invalid address: #{@addr}"
       end
     when Socket::AF_INET6
       if addr < 0 || addr > IN6MASK
-        raise InvalidAddressError, "invalid address"
+        raise InvalidAddressError, "invalid address: #{@addr}"
       end
     else
       raise AddressFamilyError, "unsupported address family"
@@ -500,12 +500,12 @@ class IPAddr
       else
         m = IPAddr.new(mask)
         if m.family != @family
-          raise InvalidPrefixError, "address family is not same"
+          raise InvalidPrefixError, "address family is not same: #{@addr}"
         end
         @mask_addr = m.to_i
         n = @mask_addr ^ m.instance_variable_get(:@mask_addr)
         unless ((n + 1) & n).zero?
-          raise InvalidPrefixError, "invalid mask #{mask}"
+          raise InvalidPrefixError, "invalid mask #{mask}: #{@addr}"
         end
         @addr &= @mask_addr
         return self
@@ -516,13 +516,13 @@ class IPAddr
     case @family
     when Socket::AF_INET
       if prefixlen < 0 || prefixlen > 32
-        raise InvalidPrefixError, "invalid length"
+        raise InvalidPrefixError, "invalid length: #{@addr}"
       end
       masklen = 32 - prefixlen
       @mask_addr = ((IN4MASK >> masklen) << masklen)
     when Socket::AF_INET6
       if prefixlen < 0 || prefixlen > 128
-        raise InvalidPrefixError, "invalid length"
+        raise InvalidPrefixError, "invalid length: #{@addr}"
       end
       masklen = 128 - prefixlen
       @mask_addr = ((IN6MASK >> masklen) << masklen)
@@ -593,8 +593,6 @@ class IPAddr
     else
       @mask_addr = (@family == Socket::AF_INET) ? IN4MASK : IN6MASK
     end
-  rescue InvalidAddressError => e
-    raise e.class, "#{e.message}: #{addr}"
   end
 
   def coerce_other(other)
@@ -617,8 +615,8 @@ class IPAddr
       octets = m.captures
     end
     octets.inject(0) { |i, s|
-      (n = s.to_i) < 256 or raise InvalidAddressError, "invalid address"
-      s.match(/\A0./) and raise InvalidAddressError, "zero-filled number in IPv4 address is ambiguous"
+      (n = s.to_i) < 256 or raise InvalidAddressError, "invalid address: #{@addr}"
+      s.match(/\A0./) and raise InvalidAddressError, "zero-filled number in IPv4 address is ambiguous: #{@addr}"
       i << 8 | n
     }
   end
@@ -635,19 +633,19 @@ class IPAddr
       right = ''
     when RE_IPV6ADDRLIKE_COMPRESSED
       if $4
-        left.count(':') <= 6 or raise InvalidAddressError, "invalid address"
+        left.count(':') <= 6 or raise InvalidAddressError, "invalid address: #{@addr}"
         addr = in_addr($~[4,4])
         left = $1
         right = $3 + '0:0'
       else
         left.count(':') <= ($1.empty? || $2.empty? ? 8 : 7) or
-          raise InvalidAddressError, "invalid address"
+          raise InvalidAddressError, "invalid address: #{@addr}"
         left = $1
         right = $2
         addr = 0
       end
     else
-      raise InvalidAddressError, "invalid address"
+      raise InvalidAddressError, "invalid address: #{@addr}"
     end
     l = left.split(':')
     r = right.split(':')
