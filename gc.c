@@ -4424,7 +4424,7 @@ rb_gc_mark_stack_values(long n, const VALUE *values)
 }
 
 static int
-mark_entry_no_pin(st_data_t key, st_data_t value, st_data_t data)
+mark_value(st_data_t key, st_data_t value, st_data_t data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
     gc_mark(objspace, (VALUE)value);
@@ -4432,7 +4432,7 @@ mark_entry_no_pin(st_data_t key, st_data_t value, st_data_t data)
 }
 
 static int
-mark_entry(st_data_t key, st_data_t value, st_data_t data)
+mark_value_pin(st_data_t key, st_data_t value, st_data_t data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
     gc_mark_and_pin(objspace, (VALUE)value);
@@ -4443,14 +4443,14 @@ static void
 mark_tbl_no_pin(rb_objspace_t *objspace, st_table *tbl)
 {
     if (!tbl || tbl->num_entries == 0) return;
-    st_foreach(tbl, mark_entry_no_pin, (st_data_t)objspace);
+    st_foreach(tbl, mark_value, (st_data_t)objspace);
 }
 
 static void
 mark_tbl(rb_objspace_t *objspace, st_table *tbl)
 {
     if (!tbl || tbl->num_entries == 0) return;
-    st_foreach(tbl, mark_entry, (st_data_t)objspace);
+    st_foreach(tbl, mark_value_pin, (st_data_t)objspace);
 }
 
 static int
@@ -4461,11 +4461,27 @@ mark_key(st_data_t key, st_data_t value, st_data_t data)
     return ST_CONTINUE;
 }
 
+static int
+mark_and_pin_value_pin_key(st_data_t key, st_data_t value, st_data_t data)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+    gc_pin(objspace, (VALUE)key);
+    gc_mark_and_pin(objspace, (VALUE)value);
+    return ST_CONTINUE;
+}
+
 static void
 mark_set(rb_objspace_t *objspace, st_table *tbl)
 {
     if (!tbl) return;
     st_foreach(tbl, mark_key, (st_data_t)objspace);
+}
+
+static void
+mark_finalizer_tbl(rb_objspace_t *objspace, st_table *tbl)
+{
+    if (!tbl) return;
+    st_foreach(tbl, mark_and_pin_value_pin_key, (st_data_t)objspace);
 }
 
 void
@@ -5286,7 +5302,7 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     if (vm->self) gc_mark(objspace, vm->self);
 
     MARK_CHECKPOINT("finalizers");
-    mark_tbl(objspace, finalizer_table);
+    mark_finalizer_tbl(objspace, finalizer_table);
 
     MARK_CHECKPOINT("machine_context");
     mark_current_machine_context(objspace, ec);
