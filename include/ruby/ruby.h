@@ -1100,6 +1100,9 @@ struct RArray {
     const VALUE _v = (v); \
     VALUE *ptr = (VALUE *)RARRAY_PTR_USE_START_TRANSIENT(_ary); \
     RB_OBJ_WRITE(_ary, &ptr[i], _v); \
+    if (FL_TEST((_ary),ELTS_SHARED)!=0) { \
+      RB_OBJ_WRITTEN(RARRAY(_ary)->as.heap.aux.shared, Qundef, _v); \
+    } \
     RARRAY_PTR_USE_END_TRANSIENT(_ary); \
 } while (0)
 
