@@ -1007,6 +1007,7 @@ SRC
   # <code>--with-FOOlib</code> configuration option.
   #
   def have_library(lib, func = nil, headers = nil, opt = "", &b)
+    dir_config(lib)
     lib = with_config(lib+'lib', lib)
     checking_for checking_message(func && func.funcall_style, LIBARG%lib, opt) do
       if COMMON_LIBS.include?(lib)
@@ -1032,6 +1033,7 @@ SRC
   # library paths searched and linked against.
   #
   def find_library(lib, func, *paths, &b)
+    dir_config(lib)
     lib = with_config(lib+'lib', lib)
     paths = paths.collect {|path| path.split(File::PATH_SEPARATOR)}.flatten
     checking_for checking_message(func && func.funcall_style, LIBARG%lib) do
@@ -1105,6 +1107,7 @@ SRC
   # +HAVE_FOO_H+ preprocessor macro would be passed to the compiler.
   #
   def have_header(header, preheaders = nil, opt = "", &b)
+    dir_config(header[/.*?(?=\/)|.*?(?=\.)/])
     checking_for header do
       if try_header(cpp_include(preheaders)+cpp_include(header), opt, &b)
         $defs.push(format("-DHAVE_%s", header.tr_cpp))
@@ -1748,6 +1751,10 @@ SRC
   # application.
   #
   def dir_config(target, idefault=nil, ldefault=nil)
+    if conf = $config_dirs[target]
+      return conf
+    end
+
     if dir = with_config(target + "-dir", (idefault unless ldefault))
       defaults = Array === dir ? dir : dir.split(File::PATH_SEPARATOR)
       idefault = ldefault = nil
@@ -1778,7 +1785,7 @@ SRC
     end
     $LIBPATH = ldirs | $LIBPATH
 
-    [idir, ldir]
+    $config_dirs[target] = [idir, ldir]
   end
 
   # Returns compile/link information about an installed library in a
@@ -2507,6 +2514,8 @@ site-install-rb: install-rb
     $enable_shared = config['ENABLE_SHARED'] == 'yes'
     $defs = []
     $extconf_h = nil
+    $config_dirs = {}
+
     if $warnflags = CONFIG['warnflags'] and CONFIG['GCC'] == 'yes'
       # turn warnings into errors only for bundled extensions.
       config['warnflags'] = $warnflags.gsub(/(\A|\s)-Werror[-=]/, '\1-W')
@@ -2565,6 +2574,7 @@ site-install-rb: install-rb
     $extout_prefix ||= nil
 
     $arg_config.clear
+    $config_dirs.clear
     dir_config("opt")
   end
 
