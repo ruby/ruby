@@ -158,7 +158,7 @@ GITHUB_RUBY_URL = https://github.com/ruby/ruby
 PR =
 
 COMMIT_GPG_SIGN = $(shell git -C "$(srcdir)" config commit.gpgsign)
-REMOTE_GUTHUB_URL = $(shell git -C "$(srcdir)" config remote.github.url)
+REMOTE_GITHUB_URL = $(shell git -C "$(srcdir)" config remote.github.url)
 
 .PHONY: fetch-github
 fetch-github:
@@ -169,11 +169,11 @@ define fetch-github
 	  echo "usage:"; echo "  make $@ PR=1234"; \
 	  exit 1; \
 	)
-	$(eval REMOTE_GUTHUB_URL := $(REMOTE_GUTHUB_URL))
-	$(if $(REMOTE_GUTHUB_URL),, \
+	$(eval REMOTE_GITHUB_URL := $(REMOTE_GITHUB_URL))
+	$(if $(REMOTE_GITHUB_URL),, \
 	  echo adding $(GITHUB_RUBY_URL) as remote github; \
 	  git -C "$(srcdir)" remote add github $(GITHUB_RUBY_URL); \
-	  $(eval REMOTE_GUTHUB_URL := $(GITHUB_RUBY_URL)) \
+	  $(eval REMOTE_GITHUB_URL := $(GITHUB_RUBY_URL)) \
 	)
 	git -C "$(srcdir)" fetch -f github "pull/$(1)/head:gh-$(1)"
 endef
