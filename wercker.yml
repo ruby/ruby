@@ -38,6 +38,7 @@ mjit-test1:
             exit 1
           fi
           EOS
+          chmod +x /usr/local/bin/mjit-debug-on-fail
 
     # --jit
     - script:
