@@ -1064,6 +1064,7 @@ tick(void)
 #define RVALUE_AGE_SHIFT 5 /* FL_PROMOTED0 bit */
 
 static int rgengc_remembered(rb_objspace_t *objspace, VALUE obj);
+static int rgengc_remembered_sweep(rb_objspace_t *objspace, VALUE obj);
 static int rgengc_remember(rb_objspace_t *objspace, VALUE obj);
 static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap);
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
@@ -3822,7 +3823,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 #if USE_RGENGC && RGENGC_CHECK_MODE
 			  if (!is_full_marking(objspace)) {
 			      if (RVALUE_OLD_P((VALUE)p)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
-			      if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("page_sweep: %p - remembered.", (void *)p);
+			      if (rgengc_remembered_sweep(objspace, (VALUE)p)) rb_bug("page_sweep: %p - remembered.", (void *)p);
 			  }
 #endif
 			  if (obj_free(objspace, (VALUE)p)) {
@@ -6294,12 +6295,18 @@ rgengc_remember(rb_objspace_t *objspace, VALUE obj)
 }
 
 static int
-rgengc_remembered(rb_objspace_t *objspace, VALUE obj)
+rgengc_remembered_sweep(rb_objspace_t *objspace, VALUE obj)
 {
     int result = rgengc_remembersetbits_get(objspace, obj);
     check_rvalue_consistency(obj);
-    gc_report(6, objspace, "rgengc_remembered: %s\n", obj_info(obj));
     return result;
+}
+
+static int
+rgengc_remembered(rb_objspace_t *objspace, VALUE obj)
+{
+    gc_report(6, objspace, "rgengc_remembered: %s\n", obj_info(obj));
+    return rgengc_remembered_sweep(objspace, obj);
 }
 
 #ifndef PROFILE_REMEMBERSET_MARK
