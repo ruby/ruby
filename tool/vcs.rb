@@ -508,9 +508,8 @@ class VCS
 
     def commit(opts = {})
       dryrun = opts.fetch(:dryrun) {$DEBUG} if opts
-      args = [COMMAND]
+      args = [COMMAND, "push"]
       args << "-n" if dryrun
-      args << "push"
       system(*args) or return false
       true
     end
