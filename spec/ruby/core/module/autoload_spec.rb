@@ -449,7 +449,9 @@ describe "Module#autoload" do
   it "does not load the file when accessing the constants table of the module" do
     ModuleSpecs::Autoload.autoload :P, @non_existent
     ModuleSpecs::Autoload.const_defined?(:P).should be_true
-    ModuleSpecs::Autoload.const_defined?("P").should be_true
+    ruby_version_is "2.7" do
+      ModuleSpecs::Autoload.const_defined?("P").should be_true
+    end
   end
 
   it "loads the file when opening a module that is the autoloaded constant" do
