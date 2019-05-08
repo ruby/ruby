@@ -28,7 +28,7 @@ mjit-test1:
         code: |
           cat <<'EOS' > /usr/local/bin/mjit-debug-on-fail
           #!/bin/bash
-          if ! $@; then
+          if ! "$@"; then
             for f in $(find /tmp -type f -name "ruby_mjit*.c"); do
               echo "[${f}]==="
               cat "$f"
