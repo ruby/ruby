@@ -24,11 +24,6 @@ describe "OpenStruct#method_missing when called with a method name ending in '='
     @os.test = "changed"
     @os.test.should == "changed"
   end
-
-  it "updates the method/value table with the passed method/value" do
-    @os.method_missing(:test=, "test")
-    @os.send(:table)[:test].should == "test"
-  end
 end
 
 describe "OpenStruct#method_missing when passed additional arguments" do
