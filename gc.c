@@ -7312,8 +7312,8 @@ update_id_to_obj(st_data_t *key, st_data_t *value, st_data_t arg, int exists)
     }
 }
 
-static void
-gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
+static VALUE
+gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, VALUE moved_list)
 {
     int marked;
     int wb_unprotected;
@@ -7392,7 +7392,10 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
     /* Assign forwarding address */
     src->as.moved.flags = T_MOVED;
     src->as.moved.destination = (VALUE)dest;
+    src->as.moved.next = moved_list;
     GC_ASSERT(BUILTIN_TYPE((VALUE)dest) != T_NONE);
+
+    return (VALUE)src;
 }
 
 struct heap_cursor {
@@ -7489,13 +7492,15 @@ int compare_pinned(const void *left, const void *right, void *dummy)
     return right_count - left_count;
 }
 
-static void
+static VALUE
 gc_compact_heap(rb_objspace_t *objspace)
 {
     struct heap_cursor free_cursor;
     struct heap_cursor scan_cursor;
     struct heap_page **page_list;
+    VALUE moved_list;
 
+    moved_list = Qfalse;
     memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
 
@@ -7558,7 +7563,7 @@ gc_compact_heap(rb_objspace_t *objspace)
             GC_ASSERT(BUILTIN_TYPE(scan_cursor.slot) != T_NONE);
             GC_ASSERT(BUILTIN_TYPE(scan_cursor.slot) != T_MOVED);
 
-            gc_move(objspace, (VALUE)scan_cursor.slot, (VALUE)free_cursor.slot);
+            moved_list = gc_move(objspace, (VALUE)scan_cursor.slot, (VALUE)free_cursor.slot, moved_list);
 
             GC_ASSERT(BUILTIN_TYPE(free_cursor.slot) != T_MOVED);
             GC_ASSERT(BUILTIN_TYPE(free_cursor.slot) != T_NONE);
@@ -7569,6 +7574,8 @@ gc_compact_heap(rb_objspace_t *objspace)
         }
     }
     free(page_list);
+
+    return moved_list;
 }
 
 static void
@@ -8195,13 +8202,17 @@ static VALUE
 gc_verify_compaction_references(VALUE mod)
 {
     rb_objspace_t *objspace = &rb_objspace;
+    VALUE moved_list;
 
     if (dont_gc) return Qnil;
 
     /* Ensure objects are pinned */
     rb_gc();
 
-    gc_compact_heap(objspace);
+    /* Double heap size */
+    heap_add_pages(objspace, heap_eden, heap_allocated_pages);
+
+    moved_list = gc_compact_heap(objspace);
 
     heap_eden->freelist = NULL;
     gc_update_references(objspace);
@@ -8213,6 +8224,14 @@ gc_verify_compaction_references(VALUE mod)
     heap_eden->using_page = NULL;
 
     gc_verify_internal_consistency(mod);
+
+#if __has_feature(address_sanitizer)
+    while (moved_list) {
+        VALUE current = moved_list;
+        moved_list = RANY(moved_list)->as.moved.next;
+        poison_object(current);
+    }
+#endif
 
     /* GC after compaction to eliminate T_MOVED */
     rb_gc();
