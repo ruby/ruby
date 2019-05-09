@@ -392,15 +392,16 @@ class VCS
     def self.get_revisions(path, srcdir = nil)
       gitcmd = [COMMAND]
       last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', '--short=10', 'HEAD']]).rstrip
-      if path
-        log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', path]])
-      else
-        log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso']])
-      end
+      log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', *path]])
       changed = log[/\Acommit (\h+)/, 1]
       changed = changed[0, last.size]
       modified = log[/^Date:\s+(.*)/, 1]
       branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short HEAD]])
+      if branch.empty?
+        branch_list = cmd_read_at(srcdir, [gitcmd + %W[branch --list --contains HEAD]]).lines
+        branch_list.delete_if {|b| /detached at/ =~ b}
+        (branch = branch_list[0]).strip! unless branch_list.empty?
+      end
       branch.chomp!
       upstream = cmd_read_at(srcdir, [gitcmd + %W[branch --list --format=%(upstream:short) #{branch}]])
       upstream.chomp!
