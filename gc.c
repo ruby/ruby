@@ -7492,8 +7492,21 @@ int compare_pinned(const void *left, const void *right, void *dummy)
     return right_count - left_count;
 }
 
+int compare_free_slots(const void *left, const void *right, void *dummy)
+{
+    struct heap_page *left_page;
+    struct heap_page *right_page;
+
+    left_page = *(struct heap_page * const *)left;
+    right_page = *(struct heap_page * const *)right;
+
+    return right_page->free_slots - left_page->free_slots;
+}
+
+typedef int page_compare_func_t(const void *, const void *, void *);
+
 static VALUE
-gc_compact_heap(rb_objspace_t *objspace)
+gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator)
 {
     struct heap_cursor free_cursor;
     struct heap_cursor scan_cursor;
@@ -7506,7 +7519,7 @@ gc_compact_heap(rb_objspace_t *objspace)
 
     page_list = calloc(heap_allocated_pages, sizeof(struct heap_page *));
     memcpy(page_list, heap_pages_sorted, heap_allocated_pages * sizeof(struct heap_page *));
-    ruby_qsort(page_list, heap_allocated_pages, sizeof(struct heap_page *), compare_pinned, NULL);
+    ruby_qsort(page_list, heap_allocated_pages, sizeof(struct heap_page *), comparator, NULL);
 
     init_cursors(objspace, &free_cursor, &scan_cursor, page_list);
 
@@ -7789,7 +7802,7 @@ rb_gc_new_location(VALUE value)
 
         if (BUILTIN_TYPE(value) == T_MOVED) {
             destination = (VALUE)RMOVED(value)->destination;
-            assert(BUILTIN_TYPE(destination) != T_NONE);
+            GC_ASSERT(BUILTIN_TYPE(destination) != T_NONE);
         }
         else {
             destination = value;
@@ -8042,20 +8055,29 @@ gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
     /* For each object on the page */
     for (; v != (VALUE)vend; v += stride) {
         if (!SPECIAL_CONST_P(v)) {
+            void *poisoned = poisoned_object_p(v);
             unpoison_object(v, false);
 
-            if (BUILTIN_TYPE(v) == T_NONE) {
-                heap_page_add_freeobj(objspace, page, v);
-                free_slots++;
+            switch(BUILTIN_TYPE(v)) {
+                case T_NONE:
+                    heap_page_add_freeobj(objspace, page, v);
+                    free_slots++;
+                    break;
+                case T_MOVED:
+                    break;
+                default:
+                    if (RVALUE_WB_UNPROTECTED(v)) {
+                        page->flags.has_uncollectible_shady_objects = TRUE;
+                    }
+                    if (RVALUE_PAGE_MARKING(page, v)) {
+                        page->flags.has_remembered_objects = TRUE;
+                    }
+                    gc_update_object_references(objspace, v);
             }
-            else {
-                if (RVALUE_WB_UNPROTECTED(v)) {
-                    page->flags.has_uncollectible_shady_objects = TRUE;
-                }
-                if (RVALUE_PAGE_MARKING(page, v)) {
-                    page->flags.has_remembered_objects = TRUE;
-                }
-                gc_update_object_references(objspace, v);
+
+            if (poisoned) {
+                GC_ASSERT(BUILTIN_TYPE(v) == T_NONE);
+                poison_object(v);
             }
         }
     }
@@ -8115,7 +8137,7 @@ rb_gc_compact(VALUE mod)
     /* Ensure objects are pinned */
     rb_gc();
 
-    gc_compact_heap(objspace);
+    gc_compact_heap(objspace, compare_pinned);
 
     heap_eden->freelist = NULL;
     gc_update_references(objspace);
@@ -8199,20 +8221,44 @@ gc_check_references_for_moved(VALUE dummy)
  *  make a SEGV.
  */
 static VALUE
-gc_verify_compaction_references(VALUE mod)
+gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
 {
     rb_objspace_t *objspace = &rb_objspace;
     VALUE moved_list;
 
     if (dont_gc) return Qnil;
 
+    VALUE opt = Qnil;
+    static ID keyword_ids[2];
+    VALUE kwvals[2];
+
+    kwvals[1] = Qtrue;
+    page_compare_func_t * comparator = compare_pinned;
+
+    rb_scan_args(argc, argv, "0:", &opt);
+
+    if (!NIL_P(opt)) {
+
+	if (!keyword_ids[0]) {
+	    keyword_ids[0] = rb_intern("toward");
+	    keyword_ids[1] = rb_intern("double_heap");
+	}
+
+	rb_get_kwargs(opt, keyword_ids, 0, 2, kwvals);
+        if (rb_intern("empty") == rb_sym2id(kwvals[0])) {
+            comparator = compare_free_slots;
+        }
+    }
+
     /* Ensure objects are pinned */
     rb_gc();
 
-    /* Double heap size */
-    heap_add_pages(objspace, heap_eden, heap_allocated_pages);
+    if (kwvals[1]) {
+        /* Double heap size */
+        heap_add_pages(objspace, heap_eden, heap_allocated_pages);
+    }
 
-    moved_list = gc_compact_heap(objspace);
+    moved_list = gc_compact_heap(objspace, comparator);
 
     heap_eden->freelist = NULL;
     gc_update_references(objspace);
@@ -11472,7 +11518,7 @@ Init_GC(void)
 
     /* internal methods */
     rb_define_singleton_method(rb_mGC, "verify_internal_consistency", gc_verify_internal_consistency, 0);
-    rb_define_singleton_method(rb_mGC, "verify_compaction_references", gc_verify_compaction_references, 0);
+    rb_define_singleton_method(rb_mGC, "verify_compaction_references", gc_verify_compaction_references, -1);
     rb_define_singleton_method(rb_mGC, "verify_transient_heap_internal_consistency", gc_verify_transient_heap_internal_consistency, 0);
 #if MALLOC_ALLOCATED_SIZE
     rb_define_singleton_method(rb_mGC, "malloc_allocated_size", gc_malloc_allocated_size, 0);
