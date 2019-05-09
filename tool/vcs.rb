@@ -403,6 +403,7 @@ class VCS
         (branch = branch_list[0]).strip! unless branch_list.empty?
       end
       branch.chomp!
+      branch = ":detached:" if branch.empty?
       upstream = cmd_read_at(srcdir, [gitcmd + %W[branch --list --format=%(upstream:short) #{branch}]])
       upstream.chomp!
       title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 #{upstream}..HEAD]])
