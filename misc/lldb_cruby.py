@@ -111,6 +111,8 @@ def lldb_inspect(debugger, target, result, val):
         flags = val.GetValueForExpressionPath("->flags").GetValueAsUnsigned()
         if (flags & RUBY_FL_PROMOTED) == RUBY_FL_PROMOTED:
             print >> result, "[PROMOTED] "
+        if (flags & RUBY_FL_FREEZE) == RUBY_FL_FREEZE:
+            print >> result, "[FROZEN] "
         flType = flags & RUBY_T_MASK
         if flType == RUBY_T_NONE:
             print >> result, 'T_NONE: %s' % val.Dereference()
