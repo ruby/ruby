@@ -3417,8 +3417,8 @@ str_casecmp(VALUE str1, VALUE str2)
     if (single_byte_optimizable(str1) && single_byte_optimizable(str2)) {
 	while (p1 < p1end && p2 < p2end) {
 	    if (*p1 != *p2) {
-		unsigned int c1 = TOUPPER(*p1 & 0xff);
-		unsigned int c2 = TOUPPER(*p2 & 0xff);
+		unsigned int c1 = TOLOWER(*p1 & 0xff);
+		unsigned int c2 = TOLOWER(*p2 & 0xff);
                 if (c1 != c2)
                     return INT2FIX(c1 < c2 ? -1 : 1);
 	    }
@@ -3432,8 +3432,8 @@ str_casecmp(VALUE str1, VALUE str2)
             int l2, c2 = rb_enc_ascget(p2, p2end, &l2, enc);
 
             if (0 <= c1 && 0 <= c2) {
-                c1 = TOUPPER(c1);
-                c2 = TOUPPER(c2);
+                c1 = TOLOWER(c1);
+                c2 = TOLOWER(c2);
                 if (c1 != c2)
                     return INT2FIX(c1 < c2 ? -1 : 1);
             }
