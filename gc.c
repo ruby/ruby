@@ -4461,15 +4461,6 @@ mark_key(st_data_t key, st_data_t value, st_data_t data)
     return ST_CONTINUE;
 }
 
-static int
-mark_and_pin_value_pin_key(st_data_t key, st_data_t value, st_data_t data)
-{
-    rb_objspace_t *objspace = (rb_objspace_t *)data;
-    gc_pin(objspace, (VALUE)key);
-    gc_mark_and_pin(objspace, (VALUE)value);
-    return ST_CONTINUE;
-}
-
 static void
 mark_set(rb_objspace_t *objspace, st_table *tbl)
 {
@@ -4481,7 +4472,7 @@ static void
 mark_finalizer_tbl(rb_objspace_t *objspace, st_table *tbl)
 {
     if (!tbl) return;
-    st_foreach(tbl, mark_and_pin_value_pin_key, (st_data_t)objspace);
+    st_foreach(tbl, mark_value, (st_data_t)objspace);
 }
 
 void
@@ -8100,6 +8091,7 @@ gc_update_references(rb_objspace_t * objspace)
     global_symbols.ids = rb_gc_new_location(global_symbols.ids);
     global_symbols.dsymbol_fstr_hash = rb_gc_new_location(global_symbols.dsymbol_fstr_hash);
     gc_update_table_refs(objspace, global_symbols.str_sym);
+    gc_update_table_refs(objspace, finalizer_table);
 }
 
 static VALUE type_sym(size_t type);
