@@ -510,6 +510,7 @@ class VCS
       dryrun = opts.fetch(:dryrun) {$DEBUG} if opts
       args = [COMMAND, "push"]
       args << "-n" if dryrun
+      STDERR.puts(args.inspect) if dryrun
       system(*args) or return false
       true
     end
