@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 begin
   require 'ripper'
+  require 'stringio'
   require 'test/unit'
   ripper_test = true
   module TestRipper; end
