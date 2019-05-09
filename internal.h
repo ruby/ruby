@@ -838,6 +838,7 @@ struct RHash {
 struct RMoved {
     VALUE flags;
     VALUE destination;
+    VALUE next;
 };
 
 /* missing/setproctitle.c */
