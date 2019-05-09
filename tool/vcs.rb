@@ -510,6 +510,15 @@ class VCS
       dryrun = opts.fetch(:dryrun) {$DEBUG} if opts
       args = [COMMAND, "push"]
       args << "-n" if dryrun
+      (branch = cmd_read(%W"#{COMMAND} symbolic-ref --short HEAD")).chomp!
+      (upstream = cmd_read(%W"#{COMMAND} branch --list --format=%(upstream) #{branch}")).chomp!
+      while ref = upstream[%r"\Arefs/heads/(.*)", 1]
+        upstream = cmd_read(%W"#{COMMAND} branch --list --format=%(upstream) #{ref}")
+      end
+      unless %r"\Arefs/remotes/([^/]+)/(.*)" =~ upstream
+        raise "Upstream not found"
+      end
+      args << $1 << "HEAD:#$2"
       STDERR.puts(args.inspect) if dryrun
       system(*args) or return false
       true
