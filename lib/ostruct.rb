@@ -206,7 +206,7 @@ class OpenStruct
 
   def respond_to_missing?(mid, include_private = false) # :nodoc:
     mname = mid.to_s.chomp("=").to_sym
-    @table&.key?(mname) || super
+    defined?(@table) && @table.key?(mname) || super
   end
 
   def method_missing(mid, *args) # :nodoc:
