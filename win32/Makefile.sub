@@ -495,12 +495,7 @@ HAVE_GIT = no
 ! endif
 !endif
 
-!if exist($(srcdir)/.svn)
-VCS = svn
-VCSUP = $(VCS) up $(SVNUPOPTIONS)
-!else if exist($(srcdir)/.git/svn)
-VCS = $(GIT) svn
-VCSUP = $(VCS) rebase $(GITSVNREBASEOPTIONS)
+!if defined(VCS)
 !else if exist($(srcdir)/.git)
 VCS = $(GIT)
 VCSUP = $(VCS) pull $(GITPULLOPTIONS)
