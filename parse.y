@@ -649,8 +649,8 @@ rb_strterm_mark(VALUE obj)
 }
 #endif
 
-#define yytnamerr(yyres, yystr) (YYSIZE_T)rb_yytnamerr(p, yyres, yystr)
-size_t rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr);
+#define yytnamerr(yyres, yystr) (YYSIZE_T)rb_yytnamerr(yyres, yystr)
+size_t rb_yytnamerr(char *yyres, const char *yystr);
 
 #define TOKEN2ID(tok) ( \
     tTOKEN_LOCAL_BEGIN<(tok)&&(tok)<tTOKEN_LOCAL_END ? TOKEN2LOCALID(tok) : \
@@ -12273,9 +12273,8 @@ count_char(const char *str, int c)
  *  "\"`class' keyword\"" => "`class' keyword"
  */
 RUBY_FUNC_EXPORTED size_t
-rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr)
+rb_yytnamerr(char *yyres, const char *yystr)
 {
-    YYUSE(p);
     if (*yystr == '"') {
 	size_t yyn = 0, bquote = 0;
 	const char *yyp = yystr;
