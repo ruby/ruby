@@ -44,7 +44,7 @@ class Delegator < BasicObject
       undef_method m
     end
     private_instance_methods.each do |m|
-      if /\Ablock_given\?\z|iterator\?\z|\A__.*__\z/ =~ m
+      if /\Ablock_given\?\z|\Aiterator\?\z|\A__.*__\z/ =~ m
         next
       end
       undef_method m
