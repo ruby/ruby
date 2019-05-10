@@ -655,6 +655,7 @@ typedef struct rb_objspace {
     st_table *id_to_obj_tbl;
     st_table *obj_to_id_tbl;
 
+    int track_ref_names;
 #if GC_DEBUG_STRESS_TO_CLASS
     VALUE stress_to_class;
 #endif
@@ -1077,6 +1078,11 @@ RVALUE_FLAGS_AGE(VALUE flags)
 
 #endif /* USE_RGENGC */
 
+
+typedef struct {
+    VALUE parent;
+    char * refname;
+} check_moved_data_t;
 
 #if RGENGC_CHECK_MODE == 0
 static inline VALUE
@@ -2590,6 +2596,7 @@ Init_heap(void)
 
     objspace->id_to_obj_tbl = st_init_numtable();
     objspace->obj_to_id_tbl = st_init_numtable();
+    objspace->track_ref_names = 0;
 
 #if RGENGC_ESTIMATE_OLDMALLOC
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
@@ -4915,6 +4922,16 @@ gc_mark_set_parent(rb_objspace_t *objspace, VALUE obj)
 #endif
 }
 
+#define MARK_REFERENCE(_name) do { \
+    if (objspace->track_ref_names) {\
+        check_moved_data_t *data; \
+        data = (check_moved_data_t *)objspace->mark_func_data->data; \
+        if (data) { \
+            data->refname = _name; \
+        } \
+    }\
+} while(0);
+
 static void
 gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 {
@@ -4923,9 +4940,12 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 	{
 	    const rb_env_t *env = (const rb_env_t *)obj;
 	    GC_ASSERT(VM_ENV_ESCAPED_P(env->ep));
+            MARK_REFERENCE("env");
             gc_mark_and_pin_values(objspace, (long)env->env_size, env->env);
 	    VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
+            MARK_REFERENCE("prev env");
             gc_mark_and_pin(objspace, (VALUE)rb_vm_env_prev_env(env));
+            MARK_REFERENCE("iseq");
 	    gc_mark(objspace, (VALUE)env->iseq);
 	}
 	return;
@@ -8156,9 +8176,11 @@ root_obj_check_moved_i(const char *category, VALUE obj, void *data)
 static void
 reachable_object_check_moved_i(VALUE ref, void *data)
 {
-    VALUE parent = (VALUE)data;
+    check_moved_data_t * ctx;
+    ctx = (check_moved_data_t *)data;
+    VALUE parent = ctx->parent;
     if (gc_object_moved_p(&rb_objspace, ref)) {
-        rb_bug("Object %s points to MOVED: %p -> %s\n", obj_info(parent), (void *)ref, obj_info(rb_gc_new_location(ref)));
+        rb_bug("Object %s points to MOVED (via %s): %p -> %s\n", obj_info(parent), ctx->refname, (void *)ref, obj_info(rb_gc_new_location(ref)));
     }
 }
 
@@ -8175,7 +8197,10 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
             unpoison_object(v, false);
 
             if (BUILTIN_TYPE(v) != T_NONE) {
-                rb_objspace_reachable_objects_from(v, reachable_object_check_moved_i, (void *)v);
+                check_moved_data_t ctx;
+                ctx.parent = v;
+                ctx.refname = NULL;
+                rb_objspace_reachable_objects_from(v, reachable_object_check_moved_i, (void *)&ctx);
             }
 
             if (poisoned) {
@@ -8191,8 +8216,11 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 static VALUE
 gc_check_references_for_moved(VALUE dummy)
 {
+    rb_objspace_t *objspace = &rb_objspace;
+    objspace->track_ref_names = 1;
     rb_objspace_reachable_objects_from_root(root_obj_check_moved_i, NULL);
     rb_objspace_each_objects(heap_check_moved_i, NULL);
+    objspace->track_ref_names = 0;
     return Qnil;
 }
 
