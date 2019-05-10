@@ -8221,7 +8221,7 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
     if (dont_gc) return Qnil;
 
     VALUE opt = Qnil;
-    static ID keyword_ids[2];
+    static ID keyword_ids[3];
     VALUE kwvals[2];
 
     kwvals[1] = Qtrue;
@@ -8242,6 +8242,8 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
         }
     }
 
+    if (dont_gc) return Qnil;
+
     /* Ensure objects are pinned */
     rb_gc();
 
@@ -8250,7 +8252,7 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
         heap_add_pages(objspace, heap_eden, heap_allocated_pages);
     }
 
-    moved_list = gc_compact_heap(objspace);
+    moved_list = gc_compact_heap(objspace, comparator);
 
     heap_eden->freelist = NULL;
     gc_update_references(objspace);
