@@ -155,9 +155,9 @@ if defined?(WIN32OLE_EVENT)
         ivar = instance_variable_get(ivarname)
 
         tries = 0
-        while tries < 5 && !ivar.match(regexp)
-          $stderr.puts "test_win32ole_event.rb: retrying until #{ivarname} matches #{regexp} (tries: #{tries})..."
-          sleep(2 ** tries) # sleep at most 31s in total
+        while tries < 6 && !ivar.match(regexp)
+          $stderr.puts "test_win32ole_event.rb: retrying until #{ivarname} (#{ivar}) matches #{regexp} (tries: #{tries})..."
+          sleep(2 ** tries) # sleep at most 63s in total
           ivar = instance_variable_get(ivarname)
           tries += 1
         end
