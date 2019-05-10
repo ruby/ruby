@@ -176,10 +176,6 @@ class OpenStruct
   end
   private :modifiable?
 
-  # ::Kernel.warn("do not use OpenStruct#modifiable", uplevel: 1)
-  alias modifiable modifiable? # :nodoc:
-  protected :modifiable
-
   #
   # Used internally to defined properties on the
   # OpenStruct. It does this by using the metaprogramming function
@@ -194,10 +190,6 @@ class OpenStruct
     name
   end
   private :new_ostruct_member!
-
-  # ::Kernel.warn("do not use OpenStruct#new_ostruct_member", uplevel: 1)
-  alias new_ostruct_member new_ostruct_member! # :nodoc:
-  protected :new_ostruct_member
 
   def freeze
     @table.each_key {|key| new_ostruct_member!(key)}
