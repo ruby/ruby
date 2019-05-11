@@ -360,6 +360,14 @@ end
 #     end
 #   end
 #
+# or:
+#
+#   MyClass = DelegateClass(ClassToDelegateTo) do    # Step 1
+#     def initialize
+#       super(obj_of_ClassToDelegateTo)              # Step 2
+#     end
+#   end
+#
 # Here's a sample of use from Tempfile which is really a File object with a
 # few special rules about storage location and when the File should be
 # deleted.  That makes for an almost textbook perfect example of how to use
@@ -383,7 +391,7 @@ end
 #     # ...
 #   end
 #
-def DelegateClass(superclass)
+def DelegateClass(superclass, &block)
   klass = Class.new(Delegator)
   methods = superclass.instance_methods
   methods -= ::Delegator.public_api
@@ -410,5 +418,6 @@ def DelegateClass(superclass)
   klass.define_singleton_method :protected_instance_methods do |all=true|
     super(all) | superclass.protected_instance_methods
   end
+  klass.module_eval(&block) if block
   return klass
 end

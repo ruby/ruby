@@ -22,6 +22,13 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal(:m, obj.m, "[ruby-dev:33116]")
   end
 
+  def test_delegate_class_block
+    klass = DelegateClass(Array) do
+      alias foo first
+    end
+    assert_equal(1, klass.new([1]).foo)
+  end
+
   def test_systemcallerror_eq
     e = SystemCallError.new(0)
     assert((SimpleDelegator.new(e) == e) == (e == SimpleDelegator.new(e)), "[ruby-dev:34808]")
