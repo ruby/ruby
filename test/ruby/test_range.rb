@@ -926,4 +926,112 @@ class TestRange < Test::Unit::TestCase
   def test_beginless_range_iteration
     assert_raise(TypeError) { (..1).each { } }
   end
+
+  def test_beginless
+    assert_equal((..10).beginless?, true);
+    assert_equal((.."z").beginless?, true);
+    assert_equal((nil..10).beginless?, true);
+    assert_equal((nil..nil).beginless?, true);
+    assert_equal((-Float::INFINITY..).beginless?, true);
+    assert_equal((-Float::INFINITY..10).beginless?, true);
+    assert_equal((-Float::INFINITY..-Float::INFINITY).beginless?, true);
+    assert_equal((-BigDecimal::INFINITY..).beginless?, true);
+    assert_equal((-BigDecimal::INFINITY..10).beginless?, true);
+    assert_equal((-BigDecimal::INFINITY..-BigDecimal::INFINITY).beginless?, true);
+
+    assert_equal((1..).beginless?, false);
+    assert_equal(("a"..).beginless?, false);
+    assert_equal((1..10).beginless?, false);
+    assert_equal(("a".."z").beginless?, false);
+    assert_equal((Float::INFINITY..).beginless?, false);
+    assert_equal((Float::INFINITY..Float::INFINITY).beginless?, false);
+    assert_equal((Float::INFINITY..-Float::INFINITY).beginless?, false);
+    assert_equal((BigDecimal::INFINITY..).beginless?, false);
+    assert_equal((BigDecimal::INFINITY..BigDecimal::INFINITY).beginless?, false);
+    assert_equal((BigDecimal::INFINITY..-BigDecimal::INFINITY).beginless?, false);
+  end
+
+  def test_endless
+    assert_equal((1..).endless?, true);
+    assert_equal(("a"..).endless?, true);
+    assert_equal((10..nil).endless?, true);
+    assert_equal((nil..nil).endless?, true);
+    assert_equal((..Float::INFINITY).endless?, true);
+    assert_equal((10..Float::INFINITY).endless?, true);
+    assert_equal((Float::INFINITY..Float::INFINITY).endless?, true);
+    assert_equal((..BigDecimal::INFINITY).endless?, true);
+    assert_equal((10..BigDecimal::INFINITY).endless?, true);
+    assert_equal((BigDecimal::INFINITY..BigDecimal::INFINITY).endless?, true);
+
+    assert_equal((..10).endless?, false);
+    assert_equal((.."z").endless?, false);
+    assert_equal((1..10).endless?, false);
+    assert_equal(("a".."z").endless?, false);
+    assert_equal((..-Float::INFINITY).endless?, false);
+    assert_equal((-Float::INFINITY..-Float::INFINITY).endless?, false);
+    assert_equal((Float::INFINITY..-Float::INFINITY).endless?, false);
+    assert_equal((..-BigDecimal::INFINITY).endless?, false);
+    assert_equal((-BigDecimal::INFINITY..-BigDecimal::INFINITY).endless?, false);
+    assert_equal((BigDecimal::INFINITY..-BigDecimal::INFINITY).endless?, false);
+  end
+
+  def test_infinite
+    assert_equal((1..).infinite?, true);
+    assert_equal((..1).infinite?, true);
+    assert_equal((..nil).infinite?, true);
+    assert_equal((nil..).infinite?, true);
+    assert_equal((..Float::INFINITY).infinite?, true);
+    assert_equal((-Float::INFINITY..).infinite?, true);
+    assert_equal((..-Float::INFINITY).infinite?, true);
+    assert_equal((Float::INFINITY..).infinite?, true);
+    assert_equal((..BigDecimal::INFINITY).infinite?, true);
+    assert_equal((-BigDecimal::INFINITY..).infinite?, true);
+    assert_equal((..-BigDecimal::INFINITY).infinite?, true);
+    assert_equal((BigDecimal::INFINITY..).infinite?, true);
+
+    assert_equal((1..nil).infinite?, true);
+    assert_equal((nil..1).infinite?, true);
+    assert_equal((1..Float::INFINITY).infinite?, true);
+    assert_equal((-Float::INFINITY..1).infinite?, true);
+    assert_equal((1..BigDecimal::INFINITY).infinite?, true);
+    assert_equal((-BigDecimal::INFINITY..1).infinite?, true);
+
+    assert_equal((1..1).infinite?, false);
+    assert_equal((1..10).infinite?, false);
+    assert_equal(("a".."z").infinite?, false);
+    assert_equal((1..-Float::INFINITY).infinite?, false);
+    assert_equal((Float::INFINITY..1).infinite?, false);
+    assert_equal((1..-BigDecimal::INFINITY).infinite?, false);
+    assert_equal((BigDecimal::INFINITY..1).infinite?, false);
+  end
+
+  def test_finite
+    assert_equal((1..1).finite?, true);
+    assert_equal((1..10).finite?, true);
+    assert_equal(("a".."z").finite?, true);
+    assert_equal((1..-Float::INFINITY).finite?, true);
+    assert_equal((Float::INFINITY..1).finite?, true);
+    assert_equal((1..-BigDecimal::INFINITY).finite?, true);
+    assert_equal((BigDecimal::INFINITY..1).finite?, true);
+
+    assert_equal((1..).finite?, false);
+    assert_equal((..1).finite?, false);
+    assert_equal((..nil).finite?, false);
+    assert_equal((nil..).finite?, false);
+    assert_equal((..Float::INFINITY).finite?, false);
+    assert_equal((-Float::INFINITY..).finite?, false);
+    assert_equal((..-Float::INFINITY).finite?, false);
+    assert_equal((Float::INFINITY..).finite?, false);
+    assert_equal((..BigDecimal::INFINITY).finite?, false);
+    assert_equal((-BigDecimal::INFINITY..).finite?, false);
+    assert_equal((..-BigDecimal::INFINITY).finite?, false);
+    assert_equal((BigDecimal::INFINITY..).finite?, false);
+
+    assert_equal((1..nil).finite?, false);
+    assert_equal((nil..1).finite?, false);
+    assert_equal((1..Float::INFINITY).finite?, false);
+    assert_equal((-Float::INFINITY..1).finite?, false);
+    assert_equal((1..BigDecimal::INFINITY).finite?, false);
+    assert_equal((-BigDecimal::INFINITY..1).finite?, false);
+  end
 end
