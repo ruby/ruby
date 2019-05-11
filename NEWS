@@ -118,6 +118,11 @@ Date::
     new Japanese era as an informal extension, until the new JIS X 0301 is
     issued.  [Feature #15742]
 
+Delegate::
+
+  * Object#DelegateClass accepts a block and module_evals it in the context
+    of the returned class, similar to Class.new and Struct.new.
+
 ERB::
 
   * Prohibit marshaling ERB instance.
