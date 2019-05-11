@@ -908,6 +908,7 @@ static void token_info_pop(struct parser_params*, const char *token, const rb_co
 static void token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, int same, const rb_code_location_t *loc);
 %}
 
+%expect 0
 %pure-parser
 %lex-param {struct parser_params *p}
 %parse-param {struct parser_params *p}
