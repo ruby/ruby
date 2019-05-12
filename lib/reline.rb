@@ -84,8 +84,29 @@ module Reline
     @@dig_perfect_match_proc = p
   end
 
+  def self.insert_text(text)
+    @@line_editor&.insert_text(text)
+    self
+  end
+
+  def self.redisplay
+    @@line_editor&.rerender
+  end
+
+  def self.line_buffer
+    @@line_editor&.line
+  end
+
+  def self.point
+    @@line_editor ? @@line_editor.byte_pointer : 0
+  end
+
+  def self.point=(val)
+    @@line_editor.byte_pointer = val
+  end
+
   def self.delete_text(start = nil, length = nil)
-    raise NotImplementedError
+    @@line_editor&.delete_text(start, length)
   end
 
   def self.input=(val)
@@ -101,6 +122,28 @@ module Reline
   def self.output=(val)
     raise TypeError unless val.respond_to?(:write) or val.nil?
     @@output = val
+  end
+
+  def self.vi_editing_mode
+    @@config.editing_mode = :vi_insert
+    nil
+  end
+
+  def self.emacs_editing_mode
+    @@config.editing_mode = :emacs
+    nil
+  end
+
+  def self.vi_editing_mode?
+    @@config.editing_mode_is?(:vi_insert, :vi_command)
+  end
+
+  def self.emacs_editing_mode?
+    @@config.editing_mode_is?(:emacs)
+  end
+
+  def self.get_screen_size
+    Reline::IO.get_screen_size
   end
 
   def retrieve_completion_block(line, byte_pointer)
@@ -131,6 +174,7 @@ module Reline
       Reline::HISTORY << whole_buffer
     end
 
+    @@line_editor.reset_line if @@line_editor.whole_buffer.nil?
     whole_buffer
   end
 
@@ -143,6 +187,7 @@ module Reline
       Reline::HISTORY << line.chomp
     end
 
+    @@line_editor.reset_line if @@line_editor.line.nil?
     line
   end
 
@@ -189,7 +234,8 @@ module Reline
 
     key_stroke = Reline::KeyStroke.new(config)
     begin
-      while c = Reline::IO.getc
+      loop do
+        c = Reline::IO.getc
         key_stroke.input_to!(c)&.then { |inputs|
           inputs.each { |c|
             @@line_editor.input_key(c)

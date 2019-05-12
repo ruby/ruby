@@ -7,6 +7,7 @@ require 'pathname'
 class Reline::LineEditor
   # TODO: undo
   attr_reader :line
+  attr_reader :byte_pointer
   attr_accessor :confirm_multiline_termination_proc
   attr_accessor :completion_proc
   attr_accessor :pre_input_hook
@@ -106,6 +107,10 @@ class Reline::LineEditor
     @first_prompt = true
     @searching_prompt = nil
     @first_char = true
+    reset_line
+  end
+
+  def reset_line
     @cursor = 0
     @cursor_max = 0
     @byte_pointer = 0
@@ -634,6 +639,63 @@ class Reline::LineEditor
       end
       finish if @confirm_multiline_termination_proc.(temp_buffer.join("\n"))
     end
+  end
+
+  def insert_text(text)
+    width = calculate_width(text)
+    if @cursor == @cursor_max
+      @line += text
+    else
+      @line = byteinsert(@line, @byte_pointer, text)
+    end
+    @byte_pointer += text.bytesize
+    @cursor += width
+    @cursor_max += width
+  end
+
+  def delete_text(start = nil, length = nil)
+    if start.nil? and length.nil?
+      @line&.clear
+      @byte_pointer = 0
+      @cursor = 0
+      @cursor_max = 0
+    elsif not start.nil? and not length.nil?
+      if @line
+        before = @line.byteslice(0, start)
+        after = @line.byteslice(start + length, @line.bytesize)
+        @line = before + after
+        @byte_pointer = @line.bytesize if @byte_pointer > @line.bytesize
+        str = @line.byteslice(0, @byte_pointer)
+        @cursor = calculate_width(str)
+        @cursor_max = calculate_width(@line)
+      end
+    elsif start.is_a?(Range)
+      range = start
+      first = range.first
+      last = range.last
+      last = @line.bytesize - 1 if last > @line.bytesize
+      last += @line.bytesize if last < 0
+      first += @line.bytesize if first < 0
+      range = range.exclude_end? ? first...last : first..last
+      @line = @line.bytes.reject.with_index{ |c, i| range.include?(i) }.map{ |c| c.chr(Encoding::ASCII_8BIT) }.join.force_encoding(@encoding)
+      @byte_pointer = @line.bytesize if @byte_pointer > @line.bytesize
+      str = @line.byteslice(0, @byte_pointer)
+      @cursor = calculate_width(str)
+      @cursor_max = calculate_width(@line)
+    else
+      @line = @line.byteslice(0, start)
+      @byte_pointer = @line.bytesize if @byte_pointer > @line.bytesize
+      str = @line.byteslice(0, @byte_pointer)
+      @cursor = calculate_width(str)
+      @cursor_max = calculate_width(@line)
+    end
+  end
+
+  def byte_pointer=(val)
+    @byte_pointer = val
+    str = @line.byteslice(0, @byte_pointer)
+    @cursor = calculate_width(str)
+    @cursor_max = calculate_width(@line)
   end
 
   def whole_buffer

@@ -28,6 +28,9 @@ class Reline::KeyStroke
   end
 
   def input_to!(bytes)
+    if bytes.nil?
+      return @buffer.push(nil)&.tap { clear }
+    end
     @buffer.concat Array(bytes)
     input_to(@buffer)&.tap { clear }
   end
