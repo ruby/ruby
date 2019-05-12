@@ -113,7 +113,7 @@ class TestReadline < Test::Unit::TestCase
         assert_equal(true, Readline.line_buffer.tainted?)
         assert_equal(21, Readline.point)
       end
-    end if Readline != Reline
+    end if !defined?(Reline) or Readline != Reline
   end
 
   def test_input=
@@ -376,7 +376,7 @@ class TestReadline < Test::Unit::TestCase
     assert_equal(str, Readline.line_buffer)
     Readline.delete_text
 
-    unless Readline == Reline
+    if !defined?(Reline) or Readline != Reline
       # NOTE: unexpected but GNU Readline's spec
       assert_equal(16, Readline.point)
       assert_equal("", Readline.line_buffer)
@@ -401,7 +401,7 @@ class TestReadline < Test::Unit::TestCase
           line = Readline.readline("> ")
           assert_equal("hello world", line)
         end
-        unless Readline == Reline # Reline's rendering logic is tricky
+        if !defined?(Reline) or Readline != Reline # Reline's rendering logic is tricky
           assert_equal("> hello world\n", stdout.read)
         end
         stdout.close
