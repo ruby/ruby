@@ -76,7 +76,7 @@ class Reline::LineEditor
   CompletionJourneyData = Struct.new('CompletionJourneyData', :preposing, :postposing, :list, :pointer)
   MenuInfo = Struct.new('MenuInfo', :target, :list)
 
-  def initialize(config, prompt, encoding = Encoding.default_external)
+  def initialize(config, prompt = '', encoding = Encoding.default_external)
     @config = config
     @prompt = prompt
     @prompt_width = calculate_width(@prompt)
