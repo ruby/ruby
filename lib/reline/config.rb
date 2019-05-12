@@ -3,6 +3,36 @@ require 'pathname'
 class Reline::Config
   DEFAULT_PATH = Pathname.new(Dir.home).join('.inputrc')
 
+  VARIABLE_NAMES = %w{
+    bind-tty-special-chars
+    blink-matching-paren
+    byte-oriented
+    completion-ignore-case
+    convert-meta
+    disable-completion
+    enable-keypad
+    expand-tilde
+    history-preserve-point
+    horizontal-scroll-mode
+    input-meta
+    mark-directories
+    mark-modified-lines
+    mark-symlinked-directories
+    match-hidden-files
+    meta-flag
+    output-meta
+    page-completions
+    prefer-visible-bell
+    print-completions-horizontally
+    show-all-if-ambiguous
+    show-all-if-unmodified
+    visible-stats
+  }
+  VARIABLE_NAME_SYMBOLS = VARIABLE_NAMES.map { |v| :"#{v.tr(?-, ?_)}" }
+  VARIABLE_NAME_SYMBOLS.each do |v|
+    attr_accessor v
+  end
+
   def initialize
     @skip_section = nil
     @if_stack = []
@@ -108,31 +138,7 @@ class Reline::Config
 
   def bind_variable(name, value)
     case name
-    when %w{
-        bind-tty-special-chars
-        blink-matching-paren
-        byte-oriented
-        completion-ignore-case
-        convert-meta
-        disable-completion
-        enable-keypad
-        expand-tilde
-        history-preserve-point
-        horizontal-scroll-mode
-        input-meta
-        mark-directories
-        mark-modified-lines
-        mark-symlinked-directories
-        match-hidden-files
-        meta-flag
-        output-meta
-        page-completions
-        prefer-visible-bell
-        print-completions-horizontally
-        show-all-if-ambiguous
-        show-all-if-unmodified
-        visible-stats
-      } then
+    when VARIABLE_NAMES then
       variable_name = :"@#{name.tr(?-, ?_)}"
       instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')
     when 'bell-style'
