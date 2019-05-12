@@ -9,6 +9,7 @@ class Reline::LineEditor
   attr_reader :line
   attr_accessor :confirm_multiline_termination_proc
   attr_accessor :completion_proc
+  attr_accessor :pre_input_hook
   attr_accessor :dig_perfect_match_proc
   attr_writer :retrieve_completion_block
   attr_writer :output
