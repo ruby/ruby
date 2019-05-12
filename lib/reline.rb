@@ -31,7 +31,6 @@ module Reline
   end
 
   @@config = Reline::Config.new
-  @@config.read
   @@line_editor = Reline::LineEditor.new(@@config)
   @@ambiguous_width = nil
 
@@ -134,6 +133,7 @@ module Reline
 
   def inner_readline(prompt, add_hist, multiline, &confirm_multiline_termination)
     otio = prep
+    @@config.read
 
     may_req_ambiguous_char_width
     if multiline

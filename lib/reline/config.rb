@@ -37,6 +37,7 @@ class Reline::Config
   end
 
   def read(file = DEFAULT_PATH)
+    file = ENV['INPUTRC'] if ENV['INPUTRC']
     begin
       if file.respond_to?(:readlines)
         lines = file.readlines
