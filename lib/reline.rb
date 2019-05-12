@@ -48,7 +48,7 @@ module Reline
     elsif val.size > 1
       @completion_append_character = val[0]
     else
-      @completion_append_character = val
+      @completion_append_character = nil
     end
   end
 
