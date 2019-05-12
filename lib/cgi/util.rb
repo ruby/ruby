@@ -23,9 +23,15 @@ module CGI::Util
   #   string = CGI::unescape("%27Stop%21%27+said+Fred")
   #      # => "'Stop!' said Fred"
   def unescape(string,encoding=@@accept_charset)
-    str=string.tr('+', ' ').b.gsub(/((?:%[0-9a-fA-F]{2})+)/) do |m|
-      [m.delete('%')].pack('H*')
-    end.force_encoding(encoding)
+    str = string.b
+    str.tr! '+', ' '
+
+    str.gsub!(/((?:%[0-9a-fA-F]{2})+)/) do |m|
+      m.delete!('%')
+      [m].pack('H*')
+    end
+    str.force_encoding(encoding)
+
     str.valid_encoding? ? str : str.force_encoding(string.encoding)
   end
 
