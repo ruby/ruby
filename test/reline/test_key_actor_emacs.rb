@@ -943,30 +943,6 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('Abc Def{Bbb}Ccc')
   end
 
-  def test_em_capitol_case
-    input_keys('abc def{bbb}ccc')
-    input_keys("\C-a\M-c", false)
-    assert_byte_pointer_size('Abc')
-    assert_cursor(3)
-    assert_cursor_max(15)
-    assert_line('Abc def{bbb}ccc')
-    input_keys("\M-c", false)
-    assert_byte_pointer_size('Abc Def')
-    assert_cursor(7)
-    assert_cursor_max(15)
-    assert_line('Abc Def{bbb}ccc')
-    input_keys("\M-c", false)
-    assert_byte_pointer_size('Abc Def{Bbb')
-    assert_cursor(11)
-    assert_cursor_max(15)
-    assert_line('Abc Def{Bbb}ccc')
-    input_keys("\M-c", false)
-    assert_byte_pointer_size('Abc Def{Bbb}Ccc')
-    assert_cursor(15)
-    assert_cursor_max(15)
-    assert_line('Abc Def{Bbb}Ccc')
-  end
-
   def test_em_capitol_case_with_complex_example
     input_keys('{}#*    AaA!!!cCc   ')
     input_keys("\C-a\M-c", false)
