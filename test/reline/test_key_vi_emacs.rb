@@ -7,9 +7,8 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     @config.read_lines(<<~LINES.split(/(?<=\n)/))
       set editing-mode vi
     LINES
-    @line_editor = Reline::LineEditor.new(
-      @config, @prompt,
-      (RELINE_TEST_ENCODING rescue Encoding.default_external))
+    @line_editor = Reline::LineEditor.new(@config)
+    @line_editor.reset(@prompt, (RELINE_TEST_ENCODING rescue Encoding.default_external))
     @line_editor.retrieve_completion_block = Reline.method(:retrieve_completion_block)
   end
 
