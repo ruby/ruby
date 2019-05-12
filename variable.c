@@ -3154,7 +3154,7 @@ rb_mod_deprecate_constant(int argc, const VALUE *argv, VALUE obj)
 {
     if (argc == 1 && RB_TYPE_P(argv[0], T_HASH)) {
 	VALUE hash = argv[0];
-	rb_frozen_class_p(obj);
+	rb_class_modify_check(obj);
 	if (RHASH_EMPTY_P(hash)) {
 	    rb_warning("%"PRIsVALUE" with no argument is just ignored",
 		       QUOTE_ID(rb_frame_callee()));
