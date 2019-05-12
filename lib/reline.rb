@@ -30,8 +30,10 @@ module Reline
     attr_writer :output
   end
 
+  @@config = Reline::Config.new
+  @@config.read
+  @@line_editor = Reline::LineEditor.new(@@config)
   @@ambiguous_width = nil
-  @@config = nil
 
   @basic_quote_characters = '"\''
   # TODO implement below
@@ -109,42 +111,43 @@ module Reline
       inner_readline(prompt, add_hist, true)
     end
 
-    if add_hist and @line_editor.whole_buffer and @line_editor.whole_buffer.chomp.size > 0
-      Reline::HISTORY << @line_editor.whole_buffer
+    whole_buffer = @@line_editor.whole_buffer.dup
+    whole_buffer.taint
+    if add_hist and whole_buffer and whole_buffer.chomp.size > 0
+      Reline::HISTORY << whole_buffer
     end
 
-    @line_editor.whole_buffer
+    whole_buffer
   end
 
   def readline(prompt = '', add_hist = false)
     inner_readline(prompt, add_hist, false)
 
-    if add_hist and @line_editor.line and @line_editor.line.chomp.size > 0
-      Reline::HISTORY << @line_editor.line.chomp
+    line = @@line_editor.line.dup
+    line.taint
+    if add_hist and line and line.chomp.size > 0
+      Reline::HISTORY << line.chomp
     end
 
-    @line_editor.line
+    line
   end
 
   def inner_readline(prompt, add_hist, multiline, &confirm_multiline_termination)
-    if @@config.nil?
-      @@config = Reline::Config.new
-      @@config.read
-    end
     otio = prep
 
     may_req_ambiguous_char_width
-    @line_editor = Reline::LineEditor.new(@@config, prompt)
     if multiline
-      @line_editor.multiline_on
+      @@line_editor.multiline_on
       if block_given?
-        @line_editor.confirm_multiline_termination_proc = confirm_multiline_termination
+        @@line_editor.confirm_multiline_termination_proc = confirm_multiline_termination
       end
+    else
+      @@line_editor.multiline_off
     end
-    @line_editor.completion_proc = @@completion_proc
-    @line_editor.dig_perfect_match_proc = @@dig_perfect_match_proc
-    @line_editor.retrieve_completion_block = method(:retrieve_completion_block)
-    @line_editor.rerender
+    @@line_editor.completion_proc = @@completion_proc
+    @@line_editor.dig_perfect_match_proc = @@dig_perfect_match_proc
+    @@line_editor.retrieve_completion_block = method(:retrieve_completion_block)
+    @@line_editor.rerender
 
     if IS_WINDOWS
       config = {
@@ -171,11 +174,11 @@ module Reline
       while c = getc
         key_stroke.input_to!(c)&.then { |inputs|
           inputs.each { |c|
-            @line_editor.input_key(c)
-            @line_editor.rerender
+            @@line_editor.input_key(c)
+            @@line_editor.rerender
           }
         }
-        break if @line_editor.finished?
+        break if @@line_editor.finished?
       end
       Reline.move_cursor_column(0)
     rescue StandardError => e
