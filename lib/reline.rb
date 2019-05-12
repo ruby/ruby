@@ -26,8 +26,6 @@ module Reline
     attr_reader :completion_append_character
     attr_accessor :completion_case_fold
     attr_accessor :filename_quote_characters
-    attr_writer :input
-    attr_writer :output
   end
 
   @@config = Reline::Config.new
@@ -80,6 +78,21 @@ module Reline
 
   def self.delete_text(start = nil, length = nil)
     raise NotImplementedError
+  end
+
+  def self.input=(val)
+    raise TypeError unless val.respond_to?(:getc) or val.nil?
+    if val.respond_to?(:getc)
+      Reline::GeneralIO.input = val
+      remove_const('IO') if const_defined?('IO')
+      const_set('IO', Reline::GeneralIO)
+    end
+  end
+
+  @@output = STDOUT
+  def self.output=(val)
+    raise TypeError unless val.respond_to?(:write) or val.nil?
+    @@output = val
   end
 
   def retrieve_completion_block(line, byte_pointer)
@@ -139,6 +152,7 @@ module Reline
     else
       @@line_editor.multiline_off
     end
+    @@line_editor.output = @@output
     @@line_editor.completion_proc = @@completion_proc
     @@line_editor.dig_perfect_match_proc = @@dig_perfect_match_proc
     @@line_editor.retrieve_completion_block = method(:retrieve_completion_block)

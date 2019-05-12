@@ -11,6 +11,7 @@ class Reline::LineEditor
   attr_accessor :completion_proc
   attr_accessor :dig_perfect_match_proc
   attr_writer :retrieve_completion_block
+  attr_writer :output
 
   ARGUMENTABLE = %i{
     ed_delete_next_char
@@ -220,9 +221,9 @@ class Reline::LineEditor
     @rest_height ||= (Reline::IO.get_screen_size.first - 1) - Reline::IO.cursor_pos.y
     @screen_size ||= Reline::IO.get_screen_size
     if @menu_info
-      puts
+      @output.puts
       @menu_info.list.each do |item|
-        puts item
+        @output.puts item
       end
       @menu_info = nil
     end
@@ -359,12 +360,16 @@ class Reline::LineEditor
     visual_lines.each_with_index do |line, index|
       Reline::IO.move_cursor_column(0)
       escaped_print line
+      if @first_prompt
+        @first_prompt = false
+        @pre_input_hook&.call
+      end
       Reline::IO.erase_after_cursor
       move_cursor_down(1) if index < (visual_lines.size - 1)
     end
     if with_control
       if finished?
-        puts
+        @output.puts
       else
         move_cursor_up((visual_lines.size - 1) - @started_from)
         Reline::IO.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
@@ -378,7 +383,7 @@ class Reline::LineEditor
   end
 
   private def escaped_print(str)
-    print str.chars.map { |gr|
+    @output.print str.chars.map { |gr|
       escaped = Reline::Unicode::EscapedPairs[gr.ord]
       if escaped
         escaped
