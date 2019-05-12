@@ -9,7 +9,6 @@ module Reline
   extend self
   FILENAME_COMPLETION_PROC = nil
   USERNAME_COMPLETION_PROC = nil
-  HISTORY = Array.new
 
   if RUBY_PLATFORM =~ /mswin|mingw/
     IS_WINDOWS = true
@@ -32,6 +31,42 @@ module Reline
   @@config = Reline::Config.new
   @@line_editor = Reline::LineEditor.new(@@config)
   @@ambiguous_width = nil
+
+  HISTORY = Class.new(Array) {
+    def to_s
+      'HISTORY'
+    end
+
+    def delete_at(index)
+      index = check_index(index)
+      super(index)
+    end
+
+    def [](index)
+      index = check_index(index)
+      super(index)
+    end
+
+    def []=(index, val)
+      index = check_index(index)
+      super(index, String.new(val, encoding: Encoding::default_external))
+    end
+
+    def push(*val)
+      super(*(val.map{ |v| String.new(v, encoding: Encoding::default_external) }))
+    end
+
+    def <<(val)
+      super(String.new(val, encoding: Encoding::default_external))
+    end
+
+    private def check_index(index)
+      index += size if index < 0
+      raise RangeError.new("index=<#{index}>") if index < -@@config.history_size or @@config.history_size < index
+      raise IndexError.new("index=<#{index}>") if index < 0 or size <= index
+      index
+    end
+  }.new
 
   @basic_quote_characters = '"\''
   # TODO implement below

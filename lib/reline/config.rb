@@ -13,6 +13,7 @@ class Reline::Config
     enable-keypad
     expand-tilde
     history-preserve-point
+    history-size
     horizontal-scroll-mode
     input-meta
     mark-directories
@@ -42,6 +43,7 @@ class Reline::Config
     @key_actors[:emacs] = Reline::KeyActor::Emacs.new
     @key_actors[:vi_insert] = Reline::KeyActor::ViInsert.new
     @key_actors[:vi_command] = Reline::KeyActor::ViCommand.new
+    @history_size = 500
   end
 
   def reset
