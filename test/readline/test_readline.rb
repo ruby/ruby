@@ -113,7 +113,7 @@ class TestReadline < Test::Unit::TestCase
         assert_equal(true, Readline.line_buffer.tainted?)
         assert_equal(21, Readline.point)
       end
-    end
+    end if Readline != Reline
   end
 
   def test_input=
@@ -376,12 +376,14 @@ class TestReadline < Test::Unit::TestCase
     assert_equal(str, Readline.line_buffer)
     Readline.delete_text
 
-    # NOTE: unexpected but GNU Readline's spec
-    assert_equal(16, Readline.point)
-    assert_equal("", Readline.line_buffer)
-    assert_equal(Readline, Readline.insert_text(str))
-    assert_equal(32, Readline.point)
-    assert_equal("", Readline.line_buffer)
+    unless Readline == Reline
+      # NOTE: unexpected but GNU Readline's spec
+      assert_equal(16, Readline.point)
+      assert_equal("", Readline.line_buffer)
+      assert_equal(Readline, Readline.insert_text(str))
+      assert_equal(32, Readline.point)
+      assert_equal("", Readline.line_buffer)
+    end
   rescue NotImplementedError
   end if !/EditLine/n.match(Readline::VERSION)
 
@@ -399,7 +401,9 @@ class TestReadline < Test::Unit::TestCase
           line = Readline.readline("> ")
           assert_equal("hello world", line)
         end
-        assert_equal("> hello world\n", stdout.read)
+        unless Readline == Reline # Reline's rendering logic is tricky
+          assert_equal("> hello world\n", stdout.read)
+        end
         stdout.close
       rescue NotImplementedError
       ensure
