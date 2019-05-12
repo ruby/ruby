@@ -68,6 +68,14 @@ module Reline
     @@completion_proc = p
   end
 
+  @@pre_input_hook = nil
+  def self.pre_input_hook
+    @@pre_input_hook
+  end
+  def self.pre_input_hook=(p)
+    @@pre_input_hook = p
+  end
+
   @@dig_perfect_match_proc = nil
   def self.dig_perfect_match_proc
     @@dig_perfect_match_proc
@@ -155,6 +163,7 @@ module Reline
     @@line_editor.output = @@output
     @@line_editor.completion_proc = @@completion_proc
     @@line_editor.dig_perfect_match_proc = @@dig_perfect_match_proc
+    @@line_editor.pre_input_hook = @@pre_input_hook
     @@line_editor.retrieve_completion_block = method(:retrieve_completion_block)
     @@line_editor.rerender
 
