@@ -54,8 +54,7 @@ module URI
         raise ArgumentError,
           "expected Array of or Hash of components of #{klass} (#{klass.component[1..-1].join(', ')})"
       end
-      tmp[:scheme] = klass.to_s.sub(/\A.*::/, '').downcase
-
+      tmp[:scheme] = klass.to_s.sub(/\A.*::/, '').tap(&:downcase!)
       return tmp
     end
     module_function :make_components_hash
