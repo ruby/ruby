@@ -67,6 +67,7 @@ module Reline
     @@completion_proc
   end
   def self.completion_proc=(p)
+    raise ArgumentError unless p.is_a?(Proc)
     @@completion_proc = p
   end
 
