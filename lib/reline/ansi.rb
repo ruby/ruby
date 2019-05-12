@@ -2,34 +2,47 @@ class Reline::ANSI
   def self.getc
     c = nil
     loop do
-      result = select([$stdin], [], [], 0.1)
+      result = select([STDIN], [], [], 0.1)
       next if result.nil?
-      c = $stdin.read(1)
+      c = STDIN.read(1)
       break
     end
     c&.ord
   end
 
   def self.get_screen_size
-    $stdin.winsize
+    STDIN.winsize
+  rescue Errno::ENOTTY
+    [24, 80]
   end
 
   def self.set_screen_size(rows, columns)
-    $stdin.winsize = [rows, columns]
+    STDIN.winsize = [rows, columns]
+    self
+  rescue Errno::ENOTTY
     self
   end
 
   def self.cursor_pos
-    res = ''
-    $stdin.raw do |stdin|
-      $stdout << "\e[6n"
-      $stdout.flush
-      while (c = stdin.getc) != 'R'
-        res << c if c
+    begin
+      res = ''
+      STDIN.raw do |stdin|
+        STDOUT << "\e[6n"
+        STDOUT.flush
+        while (c = stdin.getc) != 'R'
+          res << c if c
+        end
       end
+      res
+      m = res.match(/(?<row>\d+);(?<column>\d+)/)
+      column = m[:column].to_i - 1
+      row = m[:row].to_i - 1
+    rescue Errno::ENOTTY
+      buf = STDOUT.pread(STDOUT.pos, 0)
+      row = buf.count("\n")
+      column = buf.rindex("\n") ? (buf.size - buf.rindex("\n")) - 1 : 0
     end
-    m = res.match(/(?<row>\d+);(?<column>\d+)/)
-    Reline::CursorPos.new(m[:column].to_i - 1, m[:row].to_i - 1)
+    Reline::CursorPos.new(column, row)
   end
 
   def self.move_cursor_column(x)
