@@ -1162,4 +1162,17 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor_max(0)
     assert_line('')
   end
+
+  def test_ed_search_prev_history
+    Reline::HISTORY.concat(%w{abc 123 AAA})
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-ra\C-j")
+    assert_line('abc')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(3)
+  end
 end
