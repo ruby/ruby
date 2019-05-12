@@ -34,7 +34,7 @@ module URI
       tmp = {}
       if array_hash.kind_of?(Array) &&
           array_hash.size == klass.component.size - 1
-        klass.component[1..-1].each_index do |i|
+        array_hash.size.times do |i|
           begin
             tmp[klass.component[i + 1]] = array_hash[i].clone
           rescue TypeError
