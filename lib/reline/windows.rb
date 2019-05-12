@@ -1,6 +1,6 @@
 require 'fiddle/import'
 
-module Reline
+class Reline::Windows
   class Win32API
     DLL = {}
     TYPEMAP = {"0" => Fiddle::TYPE_VOID, "S" => Fiddle::TYPE_VOIDP, "I" => Fiddle::TYPE_LONG}
@@ -52,7 +52,7 @@ module Reline
   @@hConsoleHandle = @@GetStdHandle.call(STD_OUTPUT_HANDLE)
   @@buf = []
 
-  def getwch
+  def self.getwch
     while @@kbhit.call == 0
       sleep(0.001)
     end
@@ -69,7 +69,7 @@ module Reline
     result
   end
 
-  def getc
+  def self.getc
     unless @@buf.empty?
       return @@buf.shift
     end
@@ -112,7 +112,7 @@ module Reline
     @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
     x = csbi[4, 2].unpack('s*').first
     y = csbi[6, 4].unpack('s*').first
-    CursorPos.new(x, y)
+    Reline::CursorPos.new(x, y)
   end
 
   def self.move_cursor_column(val)
@@ -161,12 +161,12 @@ module Reline
     raise NotImplementedError
   end
 
-  def prep
+  def self.prep
     # do nothing
     nil
   end
 
-  def deprep(otio)
+  def self.deprep(otio)
     # do nothing
   end
 end

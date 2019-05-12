@@ -82,12 +82,6 @@ module Reline
     raise NotImplementedError
   end
 
-  if IS_WINDOWS
-    require 'reline/windows'
-  else
-    require 'reline/ansi'
-  end
-
   def retrieve_completion_block(line, byte_pointer)
     break_regexp = /[#{Regexp.escape(@@basic_word_break_characters)}]/
     before_pointer = line.byteslice(0, byte_pointer)
@@ -132,10 +126,11 @@ module Reline
   end
 
   def inner_readline(prompt, add_hist, multiline, &confirm_multiline_termination)
-    otio = prep
     @@config.read
+    otio = Reline::IO.prep
 
     may_req_ambiguous_char_width
+    @@line_editor.reset(prompt)
     if multiline
       @@line_editor.multiline_on
       if block_given?
@@ -171,7 +166,7 @@ module Reline
 
     key_stroke = Reline::KeyStroke.new(config)
     begin
-      while c = getc
+      while c = Reline::IO.getc
         key_stroke.input_to!(c)&.then { |inputs|
           inputs.each { |c|
             @@line_editor.input_key(c)
@@ -180,25 +175,35 @@ module Reline
         }
         break if @@line_editor.finished?
       end
-      Reline.move_cursor_column(0)
+      Reline::IO.move_cursor_column(0)
     rescue StandardError => e
-      deprep(otio)
+      Reline::IO.deprep(otio)
       raise e
     end
 
-    deprep(otio)
+    Reline::IO.deprep(otio)
   end
 
   def may_req_ambiguous_char_width
+    @@ambiguous_width = 2 if Reline::IO == Reline::GeneralIO or STDOUT.is_a?(File)
     return if @@ambiguous_width
-    Reline.move_cursor_column(0)
+    Reline::IO.move_cursor_column(0)
     print "\u{25bd}"
-    @@ambiguous_width = Reline.cursor_pos.x
-    Reline.move_cursor_column(0)
-    Reline.erase_after_cursor
+    @@ambiguous_width = Reline::IO.cursor_pos.x
+    Reline::IO.move_cursor_column(0)
+    Reline::IO.erase_after_cursor
   end
 
   def self.ambiguous_width
     @@ambiguous_width
   end
 end
+
+if Reline::IS_WINDOWS
+  require 'reline/windows'
+  Reline::IO = Reline::Windows
+else
+  require 'reline/ansi'
+  Reline::IO = Reline::ANSI
+end
+require 'reline/general_io'

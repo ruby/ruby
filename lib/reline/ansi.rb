@@ -1,13 +1,13 @@
-module Reline
-  def getc
+class Reline::ANSI
+  def self.getc
     c = nil
-    until c
-      return nil if @line_editor.finished?
+    loop do
       result = select([$stdin], [], [], 0.1)
       next if result.nil?
       c = $stdin.read(1)
+      break
     end
-    c.ord
+    c&.ord
   end
 
   def self.get_screen_size
@@ -29,7 +29,7 @@ module Reline
       end
     end
     m = res.match(/(?<row>\d+);(?<column>\d+)/)
-    CursorPos.new(m[:column].to_i - 1, m[:row].to_i - 1)
+    Reline::CursorPos.new(m[:column].to_i - 1, m[:row].to_i - 1)
   end
 
   def self.move_cursor_column(x)
@@ -66,7 +66,7 @@ module Reline
     print "\e[1;1H"
   end
 
-  def prep
+  def self.prep
     int_handle = Signal.trap('INT', 'IGNORE')
     otio = `stty -g`.chomp
     setting = ' -echo -icrnl cbreak'
@@ -79,7 +79,7 @@ module Reline
     otio
   end
 
-  def deprep(otio)
+  def self.deprep(otio)
     int_handle = Signal.trap('INT', 'IGNORE')
     `stty #{otio}`
     Signal.trap('INT', int_handle)
