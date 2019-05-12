@@ -286,15 +286,22 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
 	    OBJ_FREEZE_RAW(str);
 	}
 	else {
-	    str = str_new_frozen(rb_cString, str);
-	    if (STR_SHARED_P(str)) { /* str should not be shared */
-		/* shared substring  */
-		str_make_independent(str);
-		assert(OBJ_FROZEN(str));
-	    }
-	    if (!BARE_STRING_P(str)) {
-		str = str_new_frozen(rb_cString, str);
-	    }
+            VALUE frozen = str_new_frozen(rb_cString, str);
+            if (STR_SHARED_P(frozen)) { /* fstrings should be independent */
+                /* shared substring  */
+                if (UNLIKELY(STR_SHARED_P(str) && RSTRING(str)->as.heap.aux.shared == frozen)) {
+                    /* repair share chain since we are about to remove a middle element */
+                    VALUE root_of_root = RSTRING(frozen)->as.heap.aux.shared;
+                    STR_SET_SHARED(str, root_of_root);
+                }
+                str_make_independent(frozen);
+                assert(OBJ_FROZEN(frozen));
+            }
+            if (!BARE_STRING_P(frozen)) {
+                frozen = str_new_frozen(rb_cString, frozen);
+            }
+
+            str = frozen;
 	}
 	RBASIC(str)->flags |= RSTRING_FSTR;
 
