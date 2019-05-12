@@ -26,6 +26,7 @@ module Reline
     attr_reader :completion_append_character
     attr_accessor :completion_case_fold
     attr_accessor :filename_quote_characters
+    attr_accessor :special_prefixes
   end
 
   @@config = Reline::Config.new
@@ -38,6 +39,7 @@ module Reline
   #@completion_append_character
   #@completion_case_fold
   #@filename_quote_characters
+  #@special_prefixes
   def self.completion_append_character=(val)
     if val.nil?
       @completion_append_character = nil
