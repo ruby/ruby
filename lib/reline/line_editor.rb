@@ -230,6 +230,9 @@ class Reline::LineEditor
     if @vi_arg
       prompt = "(arg: #{@vi_arg}) "
       prompt_width = calculate_width(prompt)
+    elsif @searching_prompt
+      prompt = @searching_prompt
+      prompt_width = calculate_width(prompt)
     else
       prompt = @prompt
       prompt_width = @prompt_width
@@ -578,6 +581,14 @@ class Reline::LineEditor
   end
 
   def input_key(key)
+    if key.nil?
+      if @first_char
+        @line = nil
+      end
+      finish
+      return
+    end
+    @first_char = false
     completion_occurs = false
     if @config.editing_mode_is?(:emacs, :vi_insert) and key == "\C-i".ord
       result = @completion_proc&.(@line)
@@ -731,6 +742,94 @@ class Reline::LineEditor
       end
       @byte_pointer += byte_size
     end
+  end
+
+  private def ed_search_prev_history(key)
+    @line_backup_in_history = @line
+    searcher = Fiber.new do
+      search_word = String.new(encoding: @encoding)
+      multibyte_buf = String.new(encoding: 'ASCII-8BIT')
+      last_hit = nil
+      loop do
+        key = Fiber.yield(search_word)
+        case key
+        when "\C-h".ord, 127
+          grapheme_clusters = search_word.grapheme_clusters
+          if grapheme_clusters.size > 0
+            grapheme_clusters.pop
+            search_word = grapheme_clusters.join
+          end
+        else
+          multibyte_buf << key
+          if multibyte_buf.dup.force_encoding(@encoding).valid_encoding?
+            search_word << multibyte_buf.dup.force_encoding(@encoding)
+            multibyte_buf.clear
+          end
+        end
+        hit = nil
+        if @line_backup_in_history.include?(search_word)
+          @history_pointer = nil
+          hit = @line_backup_in_history
+        else
+          hit_index = Reline::HISTORY.rindex { |item|
+            item.include?(search_word)
+          }
+          if hit_index
+            @history_pointer = hit_index
+            hit = Reline::HISTORY[@history_pointer]
+          end
+        end
+        if hit
+          @searching_prompt = "(reverse-i-search)`%s': %s" % [search_word, hit]
+          @line = hit
+          last_hit = hit
+        else
+          @searching_prompt = "(failed reverse-i-search)`%s': %s" % [search_word, last_hit]
+        end
+      end
+    end
+    searcher.resume
+    @searching_prompt = "(reverse-i-search)`': "
+    @waiting_proc = ->(key) {
+      case key
+      when "\C-j".ord, "\C-?".ord
+        if @history_pointer
+          @line = Reline::HISTORY[@history_pointer]
+        else
+          @line = @line_backup_in_history
+        end
+        @searching_prompt = nil
+        @waiting_proc = nil
+        @cursor_max = calculate_width(@line)
+        @cursor = @byte_pointer = 0
+      when "\C-g".ord
+        @line = @line_backup_in_history
+        @history_pointer = nil
+        @searching_prompt = nil
+        @waiting_proc = nil
+        @line_backup_in_history = nil
+        @cursor_max = calculate_width(@line)
+        @cursor = @byte_pointer = 0
+      else
+        chr = key.is_a?(String) ? key : key.chr(Encoding::ASCII_8BIT)
+        if chr.match?(/[[:print:]]/)
+          search_word = searcher.resume(key)
+        else
+          if @history_pointer
+            @line = Reline::HISTORY[@history_pointer]
+          else
+            @line = @line_backup_in_history
+          end
+          @searching_prompt = nil
+          @waiting_proc = nil
+          @cursor_max = calculate_width(@line)
+          @cursor = @byte_pointer = 0
+        end
+      end
+    }
+  end
+
+  private def ed_search_next_history(key)
   end
 
   private def ed_prev_history(key, arg: 1)
