@@ -10,10 +10,13 @@ module CGI::Util
   #   url_encoded_string = CGI::escape("'Stop!' said Fred")
   #      # => "%27Stop%21%27+said+Fred"
   def escape(string)
-    encoding = string.encoding
-    string.b.gsub(/([^ a-zA-Z0-9_.\-~]+)/) do |m|
-      '%' + m.unpack('H2' * m.bytesize).join('%').upcase
-    end.tr(' ', '+').force_encoding(encoding)
+    str = string.b
+    str.gsub!(/([^ a-zA-Z0-9_.\-~]+)/) do |m|
+      '%' + m.unpack('H2' * m.bytesize).join('%').tap(&:upcase!)
+    end
+
+    str.tr!(' ', '+')
+    str.force_encoding(string.encoding)
   end
 
   # URL-decode a string with encoding(optional).
