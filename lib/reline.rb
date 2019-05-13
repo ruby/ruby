@@ -18,16 +18,6 @@ module Reline
 
   CursorPos = Struct.new(:x, :y)
 
-  class << self
-    attr_accessor :basic_quote_characters
-    attr_accessor :completer_quote_characters
-    attr_accessor :completer_word_break_characters
-    attr_reader :completion_append_character
-    attr_accessor :completion_case_fold
-    attr_accessor :filename_quote_characters
-    attr_accessor :special_prefixes
-  end
-
   @@config = Reline::Config.new
   @@line_editor = Reline::LineEditor.new(@@config)
   @@ambiguous_width = nil
@@ -68,22 +58,19 @@ module Reline
     end
   }.new
 
-  @basic_quote_characters = '"\''
-  # TODO implement below
-  #@completer_quote_characters
-  #@completion_append_character
-  #@completion_case_fold
-  #@filename_quote_characters
-  #@special_prefixes
+  @@completion_append_character = nil
+  def self.completion_append_character
+    @@completion_append_character
+  end
   def self.completion_append_character=(val)
     if val.nil?
-      @completion_append_character = nil
+      @@completion_append_character = nil
     elsif val.size == 1
-      @completion_append_character = val
+      @@completion_append_character = val.encode(Encoding::default_external)
     elsif val.size > 1
-      @completion_append_character = val[0]
+      @@completion_append_character = val[0].encode(Encoding::default_external)
     else
-      @completion_append_character = nil
+      @@completion_append_character = nil
     end
   end
 
@@ -92,10 +79,56 @@ module Reline
     @@basic_word_break_characters
   end
   def self.basic_word_break_characters=(v)
-    @@basic_word_break_characters = v
+    @@basic_word_break_characters = v.encode(Encoding::default_external)
   end
 
   @@completer_word_break_characters = @@basic_word_break_characters.dup
+  def self.completer_word_break_characters
+    @@completer_word_break_characters
+  end
+  def self.completer_word_break_characters=(v)
+    @@completer_word_break_characters = v.encode(Encoding::default_external)
+  end
+
+  @@basic_quote_characters = '"\''
+  def self.basic_quote_characters
+    @@basic_quote_characters
+  end
+  def self.basic_quote_characters=(v)
+    @@basic_quote_characters = v.encode(Encoding::default_external)
+  end
+
+  @@completer_quote_characters = '"\''
+  def self.completer_quote_characters
+    @@completer_quote_characters
+  end
+  def self.completer_quote_characters=(v)
+    @@completer_quote_characters = v.encode(Encoding::default_external)
+  end
+
+  @@filename_quote_characters = ''
+  def self.filename_quote_characters
+    @@filename_quote_characters
+  end
+  def self.filename_quote_characters=(v)
+    @@filename_quote_characters = v.encode(Encoding::default_external)
+  end
+
+  @@special_prefixes = ''
+  def self.special_prefixes
+    @@special_prefixes
+  end
+  def self.special_prefixes=(v)
+    @@special_prefixes = v.encode(Encoding::default_external)
+  end
+
+  @@completion_case_fold = nil
+  def self.completion_case_fold
+    @@completion_case_fold
+  end
+  def self.completion_case_fold=(v)
+    @@completion_case_fold = v
+  end
 
   @@completion_proc = nil
   def self.completion_proc
