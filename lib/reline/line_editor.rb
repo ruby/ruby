@@ -881,7 +881,7 @@ class Reline::LineEditor
       else
         chr = key.is_a?(String) ? key : key.chr(Encoding::ASCII_8BIT)
         if chr.match?(/[[:print:]]/)
-          search_word = searcher.resume(key)
+          searcher.resume(key)
         else
           if @history_pointer
             @line = Reline::HISTORY[@history_pointer]
