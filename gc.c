@@ -7322,7 +7322,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free)
     RVALUE *dest = (RVALUE *)free;
     RVALUE *src = (RVALUE *)scan;
 
-    gc_report(4, objspace, "Moving object: %s -> %p\n", obj_info(scan), (void *)free);
+    gc_report(4, objspace, "Moving object: %p -> %p\n", (void*)scan, (void *)free);
 
     GC_ASSERT(BUILTIN_TYPE(scan) != T_NONE);
     GC_ASSERT(BUILTIN_TYPE(free) == T_NONE);
@@ -7867,7 +7867,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 {
     RVALUE *any = RANY(obj);
 
-    gc_report(4, objspace, "update-refs: %s ->", obj_info(obj));
+    gc_report(4, objspace, "update-refs: %p ->", (void *)obj);
 
     switch(BUILTIN_TYPE(obj)) {
         case T_CLASS:
@@ -8013,8 +8013,9 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
     UPDATE_IF_MOVED(objspace, RBASIC(obj)->klass);
 
-    gc_report(4, objspace, "update-refs: %s <-", obj_info(obj));
+    gc_report(4, objspace, "update-refs: %p <-", (void *)obj);
 }
+
 static int
 gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
 {
@@ -8067,6 +8068,8 @@ gc_update_references(rb_objspace_t * objspace)
     rb_objspace_each_objects_without_setup(gc_ref_update, objspace);
     rb_vm_update_references(vm);
     rb_transient_heap_update_references();
+    global_symbols.ids = rb_gc_new_location(global_symbols.ids);
+    global_symbols.dsymbol_fstr_hash = rb_gc_new_location(global_symbols.dsymbol_fstr_hash);
     gc_update_table_refs(objspace, global_symbols.str_sym);
 }
 
@@ -8101,6 +8104,7 @@ rb_gc_compact(VALUE mod)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
+    if (dont_gc) return Qnil;
     /* Ensure objects are pinned */
     rb_gc();
 
@@ -8191,6 +8195,8 @@ static VALUE
 gc_verify_compaction_references(VALUE mod)
 {
     rb_objspace_t *objspace = &rb_objspace;
+
+    if (dont_gc) return Qnil;
 
     /* Ensure objects are pinned */
     rb_gc();
