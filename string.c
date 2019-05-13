@@ -10592,8 +10592,8 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
 /**********************************************************************
  * Document-class: Symbol
  *
- *  Symbol objects represent names and some strings inside the Ruby
- *  interpreter. They are generated using the <code>:name</code> and
+ *  Symbol objects represent names inside the Ruby interpreter. They
+ *  are generated using the <code>:name</code> and
  *  <code>:"string"</code> literals syntax, and by the various
  *  <code>to_sym</code> methods. The same Symbol object will be
  *  created for a given name or string for the duration of a program's
