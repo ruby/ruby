@@ -7523,6 +7523,7 @@ gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator)
     struct heap_cursor scan_cursor;
     struct heap_page **page_list;
     VALUE moved_list;
+    during_gc = TRUE;
 
     moved_list = Qfalse;
     memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
@@ -7599,6 +7600,7 @@ gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator)
     }
     free(page_list);
 
+    during_gc = FALSE;
     return moved_list;
 }
 
