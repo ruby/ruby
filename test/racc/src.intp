@@ -1,0 +1,34 @@
+def assert( no, cond )
+  if cond then
+  else
+    raise( 'assert ' + to_s(no) + ' failed' )
+  end
+end
+
+assert( 1, concat(concat(concat('str=', 'a'), "b"), 'c') == 'str=abc' )
+assert( 2, 'operator' + ' ok' == 'operator ok' )
+assert( 3, 1 + 1 == 2 )
+assert( 4, 4 * 1 + 10 * 1 == 14 )
+
+if true then
+  assert( 5, true )
+else
+  assert( 6, false )
+end
+
+i = 1
+while i == 1 do
+  i = false
+end
+assert( 7, i == false )
+assert( 8, nil == nil )
+
+def func
+  assert( 9, true )
+end
+func
+
+def argfunc( str )
+  assert( 10, str == 'ok' )
+end
+argfunc 'ok'
