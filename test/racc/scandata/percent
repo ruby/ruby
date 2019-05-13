@@ -1,0 +1,18 @@
+{
+    3 % 5         # mod
+    3%5           # mod
+    3% 5          # mod
+    i % 5         # mod
+    i%5           # mod
+    i% 5          # mod
+    call %{str}   # string
+    call(%{str})  # string
+    %q{string}    # string
+    %Q{string}    # string
+    %r{string}    # string
+    %w(array)     # array
+    %x{array}     # command string
+    %{string}     # string
+    %_string_     # string
+    %/string/     # regexp
+}

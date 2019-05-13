@@ -11,7 +11,7 @@
 
 */
 
-#include "ruby/ruby.h"
+#include <ruby.h>
 
 #ifndef FALSE
 #define FALSE 0
@@ -24,7 +24,7 @@
                         Important Constants
 ----------------------------------------------------------------------- */
 
-#define RACC_VERSION "1.4.5"
+#define RACC_VERSION "1.4.15"
 
 #define DEFAULT_TOKEN -1
 #define ERROR_TOKEN    1
@@ -70,6 +70,10 @@ static ID id_d_e_pop;
 #endif
 #ifndef LONG2NUM
 #  define LONG2NUM(i) INT2NUM(i)
+#endif
+
+#ifndef HAVE_RB_ARY_SUBSEQ
+#  define rb_ary_subseq(ary, beg, len) rb_ary_new4(len, RARRAY_PTR(ary) + beg)
 #endif
 
 static ID value_to_id _((VALUE v));
