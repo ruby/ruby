@@ -411,8 +411,13 @@ class Reline::LineEditor
       return nil
     end
     completed = list.inject { |memo, item|
-      memo_mbchars = memo.unicode_normalize.grapheme_clusters
-      item_mbchars = item.unicode_normalize.grapheme_clusters
+      begin
+        memo_mbchars = memo.unicode_normalize.grapheme_clusters
+        item_mbchars = item.unicode_normalize.grapheme_clusters
+      rescue Encoding::CompatibilityError
+        memo_mbchars = memo.grapheme_clusters
+        item_mbchars = item.grapheme_clusters
+      end
       size = [memo_mbchars.size, item_mbchars.size].min
       result = ''
       size.times do |i|
