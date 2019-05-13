@@ -293,7 +293,7 @@ class TestReadline < Test::Unit::TestCase
             Readline.send((method_name + "=").to_sym, e)
             res = Readline.send(method_name.to_sym)
             assert_equal(e, res)
-            assert_equal(enc, res.encoding)
+            assert_equal(enc, res.encoding, "Readline.#{method_name} should be #{enc.name}")
           end
         ensure
           Readline.send((method_name + "=").to_sym, saved) if saved
