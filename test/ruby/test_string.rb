@@ -2983,6 +2983,14 @@ CODE
     assert_equal(('a' * 24), a, '[Bug #15792]')
   end
 
+  def test_nesting_shared_b
+    a = ('j' * 24).b.b
+    eval('', binding, a)
+    assert_equal(('j' * 24), a)
+    4.times { GC.start }
+    assert_equal(('j' * 24), a, '[Bug #15934]')
+  end
+
   def test_shared_force_encoding
     s = "\u{3066}\u{3059}\u{3068}".gsub(//, '')
     h = {}
