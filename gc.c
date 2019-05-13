@@ -5251,7 +5251,7 @@ show_mark_ticks(void)
     }
 }
 
-#endif /* PRITNT_ROOT_TICKS */
+#endif /* PRINT_ROOT_TICKS */
 
 static void
 gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
@@ -5287,7 +5287,7 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     prev_category = category; \
     start_tick = tick(); \
 } while (0)
-#else /* PRITNT_ROOT_TICKS */
+#else /* PRINT_ROOT_TICKS */
 #define MARK_CHECKPOINT_PRINT_TICK(category)
 #endif
 
