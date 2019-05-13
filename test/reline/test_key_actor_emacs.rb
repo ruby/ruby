@@ -4,8 +4,9 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
   def setup
     @prompt = '> '
     @config = Reline::Config.new # Emacs mode is default
+    @encoding = (RELINE_TEST_ENCODING rescue Encoding.default_external)
     @line_editor = Reline::LineEditor.new(@config)
-    @line_editor.reset(@prompt, (RELINE_TEST_ENCODING rescue Encoding.default_external))
+    @line_editor.reset(@prompt, @encoding)
     @line_editor.retrieve_completion_block = Reline.method(:retrieve_completion_block)
   end
 
@@ -1054,6 +1055,8 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
         foo_bar
         foo_baz
         qux
+      }.map { |i|
+        i.encode(@encoding)
       }
     }
     input_keys('fo')
@@ -1096,6 +1099,8 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
         foo_bar
         foo_baz
         qux
+      }.map { |i|
+        i.encode(@encoding)
       }
     }
     input_keys('abcde fo ABCDE')
