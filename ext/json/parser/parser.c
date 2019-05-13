@@ -2099,8 +2099,13 @@ void Init_parser(void)
     rb_define_method(cParser, "source", cParser_source, 0);
 
     CNaN = rb_const_get(mJSON, rb_intern("NaN"));
+    rb_gc_register_mark_object(CNaN);
+
     CInfinity = rb_const_get(mJSON, rb_intern("Infinity"));
+    rb_gc_register_mark_object(CInfinity);
+
     CMinusInfinity = rb_const_get(mJSON, rb_intern("MinusInfinity"));
+    rb_gc_register_mark_object(CMinusInfinity);
 
     i_json_creatable_p = rb_intern("json_creatable?");
     i_json_create = rb_intern("json_create");
