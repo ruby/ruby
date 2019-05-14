@@ -33,7 +33,6 @@ class Reline::ANSI
           res << c if c
         end
       end
-      res
       m = res.match(/(?<row>\d+);(?<column>\d+)/)
       column = m[:column].to_i - 1
       row = m[:row].to_i - 1
