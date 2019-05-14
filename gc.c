@@ -4417,7 +4417,7 @@ gc_mark_and_pin_stack_values(rb_objspace_t *objspace, long n, const VALUE *value
 }
 
 void
-rb_gc_mark_stack_values(long n, const VALUE *values)
+rb_gc_mark_vm_stack_values(long n, const VALUE *values)
 {
     rb_objspace_t *objspace = &rb_objspace;
     gc_mark_and_pin_stack_values(objspace, n, values);
