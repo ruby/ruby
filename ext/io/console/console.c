@@ -443,14 +443,12 @@ console_getch(int argc, VALUE *argv, VALUE io)
 	len = 1;
 	do {
 	    buf[len++] = (unsigned char)c;
-	} while ((c >>= CHAR_BIT) && len < sizeof(buf));
+	} while ((c >>= CHAR_BIT) && len < (int)sizeof(buf));
 	return rb_str_new(buf, len);
       default:
 	len = rb_uv_to_utf8(buf, c);
-	str = rb_enc_str_new(0, 0, rb_default_external_encoding());
-	rb_str_cat_conv_enc_opts(str, 0, buf, len, rb_utf8_encoding(),
-				 0, Qnil);
-	return str;
+	str = rb_utf8_str_new(buf, len);
+	return rb_str_conv_enc(str, NULL, rb_default_external_encoding());
     }
 #endif
 }
