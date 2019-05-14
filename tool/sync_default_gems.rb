@@ -37,6 +37,7 @@
 # * https://github.com/ruby/thwait
 # * https://github.com/ruby/e2mmap
 # * https://github.com/ruby/mutex_m
+# * https://github.com/ruby/racc
 #
 
 $repositories = {
@@ -76,7 +77,8 @@ $repositories = {
   forwardable: "ruby/forwardable",
   thwait: "ruby/thwait",
   e2mmap: "ruby/e2mmap",
-  mutex_m: "ruby/mutex_m"
+  mutex_m: "ruby/mutex_m",
+  racc: "ruby/racc"
 }
 
 def sync_default_gems(gem)
@@ -208,6 +210,11 @@ def sync_default_gems(gem)
     `cp -f ../strscan/strscan.gemspec ext/strscan`
     `rm -f ext/strscan/regenc.h ext/strscan/regint.h`
     `git checkout ext/strscan/depend`
+  when "racc"
+    `rm -rf lib/racc* ext/racc test/racc`
+    `cp -rf ../racc/lib/racc* lib`
+    `cp -rf ../racc/ext/racc* ext`
+    `cp -rf ../racc/test test/racc`
   when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "cmath", "mutex_m", "sync"
     sync_lib gem
   else
