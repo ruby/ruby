@@ -419,7 +419,15 @@ console_getch(int argc, VALUE *argv, VALUE io)
 
     GetOpenFile(io, fptr);
     if (optp) {
-	rb_warning("option ignored");
+	struct timeval *to = NULL, tv;
+	if (optp->vtime) {
+	    to = &tv;
+	    tv.tv_sec = optp->vtime / 10;
+	    tv.tv_usec = (optp->vtime % 10) * 100000;
+	}
+	if (optp->vmin) {
+	    rb_warning("min option ignored");
+	}
     }
     w = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, NULL);
     if (w < 0) rb_eof_error();
