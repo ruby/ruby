@@ -8375,13 +8375,13 @@ gc_count(VALUE self)
 static VALUE
 gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const int orig_flags)
 {
-    static VALUE sym_major_by = Qnil, sym_gc_by, sym_immediate_sweep, sym_have_finalizer, sym_state;
-    static VALUE sym_nofree, sym_oldgen, sym_shady, sym_force, sym_stress;
+    static ID ID_major_by, ID_gc_by, ID_immediate_sweep, ID_have_finalizer, ID_state;
+    static ID ID_nofree, ID_oldgen, ID_shady, ID_force, ID_stress;
 #if RGENGC_ESTIMATE_OLDMALLOC
-    static VALUE sym_oldmalloc;
+    static ID ID_oldmalloc;
 #endif
-    static VALUE sym_newobj, sym_malloc, sym_method, sym_capi;
-    static VALUE sym_none, sym_marking, sym_sweeping;
+    static ID ID_newobj, ID_malloc, ID_method, ID_capi;
+    static ID ID_none, ID_marking, ID_sweeping;
     VALUE hash = Qnil, key = Qnil;
     VALUE major_by;
     VALUE flags = orig_flags ? orig_flags : objspace->profile.latest_gc_info;
@@ -8396,8 +8396,8 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const int orig_
         rb_raise(rb_eTypeError, "non-hash or symbol given");
     }
 
-    if (sym_major_by == Qnil) {
-#define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
+    if (!ID_major_by) {
+#define S(s) ID_##s = rb_intern_const(#s)
         S(major_by);
         S(gc_by);
         S(immediate_sweep);
@@ -8424,28 +8424,28 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const int orig_
     }
 
 #define SET(name, attr) \
-    if (key == sym_##name) \
+    if (key == ID2SYM(ID_##name)) \
         return (attr); \
     else if (hash != Qnil) \
-        rb_hash_aset(hash, sym_##name, (attr));
+        rb_hash_aset(hash, ID2SYM(ID_##name), (attr));
 
     major_by =
-      (flags & GPR_FLAG_MAJOR_BY_NOFREE) ? sym_nofree :
-      (flags & GPR_FLAG_MAJOR_BY_OLDGEN) ? sym_oldgen :
-      (flags & GPR_FLAG_MAJOR_BY_SHADY)  ? sym_shady :
-      (flags & GPR_FLAG_MAJOR_BY_FORCE)  ? sym_force :
+      (flags & GPR_FLAG_MAJOR_BY_NOFREE) ? ID_nofree :
+      (flags & GPR_FLAG_MAJOR_BY_OLDGEN) ? ID_oldgen :
+      (flags & GPR_FLAG_MAJOR_BY_SHADY)  ? ID_shady :
+      (flags & GPR_FLAG_MAJOR_BY_FORCE)  ? ID_force :
 #if RGENGC_ESTIMATE_OLDMALLOC
-      (flags & GPR_FLAG_MAJOR_BY_OLDMALLOC) ? sym_oldmalloc :
+      (flags & GPR_FLAG_MAJOR_BY_OLDMALLOC) ? ID_oldmalloc :
 #endif
       Qnil;
     SET(major_by, major_by);
 
     SET(gc_by,
-        (flags & GPR_FLAG_NEWOBJ) ? sym_newobj :
-        (flags & GPR_FLAG_MALLOC) ? sym_malloc :
-        (flags & GPR_FLAG_METHOD) ? sym_method :
-        (flags & GPR_FLAG_CAPI)   ? sym_capi :
-        (flags & GPR_FLAG_STRESS) ? sym_stress :
+        (flags & GPR_FLAG_NEWOBJ) ? ID_newobj :
+        (flags & GPR_FLAG_MALLOC) ? ID_malloc :
+        (flags & GPR_FLAG_METHOD) ? ID_method :
+        (flags & GPR_FLAG_CAPI)   ? ID_capi :
+        (flags & GPR_FLAG_STRESS) ? ID_stress :
         Qnil
     );
 
@@ -8453,8 +8453,8 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const int orig_
     SET(immediate_sweep, (flags & GPR_FLAG_IMMEDIATE_SWEEP) ? Qtrue : Qfalse);
 
     if (orig_flags == 0) {
-        SET(state, gc_mode(objspace) == gc_mode_none ? sym_none :
-                   gc_mode(objspace) == gc_mode_marking ? sym_marking : sym_sweeping);
+        SET(state, gc_mode(objspace) == gc_mode_none ? ID_none :
+                   gc_mode(objspace) == gc_mode_marking ? ID_marking : ID_sweeping);
     }
 #undef SET
 
