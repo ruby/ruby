@@ -416,10 +416,10 @@ console_getch(int argc, VALUE *argv, VALUE io)
     wint_t c;
     int w, len;
     char buf[8];
+    struct timeval *to = NULL, tv;
 
     GetOpenFile(io, fptr);
     if (optp) {
-	struct timeval *to = NULL, tv;
 	if (optp->vtime) {
 	    to = &tv;
 	    tv.tv_sec = optp->vtime / 10;
@@ -429,7 +429,7 @@ console_getch(int argc, VALUE *argv, VALUE io)
 	    rb_warning("min option ignored");
 	}
     }
-    w = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, NULL);
+    w = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, to);
     if (w < 0) rb_eof_error();
     if (!(w & RB_WAITFD_IN)) return Qnil;
     c = _getwch();
