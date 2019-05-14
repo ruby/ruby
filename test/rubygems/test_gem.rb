@@ -888,6 +888,27 @@ class TestGem < Gem::TestCase
     assert_equal gems['a-2'], spec
   end
 
+  def test_self_latest_spec_for_multiple_sources
+    uri = 'https://example.sample.com/'
+    source = Gem::Source.new(uri)
+    source_list = Gem::SourceList.new
+    source_list << Gem::Source.new(@uri)
+    source_list << source
+    Gem.sources.replace source_list
+
+    spec_fetcher(uri) do |fetcher|
+      fetcher.spec 'a', 1.1
+    end
+
+    gems = spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+      fetcher.spec 'a', '3.a'
+      fetcher.spec 'a', 2
+    end
+    spec = Gem.latest_spec_for 'a'
+    assert_equal gems['a-2'], spec
+  end
+
   def test_self_latest_rubygems_version
     spec_fetcher do |fetcher|
       fetcher.spec 'rubygems-update', '1.8.23'
@@ -901,6 +922,29 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_latest_version_for
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+      fetcher.spec 'a', 2
+      fetcher.spec 'a', '3.a'
+    end
+
+    version = Gem.latest_version_for 'a'
+
+    assert_equal Gem::Version.new(2), version
+  end
+
+  def test_self_latest_version_for_multiple_sources
+    uri = 'https://example.sample.com/'
+    source = Gem::Source.new(uri)
+    source_list = Gem::SourceList.new
+    source_list << Gem::Source.new(@uri)
+    source_list << source
+    Gem.sources.replace source_list
+
+    spec_fetcher(uri) do |fetcher|
+      fetcher.spec 'a', 1.1
+    end
+
     spec_fetcher do |fetcher|
       fetcher.spec 'a', 1
       fetcher.spec 'a', 2

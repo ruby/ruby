@@ -854,7 +854,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     fetcher      = Gem::SpecFetcher.fetcher
     spec_tuples, = fetcher.spec_for_dependency dependency
 
-    spec, = spec_tuples.first
+    spec, = spec_tuples.last
 
     spec
   end
