@@ -132,7 +132,7 @@ typedef char strio_flags_check[(STRIO_READABLE/FMODE_READABLE == STRIO_WRITABLE/
 #define READABLE(strio) STRIO_MODE_SET_P(strio, READABLE)
 #define WRITABLE(strio) STRIO_MODE_SET_P(strio, WRITABLE)
 
-static VALUE sym_exception;
+static ID id_exception;
 
 static struct StringIO*
 readable(VALUE strio)
@@ -1482,7 +1482,7 @@ strio_read_nonblock(int argc, VALUE *argv, VALUE self)
     val = strio_read(argc, argv, self);
     if (NIL_P(val)) {
 	if (!NIL_P(opts) &&
-	      rb_hash_lookup2(opts, sym_exception, Qundef) == Qfalse)
+	      rb_hash_lookup2(opts, ID2SYM(id_exception), Qundef) == Qfalse)
 	    return Qnil;
 	else
 	    rb_eof_error();
@@ -1731,5 +1731,5 @@ Init_stringio(void)
 	rb_include_module(StringIO, mWritable);
     }
 
-    sym_exception = ID2SYM(rb_intern("exception"));
+    id_exception = rb_intern("exception");
 }
