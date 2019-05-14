@@ -174,8 +174,8 @@ VALUE cASN1ObjectId;                          /* OBJECT IDENTIFIER */
 VALUE cASN1UTCTime, cASN1GeneralizedTime;     /* TIME              */
 VALUE cASN1Sequence, cASN1Set;                /* CONSTRUCTIVE      */
 
-static VALUE sym_IMPLICIT, sym_EXPLICIT;
-static VALUE sym_UNIVERSAL, sym_APPLICATION, sym_CONTEXT_SPECIFIC, sym_PRIVATE;
+static ID id_IMPLICIT, id_EXPLICIT;
+static ID id_UNIVERSAL, id_APPLICATION, id_CONTEXT_SPECIFIC, id_PRIVATE;
 static ID sivVALUE, sivTAG, sivTAG_CLASS, sivTAGGING, sivINDEFINITE_LENGTH, sivUNUSED_BITS;
 static ID id_each;
 
@@ -600,13 +600,13 @@ ossl_asn1_tag_class(VALUE obj)
     VALUE s;
 
     s = ossl_asn1_get_tag_class(obj);
-    if (NIL_P(s) || s == sym_UNIVERSAL)
+    if (NIL_P(s) || s == ID2SYM(id_UNIVERSAL))
 	return V_ASN1_UNIVERSAL;
-    else if (s == sym_APPLICATION)
+    else if (s == ID2SYM(id_APPLICATION))
 	return V_ASN1_APPLICATION;
-    else if (s == sym_CONTEXT_SPECIFIC)
+    else if (s == ID2SYM(id_CONTEXT_SPECIFIC))
 	return V_ASN1_CONTEXT_SPECIFIC;
-    else if (s == sym_PRIVATE)
+    else if (s == ID2SYM(id_PRIVATE))
 	return V_ASN1_PRIVATE;
     else
 	ossl_raise(eASN1Error, "invalid tag class");
@@ -616,13 +616,13 @@ static VALUE
 ossl_asn1_class2sym(int tc)
 {
     if((tc & V_ASN1_PRIVATE) == V_ASN1_PRIVATE)
-	return sym_PRIVATE;
+	return ID2SYM(id_PRIVATE);
     else if((tc & V_ASN1_CONTEXT_SPECIFIC) == V_ASN1_CONTEXT_SPECIFIC)
-	return sym_CONTEXT_SPECIFIC;
+	return ID2SYM(id_CONTEXT_SPECIFIC);
     else if((tc & V_ASN1_APPLICATION) == V_ASN1_APPLICATION)
-	return sym_APPLICATION;
+	return ID2SYM(id_APPLICATION);
     else
-	return sym_UNIVERSAL;
+	return ID2SYM(id_UNIVERSAL);
 }
 
 /*
@@ -666,7 +666,7 @@ to_der_internal(VALUE self, int constructed, int indef_len, VALUE body)
     unsigned char *p;
 
     body_length = RSTRING_LENINT(body);
-    if (ossl_asn1_get_tagging(self) == sym_EXPLICIT) {
+    if (ossl_asn1_get_tagging(self) == ID2SYM(id_EXPLICIT)) {
 	int inner_length, e_encoding = indef_len ? 2 : 1;
 
 	if (default_tag_number == -1)
@@ -737,7 +737,7 @@ int_ossl_asn1_decode0_prim(unsigned char **pp, long length, long hlen, int tag,
 
     p = *pp;
 
-    if(tc == sym_UNIVERSAL && tag < ossl_asn1_info_size) {
+    if(tc == ID2SYM(id_UNIVERSAL) && tag < ossl_asn1_info_size) {
 	switch(tag){
 	case V_ASN1_EOC:
 	    value = decode_eoc(p, hlen+length);
@@ -779,7 +779,7 @@ int_ossl_asn1_decode0_prim(unsigned char **pp, long length, long hlen, int tag,
     *pp += hlen + length;
     *num_read = hlen + length;
 
-    if (tc == sym_UNIVERSAL &&
+    if (tc == ID2SYM(id_UNIVERSAL) &&
 	tag < ossl_asn1_info_size && ossl_asn1_info[tag].klass) {
 	VALUE klass = *ossl_asn1_info[tag].klass;
 	VALUE args[4];
@@ -822,13 +822,13 @@ int_ossl_asn1_decode0_cons(unsigned char **pp, long max_len, long length,
 
 	if (indefinite &&
 	    ossl_asn1_tag(value) == V_ASN1_EOC &&
-	    ossl_asn1_get_tag_class(value) == sym_UNIVERSAL) {
+	    ossl_asn1_get_tag_class(value) == ID2SYM(id_UNIVERSAL)) {
 	    break;
 	}
 	rb_ary_push(ary, value);
     }
 
-    if (tc == sym_UNIVERSAL) {
+    if (tc == ID2SYM(id_UNIVERSAL)) {
 	VALUE args[4];
 	if (tag == V_ASN1_SEQUENCE || tag == V_ASN1_SET)
 	    asn1data = rb_obj_alloc(*ossl_asn1_info[tag].klass);
@@ -872,13 +872,13 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
     if(j & 0x80) ossl_raise(eASN1Error, NULL);
     if(len > length) ossl_raise(eASN1Error, "value is too short");
     if((tc & V_ASN1_PRIVATE) == V_ASN1_PRIVATE)
-	tag_class = sym_PRIVATE;
+	tag_class = ID2SYM(id_PRIVATE);
     else if((tc & V_ASN1_CONTEXT_SPECIFIC) == V_ASN1_CONTEXT_SPECIFIC)
-	tag_class = sym_CONTEXT_SPECIFIC;
+	tag_class = ID2SYM(id_CONTEXT_SPECIFIC);
     else if((tc & V_ASN1_APPLICATION) == V_ASN1_APPLICATION)
-	tag_class = sym_APPLICATION;
+	tag_class = ID2SYM(id_APPLICATION);
     else
-	tag_class = sym_UNIVERSAL;
+	tag_class = ID2SYM(id_UNIVERSAL);
 
     hlen = p - start;
 
@@ -1074,9 +1074,9 @@ ossl_asn1_initialize(int argc, VALUE *argv, VALUE self)
 	    ossl_raise(eASN1Error, "invalid tagging method");
 	if(NIL_P(tag_class)) {
 	    if (NIL_P(tagging))
-		tag_class = sym_UNIVERSAL;
+		tag_class = ID2SYM(id_UNIVERSAL);
 	    else
-		tag_class = sym_CONTEXT_SPECIFIC;
+		tag_class = ID2SYM(id_CONTEXT_SPECIFIC);
 	}
 	if(!SYMBOL_P(tag_class))
 	    ossl_raise(eASN1Error, "invalid tag class");
@@ -1084,7 +1084,7 @@ ossl_asn1_initialize(int argc, VALUE *argv, VALUE self)
     else{
 	tag = INT2NUM(default_tag);
 	tagging = Qnil;
-	tag_class = sym_UNIVERSAL;
+	tag_class = ID2SYM(id_UNIVERSAL);
     }
     ossl_asn1_set_tag(self, tag);
     ossl_asn1_set_value(self, value);
@@ -1102,7 +1102,7 @@ ossl_asn1eoc_initialize(VALUE self) {
     VALUE tag, tagging, tag_class, value;
     tag = INT2FIX(0);
     tagging = Qnil;
-    tag_class = sym_UNIVERSAL;
+    tag_class = ID2SYM(id_UNIVERSAL);
     value = rb_str_new("", 0);
     ossl_asn1_set_tag(self, tag);
     ossl_asn1_set_value(self, value);
@@ -1369,12 +1369,12 @@ Init_ossl_asn1(void)
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
 #endif
 
-    sym_UNIVERSAL = ID2SYM(rb_intern_const("UNIVERSAL"));
-    sym_CONTEXT_SPECIFIC = ID2SYM(rb_intern_const("CONTEXT_SPECIFIC"));
-    sym_APPLICATION = ID2SYM(rb_intern_const("APPLICATION"));
-    sym_PRIVATE = ID2SYM(rb_intern_const("PRIVATE"));
-    sym_EXPLICIT = ID2SYM(rb_intern_const("EXPLICIT"));
-    sym_IMPLICIT = ID2SYM(rb_intern_const("IMPLICIT"));
+    id_UNIVERSAL = rb_intern_const("UNIVERSAL");
+    id_CONTEXT_SPECIFIC = rb_intern_const("CONTEXT_SPECIFIC");
+    id_APPLICATION = rb_intern_const("APPLICATION");
+    id_PRIVATE = rb_intern_const("PRIVATE");
+    id_EXPLICIT = rb_intern_const("EXPLICIT");
+    id_IMPLICIT = rb_intern_const("IMPLICIT");
 
     sivVALUE = rb_intern("@value");
     sivTAG = rb_intern("@tag");

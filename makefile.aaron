@@ -1,0 +1,3 @@
+docker:
+	docker build -t ruby-core $(CURDIR)
+	docker run --privileged -t -i -v $(CURDIR):/src/ruby -w /src/ruby ruby-core /bin/bash

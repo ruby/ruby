@@ -3,7 +3,7 @@
 #include <time.h>
 
 int rsock_cmsg_cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
-static VALUE sym_wait_readable, sym_wait_writable;
+static ID id_wait_readable, id_wait_writable;
 
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
 static VALUE rb_cAncillaryData;
@@ -1285,7 +1285,7 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 	e = errno;
 	if (nonblock && (e == EWOULDBLOCK || e == EAGAIN)) {
 	    if (ex == Qfalse) {
-		return sym_wait_writable;
+		return ID2SYM(id_wait_writable);
 	    }
 	    rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e,
 				     "sendmsg(2) would block");
@@ -1559,7 +1559,7 @@ bsock_recvmsg_internal(VALUE sock,
 	e = errno;
 	if (nonblock && (e == EWOULDBLOCK || e == EAGAIN)) {
             if (ex == Qfalse) {
-                return sym_wait_readable;
+                return ID2SYM(id_wait_readable);
             }
 	    rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE, e, "recvmsg(2) would block");
         }
@@ -1729,6 +1729,6 @@ rsock_init_ancdata(void)
     rb_define_method(rb_cAncillaryData, "ipv6_pktinfo_ifindex", ancillary_ipv6_pktinfo_ifindex, 0);
 #endif
 #undef rb_intern
-    sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
-    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+    id_wait_readable = rb_intern("wait_readable");
+    id_wait_writable = rb_intern("wait_writable");
 }

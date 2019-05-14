@@ -20,8 +20,8 @@
 #include "vm_core.h"
 #include "objspace.h"
 
-static VALUE sym_output, sym_stdout, sym_string, sym_file;
-static VALUE sym_full;
+static ID id_output, id_stdout, id_string, id_file;
+static ID id_full;
 
 struct dump_config {
     VALUE type;
@@ -379,17 +379,17 @@ dump_output(struct dump_config *dc, VALUE opts, VALUE output, const char *filena
     dc->full_heap = 0;
 
     if (RTEST(opts)) {
-	output = rb_hash_aref(opts, sym_output);
+	output = rb_hash_aref(opts, ID2SYM(id_output));
 
-	if (Qtrue == rb_hash_lookup2(opts, sym_full, Qfalse))
+	if (Qtrue == rb_hash_lookup2(opts, ID2SYM(id_full), Qfalse))
 	    dc->full_heap = 1;
     }
 
-    if (output == sym_stdout) {
+    if (output == ID2SYM(id_stdout)) {
 	dc->stream = stdout;
 	dc->string = Qnil;
     }
-    else if (output == sym_file) {
+    else if (output == ID2SYM(id_file)) {
 	rb_io_t *fptr;
 	rb_require("tempfile");
 	tmp = rb_assoc_new(rb_str_new_cstr(filename), rb_str_new_cstr(".json"));
@@ -400,11 +400,11 @@ dump_output(struct dump_config *dc, VALUE opts, VALUE output, const char *filena
 	GetOpenFile(dc->string, fptr);
 	dc->stream = rb_io_stdio_file(fptr);
     }
-    else if (output == sym_string) {
+    else if (output == ID2SYM(id_string)) {
 	dc->string = rb_str_new_cstr("");
     }
     else if (!NIL_P(tmp = rb_io_check_io(output))) {
-	output = sym_file;
+	output = ID2SYM(id_file);
 	goto io;
     }
     else {
@@ -416,10 +416,10 @@ dump_output(struct dump_config *dc, VALUE opts, VALUE output, const char *filena
 static VALUE
 dump_result(struct dump_config *dc, VALUE output)
 {
-    if (output == sym_string) {
+    if (output == ID2SYM(id_string)) {
 	return rb_str_resurrect(dc->string);
     }
-    else if (output == sym_file) {
+    else if (output == ID2SYM(id_file)) {
 	rb_io_flush(dc->string);
 	return dc->string;
     }
@@ -451,7 +451,7 @@ objspace_dump(int argc, VALUE *argv, VALUE os)
 
     rb_scan_args(argc, argv, "1:", &obj, &opts);
 
-    output = dump_output(&dc, opts, sym_string, filename);
+    output = dump_output(&dc, opts, ID2SYM(id_string), filename);
 
     dump_object(obj, &dc);
 
@@ -483,7 +483,7 @@ objspace_dump_all(int argc, VALUE *argv, VALUE os)
 
     rb_scan_args(argc, argv, "0:", &opts);
 
-    output = dump_output(&dc, opts, sym_file, filename);
+    output = dump_output(&dc, opts, ID2SYM(id_file), filename);
 
     /* dump roots */
     rb_objspace_reachable_objects_from_root(root_obj_i, &dc);
@@ -506,11 +506,11 @@ Init_objspace_dump(VALUE rb_mObjSpace)
     rb_define_module_function(rb_mObjSpace, "dump", objspace_dump, -1);
     rb_define_module_function(rb_mObjSpace, "dump_all", objspace_dump_all, -1);
 
-    sym_output = ID2SYM(rb_intern("output"));
-    sym_stdout = ID2SYM(rb_intern("stdout"));
-    sym_string = ID2SYM(rb_intern("string"));
-    sym_file   = ID2SYM(rb_intern("file"));
-    sym_full   = ID2SYM(rb_intern("full"));
+    id_output = rb_intern("output");
+    id_stdout = rb_intern("stdout");
+    id_string = rb_intern("string");
+    id_file   = rb_intern("file");
+    id_full   = rb_intern("full");
 
     /* force create static IDs */
     rb_obj_gc_flags(rb_mObjSpace, 0, 0);
