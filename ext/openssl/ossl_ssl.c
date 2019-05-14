@@ -34,7 +34,7 @@ static VALUE eSSLErrorWaitWritable;
 
 static ID id_call, ID_callback_state, id_tmp_dh_callback, id_tmp_ecdh_callback,
 	  id_npn_protocols_encoded;
-static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
+static ID id_exception, id_wait_readable, id_wait_writable;
 
 static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
 	  id_i_verify_depth, id_i_verify_callback, id_i_client_ca,
@@ -1633,7 +1633,7 @@ static int
 no_exception_p(VALUE opts)
 {
     if (RB_TYPE_P(opts, T_HASH) &&
-          rb_hash_lookup2(opts, sym_exception, Qundef) == Qfalse)
+          rb_hash_lookup2(opts, ID2SYM(id_exception), Qundef) == Qfalse)
 	return 1;
     return 0;
 }
@@ -1670,12 +1670,12 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
 
 	switch((ret2 = ssl_get_error(ssl, ret))){
 	case SSL_ERROR_WANT_WRITE:
-            if (no_exception_p(opts)) { return sym_wait_writable; }
+            if (no_exception_p(opts)) { return ID2SYM(id_wait_writable); }
             write_would_block(nonblock);
             rb_io_wait_writable(fptr->fd);
             continue;
 	case SSL_ERROR_WANT_READ:
-            if (no_exception_p(opts)) { return sym_wait_readable; }
+            if (no_exception_p(opts)) { return ID2SYM(id_wait_readable); }
             read_would_block(nonblock);
             rb_io_wait_readable(fptr->fd);
             continue;
@@ -1846,12 +1846,12 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 		if (no_exception_p(opts)) { return Qnil; }
 		rb_eof_error();
 	    case SSL_ERROR_WANT_WRITE:
-		if (no_exception_p(opts)) { return sym_wait_writable; }
+		if (no_exception_p(opts)) { return ID2SYM(id_wait_writable); }
                 write_would_block(nonblock);
                 rb_io_wait_writable(fptr->fd);
                 continue;
 	    case SSL_ERROR_WANT_READ:
-		if (no_exception_p(opts)) { return sym_wait_readable; }
+		if (no_exception_p(opts)) { return ID2SYM(id_wait_readable); }
                 read_would_block(nonblock);
                 rb_io_wait_readable(fptr->fd);
 		continue;
@@ -1950,12 +1950,12 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_WANT_WRITE:
-		if (no_exception_p(opts)) { return sym_wait_writable; }
+		if (no_exception_p(opts)) { return ID2SYM(id_wait_writable); }
                 write_would_block(nonblock);
                 rb_io_wait_writable(fptr->fd);
                 continue;
 	    case SSL_ERROR_WANT_READ:
-		if (no_exception_p(opts)) { return sym_wait_readable; }
+		if (no_exception_p(opts)) { return ID2SYM(id_wait_readable); }
                 read_would_block(nonblock);
                 rb_io_wait_readable(fptr->fd);
                 continue;
@@ -2910,9 +2910,9 @@ Init_ossl_ssl(void)
 #endif
 
 
-    sym_exception = ID2SYM(rb_intern("exception"));
-    sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
-    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+    id_exception = rb_intern("exception");
+    id_wait_readable = rb_intern("wait_readable");
+    id_wait_writable = rb_intern("wait_writable");
 
     id_tmp_dh_callback = rb_intern("tmp_dh_callback");
     id_tmp_ecdh_callback = rb_intern("tmp_ecdh_callback");
