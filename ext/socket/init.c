@@ -33,7 +33,7 @@ VALUE rb_cSOCKSSocket;
 #endif
 
 int rsock_do_not_reverse_lookup = 1;
-static VALUE sym_wait_readable;
+static ID id_wait_readable;
 
 void
 rsock_raise_socket_error(const char *reason, int error)
@@ -274,7 +274,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
 	  case EWOULDBLOCK:
 #endif
             if (ex == Qfalse)
-		return sym_wait_readable;
+		return ID2SYM(id_wait_readable);
             rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE, e, "recvfrom(2) would block");
 	}
 	rb_syserr_fail(e, "recvfrom(2)");
@@ -303,7 +303,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
 }
 
 #if MSG_DONTWAIT_RELIABLE
-static VALUE sym_wait_writable;
+static ID id_wait_writable;
 
 /* copied from io.c :< */
 static long
@@ -343,7 +343,7 @@ rsock_read_nonblock(VALUE sock, VALUE length, VALUE buf, VALUE ex)
 	if (n < 0) {
 	    int e = errno;
 	    if ((e == EWOULDBLOCK || e == EAGAIN)) {
-		if (ex == Qfalse) return sym_wait_readable;
+		if (ex == Qfalse) return ID2SYM(id_wait_readable);
 		rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE,
 					 e, "read would block");
 	    }
@@ -401,7 +401,7 @@ rsock_write_nonblock(VALUE sock, VALUE str, VALUE ex)
 	}
 #endif
 	if (e == EWOULDBLOCK || e == EAGAIN) {
-	    if (ex == Qfalse) return sym_wait_writable;
+	    if (ex == Qfalse) return ID2SYM(id_wait_writable);
 	    rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e,
 				    "write would block");
 	}
@@ -729,7 +729,7 @@ rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
 	  case EPROTO:
 #endif
             if (ex == Qfalse)
-		return sym_wait_readable;
+		return ID2SYM(id_wait_readable);
             rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE, e, "accept(2) would block");
 	}
         rb_syserr_fail(e, "accept(2)");
@@ -839,9 +839,9 @@ rsock_init_socket_init(void)
     rsock_init_socket_constants();
 
 #undef rb_intern
-    sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
+    id_wait_readable = rb_intern("wait_readable");
 
 #if MSG_DONTWAIT_RELIABLE
-    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+    id_wait_writable = rb_intern("wait_writable");
 #endif
 }

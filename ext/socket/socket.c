@@ -10,7 +10,7 @@
 
 #include "rubysocket.h"
 
-static VALUE sym_wait_writable;
+static ID id_wait_writable;
 
 static VALUE sock_s_unpack_sockaddr_in(VALUE, VALUE);
 
@@ -464,7 +464,7 @@ sock_connect_nonblock(VALUE sock, VALUE addr, VALUE ex)
 	int e = errno;
 	if (e == EINPROGRESS) {
             if (ex == Qfalse) {
-                return sym_wait_writable;
+                return ID2SYM(id_wait_writable);
             }
             rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e, "connect(2) would block");
 	}
@@ -2108,5 +2108,5 @@ Init_socket(void)
     rb_define_singleton_method(rb_cSocket, "ip_address_list", socket_s_ip_address_list, 0);
 
 #undef rb_intern
-    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+    id_wait_writable = rb_intern("wait_writable");
 }
