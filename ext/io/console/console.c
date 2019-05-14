@@ -48,6 +48,7 @@ typedef struct sgttyb conmode;
 # endif
 #elif defined _WIN32
 #include <winioctl.h>
+#include <conio.h>
 typedef DWORD conmode;
 
 #define LAST_ERROR rb_w32_map_errno(GetLastError())
@@ -385,11 +386,13 @@ console_set_cooked(VALUE io)
     return io;
 }
 
+#ifndef _WIN32
 static VALUE
 getc_call(VALUE io)
 {
     return rb_funcallv(io, id_getc, 0, 0);
 }
+#endif
 
 /*
  * call-seq:
@@ -405,7 +408,43 @@ static VALUE
 console_getch(int argc, VALUE *argv, VALUE io)
 {
     rawmode_arg_t opts, *optp = rawmode_opt(argc, argv, &opts);
+#ifndef _WIN32
     return ttymode(io, getc_call, set_rawmode, optp);
+#else
+    rb_io_t *fptr;
+    VALUE str;
+    wint_t c;
+    int w, len;
+    char buf[8];
+
+    GetOpenFile(io, fptr);
+    if (optp) {
+	rb_warning("option ignored");
+    }
+    w = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, NULL);
+    if (w < 0) rb_eof_error();
+    if (!(w & RB_WAITFD_IN)) return Qnil;
+    c = _getwch();
+    switch (c) {
+      case WEOF:
+	return Qnil;
+      case 0x00:
+      case 0xe0:
+	buf[0] = (char)c;
+	c = _getwch();
+	len = 1;
+	do {
+	    buf[len++] = (unsigned char)c;
+	} while ((c >>= CHAR_BIT) && len < sizeof(buf));
+	return rb_str_new(buf, len);
+      default:
+	len = rb_uv_to_utf8(buf, c);
+	str = rb_enc_str_new(0, 0, rb_default_external_encoding());
+	rb_str_cat_conv_enc_opts(str, 0, buf, len, rb_utf8_encoding(),
+				 0, Qnil);
+	return str;
+    }
+#endif
 }
 
 /*
