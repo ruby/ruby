@@ -9,9 +9,12 @@ module Racc
   class TestCase < MiniTest::Unit::TestCase
     PROJECT_DIR = File.expand_path(File.join(File.dirname(__FILE__), '..'))
 
-    TEST_DIR = File.join(PROJECT_DIR, 'test')
-
-    RACC      = File.join(PROJECT_DIR, 'bin', 'racc')
+    test_dir = File.join(PROJECT_DIR, 'test')
+    test_dir = File.join(PROJECT_DIR, 'racc') unless File.exist?(test_dir)
+    TEST_DIR = test_dir
+    racc = File.join(PROJECT_DIR, 'bin', 'racc')
+    racc = File.join(PROJECT_DIR, '..', 'libexec', 'racc') unless File.exist?(racc)
+    RACC = racc
     OUT_DIR   = File.join(TEST_DIR, 'out')
     TAB_DIR   = File.join(TEST_DIR, 'tab') # generated parsers go here
     LOG_DIR   = File.join(TEST_DIR, 'log')
