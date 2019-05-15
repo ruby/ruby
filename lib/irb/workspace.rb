@@ -131,13 +131,17 @@ EOF
           return
         end
       end
-      lines = Color.colorize_code(code).lines
+      lines = IRB.conf[:MAIN_CONTEXT]&.use_colorize? ? Color.colorize_code(code).lines : code.lines
       pos -= 1
 
       start_pos = [pos - 5, 0].max
       end_pos   = [pos + 5, lines.size - 1].min
 
-      fmt = " %2s #{Color.colorize("%#{end_pos.to_s.length}d", [:BLUE, :BOLD])}: %s"
+      if IRB.conf[:MAIN_CONTEXT]&.use_colorize?
+        fmt = " %2s #{Color.colorize("%#{end_pos.to_s.length}d", [:BLUE, :BOLD])}: %s"
+      else
+        fmt = " %2s %#{end_pos.to_s.length}d: %s"
+      end
       body = (start_pos..end_pos).map do |current_pos|
         sprintf(fmt, pos == current_pos ? '=>' : '', current_pos + 1, lines[current_pos])
       end.join("")

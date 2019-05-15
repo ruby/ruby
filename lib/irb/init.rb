@@ -44,6 +44,7 @@ module IRB # :nodoc:
     @CONF[:IRB_RC] = nil
 
     @CONF[:USE_READLINE] = false unless defined?(ReadlineInputMethod)
+    @CONF[:USE_COLORIZE] = true
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
     @CONF[:USE_LOADER] = false
@@ -171,6 +172,10 @@ module IRB # :nodoc:
         @CONF[:VERBOSE] = true
       when "--noverbose"
         @CONF[:VERBOSE] = false
+      when "--colorize"
+        @CONF[:USE_COLORIZE] = true
+      when "--nocolorize"
+        @CONF[:USE_COLORIZE] = false
       when /^--prompt-mode(?:=(.+))?/, /^--prompt(?:=(.+))?/
         opt = $1 || argv.shift
         prompt_mode = opt.upcase.tr("-", "_").intern

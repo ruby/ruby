@@ -62,6 +62,8 @@ require "irb/version"
 #     --noinspect       Don't use inspect for output
 #     --readline        Use Readline extension module
 #     --noreadline      Don't use Readline extension module
+#     --colorize        Use colorization
+#     --nocolorize      Don't use colorization
 #     --prompt prompt-mode
 #     --prompt-mode prompt-mode
 #                       Switch prompt mode. Pre-defined prompt modes are
@@ -96,6 +98,7 @@ require "irb/version"
 #     IRB.conf[:BACK_TRACE_LIMIT]=16
 #     IRB.conf[:USE_LOADER] = false
 #     IRB.conf[:USE_READLINE] = nil
+#     IRB.conf[:USE_COLORIZE] = true
 #     IRB.conf[:USE_TRACER] = false
 #     IRB.conf[:IGNORE_SIGINT] = true
 #     IRB.conf[:IGNORE_EOF] = false

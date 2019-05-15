@@ -54,6 +54,8 @@ irbの使い方は, Rubyさえ知っていればいたって簡単です. 基本
   --noreadline	    readlineライブラリを利用しない. デフォルトの動作は,
 		    inf-ruby-mode以外でreadlineライブラリを利用しよう
 		    とする.
+  --colorize	    色付けを利用する.
+  --nocolorize	    色付けを利用しない.
   --prompt prompt-mode
   --prompt-mode prompt-mode
 		    プロンプトモードを切替えます. 現在定義されているプ

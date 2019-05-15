@@ -142,6 +142,10 @@ module IRB
     #
     # See #use_readline= for more information.
     attr_reader :use_readline
+    # Whether colorization is enabled or not.
+    #
+    # A copy of the default <code>IRB.conf[:USE_COLORIZE]</code>
+    attr_reader :use_colorize
     # A copy of the default <code>IRB.conf[:INSPECT_MODE]</code>
     attr_reader :inspect_mode
 
@@ -222,6 +226,8 @@ module IRB
 
     # Alias for #use_readline
     alias use_readline? use_readline
+    # Alias for #use_colorize
+    alias use_colorize? use_colorize
     # Alias for #rc
     alias rc? rc
     alias ignore_sigint? ignore_sigint
