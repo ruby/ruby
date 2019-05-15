@@ -8269,6 +8269,8 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
         moved_list = RANY(moved_list)->as.moved.next;
         poison_object(current);
     }
+#else
+    (void)moved_list;
 #endif
 
     /* GC after compaction to eliminate T_MOVED */
