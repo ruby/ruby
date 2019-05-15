@@ -25,6 +25,8 @@ Usage:  irb.rb [options] [programfile] [arguments]
   --noinspect	    結果出力にinspectを用いない.
   --readline	    readlineライブラリを利用する.
   --noreadline	    readlineライブラリを利用しない.
+  --colorize	    色付けを利用する.
+  --nocolorize	    色付けを利用しない.
   --prompt prompt-mode/--prompt-mode prompt-mode
 		    プロンプトモードを切替えます. 現在定義されているプ
 		    ロンプトモードは, default, simple, xmp, inf-rubyが
