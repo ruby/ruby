@@ -425,7 +425,7 @@ console_getch(int argc, VALUE *argv, VALUE io)
 	    tv.tv_sec = optp->vtime / 10;
 	    tv.tv_usec = (optp->vtime % 10) * 100000;
 	}
-	if (optp->vmin) {
+	if (optp->vmin != 1) {
 	    rb_warning("min option ignored");
 	}
     }
