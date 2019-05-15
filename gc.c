@@ -7276,6 +7276,10 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
         case T_ZOMBIE:
             return FALSE;
             break;
+        case T_SYMBOL:
+            if (RB_STATIC_SYM_P(obj)) {
+                return FALSE;
+            }
         case T_STRING:
         case T_OBJECT:
         case T_FLOAT:
@@ -7286,7 +7290,6 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
         case T_MODULE:
         case T_REGEXP:
         case T_DATA:
-        case T_SYMBOL:
         case T_MATCH:
         case T_STRUCT:
         case T_HASH:
