@@ -8239,12 +8239,12 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
 
     if (!NIL_P(opt)) {
 
-	if (!keyword_ids[0]) {
-	    keyword_ids[0] = rb_intern("toward");
-	    keyword_ids[1] = rb_intern("double_heap");
-	}
+        if (!keyword_ids[0]) {
+            keyword_ids[0] = rb_intern("toward");
+            keyword_ids[1] = rb_intern("double_heap");
+        }
 
-	rb_get_kwargs(opt, keyword_ids, 0, 2, kwvals);
+        rb_get_kwargs(opt, keyword_ids, 0, 2, kwvals);
         if (rb_intern("empty") == rb_sym2id(kwvals[0])) {
             comparator = compare_free_slots;
         }
