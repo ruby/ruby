@@ -184,8 +184,8 @@ module Reline
     raise TypeError unless val.respond_to?(:getc) or val.nil?
     if val.respond_to?(:getc)
       Reline::GeneralIO.input = val
-      remove_const('IO') if const_defined?('IO')
-      const_set('IO', Reline::GeneralIO)
+      remove_const('IOGate') if const_defined?('IOGate')
+      const_set('IOGate', Reline::GeneralIO)
     end
   end
 
@@ -214,7 +214,7 @@ module Reline
   end
 
   def self.get_screen_size
-    Reline::IO.get_screen_size
+    Reline::IOGate.get_screen_size
   end
 
   def retrieve_completion_block(line, byte_pointer)
@@ -264,7 +264,7 @@ module Reline
 
   def inner_readline(prompt, add_hist, multiline, &confirm_multiline_termination)
     @@config.read
-    otio = Reline::IO.prep
+    otio = Reline::IOGate.prep
 
     may_req_ambiguous_char_width
     @@line_editor.reset(prompt)
@@ -306,7 +306,7 @@ module Reline
     key_stroke = Reline::KeyStroke.new(config)
     begin
       loop do
-        c = Reline::IO.getc
+        c = Reline::IOGate.getc
         key_stroke.input_to!(c)&.then { |inputs|
           inputs.each { |c|
             @@line_editor.input_key(c)
@@ -315,23 +315,23 @@ module Reline
         }
         break if @@line_editor.finished?
       end
-      Reline::IO.move_cursor_column(0)
+      Reline::IOGate.move_cursor_column(0)
     rescue StandardError => e
-      Reline::IO.deprep(otio)
+      Reline::IOGate.deprep(otio)
       raise e
     end
 
-    Reline::IO.deprep(otio)
+    Reline::IOGate.deprep(otio)
   end
 
   def may_req_ambiguous_char_width
-    @@ambiguous_width = 2 if Reline::IO == Reline::GeneralIO or STDOUT.is_a?(File)
+    @@ambiguous_width = 2 if Reline::IOGate == Reline::GeneralIO or STDOUT.is_a?(File)
     return if @@ambiguous_width
-    Reline::IO.move_cursor_column(0)
+    Reline::IOGate.move_cursor_column(0)
     print "\u{25bd}"
-    @@ambiguous_width = Reline::IO.cursor_pos.x
-    Reline::IO.move_cursor_column(0)
-    Reline::IO.erase_after_cursor
+    @@ambiguous_width = Reline::IOGate.cursor_pos.x
+    Reline::IOGate.move_cursor_column(0)
+    Reline::IOGate.erase_after_cursor
   end
 
   def self.ambiguous_width
@@ -341,9 +341,9 @@ end
 
 if Reline::IS_WINDOWS
   require 'reline/windows'
-  Reline::IO = Reline::Windows
+  Reline::IOGate = Reline::Windows
 else
   require 'reline/ansi'
-  Reline::IO = Reline::ANSI
+  Reline::IOGate = Reline::ANSI
 end
 require 'reline/general_io'

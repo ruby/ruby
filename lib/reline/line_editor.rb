@@ -172,18 +172,18 @@ class Reline::LineEditor
 
   private def scroll_down(val)
     if val <= @rest_height
-      Reline::IO.move_cursor_down(val)
+      Reline::IOGate.move_cursor_down(val)
       @rest_height -= val
     else
-      Reline::IO.move_cursor_down(@rest_height)
-      Reline::IO.scroll_down(val - @rest_height)
+      Reline::IOGate.move_cursor_down(@rest_height)
+      Reline::IOGate.scroll_down(val - @rest_height)
       @rest_height = 0
     end
   end
 
   private def move_cursor_up(val)
     if val > 0
-      Reline::IO.move_cursor_up(val)
+      Reline::IOGate.move_cursor_up(val)
       @rest_height += val
     elsif val < 0
       move_cursor_down(-val)
@@ -192,7 +192,7 @@ class Reline::LineEditor
 
   private def move_cursor_down(val)
     if val > 0
-      Reline::IO.move_cursor_down(val)
+      Reline::IOGate.move_cursor_down(val)
       @rest_height -= val
       @rest_height = 0 if @rest_height < 0
     elsif val < 0
@@ -224,8 +224,8 @@ class Reline::LineEditor
   end
 
   def rerender # TODO: support physical and logical lines
-    @rest_height ||= (Reline::IO.get_screen_size.first - 1) - Reline::IO.cursor_pos.y
-    @screen_size ||= Reline::IO.get_screen_size
+    @rest_height ||= (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
+    @screen_size ||= Reline::IOGate.get_screen_size
     if @menu_info
       @output.puts
       @menu_info.list.each do |item|
@@ -245,7 +245,7 @@ class Reline::LineEditor
       prompt_width = @prompt_width
     end
     if @cleared
-      Reline::IO.clear_screen
+      Reline::IOGate.clear_screen
       @cleared = false
       back = 0
       @buffer_of_lines.each_with_index do |line, index|
@@ -258,7 +258,7 @@ class Reline::LineEditor
       end
       move_cursor_up(back)
       move_cursor_down(@first_line_started_from + @started_from)
-      Reline::IO.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
+      Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       return
     end
     # FIXME: end of logical line sometimes breaks
@@ -302,7 +302,7 @@ class Reline::LineEditor
       @previous_line_index = nil
     elsif @rerender_all
       move_cursor_up(@first_line_started_from + @started_from)
-      Reline::IO.move_cursor_column(0)
+      Reline::IOGate.move_cursor_column(0)
       back = 0
       @buffer_of_lines.each do |line|
         width = prompt_width + calculate_width(line)
@@ -314,10 +314,10 @@ class Reline::LineEditor
         move_cursor_up(back)
       elsif back < @highest_in_all
         scroll_down(back)
-        Reline::IO.erase_after_cursor
+        Reline::IOGate.erase_after_cursor
         (@highest_in_all - back).times do
           scroll_down(1)
-          Reline::IO.erase_after_cursor
+          Reline::IOGate.erase_after_cursor
         end
         move_cursor_up(@highest_in_all)
       end
@@ -344,8 +344,8 @@ class Reline::LineEditor
     render_partial(prompt, prompt_width, @line) if !@is_multiline or !finished?
     if @is_multiline and finished?
       scroll_down(1) unless @buffer_of_lines.last.empty?
-      Reline::IO.move_cursor_column(0)
-      Reline::IO.erase_after_cursor
+      Reline::IOGate.move_cursor_column(0)
+      Reline::IOGate.erase_after_cursor
     end
   end
 
@@ -364,13 +364,13 @@ class Reline::LineEditor
       @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
     end
     visual_lines.each_with_index do |line, index|
-      Reline::IO.move_cursor_column(0)
+      Reline::IOGate.move_cursor_column(0)
       escaped_print line
       if @first_prompt
         @first_prompt = false
         @pre_input_hook&.call
       end
-      Reline::IO.erase_after_cursor
+      Reline::IOGate.erase_after_cursor
       move_cursor_down(1) if index < (visual_lines.size - 1)
     end
     if with_control
@@ -378,7 +378,7 @@ class Reline::LineEditor
         @output.puts
       else
         move_cursor_up((visual_lines.size - 1) - @started_from)
-        Reline::IO.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
+        Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       end
     end
     visual_lines.size
