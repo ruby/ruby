@@ -111,7 +111,7 @@ static VALUE rb_cLazy;
 static ID id_rewind, id_new, id_to_enum;
 static ID id_next, id_result, id_receiver, id_arguments, id_memo, id_method, id_force;
 static ID id_begin, id_end, id_step, id_exclude_end, id_to_proc;
-static ID id_cycle, id_yield;
+static VALUE sym_each, sym_cycle, sym_yield;
 
 #define id_call idCall
 #define id_each idEach
@@ -312,7 +312,7 @@ proc_entry_ptr(VALUE proc_entry)
 static VALUE
 obj_to_enum(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE enumerator, meth = ID2SYM(id_each);
+    VALUE enumerator, meth = sym_each;
 
     if (argc > 0) {
 	--argc;
@@ -404,7 +404,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
 static VALUE
 enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE recv, meth = ID2SYM(id_each);
+    VALUE recv, meth = sym_each;
     VALUE size = Qnil;
 
     if (rb_block_given_p()) {
@@ -1303,7 +1303,7 @@ yielder_yield_push(VALUE obj, VALUE arg)
 static VALUE
 yielder_to_proc(VALUE obj)
 {
-    VALUE method = rb_obj_method(obj, ID2SYM(id_yield));
+    VALUE method = rb_obj_method(obj, sym_yield);
 
     return rb_funcall(method, id_to_proc, 0);
 }
@@ -1679,7 +1679,7 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
     }
     generator = generator_allocate(rb_cGenerator);
     rb_block_call(generator, id_initialize, 0, 0, lazy_init_block_i, obj);
-    enumerator_init(self, generator, ID2SYM(id_each), 0, 0, 0, size);
+    enumerator_init(self, generator, sym_each, 0, 0, 0, size);
     rb_ivar_set(self, id_receiver, obj);
 
     return self;
@@ -1794,7 +1794,7 @@ lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
 static VALUE
 enumerable_lazy(VALUE obj)
 {
-    VALUE result = lazy_to_enum_i(obj, ID2SYM(id_each), 0, 0, lazyenum_size);
+    VALUE result = lazy_to_enum_i(obj, sym_each, 0, 0, lazyenum_size);
     /* Qfalse indicates that the Enumerator::Lazy has no method name */
     rb_ivar_set(result, id_method, Qfalse);
     return result;
@@ -1833,7 +1833,7 @@ lazy_to_enum_i(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator
 static VALUE
 lazy_to_enum(int argc, VALUE *argv, VALUE self)
 {
-    VALUE lazy, meth = ID2SYM(id_each);
+    VALUE lazy, meth = sym_each;
 
     if (argc > 0) {
 	--argc;
@@ -2308,7 +2308,7 @@ lazy_take(VALUE obj, VALUE n)
     }
 
     if (len == 0) {
-       argv[0] = ID2SYM(id_cycle);
+       argv[0] = sym_cycle;
        argv[1] = INT2NUM(0);
        argc = 2;
     }
@@ -2397,7 +2397,7 @@ lazy_drop(VALUE obj, VALUE n)
 {
     long len = NUM2LONG(n);
     VALUE argv[2];
-    argv[0] = ID2SYM(id_each);
+    argv[0] = sym_each;
     argv[1] = n;
 
     if (len < 0) {
@@ -3650,8 +3650,9 @@ Init_Enumerator(void)
     id_step = rb_intern("step");
     id_exclude_end = rb_intern("exclude_end");
     id_to_proc = rb_intern("to_proc");
-    id_cycle = rb_intern("cycle");
-    id_yield = rb_intern("yield");
+    sym_each = ID2SYM(id_each);
+    sym_cycle = ID2SYM(rb_intern("cycle"));
+    sym_yield = ID2SYM(rb_intern("yield"));
 
     InitVM(Enumerator);
 }
