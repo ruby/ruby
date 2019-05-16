@@ -8080,7 +8080,8 @@ gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
     return 0;
 }
 
-extern rb_symbols_t global_symbols;
+extern rb_symbols_t ruby_global_symbols;
+#define global_symbols ruby_global_symbols
 
 static void
 gc_update_references(rb_objspace_t * objspace)
