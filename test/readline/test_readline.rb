@@ -405,7 +405,9 @@ module BasetestReadline
           line = Readline.readline("> ")
           assert_equal("hello world", line)
         end
-        if !defined?(Reline) or Readline != Reline # Reline's rendering logic is tricky
+        # Readline 4.3 doesn't include inserted text or input
+        # Reline's rendering logic is tricky
+        if Readline::VERSION != '4.3' and (!defined?(Reline) or Readline != Reline)
           assert_equal("> hello world\n", stdout.read)
         end
         stdout.close
