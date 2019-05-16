@@ -99,15 +99,15 @@ mjit_gc_start_hook(void)
 // Send a signal to workers to continue iseq compilations.  It is
 // called at the end of GC.
 void
-mjit_gc_finish_hook(void)
+mjit_gc_exit_hook(void)
 {
     if (!mjit_enabled)
         return;
-    CRITICAL_SECTION_START(4, "mjit_gc_finish_hook");
+    CRITICAL_SECTION_START(4, "mjit_gc_exit_hook");
     in_gc = false;
     verbose(4, "Sending wakeup signal to workers after GC");
     rb_native_cond_broadcast(&mjit_gc_wakeup);
-    CRITICAL_SECTION_FINISH(4, "mjit_gc_finish_hook");
+    CRITICAL_SECTION_FINISH(4, "mjit_gc_exit_hook");
 }
 
 // Deal with ISeq movement from compactor
