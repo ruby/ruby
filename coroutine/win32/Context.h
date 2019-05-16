@@ -17,7 +17,7 @@ extern "C" {
 #define COROUTINE __declspec(noreturn) void __fastcall
 
 /* This doesn't include thread information block */
-const size_t COROUTINE_REGISTERS = 4;
+enum {COROUTINE_REGISTERS = 4};
 
 typedef struct
 {

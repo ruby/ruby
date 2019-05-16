@@ -16,7 +16,7 @@ extern "C" {
 
 #define COROUTINE __declspec(noreturn) void
 
-const size_t COROUTINE_REGISTERS = 8;
+enum {COROUTINE_REGISTERS = 8};
 const size_t COROUTINE_XMM_REGISTERS = 1+10*2;
 
 typedef struct

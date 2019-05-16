@@ -16,7 +16,7 @@ extern "C" {
 
 #define COROUTINE __attribute__((noreturn, fastcall)) void
 
-const size_t COROUTINE_REGISTERS = 4;
+enum {COROUTINE_REGISTERS = 4};
 
 typedef struct
 {
