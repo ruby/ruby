@@ -8938,6 +8938,15 @@ rb_gc_enable(void)
     return old ? Qtrue : Qfalse;
 }
 
+VALUE
+rb_gc_disable_no_rest(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    int old = dont_gc;
+    dont_gc = TRUE;
+    return old ? Qtrue : Qfalse;
+}
+
 /*
  *  call-seq:
  *     GC.disable    -> true or false
@@ -8954,12 +8963,8 @@ VALUE
 rb_gc_disable(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    int old = dont_gc;
-
     gc_rest(objspace);
-
-    dont_gc = TRUE;
-    return old ? Qtrue : Qfalse;
+    return rb_gc_disable_no_rest();
 }
 
 static int
