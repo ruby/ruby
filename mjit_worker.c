@@ -1052,7 +1052,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     // print #include of MJIT header, etc.
     compile_prelude(f);
 
-    // wait until mjit_gc_finish_hook is called
+    // wait until mjit_gc_exit_hook is called
     CRITICAL_SECTION_START(3, "before mjit_compile to wait GC finish");
     while (in_gc) {
         verbose(3, "Waiting wakeup from GC");

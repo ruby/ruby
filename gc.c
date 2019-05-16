@@ -7140,7 +7140,7 @@ gc_exit(rb_objspace_t *objspace, const char *event)
     gc_report(1, objspace, "gc_exit: %s [%s]\n", event, gc_current_status(objspace));
     during_gc = FALSE;
 
-    mjit_gc_finish_hook();
+    mjit_gc_exit_hook();
 }
 
 static void *
