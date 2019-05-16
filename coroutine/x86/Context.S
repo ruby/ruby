@@ -5,14 +5,13 @@
 ##  Copyright, 2018, by Samuel Williams. All rights reserved.
 ##
 
+#define TOKEN_PASTE(x,y) x##y
+#define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
+
 .text
 
-.globl coroutine_transfer
-coroutine_transfer:
-
-# For older linkers
-.globl _coroutine_transfer
-_coroutine_transfer:
+.globl PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
+PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 
 	# Save caller registers
 	pushl %ebp
