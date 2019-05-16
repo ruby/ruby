@@ -7452,7 +7452,8 @@ init_cursors(rb_objspace_t *objspace, struct heap_cursor *free, struct heap_curs
     scan->objspace = objspace;
 }
 
-int count_pinned(struct heap_page *page)
+static int
+count_pinned(struct heap_page *page)
 {
     RVALUE *pstart = page->start;
     RVALUE *pend = pstart + page->total_slots;
@@ -7476,14 +7477,16 @@ int count_pinned(struct heap_page *page)
     return pinned;
 }
 
-int compare_pinned(const void *left, const void *right, void *dummy)
+static int
+compare_pinned(const void *left, const void *right, void *dummy)
 {
     int left_count = count_pinned(*(struct heap_page * const *)left);
     int right_count = count_pinned(*(struct heap_page * const *)right);
     return right_count - left_count;
 }
 
-int compare_free_slots(const void *left, const void *right, void *dummy)
+static int
+compare_free_slots(const void *left, const void *right, void *dummy)
 {
     struct heap_page *left_page;
     struct heap_page *right_page;
