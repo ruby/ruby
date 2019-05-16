@@ -640,3 +640,7 @@ mjit_build_dir.$(SOEXT): $(MJIT_MIN_HEADER) $(srcdir)/ruby-runner.c ruby-runner.
 	$(Q) $(DLDSHARED) $(MJIT_DLDFLAGS) $(ARCH_FLAG) $(CFLAGS) $(CPPFLAGS) \
 		-DMAKE_MJIT_BUILD_DIR=1 -DMJIT_MIN_HEADER='"$(MJIT_MIN_HEADER)"' \
 		$(OUTFLAG)$@ $(srcdir)/ruby-runner.c
+
+# yes-test-basic: leaked-globals
+leaked-globals: $(COMMONOBJS) prog $(srcdir)/tool/leaked-globals PHONY
+	$(Q) $(XRUBY) $(srcdir)/tool/leaked-globals NM=$(NM) SYMBOL_PREFIX=$(SYMBOL_PREFIX) $(srcdir)/configure.ac $(COMMONOBJS)
