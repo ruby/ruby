@@ -2898,7 +2898,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     util_setup_validate
 
     FileUtils.mkdir_p File.join(@tempdir, 'bin')
-    File.open File.join(@tempdir, 'bin', 'exec'), 'w'
+    File.write File.join(@tempdir, 'bin', 'exec'), ''
     FileUtils.mkdir_p File.join(@tempdir, 'exec')
 
     use_ui @ui do
