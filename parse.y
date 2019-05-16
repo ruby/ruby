@@ -622,8 +622,13 @@ struct rb_strterm_heredoc_struct {
 # define HERETERM_LENGTH_MAX UINT_MAX
 #endif
     ;
+#if HERETERM_LENGTH_BITS < SIZEOF_INT * CHAR_BIT
     unsigned quote: 1;
+    unsigned func: 8;
+#else
+    uint8_t quote;
     uint8_t func;
+#endif
 };
 STATIC_ASSERT(rb_strterm_heredoc_t, sizeof(rb_strterm_heredoc_t) <= 4 * SIZEOF_VALUE);
 
