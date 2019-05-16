@@ -730,7 +730,7 @@ transient_heap_evacuate(void *dmy)
         if (TRANSIENT_HEAP_DEBUG >= 1) fprintf(stderr, "!! transient_heap_evacuate: skip while transient_heap_marking\n");
     }
     else {
-        VALUE gc_disabled = rb_gc_disable();
+        VALUE gc_disabled = rb_gc_disable_no_rest();
         struct transient_heap_block* block;
 
         if (TRANSIENT_HEAP_DEBUG >= 1) {

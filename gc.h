@@ -94,6 +94,8 @@ const char *rb_obj_info(VALUE obj);
 const char *rb_raw_obj_info(char *buff, const int buff_size, VALUE obj);
 void rb_obj_info_dump(VALUE obj);
 
+VALUE rb_gc_disable_no_rest(void);
+
 struct rb_thread_struct;
 
 RUBY_SYMBOL_EXPORT_BEGIN
