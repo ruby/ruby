@@ -419,7 +419,7 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 
 .$(ASMEXT).@OBJEXT@:
 	@$(ECHO) assembling $<
-	$(Q) $(CC) $(ASFLAGS) -o $@ -c $<
+	$(Q) $(CC) $(ASFLAGS) -DSYMBOL_PREFIX=$(SYMBOL_PREFIX) -o $@ -c $<
 
 .c.$(ASMEXT):
 	@$(ECHO) translating $<
