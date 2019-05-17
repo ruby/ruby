@@ -19,7 +19,7 @@ enable_shared = $(ENABLE_SHARED:no=)
 
 UNICODE_VERSION = 12.1.0
 UNICODE_EMOJI_VERSION = 12.0
-UNICODE_BETA = YES
+UNICODE_BETA = NO
 
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files should be updated completely on every update ('make up',...).
