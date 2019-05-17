@@ -1592,8 +1592,8 @@ range_infinite(VALUE range)
  *  call-seq:
  *     rng.finite?  ->  true or false
  *
- *  Returns <code>false</code> if +beginless?+ or +endless?+ of
- *  the range, <code>true</code> otherwise.
+ *  Returns <code>true</code> if +infinite?+ is <code>false</code> of
+ *  the range, <code>false</code> otherwise.
  *     ("a"..).finite?      #=> false
  *     (.."z").finite?      #=> false
  *     ("a".."z").finite?   #=> true
