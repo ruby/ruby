@@ -2,6 +2,8 @@
 require 'test/unit'
 require 'fiddle'
 
+return
+
 class TestGCCompact < Test::Unit::TestCase
   def memory_location(obj)
     (Fiddle.dlwrap(obj) >> 1)
