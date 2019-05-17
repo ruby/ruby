@@ -180,12 +180,19 @@ module Reline
     @@line_editor&.delete_text(start, length)
   end
 
+  private_class_method def self.test_mode
+    remove_const('IOGate') if const_defined?('IOGate')
+    const_set('IOGate', Reline::GeneralIO)
+  end
+
   def self.input=(val)
     raise TypeError unless val.respond_to?(:getc) or val.nil?
     if val.respond_to?(:getc)
-      Reline::GeneralIO.input = val
-      remove_const('IOGate') if const_defined?('IOGate')
-      const_set('IOGate', Reline::GeneralIO)
+      if defined?(Reline::ANSI) and IOGate == Reline::ANSI
+        Reline::ANSI.input = val
+      elsif IOGate == Reline::GeneralIO
+        Reline::GeneralIO.input = val
+      end
     end
   end
 
@@ -193,6 +200,9 @@ module Reline
   def self.output=(val)
     raise TypeError unless val.respond_to?(:write) or val.nil?
     @@output = val
+    if defined?(Reline::ANSI) and IOGate == Reline::ANSI
+      Reline::ANSI.output = val
+    end
   end
 
   def self.vi_editing_mode

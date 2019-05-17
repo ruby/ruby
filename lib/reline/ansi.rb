@@ -1,23 +1,33 @@
 class Reline::ANSI
+  @@input = STDIN
+  def self.input=(val)
+    @@input = val
+  end
+
+  @@output = STDOUT
+  def self.output=(val)
+    @@output = val
+  end
+
   def self.getc
     c = nil
     loop do
-      result = select([STDIN], [], [], 0.1)
+      result = select([@@input], [], [], 0.1)
       next if result.nil?
-      c = STDIN.read(1)
+      c = @@input.read(1)
       break
     end
     c&.ord
   end
 
   def self.get_screen_size
-    STDIN.winsize
+    @@input.winsize
   rescue Errno::ENOTTY
     [24, 80]
   end
 
   def self.set_screen_size(rows, columns)
-    STDIN.winsize = [rows, columns]
+    @@input.winsize = [rows, columns]
     self
   rescue Errno::ENOTTY
     self
@@ -26,9 +36,9 @@ class Reline::ANSI
   def self.cursor_pos
     begin
       res = ''
-      STDIN.raw do |stdin|
-        STDOUT << "\e[6n"
-        STDOUT.flush
+      @@input.raw do |stdin|
+        @@output << "\e[6n"
+        @@output.flush
         while (c = stdin.getc) != 'R'
           res << c if c
         end
@@ -37,7 +47,7 @@ class Reline::ANSI
       column = m[:column].to_i - 1
       row = m[:row].to_i - 1
     rescue Errno::ENOTTY
-      buf = STDOUT.pread(STDOUT.pos, 0)
+      buf = @@output.pread(@@output.pos, 0)
       row = buf.count("\n")
       column = buf.rindex("\n") ? (buf.size - buf.rindex("\n")) - 1 : 0
     end
