@@ -1749,6 +1749,15 @@ rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 #define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(size_t)(n))
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(size_t)(n))
 #define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(size_t)(n))
+#ifdef __GLIBC__
+static inline void *
+ruby_nonempty_memcpy(void *dest, const void *src, size_t n)
+{
+    /* if nothing to be copied, src may be NULL */
+    return (n ? memcpy(dest, src, n) : dest);
+}
+#define memcpy(p1,p2,n) ruby_nonempty_memcpy(p1, p2, n)
+#endif
 
 void rb_obj_infect(VALUE victim, VALUE carrier);
 
