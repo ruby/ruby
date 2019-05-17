@@ -60,6 +60,21 @@ class TestLogDevice < Test::Unit::TestCase
     ensure
       logdev.close
     end
+    # logfile object with path
+    tempfile = Tempfile.new("logger")
+    tempfile.sync = true
+    logdev = d(tempfile)
+    begin
+      logdev.write('world')
+      logfile = File.read(tempfile.path)
+      assert_equal(1, logfile.split(/\n/).size)
+      assert_match(/^world$/, logfile)
+      assert_equal(tempfile.path, logdev.filename)
+    ensure
+      logdev.close
+      File.unlink(tempfile)
+      tempfile.close(true)
+    end
   end
 
   def test_write
