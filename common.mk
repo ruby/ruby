@@ -1217,10 +1217,15 @@ up::
 up::
 	-$(Q)$(MAKE) $(mflags) Q=$(Q) after-update
 
+yes::
+no::
+
 after-update:: extract-extlibs
 
 update-remote:: update-src update-download
-update-download:: update-unicode update-gems download-extlibs
+update-download:: $(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
+update-download:: update-gems
+update-download:: download-extlibs
 
 update-mspec:
 update-rubyspec:
