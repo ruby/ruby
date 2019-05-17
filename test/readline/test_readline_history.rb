@@ -2,7 +2,7 @@
 require_relative "helper"
 require "test/unit"
 
-module Readline::BasetestHistory
+module BasetestReadlineHistory
   def setup
     Readline::HISTORY.clear
   end
@@ -252,8 +252,8 @@ module Readline::BasetestHistory
   end
 end
 
-class Readline::TestHistory < Test::Unit::TestCase
-  include Readline::BasetestHistory
+class TestReadlineHistory < Test::Unit::TestCase
+  include BasetestReadlineHistory
 
   def setup
     use_ext_readline
@@ -268,8 +268,8 @@ end if defined?(::ReadlineSo) && defined?(::ReadlineSo::HISTORY) &&
    end
    )
 
-class Reline::TestHistory < Test::Unit::TestCase
-  include Readline::BasetestHistory
+class TestRelineAsReadlineHistory < Test::Unit::TestCase
+  include BasetestReadlineHistory
 
   def setup
     use_lib_reline
