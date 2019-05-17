@@ -8252,6 +8252,8 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
     /* Ensure objects are pinned */
     rb_gc();
 
+    during_gc = TRUE;
+
     if (kwvals[1]) {
         /* Double heap size */
         heap_add_pages(objspace, heap_eden, heap_allocated_pages);
@@ -8262,6 +8264,8 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
     heap_eden->freelist = NULL;
     gc_update_references(objspace);
     gc_check_references_for_moved(mod);
+
+    during_gc = FALSE;
 
     rb_clear_method_cache_by_class(rb_cObject);
     rb_clear_constant_cache();
