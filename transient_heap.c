@@ -816,7 +816,7 @@ transient_heap_block_update_refs(struct transient_heap* theap, struct transient_
         void *poisoned = __asan_region_is_poisoned((void *)header->obj, SIZEOF_VALUE);
         unpoison_object(header->obj, false);
 
-        header->obj = rb_gc_new_location(header->obj);
+        header->obj = rb_gc_location(header->obj);
 
         if (poisoned) {
             poison_object(header->obj);
@@ -848,7 +848,7 @@ rb_transient_heap_update_references(void)
 
     for (i=0; i<theap->promoted_objects_index; i++) {
         VALUE obj = theap->promoted_objects[i];
-        theap->promoted_objects[i] = rb_gc_new_location(obj);
+        theap->promoted_objects[i] = rb_gc_location(obj);
     }
 }
 

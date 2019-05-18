@@ -7625,11 +7625,11 @@ hash_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
     rb_objspace_t *objspace = (rb_objspace_t *)argp;
 
     if (gc_object_moved_p(objspace, (VALUE)*key)) {
-        *key = rb_gc_new_location((VALUE)*key);
+        *key = rb_gc_location((VALUE)*key);
     }
 
     if (gc_object_moved_p(objspace, (VALUE)*value)) {
-        *value = rb_gc_new_location((VALUE)*value);
+        *value = rb_gc_location((VALUE)*value);
     }
 
     return ST_CONTINUE;
@@ -7789,7 +7789,7 @@ check_id_table_move(ID id, VALUE value, void *data)
 /* Returns the new location of an object, if it moved.  Otherwise returns
  * the existing location. */
 VALUE
-rb_gc_new_location(VALUE value)
+rb_gc_location(VALUE value)
 {
 
     VALUE destination;
@@ -7825,7 +7825,7 @@ update_id_table(ID *key, VALUE * value, void *data, int existing)
     rb_objspace_t *objspace = (rb_objspace_t *)data;
 
     if (gc_object_moved_p(objspace, (VALUE)*value)) {
-        *value = rb_gc_new_location((VALUE)*value);
+        *value = rb_gc_location((VALUE)*value);
     }
 
     return ID_TABLE_CONTINUE;
@@ -7846,11 +7846,11 @@ update_const_table(VALUE value, void *data)
     rb_objspace_t * objspace = (rb_objspace_t *)data;
 
     if (gc_object_moved_p(objspace, ce->value)) {
-        ce->value = rb_gc_new_location(ce->value);
+        ce->value = rb_gc_location(ce->value);
     }
 
     if (gc_object_moved_p(objspace, ce->file)) {
-        ce->file = rb_gc_new_location(ce->file);
+        ce->file = rb_gc_location(ce->file);
     }
 
     return ID_TABLE_CONTINUE;
@@ -8096,8 +8096,8 @@ gc_update_references(rb_objspace_t * objspace)
     rb_objspace_each_objects_without_setup(gc_ref_update, objspace);
     rb_vm_update_references(vm);
     rb_transient_heap_update_references();
-    global_symbols.ids = rb_gc_new_location(global_symbols.ids);
-    global_symbols.dsymbol_fstr_hash = rb_gc_new_location(global_symbols.dsymbol_fstr_hash);
+    global_symbols.ids = rb_gc_location(global_symbols.ids);
+    global_symbols.dsymbol_fstr_hash = rb_gc_location(global_symbols.dsymbol_fstr_hash);
     gc_update_table_refs(objspace, global_symbols.str_sym);
     gc_update_table_refs(objspace, finalizer_table);
 }
@@ -8157,7 +8157,7 @@ static void
 root_obj_check_moved_i(const char *category, VALUE obj, void *data)
 {
     if (gc_object_moved_p(&rb_objspace, obj)) {
-        rb_bug("ROOT %s points to MOVED: %p -> %s\n", category, (void *)obj, obj_info(rb_gc_new_location(obj)));
+        rb_bug("ROOT %s points to MOVED: %p -> %s\n", category, (void *)obj, obj_info(rb_gc_location(obj)));
     }
 }
 
@@ -8166,7 +8166,7 @@ reachable_object_check_moved_i(VALUE ref, void *data)
 {
     VALUE parent = (VALUE)data;
     if (gc_object_moved_p(&rb_objspace, ref)) {
-        rb_bug("Object %s points to MOVED: %p -> %s\n", obj_info(parent), (void *)ref, obj_info(rb_gc_new_location(ref)));
+        rb_bug("Object %s points to MOVED: %p -> %s\n", obj_info(parent), (void *)ref, obj_info(rb_gc_location(ref)));
     }
 }
 
@@ -11126,7 +11126,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	    break;
 	  }
           case T_MOVED: {
-            snprintf(buff, buff_size, "-> %p", (void*)rb_gc_new_location(obj));
+            snprintf(buff, buff_size, "-> %p", (void*)rb_gc_location(obj));
             break;
           }
           case T_HASH: {

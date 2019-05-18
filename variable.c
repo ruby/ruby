@@ -2030,7 +2030,7 @@ static void
 autoload_i_compact(void *ptr)
 {
     struct autoload_data_i *p = ptr;
-    p->feature = rb_gc_new_location(p->feature);
+    p->feature = rb_gc_location(p->feature);
 }
 
 static void
