@@ -372,6 +372,7 @@ before_script:
   - "> config.status"
   - "> .rbconfig.time"
   - sed -f tool/prereq.status Makefile.in common.mk > Makefile
+  - make touch-unicode-files
   - make -s $JOBS update-download
   - make -s $JOBS srcs
   - rm -f config.status Makefile rbconfig.rb .rbconfig.time
