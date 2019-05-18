@@ -278,4 +278,16 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:LIT, body.type)
     assert_equal([1], body.children)
   end
+
+  def test_while
+    node = RubyVM::AbstractSyntaxTree.parse('1 while 1')
+    _, _, body = *node.children
+    assert_equal(:WHILE, body.type)
+    type1 = body.children[2]
+    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end while 1')
+    _, _, body = *node.children
+    assert_equal(:WHILE, body.type)
+    type2 = body.children[2]
+    assert_not_equal(type1, type2)
+  end
 end

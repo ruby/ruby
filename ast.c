@@ -374,7 +374,8 @@ node_children(rb_ast_t *ast, NODE *node)
         goto loop;
       case NODE_UNTIL:
       loop:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_cond, node->nd_body);
+        return rb_ary_push(rb_ary_new_from_node_args(ast, 2, node->nd_cond, node->nd_body),
+                           (node->nd_state ? Qtrue : Qfalse));
       case NODE_ITER:
       case NODE_FOR:
         return rb_ary_new_from_node_args(ast, 2, node->nd_iter, node->nd_body);
