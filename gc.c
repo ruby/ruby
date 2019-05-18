@@ -7260,6 +7260,7 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
             if (DYNAMIC_SYM_P(obj) && (RSYMBOL(obj)->id & ~ID_SCOPE_MASK)) {
                 return FALSE;
             }
+            /* fall through */
         case T_STRING:
         case T_OBJECT:
         case T_FLOAT:
