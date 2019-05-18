@@ -214,7 +214,7 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
 static VALUE
 update_each_insn_value(void *ctx, VALUE obj)
 {
-    return rb_gc_new_location(obj);
+    return rb_gc_location(obj);
 }
 
 void
@@ -223,16 +223,16 @@ rb_iseq_update_references(rb_iseq_t *iseq)
     if (iseq->body) {
         struct rb_iseq_constant_body *body = iseq->body;
 
-        body->variable.coverage = rb_gc_new_location(body->variable.coverage);
-        body->variable.pc2branchindex = rb_gc_new_location(body->variable.pc2branchindex);
-        body->location.label = rb_gc_new_location(body->location.label);
-        body->location.base_label = rb_gc_new_location(body->location.base_label);
-        body->location.pathobj = rb_gc_new_location(body->location.pathobj);
+        body->variable.coverage = rb_gc_location(body->variable.coverage);
+        body->variable.pc2branchindex = rb_gc_location(body->variable.pc2branchindex);
+        body->location.label = rb_gc_location(body->location.label);
+        body->location.base_label = rb_gc_location(body->location.base_label);
+        body->location.pathobj = rb_gc_location(body->location.pathobj);
         if (body->local_iseq) {
-            body->local_iseq = (struct rb_iseq_struct *)rb_gc_new_location((VALUE)body->local_iseq);
+            body->local_iseq = (struct rb_iseq_struct *)rb_gc_location((VALUE)body->local_iseq);
         }
         if (body->parent_iseq) {
-            body->parent_iseq = (struct rb_iseq_struct *)rb_gc_new_location((VALUE)body->parent_iseq);
+            body->parent_iseq = (struct rb_iseq_struct *)rb_gc_location((VALUE)body->parent_iseq);
         }
         if (FL_TEST(iseq, ISEQ_MARKABLE_ISEQ)) {
             rb_iseq_each_value(iseq, update_each_insn_value, NULL);
@@ -246,7 +246,7 @@ rb_iseq_update_references(rb_iseq_t *iseq)
             for (j = 0; i < body->param.keyword->num; i++, j++) {
                 VALUE obj = body->param.keyword->default_values[j];
                 if (obj != Qundef) {
-                    body->param.keyword->default_values[j] = rb_gc_new_location(obj);
+                    body->param.keyword->default_values[j] = rb_gc_location(obj);
                 }
             }
         }
@@ -258,7 +258,7 @@ rb_iseq_update_references(rb_iseq_t *iseq)
                 struct iseq_catch_table_entry *entry;
                 entry = &table->entries[i];
                 if (entry->iseq) {
-                    entry->iseq = (rb_iseq_t *)rb_gc_new_location((VALUE)entry->iseq);
+                    entry->iseq = (rb_iseq_t *)rb_gc_location((VALUE)entry->iseq);
                 }
             }
         }
