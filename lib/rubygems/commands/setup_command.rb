@@ -385,6 +385,18 @@ By default, this RubyGems will install gem as:
 
     bundler_spec = Gem::Specification.load(default_spec_path)
 
+    # The base_dir value for a specification is inferred by walking up from the
+    # folder where the spec was `loaded_from`. In the case of default gems, we
+    # walk up two levels, because they live at `specifications/default/`, whereas
+    # in the case of regular gems we walk up just one level because they live at
+    # `specifications/`. However, in this case, the gem we are installing is
+    # misdetected as a regular gem, when it's a default gem in reality. This is
+    # because when there's a `:destdir`, the `loaded_from` path has changed and
+    # doesn't match `Gem.default_specifications_dir` which is the criteria to
+    # tag a gem as a default gem. So, in that case, write the correct
+    # `@base_dir` directly.
+    bundler_spec.instance_variable_set(:@base_dir, File.dirname(File.dirname(specs_dir)))
+
     # Remove gemspec that was same version of vendored bundler.
     normal_gemspec = File.join(Gem.default_dir, "specifications", "bundler-#{bundler_spec.version}.gemspec")
     if File.file? normal_gemspec
@@ -399,7 +411,6 @@ By default, this RubyGems will install gem as:
     end
 
     bundler_bin_dir = bundler_spec.bin_dir
-    bundler_bin_dir = File.join(options[:destdir], bundler_bin_dir) unless Gem.win_platform?
     mkdir_p bundler_bin_dir, :mode => 0755
     bundler_spec.executables.each do |e|
       cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_bin_dir, e)
