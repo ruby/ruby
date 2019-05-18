@@ -1595,21 +1595,21 @@ lazy_generator_init(VALUE enumerator, VALUE procs)
 
 /*
  * Document-class: Enumerator::Lazy
+ *
  * Enumerator::Lazy is a special type of Enumerator, that allows constructing
  * chains of operations without evaluating them immediately, and evaluating
  * values on as-needed basis. In order to do so it redefines most of Enumerable
  * methods so that they just construct another lazy enumerator.
  *
- * Enumerator::Lazy can be constructed from any Enumerable with Enumerable#lazy
- * method.
- *
+ * Enumerator::Lazy can be constructed from any Enumerable with the
+ * Enumerable#lazy method.
  *
  *    lazy = (1..Float::INFINITY).lazy.select(&:odd?).drop(10).take_while { |i| i < 30 }
  *    # => #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: 1..Infinity>:select>:drop(10)>:take_while>
  *
- * The real enumeration is performed when any of non-redefined Enumerable methods
- * is called, like Enumerable#first on Enumerable#to_a (the latter is aliased as
- * #force for more semantical code):
+ * The real enumeration is performed when any non-redefined Enumerable method
+ * is called, like Enumerable#first or Enumerable#to_a (the latter is aliased
+ * as #force for more semantic code):
  *
  *    lazy.first(2)
  *    #=> [21, 23]
@@ -1617,16 +1617,16 @@ lazy_generator_init(VALUE enumerator, VALUE procs)
  *    lazy.force
  *    #=> [21, 23, 25, 27, 29]
  *
- * Note that most of Enumerable methods that could be called with or without block,
- * on Enumerator::Lazy will always require block:
+ * Note that most Enumerable methods that could be called with or without
+ * a block, on Enumerator::Lazy will always require a block:
  *
  *    [1, 2, 3].map       #=> #<Enumerator: [1, 2, 3]:map>
  *    [1, 2, 3].lazy.map  # ArgumentError: tried to call lazy map without a block
  *
- * This class allows idiomatic calculations on long or infinite sequence, as well
+ * This class allows idiomatic calculations on long or infinite sequences, as well
  * as chaining of calculations without constructing intermediate arrays.
  *
- * Example of working with slowly calculated sequence:
+ * Example for working with a slowly calculated sequence:
  *
  *    require 'open-uri'
  *
@@ -1766,7 +1766,7 @@ lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
  * call-seq:
  *   e.lazy -> lazy_enumerator
  *
- * Returns an Enumerator::Lazy, which redefines most of Enumerable
+ * Returns an Enumerator::Lazy, which redefines most Enumerable
  * methods to postpone enumeration and enumerate values only on an
  * as-needed basis.
  *
@@ -2564,7 +2564,7 @@ lazy_super(int argc, VALUE *argv, VALUE lazy)
  *  call-seq:
  *     enum.lazy -> lazy_enumerator
  *
- *  Returns self
+ *  Returns self.
  */
 
 static VALUE
