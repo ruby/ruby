@@ -1053,6 +1053,20 @@ class TestHash < Test::Unit::TestCase
     assert_equal({}, {}.slice)
   end
 
+  def test_slice!
+    original = { a: 1, b: 2, c: 3, d: 4 }
+
+    assert_equal({ a: 1, b: 2 }, original.slice!(:a, :b, :x))
+    assert_equal({ c: 3, d: 4 }, original)
+  end
+
+  def test_slice_bang_nils
+    original = { a: nil, b: nil }
+
+    assert_equal({a: nil}, original.slice!(:a, :x))
+    assert_equal({b: nil}, original)
+  end
+
   def test_filter
     assert_equal({3=>4,5=>6}, @cls[1=>2,3=>4,5=>6].filter {|k, v| k + v >= 7 })
 

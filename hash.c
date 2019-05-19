@@ -2403,6 +2403,41 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
 }
 
 /*
+ *  call-seq:
+ *     hsh.slice!(*keys) -> new_hash
+ *
+ *  Removes and returns the key/value pairs matching the given keys.
+ *
+ *     h = {a: 100, b: 200, c: 300}
+ *     h.slice!(:a) # => {:a=>100}
+ *     h # => {:b=>200, :c=>300}
+ *     h.slice!(:b, :c, :d) # => {:b=>200, :c=>300}
+ *     h # => {}
+ */
+
+static VALUE
+rb_hash_slice_bang(int argc, VALUE *argv, VALUE hash)
+{
+  int i;
+  VALUE key, value, result;
+
+  if (argc == 0 || RHASH_EMPTY_P(hash)) {
+    return rb_hash_new();
+  }
+
+  result = rb_hash_new_with_size(argc);
+
+  for (i = 0; i < argc; i++) {
+    key = argv[i];
+    value = rb_hash_delete_entry(hash, key);
+    if (value != Qundef)
+      rb_hash_aset(result, key, value);
+  }
+
+  return result;
+}
+
+/*
  * call-seq:
  *   hsh.values_at(key, ...)   -> array
  *
@@ -6000,6 +6035,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "reject", rb_hash_reject, 0);
     rb_define_method(rb_cHash, "reject!", rb_hash_reject_bang, 0);
     rb_define_method(rb_cHash, "slice", rb_hash_slice, -1);
+    rb_define_method(rb_cHash, "slice!", rb_hash_slice_bang, -1);
     rb_define_method(rb_cHash, "clear", rb_hash_clear, 0);
     rb_define_method(rb_cHash, "invert", rb_hash_invert, 0);
     rb_define_method(rb_cHash, "update", rb_hash_update, -1);
