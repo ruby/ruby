@@ -1527,7 +1527,7 @@ r_cover_p(VALUE range, VALUE beg, VALUE end, VALUE val)
  *  call-seq:
  *     rng.beginless?  ->  true or false
  *
- *  Returns <code>true</code> if +begin+ is +nil+ or -Infinity of
+ *  Returns <code>true</code> if +begin+ is +nil+ of
  *  the range, <code>false</code> otherwise.
  *     (.."z").beginless?       #=> true
  *     ("a"..).beginless?       #=> false
@@ -1538,7 +1538,7 @@ static VALUE
 range_beginless(VALUE range)
 {
     VALUE b = RANGE_BEG(range);
-    if (NIL_P(b) || rb_equal(b, DBL2NUM(-HUGE_VAL))) {
+    if (NIL_P(b)) {
         return Qtrue;
     }
     return Qfalse;
@@ -1549,7 +1549,7 @@ range_beginless(VALUE range)
  *  call-seq:
  *     rng.endless?  ->  true or false
  *
- *  Returns <code>true</code> if +end+ is +nil+ or Infinity of
+ *  Returns <code>true</code> if +end+ is +nil+ of
  *  the range, <code>false</code> otherwise.
  *     ("a"..).endless?      #=> true
  *     (.."z").endless?      #=> false
@@ -1560,7 +1560,7 @@ static VALUE
 range_endless(VALUE range)
 {
     VALUE e = RANGE_END(range);
-    if (NIL_P(e) || rb_equal(e, DBL2NUM(HUGE_VAL))) {
+    if (NIL_P(e)) {
         return Qtrue;
     }
     return Qfalse;
