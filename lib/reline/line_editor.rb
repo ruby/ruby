@@ -206,10 +206,18 @@ class Reline::LineEditor
     new_byte_pointer = 0
     height = 1
     max_width = @screen_size.last
+    if @config.editing_mode_is?(:vi_command)
+      last_byte_size = Reline::Unicode.get_prev_mbchar_size(@line, @line.bytesize)
+      last_mbchar = @line.byteslice(@line.bytesize - last_byte_size, last_byte_size)
+      last_width = Reline::Unicode.get_mbchar_width(last_mbchar)
+      cursor_max = @cursor_max - last_width
+    else
+      cursor_max = @cursor_max
+    end
     @line.encode(Encoding::UTF_8).grapheme_clusters.each do |gc|
       mbchar_width = Reline::Unicode.get_mbchar_width(gc)
       now = new_cursor + mbchar_width
-      if now > @cursor_max or now > @cursor
+      if now > cursor_max or now > @cursor
         break
       end
       new_cursor += mbchar_width
