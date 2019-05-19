@@ -20,6 +20,7 @@ environment:
       vs: 140
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
   GEMS_FOR_TEST: "timezone tzinfo"
+  UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
 for:
 -
   matrix:
@@ -45,7 +46,7 @@ for:
     - echo>> Makefile BUILTIN_ENCOBJS=nul
     - type win32\Makefile.sub >> Makefile
     - nmake %mflags% touch-unicode-files
-    - nmake %mflags% up incs UNICODE_FILES=.
+    - nmake %mflags% %UPDATE_UNICODE% up incs
     - del Makefile
     - mkdir \usr\local\bin
     - mkdir \usr\local\include
@@ -108,7 +109,7 @@ for:
     - cd ..\build
     - sh ../ruby/configure --disable-install-doc --prefix=/. --build=%MINGW_CHOST% --host=%MINGW_CHOST% --target=%MINGW_CHOST%
     - mingw32-make %mflags% touch-unicode-files
-    - mingw32-make -j%JOBS% up incs UNICODE_FILES=.
+    - mingw32-make -j%JOBS% %UPDATE_UNICODE% up incs
     - mingw32-make -j%JOBS%
     - mingw32-make DESTDIR=../install install-nodoc
     - if not "%GEMS_FOR_TEST%" == "" ..\install\bin\gem install --no-document %GEMS_FOR_TEST%
