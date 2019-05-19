@@ -34,7 +34,11 @@ https://www.ruby-lang.org/en/downloads/
 
 ### Git
 
-The mirror of the Ruby source tree can be checked out with the following command:
+Ruby source tree is managed in a Git repository. Ruby Committers use it.
+
+    $ git clone https://git.ruby-lang.org/ruby.git
+
+Also, the mirror of the Ruby source tree can be checked out with the following command:
 
     $ git clone https://github.com/ruby/ruby.git
 
