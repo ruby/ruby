@@ -24,7 +24,12 @@ describe "Process.clock_getres" do
         # The clock should not be less accurate than reported (times should
         # not all be a multiple of the next precision up, assuming precisions
         # are multiples of ten.)
-        times.select { |t| t % (reported * 10) == 0 }.size.should_not == times.size
+
+        if name != :CLOCK_MONOTONIC_RAW
+          # On a Hyper-V Linux guest machine, CLOCK_MONOTONIC_RAW can violate
+          # this assertion. So skipping this test for CLOCK_MONOTONIC_RAW.
+          times.select { |t| t % (reported * 10) == 0 }.size.should_not == times.size
+        end
       end
     end
   end
