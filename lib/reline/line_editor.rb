@@ -322,16 +322,16 @@ class Reline::LineEditor
         back += height
       end
       if back > @highest_in_all
-        scroll_down(back)
-        move_cursor_up(back)
+        scroll_down(back - 1)
+        move_cursor_up(back - 1)
       elsif back < @highest_in_all
         scroll_down(back)
         Reline::IOGate.erase_after_cursor
-        (@highest_in_all - back).times do
+        (@highest_in_all - back - 1).times do
           scroll_down(1)
           Reline::IOGate.erase_after_cursor
         end
-        move_cursor_up(@highest_in_all)
+        move_cursor_up(@highest_in_all - 1)
       end
       @buffer_of_lines.each_with_index do |line, index|
         render_partial(prompt, prompt_width, line, false)
