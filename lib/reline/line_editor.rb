@@ -281,9 +281,10 @@ class Reline::LineEditor
       }
       diff = all_height - @highest_in_all
       if diff > 0
+        move_cursor_down(@highest_in_all - @first_line_started_from - @started_from - 1)
         @highest_in_all = all_height
         scroll_down(diff)
-        move_cursor_up(@first_line_started_from + @started_from + diff)
+        move_cursor_up(@highest_in_all - 1)
         back = 0
         @buffer_of_lines.each_with_index do |line, index|
           line = @line if index == @previous_line_index
