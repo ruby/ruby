@@ -1713,8 +1713,12 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_obj_freeze(opt->script_name);
     if (IF_UTF8_PATH(uenc != lenc, 1)) {
 	long i;
-	VALUE load_path = GET_VM()->load_path;
+        rb_vm_t *vm = GET_VM();
+        VALUE load_path = vm->load_path;
 	const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
+        int modifiable = FALSE;
+
+        rb_get_expanded_load_path();
 	for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 	    VALUE path = RARRAY_AREF(load_path, i);
 	    int mark = rb_attr_get(path, id_initial_load_path_mark) == path;
@@ -1726,8 +1730,15 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    path = rb_enc_associate(rb_str_dup(path), lenc);
 #endif
 	    if (mark) rb_ivar_set(path, id_initial_load_path_mark, path);
+            if (!modifiable) {
+                rb_ary_modify(load_path);
+                modifiable = TRUE;
+            }
 	    RARRAY_ASET(load_path, i, path);
 	}
+        if (modifiable) {
+            rb_ary_replace(vm->load_path_snapshot, load_path);
+        }
     }
     Init_ext();		/* load statically linked extensions before rubygems */
     if (opt->features.set & FEATURE_BIT(gems)) {
