@@ -659,7 +659,9 @@ class Reline::LineEditor
       if @previous_line_index and @line_index == (@buffer_of_lines.size - 1)
         temp_buffer[@previous_line_index] = @line
       end
-      finish if @confirm_multiline_termination_proc.(temp_buffer.join("\n"))
+      if temp_buffer.any?{ |l| l.chomp != '' }
+        finish if @confirm_multiline_termination_proc.(temp_buffer.join("\n"))
+      end
     end
   end
 
