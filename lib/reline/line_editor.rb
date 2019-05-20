@@ -208,9 +208,13 @@ class Reline::LineEditor
     max_width = @screen_size.last
     if @config.editing_mode_is?(:vi_command)
       last_byte_size = Reline::Unicode.get_prev_mbchar_size(@line, @line.bytesize)
-      last_mbchar = @line.byteslice(@line.bytesize - last_byte_size, last_byte_size)
-      last_width = Reline::Unicode.get_mbchar_width(last_mbchar)
-      cursor_max = @cursor_max - last_width
+      if last_byte_size > 0
+        last_mbchar = @line.byteslice(@line.bytesize - last_byte_size, last_byte_size)
+        last_width = Reline::Unicode.get_mbchar_width(last_mbchar)
+        cursor_max = @cursor_max - last_width
+      else
+        cursor_max = @cursor_max
+      end
     else
       cursor_max = @cursor_max
     end
