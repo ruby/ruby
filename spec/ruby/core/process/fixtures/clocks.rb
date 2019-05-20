@@ -40,13 +40,6 @@ module ProcessSpecs
       }
     end
 
-    # CentOS seems to report a negative resolution for CLOCK_MONOTONIC_RAW
-    platform_is :linux do
-      clocks = clocks.reject { |clock, value|
-        clock == :CLOCK_MONOTONIC_RAW and Process.clock_getres(value, :nanosecond) < 0
-      }
-    end
-
     # On a Hyper-V Linux guest machine, these clocks in practice
     # seem to be less precise than advertised by clock_getres
     platform_is :linux do
