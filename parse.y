@@ -6572,7 +6572,7 @@ tokadd_string(struct parser_params *p,
 		if (!parser_tokadd_utf8(p, &enc, term,
 					func & STR_FUNC_SYMBOL,
 					func & STR_FUNC_REGEXP)) {
-		    return -1;
+		    continue;
 		}
 		continue;
 
