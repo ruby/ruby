@@ -47,6 +47,14 @@ module ProcessSpecs
       }
     end
 
+    # On a Hyper-V Linux guest machine, these clocks in practice
+    # seem to be less precise than advertised by clock_getres
+    platform_is :linux do
+      clocks = clocks.reject { |clock, value|
+        clock == :CLOCK_MONOTONIC_RAW
+      }
+    end
+
     clocks
   end
 end
