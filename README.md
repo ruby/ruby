@@ -44,7 +44,7 @@ to see the list of branches:
     $ git ls-remote https://github.com/ruby/ruby.git
 
 You may also want to use https://git.ruby-lang.org/ruby.git (actual trunk of Ruby source)
-for better latency in Japan.
+if you are a committer.
 
 ### Subversion
 
