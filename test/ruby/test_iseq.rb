@@ -434,7 +434,7 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_to_binary_pattern_matching
-    code = "case foo in []; end"
+    code = "case foo; in []; end"
     iseq = compile(code)
     assert_include(iseq.disasm, "TypeError")
     assert_include(iseq.disasm, "NoMatchingPatternError")

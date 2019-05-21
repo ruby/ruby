@@ -1127,7 +1127,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %nonassoc tLOWEST
 %nonassoc tLBRACE_ARG
 
-%nonassoc  modifier_if modifier_unless modifier_while modifier_until
+%nonassoc  modifier_if modifier_unless modifier_while modifier_until keyword_in
 %left  keyword_or keyword_and
 %right keyword_not
 %nonassoc keyword_defined
@@ -1537,7 +1537,23 @@ expr		: command_call
 		    {
 			$$ = call_uni_op(p, method_cond(p, $2, &@2), '!', &@1, &@$);
 		    }
-		| arg
+		| arg keyword_in
+		    {
+			SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
+			p->command_start = FALSE;
+			$<num>$ = p->in_kwarg;
+			p->in_kwarg = 1;
+		    }
+		  p_top_expr_body
+		    {
+			p->in_kwarg = !!$<num>2;
+		    /*%%%*/
+			$$ = NEW_CASE3($1, NEW_IN($4, NEW_TRUE(&@4), NEW_FALSE(&@4), &@4), &@$);
+			rb_warn0L(nd_line($$), "Pattern matching is experimental, and the behavior may change in future versions of Ruby!");
+		    /*% %*/
+		    /*% ripper: case!($1, in!($4, Qnil, Qnil)) %*/
+		    }
+		| arg %prec tLBRACE_ARG
 		;
 
 expr_value	: expr
