@@ -2,6 +2,7 @@ require_relative 'helper'
 
 class Reline::KeyActor::Emacs::Test < Reline::TestCase
   def setup
+    Reline.send(:test_mode)
     @prompt = '> '
     @config = Reline::Config.new # Emacs mode is default
     @encoding = (RELINE_TEST_ENCODING rescue Encoding.default_external)
