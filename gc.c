@@ -8128,6 +8128,8 @@ rb_gc_compact_stats(VALUE mod)
     return h;
 }
 
+static void gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier);
+
 static VALUE
 rb_gc_compact(VALUE mod)
 {
@@ -8136,20 +8138,7 @@ rb_gc_compact(VALUE mod)
     if (dont_gc) return Qnil;
     /* Ensure objects are pinned */
     rb_gc();
-
-    gc_compact_heap(objspace, compare_pinned);
-
-    heap_eden->freelist = NULL;
-    gc_update_references(objspace);
-
-    rb_clear_method_cache_by_class(rb_cObject);
-    rb_clear_constant_cache();
-    heap_eden->free_pages = NULL;
-    heap_eden->using_page = NULL;
-
-    /* GC after compaction to eliminate T_MOVED */
-    rb_gc();
-
+    gc_compact_after_gc(objspace, FALSE, FALSE, FALSE);
     return rb_gc_compact_stats(mod);
 }
 
@@ -8204,6 +8193,54 @@ gc_check_references_for_moved(VALUE dummy)
     return Qnil;
 }
 
+static void
+gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier)
+{
+    if (0) fprintf(stderr, "gc_compact_after_gc: %d,%d,%d\n", use_toward_empty, use_double_pages, use_verifier);
+
+    if (use_double_pages) {
+        /* Double heap size */
+        heap_add_pages(objspace, heap_eden, heap_allocated_pages);
+    }
+
+    VALUE moved_list;
+
+    if (use_toward_empty) {
+        moved_list = gc_compact_heap(objspace, compare_free_slots);
+    }
+    else {
+        moved_list = gc_compact_heap(objspace, compare_pinned);
+    }
+    heap_eden->freelist = NULL;
+    gc_update_references(objspace);
+
+    if (use_verifier) {
+        gc_check_references_for_moved(Qnil);
+    }
+
+    rb_clear_method_cache_by_class(rb_cObject);
+    rb_clear_constant_cache();
+    heap_eden->free_pages = NULL;
+    heap_eden->using_page = NULL;
+
+    if (use_verifier) {
+        gc_verify_internal_consistency(Qnil);
+    }
+
+#if __has_feature(address_sanitizer)
+    while (moved_list) {
+        VALUE current = moved_list;
+        moved_list = RANY(moved_list)->as.moved.next;
+        poison_object(current);
+    }
+#else
+    (void)moved_list;
+#endif
+
+    /* GC after compaction to eliminate T_MOVED */
+    rb_gc();
+}
+
 /*
  *  call-seq:
  *     GC.verify_compaction_references                  -> nil
@@ -8224,7 +8261,8 @@ static VALUE
 gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    VALUE moved_list;
+    int use_toward_empty = FALSE;
+    int use_double_pages = FALSE;
 
     if (dont_gc) return Qnil;
 
@@ -8233,12 +8271,10 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
     VALUE kwvals[2];
 
     kwvals[1] = Qtrue;
-    page_compare_func_t * comparator = compare_pinned;
 
     rb_scan_args(argc, argv, "0:", &opt);
 
     if (!NIL_P(opt)) {
-
         if (!keyword_ids[0]) {
             keyword_ids[0] = rb_intern("toward");
             keyword_ids[1] = rb_intern("double_heap");
@@ -8246,44 +8282,16 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
 
         rb_get_kwargs(opt, keyword_ids, 0, 2, kwvals);
         if (rb_intern("empty") == rb_sym2id(kwvals[0])) {
-            comparator = compare_free_slots;
+            use_toward_empty = TRUE;
+        }
+        if (kwvals[1] != Qundef && RTEST(kwvals[1])) {
+            use_double_pages = TRUE;
         }
     }
 
     /* Ensure objects are pinned */
     rb_gc();
-
-    if (kwvals[1]) {
-        /* Double heap size */
-        heap_add_pages(objspace, heap_eden, heap_allocated_pages);
-    }
-
-    moved_list = gc_compact_heap(objspace, comparator);
-
-    heap_eden->freelist = NULL;
-    gc_update_references(objspace);
-    gc_check_references_for_moved(mod);
-
-    rb_clear_method_cache_by_class(rb_cObject);
-    rb_clear_constant_cache();
-    heap_eden->free_pages = NULL;
-    heap_eden->using_page = NULL;
-
-    gc_verify_internal_consistency(mod);
-
-#if __has_feature(address_sanitizer)
-    while (moved_list) {
-        VALUE current = moved_list;
-        moved_list = RANY(moved_list)->as.moved.next;
-        poison_object(current);
-    }
-#else
-    (void)moved_list;
-#endif
-
-    /* GC after compaction to eliminate T_MOVED */
-    rb_gc();
-
+    gc_compact_after_gc(objspace, use_toward_empty, use_double_pages, TRUE);
     return rb_gc_compact_stats(mod);
 }
 
