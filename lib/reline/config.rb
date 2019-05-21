@@ -79,7 +79,6 @@ class Reline::Config
           end
       end
     rescue Errno::ENOENT
-      $stderr.puts "no such file #{file}"
       return nil
     end
 
