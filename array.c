@@ -140,7 +140,15 @@ VALUE rb_cArray;
     FL_SET((ary), RARRAY_SHARED_ROOT_FLAG); \
 } while (0)
 
-#define ARY_SET(a, i, v) RARRAY_ASET((assert(!ARY_SHARED_P(a)), (a)), (i), (v))
+static inline void
+ARY_SET(VALUE a, long i, VALUE v)
+{
+    assert(!ARY_SHARED_P(a));
+    assert(!OBJ_FROZEN(a));
+
+    RARRAY_ASET(a, i, v);
+}
+#undef RARRAY_ASET
 
 
 #if ARRAY_DEBUG
@@ -5509,7 +5517,7 @@ yield_indexed_values(const VALUE values, const long r, const long *const p)
     const VALUE result = rb_ary_new2(r);
     long i;
 
-    for (i = 0; i < r; i++) RARRAY_ASET(result, i, RARRAY_AREF(values, p[i]));
+    for (i = 0; i < r; i++) ARY_SET(result, i, RARRAY_AREF(values, p[i]));
     ARY_SET_LEN(result, r);
     rb_yield(result);
     return !RBASIC(values)->klass;
