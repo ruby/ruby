@@ -2,9 +2,7 @@
 require 'test/unit'
 
 verbose, $VERBOSE = $VERBOSE, nil # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
-eval "#{<<~"begin;"}\n#{<<~'end;'}".gsub(/^.*# fix indent\n/, ''), binding, __FILE__, __LINE__+2
-begin;
-end # fix indent
+eval "\n#{<<~'END_of_GUARD'}", binding, __FILE__, __LINE__
 class TestPatternMatching < Test::Unit::TestCase
   class C
     class << self
@@ -1145,6 +1143,5 @@ END
     end
   end
 end
-begin # fix indent
-end;
+END_of_GUARD
 $VERBOSE = verbose
