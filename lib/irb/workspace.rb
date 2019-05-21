@@ -131,13 +131,17 @@ EOF
           return
         end
       end
-      lines = IRB.conf[:MAIN_CONTEXT]&.use_colorize? ? Color.colorize_code(code).lines : code.lines
+      if IRB.conf&.fetch(:MAIN_CONTEXT, nil)&.use_colorize?
+        lines = Color.colorize_code(code).lines
+      else
+        lines = code.lines
+      end
       pos -= 1
 
       start_pos = [pos - 5, 0].max
       end_pos   = [pos + 5, lines.size - 1].min
 
-      if IRB.conf[:MAIN_CONTEXT]&.use_colorize?
+      if IRB.conf&.fetch(:MAIN_CONTEXT, nil)&.use_colorize?
         fmt = " %2s #{Color.colorize("%#{end_pos.to_s.length}d", [:BLUE, :BOLD])}: %s"
       else
         fmt = " %2s %#{end_pos.to_s.length}d: %s"
