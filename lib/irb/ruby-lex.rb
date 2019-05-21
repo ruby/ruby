@@ -126,7 +126,7 @@ class RubyLex
   end
 
   def process_continue
-    continued_bits = Ripper::EXPR_BEG | Ripper::EXPR_FNAME | Ripper::EXPR_DOT
+    continued_bits = Ripper::EXPR_BEG | Ripper::EXPR_FNAME
     # last token is always newline
     if @tokens.size >= 2 and @tokens[-2][1] == :on_regexp_end
       # end of regexp literal
@@ -184,6 +184,12 @@ class RubyLex
         #
         #   example:
         #     end
+        return false
+      when /syntax error, unexpected '\.'/
+        # "syntax error, unexpected '.'"
+        #
+        #   example:
+        #     .
         return false
       when /unexpected tREGEXP_BEG/
         # "syntax error, unexpected tREGEXP_BEG, expecting keyword_do or '{' or '('"
