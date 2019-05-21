@@ -1571,7 +1571,7 @@ range_endless(VALUE range)
  *  call-seq:
  *     rng.infinite?  ->  true or false
  *
- *  Returns <code>true</code> if +beginless?+ or +endless?+ of
+ *  Returns <code>true</code> if +beginless?+ is +nil+ or +endless?+ is +nil+ of
  *  the range, <code>false</code> otherwise.
  *     ("a"..).infinite?      #=> true
  *     (.."z").infinite?      #=> true
@@ -1592,7 +1592,7 @@ range_infinite(VALUE range)
  *  call-seq:
  *     rng.finite?  ->  true or false
  *
- *  Returns <code>true</code> if +infinite?+ is <code>false</code> of
+ *  Returns <code>true</code> if +beginless?+ is not +nil+ and +endless?+ is not +nil+ of
  *  the range, <code>false</code> otherwise.
  *     ("a"..).finite?      #=> false
  *     (.."z").finite?      #=> false
