@@ -1180,6 +1180,13 @@ END
       end
     end
   end
+
+  ################################################################
+
+  def test_modifier_in
+    assert_equal true, (1 in a)
+    assert_equal 1, a
+  end
 end
 END_of_GUARD
 $VERBOSE = verbose
