@@ -299,7 +299,8 @@ module Reline
           [224, 72] => :ed_prev_history,    # ↑
           [224, 80] => :ed_next_history,    # ↓
           [224, 77] => :ed_next_char,       # →
-          [224, 75] => :ed_prev_char        # ←
+          [224, 75] => :ed_prev_char,       # ←
+          [224, 83] => :key_delete          # Del
         }
       }
     else
@@ -308,7 +309,8 @@ module Reline
           [27, 91, 65] => :ed_prev_history,    # ↑
           [27, 91, 66] => :ed_next_history,    # ↓
           [27, 91, 67] => :ed_next_char,       # →
-          [27, 91, 68] => :ed_prev_char        # ←
+          [27, 91, 68] => :ed_prev_char,       # ←
+          [27, 91, 51, 126] => :key_delete     # Del
         }
       }
     end

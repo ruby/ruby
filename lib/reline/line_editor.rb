@@ -761,6 +761,12 @@ class Reline::LineEditor
     }
   end
 
+  private def key_delete(key)
+    if @config.editing_mode_is?(:vi_insert, :emacs)
+      ed_delete_next_char(key)
+    end
+  end
+
   private def ed_insert(key)
     if key.instance_of?(String)
       width = Reline::Unicode.get_mbchar_width(key)
