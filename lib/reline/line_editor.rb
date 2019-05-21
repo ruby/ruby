@@ -79,6 +79,8 @@ class Reline::LineEditor
   CompletionJourneyData = Struct.new('CompletionJourneyData', :preposing, :postposing, :list, :pointer)
   MenuInfo = Struct.new('MenuInfo', :target, :list)
 
+  CSI_REGEXP = /\e\[(?:\d+;?)*[ABCDEFGHJKSTfminsuhl]/
+
   def initialize(config)
     @config = config
     reset_variables
@@ -93,7 +95,7 @@ class Reline::LineEditor
   def reset_variables(prompt = '', encoding = Encoding.default_external)
     @prompt = prompt
     @encoding = encoding
-    @prompt_width = calculate_width(@prompt)
+    @prompt_width = calculate_width(@prompt, true)
     @is_multiline = false
     @finished = false
     @cleared = false
@@ -159,21 +161,47 @@ class Reline::LineEditor
     height
   end
 
-  private def split_by_width(str, max_width)
+  private def split_by_width(prompt, str, max_width)
     lines = [String.new(encoding: @encoding)]
+    height = 1
     width = 0
+    rest_prompt = prompt.encode(Encoding::UTF_8)
+    loop do
+      break if rest_prompt.empty?
+      if rest_prompt =~ /^#{CSI_REGEXP}/
+        lines.last << $&
+        rest_prompt = $'
+      else
+        gcs = rest_prompt.grapheme_clusters
+        gc = gcs.first
+        rest_prompt = gcs[1..-1].join
+        mbchar_width = Reline::Unicode.get_mbchar_width(gc)
+        width += mbchar_width
+        if width > max_width
+          width = mbchar_width
+          lines << nil
+          lines << String.new(encoding: @encoding)
+          height += 1
+        end
+        lines.last << gc
+      end
+    end
+    lines << :split
+    lines << String.new(encoding: @encoding)
     str.encode(Encoding::UTF_8).grapheme_clusters.each do |gc|
       mbchar_width = Reline::Unicode.get_mbchar_width(gc)
       width += mbchar_width
       if width > max_width
         width = mbchar_width
+        lines << nil
         lines << String.new(encoding: @encoding)
+        height += 1
       end
       lines.last << gc
     end
     # The cursor moves to next line in first
     lines << String.new(encoding: @encoding) if width == max_width
-    lines
+    [lines, height]
   end
 
   private def scroll_down(val)
@@ -367,38 +395,52 @@ class Reline::LineEditor
   end
 
   private def render_partial(prompt, prompt_width, line_to_render, with_control = true)
-    whole_line = prompt + (line_to_render.nil? ? '' : line_to_render)
-    visual_lines = split_by_width(whole_line, @screen_size.last)
+    visual_lines, height = split_by_width(prompt, line_to_render.nil? ? '' : line_to_render, @screen_size.last)
     if with_control
-      if visual_lines.size > @highest_in_this
-        diff = visual_lines.size - @highest_in_this
+      if height > @highest_in_this
+        diff = height - @highest_in_this
         scroll_down(diff)
         @highest_in_all += diff
-        @highest_in_this = visual_lines.size
+        @highest_in_this = height
         move_cursor_up(1)
       end
       move_cursor_up(@started_from)
       @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
     end
-    visual_lines.each_with_index do |line, index|
-      Reline::IOGate.move_cursor_column(0)
-      escaped_print line
+    index = 0
+    is_prompt = true
+    Reline::IOGate.move_cursor_column(0)
+    visual_lines.each do |line|
+      if line == :split
+        is_prompt = false
+        next
+      end
+      if line.nil?
+        Reline::IOGate.erase_after_cursor
+        move_cursor_down(1)
+        Reline::IOGate.move_cursor_column(0)
+        next
+      end
+      if is_prompt
+        @output.print line
+      else
+        escaped_print line
+      end
       if @first_prompt
         @first_prompt = false
         @pre_input_hook&.call
       end
-      Reline::IOGate.erase_after_cursor
-      move_cursor_down(1) if index < (visual_lines.size - 1)
     end
+    Reline::IOGate.erase_after_cursor
     if with_control
       if finished?
         @output.puts
       else
-        move_cursor_up((visual_lines.size - 1) - @started_from)
+        move_cursor_up((height - 1) - @started_from)
         Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       end
     end
-    visual_lines.size
+    height
   end
 
   def editing_mode
@@ -759,7 +801,10 @@ class Reline::LineEditor
     new_str
   end
 
-  private def calculate_width(str)
+  private def calculate_width(str, allow_csi = false)
+    if allow_csi
+      str = str.gsub(CSI_REGEXP, '')
+    end
     str.encode(Encoding::UTF_8).grapheme_clusters.inject(0) { |width, gc|
       width + Reline::Unicode.get_mbchar_width(gc)
     }
