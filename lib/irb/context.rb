@@ -40,6 +40,7 @@ module IRB
       @load_modules = IRB.conf[:LOAD_MODULES]
 
       @use_readline = IRB.conf[:USE_READLINE]
+      @use_colorize = IRB.conf[:USE_COLORIZE]
       @verbose = IRB.conf[:VERBOSE]
       @io = nil
 

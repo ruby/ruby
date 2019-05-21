@@ -75,5 +75,9 @@ module TestIRB
     ensure
       $VERBOSE = verbose
     end
+
+    def test_default_config
+      assert_equal(true, @context.use_colorize?)
+    end
   end
 end
