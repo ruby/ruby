@@ -2212,10 +2212,7 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
 	    if ((width -= RSTRING_LEN(str)) > 0) rb_str_catf(str, "%*s", (int)width, "");
 	}
 	if (body->param.flags.has_opt) {
-	    char opti[0x100] = "";
-	    snprintf(opti, sizeof(opti), "Opt=%"PRIdVALUE,
-		    body->param.opt_table[body->local_table_size]);
-	    rb_str_catf(str, "[ 0] <%s>", opti);
+	    rb_str_catf(str, "[ 0] <Opt=%"PRIdVALUE">", body->param.opt_table[body->local_table_size]);
 	}
 	rb_str_cat_cstr(right_strip(str), "\n");
     }
