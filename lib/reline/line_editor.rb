@@ -407,7 +407,6 @@ class Reline::LineEditor
       move_cursor_up(@started_from)
       @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
     end
-    index = 0
     is_prompt = true
     Reline::IOGate.move_cursor_column(0)
     visual_lines.each do |line|
