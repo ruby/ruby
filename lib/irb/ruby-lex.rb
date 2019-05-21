@@ -255,7 +255,7 @@ class RubyLex
         start_token << t
         end_type << :on_regexp_end
       when :on_symbeg
-        if (i + 1) < @tokens.size and @tokens[i + 1][1] != :on_ident
+        if (i + 1) < @tokens.size and @tokens[i + 1][1] != :on_ident and @tokens[i + 1][1] != :on_const
           start_token << t
           end_type << :on_tstring_end
         end
