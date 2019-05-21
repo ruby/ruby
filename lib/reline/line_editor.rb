@@ -81,10 +81,16 @@ class Reline::LineEditor
 
   def initialize(config)
     @config = config
-    reset
+    reset_variables
   end
 
   def reset(prompt = '', encoding = Encoding.default_external)
+    @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
+    @screen_size = Reline::IOGate.get_screen_size
+    reset_variables(prompt, encoding)
+  end
+
+  def reset_variables(prompt = '', encoding = Encoding.default_external)
     @prompt = prompt
     @encoding = encoding
     @prompt_width = calculate_width(@prompt)
@@ -236,8 +242,6 @@ class Reline::LineEditor
   end
 
   def rerender # TODO: support physical and logical lines
-    @rest_height ||= (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
-    @screen_size ||= Reline::IOGate.get_screen_size
     if @menu_info
       @output.puts
       @menu_info.list.each do |item|
