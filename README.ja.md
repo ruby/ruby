@@ -45,8 +45,8 @@ https://www.ruby-lang.org/ja/downloads/
 
     $ git ls-remote https://github.com/ruby/ruby.git
 
-GitHubのかわりに https://git.ruby-lang.org/ruby.git (本来のRubyのtrunkリポジトリ)
-を使うこともできます．日本ではこちらの方が低いレイテンシで利用できるかもしれません．
+Rubyリポジトリの本来のtrunkは https://git.ruby-lang.org/ruby.git にあります．
+コミッタはこちらを使います．
 
 ### Subversion
 
