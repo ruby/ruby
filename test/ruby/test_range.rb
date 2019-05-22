@@ -489,6 +489,10 @@ class TestRange < Test::Unit::TestCase
     assert_equal("0...1", (0...1).inspect)
     assert_equal("0..", (0..nil).inspect)
     assert_equal("0...", (0...nil).inspect)
+    assert_equal("..1", (nil..1).inspect)
+    assert_equal("...1", (nil...1).inspect)
+    assert_equal("nil..nil", (nil..nil).inspect)
+    assert_equal("nil...nil", (nil...nil).inspect)
 
     bug11767 = '[ruby-core:71811] [Bug #11767]'
     assert_predicate(("0".taint.."1").inspect, :tainted?, bug11767)

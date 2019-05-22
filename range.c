@@ -1317,10 +1317,16 @@ inspect_range(VALUE range, VALUE dummy, int recur)
     if (recur) {
 	return rb_str_new2(EXCL(range) ? "(... ... ...)" : "(... .. ...)");
     }
-    str = rb_inspect(RANGE_BEG(range));
-    if (!NIL_P(RANGE_END(range))) str2 = rb_inspect(RANGE_END(range));
-    str = rb_str_dup(str);
+    if (!NIL_P(RANGE_BEG(range)) || NIL_P(RANGE_END(range))) {
+        str = rb_str_dup(rb_inspect(RANGE_BEG(range)));
+    }
+    else {
+        str = rb_str_new(0, 0);
+    }
     rb_str_cat(str, "...", EXCL(range) ? 3 : 2);
+    if (NIL_P(RANGE_BEG(range)) || !NIL_P(RANGE_END(range))) {
+        str2 = rb_inspect(RANGE_END(range));
+    }
     if (str2 != Qundef) rb_str_append(str, str2);
     OBJ_INFECT(str, range);
 
