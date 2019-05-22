@@ -65,7 +65,7 @@ mjit-test1:
       username: Wercker mjit-test1
       channel: alerts
       notify_on: "failed"
-      branches: ^trunk$
+      branches: ^master$
 
 # --jit-wait (test-all)
 mjit-test2:
@@ -96,4 +96,4 @@ mjit-test2:
       username: Wercker mjit-test2
       channel: alerts
       notify_on: "failed"
-      branches: ^trunk$
+      branches: ^master$
