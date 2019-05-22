@@ -234,7 +234,7 @@ def package(vcs, rev, destdir, tmp = nil)
     warn "#{$0}: unknown version - #{rev}"
     return
   end
-  revision ||= vcs.get_revisions(url)[1]
+  revision ||= vcs.get_revisions(url)[0]
   version = nil
   unless revision
     url = vcs.trunk
@@ -243,7 +243,7 @@ def package(vcs, rev, destdir, tmp = nil)
       warn "#{$0}: #{rev} not found"
       return
     end
-    revision = vcs.get_revisions(url)[1]
+    revision = vcs.get_revisions(url)[0]
   end
   v = nil
   if $exported
