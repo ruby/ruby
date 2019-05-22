@@ -82,7 +82,7 @@ env:
 .org.ruby-lang.ci.matrix-definitions:
 
   - &cron-only
-    if: (type = cron) AND (branch = trunk) AND (fork = false)
+    if: (type = cron) AND (branch = master) AND (fork = false)
 
   - &make-test-only
     script:
@@ -436,7 +436,7 @@ script:
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
   only:
-    - trunk
+    - master
     - ruby_2_4
     - ruby_2_5
     - ruby_2_6
