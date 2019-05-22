@@ -100,7 +100,6 @@ class Reline::LineEditor
     @finished = false
     @cleared = false
     @rerender_all = false
-    @is_confirm_multiline_termination = false
     @history_pointer = nil
     @kill_ring = Reline::KillRing.new
     @vi_clipboard = ''
@@ -386,9 +385,12 @@ class Reline::LineEditor
       move_cursor_down(@first_line_started_from)
       @rerender_all = false
     end
-    render_partial(prompt, prompt_width, @line) if !@is_multiline or !finished?
-    if @is_multiline and finished?
-      scroll_down(1) unless @buffer_of_lines.last.empty?
+    if !@is_multiline
+      render_partial(prompt, prompt_width, @line)
+    elsif !finished?
+      render_partial(prompt, prompt_width, @line)
+    else
+      scroll_down(1) unless whole_lines.last.empty?
       Reline::IOGate.move_cursor_column(0)
       Reline::IOGate.erase_after_cursor
     end
@@ -433,11 +435,9 @@ class Reline::LineEditor
     Reline::IOGate.erase_after_cursor
     if with_control
       if finished?
-        @output.puts
-      else
         move_cursor_up((height - 1) - @started_from)
-        Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       end
+      Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
     end
     height
   end
@@ -699,15 +699,19 @@ class Reline::LineEditor
     unless completion_occurs
       @completion_state = CompletionState::NORMAL
     end
-    if @is_confirm_multiline_termination and @confirm_multiline_termination_proc
-      @is_confirm_multiline_termination = false
-      temp_buffer = @buffer_of_lines.dup
-      if @previous_line_index and @line_index == (@buffer_of_lines.size - 1)
-        temp_buffer[@previous_line_index] = @line
-      end
-      if temp_buffer.any?{ |l| l.chomp != '' }
-        finish if @confirm_multiline_termination_proc.(temp_buffer.join("\n"))
-      end
+  end
+
+  def confirm_multiline_termination
+    temp_buffer = @buffer_of_lines.dup
+    if @previous_line_index and @line_index == (@buffer_of_lines.size - 1)
+      temp_buffer[@previous_line_index] = @line
+    else
+      temp_buffer[@line_index] = @line
+    end
+    if temp_buffer.any?{ |l| l.chomp != '' }
+      @confirm_multiline_termination_proc.(temp_buffer.join("\n") + "\n")
+    else
+      false
     end
   end
 
@@ -768,13 +772,17 @@ class Reline::LineEditor
     @cursor_max = calculate_width(@line)
   end
 
-  def whole_buffer
+  def whole_lines
     temp_lines = @buffer_of_lines.dup
     temp_lines[@line_index] = @line
+    temp_lines
+  end
+
+  def whole_buffer
     if @buffer_of_lines.size == 1 and @line.nil?
       nil
     else
-      temp_lines.join("\n")
+      whole_lines.join("\n")
     end
   end
 
@@ -1077,26 +1085,27 @@ class Reline::LineEditor
     if @is_multiline
       if @config.editing_mode_is?(:vi_command)
         if @line_index < (@buffer_of_lines.size - 1)
-          ed_next_history(key)
+          ed_next_history(key) # means cursor down
         else
-          @is_confirm_multiline_termination = true
+          finish if confirm_multiline_termination
         end
       else
-        next_line = @line.byteslice(@byte_pointer, @line.bytesize - @byte_pointer)
-        cursor_line = @line.byteslice(0, @byte_pointer)
-        insert_new_line(cursor_line, next_line)
-        @cursor = 0
-        if @line_index == (@buffer_of_lines.size - 1)
-          @is_confirm_multiline_termination = true
+        if @line_index == (@buffer_of_lines.size - 1) and confirm_multiline_termination
+          finish
+        else
+          next_line = @line.byteslice(@byte_pointer, @line.bytesize - @byte_pointer)
+          cursor_line = @line.byteslice(0, @byte_pointer)
+          insert_new_line(cursor_line, next_line)
+          @cursor = 0
         end
       end
-      return
+    else
+      if @history_pointer
+        Reline::HISTORY[@history_pointer] = @line
+        @history_pointer = nil
+      end
+      finish
     end
-    if @history_pointer
-      Reline::HISTORY[@history_pointer] = @line
-      @history_pointer = nil
-    end
-    finish
   end
 
   private def em_delete_prev_char(key)
