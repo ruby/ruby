@@ -529,7 +529,7 @@ class VCS
 
   class GITSVN < GIT
     def self.revision_name(rev)
-      SVN.short_revision(rev)
+      SVN.revision_name(rev)
     end
 
     def format_changelog(r, path)
