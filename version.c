@@ -33,7 +33,7 @@ const int ruby_api_version[] = {
     STRINGIZE(RUBY_VERSION_MINOR) "." \
     STRINGIZE(RUBY_VERSION_TEENY) ""
 const char ruby_version[] = RUBY_VERSION;
-const char ruby_revision[] = RUBY_REVISION;
+const char ruby_revision[] = RUBY_FULL_REVISION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
