@@ -3,9 +3,6 @@ version: '{build}'
 shallow_clone: true
 platform:
   - x64
-branches:
-  except:
-    - trunk # mirrored master runs CI
 environment:
   ruby_version: "24-%Platform%"
   zlib_version: "1.2.11"
