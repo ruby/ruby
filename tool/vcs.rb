@@ -224,12 +224,20 @@ class VCS
     self.class.revision_name(rev)
   end
 
+  def short_revision(rev)
+    self.class.short_revision(rev)
+  end
+
   class SVN < self
     register(".svn")
     COMMAND = ENV['SVN'] || 'svn'
 
     def self.revision_name(rev)
       "r#{rev}"
+    end
+
+    def self.short_revision(rev)
+      rev
     end
 
     def self.get_revisions(path, srcdir = nil)
@@ -392,10 +400,9 @@ class VCS
 
     def self.get_revisions(path, srcdir = nil)
       gitcmd = [COMMAND]
-      last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', '--short=10', 'HEAD']]).rstrip
+      last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', 'HEAD']]).rstrip
       log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', *path]])
       changed = log[/\Acommit (\h+)/, 1]
-      changed = changed[0, last.size]
       modified = log[/^Date:\s+(.*)/, 1]
       branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short HEAD]])
       if branch.empty?
@@ -413,7 +420,11 @@ class VCS
     end
 
     def self.revision_name(rev)
-      rev
+      short_revision(rev)
+    end
+
+    def self.short_revision(rev)
+      rev[0, 10]
     end
 
     def initialize(*)
@@ -531,6 +542,10 @@ class VCS
   class GITSVN < GIT
     def self.revision_name(rev)
       SVN.revision_name(rev)
+    end
+
+    def self.short_revision(rev)
+      SVN.short_revision(rev)
     end
 
     def format_changelog(r, path)

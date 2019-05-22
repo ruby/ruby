@@ -45,6 +45,7 @@ parser = OptionParser.new {|opts|
 }
 parser.parse! rescue abort "#{File.basename(Program)}: #{$!}\n#{parser}"
 
+vcs = nil
 @output =
   case @output
   when :changed, nil
@@ -54,7 +55,8 @@ parser.parse! rescue abort "#{File.basename(Program)}: #{$!}\n#{parser}"
   when :revision_h
     Proc.new {|last, changed, modified, branch, title|
       [
-        "#define RUBY_REVISION #{last.dump}",
+        "#define RUBY_REVISION #{vcs.short_revision(last).dump}",
+        "#define RUBY_FULL_REVISION #{last.dump}",
         if branch
           e = '..'
           limit = 16
