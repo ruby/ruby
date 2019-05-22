@@ -143,7 +143,7 @@ end
 unless destdir = ARGV.shift
   abort usage
 end
-revisions = ARGV.empty? ? ["trunk"] : ARGV
+revisions = ARGV.empty? ? [nil] : ARGV
 unless tmp = $exported
   FileUtils.mkpath(destdir)
   destdir = File.expand_path(destdir)
@@ -201,10 +201,12 @@ end
 def package(vcs, rev, destdir, tmp = nil)
   patchlevel = false
   prerelease = false
-  if revision = rev[/@(\d+)\z/, 1]
+  if rev and revision = rev[/@(\d+)\z/, 1]
     rev = $`
   end
   case rev
+  when nil
+    url = nil
   when /\Atrunk\z/
     url = vcs.trunk
   when /\Abranches\//
@@ -234,7 +236,10 @@ def package(vcs, rev, destdir, tmp = nil)
     warn "#{$0}: unknown version - #{rev}"
     return
   end
-  revision ||= vcs.get_revisions(url)[0]
+  if !revision and revision = vcs.get_revisions(url)
+    url ||= vcs.branch(revision[3])
+    revision = revision[0]
+  end
   version = nil
   unless revision
     url = vcs.trunk

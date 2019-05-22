@@ -278,6 +278,7 @@ class VCS
     end
 
     def branch(name)
+      return trunk if name == "trunk"
       url + "branches/#{name}"
     end
 
