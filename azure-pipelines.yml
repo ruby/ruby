@@ -1,8 +1,6 @@
 pr: none # comment out this line if you need to test this file on PR
 trigger:
-  branches:
-    exclude:
-      - trunk # master (mirror of trunk) runs CI
+  - trunk # master (mirror of trunk) runs CI
 jobs:
 - job: Linux
   pool:
