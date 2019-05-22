@@ -1656,17 +1656,8 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
 		VALUE key, val = Qnil;
 
 		if (NIL_P(v)) {
-#if 0 /* refix in the next release */
 		    rb_raise(rb_eArgError, "wrong element type %s at %ld (expected array)",
 			     rb_builtin_class_name(e), i);
-
-#else
-		    rb_warn("wrong element type %s at %ld (expected array)",
-			    rb_builtin_class_name(e), i);
-		    rb_warn("ignoring wrong elements is deprecated, remove them explicitly");
-		    rb_warn("this causes ArgumentError in the next release");
-		    continue;
-#endif
 		}
 		switch (RARRAY_LEN(v)) {
 		  default:

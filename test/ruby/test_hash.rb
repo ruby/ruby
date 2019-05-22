@@ -149,10 +149,9 @@ class TestHash < Test::Unit::TestCase
     assert_equal(nil, h['b'])
     assert_equal(300, h['c'])
 
-    h = @cls[[["a", 100], "b", ["c", 300]]]
-    assert_equal(100, h['a'])
-    assert_equal(nil, h['b'])
-    assert_equal(300, h['c'])
+    assert_raise(ArgumentError) do
+      @cls[[["a", 100], "b", ["c", 300]]]
+    end
   end
 
   def test_s_AREF_duplicated_key
@@ -944,8 +943,8 @@ class TestHash < Test::Unit::TestCase
 
   def test_create
     assert_equal({1=>2, 3=>4}, @cls[[[1,2],[3,4]]])
-    assert_raise(ArgumentError) { Hash[0, 1, 2] }
-    assert_warning(/wrong element type Integer at 1 /) {@cls[[[1, 2], 3]]}
+    assert_raise(ArgumentError) { @cls[0, 1, 2] }
+    assert_raise(ArgumentError) { @cls[[[0, 1], 2]] }
     bug5406 = '[ruby-core:39945]'
     assert_raise(ArgumentError, bug5406) { @cls[[[1, 2], [3, 4, 5]]] }
     assert_equal({1=>2, 3=>4}, @cls[1,2,3,4])
