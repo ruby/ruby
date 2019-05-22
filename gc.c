@@ -11097,7 +11097,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	}
 	else {
             if (RTEST(RBASIC(obj)->klass)) {
-	    VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
+            VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
 	    if (!NIL_P(class_path)) {
                 APPENDF((BUFF_ARGS, "(%s)", RSTRING_PTR(class_path)));
 	    }
