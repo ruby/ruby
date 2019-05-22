@@ -851,7 +851,11 @@ class Reline::LineEditor
   private def ed_quoted_insert(str, arg: 1)
     @waiting_proc = proc { |key|
       arg.times do
-        ed_insert(key)
+        if key == "\C-j".ord or key == "\C-m".ord
+          ed_newline(key)
+        else
+          ed_insert(key)
+        end
       end
       @waiting_proc = nil
     }
