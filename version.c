@@ -32,6 +32,9 @@ const int ruby_api_version[] = {
     STRINGIZE(RUBY_VERSION_MAJOR) "." \
     STRINGIZE(RUBY_VERSION_MINOR) "." \
     STRINGIZE(RUBY_VERSION_TEENY) ""
+#ifndef RUBY_FULL_REVISION
+# define RUBY_FULL_REVISION RUBY_REVISION
+#endif
 const char ruby_version[] = RUBY_VERSION;
 const char ruby_revision[] = RUBY_FULL_REVISION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
