@@ -1223,6 +1223,13 @@ class Matrix
     collect {|e| -e }
   end
 
+  #
+  # Returns the absolute value elementwise
+  #
+  def abs
+    collect(&:abs)
+  end
+
   #--
   # MATRIX FUNCTIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   #++
