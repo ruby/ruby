@@ -902,8 +902,8 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
 		if (NIL_P(func)) {
 		    /* TODO: limit cached funcs */
                     VALUE callback_arg = rb_ary_tmp_new(2);
-                    RARRAY_ASET(callback_arg, 0, block_code);
-                    RARRAY_ASET(callback_arg, 1, ref);
+                    rb_ary_push(callback_arg, block_code);
+                    rb_ary_push(callback_arg, ref);
                     OBJ_FREEZE_RAW(callback_arg);
                     func = rb_func_proc_new(refine_sym_proc_call, callback_arg);
 		    rb_hash_aset(ref, block_code, func);
