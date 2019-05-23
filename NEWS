@@ -83,6 +83,12 @@ Regexp/String::
     * Update Unicode version to 12.1.0, adding support for
       U+32FF SQUARE ERA NAME REIWA.  [Feature #15195]
 
+Time::
+
+    * Added Time#ceil method.  [Feature #15772]
+
+    * Added Time#floor method.  [Feature #15653]
+
 === Stdlib updates (outstanding ones only)
 
 Bundler::
