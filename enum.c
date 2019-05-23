@@ -1009,8 +1009,7 @@ tally_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *  elements and the values are numbers of elements in the collection
  *  that correspond to the key.
  *
- *     (1..6).tally   #=> {1=>1, 2=>1, 3=>1, 4=>1, 5=>1, 6=>1}
- *
+ *     ["a", "b", "c", "b"].tally #=> {"a"=>1, "b"=>2, "c"=>1}
  */
 
 static VALUE
