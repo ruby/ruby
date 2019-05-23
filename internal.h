@@ -108,7 +108,6 @@ extern "C" {
 # define __asan_poison_memory_region(x, y)
 # define __asan_unpoison_memory_region(x, y)
 # define __asan_region_is_poisoned(x, y) 0
-# define poisoned_object_p(x) 0
 #endif
 
 #ifdef HAVE_SANITIZER_MSAN_INTERFACE_H
@@ -125,30 +124,28 @@ extern "C" {
 #endif
 
 static inline void
-poison_memory_region(const volatile void *ptr, size_t size)
+asan_poison_memory_region(const volatile void *ptr, size_t size)
 {
     __msan_poison(ptr, size);
     __asan_poison_memory_region(ptr, size);
 }
 
 static inline void
-poison_object(VALUE obj)
+asan_poison_object(VALUE obj)
 {
-    struct RVALUE *ptr = (void *)obj;
-    poison_memory_region(ptr, SIZEOF_VALUE);
+    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
+    asan_poison_memory_region(ptr, SIZEOF_VALUE);
 }
 
-#if __has_feature(address_sanitizer)
 static inline void *
-poisoned_object_p(VALUE obj)
+asan_poisoned_object_p(VALUE obj)
 {
-    struct RVALUE *ptr = (void *)obj;
+    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
     return __asan_region_is_poisoned(ptr, SIZEOF_VALUE);
 }
-#endif
 
 static inline void
-unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p)
+asan_unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p)
 {
     __asan_unpoison_memory_region(ptr, size);
     if (malloc_p) {
@@ -160,10 +157,10 @@ unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p)
 }
 
 static inline void
-unpoison_object(VALUE obj, bool newobj_p)
+asan_unpoison_object(VALUE obj, bool newobj_p)
 {
-    struct RVALUE *ptr = (void *)obj;
-    unpoison_memory_region(ptr, SIZEOF_VALUE, newobj_p);
+    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
+    asan_unpoison_memory_region(ptr, SIZEOF_VALUE, newobj_p);
 }
 
 #endif
