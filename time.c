@@ -4329,7 +4329,7 @@ time_ceil(int argc, VALUE *argv, VALUE time)
 
     nd = NUM2LONG(ndigits);
     if (nd < 0)
-	rb_raise(rb_eArgError, "negative ndigits given");
+        rb_raise(rb_eArgError, "negative ndigits given");
 
     GetTimeval(time, tobj);
     v = w2v(rb_time_unmagnify(tobj->timew));
