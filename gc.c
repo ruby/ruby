@@ -8048,6 +8048,8 @@ gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
                     break;
                 case T_MOVED:
                     break;
+                case T_ZOMBIE:
+                    break;
                 default:
                     if (RVALUE_WB_UNPROTECTED(v)) {
                         page->flags.has_uncollectible_shady_objects = TRUE;
