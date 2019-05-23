@@ -4693,8 +4693,7 @@ gc_mark_maybe(rb_objspace_t *objspace, VALUE obj)
           case T_NONE:
             break;
           default:
-            gc_pin(objspace, obj);
-	    gc_mark_ptr(objspace, obj);
+            gc_mark_and_pin(objspace, obj);
             break;
         }
 
@@ -4844,18 +4843,18 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
 }
 
 static inline void
-gc_mark_and_pin(rb_objspace_t *objspace, VALUE obj)
+gc_pin(rb_objspace_t *objspace, VALUE obj)
 {
-    if (!is_markable_object(objspace, obj)) return;
+    GC_ASSERT(is_markable_object(objspace, obj));
     MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
-    gc_mark_ptr(objspace, obj);
 }
 
 static inline void
-gc_pin(rb_objspace_t *objspace, VALUE obj)
+gc_mark_and_pin(rb_objspace_t *objspace, VALUE obj)
 {
     if (!is_markable_object(objspace, obj)) return;
-    MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
+    gc_pin(objspace, obj);
+    gc_mark_ptr(objspace, obj);
 }
 
 static inline void
