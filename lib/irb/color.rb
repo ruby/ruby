@@ -43,7 +43,7 @@ module IRB # :nodoc:
 
     class << self
       def colorable?
-        $stdout.tty? && ENV.key?('TERM') && ENV['TERM'] != 'dumb'
+        $stdout.tty? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb'))
       end
 
       def inspect_colorable?(obj)
