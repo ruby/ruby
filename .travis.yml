@@ -198,7 +198,7 @@ env:
     env:
       - GEMS_FOR_TEST=
       - ASAN_OPTIONS=detect_leaks=0
-      - cflags='-march=native -fsanitize=address -fno-omit-frame-pointer -fPIC'
+      - cflags='-U_FORTIFY_SOURCE -march=native -fsanitize=address -fno-omit-frame-pointer -fPIC'
       - debugflags=-ggdb3
       - optflags=-O1
       - LD=clang-8
@@ -213,7 +213,7 @@ env:
     <<: *clang-8
     env:
       - GEMS_FOR_TEST=
-      - cflags='-fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer -fPIC'
+      - cflags='-U_FORTIFY_SOURCE -fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer -fPIC'
       - optflags=-O1
       - LD=clang-8
       - LDFLAGS='-fsanitize=memory -fPIC'
@@ -227,7 +227,7 @@ env:
     <<: *clang-8
     env:
       - GEMS_FOR_TEST=
-      - cflags='-fsanitize=undefined,integer,nullability -fno-sanitize=implicit-integer-sign-change,unsigned-integer-overflow'
+      - cflags='-U_FORTIFY_SOURCE -fsanitize=undefined,integer,nullability -fno-sanitize=implicit-integer-sign-change,unsigned-integer-overflow'
       - cppflags=-DUNALIGNED_WORD_ACCESS=0
       - debugflags=-ggdb3
       - optflags='-O1 -march=native'
