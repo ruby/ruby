@@ -4106,6 +4106,25 @@ s_absolute_path(int c, const VALUE * v, VALUE _)
     return rb_file_s_absolute_path(c, v);
 }
 
+/*
+ *  call-seq:
+ *     File.absolute_path?(file_name)  ->  true or false
+ *
+ *  Returns <code>true</code> if +file_name+ is an absolute path, and
+ *  <code>false</code> otherwise.
+ *
+ *     File.absolute_path?("c:/foo")     #=> false (on Linux), true (on Windows)
+ */
+
+static VALUE
+s_absolute_path_p(VALUE klass, VALUE fname)
+{
+    VALUE path = rb_get_path(fname);
+
+    if (!rb_is_absolute_path(RSTRING_PTR(path))) return Qfalse;
+    return Qtrue;
+}
+
 enum rb_realpath_mode {
     RB_REALPATH_CHECK,
     RB_REALPATH_DIR,
@@ -6504,6 +6523,7 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "mkfifo", rb_file_s_mkfifo, -1);
     rb_define_singleton_method(rb_cFile, "expand_path", s_expand_path, -1);
     rb_define_singleton_method(rb_cFile, "absolute_path", s_absolute_path, -1);
+    rb_define_singleton_method(rb_cFile, "absolute_path?", s_absolute_path_p, 1);
     rb_define_singleton_method(rb_cFile, "realpath", rb_file_s_realpath, -1);
     rb_define_singleton_method(rb_cFile, "realdirpath", rb_file_s_realdirpath, -1);
     rb_define_singleton_method(rb_cFile, "basename", rb_file_s_basename, -1);
