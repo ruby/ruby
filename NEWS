@@ -54,6 +54,8 @@ Enumerable::
 
   New method::
 
+    * Added Enumerable#filter_map.  [Feature #15323]
+
     * Added Enumerable#tally.  [Feature #11076]
 
 Enumerator::
