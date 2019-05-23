@@ -433,6 +433,7 @@ script:
       $SETARCH make -s test-all -o exts TESTS="$TEST_ALL_ISOLATED_TESTS" RUBYOPT="-w"
     fi
   - $SETARCH make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
+  - $SETARCH make -s leaked-globals
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
