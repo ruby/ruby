@@ -117,10 +117,10 @@ extern "C" {
 #endif
 
 #if !__has_feature(memory_sanitizer)
-# define __msan_allocated_memory(x, y)
-# define __msan_poison(x, y)
-# define __msan_unpoison(x, y)
-# define __msan_unpoison_string(x)
+# define __msan_allocated_memory(x, y) ((void)(x), (void)(y))
+# define __msan_poison(x, y) ((void)(x), (void)(y))
+# define __msan_unpoison(x, y) ((void)(x), (void)(y))
+# define __msan_unpoison_string(x) ((void)(x))
 #endif
 
 /*!
