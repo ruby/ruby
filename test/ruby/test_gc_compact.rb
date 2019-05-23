@@ -81,7 +81,7 @@ class TestGCCompact < Test::Unit::TestCase
     loc = memory_location(new_tenant)
     assert loc, "should have a memory location"
 
-    if (ENV['TRAVIS'] && RUBY_PLATFORM =~ /darwin/) || RubyVM::MJIT.enabled?
+    if (ENV['TRAVIS'] && RUBY_PLATFORM =~ /darwin/)
       skip "tests are failing on Travis osx / Wercker from here"
     end
 
@@ -105,8 +105,6 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_many_collisions
-    skip if RubyVM::MJIT.enabled?
-
     list_of_objects = big_list
     ids       = list_of_objects.map(&:object_id)
     addresses = list_of_objects.map(&self.:memory_location)
