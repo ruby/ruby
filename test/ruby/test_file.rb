@@ -519,4 +519,22 @@ class TestFile < Test::Unit::TestCase
     end
   end if File::Constants.const_defined?(:TMPFILE)
 
+  def test_absolute_path?
+    assert_file.absolute_path?(File.absolute_path(__FILE__))
+    assert_file.absolute_path?("//foo/bar\\baz")
+    assert_file.not_absolute_path?(File.basename(__FILE__))
+    assert_file.not_absolute_path?("C:foo\\bar")
+    assert_file.not_absolute_path?("~")
+    assert_file.not_absolute_path?("~user")
+
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_file.absolute_path?("C:\\foo\\bar")
+      assert_file.absolute_path?("C:/foo/bar")
+      assert_file.not_absolute_path?("/foo/bar\\baz")
+    else
+      assert_file.not_absolute_path?("C:\\foo\\bar")
+      assert_file.not_absolute_path?("C:/foo/bar")
+      assert_file.absolute_path?("/foo/bar\\baz")
+    end
+  end
 end
