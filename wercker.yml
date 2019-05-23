@@ -29,16 +29,26 @@ mjit-test1:
           cat <<'EOS' > /usr/local/bin/mjit-debug-on-fail
           #!/bin/bash
           if ! "$@"; then
-            for f in $(find /tmp -type f -name "_ruby_mjit*.c"); do
-              echo "[${f}]==="
-              cat "$f"
-              echo "==="
-              echo
-            done
+            git clone --depth=1 git@github.com:ruby/mjit-debug
+            cd mjit-debug
+
+            debug_dir="$(date '+%F_%T')"
+            mkdir "$debug_dir"
+            cp /tmp/_ruby_mjit*.c "$debug_dir"
+
+            git add "$debug_dir"
+            git commit -m "Debug ${debug_dir}: ${WERCKER_BUILD_URL}"
+            git push origin master
             exit 1
           fi
           EOS
           chmod +x /usr/local/bin/mjit-debug-on-fail
+    # git push access to ruby/mjit-debug (private repository)
+    - add-ssh-key:
+        keyname: MJIT_DEBUG
+        host: github.com
+    - add-to-known_hosts:
+        hostname: github.com
 
     # --jit
     - script:
