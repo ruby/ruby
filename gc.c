@@ -882,7 +882,6 @@ static inline void gc_pin(rb_objspace_t *objspace, VALUE ptr);
 static inline void gc_mark_and_pin(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr);
 NO_SANITIZE("memory", static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr));
-static void gc_mark_and_pin_maybe(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
 
 static int gc_mark_stacked_objects_incremental(rb_objspace_t *, size_t count);
@@ -4365,7 +4364,7 @@ mark_locations_array(rb_objspace_t *objspace, register const VALUE *x, register 
     VALUE v;
     while (n--) {
         v = *x;
-        gc_mark_and_pin_maybe(objspace, v);
+        gc_mark_maybe(objspace, v);
 	x++;
     }
 }
@@ -4679,45 +4678,37 @@ rb_mark_tbl_no_pin(st_table *tbl)
 }
 
 static void
-gc_mark_maybe_(rb_objspace_t *objspace, VALUE obj, int pin)
+gc_mark_maybe(rb_objspace_t *objspace, VALUE obj)
 {
     (void)VALGRIND_MAKE_MEM_DEFINED(&obj, sizeof(obj));
-    if (is_pointer_to_heap(objspace, (void *)obj)) {
-        int type;
-        void *ptr = __asan_region_is_poisoned((void *)obj, SIZEOF_VALUE);
 
+    if (is_pointer_to_heap(objspace, (void *)obj)) {
+        void *ptr = __asan_region_is_poisoned((void *)obj, SIZEOF_VALUE);
         unpoison_object(obj, false);
-        type = BUILTIN_TYPE(obj);
 
         /* Garbage can live on the stack, so do not mark or pin */
-        if (type != T_MOVED && type != T_ZOMBIE && type != T_NONE) {
-            if (pin) {
-                gc_pin(objspace, obj);
-            }
+        switch (BUILTIN_TYPE(obj)) {
+          case T_MOVED:
+          case T_ZOMBIE:
+          case T_NONE:
+            break;
+          default:
+            gc_pin(objspace, obj);
 	    gc_mark_ptr(objspace, obj);
-	}
+            break;
+        }
+
         if (ptr) {
             GC_ASSERT(BUILTIN_TYPE(obj) == T_NONE);
             poison_object(obj);
         }
     }
 }
-static void
-gc_mark_and_pin_maybe(rb_objspace_t *objspace, VALUE obj)
-{
-    gc_mark_maybe_(objspace, obj, TRUE);
-}
-
-static void
-gc_mark_maybe(rb_objspace_t *objspace, VALUE obj)
-{
-    gc_mark_maybe_(objspace, obj, FALSE);
-}
 
 void
 rb_gc_mark_maybe(VALUE obj)
 {
-    gc_mark_and_pin_maybe(&rb_objspace, obj);
+    gc_mark_maybe(&rb_objspace, obj);
 }
 
 static inline int
@@ -5301,7 +5292,7 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     /* mark protected global variables */
     MARK_CHECKPOINT("global_list");
     for (list = global_list; list; list = list->next) {
-	rb_gc_mark_maybe(*list->varptr);
+        gc_mark_maybe(objspace, *list->varptr);
     }
 
     MARK_CHECKPOINT("end_proc");
@@ -7747,16 +7738,10 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
             UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.throw_data.throw_obj);
             break;
         case imemo_ifunc:
-            if (is_pointer_to_heap(objspace, RANY(obj)->as.imemo.ifunc.data)) {
-                TYPED_UPDATE_IF_MOVED(objspace, void *, RANY(obj)->as.imemo.ifunc.data);
-            }
             break;
         case imemo_memo:
             UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.memo.v1);
             UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.memo.v2);
-            if (is_pointer_to_heap(objspace, (void *)RANY(obj)->as.imemo.memo.u3.value)) {
-                UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.memo.u3.value);
-            }
             break;
         case imemo_ment:
             gc_ref_update_method_entry(objspace, &RANY(obj)->as.imemo.ment);
