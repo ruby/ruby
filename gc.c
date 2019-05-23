@@ -8171,7 +8171,11 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
             void *poisoned = poisoned_object_p(v);
             unpoison_object(v, false);
 
-            if (BUILTIN_TYPE(v) != T_NONE) {
+            switch (BUILTIN_TYPE(v)) {
+              case T_NONE:
+              case T_ZOMBIE:
+                break;
+              default:
                 rb_objspace_reachable_objects_from(v, reachable_object_check_moved_i, (void *)v);
             }
 
@@ -8309,7 +8313,6 @@ rb_gc(void)
     int reason = GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK |
                 GPR_FLAG_IMMEDIATE_SWEEP | GPR_FLAG_CAPI;
     garbage_collect(objspace, reason);
-    gc_finalize_deferred(objspace);
 }
 
 int
