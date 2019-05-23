@@ -123,6 +123,19 @@ extern "C" {
 # define __msan_unpoison_string(x)
 #endif
 
+/*!
+ * This function asserts that a (continuous) memory region from ptr to size
+ * being "poisoned".  Both read / write access to such memory region are
+ * prohibited until properly unpoisoned.  The region must be previously
+ * allocated (do not pass a freed pointer here), but not necessarily be an
+ * entire object that the malloc returns.  You can punch hole a part of a
+ * gigantic heap arena.  This is handy when you do not free an allocated memory
+ * region to reuse later: poison when you keep it unused, and unpoison when you
+ * reuse.
+ *
+ * \param[in]  ptr   pointer to the beginning of the memory region to poison.
+ * \param[in]  size  the length og the memory region to poison.
+ */
 static inline void
 asan_poison_memory_region(const volatile void *ptr, size_t size)
 {
@@ -130,6 +143,11 @@ asan_poison_memory_region(const volatile void *ptr, size_t size)
     __asan_poison_memory_region(ptr, size);
 }
 
+/*!
+ * This is a variant of asan_poison_memory_region that takes a VALUE.
+ *
+ * \param[in]  obj   target object.
+ */
 static inline void
 asan_poison_object(VALUE obj)
 {
@@ -137,6 +155,13 @@ asan_poison_object(VALUE obj)
     asan_poison_memory_region(ptr, SIZEOF_VALUE);
 }
 
+/*!
+ * This function predicates if the given object is fully addressable or not.
+ *
+ * \param[in]  obj        target object.
+ * \retval     0          the given object is fully addressable.
+ * \retval     otherwise  pointer to first such byte who is poisoned.
+ */
 static inline void *
 asan_poisoned_object_p(VALUE obj)
 {
@@ -144,6 +169,21 @@ asan_poisoned_object_p(VALUE obj)
     return __asan_region_is_poisoned(ptr, SIZEOF_VALUE);
 }
 
+/*!
+ * This function asserts that a (formally poisoned) memory region from ptr to
+ * size is now addressable.  Write access to such memory region gets allowed.
+ * However read access might or might not be possible depending on situations,
+ * because the region can have contents of previous usages.  That information
+ * should be passed by the malloc_p flag.  If that is true, the contents of the
+ * region is _not_ fully defined (like the return value of malloc behaves).
+ * Reading from there is NG; write something first.  If malloc_p is false on
+ * the other hand, that memory region is fully defined and can be read
+ * immediately.
+ *
+ * \param[in]  ptr       pointer to the beginning of the memory region to unpoison.
+ * \param[in]  size      the length og the memory region.
+ * \param[in]  malloc_p  if the memory region is like a malloc's return value or not.
+ */
 static inline void
 asan_unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p)
 {
@@ -156,6 +196,12 @@ asan_unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p
     }
 }
 
+/*!
+ * This is a variant of asan_unpoison_memory_region that takes a VALUE.
+ *
+ * \param[in]  obj       target object.
+ * \param[in]  malloc_p  if the memory region is like a malloc's return value or not.
+ */
 static inline void
 asan_unpoison_object(VALUE obj, bool newobj_p)
 {
