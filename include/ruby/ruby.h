@@ -2198,6 +2198,7 @@ rb_array_ptr_use_start(VALUE a, int allow_transient)
         }
     }
 #endif
+    (void)allow_transient;
 
     return rb_ary_ptr_use_start(a);
 }
@@ -2208,6 +2209,7 @@ rb_array_ptr_use_end(VALUE a, int allow_transient)
 {
     void rb_ary_ptr_use_end(VALUE a);
     rb_ary_ptr_use_end(a);
+    (void)allow_transient;
 }
 
 #if defined(EXTLIB) && defined(USE_DLN_A_OUT)
