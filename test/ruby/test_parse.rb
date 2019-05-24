@@ -562,6 +562,9 @@ class TestParse < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval(" ?a\x8a".force_encoding("utf-8")) }
     assert_equal("\u{1234}", eval("?\u{1234}"))
     assert_equal("\u{1234}", eval('?\u{1234}'))
+    assert_equal("\u{1234}", eval('?\u1234'))
+    e = assert_syntax_error('"#{?\u123}"', 'invalid Unicode escape')
+    assert_not_match(/end-of-input/, e.message)
   end
 
   def test_percent

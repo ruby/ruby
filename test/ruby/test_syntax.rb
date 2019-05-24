@@ -775,32 +775,39 @@ eom
   end
 
   def test_heredoc_mixed_encoding
-    assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+    e = assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
       #encoding: cp932
       <<-TEXT
       \xe9\x9d\u1234
       TEXT
     HEREDOC
-    assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+    assert_not_match(/end-of-input/, e.message)
+
+    e = assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
       #encoding: cp932
       <<-TEXT
       \xe9\x9d
       \u1234
       TEXT
     HEREDOC
-    assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+    assert_not_match(/end-of-input/, e.message)
+
+    e = assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
       #encoding: cp932
       <<-TEXT
       \u1234\xe9\x9d
       TEXT
     HEREDOC
-    assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+    assert_not_match(/end-of-input/, e.message)
+
+    e = assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
       #encoding: cp932
       <<-TEXT
       \u1234
       \xe9\x9d
       TEXT
     HEREDOC
+    assert_not_match(/end-of-input/, e.message)
   end
 
   def test_lineno_operation_brace_block
