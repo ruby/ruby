@@ -40,6 +40,13 @@ module ProcessSpecs
       }
     end
 
+    # These clocks in practice on AIX seem to be more precise than their reported resolution.
+    platform_is :aix do
+      clocks = clocks.reject { |clock, value|
+        [:CLOCK_REALTIME, :CLOCK_MONOTONIC].include?(clock)
+      }
+    end
+
     # On a Hyper-V Linux guest machine, these clocks in practice
     # seem to be less precise than advertised by clock_getres
     platform_is :linux do
