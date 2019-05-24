@@ -277,13 +277,13 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     # 137 M-^I
     :ed_unassigned,
     # 138 M-^J
-    :ed_unassigned,
+    :key_newline,
     # 139 M-^K
     :ed_unassigned,
     # 140 M-^L
     :ed_clear_screen,
     # 141 M-^M
-    :ed_unassigned,
+    :key_newline,
     # 142 M-^N
     :ed_unassigned,
     # 143 M-^O

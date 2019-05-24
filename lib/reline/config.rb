@@ -16,6 +16,7 @@ class Reline::Config
     history-size
     horizontal-scroll-mode
     input-meta
+    keyseq-timeout
     mark-directories
     mark-modified-lines
     mark-symlinked-directories
@@ -44,6 +45,7 @@ class Reline::Config
     @key_actors[:vi_insert] = Reline::KeyActor::ViInsert.new
     @key_actors[:vi_command] = Reline::KeyActor::ViCommand.new
     @history_size = 500
+    @keyseq_timeout = 500
   end
 
   def reset
@@ -178,6 +180,8 @@ class Reline::Config
       when 'vi-insert'
         @keymap_label = :vi_insert
       end
+    when 'keyseq-timeout'
+      @keyseq_timeout = value.to_i
     end
   end
 
