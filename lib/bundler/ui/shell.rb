@@ -10,7 +10,7 @@ module Bundler
       attr_writer :shell
 
       def initialize(options = {})
-        if options["no-color"] || !$stdout.tty?
+        if options["no-color"]
           Thor::Base.shell = Thor::Shell::Basic
         end
         @shell = Thor::Base.shell.new
