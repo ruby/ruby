@@ -1076,6 +1076,62 @@ RVALUE_FLAGS_AGE(VALUE flags)
 
 #endif /* USE_RGENGC */
 
+static VALUE
+check_rvalue_consistency_force(const VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    if (SPECIAL_CONST_P(obj)) {
+        rb_bug("check_rvalue_consistency: %p is a special const.", (void *)obj);
+    }
+    else if (!is_pointer_to_heap(objspace, (void *)obj)) {
+        rb_bug("check_rvalue_consistency: %p is not a Ruby object.", (void *)obj);
+    }
+    else {
+        const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
+        const int uncollectible_bit = RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
+        const int mark_bit = RVALUE_MARK_BITMAP(obj) != 0;
+        const int marking_bit = RVALUE_MARKING_BITMAP(obj) != 0, remembered_bit = marking_bit;
+        const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
+
+        if (BUILTIN_TYPE(obj) == T_NONE)   rb_bug("check_rvalue_consistency: %s is T_NONE", obj_info(obj));
+        if (BUILTIN_TYPE(obj) == T_ZOMBIE) rb_bug("check_rvalue_consistency: %s is T_ZOMBIE", obj_info(obj));
+        obj_memsize_of((VALUE)obj, FALSE);
+
+        /* check generation
+         *
+         * OLD == age == 3 && old-bitmap && mark-bit (except incremental marking)
+         */
+        if (age > 0 && wb_unprotected_bit) {
+            rb_bug("check_rvalue_consistency: %s is not WB protected, but age is %d > 0.", obj_info(obj), age);
+        }
+
+        if (!is_marking(objspace) && uncollectible_bit && !mark_bit) {
+            rb_bug("check_rvalue_consistency: %s is uncollectible, but is not marked while !gc.", obj_info(obj));
+        }
+
+        if (!is_full_marking(objspace)) {
+            if (uncollectible_bit && age != RVALUE_OLD_AGE && !wb_unprotected_bit) {
+                rb_bug("check_rvalue_consistency: %s is uncollectible, but not old (age: %d) and not WB unprotected.", obj_info(obj), age);
+            }
+            if (remembered_bit && age != RVALUE_OLD_AGE) {
+                rb_bug("check_rvalue_consistency: %s is remembered, but not old (age: %d).", obj_info(obj), age);
+            }
+        }
+
+        /*
+         * check coloring
+         *
+         *               marking:false marking:true
+         * marked:false  white         *invalid*
+         * marked:true   black         grey
+         */
+        if (is_incremental_marking(objspace) && marking_bit) {
+            if (!is_marking(objspace) && !mark_bit) rb_bug("check_rvalue_consistency: %s is marking, but not marked.", obj_info(obj));
+        }
+    }
+    return obj;
+}
 
 #if RGENGC_CHECK_MODE == 0
 static inline VALUE
@@ -1087,58 +1143,7 @@ check_rvalue_consistency(const VALUE obj)
 static VALUE
 check_rvalue_consistency(const VALUE obj)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-
-    if (SPECIAL_CONST_P(obj)) {
-	rb_bug("check_rvalue_consistency: %p is a special const.", (void *)obj);
-    }
-    else if (!is_pointer_to_heap(objspace, (void *)obj)) {
-	rb_bug("check_rvalue_consistency: %p is not a Ruby object.", (void *)obj);
-    }
-    else {
-	const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
-	const int uncollectible_bit = RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
-	const int mark_bit = RVALUE_MARK_BITMAP(obj) != 0;
-	const int marking_bit = RVALUE_MARKING_BITMAP(obj) != 0, remembered_bit = marking_bit;
-	const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
-
-	if (BUILTIN_TYPE(obj) == T_NONE)   rb_bug("check_rvalue_consistency: %s is T_NONE", obj_info(obj));
-	if (BUILTIN_TYPE(obj) == T_ZOMBIE) rb_bug("check_rvalue_consistency: %s is T_ZOMBIE", obj_info(obj));
-	obj_memsize_of((VALUE)obj, FALSE);
-
-	/* check generation
-	 *
-	 * OLD == age == 3 && old-bitmap && mark-bit (except incremental marking)
-	 */
-	if (age > 0 && wb_unprotected_bit) {
-	    rb_bug("check_rvalue_consistency: %s is not WB protected, but age is %d > 0.", obj_info(obj), age);
-	}
-
-	if (!is_marking(objspace) && uncollectible_bit && !mark_bit) {
-	    rb_bug("check_rvalue_consistency: %s is uncollectible, but is not marked while !gc.", obj_info(obj));
-	}
-
-	if (!is_full_marking(objspace)) {
-	    if (uncollectible_bit && age != RVALUE_OLD_AGE && !wb_unprotected_bit) {
-		rb_bug("check_rvalue_consistency: %s is uncollectible, but not old (age: %d) and not WB unprotected.", obj_info(obj), age);
-	    }
-	    if (remembered_bit && age != RVALUE_OLD_AGE) {
-		rb_bug("check_rvalue_consistency: %s is remembered, but not old (age: %d).", obj_info(obj), age);
-	    }
-	}
-
-	/*
-	 * check coloring
-	 *
-	 *               marking:false marking:true
-	 * marked:false  white         *invalid*
-	 * marked:true   black         grey
-	 */
-	if (is_incremental_marking(objspace) && marking_bit) {
-	    if (!is_marking(objspace) && !mark_bit) rb_bug("check_rvalue_consistency: %s is marking, but not marked.", obj_info(obj));
-	}
-    }
-    return obj;
+    return check_rvalue_consistency_force(obj);
 }
 #endif
 
@@ -5603,7 +5608,7 @@ check_color_i(const VALUE child, void *ptr)
 static void
 check_children_i(const VALUE child, void *ptr)
 {
-    check_rvalue_consistency(child);
+    check_rvalue_consistency_force(child);
 }
 
 static int
