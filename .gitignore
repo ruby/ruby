@@ -133,6 +133,11 @@ lcov*.info
 /web
 /yasmdata.rb
 
+# /bin/
+
+/bin/*.exe
+/bin/*.dll
+
 # /benchmark/
 /benchmark/bm_require.data
 /benchmark/bmx_*.rb
@@ -194,6 +199,10 @@ lcov*.info
 /gems/*.gem
 /gems/src
 /gems/*-*
+
+# /lib/
+/lib/ruby/[1-9]*.*/
+/lib/ruby/vendor_ruby/
 
 # /spec/bundler
 /.rspec_status
