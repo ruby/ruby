@@ -84,6 +84,14 @@ RSpec.describe Bundler::Source do
               expect(subject.version_message(spec)).to eq("nokogiri 1.6.1\e[33m (was 1.7.0)\e[0m")
             end
           end
+
+          context "without color" do
+            before { Bundler.ui = Bundler::UI::Shell.new("no-color" => true) }
+
+            it "should return a string with the locked spec version in yellow" do
+              expect(subject.version_message(spec)).to eq("nokogiri 1.6.1 (was 1.7.0)")
+            end
+          end
         end
 
         context "with an older version" do
@@ -95,6 +103,14 @@ RSpec.describe Bundler::Source do
 
             it "should return a string with the locked spec version in green" do
               expect(subject.version_message(spec)).to eq("nokogiri 1.7.1\e[32m (was 1.7.0)\e[0m")
+            end
+          end
+
+          context "without color" do
+            before { Bundler.ui = Bundler::UI::Shell.new("no-color" => true) }
+
+            it "should return a string with the locked spec version in yellow" do
+              expect(subject.version_message(spec)).to eq("nokogiri 1.7.1 (was 1.7.0)")
             end
           end
         end
