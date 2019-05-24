@@ -646,9 +646,22 @@ CODE
     assert_raise(ArgumentError) { "foo".count }
   end
 
+  def crypt_supports_des_crypt?
+    /openbsd/ !~ RUBY_PLATFORM
+  end
+
   def test_crypt
-    assert_equal(S('aaGUC/JkO9/Sc'), S("mypassword").crypt(S("aa")))
-    assert_not_equal(S('aaGUC/JkO9/Sc'), S("mypassword").crypt(S("ab")))
+    if crypt_supports_des_crypt?
+      pass      = "aaGUC/JkO9/Sc"
+      good_salt = "aa"
+      bad_salt  = "ab"
+    else
+      pass      = "$2a$04$0WVaz0pV3jzfZ5G5tpmHWuBQGbkjzgtSc3gJbmdy0GAGMa45MFM2."
+      good_salt = "$2a$04$0WVaz0pV3jzfZ5G5tpmHWu"
+      bad_salt  = "$2a$04$0WVaz0pV3jzfZ5G5tpmHXu"
+    end
+    assert_equal(S(pass), S("mypassword").crypt(S(good_salt)))
+    assert_not_equal(S(pass), S("mypassword").crypt(S(bad_salt)))
     assert_raise(ArgumentError) {S("mypassword").crypt(S(""))}
     assert_raise(ArgumentError) {S("mypassword").crypt(S("\0a"))}
     assert_raise(ArgumentError) {S("mypassword").crypt(S("a\0"))}
@@ -660,9 +673,9 @@ CODE
     end
 
     @cls == String and
-      assert_no_memory_leak([], 's = ""', "#{<<~"begin;"}\n#{<<~'end;'}")
+      assert_no_memory_leak([], "s = ''; salt_proc = proc{#{(crypt_supports_des_crypt? ? '..' : good_salt).inspect}}", "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
-      1000.times { s.crypt(-"..").clear  }
+      1000.times { s.crypt(-salt_proc.call).clear  }
     end;
   end
 

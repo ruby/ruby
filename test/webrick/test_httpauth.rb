@@ -58,6 +58,9 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
   end
 
   [nil, :crypt, :bcrypt].each do |hash_algo|
+    # OpenBSD does not support insecure DES-crypt
+    next if /openbsd/ =~ RUBY_PLATFORM && hash_algo != :bcrypt
+
     begin
       case hash_algo
       when :crypt
