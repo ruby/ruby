@@ -1096,16 +1096,21 @@ class Reline::LineEditor
         if @line_index < (@buffer_of_lines.size - 1)
           ed_next_history(key) # means cursor down
         else
-          finish if confirm_multiline_termination
+          # should check confirm_multiline_termination to finish?
+          finish
         end
       else
-        if @line_index == (@buffer_of_lines.size - 1) and confirm_multiline_termination
-          finish
+        if @line_index == (@buffer_of_lines.size - 1)
+          if confirm_multiline_termination
+            finish
+          else
+            key_newline(key)
+          end
         else
-          next_line = @line.byteslice(@byte_pointer, @line.bytesize - @byte_pointer)
-          cursor_line = @line.byteslice(0, @byte_pointer)
-          insert_new_line(cursor_line, next_line)
-          @cursor = 0
+          # should check confirm_multiline_termination to finish?
+          @previous_line_index = @line_index
+          @line_index = @buffer_of_lines.size - 1
+          finish
         end
       end
     else
