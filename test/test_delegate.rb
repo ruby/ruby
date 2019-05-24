@@ -85,6 +85,37 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal(:m, bar.send(:delegate_test_m), bug)
   end
 
+  class Parent
+    def parent_public; end
+
+    protected
+
+    def parent_protected; end
+  end
+
+  class Child < DelegateClass(Parent)
+  end
+
+  class Parent
+    def parent_public_added; end
+
+    protected
+
+    def parent_protected_added; end
+  end
+
+  def test_public_instance_methods
+    ignores = Object.public_instance_methods | Delegator.public_instance_methods
+    assert_equal([:parent_public, :parent_public_added], (Child.public_instance_methods - ignores).sort)
+    assert_equal([:parent_public, :parent_public_added], (Child.new(Parent.new).public_methods - ignores).sort)
+  end
+
+  def test_protected_instance_methods
+    ignores = Object.protected_instance_methods | Delegator.protected_instance_methods
+    assert_equal([:parent_protected, :parent_protected_added], (Child.protected_instance_methods - ignores).sort)
+    assert_equal([:parent_protected, :parent_protected_added], (Child.new(Parent.new).protected_methods - ignores).sort)
+  end
+
   class IV < DelegateClass(Integer)
     attr_accessor :var
 
