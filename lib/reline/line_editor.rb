@@ -104,7 +104,6 @@ class Reline::LineEditor
     @kill_ring = Reline::KillRing.new
     @vi_clipboard = ''
     @vi_arg = nil
-    @meta_prefix = false
     @waiting_proc = nil
     @waiting_operator_proc = nil
     @completion_journey_data = nil
@@ -625,31 +624,38 @@ class Reline::LineEditor
 
   private def normal_char(key)
     method_symbol = method_obj = nil
-    @multibyte_buffer << key
+    @multibyte_buffer << key.combined_char
     if @multibyte_buffer.size > 1
       if @multibyte_buffer.dup.force_encoding(@encoding).valid_encoding?
-        key = @multibyte_buffer.dup.force_encoding(@encoding)
+        process_key(@multibyte_buffer.dup.force_encoding(@encoding), nil, nil)
         @multibyte_buffer.clear
       else
         # invalid
         return
       end
     else # single byte
-      return if key >= 128 # maybe, first byte of multi byte
-      if @meta_prefix
-        key |= 0b10000000 if key.nobits?(0b10000000)
-        @meta_prefix = false
-      end
-      method_symbol = @config.editing_mode.get_method(key)
-      if key.allbits?(0b10000000) and method_symbol == :ed_unassigned
-        return # This is unknown input
-      end
-      if method_symbol and respond_to?(method_symbol, true)
-        method_obj = method(method_symbol)
+      return if key.char >= 128 # maybe, first byte of multi byte
+      method_symbol = @config.editing_mode.get_method(key.combined_char)
+      if key.with_meta and method_symbol == :ed_unassigned
+        # split ESC + key
+        method_symbol = @config.editing_mode.get_method("\e".ord)
+        if method_symbol and respond_to?(method_symbol, true)
+          method_obj = method(method_symbol)
+        end
+        process_key("\e".ord, method_symbol, method_obj)
+        method_symbol = @config.editing_mode.get_method(key.char)
+        if method_symbol and respond_to?(method_symbol, true)
+          method_obj = method(method_symbol)
+        end
+        process_key(key.char, method_symbol, method_obj)
+      else
+        if method_symbol and respond_to?(method_symbol, true)
+          method_obj = method(method_symbol)
+        end
+        process_key(key.combined_char, method_symbol, method_obj)
       end
       @multibyte_buffer.clear
     end
-    process_key(key, method_symbol, method_obj)
     if @config.editing_mode_is?(:vi_command) and @cursor > 0 and @cursor == @cursor_max
       byte_size = Reline::Unicode.get_prev_mbchar_size(@line, @byte_pointer)
       @byte_pointer -= byte_size
@@ -660,7 +666,7 @@ class Reline::LineEditor
   end
 
   def input_key(key)
-    if key.nil?
+    if key.nil? or key.char.nil?
       if @first_char
         @line = nil
       end
@@ -669,30 +675,20 @@ class Reline::LineEditor
     end
     @first_char = false
     completion_occurs = false
-    if @config.editing_mode_is?(:emacs, :vi_insert) and key == "\C-i".ord
+    if @config.editing_mode_is?(:emacs, :vi_insert) and key.char == "\C-i".ord
       result = @completion_proc&.(@line)
       if result.is_a?(Array)
         completion_occurs = true
         complete(result)
       end
-    elsif @config.editing_mode_is?(:vi_insert) and ["\C-p".ord, "\C-n".ord].include?(key)
+    elsif @config.editing_mode_is?(:vi_insert) and ["\C-p".ord, "\C-n".ord].include?(key.char)
       result = @completion_proc&.(@line)
       if result.is_a?(Array)
         completion_occurs = true
-        move_completed_list(result, "\C-p".ord == key ? :up : :down)
+        move_completed_list(result, "\C-p".ord == key.char ? :up : :down)
       end
-    elsif @config.editing_mode_is?(:emacs) and key == "\e".ord # meta key
-      if @meta_prefix
-        # escape twice
-        @meta_prefix = false
-        @kill_ring.process
-      else
-        @meta_prefix = true
-      end
-    elsif @config.editing_mode_is?(:vi_command) and key == "\e".ord
-      # suppress ^[ when command_mode
-    elsif Symbol === key and respond_to?(key, true)
-      process_key(key, key, method(key))
+    elsif Symbol === key.char and respond_to?(key.char, true)
+      process_key(key.char, key.char, method(key.char))
     else
       normal_char(key)
     end
@@ -820,6 +816,15 @@ class Reline::LineEditor
   private def key_delete(key)
     if @config.editing_mode_is?(:vi_insert, :emacs)
       ed_delete_next_char(key)
+    end
+  end
+
+  private def key_newline(key)
+    if @is_multiline
+      next_line = @line.byteslice(@byte_pointer, @line.bytesize - @byte_pointer)
+      cursor_line = @line.byteslice(0, @byte_pointer)
+      insert_new_line(cursor_line, next_line)
+      @cursor = 0
     end
   end
 

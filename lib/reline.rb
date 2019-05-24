@@ -1,4 +1,5 @@
 require 'io/console'
+require 'timeout'
 require 'reline/version'
 require 'reline/config'
 require 'reline/key_actor'
@@ -6,6 +7,8 @@ require 'reline/key_stroke'
 require 'reline/line_editor'
 
 module Reline
+  Key = Struct.new('Key', :char, :combined_char, :with_meta)
+
   extend self
   FILENAME_COMPLETION_PROC = nil
   USERNAME_COMPLETION_PROC = nil
@@ -321,8 +324,7 @@ module Reline
     key_stroke = Reline::KeyStroke.new(config)
     begin
       loop do
-        c = Reline::IOGate.getc
-        key_stroke.input_to!(c)&.then { |inputs|
+        key_stroke.read_io(@@config.keyseq_timeout) { |inputs|
           inputs.each { |c|
             @@line_editor.input_key(c)
             @@line_editor.rerender

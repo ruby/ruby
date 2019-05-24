@@ -9,7 +9,11 @@ class Reline::ANSI
     @@output = val
   end
 
+  @@buf = []
   def self.getc
+    unless @@buf.empty?
+      return @@buf.shift
+    end
     c = nil
     loop do
       result = select([@@input], [], [], 0.1)
@@ -18,6 +22,10 @@ class Reline::ANSI
       break
     end
     c&.ord
+  end
+
+  def self.ungetc(c)
+    @@buf.unshift(c)
   end
 
   def self.get_screen_size

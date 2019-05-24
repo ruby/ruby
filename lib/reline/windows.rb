@@ -101,6 +101,10 @@ class Reline::Windows
     end
   end
 
+  def self.ungetc(c)
+    @@buf.unshift(c)
+  end
+
   def self.get_screen_size
     csbi = 0.chr * 24
     @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
