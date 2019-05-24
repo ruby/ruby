@@ -11208,7 +11208,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 #undef IMEMO_NAME
 	      default: UNREACHABLE;
 	    }
-            APPENDF((BUFF_ARGS, "%s", imemo_name));
+            APPENDF((BUFF_ARGS, "/%s", imemo_name));
 
 	    switch (imemo_type(obj)) {
 	      case imemo_ment: {
