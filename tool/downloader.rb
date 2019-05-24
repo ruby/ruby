@@ -94,7 +94,7 @@ class Downloader
         super(UNICODE_PUBLIC+name_dir_part+beta_name, name, dir, since, options)
       else
         index_file = Pathname.new(under(dir, name_dir_part+'index.html'))
-        if index_file.exist? and name_dir_part !~ /^(12.1.0|emoji\/12.0)/
+        if index_file.exist? and name_dir_part !~ /^(12\.1\.0|emoji\/12\.0)/
           raise "Although Unicode is not in beta, file #{index_file} exists. " +
                 "Remove all files in this directory and in .downloaded-cache/ " +
                 "because they may be leftovers from the beta period."
