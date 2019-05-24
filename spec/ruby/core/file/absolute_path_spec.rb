@@ -9,6 +9,14 @@ describe "File.absolute_path?" do
     File.absolute_path?(@abs).should be_true
   end
 
+  it "returns false if it's a relative path" do
+    File.absolute_path?(File.basename(__FILE__)).should be_false
+  end
+
+  it "returns false if it's a tricky relative path" do
+    File.absolute_path?("C:foo\\bar").should be_false
+  end
+
   it "does not expand '~' to a home directory." do
     File.absolute_path?('~').should be_false
   end
