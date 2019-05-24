@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/clocks'
 
 describe "Process.clock_getres" do
-  platform_is_not :freebsd, :aix do # clock_getres() seems incorrect on FreeBSD and AIX?
+  platform_is_not :freebsd do # clock_getres() seems incorrect on FreeBSD
     ProcessSpecs.clock_constants_for_resolution_checks.each do |name, value|
       it "matches the clock in practice for Process::#{name}" do
         times = []
