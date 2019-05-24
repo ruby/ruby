@@ -31,7 +31,7 @@ class Reline::KeyStroke
       result = match_status(buffer)
       case result
       when :matched
-        block.(expand(bytes).map{ |c| Reline::Key.new(c, c, false) })
+        block.(expand(buffer).map{ |c| Reline::Key.new(c, c, false) })
         break
       when :matching
         if buffer.size == 1
