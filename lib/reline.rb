@@ -246,6 +246,9 @@ module Reline
   end
 
   def readmultiline(prompt = '', add_hist = false, &confirm_multiline_termination)
+    unless confirm_multiline_termination
+      raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
+    end
     if block_given?
       inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
     else
