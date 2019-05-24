@@ -2213,7 +2213,7 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 	if (page->start <= p) {
 	    if (p < page->start + page->total_slots) {
                 RB_DEBUG_COUNTER_INC(gc_isptr_maybe);
-		return TRUE;
+                return TRUE;
 	    }
 	    lo = mid + 1;
 	}
