@@ -4159,6 +4159,21 @@ rb_time_succ(VALUE time)
 
 #define time_succ rb_time_succ
 
+static VALUE
+ndigits_denominator(VALUE ndigits)
+{
+    long nd = NUM2LONG(ndigits);
+
+    if (nd < 0) {
+        rb_raise(rb_eArgError, "negative ndigits given");
+    }
+    if (nd == 0) {
+        return INT2FIX(1);
+    }
+    return rb_rational_new(INT2FIX(1),
+                           rb_int_positive_pow(10, (unsigned long)nd));
+}
+
 /*
  * call-seq:
  *   time.round([ndigits])   -> new_time
@@ -4193,31 +4208,17 @@ rb_time_succ(VALUE time)
 static VALUE
 time_round(int argc, VALUE *argv, VALUE time)
 {
-    VALUE ndigits, v, a, b, den;
-    long nd;
+    VALUE ndigits, v, den;
     struct time_object *tobj;
 
     if (!rb_check_arity(argc, 0, 1) || NIL_P(ndigits = argv[0]))
-        ndigits = INT2FIX(0);
+        den = INT2FIX(1);
     else
-        ndigits = rb_to_int(ndigits);
-
-    nd = NUM2LONG(ndigits);
-    if (nd < 0)
-	rb_raise(rb_eArgError, "negative ndigits given");
+        den = ndigits_denominator(ndigits);
 
     GetTimeval(time, tobj);
     v = w2v(rb_time_unmagnify(tobj->timew));
 
-    a = INT2FIX(1);
-    b = INT2FIX(10);
-    while (0 < nd) {
-        if (nd & 1)
-            a = mulv(a, b);
-        b = mulv(b, b);
-        nd = nd >> 1;
-    }
-    den = quov(INT2FIX(1), a);
     v = modv(v, den);
     if (lt(v, quov(den, INT2FIX(2))))
         return time_add(tobj, time, v, -1);
@@ -4257,31 +4258,17 @@ time_round(int argc, VALUE *argv, VALUE time)
 static VALUE
 time_floor(int argc, VALUE *argv, VALUE time)
 {
-    VALUE ndigits, v, a, b, den;
-    long nd;
+    VALUE ndigits, v, den;
     struct time_object *tobj;
 
     if (!rb_check_arity(argc, 0, 1) || NIL_P(ndigits = argv[0]))
-        ndigits = INT2FIX(0);
+        den = INT2FIX(1);
     else
-        ndigits = rb_to_int(ndigits);
-
-    nd = NUM2LONG(ndigits);
-    if (nd < 0)
-        rb_raise(rb_eArgError, "negative ndigits given");
+        den = ndigits_denominator(ndigits);
 
     GetTimeval(time, tobj);
     v = w2v(rb_time_unmagnify(tobj->timew));
 
-    a = INT2FIX(1);
-    b = INT2FIX(10);
-    while (0 < nd) {
-        if (nd & 1)
-            a = mulv(a, b);
-        b = mulv(b, b);
-        nd = nd >> 1;
-    }
-    den = quov(INT2FIX(1), a);
     v = modv(v, den);
     return time_add(tobj, time, v, -1);
 }
@@ -4318,31 +4305,17 @@ time_floor(int argc, VALUE *argv, VALUE time)
 static VALUE
 time_ceil(int argc, VALUE *argv, VALUE time)
 {
-    VALUE ndigits, v, a, b, den;
-    long nd;
+    VALUE ndigits, v, den;
     struct time_object *tobj;
 
     if (!rb_check_arity(argc, 0, 1) || NIL_P(ndigits = argv[0]))
-        ndigits = INT2FIX(0);
+        den = INT2FIX(1);
     else
-        ndigits = rb_to_int(ndigits);
-
-    nd = NUM2LONG(ndigits);
-    if (nd < 0)
-        rb_raise(rb_eArgError, "negative ndigits given");
+        den = ndigits_denominator(ndigits);
 
     GetTimeval(time, tobj);
     v = w2v(rb_time_unmagnify(tobj->timew));
 
-    a = INT2FIX(1);
-    b = INT2FIX(10);
-    while (0 < nd) {
-        if (nd & 1)
-            a = mulv(a, b);
-        b = mulv(b, b);
-        nd = nd >> 1;
-    }
-    den = quov(INT2FIX(1), a);
     v = modv(v, den);
     return time_add(tobj, time, subv(den, v), 1);
 }
