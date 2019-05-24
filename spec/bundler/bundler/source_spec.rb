@@ -65,6 +65,8 @@ RSpec.describe Bundler::Source do
           end
 
           context "without color" do
+            before { Bundler.ui = Bundler::UI::Shell.new("no-color" => true) }
+
             it "should return a string with the spec name and version and locked spec version" do
               expect(subject.version_message(spec)).to eq("nokogiri >= 1.6 (was < 1.5)")
             end
