@@ -2212,10 +2212,8 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 	page = heap_pages_sorted[mid];
 	if (page->start <= p) {
 	    if (p < page->start + page->total_slots) {
-                if (!page->flags.in_tomb) {
-                    RB_DEBUG_COUNTER_INC(gc_isptr_maybe);
-                    return TRUE;
-                }
+                RB_DEBUG_COUNTER_INC(gc_isptr_maybe);
+		return TRUE;
 	    }
 	    lo = mid + 1;
 	}
