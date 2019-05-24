@@ -201,8 +201,8 @@ lcov*.info
 /gems/*-*
 
 # /lib/
-/lib/ruby/[1-9]*.*/
-/lib/ruby/vendor_ruby/
+/lib/ruby/[1-9]*.*
+/lib/ruby/vendor_ruby
 
 # /spec/bundler
 /.rspec_status
