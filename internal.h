@@ -134,7 +134,7 @@ extern "C" {
  * reuse.
  *
  * \param[in]  ptr   pointer to the beginning of the memory region to poison.
- * \param[in]  size  the length og the memory region to poison.
+ * \param[in]  size  the length of the memory region to poison.
  */
 static inline void
 asan_poison_memory_region(const volatile void *ptr, size_t size)
@@ -181,7 +181,7 @@ asan_poisoned_object_p(VALUE obj)
  * immediately.
  *
  * \param[in]  ptr       pointer to the beginning of the memory region to unpoison.
- * \param[in]  size      the length og the memory region.
+ * \param[in]  size      the length of the memory region.
  * \param[in]  malloc_p  if the memory region is like a malloc's return value or not.
  */
 static inline void
