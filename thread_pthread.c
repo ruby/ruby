@@ -2187,25 +2187,33 @@ timer_pthread_fn(void *p)
     pthread_t main_thread_id = vm->main_thread->thread_id;
     struct pollfd pfd;
     int timeout = -1;
+    int ccp;
 
     pfd.fd = timer_pthread.low[0];
     pfd.events = POLLIN;
 
     while (system_working > 0) {
         (void)poll(&pfd, 1, timeout);
-        (void)consume_communication_pipe(pfd.fd);
+        ccp = consume_communication_pipe(pfd.fd);
 
-        if (system_working > 0 && ATOMIC_CAS(timer_pthread.armed, 1, 1)) {
-            pthread_kill(main_thread_id, SIGVTALRM);
+        if (system_working > 0) {
+	    if (ATOMIC_CAS(timer_pthread.armed, 1, 1)) {
+		pthread_kill(main_thread_id, SIGVTALRM);
 
-            if (rb_signal_buff_size() || !ubf_threads_empty()) {
-                timeout = TIME_QUANTUM_MSEC;
-            }
-            else {
-                ATOMIC_SET(timer_pthread.armed, 0);
-                timeout = -1;
-            }
-        }
+		if (rb_signal_buff_size() || !ubf_threads_empty()) {
+		    timeout = TIME_QUANTUM_MSEC;
+		}
+		else {
+		    ATOMIC_SET(timer_pthread.armed, 0);
+		    timeout = -1;
+		}
+	    }
+	    else if (ccp) {
+		pthread_kill(main_thread_id, SIGVTALRM);
+		ATOMIC_SET(timer_pthread.armed, 0);
+		timeout = -1;
+	    }
+	}
     }
 
     return 0;
