@@ -56,7 +56,7 @@ RSpec.describe Bundler::Source do
         context "with a different version" do
           let(:locked_gem) { double(:locked_gem, :name => "nokogiri", :version => "< 1.5") }
 
-          context "with color" do
+          context "with color", :non_windows do
             before { Bundler.ui = Bundler::UI::Shell.new }
 
             it "should return a string with the spec name and version and locked spec version" do
@@ -77,7 +77,7 @@ RSpec.describe Bundler::Source do
           let(:spec) { double(:spec, :name => "nokogiri", :version => "1.6.1", :platform => rb) }
           let(:locked_gem) { double(:locked_gem, :name => "nokogiri", :version => "1.7.0") }
 
-          context "with color" do
+          context "with color", :non_windows do
             before { Bundler.ui = Bundler::UI::Shell.new }
 
             it "should return a string with the locked spec version in yellow" do
@@ -98,7 +98,7 @@ RSpec.describe Bundler::Source do
           let(:spec) { double(:spec, :name => "nokogiri", :version => "1.7.1", :platform => rb) }
           let(:locked_gem) { double(:locked_gem, :name => "nokogiri", :version => "1.7.0") }
 
-          context "with color" do
+          context "with color", :non_windows do
             before { Bundler.ui = Bundler::UI::Shell.new }
 
             it "should return a string with the locked spec version in green" do

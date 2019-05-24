@@ -74,6 +74,7 @@ RSpec.configure do |config|
   config.filter_run_excluding :rubygems_master => (ENV["RGV"] != "master")
   config.filter_run_excluding :bundler => RequirementChecker.against(Bundler::VERSION.split(".")[0])
   config.filter_run_excluding :ruby_repo => !(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"]).nil?
+  config.filter_run_excluding :non_windows => Gem.win_platform?
 
   config.filter_run_when_matching :focus unless ENV["CI"]
 
