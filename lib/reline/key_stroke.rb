@@ -58,7 +58,7 @@ class Reline::KeyStroke
         end
       when :unmatched
         if buffer.size == 1 and c == "\e".ord
-          read_escaped_key(buffer, block)
+          read_escaped_key(keyseq_timeout, buffer, block)
         else
           block.(buffer.map{ |c| Reline::Key.new(c, c, false) })
         end
@@ -67,7 +67,7 @@ class Reline::KeyStroke
     end
   end
 
-  def read_escaped_key(buffer, block)
+  def read_escaped_key(keyseq_timeout, buffer, block)
     begin
       escaped_c = nil
       Timeout.timeout(keyseq_timeout / 1000.0) {
