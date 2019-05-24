@@ -857,7 +857,7 @@ class Reline::LineEditor
     @waiting_proc = proc { |key|
       arg.times do
         if key == "\C-j".ord or key == "\C-m".ord
-          ed_newline(key)
+          key_newline(key)
         else
           ed_insert(key)
         end
