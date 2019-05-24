@@ -744,6 +744,10 @@ class TestM17NComb < Test::Unit::TestCase
     }
   end
 
+  def crypt_supports_des_crypt?
+    /openbsd/ !~ RUBY_PLATFORM
+  end
+
   # glibc 2.16 or later denies salt contained other than [0-9A-Za-z./] #7312
   # we use this check to test strict and non-strict behavior separately #11045
   strict_crypt = if defined? Etc::CS_GNU_LIBC_VERSION
@@ -760,7 +764,7 @@ class TestM17NComb < Test::Unit::TestCase
     }
   end
 
-  if !strict_crypt
+  if !strict_crypt && /openbsd/ !~ RUBY_PLATFORM
     def test_str_crypt_nonstrict
       combination(STRINGS, STRINGS) {|str, salt|
         # only test input other than [0-9A-Za-z./] to confirm non-strict behavior
@@ -772,9 +776,14 @@ class TestM17NComb < Test::Unit::TestCase
   end
 
   private def confirm_crypt_result(str, salt)
-    if b(salt).length < 2
-      assert_raise(ArgumentError) { str.crypt(salt) }
-      return
+    if crypt_supports_des_crypt?
+      if b(salt).length < 2
+        assert_raise(ArgumentError) { str.crypt(salt) }
+        return
+      end
+    else
+      return if b(salt).length < 2
+      salt = "$2a$04$0WVaz0pV3jzfZ5G5tpmH#{salt}"
     end
     t = str.crypt(salt)
     assert_equal(b(str).crypt(b(salt)), t, "#{encdump(str)}.crypt(#{encdump(salt)})")
