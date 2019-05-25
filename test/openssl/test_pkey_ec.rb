@@ -309,8 +309,14 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       result_b1 = point_a.mul([3], [])
       assert_equal B(%w{ 04 10 0D }), result_b1.to_octet_string(:uncompressed)
       # 3 * point_a + 2 * point_a = 3 * (6, 3) + 2 * (6, 3) = (7, 11)
-      result_b1 = point_a.mul([3, 2], [point_a])
-      assert_equal B(%w{ 04 07 0B }), result_b1.to_octet_string(:uncompressed)
+      begin
+        result_b1 = point_a.mul([3, 2], [point_a])
+      rescue OpenSSL::PKey::EC::Point::Error
+        # LibreSSL doesn't support multiple entries in first argument
+        raise if $!.message !~ /called a function you should not call/
+      else
+        assert_equal B(%w{ 04 07 0B }), result_b1.to_octet_string(:uncompressed)
+      end
       # 3 * point_a + 5 * point_a.group.generator = 3 * (6, 3) + 5 * (5, 1) = (13, 10)
       result_b1 = point_a.mul([3], [], 5)
       assert_equal B(%w{ 04 0D 0A }), result_b1.to_octet_string(:uncompressed)
