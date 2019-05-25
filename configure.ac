@@ -3321,18 +3321,30 @@ CAPITARGET=""
 AC_ARG_ENABLE(install-doc,
        AS_HELP_STRING([--disable-install-doc], [do not install either rdoc indexes or C API documents during install]),
        [install_doc=$enableval], [install_doc=yes])
+AC_ARG_WITH(rdoc,
+      AS_HELP_STRING([--with-rdoc=ri,html], [comma/space separated list of RDoc formats to install]),
+      [install_rdoc=`echo ,$withval, | sed 'y/,/ /;s/ ri / rdoc /;s/^ *//;s/ *$//'`], [
 AC_ARG_ENABLE(install-rdoc,
       AS_HELP_STRING([--disable-install-rdoc], [do not install rdoc indexes during install]),
       [install_rdoc=$enableval], [install_rdoc=yes])
+])
 AC_ARG_ENABLE(install-capi,
       AS_HELP_STRING([--disable-install-capi], [do not install C API documents during install]),
       [install_capi=$enableval], [install_capi=no])
 
 AS_IF([test "$install_doc" != no], [
-    AS_IF([test "$install_rdoc" != no], [
+    AS_CASE(["$install_rdoc"],
+    [yes], [
 	RDOCTARGET="rdoc"
-    ], [
+    ],
+    [all], [
+	RDOCTARGET="rdoc html"
+    ],
+    [no|''], [
 	RDOCTARGET="nodoc"
+    ],
+    [
+	RDOCTARGET="$install_rdoc"
     ])
     AS_IF([test "$install_capi" != no -a -n "$DOXYGEN"], [
 	CAPITARGET="capi"
