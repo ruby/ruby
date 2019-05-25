@@ -653,13 +653,15 @@ class Reline::LineEditor
     @first_char = false
     completion_occurs = false
     if @config.editing_mode_is?(:emacs, :vi_insert) and key.char == "\C-i".ord
-      result = @completion_proc&.(@line)
+      slice = retrieve_completion_slice
+      result = @completion_proc.(slice) if @completion_proc and slice
       if result.is_a?(Array)
         completion_occurs = true
         complete(result)
       end
     elsif @config.editing_mode_is?(:vi_insert) and ["\C-p".ord, "\C-n".ord].include?(key.char)
-      result = @completion_proc&.(@line)
+      slice = retrieve_completion_slice
+      result = @completion_proc.(slice) if @completion_proc and slice
       if result.is_a?(Array)
         completion_occurs = true
         move_completed_list(result, "\C-p".ord == key.char ? :up : :down)
@@ -672,6 +674,18 @@ class Reline::LineEditor
     unless completion_occurs
       @completion_state = CompletionState::NORMAL
     end
+  end
+
+  def retrieve_completion_slice
+    word_break_regexp = /\A[#{Regexp.escape(Reline.completer_word_break_characters)}]/
+    before = @line.byteslice(0, @byte_pointer)
+    rest = nil
+    (0..@byte_pointer).each do |i|
+      if @line.byteslice(i, @byte_pointer) =~ word_break_regexp
+        rest = $'
+      end
+    end
+    rest ? rest : before
   end
 
   def confirm_multiline_termination
