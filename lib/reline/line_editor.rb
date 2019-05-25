@@ -257,10 +257,15 @@ class Reline::LineEditor
 
   def rerender # TODO: support physical and logical lines
     if @menu_info
-      @output.puts
+      scroll_down(@highest_in_all - @first_line_started_from)
+      @rerender_all = true
       @menu_info.list.each do |item|
-        @output.puts item
+        Reline::IOGate.move_cursor_column(0)
+        @output.print item
+        scroll_down(1)
       end
+      scroll_down(@highest_in_all - 1)
+      move_cursor_up(@highest_in_all - 1 - @first_line_started_from)
       @menu_info = nil
     end
     return if @line.nil?
