@@ -222,6 +222,10 @@ module IRB
       end
       Reline.completion_append_character = nil
       Reline.completion_proc = IRB::InputCompletor::CompletionProc
+      Reline.output_modifier_proc = proc do |output|
+        next unless IRB::Color.colorable?
+        IRB::Color.colorize_code(output)
+      end
       Reline.dig_perfect_match_proc = IRB::InputCompletor::PerfectMatchedProc
     end
 

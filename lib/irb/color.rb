@@ -79,7 +79,9 @@ module IRB # :nodoc:
         colored = +''
         Ripper.lex(code).each do |(_line, _col), token, str, expr|
           if seq = dispatch_seq(token, expr, str)
-            colored << "#{seq.map { |s| "\e[#{s}m" }.join('')}#{str}#{clear}"
+            str.each_line do |line|
+              colored << "#{seq.map { |s| "\e[#{s}m" }.join('')}#{line}#{clear}"
+            end
           else
             colored << str
           end

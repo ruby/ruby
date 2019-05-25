@@ -10,6 +10,7 @@ class Reline::LineEditor
   attr_reader :byte_pointer
   attr_accessor :confirm_multiline_termination_proc
   attr_accessor :completion_proc
+  attr_accessor :output_modifier_proc
   attr_accessor :pre_input_hook
   attr_accessor :dig_perfect_match_proc
   attr_writer :retrieve_completion_block
@@ -392,10 +393,18 @@ class Reline::LineEditor
       scroll_down(1) unless whole_lines.last.empty?
       Reline::IOGate.move_cursor_column(0)
       Reline::IOGate.erase_after_cursor
+
+      if output = @output_modifier_proc&.call(whole_buffer)
+        move_cursor_up(output.lines.size)
+        output.each_line(chomp: true) do |line|
+          render_partial(prompt, prompt_width, line, escape: false)
+          move_cursor_down(1)
+        end
+      end
     end
   end
 
-  private def render_partial(prompt, prompt_width, line_to_render, with_control = true)
+  private def render_partial(prompt, prompt_width, line_to_render, with_control = true, escape: true)
     visual_lines, height = split_by_width(prompt, line_to_render.nil? ? '' : line_to_render, @screen_size.last)
     if with_control
       if height > @highest_in_this
@@ -421,7 +430,7 @@ class Reline::LineEditor
         Reline::IOGate.move_cursor_column(0)
         next
       end
-      if is_prompt
+      if is_prompt || !escape
         @output.print line
       else
         escaped_print line
