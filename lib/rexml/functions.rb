@@ -315,18 +315,23 @@ module REXML
       end
     end
 
-    # UNTESTED
-    def Functions::boolean( object=nil )
-      if object.kind_of? String
-        if object =~ /\d+/u
-          return object.to_f != 0
-        else
-          return object.size > 0
-        end
-      elsif object.kind_of? Array
-        object = object.find{|x| x and true}
+    def Functions::boolean(object=@@context[:node])
+      case object
+      when true, false
+        object
+      when Float
+        return false if object.zero?
+        return false if object.nan?
+        true
+      when Numeric
+        not object.zero?
+      when String
+        not object.empty?
+      when Array
+        not object.empty?
+      else
+        object ? true : false
       end
-      return object ? true : false
     end
 
     # UNTESTED
