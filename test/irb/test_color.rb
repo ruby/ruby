@@ -32,12 +32,13 @@ module TestIRB
         '"##@var]"' => "#{RED}\"#{CLEAR}#{RED}##{CLEAR}#{RED}##{CLEAR}@var#{RED}]#{CLEAR}#{RED}\"#{CLEAR}",
         '"foo#{a} #{b}"' => "#{RED}\"#{CLEAR}#{RED}foo#{CLEAR}#{RED}\#{#{CLEAR}a#{RED}}#{CLEAR}#{RED} #{CLEAR}#{RED}\#{#{CLEAR}b#{RED}}#{CLEAR}#{RED}\"#{CLEAR}",
         '/r#{e}g/' => "#{RED}#{BOLD}/#{CLEAR}#{RED}r#{CLEAR}#{RED}\#{#{CLEAR}e#{RED}}#{CLEAR}#{RED}g#{CLEAR}#{RED}#{BOLD}/#{CLEAR}",
-        "'a\nb'" => "#{RED}'#{CLEAR}#{RED}a\n#{CLEAR}#{RED}b#{CLEAR}#{RED}'#{CLEAR}",
+        "'a\nb'" => "#{RED}'#{CLEAR}#{RED}a#{CLEAR}\n#{RED}b#{CLEAR}#{RED}'#{CLEAR}",
         "4.5.6" => "4.5.6",
         "[1]]]" => "[1]]]",
         "\e[0m\n" => "^[[#{BLUE}#{BOLD}0#{CLEAR}m\n",
       }.each do |code, result|
-        assert_equal(result, with_term { IRB::Color.colorize_code(code) }, "Case: colorize_code(#{code.dump})")
+        actual = with_term { IRB::Color.colorize_code(code) }
+        assert_equal(result, actual, "Case: colorize_code(#{code.dump})\nResult: #{humanized_literal(actual)}")
       end
     end
 
@@ -74,6 +75,19 @@ module TestIRB
     ensure
       $stdout = stdout
       ENV.replace(env) if env
+    end
+
+    def humanized_literal(str)
+      str
+        .gsub(CLEAR, '@@@{CLEAR}')
+        .gsub(BOLD, '@@@{BOLD}')
+        .gsub(UNDERLINE, '@@@{UNDERLINE}')
+        .gsub(RED, '@@@{RED}')
+        .gsub(GREEN, '@@@{GREEN}')
+        .gsub(BLUE, '@@@{BLUE}')
+        .gsub(MAGENTA, '@@@{MAGENTA}')
+        .gsub(CYAN, '@@@{CYAN}')
+        .dump.gsub(/@@@/, '#')
     end
   end
 end

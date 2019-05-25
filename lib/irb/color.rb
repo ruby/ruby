@@ -82,7 +82,7 @@ module IRB # :nodoc:
         Ripper.lex(code).each do |(_line, _col), token, str, expr|
           if seq = dispatch_seq(token, expr, str)
             Reline::Unicode.escape_for_print(str).each_line do |line|
-              colored << "#{seq.map { |s| "\e[#{s}m" }.join('')}#{line}#{clear}"
+              colored << "#{seq.map { |s| "\e[#{s}m" }.join('')}#{line.sub(/\n?\z/, "#{clear}\\0")}"
             end
           else
             colored << Reline::Unicode.escape_for_print(str)
