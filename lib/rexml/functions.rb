@@ -67,10 +67,11 @@ module REXML
     end
 
     # UNTESTED
-    def Functions::local_name( node_set=nil )
-      get_namespace( node_set ) do |node|
+    def Functions::local_name(node_set=nil)
+      get_namespace(node_set) do |node|
         return node.local_name
       end
+      ""
     end
 
     def Functions::namespace_uri( node_set=nil )
