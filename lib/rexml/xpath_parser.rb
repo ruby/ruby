@@ -5,7 +5,6 @@ require "pp"
 require_relative 'namespace'
 require_relative 'xmltokens'
 require_relative 'attribute'
-require_relative 'syncenumerator'
 require_relative 'parsers/xpathparser'
 
 class Object
@@ -141,7 +140,7 @@ module REXML
       when Array # nodeset
         unnode(result)
       else
-        result
+        [result]
       end
     end
 
@@ -341,26 +340,24 @@ module REXML
           var_name = path_stack.shift
           return [@variables[var_name]]
 
-        # :and, :or, :eq, :neq, :lt, :lteq, :gt, :gteq
-        # TODO: Special case for :or and :and -- not evaluate the right
-        # operand if the left alone determines result (i.e. is true for
-        # :or and false for :and).
-        when :eq, :neq, :lt, :lteq, :gt, :gteq, :or
+        when :eq, :neq, :lt, :lteq, :gt, :gteq
           left = expr( path_stack.shift, nodeset.dup, context )
           right = expr( path_stack.shift, nodeset.dup, context )
           res = equality_relational_compare( left, op, right )
           trace(op, left, right, res) if @debug
           return res
 
+        when :or
+          left = expr(path_stack.shift, nodeset.dup, context)
+          return true if Functions.boolean(left)
+          right = expr(path_stack.shift, nodeset.dup, context)
+          return Functions.boolean(right)
+
         when :and
-          left = expr( path_stack.shift, nodeset.dup, context )
-          return [] unless left
-          if left.respond_to?(:inject) and !left.inject(false) {|a,b| a | b}
-            return []
-          end
-          right = expr( path_stack.shift, nodeset.dup, context )
-          res = equality_relational_compare( left, op, right )
-          return res
+          left = expr(path_stack.shift, nodeset.dup, context)
+          return false unless Functions.boolean(left)
+          right = expr(path_stack.shift, nodeset.dup, context)
+          return Functions.boolean(right)
 
         when :div, :mod, :mult, :plus, :minus
           left = expr(path_stack.shift, nodeset, context)
@@ -397,31 +394,34 @@ module REXML
         when :function
           func_name = path_stack.shift.tr('-','_')
           arguments = path_stack.shift
-          subcontext = context ? nil : { :size => nodeset.size }
 
-          res = []
-          cont = context
-          nodeset.each_with_index do |node, i|
-            if subcontext
-              if node.is_a?(XPathNode)
-                subcontext[:node]  = node.raw_node
-                subcontext[:index] = node.position
-              else
-                subcontext[:node]  = node
-                subcontext[:index] = i
-              end
-              cont = subcontext
-            end
-            arg_clone = arguments.dclone
-            args = arg_clone.collect do |arg|
-              result = expr( arg, [node], cont )
-              result = unnode(result) if result.is_a?(Array)
-              result
-            end
-            Functions.context = cont
-            res << Functions.send( func_name, *args )
+          if nodeset.size != 1
+            message = "[BUG] Node set size must be 1 for function call: "
+            message += "<#{func_name}>: <#{nodeset.inspect}>: "
+            message += "<#{arguments.inspect}>"
+            raise message
           end
-          return res
+
+          node = nodeset.first
+          if context
+            target_context = context
+          else
+            target_context = {:size => nodeset.size}
+            if node.is_a?(XPathNode)
+              target_context[:node]  = node.raw_node
+              target_context[:index] = node.position
+            else
+              target_context[:node]  = node
+              target_context[:index] = 1
+            end
+          end
+          args = arguments.dclone.collect do |arg|
+            result = expr(arg, nodeset, target_context)
+            result = unnode(result) if result.is_a?(Array)
+            result
+          end
+          Functions.context = target_context
+          return Functions.send(func_name, *args)
 
         else
           raise "[BUG] Unexpected path: <#{op.inspect}>: <#{path_stack.inspect}>"
@@ -806,31 +806,28 @@ module REXML
       end
     end
 
-    def equality_relational_compare( set1, op, set2 )
+    def equality_relational_compare(set1, op, set2)
       set1 = unnode(set1) if set1.is_a?(Array)
       set2 = unnode(set2) if set2.is_a?(Array)
+
       if set1.kind_of? Array and set2.kind_of? Array
-        if set1.size == 0 or set2.size == 0
-          nd = set1.size==0 ? set2 : set1
-          rv = nd.collect { |il| compare( il, op, nil ) }
-          return rv
-        else
-          res = []
-          SyncEnumerator.new( set1, set2 ).each { |i1, i2|
-            i1 = norm( i1 )
-            i2 = norm( i2 )
-            res << compare( i1, op, i2 )
-          }
-          return res
+        # If both objects to be compared are node-sets, then the
+        # comparison will be true if and only if there is a node in the
+        # first node-set and a node in the second node-set such that the
+        # result of performing the comparison on the string-values of
+        # the two nodes is true.
+        set1.product(set2).any? do |node1, node2|
+          node_string1 = Functions.string(node1)
+          node_string2 = Functions.string(node2)
+          compare(node_string1, op, node_string2)
         end
-      end
-      # If one is nodeset and other is number, compare number to each item
-      # in nodeset s.t. number op number(string(item))
-      # If one is nodeset and other is string, compare string to each item
-      # in nodeset s.t. string op string(item)
-      # If one is nodeset and other is boolean, compare boolean to each item
-      # in nodeset s.t. boolean op boolean(item)
-      if set1.kind_of? Array or set2.kind_of? Array
+      elsif set1.kind_of? Array or set2.kind_of? Array
+        # If one is nodeset and other is number, compare number to each item
+        # in nodeset s.t. number op number(string(item))
+        # If one is nodeset and other is string, compare string to each item
+        # in nodeset s.t. string op string(item)
+        # If one is nodeset and other is boolean, compare boolean to each item
+        # in nodeset s.t. boolean op boolean(item)
         if set1.kind_of? Array
           a = set1
           b = set2
@@ -841,15 +838,23 @@ module REXML
 
         case b
         when true, false
-          return unnode(a) {|v| compare( Functions::boolean(v), op, b ) }
+          each_unnode(a).any? do |unnoded|
+            compare(Functions.boolean(unnoded), op, b)
+          end
         when Numeric
-          return unnode(a) {|v| compare( Functions::number(v), op, b )}
-        when /^\d+(\.\d+)?$/
-          b = Functions::number( b )
-          return unnode(a) {|v| compare( Functions::number(v), op, b )}
+          each_unnode(a).any? do |unnoded|
+            compare(Functions.number(unnoded), op, b)
+          end
+        when /\A\d+(\.\d+)?\z/
+          b = Functions.number(b)
+          each_unnode(a).any? do |unnoded|
+            compare(Functions.number(unnoded), op, b)
+          end
         else
-          b = Functions::string( b )
-          return unnode(a) { |v| compare( Functions::string(v), op, b ) }
+          b = Functions::string(b)
+          each_unnode(a).any? do |unnoded|
+            compare(Functions::string(unnoded), op, b)
+          end
         end
       else
         # If neither is nodeset,
@@ -880,13 +885,12 @@ module REXML
             set2 = Functions::number( set2 )
           end
         end
-        return compare( set1, op, set2 )
+        compare( set1, op, set2 )
       end
-      return false
     end
 
-    def compare a, op, b
-      case op
+    def compare(a, operator, b)
+      case operator
       when :eq
         a == b
       when :neq
@@ -899,22 +903,27 @@ module REXML
         a > b
       when :gteq
         a >= b
-      when :and
-        a and b
-      when :or
-        a or b
       else
-        false
+        message = "[BUG] Unexpected compare operator: " +
+          "<#{operator.inspect}>: <#{a.inspect}>: <#{b.inspect}>"
+        raise message
       end
     end
 
-    def unnode(nodeset)
-      nodeset.collect do |node|
+    def each_unnode(nodeset)
+      return to_enum(__method__, nodeset) unless block_given?
+      nodeset.each do |node|
         if node.is_a?(XPathNode)
           unnoded = node.raw_node
         else
           unnoded = node
         end
+        yield(unnoded)
+      end
+    end
+
+    def unnode(nodeset)
+      each_unnode(nodeset).collect do |unnoded|
         unnoded = yield(unnoded) if block_given?
         unnoded
       end
