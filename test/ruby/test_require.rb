@@ -162,8 +162,8 @@ class TestRequire < Test::Unit::TestCase
       require(require_path)
       $".pop
       File.chmod(0777, File.dirname(require_path))
-      ospath = (require_path.encode('filesystem') rescue
-                require_path.encode(self.class.ospath_encoding(require_path)))
+      require_path.encode('filesystem') rescue
+        require_path.encode(self.class.ospath_encoding(require_path))
       e = nil
       stderr = EnvUtil.verbose_warning do
         e = assert_raise(SecurityError) do
