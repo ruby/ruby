@@ -3,6 +3,7 @@ require "test/unit/testcase"
 
 require "rexml/document"
 
+# TODO: Split me
 module REXMLTests
   class FunctionsTester < Test::Unit::TestCase
     include REXML
