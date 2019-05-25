@@ -369,11 +369,15 @@ module REXMLTests
       assert_equal 2, c
     end
 
+    def match(xpath)
+      XPath.match(@@doc, xpath).collect(&:to_s)
+    end
+
     def test_grouping
-      t = XPath.first( @@doc, "a/d/*[name()='d' and (name()='f' or name()='q')]" )
-      assert_nil t
-      t = XPath.first( @@doc, "a/d/*[(name()='d' and name()='f') or name()='q']" )
-      assert_equal 'q', t.name
+      assert_equal([],
+                   match("a/d/*[name()='d' and (name()='f' or name()='q')]"))
+      assert_equal(["<q id='19'/>"],
+                   match("a/d/*[(name()='d' and name()='f') or name()='q']"))
     end
 
     def test_preceding
