@@ -10,6 +10,7 @@ class Reline::LineEditor
   attr_reader :byte_pointer
   attr_accessor :confirm_multiline_termination_proc
   attr_accessor :completion_proc
+  attr_accessor :output_modifier_proc
   attr_accessor :pre_input_hook
   attr_accessor :dig_perfect_match_proc
   attr_writer :retrieve_completion_block
@@ -163,16 +164,16 @@ class Reline::LineEditor
     lines = [String.new(encoding: @encoding)]
     height = 1
     width = 0
-    rest_prompt = prompt.encode(Encoding::UTF_8)
+    rest = "#{prompt}#{str}".encode(Encoding::UTF_8)
     loop do
-      break if rest_prompt.empty?
-      if rest_prompt =~ /^#{CSI_REGEXP}/
+      break if rest.empty?
+      if rest =~ /\A#{CSI_REGEXP}/
         lines.last << $&
-        rest_prompt = $'
+        rest = $'
       else
-        gcs = rest_prompt.grapheme_clusters
+        gcs = rest.grapheme_clusters
         gc = gcs.first
-        rest_prompt = gcs[1..-1].join
+        rest = gcs[1..-1].join
         mbchar_width = Reline::Unicode.get_mbchar_width(gc)
         width += mbchar_width
         if width > max_width
@@ -183,19 +184,6 @@ class Reline::LineEditor
         end
         lines.last << gc
       end
-    end
-    lines << :split
-    lines << String.new(encoding: @encoding)
-    str.encode(Encoding::UTF_8).grapheme_clusters.each do |gc|
-      mbchar_width = Reline::Unicode.get_mbchar_width(gc)
-      width += mbchar_width
-      if width > max_width
-        width = mbchar_width
-        lines << nil
-        lines << String.new(encoding: @encoding)
-        height += 1
-      end
-      lines.last << gc
     end
     # The cursor moves to next line in first
     lines << String.new(encoding: @encoding) if width == max_width
@@ -290,8 +278,7 @@ class Reline::LineEditor
       Reline::IOGate.clear_screen
       @cleared = false
       back = 0
-      @buffer_of_lines.each_with_index do |line, index|
-        line = @line if index == @line_index
+      modify_lines(whole_lines).each_with_index do |line, index|
         height = render_partial(prompt, prompt_width, line, false)
         if index < (@buffer_of_lines.size - 1)
           move_cursor_down(height)
@@ -305,7 +292,6 @@ class Reline::LineEditor
     end
     # FIXME: end of logical line sometimes breaks
     if @previous_line_index
-      previous_line = @line
       all_height = @buffer_of_lines.inject(0) { |result, line|
         result + calculate_height_by_width(@prompt_width + calculate_width(line))
       }
@@ -316,8 +302,7 @@ class Reline::LineEditor
         scroll_down(diff)
         move_cursor_up(@highest_in_all - 1)
         back = 0
-        @buffer_of_lines.each_with_index do |line, index|
-          line = @line if index == @previous_line_index
+        modify_lines(whole_lines(index: @previous_line_index, line: @line)).each_with_index do |line, index|
           height = render_partial(prompt, prompt_width, line, false)
           if index < (@buffer_of_lines.size - 1)
             move_cursor_down(height)
@@ -326,6 +311,7 @@ class Reline::LineEditor
         end
         move_cursor_up(back)
       else
+        previous_line = modify_lines(whole_lines(index: @previous_line_index, line: @line))[@previous_line_index]
         render_partial(prompt, prompt_width, previous_line)
         move_cursor_up(@first_line_started_from + @started_from)
       end
@@ -364,7 +350,7 @@ class Reline::LineEditor
         end
         move_cursor_up(@highest_in_all - 1)
       end
-      @buffer_of_lines.each_with_index do |line, index|
+      modify_lines(@buffer_of_lines).each_with_index do |line, index|
         render_partial(prompt, prompt_width, line, false)
         if index < (@buffer_of_lines.size - 1)
           move_cursor_down(1)
@@ -384,10 +370,11 @@ class Reline::LineEditor
       move_cursor_down(@first_line_started_from)
       @rerender_all = false
     end
+    line = modify_lines(whole_lines)[@line_index]
     if !@is_multiline
-      render_partial(prompt, prompt_width, @line)
+      render_partial(prompt, prompt_width, line)
     elsif !finished?
-      render_partial(prompt, prompt_width, @line)
+      render_partial(prompt, prompt_width, line)
     else
       scroll_down(1) unless whole_lines.last.empty?
       Reline::IOGate.move_cursor_column(0)
@@ -408,24 +395,15 @@ class Reline::LineEditor
       move_cursor_up(@started_from)
       @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
     end
-    is_prompt = true
     Reline::IOGate.move_cursor_column(0)
     visual_lines.each do |line|
-      if line == :split
-        is_prompt = false
-        next
-      end
       if line.nil?
         Reline::IOGate.erase_after_cursor
         move_cursor_down(1)
         Reline::IOGate.move_cursor_column(0)
         next
       end
-      if is_prompt
-        @output.print line
-      else
-        escaped_print line
-      end
+      @output.print line
       if @first_prompt
         @first_prompt = false
         @pre_input_hook&.call
@@ -439,6 +417,16 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
     end
     height
+  end
+
+  private def modify_lines(before)
+    return before if before.nil? || before.empty?
+
+    if after = @output_modifier_proc&.call("#{before.join("\n")}\n")
+      after.lines(chomp: true)
+    else
+      before
+    end
   end
 
   def editing_mode
@@ -768,9 +756,9 @@ class Reline::LineEditor
     @cursor_max = calculate_width(@line)
   end
 
-  def whole_lines
+  def whole_lines(index: @line_index, line: @line)
     temp_lines = @buffer_of_lines.dup
-    temp_lines[@line_index] = @line
+    temp_lines[index] = line
     temp_lines
   end
 
