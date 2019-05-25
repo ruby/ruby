@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'irb/color'
+require 'rubygems'
 require 'stringio'
 
 module TestIRB
@@ -36,6 +37,11 @@ module TestIRB
         "4.5.6" => "4.5.6",
         "[1]]]" => "[1]]]",
         "\e[0m\n" => "^[[#{BLUE}#{BOLD}0#{CLEAR}m\n",
+        "%w[a b]" => "#{RED}%w[#{CLEAR}#{RED}a#{CLEAR} #{RED}b#{CLEAR}#{RED}]#{CLEAR}",
+        "%i[c d]" => "#{RED}%i[#{CLEAR}#{RED}c#{CLEAR} #{RED}d#{CLEAR}#{RED}]#{CLEAR}",
+        "{'a': 1}" => "{#{RED}'#{CLEAR}#{RED}a#{CLEAR}#{RED}':#{CLEAR} #{BLUE}#{BOLD}1#{CLEAR}}",
+        ":Struct" => "#{BLUE}#{BOLD}:#{CLEAR}#{BLUE}#{BOLD}#{UNDERLINE}Struct#{CLEAR}",
+        "<<EOS\nhere\nEOS" => "#{RED}<<EOS#{CLEAR}\n#{RED}here#{CLEAR}\n#{RED}EOS#{CLEAR}",
       }.each do |code, result|
         actual = with_term { IRB::Color.colorize_code(code) }
         assert_equal(result, actual, "Case: colorize_code(#{code.dump})\nResult: #{humanized_literal(actual)}")
