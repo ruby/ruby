@@ -1,35 +1,38 @@
 # frozen_string_literal: false
-require 'rexml/document'
-require 'test/unit'
-require 'rexml/functions'
+
+require "test/unit"
+require "rexml/document"
+require "rexml/functions"
 
 module REXMLTests
-  class TC_Rexml_Functions_Number < Test::Unit::TestCase
+  class TestFunctionsNumber < Test::Unit::TestCase
+    def setup
+      REXML::Functions.context = nil
+    end
 
-    def test_functions_number_int
-      telem = REXML::Element.new("elem")
-      telem.text="9"
-      assert_equal(9, REXML::Functions::number(telem))
+    def test_true
+      assert_equal(1, REXML::Functions.number(true))
     end
-    def test_functions_number_float
-      telem = REXML::Element.new("elem")
-      telem.text="10.4"
-      assert_equal(10.4, REXML::Functions::number(telem))
+
+    def test_false
+      assert_equal(0, REXML::Functions.number(false))
     end
-    def test_functions_number_negative_int
-      telem = REXML::Element.new("elem")
-      telem.text="-9"
-      assert_equal(-9, REXML::Functions::number(telem))
+
+    def test_numeric
+      assert_equal(29, REXML::Functions.number(29))
     end
-    def test_functions_number_negative_float
-      telem = REXML::Element.new("elem")
-      telem.text="-9.13"
-      assert_equal(-9.13, REXML::Functions::number(telem))
+
+    def test_string_integer
+      assert_equal(100, REXML::Functions.number("100"))
     end
-    #def test_functions_number_scientific_notation
-    #  telem = REXML::Element.new("elem")
-    #  telem.text="9.13E12"
-    #  assert_equal(9.13E12, REXML::Functions::number(telem))
-    #end
+
+    def test_string_float
+      assert_equal(-9.13, REXML::Functions.number("-9.13"))
+    end
+
+    def test_node_set
+      root = REXML::Document.new("<root>100</root>").root
+      assert_equal(100, REXML::Functions.number([root]))
+    end
   end
 end

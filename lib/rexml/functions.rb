@@ -66,7 +66,6 @@ module REXML
     def Functions::id( object )
     end
 
-    # UNTESTED
     def Functions::local_name(node_set=nil)
       get_namespace(node_set) do |node|
         return node.local_name
@@ -386,25 +385,23 @@ module REXML
     #
     # an object of a type other than the four basic types is converted to a
     # number in a way that is dependent on that type
-    def Functions::number( object=nil )
-      object = @@context[:node] unless object
+    def Functions::number(object=@@context[:node])
       case object
       when true
         Float(1)
       when false
         Float(0)
       when Array
-        number(string( object ))
+        number(string(object))
       when Numeric
         object.to_f
       else
-        str = string( object )
-        # If XPath ever gets scientific notation...
-        #if str =~ /^\s*-?(\d*\.?\d+|\d+\.)([Ee]\d*)?\s*$/
-        if str =~ /^\s*-?(\d*\.?\d+|\d+\.)\s*$/
-          str.to_f
+        str = string(object)
+        case str.strip
+        when /\A\s*(-?(?:\d+(?:\.\d*)?|\.\d+))\s*\z/
+          $1.to_f
         else
-          (0.0 / 0.0)
+          Float::NAN
         end
       end
     end
