@@ -77,13 +77,21 @@ module IRB # :nodoc:
         return code unless colorable?
 
         colored = +''
+        length = 0
         Ripper.lex(code).each do |(_line, _col), token, str, expr|
           if seq = dispatch_seq(token, expr, str)
-            colored << "#{seq.map { |s| "\e[#{s}m" }.join('')}#{str}#{clear}"
+            str.each_line do |line|
+              colored << "#{seq.map { |s| "\e[#{s}m" }.join('')}#{line}#{clear}"
+            end
           else
             colored << str
           end
+          length += str.length
         end
+
+        # give up colorizing incomplete Ripper tokens
+        return code if length != code.length
+
         colored
       end
 

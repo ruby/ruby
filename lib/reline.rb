@@ -142,6 +142,15 @@ module Reline
     @@completion_proc = p
   end
 
+  @@output_modifier_proc = nil
+  def self.output_modifier_proc
+    @@output_modifier_proc
+  end
+  def self.output_modifier_proc=(p)
+    raise ArgumentError unless p.is_a?(Proc)
+    @@output_modifier_proc = p
+  end
+
   @@pre_input_hook = nil
   def self.pre_input_hook
     @@pre_input_hook
@@ -297,6 +306,7 @@ module Reline
     end
     @@line_editor.output = @@output
     @@line_editor.completion_proc = @@completion_proc
+    @@line_editor.output_modifier_proc = @@output_modifier_proc
     @@line_editor.dig_perfect_match_proc = @@dig_perfect_match_proc
     @@line_editor.pre_input_hook = @@pre_input_hook
     @@line_editor.retrieve_completion_block = method(:retrieve_completion_block)
