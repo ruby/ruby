@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'reline'
 require 'ripper'
 
 module IRB # :nodoc:
@@ -80,11 +81,11 @@ module IRB # :nodoc:
         length = 0
         Ripper.lex(code).each do |(_line, _col), token, str, expr|
           if seq = dispatch_seq(token, expr, str)
-            str.each_line do |line|
+            Reline::Unicode.escape_for_print(str).each_line do |line|
               colored << "#{seq.map { |s| "\e[#{s}m" }.join('')}#{line}#{clear}"
             end
           else
-            colored << str
+            colored << Reline::Unicode.escape_for_print(str)
           end
           length += str.length
         end

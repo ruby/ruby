@@ -55,6 +55,17 @@ class Reline::Unicode
     end
   end
 
+  def self.escape_for_print(str)
+    str.chars.map! { |gr|
+      escaped = EscapedPairs[gr.ord]
+      if escaped && gr != "\n"
+        escaped
+      else
+        gr
+      end
+    }.join
+  end
+
   def self.get_mbchar_width(mbchar)
     case mbchar.encode(Encoding::UTF_8)
     when *EscapedChars # ^ + char, such as ^M, ^H, ^[, ...
