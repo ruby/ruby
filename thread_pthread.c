@@ -2197,23 +2197,23 @@ timer_pthread_fn(void *p)
         ccp = consume_communication_pipe(pfd.fd);
 
         if (system_working > 0) {
-	    if (ATOMIC_CAS(timer_pthread.armed, 1, 1)) {
-		pthread_kill(main_thread_id, SIGVTALRM);
+            if (ATOMIC_CAS(timer_pthread.armed, 1, 1)) {
+                pthread_kill(main_thread_id, SIGVTALRM);
 
-		if (rb_signal_buff_size() || !ubf_threads_empty()) {
-		    timeout = TIME_QUANTUM_MSEC;
-		}
-		else {
-		    ATOMIC_SET(timer_pthread.armed, 0);
-		    timeout = -1;
-		}
-	    }
-	    else if (ccp) {
-		pthread_kill(main_thread_id, SIGVTALRM);
-		ATOMIC_SET(timer_pthread.armed, 0);
-		timeout = -1;
-	    }
-	}
+                if (rb_signal_buff_size() || !ubf_threads_empty()) {
+                    timeout = TIME_QUANTUM_MSEC;
+                }
+                else {
+                    ATOMIC_SET(timer_pthread.armed, 0);
+                    timeout = -1;
+                }
+            }
+            else if (ccp) {
+                pthread_kill(main_thread_id, SIGVTALRM);
+                ATOMIC_SET(timer_pthread.armed, 0);
+                timeout = -1;
+            }
+        }
     }
 
     return 0;
