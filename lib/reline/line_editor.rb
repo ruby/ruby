@@ -420,7 +420,9 @@ class Reline::LineEditor
   end
 
   private def modify_lines(before)
-    if after = @output_modifier_proc&.call(before.join("\n"))
+    return before if before.nil? || before.empty?
+
+    if after = @output_modifier_proc&.call("#{before.join("\n")}\n")
       after.lines(chomp: true)
     else
       before
