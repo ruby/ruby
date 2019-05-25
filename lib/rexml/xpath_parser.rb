@@ -47,7 +47,10 @@ module REXML
     include XMLTokens
     LITERAL    = /^'([^']*)'|^"([^"]*)"/u
 
+    DEBUG = (ENV["REXML_XPATH_PARSER_DEBUG"] == "true")
+
     def initialize(strict: false)
+      @debug = DEBUG
       @parser = REXML::Parsers::XPathParser.new
       @namespaces = nil
       @variables = {}
@@ -162,10 +165,10 @@ module REXML
     # Expr takes a stack of path elements and a set of nodes (either a Parent
     # or an Array and returns an Array of matching nodes
     def expr( path_stack, nodeset, context=nil )
-      # enter(:expr, path_stack, nodeset)
+      enter(:expr, path_stack, nodeset) if @debug
       return nodeset if path_stack.length == 0 || nodeset.length == 0
       while path_stack.length > 0
-        # trace(:while, path_stack, nodeset)
+        trace(:while, path_stack, nodeset) if @debug
         if nodeset.length == 0
           path_stack.clear
           return []
@@ -184,7 +187,7 @@ module REXML
             child(nodeset)
           end
         when :literal
-          # trace(:literal, path_stack, nodeset)
+          trace(:literal, path_stack, nodeset) if @debug
           return path_stack.shift
         when :attribute
           nodeset = step(path_stack, any_type: :attribute) do
@@ -343,7 +346,7 @@ module REXML
           left = expr( path_stack.shift, nodeset.dup, context )
           right = expr( path_stack.shift, nodeset.dup, context )
           res = equality_relational_compare( left, op, right )
-          # trace(op, left, right, res)
+          trace(op, left, right, res) if @debug
           return res
 
         when :and
@@ -422,14 +425,14 @@ module REXML
         end
       end # while
       return nodeset
-    # ensure
-    #   leave(:expr, path_stack, nodeset)
+    ensure
+      leave(:expr, path_stack, nodeset) if @debug
     end
 
     def step(path_stack, any_type: :element, order: :forward)
       nodesets = yield
       begin
-        # enter(:step, path_stack, nodesets)
+        enter(:step, path_stack, nodesets) if @debug
         nodesets = node_test(path_stack, nodesets, any_type: any_type)
         while path_stack[0] == :predicate
           path_stack.shift # :predicate
@@ -457,13 +460,13 @@ module REXML
           new_nodeset << XPathNode.new(node, position: new_nodeset.size + 1)
         end
         new_nodeset
-      # ensure
-      #   leave(:step, path_stack, new_nodeset)
+      ensure
+        leave(:step, path_stack, new_nodeset) if @debug
       end
     end
 
     def node_test(path_stack, nodesets, any_type: :element)
-      # enter(:node_test, path_stack, nodesets)
+      enter(:node_test, path_stack, nodesets) if @debug
       operator = path_stack.shift
       case operator
       when :qname
@@ -563,8 +566,8 @@ module REXML
         raise message
       end
       new_nodesets
-    # ensure
-    #   leave(:node_test, path_stack, new_nodesets)
+    ensure
+      leave(:node_test, path_stack, new_nodesets) if @debug
     end
 
     def filter_nodeset(nodeset)
@@ -577,7 +580,7 @@ module REXML
     end
 
     def evaluate_predicate(expression, nodesets)
-      # enter(:predicate, expression, nodesets)
+      enter(:predicate, expression, nodesets) if @debug
       new_nodesets = nodesets.collect do |nodeset|
         new_nodeset = []
         subcontext = { :size => nodeset.size }
@@ -590,7 +593,7 @@ module REXML
             subcontext[:index] = index + 1
           end
           result = expr(expression.dclone, [node], subcontext)
-          # trace(:predicate_evaluate, expression, node, subcontext, result)
+          trace(:predicate_evaluate, expression, node, subcontext, result) if @debug
           result = result[0] if result.kind_of? Array and result.length == 1
           if result.kind_of? Numeric
             if result == node.position
@@ -611,8 +614,8 @@ module REXML
         new_nodeset
       end
       new_nodesets
-    # ensure
-    #   leave(:predicate, new_nodesets)
+    ensure
+      leave(:predicate, new_nodesets) if @debug
     end
 
     def trace(*args)
