@@ -89,6 +89,10 @@ install-prereq: sudo-precheck
 yes-test-all no-test-all: install
 yes-test-almost no-test-almost: install
 endif
+ifneq ($(filter love install reinstall,$(MAKECMDGOALS)),)
+# Cross referece needs to parse all files at once
+RDOCFLAGS = --force-update
+endif
 ifneq ($(filter great,$(MAKECMDGOALS)),)
 love: test-rubyspec
 endif
