@@ -251,7 +251,7 @@ class RubyLex
       case t[1]
       when :on_tstring_beg
         start_token << t
-        end_type << :on_tstring_end
+        end_type << [:on_tstring_end, :on_label_end]
       when :on_regexp_beg
         start_token << t
         end_type << :on_regexp_end
@@ -269,7 +269,7 @@ class RubyLex
       when :on_heredoc_beg
         start_token << t
         end_type << :on_heredoc_end
-      when end_type.last
+      when *end_type.last
         start_token.pop
         end_type.pop
       end
