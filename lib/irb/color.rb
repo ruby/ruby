@@ -22,8 +22,8 @@ module IRB # :nodoc:
       TOKEN_SEQ_EXPRS = {
         on_CHAR:            [[BLUE, BOLD],            [Ripper::EXPR_END]],
         on_const:           [[BLUE, BOLD, UNDERLINE], [Ripper::EXPR_ARG, Ripper::EXPR_CMDARG, Ripper::EXPR_ENDFN]],
-        on_embexpr_beg:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END]],
-        on_embexpr_end:     [[RED],                   [Ripper::EXPR_END, Ripper::EXPR_ENDFN, Ripper::EXPR_CMDARG]],
+        on_embexpr_beg:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_FNAME]],
+        on_embexpr_end:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_ENDFN, Ripper::EXPR_CMDARG]],
         on_embvar:          [[RED],                   [Ripper::EXPR_BEG]],
         on_heredoc_beg:     [[RED],                   [Ripper::EXPR_BEG]],
         on_heredoc_end:     [[RED],                   [Ripper::EXPR_BEG]],

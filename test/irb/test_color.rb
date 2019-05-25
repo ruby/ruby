@@ -42,6 +42,7 @@ module TestIRB
         "{'a': 1}" => "{#{RED}'#{CLEAR}#{RED}a#{CLEAR}#{RED}':#{CLEAR} #{BLUE}#{BOLD}1#{CLEAR}}",
         ":Struct" => "#{BLUE}#{BOLD}:#{CLEAR}#{BLUE}#{BOLD}#{UNDERLINE}Struct#{CLEAR}",
         "<<EOS\nhere\nEOS" => "#{RED}<<EOS#{CLEAR}\n#{RED}here#{CLEAR}\n#{RED}EOS#{CLEAR}",
+        '"#{}"' => "#{RED}\"#{CLEAR}#{RED}\#{#{CLEAR}#{RED}}#{CLEAR}#{RED}\"#{CLEAR}",
       }.each do |code, result|
         actual = with_term { IRB::Color.colorize_code(code) }
         assert_equal(result, actual, "Case: colorize_code(#{code.dump})\nResult: #{humanized_literal(actual)}")
