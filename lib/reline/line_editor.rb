@@ -278,8 +278,7 @@ class Reline::LineEditor
       Reline::IOGate.clear_screen
       @cleared = false
       back = 0
-      @buffer_of_lines.each_with_index do |line, index|
-        line = @line if index == @line_index
+      modify_lines(whole_lines).each_with_index do |line, index|
         height = render_partial(prompt, prompt_width, line, false)
         if index < (@buffer_of_lines.size - 1)
           move_cursor_down(height)
@@ -293,7 +292,6 @@ class Reline::LineEditor
     end
     # FIXME: end of logical line sometimes breaks
     if @previous_line_index
-      previous_line = @line
       all_height = @buffer_of_lines.inject(0) { |result, line|
         result + calculate_height_by_width(@prompt_width + calculate_width(line))
       }
@@ -304,8 +302,7 @@ class Reline::LineEditor
         scroll_down(diff)
         move_cursor_up(@highest_in_all - 1)
         back = 0
-        @buffer_of_lines.each_with_index do |line, index|
-          line = @line if index == @previous_line_index
+        modify_lines(whole_lines(index: @previous_line_index, line: @line)).each_with_index do |line, index|
           height = render_partial(prompt, prompt_width, line, false)
           if index < (@buffer_of_lines.size - 1)
             move_cursor_down(height)
@@ -314,6 +311,7 @@ class Reline::LineEditor
         end
         move_cursor_up(back)
       else
+        previous_line = modify_lines(whole_lines(index: @previous_line_index, line: @line))[@previous_line_index]
         render_partial(prompt, prompt_width, previous_line)
         move_cursor_up(@first_line_started_from + @started_from)
       end
@@ -352,7 +350,7 @@ class Reline::LineEditor
         end
         move_cursor_up(@highest_in_all - 1)
       end
-      @buffer_of_lines.each_with_index do |line, index|
+      modify_lines(@buffer_of_lines).each_with_index do |line, index|
         render_partial(prompt, prompt_width, line, false)
         if index < (@buffer_of_lines.size - 1)
           move_cursor_down(1)
@@ -372,22 +370,15 @@ class Reline::LineEditor
       move_cursor_down(@first_line_started_from)
       @rerender_all = false
     end
+    line = modify_lines(whole_lines)[@line_index]
     if !@is_multiline
-      render_partial(prompt, prompt_width, @line)
+      render_partial(prompt, prompt_width, line)
     elsif !finished?
-      render_partial(prompt, prompt_width, @line)
+      render_partial(prompt, prompt_width, line)
     else
       scroll_down(1) unless whole_lines.last.empty?
       Reline::IOGate.move_cursor_column(0)
       Reline::IOGate.erase_after_cursor
-
-      if output = @output_modifier_proc&.call(whole_buffer)
-        move_cursor_up(output.lines.size)
-        output.each_line(chomp: true) do |line|
-          render_partial(prompt, prompt_width, line)
-          move_cursor_down(1)
-        end
-      end
     end
   end
 
@@ -426,6 +417,14 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
     end
     height
+  end
+
+  private def modify_lines(before)
+    if after = @output_modifier_proc&.call(before.join("\n"))
+      after.lines(chomp: true)
+    else
+      before
+    end
   end
 
   def editing_mode
@@ -755,9 +754,9 @@ class Reline::LineEditor
     @cursor_max = calculate_width(@line)
   end
 
-  def whole_lines
+  def whole_lines(index: @line_index, line: @line)
     temp_lines = @buffer_of_lines.dup
-    temp_lines[@line_index] = @line
+    temp_lines[index] = line
     temp_lines
   end
 
