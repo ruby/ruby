@@ -433,17 +433,6 @@ class Reline::LineEditor
     @config.editing_mode
   end
 
-  private def escaped_print(str)
-    @output.print str.chars.map { |gr|
-      escaped = Reline::Unicode::EscapedPairs[gr.ord]
-      if escaped
-        escaped
-      else
-        gr
-      end
-    }.join
-  end
-
   private def menu(target, list)
     @menu_info = MenuInfo.new(target, list)
   end
