@@ -1,4 +1,7 @@
 # frozen_string_literal: false
+
+require "pp"
+
 require_relative 'namespace'
 require_relative 'xmltokens'
 require_relative 'attribute'
@@ -620,7 +623,9 @@ module REXML
 
     def trace(*args)
       indent = "  " * @nest
-      puts("#{indent}#{args.inspect}")
+      PP.pp(args, "").each_line do |line|
+        puts("#{indent}#{line}")
+      end
     end
 
     def enter(tag, *args)
