@@ -864,32 +864,51 @@ module REXML
         #     Else, convert to string
         #   Else
         #     Convert both to numbers and compare
-        set1 = unnode(set1) if set1.is_a?(Array)
-        set2 = unnode(set2) if set2.is_a?(Array)
-        s1 = Functions.string(set1)
-        s2 = Functions.string(set2)
-        if s1 == 'true' or s1 == 'false' or s2 == 'true' or s2 == 'false'
-          set1 = Functions::boolean( set1 )
-          set2 = Functions::boolean( set2 )
-        else
-          if op == :eq or op == :neq
-            if s1 =~ /^\d+(\.\d+)?$/ or s2 =~ /^\d+(\.\d+)?$/
-              set1 = Functions::number( s1 )
-              set2 = Functions::number( s2 )
-            else
-              set1 = Functions::string( set1 )
-              set2 = Functions::string( set2 )
-            end
-          else
-            set1 = Functions::number( set1 )
-            set2 = Functions::number( set2 )
-          end
-        end
-        compare( set1, op, set2 )
+        compare(set1, op, set2)
       end
     end
 
+    def value_type(value)
+      case value
+      when true, false
+        :boolean
+      when Numeric
+        :number
+      when String
+        :string
+      else
+        raise "[BUG] Unexpected value type: <#{value.inspect}>"
+      end
+    end
+
+    def normalize_compare_values(a, operator, b)
+      a_type = value_type(a)
+      b_type = value_type(b)
+      case operator
+      when :eq, :neq
+        if a_type == :boolean or b_type == :boolean
+          a = Functions.boolean(a) unless a_type == :boolean
+          b = Functions.boolean(b) unless b_type == :boolean
+        elsif a_type == :number or b_type == :number
+          a = Functions.number(a) unless a_type == :number
+          b = Functions.number(b) unless b_type == :number
+        else
+          a = Functions.string(a) unless a_type == :string
+          b = Functions.string(b) unless b_type == :string
+        end
+      when :lt, :lteq, :gt, :gteq
+        a = Functions.number(a) unless a_type == :number
+        b = Functions.number(b) unless b_type == :number
+      else
+        message = "[BUG] Unexpected compare operator: " +
+          "<#{operator.inspect}>: <#{a.inspect}>: <#{b.inspect}>"
+        raise message
+      end
+      [a, b]
+    end
+
     def compare(a, operator, b)
+      a, b = normalize_compare_values(a, operator, b)
       case operator
       when :eq
         a == b
