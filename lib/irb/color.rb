@@ -15,7 +15,7 @@ module IRB # :nodoc:
     CYAN      = 36
 
     TOKEN_KEYWORDS = {
-      on_kw: ['nil', 'self', 'true', 'false'],
+      on_kw: ['nil', 'self', 'true', 'false', '__FILE__'],
       on_const: ['ENV'],
     }
 
@@ -23,19 +23,19 @@ module IRB # :nodoc:
       TOKEN_SEQ_EXPRS = {
         on_CHAR:            [[BLUE, BOLD],            [Ripper::EXPR_END]],
         on_const:           [[BLUE, BOLD, UNDERLINE], [Ripper::EXPR_ARG, Ripper::EXPR_CMDARG, Ripper::EXPR_ENDFN]],
-        on_embexpr_beg:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_FNAME]],
-        on_embexpr_end:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_ENDFN, Ripper::EXPR_CMDARG]],
+        on_embexpr_beg:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_CMDARG, Ripper::EXPR_FNAME, Ripper::EXPR_ARG]],
+        on_embexpr_end:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_CMDARG, Ripper::EXPR_ENDFN, Ripper::EXPR_ARG]],
         on_embvar:          [[RED],                   [Ripper::EXPR_BEG]],
         on_heredoc_beg:     [[RED],                   [Ripper::EXPR_BEG]],
         on_heredoc_end:     [[RED],                   [Ripper::EXPR_BEG]],
         on_ident:           [[BLUE, BOLD],            [Ripper::EXPR_ENDFN]],
         on_int:             [[BLUE, BOLD],            [Ripper::EXPR_END]],
         on_float:           [[MAGENTA, BOLD],         [Ripper::EXPR_END]],
-        on_kw:              [[GREEN],                 [Ripper::EXPR_ARG, Ripper::EXPR_CLASS, Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_FNAME]],
+        on_kw:              [[GREEN],                 [Ripper::EXPR_ARG, Ripper::EXPR_CLASS, Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_FNAME, Ripper::EXPR_MID]],
         on_label:           [[MAGENTA],               [Ripper::EXPR_LABELED]],
         on_label_end:       [[RED],                   [Ripper::EXPR_BEG]],
-        on_qwords_beg:      [[RED],                   [Ripper::EXPR_BEG]],
-        on_qsymbols_beg:    [[RED],                   [Ripper::EXPR_BEG]],
+        on_qwords_beg:      [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_CMDARG]],
+        on_qsymbols_beg:    [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_CMDARG]],
         on_regexp_beg:      [[RED, BOLD],             [Ripper::EXPR_BEG]],
         on_regexp_end:      [[RED, BOLD],             [Ripper::EXPR_BEG]],
         on_symbeg:          [[YELLOW],                [Ripper::EXPR_FNAME]],
@@ -43,17 +43,8 @@ module IRB # :nodoc:
         on_tstring_content: [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_ARG, Ripper::EXPR_CMDARG, Ripper::EXPR_FNAME]],
         on_tstring_end:     [[RED],                   [Ripper::EXPR_END]],
       }
-      SYMBOL_SEQ_OVERRIDES = {
-        on_const:           [YELLOW],
-        on_embexpr_beg:     [YELLOW],
-        on_embexpr_end:     [YELLOW],
-        on_ident:           [YELLOW],
-        on_tstring_content: [YELLOW],
-        on_tstring_end:     [YELLOW],
-      }
     rescue NameError
       TOKEN_SEQ_EXPRS = {}
-      SYMBOL_SEQ_OVERRIDES = {}
     end
 
     class << self
@@ -118,10 +109,12 @@ module IRB # :nodoc:
       def dispatch_seq(token, expr, str, in_symbol:)
         if token == :on_comment
           [BLUE, BOLD]
+        elsif in_symbol
+          [YELLOW]
         elsif TOKEN_KEYWORDS.fetch(token, []).include?(str)
           [CYAN, BOLD]
         elsif (seq, exprs = TOKEN_SEQ_EXPRS[token]; exprs&.any? { |e| (expr & e) != 0 })
-          SYMBOL_SEQ_OVERRIDES.fetch(in_symbol ? token : nil, seq)
+          seq
         else
           nil
         end
@@ -141,8 +134,8 @@ module IRB # :nodoc:
         case token
         when :on_symbeg
           @stack << true
-        when :on_ident
-          if @stack.last # Pop only when it's :sym
+        when :on_ident, :on_op, :on_const, :on_ivar
+          if @stack.last # Pop only when it's Symbol
             @stack.pop
             return prev_state
           end

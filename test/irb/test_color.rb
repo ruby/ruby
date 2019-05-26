@@ -46,6 +46,18 @@ module TestIRB
         '"#{}"' => "#{RED}\"#{CLEAR}#{RED}\#{#{CLEAR}#{RED}}#{CLEAR}#{RED}\"#{CLEAR}",
         ':"a#{}b"' => "#{YELLOW}:\"#{CLEAR}#{YELLOW}a#{CLEAR}#{YELLOW}\#{#{CLEAR}#{YELLOW}}#{CLEAR}#{YELLOW}b#{CLEAR}#{YELLOW}\"#{CLEAR}",
         ':"a#{ def b; end; \'c\' + "#{ :d }" }e"' => "#{YELLOW}:\"#{CLEAR}#{YELLOW}a#{CLEAR}#{YELLOW}\#{#{CLEAR} #{GREEN}def#{CLEAR} #{BLUE}#{BOLD}b#{CLEAR}; #{GREEN}end#{CLEAR}; #{RED}'#{CLEAR}#{RED}c#{CLEAR}#{RED}'#{CLEAR} + #{RED}\"#{CLEAR}#{RED}\#{#{CLEAR} #{YELLOW}:#{CLEAR}#{YELLOW}d#{CLEAR} #{RED}}#{CLEAR}#{RED}\"#{CLEAR} #{YELLOW}}#{CLEAR}#{YELLOW}e#{CLEAR}#{YELLOW}\"#{CLEAR}",
+        "__FILE__" => "#{CYAN}#{BOLD}__FILE__#{CLEAR}",
+        ":self" => "#{YELLOW}:#{CLEAR}#{YELLOW}self#{CLEAR}",
+        ":class" => "#{YELLOW}:#{CLEAR}#{YELLOW}class#{CLEAR}",
+        "[:>, 3]" => "[#{YELLOW}:#{CLEAR}#{YELLOW}>#{CLEAR}, #{BLUE}#{BOLD}3#{CLEAR}]",
+        ":Hello ? world : nil" => "#{YELLOW}:#{CLEAR}#{YELLOW}Hello#{CLEAR} ? world : #{CYAN}#{BOLD}nil#{CLEAR}",
+        'raise "foo#{bar}baz"' => "raise #{RED}\"#{CLEAR}#{RED}foo#{CLEAR}#{RED}\#{#{CLEAR}bar#{RED}}#{CLEAR}#{RED}baz#{CLEAR}#{RED}\"#{CLEAR}",
+        '["#{obj.inspect}"]' => "[#{RED}\"#{CLEAR}#{RED}\#{#{CLEAR}obj.inspect#{RED}}#{CLEAR}#{RED}\"#{CLEAR}]",
+        'URI.parse "#{}"' => "#{BLUE}#{BOLD}#{UNDERLINE}URI#{CLEAR}.parse #{RED}\"#{CLEAR}#{RED}\#{#{CLEAR}#{RED}}#{CLEAR}#{RED}\"#{CLEAR}",
+        "begin\nrescue\nend" => "#{GREEN}begin#{CLEAR}\n#{GREEN}rescue#{CLEAR}\n#{GREEN}end#{CLEAR}",
+        "foo %w[bar]" => "foo #{RED}%w[#{CLEAR}#{RED}bar#{CLEAR}#{RED}]#{CLEAR}",
+        "foo %i[bar]" => "foo #{RED}%i[#{CLEAR}#{RED}bar#{CLEAR}#{RED}]#{CLEAR}",
+        "foo :@bar, baz" => "foo #{YELLOW}:#{CLEAR}#{YELLOW}@bar#{CLEAR}, baz",
       }.each do |code, result|
         actual = with_term { IRB::Color.colorize_code(code) }
         assert_equal(result, actual, "Case: colorize_code(#{code.dump})\nResult: #{humanized_literal(actual)}")
