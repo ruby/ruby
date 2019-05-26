@@ -9,6 +9,7 @@ module IRB # :nodoc:
     UNDERLINE = 4
     RED       = 31
     GREEN     = 32
+    YELLOW    = 33
     BLUE      = 34
     MAGENTA   = 35
     CYAN      = 36
@@ -37,13 +38,22 @@ module IRB # :nodoc:
         on_qsymbols_beg:    [[RED],                   [Ripper::EXPR_BEG]],
         on_regexp_beg:      [[RED, BOLD],             [Ripper::EXPR_BEG]],
         on_regexp_end:      [[RED, BOLD],             [Ripper::EXPR_BEG]],
-        on_symbeg:          [[BLUE, BOLD],            [Ripper::EXPR_FNAME]],
+        on_symbeg:          [[YELLOW],                [Ripper::EXPR_FNAME]],
         on_tstring_beg:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_ARG, Ripper::EXPR_CMDARG]],
         on_tstring_content: [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_ARG, Ripper::EXPR_CMDARG, Ripper::EXPR_FNAME]],
         on_tstring_end:     [[RED],                   [Ripper::EXPR_END]],
       }
+      SYMBOL_SEQ_OVERRIDES = {
+        on_const:           [YELLOW],
+        on_embexpr_beg:     [YELLOW],
+        on_embexpr_end:     [YELLOW],
+        on_ident:           [YELLOW],
+        on_tstring_content: [YELLOW],
+        on_tstring_end:     [YELLOW],
+      }
     rescue NameError
       TOKEN_SEQ_EXPRS = {}
+      SYMBOL_SEQ_OVERRIDES = {}
     end
 
     class << self
@@ -81,10 +91,13 @@ module IRB # :nodoc:
       def colorize_code(code)
         return code unless colorable?
 
+        symbol_state = SymbolState.new
         colored = +''
         length = 0
+
         Ripper.lex(code).each do |(_line, _col), token, str, expr|
-          if seq = dispatch_seq(token, expr, str)
+          in_symbol = symbol_state.scan_token(token)
+          if seq = dispatch_seq(token, expr, str, in_symbol: in_symbol)
             Reline::Unicode.escape_for_print(str).each_line do |line|
               colored << "#{seq.map { |s| "\e[#{s}m" }.join('')}#{line.sub(/\n?\z/, "#{clear}\\0")}"
             end
@@ -102,17 +115,51 @@ module IRB # :nodoc:
 
       private
 
-      def dispatch_seq(token, expr, str)
+      def dispatch_seq(token, expr, str, in_symbol:)
         if token == :on_comment
           [BLUE, BOLD]
         elsif TOKEN_KEYWORDS.fetch(token, []).include?(str)
           [CYAN, BOLD]
         elsif (seq, exprs = TOKEN_SEQ_EXPRS[token]; exprs&.any? { |e| (expr & e) != 0 })
-          seq
+          SYMBOL_SEQ_OVERRIDES.fetch(in_symbol ? token : nil, seq)
         else
           nil
         end
       end
     end
+
+    # A class to manage a state to know whether the current token is for Symbol or not.
+    class SymbolState
+      def initialize
+        # Push `true` to detect Symbol. `false` to increase the nest level for non-Symbol.
+        @stack = []
+      end
+
+      # Return true if the token is a part of Symbol.
+      def scan_token(token)
+        prev_state = @stack.last
+        case token
+        when :on_symbeg
+          @stack << true
+        when :on_ident
+          if @stack.last # Pop only when it's :sym
+            @stack.pop
+            return prev_state
+          end
+        when :on_tstring_beg
+          @stack << false
+        when :on_embexpr_beg
+          @stack << false
+          return prev_state
+        when :on_tstring_end # :on_tstring_end may close Symbol
+          @stack.pop
+          return prev_state
+        when :on_embexpr_end
+          @stack.pop
+        end
+        @stack.last
+      end
+    end
+    private_constant :SymbolState
   end
 end
