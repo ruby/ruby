@@ -874,6 +874,13 @@ class Reline::LineEditor
       width = Reline::Unicode.get_mbchar_width(mbchar)
       @cursor += width if width
       @byte_pointer += byte_size
+    elsif @is_multiline and @config.editing_mode_is?(:emacs) and @byte_pointer == @line.bytesize and @line_index < @buffer_of_lines.size - 1
+      next_line = @buffer_of_lines[@line_index + 1]
+      @cursor = 0
+      @byte_pointer = 0
+      @cursor_max = calculate_width(next_line)
+      @previous_line_index = @line_index
+      @line_index += 1
     end
     arg -= 1
     ed_next_char(key, arg: arg) if arg > 0
@@ -886,6 +893,13 @@ class Reline::LineEditor
       mbchar = @line.byteslice(@byte_pointer, byte_size)
       width = Reline::Unicode.get_mbchar_width(mbchar)
       @cursor -= width
+    elsif @is_multiline and @config.editing_mode_is?(:emacs) and @byte_pointer == 0 and @line_index > 0
+      prev_line = @buffer_of_lines[@line_index - 1]
+      @cursor = calculate_width(prev_line)
+      @byte_pointer = prev_line.bytesize
+      @cursor_max = calculate_width(prev_line)
+      @previous_line_index = @line_index
+      @line_index -= 1
     end
     arg -= 1
     ed_prev_char(key, arg: arg) if arg > 0
