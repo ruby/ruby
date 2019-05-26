@@ -113,6 +113,7 @@ jobs:
     env:
       dependencies: openssl readline zlib
     displayName: "Install dependencies"
+    timeoutInMinutes: 20
     continueOnError: true # unstable. TODO: somehow use VM having these dependencies beforehand, and remove this `continueOnError`
   - checkout: self
     fetchDepth: 10
