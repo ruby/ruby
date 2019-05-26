@@ -60,7 +60,7 @@ module TestIRB
         "begin\nrescue\nend" => "#{GREEN}begin#{CLEAR}\n#{GREEN}rescue#{CLEAR}\n#{GREEN}end#{CLEAR}",
         "foo %w[bar]" => "foo #{RED}%w[#{CLEAR}#{RED}bar#{CLEAR}#{RED}]#{CLEAR}",
         "foo %i[bar]" => "foo #{RED}%i[#{CLEAR}#{RED}bar#{CLEAR}#{RED}]#{CLEAR}",
-        "foo :@bar, baz" => "foo #{YELLOW}:#{CLEAR}#{YELLOW}@bar#{CLEAR}, baz",
+        "foo :@bar, baz, :@@qux, :$quux" => "foo #{YELLOW}:#{CLEAR}#{YELLOW}@bar#{CLEAR}, baz, #{YELLOW}:#{CLEAR}#{YELLOW}@@qux#{CLEAR}, #{YELLOW}:#{CLEAR}#{YELLOW}$quux#{CLEAR}",
         "`echo`" => "#{RED}`#{CLEAR}#{RED}echo#{CLEAR}#{RED}`#{CLEAR}",
         "\t" => "\t", # not ^I
         "foo(*%W(bar))" => "foo(*#{RED}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED})#{CLEAR})",
