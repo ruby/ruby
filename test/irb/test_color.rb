@@ -46,7 +46,7 @@ module TestIRB
         '"#{}"' => "#{RED}\"#{CLEAR}#{RED}\#{#{CLEAR}#{RED}}#{CLEAR}#{RED}\"#{CLEAR}",
         ':"a#{}b"' => "#{YELLOW}:\"#{CLEAR}#{YELLOW}a#{CLEAR}#{YELLOW}\#{#{CLEAR}#{YELLOW}}#{CLEAR}#{YELLOW}b#{CLEAR}#{YELLOW}\"#{CLEAR}",
         ':"a#{ def b; end; \'c\' + "#{ :d }" }e"' => "#{YELLOW}:\"#{CLEAR}#{YELLOW}a#{CLEAR}#{YELLOW}\#{#{CLEAR} #{GREEN}def#{CLEAR} #{BLUE}#{BOLD}b#{CLEAR}; #{GREEN}end#{CLEAR}; #{RED}'#{CLEAR}#{RED}c#{CLEAR}#{RED}'#{CLEAR} + #{RED}\"#{CLEAR}#{RED}\#{#{CLEAR} #{YELLOW}:#{CLEAR}#{YELLOW}d#{CLEAR} #{RED}}#{CLEAR}#{RED}\"#{CLEAR} #{YELLOW}}#{CLEAR}#{YELLOW}e#{CLEAR}#{YELLOW}\"#{CLEAR}",
-        "__FILE__" => "#{CYAN}#{BOLD}__FILE__#{CLEAR}",
+        "[__FILE__, __LINE__]" => "[#{CYAN}#{BOLD}__FILE__#{CLEAR}, #{CYAN}#{BOLD}__LINE__#{CLEAR}]",
         ":self" => "#{YELLOW}:#{CLEAR}#{YELLOW}self#{CLEAR}",
         ":class" => "#{YELLOW}:#{CLEAR}#{YELLOW}class#{CLEAR}",
         "[:>, 3]" => "[#{YELLOW}:#{CLEAR}#{YELLOW}>#{CLEAR}, #{BLUE}#{BOLD}3#{CLEAR}]",
@@ -58,6 +58,9 @@ module TestIRB
         "foo %w[bar]" => "foo #{RED}%w[#{CLEAR}#{RED}bar#{CLEAR}#{RED}]#{CLEAR}",
         "foo %i[bar]" => "foo #{RED}%i[#{CLEAR}#{RED}bar#{CLEAR}#{RED}]#{CLEAR}",
         "foo :@bar, baz" => "foo #{YELLOW}:#{CLEAR}#{YELLOW}@bar#{CLEAR}, baz",
+        "`echo`" => "#{RED}`#{CLEAR}#{RED}echo#{CLEAR}#{RED}`#{CLEAR}",
+        "\t" => "\t", # not ^I
+        "foo(*%W(bar))" => "foo(*#{RED}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED})#{CLEAR})",
       }.each do |code, result|
         actual = with_term { IRB::Color.colorize_code(code) }
         assert_equal(result, actual, "Case: colorize_code(#{code.dump})\nResult: #{humanized_literal(actual)}")
