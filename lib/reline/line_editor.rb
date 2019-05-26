@@ -1037,6 +1037,7 @@ class Reline::LineEditor
       if @is_multiline
         @line_backup_in_history = whole_buffer
         @buffer_of_lines = Reline::HISTORY[@history_pointer].split("\n")
+        @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
         @line_index = @buffer_of_lines.size - 1
         @line = @buffer_of_lines.last
         @rerender_all = true
@@ -1051,6 +1052,7 @@ class Reline::LineEditor
         Reline::HISTORY[@history_pointer] = whole_buffer
         @history_pointer -= 1
         @buffer_of_lines = Reline::HISTORY[@history_pointer].split("\n")
+        @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
         @line_index = @buffer_of_lines.size - 1
         @line = @buffer_of_lines.last
         @rerender_all = true
@@ -1096,6 +1098,7 @@ class Reline::LineEditor
         Reline::HISTORY[@history_pointer] = whole_buffer
         @history_pointer += 1
         @buffer_of_lines = Reline::HISTORY[@history_pointer].split("\n")
+        @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
         @line_index = 0
         @line = @buffer_of_lines.first
         @rerender_all = true
