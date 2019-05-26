@@ -382,6 +382,9 @@ class Reline::LineEditor
     line = modify_lines(whole_lines)[@line_index]
     if !@is_multiline
       render_partial(prompt, prompt_width, line)
+      scroll_down(1)
+      Reline::IOGate.move_cursor_column(0)
+      Reline::IOGate.erase_after_cursor
     elsif !finished?
       render_partial(prompt, prompt_width, line)
     else
