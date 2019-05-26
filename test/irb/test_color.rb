@@ -49,6 +49,7 @@ module TestIRB
         "[__FILE__, __LINE__]" => "[#{CYAN}#{BOLD}__FILE__#{CLEAR}, #{CYAN}#{BOLD}__LINE__#{CLEAR}]",
         ":self" => "#{YELLOW}:#{CLEAR}#{YELLOW}self#{CLEAR}",
         ":class" => "#{YELLOW}:#{CLEAR}#{YELLOW}class#{CLEAR}",
+        "[:end, 2]" => "[#{YELLOW}:#{CLEAR}#{YELLOW}end#{CLEAR}, #{BLUE}#{BOLD}2#{CLEAR}]",
         "[:>, 3]" => "[#{YELLOW}:#{CLEAR}#{YELLOW}>#{CLEAR}, #{BLUE}#{BOLD}3#{CLEAR}]",
         ":Hello ? world : nil" => "#{YELLOW}:#{CLEAR}#{YELLOW}Hello#{CLEAR} ? world : #{CYAN}#{BOLD}nil#{CLEAR}",
         'raise "foo#{bar}baz"' => "raise #{RED}\"#{CLEAR}#{RED}foo#{CLEAR}#{RED}\#{#{CLEAR}bar#{RED}}#{CLEAR}#{RED}baz#{CLEAR}#{RED}\"#{CLEAR}",
