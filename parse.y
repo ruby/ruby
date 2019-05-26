@@ -7106,14 +7106,6 @@ number_literal_suffix(struct parser_params *p, int mask)
 	    return 0;
 	}
 	pushback(p, c);
-	if (c == '.') {
-	    c = peekc_n(p, 1);
-	    if (ISDIGIT(c)) {
-		yyerror0("unexpected fraction part after numeric literal");
-		p->lex.pcur += 2;
-		while (parser_is_identchar(p)) nextc(p);
-	    }
-	}
 	break;
     }
     return result;
@@ -8959,7 +8951,17 @@ parser_yylex(struct parser_params *p)
 	}
 	pushback(p, c);
 	if (c != -1 && ISDIGIT(c)) {
-	    yyerror0("no .<digit> floating literal anymore; put 0 before dot");
+	    char prev = p->lex.pcur-1 > p->lex.pbeg ? *(p->lex.pcur-2) : 0;
+	    parse_numeric(p, '.');
+	    if (ISDIGIT(prev)) {
+		yyerror0("unexpected fraction part after numeric literal");
+	    }
+	    else {
+		yyerror0("no .<digit> floating literal anymore; put 0 before dot");
+	    }
+	    SET_LEX_STATE(EXPR_END);
+	    p->lex.ptok = p->lex.pcur;
+	    goto retry;
 	}
 	set_yylval_id('.');
 	SET_LEX_STATE(EXPR_DOT);
