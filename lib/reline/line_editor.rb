@@ -81,6 +81,7 @@ class Reline::LineEditor
   MenuInfo = Struct.new('MenuInfo', :target, :list)
 
   CSI_REGEXP = /\e\[(?:\d+;?)*[ABCDEFGHJKSTfminsuhl]/
+  NON_PRINTING_ESCAPES = "\1\2"
 
   def initialize(config)
     @config = config
@@ -164,6 +165,8 @@ class Reline::LineEditor
     lines = [String.new(encoding: @encoding)]
     height = 1
     width = 0
+    prompt = prompt.tr(NON_PRINTING_ESCAPES, '')
+    str = str.tr(NON_PRINTING_ESCAPES, '')
     rest = "#{prompt}#{str}".encode(Encoding::UTF_8)
     loop do
       break if rest.empty?
@@ -803,6 +806,7 @@ class Reline::LineEditor
   private def calculate_width(str, allow_csi = false)
     if allow_csi
       str = str.gsub(CSI_REGEXP, '')
+      str = str.tr(NON_PRINTING_ESCAPES, '')
     end
     str.encode(Encoding::UTF_8).grapheme_clusters.inject(0) { |width, gc|
       width + Reline::Unicode.get_mbchar_width(gc)
