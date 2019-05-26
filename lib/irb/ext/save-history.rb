@@ -58,8 +58,6 @@ module IRB
   end
 
   module HistorySavingAbility # :nodoc:
-    include Readline
-
     def HistorySavingAbility.extended(obj)
       IRB.conf[:AT_EXIT].push proc{obj.save_history}
       obj.load_history
@@ -67,18 +65,22 @@ module IRB
     end
 
     def load_history
+      return unless self.class.const_defined?(:HISTORY)
+      history = self.class::HISTORY
       if history_file = IRB.conf[:HISTORY_FILE]
         history_file = File.expand_path(history_file)
       end
       history_file = IRB.rc_file("_history") unless history_file
       if File.exist?(history_file)
         open(history_file) do |f|
-          f.each {|l| HISTORY << l.chomp}
+          f.each {|l| history << l.chomp}
         end
       end
     end
 
     def save_history
+      return unless self.class.const_defined?(:HISTORY)
+      history = self.class::HISTORY
       if num = IRB.conf[:SAVE_HISTORY] and (num = num.to_i) > 0
         if history_file = IRB.conf[:HISTORY_FILE]
           history_file = File.expand_path(history_file)
@@ -96,7 +98,7 @@ module IRB
         end
 
         open(history_file, 'w', 0600 ) do |f|
-          hist = HISTORY.to_a
+          hist = history.to_a
           f.puts(hist[-num..-1] || hist)
         end
       end
