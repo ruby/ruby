@@ -790,8 +790,9 @@ class TestRubyOptions < Test::Unit::TestCase
           m.print("\C-d")
           pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
           w.close
+          timeout = EnvUtil.apply_timeout_scale(3)
           assert_nothing_raised('[ruby-dev:37798]') do
-            result = Timeout.timeout(3) {r.read}
+            result = Timeout.timeout(timeout) {r.read}
           end
           Process.wait pid
         }
