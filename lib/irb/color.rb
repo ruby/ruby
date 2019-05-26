@@ -20,25 +20,27 @@ module IRB # :nodoc:
     }
 
     begin
+      # Following pry's colors where possible, but sometimes having a compromise like making
+      # backtick and regexp as red (string's color, because they're sharing tokens).
       TOKEN_SEQ_EXPRS = {
-        on_backtick:        [[RED],                   [Ripper::EXPR_BEG]],
         on_CHAR:            [[BLUE, BOLD],            [Ripper::EXPR_END]],
+        on_backtick:        [[RED],                   [Ripper::EXPR_BEG]],
         on_const:           [[BLUE, BOLD, UNDERLINE], [Ripper::EXPR_ARG, Ripper::EXPR_CMDARG, Ripper::EXPR_ENDFN]],
         on_embexpr_beg:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_CMDARG, Ripper::EXPR_FNAME, Ripper::EXPR_ARG]],
         on_embexpr_end:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_CMDARG, Ripper::EXPR_ENDFN, Ripper::EXPR_ARG]],
         on_embvar:          [[RED],                   [Ripper::EXPR_BEG]],
+        on_float:           [[MAGENTA, BOLD],         [Ripper::EXPR_END]],
         on_heredoc_beg:     [[RED],                   [Ripper::EXPR_BEG]],
         on_heredoc_end:     [[RED],                   [Ripper::EXPR_BEG]],
         on_ident:           [[BLUE, BOLD],            [Ripper::EXPR_ENDFN]],
+        on_imaginary:       [[BLUE, BOLD],            [Ripper::EXPR_END]],
         on_int:             [[BLUE, BOLD],            [Ripper::EXPR_END]],
-        on_rational:        [[BLUE, BOLD],            [Ripper::EXPR_END]],
-        on_float:           [[MAGENTA, BOLD],         [Ripper::EXPR_END]],
-        on_imaginary:       [[MAGENTA, BOLD],         [Ripper::EXPR_END]],
         on_kw:              [[GREEN],                 [Ripper::EXPR_ARG, Ripper::EXPR_CLASS, Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_FNAME, Ripper::EXPR_MID]],
         on_label:           [[MAGENTA],               [Ripper::EXPR_LABELED]],
         on_label_end:       [[RED],                   [Ripper::EXPR_BEG]],
-        on_qwords_beg:      [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_CMDARG]],
         on_qsymbols_beg:    [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_CMDARG]],
+        on_qwords_beg:      [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_CMDARG]],
+        on_rational:        [[BLUE, BOLD],            [Ripper::EXPR_END]],
         on_regexp_beg:      [[RED, BOLD],             [Ripper::EXPR_BEG]],
         on_regexp_end:      [[RED, BOLD],             [Ripper::EXPR_BEG]],
         on_symbeg:          [[YELLOW],                [Ripper::EXPR_FNAME]],
