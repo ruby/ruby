@@ -39,6 +39,10 @@ module IRB
     BASIC_WORD_BREAK_CHARACTERS = " \t\n`><=;|&{("
 
     CompletionProc = proc { |input|
+      retrieve_completion_data(input)
+    }
+
+    def self.retrieve_completion_data(input, doc_namespace = false)
       bind = IRB.conf[:MAIN_CONTEXT].workspace.binding
 
       case input
@@ -48,7 +52,11 @@ module IRB
         message = Regexp.quote($3)
 
         candidates = String.instance_methods.collect{|m| m.to_s}
-        select_message(receiver, message, candidates)
+        if doc_namespace
+          "String.#{message}"
+        else
+          select_message(receiver, message, candidates)
+        end
 
       when /^(\/[^\/]*\/)\.([^.]*)$/
         # Regexp
@@ -56,7 +64,11 @@ module IRB
         message = Regexp.quote($2)
 
         candidates = Regexp.instance_methods.collect{|m| m.to_s}
-        select_message(receiver, message, candidates)
+        if doc_namespace
+          "Regexp.#{message}"
+        else
+          select_message(receiver, message, candidates)
+        end
 
       when /^([^\]]*\])\.([^.]*)$/
         # Array
@@ -64,19 +76,28 @@ module IRB
         message = Regexp.quote($2)
 
         candidates = Array.instance_methods.collect{|m| m.to_s}
-        select_message(receiver, message, candidates)
+        if doc_namespace
+          "Array.#{message}"
+        else
+          select_message(receiver, message, candidates)
+        end
 
       when /^([^\}]*\})\.([^.]*)$/
         # Proc or Hash
         receiver = $1
         message = Regexp.quote($2)
 
-        candidates = Proc.instance_methods.collect{|m| m.to_s}
-        candidates |= Hash.instance_methods.collect{|m| m.to_s}
-        select_message(receiver, message, candidates)
+        proc_candidates = Proc.instance_methods.collect{|m| m.to_s}
+        hash_candidates = Hash.instance_methods.collect{|m| m.to_s}
+        if doc_namespace
+          ["Proc.#{message}", "Hash.#{message}"]
+        else
+          select_message(receiver, message, proc_candidates | hash_candidates)
+        end
 
       when /^(:[^:.]*)$/
         # Symbol
+        return nil if doc_namespace
         if Symbol.respond_to?(:all_symbols)
           sym = $1
           candidates = Symbol.all_symbols.collect{|s| ":" + s.id2name}
@@ -89,7 +110,11 @@ module IRB
         # Absolute Constant or class methods
         receiver = $1
         candidates = Object.constants.collect{|m| m.to_s}
-        candidates.grep(/^#{receiver}/).collect{|e| "::" + e}
+        if doc_namespace
+          candidates.find { |i| i == receiver }
+        else
+          candidates.grep(/^#{receiver}/).collect{|e| "::" + e}
+        end
 
       when /^([A-Z].*)::([^:.]*)$/
         # Constant or class methods
@@ -101,7 +126,11 @@ module IRB
         rescue Exception
           candidates = []
         end
-        select_message(receiver, message, candidates, "::")
+        if doc_namespace
+          "#{receiver}::#{message}"
+        else
+          select_message(receiver, message, candidates, "::")
+        end
 
       when /^(:[^:.]+)(\.|::)([^.]*)$/
         # Symbol
@@ -110,20 +139,33 @@ module IRB
         message = Regexp.quote($3)
 
         candidates = Symbol.instance_methods.collect{|m| m.to_s}
-        select_message(receiver, message, candidates, sep)
+        if doc_namespace
+          "Symbol.#{message}"
+        else
+          select_message(receiver, message, candidates, sep)
+        end
 
-      when /^(-?(0[dbo])?[0-9_]+(\.[0-9_]+)?([eE]-?[0-9]+)?)(\.|::)([^.]*)$/
+      when /^(?<num>-?(0[dbo])?[0-9_]+(\.[0-9_]+)?([eE]-?[0-9]+)?)(?<sep>\.|::)(?<mes>[^.]*)$/
         # Numeric
-        receiver = $1
-        sep = $5
-        message = Regexp.quote($6)
+        receiver = $~[:num]
+        sep = $~[:sep]
+        message = Regexp.quote($~[:mes])
 
         begin
-          candidates = eval(receiver, bind).methods.collect{|m| m.to_s}
+          instance = eval(receiver, bind)
+          if doc_namespace
+            "#{instance.class.name}.#{message}"
+          else
+            candidates = instance.methods.collect{|m| m.to_s}
+            select_message(receiver, message, candidates, sep)
+          end
         rescue Exception
-          candidates = []
+          if doc_namespace
+            nil
+          else
+            candidates = []
+          end
         end
-        select_message(receiver, message, candidates, sep)
 
       when /^(-?0x[0-9a-fA-F_]+)(\.|::)([^.]*)$/
         # Numeric(0xFFFF)
@@ -132,16 +174,31 @@ module IRB
         message = Regexp.quote($3)
 
         begin
-          candidates = eval(receiver, bind).methods.collect{|m| m.to_s}
+          instance = eval(receiver, bind)
+          if doc_namespace
+            "#{instance.class.name}.#{message}"
+          else
+            candidates = instance.methods.collect{|m| m.to_s}
+            select_message(receiver, message, candidates, sep)
+          end
         rescue Exception
-          candidates = []
+          if doc_namespace
+            nil
+          else
+            candidates = []
+          end
         end
-        select_message(receiver, message, candidates, sep)
 
       when /^(\$[^.]*)$/
         # global var
-        regmessage = Regexp.new(Regexp.quote($1))
-        candidates = global_variables.collect{|m| m.to_s}.grep(regmessage)
+        gvar = $1
+        regmessage =
+        all_gvars = global_variables.collect{|m| m.to_s}
+        if doc_namespace
+          all_gvars.find{ |i| i == gvar }
+        else
+          all_gvars.grep(Regexp.new(Regexp.quote(gvar)))
+        end
 
       when /^([^."].*)(\.|::)([^.]*)$/
         # variable.func or func.func
@@ -180,7 +237,11 @@ module IRB
           candidates.sort!
           candidates.uniq!
         end
-        select_message(receiver, message, candidates, sep)
+        if doc_namespace
+          "#{rec.class.name}#{sep}#{candidates.find{ |i| i == message }}"
+        else
+          select_message(receiver, message, candidates, sep)
+        end
 
       when /^\.([^.]*)$/
         # unknown(maybe String)
@@ -189,20 +250,42 @@ module IRB
         message = Regexp.quote($1)
 
         candidates = String.instance_methods(true).collect{|m| m.to_s}
-        select_message(receiver, message, candidates)
+        if doc_namespace
+          "String.#{candidates.find{ |i| i == message }}"
+        else
+          select_message(receiver, message, candidates)
+        end
 
       else
         candidates = eval("methods | private_methods | local_variables | instance_variables | self.class.constants", bind).collect{|m| m.to_s}
+        conditions |= ReservedWords
 
-        (candidates|ReservedWords).grep(/^#{Regexp.quote(input)}/)
+        if doc_namespace
+          candidates.find{ |i| i == input }
+        else
+          candidates.grep(/^#{Regexp.quote(input)}/)
+        end
       end
-    }
+    end
 
     RDocRIDriver = RDoc::RI::Driver.new
     PerfectMatchedProc = proc { |matched|
-      begin
-        RDocRIDriver.display_name(matched)
-      rescue RDoc::RI::Driver::NotFoundError
+      namespace = retrieve_completion_data(matched, true)
+      return unless matched
+      if namespace.is_a?(Array)
+        out = RDoc::Markup::Document.new
+        namespace.each do |m|
+          begin
+            RDocRIDriver.add_method(out, m)
+          rescue RDoc::RI::Driver::NotFoundError
+          end
+        end
+        RDocRIDriver.display(out)
+      else
+        begin
+          RDocRIDriver.display_names([namespace])
+        rescue RDoc::RI::Driver::NotFoundError
+        end
       end
     }
 
