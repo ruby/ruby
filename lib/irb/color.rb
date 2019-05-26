@@ -15,12 +15,13 @@ module IRB # :nodoc:
     CYAN      = 36
 
     TOKEN_KEYWORDS = {
-      on_kw: ['nil', 'self', 'true', 'false', '__FILE__'],
+      on_kw: ['nil', 'self', 'true', 'false', '__FILE__', '__LINE__'],
       on_const: ['ENV'],
     }
 
     begin
       TOKEN_SEQ_EXPRS = {
+        on_backtick:        [[RED],                   [Ripper::EXPR_BEG]],
         on_CHAR:            [[BLUE, BOLD],            [Ripper::EXPR_END]],
         on_const:           [[BLUE, BOLD, UNDERLINE], [Ripper::EXPR_ARG, Ripper::EXPR_CMDARG, Ripper::EXPR_ENDFN]],
         on_embexpr_beg:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_CMDARG, Ripper::EXPR_FNAME, Ripper::EXPR_ARG]],
@@ -42,6 +43,7 @@ module IRB # :nodoc:
         on_tstring_beg:     [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_ARG, Ripper::EXPR_CMDARG]],
         on_tstring_content: [[RED],                   [Ripper::EXPR_BEG, Ripper::EXPR_END, Ripper::EXPR_ARG, Ripper::EXPR_CMDARG, Ripper::EXPR_FNAME]],
         on_tstring_end:     [[RED],                   [Ripper::EXPR_END]],
+        on_words_beg:       [[RED],                   [Ripper::EXPR_BEG]],
       }
     rescue NameError
       TOKEN_SEQ_EXPRS = {}
