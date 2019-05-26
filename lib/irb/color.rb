@@ -136,7 +136,7 @@ module IRB # :nodoc:
         case token
         when :on_symbeg
           @stack << true
-        when :on_ident, :on_op, :on_const, :on_ivar
+        when :on_ident, :on_op, :on_const, :on_ivar, :on_kw
           if @stack.last # Pop only when it's Symbol
             @stack.pop
             return prev_state
