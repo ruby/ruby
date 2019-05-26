@@ -26,7 +26,7 @@ module TestIRB
         "1" => "#{BLUE}#{BOLD}1#{CLEAR}",
         "2.3" => "#{MAGENTA}#{BOLD}2.3#{CLEAR}",
         "7r" => "#{BLUE}#{BOLD}7r#{CLEAR}",
-        "8i" => "#{MAGENTA}#{BOLD}8i#{CLEAR}",
+        "8i" => "#{BLUE}#{BOLD}8i#{CLEAR}",
         "['foo', :bar]" => "[#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR}, #{YELLOW}:#{CLEAR}#{YELLOW}bar#{CLEAR}]",
         "class A; end" => "#{GREEN}class#{CLEAR} #{BLUE}#{BOLD}#{UNDERLINE}A#{CLEAR}; #{GREEN}end#{CLEAR}",
         "def self.foo; bar; end" => "#{GREEN}def#{CLEAR} #{CYAN}#{BOLD}self#{CLEAR}.#{BLUE}#{BOLD}foo#{CLEAR}; bar; #{GREEN}end#{CLEAR}",
