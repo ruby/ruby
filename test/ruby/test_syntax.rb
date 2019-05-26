@@ -753,6 +753,8 @@ e"
       \
       TEXT
     end;
+
+    assert_equal("  TEXT\n", eval("<<~eos\n" "  \\\n" "TEXT\n" "eos\n"))
   end
 
   def test_lineno_after_heredoc
