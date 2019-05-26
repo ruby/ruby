@@ -448,71 +448,70 @@ class Reline::KeyActor::ViInsert < Reline::KeyActor::Base
     :ed_unassigned,
     # 223 M-_
     :ed_unassigned,
-    # 223 M-`
+    # 224 M-`
     :ed_unassigned,
-    # 224 M-a
+    # 225 M-a
     :ed_unassigned,
-    # 225 M-b
+    # 226 M-b
     :ed_unassigned,
-    # 226 M-c
+    # 227 M-c
     :ed_unassigned,
-    # 227 M-d
+    # 228 M-d
     :ed_unassigned,
-    # 228 M-e
+    # 229 M-e
     :ed_unassigned,
-    # 229 M-f
+    # 230 M-f
     :ed_unassigned,
-    # 230 M-g
+    # 231 M-g
     :ed_unassigned,
-    # 231 M-h
+    # 232 M-h
     :ed_unassigned,
-    # 232 M-i
+    # 233 M-i
     :ed_unassigned,
-    # 233 M-j
+    # 234 M-j
     :ed_unassigned,
-    # 234 M-k
+    # 235 M-k
     :ed_unassigned,
-    # 235 M-l
+    # 236 M-l
     :ed_unassigned,
-    # 236 M-m
+    # 237 M-m
     :ed_unassigned,
-    # 237 M-n
+    # 238 M-n
     :ed_unassigned,
-    # 238 M-o
+    # 239 M-o
     :ed_unassigned,
-    # 239 M-p
+    # 240 M-p
     :ed_unassigned,
-    # 240 M-q
+    # 241 M-q
     :ed_unassigned,
-    # 241 M-r
+    # 242 M-r
     :ed_unassigned,
-    # 242 M-s
+    # 243 M-s
     :ed_unassigned,
-    # 243 M-t
+    # 244 M-t
     :ed_unassigned,
-    # 244 M-u
+    # 245 M-u
     :ed_unassigned,
-    # 245 M-v
+    # 246 M-v
     :ed_unassigned,
-    # 246 M-w
+    # 247 M-w
     :ed_unassigned,
-    # 247 M-x
+    # 248 M-x
     :ed_unassigned,
-    # 248 M-y
+    # 249 M-y
     :ed_unassigned,
-    # 249 M-z
+    # 250 M-z
     :ed_unassigned,
-    # 250 M-{
+    # 251 M-{
     :ed_unassigned,
-    # 251 M-|
+    # 252 M-|
     :ed_unassigned,
-    # 252 M-}
+    # 253 M-}
     :ed_unassigned,
-    # 253 M-~
+    # 254 M-~
     :ed_unassigned,
-    # 254	M-^?
+    # 255 M-^?
     :ed_unassigned
-    # 255
     # EOF
   ]
 end
