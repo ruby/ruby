@@ -64,6 +64,7 @@ module TestIRB
         "`echo`" => "#{RED}`#{CLEAR}#{RED}echo#{CLEAR}#{RED}`#{CLEAR}",
         "\t" => "\t", # not ^I
         "foo(*%W(bar))" => "foo(*#{RED}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED})#{CLEAR})",
+        "$stdout" => "#{GREEN}#{BOLD}$stdout#{CLEAR}",
       }.each do |code, result|
         actual = with_term { IRB::Color.colorize_code(code) }
         assert_equal(result, actual, "Case: colorize_code(#{code.dump})\nResult: #{humanized_literal(actual)}")
