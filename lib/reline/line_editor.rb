@@ -269,6 +269,7 @@ class Reline::LineEditor
   end
 
   def rerender # TODO: support physical and logical lines
+    return if @line.nil?
     if @menu_info
       scroll_down(@highest_in_all - @first_line_started_from)
       @rerender_all = true
@@ -281,7 +282,6 @@ class Reline::LineEditor
       move_cursor_up(@highest_in_all - 1 - @first_line_started_from)
       @menu_info = nil
     end
-    return if @line.nil?
     if @vi_arg
       prompt = "(arg: #{@vi_arg}) "
       prompt_width = calculate_width(prompt)
@@ -1194,6 +1194,8 @@ class Reline::LineEditor
   private def em_delete_or_list(key)
     if @line.empty?
       @line = nil
+      scroll_down(@highest_in_all - @first_line_started_from)
+      Reline::IOGate.move_cursor_column(0)
       finish
     elsif @byte_pointer < @line.bytesize
       splitted_last = @line.byteslice(@byte_pointer, @line.bytesize)
@@ -1486,6 +1488,8 @@ class Reline::LineEditor
   private def vi_end_of_transmission(key)
     if @line.empty?
       @line = nil
+      scroll_down(@highest_in_all - @first_line_started_from)
+      Reline::IOGate.move_cursor_column(0)
       finish
     end
   end
@@ -1493,6 +1497,8 @@ class Reline::LineEditor
   private def vi_list_or_eof(key)
     if @line.empty?
       @line = nil
+      scroll_down(@highest_in_all - @first_line_started_from)
+      Reline::IOGate.move_cursor_column(0)
       finish
     else
       # TODO: list
