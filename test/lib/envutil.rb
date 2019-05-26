@@ -65,6 +65,13 @@ module EnvUtil
   end
   module_function :apply_timeout_scale
 
+  def timeout(sec, klass = nil, message = nil, &blk)
+    return yield(sec) if sec == nil or sec.zero?
+    sec = apply_timeout_scale(sec)
+    Timeout.timeout(sec, klass, message, &blk)
+  end
+  module_function :timeout
+
   def terminate(pid, signal = :TERM, pgroup = nil, reprieve = 1)
     reprieve = apply_timeout_scale(reprieve) if reprieve
 
