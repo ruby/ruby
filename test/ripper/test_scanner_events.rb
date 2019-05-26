@@ -19,9 +19,16 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     end
   end
 
-  def scan(target, str)
+  def scan(target, str, &error)
     sym = "on_#{target}".intern
-    Ripper.lex(str).select {|_1,type,_2| type == sym }.map {|_1,_2,tok| tok }
+    lexer = Ripper::Lexer.new(str)
+    if error
+      lexer.singleton_class.class_eval do
+        define_method(:compile_error, error)
+        define_method(:on_parse_error, error)
+      end
+    end
+    lexer.lex.select {|_1,type,_2| type == sym }.map {|_1,_2,tok| tok }
   end
 
   def test_tokenize
@@ -927,6 +934,11 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('CHAR', "?a")
     assert_equal [],
                  scan('CHAR', "@ivar")
+
+    assert_equal ["?\\M-H"], scan('CHAR', '?\\M-H')
+    err = nil
+    assert_equal ["?\\M"], scan('CHAR', '?\\M ') {|e| err = [__callee__, e]}
+    assert_equal([:on_parse_error, "Invalid escape character syntax"], err)
   end
 
   def test_label
