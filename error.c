@@ -1415,8 +1415,8 @@ frozen_err_initialize(int argc, VALUE *argv, VALUE self)
 
     argc = rb_scan_args(argc, argv, "02", &mesg, &recv);
     if (argc > 1) {
-	argc--;
-	rb_ivar_set(self, id_recv, recv);
+        argc--;
+        rb_ivar_set(self, id_recv, recv);
     }
     rb_call_super(argc, argv);
     return self;
@@ -2897,13 +2897,13 @@ rb_error_frozen_object(VALUE frozen_obj)
 	VALUE path = rb_ary_entry(debug_info, 0);
 	VALUE line = rb_ary_entry(debug_info, 1);
 
-	rb_frozen_error_raise(frozen_obj,
-	    "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
-	    CLASS_OF(frozen_obj), path, line);
+        rb_frozen_error_raise(frozen_obj,
+            "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
+            CLASS_OF(frozen_obj), path, line);
     }
     else {
-	rb_frozen_error_raise(frozen_obj, "can't modify frozen %"PRIsVALUE,
-	    CLASS_OF(frozen_obj));
+        rb_frozen_error_raise(frozen_obj, "can't modify frozen %"PRIsVALUE,
+            CLASS_OF(frozen_obj));
     }
 }
 
