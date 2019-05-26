@@ -93,6 +93,15 @@ class Reline::LineEditor
     @rest_height = (Reline::IOGate.get_screen_size.first - 1) - Reline::IOGate.cursor_pos.y
     @screen_size = Reline::IOGate.get_screen_size
     reset_variables(prompt, encoding)
+    @old_trap = Signal.trap('SIGINT') {
+      scroll_down(@highest_in_all - @first_line_started_from)
+      Reline::IOGate.move_cursor_column(0)
+      @old_trap.()
+    }
+  end
+
+  def finalize
+    Signal.trap('SIGINT', @old_trap)
   end
 
   def reset_variables(prompt = '', encoding = Encoding.default_external)

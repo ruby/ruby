@@ -347,10 +347,12 @@ module Reline
       end
       Reline::IOGate.move_cursor_column(0)
     rescue StandardError => e
+      @@line_editor.finalize
       Reline::IOGate.deprep(otio)
       raise e
     end
 
+    @@line_editor.finalize
     Reline::IOGate.deprep(otio)
   end
 
