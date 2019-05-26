@@ -149,7 +149,7 @@ class Reline::KeyActor::ViCommand < Reline::KeyActor::Base
     #  73 I
     :vi_insert_at_bol,
     #  74 J
-    :ed_search_next_history,
+    :vi_join_lines,
     #  75 K
     :ed_search_prev_history,
     #  76 L

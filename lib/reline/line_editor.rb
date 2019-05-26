@@ -40,6 +40,7 @@ class Reline::LineEditor
     vi_paste_prev
     vi_paste_next
     vi_replace_char
+    vi_join_lines
   }
 
   VI_OPERATORS = %i{
@@ -1631,5 +1632,19 @@ class Reline::LineEditor
       @cursor += width
     end
     @waiting_proc = nil
+  end
+
+  private def vi_join_lines(key, arg: 1)
+    if @is_multiline and @buffer_of_lines.size > @line_index + 1
+      @cursor = calculate_width(@line)
+      @byte_pointer = @line.bytesize
+      @line += ' ' + @buffer_of_lines.delete_at(@line_index + 1).gsub(/\A +/, '')
+      @cursor_max = calculate_width(@line)
+      @buffer_of_lines[@line_index] = @line
+      @rerender_all = true
+      @rest_height += 1
+    end
+    arg -= 1
+    vi_join_lines(key, arg: arg) if arg > 0
   end
 end
