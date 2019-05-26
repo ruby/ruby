@@ -145,7 +145,7 @@ module IRB
           select_message(receiver, message, candidates, sep)
         end
 
-      when /^(?<num>-?(0[dbo])?[0-9_]+(\.[0-9_]+)?([eE]-?[0-9]+)?)(?<sep>\.|::)(?<mes>[^.]*)$/
+      when /^(?<num>-?(0[dbo])?[0-9_]+(\.[0-9_]+)?([eE][+-]?[0-9]+i?|r)?)(?<sep>\.|::)(?<mes>[^.]*)$/
         # Numeric
         receiver = $~[:num]
         sep = $~[:sep]
