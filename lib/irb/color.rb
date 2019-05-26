@@ -20,36 +20,40 @@ module IRB # :nodoc:
     }
     private_constant :TOKEN_KEYWORDS
 
+    # A constant of all-bit 1 to match any Ripper's state in #dispatch_seq
+    ALL = -1
+    private_constant :ALL
+
     begin
       # Following pry's colors where possible, but sometimes having a compromise like making
       # backtick and regexp as red (string's color, because they're sharing tokens).
       TOKEN_SEQ_EXPRS = {
-        on_CHAR:            [[BLUE, BOLD],            :all],
-        on_backtick:        [[RED],                   :all],
-        on_const:           [[BLUE, BOLD, UNDERLINE], :all],
-        on_comment:         [[BLUE, BOLD],            :all],
-        on_embexpr_beg:     [[RED],                   :all],
-        on_embexpr_end:     [[RED],                   :all],
-        on_embvar:          [[RED],                   :all],
-        on_float:           [[MAGENTA, BOLD],         :all],
-        on_heredoc_beg:     [[RED],                   :all],
-        on_heredoc_end:     [[RED],                   :all],
+        on_CHAR:            [[BLUE, BOLD],            ALL],
+        on_backtick:        [[RED],                   ALL],
+        on_const:           [[BLUE, BOLD, UNDERLINE], ALL],
+        on_comment:         [[BLUE, BOLD],            ALL],
+        on_embexpr_beg:     [[RED],                   ALL],
+        on_embexpr_end:     [[RED],                   ALL],
+        on_embvar:          [[RED],                   ALL],
+        on_float:           [[MAGENTA, BOLD],         ALL],
+        on_heredoc_beg:     [[RED],                   ALL],
+        on_heredoc_end:     [[RED],                   ALL],
         on_ident:           [[BLUE, BOLD],            Ripper::EXPR_ENDFN],
-        on_imaginary:       [[BLUE, BOLD],            :all],
-        on_int:             [[BLUE, BOLD],            :all],
-        on_kw:              [[GREEN],                 :all],
-        on_label:           [[MAGENTA],               :all],
-        on_label_end:       [[RED],                   :all],
-        on_qsymbols_beg:    [[RED],                   :all],
-        on_qwords_beg:      [[RED],                   :all],
-        on_rational:        [[BLUE, BOLD],            :all],
-        on_regexp_beg:      [[RED, BOLD],             :all],
-        on_regexp_end:      [[RED, BOLD],             :all],
-        on_symbeg:          [[YELLOW],                :all],
-        on_tstring_beg:     [[RED],                   :all],
-        on_tstring_content: [[RED],                   :all],
-        on_tstring_end:     [[RED],                   :all],
-        on_words_beg:       [[RED],                   :all],
+        on_imaginary:       [[BLUE, BOLD],            ALL],
+        on_int:             [[BLUE, BOLD],            ALL],
+        on_kw:              [[GREEN],                 ALL],
+        on_label:           [[MAGENTA],               ALL],
+        on_label_end:       [[RED],                   ALL],
+        on_qsymbols_beg:    [[RED],                   ALL],
+        on_qwords_beg:      [[RED],                   ALL],
+        on_rational:        [[BLUE, BOLD],            ALL],
+        on_regexp_beg:      [[RED, BOLD],             ALL],
+        on_regexp_end:      [[RED, BOLD],             ALL],
+        on_symbeg:          [[YELLOW],                ALL],
+        on_tstring_beg:     [[RED],                   ALL],
+        on_tstring_content: [[RED],                   ALL],
+        on_tstring_end:     [[RED],                   ALL],
+        on_words_beg:       [[RED],                   ALL],
       }
     rescue NameError
       # Give up highlighting Ripper-incompatible older Ruby
@@ -121,7 +125,7 @@ module IRB # :nodoc:
           [YELLOW]
         elsif TOKEN_KEYWORDS.fetch(token, []).include?(str)
           [CYAN, BOLD]
-        elsif (seq, exprs = TOKEN_SEQ_EXPRS[token]; exprs == :all || (exprs != nil && (expr & exprs) != 0))
+        elsif (seq, exprs = TOKEN_SEQ_EXPRS[token]; (expr & (exprs || 0)) != 0)
           seq
         else
           nil
