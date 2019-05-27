@@ -6180,8 +6180,8 @@ tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
 
 /* return value is for ?\u3042 */
 static void
-parser_tokadd_utf8(struct parser_params *p, rb_encoding **encp,
-		   int string_literal, int symbol_literal, int regexp_literal)
+tokadd_utf8(struct parser_params *p, rb_encoding **encp,
+	    int string_literal, int symbol_literal, int regexp_literal)
 {
     /*
      * If string_literal is true, then we allow multiple codepoints
@@ -6567,9 +6567,9 @@ tokadd_string(struct parser_params *p,
 		    tokadd(p, '\\');
 		    break;
 		}
-		parser_tokadd_utf8(p, enc, term,
-				   func & STR_FUNC_SYMBOL,
-				   func & STR_FUNC_REGEXP);
+		tokadd_utf8(p, enc, term,
+			    func & STR_FUNC_SYMBOL,
+			    func & STR_FUNC_REGEXP);
 		continue;
 
 	      default:
@@ -8063,7 +8063,7 @@ parse_qmark(struct parser_params *p, int space_seen)
 	if (peek(p, 'u')) {
 	    nextc(p);
 	    enc = rb_utf8_encoding();
-	    parser_tokadd_utf8(p, &enc, -1, 0, 0);
+	    tokadd_utf8(p, &enc, -1, 0, 0);
 	}
 	else if (!lex_eol_p(p) && !(c = *p->lex.pcur, ISASCII(c))) {
 	    nextc(p);
