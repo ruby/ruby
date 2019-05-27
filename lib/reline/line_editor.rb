@@ -13,7 +13,6 @@ class Reline::LineEditor
   attr_accessor :output_modifier_proc
   attr_accessor :pre_input_hook
   attr_accessor :dig_perfect_match_proc
-  attr_writer :retrieve_completion_block
   attr_writer :output
 
   ARGUMENTABLE = %i{
@@ -482,7 +481,7 @@ class Reline::LineEditor
   end
 
   private def complete_internal_proc(list, is_menu)
-    preposing, target, postposing = @retrieve_completion_block.(@line, @byte_pointer)
+    preposing, target, postposing = retrieve_completion_block
     list = list.select { |i|
       if i and i.encoding != Encoding::US_ASCII and i.encoding != @encoding
         raise Encoding::CompatibilityError
@@ -547,7 +546,7 @@ class Reline::LineEditor
     case @completion_state
     when CompletionState::NORMAL, CompletionState::COMPLETION, CompletionState::MENU
       @completion_state = CompletionState::JOURNEY
-      result = @retrieve_completion_block.(@line, @byte_pointer)
+      result = retrieve_completion_block
       return if result.nil?
       preposing, target, postposing = result
       @completion_journey_data = CompletionJourneyData.new(
@@ -697,14 +696,16 @@ class Reline::LineEditor
     @first_char = false
     completion_occurs = false
     if @config.editing_mode_is?(:emacs, :vi_insert) and key.char == "\C-i".ord
-      slice = retrieve_completion_slice
+      result = retrieve_completion_block
+      slice = result[1]
       result = @completion_proc.(slice) if @completion_proc and slice
       if result.is_a?(Array)
         completion_occurs = true
         complete(result)
       end
     elsif @config.editing_mode_is?(:vi_insert) and ["\C-p".ord, "\C-n".ord].include?(key.char)
-      slice = retrieve_completion_slice
+      result = retrieve_completion_block
+      slice = result[1]
       result = @completion_proc.(slice) if @completion_proc and slice
       if result.is_a?(Array)
         completion_occurs = true
@@ -720,16 +721,42 @@ class Reline::LineEditor
     end
   end
 
-  def retrieve_completion_slice
+  def retrieve_completion_block
     word_break_regexp = /\A[#{Regexp.escape(Reline.completer_word_break_characters)}]/
+    quote_characters_regexp = /\A[#{Regexp.escape(Reline.completer_quote_characters)}]/
     before = @line.byteslice(0, @byte_pointer)
     rest = nil
-    (0..@byte_pointer).each do |i|
-      if @line.byteslice(i, @byte_pointer) =~ word_break_regexp
+    break_pointer = nil
+    quote = nil
+    i = 0
+    while i < @byte_pointer do
+      slice = @line.byteslice(i, @byte_pointer - i)
+      if quote and slice =~ /\A(?<!\\)#{Regexp.escape(quote)}/ # closing "
+        quote = nil
+        i += 1
+      elsif quote and slice =~ /\A\\#{Regexp.escape(quote)}/ # escaped \"
+        # skip
+        i += 2
+      elsif slice =~ quote_characters_regexp # find new "
+        quote = $&
+        i += 1
+      elsif not quote and slice =~ word_break_regexp
         rest = $'
+        i += 1
+        break_pointer = i
+      else
+        i += 1
       end
     end
-    rest ? rest : before
+    if rest
+      preposing = @line.byteslice(0, break_pointer)
+      target = rest
+    else
+      preposing = ''
+      target = before
+    end
+    postposing = @line.byteslice(@byte_pointer, @line.bytesize - @byte_pointer)
+    [preposing, target, postposing]
   end
 
   def confirm_multiline_termination

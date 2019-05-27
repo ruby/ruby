@@ -8,7 +8,6 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     @encoding = (RELINE_TEST_ENCODING rescue Encoding.default_external)
     @line_editor = Reline::LineEditor.new(@config)
     @line_editor.reset(@prompt, @encoding)
-    @line_editor.retrieve_completion_block = Reline.method(:retrieve_completion_block)
   end
 
   def test_ed_insert_one
