@@ -98,7 +98,7 @@ class RubyLex
             @line.force_encoding(@io.encoding)
             yield @line, @exp_line_no
           end
-          break unless l
+          break if @io.eof?
           @line = ''
           @exp_line_no = @line_no
 
