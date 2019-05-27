@@ -52,6 +52,11 @@ module TestIRB
       }
       assert_equal('foo', e.message)
       assert_same(e, @context.evaluate('$!', 1, exception: e))
+      e = assert_raise(SyntaxError) {
+        @context.evaluate("1,2,3", 1, exception: e)
+      }
+      assert_match(/\A\(irb\):1:/, e.message)
+      assert_not_match(/rescue _\.class/, e.message)
     end
 
     def test_eval_input
