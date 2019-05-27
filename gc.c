@@ -1083,11 +1083,11 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
     int err = 0;
 
     if (SPECIAL_CONST_P(obj)) {
-        fprintf(stderr, "check_rvalue_consistency: %p is a special const.", (void *)obj);
+        fprintf(stderr, "check_rvalue_consistency: %p is a special const.\n", (void *)obj);
         err++;
     }
     else if (!is_pointer_to_heap(objspace, (void *)obj)) {
-        fprintf(stderr, "check_rvalue_consistency: %p is not a Ruby object.", (void *)obj);
+        fprintf(stderr, "check_rvalue_consistency: %p is not a Ruby object.\n", (void *)obj);
         err++;
     }
     else {
@@ -1098,15 +1098,15 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
         const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
 
         if (GET_HEAP_PAGE(obj)->flags.in_tomb) {
-            fprintf(stderr, "check_rvalue_consistency: %s is in tomb page.", obj_info(obj));
+            fprintf(stderr, "check_rvalue_consistency: %s is in tomb page.\n", obj_info(obj));
             err++;
         }
         if (BUILTIN_TYPE(obj) == T_NONE) {
-            fprintf(stderr, "check_rvalue_consistency: %s is T_NONE", obj_info(obj));
+            fprintf(stderr, "check_rvalue_consistency: %s is T_NONE.\n", obj_info(obj));
             err++;
         }
         if (BUILTIN_TYPE(obj) == T_ZOMBIE) {
-            fprintf(stderr, "check_rvalue_consistency: %s is T_ZOMBIE", obj_info(obj));
+            fprintf(stderr, "check_rvalue_consistency: %s is T_ZOMBIE.\n", obj_info(obj));
             err++;
         }
 
@@ -1117,23 +1117,23 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
          * OLD == age == 3 && old-bitmap && mark-bit (except incremental marking)
          */
         if (age > 0 && wb_unprotected_bit) {
-            fprintf(stderr, "check_rvalue_consistency: %s is not WB protected, but age is %d > 0.", obj_info(obj), age);
+            fprintf(stderr, "check_rvalue_consistency: %s is not WB protected, but age is %d > 0.\n", obj_info(obj), age);
             err++;
         }
 
         if (!is_marking(objspace) && uncollectible_bit && !mark_bit) {
-            fprintf(stderr, "check_rvalue_consistency: %s is uncollectible, but is not marked while !gc.", obj_info(obj));
+            fprintf(stderr, "check_rvalue_consistency: %s is uncollectible, but is not marked while !gc.\n", obj_info(obj));
             err++;
         }
 
         if (!is_full_marking(objspace)) {
             if (uncollectible_bit && age != RVALUE_OLD_AGE && !wb_unprotected_bit) {
-                fprintf(stderr, "check_rvalue_consistency: %s is uncollectible, but not old (age: %d) and not WB unprotected.",
+                fprintf(stderr, "check_rvalue_consistency: %s is uncollectible, but not old (age: %d) and not WB unprotected.\n",
                         obj_info(obj), age);
                 err++;
             }
             if (remembered_bit && age != RVALUE_OLD_AGE) {
-                fprintf(stderr, "check_rvalue_consistency: %s is remembered, but not old (age: %d).",
+                fprintf(stderr, "check_rvalue_consistency: %s is remembered, but not old (age: %d).\n",
                         obj_info(obj), age);
                 err++;
             }
@@ -1148,7 +1148,7 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
          */
         if (is_incremental_marking(objspace) && marking_bit) {
             if (!is_marking(objspace) && !mark_bit) {
-                fprintf(stderr, "check_rvalue_consistency: %s is marking, but not marked.", obj_info(obj));
+                fprintf(stderr, "check_rvalue_consistency: %s is marking, but not marked.\n", obj_info(obj));
                 err++;
             }
         }
