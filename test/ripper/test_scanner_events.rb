@@ -24,8 +24,9 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     lexer = Ripper::Lexer.new(str)
     if error
       lexer.singleton_class.class_eval do
-        define_method(:compile_error, error)
-        define_method(:on_parse_error, error)
+        define_method(:on_parse_error) {|ev|
+          yield __callee__, ev, token()
+        }
       end
     end
     lexer.lex.select {|_1,type,_2| type == sym }.map {|_1,_2,tok| tok }
@@ -937,8 +938,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
 
     assert_equal ["?\\M-H"], scan('CHAR', '?\\M-H')
     err = nil
-    assert_equal ["?\\M"], scan('CHAR', '?\\M ') {|e| err = [__callee__, e]}
-    assert_equal([:on_parse_error, "Invalid escape character syntax"], err)
+    assert_equal ["?\\M"], scan('CHAR', '?\\M ') {|*e| err = e}
+    assert_equal([:on_parse_error, "Invalid escape character syntax", "?\\M "], err)
   end
 
   def test_label
