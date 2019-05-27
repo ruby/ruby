@@ -114,7 +114,7 @@ class Reline::Windows
   def self.get_screen_size
     csbi = 0.chr * 24
     @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
-    csbi[0, 4].unpack('SS')
+    csbi[0, 4].unpack('SS').reverse
   end
 
   def self.cursor_pos
