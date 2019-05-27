@@ -239,21 +239,6 @@ module Reline
     Reline::IOGate.get_screen_size
   end
 
-  def retrieve_completion_block(line, byte_pointer)
-    break_regexp = /[#{Regexp.escape(@@basic_word_break_characters)}]/
-    before_pointer = line.byteslice(0, byte_pointer)
-    break_point = before_pointer.rindex(break_regexp)
-    if break_point
-      preposing = before_pointer[0..(break_point)]
-      block = before_pointer[(break_point + 1)..-1]
-    else
-      preposing = ''
-      block = before_pointer
-    end
-    postposing = line.byteslice(byte_pointer, line.bytesize)
-    [preposing, block, postposing]
-  end
-
   def eof?
     @@line_editor.eof?
   end
@@ -313,7 +298,6 @@ module Reline
     @@line_editor.output_modifier_proc = @@output_modifier_proc
     @@line_editor.dig_perfect_match_proc = @@dig_perfect_match_proc
     @@line_editor.pre_input_hook = @@pre_input_hook
-    @@line_editor.retrieve_completion_block = method(:retrieve_completion_block)
     @@line_editor.rerender
 
     if IS_WINDOWS
