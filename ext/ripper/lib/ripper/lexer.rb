@@ -49,7 +49,8 @@ class Ripper
     State = Struct.new(:to_int, :to_s) do
       alias to_i to_int
       def initialize(i) super(i, Ripper.lex_state_name(i)).freeze end
-      def inspect; "#<#{self.class}: #{self}>" end
+      # def inspect; "#<#{self.class}: #{self}>" end
+      alias inspect to_s
       def pretty_print(q) q.text(to_s) end
       def ==(i) super or to_int == i end
       def &(i) self.class.new(to_int & i) end
@@ -62,6 +63,20 @@ class Ripper
     Elem = Struct.new(:pos, :event, :tok, :state) do
       def initialize(pos, event, tok, state)
         super(pos, event, tok, State.new(state))
+      end
+
+      def inspect
+        "#<#{self.class}: #{event}@#{pos[0]}:#{pos[0]}:#{state}: #{tok.inspect}>"
+      end
+
+      def pretty_print(q)
+        q.group(2, "#<#{self.class}:", ">") {
+          q.breakable
+          q.text("#{event}@#{pos[0]}:#{pos[0]}")
+          q.breakable
+          q.text("token: ")
+          tok.pretty_print(q)
+        }
       end
     end
 
