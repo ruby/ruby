@@ -12699,6 +12699,28 @@ ripper_state(VALUE self)
     return INT2NUM(p->lex.state);
 }
 
+/*
+ *  call-seq:
+ *    ripper.token   -> String
+ *
+ *  Return the current token string.
+ */
+static VALUE
+ripper_token(VALUE self)
+{
+    struct parser_params *p;
+    long pos, len;
+
+    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
+    if (!ripper_initialized_p(p)) {
+        rb_raise(rb_eArgError, "method called for uninitialized object");
+    }
+    if (NIL_P(p->parsing_thread)) return Qnil;
+    pos = p->lex.ptok - p->lex.pbeg;
+    len = p->lex.pcur - p->lex.ptok;
+    return rb_str_subseq(p->lex.lastline, pos, len);
+}
+
 #ifdef RIPPER_DEBUG
 /* :nodoc: */
 static VALUE
@@ -12762,6 +12784,7 @@ InitVM_ripper(void)
     rb_define_method(Ripper, "filename", ripper_filename, 0);
     rb_define_method(Ripper, "lineno", ripper_lineno, 0);
     rb_define_method(Ripper, "state", ripper_state, 0);
+    rb_define_method(Ripper, "token", ripper_token, 0);
     rb_define_method(Ripper, "end_seen?", rb_parser_end_seen_p, 0);
     rb_define_method(Ripper, "encoding", rb_parser_encoding, 0);
     rb_define_method(Ripper, "yydebug", rb_parser_get_yydebug, 0);
