@@ -9,6 +9,7 @@ module TestIRB
     CLEAR     = "\e[0m"
     BOLD      = "\e[1m"
     UNDERLINE = "\e[4m"
+    REVERSE   = "\e[7m"
     RED       = "\e[31m"
     GREEN     = "\e[32m"
     YELLOW    = "\e[33m"
@@ -37,7 +38,7 @@ module TestIRB
         '"foo#{a} #{b}"' => "#{RED}\"#{CLEAR}#{RED}foo#{CLEAR}#{RED}\#{#{CLEAR}a#{RED}}#{CLEAR}#{RED} #{CLEAR}#{RED}\#{#{CLEAR}b#{RED}}#{CLEAR}#{RED}\"#{CLEAR}",
         '/r#{e}g/' => "#{RED}#{BOLD}/#{CLEAR}#{RED}r#{CLEAR}#{RED}\#{#{CLEAR}e#{RED}}#{CLEAR}#{RED}g#{CLEAR}#{RED}#{BOLD}/#{CLEAR}",
         "'a\nb'" => "#{RED}'#{CLEAR}#{RED}a#{CLEAR}\n#{RED}b#{CLEAR}#{RED}'#{CLEAR}",
-        "4.5.6" => "4.5.6",
+        "4.5.6" => "#{MAGENTA}#{BOLD}4.5#{CLEAR}#{RED}#{REVERSE}.6#{CLEAR}",
         "[1]]]" => "[1]]]",
         "\e[0m\n" => "^[[#{BLUE}#{BOLD}0#{CLEAR}m\n",
         "%w[a b]" => "#{RED}%w[#{CLEAR}#{RED}a#{CLEAR} #{RED}b#{CLEAR}#{RED}]#{CLEAR}",
@@ -111,6 +112,7 @@ module TestIRB
         .gsub(CLEAR, '@@@{CLEAR}')
         .gsub(BOLD, '@@@{BOLD}')
         .gsub(UNDERLINE, '@@@{UNDERLINE}')
+        .gsub(REVERSE, '@@@{REVERSE}')
         .gsub(RED, '@@@{RED}')
         .gsub(GREEN, '@@@{GREEN}')
         .gsub(YELLOW, '@@@{YELLOW}')
