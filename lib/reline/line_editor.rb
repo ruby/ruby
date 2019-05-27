@@ -81,7 +81,7 @@ class Reline::LineEditor
   CompletionJourneyData = Struct.new('CompletionJourneyData', :preposing, :postposing, :list, :pointer)
   MenuInfo = Struct.new('MenuInfo', :target, :list)
 
-  CSI_REGEXP = /\e\[(?:\d+;?)*[ABCDEFGHJKSTfminsuhl]/
+  CSI_REGEXP = /\e\[[\d;]*[ABCDEFGHJKSTfminsuhl]/
   NON_PRINTING_ESCAPES = "\1\2"
 
   def initialize(config)
