@@ -39,7 +39,7 @@ class Reline::Windows
     end
   end
 
-  VK_LMENU = 0xA4
+  VK_MENU = 0x12
   STD_OUTPUT_HANDLE = -11
   @@getwch = Win32API.new('msvcrt', '_getwch', [], 'I')
   @@kbhit = Win32API.new('msvcrt', '_kbhit', [], 'I')
@@ -74,7 +74,7 @@ class Reline::Windows
       return @@buf.shift
     end
     input = getwch
-    alt = (@@GetKeyState.call(VK_LMENU) & 0x80) != 0
+    alt = (@@GetKeyState.call(VK_MENU) & 0x80) != 0
     if input.size > 1
       @@buf.concat(input)
     else # single byte
