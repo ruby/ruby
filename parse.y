@@ -6211,7 +6211,7 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
 
 	if (c != close_brace) {
 	  unterminated:
-	    literal_flush(p, p->lex.pcur);
+	    token_flush(p);
 	    yyerror0("unterminated Unicode escape");
 	    return;
 	}
@@ -6221,11 +6221,10 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
     }
     else {			/* handle \uxxxx form */
 	if (!tokadd_codepoint(p, encp, regexp_literal, FALSE)) {
+	    token_flush(p);
 	    return;
 	}
     }
-
-    return;
 }
 
 #define ESCAPE_CONTROL 1
@@ -6312,7 +6311,7 @@ read_escape(struct parser_params *p, int flags, rb_encoding **encp)
       eof:
       case -1:
         yyerror0("Invalid escape character syntax");
-	pushback(p, c);
+	token_flush(p);
 	return '\0';
 
       default:
@@ -6391,6 +6390,7 @@ tokadd_escape(struct parser_params *p, rb_encoding **encp)
       eof:
       case -1:
         yyerror0("Invalid escape character syntax");
+	token_flush(p);
 	return -1;
 
       default:

@@ -938,7 +938,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
 
     assert_equal ["?\\M-H"], scan('CHAR', '?\\M-H')
     err = nil
-    assert_equal ["?\\M"], scan('CHAR', '?\\M ') {|*e| err = e}
+    assert_equal [], scan('CHAR', '?\\M ') {|*e| err = e}
     assert_equal([:on_parse_error, "Invalid escape character syntax", "?\\M "], err)
   end
 
