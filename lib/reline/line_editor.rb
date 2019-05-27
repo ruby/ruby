@@ -104,6 +104,10 @@ class Reline::LineEditor
     Signal.trap('SIGINT', @old_trap)
   end
 
+  def eof?
+    @eof
+  end
+
   def reset_variables(prompt = '', encoding = Encoding.default_external)
     @prompt = prompt
     @encoding = encoding
@@ -125,6 +129,7 @@ class Reline::LineEditor
     @first_prompt = true
     @searching_prompt = nil
     @first_char = true
+    @eof = false
     reset_line
   end
 
@@ -389,17 +394,21 @@ class Reline::LineEditor
       @rerender_all = false
     end
     line = modify_lines(whole_lines)[@line_index]
-    if !@is_multiline
-      render_partial(prompt, prompt_width, line)
-      scroll_down(1)
-      Reline::IOGate.move_cursor_column(0)
-      Reline::IOGate.erase_after_cursor
-    elsif !finished?
-      render_partial(prompt, prompt_width, line)
+    if @is_multiline
+      if finished?
+        scroll_down(1)
+        Reline::IOGate.move_cursor_column(0)
+        Reline::IOGate.erase_after_cursor
+      else
+        render_partial(prompt, prompt_width, line)
+      end
     else
-      scroll_down(1) unless whole_lines.last.empty?
-      Reline::IOGate.move_cursor_column(0)
-      Reline::IOGate.erase_after_cursor
+      render_partial(prompt, prompt_width, line)
+      if finished?
+        scroll_down(1)
+        Reline::IOGate.move_cursor_column(0)
+        Reline::IOGate.erase_after_cursor
+      end
     end
   end
 
@@ -1194,8 +1203,11 @@ class Reline::LineEditor
   private def em_delete_or_list(key)
     if @line.empty?
       @line = nil
-      scroll_down(@highest_in_all - @first_line_started_from)
+      if @buffer_of_lines.size > 1
+        scroll_down(@highest_in_all - @first_line_started_from)
+      end
       Reline::IOGate.move_cursor_column(0)
+      @eof = true
       finish
     elsif @byte_pointer < @line.bytesize
       splitted_last = @line.byteslice(@byte_pointer, @line.bytesize)
@@ -1488,8 +1500,11 @@ class Reline::LineEditor
   private def vi_end_of_transmission(key)
     if @line.empty?
       @line = nil
-      scroll_down(@highest_in_all - @first_line_started_from)
+      if @buffer_of_lines.size > 1
+        scroll_down(@highest_in_all - @first_line_started_from)
+      end
       Reline::IOGate.move_cursor_column(0)
+      @eof = true
       finish
     end
   end
@@ -1497,8 +1512,11 @@ class Reline::LineEditor
   private def vi_list_or_eof(key)
     if @line.empty?
       @line = nil
-      scroll_down(@highest_in_all - @first_line_started_from)
+      if @buffer_of_lines.size > 1
+        scroll_down(@highest_in_all - @first_line_started_from)
+      end
       Reline::IOGate.move_cursor_column(0)
+      @eof = true
       finish
     else
       # TODO: list
