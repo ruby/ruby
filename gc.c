@@ -1495,9 +1495,14 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
     page->freelist = p;
     asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
 
-    if (RGENGC_CHECK_MODE && !is_pointer_to_heap(objspace, p)) {
-	rb_bug("heap_page_add_freeobj: %p is not rvalue.", (void *)p);
+    if (RGENGC_CHECK_MODE &&
+        /* obj should belong to page */
+        !(&page->start[0] <= (RVALUE *)obj &&
+          (RVALUE *)obj   <  &page->start[page->total_slots] &&
+          obj % sizeof(RVALUE) == 0)) {
+        rb_bug("heap_page_add_freeobj: %p is not rvalue.", (void *)p);
     }
+
     asan_poison_object(obj);
 
     gc_report(3, objspace, "heap_page_add_freeobj: add %p to freelist\n", (void *)obj);
@@ -2213,7 +2218,13 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 	if (page->start <= p) {
 	    if (p < page->start + page->total_slots) {
                 RB_DEBUG_COUNTER_INC(gc_isptr_maybe);
-                return TRUE;
+
+                if (page->flags.in_tomb) {
+                    return FALSE;
+                }
+                else {
+                    return TRUE;
+                }
 	    }
 	    lo = mid + 1;
 	}
