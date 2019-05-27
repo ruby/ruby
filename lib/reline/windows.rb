@@ -40,6 +40,7 @@ class Reline::Windows
   end
 
   VK_MENU = 0x12
+  VK_SHIFT = 0x10
   STD_OUTPUT_HANDLE = -11
   @@getwch = Win32API.new('msvcrt', '_getwch', [], 'I')
   @@kbhit = Win32API.new('msvcrt', '_kbhit', [], 'I')
@@ -75,7 +76,12 @@ class Reline::Windows
     end
     input = getwch
     alt = (@@GetKeyState.call(VK_MENU) & 0x80) != 0
-    if input.size > 1
+    shift_enter = (@@GetKeyState.call(VK_SHIFT) & 0x80) != 0 and input.first == 0x0D
+    if shift_enter
+      # It's treated as Meta+Enter on Windows
+      @@buf.concat(["\e".ord])
+      @@buf.concat(input)
+    elsif input.size > 1
       @@buf.concat(input)
     else # single byte
       case input[0]
