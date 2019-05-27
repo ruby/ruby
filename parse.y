@@ -8375,7 +8375,10 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 	    unsigned long n = ruby_scan_digits(ptr, len, 10, &len, &overflow);
 	    p->lex.pcur = ptr + len;
 	    RUBY_SET_YYLLOC(loc);
-	    if (ptr[0] == '0') {
+	    if (IS_lex_state(EXPR_FNAME)) {
+		compile_error(p, "`@%c' is not allowed as an instance variable name", c);
+	    }
+	    else if (ptr[0] == '0') {
 		compile_error(p, "leading zero is not allowed as a numbered parameter");
 	    }
 	    else if (overflow || n > NUMPARAM_MAX) {
