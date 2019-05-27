@@ -254,6 +254,10 @@ module Reline
     [preposing, block, postposing]
   end
 
+  def eof?
+    @@line_editor.eof?
+  end
+
   def readmultiline(prompt = '', add_hist = false, &confirm_multiline_termination)
     unless confirm_multiline_termination
       raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
