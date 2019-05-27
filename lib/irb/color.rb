@@ -7,6 +7,7 @@ module IRB # :nodoc:
     CLEAR     = 0
     BOLD      = 1
     UNDERLINE = 4
+    REVERSE   = 7
     RED       = 31
     GREEN     = 32
     YELLOW    = 33
@@ -55,12 +56,21 @@ module IRB # :nodoc:
         on_tstring_content: [[RED],                   ALL],
         on_tstring_end:     [[RED],                   ALL],
         on_words_beg:       [[RED],                   ALL],
+        on_parse_error:     [[RED, REVERSE],          ALL],
       }
     rescue NameError
       # Give up highlighting Ripper-incompatible older Ruby
       TOKEN_SEQ_EXPRS = {}
     end
     private_constant :TOKEN_SEQ_EXPRS
+
+    class Lexer < Ripper::Lexer
+      if method_defined?(:token)
+        def on_parse_error(mesg)
+          @buf.push Elem.new([lineno(), column()], __callee__, token(), state())
+        end
+      end
+    end
 
     class << self
       def colorable?
@@ -101,11 +111,15 @@ module IRB # :nodoc:
         colored = +''
         length = 0
 
-        Ripper.lex(code).each do |(_line, _col), token, str, expr|
+        Lexer.new(code).parse.sort_by(&:pos).each do |elem|
+          token = elem.event
+          str = elem.tok
+          expr = elem.state
           in_symbol = symbol_state.scan_token(token)
           if seq = dispatch_seq(token, expr, str, in_symbol: in_symbol)
             Reline::Unicode.escape_for_print(str).each_line do |line|
-              colored << "#{seq.map { |s| "\e[#{s}m" }.join('')}#{line.sub(/\n?\z/, "#{clear}\\0")}"
+              colored << seq.map { |s| "\e[#{s}m" }.join('')
+              colored << line.sub(/\Z/, clear)
             end
           else
             colored << Reline::Unicode.escape_for_print(str)
