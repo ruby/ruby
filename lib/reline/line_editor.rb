@@ -1242,7 +1242,7 @@ class Reline::LineEditor
   end
 
   private def em_delete_or_list(key)
-    if @line.empty?
+    if (not @is_multiline and @line.empty?) or (@is_multiline and @line.empty? and @buffer_of_lines.size == 1)
       @line = nil
       if @buffer_of_lines.size > 1
         scroll_down(@highest_in_all - @first_line_started_from)
