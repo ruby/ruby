@@ -590,6 +590,11 @@ class TestParse < Test::Unit::TestCase
       assert_equal(:foobar, eval(':"foo\u{}bar"'))
       assert_equal(:foobar, eval(':"foo\u{ }bar"'))
     end
+
+    assert_syntax_error(':@@', /is not allowed/)
+    assert_syntax_error(':@@1', /is not allowed/)
+    assert_syntax_error(':@', /is not allowed/)
+    assert_syntax_error(':@1', /is not allowed/)
   end
 
   def test_parse_string
