@@ -1256,6 +1256,14 @@ class Reline::LineEditor
       width = Reline::Unicode.get_mbchar_width(mbchar)
       @cursor_max -= width
       @line, = byteslice!(@line, @byte_pointer, mbchar.bytesize)
+    elsif @is_multiline and @byte_pointer == @line.bytesize and @buffer_of_lines.size > @line_index + 1
+      @cursor = calculate_width(@line)
+      @byte_pointer = @line.bytesize
+      @line += @buffer_of_lines.delete_at(@line_index + 1)
+      @cursor_max = calculate_width(@line)
+      @buffer_of_lines[@line_index] = @line
+      @rerender_all = true
+      @rest_height += 1
     end
   end
 
