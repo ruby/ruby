@@ -192,7 +192,6 @@ module IRB
       when /^(\$[^.]*)$/
         # global var
         gvar = $1
-        regmessage =
         all_gvars = global_variables.collect{|m| m.to_s}
         if doc_namespace
           all_gvars.find{ |i| i == gvar }
