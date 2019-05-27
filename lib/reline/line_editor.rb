@@ -82,7 +82,9 @@ class Reline::LineEditor
   MenuInfo = Struct.new('MenuInfo', :target, :list)
 
   CSI_REGEXP = /\e\[[\d;]*[ABCDEFGHJKSTfminsuhl]/
-  NON_PRINTING_ESCAPES = "\1\2"
+  OSC_REGEXP = /\e\]\d+(?:;[^;]+)*\a/
+  NON_PRINTING_START = "\1"
+  NON_PRINTING_END = "\2"
 
   def initialize(config)
     @config = config
@@ -180,19 +182,31 @@ class Reline::LineEditor
     lines = [String.new(encoding: @encoding)]
     height = 1
     width = 0
-    prompt = prompt.tr(NON_PRINTING_ESCAPES, '')
-    str = str.tr(NON_PRINTING_ESCAPES, '')
     rest = "#{prompt}#{str}".encode(Encoding::UTF_8)
+    in_zero_width = false
     loop do
       break if rest.empty?
-      if rest =~ /\A#{CSI_REGEXP}/
+      if rest.start_with?(NON_PRINTING_START)
+        rest.delete_prefix!(NON_PRINTING_START)
+        in_zero_width = true
+      elsif rest.start_with?(NON_PRINTING_END)
+        rest.delete_prefix!(NON_PRINTING_END)
+        in_zero_width = false
+      elsif rest.start_with?(CSI_REGEXP)
+        lines.last << $&
+        rest = $'
+      elsif rest.start_with?(OSC_REGEXP)
         lines.last << $&
         rest = $'
       else
         gcs = rest.grapheme_clusters
         gc = gcs.first
         rest = gcs[1..-1].join
-        mbchar_width = Reline::Unicode.get_mbchar_width(gc)
+        if in_zero_width
+          mbchar_width = 0
+        else
+          mbchar_width = Reline::Unicode.get_mbchar_width(gc)
+        end
         width += mbchar_width
         if width > max_width
           width = mbchar_width
@@ -825,14 +839,41 @@ class Reline::LineEditor
     new_str
   end
 
-  private def calculate_width(str, allow_csi = false)
-    if allow_csi
-      str = str.gsub(CSI_REGEXP, '')
-      str = str.tr(NON_PRINTING_ESCAPES, '')
+  private def calculate_width(str, allow_escape_code = false)
+    if allow_escape_code
+      width = 0
+      rest = str.encode(Encoding::UTF_8)
+      in_zero_width = false
+      loop do
+        break if rest.empty?
+        if rest.start_with?(NON_PRINTING_START)
+          rest.delete_prefix!(NON_PRINTING_START)
+          in_zero_width = true
+        elsif rest.start_with?(NON_PRINTING_END)
+          rest.delete_prefix!(NON_PRINTING_END)
+          in_zero_width = false
+        elsif rest.start_with?(CSI_REGEXP)
+          rest = $'
+        elsif rest.start_with?(OSC_REGEXP)
+          rest = $'
+        else
+          gcs = rest.grapheme_clusters
+          gc = gcs.first
+          rest = gcs[1..-1].join
+          if in_zero_width
+            mbchar_width = 0
+          else
+            mbchar_width = Reline::Unicode.get_mbchar_width(gc)
+          end
+          width += mbchar_width
+        end
+      end
+      width
+    else
+      str.encode(Encoding::UTF_8).grapheme_clusters.inject(0) { |width, gc|
+        width + Reline::Unicode.get_mbchar_width(gc)
+      }
     end
-    str.encode(Encoding::UTF_8).grapheme_clusters.inject(0) { |width, gc|
-      width + Reline::Unicode.get_mbchar_width(gc)
-    }
   end
 
   private def key_delete(key)
