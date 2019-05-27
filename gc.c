@@ -1076,16 +1076,19 @@ RVALUE_FLAGS_AGE(VALUE flags)
 
 #endif /* USE_RGENGC */
 
-static VALUE
-check_rvalue_consistency_force(const VALUE obj)
+static int
+check_rvalue_consistency_force(const VALUE obj, int terminate)
 {
     rb_objspace_t *objspace = &rb_objspace;
+    int err = 0;
 
     if (SPECIAL_CONST_P(obj)) {
-        rb_bug("check_rvalue_consistency: %p is a special const.", (void *)obj);
+        fprintf(stderr, "check_rvalue_consistency: %p is a special const.", (void *)obj);
+        err++;
     }
     else if (!is_pointer_to_heap(objspace, (void *)obj)) {
-        rb_bug("check_rvalue_consistency: %p is not a Ruby object.", (void *)obj);
+        fprintf(stderr, "check_rvalue_consistency: %p is not a Ruby object.", (void *)obj);
+        err++;
     }
     else {
         const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
@@ -1094,8 +1097,19 @@ check_rvalue_consistency_force(const VALUE obj)
         const int marking_bit = RVALUE_MARKING_BITMAP(obj) != 0, remembered_bit = marking_bit;
         const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
 
-        if (BUILTIN_TYPE(obj) == T_NONE)   rb_bug("check_rvalue_consistency: %s is T_NONE", obj_info(obj));
-        if (BUILTIN_TYPE(obj) == T_ZOMBIE) rb_bug("check_rvalue_consistency: %s is T_ZOMBIE", obj_info(obj));
+        if (GET_HEAP_PAGE(obj)->flags.in_tomb) {
+            fprintf(stderr, "check_rvalue_consistency: %s is in tomb page.", obj_info(obj));
+            err++;
+        }
+        if (BUILTIN_TYPE(obj) == T_NONE) {
+            fprintf(stderr, "check_rvalue_consistency: %s is T_NONE", obj_info(obj));
+            err++;
+        }
+        if (BUILTIN_TYPE(obj) == T_ZOMBIE) {
+            fprintf(stderr, "check_rvalue_consistency: %s is T_ZOMBIE", obj_info(obj));
+            err++;
+        }
+
         obj_memsize_of((VALUE)obj, FALSE);
 
         /* check generation
@@ -1103,19 +1117,25 @@ check_rvalue_consistency_force(const VALUE obj)
          * OLD == age == 3 && old-bitmap && mark-bit (except incremental marking)
          */
         if (age > 0 && wb_unprotected_bit) {
-            rb_bug("check_rvalue_consistency: %s is not WB protected, but age is %d > 0.", obj_info(obj), age);
+            fprintf(stderr, "check_rvalue_consistency: %s is not WB protected, but age is %d > 0.", obj_info(obj), age);
+            err++;
         }
 
         if (!is_marking(objspace) && uncollectible_bit && !mark_bit) {
-            rb_bug("check_rvalue_consistency: %s is uncollectible, but is not marked while !gc.", obj_info(obj));
+            fprintf(stderr, "check_rvalue_consistency: %s is uncollectible, but is not marked while !gc.", obj_info(obj));
+            err++;
         }
 
         if (!is_full_marking(objspace)) {
             if (uncollectible_bit && age != RVALUE_OLD_AGE && !wb_unprotected_bit) {
-                rb_bug("check_rvalue_consistency: %s is uncollectible, but not old (age: %d) and not WB unprotected.", obj_info(obj), age);
+                fprintf(stderr, "check_rvalue_consistency: %s is uncollectible, but not old (age: %d) and not WB unprotected.",
+                        obj_info(obj), age);
+                err++;
             }
             if (remembered_bit && age != RVALUE_OLD_AGE) {
-                rb_bug("check_rvalue_consistency: %s is remembered, but not old (age: %d).", obj_info(obj), age);
+                fprintf(stderr, "check_rvalue_consistency: %s is remembered, but not old (age: %d).",
+                        obj_info(obj), age);
+                err++;
             }
         }
 
@@ -1127,10 +1147,18 @@ check_rvalue_consistency_force(const VALUE obj)
          * marked:true   black         grey
          */
         if (is_incremental_marking(objspace) && marking_bit) {
-            if (!is_marking(objspace) && !mark_bit) rb_bug("check_rvalue_consistency: %s is marking, but not marked.", obj_info(obj));
+            if (!is_marking(objspace) && !mark_bit) {
+                fprintf(stderr, "check_rvalue_consistency: %s is marking, but not marked.", obj_info(obj));
+                err++;
+            }
         }
     }
-    return obj;
+
+    if (err > 0 && terminate) {
+        rb_bug("check_rvalue_consistency_force: there is %d errors.", err);
+    }
+
+    return err;
 }
 
 #if RGENGC_CHECK_MODE == 0
@@ -1143,7 +1171,8 @@ check_rvalue_consistency(const VALUE obj)
 static VALUE
 check_rvalue_consistency(const VALUE obj)
 {
-    return check_rvalue_consistency_force(obj);
+    check_rvalue_consistency_force(obj, TRUE);
+    return obj;
 }
 #endif
 
@@ -5617,7 +5646,14 @@ check_color_i(const VALUE child, void *ptr)
 static void
 check_children_i(const VALUE child, void *ptr)
 {
-    check_rvalue_consistency_force(child);
+    struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
+    if (check_rvalue_consistency_force(child, FALSE) != 0) {
+        fprintf(stderr, "check_children_i: %s has error (referenced from %s)",
+                obj_info(child), obj_info(data->parent));
+        rb_print_backtrace(); /* C backtrace will help to debug */
+
+        data->err_count++;
+    }
 }
 
 static int
@@ -5634,6 +5670,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, v
 	if (is_live_object(objspace, obj)) {
 	    /* count objects */
 	    data->live_object_count++;
+            data->parent = obj;
 
             /* Normally, we don't expect T_MOVED objects to be in the heap.
              * But they can stay alive on the stack, */
@@ -5644,8 +5681,6 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride, v
 
 #if USE_RGENGC
 	    /* check health of children */
-	    data->parent = obj;
-
 	    if (RVALUE_OLD_P(obj)) data->old_object_count++;
 	    if (RVALUE_WB_UNPROTECTED(obj) && RVALUE_UNCOLLECTIBLE(obj)) data->remembered_shady_count++;
 
