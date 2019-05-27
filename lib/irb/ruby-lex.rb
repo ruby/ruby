@@ -152,6 +152,7 @@ class RubyLex
     end
 
     begin # check if parser error are available
+      verbose, $VERBOSE = $VERBOSE, nil
       RubyVM::InstructionSequence.compile(code)
     rescue SyntaxError => e
       case e.message
@@ -199,6 +200,8 @@ class RubyLex
         #     method / f /
         return false
       end
+    ensure
+      $VERBOSE = verbose
     end
 
     last_lex_state = @tokens.last[3]
