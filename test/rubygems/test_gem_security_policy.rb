@@ -293,7 +293,7 @@ class TestGemSecurityPolicy < Gem::TestCase
 
   def test_subject
     assert_equal 'email:nobody@example', @no.subject(PUBLIC_CERT)
-    assert_equal '/C=JP/O=JIN.GR.JP/OU=RRR/CN=CA', @no.subject(CA_CERT)
+    assert_equal '/C=JP/ST=Tokyo/O=RubyGemsTest/CN=CA', @no.subject(CA_CERT)
   end
 
   def test_verify
