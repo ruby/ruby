@@ -1087,8 +1087,21 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
         err++;
     }
     else if (!is_pointer_to_heap(objspace, (void *)obj)) {
+        /* check if it is in tomb_pages */
+        struct heap_page *page;
+        list_for_each(&heap_tomb->pages, page, page_node) {
+            if (&page->start[0] <= (RVALUE *)obj &&
+                (RVALUE *)obj < &page->start[page->total_slots]) {
+                fprintf(stderr, "check_rvalue_consistency: %p is in a tomb_heap (%p).\n",
+                        (void *)obj, (void *)page);
+                err++;
+                goto skip;
+            }
+        }
         fprintf(stderr, "check_rvalue_consistency: %p is not a Ruby object.\n", (void *)obj);
         err++;
+      skip:
+        ;
     }
     else {
         const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
