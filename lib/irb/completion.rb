@@ -39,7 +39,7 @@ module IRB
     BASIC_WORD_BREAK_CHARACTERS = " \t\n`><=;|&{("
 
     CompletionProc = proc { |input|
-      retrieve_completion_data(input)
+      retrieve_completion_data(input).compact.map{ |i| i.encode(Encoding.default_external) }
     }
 
     def self.retrieve_completion_data(input, doc_namespace = false)
