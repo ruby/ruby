@@ -8369,9 +8369,7 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
 
     /* Ensure objects are pinned */
     rb_gc();
-    if (mjit_enabled) mjit_pause(false); // debugging. suspecting that JIT is triggered for a broken ISeq during `gc_compact_after_gc`.
     gc_compact_after_gc(objspace, use_toward_empty, use_double_pages, TRUE);
-    if (mjit_enabled) mjit_resume(); // debugging
     return rb_gc_compact_stats(mod);
 }
 
