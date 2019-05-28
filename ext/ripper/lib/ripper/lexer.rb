@@ -66,13 +66,13 @@ class Ripper
       end
 
       def inspect
-        "#<#{self.class}: #{event}@#{pos[0]}:#{pos[0]}:#{state}: #{tok.inspect}>"
+        "#<#{self.class}: #{event}@#{pos[0]}:#{pos[1]}:#{state}: #{tok.inspect}>"
       end
 
       def pretty_print(q)
         q.group(2, "#<#{self.class}:", ">") {
           q.breakable
-          q.text("#{event}@#{pos[0]}:#{pos[0]}")
+          q.text("#{event}@#{pos[0]}:#{pos[1]}")
           q.breakable
           q.text("token: ")
           tok.pretty_print(q)
