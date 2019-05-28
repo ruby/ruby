@@ -7523,8 +7523,17 @@ count_pinned(struct heap_page *page)
         void *poisoned = asan_poisoned_object_p(v);
         asan_unpoison_object(v, false);
 
-        if (RBASIC(v)->flags && RVALUE_PINNED(v)) {
+        switch (BUILTIN_TYPE(v)) {
+          case T_NONE:
+            break;
+          case T_ZOMBIE:
             pinned++;
+            break;
+          default:
+            if (RVALUE_PINNED(v)) {
+                pinned++;
+            }
+            break;
         }
 
         if (poisoned) {
