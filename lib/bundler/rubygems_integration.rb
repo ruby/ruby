@@ -146,6 +146,18 @@ module Bundler
       end
     end
 
+    def correct_for_windows_path(path)
+      require "rubygems/util"
+
+      if Gem::Util.respond_to?(:correct_for_windows_path)
+        Gem::Util.correct_for_windows_path(path)
+      elsif path[0].chr == "/" && path[1].chr =~ /[a-z]/i && path[2].chr == ":"
+        path[1..-1]
+      else
+        path
+      end
+    end
+
     def sources=(val)
       # Gem.configuration creates a new Gem::ConfigFile, which by default will read ~/.gemrc
       # If that file exists, its settings (including sources) will overwrite the values we
