@@ -2295,6 +2295,9 @@ static inline int rb_toupper(int c) { return rb_islower(c) ? (c&0x5f) : c; }
 #define ISALPHA(c) rb_isalpha(c)
 #define ISDIGIT(c) rb_isdigit(c)
 #define ISXDIGIT(c) rb_isxdigit(c)
+#define ISBLANK(c) rb_isblank(c)
+#define ISCNTRL(c) rb_iscntrl(c)
+#define ISPUNCT(c) rb_ispunct(c)
 #endif
 #define TOUPPER(c) rb_toupper(c)
 #define TOLOWER(c) rb_tolower(c)
