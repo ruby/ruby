@@ -438,8 +438,9 @@ script:
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
   only:
-    - master
-    - trunk # for pull request. TODO: use `fork = true` or something.
+    # Because default branch is still "trunk", we build only "trunk" to avoid
+    # doubly building on master and trigger CI on Pull Request.
+    - trunk # TODO: s/master/trunk/ when the default branch is switched to master on 7/1.
     - ruby_2_4
     - ruby_2_5
     - ruby_2_6
