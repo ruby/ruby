@@ -268,7 +268,17 @@ module IRB
     end
 
     RDocRIDriver = RDoc::RI::Driver.new
-    PerfectMatchedProc = proc { |matched|
+    PerfectMatchedProc = ->(matched) {
+      if matched =~ /\A(?:::)?RubyVM/
+        File.open(File.join(__dir__, 'ruby_logo.aa')) do |f|
+          RDocRIDriver.page do |io|
+            f.each_line do |l|
+              io.write(l)
+            end
+          end
+        end
+        return
+      end
       namespace = retrieve_completion_data(matched, true)
       return unless matched
       if namespace.is_a?(Array)
