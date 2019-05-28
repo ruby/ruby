@@ -272,9 +272,7 @@ module IRB
       if matched =~ /\A(?:::)?RubyVM/ and not ENV['RUBY_YES_I_AM_NOT_A_NORMAL_USER']
         File.open(File.join(__dir__, 'ruby_logo.aa')) do |f|
           RDocRIDriver.page do |io|
-            f.each_line do |l|
-              io.write(l)
-            end
+            IO.copy_stream(f, io)
           end
         end
         return
