@@ -76,7 +76,7 @@ class Reline::Windows
     end
     input = getwch
     alt = (@@GetKeyState.call(VK_MENU) & 0x80) != 0
-    shift_enter = (@@GetKeyState.call(VK_SHIFT) & 0x80) != 0 and input.first == 0x0D
+    shift_enter = (@@GetKeyState.call(VK_SHIFT) & 0x80) != 0 && input.first == 0x0D
     if shift_enter
       # It's treated as Meta+Enter on Windows
       @@buf.concat(["\e".ord])
