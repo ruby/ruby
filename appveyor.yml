@@ -21,6 +21,7 @@ environment:
     - build: vs
       vs: 140
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+  RELINE_TEST_ENCODING: "Windows-31J"
   GEMS_FOR_TEST: "timezone tzinfo"
   UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
 for:
@@ -68,7 +69,6 @@ for:
     - if not "%GEMS_FOR_TEST%" == "" \usr\bin\gem install --no-document %GEMS_FOR_TEST%
   test_script:
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
-    - set RELINE_TEST_ENCODING=Windows-31J
     - nmake -l "TESTOPTS=-v -q" btest
     - nmake -l "TESTOPTS=-v -q" test-basic
     - nmake -l "TESTOPTS=-q --subprocess-timeout-scale=3.0 --excludes=../test/excludes/_appveyor -j%JOBS% --exclude readline --exclude win32ole --exclude test_bignum --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca --exclude test_gc_compact" test-all
@@ -115,7 +115,6 @@ for:
     - mingw32-make DESTDIR=../install install-nodoc
     - if not "%GEMS_FOR_TEST%" == "" ..\install\bin\gem install --no-document %GEMS_FOR_TEST%
   test_script:
-    - set RELINE_TEST_ENCODING=Windows-31J
     - mingw32-make test
     - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor -j %JOBS% --exclude win32ole --exclude test_open-uri --exclude test_gc_compact"
     # separately execute tests without -j which may crash worker with -j.
