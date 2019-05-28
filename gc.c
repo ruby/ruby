@@ -7496,6 +7496,7 @@ static void
 init_cursors(rb_objspace_t *objspace, struct heap_cursor *free, struct heap_cursor *scan, struct heap_page **page_list)
 {
     struct heap_page *page;
+    size_t total_pages = heap_eden->total_pages;
     page = page_list[0];
 
     free->index = 0;
@@ -7503,8 +7504,8 @@ init_cursors(rb_objspace_t *objspace, struct heap_cursor *free, struct heap_curs
     free->slot = page->start;
     free->objspace = objspace;
 
-    page = page_list[heap_allocated_pages - 1];
-    scan->index = heap_allocated_pages - 1;
+    page = page_list[total_pages - 1];
+    scan->index = total_pages - 1;
     scan->page = page;
     scan->slot = page->start + page->total_slots - 1;
     scan->objspace = objspace;
