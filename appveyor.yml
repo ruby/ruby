@@ -56,9 +56,8 @@ for:
     - curl -fsSL -o zlib%zlib_version:.=%.zip --retry 10 https://zlib.net/zlib%zlib_version:.=%.zip
     - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib%zlib_version:.=%.zip
     - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
+    - attrib +r /s /d
     - mkdir %Platform%-mswin_%vs%
-    - ps: Get-ChildItem "win32" -Recurse | foreach {$_.Attributes = 'Readonly'}
-    - ps: Get-Item $env:Platform"-mswin_"$env:vs | foreach {$_.Attributes = 'Normal'}
   build_script:
     - cd %APPVEYOR_BUILD_FOLDER%
     - cd %Platform%-mswin_%vs%
