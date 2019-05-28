@@ -1,4 +1,4 @@
-# Used by configure and make to download or update mirrored Ruby and GCC
+#6 Used by configure and make to download or update mirrored Ruby and GCC
 # files. This will use HTTPS if possible, falling back to HTTP.
 
 require 'fileutils'
@@ -173,7 +173,7 @@ class Downloader
       if cache_save
         save_cache(cache, file, name)
       end
-      return file.to_path
+      return file.respond_to?(:to_path) ? file.to_path : file.to_s
     end
     if dryrun
       puts "Download #{url} into #{file}"
