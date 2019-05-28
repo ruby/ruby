@@ -45,6 +45,7 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal "A", ?A
     assert_instance_of String, ?\n
     assert_equal "\n", ?\n
+    assert_equal " ", ?\s
     assert_equal " ", ?\   # space
     assert_equal '', ''
     assert_equal 'string', 'string'
