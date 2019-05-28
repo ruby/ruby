@@ -7557,6 +7557,21 @@ compare_free_slots(const void *left, const void *right, void *dummy)
 
 typedef int page_compare_func_t(const void *, const void *, void *);
 
+static struct heap_page **
+allocate_page_list(rb_objspace_t *objspace, page_compare_func_t *comparator)
+{
+    size_t n = heap_eden->total_pages;
+    struct heap_page *page, **page_list = calloc(n, sizeof(struct heap_page *));
+    int i = 0;
+
+    list_for_each(&heap_eden->pages, page, page_node) {
+        page_list[i++] = page;
+    }
+    ruby_qsort(page_list, n, sizeof(struct heap_page *), comparator, NULL);
+
+    return page_list;
+}
+
 static VALUE
 gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator)
 {
@@ -7569,9 +7584,7 @@ gc_compact_heap(rb_objspace_t *objspace, page_compare_func_t *comparator)
     memset(objspace->rcompactor.considered_count_table, 0, T_MASK * sizeof(size_t));
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
 
-    page_list = calloc(heap_allocated_pages, sizeof(struct heap_page *));
-    memcpy(page_list, heap_pages_sorted, heap_allocated_pages * sizeof(struct heap_page *));
-    ruby_qsort(page_list, heap_allocated_pages, sizeof(struct heap_page *), comparator, NULL);
+    page_list = allocate_page_list(objspace, comparator);
 
     init_cursors(objspace, &free_cursor, &scan_cursor, page_list);
 
