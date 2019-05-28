@@ -15,13 +15,13 @@ describe "Module#name" do
   it "is not nil for a nested module created with the module keyword" do
     m = Module.new
     module m::N; end
-    m::N.name.should =~ /#<Module:0x[0-9a-f]+>::N/
+    m::N.name.should =~ /\A#<Module:0x[0-9a-f]+>::N\z/
   end
 
   it "changes when the module is reachable through a constant path" do
     m = Module.new
     module m::N; end
-    m::N.name.should =~ /#<Module:0x[0-9a-f]+>::N/
+    m::N.name.should =~ /\A#<Module:0x\h+>::N\z/
     ModuleSpecs::Anonymous::WasAnnon = m::N
     m::N.name.should == "ModuleSpecs::Anonymous::WasAnnon"
   end
@@ -42,7 +42,7 @@ describe "Module#name" do
     module m::Child; end
     child = m::Child
     m.send(:remove_const, :Child)
-    child.name.should =~ /#<Module:0x[0-9a-f]+>::Child/
+    child.name.should =~ /\A#<Module:0x\h+>::Child\z/
   end
 
   it "is set when opened with the module keyword" do

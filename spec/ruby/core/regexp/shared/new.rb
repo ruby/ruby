@@ -1,6 +1,6 @@
 # -*- encoding: ascii-8bit -*-
 
-describe :regexp_new_ascii_8bit, shared: true do
+describe :regexp_new, shared: true do
   it "requires one argument and creates a new regular expression object" do
     Regexp.send(@method, '').is_a?(Regexp).should == true
   end
@@ -24,7 +24,7 @@ describe :regexp_new_ascii_8bit, shared: true do
   end
 end
 
-describe :regexp_new_string_ascii_8bit, shared: true do
+describe :regexp_new_string, shared: true do
   it "uses the String argument as an unescaped literal to construct a Regexp object" do
     Regexp.send(@method, "^hi{2,3}fo.o$").should == /^hi{2,3}fo.o$/
   end
@@ -146,6 +146,10 @@ describe :regexp_new_string_ascii_8bit, shared: true do
       lambda { Regexp.send(@method, "\\") }.should raise_error(RegexpError)
     end
 
+    it "does not raise a Regexp error if there is an escaped trailing backslash" do
+      lambda { Regexp.send(@method, "\\\\") }.should_not raise_error(RegexpError)
+    end
+
     it "accepts a backspace followed by a character" do
       Regexp.send(@method, "\\N").should == /#{"\x5c"+"N"}/
     end
@@ -156,14 +160,6 @@ describe :regexp_new_string_ascii_8bit, shared: true do
 
     it "accepts a two-digit octal value" do
       Regexp.send(@method, "\11").should == /#{"\x09"}/
-    end
-
-    it "accepts a three-digit octal value" do
-      Regexp.send(@method, "\315").should == /#{"\xcd"}/
-    end
-
-    it "interprets a digit following a three-digit octal value as a character" do
-      Regexp.send(@method, "\3762").should == /#{"\xfe2"}/
     end
 
     it "accepts a one-digit hexadecimal value" do
@@ -240,118 +236,6 @@ describe :regexp_new_string_ascii_8bit, shared: true do
 
     it "accepts '\\C-\\e'" do
       Regexp.send(@method, "\C-\e").should == /#{"\x1b"}/
-    end
-
-    it "accepts '\\c\\n'" do
-      Regexp.send(@method, "\C-\n").should == /#{"\x0a"}/
-    end
-
-    it "accepts '\\c\\t'" do
-      Regexp.send(@method, "\C-\t").should == /#{"\x09"}/
-    end
-
-    it "accepts '\\c\\r'" do
-      Regexp.send(@method, "\C-\r").should == /#{"\x0d"}/
-    end
-
-    it "accepts '\\c\\f'" do
-      Regexp.send(@method, "\C-\f").should == /#{"\x0c"}/
-    end
-
-    it "accepts '\\c\\v'" do
-      Regexp.send(@method, "\C-\v").should == /#{"\x0b"}/
-    end
-
-    it "accepts '\\c\\a'" do
-      Regexp.send(@method, "\C-\a").should == /#{"\x07"}/
-    end
-
-    it "accepts '\\c\\e'" do
-      Regexp.send(@method, "\C-\e").should == /#{"\x1b"}/
-    end
-
-    it "accepts '\\M-\\n'" do
-      Regexp.send(@method, "\M-\n").should == /#{"\x8a"}/
-    end
-
-    it "accepts '\\M-\\t'" do
-      Regexp.send(@method, "\M-\t").should == /#{"\x89"}/
-    end
-
-    it "accepts '\\M-\\r'" do
-      Regexp.send(@method, "\M-\r").should == /#{"\x8d"}/
-    end
-
-    it "accepts '\\M-\\f'" do
-      Regexp.send(@method, "\M-\f").should == /#{"\x8c"}/
-    end
-
-    it "accepts '\\M-\\v'" do
-      Regexp.send(@method, "\M-\v").should == /#{"\x8b"}/
-    end
-
-    it "accepts '\\M-\\a'" do
-      Regexp.send(@method, "\M-\a").should == /#{"\x87"}/
-    end
-
-    it "accepts '\\M-\\e'" do
-      Regexp.send(@method, "\M-\e").should == /#{"\x9b"}/
-    end
-
-    it "accepts '\\M-\\C-\\n'" do
-      Regexp.send(@method, "\M-\n").should == /#{"\x8a"}/
-    end
-
-    it "accepts '\\M-\\C-\\t'" do
-      Regexp.send(@method, "\M-\t").should == /#{"\x89"}/
-    end
-
-    it "accepts '\\M-\\C-\\r'" do
-      Regexp.send(@method, "\M-\r").should == /#{"\x8d"}/
-    end
-
-    it "accepts '\\M-\\C-\\f'" do
-      Regexp.send(@method, "\M-\f").should == /#{"\x8c"}/
-    end
-
-    it "accepts '\\M-\\C-\\v'" do
-      Regexp.send(@method, "\M-\v").should == /#{"\x8b"}/
-    end
-
-    it "accepts '\\M-\\C-\\a'" do
-      Regexp.send(@method, "\M-\a").should == /#{"\x87"}/
-    end
-
-    it "accepts '\\M-\\C-\\e'" do
-      Regexp.send(@method, "\M-\e").should == /#{"\x9b"}/
-    end
-
-    it "accepts '\\M-\\c\\n'" do
-      Regexp.send(@method, "\M-\n").should == /#{"\x8a"}/
-    end
-
-    it "accepts '\\M-\\c\\t'" do
-      Regexp.send(@method, "\M-\t").should == /#{"\x89"}/
-    end
-
-    it "accepts '\\M-\\c\\r'" do
-      Regexp.send(@method, "\M-\r").should == /#{"\x8d"}/
-    end
-
-    it "accepts '\\M-\\c\\f'" do
-      Regexp.send(@method, "\M-\f").should == /#{"\x8c"}/
-    end
-
-    it "accepts '\\M-\\c\\v'" do
-      Regexp.send(@method, "\M-\v").should == /#{"\x8b"}/
-    end
-
-    it "accepts '\\M-\\c\\a'" do
-      Regexp.send(@method, "\M-\a").should == /#{"\x87"}/
-    end
-
-    it "accepts '\\M-\\c\\e'" do
-      Regexp.send(@method, "\M-\e").should == /#{"\x9b"}/
     end
 
     it "accepts multiple consecutive '\\' characters" do
@@ -494,7 +378,75 @@ describe :regexp_new_string_ascii_8bit, shared: true do
   end
 end
 
-describe :regexp_new_regexp_ascii_8bit, shared: true do
+describe :regexp_new_string_binary, shared: true do
+  describe "with escaped characters" do
+    it "accepts a three-digit octal value" do
+      Regexp.send(@method, "\315").should == /#{"\xcd"}/
+    end
+
+    it "interprets a digit following a three-digit octal value as a character" do
+      Regexp.send(@method, "\3762").should == /#{"\xfe2"}/
+    end
+
+    it "accepts '\\M-\\n'" do
+      Regexp.send(@method, "\M-\n").should == /#{"\x8a"}/
+    end
+
+    it "accepts '\\M-\\t'" do
+      Regexp.send(@method, "\M-\t").should == /#{"\x89"}/
+    end
+
+    it "accepts '\\M-\\r'" do
+      Regexp.send(@method, "\M-\r").should == /#{"\x8d"}/
+    end
+
+    it "accepts '\\M-\\f'" do
+      Regexp.send(@method, "\M-\f").should == /#{"\x8c"}/
+    end
+
+    it "accepts '\\M-\\v'" do
+      Regexp.send(@method, "\M-\v").should == /#{"\x8b"}/
+    end
+
+    it "accepts '\\M-\\a'" do
+      Regexp.send(@method, "\M-\a").should == /#{"\x87"}/
+    end
+
+    it "accepts '\\M-\\e'" do
+      Regexp.send(@method, "\M-\e").should == /#{"\x9b"}/
+    end
+
+    it "accepts '\\M-\\C-\\n'" do
+      Regexp.send(@method, "\M-\C-\n").should == /#{"\x8a"}/
+    end
+
+    it "accepts '\\M-\\C-\\t'" do
+      Regexp.send(@method, "\M-\C-\t").should == /#{"\x89"}/
+    end
+
+    it "accepts '\\M-\\C-\\r'" do
+      Regexp.send(@method, "\M-\C-\r").should == /#{"\x8d"}/
+    end
+
+    it "accepts '\\M-\\C-\\f'" do
+      Regexp.send(@method, "\M-\C-\f").should == /#{"\x8c"}/
+    end
+
+    it "accepts '\\M-\\C-\\v'" do
+      Regexp.send(@method, "\M-\C-\v").should == /#{"\x8b"}/
+    end
+
+    it "accepts '\\M-\\C-\\a'" do
+      Regexp.send(@method, "\M-\C-\a").should == /#{"\x87"}/
+    end
+
+    it "accepts '\\M-\\C-\\e'" do
+      Regexp.send(@method, "\M-\C-\e").should == /#{"\x9b"}/
+    end
+  end
+end
+
+describe :regexp_new_regexp, shared: true do
   it "uses the argument as a literal to construct a Regexp object" do
     Regexp.send(@method, /^hi{2,3}fo.o$/).should == /^hi{2,3}fo.o$/
   end

@@ -49,6 +49,14 @@ describe "Tempfile.open" do
       tempfile.binmode?.should be_true
     end
   end
+
+  it "uses a blank string for basename when passed no arguments" do
+    Tempfile.open() do |tempfile|
+      @tempfile = tempfile
+      tempfile.closed?.should be_false
+    end
+    @tempfile.should_not == nil
+  end
 end
 
 describe "Tempfile.open when passed a block" do

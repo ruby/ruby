@@ -96,6 +96,11 @@ VALUE hash_spec_rb_hash_lookup2(VALUE self, VALUE hash, VALUE key, VALUE def) {
   return rb_hash_lookup2(hash, key, def);
 }
 
+VALUE hash_spec_rb_hash_lookup2_default_undef(VALUE self, VALUE hash, VALUE key) {
+  VALUE ret = rb_hash_lookup2(hash, key, Qundef);
+  return ret == Qundef ? Qtrue : Qfalse;
+}
+
 VALUE hash_spec_rb_hash_new(VALUE self) {
   return rb_hash_new();
 }
@@ -127,6 +132,7 @@ void Init_hash_spec(void) {
   rb_define_method(cls, "rb_hash_lookup_nil", hash_spec_rb_hash_lookup_nil, 2);
   rb_define_method(cls, "rb_hash_lookup", hash_spec_rb_hash_lookup, 2);
   rb_define_method(cls, "rb_hash_lookup2", hash_spec_rb_hash_lookup2, 3);
+  rb_define_method(cls, "rb_hash_lookup2_default_undef", hash_spec_rb_hash_lookup2_default_undef, 2);
   rb_define_method(cls, "rb_hash_new", hash_spec_rb_hash_new, 0);
   rb_define_method(cls, "rb_hash_size", hash_spec_rb_hash_size, 1);
   rb_define_method(cls, "rb_hash_set_ifnone", hash_spec_rb_hash_set_ifnone, 2);

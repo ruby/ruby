@@ -49,6 +49,10 @@ describe :enumerable_find, shared: true do
     @empty.send(@method, fail_proc) {|e| true}.should == "yay"
   end
 
+  it "ignores the ifnone argument when nil" do
+    @numerous.send(@method, nil) {|e| false }.should == nil
+  end
+
   it "passes through the values yielded by #each_with_index" do
     [:a, :b].each_with_index.send(@method) { |x, i| ScratchPad << [x, i]; nil }
     ScratchPad.recorded.should == [[:a, 0], [:b, 1]]

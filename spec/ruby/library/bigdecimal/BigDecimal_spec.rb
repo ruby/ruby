@@ -100,6 +100,34 @@ describe "Kernel#BigDecimal" do
     neg_inf.should < 0
   end
 
+  describe "accepts NaN and [+-]Infinity as Float values" do
+    it "works without an explicit precision" do
+      BigDecimal(Float::NAN).nan?.should == true
+
+      pos_inf = BigDecimal(Float::INFINITY)
+      pos_inf.finite?.should == false
+      pos_inf.should > 0
+      pos_inf.should == BigDecimal("+Infinity")
+
+      neg_inf = BigDecimal(-Float::INFINITY)
+      neg_inf.finite?.should == false
+      neg_inf.should < 0
+    end
+
+    it "works with an explicit precision" do
+      BigDecimal(Float::NAN, Float::DIG).nan?.should == true
+
+      pos_inf = BigDecimal(Float::INFINITY, Float::DIG)
+      pos_inf.finite?.should == false
+      pos_inf.should > 0
+      pos_inf.should == BigDecimal("+Infinity")
+
+      neg_inf = BigDecimal(-Float::INFINITY, Float::DIG)
+      neg_inf.finite?.should == false
+      neg_inf.should < 0
+    end
+  end
+
   it "allows for [eEdD] as exponent separator" do
     reference = BigDecimal("12345.67E89")
 

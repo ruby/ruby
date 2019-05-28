@@ -63,6 +63,24 @@ describe "Hash#merge" do
     merge_pairs.should == each_pairs
   end
 
+  it "preserves the order of merged elements" do
+    h1 = { 1 => 2, 3 => 4, 5 => 6 }
+    h2 = { 1 => 7 }
+    merge_pairs = []
+    h1.merge(h2).each_pair { |k, v| merge_pairs << [k, v] }
+    merge_pairs.should == [[1,7], [3, 4], [5, 6]]
+  end
+
+  it "preserves the order of merged elements for large hashes" do
+    h1 = {}
+    h2 = {}
+    merge_pairs = []
+    expected_pairs = []
+    (1..100).each { |x| h1[x] = x; h2[101 - x] = x; expected_pairs << [x, 101 - x] }
+    h1.merge(h2).each_pair { |k, v| merge_pairs << [k, v] }
+    merge_pairs.should == expected_pairs
+  end
+
   ruby_version_is "2.6" do
     it "accepts multiple hashes" do
       result = { a: 1 }.merge({ b: 2 }, { c: 3 }, { d: 4 })

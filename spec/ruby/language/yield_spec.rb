@@ -19,6 +19,10 @@ describe "The yield call" do
     it "ignores assignment to the explicit block argument and calls the passed block" do
       @y.ze { 42 }.should == 42
     end
+
+    it "does not pass a named block to the block being yielded to" do
+      @y.z() { |&block| block == nil }.should == true
+    end
   end
 
   describe "taking a single argument" do
