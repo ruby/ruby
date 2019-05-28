@@ -2,7 +2,7 @@
 
 # cp /etc/ssl/openssl.cnf . # copied from OpenSSL 1.1.1b source
 
-rm -rf demoCA/ server/ client/ 
+rm -rf demoCA/ server/ client/
 
 mkdir demoCA demoCA/private demoCA/newcerts
 touch demoCA/index.txt
