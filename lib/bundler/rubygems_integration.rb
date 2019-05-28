@@ -139,11 +139,9 @@ module Bundler
     end
 
     def inflate(obj)
-      if defined?(Gem::Util)
-        Gem::Util.inflate(obj)
-      else
-        Gem.inflate(obj)
-      end
+      require "rubygems/util"
+
+      Gem::Util.inflate(obj)
     end
 
     def correct_for_windows_path(path)
