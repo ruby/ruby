@@ -8272,6 +8272,8 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
 {
     if (0) fprintf(stderr, "gc_compact_after_gc: %d,%d,%d\n", use_toward_empty, use_double_pages, use_verifier);
 
+    mjit_gc_start_hook(); // prevent MJIT from running while moving pointers related to ISeq
+
     if (use_verifier) {
         gc_verify_internal_consistency(Qnil);
     }
@@ -8314,6 +8316,8 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
 #else
     (void)moved_list;
 #endif
+
+    mjit_gc_exit_hook(); // unlock MJIT here, because `rb_gc()` calls `mjit_gc_start_hook()` again.
 
     /* GC after compaction to eliminate T_MOVED */
     rb_gc();
