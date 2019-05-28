@@ -548,6 +548,19 @@ class TestParse < Test::Unit::TestCase
 
     assert_equal("\x81", eval('"\C-\M-a"'))
     assert_equal("\177", eval('"\c?"'))
+
+    assert_warning(/use \\C-\\s/) {assert_equal("\x00", eval('"\C- "'))}
+    assert_warning(/use \\M-\\s/) {assert_equal("\xa0", eval('"\M- "'))}
+    assert_warning(/use \\M-\\C-\\s/) {assert_equal("\x80", eval('"\M-\C- "'))}
+    assert_warning(/use \\C-\\M-\\s/) {assert_equal("\x80", eval('"\C-\M- "'))}
+    assert_warning(/use \\t/) {assert_equal("\x09", eval("\"\\C-\t\""))}
+    assert_warning(/use \\M-\\t/) {assert_equal("\x89", eval("\"\\M-\t\""))}
+    assert_warning(/use \\M-\\t/) {assert_equal("\x89", eval("\"\\M-\\C-\t\""))}
+    assert_warning(/use \\M-\\t/) {assert_equal("\x89", eval("\"\\C-\\M-\t\""))}
+    assert_syntax_error("\"\\C-\x01\"", 'Invalid escape character syntax')
+    assert_syntax_error("\"\\M-\x01\"", 'Invalid escape character syntax')
+    assert_syntax_error("\"\\M-\\C-\x01\"", 'Invalid escape character syntax')
+    assert_syntax_error("\"\\C-\\M-\x01\"", 'Invalid escape character syntax')
   end
 
   def test_question
@@ -565,6 +578,19 @@ class TestParse < Test::Unit::TestCase
     assert_equal("\u{1234}", eval('?\u1234'))
     e = assert_syntax_error('"#{?\u123}"', 'invalid Unicode escape')
     assert_not_match(/end-of-input/, e.message)
+
+    assert_warning(/use ?\\C-\\s/) {assert_equal("\x00", eval('?\C- '))}
+    assert_warning(/use ?\\M-\\s/) {assert_equal("\xa0", eval('?\M- '))}
+    assert_warning(/use ?\\M-\\C-\\s/) {assert_equal("\x80", eval('?\M-\C- '))}
+    assert_warning(/use ?\\C-\\M-\\s/) {assert_equal("\x80", eval('?\C-\M- '))}
+    assert_warning(/use ?\\t/) {assert_equal("\x09", eval("?\\C-\t"))}
+    assert_warning(/use ?\\M-\\t/) {assert_equal("\x89", eval("?\\M-\t"))}
+    assert_warning(/use ?\\M-\\t/) {assert_equal("\x89", eval("?\\M-\\C-\t"))}
+    assert_warning(/use ?\\M-\\t/) {assert_equal("\x89", eval("?\\C-\\M-\t"))}
+    assert_syntax_error("?\\C-\x01", 'Invalid escape character syntax')
+    assert_syntax_error("?\\M-\x01", 'Invalid escape character syntax')
+    assert_syntax_error("?\\M-\\C-\x01", 'Invalid escape character syntax')
+    assert_syntax_error("?\\C-\\M-\x01", 'Invalid escape character syntax')
   end
 
   def test_percent

@@ -6139,6 +6139,36 @@ tok_hex(struct parser_params *p, size_t *numlen)
 #define tokcopy(p, n) memcpy(tokspace(p, n), (p)->lex.pcur - (n), (n))
 
 static int
+escaped_control_code(int c)
+{
+    int c2 = 0;
+    switch (c) {
+      case ' ':
+	c2 = 's';
+	break;
+      case '\n':
+	c2 = 'n';
+	break;
+      case '\t':
+	c2 = 't';
+	break;
+      case '\v':
+	c2 = 'v';
+	break;
+      case '\r':
+	c2 = 'r';
+	break;
+      case '\f':
+	c2 = 'f';
+	break;
+    }
+    return c2;
+}
+
+#define WARN_SPACE_CHAR(c, prefix) \
+    rb_warn1("invalid character syntax; use "prefix"\\%c", WARN_I(c2))
+
+static int
 tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
 		 int regexp_literal, int wide)
 {
@@ -6290,6 +6320,16 @@ read_escape(struct parser_params *p, int flags, rb_encoding **encp)
 	}
 	else if (c == -1 || !ISASCII(c)) goto eof;
 	else {
+	    int c2 = escaped_control_code(c);
+	    if (c2) {
+		if (ISCNTRL(c) || !(flags & ESCAPE_CONTROL)) {
+		    WARN_SPACE_CHAR(c2, "\\M-");
+		}
+		else {
+		    WARN_SPACE_CHAR(c2, "\\C-\\M-");
+		}
+	    }
+	    else if (ISCNTRL(c)) goto eof;
 	    return ((c & 0xff) | 0x80);
 	}
 
@@ -6306,6 +6346,28 @@ read_escape(struct parser_params *p, int flags, rb_encoding **encp)
 	else if (c == '?')
 	    return 0177;
 	else if (c == -1 || !ISASCII(c)) goto eof;
+	else {
+	    int c2 = escaped_control_code(c);
+	    if (c2) {
+		if (ISCNTRL(c)) {
+		    if (flags & ESCAPE_META) {
+			WARN_SPACE_CHAR(c2, "\\M-");
+		    }
+		    else {
+			WARN_SPACE_CHAR(c2, "");
+		    }
+		}
+		else {
+		    if (flags & ESCAPE_META) {
+			WARN_SPACE_CHAR(c2, "\\M-\\C-");
+		    }
+		    else {
+			WARN_SPACE_CHAR(c2, "\\C-");
+		    }
+		}
+	    }
+	    else if (ISCNTRL(c)) goto eof;
+	}
 	return c & 0x9f;
 
       eof:
@@ -8009,29 +8071,9 @@ parse_qmark(struct parser_params *p, int space_seen)
     }
     if (rb_enc_isspace(c, p->enc)) {
 	if (!IS_ARG()) {
-	    int c2 = 0;
-	    switch (c) {
-	      case ' ':
-		c2 = 's';
-		break;
-	      case '\n':
-		c2 = 'n';
-		break;
-	      case '\t':
-		c2 = 't';
-		break;
-	      case '\v':
-		c2 = 'v';
-		break;
-	      case '\r':
-		c2 = 'r';
-		break;
-	      case '\f':
-		c2 = 'f';
-		break;
-	    }
+	    int c2 = escaped_control_code(c);
 	    if (c2) {
-		rb_warn1("invalid character syntax; use ?\\%c", WARN_I(c2));
+		WARN_SPACE_CHAR(c2, "?");
 	    }
 	}
       ternary:
