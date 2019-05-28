@@ -1672,6 +1672,19 @@ class TestSetTraceFunc < Test::Unit::TestCase
     ary
   end
 
+  def test_single_raise_inside_load
+    events = []
+    tmpdir = Dir.mktmpdir
+    path = "#{tmpdir}/hola.rb"
+    File.open(path, "w") { |f| f.write("raise") }
+    TracePoint.new(:raise){|tp| next if !target_thread?; events << [tp.event]}.enable{
+      load path rescue nil
+    }
+    assert_equal [[:raise]], events
+  ensure
+    FileUtils.rmtree(tmpdir)
+  end
+
   def f_raise
     raise
   rescue

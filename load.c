@@ -568,7 +568,7 @@ rb_provide(const char *feature)
 
 NORETURN(static void load_failed(VALUE));
 
-static int
+static inline void
 rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
 {
     enum ruby_tag_type state;
@@ -621,59 +621,40 @@ rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
     th->top_wrapper = wrapper;
 
     if (state) {
-	/* usually state == TAG_RAISE only, except for
-	 * rb_iseq_load_iseq case */
-	VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
-	if (NIL_P(exc)) return state;
-	th->ec->errinfo = exc;
-	return TAG_RAISE;
+        rb_vm_jump_tag_but_local_jump(state);
     }
 
     if (!NIL_P(th->ec->errinfo)) {
-	/* exception during load */
-	return TAG_RAISE;
+        rb_exc_raise(th->ec->errinfo);
     }
-    return state;
 }
 
 static void
 rb_load_internal(VALUE fname, int wrap)
 {
     rb_execution_context_t *ec = GET_EC();
-    int state = rb_load_internal0(ec, fname, wrap);
-    if (state) {
-	if (state == TAG_RAISE) rb_exc_raise(ec->errinfo);
-	EC_JUMP_TAG(ec, state);
-    }
-}
-
-static VALUE
-file_to_load(VALUE fname)
-{
-    VALUE tmp = rb_find_file(FilePathValue(fname));
-    if (!tmp) load_failed(fname);
-    return tmp;
+    rb_load_internal0(ec, fname, wrap);
 }
 
 void
 rb_load(VALUE fname, int wrap)
 {
-    rb_load_internal(file_to_load(fname), wrap);
+    VALUE tmp = rb_find_file(FilePathValue(fname));
+    if (!tmp) load_failed(fname);
+    rb_load_internal(tmp, wrap);
 }
 
 void
 rb_load_protect(VALUE fname, int wrap, int *pstate)
 {
     enum ruby_tag_type state;
-    volatile VALUE path = 0;
 
     EC_PUSH_TAG(GET_EC());
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	path = file_to_load(fname);
+        rb_load(fname, wrap);
     }
     EC_POP_TAG();
 
-    if (state == TAG_NONE) state = rb_load_internal0(GET_EC(), path, wrap);
     if (state != TAG_NONE) *pstate = state;
 }
 
@@ -1025,7 +1006,7 @@ rb_require_internal(VALUE fname, int safe)
 	    else {
 		switch (found) {
 		  case 'r':
-		    state = rb_load_internal0(ec, path, 0);
+		    rb_load_internal(path, 0);
 		    break;
 
 		  case 's':
@@ -1034,10 +1015,8 @@ rb_require_internal(VALUE fname, int safe)
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}
-		if (!state) {
-		    rb_provide_feature(path);
-		    result = TAG_RETURN;
-		}
+                rb_provide_feature(path);
+                result = TAG_RETURN;
 	    }
 	}
     }

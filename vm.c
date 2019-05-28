@@ -1488,7 +1488,6 @@ rb_vm_make_jump_tag_but_local_jump(int state, VALUE val)
     return make_localjump_error(mesg, val, state);
 }
 
-#if 0
 void
 rb_vm_jump_tag_but_local_jump(int state)
 {
@@ -1496,7 +1495,6 @@ rb_vm_jump_tag_but_local_jump(int state)
     if (!NIL_P(exc)) rb_exc_raise(exc);
     EC_JUMP_TAG(GET_EC(), state);
 }
-#endif
 
 static rb_control_frame_t *
 next_not_local_frame(rb_control_frame_t *cfp)

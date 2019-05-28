@@ -294,9 +294,7 @@ NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
 NORETURN(void rb_print_inaccessible(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
-#if 0
 NORETURN(void rb_vm_jump_tag_but_local_jump(int));
-#endif
 
 VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);
 rb_cref_t *rb_vm_cref(void);
