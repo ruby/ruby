@@ -9,13 +9,9 @@ describe "BigDecimal constants" do
   end
 
   it "has a BASE value" do
-    platform_is wordsize: 64 do
-      BigDecimal::BASE.should == 1000000000
-    end
-
-    platform_is wordsize: 32 do
-      BigDecimal::BASE.should == 10000
-    end
+    # The actual one is decided based on HAVE_INT64_T in MRI,
+    # which is hard to check here.
+    [10000, 1000000000].should include(BigDecimal::BASE)
   end
 
   it "has a NaN value" do
