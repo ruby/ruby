@@ -211,6 +211,11 @@ describe "C-API Hash function" do
 
         @s.rb_hash_lookup2(hash, :chunky, 10).should == 10
       end
+
+      it "returns undefined if that is the default value specified" do
+        hsh = Hash.new(0)
+        @s.rb_hash_lookup2_default_undef(hsh, :chunky).should be_true
+      end
     end
   end
 

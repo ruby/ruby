@@ -225,6 +225,8 @@ platform_is_not :windows do
       user = ENV.delete("USER")
       begin
         Etc.getlogin != nil
+      rescue
+        false
       ensure
         ENV["USER"] = user
       end

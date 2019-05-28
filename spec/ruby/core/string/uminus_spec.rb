@@ -41,6 +41,23 @@ describe 'String#-@' do
 
       (-dynamic).should_not equal("this string is frozen".freeze)
       (-dynamic).should_not equal(-"this string is frozen".freeze)
+      (-dynamic).should == "this string is frozen"
+    end
+
+    it "does not deduplicate tainted strings" do
+      dynamic = %w(this string is frozen).join(' ')
+      dynamic.taint
+      (-dynamic).should_not equal("this string is frozen".freeze)
+      (-dynamic).should_not equal(-"this string is frozen".freeze)
+      (-dynamic).should == "this string is frozen"
+    end
+
+    it "does not deduplicate strings with additional instance variables" do
+      dynamic = %w(this string is frozen).join(' ')
+      dynamic.instance_variable_set(:@foo, :bar)
+      (-dynamic).should_not equal("this string is frozen".freeze)
+      (-dynamic).should_not equal(-"this string is frozen".freeze)
+      (-dynamic).should == "this string is frozen"
     end
   end
 

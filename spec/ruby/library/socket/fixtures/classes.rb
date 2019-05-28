@@ -72,24 +72,11 @@ module SocketSpecs
   end
 
   def self.loop_with_timeout(timeout = TIME_TOLERANCE)
-    require 'timeout'
-    time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-    loop do
-      if Process.clock_gettime(Process::CLOCK_MONOTONIC) - time >= timeout
-        raise TimeoutError, "Did not succeed within #{timeout} seconds"
-      end
-
-      sleep 0.01 # necessary on OSX; don't know why
-      yield
-    end
-  end
-
-  def self.wait_until_success(timeout = TIME_TOLERANCE)
-    loop_with_timeout(timeout) do
-      begin
-        return yield
-      rescue
+    while yield == :retry
+      if Process.clock_gettime(Process::CLOCK_MONOTONIC) - start >= timeout
+        raise RuntimeError, "Did not succeed within #{timeout} seconds"
       end
     end
   end

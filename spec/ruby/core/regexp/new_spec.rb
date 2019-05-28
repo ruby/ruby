@@ -1,20 +1,17 @@
 require_relative '../../spec_helper'
-require_relative 'shared/new_ascii'
-require_relative 'shared/new_ascii_8bit'
+require_relative 'shared/new'
 
 describe "Regexp.new" do
-  it_behaves_like :regexp_new_ascii, :new
-  it_behaves_like :regexp_new_ascii_8bit, :new
+  it_behaves_like :regexp_new, :new
 end
 
 describe "Regexp.new given a String" do
-  it_behaves_like :regexp_new_string_ascii, :new
-  it_behaves_like :regexp_new_string_ascii_8bit, :new
+  it_behaves_like :regexp_new_string, :new
 end
 
 describe "Regexp.new given a Regexp" do
-  it_behaves_like :regexp_new_regexp_ascii, :new
-  it_behaves_like :regexp_new_regexp_ascii_8bit, :new
+  it_behaves_like :regexp_new_regexp, :new
+  it_behaves_like :regexp_new_string_binary, :compile
 end
 
 describe "Regexp.new given a Fixnum" do

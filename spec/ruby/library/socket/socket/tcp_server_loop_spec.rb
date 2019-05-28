@@ -31,8 +31,13 @@ describe 'Socket.tcp_server_loop' do
         end
       end
 
-      SocketSpecs.wait_until_success do
-        @client.connect(Socket.sockaddr_in(@port, '127.0.0.1'))
+      SocketSpecs.loop_with_timeout do
+        begin
+          @client.connect(Socket.sockaddr_in(@port, '127.0.0.1'))
+        rescue SystemCallError
+          sleep 0.01
+          :retry
+        end
       end
 
       # At this point the connection has been set up but the thread may not yet

@@ -65,4 +65,19 @@ describe "Exception#backtrace" do
       e.backtrace[0].should == "backtrace first"
     end
   end
+
+  it "returns the same array after duping" do
+    begin
+      raise
+    rescue RuntimeError => err
+      bt = err.backtrace
+      err.dup.backtrace.should equal(bt)
+
+      new_bt = ['hi']
+      err.set_backtrace new_bt
+
+      err.backtrace.should == new_bt
+      err.dup.backtrace.should equal(new_bt)
+    end
+  end
 end

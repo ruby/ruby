@@ -54,7 +54,7 @@ describe "Hash.[]" do
   end
 
   ruby_version_is "2.7" do
-    it "ignores elements that are not arrays" do
+    it "raises for elements that are not arrays" do
       -> {
         Hash[[:a]].should == {}
       }.should raise_error(ArgumentError)

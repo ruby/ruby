@@ -292,6 +292,22 @@ describe "C-API Kernel function" do
     end
   end
 
+  describe "rb_eval_string_protect" do
+    it "will evaluate the given string" do
+      proof = []
+      res = @s.rb_eval_string_protect('1 + 7', proof)
+      proof.should == [23, 8]
+    end
+
+    it "will allow cleanup code to be run when an exception is raised" do
+      proof = []
+      lambda do
+        @s.rb_eval_string_protect('raise RuntimeError', proof)
+      end.should raise_error(RuntimeError)
+      proof.should == [23, nil]
+    end
+  end
+
   describe "rb_rescue" do
     before :each do
       @proc = lambda { |x| x }

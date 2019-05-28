@@ -41,4 +41,16 @@ describe "Exception#cause" do
       e.cause.should equal(cause)
     }
   end
+
+  it "is not set to the exception itself when it is re-raised" do
+    -> {
+      begin
+        raise RuntimeError
+      rescue RuntimeError => e
+        raise e
+      end
+    }.should raise_error(RuntimeError) { |e|
+      e.cause.should == nil
+    }
+  end
 end

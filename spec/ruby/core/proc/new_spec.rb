@@ -190,6 +190,17 @@ describe "Proc.new without a block" do
 
       prc.call.should == "hello"
     end
+
+    it "uses the implicit block from an enclosing method when called inside a block" do
+      def some_method
+        proc do |&block|
+          Proc.new
+        end.call { "failing" }
+      end
+      prc = some_method { "hello" }
+
+      prc.call.should == "hello"
+    end
   end
 
   ruby_version_is "2.7" do

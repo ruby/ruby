@@ -44,6 +44,30 @@ VALUE util_spec_rb_scan_args(VALUE self, VALUE argv, VALUE fmt, VALUE expected, 
   return INT2NUM(result);
 }
 
+static VALUE util_spec_rb_get_kwargs(VALUE self, VALUE keyword_hash, VALUE keys, VALUE required, VALUE optional) {
+  int req = FIX2INT(required);
+  int opt = FIX2INT(optional);
+  int len = RARRAY_LEN(keys);
+
+  int values_len = req + (opt < 0 ? -1 - opt : opt);
+  int i = 0;
+
+  ID *ids = malloc(sizeof(VALUE) * len);
+  VALUE *results = malloc(sizeof(VALUE) * values_len);
+  int extracted = 0;
+  VALUE ary = Qundef;
+
+  for (i = 0; i < len; i++) {
+    ids[i] = SYM2ID(rb_ary_entry(keys, i));
+  }
+
+  extracted = rb_get_kwargs(keyword_hash, ids, req, opt, results);
+  ary = rb_ary_new_from_values(extracted, results);
+  free(results);
+  free(ids);
+  return ary;
+}
+
 static VALUE util_spec_rb_long2int(VALUE self, VALUE n) {
   return INT2NUM(rb_long2int(NUM2LONG(n)));
 }
@@ -64,6 +88,7 @@ static VALUE util_spec_rb_sourceline(VALUE self) {
 void Init_util_spec(void) {
   VALUE cls = rb_define_class("CApiUtilSpecs", rb_cObject);
   rb_define_method(cls, "rb_scan_args", util_spec_rb_scan_args, 4);
+  rb_define_method(cls, "rb_get_kwargs", util_spec_rb_get_kwargs, 4);
   rb_define_method(cls, "rb_long2int", util_spec_rb_long2int, 1);
   rb_define_method(cls, "rb_iter_break", util_spec_rb_iter_break, 0);
   rb_define_method(cls, "rb_sourcefile", util_spec_rb_sourcefile, 0);

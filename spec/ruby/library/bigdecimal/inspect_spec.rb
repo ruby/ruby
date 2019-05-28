@@ -14,4 +14,11 @@ describe "BigDecimal#inspect" do
   it "looks like this" do
     @bigdec.inspect.should == "0.12345678e4"
   end
+
+  it "properly cases non-finite values" do
+    BigDecimal("NaN").inspect.should == "NaN"
+    BigDecimal("Infinity").inspect.should == "Infinity"
+    BigDecimal("+Infinity").inspect.should == "Infinity"
+    BigDecimal("-Infinity").inspect.should == "-Infinity"
+  end
 end

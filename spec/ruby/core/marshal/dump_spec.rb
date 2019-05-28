@@ -449,14 +449,13 @@ describe "Marshal.dump" do
         zone = ":\tzoneI\"\bAST\x06:\x06EF" # Last is 'F' (US-ASCII)
         [ "#{base}#{offset}#{zone}", "#{base}#{zone}#{offset}" ].should include(dump)
       end
-
-      it "dumps the zone, but not the offset if zone is UTC" do
-        dump = Marshal.dump(@utc)
-        zone = ":\tzoneI\"\bUTC\x06:\x06EF" # Last is 'F' (US-ASCII)
-        dump.should == "\x04\bIu:\tTime\r#{@utc_dump}\x06#{zone}"
-      end
     end
 
+    it "dumps the zone, but not the offset if zone is UTC" do
+      dump = Marshal.dump(@utc)
+      zone = ":\tzoneI\"\bUTC\x06:\x06EF" # Last is 'F' (US-ASCII)
+      dump.should == "\x04\bIu:\tTime\r#{@utc_dump}\x06#{zone}"
+    end
   end
 
   describe "with an Exception" do

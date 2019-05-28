@@ -35,9 +35,17 @@ describe 'Socket.udp_server_loop' do
       @client.connect(Socket.sockaddr_in(@port, '127.0.0.1'))
 
       SocketSpecs.loop_with_timeout do
-        SocketSpecs.wait_until_success { @client.write('hello') }
-
-        break if msg
+        begin
+          @client.write('hello')
+        rescue SystemCallError
+          sleep 0.01
+          :retry
+        else
+          unless msg
+            sleep 0.001
+            :retry
+          end
+        end
       end
 
       msg.should == 'hello'
