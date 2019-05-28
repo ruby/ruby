@@ -4,12 +4,13 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
   def setup
     Reline.send(:test_mode)
     @prompt = '> '
-    @config = Reline::Config.new
+    @config = Reline.class_variable_get(:@@config) # Emacs mode is default
     @config.read_lines(<<~LINES.split(/(?<=\n)/))
       set editing-mode vi
     LINES
-    @line_editor = Reline::LineEditor.new(@config)
-    @line_editor.reset(@prompt, (RELINE_TEST_ENCODING rescue Encoding.default_external))
+    @line_editor = Reline.class_variable_get(:@@line_editor)
+    @encoding = (RELINE_TEST_ENCODING rescue Encoding.default_external)
+    @line_editor.reset(@prompt, @encoding)
   end
 
   def test_vi_command_mode
