@@ -56,7 +56,7 @@ module IRB # :nodoc:
         on_tstring_content: [[RED],                   ALL],
         on_tstring_end:     [[RED],                   ALL],
         on_words_beg:       [[RED],                   ALL],
-        on_parse_error:     [[RED, REVERSE],          ALL],
+        ERROR:              [[RED, REVERSE],          ALL],
       }
     rescue NameError
       # Give up highlighting Ripper-incompatible older Ruby
@@ -66,9 +66,16 @@ module IRB # :nodoc:
 
     class Lexer < Ripper::Lexer
       if method_defined?(:token)
-        def on_parse_error(mesg)
-          @buf.push Elem.new([lineno(), column()], __callee__, token(), state())
+        def self.lex(code)
+          new(code).parse.sort_by {|elem| elem.pos.dup << elem.event}
         end
+
+        def on_error(mesg)
+          # :ERROR comes before other :on_ symbols
+          @buf.push Elem.new([lineno(), column()], :ERROR, token(), state())
+        end
+        alias compile_error on_error
+        alias on_parse_error on_error
       end
     end
 
@@ -110,25 +117,33 @@ module IRB # :nodoc:
         symbol_state = SymbolState.new
         colored = +''
         length = 0
+        pos = [1, 0]
 
-        Lexer.new(code).parse.sort_by(&:pos).each do |elem|
+        Lexer.lex(code).each do |elem|
           token = elem.event
           str = elem.tok
           expr = elem.state
           in_symbol = symbol_state.scan_token(token)
-          if seq = dispatch_seq(token, expr, str, in_symbol: in_symbol)
-            Reline::Unicode.escape_for_print(str).each_line do |line|
+          next if ([elem.pos[0], elem.pos[1] + str.bytesize] <=> pos) <= 0
+          Reline::Unicode.escape_for_print(str).each_line do |line|
+            if seq = dispatch_seq(token, expr, str, in_symbol: in_symbol)
               colored << seq.map { |s| "\e[#{s}m" }.join('')
               colored << line.sub(/\Z/, clear)
+            else
+              colored << line
             end
-          else
-            colored << Reline::Unicode.escape_for_print(str)
+            if line.end_with?("\n")
+              pos[0] += 1
+              pos[1] = 0
+            else
+              pos[1] += line.bytesize
+            end
           end
-          length += str.length
+          length += str.bytesize
         end
 
         # give up colorizing incomplete Ripper tokens
-        return code if length != code.length
+        return code if length != code.bytesize
 
         colored
       end
@@ -136,7 +151,9 @@ module IRB # :nodoc:
       private
 
       def dispatch_seq(token, expr, str, in_symbol:)
-        if in_symbol
+        if token == :ERROR
+          TOKEN_SEQ_EXPRS[token][0]
+        elsif in_symbol
           [YELLOW]
         elsif TOKEN_KEYWORDS.fetch(token, []).include?(str)
           [CYAN, BOLD]
