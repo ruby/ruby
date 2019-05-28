@@ -98,7 +98,7 @@ mjit-test2:
     # --jit-wait (test-all)
     - script:
         name: make test-all (JIT wait)
-        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTOPTS="--test-order=random --color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/jit-wait"
+        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTOPTS="-v --test-order=random --color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/jit-wait"
 
   after-steps:
     - wantedly/pretty-slack-notify:
