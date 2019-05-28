@@ -324,16 +324,6 @@ env:
       # Disabling -j3 because it seems to cause a hang on building Ruby: https://travis-ci.org/ruby/ruby/jobs/471021727
       - JOBS=
 
-  - &universal-darwin17
-    name: uinversal.x86_64h-darwin17
-    <<: *osx
-    <<: *cron-only
-    <<: *make-test-only
-    env:
-      - GEMS_FOR_TEST=
-      - CONFIG_FLAG=--with-arch=x86_64h,x86_64,i386
-      - TEST_ALL_OPTS="$JOBS -q --tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
-
 matrix:
   include:
     # to reduce time for finishing all jobs, run the slowest osx build first.
@@ -353,7 +343,6 @@ matrix:
     - <<: *NO_THREADED_CODE
     - <<: *rubyspec
   allow_failures:
-    - name: uinversal.x86_64h-darwin17
     - name: -fsanitize=address
     - name: -fsanitize=memory
     - name: -fsanitize=undefined
