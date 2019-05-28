@@ -124,7 +124,8 @@ class VCS
     @@dirs << [dir, self, pred]
   end
 
-  def self.detect(path, uplevel_limit: 0)
+  def self.detect(path, options = {})
+    uplevel_limit = options.fetch(:uplevel_limit, 0)
     curr = path
     begin
       @@dirs.each do |dir, klass, pred|
