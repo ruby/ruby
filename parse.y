@@ -8368,13 +8368,13 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 	return result;
     }
     else if (ISDIGIT(c)) {
+	const char *ptr = p->lex.pcur - 1;
+	size_t len = p->lex.pend - ptr;
+	int overflow;
+	unsigned long n = ruby_scan_digits(ptr, len, 10, &len, &overflow);
+	p->lex.pcur = ptr + len;
+	RUBY_SET_YYLLOC(loc);
 	if (result == tIVAR) {
-	    const char *ptr = p->lex.pcur - 1;
-	    size_t len = p->lex.pend - ptr;
-	    int overflow;
-	    unsigned long n = ruby_scan_digits(ptr, len, 10, &len, &overflow);
-	    p->lex.pcur = ptr + len;
-	    RUBY_SET_YYLLOC(loc);
 	    if (IS_lex_state(EXPR_FNAME)) {
 		compile_error(p, "`@%c' is not allowed as an instance variable name", c);
 	    }
@@ -8389,8 +8389,6 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 	    }
 	}
 	else {
-	    RUBY_SET_YYLLOC(loc);
-	    pushback(p, c);
 	    compile_error(p, "`@@%c' is not allowed as a class variable name", c);
 	}
 	parser_show_error_line(p, &loc);
