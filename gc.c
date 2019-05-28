@@ -3140,13 +3140,6 @@ gc_finalize_deferred(void *dmy)
     ATOMIC_SET(finalizing, 0);
 }
 
-/* TODO: to keep compatibility, maybe unused. */
-void
-rb_gc_finalize_deferred(void)
-{
-    gc_finalize_deferred(0);
-}
-
 static void
 gc_finalize_deferred_register(rb_objspace_t *objspace)
 {

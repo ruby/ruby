@@ -520,7 +520,6 @@ VALUE rb_gc_location(VALUE);
 void rb_gc_force_recycle(VALUE);
 void rb_gc(void);
 void rb_gc_copy_finalizer(VALUE,VALUE);
-void rb_gc_finalize_deferred(void);
 void rb_gc_call_finalizer_at_exit(void);
 VALUE rb_gc_enable(void);
 VALUE rb_gc_disable(void);
