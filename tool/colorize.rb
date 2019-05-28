@@ -4,7 +4,7 @@ class Colorize
   def initialize(color = nil)
     @colors = @reset = nil
     if color or (color == nil && STDOUT.tty?)
-      if (/\A\e\[.*m\z/ =~ IO.popen("tput smso", "r", err: IO::NULL, &:read) rescue nil)
+      if (/\A\e\[.*m\z/ =~ IO.popen("tput smso", "r", :err => IO::NULL, &:read) rescue nil)
         @beg = "\e["
         @colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
         @reset = "#{@beg}m"
