@@ -135,7 +135,7 @@ class TestVariable < Test::Unit::TestCase
   def test_special_constant_ivars
     [ true, false, :symbol, "dsym#{rand(9999)}".to_sym, 1, 1.0 ].each do |v|
       assert_empty v.instance_variables
-      msg = "can't modify frozen #{v.class}"
+      msg = "can't modify frozen #{v.class}: #{v.inspect}"
 
       assert_raise_with_message(FrozenError, msg) do
         v.instance_variable_set(:@foo, :bar)
