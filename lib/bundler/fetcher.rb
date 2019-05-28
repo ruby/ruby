@@ -99,7 +99,7 @@ module Bundler
 
       uri = URI.parse("#{remote_uri}#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}.rz")
       if uri.scheme == "file"
-        path = Gem.win_platform? ? uri.path[1..-1] : uri.path
+        path = Bundler.rubygems.correct_for_windows_path(uri.path)
         Bundler.load_marshal Bundler.rubygems.inflate(Gem.read_binary(path))
       elsif cached_spec_path = gemspec_cached_path(spec_file_name)
         Bundler.load_gemspec(cached_spec_path)
