@@ -24,9 +24,11 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     lexer = Ripper::Lexer.new(str)
     if error
       lexer.singleton_class.class_eval do
-        define_method(:on_parse_error) {|ev|
+        define_method(:on_error) {|ev|
           yield __callee__, ev, token()
         }
+        alias on_parse_error on_error
+        alias compile_error on_error
       end
     end
     lexer.lex.select {|_1,type,_2| type == sym }.map {|_1,_2,tok| tok }
@@ -967,4 +969,11 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('tlambda_arg', '-> {}')
   end
 
+  def test_invalid_char
+    err = nil
+    assert_equal ['a'], scan('ident', "\ea") {|*e| err = e}
+    assert_equal :compile_error, err[0]
+    assert_match /Invalid char/, err[1]
+    assert_equal "\e", err[2]
+  end
 end if ripper_test

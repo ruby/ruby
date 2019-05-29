@@ -66,9 +66,11 @@ module IRB # :nodoc:
 
     class Lexer < Ripper::Lexer
       if method_defined?(:token)
-        def on_parse_error(mesg)
+        def on_error(mesg)
           @buf.push Elem.new([lineno(), column()], __callee__, token(), state())
         end
+        alias on_parse_error on_error
+        alias compile_error on_error
       end
     end
 
