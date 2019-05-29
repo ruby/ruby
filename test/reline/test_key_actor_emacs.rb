@@ -5,6 +5,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     Reline.send(:test_mode)
     @prompt = '> '
     @config = Reline::Config.new # Emacs mode is default
+    Reline::HISTORY.send(:set_config, @config)
     @encoding = (RELINE_TEST_ENCODING rescue Encoding.default_external)
     @line_editor = Reline::LineEditor.new(@config)
     @line_editor.reset(@prompt, @encoding)
@@ -1179,6 +1180,33 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_byte_pointer_size('')
     assert_cursor(0)
     assert_cursor_max(3)
+  end
+
+  def test_larger_histories_than_history_size
+    history_size = @config.history_size
+    @config.history_size = 2
+    Reline::HISTORY.concat(%w{abc 123 AAA})
+    assert_line('')
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    input_keys("\C-p")
+    assert_line('AAA')
+    assert_byte_pointer_size('AAA')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    input_keys("\C-p")
+    assert_line('123')
+    assert_byte_pointer_size('123')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    input_keys("\C-p")
+    assert_line('123')
+    assert_byte_pointer_size('123')
+    assert_cursor(3)
+    assert_cursor_max(3)
+  ensure
+    @config.history_size = history_size
   end
 
 =begin # TODO: move KeyStroke instance from Reline to LineEditor
