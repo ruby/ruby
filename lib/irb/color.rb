@@ -108,25 +108,34 @@ module IRB # :nodoc:
         symbol_state = SymbolState.new
         colored = +''
         length = 0
+        pos = [1, 0]
 
         scan(code).each do |elem|
           token = elem.event
           str = elem.tok
           expr = elem.state
           in_symbol = symbol_state.scan_token(token)
-          if seq = dispatch_seq(token, expr, str, in_symbol: in_symbol)
-            Reline::Unicode.escape_for_print(str).each_line do |line|
+          next if ([elem.pos[0], elem.pos[1] + str.bytesize] <=> pos) <= 0
+          str.each_line do |line|
+            if line.end_with?("\n")
+              pos[0] += 1
+              pos[1] = 0
+            else
+              pos[1] += line.bytesize
+            end
+            line = Reline::Unicode.escape_for_print(line)
+            if seq = dispatch_seq(token, expr, line, in_symbol: in_symbol)
               colored << seq.map { |s| "\e[#{s}m" }.join('')
               colored << line.sub(/\Z/, clear)
+            else
+              colored << line
             end
-          else
-            colored << Reline::Unicode.escape_for_print(str)
           end
-          length += str.length
+          length += str.bytesize
         end
 
         # give up colorizing incomplete Ripper tokens
-        return code if length != code.length
+        return code if length != code.bytesize
 
         colored
       end
