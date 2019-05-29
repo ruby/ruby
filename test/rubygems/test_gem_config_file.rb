@@ -19,7 +19,7 @@ class TestGemConfigFile < Gem::TestCase
     Gem::ConfigFile::PLATFORM_DEFAULTS.clear
 
     @env_gemrc = ENV['GEMRC']
-    ENV['GEMRC'] = ''
+    ENV['GEMRC'] = nil
 
     util_config_file
   end
@@ -165,6 +165,12 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal true, @cfg.backtrace
     assert_equal :loud, @cfg.verbose
     assert_equal 2048, @cfg.bulk_threshold
+  end
+
+  def test_set_config_file_name_from_environment_variable
+    ENV['GEMRC'] = "/tmp/.gemrc"
+    cfg = Gem::ConfigFile.new([])
+    assert_equal cfg.config_file_name, "/tmp/.gemrc"
   end
 
   def test_api_keys
