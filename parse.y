@@ -8396,6 +8396,7 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 	tokadd(p, '@');
 	c = nextc(p);
     }
+    SET_LEX_STATE(IS_lex_state_for(last_state, EXPR_FNAME) ? EXPR_ENDFN : EXPR_END);
     if (c == -1 || !parser_is_identchar(p)) {
 	pushback(p, c);
 	RUBY_SET_YYLLOC(loc);
@@ -8407,6 +8408,7 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 	}
 	parser_show_error_line(p, &loc);
 	set_yylval_noname();
+	SET_LEX_STATE(EXPR_END);
 	return result;
     }
     else if (ISDIGIT(c)) {
@@ -8417,7 +8419,7 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
 	p->lex.pcur = ptr + len;
 	RUBY_SET_YYLLOC(loc);
 	if (result == tIVAR) {
-	    if (IS_lex_state(EXPR_FNAME)) {
+	    if (IS_lex_state_for(last_state, EXPR_FNAME)) {
 		compile_error(p, "`@%c' is not allowed as an instance variable name", c);
 	    }
 	    else if (ptr[0] == '0') {
@@ -8439,7 +8441,6 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
     }
 
     if (tokadd_ident(p, c)) return 0;
-    SET_LEX_STATE(EXPR_END);
     tokenize_ident(p, last_state);
     return result;
 }
