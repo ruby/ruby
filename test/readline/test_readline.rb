@@ -423,7 +423,6 @@ module BasetestReadline
 
   def test_input_metachar
     skip "Skip Editline" if /EditLine/n.match(Readline::VERSION)
-    skip "This hangs on Wercker environment since 3b7862c8e8" if RubyVM::MJIT.enabled?
     skip("Won't pass on mingw w/readline 7.0.005 [ruby-core:45682]") if mingw?
     bug6601 = '[ruby-core:45682]'
     Readline::HISTORY << "hello"
