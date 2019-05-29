@@ -1091,11 +1091,10 @@ $(srcdir)/revision.h:
 	$(Q)$(gnumake:yes=#) $(RM) $(@F)
 	$(Q)$(gnumake:yes=#) exit > $@ || exit > $(@F)
 
-revision.tmp: $(srcdir)/version.h $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
-revision.$(HAVE_BASERUBY:yes=tmp): $(srcdir)/version.h $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
-	$(Q) $(BASERUBY) $(srcdir)/tool/file2lastrev.rb -q --revision.h "$(srcdir)" > revision.tmp
-revision.$(HAVE_BASERUBY:no=tmp):
+revision.tmp::
 	$(Q)exit > $@
+revision.$(HAVE_BASERUBY:yes=tmp):: $(srcdir)/version.h $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
+	$(Q) $(BASERUBY) $(srcdir)/tool/file2lastrev.rb -q --revision.h "$(srcdir)" > $@
 
 $(REVISION_H): revision.tmp
 	$(Q)$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" revision.tmp
