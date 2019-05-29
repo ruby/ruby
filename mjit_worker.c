@@ -944,7 +944,7 @@ load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit
 }
 
 static void
-print_jit_result(const char *result, const struct rb_mjit_unit *unit, const double duration, const char *c_file)
+print_jit_result(const char *result, const struct rb_mjit_unit *unit, const double duration, int lineno, const char *c_file)
 {
     if (unit->iseq == NULL) {
         verbose(1, "JIT %s (%.1fms): (GCed) -> %s", result, duration, c_file);
@@ -952,7 +952,7 @@ print_jit_result(const char *result, const struct rb_mjit_unit *unit, const doub
     else {
         verbose(1, "JIT %s (%.1fms): %s@%s:%d -> %s", result,
                 duration, RSTRING_PTR(unit->iseq->body->location.label),
-                RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno), c_file);
+                RSTRING_PTR(rb_iseq_path(unit->iseq)), lineno, c_file);
     }
 }
 
@@ -1075,11 +1075,12 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
+    // FIX2INT calls method_entry_get(). Thus we should not call it while GC or GC.compact may happen.
+    int lineno = FIX2INT(unit->iseq->body->location.first_lineno);
     {
         VALUE s = rb_iseq_path(unit->iseq);
         const char *label = RSTRING_PTR(unit->iseq->body->location.label);
         const char *path = RSTRING_PTR(s);
-        int lineno = FIX2INT(unit->iseq->body->location.first_lineno);
         verbose(2, "start compilation: %s@%s:%d -> %s", label, path, lineno, c_file);
         fprintf(f, "/* %s@%s:%d */\n\n", label, path, lineno);
     }
@@ -1096,7 +1097,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     if (!success) {
         if (!mjit_opts.save_temps)
             remove_file(c_file);
-        print_jit_result("failure", unit, 0, c_file);
+        print_jit_result("failure", unit, 0, lineno, c_file);
         return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
@@ -1134,8 +1135,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
         CRITICAL_SECTION_START(3, "end of jit");
         add_to_list(unit, &active_units);
-        if (unit->iseq)
-            print_jit_result("success", unit, end_time - start_time, c_file);
+        print_jit_result("success", unit, end_time - start_time, lineno, c_file);
         CRITICAL_SECTION_FINISH(3, "end of jit");
     }
     return (mjit_func_t)func;
