@@ -95,4 +95,22 @@ class TestRipper::Lexer < Test::Unit::TestCase
     assert_equal "string\#{nil}\n",
       Ripper.slice(%(<<HERE\nstring\#{nil}\nHERE), "heredoc_beg .*? nl $(.*?) heredoc_end", 1)
   end
+
+  def state(name)
+    Ripper::Lexer::State.new(Ripper.const_get(name))
+  end
+
+  def test_state_after_ivar
+    assert_equal [[1,0],:on_ivar,"@a",state(:EXPR_END)], Ripper.lex("@a").last
+    assert_equal [[1,1],:on_ivar,"@a",state(:EXPR_ENDFN)], Ripper.lex(":@a").last
+    assert_equal [[1,0],:on_ivar,"@1",state(:EXPR_END)], Ripper.lex("@1").last
+    assert_equal [[1,1],:on_ivar,"@1",state(:EXPR_ENDFN)], Ripper.lex(":@1").last
+  end
+
+  def test_state_after_cvar
+    assert_equal [[1,0],:on_cvar,"@@a",state(:EXPR_END)], Ripper.lex("@@a").last
+    assert_equal [[1,1],:on_cvar,"@@a",state(:EXPR_ENDFN)], Ripper.lex(":@@a").last
+    assert_equal [[1,0],:on_cvar,"@@1",state(:EXPR_END)], Ripper.lex("@@1").last
+    assert_equal [[1,1],:on_cvar,"@@1",state(:EXPR_ENDFN)], Ripper.lex(":@@1").last
+  end
 end
