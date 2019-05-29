@@ -56,24 +56,14 @@ module IRB # :nodoc:
         on_tstring_content: [[RED],                   ALL],
         on_tstring_end:     [[RED],                   ALL],
         on_words_beg:       [[RED],                   ALL],
-        ERROR:              [[RED, REVERSE],          ALL],
+        on_parse_error:     [[RED, REVERSE],          ALL],
+        compile_error:      [[RED, REVERSE],          ALL],
       }
     rescue NameError
       # Give up highlighting Ripper-incompatible older Ruby
       TOKEN_SEQ_EXPRS = {}
     end
     private_constant :TOKEN_SEQ_EXPRS
-
-    class Lexer < Ripper::Lexer
-      if method_defined?(:token)
-        def on_error(mesg)
-          # :ERROR comes before other :on_ symbols
-          @buf.push Elem.new([lineno(), column()], :ERROR, token(), state())
-        end
-        alias on_parse_error on_error
-        alias compile_error on_error
-      end
-    end
 
     class << self
       def colorable?
@@ -107,6 +97,10 @@ module IRB # :nodoc:
         "#{seq.map { |s| "\e[#{const_get(s)}m" }.join('')}#{text}#{clear}"
       end
 
+      def scan(code)
+        Ripper::Lexer.new(code).scan
+      end
+
       def colorize_code(code)
         return code unless colorable?
 
@@ -114,7 +108,7 @@ module IRB # :nodoc:
         colored = +''
         length = 0
 
-        Lexer.new(code).parse.sort_by(&:pos).each do |elem|
+        scan(code).each do |elem|
           token = elem.event
           str = elem.tok
           expr = elem.state
@@ -139,7 +133,9 @@ module IRB # :nodoc:
       private
 
       def dispatch_seq(token, expr, str, in_symbol:)
-        if in_symbol
+        if token == :on_parse_error or token == :compile_error
+          TOKEN_SEQ_EXPRS[token][0]
+        elsif in_symbol
           [YELLOW]
         elsif TOKEN_KEYWORDS.fetch(token, []).include?(str)
           [CYAN, BOLD]

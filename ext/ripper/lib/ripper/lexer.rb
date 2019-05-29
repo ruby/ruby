@@ -60,13 +60,13 @@ class Ripper
       def nobits?(i) to_int.nobits?(i) end
     end
 
-    Elem = Struct.new(:pos, :event, :tok, :state) do
-      def initialize(pos, event, tok, state)
-        super(pos, event, tok, State.new(state))
+    Elem = Struct.new(:pos, :event, :tok, :state, :message) do
+      def initialize(pos, event, tok, state, message = nil)
+        super(pos, event, tok, State.new(state), message)
       end
 
       def inspect
-        "#<#{self.class}: #{event}@#{pos[0]}:#{pos[1]}:#{state}: #{tok.inspect}>"
+        "#<#{self.class}: #{event}@#{pos[0]}:#{pos[1]}:#{state}: #{tok.inspect}#{": " if message}#{message}>"
       end
 
       def pretty_print(q)
@@ -76,9 +76,22 @@ class Ripper
           q.breakable
           q.text("token: ")
           tok.pretty_print(q)
+          if message
+            q.breakable
+            q.text("message: ")
+            q.text(message)
+          end
         }
       end
+
+      def to_a
+        a = super
+        a.pop unless a.last
+        a
+      end
     end
+
+    attr_reader :errors
 
     def tokenize
       parse().sort_by(&:pos).map(&:tok)
@@ -88,7 +101,13 @@ class Ripper
       parse().sort_by(&:pos).map(&:to_a)
     end
 
+    # parse the code and returns elements including errors.
+    def scan
+      (parse() + errors).sort_by {|e| [*e.pos, (e.message ? -1 : 0)]}
+    end
+
     def parse
+      @errors = []
       @buf = []
       @stack = []
       super
@@ -143,6 +162,12 @@ class Ripper
     def _push_token(tok)
       @buf.push Elem.new([lineno(), column()], __callee__, tok, state())
     end
+
+    def on_error(mesg)
+      @errors.push Elem.new([lineno(), column()], __callee__, token(), state(), mesg)
+    end
+    alias on_parse_error on_error
+    alias compile_error on_error
 
     (SCANNER_EVENTS.map {|event|:"on_#{event}"} - private_instance_methods(false)).each do |event|
       alias_method event, :_push_token
