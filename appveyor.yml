@@ -98,7 +98,7 @@ for:
     - ruby --version
   build_script:
     # always update database and dependencies
-    - pacman -Syuu
+    - pacman -Syu --noconfirm
     - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-toolchain
     - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-gdbm mingw-w64-x86_64-gmp mingw-w64-x86_64-libffi mingw-w64-x86_64-ncurses mingw-w64-x86_64-readline mingw-w64-x86_64-zlib
     - cd %APPVEYOR_BUILD_FOLDER%
