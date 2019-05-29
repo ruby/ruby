@@ -14,7 +14,6 @@ require 'rubygems/basic_specification'
 require 'rubygems/stub_specification'
 require 'rubygems/specification_policy'
 require 'rubygems/util/list'
-require 'stringio'
 
 ##
 # The Specification class contains the information for a gem.  Typically
@@ -2535,6 +2534,7 @@ class Gem::Specification < Gem::BasicSpecification
     builder << self
     ast = builder.tree
 
+    require 'stringio'
     io = StringIO.new
     io.set_encoding Encoding::UTF_8
 
