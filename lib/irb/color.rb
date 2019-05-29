@@ -94,7 +94,8 @@ module IRB # :nodoc:
 
       def colorize(text, seq)
         return text unless colorable?
-        "#{seq.map { |s| "\e[#{const_get(s)}m" }.join('')}#{text}#{clear}"
+        seq = seq.map { |s| "\e[#{const_get(s)}m" }.join('')
+        "#{seq}#{text}#{clear}"
       end
 
       def scan(code)
