@@ -407,7 +407,7 @@ class VCS
       modified = log[/^Date:\s+(.*)/, 1]
       branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short HEAD]])
       if branch.empty?
-        branch_list = cmd_read_at(srcdir, [gitcmd + %W[branch --list --contains HEAD]]).lines
+        branch_list = cmd_read_at(srcdir, [gitcmd + %W[branch --list --contains HEAD]]).lines.to_a
         branch_list.delete_if {|b| /detached at/ =~ b}
         (branch = branch_list[0]).strip! unless branch_list.empty?
       end
