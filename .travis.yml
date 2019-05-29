@@ -349,8 +349,8 @@ matrix:
     - <<: *TOKEN_THREADED_CODE
     - <<: *CALL_THREADED_CODE
     - <<: *NO_THREADED_CODE
-    - <<: *rubyspec
     - <<: *baseruby
+    - <<: *rubyspec
   allow_failures:
     - name: -fsanitize=address
     - name: -fsanitize=memory
