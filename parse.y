@@ -9232,6 +9232,7 @@ parser_yylex(struct parser_params *p)
       default:
 	if (!parser_is_identchar(p)) {
 	    compile_error(p, "Invalid char `\\x%02X' in expression", c);
+            token_flush(p);
 	    goto retry;
 	}
 
