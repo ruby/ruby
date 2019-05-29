@@ -56,7 +56,7 @@ module IRB # :nodoc:
         on_tstring_content: [[RED],                   ALL],
         on_tstring_end:     [[RED],                   ALL],
         on_words_beg:       [[RED],                   ALL],
-        on_parse_error:     [[RED, REVERSE],          ALL],
+        ERROR:              [[RED, REVERSE],          ALL],
       }
     rescue NameError
       # Give up highlighting Ripper-incompatible older Ruby
@@ -67,7 +67,8 @@ module IRB # :nodoc:
     class Lexer < Ripper::Lexer
       if method_defined?(:token)
         def on_error(mesg)
-          @buf.push Elem.new([lineno(), column()], __callee__, token(), state())
+          # :ERROR comes before other :on_ symbols
+          @buf.push Elem.new([lineno(), column()], :ERROR, token(), state())
         end
         alias on_parse_error on_error
         alias compile_error on_error
