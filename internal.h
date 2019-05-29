@@ -155,6 +155,14 @@ asan_poison_object(VALUE obj)
     asan_poison_memory_region(ptr, SIZEOF_VALUE);
 }
 
+#if !__has_feature(address_sanitizer)
+#define asan_poison_object_if(ptr, obj) ((void)(ptr), (void)(obj))
+#else
+#define asan_poison_object_if(ptr, obj) do { \
+        if (ptr) asan_poison_object(obj); \
+    } while (0)
+#endif
+
 /*!
  * This function predicates if the given object is fully addressable or not.
  *

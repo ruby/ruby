@@ -1087,9 +1087,7 @@ remove_coverage_i(void *vstart, void *vend, size_t stride, void *data)
             ISEQ_COVERAGE_SET(iseq, Qnil);
 	}
 
-        if (ptr) {
-            asan_poison_object(v);
-        }
+        asan_poison_object_if(ptr, v);
     }
     return 0;
 }
@@ -3239,9 +3237,7 @@ trace_set_i(void *vstart, void *vend, size_t stride, void *data)
 	    rb_iseq_trace_set(rb_iseq_check((rb_iseq_t *)v), turnon_events);
 	}
 
-        if (ptr) {
-            asan_poison_object(v);
-        }
+        asan_poison_object_if(ptr, v);
     }
     return 0;
 }
