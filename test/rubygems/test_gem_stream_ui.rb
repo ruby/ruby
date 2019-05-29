@@ -56,7 +56,7 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask_for_password
-    Timeout.timeout(1) do
+    Timeout.timeout(5) do
       expected_answer = "Arthur, King of the Britons"
       @in.string = "#{expected_answer}\n"
       actual_answer = @sui.ask_for_password("What is your name?")
