@@ -97,12 +97,10 @@ for:
     - SET PATH=%ruby_path%\bin;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%PATH%
     - ruby --version
   build_script:
-    # always update database
-    - pacman -Sy
-    - pacman -S --noconfirm --needed --noprogressbar --nodeps mingw-w64-x86_64-toolchain
-    # 2019-May-29 delete below after next Appveyor msys2 update, above line remove '--nodeps'
-    - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-python3 mingw-w64-x86_64-readline mingw-w64-x86_64-sqlite3
-    - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-gdbm mingw-w64-x86_64-gmp mingw-w64-x86_64-libffi mingw-w64-x86_64-openssl mingw-w64-x86_64-pdcurses mingw-w64-x86_64-readline mingw-w64-x86_64-zlib
+    # always update database and dependencies
+    - pacman -Syu
+    - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-toolchain
+    - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-gdbm mingw-w64-x86_64-gmp mingw-w64-x86_64-libffi mingw-w64-x86_64-ncurses mingw-w64-x86_64-readline mingw-w64-x86_64-zlib
     - cd %APPVEYOR_BUILD_FOLDER%
     - set CFLAGS=-march=%MSYS2_ARCH:_=-% -mtune=generic -O3 -pipe
     - set CXXFLAGS=%CFLAGS%
