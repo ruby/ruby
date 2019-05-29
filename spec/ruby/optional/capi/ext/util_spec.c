@@ -47,7 +47,7 @@ VALUE util_spec_rb_scan_args(VALUE self, VALUE argv, VALUE fmt, VALUE expected, 
 static VALUE util_spec_rb_get_kwargs(VALUE self, VALUE keyword_hash, VALUE keys, VALUE required, VALUE optional) {
   int req = FIX2INT(required);
   int opt = FIX2INT(optional);
-  int len = RARRAY_LEN(keys);
+  int len = RARRAY_LENINT(keys);
 
   int values_len = req + (opt < 0 ? -1 - opt : opt);
   int i = 0;
