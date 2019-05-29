@@ -944,13 +944,13 @@ load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit
 }
 
 static void
-print_jit_result(const char *result, const struct rb_mjit_unit *unit, const double duration, int lineno, const char *c_file)
+print_jit_result(const char *result, const struct rb_mjit_unit *unit, const double duration, long lineno, const char *c_file)
 {
     if (unit->iseq == NULL) {
         verbose(1, "JIT %s (%.1fms): (GCed) -> %s", result, duration, c_file);
     }
     else {
-        verbose(1, "JIT %s (%.1fms): %s@%s:%d -> %s", result,
+        verbose(1, "JIT %s (%.1fms): %s@%s:%ld -> %s", result,
                 duration, RSTRING_PTR(unit->iseq->body->location.label),
                 RSTRING_PTR(rb_iseq_path(unit->iseq)), lineno, c_file);
     }
@@ -1075,14 +1075,17 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
-    // FIX2INT calls method_entry_get(). Thus we should not call it while GC or GC.compact may happen.
-    int lineno = FIX2INT(unit->iseq->body->location.first_lineno);
+    // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So showing the
+    // line number only when it's Fixnum. Also note that doing this while in_jit is true to avoid GC / GC.compact.
+    long lineno = 0;
+    if (FIXNUM_P(unit->iseq->body->location.first_lineno))
+        lineno = FIX2LONG(unit->iseq->body->location.first_lineno);
     {
         VALUE s = rb_iseq_path(unit->iseq);
         const char *label = RSTRING_PTR(unit->iseq->body->location.label);
         const char *path = RSTRING_PTR(s);
-        verbose(2, "start compilation: %s@%s:%d -> %s", label, path, lineno, c_file);
-        fprintf(f, "/* %s@%s:%d */\n\n", label, path, lineno);
+        verbose(2, "start compilation: %s@%s:%ld -> %s", label, path, lineno, c_file);
+        fprintf(f, "/* %s@%s:%ld */\n\n", label, path, lineno);
     }
     bool success = mjit_compile(f, unit->iseq, funcname);
 
