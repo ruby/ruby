@@ -766,7 +766,7 @@ class Reline::LineEditor
       if quote and slice.start_with?(/(?!\\)#{Regexp.escape(quote)}/) # closing "
         quote = nil
         i += 1
-      elsif quote and slice =~ /\A\\#{Regexp.escape(quote)}/ # escaped \"
+      elsif quote and slice.start_with?(/\\#{Regexp.escape(quote)}/) # escaped \"
         # skip
         i += 2
       elsif slice =~ quote_characters_regexp # find new "
