@@ -2293,19 +2293,19 @@ class Gem::Specification < Gem::BasicSpecification
 
   def ruby_code(obj)
     case obj
-    when String            then obj.dump + ".freeze"
-    when Array             then '[' + obj.map { |x| ruby_code x }.join(", ") + ']'
-    when Hash              then
+    when String             then obj.dump + ".freeze"
+    when Array              then '[' + obj.map { |x| ruby_code x }.join(", ") + ']'
+    when Hash               then
       seg = obj.keys.sort.map { |k| "#{k.to_s.dump} => #{obj[k].to_s.dump}" }
       "{ #{seg.join(', ')} }"
-    when Gem::Version      then obj.to_s.dump
-    when DateLike          then obj.strftime('%Y-%m-%d').dump
-    when Time              then obj.strftime('%Y-%m-%d').dump
-    when Numeric           then obj.inspect
-    when true, false, nil  then obj.inspect
+    when Gem::Version       then obj.to_s.dump
+    when DateLike           then obj.strftime('%Y-%m-%d').dump
+    when Time               then obj.strftime('%Y-%m-%d').dump
+    when Numeric            then obj.inspect
+    when true, false, nil   then obj.inspect
     when OpenSSL::PKey::RSA then obj.class
-    when Gem::Platform     then "Gem::Platform.new(#{obj.to_a.inspect})"
-    when Gem::Requirement  then
+    when Gem::Platform      then "Gem::Platform.new(#{obj.to_a.inspect})"
+    when Gem::Requirement   then
       list = obj.as_list
       "Gem::Requirement.new(#{ruby_code(list.size == 1 ? obj.to_s : list)})"
     else raise Gem::Exception, "ruby_code case not handled: #{obj.class}"
