@@ -113,4 +113,26 @@ class TestRipper::Lexer < Test::Unit::TestCase
     assert_equal [[1,0],:on_cvar,"@@1",state(:EXPR_END)], Ripper.lex("@@1").last
     assert_equal [[1,1],:on_cvar,"@@1",state(:EXPR_ENDFN)], Ripper.lex(":@@1").last
   end
+
+  def test_token_aftr_error_heredoc
+    code = "<<A.upcase\n"
+    result = Ripper::Lexer.new(code).scan
+    message = proc {result.pretty_inspect}
+    expected = [
+      [[1, 0], :on_heredoc_beg, "<<A", state(:EXPR_BEG)],
+      [[1, 3], :on_period, ".", state(:EXPR_DOT)],
+      [[1, 4], :on_ident, "upcase", state(:EXPR_ARG)],
+      [[1, 10], :on_nl, "\n", state(:EXPR_BEG)],
+      [[1, 11], :compile_error, "", state(:EXPR_BEG), "can't find string \"A\" anywhere before EOF"],
+    ]
+    pos = 0
+    expected.each_with_index do |ex, i|
+      s = result[i]
+      assert_equal ex, s.to_a, message
+      assert_equal pos, s.pos[1], message
+      pos += s.tok.bytesize
+    end
+    assert_equal pos, code.bytesize
+    assert_equal expected.size, result.size
+  end
 end
