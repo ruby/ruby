@@ -408,8 +408,21 @@ class VCS
       branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short HEAD]])
       if branch.empty?
         branch_list = cmd_read_at(srcdir, [gitcmd + %W[branch --list --contains HEAD]]).lines.to_a
-        branch_list.delete_if {|b| /detached at/ =~ b}
-        (branch = branch_list[0]).strip! unless branch_list.empty?
+        branch, = branch_list.grep(/\A\*/)
+        case branch
+        when /\A\* *\(\S+ detached at (.*)\)\Z/
+          branch = $1
+          branch = nil if last.start_with?(branch)
+        when /\A\* (\S+)\Z/
+          branch = $1
+        else
+          branch = nil
+        end
+        unless branch
+          branch_list.each {|b| b.strip!}
+          branch_list.delete_if {|b| / / =~ b}
+          branch = branch_list.min_by(&:length) || ""
+        end
       end
       branch.chomp!
       branch = ":detached:" if branch.empty?
