@@ -224,9 +224,9 @@ module IRB
       Reline.completion_proc = IRB::InputCompletor::CompletionProc
       Reline.output_modifier_proc =
         if IRB.conf[:USE_COLORIZE]
-          proc do |output|
+          proc do |output, complete:|
             next unless IRB::Color.colorable?
-            IRB::Color.colorize_code(output)
+            IRB::Color.colorize_code(output, complete: complete)
           end
         else
           proc do |output|

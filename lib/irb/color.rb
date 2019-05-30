@@ -98,14 +98,17 @@ module IRB # :nodoc:
         "#{seq}#{text}#{clear}"
       end
 
-      def colorize_code(code)
+      # If `complete` is false (code is incomplete), this does not warm compile_error.
+      # This option is needed to avoid warning a user when the compile_error is happening
+      # because the input is not wrong but just incomplete.
+      def colorize_code(code, complete: true)
         return code unless colorable?
 
         symbol_state = SymbolState.new
         colored = +''
         length = 0
 
-        scan(code) do |token, str, expr|
+        scan(code, detect_compile_error: complete) do |token, str, expr|
           in_symbol = symbol_state.scan_token(token)
           str.each_line do |line|
             line = Reline::Unicode.escape_for_print(line)
@@ -127,23 +130,29 @@ module IRB # :nodoc:
 
       private
 
-      def scan(code)
-        pos = [1, 0]
+      def scan(code, detect_compile_error:)
+        if detect_compile_error
+          pos = [1, 0]
 
-        Ripper::Lexer.new(code).scan.each do |elem|
-          str = elem.tok
-          next if ([elem.pos[0], elem.pos[1] + str.bytesize] <=> pos) <= 0
+          Ripper::Lexer.new(code).scan.each do |elem|
+            str = elem.tok
+            next if ([elem.pos[0], elem.pos[1] + str.bytesize] <=> pos) <= 0
 
-          str.each_line do |line|
-            if line.end_with?("\n")
-              pos[0] += 1
-              pos[1] = 0
-            else
-              pos[1] += line.bytesize
+            str.each_line do |line|
+              if line.end_with?("\n")
+                pos[0] += 1
+                pos[1] = 0
+              else
+                pos[1] += line.bytesize
+              end
             end
-          end
 
-          yield(elem.event, str, elem.state)
+            yield(elem.event, str, elem.state)
+          end
+        else
+          ParseErrorLexer.new(code).parse.sort_by(&:pos).each do |elem|
+            yield(elem.event, elem.tok, elem.state)
+          end
         end
       end
 
@@ -161,6 +170,15 @@ module IRB # :nodoc:
         end
       end
     end
+
+    class ParseErrorLexer < Ripper::Lexer
+      if method_defined?(:token)
+        def on_parse_error(mesg)
+          @buf.push Elem.new([lineno(), column()], __callee__, token(), state())
+        end
+      end
+    end
+    private_constant :ParseErrorLexer
 
     # A class to manage a state to know whether the current token is for Symbol or not.
     class SymbolState

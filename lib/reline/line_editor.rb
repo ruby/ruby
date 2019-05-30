@@ -436,6 +436,8 @@ class Reline::LineEditor
     line = modify_lines(whole_lines)[@line_index]
     if @is_multiline
       if finished?
+        # Always rerender on finish because output_modifier_proc may return a different output.
+        render_partial(prompt, prompt_width, line)
         scroll_down(1)
         Reline::IOGate.move_cursor_column(0)
         Reline::IOGate.erase_after_cursor
@@ -498,7 +500,7 @@ class Reline::LineEditor
   private def modify_lines(before)
     return before if before.nil? || before.empty?
 
-    if after = @output_modifier_proc&.call("#{before.join("\n")}\n")
+    if after = @output_modifier_proc&.call("#{before.join("\n")}\n", complete: finished?)
       after.lines(chomp: true)
     else
       before
