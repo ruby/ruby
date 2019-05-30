@@ -19,6 +19,7 @@ def self.output=(output)
   @output = output
 end
 @suppress_not_found = false
+@limit = 20
 
 format = '%Y-%m-%dT%H:%M:%S%z'
 srcdir = nil
@@ -38,6 +39,9 @@ parser = OptionParser.new {|opts|
   opts.on("--modified[=FORMAT]", "modified time") do |fmt|
     self.output = :modified
     format = fmt if fmt
+  end
+  opts.on("--limit=NUM", "limit branch name length (#@limit)", Integer) do |n|
+    @limit = n
   end
   opts.on("-q", "--suppress_not_found") do
     @suppress_not_found = true
@@ -60,7 +64,7 @@ vcs = nil
         ("#define RUBY_FULL_REVISION #{last.inspect}" unless short == last),
         if branch
           e = '..'
-          limit = 16
+          limit = @limit
           name = branch.sub(/\A(.{#{limit-e.size}}).{#{e.size+1},}/o) {$1+e}
           "#define RUBY_BRANCH_NAME #{name.dump}"
         end,
