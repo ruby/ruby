@@ -422,7 +422,8 @@ class Reline::LineEditor
             result + calculate_height_by_width(@prompt_width + calculate_width(line))
           }
         end
-      move_cursor_down(@first_line_started_from)
+      @started_from = calculate_height_by_width(@prompt_width + @cursor) - 1
+      move_cursor_down(@first_line_started_from + @started_from)
       Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       @rerender_all = false
       rendered = true
