@@ -406,13 +406,15 @@ def package(vcs, rev, destdir, tmp = nil)
       mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "")
       mk << <<-'APPEND'
 
+prepare-package: touch-unicode-files
 prepare-package: prereq update-download clean-cache $(CLEAN_CACHE)
 clean-cache $(CLEAN_CACHE): after-update
 update-download:: update-gems
 after-update:: extract-gems
 extract-gems: update-gems
 update-gems:
-$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: update-unicode
+$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time:
+touch-unicode-files:
       APPEND
       open(clean.add("Makefile"), "w") do |f|
         f.puts mk
