@@ -6441,9 +6441,9 @@ rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap)
 
     list_for_each(&heap->pages, page, page_node) {
 	memset(&page->mark_bits[0],       0, HEAP_PAGE_BITMAP_SIZE);
-        memset(&page->pinned_bits[0],     0, HEAP_PAGE_BITMAP_SIZE);
-	memset(&page->marking_bits[0],    0, HEAP_PAGE_BITMAP_SIZE);
 	memset(&page->uncollectible_bits[0], 0, HEAP_PAGE_BITMAP_SIZE);
+	memset(&page->marking_bits[0],    0, HEAP_PAGE_BITMAP_SIZE);
+        memset(&page->pinned_bits[0],     0, HEAP_PAGE_BITMAP_SIZE);
 	page->flags.has_uncollectible_shady_objects = FALSE;
 	page->flags.has_remembered_objects = FALSE;
     }
