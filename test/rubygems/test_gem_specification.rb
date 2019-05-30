@@ -2445,6 +2445,36 @@ end
     assert_equal @a2, same_spec
   end
 
+  def test_to_ruby_with_rsa_key
+    rsa_key = OpenSSL::PKey::RSA.new(2048)
+    @a2.signing_key = rsa_key
+    ruby_code = @a2.to_ruby
+
+    expected = <<-SPEC
+# -*- encoding: utf-8 -*-
+# stub: a 2 ruby lib
+
+Gem::Specification.new do |s|
+  s.name = "a".freeze
+  s.version = "2"
+
+  s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
+  s.require_paths = ["lib".freeze]
+  s.authors = ["A User".freeze]
+  s.date = "2019-05-30"
+  s.description = "This is a test description".freeze
+  s.email = "example@example.com".freeze
+  s.files = ["lib/code.rb".freeze]
+  s.homepage = "http://example.com".freeze
+  s.rubygems_version = "3.1.0.pre1".freeze
+  s.signing_key = OpenSSL::PKey::RSA
+  s.summary = "this is a summary".freeze
+end
+    SPEC
+
+    assert_equal expected, ruby_code
+  end
+
   def test_to_ruby_for_cache
     @a2.add_runtime_dependency 'b', '1'
     @a2.dependencies.first.instance_variable_set :@type, nil

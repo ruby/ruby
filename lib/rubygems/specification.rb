@@ -2303,6 +2303,7 @@ class Gem::Specification < Gem::BasicSpecification
     when Time              then obj.strftime('%Y-%m-%d').dump
     when Numeric           then obj.inspect
     when true, false, nil  then obj.inspect
+    when OpenSSL::PKey::RSA then obj.class
     when Gem::Platform     then "Gem::Platform.new(#{obj.to_a.inspect})"
     when Gem::Requirement  then
       list = obj.as_list
