@@ -360,10 +360,8 @@ class Reline::LineEditor
       back = 0
       modify_lines(new_lines).each_with_index do |line, index|
         height = render_partial(prompt, prompt_width, line, false)
-        if index < (new_lines.size - 1)
-          move_cursor_down(1)
-          back += height
-        end
+        move_cursor_down(1)
+        back += height
       end
       move_cursor_up(back)
       if @previous_line_index
@@ -380,8 +378,9 @@ class Reline::LineEditor
         end
       move_cursor_down(@first_line_started_from)
       calculate_nearest_cursor
+      @started_from = calculate_height_by_width(@prompt_width + @cursor) - 1
       move_cursor_down(@started_from)
-      Reline::IOGate.move_cursor_column(prompt_width + @cursor)
+      Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       @highest_in_this = calculate_height_by_width(@prompt_width + @cursor_max)
       @previous_line_index = nil
       rendered = true
@@ -424,6 +423,7 @@ class Reline::LineEditor
           }
         end
       move_cursor_down(@first_line_started_from)
+      Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       @rerender_all = false
       rendered = true
     end
