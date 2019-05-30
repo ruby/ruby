@@ -103,7 +103,7 @@ class Ripper
 
     # parse the code and returns elements including errors.
     def scan
-      (parse() + errors).sort_by {|e| [*e.pos, (e.message ? -1 : 0)]}
+      (parse() + errors + @stack.flatten).uniq.sort_by {|e| [*e.pos, (e.message ? -1 : 0)]}
     end
 
     def parse
