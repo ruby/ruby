@@ -54,9 +54,10 @@ vcs = nil
     }
   when :revision_h
     Proc.new {|last, changed, modified, branch, title|
+      short = vcs.short_revision(last)
       [
-        "#define RUBY_REVISION #{vcs.short_revision(last).dump}",
-        "#define RUBY_FULL_REVISION #{last.dump}",
+        "#define RUBY_REVISION #{short.inspect}",
+        ("#define RUBY_FULL_REVISION #{last.inspect}" unless short == last),
         if branch
           e = '..'
           limit = 16
