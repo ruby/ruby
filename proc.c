@@ -25,6 +25,9 @@
 # define NO_CLOBBERED(v) (v)
 #endif
 
+#define UPDATE_TYPED_REFERENCE(_type, _ref) *(_type*)&_ref = (_type)rb_gc_location((VALUE)_ref)
+#define UPDATE_REFERENCE(_ref) UPDATE_TYPED_REFERENCE(VALUE, _ref)
+
 const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
 
 struct METHOD {
@@ -58,20 +61,48 @@ block_mark(const struct rb_block *block)
       case block_type_ifunc:
 	{
 	    const struct rb_captured_block *captured = &block->as.captured;
-	    RUBY_MARK_UNLESS_NULL(captured->self);
-	    RUBY_MARK_UNLESS_NULL((VALUE)captured->code.val);
+	    RUBY_MARK_NO_PIN_UNLESS_NULL(captured->self);
+	    RUBY_MARK_NO_PIN_UNLESS_NULL((VALUE)captured->code.val);
 	    if (captured->ep && captured->ep[VM_ENV_DATA_INDEX_ENV] != Qundef /* cfunc_proc_t */) {
 		RUBY_MARK_UNLESS_NULL(VM_ENV_ENVVAL(captured->ep));
 	    }
 	}
 	break;
       case block_type_symbol:
-	RUBY_MARK_UNLESS_NULL(block->as.symbol);
+	RUBY_MARK_NO_PIN_UNLESS_NULL(block->as.symbol);
 	break;
       case block_type_proc:
-	RUBY_MARK_UNLESS_NULL(block->as.proc);
+	RUBY_MARK_NO_PIN_UNLESS_NULL(block->as.proc);
 	break;
     }
+}
+
+static void
+block_compact(struct rb_block *block)
+{
+    switch (block->type) {
+      case block_type_iseq:
+      case block_type_ifunc:
+	{
+	    struct rb_captured_block *captured = &block->as.captured;
+            captured->self = rb_gc_location(captured->self);
+            captured->code.val = rb_gc_location(captured->code.val);
+	}
+	break;
+      case block_type_symbol:
+        block->as.symbol = rb_gc_location(block->as.symbol);
+	break;
+      case block_type_proc:
+        block->as.proc = rb_gc_location(block->as.proc);
+	break;
+    }
+}
+
+static void
+proc_compact(void *ptr)
+{
+    rb_proc_t *proc = ptr;
+    block_compact((struct rb_block *)&proc->block);
 }
 
 static void
@@ -102,6 +133,7 @@ static const rb_data_type_t proc_data_type = {
 	proc_mark,
 	RUBY_TYPED_DEFAULT_FREE,
 	proc_memsize,
+	proc_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
@@ -260,8 +292,17 @@ binding_mark(void *ptr)
 
     RUBY_MARK_ENTER("binding");
     block_mark(&bind->block);
-    rb_gc_mark(bind->pathobj);
+    rb_gc_mark_no_pin(bind->pathobj);
     RUBY_MARK_LEAVE("binding");
+}
+
+static void
+binding_compact(void *ptr)
+{
+    rb_binding_t *bind = ptr;
+
+    block_compact((struct rb_block *)&bind->block);
+    UPDATE_REFERENCE(bind->pathobj);
 }
 
 static size_t
@@ -276,6 +317,7 @@ const rb_data_type_t ruby_binding_data_type = {
 	binding_mark,
 	binding_free,
 	binding_memsize,
+	binding_compact,
     },
     0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -1316,10 +1358,20 @@ static void
 bm_mark(void *ptr)
 {
     struct METHOD *data = ptr;
-    rb_gc_mark(data->recv);
-    rb_gc_mark(data->klass);
-    rb_gc_mark(data->iclass);
-    rb_gc_mark((VALUE)data->me);
+    rb_gc_mark_no_pin(data->recv);
+    rb_gc_mark_no_pin(data->klass);
+    rb_gc_mark_no_pin(data->iclass);
+    rb_gc_mark_no_pin((VALUE)data->me);
+}
+
+static void
+bm_compact(void *ptr)
+{
+    struct METHOD *data = ptr;
+    UPDATE_REFERENCE(data->recv);
+    UPDATE_REFERENCE(data->klass);
+    UPDATE_REFERENCE(data->iclass);
+    UPDATE_TYPED_REFERENCE(rb_method_entry_t *, data->me);
 }
 
 static size_t
@@ -1334,6 +1386,7 @@ static const rb_data_type_t method_data_type = {
 	bm_mark,
 	RUBY_TYPED_DEFAULT_FREE,
 	bm_memsize,
+	bm_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
