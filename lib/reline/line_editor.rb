@@ -392,7 +392,8 @@ class Reline::LineEditor
       move_cursor_up(@first_line_started_from + @started_from)
       Reline::IOGate.move_cursor_column(0)
       back = 0
-      @buffer_of_lines.each do |line|
+      new_buffer = whole_lines
+      new_buffer.each do |line|
         width = prompt_width + calculate_width(line)
         height = calculate_height_by_width(width)
         back += height
@@ -409,9 +410,9 @@ class Reline::LineEditor
         end
         move_cursor_up(@highest_in_all - 1)
       end
-      modify_lines(@buffer_of_lines).each_with_index do |line, index|
+      modify_lines(new_buffer).each_with_index do |line, index|
         render_partial(prompt, prompt_width, line, false)
-        if index < (@buffer_of_lines.size - 1)
+        if index < (new_buffer.size - 1)
           move_cursor_down(1)
         end
       end
@@ -422,7 +423,7 @@ class Reline::LineEditor
         if @line_index.zero?
           0
         else
-          @buffer_of_lines[0..(@line_index - 1)].inject(0) { |result, line|
+          new_buffer[0..(@line_index - 1)].inject(0) { |result, line|
             result + calculate_height_by_width(@prompt_width + calculate_width(line))
           }
         end
