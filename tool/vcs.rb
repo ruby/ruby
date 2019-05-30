@@ -461,7 +461,7 @@ class VCS
     end
 
     def stable
-      cmd = %W"for-each-ref --format=\%(refname:short) refs/heads/ruby_[0-9]*"
+      cmd = gitcmd + %W"for-each-ref --format=\%(refname:short) refs/heads/ruby_[0-9]*"
       branch(cmd_read(cmd)[/.*^(ruby_\d+_\d+)$/m, 1])
     end
 
