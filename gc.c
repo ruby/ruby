@@ -4439,20 +4439,24 @@ rb_gc_mark_locations(const VALUE *start, const VALUE *end)
 }
 
 static void
-gc_mark_and_pin_values(rb_objspace_t *objspace, long n, const VALUE *values)
+gc_mark_values(rb_objspace_t *objspace, long n, const VALUE *values)
 {
     long i;
 
     for (i=0; i<n; i++) {
-        gc_mark_and_pin(objspace, values[i]);
+        gc_mark(objspace, values[i]);
     }
 }
 
 void
 rb_gc_mark_values(long n, const VALUE *values)
 {
+    long i;
     rb_objspace_t *objspace = &rb_objspace;
-    gc_mark_and_pin_values(objspace, n, values);
+
+    for (i=0; i<n; i++) {
+        gc_mark_and_pin(objspace, values[i]);
+    }
 }
 
 static void
@@ -4962,7 +4966,7 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 	{
 	    const rb_env_t *env = (const rb_env_t *)obj;
 	    GC_ASSERT(VM_ENV_ESCAPED_P(env->ep));
-            gc_mark_and_pin_values(objspace, (long)env->env_size, env->env);
+            gc_mark_values(objspace, (long)env->env_size, env->env);
 	    VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
             gc_mark_and_pin(objspace, (VALUE)rb_vm_env_prev_env(env));
 	    gc_mark(objspace, (VALUE)env->iseq);
@@ -7794,6 +7798,16 @@ gc_ref_update_method_entry(rb_objspace_t *objspace, rb_method_entry_t *me)
 }
 
 static void
+gc_update_values(rb_objspace_t *objspace, long n, VALUE *values)
+{
+    long i;
+
+    for (i=0; i<n; i++) {
+        UPDATE_IF_MOVED(objspace, values[i]);
+    }
+}
+
+static void
 gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
 {
     switch(imemo_type(obj)) {
@@ -7801,6 +7815,7 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
             {
                 rb_env_t *env = (rb_env_t *)obj;
                 TYPED_UPDATE_IF_MOVED(objspace, rb_iseq_t *, env->iseq);
+                gc_update_values(objspace, (long)env->env_size, (VALUE *)env->env);
             }
             break;
             break;
