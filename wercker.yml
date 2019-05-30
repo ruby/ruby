@@ -27,7 +27,7 @@ mjit-test1:
         name: install mjit-debug-on-fail
         code: |
           cat <<'EOS' > /usr/local/bin/mjit-debug-on-fail
-          #!/bin/bash
+          #!/bin/bash -x
           if ! "$@"; then
             git clone --depth=1 git@github.com:ruby/mjit-debug
             cd mjit-debug
@@ -36,6 +36,8 @@ mjit-test1:
             mkdir "$debug_dir"
             cp /tmp/_ruby_mjit*.c "$debug_dir"
 
+            git config --global user.email "ruby@app.wercker.com"
+            git config --global user.name "Wercker ruby/ruby"
             git add "$debug_dir"
             git commit -m "Debug ${debug_dir}: ${WERCKER_BUILD_URL}"
             git push origin master
