@@ -7005,9 +7005,9 @@ heredoc_restore(struct parser_params *p, rb_strterm_heredoc_t *here)
     p->lex.pbeg = RSTRING_PTR(line);
     p->lex.pend = p->lex.pbeg + RSTRING_LEN(line);
     p->lex.pcur = p->lex.pbeg + here->offset + here->length + here->quote;
+    p->lex.ptok = p->lex.pbeg + here->offset - here->quote;
     p->heredoc_end = p->ruby_sourceline;
     p->ruby_sourceline = (int)here->sourceline;
-    token_flush(p);
     if (p->eofp) p->lex.nextline = Qnil;
     p->eofp = 0;
 }
@@ -7238,8 +7238,6 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 
     if ((c = nextc(p)) == -1) {
       error:
-	compile_error(p, "can't find string \"%.*s\" anywhere before EOF",
-		      (int)len, eos);
 #ifdef RIPPER
 	if (!has_delayed_token(p)) {
 	    dispatch_scan_event(p, tSTRING_CONTENT);
@@ -7264,8 +7262,10 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 	}
 	lex_goto_eol(p);
 #endif
-      restore:
 	heredoc_restore(p, &p->lex.strterm->u.heredoc);
+	compile_error(p, "can't find string \"%.*s\" anywhere before EOF",
+		      (int)len, eos);
+	token_flush(p);
 	p->lex.strterm = 0;
 	SET_LEX_STATE(EXPR_END);
 	return tSTRING_END;
@@ -7283,7 +7283,9 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
     }
     else if (whole_match_p(p, eos, len, indent)) {
 	dispatch_heredoc_end(p);
+      restore:
 	heredoc_restore(p, &p->lex.strterm->u.heredoc);
+	token_flush(p);
 	p->lex.strterm = 0;
 	SET_LEX_STATE(EXPR_END);
 	return tSTRING_END;
@@ -7379,6 +7381,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 			    yylval.val, str);
 #endif
     heredoc_restore(p, &p->lex.strterm->u.heredoc);
+    token_flush(p);
     p->lex.strterm = NEW_STRTERM(func | STR_FUNC_TERM, 0, 0);
     set_yylval_str(str);
 #ifndef RIPPER
