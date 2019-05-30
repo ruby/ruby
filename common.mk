@@ -1380,7 +1380,7 @@ update-unicode-emoji-files:
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_EMOJI_DATA_DIR)"
 	$(Q) $(UNICODE_EMOJI_DOWNLOAD) $(UNICODE_EMOJI_FILES)
 
-$(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
+$(srcdir)/lib/unicode_normalize/$(HAVE_BASERUBY:yes=tables.rb): \
 	$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time
 
 $(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): \
