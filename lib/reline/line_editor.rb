@@ -217,7 +217,11 @@ class Reline::LineEditor
       end
     end
     # The cursor moves to next line in first
-    lines << String.new(encoding: @encoding) if width == max_width
+    if width == max_width
+      lines << nil
+      lines << String.new(encoding: @encoding)
+      height += 1
+    end
     [lines, height]
   end
 
@@ -328,29 +332,24 @@ class Reline::LineEditor
     end
     # FIXME: end of logical line sometimes breaks
     if @previous_line_index
-      all_height = @buffer_of_lines.inject(0) { |result, line|
+      new_lines = whole_lines(index: @previous_line_index, line: @line)
+      all_height = new_lines.inject(0) { |result, line|
         result + calculate_height_by_width(@prompt_width + calculate_width(line))
       }
       diff = all_height - @highest_in_all
-      if diff > 0
-        move_cursor_down(@highest_in_all - @first_line_started_from - @started_from - 1)
-        @highest_in_all = all_height
-        scroll_down(diff)
-        move_cursor_up(@highest_in_all - 1)
-        back = 0
-        modify_lines(whole_lines(index: @previous_line_index, line: @line)).each_with_index do |line, index|
-          height = render_partial(prompt, prompt_width, line, false)
-          if index < (@buffer_of_lines.size - 1)
-            move_cursor_down(height)
-            back += height
-          end
+      move_cursor_down(@highest_in_all - @first_line_started_from - @started_from - 1)
+      @highest_in_all = all_height
+      scroll_down(diff)
+      move_cursor_up(all_height - 1)
+      back = 0
+      modify_lines(new_lines).each_with_index do |line, index|
+        height = render_partial(prompt, prompt_width, line, false)
+        if index < (new_lines.size - 1)
+          move_cursor_down(1)
+          back += height
         end
-        move_cursor_up(back)
-      else
-        previous_line = modify_lines(whole_lines(index: @previous_line_index, line: @line))[@previous_line_index]
-        render_partial(prompt, prompt_width, previous_line)
-        move_cursor_up(@first_line_started_from + @started_from)
       end
+      move_cursor_up(back)
       @buffer_of_lines[@previous_line_index] = @line
       @line = @buffer_of_lines[@line_index]
       @first_line_started_from =
@@ -363,8 +362,11 @@ class Reline::LineEditor
         end
       move_cursor_down(@first_line_started_from)
       calculate_nearest_cursor
+      move_cursor_down(@started_from)
+      Reline::IOGate.move_cursor_column(prompt_width + @cursor)
       @highest_in_this = calculate_height_by_width(@prompt_width + @cursor_max)
       @previous_line_index = nil
+      rendered = true
     elsif @rerender_all
       move_cursor_up(@first_line_started_from + @started_from)
       Reline::IOGate.move_cursor_column(0)
@@ -405,6 +407,7 @@ class Reline::LineEditor
         end
       move_cursor_down(@first_line_started_from)
       @rerender_all = false
+      rendered = true
     end
     line = modify_lines(whole_lines)[@line_index]
     if @is_multiline
@@ -412,7 +415,7 @@ class Reline::LineEditor
         scroll_down(1)
         Reline::IOGate.move_cursor_column(0)
         Reline::IOGate.erase_after_cursor
-      else
+      elsif not rendered
         render_partial(prompt, prompt_width, line)
       end
     else
@@ -433,13 +436,17 @@ class Reline::LineEditor
         scroll_down(diff)
         @highest_in_all += diff
         @highest_in_this = height
-        move_cursor_up(1)
+        move_cursor_up(diff)
+      elsif height < @highest_in_this
+        diff = @highest_in_this - height
+        @highest_in_all -= diff
+        @highest_in_this = height
       end
       move_cursor_up(@started_from)
       @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
     end
     Reline::IOGate.move_cursor_column(0)
-    visual_lines.each do |line|
+    visual_lines.each_with_index do |line, index|
       if line.nil?
         Reline::IOGate.erase_after_cursor
         move_cursor_down(1)
@@ -454,9 +461,11 @@ class Reline::LineEditor
     end
     Reline::IOGate.erase_after_cursor
     if with_control
+      move_cursor_up(height - 1)
       if finished?
-        move_cursor_up((height - 1) - @started_from)
+        move_cursor_down(@started_from)
       end
+      move_cursor_down(@started_from)
       Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
     end
     height
