@@ -1209,8 +1209,8 @@ lldb-ruby: $(PROGRAM) PHONY
 	lldb $(enable_shared:yes=-o 'target modules add ${LIBRUBY_SO}') -o '$(LLDB_INIT)' $(PROGRAM) -- $(TESTRUN_SCRIPT)
 
 DISTPKGS = gzip,zip,all
-dist:
-	$(BASERUBY) $(srcdir)/tool/make-snapshot \
+dist: main
+	$(RUNRUBY) $(srcdir)/tool/make-snapshot \
 	-srcdir=$(srcdir) -packages=$(DISTPKGS) \
 	-unicode-version=$(UNICODE_VERSION) \
 	tmp $(RELNAME)
