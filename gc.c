@@ -4941,12 +4941,6 @@ rb_objspace_marked_object_p(VALUE obj)
     return RVALUE_MARKED(obj) ? TRUE : FALSE;
 }
 
-int
-rb_objspace_pinned_object_p(VALUE obj)
-{
-    return RVALUE_PINNED(obj) ? TRUE : FALSE;
-}
-
 static inline void
 gc_mark_set_parent(rb_objspace_t *objspace, VALUE obj)
 {
@@ -7335,7 +7329,7 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
                     return FALSE;
                 }
             }
-            return !rb_objspace_pinned_object_p(obj);
+            return !RVALUE_PINNED(obj);
             break;
 
         default:
