@@ -132,4 +132,33 @@ module SocketSpecs
       @logger.puts message if @logger
     end
   end
+
+  # We need to find a free port for Socket.tcp_server_loop and Socket.udp_server_loop,
+  # and the only reliable way to do that is to pass 0 as the port, but then we need to
+  # find out which one was chosen and the API doesn't let us find what it is. So we
+  # intercept one of the public API methods called by these methods.
+  class ServerLoopPortFinder < Socket
+    def self.tcp_server_sockets(*args)
+      super(*args) { |sockets|
+        @port = sockets.first.local_address.ip_port
+        yield(sockets)
+      }
+    end
+
+    def self.udp_server_sockets(*args, &block)
+      super(*args) { |sockets|
+        @port = sockets.first.local_address.ip_port
+        yield(sockets)
+      }
+    end
+
+    def self.cleanup
+      @port = nil
+    end
+
+    def self.port
+      sleep 0.001 until @port
+      @port
+    end
+  end
 end
