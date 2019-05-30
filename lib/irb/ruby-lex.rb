@@ -147,6 +147,8 @@ class RubyLex
       return false
     elsif !@tokens.empty? and @tokens.last[2] == "\\\n"
       return true
+    elsif @tokens.size >= 1 and @tokens[-1][1] == :on_heredoc_end # "EOH\n"
+      return false
     elsif @tokens.size >= 2 and @tokens[-2][3].anybits?(continued_bits)
       # end of literal except for regexp
       return true
