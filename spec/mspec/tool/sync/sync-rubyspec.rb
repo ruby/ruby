@@ -190,7 +190,7 @@ def verify_commits(impl)
     puts "Manually check commit messages:"
     print "Press enter >"
     STDIN.gets
-    sh "git", "log", "master..."
+    system "git", "log", "master..."
   end
 end
 
