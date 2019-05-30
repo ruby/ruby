@@ -360,8 +360,12 @@ class Reline::LineEditor
       back = 0
       modify_lines(new_lines).each_with_index do |line, index|
         height = render_partial(prompt, prompt_width, line, false)
-        move_cursor_down(1)
-        back += height
+        if index < (new_lines.size - 1)
+          scroll_down(1)
+          back += height
+        else
+          back += height - 1
+        end
       end
       move_cursor_up(back)
       if @previous_line_index
