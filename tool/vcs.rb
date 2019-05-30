@@ -400,7 +400,7 @@ class VCS
     end
 
     def self.get_revisions(path, srcdir = nil)
-      gitcmd = [COMMAND]
+      gitcmd = [COMMAND, '-C', srcdir || '.']
       last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', 'HEAD']]).rstrip
       log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', *path]])
       changed = log[/\Acommit (\h+)/, 1]
@@ -444,6 +444,10 @@ class VCS
       self.class.cmd_read_at(@srcdir, cmds)
     end
 
+    def gitcmd
+      [COMMAND, '-C', @srcidr||"."]
+    end
+
     Branch = Struct.new(:to_str)
 
     def branch(name)
@@ -457,12 +461,12 @@ class VCS
     end
 
     def stable
-      cmd = %W"#{COMMAND} for-each-ref --format=\%(refname:short) refs/heads/ruby_[0-9]*"
+      cmd = %W"for-each-ref --format=\%(refname:short) refs/heads/ruby_[0-9]*"
       branch(cmd_read(cmd)[/.*^(ruby_\d+_\d+)$/m, 1])
     end
 
     def branch_list(pat)
-      cmd = %W"#{COMMAND} for-each-ref --format=\%(refname:short) refs/heads/#{pat}"
+      cmd = gitcmd + %W"for-each-ref --format=\%(refname:short) refs/heads/#{pat}"
       cmd_pipe(cmd) {|f|
         f.each {|line|
           line.chomp!
@@ -472,7 +476,7 @@ class VCS
     end
 
     def grep(pat, tag, *files, &block)
-      cmd = %W[#{COMMAND} grep -h --perl-regexp #{tag} --]
+      cmd = gitcmd + %W[grep -h --perl-regexp #{tag} --]
       set = block.binding.eval("proc {|match| $~ = match}")
       cmd_pipe(cmd+files) do |f|
         f.grep(pat) do |s|
@@ -483,7 +487,7 @@ class VCS
     end
 
     def export(revision, url, dir, keep_temp = false)
-      ret = system(COMMAND, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
+      ret = system(*gitcmd, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
       ret
     end
 
@@ -492,7 +496,7 @@ class VCS
     end
 
     def branch_beginning(url)
-      cmd_read(%W[ #{COMMAND} log -n1 --format=format:%H
+      cmd_read(gitcmd + %W[log -n1 --format=format:%H
                    --author=matz --committer=matz --grep=has\ started
                    -- version.h include/ruby/version.h])
     end
@@ -502,7 +506,7 @@ class VCS
         rev or next
         if Integer === rev
           rev = cmd_read({'LANG' => 'C', 'LC_ALL' => 'C'},
-                         %W"#{COMMAND} log -n1 --format=format:%H" <<
+                         gitcmd << %W"log -n1 --format=format:%H" <<
                          "--grep=^ *git-svn-id: .*@#{rev} ")
         end
         rev unless rev.empty?
@@ -512,7 +516,7 @@ class VCS
       end
       range = [from, (to || 'HEAD')].join('^..')
       cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
-               %W"#{COMMAND} log --format=medium --no-notes --date=iso-local --topo-order #{range}", "rb") do |r|
+               gitcmd + %W"log --format=medium --no-notes --date=iso-local --topo-order #{range}", "rb") do |r|
         format_changelog(r, path)
       end
     end
@@ -523,12 +527,12 @@ class VCS
 
     def commit(opts = {})
       dryrun = opts.fetch(:dryrun) {$DEBUG} if opts
-      args = [COMMAND, "push"]
+      args = [*gitcmd, "push"]
       args << "-n" if dryrun
-      (branch = cmd_read(%W"#{COMMAND} symbolic-ref --short HEAD")).chomp!
-      (upstream = cmd_read(%W"#{COMMAND} branch --list --format=%(upstream) #{branch}")).chomp!
+      (branch = cmd_read(gitcmd + %W"symbolic-ref --short HEAD")).chomp!
+      (upstream = cmd_read(gitcmd + %W"branch --list --format=%(upstream) #{branch}")).chomp!
       while ref = upstream[%r"\Arefs/heads/(.*)", 1]
-        upstream = cmd_read(%W"#{COMMAND} branch --list --format=%(upstream) #{ref}")
+        upstream = cmd_read(gitcmd + %W"branch --list --format=%(upstream) #{ref}")
       end
       unless %r"\Arefs/remotes/([^/]+)/(.*)" =~ upstream
         raise "Upstream not found"
