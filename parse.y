@@ -6016,11 +6016,16 @@ nextline(struct parser_params *p)
 	    return -1;
 
 	if (!p->lex.input || NIL_P(v = lex_getline(p))) {
+	  end_of_input:
 	    p->eofp = 1;
 	    lex_goto_eol(p);
 	    return -1;
 	}
 	p->cr_seen = FALSE;
+    }
+    else if (NIL_P(v)) {
+	/* after here-document without terminator */
+	goto end_of_input;
     }
     add_delayed_token(p, p->lex.ptok, p->lex.pend);
     if (p->heredoc_end > 0) {
@@ -6056,7 +6061,7 @@ nextc(struct parser_params *p)
 {
     int c;
 
-    if (UNLIKELY((p->lex.pcur == p->lex.pend) || p->eofp || p->lex.nextline)) {
+    if (UNLIKELY((p->lex.pcur == p->lex.pend) || p->eofp || RTEST(p->lex.nextline))) {
 	if (nextline(p)) return -1;
     }
     c = (unsigned char)*p->lex.pcur++;
@@ -7003,6 +7008,8 @@ heredoc_restore(struct parser_params *p, rb_strterm_heredoc_t *here)
     p->heredoc_end = p->ruby_sourceline;
     p->ruby_sourceline = (int)here->sourceline;
     token_flush(p);
+    if (p->eofp) p->lex.nextline = Qnil;
+    p->eofp = 0;
 }
 
 static int
@@ -7260,7 +7267,8 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
       restore:
 	heredoc_restore(p, &p->lex.strterm->u.heredoc);
 	p->lex.strterm = 0;
-	return 0;
+	SET_LEX_STATE(EXPR_END);
+	return tSTRING_END;
     }
     bol = was_bol(p);
     if (!bol) {
