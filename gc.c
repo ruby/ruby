@@ -4542,12 +4542,7 @@ mark_keyvalue(st_data_t key, st_data_t value, st_data_t data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
 
-    if (SPECIAL_CONST_P((VALUE)key) || BUILTIN_TYPE((VALUE)key) == T_STRING) {
-        gc_mark(objspace, (VALUE)key);
-    }
-    else {
-        gc_mark_and_pin(objspace, (VALUE)key);
-    }
+    gc_mark(objspace, (VALUE)key);
     gc_mark(objspace, (VALUE)value);
     return ST_CONTINUE;
 }
