@@ -524,6 +524,7 @@ typedef struct rb_objspace {
 	unsigned int dont_gc : 1;
 	unsigned int dont_incremental : 1;
 	unsigned int during_gc : 1;
+        unsigned int during_compacting : 1;
 	unsigned int gc_stressful: 1;
 	unsigned int has_hook: 1;
 #if USE_RGENGC
@@ -4897,7 +4898,9 @@ static inline void
 gc_pin(rb_objspace_t *objspace, VALUE obj)
 {
     GC_ASSERT(is_markable_object(objspace, obj));
-    MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
+    if (UNLIKELY(objspace->flags.during_compacting)) {
+        MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
+    }
 }
 
 static inline void
@@ -8175,11 +8178,9 @@ gc_update_references(rb_objspace_t * objspace)
 static VALUE type_sym(size_t type);
 
 static VALUE
-rb_gc_compact_stats(VALUE mod)
+gc_compact_stats(rb_objspace_t *objspace)
 {
     size_t i;
-
-    rb_objspace_t *objspace = &rb_objspace;
     VALUE h = rb_hash_new();
     VALUE considered = rb_hash_new();
     VALUE moved = rb_hash_new();
@@ -8201,15 +8202,27 @@ rb_gc_compact_stats(VALUE mod)
 static void gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier);
 
 static VALUE
+gc_compact(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, int use_verifier)
+{
+
+    objspace->flags.during_compacting = TRUE;
+    {
+        /* pin objects referenced by maybe pointers */
+        rb_gc();
+        /* compact */
+        gc_compact_after_gc(objspace, use_toward_empty, use_double_pages, TRUE);
+    }
+    objspace->flags.during_compacting = FALSE;
+    return gc_compact_stats(objspace);
+}
+
+static VALUE
 rb_gc_compact(VALUE mod)
 {
     rb_objspace_t *objspace = &rb_objspace;
-
     if (dont_gc) return Qnil;
-    /* Ensure objects are pinned */
-    rb_gc();
-    gc_compact_after_gc(objspace, FALSE, FALSE, FALSE);
-    return rb_gc_compact_stats(mod);
+
+    return gc_compact(objspace, FALSE, FALSE, FALSE);
 }
 
 static void
@@ -8371,10 +8384,7 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE mod)
         }
     }
 
-    /* Ensure objects are pinned */
-    rb_gc();
-    gc_compact_after_gc(objspace, use_toward_empty, use_double_pages, TRUE);
-    return rb_gc_compact_stats(mod);
+    return gc_compact(objspace, use_toward_empty, use_double_pages, TRUE);
 }
 
 VALUE
