@@ -23,6 +23,7 @@ module TestIRB
         skip "this Ripper version is not supported"
       end
 
+      # Common behaviors. Warn parser error, but do not warn compile error.
       {
         "1" => "#{BLUE}#{BOLD}1#{CLEAR}",
         "2.3" => "#{MAGENTA}#{BOLD}2.3#{CLEAR}",
@@ -40,7 +41,6 @@ module TestIRB
         "'a\nb'" => "#{RED}'#{CLEAR}#{RED}a#{CLEAR}\n#{RED}b#{CLEAR}#{RED}'#{CLEAR}",
         "4.5.6" => "#{MAGENTA}#{BOLD}4.5#{CLEAR}#{RED}#{REVERSE}.6#{CLEAR}",
         "[1]]]" => "[1]]]",
-        "\e[0m\n" => "#{RED}#{REVERSE}^[#{CLEAR}[#{BLUE}#{BOLD}0#{CLEAR}m\n",
         "%w[a b]" => "#{RED}%w[#{CLEAR}#{RED}a#{CLEAR} #{RED}b#{CLEAR}#{RED}]#{CLEAR}",
         "%i[c d]" => "#{RED}%i[#{CLEAR}#{RED}c#{CLEAR} #{RED}d#{CLEAR}#{RED}]#{CLEAR}",
         "{'a': 1}" => "{#{RED}'#{CLEAR}#{RED}a#{CLEAR}#{RED}':#{CLEAR} #{BLUE}#{BOLD}1#{CLEAR}}",
@@ -66,10 +66,38 @@ module TestIRB
         "\t" => "\t", # not ^I
         "foo(*%W(bar))" => "foo(*#{RED}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED})#{CLEAR})",
         "$stdout" => "#{GREEN}#{BOLD}$stdout#{CLEAR}",
-        "'foo' + 'bar" => "#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR} + #{RED}'#{CLEAR}#{RED}#{REVERSE}bar#{CLEAR}",
       }.each do |code, result|
-        actual = with_term { IRB::Color.colorize_code(code) }
-        assert_equal(result, actual, "Case: colorize_code(#{code.dump})\nResult: #{humanized_literal(actual)}")
+        actual = with_term { IRB::Color.colorize_code(code, complete: true) }
+        assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: true)\nResult: #{humanized_literal(actual)}")
+
+        actual = with_term { IRB::Color.colorize_code(code, complete: false) }
+        assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
+      end
+    end
+
+    def test_colorize_code_complete_true
+      # `complete: true` behaviors. Warn compile_error.
+      {
+        "\e[0m\n" => "#{RED}#{REVERSE}^[#{CLEAR}[#{BLUE}#{BOLD}0#{CLEAR}m\n",
+        "'foo' + 'bar" => "#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR} + #{RED}'#{CLEAR}#{RED}#{REVERSE}bar#{CLEAR}",
+        ":@1" => "#{YELLOW}:#{CLEAR}#{RED}#{REVERSE}@1#{CLEAR}",
+        "@@1" => "#{RED}#{REVERSE}@@1#{CLEAR}",
+      }.each do |code, result|
+        actual = with_term { IRB::Color.colorize_code(code, complete: true) }
+        assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: true)\nResult: #{humanized_literal(actual)}")
+      end
+    end
+
+    def test_colorize_code_complete_false
+      # `complete: false` behaviors. Do not warn compile_error.
+      {
+        "\e[0m\n" => "#{CLEAR}\n",
+        "'foo' + 'bar" => "#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR} + #{RED}'#{CLEAR}#{RED}bar#{CLEAR}",
+        ":@1" => "#{YELLOW}:#{CLEAR}#{YELLOW}@1#{CLEAR}",
+        "@@1" => "@@1",
+      }.each do |code, result|
+        actual = with_term { IRB::Color.colorize_code(code, complete: false) }
+        assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
       end
     end
 
