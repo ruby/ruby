@@ -173,7 +173,7 @@ class Downloader
       if cache_save
         save_cache(cache, file, name)
       end
-      return file.respond_to?(:to_path) ? file.to_path : file.to_s
+      return file.to_path
     end
     if dryrun
       puts "Download #{url} into #{file}"

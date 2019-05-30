@@ -785,9 +785,9 @@ extconf: $(PREP)
 
 $(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h
 	$(Q)$(BOOTSTRAPRUBY) -n \
-	-e 'BEGIN{VERSION=ARGV.shift;MIS=ARGV.dup}' \
-	-e 'END{abort "UNICODE version mismatch: #{MIS}" unless MIS.empty?}' \
-	-e '(MIS.delete(ARGF.path); ARGF.close) if /ONIG_UNICODE_VERSION_STRING +"#{Regexp.quote(VERSION)}"/o' \
+	-e 'BEGIN{version=ARGV.shift;mis=ARGV.dup}' \
+	-e 'END{abort "UNICODE version mismatch: #{mis}" unless mis.empty?}' \
+	-e '(mis.delete(ARGF.path); ARGF.close) if /ONIG_UNICODE_VERSION_STRING +"#{Regexp.quote(version)}"/o' \
 	$(UNICODE_VERSION) $(UNICODE_DATA_HEADERS)
 	$(Q)$(BOOTSTRAPRUBY) $(srcdir)/tool/mkconfig.rb \
 		-arch=$(arch) -version=$(RUBY_PROGRAM_VERSION) \

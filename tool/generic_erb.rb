@@ -33,9 +33,8 @@ unchanged = color.pass("unchanged")
 updated = color.fail("updated")
 
 result = templates.map do |template|
-  method = ERB.instance_method(:initialize)
-  if method.respond_to?(:parameters) && method.parameters.assoc(:key) # Ruby 2.6+
-    erb = ERB.new(File.read(template), :trim_mode => '%-')
+  if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
+    erb = ERB.new(File.read(template), trim_mode: '%-')
   else
     erb = ERB.new(File.read(template), nil, '%-')
   end
