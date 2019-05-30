@@ -330,17 +330,33 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_column((prompt_width + @cursor) % @screen_size.last)
       return
     end
+    new_highest_in_this = calculate_height_by_width(@prompt_width + calculate_width(@line.nil? ? '' : @line))
     # FIXME: end of logical line sometimes breaks
-    if @previous_line_index
-      new_lines = whole_lines(index: @previous_line_index, line: @line)
+    if @previous_line_index or new_highest_in_this < @highest_in_this
+      if @previous_line_index
+        new_lines = whole_lines(index: @previous_line_index, line: @line)
+      else
+        new_lines = whole_lines
+      end
       all_height = new_lines.inject(0) { |result, line|
         result + calculate_height_by_width(@prompt_width + calculate_width(line))
       }
       diff = all_height - @highest_in_all
       move_cursor_down(@highest_in_all - @first_line_started_from - @started_from - 1)
+      if diff > 0
+        scroll_down(diff)
+        move_cursor_up(all_height - 1)
+      elsif diff < 0
+        (-diff).times do
+          Reline::IOGate.move_cursor_column(0)
+          Reline::IOGate.erase_after_cursor
+          move_cursor_up(1)
+        end
+        move_cursor_up(all_height - 1)
+      else
+        move_cursor_up(all_height - 1)
+      end
       @highest_in_all = all_height
-      scroll_down(diff)
-      move_cursor_up(all_height - 1)
       back = 0
       modify_lines(new_lines).each_with_index do |line, index|
         height = render_partial(prompt, prompt_width, line, false)
@@ -350,8 +366,10 @@ class Reline::LineEditor
         end
       end
       move_cursor_up(back)
-      @buffer_of_lines[@previous_line_index] = @line
-      @line = @buffer_of_lines[@line_index]
+      if @previous_line_index
+        @buffer_of_lines[@previous_line_index] = @line
+        @line = @buffer_of_lines[@line_index]
+      end
       @first_line_started_from =
         if @line_index.zero?
           0
