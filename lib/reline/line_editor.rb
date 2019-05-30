@@ -763,7 +763,7 @@ class Reline::LineEditor
     i = 0
     while i < @byte_pointer do
       slice = @line.byteslice(i, @byte_pointer - i)
-      if quote and slice =~ /\A(?<!\\)#{Regexp.escape(quote)}/ # closing "
+      if quote and slice.start_with?(/(?!\\)#{Regexp.escape(quote)}/) # closing "
         quote = nil
         i += 1
       elsif quote and slice =~ /\A\\#{Regexp.escape(quote)}/ # escaped \"
