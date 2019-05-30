@@ -695,14 +695,15 @@ struct heap_page {
 #if USE_RGENGC
     bits_t wb_unprotected_bits[HEAP_PAGE_BITMAP_LIMIT];
 #endif
-    /* If set, the object is not movable */
-    bits_t pinned_bits[HEAP_PAGE_BITMAP_LIMIT];
     /* the following three bitmaps are cleared at the beginning of full GC */
     bits_t mark_bits[HEAP_PAGE_BITMAP_LIMIT];
 #if USE_RGENGC
     bits_t uncollectible_bits[HEAP_PAGE_BITMAP_LIMIT];
     bits_t marking_bits[HEAP_PAGE_BITMAP_LIMIT];
 #endif
+
+    /* If set, the object is not movable */
+    bits_t pinned_bits[HEAP_PAGE_BITMAP_LIMIT];
 };
 
 #define GET_PAGE_BODY(x)   ((struct heap_page_body *)((bits_t)(x) & ~(HEAP_PAGE_ALIGN_MASK)))
