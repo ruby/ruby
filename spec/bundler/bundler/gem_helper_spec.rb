@@ -11,6 +11,7 @@ RSpec.describe Bundler::GemHelper do
   before(:each) do
     global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false"
     bundle "gem #{app_name}"
+    prepare_gemspec(app_gemspec_path)
   end
 
   context "determining gemspec" do
