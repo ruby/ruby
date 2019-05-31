@@ -304,6 +304,13 @@ module Reline
   def inner_readline(prompt, add_hist, multiline, &confirm_multiline_termination)
     if ENV['RELINE_STDERR_TTY']
       $stderr.reopen(ENV['RELINE_STDERR_TTY'], 'w')
+      class << $stderr
+        alias :old_puts :puts
+        def puts(*v)
+          old_puts(*v)
+          flush
+        end
+      end
     end
     @@config.read
     otio = Reline::IOGate.prep
