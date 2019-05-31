@@ -584,6 +584,8 @@ class TestModule < Test::Unit::TestCase
     assert_equal(prefix+"N", m.const_get(:N).name)
     assert_equal(prefix+"O", m.const_get(:O).name)
     assert_equal(prefix+"C", m.const_get(:C).name)
+    c = m.class_eval("Bug15891 = Class.new.freeze")
+    assert_equal(prefix+"Bug15891", c.name)
   end
 
   def test_private_class_method
