@@ -2476,6 +2476,36 @@ rb_thread_recycle_stack_release(VALUE *stack)
 }
 
 void
+rb_execution_context_update(const rb_execution_context_t *ec)
+{
+    /* update VM stack */
+    if (ec->vm_stack) {
+	rb_control_frame_t *cfp = ec->cfp;
+	rb_control_frame_t *limit_cfp = (void *)(ec->vm_stack + ec->vm_stack_size);
+
+	while (cfp != limit_cfp) {
+	    const VALUE *ep = cfp->ep;
+            cfp->self = rb_gc_location(cfp->self);
+            cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
+            cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
+
+	    if (!VM_ENV_LOCAL_P(ep)) {
+		VALUE *prev_ep = (VALUE *)VM_ENV_PREV_EP(ep);
+		if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
+                    prev_ep[VM_ENV_DATA_INDEX_ENV] = rb_gc_location(prev_ep[VM_ENV_DATA_INDEX_ENV]);
+		}
+	    }
+
+	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+	}
+    }
+#if VM_CHECK_MODE > 0
+    void rb_ec_verify(const rb_execution_context_t *ec); /* cont.c */
+    rb_ec_verify(ec);
+#endif
+}
+
+void
 rb_execution_context_mark(const rb_execution_context_t *ec)
 {
 #if VM_CHECK_MODE > 0
@@ -2495,14 +2525,14 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 	while (cfp != limit_cfp) {
 	    const VALUE *ep = cfp->ep;
 	    VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
-	    rb_gc_mark(cfp->self);
-	    rb_gc_mark((VALUE)cfp->iseq);
-	    rb_gc_mark((VALUE)cfp->block_code);
+	    rb_gc_mark_no_pin(cfp->self);
+	    rb_gc_mark_no_pin((VALUE)cfp->iseq);
+	    rb_gc_mark_no_pin((VALUE)cfp->block_code);
 
 	    if (!VM_ENV_LOCAL_P(ep)) {
 		const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
 		if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
-		    rb_gc_mark(prev_ep[VM_ENV_DATA_INDEX_ENV]);
+		    rb_gc_mark_no_pin(prev_ep[VM_ENV_DATA_INDEX_ENV]);
 		}
 	    }
 
@@ -2529,8 +2559,20 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 }
 
 void rb_fiber_mark_self(rb_fiber_t *fib);
+void rb_fiber_update_self(rb_fiber_t *fib);
 void rb_threadptr_root_fiber_setup(rb_thread_t *th);
 void rb_threadptr_root_fiber_release(rb_thread_t *th);
+
+static void
+thread_compact(void *ptr)
+{
+    rb_thread_t *th = ptr;
+    rb_fiber_update_self(th->ec->fiber_ptr);
+
+    if (th->root_fiber) rb_fiber_update_self(th->root_fiber);
+
+    rb_execution_context_update(th->ec);
+}
 
 static void
 thread_mark(void *ptr)
@@ -2617,6 +2659,7 @@ const rb_data_type_t ruby_threadptr_data_type = {
 	thread_mark,
 	thread_free,
 	thread_memsize,
+	thread_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };

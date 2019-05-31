@@ -1913,13 +1913,23 @@ static const rb_data_type_t autoload_data_i_type = {
 };
 
 static void
+autoload_c_compact(void *ptr)
+{
+    struct autoload_const *ac = ptr;
+
+    ac->mod = rb_gc_location(ac->mod);
+    ac->ad = rb_gc_location(ac->ad);
+    ac->value = rb_gc_location(ac->value);
+}
+
+static void
 autoload_c_mark(void *ptr)
 {
     struct autoload_const *ac = ptr;
 
-    rb_gc_mark(ac->mod);
-    rb_gc_mark(ac->ad);
-    rb_gc_mark(ac->value);
+    rb_gc_mark_no_pin(ac->mod);
+    rb_gc_mark_no_pin(ac->ad);
+    rb_gc_mark_no_pin(ac->value);
 }
 
 static void
@@ -1938,7 +1948,7 @@ autoload_c_memsize(const void *ptr)
 
 static const rb_data_type_t autoload_const_type = {
     "autoload_const",
-    {autoload_c_mark, autoload_c_free, autoload_c_memsize,},
+    {autoload_c_mark, autoload_c_free, autoload_c_memsize, autoload_c_compact,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
