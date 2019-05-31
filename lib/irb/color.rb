@@ -98,7 +98,7 @@ module IRB # :nodoc:
         "#{seq}#{text}#{clear}"
       end
 
-      # If `complete` is false (code is incomplete), this does not warm compile_error.
+      # If `complete` is false (code is incomplete), this does not warn compile_error.
       # This option is needed to avoid warning a user when the compile_error is happening
       # because the input is not wrong but just incomplete.
       def colorize_code(code, complete: true)
