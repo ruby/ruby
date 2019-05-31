@@ -158,7 +158,7 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 #endif
 
 #if defined(USE_UNALIGNED_MEMBER_ACCESS) && USE_UNALIGNED_MEMBER_ACCESS && \
-    defined(__clang__)
+    (defined(__clang__) || GCC_VERSION_SINCE(9, 0, 0))
 # define UNALIGNED_MEMBER_ACCESS(expr) __extension__({ \
     COMPILER_WARNING_PUSH; \
     COMPILER_WARNING_IGNORED(-Waddress-of-packed-member); \
