@@ -334,7 +334,7 @@ if you believe they were disclosed to a third party.
     yaml_errors = [ArgumentError]
     yaml_errors << Psych::SyntaxError if defined?(Psych::SyntaxError)
 
-    return {} unless filename and File.exist? filename
+    return {} unless filename && !filename.empty? && File.exist?(filename)
 
     begin
       content = Gem::SafeYAML.load(File.read(filename))

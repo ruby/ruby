@@ -19,7 +19,7 @@ class TestGemConfigFile < Gem::TestCase
     Gem::ConfigFile::PLATFORM_DEFAULTS.clear
 
     @env_gemrc = ENV['GEMRC']
-    ENV['GEMRC'] = nil
+    ENV['GEMRC'] = ''
 
     util_config_file
   end
