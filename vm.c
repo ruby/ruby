@@ -2248,6 +2248,7 @@ rb_vm_mark(void *ptr)
 	rb_gc_mark(vm->loaded_features);
 	rb_gc_mark(vm->loaded_features_snapshot);
 	rb_gc_mark(vm->top_self);
+        rb_gc_mark(vm->orig_progname);
 	RUBY_MARK_UNLESS_NULL(vm->coverages);
         /* Prevent classes from moving */
         rb_mark_tbl(vm->defined_module_hash);
