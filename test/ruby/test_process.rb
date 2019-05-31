@@ -1400,6 +1400,14 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_argv0_keep_alive
+    assert_in_out_err([], <<~REPRO, ['-'], [], "[Bug #15887]")
+      $0 = "diverge"
+      4.times { GC.start }
+      puts Process.argv0
+    REPRO
+  end
+
   def test_status
     with_tmpchdir do
       s = run_in_child("exit 1")
