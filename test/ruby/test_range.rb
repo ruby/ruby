@@ -121,6 +121,23 @@ class TestRange < Test::Unit::TestCase
     assert_raise(RangeError) { (1...).max(3) }
   end
 
+  def test_minmax
+    assert_equal([1, 2], (1..2).minmax)
+    assert_equal([nil, nil], (2..1).minmax)
+    assert_equal([1, 1], (1...2).minmax)
+    assert_raise(RangeError) { (1..).minmax }
+    assert_raise(RangeError) { (1...).minmax }
+
+    assert_equal([1.0, 2.0], (1.0..2.0).minmax)
+    assert_equal([nil, nil], (2.0..1.0).minmax)
+    assert_raise(TypeError) { (1.0...2.0).minmax }
+    assert_raise(TypeError) { (1...1.5).minmax }
+    assert_raise(TypeError) { (1.5...2).minmax }
+
+    assert_equal([0, 0], (0..0).minmax)
+    assert_equal([nil, nil], (0...0).minmax)
+  end
+
   def test_initialize_twice
     r = eval("1..2")
     assert_raise(NameError) { r.instance_eval { initialize 3, 4 } }

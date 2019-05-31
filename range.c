@@ -1211,6 +1211,35 @@ range_max(int argc, VALUE *argv, VALUE range)
     }
 }
 
+
+/*
+ *  call-seq:
+ *     range.minmax                  -> [min, max]
+ *     range.minmax { |a, b| block } -> [min, max]
+ *
+ *  Returns a two element array which contains the minimum and the
+ *  maximum value in the range.  The first form assumes all
+ *  objects implement Comparable; the second uses the
+ *  block to return <em>a <=> b</em>.
+ *
+ *     (10..20).minmax  #=> [10, 20]
+ *     ('a'..'f').minmax #=> ['a', 'f']
+ */
+
+
+static VALUE
+range_minmax(VALUE range)
+{
+    if (rb_block_given_p()) {
+        return rb_call_super(0, 0);
+    }
+
+    VALUE min = rb_funcall(range, rb_intern("min"), 0, 0);
+    VALUE max = rb_funcall(range, rb_intern("max"), 0, 0);
+
+    return rb_assoc_new(min, max);
+}
+
 int
 rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
 {
@@ -1694,6 +1723,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "last", range_last, -1);
     rb_define_method(rb_cRange, "min", range_min, -1);
     rb_define_method(rb_cRange, "max", range_max, -1);
+    rb_define_method(rb_cRange, "minmax", range_minmax, 0);
     rb_define_method(rb_cRange, "size", range_size, 0);
     rb_define_method(rb_cRange, "to_a", range_to_a, 0);
     rb_define_method(rb_cRange, "entries", range_to_a, 0);
