@@ -340,12 +340,21 @@ cont_thread_value(const rb_context_t *cont)
 }
 
 static void
+cont_compact(void *ptr)
+{
+    rb_context_t *cont = ptr;
+
+    cont->value = rb_gc_location(cont->value);
+    rb_execution_context_update(&cont->saved_ec);
+}
+
+static void
 cont_mark(void *ptr)
 {
     rb_context_t *cont = ptr;
 
     RUBY_MARK_ENTER("cont");
-    rb_gc_mark(cont->value);
+    rb_gc_mark_no_pin(cont->value);
 
     rb_execution_context_mark(&cont->saved_ec);
     rb_gc_mark(cont_thread_value(cont));
@@ -481,14 +490,37 @@ cont_memsize(const void *ptr)
 }
 
 void
+rb_fiber_update_self(rb_fiber_t *fib)
+{
+    if (fib->cont.self) {
+	fib->cont.self = rb_gc_location(fib->cont.self);
+    }
+    else {
+	rb_execution_context_update(&fib->cont.saved_ec);
+    }
+}
+
+void
 rb_fiber_mark_self(const rb_fiber_t *fib)
 {
     if (fib->cont.self) {
-	rb_gc_mark(fib->cont.self);
+	rb_gc_mark_no_pin(fib->cont.self);
     }
     else {
 	rb_execution_context_mark(&fib->cont.saved_ec);
     }
+}
+
+static void
+fiber_compact(void *ptr)
+{
+    rb_fiber_t *fib = ptr;
+    fib->first_proc = rb_gc_location(fib->first_proc);
+
+    if (fib->prev) rb_fiber_update_self(fib->prev);
+
+    cont_compact(&fib->cont);
+    fiber_verify(fib);
 }
 
 static void
@@ -497,7 +529,7 @@ fiber_mark(void *ptr)
     rb_fiber_t *fib = ptr;
     RUBY_MARK_ENTER("cont");
     fiber_verify(fib);
-    rb_gc_mark(fib->first_proc);
+    rb_gc_mark_no_pin(fib->first_proc);
     if (fib->prev) rb_fiber_mark_self(fib->prev);
 
 #if !FIBER_USE_NATIVE
@@ -602,7 +634,7 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 
 static const rb_data_type_t cont_data_type = {
     "continuation",
-    {cont_mark, cont_free, cont_memsize,},
+    {cont_mark, cont_free, cont_memsize, cont_compact},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -1424,7 +1456,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 
 static const rb_data_type_t fiber_data_type = {
     "fiber",
-    {fiber_mark, fiber_free, fiber_memsize,},
+    {fiber_mark, fiber_free, fiber_memsize, fiber_compact,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
