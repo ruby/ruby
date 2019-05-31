@@ -1,4 +1,16 @@
 class Reline::ANSI
+  RAW_KEYSTROKE_CONFIG = {
+    key_mapping: {
+      [27, 91, 65] => :ed_prev_history,     # ↑
+      [27, 91, 66] => :ed_next_history,     # ↓
+      [27, 91, 67] => :ed_next_char,        # →
+      [27, 91, 68] => :ed_prev_char,        # ←
+      [27, 91, 51, 126] => :key_delete,     # Del
+      [27, 91, 49, 126] => :ed_move_to_beg, # Home
+      [27, 91, 52, 126] => :ed_move_to_end, # End
+    }.each_key(&:freeze).freeze,
+  }.freeze
+
   @@input = STDIN
   def self.input=(val)
     @@input = val

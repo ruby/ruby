@@ -1,6 +1,18 @@
 require 'fiddle/import'
 
 class Reline::Windows
+  RAW_KEYSTROKE_CONFIG = {
+    key_mapping: {
+      [224, 72] => :ed_prev_history,        # ↑
+      [224, 80] => :ed_next_history,        # ↓
+      [224, 77] => :ed_next_char,           # →
+      [224, 75] => :ed_prev_char,           # ←
+      [224, 83] => :key_delete,             # Del
+      [224, 71] => :ed_move_to_beg,         # Home
+      [224, 79] => :ed_move_to_end,         # End
+    }.each_key(&:freeze).freeze,
+  }.freeze
+
   class Win32API
     DLL = {}
     TYPEMAP = {"0" => Fiddle::TYPE_VOID, "S" => Fiddle::TYPE_VOIDP, "I" => Fiddle::TYPE_LONG}
