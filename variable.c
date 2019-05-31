@@ -2733,8 +2733,10 @@ static void
 set_namespace_path(VALUE named_namespace, VALUE namespace_path)
 {
     struct rb_id_table *const_table = RCLASS_CONST_TBL(named_namespace);
-
-    rb_ivar_set(named_namespace, classpath, namespace_path);
+    if (!RCLASS_IV_TBL(named_namespace)) {
+        RCLASS_IV_TBL(named_namespace) = st_init_numtable();
+    }
+    rb_class_ivar_set(named_namespace, classpath, namespace_path);
     if (const_table) {
         rb_id_table_foreach(const_table, set_namespace_path_i, &namespace_path);
     }
