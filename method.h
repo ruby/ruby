@@ -115,7 +115,8 @@ typedef enum {
     END_OF_ENUMERATION(VM_METHOD_TYPE)
 } rb_method_type_t;
 #define VM_METHOD_TYPE_MINIMUM_BITS 4
-/* TODO: STATIC_ASSERT for VM_METHOD_TYPE_MINIMUM_BITS */
+STATIC_ASSERT(VM_METHOD_TYPE_MINIMUM_BITS,
+              VM_METHOD_TYPE_REFINED <= (1<<VM_METHOD_TYPE_MINIMUM_BITS));
 
 #ifndef rb_iseq_t
 typedef struct rb_iseq_struct rb_iseq_t;
