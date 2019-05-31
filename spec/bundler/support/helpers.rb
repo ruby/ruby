@@ -548,6 +548,22 @@ module Spec
       Dir[pattern].each(&chmod[0o755, 0o644])
     end
 
+    # Simulate replacing TODOs with real values
+    def prepare_gemspec(pathname)
+      process_file(pathname) do |line|
+        case line
+        when /spec\.metadata\["(?:allowed_push_host|homepage_uri|source_code_uri|changelog_uri)"\]/, /spec\.homepage/
+          line.gsub(/\=.*$/, "= 'http://example.org'")
+        when /spec\.summary/
+          line.gsub(/\=.*$/, "= %q{A short summary of my new gem.}")
+        when /spec\.description/
+          line.gsub(/\=.*$/, "= %q{A longer description of my new gem.}")
+        else
+          line
+        end
+      end
+    end
+
     def process_file(pathname)
       changed_lines = pathname.readlines.map do |line|
         yield line
