@@ -114,9 +114,8 @@ CSV::
 
 Date::
 
-  * Date.jisx0301, Date#jisx0301, and Date.parse provisionally support the
-    new Japanese era as an informal extension, until the new JIS X 0301 is
-    issued.  [Feature #15742]
+  * Date.jisx0301, Date#jisx0301, and Date.parse support the new Japanese
+    era.  [Feature #15742]
 
 Delegate::
 
