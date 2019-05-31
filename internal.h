@@ -2511,6 +2511,23 @@ rb_obj_builtin_type(VALUE obj)
 #define COMPILER_WARNING_PRAGMA(str) COMPILER_WARNING_PRAGMA_(str)
 #define COMPILER_WARNING_PRAGMA_(str) _Pragma(#str)
 
+#if defined(USE_UNALIGNED_MEMBER_ACCESS) && USE_UNALIGNED_MEMBER_ACCESS && \
+    (defined(__clang__) || GCC_VERSION_SINCE(9, 0, 0))
+# define UNALIGNED_MEMBER_ACCESS(expr) __extension__({ \
+    COMPILER_WARNING_PUSH; \
+    COMPILER_WARNING_IGNORED(-Waddress-of-packed-member); \
+    typeof(expr) unaligned_member_access_result = (expr); \
+    COMPILER_WARNING_POP; \
+    unaligned_member_access_result; \
+})
+#else
+# define UNALIGNED_MEMBER_ACCESS(expr) expr
+#endif
+#define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
+
+#undef RB_OBJ_WRITE
+#define RB_OBJ_WRITE(a, slot, b) UNALIGNED_MEMBER_ACCESS(rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

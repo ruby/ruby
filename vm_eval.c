@@ -65,7 +65,7 @@ vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *ca
 {
     VALUE val;
     const rb_callable_method_entry_t *me = cc->me;
-    const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
+    const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
     int len = cfunc->argc;
     VALUE recv = calling->recv;
     int argc = calling->argc;

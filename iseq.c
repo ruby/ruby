@@ -256,7 +256,7 @@ rb_iseq_update_references(rb_iseq_t *iseq)
             unsigned int i;
             for(i = 0; i < table->size; i++) {
                 struct iseq_catch_table_entry *entry;
-                entry = &table->entries[i];
+                entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
                 if (entry->iseq) {
                     entry->iseq = (rb_iseq_t *)rb_gc_location((VALUE)entry->iseq);
                 }
@@ -315,7 +315,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	    unsigned int i;
 	    for(i = 0; i < table->size; i++) {
 		const struct iseq_catch_table_entry *entry;
-		entry = &table->entries[i];
+		entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
 		if (entry->iseq) {
                     rb_gc_mark_no_pin((VALUE)entry->iseq);
 		}
@@ -2138,7 +2138,8 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
 	rb_str_cat_cstr(indent, "| ");
 	indent_str = RSTRING_PTR(indent);
 	for (i = 0; i < body->catch_table->size; i++) {
-	    const struct iseq_catch_table_entry *entry = &body->catch_table->entries[i];
+	    const struct iseq_catch_table_entry *entry =
+		UNALIGNED_MEMBER_PTR(body->catch_table, entries[i]);
 	    rb_str_cat(str, indent_str, indent_len);
 	    rb_str_catf(str,
 			"| catch type: %-6s st: %04d ed: %04d sp: %04d cont: %04d\n",
@@ -2272,7 +2273,8 @@ iseq_iterate_children(const rb_iseq_t *iseq, void (*iter_func)(const rb_iseq_t *
 
     if (body->catch_table) {
         for (i = 0; i < body->catch_table->size; i++) {
-            const struct iseq_catch_table_entry *entry = &body->catch_table->entries[i];
+            const struct iseq_catch_table_entry *entry =
+                UNALIGNED_MEMBER_PTR(body->catch_table, entries[i]);
             child = entry->iseq;
             if (child) {
                 if (rb_hash_aref(all_children, (VALUE)child) == Qnil) {
@@ -2782,7 +2784,8 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     /* exception */
     if (iseq_body->catch_table) for (i=0; i<iseq_body->catch_table->size; i++) {
 	VALUE ary = rb_ary_new();
-	const struct iseq_catch_table_entry *entry = &iseq_body->catch_table->entries[i];
+	const struct iseq_catch_table_entry *entry =
+	    UNALIGNED_MEMBER_PTR(iseq_body->catch_table, entries[i]);
 	rb_ary_push(ary, exception_type2symbol(entry->type));
 	if (entry->iseq) {
 	    rb_ary_push(ary, iseq_data_to_ary(rb_iseq_check(entry->iseq)));

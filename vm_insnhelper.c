@@ -1201,7 +1201,8 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 
 		    if (!ct) break;
 		    for (i=0; i < ct->size; i++) {
-			const struct iseq_catch_table_entry * const entry = &ct->entries[i];
+			const struct iseq_catch_table_entry *const entry =
+			    UNALIGNED_MEMBER_PTR(ct, entries[i]);
 
 			if (entry->type == CATCH_TYPE_BREAK &&
 			    entry->iseq == base_iseq &&
@@ -2183,7 +2184,7 @@ vm_method_cfunc_entry(const rb_callable_method_entry_t *me)
 	rb_bug("wrong method type: %d", me->def->type);
     }
 #endif
-    return &me->def->body.cfunc;
+    return UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
 }
 
 static VALUE
