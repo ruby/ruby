@@ -473,7 +473,7 @@ if you believe they were disclosed to a third party.
 
   private
   def set_config_file_name(args)
-    @config_file_name = ENV["GEMRC"] || nil
+    @config_file_name = ENV["GEMRC"]
     need_config_file_name = false
 
     args.each do |arg|
