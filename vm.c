@@ -1956,7 +1956,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 		    else {
 			ct = cfp->iseq->body->catch_table;
 			if (ct) for (i = 0; i < ct->size; i++) {
-			    entry = &ct->entries[i];
+			    entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
 			    if (entry->start < epc && entry->end >= epc) {
 				if (entry->type == CATCH_TYPE_ENSURE) {
 				    catch_iseq = entry->iseq;
@@ -1992,7 +1992,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 	if (state == TAG_RAISE) {
 	    ct = cfp->iseq->body->catch_table;
 	    if (ct) for (i = 0; i < ct->size; i++) {
-		entry = &ct->entries[i];
+		entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
 		if (entry->start < epc && entry->end >= epc) {
 
 		    if (entry->type == CATCH_TYPE_RESCUE ||
@@ -2008,7 +2008,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 	else if (state == TAG_RETRY) {
 	    ct = cfp->iseq->body->catch_table;
 	    if (ct) for (i = 0; i < ct->size; i++) {
-		entry = &ct->entries[i];
+		entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
 		if (entry->start < epc && entry->end >= epc) {
 
 		    if (entry->type == CATCH_TYPE_ENSURE) {
@@ -2035,7 +2035,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 	  search_restart_point:
 	    ct = cfp->iseq->body->catch_table;
 	    if (ct) for (i = 0; i < ct->size; i++) {
-		entry = &ct->entries[i];
+		entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
 
 		if (entry->start < epc && entry->end >= epc) {
 		    if (entry->type == CATCH_TYPE_ENSURE) {
@@ -2073,7 +2073,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 	else {
 	    ct = cfp->iseq->body->catch_table;
 	    if (ct) for (i = 0; i < ct->size; i++) {
-		entry = &ct->entries[i];
+		entry = UNALIGNED_MEMBER_PTR(ct, entries[i]);
 		if (entry->start < epc && entry->end >= epc) {
 
 		    if (entry->type == CATCH_TYPE_ENSURE) {

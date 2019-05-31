@@ -1263,7 +1263,8 @@ update_catch_except_flags(struct rb_iseq_constant_body *body)
         return;
 
     for (i = 0; i < ct->size; i++) {
-        const struct iseq_catch_table_entry *entry = &ct->entries[i];
+        const struct iseq_catch_table_entry *entry =
+            UNALIGNED_MEMBER_PTR(ct, entries[i]);
         if (entry->type != CATCH_TYPE_BREAK
             && entry->type != CATCH_TYPE_NEXT
             && entry->type != CATCH_TYPE_REDO) {
@@ -2322,7 +2323,7 @@ iseq_set_exception_table(rb_iseq_t *iseq)
 
 	for (i = 0; i < table->size; i++) {
             ptr = RARRAY_CONST_PTR_TRANSIENT(tptr[i]);
-	    entry = &table->entries[i];
+	    entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
 	    entry->type = (enum catch_type)(ptr[0] & 0xffff);
 	    entry->start = label_get_position((LABEL *)(ptr[1] & ~1));
 	    entry->end = label_get_position((LABEL *)(ptr[2] & ~1));

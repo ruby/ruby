@@ -903,7 +903,7 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block)
 
 	    qw.w.th = GET_THREAD();
 	    qw.as.q = q;
-	    list_add_tail(&qw.as.q->waitq, &qw.w.node);
+	    list_add_tail(queue_waitq(qw.as.q), &qw.w.node);
 	    qw.as.q->num_waiting++;
 
 	    rb_ensure(queue_sleep, self, queue_sleep_done, (VALUE)&qw);
