@@ -55,7 +55,12 @@ module FileSpecs
     require 'socket'
     name = tmp("ftype_socket.socket")
     rm_r name
-    socket = UNIXServer.new name
+    begin
+      socket = UNIXServer.new name
+    rescue ArgumentError => error
+      error.message.should =~ /too long/
+      return
+    end
     begin
       yield name
     ensure
