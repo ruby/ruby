@@ -647,7 +647,11 @@ class Reline::LineEditor
     else
       method_obj = nil
     end
-    if @vi_arg
+    if method_symbol and key.is_a?(Symbol)
+      method_obj&.(key, arg: @vi_arg)
+      @kill_ring.process
+      @vi_arg = nil
+    elsif @vi_arg
       if key.chr =~ /[0-9]/
         ed_argument_digit(key)
       else
@@ -684,6 +688,10 @@ class Reline::LineEditor
 
   private def normal_char(key)
     method_symbol = method_obj = nil
+    if key.combined_char.is_a?(Symbol)
+      process_key(key.combined_char, key.combined_char)
+      return
+    end
     @multibyte_buffer << key.combined_char
     if @multibyte_buffer.size > 1
       if @multibyte_buffer.dup.force_encoding(@encoding).valid_encoding?
