@@ -80,6 +80,8 @@ The current active platform maintainers are as follows:
   KOSAKI Motohiro (kosaki)
 [macOS]
   Kenta Murata (mrkn)
+[OpenBSD]
+  Jeremy Evans (jeremyevans0)
 [cygwin, bcc32, djgpp, wince, ...]
   none. (Maintainer WANTED)
 
