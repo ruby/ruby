@@ -283,9 +283,9 @@ class TestISeq < Test::Unit::TestCase
 
   def test_inspect
     %W[foo \u{30d1 30b9}].each do |name|
-      assert_match /@#{name}/, ISeq.compile("", name).inspect, name
+      assert_match(/@#{name}/, ISeq.compile("", name).inspect, name)
       m = ISeq.compile("class TestISeq::Inspect; def #{name}; end; instance_method(:#{name}); end").eval
-      assert_match /:#{name}@/, ISeq.of(m).inspect, name
+      assert_match(/:#{name}@/, ISeq.of(m).inspect, name)
     end
   end
 

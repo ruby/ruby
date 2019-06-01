@@ -68,7 +68,7 @@ module WEBrick
       io.rewind
       res = Net::HTTPResponse.read_new(Net::BufferedIO.new(io))
       assert_equal '300', res.code
-      refute_match /<img/, io.string
+      refute_match(/<img/, io.string)
     end
 
     def test_304_does_not_log_warning

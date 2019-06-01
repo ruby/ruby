@@ -234,8 +234,8 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_dump_flags
     info = ObjectSpace.dump("foo".freeze)
-    assert_match /"wb_protected":true, "old":true/, info
-    assert_match /"fstring":true/, info
+    assert_match(/"wb_protected":true, "old":true/, info)
+    assert_match(/"fstring":true/, info)
     JSON.parse(info) if defined?(JSON)
   end
 
@@ -267,10 +267,10 @@ class TestObjSpace < Test::Unit::TestCase
 
   def assert_dump_object(info, line)
     loc = caller_locations(1, 1)[0]
-    assert_match /"type":"STRING"/, info
-    assert_match /"embedded":true, "bytesize":11, "value":"hello world", "encoding":"UTF-8"/, info
-    assert_match /"file":"#{Regexp.escape __FILE__}", "line":#{line}/, info
-    assert_match /"method":"#{loc.base_label}"/, info
+    assert_match(/"type":"STRING"/, info)
+    assert_match(/"embedded":true, "bytesize":11, "value":"hello world", "encoding":"UTF-8"/, info)
+    assert_match(/"file":"#{Regexp.escape __FILE__}", "line":#{line}/, info)
+    assert_match(/"method":"#{loc.base_label}"/, info)
     JSON.parse(info) if defined?(JSON)
   end
 
@@ -285,8 +285,8 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_dump_dynamic_symbol
     dump = ObjectSpace.dump(("foobar%x" % rand(0x10000)).to_sym)
-    assert_match /"type":"SYMBOL"/, dump
-    assert_match /"value":"foobar\h+"/, dump
+    assert_match(/"type":"SYMBOL"/, dump)
+    assert_match(/"value":"foobar\h+"/, dump)
   end
 
   def test_dump_includes_imemo_type
@@ -430,8 +430,8 @@ class TestObjSpace < Test::Unit::TestCase
       puts ObjectSpace.dump(File.allocate)
     RUBY
       assert_nil error
-      assert_match /"type":"FILE"/, output
-      assert_not_match /"fd":/, output
+      assert_match(/"type":"FILE"/, output)
+      assert_not_match(/"fd":/, output)
     end
   end
 
