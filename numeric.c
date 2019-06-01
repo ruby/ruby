@@ -4630,8 +4630,8 @@ rb_int_rshift(VALUE x, VALUE y)
     return Qnil;
 }
 
-static VALUE
-fix_aref(VALUE fix, VALUE idx)
+MJIT_FUNC_EXPORTED VALUE
+rb_fix_aref(VALUE fix, VALUE idx)
 {
     long val = FIX2LONG(fix);
     long i;
@@ -4722,7 +4722,7 @@ int_aref1(VALUE num, VALUE arg)
 
 one_bit:
     if (FIXNUM_P(num)) {
-        return fix_aref(num, arg);
+        return rb_fix_aref(num, arg);
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
         return rb_big_aref(num, arg);

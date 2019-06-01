@@ -4129,6 +4129,10 @@ static VALUE
 vm_opt_aref(VALUE recv, VALUE obj)
 {
     if (SPECIAL_CONST_P(recv)) {
+	if (FIXNUM_P(recv) && FIXNUM_P(obj) &&
+		BASIC_OP_UNREDEFINED_P(BOP_AREF, INTEGER_REDEFINED_OP_FLAG)) {
+	    return rb_fix_aref(recv, obj);
+	}
 	return Qundef;
     }
     else if (RBASIC_CLASS(recv) == rb_cArray &&
