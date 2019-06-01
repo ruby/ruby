@@ -16,7 +16,7 @@ class TestIter::YieldBlock < Test::Unit::TestCase
       block.call {}
     end
     def call_lambda(&block)
-      block.call &->{}
+      block.call(&->{})
     end
   end
 

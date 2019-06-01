@@ -2096,7 +2096,7 @@ class TestRefinement < Test::Unit::TestCase
         end
       }
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
@@ -2111,7 +2111,7 @@ class TestRefinement < Test::Unit::TestCase
       }
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
@@ -2127,14 +2127,14 @@ class TestRefinement < Test::Unit::TestCase
       }
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
 
     class NonProc
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
@@ -2144,7 +2144,7 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
       end
 
@@ -2163,7 +2163,7 @@ class TestRefinement < Test::Unit::TestCase
       }
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
 
@@ -2182,7 +2182,7 @@ class TestRefinement < Test::Unit::TestCase
       }
 
       def call
-        ToProc.call &self
+        ToProc.call(&self)
       end
     end
   end
