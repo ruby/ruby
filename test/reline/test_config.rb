@@ -17,6 +17,7 @@ class Reline::Config::Test < Reline::TestCase
   def teardown
     Dir.chdir(@pwd)
     FileUtils.rm_rf(@tmpdir)
+    @config.reset
   end
 
   def test_read_lines
