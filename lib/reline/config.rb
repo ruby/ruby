@@ -1,6 +1,8 @@
 require 'pathname'
 
 class Reline::Config
+  attr_reader :test_mode
+
   DEFAULT_PATH = Pathname.new(Dir.home).join('.inputrc')
 
   VARIABLE_NAMES = %w{
@@ -48,6 +50,7 @@ class Reline::Config
     @key_actors[:vi_command] = Reline::KeyActor::ViCommand.new
     @history_size = 500
     @keyseq_timeout = 500
+    @test_mode = false
   end
 
   def reset
@@ -75,6 +78,7 @@ class Reline::Config
   end
 
   def read(file = DEFAULT_PATH)
+    return if @test_mode
     file = ENV['INPUTRC'] if ENV['INPUTRC']
     begin
       if file.respond_to?(:readlines)
