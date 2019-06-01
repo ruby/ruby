@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/fetcher/base"
+require_relative "base"
 require "rubygems/remote_fetcher"
 
 module Bundler
@@ -13,6 +13,7 @@ module Bundler
         when /certificate verify failed/
           raise CertificateFailureError.new(display_uri)
         when /401/
+          raise BadAuthenticationError, remote_uri if remote_uri.userinfo
           raise AuthenticationRequiredError, remote_uri
         when /403/
           raise BadAuthenticationError, remote_uri if remote_uri.userinfo

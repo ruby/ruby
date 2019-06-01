@@ -13,8 +13,8 @@ module Bundler
 
     class Error < StandardError; end
 
-    require "bundler/compact_index_client/cache"
-    require "bundler/compact_index_client/updater"
+    require_relative "compact_index_client/cache"
+    require_relative "compact_index_client/updater"
 
     attr_reader :directory
 

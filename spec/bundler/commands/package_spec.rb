@@ -278,7 +278,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       bundle :install
-      expect(last_command.stderr).to be_empty
+      expect(err).to be_empty
       expect(the_bundle).to include_gems "rack 1.0"
     end
 

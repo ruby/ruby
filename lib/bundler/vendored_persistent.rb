@@ -15,7 +15,7 @@ module Bundler
     end
   end
 end
-require "bundler/vendor/net-http-persistent/lib/net/http/persistent"
+require_relative "vendor/net-http-persistent/lib/net/http/persistent"
 
 module Bundler
   class PersistentHTTP < Persistent::Net::HTTP::Persistent

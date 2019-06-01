@@ -14,17 +14,18 @@ module Bundler
       Bundler.ui.info msg
     end
 
-    def self.output_without_groups_message
+    def self.output_without_groups_message(command)
       return if Bundler.settings[:without].empty?
-      Bundler.ui.confirm without_groups_message
+      Bundler.ui.confirm without_groups_message(command)
     end
 
-    def self.without_groups_message
+    def self.without_groups_message(command)
+      command_in_past_tense = command == :install ? "installed" : "updated"
       groups = Bundler.settings[:without]
       group_list = [groups[0...-1].join(", "), groups[-1..-1]].
         reject {|s| s.to_s.empty? }.join(" and ")
       group_str = groups.size == 1 ? "group" : "groups"
-      "Gems in the #{group_str} #{group_list} were not installed."
+      "Gems in the #{group_str} #{group_list} were not #{command_in_past_tense}."
     end
 
     def self.select_spec(name, regex_match = nil)
@@ -59,7 +60,7 @@ module Bundler
     end
 
     def self.gem_not_found_message(missing_gem_name, alternatives)
-      require "bundler/similarity_detector"
+      require_relative "../similarity_detector"
       message = "Could not find gem '#{missing_gem_name}'."
       alternate_names = alternatives.map {|a| a.respond_to?(:name) ? a.name : a }
       suggestions = SimilarityDetector.new(alternate_names).similar_word_list(missing_gem_name)

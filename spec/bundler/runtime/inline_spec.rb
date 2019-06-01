@@ -67,7 +67,7 @@ RSpec.describe "bundler/inline#gemfile" do
       puts "success"
     RUBY
 
-    expect(last_command.stderr).to include "Could not find gem 'eleven'"
+    expect(err).to include "Could not find gem 'eleven'"
     expect(out).not_to include "success"
 
     script <<-RUBY
@@ -90,7 +90,7 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(out).to include("Installing activesupport")
     err.gsub! %r{.*lib/sinatra/base\.rb:\d+: warning: constant ::Fixnum is deprecated$}, ""
     err.strip!
-    expect(last_command.stderr).to be_empty
+    expect(err).to be_empty
     expect(exitstatus).to be_zero if exitstatus
   end
 
@@ -134,7 +134,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
       puts "success"
     RUBY
-    expect(last_command.stderr).to include "Unknown options: arglebargle"
+    expect(err).to include "Unknown options: arglebargle"
     expect(out).not_to include "success"
   end
 
@@ -165,7 +165,7 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to eq("1.0.0")
-    expect(last_command.stderr).to be_empty
+    expect(err).to be_empty
     expect(exitstatus).to be_zero if exitstatus
   end
 
@@ -183,7 +183,7 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to eq("1.0.0\n2.0.0")
-    expect(last_command.stderr).to be_empty
+    expect(err).to be_empty
     expect(exitstatus).to be_zero if exitstatus
   end
 
@@ -203,7 +203,7 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(out).to eq("two\nfour")
-    expect(last_command.stderr).to be_empty
+    expect(err).to be_empty
     expect(exitstatus).to be_zero if exitstatus
   end
 
@@ -240,6 +240,20 @@ RSpec.describe "bundler/inline#gemfile" do
       RUBY
     end
 
+    expect(err).to be_empty
+    expect(exitstatus).to be_zero if exitstatus
+  end
+
+  it "installs inline gems when frozen is set" do
+    script <<-RUBY, :env => { "BUNDLE_FROZEN" => "true" }
+      gemfile do
+        source "file://#{gem_repo1}"
+        gem "rack"
+      end
+
+      puts RACK
+    RUBY
+
     expect(last_command.stderr).to be_empty
     expect(exitstatus).to be_zero if exitstatus
   end
@@ -258,7 +272,7 @@ RSpec.describe "bundler/inline#gemfile" do
       RUBY
     end
 
-    expect(last_command.stderr).to be_empty
+    expect(err).to be_empty
     expect(exitstatus).to be_zero if exitstatus
   end
 
@@ -274,6 +288,19 @@ RSpec.describe "bundler/inline#gemfile" do
       puts RACK
     RUBY
     expect(last_command).to be_success
-    expect(last_command.stdout).to eq "1.0.0"
+    expect(out).to eq "1.0.0"
+  end
+
+  it "skips platform warnings" do
+    simulate_platform "ruby"
+
+    script <<-RUBY
+      gemfile(true) do
+        source "file://#{gem_repo1}"
+        gem "rack", platform: :jruby
+      end
+    RUBY
+
+    expect(err).to be_empty
   end
 end

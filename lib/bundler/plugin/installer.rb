@@ -8,8 +8,8 @@ module Bundler
   # are heavily dependent on the Gemfile.
   module Plugin
     class Installer
-      autoload :Rubygems, "bundler/plugin/installer/rubygems"
-      autoload :Git,      "bundler/plugin/installer/git"
+      autoload :Rubygems, File.expand_path("installer/rubygems", __dir__)
+      autoload :Git,      File.expand_path("installer/git", __dir__)
 
       def install(names, options)
         check_sources_consistency!(options)

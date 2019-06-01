@@ -46,7 +46,7 @@ RSpec.describe "Bundler.with_env helpers" do
         build_bundler_context
         bundle! "exec '#{Gem.ruby}' #{bundled_app("exe.rb")} 2"
       end
-      expect(last_command.stderr).to eq <<-EOS.strip
+      expect(err).to eq <<-EOS.strip
 2 false
 1 true
 0 true
@@ -153,29 +153,50 @@ RSpec.describe "Bundler.with_env helpers" do
   end
 
   describe "Bundler.original_system" do
+    let(:code) do
+      <<~RUBY
+        Bundler.original_system(%([ "\$BUNDLE_FOO" = "bar" ] && exit 42))
+
+        exit $?.exitstatus
+      RUBY
+    end
+
     it "runs system inside with_original_env" do
-      code = 'exit Bundler.original_system(%(test "\$BUNDLE_FOO" = "bar"))'
       lib = File.expand_path("../../lib", __dir__)
       system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib} -rbundler -e '#{code}'")
-      expect($?.exitstatus).to eq(0)
+      expect($?.exitstatus).to eq(42)
     end
   end
 
   describe "Bundler.clean_system", :bundler => 2 do
+    let(:code) do
+      <<~RUBY
+        Bundler.clean_system(%([ "\$BUNDLE_FOO" = "bar" ] || exit 42))
+
+        exit $?.exitstatus
+      RUBY
+    end
+
     it "runs system inside with_clean_env" do
-      code = 'exit Bundler.clean_system(%(test "\$BUNDLE_FOO" = "bar"))'
       lib = File.expand_path("../../lib", __dir__)
       system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib} -rbundler -e '#{code}'")
-      expect($?.exitstatus).to eq(1)
+      expect($?.exitstatus).to eq(42)
     end
   end
 
   describe "Bundler.unbundled_system" do
+    let(:code) do
+      <<~RUBY
+        Bundler.unbundled_system(%([ "\$BUNDLE_FOO" = "bar" ] || exit 42))
+
+        exit $?.exitstatus
+      RUBY
+    end
+
     it "runs system inside with_unbundled_env" do
-      code = 'exit Bundler.clean_system(%(test "\$BUNDLE_FOO" = "bar"))'
       lib = File.expand_path("../../lib", __dir__)
       system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib} -rbundler -e '#{code}'")
-      expect($?.exitstatus).to eq(1)
+      expect($?.exitstatus).to eq(42)
     end
   end
 

@@ -101,17 +101,11 @@ module Bundler
       return unless bundler_version
       prerelease_text = bundler_version.prerelease? ? " --pre" : ""
       current_version = Gem::Version.create(Bundler::VERSION)
-      case current_version.segments.first <=> bundler_version.segments.first
-      when -1
-        raise LockfileError, "You must use Bundler #{bundler_version.segments.first} or greater with this lockfile."
-      when 0
-        if current_version < bundler_version
-          Bundler.ui.warn "Warning: the running version of Bundler (#{current_version}) is older " \
-               "than the version that created the lockfile (#{bundler_version}). We suggest you to " \
-               "upgrade to the version that created the lockfile by running `gem install " \
-               "bundler:#{bundler_version}#{prerelease_text}`.\n"
-        end
-      end
+      return unless current_version < bundler_version
+      Bundler.ui.warn "Warning: the running version of Bundler (#{current_version}) is older " \
+           "than the version that created the lockfile (#{bundler_version}). We suggest you to " \
+           "upgrade to the version that created the lockfile by running `gem install " \
+           "bundler:#{bundler_version}#{prerelease_text}`.\n"
     end
 
   private

@@ -6,7 +6,7 @@ require "rubygems/user_interaction"
 module Bundler
   class Source
     class Rubygems < Source
-      autoload :Remote, "bundler/source/rubygems/remote"
+      autoload :Remote, File.expand_path("rubygems/remote", __dir__)
 
       # Use the API when installing less than X gems
       API_REQUEST_LIMIT = 500

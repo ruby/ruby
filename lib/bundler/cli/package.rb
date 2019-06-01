@@ -25,7 +25,7 @@ module Bundler
   private
 
     def install
-      require "bundler/cli/install"
+      require_relative "install"
       options = self.options.dup
       if Bundler.settings[:cache_all_platforms]
         options["local"] = false

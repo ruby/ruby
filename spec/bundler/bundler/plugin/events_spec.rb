@@ -2,10 +2,14 @@
 
 RSpec.describe Bundler::Plugin::Events do
   context "plugin events" do
+    before { Bundler::Plugin::Events.send :reset }
+
     describe "#define" do
       it "raises when redefining a constant" do
+        Bundler::Plugin::Events.send(:define, :TEST_EVENT, "foo")
+
         expect do
-          Bundler::Plugin::Events.send(:define, :GEM_BEFORE_INSTALL_ALL, "another-value")
+          Bundler::Plugin::Events.send(:define, :TEST_EVENT, "bar")
         end.to raise_error(ArgumentError)
       end
 

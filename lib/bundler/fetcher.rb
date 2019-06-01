@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/vendored_persistent"
+require_relative "vendored_persistent"
 require "cgi"
 require "securerandom"
 require "zlib"
@@ -9,10 +9,10 @@ require "rubygems/request"
 module Bundler
   # Handles all the fetching with the rubygems server
   class Fetcher
-    autoload :CompactIndex, "bundler/fetcher/compact_index"
-    autoload :Downloader, "bundler/fetcher/downloader"
-    autoload :Dependency, "bundler/fetcher/dependency"
-    autoload :Index, "bundler/fetcher/index"
+    autoload :CompactIndex, File.expand_path("fetcher/compact_index", __dir__)
+    autoload :Downloader, File.expand_path("fetcher/downloader", __dir__)
+    autoload :Dependency, File.expand_path("fetcher/dependency", __dir__)
+    autoload :Index, File.expand_path("fetcher/index", __dir__)
 
     # This error is raised when it looks like the network is down
     class NetworkDownError < HTTPError; end

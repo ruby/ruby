@@ -88,7 +88,7 @@ RSpec.describe "bundle update" do
         gem "foo", "1.0", :git => "#{lib_path("foo_two")}"
       G
 
-      expect(last_command.stderr).to be_empty
+      expect(err).to be_empty
       expect(out).to include("Fetching #{lib_path}/foo_two")
       expect(out).to include("Bundle complete!")
     end
@@ -192,7 +192,7 @@ RSpec.describe "bundle update" do
       lib_path("foo-1.0").join(".git").rmtree
 
       bundle :update, :all => true
-      expect(last_command.bundler_err).to include(lib_path("foo-1.0").to_s).
+      expect(err).to include(lib_path("foo-1.0").to_s).
         and match(/Git error: command `git fetch.+has failed/)
     end
 

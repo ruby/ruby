@@ -3,11 +3,18 @@
 RSpec.describe "when using sudo", :sudo => true do
   describe "and BUNDLE_PATH is writable" do
     context "but BUNDLE_PATH/build_info is not writable" do
+      let(:subdir) do
+        system_gem_path("cache")
+      end
+
       before do
         bundle! "config set path.system true"
-        subdir = system_gem_path("cache")
         subdir.mkpath
         sudo "chmod u-w #{subdir}"
+      end
+
+      after do
+        sudo "chmod u+w #{subdir}"
       end
 
       it "installs" do
@@ -52,8 +59,6 @@ RSpec.describe "when using sudo", :sudo => true do
     end
 
     it "installs when BUNDLE_PATH is owned by root" do
-      bundle! "config set global_path_appends_ruby_scope false" # consistency in tests between 1.x and 2.x modes
-
       bundle_path = tmp("owned_by_root")
       FileUtils.mkdir_p bundle_path
       sudo "chown -R root #{bundle_path}"
@@ -64,14 +69,12 @@ RSpec.describe "when using sudo", :sudo => true do
         gem "rack", '1.0'
       G
 
-      expect(bundle_path.join("gems/rack-1.0.0")).to exist
-      expect(bundle_path.join("gems/rack-1.0.0").stat.uid).to eq(0)
+      expect(bundle_path.join(Bundler.ruby_scope, "gems/rack-1.0.0")).to exist
+      expect(bundle_path.join(Bundler.ruby_scope, "gems/rack-1.0.0").stat.uid).to eq(0)
       expect(the_bundle).to include_gems "rack 1.0"
     end
 
     it "installs when BUNDLE_PATH does not exist" do
-      bundle! "config set global_path_appends_ruby_scope false" # consistency in tests between 1.x and 2.x modes
-
       root_path = tmp("owned_by_root")
       FileUtils.mkdir_p root_path
       sudo "chown -R root #{root_path}"
@@ -83,8 +86,8 @@ RSpec.describe "when using sudo", :sudo => true do
         gem "rack", '1.0'
       G
 
-      expect(bundle_path.join("gems/rack-1.0.0")).to exist
-      expect(bundle_path.join("gems/rack-1.0.0").stat.uid).to eq(0)
+      expect(bundle_path.join(Bundler.ruby_scope, "gems/rack-1.0.0")).to exist
+      expect(bundle_path.join(Bundler.ruby_scope, "gems/rack-1.0.0").stat.uid).to eq(0)
       expect(the_bundle).to include_gems "rack 1.0"
     end
 
@@ -103,6 +106,10 @@ RSpec.describe "when using sudo", :sudo => true do
   describe "and BUNDLE_PATH is not writable" do
     before do
       sudo "chmod ugo-w #{default_bundle_path}"
+    end
+
+    after do
+      sudo "chmod ugo+w #{default_bundle_path}"
     end
 
     it "installs" do
@@ -146,6 +153,8 @@ RSpec.describe "when using sudo", :sudo => true do
       bundle :install, :env => { "GEM_HOME" => gem_home.to_s, "GEM_PATH" => nil }
       expect(gem_home.join("bin/rackup")).to exist
       expect(the_bundle).to include_gems "rack 1.0", :env => { "GEM_HOME" => gem_home.to_s, "GEM_PATH" => nil }
+
+      sudo "rm -rf #{tmp("sudo_gem_home")}"
     end
   end
 

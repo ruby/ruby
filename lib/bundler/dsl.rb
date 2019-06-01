@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "bundler/dependency"
-require "bundler/ruby_dsl"
+require_relative "dependency"
+require_relative "ruby_dsl"
 
 module Bundler
   class Dsl
@@ -291,12 +291,7 @@ module Bundler
 "https://github.com/#{repo_name}.git"
         RUBY
         repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include?("/")
-        if Bundler.feature_flag.github_https?
-          "https://github.com/#{repo_name}.git"
-        else
-          Bundler::SharedHelpers.major_deprecation 2, "Setting `github.https` to false is deprecated and won't be supported in the future."
-          "git://github.com/#{repo_name}.git"
-        end
+        "https://github.com/#{repo_name}.git"
       end
 
       git_source(:gist) do |repo_name|
