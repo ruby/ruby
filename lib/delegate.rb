@@ -60,8 +60,8 @@ class Delegator < BasicObject
 
   ##
   # :method: raise
-  # Use __raise__ if your Delegator does not have a object to delegate the
-  # raise method call.
+  # Use #__raise__ if your Delegator does not have a object to delegate the
+  # #raise method call.
   #
 
   #
