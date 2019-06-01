@@ -272,11 +272,7 @@ module Reline
     unless confirm_multiline_termination
       raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
     end
-    if block_given?
-      inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
-    else
-      inner_readline(prompt, add_hist, true)
-    end
+    inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
 
     whole_buffer = @@line_editor.whole_buffer.dup
     whole_buffer.taint
