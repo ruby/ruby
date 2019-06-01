@@ -326,9 +326,12 @@ module Reline
     @@line_editor.pre_input_hook = @@pre_input_hook
     @@line_editor.rerender
 
-    config = Reline::IOGate::RAW_KEYSTROKE_CONFIG
+    @@config.reset_default_key_bindings
+    Reline::IOGate::RAW_KEYSTROKE_CONFIG.each_pair do |key, func|
+      @@config.add_default_key_binding(key, func)
+    end
 
-    key_stroke = Reline::KeyStroke.new(config)
+    key_stroke = Reline::KeyStroke.new(@@config)
     begin
       loop do
         key_stroke.read_io(@@config.keyseq_timeout) { |inputs|

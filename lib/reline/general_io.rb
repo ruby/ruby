@@ -1,7 +1,7 @@
 require 'timeout'
 
 class Reline::GeneralIO
-  RAW_KEYSTROKE_CONFIG = {key_mapping: {}.freeze}.freeze
+  RAW_KEYSTROKE_CONFIG = {}.freeze
 
   @@buf = []
 
