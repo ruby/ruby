@@ -33,7 +33,7 @@ module Bundler
     end
 
     def doctor
-      require "bundler/cli/doctor"
+      require_relative "doctor"
       Bundler::CLI::Doctor.new({}).run
     end
   end

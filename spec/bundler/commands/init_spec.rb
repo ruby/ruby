@@ -94,7 +94,7 @@ RSpec.describe "bundle init" do
         end
 
         bundle :init, :gemspec => spec_file
-        expect(last_command.bundler_err).to include("There was an error while loading `test.gemspec`")
+        expect(err).to include("There was an error while loading `test.gemspec`")
       end
     end
   end

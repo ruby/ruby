@@ -133,7 +133,7 @@ module Bundler
 
             unless options[:parseable]
               if groups
-                Bundler.ui.info "===== Group #{groups} ====="
+                Bundler.ui.info "===== #{groups_text("Group", groups)} ====="
               else
                 Bundler.ui.info "===== Without group ====="
               end
@@ -166,6 +166,10 @@ module Bundler
     end
 
   private
+
+    def groups_text(group_text, groups)
+      "#{group_text}#{groups.split(",").size > 1 ? "s" : ""} \"#{groups}\""
+    end
 
     def retrieve_active_spec(strict, definition, current_spec)
       if strict
@@ -212,7 +216,7 @@ module Bundler
       elsif options_include_groups || !groups
         "  * #{spec_outdated_info}"
       else
-        "  * #{spec_outdated_info} in groups \"#{groups}\""
+        "  * #{spec_outdated_info} in #{groups_text("group", groups)}"
       end
 
       Bundler.ui.info output_message.rstrip

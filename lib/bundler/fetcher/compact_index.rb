@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require "bundler/fetcher/base"
-require "bundler/worker"
+require_relative "base"
+require_relative "../worker"
 
 module Bundler
-  autoload :CompactIndexClient, "bundler/compact_index_client"
+  autoload :CompactIndexClient, File.expand_path("../compact_index_client", __dir__)
 
   class Fetcher
     class CompactIndex < Base

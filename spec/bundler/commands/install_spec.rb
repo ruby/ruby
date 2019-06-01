@@ -16,7 +16,7 @@ RSpec.describe "bundle install with gem sources" do
         raise StandardError, "FAIL"
       G
 
-      expect(last_command.bundler_err).to include('StandardError, "FAIL"')
+      expect(err).to include('StandardError, "FAIL"')
       expect(bundled_app("Gemfile.lock")).not_to exist
     end
 
@@ -404,7 +404,7 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       expect(last_command.stdboth).not_to match(/Error Report/i)
-      expect(last_command.bundler_err).to include("An error occurred while installing ajp-rails (0.0.0), and Bundler cannot continue.").
+      expect(err).to include("An error occurred while installing ajp-rails (0.0.0), and Bundler cannot continue.").
         and include(normalize_uri_file("Make sure that `gem install ajp-rails -v '0.0.0' --source 'file://localhost#{gem_repo2}/'` succeeds before bundling."))
     end
 

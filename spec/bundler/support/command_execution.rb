@@ -27,14 +27,6 @@ module Spec
       @stdboth ||= [stderr, stdout].join("\n").strip
     end
 
-    def bundler_err
-      if Bundler::VERSION.start_with?("1.")
-        stdout
-      else
-        stderr
-      end
-    end
-
     def to_s_verbose
       [
         to_s,

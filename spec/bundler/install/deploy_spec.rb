@@ -366,7 +366,7 @@ RSpec.describe "install with --deployment or --frozen" do
       G
 
       expect(the_bundle).not_to include_gems "rack 1.0.0"
-      expect(last_command.stderr).to include strip_whitespace(<<-E).strip
+      expect(err).to include strip_whitespace(<<-E).strip
 The dependencies in your gemfile changed
 
 You have added to the Gemfile:

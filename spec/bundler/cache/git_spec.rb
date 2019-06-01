@@ -59,7 +59,7 @@ end
       bundle! "#{cmd}", forgotten_command_line_options([:all, :cache_all] => true)
       bundle! "#{cmd}", forgotten_command_line_options([:all, :cache_all] => true)
 
-      expect(last_command.stdout).to include "Updating files in vendor/cache"
+      expect(out).to include "Updating files in vendor/cache"
       FileUtils.rm_rf lib_path("foo-1.0")
       expect(the_bundle).to include_gems "foo 1.0"
     end

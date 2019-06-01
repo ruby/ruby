@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/lockfile_parser"
+require_relative "lockfile_parser"
 require "set"
 
 module Bundler
@@ -385,7 +385,7 @@ module Bundler
     end
 
     def to_lock
-      require "bundler/lockfile_generator"
+      require_relative "lockfile_generator"
       LockfileGenerator.generate(self)
     end
 
@@ -782,7 +782,7 @@ module Bundler
 
         # Path sources have special logic
         if s.source.instance_of?(Source::Path) || s.source.instance_of?(Source::Gemspec)
-          other_sources_specs = begin
+          new_specs = begin
             s.source.specs
           rescue PathError, GitError
             # if we won't need the source (according to the lockfile),
@@ -794,16 +794,18 @@ module Bundler
             raise
           end
 
-          other = other_sources_specs[s].first
+          new_spec = new_specs[s].first
 
           # If the spec is no longer in the path source, unlock it. This
           # commonly happens if the version changed in the gemspec
-          next unless other
+          next unless new_spec
 
-          deps2 = other.dependencies.select {|d| d.type != :development }
-          runtime_dependencies = s.dependencies.select {|d| d.type != :development }
-          # If the dependencies of the path source have changed, unlock it
-          next unless runtime_dependencies.sort == deps2.sort
+          new_runtime_deps = new_spec.dependencies.select {|d| d.type != :development }
+          old_runtime_deps = s.dependencies.select {|d| d.type != :development }
+          # If the dependencies of the path source have changed and locked spec can't satisfy new dependencies, unlock it
+          next unless new_runtime_deps.sort == old_runtime_deps.sort || new_runtime_deps.all? {|d| satisfies_locked_spec?(d) }
+
+          s.dependencies.replace(new_spec.dependencies)
         end
 
         converged << s

@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle gem" do
-  def reset!
-    super
-    global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false"
-  end
-
   def execute_bundle_gem(gem_name, flag = "")
     bundle! "gem #{gem_name} #{flag}"
     # reset gemspec cache for each test because of commit 3d4163a
@@ -22,6 +17,7 @@ RSpec.describe "bundle gem" do
   end
 
   before do
+    global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false"
     git_config_content = <<-EOF
     [user]
       name = "Bundler User"
@@ -136,7 +132,6 @@ RSpec.describe "bundle gem" do
     context "git config github.user is absent" do
       before do
         sys_exec("git config --unset github.user")
-        reset!
         in_app_root
         bundle "gem #{gem_name}"
       end
@@ -209,7 +204,6 @@ RSpec.describe "bundle gem" do
 
   context "gem naming with relative paths" do
     before do
-      reset!
       in_app_root
     end
 
@@ -281,7 +275,6 @@ RSpec.describe "bundle gem" do
       before do
         `git config --unset user.name`
         `git config --unset user.email`
-        reset!
         in_app_root
         bundle "gem #{gem_name}"
       end
@@ -322,7 +315,6 @@ RSpec.describe "bundle gem" do
 
     context "--exe parameter set" do
       before do
-        reset!
         in_app_root
         bundle "gem #{gem_name} --exe"
       end
@@ -338,7 +330,6 @@ RSpec.describe "bundle gem" do
 
     context "--bin parameter set" do
       before do
-        reset!
         in_app_root
         bundle "gem #{gem_name} --bin"
       end
@@ -354,7 +345,6 @@ RSpec.describe "bundle gem" do
 
     context "no --test parameter" do
       before do
-        reset!
         in_app_root
         bundle "gem #{gem_name}"
       end
@@ -370,7 +360,6 @@ RSpec.describe "bundle gem" do
 
     context "--test parameter set to rspec" do
       before do
-        reset!
         in_app_root
         bundle "gem #{gem_name} --test=rspec"
       end
@@ -397,7 +386,6 @@ RSpec.describe "bundle gem" do
 
     context "gem.test setting set to rspec" do
       before do
-        reset!
         in_app_root
         bundle "config set gem.test rspec"
         bundle "gem #{gem_name}"
@@ -412,7 +400,6 @@ RSpec.describe "bundle gem" do
 
     context "gem.test setting set to rspec and --test is set to minitest" do
       before do
-        reset!
         in_app_root
         bundle "config set gem.test rspec"
         bundle "gem #{gem_name} --test=minitest"
@@ -426,7 +413,6 @@ RSpec.describe "bundle gem" do
 
     context "--test parameter set to minitest" do
       before do
-        reset!
         in_app_root
         bundle "gem #{gem_name} --test=minitest"
       end
@@ -456,7 +442,6 @@ RSpec.describe "bundle gem" do
 
     context "gem.test setting set to minitest" do
       before do
-        reset!
         in_app_root
         bundle "config set gem.test minitest"
         bundle "gem #{gem_name}"
@@ -482,7 +467,6 @@ RSpec.describe "bundle gem" do
 
     context "--test with no arguments" do
       before do
-        reset!
         in_app_root
         bundle "gem #{gem_name} --test"
       end
@@ -499,7 +483,6 @@ RSpec.describe "bundle gem" do
 
     context "--edit option" do
       it "opens the generated gemspec in the user's text editor" do
-        reset!
         in_app_root
         output = bundle "gem #{gem_name} --edit=echo"
         gemspec_path = File.join(Dir.pwd, gem_name, "#{gem_name}.gemspec")
@@ -515,7 +498,6 @@ RSpec.describe "bundle gem" do
       before do
         global_config "BUNDLE_GEM__MIT" => "true", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false"
       end
-      after { reset! }
       it_behaves_like "--mit flag"
       it_behaves_like "--no-mit flag"
     end
@@ -529,7 +511,6 @@ RSpec.describe "bundle gem" do
       before do
         global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "true"
       end
-      after { reset! }
       it_behaves_like "--coc flag"
       it_behaves_like "--no-coc flag"
     end
@@ -572,7 +553,6 @@ RSpec.describe "bundle gem" do
       before do
         `git config --unset user.name`
         `git config --unset user.email`
-        reset!
         in_app_root
         bundle "gem #{gem_name}"
       end
@@ -604,7 +584,6 @@ RSpec.describe "bundle gem" do
 
     context "--bin parameter set" do
       before do
-        reset!
         in_app_root
         bundle "gem #{gem_name} --bin"
       end
@@ -620,7 +599,6 @@ RSpec.describe "bundle gem" do
 
     context "no --test parameter" do
       before do
-        reset!
         in_app_root
         bundle "gem #{gem_name}"
       end
@@ -636,7 +614,6 @@ RSpec.describe "bundle gem" do
 
     context "--test parameter set to rspec" do
       before do
-        reset!
         in_app_root
         bundle "gem #{gem_name} --test=rspec"
       end
@@ -671,7 +648,6 @@ RSpec.describe "bundle gem" do
 
     context "--test parameter set to minitest" do
       before do
-        reset!
         in_app_root
         bundle "gem #{gem_name} --test=minitest"
       end
@@ -713,7 +689,6 @@ RSpec.describe "bundle gem" do
 
     context "--test with no arguments" do
       before do
-        reset!
         in_app_root
         bundle "gem #{gem_name} --test"
       end
@@ -726,7 +701,6 @@ RSpec.describe "bundle gem" do
 
     context "--ext parameter set" do
       before do
-        reset!
         in_app_root
         bundle "gem test_gem --ext"
       end
@@ -770,22 +744,22 @@ RSpec.describe "bundle gem" do
 
     it "fails gracefully with a ." do
       bundle "gem foo.gemspec"
-      expect(last_command.bundler_err).to end_with("Invalid gem name foo.gemspec -- `Foo.gemspec` is an invalid constant name")
+      expect(err).to end_with("Invalid gem name foo.gemspec -- `Foo.gemspec` is an invalid constant name")
     end
 
     it "fails gracefully with a ^" do
       bundle "gem ^"
-      expect(last_command.bundler_err).to end_with("Invalid gem name ^ -- `^` is an invalid constant name")
+      expect(err).to end_with("Invalid gem name ^ -- `^` is an invalid constant name")
     end
 
     it "fails gracefully with a space" do
       bundle "gem 'foo bar'"
-      expect(last_command.bundler_err).to end_with("Invalid gem name foo bar -- `Foo bar` is an invalid constant name")
+      expect(err).to end_with("Invalid gem name foo bar -- `Foo bar` is an invalid constant name")
     end
 
     it "fails gracefully when multiple names are passed" do
       bundle "gem foo bar baz"
-      expect(last_command.bundler_err).to eq(<<-E.strip)
+      expect(err).to eq(<<-E.strip)
 ERROR: "bundle gem" was called with arguments ["foo", "bar", "baz"]
 Usage: "bundle gem NAME [OPTIONS]"
       E
@@ -876,7 +850,7 @@ Usage: "bundle gem NAME [OPTIONS]"
         FileUtils.touch("conflict-foobar")
       end
       bundle "gem conflict-foobar"
-      expect(last_command.bundler_err).to include("Errno::ENOTDIR")
+      expect(err).to include("Errno::ENOTDIR")
       expect(exitstatus).to eql(32) if exitstatus
     end
   end
@@ -887,7 +861,7 @@ Usage: "bundle gem NAME [OPTIONS]"
         FileUtils.mkdir_p("conflict-foobar/Gemfile")
       end
       bundle! "gem conflict-foobar"
-      expect(last_command.stdout).to include("file_clash  conflict-foobar/Gemfile").
+      expect(out).to include("file_clash  conflict-foobar/Gemfile").
         and include "Initializing git repo in #{bundled_app("conflict-foobar")}"
     end
   end

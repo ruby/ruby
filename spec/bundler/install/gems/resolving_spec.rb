@@ -77,7 +77,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         bundle :install, :env => { "DEBUG_RESOLVER" => "1" }
 
-        expect(last_command.stderr).to include("Creating possibility state for net_c")
+        expect(err).to include("Creating possibility state for net_c")
       end
     end
 
@@ -91,7 +91,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         bundle :install, :env => { "DEBUG_RESOLVER_TREE" => "1" }
 
-        expect(last_command.stderr).to include(" net_b").
+        expect(err).to include(" net_b").
           and include("Starting resolution").
           and include("Finished resolution").
           and include("Attempting to activate")
@@ -171,7 +171,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
             Ruby\0 (> 9000), which is required by gem 'require_ruby', is not available in the local ruby installation
           E
-          expect(last_command.bundler_err).to end_with(nice_error)
+          expect(err).to end_with(nice_error)
         end
       end
 

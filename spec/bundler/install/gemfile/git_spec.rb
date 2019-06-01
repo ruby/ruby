@@ -204,7 +204,7 @@ RSpec.describe "bundle install with git sources" do
           gem "foo"
         end
       G
-      expect(last_command.stderr).to be_empty
+      expect(err).to be_empty
 
       run <<-RUBY
         require 'foo'
@@ -234,7 +234,7 @@ RSpec.describe "bundle install with git sources" do
           gem "foo"
         end
       G
-      expect(last_command.stderr).to be_empty
+      expect(err).to be_empty
 
       run! <<-RUBY
         require 'foo'
@@ -270,7 +270,7 @@ RSpec.describe "bundle install with git sources" do
           gem "foo"
         end
       G
-      expect(last_command.stderr).to be_empty
+      expect(err).to be_empty
 
       run! <<-RUBY
         require 'foo'
@@ -515,7 +515,7 @@ RSpec.describe "bundle install with git sources" do
       bundle solution
       bundle :install
 
-      expect(last_command.stderr).to be_empty
+      expect(err).to be_empty
     end
 
     it "explodes and gives correct solution if branch is not given on install" do
@@ -537,7 +537,7 @@ RSpec.describe "bundle install with git sources" do
       bundle solution
       bundle :install
 
-      expect(last_command.stderr).to be_empty
+      expect(err).to be_empty
     end
 
     it "does not explode if disable_local_branch_check is given" do
@@ -1197,7 +1197,7 @@ RSpec.describe "bundle install with git sources" do
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
-      expect(last_command.bundler_err).to end_with(<<-M.strip)
+      expect(err).to end_with(<<-M.strip)
 An error occurred while installing foo (1.0), and Bundler cannot continue.
 
 In Gemfile:
@@ -1380,7 +1380,7 @@ In Gemfile:
       with_path_as("") do
         bundle "update", :all => true
       end
-      expect(last_command.bundler_err).
+      expect(err).
         to include("You need to install git to be able to use gems from git repositories. For help installing git, please refer to GitHub's tutorial at https://help.github.com/articles/set-up-git")
     end
 
@@ -1437,7 +1437,7 @@ In Gemfile:
         G
 
         expect(last_command.stdboth).to_not include("password1")
-        expect(last_command.stdout).to include("Fetching https://user1@github.com/company/private-repo")
+        expect(out).to include("Fetching https://user1@github.com/company/private-repo")
       end
     end
 
@@ -1452,7 +1452,7 @@ In Gemfile:
         G
 
         expect(last_command.stdboth).to_not include("oauth_token")
-        expect(last_command.stdout).to include("Fetching https://x-oauth-basic@github.com/company/private-repo")
+        expect(out).to include("Fetching https://x-oauth-basic@github.com/company/private-repo")
       end
     end
   end

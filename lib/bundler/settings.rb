@@ -4,9 +4,9 @@ require "uri"
 
 module Bundler
   class Settings
-    autoload :Mirror,  "bundler/mirror"
-    autoload :Mirrors, "bundler/mirror"
-    autoload :Validator, "bundler/settings/validator"
+    autoload :Mirror,  File.expand_path("mirror", __dir__)
+    autoload :Mirrors, File.expand_path("mirror", __dir__)
+    autoload :Validator, File.expand_path("settings/validator", __dir__)
 
     BOOL_KEYS = %w[
       allow_bundler_dependency_conflicts
@@ -28,14 +28,11 @@ module Bundler
       disable_platform_warnings
       disable_shared_gems
       disable_version_check
-      error_on_stderr
       force_ruby_platform
       forget_cli_options
       frozen
       gem.coc
       gem.mit
-      github.https
-      global_path_appends_ruby_scope
       global_gem_cache
       ignore_messages
       init_gems_rb
@@ -207,23 +204,22 @@ module Bundler
       locations
     end
 
-    # for legacy reasons, in Bundler 1, the ruby scope isnt appended when the setting comes from ENV or the global config,
-    # nor do we respect :disable_shared_gems
+    # for legacy reasons, in Bundler 2, we do not respect :disable_shared_gems
     def path
       key  = key_for(:path)
       path = ENV[key] || @global_config[key]
       if path && !@temporary.key?(key) && !@local_config.key?(key)
-        return Path.new(path, Bundler.feature_flag.global_path_appends_ruby_scope?, false, false)
+        return Path.new(path, false, false)
       end
 
       system_path = self["path.system"] || (self[:disable_shared_gems] == false)
-      Path.new(self[:path], true, system_path, Bundler.feature_flag.default_install_uses_path?)
+      Path.new(self[:path], system_path, Bundler.feature_flag.default_install_uses_path?)
     end
 
-    Path = Struct.new(:explicit_path, :append_ruby_scope, :system_path, :default_install_uses_path) do
+    Path = Struct.new(:explicit_path, :system_path, :default_install_uses_path) do
       def path
         path = base_path
-        path = File.join(path, Bundler.ruby_scope) if append_ruby_scope && !use_system_gems?
+        path = File.join(path, Bundler.ruby_scope) unless use_system_gems?
         path
       end
 
@@ -358,7 +354,7 @@ module Bundler
       return unless file
       SharedHelpers.filesystem_access(file) do |p|
         FileUtils.mkdir_p(p.dirname)
-        require "bundler/yaml_serializer"
+        require_relative "yaml_serializer"
         p.open("w") {|f| f.write(YAMLSerializer.dump(hash)) }
       end
     end
@@ -398,7 +394,7 @@ module Bundler
       SharedHelpers.filesystem_access(config_file, :read) do |file|
         valid_file = file.exist? && !file.size.zero?
         return {} unless valid_file
-        require "bundler/yaml_serializer"
+        require_relative "yaml_serializer"
         YAMLSerializer.load file.read
       end
     end

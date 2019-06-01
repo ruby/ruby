@@ -391,86 +391,86 @@ E
   describe "subcommands" do
     it "list", :ruby_repo do
       bundle! "config list"
-      expect(last_command.stdout).to eq "Settings are listed in order of priority. The top value will be used.\nspec_run\nSet via BUNDLE_SPEC_RUN: \"true\""
+      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\nspec_run\nSet via BUNDLE_SPEC_RUN: \"true\""
 
       bundle! "config list", :parseable => true
-      expect(last_command.stdout).to eq "spec_run=true"
+      expect(out).to eq "spec_run=true"
     end
 
     it "get" do
       ENV["BUNDLE_BAR"] = "bar_val"
 
       bundle! "config get foo"
-      expect(last_command.stdout).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(out).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
 
       ENV["BUNDLE_FOO"] = "foo_val"
 
       bundle! "config get foo --parseable"
-      expect(last_command.stdout).to eq "foo=foo_val"
+      expect(out).to eq "foo=foo_val"
 
       bundle! "config get foo"
-      expect(last_command.stdout).to eq "Settings for `foo` in order of priority. The top value will be used\nSet via BUNDLE_FOO: \"foo_val\""
+      expect(out).to eq "Settings for `foo` in order of priority. The top value will be used\nSet via BUNDLE_FOO: \"foo_val\""
     end
 
     it "set" do
       bundle! "config set foo 1"
-      expect(last_command.stdout).to eq ""
+      expect(out).to eq ""
 
       bundle! "config set --local foo 2"
-      expect(last_command.stdout).to eq ""
+      expect(out).to eq ""
 
       bundle! "config set --global foo 3"
-      expect(last_command.stdout).to eq "Your application has set foo to \"2\". This will override the global value you are currently setting"
+      expect(out).to eq "Your application has set foo to \"2\". This will override the global value you are currently setting"
 
       bundle! "config set --parseable --local foo 4"
-      expect(last_command.stdout).to eq "foo=4"
+      expect(out).to eq "foo=4"
 
       bundle! "config set --local foo 4.1"
-      expect(last_command.stdout).to eq "You are replacing the current local value of foo, which is currently \"4\""
+      expect(out).to eq "You are replacing the current local value of foo, which is currently \"4\""
 
       bundle "config set --global --local foo 5"
       expect(last_command).to be_failure
-      expect(last_command.bundler_err).to eq "The options global and local were specified. Please only use one of the switches at a time."
+      expect(err).to eq "The options global and local were specified. Please only use one of the switches at a time."
     end
 
     it "unset" do
       bundle! "config unset foo"
-      expect(last_command.stdout).to eq ""
+      expect(out).to eq ""
 
       bundle! "config set foo 1"
       bundle! "config unset foo --parseable"
-      expect(last_command.stdout).to eq ""
+      expect(out).to eq ""
 
       bundle! "config set --local foo 1"
       bundle! "config set --global foo 2"
 
       bundle! "config unset foo"
-      expect(last_command.stdout).to eq ""
+      expect(out).to eq ""
       expect(bundle!("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
 
       bundle! "config set --local foo 1"
       bundle! "config set --global foo 2"
 
       bundle! "config unset foo --local"
-      expect(last_command.stdout).to eq ""
+      expect(out).to eq ""
       expect(bundle!("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nSet for the current user (#{home(".bundle/config")}): \"2\""
       bundle! "config unset foo --global"
-      expect(last_command.stdout).to eq ""
+      expect(out).to eq ""
       expect(bundle!("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
 
       bundle! "config set --local foo 1"
       bundle! "config set --global foo 2"
 
       bundle! "config unset foo --global"
-      expect(last_command.stdout).to eq ""
+      expect(out).to eq ""
       expect(bundle!("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nSet for your local app (#{bundled_app(".bundle/config")}): \"1\""
       bundle! "config unset foo --local"
-      expect(last_command.stdout).to eq ""
+      expect(out).to eq ""
       expect(bundle!("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
 
       bundle "config unset foo --local --global"
       expect(last_command).to be_failure
-      expect(last_command.bundler_err).to eq "The options global and local were specified. Please only use one of the switches at a time."
+      expect(err).to eq "The options global and local were specified. Please only use one of the switches at a time."
     end
   end
 end

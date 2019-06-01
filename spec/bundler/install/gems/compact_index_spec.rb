@@ -60,7 +60,7 @@ RSpec.describe "compact index api" do
     # can't use `include_gems` here since the `require` will conflict on a
     # case-insensitive FS
     run! "Bundler.require; puts Gem.loaded_specs.values_at('rack', 'Rack').map(&:full_name)"
-    expect(last_command.stdout).to eq("rack-1.0\nRack-0.1")
+    expect(out).to eq("rack-1.0\nRack-0.1")
   end
 
   it "should handle multiple gem dependencies on the same gem" do

@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 begin
-  require File.expand_path("../lib/bundler/version", __FILE__)
+  require_relative "lib/bundler/version"
 rescue LoadError
   # for Ruby core repository
-  require File.expand_path("../version", __FILE__)
+  require_relative "version"
 end
 
 Gem::Specification.new do |s|
@@ -31,27 +31,23 @@ Gem::Specification.new do |s|
     }
   end
 
-  if s.version >= Gem::Version.new("2.a".dup)
-    s.required_ruby_version     = ">= 2.3.0"
-    s.required_rubygems_version = ">= 2.5.0"
-  else
-    s.required_ruby_version     = ">= 1.8.7"
-    s.required_rubygems_version = ">= 1.3.6"
-  end
+  s.required_ruby_version     = ">= 2.3.0"
+  s.required_rubygems_version = ">= 2.5.0"
 
   s.add_development_dependency "automatiek", "~> 0.1.0"
   s.add_development_dependency "rake",       "~> 12.0"
   s.add_development_dependency "ronn",       "~> 0.7.3"
   s.add_development_dependency "rspec",      "~> 3.6"
-  s.add_development_dependency "rubocop",    "= 0.65.0"
+  s.add_development_dependency "rubocop",    "= 0.68.1"
+  s.add_development_dependency "rubocop-performance", "~> 1.1"
 
-  # s.files = Dir.glob("{lib,exe}/**/*", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
+  s.files = Dir.glob("{lib,exe}/**/*", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
 
   # we don't check in man pages, but we need to ship them because
   # we use them to generate the long-form help for each command.
-  # s.files += Dir.glob("man/**/*")
+  s.files += Dir.glob("man/**/*")
   # Include the CHANGELOG.md, LICENSE.md, README.md manually
-  # s.files += %w[CHANGELOG.md LICENSE.md README.md]
+  s.files += %w[CHANGELOG.md LICENSE.md README.md]
   # include the gemspec itself because warbler breaks w/o it
   s.files += %w[bundler.gemspec]
 

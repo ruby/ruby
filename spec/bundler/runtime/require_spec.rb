@@ -136,8 +136,8 @@ RSpec.describe "Bundler.require" do
     G
 
     run "Bundler.require"
-    expect(last_command.stderr).to match("error while trying to load the gem 'faulty'")
-    expect(last_command.stderr).to match("Gem Internal Error Message")
+    expect(err).to match("error while trying to load the gem 'faulty'")
+    expect(err).to match("Gem Internal Error Message")
   end
 
   it "doesn't swallow the error when the library has an unrelated error" do
@@ -198,7 +198,7 @@ RSpec.describe "Bundler.require" do
       RUBY
       ruby(cmd)
 
-      expect(last_command.stderr).to be_empty
+      expect(err).to be_empty
     end
 
     it "does not mangle explicitly given requires" do
@@ -432,7 +432,7 @@ RSpec.describe "Bundler.require with platform specific dependencies" do
     G
 
     run "Bundler.require"
-    expect(last_command.stderr).to be_empty
+    expect(err).to be_empty
   end
 
   it "requires gems pinned to multiple platforms, including the current one" do
@@ -447,6 +447,6 @@ RSpec.describe "Bundler.require with platform specific dependencies" do
     run "Bundler.require; puts RACK"
 
     expect(out).to eq("1.0.0")
-    expect(last_command.stderr).to be_empty
+    expect(err).to be_empty
   end
 end

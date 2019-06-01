@@ -221,36 +221,28 @@ LIST OF AVAILABLE KEYS
 	   from  checking  if  a  newer  Bundler  version  is	available   on
 	   rubygems.org.
 
-       o   error_on_stderr  (BUNDLE_ERROR_ON_STDERR):  Print Bundler errors to
-	   stderr.
-
-       o   force_ruby_platform (BUNDLE_FORCE_RUBY_PLATFORM): Ignore  the  cur-
-	   rent  machine's  platform and install only ruby platform gems. As a
+       o   force_ruby_platform	(BUNDLE_FORCE_RUBY_PLATFORM):  Ignore the cur-
+	   rent machine's platform and install only ruby platform gems.  As  a
 	   result, gems with native extensions will be compiled from source.
 
-       o   frozen (BUNDLE_FROZEN): Disallow changes to the Gemfile.  When  the
-	   Gemfile  is	changed and the lockfile has not been updated, running
-	   Bundler commands will be blocked. Defaults to true  when  --deploy-
+       o   frozen  (BUNDLE_FROZEN):  Disallow changes to the Gemfile. When the
+	   Gemfile is changed and the lockfile has not been  updated,  running
+	   Bundler  commands  will be blocked. Defaults to true when --deploy-
 	   ment is used.
 
-       o   gem.push_key  (BUNDLE_GEM__PUSH_KEY):  Sets the --key parameter for
-	   gem push when using the rake release command with  a  private  gem-
+       o   gem.push_key (BUNDLE_GEM__PUSH_KEY): Sets the --key	parameter  for
+	   gem	push  when  using the rake release command with a private gem-
 	   stash server.
 
-       o   gemfile  (BUNDLE_GEMFILE): The name of the file that bundler should
-	   use as the Gemfile. This location of this file also sets  the  root
+       o   gemfile (BUNDLE_GEMFILE): The name of the file that bundler	should
+	   use	as  the Gemfile. This location of this file also sets the root
 	   of the project, which is used to resolve relative paths in the Gem-
-	   file, among other things. By default, bundler will search  up  from
+	   file,  among  other things. By default, bundler will search up from
 	   the current working directory until it finds a Gemfile.
 
-       o   global_gem_cache  (BUNDLE_GLOBAL_GEM_CACHE): Whether Bundler should
+       o   global_gem_cache (BUNDLE_GLOBAL_GEM_CACHE): Whether Bundler	should
 	   cache all gems globally, rather than locally to the installing Ruby
 	   installation.
-
-       o   global_path_appends_ruby_scope				 (BUN-
-	   DLE_GLOBAL_PATH_APPENDS_RUBY_SCOPE): Whether Bundler should	append
-	   the	Ruby scope (e.g. engine and ABI version) to a globally-config-
-	   ured path.
 
        o   ignore_messages (BUNDLE_IGNORE_MESSAGES): When set, no post install
 	   messages will be printed. To silence a single gem, use dot notation
@@ -287,52 +279,49 @@ LIST OF AVAILABLE KEYS
        o   plugins (BUNDLE_PLUGINS): Enable Bundler's experimental plugin sys-
 	   tem.
 
-       o   prefer_gems_rb  (BUNDLE_PREFER_GEMS_RB)  Prefer  gems.rb to Gemfile
-	   when Bundler is searching for a Gemfile.
-
-       o   prefer_patch (BUNDLE_PREFER_PATCH): Prefer updating	only  to  next
-	   patch  version during updates. Makes bundle update calls equivalent
+       o   prefer_patch  (BUNDLE_PREFER_PATCH):  Prefer  updating only to next
+	   patch version during updates. Makes bundle update calls  equivalent
 	   to bundler update --patch.
 
-       o   print_only_version_number (BUNDLE_PRINT_ONLY_VERSION_NUMBER)  Print
+       o   print_only_version_number  (BUNDLE_PRINT_ONLY_VERSION_NUMBER) Print
 	   only version number from bundler --version.
 
-       o   redirect  (BUNDLE_REDIRECT):  The  number  of redirects allowed for
+       o   redirect (BUNDLE_REDIRECT): The number  of  redirects  allowed  for
 	   network requests. Defaults to 5.
 
-       o   retry (BUNDLE_RETRY): The number of times to retry  failed  network
+       o   retry  (BUNDLE_RETRY):  The number of times to retry failed network
 	   requests. Defaults to 3.
 
        o   setup_makes_kernel_gem_public   (BUNDLE_SETUP_MAKES_KERNEL_GEM_PUB-
-	   LIC): Have Bundler.setup make the Kernel#gem  method  public,  even
+	   LIC):  Have	Bundler.setup  make the Kernel#gem method public, even
 	   though RubyGems declares it as private.
 
-       o   shebang  (BUNDLE_SHEBANG):  The program name that should be invoked
-	   for generated binstubs. Defaults to the ruby install name  used  to
+       o   shebang (BUNDLE_SHEBANG): The program name that should  be  invoked
+	   for	generated  binstubs. Defaults to the ruby install name used to
 	   generate the binstub.
 
        o   silence_deprecations (BUNDLE_SILENCE_DEPRECATIONS): Whether Bundler
-	   should silence deprecation  warnings  for  behavior	that  will  be
+	   should  silence  deprecation  warnings  for	behavior  that will be
 	   changed in the next major version.
 
-       o   silence_root_warning   (BUNDLE_SILENCE_ROOT_WARNING):  Silence  the
+       o   silence_root_warning  (BUNDLE_SILENCE_ROOT_WARNING):  Silence   the
 	   warning Bundler prints when installing gems as root.
 
        o   skip_default_git_sources (BUNDLE_SKIP_DEFAULT_GIT_SOURCES): Whether
 	   Bundler should skip adding default git source shortcuts to the Gem-
 	   file DSL.
 
-       o   specific_platform  (BUNDLE_SPECIFIC_PLATFORM):  Allow  bundler   to
+       o   specific_platform   (BUNDLE_SPECIFIC_PLATFORM):  Allow  bundler  to
 	   resolve for the specific running platform and store it in the lock-
 	   file, instead of only using a generic platform. A specific platform
-	   is  the exact platform triple reported by Gem::Platform.local, such
-	   as x86_64-darwin-16	or  universal-java-1.8.  On  the  other  hand,
-	   generic  platforms  are those such as ruby, mswin, or java. In this
-	   example, x86_64-darwin-16 would map to ruby and  universal-java-1.8
+	   is the exact platform triple reported by Gem::Platform.local,  such
+	   as  x86_64-darwin-16  or  universal-java-1.8.  On  the  other hand,
+	   generic platforms are those such as ruby, mswin, or java.  In  this
+	   example,  x86_64-darwin-16 would map to ruby and universal-java-1.8
 	   to java.
 
-       o   ssl_ca_cert	(BUNDLE_SSL_CA_CERT): Path to a designated CA certifi-
-	   cate file or folder containing multiple  certificates  for  trusted
+       o   ssl_ca_cert (BUNDLE_SSL_CA_CERT): Path to a designated CA  certifi-
+	   cate  file  or  folder containing multiple certificates for trusted
 	   CAs in PEM format.
 
        o   ssl_client_cert (BUNDLE_SSL_CLIENT_CERT): Path to a designated file
@@ -342,44 +331,44 @@ LIST OF AVAILABLE KEYS
 	   Bundler uses when making HTTPS requests. Defaults to verify peer.
 
        o   suppress_install_using_messages (BUNDLE_SUPPRESS_INSTALL_USING_MES-
-	   SAGES): Avoid printing Using ... messages during installation  when
+	   SAGES):  Avoid printing Using ... messages during installation when
 	   the version of a gem has not changed.
 
-       o   system_bindir  (BUNDLE_SYSTEM_BINDIR):  The location where RubyGems
+       o   system_bindir (BUNDLE_SYSTEM_BINDIR): The location  where  RubyGems
 	   installs binstubs. Defaults to Gem.bindir.
 
        o   timeout (BUNDLE_TIMEOUT): The seconds allowed before timing out for
 	   network requests. Defaults to 10.
 
        o   unlock_source_unlocks_spec	  (BUNDLE_UNLOCK_SOURCE_UNLOCKS_SPEC):
-	   Whether running bundle update --source NAME unlocks a gem with  the
+	   Whether  running bundle update --source NAME unlocks a gem with the
 	   given name. Defaults to true.
 
-       o   update_requires_all_flag  (BUNDLE_UPDATE_REQUIRES_ALL_FLAG) Require
-	   passing --all to bundle update when everything should  be  updated,
+       o   update_requires_all_flag (BUNDLE_UPDATE_REQUIRES_ALL_FLAG)  Require
+	   passing  --all  to bundle update when everything should be updated,
 	   and disallow passing no options to bundle update.
 
-       o   user_agent  (BUNDLE_USER_AGENT):  The  custom  user	agent fragment
+       o   user_agent (BUNDLE_USER_AGENT):  The  custom  user  agent  fragment
 	   Bundler includes in API requests.
 
        o   with (BUNDLE_WITH): A :-separated list of groups whose gems bundler
 	   should install.
 
-       o   without  (BUNDLE_WITHOUT):  A :-separated list of groups whose gems
+       o   without (BUNDLE_WITHOUT): A :-separated list of groups  whose  gems
 	   bundler should not install.
 
 
 
-       In general, you should set these settings per-application by using  the
-       applicable  flag to the bundle install(1) bundle-install.1.html or bun-
+       In  general, you should set these settings per-application by using the
+       applicable flag to the bundle install(1) bundle-install.1.html or  bun-
        dle package(1) bundle-package.1.html command.
 
-       You can set them globally either via environment  variables  or	bundle
-       config,	whichever is preferable for your setup. If you use both, envi-
+       You  can  set  them globally either via environment variables or bundle
+       config, whichever is preferable for your setup. If you use both,  envi-
        ronment variables will take preference over global settings.
 
 LOCAL GIT REPOS
-       Bundler also allows you	to  work  against  a  git  repository  locally
+       Bundler	also  allows  you  to  work  against  a git repository locally
        instead of using the remote version. This can be achieved by setting up
        a local override:
 
@@ -398,30 +387,30 @@ LOCAL GIT REPOS
 
 
 
-       Now  instead of checking out the remote git repository, the local over-
-       ride will be used. Similar to a path source, every time the  local  git
-       repository  change, changes will be automatically picked up by Bundler.
-       This means a commit in the local git repo will update the  revision  in
+       Now instead of checking out the remote git repository, the local  over-
+       ride  will  be used. Similar to a path source, every time the local git
+       repository change, changes will be automatically picked up by  Bundler.
+       This  means  a commit in the local git repo will update the revision in
        the Gemfile.lock to the local git repo revision. This requires the same
-       attention as git submodules. Before pushing to the remote, you need  to
+       attention  as git submodules. Before pushing to the remote, you need to
        ensure the local override was pushed, otherwise you may point to a com-
-       mit that only exists in your local machine. You'll  also  need  to  CGI
+       mit  that  only	exists	in your local machine. You'll also need to CGI
        escape your usernames and passwords as well.
 
-       Bundler	does many checks to ensure a developer won't work with invalid
-       references. Particularly, we force a developer to specify a  branch  in
-       the  Gemfile  in  order to use this feature. If the branch specified in
-       the Gemfile and the current branch in the local git repository  do  not
-       match,  Bundler	will  abort.  This  ensures that a developer is always
-       working against the correct branches, and prevents  accidental  locking
+       Bundler does many checks to ensure a developer won't work with  invalid
+       references.  Particularly,  we force a developer to specify a branch in
+       the Gemfile in order to use this feature. If the  branch  specified  in
+       the  Gemfile  and the current branch in the local git repository do not
+       match, Bundler will abort. This ensures	that  a  developer  is	always
+       working	against  the correct branches, and prevents accidental locking
        to a different branch.
 
-       Finally,  Bundler  also	ensures  that the current revision in the Gem-
-       file.lock exists in the local git repository. By  doing	this,  Bundler
+       Finally, Bundler also ensures that the current  revision  in  the  Gem-
+       file.lock  exists  in  the local git repository. By doing this, Bundler
        forces you to fetch the latest changes in the remotes.
 
 MIRRORS OF GEM SOURCES
-       Bundler	supports  overriding gem sources with mirrors. This allows you
+       Bundler supports overriding gem sources with mirrors. This  allows  you
        to configure rubygems.org as the gem source in your Gemfile while still
        using your mirror to fetch gems.
 
@@ -431,7 +420,7 @@ MIRRORS OF GEM SOURCES
 
 
 
-       For  example,  to  use a mirror of rubygems.org hosted at rubygems-mir-
+       For example, to use a mirror of rubygems.org  hosted  at  rubygems-mir-
        ror.org:
 
 
@@ -440,8 +429,8 @@ MIRRORS OF GEM SOURCES
 
 
 
-       Each mirror also provides a fallback timeout  setting.  If  the	mirror
-       does  not  respond within the fallback timeout, Bundler will try to use
+       Each  mirror  also  provides  a fallback timeout setting. If the mirror
+       does not respond within the fallback timeout, Bundler will try  to  use
        the original server instead of the mirror.
 
 
@@ -458,11 +447,11 @@ MIRRORS OF GEM SOURCES
 
 
 
-       The default fallback timeout is 0.1 seconds, but the setting  can  cur-
+       The  default  fallback timeout is 0.1 seconds, but the setting can cur-
        rently only accept whole seconds (for example, 1, 15, or 30).
 
 CREDENTIALS FOR GEM SOURCES
-       Bundler	allows	you to configure credentials for any gem source, which
+       Bundler allows you to configure credentials for any gem	source,  which
        allows you to avoid putting secrets into your Gemfile.
 
 
@@ -471,7 +460,7 @@ CREDENTIALS FOR GEM SOURCES
 
 
 
-       For example, to save the credentials of	user  claudette  for  the  gem
+       For  example,  to  save	the  credentials of user claudette for the gem
        source at gems.longerous.com, you would run:
 
 
@@ -505,7 +494,7 @@ CREDENTIALS FOR GEM SOURCES
 
 
 
-       This is especially useful for private repositories  on  hosts  such  as
+       This  is  especially  useful  for private repositories on hosts such as
        Github, where you can use personal OAuth tokens:
 
 
@@ -515,9 +504,9 @@ CREDENTIALS FOR GEM SOURCES
 
 
 CONFIGURE BUNDLER DIRECTORIES
-       Bundler's  home,  config,  cache  and plugin directories are able to be
-       configured through environment  variables.  The	default  location  for
-       Bundler's  home	directory  is ~/.bundle, which all directories inherit
+       Bundler's home, config, cache and plugin directories  are  able	to  be
+       configured  through  environment  variables.  The  default location for
+       Bundler's home directory is ~/.bundle, which  all  directories  inherit
        from by default. The following outlines the available environment vari-
        ables and their default values
 
@@ -533,4 +522,4 @@ CONFIGURE BUNDLER DIRECTORIES
 
 
 
-				  April 2019		      BUNDLE-CONFIG(1)
+				   May 2019		      BUNDLE-CONFIG(1)

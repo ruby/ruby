@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require 'bundler/vendor/molinillo/lib/molinillo/dependency_graph/add_edge_no_circular'
-require 'bundler/vendor/molinillo/lib/molinillo/dependency_graph/add_vertex'
-require 'bundler/vendor/molinillo/lib/molinillo/dependency_graph/delete_edge'
-require 'bundler/vendor/molinillo/lib/molinillo/dependency_graph/detach_vertex_named'
-require 'bundler/vendor/molinillo/lib/molinillo/dependency_graph/set_payload'
-require 'bundler/vendor/molinillo/lib/molinillo/dependency_graph/tag'
+require_relative 'add_edge_no_circular'
+require_relative 'add_vertex'
+require_relative 'delete_edge'
+require_relative 'detach_vertex_named'
+require_relative 'set_payload'
+require_relative 'tag'
 
 module Bundler::Molinillo
   class DependencyGraph

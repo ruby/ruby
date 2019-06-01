@@ -28,7 +28,7 @@ RSpec.describe "fetching dependencies with a mirrored source", :realworld => tru
     expect(the_bundle).to include_gems "weakling 0.0.3"
   end
 
-  private
+private
 
   def setup_server
     require_rack

@@ -59,15 +59,19 @@ RSpec.describe "bundle outdated" do
       install_gemfile <<-G
         source "file://#{gem_repo2}"
 
+        gem "terranova", '8'
+
         group :development, :test do
           gem 'activesupport', '2.3.5'
         end
       G
 
       update_repo2 { build_gem "activesupport", "3.0" }
+      update_repo2 { build_gem "terranova", "9" }
 
       bundle "outdated --verbose"
       expect(out).to include("activesupport (newest 3.0, installed 2.3.5, requested = 2.3.5) in groups \"development, test\"")
+      expect(out).to include("terranova (newest 9, installed 8, requested = 8) in group \"default\"")
     end
   end
 
@@ -117,10 +121,10 @@ RSpec.describe "bundle outdated" do
     it "returns a sorted list of outdated gems from one group => 'default'" do
       test_group_option("default")
 
-      expect(out).to include("===== Group default =====")
+      expect(out).to include("===== Group \"default\" =====")
       expect(out).to include("terranova (")
 
-      expect(out).not_to include("===== Group development, test =====")
+      expect(out).not_to include("===== Groups \"development, test\" =====")
       expect(out).not_to include("activesupport")
       expect(out).not_to include("duradura")
     end
@@ -128,10 +132,10 @@ RSpec.describe "bundle outdated" do
     it "returns a sorted list of outdated gems from one group => 'development'" do
       test_group_option("development", 2)
 
-      expect(out).not_to include("===== Group default =====")
+      expect(out).not_to include("===== Group \"default\" =====")
       expect(out).not_to include("terranova (")
 
-      expect(out).to include("===== Group development, test =====")
+      expect(out).to include("===== Groups \"development, test\" =====")
       expect(out).to include("activesupport")
       expect(out).to include("duradura")
     end
@@ -139,10 +143,10 @@ RSpec.describe "bundle outdated" do
     it "returns a sorted list of outdated gems from one group => 'test'" do
       test_group_option("test", 2)
 
-      expect(out).not_to include("===== Group default =====")
+      expect(out).not_to include("===== Group \"default\" =====")
       expect(out).not_to include("terranova (")
 
-      expect(out).to include("===== Group development, test =====")
+      expect(out).to include("===== Groups \"development, test\" =====")
       expect(out).to include("activesupport")
       expect(out).to include("duradura")
     end
@@ -184,9 +188,9 @@ RSpec.describe "bundle outdated" do
       end
 
       bundle "outdated --groups"
-      expect(out).to include("===== Group default =====")
+      expect(out).to include("===== Group \"default\" =====")
       expect(out).to include("terranova (newest 9, installed 8, requested = 8)")
-      expect(out).to include("===== Group development, test =====")
+      expect(out).to include("===== Groups \"development, test\" =====")
       expect(out).to include("activesupport (newest 3.0, installed 2.3.5, requested = 2.3.5)")
       expect(out).to include("duradura (newest 8.0, installed 7.0, requested = 7.0)")
 

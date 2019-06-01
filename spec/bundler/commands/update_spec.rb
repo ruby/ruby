@@ -473,6 +473,39 @@ RSpec.describe "bundle update in more complicated situations" do
     expect(the_bundle).to include_gems "thin 2.0", "rack 10.0", "rack-obama 1.0"
   end
 
+  it "will not warn when an explicitly updated git gem changes sha but not version" do
+    build_git "foo"
+
+    install_gemfile! <<-G
+      gem "foo", :git => '#{lib_path("foo-1.0")}'
+    G
+
+    update_git "foo" do |s|
+      s.write "lib/foo2.rb", "puts :foo2"
+    end
+
+    bundle! "update foo"
+
+    expect(last_command.stdboth).not_to include "attempted to update"
+  end
+
+  it "will not warn when changing gem sources but not versions" do
+    build_git "rack"
+
+    install_gemfile! <<-G
+      gem "rack", :git => '#{lib_path("rack-1.0")}'
+    G
+
+    gemfile <<-G
+      source "file://#{gem_repo1}"
+      gem "rack"
+    G
+
+    bundle! "update rack"
+
+    expect(last_command.stdboth).not_to include "attempted to update"
+  end
+
   it "will update only from pinned source" do
     install_gemfile <<-G
       source "file://#{gem_repo2}"
@@ -530,6 +563,41 @@ RSpec.describe "bundle update in more complicated situations" do
       expect(the_bundle).to include_gem "a 1.1"
     end
   end
+
+  context "when the dependency is for a different platform" do
+    before do
+      build_repo4 do
+        build_gem("a", "0.9") {|s| s.platform = "java" }
+        build_gem("a", "1.1") {|s| s.platform = "java" }
+      end
+
+      gemfile <<-G
+        source "file://#{gem_repo4}"
+        gem "a", platform: :jruby
+      G
+
+      lockfile <<-L
+        GEM
+          remote: file://#{gem_repo4}
+          specs:
+            a (0.9-java)
+
+        PLATFORMS
+          java
+
+        DEPENDENCIES
+          a
+      L
+
+      simulate_platform linux
+    end
+
+    it "is not updated because it is not actually included in the bundle" do
+      bundle! "update a"
+      expect(last_command.stdboth).to include "Bundler attempted to update a but it was not considered because it is for a different platform from the current one"
+      expect(the_bundle).to_not include_gem "a"
+    end
+  end
 end
 
 RSpec.describe "bundle update without a Gemfile.lock" do
@@ -565,13 +633,13 @@ RSpec.describe "bundle update when a gem depends on a newer version of bundler" 
   it "should explain that bundler conflicted", :bundler => "< 3" do
     bundle "update", :all => true
     expect(last_command.stdboth).not_to match(/in snapshot/i)
-    expect(last_command.bundler_err).to match(/current Bundler version/i).
+    expect(err).to match(/current Bundler version/i).
       and match(/perhaps you need to update bundler/i)
   end
 
   it "should warn that the newer version of Bundler would conflict", :bundler => "3" do
     bundle! "update", :all => true
-    expect(last_command.bundler_err).to include("rails (3.0.1) has dependency bundler").
+    expect(err).to include("rails (3.0.1) has dependency bundler").
       and include("so the dependency is being ignored")
     expect(the_bundle).to include_gem "rails 3.0.1"
   end
@@ -947,7 +1015,7 @@ RSpec.describe "bundle update conservative" do
     it "raises if too many flags are provided" do
       bundle "update --patch --minor", :all => true
 
-      expect(last_command.bundler_err).to eq "Provide only one of the following options: minor, patch"
+      expect(err).to eq "Provide only one of the following options: minor, patch"
     end
   end
 end

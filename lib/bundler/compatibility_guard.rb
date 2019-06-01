@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 
-require "bundler/version"
+require_relative "version"
 
 if Bundler::VERSION.split(".").first.to_i >= 2
   if Gem::Version.new(Object::RUBY_VERSION.dup) < Gem::Version.new("2.3")

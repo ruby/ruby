@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require "bundler/shared_helpers"
+require_relative "shared_helpers"
 
 if Bundler::SharedHelpers.in_bundle?
-  require "bundler"
+  require_relative "../bundler"
 
   if STDOUT.tty? || ENV["BUNDLER_FORCE_TTY"]
     Bundler.ui = Bundler::UI::Shell.new

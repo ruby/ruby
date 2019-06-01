@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "uri"
-require "bundler/match_platform"
+require_relative "match_platform"
 
 module Bundler
   class LazySpecification

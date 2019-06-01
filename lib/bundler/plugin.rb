@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/plugin/api"
+require_relative "plugin/api"
 
 module Bundler
   module Plugin
@@ -256,7 +256,7 @@ module Bundler
       @hooks_by_event = Hash.new {|h, k| h[k] = [] }
 
       load_paths = spec.load_paths
-      add_to_load_path(load_paths)
+      Bundler.rubygems.add_to_load_path(load_paths)
       path = Pathname.new spec.full_gem_path
 
       begin
@@ -288,7 +288,7 @@ module Bundler
       # done to avoid conflicts
       path = index.plugin_path(name)
 
-      add_to_load_path(index.load_paths(name))
+      Bundler.rubygems.add_to_load_path(index.load_paths(name))
 
       load path.join(PLUGIN_FILE_NAME)
 
@@ -298,17 +298,8 @@ module Bundler
       raise
     end
 
-    def add_to_load_path(load_paths)
-      if insert_index = Bundler.rubygems.load_path_insert_index
-        $LOAD_PATH.insert(insert_index, *load_paths)
-      else
-        $LOAD_PATH.unshift(*load_paths)
-      end
-    end
-
     class << self
-      private :load_plugin, :register_plugin, :save_plugins, :validate_plugin!,
-        :add_to_load_path
+      private :load_plugin, :register_plugin, :save_plugins, :validate_plugin!
     end
   end
 end

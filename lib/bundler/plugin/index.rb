@@ -139,7 +139,7 @@ module Bundler
 
           data = index_f.read
 
-          require "bundler/yaml_serializer"
+          require_relative "../yaml_serializer"
           index = YAMLSerializer.load(data)
 
           @commands.merge!(index["commands"])
@@ -162,7 +162,7 @@ module Bundler
           "sources"      => @sources,
         }
 
-        require "bundler/yaml_serializer"
+        require_relative "../yaml_serializer"
         SharedHelpers.filesystem_access(index_file) do |index_f|
           FileUtils.mkdir_p(index_f.dirname)
           File.open(index_f, "w") {|f| f.puts YAMLSerializer.dump(index) }

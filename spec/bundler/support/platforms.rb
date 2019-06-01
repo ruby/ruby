@@ -105,7 +105,7 @@ module Spec
     end
 
     def local_platforms
-      if Bundler::VERSION.split(".").first.to_i > 2
+      if Bundler.feature_flag.specific_platform?
         [local, specific_local_platform]
       else
         [local]

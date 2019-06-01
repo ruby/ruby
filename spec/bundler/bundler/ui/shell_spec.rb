@@ -24,13 +24,6 @@ RSpec.describe Bundler::UI::Shell do
     it "prints to stderr" do
       expect { subject.warn("warning") }.to output("warning\n").to_stderr
     end
-
-    context "when stderr flag is enabled" do
-      before { Bundler.settings.temporary(:error_on_stderr => true) }
-      it "prints to stderr" do
-        expect { subject.warn("warning!") }.to output("warning!\n").to_stderr
-      end
-    end
   end
 
   describe "#debug" do
@@ -46,19 +39,12 @@ RSpec.describe Bundler::UI::Shell do
       expect { subject.error("error!!!") }.to output("error!!!\n").to_stderr
     end
 
-    context "when stderr flag is enabled" do
-      before { Bundler.settings.temporary(:error_on_stderr => true) }
-      it "prints to stderr" do
-        expect { subject.error("error!!!") }.to output("error!!!\n").to_stderr
-      end
-
-      context "when stderr is closed" do
-        it "doesn't report anything" do
-          output = capture(:stderr, :closed => true) do
-            subject.error("Something went wrong")
-          end
-          expect(output).to_not eq("Something went wrong\n")
+    context "when stderr is closed" do
+      it "doesn't report anything" do
+        output = capture(:stderr, :closed => true) do
+          subject.error("Something went wrong")
         end
+        expect(output).to_not eq("Something went wrong\n")
       end
     end
   end

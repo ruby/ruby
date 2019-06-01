@@ -2,10 +2,10 @@
 
 require "erb"
 require "rubygems/dependency_installer"
-require "bundler/worker"
-require "bundler/installer/parallel_installer"
-require "bundler/installer/standalone"
-require "bundler/installer/gem_installer"
+require_relative "worker"
+require_relative "installer/parallel_installer"
+require_relative "installer/standalone"
+require_relative "installer/gem_installer"
 
 module Bundler
   class Installer

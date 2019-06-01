@@ -1,11 +1,10 @@
 # frozen_string_literal: true
 
-require "bundler"
-require "bundler/vendored_thor"
+require_relative "vendored_thor"
 
 module Bundler
   class CLI < Thor
-    require "bundler/cli/common"
+    require_relative "cli/common"
 
     package_name "Bundler"
 
@@ -139,7 +138,7 @@ module Bundler
     D
     method_option "gemspec", :type => :string, :banner => "Use the specified .gemspec to create the Gemfile"
     def init
-      require "bundler/cli/init"
+      require_relative "cli/init"
       Init.new(options.dup).run
     end
 
@@ -157,7 +156,7 @@ module Bundler
       "Specify a different path than the system default ($BUNDLE_PATH or $GEM_HOME).#{" Bundler will remember this value for future installs on this machine" unless Bundler.feature_flag.forget_cli_options?}"
     map "c" => "check"
     def check
-      require "bundler/cli/check"
+      require_relative "cli/check"
       Check.new(options).run
     end
 
@@ -168,7 +167,7 @@ module Bundler
     method_option "install", :type => :boolean, :banner =>
       "Runs 'bundle install' after removing the gems from the Gemfile"
     def remove(*gems)
-      require "bundler/cli/remove"
+      require_relative "cli/remove"
       Remove.new(gems, options).run
     end
 
@@ -230,7 +229,7 @@ module Bundler
         remembered_flag_deprecation(option)
       end
 
-      require "bundler/cli/install"
+      require_relative "cli/install"
       Bundler.settings.temporary(:no_install => false) do
         Install.new(options.dup).run
       end
@@ -276,7 +275,7 @@ module Bundler
       "Update everything."
     def update(*gems)
       SharedHelpers.major_deprecation(2, "The `--force` option has been renamed to `--redownload`") if ARGV.include?("--force")
-      require "bundler/cli/update"
+      require_relative "cli/update"
       Bundler.settings.temporary(:no_install => false) do
         Update.new(options, gems).run
       end
@@ -312,7 +311,7 @@ module Bundler
             Bundler::SharedHelpers.major_deprecation(2, "use `bundle #{new_argv}` instead of `bundle #{old_argv}`")
           end
         end
-        require "bundler/cli/show"
+        require_relative "cli/show"
         Show.new(options, gem_name).run
       end
     end
@@ -323,7 +322,7 @@ module Bundler
     method_option "without-group", :type => :string, :banner => "print all gems except from a group"
     method_option "paths", :type => :boolean, :banner => "print the path to each gem in the bundle"
     def list
-      require "bundler/cli/list"
+      require_relative "cli/list"
       List.new(options).run
     end
 
@@ -332,7 +331,7 @@ module Bundler
     desc "info GEM [OPTIONS]", "Show information for the given gem"
     method_option "path", :type => :boolean, :banner => "Print full path to gem"
     def info(gem_name)
-      require "bundler/cli/info"
+      require_relative "cli/info"
       Info.new(options, gem_name).run
     end
 
@@ -353,7 +352,7 @@ module Bundler
     method_option "all", :type => :boolean, :banner =>
       "Install binstubs for all gems"
     def binstubs(*gems)
-      require "bundler/cli/binstubs"
+      require_relative "cli/binstubs"
       Binstubs.new(options, gems).run
     end
 
@@ -364,12 +363,14 @@ module Bundler
     method_option "version", :aliases => "-v", :type => :string
     method_option "group", :aliases => "-g", :type => :string
     method_option "source", :aliases => "-s", :type => :string
+    method_option "git", :type => :string
+    method_option "branch", :type => :string
     method_option "skip-install", :type => :boolean, :banner =>
       "Adds gem to the Gemfile but does not install it"
     method_option "optimistic", :type => :boolean, :banner => "Adds optimistic declaration of version to gem"
     method_option "strict", :type => :boolean, :banner => "Adds strict declaration of version to gem"
     def add(*gems)
-      require "bundler/cli/add"
+      require_relative "cli/add"
       Add.new(options.dup, gems).run
     end
 
@@ -405,7 +406,7 @@ module Bundler
     method_option "only-explicit", :type => :boolean, :banner =>
       "Only list gems specified in your Gemfile, not their dependencies"
     def outdated(*gems)
-      require "bundler/cli/outdated"
+      require_relative "cli/outdated"
       Outdated.new(options, gems).run
     end
 
@@ -420,7 +421,7 @@ module Bundler
       method_option "all-platforms", :type => :boolean, :banner => "Include gems for all platforms present in the lockfile, not only the current one"
       method_option "no-prune", :type => :boolean, :banner => "Don't remove stale gems from the cache."
       def cache
-        require "bundler/cli/cache"
+        require_relative "cli/cache"
         Cache.new(options).run
       end
     end
@@ -448,7 +449,7 @@ module Bundler
       bundle without having to download any additional gems.
     D
     def package
-      require "bundler/cli/package"
+      require_relative "cli/package"
       Package.new(options).run
     end
     map %w[pack] => :package
@@ -463,7 +464,7 @@ module Bundler
     D
     map "e" => "exec"
     def exec(*args)
-      require "bundler/cli/exec"
+      require_relative "cli/exec"
       Exec.new(options, args).run
     end
 
@@ -479,19 +480,19 @@ module Bundler
       will show the current value, as well as any superceded values and
       where they were specified.
     D
-    require "bundler/cli/config"
+    require_relative "cli/config"
     subcommand "config", Config
 
     desc "open GEM", "Opens the source directory of the given bundled gem"
     def open(name)
-      require "bundler/cli/open"
+      require_relative "cli/open"
       Open.new(options, name).run
     end
 
     unless Bundler.feature_flag.bundler_3_mode?
       desc "console [GROUP]", "Opens an IRB session with the bundle pre-loaded"
       def console(group = nil)
-        require "bundler/cli/console"
+        require_relative "cli/console"
         Console.new(options, group).run
       end
     end
@@ -539,7 +540,7 @@ module Bundler
       method_option :without, :type => :array, :default => [], :aliases => "-W", :banner => "GROUP[ GROUP...]", :desc => "Exclude gems that are part of the specified named group."
       def viz
         SharedHelpers.major_deprecation 2, "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/bundler/bundler-viz"
-        require "bundler/cli/viz"
+        require_relative "cli/viz"
         Viz.new(options.dup).run
       end
     end
@@ -563,7 +564,7 @@ module Bundler
       def gem_command.run(instance, args = [])
         arity = 1 # name
 
-        require "bundler/cli/gem"
+        require_relative "cli/gem"
         cmd_args = args + [instance]
         cmd_args.unshift(instance.options)
 
@@ -591,7 +592,7 @@ module Bundler
     method_option "force", :type => :boolean, :default => false, :banner =>
       "Forces clean even if --path is not set"
     def clean
-      require "bundler/cli/clean"
+      require_relative "cli/clean"
       Clean.new(options.dup).run
     end
 
@@ -599,7 +600,7 @@ module Bundler
     method_option "ruby", :type => :boolean, :default => false, :banner =>
       "only display ruby related platform information"
     def platform
-      require "bundler/cli/platform"
+      require_relative "cli/platform"
       Platform.new(options).run
     end
 
@@ -610,7 +611,7 @@ module Bundler
      "Install gem into a bundler group"
     def inject(name, version)
       SharedHelpers.major_deprecation 2, "The `inject` command has been replaced by the `add` command"
-      require "bundler/cli/inject"
+      require_relative "cli/inject"
       Inject.new(options.dup, name, version).run
     end
 
@@ -642,7 +643,7 @@ module Bundler
     method_option "conservative", :type => :boolean, :banner =>
       "If updating, use bundle install conservative update behavior and do not allow shared dependencies to be updated"
     def lock
-      require "bundler/cli/lock"
+      require_relative "cli/lock"
       Lock.new(options).run
     end
 
@@ -662,13 +663,13 @@ module Bundler
     method_option "quiet", :type => :boolean, :banner =>
         "Only output warnings and errors."
     def doctor
-      require "bundler/cli/doctor"
+      require_relative "cli/doctor"
       Doctor.new(options).run
     end
 
     desc "issue", "Learn how to report an issue in Bundler"
     def issue
-      require "bundler/cli/issue"
+      require_relative "cli/issue"
       Issue.new.run
     end
 
@@ -679,12 +680,12 @@ module Bundler
       checkout --force`.
     D
     def pristine(*gems)
-      require "bundler/cli/pristine"
+      require_relative "cli/pristine"
       Pristine.new(gems).run
     end
 
     if Bundler.feature_flag.plugins?
-      require "bundler/cli/plugin"
+      require_relative "cli/plugin"
       desc "plugin", "Manage the bundler plugins"
       subcommand "plugin", Plugin
     end

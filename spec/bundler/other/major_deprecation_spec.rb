@@ -365,38 +365,30 @@ RSpec.describe "major deprecations" do
   end
 
   describe Bundler::Dsl do
-    let(:msg) do
-      <<-EOS
-The :github git source is deprecated, and will be removed in the future. Change any "reponame" :github sources to "username/reponame". Add this code to the top of your Gemfile to ensure it continues to work:
-
-    git_source(:github) {|repo_name| "https://github.com/\#{repo_name}.git" }
-
-      EOS
-    end
-
     before do
       @rubygems = double("rubygems")
       allow(Bundler::Source::Rubygems).to receive(:new) { @rubygems }
     end
 
     context "with github gems" do
-      it "warns about the https change if people are opting out" do
-        Bundler.settings.temporary "github.https" => false
-        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(3, msg)
-        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(2, "Setting `github.https` to false is deprecated and won't be supported in the future.")
-        subject.gem("sparks", :github => "indirect/sparks")
-      end
+      it "warns about removal", :bundler => "2" do
+        msg = <<-EOS
+The :github git source is deprecated, and will be removed in the future. Change any "reponame" :github sources to "username/reponame". Add this code to the top of your Gemfile to ensure it continues to work:
 
-      it "upgrades to https by default", :bundler => "2" do
+    git_source(:github) {|repo_name| "https://github.com/\#{repo_name}.git" }
+
+        EOS
         expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(3, msg)
         subject.gem("sparks", :github => "indirect/sparks")
         github_uri = "https://github.com/indirect/sparks.git"
         expect(subject.dependencies.first.source.uri).to eq(github_uri)
       end
+
+      pending "should fail with a helpful error", :bundler => "3"
     end
 
     context "with bitbucket gems" do
-      it "warns about removal" do
+      it "warns about removal", :bundler => "2" do
         allow(Bundler.ui).to receive(:deprecate)
         msg = <<-EOS
 The :bitbucket git source is deprecated, and will be removed in the future. Add this code to the top of your Gemfile to ensure it continues to work:
@@ -411,10 +403,12 @@ The :bitbucket git source is deprecated, and will be removed in the future. Add 
         expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(3, msg)
         subject.gem("not-really-a-gem", :bitbucket => "mcorp/flatlab-rails")
       end
+
+      pending "should fail with a helpful error", :bundler => "3"
     end
 
     context "with gist gems" do
-      it "warns about removal" do
+      it "warns about removal", :bundler => "2" do
         allow(Bundler.ui).to receive(:deprecate)
         msg = <<-EOS
 The :gist git source is deprecated, and will be removed in the future. Add this code to the top of your Gemfile to ensure it continues to work:
@@ -425,6 +419,8 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
         expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(3, msg)
         subject.gem("not-really-a-gem", :gist => "1234")
       end
+
+      pending "should fail with a helpful error", :bundler => "3"
     end
   end
 
@@ -480,9 +476,33 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
       it "prints a deprecation warning recommending `bundle info`", :bundler => "2" do
         expect(deprecations).to include("use `bundle info rack` instead of `bundle show rack`")
       end
+
+      pending "fails with a helpful message", :bundler => "3"
     end
 
-    pending "fails with a helpful message", :bundler => "3"
+    context "with the --paths option" do
+      before do
+        bundle "show --paths"
+      end
+
+      it "prints a deprecation warning recommending `bundle list`", :bundler => "2" do
+        expect(deprecations).to include("use `bundle list` instead of `bundle show --paths`")
+      end
+
+      pending "fails with a helpful message", :bundler => "3"
+    end
+
+    context "with a gem argument and the --paths option" do
+      before do
+        bundle "show rack --paths"
+      end
+
+      it "prints deprecation warning recommending `bundle info`", :bundler => "2" do
+        expect(deprecations).to include("use `bundle info rack --path` instead of `bundle show rack --paths`")
+      end
+
+      pending "fails with a helpful message", :bundler => "3"
+    end
   end
 
   context "bundle console" do

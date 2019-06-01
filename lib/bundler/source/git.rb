@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require "bundler/vendored_fileutils"
+require_relative "../vendored_fileutils"
 require "uri"
 
 module Bundler
   class Source
     class Git < Path
-      autoload :GitProxy, "bundler/source/git/git_proxy"
+      autoload :GitProxy, File.expand_path("git/git_proxy", __dir__)
 
       attr_reader :uri, :ref, :branch, :options, :submodules
 

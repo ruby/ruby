@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-CONFIG" "1" "April 2019" "" ""
+.TH "BUNDLE\-CONFIG" "1" "May 2019" "" ""
 .
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
@@ -193,9 +193,6 @@ The following is a list of all configuration keys and their purpose\. You can le
 \fBdisable_version_check\fR (\fBBUNDLE_DISABLE_VERSION_CHECK\fR): Stop Bundler from checking if a newer Bundler version is available on rubygems\.org\.
 .
 .IP "\(bu" 4
-\fBerror_on_stderr\fR (\fBBUNDLE_ERROR_ON_STDERR\fR): Print Bundler errors to stderr\.
-.
-.IP "\(bu" 4
 \fBforce_ruby_platform\fR (\fBBUNDLE_FORCE_RUBY_PLATFORM\fR): Ignore the current machine\'s platform and install only \fBruby\fR platform gems\. As a result, gems with native extensions will be compiled from source\.
 .
 .IP "\(bu" 4
@@ -209,9 +206,6 @@ The following is a list of all configuration keys and their purpose\. You can le
 .
 .IP "\(bu" 4
 \fBglobal_gem_cache\fR (\fBBUNDLE_GLOBAL_GEM_CACHE\fR): Whether Bundler should cache all gems globally, rather than locally to the installing Ruby installation\.
-.
-.IP "\(bu" 4
-\fBglobal_path_appends_ruby_scope\fR (\fBBUNDLE_GLOBAL_PATH_APPENDS_RUBY_SCOPE\fR): Whether Bundler should append the Ruby scope (e\.g\. engine and ABI version) to a globally\-configured path\.
 .
 .IP "\(bu" 4
 \fBignore_messages\fR (\fBBUNDLE_IGNORE_MESSAGES\fR): When set, no post install messages will be printed\. To silence a single gem, use dot notation like \fBignore_messages\.httparty true\fR\.
@@ -242,9 +236,6 @@ The following is a list of all configuration keys and their purpose\. You can le
 .
 .IP "\(bu" 4
 \fBplugins\fR (\fBBUNDLE_PLUGINS\fR): Enable Bundler\'s experimental plugin system\.
-.
-.IP "\(bu" 4
-\fBprefer_gems_rb\fR (\fBBUNDLE_PREFER_GEMS_RB\fR) Prefer \fBgems\.rb\fR to \fBGemfile\fR when Bundler is searching for a Gemfile\.
 .
 .IP "\(bu" 4
 \fBprefer_patch\fR (BUNDLE_PREFER_PATCH): Prefer updating only to next patch version during updates\. Makes \fBbundle update\fR calls equivalent to \fBbundler update \-\-patch\fR\.

@@ -55,6 +55,17 @@ RSpec.describe "bundle exec" do
     expect(out).to eq("hi")
   end
 
+  it "respects custom process title when loading through ruby" do
+    script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility = <<~RUBY
+      Process.setproctitle("1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16")
+      puts `ps -eo args | grep [1]-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16`
+    RUBY
+    create_file "Gemfile"
+    create_file "a.rb", script_that_changes_its_own_title_and_checks_if_picked_up_by_ps_unix_utility
+    bundle "exec ruby a.rb"
+    expect(out).to eq("1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16")
+  end
+
   it "accepts --verbose" do
     install_gemfile 'gem "rack"'
     bundle "exec --verbose echo foobar"
@@ -88,14 +99,14 @@ RSpec.describe "bundle exec" do
     sys_exec "#{Gem.ruby} #{command.path}"
 
     expect(out).to eq("")
-    expect(last_command.stderr).to be_empty
+    expect(err).to be_empty
   end
 
   it "accepts --keep-file-descriptors" do
     install_gemfile ""
     bundle "exec --keep-file-descriptors echo foobar"
 
-    expect(last_command.stderr).to be_empty
+    expect(err).to be_empty
   end
 
   it "can run a command named --verbose" do
@@ -156,7 +167,7 @@ RSpec.describe "bundle exec" do
         bundle! "exec irb --version"
 
         expect(out).to include(default_irb_version)
-        expect(last_command.stderr).to be_empty
+        expect(err).to be_empty
       end
     end
 
@@ -182,7 +193,7 @@ RSpec.describe "bundle exec" do
         bundle! "exec irb --version"
 
         expect(out).to include(specified_irb_version)
-        expect(last_command.stderr).to be_empty
+        expect(err).to be_empty
       end
     end
 
@@ -212,7 +223,7 @@ RSpec.describe "bundle exec" do
 
       it "uses resolved version" do
         expect(out).to include(indirect_irb_version)
-        expect(last_command.stderr).to be_empty
+        expect(err).to be_empty
       end
     end
   end
@@ -268,7 +279,7 @@ RSpec.describe "bundle exec" do
     G
 
     rubyopt = ENV["RUBYOPT"]
-    rubyopt = "-rbundler/setup #{rubyopt}"
+    rubyopt = "-r#{File.expand_path("../../lib/bundler/setup", __dir__)} #{rubyopt}"
 
     bundle "exec 'echo $RUBYOPT'"
     expect(out).to have_rubyopts(rubyopt)
@@ -334,7 +345,7 @@ RSpec.describe "bundle exec" do
     [true, false].each do |l|
       bundle! "config set disable_exec_load #{l}"
       bundle "exec rackup"
-      expect(last_command.stderr).to include "can't find executable rackup for gem rack. rack is not currently included in the bundle, perhaps you meant to add it to your Gemfile?"
+      expect(err).to include "can't find executable rackup for gem rack. rack is not currently included in the bundle, perhaps you meant to add it to your Gemfile?"
     end
   end
 
@@ -552,8 +563,8 @@ RSpec.describe "bundle exec" do
 
       bundle "exec irb"
 
-      expect(last_command.stderr).to match("The gemspec at #{lib_path("foo-1.0").join("foo.gemspec")} is not valid")
-      expect(last_command.stderr).to match('"TODO" is not a summary')
+      expect(err).to match("The gemspec at #{lib_path("foo-1.0").join("foo.gemspec")} is not valid")
+      expect(err).to match('"TODO" is not a summary')
     end
   end
 
@@ -614,8 +625,8 @@ RSpec.describe "bundle exec" do
       it "like a normally executed executable" do
         subject
         expect(exitstatus).to eq(exit_code) if exitstatus
-        expect(last_command.stderr).to eq(expected_err)
-        expect(last_command.stdout).to eq(expected)
+        expect(err).to eq(expected_err)
+        expect(out).to eq(expected)
       end
     end
 
@@ -886,7 +897,7 @@ __FILE__: #{path.to_s.inspect}
 
         # sanity check that we get the newer, custom version without bundler
         sys_exec("#{Gem.ruby} #{file}")
-        expect(last_command.stderr).to include("custom openssl should not be loaded")
+        expect(err).to include("custom openssl should not be loaded")
       end
     end
   end

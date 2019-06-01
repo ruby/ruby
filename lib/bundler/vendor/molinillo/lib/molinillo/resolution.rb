@@ -238,11 +238,11 @@ module Bundler::Molinillo
         debug { 'Activated: ' + Hash[activated.vertices.select { |_n, v| v.payload }].keys.join(', ') } if state
       end
 
-      require 'bundler/vendor/molinillo/lib/molinillo/state'
-      require 'bundler/vendor/molinillo/lib/molinillo/modules/specification_provider'
+      require_relative 'state'
+      require_relative 'modules/specification_provider'
 
-      require 'bundler/vendor/molinillo/lib/molinillo/delegates/resolution_state'
-      require 'bundler/vendor/molinillo/lib/molinillo/delegates/specification_provider'
+      require_relative 'delegates/resolution_state'
+      require_relative 'delegates/specification_provider'
 
       include Bundler::Molinillo::Delegates::ResolutionState
       include Bundler::Molinillo::Delegates::SpecificationProvider

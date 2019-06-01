@@ -242,7 +242,7 @@ RSpec.describe "bundle lock" do
 
   it "errors when removing all platforms" do
     bundle "lock --remove-platform #{local_platforms.join(" ")}"
-    expect(last_command.bundler_err).to include("Removing all platforms from the bundle is not allowed")
+    expect(err).to include("Removing all platforms from the bundle is not allowed")
   end
 
   # from https://github.com/bundler/bundler/issues/4896

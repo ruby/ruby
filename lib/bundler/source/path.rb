@@ -3,7 +3,7 @@
 module Bundler
   class Source
     class Path < Source
-      autoload :Installer, "bundler/source/path/installer"
+      autoload :Installer, File.expand_path("path/installer", __dir__)
 
       attr_reader :path, :options, :root_path, :original_path
       attr_writer :name

@@ -2,8 +2,8 @@
 
 module Bundler
   class Resolver
-    require "bundler/vendored_molinillo"
-    require "bundler/resolver/spec_group"
+    require_relative "vendored_molinillo"
+    require_relative "resolver/spec_group"
 
     # Figures out the best possible configuration of gems that satisfies
     # the list of passed dependencies and any child dependencies without
@@ -75,7 +75,7 @@ module Bundler
       return unless debug?
       debug_info = yield
       debug_info = debug_info.inspect unless debug_info.is_a?(String)
-      STDERR.puts debug_info.split("\n").map {|s| "  " * depth + s }
+      warn debug_info.split("\n").map {|s| "  " * depth + s }
     end
 
     def debug?

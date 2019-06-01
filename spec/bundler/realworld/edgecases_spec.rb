@@ -204,7 +204,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
     bundle "config set --local path vendor/bundle"
     bundle! :install
     expect(err).not_to include("Could not find rake")
-    expect(last_command.stderr).to be_empty
+    expect(err).to be_empty
   end
 
   it "checks out git repos when the lockfile is corrupted" do
@@ -331,7 +331,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
     L
 
     bundle! :lock
-    expect(last_command.stderr).to be_empty
+    expect(err).to be_empty
   end
 
   it "outputs a helpful error message when gems have invalid gemspecs" do
