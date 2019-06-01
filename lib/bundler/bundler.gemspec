@@ -41,13 +41,13 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rubocop",    "= 0.68.1"
   s.add_development_dependency "rubocop-performance", "~> 1.1"
 
-  s.files = Dir.glob("{lib,exe}/**/*", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
+  # s.files = Dir.glob("{lib,exe}/**/*", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
 
   # we don't check in man pages, but we need to ship them because
   # we use them to generate the long-form help for each command.
-  s.files += Dir.glob("man/**/*")
+  # s.files += Dir.glob("man/**/*")
   # Include the CHANGELOG.md, LICENSE.md, README.md manually
-  s.files += %w[CHANGELOG.md LICENSE.md README.md]
+  # s.files += %w[CHANGELOG.md LICENSE.md README.md]
   # include the gemspec itself because warbler breaks w/o it
   s.files += %w[bundler.gemspec]
 
