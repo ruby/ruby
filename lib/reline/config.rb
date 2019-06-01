@@ -36,8 +36,8 @@ class Reline::Config
   end
 
   def initialize
-    @additional_key_bindings = {}
-    @default_key_bindings = {}
+    @additional_key_bindings = {} # from inputrc
+    @default_key_bindings = {} # environment-dependent
     @skip_section = nil
     @if_stack = []
     @editing_mode_label = :emacs
