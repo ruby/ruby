@@ -1441,6 +1441,7 @@ dependencies: []
   end
 
   def test_build_args
+    skip "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     assert_empty @ext.build_args
@@ -1459,6 +1460,7 @@ dependencies: []
   end
 
   def test_build_extensions
+    skip "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     refute_path_exists @ext.extension_dir, 'sanity check'
@@ -1494,6 +1496,7 @@ dependencies: []
   end
 
   def test_build_extensions_built
+    skip "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     refute_empty @ext.extensions, 'sanity check'
@@ -1532,6 +1535,7 @@ dependencies: []
   end
 
   def test_build_extensions_error
+    skip "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     refute_empty @ext.extensions, 'sanity check'
@@ -1545,6 +1549,7 @@ dependencies: []
     skip 'chmod not supported' if Gem.win_platform?
     skip 'skipped in root privilege' if Process.uid.zero?
 
+    skip "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     refute_empty @ext.extensions, 'sanity check'
@@ -1569,7 +1574,7 @@ dependencies: []
     @ext.build_extensions
     refute_path_exists @ext.extension_dir
   ensure
-    unless ($DEBUG or win_platform? or Process.uid.zero?)
+    unless ($DEBUG or win_platform? or Process.uid.zero? or Gem.java_platform?)
       FileUtils.chmod 0755, File.join(@ext.base_dir, 'extensions')
       FileUtils.chmod 0755, @ext.base_dir
     end
@@ -1577,7 +1582,7 @@ dependencies: []
 
   def test_build_extensions_no_extensions_dir_unwritable
     skip 'chmod not supported' if Gem.win_platform?
-
+    skip "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     refute_empty @ext.extensions, 'sanity check'
@@ -1616,6 +1621,7 @@ dependencies: []
   end
 
   def test_build_extensions_old
+    skip "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     refute_empty @ext.extensions, 'sanity check'
@@ -1629,6 +1635,7 @@ dependencies: []
   end
 
   def test_build_extensions_preview
+    skip "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
@@ -1663,6 +1670,7 @@ dependencies: []
   end
 
   def test_contains_requirable_file_eh_extension
+    skip "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     _, err = capture_io do
@@ -3623,6 +3631,7 @@ end
   end
 
   def test_missing_extensions_eh
+    skip "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     assert @ext.missing_extensions?

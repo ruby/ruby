@@ -97,7 +97,7 @@ class TestGemResolver < Gem::TestCase
 
     r1 = Gem::Resolver::DependencyRequest.new dep('a', '= 1'), nil
 
-    act = Gem::Resolver::ActivationRequest.new a1, r1, false
+    act = Gem::Resolver::ActivationRequest.new a1, r1
 
     res = Gem::Resolver.new [a1]
 
@@ -118,7 +118,7 @@ class TestGemResolver < Gem::TestCase
 
     r1 = Gem::Resolver::DependencyRequest.new dep('a', '= 1'), nil
 
-    act = Gem::Resolver::ActivationRequest.new spec, r1, false
+    act = Gem::Resolver::ActivationRequest.new spec, r1
 
     res = Gem::Resolver.new [act]
     res.development = true
@@ -137,7 +137,7 @@ class TestGemResolver < Gem::TestCase
 
     r1 = Gem::Resolver::DependencyRequest.new dep('a', '= 1'), nil
 
-    act = Gem::Resolver::ActivationRequest.new a1, r1, false
+    act = Gem::Resolver::ActivationRequest.new a1, r1
 
     res = Gem::Resolver.new [a1]
     res.ignore_dependencies = true

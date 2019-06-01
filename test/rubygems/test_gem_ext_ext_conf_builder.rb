@@ -17,6 +17,10 @@ class TestGemExtExtConfBuilder < Gem::TestCase
   end
 
   def test_class_build
+    if java_platform? && ENV["CI"]
+      skip("failing on jruby")
+    end
+
     if vc_windows? && !nmake_found?
       skip("test_class_build skipped - nmake not found")
     end
@@ -45,6 +49,10 @@ class TestGemExtExtConfBuilder < Gem::TestCase
   end
 
   def test_class_build_rbconfig_make_prog
+    if java_platform? && ENV["CI"]
+      skip("failing on jruby")
+    end
+
     configure_args do
 
       File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
@@ -67,6 +75,10 @@ class TestGemExtExtConfBuilder < Gem::TestCase
   def test_class_build_env_make
     env_make = ENV.delete 'MAKE'
     ENV['MAKE'] = 'anothermake'
+
+    if java_platform? && ENV["CI"]
+      skip("failing on jruby")
+    end
 
     configure_args '' do
       File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
