@@ -2146,7 +2146,7 @@ class TestRefinement < Test::Unit::TestCase
       def call
         ToProc.call(&self)
       end
-      end
+    end
 
     class ToProcAndMethodMissing
       def method_missing *args
