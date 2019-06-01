@@ -189,7 +189,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
         assert_path_exists File.join(bin_dir, "#{e}.bat")
       end
 
-      assert_path_exists File.join bin_dir, e
+      assert_path_exists File.join bin_dir, Gem.default_exec_format % e
     end
 
     default_dir = Gem::Specification.default_specifications_dir
@@ -323,4 +323,4 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     @ui.outs.set_encoding @default_external if @default_external
   end
 
-end
+end unless Gem.java_platform?

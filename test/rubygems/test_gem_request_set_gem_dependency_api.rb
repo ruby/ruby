@@ -856,4 +856,4 @@ end
       engine
   end
 
-end
+end unless Gem.java_platform?

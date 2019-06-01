@@ -785,6 +785,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_ssl_client_cert_auth_connection
     skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+    skip 'openssl in jruby fails' if java_platform?
 
     ssl_server = self.class.start_ssl_server({
       :SSLVerifyClient =>
@@ -1048,14 +1049,6 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       OpenSSL::PKey::RSA.new(File.read(File.join(DIR, filename)))
     end
 
-  end
-
-  def test_correct_for_windows_path
-    path = "/C:/WINDOWS/Temp/gems"
-    assert_equal "C:/WINDOWS/Temp/gems", @fetcher.correct_for_windows_path(path)
-
-    path = "/home/skillet"
-    assert_equal "/home/skillet", @fetcher.correct_for_windows_path(path)
   end
 
 end if defined?(OpenSSL::SSL)

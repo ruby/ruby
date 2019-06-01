@@ -6,6 +6,10 @@ unless defined?(OpenSSL::SSL)
   warn 'Skipping `gem cert` tests.  openssl not found.'
 end
 
+if Gem.java_platform?
+  warn 'Skipping `gem cert` tests on jruby.'
+end
+
 class TestGemCommandsCertCommand < Gem::TestCase
 
   ALTERNATE_CERT = load_cert 'alternate'
@@ -793,4 +797,4 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
                  e.message
   end
 
-end if defined?(OpenSSL::SSL)
+end if defined?(OpenSSL::SSL) && !Gem.java_platform?

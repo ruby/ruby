@@ -18,14 +18,10 @@ class Gem::Resolver::ActivationRequest
   ##
   # Creates a new ActivationRequest that will activate +spec+.  The parent
   # +request+ is used to provide diagnostics in case of conflicts.
-  #
-  # +others_possible+ indicates that other specifications may also match this
-  # activation request.
 
-  def initialize(spec, request, others_possible = true)
+  def initialize(spec, request)
     @spec = spec
     @request = request
-    @others_possible = others_possible
   end
 
   def ==(other) # :nodoc:
@@ -90,21 +86,8 @@ class Gem::Resolver::ActivationRequest
   end
 
   def inspect # :nodoc:
-    others =
-      case @others_possible
-      when true then # TODO remove at RubyGems 3
-        ' (others possible)'
-      when false then # TODO remove at RubyGems 3
-        nil
-      else
-        unless @others_possible.empty?
-          others = @others_possible.map { |s| s.full_name }
-          " (others possible: #{others.join ', '})"
-        end
-      end
-
-    '#<%s for %p from %s%s>' % [
-      self.class, @spec, @request, others
+    '#<%s for %p from %s>' % [
+      self.class, @spec, @request
     ]
   end
 
@@ -132,19 +115,6 @@ class Gem::Resolver::ActivationRequest
   end
 
   ##
-  # Indicate if this activation is one of a set of possible
-  # requests for the same Dependency request.
-
-  def others_possible?
-    case @others_possible
-    when true, false then
-      @others_possible
-    else
-      not @others_possible.empty?
-    end
-  end
-
-  ##
   # Return the ActivationRequest that contained the dependency
   # that we were activated for.
 
@@ -160,19 +130,6 @@ class Gem::Resolver::ActivationRequest
       q.breakable
       q.text ' for '
       q.pp @request
-
-      case @others_possible
-      when false then
-      when true then
-        q.breakable
-        q.text 'others possible'
-      else
-        unless @others_possible.empty?
-          q.breakable
-          q.text 'others '
-          q.pp @others_possible.map { |s| s.full_name }
-        end
-      end
     end
   end
 
