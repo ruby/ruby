@@ -17,9 +17,9 @@ class TestLazyEnumerator < Test::Unit::TestCase
       @enum.each do |v|
         @current = v
         if v.is_a? Enumerable
-          yield *v
+          yield(*v)
         else
-          yield v
+          yield(v)
         end
       end
     end
