@@ -121,6 +121,6 @@ class Reline::KeyStroke
   end
 
   def key_mapping
-    @config[:key_mapping].transform_keys(&:bytes)
+    @config.key_bindings
   end
 end

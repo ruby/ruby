@@ -28,42 +28,40 @@ class Reline::Config::Test < Reline::TestCase
   end
 
   def test_bind_key
-    key, func = @config.bind_key('"input"', '"abcde"')
-
-    assert_equal 'input', key
-    assert_equal 'abcde', func
+    assert_equal ['input'.bytes, 'abcde'.bytes], @config.bind_key('"input"', '"abcde"')
   end
 
   def test_bind_key_with_macro
-    key, func = @config.bind_key('"input"', 'abcde')
 
-    assert_equal 'input', key
-    assert_equal :abcde, func
+    assert_equal ['input'.bytes, :abcde], @config.bind_key('"input"', 'abcde')
   end
 
   def test_bind_key_with_escaped_chars
-    assert_equal ['input', "\e \\ \" ' \a \b \d \f \n \r \t \v"], @config.bind_key('"input"', '"\\e \\\\ \\" \\\' \\a \\b \\d \\f \\n \\r \\t \\v"')
+    key, func =
+    assert_equal ['input'.bytes, "\e \\ \" ' \a \b \d \f \n \r \t \v".bytes], @config.bind_key('"input"', '"\\e \\\\ \\" \\\' \\a \\b \\d \\f \\n \\r \\t \\v"')
   end
 
   def test_bind_key_with_ctrl_chars
-    assert_equal ['input', "\C-h\C-h"], @config.bind_key('"input"', '"\C-h\C-H"')
+    assert_equal ['input'.bytes, "\C-h\C-h".bytes], @config.bind_key('"input"', '"\C-h\C-H"')
   end
 
   def test_bind_key_with_meta_chars
-    assert_equal ['input', "\M-h\M-H".force_encoding('ASCII-8BIT')], @config.bind_key('"input"', '"\M-h\M-H"')
+    assert_equal ['input'.bytes, "\M-h\M-H".bytes], @config.bind_key('"input"', '"\M-h\M-H"')
   end
 
   def test_bind_key_with_octal_number
-    assert_equal ['input', "\1"], @config.bind_key('"input"', '"\1"')
-    assert_equal ['input', "\12"], @config.bind_key('"input"', '"\12"')
-    assert_equal ['input', "\123"], @config.bind_key('"input"', '"\123"')
-    assert_equal ['input', ["\123", '4'].join], @config.bind_key('"input"', '"\1234"')
+    input = %w{i n p u t}.map(&:ord)
+    assert_equal [input, "\1".bytes], @config.bind_key('"input"', '"\1"')
+    assert_equal [input, "\12".bytes], @config.bind_key('"input"', '"\12"')
+    assert_equal [input, "\123".bytes], @config.bind_key('"input"', '"\123"')
+    assert_equal [input, "\123".bytes + '4'.bytes], @config.bind_key('"input"', '"\1234"')
   end
 
   def test_bind_key_with_hexadecimal_number
-    assert_equal ['input', "\x4"], @config.bind_key('"input"', '"\x4"')
-    assert_equal ['input', "\x45"], @config.bind_key('"input"', '"\x45"')
-    assert_equal ['input', ["\x45", '6'].join], @config.bind_key('"input"', '"\x456"')
+    input = %w{i n p u t}.map(&:ord)
+    assert_equal [input, "\x4".bytes], @config.bind_key('"input"', '"\x4"')
+    assert_equal [input, "\x45".bytes], @config.bind_key('"input"', '"\x45"')
+    assert_equal [input, "\x45".bytes + '6'.bytes], @config.bind_key('"input"', '"\x456"')
   end
 
   def test_include
@@ -114,5 +112,16 @@ class Reline::Config::Test < Reline::TestCase
     LINES
 
     assert_equal :audible, @config.instance_variable_get(:@bell_style)
+  end
+
+  def test_default_key_bindings
+    @config.add_default_key_binding('abcd'.bytes, 'EFGH'.bytes)
+    @config.read_lines(<<~'LINES'.split(/(?<=\n)/))
+      "abcd": "ABCD"
+      "ijkl": "IJKL"
+    LINES
+
+    expected = { 'abcd'.bytes => 'ABCD'.bytes, 'ijkl'.bytes => 'IJKL'.bytes }
+    assert_equal expected, @config.key_bindings
   end
 end
