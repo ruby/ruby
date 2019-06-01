@@ -21,4 +21,10 @@ class Reline::WithinPipeTest < Reline::TestCase
     @writer.write("abc\n")
     assert_equal 'abc', Reline.readmultiline(&proc{ true })
   end
+
+  def test_unknown_macro
+    @config.add_default_key_binding('abc'.bytes, :unknown_macro)
+    @writer.write("abcd\n")
+    assert_equal 'd', Reline.readmultiline(&proc{ true })
+  end
 end

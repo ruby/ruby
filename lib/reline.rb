@@ -304,7 +304,6 @@ module Reline
       $stderr.reopen(ENV['RELINE_STDERR_TTY'], 'w')
       $stderr.sync = true
     end
-    @@config.read
     otio = Reline::IOGate.prep
 
     may_req_ambiguous_char_width
@@ -324,9 +323,12 @@ module Reline
     @@line_editor.pre_input_hook = @@pre_input_hook
     @@line_editor.rerender
 
-    @@config.reset_default_key_bindings
-    Reline::IOGate::RAW_KEYSTROKE_CONFIG.each_pair do |key, func|
-      @@config.add_default_key_binding(key, func)
+    unless @@config.test_mode
+      @@config.read
+      @@config.reset_default_key_bindings
+      Reline::IOGate::RAW_KEYSTROKE_CONFIG.each_pair do |key, func|
+        @@config.add_default_key_binding(key, func)
+      end
     end
 
     key_stroke = Reline::KeyStroke.new(@@config)
