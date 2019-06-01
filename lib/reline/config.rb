@@ -80,9 +80,7 @@ class Reline::Config
       if file.respond_to?(:readlines)
         lines = file.readlines
       else
-          File.open(file, 'rt') do |f|
-            lines = f.readlines
-          end
+        lines = File.readlines(file)
       end
     rescue Errno::ENOENT
       return nil
