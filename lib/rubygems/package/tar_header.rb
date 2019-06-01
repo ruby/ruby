@@ -107,8 +107,8 @@ class Gem::Package::TarHeader
 
     new :name     => fields.shift,
         :mode     => strict_oct(fields.shift),
-        :uid      => strict_oct(fields.shift),
-        :gid      => strict_oct(fields.shift),
+        :uid      => oct_or_256based(fields.shift),
+        :gid      => oct_or_256based(fields.shift),
         :size     => strict_oct(fields.shift),
         :mtime    => strict_oct(fields.shift),
         :checksum => strict_oct(fields.shift),
@@ -128,6 +128,15 @@ class Gem::Package::TarHeader
   def self.strict_oct(str)
     return str.oct if str =~ /\A[0-7]*\z/
     raise ArgumentError, "#{str.inspect} is not an octal string"
+  end
+
+  def self.oct_or_256based(str)
+    # \x80 flags a positive 256-based number
+    # \ff flags a negative 256-based number
+    # In case we have a match, parse it as a signed binary value
+    # in big-endian order, except that the high-order bit is ignored.
+    return str.unpack('N2').last if str =~ /\A[\x80\xff]/n
+    strict_oct(str)
   end
 
   ##

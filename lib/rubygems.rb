@@ -670,6 +670,21 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     index
   end
 
+  ##
+  # Add a list of paths to the $LOAD_PATH at the proper place.
+
+  def self.add_to_load_path(*paths)
+    insert_index = load_path_insert_index
+
+    if insert_index
+      # gem directories must come after -I and ENV['RUBYLIB']
+      $LOAD_PATH.insert(insert_index, *paths)
+    else
+      # we are probably testing in core, -I and RUBYLIB don't apply
+      $LOAD_PATH.unshift(*paths)
+    end
+  end
+
   @yaml_loaded = false
 
   ##
@@ -1084,6 +1099,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
+  # Is this a java platform?
+
+  def self.java_platform?
+    RUBY_PLATFORM == "java"
+  end
+
+  ##
   # Load +plugins+ as Ruby files
 
   def self.load_plugin_files(plugins) # :nodoc:
@@ -1243,7 +1265,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     #
 
     def register_default_spec(spec)
-      new_format = Gem.default_gems_use_full_paths? || spec.require_paths.any? {|path| spec.files.any? {|f| f.start_with? path } }
+      new_format = spec.require_paths.any? {|path| spec.files.any? {|f| f.start_with? path } }
 
       if new_format
         prefix_group = spec.require_paths.map {|f| f + "/"}.join("|")

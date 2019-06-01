@@ -148,13 +148,6 @@ module Gem
   end
 
   ##
-  # Whether to expect full paths in default gems - true for non-MRI
-  # ruby implementations
-  def self.default_gems_use_full_paths?
-    ruby_engine != 'ruby'
-  end
-
-  ##
   # Install extensions into lib as well as into the extension directory.
 
   def self.install_extension_in_lib # :nodoc:

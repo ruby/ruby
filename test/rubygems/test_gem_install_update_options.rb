@@ -26,9 +26,10 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
       -f
       -i /install_to
       -w
-      --vendor
       --post-install-message
     ]
+
+    args.concat %w[--vendor] unless Gem.java_platform?
 
     args.concat %w[-P HighSecurity] if defined?(OpenSSL::SSL)
 
@@ -111,6 +112,13 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_user_install_enabled
+    @spec = quick_gem 'a' do |spec|
+      util_make_exec spec
+    end
+
+    util_build_gem @spec
+    @gem = @spec.cache_file
+
     @cmd.handle_options %w[--user-install]
 
     assert @cmd.options[:user_install]
@@ -122,6 +130,13 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_user_install_disabled_read_only
+    @spec = quick_gem 'a' do |spec|
+      util_make_exec spec
+    end
+
+    util_build_gem @spec
+    @gem = @spec.cache_file
+
     if win_platform?
       skip('test_user_install_disabled_read_only test skipped on MS Windows')
     elsif Process.uid.zero?
@@ -145,28 +160,26 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_vendor
-    @cmd.handle_options %w[--vendor]
+    vendordir(File.join(@tempdir, 'vendor')) do
+      @cmd.handle_options %w[--vendor]
 
-    assert @cmd.options[:vendor]
-    assert_equal Gem.vendor_dir, @cmd.options[:install_dir]
+      assert @cmd.options[:vendor]
+      assert_equal Gem.vendor_dir, @cmd.options[:install_dir]
+    end
   end
 
   def test_vendor_missing
-    orig_vendordir = RbConfig::CONFIG['vendordir']
-    RbConfig::CONFIG.delete 'vendordir'
+    vendordir(nil) do
+      e = assert_raises OptionParser::InvalidOption do
+        @cmd.handle_options %w[--vendor]
+      end
 
-    e = assert_raises OptionParser::InvalidOption do
-      @cmd.handle_options %w[--vendor]
+      assert_equal 'invalid option: --vendor your platform is not supported',
+                   e.message
+
+      refute @cmd.options[:vendor]
+      refute @cmd.options[:install_dir]
     end
-
-    assert_equal 'invalid option: --vendor your platform is not supported',
-                 e.message
-
-    refute @cmd.options[:vendor]
-    refute @cmd.options[:install_dir]
-
-  ensure
-    RbConfig::CONFIG['vendordir'] = orig_vendordir
   end
 
   def test_post_install_message_no

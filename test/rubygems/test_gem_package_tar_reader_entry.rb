@@ -76,6 +76,7 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
   end
 
   def test_full_name_null
+    skip "jruby strips the null byte and does not think it's corrupt" if Gem.java_platform?
     @entry.header.prefix << "\000"
 
     e = assert_raises Gem::Package::TarInvalidError do

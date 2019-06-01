@@ -45,7 +45,6 @@ class TestGemDependencyInstaller < Gem::TestCase
       s.add_development_dependency 'c'
     end
 
-    util_clear_gems
     util_reset_gems
   end
 
@@ -133,7 +132,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     p1a, gem = util_gem 'a', '10.a'
 
     util_setup_spec_fetcher(p1a, @a1, @a1_pre)
-    util_clear_gems
 
     p1a_data = Gem.read_binary(gem)
 
@@ -172,7 +170,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     p1a, gem = util_gem 'p', '1.a'
 
     util_setup_spec_fetcher(p1a)
-    util_clear_gems
 
     p1a_data = Gem.read_binary(gem)
 
@@ -192,7 +189,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_setup_gems
 
     util_setup_spec_fetcher(@a1, @a1_pre)
-    util_clear_gems
 
     p1a_data = Gem.read_binary(@a1_gem)
 
@@ -212,8 +208,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     _, e1_gem = util_gem 'e', '1' do |s|
       s.add_dependency 'b'
     end
-
-    util_clear_gems
 
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @b1_gem, @tempdir
@@ -575,8 +569,6 @@ class TestGemDependencyInstaller < Gem::TestCase
       s.add_dependency 'a'
     end
 
-    util_clear_gems
-
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @b1_gem, @tempdir
     FileUtils.mv  b2_gem, @tempdir
@@ -876,8 +868,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     end
 
     si = util_setup_spec_fetcher @a1, a2_o
-
-    util_clear_gems
 
     @fetcher.data['http://gems.example.com/gems/yaml'] = si.to_yaml
 
@@ -1274,8 +1264,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_setup_spec_fetcher(*[@a1, @a1_pre, @b1, @c1_pre,
                               @d1, @d2, @x1_m, @x1_o, @w1, @y1,
                               @y1_1_p, @z1].compact)
-
-    util_clear_gems
   end
 
 end

@@ -6,6 +6,10 @@ unless defined?(OpenSSL::SSL)
   warn 'Skipping Gem::Security tests.  openssl not found.'
 end
 
+if Gem.java_platform?
+  warn 'Skipping Gem::Security tests on jruby.'
+end
+
 class TestGemSecurity < Gem::TestCase
 
   CHILD_KEY = load_key 'child'
@@ -307,4 +311,4 @@ class TestGemSecurity < Gem::TestCase
     assert_equal key.to_pem, key_from_file.to_pem
   end
 
-end if defined?(OpenSSL::SSL)
+end if defined?(OpenSSL::SSL) && !Gem.java_platform?

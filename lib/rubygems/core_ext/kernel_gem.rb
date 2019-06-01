@@ -7,9 +7,6 @@
 
 module Kernel
 
-  # REFACTOR: This should be pulled out into some kind of hacks file.
-  remove_method :gem if 'method' == defined? gem # from gem_prelude.rb on 1.9
-
   ##
   # Use Kernel#gem to activate a specific version of +gem_name+.
   #
