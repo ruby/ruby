@@ -641,7 +641,12 @@ class Reline::LineEditor
     end
   end
 
-  private def process_key(key, method_symbol, method_obj)
+  private def process_key(key, method_symbol)
+    if method_symbol and respond_to?(method_symbol, true)
+      method_obj = method(method_symbol)
+    else
+      method_obj = nil
+    end
     if @vi_arg
       if key.chr =~ /[0-9]/
         ed_argument_digit(key)
@@ -682,7 +687,7 @@ class Reline::LineEditor
     @multibyte_buffer << key.combined_char
     if @multibyte_buffer.size > 1
       if @multibyte_buffer.dup.force_encoding(@encoding).valid_encoding?
-        process_key(@multibyte_buffer.dup.force_encoding(@encoding), nil, nil)
+        process_key(@multibyte_buffer.dup.force_encoding(@encoding), nil)
         @multibyte_buffer.clear
       else
         # invalid
@@ -694,20 +699,11 @@ class Reline::LineEditor
       if key.with_meta and method_symbol == :ed_unassigned
         # split ESC + key
         method_symbol = @config.editing_mode.get_method("\e".ord)
-        if method_symbol and respond_to?(method_symbol, true)
-          method_obj = method(method_symbol)
-        end
-        process_key("\e".ord, method_symbol, method_obj)
+        process_key("\e".ord, method_symbol)
         method_symbol = @config.editing_mode.get_method(key.char)
-        if method_symbol and respond_to?(method_symbol, true)
-          method_obj = method(method_symbol)
-        end
-        process_key(key.char, method_symbol, method_obj)
+        process_key(key.char, method_symbol)
       else
-        if method_symbol and respond_to?(method_symbol, true)
-          method_obj = method(method_symbol)
-        end
-        process_key(key.combined_char, method_symbol, method_obj)
+        process_key(key.combined_char, method_symbol)
       end
       @multibyte_buffer.clear
     end
@@ -747,7 +743,7 @@ class Reline::LineEditor
         move_completed_list(result, "\C-p".ord == key.char ? :up : :down)
       end
     elsif Symbol === key.char and respond_to?(key.char, true)
-      process_key(key.char, key.char, method(key.char))
+      process_key(key.char, key.char)
     else
       normal_char(key)
     end
