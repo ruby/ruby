@@ -86,7 +86,7 @@ Integer::
          0b01001100[2...6] #=> 0b0011
              ^^^^
 
-Regexp/String::
+Regexp / String::
 
     * Update Unicode version and Emoji version from 11.0.0 to
       12.0.0.  [Feature #15321]
@@ -117,7 +117,7 @@ Date::
   * Date.jisx0301, Date#jisx0301, and Date.parse support the new Japanese
     era.  [Feature #15742]
 
-Delegate::
+Delegator::
 
   * Object#DelegateClass accepts a block and module_evals it in the context
     of the returned class, similar to Class.new and Struct.new.
@@ -128,7 +128,7 @@ ERB::
 
 IRB::
 
-  * Introduce syntax highlight inspired by pry.gem to binding.irb source lines,
+  * Introduce syntax highlight inspired by pry.gem to Binding#irb source lines,
     REPL input, and inspect output of some core-class objects.
 
 Net::IMAP::
