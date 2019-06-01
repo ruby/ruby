@@ -154,56 +154,10 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "outputs a warning if the current is older than lockfile's bundler version" do
-    lockfile <<-L
-      GEM
-        remote: file://localhost#{gem_repo1}/
-        specs:
-          rack (1.0.0)
+  it "warns if the current is older than lockfile's bundler version" do
+    current_version = Bundler::VERSION
+    newer_minor = bump_minor(current_version)
 
-      PLATFORMS
-        #{generic_local_platform}
-
-      DEPENDENCIES
-        rack
-
-      BUNDLED WITH
-         9999999.1.0
-    L
-
-    simulate_bundler_version "9999999.0.0" do
-      install_gemfile <<-G
-        source "file://localhost#{gem_repo1}"
-
-        gem "rack"
-      G
-    end
-
-    warning_message = "the running version of Bundler (9999999.0.0) is older " \
-                      "than the version that created the lockfile (9999999.1.0). " \
-                      "We suggest you to upgrade to the version that created the " \
-                      "lockfile by running `gem install bundler:9999999.1.0`."
-    expect(last_command.stderr).to include warning_message
-
-    lockfile_should_be <<-G
-      GEM
-        remote: file://localhost#{gem_repo1}/
-        specs:
-          rack (1.0.0)
-
-      PLATFORMS
-        #{generic_local_platform}
-        #{specific_local_platform}
-
-      DEPENDENCIES
-        rack
-
-      BUNDLED WITH
-         9999999.1.0
-    G
-  end
-
-  it "errors if the current is a major version older than lockfile's bundler version", :bundler => "3" do
     lockfile <<-L
       GEM
         remote: file://localhost#{gem_repo1}/
@@ -217,7 +171,57 @@ RSpec.describe "the lockfile format" do
         rack
 
       BUNDLED WITH
-         9999999.0.0
+         #{newer_minor}
+    L
+
+    install_gemfile <<-G
+      source "file://localhost#{gem_repo1}"
+
+      gem "rack"
+    G
+
+    pre_flag = prerelease?(newer_minor) ? " --pre" : ""
+    warning_message = "the running version of Bundler (#{current_version}) is older " \
+                      "than the version that created the lockfile (#{newer_minor}). " \
+                      "We suggest you to upgrade to the version that created the " \
+                      "lockfile by running `gem install bundler:#{newer_minor}#{pre_flag}`."
+    expect(err).to include warning_message
+
+    lockfile_should_be <<-G
+      GEM
+        remote: file://localhost#{gem_repo1}/
+        specs:
+          rack (1.0.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        rack
+
+      BUNDLED WITH
+         #{newer_minor}
+    G
+  end
+
+  it "warns when updating bundler major version" do
+    current_version = Bundler::VERSION
+    older_major = previous_major(current_version)
+
+    lockfile <<-L
+      GEM
+        remote: file://localhost#{gem_repo1}/
+        specs:
+          rack (1.0.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        rack
+
+      BUNDLED WITH
+         #{older_major}
     L
 
     install_gemfile <<-G
@@ -226,76 +230,9 @@ RSpec.describe "the lockfile format" do
       gem "rack"
     G
 
-    expect(last_command).to be_failure
-    expect(last_command.bundler_err).to include("You must use Bundler 9999999 or greater with this lockfile.")
-  end
-
-  it "shows a friendly error when running with a new bundler 2 lockfile" do
-    lockfile <<-L
-      GEM
-        remote: https://rails-assets.org/
-        specs:
-         rails-assets-bootstrap (3.3.4)
-           rails-assets-jquery (>= 1.9.1)
-         rails-assets-jquery (2.1.4)
-
-      GEM
-        remote: https://rubygems.org/
-        specs:
-         rake (10.4.2)
-
-      PLATFORMS
-        ruby
-
-      DEPENDENCIES
-        rails-assets-bootstrap!
-        rake
-
-      BUNDLED WITH
-         9999999.0.0
-    L
-
-    install_gemfile <<-G
-      source 'https://rubygems.org'
-      gem 'rake'
-
-      source 'https://rails-assets.org' do
-        gem 'rails-assets-bootstrap'
-      end
-    G
-
-    expect(last_command).to be_failure
-    expect(err).to include("You must use Bundler 9999999 or greater with this lockfile.")
-  end
-
-  it "warns when updating bundler major version", :bundler => "< 3" do
-    lockfile <<-L
-      GEM
-        remote: file://localhost#{gem_repo1}/
-        specs:
-          rack (1.0.0)
-
-      PLATFORMS
-        #{generic_local_platform}
-
-      DEPENDENCIES
-        rack
-
-      BUNDLED WITH
-         1.10.0
-    L
-
-    simulate_bundler_version "9999999.0.0" do
-      install_gemfile <<-G
-        source "file://localhost#{gem_repo1}/"
-
-        gem "rack"
-      G
-    end
-
-    expect(last_command.stderr).to include(
+    expect(err).to include(
       "Warning: the lockfile is being updated to Bundler " \
-      "9999999, after which you will be unable to return to Bundler 1."
+      "#{current_version.split(".").first}, after which you will be unable to return to Bundler #{older_major.split(".").first}."
     )
 
     lockfile_should_be <<-G
@@ -305,62 +242,14 @@ RSpec.describe "the lockfile format" do
           rack (1.0.0)
 
       PLATFORMS
-        #{generic_local_platform}
-        #{specific_local_platform}
-
-      DEPENDENCIES
-        rack
-
-      BUNDLED WITH
-         9999999.0.0
-    G
-  end
-
-  it "warns when updating bundler major version", :bundler => "3" do
-    lockfile <<-L
-      GEM
-        remote: file://localhost#{gem_repo1}/
-        specs:
-          rack (1.0.0)
-
-      PLATFORMS
         #{lockfile_platforms}
 
       DEPENDENCIES
         rack
 
       BUNDLED WITH
-         1.10.0
-    L
-
-    simulate_bundler_version "9999999.0.0" do
-      install_gemfile <<-G
-        source "file://localhost#{gem_repo1}/"
-
-        gem "rack"
-      G
-
-      expect(last_command.stderr).to include(
-        "Warning: the lockfile is being updated to Bundler " \
-        "9999999, after which you will be unable to return to Bundler 1."
-      )
-
-      lockfile_should_be <<-G
-        GEM
-          remote: file://localhost#{gem_repo1}/
-          specs:
-            rack (1.0.0)
-
-        PLATFORMS
-          #{lockfile_platforms}
-
-        DEPENDENCIES
-          rack
-
-        BUNDLED WITH
-           9999999.0.0
-      G
-    end
+         #{current_version}
+    G
   end
 
   it "generates a simple lockfile for a single source, gem with dependencies" do
@@ -1579,7 +1468,25 @@ RSpec.describe "the lockfile format" do
       gem "rack"
     G
 
-    expect(last_command.bundler_err).to match(/your Gemfile.lock contains merge conflicts/i)
-    expect(last_command.bundler_err).to match(/git checkout HEAD -- Gemfile.lock/i)
+    expect(err).to match(/your Gemfile.lock contains merge conflicts/i)
+    expect(err).to match(/git checkout HEAD -- Gemfile.lock/i)
+  end
+
+private
+
+  def prerelease?(version)
+    Gem::Version.new(version).prerelease?
+  end
+
+  def previous_major(version)
+    version.split(".").map.with_index {|v, i| i == 0 ? v.to_i - 1 : v }.join(".")
+  end
+
+  def bump_minor(version)
+    bump(version, 1)
+  end
+
+  def bump(version, segment)
+    version.split(".").map.with_index {|v, i| i == segment ? v.to_i + 1 : v }.join(".")
   end
 end

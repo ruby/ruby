@@ -9,9 +9,9 @@ require "bundler/vendor/thor/lib/thor/line_editor"
 require "bundler/vendor/thor/lib/thor/util"
 
 class Bundler::Thor
-  autoload :Actions,    "bundler/vendor/thor/lib/thor/actions"
-  autoload :RakeCompat, "bundler/vendor/thor/lib/thor/rake_compat"
-  autoload :Group,      "bundler/vendor/thor/lib/thor/group"
+  autoload :Actions,    File.expand_path("actions", __dir__)
+  autoload :RakeCompat, File.expand_path("rake_compat", __dir__)
+  autoload :Group,      File.expand_path("group", __dir__)
 
   # Shortcuts for help.
   HELP_MAPPINGS       = %w(-h -? --help -D)

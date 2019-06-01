@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 require "rubygems/dependency"
-require "bundler/shared_helpers"
-require "bundler/rubygems_ext"
+require_relative "shared_helpers"
+require_relative "rubygems_ext"
 
 module Bundler
   class Dependency < Gem::Dependency
     attr_reader :autorequire
-    attr_reader :groups, :platforms, :gemfile
+    attr_reader :groups, :platforms, :gemfile, :git, :branch
 
     PLATFORM_MAP = {
       :ruby     => Gem::Platform::RUBY,
@@ -84,6 +84,8 @@ module Bundler
       @autorequire    = nil
       @groups         = Array(options["group"] || :default).map(&:to_sym)
       @source         = options["source"]
+      @git            = options["git"]
+      @branch         = options["branch"]
       @platforms      = Array(options["platforms"])
       @env            = options["env"]
       @should_include = options.fetch("should_include", true)

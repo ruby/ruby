@@ -471,13 +471,13 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
   context "when a single source contains multiple locked gems" do
     before do
-      # 1. With these gems,
+      # With these gems,
       build_repo4 do
         build_gem "foo", "0.1"
         build_gem "bar", "0.1"
       end
 
-      # 2. Installing this gemfile will produce...
+      # Installing this gemfile...
       gemfile <<-G
         source 'file://#{gem_repo1}'
         gem 'rack'
@@ -485,28 +485,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
         gem 'bar', '~> 0.1', :source => 'file://#{gem_repo4}'
       G
 
-      # 3. this lockfile.
-      lockfile <<-L
-        GEM
-          remote: file:/Users/andre/src/bundler/bundler/tmp/gems/remote1/
-          remote: file:/Users/andre/src/bundler/bundler/tmp/gems/remote4/
-          specs:
-            bar (0.1)
-            foo (0.1)
-            rack (1.0.0)
-
-        PLATFORMS
-          ruby
-
-        DEPENDENCIES
-          bar (~> 0.1)!
-          foo (~> 0.1)!
-          rack
-      L
-
       bundle! :install, forgotten_command_line_options(:path => "../gems/system")
 
-      # 4. Then we add some new versions...
+      # And then we add some new versions...
       update_repo4 do
         build_gem "foo", "0.2"
         build_gem "bar", "0.3"
@@ -514,7 +495,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     end
 
     it "allows them to be unlocked separately" do
-      # 5. and install this gemfile, updating only foo.
+      # And install this gemfile, updating only foo.
       install_gemfile <<-G
         source 'file://#{gem_repo1}'
         gem 'rack'
@@ -522,7 +503,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         gem 'bar', '~> 0.1', :source => 'file://#{gem_repo4}'
       G
 
-      # 6. Which should update foo to 0.2, but not the (locked) bar 0.1
+      # It should update foo to 0.2, but not the (locked) bar 0.1
       expect(the_bundle).to include_gems("foo 0.2", "bar 0.1")
     end
   end
@@ -578,7 +559,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
 
         # When this gemfile is installed...
-        gemfile <<-G
+        install_gemfile <<-G
           source "#{source_uri}"
 
           source "#{second_uri}" do
@@ -587,26 +568,6 @@ RSpec.describe "bundle install with gems on multiple sources" do
           end
           gem "rack-obama"
         G
-
-        # It creates this lockfile.
-        lockfile <<-L
-          GEM
-            remote: #{source_uri}/
-            remote: #{second_uri}/
-            specs:
-              rack (2.0.1.1.forked)
-              rack-obama (1.0)
-                rack
-              thor (0.19.1.1.forked)
-
-          PLATFORMS
-            ruby
-
-          DEPENDENCIES
-            rack (= 2.0.1.1.forked)!
-            rack-obama
-            thor!
-        L
 
         # Then we change the Gemfile by adding a version to thor
         gemfile <<-G

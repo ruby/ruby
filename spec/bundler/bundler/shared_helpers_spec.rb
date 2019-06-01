@@ -236,7 +236,7 @@ RSpec.describe Bundler::SharedHelpers do
     shared_examples_for "ENV['RUBYOPT'] gets set correctly" do
       it "ensures -rbundler/setup is at the beginning of ENV['RUBYOPT']" do
         subject.set_bundle_environment
-        expect(ENV["RUBYOPT"].split(" ")).to start_with("-rbundler/setup")
+        expect(ENV["RUBYOPT"].split(" ")).to start_with("-r#{File.expand_path("../../lib/bundler/setup", __dir__)}")
       end
     end
 

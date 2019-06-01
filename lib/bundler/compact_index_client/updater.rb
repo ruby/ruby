@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/vendored_fileutils"
+require_relative "../vendored_fileutils"
 require "stringio"
 require "zlib"
 

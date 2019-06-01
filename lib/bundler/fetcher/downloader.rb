@@ -37,6 +37,7 @@ module Bundler
         when Net::HTTPTooManyRequests
           raise TooManyRequestsError, response.body
         when Net::HTTPUnauthorized
+          raise BadAuthenticationError, uri.host if uri.userinfo
           raise AuthenticationRequiredError, uri.host
         when Net::HTTPNotFound
           raise FallbackError, "Net::HTTPNotFound: #{URICredentialsFilter.credential_filtered_uri(uri)}"

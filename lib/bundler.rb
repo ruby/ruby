@@ -1,20 +1,20 @@
 # frozen_string_literal: true
 
-require "bundler/compatibility_guard"
+require_relative "bundler/compatibility_guard"
 
-require "bundler/vendored_fileutils"
+require_relative "bundler/vendored_fileutils"
 require "pathname"
 require "rbconfig"
 
-require "bundler/errors"
-require "bundler/environment_preserver"
-require "bundler/plugin"
-require "bundler/rubygems_ext"
-require "bundler/rubygems_integration"
-require "bundler/version"
-require "bundler/constants"
-require "bundler/current_ruby"
-require "bundler/build_metadata"
+require_relative "bundler/errors"
+require_relative "bundler/environment_preserver"
+require_relative "bundler/plugin"
+require_relative "bundler/rubygems_ext"
+require_relative "bundler/rubygems_integration"
+require_relative "bundler/version"
+require_relative "bundler/constants"
+require_relative "bundler/current_ruby"
+require_relative "bundler/build_metadata"
 
 module Bundler
   environment_preserver = EnvironmentPreserver.new(ENV, EnvironmentPreserver::BUNDLER_KEYS)
@@ -22,43 +22,43 @@ module Bundler
   ENV.replace(environment_preserver.backup)
   SUDO_MUTEX = Mutex.new
 
-  autoload :Definition,             "bundler/definition"
-  autoload :Dependency,             "bundler/dependency"
-  autoload :DepProxy,               "bundler/dep_proxy"
-  autoload :Deprecate,              "bundler/deprecate"
-  autoload :Dsl,                    "bundler/dsl"
-  autoload :EndpointSpecification,  "bundler/endpoint_specification"
-  autoload :Env,                    "bundler/env"
-  autoload :Fetcher,                "bundler/fetcher"
-  autoload :FeatureFlag,            "bundler/feature_flag"
-  autoload :GemHelper,              "bundler/gem_helper"
-  autoload :GemHelpers,             "bundler/gem_helpers"
-  autoload :GemRemoteFetcher,       "bundler/gem_remote_fetcher"
-  autoload :GemVersionPromoter,     "bundler/gem_version_promoter"
-  autoload :Graph,                  "bundler/graph"
-  autoload :Index,                  "bundler/index"
-  autoload :Injector,               "bundler/injector"
-  autoload :Installer,              "bundler/installer"
-  autoload :LazySpecification,      "bundler/lazy_specification"
-  autoload :LockfileParser,         "bundler/lockfile_parser"
-  autoload :MatchPlatform,          "bundler/match_platform"
-  autoload :ProcessLock,            "bundler/process_lock"
-  autoload :RemoteSpecification,    "bundler/remote_specification"
-  autoload :Resolver,               "bundler/resolver"
-  autoload :Retry,                  "bundler/retry"
-  autoload :RubyDsl,                "bundler/ruby_dsl"
-  autoload :RubyGemsGemInstaller,   "bundler/rubygems_gem_installer"
-  autoload :RubyVersion,            "bundler/ruby_version"
-  autoload :Runtime,                "bundler/runtime"
-  autoload :Settings,               "bundler/settings"
-  autoload :SharedHelpers,          "bundler/shared_helpers"
-  autoload :Source,                 "bundler/source"
-  autoload :SourceList,             "bundler/source_list"
-  autoload :SpecSet,                "bundler/spec_set"
-  autoload :StubSpecification,      "bundler/stub_specification"
-  autoload :UI,                     "bundler/ui"
-  autoload :URICredentialsFilter,   "bundler/uri_credentials_filter"
-  autoload :VersionRanges,          "bundler/version_ranges"
+  autoload :Definition,             File.expand_path("bundler/definition", __dir__)
+  autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
+  autoload :DepProxy,               File.expand_path("bundler/dep_proxy", __dir__)
+  autoload :Deprecate,              File.expand_path("bundler/deprecate", __dir__)
+  autoload :Dsl,                    File.expand_path("bundler/dsl", __dir__)
+  autoload :EndpointSpecification,  File.expand_path("bundler/endpoint_specification", __dir__)
+  autoload :Env,                    File.expand_path("bundler/env", __dir__)
+  autoload :Fetcher,                File.expand_path("bundler/fetcher", __dir__)
+  autoload :FeatureFlag,            File.expand_path("bundler/feature_flag", __dir__)
+  autoload :GemHelper,              File.expand_path("bundler/gem_helper", __dir__)
+  autoload :GemHelpers,             File.expand_path("bundler/gem_helpers", __dir__)
+  autoload :GemRemoteFetcher,       File.expand_path("bundler/gem_remote_fetcher", __dir__)
+  autoload :GemVersionPromoter,     File.expand_path("bundler/gem_version_promoter", __dir__)
+  autoload :Graph,                  File.expand_path("bundler/graph", __dir__)
+  autoload :Index,                  File.expand_path("bundler/index", __dir__)
+  autoload :Injector,               File.expand_path("bundler/injector", __dir__)
+  autoload :Installer,              File.expand_path("bundler/installer", __dir__)
+  autoload :LazySpecification,      File.expand_path("bundler/lazy_specification", __dir__)
+  autoload :LockfileParser,         File.expand_path("bundler/lockfile_parser", __dir__)
+  autoload :MatchPlatform,          File.expand_path("bundler/match_platform", __dir__)
+  autoload :ProcessLock,            File.expand_path("bundler/process_lock", __dir__)
+  autoload :RemoteSpecification,    File.expand_path("bundler/remote_specification", __dir__)
+  autoload :Resolver,               File.expand_path("bundler/resolver", __dir__)
+  autoload :Retry,                  File.expand_path("bundler/retry", __dir__)
+  autoload :RubyDsl,                File.expand_path("bundler/ruby_dsl", __dir__)
+  autoload :RubyGemsGemInstaller,   File.expand_path("bundler/rubygems_gem_installer", __dir__)
+  autoload :RubyVersion,            File.expand_path("bundler/ruby_version", __dir__)
+  autoload :Runtime,                File.expand_path("bundler/runtime", __dir__)
+  autoload :Settings,               File.expand_path("bundler/settings", __dir__)
+  autoload :SharedHelpers,          File.expand_path("bundler/shared_helpers", __dir__)
+  autoload :Source,                 File.expand_path("bundler/source", __dir__)
+  autoload :SourceList,             File.expand_path("bundler/source_list", __dir__)
+  autoload :SpecSet,                File.expand_path("bundler/spec_set", __dir__)
+  autoload :StubSpecification,      File.expand_path("bundler/stub_specification", __dir__)
+  autoload :UI,                     File.expand_path("bundler/ui", __dir__)
+  autoload :URICredentialsFilter,   File.expand_path("bundler/uri_credentials_filter", __dir__)
+  autoload :VersionRanges,          File.expand_path("bundler/version_ranges", __dir__)
 
   class << self
     def configure
@@ -197,19 +197,19 @@ module Bundler
     def user_bundle_path(dir = "home")
       env_var, fallback = case dir
                           when "home"
-                            ["BUNDLE_USER_HOME", Pathname.new(user_home).join(".bundle")]
+                            ["BUNDLE_USER_HOME", proc { Pathname.new(user_home).join(".bundle") }]
                           when "cache"
-                            ["BUNDLE_USER_CACHE", user_bundle_path.join("cache")]
+                            ["BUNDLE_USER_CACHE", proc { user_bundle_path.join("cache") }]
                           when "config"
-                            ["BUNDLE_USER_CONFIG", user_bundle_path.join("config")]
+                            ["BUNDLE_USER_CONFIG", proc { user_bundle_path.join("config") }]
                           when "plugin"
-                            ["BUNDLE_USER_PLUGIN", user_bundle_path.join("plugin")]
+                            ["BUNDLE_USER_PLUGIN", proc { user_bundle_path.join("plugin") }]
                           else
                             raise BundlerError, "Unknown user path requested: #{dir}"
       end
       # `fallback` will already be a Pathname, but Pathname.new() is
       # idempotent so it's OK
-      Pathname.new(ENV.fetch(env_var, fallback))
+      Pathname.new(ENV.fetch(env_var, &fallback))
     end
 
     def user_cache

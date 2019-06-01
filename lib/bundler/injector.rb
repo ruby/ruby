@@ -111,8 +111,10 @@ module Bundler
         end
 
         source = ", :source => \"#{d.source}\"" unless d.source.nil?
+        git = ", :git => \"#{d.git}\"" unless d.git.nil?
+        branch = ", :branch => \"#{d.branch}\"" unless d.branch.nil?
 
-        %(gem #{name}#{requirement}#{group}#{source})
+        %(gem #{name}#{requirement}#{group}#{source}#{git}#{branch})
       end.join("\n")
     end
 

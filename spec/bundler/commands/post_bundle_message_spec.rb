@@ -185,21 +185,21 @@ The source does not contain any versions of 'not-a-gem'
     it "with --without one group" do
       bundle! :install, forgotten_command_line_options(:without => "emo")
       bundle! :update, :all => true
-      expect(out).to include("Gems in the group emo were not installed")
+      expect(out).to include("Gems in the group emo were not updated")
       expect(out).to include(bundle_updated_message)
     end
 
     it "with --without two groups" do
       bundle! :install, forgotten_command_line_options(:without => "emo test")
       bundle! :update, :all => true
-      expect(out).to include("Gems in the groups emo and test were not installed")
+      expect(out).to include("Gems in the groups emo and test were not updated")
       expect(out).to include(bundle_updated_message)
     end
 
     it "with --without more groups" do
       bundle! :install, forgotten_command_line_options(:without => "emo obama test")
       bundle! :update, :all => true
-      expect(out).to include("Gems in the groups emo, obama and test were not installed")
+      expect(out).to include("Gems in the groups emo, obama and test were not updated")
       expect(out).to include(bundle_updated_message)
     end
   end
