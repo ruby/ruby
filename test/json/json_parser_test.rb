@@ -91,22 +91,22 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('+23') }
     assert_raise(JSON::ParserError) { parse('.23') }
     assert_raise(JSON::ParserError) { parse('023') }
-    assert_equal 23, parse('23')
-    assert_equal -23, parse('-23')
-    assert_equal_float 3.141, parse('3.141')
-    assert_equal_float -3.141, parse('-3.141')
-    assert_equal_float 3.141, parse('3141e-3')
-    assert_equal_float 3.141, parse('3141.1e-3')
-    assert_equal_float 3.141, parse('3141E-3')
-    assert_equal_float 3.141, parse('3141.0E-3')
-    assert_equal_float -3.141, parse('-3141.0e-3')
-    assert_equal_float -3.141, parse('-3141e-3')
+    assert_equal(23, parse('23'))
+    assert_equal(-23, parse('-23'))
+    assert_equal_float(3.141, parse('3.141'))
+    assert_equal_float(-3.141, parse('-3.141'))
+    assert_equal_float(3.141, parse('3141e-3'))
+    assert_equal_float(3.141, parse('3141.1e-3'))
+    assert_equal_float(3.141, parse('3141E-3'))
+    assert_equal_float(3.141, parse('3141.0E-3'))
+    assert_equal_float(-3.141, parse('-3141.0e-3'))
+    assert_equal_float(-3.141, parse('-3141e-3'))
     assert_raise(ParserError) { parse('NaN') }
     assert parse('NaN', :allow_nan => true).nan?
     assert_raise(ParserError) { parse('Infinity') }
-    assert_equal 1.0/0, parse('Infinity', :allow_nan => true)
+    assert_equal(1.0/0, parse('Infinity', :allow_nan => true))
     assert_raise(ParserError) { parse('-Infinity') }
-    assert_equal -1.0/0, parse('-Infinity', :allow_nan => true)
+    assert_equal(-1.0/0, parse('-Infinity', :allow_nan => true))
   end
 
   def test_parse_bigdecimals
