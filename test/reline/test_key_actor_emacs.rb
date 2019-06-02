@@ -305,6 +305,17 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('aABC012abcd')
   end
 
+  def test_ed_move_to_beg_with_blank
+    input_keys('  abc')
+    assert_byte_pointer_size('  abc')
+    assert_cursor(5)
+    assert_cursor_max(5)
+    input_keys("\C-a", false)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+  end
+
   def test_ed_move_to_end
     input_keys('abd')
     assert_byte_pointer_size('abd')
