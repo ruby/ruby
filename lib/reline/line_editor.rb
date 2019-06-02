@@ -996,6 +996,7 @@ class Reline::LineEditor
     arg -= 1
     ed_next_char(key, arg: arg) if arg > 0
   end
+  alias_method :forward_char, :ed_next_char
 
   private def ed_prev_char(key, arg: 1)
     if @cursor > 0
@@ -1023,6 +1024,7 @@ class Reline::LineEditor
   private def ed_move_to_beg(key)
     @byte_pointer = @cursor = 0
   end
+  alias_method :beginning_of_line, :ed_move_to_beg
 
   private def ed_move_to_end(key)
     @byte_pointer = 0
@@ -1037,6 +1039,7 @@ class Reline::LineEditor
       @byte_pointer += byte_size
     end
   end
+  alias_method :end_of_line, :ed_move_to_end
 
   private def ed_search_prev_history(key)
     @line_backup_in_history = @line
@@ -1350,6 +1353,7 @@ class Reline::LineEditor
   private def ed_clear_screen(key)
     @cleared = true
   end
+  alias_method :clear_screen, :ed_clear_screen
 
   private def em_next_word(key)
     if @line.bytesize > @byte_pointer
@@ -1358,6 +1362,7 @@ class Reline::LineEditor
       @cursor += width
     end
   end
+  alias_method :forward_word, :em_next_word
 
   private def ed_prev_word(key)
     if @byte_pointer > 0
@@ -1366,6 +1371,7 @@ class Reline::LineEditor
       @cursor -= width
     end
   end
+  alias_method :backward_word, :ed_prev_word
 
   private def em_delete_next_word(key)
     if @line.bytesize > @byte_pointer
@@ -1477,6 +1483,7 @@ class Reline::LineEditor
     ed_prev_char(key)
     @config.editing_mode = :vi_command
   end
+  alias_method :backward_char, :ed_prev_char
 
   private def vi_next_word(key, arg: 1)
     if @line.bytesize > @byte_pointer
