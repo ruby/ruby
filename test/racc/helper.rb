@@ -11,16 +11,17 @@ module Racc
 
     test_dir = File.join(PROJECT_DIR, 'test')
     test_dir = File.join(PROJECT_DIR, 'racc') unless File.exist?(test_dir)
-    TEST_DIR = Dir.mktmpdir(test_dir)
+    TEST_DIR = test_dir
+    TEMP_DIR = Dir.mktmpdir("racc")
     racc = File.join(PROJECT_DIR, 'bin', 'racc')
     racc = File.join(PROJECT_DIR, '..', 'libexec', 'racc') unless File.exist?(racc)
     RACC = racc
-    OUT_DIR   = File.join(TEST_DIR, 'out')
-    TAB_DIR   = File.join(TEST_DIR, 'tab') # generated parsers go here
-    LOG_DIR   = File.join(TEST_DIR, 'log')
-    ERR_DIR   = File.join(TEST_DIR, 'err')
-    ASSET_DIR = File.join(test_dir, 'assets') # test grammars
-    REGRESS_DIR  = File.join(test_dir, 'regress') # known-good generated outputs
+    OUT_DIR   = File.join(TEMP_DIR, 'out')
+    TAB_DIR   = File.join(TEMP_DIR, 'tab') # generated parsers go here
+    LOG_DIR   = File.join(TEMP_DIR, 'log')
+    ERR_DIR   = File.join(TEMP_DIR, 'err')
+    ASSET_DIR = File.join(TEST_DIR, 'assets') # test grammars
+    REGRESS_DIR  = File.join(TEST_DIR, 'regress') # known-good generated outputs
 
     INC = [
       File.join(PROJECT_DIR, 'lib'),
