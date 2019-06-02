@@ -295,7 +295,7 @@ module Racc
   class GrammarFileScanner
 
     def initialize(str, filename = '-')
-      @lines  = str.split(/\n|\r\n|\r/)
+      @lines  = str.b.split(/\n|\r\n|\r/)
       @filename = filename
       @lineno = -1
       @line_head   = true
