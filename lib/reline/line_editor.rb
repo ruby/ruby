@@ -1016,8 +1016,12 @@ class Reline::LineEditor
     ed_prev_char(key, arg: arg) if arg > 0
   end
 
+  private def vi_first_print(key)
+    @byte_pointer, @cursor = Reline::Unicode.vi_first_print(@line)
+  end
+
   private def ed_move_to_beg(key)
-    @byte_pointer, @cursor = Reline::Unicode.ed_move_to_begin(@line)
+    @byte_pointer = @cursor = 0
   end
 
   private def ed_move_to_end(key)

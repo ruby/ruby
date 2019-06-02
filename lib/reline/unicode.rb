@@ -407,7 +407,7 @@ class Reline::Unicode
     [byte_size, width]
   end
 
-  def self.ed_move_to_begin(line)
+  def self.vi_first_print(line)
     width = 0
     byte_size = 0
     while (line.bytesize - 1) > byte_size
