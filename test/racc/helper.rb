@@ -6,7 +6,7 @@ require 'tempfile'
 require 'timeout'
 
 module Racc
-  class TestCase < MiniTest::Unit::TestCase
+  class TestCase < Test::Unit::TestCase
     PROJECT_DIR = File.expand_path(File.join(File.dirname(__FILE__), '..'))
 
     test_dir = File.join(PROJECT_DIR, 'test')
@@ -48,7 +48,7 @@ module Racc
         "-O#{OUT_DIR}/#{file}",
         "-o#{TAB_DIR}/#{file}",
       ]
-      racc "#{args.join(' ')}"
+      racc *args
     end
 
     def assert_debugfile(asset, ok)
@@ -71,9 +71,7 @@ module Racc
 
     def assert_exec(asset)
       file = File.basename(asset, '.y')
-      Dir.chdir(TEST_DIR) do
-        ruby("#{TAB_DIR}/#{file}")
-      end
+      ruby("#{TAB_DIR}/#{file}")
     end
 
     def strip_version(source)
@@ -91,18 +89,12 @@ module Racc
         "expectation. Try compiling it and diff with test/regress/#{file}.")
     end
 
-    def racc(arg)
-      ruby "-S #{RACC} #{arg}"
+    def racc(*arg)
+      ruby "-S", RACC, *arg
     end
 
-    def ruby(arg)
-      Dir.chdir(TEST_DIR) do
-        Tempfile.open 'test' do |io|
-          cmd = "#{ENV['_'] || Gem.ruby} -I #{INC} #{arg} 2>#{io.path}"
-          result = system(cmd)
-          assert(result, io.read)
-        end
-      end
+    def ruby(*arg)
+      assert_ruby_status(["-C", TEST_DIR, *arg])
     end
   end
 end
