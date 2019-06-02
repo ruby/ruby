@@ -23,6 +23,8 @@ module Racc
     ASSET_DIR = File.join(TEST_DIR, 'assets') # test grammars
     REGRESS_DIR  = File.join(TEST_DIR, 'regress') # known-good generated outputs
 
+    FileUtils.cp File.join(TEST_DIR, "src.intp"), TEMP_DIR
+
     INC = [
       File.join(PROJECT_DIR, 'lib'),
       File.join(PROJECT_DIR, 'ext'),
