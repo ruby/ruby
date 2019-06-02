@@ -6,4 +6,4 @@ prelude: |
 benchmark:
   vm2_fiber_switch: |
     fib.resume
-loop_count: 6000000
+loop_count: 20000000

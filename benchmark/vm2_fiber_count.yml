@@ -1,0 +1,8 @@
+prelude: |
+  fibers = []
+benchmark:
+  vm2_fiber_count: |
+    fiber = Fiber.new{Fiber.yield}
+    fibers << fiber
+    fiber.resume
+loop_count: 100000
