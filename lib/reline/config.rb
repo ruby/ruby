@@ -3,7 +3,7 @@ require 'pathname'
 class Reline::Config
   attr_reader :test_mode
 
-  DEFAULT_PATH = Pathname.new(Dir.home).join('.inputrc')
+  DEFAULT_PATH = '~/.inputrc'
 
   VARIABLE_NAMES = %w{
     bind-tty-special-chars
@@ -77,8 +77,8 @@ class Reline::Config
     @key_actors[@keymap_label]
   end
 
-  def read(file = DEFAULT_PATH)
-    file = ENV['INPUTRC'] if ENV['INPUTRC']
+  def read(file = nil)
+    file ||= File.expand_path(ENV['INPUTRC'] || DEFAULT_PATH)
     begin
       if file.respond_to?(:readlines)
         lines = file.readlines
