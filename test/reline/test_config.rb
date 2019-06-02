@@ -117,6 +117,33 @@ class Reline::Config::Test < Reline::TestCase
     end
   end
 
+  def test_unclosed_if
+    e = assert_raise(Reline::Config::InvalidInputrc) do
+      @config.read_lines(<<~LINES.split(/(?<=\n)/), "INPUTRC")
+        $if Ruby
+      LINES
+    end
+    assert_equal "INPUTRC:1: unclosed if", e.message
+  end
+
+  def test_unmatched_else
+    e = assert_raise(Reline::Config::InvalidInputrc) do
+      @config.read_lines(<<~LINES.split(/(?<=\n)/), "INPUTRC")
+        $else
+      LINES
+    end
+    assert_equal "INPUTRC:1: unmatched else", e.message
+  end
+
+  def test_unmatched_endif
+    e = assert_raise(Reline::Config::InvalidInputrc) do
+      @config.read_lines(<<~LINES.split(/(?<=\n)/), "INPUTRC")
+        $endif
+      LINES
+    end
+    assert_equal "INPUTRC:1: unmatched endif", e.message
+  end
+
   def test_default_key_bindings
     @config.add_default_key_binding('abcd'.bytes, 'EFGH'.bytes)
     @config.read_lines(<<~'LINES'.split(/^/))
