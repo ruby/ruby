@@ -641,6 +641,10 @@ class Reline::LineEditor
     end
   end
 
+  private def argumentable?(method_obj)
+    method_obj and method_obj.parameters.length != 1
+  end
+
   private def process_key(key, method_symbol)
     if method_symbol and respond_to?(method_symbol, true)
       method_obj = method(method_symbol)
@@ -648,14 +652,20 @@ class Reline::LineEditor
       method_obj = nil
     end
     if method_symbol and key.is_a?(Symbol)
-      method_obj&.(key, arg: @vi_arg)
+      if @vi_arg and argumentable?(method_obj)
+        run_for_operators(key, method_symbol) do
+          method_obj.(key, arg: @vi_arg)
+        end
+      else
+        method_obj&.(key)
+      end
       @kill_ring.process
       @vi_arg = nil
     elsif @vi_arg
       if key.chr =~ /[0-9]/
         ed_argument_digit(key)
       else
-        if ARGUMENTABLE.include?(method_symbol) and method_obj
+        if argumentable?(method_obj)
           run_for_operators(key, method_symbol) do
             method_obj.(key, arg: @vi_arg)
           end
