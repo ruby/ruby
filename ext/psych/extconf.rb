@@ -13,7 +13,7 @@ if enable_config("bundled-libyaml", false) || !(find_header('yaml.h') && find_li
   $VPATH << "$(srcdir)/yaml"
   $INCFLAGS << " -I$(srcdir)/yaml"
 
-  $srcs = Dir.glob("#{$srcdir}/{,yaml/}*.c").map {|n| File.basename(n)}
+  $srcs = Dir.glob("#{$srcdir}/{,yaml/}*.c").map {|n| File.basename(n)}.sort
 
   if have_macro("_WIN32")
     $CPPFLAGS << " -DYAML_DECLARE_STATIC -DHAVE_CONFIG_H"
