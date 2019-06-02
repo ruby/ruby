@@ -21,7 +21,7 @@ class Reline::Config::Test < Reline::TestCase
   end
 
   def test_read_lines
-    @config.read_lines(<<~LINES.split(/(?<=\n)/))
+    @config.read_lines(<<~LINES.split(/^/))
       set bell-style on
     LINES
 
@@ -71,7 +71,7 @@ class Reline::Config::Test < Reline::TestCase
         set bell-style on
       PARTIAL_LINES
     end
-    @config.read_lines(<<~LINES.split(/(?<=\n)/))
+    @config.read_lines(<<~LINES.split(/^/))
       $include included_partial
     LINES
 
@@ -79,7 +79,7 @@ class Reline::Config::Test < Reline::TestCase
   end
 
   def test_if
-    @config.read_lines(<<~LINES.split(/(?<=\n)/))
+    @config.read_lines(<<~LINES.split(/^/))
       $if Ruby
       set bell-style audible
       $else
@@ -91,7 +91,7 @@ class Reline::Config::Test < Reline::TestCase
   end
 
   def test_if_with_false
-    @config.read_lines(<<~LINES.split(/(?<=\n)/))
+    @config.read_lines(<<~LINES.split(/^/))
       $if Python
       set bell-style audible
       $else
@@ -104,7 +104,7 @@ class Reline::Config::Test < Reline::TestCase
 
   def test_if_with_indent
     %w[Ruby Reline].each do |cond|
-      @config.read_lines(<<~LINES.split(/(?<=\n)/))
+      @config.read_lines(<<~LINES.split(/^/))
         set bell-style none
           $if #{cond}
             set bell-style audible
@@ -119,7 +119,7 @@ class Reline::Config::Test < Reline::TestCase
 
   def test_default_key_bindings
     @config.add_default_key_binding('abcd'.bytes, 'EFGH'.bytes)
-    @config.read_lines(<<~'LINES'.split(/(?<=\n)/))
+    @config.read_lines(<<~'LINES'.split(/^/))
       "abcd": "ABCD"
       "ijkl": "IJKL"
     LINES
