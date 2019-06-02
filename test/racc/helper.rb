@@ -53,8 +53,8 @@ module Racc
 
     def assert_debugfile(asset, ok)
       file = File.basename(asset, '.y')
-      Dir.chdir(TEST_DIR) do
-        File.foreach("log/#{file}.y") do |line|
+      Dir.chdir(LOG_DIR) do
+        File.foreach("#{file}.y") do |line|
           line.strip!
           case line
           when /sr/ then assert_equal "sr#{ok[0]}", line
@@ -94,7 +94,7 @@ module Racc
     end
 
     def ruby(*arg)
-      assert_ruby_status(["-C", TEST_DIR, *arg])
+      assert_ruby_status(["-C", TEMP_DIR, *arg])
     end
   end
 end
