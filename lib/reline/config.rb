@@ -143,6 +143,7 @@ class Reline::Config
       when 'version'
       else # application name
         condition = true if args == 'Ruby'
+        condition = true if args == 'Reline'
       end
       unless @skip_section.nil?
         @if_stack << @skip_section
