@@ -213,6 +213,19 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line("か\u3099")
   end
 
+  def test_ed_quoted_insert
+    input_keys("ab\C-v\C-acd")
+    assert_line("ab\C-acd")
+    assert_byte_pointer_size("ab\C-acd")
+    assert_cursor(6)
+    assert_cursor_max(6)
+    input_keys("\C-q\C-b")
+    assert_line("ab\C-acd\C-b")
+    assert_byte_pointer_size("ab\C-acd\C-b")
+    assert_cursor(8)
+    assert_cursor_max(8)
+  end
+
   def test_ed_kill_line
     input_keys("\C-k", false)
     assert_byte_pointer_size('')
