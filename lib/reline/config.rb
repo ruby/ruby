@@ -5,6 +5,10 @@ class Reline::Config
 
   DEFAULT_PATH = '~/.inputrc'
 
+  class InvalidInputrc < RuntimeError
+    attr_accessor :file, :lineno
+  end
+
   VARIABLE_NAMES = %w{
     bind-tty-special-chars
     blink-matching-paren
@@ -41,7 +45,7 @@ class Reline::Config
     @additional_key_bindings = {} # from inputrc
     @default_key_bindings = {} # environment-dependent
     @skip_section = nil
-    @if_stack = []
+    @if_stack = nil
     @editing_mode_label = :emacs
     @keymap_label = :emacs
     @key_actors = {}
@@ -89,8 +93,11 @@ class Reline::Config
       return nil
     end
 
-    read_lines(lines)
+    read_lines(lines, file)
     self
+  rescue InvalidInputrc => e
+    warn e.message
+    nil
   end
 
   def key_bindings
@@ -106,13 +113,19 @@ class Reline::Config
     @default_key_bindings = {}
   end
 
-  def read_lines(lines)
-    lines.each do |line|
+  def read_lines(lines, file = nil)
+    conditions = [@skip_section, @if_stack]
+    @skip_section = nil
+    @if_stack = []
+
+    lines.each_with_index do |line, no|
       next if line.start_with?('#')
+
+      no += 1
 
       line = line.chomp.gsub(/^\s*/, '')
       if line[0, 1] == '$'
-        handle_directive(line[1..-1])
+        handle_directive(line[1..-1], file, no)
         next
       end
 
@@ -130,9 +143,14 @@ class Reline::Config
         @additional_key_bindings[keystroke] = func
       end
     end
+    unless @if_stack.empty?
+      raise InvalidInputrc, "#{file}:#{@if_stack.last[1]}: unclosed if"
+    end
+  ensure
+    @skip_section, @if_stack = conditions
   end
 
-  def handle_directive(directive)
+  def handle_directive(directive, file, no)
     directive, args = directive.split(' ')
     case directive
     when 'if'
@@ -144,17 +162,18 @@ class Reline::Config
       else # application name
         condition = true if args == 'Ruby'
       end
-      unless @skip_section.nil?
-        @if_stack << @skip_section
-      end
+      @if_stack << [file, no, @skip_section]
       @skip_section = !condition
     when 'else'
+      if @if_stack.empty?
+        raise InvalidInputrc, "#{file}:#{no}: unmatched else"
+      end
       @skip_section = !@skip_section
     when 'endif'
-      @skip_section = nil
-      unless @if_stack.empty?
-        @skip_section = @if_stack.pop
+      if @if_stack.empty?
+        raise InvalidInputrc, "#{file}:#{no}: unmatched endif"
       end
+      @skip_section = @if_stack.pop
     when 'include'
       read(args)
     end
