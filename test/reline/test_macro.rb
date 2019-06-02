@@ -5,7 +5,11 @@ class Reline::MacroTest < Reline::TestCase
     @config = Reline::Config.new
     @line_editor = Reline::LineEditor.new(@config)
     @line_editor.instance_variable_set(:@screen_size, [24, 80])
-    @line_editor.output = File.open(IO::NULL, "w")
+    @output = @line_editor.output = File.open(IO::NULL, "w")
+  end
+
+  def teardown
+    @output.close
   end
 
   def input_key(char, combined_char = char, with_meta = false)

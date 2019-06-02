@@ -5,6 +5,7 @@ class Reline::WithinPipeTest < Reline::TestCase
     Reline.send(:test_mode)
     @reader, @writer = IO.pipe((RELINE_TEST_ENCODING rescue Encoding.default_external))
     Reline.input = @reader
+    @output = Reline.output = File.open(IO::NULL, 'w')
     @config = Reline.class_variable_get(:@@config)
     @line_editor = Reline.class_variable_get(:@@line_editor)
   end
@@ -14,6 +15,7 @@ class Reline::WithinPipeTest < Reline::TestCase
     Reline.output = STDOUT
     @reader.close
     @writer.close
+    @output.close
     @config.reset
   end
 
