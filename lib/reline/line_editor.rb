@@ -15,33 +15,6 @@ class Reline::LineEditor
   attr_accessor :dig_perfect_match_proc
   attr_writer :output
 
-  ARGUMENTABLE = %i{
-    ed_delete_next_char
-    ed_delete_prev_char
-    ed_delete_prev_word
-    ed_next_char
-    ed_next_history
-    ed_next_line#
-    ed_prev_char
-    ed_prev_history
-    ed_prev_line#
-    ed_prev_word
-    ed_quoted_insert
-    vi_to_column
-    vi_next_word
-    vi_prev_word
-    vi_end_word
-    vi_next_big_word
-    vi_prev_big_word
-    vi_end_big_word
-    vi_next_char
-    vi_delete_meta
-    vi_paste_prev
-    vi_paste_next
-    vi_replace_char
-    vi_join_lines
-  }
-
   VI_OPERATORS = %i{
     vi_change_meta
     vi_delete_meta
