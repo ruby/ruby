@@ -81,6 +81,14 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 # define STACK_UPPER(x, a, b) (stack_growup_p(x) ? (a) : (b))
 #endif
 
+/*
+  STACK_GROW_DIR_DETECTION is used with STACK_DIR_UPPER.
+  
+  On most normal systems, stacks grow from high address to lower address. In
+  this case, STACK_DIR_UPPER(a, b) will return (b), but on exotic systems where
+  the stack grows UP (from low address to high address), it will return (a).
+*/
+
 #if STACK_GROW_DIRECTION
 #define STACK_GROW_DIR_DETECTION
 #define STACK_DIR_UPPER(a,b) STACK_UPPER(0, (a), (b))
