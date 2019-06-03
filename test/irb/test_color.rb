@@ -40,7 +40,7 @@ module TestIRB
         '/r#{e}g/' => "#{RED}#{BOLD}/#{CLEAR}#{RED}r#{CLEAR}#{RED}\#{#{CLEAR}e#{RED}}#{CLEAR}#{RED}g#{CLEAR}#{RED}#{BOLD}/#{CLEAR}",
         "'a\nb'" => "#{RED}'#{CLEAR}#{RED}a#{CLEAR}\n#{RED}b#{CLEAR}#{RED}'#{CLEAR}",
         "4.5.6" => "#{MAGENTA}#{BOLD}4.5#{CLEAR}#{RED}#{REVERSE}.6#{CLEAR}",
-        "[1]]]" => "[1]]]",
+        "[1]]]\u0013" => "[1]]]^S",
         "\e[0m\n" => "#{RED}#{REVERSE}^[#{CLEAR}[#{BLUE}#{BOLD}0#{CLEAR}m\n",
         "%w[a b]" => "#{RED}%w[#{CLEAR}#{RED}a#{CLEAR} #{RED}b#{CLEAR}#{RED}]#{CLEAR}",
         "%i[c d]" => "#{RED}%i[#{CLEAR}#{RED}c#{CLEAR} #{RED}d#{CLEAR}#{RED}]#{CLEAR}",
@@ -69,7 +69,6 @@ module TestIRB
         "\t" => "\t", # not ^I
         "foo(*%W(bar))" => "foo(*#{RED}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED})#{CLEAR})",
         "$stdout" => "#{GREEN}#{BOLD}$stdout#{CLEAR}",
-        "\u0013" => "#{RED}#{REVERSE}^S#{CLEAR}",
       }.each do |code, result|
         actual = with_term { IRB::Color.colorize_code(code, complete: true) }
         assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: true)\nResult: #{humanized_literal(actual)}")
