@@ -40,4 +40,18 @@ class Reline::WithinPipeTest < Reline::TestCase
     @writer.write(" def\C-x\C-aabc\C-x\C-e ghi\C-x\C-a\C-x\C-f\C-x\C-f_\C-x\C-b\C-x\C-b_\C-x\C-f\C-x\C-f\C-x\C-f\C-x\M-f_\C-x\M-b\n")
     assert_equal 'a_b_c def_ ghi', Reline.readmultiline(&proc{ true })
   end
+
+  def test_macro_commands_for_moving
+    @config.add_default_key_binding("\C-x\C-d".bytes, :delete_char)
+    @config.add_default_key_binding("\C-x\C-h".bytes, :backward_delete_char)
+    @config.add_default_key_binding("\C-x\C-v".bytes, :quoted_insert)
+    #@config.add_default_key_binding("\C-xa".bytes, :self_insert)
+    @config.add_default_key_binding("\C-x\C-t".bytes, :transpose_chars)
+    @config.add_default_key_binding("\C-x\M-t".bytes, :transpose_words)
+    @config.add_default_key_binding("\C-x\M-u".bytes, :upcase_word)
+    @config.add_default_key_binding("\C-x\M-l".bytes, :downcase_word)
+    @config.add_default_key_binding("\C-x\M-c".bytes, :capitalize_word)
+    @writer.write("abcde\C-b\C-b\C-b\C-x\C-d\C-x\C-h\C-x\C-v\C-a\C-f\C-f EF\C-x\C-t gh\C-x\M-t\C-b\C-b\C-b\C-b\C-b\C-b\C-b\C-b\C-x\M-u\C-x\M-l\C-x\M-c\n")
+    assert_equal "a\C-aDE gh Fe", Reline.readmultiline(&proc{ true })
+  end
 end

@@ -958,6 +958,7 @@ class Reline::LineEditor
     end
   end
   alias_method :ed_digit, :ed_insert
+  alias_method :self_insert, :ed_insert
 
   private def ed_quoted_insert(str, arg: 1)
     @waiting_proc = proc { |key|
@@ -971,6 +972,7 @@ class Reline::LineEditor
       @waiting_proc = nil
     }
   end
+  alias_method :quoted_insert, :ed_quoted_insert
 
   private def ed_next_char(key, arg: 1)
     byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
@@ -1271,6 +1273,7 @@ class Reline::LineEditor
       @cursor_max -= width
     end
   end
+  alias_method :backward_delete_char, :em_delete_prev_char
 
   private def ed_kill_line(key)
     if @line.bytesize > @byte_pointer
@@ -1316,6 +1319,7 @@ class Reline::LineEditor
       @rest_height += 1
     end
   end
+  alias_method :delete_char, :em_delete_or_list
 
   private def em_yank(key)
     yanked = @kill_ring.yank
@@ -1405,6 +1409,7 @@ class Reline::LineEditor
       end
     end
   end
+  alias_method :transpose_chars, :ed_transpose_chars
 
   private def ed_transpose_words(key)
     left_word_start, middle_start, right_word_start, after_start = Reline::Unicode.ed_transpose_words(@line, @byte_pointer)
@@ -1418,6 +1423,7 @@ class Reline::LineEditor
     @byte_pointer = from_head_to_left_word.bytesize
     @cursor = calculate_width(from_head_to_left_word)
   end
+  alias_method :transpose_words, :ed_transpose_words
 
   private def em_capitol_case(key)
     if @line.bytesize > @byte_pointer
@@ -1429,6 +1435,7 @@ class Reline::LineEditor
       @cursor += calculate_width(new_str)
     end
   end
+  alias_method :capitalize_word, :em_capitol_case
 
   private def em_lower_case(key)
     if @line.bytesize > @byte_pointer
@@ -1444,6 +1451,7 @@ class Reline::LineEditor
       @line += rest
     end
   end
+  alias_method :downcase_word, :em_lower_case
 
   private def em_upper_case(key)
     if @line.bytesize > @byte_pointer
@@ -1459,6 +1467,7 @@ class Reline::LineEditor
       @line += rest
     end
   end
+  alias_method :upcase_word, :em_upper_case
 
   private def em_kill_region(key)
     if @byte_pointer > 0
