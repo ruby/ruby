@@ -489,7 +489,7 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     # 243 M-s
     :ed_unassigned,
     # 244 M-t
-    :ed_unassigned,
+    :ed_transpose_words,
     # 245 M-u
     :em_upper_case,
     # 246 M-v
