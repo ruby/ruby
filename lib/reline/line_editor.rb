@@ -1406,6 +1406,19 @@ class Reline::LineEditor
     end
   end
 
+  private def ed_transpose_words(key)
+    left_word_start, middle_start, right_word_start, after_start = Reline::Unicode.ed_transpose_words(@line, @byte_pointer)
+    before = @line.byteslice(0, left_word_start)
+    left_word = @line.byteslice(left_word_start, middle_start - left_word_start)
+    middle = @line.byteslice(middle_start, right_word_start - middle_start)
+    right_word = @line.byteslice(right_word_start, after_start - right_word_start)
+    after = @line.byteslice(after_start, @line.bytesize - after_start)
+    @line = before + right_word + middle + left_word + after
+    from_head_to_left_word = before + right_word + middle + left_word
+    @byte_pointer = from_head_to_left_word.bytesize
+    @cursor = calculate_width(from_head_to_left_word)
+  end
+
   private def em_capitol_case(key)
     if @line.bytesize > @byte_pointer
       byte_size, _, new_str = Reline::Unicode.em_forward_word_with_capitalization(@line, @byte_pointer)
