@@ -4547,10 +4547,24 @@ mark_keyvalue(st_data_t key, st_data_t value, st_data_t data)
     return ST_CONTINUE;
 }
 
+static int
+pin_key_mark_value(st_data_t key, st_data_t value, st_data_t data)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+
+    gc_mark_and_pin(objspace, (VALUE)key);
+    gc_mark(objspace, (VALUE)value);
+    return ST_CONTINUE;
+}
+
 static void
 mark_hash(rb_objspace_t *objspace, VALUE hash)
 {
-    rb_hash_stlike_foreach(hash, mark_keyvalue, (st_data_t)objspace);
+    if (rb_hash_compare_by_id_p(hash)) {
+        rb_hash_stlike_foreach(hash, pin_key_mark_value, (st_data_t)objspace);
+    } else {
+        rb_hash_stlike_foreach(hash, mark_keyvalue, (st_data_t)objspace);
+    }
 
     if (RHASH_AR_TABLE_P(hash)) {
         if (objspace->mark_func_data == NULL && RHASH_TRANSIENT_P(hash)) {
