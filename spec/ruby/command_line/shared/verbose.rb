@@ -4,6 +4,6 @@ describe :command_line_verbose, shared: true do
   end
 
   it "sets $VERBOSE to true" do
-    ruby_exe(@script, options: @method).chomp.split.last.should == "true"
+    ruby_exe(@script, options: @method).chomp.b.split.last.should == "true"
   end
 end
