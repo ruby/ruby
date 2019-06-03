@@ -2527,10 +2527,15 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
 {
     VALUE n, size;
     long slice_size = NUM2LONG(RARRAY_AREF(args, 0));
+    ID infinite_p;
+    CONST_ID(infinite_p, "infinite?");
     if (slice_size <= 0) rb_raise(rb_eArgError, "invalid slice size");
 
     size = enum_size(obj, 0, 0);
     if (size == Qnil) return Qnil;
+    if (RB_FLOAT_TYPE_P(size) && RTEST(rb_funcall(size, infinite_p, 0))) {
+        return size;
+    }
 
     n = add_int(size, slice_size-1);
     return div_int(n, slice_size);
