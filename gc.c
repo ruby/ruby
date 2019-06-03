@@ -7562,7 +7562,7 @@ static struct heap_page **
 allocate_page_list(rb_objspace_t *objspace, page_compare_func_t *comparator)
 {
     size_t total_pages = heap_eden->total_pages;
-    struct heap_page *page, **page_list = malloc(total_pages * sizeof(struct heap_page *));
+    struct heap_page *page = 0, **page_list = malloc(total_pages * sizeof(struct heap_page *));
     int i = 0;
 
     list_for_each(&heap_eden->pages, page, page_node) {
