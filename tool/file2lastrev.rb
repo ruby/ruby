@@ -59,6 +59,9 @@ vcs = nil
   when :revision_h
     Proc.new {|last, changed, modified, branch, title|
       short = vcs.short_revision(last)
+      if /[^\x00-\x7f]/ =~ title and title.respond_to?(:force_encoding)
+        title = title.dup.force_encoding("US-ASCII")
+      end
       [
         "#define RUBY_REVISION #{short.inspect}",
         ("#define RUBY_FULL_REVISION #{last.inspect}" unless short == last),

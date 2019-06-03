@@ -32,6 +32,7 @@ if RUBY_VERSION < "2.0"
         if opts.kind_of?(Hash)
           dir = opts.delete(:chdir)
           rest.pop if opts.empty?
+          opts.delete(:external_encoding)
         end
 
         if block
@@ -66,6 +67,7 @@ if RUBY_VERSION < "2.0"
         if opts.kind_of?(Hash)
           dir = opts.delete(:chdir)
           rest.pop if opts.empty?
+          opts.delete(:external_encoding)
         end
 
         command = command.shelljoin if Array === command
@@ -384,8 +386,9 @@ class VCS
     COMMAND = ENV["GIT"] || 'git'
 
     def self.cmd_args(cmds, srcdir = nil)
+      (opts = cmds.last).kind_of?(Hash) or cmds << (opts = {})
+      opts[:external_encoding] ||= "UTF-8"
       if srcdir and local_path?(srcdir)
-        (opts = cmds.last).kind_of?(Hash) or cmds << (opts = {})
         opts[:chdir] ||= srcdir
       end
       cmds
