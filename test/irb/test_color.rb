@@ -79,7 +79,7 @@ module TestIRB
     end
 
     def test_colorize_code_complete_true
-      # `complete: true` behaviors. Warn compile_error.
+      # `complete: true` behaviors. Warn end-of-file.
       {
         "'foo' + 'bar" => "#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR} + #{RED}'#{CLEAR}#{RED}#{REVERSE}bar#{CLEAR}",
       }.each do |code, result|
@@ -89,7 +89,7 @@ module TestIRB
     end
 
     def test_colorize_code_complete_false
-      # `complete: false` behaviors. Do not warn compile_error.
+      # `complete: false` behaviors. Do not warn end-of-file.
       {
         "'foo' + 'bar" => "#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR} + #{RED}'#{CLEAR}#{RED}bar#{CLEAR}",
       }.each do |code, result|
