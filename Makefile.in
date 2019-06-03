@@ -1,6 +1,6 @@
 # -*- mode: makefile-gmake; indent-tabs-mode: t -*-
 
-SHELL = /bin/sh
+SHELL = /bin/bash
 NULLCMD = @NULLCMD@
 n=$(NULLCMD)
 ECHO1 = $(V:1=$n)
