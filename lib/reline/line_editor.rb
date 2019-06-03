@@ -15,12 +15,6 @@ class Reline::LineEditor
   attr_accessor :dig_perfect_match_proc
   attr_writer :output
 
-  VI_OPERATORS = %i{
-    vi_change_meta
-    vi_delete_meta
-    vi_yank
-  }
-
   VI_MOTIONS = %i{
     ed_prev_char
     ed_next_char
