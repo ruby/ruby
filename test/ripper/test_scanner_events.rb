@@ -976,4 +976,14 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_match /Invalid char/, err[1]
     assert_equal "\e", err[2]
   end
+
+  def test_invalid_hex_escape
+    err = nil
+    assert_equal ['U'], scan('tstring_content', '"\\xU"') {|*e| err = e}
+    assert_equal [:on_parse_error, "invalid hex escape", "\\x"], err
+
+    err = nil
+    assert_equal ['U'], scan('tstring_content', '/\\xU/') {|*e| err = e}
+    assert_equal [:on_parse_error, "invalid hex escape", "\\x"], err
+  end
 end if ripper_test

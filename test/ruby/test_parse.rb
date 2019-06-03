@@ -513,7 +513,7 @@ class TestParse < Test::Unit::TestCase
     mesg = 'from the backslash through the invalid char'
 
     e = assert_syntax_error('"\xg1"', /hex escape/)
-    assert_equal('   ^', e.message.lines.last, mesg)
+    assert_equal(' ^~', e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{1234"', 'unterminated Unicode escape')
     assert_equal('        ^', e.message.lines.last, mesg)
