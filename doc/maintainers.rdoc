@@ -92,6 +92,8 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/racc/*]
   Aaron Patterson (tenderlove)
+[lib/reline.rb, lib/reline/*]
+  aycabta
 [lib/resolv-replace.rb]
   Tanaka Akira (akr)
 [lib/resolv.rb]
