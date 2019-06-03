@@ -14,7 +14,7 @@ jobs:
   steps:
   - task: UseRubyVersion@0
     inputs:
-      versionSpec: '2.5.1'
+      versionSpec: '2.6.2'
   - script: |
       set -x
       sudo sed /etc/apt/sources.list -e "s/^# deb-src/deb-src/g" -i
