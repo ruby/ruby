@@ -69,6 +69,7 @@ module TestIRB
         "\t" => "\t", # not ^I
         "foo(*%W(bar))" => "foo(*#{RED}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED})#{CLEAR})",
         "$stdout" => "#{GREEN}#{BOLD}$stdout#{CLEAR}",
+        "\u0013" => "#{RED}#{REVERSE}^S#{CLEAR}",
       }.each do |code, result|
         actual = with_term { IRB::Color.colorize_code(code, complete: true) }
         assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: true)\nResult: #{humanized_literal(actual)}")
@@ -79,7 +80,7 @@ module TestIRB
     end
 
     def test_colorize_code_complete_true
-      # `complete: true` behaviors. Warn end-of-file.
+      # `complete: true` behaviors. Warn compile_error.
       {
         "'foo' + 'bar" => "#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR} + #{RED}'#{CLEAR}#{RED}#{REVERSE}bar#{CLEAR}",
       }.each do |code, result|
@@ -89,7 +90,7 @@ module TestIRB
     end
 
     def test_colorize_code_complete_false
-      # `complete: false` behaviors. Do not warn end-of-file
+      # `complete: false` behaviors. Do not warn compile_error.
       {
         "'foo' + 'bar" => "#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR} + #{RED}'#{CLEAR}#{RED}bar#{CLEAR}",
       }.each do |code, result|
