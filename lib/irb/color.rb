@@ -108,7 +108,7 @@ module IRB # :nodoc:
         colored = +''
         length = 0
 
-        scan(code, detect_compile_error: complete) do |token, str, expr|
+        scan(code, allow_last_error: !complete) do |token, str, expr|
           in_symbol = symbol_state.scan_token(token)
           str.each_line do |line|
             line = Reline::Unicode.escape_for_print(line)
@@ -132,12 +132,12 @@ module IRB # :nodoc:
 
       private
 
-      def scan(code, detect_compile_error:)
+      def scan(code, allow_last_error:)
         pos = [1, 0]
 
         Ripper::Lexer.new(code).scan.each do |elem|
           str = elem.tok
-          next if !detect_compile_error and elem.message&.end_with?("meets end of file")
+          next if allow_last_error and elem.message&.end_with?('meets end of file')
           next if ([elem.pos[0], elem.pos[1] + str.bytesize] <=> pos) <= 0
 
           str.each_line do |line|
