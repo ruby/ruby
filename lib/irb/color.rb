@@ -123,7 +123,9 @@ module IRB # :nodoc:
         end
 
         # give up colorizing incomplete Ripper tokens
-        return code if length != code.bytesize
+        if length != code.bytesize
+          return Reline::Unicode.escape_for_print(code)
+        end
 
         colored
       end
