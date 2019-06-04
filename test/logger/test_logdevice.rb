@@ -45,6 +45,7 @@ class TestLogDevice < Test::Unit::TestCase
     begin
       assert_file.exist?(@filename)
       assert_predicate(logdev.dev, :sync)
+      refute_predicate(logdev.dev, :binmode?)
       assert_equal(@filename, logdev.filename)
       logdev.write('hello')
     ensure
@@ -53,6 +54,8 @@ class TestLogDevice < Test::Unit::TestCase
     # create logfile whitch is already exist.
     logdev = d(@filename)
     begin
+      assert_predicate(logdev.dev, :sync)
+      refute_predicate(logdev.dev, :binmode?)
       logdev.write('world')
       logfile = File.read(@filename)
       assert_equal(2, logfile.split(/\n/).size)

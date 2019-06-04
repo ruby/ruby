@@ -365,6 +365,8 @@ class Logger
   #   Logging formatter. Default values is an instance of Logger::Formatter.
   # +datetime_format+::
   #   Date and time format. Default value is '%Y-%m-%d %H:%M:%S'.
+  # +binmode+::
+  #   Use binany mode on the log device. Defaul value is false.
   # +shift_period_suffix+::
   #   The log file suffix format for +daily+, +weekly+ or +monthly+ rotation.
   #   Default is '%Y%m%d'.
@@ -375,7 +377,7 @@ class Logger
   #
   def initialize(logdev, shift_age = 0, shift_size = 1048576, level: DEBUG,
                  progname: nil, formatter: nil, datetime_format: nil,
-                 shift_period_suffix: '%Y%m%d')
+                 binmode: false, shift_period_suffix: '%Y%m%d')
     self.level = level
     self.progname = progname
     @default_formatter = Formatter.new
@@ -383,9 +385,10 @@ class Logger
     self.formatter = formatter
     @logdev = nil
     if logdev
-      @logdev = LogDevice.new(logdev, :shift_age => shift_age,
-        :shift_size => shift_size,
-        :shift_period_suffix => shift_period_suffix)
+      @logdev = LogDevice.new(logdev, shift_age: shift_age,
+        shift_size: shift_size,
+        shift_period_suffix: shift_period_suffix,
+        binmode: binmode)
     end
   end
 
