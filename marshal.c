@@ -106,6 +106,8 @@ typedef struct {
 
 static st_table *compat_allocator_tbl;
 static VALUE compat_allocator_tbl_wrapper;
+static VALUE rb_marshal_dump_limited(VALUE obj, VALUE port, int limit);
+static VALUE rb_marshal_load_with_proc(VALUE port, VALUE proc);
 
 static int
 mark_marshal_compat_i(st_data_t key, st_data_t value)
