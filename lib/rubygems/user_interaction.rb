@@ -604,6 +604,7 @@ class Gem::StreamUI
     end
 
     private
+
     def locked_puts(message)
       MUTEX.synchronize do
         @out.puts message
