@@ -7,6 +7,12 @@ class Colorize
       if (/\A\e\[.*m\z/ =~ IO.popen("tput smso", "r", err: IO::NULL, &:read) rescue nil)
         @beg = "\e["
         @colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
+        begin
+          File.read(File.join(__dir__, "../test/colors")).scan(/(\w+)=([^:\n]*)/) do |n, c|
+            colors[n] ||= c
+          end
+        rescue
+        end
         @reset = "#{@beg}m"
       end
     end
