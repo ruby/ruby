@@ -41,7 +41,7 @@ class Reline::WithinPipeTest < Reline::TestCase
     assert_equal 'a_b_c def_ ghi', Reline.readmultiline(&proc{ true })
   end
 
-  def test_macro_commands_for_moving
+  def test_macro_commands_for_editing
     @config.add_default_key_binding("\C-x\C-d".bytes, :delete_char)
     @config.add_default_key_binding("\C-x\C-h".bytes, :backward_delete_char)
     @config.add_default_key_binding("\C-x\C-v".bytes, :quoted_insert)
