@@ -92,7 +92,7 @@ add_id(VALUE buf, ID id)
 	    A(":"); AR(str);
 	}
 	else {
-	    rb_str_catf(buf, "(internal variable: 0x%"PRIsVALUE")", id);
+            rb_str_catf(buf, "(internal variable: 0x%"PRIsVALUE")", id);
 	}
     }
 }
