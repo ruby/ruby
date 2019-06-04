@@ -2691,19 +2691,18 @@ th_init(rb_thread_t *th, VALUE self)
     th->self = self;
     rb_threadptr_root_fiber_setup(th);
 
-    {
-	/* vm_stack_size is word number.
-	 * th->vm->default_params.thread_vm_stack_size is byte size. */
-	size_t size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
-	rb_ec_set_vm_stack(th->ec, rb_thread_recycle_stack(size), size);
+    // Initialize the main thread:
+    if (self == 0) {
+        size_t size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
+        VALUE * vm_stack = ALLOC_N(VALUE, size);
+        rb_ec_set_vm_stack(th->ec, vm_stack, size);
+        th->ec->cfp = (void *)(th->ec->vm_stack + th->ec->vm_stack_size);
+        
+        vm_push_frame(th->ec, 0 /* dummy iseq */, VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_CFRAME /* dummy frame */,
+            Qnil /* dummy self */, VM_BLOCK_HANDLER_NONE /* dummy block ptr */,
+            0 /* dummy cref/me */,
+            0 /* dummy pc */, th->ec->vm_stack, 0, 0);
     }
-
-    th->ec->cfp = (void *)(th->ec->vm_stack + th->ec->vm_stack_size);
-
-    vm_push_frame(th->ec, 0 /* dummy iseq */, VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_CFRAME /* dummy frame */,
-		  Qnil /* dummy self */, VM_BLOCK_HANDLER_NONE /* dummy block ptr */,
-		  0 /* dummy cref/me */,
-		  0 /* dummy pc */, th->ec->vm_stack, 0, 0);
 
     th->status = THREAD_RUNNABLE;
     th->last_status = Qnil;
