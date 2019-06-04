@@ -1,0 +1,40 @@
+prelude: require 'cgi/escape'
+benchmark:
+  - name: escape_html_blank
+    prelude: str = ""
+    script: CGI.escapeHTML(str)
+    loop_count: 20000000
+  - name: escape_html_short_none
+    prelude: str = "abcde"
+    script: CGI.escapeHTML(str)
+    loop_count: 20000000
+  - name: escape_html_short_one
+    prelude: str = "abcd<"
+    script: CGI.escapeHTML(str)
+    loop_count: 20000000
+  - name: escape_html_short_all
+    prelude: str = "'&\"<>"
+    script: CGI.escapeHTML(str)
+    loop_count: 5000000
+  - name: escape_html_long_none
+    prelude: str = "abcde" * 300
+    script: CGI.escapeHTML(str)
+    loop_count: 1000000
+  - name: escape_html_long_all
+    prelude: str = "'&\"<>" * 10
+    script: CGI.escapeHTML(str)
+    loop_count: 1000000
+  - name: escape_html_real
+    prelude: | # http://example.com/
+      str = <<~HTML
+        <body>
+        <div>
+            <h1>Example Domain</h1>
+            <p>This domain is established to be used for illustrative examples in documents. You may use this
+            domain in examples without prior coordination or asking for permission.</p>
+            <p><a href="http://www.iana.org/domains/example">More information...</a></p>
+        </div>
+        </body>
+      HTML
+    script: CGI.escapeHTML(str)
+    loop_count: 1000000
