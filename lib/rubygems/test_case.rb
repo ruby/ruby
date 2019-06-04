@@ -1209,6 +1209,7 @@ Also, a list:
     # Return the join path, with escaping backticks, dollars, and
     # double-quotes.  Unlike `shellescape`, equal-sign is not escaped.
     private
+
     def escape_path(*path)
       path = File.join(*path)
       if %r'\A[-+:/=@,.\w]+\z' =~ path
