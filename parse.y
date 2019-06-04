@@ -6015,6 +6015,10 @@ nextline(struct parser_params *p)
 	if (p->eofp)
 	    return -1;
 
+	if (p->lex.pend > p->lex.pbeg && *(p->lex.pend-1) != '\n') {
+	    goto end_of_input;
+	}
+
 	if (!p->lex.input || NIL_P(v = lex_getline(p))) {
 	  end_of_input:
 	    p->eofp = 1;
