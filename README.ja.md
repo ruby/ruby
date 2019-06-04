@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/ruby/ruby.svg?branch=trunk)](https://travis-ci.org/ruby/ruby)
 [![wercker status](https://app.wercker.com/status/e5e7e1704f62b76525022aa424aef6ef/s/trunk "wercker status")](https://app.wercker.com/project/byKey/e5e7e1704f62b76525022aa424aef6ef)
 [![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/trunk?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/trunk)
-[![Build Status](https://dev.azure.com/rubylang/ruby/_apis/build/status/ruby.ruby?branchName=trunk)](https://dev.azure.com/rubylang/ruby/_build/latest?definitionId=3&branchName=trunk)
+[![Build Status](https://dev.azure.com/rubylang/ruby/_apis/build/status/ruby.ruby?branchName=master)](https://dev.azure.com/rubylang/ruby/_build/latest?definitionId=3&branchName=master) 
 
 
 # Rubyとは
