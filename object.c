@@ -1664,7 +1664,7 @@ rb_true(VALUE obj)
  */
 
 
-static VALUE
+VALUE
 rb_false(VALUE obj)
 {
     return Qfalse;

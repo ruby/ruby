@@ -1657,6 +1657,7 @@ vm_init_redefined_flag(void)
     OP(Call, CALL), (C(Proc));
     OP(And, AND), (C(Integer));
     OP(Or, OR), (C(Integer));
+    OP(NilP, NIL_P), (C(NilClass));
 #undef C
 #undef OP
 }
