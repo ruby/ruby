@@ -1545,7 +1545,7 @@ InitVM_Random(void)
 
     {
 	/* Direct access to Ruby's Pseudorandom number generator (PRNG). */
-	VALUE rand_default = Init_Random_default(rb_cRandom);
+        VALUE rand_default = Init_Random_default(rb_cRandom);
 	/* The default Pseudorandom number generator.  Used by class
 	 * methods of Random. */
 	rb_define_const(rb_cRandom, "DEFAULT", rand_default);
