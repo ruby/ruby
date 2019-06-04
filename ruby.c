@@ -2011,7 +2011,7 @@ load_file_internal(VALUE argp_v)
 	else if (!NIL_P(c)) {
 	    rb_io_ungetbyte(f, c);
 	}
-	if (NIL_P(c)) {
+        if (NIL_P(c)) {
 	    argp->f = f = Qnil;
 	}
 	if (!(opt->dump & ~DUMP_BIT(version_v))) {
