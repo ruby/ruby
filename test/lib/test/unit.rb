@@ -6,6 +6,7 @@ end
 require 'minitest/unit'
 require 'test/unit/assertions'
 require_relative '../envutil'
+require_relative '../../../tool/colorize'
 require 'test/unit/testcase'
 require 'optparse'
 
@@ -705,26 +706,11 @@ module Test
         when :always
           color = true
         when :auto, nil
-          color = (@tty || @options[:job_status] == :replace) && /dumb/ !~ ENV["TERM"]
+          color = true if @tty || @options[:job_status] == :replace
         else
           color = false
         end
-        if color
-          # dircolors-like style
-          colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
-          begin
-            File.read(File.join(__dir__, "../../colors")).scan(/(\w+)=([^:\n]*)/) do |n, c|
-              colors[n] ||= c
-            end
-          rescue
-          end
-          @passed_color = "\e[;#{colors["pass"] || "32"}m"
-          @failed_color = "\e[;#{colors["fail"] || "31"}m"
-          @skipped_color = "\e[;#{colors["skip"] || "33"}m"
-          @reset_color = "\e[m"
-        else
-          @passed_color = @failed_color = @skipped_color = @reset_color = ""
-        end
+        @colorize = Colorize.new(color, colors_file: File.join(__dir__, "../../colors"))
         if color or @options[:job_status] == :replace
           @verbose = !options[:parallel]
         end
@@ -748,9 +734,7 @@ module Test
       def update_status(s)
         count = @test_count.to_s(10).rjust(@total_tests.size)
         del_status_line(false)
-        print(@passed_color)
-        add_status("[#{count}/#{@total_tests}]")
-        print(@reset_color)
+        add_status(@colorize.pass("[#{count}/#{@total_tests}]"))
         add_status(" #{s}")
         $stdout.print "\r" if @options[:job_status] == :replace and !@verbose
         $stdout.flush
@@ -769,14 +753,13 @@ module Test
               del_status_line
               next
             end
-            color = @skipped_color
+            color = :skip
           else
-            color = @failed_color
+            color = :fail
           end
-          msg = msg.split(/$/, 2)
-          $stdout.printf("%s%s%3d) %s%s%s\n",
-                         sep, color, @report_count += 1,
-                         msg[0], @reset_color, msg[1])
+          first, msg = msg.split(/$/, 2)
+          first = sprintf("%3d) %s", @report_count += 1, first)
+          $stdout.print(sep, @colorize.decorate(first, color), msg, "\n")
           sep = nil
         end
         report.clear
