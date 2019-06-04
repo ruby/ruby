@@ -46,7 +46,7 @@ optimized_escape_html(VALUE str)
 {
     const char *cstr = RSTRING_PTR(str);
     const char *end = cstr + RSTRING_LEN(str);
-    char *buf = ALLOCA_N(char, RSTRING_LEN(str) * html_escape_max_len + 1);
+    char *buf = ALLOCA_N(char, RSTRING_LEN(str) * html_escape_max_len);
 
     char *dest = buf;
     while (cstr < end) {
@@ -62,8 +62,7 @@ optimized_escape_html(VALUE str)
     }
 
     if (RSTRING_LEN(str) < (dest - buf)) {
-        *dest = '\0';
-        VALUE escaped = rb_str_new_cstr(buf);
+        VALUE escaped = rb_str_new(buf, dest - buf);
         preserve_original_state(str, escaped);
         return escaped;
     }
