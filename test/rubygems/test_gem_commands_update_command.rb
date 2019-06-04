@@ -384,7 +384,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     expected = [
       [Gem::NameTuple.new('a', v(2), Gem::Platform::RUBY),
-        Gem::Source.new(@gem_repo)],
+       Gem::Source.new(@gem_repo)],
     ]
 
     assert_equal expected, @cmd.fetch_remote_gems(specs['a-1'])
@@ -412,7 +412,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     expected = [
       [Gem::NameTuple.new('a', v(2), Gem::Platform::RUBY),
-        Gem::Source.new(@gem_repo)],
+       Gem::Source.new(@gem_repo)],
     ]
 
     assert_equal expected, @cmd.fetch_remote_gems(specs['a-1'])
@@ -429,9 +429,9 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     expected = [
       [Gem::NameTuple.new('a', v(2), Gem::Platform::RUBY),
-        Gem::Source.new(@gem_repo)],
+       Gem::Source.new(@gem_repo)],
       [Gem::NameTuple.new('a', v('3.a'), Gem::Platform::RUBY),
-        Gem::Source.new(@gem_repo)],
+       Gem::Source.new(@gem_repo)],
     ]
 
     assert_equal expected, @cmd.fetch_remote_gems(specs['a-1'])
