@@ -695,6 +695,17 @@ thread_do_start(rb_thread_t *th)
 }
 
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
+rb_control_frame_t *
+rb_vm_push_frame(rb_execution_context_t *sec,
+		 const rb_iseq_t *iseq,
+		 VALUE type,
+		 VALUE self,
+		 VALUE specval,
+		 VALUE cref_or_me,
+		 const VALUE *pc,
+		 VALUE *sp,
+		 int local_size,
+		 int stack_max);
 
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
@@ -703,9 +714,22 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     rb_thread_list_t *join_list;
     rb_thread_t *main_th;
     VALUE errinfo = Qnil;
+    size_t vm_stack_size = th->vm->default_params.thread_vm_stack_size;
 
-    if (th == th->vm->main_thread)
-	rb_bug("thread_start_func_2 must not be used for main thread");
+    if (th == th->vm->main_thread) {
+        rb_bug("thread_start_func_2 must not be used for main thread");
+    }
+
+    rb_ec_set_vm_stack(th->ec, alloca(vm_stack_size), vm_stack_size / sizeof(VALUE));
+    th->ec->cfp = (void *)(th->ec->vm_stack + th->ec->vm_stack_size);
+
+    rb_vm_push_frame(th->ec,
+        0 /* dummy iseq */,
+        VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_CFRAME /* dummy frame */,
+        Qnil /* dummy self */, VM_BLOCK_HANDLER_NONE /* dummy block ptr */,
+        0 /* dummy cref/me */,
+        0 /* dummy pc */, th->ec->vm_stack, 0, 0
+    );
 
     ruby_thread_set_native(th);
 
