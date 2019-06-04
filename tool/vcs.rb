@@ -405,9 +405,9 @@ class VCS
     def self.get_revisions(path, srcdir = nil)
       gitcmd = [COMMAND, '-C', srcdir || '.']
       last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', 'HEAD']]).rstrip
-      log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', *path]])
+      log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', '--pretty=fuller', *path]])
       changed = log[/\Acommit (\h+)/, 1]
-      modified = log[/^Date:\s+(.*)/, 1]
+      modified = log[/^CommitDate:\s+(.*)/, 1]
       branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref --short HEAD]])
       if branch.empty?
         branch_list = cmd_read_at(srcdir, [gitcmd + %W[branch --list --contains HEAD]]).lines.to_a
