@@ -530,14 +530,14 @@ class TestSH < Test::Unit::TestCase
 
   def test_marshal14
     s = "\x04\x03u:\x01\x04Date\x01\v\x04\x03[\x01\x02i\x03\xE8i%T"
-    d = Marshal.load(s)
+    d = suppress_warning {Marshal.load(s)}
     assert_equal(Rational(4903887,2), d.ajd)
     assert_equal(Date::GREGORIAN, d.start)
   end
 
   def test_marshal16
     s = "\x04\x06u:\tDate\x0F\x04\x06[\ai\x03\xE8i%T"
-    d = Marshal.load(s)
+    d = suppress_warning {Marshal.load(s)}
     assert_equal(Rational(4903887,2), d.ajd)
     assert_equal(Date::GREGORIAN, d.start)
   end
@@ -655,4 +655,12 @@ class TestSH < Test::Unit::TestCase
     assert_equal(true, Date.test_all)
   end if defined?(Date.test_all)
 
+  private
+
+  def suppress_warning
+    $VERBOSE, verbose = nil, $VERBOSE
+    yield
+  ensure
+    $VERBOSE = verbose
+  end
 end
