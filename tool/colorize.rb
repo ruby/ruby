@@ -1,13 +1,13 @@
 # frozen-string-literal: true
 
 class Colorize
-  def initialize(color = nil, colors_file: nil)
+  def initialize(color = nil, opts = ((_, color = color, nil)[0] if Hash === color))
     @colors = @reset = nil
     if color or (color == nil && STDOUT.tty?)
-      if (/\A\e\[.*m\z/ =~ IO.popen("tput smso", "r", err: IO::NULL, &:read) rescue nil)
+      if (/\A\e\[.*m\z/ =~ IO.popen("tput smso", "r", :err => IO::NULL, &:read) rescue nil)
         @beg = "\e["
         colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
-        if colors_file
+        if opts and colors_file = opts[:colors_file]
           begin
             File.read(colors_file).scan(/(\w+)=([^:\n]*)/) do |n, c|
               colors[n] ||= c
