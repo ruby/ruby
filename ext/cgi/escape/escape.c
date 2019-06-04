@@ -19,11 +19,12 @@ static void
 init_html_escape_tables(void)
 {
 #define HTML_ESCAPE(c, str) do { \
-    html_escape_table[c] = str; \
-    html_escape_len[c] = strlen(str); \
-    if (html_escape_max_len < strlen(str)) { \
-        html_escape_max_len = strlen(str); \
+    size_t len = strlen(str); \
+    html_escape_len[c] = len; \
+    if (html_escape_max_len < len) { \
+        html_escape_max_len = len; \
     } \
+    html_escape_table[c] = str; \
 } while (0)
     HTML_ESCAPE('\'', "&#39;");
     HTML_ESCAPE('&', "&amp;");
