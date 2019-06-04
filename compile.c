@@ -1556,7 +1556,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 	const NODE *val_node = node->nd_body->nd_value;
 	VALUE dv;
 
-	if (val_node == (const NODE *)-1) {
+	if (val_node == NODE_SPECIAL_REQUIRED_KEYWORD) {
 	    ++rkw;
 	}
 	else {
@@ -8012,7 +8012,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    LABEL *end_label = NEW_LABEL(nd_line(node));
 	    const NODE *default_value = node->nd_body->nd_value;
 
-	    if (default_value == (const NODE *)-1) {
+	    if (default_value == NODE_SPECIAL_REQUIRED_KEYWORD) {
 		/* required argument. do nothing */
 		COMPILE_ERROR(ERROR_ARGS "unreachable");
 		goto ng;
