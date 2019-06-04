@@ -11,26 +11,26 @@ RUBY_EXTERN const signed char ruby_digit36_to_number_table[];
 static VALUE rb_cCGI, rb_mUtil, rb_mEscape;
 static ID id_accept_charset;
 
+static const char* html_escape_table[UCHAR_MAX+1] = { NULL };
+static size_t html_escape_len[UCHAR_MAX+1] = { 0 };
+static size_t html_escape_max_len = 0;
+
 static void
-html_escaped_cat(VALUE str, char c)
+init_html_escape_tables(void)
 {
-    switch (c) {
-      case '\'':
-	rb_str_cat_cstr(str, "&#39;");
-	break;
-      case '&':
-	rb_str_cat_cstr(str, "&amp;");
-	break;
-      case '"':
-	rb_str_cat_cstr(str, "&quot;");
-	break;
-      case '<':
-	rb_str_cat_cstr(str, "&lt;");
-	break;
-      case '>':
-	rb_str_cat_cstr(str, "&gt;");
-	break;
-    }
+#define HTML_ESCAPE(c, str) do { \
+    html_escape_table[c] = str; \
+    html_escape_len[c] = strlen(str); \
+    if (html_escape_max_len < strlen(str)) { \
+        html_escape_max_len = strlen(str); \
+    } \
+} while (0)
+    HTML_ESCAPE('\'', "&#39;");
+    HTML_ESCAPE('&', "&amp;");
+    HTML_ESCAPE('"', "&quot;");
+    HTML_ESCAPE('<', "&lt;");
+    HTML_ESCAPE('>', "&gt;");
+#undef HTML_ESCAPE
 }
 
 static inline void
@@ -44,36 +44,28 @@ preserve_original_state(VALUE orig, VALUE dest)
 static VALUE
 optimized_escape_html(VALUE str)
 {
-    long i, len, beg = 0;
-    VALUE dest = 0;
-    const char *cstr;
+    const char *cstr = RSTRING_PTR(str);
+    const char *end = cstr + RSTRING_LEN(str);
+    char *buf = ALLOCA_N(char, RSTRING_LEN(str) * html_escape_max_len + 1);
 
-    len  = RSTRING_LEN(str);
-    cstr = RSTRING_PTR(str);
-
-    for (i = 0; i < len; i++) {
-	switch (cstr[i]) {
-	  case '\'':
-	  case '&':
-	  case '"':
-	  case '<':
-	  case '>':
-	    if (!dest) {
-		dest = rb_str_buf_new(len);
-	    }
-
-	    rb_str_cat(dest, cstr + beg, i - beg);
-	    beg = i + 1;
-
-	    html_escaped_cat(dest, cstr[i]);
-	    break;
-	}
+    char *dest = buf;
+    while (cstr < end) {
+        const unsigned char c = *cstr++;
+        const char *escaped = html_escape_table[c];
+        if (escaped) {
+            memcpy(dest, escaped, html_escape_len[c]);
+            dest += html_escape_len[c];
+        }
+        else {
+            *dest++ = c;
+        }
     }
 
-    if (dest) {
-	rb_str_cat(dest, cstr + beg, len - beg);
-	preserve_original_state(str, dest);
-	return dest;
+    if (RSTRING_LEN(str) < (dest - buf)) {
+        *dest = '\0';
+        VALUE escaped = rb_str_new_cstr(buf);
+        preserve_original_state(str, escaped);
+        return escaped;
     }
     else {
 	return rb_str_dup(str);
@@ -404,6 +396,7 @@ void
 Init_escape(void)
 {
     id_accept_charset = rb_intern_const("@@accept_charset");
+    init_html_escape_tables();
     InitVM(escape);
 }
 
