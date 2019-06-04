@@ -1632,7 +1632,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 	debugs("  - argc: %d\n", body->param.lead_num);
 
 	rest_id = args->rest_arg;
-	if (rest_id == 1) {
+	if (rest_id == NODE_SPECIAL_EXCESSED_COMMA) {
 	    last_comma = 1;
 	    rest_id = 0;
 	}
