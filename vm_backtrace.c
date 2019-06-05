@@ -451,6 +451,12 @@ backtrace_each(const rb_execution_context_t *ec,
     const rb_control_frame_t *cfp;
     ptrdiff_t size, i;
 
+    // In the case the thread vm_stack or cfp is not initialized, there is no backtrace.
+    if (start_cfp == NULL) {
+        init(arg, 0);
+        return;
+    }
+
     /*                <- start_cfp (end control frame)
      *  top frame (dummy)
      *  top frame (dummy)
