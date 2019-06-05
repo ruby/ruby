@@ -472,6 +472,7 @@ if you believe they were disclosed to a third party.
   protected :hash
 
   private
+
   def set_config_file_name(args)
     @config_file_name = ENV["GEMRC"]
     need_config_file_name = false
