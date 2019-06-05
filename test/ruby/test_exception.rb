@@ -880,6 +880,14 @@ end.join
     }
   end
 
+  def test_frozen_error_message
+    obj = Object.new.freeze
+    e = assert_raise_with_message(FrozenError, /can't modify frozen #{obj.class}/) {
+      obj.instance_variable_set(:@test, true)
+    }
+    assert_include(e.message, obj.inspect)
+  end
+
   def test_name_error_new_default
     error = NameError.new
     assert_equal("NameError", error.message)
