@@ -886,6 +886,21 @@ end.join
       obj.instance_variable_set(:@test, true)
     }
     assert_include(e.message, obj.inspect)
+
+    klass = Class.new do
+      def init
+        @x = true
+      end
+      def inspect
+        init
+        super
+      end
+    end
+    obj = klass.new.freeze
+    e = assert_raise_with_message(FrozenError, /can't modify frozen #{obj.class}/) {
+      obj.init
+    }
+    assert_include(e.message, klass.inspect)
   end
 
   def test_name_error_new_default

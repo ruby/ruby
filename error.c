@@ -2887,24 +2887,37 @@ rb_frozen_error_raise(VALUE frozen_obj, const char *fmt, ...)
     rb_exc_raise(exc);
 }
 
+static VALUE
+inspect_frozen_obj(VALUE obj, VALUE mesg, int recur)
+{
+    if (recur) {
+        rb_str_cat_cstr(mesg, " ...");
+    }
+    else {
+        rb_str_append(mesg, rb_inspect(obj));
+    }
+    return mesg;
+}
+
 void
 rb_error_frozen_object(VALUE frozen_obj)
 {
     VALUE debug_info;
     const ID created_info = id_debug_created_info;
+    VALUE mesg = rb_sprintf("can't modify frozen %"PRIsVALUE": ",
+                            CLASS_OF(frozen_obj));
+    VALUE exc = rb_exc_new_str(rb_eFrozenError, mesg);
+
+    rb_ivar_set(exc, id_recv, frozen_obj);
+    rb_exec_recursive(inspect_frozen_obj, frozen_obj, mesg);
 
     if (!NIL_P(debug_info = rb_attr_get(frozen_obj, created_info))) {
 	VALUE path = rb_ary_entry(debug_info, 0);
 	VALUE line = rb_ary_entry(debug_info, 1);
 
-        rb_frozen_error_raise(frozen_obj,
-            "can't modify frozen %"PRIsVALUE": %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
-            CLASS_OF(frozen_obj), rb_inspect(frozen_obj), path, line);
+        rb_str_catf(mesg, ", created at %"PRIsVALUE":%"PRIsVALUE, path, line);
     }
-    else {
-        rb_frozen_error_raise(frozen_obj, "can't modify frozen %"PRIsVALUE": %"PRIsVALUE,
-            CLASS_OF(frozen_obj), rb_inspect(frozen_obj));
-    }
+    rb_exc_raise(exc);
 }
 
 #undef rb_check_frozen
