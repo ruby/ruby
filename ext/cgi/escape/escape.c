@@ -11,11 +11,11 @@ RUBY_EXTERN const signed char ruby_digit36_to_number_table[];
 static VALUE rb_cCGI, rb_mUtil, rb_mEscape;
 static ID id_accept_charset;
 
-static const size_t html_escape_max_len = 6; // "&quot;" is longest
+#define HTML_ESCAPE_MAX_LEN 6
 
 static const struct {
     uint8_t len;
-    char str[html_escape_max_len+1];
+    char str[HTML_ESCAPE_MAX_LEN+1];
 } html_escape_table[UCHAR_MAX+1] = {
 #define HTML_ESCAPE(c, str) [c] = {rb_strlen_lit(str), str}
     HTML_ESCAPE('\'', "&#39;"),
@@ -39,7 +39,7 @@ optimized_escape_html(VALUE str)
 {
     const char *cstr = RSTRING_PTR(str);
     const char *end = cstr + RSTRING_LEN(str);
-    char *buf = ALLOCA_N(char, RSTRING_LEN(str) * html_escape_max_len);
+    char *buf = ALLOCA_N(char, RSTRING_LEN(str) * HTML_ESCAPE_MAX_LEN);
 
     char *dest = buf;
     while (cstr < end) {
