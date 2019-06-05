@@ -420,10 +420,7 @@ cont_free(void *ptr)
 	rb_fiber_t *fib = (rb_fiber_t*)cont;
 #if defined(FIBER_USE_COROUTINE)
 	coroutine_destroy(&fib->context);
-	if (fib->ss_sp != NULL) {
-	    if (fiber_is_root_p(fib)) {
-		rb_bug("Illegal root fiber parameter");
-	    }
+	if (fib->ss_sp != NULL && !fiber_is_root_p(fib)) {
 #ifdef _WIN32
             VirtualFree((void*)fib->ss_sp, 0, MEM_RELEASE);
 #else
@@ -1660,6 +1657,8 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fib->cont.saved_ec.thread_ptr = th;
     fiber_status_set(fib, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fib->cont.saved_ec;
+
+    th->root_fiber = fib;
 
     /* NOTE: On WIN32, fib_handle is not allocated yet. */
 }

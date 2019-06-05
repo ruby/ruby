@@ -2625,7 +2625,7 @@ thread_free(void *ptr)
 	rb_bug("thread_free: keeping_mutexes must be NULL (%p:%p)", (void *)th, (void *)th->keeping_mutexes);
     }
 
-    //rb_threadptr_root_fiber_release(th);
+    rb_threadptr_root_fiber_release(th);
 
     if (th->vm && th->vm->main_thread == th) {
 	RUBY_GC_INFO("main thread\n");
