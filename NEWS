@@ -118,6 +118,10 @@ Bundler::
   * Upgrade to Bundler 2.1.0.pre.1
     Bundled from https://github.com/bundler/bundler/commit/a53709556b95a914e874b22ed2116a46b0528852
 
+CGI::
+
+  * CGI.escapeHTML becomes 2~5x faster when there's at least one escaped character.
+
 CSV::
 
   * Upgrade to 3.0.9.
