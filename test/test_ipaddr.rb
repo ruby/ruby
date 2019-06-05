@@ -92,6 +92,8 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("[2001:200:300::]\nINVALID") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.1/32\nINVALID") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.1/32/20") }
+    assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("192.168.0.1/032") }
+    assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("::1/0128") }
     assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("::1/255.255.255.0") }
     assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("::1/129") }
     assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("192.168.0.1/33") }

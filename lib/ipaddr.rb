@@ -495,8 +495,11 @@ class IPAddr
   def mask!(mask)
     case mask
     when String
-      if mask =~ /\A\d+\z/
+      case mask
+      when /\A(0|[1-9]+\d*)\z/
         prefixlen = mask.to_i
+      when /\A\d+\z/
+        raise InvalidPrefixError, "leading zeros in prefix"
       else
         m = IPAddr.new(mask)
         if m.family != @family
