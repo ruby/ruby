@@ -2704,9 +2704,6 @@ th_init(rb_thread_t *th, VALUE self)
             0 /* dummy cref/me */,
             0 /* dummy pc */, th->ec->vm_stack, 0, 0
         );
-    } else {
-        th->ec->cfp = NULL;
-        rb_ec_set_vm_stack(th->ec, NULL, 0);
     }
 
     th->status = THREAD_RUNNABLE;
