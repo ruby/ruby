@@ -10,7 +10,7 @@ module OpenSSL::SSLPairM
     ee_exts = [
       ["keyUsage", "keyEncipherment,digitalSignature", true],
     ]
-    @svr_key = OpenSSL::TestUtils::Fixtures.pkey("rsa1024")
+    @svr_key = OpenSSL::TestUtils::Fixtures.pkey("rsa-1")
     @svr_cert = issue_cert(svr_dn, @svr_key, 1, ee_exts, nil, nil)
   end
 
@@ -23,7 +23,7 @@ module OpenSSL::SSLPairM
       sctx = OpenSSL::SSL::SSLContext.new
       sctx.cert = @svr_cert
       sctx.key = @svr_key
-      sctx.tmp_dh_callback = proc { OpenSSL::TestUtils::Fixtures.pkey_dh("dh1024") }
+      sctx.tmp_dh_callback = proc { OpenSSL::TestUtils::Fixtures.pkey("dh-1") }
       sctx.options |= OpenSSL::SSL::OP_NO_COMPRESSION
       ssls = OpenSSL::SSL::SSLServer.new(tcps, sctx)
       ns = ssls.accept
@@ -397,7 +397,7 @@ module OpenSSL::TestPairM
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.cert = @svr_cert
     ctx2.key = @svr_key
-    ctx2.tmp_dh_callback = proc { OpenSSL::TestUtils::Fixtures.pkey_dh("dh1024") }
+    ctx2.tmp_dh_callback = proc { OpenSSL::TestUtils::Fixtures.pkey("dh-1") }
 
     sock1, sock2 = tcp_pair
 
@@ -442,54 +442,47 @@ module OpenSSL::TestPairM
   end
 
   def test_connect_accept_nonblock
-    ctx = OpenSSL::SSL::SSLContext.new()
+    ctx = OpenSSL::SSL::SSLContext.new
     ctx.cert = @svr_cert
     ctx.key = @svr_key
-    ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::Fixtures.pkey_dh("dh1024") }
+    ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::Fixtures.pkey("dh-1") }
 
     sock1, sock2 = tcp_pair
 
     th = Thread.new {
       s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx)
-      s2.sync_close = true
-      begin
+      5.times {
+        begin
+          break s2.accept_nonblock
+        rescue IO::WaitReadable
+          IO.select([s2], nil, nil, 1)
+        rescue IO::WaitWritable
+          IO.select(nil, [s2], nil, 1)
+        end
         sleep 0.2
-        s2.accept_nonblock
-      rescue IO::WaitReadable
-        IO.select([s2])
-        retry
-      rescue IO::WaitWritable
-        IO.select(nil, [s2])
-        retry
-      end
-      s2
+      }
     }
 
-    sleep 0.1
-    ctx = OpenSSL::SSL::SSLContext.new()
-    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx)
-    begin
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1)
+    5.times {
+      begin
+        break s1.connect_nonblock
+      rescue IO::WaitReadable
+        IO.select([s1], nil, nil, 1)
+      rescue IO::WaitWritable
+        IO.select(nil, [s1], nil, 1)
+      end
       sleep 0.2
-      s1.connect_nonblock
-    rescue IO::WaitReadable
-      IO.select([s1])
-      retry
-    rescue IO::WaitWritable
-      IO.select(nil, [s1])
-      retry
-    end
-    s1.sync_close = true
+    }
 
     s2 = th.value
 
     s1.print "a\ndef"
     assert_equal("a\n", s2.gets)
   ensure
-    th.join if th
-    s1.close if s1 && !s1.closed?
-    s2.close if s2 && !s2.closed?
-    sock1.close if sock1 && !sock1.closed?
-    sock2.close if sock2 && !sock2.closed?
+    sock1&.close
+    sock2&.close
+    th&.join
   end
 end
 
