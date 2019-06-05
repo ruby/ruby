@@ -102,7 +102,7 @@ class ComplexRational_Test < Test::Unit::TestCase
     assert_equal(Complex(SimpleRat(4,3),SimpleRat(1,1)), c * 2)
     assert_equal(Complex(SimpleRat(1,3),SimpleRat(1,4)), c / 2)
     assert_equal(Complex(SimpleRat(7,36),SimpleRat(2,3)), c ** 2)
-    assert_raise(NoMethodError){c <=> 2}
+    assert_nil(c <=> 2)
 
     assert_equal(Complex(SimpleRat(8,3),SimpleRat(1,2)), 2 + c)
     assert_equal(Complex(SimpleRat(4,3),SimpleRat(-1,2)), 2 - c)
@@ -111,7 +111,7 @@ class ComplexRational_Test < Test::Unit::TestCase
     r = 2 ** c
     assert_in_delta(1.4940, r.real, 0.001)
     assert_in_delta(0.5392, r.imag, 0.001)
-    assert_raise(NoMethodError){2 <=> c}
+    assert_nil(2 <=> c)
 
     assert_equal(Complex(SimpleRat(13,6),SimpleRat(5,2)), c + cc)
     assert_equal(Complex(SimpleRat(-5,6),SimpleRat(-3,2)), c - cc)
@@ -120,7 +120,7 @@ class ComplexRational_Test < Test::Unit::TestCase
     r = c ** cc
     assert_in_delta(0.1732, r.real, 0.001)
     assert_in_delta(0.1186, r.imag, 0.001)
-    assert_raise(NoMethodError){c <=> cc}
+    assert_nil(c <=> cc)
 
     assert_equal(Complex(SimpleRat(13,6),SimpleRat(5,2)), cc + c)
     assert_equal(Complex(SimpleRat(5,6),SimpleRat(3,2)), cc - c)
@@ -129,7 +129,7 @@ class ComplexRational_Test < Test::Unit::TestCase
     r = cc ** c
     assert_in_delta(0.5498, r.real, 0.001)
     assert_in_delta(1.0198, r.imag, 0.001)
-    assert_raise(NoMethodError){cc <=> c}
+    assert_nil(cc <=> c)
 
     assert_equal([SimpleRat,SimpleRat],
 		 (+c).instance_eval{[real.class, imag.class]})
