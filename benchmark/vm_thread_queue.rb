@@ -1,6 +1,6 @@
 require 'thread'
 
-n = 1_000_000
+n = 10_000_000
 q = Thread::Queue.new
 consumer = Thread.new{
   while q.pop

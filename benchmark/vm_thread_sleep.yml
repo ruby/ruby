@@ -1,0 +1,4 @@
+benchmark:
+  vm_thread_sleep: |
+    Thread.new { sleep }
+loop_count: 10_000
