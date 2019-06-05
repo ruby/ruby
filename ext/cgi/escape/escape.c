@@ -11,28 +11,20 @@ RUBY_EXTERN const signed char ruby_digit36_to_number_table[];
 static VALUE rb_cCGI, rb_mUtil, rb_mEscape;
 static ID id_accept_charset;
 
-static const char* html_escape_table[UCHAR_MAX+1] = { NULL };
-static size_t html_escape_len[UCHAR_MAX+1] = { 0 };
-static size_t html_escape_max_len = 0;
+static const size_t html_escape_max_len = 6; // "&quot;" is longest
 
-static void
-init_html_escape_tables(void)
-{
-#define HTML_ESCAPE(c, str) do { \
-    size_t len = strlen(str); \
-    html_escape_len[c] = len; \
-    if (html_escape_max_len < len) { \
-        html_escape_max_len = len; \
-    } \
-    html_escape_table[c] = str; \
-} while (0)
-    HTML_ESCAPE('\'', "&#39;");
-    HTML_ESCAPE('&', "&amp;");
-    HTML_ESCAPE('"', "&quot;");
-    HTML_ESCAPE('<', "&lt;");
-    HTML_ESCAPE('>', "&gt;");
+static const struct {
+    uint8_t len;
+    char str[html_escape_max_len+1];
+} html_escape_table[UCHAR_MAX+1] = {
+#define HTML_ESCAPE(c, str) [c] = {rb_strlen_lit(str), str}
+    HTML_ESCAPE('\'', "&#39;"),
+    HTML_ESCAPE('&', "&amp;"),
+    HTML_ESCAPE('"', "&quot;"),
+    HTML_ESCAPE('<', "&lt;"),
+    HTML_ESCAPE('>', "&gt;"),
 #undef HTML_ESCAPE
-}
+};
 
 static inline void
 preserve_original_state(VALUE orig, VALUE dest)
@@ -52,10 +44,10 @@ optimized_escape_html(VALUE str)
     char *dest = buf;
     while (cstr < end) {
         const unsigned char c = *cstr++;
-        const char *escaped = html_escape_table[c];
-        if (escaped) {
-            memcpy(dest, escaped, html_escape_len[c]);
-            dest += html_escape_len[c];
+        uint8_t len = html_escape_table[c].len;
+        if (len) {
+            memcpy(dest, html_escape_table[c].str, len);
+            dest += len;
         }
         else {
             *dest++ = c;
@@ -396,7 +388,6 @@ void
 Init_escape(void)
 {
     id_accept_charset = rb_intern_const("@@accept_charset");
-    init_html_escape_tables();
     InitVM(escape);
 }
 
