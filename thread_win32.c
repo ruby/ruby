@@ -592,7 +592,7 @@ thread_start_func_1(void *th_ptr)
 static int
 native_thread_create(rb_thread_t *th)
 {
-    size_t stack_size = 4 * 1024; /* 4KB is the minimum commit size */
+    const size_t stack_size = th->vm->default_params.thread_machine_stack_size + th->vm->default_params.thread_vm_stack_size;
     th->thread_id = w32_create_thread(stack_size, thread_start_func_1, th);
 
     if ((th->thread_id) == 0) {
@@ -831,7 +831,7 @@ mjit_worker(void *arg)
 int
 rb_thread_create_mjit_thread(void (*worker_func)(void))
 {
-    size_t stack_size = 4 * 1024; /* 4KB is the minimum commit size */
+    const size_t stack_size = th->vm->default_params.thread_machine_stack_size;
     HANDLE thread_id = w32_create_thread(stack_size, mjit_worker, worker_func);
     if (thread_id == 0) {
         return FALSE;
