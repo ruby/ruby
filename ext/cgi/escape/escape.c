@@ -16,20 +16,20 @@ html_escaped_cat(VALUE str, char c)
 {
     switch (c) {
       case '\'':
-	rb_str_cat_cstr(str, "&#39;");
-	break;
+        rb_str_cat_cstr(str, "&#39;");
+        break;
       case '&':
-	rb_str_cat_cstr(str, "&amp;");
-	break;
+        rb_str_cat_cstr(str, "&amp;");
+        break;
       case '"':
-	rb_str_cat_cstr(str, "&quot;");
-	break;
+        rb_str_cat_cstr(str, "&quot;");
+        break;
       case '<':
-	rb_str_cat_cstr(str, "&lt;");
-	break;
+        rb_str_cat_cstr(str, "&lt;");
+        break;
       case '>':
-	rb_str_cat_cstr(str, "&gt;");
-	break;
+        rb_str_cat_cstr(str, "&gt;");
+        break;
     }
 }
 
@@ -52,28 +52,28 @@ optimized_escape_html(VALUE str)
     cstr = RSTRING_PTR(str);
 
     for (i = 0; i < len; i++) {
-	switch (cstr[i]) {
-	  case '\'':
-	  case '&':
-	  case '"':
-	  case '<':
-	  case '>':
-	    if (!dest) {
-		dest = rb_str_buf_new(len);
-	    }
+        switch (cstr[i]) {
+          case '\'':
+          case '&':
+          case '"':
+          case '<':
+          case '>':
+            if (!dest) {
+                dest = rb_str_buf_new(len);
+            }
 
-	    rb_str_cat(dest, cstr + beg, i - beg);
-	    beg = i + 1;
+            rb_str_cat(dest, cstr + beg, i - beg);
+            beg = i + 1;
 
-	    html_escaped_cat(dest, cstr[i]);
-	    break;
-	}
+            html_escaped_cat(dest, cstr[i]);
+            break;
+        }
     }
 
     if (dest) {
-	rb_str_cat(dest, cstr + beg, len - beg);
-	preserve_original_state(str, dest);
-	return dest;
+        rb_str_cat(dest, cstr + beg, len - beg);
+        preserve_original_state(str, dest);
+        return dest;
     }
     else {
 	return rb_str_dup(str);
