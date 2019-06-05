@@ -22,6 +22,7 @@ module Reline
   CursorPos = Struct.new(:x, :y)
 
   @@config = Reline::Config.new
+  @@key_stroke = Reline::KeyStroke.new(@@config)
   @@line_editor = Reline::LineEditor.new(@@config)
   @@ambiguous_width = nil
 
@@ -331,10 +332,9 @@ module Reline
       end
     end
 
-    key_stroke = Reline::KeyStroke.new(@@config)
     begin
       loop do
-        key_stroke.read_io(@@config.keyseq_timeout) { |inputs|
+        read_io(@@config.keyseq_timeout) { |inputs|
           inputs.each { |c|
             @@line_editor.input_key(c)
             @@line_editor.rerender
@@ -351,6 +351,79 @@ module Reline
 
     @@line_editor.finalize
     Reline::IOGate.deprep(otio)
+  end
+
+  # Keystrokes of GNU Readline will timeout it with the specification of
+  # "keyseq-timeout" when waiting for the 2nd character after the 1st one.
+  # If the 2nd character comes after 1st ESC without timeout it has a
+  # meta-property of meta-key to discriminate modified key with meta-key
+  # from multibyte characters that come with 8th bit on.
+  #
+  # GNU Readline will wait for the 2nd character with "keyseq-timeout"
+  # milli-seconds but wait forever after 3rd characters.
+  def read_io(keyseq_timeout, &block)
+    buffer = []
+    loop do
+      c = Reline::IOGate.getc
+      buffer << c
+      result = @@key_stroke.match_status(buffer)
+      case result
+      when :matched
+        block.(@@key_stroke.expand(buffer).map{ |c| Reline::Key.new(c, c, false) })
+        break
+      when :matching
+        if buffer.size == 1
+          begin
+            succ_c = nil
+            Timeout.timeout(keyseq_timeout / 1000.0) {
+              succ_c = Reline::IOGate.getc
+            }
+          rescue Timeout::Error # cancel matching only when first byte
+            block.([Reline::Key.new(c, c, false)])
+            break
+          else
+            if @@key_stroke.match_status(buffer.dup.push(succ_c)) == :unmatched
+              if c == "\e".ord
+                block.([Reline::Key.new(succ_c, succ_c | 0b10000000, true)])
+              else
+                block.([Reline::Key.new(c, c, false), Reline::Key.new(succ_c, succ_c, false)])
+              end
+              break
+            else
+              Reline::IOGate.ungetc(succ_c)
+            end
+          end
+        end
+      when :unmatched
+        if buffer.size == 1 and c == "\e".ord
+          read_escaped_key(keyseq_timeout, buffer, block)
+        else
+          block.(buffer.map{ |c| Reline::Key.new(c, c, false) })
+        end
+        break
+      end
+    end
+  end
+
+  def read_escaped_key(keyseq_timeout, buffer, block)
+    begin
+      escaped_c = nil
+      Timeout.timeout(keyseq_timeout / 1000.0) {
+        escaped_c = Reline::IOGate.getc
+      }
+    rescue Timeout::Error # independent ESC
+      block.([Reline::Key.new(c, c, false)])
+    else
+      if escaped_c.nil?
+        block.([Reline::Key.new(c, c, false)])
+      elsif escaped_c >= 128 # maybe, first byte of multi byte
+        block.([Reline::Key.new(c, c, false), Reline::Key.new(escaped_c, escaped_c, false)])
+      elsif escaped_c == "\e".ord # escape twice
+        block.([Reline::Key.new(c, c, false), Reline::Key.new(c, c, false)])
+      else
+        block.([Reline::Key.new(escaped_c, escaped_c | 0b10000000, true)])
+      end
+    end
   end
 
   def may_req_ambiguous_char_width
