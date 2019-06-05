@@ -142,7 +142,12 @@ if debugger or ENV['RUNRUBY_USE_GDB'] == 'true'
     debugger << '--args'
   end
   if debugger == :lldb
-    debugger = %w'lldb --'
+    debugger = ['lldb', '-O', "command script import #{srcdir}/misc/lldb_cruby.py"]
+    if File.exist?(lldb = 'run.lldb') or
+      File.exist?(lldb = File.join(abs_archdir, 'run.lldb'))
+      debugger.push('-s', lldb)
+    end
+    debugger << '--'
   end
 
   if idx = precommand.index(:debugger)
