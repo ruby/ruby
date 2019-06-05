@@ -1418,6 +1418,7 @@ class Reline::LineEditor
     middle = @line.byteslice(middle_start, right_word_start - middle_start)
     right_word = @line.byteslice(right_word_start, after_start - right_word_start)
     after = @line.byteslice(after_start, @line.bytesize - after_start)
+    return if left_word.empty? or right_word.empty?
     @line = before + right_word + middle + left_word + after
     from_head_to_left_word = before + right_word + middle + left_word
     @byte_pointer = from_head_to_left_word.bytesize
