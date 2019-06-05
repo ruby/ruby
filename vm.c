@@ -2625,7 +2625,7 @@ thread_free(void *ptr)
 	rb_bug("thread_free: keeping_mutexes must be NULL (%p:%p)", (void *)th, (void *)th->keeping_mutexes);
     }
 
-    rb_threadptr_root_fiber_release(th);
+    //rb_threadptr_root_fiber_release(th);
 
     if (th->vm && th->vm->main_thread == th) {
 	RUBY_GC_INFO("main thread\n");
@@ -2691,17 +2691,22 @@ th_init(rb_thread_t *th, VALUE self)
     th->self = self;
     rb_threadptr_root_fiber_setup(th);
 
-    // Initialize the main thread:
     if (self == 0) {
         size_t size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
-        VALUE * vm_stack = ALLOC_N(VALUE, size);
-        rb_ec_set_vm_stack(th->ec, vm_stack, size);
+        rb_ec_set_vm_stack(th->ec, ALLOC_N(VALUE, size), size);
+
         th->ec->cfp = (void *)(th->ec->vm_stack + th->ec->vm_stack_size);
-        
-        vm_push_frame(th->ec, 0 /* dummy iseq */, VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_CFRAME /* dummy frame */,
+
+        rb_vm_push_frame(th->ec,
+            0 /* dummy iseq */,
+            VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_CFRAME /* dummy frame */,
             Qnil /* dummy self */, VM_BLOCK_HANDLER_NONE /* dummy block ptr */,
             0 /* dummy cref/me */,
-            0 /* dummy pc */, th->ec->vm_stack, 0, 0);
+            0 /* dummy pc */, th->ec->vm_stack, 0, 0
+        );
+    } else {
+        th->ec->cfp = NULL;
+        rb_ec_set_vm_stack(th->ec, NULL, 0);
     }
 
     th->status = THREAD_RUNNABLE;
