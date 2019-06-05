@@ -77,6 +77,11 @@
 #include "mjit.h"
 #include "hrtime.h"
 
+#ifdef __linux__
+// Normally,  gcc(1)  translates  calls to alloca() with inlined code.  This is not done when either the -ansi, -std=c89, -std=c99, or the -std=c11 option is given and the header <alloca.h> is not included.
+#include <alloca.h>
+#endif
+
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0
 #define RUBY_THREAD_PRIORITY_MAX 3
@@ -714,8 +719,8 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     rb_thread_list_t *join_list;
     rb_thread_t *main_th;
     VALUE errinfo = Qnil;
-    VALUE * vm_stack = NULL;
     size_t size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
+    VALUE * vm_stack = NULL;
 
     if (th == th->vm->main_thread) {
         rb_bug("thread_start_func_2 must not be used for main thread");
@@ -723,7 +728,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
     vm_stack = alloca(size * sizeof(VALUE));
     rb_ec_set_vm_stack(th->ec, vm_stack, size);
-
     th->ec->cfp = (void *)(th->ec->vm_stack + th->ec->vm_stack_size);
 
     rb_vm_push_frame(th->ec,
