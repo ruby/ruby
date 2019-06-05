@@ -2897,13 +2897,13 @@ rb_error_frozen_object(VALUE frozen_obj)
 	VALUE path = rb_ary_entry(debug_info, 0);
 	VALUE line = rb_ary_entry(debug_info, 1);
 
-	rb_frozen_error_raise(frozen_obj,
-	    "can't modify frozen %"PRIsVALUE": %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
-	    CLASS_OF(frozen_obj), rb_inspect(frozen_obj), path, line);
+        rb_frozen_error_raise(frozen_obj,
+            "can't modify frozen %"PRIsVALUE": %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
+            CLASS_OF(frozen_obj), rb_inspect(frozen_obj), path, line);
     }
     else {
-	rb_frozen_error_raise(frozen_obj, "can't modify frozen %"PRIsVALUE": %"PRIsVALUE,
-	    CLASS_OF(frozen_obj), rb_inspect(frozen_obj));
+        rb_frozen_error_raise(frozen_obj, "can't modify frozen %"PRIsVALUE": %"PRIsVALUE,
+            CLASS_OF(frozen_obj), rb_inspect(frozen_obj));
     }
 }
 
