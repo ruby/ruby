@@ -134,7 +134,7 @@ ENV.update env
 
 if debugger or ENV['RUNRUBY_USE_GDB'] == 'true'
   if debugger == :gdb or !debugger
-    debugger = %w'gdb'
+    debugger = %W'gdb -x #{srcdir}/.gdbinit'
     if File.exist?(gdb = 'run.gdb') or
       File.exist?(gdb = File.join(abs_archdir, 'run.gdb'))
       debugger.push('-x', gdb)
