@@ -831,7 +831,7 @@ mjit_worker(void *arg)
 int
 rb_thread_create_mjit_thread(void (*worker_func)(void))
 {
-    const size_t stack_size = th->vm->default_params.thread_machine_stack_size;
+    size_t stack_size = 4 * 1024; /* 4KB is the minimum commit size */
     HANDLE thread_id = w32_create_thread(stack_size, mjit_worker, worker_func);
     if (thread_id == 0) {
         return FALSE;
