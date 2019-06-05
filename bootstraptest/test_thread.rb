@@ -11,6 +11,9 @@ assert_equal %q{ok}, %q{
   }.value
 }
 assert_equal %q{ok}, %q{
+  :ok if Thread.new{sleep}.backtrace == []
+}
+assert_equal %q{ok}, %q{
 begin
   v = 0
   (1..200).map{|i|
