@@ -333,9 +333,9 @@ RSpec.describe Bundler::Dsl do
 
   describe "Runtime errors", :unless => Bundler.current_ruby.on_18? do
     it "will raise a Bundler::GemfileError" do
-      gemfile "s = 'foo'.freeze; s.strip!"
+      gemfile "raise RuntimeError, 'foo'"
       expect { Bundler::Dsl.evaluate(bundled_app("Gemfile"), nil, true) }.
-        to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`: can't modify frozen String. Bundler cannot continue./i)
+        to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`: foo. Bundler cannot continue./i)
     end
   end
 
