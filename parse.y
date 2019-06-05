@@ -3257,7 +3257,7 @@ block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
 		    {
 		    /*%%%*/
 			/* magic number for rest_id in iseq_set_arguments() */
-			$$ = new_args(p, $1, Qnone, NODE_SPECIAL_EXCESSED_COMMA, Qnone, new_args_tail(p, Qnone, Qnone, Qnone, &@1), &@$);
+			$$ = new_args(p, $1, Qnone, NODE_SPECIAL_EXCESSIVE_COMMA, Qnone, new_args_tail(p, Qnone, Qnone, Qnone, &@1), &@$);
 		    /*% %*/
 		    /*% ripper: new_args(p, $1, Qnone, excessed_comma!, Qnone, new_args_tail(p, Qnone, Qnone, Qnone, NULL), NULL) %*/
 		    }
@@ -11130,7 +11130,7 @@ args_with_numbered(struct parser_params *p, NODE *args, int max_numparam)
     if (max_numparam > 0) {
 	if (!args) args = new_args_tail(p, 0, 0, 0, 0);
 	args->nd_ainfo->pre_args_num = max_numparam;
-	args->nd_ainfo->rest_arg = NODE_SPECIAL_EXCESSED_COMMA;
+	args->nd_ainfo->rest_arg = NODE_SPECIAL_EXCESSIVE_COMMA;
     }
     return args;
 }

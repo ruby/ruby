@@ -383,7 +383,7 @@ typedef struct RNode {
 #define NODE_REQUIRED_KEYWORD_P(node) ((node)->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD)
 #define NODE_SPECIAL_NO_NAME_REST     ((NODE *)-1)
 #define NODE_NAMED_REST_P(node) ((node) != NODE_SPECIAL_NO_NAME_REST)
-#define NODE_SPECIAL_EXCESSED_COMMA   ((ID)1)
+#define NODE_SPECIAL_EXCESSIVE_COMMA   ((ID)1)
 
 VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
 
