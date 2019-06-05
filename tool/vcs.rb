@@ -399,7 +399,7 @@ class VCS
     end
 
     def self.cmd_read_at(srcdir, cmds)
-      IO.pread(*cmd_args(cmds, srcdir))
+      without_gitconfig { IO.pread(*cmd_args(cmds, srcdir)) }
     end
 
     def self.get_revisions(path, srcdir = nil)
@@ -442,6 +442,13 @@ class VCS
 
     def self.short_revision(rev)
       rev[0, 10]
+    end
+
+    def self.without_gitconfig
+      home = ENV.delete('HOME')
+      yield
+    ensure
+      ENV['HOME'] = home if home
     end
 
     def initialize(*)
