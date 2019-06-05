@@ -1011,7 +1011,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	F_NODE(nd_ainfo->post_init, "initialization of post-arguments");
 	F_ID(nd_ainfo->first_post_arg, "first post argument");
         F_CUSTOM1(nd_ainfo->rest_arg, "rest argument") {
-            if (node->nd_ainfo->rest_arg == NODE_SPECIAL_EXCESSED_COMMA) {
+            if (node->nd_ainfo->rest_arg == NODE_SPECIAL_EXCESSIVE_COMMA) {
                 A("1 (excessed comma)");
             }
             else {
