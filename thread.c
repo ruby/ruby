@@ -821,7 +821,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	rb_threadptr_unlock_all_locking_mutexes(th);
 	rb_check_deadlock(th->vm);
 
-        rb_ec_set_vm_stack(th->ec, NULL, 0);
+	rb_fiber_close(th->ec->fiber_ptr);
     }
     thread_cleanup_func(th, FALSE);
     gvl_release(th->vm);

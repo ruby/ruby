@@ -128,6 +128,7 @@ typedef struct rb_context_struct {
 #endif
     } machine;
     rb_execution_context_t saved_ec;
+    int free_vm_stack;
     rb_jmpbuf_t jmpbuf;
     rb_ensure_entry_t *ensure_array;
     /* Pointer to MJIT info about the continuation.  */
@@ -407,7 +408,10 @@ cont_free(void *ptr)
     rb_context_t *cont = ptr;
 
     RUBY_FREE_ENTER("cont");
-    ruby_xfree(cont->saved_ec.vm_stack);
+
+    if (cont->free_vm_stack) {
+        ruby_xfree(cont->saved_ec.vm_stack);
+    }
 
 #if FIBER_USE_NATIVE
     if (cont->type == CONTINUATION_CONTEXT) {
@@ -420,7 +424,10 @@ cont_free(void *ptr)
 	rb_fiber_t *fib = (rb_fiber_t*)cont;
 #if defined(FIBER_USE_COROUTINE)
 	coroutine_destroy(&fib->context);
-	if (fib->ss_sp != NULL && !fiber_is_root_p(fib)) {
+       if (fib->ss_sp != NULL) {
+           if (fiber_is_root_p(fib)) {
+               rb_bug("Illegal root fiber parameter");
+           }
 #ifdef _WIN32
             VirtualFree((void*)fib->ss_sp, 0, MEM_RELEASE);
 #else
@@ -1522,6 +1529,7 @@ fiber_init(VALUE fibval, VALUE proc)
     else {
         vm_stack = ruby_xmalloc(fib_stack_bytes);
     }
+    cont->free_vm_stack = 1;
     rb_ec_set_vm_stack(sec, vm_stack, fib_stack_bytes / sizeof(VALUE));
     sec->cfp = (void *)(sec->vm_stack + sec->vm_stack_size);
 
@@ -1658,7 +1666,7 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber_status_set(fib, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fib->cont.saved_ec;
 
-    th->root_fiber = fib;
+    VM_ASSERT(fib->cont.free_vm_stack == 0);
 
     /* NOTE: On WIN32, fib_handle is not allocated yet. */
 }
@@ -1672,6 +1680,8 @@ rb_threadptr_root_fiber_release(rb_thread_t *th)
     else {
 	VM_ASSERT(th->ec->fiber_ptr->cont.type == FIBER_CONTEXT);
 	VM_ASSERT(th->ec->fiber_ptr->cont.self == 0);
+
+    // th->ec->fiber_ptr->cont.saved_ec.vm_stack = NULL;
 	fiber_free(th->ec->fiber_ptr);
 
 	if (th->ec == ruby_current_execution_context_ptr) {
@@ -1877,12 +1887,15 @@ rb_fiber_close(rb_fiber_t *fib)
     size_t stack_bytes = ec->vm_stack_size * sizeof(VALUE);
 
     fiber_status_set(fib, FIBER_TERMINATED);
-    if (stack_bytes == rb_ec_vm_ptr(ec)->default_params.thread_vm_stack_size) {
-        rb_thread_recycle_stack_release(vm_stack);
+    if (fib->cont.free_vm_stack) {
+        if (stack_bytes == rb_ec_vm_ptr(ec)->default_params.thread_vm_stack_size) {
+            rb_thread_recycle_stack_release(vm_stack);
+        }
+        else {
+            ruby_xfree(vm_stack);
+        }
     }
-    else {
-        ruby_xfree(vm_stack);
-    }
+
     rb_ec_set_vm_stack(ec, NULL, 0);
 
 #if !FIBER_USE_NATIVE
