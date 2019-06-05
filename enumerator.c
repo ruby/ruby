@@ -1894,6 +1894,26 @@ lazy_to_enum(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
+lazy_eager_size(VALUE self, VALUE args, VALUE eobj)
+{
+    return enum_size(self);
+}
+
+/*
+ * call-seq:
+ *   lzy.eager -> enum
+ *
+ * Returns a non-lazy Enumerator converted from the lazy enumerator.
+ */
+
+static VALUE
+lazy_eager(VALUE self)
+{
+    return enumerator_init(enumerator_allocate(rb_cEnumerator),
+                           self, sym_each, 0, 0, lazy_eager_size, Qnil);
+}
+
+static VALUE
 lazyenum_yield(VALUE proc_entry, struct MEMO *result)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
@@ -3741,6 +3761,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "initialize", lazy_initialize, -1);
     rb_define_method(rb_cLazy, "to_enum", lazy_to_enum, -1);
     rb_define_method(rb_cLazy, "enum_for", lazy_to_enum, -1);
+    rb_define_method(rb_cLazy, "eager", lazy_eager, 0);
     rb_define_method(rb_cLazy, "map", lazy_map, 0);
     rb_define_method(rb_cLazy, "collect", lazy_map, 0);
     rb_define_method(rb_cLazy, "flat_map", lazy_flat_map, 0);

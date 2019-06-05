@@ -452,6 +452,14 @@ class TestLazyEnumerator < Test::Unit::TestCase
 EOS
   end
 
+  def test_lazy_eager
+    lazy = [1, 2, 3].lazy.map { |x| x * 2 }
+    enum = lazy.eager
+    assert_equal Enumerator, enum.class
+    assert_equal 3, enum.size
+    assert_equal [1, 2, 3], enum.map { |x| x / 2 }
+  end
+
   def test_lazy_to_enum
     lazy = [1, 2, 3].lazy
     def lazy.foo(*args)

@@ -102,6 +102,9 @@ Enumerator::
 
   New method::
 
+    * Added Enumerator::Lazy#eager that generates a non-lazy enumerator
+      from a lazy enumerator.  [Feature #15901]
+
     * Added Enumerator::Yielder#to_proc so that a Yielder object
       can be directly passed to another method as a block
       argument.  [Feature #15618]
