@@ -62,6 +62,13 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Core classes updates (outstanding ones only)
 
+Complex::
+
+  New method::
+
+    * Added Complex#<=>. So 0 <=> 0i will not raise NoMethodError.
+      [Bug #15857]
+
 Enumerable::
 
   New method::

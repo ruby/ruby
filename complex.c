@@ -1021,14 +1021,50 @@ nucomp_eqeq_p(VALUE self, VALUE other)
     return f_boolcast(f_eqeq_p(other, self));
 }
 
+static VALUE
+nucomp_real_p(VALUE self)
+{
+    get_dat1(self);
+    return(f_zero_p(dat->imag) ? Qtrue : Qfalse);
+}
+
+/*
+ * call-seq:
+ *    cmp <=> object  ->  0, 1, -1, or nil
+ *
+ * If +cmp+'s imaginary part is zero, and +object+ is also a
+ * real number (or a Complex number where the imaginary part is zero),
+ * compare the real part of +cmp+ to object.  Otherwise, return nil.
+ *
+ *    Complex(2, 3)  <=> Complex(2, 3)   #=> nil
+ *    Complex(2, 3)  <=> 1               #=> nil
+ *    Complex(2)     <=> 1               #=> 1
+ *    Complex(2)     <=> 2               #=> 0
+ *    Complex(2)     <=> 3               #=> -1
+ */
+static VALUE
+nucomp_cmp(VALUE self, VALUE other)
+{
+    if (nucomp_real_p(self) && k_numeric_p(other)) {
+        if (RB_TYPE_P(other, T_COMPLEX) && nucomp_real_p(other)) {
+            get_dat2(self, other);
+            return rb_funcall(adat->real, idCmp, 1, bdat->real);
+        } else if (f_real_p(other)) {
+            get_dat1(self);
+            return rb_funcall(dat->real, idCmp, 1, other);
+        }
+    }
+    return Qnil;
+}
+
 /* :nodoc: */
 static VALUE
 nucomp_coerce(VALUE self, VALUE other)
 {
-    if (k_numeric_p(other) && f_real_p(other))
-	return rb_assoc_new(f_complex_new_bang1(CLASS_OF(self), other), self);
     if (RB_TYPE_P(other, T_COMPLEX))
 	return rb_assoc_new(other, self);
+    if (k_numeric_p(other) && f_real_p(other))
+	return rb_assoc_new(f_complex_new_bang1(CLASS_OF(self), other), self);
 
     rb_raise(rb_eTypeError, "%"PRIsVALUE" can't be coerced into %"PRIsVALUE,
 	     rb_obj_class(other), rb_obj_class(self));
@@ -1147,9 +1183,10 @@ rb_complex_conjugate(VALUE self)
 
 /*
  * call-seq:
- *    cmp.real?  ->  false
+ *    Complex(1).real?     ->  false
+ *    Complex(1, 2).real?  ->  false
  *
- * Returns false.
+ * Returns false, even if the complex number has no imaginary part.
  */
 static VALUE
 nucomp_false(VALUE self)
@@ -2228,7 +2265,6 @@ Init_Complex(void)
 
     rb_undef_methods_from(rb_cComplex, rb_mComparable);
     rb_undef_method(rb_cComplex, "%");
-    rb_undef_method(rb_cComplex, "<=>");
     rb_undef_method(rb_cComplex, "div");
     rb_undef_method(rb_cComplex, "divmod");
     rb_undef_method(rb_cComplex, "floor");
@@ -2254,6 +2290,7 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "**", rb_complex_pow, 1);
 
     rb_define_method(rb_cComplex, "==", nucomp_eqeq_p, 1);
+    rb_define_method(rb_cComplex, "<=>", nucomp_cmp, 1);
     rb_define_method(rb_cComplex, "coerce", nucomp_coerce, 1);
 
     rb_define_method(rb_cComplex, "abs", rb_complex_abs, 0);
