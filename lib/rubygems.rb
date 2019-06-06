@@ -1208,7 +1208,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     require 'rubygems/user_interaction'
     Gem::DefaultUserInteraction.use_ui(ui) do
       require "bundler"
-      @gemdeps = Bundler.setup
+      begin
+        @gemdeps = Bundler.setup
+      ensure
+        if Gem::DefaultUserInteraction.ui.is_a?(Gem::SilentUI)
+          Gem::DefaultUserInteraction.ui.close
+        end
+      end
       Bundler.ui = nil
       @gemdeps.requested_specs.map(&:to_spec).sort_by(&:name)
     end
