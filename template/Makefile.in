@@ -334,7 +334,7 @@ install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/confi
 	$(INSTALL_DATA) $(LIBRUBY) $(LIBRUBY_A) $(XRUBY_RUBYLIBDIR)/$(arch)
 	$(INSTALL_PROGRAM) $(LIBRUBY_SO) $(XRUBY_RUBYLIBDIR)/$(arch)
 
-Makefile:	$(srcdir)/Makefile.in $(srcdir)/enc/Makefile.in
+Makefile:	$(srcdir)/template/Makefile.in $(srcdir)/enc/Makefile.in
 
 $(MKFILES): config.status $(srcdir)/version.h
 		@[ -f $@ ] && mv $@ $@.old
