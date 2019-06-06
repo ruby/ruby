@@ -370,7 +370,7 @@ before_script:
   - ln -s ~/.downloaded-cache
   - "> config.status"
   - "> .rbconfig.time"
-  - sed -f tool/prereq.status Makefile.in common.mk > Makefile
+  - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
   - make touch-unicode-files
   - make -s $JOBS $UPDATE_UNICODE up
   - make -s $JOBS srcs
