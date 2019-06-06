@@ -256,7 +256,7 @@ typedef LPTHREAD_START_ROUTINE w32_thread_start_func;
 static HANDLE
 w32_create_thread(DWORD stack_size, w32_thread_start_func func, void *val)
 {
-    return start_thread(0, stack_size, func, val, CREATE_SUSPENDED, 0);
+    return start_thread(0, stack_size, func, val, CREATE_SUSPENDED | STACK_SIZE_PARAM_IS_A_RESERVATION, 0);
 }
 
 int
