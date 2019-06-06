@@ -1124,7 +1124,12 @@ class Gem::Specification < Gem::BasicSpecification
       if Gem::Specification === _spec
         _spec.loaded_from = File.expand_path file.to_s
         LOAD_CACHE_MUTEX.synchronize do
-          LOAD_CACHE[file] = _spec
+          prev = LOAD_CACHE[file]
+          if prev
+            _spec = prev
+          else
+            LOAD_CACHE[file] = _spec
+          end
         end
         return _spec
       end
