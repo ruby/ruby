@@ -7307,47 +7307,47 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
         return FALSE;
     }
 
-    switch(BUILTIN_TYPE(obj)) {
-        case T_NONE:
-        case T_NIL:
-        case T_MOVED:
-        case T_ZOMBIE:
+    switch (BUILTIN_TYPE(obj)) {
+      case T_NONE:
+      case T_NIL:
+      case T_MOVED:
+      case T_ZOMBIE:
+        return FALSE;
+        break;
+      case T_SYMBOL:
+        if (DYNAMIC_SYM_P(obj) && (RSYMBOL(obj)->id & ~ID_SCOPE_MASK)) {
             return FALSE;
-            break;
-        case T_SYMBOL:
-            if (DYNAMIC_SYM_P(obj) && (RSYMBOL(obj)->id & ~ID_SCOPE_MASK)) {
+        }
+        /* fall through */
+      case T_STRING:
+      case T_OBJECT:
+      case T_FLOAT:
+      case T_IMEMO:
+      case T_ARRAY:
+      case T_BIGNUM:
+      case T_ICLASS:
+      case T_MODULE:
+      case T_REGEXP:
+      case T_DATA:
+      case T_MATCH:
+      case T_STRUCT:
+      case T_HASH:
+      case T_FILE:
+      case T_COMPLEX:
+      case T_RATIONAL:
+      case T_NODE:
+      case T_CLASS:
+        if (FL_TEST(obj, FL_FINALIZE)) {
+            if (st_lookup(finalizer_table, obj, 0)) {
                 return FALSE;
             }
-            /* fall through */
-        case T_STRING:
-        case T_OBJECT:
-        case T_FLOAT:
-        case T_IMEMO:
-        case T_ARRAY:
-        case T_BIGNUM:
-        case T_ICLASS:
-        case T_MODULE:
-        case T_REGEXP:
-        case T_DATA:
-        case T_MATCH:
-        case T_STRUCT:
-        case T_HASH:
-        case T_FILE:
-        case T_COMPLEX:
-        case T_RATIONAL:
-        case T_NODE:
-        case T_CLASS:
-            if (FL_TEST(obj, FL_FINALIZE)) {
-                if (st_lookup(finalizer_table, obj, 0)) {
-                    return FALSE;
-                }
-            }
-            return !RVALUE_PINNED(obj);
-            break;
+        }
+        return !RVALUE_PINNED(obj);
+        break;
 
-        default:
-            rb_bug("gc_is_moveable_obj: unreachable (%d)", (int)BUILTIN_TYPE(obj));
-            break;
+      default:
+        rb_bug("gc_is_moveable_obj: unreachable (%d)", (int)BUILTIN_TYPE(obj));
+        break;
     }
 
     return FALSE;
@@ -7819,48 +7819,48 @@ gc_update_values(rb_objspace_t *objspace, long n, VALUE *values)
 static void
 gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
 {
-    switch(imemo_type(obj)) {
-        case imemo_env:
-            {
-                rb_env_t *env = (rb_env_t *)obj;
-                TYPED_UPDATE_IF_MOVED(objspace, rb_iseq_t *, env->iseq);
-                gc_update_values(objspace, (long)env->env_size, (VALUE *)env->env);
-            }
-            break;
-            break;
-        case imemo_cref:
-            UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.cref.klass);
-            TYPED_UPDATE_IF_MOVED(objspace, struct rb_cref_struct *, RANY(obj)->as.imemo.cref.next);
-            UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.cref.refinements);
-            break;
-        case imemo_svar:
-            UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.svar.cref_or_me);
-            UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.svar.lastline);
-            UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.svar.backref);
-            UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.svar.others);
-            break;
-        case imemo_throw_data:
-            UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.throw_data.throw_obj);
-            break;
-        case imemo_ifunc:
-            break;
-        case imemo_memo:
-            UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.memo.v1);
-            UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.memo.v2);
-            break;
-        case imemo_ment:
-            gc_ref_update_method_entry(objspace, &RANY(obj)->as.imemo.ment);
-            break;
-        case imemo_iseq:
-            rb_iseq_update_references((rb_iseq_t *)obj);
-            break;
-        case imemo_ast:
-        case imemo_parser_strterm:
-        case imemo_tmpbuf:
-            break;
-        default:
-            rb_bug("not reachable %d", imemo_type(obj));
-            break;
+    switch (imemo_type(obj)) {
+      case imemo_env:
+        {
+            rb_env_t *env = (rb_env_t *)obj;
+            TYPED_UPDATE_IF_MOVED(objspace, rb_iseq_t *, env->iseq);
+            gc_update_values(objspace, (long)env->env_size, (VALUE *)env->env);
+        }
+        break;
+        break;
+      case imemo_cref:
+        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.cref.klass);
+        TYPED_UPDATE_IF_MOVED(objspace, struct rb_cref_struct *, RANY(obj)->as.imemo.cref.next);
+        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.cref.refinements);
+        break;
+      case imemo_svar:
+        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.svar.cref_or_me);
+        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.svar.lastline);
+        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.svar.backref);
+        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.svar.others);
+        break;
+      case imemo_throw_data:
+        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.throw_data.throw_obj);
+        break;
+      case imemo_ifunc:
+        break;
+      case imemo_memo:
+        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.memo.v1);
+        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.memo.v2);
+        break;
+      case imemo_ment:
+        gc_ref_update_method_entry(objspace, &RANY(obj)->as.imemo.ment);
+        break;
+      case imemo_iseq:
+        rb_iseq_update_references((rb_iseq_t *)obj);
+        break;
+      case imemo_ast:
+      case imemo_parser_strterm:
+      case imemo_tmpbuf:
+        break;
+      default:
+        rb_bug("not reachable %d", imemo_type(obj));
+        break;
     }
 }
 
@@ -7977,145 +7977,145 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
     gc_report(4, objspace, "update-refs: %p ->", (void *)obj);
 
-    switch(BUILTIN_TYPE(obj)) {
-        case T_CLASS:
-        case T_MODULE:
+    switch (BUILTIN_TYPE(obj)) {
+      case T_CLASS:
+      case T_MODULE:
+        update_m_tbl(objspace, RCLASS_M_TBL(obj));
+        if (RCLASS_SUPER((VALUE)obj)) {
+            UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
+        }
+        if (!RCLASS_EXT(obj)) break;
+        if (RCLASS_IV_TBL(obj)) {
+            gc_update_table_refs(objspace, RCLASS_IV_TBL(obj));
+        }
+        update_class_ext(objspace, RCLASS_EXT(obj));
+        update_const_tbl(objspace, RCLASS_CONST_TBL(obj));
+        break;
+
+      case T_ICLASS:
+        if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
             update_m_tbl(objspace, RCLASS_M_TBL(obj));
-            if (RCLASS_SUPER((VALUE)obj)) {
-                UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
-            }
-            if (!RCLASS_EXT(obj)) break;
-            if (RCLASS_IV_TBL(obj)) {
-                gc_update_table_refs(objspace, RCLASS_IV_TBL(obj));
-            }
-            update_class_ext(objspace, RCLASS_EXT(obj));
-            update_const_tbl(objspace, RCLASS_CONST_TBL(obj));
-            break;
+        }
+        if (RCLASS_SUPER((VALUE)obj)) {
+            UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
+        }
+        if (!RCLASS_EXT(obj)) break;
+        if (RCLASS_IV_TBL(obj)) {
+            gc_update_table_refs(objspace, RCLASS_IV_TBL(obj));
+        }
+        update_class_ext(objspace, RCLASS_EXT(obj));
+        update_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
+        break;
 
-        case T_ICLASS:
-            if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
-                update_m_tbl(objspace, RCLASS_M_TBL(obj));
-            }
-            if (RCLASS_SUPER((VALUE)obj)) {
-                UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
-            }
-            if (!RCLASS_EXT(obj)) break;
-            if (RCLASS_IV_TBL(obj)) {
-                gc_update_table_refs(objspace, RCLASS_IV_TBL(obj));
-            }
-            update_class_ext(objspace, RCLASS_EXT(obj));
-            update_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
-            break;
+      case T_IMEMO:
+        gc_ref_update_imemo(objspace, obj);
+        break;
 
-        case T_IMEMO:
-            gc_ref_update_imemo(objspace, obj);
-            break;
+      case T_NIL:
+      case T_FIXNUM:
+      case T_NODE:
+      case T_MOVED:
+      case T_NONE:
+        /* These can't move */
+        return;
 
-        case T_NIL:
-        case T_FIXNUM:
-        case T_NODE:
-        case T_MOVED:
-        case T_NONE:
-            /* These can't move */
-            return;
+      case T_ARRAY:
+        if (FL_TEST(obj, ELTS_SHARED)) {
+            UPDATE_IF_MOVED(objspace, any->as.array.as.heap.aux.shared);
+        }
+        else {
+            gc_ref_update_array(objspace, obj);
+        }
+        break;
 
-        case T_ARRAY:
-            if (FL_TEST(obj, ELTS_SHARED)) {
-                UPDATE_IF_MOVED(objspace, any->as.array.as.heap.aux.shared);
-            }
-            else {
-                gc_ref_update_array(objspace, obj);
-            }
-            break;
+      case T_HASH:
+        gc_ref_update_hash(objspace, obj);
+        UPDATE_IF_MOVED(objspace, any->as.hash.ifnone);
+        break;
 
-        case T_HASH:
-            gc_ref_update_hash(objspace, obj);
-            UPDATE_IF_MOVED(objspace, any->as.hash.ifnone);
-            break;
+      case T_STRING:
+        if (STR_SHARED_P(obj)) {
+            UPDATE_IF_MOVED(objspace, any->as.string.as.heap.aux.shared);
+        }
+        break;
 
-        case T_STRING:
-            if (STR_SHARED_P(obj)) {
-                UPDATE_IF_MOVED(objspace, any->as.string.as.heap.aux.shared);
-            }
-            break;
-
-        case T_DATA:
-            /* Call the compaction callback, if it exists */
-            {
-                void *const ptr = DATA_PTR(obj);
-                if (ptr) {
-                    if (RTYPEDDATA_P(obj)) {
-                        RUBY_DATA_FUNC compact_func = any->as.typeddata.type->function.dcompact;
-                        if (compact_func) (*compact_func)(ptr);
-                    }
+      case T_DATA:
+        /* Call the compaction callback, if it exists */
+        {
+            void *const ptr = DATA_PTR(obj);
+            if (ptr) {
+                if (RTYPEDDATA_P(obj)) {
+                    RUBY_DATA_FUNC compact_func = any->as.typeddata.type->function.dcompact;
+                    if (compact_func) (*compact_func)(ptr);
                 }
             }
-            break;
+        }
+        break;
 
-        case T_OBJECT:
-            gc_ref_update_object(objspace, obj);
-            break;
+      case T_OBJECT:
+        gc_ref_update_object(objspace, obj);
+        break;
 
-        case T_FILE:
-            if (any->as.file.fptr) {
-                UPDATE_IF_MOVED(objspace, any->as.file.fptr->pathv);
-                UPDATE_IF_MOVED(objspace, any->as.file.fptr->tied_io_for_writing);
-                UPDATE_IF_MOVED(objspace, any->as.file.fptr->writeconv_asciicompat);
-                UPDATE_IF_MOVED(objspace, any->as.file.fptr->writeconv_pre_ecopts);
-                UPDATE_IF_MOVED(objspace, any->as.file.fptr->encs.ecopts);
-                UPDATE_IF_MOVED(objspace, any->as.file.fptr->write_lock);
+      case T_FILE:
+        if (any->as.file.fptr) {
+            UPDATE_IF_MOVED(objspace, any->as.file.fptr->pathv);
+            UPDATE_IF_MOVED(objspace, any->as.file.fptr->tied_io_for_writing);
+            UPDATE_IF_MOVED(objspace, any->as.file.fptr->writeconv_asciicompat);
+            UPDATE_IF_MOVED(objspace, any->as.file.fptr->writeconv_pre_ecopts);
+            UPDATE_IF_MOVED(objspace, any->as.file.fptr->encs.ecopts);
+            UPDATE_IF_MOVED(objspace, any->as.file.fptr->write_lock);
+        }
+        break;
+      case T_REGEXP:
+        UPDATE_IF_MOVED(objspace, any->as.regexp.src);
+        break;
+
+      case T_SYMBOL:
+        if (DYNAMIC_SYM_P((VALUE)any)) {
+            UPDATE_IF_MOVED(objspace, RSYMBOL(any)->fstr);
+        }
+        break;
+
+      case T_FLOAT:
+      case T_BIGNUM:
+        break;
+
+      case T_MATCH:
+        UPDATE_IF_MOVED(objspace, any->as.match.regexp);
+
+        if (any->as.match.str) {
+            UPDATE_IF_MOVED(objspace, any->as.match.str);
+        }
+        break;
+
+      case T_RATIONAL:
+        UPDATE_IF_MOVED(objspace, any->as.rational.num);
+        UPDATE_IF_MOVED(objspace, any->as.rational.den);
+        break;
+
+      case T_COMPLEX:
+        UPDATE_IF_MOVED(objspace, any->as.complex.real);
+        UPDATE_IF_MOVED(objspace, any->as.complex.imag);
+
+        break;
+
+      case T_STRUCT:
+        {
+            long i, len = RSTRUCT_LEN(obj);
+            VALUE *ptr = (VALUE *)RSTRUCT_CONST_PTR(obj);
+
+            for (i = 0; i < len; i++) {
+                UPDATE_IF_MOVED(objspace, ptr[i]);
             }
-            break;
-        case T_REGEXP:
-            UPDATE_IF_MOVED(objspace, any->as.regexp.src);
-            break;
-
-        case T_SYMBOL:
-            if (DYNAMIC_SYM_P((VALUE)any)) {
-                UPDATE_IF_MOVED(objspace, RSYMBOL(any)->fstr);
-            }
-            break;
-
-        case T_FLOAT:
-        case T_BIGNUM:
-            break;
-
-        case T_MATCH:
-            UPDATE_IF_MOVED(objspace, any->as.match.regexp);
-
-            if (any->as.match.str) {
-                UPDATE_IF_MOVED(objspace, any->as.match.str);
-            }
-            break;
-
-        case T_RATIONAL:
-            UPDATE_IF_MOVED(objspace, any->as.rational.num);
-            UPDATE_IF_MOVED(objspace, any->as.rational.den);
-            break;
-
-        case T_COMPLEX:
-            UPDATE_IF_MOVED(objspace, any->as.complex.real);
-            UPDATE_IF_MOVED(objspace, any->as.complex.imag);
-
-            break;
-
-        case T_STRUCT:
-            {
-                long i, len = RSTRUCT_LEN(obj);
-                VALUE *ptr = (VALUE *)RSTRUCT_CONST_PTR(obj);
-
-                for (i = 0; i < len; i++) {
-                    UPDATE_IF_MOVED(objspace, ptr[i]);
-                }
-            }
-            break;
-        default:
+        }
+        break;
+      default:
 #if GC_DEBUG
-            rb_gcdebug_print_obj_condition((VALUE)obj);
-            rb_obj_info_dump(obj);
-            rb_bug("unreachable");
+        rb_gcdebug_print_obj_condition((VALUE)obj);
+        rb_obj_info_dump(obj);
+        rb_bug("unreachable");
 #endif
-            break;
+        break;
 
     }
 
@@ -8146,23 +8146,23 @@ gc_ref_update(void *vstart, void *vend, size_t stride, void * data)
             void *poisoned = asan_poisoned_object_p(v);
             asan_unpoison_object(v, false);
 
-            switch(BUILTIN_TYPE(v)) {
-                case T_NONE:
-                    heap_page_add_freeobj(objspace, page, v);
-                    free_slots++;
-                    break;
-                case T_MOVED:
-                    break;
-                case T_ZOMBIE:
-                    break;
-                default:
-                    if (RVALUE_WB_UNPROTECTED(v)) {
-                        page->flags.has_uncollectible_shady_objects = TRUE;
-                    }
-                    if (RVALUE_PAGE_MARKING(page, v)) {
-                        page->flags.has_remembered_objects = TRUE;
-                    }
-                    gc_update_object_references(objspace, v);
+            switch (BUILTIN_TYPE(v)) {
+              case T_NONE:
+                heap_page_add_freeobj(objspace, page, v);
+                free_slots++;
+                break;
+              case T_MOVED:
+                break;
+              case T_ZOMBIE:
+                break;
+              default:
+                if (RVALUE_WB_UNPROTECTED(v)) {
+                    page->flags.has_uncollectible_shady_objects = TRUE;
+                }
+                if (RVALUE_PAGE_MARKING(page, v)) {
+                    page->flags.has_remembered_objects = TRUE;
+                }
+                gc_update_object_references(objspace, v);
             }
 
             if (poisoned) {
