@@ -1664,7 +1664,7 @@ rb_true(VALUE obj)
  */
 
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_false(VALUE obj)
 {
     return Qfalse;
