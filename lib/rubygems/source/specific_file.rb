@@ -3,6 +3,8 @@
 # A source representing a single .gem file.  This is used for installation of
 # local gems.
 
+require 'rubygems/package'
+
 class Gem::Source::SpecificFile < Gem::Source
 
   ##
