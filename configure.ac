@@ -3915,7 +3915,7 @@ AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s
 AS_IF([test x"$firstmf" != x], [
     AC_CONFIG_FILES($firstmf:$firsttmpl, [], [firstmf="$firstmf" firsttmpl="$firsttmpl"])
 ])
-AC_CONFIG_FILES(Makefile:template/Makefile.in, [
+AC_CONFIG_FILES(Makefile, [
     tmpmk=confmk$$.tmp
     {
 	AS_IF([test ${VCS+set}], [
