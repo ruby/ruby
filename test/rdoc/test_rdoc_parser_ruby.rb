@@ -2914,6 +2914,21 @@ EXPECTED
     assert_equal expected, markup_code
   end
 
+  def test_parse_heredoc_end
+    code = "A = <<eos\n""OK\n""eos\n"
+    util_parser code
+    @parser.parse_statements @top_level
+    @parser.scan
+    c = @top_level.classes.first.constants.first
+    assert_equal("A", c.name)
+
+    util_parser code.gsub(/$/, "\r")
+    @parser.parse_statements @top_level
+    @parser.scan
+    c = @top_level.classes.first.constants.first
+    assert_equal("A", c.name)
+  end
+
   def test_parse_statements_method_oneliner_with_regexp
     util_parser <<RUBY
 class Foo
