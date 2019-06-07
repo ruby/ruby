@@ -257,6 +257,8 @@ module Test
           return if @io.closed?
           @quit_called = true
           @io.puts "quit"
+        rescue Errno::EPIPE => e
+          warn "#{@pid}:#{@status.to_s.ljust(7)}:#{@file}: #{e.message}"
         end
 
         def kill
