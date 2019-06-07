@@ -389,7 +389,8 @@ def package(vcs, rev, destdir, tmp = nil)
       File.open("#{defaults}/ruby.rb", "w") {}
       miniruby = ENV['MINIRUBY'] + " -I. -I#{extout} -rcross"
       baseruby = ENV["BASERUBY"]
-      mk = IO.read("Makefile.in").gsub(/^@.*\n/, '')
+      mk = (IO.read("template/Makefile.in") rescue IO.read("Makefile.in")).
+             gsub(/^@.*\n/, '')
       vars = {
         "EXTOUT"=>extout,
         "PATH_SEPARATOR"=>File::PATH_SEPARATOR,
