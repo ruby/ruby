@@ -38,7 +38,6 @@ class Reline::Config::Test < Reline::TestCase
   end
 
   def test_bind_key_with_escaped_chars
-    key, func =
     assert_equal ['input'.bytes, "\e \\ \" ' \a \b \d \f \n \r \t \v".bytes], @config.bind_key('"input"', '"\\e \\\\ \\" \\\' \\a \\b \\d \\f \\n \\r \\t \\v"')
   end
 
