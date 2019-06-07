@@ -3,6 +3,8 @@
 # The local source finds gems in the current directory for fulfilling
 # dependencies.
 
+require 'rubygems/package'
+
 class Gem::Source::Local < Gem::Source
 
   def initialize # :nodoc:
