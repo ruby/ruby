@@ -10972,6 +10972,7 @@ static int
 nogvl_fcopyfile(struct copy_stream_struct *stp)
 {
     off_t cur, ss = 0;
+    const off_t src_offset = stp->src_offset;
     int ret;
 
     if (stp->copy_length >= (off_t)0) {
@@ -10987,7 +10988,7 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
     if (lseek(stp->dst_fd, 0, SEEK_CUR) > (off_t)0) /* if dst IO was already written */
         return 0;
 
-    if (stp->src_offset > (off_t)0) {
+    if (src_offset > (off_t)0) {
         off_t r;
 
         /* get current offset */
@@ -10999,7 +11000,7 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
         }
 
         errno = 0;
-        r = lseek(stp->src_fd, stp->src_offset, SEEK_SET);
+        r = lseek(stp->src_fd, src_offset, SEEK_SET);
         if (r < (off_t)0 && errno) {
             stp->error_no = errno;
             return 1;
@@ -11012,7 +11013,7 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
 
     if (ret == 0) { /* success */
         stp->total = ss;
-        if (stp->src_offset > (off_t)0) {
+        if (src_offset > (off_t)0) {
             off_t r;
             errno = 0;
             /* reset offset */

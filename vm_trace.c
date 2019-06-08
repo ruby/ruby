@@ -418,7 +418,7 @@ VALUE
 rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 {
     volatile int raised;
-    VALUE result = Qnil;
+    volatile VALUE result = Qnil;
     rb_execution_context_t *const ec = GET_EC();
     rb_vm_t *const vm = rb_ec_vm_ptr(ec);
     enum ruby_tag_type state;
