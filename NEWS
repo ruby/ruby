@@ -86,6 +86,13 @@ GC::
       Details on the algorithm and caveats can be found here:
       https://bugs.ruby-lang.org/issues/15626
 
+IO::
+
+  New method::
+
+    * Added IO#set_encoding_by_bom to check the BOM and set the external
+      encoding.  [Bug #15210]
+
 Integer::
 
   Modified method::
