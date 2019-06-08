@@ -3,7 +3,6 @@ require 'rubygems/command'
 require 'rubygems/version_option'
 require 'rubygems/security_option'
 require 'rubygems/remote_fetcher'
-require 'rubygems/package'
 
 # forward-declare
 
