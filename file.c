@@ -20,6 +20,14 @@
 #include <wchar.h>
 #endif
 #ifdef __APPLE__
+# if !(defined(__has_feature) && defined(__has_attribute))
+/* Maybe a bug in SDK of Xcode 10.2.1 */
+/* In this condition, <os/availability.h> does not define
+ * API_AVAILABLE and similar, but __API_AVAILABLE and similar which
+ * are defined in <Availability.h> */
+#   define API_AVAILABLE(...)
+#   define API_DEPRECATED(...)
+# endif
 #include <CoreFoundation/CFString.h>
 #endif
 
