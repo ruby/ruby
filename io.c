@@ -498,7 +498,14 @@ static rb_io_t *flush_before_seek(rb_io_t *fptr);
  * conversion IO process and universal newline decorator by default.
  */
 #define NEED_READCONV(fptr) ((fptr)->encs.enc2 != NULL || (fptr)->encs.ecflags & ~ECONV_CRLF_NEWLINE_DECORATOR)
-#define NEED_WRITECONV(fptr) (((fptr)->encs.enc != NULL && (fptr)->encs.enc != rb_ascii8bit_encoding()) || ((fptr)->encs.ecflags & ((ECONV_DECORATOR_MASK & ~ECONV_CRLF_NEWLINE_DECORATOR)|ECONV_STATEFUL_DECORATOR_MASK)))
+#define WRITECONV_MASK ( \
+    (ECONV_DECORATOR_MASK & ~ECONV_CRLF_NEWLINE_DECORATOR)|\
+    ECONV_STATEFUL_DECORATOR_MASK|\
+    0)
+#define NEED_WRITECONV(fptr) ( \
+  ((fptr)->encs.enc != NULL && (fptr)->encs.enc != rb_ascii8bit_encoding()) || \
+  ((fptr)->encs.ecflags & WRITECONV_MASK) || \
+  0)
 #define SET_BINARY_MODE(fptr) setmode((fptr)->fd, O_BINARY)
 
 #define NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr) do {\
@@ -626,7 +633,11 @@ set_binary_mode_with_seek_cur(rb_io_t *fptr)
 /* Unix */
 # define DEFAULT_TEXTMODE 0
 #define NEED_READCONV(fptr) ((fptr)->encs.enc2 != NULL || NEED_NEWLINE_DECORATOR_ON_READ(fptr))
-#define NEED_WRITECONV(fptr) (((fptr)->encs.enc != NULL && (fptr)->encs.enc != rb_ascii8bit_encoding()) || NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) || ((fptr)->encs.ecflags & (ECONV_DECORATOR_MASK|ECONV_STATEFUL_DECORATOR_MASK)))
+#define NEED_WRITECONV(fptr) ( \
+  ((fptr)->encs.enc != NULL && (fptr)->encs.enc != rb_ascii8bit_encoding()) || \
+  NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) ||                        \
+  ((fptr)->encs.ecflags & (ECONV_DECORATOR_MASK|ECONV_STATEFUL_DECORATOR_MASK)) || \
+  0)
 #define SET_BINARY_MODE(fptr) (void)(fptr)
 #define NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr) (void)(fptr)
 #define SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags) ((void)(enc2), (void)(ecflags))
@@ -2905,11 +2916,15 @@ io_getpartial(int argc, VALUE *argv, VALUE io, VALUE opts, int nonblock)
  *
  *  Note that readpartial behaves similar to sysread.
  *  The differences are:
- *  * If the byte buffer is not empty, read from the byte buffer instead of "sysread for buffered IO (IOError)".
- *  * It doesn't cause Errno::EWOULDBLOCK and Errno::EINTR.  When readpartial meets EWOULDBLOCK and EINTR by read system call, readpartial retry the system call.
+ *  * If the byte buffer is not empty, read from the byte buffer
+ *    instead of "sysread for buffered IO (IOError)".
+ *  * It doesn't cause Errno::EWOULDBLOCK and Errno::EINTR.  When
+ *    readpartial meets EWOULDBLOCK and EINTR by read system call,
+ *    readpartial retry the system call.
  *
  *  The latter means that readpartial is nonblocking-flag insensitive.
- *  It blocks on the situation IO#sysread causes Errno::EWOULDBLOCK as if the fd is blocking mode.
+ *  It blocks on the situation IO#sysread causes Errno::EWOULDBLOCK as
+ *  if the fd is blocking mode.
  *
  */
 
