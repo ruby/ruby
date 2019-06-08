@@ -1907,7 +1907,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
             uint32_t offset = __builtin_bswap32(arch->offset);
             /* fprintf(stderr,"%d: fat %d %x/%x %x/%x\n",__LINE__, i, mhp->cputype,mhp->cpusubtype, cputype,cpusubtype); */
             if (mhp->cputype == cputype &&
-                    (mhp->cpusubtype & ~CPU_SUBTYPE_MASK) == cpusubtype) {
+                    (cpu_subtype_t)(mhp->cpusubtype & ~CPU_SUBTYPE_MASK) == cpusubtype) {
                 p = file + offset;
                 file = p;
                 header = (struct LP(mach_header) *)p;
@@ -1980,9 +1980,9 @@ found_mach_header:
             {
                 struct symtab_command *cmd = (struct symtab_command *)lcmd;
                 struct LP(nlist) *nl = (struct LP(nlist) *)(file + cmd->symoff);
-                char *strtab = file + cmd->stroff, *sname;
+                char *strtab = file + cmd->stroff, *sname = 0;
                 uint32_t j;
-                uintptr_t saddr;
+                uintptr_t saddr = 0;
                 /* kprintf("[%2d]: %x/symtab %p\n", i, cmd->cmd, p); */
                 for (j = 0; j < cmd->nsyms; j++) {
                     uintptr_t symsize, d;
