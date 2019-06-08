@@ -1211,6 +1211,27 @@ range_max(int argc, VALUE *argv, VALUE range)
     }
 }
 
+/*
+ *  call-seq:
+ *     rng.minmax                       -> [obj, obj]
+ *     rng.minmax {| a,b | block }      -> [obj, obj]
+ *
+ *  Returns a two element array which contains the minimum and the
+ *  maximum value in the range.
+ *
+ *  Can be given an optional block to override the default comparison
+ *  method <code>a <=> b</code>.
+ */
+
+static VALUE
+range_minmax(VALUE range)
+{
+    if (rb_block_given_p()) {
+        return rb_call_super(0, NULL);
+    }
+    return rb_assoc_new(range_min(0, NULL, range), range_max(0, NULL, range));
+}
+
 int
 rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
 {
@@ -1697,6 +1718,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "last", range_last, -1);
     rb_define_method(rb_cRange, "min", range_min, -1);
     rb_define_method(rb_cRange, "max", range_max, -1);
+    rb_define_method(rb_cRange, "minmax", range_minmax, 0);
     rb_define_method(rb_cRange, "size", range_size, 0);
     rb_define_method(rb_cRange, "to_a", range_to_a, 0);
     rb_define_method(rb_cRange, "entries", range_to_a, 0);
