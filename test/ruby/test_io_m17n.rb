@@ -2097,6 +2097,10 @@ EOT
           assert_equal(Encoding::UTF_8, result.encoding, message)
           assert_equal(stripped, result, message)
         end
+
+        File.open(path, "rb") {|f|
+          assert_equal(Encoding.find(name), f.set_encoding_by_bom)
+        }
       }
     end
   end
@@ -2139,6 +2143,10 @@ EOT
       assert_equal(stripped, result, bug8323)
       result = File.read(path, encoding: 'BOM|UTF-8:UTF-8')
       assert_equal(stripped, result, bug8323)
+
+      File.open(path, "rb") {|f|
+        assert_nil(f.set_encoding_by_bom)
+      }
     }
   end
 
