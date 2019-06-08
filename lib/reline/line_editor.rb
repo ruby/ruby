@@ -67,7 +67,7 @@ class Reline::LineEditor
     @old_trap = Signal.trap('SIGINT') {
       scroll_down(@highest_in_all - @first_line_started_from)
       Reline::IOGate.move_cursor_column(0)
-      @old_trap.()
+      @old_trap.call if @old_trap.respond_to?(:call) # can also be string, ex: "DEFAULT"
     }
   end
 
