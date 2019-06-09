@@ -2089,11 +2089,11 @@ EOT
         content = text.encode(name)
         generate_file(path, content)
         result = File.read(path, mode: 'rb:BOM|UTF-8')
-        assert_equal(content[1].force_encoding("ascii-8bit"),
-                     result.force_encoding("ascii-8bit"))
+        assert_equal(Encoding.find(name), result.encoding, name)
+        assert_equal(content[1..-1].b, result.b, name)
         result = File.read(path, mode: 'rb:BOM|UTF-8:UTF-8')
-        assert_equal(Encoding::UTF_8, result.encoding)
-        assert_equal(stripped, result)
+        assert_equal(Encoding::UTF_8, result.encoding, name)
+        assert_equal(stripped, result, name)
       end
 
       bug3407 = '[ruby-core:30641]'
