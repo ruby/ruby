@@ -279,7 +279,12 @@ RSpec.describe "bundle exec" do
     G
 
     rubyopt = ENV["RUBYOPT"]
-    rubyopt = "-r#{File.expand_path("../../lib/bundler/setup", __dir__)} #{rubyopt}"
+    setup_path = if ruby_core?
+                   File.expand_path("../../../lib/bundler/setup", __dir__)
+                 else
+                   File.expand_path("../../lib/bundler/setup", __dir__)
+                 end
+    rubyopt = "-r#{setup_path} #{rubyopt}"
 
     bundle "exec 'echo $RUBYOPT'"
     expect(out).to have_rubyopts(rubyopt)
