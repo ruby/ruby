@@ -451,6 +451,8 @@ class Resolv
       case address
       when Name
         ptr = address
+      when IPv4, IPv6
+        ptr = address.to_name
       when IPv4::Regex
         ptr = IPv4.create(address).to_name
       when IPv6::Regex
