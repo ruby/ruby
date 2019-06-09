@@ -265,4 +265,28 @@ class TestResolvDNS < Test::Unit::TestCase
   def test_no_fd_leak_unconnected
     assert_no_fd_leak {Resolv::DNS.new}
   end
+
+  def test_each_name
+    dns = Resolv::DNS.new
+    def dns.each_resource(name, typeclass)
+      yield typeclass.new(name)
+    end
+
+    dns.each_name('127.0.0.1') do |ptr|
+      assert_equal('1.0.0.127.in-addr.arpa', ptr.to_s)
+    end
+    dns.each_name(Resolv::IPv4.create('127.0.0.1')) do |ptr|
+      assert_equal('1.0.0.127.in-addr.arpa', ptr.to_s)
+    end
+    dns.each_name('::1') do |ptr|
+      assert_equal('1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa', ptr.to_s)
+    end
+    dns.each_name(Resolv::IPv6.create('::1')) do |ptr|
+      assert_equal('1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa', ptr.to_s)
+    end
+    dns.each_name(Resolv::DNS::Name.create('1.0.0.127.in-addr.arpa.')) do |ptr|
+      assert_equal('1.0.0.127.in-addr.arpa', ptr.to_s)
+    end
+    assert_raise(Resolv::ResolvError) { dns.each_name('example.com') }
+  end
 end
