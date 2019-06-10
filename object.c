@@ -1800,7 +1800,7 @@ rb_mod_to_s(VALUE klass)
 	rb_str_cat2(s, ">");
 	return s;
     }
-    return rb_str_dup(rb_class_name(klass));
+    return rb_class_name(klass);
 }
 
 /*

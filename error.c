@@ -1098,7 +1098,7 @@ exc_inspect(VALUE exc)
     klass = CLASS_OF(exc);
     exc = rb_obj_as_string(exc);
     if (RSTRING_LEN(exc) == 0) {
-	return rb_str_dup(rb_class_name(klass));
+	return rb_class_name(klass);
     }
 
     str = rb_str_buf_new2("#<");
