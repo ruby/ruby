@@ -544,7 +544,7 @@ module TestNetHTTP_version_1_1_methods
         err = !windows? ? Net::WriteTimeout : Net::ReadTimeout
         assert_raise(err) { conn.post('/', "a"*50_000_000) }
       end
-      assert th.join(10)
+      assert th.join(EnvUtil.apply_timeout_scale(10))
     }
   ensure
     th&.kill
@@ -568,7 +568,7 @@ module TestNetHTTP_version_1_1_methods
           conn.get('/')
         }
       end
-      assert th.join(10), bug4246
+      assert th.join(EnvUtil.apply_timeout_scale(10)), bug4246
     }
   ensure
     th.kill
