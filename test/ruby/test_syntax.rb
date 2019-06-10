@@ -976,6 +976,11 @@ eom
     assert_valid_syntax("a\n.:foo")
   end
 
+  def test_safe_call_in_massign_lhs
+    assert_syntax_error("*a&.x=0", /LHS/)
+    assert_syntax_error("a&.x,=0", /LHS/)
+  end
+
   def test_no_warning_logop_literal
     assert_warning("") do
       eval("true||raise;nil")
