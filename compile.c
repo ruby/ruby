@@ -5332,8 +5332,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         ADD_SEND(ret, line, rb_intern("deconstruct"), INT2FIX(0));
 
         ADD_INSN(ret, line, dup);
-        ADD_INSN1(ret, line, putobject, rb_cArray);
-        ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE));
+        ADD_INSN1(ret, line, checktype, INT2FIX(T_ARRAY));
         ADD_INSNL(ret, line, branchunless, type_error);
 
         ADD_INSN(ret, line, dup);
@@ -5506,8 +5505,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         ADD_SEND(ret, line, rb_intern("deconstruct_keys"), INT2FIX(1));
 
         ADD_INSN(ret, line, dup);
-        ADD_INSN1(ret, line, putobject, rb_cHash);
-        ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE));
+        ADD_INSN1(ret, line, checktype, INT2FIX(T_HASH));
         ADD_INSNL(ret, line, branchunless, type_error);
 
         if (node->nd_pkwrestarg) {
