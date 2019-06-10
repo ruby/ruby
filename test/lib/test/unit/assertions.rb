@@ -756,7 +756,7 @@ eom
         skip
       end
 
-      def assert_cpu_usage_low(msg = nil, pct: 0.01)
+      def assert_cpu_usage_low(msg = nil, pct: 0.05)
         require 'benchmark'
 
         tms = Benchmark.measure(msg || '') { yield }
