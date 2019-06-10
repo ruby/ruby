@@ -2635,7 +2635,10 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 		    goto no_refinement_dispatch;
 		}
 	    }
-	    cc->me = ref_me;
+            if (cc->me->def->type != VM_METHOD_TYPE_REFINED ||
+                 cc->me->def != ref_me->def) {
+                 cc->me = ref_me;
+            }
 	    if (ref_me->def->type != VM_METHOD_TYPE_REFINED) {
 		return vm_call_method(ec, cfp, calling, ci, cc);
 	    }
