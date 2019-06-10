@@ -4,9 +4,10 @@ require 'resolv'
 describe "Resolv#getname" do
   platform_is_not :windows do
     it "resolves 127.0.0.1" do
-      lambda {
-        Resolv.getname("127.0.0.1")
-      }.should_not raise_error(Resolv::ResolvError)
+      hosts = Resolv::Hosts.new(fixture(__FILE__ , "hosts"))
+      res = Resolv.new([hosts])
+
+      res.getname("127.0.0.1").should == "localhost"
     end
   end
 

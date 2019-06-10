@@ -4,11 +4,11 @@ require 'resolv'
 describe "Resolv#getaddresses" do
   platform_is_not :windows do
     it "resolves localhost" do
-      res = Resolv.new([Resolv::Hosts.new])
+      hosts = Resolv::Hosts.new(fixture(__FILE__ , "hosts"))
+      res = Resolv.new([hosts])
 
-      addresses = res.getaddresses("localhost")
-      addresses.should_not == nil
-      addresses.size.should > 0
+      res.getaddresses("localhost").should == ["127.0.0.1"]
+      res.getaddresses("localhost4").should == ["127.0.0.1"]
     end
   end
 end
