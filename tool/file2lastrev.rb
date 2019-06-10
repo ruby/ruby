@@ -11,8 +11,6 @@ require File.expand_path('../vcs', __FILE__)
 
 Program = $0
 
-TIMEZONE_FOR_RELEASE = "+09:00" # in Japan Standard Time traditionally
-
 @output = nil
 def self.output=(output)
   if @output and @output != output
@@ -77,8 +75,7 @@ vcs = nil
           "#define RUBY_LAST_COMMIT_TITLE #{title.dump}"
         end,
         if modified
-          modified.getlocal(TIMEZONE_FOR_RELEASE).
-            strftime(<<TIME)
+          modified.strftime(<<TIME)
 #if defined(RUBY_PATCHLEVEL) && (RUBY_PATCHLEVEL == -1)
 #undef RUBY_RELEASE_DATE
 #define RUBY_RELEASE_DATE "%FT%T%:z"
