@@ -36,6 +36,7 @@ module IRB
           end
           nil
         end
+        nil
       ensure
         execute(*names)
       end
