@@ -233,6 +233,12 @@ RSpec.describe Bundler::GemHelper do
 
             Rake.application["release"].invoke
           end
+
+          it "uses Kernel.system" do
+            expect(Kernel).to receive(:system).with("gem", "push", app_gem_path.to_s, "--host", "http://example.org").and_return(true)
+
+            Rake.application["release"].invoke
+          end
         end
 
         it "even if tag already exists" do
@@ -255,7 +261,7 @@ RSpec.describe Bundler::GemHelper do
       before(:each) do
         Rake.application = Rake::Application.new
         subject.install
-        allow(subject).to receive(:sh)
+        allow(subject).to receive(:sh_with_input)
       end
 
       after(:each) do
