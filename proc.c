@@ -64,7 +64,7 @@ block_mark(const struct rb_block *block)
 	    RUBY_MARK_NO_PIN_UNLESS_NULL(captured->self);
 	    RUBY_MARK_NO_PIN_UNLESS_NULL((VALUE)captured->code.val);
 	    if (captured->ep && captured->ep[VM_ENV_DATA_INDEX_ENV] != Qundef /* cfunc_proc_t */) {
-		RUBY_MARK_NO_PIN_UNLESS_NULL(VM_ENV_ENVVAL(captured->ep));
+                RUBY_MARK_NO_PIN_UNLESS_NULL(VM_ENV_ENVVAL(captured->ep));
 	    }
 	}
 	break;
@@ -87,9 +87,9 @@ block_compact(struct rb_block *block)
 	    struct rb_captured_block *captured = &block->as.captured;
             captured->self = rb_gc_location(captured->self);
             captured->code.val = rb_gc_location(captured->code.val);
-	    if (captured->ep && captured->ep[VM_ENV_DATA_INDEX_ENV] != Qundef /* cfunc_proc_t */) {
+            if (captured->ep && captured->ep[VM_ENV_DATA_INDEX_ENV] != Qundef /* cfunc_proc_t */) {
                 UPDATE_REFERENCE(captured->ep[VM_ENV_DATA_INDEX_ENV]);
-	    }
+            }
 	}
 	break;
       case block_type_symbol:
