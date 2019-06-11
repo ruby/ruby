@@ -1913,6 +1913,10 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file is executable by the effective
  * user and group id of this process. See eaccess(3).
+ *
+ * Windows does not support execute permissions separately from read
+ * permissions. On Windows, a file is only considered executable if it ends in
+ * .bat, .cmd, .com, or .exe.
  */
 
 static VALUE
@@ -1928,6 +1932,10 @@ rb_file_executable_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file is executable by the real
  * user and group id of this process. See access(3).
+ *
+ * Windows does not support execute permissions separately from read
+ * permissions. On Windows, a file is only considered executable if it ends in
+ * .bat, .cmd, .com, or .exe.
  */
 
 static VALUE
