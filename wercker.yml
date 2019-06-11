@@ -61,7 +61,7 @@ mjit-test1:
         code: /usr/bin/sudo -H -u test -- make test-spec RUN_OPTS="--disable-gems --jit --jit-warnings"
     - script:
         name: make test-all (JIT)
-        code: /usr/local/bin/mjit-debug-on-fail /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-verbose=1 --jit-save-temps --jit-warnings" TESTOPTS="-v --color=never --job-status=normal --longest 10 --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/jit"
+        code: /usr/local/bin/mjit-debug-on-fail /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-verbose=1 --jit-save-temps --jit-warnings" TESTOPTS="-v --color=never --job-status=normal --longest 10 --timeout-scale=3.0 --excludes=test/excludes/_wercker/jit"
 
     # --jit-wait (test, test-spec)
     - script:
@@ -100,7 +100,7 @@ mjit-test2:
     # --jit-wait (test-all)
     - script:
         name: make test-all (JIT wait)
-        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTOPTS="-v --test-order=random --color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/jit-wait"
+        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTOPTS="-v --test-order=random --color=never --job-status=normal --timeout-scale=3.0 --excludes=test/excludes/_wercker/jit-wait"
 
   after-steps:
     - wantedly/pretty-slack-notify:
