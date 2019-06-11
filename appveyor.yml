@@ -71,9 +71,9 @@ for:
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
     - nmake -l "TESTOPTS=-v -q" btest
     - nmake -l "TESTOPTS=-v -q" test-basic
-    - nmake -l "TESTOPTS=-q --subprocess-timeout-scale=3.0 --excludes=../test/excludes/_appveyor -j%JOBS% --exclude readline --exclude win32ole --exclude test_bignum --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca --exclude test_gc_compact" test-all
+    - nmake -l "TESTOPTS=-q --timeout-scale=3.0 --excludes=../test/excludes/_appveyor -j%JOBS% --exclude readline --exclude win32ole --exclude test_bignum --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca --exclude test_gc_compact" test-all
     # separately execute tests without -j which may crash worker with -j.
-    - nmake -l "TESTOPTS=-v --subprocess-timeout-scale=3.0 --excludes=../test/excludes/_appveyor" test-all TESTS="../test/win32ole ../test/ruby/test_bignum.rb ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb ../test/ruby/test_gc_compact.rb"
+    - nmake -l "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor" test-all TESTS="../test/win32ole ../test/ruby/test_bignum.rb ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb ../test/ruby/test_gc_compact.rb"
     - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
 -
   matrix:
@@ -118,9 +118,9 @@ for:
     - if not "%GEMS_FOR_TEST%" == "" ..\install\bin\gem install --no-document %GEMS_FOR_TEST%
   test_script:
     - mingw32-make test
-    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor -j %JOBS% --exclude win32ole --exclude test_open-uri --exclude test_gc_compact"
+    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor -j %JOBS% --exclude win32ole --exclude test_open-uri --exclude test_gc_compact"
     # separately execute tests without -j which may crash worker with -j.
-    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor" TESTS="../ruby/test/win32ole ../ruby/test/open-uri/test_open-uri.rb ../ruby/test/ruby/test_gc_compact.rb"
+    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor" TESTS="../ruby/test/win32ole ../ruby/test/open-uri/test_open-uri.rb ../ruby/test/ruby/test_gc_compact.rb"
     - mingw32-make test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
 notifications:
   # Using "Webhook" with templated body to skip notification on Pull Request

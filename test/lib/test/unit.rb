@@ -195,10 +195,10 @@ module Test
 
       class Worker
         def self.launch(ruby,args=[])
-          scale = EnvUtil.subprocess_timeout_scale
+          scale = EnvUtil.timeout_scale
           io = IO.popen([*ruby, "-W1",
                         "#{File.dirname(__FILE__)}/unit/parallel.rb",
-                        *("--subprocess-timeout-scale=#{scale}" if scale),
+                        *("--timeout-scale=#{scale}" if scale),
                         *args], "rb+")
           new(io, io.pid, :waiting)
         end
@@ -1031,11 +1031,11 @@ module Test
       end
     end
 
-    module SubprocessOption
+    module TimeoutOption
       def setup_options(parser, options)
         super
-        parser.separator "subprocess options:"
-        parser.on '--subprocess-timeout-scale NUM', "Scale subprocess timeout", Float do |scale|
+        parser.separator "timeout options:"
+        parser.on '--timeout-scale NUM', '--subprocess-timeout-scale NUM', "Scale timeout", Float do |scale|
           raise OptionParser::InvalidArgument, "timeout scale must be positive" unless scale > 0
           options[:timeout_scale] = scale
         end
@@ -1043,8 +1043,9 @@ module Test
 
       def non_options(files, options)
         if scale = options[:timeout_scale] or
-          (scale = ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"] and (scale = scale.to_f) > 0)
-          EnvUtil.subprocess_timeout_scale = scale
+          (scale = ENV["RUBY_TEST_TIMEOUT_SCALE"] || ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"] and
+           (scale = scale.to_f) > 0)
+          EnvUtil.timeout_scale = scale
         end
         super
       end
@@ -1061,7 +1062,7 @@ module Test
       include Test::Unit::LoadPathOption
       include Test::Unit::GCStressOption
       include Test::Unit::ExcludesOption
-      include Test::Unit::SubprocessOption
+      include Test::Unit::TimeoutOption
       include Test::Unit::RunCount
 
       class << self; undef autorun; end

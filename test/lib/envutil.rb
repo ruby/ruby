@@ -45,7 +45,7 @@ module EnvUtil
   RUBYLIB = ENV["RUBYLIB"]
 
   class << self
-    attr_accessor :subprocess_timeout_scale
+    attr_accessor :timeout_scale
     attr_reader :original_internal_encoding, :original_external_encoding,
                 :original_verbose
 
@@ -57,7 +57,7 @@ module EnvUtil
   end
 
   def apply_timeout_scale(t)
-    if scale = EnvUtil.subprocess_timeout_scale
+    if scale = EnvUtil.timeout_scale
       t * scale
     else
       t
