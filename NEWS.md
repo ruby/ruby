@@ -38,6 +38,12 @@ sufficient information, see the ChangeLog file or Redmine
   instead of a warning. yield in a class definition outside of a method
   is now a SyntaxError instead of a LocalJumpError.  [[Feature #15575]]
 
+* Rightward assignment statement is added. [[Feature #15921]]
+
+    ```ruby
+    fib(10) => x
+    ```
+
 ## Command line options
 
 ## Core classes updates
@@ -170,5 +176,6 @@ Excluding feature bug fixes.
 [Feature #16274]: https://bugs.ruby-lang.org/issues/16274
 [Feature #16377]: https://bugs.ruby-lang.org/issues/16377
 [Bug #12706]:     https://bugs.ruby-lang.org/issues/12706
+[Feature #15921]: https://bugs.ruby-lang.org/issues/15921
 [Feature #16555]: https://bugs.ruby-lang.org/issues/16555
 [GH-2991]:        https://github.com/ruby/ruby/pull/2991

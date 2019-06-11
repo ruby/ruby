@@ -1083,7 +1083,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> string_contents xstring_contents regexp_contents string_content
 %type <node> words symbols symbol_list qwords qsymbols word_list qword_list qsym_list word
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath
-%type <node> top_compstmt top_stmts top_stmt begin_block
+%type <node> top_compstmt top_stmts top_stmt begin_block rassign
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value expr_value_do arg_value primary_value fcall rel_expr
 %type <node> if_tail opt_else case_body case_args cases opt_rescue exc_list exc_var opt_ensure
@@ -1481,7 +1481,42 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    /*% %*/
 		    /*% ripper: massign!($1, $3) %*/
 		    }
+		| rassign
 		| expr
+		;
+
+rassign 	: primary tASSOC lhs
+		    {
+		    /*%%%*/
+			value_expr($1);
+			$$ = node_assign(p, $3, $1, &@$);
+		    /*% %*/
+		    /*% ripper: assign!($3, $1) %*/
+		    }
+		| primary tASSOC mlhs
+		    {
+		    /*%%%*/
+			value_expr($1);
+			$$ = node_assign(p, $3, $1, &@$);
+		    /*% %*/
+		    /*% ripper: massign!($3, $1) %*/
+		    }
+		| rassign tASSOC lhs
+		    {
+		    /*%%%*/
+			value_expr($1);
+			$$ = node_assign(p, $3, $1, &@$);
+		    /*% %*/
+		    /*% ripper: assign!($3, $1) %*/
+		    }
+		| rassign tASSOC mlhs
+		    {
+		    /*%%%*/
+			value_expr($1);
+			$$ = node_assign(p, $3, $1, &@$);
+		    /*% %*/
+		    /*% ripper: massign!($3, $1) %*/
+		    }
 		;
 
 command_asgn	: lhs '=' command_rhs
@@ -8866,10 +8901,11 @@ parser_yylex(struct parser_params *p)
 		pushback(p, c);
 		if (space_seen) dispatch_scan_event(p, tSP);
 		goto retry;
+	      case '=':
 	      case '&':
 	      case '.': {
 		dispatch_delayed_token(p, tIGNORED_NL);
-		if (peek(p, '.') == (c == '&')) {
+		if (c == '=' ? peek(p, '>') : (peek(p, '.') == (c == '&'))) {
 		    pushback(p, c);
 		    dispatch_scan_event(p, tSP);
 		    goto retry;
