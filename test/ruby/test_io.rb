@@ -567,11 +567,8 @@ class TestIO < Test::Unit::TestCase
       msg = 'r58534 [ruby-core:80969] [Backport #13533]'
       IO.pipe do |r,w|
         r.nonblock = true
-        assert_cpu_usage_low(msg) do
-          th = Thread.new { IO.copy_stream(r, IO::NULL) }
-          sleep 0.1
-          w.close
-          th.join
+        assert_cpu_usage_low(msg, stop: ->{w.close}) do
+          IO.copy_stream(r, IO::NULL)
         end
       end
     end

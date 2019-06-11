@@ -761,15 +761,27 @@ eom
       MIN_HZ = MiniTest::Unit::TestCase.windows? ? 67 : 100
       MIN_MEASURABLE = 1.0 / MIN_HZ
 
-      def assert_cpu_usage_low(msg = nil, pct: 0.05)
+      def assert_cpu_usage_low(msg = nil, pct: 0.05, wait: 0.1, stop: nil)
         require 'benchmark'
 
-        tms = Benchmark.measure(msg || '') { yield }
-        max = pct * tms.real
-        if tms.real < 0.1 # TIME_QUANTUM_USEC in thread_pthread.c
+        wait = EnvUtil.apply_timeout_scale(wait)
+        if wait < 0.1 # TIME_QUANTUM_USEC in thread_pthread.c
           warn "test #{msg || 'assert_cpu_usage_low'} too short to be accurate"
         end
+        tms = Benchmark.measure(msg || '') do
+          if stop
+            th = Thread.start {sleep wait; stop.call}
+            yield
+            th.join
+          else
+            begin
+              Timeout.timeout(wait) {yield}
+            rescue Timeout::Error
+            end
+          end
+        end
 
+        max = pct * tms.real
         min_measurable = MIN_MEASURABLE
         min_measurable *= 1.30 # add a little (30%) to account for misc. overheads
         if max < min_measurable
