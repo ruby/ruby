@@ -493,10 +493,10 @@ void
 rb_fiber_update_self(rb_fiber_t *fib)
 {
     if (fib->cont.self) {
-	fib->cont.self = rb_gc_location(fib->cont.self);
+        fib->cont.self = rb_gc_location(fib->cont.self);
     }
     else {
-	rb_execution_context_update(&fib->cont.saved_ec);
+        rb_execution_context_update(&fib->cont.saved_ec);
     }
 }
 
@@ -504,7 +504,7 @@ void
 rb_fiber_mark_self(const rb_fiber_t *fib)
 {
     if (fib->cont.self) {
-	rb_gc_mark_no_pin(fib->cont.self);
+        rb_gc_mark_no_pin(fib->cont.self);
     }
     else {
 	rb_execution_context_mark(&fib->cont.saved_ec);
