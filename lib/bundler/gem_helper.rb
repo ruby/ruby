@@ -106,7 +106,7 @@ module Bundler
       unless allowed_push_host || Bundler.user_home.join(".gem/credentials").file?
         raise "Your rubygems.org credentials aren't set. Run `gem push` to set them."
       end
-      sh(gem_command)
+      sh_with_input(gem_command)
       Bundler.ui.confirm "Pushed #{name} #{version} to #{gem_push_host}"
     end
 
@@ -178,6 +178,13 @@ module Bundler
 
     def name
       gemspec.name
+    end
+
+    def sh_with_input(cmd)
+      Bundler.ui.debug(cmd)
+      SharedHelpers.chdir(base) do
+        abort unless Kernel.system(*cmd)
+      end
     end
 
     def sh(cmd, &block)
