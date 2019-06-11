@@ -977,8 +977,8 @@ eom
   end
 
   def test_safe_call_in_massign_lhs
-    assert_syntax_error("*a&.x=0", /LHS/)
-    assert_syntax_error("a&.x,=0", /LHS/)
+    assert_syntax_error("*a&.x=0", /multiple assignment destination/)
+    assert_syntax_error("a&.x,=0", /multiple assignment destination/)
   end
 
   def test_no_warning_logop_literal

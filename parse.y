@@ -1788,7 +1788,7 @@ mlhs_node	: user_variable
 		| primary_value call_op tIDENTIFIER
 		    {
 			if ($2 == tANDDOT) {
-			    yyerror1(&@2, "&. inside LHS of multiple assignment");
+			    yyerror1(&@2, "&. inside multiple assignment destination");
 			}
 		    /*%%%*/
 			$$ = attrset(p, $1, $2, $3, &@$);
@@ -1805,7 +1805,7 @@ mlhs_node	: user_variable
 		| primary_value call_op tCONSTANT
 		    {
 			if ($2 == tANDDOT) {
-			    yyerror1(&@2, "&. inside LHS of multiple assignment");
+			    yyerror1(&@2, "&. inside multiple assignment destination");
 			}
 		    /*%%%*/
 			$$ = attrset(p, $1, $2, $3, &@$);
