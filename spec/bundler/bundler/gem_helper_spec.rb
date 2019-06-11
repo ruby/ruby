@@ -218,15 +218,20 @@ RSpec.describe Bundler::GemHelper do
           end
         end
 
-        it "on releasing" do
-          mock_build_message app_name, app_version
-          mock_confirm_message "Tagged v#{app_version}."
-          mock_confirm_message "Pushed git commits and tags."
-          expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
+        context "on releasing" do
+          before do
+            mock_build_message app_name, app_version
+            mock_confirm_message "Tagged v#{app_version}."
+            mock_confirm_message "Pushed git commits and tags."
 
-          Dir.chdir(app_path) { sys_exec("git push -u origin master") }
+            Dir.chdir(app_path) { sys_exec("git push -u origin master") }
+          end
 
-          Rake.application["release"].invoke
+          it "calls rubygem_push with proper arguments" do
+            expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
+
+            Rake.application["release"].invoke
+          end
         end
 
         it "even if tag already exists" do
