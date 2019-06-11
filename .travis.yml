@@ -422,6 +422,7 @@ before_script:
   - |-
     [ -z "${GEMS_FOR_TEST}" ] ||
     $RUBY_PREFIX/bin/gem install --no-document $GEMS_FOR_TEST
+  - echo "raise 'do not load ~/.irbrc in test'" > ~/.irbrc
 
 script:
   - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
