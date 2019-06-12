@@ -250,7 +250,7 @@ class RubyLex
         case t[2]
         when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
           indent += 1
-        when 'if', 'unless', 'while', 'until', 'rescue'
+        when 'if', 'unless', 'while', 'until'
           # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
           indent += 1 unless t[3].allbits?(Ripper::EXPR_LABEL)
         when 'end'
