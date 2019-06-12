@@ -18,13 +18,8 @@ module TestIRB
     CYAN      = "\e[36m"
 
     def test_colorize_code
-      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.5.0')
-        assert_equal({}, IRB::Color::TOKEN_SEQ_EXPRS)
-        skip "this Ripper version is not supported"
-      end
-
       # Common behaviors. Warn parser error, but do not warn compile error.
-      {
+      tests = {
         "1" => "#{BLUE}#{BOLD}1#{CLEAR}",
         "2.3" => "#{MAGENTA}#{BOLD}2.3#{CLEAR}",
         "7r" => "#{BLUE}#{BOLD}7r#{CLEAR}",
@@ -39,22 +34,17 @@ module TestIRB
         '"foo#{a} #{b}"' => "#{RED}\"#{CLEAR}#{RED}foo#{CLEAR}#{RED}\#{#{CLEAR}a#{RED}}#{CLEAR}#{RED} #{CLEAR}#{RED}\#{#{CLEAR}b#{RED}}#{CLEAR}#{RED}\"#{CLEAR}",
         '/r#{e}g/' => "#{RED}#{BOLD}/#{CLEAR}#{RED}r#{CLEAR}#{RED}\#{#{CLEAR}e#{RED}}#{CLEAR}#{RED}g#{CLEAR}#{RED}#{BOLD}/#{CLEAR}",
         "'a\nb'" => "#{RED}'#{CLEAR}#{RED}a#{CLEAR}\n#{RED}b#{CLEAR}#{RED}'#{CLEAR}",
-        "4.5.6" => "#{MAGENTA}#{BOLD}4.5#{CLEAR}#{RED}#{REVERSE}.6#{CLEAR}",
         "[1]]]\u0013" => "[1]]]^S",
-        "\e[0m\n" => "#{RED}#{REVERSE}^[#{CLEAR}[#{BLUE}#{BOLD}0#{CLEAR}#{RED}#{REVERSE}m#{CLEAR}\n",
         "%w[a b]" => "#{RED}%w[#{CLEAR}#{RED}a#{CLEAR} #{RED}b#{CLEAR}#{RED}]#{CLEAR}",
         "%i[c d]" => "#{RED}%i[#{CLEAR}#{RED}c#{CLEAR} #{RED}d#{CLEAR}#{RED}]#{CLEAR}",
         "{'a': 1}" => "{#{RED}'#{CLEAR}#{RED}a#{CLEAR}#{RED}':#{CLEAR} #{BLUE}#{BOLD}1#{CLEAR}}",
         ":Struct" => "#{YELLOW}:#{CLEAR}#{YELLOW}Struct#{CLEAR}",
-        "<<EOS\nhere\nEOS" => "#{RED}<<EOS#{CLEAR}\n#{RED}here#{CLEAR}\n#{RED}EOS#{CLEAR}",
         '"#{}"' => "#{RED}\"#{CLEAR}#{RED}\#{#{CLEAR}#{RED}}#{CLEAR}#{RED}\"#{CLEAR}",
         ':"a#{}b"' => "#{YELLOW}:\"#{CLEAR}#{YELLOW}a#{CLEAR}#{YELLOW}\#{#{CLEAR}#{YELLOW}}#{CLEAR}#{YELLOW}b#{CLEAR}#{YELLOW}\"#{CLEAR}",
         ':"a#{ def b; end; \'c\' + "#{ :d }" }e"' => "#{YELLOW}:\"#{CLEAR}#{YELLOW}a#{CLEAR}#{YELLOW}\#{#{CLEAR} #{GREEN}def#{CLEAR} #{BLUE}#{BOLD}b#{CLEAR}; #{GREEN}end#{CLEAR}; #{RED}'#{CLEAR}#{RED}c#{CLEAR}#{RED}'#{CLEAR} + #{RED}\"#{CLEAR}#{RED}\#{#{CLEAR} #{YELLOW}:#{CLEAR}#{YELLOW}d#{CLEAR} #{RED}}#{CLEAR}#{RED}\"#{CLEAR} #{YELLOW}}#{CLEAR}#{YELLOW}e#{CLEAR}#{YELLOW}\"#{CLEAR}",
         "[__FILE__, __LINE__]" => "[#{CYAN}#{BOLD}__FILE__#{CLEAR}, #{CYAN}#{BOLD}__LINE__#{CLEAR}]",
         ":self" => "#{YELLOW}:#{CLEAR}#{YELLOW}self#{CLEAR}",
         ":class" => "#{YELLOW}:#{CLEAR}#{YELLOW}class#{CLEAR}",
-        ":@1" => "#{YELLOW}:#{CLEAR}#{RED}#{REVERSE}@1#{CLEAR}",
-        "@@1" => "#{RED}#{REVERSE}@@1#{CLEAR}",
         "[:end, 2]" => "[#{YELLOW}:#{CLEAR}#{YELLOW}end#{CLEAR}, #{BLUE}#{BOLD}2#{CLEAR}]",
         "[:>, 3]" => "[#{YELLOW}:#{CLEAR}#{YELLOW}>#{CLEAR}, #{BLUE}#{BOLD}3#{CLEAR}]",
         ":Hello ? world : nil" => "#{YELLOW}:#{CLEAR}#{YELLOW}Hello#{CLEAR} ? world : #{CYAN}#{BOLD}nil#{CLEAR}",
@@ -69,16 +59,37 @@ module TestIRB
         "\t" => "\t", # not ^I
         "foo(*%W(bar))" => "foo(*#{RED}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED})#{CLEAR})",
         "$stdout" => "#{GREEN}#{BOLD}$stdout#{CLEAR}",
-      }.each do |code, result|
-        actual = with_term { IRB::Color.colorize_code(code, complete: true) }
-        assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: true)\nResult: #{humanized_literal(actual)}")
+      }
 
-        actual = with_term { IRB::Color.colorize_code(code, complete: false) }
-        assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
+      if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.7.0')
+        tests.merge!({
+          "4.5.6" => "#{MAGENTA}#{BOLD}4.5#{CLEAR}#{RED}#{REVERSE}.6#{CLEAR}",
+          "\e[0m\n" => "#{RED}#{REVERSE}^[#{CLEAR}[#{BLUE}#{BOLD}0#{CLEAR}#{RED}#{REVERSE}m#{CLEAR}\n",
+          "<<EOS\nhere\nEOS" => "#{RED}<<EOS#{CLEAR}\n#{RED}here#{CLEAR}\n#{RED}EOS#{CLEAR}",
+          ":@1" => "#{YELLOW}:#{CLEAR}#{RED}#{REVERSE}@1#{CLEAR}",
+          "@@1" => "#{RED}#{REVERSE}@@1#{CLEAR}",
+        })
+      end
+
+      tests.each do |code, result|
+        if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.5.0')
+          # colorize_code is supported only for Ruby 2.5+. Just return the original code in 2.4-.
+          actual = with_term { IRB::Color.colorize_code(code) }
+          assert_equal(code, actual)
+        else
+          actual = with_term { IRB::Color.colorize_code(code, complete: true) }
+          assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: true)\nResult: #{humanized_literal(actual)}")
+
+          actual = with_term { IRB::Color.colorize_code(code, complete: false) }
+          assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
+        end
       end
     end
 
     def test_colorize_code_complete_true
+      unless lexer_scan_supported?
+        skip '`complete: true` is the same as `complete: false` in Ruby 2.6-'
+      end
       # `complete: true` behaviors. Warn end-of-file.
       {
         "'foo' + 'bar" => "#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR} + #{RED}'#{CLEAR}#{RED}#{REVERSE}bar#{CLEAR}",
@@ -95,8 +106,19 @@ module TestIRB
         "'foo' + 'bar" => "#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR} + #{RED}'#{CLEAR}#{RED}bar#{CLEAR}",
         "('foo" => "(#{RED}'#{CLEAR}#{RED}foo#{CLEAR}",
       }.each do |code, result|
-        actual = with_term { IRB::Color.colorize_code(code, complete: false) }
-        assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
+        if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.5.0')
+          # colorize_code is supported only for Ruby 2.5+. Just return the original code in 2.4-.
+          actual = with_term { IRB::Color.colorize_code(code) }
+          assert_equal(code, actual)
+        else
+          actual = with_term { IRB::Color.colorize_code(code, complete: false) }
+          assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
+
+          unless lexer_scan_supported?
+            actual = with_term { IRB::Color.colorize_code(code, complete: true) }
+            assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
+          end
+        end
       end
     end
 
@@ -119,6 +141,10 @@ module TestIRB
     end
 
     private
+
+    def lexer_scan_supported?
+      Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.7.0')
+    end
 
     def with_term
       stdout = $stdout

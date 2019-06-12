@@ -127,7 +127,6 @@ class RubyLex
   end
 
   def process_continue
-    continued_bits = Ripper::EXPR_BEG | Ripper::EXPR_FNAME
     # last token is always newline
     if @tokens.size >= 2 and @tokens[-2][1] == :on_regexp_end
       # end of regexp literal
@@ -149,7 +148,7 @@ class RubyLex
       return true
     elsif @tokens.size >= 1 and @tokens[-1][1] == :on_heredoc_end # "EOH\n"
       return false
-    elsif @tokens.size >= 2 and @tokens[-2][3].anybits?(continued_bits)
+    elsif @tokens.size >= 2 and defined?(Ripper::EXPR_BEG) and @tokens[-2][3].anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME)
       # end of literal except for regexp
       return true
     end
@@ -221,19 +220,21 @@ class RubyLex
       $VERBOSE = verbose
     end
 
-    last_lex_state = @tokens.last[3]
-    if last_lex_state.allbits?(Ripper::EXPR_BEG)
-      return false
-    elsif last_lex_state.allbits?(Ripper::EXPR_DOT)
-      return true
-    elsif last_lex_state.allbits?(Ripper::EXPR_CLASS)
-      return true
-    elsif last_lex_state.allbits?(Ripper::EXPR_FNAME)
-      return true
-    elsif last_lex_state.allbits?(Ripper::EXPR_VALUE)
-      return true
-    elsif last_lex_state.allbits?(Ripper::EXPR_ARG)
-      return false
+    if defined?(Ripper::EXPR_BEG)
+      last_lex_state = @tokens.last[3]
+      if last_lex_state.allbits?(Ripper::EXPR_BEG)
+        return false
+      elsif last_lex_state.allbits?(Ripper::EXPR_DOT)
+        return true
+      elsif last_lex_state.allbits?(Ripper::EXPR_CLASS)
+        return true
+      elsif last_lex_state.allbits?(Ripper::EXPR_FNAME)
+        return true
+      elsif last_lex_state.allbits?(Ripper::EXPR_VALUE)
+        return true
+      elsif last_lex_state.allbits?(Ripper::EXPR_ARG)
+        return false
+      end
     end
 
     false
