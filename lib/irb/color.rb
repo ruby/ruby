@@ -67,7 +67,7 @@ module IRB # :nodoc:
 
     class << self
       def colorable?
-        $stdout.tty? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb'))
+        $stdout.tty? && supported? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb'))
       end
 
       def inspect_colorable?(obj)
@@ -132,24 +132,37 @@ module IRB # :nodoc:
 
       private
 
+      # Ripper::Lexer::Elem#state is supported on Ruby 2.5+
+      def supported?
+        return @supported if defined?(@supported)
+        @supported = Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.5.0')
+      end
+
       def scan(code, allow_last_error:)
         pos = [1, 0]
 
-        Ripper::Lexer.new(code).scan.each do |elem|
-          str = elem.tok
-          next if allow_last_error and /meets end of file|unexpected end-of-input/ =~ elem.message
-          next if ([elem.pos[0], elem.pos[1] + str.bytesize] <=> pos) <= 0
+        lexer = Ripper::Lexer.new(code)
+        if lexer.respond_to?(:scan) # Ruby 2.7+
+          lexer.scan.each do |elem|
+            str = elem.tok
+            next if allow_last_error and /meets end of file|unexpected end-of-input/ =~ elem.message
+            next if ([elem.pos[0], elem.pos[1] + str.bytesize] <=> pos) <= 0
 
-          str.each_line do |line|
-            if line.end_with?("\n")
-              pos[0] += 1
-              pos[1] = 0
-            else
-              pos[1] += line.bytesize
+            str.each_line do |line|
+              if line.end_with?("\n")
+                pos[0] += 1
+                pos[1] = 0
+              else
+                pos[1] += line.bytesize
+              end
             end
-          end
 
-          yield(elem.event, str, elem.state)
+            yield(elem.event, str, elem.state)
+          end
+        else
+          lexer.parse.each do |elem|
+            yield(elem.event, elem.tok, elem.state)
+          end
         end
       end
 
