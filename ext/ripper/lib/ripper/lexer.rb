@@ -103,7 +103,17 @@ class Ripper
 
     # parse the code and returns elements including errors.
     def scan
-      (parse() + errors + @stack.flatten).uniq.sort_by {|e| [*e.pos, (e.message ? -1 : 0)]}
+      result = (parse() + errors + @stack.flatten).uniq.sort_by {|e| [*e.pos, (e.message ? -1 : 0)]}
+      result.each_with_index do |e, i|
+        if e.event == :on_parse_error and e.tok.empty? and (pre = result[i-1]) and
+          pre.pos[0] == e.pos[0] and (pre.pos[1] + pre.tok.size) == e.pos[1]
+          e.tok = pre.tok
+          e.pos[1] = pre.pos[1]
+          result[i-1] = e
+          result[i] = pre
+        end
+      end
+      result
     end
 
     def parse
