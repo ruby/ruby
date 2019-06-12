@@ -61,6 +61,7 @@ module TestIRB
         "$stdout" => "#{GREEN}#{BOLD}$stdout#{CLEAR}",
       }
 
+      # specific to Ruby 2.7+
       if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.7.0')
         tests.merge!({
           "4.5.6" => "#{MAGENTA}#{BOLD}4.5#{CLEAR}#{RED}#{REVERSE}.6#{CLEAR}",
@@ -72,24 +73,24 @@ module TestIRB
       end
 
       tests.each do |code, result|
-        if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.5.0')
-          # colorize_code is supported only for Ruby 2.5+. Just return the original code in 2.4-.
-          actual = with_term { IRB::Color.colorize_code(code) }
-          assert_equal(code, actual)
-        else
+        if colorize_code_supported?
           actual = with_term { IRB::Color.colorize_code(code, complete: true) }
           assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: true)\nResult: #{humanized_literal(actual)}")
 
           actual = with_term { IRB::Color.colorize_code(code, complete: false) }
           assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
+        else
+          actual = with_term { IRB::Color.colorize_code(code) }
+          assert_equal(code, actual)
         end
       end
     end
 
     def test_colorize_code_complete_true
-      unless lexer_scan_supported?
+      unless complete_option_supported?
         skip '`complete: true` is the same as `complete: false` in Ruby 2.6-'
       end
+
       # `complete: true` behaviors. Warn end-of-file.
       {
         "'foo' + 'bar" => "#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR} + #{RED}'#{CLEAR}#{RED}#{REVERSE}bar#{CLEAR}",
@@ -106,18 +107,17 @@ module TestIRB
         "'foo' + 'bar" => "#{RED}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}'#{CLEAR} + #{RED}'#{CLEAR}#{RED}bar#{CLEAR}",
         "('foo" => "(#{RED}'#{CLEAR}#{RED}foo#{CLEAR}",
       }.each do |code, result|
-        if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.5.0')
-          # colorize_code is supported only for Ruby 2.5+. Just return the original code in 2.4-.
-          actual = with_term { IRB::Color.colorize_code(code) }
-          assert_equal(code, actual)
-        else
+        if colorize_code_supported?
           actual = with_term { IRB::Color.colorize_code(code, complete: false) }
           assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
 
-          unless lexer_scan_supported?
+          unless complete_option_supported?
             actual = with_term { IRB::Color.colorize_code(code, complete: true) }
             assert_equal(result, actual, "Case: colorize_code(#{code.dump}, complete: false)\nResult: #{humanized_literal(actual)}")
           end
+        else
+          actual = with_term { IRB::Color.colorize_code(code) }
+          assert_equal(code, actual)
         end
       end
     end
@@ -142,7 +142,13 @@ module TestIRB
 
     private
 
-    def lexer_scan_supported?
+    # `#colorize_code` is supported only for Ruby 2.5+. It just returns the original code in 2.4-.
+    def colorize_code_supported?
+      Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.5.0')
+    end
+
+    # `complete: true` is the same as `complete: false` in Ruby 2.6-
+    def complete_option_supported?
       Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.7.0')
     end
 
