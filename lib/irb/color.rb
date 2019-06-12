@@ -137,7 +137,7 @@ module IRB # :nodoc:
 
         Ripper::Lexer.new(code).scan.each do |elem|
           str = elem.tok
-          next if allow_last_error and elem.message&.end_with?('meets end of file')
+          next if allow_last_error and /meets end of file|unexpected end-of-input/ =~ elem.message
           next if ([elem.pos[0], elem.pos[1] + str.bytesize] <=> pos) <= 0
 
           str.each_line do |line|
