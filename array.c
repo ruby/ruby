@@ -2819,6 +2819,11 @@ rb_ary_sort_bang(VALUE ary)
  *     ary.sort                     #=> ["a", "b", "c", "d", "e"]
  *     ary.sort {|a, b| b <=> a}    #=> ["e", "d", "c", "b", "a"]
  *
+ *  To produce the reverse order, the following can also be used
+ *  (and may be faster):
+ *
+ *    ary.sort.reverse!             #=> ["e", "d", "c", "b", "a"]
+ *
  *  See also Enumerable#sort_by.
  */
 
