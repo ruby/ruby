@@ -55,7 +55,7 @@ class TestWEBrickSSLServer < Test::Unit::TestCase
       :SSLEnable => true,
       :SSLCertName => "/C=JP/O=www.ruby-lang.org/CN=Ruby",
     }
-    Timeout.timeout(10) do
+    EnvUtil.timeout(10) do
       TestWEBrick.start_server(Echo, config) do |server, addr, port, log|
         outer = TCPSocket.new(addr, port)
         inner = TCPSocket.new(addr, port)
