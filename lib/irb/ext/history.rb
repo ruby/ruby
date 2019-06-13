@@ -22,7 +22,7 @@ module IRB # :nodoc:
     def set_last_value(value)
       _set_last_value(value)
 
-      if @eval_history
+      if defined?(@eval_history) && @eval_history
         @eval_history_values.push @line_no, @last_value
         @workspace.evaluate self, "__ = IRB.CurrentContext.instance_eval{@eval_history_values}"
       end
@@ -30,6 +30,7 @@ module IRB # :nodoc:
       @last_value
     end
 
+    remove_method :eval_history= if method_defined?(:eval_history=)
     # The command result history limit.
     attr_reader :eval_history
     # Sets command result history limit.
