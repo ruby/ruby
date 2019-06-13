@@ -1496,6 +1496,37 @@ expr		: command_call
 			$$ = call_uni_op(p, method_cond(p, $2, &@2), '!', &@1, &@$);
 		    }
 		| arg
+		| pipeline
+		;
+
+pipeline	: expr tPIPE operation2 opt_paren_args
+		    {
+		    /*%%%*/
+			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, Qnull, &@3, &@$);
+		    /*% %*/
+		    /*% ripper: command_call!($1, ID2VAL(idPIPE), $3, $4) %*/
+		    }
+		| expr tPIPE operation2 opt_paren_args brace_block
+		    {
+		    /*%%%*/
+			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, $5, &@3, &@$);
+		    /*% %*/
+		    /*% ripper: method_add_block!(command_call!($1, ID2VAL(idPIPE), $3, $4), $5) %*/
+		    }
+		| expr tPIPE operation2 command_args
+		    {
+		    /*%%%*/
+			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, Qnull, &@3, &@$);
+		    /*% %*/
+		    /*% ripper: command_call!($1, ID2VAL(idPIPE), $3, $4) %*/
+		    }
+		| expr tPIPE operation2 command_args do_block
+		    {
+		    /*%%%*/
+			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, $5, &@3, &@$);
+		    /*% %*/
+		    /*% ripper: method_add_block!(command_call!($1, ID2VAL(idPIPE), $3, $4), $5) %*/
+		    }
 		;
 
 expr_value	: expr
@@ -2271,26 +2302,9 @@ arg		: lhs '=' arg_rhs
 		    /*% %*/
 		    /*% ripper: ifop!($1, $3, $6) %*/
 		    }
-		| pipeline
 		| primary
 		    {
 			$$ = $1;
-		    }
-		;
-
-pipeline	: arg tPIPE operation2 opt_paren_args
-		    {
-		    /*%%%*/
-			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, Qnull, &@3, &@$);
-		    /*% %*/
-		    /*% ripper: command_call!($1, ID2VAL(idPIPE), $3, $4) %*/
-		    }
-		| arg tPIPE operation2 opt_paren_args brace_block
-		    {
-		    /*%%%*/
-			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, $5, &@3, &@$);
-		    /*% %*/
-		    /*% ripper: method_add_block!(command_call!($1, ID2VAL(idPIPE), $3, $4), $5) %*/
 		    }
 		;
 
