@@ -858,13 +858,7 @@ eom
           msg = "exceptions on #{errs.length} threads:\n" +
             errs.map {|t, err|
             "#{t.inspect}:\n" +
-            err.backtrace.map.with_index {|line, i|
-              if i == 0
-                "#{line}: #{err.message} (#{err.class})"
-              else
-                "\tfrom #{line}"
-              end
-            }.join("\n")
+              err.full_message(highlight: false, order: :top)
           }.join("\n---\n")
           if message
             msg = "#{message}\n#{msg}"
