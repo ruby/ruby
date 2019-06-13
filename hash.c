@@ -1426,6 +1426,12 @@ rb_hash_modify_check(VALUE hash)
     rb_check_frozen(hash);
 }
 
+static void
+rb_env_modify_check()
+{
+    rb_check_frozen(envtbl);
+}
+
 MJIT_FUNC_EXPORTED struct st_table *
 #if RHASH_CONVERT_TABLE_DEBUG
 rb_hash_tbl_raw(VALUE hash, const char *file, int line)
@@ -4626,6 +4632,7 @@ env_delete_m(VALUE obj, VALUE name)
 {
     VALUE val;
 
+    rb_env_modify_check();
     val = env_delete(name);
     if (NIL_P(val) && rb_block_given_p()) rb_yield(name);
     return val;
@@ -4959,6 +4966,7 @@ ruby_unsetenv(const char *name)
 static VALUE
 env_aset_m(VALUE obj, VALUE nm, VALUE val)
 {
+    rb_env_modify_check();
     return env_aset(nm, val);
 }
 
@@ -5170,6 +5178,7 @@ env_reject_bang(VALUE ehash)
     int del = 0;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
+    rb_env_modify_check();
     keys = env_keys();
     RBASIC_CLEAR_CLASS(keys);
     for (i=0; i<RARRAY_LEN(keys); i++) {
@@ -5200,6 +5209,7 @@ static VALUE
 env_delete_if(VALUE ehash)
 {
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
+    rb_env_modify_check();
     env_reject_bang(ehash);
     return envtbl;
 }
@@ -5280,6 +5290,7 @@ env_select_bang(VALUE ehash)
     int del = 0;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
+    rb_env_modify_check();
     keys = env_keys();
     RBASIC_CLEAR_CLASS(keys);
     for (i=0; i<RARRAY_LEN(keys); i++) {
@@ -5310,6 +5321,7 @@ static VALUE
 env_keep_if(VALUE ehash)
 {
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
+    rb_env_modify_check();
     env_select_bang(ehash);
     return envtbl;
 }
@@ -5355,6 +5367,7 @@ rb_env_clear(void)
     VALUE keys;
     long i;
 
+    rb_env_modify_check();
     keys = env_keys();
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	VALUE val = rb_f_getenv(Qnil, RARRAY_AREF(keys, i));
@@ -5453,6 +5466,7 @@ env_to_a(void)
 static VALUE
 env_none(void)
 {
+    rb_env_modify_check();
     return Qnil;
 }
 
@@ -5712,6 +5726,7 @@ env_shift(void)
     char **env;
     VALUE result = Qnil;
 
+    rb_env_modify_check();
     env = GET_ENVIRON(environ);
     if (*env) {
 	char *s = strchr(*env, '=');
@@ -5762,6 +5777,7 @@ env_replace(VALUE env, VALUE hash)
     VALUE keys;
     long i;
 
+    rb_env_modify_check();
     keys = env_keys();
     if (env == hash) return env;
     hash = to_hash(hash);
@@ -5797,6 +5813,7 @@ env_update_i(VALUE key, VALUE val)
 static VALUE
 env_update(VALUE env, VALUE hash)
 {
+    rb_env_modify_check();
     if (env == hash) return env;
     hash = to_hash(hash);
     rb_hash_foreach(hash, env_update_i, 0);

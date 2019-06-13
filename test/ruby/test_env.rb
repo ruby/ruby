@@ -107,6 +107,8 @@ class TestEnv < Test::Unit::TestCase
     assert_invalid_env {|v| ENV.delete(v)}
     assert_nil(ENV.delete("TEST"))
     assert_nothing_raised { ENV.delete(PATH_ENV) }
+
+    assert_in_out_err([], 'ENV.freeze; ENV.delete("TEST")', [], [/.*FrozenError.*\n/, /.*main.*\n/])
   end
 
   def test_getenv
@@ -157,6 +159,8 @@ class TestEnv < Test::Unit::TestCase
 
     ENV[PATH_ENV] = "/tmp/".taint
     assert_equal("/tmp/", ENV[PATH_ENV])
+
+    assert_in_out_err([], 'ENV.freeze; ENV["TEST"] = nil', [], [/.*FrozenError.*\n/, /.*main.*\n/])
   end
 
   def test_keys
@@ -196,6 +200,8 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(h1, h2)
 
     assert_nil(ENV.reject! {|k, v| IGNORE_CASE ? k.upcase == "TEST" : k == "test" })
+
+    assert_in_out_err([], 'ENV.freeze; ENV.reject! {}', [], [/.*FrozenError.*\n/, /.*main.*\n/])
   end
 
   def test_delete_if
@@ -208,6 +214,8 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(h1, h2)
 
     assert_equal(ENV, ENV.delete_if {|k, v| IGNORE_CASE ? k.upcase == "TEST" : k == "test" })
+
+    assert_in_out_err([], 'ENV.freeze; ENV.delete_if {}', [], [/.*FrozenError.*\n/, /.*main.*\n/])
   end
 
   def test_select_bang
@@ -220,6 +228,8 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(h1, h2)
 
     assert_nil(ENV.select! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
+
+    assert_in_out_err([], 'ENV.freeze; ENV.select! {}', [], [/.*FrozenError.*\n/, /.*main.*\n/])
   end
 
   def test_filter_bang
@@ -232,6 +242,8 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(h1, h2)
 
     assert_nil(ENV.filter! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
+
+    assert_in_out_err([], 'ENV.freeze; ENV.filter! {}', [], [/.*FrozenError.*\n/, /.*main.*\n/])
   end
 
   def test_keep_if
@@ -244,6 +256,8 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(h1, h2)
 
     assert_equal(ENV, ENV.keep_if {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
+
+    assert_in_out_err([], 'ENV.freeze; ENV.keep_if {}', [], [/.*FrozenError.*\n/, /.*main.*\n/])
   end
 
   def test_values_at
@@ -295,6 +309,8 @@ class TestEnv < Test::Unit::TestCase
   def test_clear
     ENV.clear
     assert_equal(0, ENV.size)
+
+    assert_in_out_err([], 'ENV.freeze; ENV.clear', [], [/.*FrozenError.*\n/, /.*main.*\n/])
   end
 
   def test_to_s
@@ -330,6 +346,8 @@ class TestEnv < Test::Unit::TestCase
 
   def test_rehash
     assert_nil(ENV.rehash)
+
+    assert_in_out_err([], 'ENV.freeze; ENV.rehash', [], [/.*FrozenError.*\n/, /.*main.*\n/])
   end
 
   def test_size
@@ -427,6 +445,8 @@ class TestEnv < Test::Unit::TestCase
     b = ENV.shift
     check([a, b], [%w(foo bar), %w(baz qux)])
     assert_nil(ENV.shift)
+
+    assert_in_out_err([], 'ENV.freeze; ENV.shift', [], [/.*FrozenError.*\n/, /.*main.*\n/])
   end
 
   def test_invert
@@ -440,6 +460,8 @@ class TestEnv < Test::Unit::TestCase
     ENV["foo"] = "xxx"
     ENV.replace({"foo"=>"bar", "baz"=>"qux"})
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz qux)])
+
+    assert_in_out_err([], 'ENV.freeze; ENV.replace({})', [], [/.*FrozenError.*\n/, /.*main.*\n/])
   end
 
   def test_update
@@ -454,6 +476,8 @@ class TestEnv < Test::Unit::TestCase
     ENV["baz"] = "qux"
     ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| v1 ? k + "_" + v1 + "_" + v2 : v2 }
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz baz_qux_quux), %w(a b)])
+
+    assert_in_out_err([], 'ENV.freeze; ENV.update({})', [], [/.*FrozenError.*\n/, /.*main.*\n/])
   end
 
   def test_huge_value
