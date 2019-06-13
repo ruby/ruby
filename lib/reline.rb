@@ -379,10 +379,6 @@ module Reline
       result = @@key_stroke.match_status(buffer)
       case result
       when :matched
-        if @@key_stroke.expand(buffer).nil?
-          $stderr.puts buffer.inspect
-          $stderr.puts @@config.key_bindings.inspect
-        end
         block.(@@key_stroke.expand(buffer).map{ |c| Reline::Key.new(c, c, false) })
         break
       when :matching
