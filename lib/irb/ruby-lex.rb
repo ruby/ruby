@@ -33,16 +33,24 @@ class RubyLex
     if @io.respond_to?(:check_termination)
       @io.check_termination do |code|
         code.gsub!(/\s*\z/, '').concat("\n")
-        @tokens = Ripper.lex(code)
-        continue = process_continue
-        code_block_open = check_code_block(code)
-        indent = process_nesting_level
-        ltype = process_literal_type
-        if code_block_open or ltype or continue or indent > 0
+        ltype, indent, continue, code_block_open = check_state(code)
+        if ltype or indent > 0 or continue or code_block_open
           false
         else
           true
         end
+      end
+    end
+    if @io.respond_to?(:dynamic_prompt)
+      @io.dynamic_prompt do |lines, base_line_no|
+        lines << '' if lines.empty?
+        result = []
+        lines.each_index { |i|
+          c = lines[0..i].map{ |l| l + "\n" }.join
+          ltype, indent, continue, code_block_open = check_state(c)
+          result << @prompt.call(ltype, indent, continue, base_line_no + i)
+        }
+        result
       end
     end
     if p.respond_to?(:call)
@@ -61,6 +69,15 @@ class RubyLex
     else
       @prompt = Proc.new{print p}
     end
+  end
+
+  def check_state(code)
+    @tokens = Ripper.lex(code)
+    ltype = process_literal_type
+    indent = process_nesting_level
+    continue = process_continue
+    code_block_open = check_code_block(code)
+    [ltype, indent, continue, code_block_open]
   end
 
   def prompt
