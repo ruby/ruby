@@ -279,7 +279,7 @@ class Reline::LineEditor
       prompt_width = calculate_width(prompt)
     else
       prompt = @prompt
-      prompt_width = calculate_width(prompt)
+      prompt_width = calculate_width(prompt, true)
     end
     if @cleared
       Reline::IOGate.clear_screen
@@ -289,7 +289,7 @@ class Reline::LineEditor
       if @prompt_proc
         prompt_list = @prompt_proc.(whole_lines, 0)
         prompt = prompt_list[@line_index]
-        prompt_width = calculate_width(prompt)
+        prompt_width = calculate_width(prompt, true)
       end
       modify_lines(whole_lines).each_with_index do |line, index|
         if @prompt_proc
@@ -320,7 +320,7 @@ class Reline::LineEditor
       if @prompt_proc
         prompt_list = @prompt_proc.(new_lines, 0)
         prompt = prompt_list[@line_index]
-        prompt_width = calculate_width(prompt)
+        prompt_width = calculate_width(prompt, true)
       end
       all_height = new_lines.inject(0) { |result, line|
         result + calculate_height_by_width(prompt_width + calculate_width(line)) # TODO prompt_list
@@ -345,7 +345,7 @@ class Reline::LineEditor
       modify_lines(new_lines).each_with_index do |line, index|
         if @prompt_proc
           prompt = prompt_list[index]
-          prompt_width = calculate_width(prompt)
+          prompt_width = calculate_width(prompt, true)
         end
         height = render_partial(prompt, prompt_width, line, false)
         if index < (new_lines.size - 1)
@@ -370,7 +370,7 @@ class Reline::LineEditor
         end
       if @prompt_proc
         prompt = prompt_list[@line_index]
-        prompt_width = calculate_width(prompt)
+        prompt_width = calculate_width(prompt, true)
       end
       move_cursor_down(@first_line_started_from)
       calculate_nearest_cursor
@@ -389,10 +389,10 @@ class Reline::LineEditor
       if @prompt_proc
         prompt_list = @prompt_proc.(new_buffer, 0)
         prompt = prompt_list[@line_index]
-        prompt_width = calculate_width(prompt)
+        prompt_width = calculate_width(prompt, true)
       end
       new_buffer.each_with_index do |line, index|
-        prompt_width = calculate_width(prompt_list[index]) if @prompt_proc
+        prompt_width = calculate_width(prompt_list[index], true) if @prompt_proc
         width = prompt_width + calculate_width(line)
         height = calculate_height_by_width(width)
         back += height
@@ -412,7 +412,7 @@ class Reline::LineEditor
       modify_lines(new_buffer).each_with_index do |line, index|
         if @prompt_proc
           prompt = prompt_list[index]
-          prompt_width = calculate_width(prompt)
+          prompt_width = calculate_width(prompt, true)
         end
         render_partial(prompt, prompt_width, line, false)
         if index < (new_buffer.size - 1)
@@ -422,7 +422,7 @@ class Reline::LineEditor
       move_cursor_up(back - 1)
       if @prompt_proc
         prompt = prompt_list[@line_index]
-        prompt_width = calculate_width(prompt)
+        prompt_width = calculate_width(prompt, true)
       end
       @highest_in_all = back
       @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
@@ -446,7 +446,7 @@ class Reline::LineEditor
       if @prompt_proc
         prompt_list = @prompt_proc.(whole_lines, 0)
         prompt = prompt_list[@line_index]
-        prompt_width = calculate_width(prompt)
+        prompt_width = calculate_width(prompt, true)
       end
       if finished?
         # Always rerender on finish because output_modifier_proc may return a different output.
