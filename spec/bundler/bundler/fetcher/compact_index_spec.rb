@@ -22,7 +22,7 @@ RSpec.describe Bundler::Fetcher::CompactIndex do
     end
 
     it "calls worker#stop during the run" do
-      expect_any_instance_of(Bundler::Worker).to receive(:stop).at_least(:once)
+      expect_any_instance_of(Bundler::Worker).to receive(:stop).at_least(:once).and_call_original
 
       compact_index.specs_for_names(["lskdjf"])
     end
