@@ -761,7 +761,7 @@ eom
       MIN_HZ = MiniTest::Unit::TestCase.windows? ? 67 : 100
       MIN_MEASURABLE = 1.0 / MIN_HZ
 
-      def assert_cpu_usage_low(msg = nil, pct: 0.05, wait: 0.1, stop: nil)
+      def assert_cpu_usage_low(msg = nil, pct: 0.05, wait: 1.0, stop: nil)
         require 'benchmark'
 
         wait = EnvUtil.apply_timeout_scale(wait)
