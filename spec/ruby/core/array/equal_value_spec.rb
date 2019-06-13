@@ -43,9 +43,4 @@ describe "Array#==" do
     obj.should_receive(:==).and_return(true)
     [obj].should == [5]
   end
-
-  # As per bug #1720
-  it "returns false for [NaN] == [NaN]" do
-    [nan_value].should_not == [nan_value]
-  end
 end
