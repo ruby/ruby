@@ -1220,6 +1220,10 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  *
  *     sorted = Dir["*"].sort_by { |f| test(?M, f) }
  *     sorted   #=> ["mon", "tues", "wed", "thurs"]
+ *
+ *  To produce the reverse of a specific order, the following can  be used:
+ *
+ *    ary.sort_by { ... }.reverse!
  */
 
 static VALUE
