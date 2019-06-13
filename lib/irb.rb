@@ -469,6 +469,7 @@ module IRB
             @context.io.prompt = p + " " * ind if ind > 0
           end
         end
+        @context.io.prompt
       end
 
       @scanner.set_input(@context.io) do
