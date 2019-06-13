@@ -177,6 +177,15 @@ module Reline
     @@output_modifier_proc = p
   end
 
+  @@prompt_proc = nil
+  def self.prompt_proc
+    @@prompt_proc
+  end
+  def self.prompt_proc=(p)
+    raise ArgumentError unless p.is_a?(Proc)
+    @@prompt_proc = p
+  end
+
   @@pre_input_hook = nil
   def self.pre_input_hook
     @@pre_input_hook
@@ -320,6 +329,7 @@ module Reline
     @@line_editor.output = @@output
     @@line_editor.completion_proc = @@completion_proc
     @@line_editor.output_modifier_proc = @@output_modifier_proc
+    @@line_editor.prompt_proc = @@prompt_proc
     @@line_editor.dig_perfect_match_proc = @@dig_perfect_match_proc
     @@line_editor.pre_input_hook = @@pre_input_hook
     @@line_editor.rerender
@@ -369,6 +379,10 @@ module Reline
       result = @@key_stroke.match_status(buffer)
       case result
       when :matched
+        if @@key_stroke.expand(buffer).nil?
+          $stderr.puts buffer.inspect
+          $stderr.puts @@config.key_bindings.inspect
+        end
         block.(@@key_stroke.expand(buffer).map{ |c| Reline::Key.new(c, c, false) })
         break
       when :matching
