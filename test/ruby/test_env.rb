@@ -497,6 +497,10 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_frozen
+    assert_raise(TypeError) { ENV.freeze }
+  end
+
+  def test_frozen
     ENV[PATH_ENV] = "/"
     ENV.each do |k, v|
       assert_predicate(k, :frozen?)
