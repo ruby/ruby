@@ -1499,28 +1499,28 @@ expr		: command_call
 		| pipeline
 		;
 
-pipeline	: expr tPIPE operation2 opt_paren_args
+pipeline	: expr tPIPE operation opt_paren_args
 		    {
 		    /*%%%*/
 			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, Qnull, &@3, &@$);
 		    /*% %*/
 		    /*% ripper: command_call!($1, ID2VAL(idPIPE), $3, $4) %*/
 		    }
-		| expr tPIPE operation2 opt_paren_args brace_block
+		| expr tPIPE operation opt_paren_args brace_block
 		    {
 		    /*%%%*/
 			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, $5, &@3, &@$);
 		    /*% %*/
 		    /*% ripper: method_add_block!(command_call!($1, ID2VAL(idPIPE), $3, $4), $5) %*/
 		    }
-		| expr tPIPE operation2 command_args
+		| expr tPIPE operation command_args
 		    {
 		    /*%%%*/
 			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, Qnull, &@3, &@$);
 		    /*% %*/
 		    /*% ripper: command_call!($1, ID2VAL(idPIPE), $3, $4) %*/
 		    }
-		| expr tPIPE operation2 command_args do_block
+		| expr tPIPE operation command_args do_block
 		    {
 		    /*%%%*/
 			$$ = new_command_qcall(p, ID2VAL(idPIPE), $1, $3, $4, $5, &@3, &@$);
