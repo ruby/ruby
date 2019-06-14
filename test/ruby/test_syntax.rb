@@ -1385,6 +1385,7 @@ eom
     assert_equal("121", eval('x = 12 |> pow(2) |> to_s 11'))
     assert_equal(12, x)
     assert_equal([2, 4, 6], eval("1.. |> take 3\n|> map do @1 * 2 end"))
+    assert_syntax_error('a|>-b', /unexpected '-'/)
   end
 
   private
