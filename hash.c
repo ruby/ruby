@@ -5701,6 +5701,20 @@ env_reject(void)
 
 /*
  * call-seq:
+ *   ENV.freeze -> raises TypeError
+ *
+ * Ruby does not allow ENV to be frozen, so calling ENV.freeze
+ * raises TypeError.
+ */
+static VALUE
+env_freeze(VALUE self)
+{
+    rb_raise(rb_eTypeError, "cannot freeze ENV");
+    return self; /* Not reached */
+}
+
+/*
+ * call-seq:
  *   ENV.shift -> Array or nil
  *
  * Removes an environment variable name-value pair from ENV and returns it as
@@ -6058,6 +6072,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "filter", env_select, 0);
     rb_define_singleton_method(envtbl, "filter!", env_select_bang, 0);
     rb_define_singleton_method(envtbl, "shift", env_shift, 0);
+    rb_define_singleton_method(envtbl, "freeze", env_freeze, 0);
     rb_define_singleton_method(envtbl, "invert", env_invert, 0);
     rb_define_singleton_method(envtbl, "replace", env_replace, 1);
     rb_define_singleton_method(envtbl, "update", env_update, 1);
