@@ -481,13 +481,21 @@ class TestSprintf < Test::Unit::TestCase
     end
   end
 
-  def test_named_typed
+  def test_named_typed_symbols
     assert_equal("value", sprintf("%{key}", :key => "value"))
     assert_raise_with_message(ArgumentError, "named{key2} after numbered") {sprintf("%1${key2}", :key => "value")}
     assert_raise_with_message(ArgumentError, "named{key2} after unnumbered(2)") {sprintf("%s%s%{key2}", "foo", "bar", :key => "value")}
     assert_raise_with_message(ArgumentError, "named{key2} after <key>") {sprintf("%<key>{key2}", :key => "value")}
     assert_equal("value{key2}", sprintf("%{key}{key2}", :key => "value"))
     assert_raise_with_message(KeyError, "key{key} not found") {sprintf("%{key}", {})}
+  end
+
+  def test_named_typed_strings
+    assert_equal("value", sprintf("%{key}", "key" => "value"))
+    default_keys = []
+    hash = Hash.new { |h, k| default_keys << k; nil }
+    assert_raise_with_message(KeyError, "key{unfound_new_symbol} not found") {sprintf("%{unfound_new_symbol}", hash)}
+    assert_equal(['unfound_new_symbol'.to_sym], default_keys) # created symbol to send to default hash as key
   end
 
   def test_named_typed_enc

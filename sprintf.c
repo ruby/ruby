@@ -519,6 +519,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	const char *t;
 	int n;
 	VALUE sym = Qnil;
+        VALUE symstr = Qnil;
+        struct RString fake_str;
 
 	for (t = p; t < end && *t != '%'; t++) ;
 	if (t + 1 == end) {
@@ -623,19 +625,24 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		CHECKNAMEARG(start, len, enc);
 		get_hash(&hash, argc, argv);
 		sym = rb_check_symbol_cstr(start + 1,
-					   len - 2 /* without parenthesis */,
+					   len - 2 /* without delimiters */,
 					   enc);
 		if (!NIL_P(sym)) nextvalue = rb_hash_lookup2(hash, sym, Qundef);
 		if (nextvalue == Qundef) {
-		    if (NIL_P(sym)) {
-			sym = rb_sym_intern(start + 1,
-					    len - 2 /* without parenthesis */,
-					    enc);
-		    }
-		    nextvalue = rb_hash_default_value(hash, sym);
-		    if (NIL_P(nextvalue)) {
-			rb_key_err_raise(rb_enc_sprintf(enc, "key%.*s not found", len, start), hash, sym);
-		    }
+                    // try string hash key first
+                    symstr = rb_setup_fake_str(&fake_str, start+1, len-2, enc);
+                    nextvalue = rb_hash_lookup2(hash, symstr, Qundef);
+                    if (nextvalue == Qundef) {
+                        if (NIL_P(sym)) {
+                            sym = rb_sym_intern(start + 1,
+                                                len - 2 /* without delimiters */,
+                                                enc);
+                        }
+                        nextvalue = rb_hash_default_value(hash, sym);
+                    }
+                    if (NIL_P(nextvalue)) {
+                        rb_key_err_raise(rb_enc_sprintf(enc, "key%.*s not found", len, start), hash, sym);
+                    }
 		}
 		if (term == '}') goto format_s;
 		p++;

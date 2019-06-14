@@ -2005,6 +2005,7 @@ rb_str_times(VALUE str, VALUE times)
  *     "%05d" % 123                              #=> "00123"
  *     "%-5s: %016x" % [ "ID", self.object_id ]  #=> "ID   : 00002b054ec93168"
  *     "foo = %{foo}" % { :foo => 'bar' }        #=> "foo = bar"
+ *     "baz = %{baz}" % { 'baz' => 'qux' }       #=> "baz = qux"
  */
 
 static VALUE
