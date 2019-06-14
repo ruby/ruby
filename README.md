@@ -69,7 +69,7 @@ send the following phrase:
     subscribe
 
 in the mail body (not subject) to the address
-<ruby-talk-request@ruby-lang.org>.
+[ruby-talk-request@ruby-lang.org](mailto:ruby-talk-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe).
 
 ## How to compile and install
 
