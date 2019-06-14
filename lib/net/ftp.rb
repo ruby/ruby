@@ -1325,7 +1325,7 @@ module Net
     # Writes debug message to the debug output stream
     #
     def debug_print(msg)
-      @debug_output << msg "\n" if @debug_mode && @debug_output
+      @debug_output << msg + "\n" if @debug_mode && @debug_output
     end
 
     # handler for response code 227
