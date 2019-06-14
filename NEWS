@@ -48,7 +48,7 @@ sufficient information, see the ChangeLog file or Redmine
      " # This has been warned since 2.4
      EOS
 
-* Pipeline operator is added.
+* Pipeline operator is experimentally added.
 
   This code equals to the next code.
 
