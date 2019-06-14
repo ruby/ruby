@@ -69,16 +69,16 @@ VALUE rb_cSymbol;
 
 /* FLAGS of RString
  *
- * 1:     RSTRING_NOEMBED
- * 2:     STR_SHARED (== ELTS_SHARED)
+ * 1:     RSTRING_NOEMBED (uses RSTRING(str)->as.heap.ptr, even if it doesn't point to heap memory)
+ * 2:     STR_SHARED (== ELTS_SHARED, NOEMBED should also be set)
  * 2-6:   RSTRING_EMBED_LEN (5 bits == 32)
  * 6:     STR_IS_SHARED_M (shared, when RSTRING_NOEMBED==1 && klass==0)
  * 7:     STR_TMPLOCK
  * 8-9:   ENC_CODERANGE (2 bits)
  * 10-16: ENCODING (7 bits == 128)
- * 17:    RSTRING_FSTR
- * 18:    STR_NOFREE
- * 19:    STR_FAKESTR
+ * 17:    RSTRING_FSTR (deduplicated frozen string, kept in fstring table)
+ * 18:    STR_NOFREE (buffer is static C buffer, or set on edge case involving circular shared strings)
+ * 19:    STR_FAKESTR (stack allocated RString)
  */
 
 #define RUBY_MAX_CHAR_LEN 16
@@ -131,6 +131,7 @@ VALUE rb_cSymbol;
     const int termlen = TERM_LEN(str);\
     RESIZE_CAPA_TERM(str,capacity,termlen);\
 } while (0)
+/* `str` should be independent */
 #define RESIZE_CAPA_TERM(str,capacity,termlen) do {\
     if (STR_EMBED_P(str)) {\
 	if (!STR_EMBEDDABLE_P(capacity, termlen)) {\
@@ -165,6 +166,11 @@ VALUE rb_cSymbol;
 
 #define STR_ENC_GET(str) get_encoding(str)
 
+/* NOTE: this is off by default due to some C extension libraries relying on NUL
+ * terminated c strings when using RSTRING_PTR(str), instead of relying on
+ * both RSTRING_PTR(str) and RSTRING_LEN(str), which would be the correct way
+ * to do it with sharable middle substrings.
+ */
 #if !defined SHARABLE_MIDDLE_SUBSTRING
 # define SHARABLE_MIDDLE_SUBSTRING 0
 #endif
@@ -182,7 +188,7 @@ static VALUE str_new_shared(VALUE klass, VALUE str);
 static VALUE str_new_frozen(VALUE klass, VALUE orig);
 static VALUE str_new_static(VALUE klass, const char *ptr, long len, int encindex);
 static void str_make_independent_expand(VALUE str, long len, long expand, const int termlen);
-static inline void str_modifiable(VALUE str);
+static inline void check_str_modifiable(VALUE str);
 static VALUE rb_str_downcase(int argc, VALUE *argv, VALUE str);
 
 static inline void
@@ -355,7 +361,6 @@ static VALUE
 setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
 {
     fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|STR_NOFREE|STR_FAKESTR;
-    /* SHARED to be allocated by the callback */
 
     ENCODING_SET_INLINED((VALUE)fake_str, encidx);
 
@@ -377,8 +382,8 @@ rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encod
 
 /*
  * rb_fstring_new and rb_fstring_cstr family create or lookup a frozen
- * shared string which refers a static string literal.  `ptr` must
- * point a constant string.
+ * string which refers to a static string literal. `ptr` must
+ * point to a constant string.
  */
 MJIT_FUNC_EXPORTED VALUE
 rb_fstring_new(const char *ptr, long len)
@@ -729,6 +734,10 @@ empty_str_alloc(VALUE klass)
     RUBY_DTRACE_CREATE_HOOK(STRING, 0);
     return str_alloc(klass);
 }
+
+/*
+ * Create a new string, can be embedded or not depending on size.
+ */
 
 static VALUE
 str_new0(VALUE klass, const char *ptr, long len, int termlen)
@@ -1145,6 +1154,12 @@ rb_str_export_to_enc(VALUE str, rb_encoding *enc)
     return rb_str_conv_enc(str, STR_ENC_GET(str), enc);
 }
 
+/*
+ * Make `str2` contain same content as `str`. If small enough,
+ * `str2` can just embed the contents. Otherwise, point `str2`
+ * (shared) to `str` (sharer, frozen).
+ */
+
 static VALUE
 str_replace_shared_without_enc(VALUE str2, VALUE str)
 {
@@ -1171,6 +1186,10 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
     return str2;
 }
 
+/*
+ * Make `str2` contain same content as `str`.
+ */
+
 static VALUE
 str_replace_shared(VALUE str2, VALUE str)
 {
@@ -1178,6 +1197,10 @@ str_replace_shared(VALUE str2, VALUE str)
     rb_enc_cr_str_exact_copy(str2, str);
     return str2;
 }
+
+/*
+ * Return new string containing the same content as `str`.
+ */
 
 static VALUE
 str_new_shared(VALUE klass, VALUE str)
@@ -1245,13 +1268,18 @@ rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
     }
 }
 
+/*
+ * Create a new frozen string based on `orig`. Can return an embedded string,
+ * shared string, or heap string.
+ */
+
 static VALUE
 str_new_frozen(VALUE klass, VALUE orig)
 {
     VALUE str;
 
     if (STR_EMBED_P(orig)) {
-	str = str_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig));
+	str = str_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig)); /* will be embedded too */
     }
     else {
 	if (FL_TEST_RAW(orig, STR_SHARED)) {
@@ -1283,17 +1311,23 @@ str_new_frozen(VALUE klass, VALUE orig)
 	    TERM_FILL(RSTRING_END(str), TERM_LEN(orig));
 	}
 	else {
-	    str = str_alloc(klass);
-	    STR_SET_NOEMBED(str);
-	    RSTRING(str)->as.heap.len = RSTRING_LEN(orig);
-	    RSTRING(str)->as.heap.ptr = RSTRING_PTR(orig);
-	    RSTRING(str)->as.heap.aux.capa = RSTRING(orig)->as.heap.aux.capa;
-	    RBASIC(str)->flags |= RBASIC(orig)->flags & STR_NOFREE;
-	    RBASIC(orig)->flags &= ~STR_NOFREE;
-	    STR_SET_SHARED(orig, str);
-	    if (klass == 0)
-		FL_UNSET_RAW(str, STR_IS_SHARED_M);
-	}
+            /* Weird case, make `orig` a shared string pointing to the newly
+            * created frozen one, but `orig` holds the underlying buffer of the new `str`.
+            * Since `orig` is shared now, though, `orig`'s buffer is freed  only if/when
+            * `str` is destructed. Terminology: `orig` can be called a 'circular shared string'.
+            * This is an optimization to avoid a new heap buffer.
+            */
+            str = str_alloc(klass);
+            STR_SET_NOEMBED(str);
+            RSTRING(str)->as.heap.len = RSTRING_LEN(orig);
+            RSTRING(str)->as.heap.ptr = RSTRING_PTR(orig);
+            RSTRING(str)->as.heap.aux.capa = RSTRING(orig)->as.heap.aux.capa;
+            RBASIC(str)->flags |= RBASIC(orig)->flags & STR_NOFREE; /* free the buffer if `orig` can free its buffer (it's `orig`'s buffer after all) */
+            RBASIC(orig)->flags &= ~STR_NOFREE; /* this shouldnt' matter, as `orig` is marked shared now and so won't free its buffer */
+            /* make `orig` point to this new string, as it's frozen */
+            STR_SET_SHARED(orig, str);
+            if (klass == 0) FL_UNSET_RAW(str, STR_IS_SHARED_M);
+        }
     }
 
     rb_enc_cr_str_exact_copy(str, orig);
@@ -1346,6 +1380,11 @@ rb_str_buf_new_cstr(const char *ptr)
     return str;
 }
 
+/* Temporary strings hold buffers for temporary values, but are garbage collected
+ * normally. These objects should not be leaked to ruby-land, they should remain
+ * an implementation detail. Methods cannot be called on them, as they have no
+ * class. */
+
 VALUE
 rb_str_tmp_new(long len)
 {
@@ -1381,7 +1420,7 @@ rb_str_memsize(VALUE str)
 	return STR_HEAP_SIZE(str);
     }
     else {
-	return 0;
+	return 0; /* shared, static or embedded */
     }
 }
 
@@ -1399,6 +1438,12 @@ rb_str_shared_replace(VALUE str, VALUE str2)
 {
     if (str != str2) str_shared_replace(str, str2);
 }
+
+/*
+ * Make `str` contain same value as `str2`, then clear `str2`.
+ * `str` must be modifiable, and can be non-empty, in which case
+ * the underlying buffer that can be freed is freed.
+ */
 
 static void
 str_shared_replace(VALUE str, VALUE str2)
@@ -1422,6 +1467,7 @@ str_shared_replace(VALUE str, VALUE str2)
         ENC_CODERANGE_SET(str, cr);
     }
     else {
+        /* `str` steals `str2`s underlying buffer */
 	STR_SET_NOEMBED(str);
 	FL_UNSET(str, STR_SHARED);
 	RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
@@ -1467,6 +1513,10 @@ rb_obj_as_string_result(VALUE str, VALUE obj)
     return str;
 }
 
+/*
+ * Make `str` contain same value as `str2`.
+ */
+
 static VALUE
 str_replace(VALUE str, VALUE str2)
 {
@@ -1502,7 +1552,7 @@ str_duplicate(VALUE klass, VALUE str)
     VALUE flags = FL_TEST_RAW(str, flag_mask);
     VALUE dup = str_alloc(klass);
     MEMCPY(RSTRING(dup)->as.ary, RSTRING(str)->as.ary,
-	   char, embed_size);
+	   char, embed_size); /* even if `str` isn't embedded */
     if (flags & STR_NOEMBED) {
         if (FL_TEST_RAW(str, STR_SHARED)) {
             str = RSTRING(str)->as.heap.aux.shared;
@@ -1595,7 +1645,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
 		}
 		if (orig == str) n = 0;
 	    }
-	    str_modifiable(str);
+	    check_str_modifiable(str);
 	    if (STR_EMBED_P(str)) { /* make noembed always */
 		RSTRING(str)->as.heap.ptr = ALLOC_N(char, (size_t)capa + termlen);
 	    }
@@ -2027,29 +2077,42 @@ rb_check_lockedtmp(VALUE str)
 }
 
 static inline void
-str_modifiable(VALUE str)
+check_str_modifiable(VALUE str)
 {
     rb_check_lockedtmp(str);
     rb_check_frozen(str);
 }
 
+
+/*
+ * Strings are dependent if they are shared strings or their buffers cannot be
+ * freed due to pointing to static C buffers.
+ */
+
 static inline int
 str_dependent_p(VALUE str)
 {
     if (STR_EMBED_P(str) || !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
-	return 0;
+	return 0; /* independent (embedded, or unshared and non-static) */
     }
     else {
 	return 1;
     }
 }
 
+/* NOTE: will raise if `str` is frozen or locked */
+
 static inline int
-str_independent(VALUE str)
+check_str_independent(VALUE str)
 {
-    str_modifiable(str);
+    check_str_modifiable(str);
     return !str_dependent_p(str);
 }
+
+/*
+ * If unembedded shared or static string can be embedded, embed it. Otherwise,
+ * have it allocate its own heap buffer and set it to unshared.
+ */
 
 static void
 str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
@@ -2061,7 +2124,7 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
     if (len > capa) len = capa;
 
     if (!STR_EMBED_P(str) && STR_EMBEDDABLE_P(capa, termlen)) {
-	ptr = RSTRING(str)->as.heap.ptr;
+	ptr = RSTRING(str)->as.heap.ptr; /* shared or static */
 	STR_SET_EMBED(str);
 	memcpy(RSTRING(str)->as.ary, ptr, len);
 	TERM_FILL(RSTRING(str)->as.ary + len, termlen);
@@ -2070,6 +2133,7 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
     }
 
     ptr = ALLOC_N(char, (size_t)capa + termlen);
+    /* oldptr is from shared string, non-freeable C buffer or embedded string */
     oldptr = RSTRING_PTR(str);
     if (oldptr) {
 	memcpy(ptr, oldptr, len);
@@ -2085,7 +2149,7 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
 void
 rb_str_modify(VALUE str)
 {
-    if (!str_independent(str))
+    if (!check_str_independent(str))
 	str_make_independent(str);
     ENC_CODERANGE_CLEAR(str);
 }
@@ -2103,7 +2167,7 @@ rb_str_modify_expand(VALUE str, long expand)
 	rb_raise(rb_eArgError, "string size too big");
     }
 
-    if (!str_independent(str)) {
+    if (!check_str_independent(str)) {
 	str_make_independent_expand(str, len, expand, termlen);
     }
     else if (expand > 0) {
@@ -2116,17 +2180,20 @@ rb_str_modify_expand(VALUE str, long expand)
 static void
 str_modify_keep_cr(VALUE str)
 {
-    if (!str_independent(str))
+    if (!check_str_independent(str))
 	str_make_independent(str);
     if (ENC_CODERANGE(str) == ENC_CODERANGE_BROKEN)
 	/* Force re-scan later */
 	ENC_CODERANGE_CLEAR(str);
 }
 
+
+/* free underlying string's buffer if we can */
+
 static inline void
 str_discard(VALUE str)
 {
-    str_modifiable(str);
+    check_str_modifiable(str);
     if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
 	ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
 	RSTRING(str)->as.heap.ptr = 0;
@@ -2665,7 +2732,7 @@ rb_str_set_len(VALUE str, long len)
     long capa;
     const int termlen = TERM_LEN(str);
 
-    str_modifiable(str);
+    check_str_modifiable(str);
     if (STR_SHARED_P(str)) {
 	rb_raise(rb_eRuntimeError, "can't set length of shared string");
     }
@@ -2686,7 +2753,7 @@ rb_str_resize(VALUE str, long len)
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
-    independent = str_independent(str);
+    independent = check_str_independent(str);
     ENC_CODERANGE_CLEAR(str);
     slen = RSTRING_LEN(str);
 
@@ -2709,7 +2776,7 @@ rb_str_resize(VALUE str, long len)
 	    if (slen > 0) MEMCPY(RSTRING(str)->as.ary, ptr, char, slen);
 	    TERM_FILL(RSTRING(str)->as.ary + len, termlen);
 	    STR_SET_EMBED_LEN(str, len);
-	    if (independent) ruby_xfree(ptr);
+	    if (independent) ruby_xfree(ptr); /* use ruby_sized_xfree? */
 	    return str;
 	}
 	else if (!independent) {
@@ -3001,7 +3068,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
 static VALUE
 rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
 {
-    str_modifiable(str);
+    check_str_modifiable(str);
 
     if (argc == 1) {
 	return rb_str_concat(str, argv[0]);
@@ -3114,7 +3181,7 @@ rb_str_concat(VALUE str1, VALUE str2)
 static VALUE
 rb_str_prepend_multi(int argc, VALUE *argv, VALUE str)
 {
-    str_modifiable(str);
+    check_str_modifiable(str);
 
     if (argc == 1) {
 	rb_str_update(str, 0L, 0L, argv[0]);
@@ -4566,7 +4633,7 @@ rb_str_drop_bytes(VALUE str, long len)
     char *ptr = RSTRING_PTR(str);
     long olen = RSTRING_LEN(str), nlen;
 
-    str_modifiable(str);
+    check_str_modifiable(str);
     if (len > olen) len = olen;
     nlen = olen - len;
     if (STR_EMBEDDABLE_P(nlen, TERM_LEN(str))) {
@@ -4576,10 +4643,11 @@ rb_str_drop_bytes(VALUE str, long len)
 	STR_SET_EMBED_LEN(str, nlen);
 	ptr = RSTRING(str)->as.ary;
 	memmove(ptr, oldptr + len, nlen);
-	if (fl == STR_NOEMBED) xfree(oldptr);
+	if (fl == STR_NOEMBED) xfree(oldptr); /* use ruby_sized_xfree? */
     }
     else {
-	if (!STR_SHARED_P(str)) rb_str_new_frozen(str);
+	if (!STR_SHARED_P(str))
+            rb_str_new_frozen(str); /* `str` is now a shared substring */
 	ptr = RSTRING(str)->as.heap.ptr += len;
 	RSTRING(str)->as.heap.len = nlen;
     }
@@ -4984,7 +5052,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 
     pat = get_pat_quoted(argv[0], 1);
 
-    str_modifiable(str);
+    check_str_modifiable(str);
     beg = rb_pat_search(pat, str, 0, 1);
     if (beg >= 0) {
 	rb_encoding *enc;
@@ -5336,7 +5404,7 @@ rb_str_gsub(int argc, VALUE *argv, VALUE str)
 VALUE
 rb_str_replace(VALUE str, VALUE str2)
 {
-    str_modifiable(str);
+    check_str_modifiable(str);
     if (str == str2) return str;
 
     StringValue(str2);
@@ -5428,7 +5496,7 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
     VALUE w = rb_int_and(v, INT2FIX(0xff));
     unsigned char byte = NUM2INT(w) & 0xFF;
 
-    if (!str_independent(str))
+    if (!check_str_independent(str))
 	str_make_independent(str);
     enc = STR_ENC_GET(str);
     head = RSTRING_PTR(str);
@@ -8893,7 +8961,7 @@ static VALUE
 rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 {
     VALUE rs;
-    str_modifiable(str);
+    check_str_modifiable(str);
     if (RSTRING_LEN(str) == 0) return Qnil;
     rs = chomp_rs(argc, argv);
     if (NIL_P(rs)) return Qnil;
@@ -9989,7 +10057,7 @@ static VALUE
 rb_str_delete_suffix_bang(VALUE str, VALUE suffix)
 {
     long olen, suffixlen, len;
-    str_modifiable(str);
+    check_str_modifiable(str);
 
     suffixlen = deleted_suffix_length(str, suffix);
     if (suffixlen <= 0) return Qnil;
@@ -10061,7 +10129,7 @@ rb_fs_setter(VALUE val, ID id, VALUE *var)
 static VALUE
 rb_str_force_encoding(VALUE str, VALUE enc)
 {
-    str_modifiable(str);
+    check_str_modifiable(str);
     rb_enc_associate(str, rb_to_encoding(enc));
     ENC_CODERANGE_CLEAR(str);
     return str;
