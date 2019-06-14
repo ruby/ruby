@@ -2373,7 +2373,7 @@ EOF
     ftp.debug_mode = true
     ftp.debug_print("Test")
     debug_stream.rewind
-    assert_equal(debug_stream.read, "Test2\n")
+    assert_equal(debug_stream.read, "Test\n")
   end
 
   private
