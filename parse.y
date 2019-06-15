@@ -5330,7 +5330,7 @@ ripper_has_scan_event(struct parser_params *p)
 }
 
 static VALUE
-ripper_scan_event_val(struct parser_params *p, int t)
+ripper_scan_event_val(struct parser_params *p, enum yytokentype t)
 {
     VALUE str = STR_NEW(p->lex.ptok, p->lex.pcur - p->lex.ptok);
     VALUE rval = ripper_dispatch1(p, ripper_token2eventid(t), str);
@@ -5339,7 +5339,7 @@ ripper_scan_event_val(struct parser_params *p, int t)
 }
 
 static void
-ripper_dispatch_scan_event(struct parser_params *p, int t)
+ripper_dispatch_scan_event(struct parser_params *p, enum yytokentype t)
 {
     if (!ripper_has_scan_event(p)) return;
     add_mark_object(p, yylval_rval = ripper_scan_event_val(p, t));
@@ -5347,7 +5347,7 @@ ripper_dispatch_scan_event(struct parser_params *p, int t)
 #define dispatch_scan_event(p, t) ripper_dispatch_scan_event(p, t)
 
 static void
-ripper_dispatch_delayed_token(struct parser_params *p, int t)
+ripper_dispatch_delayed_token(struct parser_params *p, enum yytokentype t)
 {
     int saved_line = p->ruby_sourceline;
     const char *saved_tokp = p->lex.ptok;

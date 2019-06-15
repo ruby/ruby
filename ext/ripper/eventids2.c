@@ -294,13 +294,13 @@ static const struct token_assoc {
 };
 
 static ID
-ripper_token2eventid(int tok)
+ripper_token2eventid(enum yytokentype tok)
 {
     int i;
 
     for (i = 0; i < numberof(token_to_eventid); i++) {
 	const struct token_assoc *const a = &token_to_eventid[i];
-        if (a->token == tok)
+        if ((enum yytokentype)a->token == tok)
             return *(const ID *)((const char *)&ripper_scanner_ids + a->id_offset);
     }
     if (tok < 256) {
