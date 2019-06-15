@@ -660,7 +660,7 @@ class IO
 
     begin
       seek(start_position + matched_so_far, IO::SEEK_SET)
-    rescue Errno::ESPIPE
+    rescue Errno::ESPIPE, Errno::EINVAL
     end
 
     soak_up_spaces if fstr.last_spec && fstr.space
