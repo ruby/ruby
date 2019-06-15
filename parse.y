@@ -91,7 +91,6 @@ enum lex_state_bits {
     EXPR_LABEL_bit,		/* flag bit, label is allowed. */
     EXPR_LABELED_bit,		/* flag bit, just after a label. */
     EXPR_FITEM_bit,		/* symbol literal as FNAME. */
-    EXPR_EMPTYLN_bit,		/* line contains only whitespace and comments */
     EXPR_MAX_STATE
 };
 /* examine combinations */
@@ -110,7 +109,6 @@ enum lex_state_e {
     DEF_EXPR(LABEL),
     DEF_EXPR(LABELED),
     DEF_EXPR(FITEM),
-    DEF_EXPR(EMPTYLN),
     EXPR_VALUE = EXPR_BEG,
     EXPR_BEG_ANY  =  (EXPR_BEG | EXPR_MID | EXPR_CLASS),
     EXPR_ARG_ANY  =  (EXPR_ARG | EXPR_CMDARG),
@@ -8680,11 +8678,6 @@ parser_yylex(struct parser_params *p)
 	      case '\13': /* '\v' */
 		space_seen = 1;
 		break;
-	      case '\n':
-	      case '#':
-		SET_LEX_STATE(EXPR_EMPTYLN);
-		pushback(p, c);
-		goto retry;
 	      case '|':
 	      case '&':
 	      case '.': {
@@ -10023,7 +10016,7 @@ new_regexp(struct parser_params *p, VALUE re, VALUE opt, const YYLTYPE *loc)
 static const char rb_parser_lex_state_names[][13] = {
     "EXPR_BEG",    "EXPR_END",    "EXPR_ENDARG", "EXPR_ENDFN",  "EXPR_ARG",
     "EXPR_CMDARG", "EXPR_MID",    "EXPR_FNAME",  "EXPR_DOT",    "EXPR_CLASS",
-    "EXPR_LABEL",  "EXPR_LABELED","EXPR_FITEM",  "EXPR_EMPTYLN",
+    "EXPR_LABEL",  "EXPR_LABELED","EXPR_FITEM",
 };
 
 static VALUE

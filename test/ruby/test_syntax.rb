@@ -981,34 +981,6 @@ eom
     assert_syntax_error("a&.x,=0", /multiple assignment destination/)
   end
 
-  def test_fluent_dot_with_empty_lines_between
-    assert_valid_syntax("a #\n #\n.foo")
-    assert_valid_syntax("a #\n #\n&.foo")
-    assert_valid_syntax("a\n\n.foo")
-    assert_valid_syntax("a \n \n &.foo")
-
-    src = <<~RUBY
-      def m
-        # c
-
-        x
-      end
-    RUBY
-    tokens = [
-      [:on_kw,      "def",     ], # EXPR_FNAME],
-      [:on_sp,      " ",       ], # EXPR_FNAME],
-      [:on_ident,   "m",       ], # EXPR_ENDFN],
-      [:on_nl,      "\n",      ], # EXPR_BEG],
-      [:on_comment, "  # c\n", ], # EXPR_EMPTYLN],
-      [:on_sp,      "  ",      ], # EXPR_BEG],
-      [:on_ident,   "x",       ], # EXPR_CMDARG],
-      [:on_nl,      "\n",      ], # EXPR_BEG],
-      [:on_kw,      "end",     ], # EXPR_END],
-      [:on_nl,      "\n",      ], # EXPR_BEG],
-    ]
-    assert_tokens tokens, src
-  end
-
   def test_no_warning_logop_literal
     assert_warning("") do
       eval("true||raise;nil")
@@ -1423,17 +1395,6 @@ eom
     @result = nil
     assert_nothing_raised(SyntaxError, message) {eval(src)}
     assert_equal(expected, @result, message)
-  end
-
-  def assert_tokens(expected, src, message = nil)
-    begin
-      require 'ripper'
-      actual = Ripper.lex(src).map { |_position, type, value, _state| [type, value] }
-      assert_equal(expected, actual, message)
-    rescue Exception => err
-      puts err
-      exit! 1
-    end
   end
 
   def make_tmpsrc(f, src)
