@@ -129,10 +129,19 @@ class IMAPTest < Test::Unit::TestCase
     end
   end
 
+  def start_server
+    started = false
+    @threads << Thread.new do
+      started = true
+      yield
+    end
+    sleep 0.1 until started
+  end
+
   def test_unexpected_eof
     server = create_tcp_server
     port = server.addr[1]
-    @threads << Thread.start do
+    start_server do
       sock = server.accept
       begin
         sock.print("* OK test server\r\n")
@@ -158,7 +167,7 @@ class IMAPTest < Test::Unit::TestCase
     server = create_tcp_server
     port = server.addr[1]
     requests = []
-    @threads << Thread.start do
+    start_server do
       sock = server.accept
       begin
         sock.print("* OK test server\r\n")
@@ -205,7 +214,7 @@ class IMAPTest < Test::Unit::TestCase
     server = create_tcp_server
     port = server.addr[1]
     requests = []
-    @threads << Thread.start do
+    start_server do
       sock = server.accept
       begin
         sock.print("* OK test server\r\n")
@@ -268,7 +277,7 @@ class IMAPTest < Test::Unit::TestCase
   def test_idle_done_not_during_idle
     server = create_tcp_server
     port = server.addr[1]
-    @threads << Thread.start do
+    start_server do
       sock = server.accept
       begin
         sock.print("* OK test server\r\n")
@@ -291,7 +300,7 @@ class IMAPTest < Test::Unit::TestCase
     server = create_tcp_server
     port = server.addr[1]
     requests = []
-    @threads << Thread.start do
+    start_server do
       sock = server.accept
       begin
         sock.print("* OK test server\r\n")
@@ -347,7 +356,7 @@ class IMAPTest < Test::Unit::TestCase
   def test_unexpected_bye
     server = create_tcp_server
     port = server.addr[1]
-    @threads << Thread.start do
+    start_server do
       sock = server.accept
       begin
         sock.print("* OK Gimap ready for requests from 75.101.246.151 33if2752585qyk.26\r\n")
@@ -369,7 +378,7 @@ class IMAPTest < Test::Unit::TestCase
   def test_exception_during_shutdown
     server = create_tcp_server
     port = server.addr[1]
-    @threads << Thread.start do
+    start_server do
       sock = server.accept
       begin
         sock.print("* OK test server\r\n")
@@ -404,7 +413,9 @@ class IMAPTest < Test::Unit::TestCase
     requests = []
     sock = nil
     threads = []
+    started = false
     threads << Thread.start do
+      started = true
       begin
         sock = server.accept
         sock.print("* OK test server\r\n")
@@ -415,6 +426,7 @@ class IMAPTest < Test::Unit::TestCase
         server.close
       end
     end
+    sleep 0.1 until started
     threads << Thread.start do
       imap = Net::IMAP.new(server_addr, :port => port)
       begin
@@ -461,7 +473,7 @@ class IMAPTest < Test::Unit::TestCase
   def test_connection_closed_without_greeting
     server = create_tcp_server
     port = server.addr[1]
-    @threads << Thread.start do
+    start_server do
       begin
         sock = server.accept
         sock.close
@@ -485,7 +497,7 @@ class IMAPTest < Test::Unit::TestCase
   def test_send_invalid_number
     server = create_tcp_server
     port = server.addr[1]
-    @threads << Thread.start do
+    start_server do
       sock = server.accept
       begin
         sock.print("* OK test server\r\n")
@@ -537,7 +549,7 @@ class IMAPTest < Test::Unit::TestCase
     port = server.addr[1]
     requests = []
     literal = nil
-    @threads << Thread.start do
+    start_server do
       sock = server.accept
       begin
         sock.print("* OK test server\r\n")
@@ -572,7 +584,7 @@ class IMAPTest < Test::Unit::TestCase
   def test_disconnect
     server = create_tcp_server
     port = server.addr[1]
-    @threads << Thread.start do
+    start_server do
       sock = server.accept
       begin
         sock.print("* OK test server\r\n")
@@ -608,7 +620,7 @@ hello world
 EOF
     requests = []
     received_mail = nil
-    @threads << Thread.start do
+    start_server do
       sock = server.accept
       begin
         sock.print("* OK test server\r\n")
@@ -654,7 +666,7 @@ hello world
 EOF
     requests = []
     received_mail = nil
-    @threads << Thread.start do
+    start_server do
       sock = server.accept
       begin
         sock.print("* OK test server\r\n")
@@ -698,9 +710,11 @@ EOF
       OpenSSL::X509::Certificate.new(f)
     }
     ssl_server = OpenSSL::SSL::SSLServer.new(server, ctx)
+    started = false
     ths = Thread.start do
       Thread.current.report_on_exception = false # always join-ed
       begin
+        started = true
         sock = ssl_server.accept
         begin
           sock.print("* OK test server\r\n")
@@ -713,6 +727,7 @@ EOF
       rescue Errno::EPIPE, Errno::ECONNRESET, Errno::ECONNABORTED
       end
     end
+    sleep 0.1 until started
     begin
       begin
         imap = yield(port)
@@ -729,7 +744,7 @@ EOF
   def starttls_test
     server = create_tcp_server
     port = server.addr[1]
-    @threads << Thread.start do
+    start_server do
       sock = server.accept
       begin
         sock.print("* OK test server\r\n")
