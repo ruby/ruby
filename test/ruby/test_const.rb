@@ -69,4 +69,12 @@ PRE
   def test_toplevel_lookup
     assert_raise(NameError, '[Feature #11547]') {TestConst::Object}
   end
+
+  def test_evaluation_order
+    assert_raise_with_message(RuntimeError, "recv", 'JIS X 3017:2013 11.4.2.2.3') {
+      eval <<~EOS
+        raise('recv')::C = raise('value')
+      EOS
+    }
+  end
 end
