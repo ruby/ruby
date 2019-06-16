@@ -271,7 +271,7 @@ def backport_command_string
 
       # check if the Git revision is included in trunk
       begin
-        uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/ruby-git/revisions/#{c}")
+        uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/git/revisions/#{c}")
         uri.read($openuri_options)
         true
       rescue
@@ -382,7 +382,7 @@ eom
       uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/trunk/revisions/#{rev}/issues.json")
     when /\A\h{7,40}\z/ # Git
       rev = args
-      uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/ruby-git/revisions/#{rev}/issues.json")
+      uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/git/revisions/#{rev}/issues.json")
     else
       raise CommandSyntaxError
     end
