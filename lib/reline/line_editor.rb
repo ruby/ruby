@@ -287,7 +287,7 @@ class Reline::LineEditor
       back = 0
       prompt_list = nil
       if @prompt_proc
-        prompt_list = @prompt_proc.(whole_lines, 0)
+        prompt_list = @prompt_proc.(whole_lines)
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
@@ -318,7 +318,7 @@ class Reline::LineEditor
       end
       prompt_list = nil
       if @prompt_proc
-        prompt_list = @prompt_proc.(new_lines, 0)
+        prompt_list = @prompt_proc.(new_lines)
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
@@ -387,7 +387,7 @@ class Reline::LineEditor
       new_buffer = whole_lines
       prompt_list = nil
       if @prompt_proc
-        prompt_list = @prompt_proc.(new_buffer, 0)
+        prompt_list = @prompt_proc.(new_buffer)
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
@@ -444,7 +444,7 @@ class Reline::LineEditor
     if @is_multiline
       prompt_list = nil
       if @prompt_proc
-        prompt_list = @prompt_proc.(whole_lines, 0)
+        prompt_list = @prompt_proc.(whole_lines)
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
