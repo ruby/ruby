@@ -469,7 +469,7 @@ class VCS
                        %W"#{COMMAND} log -n1 --format=format:%H" <<
                        "--grep=^ *git-svn-id: .*@#{rev} ")
         rev unless rev.empty?
-      end.join('..')
+      end.join('^..')
       cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"#{COMMAND} log --no-notes --date=iso-local --topo-order #{range}", "rb") do |r|
         open(path, 'w') do |w|
