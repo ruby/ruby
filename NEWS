@@ -69,6 +69,10 @@ Complex::
     * Added Complex#<=>. So 0 <=> 0i will not raise NoMethodError.
       [Bug #15857]
 
+Encoding::
+
+  * Added new encoding CESU-8 [Feature #15931]
+
 Enumerable::
 
   New method::
