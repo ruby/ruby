@@ -42,13 +42,13 @@ class RubyLex
       end
     end
     if @io.respond_to?(:dynamic_prompt)
-      @io.dynamic_prompt do |lines, base_line_no|
+      @io.dynamic_prompt do |lines|
         lines << '' if lines.empty?
         result = []
         lines.each_index { |i|
           c = lines[0..i].map{ |l| l + "\n" }.join
           ltype, indent, continue, code_block_open = check_state(c)
-          result << @prompt.call(ltype, indent, continue, base_line_no + i)
+          result << @prompt.call(ltype, indent, continue, @line_no + i)
         }
         result
       end
@@ -104,7 +104,7 @@ class RubyLex
           unless l = lex
             throw :TERM_INPUT if @line == ''
           else
-            @line_no += 1
+            @line_no += l.count("\n")
             next if l == "\n"
             @line.concat l
             if @code_block_open or @ltype or @continue or @indent > 0
