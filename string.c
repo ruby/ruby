@@ -1162,6 +1162,13 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
     }
     else {
 	str = rb_str_new_frozen(str);
+        if (!STR_EMBED_P(str2) && !FL_TEST_RAW(str2, STR_SHARED|STR_NOFREE)) {
+            /* TODO: check if str2 is a shared root */
+            char *ptr2 = STR_HEAP_PTR(str2);
+            if (STR_HEAP_PTR(str) != ptr2) {
+                ruby_sized_xfree(ptr2, STR_HEAP_SIZE(str2));
+            }
+        }
 	FL_SET(str2, STR_NOEMBED);
 	RSTRING_GETMEM(str, ptr, len);
 	RSTRING(str2)->as.heap.len = len;
