@@ -9748,7 +9748,7 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	    if (NIL_P(file))
 		file = rb_str_new(0, 0);
 	    else
-		file = rb_str_dup(file);
+		file = rb_str_dup(rb_fstring(file));
 	    node = NEW_STR(add_mark_object(p, file), loc);
 	}
 	return node;
