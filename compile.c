@@ -6855,21 +6855,26 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	break;
       }
       case NODE_CDECL:{
-	CHECK(COMPILE(ret, "lvalue", node->nd_value));
-
-	if (!popped) {
-	    ADD_INSN(ret, line, dup);
-	}
-
+        ID base_id;
 	if (node->nd_vid) {
 	    ADD_INSN1(ret, line, putspecialobject,
 		      INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
-	    ADD_INSN1(ret, line, setconstant, ID2SYM(node->nd_vid));
+	    base_id = node->nd_vid;
 	}
 	else {
 	    compile_cpath(ret, iseq, node->nd_else);
-	    ADD_INSN1(ret, line, setconstant, ID2SYM(node->nd_else->nd_mid));
+	    base_id = node->nd_else->nd_mid;
 	}
+	CHECK(COMPILE(ret, "lvalue", node->nd_value));
+
+	if (popped) {
+            ADD_INSN(ret, line, swap);
+	} else {
+	    ADD_INSN(ret, line, dup);
+            ADD_INSN1(ret, line, reverse, INT2FIX(3));
+	}
+
+	ADD_INSN1(ret, line, setconstant, ID2SYM(base_id));
 	break;
       }
       case NODE_CVASGN:{
