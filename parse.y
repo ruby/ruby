@@ -10552,12 +10552,10 @@ value_expr_check(struct parser_params *p, NODE *node)
 	  case NODE_IF:
 	  case NODE_UNLESS:
 	    if (!node->nd_body) {
-		node = node->nd_else;
-		break;
+		return NULL;
 	    }
 	    else if (!node->nd_else) {
-		node = node->nd_body;
-		break;
+		return NULL;
 	    }
 	    vn = value_expr_check(p, node->nd_body);
 	    if (!vn) return NULL;

@@ -1392,6 +1392,8 @@ eom
     mesg = /void value expression/
     assert_syntax_error("tap {a = (true ? next : break)}", mesg)
     assert_valid_syntax("tap {a = (true ? true : break)}")
+    assert_valid_syntax("tap {a = (break if false)}")
+    assert_valid_syntax("tap {a = (break unless true)}")
   end
 
   private
