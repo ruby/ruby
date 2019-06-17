@@ -16,6 +16,8 @@ RSpec.describe "bundle gem" do
     expect(bundled_app("#{gem_name}/lib/test/gem/version.rb")).to exist
   end
 
+  let(:generated_gem) { Bundler::GemHelper.new(bundled_app(gem_name).to_s) }
+
   before do
     global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false"
     git_config_content = <<-EOF
@@ -116,7 +118,6 @@ RSpec.describe "bundle gem" do
 
   context "README.md" do
     let(:gem_name) { "test_gem" }
-    let(:generated_gem) { Bundler::GemHelper.new(bundled_app(gem_name).to_s) }
 
     context "git config github.user present" do
       before do
@@ -231,8 +232,6 @@ RSpec.describe "bundle gem" do
     before do
       execute_bundle_gem(gem_name)
     end
-
-    let(:generated_gem) { Bundler::GemHelper.new(bundled_app(gem_name).to_s) }
 
     it "generates a gem skeleton" do
       expect(bundled_app("test_gem/test_gem.gemspec")).to exist
@@ -515,8 +514,6 @@ RSpec.describe "bundle gem" do
     before do
       execute_bundle_gem(gem_name)
     end
-
-    let(:generated_gem) { Bundler::GemHelper.new(bundled_app(gem_name).to_s) }
 
     it "generates a gem skeleton" do
       expect(bundled_app("test-gem/test-gem.gemspec")).to exist
