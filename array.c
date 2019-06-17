@@ -4850,6 +4850,26 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
+/*
+ *  call-seq:
+ *     ary.minmax                       -> [obj, obj]
+ *     ary.minmax {| a,b | block }      -> [obj, obj]
+ *
+ *  Returns a two element array which contains the minimum and the
+ *  maximum value in the array.
+ *
+ *  Can be given an optional block to override the default comparison
+ *  method <code>a <=> b</code>.
+ */
+static VALUE
+rb_ary_minmax(VALUE ary)
+{
+    if (rb_block_given_p()) {
+        return rb_call_super(0, NULL);
+    }
+    return rb_assoc_new(rb_ary_min(0, 0, ary), rb_ary_max(0, 0, ary));
+}
+
 static int
 push_value(st_data_t key, st_data_t val, st_data_t ary)
 {
@@ -6902,6 +6922,7 @@ Init_Array(void)
 
     rb_define_method(rb_cArray, "max", rb_ary_max, -1);
     rb_define_method(rb_cArray, "min", rb_ary_min, -1);
+    rb_define_method(rb_cArray, "minmax", rb_ary_minmax, 0);
 
     rb_define_method(rb_cArray, "uniq", rb_ary_uniq, 0);
     rb_define_method(rb_cArray, "uniq!", rb_ary_uniq_bang, 0);
