@@ -1388,6 +1388,12 @@ eom
     assert_syntax_error('a|>-b', /unexpected '-'/)
   end
 
+  def test_value_expr_in_condition
+    mesg = /void value expression/
+    assert_syntax_error("tap {a = (true ? next : break)}", mesg)
+    assert_valid_syntax("tap {a = (true ? true : break)}")
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
