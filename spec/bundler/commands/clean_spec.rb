@@ -183,6 +183,32 @@ RSpec.describe "bundle clean" do
     expect(vendored_gems("bin/rackup")).to exist
   end
 
+  it "keeps used git gems even if installed to a symlinked location" do
+    build_git "foo", :path => lib_path("foo")
+    git_path = lib_path("foo")
+    revision = revision_for(git_path)
+
+    gemfile <<-G
+      source "file://#{gem_repo1}"
+
+      gem "rack", "1.0.0"
+      git "#{git_path}", :ref => "#{revision}" do
+        gem "foo"
+      end
+    G
+
+    FileUtils.mkdir_p(bundled_app("real-path"))
+    FileUtils.ln_sf(bundled_app("real-path"), bundled_app("symlink-path"))
+
+    bundle "install", forgotten_command_line_options(:path => bundled_app("symlink-path"))
+
+    bundle :clean
+
+    expect(out).not_to include("Removing foo (#{revision[0..11]})")
+
+    expect(bundled_app("symlink-path/#{Bundler.ruby_scope}/bundler/gems/foo-#{revision[0..11]}")).to exist
+  end
+
   it "removes old git gems" do
     build_git "foo-bar", :path => lib_path("foo-bar")
     revision = revision_for(lib_path("foo-bar"))
