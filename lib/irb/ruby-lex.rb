@@ -53,6 +53,34 @@ class RubyLex
         result
       end
     end
+    if @io.respond_to?(:auto_indent)
+      @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
+        if is_newline
+          md = lines[line_index - 1].match(/(\A +)/)
+          prev_spaces = md.nil? ? 0 : md[1].count(' ')
+          indent_list = []
+          code = ''
+          lines.each_with_index { |l, i|
+            code << l + "\n"
+            @tokens = Ripper.lex(code)
+            indent_list << process_nesting_level
+          }
+          prev_indent = (line_index - 1).zero? ? 0 : indent_list[line_index - 2]
+          indent = indent_list[line_index - 1]
+          prev_spaces + (indent - prev_indent) * 2
+        else
+          code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
+          code += lines[line_index].byteslice(0, byte_pointer)
+          @tokens = Ripper.lex(code)
+          indent, close_token = process_nesting_level(check_closing: true)
+          if close_token
+            indent * 2
+          else
+            nil
+          end
+        end
+      end
+    end
     if p.respond_to?(:call)
       @input = p
     elsif block_given?
@@ -257,13 +285,16 @@ class RubyLex
     false
   end
 
-  def process_nesting_level
-    @tokens.inject(0) { |indent, t|
+  def process_nesting_level(check_closing: false)
+    close_token = false
+    indent = @tokens.inject(0) { |indent, t|
+      close_token = false
       case t[1]
       when :on_lbracket, :on_lbrace, :on_lparen
         indent += 1
       when :on_rbracket, :on_rbrace, :on_rparen
         indent -= 1
+        close_token = true
       when :on_kw
         case t[2]
         when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
@@ -273,11 +304,17 @@ class RubyLex
           indent += 1 unless t[3].allbits?(Ripper::EXPR_LABEL)
         when 'end'
           indent -= 1
+          close_token = true
         end
       end
       # percent literals are not indented
       indent
     }
+    if check_closing
+      [indent, close_token]
+    else
+      indent
+    end
   end
 
   def check_string_literal
