@@ -70,7 +70,8 @@ class RubyLex
           prev_spaces + (indent - prev_indent) * 2
         else
           code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
-          code += lines[line_index].byteslice(0, byte_pointer)
+          last_line = lines[line_index]&.byteslice(0, byte_pointer)
+          code += last_line if last_line
           @tokens = Ripper.lex(code)
           indent, close_token = process_nesting_level(check_closing: true)
           if close_token
