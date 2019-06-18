@@ -281,13 +281,22 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal('true', ObjectSpace.dump(true))
     assert_equal('false', ObjectSpace.dump(false))
     assert_equal('0', ObjectSpace.dump(0))
-    assert_equal('{"type":"SYMBOL", "value":"foo"}', ObjectSpace.dump(:foo))
+
+    dump = JSON.parse(ObjectSpace.dump(:foo))
+    assert_equal('SYMBOL', dump['type'])
+    assert_equal('foo', dump['value'])
+    assert_equal(false, dump['dynamic'])
+    assert_instance_of(Array, dump['references'])
+    assert_equal(1, dump['references'].size)
   end
 
   def test_dump_dynamic_symbol
-    dump = ObjectSpace.dump(("foobar%x" % rand(0x10000)).to_sym)
-    assert_match(/"type":"SYMBOL"/, dump)
-    assert_match(/"value":"foobar\h+"/, dump)
+    dump = JSON.parse(ObjectSpace.dump(("foobar%x" % rand(0x10000)).to_sym))
+    assert_equal('SYMBOL', dump['type'])
+    assert_match(/\Afoobar\h+\z/, dump['value'])
+    assert_equal(true, dump['dynamic'])
+    assert_instance_of(Array, dump['references'])
+    assert_equal(1, dump['references'].size)
   end
 
   def test_dump_includes_imemo_type

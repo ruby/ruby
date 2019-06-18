@@ -19,6 +19,7 @@
 #include "node.h"
 #include "vm_core.h"
 #include "objspace.h"
+#include "symbol.h"
 
 static VALUE sym_output, sym_stdout, sym_string, sym_file;
 static VALUE sym_full;
@@ -96,9 +97,10 @@ dump_append_string_value(struct dump_config *dc, VALUE obj)
 static void
 dump_append_symbol_value(struct dump_config *dc, VALUE obj)
 {
-    dump_append(dc, "{\"type\":\"SYMBOL\", \"value\":");
-    dump_append_string_value(dc, rb_sym2str(obj));
-    dump_append(dc, "}");
+    VALUE str = rb_sym2str(obj);
+    dump_append(dc, "{\"address\":\"%#"PRIxVALUE"\", \"type\":\"SYMBOL\", \"value\":", obj);
+    dump_append_string_value(dc, str);
+    dump_append(dc, ", \"dynamic\": false, \"references\":[\"%#"PRIxVALUE"\"]}", str);
 }
 
 static inline const char *
@@ -192,6 +194,14 @@ dump_append_string_content(struct dump_config *dc, VALUE obj)
     }
 }
 
+static void
+dump_append_symbol_content(struct dump_config *dc, VALUE obj)
+{
+	VALUE str = rb_sym2str(obj);
+	dump_append_string_content(dc, str);
+	dump_append(dc, ", \"dynamic\":true, \"references\":[\"%#"PRIxVALUE"\"]", str);
+}
+
 static const char *
 imemo_name(int imemo)
 {
@@ -252,7 +262,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 	break;
 
       case T_SYMBOL:
-	dump_append_string_content(dc, rb_sym2str(obj));
+	dump_append_symbol_content(dc, obj);
 	break;
 
       case T_STRING:
