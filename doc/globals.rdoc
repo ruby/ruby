@@ -13,8 +13,8 @@ $~::   The information about the last match in the current scope.
 $=::   This variable is no longer effective. Deprecated.
 $/::   The input record separator, newline by default.
 $\::   The output record separator for the print and IO#write. Default is nil.
-$,::   The output field separator for the print and Array#join.
-$;::   The default separator for String#split.
+$,::   The output field separator for the print and Array#join. Non-nil $, will be deprecated.
+$;::   The default separator for String#split. Non-nil $; will be deprecated.
 $.::   The current input line number of the last file that was read.
 $<::   The virtual concatenation file of the files given on command line (or from $stdin if no files were given).
 $>::   The default output for print, printf. $stdout by default.
