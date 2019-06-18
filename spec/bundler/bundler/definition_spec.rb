@@ -147,6 +147,34 @@ RSpec.describe Bundler::Definition do
       G
     end
 
+    it "for a locked gem for another platform" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "only_java", platform: :jruby
+      G
+
+      bundle "lock --add-platform java"
+      bundle :check, :env => { "DEBUG" => 1 }
+
+      expect(out).to match(/using resolution from the lockfile/)
+      lockfile_should_be <<-G
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+            only_java (1.1-java)
+
+        PLATFORMS
+          java
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          only_java
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      G
+    end
+
     it "for a rubygems gem" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
