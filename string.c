@@ -1180,7 +1180,7 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
 	FL_SET(str2, STR_NOEMBED);
 	RSTRING(str2)->as.heap.len = len;
 	RSTRING(str2)->as.heap.ptr = ptr;
-	STR_SET_SHARED(str2, root);
+        STR_SET_SHARED(str2, root);
     }
     return str2;
 }
