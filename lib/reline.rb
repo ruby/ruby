@@ -322,6 +322,7 @@ module Reline
     if ENV['RELINE_STDERR_TTY']
       $stderr.reopen(ENV['RELINE_STDERR_TTY'], 'w')
       $stderr.sync = true
+      $stderr.puts "Reline is used by #{Process.pid}"
     end
     otio = Reline::IOGate.prep
 
