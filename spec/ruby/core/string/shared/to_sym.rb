@@ -21,16 +21,32 @@ describe :string_to_sym, shared: true do
     "-(unary)".send(@method).should equal :"-(unary)"
   end
 
-  it "returns a US-ASCII Symbol for a UTF-8 String containing only US-ASCII characters" do
-    sym = "foobar".send(@method)
-    sym.encoding.should == Encoding::US_ASCII
-    sym.should equal :"foobar"
+  ruby_version_is "".."2.6" do
+    it "returns a US-ASCII Symbol for a UTF-8 String containing only US-ASCII characters" do
+      sym = "foobar".send(@method)
+      sym.encoding.should == Encoding::US_ASCII
+      sym.should equal :"foobar"
+    end
+
+    it "returns a US-ASCII Symbol for a binary String containing only US-ASCII characters" do
+      sym = "foobar".b.send(@method)
+      sym.encoding.should == Encoding::US_ASCII
+      sym.should equal :"foobar"
+    end
   end
 
-  it "returns a US-ASCII Symbol for a binary String containing only US-ASCII characters" do
-    sym = "foobar".b.send(@method)
-    sym.encoding.should == Encoding::US_ASCII
-    sym.should equal :"foobar"
+  ruby_version_is "2.7" do
+    it "returns a UTF-8 Symbol for a UTF-8 String containing only US-ASCII characters" do
+      sym = "foobar".send(@method)
+      sym.encoding.should == Encoding::UTF_8
+      sym.should equal :"foobar"
+    end
+
+    it "returns a UTF-8 Symbol for a binary String containing only US-ASCII characters" do
+      sym = "foobar".b.send(@method)
+      sym.encoding.should == Encoding::UTF_8
+      sym.should equal :"foobar"
+    end
   end
 
   it "returns a UTF-8 Symbol for a UTF-8 String containing non US-ASCII characters" do

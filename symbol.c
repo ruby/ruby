@@ -42,7 +42,7 @@ static void
 Init_op_tbl(void)
 {
     int i;
-    rb_encoding *const enc = rb_usascii_encoding();
+    rb_encoding *const enc = rb_utf8_encoding();
 
     for (i = '!'; i <= '~'; ++i) {
 	if (!ISALNUM(i) && i != '_') {
@@ -189,7 +189,7 @@ is_special_global_name(const char *m, const char *e, rb_encoding *enc)
 int
 rb_symname_p(const char *name)
 {
-    return rb_enc_symname_p(name, rb_ascii8bit_encoding());
+    return rb_enc_symname_p(name, rb_utf8_encoding());
 }
 
 int
@@ -640,12 +640,18 @@ intern_str(VALUE str, int mutable)
 {
     ID id;
     ID nid;
+    rb_encoding *enc, *utf8;
 
     id = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
     if (id == (ID)-1) id = ID_JUNK;
+
+    enc = rb_enc_get(str);
     if (sym_check_asciionly(str)) {
-	if (!mutable) str = rb_str_dup(str);
-	rb_enc_associate(str, rb_usascii_encoding());
+	utf8 = rb_utf8_encoding();
+	if (enc != utf8) {
+	    if (!mutable) str = rb_str_dup(str);
+	    rb_enc_associate(str, utf8);
+	}
     }
     if ((nid = next_id_base()) == (ID)-1) {
 	str = rb_str_ellipsize(str, 20);
@@ -660,7 +666,7 @@ intern_str(VALUE str, int mutable)
 ID
 rb_intern2(const char *name, long len)
 {
-    return rb_intern3(name, len, rb_usascii_encoding());
+    return rb_intern3(name, len, rb_utf8_encoding());
 }
 
 #undef rb_intern
@@ -718,7 +724,7 @@ VALUE
 rb_str_intern(VALUE str)
 {
 #if USE_SYMBOL_GC
-    rb_encoding *enc, *ascii;
+    rb_encoding *enc, *utf8;
     int type;
 #else
     ID id;
@@ -731,12 +737,14 @@ rb_str_intern(VALUE str)
 
 #if USE_SYMBOL_GC
     enc = rb_enc_get(str);
-    ascii = rb_usascii_encoding();
-    if (enc != ascii && sym_check_asciionly(str)) {
-	str = rb_str_dup(str);
-	rb_enc_associate(str, ascii);
-	OBJ_FREEZE(str);
-	enc = ascii;
+    if (sym_check_asciionly(str)) {
+	utf8 = rb_utf8_encoding();
+	if (enc != utf8) {
+	    str = rb_str_dup(str);
+	    rb_enc_associate(str, utf8);
+	    OBJ_FREEZE(str);
+	    enc = utf8;
+	}
     }
     else {
 	str = rb_str_new_frozen(str);
@@ -1092,7 +1100,7 @@ rb_sym_intern_cstr(const char *ptr, rb_encoding *enc)
 VALUE
 rb_sym_intern_ascii(const char *ptr, long len)
 {
-    return rb_sym_intern(ptr, len, rb_usascii_encoding());
+    return rb_sym_intern(ptr, len, rb_ascii8bit_encoding());
 }
 
 VALUE

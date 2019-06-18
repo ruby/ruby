@@ -1294,7 +1294,7 @@ class TestM17N < Test::Unit::TestCase
       === != =~ !~ ~ ! [] []= << >> :: `
     "
     ops.each do |op|
-      assert_equal(Encoding::US_ASCII, op.intern.encoding, "[ruby-dev:33449]")
+      assert_equal(Encoding::UTF_8, op.intern.encoding, "[ruby-dev:33449]")
     end
   end
 
