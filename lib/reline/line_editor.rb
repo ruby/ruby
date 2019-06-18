@@ -12,6 +12,7 @@ class Reline::LineEditor
   attr_accessor :completion_proc
   attr_accessor :output_modifier_proc
   attr_accessor :prompt_proc
+  attr_accessor :auto_indent_proc
   attr_accessor :pre_input_hook
   attr_accessor :dig_perfect_match_proc
   attr_writer :output
@@ -116,6 +117,7 @@ class Reline::LineEditor
     @highest_in_all = 1
     @line_backup_in_history = nil
     @multibyte_buffer = String.new(encoding: 'ASCII-8BIT')
+    @check_new_auto_indent = false
   end
 
   def multiline_on
@@ -781,6 +783,28 @@ class Reline::LineEditor
     unless completion_occurs
       @completion_state = CompletionState::NORMAL
     end
+    if @is_multiline and @auto_indent_proc
+      if @previous_line_index
+        new_lines = whole_lines(index: @previous_line_index, line: @line)
+      else
+        new_lines = whole_lines
+      end
+      new_indent = @auto_indent_proc.(new_lines, @line_index, @byte_pointer, @check_new_auto_indent)
+      if new_indent
+        md = @buffer_of_lines[@line_index].match(/\A */)
+        prev_indent = md[0].count(' ')
+        if @check_new_auto_indent
+          @buffer_of_lines[@line_index] = ' ' * new_indent + @buffer_of_lines[@line_index].gsub(/\A */, '')
+          @cursor = new_indent
+          @byte_pointer = new_indent
+        else
+          @line = ' ' * new_indent + @line.gsub(/\A */, '')
+          @cursor -= prev_indent - new_indent
+          @byte_pointer -= prev_indent - new_indent
+        end
+      end
+      @check_new_auto_indent = false
+    end
   end
 
   def retrieve_completion_block
@@ -977,6 +1001,7 @@ class Reline::LineEditor
       cursor_line = @line.byteslice(0, @byte_pointer)
       insert_new_line(cursor_line, next_line)
       @cursor = 0
+      @check_new_auto_indent = true
     end
   end
 
