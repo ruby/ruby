@@ -966,9 +966,9 @@ thread_start_func_1(void *th_ptr)
 	native_thread_init(th);
 	/* run */
 #if defined USE_NATIVE_THREAD_INIT
-	thread_start_func_2(th, th->ec->machine.stack_start);
+        thread_start_func_2(th, th->ec->machine.stack_start);
 #else
-	thread_start_func_2(th, &stack_start);
+        thread_start_func_2(th, &stack_start);
 #endif
     }
 #if USE_THREAD_CACHE
