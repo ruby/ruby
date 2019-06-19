@@ -1578,7 +1578,7 @@ rb_threadptr_root_fiber_release(rb_thread_t *th)
 	VM_ASSERT(th->ec->fiber_ptr->cont.type == FIBER_CONTEXT);
 	VM_ASSERT(th->ec->fiber_ptr->cont.self == 0);
 
-    // th->ec->fiber_ptr->cont.saved_ec.vm_stack = NULL;
+        // th->ec->fiber_ptr->cont.saved_ec.vm_stack = NULL;
 	fiber_free(th->ec->fiber_ptr);
 
 	if (th->ec == ruby_current_execution_context_ptr) {

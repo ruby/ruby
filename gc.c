@@ -2341,7 +2341,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         if (st_delete(objspace->obj_to_id_tbl, (st_data_t *)&obj, &id)) {
             assert(id);
             st_delete(objspace->id_to_obj_tbl, (st_data_t *)&id, NULL);
-        } else {
+        }
+        else {
             rb_bug("Object ID see, but not in mapping table: %s\n", obj_info(obj));
         }
     }
@@ -4553,7 +4554,8 @@ mark_hash(rb_objspace_t *objspace, VALUE hash)
 {
     if (rb_hash_compare_by_id_p(hash)) {
         rb_hash_stlike_foreach(hash, pin_key_mark_value, (st_data_t)objspace);
-    } else {
+    }
+    else {
         rb_hash_stlike_foreach(hash, mark_keyvalue, (st_data_t)objspace);
     }
 
@@ -9378,9 +9380,9 @@ rb_memerror(void)
     VALUE exc;
 
     if (0) {
-      // Print out pid, sleep, so you can attach debugger to see what went wrong:
-      fprintf(stderr, "rb_memerror pid=%d\n", getpid());
-      sleep(60);
+        // Print out pid, sleep, so you can attach debugger to see what went wrong:
+        fprintf(stderr, "rb_memerror pid=%d\n", getpid());
+        sleep(60);
     }
 
     if (during_gc) gc_exit(objspace, "rb_memerror");

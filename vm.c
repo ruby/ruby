@@ -2710,10 +2710,11 @@ th_init(rb_thread_t *th, VALUE self)
     if (self == 0) {
         size_t size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
         rb_ec_initialize_vm_stack(th->ec, ALLOC_N(VALUE, size), size);
-    } else {
-      VM_ASSERT(th->ec->cfp == NULL);
-      VM_ASSERT(th->ec->vm_stack == NULL);
-      VM_ASSERT(th->ec->vm_stack_size == 0);
+    }
+    else {
+        VM_ASSERT(th->ec->cfp == NULL);
+        VM_ASSERT(th->ec->vm_stack == NULL);
+        VM_ASSERT(th->ec->vm_stack_size == 0);
     }
 
     th->status = THREAD_RUNNABLE;
