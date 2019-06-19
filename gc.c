@@ -9398,9 +9398,11 @@ rb_memerror(void)
     rb_objspace_t *objspace = rb_objspace_of(rb_ec_vm_ptr(ec));
     VALUE exc;
 
-    // Print out pid, sleep, so you can attach debugger to see what went wrong:
-    // fprintf(stderr, "rb_memerror pid=%d\n", getpid());
-    // sleep(60);
+    if (0) {
+      // Print out pid, sleep, so you can attach debugger to see what went wrong:
+      fprintf(stderr, "rb_memerror pid=%d\n", getpid());
+      sleep(60);
+    }
 
     if (during_gc) gc_exit(objspace, "rb_memerror");
 
