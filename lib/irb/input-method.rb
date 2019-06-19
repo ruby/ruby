@@ -255,7 +255,7 @@ module IRB
       Reline.input = @stdin
       Reline.output = @stdout
       Reline.prompt_proc = @prompt_proc
-      Reline.auto_indent_proc = @auto_indent_proc
+      Reline.auto_indent_proc = @auto_indent_proc if @auto_indent_proc
       if l = readmultiline(@prompt, false, &@check_termination_proc)
         HISTORY.push(l) if !l.empty?
         @line[@line_no += 1] = l + "\n"

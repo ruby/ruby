@@ -491,6 +491,8 @@ module IRB
         end
       end
 
+      @scanner.set_auto_indent(@context) if @context.auto_indent_mode
+
       @scanner.each_top_level_statement do |line, line_no|
         signal_status(:IN_EVAL) do
           begin

@@ -53,7 +53,26 @@ class RubyLex
         result
       end
     end
-    if @io.respond_to?(:auto_indent)
+    if p.respond_to?(:call)
+      @input = p
+    elsif block_given?
+      @input = block
+    else
+      @input = Proc.new{@io.gets}
+    end
+  end
+
+  def set_prompt(p = nil, &block)
+    p = block if block_given?
+    if p.respond_to?(:call)
+      @prompt = p
+    else
+      @prompt = Proc.new{print p}
+    end
+  end
+
+  def set_auto_indent(context)
+    if @io.respond_to?(:auto_indent) and context.auto_indent_mode
       @io.auto_indent do |lines, line_index, byte_pointer, is_newline|
         if is_newline
           md = lines[line_index - 1].match(/(\A +)/)
@@ -81,22 +100,6 @@ class RubyLex
           end
         end
       end
-    end
-    if p.respond_to?(:call)
-      @input = p
-    elsif block_given?
-      @input = block
-    else
-      @input = Proc.new{@io.gets}
-    end
-  end
-
-  def set_prompt(p = nil, &block)
-    p = block if block_given?
-    if p.respond_to?(:call)
-      @prompt = p
-    else
-      @prompt = Proc.new{print p}
     end
   end
 
