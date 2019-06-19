@@ -750,28 +750,28 @@ Racc_debug_parser = false
 
 module_eval(<<'.,.,', 'huia.y', 44)
   def _reduce_2(val, _values, result)
-     return scope 
+     return scope
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 46)
   def _reduce_3(val, _values, result)
-     return scope.append val[0] 
+     return scope.append val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 47)
   def _reduce_4(val, _values, result)
-     return scope.append val[0] 
+     return scope.append val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 48)
   def _reduce_5(val, _values, result)
-     return scope 
+     return scope
     result
   end
 .,.,
@@ -810,14 +810,14 @@ module_eval(<<'.,.,', 'huia.y', 48)
 
 module_eval(<<'.,.,', 'huia.y', 66)
   def _reduce_22(val, _values, result)
-     return n(:Return, val[1]) 
+     return n(:Return, val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 67)
   def _reduce_23(val, _values, result)
-     return n(:Return, n(:Nil)) 
+     return n(:Return, n(:Nil))
     result
   end
 .,.,
@@ -828,28 +828,28 @@ module_eval(<<'.,.,', 'huia.y', 67)
 
 module_eval(<<'.,.,', 'huia.y', 72)
   def _reduce_26(val, _values, result)
-     return n :Array 
+     return n :Array
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 74)
   def _reduce_27(val, _values, result)
-     return val[1] 
+     return val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 75)
   def _reduce_28(val, _values, result)
-     return n :Array, [val[0]] 
+     return n :Array, [val[0]]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 76)
   def _reduce_29(val, _values, result)
-     val[0].append(val[2]); return val[0] 
+     val[0].append(val[2]); return val[0]
     result
   end
 .,.,
@@ -860,42 +860,42 @@ module_eval(<<'.,.,', 'huia.y', 76)
 
 module_eval(<<'.,.,', 'huia.y', 80)
   def _reduce_32(val, _values, result)
-     return n :Hash 
+     return n :Hash
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 81)
   def _reduce_33(val, _values, result)
-     return val[1] 
+     return val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 82)
   def _reduce_34(val, _values, result)
-     return n :Hash, val[0] 
+     return n :Hash, val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 83)
   def _reduce_35(val, _values, result)
-     val[0].append(val[2]); return val[0] 
+     val[0].append(val[2]); return val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 84)
   def _reduce_36(val, _values, result)
-     return n :HashItem, val[0], val[2] 
+     return n :HashItem, val[0], val[2]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 86)
   def _reduce_37(val, _values, result)
-     return constant val[0] 
+     return constant val[0]
     result
   end
 .,.,
@@ -908,49 +908,49 @@ module_eval(<<'.,.,', 'huia.y', 86)
 
 module_eval(<<'.,.,', 'huia.y', 91)
   def _reduce_41(val, _values, result)
-     return val[0] 
+     return val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 92)
   def _reduce_42(val, _values, result)
-     return val[0].append(val[1]) 
+     return val[0].append(val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 93)
   def _reduce_43(val, _values, result)
-     return val[0] 
+     return val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 94)
   def _reduce_44(val, _values, result)
-     return pop_scope 
+     return pop_scope
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 97)
   def _reduce_45(val, _values, result)
-     return val[0] 
+     return val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 98)
   def _reduce_46(val, _values, result)
-     return push_scope 
+     return push_scope
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 99)
   def _reduce_47(val, _values, result)
-     return push_scope 
+     return push_scope
     result
   end
 .,.,
@@ -965,21 +965,21 @@ module_eval(<<'.,.,', 'huia.y', 99)
 
 module_eval(<<'.,.,', 'huia.y', 105)
   def _reduce_52(val, _values, result)
-     return scope.add_argument val[0] 
+     return scope.add_argument val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 106)
   def _reduce_53(val, _values, result)
-     return n :Assignment, val[0], val[2] 
+     return n :Assignment, val[0], val[2]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 107)
   def _reduce_54(val, _values, result)
-     return n :Variable, val[0] 
+     return n :Variable, val[0]
     result
   end
 .,.,
@@ -992,35 +992,35 @@ module_eval(<<'.,.,', 'huia.y', 107)
 
 module_eval(<<'.,.,', 'huia.y', 112)
   def _reduce_58(val, _values, result)
-     return n :MethodCall, val[0], val[2] 
+     return n :MethodCall, val[0], val[2]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 113)
   def _reduce_59(val, _values, result)
-     return n :MethodCall, val[0], n(:CallSignature, val[2]) 
+     return n :MethodCall, val[0], n(:CallSignature, val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 114)
   def _reduce_60(val, _values, result)
-     return n :MethodCall, scope_instance, val[0] 
+     return n :MethodCall, scope_instance, val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 116)
   def _reduce_61(val, _values, result)
-     return n :MethodCall, this_closure, val[1] 
+     return n :MethodCall, this_closure, val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 117)
   def _reduce_62(val, _values, result)
-     return n :MethodCall, this_closure, n(:CallSignature, val[1]) 
+     return n :MethodCall, this_closure, n(:CallSignature, val[1])
     result
   end
 .,.,
@@ -1031,14 +1031,14 @@ module_eval(<<'.,.,', 'huia.y', 117)
 
 module_eval(<<'.,.,', 'huia.y', 121)
   def _reduce_65(val, _values, result)
-     return n :CallSignature, val[0] 
+     return n :CallSignature, val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 122)
   def _reduce_66(val, _values, result)
-     return n :CallSignature, val[0], [val[1]] 
+     return n :CallSignature, val[0], [val[1]]
     result
   end
 .,.,
@@ -1057,28 +1057,28 @@ module_eval(<<'.,.,', 'huia.y', 122)
 
 module_eval(<<'.,.,', 'huia.y', 129)
   def _reduce_73(val, _values, result)
-     return val[0] 
+     return val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 130)
   def _reduce_74(val, _values, result)
-     return val[0].concat_signature val[1] 
+     return val[0].concat_signature val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 132)
   def _reduce_75(val, _values, result)
-     return n :Expression, val[1] 
+     return n :Expression, val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 134)
   def _reduce_76(val, _values, result)
-     return allocate_local val[0] 
+     return allocate_local val[0]
     result
   end
 .,.,
@@ -1115,105 +1115,105 @@ module_eval(<<'.,.,', 'huia.y', 134)
 
 module_eval(<<'.,.,', 'huia.y', 152)
   def _reduce_92(val, _values, result)
-     return allocate_local_assignment val[0], val[2] 
+     return allocate_local_assignment val[0], val[2]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 153)
   def _reduce_93(val, _values, result)
-     return binary val[0], val[2], 'plus:' 
+     return binary val[0], val[2], 'plus:'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 154)
   def _reduce_94(val, _values, result)
-     return binary val[0], val[2], 'minus:' 
+     return binary val[0], val[2], 'minus:'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 155)
   def _reduce_95(val, _values, result)
-     return binary val[0], val[2], 'multiplyBy:' 
+     return binary val[0], val[2], 'multiplyBy:'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 156)
   def _reduce_96(val, _values, result)
-     return binary val[0], val[2], 'divideBy:' 
+     return binary val[0], val[2], 'divideBy:'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 157)
   def _reduce_97(val, _values, result)
-     return binary val[0], val[2], 'toThePowerOf:' 
+     return binary val[0], val[2], 'toThePowerOf:'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 158)
   def _reduce_98(val, _values, result)
-     return binary val[0], val[2], 'moduloOf:' 
+     return binary val[0], val[2], 'moduloOf:'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 159)
   def _reduce_99(val, _values, result)
-     return binary val[0], val[2], 'isEqualTo:' 
+     return binary val[0], val[2], 'isEqualTo:'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 160)
   def _reduce_100(val, _values, result)
-     return binary val[0], val[2], 'isNotEqualTo:' 
+     return binary val[0], val[2], 'isNotEqualTo:'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 161)
   def _reduce_101(val, _values, result)
-     return binary val[0], val[2], 'logicalOr:' 
+     return binary val[0], val[2], 'logicalOr:'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 162)
   def _reduce_102(val, _values, result)
-     return binary val[0], val[2], 'logicalAnd:' 
+     return binary val[0], val[2], 'logicalAnd:'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 163)
   def _reduce_103(val, _values, result)
-     return binary val[0], val[2], 'isGreaterThan:' 
+     return binary val[0], val[2], 'isGreaterThan:'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 164)
   def _reduce_104(val, _values, result)
-     return binary val[0], val[2], 'isLessThan:' 
+     return binary val[0], val[2], 'isLessThan:'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 165)
   def _reduce_105(val, _values, result)
-     return binary val[0], val[2], 'isGreaterOrEqualTo:' 
+     return binary val[0], val[2], 'isGreaterOrEqualTo:'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 166)
   def _reduce_106(val, _values, result)
-     return binary val[0], val[2], 'isLessOrEqualTo:' 
+     return binary val[0], val[2], 'isLessOrEqualTo:'
     result
   end
 .,.,
@@ -1228,28 +1228,28 @@ module_eval(<<'.,.,', 'huia.y', 166)
 
 module_eval(<<'.,.,', 'huia.y', 173)
   def _reduce_111(val, _values, result)
-     return unary val[1], 'unaryNot' 
+     return unary val[1], 'unaryNot'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 174)
   def _reduce_112(val, _values, result)
-     return unary val[1], 'unaryPlus' 
+     return unary val[1], 'unaryPlus'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 175)
   def _reduce_113(val, _values, result)
-     return unary val[1], 'unaryMinus' 
+     return unary val[1], 'unaryMinus'
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 176)
   def _reduce_114(val, _values, result)
-     return unary val[1], 'unaryComplement' 
+     return unary val[1], 'unaryComplement'
     result
   end
 .,.,
@@ -1270,49 +1270,49 @@ module_eval(<<'.,.,', 'huia.y', 176)
 
 module_eval(<<'.,.,', 'huia.y', 186)
   def _reduce_122(val, _values, result)
-     return n :Float,   val[0] 
+     return n :Float,   val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 187)
   def _reduce_123(val, _values, result)
-     return n :Integer, val[0] 
+     return n :Integer, val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 188)
   def _reduce_124(val, _values, result)
-     return n :Nil 
+     return n :Nil
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 189)
   def _reduce_125(val, _values, result)
-     return n :True 
+     return n :True
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 190)
   def _reduce_126(val, _values, result)
-     return n :False 
+     return n :False
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 191)
   def _reduce_127(val, _values, result)
-     return n :Self 
+     return n :Self
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 193)
   def _reduce_128(val, _values, result)
-     return n :String,  val[0] 
+     return n :String,  val[0]
     result
   end
 .,.,
@@ -1323,63 +1323,63 @@ module_eval(<<'.,.,', 'huia.y', 193)
 
 module_eval(<<'.,.,', 'huia.y', 197)
   def _reduce_131(val, _values, result)
-     return val[1] 
+     return val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 198)
   def _reduce_132(val, _values, result)
-     return val[1] 
+     return val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 199)
   def _reduce_133(val, _values, result)
-     return n :InterpolatedString, val[0] 
+     return n :InterpolatedString, val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 200)
   def _reduce_134(val, _values, result)
-     val[0].append(val[1]); return val[0] 
+     val[0].append(val[1]); return val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 201)
   def _reduce_135(val, _values, result)
-     return val[0] 
+     return val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 202)
   def _reduce_136(val, _values, result)
-     return to_string(val[0]) 
+     return to_string(val[0])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 203)
   def _reduce_137(val, _values, result)
-     return n :String, '' 
+     return n :String, ''
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 205)
   def _reduce_138(val, _values, result)
-     return n :String, val[0] 
+     return n :String, val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'huia.y', 206)
   def _reduce_139(val, _values, result)
-     val[0].append(val[1]); return val[0] 
+     val[0].append(val[1]); return val[0]
     result
   end
 .,.,

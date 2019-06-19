@@ -35,7 +35,7 @@ def initialize options = {}
   @includes = options[:includes] || []
   @quiet = options[:quiet]
   @style = options[:style] || :cim  # default to style CIM v2.2 syntax
-  
+
   @lineno = 1
   @file = nil
   @iconv = nil
@@ -699,14 +699,14 @@ Racc_debug_parser = false
 
 module_eval(<<'.,.,', 'mof.y', 41)
   def _reduce_1(val, _values, result)
-     result = Hash.new 
+     result = Hash.new
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 43)
   def _reduce_2(val, _values, result)
-     result = { @name => @result } 
+     result = { @name => @result }
     result
   end
 .,.,
@@ -715,7 +715,7 @@ module_eval(<<'.,.,', 'mof.y', 45)
   def _reduce_3(val, _values, result)
      result = val[0]
 	    result[@name] = @result
-	  
+
     result
   end
 .,.,
@@ -726,7 +726,7 @@ module_eval(<<'.,.,', 'mof.y', 53)
   def _reduce_5(val, _values, result)
      #puts "Class '#{val[0].name}'"
 	    @result.classes << val[0]
-	  
+
     result
   end
 .,.,
@@ -735,14 +735,14 @@ module_eval(<<'.,.,', 'mof.y', 57)
   def _reduce_6(val, _values, result)
      @result.qualifiers << val[0]
 	    @qualifiers[val[0].name.downcase] = val[0]
-	  
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 61)
   def _reduce_7(val, _values, result)
-     @result.instances << val[0] 
+     @result.instances << val[0]
     result
   end
 .,.,
@@ -751,7 +751,7 @@ module_eval(<<'.,.,', 'mof.y', 71)
   def _reduce_8(val, _values, result)
      raise MOF::Helper::Error.new(@name,@lineno,@line,"Missing filename after '#pragma include'") unless val[3]
 	    open val[3], :pragma
-	  
+
     result
   end
 .,.,
@@ -763,7 +763,7 @@ module_eval(<<'.,.,', 'mof.y', 76)
      raise StyleError.new(@name,@lineno,@line,"Use '#pragma include' instead of '#include'") unless @style == :wmi
 	    raise MOF::Helper::Error.new(@name,@lineno,@line,"Missing filename after '#include'") unless val[2]
 	    open val[2], :pragma
-	  
+
     result
   end
 .,.,
@@ -772,14 +772,14 @@ module_eval(<<'.,.,', 'mof.y', 76)
 
 module_eval(<<'.,.,', 'mof.y', 88)
   def _reduce_12(val, _values, result)
-     raise StyleError.new(@name,@lineno,@line,"#pragma parameter missing") unless @style == :wmi 
+     raise StyleError.new(@name,@lineno,@line,"#pragma parameter missing") unless @style == :wmi
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 90)
   def _reduce_13(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
@@ -792,7 +792,7 @@ module_eval(<<'.,.,', 'mof.y', 90)
 
 module_eval(<<'.,.,', 'mof.y', 101)
   def _reduce_17(val, _values, result)
-     raise StyleError.new(@name,@lineno,@line,"#pragma parameter missing") unless @style == :wmi 
+     raise StyleError.new(@name,@lineno,@line,"#pragma parameter missing") unless @style == :wmi
     result
   end
 .,.,
@@ -805,21 +805,21 @@ module_eval(<<'.,.,', 'mof.y', 112)
 	    features = val[6]
 	    # FIXME: features must not include references
 	    result = CIM::Class.new(val[2],qualifiers,val[3],val[4],features)
-	  
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 121)
   def _reduce_20(val, _values, result)
-     result = [] 
+     result = []
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 123)
   def _reduce_21(val, _values, result)
-     result = val[0] << val[1] 
+     result = val[0] << val[1]
     result
   end
 .,.,
@@ -834,7 +834,7 @@ module_eval(<<'.,.,', 'mof.y', 123)
 
 module_eval(<<'.,.,', 'mof.y', 136)
   def _reduce_26(val, _values, result)
-     result = CIM::QualifierSet.new val[0] 
+     result = CIM::QualifierSet.new val[0]
     result
   end
 .,.,
@@ -842,14 +842,14 @@ module_eval(<<'.,.,', 'mof.y', 136)
 module_eval(<<'.,.,', 'mof.y', 141)
   def _reduce_27(val, _values, result)
      result = val[2]
-	    result.unshift val[1] if val[1] 
+	    result.unshift val[1] if val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 147)
   def _reduce_28(val, _values, result)
-     result = [] 
+     result = []
     result
   end
 .,.,
@@ -858,7 +858,7 @@ module_eval(<<'.,.,', 'mof.y', 149)
   def _reduce_29(val, _values, result)
      result = val[0]
 	    result << val[2] if val[2]
-	  
+
     result
   end
 .,.,
@@ -882,7 +882,7 @@ module_eval(<<'.,.,', 'mof.y', 156)
 	    else
 	      result = CIM::Qualifier.new(qualifier,value,val[2])
 	    end
-	  
+
     result
   end
 .,.,
@@ -891,7 +891,7 @@ module_eval(<<'.,.,', 'mof.y', 156)
 
 module_eval(<<'.,.,', 'mof.y', 179)
   def _reduce_32(val, _values, result)
-     result = CIM::QualifierFlavors.new val[1] 
+     result = CIM::QualifierFlavors.new val[1]
     result
   end
 .,.,
@@ -902,7 +902,7 @@ module_eval(<<'.,.,', 'mof.y', 179)
 
 module_eval(<<'.,.,', 'mof.y', 189)
   def _reduce_35(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
@@ -927,7 +927,7 @@ module_eval(<<'.,.,', 'mof.y', 196)
 	      when :amended, :toinstance
 	        raise StyleError.new(@name,@lineno,@line,"'#{val[0]}' is not a valid flavor") unless @style == :wmi
 	    end
-	  
+
     result
   end
 .,.,
@@ -942,28 +942,28 @@ module_eval(<<'.,.,', 'mof.y', 196)
 
 module_eval(<<'.,.,', 'mof.y', 215)
   def _reduce_48(val, _values, result)
-     raise ParseError.new("Class name must be prefixed by '<schema>_'") unless val[0].include?("_") || @style == :wmi 
+     raise ParseError.new("Class name must be prefixed by '<schema>_'") unless val[0].include?("_") || @style == :wmi
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 220)
   def _reduce_49(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 225)
   def _reduce_50(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 230)
   def _reduce_51(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
@@ -976,7 +976,7 @@ module_eval(<<'.,.,', 'mof.y', 236)
 	      type = val[1]
 	    end
 	    result = CIM::Property.new(type,val[2],val[0],val[4])
-	  
+
     result
   end
 .,.,
@@ -986,14 +986,14 @@ module_eval(<<'.,.,', 'mof.y', 247)
      if val[4]
 	      raise StyleError.new(@name,@lineno,@line,"Array not allowed in reference declaration") unless @style == :wmi
 	    end
-	    result = CIM::Reference.new(val[1],val[2],val[0],val[4]) 
+	    result = CIM::Reference.new(val[1],val[2],val[0],val[4])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 255)
   def _reduce_54(val, _values, result)
-     result = CIM::Method.new(val[1],val[2],val[0],val[4]) 
+     result = CIM::Method.new(val[1],val[2],val[0],val[4])
     result
   end
 .,.,
@@ -1004,7 +1004,7 @@ module_eval(<<'.,.,', 'mof.y', 261)
   def _reduce_56(val, _values, result)
      # tmplprov.mof has 'string Property;'
 	    raise StyleError.new(@name,@lineno,@line,"Invalid keyword '#{val[0]}' used for property name") unless @style == :wmi
-	  
+
     result
   end
 .,.,
@@ -1013,7 +1013,7 @@ module_eval(<<'.,.,', 'mof.y', 261)
 
 module_eval(<<'.,.,', 'mof.y', 269)
   def _reduce_58(val, _values, result)
-     result = "Indication" 
+     result = "Indication"
     result
   end
 .,.,
@@ -1050,7 +1050,7 @@ module_eval(<<'.,.,', 'mof.y', 269)
 
 module_eval(<<'.,.,', 'mof.y', 292)
   def _reduce_74(val, _values, result)
-     raise StyleError.new(@name,@lineno,@line,"'void' is not a valid datatype") unless @style == :wmi 
+     raise StyleError.new(@name,@lineno,@line,"'void' is not a valid datatype") unless @style == :wmi
     result
   end
 .,.,
@@ -1060,14 +1060,14 @@ module_eval(<<'.,.,', 'mof.y', 297)
      # WMI uses class names as data types (without REF ?!)
 	    raise StyleError.new(@name,@lineno,@line,"Expected 'ref' keyword after classname '#{val[0]}'") unless @style == :wmi
 	    result = CIM::ReferenceType.new val[0]
-	  
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 303)
   def _reduce_76(val, _values, result)
-     result = CIM::ReferenceType.new val[0] 
+     result = CIM::ReferenceType.new val[0]
     result
   end
 .,.,
@@ -1078,21 +1078,21 @@ module_eval(<<'.,.,', 'mof.y', 303)
 
 module_eval(<<'.,.,', 'mof.y', 313)
   def _reduce_79(val, _values, result)
-     result = val[1].unshift val[0] 
+     result = val[1].unshift val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 318)
   def _reduce_80(val, _values, result)
-     result = [] 
+     result = []
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 320)
   def _reduce_81(val, _values, result)
-     result = val[0] << val[2] 
+     result = val[0] << val[2]
     result
   end
 .,.,
@@ -1105,7 +1105,7 @@ module_eval(<<'.,.,', 'mof.y', 325)
 	      type = val[1]
 	    end
 	    result = CIM::Property.new(type,val[2],val[0])
-	  
+
     result
   end
 .,.,
@@ -1124,21 +1124,21 @@ module_eval(<<'.,.,', 'mof.y', 325)
 
 module_eval(<<'.,.,', 'mof.y', 351)
   def _reduce_89(val, _values, result)
-     raise "Default parameter value not allowed in syntax style '{@style}'" unless @style == :wmi 
+     raise "Default parameter value not allowed in syntax style '{@style}'" unless @style == :wmi
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 356)
   def _reduce_90(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 361)
   def _reduce_91(val, _values, result)
-     result = -1 
+     result = -1
     result
   end
 .,.,
@@ -1151,7 +1151,7 @@ module_eval(<<'.,.,', 'mof.y', 361)
 
 module_eval(<<'.,.,', 'mof.y', 372)
   def _reduce_95(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
@@ -1164,7 +1164,7 @@ module_eval(<<'.,.,', 'mof.y', 372)
 
 module_eval(<<'.,.,', 'mof.y', 383)
   def _reduce_99(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
@@ -1173,14 +1173,14 @@ module_eval(<<'.,.,', 'mof.y', 383)
 
 module_eval(<<'.,.,', 'mof.y', 389)
   def _reduce_101(val, _values, result)
-     result = [ val[0] ] 
+     result = [ val[0] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 391)
   def _reduce_102(val, _values, result)
-     result = val[0] << val[2] 
+     result = val[0] << val[2]
     result
   end
 .,.,
@@ -1199,7 +1199,7 @@ module_eval(<<'.,.,', 'mof.y', 391)
 
 module_eval(<<'.,.,', 'mof.y', 402)
   def _reduce_109(val, _values, result)
-     raise "Instance as property value not allowed in syntax style '{@style}'" unless @style == :wmi 
+     raise "Instance as property value not allowed in syntax style '{@style}'" unless @style == :wmi
     result
   end
 .,.,
@@ -1218,7 +1218,7 @@ module_eval(<<'.,.,', 'mof.y', 402)
 
 module_eval(<<'.,.,', 'mof.y', 416)
   def _reduce_116(val, _values, result)
-     result = val[0] + val[1] 
+     result = val[0] + val[1]
     result
   end
 .,.,
@@ -1251,7 +1251,7 @@ module_eval(<<'.,.,', 'mof.y', 416)
 
 module_eval(<<'.,.,', 'mof.y', 471)
   def _reduce_130(val, _values, result)
-     result = CIM::QualifierDeclaration.new( val[1], val[2][0], val[2][1], val[3], val[4]) 
+     result = CIM::QualifierDeclaration.new( val[1], val[2][0], val[2][1], val[3], val[4])
     result
   end
 .,.,
@@ -1274,28 +1274,28 @@ module_eval(<<'.,.,', 'mof.y', 490)
   def _reduce_138(val, _values, result)
      type = val[2].nil? ? val[1] : CIM::Array.new(val[2],val[1])
 	    result = [ type, val[3] ]
-	  
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 497)
   def _reduce_139(val, _values, result)
-     result = CIM::QualifierScopes.new(val[3]) 
+     result = CIM::QualifierScopes.new(val[3])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 502)
   def _reduce_140(val, _values, result)
-     result = [ val[0] ] 
+     result = [ val[0] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 504)
   def _reduce_141(val, _values, result)
-     result = val[0] << val[2] 
+     result = val[0] << val[2]
     result
   end
 .,.,
@@ -1322,21 +1322,21 @@ module_eval(<<'.,.,', 'mof.y', 504)
 
 module_eval(<<'.,.,', 'mof.y', 522)
   def _reduce_152(val, _values, result)
-     result = CIM::QualifierFlavors.new val[3] 
+     result = CIM::QualifierFlavors.new val[3]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 527)
   def _reduce_153(val, _values, result)
-     result = [ val[0] ] 
+     result = [ val[0] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'mof.y', 529)
   def _reduce_154(val, _values, result)
-     result = val[0] << val[2] 
+     result = val[0] << val[2]
     result
   end
 .,.,
@@ -1353,7 +1353,7 @@ module_eval(<<'.,.,', 'mof.y', 529)
 
 module_eval(<<'.,.,', 'mof.y', 553)
   def _reduce_160(val, _values, result)
-     raise "Instance property '#{val[1]} must have a value" unless @style == :wmi 
+     raise "Instance property '#{val[1]} must have a value" unless @style == :wmi
     result
   end
 .,.,

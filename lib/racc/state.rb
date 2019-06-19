@@ -168,7 +168,7 @@ module Racc
         @states.push dest
 
         @statecache[k] = dest
-        
+
         puts "core_to_state: create state   ID #{dest.ident}" if @d_state
       else
         if @d_state
@@ -306,7 +306,7 @@ module Racc
 
       la
     end
-    
+
     def create_tmap(size)
       Array.new(size, 0)   # use Integer as bitmap
     end
@@ -510,13 +510,13 @@ module Racc
         end
       end
     end
-    
+
     ASSOC = {
       :Left     => :Reduce,
       :Right    => :Shift,
       :Nonassoc => :Error
     }
-   
+
     def do_resolve_sr(stok, rtok)
       puts "resolve_sr: s/r conflict: rtok=#{rtok}, stok=#{stok}" if @d_prec
 
@@ -773,7 +773,7 @@ module Racc
     attr_reader :symbol
     attr_reader :from_state
     attr_reader :to_state
-    
+
     def inspect
       "(#{@from_state.ident}-#{@symbol}->#{@to_state.ident})"
     end
@@ -936,11 +936,11 @@ module Racc
       @shift   = shift
       @reduce  = reduce
     end
-    
+
     attr_reader :stateid
     attr_reader :shift
     attr_reader :reduce
-  
+
     def to_s
       sprintf('state %d: S/R conflict rule %d reduce and shift %s',
               @stateid, @reduce.ruleid, @shift.to_s)
@@ -959,7 +959,7 @@ module Racc
     attr_reader :high_prec
     attr_reader :low_prec
     attr_reader :token
-  
+
     def to_s
       sprintf('state %d: R/R conflict with rule %d and %d on %s',
               @stateid, @high_prec.ident, @low_prec.ident, @token.to_s)

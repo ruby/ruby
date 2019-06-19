@@ -508,7 +508,7 @@ module_eval(<<'.,.,', 'machete.y', 44)
                else
                  ChoiceMatcher.new([val[0], val[2]])
                end
-             
+
     result
   end
 .,.,
@@ -524,7 +524,7 @@ module_eval(<<'.,.,', 'machete.y', 44)
 module_eval(<<'.,.,', 'machete.y', 57)
   def _reduce_7(val, _values, result)
              result = NodeMatcher.new(val[0].to_sym)
-       
+
     result
   end
 .,.,
@@ -532,7 +532,7 @@ module_eval(<<'.,.,', 'machete.y', 57)
 module_eval(<<'.,.,', 'machete.y', 60)
   def _reduce_8(val, _values, result)
              result = NodeMatcher.new(val[0].to_sym, val[2])
-       
+
     result
   end
 .,.,
@@ -541,14 +541,14 @@ module_eval(<<'.,.,', 'machete.y', 60)
 
 module_eval(<<'.,.,', 'machete.y', 64)
   def _reduce_10(val, _values, result)
-     result = val[0].merge(val[2]) 
+     result = val[0].merge(val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 66)
   def _reduce_11(val, _values, result)
-     result = { val[0].to_sym => val[2] } 
+     result = { val[0].to_sym => val[2] }
     result
   end
 .,.,
@@ -560,7 +560,7 @@ module_eval(<<'.,.,', 'machete.y', 68)
              Regexp.new("^" + Regexp.escape(symbol_value(val[2]).to_s))
            )
          }
-       
+
     result
   end
 .,.,
@@ -572,7 +572,7 @@ module_eval(<<'.,.,', 'machete.y', 75)
              Regexp.new(Regexp.escape(symbol_value(val[2]).to_s) + "$")
            )
          }
-       
+
     result
   end
 .,.,
@@ -584,7 +584,7 @@ module_eval(<<'.,.,', 'machete.y', 82)
              Regexp.new(Regexp.escape(symbol_value(val[2]).to_s))
            )
          }
-       
+
     result
   end
 .,.,
@@ -596,7 +596,7 @@ module_eval(<<'.,.,', 'machete.y', 89)
              Regexp.new("^" + Regexp.escape(string_value(val[2])))
            )
          }
-       
+
     result
   end
 .,.,
@@ -608,7 +608,7 @@ module_eval(<<'.,.,', 'machete.y', 96)
              Regexp.new(Regexp.escape(string_value(val[2])) + "$")
            )
          }
-       
+
     result
   end
 .,.,
@@ -620,7 +620,7 @@ module_eval(<<'.,.,', 'machete.y', 103)
              Regexp.new(Regexp.escape(string_value(val[2])))
            )
          }
-       
+
     result
   end
 .,.,
@@ -632,7 +632,7 @@ module_eval(<<'.,.,', 'machete.y', 110)
              Regexp.new(regexp_value(val[2]))
            )
          }
-       
+
     result
   end
 .,.,
@@ -665,14 +665,14 @@ module_eval(<<'.,.,', 'machete.y', 110)
 
 module_eval(<<'.,.,', 'machete.y', 134)
   def _reduce_32(val, _values, result)
-     result = ArrayMatcher.new(val[1]) 
+     result = ArrayMatcher.new(val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 136)
   def _reduce_33(val, _values, result)
-     result = [] 
+     result = []
     result
   end
 .,.,
@@ -681,14 +681,14 @@ module_eval(<<'.,.,', 'machete.y', 136)
 
 module_eval(<<'.,.,', 'machete.y', 139)
   def _reduce_35(val, _values, result)
-     result = [val[0]] 
+     result = [val[0]]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 140)
   def _reduce_36(val, _values, result)
-     result = val[0] << val[2] 
+     result = val[0] << val[2]
     result
   end
 .,.,
@@ -697,28 +697,28 @@ module_eval(<<'.,.,', 'machete.y', 140)
 
 module_eval(<<'.,.,', 'machete.y', 143)
   def _reduce_38(val, _values, result)
-     result = Quantifier.new(val[0], *val[1]) 
+     result = Quantifier.new(val[0], *val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 145)
   def _reduce_39(val, _values, result)
-     result = [0, nil, 1] 
+     result = [0, nil, 1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 146)
   def _reduce_40(val, _values, result)
-     result = [1, nil, 1] 
+     result = [1, nil, 1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 147)
   def _reduce_41(val, _values, result)
-     result = [0, 1, 1] 
+     result = [0, 1, 1]
     result
   end
 .,.,
@@ -726,7 +726,7 @@ module_eval(<<'.,.,', 'machete.y', 147)
 module_eval(<<'.,.,', 'machete.y', 149)
   def _reduce_42(val, _values, result)
                  result = [integer_value(val[1]), integer_value(val[1]), 1]
-           
+
     result
   end
 .,.,
@@ -734,7 +734,7 @@ module_eval(<<'.,.,', 'machete.y', 149)
 module_eval(<<'.,.,', 'machete.y', 152)
   def _reduce_43(val, _values, result)
                  result = [integer_value(val[1]), nil, 1]
-           
+
     result
   end
 .,.,
@@ -742,7 +742,7 @@ module_eval(<<'.,.,', 'machete.y', 152)
 module_eval(<<'.,.,', 'machete.y', 155)
   def _reduce_44(val, _values, result)
                  result = [0, integer_value(val[2]), 1]
-           
+
     result
   end
 .,.,
@@ -750,77 +750,77 @@ module_eval(<<'.,.,', 'machete.y', 155)
 module_eval(<<'.,.,', 'machete.y', 158)
   def _reduce_45(val, _values, result)
                  result = [integer_value(val[1]), integer_value(val[3]), 1]
-           
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 160)
   def _reduce_46(val, _values, result)
-     result = [0, nil, 2] 
+     result = [0, nil, 2]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 161)
   def _reduce_47(val, _values, result)
-     result = [1, nil, 2] 
+     result = [1, nil, 2]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 163)
   def _reduce_48(val, _values, result)
-     result = LiteralMatcher.new(nil) 
+     result = LiteralMatcher.new(nil)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 164)
   def _reduce_49(val, _values, result)
-     result = LiteralMatcher.new(true) 
+     result = LiteralMatcher.new(true)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 165)
   def _reduce_50(val, _values, result)
-     result = LiteralMatcher.new(false) 
+     result = LiteralMatcher.new(false)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 166)
   def _reduce_51(val, _values, result)
-     result = LiteralMatcher.new(integer_value(val[0])) 
+     result = LiteralMatcher.new(integer_value(val[0]))
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 167)
   def _reduce_52(val, _values, result)
-     result = LiteralMatcher.new(symbol_value(val[0])) 
+     result = LiteralMatcher.new(symbol_value(val[0]))
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 168)
   def _reduce_53(val, _values, result)
-     result = LiteralMatcher.new(string_value(val[0])) 
+     result = LiteralMatcher.new(string_value(val[0]))
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 169)
   def _reduce_54(val, _values, result)
-     result = LiteralMatcher.new(regexp_value(val[0])) 
+     result = LiteralMatcher.new(regexp_value(val[0]))
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'machete.y', 171)
   def _reduce_55(val, _values, result)
-     result = AnyMatcher.new 
+     result = AnyMatcher.new
     result
   end
 .,.,

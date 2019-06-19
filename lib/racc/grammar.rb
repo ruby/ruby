@@ -569,7 +569,7 @@ module Racc
         check_symbols_useless s
       end until r.size == rs and s.size == ss
     end
-    
+
     def check_rules_useless(rules)
       rules.delete_if do |rule|
         rule.useless = false
@@ -853,7 +853,7 @@ module Racc
     end
 
     private
-    
+
     def ptr_bug!
       raise "racc: fatal: pointer not exist: self: #{to_s}"
     end

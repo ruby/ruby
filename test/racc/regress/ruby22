@@ -3347,7 +3347,7 @@ Racc_debug_parser = false
 module_eval(<<'.,.,', 'ruby22.y', 78)
   def _reduce_2(val, _values, result)
                           result = @builder.compstmt(val[0])
-                    
+
     result
   end
 .,.,
@@ -3355,7 +3355,7 @@ module_eval(<<'.,.,', 'ruby22.y', 78)
 module_eval(<<'.,.,', 'ruby22.y', 83)
   def _reduce_3(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -3363,7 +3363,7 @@ module_eval(<<'.,.,', 'ruby22.y', 83)
 module_eval(<<'.,.,', 'ruby22.y', 87)
   def _reduce_4(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -3371,7 +3371,7 @@ module_eval(<<'.,.,', 'ruby22.y', 87)
 module_eval(<<'.,.,', 'ruby22.y', 91)
   def _reduce_5(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -3379,7 +3379,7 @@ module_eval(<<'.,.,', 'ruby22.y', 91)
 module_eval(<<'.,.,', 'ruby22.y', 95)
   def _reduce_6(val, _values, result)
                           result = [ val[1] ]
-                    
+
     result
   end
 .,.,
@@ -3389,7 +3389,7 @@ module_eval(<<'.,.,', 'ruby22.y', 95)
 module_eval(<<'.,.,', 'ruby22.y', 101)
   def _reduce_8(val, _values, result)
                           result = @builder.preexe(val[0], val[1], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -3408,7 +3408,7 @@ module_eval(<<'.,.,', 'ruby22.y', 106)
                                   rescue_bodies,
                                   else_t,   else_,
                                   ensure_t, ensure_)
-                    
+
     result
   end
 .,.,
@@ -3416,7 +3416,7 @@ module_eval(<<'.,.,', 'ruby22.y', 106)
 module_eval(<<'.,.,', 'ruby22.y', 122)
   def _reduce_10(val, _values, result)
                           result = @builder.compstmt(val[0])
-                    
+
     result
   end
 .,.,
@@ -3424,7 +3424,7 @@ module_eval(<<'.,.,', 'ruby22.y', 122)
 module_eval(<<'.,.,', 'ruby22.y', 127)
   def _reduce_11(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -3432,7 +3432,7 @@ module_eval(<<'.,.,', 'ruby22.y', 127)
 module_eval(<<'.,.,', 'ruby22.y', 131)
   def _reduce_12(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -3440,7 +3440,7 @@ module_eval(<<'.,.,', 'ruby22.y', 131)
 module_eval(<<'.,.,', 'ruby22.y', 135)
   def _reduce_13(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -3448,7 +3448,7 @@ module_eval(<<'.,.,', 'ruby22.y', 135)
 module_eval(<<'.,.,', 'ruby22.y', 139)
   def _reduce_14(val, _values, result)
                           result = [ val[1] ]
-                    
+
     result
   end
 .,.,
@@ -3458,7 +3458,7 @@ module_eval(<<'.,.,', 'ruby22.y', 139)
 module_eval(<<'.,.,', 'ruby22.y', 145)
   def _reduce_16(val, _values, result)
                           diagnostic :error, :begin_in_method, nil, val[0]
-                    
+
     result
   end
 .,.,
@@ -3466,7 +3466,7 @@ module_eval(<<'.,.,', 'ruby22.y', 145)
 module_eval(<<'.,.,', 'ruby22.y', 150)
   def _reduce_17(val, _values, result)
                           @lexer.state = :expr_fname
-                    
+
     result
   end
 .,.,
@@ -3474,7 +3474,7 @@ module_eval(<<'.,.,', 'ruby22.y', 150)
 module_eval(<<'.,.,', 'ruby22.y', 154)
   def _reduce_18(val, _values, result)
                           result = @builder.alias(val[0], val[1], val[3])
-                    
+
     result
   end
 .,.,
@@ -3484,7 +3484,7 @@ module_eval(<<'.,.,', 'ruby22.y', 158)
                           result = @builder.alias(val[0],
                                   @builder.gvar(val[1]),
                                   @builder.gvar(val[2]))
-                    
+
     result
   end
 .,.,
@@ -3494,7 +3494,7 @@ module_eval(<<'.,.,', 'ruby22.y', 164)
                           result = @builder.alias(val[0],
                                   @builder.gvar(val[1]),
                                   @builder.back_ref(val[2]))
-                    
+
     result
   end
 .,.,
@@ -3502,7 +3502,7 @@ module_eval(<<'.,.,', 'ruby22.y', 164)
 module_eval(<<'.,.,', 'ruby22.y', 170)
   def _reduce_21(val, _values, result)
                           diagnostic :error, :nth_ref_alias, nil, val[2]
-                    
+
     result
   end
 .,.,
@@ -3510,7 +3510,7 @@ module_eval(<<'.,.,', 'ruby22.y', 170)
 module_eval(<<'.,.,', 'ruby22.y', 174)
   def _reduce_22(val, _values, result)
                           result = @builder.undef_method(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -3519,7 +3519,7 @@ module_eval(<<'.,.,', 'ruby22.y', 178)
   def _reduce_23(val, _values, result)
                           result = @builder.condition_mod(val[0], nil,
                                                       val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3528,7 +3528,7 @@ module_eval(<<'.,.,', 'ruby22.y', 183)
   def _reduce_24(val, _values, result)
                           result = @builder.condition_mod(nil, val[0],
                                                       val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3536,7 +3536,7 @@ module_eval(<<'.,.,', 'ruby22.y', 183)
 module_eval(<<'.,.,', 'ruby22.y', 188)
   def _reduce_25(val, _values, result)
                           result = @builder.loop_mod(:while, val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3544,7 +3544,7 @@ module_eval(<<'.,.,', 'ruby22.y', 188)
 module_eval(<<'.,.,', 'ruby22.y', 192)
   def _reduce_26(val, _values, result)
                           result = @builder.loop_mod(:until, val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3556,7 +3556,7 @@ module_eval(<<'.,.,', 'ruby22.y', 196)
                                         nil, val[2])
 
                       result = @builder.begin_body(val[0], [ rescue_body ])
-                    
+
     result
   end
 .,.,
@@ -3564,7 +3564,7 @@ module_eval(<<'.,.,', 'ruby22.y', 196)
 module_eval(<<'.,.,', 'ruby22.y', 204)
   def _reduce_28(val, _values, result)
                           result = @builder.postexe(val[0], val[1], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -3574,7 +3574,7 @@ module_eval(<<'.,.,', 'ruby22.y', 204)
 module_eval(<<'.,.,', 'ruby22.y', 209)
   def _reduce_30(val, _values, result)
                           result = @builder.multi_assign(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3582,7 +3582,7 @@ module_eval(<<'.,.,', 'ruby22.y', 209)
 module_eval(<<'.,.,', 'ruby22.y', 213)
   def _reduce_31(val, _values, result)
                           result = @builder.op_assign(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3593,7 +3593,7 @@ module_eval(<<'.,.,', 'ruby22.y', 217)
                                   @builder.index(
                                     val[0], val[1], val[2], val[3]),
                                   val[4], val[5])
-                    
+
     result
   end
 .,.,
@@ -3604,7 +3604,7 @@ module_eval(<<'.,.,', 'ruby22.y', 224)
                                   @builder.call_method(
                                     val[0], val[1], val[2]),
                                   val[3], val[4])
-                    
+
     result
   end
 .,.,
@@ -3615,7 +3615,7 @@ module_eval(<<'.,.,', 'ruby22.y', 231)
                                   @builder.call_method(
                                     val[0], val[1], val[2]),
                                   val[3], val[4])
-                    
+
     result
   end
 .,.,
@@ -3626,7 +3626,7 @@ module_eval(<<'.,.,', 'ruby22.y', 238)
                                   @builder.call_method(
                                     val[0], val[1], val[2]),
                                   val[3], val[4])
-                    
+
     result
   end
 .,.,
@@ -3637,7 +3637,7 @@ module_eval(<<'.,.,', 'ruby22.y', 245)
                                   @builder.call_method(
                                     val[0], val[1], val[2]),
                                   val[3], val[4])
-                    
+
     result
   end
 .,.,
@@ -3645,7 +3645,7 @@ module_eval(<<'.,.,', 'ruby22.y', 245)
 module_eval(<<'.,.,', 'ruby22.y', 252)
   def _reduce_37(val, _values, result)
                           @builder.op_assign(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3654,7 +3654,7 @@ module_eval(<<'.,.,', 'ruby22.y', 256)
   def _reduce_38(val, _values, result)
                           result = @builder.assign(val[0], val[1],
                                   @builder.array(nil, val[2], nil))
-                    
+
     result
   end
 .,.,
@@ -3662,7 +3662,7 @@ module_eval(<<'.,.,', 'ruby22.y', 256)
 module_eval(<<'.,.,', 'ruby22.y', 261)
   def _reduce_39(val, _values, result)
                           result = @builder.multi_assign(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3672,7 +3672,7 @@ module_eval(<<'.,.,', 'ruby22.y', 261)
 module_eval(<<'.,.,', 'ruby22.y', 267)
   def _reduce_41(val, _values, result)
                           result = @builder.assign(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3680,7 +3680,7 @@ module_eval(<<'.,.,', 'ruby22.y', 267)
 module_eval(<<'.,.,', 'ruby22.y', 271)
   def _reduce_42(val, _values, result)
                           result = @builder.assign(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3690,7 +3690,7 @@ module_eval(<<'.,.,', 'ruby22.y', 271)
 module_eval(<<'.,.,', 'ruby22.y', 277)
   def _reduce_44(val, _values, result)
                           result = @builder.logical_op(:and, val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3698,7 +3698,7 @@ module_eval(<<'.,.,', 'ruby22.y', 277)
 module_eval(<<'.,.,', 'ruby22.y', 281)
   def _reduce_45(val, _values, result)
                           result = @builder.logical_op(:or, val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3706,7 +3706,7 @@ module_eval(<<'.,.,', 'ruby22.y', 281)
 module_eval(<<'.,.,', 'ruby22.y', 285)
   def _reduce_46(val, _values, result)
                           result = @builder.not_op(val[0], nil, val[2], nil)
-                    
+
     result
   end
 .,.,
@@ -3714,7 +3714,7 @@ module_eval(<<'.,.,', 'ruby22.y', 285)
 module_eval(<<'.,.,', 'ruby22.y', 289)
   def _reduce_47(val, _values, result)
                           result = @builder.not_op(val[0], nil, val[1], nil)
-                    
+
     result
   end
 .,.,
@@ -3733,7 +3733,7 @@ module_eval(<<'.,.,', 'ruby22.y', 301)
   def _reduce_53(val, _values, result)
                           result = @builder.call_method(val[0], val[1], val[2],
                                   nil, val[3], nil)
-                    
+
     result
   end
 .,.,
@@ -3741,7 +3741,7 @@ module_eval(<<'.,.,', 'ruby22.y', 301)
 module_eval(<<'.,.,', 'ruby22.y', 307)
   def _reduce_54(val, _values, result)
                           @static_env.extend_dynamic
-                    
+
     result
   end
 .,.,
@@ -3751,7 +3751,7 @@ module_eval(<<'.,.,', 'ruby22.y', 311)
                           result = [ val[0], val[2], val[3], val[4] ]
 
                       @static_env.unextend
-                    
+
     result
   end
 .,.,
@@ -3762,7 +3762,7 @@ module_eval(<<'.,.,', 'ruby22.y', 320)
   def _reduce_57(val, _values, result)
                           result = @builder.call_method(nil, nil, val[0],
                                   nil, val[1], nil)
-                    
+
     result
   end
 .,.,
@@ -3775,7 +3775,7 @@ module_eval(<<'.,.,', 'ruby22.y', 325)
                       begin_t, args, body, end_t = val[2]
                       result      = @builder.block(method_call,
                                       begin_t, args, body, end_t)
-                    
+
     result
   end
 .,.,
@@ -3784,7 +3784,7 @@ module_eval(<<'.,.,', 'ruby22.y', 334)
   def _reduce_59(val, _values, result)
                           result = @builder.call_method(val[0], val[1], val[2],
                                   nil, val[3], nil)
-                    
+
     result
   end
 .,.,
@@ -3797,7 +3797,7 @@ module_eval(<<'.,.,', 'ruby22.y', 339)
                       begin_t, args, body, end_t = val[4]
                       result      = @builder.block(method_call,
                                       begin_t, args, body, end_t)
-                    
+
     result
   end
 .,.,
@@ -3806,7 +3806,7 @@ module_eval(<<'.,.,', 'ruby22.y', 348)
   def _reduce_61(val, _values, result)
                           result = @builder.call_method(val[0], val[1], val[2],
                                   nil, val[3], nil)
-                    
+
     result
   end
 .,.,
@@ -3819,7 +3819,7 @@ module_eval(<<'.,.,', 'ruby22.y', 353)
                       begin_t, args, body, end_t = val[4]
                       result      = @builder.block(method_call,
                                       begin_t, args, body, end_t)
-                    
+
     result
   end
 .,.,
@@ -3828,7 +3828,7 @@ module_eval(<<'.,.,', 'ruby22.y', 362)
   def _reduce_63(val, _values, result)
                           result = @builder.keyword_cmd(:super, val[0],
                                   nil, val[1], nil)
-                    
+
     result
   end
 .,.,
@@ -3837,7 +3837,7 @@ module_eval(<<'.,.,', 'ruby22.y', 367)
   def _reduce_64(val, _values, result)
                           result = @builder.keyword_cmd(:yield, val[0],
                                   nil, val[1], nil)
-                    
+
     result
   end
 .,.,
@@ -3846,7 +3846,7 @@ module_eval(<<'.,.,', 'ruby22.y', 372)
   def _reduce_65(val, _values, result)
                           result = @builder.keyword_cmd(:return, val[0],
                                   nil, val[1], nil)
-                    
+
     result
   end
 .,.,
@@ -3855,7 +3855,7 @@ module_eval(<<'.,.,', 'ruby22.y', 377)
   def _reduce_66(val, _values, result)
                           result = @builder.keyword_cmd(:break, val[0],
                                   nil, val[1], nil)
-                    
+
     result
   end
 .,.,
@@ -3864,7 +3864,7 @@ module_eval(<<'.,.,', 'ruby22.y', 382)
   def _reduce_67(val, _values, result)
                           result = @builder.keyword_cmd(:next, val[0],
                                   nil, val[1], nil)
-                    
+
     result
   end
 .,.,
@@ -3872,7 +3872,7 @@ module_eval(<<'.,.,', 'ruby22.y', 382)
 module_eval(<<'.,.,', 'ruby22.y', 388)
   def _reduce_68(val, _values, result)
                           result = @builder.multi_lhs(nil, val[0], nil)
-                    
+
     result
   end
 .,.,
@@ -3880,7 +3880,7 @@ module_eval(<<'.,.,', 'ruby22.y', 388)
 module_eval(<<'.,.,', 'ruby22.y', 392)
   def _reduce_69(val, _values, result)
                           result = @builder.begin(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3888,7 +3888,7 @@ module_eval(<<'.,.,', 'ruby22.y', 392)
 module_eval(<<'.,.,', 'ruby22.y', 397)
   def _reduce_70(val, _values, result)
                           result = @builder.multi_lhs(nil, val[0], nil)
-                    
+
     result
   end
 .,.,
@@ -3896,7 +3896,7 @@ module_eval(<<'.,.,', 'ruby22.y', 397)
 module_eval(<<'.,.,', 'ruby22.y', 401)
   def _reduce_71(val, _values, result)
                           result = @builder.multi_lhs(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3907,7 +3907,7 @@ module_eval(<<'.,.,', 'ruby22.y', 407)
   def _reduce_73(val, _values, result)
                           result = val[0].
                                   push(val[1])
-                    
+
     result
   end
 .,.,
@@ -3916,7 +3916,7 @@ module_eval(<<'.,.,', 'ruby22.y', 412)
   def _reduce_74(val, _values, result)
                           result = val[0].
                                   push(@builder.splat(val[1], val[2]))
-                    
+
     result
   end
 .,.,
@@ -3926,7 +3926,7 @@ module_eval(<<'.,.,', 'ruby22.y', 417)
                           result = val[0].
                                   push(@builder.splat(val[1], val[2])).
                                   concat(val[4])
-                    
+
     result
   end
 .,.,
@@ -3935,7 +3935,7 @@ module_eval(<<'.,.,', 'ruby22.y', 423)
   def _reduce_76(val, _values, result)
                           result = val[0].
                                   push(@builder.splat(val[1]))
-                    
+
     result
   end
 .,.,
@@ -3945,7 +3945,7 @@ module_eval(<<'.,.,', 'ruby22.y', 428)
                           result = val[0].
                                   push(@builder.splat(val[1])).
                                   concat(val[3])
-                    
+
     result
   end
 .,.,
@@ -3953,7 +3953,7 @@ module_eval(<<'.,.,', 'ruby22.y', 428)
 module_eval(<<'.,.,', 'ruby22.y', 434)
   def _reduce_78(val, _values, result)
                           result = [ @builder.splat(val[0], val[1]) ]
-                    
+
     result
   end
 .,.,
@@ -3962,7 +3962,7 @@ module_eval(<<'.,.,', 'ruby22.y', 438)
   def _reduce_79(val, _values, result)
                           result = [ @builder.splat(val[0], val[1]),
                                  *val[3] ]
-                    
+
     result
   end
 .,.,
@@ -3970,7 +3970,7 @@ module_eval(<<'.,.,', 'ruby22.y', 438)
 module_eval(<<'.,.,', 'ruby22.y', 443)
   def _reduce_80(val, _values, result)
                           result = [ @builder.splat(val[0]) ]
-                    
+
     result
   end
 .,.,
@@ -3979,7 +3979,7 @@ module_eval(<<'.,.,', 'ruby22.y', 447)
   def _reduce_81(val, _values, result)
                           result = [ @builder.splat(val[0]),
                                  *val[2] ]
-                    
+
     result
   end
 .,.,
@@ -3989,7 +3989,7 @@ module_eval(<<'.,.,', 'ruby22.y', 447)
 module_eval(<<'.,.,', 'ruby22.y', 454)
   def _reduce_83(val, _values, result)
                           result = @builder.begin(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3997,7 +3997,7 @@ module_eval(<<'.,.,', 'ruby22.y', 454)
 module_eval(<<'.,.,', 'ruby22.y', 459)
   def _reduce_84(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -4005,7 +4005,7 @@ module_eval(<<'.,.,', 'ruby22.y', 459)
 module_eval(<<'.,.,', 'ruby22.y', 463)
   def _reduce_85(val, _values, result)
                           result = val[0] << val[1]
-                    
+
     result
   end
 .,.,
@@ -4013,7 +4013,7 @@ module_eval(<<'.,.,', 'ruby22.y', 463)
 module_eval(<<'.,.,', 'ruby22.y', 468)
   def _reduce_86(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -4021,7 +4021,7 @@ module_eval(<<'.,.,', 'ruby22.y', 468)
 module_eval(<<'.,.,', 'ruby22.y', 472)
   def _reduce_87(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -4029,7 +4029,7 @@ module_eval(<<'.,.,', 'ruby22.y', 472)
 module_eval(<<'.,.,', 'ruby22.y', 477)
   def _reduce_88(val, _values, result)
                           result = @builder.assignable(val[0])
-                    
+
     result
   end
 .,.,
@@ -4037,7 +4037,7 @@ module_eval(<<'.,.,', 'ruby22.y', 477)
 module_eval(<<'.,.,', 'ruby22.y', 481)
   def _reduce_89(val, _values, result)
                           result = @builder.assignable(val[0])
-                    
+
     result
   end
 .,.,
@@ -4045,7 +4045,7 @@ module_eval(<<'.,.,', 'ruby22.y', 481)
 module_eval(<<'.,.,', 'ruby22.y', 485)
   def _reduce_90(val, _values, result)
                           result = @builder.index_asgn(val[0], val[1], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -4053,7 +4053,7 @@ module_eval(<<'.,.,', 'ruby22.y', 485)
 module_eval(<<'.,.,', 'ruby22.y', 489)
   def _reduce_91(val, _values, result)
                           result = @builder.attr_asgn(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4061,7 +4061,7 @@ module_eval(<<'.,.,', 'ruby22.y', 489)
 module_eval(<<'.,.,', 'ruby22.y', 493)
   def _reduce_92(val, _values, result)
                           result = @builder.attr_asgn(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4069,7 +4069,7 @@ module_eval(<<'.,.,', 'ruby22.y', 493)
 module_eval(<<'.,.,', 'ruby22.y', 497)
   def _reduce_93(val, _values, result)
                           result = @builder.attr_asgn(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4078,7 +4078,7 @@ module_eval(<<'.,.,', 'ruby22.y', 501)
   def _reduce_94(val, _values, result)
                           result = @builder.assignable(
                                   @builder.const_fetch(val[0], val[1], val[2]))
-                    
+
     result
   end
 .,.,
@@ -4087,7 +4087,7 @@ module_eval(<<'.,.,', 'ruby22.y', 506)
   def _reduce_95(val, _values, result)
                           result = @builder.assignable(
                                   @builder.const_global(val[0], val[1]))
-                    
+
     result
   end
 .,.,
@@ -4095,7 +4095,7 @@ module_eval(<<'.,.,', 'ruby22.y', 506)
 module_eval(<<'.,.,', 'ruby22.y', 511)
   def _reduce_96(val, _values, result)
                           result = @builder.assignable(val[0])
-                    
+
     result
   end
 .,.,
@@ -4103,7 +4103,7 @@ module_eval(<<'.,.,', 'ruby22.y', 511)
 module_eval(<<'.,.,', 'ruby22.y', 516)
   def _reduce_97(val, _values, result)
                           result = @builder.assignable(val[0])
-                    
+
     result
   end
 .,.,
@@ -4111,7 +4111,7 @@ module_eval(<<'.,.,', 'ruby22.y', 516)
 module_eval(<<'.,.,', 'ruby22.y', 520)
   def _reduce_98(val, _values, result)
                           result = @builder.assignable(val[0])
-                    
+
     result
   end
 .,.,
@@ -4119,7 +4119,7 @@ module_eval(<<'.,.,', 'ruby22.y', 520)
 module_eval(<<'.,.,', 'ruby22.y', 524)
   def _reduce_99(val, _values, result)
                           result = @builder.index_asgn(val[0], val[1], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -4127,7 +4127,7 @@ module_eval(<<'.,.,', 'ruby22.y', 524)
 module_eval(<<'.,.,', 'ruby22.y', 528)
   def _reduce_100(val, _values, result)
                           result = @builder.attr_asgn(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4135,7 +4135,7 @@ module_eval(<<'.,.,', 'ruby22.y', 528)
 module_eval(<<'.,.,', 'ruby22.y', 532)
   def _reduce_101(val, _values, result)
                           result = @builder.attr_asgn(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4143,7 +4143,7 @@ module_eval(<<'.,.,', 'ruby22.y', 532)
 module_eval(<<'.,.,', 'ruby22.y', 536)
   def _reduce_102(val, _values, result)
                           result = @builder.attr_asgn(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4152,7 +4152,7 @@ module_eval(<<'.,.,', 'ruby22.y', 540)
   def _reduce_103(val, _values, result)
                           result = @builder.assignable(
                                   @builder.const_fetch(val[0], val[1], val[2]))
-                    
+
     result
   end
 .,.,
@@ -4161,7 +4161,7 @@ module_eval(<<'.,.,', 'ruby22.y', 545)
   def _reduce_104(val, _values, result)
                           result = @builder.assignable(
                                   @builder.const_global(val[0], val[1]))
-                    
+
     result
   end
 .,.,
@@ -4169,7 +4169,7 @@ module_eval(<<'.,.,', 'ruby22.y', 545)
 module_eval(<<'.,.,', 'ruby22.y', 550)
   def _reduce_105(val, _values, result)
                           result = @builder.assignable(val[0])
-                    
+
     result
   end
 .,.,
@@ -4177,7 +4177,7 @@ module_eval(<<'.,.,', 'ruby22.y', 550)
 module_eval(<<'.,.,', 'ruby22.y', 555)
   def _reduce_106(val, _values, result)
                           diagnostic :error, :module_name_const, nil, val[0]
-                    
+
     result
   end
 .,.,
@@ -4187,7 +4187,7 @@ module_eval(<<'.,.,', 'ruby22.y', 555)
 module_eval(<<'.,.,', 'ruby22.y', 561)
   def _reduce_108(val, _values, result)
                           result = @builder.const_global(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -4195,7 +4195,7 @@ module_eval(<<'.,.,', 'ruby22.y', 561)
 module_eval(<<'.,.,', 'ruby22.y', 565)
   def _reduce_109(val, _values, result)
                           result = @builder.const(val[0])
-                    
+
     result
   end
 .,.,
@@ -4203,7 +4203,7 @@ module_eval(<<'.,.,', 'ruby22.y', 565)
 module_eval(<<'.,.,', 'ruby22.y', 569)
   def _reduce_110(val, _values, result)
                           result = @builder.const_fetch(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4221,7 +4221,7 @@ module_eval(<<'.,.,', 'ruby22.y', 569)
 module_eval(<<'.,.,', 'ruby22.y', 578)
   def _reduce_116(val, _values, result)
                           result = @builder.symbol(val[0])
-                    
+
     result
   end
 .,.,
@@ -4235,7 +4235,7 @@ module_eval(<<'.,.,', 'ruby22.y', 578)
 module_eval(<<'.,.,', 'ruby22.y', 587)
   def _reduce_120(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -4243,7 +4243,7 @@ module_eval(<<'.,.,', 'ruby22.y', 587)
 module_eval(<<'.,.,', 'ruby22.y', 591)
   def _reduce_121(val, _values, result)
                           @lexer.state = :expr_fname
-                    
+
     result
   end
 .,.,
@@ -4251,7 +4251,7 @@ module_eval(<<'.,.,', 'ruby22.y', 591)
 module_eval(<<'.,.,', 'ruby22.y', 595)
   def _reduce_122(val, _values, result)
                           result = val[0] << val[3]
-                    
+
     result
   end
 .,.,
@@ -4401,7 +4401,7 @@ module_eval(<<'.,.,', 'ruby22.y', 595)
 module_eval(<<'.,.,', 'ruby22.y', 616)
   def _reduce_194(val, _values, result)
                           result = @builder.assign(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4415,7 +4415,7 @@ module_eval(<<'.,.,', 'ruby22.y', 620)
                       rescue_ = @builder.begin_body(val[2], [ rescue_body ])
 
                       result  = @builder.assign(val[0], val[1], rescue_)
-                    
+
     result
   end
 .,.,
@@ -4423,7 +4423,7 @@ module_eval(<<'.,.,', 'ruby22.y', 620)
 module_eval(<<'.,.,', 'ruby22.y', 630)
   def _reduce_196(val, _values, result)
                           result = @builder.op_assign(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4437,7 +4437,7 @@ module_eval(<<'.,.,', 'ruby22.y', 634)
                       rescue_ = @builder.begin_body(val[2], [ rescue_body ])
 
                       result = @builder.op_assign(val[0], val[1], rescue_)
-                    
+
     result
   end
 .,.,
@@ -4448,7 +4448,7 @@ module_eval(<<'.,.,', 'ruby22.y', 644)
                                   @builder.index(
                                     val[0], val[1], val[2], val[3]),
                                   val[4], val[5])
-                    
+
     result
   end
 .,.,
@@ -4459,7 +4459,7 @@ module_eval(<<'.,.,', 'ruby22.y', 651)
                                   @builder.call_method(
                                     val[0], val[1], val[2]),
                                   val[3], val[4])
-                    
+
     result
   end
 .,.,
@@ -4470,7 +4470,7 @@ module_eval(<<'.,.,', 'ruby22.y', 658)
                                   @builder.call_method(
                                     val[0], val[1], val[2]),
                                   val[3], val[4])
-                    
+
     result
   end
 .,.,
@@ -4481,7 +4481,7 @@ module_eval(<<'.,.,', 'ruby22.y', 665)
                                   @builder.call_method(
                                     val[0], val[1], val[2]),
                                   val[3], val[4])
-                    
+
     result
   end
 .,.,
@@ -4491,7 +4491,7 @@ module_eval(<<'.,.,', 'ruby22.y', 672)
                           const  = @builder.const_op_assignable(
                                   @builder.const_fetch(val[0], val[1], val[2]))
                       result = @builder.op_assign(const, val[3], val[4])
-                    
+
     result
   end
 .,.,
@@ -4501,7 +4501,7 @@ module_eval(<<'.,.,', 'ruby22.y', 678)
                           const  = @builder.const_op_assignable(
                                   @builder.const_global(val[0], val[1]))
                       result = @builder.op_assign(const, val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -4509,7 +4509,7 @@ module_eval(<<'.,.,', 'ruby22.y', 678)
 module_eval(<<'.,.,', 'ruby22.y', 684)
   def _reduce_204(val, _values, result)
                           result = @builder.op_assign(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4517,7 +4517,7 @@ module_eval(<<'.,.,', 'ruby22.y', 684)
 module_eval(<<'.,.,', 'ruby22.y', 688)
   def _reduce_205(val, _values, result)
                           result = @builder.range_inclusive(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4525,7 +4525,7 @@ module_eval(<<'.,.,', 'ruby22.y', 688)
 module_eval(<<'.,.,', 'ruby22.y', 692)
   def _reduce_206(val, _values, result)
                           result = @builder.range_exclusive(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4533,7 +4533,7 @@ module_eval(<<'.,.,', 'ruby22.y', 692)
 module_eval(<<'.,.,', 'ruby22.y', 696)
   def _reduce_207(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4541,7 +4541,7 @@ module_eval(<<'.,.,', 'ruby22.y', 696)
 module_eval(<<'.,.,', 'ruby22.y', 700)
   def _reduce_208(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4549,7 +4549,7 @@ module_eval(<<'.,.,', 'ruby22.y', 700)
 module_eval(<<'.,.,', 'ruby22.y', 704)
   def _reduce_209(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4557,7 +4557,7 @@ module_eval(<<'.,.,', 'ruby22.y', 704)
 module_eval(<<'.,.,', 'ruby22.y', 708)
   def _reduce_210(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4565,7 +4565,7 @@ module_eval(<<'.,.,', 'ruby22.y', 708)
 module_eval(<<'.,.,', 'ruby22.y', 712)
   def _reduce_211(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4573,7 +4573,7 @@ module_eval(<<'.,.,', 'ruby22.y', 712)
 module_eval(<<'.,.,', 'ruby22.y', 716)
   def _reduce_212(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4583,7 +4583,7 @@ module_eval(<<'.,.,', 'ruby22.y', 720)
                           result = @builder.unary_op(val[0],
                                   @builder.binary_op(
                                     val[1], val[2], val[3]))
-                    
+
     result
   end
 .,.,
@@ -4591,7 +4591,7 @@ module_eval(<<'.,.,', 'ruby22.y', 720)
 module_eval(<<'.,.,', 'ruby22.y', 726)
   def _reduce_214(val, _values, result)
                           result = @builder.unary_op(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -4599,7 +4599,7 @@ module_eval(<<'.,.,', 'ruby22.y', 726)
 module_eval(<<'.,.,', 'ruby22.y', 730)
   def _reduce_215(val, _values, result)
                           result = @builder.unary_op(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -4607,7 +4607,7 @@ module_eval(<<'.,.,', 'ruby22.y', 730)
 module_eval(<<'.,.,', 'ruby22.y', 734)
   def _reduce_216(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4615,7 +4615,7 @@ module_eval(<<'.,.,', 'ruby22.y', 734)
 module_eval(<<'.,.,', 'ruby22.y', 738)
   def _reduce_217(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4623,7 +4623,7 @@ module_eval(<<'.,.,', 'ruby22.y', 738)
 module_eval(<<'.,.,', 'ruby22.y', 742)
   def _reduce_218(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4631,7 +4631,7 @@ module_eval(<<'.,.,', 'ruby22.y', 742)
 module_eval(<<'.,.,', 'ruby22.y', 746)
   def _reduce_219(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4639,7 +4639,7 @@ module_eval(<<'.,.,', 'ruby22.y', 746)
 module_eval(<<'.,.,', 'ruby22.y', 750)
   def _reduce_220(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4647,7 +4647,7 @@ module_eval(<<'.,.,', 'ruby22.y', 750)
 module_eval(<<'.,.,', 'ruby22.y', 754)
   def _reduce_221(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4655,7 +4655,7 @@ module_eval(<<'.,.,', 'ruby22.y', 754)
 module_eval(<<'.,.,', 'ruby22.y', 758)
   def _reduce_222(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4663,7 +4663,7 @@ module_eval(<<'.,.,', 'ruby22.y', 758)
 module_eval(<<'.,.,', 'ruby22.y', 762)
   def _reduce_223(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4671,7 +4671,7 @@ module_eval(<<'.,.,', 'ruby22.y', 762)
 module_eval(<<'.,.,', 'ruby22.y', 766)
   def _reduce_224(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4679,7 +4679,7 @@ module_eval(<<'.,.,', 'ruby22.y', 766)
 module_eval(<<'.,.,', 'ruby22.y', 770)
   def _reduce_225(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4687,7 +4687,7 @@ module_eval(<<'.,.,', 'ruby22.y', 770)
 module_eval(<<'.,.,', 'ruby22.y', 774)
   def _reduce_226(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4695,7 +4695,7 @@ module_eval(<<'.,.,', 'ruby22.y', 774)
 module_eval(<<'.,.,', 'ruby22.y', 778)
   def _reduce_227(val, _values, result)
                           result = @builder.match_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4703,7 +4703,7 @@ module_eval(<<'.,.,', 'ruby22.y', 778)
 module_eval(<<'.,.,', 'ruby22.y', 782)
   def _reduce_228(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4711,7 +4711,7 @@ module_eval(<<'.,.,', 'ruby22.y', 782)
 module_eval(<<'.,.,', 'ruby22.y', 786)
   def _reduce_229(val, _values, result)
                           result = @builder.not_op(val[0], nil, val[1], nil)
-                    
+
     result
   end
 .,.,
@@ -4719,7 +4719,7 @@ module_eval(<<'.,.,', 'ruby22.y', 786)
 module_eval(<<'.,.,', 'ruby22.y', 790)
   def _reduce_230(val, _values, result)
                           result = @builder.unary_op(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -4727,7 +4727,7 @@ module_eval(<<'.,.,', 'ruby22.y', 790)
 module_eval(<<'.,.,', 'ruby22.y', 794)
   def _reduce_231(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4735,7 +4735,7 @@ module_eval(<<'.,.,', 'ruby22.y', 794)
 module_eval(<<'.,.,', 'ruby22.y', 798)
   def _reduce_232(val, _values, result)
                           result = @builder.binary_op(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4743,7 +4743,7 @@ module_eval(<<'.,.,', 'ruby22.y', 798)
 module_eval(<<'.,.,', 'ruby22.y', 802)
   def _reduce_233(val, _values, result)
                           result = @builder.logical_op(:and, val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4751,7 +4751,7 @@ module_eval(<<'.,.,', 'ruby22.y', 802)
 module_eval(<<'.,.,', 'ruby22.y', 806)
   def _reduce_234(val, _values, result)
                           result = @builder.logical_op(:or, val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4759,7 +4759,7 @@ module_eval(<<'.,.,', 'ruby22.y', 806)
 module_eval(<<'.,.,', 'ruby22.y', 810)
   def _reduce_235(val, _values, result)
                           result = @builder.keyword_cmd(:defined?, val[0], nil, [ val[2] ], nil)
-                    
+
     result
   end
 .,.,
@@ -4768,7 +4768,7 @@ module_eval(<<'.,.,', 'ruby22.y', 820)
   def _reduce_236(val, _values, result)
                           @lexer.push_cond
                       @lexer.cond.push(true)
-                    
+
     result
   end
 .,.,
@@ -4776,7 +4776,7 @@ module_eval(<<'.,.,', 'ruby22.y', 820)
 module_eval(<<'.,.,', 'ruby22.y', 825)
   def _reduce_237(val, _values, result)
                           @lexer.pop_cond
-                    
+
     result
   end
 .,.,
@@ -4785,7 +4785,7 @@ module_eval(<<'.,.,', 'ruby22.y', 829)
   def _reduce_238(val, _values, result)
                           result = @builder.ternary(val[0], val[1],
                                                 val[3], val[5], val[7])
-                    
+
     result
   end
 .,.,
@@ -4801,7 +4801,7 @@ module_eval(<<'.,.,', 'ruby22.y', 829)
 module_eval(<<'.,.,', 'ruby22.y', 840)
   def _reduce_243(val, _values, result)
                           result = val[0] << @builder.associate(nil, val[2], nil)
-                    
+
     result
   end
 .,.,
@@ -4809,7 +4809,7 @@ module_eval(<<'.,.,', 'ruby22.y', 840)
 module_eval(<<'.,.,', 'ruby22.y', 844)
   def _reduce_244(val, _values, result)
                           result = [ @builder.associate(nil, val[0], nil) ]
-                    
+
     result
   end
 .,.,
@@ -4817,7 +4817,7 @@ module_eval(<<'.,.,', 'ruby22.y', 844)
 module_eval(<<'.,.,', 'ruby22.y', 849)
   def _reduce_245(val, _values, result)
                           result = val
-                    
+
     result
   end
 .,.,
@@ -4825,7 +4825,7 @@ module_eval(<<'.,.,', 'ruby22.y', 849)
 module_eval(<<'.,.,', 'ruby22.y', 854)
   def _reduce_246(val, _values, result)
                           result = [ nil, [], nil ]
-                    
+
     result
   end
 .,.,
@@ -4835,7 +4835,7 @@ module_eval(<<'.,.,', 'ruby22.y', 854)
 module_eval(<<'.,.,', 'ruby22.y', 860)
   def _reduce_248(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -4847,7 +4847,7 @@ module_eval(<<'.,.,', 'ruby22.y', 860)
 module_eval(<<'.,.,', 'ruby22.y', 866)
   def _reduce_251(val, _values, result)
                           result = val[0] << @builder.associate(nil, val[2], nil)
-                    
+
     result
   end
 .,.,
@@ -4855,7 +4855,7 @@ module_eval(<<'.,.,', 'ruby22.y', 866)
 module_eval(<<'.,.,', 'ruby22.y', 870)
   def _reduce_252(val, _values, result)
                           result = [ @builder.associate(nil, val[0], nil) ]
-                    
+
     result
   end
 .,.,
@@ -4863,7 +4863,7 @@ module_eval(<<'.,.,', 'ruby22.y', 870)
 module_eval(<<'.,.,', 'ruby22.y', 875)
   def _reduce_253(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -4871,7 +4871,7 @@ module_eval(<<'.,.,', 'ruby22.y', 875)
 module_eval(<<'.,.,', 'ruby22.y', 879)
   def _reduce_254(val, _values, result)
                           result = val[0].concat(val[1])
-                    
+
     result
   end
 .,.,
@@ -4880,7 +4880,7 @@ module_eval(<<'.,.,', 'ruby22.y', 883)
   def _reduce_255(val, _values, result)
                           result = [ @builder.associate(nil, val[0], nil) ]
                       result.concat(val[1])
-                    
+
     result
   end
 .,.,
@@ -4890,7 +4890,7 @@ module_eval(<<'.,.,', 'ruby22.y', 888)
                           assocs = @builder.associate(nil, val[2], nil)
                       result = val[0] << assocs
                       result.concat(val[3])
-                    
+
     result
   end
 .,.,
@@ -4898,7 +4898,7 @@ module_eval(<<'.,.,', 'ruby22.y', 888)
 module_eval(<<'.,.,', 'ruby22.y', 894)
   def _reduce_257(val, _values, result)
                           result =  [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -4907,7 +4907,7 @@ module_eval(<<'.,.,', 'ruby22.y', 898)
   def _reduce_258(val, _values, result)
                           result = @lexer.cmdarg.dup
                       @lexer.cmdarg.push(true)
-                    
+
     result
   end
 .,.,
@@ -4917,7 +4917,7 @@ module_eval(<<'.,.,', 'ruby22.y', 903)
                           @lexer.cmdarg = val[0]
 
                       result = val[1]
-                    
+
     result
   end
 .,.,
@@ -4925,7 +4925,7 @@ module_eval(<<'.,.,', 'ruby22.y', 903)
 module_eval(<<'.,.,', 'ruby22.y', 910)
   def _reduce_260(val, _values, result)
                           result = @builder.block_pass(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -4933,7 +4933,7 @@ module_eval(<<'.,.,', 'ruby22.y', 910)
 module_eval(<<'.,.,', 'ruby22.y', 915)
   def _reduce_261(val, _values, result)
                           result = [ val[1] ]
-                    
+
     result
   end
 .,.,
@@ -4941,7 +4941,7 @@ module_eval(<<'.,.,', 'ruby22.y', 915)
 module_eval(<<'.,.,', 'ruby22.y', 919)
   def _reduce_262(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -4949,7 +4949,7 @@ module_eval(<<'.,.,', 'ruby22.y', 919)
 module_eval(<<'.,.,', 'ruby22.y', 924)
   def _reduce_263(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -4957,7 +4957,7 @@ module_eval(<<'.,.,', 'ruby22.y', 924)
 module_eval(<<'.,.,', 'ruby22.y', 928)
   def _reduce_264(val, _values, result)
                           result = [ @builder.splat(val[0], val[1]) ]
-                    
+
     result
   end
 .,.,
@@ -4965,7 +4965,7 @@ module_eval(<<'.,.,', 'ruby22.y', 928)
 module_eval(<<'.,.,', 'ruby22.y', 932)
   def _reduce_265(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -4973,7 +4973,7 @@ module_eval(<<'.,.,', 'ruby22.y', 932)
 module_eval(<<'.,.,', 'ruby22.y', 936)
   def _reduce_266(val, _values, result)
                           result = val[0] << @builder.splat(val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -4981,7 +4981,7 @@ module_eval(<<'.,.,', 'ruby22.y', 936)
 module_eval(<<'.,.,', 'ruby22.y', 941)
   def _reduce_267(val, _values, result)
                           result = @builder.array(nil, val[0], nil)
-                    
+
     result
   end
 .,.,
@@ -4991,7 +4991,7 @@ module_eval(<<'.,.,', 'ruby22.y', 941)
 module_eval(<<'.,.,', 'ruby22.y', 947)
   def _reduce_269(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -4999,7 +4999,7 @@ module_eval(<<'.,.,', 'ruby22.y', 947)
 module_eval(<<'.,.,', 'ruby22.y', 951)
   def _reduce_270(val, _values, result)
                           result = val[0] << @builder.splat(val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -5007,7 +5007,7 @@ module_eval(<<'.,.,', 'ruby22.y', 951)
 module_eval(<<'.,.,', 'ruby22.y', 955)
   def _reduce_271(val, _values, result)
                           result = [ @builder.splat(val[0], val[1]) ]
-                    
+
     result
   end
 .,.,
@@ -5035,7 +5035,7 @@ module_eval(<<'.,.,', 'ruby22.y', 955)
 module_eval(<<'.,.,', 'ruby22.y', 970)
   def _reduce_282(val, _values, result)
                           result = @builder.call_method(nil, nil, val[0])
-                    
+
     result
   end
 .,.,
@@ -5044,7 +5044,7 @@ module_eval(<<'.,.,', 'ruby22.y', 974)
   def _reduce_283(val, _values, result)
                           result = @lexer.cmdarg.dup
                       @lexer.cmdarg.clear
-                    
+
     result
   end
 .,.,
@@ -5054,7 +5054,7 @@ module_eval(<<'.,.,', 'ruby22.y', 979)
                           @lexer.cmdarg = val[1]
 
                       result = @builder.begin_keyword(val[0], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -5063,7 +5063,7 @@ module_eval(<<'.,.,', 'ruby22.y', 985)
   def _reduce_285(val, _values, result)
                           result = @lexer.cmdarg.dup
                       @lexer.cmdarg.clear
-                    
+
     result
   end
 .,.,
@@ -5071,7 +5071,7 @@ module_eval(<<'.,.,', 'ruby22.y', 985)
 module_eval(<<'.,.,', 'ruby22.y', 990)
   def _reduce_286(val, _values, result)
                           @lexer.state = :expr_endarg
-                    
+
     result
   end
 .,.,
@@ -5081,7 +5081,7 @@ module_eval(<<'.,.,', 'ruby22.y', 994)
                           @lexer.cmdarg = val[1]
 
                       result = @builder.begin(val[0], val[2], val[5])
-                    
+
     result
   end
 .,.,
@@ -5089,7 +5089,7 @@ module_eval(<<'.,.,', 'ruby22.y', 994)
 module_eval(<<'.,.,', 'ruby22.y', 1000)
   def _reduce_288(val, _values, result)
                           @lexer.state = :expr_endarg
-                    
+
     result
   end
 .,.,
@@ -5097,7 +5097,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1000)
 module_eval(<<'.,.,', 'ruby22.y', 1004)
   def _reduce_289(val, _values, result)
                           result = @builder.begin(val[0], nil, val[3])
-                    
+
     result
   end
 .,.,
@@ -5105,7 +5105,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1004)
 module_eval(<<'.,.,', 'ruby22.y', 1008)
   def _reduce_290(val, _values, result)
                           result = @builder.begin(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -5113,7 +5113,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1008)
 module_eval(<<'.,.,', 'ruby22.y', 1012)
   def _reduce_291(val, _values, result)
                           result = @builder.const_fetch(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -5121,7 +5121,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1012)
 module_eval(<<'.,.,', 'ruby22.y', 1016)
   def _reduce_292(val, _values, result)
                           result = @builder.const_global(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -5129,7 +5129,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1016)
 module_eval(<<'.,.,', 'ruby22.y', 1020)
   def _reduce_293(val, _values, result)
                           result = @builder.array(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -5137,7 +5137,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1020)
 module_eval(<<'.,.,', 'ruby22.y', 1024)
   def _reduce_294(val, _values, result)
                           result = @builder.associate(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -5145,7 +5145,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1024)
 module_eval(<<'.,.,', 'ruby22.y', 1028)
   def _reduce_295(val, _values, result)
                           result = @builder.keyword_cmd(:return, val[0])
-                    
+
     result
   end
 .,.,
@@ -5153,7 +5153,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1028)
 module_eval(<<'.,.,', 'ruby22.y', 1032)
   def _reduce_296(val, _values, result)
                           result = @builder.keyword_cmd(:yield, val[0], val[1], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -5161,7 +5161,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1032)
 module_eval(<<'.,.,', 'ruby22.y', 1036)
   def _reduce_297(val, _values, result)
                           result = @builder.keyword_cmd(:yield, val[0], val[1], [], val[2])
-                    
+
     result
   end
 .,.,
@@ -5169,7 +5169,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1036)
 module_eval(<<'.,.,', 'ruby22.y', 1040)
   def _reduce_298(val, _values, result)
                           result = @builder.keyword_cmd(:yield, val[0])
-                    
+
     result
   end
 .,.,
@@ -5178,7 +5178,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1044)
   def _reduce_299(val, _values, result)
                           result = @builder.keyword_cmd(:defined?, val[0],
                                                     val[2], [ val[3] ], val[4])
-                    
+
     result
   end
 .,.,
@@ -5186,7 +5186,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1044)
 module_eval(<<'.,.,', 'ruby22.y', 1049)
   def _reduce_300(val, _values, result)
                           result = @builder.not_op(val[0], val[1], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -5194,7 +5194,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1049)
 module_eval(<<'.,.,', 'ruby22.y', 1053)
   def _reduce_301(val, _values, result)
                           result = @builder.not_op(val[0], val[1], nil, val[2])
-                    
+
     result
   end
 .,.,
@@ -5206,7 +5206,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1057)
                       begin_t, args, body, end_t = val[1]
                       result      = @builder.block(method_call,
                                       begin_t, args, body, end_t)
-                    
+
     result
   end
 .,.,
@@ -5218,7 +5218,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1066)
                           begin_t, args, body, end_t = val[1]
                       result      = @builder.block(val[0],
                                       begin_t, args, body, end_t)
-                    
+
     result
   end
 .,.,
@@ -5230,7 +5230,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1072)
                       args, (begin_t, body, end_t) = val[1]
                       result      = @builder.block(lambda_call,
                                       begin_t, args, body, end_t)
-                    
+
     result
   end
 .,.,
@@ -5241,7 +5241,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1080)
                       result = @builder.condition(val[0], val[1], val[2],
                                                   val[3], else_t,
                                                   else_,  val[5])
-                    
+
     result
   end
 .,.,
@@ -5252,7 +5252,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1087)
                       result = @builder.condition(val[0], val[1], val[2],
                                                   else_,  else_t,
                                                   val[3], val[5])
-                    
+
     result
   end
 .,.,
@@ -5260,7 +5260,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1087)
 module_eval(<<'.,.,', 'ruby22.y', 1094)
   def _reduce_308(val, _values, result)
                           @lexer.cond.push(true)
-                    
+
     result
   end
 .,.,
@@ -5268,7 +5268,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1094)
 module_eval(<<'.,.,', 'ruby22.y', 1098)
   def _reduce_309(val, _values, result)
                           @lexer.cond.pop
-                    
+
     result
   end
 .,.,
@@ -5277,7 +5277,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1102)
   def _reduce_310(val, _values, result)
                           result = @builder.loop(:while, val[0], val[2], val[3],
                                              val[5], val[6])
-                    
+
     result
   end
 .,.,
@@ -5285,7 +5285,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1102)
 module_eval(<<'.,.,', 'ruby22.y', 1107)
   def _reduce_311(val, _values, result)
                           @lexer.cond.push(true)
-                    
+
     result
   end
 .,.,
@@ -5293,7 +5293,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1107)
 module_eval(<<'.,.,', 'ruby22.y', 1111)
   def _reduce_312(val, _values, result)
                           @lexer.cond.pop
-                    
+
     result
   end
 .,.,
@@ -5302,7 +5302,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1115)
   def _reduce_313(val, _values, result)
                           result = @builder.loop(:until, val[0], val[2], val[3],
                                              val[5], val[6])
-                    
+
     result
   end
 .,.,
@@ -5314,7 +5314,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1120)
                       result = @builder.case(val[0], val[1],
                                              when_bodies, else_t, else_body,
                                              val[4])
-                    
+
     result
   end
 .,.,
@@ -5326,7 +5326,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1128)
                       result = @builder.case(val[0], nil,
                                              when_bodies, else_t, else_body,
                                              val[3])
-                    
+
     result
   end
 .,.,
@@ -5334,7 +5334,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1128)
 module_eval(<<'.,.,', 'ruby22.y', 1136)
   def _reduce_316(val, _values, result)
                           @lexer.cond.push(true)
-                    
+
     result
   end
 .,.,
@@ -5342,7 +5342,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1136)
 module_eval(<<'.,.,', 'ruby22.y', 1140)
   def _reduce_317(val, _values, result)
                           @lexer.cond.pop
-                    
+
     result
   end
 .,.,
@@ -5352,7 +5352,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1144)
                           result = @builder.for(val[0], val[1],
                                             val[2], val[4],
                                             val[5], val[7], val[8])
-                    
+
     result
   end
 .,.,
@@ -5361,7 +5361,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1150)
   def _reduce_319(val, _values, result)
                           @static_env.extend_static
                       @lexer.push_cmdarg
-                    
+
     result
   end
 .,.,
@@ -5379,7 +5379,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1155)
 
                       @lexer.pop_cmdarg
                       @static_env.unextend
-                    
+
     result
   end
 .,.,
@@ -5391,7 +5391,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1169)
 
                       @static_env.extend_static
                       @lexer.push_cmdarg
-                    
+
     result
   end
 .,.,
@@ -5405,7 +5405,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1177)
                       @static_env.unextend
 
                       @def_level = val[4]
-                    
+
     result
   end
 .,.,
@@ -5414,7 +5414,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1187)
   def _reduce_323(val, _values, result)
                           @static_env.extend_static
                       @lexer.push_cmdarg
-                    
+
     result
   end
 .,.,
@@ -5430,7 +5430,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1192)
 
                       @lexer.pop_cmdarg
                       @static_env.unextend
-                    
+
     result
   end
 .,.,
@@ -5440,7 +5440,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1204)
                           @def_level += 1
                       @static_env.extend_static
                       @lexer.push_cmdarg
-                    
+
     result
   end
 .,.,
@@ -5453,7 +5453,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1210)
                       @lexer.pop_cmdarg
                       @static_env.unextend
                       @def_level -= 1
-                    
+
     result
   end
 .,.,
@@ -5461,7 +5461,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1210)
 module_eval(<<'.,.,', 'ruby22.y', 1219)
   def _reduce_327(val, _values, result)
                           @lexer.state = :expr_fname
-                    
+
     result
   end
 .,.,
@@ -5471,7 +5471,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1223)
                           @def_level += 1
                       @static_env.extend_static
                       @lexer.push_cmdarg
-                    
+
     result
   end
 .,.,
@@ -5484,7 +5484,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1229)
                       @lexer.pop_cmdarg
                       @static_env.unextend
                       @def_level -= 1
-                    
+
     result
   end
 .,.,
@@ -5492,7 +5492,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1229)
 module_eval(<<'.,.,', 'ruby22.y', 1238)
   def _reduce_330(val, _values, result)
                           result = @builder.keyword_cmd(:break, val[0])
-                    
+
     result
   end
 .,.,
@@ -5500,7 +5500,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1238)
 module_eval(<<'.,.,', 'ruby22.y', 1242)
   def _reduce_331(val, _values, result)
                           result = @builder.keyword_cmd(:next, val[0])
-                    
+
     result
   end
 .,.,
@@ -5508,7 +5508,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1242)
 module_eval(<<'.,.,', 'ruby22.y', 1246)
   def _reduce_332(val, _values, result)
                           result = @builder.keyword_cmd(:redo, val[0])
-                    
+
     result
   end
 .,.,
@@ -5516,7 +5516,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1246)
 module_eval(<<'.,.,', 'ruby22.y', 1250)
   def _reduce_333(val, _values, result)
                           result = @builder.keyword_cmd(:retry, val[0])
-                    
+
     result
   end
 .,.,
@@ -5530,7 +5530,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1250)
 module_eval(<<'.,.,', 'ruby22.y', 1259)
   def _reduce_337(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -5549,7 +5549,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1268)
                                                     val[3], else_t,
                                                     else_,  nil),
                                ]
-                    
+
     result
   end
 .,.,
@@ -5559,7 +5559,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1268)
 module_eval(<<'.,.,', 'ruby22.y', 1279)
   def _reduce_343(val, _values, result)
                           result = val
-                    
+
     result
   end
 .,.,
@@ -5571,7 +5571,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1279)
 module_eval(<<'.,.,', 'ruby22.y', 1287)
   def _reduce_346(val, _values, result)
                           result = @builder.arg(val[0])
-                    
+
     result
   end
 .,.,
@@ -5579,7 +5579,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1287)
 module_eval(<<'.,.,', 'ruby22.y', 1291)
   def _reduce_347(val, _values, result)
                           result = @builder.multi_lhs(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -5587,7 +5587,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1291)
 module_eval(<<'.,.,', 'ruby22.y', 1296)
   def _reduce_348(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -5595,7 +5595,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1296)
 module_eval(<<'.,.,', 'ruby22.y', 1300)
   def _reduce_349(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -5606,7 +5606,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1306)
   def _reduce_351(val, _values, result)
                           result = val[0].
                                   push(@builder.restarg(val[2], val[3]))
-                    
+
     result
   end
 .,.,
@@ -5616,7 +5616,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1311)
                           result = val[0].
                                   push(@builder.restarg(val[2], val[3])).
                                   concat(val[5])
-                    
+
     result
   end
 .,.,
@@ -5625,7 +5625,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1317)
   def _reduce_353(val, _values, result)
                           result = val[0].
                                   push(@builder.restarg(val[2]))
-                    
+
     result
   end
 .,.,
@@ -5635,7 +5635,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1322)
                           result = val[0].
                                   push(@builder.restarg(val[2])).
                                   concat(val[4])
-                    
+
     result
   end
 .,.,
@@ -5643,7 +5643,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1322)
 module_eval(<<'.,.,', 'ruby22.y', 1328)
   def _reduce_355(val, _values, result)
                           result = [ @builder.restarg(val[0], val[1]) ]
-                    
+
     result
   end
 .,.,
@@ -5652,7 +5652,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1332)
   def _reduce_356(val, _values, result)
                           result = [ @builder.restarg(val[0], val[1]),
                                  *val[3] ]
-                    
+
     result
   end
 .,.,
@@ -5660,7 +5660,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1332)
 module_eval(<<'.,.,', 'ruby22.y', 1337)
   def _reduce_357(val, _values, result)
                           result = [ @builder.restarg(val[0]) ]
-                    
+
     result
   end
 .,.,
@@ -5669,7 +5669,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1341)
   def _reduce_358(val, _values, result)
                           result = [ @builder.restarg(val[0]),
                                  *val[2] ]
-                    
+
     result
   end
 .,.,
@@ -5677,7 +5677,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1341)
 module_eval(<<'.,.,', 'ruby22.y', 1347)
   def _reduce_359(val, _values, result)
                           result = val[0].concat(val[2]).concat(val[3])
-                    
+
     result
   end
 .,.,
@@ -5685,7 +5685,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1347)
 module_eval(<<'.,.,', 'ruby22.y', 1351)
   def _reduce_360(val, _values, result)
                           result = val[0].concat(val[1])
-                    
+
     result
   end
 .,.,
@@ -5693,7 +5693,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1351)
 module_eval(<<'.,.,', 'ruby22.y', 1355)
   def _reduce_361(val, _values, result)
                           result = val[0].concat(val[1])
-                    
+
     result
   end
 .,.,
@@ -5701,7 +5701,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1355)
 module_eval(<<'.,.,', 'ruby22.y', 1359)
   def _reduce_362(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -5709,7 +5709,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1359)
 module_eval(<<'.,.,', 'ruby22.y', 1365)
   def _reduce_363(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -5717,7 +5717,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1365)
 module_eval(<<'.,.,', 'ruby22.y', 1369)
   def _reduce_364(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -5728,7 +5728,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1374)
                                   concat(val[2]).
                                   concat(val[4]).
                                   concat(val[5])
-                    
+
     result
   end
 .,.,
@@ -5740,7 +5740,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1381)
                                   concat(val[4]).
                                   concat(val[6]).
                                   concat(val[7])
-                    
+
     result
   end
 .,.,
@@ -5750,7 +5750,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1389)
                           result = val[0].
                                   concat(val[2]).
                                   concat(val[3])
-                    
+
     result
   end
 .,.,
@@ -5761,7 +5761,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1395)
                                   concat(val[2]).
                                   concat(val[4]).
                                   concat(val[5])
-                    
+
     result
   end
 .,.,
@@ -5771,7 +5771,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1402)
                           result = val[0].
                                   concat(val[2]).
                                   concat(val[3])
-                    
+
     result
   end
 .,.,
@@ -5784,7 +5784,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1409)
                                   concat(val[2]).
                                   concat(val[4]).
                                   concat(val[5])
-                    
+
     result
   end
 .,.,
@@ -5792,7 +5792,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1409)
 module_eval(<<'.,.,', 'ruby22.y', 1416)
   def _reduce_372(val, _values, result)
                           result = val[0].concat(val[1])
-                    
+
     result
   end
 .,.,
@@ -5802,7 +5802,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1420)
                           result = val[0].
                                   concat(val[2]).
                                   concat(val[3])
-                    
+
     result
   end
 .,.,
@@ -5813,7 +5813,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1426)
                                   concat(val[2]).
                                   concat(val[4]).
                                   concat(val[5])
-                    
+
     result
   end
 .,.,
@@ -5822,7 +5822,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1433)
   def _reduce_375(val, _values, result)
                           result = val[0].
                                   concat(val[1])
-                    
+
     result
   end
 .,.,
@@ -5832,7 +5832,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1438)
                           result = val[0].
                                   concat(val[2]).
                                   concat(val[3])
-                    
+
     result
   end
 .,.,
@@ -5841,7 +5841,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1444)
   def _reduce_377(val, _values, result)
                           result = val[0].
                                   concat(val[1])
-                    
+
     result
   end
 .,.,
@@ -5851,7 +5851,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1449)
                           result = val[0].
                                   concat(val[2]).
                                   concat(val[3])
-                    
+
     result
   end
 .,.,
@@ -5861,7 +5861,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1449)
 module_eval(<<'.,.,', 'ruby22.y', 1457)
   def _reduce_380(val, _values, result)
                           result = @builder.args(nil, [], nil)
-                    
+
     result
   end
 .,.,
@@ -5869,7 +5869,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1457)
 module_eval(<<'.,.,', 'ruby22.y', 1461)
   def _reduce_381(val, _values, result)
                           @lexer.state = :expr_value
-                    
+
     result
   end
 .,.,
@@ -5877,7 +5877,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1461)
 module_eval(<<'.,.,', 'ruby22.y', 1466)
   def _reduce_382(val, _values, result)
                           result = @builder.args(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -5885,7 +5885,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1466)
 module_eval(<<'.,.,', 'ruby22.y', 1470)
   def _reduce_383(val, _values, result)
                           result = @builder.args(val[0], [], val[0])
-                    
+
     result
   end
 .,.,
@@ -5893,7 +5893,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1470)
 module_eval(<<'.,.,', 'ruby22.y', 1474)
   def _reduce_384(val, _values, result)
                           result = @builder.args(val[0], val[1].concat(val[2]), val[3])
-                    
+
     result
   end
 .,.,
@@ -5901,7 +5901,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1474)
 module_eval(<<'.,.,', 'ruby22.y', 1479)
   def _reduce_385(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -5909,7 +5909,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1479)
 module_eval(<<'.,.,', 'ruby22.y', 1483)
   def _reduce_386(val, _values, result)
                           result = val[2]
-                    
+
     result
   end
 .,.,
@@ -5917,7 +5917,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1483)
 module_eval(<<'.,.,', 'ruby22.y', 1488)
   def _reduce_387(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -5925,7 +5925,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1488)
 module_eval(<<'.,.,', 'ruby22.y', 1492)
   def _reduce_388(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -5933,7 +5933,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1492)
 module_eval(<<'.,.,', 'ruby22.y', 1497)
   def _reduce_389(val, _values, result)
                           result = @builder.shadowarg(val[0])
-                    
+
     result
   end
 .,.,
@@ -5943,7 +5943,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1497)
 module_eval(<<'.,.,', 'ruby22.y', 1502)
   def _reduce_391(val, _values, result)
                           @static_env.extend_dynamic
-                    
+
     result
   end
 .,.,
@@ -5952,7 +5952,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1506)
   def _reduce_392(val, _values, result)
                           result = @lexer.cmdarg.dup
                       @lexer.cmdarg.clear
-                    
+
     result
   end
 .,.,
@@ -5965,7 +5965,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1511)
                       result = [ val[1], val[3] ]
 
                       @static_env.unextend
-                    
+
     result
   end
 .,.,
@@ -5973,7 +5973,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1511)
 module_eval(<<'.,.,', 'ruby22.y', 1521)
   def _reduce_394(val, _values, result)
                           result = @builder.args(val[0], val[1].concat(val[2]), val[3])
-                    
+
     result
   end
 .,.,
@@ -5981,7 +5981,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1521)
 module_eval(<<'.,.,', 'ruby22.y', 1525)
   def _reduce_395(val, _values, result)
                           result = @builder.args(nil, val[0], nil)
-                    
+
     result
   end
 .,.,
@@ -5989,7 +5989,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1525)
 module_eval(<<'.,.,', 'ruby22.y', 1530)
   def _reduce_396(val, _values, result)
                           result = [ val[0], val[1], val[2] ]
-                    
+
     result
   end
 .,.,
@@ -5997,7 +5997,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1530)
 module_eval(<<'.,.,', 'ruby22.y', 1534)
   def _reduce_397(val, _values, result)
                           result = [ val[0], val[1], val[2] ]
-                    
+
     result
   end
 .,.,
@@ -6005,7 +6005,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1534)
 module_eval(<<'.,.,', 'ruby22.y', 1539)
   def _reduce_398(val, _values, result)
                           @static_env.extend_dynamic
-                    
+
     result
   end
 .,.,
@@ -6015,7 +6015,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1543)
                           result = [ val[0], val[2], val[3], val[4] ]
 
                       @static_env.unextend
-                    
+
     result
   end
 .,.,
@@ -6025,7 +6025,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1550)
                           begin_t, block_args, body, end_t = val[1]
                       result      = @builder.block(val[0],
                                       begin_t, block_args, body, end_t)
-                    
+
     result
   end
 .,.,
@@ -6035,7 +6035,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1556)
                           lparen_t, args, rparen_t = val[3]
                       result = @builder.call_method(val[0], val[1], val[2],
                                   lparen_t, args, rparen_t)
-                    
+
     result
   end
 .,.,
@@ -6049,7 +6049,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1562)
                       begin_t, args, body, end_t = val[4]
                       result      = @builder.block(method_call,
                                       begin_t, args, body, end_t)
-                    
+
     result
   end
 .,.,
@@ -6062,7 +6062,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1572)
                       begin_t, args, body, end_t = val[4]
                       result      = @builder.block(method_call,
                                       begin_t, args, body, end_t)
-                    
+
     result
   end
 .,.,
@@ -6072,7 +6072,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1582)
                           lparen_t, args, rparen_t = val[1]
                       result = @builder.call_method(nil, nil, val[0],
                                   lparen_t, args, rparen_t)
-                    
+
     result
   end
 .,.,
@@ -6082,7 +6082,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1588)
                           lparen_t, args, rparen_t = val[3]
                       result = @builder.call_method(val[0], val[1], val[2],
                                   lparen_t, args, rparen_t)
-                    
+
     result
   end
 .,.,
@@ -6092,7 +6092,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1594)
                           lparen_t, args, rparen_t = val[3]
                       result = @builder.call_method(val[0], val[1], val[2],
                                   lparen_t, args, rparen_t)
-                    
+
     result
   end
 .,.,
@@ -6100,7 +6100,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1594)
 module_eval(<<'.,.,', 'ruby22.y', 1600)
   def _reduce_407(val, _values, result)
                           result = @builder.call_method(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -6110,7 +6110,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1604)
                           lparen_t, args, rparen_t = val[2]
                       result = @builder.call_method(val[0], val[1], nil,
                                   lparen_t, args, rparen_t)
-                    
+
     result
   end
 .,.,
@@ -6120,7 +6120,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1610)
                           lparen_t, args, rparen_t = val[2]
                       result = @builder.call_method(val[0], val[1], nil,
                                   lparen_t, args, rparen_t)
-                    
+
     result
   end
 .,.,
@@ -6130,7 +6130,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1616)
                           lparen_t, args, rparen_t = val[1]
                       result = @builder.keyword_cmd(:super, val[0],
                                   lparen_t, args, rparen_t)
-                    
+
     result
   end
 .,.,
@@ -6138,7 +6138,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1616)
 module_eval(<<'.,.,', 'ruby22.y', 1622)
   def _reduce_411(val, _values, result)
                           result = @builder.keyword_cmd(:zsuper, val[0])
-                    
+
     result
   end
 .,.,
@@ -6146,7 +6146,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1622)
 module_eval(<<'.,.,', 'ruby22.y', 1626)
   def _reduce_412(val, _values, result)
                           result = @builder.index(val[0], val[1], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -6154,7 +6154,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1626)
 module_eval(<<'.,.,', 'ruby22.y', 1631)
   def _reduce_413(val, _values, result)
                           @static_env.extend_dynamic
-                    
+
     result
   end
 .,.,
@@ -6164,7 +6164,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1635)
                           result = [ val[0], val[2], val[3], val[4] ]
 
                       @static_env.unextend
-                    
+
     result
   end
 .,.,
@@ -6172,7 +6172,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1635)
 module_eval(<<'.,.,', 'ruby22.y', 1641)
   def _reduce_415(val, _values, result)
                           @static_env.extend_dynamic
-                    
+
     result
   end
 .,.,
@@ -6182,7 +6182,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1645)
                           result = [ val[0], val[2], val[3], val[4] ]
 
                       @static_env.unextend
-                    
+
     result
   end
 .,.,
@@ -6191,7 +6191,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1652)
   def _reduce_417(val, _values, result)
                           result = [ @builder.when(val[0], val[1], val[2], val[3]),
                                  *val[4] ]
-                    
+
     result
   end
 .,.,
@@ -6199,7 +6199,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1652)
 module_eval(<<'.,.,', 'ruby22.y', 1658)
   def _reduce_418(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -6218,7 +6218,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1664)
                                       exc_list, assoc_t, exc_var,
                                       val[3], val[4]),
                                  *val[5] ]
-                    
+
     result
   end
 .,.,
@@ -6226,7 +6226,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1664)
 module_eval(<<'.,.,', 'ruby22.y', 1677)
   def _reduce_421(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -6234,7 +6234,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1677)
 module_eval(<<'.,.,', 'ruby22.y', 1682)
   def _reduce_422(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -6246,7 +6246,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1682)
 module_eval(<<'.,.,', 'ruby22.y', 1689)
   def _reduce_425(val, _values, result)
                           result = [ val[0], val[1] ]
-                    
+
     result
   end
 .,.,
@@ -6256,7 +6256,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1689)
 module_eval(<<'.,.,', 'ruby22.y', 1695)
   def _reduce_427(val, _values, result)
                           result = [ val[0], val[1] ]
-                    
+
     result
   end
 .,.,
@@ -6272,7 +6272,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1695)
 module_eval(<<'.,.,', 'ruby22.y', 1705)
   def _reduce_432(val, _values, result)
                           result = @builder.string_compose(nil, val[0], nil)
-                    
+
     result
   end
 .,.,
@@ -6280,7 +6280,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1705)
 module_eval(<<'.,.,', 'ruby22.y', 1710)
   def _reduce_433(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -6288,7 +6288,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1710)
 module_eval(<<'.,.,', 'ruby22.y', 1714)
   def _reduce_434(val, _values, result)
                           result = val[0] << val[1]
-                    
+
     result
   end
 .,.,
@@ -6296,7 +6296,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1714)
 module_eval(<<'.,.,', 'ruby22.y', 1719)
   def _reduce_435(val, _values, result)
                           result = @builder.string_compose(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -6304,7 +6304,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1719)
 module_eval(<<'.,.,', 'ruby22.y', 1723)
   def _reduce_436(val, _values, result)
                           result = @builder.string(val[0])
-                    
+
     result
   end
 .,.,
@@ -6312,7 +6312,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1723)
 module_eval(<<'.,.,', 'ruby22.y', 1727)
   def _reduce_437(val, _values, result)
                           result = @builder.character(val[0])
-                    
+
     result
   end
 .,.,
@@ -6320,7 +6320,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1727)
 module_eval(<<'.,.,', 'ruby22.y', 1732)
   def _reduce_438(val, _values, result)
                           result = @builder.xstring_compose(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -6329,7 +6329,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1737)
   def _reduce_439(val, _values, result)
                           opts   = @builder.regexp_options(val[3])
                       result = @builder.regexp_compose(val[0], val[1], val[2], opts)
-                    
+
     result
   end
 .,.,
@@ -6337,7 +6337,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1737)
 module_eval(<<'.,.,', 'ruby22.y', 1743)
   def _reduce_440(val, _values, result)
                           result = @builder.words_compose(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -6345,7 +6345,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1743)
 module_eval(<<'.,.,', 'ruby22.y', 1748)
   def _reduce_441(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -6353,7 +6353,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1748)
 module_eval(<<'.,.,', 'ruby22.y', 1752)
   def _reduce_442(val, _values, result)
                           result = val[0] << @builder.word(val[1])
-                    
+
     result
   end
 .,.,
@@ -6361,7 +6361,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1752)
 module_eval(<<'.,.,', 'ruby22.y', 1757)
   def _reduce_443(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -6369,7 +6369,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1757)
 module_eval(<<'.,.,', 'ruby22.y', 1761)
   def _reduce_444(val, _values, result)
                           result = val[0] << val[1]
-                    
+
     result
   end
 .,.,
@@ -6377,7 +6377,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1761)
 module_eval(<<'.,.,', 'ruby22.y', 1766)
   def _reduce_445(val, _values, result)
                           result = @builder.symbols_compose(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -6385,7 +6385,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1766)
 module_eval(<<'.,.,', 'ruby22.y', 1771)
   def _reduce_446(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -6393,7 +6393,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1771)
 module_eval(<<'.,.,', 'ruby22.y', 1775)
   def _reduce_447(val, _values, result)
                           result = val[0] << @builder.word(val[1])
-                    
+
     result
   end
 .,.,
@@ -6401,7 +6401,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1775)
 module_eval(<<'.,.,', 'ruby22.y', 1780)
   def _reduce_448(val, _values, result)
                           result = @builder.words_compose(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -6409,7 +6409,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1780)
 module_eval(<<'.,.,', 'ruby22.y', 1785)
   def _reduce_449(val, _values, result)
                           result = @builder.symbols_compose(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -6417,7 +6417,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1785)
 module_eval(<<'.,.,', 'ruby22.y', 1790)
   def _reduce_450(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -6425,7 +6425,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1790)
 module_eval(<<'.,.,', 'ruby22.y', 1794)
   def _reduce_451(val, _values, result)
                           result = val[0] << @builder.string_internal(val[1])
-                    
+
     result
   end
 .,.,
@@ -6433,7 +6433,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1794)
 module_eval(<<'.,.,', 'ruby22.y', 1799)
   def _reduce_452(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -6441,7 +6441,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1799)
 module_eval(<<'.,.,', 'ruby22.y', 1803)
   def _reduce_453(val, _values, result)
                           result = val[0] << @builder.symbol_internal(val[1])
-                    
+
     result
   end
 .,.,
@@ -6449,7 +6449,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1803)
 module_eval(<<'.,.,', 'ruby22.y', 1808)
   def _reduce_454(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -6457,7 +6457,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1808)
 module_eval(<<'.,.,', 'ruby22.y', 1812)
   def _reduce_455(val, _values, result)
                           result = val[0] << val[1]
-                    
+
     result
   end
 .,.,
@@ -6465,7 +6465,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1812)
 module_eval(<<'.,.,', 'ruby22.y', 1817)
   def _reduce_456(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -6473,7 +6473,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1817)
 module_eval(<<'.,.,', 'ruby22.y', 1821)
   def _reduce_457(val, _values, result)
                           result = val[0] << val[1]
-                    
+
     result
   end
 .,.,
@@ -6481,7 +6481,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1821)
 module_eval(<<'.,.,', 'ruby22.y', 1826)
   def _reduce_458(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -6489,7 +6489,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1826)
 module_eval(<<'.,.,', 'ruby22.y', 1830)
   def _reduce_459(val, _values, result)
                           result = val[0] << val[1]
-                    
+
     result
   end
 .,.,
@@ -6497,7 +6497,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1830)
 module_eval(<<'.,.,', 'ruby22.y', 1835)
   def _reduce_460(val, _values, result)
                           result = @builder.string_internal(val[0])
-                    
+
     result
   end
 .,.,
@@ -6505,7 +6505,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1835)
 module_eval(<<'.,.,', 'ruby22.y', 1839)
   def _reduce_461(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -6514,7 +6514,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1843)
   def _reduce_462(val, _values, result)
                           @lexer.cond.push(false)
                       @lexer.cmdarg.push(false)
-                    
+
     result
   end
 .,.,
@@ -6525,7 +6525,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1848)
                       @lexer.cmdarg.lexpop
 
                       result = @builder.begin(val[0], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -6533,7 +6533,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1848)
 module_eval(<<'.,.,', 'ruby22.y', 1856)
   def _reduce_464(val, _values, result)
                           result = @builder.gvar(val[0])
-                    
+
     result
   end
 .,.,
@@ -6541,7 +6541,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1856)
 module_eval(<<'.,.,', 'ruby22.y', 1860)
   def _reduce_465(val, _values, result)
                           result = @builder.ivar(val[0])
-                    
+
     result
   end
 .,.,
@@ -6549,7 +6549,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1860)
 module_eval(<<'.,.,', 'ruby22.y', 1864)
   def _reduce_466(val, _values, result)
                           result = @builder.cvar(val[0])
-                    
+
     result
   end
 .,.,
@@ -6559,7 +6559,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1864)
 module_eval(<<'.,.,', 'ruby22.y', 1871)
   def _reduce_468(val, _values, result)
                           result = @builder.symbol(val[0])
-                    
+
     result
   end
 .,.,
@@ -6567,7 +6567,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1871)
 module_eval(<<'.,.,', 'ruby22.y', 1876)
   def _reduce_469(val, _values, result)
                           result = @builder.symbol_compose(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -6575,7 +6575,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1876)
 module_eval(<<'.,.,', 'ruby22.y', 1881)
   def _reduce_470(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -6583,7 +6583,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1881)
 module_eval(<<'.,.,', 'ruby22.y', 1885)
   def _reduce_471(val, _values, result)
                           result = @builder.negate(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -6591,7 +6591,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1885)
 module_eval(<<'.,.,', 'ruby22.y', 1890)
   def _reduce_472(val, _values, result)
                           result = @builder.integer(val[0])
-                    
+
     result
   end
 .,.,
@@ -6599,7 +6599,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1890)
 module_eval(<<'.,.,', 'ruby22.y', 1894)
   def _reduce_473(val, _values, result)
                           result = @builder.float(val[0])
-                    
+
     result
   end
 .,.,
@@ -6607,7 +6607,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1894)
 module_eval(<<'.,.,', 'ruby22.y', 1898)
   def _reduce_474(val, _values, result)
                           result = @builder.rational(val[0])
-                    
+
     result
   end
 .,.,
@@ -6615,7 +6615,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1898)
 module_eval(<<'.,.,', 'ruby22.y', 1902)
   def _reduce_475(val, _values, result)
                           result = @builder.complex(val[0])
-                    
+
     result
   end
 .,.,
@@ -6623,7 +6623,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1902)
 module_eval(<<'.,.,', 'ruby22.y', 1907)
   def _reduce_476(val, _values, result)
                           result = @builder.ident(val[0])
-                    
+
     result
   end
 .,.,
@@ -6631,7 +6631,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1907)
 module_eval(<<'.,.,', 'ruby22.y', 1911)
   def _reduce_477(val, _values, result)
                           result = @builder.ivar(val[0])
-                    
+
     result
   end
 .,.,
@@ -6639,7 +6639,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1911)
 module_eval(<<'.,.,', 'ruby22.y', 1915)
   def _reduce_478(val, _values, result)
                           result = @builder.gvar(val[0])
-                    
+
     result
   end
 .,.,
@@ -6647,7 +6647,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1915)
 module_eval(<<'.,.,', 'ruby22.y', 1919)
   def _reduce_479(val, _values, result)
                           result = @builder.const(val[0])
-                    
+
     result
   end
 .,.,
@@ -6655,7 +6655,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1919)
 module_eval(<<'.,.,', 'ruby22.y', 1923)
   def _reduce_480(val, _values, result)
                           result = @builder.cvar(val[0])
-                    
+
     result
   end
 .,.,
@@ -6663,7 +6663,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1923)
 module_eval(<<'.,.,', 'ruby22.y', 1928)
   def _reduce_481(val, _values, result)
                           result = @builder.nil(val[0])
-                    
+
     result
   end
 .,.,
@@ -6671,7 +6671,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1928)
 module_eval(<<'.,.,', 'ruby22.y', 1932)
   def _reduce_482(val, _values, result)
                           result = @builder.self(val[0])
-                    
+
     result
   end
 .,.,
@@ -6679,7 +6679,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1932)
 module_eval(<<'.,.,', 'ruby22.y', 1936)
   def _reduce_483(val, _values, result)
                           result = @builder.true(val[0])
-                    
+
     result
   end
 .,.,
@@ -6687,7 +6687,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1936)
 module_eval(<<'.,.,', 'ruby22.y', 1940)
   def _reduce_484(val, _values, result)
                           result = @builder.false(val[0])
-                    
+
     result
   end
 .,.,
@@ -6695,7 +6695,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1940)
 module_eval(<<'.,.,', 'ruby22.y', 1944)
   def _reduce_485(val, _values, result)
                           result = @builder.__FILE__(val[0])
-                    
+
     result
   end
 .,.,
@@ -6703,7 +6703,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1944)
 module_eval(<<'.,.,', 'ruby22.y', 1948)
   def _reduce_486(val, _values, result)
                           result = @builder.__LINE__(val[0])
-                    
+
     result
   end
 .,.,
@@ -6711,7 +6711,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1948)
 module_eval(<<'.,.,', 'ruby22.y', 1952)
   def _reduce_487(val, _values, result)
                           result = @builder.__ENCODING__(val[0])
-                    
+
     result
   end
 .,.,
@@ -6719,7 +6719,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1952)
 module_eval(<<'.,.,', 'ruby22.y', 1957)
   def _reduce_488(val, _values, result)
                           result = @builder.accessible(val[0])
-                    
+
     result
   end
 .,.,
@@ -6727,7 +6727,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1957)
 module_eval(<<'.,.,', 'ruby22.y', 1961)
   def _reduce_489(val, _values, result)
                           result = @builder.accessible(val[0])
-                    
+
     result
   end
 .,.,
@@ -6735,7 +6735,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1961)
 module_eval(<<'.,.,', 'ruby22.y', 1966)
   def _reduce_490(val, _values, result)
                           result = @builder.assignable(val[0])
-                    
+
     result
   end
 .,.,
@@ -6743,7 +6743,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1966)
 module_eval(<<'.,.,', 'ruby22.y', 1970)
   def _reduce_491(val, _values, result)
                           result = @builder.assignable(val[0])
-                    
+
     result
   end
 .,.,
@@ -6751,7 +6751,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1970)
 module_eval(<<'.,.,', 'ruby22.y', 1975)
   def _reduce_492(val, _values, result)
                           result = @builder.nth_ref(val[0])
-                    
+
     result
   end
 .,.,
@@ -6759,7 +6759,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1975)
 module_eval(<<'.,.,', 'ruby22.y', 1979)
   def _reduce_493(val, _values, result)
                           result = @builder.back_ref(val[0])
-                    
+
     result
   end
 .,.,
@@ -6767,7 +6767,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1979)
 module_eval(<<'.,.,', 'ruby22.y', 1984)
   def _reduce_494(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,
@@ -6775,7 +6775,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1984)
 module_eval(<<'.,.,', 'ruby22.y', 1988)
   def _reduce_495(val, _values, result)
                           @lexer.state = :expr_value
-                    
+
     result
   end
 .,.,
@@ -6783,7 +6783,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1988)
 module_eval(<<'.,.,', 'ruby22.y', 1992)
   def _reduce_496(val, _values, result)
                           result = [ val[0], val[2] ]
-                    
+
     result
   end
 .,.,
@@ -6792,7 +6792,7 @@ module_eval(<<'.,.,', 'ruby22.y', 1996)
   def _reduce_497(val, _values, result)
                           yyerrok
                       result = nil
-                    
+
     result
   end
 .,.,
@@ -6802,7 +6802,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2002)
                           result = @builder.args(val[0], val[1], val[2])
 
                       @lexer.state = :expr_value
-                    
+
     result
   end
 .,.,
@@ -6811,7 +6811,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2007)
   def _reduce_499(val, _values, result)
                           result = @lexer.in_kwarg
                       @lexer.in_kwarg = true
-                    
+
     result
   end
 .,.,
@@ -6820,7 +6820,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2012)
   def _reduce_500(val, _values, result)
                           @lexer.in_kwarg = val[0]
                       result = @builder.args(nil, val[1], nil)
-                    
+
     result
   end
 .,.,
@@ -6828,7 +6828,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2012)
 module_eval(<<'.,.,', 'ruby22.y', 2018)
   def _reduce_501(val, _values, result)
                           result = val[0].concat(val[2]).concat(val[3])
-                    
+
     result
   end
 .,.,
@@ -6836,7 +6836,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2018)
 module_eval(<<'.,.,', 'ruby22.y', 2022)
   def _reduce_502(val, _values, result)
                           result = val[0].concat(val[1])
-                    
+
     result
   end
 .,.,
@@ -6844,7 +6844,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2022)
 module_eval(<<'.,.,', 'ruby22.y', 2026)
   def _reduce_503(val, _values, result)
                           result = val[0].concat(val[1])
-                    
+
     result
   end
 .,.,
@@ -6852,7 +6852,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2026)
 module_eval(<<'.,.,', 'ruby22.y', 2030)
   def _reduce_504(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -6860,7 +6860,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2030)
 module_eval(<<'.,.,', 'ruby22.y', 2035)
   def _reduce_505(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -6868,7 +6868,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2035)
 module_eval(<<'.,.,', 'ruby22.y', 2039)
   def _reduce_506(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -6879,7 +6879,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2044)
                                   concat(val[2]).
                                   concat(val[4]).
                                   concat(val[5])
-                    
+
     result
   end
 .,.,
@@ -6891,7 +6891,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2051)
                                   concat(val[4]).
                                   concat(val[6]).
                                   concat(val[7])
-                    
+
     result
   end
 .,.,
@@ -6901,7 +6901,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2059)
                           result = val[0].
                                   concat(val[2]).
                                   concat(val[3])
-                    
+
     result
   end
 .,.,
@@ -6912,7 +6912,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2065)
                                   concat(val[2]).
                                   concat(val[4]).
                                   concat(val[5])
-                    
+
     result
   end
 .,.,
@@ -6922,7 +6922,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2072)
                           result = val[0].
                                   concat(val[2]).
                                   concat(val[3])
-                    
+
     result
   end
 .,.,
@@ -6933,7 +6933,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2078)
                                   concat(val[2]).
                                   concat(val[4]).
                                   concat(val[5])
-                    
+
     result
   end
 .,.,
@@ -6942,7 +6942,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2085)
   def _reduce_513(val, _values, result)
                           result = val[0].
                                   concat(val[1])
-                    
+
     result
   end
 .,.,
@@ -6952,7 +6952,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2090)
                           result = val[0].
                                   concat(val[2]).
                                   concat(val[3])
-                    
+
     result
   end
 .,.,
@@ -6963,7 +6963,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2096)
                                   concat(val[2]).
                                   concat(val[4]).
                                   concat(val[5])
-                    
+
     result
   end
 .,.,
@@ -6972,7 +6972,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2103)
   def _reduce_516(val, _values, result)
                           result = val[0].
                                   concat(val[1])
-                    
+
     result
   end
 .,.,
@@ -6982,7 +6982,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2108)
                           result = val[0].
                                   concat(val[2]).
                                   concat(val[3])
-                    
+
     result
   end
 .,.,
@@ -6991,7 +6991,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2114)
   def _reduce_518(val, _values, result)
                           result = val[0].
                                   concat(val[1])
-                    
+
     result
   end
 .,.,
@@ -7001,7 +7001,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2119)
                           result = val[0].
                                   concat(val[2]).
                                   concat(val[3])
-                    
+
     result
   end
 .,.,
@@ -7009,7 +7009,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2119)
 module_eval(<<'.,.,', 'ruby22.y', 2125)
   def _reduce_520(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -7017,7 +7017,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2125)
 module_eval(<<'.,.,', 'ruby22.y', 2129)
   def _reduce_521(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -7025,7 +7025,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2129)
 module_eval(<<'.,.,', 'ruby22.y', 2134)
   def _reduce_522(val, _values, result)
                           diagnostic :error, :argument_const, nil, val[0]
-                    
+
     result
   end
 .,.,
@@ -7033,7 +7033,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2134)
 module_eval(<<'.,.,', 'ruby22.y', 2138)
   def _reduce_523(val, _values, result)
                           diagnostic :error, :argument_ivar, nil, val[0]
-                    
+
     result
   end
 .,.,
@@ -7041,7 +7041,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2138)
 module_eval(<<'.,.,', 'ruby22.y', 2142)
   def _reduce_524(val, _values, result)
                           diagnostic :error, :argument_gvar, nil, val[0]
-                    
+
     result
   end
 .,.,
@@ -7049,7 +7049,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2142)
 module_eval(<<'.,.,', 'ruby22.y', 2146)
   def _reduce_525(val, _values, result)
                           diagnostic :error, :argument_cvar, nil, val[0]
-                    
+
     result
   end
 .,.,
@@ -7061,7 +7061,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2152)
                           @static_env.declare val[0][0]
 
                       result = val[0]
-                    
+
     result
   end
 .,.,
@@ -7069,7 +7069,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2152)
 module_eval(<<'.,.,', 'ruby22.y', 2159)
   def _reduce_528(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -7077,7 +7077,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2159)
 module_eval(<<'.,.,', 'ruby22.y', 2164)
   def _reduce_529(val, _values, result)
                           result = @builder.arg(val[0])
-                    
+
     result
   end
 .,.,
@@ -7085,7 +7085,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2164)
 module_eval(<<'.,.,', 'ruby22.y', 2168)
   def _reduce_530(val, _values, result)
                           result = @builder.multi_lhs(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -7093,7 +7093,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2168)
 module_eval(<<'.,.,', 'ruby22.y', 2173)
   def _reduce_531(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -7101,7 +7101,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2173)
 module_eval(<<'.,.,', 'ruby22.y', 2177)
   def _reduce_532(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -7113,7 +7113,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2182)
                       @static_env.declare val[0][0]
 
                       result = val[0]
-                    
+
     result
   end
 .,.,
@@ -7121,7 +7121,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2182)
 module_eval(<<'.,.,', 'ruby22.y', 2191)
   def _reduce_534(val, _values, result)
                           result = @builder.kwoptarg(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -7129,7 +7129,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2191)
 module_eval(<<'.,.,', 'ruby22.y', 2195)
   def _reduce_535(val, _values, result)
                           result = @builder.kwarg(val[0])
-                    
+
     result
   end
 .,.,
@@ -7137,7 +7137,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2195)
 module_eval(<<'.,.,', 'ruby22.y', 2200)
   def _reduce_536(val, _values, result)
                           result = @builder.kwoptarg(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -7145,7 +7145,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2200)
 module_eval(<<'.,.,', 'ruby22.y', 2204)
   def _reduce_537(val, _values, result)
                           result = @builder.kwarg(val[0])
-                    
+
     result
   end
 .,.,
@@ -7153,7 +7153,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2204)
 module_eval(<<'.,.,', 'ruby22.y', 2209)
   def _reduce_538(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -7161,7 +7161,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2209)
 module_eval(<<'.,.,', 'ruby22.y', 2213)
   def _reduce_539(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -7169,7 +7169,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2213)
 module_eval(<<'.,.,', 'ruby22.y', 2218)
   def _reduce_540(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -7177,7 +7177,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2218)
 module_eval(<<'.,.,', 'ruby22.y', 2222)
   def _reduce_541(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -7191,7 +7191,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2229)
                           @static_env.declare val[1][0]
 
                       result = [ @builder.kwrestarg(val[0], val[1]) ]
-                    
+
     result
   end
 .,.,
@@ -7199,7 +7199,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2229)
 module_eval(<<'.,.,', 'ruby22.y', 2235)
   def _reduce_545(val, _values, result)
                           result = [ @builder.kwrestarg(val[0]) ]
-                    
+
     result
   end
 .,.,
@@ -7207,7 +7207,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2235)
 module_eval(<<'.,.,', 'ruby22.y', 2240)
   def _reduce_546(val, _values, result)
                           result = @builder.optarg(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -7215,7 +7215,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2240)
 module_eval(<<'.,.,', 'ruby22.y', 2245)
   def _reduce_547(val, _values, result)
                           result = @builder.optarg(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -7223,7 +7223,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2245)
 module_eval(<<'.,.,', 'ruby22.y', 2250)
   def _reduce_548(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -7231,7 +7231,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2250)
 module_eval(<<'.,.,', 'ruby22.y', 2254)
   def _reduce_549(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -7239,7 +7239,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2254)
 module_eval(<<'.,.,', 'ruby22.y', 2259)
   def _reduce_550(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -7247,7 +7247,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2259)
 module_eval(<<'.,.,', 'ruby22.y', 2263)
   def _reduce_551(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -7261,7 +7261,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2270)
                           @static_env.declare val[1][0]
 
                       result = [ @builder.restarg(val[0], val[1]) ]
-                    
+
     result
   end
 .,.,
@@ -7269,7 +7269,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2270)
 module_eval(<<'.,.,', 'ruby22.y', 2276)
   def _reduce_555(val, _values, result)
                           result = [ @builder.restarg(val[0]) ]
-                    
+
     result
   end
 .,.,
@@ -7283,7 +7283,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2283)
                           @static_env.declare val[1][0]
 
                       result = @builder.blockarg(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -7291,7 +7291,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2283)
 module_eval(<<'.,.,', 'ruby22.y', 2290)
   def _reduce_559(val, _values, result)
                           result = [ val[1] ]
-                    
+
     result
   end
 .,.,
@@ -7299,7 +7299,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2290)
 module_eval(<<'.,.,', 'ruby22.y', 2294)
   def _reduce_560(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -7309,7 +7309,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2294)
 module_eval(<<'.,.,', 'ruby22.y', 2300)
   def _reduce_562(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -7317,7 +7317,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2300)
 module_eval(<<'.,.,', 'ruby22.y', 2305)
   def _reduce_563(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -7327,7 +7327,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2305)
 module_eval(<<'.,.,', 'ruby22.y', 2311)
   def _reduce_565(val, _values, result)
                           result = [ val[0] ]
-                    
+
     result
   end
 .,.,
@@ -7335,7 +7335,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2311)
 module_eval(<<'.,.,', 'ruby22.y', 2315)
   def _reduce_566(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -7343,7 +7343,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2315)
 module_eval(<<'.,.,', 'ruby22.y', 2320)
   def _reduce_567(val, _values, result)
                           result = @builder.pair(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -7351,7 +7351,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2320)
 module_eval(<<'.,.,', 'ruby22.y', 2324)
   def _reduce_568(val, _values, result)
                           result = @builder.pair_keyword(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -7359,7 +7359,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2324)
 module_eval(<<'.,.,', 'ruby22.y', 2328)
   def _reduce_569(val, _values, result)
                           result = @builder.pair_quoted(val[0], val[1], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -7367,7 +7367,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2328)
 module_eval(<<'.,.,', 'ruby22.y', 2332)
   def _reduce_570(val, _values, result)
                           result = @builder.kwsplat(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -7407,7 +7407,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2332)
 module_eval(<<'.,.,', 'ruby22.y', 2343)
   def _reduce_587(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -7415,7 +7415,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2343)
 module_eval(<<'.,.,', 'ruby22.y', 2347)
   def _reduce_588(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -7429,7 +7429,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2347)
 module_eval(<<'.,.,', 'ruby22.y', 2353)
   def _reduce_592(val, _values, result)
                         yyerrok
-                  
+
     result
   end
 .,.,
@@ -7443,7 +7443,7 @@ module_eval(<<'.,.,', 'ruby22.y', 2353)
 module_eval(<<'.,.,', 'ruby22.y', 2362)
   def _reduce_596(val, _values, result)
                         result = nil
-                  
+
     result
   end
 .,.,

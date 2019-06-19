@@ -3156,7 +3156,7 @@ Racc_debug_parser = false
 module_eval(<<'.,.,', 'opal.y', 70)
   def _reduce_2(val, _values, result)
                           result = new_compstmt val[0]
-                    
+
     result
   end
 .,.,
@@ -3164,7 +3164,7 @@ module_eval(<<'.,.,', 'opal.y', 70)
 module_eval(<<'.,.,', 'opal.y', 75)
   def _reduce_3(val, _values, result)
                           result = new_block
-                    
+
     result
   end
 .,.,
@@ -3172,7 +3172,7 @@ module_eval(<<'.,.,', 'opal.y', 75)
 module_eval(<<'.,.,', 'opal.y', 79)
   def _reduce_4(val, _values, result)
                           result = new_block val[0]
-                    
+
     result
   end
 .,.,
@@ -3181,7 +3181,7 @@ module_eval(<<'.,.,', 'opal.y', 83)
   def _reduce_5(val, _values, result)
                           val[0] << val[2]
                       result = val[0]
-                    
+
     result
   end
 .,.,
@@ -3191,7 +3191,7 @@ module_eval(<<'.,.,', 'opal.y', 83)
 module_eval(<<'.,.,', 'opal.y', 90)
   def _reduce_7(val, _values, result)
                           result = val[2]
-                    
+
     result
   end
 .,.,
@@ -3199,7 +3199,7 @@ module_eval(<<'.,.,', 'opal.y', 90)
 module_eval(<<'.,.,', 'opal.y', 95)
   def _reduce_8(val, _values, result)
                           result = new_body(val[0], val[1], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -3207,7 +3207,7 @@ module_eval(<<'.,.,', 'opal.y', 95)
 module_eval(<<'.,.,', 'opal.y', 100)
   def _reduce_9(val, _values, result)
                           result = new_compstmt val[0]
-                    
+
     result
   end
 .,.,
@@ -3215,7 +3215,7 @@ module_eval(<<'.,.,', 'opal.y', 100)
 module_eval(<<'.,.,', 'opal.y', 105)
   def _reduce_10(val, _values, result)
                           result = new_block
-                    
+
     result
   end
 .,.,
@@ -3223,7 +3223,7 @@ module_eval(<<'.,.,', 'opal.y', 105)
 module_eval(<<'.,.,', 'opal.y', 109)
   def _reduce_11(val, _values, result)
                           result = new_block val[0]
-                    
+
     result
   end
 .,.,
@@ -3232,7 +3232,7 @@ module_eval(<<'.,.,', 'opal.y', 113)
   def _reduce_12(val, _values, result)
                           val[0] << val[2]
                       result = val[0]
-                    
+
     result
   end
 .,.,
@@ -3240,7 +3240,7 @@ module_eval(<<'.,.,', 'opal.y', 113)
 module_eval(<<'.,.,', 'opal.y', 119)
   def _reduce_13(val, _values, result)
                           lexer.lex_state = :expr_fname
-                    
+
     result
   end
 .,.,
@@ -3248,7 +3248,7 @@ module_eval(<<'.,.,', 'opal.y', 119)
 module_eval(<<'.,.,', 'opal.y', 123)
   def _reduce_14(val, _values, result)
                           result = new_alias(val[0], val[1], val[3])
-                    
+
     result
   end
 .,.,
@@ -3256,7 +3256,7 @@ module_eval(<<'.,.,', 'opal.y', 123)
 module_eval(<<'.,.,', 'opal.y', 127)
   def _reduce_15(val, _values, result)
                           result = s(:valias, value(val[1]).to_sym, value(val[2]).to_sym)
-                    
+
     result
   end
 .,.,
@@ -3266,7 +3266,7 @@ module_eval(<<'.,.,', 'opal.y', 127)
 module_eval(<<'.,.,', 'opal.y', 132)
   def _reduce_17(val, _values, result)
                           result = s(:valias, value(val[1]).to_sym, value(val[2]).to_sym)
-                    
+
     result
   end
 .,.,
@@ -3274,7 +3274,7 @@ module_eval(<<'.,.,', 'opal.y', 132)
 module_eval(<<'.,.,', 'opal.y', 136)
   def _reduce_18(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -3282,7 +3282,7 @@ module_eval(<<'.,.,', 'opal.y', 136)
 module_eval(<<'.,.,', 'opal.y', 140)
   def _reduce_19(val, _values, result)
                           result = new_if(val[1], val[2], val[0], nil)
-                    
+
     result
   end
 .,.,
@@ -3290,7 +3290,7 @@ module_eval(<<'.,.,', 'opal.y', 140)
 module_eval(<<'.,.,', 'opal.y', 144)
   def _reduce_20(val, _values, result)
                           result = new_if(val[1], val[2], nil, val[0])
-                    
+
     result
   end
 .,.,
@@ -3298,7 +3298,7 @@ module_eval(<<'.,.,', 'opal.y', 144)
 module_eval(<<'.,.,', 'opal.y', 148)
   def _reduce_21(val, _values, result)
                           result = new_while(val[1], val[2], val[0])
-                    
+
     result
   end
 .,.,
@@ -3306,7 +3306,7 @@ module_eval(<<'.,.,', 'opal.y', 148)
 module_eval(<<'.,.,', 'opal.y', 152)
   def _reduce_22(val, _values, result)
                           result = new_until(val[1], val[2], val[0])
-                    
+
     result
   end
 .,.,
@@ -3314,7 +3314,7 @@ module_eval(<<'.,.,', 'opal.y', 152)
 module_eval(<<'.,.,', 'opal.y', 156)
   def _reduce_23(val, _values, result)
                           result = new_rescue_mod(val[1], val[0], val[2])
-                    
+
     result
   end
 .,.,
@@ -3324,7 +3324,7 @@ module_eval(<<'.,.,', 'opal.y', 156)
 module_eval(<<'.,.,', 'opal.y', 161)
   def _reduce_25(val, _values, result)
                           result = new_assign(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3332,7 +3332,7 @@ module_eval(<<'.,.,', 'opal.y', 161)
 module_eval(<<'.,.,', 'opal.y', 165)
   def _reduce_26(val, _values, result)
                           result = s(:masgn, val[0], s(:to_ary, val[2]))
-                    
+
     result
   end
 .,.,
@@ -3340,7 +3340,7 @@ module_eval(<<'.,.,', 'opal.y', 165)
 module_eval(<<'.,.,', 'opal.y', 169)
   def _reduce_27(val, _values, result)
                           result = new_op_asgn val[1], val[0], val[2]
-                    
+
     result
   end
 .,.,
@@ -3352,7 +3352,7 @@ module_eval(<<'.,.,', 'opal.y', 169)
 module_eval(<<'.,.,', 'opal.y', 175)
   def _reduce_30(val, _values, result)
                           result = s(:op_asgn2, val[0], op_to_setter(val[2]), value(val[3]).to_sym, val[4])
-                    
+
     result
   end
 .,.,
@@ -3366,7 +3366,7 @@ module_eval(<<'.,.,', 'opal.y', 175)
 module_eval(<<'.,.,', 'opal.y', 182)
   def _reduce_34(val, _values, result)
                           result = new_assign val[0], val[1], s(:svalue, val[2])
-                    
+
     result
   end
 .,.,
@@ -3374,7 +3374,7 @@ module_eval(<<'.,.,', 'opal.y', 182)
 module_eval(<<'.,.,', 'opal.y', 186)
   def _reduce_35(val, _values, result)
                           result = s(:masgn, val[0], s(:to_ary, val[2]))
-                    
+
     result
   end
 .,.,
@@ -3382,7 +3382,7 @@ module_eval(<<'.,.,', 'opal.y', 186)
 module_eval(<<'.,.,', 'opal.y', 190)
   def _reduce_36(val, _values, result)
                           result = s(:masgn, val[0], val[2])
-                    
+
     result
   end
 .,.,
@@ -3394,7 +3394,7 @@ module_eval(<<'.,.,', 'opal.y', 190)
 module_eval(<<'.,.,', 'opal.y', 197)
   def _reduce_39(val, _values, result)
                           result = s(:and, val[0], val[2])
-                    
+
     result
   end
 .,.,
@@ -3402,7 +3402,7 @@ module_eval(<<'.,.,', 'opal.y', 197)
 module_eval(<<'.,.,', 'opal.y', 201)
   def _reduce_40(val, _values, result)
                           result = s(:or, val[0], val[2])
-                    
+
     result
   end
 .,.,
@@ -3410,7 +3410,7 @@ module_eval(<<'.,.,', 'opal.y', 201)
 module_eval(<<'.,.,', 'opal.y', 205)
   def _reduce_41(val, _values, result)
                           result = new_unary_call(['!', []], val[1])
-                    
+
     result
   end
 .,.,
@@ -3418,7 +3418,7 @@ module_eval(<<'.,.,', 'opal.y', 205)
 module_eval(<<'.,.,', 'opal.y', 209)
   def _reduce_42(val, _values, result)
                           result = new_unary_call(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -3434,7 +3434,7 @@ module_eval(<<'.,.,', 'opal.y', 209)
 module_eval(<<'.,.,', 'opal.y', 219)
   def _reduce_47(val, _values, result)
                           result = new_return(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -3442,7 +3442,7 @@ module_eval(<<'.,.,', 'opal.y', 219)
 module_eval(<<'.,.,', 'opal.y', 223)
   def _reduce_48(val, _values, result)
                           result = new_break(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -3450,7 +3450,7 @@ module_eval(<<'.,.,', 'opal.y', 223)
 module_eval(<<'.,.,', 'opal.y', 227)
   def _reduce_49(val, _values, result)
                           result = new_next(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -3468,7 +3468,7 @@ module_eval(<<'.,.,', 'opal.y', 227)
 module_eval(<<'.,.,', 'opal.y', 239)
   def _reduce_55(val, _values, result)
                           result = new_call(nil, val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -3478,7 +3478,7 @@ module_eval(<<'.,.,', 'opal.y', 239)
 module_eval(<<'.,.,', 'opal.y', 244)
   def _reduce_57(val, _values, result)
                           result = new_js_call(val[0], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -3488,7 +3488,7 @@ module_eval(<<'.,.,', 'opal.y', 244)
 module_eval(<<'.,.,', 'opal.y', 249)
   def _reduce_59(val, _values, result)
                           result = new_call(val[0], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -3498,7 +3498,7 @@ module_eval(<<'.,.,', 'opal.y', 249)
 module_eval(<<'.,.,', 'opal.y', 254)
   def _reduce_61(val, _values, result)
                         result = new_call(val[0], val[2], val[3])
-                  
+
     result
   end
 .,.,
@@ -3508,7 +3508,7 @@ module_eval(<<'.,.,', 'opal.y', 254)
 module_eval(<<'.,.,', 'opal.y', 259)
   def _reduce_63(val, _values, result)
                           result = new_super(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -3516,7 +3516,7 @@ module_eval(<<'.,.,', 'opal.y', 259)
 module_eval(<<'.,.,', 'opal.y', 263)
   def _reduce_64(val, _values, result)
                           result = new_yield val[1]
-                    
+
     result
   end
 .,.,
@@ -3524,7 +3524,7 @@ module_eval(<<'.,.,', 'opal.y', 263)
 module_eval(<<'.,.,', 'opal.y', 268)
   def _reduce_65(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -3532,7 +3532,7 @@ module_eval(<<'.,.,', 'opal.y', 268)
 module_eval(<<'.,.,', 'opal.y', 272)
   def _reduce_66(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -3540,7 +3540,7 @@ module_eval(<<'.,.,', 'opal.y', 272)
 module_eval(<<'.,.,', 'opal.y', 277)
   def _reduce_67(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -3548,7 +3548,7 @@ module_eval(<<'.,.,', 'opal.y', 277)
 module_eval(<<'.,.,', 'opal.y', 281)
   def _reduce_68(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -3556,7 +3556,7 @@ module_eval(<<'.,.,', 'opal.y', 281)
 module_eval(<<'.,.,', 'opal.y', 286)
   def _reduce_69(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -3564,7 +3564,7 @@ module_eval(<<'.,.,', 'opal.y', 286)
 module_eval(<<'.,.,', 'opal.y', 290)
   def _reduce_70(val, _values, result)
                           result = val[0] << val[1]
-                    
+
     result
   end
 .,.,
@@ -3572,7 +3572,7 @@ module_eval(<<'.,.,', 'opal.y', 290)
 module_eval(<<'.,.,', 'opal.y', 294)
   def _reduce_71(val, _values, result)
                           result = val[0] << s(:splat, val[2])
-                    
+
     result
   end
 .,.,
@@ -3582,7 +3582,7 @@ module_eval(<<'.,.,', 'opal.y', 294)
 module_eval(<<'.,.,', 'opal.y', 299)
   def _reduce_73(val, _values, result)
                           result = val[0] << s(:splat)
-                    
+
     result
   end
 .,.,
@@ -3592,7 +3592,7 @@ module_eval(<<'.,.,', 'opal.y', 299)
 module_eval(<<'.,.,', 'opal.y', 304)
   def _reduce_75(val, _values, result)
                           result = s(:array, s(:splat, val[1]))
-                    
+
     result
   end
 .,.,
@@ -3600,7 +3600,7 @@ module_eval(<<'.,.,', 'opal.y', 304)
 module_eval(<<'.,.,', 'opal.y', 308)
   def _reduce_76(val, _values, result)
                           result = s(:array, s(:splat))
-                    
+
     result
   end
 .,.,
@@ -3610,7 +3610,7 @@ module_eval(<<'.,.,', 'opal.y', 308)
 module_eval(<<'.,.,', 'opal.y', 314)
   def _reduce_78(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -3618,7 +3618,7 @@ module_eval(<<'.,.,', 'opal.y', 314)
 module_eval(<<'.,.,', 'opal.y', 318)
   def _reduce_79(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -3626,7 +3626,7 @@ module_eval(<<'.,.,', 'opal.y', 318)
 module_eval(<<'.,.,', 'opal.y', 323)
   def _reduce_80(val, _values, result)
                           result = s(:array, val[0])
-                    
+
     result
   end
 .,.,
@@ -3634,7 +3634,7 @@ module_eval(<<'.,.,', 'opal.y', 323)
 module_eval(<<'.,.,', 'opal.y', 327)
   def _reduce_81(val, _values, result)
                           result = val[0] << val[1]
-                    
+
     result
   end
 .,.,
@@ -3646,7 +3646,7 @@ module_eval(<<'.,.,', 'opal.y', 327)
 module_eval(<<'.,.,', 'opal.y', 335)
   def _reduce_84(val, _values, result)
                           result = new_assignable val[0]
-                    
+
     result
   end
 .,.,
@@ -3655,7 +3655,7 @@ module_eval(<<'.,.,', 'opal.y', 339)
   def _reduce_85(val, _values, result)
                           args = val[2] ? val[2] : []
                       result = s(:attrasgn, val[0], :[]=, s(:arglist, *args))
-                    
+
     result
   end
 .,.,
@@ -3663,7 +3663,7 @@ module_eval(<<'.,.,', 'opal.y', 339)
 module_eval(<<'.,.,', 'opal.y', 344)
   def _reduce_86(val, _values, result)
                           result = new_call val[0], val[2], []
-                    
+
     result
   end
 .,.,
@@ -3681,7 +3681,7 @@ module_eval(<<'.,.,', 'opal.y', 344)
 module_eval(<<'.,.,', 'opal.y', 354)
   def _reduce_92(val, _values, result)
                           result = new_assignable val[0]
-                    
+
     result
   end
 .,.,
@@ -3689,7 +3689,7 @@ module_eval(<<'.,.,', 'opal.y', 354)
 module_eval(<<'.,.,', 'opal.y', 358)
   def _reduce_93(val, _values, result)
                           result = new_js_attrasgn(val[0], val[2])
-                    
+
     result
   end
 .,.,
@@ -3697,7 +3697,7 @@ module_eval(<<'.,.,', 'opal.y', 358)
 module_eval(<<'.,.,', 'opal.y', 362)
   def _reduce_94(val, _values, result)
                           result = new_attrasgn(val[0], :[]=, val[2])
-                    
+
     result
   end
 .,.,
@@ -3705,7 +3705,7 @@ module_eval(<<'.,.,', 'opal.y', 362)
 module_eval(<<'.,.,', 'opal.y', 366)
   def _reduce_95(val, _values, result)
                           result = new_attrasgn(val[0], op_to_setter(val[2]))
-                    
+
     result
   end
 .,.,
@@ -3713,7 +3713,7 @@ module_eval(<<'.,.,', 'opal.y', 366)
 module_eval(<<'.,.,', 'opal.y', 370)
   def _reduce_96(val, _values, result)
                           result = new_attrasgn(val[0], op_to_setter(val[2]))
-                    
+
     result
   end
 .,.,
@@ -3721,7 +3721,7 @@ module_eval(<<'.,.,', 'opal.y', 370)
 module_eval(<<'.,.,', 'opal.y', 374)
   def _reduce_97(val, _values, result)
                           result = new_attrasgn(val[0], op_to_setter(val[2]))
-                    
+
     result
   end
 .,.,
@@ -3729,7 +3729,7 @@ module_eval(<<'.,.,', 'opal.y', 374)
 module_eval(<<'.,.,', 'opal.y', 378)
   def _reduce_98(val, _values, result)
                           result = new_colon2(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3737,7 +3737,7 @@ module_eval(<<'.,.,', 'opal.y', 378)
 module_eval(<<'.,.,', 'opal.y', 382)
   def _reduce_99(val, _values, result)
                           result = new_colon3(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -3749,7 +3749,7 @@ module_eval(<<'.,.,', 'opal.y', 382)
 module_eval(<<'.,.,', 'opal.y', 390)
   def _reduce_102(val, _values, result)
                           result = new_colon3(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -3757,7 +3757,7 @@ module_eval(<<'.,.,', 'opal.y', 390)
 module_eval(<<'.,.,', 'opal.y', 394)
   def _reduce_103(val, _values, result)
                           result = new_const(val[0])
-                    
+
     result
   end
 .,.,
@@ -3765,7 +3765,7 @@ module_eval(<<'.,.,', 'opal.y', 394)
 module_eval(<<'.,.,', 'opal.y', 398)
   def _reduce_104(val, _values, result)
                           result = new_colon2(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3780,7 +3780,7 @@ module_eval(<<'.,.,', 'opal.y', 406)
   def _reduce_108(val, _values, result)
                           lexer.lex_state = :expr_end
                       result = val[0]
-                    
+
     result
   end
 .,.,
@@ -3789,7 +3789,7 @@ module_eval(<<'.,.,', 'opal.y', 411)
   def _reduce_109(val, _values, result)
                           lexer.lex_state = :expr_end
                       result = val[0]
-                    
+
     result
   end
 .,.,
@@ -3797,7 +3797,7 @@ module_eval(<<'.,.,', 'opal.y', 411)
 module_eval(<<'.,.,', 'opal.y', 417)
   def _reduce_110(val, _values, result)
                           result = new_sym(val[0])
-                    
+
     result
   end
 .,.,
@@ -3807,7 +3807,7 @@ module_eval(<<'.,.,', 'opal.y', 417)
 module_eval(<<'.,.,', 'opal.y', 423)
   def _reduce_112(val, _values, result)
                           result = s(:undef, val[0])
-                    
+
     result
   end
 .,.,
@@ -3815,7 +3815,7 @@ module_eval(<<'.,.,', 'opal.y', 423)
 module_eval(<<'.,.,', 'opal.y', 427)
   def _reduce_113(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -3971,7 +3971,7 @@ module_eval(<<'.,.,', 'opal.y', 427)
 module_eval(<<'.,.,', 'opal.y', 447)
   def _reduce_188(val, _values, result)
                           result = new_assign(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -3979,7 +3979,7 @@ module_eval(<<'.,.,', 'opal.y', 447)
 module_eval(<<'.,.,', 'opal.y', 451)
   def _reduce_189(val, _values, result)
                           result = new_assign val[0], val[1], s(:rescue_mod, val[2], val[4])
-                    
+
     result
   end
 .,.,
@@ -3987,7 +3987,7 @@ module_eval(<<'.,.,', 'opal.y', 451)
 module_eval(<<'.,.,', 'opal.y', 455)
   def _reduce_190(val, _values, result)
                           result = new_op_asgn val[1], val[0], val[2]
-                    
+
     result
   end
 .,.,
@@ -3995,7 +3995,7 @@ module_eval(<<'.,.,', 'opal.y', 455)
 module_eval(<<'.,.,', 'opal.y', 459)
   def _reduce_191(val, _values, result)
                           result = new_op_asgn1(val[0], val[2], val[4], val[5])
-                    
+
     result
   end
 .,.,
@@ -4003,7 +4003,7 @@ module_eval(<<'.,.,', 'opal.y', 459)
 module_eval(<<'.,.,', 'opal.y', 463)
   def _reduce_192(val, _values, result)
                           raise ".JS[...] #{val[4]} is not supported"
-                    
+
     result
   end
 .,.,
@@ -4011,7 +4011,7 @@ module_eval(<<'.,.,', 'opal.y', 463)
 module_eval(<<'.,.,', 'opal.y', 467)
   def _reduce_193(val, _values, result)
                           result = s(:op_asgn2, val[0], op_to_setter(val[2]), value(val[3]).to_sym, val[4])
-                    
+
     result
   end
 .,.,
@@ -4029,7 +4029,7 @@ module_eval(<<'.,.,', 'opal.y', 467)
 module_eval(<<'.,.,', 'opal.y', 476)
   def _reduce_199(val, _values, result)
                           result = new_irange(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4037,7 +4037,7 @@ module_eval(<<'.,.,', 'opal.y', 476)
 module_eval(<<'.,.,', 'opal.y', 480)
   def _reduce_200(val, _values, result)
                           result = new_erange(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4045,7 +4045,7 @@ module_eval(<<'.,.,', 'opal.y', 480)
 module_eval(<<'.,.,', 'opal.y', 484)
   def _reduce_201(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4053,7 +4053,7 @@ module_eval(<<'.,.,', 'opal.y', 484)
 module_eval(<<'.,.,', 'opal.y', 488)
   def _reduce_202(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4061,7 +4061,7 @@ module_eval(<<'.,.,', 'opal.y', 488)
 module_eval(<<'.,.,', 'opal.y', 492)
   def _reduce_203(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4069,7 +4069,7 @@ module_eval(<<'.,.,', 'opal.y', 492)
 module_eval(<<'.,.,', 'opal.y', 496)
   def _reduce_204(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4077,7 +4077,7 @@ module_eval(<<'.,.,', 'opal.y', 496)
 module_eval(<<'.,.,', 'opal.y', 500)
   def _reduce_205(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4085,7 +4085,7 @@ module_eval(<<'.,.,', 'opal.y', 500)
 module_eval(<<'.,.,', 'opal.y', 504)
   def _reduce_206(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4093,7 +4093,7 @@ module_eval(<<'.,.,', 'opal.y', 504)
 module_eval(<<'.,.,', 'opal.y', 508)
   def _reduce_207(val, _values, result)
                           result = new_call new_binary_call(new_int(val[1]), val[2], val[3]), [:"-@", []], []
-                    
+
     result
   end
 .,.,
@@ -4101,7 +4101,7 @@ module_eval(<<'.,.,', 'opal.y', 508)
 module_eval(<<'.,.,', 'opal.y', 512)
   def _reduce_208(val, _values, result)
                           result = new_call new_binary_call(new_float(val[1]), val[2], val[3]), [:"-@", []], []
-                    
+
     result
   end
 .,.,
@@ -4112,7 +4112,7 @@ module_eval(<<'.,.,', 'opal.y', 516)
                       if [:int, :float].include? val[1].type
                         result = val[1]
                       end
-                    
+
     result
   end
 .,.,
@@ -4127,7 +4127,7 @@ module_eval(<<'.,.,', 'opal.y', 523)
                         val[1][1] = -val[1][1].to_f
                         result = val[1]
                       end
-                    
+
     result
   end
 .,.,
@@ -4135,7 +4135,7 @@ module_eval(<<'.,.,', 'opal.y', 523)
 module_eval(<<'.,.,', 'opal.y', 534)
   def _reduce_211(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4143,7 +4143,7 @@ module_eval(<<'.,.,', 'opal.y', 534)
 module_eval(<<'.,.,', 'opal.y', 538)
   def _reduce_212(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4151,7 +4151,7 @@ module_eval(<<'.,.,', 'opal.y', 538)
 module_eval(<<'.,.,', 'opal.y', 542)
   def _reduce_213(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4159,7 +4159,7 @@ module_eval(<<'.,.,', 'opal.y', 542)
 module_eval(<<'.,.,', 'opal.y', 546)
   def _reduce_214(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4167,7 +4167,7 @@ module_eval(<<'.,.,', 'opal.y', 546)
 module_eval(<<'.,.,', 'opal.y', 550)
   def _reduce_215(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4175,7 +4175,7 @@ module_eval(<<'.,.,', 'opal.y', 550)
 module_eval(<<'.,.,', 'opal.y', 554)
   def _reduce_216(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4183,7 +4183,7 @@ module_eval(<<'.,.,', 'opal.y', 554)
 module_eval(<<'.,.,', 'opal.y', 558)
   def _reduce_217(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4191,7 +4191,7 @@ module_eval(<<'.,.,', 'opal.y', 558)
 module_eval(<<'.,.,', 'opal.y', 562)
   def _reduce_218(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4199,7 +4199,7 @@ module_eval(<<'.,.,', 'opal.y', 562)
 module_eval(<<'.,.,', 'opal.y', 566)
   def _reduce_219(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4207,7 +4207,7 @@ module_eval(<<'.,.,', 'opal.y', 566)
 module_eval(<<'.,.,', 'opal.y', 570)
   def _reduce_220(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4215,7 +4215,7 @@ module_eval(<<'.,.,', 'opal.y', 570)
 module_eval(<<'.,.,', 'opal.y', 574)
   def _reduce_221(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4223,7 +4223,7 @@ module_eval(<<'.,.,', 'opal.y', 574)
 module_eval(<<'.,.,', 'opal.y', 578)
   def _reduce_222(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4231,7 +4231,7 @@ module_eval(<<'.,.,', 'opal.y', 578)
 module_eval(<<'.,.,', 'opal.y', 582)
   def _reduce_223(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4239,7 +4239,7 @@ module_eval(<<'.,.,', 'opal.y', 582)
 module_eval(<<'.,.,', 'opal.y', 586)
   def _reduce_224(val, _values, result)
                           result = new_unary_call(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -4247,7 +4247,7 @@ module_eval(<<'.,.,', 'opal.y', 586)
 module_eval(<<'.,.,', 'opal.y', 590)
   def _reduce_225(val, _values, result)
                           result = new_unary_call(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -4255,7 +4255,7 @@ module_eval(<<'.,.,', 'opal.y', 590)
 module_eval(<<'.,.,', 'opal.y', 594)
   def _reduce_226(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4263,7 +4263,7 @@ module_eval(<<'.,.,', 'opal.y', 594)
 module_eval(<<'.,.,', 'opal.y', 598)
   def _reduce_227(val, _values, result)
                           result = new_binary_call(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4271,7 +4271,7 @@ module_eval(<<'.,.,', 'opal.y', 598)
 module_eval(<<'.,.,', 'opal.y', 602)
   def _reduce_228(val, _values, result)
                           result = new_and(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4279,7 +4279,7 @@ module_eval(<<'.,.,', 'opal.y', 602)
 module_eval(<<'.,.,', 'opal.y', 606)
   def _reduce_229(val, _values, result)
                           result = new_or(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4287,7 +4287,7 @@ module_eval(<<'.,.,', 'opal.y', 606)
 module_eval(<<'.,.,', 'opal.y', 610)
   def _reduce_230(val, _values, result)
                           result = s(:defined, val[2])
-                    
+
     result
   end
 .,.,
@@ -4295,7 +4295,7 @@ module_eval(<<'.,.,', 'opal.y', 610)
 module_eval(<<'.,.,', 'opal.y', 614)
   def _reduce_231(val, _values, result)
                           result = new_if(val[1], val[0], val[2], val[4])
-                    
+
     result
   end
 .,.,
@@ -4307,7 +4307,7 @@ module_eval(<<'.,.,', 'opal.y', 614)
 module_eval(<<'.,.,', 'opal.y', 622)
   def _reduce_234(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,
@@ -4315,7 +4315,7 @@ module_eval(<<'.,.,', 'opal.y', 622)
 module_eval(<<'.,.,', 'opal.y', 626)
   def _reduce_235(val, _values, result)
                           result = [val[0]]
-                    
+
     result
   end
 .,.,
@@ -4323,7 +4323,7 @@ module_eval(<<'.,.,', 'opal.y', 626)
 module_eval(<<'.,.,', 'opal.y', 630)
   def _reduce_236(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -4332,7 +4332,7 @@ module_eval(<<'.,.,', 'opal.y', 634)
   def _reduce_237(val, _values, result)
                           val[0] << s(:hash, *val[2])
                       result = val[0]
-                    
+
     result
   end
 .,.,
@@ -4340,7 +4340,7 @@ module_eval(<<'.,.,', 'opal.y', 634)
 module_eval(<<'.,.,', 'opal.y', 639)
   def _reduce_238(val, _values, result)
                           result = [s(:hash, *val[0])]
-                    
+
     result
   end
 .,.,
@@ -4348,7 +4348,7 @@ module_eval(<<'.,.,', 'opal.y', 639)
 module_eval(<<'.,.,', 'opal.y', 644)
   def _reduce_239(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -4358,7 +4358,7 @@ module_eval(<<'.,.,', 'opal.y', 644)
 module_eval(<<'.,.,', 'opal.y', 651)
   def _reduce_241(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -4368,7 +4368,7 @@ module_eval(<<'.,.,', 'opal.y', 651)
 module_eval(<<'.,.,', 'opal.y', 657)
   def _reduce_243(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -4378,7 +4378,7 @@ module_eval(<<'.,.,', 'opal.y', 657)
 module_eval(<<'.,.,', 'opal.y', 662)
   def _reduce_245(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -4387,7 +4387,7 @@ module_eval(<<'.,.,', 'opal.y', 666)
   def _reduce_246(val, _values, result)
                           result = val[0]
                       result << new_hash(nil, val[2], nil)
-                    
+
     result
   end
 .,.,
@@ -4395,7 +4395,7 @@ module_eval(<<'.,.,', 'opal.y', 666)
 module_eval(<<'.,.,', 'opal.y', 671)
   def _reduce_247(val, _values, result)
                           result = [new_hash(nil, val[0], nil)]
-                    
+
     result
   end
 .,.,
@@ -4403,7 +4403,7 @@ module_eval(<<'.,.,', 'opal.y', 671)
 module_eval(<<'.,.,', 'opal.y', 676)
   def _reduce_248(val, _values, result)
                           result = [val[0]]
-                    
+
     result
   end
 .,.,
@@ -4412,7 +4412,7 @@ module_eval(<<'.,.,', 'opal.y', 680)
   def _reduce_249(val, _values, result)
                           result = val[0]
                       add_block_pass val[0], val[1]
-                    
+
     result
   end
 .,.,
@@ -4421,7 +4421,7 @@ module_eval(<<'.,.,', 'opal.y', 685)
   def _reduce_250(val, _values, result)
                           result = [new_hash(nil, val[0], nil)]
                       add_block_pass result, val[1]
-                    
+
     result
   end
 .,.,
@@ -4431,7 +4431,7 @@ module_eval(<<'.,.,', 'opal.y', 690)
                           result = val[0]
                       result << new_hash(nil, val[2], nil)
                       result << val[3] if val[3]
-                    
+
     result
   end
 .,.,
@@ -4440,7 +4440,7 @@ module_eval(<<'.,.,', 'opal.y', 696)
   def _reduce_252(val, _values, result)
                           result = []
                       add_block_pass result, val[0]
-                    
+
     result
   end
 .,.,
@@ -4452,7 +4452,7 @@ module_eval(<<'.,.,', 'opal.y', 696)
 module_eval(<<'.,.,', 'opal.y', 704)
   def _reduce_255(val, _values, result)
                           lexer.cmdarg_push 1
-                    
+
     result
   end
 .,.,
@@ -4461,7 +4461,7 @@ module_eval(<<'.,.,', 'opal.y', 708)
   def _reduce_256(val, _values, result)
                           lexer.cmdarg_pop
                       result = val[1]
-                    
+
     result
   end
 .,.,
@@ -4471,7 +4471,7 @@ module_eval(<<'.,.,', 'opal.y', 708)
 module_eval(<<'.,.,', 'opal.y', 715)
   def _reduce_258(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,
@@ -4479,7 +4479,7 @@ module_eval(<<'.,.,', 'opal.y', 715)
 module_eval(<<'.,.,', 'opal.y', 719)
   def _reduce_259(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -4487,7 +4487,7 @@ module_eval(<<'.,.,', 'opal.y', 719)
 module_eval(<<'.,.,', 'opal.y', 724)
   def _reduce_260(val, _values, result)
                           result = new_block_pass(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -4495,7 +4495,7 @@ module_eval(<<'.,.,', 'opal.y', 724)
 module_eval(<<'.,.,', 'opal.y', 729)
   def _reduce_261(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -4503,7 +4503,7 @@ module_eval(<<'.,.,', 'opal.y', 729)
 module_eval(<<'.,.,', 'opal.y', 733)
   def _reduce_262(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,
@@ -4511,7 +4511,7 @@ module_eval(<<'.,.,', 'opal.y', 733)
 module_eval(<<'.,.,', 'opal.y', 738)
   def _reduce_263(val, _values, result)
                           result = [val[0]]
-                    
+
     result
   end
 .,.,
@@ -4519,7 +4519,7 @@ module_eval(<<'.,.,', 'opal.y', 738)
 module_eval(<<'.,.,', 'opal.y', 742)
   def _reduce_264(val, _values, result)
                           result = [new_splat(val[0], val[1])]
-                    
+
     result
   end
 .,.,
@@ -4527,7 +4527,7 @@ module_eval(<<'.,.,', 'opal.y', 742)
 module_eval(<<'.,.,', 'opal.y', 746)
   def _reduce_265(val, _values, result)
                           result = val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -4535,7 +4535,7 @@ module_eval(<<'.,.,', 'opal.y', 746)
 module_eval(<<'.,.,', 'opal.y', 750)
   def _reduce_266(val, _values, result)
                           result  = val[0] << new_splat(val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -4544,7 +4544,7 @@ module_eval(<<'.,.,', 'opal.y', 755)
   def _reduce_267(val, _values, result)
                           val[0] << val[2]
                       result = s(:array, *val[0])
-                    
+
     result
   end
 .,.,
@@ -4553,7 +4553,7 @@ module_eval(<<'.,.,', 'opal.y', 760)
   def _reduce_268(val, _values, result)
                           val[0] << s(:splat, val[3])
                       result = s(:array, *val[0])
-                    
+
     result
   end
 .,.,
@@ -4561,7 +4561,7 @@ module_eval(<<'.,.,', 'opal.y', 760)
 module_eval(<<'.,.,', 'opal.y', 765)
   def _reduce_269(val, _values, result)
                           result = s(:splat, val[1])
-                    
+
     result
   end
 .,.,
@@ -4587,7 +4587,7 @@ module_eval(<<'.,.,', 'opal.y', 765)
 module_eval(<<'.,.,', 'opal.y', 779)
   def _reduce_279(val, _values, result)
                           result = lexer.line
-                    
+
     result
   end
 .,.,
@@ -4595,7 +4595,7 @@ module_eval(<<'.,.,', 'opal.y', 779)
 module_eval(<<'.,.,', 'opal.y', 783)
   def _reduce_280(val, _values, result)
                           result = s(:begin, val[2])
-                    
+
     result
   end
 .,.,
@@ -4603,7 +4603,7 @@ module_eval(<<'.,.,', 'opal.y', 783)
 module_eval(<<'.,.,', 'opal.y', 787)
   def _reduce_281(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -4611,7 +4611,7 @@ module_eval(<<'.,.,', 'opal.y', 787)
 module_eval(<<'.,.,', 'opal.y', 791)
   def _reduce_282(val, _values, result)
                           result = new_paren(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4619,7 +4619,7 @@ module_eval(<<'.,.,', 'opal.y', 791)
 module_eval(<<'.,.,', 'opal.y', 795)
   def _reduce_283(val, _values, result)
                           result = new_colon2(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4627,7 +4627,7 @@ module_eval(<<'.,.,', 'opal.y', 795)
 module_eval(<<'.,.,', 'opal.y', 799)
   def _reduce_284(val, _values, result)
                           result = new_colon3(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -4635,7 +4635,7 @@ module_eval(<<'.,.,', 'opal.y', 799)
 module_eval(<<'.,.,', 'opal.y', 803)
   def _reduce_285(val, _values, result)
                           result = new_call val[0], [:[], []], val[2]
-                    
+
     result
   end
 .,.,
@@ -4643,7 +4643,7 @@ module_eval(<<'.,.,', 'opal.y', 803)
 module_eval(<<'.,.,', 'opal.y', 807)
   def _reduce_286(val, _values, result)
                           result = new_js_call val[0], [:[], []], val[2]
-                    
+
     result
   end
 .,.,
@@ -4651,7 +4651,7 @@ module_eval(<<'.,.,', 'opal.y', 807)
 module_eval(<<'.,.,', 'opal.y', 811)
   def _reduce_287(val, _values, result)
                           result = new_array(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4659,7 +4659,7 @@ module_eval(<<'.,.,', 'opal.y', 811)
 module_eval(<<'.,.,', 'opal.y', 815)
   def _reduce_288(val, _values, result)
                           result = new_hash(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -4667,7 +4667,7 @@ module_eval(<<'.,.,', 'opal.y', 815)
 module_eval(<<'.,.,', 'opal.y', 819)
   def _reduce_289(val, _values, result)
                           result = new_return(val[0])
-                    
+
     result
   end
 .,.,
@@ -4675,7 +4675,7 @@ module_eval(<<'.,.,', 'opal.y', 819)
 module_eval(<<'.,.,', 'opal.y', 823)
   def _reduce_290(val, _values, result)
                           result = new_yield val[2]
-                    
+
     result
   end
 .,.,
@@ -4683,7 +4683,7 @@ module_eval(<<'.,.,', 'opal.y', 823)
 module_eval(<<'.,.,', 'opal.y', 827)
   def _reduce_291(val, _values, result)
                           result = s(:yield)
-                    
+
     result
   end
 .,.,
@@ -4691,7 +4691,7 @@ module_eval(<<'.,.,', 'opal.y', 827)
 module_eval(<<'.,.,', 'opal.y', 831)
   def _reduce_292(val, _values, result)
                           result = s(:yield)
-                    
+
     result
   end
 .,.,
@@ -4699,7 +4699,7 @@ module_eval(<<'.,.,', 'opal.y', 831)
 module_eval(<<'.,.,', 'opal.y', 835)
   def _reduce_293(val, _values, result)
                           result = s(:defined, val[3])
-                    
+
     result
   end
 .,.,
@@ -4707,7 +4707,7 @@ module_eval(<<'.,.,', 'opal.y', 835)
 module_eval(<<'.,.,', 'opal.y', 839)
   def _reduce_294(val, _values, result)
                           result = new_unary_call(['!', []], val[2])
-                    
+
     result
   end
 .,.,
@@ -4715,7 +4715,7 @@ module_eval(<<'.,.,', 'opal.y', 839)
 module_eval(<<'.,.,', 'opal.y', 843)
   def _reduce_295(val, _values, result)
                           result = new_unary_call(['!', []], new_nil(val[0]))
-                    
+
     result
   end
 .,.,
@@ -4724,7 +4724,7 @@ module_eval(<<'.,.,', 'opal.y', 847)
   def _reduce_296(val, _values, result)
                           result = new_call(nil, val[0], [])
                       result << val[1]
-                    
+
     result
   end
 .,.,
@@ -4735,7 +4735,7 @@ module_eval(<<'.,.,', 'opal.y', 853)
   def _reduce_298(val, _values, result)
                           val[0] << val[1]
                       result = val[0]
-                    
+
     result
   end
 .,.,
@@ -4743,7 +4743,7 @@ module_eval(<<'.,.,', 'opal.y', 853)
 module_eval(<<'.,.,', 'opal.y', 858)
   def _reduce_299(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -4751,7 +4751,7 @@ module_eval(<<'.,.,', 'opal.y', 858)
 module_eval(<<'.,.,', 'opal.y', 862)
   def _reduce_300(val, _values, result)
                           result = new_if(val[0], val[1], val[3], val[4])
-                    
+
     result
   end
 .,.,
@@ -4759,7 +4759,7 @@ module_eval(<<'.,.,', 'opal.y', 862)
 module_eval(<<'.,.,', 'opal.y', 866)
   def _reduce_301(val, _values, result)
                           result = new_if(val[0], val[1], val[4], val[3])
-                    
+
     result
   end
 .,.,
@@ -4768,7 +4768,7 @@ module_eval(<<'.,.,', 'opal.y', 870)
   def _reduce_302(val, _values, result)
                           lexer.cond_push 1
                       result = lexer.line
-                    
+
     result
   end
 .,.,
@@ -4776,7 +4776,7 @@ module_eval(<<'.,.,', 'opal.y', 870)
 module_eval(<<'.,.,', 'opal.y', 875)
   def _reduce_303(val, _values, result)
                           lexer.cond_pop
-                    
+
     result
   end
 .,.,
@@ -4784,7 +4784,7 @@ module_eval(<<'.,.,', 'opal.y', 875)
 module_eval(<<'.,.,', 'opal.y', 879)
   def _reduce_304(val, _values, result)
                           result = s(:while, val[2], val[5])
-                    
+
     result
   end
 .,.,
@@ -4793,7 +4793,7 @@ module_eval(<<'.,.,', 'opal.y', 883)
   def _reduce_305(val, _values, result)
                           lexer.cond_push 1
                       result = lexer.line
-                    
+
     result
   end
 .,.,
@@ -4801,7 +4801,7 @@ module_eval(<<'.,.,', 'opal.y', 883)
 module_eval(<<'.,.,', 'opal.y', 888)
   def _reduce_306(val, _values, result)
                           lexer.cond_pop
-                    
+
     result
   end
 .,.,
@@ -4809,7 +4809,7 @@ module_eval(<<'.,.,', 'opal.y', 888)
 module_eval(<<'.,.,', 'opal.y', 892)
   def _reduce_307(val, _values, result)
                           result = s(:until, val[2], val[5])
-                    
+
     result
   end
 .,.,
@@ -4817,7 +4817,7 @@ module_eval(<<'.,.,', 'opal.y', 892)
 module_eval(<<'.,.,', 'opal.y', 896)
   def _reduce_308(val, _values, result)
                           result = s(:case, val[1], *val[3])
-                    
+
     result
   end
 .,.,
@@ -4825,7 +4825,7 @@ module_eval(<<'.,.,', 'opal.y', 896)
 module_eval(<<'.,.,', 'opal.y', 900)
   def _reduce_309(val, _values, result)
                           result = s(:case, nil, *val[2])
-                    
+
     result
   end
 .,.,
@@ -4833,7 +4833,7 @@ module_eval(<<'.,.,', 'opal.y', 900)
 module_eval(<<'.,.,', 'opal.y', 904)
   def _reduce_310(val, _values, result)
                           result = s(:case, nil, val[3])
-                    
+
     result
   end
 .,.,
@@ -4842,7 +4842,7 @@ module_eval(<<'.,.,', 'opal.y', 908)
   def _reduce_311(val, _values, result)
                           lexer.cond_push 1
                       result = lexer.line
-                    
+
     result
   end
 .,.,
@@ -4850,7 +4850,7 @@ module_eval(<<'.,.,', 'opal.y', 908)
 module_eval(<<'.,.,', 'opal.y', 913)
   def _reduce_312(val, _values, result)
                           lexer.cond_pop
-                    
+
     result
   end
 .,.,
@@ -4858,7 +4858,7 @@ module_eval(<<'.,.,', 'opal.y', 913)
 module_eval(<<'.,.,', 'opal.y', 917)
   def _reduce_313(val, _values, result)
                           result = s(:for, val[4], val[1], val[7])
-                    
+
     result
   end
 .,.,
@@ -4866,7 +4866,7 @@ module_eval(<<'.,.,', 'opal.y', 917)
 module_eval(<<'.,.,', 'opal.y', 921)
   def _reduce_314(val, _values, result)
                           # ...
-                    
+
     result
   end
 .,.,
@@ -4874,7 +4874,7 @@ module_eval(<<'.,.,', 'opal.y', 921)
 module_eval(<<'.,.,', 'opal.y', 925)
   def _reduce_315(val, _values, result)
                           result = new_class val[0], val[1], val[2], val[4], val[5]
-                    
+
     result
   end
 .,.,
@@ -4882,7 +4882,7 @@ module_eval(<<'.,.,', 'opal.y', 925)
 module_eval(<<'.,.,', 'opal.y', 929)
   def _reduce_316(val, _values, result)
                           result = lexer.line
-                    
+
     result
   end
 .,.,
@@ -4890,7 +4890,7 @@ module_eval(<<'.,.,', 'opal.y', 929)
 module_eval(<<'.,.,', 'opal.y', 933)
   def _reduce_317(val, _values, result)
                           # ...
-                    
+
     result
   end
 .,.,
@@ -4898,7 +4898,7 @@ module_eval(<<'.,.,', 'opal.y', 933)
 module_eval(<<'.,.,', 'opal.y', 937)
   def _reduce_318(val, _values, result)
                           result = new_sclass(val[0], val[3], val[6], val[7])
-                    
+
     result
   end
 .,.,
@@ -4906,7 +4906,7 @@ module_eval(<<'.,.,', 'opal.y', 937)
 module_eval(<<'.,.,', 'opal.y', 941)
   def _reduce_319(val, _values, result)
                           result = lexer.line
-                    
+
     result
   end
 .,.,
@@ -4914,7 +4914,7 @@ module_eval(<<'.,.,', 'opal.y', 941)
 module_eval(<<'.,.,', 'opal.y', 945)
   def _reduce_320(val, _values, result)
                           # ...
-                    
+
     result
   end
 .,.,
@@ -4922,7 +4922,7 @@ module_eval(<<'.,.,', 'opal.y', 945)
 module_eval(<<'.,.,', 'opal.y', 949)
   def _reduce_321(val, _values, result)
                           result = new_module(val[0], val[2], val[4], val[5])
-                    
+
     result
   end
 .,.,
@@ -4931,7 +4931,7 @@ module_eval(<<'.,.,', 'opal.y', 953)
   def _reduce_322(val, _values, result)
                           push_scope
                       lexer.lex_state = :expr_endfn
-                    
+
     result
   end
 .,.,
@@ -4940,7 +4940,7 @@ module_eval(<<'.,.,', 'opal.y', 958)
   def _reduce_323(val, _values, result)
                           result = new_def(val[0], nil, val[1], val[3], val[4], val[5])
                       pop_scope
-                    
+
     result
   end
 .,.,
@@ -4948,7 +4948,7 @@ module_eval(<<'.,.,', 'opal.y', 958)
 module_eval(<<'.,.,', 'opal.y', 963)
   def _reduce_324(val, _values, result)
                            lexer.lex_state = :expr_fname
-                    
+
     result
   end
 .,.,
@@ -4957,7 +4957,7 @@ module_eval(<<'.,.,', 'opal.y', 967)
   def _reduce_325(val, _values, result)
                           push_scope
                       lexer.lex_state = :expr_endfn
-                    
+
     result
   end
 .,.,
@@ -4966,7 +4966,7 @@ module_eval(<<'.,.,', 'opal.y', 972)
   def _reduce_326(val, _values, result)
                           result = new_def(val[0], val[1], val[4], val[6], val[7], val[8])
                       pop_scope
-                    
+
     result
   end
 .,.,
@@ -4974,7 +4974,7 @@ module_eval(<<'.,.,', 'opal.y', 972)
 module_eval(<<'.,.,', 'opal.y', 977)
   def _reduce_327(val, _values, result)
                           result = new_break(val[0])
-                    
+
     result
   end
 .,.,
@@ -4982,7 +4982,7 @@ module_eval(<<'.,.,', 'opal.y', 977)
 module_eval(<<'.,.,', 'opal.y', 981)
   def _reduce_328(val, _values, result)
                           result = s(:next)
-                    
+
     result
   end
 .,.,
@@ -4990,7 +4990,7 @@ module_eval(<<'.,.,', 'opal.y', 981)
 module_eval(<<'.,.,', 'opal.y', 985)
   def _reduce_329(val, _values, result)
                           result = s(:redo)
-                    
+
     result
   end
 .,.,
@@ -5017,7 +5017,7 @@ module_eval(<<'.,.,', 'opal.y', 1002)
   def _reduce_339(val, _values, result)
                           result = new_call nil, [:lambda, []], []
                       result << new_iter(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -5025,7 +5025,7 @@ module_eval(<<'.,.,', 'opal.y', 1002)
 module_eval(<<'.,.,', 'opal.y', 1008)
   def _reduce_340(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -5033,7 +5033,7 @@ module_eval(<<'.,.,', 'opal.y', 1008)
 module_eval(<<'.,.,', 'opal.y', 1012)
   def _reduce_341(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,
@@ -5045,7 +5045,7 @@ module_eval(<<'.,.,', 'opal.y', 1012)
 module_eval(<<'.,.,', 'opal.y', 1019)
   def _reduce_344(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -5053,7 +5053,7 @@ module_eval(<<'.,.,', 'opal.y', 1019)
 module_eval(<<'.,.,', 'opal.y', 1023)
   def _reduce_345(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -5061,7 +5061,7 @@ module_eval(<<'.,.,', 'opal.y', 1023)
 module_eval(<<'.,.,', 'opal.y', 1028)
   def _reduce_346(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -5069,7 +5069,7 @@ module_eval(<<'.,.,', 'opal.y', 1028)
 module_eval(<<'.,.,', 'opal.y', 1032)
   def _reduce_347(val, _values, result)
                           result = new_if(val[0], val[1], val[3], val[4])
-                    
+
     result
   end
 .,.,
@@ -5079,7 +5079,7 @@ module_eval(<<'.,.,', 'opal.y', 1032)
 module_eval(<<'.,.,', 'opal.y', 1038)
   def _reduce_349(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -5087,7 +5087,7 @@ module_eval(<<'.,.,', 'opal.y', 1038)
 module_eval(<<'.,.,', 'opal.y', 1043)
   def _reduce_350(val, _values, result)
                           result = s(:block, val[0])
-                    
+
     result
   end
 .,.,
@@ -5096,7 +5096,7 @@ module_eval(<<'.,.,', 'opal.y', 1047)
   def _reduce_351(val, _values, result)
                           val[0] << val[2]
                       result = val[0]
-                    
+
     result
   end
 .,.,
@@ -5105,7 +5105,7 @@ module_eval(<<'.,.,', 'opal.y', 1053)
   def _reduce_352(val, _values, result)
                           result = new_assign(new_assignable(new_ident(
                                   val[0])), val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -5115,7 +5115,7 @@ module_eval(<<'.,.,', 'opal.y', 1053)
 module_eval(<<'.,.,', 'opal.y', 1060)
   def _reduce_354(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,
@@ -5123,7 +5123,7 @@ module_eval(<<'.,.,', 'opal.y', 1060)
 module_eval(<<'.,.,', 'opal.y', 1064)
   def _reduce_355(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,
@@ -5131,7 +5131,7 @@ module_eval(<<'.,.,', 'opal.y', 1064)
 module_eval(<<'.,.,', 'opal.y', 1068)
   def _reduce_356(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -5139,7 +5139,7 @@ module_eval(<<'.,.,', 'opal.y', 1068)
 module_eval(<<'.,.,', 'opal.y', 1073)
   def _reduce_357(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -5147,7 +5147,7 @@ module_eval(<<'.,.,', 'opal.y', 1073)
 module_eval(<<'.,.,', 'opal.y', 1078)
   def _reduce_358(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -5155,7 +5155,7 @@ module_eval(<<'.,.,', 'opal.y', 1078)
 module_eval(<<'.,.,', 'opal.y', 1082)
   def _reduce_359(val, _values, result)
                           nil
-                    
+
     result
   end
 .,.,
@@ -5163,7 +5163,7 @@ module_eval(<<'.,.,', 'opal.y', 1082)
 module_eval(<<'.,.,', 'opal.y', 1087)
   def _reduce_360(val, _values, result)
                           result = new_block_args(val[0], val[2], val[4], val[5])
-                    
+
     result
   end
 .,.,
@@ -5171,7 +5171,7 @@ module_eval(<<'.,.,', 'opal.y', 1087)
 module_eval(<<'.,.,', 'opal.y', 1091)
   def _reduce_361(val, _values, result)
                           result = new_block_args(val[0], val[2], nil, val[3])
-                    
+
     result
   end
 .,.,
@@ -5179,7 +5179,7 @@ module_eval(<<'.,.,', 'opal.y', 1091)
 module_eval(<<'.,.,', 'opal.y', 1095)
   def _reduce_362(val, _values, result)
                           result = new_block_args(val[0], nil, val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -5187,7 +5187,7 @@ module_eval(<<'.,.,', 'opal.y', 1095)
 module_eval(<<'.,.,', 'opal.y', 1099)
   def _reduce_363(val, _values, result)
                           result = new_block_args(val[0], nil, nil, nil)
-                    
+
     result
   end
 .,.,
@@ -5195,7 +5195,7 @@ module_eval(<<'.,.,', 'opal.y', 1099)
 module_eval(<<'.,.,', 'opal.y', 1103)
   def _reduce_364(val, _values, result)
                           result = new_block_args(val[0], nil, nil, val[1])
-                    
+
     result
   end
 .,.,
@@ -5203,7 +5203,7 @@ module_eval(<<'.,.,', 'opal.y', 1103)
 module_eval(<<'.,.,', 'opal.y', 1107)
   def _reduce_365(val, _values, result)
                           result = new_block_args(nil, val[0], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -5211,7 +5211,7 @@ module_eval(<<'.,.,', 'opal.y', 1107)
 module_eval(<<'.,.,', 'opal.y', 1111)
   def _reduce_366(val, _values, result)
                           result = new_block_args(nil, val[0], nil, val[1])
-                    
+
     result
   end
 .,.,
@@ -5219,7 +5219,7 @@ module_eval(<<'.,.,', 'opal.y', 1111)
 module_eval(<<'.,.,', 'opal.y', 1115)
   def _reduce_367(val, _values, result)
                           result = new_block_args(nil, nil, val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -5227,7 +5227,7 @@ module_eval(<<'.,.,', 'opal.y', 1115)
 module_eval(<<'.,.,', 'opal.y', 1119)
   def _reduce_368(val, _values, result)
                           result = new_block_args(nil, nil, nil, val[0])
-                    
+
     result
   end
 .,.,
@@ -5236,7 +5236,7 @@ module_eval(<<'.,.,', 'opal.y', 1124)
   def _reduce_369(val, _values, result)
                           push_scope :block
                       result = lexer.line
-                    
+
     result
   end
 .,.,
@@ -5245,7 +5245,7 @@ module_eval(<<'.,.,', 'opal.y', 1129)
   def _reduce_370(val, _values, result)
                           result = new_iter val[2], val[3]
                       pop_scope
-                    
+
     result
   end
 .,.,
@@ -5254,7 +5254,7 @@ module_eval(<<'.,.,', 'opal.y', 1135)
   def _reduce_371(val, _values, result)
                           val[0] << val[1]
                       result = val[0]
-                    
+
     result
   end
 .,.,
@@ -5268,7 +5268,7 @@ module_eval(<<'.,.,', 'opal.y', 1135)
 module_eval(<<'.,.,', 'opal.y', 1144)
   def _reduce_375(val, _values, result)
                           result = new_call(nil, val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -5276,7 +5276,7 @@ module_eval(<<'.,.,', 'opal.y', 1144)
 module_eval(<<'.,.,', 'opal.y', 1148)
   def _reduce_376(val, _values, result)
                           result = new_call(val[0], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -5284,7 +5284,7 @@ module_eval(<<'.,.,', 'opal.y', 1148)
 module_eval(<<'.,.,', 'opal.y', 1152)
   def _reduce_377(val, _values, result)
                           result = new_js_call(val[0], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -5292,7 +5292,7 @@ module_eval(<<'.,.,', 'opal.y', 1152)
 module_eval(<<'.,.,', 'opal.y', 1156)
   def _reduce_378(val, _values, result)
                           result = new_call(val[0], [:call, []], val[2])
-                    
+
     result
   end
 .,.,
@@ -5300,7 +5300,7 @@ module_eval(<<'.,.,', 'opal.y', 1156)
 module_eval(<<'.,.,', 'opal.y', 1160)
   def _reduce_379(val, _values, result)
                           result = new_call(val[0], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -5308,7 +5308,7 @@ module_eval(<<'.,.,', 'opal.y', 1160)
 module_eval(<<'.,.,', 'opal.y', 1164)
   def _reduce_380(val, _values, result)
                           result = new_call(val[0], val[2])
-                    
+
     result
   end
 .,.,
@@ -5316,7 +5316,7 @@ module_eval(<<'.,.,', 'opal.y', 1164)
 module_eval(<<'.,.,', 'opal.y', 1168)
   def _reduce_381(val, _values, result)
                           result = new_super(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -5324,7 +5324,7 @@ module_eval(<<'.,.,', 'opal.y', 1168)
 module_eval(<<'.,.,', 'opal.y', 1172)
   def _reduce_382(val, _values, result)
                           result = new_super(val[0], nil)
-                    
+
     result
   end
 .,.,
@@ -5333,7 +5333,7 @@ module_eval(<<'.,.,', 'opal.y', 1177)
   def _reduce_383(val, _values, result)
                           push_scope :block
                       result = lexer.line
-                    
+
     result
   end
 .,.,
@@ -5342,7 +5342,7 @@ module_eval(<<'.,.,', 'opal.y', 1182)
   def _reduce_384(val, _values, result)
                           result = new_iter val[2], val[3]
                       pop_scope
-                    
+
     result
   end
 .,.,
@@ -5351,7 +5351,7 @@ module_eval(<<'.,.,', 'opal.y', 1187)
   def _reduce_385(val, _values, result)
                           push_scope :block
                       result = lexer.line
-                    
+
     result
   end
 .,.,
@@ -5360,7 +5360,7 @@ module_eval(<<'.,.,', 'opal.y', 1192)
   def _reduce_386(val, _values, result)
                           result = new_iter val[2], val[3]
                       pop_scope
-                    
+
     result
   end
 .,.,
@@ -5368,7 +5368,7 @@ module_eval(<<'.,.,', 'opal.y', 1192)
 module_eval(<<'.,.,', 'opal.y', 1198)
   def _reduce_387(val, _values, result)
                           result = lexer.line
-                    
+
     result
   end
 .,.,
@@ -5378,7 +5378,7 @@ module_eval(<<'.,.,', 'opal.y', 1202)
                           part = s(:when, s(:array, *val[2]), val[4])
                       result = [part]
                       result.push(*val[5]) if val[5]
-                    
+
     result
   end
 .,.,
@@ -5386,7 +5386,7 @@ module_eval(<<'.,.,', 'opal.y', 1202)
 module_eval(<<'.,.,', 'opal.y', 1209)
   def _reduce_389(val, _values, result)
                           result = [val[0]]
-                    
+
     result
   end
 .,.,
@@ -5399,7 +5399,7 @@ module_eval(<<'.,.,', 'opal.y', 1215)
                       exc << new_assign(val[2], val[2], s(:gvar, '$!'.intern)) if val[2]
                       result = [s(:resbody, exc, val[4])]
                       result.push val[5].first if val[5]
-                    
+
     result
   end
 .,.,
@@ -5407,7 +5407,7 @@ module_eval(<<'.,.,', 'opal.y', 1215)
 module_eval(<<'.,.,', 'opal.y', 1222)
   def _reduce_392(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,
@@ -5415,7 +5415,7 @@ module_eval(<<'.,.,', 'opal.y', 1222)
 module_eval(<<'.,.,', 'opal.y', 1227)
   def _reduce_393(val, _values, result)
                           result = s(:array, val[0])
-                    
+
     result
   end
 .,.,
@@ -5427,7 +5427,7 @@ module_eval(<<'.,.,', 'opal.y', 1227)
 module_eval(<<'.,.,', 'opal.y', 1234)
   def _reduce_396(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -5435,7 +5435,7 @@ module_eval(<<'.,.,', 'opal.y', 1234)
 module_eval(<<'.,.,', 'opal.y', 1238)
   def _reduce_397(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,
@@ -5443,7 +5443,7 @@ module_eval(<<'.,.,', 'opal.y', 1238)
 module_eval(<<'.,.,', 'opal.y', 1243)
   def _reduce_398(val, _values, result)
                           result = val[1].nil? ? s(:nil) : val[1]
-                    
+
     result
   end
 .,.,
@@ -5459,7 +5459,7 @@ module_eval(<<'.,.,', 'opal.y', 1243)
 module_eval(<<'.,.,', 'opal.y', 1253)
   def _reduce_403(val, _values, result)
                           result = new_str val[0]
-                    
+
     result
   end
 .,.,
@@ -5469,7 +5469,7 @@ module_eval(<<'.,.,', 'opal.y', 1253)
 module_eval(<<'.,.,', 'opal.y', 1259)
   def _reduce_405(val, _values, result)
                         result = str_append val[0], val[1]
-                  
+
     result
   end
 .,.,
@@ -5477,7 +5477,7 @@ module_eval(<<'.,.,', 'opal.y', 1259)
 module_eval(<<'.,.,', 'opal.y', 1264)
   def _reduce_406(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -5485,7 +5485,7 @@ module_eval(<<'.,.,', 'opal.y', 1264)
 module_eval(<<'.,.,', 'opal.y', 1268)
   def _reduce_407(val, _values, result)
                           result = s(:str, value(val[0]))
-                    
+
     result
   end
 .,.,
@@ -5493,7 +5493,7 @@ module_eval(<<'.,.,', 'opal.y', 1268)
 module_eval(<<'.,.,', 'opal.y', 1273)
   def _reduce_408(val, _values, result)
                           result = new_xstr(val[0], val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -5501,7 +5501,7 @@ module_eval(<<'.,.,', 'opal.y', 1273)
 module_eval(<<'.,.,', 'opal.y', 1278)
   def _reduce_409(val, _values, result)
                           result = new_regexp val[1], val[2]
-                    
+
     result
   end
 .,.,
@@ -5509,7 +5509,7 @@ module_eval(<<'.,.,', 'opal.y', 1278)
 module_eval(<<'.,.,', 'opal.y', 1283)
   def _reduce_410(val, _values, result)
                           result = s(:array)
-                    
+
     result
   end
 .,.,
@@ -5517,7 +5517,7 @@ module_eval(<<'.,.,', 'opal.y', 1283)
 module_eval(<<'.,.,', 'opal.y', 1287)
   def _reduce_411(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -5525,7 +5525,7 @@ module_eval(<<'.,.,', 'opal.y', 1287)
 module_eval(<<'.,.,', 'opal.y', 1292)
   def _reduce_412(val, _values, result)
                           result = s(:array)
-                    
+
     result
   end
 .,.,
@@ -5535,7 +5535,7 @@ module_eval(<<'.,.,', 'opal.y', 1296)
                           part = val[1]
                       part = s(:dstr, "", val[1]) if part.type == :evstr
                       result = val[0] << part
-                    
+
     result
   end
 .,.,
@@ -5543,7 +5543,7 @@ module_eval(<<'.,.,', 'opal.y', 1296)
 module_eval(<<'.,.,', 'opal.y', 1303)
   def _reduce_414(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -5551,7 +5551,7 @@ module_eval(<<'.,.,', 'opal.y', 1303)
 module_eval(<<'.,.,', 'opal.y', 1307)
   def _reduce_415(val, _values, result)
                           result = val[0].concat([val[1]])
-                    
+
     result
   end
 .,.,
@@ -5559,7 +5559,7 @@ module_eval(<<'.,.,', 'opal.y', 1307)
 module_eval(<<'.,.,', 'opal.y', 1312)
   def _reduce_416(val, _values, result)
                           result = s(:array)
-                    
+
     result
   end
 .,.,
@@ -5567,7 +5567,7 @@ module_eval(<<'.,.,', 'opal.y', 1312)
 module_eval(<<'.,.,', 'opal.y', 1316)
   def _reduce_417(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -5575,7 +5575,7 @@ module_eval(<<'.,.,', 'opal.y', 1316)
 module_eval(<<'.,.,', 'opal.y', 1321)
   def _reduce_418(val, _values, result)
                           result = s(:array)
-                    
+
     result
   end
 .,.,
@@ -5583,7 +5583,7 @@ module_eval(<<'.,.,', 'opal.y', 1321)
 module_eval(<<'.,.,', 'opal.y', 1325)
   def _reduce_419(val, _values, result)
                           result = val[0] << s(:str, value(val[1]))
-                    
+
     result
   end
 .,.,
@@ -5591,7 +5591,7 @@ module_eval(<<'.,.,', 'opal.y', 1325)
 module_eval(<<'.,.,', 'opal.y', 1330)
   def _reduce_420(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,
@@ -5599,7 +5599,7 @@ module_eval(<<'.,.,', 'opal.y', 1330)
 module_eval(<<'.,.,', 'opal.y', 1334)
   def _reduce_421(val, _values, result)
                           result = str_append val[0], val[1]
-                    
+
     result
   end
 .,.,
@@ -5607,7 +5607,7 @@ module_eval(<<'.,.,', 'opal.y', 1334)
 module_eval(<<'.,.,', 'opal.y', 1339)
   def _reduce_422(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,
@@ -5615,7 +5615,7 @@ module_eval(<<'.,.,', 'opal.y', 1339)
 module_eval(<<'.,.,', 'opal.y', 1343)
   def _reduce_423(val, _values, result)
                           result = str_append val[0], val[1]
-                    
+
     result
   end
 .,.,
@@ -5623,7 +5623,7 @@ module_eval(<<'.,.,', 'opal.y', 1343)
 module_eval(<<'.,.,', 'opal.y', 1348)
   def _reduce_424(val, _values, result)
                           result = new_str_content(val[0])
-                    
+
     result
   end
 .,.,
@@ -5632,7 +5632,7 @@ module_eval(<<'.,.,', 'opal.y', 1352)
   def _reduce_425(val, _values, result)
                           result = lexer.strterm
                       lexer.strterm = nil
-                    
+
     result
   end
 .,.,
@@ -5641,7 +5641,7 @@ module_eval(<<'.,.,', 'opal.y', 1357)
   def _reduce_426(val, _values, result)
                           lexer.strterm = val[1]
                       result = new_evstr(val[2])
-                    
+
     result
   end
 .,.,
@@ -5653,7 +5653,7 @@ module_eval(<<'.,.,', 'opal.y', 1362)
                       result = lexer.strterm
                       lexer.strterm = nil
                       lexer.lex_state = :expr_beg
-                    
+
     result
   end
 .,.,
@@ -5664,7 +5664,7 @@ module_eval(<<'.,.,', 'opal.y', 1370)
                       lexer.cond_lexpop
                       lexer.cmdarg_lexpop
                       result = new_evstr(val[2])
-                    
+
     result
   end
 .,.,
@@ -5672,7 +5672,7 @@ module_eval(<<'.,.,', 'opal.y', 1370)
 module_eval(<<'.,.,', 'opal.y', 1378)
   def _reduce_429(val, _values, result)
                           result = new_gvar(val[0])
-                    
+
     result
   end
 .,.,
@@ -5680,7 +5680,7 @@ module_eval(<<'.,.,', 'opal.y', 1378)
 module_eval(<<'.,.,', 'opal.y', 1382)
   def _reduce_430(val, _values, result)
                           result = new_ivar(val[0])
-                    
+
     result
   end
 .,.,
@@ -5688,7 +5688,7 @@ module_eval(<<'.,.,', 'opal.y', 1382)
 module_eval(<<'.,.,', 'opal.y', 1386)
   def _reduce_431(val, _values, result)
                           result = new_cvar(val[0])
-                    
+
     result
   end
 .,.,
@@ -5699,7 +5699,7 @@ module_eval(<<'.,.,', 'opal.y', 1393)
   def _reduce_433(val, _values, result)
                           result = new_sym(val[1])
                       lexer.lex_state = :expr_end
-                    
+
     result
   end
 .,.,
@@ -5707,7 +5707,7 @@ module_eval(<<'.,.,', 'opal.y', 1393)
 module_eval(<<'.,.,', 'opal.y', 1398)
   def _reduce_434(val, _values, result)
                           result = new_sym(val[0])
-                    
+
     result
   end
 .,.,
@@ -5723,7 +5723,7 @@ module_eval(<<'.,.,', 'opal.y', 1398)
 module_eval(<<'.,.,', 'opal.y', 1408)
   def _reduce_439(val, _values, result)
                           result = new_dsym val[1]
-                    
+
     result
   end
 .,.,
@@ -5731,7 +5731,7 @@ module_eval(<<'.,.,', 'opal.y', 1408)
 module_eval(<<'.,.,', 'opal.y', 1413)
   def _reduce_440(val, _values, result)
                           result = new_int(val[0])
-                    
+
     result
   end
 .,.,
@@ -5739,7 +5739,7 @@ module_eval(<<'.,.,', 'opal.y', 1413)
 module_eval(<<'.,.,', 'opal.y', 1417)
   def _reduce_441(val, _values, result)
                           result = new_float(val[0])
-                    
+
     result
   end
 .,.,
@@ -5747,7 +5747,7 @@ module_eval(<<'.,.,', 'opal.y', 1417)
 module_eval(<<'.,.,', 'opal.y', 1421)
   def _reduce_442(val, _values, result)
                         result = negate_num(new_int(val[1]))
-                  
+
     result
   end
 .,.,
@@ -5755,7 +5755,7 @@ module_eval(<<'.,.,', 'opal.y', 1421)
 module_eval(<<'.,.,', 'opal.y', 1425)
   def _reduce_443(val, _values, result)
                         result = negate_num(new_float(val[1]))
-                  
+
     result
   end
 .,.,
@@ -5763,7 +5763,7 @@ module_eval(<<'.,.,', 'opal.y', 1425)
 module_eval(<<'.,.,', 'opal.y', 1429)
   def _reduce_444(val, _values, result)
                         result = new_int(val[1])
-                  
+
     result
   end
 .,.,
@@ -5771,7 +5771,7 @@ module_eval(<<'.,.,', 'opal.y', 1429)
 module_eval(<<'.,.,', 'opal.y', 1433)
   def _reduce_445(val, _values, result)
                         result = new_float(val[1])
-                  
+
     result
   end
 .,.,
@@ -5779,7 +5779,7 @@ module_eval(<<'.,.,', 'opal.y', 1433)
 module_eval(<<'.,.,', 'opal.y', 1438)
   def _reduce_446(val, _values, result)
                           result = new_ident(val[0])
-                    
+
     result
   end
 .,.,
@@ -5787,7 +5787,7 @@ module_eval(<<'.,.,', 'opal.y', 1438)
 module_eval(<<'.,.,', 'opal.y', 1442)
   def _reduce_447(val, _values, result)
                           result = new_ivar(val[0])
-                    
+
     result
   end
 .,.,
@@ -5795,7 +5795,7 @@ module_eval(<<'.,.,', 'opal.y', 1442)
 module_eval(<<'.,.,', 'opal.y', 1446)
   def _reduce_448(val, _values, result)
                           result = new_gvar(val[0])
-                    
+
     result
   end
 .,.,
@@ -5803,7 +5803,7 @@ module_eval(<<'.,.,', 'opal.y', 1446)
 module_eval(<<'.,.,', 'opal.y', 1450)
   def _reduce_449(val, _values, result)
                           result = new_const(val[0])
-                    
+
     result
   end
 .,.,
@@ -5811,7 +5811,7 @@ module_eval(<<'.,.,', 'opal.y', 1450)
 module_eval(<<'.,.,', 'opal.y', 1454)
   def _reduce_450(val, _values, result)
                           result = new_cvar(val[0])
-                    
+
     result
   end
 .,.,
@@ -5819,7 +5819,7 @@ module_eval(<<'.,.,', 'opal.y', 1454)
 module_eval(<<'.,.,', 'opal.y', 1458)
   def _reduce_451(val, _values, result)
                           result = new_nil(val[0])
-                    
+
     result
   end
 .,.,
@@ -5827,7 +5827,7 @@ module_eval(<<'.,.,', 'opal.y', 1458)
 module_eval(<<'.,.,', 'opal.y', 1462)
   def _reduce_452(val, _values, result)
                           result = new_self(val[0])
-                    
+
     result
   end
 .,.,
@@ -5835,7 +5835,7 @@ module_eval(<<'.,.,', 'opal.y', 1462)
 module_eval(<<'.,.,', 'opal.y', 1466)
   def _reduce_453(val, _values, result)
                           result = new_true(val[0])
-                    
+
     result
   end
 .,.,
@@ -5843,7 +5843,7 @@ module_eval(<<'.,.,', 'opal.y', 1466)
 module_eval(<<'.,.,', 'opal.y', 1470)
   def _reduce_454(val, _values, result)
                           result = new_false(val[0])
-                    
+
     result
   end
 .,.,
@@ -5851,7 +5851,7 @@ module_eval(<<'.,.,', 'opal.y', 1470)
 module_eval(<<'.,.,', 'opal.y', 1474)
   def _reduce_455(val, _values, result)
                           result = new___FILE__(val[0])
-                    
+
     result
   end
 .,.,
@@ -5859,7 +5859,7 @@ module_eval(<<'.,.,', 'opal.y', 1474)
 module_eval(<<'.,.,', 'opal.y', 1478)
   def _reduce_456(val, _values, result)
                           result = new___LINE__(val[0])
-                    
+
     result
   end
 .,.,
@@ -5867,7 +5867,7 @@ module_eval(<<'.,.,', 'opal.y', 1478)
 module_eval(<<'.,.,', 'opal.y', 1483)
   def _reduce_457(val, _values, result)
                           result = new_var_ref(val[0])
-                    
+
     result
   end
 .,.,
@@ -5875,7 +5875,7 @@ module_eval(<<'.,.,', 'opal.y', 1483)
 module_eval(<<'.,.,', 'opal.y', 1488)
   def _reduce_458(val, _values, result)
                           result = new_assignable val[0]
-                    
+
     result
   end
 .,.,
@@ -5883,7 +5883,7 @@ module_eval(<<'.,.,', 'opal.y', 1488)
 module_eval(<<'.,.,', 'opal.y', 1493)
   def _reduce_459(val, _values, result)
                           result = s(:nth_ref, value(val[0]))
-                    
+
     result
   end
 .,.,
@@ -5893,7 +5893,7 @@ module_eval(<<'.,.,', 'opal.y', 1493)
 module_eval(<<'.,.,', 'opal.y', 1499)
   def _reduce_461(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,
@@ -5901,7 +5901,7 @@ module_eval(<<'.,.,', 'opal.y', 1499)
 module_eval(<<'.,.,', 'opal.y', 1503)
   def _reduce_462(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -5909,7 +5909,7 @@ module_eval(<<'.,.,', 'opal.y', 1503)
 module_eval(<<'.,.,', 'opal.y', 1507)
   def _reduce_463(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,
@@ -5918,7 +5918,7 @@ module_eval(<<'.,.,', 'opal.y', 1512)
   def _reduce_464(val, _values, result)
                           result = val[1]
                       lexer.lex_state = :expr_beg
-                    
+
     result
   end
 .,.,
@@ -5927,7 +5927,7 @@ module_eval(<<'.,.,', 'opal.y', 1517)
   def _reduce_465(val, _values, result)
                           result = val[0]
                       lexer.lex_state = :expr_beg
-                    
+
     result
   end
 .,.,
@@ -5939,7 +5939,7 @@ module_eval(<<'.,.,', 'opal.y', 1517)
 module_eval(<<'.,.,', 'opal.y', 1526)
   def _reduce_468(val, _values, result)
                           result = new_kwrestarg(val[1])
-                    
+
     result
   end
 .,.,
@@ -5947,7 +5947,7 @@ module_eval(<<'.,.,', 'opal.y', 1526)
 module_eval(<<'.,.,', 'opal.y', 1530)
   def _reduce_469(val, _values, result)
                           result = new_kwrestarg()
-                    
+
     result
   end
 .,.,
@@ -5955,7 +5955,7 @@ module_eval(<<'.,.,', 'opal.y', 1530)
 module_eval(<<'.,.,', 'opal.y', 1535)
   def _reduce_470(val, _values, result)
                           result = new_sym(val[0])
-                    
+
     result
   end
 .,.,
@@ -5963,7 +5963,7 @@ module_eval(<<'.,.,', 'opal.y', 1535)
 module_eval(<<'.,.,', 'opal.y', 1540)
   def _reduce_471(val, _values, result)
                           result = new_kwoptarg(val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -5971,7 +5971,7 @@ module_eval(<<'.,.,', 'opal.y', 1540)
 module_eval(<<'.,.,', 'opal.y', 1544)
   def _reduce_472(val, _values, result)
                           result = new_kwarg(val[0])
-                    
+
     result
   end
 .,.,
@@ -5979,7 +5979,7 @@ module_eval(<<'.,.,', 'opal.y', 1544)
 module_eval(<<'.,.,', 'opal.y', 1549)
   def _reduce_473(val, _values, result)
                           result = [val[0]]
-                    
+
     result
   end
 .,.,
@@ -5988,7 +5988,7 @@ module_eval(<<'.,.,', 'opal.y', 1553)
   def _reduce_474(val, _values, result)
                           result = val[0]
                       result << val[2]
-                    
+
     result
   end
 .,.,
@@ -5996,7 +5996,7 @@ module_eval(<<'.,.,', 'opal.y', 1553)
 module_eval(<<'.,.,', 'opal.y', 1559)
   def _reduce_475(val, _values, result)
                           result = new_args_tail(val[0], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -6004,7 +6004,7 @@ module_eval(<<'.,.,', 'opal.y', 1559)
 module_eval(<<'.,.,', 'opal.y', 1563)
   def _reduce_476(val, _values, result)
                           result = new_args_tail(val[0], nil, val[1])
-                    
+
     result
   end
 .,.,
@@ -6012,7 +6012,7 @@ module_eval(<<'.,.,', 'opal.y', 1563)
 module_eval(<<'.,.,', 'opal.y', 1567)
   def _reduce_477(val, _values, result)
                           result = new_args_tail(nil, val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -6020,7 +6020,7 @@ module_eval(<<'.,.,', 'opal.y', 1567)
 module_eval(<<'.,.,', 'opal.y', 1571)
   def _reduce_478(val, _values, result)
                           result = new_args_tail(nil, nil, val[0])
-                    
+
     result
   end
 .,.,
@@ -6028,7 +6028,7 @@ module_eval(<<'.,.,', 'opal.y', 1571)
 module_eval(<<'.,.,', 'opal.y', 1576)
   def _reduce_479(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -6036,7 +6036,7 @@ module_eval(<<'.,.,', 'opal.y', 1576)
 module_eval(<<'.,.,', 'opal.y', 1580)
   def _reduce_480(val, _values, result)
                           result = new_args_tail(nil, nil, nil)
-                    
+
     result
   end
 .,.,
@@ -6044,7 +6044,7 @@ module_eval(<<'.,.,', 'opal.y', 1580)
 module_eval(<<'.,.,', 'opal.y', 1585)
   def _reduce_481(val, _values, result)
                           result = new_args(val[0], val[2], val[4], val[5])
-                    
+
     result
   end
 .,.,
@@ -6052,7 +6052,7 @@ module_eval(<<'.,.,', 'opal.y', 1585)
 module_eval(<<'.,.,', 'opal.y', 1589)
   def _reduce_482(val, _values, result)
                           result = new_args(val[0], val[2], nil, val[3])
-                    
+
     result
   end
 .,.,
@@ -6060,7 +6060,7 @@ module_eval(<<'.,.,', 'opal.y', 1589)
 module_eval(<<'.,.,', 'opal.y', 1593)
   def _reduce_483(val, _values, result)
                           result = new_args(val[0], nil, val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -6068,7 +6068,7 @@ module_eval(<<'.,.,', 'opal.y', 1593)
 module_eval(<<'.,.,', 'opal.y', 1597)
   def _reduce_484(val, _values, result)
                           result = new_args(val[0], nil, nil, val[1])
-                    
+
     result
   end
 .,.,
@@ -6076,7 +6076,7 @@ module_eval(<<'.,.,', 'opal.y', 1597)
 module_eval(<<'.,.,', 'opal.y', 1601)
   def _reduce_485(val, _values, result)
                           result = new_args(nil, val[0], val[2], val[3])
-                    
+
     result
   end
 .,.,
@@ -6084,7 +6084,7 @@ module_eval(<<'.,.,', 'opal.y', 1601)
 module_eval(<<'.,.,', 'opal.y', 1605)
   def _reduce_486(val, _values, result)
                           result = new_args(nil, val[0], nil, val[1])
-                    
+
     result
   end
 .,.,
@@ -6092,7 +6092,7 @@ module_eval(<<'.,.,', 'opal.y', 1605)
 module_eval(<<'.,.,', 'opal.y', 1609)
   def _reduce_487(val, _values, result)
                           result = new_args(nil, nil, val[0], val[1])
-                    
+
     result
   end
 .,.,
@@ -6100,7 +6100,7 @@ module_eval(<<'.,.,', 'opal.y', 1609)
 module_eval(<<'.,.,', 'opal.y', 1613)
   def _reduce_488(val, _values, result)
                           result = new_args(nil, nil, nil, val[0])
-                    
+
     result
   end
 .,.,
@@ -6108,7 +6108,7 @@ module_eval(<<'.,.,', 'opal.y', 1613)
 module_eval(<<'.,.,', 'opal.y', 1617)
   def _reduce_489(val, _values, result)
                           result = new_args(nil, nil, nil, nil)
-                    
+
     result
   end
 .,.,
@@ -6119,7 +6119,7 @@ module_eval(<<'.,.,', 'opal.y', 1623)
   def _reduce_491(val, _values, result)
                           result = value(val[0]).to_sym
                       scope.add_local result
-                    
+
     result
   end
 .,.,
@@ -6127,7 +6127,7 @@ module_eval(<<'.,.,', 'opal.y', 1623)
 module_eval(<<'.,.,', 'opal.y', 1629)
   def _reduce_492(val, _values, result)
                           raise 'formal argument cannot be a constant'
-                    
+
     result
   end
 .,.,
@@ -6135,7 +6135,7 @@ module_eval(<<'.,.,', 'opal.y', 1629)
 module_eval(<<'.,.,', 'opal.y', 1633)
   def _reduce_493(val, _values, result)
                           raise 'formal argument cannot be an instance variable'
-                    
+
     result
   end
 .,.,
@@ -6143,7 +6143,7 @@ module_eval(<<'.,.,', 'opal.y', 1633)
 module_eval(<<'.,.,', 'opal.y', 1637)
   def _reduce_494(val, _values, result)
                           raise 'formal argument cannot be a class variable'
-                    
+
     result
   end
 .,.,
@@ -6151,7 +6151,7 @@ module_eval(<<'.,.,', 'opal.y', 1637)
 module_eval(<<'.,.,', 'opal.y', 1641)
   def _reduce_495(val, _values, result)
                           raise 'formal argument cannot be a global variable'
-                    
+
     result
   end
 .,.,
@@ -6159,7 +6159,7 @@ module_eval(<<'.,.,', 'opal.y', 1641)
 module_eval(<<'.,.,', 'opal.y', 1646)
   def _reduce_496(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -6167,7 +6167,7 @@ module_eval(<<'.,.,', 'opal.y', 1646)
 module_eval(<<'.,.,', 'opal.y', 1650)
   def _reduce_497(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -6179,7 +6179,7 @@ module_eval(<<'.,.,', 'opal.y', 1650)
 module_eval(<<'.,.,', 'opal.y', 1658)
   def _reduce_500(val, _values, result)
                           result = s(:lasgn, val[0])
-                    
+
     result
   end
 .,.,
@@ -6189,7 +6189,7 @@ module_eval(<<'.,.,', 'opal.y', 1658)
 module_eval(<<'.,.,', 'opal.y', 1664)
   def _reduce_502(val, _values, result)
                           result = s(:array, val[0])
-                    
+
     result
   end
 .,.,
@@ -6198,7 +6198,7 @@ module_eval(<<'.,.,', 'opal.y', 1668)
   def _reduce_503(val, _values, result)
                           val[0] << val[2]
                       result = val[0]
-                    
+
     result
   end
 .,.,
@@ -6216,7 +6216,7 @@ module_eval(<<'.,.,', 'opal.y', 1668)
 module_eval(<<'.,.,', 'opal.y', 1680)
   def _reduce_509(val, _values, result)
                           result = [val[0]]
-                    
+
     result
   end
 .,.,
@@ -6225,7 +6225,7 @@ module_eval(<<'.,.,', 'opal.y', 1684)
   def _reduce_510(val, _values, result)
                           val[0] << val[2]
                       result = val[0]
-                    
+
     result
   end
 .,.,
@@ -6233,7 +6233,7 @@ module_eval(<<'.,.,', 'opal.y', 1684)
 module_eval(<<'.,.,', 'opal.y', 1690)
   def _reduce_511(val, _values, result)
                           result = new_assign(new_assignable(new_ident(val[0])), val[1], val[2])
-                    
+
     result
   end
 .,.,
@@ -6241,7 +6241,7 @@ module_eval(<<'.,.,', 'opal.y', 1690)
 module_eval(<<'.,.,', 'opal.y', 1695)
   def _reduce_512(val, _values, result)
                           result = s(:block, val[0])
-                    
+
     result
   end
 .,.,
@@ -6250,7 +6250,7 @@ module_eval(<<'.,.,', 'opal.y', 1699)
   def _reduce_513(val, _values, result)
                           result = val[0]
                       val[0] << val[2]
-                    
+
     result
   end
 .,.,
@@ -6262,7 +6262,7 @@ module_eval(<<'.,.,', 'opal.y', 1699)
 module_eval(<<'.,.,', 'opal.y', 1708)
   def _reduce_516(val, _values, result)
                           result = "*#{value(val[1])}".to_sym
-                    
+
     result
   end
 .,.,
@@ -6270,7 +6270,7 @@ module_eval(<<'.,.,', 'opal.y', 1708)
 module_eval(<<'.,.,', 'opal.y', 1712)
   def _reduce_517(val, _values, result)
                           result = :"*"
-                    
+
     result
   end
 .,.,
@@ -6282,7 +6282,7 @@ module_eval(<<'.,.,', 'opal.y', 1712)
 module_eval(<<'.,.,', 'opal.y', 1720)
   def _reduce_520(val, _values, result)
                           result = "&#{value(val[1])}".to_sym
-                    
+
     result
   end
 .,.,
@@ -6290,7 +6290,7 @@ module_eval(<<'.,.,', 'opal.y', 1720)
 module_eval(<<'.,.,', 'opal.y', 1725)
   def _reduce_521(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -6298,7 +6298,7 @@ module_eval(<<'.,.,', 'opal.y', 1725)
 module_eval(<<'.,.,', 'opal.y', 1729)
   def _reduce_522(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,
@@ -6306,7 +6306,7 @@ module_eval(<<'.,.,', 'opal.y', 1729)
 module_eval(<<'.,.,', 'opal.y', 1734)
   def _reduce_523(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -6314,7 +6314,7 @@ module_eval(<<'.,.,', 'opal.y', 1734)
 module_eval(<<'.,.,', 'opal.y', 1738)
   def _reduce_524(val, _values, result)
                           result = val[1]
-                    
+
     result
   end
 .,.,
@@ -6322,7 +6322,7 @@ module_eval(<<'.,.,', 'opal.y', 1738)
 module_eval(<<'.,.,', 'opal.y', 1743)
   def _reduce_525(val, _values, result)
                           result = []
-                    
+
     result
   end
 .,.,
@@ -6330,7 +6330,7 @@ module_eval(<<'.,.,', 'opal.y', 1743)
 module_eval(<<'.,.,', 'opal.y', 1747)
   def _reduce_526(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -6338,7 +6338,7 @@ module_eval(<<'.,.,', 'opal.y', 1747)
 module_eval(<<'.,.,', 'opal.y', 1752)
   def _reduce_527(val, _values, result)
                           result = val[0]
-                    
+
     result
   end
 .,.,
@@ -6346,7 +6346,7 @@ module_eval(<<'.,.,', 'opal.y', 1752)
 module_eval(<<'.,.,', 'opal.y', 1756)
   def _reduce_528(val, _values, result)
                           result = val[0].push(*val[2])
-                    
+
     result
   end
 .,.,
@@ -6354,7 +6354,7 @@ module_eval(<<'.,.,', 'opal.y', 1756)
 module_eval(<<'.,.,', 'opal.y', 1761)
   def _reduce_529(val, _values, result)
                           result = [val[0], val[2]]
-                    
+
     result
   end
 .,.,
@@ -6362,7 +6362,7 @@ module_eval(<<'.,.,', 'opal.y', 1761)
 module_eval(<<'.,.,', 'opal.y', 1765)
   def _reduce_530(val, _values, result)
                           result = [new_sym(val[0]), val[1]]
-                    
+
     result
   end
 .,.,
@@ -6416,7 +6416,7 @@ module_eval(<<'.,.,', 'opal.y', 1765)
 module_eval(<<'.,.,', 'opal.y', 1802)
   def _reduce_554(val, _values, result)
                           result = nil
-                    
+
     result
   end
 .,.,

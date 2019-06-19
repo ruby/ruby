@@ -35,7 +35,7 @@ rule
                   @field.domain = mb.domain
                 }
             ;
-  
+
   datetime  : day DIGIT ATOM DIGIT hour zone
             # 0   1     2    3     4    5
             #     day  month year
@@ -44,11 +44,11 @@ rule
                   result = (t + val[4] - val[5]).localtime
                 }
             ;
-  
+
   day       :  /* none */
             | ATOM ','
             ;
-  
+
   hour      : DIGIT ':' DIGIT
                 {
                   result = (result.to_i * 60 * 60) + (val[2].to_i * 60)
@@ -60,16 +60,16 @@ rule
                            + val[4].to_i
                 }
             ;
-  
+
   zone      : ATOM
                 {
                   result = ::TMail.zonestr2i( val[0] ) * 60
                 }
             ;
-  
+
   received  : from by via with id for recvdatetime
             ;
-  
+
   from      : /* none */
             | FROM domain
                 {
@@ -84,28 +84,28 @@ rule
                   @field.from = Address.join( val[1] )
                 }
             ;
-  
+
   by        :  /* none */
             | BY domain
                 {
                   @field.by = Address.join( val[1] )
                 }
             ;
-  
+
   via       :  /* none */
             | VIA ATOM
                 {
                   @field.via = val[1]
                 }
             ;
-  
+
   with      : /* none */
             | WITH ATOM
                 {
                   @field.with.push val[1]
                 }
             ;
-  
+
   id        :  /* none */
             | ID msgid
                 {
@@ -116,14 +116,14 @@ rule
                   @field.msgid = val[1]
                 }
             ;
-  
+
   for       :  /* none */
             | FOR addr
                 {
                   @field.for_ = val[1].address
                 }
             ;
-  
+
   recvdatetime
             :  /* none */
             | ';' datetime
@@ -131,7 +131,7 @@ rule
                   @field.date = val[1]
                 }
             ;
-  
+
   returnpath: '<' '>'
             | routeaddr
                 {
@@ -173,7 +173,7 @@ rule
                 }
           # |    phrase ':' ';' { result = AddressGroup.new( result ) }
             ;
-  
+
   routeaddr : '<' route spec '>'
                 {
                   result = val[2]
@@ -184,22 +184,22 @@ rule
                   result = val[1]
                 }
             ;
-  
+
   route     : at_domains ':'
             ;
-  
+
   at_domains: '@' domain                { result = [ val[1] ] }
             | at_domains ',' '@' domain { result.push val[3] }
             ;
-  
+
   spec      : local '@' domain { result = Address.new( val[0], val[2] ) }
             | local            { result = Address.new( result, nil ) }
             ;
-  
+
   local     : word           { result = val }
             | local '.' word { result.push val[2] }
             ;
-  
+
   domain    : domword            { result = val }
             | domain '.' domword { result.push val[2] }
             ;
@@ -215,11 +215,11 @@ rule
                   result = val.join('')
                 }
             ;
-  
+
   phrase    : word
             | phrase word { result << ' ' << val[1] }
             ;
-  
+
   word      : atom
             | QUOTED
             | DIGIT
@@ -228,7 +228,7 @@ rule
   keys      : phrase
             | keys ',' phrase
             ;
-  
+
   enc       : word
                 {
                   @field.encrypter = val[0]
@@ -258,7 +258,7 @@ rule
                   @field.sub  = ''
                 }
             ;
-  
+
   params    : /* none */
             | params ';' TOKEN '=' value
                 {
@@ -281,7 +281,7 @@ rule
                   @field.disposition = val[0]
                 }
             ;
-  
+
   disp_params
             :  /* none */
             | disp_params ';' disp_param
@@ -293,7 +293,7 @@ rule
                   @field.params[ val[0].downcase ] = val[2]
                 }
             ;
-  
+
   atom      : ATOM
             | FROM
             | BY
@@ -302,7 +302,7 @@ rule
             | ID
             | FOR
             ;
-  
+
 end
 
 
@@ -382,7 +382,7 @@ module TMail
       @scanner.scan @pass_array
     end
   end
-  
+
   def on_error( tok, val, vstack )
     raise ParseError,
       "\nparse error in '#{@field.name}' header, on token #{val.inspect}"

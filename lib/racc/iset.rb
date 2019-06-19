@@ -85,7 +85,7 @@ module Racc
     def dup
       ISet.new(@set.dup)
     end
-  
+
   end   # class ISet
 
 end   # module Racc
