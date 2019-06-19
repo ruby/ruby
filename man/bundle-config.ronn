@@ -176,8 +176,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    When set, Gemfiles containing multiple sources will produce errors
    instead of warnings.
    Use `bundle config unset disable_multisource` to unset.
-* `disable_platform_warnings` (`BUNDLE_DISABLE_PLATFORM_WARNINGS`):
-   Disable warnings during bundle install when a dependency is unused on the current platform.
 * `disable_shared_gems` (`BUNDLE_DISABLE_SHARED_GEMS`):
    Stop Bundler from accessing gems installed to RubyGems' normal location.
 * `disable_version_check` (`BUNDLE_DISABLE_VERSION_CHECK`):
