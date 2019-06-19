@@ -702,15 +702,15 @@ thread_do_start(rb_thread_t *th)
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
 rb_control_frame_t *
 rb_vm_push_frame(rb_execution_context_t *sec,
-		 const rb_iseq_t *iseq,
-		 VALUE type,
-		 VALUE self,
-		 VALUE specval,
-		 VALUE cref_or_me,
-		 const VALUE *pc,
-		 VALUE *sp,
-		 int local_size,
-		 int stack_max);
+                 const rb_iseq_t *iseq,
+                 VALUE type,
+                 VALUE self,
+                 VALUE specval,
+                 VALUE cref_or_me,
+                 const VALUE *pc,
+                 VALUE *sp,
+                 int local_size,
+                 int stack_max);
 
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
@@ -817,7 +817,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	rb_threadptr_unlock_all_locking_mutexes(th);
 	rb_check_deadlock(th->vm);
 
-	rb_fiber_close(th->ec->fiber_ptr);
+        rb_fiber_close(th->ec->fiber_ptr);
     }
     thread_cleanup_func(th, FALSE);
     gvl_release(th->vm);

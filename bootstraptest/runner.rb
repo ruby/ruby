@@ -268,7 +268,7 @@ def show_limit(testsrc, opt = '', **argh)
   $stderr.print '.'
   $stderr.print @reset
   $stderr.puts if @verbose
-  
+
   if @tty
     $stderr.puts "#{erase}#{result}"
   else
