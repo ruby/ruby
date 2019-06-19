@@ -1064,7 +1064,7 @@ nucomp_coerce(VALUE self, VALUE other)
     if (RB_TYPE_P(other, T_COMPLEX))
 	return rb_assoc_new(other, self);
     if (k_numeric_p(other) && f_real_p(other))
-	return rb_assoc_new(f_complex_new_bang1(CLASS_OF(self), other), self);
+        return rb_assoc_new(f_complex_new_bang1(CLASS_OF(self), other), self);
 
     rb_raise(rb_eTypeError, "%"PRIsVALUE" can't be coerced into %"PRIsVALUE,
 	     rb_obj_class(other), rb_obj_class(self));
