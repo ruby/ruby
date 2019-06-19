@@ -2685,6 +2685,22 @@ thread_alloc(VALUE klass)
     return obj;
 }
 
+void
+rb_ec_initialize_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size)
+{
+  rb_ec_set_vm_stack(ec, stack, size);
+
+  ec->cfp = (void *)(ec->vm_stack + ec->vm_stack_size);
+
+  rb_vm_push_frame(ec,
+      NULL /* dummy iseq */,
+      VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_CFRAME /* dummy frame */,
+      Qnil /* dummy self */, VM_BLOCK_HANDLER_NONE /* dummy block ptr */,
+      0 /* dummy cref/me */,
+      0 /* dummy pc */, ec->vm_stack, 0, 0
+  );
+}
+
 static void
 th_init(rb_thread_t *th, VALUE self)
 {
@@ -2693,17 +2709,7 @@ th_init(rb_thread_t *th, VALUE self)
 
     if (self == 0) {
         size_t size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
-        rb_ec_set_vm_stack(th->ec, ALLOC_N(VALUE, size), size);
-
-        th->ec->cfp = (void *)(th->ec->vm_stack + th->ec->vm_stack_size);
-
-        rb_vm_push_frame(th->ec,
-            0 /* dummy iseq */,
-            VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_CFRAME /* dummy frame */,
-            Qnil /* dummy self */, VM_BLOCK_HANDLER_NONE /* dummy block ptr */,
-            0 /* dummy cref/me */,
-            0 /* dummy pc */, th->ec->vm_stack, 0, 0
-        );
+        rb_ec_initialize_vm_stack(th->ec, ALLOC_N(VALUE, size), size);
     } else {
       VM_ASSERT(th->ec->cfp == NULL);
       VM_ASSERT(th->ec->vm_stack == NULL);
