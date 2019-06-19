@@ -31,7 +31,7 @@ rule
               print 'cba'
             }
         | cont
-  
+
   cont  : A c2 B c2 C
 
   c2    : C C C C C

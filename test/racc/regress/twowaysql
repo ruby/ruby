@@ -60,7 +60,7 @@ def parse( io )
 
   # @q.push [ false, nil ]
   @q.push [ false, [@s.pos, nil] ]
-    
+
   ## call racc's private parse method
   do_parse
 end
@@ -326,7 +326,7 @@ Racc_debug_parser = false
 module_eval(<<'.,.,', 'twowaysql.y', 20)
   def _reduce_1(val, _values, result)
                       result = RootNode.new( val[0] )
-                
+
     result
   end
 .,.,
@@ -334,7 +334,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 20)
 module_eval(<<'.,.,', 'twowaysql.y', 25)
   def _reduce_2(val, _values, result)
                       result = []
-                
+
     result
   end
 .,.,
@@ -342,7 +342,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 25)
 module_eval(<<'.,.,', 'twowaysql.y', 29)
   def _reduce_3(val, _values, result)
                       result.push val[1]
-                
+
     result
   end
 .,.,
@@ -356,7 +356,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 29)
 module_eval(<<'.,.,', 'twowaysql.y', 38)
   def _reduce_7(val, _values, result)
                       result = BeginNode.new( val[1] )
-                
+
     result
   end
 .,.,
@@ -364,7 +364,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 38)
 module_eval(<<'.,.,', 'twowaysql.y', 43)
   def _reduce_8(val, _values, result)
                       result = IfNode.new( val[0][1], val[1], val[2] )
-                
+
     result
   end
 .,.,
@@ -372,7 +372,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 43)
 module_eval(<<'.,.,', 'twowaysql.y', 48)
   def _reduce_9(val, _values, result)
                       result = val[1]
-                
+
     result
   end
 .,.,
@@ -380,7 +380,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 48)
 module_eval(<<'.,.,', 'twowaysql.y', 52)
   def _reduce_10(val, _values, result)
                       result = nil
-                
+
     result
   end
 .,.,
@@ -394,7 +394,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 52)
 module_eval(<<'.,.,', 'twowaysql.y', 61)
   def _reduce_14(val, _values, result)
                       result = SubStatementNode.new( val[0][1], val[1] )
-                
+
     result
   end
 .,.,
@@ -402,7 +402,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 61)
 module_eval(<<'.,.,', 'twowaysql.y', 66)
   def _reduce_15(val, _values, result)
                       result = SubStatementNode.new( val[0][1], val[1] )
-                
+
     result
   end
 .,.,
@@ -410,7 +410,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 66)
 module_eval(<<'.,.,', 'twowaysql.y', 71)
   def _reduce_16(val, _values, result)
                       result = LiteralNode.new( val[0][1] )
-                
+
     result
   end
 .,.,
@@ -418,7 +418,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 71)
 module_eval(<<'.,.,', 'twowaysql.y', 75)
   def _reduce_17(val, _values, result)
                       result = LiteralNode.new( val[0][1] )
-                
+
     result
   end
 .,.,
@@ -426,7 +426,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 75)
 module_eval(<<'.,.,', 'twowaysql.y', 79)
   def _reduce_18(val, _values, result)
                       result = LiteralNode.new( val[0][1] )
-                
+
     result
   end
 .,.,
@@ -434,7 +434,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 79)
 module_eval(<<'.,.,', 'twowaysql.y', 83)
   def _reduce_19(val, _values, result)
                       result = LiteralNode.new( val[0][1] )
-                
+
     result
   end
 .,.,
@@ -442,7 +442,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 83)
 module_eval(<<'.,.,', 'twowaysql.y', 87)
   def _reduce_20(val, _values, result)
                       result = WhiteSpaceNode.new( val[0][1], @preserve_space )
-                
+
     result
   end
 .,.,
@@ -450,7 +450,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 87)
 module_eval(<<'.,.,', 'twowaysql.y', 91)
   def _reduce_21(val, _values, result)
                       result = LiteralNode.new( val[0][1] )
-                
+
     result
   end
 .,.,
@@ -458,7 +458,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 91)
 module_eval(<<'.,.,', 'twowaysql.y', 95)
   def _reduce_22(val, _values, result)
                       result = LiteralNode.new( val[0][1] )
-                
+
     result
   end
 .,.,
@@ -466,7 +466,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 95)
 module_eval(<<'.,.,', 'twowaysql.y', 99)
   def _reduce_23(val, _values, result)
                       result = LiteralNode.new( val[0][1] )
-                
+
     result
   end
 .,.,
@@ -475,7 +475,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 103)
   def _reduce_24(val, _values, result)
                       @num_questions += 1
                   result = QuestionNode.new( @num_questions )
-                
+
     result
   end
 .,.,
@@ -483,7 +483,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 103)
 module_eval(<<'.,.,', 'twowaysql.y', 108)
   def _reduce_25(val, _values, result)
                       result = ActualCommentNode.new( val[0][1] , val[0][2] )
-                
+
     result
   end
 .,.,
@@ -495,7 +495,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 108)
 module_eval(<<'.,.,', 'twowaysql.y', 115)
   def _reduce_28(val, _values, result)
                       result = BindVariableNode.new( val[0][1] )
-                
+
     result
   end
 .,.,
@@ -503,7 +503,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 115)
 module_eval(<<'.,.,', 'twowaysql.y', 119)
   def _reduce_29(val, _values, result)
                       result = BindVariableNode.new( val[0][1] )
-                
+
     result
   end
 .,.,
@@ -511,7 +511,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 119)
 module_eval(<<'.,.,', 'twowaysql.y', 123)
   def _reduce_30(val, _values, result)
                       result = BindVariableNode.new( val[0][1] )
-                
+
     result
   end
 .,.,
@@ -519,7 +519,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 123)
 module_eval(<<'.,.,', 'twowaysql.y', 127)
   def _reduce_31(val, _values, result)
                       result = BindVariableNode.new( val[0][1] )
-                
+
     result
   end
 .,.,
@@ -527,7 +527,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 127)
 module_eval(<<'.,.,', 'twowaysql.y', 131)
   def _reduce_32(val, _values, result)
                       result = ParenBindVariableNode.new( val[0][1] )
-                
+
     result
   end
 .,.,
@@ -535,7 +535,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 131)
 module_eval(<<'.,.,', 'twowaysql.y', 136)
   def _reduce_33(val, _values, result)
                       result = EmbedVariableNode.new( val[0][1] )
-                
+
     result
   end
 .,.,
@@ -543,7 +543,7 @@ module_eval(<<'.,.,', 'twowaysql.y', 136)
 module_eval(<<'.,.,', 'twowaysql.y', 140)
   def _reduce_34(val, _values, result)
                       result = EmbedVariableNode.new( val[0][1] )
-                
+
     result
   end
 .,.,

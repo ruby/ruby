@@ -315,56 +315,56 @@ Racc_debug_parser = false
 module_eval(<<'.,.,', 'nokogiri-css.y', 9)
   def _reduce_1(val, _values, result)
             result = [val.first, val.last].flatten
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 11)
   def _reduce_2(val, _values, result)
-     result = val.flatten 
+     result = val.flatten
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 12)
   def _reduce_3(val, _values, result)
-     result = [val.last].flatten 
+     result = [val.last].flatten
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 15)
   def _reduce_4(val, _values, result)
-     result = :DIRECT_ADJACENT_SELECTOR 
+     result = :DIRECT_ADJACENT_SELECTOR
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 16)
   def _reduce_5(val, _values, result)
-     result = :CHILD_SELECTOR 
+     result = :CHILD_SELECTOR
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 17)
   def _reduce_6(val, _values, result)
-     result = :FOLLOWING_SELECTOR 
+     result = :FOLLOWING_SELECTOR
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 18)
   def _reduce_7(val, _values, result)
-     result = :DESCENDANT_SELECTOR 
+     result = :DESCENDANT_SELECTOR
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 19)
   def _reduce_8(val, _values, result)
-     result = :CHILD_SELECTOR 
+     result = :CHILD_SELECTOR
     result
   end
 .,.,
@@ -376,7 +376,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 23)
                   else
                     Node.new(:CONDITIONAL_SELECTOR, [val.first, val[1]])
                   end
-      
+
     result
   end
 .,.,
@@ -386,7 +386,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 23)
 module_eval(<<'.,.,', 'nokogiri-css.y', 31)
   def _reduce_11(val, _values, result)
             result = Node.new(:CONDITIONAL_SELECTOR, val)
-      
+
     result
   end
 .,.,
@@ -394,7 +394,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 31)
 module_eval(<<'.,.,', 'nokogiri-css.y', 34)
   def _reduce_12(val, _values, result)
             result = Node.new(:CONDITIONAL_SELECTOR, val)
-      
+
     result
   end
 .,.,
@@ -404,7 +404,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 37)
             result = Node.new(:CONDITIONAL_SELECTOR,
           [Node.new(:ELEMENT_NAME, ['*']), val.first]
         )
-      
+
     result
   end
 .,.,
@@ -412,7 +412,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 37)
 module_eval(<<'.,.,', 'nokogiri-css.y', 44)
   def _reduce_14(val, _values, result)
             result = Node.new(val.first, [nil, val.last])
-      
+
     result
   end
 .,.,
@@ -420,7 +420,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 44)
 module_eval(<<'.,.,', 'nokogiri-css.y', 49)
   def _reduce_15(val, _values, result)
             result = Node.new(val[1], [val.first, val.last])
-      
+
     result
   end
 .,.,
@@ -428,7 +428,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 49)
 module_eval(<<'.,.,', 'nokogiri-css.y', 52)
   def _reduce_16(val, _values, result)
             result = Node.new(:DESCENDANT_SELECTOR, [val.first, val.last])
-      
+
     result
   end
 .,.,
@@ -437,7 +437,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 52)
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 57)
   def _reduce_18(val, _values, result)
-     result = Node.new(:CLASS_CONDITION, [val[1]]) 
+     result = Node.new(:CLASS_CONDITION, [val[1]])
     result
   end
 .,.,
@@ -446,7 +446,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 57)
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 61)
   def _reduce_20(val, _values, result)
-     result = Node.new(:ELEMENT_NAME, val) 
+     result = Node.new(:ELEMENT_NAME, val)
     result
   end
 .,.,
@@ -456,7 +456,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 65)
             result = Node.new(:ELEMENT_NAME,
           [[val.first, val.last].compact.join(':')]
         )
-      
+
     result
   end
 .,.,
@@ -465,14 +465,14 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 70)
   def _reduce_22(val, _values, result)
             name = @namespaces.key?('xmlns') ? "xmlns:#{val.first}" : val.first
         result = Node.new(:ELEMENT_NAME, [name])
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 75)
   def _reduce_23(val, _values, result)
-     result = val[0] 
+     result = val[0]
     result
   end
 .,.,
@@ -484,7 +484,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 80)
             result = Node.new(:ATTRIBUTE_CONDITION,
           [val[1]] + (val[2] || [])
         )
-      
+
     result
   end
 .,.,
@@ -494,7 +494,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 85)
             result = Node.new(:ATTRIBUTE_CONDITION,
           [val[1]] + (val[2] || [])
         )
-      
+
     result
   end
 .,.,
@@ -505,7 +505,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 90)
         result = Node.new(:PSEUDO_CLASS,
           [Node.new(:FUNCTION, ['nth-child(', val[1]])]
         )
-      
+
     result
   end
 .,.,
@@ -515,7 +515,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 98)
             result = Node.new(:ELEMENT_NAME,
           [[val.first, val.last].compact.join(':')]
         )
-      
+
     result
   end
 .,.,
@@ -525,7 +525,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 103)
             # Default namespace is not applied to attributes.
         # So we don't add prefix "xmlns:" as in namespaced_ident.
         result = Node.new(:ELEMENT_NAME, [val.first])
-      
+
     result
   end
 .,.,
@@ -533,7 +533,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 103)
 module_eval(<<'.,.,', 'nokogiri-css.y', 110)
   def _reduce_30(val, _values, result)
             result = Node.new(:FUNCTION, [val.first.strip])
-      
+
     result
   end
 .,.,
@@ -541,7 +541,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 110)
 module_eval(<<'.,.,', 'nokogiri-css.y', 113)
   def _reduce_31(val, _values, result)
             result = Node.new(:FUNCTION, [val.first.strip, val[1]].flatten)
-      
+
     result
   end
 .,.,
@@ -549,7 +549,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 113)
 module_eval(<<'.,.,', 'nokogiri-css.y', 116)
   def _reduce_32(val, _values, result)
             result = Node.new(:FUNCTION, [val.first.strip, val[1]].flatten)
-      
+
     result
   end
 .,.,
@@ -557,7 +557,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 116)
 module_eval(<<'.,.,', 'nokogiri-css.y', 119)
   def _reduce_33(val, _values, result)
             result = Node.new(:FUNCTION, [val.first.strip, val[1]].flatten)
-      
+
     result
   end
 .,.,
@@ -565,28 +565,28 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 119)
 module_eval(<<'.,.,', 'nokogiri-css.y', 122)
   def _reduce_34(val, _values, result)
             result = Node.new(:FUNCTION, [val.first.strip, val[1]].flatten)
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 126)
   def _reduce_35(val, _values, result)
-     result = [val.first, val.last] 
+     result = [val.first, val.last]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 127)
   def _reduce_36(val, _values, result)
-     result = [val.first, val.last] 
+     result = [val.first, val.last]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 128)
   def _reduce_37(val, _values, result)
-     result = [val.first, val.last] 
+     result = [val.first, val.last]
     result
   end
 .,.,
@@ -611,7 +611,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 133)
           # assert_xpath("//a[foo(., a, 10)]", @parser.parse('a:foo(a, 10)'))
           result = val
         end
-      
+
     result
   end
 .,.,
@@ -623,7 +623,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 152)
         else
           raise Racc::ParseError, "parse error on IDENT '#{val[1]}'"
         end
-      
+
     result
   end
 .,.,
@@ -641,7 +641,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 158)
         else
           raise Racc::ParseError, "parse error on IDENT '#{val[1]}'"
         end
-      
+
     result
   end
 .,.,
@@ -663,7 +663,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 170)
         else
           raise Racc::ParseError, "parse error on IDENT '#{val[1]}'"
         end
-      
+
     result
   end
 .,.,
@@ -671,14 +671,14 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 170)
 module_eval(<<'.,.,', 'nokogiri-css.y', 189)
   def _reduce_44(val, _values, result)
             result = Node.new(:PSEUDO_CLASS, [val[1]])
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 191)
   def _reduce_45(val, _values, result)
-     result = Node.new(:PSEUDO_CLASS, [val[1]]) 
+     result = Node.new(:PSEUDO_CLASS, [val[1]])
     result
   end
 .,.,
@@ -690,7 +690,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 191)
 module_eval(<<'.,.,', 'nokogiri-css.y', 199)
   def _reduce_48(val, _values, result)
             result = Node.new(:COMBINATOR, val)
-      
+
     result
   end
 .,.,
@@ -698,7 +698,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 199)
 module_eval(<<'.,.,', 'nokogiri-css.y', 202)
   def _reduce_49(val, _values, result)
             result = Node.new(:COMBINATOR, val)
-      
+
     result
   end
 .,.,
@@ -706,7 +706,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 202)
 module_eval(<<'.,.,', 'nokogiri-css.y', 205)
   def _reduce_50(val, _values, result)
             result = Node.new(:COMBINATOR, val)
-      
+
     result
   end
 .,.,
@@ -714,7 +714,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 205)
 module_eval(<<'.,.,', 'nokogiri-css.y', 208)
   def _reduce_51(val, _values, result)
             result = Node.new(:COMBINATOR, val)
-      
+
     result
   end
 .,.,
@@ -722,7 +722,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 208)
 module_eval(<<'.,.,', 'nokogiri-css.y', 211)
   def _reduce_52(val, _values, result)
             result = Node.new(:COMBINATOR, val)
-      
+
     result
   end
 .,.,
@@ -739,21 +739,21 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 211)
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 220)
   def _reduce_58(val, _values, result)
-     result = Node.new(:ID, val) 
+     result = Node.new(:ID, val)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 223)
   def _reduce_59(val, _values, result)
-     result = [val.first, val[1]] 
+     result = [val.first, val[1]]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 224)
   def _reduce_60(val, _values, result)
-     result = [val.first, val[1]] 
+     result = [val.first, val[1]]
     result
   end
 .,.,
@@ -762,49 +762,49 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 224)
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 228)
   def _reduce_62(val, _values, result)
-     result = :equal 
+     result = :equal
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 229)
   def _reduce_63(val, _values, result)
-     result = :prefix_match 
+     result = :prefix_match
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 230)
   def _reduce_64(val, _values, result)
-     result = :suffix_match 
+     result = :suffix_match
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 231)
   def _reduce_65(val, _values, result)
-     result = :substring_match 
+     result = :substring_match
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 232)
   def _reduce_66(val, _values, result)
-     result = :not_equal 
+     result = :not_equal
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 233)
   def _reduce_67(val, _values, result)
-     result = :includes 
+     result = :includes
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'nokogiri-css.y', 234)
   def _reduce_68(val, _values, result)
-     result = :dash_match 
+     result = :dash_match
     result
   end
 .,.,
@@ -812,7 +812,7 @@ module_eval(<<'.,.,', 'nokogiri-css.y', 234)
 module_eval(<<'.,.,', 'nokogiri-css.y', 238)
   def _reduce_69(val, _values, result)
             result = Node.new(:NOT, [val[1]])
-      
+
     result
   end
 .,.,

@@ -369,63 +369,63 @@ Racc_debug_parser = false
 
 module_eval(<<'.,.,', 'cadenza.y', 12)
   def _reduce_2(val, _values, result)
-     result = nil 
+     result = nil
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 16)
   def _reduce_3(val, _values, result)
-     result = [val[0]] 
+     result = [val[0]]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 17)
   def _reduce_4(val, _values, result)
-     result = val[0].push(val[2]) 
+     result = val[0].push(val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 22)
   def _reduce_5(val, _values, result)
-     result = VariableNode.new(val[0].value) 
+     result = VariableNode.new(val[0].value)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 23)
   def _reduce_6(val, _values, result)
-     result = VariableNode.new(val[0].value, val[1]) 
+     result = VariableNode.new(val[0].value, val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 24)
   def _reduce_7(val, _values, result)
-     result = ConstantNode.new(val[0].value) 
+     result = ConstantNode.new(val[0].value)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 25)
   def _reduce_8(val, _values, result)
-     result = ConstantNode.new(val[0].value) 
+     result = ConstantNode.new(val[0].value)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 26)
   def _reduce_9(val, _values, result)
-     result = ConstantNode.new(val[0].value) 
+     result = ConstantNode.new(val[0].value)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 27)
   def _reduce_10(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
@@ -434,14 +434,14 @@ module_eval(<<'.,.,', 'cadenza.y', 27)
 
 module_eval(<<'.,.,', 'cadenza.y', 32)
   def _reduce_12(val, _values, result)
-     result = OperationNode.new(val[0], "*", val[2]) 
+     result = OperationNode.new(val[0], "*", val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 33)
   def _reduce_13(val, _values, result)
-     result = OperationNode.new(val[0], "/", val[2]) 
+     result = OperationNode.new(val[0], "/", val[2])
     result
   end
 .,.,
@@ -450,14 +450,14 @@ module_eval(<<'.,.,', 'cadenza.y', 33)
 
 module_eval(<<'.,.,', 'cadenza.y', 38)
   def _reduce_15(val, _values, result)
-     result = OperationNode.new(val[0], "+", val[2]) 
+     result = OperationNode.new(val[0], "+", val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 39)
   def _reduce_16(val, _values, result)
-     result = OperationNode.new(val[0], "-", val[2]) 
+     result = OperationNode.new(val[0], "-", val[2])
     result
   end
 .,.,
@@ -466,42 +466,42 @@ module_eval(<<'.,.,', 'cadenza.y', 39)
 
 module_eval(<<'.,.,', 'cadenza.y', 44)
   def _reduce_18(val, _values, result)
-     result = OperationNode.new(val[0], "==", val[2]) 
+     result = OperationNode.new(val[0], "==", val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 45)
   def _reduce_19(val, _values, result)
-     result = OperationNode.new(val[0], "!=", val[2]) 
+     result = OperationNode.new(val[0], "!=", val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 46)
   def _reduce_20(val, _values, result)
-     result = OperationNode.new(val[0], "<=", val[2]) 
+     result = OperationNode.new(val[0], "<=", val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 47)
   def _reduce_21(val, _values, result)
-     result = OperationNode.new(val[0], ">=", val[2]) 
+     result = OperationNode.new(val[0], ">=", val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 48)
   def _reduce_22(val, _values, result)
-     result = OperationNode.new(val[0], ">", val[2]) 
+     result = OperationNode.new(val[0], ">", val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 49)
   def _reduce_23(val, _values, result)
-     result = OperationNode.new(val[0], "<", val[2]) 
+     result = OperationNode.new(val[0], "<", val[2])
     result
   end
 .,.,
@@ -510,7 +510,7 @@ module_eval(<<'.,.,', 'cadenza.y', 49)
 
 module_eval(<<'.,.,', 'cadenza.y', 54)
   def _reduce_25(val, _values, result)
-     result = BooleanInverseNode.new(val[1]) 
+     result = BooleanInverseNode.new(val[1])
     result
   end
 .,.,
@@ -519,42 +519,42 @@ module_eval(<<'.,.,', 'cadenza.y', 54)
 
 module_eval(<<'.,.,', 'cadenza.y', 59)
   def _reduce_27(val, _values, result)
-     result = OperationNode.new(val[0], "and", val[2]) 
+     result = OperationNode.new(val[0], "and", val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 60)
   def _reduce_28(val, _values, result)
-     result = OperationNode.new(val[0], "or", val[2]) 
+     result = OperationNode.new(val[0], "or", val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 64)
   def _reduce_29(val, _values, result)
-     result = FilterNode.new(val[0].value) 
+     result = FilterNode.new(val[0].value)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 65)
   def _reduce_30(val, _values, result)
-     result = FilterNode.new(val[0].value, val[2]) 
+     result = FilterNode.new(val[0].value, val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 69)
   def _reduce_31(val, _values, result)
-     result = [val[0]] 
+     result = [val[0]]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 70)
   def _reduce_32(val, _values, result)
-     result = val[0].push(val[2]) 
+     result = val[0].push(val[2])
     result
   end
 .,.,
@@ -563,189 +563,189 @@ module_eval(<<'.,.,', 'cadenza.y', 70)
 
 module_eval(<<'.,.,', 'cadenza.y', 75)
   def _reduce_34(val, _values, result)
-     result = FilteredValueNode.new(val[0], val[2]) 
+     result = FilteredValueNode.new(val[0], val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 79)
   def _reduce_35(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 83)
   def _reduce_36(val, _values, result)
-     open_scope!; result = val[2] 
+     open_scope!; result = val[2]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 84)
   def _reduce_37(val, _values, result)
-     open_scope!; result = BooleanInverseNode.new(val[2]) 
+     open_scope!; result = BooleanInverseNode.new(val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 88)
   def _reduce_38(val, _values, result)
-     result = close_scope!; open_scope! 
+     result = close_scope!; open_scope!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 92)
   def _reduce_39(val, _values, result)
-     result = close_scope! 
+     result = close_scope!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 93)
   def _reduce_40(val, _values, result)
-     result = close_scope! 
+     result = close_scope!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 97)
   def _reduce_41(val, _values, result)
-     result = IfNode.new(val[0], val[1]) 
+     result = IfNode.new(val[0], val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 98)
   def _reduce_42(val, _values, result)
-     result = IfNode.new(val[0], val[2]) 
+     result = IfNode.new(val[0], val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 99)
   def _reduce_43(val, _values, result)
-     result = IfNode.new(val[0], val[1], val[3]) 
+     result = IfNode.new(val[0], val[1], val[3])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 100)
   def _reduce_44(val, _values, result)
-     result = IfNode.new(val[0], val[2], val[3]) 
+     result = IfNode.new(val[0], val[2], val[3])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 101)
   def _reduce_45(val, _values, result)
-     result = IfNode.new(val[0], val[2], val[4]) 
+     result = IfNode.new(val[0], val[2], val[4])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 105)
   def _reduce_46(val, _values, result)
-     open_scope!; result = [val[2].value, val[4]] 
+     open_scope!; result = [val[2].value, val[4]]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 109)
   def _reduce_47(val, _values, result)
-     result = close_scope! 
+     result = close_scope!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 114)
   def _reduce_48(val, _values, result)
-     result = ForNode.new(VariableNode.new(val[0].first), val[0].last, val[1]) 
+     result = ForNode.new(VariableNode.new(val[0].first), val[0].last, val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 115)
   def _reduce_49(val, _values, result)
-     result = ForNode.new(VariableNode.new(val[0].first), val[0].last, val[2]) 
+     result = ForNode.new(VariableNode.new(val[0].first), val[0].last, val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 119)
   def _reduce_50(val, _values, result)
-     result = open_block_scope!(val[2].value) 
+     result = open_block_scope!(val[2].value)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 123)
   def _reduce_51(val, _values, result)
-     result = close_block_scope! 
+     result = close_block_scope!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 128)
   def _reduce_52(val, _values, result)
-     result = BlockNode.new(val[0], val[1]) 
+     result = BlockNode.new(val[0], val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 129)
   def _reduce_53(val, _values, result)
-     result = BlockNode.new(val[0], val[2]) 
+     result = BlockNode.new(val[0], val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 133)
   def _reduce_54(val, _values, result)
-     open_scope!; result = [val[1].value, []] 
+     open_scope!; result = [val[1].value, []]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 134)
   def _reduce_55(val, _values, result)
-     open_scope!; result = [val[1].value, val[2]] 
+     open_scope!; result = [val[1].value, val[2]]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 138)
   def _reduce_56(val, _values, result)
-     result = close_scope! 
+     result = close_scope!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 142)
   def _reduce_57(val, _values, result)
-     result = GenericBlockNode.new(val[0].first, val[2], val[0].last) 
+     result = GenericBlockNode.new(val[0].first, val[2], val[0].last)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 146)
   def _reduce_58(val, _values, result)
-     result = val[2].value 
+     result = val[2].value
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 147)
   def _reduce_59(val, _values, result)
-     result = VariableNode.new(val[2].value) 
+     result = VariableNode.new(val[2].value)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 151)
   def _reduce_60(val, _values, result)
-     result = TextNode.new(val[0].value) 
+     result = TextNode.new(val[0].value)
     result
   end
 .,.,
@@ -762,28 +762,28 @@ module_eval(<<'.,.,', 'cadenza.y', 151)
 
 module_eval(<<'.,.,', 'cadenza.y', 160)
   def _reduce_66(val, _values, result)
-     push val[0] 
+     push val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 161)
   def _reduce_67(val, _values, result)
-     push val[1] 
+     push val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 162)
   def _reduce_68(val, _values, result)
-     document.extends = val[0] 
+     document.extends = val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'cadenza.y', 163)
   def _reduce_69(val, _values, result)
-     document.extends = val[1] 
+     document.extends = val[1]
     result
   end
 .,.,

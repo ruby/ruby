@@ -33,7 +33,7 @@ class MOF::Parser
 	octalValue
 	decimalValue
 	hexValue
-	
+
 rule
 
   /* Returns a Hash of filename and MofResult */
@@ -47,7 +47,7 @@ rule
 	    result[@name] = @result
 	  }
         ;
-	
+
   mofProduction
         : compilerDirective
 	| classDeclaration
@@ -66,7 +66,7 @@ rule
  * compilerDirective
  *
  */
- 
+
   compilerDirective
 	: "#" PRAGMA INCLUDE pragmaParameters_opt
 	  { raise MOF::Helper::Error.new(@name,@lineno,@line,"Missing filename after '#pragma include'") unless val[3]
@@ -107,7 +107,7 @@ rule
  * classDeclaration
  *
  */
- 
+
   classDeclaration
 	: qualifierList_opt CLASS className alias_opt superClass_opt "{" classFeatures "}" ";"
 	  { qualifiers = val[0]
@@ -151,7 +151,7 @@ rule
 	    result << val[2] if val[2]
 	  }
         ;
-	
+
   qualifier
 	: qualifierName qualifierParameter_opt flavor_opt
 	  { # Get qualifier decl
@@ -242,7 +242,7 @@ rule
 	    result = CIM::Property.new(type,val[2],val[0],val[4])
 	  }
         ;
-	
+
   referenceDeclaration
 	: qualifierList_opt objectRef referenceName array_opt defaultValue_opt ";"
 	  { if val[4]
@@ -308,7 +308,7 @@ rule
 	: /* empty */
         | parameterList
         ;
-	
+
   parameterList
 	: parameter parameters
 	  { result = val[1].unshift val[0] }
@@ -367,7 +367,7 @@ rule
 	: /* empty */
         | defaultValue
         ;
-	
+
   defaultValue
 	: "=" initializer
 	  { result = val[1] }
@@ -416,7 +416,7 @@ rule
 	| string stringValue
 	  { result = val[0] + val[1] }
 	;
-	
+
   referenceInitializer
 	: objectHandle
 	| aliasIdentifier
@@ -465,7 +465,7 @@ rule
  * qualifierDeclaration
  *
  */
- 
+
   qualifierDeclaration
           /*      0             1             2     3                 4 */
 	: QUALIFIER qualifierName qualifierType scope defaultFlavor_opt ";"
@@ -534,7 +534,7 @@ rule
  * instanceDeclaration
  *
  */
- 
+
   instanceDeclaration
 	: instance ";"
         ;
@@ -583,7 +583,7 @@ def initialize options = {}
   @includes = options[:includes] || []
   @quiet = options[:quiet]
   @style = options[:style] || :cim  # default to style CIM v2.2 syntax
-  
+
   @lineno = 1
   @file = nil
   @iconv = nil

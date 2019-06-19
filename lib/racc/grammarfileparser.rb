@@ -284,7 +284,7 @@ module Racc
       end
       label
     end
-    
+
     def add_user_code(label, src)
       @result.params.send(USER_CODE_LABELS[label]).push src
     end

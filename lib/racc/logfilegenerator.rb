@@ -132,7 +132,7 @@ module Racc
     def outact(f, t, act)
       case act
       when Shift
-        f.printf "  %-12s  shift, and go to state %d\n", 
+        f.printf "  %-12s  shift, and go to state %d\n",
                  t.to_s, act.goto_id
       when Reduce
         f.printf "  %-12s  reduce using rule %d (%s)\n",

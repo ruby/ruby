@@ -882,7 +882,7 @@ Racc_debug_parser = false
 
 module_eval(<<'.,.,', 'tp_plus.y', 35)
   def _reduce_1(val, _values, result)
-     @interpreter.nodes = val[0] 
+     @interpreter.nodes = val[0]
     result
   end
 .,.,
@@ -893,7 +893,7 @@ module_eval(<<'.,.,', 'tp_plus.y', 42)
   def _reduce_3(val, _values, result)
                                               result = [val[0]]
                                           result << val[1] unless val[1].nil?
-                                        
+
     result
   end
 .,.,
@@ -902,14 +902,14 @@ module_eval(<<'.,.,', 'tp_plus.y', 46)
   def _reduce_4(val, _values, result)
                                               result = val[0] << val[1]
                                           result << val[2] unless val[2].nil?
-                                        
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 52)
   def _reduce_5(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
@@ -960,28 +960,28 @@ module_eval(<<'.,.,', 'tp_plus.y', 52)
 
 module_eval(<<'.,.,', 'tp_plus.y', 85)
   def _reduce_28(val, _values, result)
-     result = PauseNode.new 
+     result = PauseNode.new
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 86)
   def _reduce_29(val, _values, result)
-     result = AbortNode.new 
+     result = AbortNode.new
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 90)
   def _reduce_30(val, _values, result)
-     result = EmptyStmtNode.new() 
+     result = EmptyStmtNode.new()
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 94)
   def _reduce_31(val, _values, result)
-     result = HeaderNode.new(val[0],val[2]) 
+     result = HeaderNode.new(val[0],val[2])
     result
   end
 .,.,
@@ -992,49 +992,49 @@ module_eval(<<'.,.,', 'tp_plus.y', 94)
 
 module_eval(<<'.,.,', 'tp_plus.y', 103)
   def _reduce_34(val, _values, result)
-     result = RaiseNode.new(val[1]) 
+     result = RaiseNode.new(val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 107)
   def _reduce_35(val, _values, result)
-     result = TimerMethodNode.new(val[0],val[1]) 
+     result = TimerMethodNode.new(val[0],val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 111)
   def _reduce_36(val, _values, result)
-     result = EvalNode.new(val[1]) 
+     result = EvalNode.new(val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 116)
   def _reduce_37(val, _values, result)
-     result = WaitForNode.new(val[2], val[4]) 
+     result = WaitForNode.new(val[2], val[4])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 118)
   def _reduce_38(val, _values, result)
-     result = WaitUntilNode.new(val[2], nil) 
+     result = WaitUntilNode.new(val[2], nil)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 120)
   def _reduce_39(val, _values, result)
-     result = WaitUntilNode.new(val[2],val[5]) 
+     result = WaitUntilNode.new(val[2],val[5])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 122)
   def _reduce_40(val, _values, result)
-     result = WaitUntilNode.new(val[2],val[5].merge(val[7])) 
+     result = WaitUntilNode.new(val[2],val[5].merge(val[7]))
     result
   end
 .,.,
@@ -1045,70 +1045,70 @@ module_eval(<<'.,.,', 'tp_plus.y', 122)
 
 module_eval(<<'.,.,', 'tp_plus.y', 132)
   def _reduce_43(val, _values, result)
-     result = { label: val[3] } 
+     result = { label: val[3] }
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 137)
   def _reduce_44(val, _values, result)
-     result = { timeout: [val[3],val[5]] } 
+     result = { timeout: [val[3],val[5]] }
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 141)
   def _reduce_45(val, _values, result)
-     result = val[0] 
+     result = val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 145)
   def _reduce_46(val, _values, result)
-     result = UseNode.new(val[0],val[1]) 
+     result = UseNode.new(val[0],val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 150)
   def _reduce_47(val, _values, result)
-     result = SetSkipNode.new(val[1]) 
+     result = SetSkipNode.new(val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 154)
   def _reduce_48(val, _values, result)
-     result = CallNode.new(val[0],val[2]) 
+     result = CallNode.new(val[0],val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 155)
   def _reduce_49(val, _values, result)
-     result = CallNode.new(val[1],val[3],async: true) 
+     result = CallNode.new(val[1],val[3],async: true)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 159)
   def _reduce_50(val, _values, result)
-     result = [val[0]] 
+     result = [val[0]]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 160)
   def _reduce_51(val, _values, result)
-     result = val[0] << val[2] 
+     result = val[0] << val[2]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 161)
   def _reduce_52(val, _values, result)
-     result = [] 
+     result = []
     result
   end
 .,.,
@@ -1123,28 +1123,28 @@ module_eval(<<'.,.,', 'tp_plus.y', 161)
 
 module_eval(<<'.,.,', 'tp_plus.y', 172)
   def _reduce_57(val, _values, result)
-     result = StringNode.new(val[0]) 
+     result = StringNode.new(val[0])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 176)
   def _reduce_58(val, _values, result)
-     result = IOMethodNode.new(val[0],val[1]) 
+     result = IOMethodNode.new(val[0],val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 178)
   def _reduce_59(val, _values, result)
-     result = IOMethodNode.new(val[0],val[2]) 
+     result = IOMethodNode.new(val[0],val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 180)
   def _reduce_60(val, _values, result)
-     result = IOMethodNode.new(val[0],val[2],{ pulse_time: val[4], pulse_units: val[6] }) 
+     result = IOMethodNode.new(val[0],val[2],{ pulse_time: val[4], pulse_units: val[6] })
     result
   end
 .,.,
@@ -1155,35 +1155,35 @@ module_eval(<<'.,.,', 'tp_plus.y', 180)
 
 module_eval(<<'.,.,', 'tp_plus.y', 190)
   def _reduce_63(val, _values, result)
-     result = JumpNode.new(val[1]) 
+     result = JumpNode.new(val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 195)
   def _reduce_64(val, _values, result)
-     result = ConditionalNode.new("if",val[1],val[2],val[3]) 
+     result = ConditionalNode.new("if",val[1],val[2],val[3])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 197)
   def _reduce_65(val, _values, result)
-     result = ConditionalNode.new("unless",val[1],val[2],val[3]) 
+     result = ConditionalNode.new("unless",val[1],val[2],val[3])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 202)
   def _reduce_66(val, _values, result)
-     result = ForNode.new(val[1],val[4],val[6],val[8]) 
+     result = ForNode.new(val[1],val[4],val[6],val[8])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 206)
   def _reduce_67(val, _values, result)
-     result = WhileNode.new(val[1],val[2]) 
+     result = WhileNode.new(val[1],val[2])
     result
   end
 .,.,
@@ -1194,35 +1194,35 @@ module_eval(<<'.,.,', 'tp_plus.y', 206)
 
 module_eval(<<'.,.,', 'tp_plus.y', 215)
   def _reduce_70(val, _values, result)
-     result = NamespaceNode.new(val[1],val[2]) 
+     result = NamespaceNode.new(val[1],val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 222)
   def _reduce_71(val, _values, result)
-     result = CaseNode.new(val[1],val[3],val[4]) 
+     result = CaseNode.new(val[1],val[3],val[4])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 226)
   def _reduce_72(val, _values, result)
-     result = val 
+     result = val
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 228)
   def _reduce_73(val, _values, result)
-     result = val[0] << val[1] << val[2] 
+     result = val[0] << val[1] << val[2]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 233)
   def _reduce_74(val, _values, result)
-     result = CaseConditionNode.new(val[1],val[3]) 
+     result = CaseConditionNode.new(val[1],val[3])
     result
   end
 .,.,
@@ -1233,7 +1233,7 @@ module_eval(<<'.,.,', 'tp_plus.y', 233)
 
 module_eval(<<'.,.,', 'tp_plus.y', 243)
   def _reduce_77(val, _values, result)
-     result = CaseConditionNode.new(nil,val[2]) 
+     result = CaseConditionNode.new(nil,val[2])
     result
   end
 .,.,
@@ -1248,14 +1248,14 @@ module_eval(<<'.,.,', 'tp_plus.y', 243)
 
 module_eval(<<'.,.,', 'tp_plus.y', 254)
   def _reduce_82(val, _values, result)
-     result = InlineConditionalNode.new(val[1], val[2], val[0]) 
+     result = InlineConditionalNode.new(val[1], val[2], val[0])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 255)
   def _reduce_83(val, _values, result)
-     result = InlineConditionalNode.new(val[1], val[2], val[0]) 
+     result = InlineConditionalNode.new(val[1], val[2], val[0])
     result
   end
 .,.,
@@ -1270,70 +1270,70 @@ module_eval(<<'.,.,', 'tp_plus.y', 255)
 
 module_eval(<<'.,.,', 'tp_plus.y', 266)
   def _reduce_88(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 267)
   def _reduce_89(val, _values, result)
-     result = [] 
+     result = []
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 272)
   def _reduce_90(val, _values, result)
-     result = MotionNode.new(val[0],val[5],val[7]) 
+     result = MotionNode.new(val[0],val[5],val[7])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 276)
   def _reduce_91(val, _values, result)
-     result = val 
+     result = val
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 278)
   def _reduce_92(val, _values, result)
-     result = val[0] << val[1] 
+     result = val[0] << val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 283)
   def _reduce_93(val, _values, result)
-     result = SpeedNode.new(val[4]) 
+     result = SpeedNode.new(val[4])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 285)
   def _reduce_94(val, _values, result)
-     result = TerminationNode.new(val[4]) 
+     result = TerminationNode.new(val[4])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 287)
   def _reduce_95(val, _values, result)
-     result = OffsetNode.new(val[2],val[4]) 
+     result = OffsetNode.new(val[2],val[4])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 289)
   def _reduce_96(val, _values, result)
-     result = TimeNode.new(val[2],val[4],val[6]) 
+     result = TimeNode.new(val[2],val[4],val[6])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 291)
   def _reduce_97(val, _values, result)
-     result = SkipNode.new(val[4],val[5]) 
+     result = SkipNode.new(val[4],val[5])
     result
   end
 .,.,
@@ -1347,14 +1347,14 @@ module_eval(<<'.,.,', 'tp_plus.y', 298)
                                              raise Racc::ParseError, sprintf("\ninvalid termination type: (%s)", val[1]) if val[1] != 1
 
                                          result = DigitNode.new(val[1].to_i * -1)
-                                       
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 305)
   def _reduce_101(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
@@ -1375,35 +1375,35 @@ module_eval(<<'.,.,', 'tp_plus.y', 305)
 
 module_eval(<<'.,.,', 'tp_plus.y', 325)
   def _reduce_109(val, _values, result)
-     result = { speed: val[0], units: val[2] } 
+     result = { speed: val[0], units: val[2] }
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 326)
   def _reduce_110(val, _values, result)
-     result = { speed: val[0], units: nil } 
+     result = { speed: val[0], units: nil }
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 330)
   def _reduce_111(val, _values, result)
-     result = LabelDefinitionNode.new(val[0]) 
+     result = LabelDefinitionNode.new(val[0])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 334)
   def _reduce_112(val, _values, result)
-     result = DefinitionNode.new(val[0],val[2]) 
+     result = DefinitionNode.new(val[0],val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 338)
   def _reduce_113(val, _values, result)
-     result = AssignmentNode.new(val[0],val[2]) 
+     result = AssignmentNode.new(val[0],val[2])
     result
   end
 .,.,
@@ -1414,7 +1414,7 @@ module_eval(<<'.,.,', 'tp_plus.y', 339)
                                            val[0],
                                            ExpressionNode.new(val[0],"+",val[3])
                                          )
-                                       
+
     result
   end
 .,.,
@@ -1425,7 +1425,7 @@ module_eval(<<'.,.,', 'tp_plus.y', 344)
                                            val[0],
                                            ExpressionNode.new(val[0],"-",val[3])
                                          )
-                                       
+
     result
   end
 .,.,
@@ -1436,70 +1436,70 @@ module_eval(<<'.,.,', 'tp_plus.y', 344)
 
 module_eval(<<'.,.,', 'tp_plus.y', 357)
   def _reduce_118(val, _values, result)
-     result = VarNode.new(val[0]) 
+     result = VarNode.new(val[0])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 358)
   def _reduce_119(val, _values, result)
-     result = VarMethodNode.new(val[0],val[1]) 
+     result = VarMethodNode.new(val[0],val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 363)
   def _reduce_120(val, _values, result)
-     result = NamespacedVarNode.new(val[0],val[1]) 
+     result = NamespacedVarNode.new(val[0],val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 367)
   def _reduce_121(val, _values, result)
-     result = val[0] 
+     result = val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 369)
   def _reduce_122(val, _values, result)
-     result = val[0].merge(val[1]) 
+     result = val[0].merge(val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 373)
   def _reduce_123(val, _values, result)
-     result = { method: val[2] } 
+     result = { method: val[2] }
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 375)
   def _reduce_124(val, _values, result)
-     result = { group: val[4] } 
+     result = { group: val[4] }
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 379)
   def _reduce_125(val, _values, result)
-     result = [val[0]] 
+     result = [val[0]]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 380)
   def _reduce_126(val, _values, result)
-     result = val[0] << val[1] 
+     result = val[0] << val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 384)
   def _reduce_127(val, _values, result)
-     result = val[0] 
+     result = val[0]
     result
   end
 .,.,
@@ -1510,7 +1510,7 @@ module_eval(<<'.,.,', 'tp_plus.y', 384)
 
 module_eval(<<'.,.,', 'tp_plus.y', 394)
   def _reduce_130(val, _values, result)
-     result = val[0] 
+     result = val[0]
     result
   end
 .,.,
@@ -1519,112 +1519,112 @@ module_eval(<<'.,.,', 'tp_plus.y', 394)
 
 module_eval(<<'.,.,', 'tp_plus.y', 396)
   def _reduce_132(val, _values, result)
-     result = ExpressionNode.new(val[1], "!", nil) 
+     result = ExpressionNode.new(val[1], "!", nil)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 401)
   def _reduce_133(val, _values, result)
-     result = ExpressionNode.new(val[0], val[1], val[2]) 
+     result = ExpressionNode.new(val[0], val[1], val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 405)
   def _reduce_134(val, _values, result)
-     result = "==" 
+     result = "=="
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 406)
   def _reduce_135(val, _values, result)
-     result = "<>" 
+     result = "<>"
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 407)
   def _reduce_136(val, _values, result)
-     result = "<" 
+     result = "<"
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 408)
   def _reduce_137(val, _values, result)
-     result = ">" 
+     result = ">"
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 409)
   def _reduce_138(val, _values, result)
-     result = ">=" 
+     result = ">="
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 410)
   def _reduce_139(val, _values, result)
-     result = "<=" 
+     result = "<="
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 411)
   def _reduce_140(val, _values, result)
-     result = "+" 
+     result = "+"
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 412)
   def _reduce_141(val, _values, result)
-     result = "-" 
+     result = "-"
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 413)
   def _reduce_142(val, _values, result)
-     result = "||" 
+     result = "||"
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 414)
   def _reduce_143(val, _values, result)
-     result = "*" 
+     result = "*"
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 415)
   def _reduce_144(val, _values, result)
-     result = "/" 
+     result = "/"
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 416)
   def _reduce_145(val, _values, result)
-     result = "DIV" 
+     result = "DIV"
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 417)
   def _reduce_146(val, _values, result)
-     result = "%" 
+     result = "%"
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 418)
   def _reduce_147(val, _values, result)
-     result = "&&" 
+     result = "&&"
     result
   end
 .,.,
@@ -1641,14 +1641,14 @@ module_eval(<<'.,.,', 'tp_plus.y', 418)
 
 module_eval(<<'.,.,', 'tp_plus.y', 430)
   def _reduce_153(val, _values, result)
-     result = ParenExpressionNode.new(val[1]) 
+     result = ParenExpressionNode.new(val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 435)
   def _reduce_154(val, _values, result)
-     result = IndirectNode.new(val[2].to_sym, val[4]) 
+     result = IndirectNode.new(val[2].to_sym, val[4])
     result
   end
 .,.,
@@ -1657,21 +1657,21 @@ module_eval(<<'.,.,', 'tp_plus.y', 440)
   def _reduce_155(val, _values, result)
                                               val[1] = val[1].to_i * -1 if val[0] == "-"
                                           result = DigitNode.new(val[1])
-                                      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 443)
   def _reduce_156(val, _values, result)
-     val[1] = val[1].to_f * -1 if val[0] == "-"; result = RealNode.new(val[1]) 
+     val[1] = val[1].to_f * -1 if val[0] == "-"; result = RealNode.new(val[1])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 447)
   def _reduce_157(val, _values, result)
-     result = "-" 
+     result = "-"
     result
   end
 .,.,
@@ -1680,14 +1680,14 @@ module_eval(<<'.,.,', 'tp_plus.y', 447)
 
 module_eval(<<'.,.,', 'tp_plus.y', 452)
   def _reduce_159(val, _values, result)
-     result = RealNode.new(val[0]) 
+     result = RealNode.new(val[0])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 456)
   def _reduce_160(val, _values, result)
-     result = DigitNode.new(val[0]) 
+     result = DigitNode.new(val[0])
     result
   end
 .,.,
@@ -1718,98 +1718,98 @@ module_eval(<<'.,.,', 'tp_plus.y', 456)
 
 module_eval(<<'.,.,', 'tp_plus.y', 476)
   def _reduce_173(val, _values, result)
-     result = StringRegisterNode.new(val[2].to_i) 
+     result = StringRegisterNode.new(val[2].to_i)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 480)
   def _reduce_174(val, _values, result)
-     result = UserAlarmNode.new(val[2].to_i) 
+     result = UserAlarmNode.new(val[2].to_i)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 484)
   def _reduce_175(val, _values, result)
-     result = TimerNode.new(val[2].to_i) 
+     result = TimerNode.new(val[2].to_i)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 488)
   def _reduce_176(val, _values, result)
-     result = ArgumentNode.new(val[2].to_i) 
+     result = ArgumentNode.new(val[2].to_i)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 492)
   def _reduce_177(val, _values, result)
-     result = VisionRegisterNode.new(val[2].to_i) 
+     result = VisionRegisterNode.new(val[2].to_i)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 496)
   def _reduce_178(val, _values, result)
-     result = PositionNode.new(val[2].to_i) 
+     result = PositionNode.new(val[2].to_i)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 500)
   def _reduce_179(val, _values, result)
-     result = NumregNode.new(val[2].to_i) 
+     result = NumregNode.new(val[2].to_i)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 504)
   def _reduce_180(val, _values, result)
-     result = PosregNode.new(val[2].to_i) 
+     result = PosregNode.new(val[2].to_i)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 508)
   def _reduce_181(val, _values, result)
-     result = IONode.new(val[0], val[2].to_i) 
+     result = IONode.new(val[0], val[2].to_i)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 512)
   def _reduce_182(val, _values, result)
-     result = IONode.new(val[0], val[2].to_i) 
+     result = IONode.new(val[0], val[2].to_i)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 516)
   def _reduce_183(val, _values, result)
-     result = AddressNode.new(val[0]) 
+     result = AddressNode.new(val[0])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 520)
   def _reduce_184(val, _values, result)
-     result = CommentNode.new(val[0]) 
+     result = CommentNode.new(val[0])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 524)
   def _reduce_185(val, _values, result)
-     result = TerminatorNode.new 
+     result = TerminatorNode.new
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 525)
   def _reduce_186(val, _values, result)
-     result = val[0] 
+     result = val[0]
     result
   end
 .,.,
@@ -1820,7 +1820,7 @@ module_eval(<<'.,.,', 'tp_plus.y', 525)
 
 module_eval(<<'.,.,', 'tp_plus.y', 532)
   def _reduce_189(val, _values, result)
-     result = TerminatorNode.new 
+     result = TerminatorNode.new
     result
   end
 .,.,
@@ -1829,7 +1829,7 @@ module_eval(<<'.,.,', 'tp_plus.y', 532)
 
 module_eval(<<'.,.,', 'tp_plus.y', 538)
   def _reduce_191(val, _values, result)
-     result = PositionDataNode.new(val[2]) 
+     result = PositionDataNode.new(val[2])
     result
   end
 .,.,
@@ -1838,35 +1838,35 @@ module_eval(<<'.,.,', 'tp_plus.y', 538)
 
 module_eval(<<'.,.,', 'tp_plus.y', 546)
   def _reduce_193(val, _values, result)
-     result = val[2] 
+     result = val[2]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 547)
   def _reduce_194(val, _values, result)
-     result = {} 
+     result = {}
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 551)
   def _reduce_195(val, _values, result)
-     result = val[0] 
+     result = val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 553)
   def _reduce_196(val, _values, result)
-     result = val[0].merge(val[3]) 
+     result = val[0].merge(val[3])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 557)
   def _reduce_197(val, _values, result)
-     result = { val[0].to_sym => val[2] } 
+     result = { val[0].to_sym => val[2] }
     result
   end
 .,.,
@@ -1879,21 +1879,21 @@ module_eval(<<'.,.,', 'tp_plus.y', 557)
 
 module_eval(<<'.,.,', 'tp_plus.y', 564)
   def _reduce_201(val, _values, result)
-     val[1] = val[1].to_i * -1 if val[0] == "-"; result = val[1] 
+     val[1] = val[1].to_i * -1 if val[0] == "-"; result = val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 565)
   def _reduce_202(val, _values, result)
-     val[1] = val[1].to_f * -1 if val[0] == "-"; result = val[1] 
+     val[1] = val[1].to_f * -1 if val[0] == "-"; result = val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 566)
   def _reduce_203(val, _values, result)
-     result = val[0] == "true" 
+     result = val[0] == "true"
     result
   end
 .,.,
@@ -1904,21 +1904,21 @@ module_eval(<<'.,.,', 'tp_plus.y', 566)
 
 module_eval(<<'.,.,', 'tp_plus.y', 575)
   def _reduce_206(val, _values, result)
-     result = val[2] 
+     result = val[2]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 579)
   def _reduce_207(val, _values, result)
-     result = val 
+     result = val
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'tp_plus.y', 580)
   def _reduce_208(val, _values, result)
-     result = val[0] << val[3] 
+     result = val[0] << val[3]
     result
   end
 .,.,

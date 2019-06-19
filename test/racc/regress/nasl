@@ -1024,1027 +1024,1027 @@ Racc_debug_parser = false
 
 module_eval(<<'.,.,', 'nasl.y', 61)
   def _reduce_1(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 63)
   def _reduce_2(val, _values)
-     [] 
+     []
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 67)
   def _reduce_3(val, _values)
-     [val[0]] + val[1] 
+     [val[0]] + val[1]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 69)
   def _reduce_4(val, _values)
-     [val[0]] 
+     [val[0]]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 73)
   def _reduce_5(val, _values)
-     c(*val) 
+     c(*val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 75)
   def _reduce_6(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 77)
   def _reduce_7(val, _values)
-     c(*val) 
+     c(*val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 79)
   def _reduce_8(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 81)
   def _reduce_9(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 85)
   def _reduce_10(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 87)
   def _reduce_11(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 95)
   def _reduce_12(val, _values)
-     n(:Export, *val) 
+     n(:Export, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 99)
   def _reduce_13(val, _values)
-     n(:Function, *val) 
+     n(:Function, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 101)
   def _reduce_14(val, _values)
-     n(:Function, *val) 
+     n(:Function, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 105)
   def _reduce_15(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 107)
   def _reduce_16(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 109)
   def _reduce_17(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 111)
   def _reduce_18(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 113)
   def _reduce_19(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 115)
   def _reduce_20(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 117)
   def _reduce_21(val, _values)
-     c(*val) 
+     c(*val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 119)
   def _reduce_22(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 121)
   def _reduce_23(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 123)
   def _reduce_24(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 125)
   def _reduce_25(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 127)
   def _reduce_26(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 129)
   def _reduce_27(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 131)
   def _reduce_28(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 135)
   def _reduce_29(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 137)
   def _reduce_30(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 139)
   def _reduce_31(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 141)
   def _reduce_32(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 143)
   def _reduce_33(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 145)
   def _reduce_34(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 153)
   def _reduce_35(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 157)
   def _reduce_36(val, _values)
-     n(:Break, *val) 
+     n(:Break, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 161)
   def _reduce_37(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 165)
   def _reduce_38(val, _values)
-     n(:Continue, *val) 
+     n(:Continue, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 169)
   def _reduce_39(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 173)
   def _reduce_40(val, _values)
-     n(:Empty, *val) 
+     n(:Empty, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 177)
   def _reduce_41(val, _values)
-     n(:Global, *val) 
+     n(:Global, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 181)
   def _reduce_42(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 185)
   def _reduce_43(val, _values)
-     n(:Import, *val) 
+     n(:Import, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 189)
   def _reduce_44(val, _values)
-     n(:Include, *val) 
+     n(:Include, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 193)
   def _reduce_45(val, _values)
-     n(:Local, *val) 
+     n(:Local, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 197)
   def _reduce_46(val, _values)
-     n(:Repetition, *val[0..-1]) 
+     n(:Repetition, *val[0..-1])
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 201)
   def _reduce_47(val, _values)
-     n(:Return, *val) 
+     n(:Return, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 203)
   def _reduce_48(val, _values)
-     n(:Return, *val) 
+     n(:Return, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 205)
   def _reduce_49(val, _values)
-     n(:Return, *val) 
+     n(:Return, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 213)
   def _reduce_50(val, _values)
-     n(:Block, *val) 
+     n(:Block, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 215)
   def _reduce_51(val, _values)
-     n(:Block, *val) 
+     n(:Block, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 219)
   def _reduce_52(val, _values)
-     n(:For, *val) 
+     n(:For, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 223)
   def _reduce_53(val, _values)
-     n(:Foreach, val[0], val[1], val[3], val[5]) 
+     n(:Foreach, val[0], val[1], val[3], val[5])
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 225)
   def _reduce_54(val, _values)
-     n(:Foreach, val[0], val[2], val[4], val[6]) 
+     n(:Foreach, val[0], val[2], val[4], val[6])
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 229)
   def _reduce_55(val, _values)
-     n(:If, *val) 
+     n(:If, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 231)
   def _reduce_56(val, _values)
-     n(:If, *val) 
+     n(:If, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 235)
   def _reduce_57(val, _values)
-     n(:Repeat, *val) 
+     n(:Repeat, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 239)
   def _reduce_58(val, _values)
-     n(:While, *val) 
+     n(:While, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 247)
   def _reduce_59(val, _values)
-     n(:Assignment, *val) 
+     n(:Assignment, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 249)
   def _reduce_60(val, _values)
-     n(:Assignment, *val) 
+     n(:Assignment, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 251)
   def _reduce_61(val, _values)
-     n(:Assignment, *val) 
+     n(:Assignment, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 253)
   def _reduce_62(val, _values)
-     n(:Assignment, *val) 
+     n(:Assignment, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 255)
   def _reduce_63(val, _values)
-     n(:Assignment, *val) 
+     n(:Assignment, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 257)
   def _reduce_64(val, _values)
-     n(:Assignment, *val) 
+     n(:Assignment, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 259)
   def _reduce_65(val, _values)
-     n(:Assignment, *val) 
+     n(:Assignment, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 261)
   def _reduce_66(val, _values)
-     n(:Assignment, *val) 
+     n(:Assignment, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 263)
   def _reduce_67(val, _values)
-     n(:Assignment, *val) 
+     n(:Assignment, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 265)
   def _reduce_68(val, _values)
-     n(:Assignment, *val) 
+     n(:Assignment, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 269)
   def _reduce_69(val, _values)
-     n(:Call, *val) 
+     n(:Call, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 271)
   def _reduce_70(val, _values)
-     n(:Call, *val) 
+     n(:Call, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 275)
   def _reduce_71(val, _values)
-     n(:Decrement, val[0]) 
+     n(:Decrement, val[0])
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 277)
   def _reduce_72(val, _values)
-     n(:Decrement, val[0]) 
+     n(:Decrement, val[0])
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 281)
   def _reduce_73(val, _values)
-     n(:Increment, val[0]) 
+     n(:Increment, val[0])
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 283)
   def _reduce_74(val, _values)
-     n(:Increment, val[0]) 
+     n(:Increment, val[0])
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 287)
   def _reduce_75(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 289)
   def _reduce_76(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 291)
   def _reduce_77(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 293)
   def _reduce_78(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 295)
   def _reduce_79(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 297)
   def _reduce_80(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 299)
   def _reduce_81(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 301)
   def _reduce_82(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 303)
   def _reduce_83(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 305)
   def _reduce_84(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 307)
   def _reduce_85(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 309)
   def _reduce_86(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 311)
   def _reduce_87(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 313)
   def _reduce_88(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 315)
   def _reduce_89(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 317)
   def _reduce_90(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 319)
   def _reduce_91(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 321)
   def _reduce_92(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 323)
   def _reduce_93(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 325)
   def _reduce_94(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 327)
   def _reduce_95(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 329)
   def _reduce_96(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 331)
   def _reduce_97(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 333)
   def _reduce_98(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 335)
   def _reduce_99(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 337)
   def _reduce_100(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 339)
   def _reduce_101(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 341)
   def _reduce_102(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 343)
   def _reduce_103(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 345)
   def _reduce_104(val, _values)
-     n(:Expression, *val) 
+     n(:Expression, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 347)
   def _reduce_105(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 349)
   def _reduce_106(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 351)
   def _reduce_107(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 353)
   def _reduce_108(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 355)
   def _reduce_109(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 357)
   def _reduce_110(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 359)
   def _reduce_111(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 361)
   def _reduce_112(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 363)
   def _reduce_113(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 371)
   def _reduce_114(val, _values)
-     n(:Argument, *val) 
+     n(:Argument, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 373)
   def _reduce_115(val, _values)
-     n(:Argument, *val) 
+     n(:Argument, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 375)
   def _reduce_116(val, _values)
-     n(:Argument, *val) 
+     n(:Argument, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 377)
   def _reduce_117(val, _values)
-     n(:Argument, *val) 
+     n(:Argument, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 381)
   def _reduce_118(val, _values)
-     n(:KeyValuePair, *val) 
+     n(:KeyValuePair, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 383)
   def _reduce_119(val, _values)
-     n(:KeyValuePair, *val) 
+     n(:KeyValuePair, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 385)
   def _reduce_120(val, _values)
-     n(:KeyValuePair, *val) 
+     n(:KeyValuePair, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 387)
   def _reduce_121(val, _values)
-     n(:KeyValuePair, *val) 
+     n(:KeyValuePair, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 389)
   def _reduce_122(val, _values)
-     n(:KeyValuePair, *val) 
+     n(:KeyValuePair, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 391)
   def _reduce_123(val, _values)
-     n(:KeyValuePair, *val) 
+     n(:KeyValuePair, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 395)
   def _reduce_124(val, _values)
-     [val[0]] + val[2] 
+     [val[0]] + val[2]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 397)
   def _reduce_125(val, _values)
-     [val[0]] 
+     [val[0]]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 399)
   def _reduce_126(val, _values)
-     [val[0]] 
+     [val[0]]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 403)
   def _reduce_127(val, _values)
-     n(:Lvalue, *val) 
+     n(:Lvalue, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 405)
   def _reduce_128(val, _values)
-     n(:Lvalue, *val) 
+     n(:Lvalue, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 409)
   def _reduce_129(val, _values)
-     n(:Reference, val[1]) 
+     n(:Reference, val[1])
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 417)
   def _reduce_130(val, _values)
-     [val[0]] + val[2] 
+     [val[0]] + val[2]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 419)
   def _reduce_131(val, _values)
-     [val[0]] 
+     [val[0]]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 423)
   def _reduce_132(val, _values)
-     n(:Array, *val) 
+     n(:Array, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 425)
   def _reduce_133(val, _values)
-     n(:Array, *val) 
+     n(:Array, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 429)
   def _reduce_134(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 431)
   def _reduce_135(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 433)
   def _reduce_136(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 435)
   def _reduce_137(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 437)
   def _reduce_138(val, _values)
-     nil 
+     nil
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 441)
   def _reduce_139(val, _values)
-     val[1] 
+     val[1]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 443)
   def _reduce_140(val, _values)
-     val[1] 
+     val[1]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 447)
   def _reduce_141(val, _values)
-     [val[0]] + val[1] 
+     [val[0]] + val[1]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 449)
   def _reduce_142(val, _values)
-     [val[0]] 
+     [val[0]]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 453)
   def _reduce_143(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 455)
   def _reduce_144(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 459)
   def _reduce_145(val, _values)
-     [val[0]] + val[2] 
+     [val[0]] + val[2]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 461)
   def _reduce_146(val, _values)
-     [val[0]] 
+     [val[0]]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 465)
   def _reduce_147(val, _values)
-     n(:List, *val) 
+     n(:List, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 467)
   def _reduce_148(val, _values)
-     n(:List, *val) 
+     n(:List, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 471)
   def _reduce_149(val, _values)
-     n(:Parameter, val[1], 'reference') 
+     n(:Parameter, val[1], 'reference')
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 473)
   def _reduce_150(val, _values)
-     n(:Parameter, val[0], 'value') 
+     n(:Parameter, val[0], 'value')
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 477)
   def _reduce_151(val, _values)
-     [val[0]] + val[2] 
+     [val[0]] + val[2]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 479)
   def _reduce_152(val, _values)
-     [val[0]] 
+     [val[0]]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 483)
   def _reduce_153(val, _values)
-     [val[0]] + val[1] 
+     [val[0]] + val[1]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 485)
   def _reduce_154(val, _values)
-     [val[0]] 
+     [val[0]]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 489)
   def _reduce_155(val, _values)
-     n(:Assignment, *val) 
+     n(:Assignment, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 491)
   def _reduce_156(val, _values)
-     n(:Assignment, *val) 
+     n(:Assignment, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 493)
   def _reduce_157(val, _values)
-     val[0] 
+     val[0]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 497)
   def _reduce_158(val, _values)
-     [val[0]] + val[2] 
+     [val[0]] + val[2]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 499)
   def _reduce_159(val, _values)
-     [val[0]] 
+     [val[0]]
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 507)
   def _reduce_160(val, _values)
-     n(:Identifier, *val) 
+     n(:Identifier, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 509)
   def _reduce_161(val, _values)
-     n(:Identifier, *val) 
+     n(:Identifier, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 511)
   def _reduce_162(val, _values)
-     n(:Identifier, *val) 
+     n(:Identifier, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 515)
   def _reduce_163(val, _values)
-     n(:Integer, *val) 
+     n(:Integer, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 517)
   def _reduce_164(val, _values)
-     n(:Integer, *val) 
+     n(:Integer, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 519)
   def _reduce_165(val, _values)
-     n(:Integer, *val) 
+     n(:Integer, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 521)
   def _reduce_166(val, _values)
-     n(:Integer, *val) 
+     n(:Integer, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 523)
   def _reduce_167(val, _values)
-     n(:Integer, *val) 
+     n(:Integer, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 527)
   def _reduce_168(val, _values)
-     n(:Ip, *val) 
+     n(:Ip, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 530)
   def _reduce_169(val, _values)
-     n(:String, *val) 
+     n(:String, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 532)
   def _reduce_170(val, _values)
-     n(:String, *val) 
+     n(:String, *val)
   end
 .,.,
 
 module_eval(<<'.,.,', 'nasl.y', 536)
   def _reduce_171(val, _values)
-     n(:Undefined, *val) 
+     n(:Undefined, *val)
   end
 .,.,
 

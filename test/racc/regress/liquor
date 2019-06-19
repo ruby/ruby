@@ -490,42 +490,42 @@ Racc_debug_parser = false
 
 module_eval(<<'.,.,', 'liquor.y', 47)
   def _reduce_1(val, _values, result)
-     result = [] 
+     result = []
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 49)
   def _reduce_2(val, _values, result)
-     result = [ val[0], *val[1] ] 
+     result = [ val[0], *val[1] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 51)
   def _reduce_3(val, _values, result)
-     result = [ val[0], *val[1] ] 
+     result = [ val[0], *val[1] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 53)
   def _reduce_4(val, _values, result)
-     result = [ val[0], *val[1] ] 
+     result = [ val[0], *val[1] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 57)
   def _reduce_5(val, _values, result)
-     result = [ :interp, retag(val), val[1] ] 
+     result = [ :interp, retag(val), val[1] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 59)
   def _reduce_6(val, _values, result)
-     result = [ :interp, retag(val), val[1] ] 
+     result = [ :interp, retag(val), val[1] ]
     result
   end
 .,.,
@@ -534,7 +534,7 @@ module_eval(<<'.,.,', 'liquor.y', 59)
 
 module_eval(<<'.,.,', 'liquor.y', 64)
   def _reduce_8(val, _values, result)
-     result = [ val[1][0], retag(val), *val[1][2..-1] ] 
+     result = [ val[1][0], retag(val), *val[1][2..-1] ]
     result
   end
 .,.,
@@ -547,133 +547,133 @@ module_eval(<<'.,.,', 'liquor.y', 64)
 
 module_eval(<<'.,.,', 'liquor.y', 71)
   def _reduce_12(val, _values, result)
-     result = [ :call,   retag(val), val[0], val[1] ] 
+     result = [ :call,   retag(val), val[0], val[1] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 73)
   def _reduce_13(val, _values, result)
-     result = [ :index,  retag(val), val[0], val[2] ] 
+     result = [ :index,  retag(val), val[0], val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 75)
   def _reduce_14(val, _values, result)
-     result = [ :external, retag(val), val[0], val[2], val[3] ] 
+     result = [ :external, retag(val), val[0], val[2], val[3] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 77)
   def _reduce_15(val, _values, result)
-     result = [ :external, retag(val), val[0], val[2], nil ] 
+     result = [ :external, retag(val), val[0], val[2], nil ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 79)
   def _reduce_16(val, _values, result)
-     result = [ :uminus, retag(val), val[1] ] 
+     result = [ :uminus, retag(val), val[1] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 81)
   def _reduce_17(val, _values, result)
-     result = [ :not, retag(val), val[1] ] 
+     result = [ :not, retag(val), val[1] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 83)
   def _reduce_18(val, _values, result)
-     result = [ :mul, retag(val), val[0], val[2] ] 
+     result = [ :mul, retag(val), val[0], val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 85)
   def _reduce_19(val, _values, result)
-     result = [ :div, retag(val), val[0], val[2] ] 
+     result = [ :div, retag(val), val[0], val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 87)
   def _reduce_20(val, _values, result)
-     result = [ :mod, retag(val), val[0], val[2] ] 
+     result = [ :mod, retag(val), val[0], val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 89)
   def _reduce_21(val, _values, result)
-     result = [ :plus, retag(val), val[0], val[2] ] 
+     result = [ :plus, retag(val), val[0], val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 91)
   def _reduce_22(val, _values, result)
-     result = [ :minus, retag(val), val[0], val[2] ] 
+     result = [ :minus, retag(val), val[0], val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 93)
   def _reduce_23(val, _values, result)
-     result = [ :eq, retag(val), val[0], val[2] ] 
+     result = [ :eq, retag(val), val[0], val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 95)
   def _reduce_24(val, _values, result)
-     result = [ :neq, retag(val), val[0], val[2] ] 
+     result = [ :neq, retag(val), val[0], val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 97)
   def _reduce_25(val, _values, result)
-     result = [ :lt, retag(val), val[0], val[2] ] 
+     result = [ :lt, retag(val), val[0], val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 99)
   def _reduce_26(val, _values, result)
-     result = [ :leq, retag(val), val[0], val[2] ] 
+     result = [ :leq, retag(val), val[0], val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 101)
   def _reduce_27(val, _values, result)
-     result = [ :gt, retag(val), val[0], val[2] ] 
+     result = [ :gt, retag(val), val[0], val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 103)
   def _reduce_28(val, _values, result)
-     result = [ :geq, retag(val), val[0], val[2] ] 
+     result = [ :geq, retag(val), val[0], val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 105)
   def _reduce_29(val, _values, result)
-     result = [ :and, retag(val), val[0], val[2] ] 
+     result = [ :and, retag(val), val[0], val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 107)
   def _reduce_30(val, _values, result)
-     result = [ :or, retag(val), val[0], val[2] ] 
+     result = [ :or, retag(val), val[0], val[2] ]
     result
   end
 .,.,
@@ -682,49 +682,49 @@ module_eval(<<'.,.,', 'liquor.y', 107)
 
 module_eval(<<'.,.,', 'liquor.y', 112)
   def _reduce_32(val, _values, result)
-     result = [ :tuple, retag(val), val[1].compact ] 
+     result = [ :tuple, retag(val), val[1].compact ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 116)
   def _reduce_33(val, _values, result)
-     result = [ val[0], *val[2] ] 
+     result = [ val[0], *val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 118)
   def _reduce_34(val, _values, result)
-     result = [ val[0] ] 
+     result = [ val[0] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 120)
   def _reduce_35(val, _values, result)
-     result = [ ] 
+     result = [ ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 124)
   def _reduce_36(val, _values, result)
-     result = [ :args, retag(val), *val[1] ] 
+     result = [ :args, retag(val), *val[1] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 128)
   def _reduce_37(val, _values, result)
-     result = [ val[0], val[1][2] ] 
+     result = [ val[0], val[1][2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 130)
   def _reduce_38(val, _values, result)
-     result = [ nil,    val[0][2] ] 
+     result = [ nil,    val[0][2] ]
     result
   end
 .,.,
@@ -745,14 +745,14 @@ module_eval(<<'.,.,', 'liquor.y', 134)
         }.merge(tail)
 
         result = [ :keywords, retag([ loc, val[2] ]), hash ]
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 150)
   def _reduce_40(val, _values, result)
-     result = [ :keywords, nil, {} ] 
+     result = [ :keywords, nil, {} ]
     result
   end
 .,.,
@@ -761,21 +761,21 @@ module_eval(<<'.,.,', 'liquor.y', 154)
   def _reduce_41(val, _values, result)
      result = [ val[0], *val[2] ].
             reduce { |tree, node| node[3][2] = tree; node }
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 160)
   def _reduce_42(val, _values, result)
-     result = [ val[0], *val[2] ] 
+     result = [ val[0], *val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 162)
   def _reduce_43(val, _values, result)
-     result = [ val[0] ] 
+     result = [ val[0] ]
     result
   end
 .,.,
@@ -788,91 +788,91 @@ module_eval(<<'.,.,', 'liquor.y', 166)
                            end:   ident_loc[:end] + 1, }
         result = [ :call, val[0][1], val[0],
                    [ :args, val[1][1] || empty_args_loc, nil, val[1][2] ] ]
-      
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 176)
   def _reduce_45(val, _values, result)
-     result = [ :tag, retag(val), val[1], val[2], *reduce_tag_args(val[3][2]) ] 
+     result = [ :tag, retag(val), val[1], val[2], *reduce_tag_args(val[3][2]) ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 178)
   def _reduce_46(val, _values, result)
-     result = [ :tag, retag(val), val[1], nil,    *reduce_tag_args(val[2][2]) ] 
+     result = [ :tag, retag(val), val[1], nil,    *reduce_tag_args(val[2][2]) ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 186)
   def _reduce_47(val, _values, result)
-     result = [ :cont,  retag(val), [] ] 
+     result = [ :cont,  retag(val), [] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 188)
   def _reduce_48(val, _values, result)
-     result = [ :cont,  retag(val), [ val[0], *val[1][2] ] ] 
+     result = [ :cont,  retag(val), [ val[0], *val[1][2] ] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 192)
   def _reduce_49(val, _values, result)
-     result = [ :cont2, val[0][1],  [ [:block, val[0][1], val[1] ], *val[3] ] ] 
+     result = [ :cont2, val[0][1],  [ [:block, val[0][1], val[1] ], *val[3] ] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 194)
   def _reduce_50(val, _values, result)
-     result = [ :cont2, retag(val), [ val[0], *val[1][2] ] ] 
+     result = [ :cont2, retag(val), [ val[0], *val[1][2] ] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 198)
   def _reduce_51(val, _values, result)
-     result = [] 
+     result = []
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 200)
   def _reduce_52(val, _values, result)
-     result = [ val[0], *val[1] ] 
+     result = [ val[0], *val[1] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 204)
   def _reduce_53(val, _values, result)
-     result = [ [:block, val[0][1], val[1] ], *val[3] ] 
+     result = [ [:block, val[0][1], val[1] ], *val[3] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 206)
   def _reduce_54(val, _values, result)
-     result = [ val[0], val[1], *val[2] ] 
+     result = [ val[0], val[1], *val[2] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 210)
   def _reduce_55(val, _values, result)
-     result = [ [:block, val[0][1], val[1] ], *val[3] ] 
+     result = [ [:block, val[0][1], val[1] ], *val[3] ]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'liquor.y', 212)
   def _reduce_56(val, _values, result)
-     result = [ val[0], *val[1] ] 
+     result = [ val[0], *val[1] ]
     result
   end
 .,.,
