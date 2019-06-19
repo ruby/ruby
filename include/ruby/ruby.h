@@ -2669,13 +2669,7 @@ void ruby_show_copyright(void);
     ruby_init_stack(&variable_in_this_stack_frame);
 /*! @} */
 
-#ifdef __ia64
-void ruby_init_stack(volatile VALUE*, void*);
-#define ruby_init_stack(addr) ruby_init_stack((addr), rb_ia64_bsp())
-#else
 void ruby_init_stack(volatile VALUE*);
-#endif
-#define Init_stack(addr) ruby_init_stack(addr)
 
 int ruby_setup(void);
 int ruby_cleanup(volatile int);

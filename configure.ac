@@ -1687,24 +1687,6 @@ AS_IF([test "x$ALLOCA" = "x"], [
 ])
 AC_FUNC_MEMCMP
 
-# http://sources.redhat.com/ml/libc-hacker/2005-08/msg00008.html
-# Debian GNU/Linux Etch's libc6.1 2.3.6.ds1-13etch5 has this problem.
-# Debian GNU/Linux Lenny's libc6.1 2.7-10 has no problem.
-AC_CACHE_CHECK(for broken erfc of glibc-2.3.6 on IA64, rb_cv_broken_glibc_ia64_erfc,
-  [AC_TRY_RUN([
-#include <math.h>
-int
-main()
-{
-   erfc(10000.0);
-   return 0;
-}
-],
-	rb_cv_broken_glibc_ia64_erfc=no,
-	rb_cv_broken_glibc_ia64_erfc=yes,
-	rb_cv_broken_glibc_ia64_erfc=no)])
-AS_CASE([$rb_cv_broken_glibc_ia64_erfc],[yes],[ac_cv_func_erf=no])
-
 AS_CASE(["$target_os"],[freebsd*],[
 	 AC_DEFINE(BROKEN_CLOSE)
 	 AC_REPLACE_FUNCS(close)
@@ -2215,21 +2197,6 @@ AS_IF([test x"$ac_cv_func_dirfd" = xno], [
 #include <sys/types.h>
 #include <dirent.h>
 ])])
-])
-
-AS_IF([test x"$target_cpu" = xia64], [
-    AC_LIBOBJ([ia64])
-    AC_CACHE_CHECK(for __libc_ia64_register_backing_store_base,
-                   rb_cv___libc_ia64_register_backing_store_base,
-    [rb_cv___libc_ia64_register_backing_store_base=no
-    AC_TRY_LINK(
-      [extern unsigned long __libc_ia64_register_backing_store_base;],
-      [unsigned long p = __libc_ia64_register_backing_store_base;
-       printf("%ld\n", p);],
-      [rb_cv___libc_ia64_register_backing_store_base=yes])])
-    AS_IF([test $rb_cv___libc_ia64_register_backing_store_base = yes], [
-      AC_DEFINE(HAVE___LIBC_IA64_REGISTER_BACKING_STORE_BASE)
-    ])
 ])
 
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,

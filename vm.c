@@ -2878,9 +2878,6 @@ mjit_pause_m(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
 
 extern VALUE *rb_gc_stack_start;
 extern size_t rb_gc_stack_maxsize;
-#ifdef __ia64
-extern VALUE *rb_gc_register_stack_start;
-#endif
 
 /* debug functions */
 

@@ -582,7 +582,7 @@ thread_start_func_1(void *th_ptr)
     thread_debug("thread created (th: %p, thid: %p, event: %p)\n", th,
 		 th->thread_id, th->native_thread_data.interrupt_event);
 
-    thread_start_func_2(th, th->ec->machine.stack_start, rb_ia64_bsp());
+    thread_start_func_2(th, th->ec->machine.stack_start);
 
     w32_close_handle(thread_id);
     thread_debug("thread deleted (th: %p)\n", th);

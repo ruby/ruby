@@ -4324,11 +4324,7 @@ init_mark_stack(mark_stack_t *stack)
 
 /* Marking */
 
-#ifdef __ia64
-#define SET_STACK_END (SET_MACHINE_STACK_END(&ec->machine.stack_end), ec->machine.register_stack_end = rb_ia64_bsp())
-#else
 #define SET_STACK_END SET_MACHINE_STACK_END(&ec->machine.stack_end)
-#endif
 
 #define STACK_START (ec->machine.stack_start)
 #define STACK_END (ec->machine.stack_end)
@@ -4384,12 +4380,7 @@ stack_check(rb_execution_context_t *ec, int water_mark)
     int ret;
     SET_STACK_END;
     ret = STACK_LENGTH > STACK_LEVEL_MAX - water_mark;
-#ifdef __ia64
-    if (!ret) {
-        ret = (VALUE*)rb_ia64_bsp() - ec->machine.register_stack_start >
-	    ec->machine.register_stack_maxsize/sizeof(VALUE) - water_mark;
-    }
-#endif
+
     return ret;
 }
 #else
@@ -4719,11 +4710,7 @@ mark_stack_locations(rb_objspace_t *objspace, const rb_execution_context_t *ec,
 {
 
     gc_mark_locations(objspace, stack_start, stack_end);
-#ifdef __ia64
-    gc_mark_locations(objspace,
-		      ec->machine.register_stack_start,
-		      ec->machine.register_stack_end);
-#endif
+
 #if defined(__mc68000__)
     gc_mark_locations(objspace,
 		      (VALUE*)((char*)stack_start + 2),
@@ -7228,14 +7215,6 @@ garbage_collect_with_gvl(rb_objspace_t *objspace, int reason)
 	    exit(EXIT_FAILURE);
 	}
     }
-}
-
-#undef Init_stack
-
-void
-Init_stack(volatile VALUE *addr)
-{
-    ruby_init_stack(addr);
 }
 
 /*

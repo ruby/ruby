@@ -61,10 +61,6 @@
 /* On Solaris because resuming any Fiber caused SEGV, for some reason.
  */
 #     define FIBER_USE_NATIVE 0
-#   elif defined(__ia64)
-/* At least, Linux/ia64's getcontext(3) doesn't save register window.
- */
-#     define FIBER_USE_NATIVE 0
 #   elif defined(__GNU__)
 /* GNU/Hurd doesn't fully support getcontext, setcontext, makecontext
  * and swapcontext functions. Disabling their usage till support is
@@ -121,11 +117,6 @@ typedef struct rb_context_struct {
 	VALUE *stack;
 	VALUE *stack_src;
 	size_t stack_size;
-#ifdef __ia64
-	VALUE *register_stack;
-	VALUE *register_stack_src;
-	int register_stack_size;
-#endif
     } machine;
     rb_execution_context_t saved_ec;
     int free_vm_stack;
@@ -386,12 +377,6 @@ cont_mark(void *ptr)
 	    }
 	}
     }
-#ifdef __ia64
-    if (cont->machine.register_stack) {
-	rb_gc_mark_locations(cont->machine.register_stack,
-			     cont->machine.register_stack + cont->machine.register_stack_size);
-    }
-#endif
 
     RUBY_MARK_LEAVE("cont");
 }
@@ -453,9 +438,6 @@ cont_free(void *ptr)
     ruby_xfree(cont->ensure_array);
     RUBY_FREE_UNLESS_NULL(cont->machine.stack);
 #endif
-#ifdef __ia64
-    RUBY_FREE_UNLESS_NULL(cont->machine.register_stack);
-#endif
     RUBY_FREE_UNLESS_NULL(cont->saved_vm_stack.ptr);
 
     if (mjit_enabled && cont->mjit_cont != NULL) {
@@ -485,11 +467,7 @@ cont_memsize(const void *ptr)
     if (cont->machine.stack) {
 	size += cont->machine.stack_size * sizeof(*cont->machine.stack);
     }
-#ifdef __ia64
-    if (cont->machine.register_stack) {
-	size += cont->machine.register_stack_size * sizeof(*cont->machine.register_stack);
-    }
-#endif
+
     return size;
 }
 
@@ -598,9 +576,6 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
     size_t size;
 
     SET_MACHINE_STACK_END(&th->ec->machine.stack_end);
-#ifdef __ia64
-    th->ec->machine.register_stack_end = rb_ia64_bsp();
-#endif
 
     if (th->ec->machine.stack_start > th->ec->machine.stack_end) {
 	size = cont->machine.stack_size = th->ec->machine.stack_start - th->ec->machine.stack_end;
@@ -620,20 +595,6 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 
     FLUSH_REGISTER_WINDOWS;
     MEMCPY(cont->machine.stack, cont->machine.stack_src, VALUE, size);
-
-#ifdef __ia64
-    rb_ia64_flushrs();
-    size = cont->machine.register_stack_size = th->ec->machine.register_stack_end - th->ec->machine.register_stack_start;
-    cont->machine.register_stack_src = th->ec->machine.register_stack_start;
-    if (cont->machine.register_stack) {
-	REALLOC_N(cont->machine.register_stack, VALUE, size);
-    }
-    else {
-	cont->machine.register_stack = ALLOC_N(VALUE, size);
-    }
-
-    MEMCPY(cont->machine.register_stack, cont->machine.register_stack_src, VALUE, size);
-#endif
 }
 
 static const rb_data_type_t cont_data_type = {
@@ -655,10 +616,6 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
     /* saved_ec->machine.stack_end should be NULL */
     /* because it may happen GC afterward */
     sec->machine.stack_end = NULL;
-
-#ifdef __ia64
-    sec->machine.register_stack_end = NULL;
-#endif
 }
 
 static void
@@ -993,9 +950,6 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     sec->machine.stack_start = (VALUE*)(ptr + STACK_DIR_UPPER(0, size));
     sec->machine.stack_maxsize = size - RB_PAGE_SIZE;
 #endif
-#ifdef __ia64
-    sth->machine.register_stack_maxsize = sth->machine.stack_maxsize;
-#endif
 }
 
 NOINLINE(static void fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib));
@@ -1065,52 +1019,10 @@ cont_restore_1(rb_context_t *cont)
 		VALUE, cont->machine.stack_size);
     }
 
-#ifdef __ia64
-    if (cont->machine.register_stack_src) {
-	MEMCPY(cont->machine.register_stack_src, cont->machine.register_stack,
-	       VALUE, cont->machine.register_stack_size);
-    }
-#endif
-
     ruby_longjmp(cont->jmpbuf, 1);
 }
 
 NORETURN(NOINLINE(static void cont_restore_0(rb_context_t *, VALUE *)));
-
-#ifdef __ia64
-#define C(a) rse_##a##0, rse_##a##1, rse_##a##2, rse_##a##3, rse_##a##4
-#define E(a) rse_##a##0= rse_##a##1= rse_##a##2= rse_##a##3= rse_##a##4
-static volatile int C(a), C(b), C(c), C(d), C(e);
-static volatile int C(f), C(g), C(h), C(i), C(j);
-static volatile int C(k), C(l), C(m), C(n), C(o);
-static volatile int C(p), C(q), C(r), C(s), C(t);
-#if 0
-{/* the above lines make cc-mode.el confused so much */}
-#endif
-int rb_dummy_false = 0;
-NORETURN(NOINLINE(static void register_stack_extend(rb_context_t *, VALUE *, VALUE *)));
-static void
-register_stack_extend(rb_context_t *cont, VALUE *vp, VALUE *curr_bsp)
-{
-    if (rb_dummy_false) {
-        /* use registers as much as possible */
-        E(a) = E(b) = E(c) = E(d) = E(e) =
-        E(f) = E(g) = E(h) = E(i) = E(j) =
-        E(k) = E(l) = E(m) = E(n) = E(o) =
-        E(p) = E(q) = E(r) = E(s) = E(t) = 0;
-        E(a) = E(b) = E(c) = E(d) = E(e) =
-        E(f) = E(g) = E(h) = E(i) = E(j) =
-        E(k) = E(l) = E(m) = E(n) = E(o) =
-        E(p) = E(q) = E(r) = E(s) = E(t) = 0;
-    }
-    if (curr_bsp < cont->machine.register_stack_src+cont->machine.register_stack_size) {
-        register_stack_extend(cont, vp, (VALUE*)rb_ia64_bsp());
-    }
-    cont_restore_0(cont, vp);
-}
-#undef C
-#undef E
-#endif
 
 static void
 cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
@@ -1160,9 +1072,6 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
     }
     cont_restore_1(cont);
 }
-#ifdef __ia64
-#define cont_restore_0(cont, vp) register_stack_extend((cont), (vp), (VALUE*)rb_ia64_bsp())
-#endif
 
 /*
  *  Document-class: Continuation
