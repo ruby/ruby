@@ -79,6 +79,11 @@ class TestString < Test::Unit::TestCase
     assert_equal("mystring", str.__send__(:initialize, str, capacity: 1000))
   end
 
+  def test_initialize_shared
+    String.new(str = "mystring" * 10).__send__(:initialize, capacity: str.bytesize)
+    assert_equal("mystring", str[0, 8])
+  end
+
   def test_initialize_nonstring
     assert_raise(TypeError) {
       S(1)
