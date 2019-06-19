@@ -1331,6 +1331,7 @@ str_new_empty(VALUE str)
 }
 
 #define STR_BUF_MIN_SIZE 127
+STATIC_ASSERT(STR_BUF_MIN_SIZE, STR_BUF_MIN_SIZE > RSTRING_EMBED_LEN_MAX);
 
 VALUE
 rb_str_buf_new(long capa)
@@ -1611,7 +1612,9 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
 	    }
 	    str_modifiable(str);
 	    if (STR_EMBED_P(str)) { /* make noembed always */
-		RSTRING(str)->as.heap.ptr = ALLOC_N(char, (size_t)capa + termlen);
+                char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
+                memcpy(new_ptr, RSTRING(str)->as.ary, RSTRING_EMBED_LEN_MAX + 1);
+                RSTRING(str)->as.heap.ptr = new_ptr;
 	    }
 	    else if (STR_HEAP_SIZE(str) != (size_t)capa + termlen) {
 		SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char,
