@@ -1794,6 +1794,7 @@ rb_fiber_close(rb_fiber_t *fib)
     }
 
     rb_ec_set_vm_stack(ec, NULL, 0);
+    ec->cfp = NULL;
 
 #if !FIBER_USE_NATIVE
     /* should not mark machine stack any more */
