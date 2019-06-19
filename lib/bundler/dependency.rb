@@ -105,9 +105,13 @@ module Bundler
     def gem_platforms(valid_platforms)
       return valid_platforms if @platforms.empty?
 
-      @gem_platforms ||= @platforms.map {|pl| PLATFORM_MAP[pl] }.compact.uniq
+      @gem_platforms ||= expanded_platforms.compact.uniq
 
       valid_platforms & @gem_platforms
+    end
+
+    def expanded_platforms
+      @platforms.map {|pl| PLATFORM_MAP[pl] }
     end
 
     def should_include?
