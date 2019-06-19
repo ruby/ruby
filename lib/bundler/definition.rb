@@ -519,9 +519,7 @@ module Bundler
     end
 
     def add_current_platform
-      current_platform = Bundler.local_platform
-      add_platform(current_platform) if Bundler.feature_flag.specific_platform?
-      add_platform(generic(current_platform))
+      current_platforms.each {|platform| add_platform(platform) }
     end
 
     def find_resolved_spec(current_spec)
@@ -544,6 +542,14 @@ module Bundler
     end
 
   private
+
+    def current_platforms
+      current_platform = Bundler.local_platform
+      platforms = []
+      platforms << current_platform if Bundler.feature_flag.specific_platform?
+      platforms << generic(current_platform)
+      platforms
+    end
 
     def change_reason
       if unlocking?
