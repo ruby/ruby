@@ -10278,9 +10278,10 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 {
     int encidx;
     VALUE buf = Qnil;
-    const char *rep;
+    const char *rep, *p, *e, *p1, *sp;
     long replen = -1;
     int tainted = 0;
+    long slen;
 
     if (rb_block_given_p()) {
 	if (!NIL_P(repl))
@@ -10306,10 +10307,13 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 	rep = replace; replen = (int)sizeof(replace); \
     } while (0)
 
+    slen = RSTRING_LEN(str);
+    p = RSTRING_PTR(str);
+    e = RSTRING_END(str);
+    p1 = p;
+    sp = p;
+
     if (rb_enc_asciicompat(enc)) {
-	const char *p = RSTRING_PTR(str);
-	const char *e = RSTRING_END(str);
-	const char *p1 = p;
 	int rep7bit_p;
 	if (!replen) {
 	    rep = NULL;
@@ -10374,6 +10378,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 		}
 		else {
 		    repl = rb_yield(rb_enc_str_new(p, clen, enc));
+                    str_mod_check(str, sp, slen);
 		    repl = str_compat_and_valid(repl, enc);
 		    tainted |= OBJ_TAINTED_RAW(repl);
 		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
@@ -10409,6 +10414,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 	    }
 	    else {
 		repl = rb_yield(rb_enc_str_new(p, e-p, enc));
+                str_mod_check(str, sp, slen);
 		repl = str_compat_and_valid(repl, enc);
 		tainted |= OBJ_TAINTED_RAW(repl);
 		rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
@@ -10419,9 +10425,6 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
     }
     else {
 	/* ASCII incompatible */
-	const char *p = RSTRING_PTR(str);
-	const char *e = RSTRING_END(str);
-	const char *p1 = p;
 	long mbminlen = rb_enc_mbminlen(enc);
 	if (!replen) {
 	    rep = NULL;
@@ -10478,6 +10481,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 		}
 		else {
 		    repl = rb_yield(rb_enc_str_new(p, clen, enc));
+                    str_mod_check(str, sp, slen);
 		    repl = str_compat_and_valid(repl, enc);
 		    tainted |= OBJ_TAINTED_RAW(repl);
 		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
@@ -10505,6 +10509,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 	    }
 	    else {
 		repl = rb_yield(rb_enc_str_new(p, e-p, enc));
+                str_mod_check(str, sp, slen);
 		repl = str_compat_and_valid(repl, enc);
 		tainted |= OBJ_TAINTED_RAW(repl);
 		rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
