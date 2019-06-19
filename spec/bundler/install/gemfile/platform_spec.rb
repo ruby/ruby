@@ -102,7 +102,7 @@ RSpec.describe "bundle install across platforms" do
       gem "pry"
     G
 
-    expect(the_bundle.lockfile).to read_as strip_whitespace(<<-L)
+    lockfile_should_be <<-L
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -160,7 +160,7 @@ RSpec.describe "bundle install across platforms" do
          #{Bundler::VERSION}
     L
 
-    expect(the_bundle.lockfile).to read_as good_lockfile
+    lockfile_should_be good_lockfile
 
     bad_lockfile = strip_whitespace <<-L
       GEM
@@ -196,23 +196,23 @@ RSpec.describe "bundle install across platforms" do
     aggregate_failures do
       lockfile bad_lockfile
       bundle! :install
-      expect(the_bundle.lockfile).to read_as good_lockfile
+      lockfile_should_be good_lockfile
 
       lockfile bad_lockfile
       bundle! :update, :all => true
-      expect(the_bundle.lockfile).to read_as good_lockfile
+      lockfile_should_be good_lockfile
 
       lockfile bad_lockfile
       bundle! "update ffi"
-      expect(the_bundle.lockfile).to read_as good_lockfile
+      lockfile_should_be good_lockfile
 
       lockfile bad_lockfile
       bundle! "update empyrean"
-      expect(the_bundle.lockfile).to read_as good_lockfile
+      lockfile_should_be good_lockfile
 
       lockfile bad_lockfile
       bundle! :lock
-      expect(the_bundle.lockfile).to read_as good_lockfile
+      lockfile_should_be good_lockfile
     end
   end
 
