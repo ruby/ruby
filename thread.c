@@ -713,19 +713,19 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         rb_bug("thread_start_func_2 must not be used for main thread");
     }
 
+    thread_debug("thread start: %p\n", (void *)th);
+    VM_ASSERT((size * sizeof(VALUE)) <= th->ec->machine.stack_maxsize);
+
     vm_stack = alloca(size * sizeof(VALUE));
     VM_ASSERT(vm_stack);
 
     gvl_acquire(th->vm, th);
 
     rb_ec_initialize_vm_stack(th->ec, vm_stack, size);
-
-    ruby_thread_set_native(th);
-
     th->ec->machine.stack_start = STACK_DIR_UPPER(vm_stack + size, vm_stack);
     th->ec->machine.stack_maxsize -= size * sizeof(VALUE);
 
-    thread_debug("thread start: %p\n", (void *)th);
+    ruby_thread_set_native(th);
 
     {
 	thread_debug("thread start (get lock): %p\n", (void *)th);
@@ -806,7 +806,11 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 
         rb_fiber_close(th->ec->fiber_ptr);
     }
+
     thread_cleanup_func(th, FALSE);
+    VM_ASSERT(this->ec->vm_stack == NULL);
+    VM_ASSERT(this->ec->cfp == NULL);
+
     gvl_release(th->vm);
 
     return 0;
@@ -2253,6 +2257,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    if (th->status == THREAD_RUNNABLE)
 		th->running_time_us += TIME_QUANTUM_USEC;
 
+            VM_ASSERT(th->ec->cfp);
 	    EXEC_EVENT_HOOK(th->ec, RUBY_INTERNAL_EVENT_SWITCH, th->ec->cfp->self,
 			    0, 0, 0, Qundef);
 
