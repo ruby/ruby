@@ -715,6 +715,7 @@ rb_vm_push_frame(rb_execution_context_t *sec,
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
 {
+    STACK_GROW_DIR_DETECTION;
     enum ruby_tag_type state;
     rb_thread_list_t *join_list;
     rb_thread_t *main_th;
@@ -740,8 +741,8 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
     ruby_thread_set_native(th);
 
-    th->ec->machine.stack_start = vm_stack;
-    th->ec->machine.stack_maxsize = th->ec->machine.stack_end - th->ec->machine.stack_start;
+    th->ec->machine.stack_start = STACK_DIR_UPPER(vm_stack + size, vm_stack);
+    th->ec->machine.stack_maxsize -= size * sizeof(VALUE);
 #ifdef __ia64
     th->ec->machine.register_stack_start = register_stack_start;
 #endif
