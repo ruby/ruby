@@ -148,16 +148,9 @@ static inline int blocking_region_begin(rb_thread_t *th, struct rb_blocking_regi
 					rb_unblock_function_t *ubf, void *arg, int fail_if_interrupted);
 static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region);
 
-#ifdef __ia64
-#define RB_GC_SAVE_MACHINE_REGISTER_STACK(th)          \
-    do{(th)->ec->machine.register_stack_end = rb_ia64_bsp();}while(0)
-#else
-#define RB_GC_SAVE_MACHINE_REGISTER_STACK(th)
-#endif
 #define RB_GC_SAVE_MACHINE_CONTEXT(th)				\
     do {							\
 	FLUSH_REGISTER_WINDOWS;					\
-	RB_GC_SAVE_MACHINE_REGISTER_STACK(th);			\
 	setjmp((th)->ec->machine.regs);				\
 	SET_MACHINE_STACK_END(&(th)->ec->machine.stack_end);	\
     } while (0)
@@ -332,11 +325,7 @@ rb_thread_s_debug_set(VALUE self, VALUE val)
 # define PRI_THREAD_ID "p"
 #endif
 
-#ifndef __ia64
-#define thread_start_func_2(th, st, rst) thread_start_func_2(th, st)
-#endif
-NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start,
-					VALUE *register_stack_start));
+NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start));
 static void timer_thread_function(void);
 void ruby_sigchld_handler(rb_vm_t *); /* signal.c */
 
@@ -608,9 +597,6 @@ thread_cleanup_func_before_exec(void *th_ptr)
     rb_thread_t *th = th_ptr;
     th->status = THREAD_KILLED;
     th->ec->machine.stack_start = th->ec->machine.stack_end = NULL;
-#ifdef __ia64
-    th->ec->machine.register_stack_start = th->ec->machine.register_stack_end = NULL;
-#endif
 }
 
 static void
@@ -713,7 +699,7 @@ rb_vm_push_frame(rb_execution_context_t *sec,
                  int stack_max);
 
 static int
-thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
+thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 {
     STACK_GROW_DIR_DETECTION;
     enum ruby_tag_type state;
@@ -734,9 +720,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
     th->ec->machine.stack_start = STACK_DIR_UPPER(vm_stack + size, vm_stack);
     th->ec->machine.stack_maxsize -= size * sizeof(VALUE);
-#ifdef __ia64
-    th->ec->machine.register_stack_start = register_stack_start;
-#endif
+
     thread_debug("thread start: %p\n", (void *)th);
 
     gvl_acquire(th->vm, th);

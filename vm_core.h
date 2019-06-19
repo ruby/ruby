@@ -894,11 +894,6 @@ typedef struct rb_execution_context_struct {
 	VALUE *stack_start;
 	VALUE *stack_end;
 	size_t stack_maxsize;
-#ifdef __ia64
-	VALUE *register_stack_start;
-	VALUE *register_stack_end;
-	size_t register_stack_maxsize;
-#endif
 	RUBY_ALIGNAS(SIZEOF_VALUE) jmp_buf regs;
     } machine;
 } rb_execution_context_t;

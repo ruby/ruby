@@ -647,51 +647,6 @@ size_t pthread_get_stacksize_np(pthread_t);
 #define STACKADDR_AVAILABLE 1
 #elif defined __HAIKU__
 #define STACKADDR_AVAILABLE 1
-#elif defined __ia64 && defined _HPUX_SOURCE
-#include <sys/dyntune.h>
-
-#define STACKADDR_AVAILABLE 1
-
-/*
- * Do not lower the thread's stack to PTHREAD_STACK_MIN,
- * otherwise one would receive a 'sendsig: useracc failed.'
- * and a coredump.
- */
-#undef PTHREAD_STACK_MIN
-
-#define HAVE_PTHREAD_ATTR_GET_NP 1
-#undef HAVE_PTHREAD_ATTR_GETSTACK
-
-/*
- * As the PTHREAD_STACK_MIN is undefined and
- * no one touches the default stacksize,
- * it is just fine to use the default.
- */
-#define pthread_attr_get_np(thid, attr) 0
-
-/*
- * Using value of sp is very rough... To make it more real,
- * addr would need to be aligned to vps_pagesize.
- * The vps_pagesize is 'Default user page size (kBytes)'
- * and could be retrieved by gettune().
- */
-static int
-hpux_attr_getstackaddr(const pthread_attr_t *attr, void **addr)
-{
-    static uint64_t pagesize;
-    size_t size;
-
-    if (!pagesize) {
-	if (gettune("vps_pagesize", &pagesize)) {
-	    pagesize = 16;
-	}
-	pagesize *= 1024;
-    }
-    pthread_attr_getstacksize(attr, &size);
-    *addr = (void *)((size_t)((char *)_Asm_get_sp() - size) & ~(pagesize - 1));
-    return 0;
-}
-#define pthread_attr_getstackaddr(attr, addr) hpux_attr_getstackaddr(attr, addr)
 #endif
 
 #ifndef MAINSTACKADDR_AVAILABLE
@@ -791,9 +746,6 @@ static struct {
     rb_nativethread_id_t id;
     size_t stack_maxsize;
     VALUE *stack_start;
-#ifdef __ia64
-    VALUE *register_stack_start;
-#endif
 } native_main_thread;
 
 #ifdef STACK_END_ADDRESS
@@ -879,19 +831,10 @@ reserve_stack(volatile char *limit, size_t size)
  * You must call this function before any heap allocation by Ruby implementation.
  * Or GC will break living objects */
 void
-ruby_init_stack(volatile VALUE *addr
-#ifdef __ia64
-    , void *bsp
-#endif
-    )
+ruby_init_stack(volatile VALUE *addr)
 {
     native_main_thread.id = pthread_self();
-#ifdef __ia64
-    if (!native_main_thread.register_stack_start ||
-        (VALUE*)bsp < native_main_thread.register_stack_start) {
-        native_main_thread.register_stack_start = (VALUE*)bsp;
-    }
-#endif
+
 #if MAINSTACKADDR_AVAILABLE
     if (native_main_thread.stack_maxsize) return;
     {
@@ -995,11 +938,7 @@ native_thread_init_stack(rb_thread_t *th)
 	rb_raise(rb_eNotImpError, "ruby engine can initialize only in the main thread");
 #endif
     }
-#ifdef __ia64
-    th->ec->machine.register_stack_start = native_main_thread.register_stack_start;
-    th->ec->machine.stack_maxsize /= 2;
-    th->ec->machine.register_stack_maxsize = th->ec->machine.stack_maxsize;
-#endif
+
     return 0;
 }
 
@@ -1027,9 +966,9 @@ thread_start_func_1(void *th_ptr)
 	native_thread_init(th);
 	/* run */
 #if defined USE_NATIVE_THREAD_INIT
-	thread_start_func_2(th, th->ec->machine.stack_start, rb_ia64_bsp());
+	thread_start_func_2(th, th->ec->machine.stack_start);
 #else
-	thread_start_func_2(th, &stack_start, rb_ia64_bsp());
+	thread_start_func_2(th, &stack_start);
 #endif
     }
 #if USE_THREAD_CACHE
@@ -1161,10 +1100,6 @@ native_thread_create(rb_thread_t *th)
 	const size_t space = space_size(stack_size);
 
         th->ec->machine.stack_maxsize = stack_size - space;
-#ifdef __ia64
-        th->ec->machine.stack_maxsize /= 2;
-        th->ec->machine.register_stack_maxsize = th->ec->machine.stack_maxsize;
-#endif
 
 	CHECK_ERR(pthread_attr_init(&attr));
 

@@ -917,8 +917,6 @@ strlcat.$(OBJEXT): {$(VPATH)}strlcat.c
 strlcpy.$(OBJEXT): {$(VPATH)}strlcpy.c
 strstr.$(OBJEXT): {$(VPATH)}strstr.c
 nt.$(OBJEXT): {$(VPATH)}nt.c
-ia64.$(OBJEXT): {$(VPATH)}ia64.s
-	$(CC) $(CFLAGS) -c $<
 .coroutine_obj $(COROUTINE_OBJ): \
 	{$(VPATH)}$(COROUTINE_H:.h=).$(ASMEXT) \
 	$(COROUTINE_H:/Context.h=/.time)

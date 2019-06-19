@@ -8,8 +8,8 @@
 
 2.  Visual C++ 12.0 (2013) or later.
 
-    [Note] if you want to build x64 or ia64 version, use native compiler for
-           x64/ia64.
+    [Note] if you want to build x64 version, use native compiler for
+           x64.
 
 3.  Please set environment variable +INCLUDE+, +LIB+, +PATH+
     to run required commands properly from the command line.
