@@ -1604,6 +1604,19 @@ class TestM17N < Test::Unit::TestCase
     assert_predicate(str.dup.taint.scrub, :tainted?)
   end
 
+  def test_scrub_modification_inside_block
+    str = ("abc\u3042".b << "\xE3\x80".b).force_encoding('UTF-8')
+    assert_raise(RuntimeError) {str.scrub{|_| str << "1234567890"; "?" }}
+
+    str = "\x00\xD8\x42\x30".force_encoding(Encoding::UTF_16LE)
+    assert_raise(RuntimeError) do
+      str.scrub do |_|
+        str << "1\x002\x00".force_encoding('UTF-16LE')
+        "?\x00".force_encoding('UTF-16LE')
+      end
+    end
+  end
+
   def test_scrub_replace_default
     assert_equal("\uFFFD\uFFFD\uFFFD", u("\x80\x80\x80").scrub)
     assert_equal("\uFFFDA", u("\xF4\x80\x80A").scrub)
