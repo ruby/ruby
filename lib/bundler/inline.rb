@@ -60,7 +60,7 @@ def gemfile(install = false, options = {}, &gemfile)
 
     Bundler.ui = ui if install
     if install || missing_specs.call
-      Bundler.settings.temporary(:inline => true, :disable_platform_warnings => true) do
+      Bundler.settings.temporary(:inline => true) do
         installer = Bundler::Installer.install(Bundler.root, definition, :system => true)
         installer.post_install_messages.each do |name, message|
           Bundler.ui.info "Post-install message from #{name}:\n#{message}"
