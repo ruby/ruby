@@ -1,4 +1,5 @@
-# $Id: 1e30abedf4eea155815d1efa5500ec817b10a2ab $
+# frozen_string_literal: false
+# $Id$
 
 require 'mkmf'
 
