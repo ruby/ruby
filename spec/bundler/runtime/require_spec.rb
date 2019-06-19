@@ -425,7 +425,7 @@ RSpec.describe "Bundler.require with platform specific dependencies" do
       source "#{file_uri_for(gem_repo1)}"
 
       platforms :#{not_local_tag} do
-        gem "fail", :require => "omgomg"
+        gem "platform_specific", :require => "omgomg"
       end
 
       gem "rack", "1.0.0"

@@ -172,6 +172,8 @@ module Bundler
     end
 
     def retrieve_active_spec(strict, definition, current_spec)
+      return unless current_spec.match_platform(Bundler.local_platform)
+
       if strict
         active_spec = definition.find_resolved_spec(current_spec)
       else
