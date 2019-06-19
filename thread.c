@@ -714,6 +714,10 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     }
 
     vm_stack = alloca(size * sizeof(VALUE));
+    VM_ASSERT(vm_stack);
+
+    gvl_acquire(th->vm, th);
+
     rb_ec_initialize_vm_stack(th->ec, vm_stack, size);
 
     ruby_thread_set_native(th);
@@ -723,7 +727,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 
     thread_debug("thread start: %p\n", (void *)th);
 
-    gvl_acquire(th->vm, th);
     {
 	thread_debug("thread start (get lock): %p\n", (void *)th);
 	rb_thread_set_current(th);
