@@ -284,7 +284,7 @@ RSpec.describe "bundle lock" do
 
     simulate_platform(mingw) { bundle! :lock }
 
-    expect(the_bundle.lockfile).to read_as(strip_whitespace(<<-G))
+    lockfile_should_be <<-G
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -309,7 +309,7 @@ RSpec.describe "bundle lock" do
 
     simulate_platform(rb) { bundle! :lock }
 
-    expect(the_bundle.lockfile).to read_as(strip_whitespace(<<-G))
+    lockfile_should_be <<-G
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
