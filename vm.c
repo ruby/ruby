@@ -2514,7 +2514,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 #endif
 
     /* mark VM stack */
-    if (ec->vm_stack) {
+    if (ec->vm_stack && ec->cfp) {
 	VALUE *p = ec->vm_stack;
 	VALUE *sp = ec->cfp->sp;
 	rb_control_frame_t *cfp = ec->cfp;
