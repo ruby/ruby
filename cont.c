@@ -1530,19 +1530,7 @@ fiber_init(VALUE fibval, VALUE proc)
         vm_stack = ruby_xmalloc(fib_stack_bytes);
     }
     cont->free_vm_stack = 1;
-    rb_ec_set_vm_stack(sec, vm_stack, fib_stack_bytes / sizeof(VALUE));
-    sec->cfp = (void *)(sec->vm_stack + sec->vm_stack_size);
-
-    rb_vm_push_frame(sec,
-		     NULL,
-		     VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_CFRAME,
-		     Qnil, /* self */
-		     VM_BLOCK_HANDLER_NONE,
-		     0, /* specval */
-		     NULL, /* pc */
-		     sec->vm_stack, /* sp */
-		     0, /* local_size */
-		     0);
+    rb_ec_initialize_vm_stack(sec, vm_stack, fib_stack_bytes / sizeof(VALUE));
 
     sec->tag = NULL;
     sec->local_storage = NULL;

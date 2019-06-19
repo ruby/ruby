@@ -728,16 +728,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     }
 
     vm_stack = alloca(size * sizeof(VALUE));
-    rb_ec_set_vm_stack(th->ec, vm_stack, size);
-    th->ec->cfp = (void *)(th->ec->vm_stack + th->ec->vm_stack_size);
-
-    rb_vm_push_frame(th->ec,
-        0 /* dummy iseq */,
-        VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_CFRAME /* dummy frame */,
-        Qnil /* dummy self */, VM_BLOCK_HANDLER_NONE /* dummy block ptr */,
-        0 /* dummy cref/me */,
-        0 /* dummy pc */, th->ec->vm_stack, 0, 0
-    );
+    rb_ec_initialize_vm_stack(th->ec, vm_stack, size);
 
     ruby_thread_set_native(th);
 
