@@ -1,5 +1,27 @@
-# Thread and Fiber
-
+show_limit %q{
+  threads = []
+  begin
+    threads << Thread.new{sleep}
+    
+    raise Exception, "skipping" if threads.count >= 10_000
+  rescue Exception => error
+    puts "Thread count: #{threads.count} (#{error})"
+    break
+  end while true
+}
+show_limit %q{
+  fibers = []
+  begin
+    fiber = Fiber.new{Fiber.yield}
+    fiber.resume
+    fibers << fiber
+    
+    raise Exception, "skipping" if fibers.count >= 10_000
+  rescue Exception => error
+    puts "Fiber count: #{fibers.count} (#{error})"
+    break
+  end while true
+}
 assert_equal %q{ok}, %q{
   Thread.new{
   }.join
