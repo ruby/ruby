@@ -892,7 +892,7 @@ module Bundler
         next if !remote && !dep.current_platform?
         platforms = dep.gem_platforms(sorted_platforms)
         if platforms.empty? && !Bundler.settings[:disable_platform_warnings]
-          mapped_platforms = dep.platforms.map {|p| Dependency::PLATFORM_MAP[p] }
+          mapped_platforms = dep.expanded_platforms
           Bundler.ui.warn \
             "The dependency #{dep} will be unused by any of the platforms Bundler is installing for. " \
             "Bundler is installing for #{@platforms.join ", "} but the dependency " \
