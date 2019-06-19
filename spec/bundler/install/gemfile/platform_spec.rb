@@ -406,25 +406,6 @@ RSpec.describe "bundle install with platform conditionals" do
          #{Bundler::VERSION}
     L
   end
-
-  context "when disable_platform_warnings is true" do
-    before { bundle! "config set disable_platform_warnings true" }
-
-    it "does not print the warning when a dependency is unused on any platform" do
-      simulate_platform "ruby"
-      simulate_ruby_engine "ruby"
-
-      gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-
-        gem "rack", :platform => [:mingw, :mswin, :x64_mingw, :jruby]
-      G
-
-      bundle! "install"
-
-      expect(out).not_to match(/The dependency (.*) will be unused/)
-    end
-  end
 end
 
 RSpec.describe "when a gem has no architecture" do
