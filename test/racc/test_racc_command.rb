@@ -164,13 +164,13 @@ module Racc
     # .y files from `parser` gem
 
     def test_ruby18
-      assert_compile 'ruby18.y'
+      assert_compile 'ruby18.y', [], timeout: 60
       assert_debugfile 'ruby18.y', []
       # assert_output_unchanged 'ruby18.y'
     end
 
     def test_ruby22
-      assert_compile 'ruby22.y'
+      assert_compile 'ruby22.y', [], timeout: 60
       assert_debugfile 'ruby22.y', []
       # assert_output_unchanged 'ruby22.y'
     end
@@ -186,7 +186,7 @@ module Racc
     # .y file from opal gem
 
     def test_opal
-      assert_compile 'opal.y'
+      assert_compile 'opal.y', [], timeout: 60
       assert_debugfile 'opal.y', []
       # assert_output_unchanged 'opal.y'
     end

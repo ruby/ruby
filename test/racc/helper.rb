@@ -42,7 +42,7 @@ module Racc
       end
     end
 
-    def assert_compile(asset, args = [])
+    def assert_compile(asset, args = [], **opt)
       file = File.basename(asset, '.y')
       args = ([args].flatten) + [
         "#{ASSET_DIR}/#{file}.y",
@@ -50,7 +50,7 @@ module Racc
         "-O#{OUT_DIR}/#{file}",
         "-o#{TAB_DIR}/#{file}",
       ]
-      racc *args
+      racc *args, **opt
     end
 
     def assert_debugfile(asset, ok)
@@ -91,12 +91,12 @@ module Racc
         "expectation. Try compiling it and diff with test/regress/#{file}.")
     end
 
-    def racc(*arg)
-      ruby "-S", RACC, *arg
+    def racc(*arg, **opt)
+      ruby "-S", RACC, *arg, **opt
     end
 
-    def ruby(*arg)
-      assert_ruby_status(["-C", TEMP_DIR, *arg])
+    def ruby(*arg, **opt)
+      assert_ruby_status(["-C", TEMP_DIR, *arg], **opt)
     end
   end
 end
