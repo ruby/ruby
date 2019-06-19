@@ -2438,42 +2438,6 @@ vm_init2(rb_vm_t *vm)
     vm_default_params_setup(vm);
 }
 
-/* Thread */
-
-#define USE_THREAD_DATA_RECYCLE 1
-
-#if USE_THREAD_DATA_RECYCLE
-#define RECYCLE_MAX 64
-static VALUE *thread_recycle_stack_slot[RECYCLE_MAX];
-static int thread_recycle_stack_count = 0;
-#endif /* USE_THREAD_DATA_RECYCLE */
-
-VALUE *
-rb_thread_recycle_stack(size_t size)
-{
-#if USE_THREAD_DATA_RECYCLE
-    if (thread_recycle_stack_count > 0) {
-	/* TODO: check stack size if stack sizes are variable */
-	return thread_recycle_stack_slot[--thread_recycle_stack_count];
-    }
-#endif /* USE_THREAD_DATA_RECYCLE */
-    return ALLOC_N(VALUE, size);
-}
-
-void
-rb_thread_recycle_stack_release(VALUE *stack)
-{
-    VM_ASSERT(stack != NULL);
-
-#if USE_THREAD_DATA_RECYCLE
-    if (thread_recycle_stack_count < RECYCLE_MAX) {
-	thread_recycle_stack_slot[thread_recycle_stack_count++] = stack;
-	return;
-    }
-#endif
-    ruby_xfree(stack);
-}
-
 void
 rb_execution_context_update(const rb_execution_context_t *ec)
 {
