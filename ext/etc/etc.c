@@ -754,9 +754,6 @@ etc_uname(VALUE obj)
 # ifndef PROCESSOR_ARCHITECTURE_AMD64
 #   define PROCESSOR_ARCHITECTURE_AMD64 9
 # endif
-# ifndef PROCESSOR_ARCHITECTURE_IA64
-#   define PROCESSOR_ARCHITECTURE_IA64 6
-# endif
 # ifndef PROCESSOR_ARCHITECTURE_INTEL
 #   define PROCESSOR_ARCHITECTURE_INTEL 0
 # endif
@@ -767,9 +764,6 @@ etc_uname(VALUE obj)
 	break;
       case PROCESSOR_ARCHITECTURE_ARM:
 	mach = "ARM";
-	break;
-      case PROCESSOR_ARCHITECTURE_IA64:
-	mach = "IA64";
 	break;
       case PROCESSOR_ARCHITECTURE_INTEL:
 	mach = "x86";
