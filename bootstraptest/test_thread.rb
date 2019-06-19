@@ -2,7 +2,7 @@ show_limit %q{
   threads = []
   begin
     threads << Thread.new{sleep}
-    
+
     raise Exception, "skipping" if threads.count >= 10_000
   rescue Exception => error
     puts "Thread count: #{threads.count} (#{error})"
@@ -15,7 +15,7 @@ show_limit %q{
     fiber = Fiber.new{Fiber.yield}
     fiber.resume
     fibers << fiber
-    
+
     raise Exception, "skipping" if fibers.count >= 10_000
   rescue Exception => error
     puts "Fiber count: #{fibers.count} (#{error})"

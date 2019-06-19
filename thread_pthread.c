@@ -1157,7 +1157,7 @@ native_thread_create(rb_thread_t *th)
     }
     else {
 	pthread_attr_t attr;
-	const size_t stack_size = th->vm->default_params.thread_machine_stack_size + th->vm->default_params.thread_vm_stack_size;
+        const size_t stack_size = th->vm->default_params.thread_machine_stack_size + th->vm->default_params.thread_vm_stack_size;
 	const size_t space = space_size(stack_size);
 
         th->ec->machine.stack_maxsize = stack_size - space;
