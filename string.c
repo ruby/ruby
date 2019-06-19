@@ -2658,6 +2658,9 @@ str_uplus(VALUE str)
 static VALUE
 str_uminus(VALUE str)
 {
+    if (!BARE_STRING_P(str) && !rb_obj_frozen_p(str)) {
+        str = rb_str_dup(str);
+    }
     return rb_fstring(str);
 }
 

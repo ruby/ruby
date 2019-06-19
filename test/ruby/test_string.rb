@@ -3175,6 +3175,22 @@ CODE
     assert_same(str, -bar, "uminus deduplicates [Feature #13077]")
   end
 
+  def test_uminus_no_freeze_not_bare
+    str = @cls.new("foo")
+    -str
+    assert_equal(false, str.frozen?)
+
+    str = @cls.new("foo")
+    str.instance_variable_set(:@iv, 1)
+    -str
+    assert_equal(false, str.frozen?)
+
+    str = @cls.new("foo")
+    str.taint
+    -str
+    assert_equal(false, str.frozen?)
+  end
+
   def test_ord
     assert_equal(97, "a".ord)
     assert_equal(97, "abc".ord)
