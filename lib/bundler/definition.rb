@@ -113,7 +113,7 @@ module Bundler
       end
       @unlocking ||= @unlock[:ruby] ||= (!@locked_ruby_version ^ !@ruby_version)
 
-      add_current_platform unless Bundler.frozen_bundle?
+      add_platforms unless Bundler.frozen_bundle?
 
       converge_path_sources_to_gemspec_sources
       @path_changes = converge_paths
@@ -542,6 +542,12 @@ module Bundler
     end
 
   private
+
+    def add_platforms
+      (@dependencies.flat_map(&:expanded_platforms) + current_platforms).uniq.each do |platform|
+        add_platform(platform)
+      end
+    end
 
     def current_platforms
       current_platform = Bundler.local_platform
