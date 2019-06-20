@@ -187,6 +187,23 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
   end
 
+  def test_path_taint
+    [regular_file, utf8_file].each do |file|
+      file.untaint
+      assert_equal(false, File.open(file) {|f| f.path}.tainted?)
+      assert_equal(true, File.open(file.dup.taint) {|f| f.path}.tainted?)
+      o = Object.new
+      class << o; self; end.class_eval do
+        define_method(:to_path) { file }
+      end
+      assert_equal(false, File.open(o) {|f| f.path}.tainted?)
+      class << o; self; end.class_eval do
+        define_method(:to_path) { file.dup.taint }
+      end
+      assert_equal(true, File.open(o) {|f| f.path}.tainted?)
+    end
+  end
+
   def assert_integer(n)
     assert_kind_of(Integer, n)
   end
