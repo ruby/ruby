@@ -784,27 +784,32 @@ class Reline::LineEditor
       @completion_state = CompletionState::NORMAL
     end
     if @is_multiline and @auto_indent_proc
-      if @previous_line_index
-        new_lines = whole_lines(index: @previous_line_index, line: @line)
-      else
-        new_lines = whole_lines
-      end
-      new_indent = @auto_indent_proc.(new_lines, @line_index, @byte_pointer, @check_new_auto_indent)
-      if new_indent
-        md = @buffer_of_lines[@line_index].match(/\A */)
-        prev_indent = md[0].count(' ')
-        if @check_new_auto_indent
-          @buffer_of_lines[@line_index] = ' ' * new_indent + @buffer_of_lines[@line_index].gsub(/\A */, '')
-          @cursor = new_indent
-          @byte_pointer = new_indent
-        else
-          @line = ' ' * new_indent + @line.gsub(/\A */, '')
-          @cursor -= prev_indent - new_indent
-          @byte_pointer -= prev_indent - new_indent
-        end
-      end
-      @check_new_auto_indent = false
+      process_auto_indent
     end
+  end
+
+  private def process_auto_indent
+    return if not @check_new_auto_indent and @previous_line_index # move cursor up or down
+    if @previous_line_index
+      new_lines = whole_lines(index: @previous_line_index, line: @line)
+    else
+      new_lines = whole_lines
+    end
+    new_indent = @auto_indent_proc.(new_lines, @line_index, @byte_pointer, @check_new_auto_indent)
+    if new_indent
+      md = @buffer_of_lines[@line_index].match(/\A */)
+      prev_indent = md[0].count(' ')
+      if @check_new_auto_indent
+        @buffer_of_lines[@line_index] = ' ' * new_indent + @buffer_of_lines[@line_index].gsub(/\A */, '')
+        @cursor = new_indent
+        @byte_pointer = new_indent
+      else
+        @line = ' ' * new_indent + @line.gsub(/\A */, '')
+        @cursor -= prev_indent - new_indent
+        @byte_pointer -= prev_indent - new_indent
+      end
+    end
+    @check_new_auto_indent = false
   end
 
   def retrieve_completion_block
