@@ -808,8 +808,8 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     }
 
     thread_cleanup_func(th, FALSE);
-    VM_ASSERT(this->ec->vm_stack == NULL);
-    VM_ASSERT(this->ec->cfp == NULL);
+    VM_ASSERT(th->ec->vm_stack == NULL);
+    VM_ASSERT(th->ec->cfp == NULL);
 
     gvl_release(th->vm);
 
