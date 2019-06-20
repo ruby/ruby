@@ -370,7 +370,7 @@ module URI
     if str.encoding != Encoding::ASCII_8BIT
       if enc && enc != Encoding::ASCII_8BIT
         str.encode!(Encoding::UTF_8, invalid: :replace, undef: :replace)
-        str.encode!(enc, fallback: ->(x){"&#{x.ord};"})
+        str.encode!(enc, fallback: ->(x){"&##{x.ord};"})
       end
       str.force_encoding(Encoding::ASCII_8BIT)
     end
