@@ -11,7 +11,6 @@ module Bundler
     def run
       Bundler.ui.level = "error" if options[:quiet]
       Bundler.settings.set_command_option_if_given :path, options[:path]
-      Bundler.settings.set_command_option_if_given :cache_all_platforms, options["all-platforms"]
       Bundler.settings.set_command_option_if_given :cache_path, options["cache-path"]
 
       setup_cache_all
@@ -19,7 +18,10 @@ module Bundler
 
       # TODO: move cache contents here now that all bundles are locked
       custom_path = Bundler.settings[:path] if options[:path]
-      Bundler.load.cache(custom_path)
+
+      Bundler.settings.temporary(:cache_all_platforms => options["all-platforms"]) do
+        Bundler.load.cache(custom_path)
+      end
     end
 
   private
