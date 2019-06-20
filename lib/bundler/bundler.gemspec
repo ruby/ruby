@@ -38,7 +38,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rake",       "~> 12.0"
   s.add_development_dependency "ronn",       "~> 0.7.3"
   s.add_development_dependency "rspec",      "~> 3.6"
-  s.add_development_dependency "rubocop",    "= 0.68.1"
+  s.add_development_dependency "rubocop",    "= 0.71.0"
   s.add_development_dependency "rubocop-performance", "~> 1.1"
 
   # s.files = Dir.glob("{lib,exe}/**/*", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
