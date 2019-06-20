@@ -143,7 +143,7 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "use BUNDLE_GEMFILE gemfile for binstub" do
-    # context with bin/bunlder w/ default Gemfile
+    # context with bin/bundler w/ default Gemfile
     bundle! "binstubs bundler"
 
     # generate other Gemfile with executable gem
