@@ -178,7 +178,7 @@ Net::IMAP::
 
 Racc::
 
-  * Merge 1.4.15 from upstreasm repository and added cli of racc.
+  * Merge 1.4.15 from upstream repository and added cli of racc.
 
 RSS::
 
