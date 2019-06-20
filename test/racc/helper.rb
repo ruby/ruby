@@ -1,4 +1,7 @@
+verbose = $VERBOSE
 $VERBOSE = true
+begin
+
 require 'minitest/autorun'
 require 'racc/static'
 require 'fileutils'
@@ -99,4 +102,8 @@ module Racc
       assert_ruby_status(["-C", TEMP_DIR, *arg], **opt)
     end
   end
+end
+
+ensure
+$VERBOSE = verbose
 end
