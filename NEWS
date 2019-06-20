@@ -176,6 +176,10 @@ Net::IMAP::
 
   * Add Server Name Indication (SNI) support.  [Feature #15594]
 
+Racc::
+
+  * Merge 1.4.15 from upstreasm repository and added cli of racc.
+
 RSS::
 
   * Upgrade to RSS 0.2.8.
