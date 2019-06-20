@@ -50,7 +50,7 @@ module Racc
         "-O#{OUT_DIR}/#{file}",
         "-o#{TAB_DIR}/#{file}",
       ]
-      racc *args, **opt
+      racc(*args, **opt)
     end
 
     def assert_debugfile(asset, ok)
