@@ -213,7 +213,9 @@ def sync_default_gems(gem)
   when "racc"
     `rm -rf lib/racc* ext/racc test/racc`
     `cp -rf ../racc/lib/racc* lib`
-    `cp -rf ../racc/ext/racc* ext`
+    `mkdir -p ext/racc/cparse`
+    `cp -rf ../racc/ext/racc/* ext/racc/cparse`
+    `rm -rf ext/racc/cparse/MANIFEST ext/racc/cparse/com`
     `cp -rf ../racc/test test/racc`
   when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "cmath", "mutex_m", "sync"
     sync_lib gem
