@@ -8,7 +8,7 @@
 # see the file "COPYING".
 
 module Racc
-  VERSION   = '1.4.15'
+  VERSION   = '1.4.16.pre.1'
   Version = VERSION
   Copyright = 'Copyright (c) 1999-2006 Minero Aoki'
 end
