@@ -1581,6 +1581,17 @@ rb_threadptr_root_fiber_release(rb_thread_t *th)
     }
 }
 
+void
+rb_threadptr_root_fiber_terminate(rb_thread_t *th)
+{
+    rb_fiber_t *fiber = th->ec->fiber_ptr;
+
+    fiber->status = FIBER_TERMINATED;
+
+    // The vm_stack is `alloca`ed on the thread stack, so it's gone too:
+    rb_ec_clear_vm_stack(th->ec);
+}
+
 static inline rb_fiber_t*
 fiber_current(void)
 {
