@@ -56,7 +56,7 @@ lcov*.info
 /*.pc
 /*.rc
 /*_prelude.c
-/build*
+/build*/
 /COPYING.LIB
 /ChangeLog
 /Doxyfile
