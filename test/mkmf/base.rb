@@ -130,8 +130,10 @@ module TestMkmf::Base
   def mkmf(*args, &block)
     @stdout.clear
     stdout, @stdout.origin, $stdout = @stdout.origin, $stdout, @stdout
+    verbose, $VERBOSE = $VERBOSE, false
     @mkmfobj.instance_eval(*args, &block)
   ensure
+    $VERBOSE = verbose
     $stdout, @stdout.origin = @stdout.origin, stdout
   end
 
