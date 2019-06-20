@@ -907,6 +907,10 @@ void rb_ec_set_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size);
 // @param size the size of the stack, as in `VALUE stack[size]`.
 void rb_ec_initialize_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size);
 
+// Clear (set to `NULL`) the vm_stack pointer and frame pointer in the execution context.
+// @param ec the execution context to update.
+void rb_ec_clear_vm_stack(rb_execution_context_t *ec);
+
 typedef struct rb_thread_struct {
     struct list_node vmlt_node;
     VALUE self;

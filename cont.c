@@ -268,13 +268,6 @@ fiber_status_set(rb_fiber_t *fib, enum fiber_status s)
     fib->status = s;
 }
 
-void
-rb_ec_set_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size)
-{
-    ec->vm_stack = stack;
-    ec->vm_stack_size = size;
-}
-
 static inline void
 ec_switch(rb_thread_t *th, rb_fiber_t *fib)
 {
@@ -705,7 +698,7 @@ cont_capture(volatile int *volatile stat)
     cont->saved_vm_stack.ptr = ALLOC_N(VALUE, ec->vm_stack_size);
     MEMCPY(cont->saved_vm_stack.ptr, ec->vm_stack, VALUE, ec->vm_stack_size);
 #endif
-    rb_ec_set_vm_stack(&cont->saved_ec, NULL, 0);
+    rb_ec_clear_vm_stack(&cont->saved_ec);
     cont_save_machine_stack(th, cont);
 
     /* backup ensure_list to array for search in another context */
@@ -1793,8 +1786,7 @@ rb_fiber_close(rb_fiber_t *fib)
         }
     }
 
-    rb_ec_set_vm_stack(ec, NULL, 0);
-    ec->cfp = NULL;
+    rb_ec_clear_vm_stack(ec);
 
 #if !FIBER_USE_NATIVE
     /* should not mark machine stack any more */
