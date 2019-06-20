@@ -41,6 +41,11 @@ module BasetestReadline
       assert_equal("> ", stdout.read(2))
       assert_equal(1, Readline::HISTORY.length)
       assert_equal("hello", Readline::HISTORY[0])
+
+      # Work around lack of SecurityError in Reline
+      # test mode with tainted prompt
+      return if kind_of?(TestRelineAsReadline)
+
       Thread.start {
         $SAFE = 1
         assert_raise(SecurityError) do
