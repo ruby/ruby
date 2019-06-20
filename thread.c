@@ -598,7 +598,7 @@ thread_cleanup_func_before_exec(void *th_ptr)
     th->status = THREAD_KILLED;
     // The thread stack doesn't exist in the forked process:
     th->ec->machine.stack_start = th->ec->machine.stack_end = NULL;
-    
+
     // The vm_stack is `alloca`ed on the thread stack, so it's gone too:
     rb_ec_clear_vm_stack(th->ec);
 }
