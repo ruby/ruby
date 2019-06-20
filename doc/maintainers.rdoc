@@ -206,6 +206,9 @@ Zachary Scott (zzak)
   Marc-Andre Lafortune (marcandre)
 [lib/prime.rb]
   Yuki Sonoda (yugui)
+[lib/racc.rb, lib/racc/*]
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA(hsbt)
+  https://github.com/ruby/racc
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/rdoc
