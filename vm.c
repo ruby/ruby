@@ -2714,7 +2714,7 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
     rb_ec_set_vm_stack(ec, NULL, 0);
 
     // Avoid dangling pointers:
-    ec->cfp = NULL;
+    // ec->cfp = NULL;
 }
 
 static void
