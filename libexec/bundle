@@ -7,7 +7,7 @@ Signal.trap("INT") do
   exit 1
 end
 
-require_relative "../lib/bundler"
+require "bundler"
 # Check if an older version of bundler is installed
 $LOAD_PATH.each do |path|
   next unless path =~ %r{/bundler-0\.(\d+)} && $1.to_i < 9
@@ -18,9 +18,9 @@ $LOAD_PATH.each do |path|
   abort(err)
 end
 
-require_relative "../lib/bundler/friendly_errors"
+require "bundler/friendly_errors"
 Bundler.with_friendly_errors do
-  require_relative "../lib/bundler/cli"
+  require "bundler/cli"
 
   # Allow any command to use --help flag to show help for that command
   help_flags = %w[--help -h]
