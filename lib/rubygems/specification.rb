@@ -732,6 +732,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Formerly used to set rubyforge project.
 
   attr_writer :rubyforge_project
+  deprecate :rubyforge_project=, :none,       2019, 12
 
   ##
   # The Gem::Specification version of this gemspec.
