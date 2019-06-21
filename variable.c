@@ -2342,7 +2342,7 @@ rb_autoload_at_p(VALUE mod, ID id, int recur)
     struct autoload_data_i *ele;
 
     while (!autoload_defined_p(mod, id)) {
-	if (!recur) return Qnil;
+        if (!recur) return Qnil;
 	mod = RCLASS_SUPER(mod);
 	if (!mod) return Qnil;
     }
