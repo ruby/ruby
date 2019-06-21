@@ -92,9 +92,9 @@ class RubyLex
           last_line = lines[line_index]&.byteslice(0, byte_pointer)
           code += last_line if last_line
           @tokens = Ripper.lex(code)
-          indent, close_token = process_nesting_level(check_closing: true)
-          if close_token
-            indent * 2
+          indent, corresponding_token_depth = process_nesting_level(check_closing: true)
+          if corresponding_token_depth
+            corresponding_token_depth
           else
             nil
           end
@@ -290,32 +290,48 @@ class RubyLex
   end
 
   def process_nesting_level(check_closing: false)
-    close_token = false
+    corresponding_token_depth = nil
+    is_first_spaces_of_line = true
+    spaces_of_nest = []
+    spaces_at_line_head = 0
     indent = @tokens.inject(0) { |indent, t|
-      close_token = false
+      corresponding_token_depth = nil
+      case t[1]
+      when :on_ignored_nl, :on_nl
+        spaces_at_line_head = nil
+        is_first_spaces_of_line = true
+      when :on_sp
+        spaces_at_line_head = t[2].count(' ') if is_first_spaces_of_line
+        is_first_spaces_of_line = false
+      else
+        is_first_spaces_of_line = false
+      end
       case t[1]
       when :on_lbracket, :on_lbrace, :on_lparen
         indent += 1
+        spaces_of_nest.push(spaces_at_line_head)
       when :on_rbracket, :on_rbrace, :on_rparen
         indent -= 1
-        close_token = true
+        corresponding_token_depth = spaces_of_nest.pop
       when :on_kw
         case t[2]
         when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
           indent += 1
+          spaces_of_nest.push(spaces_at_line_head)
         when 'if', 'unless', 'while', 'until'
           # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
           indent += 1 unless t[3].allbits?(Ripper::EXPR_LABEL)
+          spaces_of_nest.push(spaces_at_line_head)
         when 'end'
           indent -= 1
-          close_token = true
+          corresponding_token_depth = spaces_of_nest.pop
         end
       end
       # percent literals are not indented
       indent
     }
     if check_closing
-      [indent, close_token]
+      [indent, corresponding_token_depth]
     else
       indent
     end
