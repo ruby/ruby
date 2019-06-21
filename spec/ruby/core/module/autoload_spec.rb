@@ -19,13 +19,13 @@ describe "Module#autoload?" do
 
   ruby_version_is "2.7" do
     it "returns nil if an ancestor defined that autoload but recursion is disabled" do
-      ModuleSpecs::Autoload::Parent.autoload :AnotherAutoload, "another_autoload.rb"
-      ModuleSpecs::Autoload::Child.autoload?(:AnotherAutoload, false).should be_nil
+      ModuleSpecs::Autoload::Parent.autoload :InheritedAutoload, "inherited_autoload.rb"
+      ModuleSpecs::Autoload::Child.autoload?(:InheritedAutoload, false).should be_nil
     end
 
     it "returns the name of the file that will be loaded if recursion is disabled but the autoload is defined on the classs itself" do
-      ModuleSpecs::Autoload::Child.autoload :AnotherAutoload, "another_autoload.rb"
-      ModuleSpecs::Autoload::Child.autoload?(:AnotherAutoload, false).should == "another_autoload.rb"
+      ModuleSpecs::Autoload::Child.autoload :ChildAutoload, "child_autoload.rb"
+      ModuleSpecs::Autoload::Child.autoload?(:ChildAutoload, false).should == "child_autoload.rb"
     end
   end
 end
