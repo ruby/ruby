@@ -2060,6 +2060,37 @@ lazy_filter_map(VALUE obj)
 }
 
 static struct MEMO *
+lazy_filter_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+{
+    VALUE value = lazyenum_yield_values(proc_entry, result);
+    if (!RTEST(value)) return 0;
+    LAZY_MEMO_SET_VALUE(result, value);
+    LAZY_MEMO_RESET_PACKED(result);
+    return result;
+}
+
+static const lazyenum_funcs lazy_filter_map_funcs = {
+    lazy_filter_map_proc, 0,
+};
+
+/*
+ *  call-seq:
+ *     lazy.filter_map { |obj| block } -> lazy_enumerator
+ *
+ *  Like Enumerable#filter_map, but chains operation to be lazy-evaluated.
+ */
+
+static VALUE
+lazy_filter_map(VALUE obj)
+{
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eArgError, "tried to call lazy filter_map without a block");
+    }
+
+    return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_filter_map_funcs);
+}
+
+static struct MEMO *
 lazy_reject_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
     VALUE chain = lazyenum_yield(proc_entry, result);

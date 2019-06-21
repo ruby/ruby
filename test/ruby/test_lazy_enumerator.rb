@@ -116,6 +116,14 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(expected, a.lazy.map {|*args| args}.map {|*args| args}.to_a, bug)
   end
 
+  def test_filter_map
+    a = Step.new(1..3)
+    assert_equal(2, a.filter_map {|x| x.odd? && x * 2}.first)
+    assert_equal(3, a.current)
+    assert_equal(2, a.lazy.filter_map {|x| x.odd? && x * 2}.first)
+    assert_equal(1, a.current)
+  end
+
   def test_flat_map
     a = Step.new(1..3)
     assert_equal(2, a.flat_map {|x| [x * 2]}.first)
