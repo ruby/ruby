@@ -2026,6 +2026,40 @@ lazy_select(VALUE obj)
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_select_funcs);
 }
 
+static VALUE
+lazy_filter_map_proc(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
+{
+    VALUE result = rb_yield_values2(argc - 1, &argv[1]);
+    if (RTEST(result)) {
+        rb_funcall(argv[0], idLTLT, 1, result);
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.filter_map { |obj| block } -> an_enumerator
+ *     enum.filter_map                 -> an_enumerator
+ *
+ *  Returns an enumerator which will return a new array containing the
+ *  truthy results (everything except +false+ or +nil+) of running the
+ *  +block+ for every element in +enum+.
+ *
+ *     (1..).lazy.filter_map { |i| i * 2 if i.even? }.take(5) #=> [4, 8, 12, 16, 20]
+ *
+ */
+static VALUE
+lazy_filter_map(VALUE obj)
+{
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eArgError, "tried to call lazy filter_map without a block");
+    }
+
+    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
+					 lazy_filter_map_proc, 0),
+			   Qnil, 0);
+}
+
 static struct MEMO *
 lazy_reject_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
@@ -3555,6 +3589,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "select", lazy_select, 0);
     rb_define_method(rb_cLazy, "find_all", lazy_select, 0);
     rb_define_method(rb_cLazy, "filter", lazy_select, 0);
+    rb_define_method(rb_cLazy, "filter_map", lazy_filter_map, 0);
     rb_define_method(rb_cLazy, "reject", lazy_reject, 0);
     rb_define_method(rb_cLazy, "grep", lazy_grep, 1);
     rb_define_method(rb_cLazy, "grep_v", lazy_grep_v, 1);

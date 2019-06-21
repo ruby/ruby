@@ -578,4 +578,13 @@ EOS
     assert_equal([1, 2, 3, 4, 5, 10], u.first(6))
     assert_equal([1, 2, 3, 4, 5, 10], u.first(6))
   end
+
+  def test_filter_map
+    e = (1..Float::INFINITY).lazy.filter_map do |x|
+      raise "too big" if x > 10000
+      (x**2) % 10 if x.even?
+    end
+    assert_equal([4, 6, 6, 4, 0, 4], e.first(6))
+    assert_equal([4, 6, 6, 4, 0, 4], e.first(6))
+  end
 end
