@@ -2044,7 +2044,7 @@ lazy_filter_map_proc(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
  *  truthy results (everything except +false+ or +nil+) of running the
  *  +block+ for every element in +lazy+.
  *
- *     (1..).lazy.filter_map { |i| i * 2 if i.even? }.take(5) #=> [4, 8, 12, 16, 20]
+ *     (1..).lazy.filter_map { |i| i * 2 if i.even? }.first(5) #=> [4, 8, 12, 16, 20]
  *
  */
 static VALUE
