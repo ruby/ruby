@@ -75,12 +75,7 @@ vcs = nil
           "#define RUBY_LAST_COMMIT_TITLE #{title.dump}"
         end,
         if modified
-          modified.utc.strftime(<<TIME)
-#if defined(RUBY_PATCHLEVEL) && (RUBY_PATCHLEVEL == -1)
-#undef RUBY_RELEASE_DATE
-#define RUBY_RELEASE_DATE "%FT%TZ"
-#endif
-TIME
+          modified.utc.strftime('#define RUBY_RELEASE_DATETIME "%FT%TZ"')
         end,
       ].compact
     }
