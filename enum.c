@@ -2398,7 +2398,7 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 
     memo = MEMO_NEW(0, 0, 0);
     rb_block_call(obj, id_each, argc, argv, each_with_index_i, (VALUE)memo);
-    return obj;
+    return Qnil;
 }
 
 
