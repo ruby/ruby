@@ -2084,7 +2084,7 @@ static VALUE
 lazy_filter_map(VALUE obj)
 {
     if (!rb_block_given_p()) {
-	rb_raise(rb_eArgError, "tried to call lazy filter_map without a block");
+        rb_raise(rb_eArgError, "tried to call lazy filter_map without a block");
     }
 
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_filter_map_funcs);
