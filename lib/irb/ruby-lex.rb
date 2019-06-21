@@ -292,6 +292,7 @@ class RubyLex
   def process_nesting_level(check_closing: false)
     corresponding_token_depth = nil
     is_first_spaces_of_line = true
+    is_first_printable_of_line = true
     spaces_of_nest = []
     spaces_at_line_head = 0
     indent = @tokens.inject(0) { |indent, t|
@@ -300,11 +301,12 @@ class RubyLex
       when :on_ignored_nl, :on_nl
         spaces_at_line_head = nil
         is_first_spaces_of_line = true
+        is_first_printable_of_line = true
+        next indent
       when :on_sp
         spaces_at_line_head = t[2].count(' ') if is_first_spaces_of_line
         is_first_spaces_of_line = false
-      else
-        is_first_spaces_of_line = false
+        next indent
       end
       case t[1]
       when :on_lbracket, :on_lbrace, :on_lparen
@@ -312,7 +314,11 @@ class RubyLex
         spaces_of_nest.push(spaces_at_line_head)
       when :on_rbracket, :on_rbrace, :on_rparen
         indent -= 1
-        corresponding_token_depth = spaces_of_nest.pop
+        if is_first_printable_of_line
+          corresponding_token_depth = spaces_of_nest.pop
+        else
+          corresponding_token_depth = nil
+        end
       when :on_kw
         case t[2]
         when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
@@ -324,9 +330,15 @@ class RubyLex
           spaces_of_nest.push(spaces_at_line_head)
         when 'end'
           indent -= 1
-          corresponding_token_depth = spaces_of_nest.pop
+          if is_first_printable_of_line
+            corresponding_token_depth = spaces_of_nest.pop
+          else
+            corresponding_token_depth = nil
+          end
         end
       end
+      is_first_spaces_of_line = false
+      is_first_printable_of_line = false
       # percent literals are not indented
       indent
     }
