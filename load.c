@@ -1169,9 +1169,8 @@ rb_mod_autoload(VALUE mod, VALUE sym, VALUE file)
 static VALUE
 rb_mod_autoload_p(int argc, VALUE *argv, VALUE mod)
 {
-    rb_check_arity(argc, 1, 2);
+    int recur = (rb_check_arity(argc, 1, 2) == 1) ? TRUE : RTEST(argv[1]);
     VALUE sym = argv[0];
-    VALUE recur = (argc == 1) ? Qtrue : argv[1];
 
     ID id = rb_check_id(&sym);
     if (!id) {
