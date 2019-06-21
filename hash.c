@@ -5786,22 +5786,28 @@ env_update_i(VALUE key, VALUE val)
 
 /*
  * call-seq:
- *   ENV.update(hash)                                        -> Hash
- *   ENV.update(hash) { |name, old_value, new_value| block } -> Hash
- *   ENV.merge!(hash)                                        -> Hash
- *   ENV.merge!(hash) { |name, old_value, new_value| block } -> Hash
+ *   ENV.update(hash1, hash2, ...)                                     -> Hash
+ *   ENV.update(hash1, hash2, ...) { |name, old_value, new_value| block }
+ *                                                                     -> Hash
+ *   ENV.merge!(hash1, hash2, ...)                                     -> Hash
+ *   ENV.merge!(hash1, hash2, ...) { |name, old_value, new_value| block }
+ *                                                                     -> Hash
  *
- * Adds the contents of +hash+ to the environment variables.  If no block is
- * specified entries with duplicate keys are overwritten, otherwise the value
- * of each duplicate name is determined by calling the block with the key, its
- * value from the environment and its value from the hash.
+ * Adds the contents of given hashes to the environment variables. If no block
+ * is specified entries with duplicate keys are overwritten, otherwise the 
+ * value of each duplicate name is determined by calling the block with the 
+ * key, its value from the environment and its value from the hash.
  */
 static VALUE
-env_update(VALUE env, VALUE hash)
+env_update(int argc, VALUE *argv, VALUE env)
 {
-    if (env == hash) return env;
-    hash = to_hash(hash);
-    rb_hash_foreach(hash, env_update_i, 0);
+    int i;
+
+    for (i = 0; i < argc; i++){
+       VALUE hash = to_hash(argv[i]);
+       rb_hash_foreach(hash, env_update_i, 0);
+    }
+
     return env;
 }
 
@@ -6060,8 +6066,8 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "shift", env_shift, 0);
     rb_define_singleton_method(envtbl, "invert", env_invert, 0);
     rb_define_singleton_method(envtbl, "replace", env_replace, 1);
-    rb_define_singleton_method(envtbl, "update", env_update, 1);
-    rb_define_singleton_method(envtbl, "merge!", env_update, 1);
+    rb_define_singleton_method(envtbl, "update", env_update, -1);
+    rb_define_singleton_method(envtbl, "merge!", env_update, -1);
     rb_define_singleton_method(envtbl, "inspect", env_inspect, 0);
     rb_define_singleton_method(envtbl, "rehash", env_none, 0);
     rb_define_singleton_method(envtbl, "to_a", env_to_a, 0);
