@@ -2094,7 +2094,7 @@ rb_ary_each(VALUE ary)
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	rb_yield(RARRAY_AREF(ary, i));
     }
-    return ary;
+    return Qnil;
 }
 
 /*
@@ -2124,7 +2124,7 @@ rb_ary_each_index(VALUE ary)
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	rb_yield(LONG2NUM(i));
     }
-    return ary;
+    return Qnil;
 }
 
 /*
