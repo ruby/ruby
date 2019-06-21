@@ -299,7 +299,7 @@ class RubyLex
       corresponding_token_depth = nil
       case t[1]
       when :on_ignored_nl, :on_nl
-        spaces_at_line_head = nil
+        spaces_at_line_head = 0
         is_first_spaces_of_line = true
         is_first_printable_of_line = true
         next indent
