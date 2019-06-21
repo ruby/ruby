@@ -5788,6 +5788,8 @@ env_update_i(VALUE key, VALUE val)
  * call-seq:
  *   ENV.update(hash)                                        -> Hash
  *   ENV.update(hash) { |name, old_value, new_value| block } -> Hash
+ *   ENV.merge!(hash)                                        -> Hash
+ *   ENV.merge!(hash) { |name, old_value, new_value| block } -> Hash
  *
  * Adds the contents of +hash+ to the environment variables.  If no block is
  * specified entries with duplicate keys are overwritten, otherwise the value
@@ -6059,6 +6061,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "invert", env_invert, 0);
     rb_define_singleton_method(envtbl, "replace", env_replace, 1);
     rb_define_singleton_method(envtbl, "update", env_update, 1);
+    rb_define_singleton_method(envtbl, "merge!", env_update, 1);
     rb_define_singleton_method(envtbl, "inspect", env_inspect, 0);
     rb_define_singleton_method(envtbl, "rehash", env_none, 0);
     rb_define_singleton_method(envtbl, "to_a", env_to_a, 0);
