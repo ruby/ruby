@@ -2052,12 +2052,12 @@ static VALUE
 lazy_filter_map(VALUE obj)
 {
     if (!rb_block_given_p()) {
-	rb_raise(rb_eArgError, "tried to call lazy filter_map without a block");
+        rb_raise(rb_eArgError, "tried to call lazy filter_map without a block");
     }
 
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 lazy_filter_map_proc, 0),
-			   Qnil, 0);
+                                         lazy_filter_map_proc, 0),
+                           Qnil, 0);
 }
 
 static struct MEMO *
