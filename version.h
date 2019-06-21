@@ -52,6 +52,9 @@
 #   define RUBY_BRANCH_NAME "trunk"
 #  endif
 #  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "RUBY_REVISION
+#  ifndef RUBY_RELEASE_DATETIME
+#   define RUBY_RELEASE_DATETIME RUBY_RELEASE_DATE
+#  endif
 # else
 #  define RUBY_REVISION_STR " revision "RUBY_REVISION
 # endif
@@ -63,7 +66,7 @@
 # define RUBY_DESCRIPTION_WITH(opt) \
     "ruby "RUBY_VERSION		    \
     RUBY_PATCHLEVEL_STR		    \
-    " ("RUBY_RELEASE_DATE	    \
+    " ("RUBY_RELEASE_DATETIME	    \
     RUBY_REVISION_STR")"opt" "	    \
     "["RUBY_PLATFORM"]"
 # define RUBY_COPYRIGHT		    \
