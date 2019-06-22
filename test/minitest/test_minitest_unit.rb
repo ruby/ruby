@@ -868,6 +868,13 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
     end
   end
 
+  def test_assert_equal_different_escaped_newline
+    msg = "--- expected\n+++ actual\n@@ -1,2 +1,2 @@\n \"xxx\n-a\\\\nb\"\n+a\\\\nc\"\n"
+    util_assert_triggered msg do
+      @tc.assert_equal "xxx\na\\nb", "xxx\na\\nc"
+    end
+  end
+
   def test_assert_in_delta
     @tc.assert_in_delta 0.0, 1.0 / 1000, 0.1
   end
