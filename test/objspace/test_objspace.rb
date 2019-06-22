@@ -112,7 +112,8 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_reachable_objects_from
-    assert_separately %w[--disable-gem -robjspace], "#{<<-"begin;"}\n#{<<-'end;'}"
+    opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
+    assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
     begin;
       assert_equal(nil, ObjectSpace.reachable_objects_from(nil))
       assert_equal([Array, 'a', 'b', 'c'], ObjectSpace.reachable_objects_from(['a', 'b', 'c']))
@@ -378,8 +379,9 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_dump_all
     entry = /"bytesize":11, "value":"TEST STRING", "encoding":"UTF-8", "file":"-", "line":4, "method":"dump_my_heap_please", "generation":/
+    opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
 
-    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}#{<<-'end;'}") do |output, error|
+    assert_in_out_err(opts, "#{<<-"begin;"}#{<<-'end;'}") do |output, error|
       begin;
         def dump_my_heap_please
           ObjectSpace.trace_object_allocations_start
