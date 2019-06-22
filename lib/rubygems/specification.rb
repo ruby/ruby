@@ -2303,7 +2303,6 @@ class Gem::Specification < Gem::BasicSpecification
     when Time               then obj.strftime('%Y-%m-%d').dump
     when Numeric            then obj.inspect
     when true, false, nil   then obj.inspect
-    when OpenSSL::PKey::RSA then obj.class
     when Gem::Platform      then "Gem::Platform.new(#{obj.to_a.inspect})"
     when Gem::Requirement   then
       list = obj.as_list
@@ -2462,9 +2461,8 @@ class Gem::Specification < Gem::BasicSpecification
     @@attributes.each do |attr_name|
       next if handled.include? attr_name
       current_value = self.send(attr_name)
-      if current_value != default_value(attr_name) or
-         self.class.required_attribute? attr_name
-        result << "  s.#{attr_name} = #{ruby_code current_value}"
+      if current_value != default_value(attr_name) || self.class.required_attribute?(attr_name)
+        result << "  s.#{attr_name} = #{ruby_code current_value}" unless current_value.is_a?(OpenSSL::PKey::RSA)
       end
     end
 
