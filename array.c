@@ -1805,6 +1805,9 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 	if (rb_equal(e, val)) {
 	    return LONG2NUM(i);
 	}
+        if (i > RARRAY_LEN(ary)) {
+            break;
+        }
     }
     return Qnil;
 }
