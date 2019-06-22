@@ -141,4 +141,10 @@ class TestWeakMap < Test::Unit::TestCase
     assert_equal(2, @wm.__send__(m))
   end
   alias test_length test_size
+
+  def test_frozen_object
+    o = Object.new.freeze
+    assert_nothing_raised(FrozenError) {@wm[o] = 'foo'}
+    assert_nothing_raised(FrozenError) {@wm['foo'] = o}
+  end
 end
