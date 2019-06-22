@@ -2461,13 +2461,12 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze]
   s.authors = ["A User".freeze]
-  s.date = "2019-05-30"
+  s.date = "#{Gem::Specification::TODAY.strftime "%Y-%m-%d"}"
   s.description = "This is a test description".freeze
   s.email = "example@example.com".freeze
   s.files = ["lib/code.rb".freeze]
   s.homepage = "http://example.com".freeze
   s.rubygems_version = "3.1.0.pre1".freeze
-  s.signing_key = OpenSSL::PKey::RSA
   s.summary = "this is a summary".freeze
 end
     SPEC
