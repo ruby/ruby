@@ -1,3 +1,5 @@
+# frozen-string-literal: true
+
 require "-test-/symbol"
 
 module Test_Symbol
