@@ -2733,17 +2733,17 @@ rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
     recur = (argc == 1) ? Qtrue : argv[1];
 
     if (SYMBOL_P(name)) {
-	if (!rb_is_const_sym(name)) goto wrong_name;
-	id = rb_check_id(&name);
-	if (!id) return Qnil;
-	return RTEST(recur) ? rb_const_source_location(mod, id) : rb_const_source_location_at(mod, id);
+        if (!rb_is_const_sym(name)) goto wrong_name;
+        id = rb_check_id(&name);
+        if (!id) return Qnil;
+        return RTEST(recur) ? rb_const_source_location(mod, id) : rb_const_source_location_at(mod, id);
     }
 
     path = StringValuePtr(name);
     enc = rb_enc_get(name);
 
     if (!rb_enc_asciicompat(enc)) {
-	rb_raise(rb_eArgError, "invalid class path encoding (non ASCII)");
+        rb_raise(rb_eArgError, "invalid class path encoding (non ASCII)");
     }
 
     pbeg = p = path;
@@ -2751,69 +2751,69 @@ rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
 
     if (p >= pend || !*p) {
       wrong_name:
-	rb_name_err_raise(wrong_constant_name, mod, name);
+        rb_name_err_raise(wrong_constant_name, mod, name);
     }
 
     if (p + 2 < pend && p[0] == ':' && p[1] == ':') {
-	mod = rb_cObject;
-	p += 2;
-	pbeg = p;
+        mod = rb_cObject;
+        p += 2;
+        pbeg = p;
     }
 
     while (p < pend) {
-	VALUE part;
-	long len, beglen;
+        VALUE part;
+        long len, beglen;
 
-	while (p < pend && *p != ':') p++;
+        while (p < pend && *p != ':') p++;
 
-	if (pbeg == p) goto wrong_name;
+        if (pbeg == p) goto wrong_name;
 
-	id = rb_check_id_cstr(pbeg, len = p-pbeg, enc);
-	beglen = pbeg-path;
+        id = rb_check_id_cstr(pbeg, len = p-pbeg, enc);
+        beglen = pbeg-path;
 
-	if (p < pend && p[0] == ':') {
-	    if (p + 2 >= pend || p[1] != ':') goto wrong_name;
-	    p += 2;
-	    pbeg = p;
-	}
+        if (p < pend && p[0] == ':') {
+            if (p + 2 >= pend || p[1] != ':') goto wrong_name;
+            p += 2;
+            pbeg = p;
+        }
 
-	if (!id) {
-	    part = rb_str_subseq(name, beglen, len);
-	    OBJ_FREEZE(part);
-	    if (!rb_is_const_name(part)) {
-		name = part;
-		goto wrong_name;
-	    }
-	    else {
-		return Qnil;
-	    }
-	}
-	if (!rb_is_const_id(id)) {
-	    name = ID2SYM(id);
-	    goto wrong_name;
-	}
-	if (p < pend) {
-	    if (RTEST(recur)) {
-		mod = rb_const_get(mod, id);
-	    }
-	    else {
-		mod = rb_const_get_at(mod, id);
-	    }
-	    if (!RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
-		rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
-			 QUOTE(name));
-	    }
-	}
-	else {
-	    if (RTEST(recur)) {
-		loc = rb_const_source_location(mod, id);
-	    }
-	    else {
-		loc = rb_const_source_location_at(mod, id);
-	    }
-	    break;
-	}
-	recur = Qfalse;
+        if (!id) {
+            part = rb_str_subseq(name, beglen, len);
+            OBJ_FREEZE(part);
+            if (!rb_is_const_name(part)) {
+                name = part;
+                goto wrong_name;
+            }
+            else {
+                return Qnil;
+            }
+        }
+        if (!rb_is_const_id(id)) {
+            name = ID2SYM(id);
+            goto wrong_name;
+        }
+        if (p < pend) {
+            if (RTEST(recur)) {
+                mod = rb_const_get(mod, id);
+            }
+            else {
+                mod = rb_const_get_at(mod, id);
+            }
+            if (!RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
+                rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
+                         QUOTE(name));
+            }
+        }
+        else {
+            if (RTEST(recur)) {
+                loc = rb_const_source_location(mod, id);
+            }
+            else {
+                loc = rb_const_source_location_at(mod, id);
+            }
+            break;
+        }
+        recur = Qfalse;
     }
 
     return loc;

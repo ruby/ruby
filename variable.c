@@ -2411,7 +2411,7 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
 		rb_autoload_load(tmp, id);
 		continue;
 	    }
-	    if (exclude && tmp == rb_cObject) {
+            if (exclude && tmp == rb_cObject) {
 		goto not_found;
 	    }
 	    return value;
@@ -2487,20 +2487,20 @@ static VALUE
 rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
     while (RTEST(klass)) {
-	rb_const_entry_t *ce;
+        rb_const_entry_t *ce;
 
-	while ((ce = rb_const_lookup(klass, id))) {
-	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
-		return Qnil;
-	    }
-	    if (exclude && klass == rb_cObject) {
-		goto not_found;
-	    }
-	    if (NIL_P(ce->file)) return rb_ary_new();
-	    return rb_assoc_new(ce->file, INT2NUM(ce->line));
-	}
-	if (!recurse) break;
-	klass = RCLASS_SUPER(klass);
+        while ((ce = rb_const_lookup(klass, id))) {
+            if (visibility && RB_CONST_PRIVATE_P(ce)) {
+                return Qnil;
+            }
+            if (exclude && klass == rb_cObject) {
+                goto not_found;
+            }
+            if (NIL_P(ce->file)) return rb_ary_new();
+            return rb_assoc_new(ce->file, INT2NUM(ce->line));
+        }
+        if (!recurse) break;
+        klass = RCLASS_SUPER(klass);
     }
 
   not_found:
