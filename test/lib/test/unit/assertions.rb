@@ -852,7 +852,14 @@ eom
             values << th.value
           rescue Exception
             errs << [th, $!]
+            th = nil
           end
+        end
+        values
+      ensure
+        if th&.alive?
+          th.raise(Timeout::Error.new)
+          th.join rescue errs << [th, $!]
         end
         if !errs.empty?
           msg = "exceptions on #{errs.length} threads:\n" +
@@ -865,7 +872,6 @@ eom
           end
           raise MiniTest::Assertion, msg
         end
-        values
       end
 
       class << (AssertFile = Struct.new(:failure_message).new)
