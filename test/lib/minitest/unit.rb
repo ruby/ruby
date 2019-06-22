@@ -79,18 +79,14 @@ module MiniTest
     # figure out what diff to use.
 
     def self.diff
-      @diff = if (RbConfig::CONFIG['host_os'] =~ /mswin|mingw/ &&
-                  system("diff.exe", __FILE__, __FILE__)) then
-                "diff.exe -u"
-              elsif Minitest::Unit::Guard.maglev? then # HACK
-                "diff -u"
-              elsif system("gdiff", __FILE__, __FILE__)
-                "gdiff -u" # solaris and kin suck
-              elsif system("diff", __FILE__, __FILE__)
-                "diff -u"
-              else
-                nil
-              end unless defined? @diff
+      unless defined? @diff
+        exe = RbConfig::CONFIG['EXEEXT']
+        @diff = %W"gdiff#{exe} diff#{exe}".find do |diff|
+          if system(diff, "-u", __FILE__, __FILE__)
+            break "#{diff} -u"
+          end
+        end
+      end
 
       @diff
     end
