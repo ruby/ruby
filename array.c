@@ -1373,6 +1373,8 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 	rb_raise(rb_eIndexError, "index %ld too big", new_len);
     }
 
+    rb_ary_modify(ary);
+
     if (ARY_SHARED_P(ary)) {
 	VALUE shared = ARY_SHARED(ary);
 	capa = RARRAY_LEN(shared);
@@ -1383,7 +1385,6 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 	}
     }
 
-    rb_ary_modify(ary);
     capa = ARY_CAPA(ary);
     if (capa - (capa >> 6) <= new_len) {
 	ary_double_capa(ary, new_len);
