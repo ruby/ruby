@@ -53,7 +53,6 @@ requiring to see why it does not behave as you expect.
         end
       end
 
-      # TODO: this is totally redundant and stupid
       paths = find_paths arg, dirs
 
       if paths.empty?
