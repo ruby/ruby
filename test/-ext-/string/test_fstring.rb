@@ -58,7 +58,7 @@ class Test_String_Fstring < Test::Unit::TestCase
   end
 
   def test_singleton_class
-    str = noninterned_name.force_encoding("us-ascii")
+    str = noninterned_name
     fstr = Bug::String.fstring(str)
     assert_raise(TypeError) {fstr.singleton_class}
   end
