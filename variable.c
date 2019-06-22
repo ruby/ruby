@@ -2138,7 +2138,7 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
     return 0;
 }
 
-struct autoload_const *autoloading_const_entry(VALUE mod, ID id);
+static struct autoload_const *autoloading_const_entry(VALUE mod, ID id);
 
 MJIT_FUNC_EXPORTED int
 rb_autoloading_value(VALUE mod, ID id, VALUE* value, rb_const_flag_t *flag)
