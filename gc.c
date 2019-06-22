@@ -10048,8 +10048,11 @@ rb_gc_adjust_memory_usage(ssize_t diff)
 struct weakmap {
     st_table *obj2wmap;		/* obj -> [ref,...] */
     st_table *wmap2obj;		/* ref -> obj */
+    VALUE deadref;
     VALUE final;
 };
+
+static VALUE rb_cWeakMapDead;
 
 #define WMAP_DELETE_DEAD_OBJECT_IN_MARK 0
 
@@ -10087,6 +10090,7 @@ wmap_mark(void *ptr)
     if (w->obj2wmap) st_foreach(w->obj2wmap, wmap_mark_map, (st_data_t)&rb_objspace);
 #endif
     rb_gc_mark(w->final);
+    rb_gc_mark(w->deadref);
 }
 
 static int
@@ -10143,6 +10147,7 @@ wmap_allocate(VALUE klass)
     VALUE obj = TypedData_Make_Struct(klass, struct weakmap, &weakmap_type, w);
     w->obj2wmap = st_init_numtable();
     w->wmap2obj = st_init_numtable();
+    w->deadref = rb_class_new_instance(0, 0, rb_cWeakMapDead);
     w->final = rb_obj_method(obj, ID2SYM(rb_intern("finalize")));
     return obj;
 }
@@ -10253,8 +10258,9 @@ wmap_each_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
     VALUE obj = (VALUE)val;
-    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
-	rb_yield_values(2, (VALUE)key, obj);
+    if (RB_SPECIAL_CONST_P(obj) ||
+            (is_id_value(objspace, obj) && is_live_object(objspace, obj))) {
+        rb_yield_values(2, (VALUE)key, obj);
     }
     return ST_CONTINUE;
 }
@@ -10276,8 +10282,9 @@ wmap_each_key_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
     VALUE obj = (VALUE)val;
-    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
-	rb_yield((VALUE)key);
+    if (RB_SPECIAL_CONST_P(obj) ||
+            (is_id_value(objspace, obj) && is_live_object(objspace, obj))) {
+        rb_yield((VALUE)key);
     }
     return ST_CONTINUE;
 }
@@ -10299,8 +10306,9 @@ wmap_each_value_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
     VALUE obj = (VALUE)val;
-    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
-	rb_yield(obj);
+    if (RB_SPECIAL_CONST_P(obj) ||
+            (is_id_value(objspace, obj) && is_live_object(objspace, obj))) {
+        rb_yield(obj);
     }
     return ST_CONTINUE;
 }
@@ -10324,8 +10332,9 @@ wmap_keys_i(st_data_t key, st_data_t val, st_data_t arg)
     rb_objspace_t *objspace = argp->objspace;
     VALUE ary = argp->value;
     VALUE obj = (VALUE)val;
-    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
-	rb_ary_push(ary, (VALUE)key);
+    if (RB_SPECIAL_CONST_P(obj) ||
+            (is_id_value(objspace, obj) && is_live_object(objspace, obj))) {
+        rb_ary_push(ary, (VALUE)key);
     }
     return ST_CONTINUE;
 }
@@ -10351,8 +10360,9 @@ wmap_values_i(st_data_t key, st_data_t val, st_data_t arg)
     rb_objspace_t *objspace = argp->objspace;
     VALUE ary = argp->value;
     VALUE obj = (VALUE)val;
-    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
-	rb_ary_push(ary, obj);
+    if (RB_SPECIAL_CONST_P(obj) ||
+            (is_id_value(objspace, obj) && is_live_object(objspace, obj))) {
+        rb_ary_push(ary, obj);
     }
     return ST_CONTINUE;
 }
@@ -10399,9 +10409,10 @@ wmap_aset(VALUE self, VALUE wmap, VALUE orig)
     struct weakmap *w;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    should_be_finalizable(orig);
     should_be_finalizable(wmap);
-    define_final0(orig, w->final);
+    if (FL_ABLE(orig)) {
+        define_final0(orig, w->final);
+    }
     define_final0(wmap, w->final);
     st_update(w->obj2wmap, (st_data_t)orig, wmap_aset_update, wmap);
     st_insert(w->wmap2obj, (st_data_t)wmap, (st_data_t)orig);
@@ -10418,10 +10429,11 @@ wmap_aref(VALUE self, VALUE wmap)
     rb_objspace_t *objspace = &rb_objspace;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    if (!st_lookup(w->wmap2obj, (st_data_t)wmap, &data)) return Qnil;
+    if (!st_lookup(w->wmap2obj, (st_data_t)wmap, &data)) return w->deadref;
     obj = (VALUE)data;
-    if (!is_id_value(objspace, obj)) return Qnil;
-    if (!is_live_object(objspace, obj)) return Qnil;
+    if (RB_SPECIAL_CONST_P(obj)) return obj;
+    if (!is_id_value(objspace, obj)) return w->deadref;
+    if (!is_live_object(objspace, obj)) return w->deadref;
     return obj;
 }
 
@@ -10429,7 +10441,10 @@ wmap_aref(VALUE self, VALUE wmap)
 static VALUE
 wmap_has_key(VALUE self, VALUE key)
 {
-    return NIL_P(wmap_aref(self, key)) ? Qfalse : Qtrue;
+    struct weakmap *w;
+    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+
+    return wmap_aref(self, key) == w->deadref ? Qfalse : Qtrue;
 }
 
 /* Returns the number of referenced objects */
@@ -11633,6 +11648,8 @@ Init_GC(void)
 	rb_define_method(rb_cWeakMap, "length", wmap_size, 0);
 	rb_define_private_method(rb_cWeakMap, "finalize", wmap_finalize, 1);
 	rb_include_module(rb_cWeakMap, rb_mEnumerable);
+
+        rb_cWeakMapDead = rb_define_class_under(rb_cWeakMap, "DeadRef", rb_cObject);
     }
 
     /* internal methods */

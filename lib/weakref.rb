@@ -34,18 +34,16 @@ class WeakRef < Delegator
   # Integer, or Float.
 
   def initialize(orig)
-    case orig
-    when true, false, nil
-      @delegate_sd_obj = orig
-    else
-      @@__map[self] = orig
-    end
-    super
+    @@__map[self] = orig
   end
 
   def __getobj__ # :nodoc:
-    @@__map[self] or defined?(@delegate_sd_obj) ? @delegate_sd_obj :
+    obj = @@__map[self]
+    if obj.is_a? ObjectSpace::WeakMap::DeadRef
       Kernel::raise(RefError, "Invalid Reference - probably recycled", Kernel::caller(2))
+    else
+      obj
+    end
   end
 
   def __setobj__(obj) # :nodoc:

@@ -6,6 +6,91 @@ class TestWeakMap < Test::Unit::TestCase
     @wm = ObjectSpace::WeakMap.new
   end
 
+  def test_dead_reference
+    weaks = []
+    100.times do
+      key = Object.new
+      weaks << key
+      make_weakref @wm, key
+      ObjectSpace.garbage_collect
+      ObjectSpace.garbage_collect
+      weak = weaks.map { |k| @wm[k] }.grep(ObjectSpace::WeakMap::DeadRef).first
+      # Found a dead reference
+      return assert(true) if weak
+    end
+
+    flunk "couldn't find a dead reference"
+  end
+
+  def test_special_values
+    weaks = []
+    objs = [true, false, nil, 1, 0.2]
+    objs.each do |v|
+      k = Object.new
+      weaks << k
+      @wm[k] = v
+    end
+    assert_equal objs, @wm.values
+  end
+
+  def test_special_each_values
+    weaks = []
+    objs = [true, false, nil, 1, 0.2]
+    objs.each do |v|
+      k = Object.new
+      weaks << k
+      @wm[k] = v
+    end
+    m = []
+    @wm.each_value { |z| m << z }
+    assert_equal objs, m
+  end
+
+  def test_special_each
+    weaks = []
+    objs = [true, false, nil, 1, 0.2]
+    objs.each do |v|
+      k = Object.new
+      weaks << k
+      @wm[k] = v
+    end
+    m = []
+    @wm.each { |_, z| m << z }
+    assert_equal objs, m
+  end
+
+  def test_special_each_key
+    weaks = []
+    objs = [true, false, nil, 1, 0.2]
+    objs.each do |v|
+      k = Object.new
+      weaks << k
+      @wm[k] = v
+    end
+    m = []
+    @wm.each_key { |z| m << z }
+    assert_equal weaks, m
+  end
+
+  def test_special_keys
+    weaks = []
+    objs = [true, false, nil, 1, 0.2]
+    objs.each do |v|
+      k = Object.new
+      weaks << k
+      @wm[k] = v
+    end
+    assert_equal weaks, @wm.keys
+  end
+
+  def make_weakref(wm, key, level = 10)
+    if level > 0
+      make_weakref(wm, key, level - 1)
+    else
+      wm[key] = Object.new
+    end
+  end
+
   def test_map
     x = Object.new
     k = "foo"
@@ -21,11 +106,11 @@ class TestWeakMap < Test::Unit::TestCase
     assert_raise(ArgumentError) {@wm[nil] = x}
     assert_raise(ArgumentError) {@wm[42] = x}
     assert_raise(ArgumentError) {@wm[:foo] = x}
-    assert_raise(ArgumentError) {@wm[x] = true}
-    assert_raise(ArgumentError) {@wm[x] = false}
-    assert_raise(ArgumentError) {@wm[x] = nil}
-    assert_raise(ArgumentError) {@wm[x] = 42}
-    assert_raise(ArgumentError) {@wm[x] = :foo}
+    assert @wm[x] = true
+    assert_equal false,  @wm[x] = false
+    assert_nil @wm[x] = nil
+    assert_equal 42, @wm[x] = 42
+    assert_equal :foo, @wm[x] = :foo
   end
 
   def assert_weak_include(m, k, n = 100)
