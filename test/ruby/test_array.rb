@@ -1438,6 +1438,16 @@ class TestArray < Test::Unit::TestCase
     assert_nil(a.rindex([1,2]))
 
     assert_equal(3, a.rindex(99) {|x| x == [1,2,3] })
+
+    bug15951 = "[Bug #15951]"
+    o2 = Object.new
+    def o2.==(other)
+      other.replace([]) if Array === other
+      false
+    end
+    a = Array.new(10)
+    a.fill(o2)
+    assert_nil(a.rindex(a), bug15951)
   end
 
   def test_shift
