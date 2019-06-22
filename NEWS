@@ -125,6 +125,11 @@ Integer::
 
 Module::
 
+  New method::
+
+    * Added Module#const_source_location to retreive the location where a
+      constant is defined.  [Feature #10771]
+
   Modified method::
 
     * Module#autoload? now takes an +inherit+ optional argument, like as
