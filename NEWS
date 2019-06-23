@@ -214,6 +214,12 @@ profile.rb, Profiler__::
 
 === Implementation improvements
 
+Thread::
+
+  * VM stack memory allocation is now combined with native thread stack,
+    improving thread allocation performance and reducing allocation related
+    failures. ~10x performance improvement was measured in micro-benchmarks.
+
 JIT::
 
   * JIT-ed code is recompiled to less-optimized code when an optimization assumption is invalidated.
@@ -226,6 +232,10 @@ JIT::
   * Default value of +--jit-min-calls+ is changed from 5 to 10,000
 
 === Miscellaneous changes
+
+* Support for IA64 architecure has ben removed. Harware for testing was
+  difficult to find, native fiber code is difficult to implement, and it added
+  non-trivial complexity to the interpreter. [Feature #15894]
 
 * Require compilers to support C99 [Misc #15347]
 
