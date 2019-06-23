@@ -44,14 +44,14 @@ VALUE rb_cArray;
 
 #define ARY_HEAP_PTR(a) (assert(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.ptr)
 #define ARY_HEAP_LEN(a) (assert(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.len)
-#define ARY_HEAP_CAPA(a) (assert(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.aux.capa)
+#define ARY_HEAP_CAPA(a) (assert(!ARY_EMBED_P(a)), assert(!ARY_SHARED_ROOT_P(a)), RARRAY(a)->as.heap.aux.capa)
 
 #define ARY_EMBED_PTR(a) (assert(ARY_EMBED_P(a)), RARRAY(a)->as.ary)
 #define ARY_EMBED_LEN(a) \
     (assert(ARY_EMBED_P(a)), \
      (long)((RBASIC(a)->flags >> RARRAY_EMBED_LEN_SHIFT) & \
 	 (RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT)))
-#define ARY_HEAP_SIZE(a) (assert(!ARY_EMBED_P(a)), assert(ARY_OWNS_HEAP_P(a)), ARY_HEAP_CAPA(a) * sizeof(VALUE))
+#define ARY_HEAP_SIZE(a) (assert(!ARY_EMBED_P(a)), assert(ARY_OWNS_HEAP_P(a)), ARY_CAPA(a) * sizeof(VALUE))
 
 #define ARY_OWNS_HEAP_P(a) (!FL_TEST((a), ELTS_SHARED|RARRAY_EMBED_FLAG))
 #define FL_SET_EMBED(a) do { \
