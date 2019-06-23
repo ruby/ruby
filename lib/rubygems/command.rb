@@ -20,6 +20,10 @@ class Gem::Command
 
   include Gem::UserInteraction
 
+  OptionParser.accept Symbol do |value|
+    value.to_sym
+  end
+
   ##
   # The name of the command.
 

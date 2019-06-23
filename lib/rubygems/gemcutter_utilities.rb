@@ -9,11 +9,6 @@ module Gem::GemcutterUtilities
 
   include Gem::Text
 
-  # TODO: move to Gem::Command
-  OptionParser.accept Symbol do |value|
-    value.to_sym
-  end
-
   attr_writer :host
 
   ##
