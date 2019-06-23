@@ -1,5 +1,6 @@
 # vcs
 require 'fileutils'
+require 'optparse'
 
 # This library is used by several other tools/ scripts to detect the current
 # VCS in use (e.g. SVN, Git) or to interact with that VCS.
@@ -126,12 +127,16 @@ class VCS
     @@dirs << [dir, self, pred]
   end
 
-  def self.detect(path, options = {})
+  def self.detect(path, options = {}, argv = ::ARGV)
     uplevel_limit = options.fetch(:uplevel_limit, 0)
     curr = path
     begin
       @@dirs.each do |dir, klass, pred|
-        return klass.new(curr) if pred ? pred[curr, dir] : File.directory?(File.join(curr, dir))
+        if pred ? pred[curr, dir] : File.directory?(File.join(curr, dir))
+          vcs = klass.new(curr)
+          vcs.parse_options(argv)
+          return vcs
+        end
       end
       if uplevel_limit
         break if uplevel_limit.zero?
@@ -153,6 +158,26 @@ class VCS
     super()
   end
 
+  def parse_options(opts, parser = OptionParser.new)
+    case opts
+    when Array
+      parser.on("--[no-]dryrun") {|v| @dryrun = v}
+      parser.on("--[no-]debug") {|v| @debug = v}
+      parser.parse(opts)
+      @dryrun = @debug unless defined?(@dryrun)
+    when Hash
+      unless (keys = opts.keys - [:debug, :dryrun]).empty?
+        raise "Unknown options: #{keys.join(', ')}"
+      end
+      @debug = opts.fetch(:debug) {$DEBUG}
+      @dryrun = opts.fetch(:dryrun) {@debug}
+    end
+  end
+
+  attr_reader :dryrun, :debug
+  alias dryrun? dryrun
+  alias debug? debug
+
   NullDevice = defined?(IO::NULL) ? IO::NULL :
     %w[/dev/null NUL NIL: NL:].find {|dev| File.exist?(dev)}
 
@@ -168,7 +193,7 @@ class VCS
           save_stderr = STDERR.dup
           STDERR.reopen NullDevice, 'w'
         end
-        self.class.get_revisions(path, @srcdir)
+        _get_revisions(path, @srcdir)
       rescue Errno::ENOENT => e
         raise VCS::NotFoundError, e.message
       ensure
@@ -243,7 +268,7 @@ class VCS
       rev
     end
 
-    def self.get_revisions(path, srcdir = nil)
+    def _get_revisions(path, srcdir = nil)
       if srcdir and local_path?(path)
         path = File.join(srcdir, path)
       end
@@ -377,7 +402,12 @@ class VCS
     end
 
     def commit
-      system(*%W"#{COMMAND} commit")
+      args = %W"#{COMMAND} commit"
+      if dryrun?
+        STDERR.puts(args.inspect)
+        return true
+      end
+      system(*args)
     end
   end
 
@@ -385,24 +415,33 @@ class VCS
     register(".git") {|path, dir| File.exist?(File.join(path, dir))}
     COMMAND = ENV["GIT"] || 'git'
 
-    def self.cmd_args(cmds, srcdir = nil)
+    def cmd_args(cmds, srcdir = nil)
       (opts = cmds.last).kind_of?(Hash) or cmds << (opts = {})
       opts[:external_encoding] ||= "UTF-8"
-      if srcdir and local_path?(srcdir)
+      if srcdir and self.class.local_path?(srcdir)
         opts[:chdir] ||= srcdir
       end
+      STDERR.puts cmds.inspect if debug?
       cmds
     end
 
-    def self.cmd_pipe_at(srcdir, cmds, &block)
-      IO.popen(*cmd_args(cmds, srcdir), &block)
+    def cmd_pipe_at(srcdir, cmds, &block)
+      without_gitconfig { IO.popen(*cmd_args(cmds, srcdir), &block) }
     end
 
-    def self.cmd_read_at(srcdir, cmds)
+    def cmd_read_at(srcdir, cmds)
       without_gitconfig { IO.pread(*cmd_args(cmds, srcdir)) }
     end
 
-    def self.get_revisions(path, srcdir = nil)
+    def cmd_pipe(*cmds, &block)
+      cmd_pipe_at(@srcdir, cmds, &block)
+    end
+
+    def cmd_read(*cmds)
+      cmd_read_at(@srcdir, cmds)
+    end
+
+    def _get_revisions(path, srcdir = nil)
       gitcmd = [COMMAND]
       last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', 'HEAD']]).rstrip
       log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', '--pretty=fuller', *path]])
@@ -444,7 +483,7 @@ class VCS
       rev[0, 10]
     end
 
-    def self.without_gitconfig
+    def without_gitconfig
       home = ENV.delete('HOME')
       yield
     ensure
@@ -457,14 +496,6 @@ class VCS
         @srcdir = File.realpath(srcdir)
       end
       self
-    end
-
-    def cmd_pipe(*cmds, &block)
-      self.class.cmd_pipe_at(@srcdir, cmds, &block)
-    end
-
-    def cmd_read(*cmds)
-      self.class.cmd_read_at(@srcdir, cmds)
     end
 
     Branch = Struct.new(:to_str)
@@ -545,7 +576,6 @@ class VCS
     end
 
     def commit(opts = {})
-      dryrun = opts.fetch(:dryrun) {$DEBUG} if opts
       args = [COMMAND, "push"]
       args << "-n" if dryrun
       (branch = cmd_read(%W"#{COMMAND} symbolic-ref --short HEAD")).chomp!
@@ -557,7 +587,10 @@ class VCS
         raise "Upstream not found"
       end
       args << $1 << "HEAD:#$2"
-      STDERR.puts(args.inspect) if dryrun
+      if dryrun?
+        STDERR.puts(args.inspect)
+        return true
+      end
       system(*args) or return false
       true
     end
@@ -603,7 +636,6 @@ class VCS
     end
 
     def commit(opts = {})
-      dryrun = opts.fetch(:dryrun) {$DEBUG} if opts
       rev, com = last_changed_revision
       head = cmd_read(%W"#{COMMAND} symbolic-ref --short HEAD").chomp
 
