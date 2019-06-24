@@ -420,7 +420,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal %w[lib/code.rb], reader.contents
   end
 
-  def test_metadata
+  def test_raw_spec
     data_tgz = util_tar_gz { }
 
     gem = util_tar do |tar|
@@ -441,7 +441,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       io.write gem.string
     end
 
-    spec, metadata = Gem::Package.metadata(gem_path)
+    spec, metadata = Gem::Package.raw_spec(gem_path)
 
     assert_equal @spec, spec
     assert_match @spec.to_yaml, metadata.force_encoding("UTF-8")
