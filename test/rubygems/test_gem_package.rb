@@ -420,6 +420,33 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal %w[lib/code.rb], reader.contents
   end
 
+  def test_metadata
+    data_tgz = util_tar_gz { }
+
+    gem = util_tar do |tar|
+      tar.add_file 'data.tar.gz', 0644 do |io|
+        io.write data_tgz.string
+      end
+
+      tar.add_file 'metadata.gz', 0644 do |io|
+        Zlib::GzipWriter.wrap io do |gzio|
+          gzio.write @spec.to_yaml
+        end
+      end
+    end
+
+    gem_path = "#{@destination}/test.gem"
+
+    File.open gem_path, "wb" do |io|
+      io.write gem.string
+    end
+
+    spec, metadata = Gem::Package.metadata(gem_path)
+
+    assert_equal @spec, spec
+    assert_match @spec.to_yaml, metadata.force_encoding("UTF-8")
+  end
+
   def test_contents
     package = Gem::Package.new @gem
 

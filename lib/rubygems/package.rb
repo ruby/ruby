@@ -157,6 +157,32 @@ class Gem::Package
   end
 
   ##
+  # Extracts the Gem::Specification and raw metadata from the .gem file at
+  # +path+.
+  #--
+
+  def self.metadata(path, security_policy = nil)
+    format = new(path, security_policy)
+    spec = format.spec
+
+    metadata = nil
+
+    File.open path, Gem.binary_mode do |io|
+      tar = Gem::Package::TarReader.new io
+      tar.each_entry do |entry|
+        case entry.full_name
+        when 'metadata' then
+          metadata = entry.read
+        when 'metadata.gz' then
+          metadata = Gem::Util.gunzip entry.read
+        end
+      end
+    end
+
+    return spec, metadata
+  end
+
+  ##
   # Creates a new package that will read or write to the file +gem+.
 
   def initialize(gem, security_policy) # :notnew:
@@ -690,7 +716,6 @@ EOM
   rescue Zlib::GzipFile::Error => e
     raise Gem::Package::FormatError.new(e.message, entry.full_name)
   end
-
 end
 
 require 'rubygems/package/digest_io'
