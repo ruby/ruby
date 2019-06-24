@@ -2256,28 +2256,28 @@ AC_ARG_ENABLE(fiber-coroutine,
 AS_CASE(["$rb_cv_fiber_coroutine"], [yes|''], [
     AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
     AS_CASE(["$target_cpu-$target_os"],
-	[x*64-darwin*], [
-	    rb_cv_fiber_coroutine=amd64
-	],
-	[x*64-linux], [
-	    AS_CASE(["$ac_cv_sizeof_voidp"],
-	        [8], [ rb_cv_fiber_coroutine=amd64 ],
-	        [4], [ rb_cv_fiber_coroutine=x86 ],
-		[*], [ rb_cv_fiber_coroutine= ]
-	    )
-	],
-	[*86-linux], [
-	    rb_cv_fiber_coroutine=x86
-	],
-	[x64-mingw32], [
-	    rb_cv_fiber_coroutine=win64
-	],
-	[powerpc64le-linux], [
-	    rb_cv_fiber_coroutine=ppc64le
-	],
-	[*], [
-	    rb_cv_fiber_coroutine=
-	]
+        [x*64-darwin*], [
+            rb_cv_fiber_coroutine=amd64
+        ],
+        [x*64-linux], [
+            AS_CASE(["$ac_cv_sizeof_voidp"],
+                [8], [ rb_cv_fiber_coroutine=amd64 ],
+                [4], [ rb_cv_fiber_coroutine=x86 ],
+        	[*], [ rb_cv_fiber_coroutine= ]
+            )
+        ],
+        [*86-linux], [
+            rb_cv_fiber_coroutine=x86
+        ],
+        [x64-mingw32], [
+            rb_cv_fiber_coroutine=win64
+        ],
+        [powerpc64le-linux], [
+            rb_cv_fiber_coroutine=ppc64le
+        ],
+        [*], [
+            rb_cv_fiber_coroutine=
+        ]
     )
     AC_MSG_RESULT(${rb_cv_fiber_coroutine:-no})
 ])
