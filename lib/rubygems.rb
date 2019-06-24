@@ -338,6 +338,13 @@ module Gem
   end
 
   ##
+  # The path to standard location of the user's configuration directory.
+
+  def self.config_home
+    @config_home ||= (ENV["XDG_CONFIG_HOME"] || File.join(Gem.user_home, '.config'))
+  end
+
+  ##
   # The path to standard location of the user's .gemrc file.
 
   def self.config_file
@@ -345,9 +352,7 @@ module Gem
     if File.exist? gemrc
       @config_file ||= gemrc
     else
-      # XDG
-      xdg_config_home = ENV["XDG_CONFIG_HOME"] || File.join(Gem.user_home, '.config')
-      @config_file ||= File.join xdg_config_home, "gem"
+      @config_file ||= File.join Gem.config_home, "gem", "gemrc"
     end
   end
 
