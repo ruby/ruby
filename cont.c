@@ -187,7 +187,7 @@ struct rb_fiber_struct {
 #if FIBER_USE_NATIVE
 #if defined(FIBER_USE_COROUTINE)
 #define FIBER_ALLOCATE_STACK
-    coroutine_context context;
+    struct coroutine_context context;
     void *ss_sp;
     size_t ss_size;
 #elif defined(_WIN32)
@@ -802,7 +802,7 @@ cont_restore_thread(rb_context_t *cont)
 #if FIBER_USE_NATIVE
 #if defined(FIBER_USE_COROUTINE)
 static COROUTINE
-fiber_entry(coroutine_context * from, coroutine_context * to)
+fiber_entry(struct coroutine_context * from, struct coroutine_context * to)
 {
     rb_fiber_start();
 }
@@ -914,7 +914,7 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     ptr = fiber_machine_stack_alloc(size);
     fib->ss_sp = ptr;
     fib->ss_size = size;
-    coroutine_initialize(&fib->context, fiber_entry, ptr+size, size);
+    coroutine_initialize(&fib->context, fiber_entry, ptr, size);
     sec->machine.stack_start = (VALUE*)(ptr + STACK_DIR_UPPER(0, size));
     sec->machine.stack_maxsize = size - RB_PAGE_SIZE;
 #elif defined(_WIN32)
@@ -1530,7 +1530,7 @@ root_fiber_alloc(rb_thread_t *th)
 
 #if FIBER_USE_NATIVE
 #if defined(FIBER_USE_COROUTINE)
-    coroutine_initialize(&fib->context, NULL, NULL, 0);
+    coroutine_initialize_main(&fib->context);
 #elif defined(_WIN32)
     /* setup fib_handle for root Fiber */
     if (fib->fib_handle == 0) {
