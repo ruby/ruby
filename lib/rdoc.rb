@@ -126,11 +126,11 @@ module RDoc
               rescue ArgumentError
               end
 
-    if File.exists?(rdoc_dir)
+    if File.exist?(rdoc_dir)
       rdoc_dir
     else
       xdg_data_home = ENV["XDG_DATA_HOME"] || File.join(Gem.user_home, '.local', 'share')
-      unless File.exists?(xdg_data_home)
+      unless File.exist?(xdg_data_home)
         FileUtils.mkdir_p xdg_data_home
       end
       File.join xdg_data_home, "rdoc"
