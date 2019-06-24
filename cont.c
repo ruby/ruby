@@ -46,7 +46,7 @@
 #include FIBER_USE_COROUTINE
 #define FIBER_USE_NATIVE 1
 #else
-#pragma message "Native coroutine not available!" 
+#pragma message "Native coroutine not available!"
 #endif
 
 #if !defined(FIBER_USE_NATIVE)
