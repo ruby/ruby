@@ -101,6 +101,8 @@ module IRB
             File.chmod(0600, history_file)
           end
         rescue Errno::ENOENT
+        rescue Errno::EPERM
+          return
         rescue
           raise
         end
