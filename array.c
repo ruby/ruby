@@ -4516,7 +4516,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.difference(other_ary1, other_ary2, ...)   -> ary
+ *     ary.difference(other_ary1, other_ary2, ...)   -> new_ary
  *
  *  Array Difference
  *
