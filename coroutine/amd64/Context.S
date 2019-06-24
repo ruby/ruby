@@ -27,7 +27,7 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 	# Restore callee stack pointer
 	movq (%rsi), %rsp
 
-	# Restore callee stack
+	# Restore callee state
 	popq %r15
 	popq %r14
 	popq %r13

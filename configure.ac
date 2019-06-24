@@ -2263,7 +2263,7 @@ AS_CASE(["$rb_cv_fiber_coroutine"], [yes|''], [
             AS_CASE(["$ac_cv_sizeof_voidp"],
                 [8], [ rb_cv_fiber_coroutine=amd64 ],
                 [4], [ rb_cv_fiber_coroutine=x86 ],
-        	[*], [ rb_cv_fiber_coroutine= ]
+                [*], [ rb_cv_fiber_coroutine= ]
             )
         ],
         [*86-linux], [
@@ -2282,7 +2282,7 @@ AS_CASE(["$rb_cv_fiber_coroutine"], [yes|''], [
             rb_cv_fiber_coroutine=ppc64le
         ],
         [*], [
-            rb_cv_fiber_coroutine=
+            rb_cv_fiber_coroutine=ucontext
         ]
     )
     AC_MSG_RESULT(${rb_cv_fiber_coroutine:-no})

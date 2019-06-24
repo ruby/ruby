@@ -917,8 +917,10 @@ strlcat.$(OBJEXT): {$(VPATH)}strlcat.c
 strlcpy.$(OBJEXT): {$(VPATH)}strlcpy.c
 strstr.$(OBJEXT): {$(VPATH)}strstr.c
 nt.$(OBJEXT): {$(VPATH)}nt.c
+
+COROUTINE_SRC = $(COROUTINE_H:.h=).$(ASMEXT)
 .coroutine_obj $(COROUTINE_OBJ): \
-	{$(VPATH)}$(COROUTINE_H:.h=).$(ASMEXT) \
+	{$(VPATH)}$(COROUTINE_SRC:/ucontext/Context.S=/ucontext/Context.c) \
 	$(COROUTINE_H:/Context.h=/.time)
 $(COROUTINE_H:/Context.h=/.time):
 	$(Q) $(MAKEDIRS) $(@D)
