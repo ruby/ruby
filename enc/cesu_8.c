@@ -302,8 +302,6 @@ mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
           int low  = ((p[3] & 0xF) << 12) | ((p[4] & 0x3f) << 6) | (p[5] & 0x3f);
           return ((high & 0x03ff) << 10) + (low & 0x03ff) + 0x10000;
       }
-    default:
-      UNREACHABLE;
   }
 #ifdef USE_INVALID_CODE_SCHEME
   if (*p > 0xfd) {
