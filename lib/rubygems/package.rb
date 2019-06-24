@@ -161,7 +161,7 @@ class Gem::Package
   # +path+.
   #--
 
-  def self.metadata(path, security_policy = nil)
+  def self.raw_spec(path, security_policy = nil)
     format = new(path, security_policy)
     spec = format.spec
 
@@ -716,6 +716,7 @@ EOM
   rescue Zlib::GzipFile::Error => e
     raise Gem::Package::FormatError.new(e.message, entry.full_name)
   end
+
 end
 
 require 'rubygems/package/digest_io'

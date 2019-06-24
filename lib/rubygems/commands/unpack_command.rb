@@ -85,7 +85,7 @@ command help for an example.
       end
 
       if @options[:spec]
-        spec, metadata = Gem::Package.metadata(path, security_policy)
+        spec, metadata = Gem::Package.raw_spec(path, security_policy)
 
         if metadata.nil?
           alert_error "--spec is unsupported on '#{name}' (old format gem)"
@@ -173,4 +173,5 @@ command help for an example.
 
     path
   end
+
 end
