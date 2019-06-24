@@ -2446,8 +2446,8 @@ rb_ary_to_a(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.to_h            -> hash
- *     ary.to_h { block }  -> hash
+ *     ary.to_h                  -> hash
+ *     ary.to_h {|item| block }  -> hash
  *
  *  Returns the result of interpreting <i>ary</i> as an array of
  *  <tt>[key, value]</tt> pairs.
