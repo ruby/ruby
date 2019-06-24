@@ -261,7 +261,12 @@ if you believe they were disclosed to a third party.
   # Location of RubyGems.org credentials
 
   def credentials_path
-    File.join Gem.user_home, '.gem', 'credentials'
+    credentials = File.join Gem.user_home, '.gem', 'credentials'
+    if File.exist? credentials
+      credentials
+    else
+      File.join Gem.config_home, "gem", "credentials"
+    end
   end
 
   def load_api_keys
