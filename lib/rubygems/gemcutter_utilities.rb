@@ -19,7 +19,7 @@ module Gem::GemcutterUtilities
   def add_key_option
     add_option('-k', '--key KEYNAME', Symbol,
                'Use the given API key',
-               'from ~/.gem/credentials') do |value,options|
+               'from ~/.config/gem/credentials') do |value,options|
       options[:key] = value
     end
   end
