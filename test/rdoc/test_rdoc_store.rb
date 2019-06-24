@@ -331,7 +331,7 @@ class TestRDocStore < XrefTestCase
     assert_equal "ruby site", @s.friendly_path
 
     @s.type = :home
-    assert_equal "~/.rdoc", @s.friendly_path
+    assert_equal File.expand_path("~/.local/share/rdoc"), @s.friendly_path
 
     @s.type = :gem
     @s.path = "#{@tmpdir}/gem_repository/doc/gem_name-1.0/ri"

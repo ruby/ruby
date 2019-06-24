@@ -15,6 +15,8 @@ class TestRDocRIDriver < RDoc::TestCase
     @orig_ri = ENV['RI']
     @orig_home = ENV['HOME']
     ENV['HOME'] = @tmpdir
+    @rdoc_home = File.join ENV["HOME"], ".rdoc"
+    FileUtils.mkdir_p @rdoc_home
     ENV.delete 'RI'
 
     @options = RDoc::RI::Driver.default_options
@@ -81,7 +83,7 @@ class TestRDocRIDriver < RDoc::TestCase
       @RM::Rule.new(1),
       @RM::Paragraph.new('Also found in:'),
       @RM::Verbatim.new("ruby core", "\n",
-                        "~/.rdoc", "\n"))
+                        @rdoc_home, "\n"))
 
     assert_equal expected, out
   end
@@ -231,7 +233,7 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Foo::Bar#blah'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         head(3, 'Implementation from Bar'),
         rule(1),
         verb("blah(5) => 5\n",
@@ -254,7 +256,7 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Qux#aliased'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         rule(1),
         blank_line,
         para('alias comment'),
@@ -280,7 +282,7 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Foo::Bar#attr'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         rule(1),
         blank_line,
         blank_line)
@@ -299,7 +301,7 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Bar#inherit'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         head(3, 'Implementation from Foo'),
         rule(1),
         blank_line,
@@ -343,13 +345,13 @@ class TestRDocRIDriver < RDoc::TestCase
       doc(
         head(1, 'Foo#inherit'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         rule(1),
         blank_line,
         blank_line,
         head(1, 'Foo#override'),
         blank_line,
-        para('(from ~/.rdoc)'),
+        para("(from #{@rdoc_home})"),
         rule(1),
         blank_line,
         para('must not be displayed in Bar#override'),
@@ -802,7 +804,7 @@ Foo::Bar#bother
       @driver.display_page 'home:README'
     end
 
-    assert_match %r%= README pages in ~/\.rdoc%, out
+    assert_match %r%= README pages in #{@rdoc_home}%, out
     assert_match %r%README\.rdoc%,               out
     assert_match %r%README\.md%,                 out
   end
@@ -856,7 +858,7 @@ Foo::Bar#bother
       @driver.display_page_list @store1
     end
 
-    assert_match %r%= Pages in ~/\.rdoc%, out
+    assert_match %r%= Pages in #{@rdoc_home}%, out
     assert_match %r%README\.rdoc%,        out
   end
 
@@ -876,7 +878,7 @@ Foo::Bar#bother
       @driver.display_page_list @store1
     end
 
-    assert_match %r%= Pages in ~/\.rdoc%, out
+    assert_match %r%= Pages in #{@rdoc_home}%, out
     assert_match %r%README\.rdoc%,        out
     assert_match %r%OTHER\.rdoc%,         out
   end
