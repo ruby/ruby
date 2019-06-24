@@ -92,7 +92,7 @@ class RubyLex
           last_line = lines[line_index]&.byteslice(0, byte_pointer)
           code += last_line if last_line
           @tokens = Ripper.lex(code)
-          indent, corresponding_token_depth = process_nesting_level(check_closing: true)
+          corresponding_token_depth = check_corresponding_token_depth
           if corresponding_token_depth
             corresponding_token_depth
           else
@@ -289,31 +289,53 @@ class RubyLex
     false
   end
 
-  def process_nesting_level(check_closing: false)
+  def process_nesting_level
+    indent = @tokens.inject(0) { |indent, t|
+      case t[1]
+      when :on_lbracket, :on_lbrace, :on_lparen
+        indent += 1
+      when :on_rbracket, :on_rbrace, :on_rparen
+        indent -= 1
+      when :on_kw
+        case t[2]
+        when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
+          indent += 1
+        when 'if', 'unless', 'while', 'until'
+          # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
+          indent += 1 unless t[3].allbits?(Ripper::EXPR_LABEL)
+        when 'end'
+          indent -= 1
+        end
+      end
+      # percent literals are not indented
+      indent
+    }
+    indent
+  end
+
+  def check_corresponding_token_depth
     corresponding_token_depth = nil
     is_first_spaces_of_line = true
     is_first_printable_of_line = true
     spaces_of_nest = []
     spaces_at_line_head = 0
-    indent = @tokens.inject(0) { |indent, t|
+    @tokens.each do |t|
       corresponding_token_depth = nil
       case t[1]
       when :on_ignored_nl, :on_nl
         spaces_at_line_head = 0
         is_first_spaces_of_line = true
         is_first_printable_of_line = true
-        next indent
+        next
       when :on_sp
         spaces_at_line_head = t[2].count(' ') if is_first_spaces_of_line
         is_first_spaces_of_line = false
-        next indent
+        next
       end
       case t[1]
       when :on_lbracket, :on_lbrace, :on_lparen
-        indent += 1
         spaces_of_nest.push(spaces_at_line_head)
       when :on_rbracket, :on_rbrace, :on_rparen
-        indent -= 1
         if is_first_printable_of_line
           corresponding_token_depth = spaces_of_nest.pop
         else
@@ -322,14 +344,13 @@ class RubyLex
       when :on_kw
         case t[2]
         when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
-          indent += 1
           spaces_of_nest.push(spaces_at_line_head)
         when 'if', 'unless', 'while', 'until'
           # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
-          indent += 1 unless t[3].allbits?(Ripper::EXPR_LABEL)
-          spaces_of_nest.push(spaces_at_line_head)
+          unless t[3].allbits?(Ripper::EXPR_LABEL)
+            spaces_of_nest.push(spaces_at_line_head)
+          end
         when 'end'
-          indent -= 1
           if is_first_printable_of_line
             corresponding_token_depth = spaces_of_nest.pop
           else
@@ -339,14 +360,8 @@ class RubyLex
       end
       is_first_spaces_of_line = false
       is_first_printable_of_line = false
-      # percent literals are not indented
-      indent
-    }
-    if check_closing
-      [indent, corresponding_token_depth]
-    else
-      indent
     end
+    corresponding_token_depth
   end
 
   def check_string_literal
