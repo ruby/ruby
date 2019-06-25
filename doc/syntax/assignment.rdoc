@@ -115,7 +115,7 @@ Using +eval+ to evaluate Ruby code will allow access to local variables in
 the same scope, even if the local variables are not assigned until after the
 call to +eval+.  However, local variables assigned inside the call to +eval+
 will not be reflected in the surrounding scope.  Inside the call to +eval+,
-local variables in the scope and local variables assigned inside the call to 
+local variables in the scope and local variables assigned inside the call to
 +eval+ will be accessible.  However, you will not be able to access local
 variables assigned in previous or subsequent calls to +eval+ in the same
 scope. Consider each +eval+ call a separate nested scope. Example:
