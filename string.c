@@ -321,6 +321,9 @@ rb_fstring(VALUE str)
 	return str;
     }
 
+    if (!OBJ_FROZEN(str))
+        rb_str_resize(str, RSTRING_LEN(str));
+
     fstr = register_fstring(str);
 
     if (!bare) {
