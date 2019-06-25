@@ -9,10 +9,6 @@
 
 .globl coroutine_transfer
 coroutine_transfer:
-	stmia r0!, {r4-r11,sp,lr}
-	ldmia r1!, {r4-r11,sp,pc}
+	stmia r1!, {r4-r11,sp,lr}
+	ldmia r0!, {r4-r11,sp,pc}
 	bx lr
-
-#if defined(__linux__) && defined(__ELF__)
-.section .note.GNU-stack,"",%progbits
-#endif
