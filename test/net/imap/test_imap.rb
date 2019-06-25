@@ -130,12 +130,11 @@ class IMAPTest < Test::Unit::TestCase
   end
 
   def start_server
-    started = false
-    @threads << Thread.new do
-      started = true
+    th = Thread.new do
       yield
     end
-    sleep 0.1 until started
+    @threads << th
+    sleep 0.1 until th.stop?
   end
 
   def test_unexpected_eof
