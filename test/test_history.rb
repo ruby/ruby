@@ -1,7 +1,7 @@
 require_relative 'helper'
 require "reline/history"
 
-class Reline::KeyStroke::Test < Reline::TestCase
+class Reline::History::Test < Reline::TestCase
   def test_ancestors
     assert_equal(Reline::History.ancestors.include?(Array), true)
   end
