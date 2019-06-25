@@ -308,8 +308,6 @@ class RubyLex
 
   def check_newline_depth_difference
     depth_difference = 0
-    $stderr.puts ?= * 100
-    $stderr.puts @tokens.inspect
     @tokens.each_with_index do |t, index|
       case t[1]
       when :on_ignored_nl, :on_nl
