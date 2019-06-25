@@ -149,7 +149,7 @@ def sync_default_gems(gem)
     `cp -rf ../io-console/ext/io/console ext/io`
     `cp -rf ../io-console/test/io/console test/io`
     `mkdir -p ext/io/console/lib`
-    `cp -rf ../io-console/lib/console ext/io/console/lib`
+    `cp -rf ../io-console/lib/io/console ext/io/console/lib`
     `cp -f ../io-console/io-console.gemspec ext/io/console`
     `git checkout ext/io/console/depend`
   when "dbm"
