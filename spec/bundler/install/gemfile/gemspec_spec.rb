@@ -331,22 +331,10 @@ RSpec.describe "bundle install from an existing gemspec" do
 
     context "previously bundled for Ruby" do
       let(:platform) { "ruby" }
-      let(:explicit_platform) { false }
 
       before do
         build_lib("foo", :path => tmp.join("foo")) do |s|
           s.add_dependency "rack", "=1.0.0"
-        end
-
-        if explicit_platform
-          create_file(
-            tmp.join("foo", "foo-#{platform}.gemspec"),
-            build_spec("foo", "1.0", platform) do
-              dep "rack", "=1.0.0"
-              @spec.authors = "authors"
-              @spec.summary = "summary"
-            end.first.to_ruby
-          )
         end
 
         gemfile <<-G
@@ -379,7 +367,17 @@ RSpec.describe "bundle install from an existing gemspec" do
 
       context "using JRuby with explicit platform" do
         let(:platform) { "java" }
-        let(:explicit_platform) { true }
+
+        before do
+          create_file(
+            tmp.join("foo", "foo-#{platform}.gemspec"),
+            build_spec("foo", "1.0", platform) do
+              dep "rack", "=1.0.0"
+              @spec.authors = "authors"
+              @spec.summary = "summary"
+            end.first.to_ruby
+          )
+        end
 
         it "should install" do
           simulate_ruby_engine "jruby" do
