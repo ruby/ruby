@@ -7,7 +7,7 @@ require "fileutils"
 module Spec
   module Rubygems
     DEV_DEPS = {
-      "automatiek" => "~> 0.1.0",
+      "automatiek" => "~> 0.2.0",
       "rake" => "~> 12.0",
       "ronn" => "~> 0.7.3",
       "rspec" => "~> 3.6",
