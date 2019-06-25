@@ -645,14 +645,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # <tt>https://rubygems.org</tt>.
 
   def self.host
-    # TODO: move to utils
     @host ||= Gem::DEFAULT_HOST
   end
 
   ## Set the default RubyGems API host.
 
   def self.host=(host)
-    # TODO: move to utils
     @host = host
   end
 
