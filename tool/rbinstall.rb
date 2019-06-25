@@ -827,7 +827,7 @@ def install_default_gem(dir, srcdir)
     spec
   }
   gems.compact.sort_by(&:name).each do |gemspec|
-    old_gemspecs = Dir[File.join(default_spec_dir, "#{gemspec.name}-*.gemspec")]
+    old_gemspecs = Dir[File.join(with_destdir(default_spec_dir), "#{gemspec.name}-*.gemspec")]
     if old_gemspecs.size > 0
       old_gemspecs.each {|spec| FileUtils.rm spec }
     end
