@@ -77,16 +77,9 @@ class RubyLex
         if is_newline
           md = lines[line_index - 1].match(/(\A +)/)
           prev_spaces = md.nil? ? 0 : md[1].count(' ')
-          indent_list = []
-          code = ''
-          lines.each_with_index { |l, i|
-            code << l + "\n"
-            @tokens = Ripper.lex(code)
-            indent_list << process_nesting_level
-          }
-          prev_indent = (line_index - 1).zero? ? 0 : indent_list[line_index - 2]
-          indent = indent_list[line_index - 1]
-          prev_spaces + (indent - prev_indent) * 2
+          @tokens = Ripper.lex(lines[0..line_index].join("\n"))
+          depth_difference = check_newline_depth_difference
+          prev_spaces + depth_difference * 2
         else
           code = line_index.zero? ? '' : lines[0..(line_index - 1)].map{ |l| l + "\n" }.join
           last_line = lines[line_index]&.byteslice(0, byte_pointer)
@@ -311,6 +304,45 @@ class RubyLex
       indent
     }
     indent
+  end
+
+  def check_newline_depth_difference
+    depth_difference = 0
+    $stderr.puts ?= * 100
+    $stderr.puts @tokens.inspect
+    @tokens.each_with_index do |t, index|
+      case t[1]
+      when :on_ignored_nl, :on_nl
+        if index != (@tokens.size - 1)
+          $stderr.puts "nl"
+          depth_difference = 0
+        end
+        next
+      when :on_sp
+        next
+      end
+      case t[1]
+      when :on_lbracket, :on_lbrace, :on_lparen
+        depth_difference += 1
+      when :on_rbracket, :on_rbrace, :on_rparen
+        depth_difference -= 1
+      when :on_kw
+        case t[2]
+        when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
+          depth_difference += 1
+        when 'if', 'unless', 'while', 'until'
+          # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
+          unless t[3].allbits?(Ripper::EXPR_LABEL)
+        $stderr.puts "if"
+            depth_difference += 1
+          end
+        when 'else', 'rescue', 'ensure', 'when', 'in'
+        $stderr.puts "else"
+          depth_difference += 1
+        end
+      end
+    end
+    depth_difference
   end
 
   def check_corresponding_token_depth
