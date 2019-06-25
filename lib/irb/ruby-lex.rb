@@ -332,7 +332,7 @@ class RubyLex
           unless t[3].allbits?(Ripper::EXPR_LABEL)
             depth_difference += 1
           end
-        when 'else', 'rescue', 'ensure', 'when', 'in'
+        when 'else', 'elsif', 'rescue', 'ensure', 'when', 'in'
           depth_difference += 1
         end
       end
@@ -377,7 +377,7 @@ class RubyLex
           unless t[3].allbits?(Ripper::EXPR_LABEL)
             spaces_of_nest.push(spaces_at_line_head)
           end
-        when 'else', 'rescue', 'ensure', 'when', 'in'
+        when 'else', 'elsif', 'rescue', 'ensure', 'when', 'in'
           corresponding_token_depth = spaces_of_nest.last
         when 'end'
           if is_first_printable_of_line
