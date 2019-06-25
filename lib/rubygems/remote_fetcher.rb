@@ -343,30 +343,70 @@ class Gem::RemoteFetcher
 
   protected
 
+  S3Config = Struct.new :access_key_id, :secret_access_key, :security_token, :region
+
   # we have our own signing code here to avoid a dependency on the aws-sdk gem
   # fortunately, a simple GET request isn't too complex to sign properly
   def sign_s3_url(uri, expiration = nil)
     require 'base64'
+    require 'digest'
     require 'openssl'
 
-    id, secret = s3_source_auth uri
+    s3_config = s3_source_auth uri
+    expiration ||= 3600
 
-    expiration ||= s3_expiration
-    canonical_path = "/#{uri.host}#{uri.path}"
-    payload = "GET\n\n\n#{expiration}\n#{canonical_path}"
-    digest = OpenSSL::HMAC.digest('sha1', secret, payload)
-    # URI.escape is deprecated, and there isn't yet a replacement that does quite what we want
-    signature = Base64.encode64(digest).gsub("\n", '').gsub(/[\+\/=]/) { |c| BASE64_URI_TRANSLATE[c] }
-    URI.parse("https://#{uri.host}.s3.amazonaws.com#{uri.path}?AWSAccessKeyId=#{id}&Expires=#{expiration}&Signature=#{signature}")
-  end
+    current_time = Time.now.utc
+    date_time = current_time.strftime("%Y%m%dT%H%m%SZ")
+    date = date_time[0,8]
 
-  def s3_expiration
-    (Time.now + 3600).to_i # one hour from now
+    credential_info = "#{date}/#{s3_config.region}/s3/aws4_request"
+    canonical_host = "#{uri.host}.s3.#{s3_config.region}.amazonaws.com"
+
+    canonical_params = {}
+    canonical_params['X-Amz-Algorithm'] = 'AWS4-HMAC-SHA256'
+    canonical_params['X-Amz-Credential'] = "#{s3_config.access_key_id}/#{credential_info}"
+    canonical_params['X-Amz-Date'] = date_time
+    canonical_params['X-Amz-Expires'] = expiration.to_s
+    canonical_params['X-Amz-SignedHeaders'] = 'host'
+    canonical_params['X-Amz-Security-Token'] = s3_config.security_token if s3_config.security_token
+
+    query_params = canonical_params.sort.to_h.map do |key, value|
+      "#{base64_uri_escape(key)}=#{base64_uri_escape(value)}"
+    end.join('&')
+
+    canonical_request = [
+      'GET',
+      uri.path,
+      query_params,
+      "host:#{canonical_host}",
+      '', # empty params
+      'host',
+      'UNSIGNED-PAYLOAD',
+    ].join("\n")
+
+    string_to_sign = [
+      "AWS4-HMAC-SHA256",
+      date_time,
+      credential_info,
+      Digest::SHA256.hexdigest(canonical_request)
+    ].join("\n")
+
+    date_key = OpenSSL::HMAC.digest('sha256', "AWS4" + s3_config.secret_access_key, date)
+    date_region_key = OpenSSL::HMAC.digest('sha256', date_key, s3_config.region)
+    date_region_service_key = OpenSSL::HMAC.digest('sha256', date_region_key, "s3")
+    signing_key = OpenSSL::HMAC.digest('sha256', date_region_service_key, "aws4_request")
+    signature = OpenSSL::HMAC.hexdigest('sha256', signing_key, string_to_sign)
+
+    URI.parse("https://#{canonical_host}#{uri.path}?#{query_params}&X-Amz-Signature=#{signature}")
   end
 
   BASE64_URI_TRANSLATE = { '+' => '%2B', '/' => '%2F', '=' => '%3D' }.freeze
 
   private
+
+  def base64_uri_escape(str)
+    str.gsub("\n", '').gsub(/[\+\/=]/) { |c| BASE64_URI_TRANSLATE[c] }
+  end
 
   def proxy_for(proxy, uri)
     Gem::Request.proxy_uri(proxy || Gem::Request.get_proxy_from_env(uri.scheme))
@@ -379,7 +419,7 @@ class Gem::RemoteFetcher
   end
 
   def s3_source_auth(uri)
-    return [uri.user, uri.password] if uri.user && uri.password
+    return S3Config.new(uri.user, uri.password, nil, 'us-east-1') if uri.user && uri.password
 
     s3_source = Gem.configuration[:s3_source] || Gem.configuration['s3_source']
     host = uri.host
@@ -388,11 +428,31 @@ class Gem::RemoteFetcher
     auth = s3_source[host] || s3_source[host.to_sym]
     raise FetchError.new("no key for host #{host} in s3_source in .gemrc", "s3://#{host}") unless auth
 
-    id = auth[:id] || auth['id']
-    secret = auth[:secret] || auth['secret']
-    raise FetchError.new("s3_source for #{host} missing id or secret", "s3://#{host}") unless id and secret
+    provider = auth[:provider] || auth['provider']
+    case provider
+    when 'env'
+      id = ENV['AWS_ACCESS_KEY_ID']
+      secret = ENV['AWS_SECRET_ACCESS_KEY']
+      security_token = ENV['AWS_SESSION_TOKEN']
+    when 'instance_profile'
+      require 'json'
+      credentials_response = fetch_http URI(EC2_METADATA_CREDENTIALS)
+      credentials = JSON.parse(credentials_response)
+      id = credentials['AccessKeyId']
+      secret = credentials['SecretAccessKey']
+      security_token = credentials['Token']
+    else
+      id = auth[:id] || auth['id']
+      secret = auth[:secret] || auth['secret']
+      raise FetchError.new("s3_source for #{host} missing id or secret", "s3://#{host}") unless id and secret
 
-    [id, secret]
+      security_token = auth[:security_token] || auth['security_token']
+    end
+
+    region = auth[:region] || auth['region'] || 'us-east-1'
+    S3Config.new(id, secret, security_token, region)
   end
+
+  EC2_METADATA_CREDENTIALS = "http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance"
 
 end
