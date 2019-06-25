@@ -1,8 +1,4 @@
 # frozen_string_literal: true
-# TODO: the documentation in here is terrible.
-#
-# Each exception needs a brief description and the scenarios where it is
-# likely to be raised
 
 require 'rubygems/deprecate'
 
