@@ -312,7 +312,6 @@ class RubyLex
       case t[1]
       when :on_ignored_nl, :on_nl
         if index != (@tokens.size - 1)
-          $stderr.puts "nl"
           depth_difference = 0
         end
         next
@@ -331,11 +330,9 @@ class RubyLex
         when 'if', 'unless', 'while', 'until'
           # postfix if/unless/while/until/rescue must be Ripper::EXPR_LABEL
           unless t[3].allbits?(Ripper::EXPR_LABEL)
-        $stderr.puts "if"
             depth_difference += 1
           end
         when 'else', 'rescue', 'ensure', 'when', 'in'
-        $stderr.puts "else"
           depth_difference += 1
         end
       end
