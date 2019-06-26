@@ -33,11 +33,4 @@ Gem::Specification.new do |spec|
 <%- end -%>
 
   spec.add_development_dependency "bundler", "~> <%= config[:bundler_version] %>"
-  spec.add_development_dependency "rake", "~> 12.0"
-<%- if config[:ext] -%>
-  spec.add_development_dependency "rake-compiler"
-<%- end -%>
-<%- if config[:test] -%>
-  spec.add_development_dependency "<%= config[:test] %>", "~> <%= config[:test_framework_version] %>"
-<%- end -%>
 end
