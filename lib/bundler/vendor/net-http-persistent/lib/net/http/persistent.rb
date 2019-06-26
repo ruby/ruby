@@ -1,7 +1,7 @@
 require 'net/http'
 require 'uri'
 require 'cgi' # for escaping
-require_relative '../../../../connection_pool/lib/connection_pool'
+require 'bundler/vendor/connection_pool/lib/connection_pool'
 
 begin
   require 'net/http/pipeline'
