@@ -31,6 +31,4 @@ Gem::Specification.new do |spec|
 <%- if config[:ext] -%>
   spec.extensions    = ["ext/<%= config[:underscored_name] %>/extconf.rb"]
 <%- end -%>
-
-  spec.add_development_dependency "bundler", "~> <%= config[:bundler_version] %>"
 end
