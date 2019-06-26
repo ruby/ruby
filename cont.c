@@ -85,7 +85,6 @@
 #ifndef _WIN32
 #include <unistd.h>
 #include <sys/mman.h>
-#include <ucontext.h>
 #endif
 #define RB_PAGE_SIZE (pagesize)
 #define RB_PAGE_MASK (~(RB_PAGE_SIZE - 1))
