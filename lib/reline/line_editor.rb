@@ -797,7 +797,7 @@ class Reline::LineEditor
     end
     new_indent = @auto_indent_proc.(new_lines, @line_index, @byte_pointer, @check_new_auto_indent)
     if new_indent
-      md = @buffer_of_lines[@line_index].match(/\A */)
+      md = new_lines[@line_index].match(/\A */)
       prev_indent = md[0].count(' ')
       if @check_new_auto_indent
         @buffer_of_lines[@line_index] = ' ' * new_indent + @buffer_of_lines[@line_index].gsub(/\A */, '')
@@ -805,8 +805,8 @@ class Reline::LineEditor
         @byte_pointer = new_indent
       else
         @line = ' ' * new_indent + @line.gsub(/\A */, '')
-        @cursor -= prev_indent - new_indent
-        @byte_pointer -= prev_indent - new_indent
+        @cursor += new_indent - prev_indent
+        @byte_pointer += new_indent - prev_indent
       end
     end
     @check_new_auto_indent = false
