@@ -411,8 +411,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "depends on a specific version of minitest" do
-        rspec_dep = generated_gemspec.development_dependencies.find {|d| d.name == "minitest" }
-        expect(rspec_dep).to be_specific
+        minitest_dep = generated_gemspec.development_dependencies.find {|d| d.name == "minitest" }
+        expect(minitest_dep).to be_specific
       end
 
       it "builds spec skeleton" do
