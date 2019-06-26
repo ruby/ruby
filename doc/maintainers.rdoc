@@ -207,7 +207,7 @@ Zachary Scott (zzak)
 [lib/prime.rb]
   Yuki Sonoda (yugui)
 [lib/racc.rb, lib/racc/*]
-  Aaron Patterson (tenderlove), Hiroshi SHIBATA(hsbt)
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/racc
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
@@ -264,7 +264,7 @@ Zachary Scott (zzak)
   Kazuki Yamaguchi (rhe)
   https://github.com/ruby/openssl
 [ext/psych]
-  Aaron Patterson (tenderlove), Hiroshi SHIBATA(hsbt)
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/psych
 [ext/sdbm]
   Yukihiro Matsumoto (matz)
