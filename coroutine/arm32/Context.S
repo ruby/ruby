@@ -9,7 +9,6 @@
 
 .globl coroutine_transfer
 coroutine_transfer:
-	push {r4-r11,lr}
-	str sp, [r0]
-	ldr sp, [r1]
-	pop {r4-r11,pc}
+	stmia r1!, {r4-r11,sp,lr}
+	ldmia r0!, {r4-r11,sp,pc}
+	bx lr
