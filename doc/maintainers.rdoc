@@ -149,7 +149,7 @@ Zachary Scott (zzak)
 [ext/io/wait]
   Nobuyuki Nakada (nobu)
 [ext/nkf]
-  NARUSE, Yui (narse)
+  NARUSE, Yui (naruse)
 [ext/objspace]
   _unmaintained_
 [ext/pathname]
