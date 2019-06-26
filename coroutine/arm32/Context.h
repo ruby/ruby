@@ -12,7 +12,7 @@
 
 #define COROUTINE __attribute__((noreturn)) void
 
-enum {COROUTINE_REGISTERS = 9};
+enum {COROUTINE_REGISTERS = 8};
 
 struct coroutine_context
 {

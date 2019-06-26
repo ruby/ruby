@@ -2272,6 +2272,9 @@ AS_CASE(["$rb_cv_fiber_coroutine"], [yes|''], [
         [x64-mingw32], [
             rb_cv_fiber_coroutine=win64
         ],
+        [armv7*-linux-*], [
+            rb_cv_fiber_coroutine=ucontext
+        ],
         [aarch64-linux], [
             rb_cv_fiber_coroutine=arm64
         ],
