@@ -175,7 +175,7 @@ class RubyLex
       return false
     elsif @tokens.size >= 2 and @tokens[-2][1] == :on_semicolon
       return false
-    elsif @tokens.size >= 2 and @tokens[-2][1] == :on_kw and (@tokens[-2][2] == 'begin' or @tokens[-2][2] == 'else')
+    elsif @tokens.size >= 2 and @tokens[-2][1] == :on_kw and ['begin', 'else', 'ensure'].include?(@tokens[-2][2])
       return false
     elsif @tokens.size >= 3 and @tokens[-3][1] == :on_symbeg and @tokens[-2][1] == :on_ivar
       # This is for :@a or :@1 because :@1 ends with EXPR_FNAME
