@@ -366,6 +366,7 @@ class RubyLex
         if is_first_printable_of_line
           corresponding_token_depth = spaces_of_nest.pop
         else
+          spaces_of_nest.pop
           corresponding_token_depth = nil
         end
       when :on_kw
@@ -383,6 +384,7 @@ class RubyLex
           if is_first_printable_of_line
             corresponding_token_depth = spaces_of_nest.pop
           else
+            spaces_of_nest.pop
             corresponding_token_depth = nil
           end
         end
