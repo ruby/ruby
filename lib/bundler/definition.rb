@@ -812,9 +812,8 @@ module Bundler
       end
 
       resolve = SpecSet.new(converged)
-      expanded_deps = expand_dependencies(deps, true)
       @locked_specs_incomplete_for_platform = !resolve.for(expand_dependencies(deps), @unlock[:gems], true, true)
-      resolve = resolve.for(expanded_deps, @unlock[:gems], false, false, false)
+      resolve = resolve.for(expand_dependencies(deps, true), @unlock[:gems], false, false, false)
       diff    = nil
 
       # Now, we unlock any sources that do not have anymore gems pinned to it
