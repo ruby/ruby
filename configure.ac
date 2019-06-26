@@ -2281,6 +2281,9 @@ AS_CASE(["$rb_cv_fiber_coroutine"], [yes|''], [
         [powerpc64le-linux], [
             rb_cv_fiber_coroutine=ppc64le
         ],
+        [*-openbsd*], [
+            rb_cv_fiber_coroutine=
+        ],
         [*], [
             rb_cv_fiber_coroutine=ucontext
         ]
