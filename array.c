@@ -2369,7 +2369,9 @@ rb_ary_join(VALUE ary, VALUE sep)
 	len += RSTRING_LEN(tmp);
     }
 
-    result = rb_str_buf_new(len);
+    result = rb_str_new(0, len);
+    rb_str_set_len(result, 0);
+
     if (taint) OBJ_TAINT(result);
     ary_join_0(ary, sep, RARRAY_LEN(ary), result);
 
