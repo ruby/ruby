@@ -489,6 +489,9 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_match("can't find string \"a\" anywhere before EOF", compile_error("<<a"))
     assert_match("can't find string \"a\" anywhere before EOF", compile_error('<<"a"'))
     assert_match("can't find string \"a\" anywhere before EOF", compile_error("<<'a'"))
+    msg = nil
+    parse('<<"', :on_parse_error) {|_, e| msg = e}
+    assert_equal("unterminated here document identifier", msg)
   end
 
   def test_massign
