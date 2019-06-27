@@ -2,11 +2,6 @@
 
 require "set"
 
-if defined?(Encoding) && Encoding.default_external.name != "UTF-8"
-  # An approximation of ruby -E UTF-8, since it works on 1.8.7
-  Encoding.default_external = Encoding.find("UTF-8")
-end
-
 RSpec.describe "The library itself" do
   def check_for_debugging_mechanisms(filename)
     debugging_mechanisms_regex = /
@@ -17,7 +12,7 @@ RSpec.describe "The library itself" do
     /x
 
     failing_lines = []
-    File.readlines(filename).each_with_index do |line, number|
+    each_line(filename) do |line, number|
       if line =~ debugging_mechanisms_regex && !line.end_with?("# ignore quality_spec\n")
         failing_lines << number + 1
       end
@@ -35,7 +30,7 @@ RSpec.describe "The library itself" do
     /x
 
     failing_lines = []
-    File.readlines(filename).each_with_index do |line, number|
+    each_line(filename) do |line, number|
       failing_lines << number + 1 if line =~ merge_conflicts_regex
     end
 
@@ -45,7 +40,7 @@ RSpec.describe "The library itself" do
 
   def check_for_tab_characters(filename)
     failing_lines = []
-    File.readlines(filename).each_with_index do |line, number|
+    each_line(filename) do |line, number|
       failing_lines << number + 1 if line =~ /\t/
     end
 
@@ -55,7 +50,7 @@ RSpec.describe "The library itself" do
 
   def check_for_extra_spaces(filename)
     failing_lines = []
-    File.readlines(filename).each_with_index do |line, number|
+    each_line(filename) do |line, number|
       next if line =~ /^\s+#.*\s+\n$/
       next if %w[LICENCE.md].include?(line)
       failing_lines << number + 1 if line =~ /\s+\n$/
@@ -78,7 +73,7 @@ RSpec.describe "The library itself" do
     ]
     pattern = /\b#{Regexp.union(useless_words)}\b/i
 
-    File.readlines(filename).each_with_index do |line, number|
+    each_line(filename) do |line, number|
       next unless word_found = pattern.match(line)
       failing_line_message << "#{filename}:#{number.succ} has '#{word_found}'. Avoid using these kinds of weak modifiers."
     end
@@ -90,7 +85,7 @@ RSpec.describe "The library itself" do
     failing_line_message = []
     specific_pronouns = /\b(he|she|his|hers|him|her|himself|herself)\b/i
 
-    File.readlines(filename).each_with_index do |line, number|
+    each_line(filename) do |line, number|
       next unless word_found = specific_pronouns.match(line)
       failing_line_message << "#{filename}:#{number.succ} has '#{word_found}'. Use more generic pronouns in documentation."
     end
@@ -188,7 +183,7 @@ RSpec.describe "The library itself" do
       key_pattern = /([a-z\._-]+)/i
       lib_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
       lib_files.split("\x0").each do |filename|
-        File.readlines(filename).each_with_index do |line, number|
+        each_line(filename) do |line, number|
           line.scan(/Bundler\.settings\[:#{key_pattern}\]/).flatten.each {|s| all_settings[s] << "referenced at `#{filename}:#{number.succ}`" }
         end
       end
@@ -279,12 +274,18 @@ RSpec.describe "The library itself" do
       lib_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
       lib_files.split("\x0").each do |filename|
         next if filename =~ exempt
-        File.readlines(filename).each_with_index do |line, number|
+        each_line(filename) do |line, number|
           line.scan(/^ *require "bundler/).each { all_bad_requires << "#{filename}:#{number.succ}" }
         end
       end
 
       expect(all_bad_requires).to be_empty, "#{all_bad_requires.size} internal requires that should use `require_relative`: #{all_bad_requires}"
     end
+  end
+
+private
+
+  def each_line(filename, &block)
+    File.readlines(filename, :encoding => "UTF-8").each_with_index(&block)
   end
 end
