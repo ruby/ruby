@@ -22,7 +22,7 @@ Usage:  irb.rb [options] [programfile] [arguments]
                     when new workspace was created
   --echo            Show result(default)
   --noecho          Don't show result
-  --inspect	    Use `inspect' for output (default except for bc mode)
+  --inspect	    Use `inspect' for output
   --noinspect	    Don't use inspect for output
   --readline        Use Readline extension module
   --noreadline	    Don't use Readline extension module
