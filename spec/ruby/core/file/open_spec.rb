@@ -552,9 +552,9 @@ describe "File.open" do
     lambda { File.open(@file, 'fake') }.should raise_error(ArgumentError)
   end
 
-  it "defaults external_encoding to ASCII-8BIT for binary modes" do
-    File.open(@file, 'rb') {|f| f.external_encoding.should == Encoding::ASCII_8BIT}
-    File.open(@file, 'wb+') {|f| f.external_encoding.should == Encoding::ASCII_8BIT}
+  it "defaults external_encoding to BINARY for binary modes" do
+    File.open(@file, 'rb') {|f| f.external_encoding.should == Encoding::BINARY}
+    File.open(@file, 'wb+') {|f| f.external_encoding.should == Encoding::BINARY}
   end
 
   it "uses the second argument as an options Hash" do

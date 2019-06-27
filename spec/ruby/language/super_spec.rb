@@ -102,6 +102,25 @@ describe "The super keyword" do
     c2.new.m(:dump) { :value }.should == :value
   end
 
+  it "uses block argument given to method when used in a block" do
+    c1 = Class.new do
+      def m
+        yield
+      end
+    end
+    c2 = Class.new(c1) do
+      def m(v)
+        ary = []
+        1.times do
+          ary << super()
+        end
+        ary
+      end
+    end
+
+    c2.new.m(:dump) { :value }.should == [ :value ]
+  end
+
   it "calls the superclass method when in a block" do
     SuperSpecs::S6.new.here.should == :good
   end

@@ -12,6 +12,4 @@ describe "Zlib::GzipWriter#<<" do
       (gzio << "test").should equal(gzio)
     end
   end
-
-  it "needs to be reviewed for spec completeness"
 end

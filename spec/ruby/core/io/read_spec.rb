@@ -380,16 +380,16 @@ describe "IO#read in binary mode" do
 
     result = File.open(@name, "rb") { |f| f.read }.chomp
 
-    result.encoding.should == Encoding::ASCII_8BIT
+    result.encoding.should == Encoding::BINARY
     xE2 = [226].pack('C*')
-    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::ASCII_8BIT)
+    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::BINARY)
   end
 
   it "does not transcode file contents when an internal encoding is specified" do
     result = File.open(@name, "r:binary:utf-8") { |f| f.read }.chomp
-    result.encoding.should == Encoding::ASCII_8BIT
+    result.encoding.should == Encoding::BINARY
     xE2 = [226].pack('C*')
-    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::ASCII_8BIT)
+    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::BINARY)
   end
 end
 
@@ -420,37 +420,37 @@ describe "IO.read with BOM" do
   it "reads a file without a bom" do
     name = fixture __FILE__, "no_bom_UTF-8.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "UTF-8\n"
+    result.force_encoding("binary").should == "UTF-8\n"
   end
 
   it "reads a file with a utf-8 bom" do
     name = fixture __FILE__, "bom_UTF-8.txt"
     result = File.read(name, mode: "rb:BOM|utf-16le")
-    result.force_encoding("ascii-8bit").should == "UTF-8\n"
+    result.force_encoding("binary").should == "UTF-8\n"
   end
 
   it "reads a file with a utf-16le bom" do
     name = fixture __FILE__, "bom_UTF-16LE.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "U\x00T\x00F\x00-\x001\x006\x00L\x00E\x00\n\x00"
+    result.force_encoding("binary").should == "U\x00T\x00F\x00-\x001\x006\x00L\x00E\x00\n\x00"
   end
 
   it "reads a file with a utf-16be bom" do
     name = fixture __FILE__, "bom_UTF-16BE.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "\x00U\x00T\x00F\x00-\x001\x006\x00B\x00E\x00\n"
+    result.force_encoding("binary").should == "\x00U\x00T\x00F\x00-\x001\x006\x00B\x00E\x00\n"
   end
 
   it "reads a file with a utf-32le bom" do
     name = fixture __FILE__, "bom_UTF-32LE.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "U\x00\x00\x00T\x00\x00\x00F\x00\x00\x00-\x00\x00\x003\x00\x00\x002\x00\x00\x00L\x00\x00\x00E\x00\x00\x00\n\x00\x00\x00"
+    result.force_encoding("binary").should == "U\x00\x00\x00T\x00\x00\x00F\x00\x00\x00-\x00\x00\x003\x00\x00\x002\x00\x00\x00L\x00\x00\x00E\x00\x00\x00\n\x00\x00\x00"
   end
 
   it "reads a file with a utf-32be bom" do
     name = fixture __FILE__, "bom_UTF-32BE.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "\x00\x00\x00U\x00\x00\x00T\x00\x00\x00F\x00\x00\x00-\x00\x00\x003\x00\x00\x002\x00\x00\x00B\x00\x00\x00E\x00\x00\x00\n"
+    result.force_encoding("binary").should == "\x00\x00\x00U\x00\x00\x00T\x00\x00\x00F\x00\x00\x00-\x00\x00\x003\x00\x00\x002\x00\x00\x00B\x00\x00\x00E\x00\x00\x00\n"
   end
 end
 
@@ -480,11 +480,11 @@ end
 
 describe :io_read_size_internal_encoding, shared: true do
   it "reads bytes when passed a size" do
-    @io.read(2).should == [164, 162].pack('C*').force_encoding(Encoding::ASCII_8BIT)
+    @io.read(2).should == [164, 162].pack('C*').force_encoding(Encoding::BINARY)
   end
 
-  it "returns a String in ASCII-8BIT when passed a size" do
-    @io.read(4).encoding.should equal(Encoding::ASCII_8BIT)
+  it "returns a String in BINARY when passed a size" do
+    @io.read(4).encoding.should equal(Encoding::BINARY)
   end
 
   it "does not change the buffer's encoding when passed a limit" do

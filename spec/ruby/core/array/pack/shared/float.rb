@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 
 describe :array_pack_float_le, shared: true do
   it "encodes a positive Float" do

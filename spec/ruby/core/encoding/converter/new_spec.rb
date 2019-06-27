@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 require_relative '../../../spec_helper'
 
 describe "Encoding::Converter.new" do
@@ -96,12 +96,12 @@ describe "Encoding::Converter.new" do
   describe "when passed nil for the replacement object" do
     describe "when the destination encoding is not UTF-8" do
       it "sets the replacement String to '?'" do
-        conv = Encoding::Converter.new("us-ascii", "ascii-8bit", replace: nil)
+        conv = Encoding::Converter.new("us-ascii", "binary", replace: nil)
         conv.replacement.should == "?"
       end
 
       it "sets the replacement String encoding to US-ASCII" do
-        conv = Encoding::Converter.new("us-ascii", "ascii-8bit", replace: nil)
+        conv = Encoding::Converter.new("us-ascii", "binary", replace: nil)
         conv.replacement.encoding.should == Encoding::US_ASCII
       end
 

@@ -142,11 +142,3 @@ describe "File#chown" do
     @file.chown(nil, nil).should == 0
   end
 end
-
-describe "File.chown" do
-  it "needs to be reviewed for spec completeness"
-end
-
-describe "File#chown" do
-  it "needs to be reviewed for spec completeness"
-end

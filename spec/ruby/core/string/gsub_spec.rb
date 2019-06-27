@@ -528,8 +528,8 @@ describe "String#gsub with pattern and block" do
     s  = "hello"
     s2 = "#{195.chr}#{192.chr}#{195.chr}"
 
-    s.gsub(/l/) { |bar| 195.chr }.encoding.should == Encoding::ASCII_8BIT
-    s2.gsub("#{192.chr}") { |bar| "hello" }.encoding.should == Encoding::ASCII_8BIT
+    s.gsub(/l/) { |bar| 195.chr }.encoding.should == Encoding::BINARY
+    s2.gsub("#{192.chr}") { |bar| "hello" }.encoding.should == Encoding::BINARY
   end
 
   it "raises an Encoding::CompatibilityError if the encodings are not compatible" do
@@ -653,8 +653,8 @@ describe "String#gsub! with pattern and block" do
     s  = "hello"
     s2 = "#{195.chr}#{192.chr}#{195.chr}"
 
-    s.gsub!(/l/) { |bar| 195.chr }.encoding.should == Encoding::ASCII_8BIT
-    s2.gsub!("#{192.chr}") { |bar| "hello" }.encoding.should == Encoding::ASCII_8BIT
+    s.gsub!(/l/) { |bar| 195.chr }.encoding.should == Encoding::BINARY
+    s2.gsub!("#{192.chr}") { |bar| "hello" }.encoding.should == Encoding::BINARY
   end
 
   it "raises an Encoding::CompatibilityError if the encodings are not compatible" do

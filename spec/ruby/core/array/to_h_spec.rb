@@ -35,6 +35,10 @@ describe "Array#to_h" do
     lambda { [].to_h(:a, :b) }.should raise_error(ArgumentError)
   end
 
+  it "produces a hash that returns nil for a missing element" do
+    [[:a, 1], [:b, 2]].to_h[:c].should be_nil
+  end
+
   ruby_version_is "2.6" do
     context "with block" do
       it "converts [key, value] pairs returned by the block to a Hash" do

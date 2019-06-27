@@ -3,8 +3,6 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "#String#bytesize" do
-  it "needs to be reviewed for spec completeness"
-
   it "returns the length of self in bytes" do
     "hello".bytesize.should == 5
     " ".bytesize.should == 1

@@ -430,7 +430,7 @@ ruby_version_is '2.5' do
       end
 
       it "raises RuntimeError if there is malformed dump of non ASCII-compatible string" do
-        -> { '"".force_encoding("ASCII-8BIT"'.undump }.should raise_error(RuntimeError, /invalid dumped string/)
+        -> { '"".force_encoding("BINARY"'.undump }.should raise_error(RuntimeError, /invalid dumped string/)
         -> { '"".force_encoding("Unknown")'.undump }.should raise_error(RuntimeError, /dumped string has unknown encoding name/)
         -> { '"".force_encoding()'.undump }.should raise_error(RuntimeError, /invalid dumped string/)
       end

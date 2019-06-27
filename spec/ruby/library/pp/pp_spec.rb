@@ -20,6 +20,4 @@ describe "PP.pp" do
 
     other_out.to_s.should == "[1, 2, 3]\n"
   end
-
-  it "needs to be reviewed for spec completeness"
 end

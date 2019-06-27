@@ -295,25 +295,25 @@ describe "IO#gets" do
   end
 
   it "overwrites the default external encoding with the IO object's own external encoding" do
-    Encoding.default_external = Encoding::ASCII_8BIT
+    Encoding.default_external = Encoding::BINARY
     Encoding.default_internal = Encoding::UTF_8
     @io = new_io @name, 'r'
     @io.set_encoding Encoding::IBM866
     @io.gets.encoding.should == Encoding::UTF_8
   end
 
-  it "ignores the internal encoding if the default external encoding is ASCII-8BIT" do
-    Encoding.default_external = Encoding::ASCII_8BIT
+  it "ignores the internal encoding if the default external encoding is BINARY" do
+    Encoding.default_external = Encoding::BINARY
     Encoding.default_internal = Encoding::UTF_8
     @io = new_io @name, 'r'
-    @io.gets.encoding.should == Encoding::ASCII_8BIT
+    @io.gets.encoding.should == Encoding::BINARY
   end
 
-  it "transcodes to internal encoding if the IO object's external encoding is ASCII-8BIT" do
-    Encoding.default_external = Encoding::ASCII_8BIT
+  it "transcodes to internal encoding if the IO object's external encoding is BINARY" do
+    Encoding.default_external = Encoding::BINARY
     Encoding.default_internal = Encoding::UTF_8
     @io = new_io @name, 'r'
-    @io.set_encoding Encoding::ASCII_8BIT, Encoding::UTF_8
+    @io.set_encoding Encoding::BINARY, Encoding::UTF_8
     @io.gets.encoding.should == Encoding::UTF_8
   end
 end

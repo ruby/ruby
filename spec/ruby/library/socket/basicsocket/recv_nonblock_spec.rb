@@ -35,6 +35,11 @@ describe "Socket::BasicSocket#recv_nonblock" do
       }
     end
 
+    it "returns :wait_readable with exception: false" do
+      @s1.bind(Socket.pack_sockaddr_in(0, ip_address))
+      @s1.recv_nonblock(5, exception: false).should == :wait_readable
+    end
+
     it "receives data after it's ready" do
       @s1.bind(Socket.pack_sockaddr_in(0, ip_address))
       @s2.send("aaa", 0, @s1.getsockname)

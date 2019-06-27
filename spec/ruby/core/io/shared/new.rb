@@ -168,13 +168,13 @@ describe :io_new, shared: true do
 
   it "sets external encoding to binary with binmode in mode string" do
     @io = IO.send(@method, @fd, 'wb')
-    @io.external_encoding.to_s.should == 'ASCII-8BIT'
+    @io.external_encoding.should == Encoding::BINARY
   end
 
   # #5917
   it "sets external encoding to binary with :binmode option" do
     @io = IO.send(@method, @fd, 'w', {binmode: true})
-    @io.external_encoding.to_s.should == 'ASCII-8BIT'
+    @io.external_encoding.should == Encoding::BINARY
   end
 
   it "does not use binary encoding when mode encoding is specified" do

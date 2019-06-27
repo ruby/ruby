@@ -21,6 +21,4 @@ describe "IO#readbyte" do
       @io.readbyte
     end.should raise_error EOFError
   end
-
-  it "needs to be reviewed for spec completeness"
 end

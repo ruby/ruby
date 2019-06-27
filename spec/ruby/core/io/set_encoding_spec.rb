@@ -87,7 +87,7 @@ describe "IO#set_encoding when passed nil, nil" do
   describe "with 'rb' mode" do
     it "returns Encoding.default_external" do
       @io = new_io @name, "rb"
-      @io.external_encoding.should equal(Encoding::ASCII_8BIT)
+      @io.external_encoding.should equal(Encoding::BINARY)
 
       @io.set_encoding nil, nil
       @io.external_encoding.should equal(Encoding.default_external)

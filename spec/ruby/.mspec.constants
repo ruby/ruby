@@ -78,7 +78,7 @@ Find
 Forwardable
 GetoptLong
 HMACConstants
-HashStringsASCII8BIT
+HashStringsBinary
 HashStringsUSASCII
 HashStringsUTF8
 IPAddr

@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'

@@ -35,7 +35,7 @@ describe :rb_str_new2, shared: true do
   end
 
   it "encodes the string with ASCII_8BIT" do
-    @s.send(@method, "hello").encoding.should == Encoding::ASCII_8BIT
+    @s.send(@method, "hello").encoding.should == Encoding::BINARY
   end
 end
 
@@ -159,8 +159,8 @@ describe "C-API String function" do
   end
 
   describe "rb_str_new" do
-    it "creates a new String with ASCII-8BIT Encoding" do
-      @s.rb_str_new("", 0).encoding.should == Encoding::ASCII_8BIT
+    it "creates a new String with BINARY Encoding" do
+      @s.rb_str_new("", 0).encoding.should == Encoding::BINARY
     end
 
     it "returns a new string object from a char buffer of len characters" do
@@ -676,10 +676,10 @@ describe :rb_external_str_new, shared: true do
     @s.send(@method, "abc").encoding.should == Encoding::UTF_8
   end
 
-  it "returns an ASCII-8BIT encoded string if any non-ascii bytes are present and default external is US-ASCII" do
+  it "returns an BINARY encoded string if any non-ascii bytes are present and default external is US-ASCII" do
     Encoding.default_external = "US-ASCII"
     x80 = [0x80].pack('C')
-    @s.send(@method, "#{x80}abc").encoding.should == Encoding::ASCII_8BIT
+    @s.send(@method, "#{x80}abc").encoding.should == Encoding::BINARY
   end
 
   it "returns a tainted String" do
@@ -735,10 +735,10 @@ describe "C-API String function" do
       s.encoding.should == Encoding::UTF_8
     end
 
-    it "returns an ASCII-8BIT encoded String if any non-ascii bytes are present and the specified encoding is US-ASCII" do
+    it "returns an BINARY encoded String if any non-ascii bytes are present and the specified encoding is US-ASCII" do
       x80 = [0x80].pack('C')
       s = @s.rb_external_str_new_with_enc("#{x80}abc", 4, Encoding::US_ASCII)
-      s.encoding.should == Encoding::ASCII_8BIT
+      s.encoding.should == Encoding::BINARY
     end
 
 
@@ -750,7 +750,7 @@ describe "C-API String function" do
 #         s = @s.rb_external_str_new_with_enc(a, a.bytesize, Encoding::UTF_8)
 #  -
 #  -      s.should == "\xA4\xA2\xA4\xEC".force_encoding("euc-jp")
-#  +      x = [0xA4, 0xA2, 0xA4, 0xEC].pack('C4')#.force_encoding('ascii-8bit')
+#  +      x = [0xA4, 0xA2, 0xA4, 0xEC].pack('C4')#.force_encoding('binary')
 #  +      s.should == x
 #         s.encoding.should equal(Encoding::EUC_JP)
 #     end
@@ -817,9 +817,9 @@ describe "C-API String function" do
         @s.rb_str_conv_enc(a, Encoding::UTF_8, Encoding::US_ASCII).should equal(a)
       end
 
-      it "returns the origin String if the destination encoding is ASCII-8BIT" do
-        a = "abc".force_encoding("ascii-8bit")
-        @s.rb_str_conv_enc(a, Encoding::US_ASCII, Encoding::ASCII_8BIT).should equal(a)
+      it "returns the origin String if the destination encoding is BINARY" do
+        a = "abc".force_encoding("binary")
+        @s.rb_str_conv_enc(a, Encoding::US_ASCII, Encoding::BINARY).should equal(a)
       end
     end
   end
@@ -857,10 +857,10 @@ describe "C-API String function" do
                                 Encoding::US_ASCII, 0, nil).should equal(a)
       end
 
-      it "returns the origin String if the destination encoding is ASCII-8BIT" do
-        a = "abc".force_encoding("ascii-8bit")
+      it "returns the origin String if the destination encoding is BINARY" do
+        a = "abc".force_encoding("binary")
         @s.rb_str_conv_enc_opts(a, Encoding::US_ASCII,
-                                Encoding::ASCII_8BIT, 0, nil).should equal(a)
+                                Encoding::BINARY, 0, nil).should equal(a)
       end
     end
   end

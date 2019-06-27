@@ -37,7 +37,7 @@ describe :dir_pwd, shared: true do
   it "returns a String with the filesystem encoding" do
     enc = Dir.send(@method).encoding
     if @fs_encoding == Encoding::US_ASCII
-      [Encoding::US_ASCII, Encoding::ASCII_8BIT].should include(enc)
+      [Encoding::US_ASCII, Encoding::BINARY].should include(enc)
     else
       enc.should equal(@fs_encoding)
     end

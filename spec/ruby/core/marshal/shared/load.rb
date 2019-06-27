@@ -446,11 +446,11 @@ describe :marshal_load, shared: true do
       result.encoding.should equal(Encoding::UTF_16LE)
     end
 
-    it "loads a String as ASCII-8BIT if no encoding is specified at the end" do
-      str = "\xC3\xB8".force_encoding("ASCII-8BIT")
+    it "loads a String as BINARY if no encoding is specified at the end" do
+      str = "\xC3\xB8".force_encoding("BINARY")
       data = "\x04\b\"\a\xC3\xB8".force_encoding("UTF-8")
       result = Marshal.send(@method, data)
-      result.encoding.should == Encoding::ASCII_8BIT
+      result.encoding.should == Encoding::BINARY
       result.should == str
     end
   end

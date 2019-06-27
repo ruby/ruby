@@ -171,9 +171,9 @@ describe "IO#external_encoding" do
   end
 
   describe "with 'rb' mode" do
-    it "returns Encoding::ASCII_8BIT" do
+    it "returns Encoding::BINARY" do
       @io = new_io @name, "rb"
-      @io.external_encoding.should equal(Encoding::ASCII_8BIT)
+      @io.external_encoding.should equal(Encoding::BINARY)
     end
 
     it "returns the external encoding specified by the mode argument" do
@@ -191,9 +191,9 @@ describe "IO#external_encoding" do
   end
 
   describe "with 'wb' mode" do
-    it "returns Encoding::ASCII_8BIT" do
+    it "returns Encoding::BINARY" do
       @io = new_io @name, "wb"
-      @io.external_encoding.should equal(Encoding::ASCII_8BIT)
+      @io.external_encoding.should equal(Encoding::BINARY)
     end
 
     it "returns the external encoding specified by the mode argument" do

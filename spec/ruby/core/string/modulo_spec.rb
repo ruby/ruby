@@ -21,13 +21,13 @@ describe "String#%" do
 
   describe "output's encoding" do
     it "is the same as the format string if passed value is encoding-compatible" do
-      [Encoding::ASCII_8BIT, Encoding::US_ASCII, Encoding::UTF_8, Encoding::SHIFT_JIS].each do |encoding|
+      [Encoding::BINARY, Encoding::US_ASCII, Encoding::UTF_8, Encoding::SHIFT_JIS].each do |encoding|
         ("hello %s!".encode(encoding) % "world").encoding.should == encoding
       end
     end
 
     it "negotiates a compatible encoding if necessary" do
-      ("hello %s" % 195.chr).encoding.should == Encoding::ASCII_8BIT
+      ("hello %s" % 195.chr).encoding.should == Encoding::BINARY
       ("hello %s".encode("shift_jis") % "wörld").encoding.should == Encoding::UTF_8
     end
 

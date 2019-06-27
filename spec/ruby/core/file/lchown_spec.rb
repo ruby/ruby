@@ -57,7 +57,3 @@ as_superuser do
     end
   end
 end
-
-describe "File.lchown" do
-  it "needs to be reviewed for spec completeness"
-end

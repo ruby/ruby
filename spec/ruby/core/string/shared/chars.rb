@@ -22,7 +22,7 @@ describe :string_chars, shared: true do
 
   it "returns characters in the same encoding as self" do
     "&%".force_encoding('Shift_JIS').send(@method).to_a.all? {|c| c.encoding.name.should == 'Shift_JIS'}
-    "&%".encode('ASCII-8BIT').send(@method).to_a.all? {|c| c.encoding.name.should == 'ASCII-8BIT'}
+    "&%".encode('BINARY').send(@method).to_a.all? {|c| c.encoding.should == Encoding::BINARY }
   end
 
   it "works with multibyte characters" do
