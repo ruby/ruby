@@ -38,7 +38,7 @@ module Net
     include SMTPError
   end
 
-  # Represents SMTP error code 420 or 450, a temporary error.
+  # Represents SMTP error code 4xx, a temporary error.
   class SMTPServerBusy < ProtoServerError
     include SMTPError
   end
