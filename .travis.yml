@@ -314,6 +314,8 @@ env:
     before_script: chmod -R u+w spec/ruby
     # -j randomly hangs.
     script: ruby -C spec/ruby ../mspec/bin/mspec .
+    after_failure:
+      - echo "ruby/spec failed on Ruby 2.4. This is likely because of a missing ruby_version_is guard, please add it. See spec/README.md."
 
   - &baseruby
     name: "BASERUBY: Ruby 1.9.3"
