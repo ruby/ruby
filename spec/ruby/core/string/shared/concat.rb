@@ -60,13 +60,13 @@ describe :string_concat, shared: true do
     end
 
     # #5855
-    it "returns a ASCII-8BIT string if self is US-ASCII and the argument is between 128-255 (inclusive)" do
+    it "returns a BINARY string if self is US-ASCII and the argument is between 128-255 (inclusive)" do
       a = ("".encode(Encoding::US_ASCII).send(@method, 128))
-      a.encoding.should == Encoding::ASCII_8BIT
+      a.encoding.should == Encoding::BINARY
       a.should == 128.chr
 
       a = ("".encode(Encoding::US_ASCII).send(@method, 255))
-      a.encoding.should == Encoding::ASCII_8BIT
+      a.encoding.should == Encoding::BINARY
       a.should == 255.chr
     end
 
@@ -152,9 +152,9 @@ describe :string_concat_encoding, shared: true do
     end
   end
 
-  describe "when self is ASCII-8BIT and argument is US-ASCII" do
-    it "uses ASCII-8BIT encoding" do
-      "abc".encode("ASCII-8BIT").send(@method, "123".encode("US-ASCII")).encoding.should == Encoding::ASCII_8BIT
+  describe "when self is BINARY and argument is US-ASCII" do
+    it "uses BINARY encoding" do
+      "abc".encode("BINARY").send(@method, "123".encode("US-ASCII")).encoding.should == Encoding::BINARY
     end
   end
 end

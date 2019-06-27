@@ -19,9 +19,9 @@ describe "String#force_encoding" do
       "abc".force_encoding("internal").encoding.should == Encoding::US_ASCII
     end
 
-    it "defaults to ASCII-8BIT if special encoding name is not set" do
+    it "defaults to BINARY if special encoding name is not set" do
       Encoding.default_internal = nil
-      "abc".force_encoding("internal").encoding.should == Encoding::ASCII_8BIT
+      "abc".force_encoding("internal").encoding.should == Encoding::BINARY
     end
   end
 

@@ -90,9 +90,3 @@ describe "URI::Mailto.build" do
     ok.flatten.join("\0").should == ok_all
   end
 end
-
-
-
-describe "URI::MailTo.build" do
-  it "needs to be reviewed for spec completeness"
-end

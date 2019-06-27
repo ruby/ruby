@@ -22,9 +22,9 @@ describe "Encoding::InvalidByteSequenceError#error_bytes" do
     @exception2.error_bytes.should == @errinfo2[-2]
   end
 
-  it "uses ASCII-8BIT as the encoding" do
-    @exception.error_bytes.encoding.should == Encoding::ASCII_8BIT
+  it "uses BINARY as the encoding" do
+    @exception.error_bytes.encoding.should == Encoding::BINARY
 
-    @exception2.error_bytes.encoding.should == Encoding::ASCII_8BIT
+    @exception2.error_bytes.encoding.should == Encoding::BINARY
   end
 end

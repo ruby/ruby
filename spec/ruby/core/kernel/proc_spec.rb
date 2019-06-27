@@ -59,6 +59,4 @@ describe "Kernel#proc" do
       }.should complain(/Capturing the given block using Proc.new is deprecated/)
     end
   end
-
-  it "needs to be reviewed for spec completeness"
 end

@@ -31,6 +31,10 @@ describe 'BasicSocket#recvmsg_nonblock' do
           it 'raises an exception extending IO::WaitReadable' do
             lambda { @server.recvmsg_nonblock }.should raise_error(IO::WaitReadable)
           end
+
+          it 'returns :wait_readable with exception: false' do
+            @server.recvmsg_nonblock(exception: false).should == :wait_readable
+          end
         end
 
         describe 'with data available' do

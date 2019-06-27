@@ -89,8 +89,8 @@ describe :array_join_with_default_separator, shared: true do
   it "uses the first encoding when other strings are compatible" do
     ary1 = ArraySpecs.array_with_7bit_utf8_and_usascii_strings
     ary2 = ArraySpecs.array_with_usascii_and_7bit_utf8_strings
-    ary3 = ArraySpecs.array_with_utf8_and_7bit_ascii8bit_strings
-    ary4 = ArraySpecs.array_with_usascii_and_7bit_ascii8bit_strings
+    ary3 = ArraySpecs.array_with_utf8_and_7bit_binary_strings
+    ary4 = ArraySpecs.array_with_usascii_and_7bit_binary_strings
 
     ary1.send(@method).encoding.should == Encoding::UTF_8
     ary2.send(@method).encoding.should == Encoding::US_ASCII
@@ -107,9 +107,9 @@ describe :array_join_with_default_separator, shared: true do
   end
 
   it "fails for arrays with incompatibly-encoded strings" do
-    ary_utf8_bad_ascii8bit = ArraySpecs.array_with_utf8_and_ascii8bit_strings
+    ary_utf8_bad_binary = ArraySpecs.array_with_utf8_and_binary_strings
 
-    lambda { ary_utf8_bad_ascii8bit.send(@method) }.should raise_error(EncodingError)
+    lambda { ary_utf8_bad_binary.send(@method) }.should raise_error(EncodingError)
   end
 end
 

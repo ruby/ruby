@@ -30,9 +30,9 @@ describe "Integer#chr without argument" do
     end
 
     describe "and self is between 128 and 255 (inclusive)" do
-      it "returns an ASCII-8BIT String" do
+      it "returns an BINARY String" do
         (128..255).each do |c|
-          c.chr.encoding.should == Encoding::ASCII_8BIT
+          c.chr.encoding.should == Encoding::BINARY
         end
       end
 
@@ -81,13 +81,13 @@ describe "Integer#chr without argument" do
     end
 
     describe "and self is between 128 and 255 (inclusive)" do
-      it "returns an ASCII-8BIT String" do
+      it "returns an BINARY String" do
         (128..255).each do |c|
           Encoding.default_internal = Encoding::UTF_8
-          c.chr.encoding.should == Encoding::ASCII_8BIT
+          c.chr.encoding.should == Encoding::BINARY
 
           Encoding.default_internal = Encoding::SHIFT_JIS
-          c.chr.encoding.should == Encoding::ASCII_8BIT
+          c.chr.encoding.should == Encoding::BINARY
         end
       end
 
@@ -126,7 +126,7 @@ describe "Integer#chr without argument" do
       # #5864
       it "raises RangeError if self is invalid as a codepoint in the default internal encoding" do
         [ [0x0100, "US-ASCII"],
-          [0x0100, "ASCII-8BIT"],
+          [0x0100, "BINARY"],
           [0x0100, "EUC-JP"],
           [0xA1A0, "EUC-JP"],
           [0x0100, "ISO-8859-9"],
@@ -173,10 +173,10 @@ describe "Integer#chr with an encoding argument" do
     0x0000.chr(Encoding::US_ASCII).encoding.should == Encoding::US_ASCII
     0x007F.chr(Encoding::US_ASCII).encoding.should == Encoding::US_ASCII
 
-    0x0000.chr(Encoding::ASCII_8BIT).encoding.should == Encoding::ASCII_8BIT
-    0x007F.chr(Encoding::ASCII_8BIT).encoding.should == Encoding::ASCII_8BIT
-    0x0080.chr(Encoding::ASCII_8BIT).encoding.should == Encoding::ASCII_8BIT
-    0x00FF.chr(Encoding::ASCII_8BIT).encoding.should == Encoding::ASCII_8BIT
+    0x0000.chr(Encoding::BINARY).encoding.should == Encoding::BINARY
+    0x007F.chr(Encoding::BINARY).encoding.should == Encoding::BINARY
+    0x0080.chr(Encoding::BINARY).encoding.should == Encoding::BINARY
+    0x00FF.chr(Encoding::BINARY).encoding.should == Encoding::BINARY
 
     0x0000.chr(Encoding::UTF_8).encoding.should == Encoding::UTF_8
     0x007F.chr(Encoding::UTF_8).encoding.should == Encoding::UTF_8
@@ -197,10 +197,10 @@ describe "Integer#chr with an encoding argument" do
     0x0000.chr(Encoding::US_ASCII).bytes.to_a.should == [0x00]
     0x007F.chr(Encoding::US_ASCII).bytes.to_a.should == [0x7F]
 
-    0x0000.chr(Encoding::ASCII_8BIT).bytes.to_a.should == [0x00]
-    0x007F.chr(Encoding::ASCII_8BIT).bytes.to_a.should == [0x7F]
-    0x0080.chr(Encoding::ASCII_8BIT).bytes.to_a.should == [0x80]
-    0x00FF.chr(Encoding::ASCII_8BIT).bytes.to_a.should == [0xFF]
+    0x0000.chr(Encoding::BINARY).bytes.to_a.should == [0x00]
+    0x007F.chr(Encoding::BINARY).bytes.to_a.should == [0x7F]
+    0x0080.chr(Encoding::BINARY).bytes.to_a.should == [0x80]
+    0x00FF.chr(Encoding::BINARY).bytes.to_a.should == [0xFF]
 
     0x0000.chr(Encoding::UTF_8).bytes.to_a.should == [0x00]
     0x007F.chr(Encoding::UTF_8).bytes.to_a.should == [0x7F]
@@ -220,7 +220,7 @@ describe "Integer#chr with an encoding argument" do
   # #5864
   it "raises RangeError if self is invalid as a codepoint in the specified encoding" do
     [ [0x80,   "US-ASCII"],
-      [0x0100, "ASCII-8BIT"],
+      [0x0100, "BINARY"],
       [0x0100, "EUC-JP"],
       [0xA1A0, "EUC-JP"],
       [0xA1,   "EUC-JP"],

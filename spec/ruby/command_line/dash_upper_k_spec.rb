@@ -6,24 +6,24 @@ describe 'The -K command line option' do
   end
 
   describe 'sets __ENCODING__ and Encoding.default_external' do
-    it "to Encoding::ASCII_8BIT with -Ka" do
+    it "to Encoding::BINARY with -Ka" do
       ruby_exe(@test_string, options: '-Ka').should ==
-        [Encoding::ASCII_8BIT.name, Encoding::ASCII_8BIT.name, nil].inspect
+        [Encoding::BINARY.name, Encoding::BINARY.name, nil].inspect
     end
 
-    it "to Encoding::ASCII_8BIT with -KA" do
+    it "to Encoding::BINARY with -KA" do
       ruby_exe(@test_string, options: '-KA').should ==
-        [Encoding::ASCII_8BIT.name, Encoding::ASCII_8BIT.name, nil].inspect
+        [Encoding::BINARY.name, Encoding::BINARY.name, nil].inspect
     end
 
-    it "to Encoding::ASCII_8BIT with -Kn" do
+    it "to Encoding::BINARY with -Kn" do
       ruby_exe(@test_string, options: '-Kn').should ==
-        [Encoding::ASCII_8BIT.name, Encoding::ASCII_8BIT.name, nil].inspect
+        [Encoding::BINARY.name, Encoding::BINARY.name, nil].inspect
     end
 
-    it "to Encoding::ASCII_8BIT with -KN" do
+    it "to Encoding::BINARY with -KN" do
       ruby_exe(@test_string, options: '-KN').should ==
-        [Encoding::ASCII_8BIT.name, Encoding::ASCII_8BIT.name, nil].inspect
+        [Encoding::BINARY.name, Encoding::BINARY.name, nil].inspect
     end
 
     it "to Encoding::EUC_JP with -Ke" do

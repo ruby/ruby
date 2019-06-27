@@ -98,6 +98,15 @@ describe 'BasicSocket#sendmsg_nonblock' do
             10.times { @client.sendmsg_nonblock('hello' * 1_000_000) }
           }.should raise_error(IO::WaitWritable)
         end
+
+        it 'returns :wait_writable when the underlying buffer is full with exception: false' do
+          ret = nil
+          10.times {
+            ret = @client.sendmsg_nonblock('hello' * 1_000_000, exception: false)
+            break unless ret.is_a?(Integer)
+          }
+          ret.should == :wait_writable
+        end
       end
     end
   end

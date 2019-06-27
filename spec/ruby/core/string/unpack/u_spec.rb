@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
@@ -31,10 +31,10 @@ describe "String#unpack with format 'u'" do
 
   it "decodes into raw (ascii) string values" do
     str = "".unpack("u")[0]
-    str.encoding.name.should == 'ASCII-8BIT'
+    str.encoding.should == Encoding::BINARY
 
     str = "1".force_encoding('UTF-8').unpack("u")[0]
-    str.encoding.name.should == 'ASCII-8BIT'
+    str.encoding.should == Encoding::BINARY
   end
 
   it "decodes the complete string ignoring newlines when given a single directive" do

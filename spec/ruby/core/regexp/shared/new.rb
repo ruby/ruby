@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 
 describe :regexp_new, shared: true do
   it "requires one argument and creates a new regular expression object" do
@@ -135,10 +135,10 @@ describe :regexp_new_string, shared: true do
     a = "(?:[\x8E\xA1-\xFE])"
     str = "\A(?:#{a}|x*)\z"
 
-    Regexp.send(@method, str, nil, 'N').encoding.should == Encoding::ASCII_8BIT
-    Regexp.send(@method, str, nil, 'n').encoding.should == Encoding::ASCII_8BIT
-    Regexp.send(@method, str, nil, 'none').encoding.should == Encoding::ASCII_8BIT
-    Regexp.send(@method, str, nil, 'NONE').encoding.should == Encoding::ASCII_8BIT
+    Regexp.send(@method, str, nil, 'N').encoding.should == Encoding::BINARY
+    Regexp.send(@method, str, nil, 'n').encoding.should == Encoding::BINARY
+    Regexp.send(@method, str, nil, 'none').encoding.should == Encoding::BINARY
+    Regexp.send(@method, str, nil, 'NONE').encoding.should == Encoding::BINARY
   end
 
   describe "with escaped characters" do
@@ -499,7 +499,7 @@ describe :regexp_new_regexp, shared: true do
     end
 
     it "sets the encoding to source String's encoding if the Regexp literal has the 'n' option and the source String is not ASCII only" do
-      Regexp.send(@method, Regexp.new("\\xff", nil, 'n')).encoding.should == Encoding::ASCII_8BIT
+      Regexp.send(@method, Regexp.new("\\xff", nil, 'n')).encoding.should == Encoding::BINARY
     end
   end
 end

@@ -9,18 +9,18 @@ describe :string_encode, shared: true do
 
     it "transcodes a 7-bit String despite no generic converting being available" do
       lambda do
-        Encoding::Converter.new Encoding::Emacs_Mule, Encoding::ASCII_8BIT
+        Encoding::Converter.new Encoding::Emacs_Mule, Encoding::BINARY
       end.should raise_error(Encoding::ConverterNotFoundError)
 
       Encoding.default_internal = Encoding::Emacs_Mule
-      str = "\x79".force_encoding Encoding::ASCII_8BIT
+      str = "\x79".force_encoding Encoding::BINARY
 
-      str.send(@method).should == "y".force_encoding(Encoding::ASCII_8BIT)
+      str.send(@method).should == "y".force_encoding(Encoding::BINARY)
     end
 
     it "raises an Encoding::ConverterNotFoundError when no conversion is possible" do
       Encoding.default_internal = Encoding::Emacs_Mule
-      str = [0x80].pack('C').force_encoding Encoding::ASCII_8BIT
+      str = [0x80].pack('C').force_encoding Encoding::BINARY
       lambda { str.send(@method) }.should raise_error(Encoding::ConverterNotFoundError)
     end
   end
@@ -52,15 +52,15 @@ describe :string_encode, shared: true do
 
     it "transcodes a 7-bit String despite no generic converting being available" do
       lambda do
-        Encoding::Converter.new Encoding::Emacs_Mule, Encoding::ASCII_8BIT
+        Encoding::Converter.new Encoding::Emacs_Mule, Encoding::BINARY
       end.should raise_error(Encoding::ConverterNotFoundError)
 
-      str = "\x79".force_encoding Encoding::ASCII_8BIT
-      str.send(@method, Encoding::Emacs_Mule).should == "y".force_encoding(Encoding::ASCII_8BIT)
+      str = "\x79".force_encoding Encoding::BINARY
+      str.send(@method, Encoding::Emacs_Mule).should == "y".force_encoding(Encoding::BINARY)
     end
 
     it "raises an Encoding::ConverterNotFoundError when no conversion is possible" do
-      str = [0x80].pack('C').force_encoding Encoding::ASCII_8BIT
+      str = [0x80].pack('C').force_encoding Encoding::BINARY
       lambda do
         str.send(@method, Encoding::Emacs_Mule)
       end.should raise_error(Encoding::ConverterNotFoundError)
@@ -95,7 +95,7 @@ describe :string_encode, shared: true do
 
     it "raises an Encoding::ConverterNotFoundError when no conversion is possible despite 'invalid: :replace, undef: :replace'" do
       Encoding.default_internal = Encoding::Emacs_Mule
-      str = [0x80].pack('C').force_encoding Encoding::ASCII_8BIT
+      str = [0x80].pack('C').force_encoding Encoding::BINARY
       lambda do
         str.send(@method, invalid: :replace, undef: :replace)
       end.should raise_error(Encoding::ConverterNotFoundError)
@@ -153,7 +153,7 @@ describe :string_encode, shared: true do
 
   describe "when passed to, from, options" do
     it "replaces undefined characters in the destination encoding" do
-      str = "あ?あ".force_encoding Encoding::ASCII_8BIT
+      str = "あ?あ".force_encoding Encoding::BINARY
       result = str.send(@method, "euc-jp", "utf-8", undef: :replace)
       xA4xA2 = [0xA4, 0xA2].pack('CC').force_encoding('utf-8')
       result.should == "#{xA4xA2}?#{xA4xA2}".force_encoding("euc-jp")
@@ -161,7 +161,7 @@ describe :string_encode, shared: true do
 
     it "replaces invalid characters in the destination encoding" do
       xFF = [0xFF].pack('C').force_encoding('utf-8')
-      str = "ab#{xFF}c".force_encoding Encoding::ASCII_8BIT
+      str = "ab#{xFF}c".force_encoding Encoding::BINARY
       str.send(@method, "iso-8859-1", "utf-8", invalid: :replace).should == "ab?c"
     end
 
@@ -170,7 +170,7 @@ describe :string_encode, shared: true do
       to.should_receive(:to_str).and_return("iso-8859-1")
 
       xFF = [0xFF].pack('C').force_encoding('utf-8')
-      str = "ab#{xFF}c".force_encoding Encoding::ASCII_8BIT
+      str = "ab#{xFF}c".force_encoding Encoding::BINARY
       str.send(@method, to, "utf-8", invalid: :replace).should == "ab?c"
     end
 
@@ -179,7 +179,7 @@ describe :string_encode, shared: true do
       from.should_receive(:to_str).and_return("utf-8")
 
       xFF = [0xFF].pack('C').force_encoding('utf-8')
-      str = "ab#{xFF}c".force_encoding Encoding::ASCII_8BIT
+      str = "ab#{xFF}c".force_encoding Encoding::BINARY
       str.send(@method, "iso-8859-1", from, invalid: :replace).should == "ab?c"
     end
 
@@ -188,7 +188,7 @@ describe :string_encode, shared: true do
       options.should_receive(:to_hash).and_return({ invalid: :replace })
 
       xFF = [0xFF].pack('C').force_encoding('utf-8')
-      str = "ab#{xFF}c".force_encoding Encoding::ASCII_8BIT
+      str = "ab#{xFF}c".force_encoding Encoding::BINARY
       str.send(@method, "iso-8859-1", "utf-8", options).should == "ab?c"
     end
   end

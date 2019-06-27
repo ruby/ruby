@@ -45,8 +45,10 @@ describe "Kernel#open" do
     end
 
     it "opens an io for writing" do
-      bytes = open("|cat", "w") { |io| io.write(".") }
-      bytes.should == 1
+      -> do
+        bytes = open("|cat", "w") { |io| io.write(".") }
+        bytes.should == 1
+      end.should output_to_fd(".")
     end
   end
 

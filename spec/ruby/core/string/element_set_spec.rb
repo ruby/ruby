@@ -134,9 +134,9 @@ describe "String#[]= with Fixnum index" do
 
   it "encodes the String in an encoding compatible with the replacement" do
     str = " ".force_encoding Encoding::US_ASCII
-    rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
+    rep = [160].pack('C').force_encoding Encoding::BINARY
     str[0] = rep
-    str.encoding.should equal(Encoding::ASCII_8BIT)
+    str.encoding.should equal(Encoding::BINARY)
   end
 
   it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
@@ -190,9 +190,9 @@ describe "String#[]= with String index" do
 
   it "encodes the String in an encoding compatible with the replacement" do
     str = " ".force_encoding Encoding::US_ASCII
-    rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
+    rep = [160].pack('C').force_encoding Encoding::BINARY
     str[" "] = rep
-    str.encoding.should equal(Encoding::ASCII_8BIT)
+    str.encoding.should equal(Encoding::BINARY)
   end
 
   it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
@@ -303,9 +303,9 @@ describe "String#[]= with a Regexp index" do
 
   it "encodes the String in an encoding compatible with the replacement" do
     str = " ".force_encoding Encoding::US_ASCII
-    rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
+    rep = [160].pack('C').force_encoding Encoding::BINARY
     str[/ /] = rep
-    str.encoding.should equal(Encoding::ASCII_8BIT)
+    str.encoding.should equal(Encoding::BINARY)
   end
 
   it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
@@ -424,9 +424,9 @@ describe "String#[]= with a Range index" do
 
   it "encodes the String in an encoding compatible with the replacement" do
     str = " ".force_encoding Encoding::US_ASCII
-    rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
+    rep = [160].pack('C').force_encoding Encoding::BINARY
     str[0..1] = rep
-    str.encoding.should equal(Encoding::ASCII_8BIT)
+    str.encoding.should equal(Encoding::BINARY)
   end
 
   it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
@@ -589,9 +589,9 @@ describe "String#[]= with Fixnum index, count" do
 
   it "encodes the String in an encoding compatible with the replacement" do
     str = " ".force_encoding Encoding::US_ASCII
-    rep = [160].pack('C').force_encoding Encoding::ASCII_8BIT
+    rep = [160].pack('C').force_encoding Encoding::BINARY
     str[0, 1] = rep
-    str.encoding.should equal(Encoding::ASCII_8BIT)
+    str.encoding.should equal(Encoding::BINARY)
   end
 
   it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do

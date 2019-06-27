@@ -30,7 +30,7 @@ describe "String#encode" do
 
     it "encodes an ascii substring of a binary string to UTF-8" do
       x82 = [0x82].pack('C')
-      str =  "#{x82}foo".force_encoding("ascii-8bit")[1..-1].encode("utf-8")
+      str =  "#{x82}foo".force_encoding("binary")[1..-1].encode("utf-8")
       str.should == "foo".force_encoding("utf-8")
       str.encoding.should equal(Encoding::UTF_8)
     end
@@ -60,12 +60,18 @@ describe "String#encode" do
 
       "\rfoo".encode(universal_newline: true).should == "\nfoo"
     end
+
+    it "replaces invalid encoding" do
+      encoded = "ち\xE3\x81\xFF".encode("UTF-16LE", invalid: :replace, replace: "?")
+      encoded.should == "\u3061??".encode("UTF-16LE")
+      encoded.encode("UTF-8").should == "ち??"
+    end
   end
 
   describe "when passed to, from" do
     it "returns a copy in the destination encoding when both encodings are the same" do
       str = "あ"
-      str.force_encoding("ascii-8bit")
+      str.force_encoding("binary")
       encoded = str.encode("utf-8", "utf-8")
 
       encoded.should_not equal(str)

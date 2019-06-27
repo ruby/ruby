@@ -1,6 +1,6 @@
-# encoding: ascii-8bit
+# encoding: binary
 
-module HashStringsASCII8BIT
+module HashStringsBinary
   def self.literal_hash
     {"foo" => "bar"}
   end

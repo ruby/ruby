@@ -150,8 +150,13 @@ describe "Kernel#BigDecimal" do
     BigDecimal("-12345.6E-1").should == -reference
   end
 
-  it 'raises ArgumentError when Float is used without precision' do
+  it "raises ArgumentError when Float is used without precision" do
     lambda { BigDecimal(1.0) }.should raise_error(ArgumentError)
+  end
+
+  it "returns appropriate BigDecimal zero for signed zero" do
+    BigDecimal(-0.0, Float::DIG).sign.should == -1
+    BigDecimal(0.0, Float::DIG).sign.should == 1
   end
 
 end

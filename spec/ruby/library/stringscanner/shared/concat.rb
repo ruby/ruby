@@ -25,6 +25,6 @@ describe :strscan_concat_fixnum, shared: true do
     x = mock('x')
     x.should_not_receive(:to_int)
 
-    lambda { "".send(@method, x) }.should raise_error(TypeError)
+    lambda { StringScanner.new("").send(@method, x) }.should raise_error(TypeError)
   end
 end

@@ -12,6 +12,4 @@ describe "Module#define_singleton_method" do
     klass.a.should == 42
     klass.b(10).should == 20
   end
-
-  it "needs to be reviewed for spec completeness"
 end

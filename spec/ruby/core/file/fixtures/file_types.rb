@@ -52,15 +52,10 @@ module FileSpecs
   end
 
   def self.socket
-    require 'socket'
-    name = tmp("ftype_socket.socket")
-    rm_r name
-    begin
-      socket = UNIXServer.new name
-    rescue ArgumentError => error
-      error.message.should =~ /too long/
-      return
-    end
+    require_relative '../../../library/socket/fixtures/classes.rb'
+
+    name = SocketSpecs.socket_path
+    socket = UNIXServer.new name
     begin
       yield name
     ensure

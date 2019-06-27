@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 require_relative '../../spec_helper'
 
 describe "ENV.[]" do
@@ -34,7 +34,7 @@ describe "ENV.[]" do
     @external = Encoding.default_external
     @internal = Encoding.default_internal
 
-    Encoding.default_external = Encoding::ASCII_8BIT
+    Encoding.default_external = Encoding::BINARY
   end
 
   after :each do
@@ -48,7 +48,7 @@ describe "ENV.[]" do
     Encoding.default_internal = nil
 
     locale = Encoding.find('locale')
-    locale = Encoding::ASCII_8BIT if locale == Encoding::US_ASCII
+    locale = Encoding::BINARY if locale == Encoding::US_ASCII
     ENV[@variable] = "\xC3\xB8"
     ENV[@variable].encoding.should == locale
   end

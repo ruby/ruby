@@ -31,6 +31,10 @@ describe 'Socket#recvfrom_nonblock' do
         it 'raises IO::WaitReadable' do
           lambda { @server.recvfrom_nonblock(1) }.should raise_error(IO::WaitReadable)
         end
+
+        it 'returns :wait_readable with exception: false' do
+          @server.recvfrom_nonblock(1, exception: false).should == :wait_readable
+        end
       end
 
       describe 'with data available' do

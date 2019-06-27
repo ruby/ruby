@@ -57,6 +57,13 @@ describe :hash_update, shared: true do
     end.should raise_error(frozen_error_class)
   end
 
+  it "does not raise an exception if changing the value of an existing key during iteration" do
+    hash = {1 => 2, 3 => 4, 5 => 6}
+    hash2 = {1 => :foo, 3 => :bar}
+    hash.each { hash.send(@method, hash2) }
+    hash.should == {1 => :foo, 3 => :bar, 5 => 6}
+  end
+
   ruby_version_is "2.6" do
     it "accepts multiple hashes" do
       result = { a: 1 }.send(@method, { b: 2 }, { c: 3 }, { d: 4 })

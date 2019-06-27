@@ -2,8 +2,6 @@ require_relative '../../spec_helper'
 require_relative '../../fixtures/code_loading'
 
 describe "Kernel#require_relative with a relative path" do
-  it "needs to be reviewed for spec completeness"
-
   before :each do
     CodeLoadingSpecs.spec_setup
     @dir = "../../fixtures/code"
@@ -267,8 +265,6 @@ describe "Kernel#require_relative with a relative path" do
 end
 
 describe "Kernel#require_relative with an absolute path" do
-  it "needs to be reviewed for spec completeness"
-
   before :each do
     CodeLoadingSpecs.spec_setup
     @dir = File.expand_path "../../fixtures/code", File.dirname(__FILE__)

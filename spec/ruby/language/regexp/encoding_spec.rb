@@ -42,16 +42,16 @@ describe "Regexps with encoding modifiers" do
     /./n.encoding.should == Encoding::US_ASCII
   end
 
-  it 'uses ASCII-8BIT as /n encoding if not all chars are 7-bit' do
-    /\xFF/n.encoding.should == Encoding::ASCII_8BIT
+  it 'uses BINARY as /n encoding if not all chars are 7-bit' do
+    /\xFF/n.encoding.should == Encoding::BINARY
   end
 
   it 'preserves US-ASCII as /n encoding through interpolation if all chars are 7-bit' do
     /.#{/./}/n.encoding.should == Encoding::US_ASCII
   end
 
-  it 'preserves ASCII-8BIT as /n encoding through interpolation if all chars are 7-bit' do
-    /\xFF#{/./}/n.encoding.should == Encoding::ASCII_8BIT
+  it 'preserves BINARY as /n encoding through interpolation if all chars are 7-bit' do
+    /\xFF#{/./}/n.encoding.should == Encoding::BINARY
   end
 
   it "supports /s (Windows_31J encoding)" do

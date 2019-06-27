@@ -21,6 +21,6 @@ describe :string_length, shared: true do
     str = 'こにちわ'
     str.send(@method)
 
-    str.force_encoding('ASCII-8BIT').send(@method).should == 12
+    str.force_encoding('BINARY').send(@method).should == 12
   end
 end

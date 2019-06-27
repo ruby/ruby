@@ -125,13 +125,13 @@ describe "String#encoding for Strings with \\x escapes" do
     s.encoding.should == Encoding::US_ASCII
   end
 
-  it "returns ASCII-8BIT when an escape creates a byte with the 8th bit set if the source encoding is US-ASCII" do
+  it "returns BINARY when an escape creates a byte with the 8th bit set if the source encoding is US-ASCII" do
     __ENCODING__.should == Encoding::US_ASCII
     str = " "
     str.encoding.should == Encoding::US_ASCII
     str += [0xDF].pack('C')
     str.ascii_only?.should be_false
-    str.encoding.should == Encoding::ASCII_8BIT
+    str.encoding.should == Encoding::BINARY
   end
 
   # TODO: Deal with case when the byte in question isn't valid in the source
@@ -155,7 +155,7 @@ describe "String#encoding for Strings with \\x escapes" do
     default_external = Encoding.default_external
     Encoding.default_external = Encoding::SHIFT_JIS
     "\x50".encoding.should == Encoding::US_ASCII
-    [0xD4].pack('C').encoding.should == Encoding::ASCII_8BIT
+    [0xD4].pack('C').encoding.should == Encoding::BINARY
     Encoding.default_external = default_external
   end
 
@@ -166,7 +166,7 @@ describe "String#encoding for Strings with \\x escapes" do
     Encoding.default_external = Encoding::SHIFT_JIS
     x50 = "\x50"
     x50.encoding.should == Encoding::US_ASCII
-    [0xD4].pack('C').encoding.should == Encoding::ASCII_8BIT
+    [0xD4].pack('C').encoding.should == Encoding::BINARY
     Encoding.default_external = default_external
     Encoding.default_internal = default_internal
   end

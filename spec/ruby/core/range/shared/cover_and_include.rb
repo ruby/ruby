@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 require_relative '../../../spec_helper'
 
 describe :range_cover_and_include, shared: true do

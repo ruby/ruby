@@ -201,10 +201,10 @@ describe "IO.readlines" do
     lines.all? { |s| s.encoding == Encoding::UTF_16 }.should be_true
   end
 
-  it "ignores the default internal encoding if the external encoding is ASCII-8BIT" do
-    Encoding.default_external = Encoding::ASCII_8BIT
+  it "ignores the default internal encoding if the external encoding is BINARY" do
+    Encoding.default_external = Encoding::BINARY
     Encoding.default_internal = Encoding::UTF_8
     lines = IO.readlines(@name)
-    lines.all? { |s| s.encoding == Encoding::ASCII_8BIT }.should be_true
+    lines.all? { |s| s.encoding == Encoding::BINARY }.should be_true
   end
 end

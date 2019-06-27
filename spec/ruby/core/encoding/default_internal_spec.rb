@@ -24,8 +24,8 @@ describe "Encoding.default_internal" do
   end
 
   it "returns the default internal encoding" do
-    Encoding.default_internal = Encoding::ASCII_8BIT
-    Encoding.default_internal.should == Encoding::ASCII_8BIT
+    Encoding.default_internal = Encoding::BINARY
+    Encoding.default_internal.should == Encoding::BINARY
   end
 end
 

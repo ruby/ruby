@@ -26,4 +26,17 @@ describe "StringIO#read_nonblock" do
     stringio.read_nonblock(3, exception: false).should == 'foo'
   end
 
+  context "when exception option is set to false" do
+    context "when the end is reached" do
+      it "returns nil" do
+        stringio = StringIO.new('')
+        stringio << "hello"
+        stringio.rewind
+
+        stringio.read_nonblock(5).should == "hello"
+        stringio.read_nonblock(5, exception: false).should be_nil
+      end
+    end
+  end
+
 end

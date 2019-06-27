@@ -13,8 +13,8 @@ describe :random_urandom, shared: true do
     }.should raise_error(ArgumentError)
   end
 
-  it "returns an ASCII-8BIT String" do
-    Random.send(@method, 15).encoding.should == Encoding::ASCII_8BIT
+  it "returns an BINARY String" do
+    Random.send(@method, 15).encoding.should == Encoding::BINARY
   end
 
   it "returns a random binary String" do

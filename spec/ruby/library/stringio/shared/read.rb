@@ -69,7 +69,7 @@ describe :stringio_read_length, shared: true do
   end
 
   it "returns a binary String" do
-    @io.send(@method, 4).encoding.should == Encoding::ASCII_8BIT
+    @io.send(@method, 4).encoding.should == Encoding::BINARY
   end
 end
 

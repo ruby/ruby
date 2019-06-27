@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 
 describe :regexp_quote, shared: true do
   it "escapes any characters with special meaning in a regular expression" do
@@ -23,9 +23,9 @@ describe :regexp_quote, shared: true do
     Regexp.send(@method, str).encoding.should == Encoding::UTF_8
   end
 
-  it "sets the encoding of the result to ASCII-8BIT if any non-US-ASCII characters are present in an input String with invalid encoding" do
+  it "sets the encoding of the result to BINARY if any non-US-ASCII characters are present in an input String with invalid encoding" do
     str = "\xff".force_encoding "us-ascii"
     str.valid_encoding?.should be_false
-    Regexp.send(@method, "\xff").encoding.should == Encoding::ASCII_8BIT
+    Regexp.send(@method, "\xff").encoding.should == Encoding::BINARY
   end
 end

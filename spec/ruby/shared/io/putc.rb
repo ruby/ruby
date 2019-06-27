@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 describe :io_putc, shared: true do
   after :each do
     @io.close if @io && !@io.closed?
