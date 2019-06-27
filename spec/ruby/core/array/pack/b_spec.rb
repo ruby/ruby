@@ -47,7 +47,7 @@ describe "Array#pack with format 'B'" do
     ].should be_computed_by(:pack, "B*")
   end
 
-  it "returns an BINARY string" do
+  it "returns a binary string" do
     ["1"].pack("B").encoding.should == Encoding::BINARY
   end
 
@@ -98,7 +98,7 @@ describe "Array#pack with format 'b'" do
     ].should be_computed_by(:pack, "b*")
   end
 
-  it "returns an BINARY string" do
+  it "returns a binary string" do
     ["1"].pack("b").encoding.should == Encoding::BINARY
   end
 

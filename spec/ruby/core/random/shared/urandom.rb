@@ -13,7 +13,7 @@ describe :random_urandom, shared: true do
     }.should raise_error(ArgumentError)
   end
 
-  it "returns an BINARY String" do
+  it "returns a binary String" do
     Random.send(@method, 15).encoding.should == Encoding::BINARY
   end
 
