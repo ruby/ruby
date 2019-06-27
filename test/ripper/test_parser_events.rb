@@ -485,6 +485,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal(1, width)
   end
 
+  def test_unterminated_heredoc
+    assert_match("can't find string \"a\" anywhere before EOF", compile_error("<<a"))
+    assert_match("can't find string \"a\" anywhere before EOF", compile_error('<<"a"'))
+    assert_match("can't find string \"a\" anywhere before EOF", compile_error("<<'a'"))
+  end
+
   def test_massign
     thru_massign = false
     parse("a, b = 1, 2", :on_massign) {thru_massign = true}
