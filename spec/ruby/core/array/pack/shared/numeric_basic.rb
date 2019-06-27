@@ -15,7 +15,7 @@ describe :array_pack_numeric_basic, shared: true do
     lambda { [false].pack(pack_format) }.should raise_error(TypeError)
   end
 
-  it "returns an BINARY string" do
+  it "returns a binary string" do
     [0xFF].pack(pack_format).encoding.should == Encoding::BINARY
     [0xE3, 0x81, 0x82].pack(pack_format(3)).encoding.should == Encoding::BINARY
   end

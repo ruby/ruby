@@ -30,7 +30,7 @@ describe "Integer#chr without argument" do
     end
 
     describe "and self is between 128 and 255 (inclusive)" do
-      it "returns an BINARY String" do
+      it "returns a binary String" do
         (128..255).each do |c|
           c.chr.encoding.should == Encoding::BINARY
         end
@@ -81,7 +81,7 @@ describe "Integer#chr without argument" do
     end
 
     describe "and self is between 128 and 255 (inclusive)" do
-      it "returns an BINARY String" do
+      it "returns a binary String" do
         (128..255).each do |c|
           Encoding.default_internal = Encoding::UTF_8
           c.chr.encoding.should == Encoding::BINARY

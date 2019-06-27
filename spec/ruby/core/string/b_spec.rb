@@ -2,7 +2,7 @@
 require_relative '../../spec_helper'
 
 describe "String#b" do
-  it "returns an BINARY encoded string" do
+  it "returns a binary encoded string" do
     "Hello".b.should == "Hello".force_encoding(Encoding::BINARY)
     "こんちには".b.should == "こんちには".force_encoding(Encoding::BINARY)
   end

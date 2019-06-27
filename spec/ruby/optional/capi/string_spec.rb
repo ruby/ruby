@@ -676,7 +676,7 @@ describe :rb_external_str_new, shared: true do
     @s.send(@method, "abc").encoding.should == Encoding::UTF_8
   end
 
-  it "returns an BINARY encoded string if any non-ascii bytes are present and default external is US-ASCII" do
+  it "returns a binary encoded string if any non-ascii bytes are present and default external is US-ASCII" do
     Encoding.default_external = "US-ASCII"
     x80 = [0x80].pack('C')
     @s.send(@method, "#{x80}abc").encoding.should == Encoding::BINARY
@@ -735,7 +735,7 @@ describe "C-API String function" do
       s.encoding.should == Encoding::UTF_8
     end
 
-    it "returns an BINARY encoded String if any non-ascii bytes are present and the specified encoding is US-ASCII" do
+    it "returns a binary encoded String if any non-ascii bytes are present and the specified encoding is US-ASCII" do
       x80 = [0x80].pack('C')
       s = @s.rb_external_str_new_with_enc("#{x80}abc", 4, Encoding::US_ASCII)
       s.encoding.should == Encoding::BINARY
