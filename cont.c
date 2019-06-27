@@ -17,6 +17,9 @@
 
 #ifdef FIBER_USE_COROUTINE
 #include FIBER_USE_COROUTINE
+#else
+// Stack copying implementation, should work everywhere:
+#include "coroutine/copy/Context.h"
 #endif
 
 #ifndef _WIN32
@@ -448,8 +451,9 @@ fiber_entry(struct coroutine_context * from, struct coroutine_context * to)
     rb_fiber_start();
 }
 
+// Initialize a fiber's coroutine's machine stack and vm stack.
 static VALUE *
-fiber_initialize_machine_stack_context(rb_fiber_t *fiber, size_t * vm_stack_size)
+fiber_initialize_coroutine(rb_fiber_t *fiber, size_t * vm_stack_size)
 {
     struct fiber_pool * fiber_pool = fiber->stack.pool;
     rb_execution_context_t *sec = &fiber->cont.saved_ec;
@@ -463,10 +467,22 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fiber, size_t * vm_stack_size
     vm_stack = fiber_pool_stack_alloca(&fiber->stack, fiber_pool->vm_stack_size);
     *vm_stack_size = fiber_pool->vm_stack_size;
 
+#ifdef COROUTINE_PRIVATE_STACK
+    coroutine_initialize(&fiber->context, fiber_entry, fiber_pool_stack_base(&fiber->stack), fiber->stack.available, sec->machine.stack_start);
+    // The stack for this execution context is still the main machine stack, so don't adjust it.
+    // If this is not managed correctly, you will fail in `rb_ec_stack_check`.
+
+    // We limit the machine stack usage to the fiber stack size.
+    if (sec->machine.stack_maxsize > fiber->stack.available) {
+        sec->machine.stack_maxsize = fiber->stack.available;
+    }
+#else
     coroutine_initialize(&fiber->context, fiber_entry, fiber_pool_stack_base(&fiber->stack), fiber->stack.available);
 
+    // The stack for this execution context is the one we allocated:
     sec->machine.stack_start = fiber->stack.current;
     sec->machine.stack_maxsize = fiber->stack.available;
+#endif
 
     return vm_stack;
 }
@@ -1488,7 +1504,7 @@ fiber_prepare_stack(rb_fiber_t *fiber)
     rb_execution_context_t *sec = &cont->saved_ec;
 
     size_t vm_stack_size = 0;
-    VALUE *vm_stack = fiber_initialize_machine_stack_context(fiber, &vm_stack_size);
+    VALUE *vm_stack = fiber_initialize_coroutine(fiber, &vm_stack_size);
 
     /* initialize cont */
     cont->saved_vm_stack.ptr = NULL;
@@ -1578,7 +1594,12 @@ root_fiber_alloc(rb_thread_t *th)
     DATA_PTR(fiber_value) = fiber;
     fiber->cont.self = fiber_value;
 
+#ifdef COROUTINE_PRIVATE_STACK
+    fiber->stack = fiber_pool_stack_acquire(&shared_fiber_pool);
+    coroutine_initialize_main(&fiber->context, fiber_pool_stack_base(&fiber->stack), fiber->stack.available, th->ec->machine.stack_start);
+#else
     coroutine_initialize_main(&fiber->context);
+#endif
 
     return fiber;
 }
