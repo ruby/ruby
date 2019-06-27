@@ -10012,11 +10012,12 @@ new_regexp(struct parser_params *p, VALUE re, VALUE opt, const YYLTYPE *loc)
 }
 #endif /* !RIPPER */
 
+
 #ifndef RIPPER
-static const char rb_parser_lex_state_names[][13] = {
-    "EXPR_BEG",    "EXPR_END",    "EXPR_ENDARG", "EXPR_ENDFN",  "EXPR_ARG",
-    "EXPR_CMDARG", "EXPR_MID",    "EXPR_FNAME",  "EXPR_DOT",    "EXPR_CLASS",
-    "EXPR_LABEL",  "EXPR_LABELED","EXPR_FITEM",
+static const char rb_parser_lex_state_names[][8] = {
+    "BEG",    "END",    "ENDARG", "ENDFN",  "ARG",
+    "CMDARG", "MID",    "FNAME",  "DOT",    "CLASS",
+    "LABEL",  "LABELED","FITEM",
 };
 
 static VALUE
@@ -10024,7 +10025,7 @@ append_lex_state_name(enum lex_state_e state, VALUE buf)
 {
     int i, sep = 0;
     unsigned int mask = 1;
-    static const char none[] = "EXPR_NONE";
+    static const char none[] = "NONE";
 
     for (i = 0; i < EXPR_MAX_STATE; ++i, mask <<= 1) {
 	if ((unsigned)state & mask) {
