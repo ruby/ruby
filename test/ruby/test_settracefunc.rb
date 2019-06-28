@@ -1903,7 +1903,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   def test_lineno_in_optimized_insn
-    actual, _, _ = EnvUtil.invoke_ruby [], <<-EOF.gsub(/^.*?: */, ""), true
+    actual, _, _ = EnvUtil.invoke_ruby %W[-W0], <<-EOF.gsub(/^.*?: */, ""), true
       1: class String
       2:   def -@
       3:     puts caller_locations(1, 1)[0].lineno
