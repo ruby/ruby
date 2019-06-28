@@ -2107,8 +2107,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  ], events
     events.clear
 
-    # TODO: test for requires
-    return
+    skip "TODO: test for requires"
 
     tp.enable{
       require ''
