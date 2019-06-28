@@ -537,7 +537,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     tree = parse("a, *b = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
     assert_equal false, thru_mlhs_add_post
     assert_include(tree, "massign([var_field(a),*var_field(b)],")
-    thru_massign_add_post = false
+    thru_mlhs_add_post = false
     tree = parse("a, *b, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
     assert_equal true, thru_mlhs_add_post
     assert_include(tree, "massign([var_field(a),*var_field(b),var_field(c)],")
