@@ -5,8 +5,8 @@
 #
 # Ad hoc tests of IO#scanf (needs to be expanded)
 
-
-require "scanf"
+require 'test/unit'
+require 'scanf'
 
 class TestScanfIO < Test::Unit::TestCase
   def test_io
