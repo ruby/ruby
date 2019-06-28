@@ -23,6 +23,8 @@ class TestScanfIO < Test::Unit::TestCase
     w.write('a')
     w.close
     assert_equal([], r.scanf('a'))
+  ensure
+    r.close
   end
 end
 
