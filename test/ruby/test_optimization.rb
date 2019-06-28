@@ -272,7 +272,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     unless file
       loc, = caller_locations(1, 1)
       file = loc.path
-      line ||= loc.lineno
+      line ||= loc.lineno + 1
     end
     RubyVM::InstructionSequence.new("proc {|_|_.class_eval {#{src}}}",
                                     file, (path || file), line,
