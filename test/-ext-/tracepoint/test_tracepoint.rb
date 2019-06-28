@@ -41,7 +41,7 @@ class TestTracepointObj < Test::Unit::TestCase
     GC.stat(stat2)
     GC.enable
 
-    newobj_count, free_count, gc_start_count, gc_end_mark_count, gc_end_sweep_count, *newobjs = *result
+    newobj_count, free_count, gc_start_count, gc_end_mark_count, gc_end_sweep_count, = *result
 
     assert_operator stat2[:total_allocated_objects] - stat1[:total_allocated_objects], :>=, newobj_count
     assert_operator 1_000_000, :<=, newobj_count
