@@ -347,7 +347,7 @@ print <<EOS
   #
   # returns updated keys list, or +nil+ if nothing changed.
   def RbConfig.fire_update!(key, val, mkconf = MAKEFILE_CONFIG, conf = CONFIG)
-    return if (old = mkconf[key]) == val
+    return if mkconf[key] == val
     mkconf[key] = val
     keys = [key]
     deps = []
