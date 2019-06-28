@@ -406,10 +406,10 @@ class TestObjSpace < Test::Unit::TestCase
 
         puts dump_my_heap_please
       end;
-      skip if /is not supported/ =~ error
-      skip error unless output
-      assert_match(entry, File.readlines(output).grep(/TEST STRING/).join("\n"))
+      assert_nil(error)
+      dump = File.readlines(output)
       File.unlink(output)
+      assert_match(entry, dump.grep(/TEST STRING/).join("\n"))
     end
 
     if defined?(JSON)

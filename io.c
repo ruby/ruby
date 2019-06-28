@@ -8037,7 +8037,7 @@ FILE *
 rb_io_stdio_file(rb_io_t *fptr)
 {
     if (!fptr->stdio_file) {
-        int oflags = rb_io_fmode_oflags(fptr->mode);
+        int oflags = rb_io_fmode_oflags(fptr->mode) & ~O_EXCL;
         fptr->stdio_file = rb_fdopen(fptr->fd, rb_io_oflags_modestr(oflags));
     }
     return fptr->stdio_file;
