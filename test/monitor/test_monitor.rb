@@ -172,6 +172,8 @@ class TestMonitor < Test::Unit::TestCase
       assert @monitor.mon_locked?
       assert @monitor.mon_owned?
     end
+  ensure
+    th.join
   end
 
   def test_cond
