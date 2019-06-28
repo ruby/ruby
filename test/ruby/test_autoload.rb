@@ -304,7 +304,7 @@ p Foo::Bar
         begin
           thrs = []
           3.times do
-            thrs << Thread.new { AutoloadTest; nil }
+            thrs << Thread.new { AutoloadTest && nil }
             thrs << Thread.new { fork { AutoloadTest } }
           end
           thrs.each(&:join)
