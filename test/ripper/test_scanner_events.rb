@@ -973,10 +973,10 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
 
   def test_invalid_char
     err = nil
-    assert_equal ['a'], scan('ident', "\ea") {|*e| err = e}
-    assert_equal :compile_error, err[0]
-    assert_match /Invalid char/, err[1]
-    assert_equal "\e", err[2]
+    assert_equal(['a'], scan('ident', "\ea") {|*e| err = e})
+    assert_equal(:compile_error, err[0])
+    assert_match(/Invalid char/, err[1])
+    assert_equal("\e", err[2])
   end
 
   def test_invalid_hex_escape
