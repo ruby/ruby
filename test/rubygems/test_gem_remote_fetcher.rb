@@ -670,7 +670,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     data = fetcher.fetch_s3 URI.parse(url)
 
-    assert_equal "https://my-bucket.s3.#{region}.amazonaws.com/gems/specs.4.8.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=testuser%2F20190624%2F#{region}%2Fs3%2Faws4_request&X-Amz-Date=20190624T050641Z&X-Amz-Expires=3600#{token ? "&X-Amz-Security-Token=" + token : ""}&X-Amz-SignedHeaders=host&X-Amz-Signature=#{signature}", $fetched_uri.to_s
+    assert_equal "https://my-bucket.s3.#{region}.amazonaws.com/gems/specs.4.8.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=testuser%2F20190624%2F#{region}%2Fs3%2Faws4_request&X-Amz-Date=20190624T050641Z&X-Amz-Expires=86400#{token ? "&X-Amz-Security-Token=" + token : ""}&X-Amz-SignedHeaders=host&X-Amz-Signature=#{signature}", $fetched_uri.to_s
     assert_equal 'success', data
   ensure
     $fetched_uri = nil
@@ -682,7 +682,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
-      assert_fetch_s3 url, '8464fcf293454689ec1d3399463c9eeafe2a5b22f2cbd948cba28175a34b073d'
+      assert_fetch_s3 url, '20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b'
     end
   ensure
     Gem.configuration[:s3_source] = nil
@@ -694,7 +694,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
-      assert_fetch_s3 url, '800419b6efb5eacabef2c13c7e493f093df417afc10961f6dcc7e085c9c89e93', nil, 'us-west-2'
+      assert_fetch_s3 url, '4afc3010757f1fd143e769f1d1dabd406476a4fc7c120e9884fd02acbb8f26c9', nil, 'us-west-2'
     end
   ensure
     Gem.configuration[:s3_source] = nil
@@ -706,7 +706,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
-      assert_fetch_s3 url, '9686a7b85d29b983f0ee723fd444536258ae1d3a7afa7f8599b3852aef3c8c11', 'testtoken'
+      assert_fetch_s3 url, '935160a427ef97e7630f799232b8f208c4a4e49aad07d0540572a2ad5fe9f93c', 'testtoken'
     end
   ensure
     Gem.configuration[:s3_source] = nil
@@ -721,7 +721,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
-      assert_fetch_s3 url, '8464fcf293454689ec1d3399463c9eeafe2a5b22f2cbd948cba28175a34b073d'
+      assert_fetch_s3 url, '20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b'
     end
   ensure
     ENV.each_key {|key| ENV.delete(key) if key.start_with?('AWS')}
@@ -737,7 +737,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
-      assert_fetch_s3 url, '800419b6efb5eacabef2c13c7e493f093df417afc10961f6dcc7e085c9c89e93', nil, 'us-west-2'
+      assert_fetch_s3 url, '4afc3010757f1fd143e769f1d1dabd406476a4fc7c120e9884fd02acbb8f26c9', nil, 'us-west-2'
     end
   ensure
     ENV.each_key {|key| ENV.delete(key) if key.start_with?('AWS')}
@@ -753,7 +753,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
-      assert_fetch_s3 url, '9686a7b85d29b983f0ee723fd444536258ae1d3a7afa7f8599b3852aef3c8c11', 'testtoken'
+      assert_fetch_s3 url, '935160a427ef97e7630f799232b8f208c4a4e49aad07d0540572a2ad5fe9f93c', 'testtoken'
     end
   ensure
     ENV.each_key {|key| ENV.delete(key) if key.start_with?('AWS')}
@@ -763,7 +763,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_fetch_s3_url_creds
     url = 's3://testuser:testpass@my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
-      assert_fetch_s3 url, '8464fcf293454689ec1d3399463c9eeafe2a5b22f2cbd948cba28175a34b073d'
+      assert_fetch_s3 url, '20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b'
     end
   end
 
@@ -774,7 +774,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
-      assert_fetch_s3 url, '8464fcf293454689ec1d3399463c9eeafe2a5b22f2cbd948cba28175a34b073d', nil, 'us-east-1',
+      assert_fetch_s3 url, '20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b', nil, 'us-east-1',
                       '{"AccessKeyId": "testuser", "SecretAccessKey": "testpass"}'
     end
   ensure
@@ -788,7 +788,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
-      assert_fetch_s3 url, '800419b6efb5eacabef2c13c7e493f093df417afc10961f6dcc7e085c9c89e93', nil, 'us-west-2',
+      assert_fetch_s3 url, '4afc3010757f1fd143e769f1d1dabd406476a4fc7c120e9884fd02acbb8f26c9', nil, 'us-west-2',
                       '{"AccessKeyId": "testuser", "SecretAccessKey": "testpass"}'
     end
   ensure
@@ -802,7 +802,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
-      assert_fetch_s3 url, '9686a7b85d29b983f0ee723fd444536258ae1d3a7afa7f8599b3852aef3c8c11', 'testtoken', 'us-east-1',
+      assert_fetch_s3 url, '935160a427ef97e7630f799232b8f208c4a4e49aad07d0540572a2ad5fe9f93c', 'testtoken', 'us-east-1',
                       '{"AccessKeyId": "testuser", "SecretAccessKey": "testpass", "Token": "testtoken"}'
     end
   ensure
