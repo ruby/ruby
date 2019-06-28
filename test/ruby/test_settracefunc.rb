@@ -1485,7 +1485,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   def test_throwing_return_with_finish_frame
-    target_th = Thread.current
     evs = []
 
     TracePoint.new(:call, :return){|tp|
@@ -1922,18 +1921,18 @@ class TestSetTraceFunc < Test::Unit::TestCase
     a = 1
     b = 2
     1.times{|i|
-      x = i
+      _x = i
     }
-    c = a + b
+    _c = a + b
   end
 
   def method_for_enable_target2
     a = 1
     b = 2
     1.times{|i|
-      x = i
+      _x = i
     }
-    c = a + b
+    _c = a + b
   end
 
   def check_with_events *trace_events
@@ -1966,7 +1965,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
       method_for_enable_target2
       method_for_enable_target1
     end
-    assert_equal all_events.find_all{|(ev, m)| trace_events.include? ev}, events
+    assert_equal all_events.find_all{|(ev)| trace_events.include? ev}, events
   end
 
   def test_tracepoint_enable_target
@@ -1979,10 +1978,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_nested_enabled_with_target
     code1 = proc{
-      a = 1
+      _a = 1
     }
     code2 = proc{
-      b = 2
+      _b = 2
     }
 
     ## error
@@ -2124,12 +2123,12 @@ class TestSetTraceFunc < Test::Unit::TestCase
     TracePoint.new(:line) do |tp|
       events << Thread.current
     end.enable(target_thread: Thread.current) do
-      a = 1
+      _a = 1
       Thread.new{
-        b = 2
-        c = 3
+        _b = 2
+        _c = 3
       }.join
-      d = 4
+      _d = 4
     end
     assert_equal Array.new(3){Thread.current}, events
 
@@ -2143,14 +2142,14 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     th = Thread.new{
       q1 << :ok; q2.pop
-      t1 = 1
-      t2 = 2
+      _t1 = 1
+      _t2 = 2
     }
     q1.pop
     tp.enable(target_thread: th) do
       q2 << 1
-      a = 1
-      b = 2
+      _a = 1
+      _b = 2
       th.join
     end
 
