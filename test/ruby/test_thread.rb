@@ -882,15 +882,15 @@ class TestThread < Test::Unit::TestCase
         begin
           begin
             Thread.pass until done
-          rescue => e
+          rescue
             q.push :ng1
           end
           begin
             Thread.handle_interrupt(Object => :immediate){} if Thread.pending_interrupt?
-          rescue RuntimeError => e
+          rescue RuntimeError
             q.push :ok
           end
-        rescue => e
+        rescue
           q.push :ng2
         ensure
           q.push :ng3
@@ -1189,12 +1189,10 @@ q.pop
     bug8433 = '[ruby-core:55102] [Bug #8433]'
 
     mutex = Thread::Mutex.new
-    flag = false
     mutex.lock
 
     th = Thread.new do
       mutex.synchronize do
-        flag = true
         sleep
       end
     end
