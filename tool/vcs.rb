@@ -164,6 +164,7 @@ class VCS
       parser.on("--[no-]dryrun") {|v| @dryrun = v}
       parser.on("--[no-]debug") {|v| @debug = v}
       parser.parse(opts)
+      @debug = $DEBUG unless defined?(@debug)
       @dryrun = @debug unless defined?(@dryrun)
     when Hash
       unless (keys = opts.keys - [:debug, :dryrun]).empty?
