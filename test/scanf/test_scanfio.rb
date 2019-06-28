@@ -10,21 +10,19 @@ require 'scanf'
 
 class TestScanfIO < Test::Unit::TestCase
   def test_io
-    fh = File.new(File.join(File.dirname(__FILE__), "data.txt"), "r")
-    assert_equal(0, fh.pos)
-    assert_equal(["this", "is"], fh.scanf("%s%s"))
-    assert_equal([33, "little"], fh.scanf("%da fun%s"))
-  ensure
-    fh.close
+    File.open(File.join(File.dirname(__FILE__), "data.txt"), "r") do |fh|
+      assert_equal(0, fh.pos)
+      assert_equal(["this", "is"], fh.scanf("%s%s"))
+      assert_equal([33, "little"], fh.scanf("%da fun%s"))
+    end
   end
 
   def test_pipe_scanf
-    r, w = IO.pipe
-    w.write('a')
-    w.close
-    assert_equal([], r.scanf('a'))
-  ensure
-    r.close
+    IO.pipe do |r, w|
+      w.write('a')
+      w.close
+      assert_equal([], r.scanf('a'))
+    end
   end
 end
 
