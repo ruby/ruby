@@ -2424,15 +2424,13 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     thr.exit        -> thr or nil
- *     thr.kill        -> thr or nil
- *     thr.terminate   -> thr or nil
+ *     thr.exit        -> thr
+ *     thr.kill        -> thr
+ *     thr.terminate   -> thr
  *
- *  Terminates +thr+ and schedules another thread to be run.
- *
- *  If this thread is already marked to be killed, #exit returns the Thread.
- *
- *  If this is the main thread, or the last thread, exits the process.
+ *  Terminates +thr+ and schedules another thread to be run, returning
+ *  the terminated Thread.  If this is the main thread, or the last
+ *  thread, exits the process.
  */
 
 VALUE
