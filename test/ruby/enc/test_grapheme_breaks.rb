@@ -3,7 +3,10 @@
 
 require "test/unit"
 
-class BreakTest
+class TestGraphemeBreaksFromFile < Test::Unit::TestCase
+end
+
+class TestGraphemeBreaksFromFile::BreakTest
   attr_reader :clusters, :string, :comment, :line_number
 
   def initialize (line_number, data, comment)
