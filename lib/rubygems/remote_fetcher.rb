@@ -346,14 +346,13 @@ class Gem::RemoteFetcher
   S3Config = Struct.new :access_key_id, :secret_access_key, :security_token, :region
 
   # we have our own signing code here to avoid a dependency on the aws-sdk gem
-  # fortunately, a simple GET request isn't too complex to sign properly
   def sign_s3_url(uri, expiration = nil)
     require 'base64'
     require 'digest'
     require 'openssl'
 
     s3_config = s3_source_auth uri
-    expiration ||= 3600
+    expiration ||= 86400
 
     current_time = Time.now.utc
     date_time = current_time.strftime("%Y%m%dT%H%m%SZ")
@@ -363,13 +362,14 @@ class Gem::RemoteFetcher
     canonical_host = "#{uri.host}.s3.#{s3_config.region}.amazonaws.com"
 
     canonical_params = {}
-    canonical_params['X-Amz-Algorithm'] = 'AWS4-HMAC-SHA256'
+    canonical_params['X-Amz-Algorithm'] = "AWS4-HMAC-SHA256"
     canonical_params['X-Amz-Credential'] = "#{s3_config.access_key_id}/#{credential_info}"
     canonical_params['X-Amz-Date'] = date_time
     canonical_params['X-Amz-Expires'] = expiration.to_s
-    canonical_params['X-Amz-SignedHeaders'] = 'host'
+    canonical_params['X-Amz-SignedHeaders'] = "host"
     canonical_params['X-Amz-Security-Token'] = s3_config.security_token if s3_config.security_token
 
+    # Sorting is required to generate proper signature
     query_params = canonical_params.sort.to_h.map do |key, value|
       "#{base64_uri_escape(key)}=#{base64_uri_escape(value)}"
     end.join('&')
@@ -444,7 +444,7 @@ class Gem::RemoteFetcher
     else
       id = auth[:id] || auth['id']
       secret = auth[:secret] || auth['secret']
-      raise FetchError.new("s3_source for #{host} missing id or secret", "s3://#{host}") unless id and secret
+      raise FetchError.new("s3_source for #{host} missing id or secret", "s3://#{host}") unless id && secret
 
       security_token = auth[:security_token] || auth['security_token']
     end
