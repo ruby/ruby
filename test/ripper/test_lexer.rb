@@ -2,7 +2,6 @@
 begin
   require 'ripper'
   require 'test/unit'
-  ripper_test = true
   module TestRipper; end
 rescue LoadError
 end
