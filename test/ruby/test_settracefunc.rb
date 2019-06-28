@@ -1903,16 +1903,19 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   def test_lineno_in_optimized_insn
-    actual, _, _ = EnvUtil.invoke_ruby %W[-W0], <<-EOF.gsub(/^.*?: */, ""), true
-      1: class String
-      2:   def -@
-      3:     puts caller_locations(1, 1)[0].lineno
-      4:   end
-      5: end
-      6:
-      7: -""
-    EOF
-    assert_equal "7\n", actual, '[Bug #14809]'
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $loc = nil
+      class String
+        undef -@
+        def -@
+          $loc = caller_locations(1, 1)[0].lineno
+        end
+      end
+
+      assert_predicate(-"", :frozen?)
+      assert_equal(__LINE__-1, $loc, '[Bug #14809]')
+    end;
   end
 
   def method_for_enable_target1
