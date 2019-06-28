@@ -400,7 +400,7 @@ class TestObjSpace < Test::Unit::TestCase
         def dump_my_heap_please
           ObjectSpace.trace_object_allocations_start
           GC.start
-          str = "TEST STRING".force_encoding("UTF-8")
+          (str = "TEST STRING").force_encoding("UTF-8")
           ObjectSpace.dump_all().path
         end
 
