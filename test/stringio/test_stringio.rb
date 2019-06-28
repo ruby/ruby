@@ -29,6 +29,8 @@ class TestStringIO < Test::Unit::TestCase
       nil
     end
     assert_raise(TypeError) { StringIO.new(o) }
+
+    o = Object.new
     def o.to_str
       'str'
     end
