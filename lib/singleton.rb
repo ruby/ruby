@@ -170,4 +170,8 @@ module Singleton
   ##
   # :singleton-method: _load
   #  By default calls instance(). Override to retain singleton state.
+
+  ##
+  # :singleton-method: instance
+  #  Returns the singleton instance.
 end
