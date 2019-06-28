@@ -387,7 +387,7 @@ class TestISeq < Test::Unit::TestCase
       type = ary[9]
       name = ary[5]
       line = ary[13].first
-      case ary[9]
+      case type
       when :method
         assert_equal "foo", name
         assert_equal 3, line
