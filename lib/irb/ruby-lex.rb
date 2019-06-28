@@ -308,9 +308,6 @@ class RubyLex
 
   def check_newline_depth_difference
     depth_difference = 0
-    if @tokens.size >= 2 and @tokens.last[2].end_with?("\n") and @tokens[-2][3].nobits?(Ripper::EXPR_END | Ripper::EXPR_ENDFN | Ripper::EXPR_CMDARG | Ripper::EXPR_LABEL)
-      return 1
-    end
     @tokens.each_with_index do |t, index|
       case t[1]
       when :on_ignored_nl, :on_nl
