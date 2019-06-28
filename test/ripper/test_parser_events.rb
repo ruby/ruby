@@ -482,6 +482,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     }
     assert_equal true, thru_heredoc_dedent
     assert_match(/string_content\(\), heredoc\n/, tree)
+    assert_equal(" heredoc\n", str.children[1])
     assert_equal(1, width)
   end
 
