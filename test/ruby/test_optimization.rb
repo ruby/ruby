@@ -425,7 +425,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_tailcall_condition_block
     bug = '[ruby-core:78015] [Bug #12905]'
 
-    src = "#{<<-"begin;"}\n#{<<~"end;"}"
+    src = "#{<<-"begin;"}\n#{<<~"end;"}", __FILE__, nil, __LINE__+1
     begin;
       def run(current, final)
         if current < final
@@ -437,13 +437,13 @@ class TestRubyOptimization < Test::Unit::TestCase
     end;
 
     obj = Object.new
-    self.class.tailcall(obj.singleton_class, src, tailcall: false)
+    self.class.tailcall(obj.singleton_class, *src, tailcall: false)
     e = assert_raise(SystemStackError) {
       obj.run(1, Float::INFINITY)
     }
     level = e.backtrace_locations.size
     obj = Object.new
-    self.class.tailcall(obj.singleton_class, src, tailcall: true)
+    self.class.tailcall(obj.singleton_class, *src, tailcall: true)
     level *= 2
     mesg = message {"#{bug}: #{$!.backtrace_locations.size} / #{level} stack levels"}
     assert_nothing_raised(SystemStackError, mesg) {
