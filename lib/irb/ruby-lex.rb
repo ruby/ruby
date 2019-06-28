@@ -47,7 +47,7 @@ class RubyLex
         result = []
         lines.each_index { |i|
           c = lines[0..i].map{ |l| l + "\n" }.join
-          ltype, indent, continue, code_block_open = check_state(c)
+          ltype, indent, continue, = check_state(c)
           result << @prompt.call(ltype, indent, continue, @line_no + i)
         }
         result
