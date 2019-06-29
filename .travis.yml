@@ -156,12 +156,19 @@ env:
       - GEMS_FOR_TEST=
       - cppflags=-DVM_CHECK_MODE=0x0003
 
-  - &FIBER_USE_sjlj
-    name: FIBER_USE_NATIVE=0
+  - &WITH_COROUTINE_UCONTEXT
+    name: COROUTINE=ucontext
     <<: *linux
-    <<: *cron-only
+    # <<: *cron-only
     env:
-      - cppflags=-DFIBER_USE_NATIVE=0
+      - CONFIG_FLAG='--with-coroutine=ucontext'
+
+  - &WITH_COROUTINE_COPY
+    name: COROUTINE=copy
+    <<: *linux
+    # <<: *cron-only
+    env:
+      - CONFIG_FLAG='--with-coroutine=copy'
 
   - &TOKEN_THREADED_CODE
     name: TOKEN_THREADED_CODE
@@ -385,7 +392,8 @@ matrix:
     - <<: *UBSAN
     - <<: *assertions
     - <<: *VM_CHECK_MODE
-    - <<: *FIBER_USE_sjlj
+    - <<: *WITH_COROUTINE_UCONTEXT
+    - <<: *WITH_COROUTINE_COPY
     - <<: *TOKEN_THREADED_CODE
     - <<: *CALL_THREADED_CODE
     - <<: *NO_THREADED_CODE
