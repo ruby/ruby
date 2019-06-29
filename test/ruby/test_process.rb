@@ -2362,7 +2362,6 @@ EOS
           w.syswrite("exec failed\n")
         end
         q = Queue.new
-        run = true
         th1 = Thread.new { i = 0; i += 1 while q.empty?; i }
         th2 = Thread.new { j = 0; j += 1 while q.empty? && Thread.pass.nil?; j }
         sleep 0.5

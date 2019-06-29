@@ -6,7 +6,6 @@ class TestCSVInterfaceReadWrite < Test::Unit::TestCase
   extend DifferentOFS
 
   def test_filter
-    rows = [[1, 2, 3], [4, 5]]
     input = <<-CSV
 1;2;3
 4;5

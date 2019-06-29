@@ -77,7 +77,7 @@ class TestOpen3 < Test::Unit::TestCase
   end
 
   def test_env
-    result = Open3.popen3({'A' => 'B', 'C' => 'D'}, RUBY, '-e' 'p ENV["A"]') do |i, out, err, thr|
+    Open3.popen3({'A' => 'B', 'C' => 'D'}, RUBY, '-e' 'p ENV["A"]') do |i, out, err, thr|
       output = out.read
       assert_equal("\"B\"\n", output)
     end

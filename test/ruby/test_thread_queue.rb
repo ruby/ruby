@@ -474,7 +474,7 @@ class TestThreadQueue < Test::Unit::TestCase
     prod_threads.each{|t|
       begin
         t.join
-      rescue => e
+      rescue
       end
     }
   end

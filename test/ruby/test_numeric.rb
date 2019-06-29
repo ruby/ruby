@@ -52,7 +52,6 @@ class TestNumeric < Test::Unit::TestCase
     end.new
     assert_equal(-1, -a)
 
-    bug7688 = '[ruby-core:51389] [Bug #7688]'
     a = Class.new(Numeric) do
       def coerce(x); raise StandardError, "my error"; end
     end.new

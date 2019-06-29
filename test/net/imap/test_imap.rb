@@ -641,7 +641,7 @@ EOF
 
     begin
       imap = Net::IMAP.new(server_addr, :port => port)
-      resp = imap.append("INBOX", mail)
+      imap.append("INBOX", mail)
       assert_equal(1, requests.length)
       assert_equal("RUBY0001 APPEND INBOX {#{mail.size}}\r\n", requests[0])
       assert_equal(mail, received_mail)
@@ -664,7 +664,6 @@ Subject: hello
 hello world
 EOF
     requests = []
-    received_mail = nil
     start_server do
       sock = server.accept
       begin
