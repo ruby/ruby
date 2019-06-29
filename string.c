@@ -8593,7 +8593,7 @@ get_reg_grapheme_cluster(rb_encoding *enc)
 	reg_grapheme_cluster = reg_grapheme_cluster_utf8;
     }
     if (!reg_grapheme_cluster) {
-	const OnigUChar source_ascii[] = "\\X";
+        const OnigUChar source_ascii[] = "\\X";
         OnigErrorInfo einfo;
         const OnigUChar *source = source_ascii;
         size_t source_len = sizeof(source_ascii) - 1;
@@ -8616,7 +8616,7 @@ get_reg_grapheme_cluster(rb_encoding *enc)
 #undef CHARS_32BE
 #undef CHARS_32LE
         }
-	int r = onig_new(&reg_grapheme_cluster, source, source + source_len,
+        int r = onig_new(&reg_grapheme_cluster, source, source + source_len,
                          ONIG_OPTION_DEFAULT, enc, OnigDefaultSyntax, &einfo);
 	if (r) {
             UChar message[ONIG_MAX_ERROR_MESSAGE_LEN];
