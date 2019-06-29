@@ -544,7 +544,7 @@ Europe/Lisbon  Sun Dec 31 23:59:59 1911 UT = Sun Dec 31 23:23:14 1911 LMT isdst=
 End
 
   class TZ
-    attr_reader :name, :abbr, :offset
+    attr_reader :name, :offset
 
     def initialize(name, abbr, offset)
       @name = name
