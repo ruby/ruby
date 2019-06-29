@@ -1036,13 +1036,20 @@ CODE
       "\u{1F468 200D 1F393}",
       "\u{1F46F 200D 2642 FE0F}",
       "\u{1f469 200d 2764 fe0f 200d 1f469}",
-    ].each do |g|
+    ].product([Encoding::UTF_8, *WIDE_ENCODINGS]) do |g, enc|
+      g = g.encode(enc)
       assert_equal [g], g.grapheme_clusters
-      assert_predicate g.dup.taint.grapheme_clusters[0], :tainted?
+      assert_predicate g.taint.grapheme_clusters[0], :tainted?
     end
 
-    assert_equal ["\u000A", "\u0324"], "\u{a 324}".grapheme_clusters
-    assert_equal ["\u000D", "\u0324"], "\u{d 324}".grapheme_clusters
+    [
+      "\u{a 324}",
+      "\u{d 324}",
+      "abc",
+    ].product([Encoding::UTF_8, *WIDE_ENCODINGS]) do |g, enc|
+      g = g.encode(enc)
+      assert_equal g.chars, g.grapheme_clusters
+    end
     assert_equal ["a", "b", "c"], "abc".b.grapheme_clusters
 
     if ENUMERATOR_WANTARRAY

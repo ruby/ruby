@@ -8593,9 +8593,30 @@ get_reg_grapheme_cluster(rb_encoding *enc)
 	reg_grapheme_cluster = reg_grapheme_cluster_utf8;
     }
     if (!reg_grapheme_cluster) {
-	const OnigUChar source[] = "\\X";
+	const OnigUChar source_ascii[] = "\\X";
         OnigErrorInfo einfo;
-	int r = onig_new(&reg_grapheme_cluster, source, source + sizeof(source) - 1,
+        const OnigUChar *source = source_ascii;
+        size_t source_len = sizeof(source_ascii) - 1;
+        switch (encidx) {
+#define CHARS_16BE(x) (OnigUChar)((x)>>8), (OnigUChar)(x)
+#define CHARS_16LE(x) (OnigUChar)(x), (OnigUChar)((x)>>8)
+#define CHARS_32BE(x) CHARS_16BE((x)>>16), CHARS_16BE(x)
+#define CHARS_32LE(x) CHARS_16LE(x), CHARS_16LE((x)>>16)
+#define CASE_UTF(e) \
+          case ENCINDEX_UTF_##e: { \
+            static const OnigUChar source_UTF_##e[] = {CHARS_##e('\\'), CHARS_##e('X')}; \
+            source = source_UTF_##e; \
+            source_len = sizeof(source_UTF_##e); \
+            break; \
+          }
+            CASE_UTF(16BE); CASE_UTF(16LE); CASE_UTF(32BE); CASE_UTF(32LE);
+#undef CASE_UTF
+#undef CHARS_16BE
+#undef CHARS_16LE
+#undef CHARS_32BE
+#undef CHARS_32LE
+        }
+	int r = onig_new(&reg_grapheme_cluster, source, source + source_len,
                          ONIG_OPTION_DEFAULT, enc, OnigDefaultSyntax, &einfo);
 	if (r) {
             UChar message[ONIG_MAX_ERROR_MESSAGE_LEN];
