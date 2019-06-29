@@ -3,7 +3,8 @@ require 'rbconfig'
 
 src_testdir = File.dirname(File.realpath(__FILE__))
 $LOAD_PATH << src_testdir
-$LOAD_PATH.unshift "#{src_testdir}/lib"
+tool_dir = File.join src_testdir, "..", "tool"
+$LOAD_PATH.unshift "#{tool_dir}/lib"
 
 # Get bundled gems on load path
 Dir.glob("#{src_testdir}/../gems/*/*.gemspec")
@@ -20,13 +21,13 @@ end
 
 ENV["GEM_SKIP"] = ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
 
-require_relative 'lib/profile_test_all' if ENV.has_key?('RUBY_TEST_ALL_PROFILE')
-require_relative 'lib/tracepointchecker'
-require_relative 'lib/zombie_hunter'
-require_relative 'lib/iseq_loader_checker'
+require_relative "#{tool_dir}/lib/profile_test_all" if ENV.has_key?('RUBY_TEST_ALL_PROFILE')
+require_relative "#{tool_dir}/lib/tracepointchecker"
+require_relative "#{tool_dir}/lib/zombie_hunter"
+require_relative "#{tool_dir}/lib/iseq_loader_checker"
 
 if ENV['COVERAGE']
-  require_relative "../tool/test-coverage.rb"
+  require_relative "#{tool_dir}/lib/test-coverage.rb"
 end
 
 begin
