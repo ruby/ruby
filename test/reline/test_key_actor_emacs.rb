@@ -5,7 +5,7 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     Reline.send(:test_mode)
     @prompt = '> '
     @config = Reline::Config.new # Emacs mode is default
-    Reline::HISTORY.send(:set_config, @config)
+    Reline::HISTORY.instance_variable_set(:@config, @config)
     @encoding = (RELINE_TEST_ENCODING rescue Encoding.default_external)
     @line_editor = Reline::LineEditor.new(@config)
     @line_editor.reset(@prompt, @encoding)
