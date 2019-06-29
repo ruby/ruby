@@ -12,7 +12,7 @@ if File.exist?(bundler_gemspec)
 end
 
 begin
-  gem 'minitest', '~> 5.13'
+  gem 'test-unit', '~> 3.0'
 rescue Gem::LoadError
 end
 
@@ -41,7 +41,7 @@ end
 
 ENV["MT_NO_PLUGINS"] = "true"
 
-require 'minitest/autorun'
+require 'test/unit'
 
 ENV["JARS_SKIP"] = "true" if Gem.java_platform? # avoid unnecessary and noisy `jar-dependencies` post install hook
 
@@ -111,7 +111,7 @@ end
 # and uninstall gems, fetch remote gems through a stub fetcher and be assured
 # your normal set of gems is not affected.
 
-class Gem::TestCase < Minitest::Test
+class Gem::TestCase < Test::Unit::TestCase
   extend Gem::Deprecate
 
   attr_accessor :fetcher # :nodoc:
@@ -140,7 +140,7 @@ class Gem::TestCase < Minitest::Test
   end
 
   def assert_directory_exists(path, msg = nil)
-    msg = message(msg) { "Expected path '#{path}' to be a directory" }
+    msg = build_message(msg, "Expected path '#{path}' to be a directory")
     assert_path_exists path
     assert File.directory?(path), msg
   end
@@ -262,19 +262,19 @@ class Gem::TestCase < Minitest::Test
 
   def assert_contains_make_command(target, output, msg = nil)
     if output.match(/\n/)
-      msg = message(msg) do
+      msg = build_message(msg,
         "Expected output containing make command \"%s\", but was \n\nBEGIN_OF_OUTPUT\n%sEND_OF_OUTPUT" % [
           ('%s %s' % [make_command, target]).rstrip,
           output,
         ]
-      end
+      )
     else
-      msg = message(msg) do
+      msg = build_message(msg,
         'Expected make command "%s": %s' % [
           ('%s %s' % [make_command, target]).rstrip,
           output,
         ]
-      end
+      )
     end
 
     assert scan_make_command_lines(output).any? {|line|
@@ -1012,6 +1012,7 @@ Also, a list:
 
     spec_fetcher.specs[@uri] = []
     all.each do |spec|
+
       spec_fetcher.specs[@uri] << spec.name_tuple
     end
 
