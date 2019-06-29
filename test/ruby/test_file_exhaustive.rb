@@ -683,7 +683,6 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_utime_symlinkfile
     return unless symlinkfile
     t = Time.local(2000)
-    stat = File.lstat(symlinkfile)
     assert_equal(1, File.utime(t, t, symlinkfile))
     assert_equal(t, File.stat(regular_file).atime)
     assert_equal(t, File.stat(regular_file).mtime)

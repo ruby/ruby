@@ -188,7 +188,7 @@ class TestSystem < Test::Unit::TestCase
       name = "\u{30c6 30b9 30c8}"
       tmpfilename = "#{tmpdir}/#{name}.cmd"
       message = /#{name}\.cmd/
-      e = assert_raise_with_message(Errno::ENOENT, message) do
+      assert_raise_with_message(Errno::ENOENT, message) do
         system(tmpfilename, exception: true)
       end
       open(tmpfilename, "w") {|f|
@@ -196,7 +196,7 @@ class TestSystem < Test::Unit::TestCase
         f.puts "exit 127"
         f.chmod(0755)
       }
-      e = assert_raise_with_message(RuntimeError, message) do
+      assert_raise_with_message(RuntimeError, message) do
         system(tmpfilename, exception: true)
       end
     end

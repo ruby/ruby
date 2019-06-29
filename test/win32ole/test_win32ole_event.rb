@@ -25,9 +25,8 @@ end
 def swbemsink_available?
   available = false
   if defined?(WIN32OLE)
-    wmi = nil
     begin
-      wmi = WIN32OLE.new('WbemScripting.SWbemSink')
+      WIN32OLE.new('WbemScripting.SWbemSink')
       available = true
     rescue
     end
@@ -422,7 +421,7 @@ if defined?(WIN32OLE_EVENT)
           $SAFE=1
           str = 'ConnectionEvents'
           str.taint
-          ev = WIN32OLE_EVENT.new(@db, str)
+          WIN32OLE_EVENT.new(@db, str)
         }
         exc = assert_raise(SecurityError) {
           th.join
