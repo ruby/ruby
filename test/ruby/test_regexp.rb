@@ -1124,6 +1124,8 @@ class TestRegexp < Test::Unit::TestCase
 
     bug8151 = '[ruby-core:53649]'
     assert_warning(/\A\z/, bug8151) { Regexp.new('(?:[\u{33}])').to_s }
+
+    assert_warning(%r[/.*/\Z]) { Regexp.new("[\n\n]") }
   end
 
   def test_property_warn
