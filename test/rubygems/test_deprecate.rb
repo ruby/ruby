@@ -96,7 +96,7 @@ class TestDeprecate < Gem::TestCase
   end
 
   def test_deprecated_method_calls_the_old_method
-    capture_io do
+    capture_output do
       thing = Thing.new
       thing.foo
       assert_equal "foo", thing.message
@@ -108,7 +108,7 @@ class TestDeprecate < Gem::TestCase
   end
 
   def test_deprecated_method_outputs_a_warning
-    out, err = capture_io do
+    out, err = capture_output do
       thing = Thing.new
       thing.foo
       thing.foo_arg("msg")

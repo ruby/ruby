@@ -253,7 +253,7 @@ if you believe they were disclosed to a third party.
 
     args = %w[--debug]
 
-    _, err = capture_io do
+    _, err = capture_output do
       @cfg.handle_arguments args
     end
 

@@ -55,7 +55,7 @@ class TestGemCommandsCheckCommand < Gem::TestCase
 
     Gem.use_paths @gemhome
 
-    capture_io do
+    capture_output do
       use_ui @ui do
         @cmd.doctor
       end

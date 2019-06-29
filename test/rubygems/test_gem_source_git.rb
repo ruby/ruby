@@ -240,7 +240,7 @@ class TestGemSourceGit < Gem::TestCase
 
     specs = nil
 
-    capture_io do
+    capture_output do
       specs = source.specs
     end
 
@@ -275,7 +275,7 @@ class TestGemSourceGit < Gem::TestCase
     source = Gem::Source::Git.new @name, @repository, 'master', true
     source.remote = false
 
-    capture_io do
+    capture_output do
       assert_empty source.specs
     end
   end
