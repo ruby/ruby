@@ -208,7 +208,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     @cmd.options[:args] = [gemspec_file]
 
     out, err = use_ui @ui do
-      capture_io do
+      capture_output do
         assert_raises Gem::MockGemUi::TermError do
           @cmd.execute
         end

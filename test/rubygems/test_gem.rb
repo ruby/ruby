@@ -1389,7 +1389,7 @@ class TestGem < Gem::TestCase
       io.write spec.to_ruby_for_cache
     end
 
-    _, err = capture_io do
+    _, err = capture_output do
       refute Gem.try_activate 'nonexistent'
     end
 
@@ -1414,7 +1414,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_setting_paths_does_not_warn_about_unknown_keys
-    stdout, stderr = capture_io do
+    stdout, stderr = capture_output do
       Gem.paths = { 'foo'      => [],
                     'bar'      => Object.new,
                     'GEM_HOME' => Gem.paths.home,
@@ -1432,7 +1432,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_deprecated_paths=
-    stdout, stderr = capture_io do
+    stdout, stderr = capture_output do
       Gem.paths = { 'GEM_HOME' => Gem.paths.home,
                     'GEM_PATH' => [Gem.paths.home, 'foo'] }
     end
@@ -2073,7 +2073,7 @@ You may need to `gem install -g` to install missing gems
     refute_includes $LOAD_PATH, test_plugin_path
     $LOAD_PATH.unshift test_plugin_path
 
-    capture_io do
+    capture_output do
       yield
     end
   ensure
