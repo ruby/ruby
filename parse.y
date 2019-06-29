@@ -404,6 +404,7 @@ static NODE *literal_concat(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
 static NODE *new_evstr(struct parser_params*,NODE*,const YYLTYPE*);
 static NODE *evstr2dstr(struct parser_params*,NODE*);
 static NODE *splat_array(NODE*);
+static void mark_lvar_used(struct parser_params *p, NODE *rhs);
 
 static NODE *call_bin_op(struct parser_params*,NODE*,ID,NODE*,const YYLTYPE*,const YYLTYPE*);
 static NODE *call_uni_op(struct parser_params*,NODE*,ID,const YYLTYPE*,const YYLTYPE*);
@@ -3150,6 +3151,7 @@ f_marg		: f_norm_arg
 		    {
 		    /*%%%*/
 			$$ = assignable(p, $1, 0, &@$);
+			mark_lvar_used(p, $$);
 		    /*% %*/
 		    /*% ripper: assignable(p, $1) %*/
 		    }

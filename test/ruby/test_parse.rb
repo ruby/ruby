@@ -961,10 +961,12 @@ x = __ENCODING__
     assert_warning(/assigned but unused variable/) {o.instance_eval("def foo; a=1; nil; end")}
     assert_warning(/assigned but unused variable/) {o.instance_eval("def bar; a=1; a(); end")}
     a = "\u{3042}"
-    assert_warning(/#{a}/) {o.instance_eval("def foo; #{a}=1; nil; end")}
-    o = Object.new
-    assert_warning(/assigned but unused variable/) {o.instance_eval("def foo; tap {a=1; a()}; end")}
-    assert_warning('') {o.instance_eval("def bar; a=a=1; nil; end")}
+    assert_warning(/#{a}/) {o.instance_eval("def foo0; #{a}=1; nil; end")}
+    assert_warning(/assigned but unused variable/) {o.instance_eval("def foo1; tap {a=1; a()}; end")}
+    assert_warning('') {o.instance_eval("def bar1; a=a=1; nil; end")}
+    assert_warning(/assigned but unused variable/) {o.instance_eval("def bar2; a, = 1, 2; end")}
+    assert_warning('') {o.instance_eval("def marg1(a); nil; end")}
+    assert_warning('') {o.instance_eval("def marg2((a)); nil; end")}
   end
 
   def test_named_capture_conflict
