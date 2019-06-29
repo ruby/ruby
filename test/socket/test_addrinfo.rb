@@ -500,6 +500,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert_equal(ai1.socktype, ai2.socktype)
     assert_equal(ai1.protocol, ai2.protocol)
     assert_equal(ai1.canonname, ai2.canonname)
+    assert_equal(ai1, ai2)
   end
 
   def test_marshal_memory_leak
@@ -545,6 +546,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
       assert_equal(ai1.socktype, ai2.socktype)
       assert_equal(ai1.protocol, ai2.protocol)
       assert_equal(ai1.canonname, ai2.canonname)
+      assert_equal(ai1, ai2)
     end
 
     def ipv6(str)
@@ -686,6 +688,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
       assert_equal(ai1.socktype, ai2.socktype)
       assert_equal(ai1.protocol, ai2.protocol)
       assert_equal(ai1.canonname, ai2.canonname)
+      assert_equal(ai1, ai2)
     end
 
   end

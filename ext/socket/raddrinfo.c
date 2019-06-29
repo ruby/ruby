@@ -1713,6 +1713,55 @@ addrinfo_mload(VALUE self, VALUE ary)
 }
 
 /*
+ *  call-seq:
+ *     addrinfo == obj    -> true or false
+ *
+ *  Equality---Returns whether +addrinfo+ == +obj+, similar to Object#==.
+ */
+
+static VALUE
+addrinfo_equal(VALUE self, VALUE other)
+{
+    const rb_addrinfo_t *r1, *r2;
+    int afamily;
+
+    if (CLASS_OF(self) != CLASS_OF(other)) return Qfalse;
+    r1 = get_addrinfo(self);
+    r2 = get_addrinfo(other);
+    if (r1->pfamily != r2->pfamily) return Qfalse;
+    if (r1->socktype != r2->socktype) return Qfalse;
+    if (r1->protocol != r2->protocol) return Qfalse;
+    if (r1->sockaddr_len != r2->sockaddr_len) return Qfalse;
+
+    if (!rb_str_equal(r1->inspectname, r2->inspectname)) return Qfalse;
+    if (!rb_str_equal(r1->canonname, r2->canonname)) return Qfalse;
+    afamily = ai_get_afamily(r1);
+    if (afamily != ai_get_afamily(r2)) return Qfalse;
+
+    if (r1->sockaddr_len != r2->sockaddr_len) return Qfalse;
+    switch (afamily) {
+#ifdef HAVE_SYS_UN_H
+      case AF_UNIX:
+      {
+        long l1 = unixsocket_len(r1);
+        long l2 = unixsocket_len(r2);
+        if (l1 != l2) return Qfalse;
+        if (memcmp(&r1->addr.un.sun_path, &r2->addr.un.sun_path, l1))
+            return Qfalse;
+        break;
+      }
+#endif
+
+      default:
+        if (memcmp(&r1->addr.addr, &r2->addr.addr, r1->sockaddr_len))
+            return Qfalse;
+        break;
+    }
+
+    return Qtrue;
+}
+
+/*
  * call-seq:
  *   addrinfo.afamily => integer
  *
@@ -2578,6 +2627,7 @@ rsock_init_addrinfo(void)
     rb_define_singleton_method(rb_cAddrinfo, "unix", addrinfo_s_unix, -1);
 #endif
 
+    rb_define_method(rb_cAddrinfo, "==", addrinfo_equal, 1);
     rb_define_method(rb_cAddrinfo, "afamily", addrinfo_afamily, 0);
     rb_define_method(rb_cAddrinfo, "pfamily", addrinfo_pfamily, 0);
     rb_define_method(rb_cAddrinfo, "socktype", addrinfo_socktype, 0);

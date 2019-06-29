@@ -727,14 +727,17 @@ class TestSocket < Test::Unit::TestCase
     s2.send("a" * 100, 0)
     ret, addr, rflags = s1.recvmsg(10, Socket::MSG_PEEK)
     assert_equal "a" * 10, ret
+    assert_equal s2.local_address, addr
     # AIX does not set MSG_TRUNC for a message partially read with MSG_PEEK.
     assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil? && /aix/ !~ RUBY_PLATFORM
     ret, addr, rflags = s1.recvmsg(10, 0)
     assert_equal "a" * 10, ret
+    assert_equal s2.local_address, addr
     assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil?
     s2.send("b" * 100, 0)
     ret, addr, rflags = s1.recvmsg(10, 0)
     assert_equal "b" * 10, ret
+    assert_equal s2.local_address, addr
     assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil?
     addr
   ensure
