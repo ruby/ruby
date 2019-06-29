@@ -4,6 +4,11 @@ require 'test/unit'
 class TestString < Test::Unit::TestCase
   ENUMERATOR_WANTARRAY = RUBY_VERSION >= "3.0.0"
 
+  WIDE_ENCODINGS = [
+     Encoding::UTF_16BE, Encoding::UTF_16LE,
+     Encoding::UTF_32BE, Encoding::UTF_32LE,
+  ]
+
   def initialize(*args)
     @cls = String
     @aref_re_nth = true
@@ -680,8 +685,7 @@ CODE
     assert_raise(ArgumentError) {S("mypassword").crypt(S("\0a"))}
     assert_raise(ArgumentError) {S("mypassword").crypt(S("a\0"))}
     assert_raise(ArgumentError) {S("poison\u0000null").crypt(S("aa"))}
-    [Encoding::UTF_16BE, Encoding::UTF_16LE,
-     Encoding::UTF_32BE, Encoding::UTF_32LE].each do |enc|
+    WIDE_ENCODINGS.each do |enc|
       assert_raise(ArgumentError) {S("mypassword").crypt(S("aa".encode(enc)))}
       assert_raise(ArgumentError) {S("mypassword".encode(enc)).crypt(S("aa"))}
     end
@@ -1807,10 +1811,7 @@ CODE
 
   def test_split_wchar
     bug8642 = '[ruby-core:56036] [Bug #8642]'
-    [
-     Encoding::UTF_16BE, Encoding::UTF_16LE,
-     Encoding::UTF_32BE, Encoding::UTF_32LE,
-    ].each do |enc|
+    WIDE_ENCODINGS.each do |enc|
       s = S("abc,def".encode(enc))
       assert_equal(["abc", "def"].map {|c| c.encode(enc)},
                    s.split(",".encode(enc)),
@@ -3020,8 +3021,7 @@ CODE
 
   def test_ascii_incomat_inspect
     bug4081 = '[ruby-core:33283]'
-    [Encoding::UTF_16LE, Encoding::UTF_16BE,
-     Encoding::UTF_32LE, Encoding::UTF_32BE].each do |e|
+    WIDE_ENCODINGS.each do |e|
       assert_equal('"abc"', "abc".encode(e).inspect)
       assert_equal('"\\u3042\\u3044\\u3046"', "\u3042\u3044\u3046".encode(e).inspect)
       assert_equal('"ab\\"c"', "ab\"c".encode(e).inspect, bug4081)
