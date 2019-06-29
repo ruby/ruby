@@ -964,7 +964,7 @@ main()
 		AS_IF([test "$target_cpu" = x64], [
 		    ac_cv_func___builtin_setjmp=yes
 		    ac_cv_func_round=no
-		    rb_cv_fiber_coroutine=yes
+		    rb_cv_coroutine=yes
 		])
 		ac_cv_func_tgamma=no
 		rb_cv_negative_time_t=yes
@@ -2251,60 +2251,67 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $dir)
 ])
 
-AC_ARG_ENABLE(fiber-coroutine,
-    AS_HELP_STRING([--disable-fiber-coroutine], [disable native coroutine implementation for fiber]),
-    [rb_cv_fiber_coroutine=$enableval])
-AS_CASE(["$rb_cv_fiber_coroutine"], [yes|''], [
+AC_ARG_WITH(coroutine,
+    AS_HELP_STRING([--with-coroutine=IMPLEMENTATION], [specify the coroutine implementation to use]),
+    [rb_cv_coroutine=$withval])
+AS_CASE([$rb_cv_coroutine], [yes|''], [
     AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
     AS_CASE(["$target_cpu-$target_os"],
         [x*64-darwin*], [
-            rb_cv_fiber_coroutine=amd64
+            rb_cv_coroutine=amd64
         ],
         [x*64-linux], [
             AS_CASE(["$ac_cv_sizeof_voidp"],
-                [8], [ rb_cv_fiber_coroutine=amd64 ],
-                [4], [ rb_cv_fiber_coroutine=x86 ],
-                [*], [ rb_cv_fiber_coroutine= ]
+                [8], [ rb_cv_coroutine=amd64 ],
+                [4], [ rb_cv_coroutine=x86 ],
+                [*], [ rb_cv_coroutine= ]
             )
         ],
         [*86-linux], [
-            rb_cv_fiber_coroutine=x86
+            rb_cv_coroutine=x86
         ],
         [x64-mingw32], [
-            rb_cv_fiber_coroutine=win64
+            rb_cv_coroutine=win64
         ],
         [*86-mingw32], [
-            rb_cv_fiber_coroutine=win32
+            rb_cv_coroutine=win32
         ],
         [armv7*-linux-*], [
-            rb_cv_fiber_coroutine=ucontext
+            rb_cv_coroutine=ucontext
         ],
         [aarch64-linux], [
-            rb_cv_fiber_coroutine=arm64
+            rb_cv_coroutine=arm64
         ],
         [powerpc64le-linux], [
-            rb_cv_fiber_coroutine=ppc64le
+            rb_cv_coroutine=ppc64le
         ],
         [x86_64-openbsd*], [
-            rb_cv_fiber_coroutine=amd64
+            rb_cv_coroutine=amd64
         ],
         [i386-openbsd*], [
-            rb_cv_fiber_coroutine=x86
+            rb_cv_coroutine=x86
         ],
         [*-openbsd*], [
-            rb_cv_fiber_coroutine=
+            rb_cv_coroutine=copy
         ],
         [*], [
-            rb_cv_fiber_coroutine=ucontext
+            rb_cv_coroutine=ucontext
         ]
     )
-    AC_MSG_RESULT(${rb_cv_fiber_coroutine:-no})
+    AC_MSG_RESULT(${rb_cv_coroutine})
 ])
-AS_IF([test "${rb_cv_fiber_coroutine:-no}" != no], [
-    COROUTINE_H=coroutine/$rb_cv_fiber_coroutine/Context.h
-    AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
-    AC_SUBST(X_FIBER_COROUTINE_H, [$COROUTINE_H])
-])
+COROUTINE_H=coroutine/$rb_cv_coroutine/Context.h
+AS_CASE([$rb_cv_coroutine],
+    [copy|ucontext], [
+        COROUTINE_SRC=coroutine/$rb_cv_coroutine/Context.c
+    ],
+    [*], [
+        COROUTINE_SRC=coroutine/$rb_cv_coroutine/Context.'$(ASMEXT)'
+    ],
+)
+AC_DEFINE_UNQUOTED(COROUTINE_H, ["$COROUTINE_H"])
+AC_SUBST(X_COROUTINE_H, [$COROUTINE_H])
+AC_SUBST(X_COROUTINE_SRC, [$COROUTINE_SRC])
 
 AS_IF([test x"$enable_pthread" = xyes], [
     for pthread_lib in thr pthread pthreads c c_r root; do
@@ -4009,6 +4016,7 @@ config_summary "vendor path"         "$vendordir"
 config_summary "target OS"           "$target_os"
 config_summary "compiler"            "$CC"
 config_summary "with pthread"        "$enable_pthread"
+config_summary "with coroutine"      "$rb_cv_coroutine"
 config_summary "enable shared libs"  "$ENABLE_SHARED"
 config_summary "dynamic library ext" "$DLEXT"
 config_summary "CFLAGS"              "$cflags"

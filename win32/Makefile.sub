@@ -290,19 +290,18 @@ MISSING = $(MISSING) acosh.obj cbrt.obj erf.obj nan.obj tgamma.obj
 MISSING = $(MISSING) explicit_bzero.obj
 !endif
 DLNOBJ = dln.obj
+
 !if "$(ARCH)" == "x64"
-COROUTINE_OBJ = coroutine/Win64/Context.obj
+COROUTINE_OBJ = coroutine/win64/Context.obj
+COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !elseif "$(ARCH)" == "i386"
-COROUTINE_OBJ = coroutine/Win32/Context.obj
+COROUTINE_OBJ = coroutine/win32/Context.obj
+COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !else
-COROUTINE_OBJ =
+COROUTINE_OBJ = coroutine/copy/Context.obj
+COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.c)
 !endif
-!if "$(COROUTINE_OBJ)" == ""
-# get rid of empty value not to leave VPATH only in dependencies
-COROUTINE_H = coroutine/Win32/Context.h
-!else
 COROUTINE_H = $(COROUTINE_OBJ:.obj=.h)
-!endif
 
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
@@ -871,9 +870,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64"
 #define STACK_GROW_DIRECTION -1
 !endif
-!if "$(COROUTINE_OBJ)" != ""
-#define FIBER_USE_COROUTINE "$(COROUTINE_H)"
-!endif
+#define COROUTINE_H "$(COROUTINE_H)"
 #define DEFAULT_KCODE KCODE_NONE
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
@@ -1235,12 +1232,15 @@ $(ruby_pc): $(RBCONFIG)
 		-output=$@ -mode=$(INSTALL_DATA_MODE) -config=rbconfig.rb \
 		$(srcdir)/template/ruby.pc.in
 
-{$(srcdir)/coroutine/Win32}.asm{coroutine/Win32}.obj:
+{$(srcdir)/coroutine/win32}.asm{coroutine/win32}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
-{$(srcdir)/coroutine/Win64}.asm{coroutine/Win64}.obj:
+{$(srcdir)/coroutine/win64}.asm{coroutine/win64}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
+{$(srcdir)/coroutine/copy}.c{coroutine/copy}.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
 
 {$(srcdir)/enc/trans}.c.obj:
 	$(ECHO) compiling $(<:\=/)

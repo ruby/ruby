@@ -15,12 +15,7 @@
 #include "eval_intern.h"
 #include "mjit.h"
 
-#ifdef FIBER_USE_COROUTINE
-#include FIBER_USE_COROUTINE
-#else
-// Stack copying implementation, should work everywhere:
-#include "coroutine/copy/Context.h"
-#endif
+#include COROUTINE_H
 
 #ifndef _WIN32
 #include <unistd.h>
