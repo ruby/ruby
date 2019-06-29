@@ -53,8 +53,4 @@ class Reline::History < Array
     raise IndexError.new("index=<#{index}>") if index < 0 or size <= index
     index
   end
-
-  private def set_config(config)
-    @config = config
-  end
 end
