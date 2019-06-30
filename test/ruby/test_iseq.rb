@@ -464,12 +464,13 @@ class TestISeq < Test::Unit::TestCase
     RUBY
 
     iseq_bin = iseq.to_binary
+    iseq = ISeq.load_from_binary(iseq_bin)
     lines = []
     TracePoint.new(tracepoint_type){|tp|
       next unless tp.path == filename
       lines << tp.lineno
     }.enable{
-      ISeq.load_from_binary(iseq_bin).eval
+      EnvUtil.suppress_warning {iseq.eval}
     }
 
     lines
