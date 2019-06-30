@@ -805,9 +805,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   # location are returned.
 
   def util_gem(name, version, deps = nil, &block)
-    # TODO: deprecate
-    raise "deps or block, not both" if deps and block
-
     if deps
       block = proc do |s|
         # Since Hash#each is unordered in 1.8, sort
