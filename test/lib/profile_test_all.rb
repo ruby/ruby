@@ -43,7 +43,7 @@ class MiniTest::Unit::TestCase
     result << ObjectSpace.memsize_of_all
   end
 
-  add *GC.stat.keys do |result, *|
+  add(*GC.stat.keys) do |result, *|
     GC.stat(TEST_ALL_PROFILE_GC_STAT_HASH)
     result.concat TEST_ALL_PROFILE_GC_STAT_HASH.values
   end
@@ -52,7 +52,7 @@ class MiniTest::Unit::TestCase
     return unless FileTest.exist?(file)
     regexp = /(#{fields.join("|")}):\s*(\d+) kB/
     # check = {}; fields.each{|e| check[e] = true}
-    add *fields do |result, *|
+    add(*fields) do |result, *|
       text = File.read(file)
       text.scan(regexp){
         # check.delete $1
@@ -67,7 +67,7 @@ class MiniTest::Unit::TestCase
   add_proc_meminfo '/proc/self/status', %w(VmPeak VmSize VmHWM VmRSS)
 
   if FileTest.exist?('/proc/self/statm')
-    add *%w(size resident share text lib data dt) do |result, *|
+    add 'size', 'resident', 'share', 'text', 'lib', 'data', 'dt' do |result, *|
       result.concat File.read('/proc/self/statm').split(/\s+/)
     end
   end
