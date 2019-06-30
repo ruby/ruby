@@ -111,7 +111,8 @@ class TestGCCompact < Test::Unit::TestCase
 
     GC.verify_compaction_references(toward: :empty)
 
-    return
+    skip "time consuming"
+
     new_tenants = 10.times.map {
       find_object_in_recycled_slot(addresses)
     }
