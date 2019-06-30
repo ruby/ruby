@@ -1011,7 +1011,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %type <node> command_rhs arg_rhs
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
 %type <node> f_block_optarg f_block_opt
-%type <node> f_arglist f_args f_arg f_arg_item f_optarg f_marg f_marg_list f_margs
+%type <node> f_arglist f_args f_arg f_arg_item f_optarg f_marg f_marg_list f_margs f_rest_marg
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node> block_param opt_block_param block_param_def f_opt
 %type <node> f_kwarg f_kw f_block_kwarg f_block_kw
@@ -3187,64 +3187,52 @@ f_margs		: f_marg_list
 		    /*% %*/
 		    /*% ripper: $1 %*/
 		    }
-		| f_marg_list ',' tSTAR f_norm_arg
+		| f_marg_list ',' f_rest_marg
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN($1, assignable(p, $4, 0, &@$), &@$);
+			$$ = NEW_MASGN($1, $3, &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_star!($1, assignable(p, $4)) %*/
+		    /*% ripper: mlhs_add_star!($1, $3) %*/
 		    }
-		| f_marg_list ',' tSTAR f_norm_arg ',' f_marg_list
+		| f_marg_list ',' f_rest_marg ',' f_marg_list
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN($1, NEW_POSTARG(assignable(p, $4, 0, &@$), $6, &@$), &@$);
+			$$ = NEW_MASGN($1, NEW_POSTARG($3, $5, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_post!(mlhs_add_star!($1, assignable(p, $4)), $6) %*/
+		    /*% ripper: mlhs_add_post!(mlhs_add_star!($1, $3), $5) %*/
 		    }
-		| f_marg_list ',' tSTAR
+		| f_rest_marg
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN($1, NODE_SPECIAL_NO_NAME_REST, &@$);
+			$$ = NEW_MASGN(0, $1, &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_star!($1, Qnil) %*/
+		    /*% ripper: mlhs_add_star!(mlhs_new!, $1) %*/
 		    }
-		| f_marg_list ',' tSTAR ',' f_marg_list
+		| f_rest_marg ',' f_marg_list
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN($1, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $5, &@$), &@$);
+			$$ = NEW_MASGN(0, NEW_POSTARG($1, $3, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_post!(mlhs_add_star!($1, Qnil), $5) %*/
+		    /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, $1), $3) %*/
 		    }
-		| tSTAR f_norm_arg
+		;
+
+f_rest_marg	: tSTAR f_norm_arg
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN(0, assignable(p, $2, 0, &@$), &@$);
+			$$ = assignable(p, $2, 0, &@$);
+			mark_lvar_used(p, $$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_star!(mlhs_new!, assignable(p, $2)) %*/
-		    }
-		| tSTAR f_norm_arg ',' f_marg_list
-		    {
-		    /*%%%*/
-			$$ = NEW_MASGN(0, NEW_POSTARG(assignable(p, $2, 0, &@$), $4, &@$), &@$);
-		    /*% %*/
-		    /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, assignable(p, $2)), $4) %*/
+		    /*% ripper: assignable(p, $2) %*/
 		    }
 		| tSTAR
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN(0, NODE_SPECIAL_NO_NAME_REST, &@$);
+			$$ = NODE_SPECIAL_NO_NAME_REST;
 		    /*% %*/
-		    /*% ripper: mlhs_add_star!(mlhs_new!, Qnil) %*/
-		    }
-		| tSTAR ',' f_marg_list
-		    {
-		    /*%%%*/
-			$$ = NEW_MASGN(0, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $3, &@$), &@$);
-		    /*% %*/
-		    /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, Qnil), $3) %*/
+		    /*% ripper: Qnil %*/
 		    }
 		;
-
 
 block_args_tail	: f_block_kwarg ',' f_kwrest opt_f_block_arg
 		    {
