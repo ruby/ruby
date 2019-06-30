@@ -1149,6 +1149,7 @@ x = __ENCODING__
     end
     o.instance_eval {i (-1.3).abs}
     assert_equal(1.3, o.x)
+    o.i(nil)
     o.instance_eval {i = 0; i (-1.3).abs; i}
     assert_equal(1.3, o.x)
   end
