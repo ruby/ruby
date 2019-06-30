@@ -347,7 +347,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_tailcall_inhibited_by_rescue
     bug12082 = '[ruby-core:73871] [Bug #12082]'
 
-    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    EnvUtil.suppress_warning {tailcall("#{<<-"begin;"}\n#{<<~"end;"}")}
     begin;
       def to_be_rescued
         return do_raise
