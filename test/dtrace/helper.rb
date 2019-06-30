@@ -19,9 +19,7 @@ if RUBY_PLATFORM =~ /linux/
   impl = :stap
   begin
     require 'etc'
-    login = Etc.getlogin
-    ok = Etc.getgrnam('stapusr').mem.include?(login) &&
-           Etc.getgrnam('stapdev').mem.include?(login)
+    ok = (%w[stapusr stapdev].map {|g|Etc.getgrnam(g).gid} & Process.groups).size == 2
   rescue LoadError, ArgumentError
   end unless ok
 end
