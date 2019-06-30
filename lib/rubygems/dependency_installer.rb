@@ -164,9 +164,8 @@ class Gem::DependencyInstaller
 
     if consider_remote?
       begin
-        # TODO this is pulled from #spec_for_dependency to allow
+        # This is pulled from #spec_for_dependency to allow
         # us to filter tuples before fetching specs.
-        #
         tuples, errors = Gem::SpecFetcher.fetcher.search_for_dependency dep
 
         if best_only && !tuples.empty?
