@@ -1530,7 +1530,7 @@ class Gem::Specification < Gem::BasicSpecification
   # a full path.
 
   def bin_dir
-    @bin_dir ||= File.join gem_dir, bindir # TODO: this is unfortunate
+    @bin_dir ||= File.join gem_dir, bindir
   end
 
   ##
