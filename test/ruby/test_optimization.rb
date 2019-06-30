@@ -751,6 +751,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     h = {}
     assert_equal(bug, eval('{ok: 42, **h}; bug'))
     assert_equal(:ok, eval('{ok: bug = :ok, **h}; bug'))
+    assert_empty(h)
   end
 
   def test_overwritten_blockparam

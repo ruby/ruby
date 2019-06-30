@@ -615,6 +615,8 @@ class TestM17N < Test::Unit::TestCase
     r1 = Regexp.new('\xa1'.force_encoding("ascii-8bit"))
     r2 = eval('/\xa1#{r1}/'.force_encoding('ascii-8bit'))
     assert_equal(Encoding::ASCII_8BIT, r2.encoding)
+
+    [r1, r2]
   end
 
   def test_regexp_named_class

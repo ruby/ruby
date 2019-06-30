@@ -119,6 +119,8 @@ class TestGCCompact < Test::Unit::TestCase
     collisions = GC.stat(:object_id_collisions)
     skip "couldn't get objects to collide" if collisions == 0
     assert_operator collisions, :>, 0
+    ids.clear
+    new_tenants.clear
   end
 
   def test_complex_hash_keys

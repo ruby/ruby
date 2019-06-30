@@ -452,7 +452,7 @@ class TestISeq < Test::Unit::TestCase
         class B
           2.times {
             def self.foo
-              a = 'good day'
+              _a = 'good day'
               raise
             rescue
               'dear reader'

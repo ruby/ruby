@@ -320,5 +320,6 @@ class TestOpen3 < Test::Unit::TestCase
     command = [RUBY, '-e', 'puts "test_integer_and_symbol_key"']
     out, status = Open3.capture2(*command, :chdir => '.', 2 => IO::NULL)
     assert_equal("test_integer_and_symbol_key\n", out)
+    assert_predicate(status, :success?)
   end
 end
