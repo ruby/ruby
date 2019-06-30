@@ -256,8 +256,8 @@ class TestRequire < Test::Unit::TestCase
   def assert_syntax_error_backtrace
     Dir.mktmpdir do |tmp|
       req = File.join(tmp, "test.rb")
-      File.write(req, "'\n")
-      e = assert_raise_with_message(SyntaxError, /unterminated/) {
+      File.write(req, ",\n")
+      e = assert_raise_with_message(SyntaxError, /unexpected/) {
         yield req
       }
       assert_not_nil(bt = e.backtrace)

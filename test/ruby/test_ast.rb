@@ -130,6 +130,12 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  private def parse(src)
+    EnvUtil.suppress_warning {
+      RubyVM::AbstractSyntaxTree.parse(src)
+    }
+  end
+
   def test_allocate
     assert_raise(TypeError) {RubyVM::AbstractSyntaxTree::Node.allocate}
   end
@@ -144,19 +150,19 @@ class TestAst < Test::Unit::TestCase
 
   def test_column_with_long_heredoc_identifier
     term = "A"*257
-    ast = RubyVM::AbstractSyntaxTree.parse("<<-#{term}\n""ddddddd\n#{term}\n")
+    ast = parse("<<-#{term}\n""ddddddd\n#{term}\n")
     node = ast.children[2]
     assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
   end
 
   def test_column_of_heredoc
-    node = RubyVM::AbstractSyntaxTree.parse("<<-SRC\nddddddd\nSRC\n").children[2]
+    node = parse("<<-SRC\nddddddd\nSRC\n").children[2]
     assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
     assert_equal(6, node.last_column)
 
-    node = RubyVM::AbstractSyntaxTree.parse("<<SRC\nddddddd\nSRC\n").children[2]
+    node = parse("<<SRC\nddddddd\nSRC\n").children[2]
     assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
     assert_equal(5, node.last_column)
@@ -268,7 +274,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_dstr
-    node = RubyVM::AbstractSyntaxTree.parse('"foo#{1}bar"')
+    node = parse('"foo#{1}bar"')
     _, _, body = *node.children
     assert_equal(:DSTR, body.type)
     head, body = body.children
