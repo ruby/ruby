@@ -134,8 +134,8 @@ end
 
 class TracePoint
   # call-seq:
-  #    trace.enable(target: nil, target_line: nil)    -> true or false
-  #    trace.enable(target: nil, target_line: nil) { block }  -> obj
+  #    trace.enable(target: nil, target_line: nil, target_thread: nil)    -> true or false
+  #    trace.enable(target: nil, target_line: nil, target_thread: nil) { block }  -> obj
   #
   # Activates the trace.
   #
@@ -163,9 +163,10 @@ class TracePoint
   #    trace.enabled?
   #    #=> false
   #
-  # <i>target</i> and <i>target_line</i> parameters are used to limit tracing
-  # only to specified code objects. <i>target</i> should be a code object for
-  # which RubyVM::InstructionSequence.of will return an instruction sequence.
+  # +target+, +target_line+ and +target_thread+ parameters are used to
+  # limit tracing only to specified code objects. +target+ should be a
+  # code object for which RubyVM::InstructionSequence.of will return
+  # an instruction sequence.
   #
   #    t = TracePoint.new(:line) { |tp| p tp }
   #
