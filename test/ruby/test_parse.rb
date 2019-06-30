@@ -481,6 +481,7 @@ class TestParse < Test::Unit::TestCase
     t[42, &blk] ||= t.dummy 42 # command_asgn test
     END
     assert_equal([:aref, :aset], a)
+    blk
   end
 
   def test_backquote
@@ -1148,7 +1149,7 @@ x = __ENCODING__
     end
     o.instance_eval {i (-1.3).abs}
     assert_equal(1.3, o.x)
-    o.instance_eval {i = 0; i (-1.3).abs}
+    o.instance_eval {i = 0; i (-1.3).abs; i}
     assert_equal(1.3, o.x)
   end
 
@@ -1157,6 +1158,7 @@ x = __ENCODING__
       $VERBOSE = true
       x = 1
       eval("if false; 0 < x < 2; end")
+      x
     end
   end
 

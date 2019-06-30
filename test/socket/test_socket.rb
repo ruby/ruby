@@ -736,6 +736,7 @@ class TestSocket < Test::Unit::TestCase
     ret, addr, rflags = s1.recvmsg(10, 0)
     assert_equal "b" * 10, ret
     assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil?
+    addr
   ensure
     s1.close
     s2.close

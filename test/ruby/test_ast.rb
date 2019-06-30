@@ -205,9 +205,9 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_scope_local_variables
-    node = RubyVM::AbstractSyntaxTree.parse("x = 0")
+    node = RubyVM::AbstractSyntaxTree.parse("_x = 0")
     lv, _, body = *node.children
-    assert_equal([:x], lv)
+    assert_equal([:_x], lv)
     assert_equal(:LASGN, body.type)
   end
 

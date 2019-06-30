@@ -530,6 +530,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("553 Requested action not taken.\r\n")
       commands.push(sock.gets)
       sock.print("200 Switching to Binary mode.\r\n")
+      [host, port]
     }
     begin
       begin
@@ -711,6 +712,7 @@ class FTPTest < Test::Unit::TestCase
       host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("550 Requested action not taken.\r\n")
+      [host, port]
     }
     begin
       begin
@@ -937,6 +939,7 @@ class FTPTest < Test::Unit::TestCase
       host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("452 Requested file action aborted.\r\n")
+      [host, port]
     }
     begin
       begin

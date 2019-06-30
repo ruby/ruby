@@ -1302,7 +1302,7 @@ class TestProc < Test::Unit::TestCase
   def test_local_variables
     b = get_binding
     assert_equal(%i'if case when begin end a', b.local_variables)
-    a = tap {|;x, y| x = y; break binding.local_variables}
+    a = tap {|;x, y| x = y = x; break binding.local_variables}
     assert_equal(%i[a b x y], a.sort)
   end
 

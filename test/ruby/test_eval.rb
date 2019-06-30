@@ -345,6 +345,7 @@ class TestEval < Test::Unit::TestCase
       # assert_equal(1, eval("foo11"))
       assert_equal(eval("foo22"), eval("foo22", p))
       assert_equal(55, eval("foo22"))
+      assert_equal(55, foo22)
     }.call
   end
 
