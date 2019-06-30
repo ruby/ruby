@@ -340,6 +340,7 @@ class TestSignal < Test::Unit::TestCase
         w.close
       end
       assert_raise(Errno::ECHILD) { Process.wait(pid) }
+      th.join
       assert_nil nb
     end
 
