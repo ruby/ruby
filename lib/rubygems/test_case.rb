@@ -673,7 +673,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   # Removes all installed gems from +@gemhome+.
 
   def util_clear_gems
-    FileUtils.rm_rf File.join(@gemhome, "gems") # TODO: use Gem::Dirs
+    FileUtils.rm_rf File.join(@gemhome, "gems")
     FileUtils.mkdir File.join(@gemhome, "gems")
     FileUtils.rm_rf File.join(@gemhome, "specifications")
     FileUtils.mkdir File.join(@gemhome, "specifications")
