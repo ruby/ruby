@@ -361,7 +361,7 @@ class TestThreadQueue < Test::Unit::TestCase
     items = []
     # sometimes empty? is false but pop will raise ThreadError('empty'),
     # meaning a value is not immediately available but will be soon.
-    until q.empty? and !prod_threads.any?(&:alive?)
+    while prod_threads.any?(&:alive?) or !q.empty?
       items << q.pop(true) rescue nil
     end
     assert_join_threads(prod_threads)
