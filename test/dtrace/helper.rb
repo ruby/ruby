@@ -30,7 +30,6 @@ if ok
     begin
       require 'pty'
     rescue LoadError
-      ok = false
     end
   end
 end
@@ -78,7 +77,7 @@ module DTrace
           Process.wait(pid)
         end
         lines
-      end
+      end if defined?(PTY)
     end
 
     # only handles simple cases, use a Hash for d_program
