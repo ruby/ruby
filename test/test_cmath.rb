@@ -4,13 +4,11 @@ require 'cmath'
 
 class TestCMath < Test::Unit::TestCase
   def test_deprecated_method
-    orig = $VERBOSE
-    $VERBOSE = true
+    root = nil
     assert_warning(/CMath#sqrt! is deprecated; use CMath#sqrt or Math#sqrt/) do
-      CMath.sqrt!(1)
+      root = CMath.sqrt!(1)
     end
-    assert_equal CMath.sqrt(1), CMath.sqrt!(1)
-    $VERBOSE = orig
+    assert_equal CMath.sqrt(1), root
   end
 
   def test_sqrt
