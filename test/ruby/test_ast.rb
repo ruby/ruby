@@ -286,11 +286,11 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_while
-    node = RubyVM::AbstractSyntaxTree.parse('1 while 1')
+    node = RubyVM::AbstractSyntaxTree.parse('1 while qux')
     _, _, body = *node.children
     assert_equal(:WHILE, body.type)
     type1 = body.children[2]
-    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end while 1')
+    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end while qux')
     _, _, body = *node.children
     assert_equal(:WHILE, body.type)
     type2 = body.children[2]
@@ -298,11 +298,11 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_until
-    node = RubyVM::AbstractSyntaxTree.parse('1 until 1')
+    node = RubyVM::AbstractSyntaxTree.parse('1 until qux')
     _, _, body = *node.children
     assert_equal(:UNTIL, body.type)
     type1 = body.children[2]
-    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end until 1')
+    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end until qux')
     _, _, body = *node.children
     assert_equal(:UNTIL, body.type)
     type2 = body.children[2]
