@@ -688,13 +688,15 @@ eom
       end
 
       def assert_warning(pat, msg = nil)
+        result = nil
         stderr = EnvUtil.with_default_internal(pat.encoding) {
           EnvUtil.verbose_warning {
-            yield
+            result = yield
           }
         }
         msg = message(msg) {diff pat, stderr}
         assert(pat === stderr, msg)
+        result
       end
 
       def assert_warn(*args)
@@ -702,13 +704,15 @@ eom
       end
 
       def assert_no_warning(pat, msg = nil)
+        result = nil
         stderr = EnvUtil.verbose_warning {
           EnvUtil.with_default_internal(pat.encoding) {
-            yield
+            result = yield
           }
         }
         msg = message(msg) {diff pat, stderr}
         refute(pat === stderr, msg)
+        result
       end
 
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
