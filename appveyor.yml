@@ -5,9 +5,7 @@ platform:
   - x64
 branches:
   except:
-    # Because default branch is still "trunk", we build only "trunk" to avoid
-    # doubly building on master and trigger CI on Pull Request.
-    - master # mirrored from trunk
+    - trunk # mirrored from trunk. avoid doubly building on it
 environment:
   ruby_version: "24-%Platform%"
   zlib_version: "1.2.11"
