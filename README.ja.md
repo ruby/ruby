@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.org/ruby/ruby.svg?branch=trunk)](https://travis-ci.org/ruby/ruby)
-[![wercker status](https://app.wercker.com/status/e5e7e1704f62b76525022aa424aef6ef/s/trunk "wercker status")](https://app.wercker.com/project/byKey/e5e7e1704f62b76525022aa424aef6ef)
-[![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/trunk?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/trunk)
+[![Build Status](https://travis-ci.org/ruby/ruby.svg?branch=master)](https://travis-ci.org/ruby/ruby)
+[![wercker status](https://app.wercker.com/status/e5e7e1704f62b76525022aa424aef6ef/s/master "wercker status")](https://app.wercker.com/project/byKey/e5e7e1704f62b76525022aa424aef6ef)
+[![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
 [![Build Status](https://dev.azure.com/rubylang/ruby/_apis/build/status/ruby.ruby?branchName=master)](https://dev.azure.com/rubylang/ruby/_build/latest?definitionId=3&branchName=master)
 
 
@@ -24,7 +24,7 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい
 *   ダイナミックローディング (アーキテクチャによる)
 *   移植性が高い．多くのUnix-like/POSIX互換プラットフォーム上で動くだけでなく，Windows， macOS，
     Haikuなどの上でも動く cf.
-    https://github.com/ruby/ruby/blob/trunk/doc/contributing.rdoc#platform-maintainers
+    https://github.com/ruby/ruby/blob/master/doc/contributing.rdoc#platform-maintainers
 
 
 ## 入手法
@@ -45,7 +45,7 @@ https://www.ruby-lang.org/ja/downloads/
 
     $ git ls-remote https://github.com/ruby/ruby.git
 
-Rubyリポジトリの本来のtrunkは https://git.ruby-lang.org/ruby.git にあります．
+Rubyリポジトリの本来のmasterは https://git.ruby-lang.org/ruby.git にあります．
 コミッタはこちらを使います．
 
 ### Subversion
