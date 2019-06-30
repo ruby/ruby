@@ -331,11 +331,14 @@ class TestThreadQueue < Test::Unit::TestCase
   def test_sized_queue_one_closed_interrupt
     q = SizedQueue.new 1
     q << :one
-    t1 = Thread.new { q << :two }
+    t1 = Thread.new {
+      Thread.current.report_on_exception = false
+      q << :two
+    }
     sleep 0.01 until t1.stop?
     q.close
+    assert_raise(ClosedQueueError) {t1.join}
 
-    t1.kill.join
     assert_equal 1, q.size
     assert_equal :one, q.pop
     assert q.empty?, "queue not empty"
