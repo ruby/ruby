@@ -269,6 +269,7 @@ class TestPrime < Test::Unit::TestCase
       end
     ensure
       class << Integer
+        remove_method :sqrt
         alias_method :sqrt, :org_sqrt
         remove_method :org_sqrt
       end
