@@ -3,7 +3,7 @@ require 'test/unit'
 require 'timeout'
 
 module TestParallel
-  PARALLEL_RB = "#{File.dirname(__FILE__)}/../lib/test/unit/parallel.rb"
+  PARALLEL_RB = "#{File.dirname(__FILE__)}/../../lib/test/unit/parallel.rb"
   TESTS = "#{File.dirname(__FILE__)}/tests_for_parallel"
   # use large timeout for --jit-wait
   TIMEOUT = EnvUtil.apply_timeout_scale(RubyVM::MJIT.enabled? ? 100 : 30)

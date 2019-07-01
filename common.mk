@@ -185,6 +185,7 @@ INSTALL_PROG_MODE = 0755
 INSTALL_DATA_MODE = 0644
 
 TESTSDIR      = $(srcdir)/test
+TOOL_TESTSDIR = ${srcdir}/tool/test
 TEST_EXCLUDES = --excludes-dir=$(TESTSDIR)/excludes --name=!/memory_leak/
 EXCLUDE_TESTFRAMEWORK = --exclude=/testunit/ --exclude=/minitest/
 TESTWORKDIR   = testwork
@@ -753,7 +754,7 @@ yes-test-knownbug: prog PHONY
 
 test-testframework: $(TEST_RUNNABLE)-test-testframework
 yes-test-testframework: prog PHONY
-	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) testunit minitest
+	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" --basedir=${TOOL_TESTSDIR} $(TESTOPTS) testunit minitest
 no-test-testframework: PHONY
 
 test-sample: test-basic # backward compatibility for mswin-build
