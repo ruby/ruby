@@ -2284,6 +2284,9 @@ AS_CASE(["$rb_cv_fiber_coroutine"], [yes|''], [
         [x86_64-openbsd*], [
             rb_cv_fiber_coroutine=amd64
         ],
+        [i386-openbsd*], [
+            rb_cv_fiber_coroutine=x86
+        ],
         [*-openbsd*], [
             rb_cv_fiber_coroutine=
         ],
