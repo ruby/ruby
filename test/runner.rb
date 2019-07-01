@@ -27,7 +27,7 @@ require_relative "#{tool_dir}/lib/zombie_hunter"
 require_relative "#{tool_dir}/lib/iseq_loader_checker"
 
 if ENV['COVERAGE']
-  require_relative "#{tool_dir}/lib/test-coverage.rb"
+  require_relative "#{tool_dir}/test-coverage.rb"
 end
 
 begin
