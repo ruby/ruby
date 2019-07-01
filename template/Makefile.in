@@ -224,7 +224,7 @@ DTRACE_REBUILD= @DTRACE_REBUILD@
 DTRACE_GLOMMED_OBJ = $(DTRACE_REBUILD:yes=ruby-glommed.$(OBJEXT))
 
 OBJEXT        = @OBJEXT@
-ASMEXT        = S
+ASMEXT        = @ASMEXT@
 SOEXT         = @SOEXT@
 DLEXT         = @DLEXT@
 MANTYPE	      = @MANTYPE@
