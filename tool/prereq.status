@@ -2,6 +2,7 @@ s,@EXTOUT@,tmp,g
 s,@ruby_version@,0.0.0,g
 s,@NULLCMD@,:,g
 s,@ARCH_FLAG@,,g
+s,@ASMEXT@,S,g
 s,@BASERUBY@,ruby,g
 s,@BOOTSTRAPRUBY@,$(BASERUBY),g
 s,@CC@,false,g
