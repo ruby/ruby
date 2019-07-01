@@ -795,7 +795,11 @@ class TestMarshal < Test::Unit::TestCase
       end
 
       def marshal_dump
-        self.foo.baz = :problem
+        if self.foo.baz
+          self.foo.remove_instance_variable(:@baz)
+        else
+          self.foo.baz = :problem
+        end
         {foo: self.foo}
       end
 
@@ -808,6 +812,14 @@ class TestMarshal < Test::Unit::TestCase
   def test_marshal_dump_adding_instance_variable
     obj = Bug15968.new
     assert_raise_with_message(RuntimeError, /instance variable added/) do
+      Marshal.dump(obj)
+    end
+  end
+
+  def test_marshal_dump_removing_instance_variable
+    obj = Bug15968.new
+    obj.baz = :Bug15968
+    assert_raise_with_message(RuntimeError, /instance variable removed/) do
       Marshal.dump(obj)
     end
   end

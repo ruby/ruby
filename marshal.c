@@ -258,7 +258,7 @@ class2path(VALUE klass)
 
 int ruby_marshal_write_long(long x, char *buf);
 static void w_long(long, struct dump_arg*);
-static void w_encoding(VALUE encname, struct dump_call_arg *arg);
+static int w_encoding(VALUE encname, struct dump_call_arg *arg);
 static VALUE encoding_name(VALUE obj, struct dump_arg *arg);
 
 static void
@@ -626,7 +626,7 @@ encoding_name(VALUE obj, struct dump_arg *arg)
     }
 }
 
-static void
+static int
 w_encoding(VALUE encname, struct dump_call_arg *arg)
 {
     int limit = arg->limit;
@@ -636,11 +636,13 @@ w_encoding(VALUE encname, struct dump_call_arg *arg)
       case Qtrue:
 	w_symbol(ID2SYM(rb_intern("E")), arg->arg);
 	w_object(encname, arg->arg, limit);
+        return 1;
       case Qnil:
-	return;
+	return 0;
     }
     w_symbol(ID2SYM(rb_id_encoding()), arg->arg);
     w_object(encname, arg->arg, limit);
+    return 1;
 }
 
 static st_index_t
@@ -670,13 +672,17 @@ w_ivar_each(VALUE obj, st_index_t num, struct dump_call_arg *arg)
     struct w_ivar_arg ivarg = {arg, num};
     if (!num) return;
     rb_ivar_foreach(obj, w_obj_each, (st_data_t)&ivarg);
+    if (ivarg.num_ivar) {
+        rb_raise(rb_eRuntimeError, "instance variable removed from %"PRIsVALUE" instance",
+                 CLASS_OF(arg->obj));
+    }
 }
 
 static void
 w_ivar(st_index_t num, VALUE ivobj, VALUE encname, struct dump_call_arg *arg)
 {
     w_long(num, arg->arg);
-    w_encoding(encname, arg);
+    num -= w_encoding(encname, arg);
     if (ivobj != Qundef) {
         w_ivar_each(ivobj, num, arg);
     }
