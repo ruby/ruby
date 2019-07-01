@@ -265,11 +265,8 @@ end
 
 def show_limit(testsrc, opt = '', **argh)
   result = get_result_string(testsrc, opt, **argh)
-  if @tty
-    $stderr.print '.'
-    $stderr.print @reset
-    $stderr.puts if @verbose
-    $stderr.puts "#{erase}#{result}"
+  if @tty and @verbose
+    $stderr.puts ".{#@reset}\n#{erase}#{result}"
   else
     @errbuf.push result
   end
