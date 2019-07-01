@@ -42,7 +42,7 @@ options:
   -s3=PATH              s3 bucket path(default=tmp)
   -help, --help         show this message
 version:
-  trunk, stable, branches/*, tags/*, X.Y, X.Y.Z, X.Y.Z-pL
+  master, trunk, stable, branches/*, tags/*, X.Y, X.Y.Z, X.Y.Z-pL
 each versions may be followed by optional @revision.
 USAGE
 end
@@ -207,7 +207,7 @@ def package(vcs, rev, destdir, tmp = nil)
   case rev
   when nil
     url = nil
-  when /\Atrunk\z/
+  when /\A(?:master|trunk)\z/
     url = vcs.trunk
   when /\Abranches\//
     url = vcs.branch($')

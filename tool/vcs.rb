@@ -326,6 +326,7 @@ class VCS
     def trunk
       url + "trunk"
     end
+    alias master trunk
 
     def branch_list(pat)
       IO.popen(%W"#{COMMAND} ls #{branch('')}") do |f|
@@ -507,9 +508,10 @@ class VCS
 
     alias tag branch
 
-    def trunk
-      branch("trunk")
+    def master
+      branch("master")
     end
+    alias trunk master
 
     def stable
       cmd = %W"#{COMMAND} for-each-ref --format=\%(refname:short) refs/heads/ruby_[0-9]*"
