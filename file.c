@@ -4316,54 +4316,54 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
     struct stat st;
 
     if (mode == RB_REALPATH_DIR) {
-	return rb_check_realpath_emulate(basedir, path, mode);
+        return rb_check_realpath_emulate(basedir, path, mode);
     }
 
     unresolved_path = rb_str_dup_frozen(path);
     origenc = rb_enc_get(unresolved_path);
     if (*RSTRING_PTR(unresolved_path) != '/' && !NIL_P(basedir)) {
-	unresolved_path = rb_file_join(rb_assoc_new(basedir, unresolved_path));
+        unresolved_path = rb_file_join(rb_assoc_new(basedir, unresolved_path));
     }
     unresolved_path = TO_OSPATH(unresolved_path);
 
     if((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), NULL)) == NULL) {
-	/* glibc realpath(3) does not allow /path/to/file.rb/../other_file.rb,
-	   returning ENOTDIR in that case.
-	   glibc realpath(3) can also return ENOENT for paths that exist,
-	   such as /dev/fd/5.
-	   Fallback to the emulated approach in either of those cases. */
-	if (errno == ENOTDIR ||
-	    (errno == ENOENT && rb_file_exist_p(0, unresolved_path))) {
-	    return rb_check_realpath_emulate(basedir, path, mode);
+        /* glibc realpath(3) does not allow /path/to/file.rb/../other_file.rb,
+           returning ENOTDIR in that case.
+           glibc realpath(3) can also return ENOENT for paths that exist,
+           such as /dev/fd/5.
+           Fallback to the emulated approach in either of those cases. */
+        if (errno == ENOTDIR ||
+            (errno == ENOENT && rb_file_exist_p(0, unresolved_path))) {
+            return rb_check_realpath_emulate(basedir, path, mode);
 
-	}
-	if (mode == RB_REALPATH_CHECK) {
-	    return Qnil;
-	}
-	rb_sys_fail_path(unresolved_path);
+        }
+        if (mode == RB_REALPATH_CHECK) {
+            return Qnil;
+        }
+        rb_sys_fail_path(unresolved_path);
     }
     resolved = ospath_new(resolved_ptr, strlen(resolved_ptr), rb_filesystem_encoding());
     free(resolved_ptr);
 
     if (rb_stat(resolved, &st) < 0) {
-	if (mode == RB_REALPATH_CHECK) {
-	    return Qnil;
-	}
-	rb_sys_fail_path(unresolved_path);
+        if (mode == RB_REALPATH_CHECK) {
+            return Qnil;
+        }
+        rb_sys_fail_path(unresolved_path);
     }
 
     if (origenc != rb_enc_get(resolved)) {
-	if (!rb_enc_str_asciionly_p(resolved)) {
-	    resolved = rb_str_conv_enc(resolved, NULL, origenc);
-	}
-	rb_enc_associate(resolved, origenc);
+        if (!rb_enc_str_asciionly_p(resolved)) {
+            resolved = rb_str_conv_enc(resolved, NULL, origenc);
+        }
+        rb_enc_associate(resolved, origenc);
     }
 
     if(rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
-	rb_enc_associate(resolved, rb_filesystem_encoding());
-	if(rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
-	    rb_enc_associate(resolved, rb_ascii8bit_encoding());
-	}
+        rb_enc_associate(resolved, rb_filesystem_encoding());
+        if(rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
+            rb_enc_associate(resolved, rb_ascii8bit_encoding());
+        }
     }
 
     rb_obj_taint(resolved);
