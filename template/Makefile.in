@@ -238,7 +238,7 @@ PRELUDE_C     = prelude.c
 GOLF_PRELUDE_C= golf_prelude.c
 RBCONFIG      = .rbconfig.time
 
-MAINSRC = $(MAINOBJ:@OBJEXT@=c)
+MAINSRC = $(MAINOBJ:.@OBJEXT@=.c)
 
 SRC_FILE      = $<
 OS_SRC_FILE   = $<
