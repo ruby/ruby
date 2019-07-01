@@ -670,10 +670,18 @@ module IRB
         when "l"
           ltype
         when "i"
-          if $1
-            format("%" + $1 + "d", indent)
+          if indent < 0
+            if $1
+              "-".rjust($1.to_i)
+            else
+              "-"
+            end
           else
-            indent.to_s
+            if $1
+              format("%" + $1 + "d", indent)
+            else
+              indent.to_s
+            end
           end
         when "n"
           if $1
