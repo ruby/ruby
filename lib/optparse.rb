@@ -1091,6 +1091,7 @@ XXX
     @summary_width = width
     @summary_indent = indent
     @default_argv = ARGV
+    @require_exact = false
     add_officious
     yield self if block_given?
   end
@@ -1163,6 +1164,10 @@ XXX
 
   # Strings to be parsed in default.
   attr_accessor :default_argv
+
+  # Whether to require that options match exactly (disallows providing
+  # abbreviated long option as short option).
+  attr_accessor :require_exact
 
   #
   # Heading banner preceding summary.
@@ -1583,6 +1588,9 @@ XXX
           opt.tr!('_', '-')
           begin
             sw, = complete(:long, opt, true)
+            if require_exact && !sw.long.include?(arg)
+              raise InvalidOption, arg
+            end
           rescue ParseError
             raise $!.set_option(arg, true)
           end
@@ -1607,6 +1615,7 @@ XXX
                 val = arg.delete_prefix('-')
                 has_arg = true
               rescue InvalidOption
+                raise if require_exact
                 # if no short options match, try completion with long
                 # options.
                 sw, = complete(:long, opt)
