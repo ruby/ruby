@@ -146,6 +146,11 @@ int flock(int, int);
 #  define UTIME_EINVAL
 #endif
 
+/* Solaris 10 realpath(3) doesn't support File.realpath */
+#if defined HAVE_REALPATH && defined __sun && defined __SVR4
+#undef HAVE_REALPATH
+#endif
+
 #ifdef HAVE_REALPATH
 #include <limits.h>
 #include <stdlib.h>
