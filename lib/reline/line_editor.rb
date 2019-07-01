@@ -796,7 +796,7 @@ class Reline::LineEditor
       new_lines = whole_lines
     end
     new_indent = @auto_indent_proc.(new_lines, @line_index, @byte_pointer, @check_new_auto_indent)
-    if new_indent
+    if new_indent&.>= 0
       md = new_lines[@line_index].match(/\A */)
       prev_indent = md[0].count(' ')
       if @check_new_auto_indent
