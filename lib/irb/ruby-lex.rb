@@ -283,13 +283,15 @@ class RubyLex
   end
 
   def process_nesting_level
-    indent = @tokens.inject(0) { |indent, t|
+    indent = 0
+    @tokens.each_with_index { |t, index|
       case t[1]
       when :on_lbracket, :on_lbrace, :on_lparen
         indent += 1
       when :on_rbracket, :on_rbrace, :on_rparen
         indent -= 1
       when :on_kw
+        next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
         when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
           indent += 1
@@ -301,7 +303,6 @@ class RubyLex
         end
       end
       # percent literals are not indented
-      indent
     }
     indent
   end
@@ -324,6 +325,7 @@ class RubyLex
       when :on_rbracket, :on_rbrace, :on_rparen
         depth_difference -= 1
       when :on_kw
+        next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
         when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
           depth_difference += 1
@@ -346,7 +348,7 @@ class RubyLex
     is_first_printable_of_line = true
     spaces_of_nest = []
     spaces_at_line_head = 0
-    @tokens.each do |t|
+    @tokens.each_with_index do |t, index|
       corresponding_token_depth = nil
       case t[1]
       when :on_ignored_nl, :on_nl
@@ -370,6 +372,7 @@ class RubyLex
           corresponding_token_depth = nil
         end
       when :on_kw
+        next if index > 0 and @tokens[index - 1][3].allbits?(Ripper::EXPR_FNAME)
         case t[2]
         when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
           spaces_of_nest.push(spaces_at_line_head)
