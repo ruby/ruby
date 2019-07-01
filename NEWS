@@ -259,6 +259,19 @@ profile.rb, Profiler__::
 
 === Implementation improvements
 
+Fiber::
+
+  * Allow selecting different coroutine implementation by using
+    `--with-coroutine=`, e.g.
+
+         ./confgure --with-coroutine=ucontext
+         ./confgure --with-coroutine=copy
+
+  * Replace previous stack cache with fiber pool cache. The fiber pool
+    allocates many stacks in a single memory region. Stack allocation
+    becomes O(log N) and fiber creation is amortized O(1). Around 10x
+    performance improvement was measured in micro-benchmarks.
+
 Thread::
 
   * VM stack memory allocation is now combined with native thread stack,
