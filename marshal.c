@@ -638,7 +638,7 @@ w_encoding(VALUE encname, struct dump_call_arg *arg)
 	w_object(encname, arg->arg, limit);
         return 1;
       case Qnil:
-	return 0;
+        return 0;
     }
     w_symbol(ID2SYM(rb_id_encoding()), arg->arg);
     w_object(encname, arg->arg, limit);
