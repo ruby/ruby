@@ -561,14 +561,25 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
 
 #define to_be_skipped_id(id) (id == rb_id_encoding() || id == rb_intern("E") || !rb_id2str(id))
 
+struct w_ivar_arg {
+    struct dump_call_arg *dump;
+    st_data_t num_ivar;
+};
+
 static int
 w_obj_each(st_data_t key, st_data_t val, st_data_t a)
 {
     ID id = (ID)key;
     VALUE value = (VALUE)val;
-    struct dump_call_arg *arg = (struct dump_call_arg *)a;
+    struct w_ivar_arg *ivarg = (struct w_ivar_arg *)a;
+    struct dump_call_arg *arg = ivarg->dump;
 
     if (to_be_skipped_id(id)) return ST_CONTINUE;
+    if (!ivarg->num_ivar) {
+        rb_raise(rb_eRuntimeError, "instance variable added to %"PRIsVALUE" instance",
+                 CLASS_OF(arg->obj));
+    }
+    --ivarg->num_ivar;
     w_symbol(ID2SYM(id), arg->arg);
     w_object(value, arg->arg, arg->limit);
     return ST_CONTINUE;
@@ -659,7 +670,8 @@ w_ivar(st_index_t num, VALUE ivobj, VALUE encname, struct dump_call_arg *arg)
     w_long(num, arg->arg);
     w_encoding(encname, arg);
     if (ivobj != Qundef) {
-	rb_ivar_foreach(ivobj, w_obj_each, (st_data_t)arg);
+        struct w_ivar_arg ivarg = {arg, num};
+        rb_ivar_foreach(ivobj, w_obj_each, (st_data_t)&ivarg);
     }
 }
 
@@ -671,7 +683,8 @@ w_objivar(VALUE obj, struct dump_call_arg *arg)
     rb_ivar_foreach(obj, obj_count_ivars, (st_data_t)&num);
     w_long(num, arg->arg);
     if (num != 0) {
-        rb_ivar_foreach(obj, w_obj_each, (st_data_t)arg);
+        struct w_ivar_arg ivarg = {arg, num};
+        rb_ivar_foreach(obj, w_obj_each, (st_data_t)&ivarg);
     }
 }
 
@@ -691,6 +704,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     if (limit > 0) limit--;
     c_arg.limit = limit;
     c_arg.arg = arg;
+    c_arg.obj = obj;
 
     if (st_lookup(arg->data, obj, &num)) {
 	w_byte(TYPE_LINK, arg);
