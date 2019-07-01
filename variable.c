@@ -3364,9 +3364,9 @@ rb_iv_get(VALUE obj, const char *name)
     ID id = rb_check_id_cstr(name, strlen(name), rb_usascii_encoding());
 
     if (!id) {
-	if (RTEST(ruby_verbose))
-	    rb_warning("instance variable %s not initialized", name);
-	return Qnil;
+        if (RTEST(ruby_verbose))
+            rb_warning("instance variable %s not initialized", name);
+        return Qnil;
     }
     return rb_ivar_get(obj, id);
 }
