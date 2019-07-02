@@ -2020,7 +2020,7 @@ rb_autoload_str(VALUE mod, ID id, VALUE file)
     }
     file = rb_fstring(file);
     if (!autoload_featuremap) {
-        autoload_featuremap = rb_hash_new_compare_by_id();
+        autoload_featuremap = rb_ident_hash_new();
         rb_obj_hide(autoload_featuremap);
         rb_gc_register_mark_object(autoload_featuremap);
     }
