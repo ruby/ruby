@@ -269,7 +269,7 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
   end
 end
 
-require "minitest/metametameta"
+require_relative "metametameta"
 
 class TestMiniTestStub < MiniTest::Unit::TestCase
   def setup
