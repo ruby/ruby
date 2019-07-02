@@ -2954,6 +2954,42 @@ should_be_finalizable(VALUE obj)
     rb_check_frozen(obj);
 }
 
+struct should_not_capture_data {
+    VALUE obj;
+    VALUE set;
+    bool found;
+};
+
+static void
+should_not_capture_callback(const VALUE child, struct should_not_capture_data *data)
+{
+    if (child == data->obj)
+	data->found = true;
+
+    if (data->found)
+	return;
+
+    // Maintain a set of objects already searched, so that we don't follow a cycle
+    VALUE key = rb_obj_id(child);
+    if (rb_hash_has_key(data->set, key))
+	return;
+    rb_hash_aset(data->set, key, Qtrue);
+
+    rb_objspace_reachable_objects_from(child, (void (*)(unsigned long, void *)) &should_not_capture_callback, (void *)data);
+}
+
+static void
+should_not_capture(VALUE block, VALUE obj)
+{
+    struct should_not_capture_data data;
+    data.obj = obj;
+    data.set = rb_hash_new();
+    data.found = false;
+    rb_objspace_reachable_objects_from(block, (void (*)(unsigned long, void *)) &should_not_capture_callback, (void *)&data);
+    if (data.found)
+	rb_warn("object is reachable from finalizer - it may never be run");
+}
+
 /*
  *  call-seq:
  *     ObjectSpace.define_finalizer(obj, aProc=proc())
@@ -2962,6 +2998,10 @@ should_be_finalizable(VALUE obj)
  *  was destroyed. The object ID of the <i>obj</i> will be passed
  *  as an argument to <i>aProc</i>. If <i>aProc</i> is a lambda or
  *  method, make sure it can be called with a single argument.
+ *
+ *  In verbose mode (<code>-w</code>) a warning will be issued if
+ *  the object is reachable from <i>aProc</i>, which may prevent
+ *  finalization.
  *
  */
 
@@ -2978,6 +3018,9 @@ define_final(int argc, VALUE *argv, VALUE os)
     else {
 	should_be_callable(block);
     }
+
+    if (ruby_verbose)
+	should_not_capture(block, obj);
 
     return define_final0(obj, block);
 }
