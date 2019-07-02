@@ -9847,6 +9847,81 @@ rb_str_rpartition(VALUE str, VALUE sep)
 
 /*
  *  call-seq:
+ *     str.before(sep)             -> str or nil
+ *     str.before(regexp)          -> str or nil
+ *
+ *  Searches <i>sep</i> or pattern (<i>regexp</i>) in the string
+ *  and returns the part before it.
+ *  If it is not found, returns nil.
+ *
+ *     "hello".before("l")         #=> "he"
+ *     "hello".before(/ll/i)       #=> "he"
+ */
+VALUE
+rb_str_before(VALUE str, VALUE sep)
+{
+    if (RSTRING_LEN(str) == 0) {
+        failed: return Qnil;
+    }
+
+    sep = get_pat_quoted(sep, 0);
+
+    if (RB_TYPE_P(sep, T_REGEXP)) {
+        rb_reg_search(sep, str, 0, 0);
+        VALUE match = rb_backref_get();
+
+        return rb_reg_match_pre(match);
+    }
+
+    long pos = rb_str_index(str, sep, 0);
+    if (pos < 0) goto failed;
+
+    return str_substr(str, 0, pos, TRUE);
+}
+
+/*
+ *  call-seq:
+ *     str.after(sep)             -> str or nil
+ *     str.after(regexp)          -> str or nil
+ *
+ *  Searches <i>sep</i> or pattern (<i>regexp</i>) in the string
+ *  and returns the part after it.
+ *  If it is not found, returns nil.
+ *
+ *     "hello".after("l")         #=> "lo"
+ *     "hello".after(/ll/i)       #=> "o"
+ */
+VALUE
+rb_str_after(VALUE str, VALUE sep)
+{
+    long len = RSTRING_LEN(str);
+
+    if (len == 0) {
+        failed: return Qnil;
+    }
+
+    sep = get_pat_quoted(sep, 0);
+
+    if (RB_TYPE_P(sep, T_REGEXP)) {
+        rb_reg_search(sep, str, 0, 0);
+        VALUE match = rb_backref_get();
+
+        return rb_reg_match_post(match);
+    }
+
+    long pos = rb_str_index(str, sep, 0);
+    if (pos < 0) goto failed;
+
+    return str_substr(
+        str,
+        pos + RSTRING_LEN(sep),
+        len - pos,
+        TRUE
+    );
+}
+
+/*
+ *  call-seq:
  *     str.start_with?([prefixes]+)   -> true or false
  *
  *  Returns true if +str+ starts with one of the +prefixes+ given.
@@ -11292,6 +11367,9 @@ Init_String(void)
 
     rb_define_method(rb_cString, "partition", rb_str_partition, 1);
     rb_define_method(rb_cString, "rpartition", rb_str_rpartition, 1);
+
+    rb_define_method(rb_cString, "before", rb_str_before, 1);
+    rb_define_method(rb_cString, "after", rb_str_after, 1);
 
     rb_define_method(rb_cString, "encoding", rb_obj_encoding, 0); /* in encoding.c */
     rb_define_method(rb_cString, "force_encoding", rb_str_force_encoding, 1);

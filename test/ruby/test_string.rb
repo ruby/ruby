@@ -2627,6 +2627,34 @@ CODE
     assert_equal("hello", hello, bug)
   end
 
+  def test_before
+    assert_equal("hello", "hello world".before(" "))
+    assert_equal(nil, "onetwothree".before("four"))
+    assert_equal("he", "hello world".before("l"))
+    assert_equal("cat", "cats and dogs".before("s"))
+
+    assert_equal("foo", "foobarbaz".before(/bar/))
+    assert_equal(nil, "cats and dogs".before(/pigs/))
+    assert_equal("he", "hello".before(/ll/))
+    assert_equal("", "hello".before(//))
+
+    assert_equal(nil, "".before(""))
+  end
+
+  def test_after
+    assert_equal("world", "hello world".after(" "))
+    assert_equal(nil, "onetwothree".after("four"))
+    assert_equal("lo world", "hello world".after("l"))
+    assert_equal(" and dogs", "cats and dogs".after("s"))
+
+    assert_equal("baz", "foobarbaz".after(/bar/))
+    assert_equal(nil, "cats and dogs".after(/pigs/))
+    assert_equal("o", "hello".after(/ll/))
+    assert_equal("hello", "hello".after(//))
+
+    assert_equal(nil, "".after(""))
+  end
+
   def test_setter
     assert_raise(TypeError) { $/ = 1 }
     name = "\u{5206 884c}"
