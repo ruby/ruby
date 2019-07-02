@@ -4631,6 +4631,56 @@ rb_ary_and(VALUE ary1, VALUE ary2)
     return ary3;
 }
 
+/*
+ *  call-seq:
+ *     ary.overlaps?(ary2)   -> true or false
+ *
+ *  Returns +true+ if the intersection of +ary+ and +ary2+ is non empty, else returns false. 
+ *
+ *  This is equivalent to (ary & ary2).any?
+ *
+ *     [ "a", "b", "c" ].overlaps?( [ "c", "d", "a" ] )    #=> true
+ *     [ "a" ].overlaps?( ["e", "b"] )                     #=> false
+ *     [ "a" ].overlaps?( [] )                             #=> false
+ *
+ *  See also Array#&.
+ */
+
+static VALUE
+rb_ary_and_p(VALUE ary1, VALUE ary2)
+{
+    VALUE hash, result, v;
+    st_data_t vv;
+    long i;
+
+    ary2 = to_ary(ary2);
+    if (RARRAY_LEN(ary1) == 0 || RARRAY_LEN(ary2) == 0) return Qfalse;
+
+    if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN && RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
+        for (i=0; i<RARRAY_LEN(ary1); i++) {
+            v = RARRAY_AREF(ary1, i);
+            if (rb_ary_includes_by_eql(ary2, v)) {
+                return Qtrue;
+            }
+        }
+        return Qfalse;
+    }
+
+    hash = ary_make_hash(ary2);
+    result = Qfalse;
+    for (i=0; i<RARRAY_LEN(ary1); i++) {
+        v = RARRAY_AREF(ary1, i);
+        vv = (st_data_t)v;
+        if (rb_hash_stlike_delete(hash, &vv, 0)) {
+            result = Qtrue;
+            break;
+        }
+    }
+    ary_recycle_hash(hash);
+
+    return result;
+}
+
 static int
 ary_hash_orset(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
@@ -6898,6 +6948,8 @@ Init_Array(void)
 
     rb_define_method(rb_cArray, "-", rb_ary_diff, 1);
     rb_define_method(rb_cArray, "&", rb_ary_and, 1);
+    rb_define_method(rb_cArray, "overlaps?", rb_ary_and_p, 1);
+
     rb_define_method(rb_cArray, "|", rb_ary_or, 1);
 
     rb_define_method(rb_cArray, "max", rb_ary_max, -1);
