@@ -46,10 +46,15 @@
 
 % # JIT: If ISeq is inlinable, call the inlined method without pushing a frame.
             if (status->inlined_iseqs != NULL && status->inlined_iseqs[pos] == iseq->body) {
+                // TODO: consider using C variables for Ruby variables to simplify cfp->ep manipulation
                 fprintf(f, "    {\n");
                 fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
+                fprintf(f, "        VALUE orig_ep = reg_cfp->ep;\n");
                 fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size - argc - 1);
+                fprintf(f, "        reg_cfp->ep = reg_cfp->sp + %d + 2;\n", iseq->body->local_table_size - iseq->body->param.size); // simulate `vm_push_frame`'s local_size and 2 increments
+                fprintf(f, "        ((VALUE *)reg_cfp->ep)[VM_ENV_DATA_INDEX_ENV] = ((VALUE *)orig_ep)[VM_ENV_DATA_INDEX_ENV];\n"); // `vm_env_write_slowpath` checks this value
                 fprintf(f, "        stack[%d] = _mjit_inlined_%d(ec, reg_cfp, orig_self, original_iseq);\n", b->stack_size - argc - 1, pos);
+                fprintf(f, "        reg_cfp->ep = orig_ep;\n");
                 fprintf(f, "        reg_cfp->self = orig_self;\n");
                 fprintf(f, "    }\n");
             }
