@@ -440,14 +440,18 @@ enum_size_over_p(VALUE obj, long n)
  */
 
 static VALUE
-enum_find_all(VALUE obj)
+enum_find_all(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary;
-
-    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
-
     ary = rb_ary_new();
-    rb_block_call(obj, id_each, 0, 0, find_all_i, ary);
+
+    if (rb_block_given_p()) {
+      rb_block_call(obj, id_each, 0, 0, find_all_i, ary);
+    } else if(argc > 0 && argv[0]) {
+      ary = enum_grep(obj, argv[0]);
+    } else {
+      RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
+    }
 
     return ary;
 }
@@ -4153,9 +4157,9 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "find", enum_find, -1);
     rb_define_method(rb_mEnumerable, "detect", enum_find, -1);
     rb_define_method(rb_mEnumerable, "find_index", enum_find_index, -1);
-    rb_define_method(rb_mEnumerable, "find_all", enum_find_all, 0);
-    rb_define_method(rb_mEnumerable, "select", enum_find_all, 0);
-    rb_define_method(rb_mEnumerable, "filter", enum_find_all, 0);
+    rb_define_method(rb_mEnumerable, "find_all", enum_find_all, -1);
+    rb_define_method(rb_mEnumerable, "select", enum_find_all, -1);
+    rb_define_method(rb_mEnumerable, "filter", enum_find_all, -1);
     rb_define_method(rb_mEnumerable, "filter_map", enum_filter_map, 0);
     rb_define_method(rb_mEnumerable, "reject", enum_reject, 0);
     rb_define_method(rb_mEnumerable, "collect", enum_collect, 0);

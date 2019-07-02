@@ -924,6 +924,9 @@ class TestEnumerable < Test::Unit::TestCase
     bug9605 = '[ruby-core:61340]'
     lambda2 = ->(x, i) { x == 'c' }
     assert_equal([['c',2]], @obj.each_with_index.select(&lambda2), bug9605)
+
+    assert_equal(['c'], @obj.select(/c/))
+    assert_equal(('a'..'z'), @obj.select(String))
   end
 
   def test_map
