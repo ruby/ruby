@@ -268,7 +268,7 @@ libraries, but these are not required:
 
 * NDBM/QDBM
 * GDBM
-* OpenSSL
+* OpenSSL/LibreSSL
 * readline/editline(libedit)
 * zlib
 * libffi
