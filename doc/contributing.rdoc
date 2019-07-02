@@ -131,7 +131,7 @@ redmine, if gone without notice. In this case the +patch+ command is your
 friend, see <code>man patch</code> for more information. Basically this would
 go something like this:
 
-  cd path/to/ruby/trunk
+  cd path/to/ruby
   patch -p0 < path/to/patch
 
 You will then be prompted to apply the patch with the associated files. After
@@ -157,7 +157,7 @@ write a convincing proposal and patch to implement the feature.
 
 For new features in CRuby, use the {'Feature'
 tracker}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues?set_filter=1&tracker_id=2]
-on ruby-trunk. For non-CRuby dependent features, features that would apply to
+on ruby-master. For non-CRuby dependent features, features that would apply to
 alternate Ruby implementations such as JRuby and Rubinius, use the {CommonRuby
 tracker}[https://bugs.ruby-lang.org/projects/common-ruby].
 
@@ -217,7 +217,7 @@ Please note:
 == Backport Requests
 
 When a new version of Ruby is released, it starts at patch level 0 (p0), and
-bugs will be fixed first on the trunk branch. If it's determined that a bug
+bugs will be fixed first on the master branch. If it's determined that a bug
 exists in a previous version of Ruby that is still in the bug fix stage of
 maintenance, then a patch will be backported. After the maintenance stage of a
 particular Ruby version ends, it goes into "security fix only" mode which
@@ -279,15 +279,15 @@ Now let's build CRuby:
 
 * Checkout the CRuby source code:
 
-    git clone https://github.com/ruby/ruby.git ruby-trunk
+    git clone https://github.com/ruby/ruby.git ruby-master
 
 * Generate the configuration files and build:
 
-    cd ruby-trunk
+    cd ruby-master
     autoconf
     mkdir build && cd build # its good practice to build outside of source dir
-    mkdir ~/.rubies # we will install to .rubies/ruby-trunk in our home dir
-    ../configure --prefix="${HOME}/.rubies/ruby-trunk"
+    mkdir ~/.rubies # we will install to .rubies/ruby-master in our home dir
+    ../configure --prefix="${HOME}/.rubies/ruby-master"
     make up && make install
 
 After adding Ruby to your PATH, you should be ready to run the test suite:
@@ -344,7 +344,7 @@ Before you submit a patch, there are a few things you should know:
 
 To improve the chance your patch will be accepted please follow these simple rules:
 
-* Bug fixes should be committed on trunk first
+* Bug fixes should be committed on master first
 * Format of the patch file must be a unified diff (ie: diff -pu, svn diff, or git diff)
 * Don't introduce cosmetic changes
 * Follow the original coding style of the code
@@ -352,17 +352,17 @@ To improve the chance your patch will be accepted please follow these simple rul
 
 First thing you should do is check out the code if you haven't already:
 
-  git clone https://github.com/ruby/ruby.git ruby-trunk
+  git clone https://github.com/ruby/ruby.git ruby-master
 
 Now create a dedicated branch:
 
-  cd ruby-trunk
+  cd ruby-master
   git checkout -b my_new_branch
 
 The name of your branch doesn't really matter because it will only exist on
 your local computer and won't be part of the official Ruby repository. It will
 be used to create patches based on the differences between your branch and
-trunk, or edge Ruby.
+master, or edge Ruby.
 
 === Coding style
 
@@ -438,7 +438,7 @@ Next copy the writable url for your fork and add it as a git remote, replace
 
 In order to generate a patch that you can upload to the bug tracker, we can use
 the github interface to review our changes just visit
-https://github.com/my_username/ruby/compare/trunk...my_new_branch
+https://github.com/my_username/ruby/compare/master...my_new_branch
 
 Next, you can simply add '.patch' to the end of this URL and it will generate
 the patch for you, save the file to your computer and upload it to the bug
