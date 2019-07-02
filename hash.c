@@ -1364,14 +1364,6 @@ rb_hash_new(void)
     return hash_alloc(rb_cHash);
 }
 
-VALUE
-rb_hash_new_compare_by_id(void)
-{
-    VALUE hash = rb_hash_new();
-    RHASH_ST_TABLE_SET(hash, rb_init_identtable());
-    return hash;
-}
-
 MJIT_FUNC_EXPORTED VALUE
 rb_hash_new_with_size(st_index_t size)
 {

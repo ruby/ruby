@@ -1605,9 +1605,6 @@ struct st_table *rb_hash_tbl_raw(VALUE hash);
 #endif
 
 VALUE rb_hash_new_with_size(st_index_t size);
-RUBY_SYMBOL_EXPORT_BEGIN
-VALUE rb_hash_new_compare_by_id(void);
-RUBY_SYMBOL_EXPORT_END
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_default_value(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);

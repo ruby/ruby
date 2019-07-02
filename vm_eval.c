@@ -2028,7 +2028,7 @@ rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
 static void
 local_var_list_init(struct local_var_list *vars)
 {
-    vars->tbl = rb_hash_new_compare_by_id();
+    vars->tbl = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(vars->tbl);
 }
 
