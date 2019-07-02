@@ -11,7 +11,6 @@ class TestJIT < Test::Unit::TestCase
 
   IGNORABLE_PATTERNS = [
     /\AJIT recompile: .+\n\z/,
-    /\AJIT inline: .+\n\z/,
     /\ASuccessful MJIT finish\n\z/,
   ]
 
@@ -838,19 +837,6 @@ class TestJIT < Test::Unit::TestCase
       2.times do
         a, _ = nil
         p a
-      end
-    end;
-  end
-
-  def test_block_handler_with_frame_omitted_inlining
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "70.0\n70.0\n70.0\n", success_count: 1, min_calls: 2)
-    begin;
-      def multiply(a, b)
-        a *= b
-      end
-
-      3.times do
-        p multiply(7.0, 10.0)
       end
     end;
   end
