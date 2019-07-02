@@ -4850,6 +4850,36 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
+/*
+ *  call-seq:
+ *     range.minmax                  -> [min, max]
+ *     range.minmax { |a, b| block } -> [min, max]
+ *
+ *  Returns a two element array which contains the minimum and the
+ *  maximum value of the array. The first form assumes all
+ *  objects implement Comparable; the second uses the
+ *  block to return <em>a <=> b</em>.
+ *
+ *  ary = %w[albatross dog horse]
+ *  ary.minmax                                  #=> ["albatross", "horse"]
+ *  ary.minmax {|a, b| a.length <=> b.length }  #=> ["dog", "albatross"]
+ */
+static VALUE
+rb_ary_minmax(int argc, VALUE *argv, VALUE ary)
+{
+    if (rb_block_given_p()) {
+        return rb_call_super(0, 0);
+    }
+
+    VALUE min, max, result;
+    result = rb_ary_new2(2);
+    min = rb_ary_min(argc, argv, ary);
+    rb_ary_push(result, min);
+    max = rb_ary_max(argc, argv, ary);
+    rb_ary_push(result, max);
+    return result;
+}
+
 static int
 push_value(st_data_t key, st_data_t val, st_data_t ary)
 {
@@ -6902,6 +6932,7 @@ Init_Array(void)
 
     rb_define_method(rb_cArray, "max", rb_ary_max, -1);
     rb_define_method(rb_cArray, "min", rb_ary_min, -1);
+    rb_define_method(rb_cArray, "minmax", rb_ary_minmax, -1);
 
     rb_define_method(rb_cArray, "uniq", rb_ary_uniq, 0);
     rb_define_method(rb_cArray, "uniq!", rb_ary_uniq_bang, 0);
