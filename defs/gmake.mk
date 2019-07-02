@@ -18,6 +18,7 @@ TEST_DEPENDS := $(filter-out exam check test-spec $(TEST_TARGETS),$(TEST_DEPENDS
 TEST_TARGETS := $(patsubst love,check,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out love $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst test-almost,test-all,$(patsubst check-%,test test-%,$(TEST_TARGETS)))
+TEST_TARGETS := $(patsubst test-all,test-short test-testframework test-all,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test-all $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst test,test-short,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test $(TEST_TARGETS),$(TEST_DEPENDS))
