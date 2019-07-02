@@ -3,6 +3,7 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'helper'))
 module Racc
   class TestScanY < TestCase
     def setup
+      super
       file = File.join(ASSET_DIR, 'scan.y')
       @debug_flags = Racc::DebugFlags.parse_option_string('o')
       parser = Racc::GrammarFileParser.new(@debug_flags)
