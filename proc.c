@@ -771,14 +771,20 @@ proc_new(VALUE klass, int8_t is_lambda)
       case block_handler_type_proc:
 	procval = VM_BH_TO_PROC(block_handler);
 
-	if (RBASIC_CLASS(procval) == klass) {
-	    return procval;
-	}
-	else {
+	if (RBASIC_CLASS(procval) != klass) {
 	    VALUE newprocval = rb_proc_dup(procval);
             RBASIC_SET_CLASS(newprocval, klass);
-	    return newprocval;
+	    procval = newprocval;
 	}
+
+        rb_proc_t *proc = RTYPEDDATA_DATA(procval);
+        if (is_lambda && !proc->is_lambda) {
+            procval = rb_proc_dup(procval);
+            proc = RTYPEDDATA_DATA(procval);
+            proc->is_lambda = true;
+        }
+
+        return procval;
 	break;
 
       case block_handler_type_symbol:

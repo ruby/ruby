@@ -31,11 +31,46 @@ describe "Kernel.lambda" do
     l.lambda?.should be_true
   end
 
-  it "returned the passed Proc if given an existing Proc" do
-    some_proc = proc {}
-    l = lambda(&some_proc)
-    l.should equal(some_proc)
-    l.lambda?.should be_false
+  ruby_version_is ""..."2.7" do
+    it "returned the passed Proc if given an existing Proc" do
+      some_proc = proc {}
+      l = lambda(&some_proc)
+      l.should equal(some_proc)
+      l.lambda?.should be_false
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "returns the passed lambda Proc" do
+      some_lambda = lambda {}
+      l = lambda(&some_lambda)
+      l.should equal(some_lambda)
+      l.lambda?.should be_true
+    end
+
+    it "converts a proc into a lambda" do
+      some_proc = Proc.new { |foo| foo }
+      some_proc.lambda?.should be_false
+      l = lambda(&some_proc)
+      l.lambda?.should be_true
+      lambda { l.call }.should raise_error(ArgumentError)
+    end
+
+    it "does not mutate the argument when convering it into a lambda" do
+      klass = Class.new do
+        def self.make_proc
+          Proc.new { return 42 }
+        end
+      end
+
+      some_proc = klass.make_proc
+      l = lambda(&some_proc)
+      some_proc.lambda?.should be_false
+      l.lambda?.should be_true
+      l.call.should == 42
+      lambda { some_proc.call }.should raise_error(LocalJumpError)
+      lambda { some_proc.call("extra args") }.should raise_error(LocalJumpError)
+    end
   end
 
   it "checks the arity of the call when no args are specified" do

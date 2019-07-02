@@ -16,7 +16,9 @@ describe "Proc#lambda?" do
 
   it "is preserved when passing a Proc with & to the lambda keyword" do
     lambda(&lambda{}).lambda?.should be_true
-    lambda(&proc{}).lambda?.should be_false
+    ruby_version_is ""..."2.7" do
+      lambda(&proc{}).lambda?.should be_false
+    end
   end
 
   it "is preserved when passing a Proc with & to the proc keyword" do
