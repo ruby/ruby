@@ -6773,6 +6773,10 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
             iseq_block_param_id_p(iseq, node->nd_recv->nd_vid, &idx, &level)) {
             ADD_INSN2(recv, nd_line(node->nd_recv), getblockparamproxy, INT2FIX(idx + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
         }
+        else if (private_recv_p(node)) {
+            ADD_INSN(recv, nd_line(node), putself);
+            flag |= VM_CALL_FCALL;
+        }
         else {
             CHECK(COMPILE(recv, "recv", node->nd_recv));
         }

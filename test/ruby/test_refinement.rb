@@ -538,7 +538,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_main_using_is_private
     assert_raise(NoMethodError) do
-      eval("self.using Module.new", Sandbox::BINDING)
+      eval("recv = self; recv.using Module.new", Sandbox::BINDING)
     end
   end
 

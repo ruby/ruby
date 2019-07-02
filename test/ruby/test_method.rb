@@ -673,7 +673,7 @@ class TestMethod < Test::Unit::TestCase
     assert_nothing_raised { mv3 }
 
     assert_nothing_raised { self.mv1 }
-    assert_raise(NoMethodError) { self.mv2 }
+    assert_nothing_raised { self.mv2 }
     assert_nothing_raised { self.mv3 }
 
     v = Visibility.new
