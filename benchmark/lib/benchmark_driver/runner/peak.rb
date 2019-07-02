@@ -61,7 +61,7 @@ class BenchmarkDriver::Runner::Peak
       loop_count: job.loop_count,
     )
 
-    memory_status = File.expand_path('../../../../test/lib/memory_status', __dir__)
+    memory_status = File.expand_path('../../../../tool/lib/memory_status', __dir__)
     Tempfile.open(['benchmark_driver-', '.rb']) do |f|
       with_script(benchmark.render) do |path|
         output = IO.popen([*context.executable.command, path, f.path, target, memory_status], &:read)
