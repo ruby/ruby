@@ -630,7 +630,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_kind_of(Time, t1)
       assert_kind_of(Time, t2)
       assert_equal(t1, t2)
-    rescue Errno::ENOSYS
+    rescue Errno::ENOSYS, NotImplementedError
       # ignore unsupporting filesystems
     rescue Errno::EPERM
       # Docker prohibits statx syscall by the default.
