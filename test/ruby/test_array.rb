@@ -241,18 +241,18 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[],     @cls[ 1, 2, 3 ]*64 & @cls[ 4, 5, 6 ]*64)
   end
 
-  def test_overlaps
-    assert_equal(true,      @cls[ 1, 1, 3, 5 ].overlaps?( @cls[ 1, 2, 3 ]))
-    assert_equal(false,     @cls[ 1, 1, 3, 5 ].overlaps?( @cls[ ]))
-    assert_equal(false,     @cls[  ].overlaps?(           @cls[ 1, 2, 3 ]))
-    assert_equal(false,     @cls[ 1, 2, 3 ].overlaps?(    @cls[ 4, 5, 6 ]))
+  def test_overlap
+    assert_equal(true,      @cls[ 1, 1, 3, 5 ].overlap?( @cls[ 1, 2, 3 ]))
+    assert_equal(false,     @cls[ 1, 1, 3, 5 ].overlap?( @cls[ ]))
+    assert_equal(false,     @cls[  ].overlap?(           @cls[ 1, 2, 3 ]))
+    assert_equal(false,     @cls[ 1, 2, 3 ].overlap?(    @cls[ 4, 5, 6 ]))
   end
 
-  def test_overlaps_big_array 
-    assert_equal(true,      (@cls[ 1, 1, 3, 5 ]*64).overlaps?(@cls[ 1, 2, 3 ]*64))
-    assert_equal(false,     (@cls[ 1, 1, 3, 5 ]*64).overlaps?(@cls[ ]))
-    assert_equal(false,     (@cls[  ]).overlaps?(@cls[ 1, 2, 3 ]*64))
-    assert_equal(false,     (@cls[ 1, 2, 3 ]*64).overlaps?(@cls[ 4, 5, 6 ]*64))
+  def test_overlap_big_array 
+    assert_equal(true,      (@cls[ 1, 1, 3, 5 ]*64).overlap?(@cls[ 1, 2, 3 ]*64))
+    assert_equal(false,     (@cls[ 1, 1, 3, 5 ]*64).overlap?(@cls[ ]))
+    assert_equal(false,     (@cls[  ]).overlap?(@cls[ 1, 2, 3 ]*64))
+    assert_equal(false,     (@cls[ 1, 2, 3 ]*64).overlap?(@cls[ 4, 5, 6 ]*64))
   end
 
   def test_MUL # '*'

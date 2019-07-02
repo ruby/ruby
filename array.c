@@ -4633,15 +4633,15 @@ rb_ary_and(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.overlaps?(ary2)   -> true or false
+ *     ary.overlap?(ary2)   -> true or false
  *
  *  Returns +true+ if the intersection of +ary+ and +ary2+ is non empty, else returns false. 
  *
  *  This is equivalent to (ary & ary2).any?
  *
- *     [ "a", "b", "c" ].overlaps?( [ "c", "d", "a" ] )    #=> true
- *     [ "a" ].overlaps?( ["e", "b"] )                     #=> false
- *     [ "a" ].overlaps?( [] )                             #=> false
+ *     [ "a", "b", "c" ].overlap?( [ "c", "d", "a" ] )    #=> true
+ *     [ "a" ].overlap?( ["e", "b"] )                     #=> false
+ *     [ "a" ].overlap?( [] )                             #=> false
  *
  *  See also Array#&.
  */
@@ -6948,7 +6948,7 @@ Init_Array(void)
 
     rb_define_method(rb_cArray, "-", rb_ary_diff, 1);
     rb_define_method(rb_cArray, "&", rb_ary_and, 1);
-    rb_define_method(rb_cArray, "overlaps?", rb_ary_and_p, 1);
+    rb_define_method(rb_cArray, "overlap?", rb_ary_and_p, 1);
 
     rb_define_method(rb_cArray, "|", rb_ary_or, 1);
 
