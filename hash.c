@@ -2673,17 +2673,9 @@ replace_i(VALUE key, VALUE val, VALUE hash)
     return ST_CONTINUE;
 }
 
-/* :nodoc: */
 static VALUE
-rb_hash_initialize_copy(VALUE hash, VALUE hash2)
+copy_hash(VALUE hash, VALUE hash2)
 {
-    rb_hash_modify_check(hash);
-    hash2 = to_hash(hash2);
-
-    Check_Type(hash2, T_HASH);
-
-    if (hash == hash2) return hash;
-
     if (RHASH_AR_TABLE_P(hash2)) {
         if (RHASH_AR_TABLE_P(hash)) ar_free_and_clear_table(hash);
         ar_copy(hash, hash2);
@@ -2706,6 +2698,20 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
     COPY_DEFAULT(hash, hash2);
 
     return hash;
+}
+
+/* :nodoc: */
+static VALUE
+rb_hash_initialize_copy(VALUE hash, VALUE hash2)
+{
+    rb_hash_modify_check(hash);
+    hash2 = to_hash(hash2);
+
+    Check_Type(hash2, T_HASH);
+
+    if (hash == hash2) return hash;
+
+    return copy_hash(hash, hash2);
 }
 
 /*
