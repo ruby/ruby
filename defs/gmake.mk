@@ -17,7 +17,7 @@ TEST_TARGETS := $(patsubst test-rubyspec,test-spec,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out exam check test-spec $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst love,check,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out love $(TEST_TARGETS),$(TEST_DEPENDS))
-TEST_TARGETS := $(patsubst test-all,test test-testframework test-almost,$(patsubst check-%,test test-%,$(TEST_TARGETS)))
+TEST_TARGETS := $(patsubst test-all,test test-testframework test-all,$(patsubst check-%,test test-%,$(TEST_TARGETS)))
 TEST_DEPENDS := $(filter-out test-all $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst test,test-short,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test $(TEST_TARGETS),$(TEST_DEPENDS))
@@ -64,7 +64,7 @@ endif
 
 ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
 	btest-ruby test-knownbug test-basic \
-	test-testframework test-ruby test-almost test-all \
+	test-testframework test-ruby test-all \
 	test-spec test-bundler-prepare test-bundler \
 	)
 prev_test := $(if $(filter test-spec,$(ORDERED_TEST_TARGETS)),test-spec-precheck)
@@ -87,7 +87,6 @@ showflags: up
 sudo-precheck: test yes-test-testframework no-test-testframework
 install-prereq: sudo-precheck
 yes-test-all no-test-all: install
-yes-test-almost no-test-almost: install
 endif
 ifneq ($(filter love install reinstall,$(MAKECMDGOALS)),)
 # Cross referece needs to parse all files at once
