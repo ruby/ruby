@@ -1136,4 +1136,17 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(m, o.:foo)
     assert_nil(o.method(:foo))
   end
+
+  def test_method_reference_freeze_state
+    m = 1.:succ
+    assert(m.frozen?)
+    m = 1.method(:succ)
+    assert_equal(m.frozen?, false)
+    o = Object.new
+    def o.foo; 42; end
+    m = o.:foo
+    assert(m.frozen?)
+    m = o.method(:foo)
+    assert_equal(m.frozen?, false)
+  end
 end

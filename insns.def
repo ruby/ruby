@@ -699,7 +699,7 @@ checktype
     ret = (TYPE(val) == (int)type) ? Qtrue : Qfalse;
 }
 
-/* get method reference. */
+/* get frozen method reference. */
 DEFINE_INSN
 methodref
 (ID id)
@@ -707,6 +707,7 @@ methodref
 (VALUE ret)
 {
     ret = rb_obj_method(val, ID2SYM(id));
+    rb_obj_freeze(ret);
 }
 
 /**********************************************************/
