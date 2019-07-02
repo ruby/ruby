@@ -187,7 +187,6 @@ INSTALL_DATA_MODE = 0644
 TESTSDIR      = $(srcdir)/test
 TOOL_TESTSDIR = ${srcdir}/tool/test
 TEST_EXCLUDES = --excludes-dir=$(TESTSDIR)/excludes --name=!/memory_leak/
-EXCLUDE_TESTFRAMEWORK = --exclude=/testunit/ --exclude=/minitest/
 TESTWORKDIR   = testwork
 TESTOPTS      = $(RUBY_TESTOPTS)
 
@@ -772,7 +771,7 @@ no-test-all: PHONY
 
 test-almost: $(TEST_RUNNABLE)-test-almost
 yes-test-almost: prog PHONY
-	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(EXCLUDE_TESTFRAMEWORK) $(TESTS)
+	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
 no-test-almost: PHONY
 
 test-ruby: $(TEST_RUNNABLE)-test-ruby
