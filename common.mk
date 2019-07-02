@@ -714,7 +714,7 @@ clean-spec: PHONY
 	-$(Q) $(RM) $(RUBYSPEC_CAPIEXT)/*.$(OBJEXT) $(RUBYSPEC_CAPIEXT)/*.$(DLEXT)
 	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || exit 0
 
-check: main test test-testframework test-almost test-spec
+check: main test test-testframework test-all test-spec
 	$(ECHO) check succeeded
 check-ruby: test test-ruby
 
@@ -769,10 +769,9 @@ TESTS_BUILD = mkmf
 no-test-all: PHONY
 	$(gnumake_recursive)$(MINIRUBY) -I"$(srcdir)/lib" "$(srcdir)/test/runner.rb" $(TESTOPTS) $(TESTS_BUILD)
 
-test-almost: $(TEST_RUNNABLE)-test-almost
-yes-test-almost: prog PHONY
-	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
-no-test-almost: PHONY
+test-almost: test-all
+yes-test-almost: yes-test-all
+no-test-almost: no-test-all
 
 test-ruby: $(TEST_RUNNABLE)-test-ruby
 no-test-ruby: PHONY
