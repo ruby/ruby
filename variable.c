@@ -896,8 +896,7 @@ iv_index_tbl_newsize(struct ivar_update *ivup)
     uint32_t index = (uint32_t)ivup->index;	/* should not overflow */
     uint32_t newsize = (index+1) + (index+1)/4; /* (index+1)*1.25 */
 
-    if (!ivup->iv_extended &&
-        ivup->u.iv_index_tbl->num_entries < (st_index_t)newsize) {
+    if (!ivup->iv_extended) {
         newsize = (uint32_t)ivup->u.iv_index_tbl->num_entries;
     }
     return newsize;
