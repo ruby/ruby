@@ -28,11 +28,11 @@ struct dump_config {
     FILE *stream;
     VALUE string;
     int roots;
+    int full_heap;
     const char *root_category;
     VALUE cur_obj;
     VALUE cur_obj_klass;
     size_t cur_obj_references;
-    int full_heap;
 };
 
 PRINTF_ARGS(static void dump_append(struct dump_config *, const char *, ...), 2, 3);
