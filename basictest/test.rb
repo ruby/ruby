@@ -35,7 +35,7 @@ class Progress
       # dircolors-like style
       colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
       begin
-        File.read(File.join(__dir__, "../test/colors")).scan(/(\w+)=([^:\n]*)/) do |n, c|
+        File.read(File.join(__dir__, "../tool/colors")).scan(/(\w+)=([^:\n]*)/) do |n, c|
           colors[n] ||= c
         end
       rescue
