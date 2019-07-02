@@ -3398,13 +3398,22 @@ date_initialize(int argc, VALUE *argv, VALUE self)
 	rb_raise(rb_eTypeError, "Date expected");
     }
 
-    rb_scan_args(argc, argv, "04", &vy, &vm, &vd, &vsg);
+    int i = rb_scan_args(argc, argv, "04", &vy, &vm, &vd, &vsg);
 
     y = INT2FIX(-4712);
     m = 1;
     d = 1;
     fr2 = INT2FIX(0);
     sg = DEFAULT_SG;
+
+    if (i >= 1 && NIL_P(vy))
+        rb_raise(rb_eArgError, "invalid date");
+
+    if (i >= 2 && NIL_P(vm))
+        rb_raise(rb_eArgError, "invalid date");
+
+    if (i >= 3 && NIL_P(vd))
+        rb_raise(rb_eArgError, "invalid date");
 
     switch (argc) {
       case 4:

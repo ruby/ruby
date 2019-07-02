@@ -131,6 +131,15 @@ class TestDateNew < Test::Unit::TestCase
       Date.civil(2001,2,29)
     end
     assert_raise(ArgumentError) do
+      Date.civil(nil,12,12)
+    end
+    assert_raise(ArgumentError) do
+      Date.civil(2001,nil,12)
+    end
+    assert_raise(ArgumentError) do
+      Date.civil(2001,12,nil)
+    end
+    assert_raise(ArgumentError) do
       DateTime.civil(2001,2,28, 23,59,60, 0)
     end
     assert_raise(ArgumentError) do
