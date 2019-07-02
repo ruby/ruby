@@ -1061,7 +1061,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %token <id> tANDDOT	RUBY_TOKEN(ANDDOT) "&."
 %token <id> tCOLON2	RUBY_TOKEN(COLON2) "::"
 %token <id> tMETHREF	RUBY_TOKEN(METHREF) ".:"
-%token tPIPE		RUBY_TOKEN(PIPE) "|>"
+%token tPIPE		RUBY_TOKEN(PIPE) "😊"
 %token tCOLON3		":: at EXPR_BEG"
 %token <id> tOP_ASGN	"operator-assignment" /* +=, -=  etc. */
 %token tASSOC		"=>"
@@ -8931,6 +8931,14 @@ parser_yylex(struct parser_params *p)
 	}
 	SET_LEX_STATE(IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG);
 	return c;
+
+      case 240:
+	if (peekc(p) == 159 && peekc_n(p, 1) == 152 && peekc_n(p, 2) == 138) {
+          nextc(p);
+          nextc(p);
+          nextc(p);
+          return tPIPE;
+        }
 
       case '|':
 	if ((c = nextc(p)) == '|') {

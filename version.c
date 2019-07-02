@@ -128,6 +128,7 @@ ruby_show_version(void)
 #ifdef HAVE_MALLOC_CONF
     if (malloc_conf) printf("malloc_conf=%s\n", malloc_conf);
 #endif
+    printf("Aaron's Ruby Interpreter 😊\n");
     fflush(stdout);
 }
 
