@@ -2197,6 +2197,16 @@ class TestArray < Test::Unit::TestCase
     assert_empty(a.reject {|x| !x.include?(0)})
   end
 
+  def test_pluck
+    a = @cls[ {name: "Lewis"}, {name: "Steffan"} ]
+
+    assert_equal(a.pluck(:name), ["Lewis", "Steffan"])
+
+    b = @cls[ "string", {name: "Steffan"} ]
+
+    assert_raise(TypeError) { b.pluck(:name) }
+  end
+
   def test_repeated_permutation_stack_error
     assert_separately([], "#{<<-"begin;"}\n#{<<~'end;'}", timeout: 30)
     begin;

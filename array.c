@@ -2103,6 +2103,40 @@ rb_ary_each(VALUE ary)
 
 /*
  *  call-seq:
+ *     ary.pluck(key)    -> ary
+ *
+ *  Returns an array of values from an input array of hashes
+ *
+ *     a = [ {name: "Lewis"}, {name: "Steffan"} ]
+ *     a.pluck(:name)
+ *
+ *  produces:
+ *
+ *     ["Lewis", "Steffan"]
+ */
+
+VALUE
+rb_ary_pluck(VALUE ary, VALUE hash_key)
+{
+    ary_verify(ary);
+
+    VALUE output_ary = rb_ary_new2(RARRAY_LEN(ary));
+
+    long i;
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+        VALUE item = RARRAY_AREF(ary, i);
+
+        Check_Type(item, T_HASH);
+
+        VALUE item_value = rb_hash_aref(item, hash_key);
+        rb_ary_push(output_ary, item_value);
+    }
+
+    return output_ary;
+}
+
+/*
+ *  call-seq:
  *     ary.each_index {|index| block}    -> ary
  *     ary.each_index                    -> Enumerator
  *
@@ -6872,6 +6906,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "select!", rb_ary_select_bang, 0);
     rb_define_method(rb_cArray, "filter", rb_ary_select, 0);
     rb_define_method(rb_cArray, "filter!", rb_ary_select_bang, 0);
+    rb_define_method(rb_cArray, "pluck", rb_ary_pluck, 1);
     rb_define_method(rb_cArray, "keep_if", rb_ary_keep_if, 0);
     rb_define_method(rb_cArray, "values_at", rb_ary_values_at, -1);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
