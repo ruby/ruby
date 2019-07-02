@@ -4637,7 +4637,7 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *
  *  Returns +true+ if the intersection of +ary+ and +ary2+ is non empty, else returns false. 
  *
- *  This is equivalent to (ary & ary2).any?
+ *  This is equivalent to !(ary & ary2).empty?
  *
  *     [ "a", "b", "c" ].overlap?( [ "c", "d", "a" ] )    #=> true
  *     [ "a" ].overlap?( ["e", "b"] )                     #=> false

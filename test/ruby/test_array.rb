@@ -242,6 +242,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_overlap
+    assert_equal(true,      @cls[ nil ].overlap?( @cls[ nil ]))
     assert_equal(true,      @cls[ 1, 1, 3, 5 ].overlap?( @cls[ 1, 2, 3 ]))
     assert_equal(false,     @cls[ 1, 1, 3, 5 ].overlap?( @cls[ ]))
     assert_equal(false,     @cls[  ].overlap?(           @cls[ 1, 2, 3 ]))
