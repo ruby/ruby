@@ -5599,6 +5599,20 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "negative?", num_negative_p, 0);
 
     rb_cInteger = rb_define_class("Integer", rb_cNumeric);
+
+    /*
+     *  The smallest number possible integer
+     *
+     *  Usually defaults to -4611686018427387903.
+     */
+    rb_define_const(rb_cInteger, "MIN", LONG2FIX(FIXNUM_MIN));
+    /*
+     *  The largest possible integer.
+     *
+     *  Usually defaults to 4611686018427387903.
+     */
+    rb_define_const(rb_cInteger, "MAX", LONG2FIX(FIXNUM_MAX));
+
     rb_undef_alloc_func(rb_cInteger);
     rb_undef_method(CLASS_OF(rb_cInteger), "new");
     rb_define_singleton_method(rb_cInteger, "sqrt", rb_int_s_isqrt, 1);

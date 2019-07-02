@@ -650,4 +650,18 @@ class TestInteger < Test::Unit::TestCase
     def o.fdiv(x); 1; end
     assert_equal(1.0, 1.fdiv(o))
   end
+
+  def test_min
+    assert_kind_of(Fixnum, Fixnum::MIN)
+    if RUBY_ENGINE == 'ruby'
+      assert_equal(-2 ** (1.size * 8 - 2), Fixnum::MIN)
+    end
+  end
+
+  def test_max
+    assert_kind_of(Fixnum, Fixnum::MAX)
+    if RUBY_ENGINE == 'ruby'
+      assert_equal(2 ** (1.size * 8 - 2), Fixnum::MAX)
+    end
+  end
 end
