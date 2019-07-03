@@ -659,13 +659,16 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     def fetcher.request(uri, request_class, last_modified = nil)
       $fetched_uri = uri
       res = Net::HTTPOK.new nil, 200, nil
-      case uri.to_s
-      when /^http:\/\/169\.254\.169\.254.*/
-        def res.body() $instance_profile end
-      else
-        def res.body() 'success' end
-      end
+      def res.body() 'success' end
       res
+    end
+
+    def fetcher.s3_uri_signer(uri)
+      s3_uri_signer = Gem::S3URISigner.new(uri)
+      def s3_uri_signer.ec2_metadata
+        $instance_profile
+      end
+      s3_uri_signer
     end
 
     data = fetcher.fetch_s3 URI.parse(url)
