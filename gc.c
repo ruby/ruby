@@ -2954,16 +2954,16 @@ should_be_finalizable(VALUE obj)
     rb_check_frozen(obj);
 }
 
-struct should_not_capture_data {
+struct reachable_object_data {
     VALUE obj;
     VALUE set;
     bool found;
 };
 
 static void
-should_not_capture_callback(VALUE child, void *dp)
+reachable_object_callback(VALUE child, void *dp)
 {
-    struct should_not_capture_data *data = dp;
+    struct reachable_object_data *data = dp;
     if (child == data->obj)
         data->found = true;
 
@@ -2975,18 +2975,17 @@ should_not_capture_callback(VALUE child, void *dp)
         return;
     rb_hash_aset(data->set, child, Qtrue);
 
-    rb_objspace_reachable_objects_from(child, should_not_capture_callback, data);
+    rb_objspace_reachable_objects_from(child, reachable_object_callback, data);
 }
 
-static void
-should_not_capture(VALUE block, VALUE obj)
+static int
+rb_objspace_reachable_object_p(VALUE obj, VALUE root)
 {
-    struct should_not_capture_data data = {obj, rb_ident_hash_new()};
+    struct reachable_object_data data = {obj, rb_ident_hash_new()};
     rb_obj_hide(data.set);
-    rb_objspace_reachable_objects_from(block, should_not_capture_callback, &data);
+    rb_objspace_reachable_objects_from(root, reachable_object_callback, &data);
     rb_hash_clear(data.set);
-    if (data.found)
-        rb_warn("object is reachable from finalizer - it may never be run");
+    return data.found;
 }
 
 /*
@@ -3019,7 +3018,8 @@ define_final(int argc, VALUE *argv, VALUE os)
     }
 
     if (RTEST(ruby_verbose)) {
-        should_not_capture(block, obj);
+        if (rb_objspace_reachable_object_p(obj, block))
+            rb_warn("object is reachable from finalizer - it may never be run");
     }
 
     return define_final0(obj, block);
