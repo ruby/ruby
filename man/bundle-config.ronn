@@ -151,7 +151,7 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `cache_path` (`BUNDLE_CACHE_PATH`):
    The directory that bundler will place cached gems in when running
    <code>bundle package</code>, and that bundler will look in when installing gems.
-   Defaults to `vendor/bundle`.
+   Defaults to `vendor/cache`.
 * `clean` (`BUNDLE_CLEAN`):
    Whether Bundler should run `bundle clean` automatically after
    `bundle install`.
