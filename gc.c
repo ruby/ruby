@@ -8217,7 +8217,9 @@ gc_compact(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, 
         /* pin objects referenced by maybe pointers */
         rb_gc();
         /* compact */
+        during_gc = TRUE;
         gc_compact_after_gc(objspace, use_toward_empty, use_double_pages, TRUE);
+        during_gc = FALSE;
     }
     objspace->flags.during_compacting = FALSE;
     return gc_compact_stats(objspace);
