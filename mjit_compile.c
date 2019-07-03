@@ -331,6 +331,19 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
         //   * Do not read any `cfp->pc`
         if (insn != BIN(leave) && insn_may_depend_on_sp_or_pc(insn, body->iseq_encoded + (pos + 1)))
             return false;
+        // At this moment, `cfp->ep` in an inlined method is not working.
+        switch (insn) {
+          case BIN(getlocal):
+          case BIN(getlocal_WC_0):
+          case BIN(getlocal_WC_1):
+          case BIN(setlocal):
+          case BIN(setlocal_WC_0):
+          case BIN(setlocal_WC_1):
+          case BIN(getblockparam):
+          case BIN(getblockparamproxy):
+          case BIN(setblockparam):
+            return false;
+        }
         pos += insn_len(insn);
     }
     return true;
