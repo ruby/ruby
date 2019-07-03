@@ -1919,34 +1919,34 @@ enum rb_io_wait_readwrite {RB_IO_WAIT_READABLE, RB_IO_WAIT_WRITABLE};
 #define RB_IO_WAIT_READABLE RB_IO_WAIT_READABLE
 #define RB_IO_WAIT_WRITABLE RB_IO_WAIT_WRITABLE
 
-PRINTF_ARGS(NORETURN(void rb_raise(VALUE, const char*, ...)), 2, 3);
-PRINTF_ARGS(NORETURN(void rb_fatal(const char*, ...)), 1, 2);
+COLDFUNC PRINTF_ARGS(NORETURN(void rb_raise(VALUE, const char*, ...)), 2, 3);
+COLDFUNC PRINTF_ARGS(NORETURN(void rb_fatal(const char*, ...)), 1, 2);
 COLDFUNC PRINTF_ARGS(NORETURN(void rb_bug(const char*, ...)), 1, 2);
-NORETURN(void rb_bug_errno(const char*, int));
-NORETURN(void rb_sys_fail(const char*));
-NORETURN(void rb_sys_fail_str(VALUE));
-NORETURN(void rb_mod_sys_fail(VALUE, const char*));
-NORETURN(void rb_mod_sys_fail_str(VALUE, VALUE));
-NORETURN(void rb_readwrite_sys_fail(enum rb_io_wait_readwrite, const char*));
+COLDFUNC NORETURN(void rb_bug_errno(const char*, int));
+COLDFUNC NORETURN(void rb_sys_fail(const char*));
+COLDFUNC NORETURN(void rb_sys_fail_str(VALUE));
+COLDFUNC NORETURN(void rb_mod_sys_fail(VALUE, const char*));
+COLDFUNC NORETURN(void rb_mod_sys_fail_str(VALUE, VALUE));
+COLDFUNC NORETURN(void rb_readwrite_sys_fail(enum rb_io_wait_readwrite, const char*));
+COLDFUNC NORETURN(void rb_exit(int));
+COLDFUNC NORETURN(void rb_notimplement(void));
+COLDFUNC VALUE rb_syserr_new(int, const char *);
+COLDFUNC VALUE rb_syserr_new_str(int n, VALUE arg);
+COLDFUNC NORETURN(void rb_syserr_fail(int, const char*));
+COLDFUNC NORETURN(void rb_syserr_fail_str(int, VALUE));
+COLDFUNC NORETURN(void rb_mod_syserr_fail(VALUE, int, const char*));
+COLDFUNC NORETURN(void rb_mod_syserr_fail_str(VALUE, int, VALUE));
+COLDFUNC NORETURN(void rb_readwrite_syserr_fail(enum rb_io_wait_readwrite, int, const char*));
 NORETURN(void rb_iter_break(void));
 NORETURN(void rb_iter_break_value(VALUE));
-NORETURN(void rb_exit(int));
-NORETURN(void rb_notimplement(void));
-VALUE rb_syserr_new(int, const char *);
-VALUE rb_syserr_new_str(int n, VALUE arg);
-NORETURN(void rb_syserr_fail(int, const char*));
-NORETURN(void rb_syserr_fail_str(int, VALUE));
-NORETURN(void rb_mod_syserr_fail(VALUE, int, const char*));
-NORETURN(void rb_mod_syserr_fail_str(VALUE, int, VALUE));
-NORETURN(void rb_readwrite_syserr_fail(enum rb_io_wait_readwrite, int, const char*));
 
 /* reports if `-W' specified */
-PRINTF_ARGS(void rb_warning(const char*, ...), 1, 2);
-PRINTF_ARGS(void rb_compile_warning(const char *, int, const char*, ...), 3, 4);
-PRINTF_ARGS(void rb_sys_warning(const char*, ...), 1, 2);
+COLDFUNC PRINTF_ARGS(void rb_warning(const char*, ...), 1, 2);
+COLDFUNC PRINTF_ARGS(void rb_compile_warning(const char *, int, const char*, ...), 3, 4);
+COLDFUNC PRINTF_ARGS(void rb_sys_warning(const char*, ...), 1, 2);
 /* reports always */
 COLDFUNC PRINTF_ARGS(void rb_warn(const char*, ...), 1, 2);
-PRINTF_ARGS(void rb_compile_warn(const char *, int, const char*, ...), 3, 4);
+COLDFUNC PRINTF_ARGS(void rb_compile_warn(const char *, int, const char*, ...), 3, 4);
 
 #define RUBY_BLOCK_CALL_FUNC_TAKES_BLOCKARG 1
 #define RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg) \
