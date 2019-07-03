@@ -9376,14 +9376,14 @@ rb_objspace_reachable_object_p(VALUE obj, VALUE root)
     int reachable = FALSE;
     if (is_markable_object(objspace, obj)) {
         struct reachable_object_data data = {obj, root};
-	struct mark_func_data_struct mfd = {&data, reachable_object_callback};
+        struct mark_func_data_struct mfd = {&data, reachable_object_callback};
         int prev_dont_gc = dont_gc;
         enum ruby_tag_type state;
 
         dont_gc = TRUE;
-	PUSH_MARK_FUNC_DATA(&mfd);
+        PUSH_MARK_FUNC_DATA(&mfd);
         reachable = RTEST(rb_catch_protect(rb_ident_hash_new(), call_reachable_object, (VALUE)&data, &state));
-	POP_MARK_FUNC_DATA();
+        POP_MARK_FUNC_DATA();
         dont_gc = prev_dont_gc;
         if (state) EC_JUMP_TAG(GET_EC(), state);
     }
