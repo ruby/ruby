@@ -6104,7 +6104,7 @@ nextc(struct parser_params *p)
 static void
 pushback(struct parser_params *p, int c)
 {
-    if (c == -1) return;
+    if (UNLIKELY(c == -1)) return;
     p->lex.pcur--;
     if (p->lex.pcur > p->lex.pbeg && p->lex.pcur[0] == '\n' && p->lex.pcur[-1] == '\r') {
 	p->lex.pcur--;
@@ -6122,7 +6122,7 @@ newtok(struct parser_params *p)
 {
     p->tokidx = 0;
     p->tokline = p->ruby_sourceline;
-    if (!p->tokenbuf) {
+    if (UNLIKELY(!p->tokenbuf)) {
 	p->toksiz = 60;
 	p->tokenbuf = ALLOC_N(char, 60);
     }
