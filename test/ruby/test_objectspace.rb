@@ -56,7 +56,7 @@ End
   end
 
   def test_finalizer
-    assert_in_out_err(["-W0", "-e", <<-END], "", %w(:ok :ok :ok :ok))
+    assert_in_out_err(["-e", <<-END], "", %w(:ok :ok :ok :ok), [])
       a = []
       ObjectSpace.define_finalizer(a) { p :ok }
       b = a.dup
@@ -76,8 +76,8 @@ End
       ObjectSpace.define_finalizer([], fin)
       CODE
     end
-    assert_in_out_err(["-W0"], code[""], ["finalized"])
-    assert_in_out_err(["-W0"], code["private "], ["finalized"])
+    assert_in_out_err([], code[""], ["finalized"])
+    assert_in_out_err([], code["private "], ["finalized"])
     c = EnvUtil.labeled_class("C\u{3042}").new
     o = Object.new
     assert_raise_with_message(ArgumentError, /C\u{3042}/) {
@@ -129,32 +129,6 @@ End
 
       p :ok
     END
-  end
-
-  def test_self_referencing_finalizer
-    assert_separately(["-w"], "#{<<~"begin;"}\n#{<<~'end;'}")
-    begin;
-      obj = +"Test"
-      handler = proc {puts "finalized"}
-      assert_warning(/object is reachable from finalizer/) do
-        ObjectSpace.define_finalizer(obj, handler)
-      end
-    end;
-  end
-
-  def test_indirectly_self_referencing_finalizer
-    assert_separately(["-w"], "#{<<~"begin;"}\n#{<<~'end;'}")
-    begin;
-      def scoped(indirect)
-        proc {puts "finalized"}
-      end
-      obj = +"Test"
-      indirect = [obj]
-      handler = scoped(indirect)
-      assert_warning(/object is reachable from finalizer/) do
-        ObjectSpace.define_finalizer(obj, handler)
-      end
-    end;
   end
 
   def test_each_object

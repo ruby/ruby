@@ -2954,8 +2954,6 @@ should_be_finalizable(VALUE obj)
     rb_check_frozen(obj);
 }
 
-static int rb_objspace_reachable_object_p(VALUE obj, VALUE root);
-
 /*
  *  call-seq:
  *     ObjectSpace.define_finalizer(obj, aProc=proc())
@@ -2964,10 +2962,6 @@ static int rb_objspace_reachable_object_p(VALUE obj, VALUE root);
  *  was destroyed. The object ID of the <i>obj</i> will be passed
  *  as an argument to <i>aProc</i>. If <i>aProc</i> is a lambda or
  *  method, make sure it can be called with a single argument.
- *
- *  In verbose mode (<code>-w</code>) a warning will be issued if
- *  the object is reachable from <i>aProc</i>, which may prevent
- *  finalization.
  *
  */
 
@@ -2983,11 +2977,6 @@ define_final(int argc, VALUE *argv, VALUE os)
     }
     else {
 	should_be_callable(block);
-    }
-
-    if (RTEST(ruby_verbose)) {
-        if (rb_objspace_reachable_object_p(obj, block))
-            rb_warn("object is reachable from finalizer - it may never be run");
     }
 
     return define_final0(obj, block);
@@ -9335,59 +9324,6 @@ rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE,
     PUSH_MARK_FUNC_DATA(&mfd);
     gc_mark_roots(objspace, &data.category);
     POP_MARK_FUNC_DATA();
-}
-
-struct reachable_object_data {
-    VALUE obj;
-    VALUE set;
-};
-
-static void
-reachable_object_callback(VALUE child, void *dp)
-{
-    struct reachable_object_data *data = dp;
-    if (child == data->obj) {
-        rb_throw_obj(data->set, Qtrue);
-    }
-
-    // Maintain a set of objects already searched, so that we don't follow a cycle
-    if (rb_hash_lookup2(data->set, child, Qfalse))
-        return;
-    rb_hash_aset(data->set, child, Qtrue);
-
-    rb_objspace_reachable_objects_from(child, reachable_object_callback, data);
-}
-
-static VALUE
-call_reachable_object(RB_BLOCK_CALL_FUNC_ARGLIST(set, arg))
-{
-    struct reachable_object_data *data = (void *)arg;
-    VALUE obj = data->set;
-    data->set = rb_obj_hide(set);
-    gc_mark_children(&rb_objspace, obj);
-    rb_hash_clear(set);
-    return Qfalse;
-}
-
-static int
-rb_objspace_reachable_object_p(VALUE obj, VALUE root)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    int reachable = FALSE;
-    if (is_markable_object(objspace, obj)) {
-        struct reachable_object_data data = {obj, root};
-        struct mark_func_data_struct mfd = {&data, reachable_object_callback};
-        int prev_dont_gc = dont_gc;
-        enum ruby_tag_type state;
-
-        dont_gc = TRUE;
-        PUSH_MARK_FUNC_DATA(&mfd);
-        reachable = RTEST(rb_catch_protect(rb_ident_hash_new(), call_reachable_object, (VALUE)&data, &state));
-        POP_MARK_FUNC_DATA();
-        dont_gc = prev_dont_gc;
-        if (state) EC_JUMP_TAG(GET_EC(), state);
-    }
-    return reachable;
 }
 
 /*
