@@ -119,7 +119,7 @@ class Reline::Config
     @if_stack = []
 
     lines.each_with_index do |line, no|
-      next if line.start_with?('#')
+      next if line.match(/\A\s*#/)
 
       no += 1
 
