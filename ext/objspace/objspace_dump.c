@@ -27,12 +27,14 @@ struct dump_config {
     VALUE type;
     FILE *stream;
     VALUE string;
-    int roots;
-    int full_heap;
     const char *root_category;
     VALUE cur_obj;
     VALUE cur_obj_klass;
     size_t cur_obj_references;
+    struct {
+    unsigned int roots: 1;
+    unsigned int full_heap: 1;
+    } flags;
 };
 
 PRINTF_ARGS(static void dump_append(struct dump_config *, const char *, ...), 2, 3);
@@ -349,7 +351,7 @@ heap_i(void *vstart, void *vend, size_t stride, void *data)
     struct dump_config *dc = (struct dump_config *)data;
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
-	if (dc->full_heap || RBASIC(v)->flags)
+	if (dc->flags.full_heap || RBASIC(v)->flags)
 	    dump_object(v, dc);
     }
     return 0;
@@ -368,7 +370,7 @@ root_obj_i(const char *category, VALUE obj, void *data)
         dump_append(dc, ", \"%#"PRIxVALUE"\"", obj);
 
     dc->root_category = category;
-    dc->roots++;
+    dc->flags.roots = 1;
 }
 
 static VALUE
@@ -376,13 +378,13 @@ dump_output(struct dump_config *dc, VALUE opts, VALUE output, const char *filena
 {
     VALUE tmp;
 
-    dc->full_heap = 0;
+    dc->flags.full_heap = 0;
 
     if (RTEST(opts)) {
 	output = rb_hash_aref(opts, sym_output);
 
 	if (Qtrue == rb_hash_lookup2(opts, sym_full, Qfalse))
-	    dc->full_heap = 1;
+	    dc->flags.full_heap = 1;
     }
 
     if (output == sym_stdout) {
@@ -487,7 +489,7 @@ objspace_dump_all(int argc, VALUE *argv, VALUE os)
 
     /* dump roots */
     rb_objspace_reachable_objects_from_root(root_obj_i, &dc);
-    if (dc.roots) dump_append(&dc, "]}\n");
+    if (dc.flags.roots) dump_append(&dc, "]}\n");
 
     /* dump all objects */
     rb_objspace_each_objects(heap_i, &dc);
