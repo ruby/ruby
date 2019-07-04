@@ -1251,16 +1251,54 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
     return ST_CHECK;
 }
 
+#define ITER_LEV_BITS 4
+#define ITER_LEV_SHIFT (32 - ITER_LEV_BITS)
+#define ITER_LEV_MAX ((1 << ITER_LEV_BITS) - 1)
+#define ITER_LEV_MASK ((1 << ITER_LEV_SHIFT) - 1)
+
+#define ITER_LEV_SET_FL(_obj, _lev) \
+        RBASIC(_obj)->flags = \
+            (RBASIC(_obj)->flags & ITER_LEV_MASK) | \
+            (((_lev) & ITER_LEV_MAX) << ITER_LEV_SHIFT)
+
+#define ITER_OVERFLOW FL_USER15
+
+#ifdef RHASH_ITER_LEV
+  # undef RHASH_ITER_LEV
+#endif
+
+#define RHASH_ITER_LEV(h) \
+    (FL_TEST_RAW(h, ITER_OVERFLOW)) ? \
+        NUM2UINT(rb_iv_get(h, "iter_lev")) : \
+        (unsigned int)((RBASIC(h)->flags >> ITER_LEV_SHIFT) & ITER_LEV_MAX)
+
 static void
 hash_iter_lev_inc(VALUE hash)
 {
-    *((int *)&RHASH(hash)->iter_lev) = RHASH_ITER_LEV(hash) + 1;
+    unsigned int lev = RHASH_ITER_LEV(hash);
+
+    if ((lev + 1) > ITER_LEV_MAX) {
+        /* Overflow */
+        FL_SET_RAW(hash, ITER_OVERFLOW);
+        rb_iv_set(hash, "iter_lev", INT2NUM(lev + 1));
+    } else {
+        ITER_LEV_SET_FL(hash, lev + 1);
+    }
 }
 
 static void
 hash_iter_lev_dec(VALUE hash)
 {
-    *((int *)&RHASH(hash)->iter_lev) = RHASH_ITER_LEV(hash) - 1;
+    unsigned int lev = RHASH_ITER_LEV(hash);
+
+    if ((lev - 1) <= ITER_LEV_MAX) {
+        FL_UNSET_RAW(hash, ITER_OVERFLOW);
+        ITER_LEV_SET_FL(hash, lev - 1);
+    } else {
+        /* Overflow */
+        FL_SET_RAW(hash, ITER_OVERFLOW);
+        rb_iv_set(hash, "iter_lev", INT2NUM(lev - 1));
+    }
 }
 
 static VALUE

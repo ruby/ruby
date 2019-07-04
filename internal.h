@@ -872,7 +872,6 @@ struct RHash {
         st_table *st;
         struct ar_table_struct *ar; /* possibly 0 */
     } as;
-    int iter_lev;
     VALUE ifnone;
 };
 
@@ -881,7 +880,6 @@ struct RHash {
 #  undef RHASH_IFNONE
 #  undef RHASH_SIZE
 
-#  define RHASH_ITER_LEV(h)  (RHASH(h)->iter_lev)
 #  define RHASH_IFNONE(h)    (RHASH(h)->ifnone)
 #  define RHASH_SIZE(h)      (RHASH_AR_TABLE_P(h) ? RHASH_AR_TABLE_SIZE_RAW(h) : RHASH_ST_SIZE(h))
 #endif /* #ifdef RHASH_ITER_LEV */
