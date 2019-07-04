@@ -163,4 +163,26 @@ class Reline::Config::Test < Reline::TestCase
     expected = { 'abcd'.bytes => 'ABCD'.bytes, 'ijkl'.bytes => 'IJKL'.bytes }
     assert_equal expected, @config.key_bindings
   end
+
+  def test_additional_key_bindings
+    @config.read_lines(<<~'LINES'.lines)
+      "ef": "EF"
+      "gh": "GH"
+    LINES
+
+    expected = { 'ef'.bytes => 'EF'.bytes, 'gh'.bytes => 'GH'.bytes }
+    assert_equal expected, @config.key_bindings
+  end
+
+  def test_additional_key_bindings_with_nesting_and_comment_out
+    @config.read_lines(<<~'LINES'.lines)
+      #"ab": "AB"
+        #"cd": "cd"
+      "ef": "EF"
+        "gh": "GH"
+    LINES
+
+    expected = { 'ef'.bytes => 'EF'.bytes, 'gh'.bytes => 'GH'.bytes }
+    assert_equal expected, @config.key_bindings
+  end
 end
