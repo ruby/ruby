@@ -5,6 +5,8 @@ class Reline::Config
 
   DEFAULT_PATH = '~/.inputrc'
 
+  KEYSEQ_PATTERN = /\\C-[A-Za-z_]|\\M-[0-9A-Za-z_]|\\C-M-[A-Za-z_]|\\M-C-[A-Za-z_]|\\e|\\[\\\"\'abdfnrtv]|\\\d{1,3}|\\x\h{1,2}|./
+
   class InvalidInputrc < RuntimeError
     attr_accessor :file, :lineno
   end
@@ -137,9 +139,10 @@ class Reline::Config
         next
       end
 
-      if line =~ /\s*(.*)\s*:\s*(.*)\s*$/
+      if line =~ /\s*("#{KEYSEQ_PATTERN}+")\s*:\s*(.*)\s*$/
         key, func_name = $1, $2
         keystroke, func = bind_key(key, func_name)
+        next unless keystroke
         @additional_key_bindings[keystroke] = func
       end
     end
@@ -227,7 +230,7 @@ class Reline::Config
   end
 
   def bind_key(key, func_name)
-    if key =~ /"(.*)"/
+    if key =~ /\A"(.*)"\z/
       keyseq = parse_keyseq($1)
     else
       keyseq = nil
@@ -277,9 +280,8 @@ class Reline::Config
   def parse_keyseq(str)
     # TODO: Control- and Meta-
     ret = []
-    while str =~ /(\\C-[A-Za-z_]|\\M-[0-9A-Za-z_]|\\C-M-[A-Za-z_]|\\M-C-[A-Za-z_]|\\e|\\\\|\\"|\\'|\\a|\\b|\\d|\\f|\\n|\\r|\\t|\\v|\\\d{1,3}|\\x\h{1,2}|.)/
+    str.scan(KEYSEQ_PATTERN) do
       ret << key_notation_to_code($&)
-      str = $'
     end
     ret
   end
