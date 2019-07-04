@@ -1003,10 +1003,8 @@ RSpec.describe "bundle install with git sources" do
       update_git "valim"
       new_revision = revision_for(lib_path("valim-1.0"))
 
-      lockfile = File.read(bundled_app("Gemfile.lock"))
-      File.open(bundled_app("Gemfile.lock"), "w") do |file|
-        file.puts lockfile.gsub(/revision: #{old_revision}/, "revision: #{new_revision}")
-      end
+      old_lockfile = File.read(bundled_app("Gemfile.lock"))
+      lockfile(bundled_app("Gemfile.lock"), old_lockfile.gsub(/revision: #{old_revision}/, "revision: #{new_revision}"))
 
       bundle "install"
 
