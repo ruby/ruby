@@ -568,9 +568,7 @@ RSpec.describe "bundle clean" do
     gemfile_lock.each_with_index do |line, index|
       gemfile_lock[index] = line[0..(11 + 7)] if line.include?("  revision:")
     end
-    File.open(bundled_app("Gemfile.lock"), "w") do |file|
-      file.print gemfile_lock.join("\n")
-    end
+    lockfile(bundled_app("Gemfile.lock"), gemfile_lock.join("\n"))
 
     bundle "install", forgotten_command_line_options(:path => "vendor/bundle")
 
