@@ -5,8 +5,7 @@ class Reline::Config
 
   DEFAULT_PATH = '~/.inputrc'
 
-  # TODO: Control- and Meta-
-  KEYSEQ_PATTERN = /\\C-[A-Za-z_]|\\M-[0-9A-Za-z_]|\\C-M-[A-Za-z_]|\\M-C-[A-Za-z_]|\\e|\\[\\\"\'abdfnrtv]|\\\d{1,3}|\\x\h{1,2}|./
+  KEYSEQ_PATTERN = /\\(?:C|Control)-[A-Za-z_]|\\(?:M|Meta)-[0-9A-Za-z_]|\\(?:C|Control)-(?:M|Meta)-[A-Za-z_]|\\(?:M|Meta)-(?:C|Control)-[A-Za-z_]|\\e|\\[\\\"\'abdfnrtv]|\\\d{1,3}|\\x\h{1,2}|./
 
   class InvalidInputrc < RuntimeError
     attr_accessor :file, :lineno
@@ -246,9 +245,9 @@ class Reline::Config
 
   def key_notation_to_code(notation)
     case notation
-    when /\\C-([A-Za-z_])/
+    when /\\(?:C|Control)-([A-Za-z_])/
       (1 + $1.downcase.ord - ?a.ord)
-    when /\\M-([0-9A-Za-z_])/
+    when /\\(?:M|Meta)-([0-9A-Za-z_])/
       modified_key = $1
       case $1
       when /[0-9]/
@@ -258,7 +257,7 @@ class Reline::Config
       when /[a-z]/
         ?\M-a.bytes.first + (modified_key.ord - ?a.ord)
       end
-    when /\\C-M-[A-Za-z_]/, /\\M-C-[A-Za-z_]/
+    when /\\(?:C|Control)-(?:M|Meta)-[A-Za-z_]/, /\\(?:M|Meta)-(?:C|Control)-[A-Za-z_]/
     # 129 M-^A
     when /\\(\d{1,3})/ then $1.to_i(8) # octal
     when /\\x(\h{1,2})/ then $1.to_i(16) # hexadecimal
