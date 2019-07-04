@@ -52,23 +52,14 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
     gem_name = get_one_gem_name
     default_gem_server, push_host = get_hosts_for(gem_name)
 
-    default_host = nil
-    user_defined_host = nil
-
-    if @user_defined_host
-      user_defined_host = options[:host]
-    else
-      default_host = options[:host]
-    end
-
-    @host = if user_defined_host
-              user_defined_host
+    @host = if @user_defined_host
+              options[:host]
             elsif default_gem_server
               default_gem_server
             elsif push_host
               push_host
             else
-              default_host
+              options[:host]
             end
 
     sign_in @host
