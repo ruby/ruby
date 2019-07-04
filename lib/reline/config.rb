@@ -5,6 +5,7 @@ class Reline::Config
 
   DEFAULT_PATH = '~/.inputrc'
 
+  # TODO: Control- and Meta-
   KEYSEQ_PATTERN = /\\C-[A-Za-z_]|\\M-[0-9A-Za-z_]|\\C-M-[A-Za-z_]|\\M-C-[A-Za-z_]|\\e|\\[\\\"\'abdfnrtv]|\\\d{1,3}|\\x\h{1,2}|./
 
   class InvalidInputrc < RuntimeError
@@ -278,7 +279,6 @@ class Reline::Config
   end
 
   def parse_keyseq(str)
-    # TODO: Control- and Meta-
     ret = []
     str.scan(KEYSEQ_PATTERN) do
       ret << key_notation_to_code($&)
