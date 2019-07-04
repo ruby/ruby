@@ -33,6 +33,11 @@ class Reline::Config::Test < Reline::TestCase
     assert_not_include @config.key_bindings, nil
   end
 
+  def test_invalid_keystroke
+    @config.read_lines(["a: error\n"])
+    assert_not_include @config.key_bindings, nil
+  end
+
   def test_bind_key
     assert_equal ['input'.bytes, 'abcde'.bytes], @config.bind_key('"input"', '"abcde"')
   end
