@@ -28,6 +28,11 @@ class Reline::Config::Test < Reline::TestCase
     assert_equal :audible, @config.instance_variable_get(:@bell_style)
   end
 
+  def test_comment_line
+    @config.read_lines([" #a: error\n"])
+    assert_not_include @config.key_bindings, nil
+  end
+
   def test_bind_key
     assert_equal ['input'.bytes, 'abcde'.bytes], @config.bind_key('"input"', '"abcde"')
   end
