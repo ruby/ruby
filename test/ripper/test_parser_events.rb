@@ -751,6 +751,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_ifop
   end
 
+  def test_ignored_nl
+    ignored_nl = []
+    parse("foo # comment\n...\n", :on_ignored_nl) {|_, a| ignored_nl << a}
+    assert_equal ["\n"], ignored_nl
+  end
+
   def test_lambda
     thru_lambda = false
     parse('->{}', :on_lambda) {thru_lambda = true}
