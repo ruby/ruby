@@ -800,11 +800,11 @@ class Reline::LineEditor
       md = new_lines[@line_index].match(/\A */)
       prev_indent = md[0].count(' ')
       if @check_new_auto_indent
-        @buffer_of_lines[@line_index] = ' ' * new_indent + @buffer_of_lines[@line_index].gsub(/\A */, '')
+        @buffer_of_lines[@line_index] = ' ' * new_indent + @buffer_of_lines[@line_index].lstrip
         @cursor = new_indent
         @byte_pointer = new_indent
       else
-        @line = ' ' * new_indent + @line.gsub(/\A */, '')
+        @line = ' ' * new_indent + @line.lstrip
         @cursor += new_indent - prev_indent
         @byte_pointer += new_indent - prev_indent
       end
@@ -1893,7 +1893,7 @@ class Reline::LineEditor
     if @is_multiline and @buffer_of_lines.size > @line_index + 1
       @cursor = calculate_width(@line)
       @byte_pointer = @line.bytesize
-      @line += ' ' + @buffer_of_lines.delete_at(@line_index + 1).gsub(/\A +/, '')
+      @line += ' ' + @buffer_of_lines.delete_at(@line_index + 1).lstrip
       @cursor_max = calculate_width(@line)
       @buffer_of_lines[@line_index] = @line
       @rerender_all = true

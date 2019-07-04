@@ -123,7 +123,7 @@ class Reline::Config
 
       no += 1
 
-      line = line.chomp.gsub(/^\s*/, '')
+      line = line.chomp.lstrip
       if line[0, 1] == '$'
         handle_directive(line[1..-1], file, no)
         next
