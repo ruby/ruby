@@ -93,6 +93,13 @@ class TestSyntax < Test::Unit::TestCase
     assert_valid_syntax("tap (proc do end)", __FILE__, bug9726)
   end
 
+  def test_methodref_literal
+    assert_separately [], <<-EOS
+      eval 'nil.:|;1'
+      1000.times{eval 'nil.:|;1'}
+    EOS
+  end
+
   def test_normal_argument
     assert_valid_syntax('def foo(x) end')
     assert_syntax_error('def foo(X) end', /constant/)
