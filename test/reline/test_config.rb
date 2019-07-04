@@ -53,10 +53,12 @@ class Reline::Config::Test < Reline::TestCase
 
   def test_bind_key_with_ctrl_chars
     assert_equal ['input'.bytes, "\C-h\C-h".bytes], @config.bind_key('"input"', '"\C-h\C-H"')
+    assert_equal ['input'.bytes, "\C-h\C-h".bytes], @config.bind_key('"input"', '"\Control-h\Control-H"')
   end
 
   def test_bind_key_with_meta_chars
     assert_equal ['input'.bytes, "\M-h\M-H".bytes], @config.bind_key('"input"', '"\M-h\M-H"')
+    assert_equal ['input'.bytes, "\M-h\M-H".bytes], @config.bind_key('"input"', '"\Meta-h\Meta-H"')
   end
 
   def test_bind_key_with_octal_number
