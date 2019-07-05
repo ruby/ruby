@@ -1,8 +1,6 @@
 require 'base64'
 require 'digest'
 require 'openssl'
-require 'rubygems/request'
-require 'rubygems/request/connection_pools'
 
 ##
 # S3URISigner implements AWS SigV4 for S3 Source to avoid a dependency on the aws-sdk-* gems
@@ -139,6 +137,8 @@ class Gem::S3URISigner
 
   def ec2_metadata
     require 'net/http'
+    require 'rubygems/request'
+    require 'rubygems/request/connection_pools'
 
     metadata_uri = URI(EC2_METADATA_CREDENTIALS)
 
