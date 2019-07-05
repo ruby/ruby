@@ -2251,6 +2251,16 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $dir)
 ])
 
+AS_IF([test x"$ac_cv_header_ucontext_h" = xno], [
+    AC_CACHE_CHECK([if signal.h defines ucontext_t], [rb_cv_ucontext_in_signal_h],
+	[AC_TRY_COMPILE([@%:@include <signal.h>],
+	[size_t size = sizeof(ucontext_t);],
+	[rb_cv_ucontext_in_signal_h=yes], [rb_cv_ucontext_in_signal_h=no])])
+    AS_IF([test x"$rb_cv_ucontext_in_signal_h" = xyes], [
+	    AC_DEFINE_UNQUOTED(UCONTEXT_IN_SIGNAL_H, 1)
+    ])
+])
+
 AC_ARG_ENABLE(fiber-coroutine,
     AS_HELP_STRING([--disable-fiber-coroutine], [disable native coroutine implementation for fiber]),
     [rb_cv_fiber_coroutine=$enableval])
@@ -2292,7 +2302,11 @@ AS_CASE(["$rb_cv_fiber_coroutine"], [yes|''], [
             rb_cv_fiber_coroutine=
         ],
         [*], [
-            rb_cv_fiber_coroutine=ucontext
+            AS_IF([test x"$ac_cv_header_ucontext_h" = xyes -o x"$rb_cv_ucontext_in_signal_h" = xyes], [
+                rb_cv_fiber_coroutine=ucontext
+            ], [
+                rb_cv_fiber_coroutine=
+            ])
         ]
     )
     AC_MSG_RESULT(${rb_cv_fiber_coroutine:-no})
@@ -2384,15 +2398,6 @@ AS_IF([test x"$enable_pthread" = xyes], [
     ])
 ])
 
-AS_IF([test x"$ac_cv_header_ucontext_h" = xno], [
-    AC_CACHE_CHECK([if signal.h defines ucontext_t], [rb_cv_ucontext_in_signal_h],
-	[AC_TRY_COMPILE([@%:@include <signal.h>],
-	[size_t size = sizeof(ucontext_t);],
-	[rb_cv_ucontext_in_signal_h=yes], [rb_cv_ucontext_in_signal_h=no])])
-    AS_IF([test x"$rb_cv_ucontext_in_signal_h" = xyes], [
-	    AC_DEFINE_UNQUOTED(UCONTEXT_IN_SIGNAL_H, 1)
-    ])
-])
 AS_IF([test x"$ac_cv_header_ucontext_h" = xyes -o x"$rb_cv_ucontext_in_signal_h" = xyes], [
     AC_CACHE_CHECK([if mcontext_t is a pointer], [rb_cv_mcontext_t_ptr],
 	[AC_TRY_COMPILE([
