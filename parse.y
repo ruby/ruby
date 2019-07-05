@@ -7302,7 +7302,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
     }
     bol = was_bol(p);
     if (!bol) {
-	/* not beginning of line, cannot be the terminater */
+	/* not beginning of line, cannot be the terminator */
     }
     else if (p->heredoc_line_indent == -1) {
 	/* `heredoc_line_indent == -1` means
