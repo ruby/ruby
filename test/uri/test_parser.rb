@@ -40,6 +40,11 @@ class URI::TestParser < Test::Unit::TestCase
 		 uri_to_ary(u1))
   end
 
+  def test_parse_query_pct_encoded
+    assert_equal('q=%32!$&-/?.09;=:@AZ_az~', URI.parse('https://www.example.com/search?q=%32!$&-/?.09;=:@AZ_az~').query)
+    assert_raise(URI::InvalidURIError) { URI.parse('https://www.example.com/search?q=%XX') }
+  end
+
   def test_raise_bad_uri_for_integer
     assert_raise(URI::InvalidURIError) do
       URI.parse(1)
