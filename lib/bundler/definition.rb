@@ -547,10 +547,10 @@ module Bundler
 
     def current_platforms
       current_platform = Bundler.local_platform
-      platforms = []
-      platforms << current_platform if Bundler.feature_flag.specific_platform?
-      platforms << generic(current_platform)
-      platforms
+      [].tap do |platforms|
+        platforms << current_platform if Bundler.feature_flag.specific_platform?
+        platforms << generic(current_platform)
+      end
     end
 
     def change_reason
