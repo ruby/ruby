@@ -6246,24 +6246,28 @@ tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
 /* return value is for ?\u3042 */
 static void
 tokadd_utf8(struct parser_params *p, rb_encoding **encp,
-	    int string_literal, int symbol_literal, int regexp_literal)
+	    int term, int symbol_literal, int regexp_literal)
 {
     /*
-     * If string_literal is true, then we allow multiple codepoints
-     * in \u{}, and add the codepoints to the current token.
-     * Otherwise we're parsing a character literal and return a single
-     * codepoint without adding it
+     * If `term` is not -1, then we allow multiple codepoints in \u{}
+     * upto `term` byte, otherwise we're parsing a character literal.
+     * And then add the codepoints to the current token.
      */
+    static const char multiple_codepoints[] = "Multiple codepoints at single character literal";
 
     const int open_brace = '{', close_brace = '}';
 
     if (regexp_literal) { tokadd(p, '\\'); tokadd(p, 'u'); }
 
     if (peek(p, open_brace)) {  /* handle \u{...} form */
+	const char *second = NULL;
 	int c, last = nextc(p);
 	if (p->lex.pcur >= p->lex.pend) goto unterminated;
 	while (ISSPACE(c = *p->lex.pcur) && ++p->lex.pcur < p->lex.pend);
 	while (c != close_brace) {
+	    if (c == term) goto unterminated;
+	    if (second == multiple_codepoints)
+		second = p->lex.pcur;
 	    if (regexp_literal) tokadd(p, last);
 	    if (!tokadd_codepoint(p, encp, regexp_literal, TRUE)) {
 		break;
@@ -6272,6 +6276,8 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
 		if (++p->lex.pcur >= p->lex.pend) goto unterminated;
 		last = c;
 	    }
+	    if (term == -1 && !second)
+		second = multiple_codepoints;
 	}
 
 	if (c != close_brace) {
@@ -6279,6 +6285,15 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
 	    token_flush(p);
 	    yyerror0("unterminated Unicode escape");
 	    return;
+	}
+	if (second && second != multiple_codepoints) {
+	    const char *pcur = p->lex.pcur;
+	    p->lex.pcur = second;
+	    dispatch_scan_event(p, tSTRING_CONTENT);
+	    token_flush(p);
+	    p->lex.pcur = pcur;
+	    yyerror0(multiple_codepoints);
+	    token_flush(p);
 	}
 
 	if (regexp_literal) tokadd(p, close_brace);
