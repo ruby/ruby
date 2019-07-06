@@ -53,6 +53,7 @@ class Reline::LineEditor
   OSC_REGEXP = /\e\]\d+(?:;[^;]+)*\a/
   NON_PRINTING_START = "\1"
   NON_PRINTING_END = "\2"
+  WIDTH_SCANNER = /\G(?:#{NON_PRINTING_START}|#{NON_PRINTING_END}|#{CSI_REGEXP}|#{OSC_REGEXP}|\X)/
 
   def initialize(config)
     @config = config
@@ -145,35 +146,23 @@ class Reline::LineEditor
     width = 0
     rest = "#{prompt}#{str}".encode(Encoding::UTF_8)
     in_zero_width = false
-    loop do
-      break if rest.empty?
-      if rest.start_with?(NON_PRINTING_START)
-        rest.delete_prefix!(NON_PRINTING_START)
+    rest.scan(WIDTH_SCANNER) do |gc|
+      case gc
+      when NON_PRINTING_START
         in_zero_width = true
-      elsif rest.start_with?(NON_PRINTING_END)
-        rest.delete_prefix!(NON_PRINTING_END)
+      when NON_PRINTING_END
         in_zero_width = false
-      elsif rest.start_with?(CSI_REGEXP)
-        lines.last << $&
-        rest = $'
-      elsif rest.start_with?(OSC_REGEXP)
-        lines.last << $&
-        rest = $'
+      when CSI_REGEXP, OSC_REGEXP
+        lines.last << gc
       else
-        gcs = rest.grapheme_clusters
-        gc = gcs.first
-        rest = gcs[1..-1].join
-        if in_zero_width
-          mbchar_width = 0
-        else
+        unless in_zero_width
           mbchar_width = Reline::Unicode.get_mbchar_width(gc)
-        end
-        width += mbchar_width
-        if width > max_width
-          width = mbchar_width
-          lines << nil
-          lines << String.new(encoding: @encoding)
-          height += 1
+          if (width += mbchar_width) > max_width
+            width = mbchar_width
+            lines << nil
+            lines << String.new(encoding: @encoding)
+            height += 1
+          end
         end
         lines.last << gc
       end
@@ -955,28 +944,17 @@ class Reline::LineEditor
       width = 0
       rest = str.encode(Encoding::UTF_8)
       in_zero_width = false
-      loop do
-        break if rest.empty?
-        if rest.start_with?(NON_PRINTING_START)
-          rest.delete_prefix!(NON_PRINTING_START)
+      rest.scan(WIDTH_SCANNER) do |gc|
+        case gc
+        when NON_PRINTING_START
           in_zero_width = true
-        elsif rest.start_with?(NON_PRINTING_END)
-          rest.delete_prefix!(NON_PRINTING_END)
+        when NON_PRINTING_END
           in_zero_width = false
-        elsif rest.start_with?(CSI_REGEXP)
-          rest = $'
-        elsif rest.start_with?(OSC_REGEXP)
-          rest = $'
+        when CSI_REGEXP, OSC_REGEXP
         else
-          gcs = rest.grapheme_clusters
-          gc = gcs.first
-          rest = gcs[1..-1].join
-          if in_zero_width
-            mbchar_width = 0
-          else
-            mbchar_width = Reline::Unicode.get_mbchar_width(gc)
+          unless in_zero_width
+            width += Reline::Unicode.get_mbchar_width(gc)
           end
-          width += mbchar_width
         end
       end
       width
