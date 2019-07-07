@@ -13,6 +13,10 @@ class TestParse < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def test_error_line
+    assert_syntax_error('------,,', /\n\z/, 'Message to pipe should end with a newline')
+  end
+
   def test_else_without_rescue
     assert_syntax_error(<<-END, %r":#{__LINE__+2}: else without rescue"o, [__FILE__, __LINE__+1])
       begin
@@ -514,13 +518,13 @@ class TestParse < Test::Unit::TestCase
     mesg = 'from the backslash through the invalid char'
 
     e = assert_syntax_error('"\xg1"', /hex escape/)
-    assert_equal(' ^~', e.message.lines.last, mesg)
+    assert_equal(' ^~'"\n", e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{1234"', 'unterminated Unicode escape')
-    assert_equal('        ^', e.message.lines.last, mesg)
+    assert_equal('        ^'"\n", e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{xxxx}"', 'invalid Unicode escape')
-    assert_equal('    ^', e.message.lines.last, mesg)
+    assert_equal('    ^'"\n", e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{xxxx', 'Unicode escape')
     assert_pattern_list([
@@ -531,14 +535,14 @@ class TestParse < Test::Unit::TestCase
                           /    \^/,
                           /\n/,
                           /.*: unterminated string.*\n.*\n/,
-                          /        \^/,
+                          /        \^\n/,
                         ], e.message)
 
     e = assert_syntax_error('"\M1"', /escape character syntax/)
-    assert_equal(' ^~~', e.message.lines.last, mesg)
+    assert_equal(' ^~~'"\n", e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\C1"', /escape character syntax/)
-    assert_equal(' ^~~', e.message.lines.last, mesg)
+    assert_equal(' ^~~'"\n", e.message.lines.last, mesg)
 
     src = '"\xD0\u{90'"\n""000000000000000000000000"
     assert_syntax_error(src, /:#{__LINE__}: unterminated/o)
@@ -1115,13 +1119,13 @@ x = __ENCODING__
   end
 
   def test_unexpected_token_after_numeric
-    assert_raise_with_message(SyntaxError, /^    \^~~\z/) do
+    assert_raise_with_message(SyntaxError, /^    \^~~\Z/) do
       eval('0000xyz')
     end
-    assert_raise_with_message(SyntaxError, /^    \^~~\z/) do
+    assert_raise_with_message(SyntaxError, /^    \^~~\Z/) do
       eval('1.2i1.1')
     end
-    assert_raise_with_message(SyntaxError, /^   \^~\z/) do
+    assert_raise_with_message(SyntaxError, /^   \^~\Z/) do
       eval('1.2.3')
     end
   end
@@ -1171,7 +1175,7 @@ x = __ENCODING__
   end
 
   def test_location_of_invalid_token
-    assert_raise_with_message(SyntaxError, /^      \^~~\z/) do
+    assert_raise_with_message(SyntaxError, /^      \^~~\Z/) do
       eval('class xxx end')
     end
   end

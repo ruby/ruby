@@ -5581,7 +5581,7 @@ ruby_show_error_line(VALUE errbuf, const YYLTYPE *yylloc, int lineno, VALUE str)
 	    p2 += (lim - ptr);
 	}
 	*p2 = '\0';
-	rb_str_catf(mesg, "%s%.*s%s\n""%s%s",
+	rb_str_catf(mesg, "%s%.*s%s\n""%s%s\n",
 		    pre, (int)len, code, post,
 		    pre, caret);
     }
