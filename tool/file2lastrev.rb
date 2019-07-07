@@ -69,7 +69,8 @@ vcs = nil
           e = '..'
           limit = @limit
           name = branch.sub(/\A(.{#{limit-e.size}}).{#{e.size+1},}/o) {$1+e}
-          "#define RUBY_BRANCH_NAME #{name.dump}"
+          name = name.dump.sub(/\\#/, '#')
+          "#define RUBY_BRANCH_NAME #{name}"
         end,
         if title
           title = title.dump.sub(/\\#/, '#')
