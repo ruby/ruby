@@ -3003,6 +3003,15 @@ k_begin		: keyword_begin
 k_if		: keyword_if
 		    {
 			token_info_push(p, "if", &@$);
+			if (p->token_info && p->token_info->nonspc &&
+			    p->token_info->next && !strcmp(p->token_info->next->token, "if")) {
+			    const char *tok = p->lex.ptok, *beg = p->lex.pbeg;
+			    while (tok > beg && ISSPACE(*--tok));
+			    while (beg < tok && ISSPACE(*beg)) beg++;
+			    if (tok - beg == 3 && !memcmp(beg, "else", 4)) {
+				p->token_info->nonspc = 0;
+			    }
+			}
 		    }
 		;
 

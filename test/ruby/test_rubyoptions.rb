@@ -491,14 +491,17 @@ class TestRubyOptions < Test::Unit::TestCase
           ["begin", "ensure ; end"],
           ["  case nil", "when true; end"],
           ["case nil; when true", "end"],
+          ["if false;", "end", "if true\nelse ", "end"],
         ].each do
-          |b, e = 'end'|
-          src = ["#{b}\n", " #{e}\n"]
+          |b, e = 'end', pre = nil, post = nil|
+          src = ["#{pre}#{b}\n", " #{e}\n#{post}"]
           k = b[/\A\s*(\S+)/, 1]
           e = e[/\A\s*(\S+)/, 1]
+          n = 2
+          n += pre.count("\n") if pre
 
           a.for("no directives with #{b}") do
-            err = ["#{t.path}:2: warning: mismatched indentations at '#{e}' with '#{k}' at 1"]
+            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n-1}"]
             t.rewind
             t.truncate(0)
             t.puts src
@@ -517,7 +520,7 @@ class TestRubyOptions < Test::Unit::TestCase
           end
 
           a.for("false and true directives with #{b}") do
-            err = ["#{t.path}:4: warning: mismatched indentations at '#{e}' with '#{k}' at 3"]
+            err = ["#{t.path}:#{n+2}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n+1}"]
             t.rewind
             t.truncate(0)
             t.puts "# -*- warn-indent: false -*-"
@@ -539,7 +542,7 @@ class TestRubyOptions < Test::Unit::TestCase
           end
 
           a.for("BOM with #{b}") do
-            err = ["#{t.path}:2: warning: mismatched indentations at '#{e}' with '#{k}' at 1"]
+            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n-1}"]
             t.rewind
             t.truncate(0)
             t.print "\u{feff}"
