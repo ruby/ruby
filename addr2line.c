@@ -1092,7 +1092,7 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_uint_value(v, uleb128(&reader->p));
         break;
       case DW_FORM_indirect:
-        /* TODO: read the refered value */
+        /* TODO: read the referred value */
         set_uint_value(v, uleb128(&reader->p));
         break;
       case DW_FORM_sec_offset:
