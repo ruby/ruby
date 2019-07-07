@@ -4385,11 +4385,12 @@ ruby_stack_length(VALUE **p)
 static int
 stack_check(rb_execution_context_t *ec, int water_mark)
 {
-    int ret;
     SET_STACK_END;
-    ret = STACK_LENGTH > STACK_LEVEL_MAX - water_mark;
 
-    return ret;
+    size_t length = STACK_LENGTH;
+    size_t maximum_length = STACK_LEVEL_MAX - water_mark;
+
+    return length > maximum_length;
 }
 #else
 #define stack_check(ec, water_mark) FALSE
