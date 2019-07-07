@@ -72,7 +72,8 @@ vcs = nil
           "#define RUBY_BRANCH_NAME #{name.dump}"
         end,
         if title
-          "#define RUBY_LAST_COMMIT_TITLE #{title.dump}"
+          title = title.dump.sub(/\\#/, '#')
+          "#define RUBY_LAST_COMMIT_TITLE #{title}"
         end,
         if modified
           modified.utc.strftime('#define RUBY_RELEASE_DATETIME "%FT%TZ"')
