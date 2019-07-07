@@ -175,8 +175,8 @@ struct local_vars {
 
 typedef struct token_info {
     const char *token;
-    int linenum;
-    int column;
+    rb_code_position_t beg;
+    int indent;
     int nonspc;
     struct token_info *next;
 } token_info;
@@ -5387,8 +5387,8 @@ setup_token_info(token_info *ptinfo, const char *ptr, const rb_code_location_t *
 	}
     }
 
-    ptinfo->linenum = loc->beg_pos.lineno;
-    ptinfo->column = column;
+    ptinfo->beg = loc->beg_pos;
+    ptinfo->indent = column;
     ptinfo->nonspc = nonspc;
 }
 
@@ -5426,13 +5426,13 @@ token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_b
     if (!p->token_info_enabled) return;
     if (!ptinfo_beg) return;
     setup_token_info(ptinfo_end, p->lex.pbeg, loc);
-    if (ptinfo_beg->linenum == ptinfo_end->linenum) return; /* ignore one-line block */
+    if (ptinfo_beg->beg.lineno == ptinfo_end->beg.lineno) return; /* ignore one-line block */
     if (ptinfo_beg->nonspc || ptinfo_end->nonspc) return; /* ignore keyword in the middle of a line */
-    if (ptinfo_beg->column == ptinfo_end->column) return; /* the indents are matched */
-    if (!same && ptinfo_beg->column < ptinfo_end->column) return;
-    rb_warn3L(ptinfo_end->linenum,
+    if (ptinfo_beg->indent == ptinfo_end->indent) return; /* the indents are matched */
+    if (!same && ptinfo_beg->indent < ptinfo_end->indent) return;
+    rb_warn3L(ptinfo_end->beg.lineno,
 	      "mismatched indentations at '%s' with '%s' at %d",
-	      WARN_S(token), WARN_S(ptinfo_beg->token), WARN_I(ptinfo_beg->linenum));
+	      WARN_S(token), WARN_S(ptinfo_beg->token), WARN_I(ptinfo_beg->beg.lineno));
 }
 
 static int
