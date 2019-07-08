@@ -529,17 +529,14 @@ class TestStringIO < Test::Unit::TestCase
   def test_each
     f = StringIO.new("foo\nbar\nbaz\n")
     assert_equal(["foo\n", "bar\n", "baz\n"], f.each.to_a)
-    f.rewind
-    assert_equal(["foo", "bar", "baz"], f.each(chomp: true).to_a)
+    assert_equal(["foo", "bar", "baz"], f.rewind.each(chomp: true).to_a)
     f = StringIO.new("foo\nbar\n\nbaz\n")
     assert_equal(["foo\nbar\n\n", "baz\n"], f.each("").to_a)
-    f.rewind
-    assert_equal(["foo\nbar\n", "baz"], f.each("", chomp: true).to_a)
+    assert_equal(["foo\nbar\n", "baz"], f.rewind.each("", chomp: true).to_a)
 
     f = StringIO.new("foo\r\nbar\r\n\r\nbaz\r\n")
     assert_equal(["foo\r\nbar\r\n\r\n", "baz\r\n"], f.each("").to_a)
-    f.rewind
-    assert_equal(["foo\r\nbar\r\n", "baz"], f.each("", chomp: true).to_a)
+    assert_equal(["foo\r\nbar\r\n", "baz"], f.rewind.each("", chomp: true).to_a)
   end
 
   def test_putc
@@ -582,20 +579,16 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(ArgumentError) { f.read(1, 2, 3) }
     assert_equal("\u3042\u3044", f.read)
     assert_nil(f.read(1))
-    f.rewind
-    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read(f.size))
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.rewind.read(f.size))
 
     bug5207 = '[ruby-core:39026]'
-    f.rewind
-    assert_equal("\u3042\u3044", f.read(nil, nil), bug5207)
-    f.rewind
+    assert_equal("\u3042\u3044", f.rewind.read(nil, nil), bug5207)
     s = ""
-    assert_same(s, f.read(nil, s))
+    assert_same(s, f.rewind.read(nil, s))
     assert_equal("\u3042\u3044", s, bug5207)
-    f.rewind
     # not empty buffer
     s = "0123456789"
-    assert_same(s, f.read(nil, s))
+    assert_same(s, f.rewind.read(nil, s))
     assert_equal("\u3042\u3044", s)
 
     bug13806 = '[ruby-core:82349] [Bug #13806]'
@@ -611,12 +604,10 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(ArgumentError) { f.readpartial(-1) }
     assert_raise(ArgumentError) { f.readpartial(1, 2, 3) }
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.readpartial(100))
-    f.rewind
-    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.readpartial(f.size))
-    f.rewind
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.rewind.readpartial(f.size))
     # not empty buffer
     s = '0123456789'
-    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.readpartial(f.size, s))
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.rewind.readpartial(f.size, s))
   end
 
   def test_read_nonblock
@@ -625,8 +616,7 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(ArgumentError) { f.read_nonblock(1, 2, 3) }
     assert_equal("\u3042\u3044".force_encoding("BINARY"), f.read_nonblock(100))
     assert_raise(EOFError) { f.read_nonblock(10) }
-    f.rewind
-    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size))
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.rewind.read_nonblock(f.size))
   end
 
   def test_read_nonblock_no_exceptions
@@ -636,12 +626,10 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(ArgumentError) { f.read_nonblock }
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(100, exception: false))
     assert_equal(nil, f.read_nonblock(10, exception: false))
-    f.rewind
-    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size))
-    f.rewind
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.rewind.read_nonblock(f.size))
     # not empty buffer
     s = '0123456789'
-    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size, s))
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.rewind.read_nonblock(f.size, s))
   end
 
   def test_sysread
