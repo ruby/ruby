@@ -8,8 +8,8 @@ describe "StringIO#rewind" do
     @io.lineno = 1
   end
 
-  it "returns 0" do
-    @io.rewind.should eql(0)
+  it "returns self" do
+    @io.rewind.should eql(@io)
   end
 
   it "resets the position" do
