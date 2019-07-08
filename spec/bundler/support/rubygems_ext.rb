@@ -1,11 +1,20 @@
 # frozen_string_literal: true
 
 require "rubygems/user_interaction"
-require "support/path"
+require_relative "path"
 require "fileutils"
 
 module Spec
   module Rubygems
+    DEV_DEPS = {
+      "automatiek" => "~> 0.1.0",
+      "rake" => "~> 12.0",
+      "ronn" => "~> 0.7.3",
+      "rspec" => "~> 3.6",
+      "rubocop" => "= 0.72.0",
+      "rubocop-performance" => "= 1.4.0",
+    }.freeze
+
     DEPS = {
       # artifice doesn't support rack 2.x now.
       "rack" => "< 2.0",
@@ -17,8 +26,32 @@ module Spec
       "rake" => "12.3.2",
       "builder" => "~> 3.2",
       # ruby-graphviz is used by the viz tests
-      "ruby-graphviz" => nil,
+      "ruby-graphviz" => ">= 0.a",
     }.freeze
+
+    def self.dev_setup
+      deps = DEV_DEPS
+
+      # JRuby can't build ronn, so we skip that
+      deps.delete("ronn") if RUBY_ENGINE == "jruby"
+
+      install_gems(deps)
+    end
+
+    def self.gem_load(gem_name, bin_container)
+      gem_activate(gem_name)
+      load Gem.bin_path(gem_name, bin_container)
+    end
+
+    def self.gem_activate(gem_name)
+      gem_requirement = DEV_DEPS[gem_name]
+      gem gem_name, gem_requirement
+    end
+
+    def self.gem_require(gem_name)
+      gem_activate(gem_name)
+      require gem_name
+    end
 
     def self.setup
       Gem.clear_paths
