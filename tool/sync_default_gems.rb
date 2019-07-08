@@ -214,9 +214,9 @@ def sync_default_gems(gem)
     `rm -rf lib/racc* ext/racc test/racc`
     `cp -rf ../racc/lib/racc* lib`
     `mkdir -p ext/racc/cparse`
-    `cp -rf ../racc/ext/racc/* ext/racc/cparse`
-    `rm -rf ext/racc/cparse/MANIFEST ext/racc/cparse/com`
+    `cp -rf ../racc/ext/racc/cparse/* ext/racc/cparse`
     `cp -rf ../racc/test test/racc`
+    `git checkout ext/racc/cparse/README`
   when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "cmath", "mutex_m", "sync"
     sync_lib gem
   else
