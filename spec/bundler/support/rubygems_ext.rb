@@ -6,21 +6,19 @@ require "fileutils"
 
 module Spec
   module Rubygems
-    DEPS = begin
-      {
-        # artifice doesn't support rack 2.x now.
-        "rack" => "< 2.0",
-        "rack-test" => "~> 1.1",
-        "artifice" => "~> 0.6.0",
-        "compact_index" => "~> 0.11.0",
-        "sinatra" => "~> 1.4.7",
-        # Rake version has to be consistent for tests to pass
-        "rake" => "12.3.2",
-        "builder" => "~> 3.2",
-        # ruby-graphviz is used by the viz tests
-        "ruby-graphviz" => nil,
-      }
-    end
+    DEPS = {
+      # artifice doesn't support rack 2.x now.
+      "rack" => "< 2.0",
+      "rack-test" => "~> 1.1",
+      "artifice" => "~> 0.6.0",
+      "compact_index" => "~> 0.11.0",
+      "sinatra" => "~> 1.4.7",
+      # Rake version has to be consistent for tests to pass
+      "rake" => "12.3.2",
+      "builder" => "~> 3.2",
+      # ruby-graphviz is used by the viz tests
+      "ruby-graphviz" => nil,
+    }.freeze
 
     def self.setup
       Gem.clear_paths
