@@ -514,10 +514,15 @@ class Resolv
 
     def fetch_resource(name, typeclass)
       lazy_initialize
-      requester = make_udp_requester
+      begin
+        requester = make_udp_requester
+      rescue Errno::EACCES
+        # fall back to TCP
+      end
       senders = {}
       begin
         @config.resolv(name) {|candidate, tout, nameserver, port|
+          requester ||= make_tcp_requester(nameserver, port)
           msg = Message.new
           msg.rd = 1
           msg.add_question(candidate, typeclass)
@@ -550,7 +555,7 @@ class Resolv
           end
         }
       ensure
-        requester.close
+        requester&.close
       end
     end
 
