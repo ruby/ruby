@@ -905,6 +905,7 @@ PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const char *
 # define compile_error parser_compile_error
 #endif
 
+static void token_info_setup(token_info *ptinfo, const char *ptr, const rb_code_location_t *loc);
 static void token_info_push(struct parser_params*, const char *token, const rb_code_location_t *loc);
 static void token_info_pop(struct parser_params*, const char *token, const rb_code_location_t *loc);
 static void token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, int same, const rb_code_location_t *loc);
@@ -3004,11 +3005,12 @@ k_if		: keyword_if
 		    {
 			token_info_push(p, "if", &@$);
 			if (p->token_info && p->token_info->nonspc &&
-			    p->token_info->next && !strcmp(p->token_info->next->token, "if")) {
-			    const char *tok = p->lex.ptok, *beg = p->lex.pbeg;
-			    while (tok > beg && ISSPACE(*--tok));
+			    p->token_info->next && !strcmp(p->token_info->next->token, "else")) {
+			    const char *tok = p->lex.ptok;
+			    const char *beg = p->lex.pbeg + p->token_info->next->beg.column;
+			    beg += rb_strlen_lit("else");
 			    while (beg < tok && ISSPACE(*beg)) beg++;
-			    if (tok - beg == 3 && !memcmp(beg, "else", 4)) {
+			    if (beg == tok) {
 				p->token_info->nonspc = 0;
 			    }
 			}
@@ -3098,6 +3100,13 @@ k_else		: keyword_else
 			token_info *ptinfo_beg = p->token_info;
 			int same = ptinfo_beg && strcmp(ptinfo_beg->token, "case") != 0;
 			token_info_warn(p, "else", p->token_info, same, &@$);
+			if (same) {
+			    token_info e;
+			    e.next = ptinfo_beg->next;
+			    e.token = "else";
+			    token_info_setup(&e, p->lex.pbeg, &@$);
+			    if (!e.nonspc) *ptinfo_beg = e;
+			}
 		    }
 		;
 
@@ -5383,7 +5392,7 @@ parser_isascii(struct parser_params *p)
 }
 
 static void
-setup_token_info(token_info *ptinfo, const char *ptr, const rb_code_location_t *loc)
+token_info_setup(token_info *ptinfo, const char *ptr, const rb_code_location_t *loc)
 {
     int column = 1, nonspc = 0, i;
     for (i = 0; i < loc->beg_pos.column; i++, ptr++) {
@@ -5410,7 +5419,7 @@ token_info_push(struct parser_params *p, const char *token, const rb_code_locati
     ptinfo = ALLOC(token_info);
     ptinfo->token = token;
     ptinfo->next = p->token_info;
-    setup_token_info(ptinfo, p->lex.pbeg, loc);
+    token_info_setup(ptinfo, p->lex.pbeg, loc);
 
     p->token_info = ptinfo;
 }
@@ -5434,7 +5443,7 @@ token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_b
     token_info ptinfo_end_body, *ptinfo_end = &ptinfo_end_body;
     if (!p->token_info_enabled) return;
     if (!ptinfo_beg) return;
-    setup_token_info(ptinfo_end, p->lex.pbeg, loc);
+    token_info_setup(ptinfo_end, p->lex.pbeg, loc);
     if (ptinfo_beg->beg.lineno == ptinfo_end->beg.lineno) return; /* ignore one-line block */
     if (ptinfo_beg->nonspc || ptinfo_end->nonspc) return; /* ignore keyword in the middle of a line */
     if (ptinfo_beg->indent == ptinfo_end->indent) return; /* the indents are matched */
