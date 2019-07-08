@@ -14,6 +14,7 @@ class CSV
       @output = output
       @options = options
       @lineno = 0
+      @fields_converter = nil
       prepare
       if @options[:write_headers] and @headers
         self << @headers
