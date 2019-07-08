@@ -403,10 +403,10 @@ cont_free(void *ptr)
 	rb_fiber_t *fiber = (rb_fiber_t*)cont;
 #if defined(FIBER_USE_COROUTINE)
 	coroutine_destroy(&fiber->context);
-       if (fiber->ss_sp != NULL) {
-           if (fiber_is_root_p(fiber)) {
-               rb_bug("Illegal root fiber parameter");
-           }
+        if (fiber->ss_sp != NULL) {
+            if (fiber_is_root_p(fiber)) {
+                rb_bug("Illegal root fiber parameter");
+            }
 #ifdef _WIN32
             VirtualFree((void*)fiber->ss_sp, 0, MEM_RELEASE);
 #else
