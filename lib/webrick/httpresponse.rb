@@ -349,12 +349,6 @@ module WEBrick
       end
     end
 
-    def to_s # :nodoc:
-      ret = ""
-      send_response(ret)
-      ret
-    end
-
     ##
     # Redirects to +url+ with a WEBrick::HTTPStatus::Redirect +status+.
     #
