@@ -1447,6 +1447,9 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
     int recur = TRUE;
 
     if (rb_check_arity(argc, 0, 1)) recur = RTEST(argv[0]);
+    if (RB_TYPE_P(obj, T_CLASS) && FL_TEST(obj, FL_SINGLETON)) {
+        rb_singleton_class(obj);
+    }
     klass = CLASS_OF(obj);
     origin = RCLASS_ORIGIN(klass);
     me_arg.list = st_init_numtable();
