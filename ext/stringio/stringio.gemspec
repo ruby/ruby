@@ -3,9 +3,18 @@
 # stub: stringio 0.0.0 ruby lib
 # stub: extconf.rb
 
+source_version = ["", "ext/stringio/"].find do |dir|
+  begin
+    File.open(File.join(__dir__, "#{dir}stringio.c")) {|f|
+      f.gets("\n#define STRINGIO_VERSION ")
+      f.gets[/\s*(".+")/, 1].undump
+    }
+  rescue Errno::ENOENT
+  end
+end
 Gem::Specification.new do |s|
   s.name = "stringio".freeze
-  s.version = "0.0.2"
+  s.version = source_version
 
   s.required_rubygems_version = Gem::Requirement.new(">= 2.6".freeze)
   s.require_paths = ["lib".freeze]
