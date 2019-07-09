@@ -193,6 +193,13 @@ enc/big5.$(OBJEXT): enc/big5.c
 enc/big5.$(OBJEXT): missing.h
 enc/big5.$(OBJEXT): onigmo.h
 enc/big5.$(OBJEXT): oniguruma.h
+enc/cesu_8.$(OBJEXT): $(top_srcdir)/encindex.h
+enc/cesu_8.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/cesu_8.$(OBJEXT): config.h
+enc/cesu_8.$(OBJEXT): defines.h
+enc/cesu_8.$(OBJEXT): enc/cesu_8.c
+enc/cesu_8.$(OBJEXT): missing.h
+enc/cesu_8.$(OBJEXT): onigmo.h
 enc/cp949.$(OBJEXT): $(top_srcdir)/regenc.h
 enc/cp949.$(OBJEXT): config.h
 enc/cp949.$(OBJEXT): defines.h
