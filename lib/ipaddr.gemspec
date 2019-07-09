@@ -17,9 +17,7 @@ Both IPv4 and IPv6 are supported.
   spec.homepage      = "https://github.com/ruby/ipaddr"
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
-  spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "ipaddr.gemspec", "lib/ipaddr.rb"]
-  spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.files         = ["LICENSE.txt", "README.md", "ipaddr.gemspec", "lib/ipaddr.rb"]
   spec.require_paths = ["lib"]
 
   spec.add_development_dependency "bundler", "~> 1.15"
