@@ -4,7 +4,7 @@ require 'test/unit'
 require 'timeout'
 require 'tmpdir'
 require 'tempfile'
-require_relative '../../tool/lib/jit_support'
+require_relative '../lib/jit_support'
 
 class TestRubyOptions < Test::Unit::TestCase
   NO_JIT_DESCRIPTION =

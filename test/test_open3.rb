@@ -2,7 +2,7 @@
 
 require 'test/unit'
 require 'open3'
-require_relative '../tool/lib/jit_support'
+require_relative 'lib/jit_support'
 
 class TestOpen3 < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
