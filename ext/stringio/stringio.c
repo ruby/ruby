@@ -11,6 +11,8 @@
 
 **********************************************************************/
 
+#define STRINGIO_VERSION "0.0.2"
+
 #include "ruby.h"
 #include "ruby/io.h"
 #include "ruby/encoding.h"
@@ -1628,6 +1630,8 @@ Init_stringio(void)
 {
 #undef rb_intern
     VALUE StringIO = rb_define_class("StringIO", rb_cData);
+
+    rb_define_const(StringIO, "VERSION", rb_str_new_cstr(STRINGIO_VERSION));
 
     rb_include_module(StringIO, rb_mEnumerable);
     rb_define_alloc_func(StringIO, strio_s_allocate);
