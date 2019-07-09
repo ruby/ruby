@@ -335,6 +335,32 @@ env:
       # Disabling -j3 because it seems to cause a hang on building Ruby: https://travis-ci.org/ruby/ruby/jobs/471021727
       - JOBS=
 
+  - &dependency
+    name: Check dependencies in makefiles
+    <<: *linux
+    language: ruby
+    addons:
+      apt:
+        packages:
+    before_install:
+    install:
+    before_script:
+      - "> config.status"
+      - "> .rbconfig.time"
+      - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
+      - make touch-unicode-files
+      - make -s $JOBS $UPDATE_UNICODE up
+      - make -s $JOBS srcs
+      - rm -f config.status Makefile rbconfig.rb .rbconfig.time
+      - $SETARCH ./configure -C --disable-install-doc --prefix=$RUBY_PREFIX --disable-rubygems 'optflags=-O0' 'debugflags=-save-temps=obj -g'
+      - ruby tool/update-deps --fix
+    script:
+      - git diff --no-ext-diff --ignore-submodules --exit-code
+    after_failure:
+      - echo "Dependencies need to update"
+    env:
+      - CONFIG_FLAG=
+
 matrix:
   include:
     # to reduce time for finishing all jobs, run the slowest osx build first.
@@ -354,6 +380,7 @@ matrix:
     - <<: *NO_THREADED_CODE
     - <<: *baseruby
     - <<: *rubyspec
+    - <<: *dependency
   allow_failures:
     - name: -fsanitize=address
     - name: -fsanitize=memory
