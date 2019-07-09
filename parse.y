@@ -8845,7 +8845,6 @@ parser_yylex(struct parser_params *p)
 	return '=';
 
       case '<':
-	last_state = p->lex.state;
 	c = nextc(p);
 	if (c == '<' &&
 	    !IS_lex_state(EXPR_DOT | EXPR_CLASS) &&
