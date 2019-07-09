@@ -807,25 +807,22 @@ strio_ungetbyte(VALUE self, VALUE c)
     struct StringIO *ptr = readable(self);
 
     check_modifiable(ptr);
-    switch (TYPE(c)) {
-      case T_NIL:
-        return Qnil;
-      case T_FIXNUM:
-      case T_BIGNUM: ;
+    if (NIL_P(c)) return Qnil;
+    if (RB_INTEGER_TYPE_P(c)) {
         /* rb_int_and() not visible from exts */
         VALUE v = rb_funcall(c, '&', 1, INT2FIX(0xff));
         const char cc = NUM2INT(v) & 0xFF;
         strio_unget_bytes(ptr, &cc, 1);
-        return Qnil;
-      default:
-        SafeStringValue(c);
     }
-
-    const char *cp = RSTRING_PTR(c);
-    long cl = RSTRING_LEN(c);
-    if (cl == 0) return Qnil;
-    strio_unget_bytes(ptr, cp, cl);
-    RB_GC_GUARD(c);
+    else {
+	long cl;
+	SafeStringValue(c);
+	cl = RSTRING_LEN(c);
+	if (cl > 0) {
+	    strio_unget_bytes(ptr, RSTRING_PTR(c), cl);
+	    RB_GC_GUARD(c);
+	}
+    }
     return Qnil;
 }
 
