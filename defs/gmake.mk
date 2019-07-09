@@ -250,7 +250,7 @@ $(MJIT_MIN_HEADER): $(mjit_min_headers) $(PREP)
 
 endif
 
-ifeq ($(if $(wildcard $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)),,\
+ifeq ($(if $(wildcard $(filter-out .,$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES))),,\
 	   $(wildcard $(srcdir)/lib/unicode_normalize/tables.rb)),)
 # Needs the dependency when any Unicode data file exists, or
 # normalization tables script doesn't.  Otherwise, when the target
