@@ -436,7 +436,7 @@ enum_size_over_p(VALUE obj, long n)
  *
  *     [:foo, :bar].filter { |x| x == :foo }   #=> [:foo]
  *
- *  See also Enumerable#reject.
+ *  See also Enumerable#reject, Enumerable#grep.
  */
 
 static VALUE
