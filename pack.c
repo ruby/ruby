@@ -286,8 +286,10 @@ VALUE_to_float(VALUE obj)
  *   u            | String  | UU-encoded string
  *   M            | String  | quoted printable, MIME encoding (see also RFC2045)
  *                |         | (text mode but input must use LF and output LF)
- *   m            | String  | base64 encoded string (see RFC 2045, count is width)
+ *   m            | String  | base64 encoded string (see RFC 2045)
  *                |         | (if count is 0, no line feed are added, see RFC 4648)
+ *                |         | (count specifies input bytes between each LF,
+ *                |         | rounded down to nearest multiple of 3)
  *   P            | String  | pointer to a structure (fixed-length string)
  *   p            | String  | pointer to a null-terminated string
  *
