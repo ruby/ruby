@@ -7,8 +7,7 @@ bundle = enable_config('bundled-libffi')
 if ! bundle
   dir_config 'libffi'
 
-  pkg_config("libffi") and
-    ver = pkg_config("libffi", "modversion")
+  pkg_config("libffi")
 
   if have_header(ffi_header = 'ffi.h')
     true
@@ -28,20 +27,20 @@ begin
     Dir.glob("#{$srcdir}/libffi-*/").each{|dir| FileUtils.rm_rf(dir)}
     extlibs.run(["--cache=#{cache_dir}", ext_dir])
   end
-  ver = bundle != false &&
+  libffi_dir = bundle != false &&
         Dir.glob("#{$srcdir}/libffi-*/")
         .map {|n| File.basename(n)}
         .max_by {|n| n.scan(/\d+/).map(&:to_i)}
-  unless ver
+  unless libffi_dir
     raise "missing libffi. Please install libffi."
   end
 
-  srcdir = "#{$srcdir}/#{ver}"
+  srcdir = "#{$srcdir}/#{libffi_dir}"
   ffi_header = 'ffi.h'
   libffi = Struct.new(*%I[dir srcdir builddir include lib a cflags ldflags opt arch]).new
-  libffi.dir = ver
+  libffi.dir = libffi_dir
   if $srcdir == "."
-    libffi.builddir = "#{ver}/#{RUBY_PLATFORM}"
+    libffi.builddir = "#{libffi_dir}/#{RUBY_PLATFORM}"
     libffi.srcdir = "."
   else
     libffi.builddir = libffi.dir
@@ -52,7 +51,6 @@ begin
   libffi.a = "#{libffi.lib}/libffi_convenience.#{$LIBEXT}"
   nowarn = CONFIG.merge("warnflags"=>"")
   libffi.cflags = RbConfig.expand("$(CFLAGS)".dup, nowarn)
-  ver = ver[/libffi-(.*)/, 1]
 
   FileUtils.mkdir_p(libffi.dir)
   libffi.opt = CONFIG['configure_args'][/'(-C)'/, 1]
@@ -110,12 +108,6 @@ begin
     FileUtils.cp("#{srcdir}/src/x86/ffitarget.h", libffi.include, preserve: true)
   end
   $INCFLAGS << " -I" << libffi.include
-end
-
-if ver
-  ver = ver.gsub(/-rc\d+/, '') # If ver contains rc version, just ignored.
-  ver = (ver.split('.') + [0,0])[0,3]
-  $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % ver }})
 end
 
 have_header 'sys/mman.h'

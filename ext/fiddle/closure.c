@@ -13,25 +13,11 @@ typedef struct {
     ffi_type **argv;
 } fiddle_closure;
 
-#if defined(USE_FFI_CLOSURE_ALLOC)
-#elif defined(__OpenBSD__) || defined(__APPLE__) || defined(__linux__)
-# define USE_FFI_CLOSURE_ALLOC 0
-#elif defined(RUBY_LIBFFI_MODVERSION) && RUBY_LIBFFI_MODVERSION < 3000005 && \
-	(defined(__i386__) || defined(__x86_64__) || defined(_M_IX86) || defined(_M_AMD64))
-# define USE_FFI_CLOSURE_ALLOC 0
-#else
-# define USE_FFI_CLOSURE_ALLOC 1
-#endif
-
 static void
 dealloc(void * ptr)
 {
     fiddle_closure * cls = (fiddle_closure *)ptr;
-#if USE_FFI_CLOSURE_ALLOC
     ffi_closure_free(cls->pcl);
-#else
-    munmap(cls->pcl, sizeof(*cls->pcl));
-#endif
     if (cls->argv) xfree(cls->argv);
     xfree(cls);
 }
@@ -205,12 +191,7 @@ allocate(VALUE klass)
     VALUE i = TypedData_Make_Struct(klass, fiddle_closure,
 	    &closure_data_type, closure);
 
-#if USE_FFI_CLOSURE_ALLOC
     closure->pcl = ffi_closure_alloc(sizeof(ffi_closure), &closure->code);
-#else
-    closure->pcl = mmap(NULL, sizeof(ffi_closure), PROT_READ | PROT_WRITE,
-        MAP_ANON | MAP_PRIVATE, -1, 0);
-#endif
 
     return i;
 }
@@ -257,17 +238,8 @@ initialize(int rbargc, VALUE argv[], VALUE self)
     if (FFI_OK != result)
 	rb_raise(rb_eRuntimeError, "error prepping CIF %d", result);
 
-#if USE_FFI_CLOSURE_ALLOC
     result = ffi_prep_closure_loc(pcl, cif, callback,
 		(void *)self, cl->code);
-#else
-    result = ffi_prep_closure(pcl, cif, callback, (void *)self);
-    cl->code = (void *)pcl;
-    i = mprotect(pcl, sizeof(*pcl), PROT_READ | PROT_EXEC);
-    if (i) {
-	rb_sys_fail("mprotect");
-    }
-#endif
 
     if (FFI_OK != result)
 	rb_raise(rb_eRuntimeError, "error prepping closure %d", result);
