@@ -52,6 +52,8 @@ char *getenv();
 #endif
 char *getlogin();
 
+#define RUBY_ETC_VERSION "1.0.1"
+
 #include "constdefs.h"
 
 /* call-seq:
@@ -1062,6 +1064,7 @@ Init_etc(void)
     VALUE mEtc;
 
     mEtc = rb_define_module("Etc");
+    rb_define_const(mEtc, "VERSION", rb_str_new_cstr(RUBY_ETC_VERSION));
     init_constants(mEtc);
 
     rb_define_module_function(mEtc, "getlogin", etc_getlogin, 0);
