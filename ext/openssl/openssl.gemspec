@@ -21,27 +21,9 @@ Gem::Specification.new do |s|
   s.rubygems_version = "3.0.0.beta1".freeze
   s.summary = "OpenSSL provides SSL, TLS and general purpose cryptography.".freeze
 
-  if s.respond_to? :specification_version then
-    s.specification_version = 4
-
-    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<ipaddr>.freeze, [">= 0"])
-      s.add_development_dependency(%q<rake>.freeze, [">= 0"])
-      s.add_development_dependency(%q<rake-compiler>.freeze, [">= 0"])
-      s.add_development_dependency(%q<test-unit>.freeze, ["~> 3.0"])
-      s.add_development_dependency(%q<rdoc>.freeze, [">= 0"])
-    else
-      s.add_dependency(%q<ipaddr>.freeze, [">= 0"])
-      s.add_dependency(%q<rake>.freeze, [">= 0"])
-      s.add_dependency(%q<rake-compiler>.freeze, [">= 0"])
-      s.add_dependency(%q<test-unit>.freeze, ["~> 3.0"])
-      s.add_dependency(%q<rdoc>.freeze, [">= 0"])
-    end
-  else
-    s.add_dependency(%q<ipaddr>.freeze, [">= 0"])
-    s.add_dependency(%q<rake>.freeze, [">= 0"])
-    s.add_dependency(%q<rake-compiler>.freeze, [">= 0"])
-    s.add_dependency(%q<test-unit>.freeze, ["~> 3.0"])
-    s.add_dependency(%q<rdoc>.freeze, [">= 0"])
-  end
+  s.add_runtime_dependency(%q<ipaddr>.freeze, [">= 0"])
+  s.add_development_dependency(%q<rake>.freeze, [">= 0"])
+  s.add_development_dependency(%q<rake-compiler>.freeze, [">= 0"])
+  s.add_development_dependency(%q<test-unit>.freeze, ["~> 3.0"])
+  s.add_development_dependency(%q<rdoc>.freeze, [">= 0"])
 end
