@@ -49,6 +49,19 @@ class Gem::S3URISigner
     credential_info = "#{date}/#{s3_config.region}/s3/aws4_request"
     canonical_host = "#{uri.host}.s3.#{s3_config.region}.amazonaws.com"
 
+    uri.query = generate_canonical_query_params(s3_config, date_time, credential_info, expiration)
+    canonical_request = generate_canonical_request(canonical_host)
+    string_to_sign = generate_string_to_sign(date_time, credential_info, canonical_request)
+    signature = generate_signature(s3_config, date, string_to_sign)
+
+    URI.parse("https://#{canonical_host}#{uri.path}?#{uri.query}&X-Amz-Signature=#{signature}")
+  end
+
+  private
+
+  S3Config = Struct.new :access_key_id, :secret_access_key, :security_token, :region
+
+  def generate_canonical_query_params(s3_config, date_time, credential_info, expiration)
     canonical_params = {}
     canonical_params["X-Amz-Algorithm"] = "AWS4-HMAC-SHA256"
     canonical_params["X-Amz-Credential"] = "#{s3_config.access_key_id}/#{credential_info}"
@@ -58,39 +71,39 @@ class Gem::S3URISigner
     canonical_params["X-Amz-Security-Token"] = s3_config.security_token if s3_config.security_token
 
     # Sorting is required to generate proper signature
-    query_params = canonical_params.sort.to_h.map do |key, value|
+    canonical_params.sort.to_h.map do |key, value|
       "#{base64_uri_escape(key)}=#{base64_uri_escape(value)}"
     end.join("&")
+  end
 
-    canonical_request = [
+  def generate_canonical_request(canonical_host)
+    [
       "GET",
       uri.path,
-      query_params,
+      uri.query,
       "host:#{canonical_host}",
       "", # empty params
       "host",
       "UNSIGNED-PAYLOAD",
     ].join("\n")
+  end
 
-    string_to_sign = [
+  def generate_string_to_sign(date_time, credential_info, canonical_request)
+    [
       "AWS4-HMAC-SHA256",
       date_time,
       credential_info,
       Digest::SHA256.hexdigest(canonical_request)
     ].join("\n")
+  end
 
+  def generate_signature(s3_config, date, string_to_sign)
     date_key = OpenSSL::HMAC.digest("sha256", "AWS4" + s3_config.secret_access_key, date)
     date_region_key = OpenSSL::HMAC.digest("sha256", date_key, s3_config.region)
     date_region_service_key = OpenSSL::HMAC.digest("sha256", date_region_key, "s3")
     signing_key = OpenSSL::HMAC.digest("sha256", date_region_service_key, "aws4_request")
-    signature = OpenSSL::HMAC.hexdigest("sha256", signing_key, string_to_sign)
-
-    URI.parse("https://#{canonical_host}#{uri.path}?#{query_params}&X-Amz-Signature=#{signature}")
+    OpenSSL::HMAC.hexdigest("sha256", signing_key, string_to_sign)
   end
-
-  private
-
-  S3Config = Struct.new :access_key_id, :secret_access_key, :security_token, :region
 
   ##
   # Extracts S3 configuration for S3 bucket
@@ -111,9 +124,7 @@ class Gem::S3URISigner
       secret = ENV["AWS_SECRET_ACCESS_KEY"]
       security_token = ENV["AWS_SESSION_TOKEN"]
     when "instance_profile"
-      require "json"
-      credentials_response = ec2_metadata
-      credentials = JSON.parse(credentials_response)
+      credentials = ec2_metadata_credentials_json
       id = credentials["AccessKeyId"]
       secret = credentials["SecretAccessKey"]
       security_token = credentials["Token"]
@@ -133,20 +144,20 @@ class Gem::S3URISigner
     str.gsub("\n", "").gsub(/[\+\/=]/) { |c| BASE64_URI_TRANSLATE[c] }
   end
 
-  def ec2_metadata
+  def ec2_metadata_credentials_json
     require 'net/http'
     require 'rubygems/request'
     require 'rubygems/request/connection_pools'
+    require 'json'
 
     metadata_uri = URI(EC2_METADATA_CREDENTIALS)
-
     @request_pool ||= create_request_pool(metadata_uri)
     request = Gem::Request.new(metadata_uri, Net::HTTP::Get, nil, @request_pool)
     response = request.fetch
 
     case response
     when Net::HTTPOK then
-      response.body
+      JSON.parse(response.body)
     else
       raise InstanceProfileError.new("Unable to fetch AWS credentials from #{metadata_uri}: #{response.message} #{response.code}")
     end
