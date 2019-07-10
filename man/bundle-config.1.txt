@@ -179,7 +179,7 @@ LIST OF AVAILABLE KEYS
 
        o   cache_path  (BUNDLE_CACHE_PATH):  The  directory  that bundler will
 	   place cached gems in when running bundle package, and that  bundler
-	   will look in when installing gems. Defaults to vendor/bundle.
+	   will look in when installing gems. Defaults to vendor/cache.
 
        o   clean (BUNDLE_CLEAN): Whether Bundler should run bundle clean auto-
 	   matically after bundle install.
@@ -209,10 +209,6 @@ LIST OF AVAILABLE KEYS
        o   disable_multisource (BUNDLE_DISABLE_MULTISOURCE):  When  set,  Gem-
 	   files  containing  multiple	sources will produce errors instead of
 	   warnings. Use bundle config unset disable_multisource to unset.
-
-       o   disable_platform_warnings (BUNDLE_DISABLE_PLATFORM_WARNINGS):  Dis-
-	   able  warnings during bundle install when a dependency is unused on
-	   the current platform.
 
        o   disable_shared_gems (BUNDLE_DISABLE_SHARED_GEMS): Stop Bundler from
 	   accessing gems installed to RubyGems' normal location.
@@ -522,4 +518,4 @@ CONFIGURE BUNDLER DIRECTORIES
 
 
 
-				   May 2019		      BUNDLE-CONFIG(1)
+				  August 2019		      BUNDLE-CONFIG(1)

@@ -105,7 +105,7 @@ RSpec.describe "The library itself" do
   end
 
   it "has no malformed whitespace" do
-    exempt = /\.gitmodules|\.marshal|fixtures|vendor|LICENSE|vcr_cassettes|rbreadline\.diff/
+    exempt = /\.gitmodules|\.marshal|fixtures|vendor|LICENSE|vcr_cassettes|rbreadline\.diff|\.txt$/
     error_messages = []
     Dir.chdir(root) do
       files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z`
@@ -132,7 +132,7 @@ RSpec.describe "The library itself" do
   end
 
   it "does not include any leftover debugging or development mechanisms" do
-    exempt = %r{quality_spec.rb|support/helpers|vcr_cassettes|\.md|\.ronn}
+    exempt = %r{quality_spec.rb|support/helpers|vcr_cassettes|\.md|\.ronn|\.txt|\.5|\.1}
     error_messages = []
     Dir.chdir(root) do
       files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z`
@@ -253,9 +253,8 @@ RSpec.describe "The library itself" do
 
   it "ships the correct set of files", :ruby_repo do
     Dir.chdir(root) do
-      git_list = IO.popen("git ls-files -z", &:read).split("\x0").select {|f| f.match(%r{^(lib|exe)/}) }
+      git_list = IO.popen("git ls-files -z", &:read).split("\x0").select {|f| f.match(%r{^(lib|man|exe)/}) }
       git_list += %w[CHANGELOG.md LICENSE.md README.md bundler.gemspec]
-      git_list += Dir.glob("man/**/*")
 
       gem_list = Gem::Specification.load(gemspec.to_s).files
 
