@@ -1383,18 +1383,21 @@ module FileUtils
         end
       when symlink?
         File.symlink File.readlink(path()), dest
-      when chardev?
-        raise "cannot handle device file" unless File.respond_to?(:mknod)
-        mknod dest, ?c, 0666, lstat().rdev
-      when blockdev?
-        raise "cannot handle device file" unless File.respond_to?(:mknod)
-        mknod dest, ?b, 0666, lstat().rdev
+      when chardev?, blockdev?
+        raise "cannot handle device file"
       when socket?
-        raise "cannot handle socket" unless File.respond_to?(:mknod)
-        mknod dest, nil, lstat().mode, 0
+        begin
+          require 'socket'
+        rescue LoadError
+          raise "cannot handle socket"
+        else
+          raise "cannot handle socket" unless defined?(UNIXServer)
+        end
+        UNIXServer.new(dest).close
+        File.chmod lstat().mode, dest
       when pipe?
         raise "cannot handle FIFO" unless File.respond_to?(:mkfifo)
-        mkfifo dest, 0666
+        File.mkfifo dest, lstat().mode
       when door?
         raise "cannot handle door: #{path()}"
       else

@@ -440,6 +440,34 @@ class TestFileUtils < Test::Unit::TestCase
     }
   end if have_symlink? and !no_broken_symlink?
 
+  def test_cp_r_fifo
+    Dir.mkdir('tmp/cpr_src')
+    File.mkfifo 'tmp/cpr_src/fifo', 0600
+    cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
+    assert_equal(true, File.pipe?('tmp/cpr_dest/fifo'))
+  end if File.respond_to?(:mkfifo)
+
+  def test_cp_r_dev
+    devs = Dir['/dev/*']
+    chardev = Dir['/dev/*'].find{|f| File.chardev?(f)}
+    blockdev = Dir['/dev/*'].find{|f| File.blockdev?(f)}
+    Dir.mkdir('tmp/cpr_dest')
+    assert_raise(RuntimeError) { cp_r chardev, 'tmp/cpr_dest/cd' }
+    assert_raise(RuntimeError) { cp_r blockdev, 'tmp/cpr_dest/bd' }
+  end
+
+  begin
+    require 'socket'
+  rescue LoadError
+  else
+    def test_cp_r_socket
+      Dir.mkdir('tmp/cpr_src')
+      UNIXServer.new('tmp/cpr_src/socket').close
+      cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
+      assert_equal(true, File.socket?('tmp/cpr_dest/socket'))
+    end if defined?(UNIXServer)
+  end
+
   def test_cp_r_pathname
     # pathname
     touch 'tmp/cprtmp'
