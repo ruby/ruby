@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-BINSTUBS" "1" "March 2019" "" ""
+.TH "BUNDLE\-BINSTUBS" "1" "August 2019" "" ""
 .
 .SH "NAME"
 \fBbundle\-binstubs\fR \- Install the binstubs of the listed gems
@@ -10,7 +10,7 @@
 \fBbundle binstubs\fR \fIGEM_NAME\fR [\-\-force] [\-\-path PATH] [\-\-standalone]
 .
 .SH "DESCRIPTION"
-Binstubs are scripts that wrap around executables\. Bundler creates a small Ruby file (a binstub) that loads Bundler, runs the command, and puts it into \fBbin/\fR\. Binstubs are a shortcut\-or alternative\- to always using \fBbundle exec\fR\. This gives you a file that can by run directly, and one that will always run the correct gem version used by the application\.
+Binstubs are scripts that wrap around executables\. Bundler creates a small Ruby file (a binstub) that loads Bundler, runs the command, and puts it into \fBbin/\fR\. Binstubs are a shortcut\-or alternative\- to always using \fBbundle exec\fR\. This gives you a file that can be run directly, and one that will always run the correct gem version used by the application\.
 .
 .P
 For example, if you run \fBbundle binstubs rspec\-core\fR, Bundler will create the file \fBbin/rspec\fR\. That file will contain enough code to load Bundler, tell it to load the bundled gems, and then run rspec\.

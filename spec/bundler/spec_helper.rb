@@ -22,8 +22,6 @@ end
 
 $debug = false
 
-Spec::Manpages.setup unless Gem.win_platform?
-
 module Gem
   def self.ruby=(ruby)
     @ruby = ruby
