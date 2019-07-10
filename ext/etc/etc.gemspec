@@ -1,8 +1,19 @@
 # frozen_string_literal: true
 
+version = ["", "ext/etc/"].find do |dir|
+  begin
+    break File.open(File.expand_path("../#{dir}/etc.c", __FILE__)) do |f|
+      f.gets "\n#define RUBY_ETC_VERSION "
+      f.gets[/"(.+)"/, 1]
+    end
+  rescue
+    next
+  end
+end
+
 Gem::Specification.new do |spec|
   spec.name          = "etc"
-  spec.version       = "1.0.1"
+  spec.version       = version
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
