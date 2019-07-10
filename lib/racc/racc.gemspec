@@ -20,24 +20,8 @@ Gem::Specification.new do |s|
   s.rubygems_version = "3.1.0.pre1".freeze
   s.summary = "Racc is a LALR(1) parser generator".freeze
 
-  if s.respond_to? :specification_version then
-    s.specification_version = 4
-
-    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_development_dependency(%q<rake-compiler>.freeze, [">= 0.4.1"])
-      s.add_development_dependency(%q<minitest>.freeze, ["~> 4.7"])
-      s.add_development_dependency(%q<rdoc>.freeze, [">= 4.0", "< 7"])
-      s.add_development_dependency(%q<hoe>.freeze, ["~> 3.18"])
-    else
-      s.add_dependency(%q<rake-compiler>.freeze, [">= 0.4.1"])
-      s.add_dependency(%q<minitest>.freeze, ["~> 4.7"])
-      s.add_dependency(%q<rdoc>.freeze, [">= 4.0", "< 7"])
-      s.add_dependency(%q<hoe>.freeze, ["~> 3.18"])
-    end
-  else
-    s.add_dependency(%q<rake-compiler>.freeze, [">= 0.4.1"])
-    s.add_dependency(%q<minitest>.freeze, ["~> 4.7"])
-    s.add_dependency(%q<rdoc>.freeze, [">= 4.0", "< 7"])
-    s.add_dependency(%q<hoe>.freeze, ["~> 3.18"])
-  end
+  s.add_development_dependency(%q<rake-compiler>.freeze, [">= 0.4.1"])
+  s.add_development_dependency(%q<minitest>.freeze, ["~> 4.7"])
+  s.add_development_dependency(%q<rdoc>.freeze, [">= 4.0", "< 7"])
+  s.add_development_dependency(%q<hoe>.freeze, ["~> 3.18"])
 end
