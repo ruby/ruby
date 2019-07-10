@@ -7,27 +7,21 @@ Gem::Specification.new do |spec|
   spec.email         = ["matz@ruby-lang.org"]
 
   spec.summary       = %q{Provides access to information typically stored in UNIX /etc directory.}
-  spec.description   = %q{Provides access to information typically stored in UNIX /etc directory.}
+  spec.description   = spec.summary
   spec.homepage      = "https://github.com/ruby/etc"
   spec.license       = "BSD-2-Clause"
 
   spec.files         = %w[
-    .gitignore
-    .travis.yml
-    Gemfile
     LICENSE.txt
     README.md
-    Rakefile
-    bin/console
-    bin/setup
-    etc.gemspec
+    ext/etc/constdefs.h
     ext/etc/etc.c
     ext/etc/extconf.rb
     ext/etc/mkconstants.rb
+    stub/etc.rb
     test/etc/test_etc.rb
   ]
   spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
   spec.extensions    = %w{ext/etc/extconf.rb}
 
