@@ -60,7 +60,10 @@ Executing bundle with the \fBBUNDLE_IGNORE_CONFIG\fR environment variable set wi
 Executing \fBbundle config set disable_multisource true\fR upgrades the warning about the Gemfile containing multiple primary sources to an error\. Executing \fBbundle config unset disable_multisource\fR downgrades this error to a warning\.
 .
 .SH "REMEMBERING OPTIONS"
-Flags passed to \fBbundle install\fR or the Bundler runtime, such as \fB\-\-path foo\fR or \fB\-\-without production\fR, are not remembered between commands\. If these options must be remembered, they must be set using \fBbundle config\fR (e\.g\., \fBbundle config set path foo\fR)\.
+Flags passed to \fBbundle install\fR or the Bundler runtime, such as \fB\-\-path foo\fR or \fB\-\-without production\fR, are remembered between commands and saved to your local application\'s configuration (normally, \fB\./\.bundle/config\fR)\.
+.
+.P
+However, this will be changed in bundler 3, so it\'s better not to rely on this behavior\. If these options must be remembered, it\'s better to set them using \fBbundle config\fR (e\.g\., \fBbundle config set path foo\fR)\.
 .
 .P
 The options that can be configured are:
