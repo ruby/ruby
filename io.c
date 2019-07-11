@@ -2984,7 +2984,7 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
     io_set_read_length(str, n, shrinkable);
 
     if (n == 0) {
-	if (!ex) return Qnil;
+        if (!ex) return Qnil;
 	rb_eof_error();
     }
 
@@ -3016,7 +3016,7 @@ io_write_nonblock(VALUE io, VALUE str, VALUE ex)
     if (n < 0) {
 	int e = errno;
 	if (e == EWOULDBLOCK || e == EAGAIN) {
-	    if (!ex) {
+            if (!ex) {
 		return sym_wait_writable;
 	    }
 	    else {
@@ -12215,12 +12215,12 @@ argf_getpartial(int argc, VALUE *argv, VALUE argf, VALUE opts, int nonblock)
     }
     if (NIL_P(tmp)) {
         if (ARGF.next_p == -1) {
-	    return io_nonblock_eof(no_exception);
+            return io_nonblock_eof(no_exception);
         }
         argf_close(argf);
         ARGF.next_p = 1;
         if (RARRAY_LEN(ARGF.argv) == 0) {
-	    return io_nonblock_eof(no_exception);
+            return io_nonblock_eof(no_exception);
 	}
         if (NIL_P(str))
             str = rb_str_new(NULL, 0);
