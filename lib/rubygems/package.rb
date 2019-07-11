@@ -100,6 +100,11 @@ class Gem::Package
   attr_reader :files
 
   ##
+  # Reference to the gem being packaged.
+
+  attr_reader :gem
+
+  ##
   # The security policy used for verifying the contents of this package.
 
   attr_accessor :security_policy
