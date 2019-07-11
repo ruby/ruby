@@ -2572,7 +2572,7 @@ opts_exception_p(VALUE opts)
     if (!kwds[0]) {
         kwds[0] = rb_intern_const("exception");
     }
-    rb_get_kwargs(opts, kwds, 0, 1, &exception);
+    if (!rb_get_kwargs(opts, kwds, 0, 1, &exception)) return 1;
     switch (exception) {
       case Qtrue: case Qfalse:
         break;
