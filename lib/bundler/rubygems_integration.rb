@@ -314,19 +314,6 @@ module Bundler
       end
     end
 
-    # RubyGems-generated binstubs call Kernel#gem
-    def binstubs_call_gem?
-      !provides?(">= 2.5.2")
-    end
-
-    # only 2.5.2+ has all of the stub methods we want to use, and since this
-    # is a performance optimization _only_,
-    # we'll restrict ourselves to the most
-    # recent RG versions instead of all versions that have stubs
-    def stubs_provide_full_functionality?
-      provides?(">= 2.5.2")
-    end
-
     def replace_gem(specs, specs_by_name)
       reverse_rubygems_kernel_mixin
 
@@ -335,7 +322,6 @@ module Bundler
       kernel = (class << ::Kernel; self; end)
       [kernel, ::Kernel].each do |kernel_class|
         redefine_method(kernel_class, :gem) do |dep, *reqs|
-          executables ||= specs.map(&:executables).flatten if ::Bundler.rubygems.binstubs_call_gem?
           if executables && executables.include?(File.basename(caller.first.split(":").first))
             break
           end
