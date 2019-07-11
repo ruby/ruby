@@ -2578,7 +2578,7 @@ opts_exception_p(VALUE opts)
         break;
       default:
         rb_raise(rb_eArgError, "true or false is expected as exception: %+"PRIsVALUE,
-                 flagname, obj);
+                 obj);
     }
     return exception != Qfalse;
 }
