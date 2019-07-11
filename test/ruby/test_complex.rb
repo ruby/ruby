@@ -868,6 +868,12 @@ class Complex_Test < Test::Unit::TestCase
 
   end
 
+  def test_Complex_with_invalid_exception
+    assert_raise(ArgumentError) {
+      Complex("0", exception: 1)
+    }
+  end
+
   def test_Complex_without_exception
     assert_nothing_raised(ArgumentError){
       assert_equal(nil, Complex('5x', exception: false))

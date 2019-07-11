@@ -3330,17 +3330,30 @@ rb_Integer(VALUE val)
     return rb_convert_to_integer(val, 0, TRUE);
 }
 
-static int
-opts_exception_p(VALUE opts)
+int
+rb_bool_expected(VALUE obj, const char *flagname)
 {
-    static ID kwds[1];
-    VALUE exception;
-    if (!kwds[0]) {
-        kwds[0] = idException;
+    switch (obj) {
+      case Qtrue: case Qfalse:
+        break;
+      default:
+        rb_raise(rb_eArgError, "true or false is expected as %s: %+"PRIsVALUE,
+                 flagname, obj);
     }
-    rb_get_kwargs(opts, kwds, 0, 1, &exception);
-    return exception != Qfalse;
+    return obj != Qfalse;
 }
+
+int
+rb_opts_exception_p(VALUE opts, int default_value)
+{
+    static ID kwds[1] = {idException};
+    VALUE exception;
+    if (rb_get_kwargs(opts, kwds, 0, 1, &exception))
+        return rb_bool_expected(exception, "exception");
+    return default_value;
+}
+
+#define opts_exception_p(opts) rb_opts_exception_p((opts), TRUE)
 
 /*
  *  call-seq:

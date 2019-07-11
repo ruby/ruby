@@ -193,6 +193,12 @@ class TestInteger < Test::Unit::TestCase
   end
 
   def test_Integer_with_exception_keyword
+    assert_raise(ArgumentError) {
+      Integer("0", exception: 1)
+    }
+  end
+
+  def test_Integer_with_exception_keyword
     assert_nothing_raised(ArgumentError) {
       assert_equal(nil, Integer("1z", exception: false))
     }

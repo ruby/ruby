@@ -574,13 +574,7 @@ nurat_f_rational(int argc, VALUE *argv, VALUE klass)
         a2 = Qundef;
     }
     if (!NIL_P(opts)) {
-        static ID kwds[1];
-        VALUE exception;
-        if (!kwds[0]) {
-            kwds[0] = idException;
-        }
-        rb_get_kwargs(opts, kwds, 0, 1, &exception);
-        raise = (exception != Qfalse);
+        raise = rb_opts_exception_p(opts, raise);
     }
     return nurat_convert(rb_cRational, a1, a2, raise);
 }

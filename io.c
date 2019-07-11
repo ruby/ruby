@@ -171,7 +171,6 @@ VALUE rb_default_rs;
 
 static VALUE argf;
 
-#define id_exception idException
 static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding;
 static VALUE sym_mode, sym_perm, sym_flags, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode, sym_autoclose;
@@ -2793,18 +2792,10 @@ read_internal_locktmp(VALUE str, struct io_internal_read_struct *iis)
     return (long)rb_str_locktmp_ensure(str, read_internal_call, (VALUE)iis);
 }
 
-static int
-no_exception_p(VALUE opts)
-{
-    VALUE except;
-    ID id = id_exception;
-
-    rb_get_kwargs(opts, &id, 0, 1, &except);
-    return except == Qfalse;
-}
+#define no_exception_p(opts) !rb_opts_exception_p((opts), TRUE)
 
 static VALUE
-io_getpartial(int argc, VALUE *argv, VALUE io, VALUE opts, int nonblock)
+io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
 {
     rb_io_t *fptr;
     VALUE length, str;
@@ -2846,7 +2837,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, VALUE opts, int nonblock)
             if (!nonblock && fptr_wait_readable(fptr))
                 goto again;
 	    if (nonblock && (e == EWOULDBLOCK || e == EAGAIN)) {
-                if (no_exception_p(opts))
+                if (no_exception)
                     return sym_wait_readable;
                 else
 		    rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE,
@@ -2940,9 +2931,9 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
 }
 
 static VALUE
-io_nonblock_eof(VALUE opts)
+io_nonblock_eof(int no_exception)
 {
-    if (!no_exception_p(opts)) {
+    if (!no_exception) {
         rb_eof_error();
     }
     return Qnil;
@@ -2963,6 +2954,8 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
 
     shrinkable = io_setstrbuf(&str, len);
     OBJ_TAINT(str);
+    rb_bool_expected(ex, "exception");
+
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
 
@@ -2981,7 +2974,7 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
         if (n < 0) {
 	    int e = errno;
 	    if ((e == EWOULDBLOCK || e == EAGAIN)) {
-                if (ex == Qfalse) return sym_wait_readable;
+                if (!ex) return sym_wait_readable;
 		rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE,
 					 e, "read would block");
             }
@@ -2991,7 +2984,7 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
     io_set_read_length(str, n, shrinkable);
 
     if (n == 0) {
-	if (ex == Qfalse) return Qnil;
+	if (!ex) return Qnil;
 	rb_eof_error();
     }
 
@@ -3007,6 +3000,7 @@ io_write_nonblock(VALUE io, VALUE str, VALUE ex)
 
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
+    rb_bool_expected(ex, "exception");
 
     io = GetWriteIO(io);
     GetOpenFile(io, fptr);
@@ -3022,7 +3016,7 @@ io_write_nonblock(VALUE io, VALUE str, VALUE ex)
     if (n < 0) {
 	int e = errno;
 	if (e == EWOULDBLOCK || e == EAGAIN) {
-	    if (ex == Qfalse) {
+	    if (!ex) {
 		return sym_wait_writable;
 	    }
 	    else {
@@ -12193,12 +12187,14 @@ static VALUE
 argf_getpartial(int argc, VALUE *argv, VALUE argf, VALUE opts, int nonblock)
 {
     VALUE tmp, str, length;
+    int no_exception;
 
     rb_scan_args(argc, argv, "11", &length, &str);
     if (!NIL_P(str)) {
         StringValue(str);
         argv[1] = str;
     }
+    no_exception = no_exception_p(opts);
 
     if (!next_argv()) {
 	if (!NIL_P(str)) {
@@ -12215,16 +12211,16 @@ argf_getpartial(int argc, VALUE *argv, VALUE argf, VALUE opts, int nonblock)
 			 RUBY_METHOD_FUNC(0), Qnil, rb_eEOFError, (VALUE)0);
     }
     else {
-        tmp = io_getpartial(argc, argv, ARGF.current_file, opts, nonblock);
+        tmp = io_getpartial(argc, argv, ARGF.current_file, no_exception, nonblock);
     }
     if (NIL_P(tmp)) {
         if (ARGF.next_p == -1) {
-	    return io_nonblock_eof(opts);
+	    return io_nonblock_eof(no_exception);
         }
         argf_close(argf);
         ARGF.next_p = 1;
         if (RARRAY_LEN(ARGF.argv) == 0) {
-	    return io_nonblock_eof(opts);
+	    return io_nonblock_eof(no_exception);
 	}
         if (NIL_P(str))
             str = rb_str_new(NULL, 0);

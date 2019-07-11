@@ -1509,6 +1509,12 @@ class TestIO < Test::Unit::TestCase
     }
   end if have_nonblock?
 
+  def test_read_nonblock_invalid_exception
+    with_pipe {|r, w|
+      assert_raise(ArgumentError) {r.read_nonblock(4096, exception: 1)}
+    }
+  end if have_nonblock?
+
   def test_read_nonblock_no_exceptions
     skip '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if RubyVM::MJIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
     with_pipe {|r, w|
@@ -1542,6 +1548,12 @@ class TestIO < Test::Unit::TestCase
       rescue Errno::EWOULDBLOCK
         assert_kind_of(IO::WaitWritable, $!)
       end
+    }
+  end if have_nonblock?
+
+  def test_write_nonblock_invalid_exception
+    with_pipe {|r, w|
+      assert_raise(ArgumentError) {w.write_nonblock(4096, exception: 1)}
     }
   end if have_nonblock?
 
