@@ -1238,6 +1238,7 @@ Init_load(void)
     vm->expanded_load_path = rb_ary_tmp_new(0);
     vm->load_path_snapshot = rb_ary_tmp_new(0);
     vm->load_path_check_cache = 0;
+    rb_define_singleton_method(vm->load_path, "resolve_feature_path", rb_resolve_feature_path, 1);
 
     rb_define_virtual_variable("$\"", get_loaded_features, 0);
     rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);

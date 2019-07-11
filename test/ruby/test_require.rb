@@ -898,7 +898,7 @@ class TestRequire < Test::Unit::TestCase
     }
   end
 
-  if defined?(RubyVM.resolve_feature_path)
+  if defined?($LOAD_PATH.resolve_feature_path)
     def test_resolve_feature_path
       paths, loaded = $:.dup, $".dup
       Dir.mktmpdir do |tmp|
@@ -907,9 +907,9 @@ class TestRequire < Test::Unit::TestCase
           path = File.realpath(file.path)
           dir, base = File.split(path)
           $:.unshift(dir)
-          assert_equal([:rb, path], RubyVM.resolve_feature_path(base))
+          assert_equal([:rb, path], $LOAD_PATH.resolve_feature_path(base))
           $".push(path)
-          assert_equal([:rb, path], RubyVM.resolve_feature_path(base))
+          assert_equal([:rb, path], $LOAD_PATH.resolve_feature_path(base))
         end
       end
     ensure
