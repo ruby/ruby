@@ -244,7 +244,6 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
         res.chunked = true
         res.body = -> (socket) { body.each_char {|c| socket.write c } }
       }
-      http = Net::HTTP.new(addr, port, addr, port)
 
       # Don't use Net::HTTP because it uses HTTP/1.1.
       TCPSocket.open(addr, port) {|s|
