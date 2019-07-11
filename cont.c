@@ -232,78 +232,136 @@ fiber_pool_vacancy_pointer(void * base, size_t size)
     );
 }
 
+// Reset the current stack pointer and available size of the given stack.
+inline static void
+fiber_pool_stack_reset(struct fiber_pool_stack * stack)
+{
+    STACK_GROW_DIR_DETECTION;
+
+    stack->current = (char*)stack->base + STACK_DIR_UPPER(0, stack->size);
+    stack->available = stack->size;
+}
+
+// A pointer to the base of the current unused portion of the stack.
+inline static void *
+fiber_pool_stack_base(struct fiber_pool_stack * stack)
+{
+    STACK_GROW_DIR_DETECTION;
+
+    return STACK_DIR_UPPER(stack->current, (char*)stack->current - stack->available);
+}
+
+// Allocate some memory from the stack. Used to allocate vm_stack inline with machine stack.
+// @sa fiber_initialize_coroutine
+inline static void *
+fiber_pool_stack_alloca(struct fiber_pool_stack * stack, size_t offset)
+{
+    STACK_GROW_DIR_DETECTION;
+
+    VM_ASSERT(stack->available >= offset);
+
+    // The pointer to the memory being allocated:
+    void * pointer = STACK_DIR_UPPER(stack->current, (char*)stack->current - offset);
+
+    // Move the stack pointer:
+    stack->current = STACK_DIR_UPPER((char*)stack->current + offset, (char*)stack->current - offset);
+    stack->available -= offset;
+
+    return pointer;
+}
+
+// Reset the current stack pointer and available size of the given stack.
+inline static void
+fiber_pool_vacancy_reset(struct fiber_pool_vacancy * vacancy)
+{
+    fiber_pool_stack_reset(&vacancy->stack);
+
+    // Consume one page of the stack because it's used for the vacancy list:
+    fiber_pool_stack_alloca(&vacancy->stack, RB_PAGE_SIZE);
+}
+
+// Initialize the vacant stack. The [base, size] allocation should not include the guard page.
+// @param base The pointer to the lowest address of the allocated memory.
+// @param size The size of the allocated memory.
+inline static struct fiber_pool_vacancy *
+fiber_pool_vacancy_initialize(struct fiber_pool * fiber_pool, struct fiber_pool_vacancy * vacancies, void * base, size_t size)
+{
+    struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pointer(base, size);
+
+    vacancy->stack.base = base;
+    vacancy->stack.size = size;
+
+    fiber_pool_vacancy_reset(vacancy);
+
+    vacancy->stack.pool = fiber_pool;
+    vacancy->next = vacancies;
+
+    return vacancy;
+}
+
 // Given an existing fiber pool, expand it by the specified number of stacks.
 static struct fiber_pool_allocation *
 fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
 {
+    STACK_GROW_DIR_DETECTION;
+
     size_t i;
     struct fiber_pool_vacancy * vacancies = fiber_pool->vacancies;
     struct fiber_pool_allocation * allocation = RB_ALLOC(struct fiber_pool_allocation);
 
     size_t size = fiber_pool->size;
 
-    /* Initialize fiber pool */
+    // The size of stack including guard page:
+    size_t stride = size + RB_PAGE_SIZE;
+
+    // Initialize fiber pool allocation:
     allocation->base = NULL;
     allocation->size = size;
     allocation->count = count;
 
     if (DEBUG) fprintf(stderr, "fiber_pool_expand(%zu): %p, %zu/%zu x [%zu:%zu]\n", count, fiber_pool, fiber_pool->used, fiber_pool->count, size, fiber_pool->vm_stack_size);
 
-#ifdef _WIN32
-    DWORD old_protect;
-
-    allocation->base = VirtualAlloc(0, count*size, MEM_COMMIT, PAGE_READWRITE);
+    // Allocate the memory required for the stacks:
+#if defined(_WIN32)
+    allocation->base = VirtualAlloc(0, count*stride, MEM_COMMIT, PAGE_READWRITE);
 
     if (!allocation->base) {
         rb_raise(rb_eFiberError, "can't alloc machine stack to fiber (%zu x %zu bytes): %s", count, size, ERRNOMSG);
     }
-
-    for (i = 0; i < count; i += 1) {
-        void * base = (char*)allocation->base + (size * i);
-
-        if (!VirtualProtect(base, RB_PAGE_SIZE, PAGE_READWRITE | PAGE_GUARD, &old_protect)) {
-            VirtualFree(allocation->base, 0, MEM_RELEASE);
-            rb_raise(rb_eFiberError, "can't set a guard page: %s", ERRNOMSG);
-        }
-
-        struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pointer(base, size);
-        vacancy->stack.base = base;
-        vacancy->stack.current = (char*)base + size;
-        vacancy->stack.size = size;
-        vacancy->stack.available = size - pagesize;
-        vacancy->stack.pool = fiber_pool;
-        vacancy->next = vacancies;
-        vacancies = vacancy;
-    }
 #else
-    STACK_GROW_DIR_DETECTION;
-
     errno = 0;
-    allocation->base = mmap(NULL, count*size, PROT_READ | PROT_WRITE, FIBER_STACK_FLAGS, -1, 0);
+    allocation->base = mmap(NULL, count*stride, PROT_READ | PROT_WRITE, FIBER_STACK_FLAGS, -1, 0);
 
     if (allocation->base == MAP_FAILED) {
         rb_raise(rb_eFiberError, "can't alloc machine stack to fiber (%zu x %zu bytes): %s", count, size, ERRNOMSG);
     }
+#endif
 
+    // Iterate over all stacks, initializing the vacancy list:
     for (i = 0; i < count; i += 1) {
-        void * base = (char*)allocation->base + (size * i);
-        void * page = (char*)base + STACK_DIR_UPPER(size - RB_PAGE_SIZE, 0);
+        void * base = (char*)allocation->base + (stride * i);
+        void * page = (char*)base + STACK_DIR_UPPER(size, 0);
 
-        if (mprotect(page, RB_PAGE_SIZE, PROT_NONE) < 0) {
-            munmap(allocation->base, count*size);
+#if defined(_WIN32)
+        DWORD old_protect;
+
+        if (!VirtualProtect(page, RB_PAGE_SIZE, PAGE_READWRITE | PAGE_GUARD, &old_protect)) {
+            VirtualFree(allocation->base, 0, MEM_RELEASE);
             rb_raise(rb_eFiberError, "can't set a guard page: %s", ERRNOMSG);
         }
-
-        struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pointer(base, size);
-        vacancy->stack.base = base;
-        vacancy->stack.current = (char*)base + STACK_DIR_UPPER(0, size);
-        vacancy->stack.size = size;
-        vacancy->stack.available = size - pagesize;
-        vacancy->stack.pool = fiber_pool;
-        vacancy->next = vacancies;
-        vacancies = vacancy;
-    }
+#else
+        if (mprotect(page, RB_PAGE_SIZE, PROT_NONE) < 0) {
+            munmap(allocation->base, count*stride);
+            rb_raise(rb_eFiberError, "can't set a guard page: %s", ERRNOMSG);
+        }
 #endif
+
+        vacancies = fiber_pool_vacancy_initialize(
+          fiber_pool, vacancies,
+          (char*)base + STACK_DIR_UPPER(0, RB_PAGE_SIZE),
+          size
+        );
+    }
 
     // Insert the allocation into the head of the pool:
     allocation->next = fiber_pool->allocations;
@@ -355,44 +413,6 @@ fiber_pool_free_allocations(struct fiber_pool_allocation * allocation)
 }
 #endif
 
-// Reset the current stack pointer and available size of the given stack.
-inline static void
-fiber_pool_stack_reset(struct fiber_pool_stack * stack)
-{
-    STACK_GROW_DIR_DETECTION;
-
-    stack->current = (char*)stack->base + STACK_DIR_UPPER(0, stack->size);
-    stack->available = stack->size - RB_PAGE_SIZE;
-}
-
-// A pointer to the base of the current unused portion of the stack.
-inline static void *
-fiber_pool_stack_base(struct fiber_pool_stack * stack)
-{
-    STACK_GROW_DIR_DETECTION;
-
-    return STACK_DIR_UPPER(stack->current, (char*)stack->current - stack->available);
-}
-
-// Allocate some memory from the stack. Used to allocate vm_stack inline with machine stack.
-// @sa fiber_initialize_coroutine
-inline static void *
-fiber_pool_stack_alloca(struct fiber_pool_stack * stack, size_t offset)
-{
-    STACK_GROW_DIR_DETECTION;
-
-    VM_ASSERT(stack->available >= offset);
-
-    // The pointer to the memory being allocated:
-    void * pointer = STACK_DIR_UPPER(stack->current, (char*)stack->current - offset);
-
-    // Move the stack pointer:
-    stack->current = STACK_DIR_UPPER((char*)stack->current + offset, (char*)stack->current - offset);
-    stack->available -= offset;
-
-    return pointer;
-}
-
 // Acquire a stack from the given fiber pool. If none are avilable, allocate more.
 static struct fiber_pool_stack
 fiber_pool_stack_acquire(struct fiber_pool * fiber_pool) {
@@ -421,18 +441,39 @@ fiber_pool_stack_acquire(struct fiber_pool * fiber_pool) {
     return vacancy->stack;
 }
 
+// We advise the operating system that the stack memory pages are no longer being used.
+// This introduce some performance overhead but allows system to relaim memory when there is pressure.
+static inline void
+fiber_pool_stack_free(struct fiber_pool_stack * stack) {
+    void * base = fiber_pool_stack_base(stack);
+    size_t size = stack->available - RB_PAGE_SIZE;
+
+    if (DEBUG) fprintf(stderr, "fiber_pool_stack_free: %p+%zu [base=%p, size=%zu]\n", base, size, stack->base, stack->size);
+
+#if defined(MADV_FREE_REUSABLE)
+    madvise(base, size, MADV_FREE_REUSABLE);
+#elif defined(MADV_FREE)
+    madvise(base, size, MADV_FREE);
+#elif defined(MADV_DONTNEED)
+    madvise(base, size, MADV_DONTNEED);
+#elif defined(_WIN32)
+    VirtualAlloc(base, size, MEM_RESET, PAGE_READWRITE);
+    // Not available in all versions of Windows.
+    //DiscardVirtualMemory(base, size);
+#endif
+}
+
 // Release and return a stack to the vacancy list.
 static void
 fiber_pool_stack_release(struct fiber_pool_stack stack) {
     struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pointer(stack.base, stack.size);
 
-#if defined(MADV_FREE) && defined(__linux__)
-    // Using madvise can make physical memory available to OS when there is memory pressure.
-    // But bencmarks show that this approach makes performance worse.
-    // madvise(vacancy->stack.base, vacancy->stack.size - RB_PAGE_SIZE, MADV_FREE);
-#endif
-
+    // Copy the stack details into the vacancy area:
     vacancy->stack = stack;
+    fiber_pool_vacancy_reset(vacancy);
+
+    fiber_pool_stack_free(&vacancy->stack);
+
     vacancy->next = stack.pool->vacancies;
     stack.pool->vacancies = vacancy;
     stack.pool->used -= 1;
@@ -480,6 +521,21 @@ fiber_initialize_coroutine(rb_fiber_t *fiber, size_t * vm_stack_size)
 #endif
 
     return vm_stack;
+}
+
+// Release the stack from the fiber, it's execution context, and return it to the fiber pool.
+static void
+fiber_stack_release(rb_fiber_t * fiber)
+{
+    rb_execution_context_t *ec = &fiber->cont.saved_ec;
+
+    if (fiber->stack.base) {
+        fiber_pool_stack_release(fiber->stack);
+        fiber->stack.base = NULL;
+    }
+
+    // The stack is no longer associated with this execution context:
+    rb_ec_clear_vm_stack(ec);
 }
 
 static const char *
@@ -757,6 +813,8 @@ fiber_free(void *ptr)
         st_free_table(fiber->cont.saved_ec.local_storage);
     }
 
+    fiber_stack_release(fiber);
+
     cont_free(&fiber->cont);
     RUBY_FREE_LEAVE("fiber");
 }
@@ -1031,7 +1089,7 @@ fiber_setcontext(rb_fiber_t *new_fiber, rb_fiber_t *old_fiber)
 {
     rb_thread_t *th = GET_THREAD();
 
-    /* save old_fiber's machine stack / TODO: is it needed? */
+    /* save old_fiber's machine stack - to ensure efficienct garbage collection */
     if (!FIBER_TERMINATED_P(old_fiber)) {
         STACK_GROW_DIR_DETECTION;
         SET_MACHINE_STACK_END(&th->ec->machine.stack_end);
@@ -1679,20 +1737,7 @@ rb_fiber_current(void)
     return fiber_current()->cont.self;
 }
 
-static void
-fiber_stack_release(rb_fiber_t * fiber)
-{
-    rb_execution_context_t *ec = &fiber->cont.saved_ec;
-
-    if (fiber->stack.base) {
-        fiber_pool_stack_release(fiber->stack);
-        fiber->stack.base = NULL;
-    }
-
-    // The stack is no longer associated with this execution context:
-    rb_ec_clear_vm_stack(ec);
-}
-
+// Prepare to execute next_fiber on the given thread.
 static inline VALUE
 fiber_store(rb_fiber_t *next_fiber, rb_thread_t *th)
 {
@@ -1804,7 +1849,6 @@ void
 rb_fiber_close(rb_fiber_t *fiber)
 {
     fiber_status_set(fiber, FIBER_TERMINATED);
-    fiber_stack_release(fiber);
 }
 
 static void
