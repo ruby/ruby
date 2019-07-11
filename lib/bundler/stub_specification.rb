@@ -63,10 +63,8 @@ module Bundler
       stub.loaded_from
     end
 
-    if Bundler.rubygems.stubs_provide_full_functionality?
-      def matches_for_glob(glob)
-        stub.matches_for_glob(glob)
-      end
+    def matches_for_glob(glob)
+      stub.matches_for_glob(glob)
     end
 
     def raw_require_paths
