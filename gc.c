@@ -9390,7 +9390,7 @@ rb_memerror(void)
 
     if (0) {
         // Print out pid, sleep, so you can attach debugger to see what went wrong:
-        fprintf(stderr, "rb_memerror pid=%d\n", getpid());
+        fprintf(stderr, "rb_memerror pid=%"PRI_PIDT_PREFIX"d\n", getpid());
         sleep(60);
     }
 
