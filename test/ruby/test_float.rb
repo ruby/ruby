@@ -802,6 +802,12 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError, bug4310) {under_gc_stress {Float('a'*10000)}}
   end
 
+  def test_Float_with_invalid_exception
+    assert_raise(ArgumentError) {
+      Float("0", exception: 1)
+    }
+  end
+
   def test_Float_with_exception_keyword
     assert_raise(ArgumentError) {
       Float(".", exception: true)

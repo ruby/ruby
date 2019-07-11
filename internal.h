@@ -1891,6 +1891,7 @@ VALUE rb_immutable_obj_clone(int, VALUE *, VALUE);
 VALUE rb_obj_not_equal(VALUE obj1, VALUE obj2);
 VALUE rb_convert_type_with_id(VALUE,int,const char*,ID);
 VALUE rb_check_convert_type_with_id(VALUE,int,const char*,ID);
+int rb_bool_expected(VALUE, const char *);
 
 struct RBasicRaw {
     VALUE flags;
@@ -2348,6 +2349,9 @@ void rb_write_error_str(VALUE mesg);
 
 /* numeric.c (export) */
 VALUE rb_int_positive_pow(long x, unsigned long y);
+
+/* object.c (export) */
+int rb_opts_exception_p(VALUE opts, int default_value);
 
 /* process.c (export) */
 int rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen);
