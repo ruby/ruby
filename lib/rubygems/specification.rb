@@ -2476,24 +2476,16 @@ class Gem::Specification < Gem::BasicSpecification
       result << nil
       result << "  if s.respond_to? :specification_version then"
       result << "    s.specification_version = #{specification_version}"
+      result << "  end"
       result << nil
 
-      result << "    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then"
+      result << "  if s.respond_to? :add_runtime_dependency then"
 
       dependencies.each do |dep|
         req = dep.requirements_list.inspect
         dep.instance_variable_set :@type, :runtime if dep.type.nil? # HACK
-        result << "      s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{req})"
+        result << "    s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{req})"
       end
-
-      result << "    else"
-
-      dependencies.each do |dep|
-        version_reqs_param = dep.requirements_list.inspect
-        result << "      s.add_dependency(%q<#{dep.name}>.freeze, #{version_reqs_param})"
-      end
-
-      result << '    end'
 
       result << "  else"
       dependencies.each do |dep|
