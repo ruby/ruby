@@ -104,7 +104,7 @@ RSpec.describe "bundle info" do
       expect(out).to include("foo (1.0 #{sha[0..6]})")
     end
 
-    it "handles when a version is a '-' prerelease", :rubygems => "2.1" do
+    it "handles when a version is a '-' prerelease" do
       @git = build_git("foo", "1.0.0-beta.1", :path => lib_path("foo"))
       install_gemfile <<-G
         gem "foo", "1.0.0-beta.1", :git => "#{lib_path("foo")}"
