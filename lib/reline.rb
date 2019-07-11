@@ -208,6 +208,7 @@ module Reline
     @@dig_perfect_match_proc
   end
   def self.dig_perfect_match_proc=(p)
+    raise ArgumentError unless p.is_a?(Proc)
     @@dig_perfect_match_proc = p
   end
 
