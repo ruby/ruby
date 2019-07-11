@@ -1027,9 +1027,7 @@ eom
       eval('1 if !//')
     end
     assert_warn('') do
-      verbose_bak, $VERBOSE = $VERBOSE, nil
       eval('1 if !(true..false)')
-      $VERBOSE = verbose_bak
     end
     assert_warning('') do
       eval('1 if !1')
