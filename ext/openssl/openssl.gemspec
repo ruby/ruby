@@ -1,6 +1,4 @@
 # -*- encoding: utf-8 -*-
-# stub: openssl 2.1.2 ruby lib
-# stub: ext/openssl/extconf.rb
 
 Gem::Specification.new do |s|
   s.name = "openssl".freeze

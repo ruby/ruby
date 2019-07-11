@@ -1,7 +1,5 @@
 # -*- encoding: utf-8 -*-
 # frozen_string_literal: true
-# stub: stringio 0.0.0 ruby lib
-# stub: extconf.rb
 
 source_version = ["", "ext/stringio/"].find do |dir|
   begin

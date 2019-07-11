@@ -1,6 +1,4 @@
 # -*- encoding: utf-8 -*-
-# stub: racc 1.4.16.pre.1 ruby lib
-# stub: ext/racc/extconf.rb
 
 Gem::Specification.new do |s|
   s.name = "racc".freeze
