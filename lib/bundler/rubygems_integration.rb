@@ -441,13 +441,6 @@ module Bundler
       end
     end
 
-    # Because Bundler has a static view of what specs are available,
-    # we don't #refresh, so stub it out.
-    def replace_refresh
-      gem_class = (class << Gem; self; end)
-      redefine_method(gem_class, :refresh) {}
-    end
-
     # Replace or hook into RubyGems to provide a bundlerized view
     # of the world.
     def replace_entrypoints(specs)
@@ -468,7 +461,6 @@ module Bundler
       replace_gem(specs, specs_by_name)
       stub_rubygems(specs)
       replace_bin_path(specs_by_name)
-      replace_refresh
 
       Gem.clear_paths
     end
