@@ -77,6 +77,7 @@ env:
     # JOBS and SETARCH are overridden when necessary; see below.
     - JOBS=-j$((1+${NPROC}))
     - SETARCH=
+    - CCACHE_EXE=ccache
     - RUBY_PREFIX=/tmp/ruby-prefix
     - GEMS_FOR_TEST='timezone tzinfo'
     - UPDATE_UNICODE="UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
@@ -146,6 +147,13 @@ env:
     env:
       - GEMS_FOR_TEST=
       - cppflags='-DRUBY_DEBUG -DVM_CHECK_MODE=1 -DTRANSIENT_HEAP_CHECK_MODE -DRGENGC_CHECK_MODE -DENC_DEBUG'
+
+  - &flto
+    name: gcc -flfo=jobserver
+    <<: *linux
+    env:
+      - CONFIG_FLAG='--enable-lto'
+      - CCACHE_EXE=
 
   - &VM_CHECK_MODE
     name: VM_CHECK_MODE=3
@@ -367,24 +375,7 @@ matrix:
     - <<: *x86_64-darwin17
     - <<: *x86_64-linux
     - <<: *i686-linux
-    - <<: *jemalloc
-    - <<: *pedanticism
-    - <<: *ASAN
-    - <<: *MSAN
-    - <<: *UBSAN
-    - <<: *assertions
-    - <<: *VM_CHECK_MODE
-    - <<: *FIBER_USE_sjlj
-    - <<: *TOKEN_THREADED_CODE
-    - <<: *CALL_THREADED_CODE
-    - <<: *NO_THREADED_CODE
-    - <<: *baseruby
-    - <<: *rubyspec
-    - <<: *dependency
-  allow_failures:
-    - name: -fsanitize=address
-    - name: -fsanitize=memory
-    - name: -fsanitize=undefined
+    - <<: *flto
   fast_finish: true
 
 before_script:
@@ -418,8 +409,8 @@ before_script:
   - ccache --show-stats
   - |-
     case "$CC" in
-    gcc*)   CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-diagnostics-color";;
-    clang*) CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-color-diagnostics";;
+    gcc*)   CC="${CCACHE_EXE} $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-diagnostics-color";;
+    clang*) CC="${CCACHE_EXE} $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-color-diagnostics";;
     esac
   - |-
     [ ! -f config.cache ] ||
