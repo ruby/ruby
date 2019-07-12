@@ -3228,8 +3228,8 @@ LDFLAGS="-L. $LDFLAGS"
 AC_SUBST(ARCHFILE)
 
 AC_ARG_ENABLE(lto,
-    AS_HELP_STRING([--disable-lto], [disables inter-procedural optimization]),
-    [enable_lto=$enableval], [enable_lto=yes])
+    AS_HELP_STRING([--enable-lto], [enables inter-procedural optimization]),
+    [enable_lto=$enableval], [enable_lto=no])
 AS_IF([test "$enable_lto" = yes],[
     for i in "-flto=jobserver" "-flto=thin" "-flto" "-LTCG:INCREMENTAL" "-LTCG"
     do
