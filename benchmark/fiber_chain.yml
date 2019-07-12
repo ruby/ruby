@@ -16,9 +16,9 @@ prelude: |
 
     return chain
   end
-  
+
   message = "Hello World!"
-  
+
   chain = make_chain do
     while true
       Fiber.yield(message)

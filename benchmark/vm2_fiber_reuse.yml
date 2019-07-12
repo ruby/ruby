@@ -8,7 +8,7 @@ benchmark:
       fibers << fiber
       fiber.resume
     end
-    
+
     fibers.clear
     GC.start
 loop_count: 200
