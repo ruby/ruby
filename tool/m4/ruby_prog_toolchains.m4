@@ -2,6 +2,12 @@
 AC_DEFUN([RUBY_PROG_TOOLCHAINS],[
 AC_PROG_CC_C99
 AS_CASE([$CC],
+[*ccache*], [
+    # Should not modify for instance `ccache gcc ...`
+],
+[*distcc*], [
+    # Ditto for distcc
+],
 [*clang*], [
     # Recent LLVM has LTO.  It tends to come with its own linker etc.
     path=`echo "${CC}" | sed 's,clang.*$,,'`
