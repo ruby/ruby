@@ -789,6 +789,9 @@ proc_new(VALUE klass, int8_t is_lambda)
 
       case block_handler_type_ifunc:
       case block_handler_type_iseq:
+        if (VM_BH_FORWARDED_ISEQ_BLOCK_P(block_handler)) {
+            is_lambda = 0;
+        }
 	return rb_vm_make_proc_lambda(ec, VM_BH_TO_CAPT_BLOCK(block_handler), klass, is_lambda);
     }
     VM_UNREACHABLE(proc_new);

@@ -1380,7 +1380,7 @@ RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(const rb_execution_context_t *ec, const r
 static inline int
 VM_BH_ISEQ_BLOCK_P(VALUE block_handler)
 {
-    if ((block_handler & 0x03) == 0x01) {
+    if ((block_handler & 0x03) == 0x01 || (block_handler & 0x03) == 0x2) {
 #if VM_CHECK_MODE > 0
 	struct rb_captured_block *captured = VM_TAGGED_PTR_REF(block_handler, 0x03);
 	VM_ASSERT(imemo_type_p(captured->code.val, imemo_iseq));
@@ -1390,6 +1390,30 @@ VM_BH_ISEQ_BLOCK_P(VALUE block_handler)
     else {
 	return 0;
     }
+}
+
+static inline int
+VM_BH_FORWARDED_ISEQ_BLOCK_P(VALUE block_handler)
+{
+    if ((block_handler & 0x03) == 0x02) {
+#if VM_CHECK_MODE > 0
+        struct rb_captured_block *captured = VM_TAGGED_PTR_REF(block_handler, 0x03);
+        VM_ASSERT(imemo_type_p(captured->code.val, imemo_iseq));
+#endif
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+static inline VALUE
+VM_FORWARDED_BH_FROM_ISEQ_BLOCK_BH(VALUE block_handler)
+{
+    VM_ASSERT(VM_BH_ISEQ_BLOCK_P(block_handler));
+    block_handler = VM_TAGGED_PTR_SET(VM_TAGGED_PTR_REF(block_handler, 0x03), 0x02);
+    VM_ASSERT(rb_special_const_p(block_handler)); // dodge GC marking
+    return block_handler;
 }
 
 static inline VALUE

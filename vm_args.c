@@ -892,7 +892,11 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
             return VM_BLOCK_HANDLER_NONE;
         }
 	else if (block_code == rb_block_param_proxy) {
-            return VM_CF_BLOCK_HANDLER(reg_cfp);
+            VALUE block_handler = VM_CF_BLOCK_HANDLER(reg_cfp);
+            if (VM_BH_ISEQ_BLOCK_P(block_handler)) {
+                block_handler = VM_FORWARDED_BH_FROM_ISEQ_BLOCK_BH(block_handler);
+            }
+            return block_handler;
         }
 	else if (SYMBOL_P(block_code) && rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
 	    const rb_cref_t *cref = vm_env_cref(reg_cfp->ep);
