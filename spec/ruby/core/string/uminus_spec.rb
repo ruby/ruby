@@ -71,4 +71,14 @@ describe 'String#-@' do
       (-dynamic).should equal(-"this string is frozen".freeze)
     end
   end
+
+  ruby_version_is "2.7" do
+    it "does deduplicate tainted strings" do
+      dynamic = %w(this string is frozen).join(' ')
+      dynamic.taint
+      (-dynamic).should equal("this string is frozen".freeze)
+      (-dynamic).should equal(-"this string is frozen".freeze)
+      (-dynamic).should == "this string is frozen"
+    end
+  end
 end

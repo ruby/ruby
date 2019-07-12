@@ -258,7 +258,7 @@ const struct st_hash_type rb_fstring_hash_type = {
     rb_str_hash,
 };
 
-#define BARE_STRING_P(str) (!FL_ANY_RAW(str, FL_TAINT|FL_EXIVAR) && RBASIC_CLASS(str) == rb_cString)
+#define BARE_STRING_P(str) (!FL_ANY_RAW(str, FL_EXIVAR) && RBASIC_CLASS(str) == rb_cString)
 
 static int
 fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
@@ -319,6 +319,11 @@ rb_fstring(VALUE str)
     if (STR_EMBED_P(str) && !bare) {
 	OBJ_FREEZE_RAW(str);
 	return str;
+    }
+
+    if (FL_ANY_RAW(str, FL_TAINT)) {
+	str = rb_str_dup(str);
+	FL_UNSET(str, FL_TAINT);
     }
 
     if (!OBJ_FROZEN(str))
@@ -2683,7 +2688,7 @@ str_uplus(VALUE str)
  *
  * Returns a frozen, possibly pre-existing copy of the string.
  *
- * The string will be deduplicated as long as it is not tainted,
+ * The string will be deduplicated as long as it is not a sublass
  * or has any instance variables set on it.
  */
 static VALUE

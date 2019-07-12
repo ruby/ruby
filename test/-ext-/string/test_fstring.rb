@@ -14,32 +14,36 @@ class Test_String_Fstring < Test::Unit::TestCase
 
   def test_taint_shared_string
     str = __method__.to_s.dup
-    str.taint
-    assert_fstring(str) {|s| assert_predicate(s, :tainted?)}
+    assert_predicate(str.taint, :tainted?)
+    assert_not_predicate(Bug::String.fstring(str), :tainted?)
   end
 
   def test_taint_normal_string
     str = __method__.to_s * 3
-    str.taint
-    assert_fstring(str) {|s| assert_predicate(s, :tainted?)}
+    assert_predicate(str.taint, :tainted?)
+    assert_not_predicate(Bug::String.fstring(str), :tainted?)
   end
 
   def test_taint_registered_tainted
     str = __method__.to_s * 3
     str.taint
-    assert_fstring(str) {|s| assert_predicate(s, :tainted?)}
+    assert_predicate(str.taint, :tainted?)
+    assert_not_predicate(Bug::String.fstring(str), :tainted?)
 
     str = __method__.to_s * 3
-    assert_fstring(str) {|s| assert_not_predicate(s, :tainted?)}
+    assert_predicate(str.taint, :tainted?)
+    assert_not_predicate(Bug::String.fstring(str), :tainted?)
   end
 
   def test_taint_registered_untainted
     str = __method__.to_s * 3
-    assert_fstring(str) {|s| assert_not_predicate(s, :tainted?)}
+    assert_predicate(str.taint, :tainted?)
+    assert_not_predicate(Bug::String.fstring(str), :tainted?)
 
     str = __method__.to_s * 3
     str.taint
-    assert_fstring(str) {|s| assert_predicate(s, :tainted?)}
+    assert_predicate(str.taint, :tainted?)
+    assert_not_predicate(Bug::String.fstring(str), :tainted?)
   end
 
   def test_instance_variable
