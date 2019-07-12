@@ -3231,7 +3231,7 @@ AC_ARG_ENABLE(lto,
     AS_HELP_STRING([--disable-lto], [disables inter-procedural optimization]),
     [enable_lto=$enableval], [enable_lto=yes])
 AS_IF([test "$enable_lto" = yes],[
-    for i in "-flto=thin" "-flto" "-LTCG:INCREMENTAL" "-LTCG"
+    for i in "-flto=jobserver" "-flto=thin" "-flto" "-LTCG:INCREMENTAL" "-LTCG"
     do
         RUBY_TRY_LDFLAGS(["${i}"], [
             RUBY_APPEND_OPTIONS(CFLAGS, "${i}")
