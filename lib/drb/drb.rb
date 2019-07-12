@@ -1279,7 +1279,7 @@ module DRb
     @@idconv = DRbIdConv.new
     @@secondary_server = nil
     @@argc_limit = 256
-    @@load_limit = 256 * 102400
+    @@load_limit = 0xffffffff
     @@verbose = false
     @@safe_level = 0
 
