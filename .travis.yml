@@ -345,6 +345,17 @@ env:
     before_install:
     install:
     before_script:
+      - |-
+        ruby -e 'new = []
+          Dir.glob("ext/**/extconf.rb") {|ex|
+            unless File.exist?(dep = File.dirname(ex)+"/depend")
+              puts "Adding "+dep
+              File.copy_stream("template/depend.tmpl", dep)
+              new << dep
+            end
+          }
+          exec("git", "add", *new) unless new.empty?'
+      - git diff --cached
       - "> config.status"
       - "> .rbconfig.time"
       - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
