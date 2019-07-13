@@ -24,11 +24,11 @@ $*::   The same as ARGV.
 $$::   The process number of the Ruby running this script.
 $?::   The status of the last executed child process.  This value is
        thread-local.
-$LOAD_PATH::   Load path for scripts and binary modules by load or require.
-               Aliased to $: and $-I. Has a singleton method
-               $LOAD_PATH.resolve_feature_path(feature) that returns
-               [:rb or :so, path], which resolves the feature to the path the
-               original Kernel#require method would load.
+$LOAD_PATH::   Load path for searching Ruby scripts and extension libraries used
+               by Kernel#load and Kernel#require. Aliased to $: and $-I.
+               Has a singleton method $LOAD_PATH.resolve_feature_path(feature)
+               that returns [:rb or :so, path], which resolves the feature to
+               the path the original Kernel#require method would load.
 $LOADED_FEATURES::   The array contains the module names loaded by require.
                      Aliased to $".
 $DEBUG::     The debug flag, which is set by the -d switch.  Enabling debug
