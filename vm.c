@@ -2937,18 +2937,6 @@ static VALUE usage_analysis_operand_stop(VALUE self);
 static VALUE usage_analysis_register_stop(VALUE self);
 #endif
 
-/*
- * Document-method: RubyVM::resolve_feature_path
- * call-seq:
- *   RubyVM.resolve_feature_path(feature) -> [:rb or :so, path]
- *
- * Identifies the file that will be loaded by "require(feature)".
- * This API is experimental and just for internal use.
- *
- *    RubyVM.resolve_feature_path("set")
- *      #=> [:rb, "/path/to/set.rb"]
- */
-
 void
 Init_VM(void)
 {

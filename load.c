@@ -945,14 +945,13 @@ load_ext(VALUE path)
     return (VALUE)dln_load(RSTRING_PTR(path));
 }
 
-/* Method is documented in vm.c */
-
 static int
 no_feature_p(const char *feature, const char *ext, int rb, int expanded, const char **fn)
 {
     return 0;
 }
 
+// Documented in doc/globals.rdoc
 VALUE
 rb_resolve_feature_path(VALUE klass, VALUE fname)
 {
