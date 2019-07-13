@@ -792,8 +792,16 @@ proc_new(VALUE klass, int8_t is_lambda, int8_t kernel)
 	break;
 
       case block_handler_type_ifunc:
-      case block_handler_type_iseq:
 	return rb_vm_make_proc_lambda(ec, VM_BH_TO_CAPT_BLOCK(block_handler), klass, is_lambda);
+      case block_handler_type_iseq:
+        {
+            const struct rb_captured_block *captured = VM_BH_TO_CAPT_BLOCK(block_handler);
+            rb_control_frame_t *last_ruby_cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
+            if (is_lambda && last_ruby_cfp && vm_cfp_forwarded_bh_p(last_ruby_cfp, block_handler)) {
+                is_lambda = false;
+            }
+            return rb_vm_make_proc_lambda(ec, captured, klass, is_lambda);
+        }
     }
     VM_UNREACHABLE(proc_new);
     return Qnil;

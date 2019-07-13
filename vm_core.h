@@ -763,7 +763,7 @@ typedef struct rb_control_frame_struct {
     const rb_iseq_t *iseq;	/* cfp[2] */
     VALUE self;			/* cfp[3] / block[0] */
     const VALUE *ep;		/* cfp[4] / block[1] */
-    const void *block_code;     /* cfp[5] / block[2] */ /* iseq or ifunc */
+    const void *block_code;     /* cfp[5] / block[2] */ /* iseq or ifunc or forwarded block handler */
     VALUE *__bp__;              /* cfp[6] */ /* outside vm_push_frame, use vm_base_ptr instead. */
 
 #if VM_DEBUG_BP_CHECK
@@ -1492,6 +1492,12 @@ vm_block_handler_verify(MAYBE_UNUSED(VALUE block_handler))
 {
     VM_ASSERT(block_handler == VM_BLOCK_HANDLER_NONE ||
 	      (vm_block_handler_type(block_handler), 1));
+}
+
+static inline int
+vm_cfp_forwarded_bh_p(const rb_control_frame_t *cfp, VALUE block_handler)
+{
+    return ((VALUE) cfp->block_code) == block_handler;
 }
 
 static inline enum rb_block_type
