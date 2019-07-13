@@ -58,6 +58,9 @@ ENV::               The hash contains current environment variables.
 ARGF::              The virtual concatenation of the files given on command line (or from $stdin if no files were given).
 ARGV::              An Array of command line arguments given for the script.
 DATA::              The file object of the script, pointing just after __END__.
-RUBY_VERSION::      The ruby version string (VERSION was deprecated).
+RUBY_VERSION::      The Ruby language version.
 RUBY_RELEASE_DATE:: The release date string.
 RUBY_PLATFORM::     The platform identifier.
+RUBY_ENGINE::       The name of the Ruby implementation.
+RUBY_ENGINE_VERSION:: The version of the Ruby implementation.
+RUBY_DESCRIPTION::  The same as `ruby --version`, a String describing various aspects of the Ruby implementation.
