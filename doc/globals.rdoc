@@ -3,7 +3,7 @@
 == Pre-defined global variables
 
 $!::   The Exception object set by Kernel#raise.
-$@::   The same as $!.backtrace.
+$@::   The same as <code>$!.backtrace</code>.
 $~::   The information about the last match in the current scope (thread-local and frame-local).
 $&::   The string matched by the last successful match.
 $`::   The string to the left  of the last successful match.
@@ -12,7 +12,7 @@ $+::   The highest group matched by the last successful match.
 $1::   The Nth group of the last successful match. May be > 1.
 $=::   This variable is no longer effective. Deprecated.
 $/::   The input record separator, newline by default. Aliased to $-0.
-$\::   The output record separator for Kernel#print and IO#write. Default is nil.
+$\::   The output record separator for Kernel#print and IO#write. Default is +nil+.
 $,::   The output field separator for Kernel#print and Array#join. Non-nil $, will be deprecated.
 $;::   The default separator for String#split. Non-nil $; will be deprecated. Aliased to $-F.
 $.::   The current input line number of the last file that was read.
@@ -25,8 +25,8 @@ $$::   The process number of the Ruby running this script. Same as Process.pid.
 $?::   The status of the last executed child process (thread-local).
 $LOAD_PATH::   Load path for searching Ruby scripts and extension libraries used
                by Kernel#load and Kernel#require. Aliased to $: and $-I.
-               Has a singleton method $LOAD_PATH.resolve_feature_path(feature)
-               that returns [:rb or :so, path], which resolves the feature to
+               Has a singleton method <code>$LOAD_PATH.resolve_feature_path(feature)</code>
+               that returns [+:rb+ or +:so+, path], which resolves the feature to
                the path the original Kernel#require method would load.
 $LOADED_FEATURES::   The array contains the module names loaded by require.
                      Aliased to $".
@@ -41,28 +41,28 @@ $stdin::     The current standard input.
 $stdout::    The current standard output.
 $VERBOSE::   The verbose flag, which is set by the -w or -v switch.  Setting
              this to a true value enables warnings as if -w or -v were given
-             on the command line.  Setting this to nil disables warnings,
+             on the command line.  Setting this to +nil+ disables warnings,
              including from Kernel#warn. Aliased to $-v and $-w.
 $-a::  True if option -a is set. Read-only variable.
-$-i::  In in-place-edit mode, this variable holds the extension, otherwise nil.
+$-i::  In in-place-edit mode, this variable holds the extension, otherwise +nil+.
 $-l::  True if option -l is set. Read-only variable.
 $-p::  True if option -p is set. Read-only variable.
 
 == Pre-defined global constants
 
 TRUE::              The typical true value.
-FALSE::             The false itself.
-NIL::               The nil itself.
+FALSE::             The +false+ itself.
+NIL::               The +nil+ itself.
 STDIN::             The standard input. The default value for $stdin.
 STDOUT::            The standard output. The default value for $stdout.
 STDERR::            The standard error output. The default value for $stderr.
 ENV::               The hash contains current environment variables.
 ARGF::              The virtual concatenation of the files given on command line (or from $stdin if no files were given).
 ARGV::              An Array of command line arguments given for the script.
-DATA::              The file object of the script, pointing just after __END__.
+DATA::              The file object of the script, pointing just after <code>__END__</code>.
 RUBY_VERSION::      The Ruby language version.
 RUBY_RELEASE_DATE:: The release date string.
 RUBY_PLATFORM::     The platform identifier.
 RUBY_ENGINE::       The name of the Ruby implementation.
 RUBY_ENGINE_VERSION:: The version of the Ruby implementation.
-RUBY_DESCRIPTION::  The same as `ruby --version`, a String describing various aspects of the Ruby implementation.
+RUBY_DESCRIPTION::  The same as <tt>ruby --version</tt>, a String describing various aspects of the Ruby implementation.
