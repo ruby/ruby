@@ -153,6 +153,10 @@ Time::
 
     * Added Time#floor method.  [Feature #15653]
 
+$LOAD_PATH::
+
+    * Added $LOAD_PATH.resolve_feature_path.  [Feature #15903] [Feature #15230]
+
 === Stdlib updates (outstanding ones only)
 
 Bundler::
