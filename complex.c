@@ -45,13 +45,6 @@ static ID id_abs, id_arg,
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
-#define binop(n,op) \
-inline static VALUE \
-f_##n(VALUE x, VALUE y)\
-{\
-    return rb_funcall(x, (op), 1, y);\
-}
-
 #define fun1(n) \
 inline static VALUE \
 f_##n(VALUE x)\
