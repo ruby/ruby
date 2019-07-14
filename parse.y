@@ -9896,6 +9896,7 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
       default:
 	add_mark_object(p, lit = STR_NEW0());
 	node = NEW_NODE(NODE_DSTR, lit, 1, NEW_LIST(node, loc), loc);
+	/* fall through */
       case NODE_DSTR:
 	nd_set_type(node, NODE_DREGX);
 	nd_set_loc(node, loc);
