@@ -3219,15 +3219,16 @@ rb_file_s_umask(int argc, VALUE *argv)
 {
     mode_t omask = 0;
 
-    if (argc == 0) {
+    switch (argc) {
+      case 0:
 	omask = umask(0);
 	umask(omask);
-    }
-    else if (argc == 1) {
+        break;
+      case 1:
 	omask = umask(NUM2MODET(argv[0]));
-    }
-    else {
-	rb_check_arity(argc, 0, 1);
+        break;
+      default:
+	rb_error_arity(argc, 0, 1);
     }
     return MODET2NUM(omask);
 }
