@@ -105,7 +105,7 @@ module IRB # :nodoc:
     }
 
     @CONF[:PROMPT_MODE] = (STDIN.tty? ? :DEFAULT : :NULL)
-    @CONF[:AUTO_INDENT] = false
+    @CONF[:AUTO_INDENT] = true
 
     @CONF[:CONTEXT_MODE] = 3 # use binding in function on TOPLEVEL_BINDING
     @CONF[:SINGLE_IRB] = false
