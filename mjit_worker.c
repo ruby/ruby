@@ -609,7 +609,6 @@ static int
 exec_process(const char *path, char *const argv[])
 {
     int stat, exit_code = -2;
-    pid_t pid;
     rb_vm_t *vm = WAITPID_USE_SIGCHLD ? GET_VM() : 0;
     rb_nativethread_cond_t cond;
 
@@ -618,7 +617,7 @@ exec_process(const char *path, char *const argv[])
         rb_native_mutex_lock(&vm->waitpid_lock);
     }
 
-    pid = start_process(path, argv);
+    pid_t pid = start_process(path, argv);
     for (;pid > 0;) {
         pid_t r = vm ? ruby_waitpid_locked(vm, pid, &stat, 0, &cond)
                      : waitpid(pid, &stat, 0);
@@ -670,10 +669,8 @@ remove_so_file(const char *so_file, struct rb_mjit_unit *unit)
 static bool
 compile_c_to_so(const char *c_file, const char *so_file)
 {
-    int exit_code;
     const char *files[] = { NULL, NULL, NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
-    char **args;
-    char *p, *obj_file;
+    char *p;
 
     // files[0] = "-Fe*.dll"
     files[0] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fe") + strlen(so_file) + 1));
@@ -684,7 +681,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
     // files[1] = "-Fo*.obj"
     // We don't need .obj file, but it's somehow created to cwd without -Fo and we want to control the output directory.
     files[1] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fo") + strlen(so_file) - rb_strlen_lit(DLEXT) + rb_strlen_lit(".obj") + 1));
-    obj_file = p = append_lit(p, "-Fo");
+    char *obj_file = p = append_lit(p, "-Fo");
     p = append_str2(p, so_file, strlen(so_file) - rb_strlen_lit(DLEXT));
     p = append_lit(p, ".obj");
     *p = '\0';
@@ -714,12 +711,12 @@ compile_c_to_so(const char *c_file, const char *so_file)
     p = append_lit(p, ".pdb");
     *p = '\0';
 
-    args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-                     files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    char **args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+            files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
         return false;
 
-    exit_code = exec_process(cc_path, args);
+    int exit_code = exec_process(cc_path, args);
     free(args);
 
     if (exit_code == 0) {
@@ -745,7 +742,6 @@ compile_c_to_so(const char *c_file, const char *so_file)
 static void
 make_pch(void)
 {
-    int exit_code;
     const char *rest_args[] = {
 # ifdef __clang__
         "-emit-pch",
@@ -753,16 +749,12 @@ make_pch(void)
         // -nodefaultlibs is a linker flag, but it may affect cc1 behavior on Gentoo, which should NOT be changed on pch:
         // https://gitweb.gentoo.org/proj/gcc-patches.git/tree/7.3.0/gentoo/13_all_default-ssp-fix.patch
         GCC_NOSTDLIB_FLAGS
-        "-o", NULL, NULL,
+        "-o", pch_file, header_file,
         NULL,
     };
-    char **args;
-    int len = sizeof(rest_args) / sizeof(const char *);
 
-    rest_args[len - 2] = header_file;
-    rest_args[len - 3] = pch_file;
     verbose(2, "Creating precompiled header");
-    args = form_args(3, cc_common_args, CC_CODEFLAG_ARGS, rest_args);
+    char **args = form_args(3, cc_common_args, CC_CODEFLAG_ARGS, rest_args);
     if (args == NULL) {
         mjit_warning("making precompiled header failed on forming args");
         CRITICAL_SECTION_START(3, "in make_pch");
@@ -771,7 +763,7 @@ make_pch(void)
         return;
     }
 
-    exit_code = exec_process(cc_path, args);
+    int exit_code = exec_process(cc_path, args);
     free(args);
 
     CRITICAL_SECTION_START(3, "in make_pch");
@@ -791,26 +783,19 @@ make_pch(void)
 static bool
 compile_c_to_o(const char *c_file, const char *o_file)
 {
-    int exit_code;
     const char *files[] = {
-        "-o", NULL, NULL,
+        "-o", o_file, c_file,
 # ifdef __clang__
-        "-include-pch", NULL,
+        "-include-pch", pch_file,
 # endif
         "-c", NULL
     };
-    char **args;
 
-    files[1] = o_file;
-    files[2] = c_file;
-# ifdef __clang__
-    files[4] = pch_file;
-# endif
-    args = form_args(5, cc_common_args, CC_CODEFLAG_ARGS, files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    char **args = form_args(5, cc_common_args, CC_CODEFLAG_ARGS, files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
         return false;
 
-    exit_code = exec_process(cc_path, args);
+    int exit_code = exec_process(cc_path, args);
     free(args);
 
     if (exit_code != 0)
@@ -822,23 +807,20 @@ compile_c_to_o(const char *c_file, const char *o_file)
 static bool
 link_o_to_so(const char **o_files, const char *so_file)
 {
-    int exit_code;
     const char *options[] = {
-        "-o", NULL,
+        "-o", so_file,
 # ifdef _WIN32
         libruby_pathflag,
 # endif
         NULL
     };
-    char **args;
 
-    options[1] = so_file;
-    args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-                     options, o_files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    char **args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+            options, o_files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
         return false;
 
-    exit_code = exec_process(cc_path, args);
+    int exit_code = exec_process(cc_path, args);
     free(args);
 
     if (exit_code != 0)
