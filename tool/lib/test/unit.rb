@@ -871,31 +871,41 @@ module Test
         end
         files.map! {|f|
           f = f.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
-          ((paths if /\A\.\.?(?:\z|\/)/ !~ f) || [nil]).any? do |prefix|
-            if prefix
-              path = f.empty? ? prefix : "#{prefix}/#{f}"
-            else
-              next if f.empty?
-              path = f
-            end
-            if f.end_with?(File::SEPARATOR) or !f.include?(File::SEPARATOR) or File.directory?(path)
-              match = (Dir["#{path}/**/#{@@testfile_prefix}_*.rb"] + Dir["#{path}/**/*_#{@@testfile_suffix}.rb"]).uniq
-            else
-              match = Dir[path]
-            end
-            if !match.empty?
-              if reject
-                match.reject! {|n|
-                  n = n[(prefix.length+1)..-1] if prefix
-                  reject_pat =~ n
-                }
+          while true
+            ret = ((paths if /\A\.\.?(?:\z|\/)/ !~ f) || [nil]).any? do |prefix|
+              if prefix
+                path = f.empty? ? prefix : "#{prefix}/#{f}"
+              else
+                next if f.empty?
+                path = f
               end
-              break match
-            elsif !reject or reject_pat !~ f and File.exist? path
-              break path
+              if f.end_with?(File::SEPARATOR) or !f.include?(File::SEPARATOR) or File.directory?(path)
+                match = (Dir["#{path}/**/#{@@testfile_prefix}_*.rb"] + Dir["#{path}/**/*_#{@@testfile_suffix}.rb"]).uniq
+              else
+                match = Dir[path]
+              end
+              if !match.empty?
+                if reject
+                  match.reject! {|n|
+                    n = n[(prefix.length+1)..-1] if prefix
+                    reject_pat =~ n
+                  }
+                end
+                break match
+              elsif !reject or reject_pat !~ f and File.exist? path
+                break path
+              end
             end
-          end or
-            raise ArgumentError, "file not found: #{f}"
+            if !ret
+              if /\.rb\z/ =~ f
+                raise ArgumentError, "file not found: #{f}"
+              else
+                f = "#{f}.rb"
+              end
+            else
+              break ret
+            end
+          end
         }
         files.flatten!
         super(files, options)
