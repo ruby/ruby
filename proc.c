@@ -2743,6 +2743,18 @@ method_inspect(VALUE method)
     if (data->me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
         rb_str_buf_cat2(str, " (not-implemented)");
     }
+
+    // parameter information
+    // TODO
+
+    { // source location
+        VALUE loc = rb_method_location(method);
+        if (!NIL_P(loc)) {
+            rb_str_catf(str, " %"PRIsVALUE":%"PRIsVALUE,
+                        RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
+        }
+    }
+
     rb_str_buf_cat2(str, ">");
 
     return str;

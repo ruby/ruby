@@ -432,29 +432,29 @@ class TestMethod < Test::Unit::TestCase
 
   def test_inspect
     o = Object.new
-    def o.foo; end
+    def o.foo; end; line_no = __LINE__
     m = o.method(:foo)
-    assert_equal("#<Method: #{ o.inspect }.foo>", m.inspect)
+    assert_equal("#<Method: #{ o.inspect }.foo #{__FILE__}:#{line_no}>", m.inspect)
     m = o.method(:foo)
-    assert_equal("#<UnboundMethod: #{ class << o; self; end.inspect }#foo>", m.unbind.inspect)
+    assert_match("#<UnboundMethod: #{ class << o; self; end.inspect }#foo #{__FILE__}:#{line_no}", m.unbind.inspect)
 
     c = Class.new
-    c.class_eval { def foo; end; }
+    c.class_eval { def foo; end; }; line_no = __LINE__
     m = c.new.method(:foo)
-    assert_equal("#<Method: #{ c.inspect }#foo>", m.inspect)
+    assert_equal("#<Method: #{ c.inspect }#foo #{__FILE__}:#{line_no}>", m.inspect)
     m = c.instance_method(:foo)
-    assert_equal("#<UnboundMethod: #{ c.inspect }#foo>", m.inspect)
+    assert_equal("#<UnboundMethod: #{ c.inspect }#foo #{__FILE__}:#{line_no}>", m.inspect)
 
     c2 = Class.new(c)
     c2.class_eval { private :foo }
     m2 = c2.new.method(:foo)
-    assert_equal("#<Method: #{ c2.inspect }(#{ c.inspect })#foo>", m2.inspect)
+    assert_equal("#<Method: #{ c2.inspect }(#{ c.inspect })#foo #{__FILE__}:#{line_no}>", m2.inspect)
 
     bug7806 = '[ruby-core:52048] [Bug #7806]'
     c3 = Class.new(c)
     c3.class_eval { alias bar foo }
     m3 = c3.new.method(:bar)
-    assert_equal("#<Method: #{c3.inspect}(#{c.inspect})#bar(foo)>", m3.inspect, bug7806)
+    assert_equal("#<Method: #{c3.inspect}(#{c.inspect})#bar(foo) #{__FILE__}:#{line_no}>", m3.inspect, bug7806)
 
     m.taint
     assert_predicate(m.inspect, :tainted?, "inspect result should be infected")
