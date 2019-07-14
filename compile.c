@@ -4442,11 +4442,11 @@ compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const NODE *cpath)
 }
 
 #define private_recv_p(node) (nd_type((node)->nd_recv) == NODE_SELF)
-static int
+static void
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	     const NODE *const node, LABEL **lfinish, VALUE needstr);
 
-static int
+static void
 defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	      const NODE *const node, LABEL **lfinish, VALUE needstr)
 {
@@ -4501,25 +4501,25 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_IVAR),
 		  ID2SYM(node->nd_vid), needstr);
-	return 1;
+	return;
 
       case NODE_GVAR:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_GVAR),
 		  ID2SYM(node->nd_entry->id), needstr);
-	return 1;
+	return;
 
       case NODE_CVAR:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_CVAR),
 		  ID2SYM(node->nd_vid), needstr);
-	return 1;
+	return;
 
       case NODE_CONST:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_CONST),
 		  ID2SYM(node->nd_vid), needstr);
-	return 1;
+	return;
       case NODE_COLON2:
 	if (!lfinish[1]) {
             lfinish[1] = NEW_LABEL(line);
@@ -4532,12 +4532,12 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 		  (rb_is_const_id(node->nd_mid) ?
 		   INT2FIX(DEFINED_CONST) : INT2FIX(DEFINED_METHOD)),
 		  ID2SYM(node->nd_mid), needstr);
-	return 1;
+	return;
       case NODE_COLON3:
         ADD_INSN1(ret, line, putobject, rb_cObject);
         ADD_INSN3(ret, line, defined,
 		  INT2FIX(DEFINED_CONST), ID2SYM(node->nd_mid), needstr);
-	return 1;
+	return;
 
 	/* method dispatch */
       case NODE_CALL:
@@ -4570,14 +4570,14 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
             ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_FUNC),
 		      ID2SYM(node->nd_mid), needstr);
 	}
-	return 1;
+	return;
       }
 
       case NODE_YIELD:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_YIELD), 0,
 		  needstr);
-	return 1;
+	return;
 
       case NODE_BACK_REF:
       case NODE_NTH_REF:
@@ -4585,14 +4585,14 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_REF),
 		  INT2FIX((node->nd_nth << 1) | (type == NODE_BACK_REF)),
 		  needstr);
-	return 1;
+	return;
 
       case NODE_SUPER:
       case NODE_ZSUPER:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_ZSUPER), 0,
 		  needstr);
-	return 1;
+	return;
 
       case NODE_OP_ASGN1:
       case NODE_OP_ASGN2:
@@ -4610,17 +4610,15 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	break;
     }
 
-    if (expr_type) {
-	if (needstr != Qfalse) {
-	    VALUE str = rb_iseq_defined_string(expr_type);
-            ADD_INSN1(ret, line, putobject, str);
-	}
-	else {
-            ADD_INSN1(ret, line, putobject, Qtrue);
-	}
-	return 1;
+    assert(expr_type != DEFINED_NOT_DEFINED);
+
+    if (needstr != Qfalse) {
+        VALUE str = rb_iseq_defined_string(expr_type);
+        ADD_INSN1(ret, line, putobject, str);
     }
-    return 0;
+    else {
+        ADD_INSN1(ret, line, putobject, Qtrue);
+    }
 }
 
 static VALUE
@@ -4631,12 +4629,12 @@ build_defined_rescue_iseq(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *u
     return Qnil;
 }
 
-static int
+static void
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	     const NODE *const node, LABEL **lfinish, VALUE needstr)
 {
     LINK_ELEMENT *lcur = ret->last;
-    int done = defined_expr0(iseq, ret, node, lfinish, needstr);
+    defined_expr0(iseq, ret, node, lfinish, needstr);
     if (lfinish[1]) {
 	int line = nd_line(node);
 	LABEL *lstart = NEW_LABEL(line);
@@ -4652,7 +4650,6 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	ADD_LABEL(ret, lend);
 	ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue, lfinish[1]);
     }
-    return done;
 }
 
 static int
