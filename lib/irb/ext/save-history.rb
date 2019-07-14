@@ -73,7 +73,16 @@ module IRB
       history_file = IRB.rc_file("_history") unless history_file
       if File.exist?(history_file)
         open(history_file) do |f|
-          f.each {|l| history << l.chomp}
+          f.each { |l|
+            l = l.chomp
+            $stderr.puts l.inspect
+            if history.last&.end_with?("\\")
+              history.last.delete_suffix!("\\")
+              history.last << "\n" << l
+            else
+              history << l
+            end
+          }
         end
       end
     end
@@ -98,7 +107,14 @@ module IRB
         end
 
         open(history_file, 'w', 0600 ) do |f|
-          hist = history.to_a
+          hist = history.to_a.map { |l|
+            split_lines = l.split("\n")
+            if split_lines.size == 1
+              l
+            else
+              split_lines.join("\\\n")
+            end
+          }
           f.puts(hist[-num..-1] || hist)
         end
       end
