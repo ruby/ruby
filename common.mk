@@ -1502,7 +1502,7 @@ help: PHONY
 	"  exam:                equals make check" \
 	"  test:                ruby core tests" \
 	"  test-all:            all ruby tests [TESTOPTS=-j4 TESTS=<test files>]" \
-	"  test-spec:           run the Ruby spec suite" \
+	"  test-spec:           run the Ruby spec suite [SPECOPTS=<specs, opts>]" \
 	"  test-rubyspec:       same as test-spec" \
 	"  test-bundler:        run the Bundler spec" \
 	"  test-bundled-gems:   run the test suite of bundled gems" \
