@@ -6228,6 +6228,8 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
     if (p) {
         parse_mode_enc(p+1, rb_usascii_encoding(),
 		       &convconfig.enc, &convconfig.enc2, &fmode);
+        convconfig.ecflags = 0;
+        convconfig.ecopts = Qnil;
     }
     else {
 	rb_encoding *e;
