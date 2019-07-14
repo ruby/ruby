@@ -432,7 +432,7 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    /*basic_block = 1; */
 	    break;
 	case DW_LNS_const_add_pc:
-	    a = ((255 - header.opcode_base) / header.line_range) *
+	    a = ((255UL - header.opcode_base) / header.line_range) *
 		header.minimum_instruction_length;
 	    addr += a;
 	    break;
