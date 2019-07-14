@@ -4501,25 +4501,25 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_IVAR),
 		  ID2SYM(node->nd_vid), needstr);
-	return;
+        return;
 
       case NODE_GVAR:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_GVAR),
 		  ID2SYM(node->nd_entry->id), needstr);
-	return;
+        return;
 
       case NODE_CVAR:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_CVAR),
 		  ID2SYM(node->nd_vid), needstr);
-	return;
+        return;
 
       case NODE_CONST:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_CONST),
 		  ID2SYM(node->nd_vid), needstr);
-	return;
+        return;
       case NODE_COLON2:
 	if (!lfinish[1]) {
             lfinish[1] = NEW_LABEL(line);
@@ -4532,12 +4532,12 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 		  (rb_is_const_id(node->nd_mid) ?
 		   INT2FIX(DEFINED_CONST) : INT2FIX(DEFINED_METHOD)),
 		  ID2SYM(node->nd_mid), needstr);
-	return;
+        return;
       case NODE_COLON3:
         ADD_INSN1(ret, line, putobject, rb_cObject);
         ADD_INSN3(ret, line, defined,
 		  INT2FIX(DEFINED_CONST), ID2SYM(node->nd_mid), needstr);
-	return;
+        return;
 
 	/* method dispatch */
       case NODE_CALL:
@@ -4570,14 +4570,14 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
             ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_FUNC),
 		      ID2SYM(node->nd_mid), needstr);
 	}
-	return;
+        return;
       }
 
       case NODE_YIELD:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_YIELD), 0,
 		  needstr);
-	return;
+        return;
 
       case NODE_BACK_REF:
       case NODE_NTH_REF:
@@ -4585,14 +4585,14 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_REF),
 		  INT2FIX((node->nd_nth << 1) | (type == NODE_BACK_REF)),
 		  needstr);
-	return;
+        return;
 
       case NODE_SUPER:
       case NODE_ZSUPER:
         ADD_INSN(ret, line, putnil);
         ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_ZSUPER), 0,
 		  needstr);
-	return;
+        return;
 
       case NODE_OP_ASGN1:
       case NODE_OP_ASGN2:
