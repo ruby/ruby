@@ -81,6 +81,9 @@
         fprintf(f, "            reg_cfp->pc = original_body_iseq + %d;\n", pos);
         fprintf(f, "            RB_DEBUG_COUNTER_INC(mjit_cancel_opt_insn);\n");
         fprintf(f, "            goto cancel;\n");
+%   when /\A(?<prefix>.+\b)INSN_LABEL\((?<name>[^)]+)\)(?<suffix>.+)\z/m
+%     prefix, name, suffix = Regexp.last_match[:prefix], Regexp.last_match[:name], Regexp.last_match[:suffix]
+        fprintf(f, "    <%= prefix.gsub(/\t/, ' ' * 8) %>INSN_LABEL(<%= name %>_%d)<%= suffix.sub(/\n/, '\n') %>", pos);
 %   else
 %     if insn.handles_sp?
 %       # If insn.handles_sp? is true, cfp->sp might be changed inside insns (like vm_caller_setup_arg_block)

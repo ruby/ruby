@@ -323,8 +323,6 @@ extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, V
                                   const rb_callable_method_entry_t *me);
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, VALUE block_handler);
 
-static VALUE rb_block_param_proxy;
-
 #include "mjit.h"
 #include "vm_insnhelper.h"
 #include "vm_exec.h"
@@ -352,6 +350,7 @@ rb_next_class_serial(void)
 VALUE rb_cRubyVM;
 VALUE rb_cThread;
 VALUE rb_mRubyVMFrozenCore;
+VALUE rb_block_param_proxy;
 
 #define ruby_vm_redefined_flag GET_VM()->redefined_flag
 VALUE ruby_vm_const_missing_count = 0;
