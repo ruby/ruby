@@ -7275,7 +7275,7 @@ io_reopen(VALUE io, VALUE nfile)
             rb_sys_fail(0);
     }
     else {
-	flush_before_seek(fptr);
+        flush_before_seek(fptr);
     }
     if (orig->mode & FMODE_READABLE) {
 	pos = io_tell(orig);
