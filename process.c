@@ -6099,11 +6099,9 @@ static VALUE
 p_sys_setregid(VALUE obj, VALUE rid, VALUE eid)
 {
     rb_gid_t rgid, egid;
-    PREPARE_GETGRNAM;
     check_gid_switch();
     rgid = OBJ2GID(rid);
     egid = OBJ2GID(eid);
-    FINISH_GETGRNAM;
     if (setregid(rgid, egid) != 0) rb_sys_fail(0);
     return Qnil;
 }
@@ -6127,12 +6125,10 @@ static VALUE
 p_sys_setresgid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 {
     rb_gid_t rgid, egid, sgid;
-    PREPARE_GETGRNAM;
     check_gid_switch();
     rgid = OBJ2GID(rid);
     egid = OBJ2GID(eid);
     sgid = OBJ2GID(sid);
-    FINISH_GETGRNAM;
     if (setresgid(rgid, egid, sgid) != 0) rb_sys_fail(0);
     return Qnil;
 }
