@@ -1459,9 +1459,6 @@ info-libruby_so: PHONY
 info-arch: PHONY
 	@echo arch=$(arch)
 
-change: PHONY
-	$(BASERUBY) -C "$(srcdir)" ./tool/change_maker.rb $(CHANGES) > change.log
-
 exam: check
 
 love: sudo-precheck up all test exam install
@@ -1514,7 +1511,6 @@ help: PHONY
 	"  install-cross:       install cross compiling stuff" \
 	"  clean:               clean for tarball" \
 	"  distclean:           clean for repository" \
-	"  change:              make change log template" \
 	"  golf:                for golfers" \
 	"  goruby:              same as golf" \
 	$(HELP_EXTRA_TASKS) \
