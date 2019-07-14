@@ -1049,8 +1049,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     if (FIXNUM_P(unit->iseq->body->location.first_lineno))
         // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
         iseq_lineno = FIX2LONG(unit->iseq->body->location.first_lineno);
-    char *iseq_label = alloca(RSTRING_LEN(unit->iseq->body->location.label));
-    char *iseq_path  = alloca(RSTRING_LEN(rb_iseq_path(unit->iseq)));
+    char *iseq_label = alloca(RSTRING_LEN(unit->iseq->body->location.label) + 1);
+    char *iseq_path  = alloca(RSTRING_LEN(rb_iseq_path(unit->iseq)) + 1);
     strcpy(iseq_label, RSTRING_PTR(unit->iseq->body->location.label));
     strcpy(iseq_path,  RSTRING_PTR(rb_iseq_path(unit->iseq)));
 
