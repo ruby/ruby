@@ -2080,8 +2080,6 @@ VALUE rb_id_quote_unprintable(ID);
 char *rb_str_fill_terminator(VALUE str, const int termlen);
 void rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int termlen);
 VALUE rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg);
-VALUE rb_str_tmp_frozen_acquire(VALUE str);
-void rb_str_tmp_frozen_release(VALUE str, VALUE tmp);
 VALUE rb_str_chomp_string(VALUE str, VALUE chomp);
 #ifdef RUBY_ENCODING_H
 VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
@@ -2376,6 +2374,8 @@ VALUE rb_gcd_gmp(VALUE x, VALUE y);
 int rb_grantpt(int fd);
 
 /* string.c (export) */
+VALUE rb_str_tmp_frozen_acquire(VALUE str);
+void rb_str_tmp_frozen_release(VALUE str, VALUE tmp);
 #ifdef RUBY_ENCODING_H
 /* internal use */
 VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
