@@ -288,8 +288,8 @@ RubyVM::AbstractSyntaxTree::
     * RubyVM::AbstractSyntaxTree.parse_file parses a given file and returns AST
       nodes.  [experimental]
 
-    * RubyVM::AbstractSyntaxTree.of returns AST nodes of the given proc or method.
-      experimental::
+    * RubyVM::AbstractSyntaxTree.of returns AST nodes of the given proc or
+      method.  [experimental]
 
 RubyVM::
 
