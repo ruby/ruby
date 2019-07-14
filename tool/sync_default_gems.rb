@@ -253,7 +253,7 @@ def sync_default_gems_with_commits(gem, range)
         break
       end
 
-      `git filter-branch --msg-filter 'echo "[#{$repositories[gem.to_sym]}]" && echo && cat' -- HEAD~1..HEAD`
+      `git filter-branch -f --msg-filter 'echo "[#{$repositories[gem.to_sym]}]" && echo && cat' -- HEAD~1..HEAD`
     end
   end
 end
