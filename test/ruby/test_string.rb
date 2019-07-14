@@ -3177,18 +3177,20 @@ CODE
 
   def test_uminus_no_freeze_not_bare
     str = @cls.new("foo")
-    -str
+    assert_instance_of(@cls, -str)
     assert_equal(false, str.frozen?)
 
     str = @cls.new("foo")
     str.instance_variable_set(:@iv, 1)
-    -str
+    assert_instance_of(@cls, -str)
     assert_equal(false, str.frozen?)
+    assert_equal(1, str.instance_variable_get(:@iv))
 
     str = @cls.new("foo")
     str.taint
-    -str
+    assert_instance_of(@cls, -str)
     assert_equal(false, str.frozen?)
+    assert_predicate(str, :tainted?)
   end
 
   def test_ord
