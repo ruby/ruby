@@ -4125,7 +4125,7 @@ str_succ(VALUE str)
 {
     rb_encoding *enc;
     char *sbeg, *s, *e, *last_alnum = 0;
-    int c = -1;
+    int found_alnum = 0;
     long l, slen;
     char carry[ONIGENC_CODE_TO_MBC_MAXLEN] = "\1";
     long carry_pos = 0, carry_len = 1;
@@ -4158,11 +4158,11 @@ str_succ(VALUE str)
 	    last_alnum = s;
 	    break;
 	}
-        c = 1;
+        found_alnum = 1;
         carry_pos = s - sbeg;
         carry_len = l;
     }
-    if (c == -1) {		/* str contains no alnum */
+    if (!found_alnum) {		/* str contains no alnum */
 	s = e;
 	while ((s = rb_enc_prev_char(sbeg, s, e, enc)) != 0) {
             enum neighbor_char neighbor;
