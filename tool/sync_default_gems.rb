@@ -152,7 +152,7 @@ def sync_default_gems(gem)
     FileUtils.rm_rf(%w[ext/io/console test/io/console])
     FileUtils.cp_r("#{upstream}/ext/io/console", "ext/io")
     FileUtils.cp_r("#{upstream}/test/io/console", "test/io")
-    `mkdir -p ext/io/console/lib`
+    FileUtils.mkdir_p("ext/io/console/lib")
     FileUtils.cp_r("#{upstream}/lib/io/console", "ext/io/console/lib")
     FileUtils.cp_r("#{upstream}/io-console.gemspec", "ext/io/console")
     `git checkout ext/io/console/depend`
@@ -217,7 +217,7 @@ def sync_default_gems(gem)
   when "racc"
     FileUtils.rm_rf(%w[lib/racc* ext/racc test/racc])
     FileUtils.cp_r(Dir.glob("#{upstream}/lib/racc*"), "lib")
-    `mkdir -p ext/racc/cparse`
+    FileUtils.mkdir_p("ext/racc/cparse")
     FileUtils.cp_r(Dir.glob("#{upstream}/ext/racc/cparse/*"), "ext/racc/cparse")
     FileUtils.cp_r("#{upstream}/test", "test/racc")
     `git checkout ext/racc/cparse/README`
@@ -251,7 +251,7 @@ def update_default_gems(gem)
   author, repository = $repositories[gem.to_sym].split('/')
 
   unless File.exist?("../../#{author}/#{repository}")
-    `mkdir -p ../../#{author}`
+    FileUtils.mkdir_p("../../#{author}")
     `git clone git@github.com:#{author}/#{repository}.git ../../#{author}/#{repository}`
   end
 
