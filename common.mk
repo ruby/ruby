@@ -1169,11 +1169,7 @@ ITEM =
 ARGS = $$(find $(srcdir)/benchmark -maxdepth 1 -name '*$(ITEM)*.yml' -o -name '*$(ITEM)*.rb' | sort)
 OPTS =
 
-# You can pass several options through OPTS environment variable.
-# $ make benchmark ARGS="--help" displays more detail.
-# for example,
-#  $ make benchmark COMPARE_RUBY="ruby-trunk" OPTS="-e ruby-2.2.2"
-# This command compares trunk and built-ruby and 2.2.2
+# See benchmark/README.md for details.
 benchmark: miniruby$(EXEEXT) update-benchmark-driver PHONY
 	$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
 	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
