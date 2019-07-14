@@ -1,6 +1,6 @@
 #!/usr/bin/ruby -pi
 BEGIN {
-  require_relative 'colorize'
+  require_relative 'lib/colorize'
 
   colorize = Colorize.new
   file = ARGV.shift
