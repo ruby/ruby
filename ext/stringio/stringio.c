@@ -1409,7 +1409,7 @@ strio_read(int argc, VALUE *argv, VALUE self)
       case 0:
 	len = RSTRING_LEN(ptr->string);
 	if (len <= ptr->pos) {
-	    rb_encoding *enc = binary ? rb_ascii8bit_encoding() : get_enc(ptr);
+	    rb_encoding *enc = get_enc(ptr);
 	    if (NIL_P(str)) {
 		str = rb_str_new(0, 0);
 	    }
