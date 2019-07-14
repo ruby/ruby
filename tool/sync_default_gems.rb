@@ -253,7 +253,9 @@ def sync_default_gems_with_commits(gem, range)
         break
       end
 
-      `git filter-branch -f --msg-filter 'echo "[#{$repositories[gem.to_sym]}]" && echo && cat' -- HEAD~1..HEAD`
+      prefix = "[#{($repositories[gem.to_sym])}]".gsub(/\//, '\/')
+      suffix = "https://github.com/#{($repositories[gem.to_sym])}/commit/#{sha[0,10]}"
+      `git filter-branch -f --msg-filter 'sed "1s/^/#{prefix} /" && echo && echo #{suffix}' -- HEAD~1..HEAD`
       unless $?.success?
         puts "Failed to modify commit message of #{sha}"
         break
