@@ -7,7 +7,7 @@ require 'optparse'
 
 # this file run with BASERUBY, which may be older than 1.9, so no
 # require_relative
-require File.expand_path('../vcs', __FILE__)
+require File.expand_path('../lib/vcs', __FILE__)
 
 Program = $0
 
