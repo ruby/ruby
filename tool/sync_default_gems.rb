@@ -246,6 +246,8 @@ def sync_default_gems_with_commits(gem, range)
         puts "Failed to pick #{commit}."
         break
       end
+
+      `git filter-branch --msg-filter 'echo "[#{$repositories[gem.to_sym]}]" && echo && cat' -- HEAD~1..HEAD`
     end
   end
 end
