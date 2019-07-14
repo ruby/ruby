@@ -106,7 +106,7 @@ module IRB
         end
 
         open(history_file, 'w', 0600 ) do |f|
-          hist = history.to_a.map { |l|
+          hist = history.map { |l|
             split_lines = l.split("\n")
             if split_lines.size == 1
               l
