@@ -370,12 +370,12 @@ load_mantissa(double d, const char *buf, long len)
 	do {
 	    m = 0;
 	    switch (len) {
-	      default: m = *buf++ & 0xff;
+	      default: m = *buf++ & 0xff; /* fall through */
 #if MANT_BITS > 24
-	      case 3: m = (m << 8) | (*buf++ & 0xff);
+	      case 3: m = (m << 8) | (*buf++ & 0xff); /* fall through */
 #endif
 #if MANT_BITS > 16
-	      case 2: m = (m << 8) | (*buf++ & 0xff);
+	      case 2: m = (m << 8) | (*buf++ & 0xff); /* fall through */
 #endif
 #if MANT_BITS > 8
 	      case 1: m = (m << 8) | (*buf++ & 0xff);
@@ -1799,6 +1799,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		      case 'L': case 'N': case 'O': case 'P': case 'Q': case 'R':
 		      case 'S': case 'T': case 'U': case 'V': case 'X': case 'Y':
 			if (bs & 1) --dst;
+                        /* fall through */
 		      default: bs = 0; break;
 		    }
 		}
