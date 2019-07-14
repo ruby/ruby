@@ -41,6 +41,7 @@
 #
 
 require 'fileutils'
+include FileUtils
 
 $repositories = {
   rubygems: 'rubygems/rubygems',
@@ -90,136 +91,136 @@ def sync_default_gems(gem)
 
   case gem
   when "rubygems"
-    FileUtils.rm_rf(%w[lib/rubygems* test/rubygems])
-    FileUtils.cp_r(Dir.glob("#{upstream}/lib/rubygems*"), "lib")
-    FileUtils.cp_r("#{upstream}/test/rubygems", "test")
+    rm_rf(%w[lib/rubygems* test/rubygems])
+    cp_r(Dir.glob("#{upstream}/lib/rubygems*"), "lib")
+    cp_r("#{upstream}/test/rubygems", "test")
   when "bundler"
-    FileUtils.rm_rf(%w[lib/bundler* libexec/bundler libexec/bundle spec/bundler man/bundle* man/gemfile*])
-    FileUtils.cp_r(Dir.glob("#{upstream}/lib/bundler*"), "lib")
-    FileUtils.cp_r(Dir.glob("#{upstream}/exe/bundle*"), "libexec")
-    FileUtils.cp_r("#{upstream}/bundler.gemspec", "lib/bundler")
-    FileUtils.cp_r("#{upstream}/spec", "spec/bundler")
-    FileUtils.cp_r(Dir.glob("#{upstream}/man/*.{1,5,1\.txt,5\.txt,ronn}"), "man")
-    FileUtils.rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
+    rm_rf(%w[lib/bundler* libexec/bundler libexec/bundle spec/bundler man/bundle* man/gemfile*])
+    cp_r(Dir.glob("#{upstream}/lib/bundler*"), "lib")
+    cp_r(Dir.glob("#{upstream}/exe/bundle*"), "libexec")
+    cp_r("#{upstream}/bundler.gemspec", "lib/bundler")
+    cp_r("#{upstream}/spec", "spec/bundler")
+    cp_r(Dir.glob("#{upstream}/man/*.{1,5,1\.txt,5\.txt,ronn}"), "man")
+    rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
   when "rdoc"
-    FileUtils.rm_rf(%w[lib/rdoc* test/rdoc libexec/rdoc libexec/ri])
-    FileUtils.cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
-    FileUtils.cp_r("#{upstream}/test", "test/rdoc")
-    FileUtils.cp_r("#{upstream}/rdoc.gemspec", "lib/rdoc")
-    FileUtils.cp_r("#{upstream}/exe/rdoc", "libexec")
-    FileUtils.cp_r("#{upstream}/exe/ri", "libexec")
-    FileUtils.rm_rf(%w[lib/rdoc/markdown.kpeg lib/rdoc/markdown/literals.kpeg lib/rdoc/rd/block_parser.ry lib/rdoc/rd/inline_parser.ry])
+    rm_rf(%w[lib/rdoc* test/rdoc libexec/rdoc libexec/ri])
+    cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
+    cp_r("#{upstream}/test", "test/rdoc")
+    cp_r("#{upstream}/rdoc.gemspec", "lib/rdoc")
+    cp_r("#{upstream}/exe/rdoc", "libexec")
+    cp_r("#{upstream}/exe/ri", "libexec")
+    rm_rf(%w[lib/rdoc/markdown.kpeg lib/rdoc/markdown/literals.kpeg lib/rdoc/rd/block_parser.ry lib/rdoc/rd/inline_parser.ry])
     `git checkout lib/rdoc/.document`
   when "reline"
-    FileUtils.rm_rf(%w[lib/reline* test/reline])
-    FileUtils.cp_r(Dir.glob("#{upstream}/lib/reline*"), "lib")
-    FileUtils.cp_r("#{upstream}/test", "test/reline")
-    FileUtils.cp_r("#{upstream}/reline.gemspec", "lib/reline")
+    rm_rf(%w[lib/reline* test/reline])
+    cp_r(Dir.glob("#{upstream}/lib/reline*"), "lib")
+    cp_r("#{upstream}/test", "test/reline")
+    cp_r("#{upstream}/reline.gemspec", "lib/reline")
   when "json"
-    FileUtils.rm_rf(%w[ext/json test/json])
-    FileUtils.cp_r("#{upstream}/ext/json/ext", "ext/json")
-    FileUtils.cp_r("#{upstream}/tests", "test/json")
-    FileUtils.cp_r("#{upstream}/lib", "ext/json")
-    FileUtils.rm_rf(%[ext/json/lib/json/pure*])
-    FileUtils.cp_r("#{upstream}/json.gemspec", "ext/json")
-    FileUtils.rm_rf(%w[ext/json/lib/json/ext])
+    rm_rf(%w[ext/json test/json])
+    cp_r("#{upstream}/ext/json/ext", "ext/json")
+    cp_r("#{upstream}/tests", "test/json")
+    cp_r("#{upstream}/lib", "ext/json")
+    rm_rf(%[ext/json/lib/json/pure*])
+    cp_r("#{upstream}/json.gemspec", "ext/json")
+    rm_rf(%w[ext/json/lib/json/ext])
     `git checkout ext/json/extconf.rb ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend`
   when "psych"
-    FileUtils.rm_rf(%w[ext/psych test/psych])
-    FileUtils.cp_r("#{upstream}/ext/psych", "ext")
-    FileUtils.cp_r("#{upstream}/lib", "ext/psych")
-    FileUtils.cp_r("#{upstream}/test/psych", "test")
-    FileUtils.rm_rf(%w[ext/psych/lib/org ext/psych/lib/psych.jar ext/psych/lib/psych_jars.rb])
-    FileUtils.rm_rf(%w[ext/psych/lib/psych.{bundle,so} ext/psych/lib/2.*])
-    FileUtils.rm_rf(["ext/psych/yaml/LICENSE"])
-    FileUtils.cp_r("#{upstream}/psych.gemspec", "ext/psych")
+    rm_rf(%w[ext/psych test/psych])
+    cp_r("#{upstream}/ext/psych", "ext")
+    cp_r("#{upstream}/lib", "ext/psych")
+    cp_r("#{upstream}/test/psych", "test")
+    rm_rf(%w[ext/psych/lib/org ext/psych/lib/psych.jar ext/psych/lib/psych_jars.rb])
+    rm_rf(%w[ext/psych/lib/psych.{bundle,so} ext/psych/lib/2.*])
+    rm_rf(["ext/psych/yaml/LICENSE"])
+    cp_r("#{upstream}/psych.gemspec", "ext/psych")
     `git checkout ext/psych/depend`
   when "fiddle"
-    FileUtils.rm_rf(%w[ext/fiddle test/fiddle])
-    FileUtils.cp_r("#{upstream}/ext/fiddle", "ext")
-    FileUtils.cp_r("#{upstream}/lib", "ext/fiddle")
-    FileUtils.cp_r("#{upstream}/test/fiddle", "test")
-    FileUtils.cp_r("#{upstream}/fiddle.gemspec", "ext/fiddle")
+    rm_rf(%w[ext/fiddle test/fiddle])
+    cp_r("#{upstream}/ext/fiddle", "ext")
+    cp_r("#{upstream}/lib", "ext/fiddle")
+    cp_r("#{upstream}/test/fiddle", "test")
+    cp_r("#{upstream}/fiddle.gemspec", "ext/fiddle")
     `git checkout ext/fiddle/depend`
-    FileUtils.rm_rf(%w[ext/fiddle/lib/fiddle.{bundle,so}])
+    rm_rf(%w[ext/fiddle/lib/fiddle.{bundle,so}])
   when "stringio"
-    FileUtils.rm_rf(%w[ext/stringio test/stringio])
-    FileUtils.cp_r("#{upstream}/ext/stringio", "ext")
-    FileUtils.cp_r("#{upstream}/test/stringio", "test")
-    FileUtils.cp_r("#{upstream}/stringio.gemspec", "ext/stringio")
+    rm_rf(%w[ext/stringio test/stringio])
+    cp_r("#{upstream}/ext/stringio", "ext")
+    cp_r("#{upstream}/test/stringio", "test")
+    cp_r("#{upstream}/stringio.gemspec", "ext/stringio")
     `git checkout ext/stringio/depend ext/stringio/README.md`
   when "ioconsole"
-    FileUtils.rm_rf(%w[ext/io/console test/io/console])
-    FileUtils.cp_r("#{upstream}/ext/io/console", "ext/io")
-    FileUtils.cp_r("#{upstream}/test/io/console", "test/io")
-    FileUtils.mkdir_p("ext/io/console/lib")
-    FileUtils.cp_r("#{upstream}/lib/io/console", "ext/io/console/lib")
-    FileUtils.cp_r("#{upstream}/io-console.gemspec", "ext/io/console")
+    rm_rf(%w[ext/io/console test/io/console])
+    cp_r("#{upstream}/ext/io/console", "ext/io")
+    cp_r("#{upstream}/test/io/console", "test/io")
+    mkdir_p("ext/io/console/lib")
+    cp_r("#{upstream}/lib/io/console", "ext/io/console/lib")
+    cp_r("#{upstream}/io-console.gemspec", "ext/io/console")
     `git checkout ext/io/console/depend`
   when "dbm"
-    FileUtils.rm_rf(%w[ext/dbm test/dbm])
-    FileUtils.cp_r("#{upstream}/ext/dbm", "ext")
-    FileUtils.cp_r("#{upstream}/test/dbm", "test")
-    FileUtils.cp_r("#{upstream}/dbm.gemspec", "ext/dbm")
+    rm_rf(%w[ext/dbm test/dbm])
+    cp_r("#{upstream}/ext/dbm", "ext")
+    cp_r("#{upstream}/test/dbm", "test")
+    cp_r("#{upstream}/dbm.gemspec", "ext/dbm")
     `git checkout ext/dbm/depend`
   when "gdbm"
-    FileUtils.rm_rf(%w[ext/gdbm test/gdbm])
-    FileUtils.cp_r("#{upstream}/ext/gdbm", "ext")
-    FileUtils.cp_r("#{upstream}/test/gdbm", "test")
-    FileUtils.cp_r("#{upstream}/gdbm.gemspec", "ext/gdbm")
+    rm_rf(%w[ext/gdbm test/gdbm])
+    cp_r("#{upstream}/ext/gdbm", "ext")
+    cp_r("#{upstream}/test/gdbm", "test")
+    cp_r("#{upstream}/gdbm.gemspec", "ext/gdbm")
     `git checkout ext/gdbm/depend ext/gdbm/README`
   when "sdbm"
-    FileUtils.rm_rf(%w[ext/sdbm test/sdbm])
-    FileUtils.cp_r("#{upstream}/ext/sdbm", "ext")
-    FileUtils.cp_r("#{upstream}/test/sdbm", "test")
-    FileUtils.cp_r("#{upstream}/sdbm.gemspec", "ext/sdbm")
+    rm_rf(%w[ext/sdbm test/sdbm])
+    cp_r("#{upstream}/ext/sdbm", "ext")
+    cp_r("#{upstream}/test/sdbm", "test")
+    cp_r("#{upstream}/sdbm.gemspec", "ext/sdbm")
     `git checkout ext/sdbm/depend`
   when "etc"
-    FileUtils.rm_rf(%w[ext/etc test/etc])
-    FileUtils.cp_r("#{upstream}/ext/etc", "ext")
-    FileUtils.cp_r("#{upstream}/test/etc", "test")
-    FileUtils.cp_r("#{upstream}/etc.gemspec", "ext/etc")
+    rm_rf(%w[ext/etc test/etc])
+    cp_r("#{upstream}/ext/etc", "ext")
+    cp_r("#{upstream}/test/etc", "test")
+    cp_r("#{upstream}/etc.gemspec", "ext/etc")
     `git checkout ext/etc/depend`
   when "date"
-    FileUtils.rm_rf(%w[ext/date test/date])
-    FileUtils.cp_r("#{upstream}/ext/date", "ext")
-    FileUtils.cp_r("#{upstream}/lib", "ext/date")
-    FileUtils.cp_r("#{upstream}/test/date", "test")
-    FileUtils.cp_r("#{upstream}/date.gemspec", "ext/date")
+    rm_rf(%w[ext/date test/date])
+    cp_r("#{upstream}/ext/date", "ext")
+    cp_r("#{upstream}/lib", "ext/date")
+    cp_r("#{upstream}/test/date", "test")
+    cp_r("#{upstream}/date.gemspec", "ext/date")
     `git checkout ext/date/depend`
-    FileUtils.rm_rf(["ext/date/lib/date_core.bundle"])
+    rm_rf(["ext/date/lib/date_core.bundle"])
   when "zlib"
-    FileUtils.rm_rf(%w[ext/zlib test/zlib])
-    FileUtils.cp_r("#{upstream}/ext/zlib", "ext")
-    FileUtils.cp_r("#{upstream}/test/zlib", "test")
-    FileUtils.cp_r("#{upstream}/zlib.gemspec", "ext/zlib")
+    rm_rf(%w[ext/zlib test/zlib])
+    cp_r("#{upstream}/ext/zlib", "ext")
+    cp_r("#{upstream}/test/zlib", "test")
+    cp_r("#{upstream}/zlib.gemspec", "ext/zlib")
     `git checkout ext/zlib/depend`
   when "fcntl"
-    FileUtils.rm_rf(%w[ext/fcntl])
-    FileUtils.cp_r("#{upstream}/ext/fcntl", "ext")
-    FileUtils.cp_r("#{upstream}/fcntl.gemspec", "ext/fcntl")
+    rm_rf(%w[ext/fcntl])
+    cp_r("#{upstream}/ext/fcntl", "ext")
+    cp_r("#{upstream}/fcntl.gemspec", "ext/fcntl")
     `git checkout ext/fcntl/depend`
   when "thwait"
-    FileUtils.rm_rf(%w[lib/thwait*])
-    FileUtils.cp_r(Dir.glob("#{upstream}/lib/*"), "lib")
-    FileUtils.cp_r("#{upstream}/thwait.gemspec", "lib/thwait")
+    rm_rf(%w[lib/thwait*])
+    cp_r(Dir.glob("#{upstream}/lib/*"), "lib")
+    cp_r("#{upstream}/thwait.gemspec", "lib/thwait")
   when "e2mmap"
-    FileUtils.rm_rf(%w[lib/e2mmap*])
-    FileUtils.cp_r(Dir.glob("#{upstream}/lib/*"), "lib")
-    FileUtils.cp_r("#{upstream}/e2mmap.gemspec", "lib")
+    rm_rf(%w[lib/e2mmap*])
+    cp_r(Dir.glob("#{upstream}/lib/*"), "lib")
+    cp_r("#{upstream}/e2mmap.gemspec", "lib")
   when "strscan"
-    FileUtils.rm_rf(%w[ext/strscan test/strscan])
-    FileUtils.cp_r("#{upstream}/ext/strscan", "ext")
-    FileUtils.cp_r("#{upstream}/test/strscan", "test")
-    FileUtils.cp_r("#{upstream}/strscan.gemspec", "ext/strscan")
-    FileUtils.rm_rf(%w["ext/strscan/regenc.h ext/strscan/regint.h"])
+    rm_rf(%w[ext/strscan test/strscan])
+    cp_r("#{upstream}/ext/strscan", "ext")
+    cp_r("#{upstream}/test/strscan", "test")
+    cp_r("#{upstream}/strscan.gemspec", "ext/strscan")
+    rm_rf(%w["ext/strscan/regenc.h ext/strscan/regint.h"])
     `git checkout ext/strscan/depend`
   when "racc"
-    FileUtils.rm_rf(%w[lib/racc* ext/racc test/racc])
-    FileUtils.cp_r(Dir.glob("#{upstream}/lib/racc*"), "lib")
-    FileUtils.mkdir_p("ext/racc/cparse")
-    FileUtils.cp_r(Dir.glob("#{upstream}/ext/racc/cparse/*"), "ext/racc/cparse")
-    FileUtils.cp_r("#{upstream}/test", "test/racc")
+    rm_rf(%w[lib/racc* ext/racc test/racc])
+    cp_r(Dir.glob("#{upstream}/lib/racc*"), "lib")
+    mkdir_p("ext/racc/cparse")
+    cp_r(Dir.glob("#{upstream}/ext/racc/cparse/*"), "ext/racc/cparse")
+    cp_r("#{upstream}/test", "test/racc")
     `git checkout ext/racc/cparse/README`
   when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "cmath", "mutex_m", "sync"
     sync_lib gem
@@ -231,27 +232,27 @@ def sync_lib(repo)
   unless File.directory?("../#{repo}")
     abort "Expected '../#{repo}' (#{File.expand_path("../#{repo}")}) to be a directory, but it wasn't."
   end
-  FileUtils.rm_rf(["lib/#{repo}.rb", "lib/#{repo}/*", "test/test_#{repo}.rb"])
-  FileUtils.cp_r(Dir.glob("../#{repo}/lib/*"), "lib")
+  rm_rf(["lib/#{repo}.rb", "lib/#{repo}/*", "test/test_#{repo}.rb"])
+  cp_r(Dir.glob("../#{repo}/lib/*"), "lib")
   tests = if File.directory?("test/#{repo}")
             "test/#{repo}"
           else
             "test/test_#{repo}.rb"
           end
-  FileUtils.cp_r("../#{repo}/#{tests}", "test")
+  cp_r("../#{repo}/#{tests}", "test")
   gemspec = if File.directory?("lib/#{repo}")
               "lib/#{repo}/#{repo}.gemspec"
             else
               "lib/#{repo}.gemspec"
             end
-  FileUtils.cp_r("../#{repo}/#{repo}.gemspec", "#{gemspec}")
+  cp_r("../#{repo}/#{repo}.gemspec", "#{gemspec}")
 end
 
 def update_default_gems(gem)
   author, repository = $repositories[gem.to_sym].split('/')
 
   unless File.exist?("../../#{author}/#{repository}")
-    FileUtils.mkdir_p("../../#{author}")
+    mkdir_p("../../#{author}")
     `git clone git@github.com:#{author}/#{repository}.git ../../#{author}/#{repository}`
   end
 
