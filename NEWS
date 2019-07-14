@@ -203,6 +203,11 @@ open-uri::
   * Warn open-uri's "open" method at Kernel.
     Use URI.open instead.
 
+Pathname:
+
+  * Delegates 3 arguments from Pathname.glob to Dir.glob to
+    accept base: keyword.
+
 Racc::
 
   * Merge 1.4.15 from upstream repository and added cli of racc.
