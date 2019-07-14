@@ -84,138 +84,140 @@ $repositories = {
 def sync_default_gems(gem)
   puts "Sync #{$repositories[gem.to_sym]}"
 
+  upstream = File.join("..", "..", $repositories[gem.to_sym])
+
   case gem
   when "rubygems"
     `rm -rf lib/rubygems* test/rubygems`
-    `cp -r ../../rubygems/rubygems/lib/rubygems* ./lib`
-    `cp -r ../../rubygems/rubygems/test/rubygems ./test`
+    `cp -r #{upstream}/lib/rubygems* ./lib`
+    `cp -r #{upstream}/test/rubygems ./test`
   when "bundler"
     `rm -rf lib/bundler* libexec/bundler libexec/bundle spec/bundler man/bundle* man/gemfile*`
-    `cp -r ../../bundler/bundler/lib/bundler* ./lib`
-    `cp -r ../../bundler/bundler/exe/bundle* ./libexec`
-    `cp ../../bundler/bundler/bundler.gemspec ./lib/bundler`
-    `cp -r ../../bundler/bundler/spec spec/bundler`
-    `cp -r ../../bundler/bundler/man/*.{1,5,1\.txt,5\.txt,ronn} ./man`
+    `cp -r #{upstream}/lib/bundler* ./lib`
+    `cp -r #{upstream}/exe/bundle* ./libexec`
+    `cp #{upstream}/bundler.gemspec ./lib/bundler`
+    `cp -r #{upstream}/spec spec/bundler`
+    `cp -r #{upstream}/man/*.{1,5,1\.txt,5\.txt,ronn} ./man`
     `rm -rf spec/bundler/support/artifice/vcr_cassettes`
   when "rdoc"
     `rm -rf lib/rdoc* test/rdoc libexec/rdoc libexec/ri`
-    `cp -rf ../rdoc/lib/rdoc* ./lib`
-    `cp -rf ../rdoc/test test/rdoc`
-    `cp ../rdoc/rdoc.gemspec ./lib/rdoc`
-    `cp -rf ../rdoc/exe/rdoc ./libexec`
-    `cp -rf ../rdoc/exe/ri ./libexec`
+    `cp -rf #{upstream}/lib/rdoc* ./lib`
+    `cp -rf #{upstream}/test test/rdoc`
+    `cp #{upstream}/rdoc.gemspec ./lib/rdoc`
+    `cp -rf #{upstream}/exe/rdoc ./libexec`
+    `cp -rf #{upstream}/exe/ri ./libexec`
     `rm -f lib/rdoc/markdown.kpeg lib/rdoc/markdown/literals.kpeg lib/rdoc/rd/block_parser.ry lib/rdoc/rd/inline_parser.ry`
     `git checkout lib/rdoc/.document`
   when "reline"
     `rm -rf lib/reline* test/reline`
-    `cp -rf ../reline/lib/reline* ./lib`
-    `cp -rf ../reline/test test/reline`
-    `cp ../reline/reline.gemspec ./lib/reline`
+    `cp -rf #{upstream}/lib/reline* ./lib`
+    `cp -rf #{upstream}/test test/reline`
+    `cp #{upstream}/reline.gemspec ./lib/reline`
   when "json"
     `rm -rf ext/json test/json`
-    `cp -rf ../../flori/json/ext/json/ext ext/json`
-    `cp -rf ../../flori/json/tests test/json`
-    `cp -rf ../../flori/json/lib ext/json`
+    `cp -rf .#{upstream}/ext/json/ext ext/json`
+    `cp -rf .#{upstream}/tests test/json`
+    `cp -rf .#{upstream}/lib ext/json`
     `rm -rf ext/json/lib/json/pure*`
-    `cp ../../flori/json/json.gemspec ext/json`
+    `cp .#{upstream}/json.gemspec ext/json`
     `rm -r ext/json/lib/json/ext`
     `git checkout ext/json/extconf.rb ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend`
   when "psych"
     `rm -rf ext/psych test/psych`
-    `cp -rf ../psych/ext/psych ./ext`
-    `cp -rf ../psych/lib ./ext/psych`
-    `cp -rf ../psych/test/psych ./test`
+    `cp -rf .#{upstream}/ext/psych ./ext`
+    `cp -rf .#{upstream}/lib ./ext/psych`
+    `cp -rf .#{upstream}/test/psych ./test`
     `rm -rf ext/psych/lib/org ext/psych/lib/psych.jar ext/psych/lib/psych_jars.rb`
     `rm -rf ext/psych/lib/psych.{bundle,so} ext/psych/lib/{2.0,2.1,2.2,2.3,2.4}`
     `rm -f ext/psych/yaml/LICENSE`
-    `cp ../psych/psych.gemspec ext/psych/`
+    `cp .#{upstream}/psych.gemspec ext/psych/`
     `git checkout ext/psych/depend`
   when "fiddle"
     `rm -rf ext/fiddle test/fiddle`
-    `cp -rf ../fiddle/ext/fiddle ext`
-    `cp -rf ../fiddle/lib ext/fiddle`
-    `cp -rf ../fiddle/test/fiddle test`
-    `cp -f ../fiddle/fiddle.gemspec ext/fiddle`
+    `cp -rf #{upstream}/ext/fiddle ext`
+    `cp -rf #{upstream}/lib ext/fiddle`
+    `cp -rf #{upstream}/test/fiddle test`
+    `cp -f #{upstream}/fiddle.gemspec ext/fiddle`
     `git checkout ext/fiddle/depend`
     `rm -rf ext/fiddle/lib/fiddle.{bundle,so}`
   when "stringio"
     `rm -rf ext/stringio test/stringio`
-    `cp -rf ../stringio/ext/stringio ext`
-    `cp -rf ../stringio/test/stringio test`
-    `cp -f ../stringio/stringio.gemspec ext/stringio`
+    `cp -rf #{upstream}/ext/stringio ext`
+    `cp -rf #{upstream}/test/stringio test`
+    `cp -f #{upstream}/stringio.gemspec ext/stringio`
     `git checkout ext/stringio/depend ext/stringio/README.md`
   when "ioconsole"
     `rm -rf ext/io/console test/io/console`
-    `cp -rf ../io-console/ext/io/console ext/io`
-    `cp -rf ../io-console/test/io/console test/io`
+    `cp -rf #{upstream}/ext/io/console ext/io`
+    `cp -rf #{upstream}/test/io/console test/io`
     `mkdir -p ext/io/console/lib`
-    `cp -rf ../io-console/lib/io/console ext/io/console/lib`
-    `cp -f ../io-console/io-console.gemspec ext/io/console`
+    `cp -rf #{upstream}/lib/io/console ext/io/console/lib`
+    `cp -f #{upstream}/io-console.gemspec ext/io/console`
     `git checkout ext/io/console/depend`
   when "dbm"
     `rm -rf ext/dbm test/dbm`
-    `cp -rf ../dbm/ext/dbm ext`
-    `cp -rf ../dbm/test/dbm test`
-    `cp -f ../dbm/dbm.gemspec ext/dbm`
+    `cp -rf #{upstream}/ext/dbm ext`
+    `cp -rf #{upstream}/test/dbm test`
+    `cp -f #{upstream}/dbm.gemspec ext/dbm`
     `git checkout ext/dbm/depend`
   when "gdbm"
     `rm -rf ext/gdbm test/gdbm`
-    `cp -rf ../gdbm/ext/gdbm ext`
-    `cp -rf ../gdbm/test/gdbm test`
-    `cp -f ../gdbm/gdbm.gemspec ext/gdbm`
+    `cp -rf #{upstream}/ext/gdbm ext`
+    `cp -rf #{upstream}/test/gdbm test`
+    `cp -f #{upstream}/gdbm.gemspec ext/gdbm`
     `git checkout ext/gdbm/depend ext/gdbm/README`
   when "sdbm"
     `rm -rf ext/sdbm test/sdbm`
-    `cp -rf ../sdbm/ext/sdbm ext`
-    `cp -rf ../sdbm/test/sdbm test`
-    `cp -f ../sdbm/sdbm.gemspec ext/sdbm`
+    `cp -rf #{upstream}/ext/sdbm ext`
+    `cp -rf #{upstream}/test/sdbm test`
+    `cp -f #{upstream}/sdbm.gemspec ext/sdbm`
     `git checkout ext/sdbm/depend`
   when "etc"
     `rm -rf ext/etc test/etc`
-    `cp -rf ../etc/ext/etc ext`
-    `cp -rf ../etc/test/etc test`
-    `cp -f ../etc/etc.gemspec ext/etc`
+    `cp -rf #{upstream}/ext/etc ext`
+    `cp -rf #{upstream}/test/etc test`
+    `cp -f #{upstream}/etc.gemspec ext/etc`
     `git checkout ext/etc/depend`
   when "date"
     `rm -rf ext/date test/date`
-    `cp -rf ../date/ext/date ext`
-    `cp -rf ../date/lib ext/date`
-    `cp -rf ../date/test/date test`
-    `cp -f ../date/date.gemspec ext/date`
+    `cp -rf #{upstream}/ext/date ext`
+    `cp -rf #{upstream}/lib ext/date`
+    `cp -rf #{upstream}/test/date test`
+    `cp -f #{upstream}/date.gemspec ext/date`
     `git checkout ext/date/depend`
     `rm -f ext/date/lib/date_core.bundle`
   when "zlib"
     `rm -rf ext/zlib test/zlib`
-    `cp -rf ../zlib/ext/zlib ext`
-    `cp -rf ../zlib/test/zlib test`
-    `cp -f ../zlib/zlib.gemspec ext/zlib`
+    `cp -rf #{upstream}/ext/zlib ext`
+    `cp -rf #{upstream}/test/zlib test`
+    `cp -f #{upstream}/zlib.gemspec ext/zlib`
     `git checkout ext/zlib/depend`
   when "fcntl"
     `rm -rf ext/fcntl`
-    `cp -rf ../fcntl/ext/fcntl ext`
-    `cp -f ../fcntl/fcntl.gemspec ext/fcntl`
+    `cp -rf #{upstream}/ext/fcntl ext`
+    `cp -f #{upstream}/fcntl.gemspec ext/fcntl`
     `git checkout ext/fcntl/depend`
   when "thwait"
     `rm -rf lib/thwait*`
-    `cp -rf ../thwait/lib/* lib`
-    `cp -rf ../thwait/thwait.gemspec lib/thwait`
+    `cp -rf #{upstream}/lib/* lib`
+    `cp -rf #{upstream}/thwait.gemspec lib/thwait`
   when "e2mmap"
     `rm -rf lib/e2mmap*`
-    `cp -rf ../e2mmap/lib/* lib`
-    `cp -rf ../e2mmap/e2mmap.gemspec lib`
+    `cp -rf #{upstream}/lib/* lib`
+    `cp -rf #{upstream}/e2mmap.gemspec lib`
   when "strscan"
     `rm -rf ext/strscan test/strscan`
-    `cp -rf ../strscan/ext/strscan ext`
-    `cp -rf ../strscan/test/strscan test`
-    `cp -f ../strscan/strscan.gemspec ext/strscan`
+    `cp -rf #{upstream}/ext/strscan ext`
+    `cp -rf #{upstream}/test/strscan test`
+    `cp -f #{upstream}/strscan.gemspec ext/strscan`
     `rm -f ext/strscan/regenc.h ext/strscan/regint.h`
     `git checkout ext/strscan/depend`
   when "racc"
     `rm -rf lib/racc* ext/racc test/racc`
-    `cp -rf ../racc/lib/racc* lib`
+    `cp -rf #{upstream}/lib/racc* lib`
     `mkdir -p ext/racc/cparse`
-    `cp -rf ../racc/ext/racc/cparse/* ext/racc/cparse`
-    `cp -rf ../racc/test test/racc`
+    `cp -rf #{upstream}/ext/racc/cparse/* ext/racc/cparse`
+    `cp -rf #{upstream}/test test/racc`
     `git checkout ext/racc/cparse/README`
   when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "cmath", "mutex_m", "sync"
     sync_lib gem
