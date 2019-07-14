@@ -56,7 +56,7 @@ Array::
 
     * Added Array#union and Array#difference instance methods.  [Feature #14097]
 
-  Modified methods::
+  Modified method::
 
     * Array#to_h now accepts a block that maps elements to new key/value pairs.  [Feature #15143]
 
@@ -67,7 +67,7 @@ Array::
 
 Binding::
 
-  New methods::
+  New method::
 
     * Added Binding#source_location.  [Feature #14230]
 
@@ -87,13 +87,13 @@ Dir::
 
 Enumerable::
 
-  New methods::
+  New method::
 
     * Enumerable#chain returns an enumerator object that iterates over the
       elements of the receiver and then those of each argument
       in sequence.  [Feature #15144]
 
-  Modified methods::
+  Modified method::
 
     * Enumerable#to_h now accepts a block that maps elements to new key/value pairs.  [Feature #15143]
 
@@ -130,7 +130,7 @@ Enumerator::
 
 ENV::
 
-  Modified methods::
+  Modified method::
 
     * ENV.to_h now accepts a block that maps names and values to new keys and values.  [Feature #15143]
 
@@ -158,7 +158,7 @@ Hash::
 
 IO::
 
-  New options::
+  New option::
 
     * Added new mode character <code>'x'</code> to open files for exclusive
       access. [Feature #11258]
@@ -209,20 +209,20 @@ Module::
 
 NameError::
 
-  New options::
+  New option::
 
     * NameError.new accepts a +:receiver+ option to set receiver in Ruby
       code.  [Feature #14313]
 
 NilClass::
 
-  New methods::
+  New method::
 
     * NilClass#=~ is added for compatibility.  [Feature #15231]
 
 NoMethodError::
 
-  New options::
+  New option::
 
     * NoMethodError.new accepts a +:receiver+ option to set receiver in Ruby
       code.  [Feature #14313]
@@ -236,7 +236,7 @@ Numeric::
 
 OpenStruct::
 
-  Modified methods::
+  Modified method::
 
     * OpenStruct#to_h now accepts a block that maps keys and values to new keys and values.  [Feature #15143]
 
@@ -252,13 +252,13 @@ Proc::
 
 Random::
 
-  New methods::
+  New method::
 
     * Added Random.bytes.  [Feature #4938]
 
 Range::
 
-  New methods::
+  New method::
 
     * Added Range#% instance method.  [Feature #14697]
 
@@ -293,7 +293,7 @@ RubyVM::AbstractSyntaxTree::
 
 RubyVM::
 
-  New methods::
+  New method::
 
     * RubyVM.resolve_feature_path identifies the file that will be loaded by
       "require(feature)". [experimental] [Feature #15230]
@@ -308,7 +308,7 @@ String::
 
 Struct::
 
-  Modified methods::
+  Modified method::
 
     * Struct#to_h now accepts a block that maps keys and values to new keys and values.  [Feature #15143]
 
@@ -338,7 +338,7 @@ TracePoint::
 
     * TracePoint#eval_script [Feature #15287]
 
-  Modified methods::
+  Modified method::
 
     * TracePoint#enable accepts new keywords "target:" and
       "target_line:".  [Feature #15289]
@@ -350,7 +350,7 @@ BigDecimal::
   Update to version 1.4.0.  This version includes several compatibility
   issues, see Compatibility issues section below for details.
 
-  Modified methods::
+  Modified method::
 
     * BigDecimal() accepts the new keyword "exception:" similar to Float().
 
