@@ -3135,6 +3135,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		    break;
 		  case BIN(leave):
 		    piobj = iobj;
+                    /* fall through */
 		  default:
 		    next = NULL;
 		    break;
