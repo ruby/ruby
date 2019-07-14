@@ -18,7 +18,6 @@ class TestJIT < Test::Unit::TestCase
   # trace_* insns are not compiled for now...
   TEST_PENDING_INSNS = RubyVM::INSTRUCTION_NAMES.select { |n| n.start_with?('trace_') }.map(&:to_sym) + [
     # not supported yet
-    :getblockparamproxy,
     :defineclass,
     :opt_call_c_function,
 
@@ -94,7 +93,18 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_getblockparamproxy
-    skip "support this in mjit_compile"
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '4', success_count: 3, insns: %i[getblockparamproxy])
+    begin;
+      def bar(&b)
+        b.call
+      end
+
+      def foo(&b)
+        bar(&b) * bar(&b)
+      end
+
+      print foo { 2 }
+    end;
   end
 
   def test_compile_insn_getspecial

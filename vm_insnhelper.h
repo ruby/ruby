@@ -14,6 +14,8 @@
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
+RUBY_EXTERN VALUE rb_block_param_proxy;
+
 RUBY_EXTERN VALUE ruby_vm_const_missing_count;
 RUBY_EXTERN rb_serial_t ruby_vm_global_method_state;
 RUBY_EXTERN rb_serial_t ruby_vm_global_constant_state;
