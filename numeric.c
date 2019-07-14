@@ -4196,7 +4196,6 @@ fix_cmp(VALUE x, VALUE y)
     else {
 	return rb_num_coerce_cmp(x, y, id_cmp);
     }
-    return rb_num_coerce_cmp(x, y, id_cmp);
 }
 
 VALUE
