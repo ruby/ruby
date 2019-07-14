@@ -8428,6 +8428,7 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 	    set_yylval_noname();
 	    return tGVAR;
 	}
+	/* fall through */
       case '0':
 	tokadd(p, '$');
     }
