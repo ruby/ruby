@@ -737,6 +737,7 @@ cref_replace_with_duplicated_cref_each_frame(const VALUE *vptr, int can_be_svar,
 	    if (can_be_svar) {
 		return cref_replace_with_duplicated_cref_each_frame((const VALUE *)&((struct vm_svar *)v)->cref_or_me, FALSE, v);
 	    }
+            /* fall through */
 	  case imemo_ment:
 	    rb_bug("cref_replace_with_duplicated_cref_each_frame: unreachable");
 	  default:
