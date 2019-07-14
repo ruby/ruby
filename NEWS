@@ -149,6 +149,13 @@ Regexp / String::
     * Update Unicode version to 12.1.0, adding support for
       U+32FF SQUARE ERA NAME REIWA.  [Feature #15195]
 
+RubyVM::
+
+  Removed method::
+
+    * RubyVM.resolve_feature_path moved to
+      $LOAD_PATH.resolve_feature_path.  [Feature #15903] [Feature #15230]
+
 Time::
 
   New methods::
