@@ -110,9 +110,9 @@ require "irb/version"
 #
 # === Auto indentation
 #
-# To enable auto-indent mode in irb, add the following to your +.irbrc+:
+# To disable auto-indent mode in irb, add the following to your +.irbrc+:
 #
-#     IRB.conf[:AUTO_INDENT] = true
+#     IRB.conf[:AUTO_INDENT] = false
 #
 # === Autocompletion
 #
@@ -141,7 +141,7 @@ require "irb/version"
 # This example can be used in your +.irbrc+
 #
 #     IRB.conf[:PROMPT][:MY_PROMPT] = { # name of prompt mode
-#       :AUTO_INDENT => true,           # enables auto-indent mode
+#       :AUTO_INDENT => false,          # disables auto-indent mode
 #       :PROMPT_I =>  ">> ",		# simple prompt
 #       :PROMPT_S => nil,		# prompt for continuated strings
 #       :PROMPT_C => nil,		# prompt for continuated statement

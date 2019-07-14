@@ -194,17 +194,17 @@ module IRB
     # Can be either the default <code>IRB.conf[:AUTO_INDENT]</code>, or the
     # mode set by #prompt_mode=
     #
-    # To enable auto-indentation in irb:
+    # To disable auto-indentation in irb:
     #
-    #     IRB.conf[:AUTO_INDENT] = true
-    #
-    # or
-    #
-    #     irb_context.auto_indent_mode = true
+    #     IRB.conf[:AUTO_INDENT] = false
     #
     # or
     #
-    #     IRB.CurrentContext.auto_indent_mode = true
+    #     irb_context.auto_indent_mode = false
+    #
+    # or
+    #
+    #     IRB.CurrentContext.auto_indent_mode = false
     #
     # See IRB@Configuration for more information.
     attr_accessor :auto_indent_mode
