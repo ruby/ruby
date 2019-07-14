@@ -238,12 +238,18 @@ def sync_default_gems_with_commits(gem, range)
     end
   end
 
-  IO.popen(%W"git log --format=%H #{range}") do |commits|
-    commits.read.split.reverse.each do |commit|
-      puts "Pick #{commit} from #{$repositories[gem.to_sym]}."
-      `git cherry-pick #{commit}`
+  IO.popen(%W"git log --format=%H,%s #{range}") do |f|
+    commits = f.read.split("\n").reverse.map{|commit| commit.split(',')}
+    commits.each do |sha, subject|
+      puts "Pick #{sha} from #{$repositories[gem.to_sym]}."
+      if subject =~ /^Merge/
+        puts "Skip #{sha}. Because It was merge commit"
+        next
+      end
+
+      `git cherry-pick #{sha}`
       unless $?.success?
-        puts "Failed to pick #{commit}."
+        puts "Failed to pick #{sha}"
         break
       end
 
