@@ -2,6 +2,7 @@
 init.o: $(RUBY_EXTCONF_H)
 init.o: $(arch_hdrdir)/ruby/config.h
 init.o: $(hdrdir)/ruby.h
+init.o: $(hdrdir)/ruby/assert.h
 init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
@@ -13,6 +14,7 @@ init.o: init.c
 receiver.o: $(RUBY_EXTCONF_H)
 receiver.o: $(arch_hdrdir)/ruby/config.h
 receiver.o: $(hdrdir)/ruby.h
+receiver.o: $(hdrdir)/ruby/assert.h
 receiver.o: $(hdrdir)/ruby/backward.h
 receiver.o: $(hdrdir)/ruby/defines.h
 receiver.o: $(hdrdir)/ruby/intern.h
@@ -24,6 +26,7 @@ receiver.o: receiver.c
 super.o: $(RUBY_EXTCONF_H)
 super.o: $(arch_hdrdir)/ruby/config.h
 super.o: $(hdrdir)/ruby.h
+super.o: $(hdrdir)/ruby/assert.h
 super.o: $(hdrdir)/ruby/backward.h
 super.o: $(hdrdir)/ruby/defines.h
 super.o: $(hdrdir)/ruby/intern.h

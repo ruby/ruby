@@ -2,6 +2,7 @@
 typeddata.o: $(RUBY_EXTCONF_H)
 typeddata.o: $(arch_hdrdir)/ruby/config.h
 typeddata.o: $(hdrdir)/ruby.h
+typeddata.o: $(hdrdir)/ruby/assert.h
 typeddata.o: $(hdrdir)/ruby/backward.h
 typeddata.o: $(hdrdir)/ruby/defines.h
 typeddata.o: $(hdrdir)/ruby/intern.h

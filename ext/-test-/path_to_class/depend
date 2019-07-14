@@ -2,6 +2,7 @@
 path_to_class.o: $(RUBY_EXTCONF_H)
 path_to_class.o: $(arch_hdrdir)/ruby/config.h
 path_to_class.o: $(hdrdir)/ruby.h
+path_to_class.o: $(hdrdir)/ruby/assert.h
 path_to_class.o: $(hdrdir)/ruby/backward.h
 path_to_class.o: $(hdrdir)/ruby/defines.h
 path_to_class.o: $(hdrdir)/ruby/intern.h

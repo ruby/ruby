@@ -2,6 +2,7 @@
 memory_status.o: $(RUBY_EXTCONF_H)
 memory_status.o: $(arch_hdrdir)/ruby/config.h
 memory_status.o: $(hdrdir)/ruby.h
+memory_status.o: $(hdrdir)/ruby/assert.h
 memory_status.o: $(hdrdir)/ruby/backward.h
 memory_status.o: $(hdrdir)/ruby/defines.h
 memory_status.o: $(hdrdir)/ruby/intern.h

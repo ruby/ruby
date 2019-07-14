@@ -2,6 +2,7 @@
 internal_ivar.o: $(RUBY_EXTCONF_H)
 internal_ivar.o: $(arch_hdrdir)/ruby/config.h
 internal_ivar.o: $(hdrdir)/ruby.h
+internal_ivar.o: $(hdrdir)/ruby/assert.h
 internal_ivar.o: $(hdrdir)/ruby/backward.h
 internal_ivar.o: $(hdrdir)/ruby/defines.h
 internal_ivar.o: $(hdrdir)/ruby/intern.h

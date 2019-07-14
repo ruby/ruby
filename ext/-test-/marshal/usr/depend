@@ -2,6 +2,7 @@
 usrmarshal.o: $(RUBY_EXTCONF_H)
 usrmarshal.o: $(arch_hdrdir)/ruby/config.h
 usrmarshal.o: $(hdrdir)/ruby.h
+usrmarshal.o: $(hdrdir)/ruby/assert.h
 usrmarshal.o: $(hdrdir)/ruby/backward.h
 usrmarshal.o: $(hdrdir)/ruby/defines.h
 usrmarshal.o: $(hdrdir)/ruby/intern.h

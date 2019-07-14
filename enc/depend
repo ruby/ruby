@@ -223,6 +223,7 @@ enc/emacs_mule.$(OBJEXT): subst.h
 enc/encdb.$(OBJEXT): $(hdrdir)/ruby.h
 enc/encdb.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/encdb.$(OBJEXT): $(top_srcdir)/internal.h
+enc/encdb.$(OBJEXT): assert.h
 enc/encdb.$(OBJEXT): backward.h
 enc/encdb.$(OBJEXT): config.h
 enc/encdb.$(OBJEXT): defines.h
@@ -274,6 +275,7 @@ enc/gb18030.$(OBJEXT): onigmo.h
 enc/gb18030.$(OBJEXT): oniguruma.h
 enc/gb2312.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/gb2312.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/gb2312.$(OBJEXT): assert.h
 enc/gb2312.$(OBJEXT): backward.h
 enc/gb2312.$(OBJEXT): config.h
 enc/gb2312.$(OBJEXT): defines.h
@@ -439,6 +441,7 @@ enc/shift_jis.$(OBJEXT): st.h
 enc/shift_jis.$(OBJEXT): subst.h
 enc/trans/big5.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/big5.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/big5.$(OBJEXT): assert.h
 enc/trans/big5.$(OBJEXT): backward.h
 enc/trans/big5.$(OBJEXT): config.h
 enc/trans/big5.$(OBJEXT): defines.h
@@ -449,6 +452,7 @@ enc/trans/big5.$(OBJEXT): st.h
 enc/trans/big5.$(OBJEXT): subst.h
 enc/trans/cesu_8.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/cesu_8.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/cesu_8.$(OBJEXT): assert.h
 enc/trans/cesu_8.$(OBJEXT): backward.h
 enc/trans/cesu_8.$(OBJEXT): config.h
 enc/trans/cesu_8.$(OBJEXT): defines.h
@@ -459,6 +463,7 @@ enc/trans/cesu_8.$(OBJEXT): st.h
 enc/trans/cesu_8.$(OBJEXT): subst.h
 enc/trans/chinese.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/chinese.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/chinese.$(OBJEXT): assert.h
 enc/trans/chinese.$(OBJEXT): backward.h
 enc/trans/chinese.$(OBJEXT): config.h
 enc/trans/chinese.$(OBJEXT): defines.h
@@ -469,6 +474,7 @@ enc/trans/chinese.$(OBJEXT): st.h
 enc/trans/chinese.$(OBJEXT): subst.h
 enc/trans/ebcdic.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/ebcdic.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/ebcdic.$(OBJEXT): assert.h
 enc/trans/ebcdic.$(OBJEXT): backward.h
 enc/trans/ebcdic.$(OBJEXT): config.h
 enc/trans/ebcdic.$(OBJEXT): defines.h
@@ -479,6 +485,7 @@ enc/trans/ebcdic.$(OBJEXT): st.h
 enc/trans/ebcdic.$(OBJEXT): subst.h
 enc/trans/emoji.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/emoji.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/emoji.$(OBJEXT): assert.h
 enc/trans/emoji.$(OBJEXT): backward.h
 enc/trans/emoji.$(OBJEXT): config.h
 enc/trans/emoji.$(OBJEXT): defines.h
@@ -489,6 +496,7 @@ enc/trans/emoji.$(OBJEXT): st.h
 enc/trans/emoji.$(OBJEXT): subst.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): assert.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): backward.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): config.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): defines.h
@@ -499,6 +507,7 @@ enc/trans/emoji_iso2022_kddi.$(OBJEXT): st.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): subst.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): assert.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): backward.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): config.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): defines.h
@@ -509,6 +518,7 @@ enc/trans/emoji_sjis_docomo.$(OBJEXT): st.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): subst.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): assert.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): backward.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): config.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): defines.h
@@ -519,6 +529,7 @@ enc/trans/emoji_sjis_kddi.$(OBJEXT): st.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): subst.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): assert.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): backward.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): config.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): defines.h
@@ -529,6 +540,7 @@ enc/trans/emoji_sjis_softbank.$(OBJEXT): st.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): subst.h
 enc/trans/escape.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/escape.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/escape.$(OBJEXT): assert.h
 enc/trans/escape.$(OBJEXT): backward.h
 enc/trans/escape.$(OBJEXT): config.h
 enc/trans/escape.$(OBJEXT): defines.h
@@ -539,6 +551,7 @@ enc/trans/escape.$(OBJEXT): st.h
 enc/trans/escape.$(OBJEXT): subst.h
 enc/trans/gb18030.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/gb18030.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/gb18030.$(OBJEXT): assert.h
 enc/trans/gb18030.$(OBJEXT): backward.h
 enc/trans/gb18030.$(OBJEXT): config.h
 enc/trans/gb18030.$(OBJEXT): defines.h
@@ -549,6 +562,7 @@ enc/trans/gb18030.$(OBJEXT): st.h
 enc/trans/gb18030.$(OBJEXT): subst.h
 enc/trans/gbk.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/gbk.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/gbk.$(OBJEXT): assert.h
 enc/trans/gbk.$(OBJEXT): backward.h
 enc/trans/gbk.$(OBJEXT): config.h
 enc/trans/gbk.$(OBJEXT): defines.h
@@ -559,6 +573,7 @@ enc/trans/gbk.$(OBJEXT): st.h
 enc/trans/gbk.$(OBJEXT): subst.h
 enc/trans/iso2022.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/iso2022.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/iso2022.$(OBJEXT): assert.h
 enc/trans/iso2022.$(OBJEXT): backward.h
 enc/trans/iso2022.$(OBJEXT): config.h
 enc/trans/iso2022.$(OBJEXT): defines.h
@@ -569,6 +584,7 @@ enc/trans/iso2022.$(OBJEXT): st.h
 enc/trans/iso2022.$(OBJEXT): subst.h
 enc/trans/japanese.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/japanese.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/japanese.$(OBJEXT): assert.h
 enc/trans/japanese.$(OBJEXT): backward.h
 enc/trans/japanese.$(OBJEXT): config.h
 enc/trans/japanese.$(OBJEXT): defines.h
@@ -579,6 +595,7 @@ enc/trans/japanese.$(OBJEXT): st.h
 enc/trans/japanese.$(OBJEXT): subst.h
 enc/trans/japanese_euc.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/japanese_euc.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/japanese_euc.$(OBJEXT): assert.h
 enc/trans/japanese_euc.$(OBJEXT): backward.h
 enc/trans/japanese_euc.$(OBJEXT): config.h
 enc/trans/japanese_euc.$(OBJEXT): defines.h
@@ -589,6 +606,7 @@ enc/trans/japanese_euc.$(OBJEXT): st.h
 enc/trans/japanese_euc.$(OBJEXT): subst.h
 enc/trans/japanese_sjis.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/japanese_sjis.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/japanese_sjis.$(OBJEXT): assert.h
 enc/trans/japanese_sjis.$(OBJEXT): backward.h
 enc/trans/japanese_sjis.$(OBJEXT): config.h
 enc/trans/japanese_sjis.$(OBJEXT): defines.h
@@ -599,6 +617,7 @@ enc/trans/japanese_sjis.$(OBJEXT): st.h
 enc/trans/japanese_sjis.$(OBJEXT): subst.h
 enc/trans/korean.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/korean.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/korean.$(OBJEXT): assert.h
 enc/trans/korean.$(OBJEXT): backward.h
 enc/trans/korean.$(OBJEXT): config.h
 enc/trans/korean.$(OBJEXT): defines.h
@@ -609,6 +628,7 @@ enc/trans/korean.$(OBJEXT): st.h
 enc/trans/korean.$(OBJEXT): subst.h
 enc/trans/newline.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/newline.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/newline.$(OBJEXT): assert.h
 enc/trans/newline.$(OBJEXT): config.h
 enc/trans/newline.$(OBJEXT): defines.h
 enc/trans/newline.$(OBJEXT): enc/trans/newline.c
@@ -618,6 +638,7 @@ enc/trans/newline.$(OBJEXT): st.h
 enc/trans/newline.$(OBJEXT): subst.h
 enc/trans/single_byte.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/single_byte.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/single_byte.$(OBJEXT): assert.h
 enc/trans/single_byte.$(OBJEXT): backward.h
 enc/trans/single_byte.$(OBJEXT): config.h
 enc/trans/single_byte.$(OBJEXT): defines.h
@@ -630,6 +651,7 @@ enc/trans/transdb.$(OBJEXT): enc/trans/transdb.c
 enc/trans/transdb.$(OBJEXT): transdb.h
 enc/trans/utf8_mac.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/utf8_mac.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/utf8_mac.$(OBJEXT): assert.h
 enc/trans/utf8_mac.$(OBJEXT): backward.h
 enc/trans/utf8_mac.$(OBJEXT): config.h
 enc/trans/utf8_mac.$(OBJEXT): defines.h
@@ -640,6 +662,7 @@ enc/trans/utf8_mac.$(OBJEXT): st.h
 enc/trans/utf8_mac.$(OBJEXT): subst.h
 enc/trans/utf_16_32.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/utf_16_32.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/utf_16_32.$(OBJEXT): assert.h
 enc/trans/utf_16_32.$(OBJEXT): backward.h
 enc/trans/utf_16_32.$(OBJEXT): config.h
 enc/trans/utf_16_32.$(OBJEXT): defines.h
@@ -653,6 +676,7 @@ enc/unicode.$(OBJEXT): $(UNICODE_HDR_DIR)/name2ctype.h
 enc/unicode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/unicode.$(OBJEXT): $(top_srcdir)/regenc.h
 enc/unicode.$(OBJEXT): $(top_srcdir)/regint.h
+enc/unicode.$(OBJEXT): assert.h
 enc/unicode.$(OBJEXT): config.h
 enc/unicode.$(OBJEXT): defines.h
 enc/unicode.$(OBJEXT): enc/unicode.c

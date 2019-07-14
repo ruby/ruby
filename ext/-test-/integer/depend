@@ -2,6 +2,7 @@
 core_ext.o: $(RUBY_EXTCONF_H)
 core_ext.o: $(arch_hdrdir)/ruby/config.h
 core_ext.o: $(hdrdir)/ruby.h
+core_ext.o: $(hdrdir)/ruby/assert.h
 core_ext.o: $(hdrdir)/ruby/backward.h
 core_ext.o: $(hdrdir)/ruby/defines.h
 core_ext.o: $(hdrdir)/ruby/encoding.h
@@ -18,6 +19,7 @@ core_ext.o: core_ext.c
 init.o: $(RUBY_EXTCONF_H)
 init.o: $(arch_hdrdir)/ruby/config.h
 init.o: $(hdrdir)/ruby.h
+init.o: $(hdrdir)/ruby/assert.h
 init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
@@ -29,6 +31,7 @@ init.o: init.c
 my_integer.o: $(RUBY_EXTCONF_H)
 my_integer.o: $(arch_hdrdir)/ruby/config.h
 my_integer.o: $(hdrdir)/ruby.h
+my_integer.o: $(hdrdir)/ruby/assert.h
 my_integer.o: $(hdrdir)/ruby/backward.h
 my_integer.o: $(hdrdir)/ruby/defines.h
 my_integer.o: $(hdrdir)/ruby/intern.h

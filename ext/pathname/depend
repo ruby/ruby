@@ -2,6 +2,7 @@
 pathname.o: $(RUBY_EXTCONF_H)
 pathname.o: $(arch_hdrdir)/ruby/config.h
 pathname.o: $(hdrdir)/ruby.h
+pathname.o: $(hdrdir)/ruby/assert.h
 pathname.o: $(hdrdir)/ruby/backward.h
 pathname.o: $(hdrdir)/ruby/defines.h
 pathname.o: $(hdrdir)/ruby/encoding.h

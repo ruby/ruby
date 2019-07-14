@@ -2,6 +2,7 @@
 digest.o: $(RUBY_EXTCONF_H)
 digest.o: $(arch_hdrdir)/ruby/config.h
 digest.o: $(hdrdir)/ruby.h
+digest.o: $(hdrdir)/ruby/assert.h
 digest.o: $(hdrdir)/ruby/backward.h
 digest.o: $(hdrdir)/ruby/defines.h
 digest.o: $(hdrdir)/ruby/intern.h

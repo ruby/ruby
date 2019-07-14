@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 #include "defines.h"
+#include "ruby/assert.h"
 
 /* For MinGW, we need __declspec(dllimport) for RUBY_EXTERN on MJIT.
    mswin's RUBY_EXTERN already has that. See also: win32/Makefile.sub */

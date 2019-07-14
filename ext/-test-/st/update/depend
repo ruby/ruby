@@ -2,6 +2,7 @@
 update.o: $(RUBY_EXTCONF_H)
 update.o: $(arch_hdrdir)/ruby/config.h
 update.o: $(hdrdir)/ruby.h
+update.o: $(hdrdir)/ruby/assert.h
 update.o: $(hdrdir)/ruby/backward.h
 update.o: $(hdrdir)/ruby/defines.h
 update.o: $(hdrdir)/ruby/intern.h

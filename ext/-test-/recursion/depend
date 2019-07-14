@@ -2,6 +2,7 @@
 recursion.o: $(RUBY_EXTCONF_H)
 recursion.o: $(arch_hdrdir)/ruby/config.h
 recursion.o: $(hdrdir)/ruby.h
+recursion.o: $(hdrdir)/ruby/assert.h
 recursion.o: $(hdrdir)/ruby/backward.h
 recursion.o: $(hdrdir)/ruby/defines.h
 recursion.o: $(hdrdir)/ruby/intern.h

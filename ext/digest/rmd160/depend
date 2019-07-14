@@ -5,6 +5,7 @@ rmd160init.o: $(LOCAL_HDRS)
 rmd160init.o: $(RUBY_EXTCONF_H)
 rmd160init.o: $(arch_hdrdir)/ruby/config.h
 rmd160init.o: $(hdrdir)/ruby.h
+rmd160init.o: $(hdrdir)/ruby/assert.h
 rmd160init.o: $(hdrdir)/ruby/backward.h
 rmd160init.o: $(hdrdir)/ruby/defines.h
 rmd160init.o: $(hdrdir)/ruby/intern.h

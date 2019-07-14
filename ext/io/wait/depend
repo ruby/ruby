@@ -2,6 +2,7 @@
 wait.o: $(RUBY_EXTCONF_H)
 wait.o: $(arch_hdrdir)/ruby/config.h
 wait.o: $(hdrdir)/ruby.h
+wait.o: $(hdrdir)/ruby/assert.h
 wait.o: $(hdrdir)/ruby/backward.h
 wait.o: $(hdrdir)/ruby/defines.h
 wait.o: $(hdrdir)/ruby/encoding.h

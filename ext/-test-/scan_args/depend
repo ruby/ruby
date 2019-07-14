@@ -2,6 +2,7 @@
 scan_args.o: $(RUBY_EXTCONF_H)
 scan_args.o: $(arch_hdrdir)/ruby/config.h
 scan_args.o: $(hdrdir)/ruby.h
+scan_args.o: $(hdrdir)/ruby/assert.h
 scan_args.o: $(hdrdir)/ruby/backward.h
 scan_args.o: $(hdrdir)/ruby/defines.h
 scan_args.o: $(hdrdir)/ruby/intern.h

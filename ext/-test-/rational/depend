@@ -6,6 +6,7 @@ rat.o: rat.c $(top_srcdir)/internal.h
 rat.o: $(RUBY_EXTCONF_H)
 rat.o: $(arch_hdrdir)/ruby/config.h
 rat.o: $(hdrdir)/ruby.h
+rat.o: $(hdrdir)/ruby/assert.h
 rat.o: $(hdrdir)/ruby/backward.h
 rat.o: $(hdrdir)/ruby/defines.h
 rat.o: $(hdrdir)/ruby/encoding.h

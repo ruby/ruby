@@ -2,6 +2,7 @@
 rb_fatal.o: $(RUBY_EXTCONF_H)
 rb_fatal.o: $(arch_hdrdir)/ruby/config.h
 rb_fatal.o: $(hdrdir)/ruby.h
+rb_fatal.o: $(hdrdir)/ruby/assert.h
 rb_fatal.o: $(hdrdir)/ruby/backward.h
 rb_fatal.o: $(hdrdir)/ruby/defines.h
 rb_fatal.o: $(hdrdir)/ruby/intern.h
