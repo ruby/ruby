@@ -2087,6 +2087,7 @@ utc_offset_arg(VALUE arg)
 	    if (s[6] != ':') goto invalid_utc_offset;
 	    if (!ISDIGIT(s[7]) || !ISDIGIT(s[8])) goto invalid_utc_offset;
 	    n += (s[7] * 10 + s[8] - '0' * 11);
+            /* fall through */
 	  case 6:
 	    if (s[0] != '+' && s[0] != '-') goto invalid_utc_offset;
 	    if (!ISDIGIT(s[1]) || !ISDIGIT(s[2])) goto invalid_utc_offset;
