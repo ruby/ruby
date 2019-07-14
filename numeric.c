@@ -3418,8 +3418,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
       case 1:
 	break;
       default:
-	rb_check_arity(argc, 0, 1);
-	break;
+	rb_error_arity(argc, 0, 1);
     }
     enc = rb_to_encoding(argv[0]);
     if (!enc) enc = rb_ascii8bit_encoding();
