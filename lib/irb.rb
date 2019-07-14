@@ -463,7 +463,8 @@ module IRB
         end
         if @context.auto_indent_mode and !@context.io.respond_to?(:auto_indent)
           unless ltype
-            ind = prompt(@context.prompt_i, ltype, indent, line_no)[/.*\z/].size +
+            prompt_i = @context.prompt_i.nil? ? "" : @context.prompt_i
+            ind = prompt(prompt_i, ltype, indent, line_no)[/.*\z/].size +
               indent * 2 - p.size
             ind += 2 if continue
             @context.io.prompt = p + " " * ind if ind > 0
