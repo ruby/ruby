@@ -97,7 +97,7 @@ Enumerable::
 
     * Enumerable#to_h now accepts a block that maps elements to new key/value pairs.  [Feature #15143]
 
-  Aliased methods::
+  Aliased method::
 
     * Enumerable#filter is a new alias for Enumerable#select. [Feature #13784]
 
@@ -116,7 +116,7 @@ Enumerator::Chain::
 
 Enumerator::Lazy::
 
-  Aliased methods::
+  Aliased method::
 
     * Enumerator::Lazy#filter is a new alias for
       Enumerator::Lazy#select.  [Feature #13784]
@@ -165,7 +165,7 @@ IO::
 
 Kernel::
 
-  Aliased methods::
+  Aliased method::
 
     * Kernel#then is a new alias for Kernel#yield_self. [Feature #14594]
 
@@ -534,7 +534,7 @@ RubyGems::
 
 Set::
 
-  Aliased methods::
+  Aliased method::
 
     * Set#filter! is a new alias for Set#select!.  [Feature #13784]
 
