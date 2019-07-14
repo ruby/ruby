@@ -1492,7 +1492,6 @@ help: PHONY
 	"  gdb:                 runs test.rb by miniruby under gdb" \
 	"  gdb-ruby:            runs test.rb by ruby under gdb" \
 	"  check:               equals make test test-all test-spec" \
-	"  exam:                equals make check" \
 	"  test:                ruby core tests" \
 	"  test-all:            all ruby tests [TESTOPTS=-j4 TESTS=<test files>]" \
 	"  test-spec:           run the Ruby spec suite [SPECOPTS=<specs, opts>]" \
