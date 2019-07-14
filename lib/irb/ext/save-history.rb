@@ -75,7 +75,6 @@ module IRB
         open(history_file) do |f|
           f.each { |l|
             l = l.chomp
-            $stderr.puts l.inspect
             if history.last&.end_with?("\\")
               history.last.delete_suffix!("\\")
               history.last << "\n" << l
