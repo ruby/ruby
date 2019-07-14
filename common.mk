@@ -1508,8 +1508,7 @@ help: PHONY
 	"  install-cross:       install cross compiling stuff" \
 	"  clean:               clean for tarball" \
 	"  distclean:           clean for repository" \
-	"  golf:                for golfers" \
-	"  goruby:              same as golf" \
+	"  golf:                build goruby for golfers" \
 	$(HELP_EXTRA_TASKS) \
 	"see DeveloperHowto for more detail: " \
 	"  https://bugs.ruby-lang.org/projects/ruby/wiki/DeveloperHowto" \
