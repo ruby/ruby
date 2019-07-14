@@ -6,7 +6,7 @@ end
 require 'minitest/unit'
 require 'test/unit/assertions'
 require_relative '../envutil'
-require_relative '../../../tool/colorize'
+require_relative '../colorize'
 require 'test/unit/testcase'
 require 'optparse'
 
