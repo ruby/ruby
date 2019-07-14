@@ -6919,6 +6919,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    break;
 	  case NODE_BLOCK_PASS:
 	    boff = 1;
+            /* fall through */
 	  default:
 	    INIT_ANCHOR(args);
 	    argc = setup_args(iseq, args, node->nd_args->nd_head, &flag, NULL);
