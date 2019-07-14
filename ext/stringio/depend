@@ -2,6 +2,7 @@
 stringio.o: $(RUBY_EXTCONF_H)
 stringio.o: $(arch_hdrdir)/ruby/config.h
 stringio.o: $(hdrdir)/ruby.h
+stringio.o: $(hdrdir)/ruby/assert.h
 stringio.o: $(hdrdir)/ruby/backward.h
 stringio.o: $(hdrdir)/ruby/defines.h
 stringio.o: $(hdrdir)/ruby/encoding.h

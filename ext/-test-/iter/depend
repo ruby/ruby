@@ -2,6 +2,7 @@
 break.o: $(RUBY_EXTCONF_H)
 break.o: $(arch_hdrdir)/ruby/config.h
 break.o: $(hdrdir)/ruby.h
+break.o: $(hdrdir)/ruby/assert.h
 break.o: $(hdrdir)/ruby/backward.h
 break.o: $(hdrdir)/ruby/defines.h
 break.o: $(hdrdir)/ruby/intern.h
@@ -13,6 +14,7 @@ break.o: break.c
 init.o: $(RUBY_EXTCONF_H)
 init.o: $(arch_hdrdir)/ruby/config.h
 init.o: $(hdrdir)/ruby.h
+init.o: $(hdrdir)/ruby/assert.h
 init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
@@ -24,6 +26,7 @@ init.o: init.c
 yield.o: $(RUBY_EXTCONF_H)
 yield.o: $(arch_hdrdir)/ruby/config.h
 yield.o: $(hdrdir)/ruby.h
+yield.o: $(hdrdir)/ruby/assert.h
 yield.o: $(hdrdir)/ruby/backward.h
 yield.o: $(hdrdir)/ruby/defines.h
 yield.o: $(hdrdir)/ruby/intern.h

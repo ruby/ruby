@@ -2,6 +2,7 @@
 nonblock.o: $(RUBY_EXTCONF_H)
 nonblock.o: $(arch_hdrdir)/ruby/config.h
 nonblock.o: $(hdrdir)/ruby.h
+nonblock.o: $(hdrdir)/ruby/assert.h
 nonblock.o: $(hdrdir)/ruby/backward.h
 nonblock.o: $(hdrdir)/ruby/defines.h
 nonblock.o: $(hdrdir)/ruby/encoding.h

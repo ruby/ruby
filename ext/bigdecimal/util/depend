@@ -2,6 +2,7 @@
 util.o: $(RUBY_EXTCONF_H)
 util.o: $(arch_hdrdir)/ruby/config.h
 util.o: $(hdrdir)/ruby.h
+util.o: $(hdrdir)/ruby/assert.h
 util.o: $(hdrdir)/ruby/backward.h
 util.o: $(hdrdir)/ruby/defines.h
 util.o: $(hdrdir)/ruby/intern.h

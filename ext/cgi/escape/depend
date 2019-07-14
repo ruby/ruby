@@ -2,6 +2,7 @@
 escape.o: $(RUBY_EXTCONF_H)
 escape.o: $(arch_hdrdir)/ruby/config.h
 escape.o: $(hdrdir)/ruby.h
+escape.o: $(hdrdir)/ruby/assert.h
 escape.o: $(hdrdir)/ruby/backward.h
 escape.o: $(hdrdir)/ruby/defines.h
 escape.o: $(hdrdir)/ruby/encoding.h

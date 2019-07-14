@@ -2,6 +2,7 @@
 numhash.o: $(RUBY_EXTCONF_H)
 numhash.o: $(arch_hdrdir)/ruby/config.h
 numhash.o: $(hdrdir)/ruby.h
+numhash.o: $(hdrdir)/ruby/assert.h
 numhash.o: $(hdrdir)/ruby/backward.h
 numhash.o: $(hdrdir)/ruby/defines.h
 numhash.o: $(hdrdir)/ruby/intern.h

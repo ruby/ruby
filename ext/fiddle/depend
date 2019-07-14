@@ -55,6 +55,7 @@ realclean: realclean-$(LIBFFI_CLEAN)
 closure.o: $(RUBY_EXTCONF_H)
 closure.o: $(arch_hdrdir)/ruby/config.h
 closure.o: $(hdrdir)/ruby.h
+closure.o: $(hdrdir)/ruby/assert.h
 closure.o: $(hdrdir)/ruby/backward.h
 closure.o: $(hdrdir)/ruby/defines.h
 closure.o: $(hdrdir)/ruby/encoding.h
@@ -76,6 +77,7 @@ closure.o: function.h
 conversions.o: $(RUBY_EXTCONF_H)
 conversions.o: $(arch_hdrdir)/ruby/config.h
 conversions.o: $(hdrdir)/ruby.h
+conversions.o: $(hdrdir)/ruby/assert.h
 conversions.o: $(hdrdir)/ruby/backward.h
 conversions.o: $(hdrdir)/ruby/defines.h
 conversions.o: $(hdrdir)/ruby/intern.h
@@ -91,6 +93,7 @@ conversions.o: function.h
 fiddle.o: $(RUBY_EXTCONF_H)
 fiddle.o: $(arch_hdrdir)/ruby/config.h
 fiddle.o: $(hdrdir)/ruby.h
+fiddle.o: $(hdrdir)/ruby/assert.h
 fiddle.o: $(hdrdir)/ruby/backward.h
 fiddle.o: $(hdrdir)/ruby/defines.h
 fiddle.o: $(hdrdir)/ruby/intern.h
@@ -106,6 +109,7 @@ fiddle.o: function.h
 function.o: $(RUBY_EXTCONF_H)
 function.o: $(arch_hdrdir)/ruby/config.h
 function.o: $(hdrdir)/ruby.h
+function.o: $(hdrdir)/ruby/assert.h
 function.o: $(hdrdir)/ruby/backward.h
 function.o: $(hdrdir)/ruby/defines.h
 function.o: $(hdrdir)/ruby/intern.h
@@ -122,6 +126,7 @@ function.o: function.h
 handle.o: $(RUBY_EXTCONF_H)
 handle.o: $(arch_hdrdir)/ruby/config.h
 handle.o: $(hdrdir)/ruby.h
+handle.o: $(hdrdir)/ruby/assert.h
 handle.o: $(hdrdir)/ruby/backward.h
 handle.o: $(hdrdir)/ruby/defines.h
 handle.o: $(hdrdir)/ruby/intern.h
@@ -137,6 +142,7 @@ handle.o: handle.c
 pointer.o: $(RUBY_EXTCONF_H)
 pointer.o: $(arch_hdrdir)/ruby/config.h
 pointer.o: $(hdrdir)/ruby.h
+pointer.o: $(hdrdir)/ruby/assert.h
 pointer.o: $(hdrdir)/ruby/backward.h
 pointer.o: $(hdrdir)/ruby/defines.h
 pointer.o: $(hdrdir)/ruby/encoding.h

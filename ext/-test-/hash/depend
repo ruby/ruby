@@ -2,6 +2,7 @@
 delete.o: $(RUBY_EXTCONF_H)
 delete.o: $(arch_hdrdir)/ruby/config.h
 delete.o: $(hdrdir)/ruby.h
+delete.o: $(hdrdir)/ruby/assert.h
 delete.o: $(hdrdir)/ruby/backward.h
 delete.o: $(hdrdir)/ruby/defines.h
 delete.o: $(hdrdir)/ruby/intern.h
@@ -13,6 +14,7 @@ delete.o: delete.c
 init.o: $(RUBY_EXTCONF_H)
 init.o: $(arch_hdrdir)/ruby/config.h
 init.o: $(hdrdir)/ruby.h
+init.o: $(hdrdir)/ruby/assert.h
 init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h

@@ -2,6 +2,7 @@
 foreach.o: $(RUBY_EXTCONF_H)
 foreach.o: $(arch_hdrdir)/ruby/config.h
 foreach.o: $(hdrdir)/ruby.h
+foreach.o: $(hdrdir)/ruby/assert.h
 foreach.o: $(hdrdir)/ruby/backward.h
 foreach.o: $(hdrdir)/ruby/defines.h
 foreach.o: $(hdrdir)/ruby/intern.h

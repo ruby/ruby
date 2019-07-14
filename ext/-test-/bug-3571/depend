@@ -2,6 +2,7 @@
 bug.o: $(RUBY_EXTCONF_H)
 bug.o: $(arch_hdrdir)/ruby/config.h
 bug.o: $(hdrdir)/ruby.h
+bug.o: $(hdrdir)/ruby/assert.h
 bug.o: $(hdrdir)/ruby/backward.h
 bug.o: $(hdrdir)/ruby/defines.h
 bug.o: $(hdrdir)/ruby/intern.h

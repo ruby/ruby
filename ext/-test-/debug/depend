@@ -2,6 +2,7 @@
 init.o: $(RUBY_EXTCONF_H)
 init.o: $(arch_hdrdir)/ruby/config.h
 init.o: $(hdrdir)/ruby.h
+init.o: $(hdrdir)/ruby/assert.h
 init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
@@ -12,6 +13,7 @@ init.o: $(hdrdir)/ruby/subst.h
 init.o: init.c
 inspector.o: $(RUBY_EXTCONF_H)
 inspector.o: $(arch_hdrdir)/ruby/config.h
+inspector.o: $(hdrdir)/ruby/assert.h
 inspector.o: $(hdrdir)/ruby/backward.h
 inspector.o: $(hdrdir)/ruby/debug.h
 inspector.o: $(hdrdir)/ruby/defines.h
@@ -23,6 +25,7 @@ inspector.o: $(hdrdir)/ruby/subst.h
 inspector.o: inspector.c
 profile_frames.o: $(RUBY_EXTCONF_H)
 profile_frames.o: $(arch_hdrdir)/ruby/config.h
+profile_frames.o: $(hdrdir)/ruby/assert.h
 profile_frames.o: $(hdrdir)/ruby/backward.h
 profile_frames.o: $(hdrdir)/ruby/debug.h
 profile_frames.o: $(hdrdir)/ruby/defines.h

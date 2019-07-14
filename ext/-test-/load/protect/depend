@@ -2,6 +2,7 @@
 protect.o: $(RUBY_EXTCONF_H)
 protect.o: $(arch_hdrdir)/ruby/config.h
 protect.o: $(hdrdir)/ruby.h
+protect.o: $(hdrdir)/ruby/assert.h
 protect.o: $(hdrdir)/ruby/backward.h
 protect.o: $(hdrdir)/ruby/defines.h
 protect.o: $(hdrdir)/ruby/intern.h

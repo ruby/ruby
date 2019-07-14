@@ -2,6 +2,7 @@
 fcntl.o: $(RUBY_EXTCONF_H)
 fcntl.o: $(arch_hdrdir)/ruby/config.h
 fcntl.o: $(hdrdir)/ruby.h
+fcntl.o: $(hdrdir)/ruby/assert.h
 fcntl.o: $(hdrdir)/ruby/backward.h
 fcntl.o: $(hdrdir)/ruby/defines.h
 fcntl.o: $(hdrdir)/ruby/intern.h

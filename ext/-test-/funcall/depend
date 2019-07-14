@@ -2,6 +2,7 @@
 funcall.o: $(RUBY_EXTCONF_H)
 funcall.o: $(arch_hdrdir)/ruby/config.h
 funcall.o: $(hdrdir)/ruby.h
+funcall.o: $(hdrdir)/ruby/assert.h
 funcall.o: $(hdrdir)/ruby/backward.h
 funcall.o: $(hdrdir)/ruby/defines.h
 funcall.o: $(hdrdir)/ruby/intern.h
