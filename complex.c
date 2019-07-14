@@ -817,25 +817,19 @@ f_divide(VALUE self, VALUE other,
 	if (f_gt_p(f_abs(bdat->real), f_abs(bdat->imag))) {
 	    r = (*func)(bdat->imag, bdat->real);
 	    n = f_mul(bdat->real, f_add(ONE, f_mul(r, r)));
-	    if (flo)
-		return f_complex_new2(CLASS_OF(self),
-				      (*func)(self, n),
-				      (*func)(f_negate(f_mul(self, r)), n));
             x = (*func)(f_add(adat->real, f_mul(adat->imag, r)), n);
             y = (*func)(f_sub(adat->imag, f_mul(adat->real, r)), n);
 	}
 	else {
 	    r = (*func)(bdat->real, bdat->imag);
 	    n = f_mul(bdat->imag, f_add(ONE, f_mul(r, r)));
-	    if (flo)
-		return f_complex_new2(CLASS_OF(self),
-				      (*func)(f_mul(self, r), n),
-				      (*func)(f_negate(self), n));
             x = (*func)(f_add(f_mul(adat->real, r), adat->imag), n);
             y = (*func)(f_sub(f_mul(adat->imag, r), adat->real), n);
 	}
-        x = rb_rational_canonicalize(x);
-        y = rb_rational_canonicalize(y);
+        if (!flo) {
+            x = rb_rational_canonicalize(x);
+            y = rb_rational_canonicalize(y);
+        }
         return f_complex_new2(CLASS_OF(self), x, y);
     }
     if (k_numeric_p(other) && f_real_p(other)) {
