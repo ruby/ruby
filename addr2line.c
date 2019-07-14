@@ -2050,6 +2050,7 @@ main_exe_path(void)
 {
 # define PROC_SELF_EXE "/proc/self/exe"
     ssize_t len = readlink(PROC_SELF_EXE, binary_filename, PATH_MAX);
+    if (len < 0) return 0;
     binary_filename[len] = 0;
     return len;
 }
