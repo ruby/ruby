@@ -834,7 +834,7 @@ static int
 name_match_p(const char *name, const char *str, size_t len)
 {
     if (len == 0) return 0;
-    do {
+    while (1) {
 	while (TOLOWER(*str) == *name) {
 	    if (!--len || !*++str) return 1;
 	    ++name;
@@ -844,8 +844,7 @@ name_match_p(const char *name, const char *str, size_t len)
 	if (*name != '-' && *name != '_') return 0;
 	++name;
 	++str;
-    } while (len > 0);
-    return !*name;
+    }
 }
 
 #define NAME_MATCH_P(name, str, len) \
