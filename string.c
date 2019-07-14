@@ -4142,7 +4142,6 @@ str_succ(VALUE str)
 	if (neighbor == NEIGHBOR_NOT_CHAR && last_alnum) {
 	    if (ISALPHA(*last_alnum) ? ISDIGIT(*s) :
 		ISDIGIT(*last_alnum) ? ISALPHA(*s) : 0) {
-		s = last_alnum;
 		break;
 	    }
 	}
