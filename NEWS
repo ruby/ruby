@@ -198,6 +198,11 @@ Net::IMAP::
 
   * Add Server Name Indication (SNI) support.  [Feature #15594]
 
+open-uri::
+
+  * Warn open-uri's "open" method at Kernel.
+    Use URI.open instead.
+
 Racc::
 
   * Merge 1.4.15 from upstream repository and added cli of racc.
