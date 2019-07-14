@@ -122,13 +122,12 @@ require "irb/version"
 #
 # === History
 #
-# By default, irb disables history and will not store any commands you used.
+# By default, irb will store the last 1000 commands you used in
+# <code>~/.irb_history</code>.
 #
-# If you want to enable history, add the following to your +.irbrc+:
+# If you want to disable history, add the following to your +.irbrc+:
 #
-#     IRB.conf[:SAVE_HISTORY] = 1000
-#
-# This will now store the last 1000 commands in <code>~/.irb_history</code>.
+#     IRB.conf[:SAVE_HISTORY] = nil
 #
 # See IRB::Context#save_history= for more information.
 #
