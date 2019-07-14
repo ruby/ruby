@@ -179,13 +179,6 @@ module Reline
     @@line_editor&.delete_text(start, length)
   end
 
-  private_class_method def self.test_mode
-    remove_const('IOGate') if const_defined?('IOGate')
-    const_set('IOGate', Reline::GeneralIO)
-    @@config.instance_variable_set(:@test_mode, true)
-    @@config.reset
-  end
-
   def self.input=(val)
     raise TypeError unless val.respond_to?(:getc) or val.nil?
     if val.respond_to?(:getc)
