@@ -9363,6 +9363,7 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct r
                 }
 	      case TS_ISE:
 		FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+                /* fall through */
 	      case TS_IC:
 		code[code_index] = (VALUE)&is_entries[(int)op];
 		break;
