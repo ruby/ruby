@@ -1194,7 +1194,6 @@ rb_trans_conv(rb_econv_t *ec,
     if (ec->elems[0].last_result == econv_after_output)
         ec->elems[0].last_result = econv_source_buffer_empty;
 
-    needreport_index = -1;
     for (i = ec->num_trans-1; 0 <= i; i--) {
         switch (ec->elems[i].last_result) {
           case econv_invalid_byte_sequence:
@@ -1203,7 +1202,6 @@ rb_trans_conv(rb_econv_t *ec,
           case econv_after_output:
           case econv_finished:
             sweep_start = i+1;
-            needreport_index = i;
             goto found_needreport;
 
           case econv_destination_buffer_full:
