@@ -447,6 +447,16 @@ enc/trans/big5.$(OBJEXT): intern.h
 enc/trans/big5.$(OBJEXT): missing.h
 enc/trans/big5.$(OBJEXT): st.h
 enc/trans/big5.$(OBJEXT): subst.h
+enc/trans/cesu_8.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/cesu_8.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/cesu_8.$(OBJEXT): backward.h
+enc/trans/cesu_8.$(OBJEXT): config.h
+enc/trans/cesu_8.$(OBJEXT): defines.h
+enc/trans/cesu_8.$(OBJEXT): enc/trans/cesu_8.c
+enc/trans/cesu_8.$(OBJEXT): intern.h
+enc/trans/cesu_8.$(OBJEXT): missing.h
+enc/trans/cesu_8.$(OBJEXT): st.h
+enc/trans/cesu_8.$(OBJEXT): subst.h
 enc/trans/chinese.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enc/trans/chinese.$(OBJEXT): $(top_srcdir)/transcode_data.h
 enc/trans/chinese.$(OBJEXT): backward.h
