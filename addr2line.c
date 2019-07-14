@@ -187,7 +187,7 @@ struct debug_section_definition {
 };
 
 /* Avoid consuming stack as this module may be used from signal handler */
-static char binary_filename[PATH_MAX];
+static char binary_filename[PATH_MAX + 1];
 
 static unsigned long
 uleb128(char **p)
