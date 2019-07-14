@@ -64,6 +64,7 @@ TOPLEVEL_BINDING::  The Binding of the top level scope.
 RUBY_VERSION::      The Ruby language version.
 RUBY_RELEASE_DATE:: The release date string.
 RUBY_PLATFORM::     The platform identifier.
+RUBY_COPYRIGHT::    The copyright string for ruby.
 RUBY_ENGINE::       The name of the Ruby implementation.
 RUBY_ENGINE_VERSION:: The version of the Ruby implementation.
 RUBY_DESCRIPTION::  The same as <tt>ruby --version</tt>, a String describing various aspects of the Ruby implementation.
