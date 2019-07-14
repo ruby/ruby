@@ -4483,6 +4483,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
             ADD_INSNL(ret, line, branchunless, lfinish[1]);
 	} while ((vals = vals->nd_next) != NULL);
       }
+        /* fall through */
       case NODE_STR:
       case NODE_LIT:
       case NODE_ZARRAY:
