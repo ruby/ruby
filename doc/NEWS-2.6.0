@@ -352,24 +352,24 @@ BigDecimal::
 
   Modified methods::
 
-  * BigDecimal() accepts the new keyword "exception:" similar to Float().
+    * BigDecimal() accepts the new keyword "exception:" similar to Float().
 
   Note for the differences among recent versions::
 
-  You should want to know the differences among recent versions of bigdecimal.
-  Please select the suitable version of bigdecimal according to the following
-  information.
+    You should want to know the differences among recent versions of bigdecimal.
+    Please select the suitable version of bigdecimal according to the following
+    information.
 
-  * 1.3.5 has BigDecimal.new without "exception:" keyword.  You can see the
-    deprecation warning of BigDecimal.new when you specify "-w" option.
-    BigDecimal(), BigDecimal.new, and Object#to_d methods are the same.
+    * 1.3.5 has BigDecimal.new without "exception:" keyword.  You can see the
+      deprecation warning of BigDecimal.new when you specify "-w" option.
+      BigDecimal(), BigDecimal.new, and Object#to_d methods are the same.
 
-  * 1.4.0 has BigDecimal.new with "exception:" keyword.  You always see the
-    deprecation warning of BigDecimal.new.  Object#to_d method is different
-    from BigDecimal() and BigDecimal.new.
+    * 1.4.0 has BigDecimal.new with "exception:" keyword.  You always see the
+      deprecation warning of BigDecimal.new.  Object#to_d method is different
+      from BigDecimal() and BigDecimal.new.
 
-  * 2.0.0 will be released soon after releasing Ruby 2.6.0.  This version
-    will not have the BigDecimal.new method.
+    * 2.0.0 will be released soon after releasing Ruby 2.6.0.  This version
+      will not have the BigDecimal.new method.
 
 Bundler::
 
