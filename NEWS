@@ -151,11 +151,15 @@ Regexp / String::
 
 Time::
 
+  New methods::
+
     * Added Time#ceil method.  [Feature #15772]
 
     * Added Time#floor method.  [Feature #15653]
 
 $LOAD_PATH::
+
+  New method::
 
     * Added $LOAD_PATH.resolve_feature_path.  [Feature #15903] [Feature #15230]
 
