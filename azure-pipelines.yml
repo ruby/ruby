@@ -22,7 +22,7 @@ jobs:
       sudo apt-get build-dep ruby2.3
     displayName: "Install dependencies"
   - checkout: self
-    fetchDepth: 10
+    fetchDepth: 20
   - script: |
       autoconf
       ./configure
