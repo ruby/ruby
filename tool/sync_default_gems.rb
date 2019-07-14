@@ -237,6 +237,17 @@ def sync_default_gems_with_commits(gem, range)
       `git fetch #{gem}`
     end
   end
+
+  IO.popen(%W"git log --format=%H #{range}") do |commits|
+    commits.read.split.reverse.each do |commit|
+      puts "Pick #{commit} from #{$repositories[gem.to_sym]}."
+      `git cherry-pick #{commit}`
+      unless $?.success?
+        puts "Failed to pick #{commit}."
+        break
+      end
+    end
+  end
 end
 
 def sync_lib(repo)
