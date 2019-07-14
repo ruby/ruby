@@ -254,6 +254,10 @@ def sync_default_gems_with_commits(gem, range)
       end
 
       `git filter-branch -f --msg-filter 'echo "[#{$repositories[gem.to_sym]}]" && echo && cat' -- HEAD~1..HEAD`
+      unless $?.success?
+        puts "Failed to modify commit message of #{sha}"
+        break
+      end
     end
   end
 end
