@@ -1079,9 +1079,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 #else
     // splitting .c -> .o step and .o -> .so step, to cache .o files in the future
     if ((success = compile_c_to_o(c_file, o_file)) != false) {
-        const char *o_files[2] = { NULL, NULL };
-        o_files[0] = o_file;
-        success = link_o_to_so(o_files, so_file);
+        success = link_o_to_so((const char *[]){ o_file, NULL }, so_file);
 
         // Always set o_file for compaction. The value is also used for lazy deletion.
         unit->o_file = strdup(o_file);
