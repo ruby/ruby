@@ -77,7 +77,7 @@ Encoding::
 
 Enumerable::
 
-  New method::
+  New methods::
 
     * Added Enumerable#filter_map.  [Feature #15323]
 
