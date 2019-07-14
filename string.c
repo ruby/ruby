@@ -5186,7 +5186,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	tainted = OBJ_TAINTED_RAW(repl);
 	break;
       default:
-	rb_error_arity(argc, 1, 2);
+        rb_error_arity(argc, 1, 2);
     }
 
     pat = get_pat_quoted(argv[0], 1);

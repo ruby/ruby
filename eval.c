@@ -790,7 +790,7 @@ make_exception(int argc, const VALUE *argv, int isstr)
 	}
 	break;
       default:
-	rb_error_arity(argc, 0, 3);
+        rb_error_arity(argc, 0, 3);
     }
     if (argc > 0) {
 	if (!rb_obj_is_kind_of(mesg, rb_eException))
