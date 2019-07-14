@@ -370,12 +370,12 @@ load_mantissa(double d, const char *buf, long len)
 	do {
 	    m = 0;
 	    switch (len) {
-	      default: m = *buf++ & 0xff; /* fall through */
+              default: m = *buf++ & 0xff; /* fall through */
 #if MANT_BITS > 24
-	      case 3: m = (m << 8) | (*buf++ & 0xff); /* fall through */
+              case 3: m = (m << 8) | (*buf++ & 0xff); /* fall through */
 #endif
 #if MANT_BITS > 16
-	      case 2: m = (m << 8) | (*buf++ & 0xff); /* fall through */
+              case 2: m = (m << 8) | (*buf++ & 0xff); /* fall through */
 #endif
 #if MANT_BITS > 8
 	      case 1: m = (m << 8) | (*buf++ & 0xff);
