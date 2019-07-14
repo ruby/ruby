@@ -3423,7 +3423,7 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *      $a = []; def m1(&b) b.call; $a << :m1 end; def m2() m1(&proc { next }); $a << :m2 end; m2; p $a
  *      #=> [:m1, :m2]
  *
- *      # +return+, +break+ and +next+ in the subby lambda exits the block.
+ *      # +return+, +break+ and +next+ in the stubby lambda exits the block.
  *      # (+lambda+ method behaves same.)
  *      # (The block is given for stubby lambda syntax and embraced by +m2+.)
  *      $a = []; def m1(&b) b.call; $a << :m1 end; def m2() m1(&-> { return }); $a << :m2 end; m2; p $a
@@ -3510,18 +3510,19 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  * a proc by the <code>&</code> operator, and therefore con be
  * consumed by iterators.
  *
- *      class Greater
- *        def initialize(greating)
- *          @greating = greating
+
+ *      class Greeter
+ *        def initialize(greeting)
+ *          @greeting = greeting
  *        end
  *
  *        def to_proc
- *          proc {|name| "#{@greating}, #{name}!" }
+ *          proc {|name| "#{@greeting}, #{name}!" }
  *        end
  *      end
  *
- *      hi = Greater.new("Hi")
- *      hey = Greater.new("Hey")
+ *      hi = Greeter.new("Hi")
+ *      hey = Greeter.new("Hey")
  *      ["Bob", "Jane"].map(&hi)    #=> ["Hi, Bob!", "Hi, Jane!"]
  *      ["Bob", "Jane"].map(&hey)   #=> ["Hey, Bob!", "Hey, Jane!"]
  *
@@ -3557,7 +3558,7 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *     def m1(&b) b end; def m2(); m1 { return } end; m2.call # LocalJumpError
  *     def m1(&b) b end; def m2(); m1 { break } end; m2.call # LocalJumpError
  *
- * Since +return+ and +break+ exists the block itself in lambdas,
+ * Since +return+ and +break+ exits the block itself in lambdas,
  * lambdas cannot be orphaned.
  *
  */
