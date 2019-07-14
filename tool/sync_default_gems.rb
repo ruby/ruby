@@ -40,6 +40,8 @@
 # * https://github.com/ruby/racc
 #
 
+require 'fileutils'
+
 $repositories = {
   rubygems: 'rubygems/rubygems',
   bundler: 'bundler/bundler',
@@ -88,66 +90,66 @@ def sync_default_gems(gem)
 
   case gem
   when "rubygems"
-    `rm -rf lib/rubygems* test/rubygems`
+    FileUtils.rm_rf(%w[lib/rubygems* test/rubygems])
     `cp -r #{upstream}/lib/rubygems* ./lib`
     `cp -r #{upstream}/test/rubygems ./test`
   when "bundler"
-    `rm -rf lib/bundler* libexec/bundler libexec/bundle spec/bundler man/bundle* man/gemfile*`
+    FileUtils.rm_rf(%w[lib/bundler* libexec/bundler libexec/bundle spec/bundler man/bundle* man/gemfile*])
     `cp -r #{upstream}/lib/bundler* ./lib`
     `cp -r #{upstream}/exe/bundle* ./libexec`
     `cp #{upstream}/bundler.gemspec ./lib/bundler`
     `cp -r #{upstream}/spec spec/bundler`
     `cp -r #{upstream}/man/*.{1,5,1\.txt,5\.txt,ronn} ./man`
-    `rm -rf spec/bundler/support/artifice/vcr_cassettes`
+    FileUtils.rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
   when "rdoc"
-    `rm -rf lib/rdoc* test/rdoc libexec/rdoc libexec/ri`
+    FileUtils.rm_rf(%w[lib/rdoc* test/rdoc libexec/rdoc libexec/ri])
     `cp -rf #{upstream}/lib/rdoc* ./lib`
     `cp -rf #{upstream}/test test/rdoc`
     `cp #{upstream}/rdoc.gemspec ./lib/rdoc`
     `cp -rf #{upstream}/exe/rdoc ./libexec`
     `cp -rf #{upstream}/exe/ri ./libexec`
-    `rm -f lib/rdoc/markdown.kpeg lib/rdoc/markdown/literals.kpeg lib/rdoc/rd/block_parser.ry lib/rdoc/rd/inline_parser.ry`
+    FileUtils.rm_rf(%w[lib/rdoc/markdown.kpeg lib/rdoc/markdown/literals.kpeg lib/rdoc/rd/block_parser.ry lib/rdoc/rd/inline_parser.ry])
     `git checkout lib/rdoc/.document`
   when "reline"
-    `rm -rf lib/reline* test/reline`
+    FileUtils.rm_rf(%w[lib/reline* test/reline])
     `cp -rf #{upstream}/lib/reline* ./lib`
     `cp -rf #{upstream}/test test/reline`
     `cp #{upstream}/reline.gemspec ./lib/reline`
   when "json"
-    `rm -rf ext/json test/json`
+    FileUtils.rm_rf(%w[ext/json test/json])
     `cp -rf .#{upstream}/ext/json/ext ext/json`
     `cp -rf .#{upstream}/tests test/json`
     `cp -rf .#{upstream}/lib ext/json`
-    `rm -rf ext/json/lib/json/pure*`
+    FileUtils.rm_rf(%[ext/json/lib/json/pure*])
     `cp .#{upstream}/json.gemspec ext/json`
-    `rm -r ext/json/lib/json/ext`
+    FileUtils.rm_rf(%w[ext/json/lib/json/ext])
     `git checkout ext/json/extconf.rb ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend`
   when "psych"
-    `rm -rf ext/psych test/psych`
+    FileUtils.rm_rf(%w[ext/psych test/psych])
     `cp -rf .#{upstream}/ext/psych ./ext`
     `cp -rf .#{upstream}/lib ./ext/psych`
     `cp -rf .#{upstream}/test/psych ./test`
-    `rm -rf ext/psych/lib/org ext/psych/lib/psych.jar ext/psych/lib/psych_jars.rb`
-    `rm -rf ext/psych/lib/psych.{bundle,so} ext/psych/lib/{2.0,2.1,2.2,2.3,2.4}`
-    `rm -f ext/psych/yaml/LICENSE`
+    FileUtils.rm_rf(%w[ext/psych/lib/org ext/psych/lib/psych.jar ext/psych/lib/psych_jars.rb])
+    FileUtils.rm_rf(%w[ext/psych/lib/psych.{bundle,so} ext/psych/lib/2.*])
+    FileUtils.rm_rf(["ext/psych/yaml/LICENSE"])
     `cp .#{upstream}/psych.gemspec ext/psych/`
     `git checkout ext/psych/depend`
   when "fiddle"
-    `rm -rf ext/fiddle test/fiddle`
+    FileUtils.rm_rf(%w[ext/fiddle test/fiddle])
     `cp -rf #{upstream}/ext/fiddle ext`
     `cp -rf #{upstream}/lib ext/fiddle`
     `cp -rf #{upstream}/test/fiddle test`
     `cp -f #{upstream}/fiddle.gemspec ext/fiddle`
     `git checkout ext/fiddle/depend`
-    `rm -rf ext/fiddle/lib/fiddle.{bundle,so}`
+    FileUtils.rm_rf(%w[ext/fiddle/lib/fiddle.{bundle,so}])
   when "stringio"
-    `rm -rf ext/stringio test/stringio`
+    FileUtils.rm_rf(%w[ext/stringio test/stringio])
     `cp -rf #{upstream}/ext/stringio ext`
     `cp -rf #{upstream}/test/stringio test`
     `cp -f #{upstream}/stringio.gemspec ext/stringio`
     `git checkout ext/stringio/depend ext/stringio/README.md`
   when "ioconsole"
-    `rm -rf ext/io/console test/io/console`
+    FileUtils.rm_rf(%w[ext/io/console test/io/console])
     `cp -rf #{upstream}/ext/io/console ext/io`
     `cp -rf #{upstream}/test/io/console test/io`
     `mkdir -p ext/io/console/lib`
@@ -155,65 +157,65 @@ def sync_default_gems(gem)
     `cp -f #{upstream}/io-console.gemspec ext/io/console`
     `git checkout ext/io/console/depend`
   when "dbm"
-    `rm -rf ext/dbm test/dbm`
+    FileUtils.rm_rf(%w[ext/dbm test/dbm])
     `cp -rf #{upstream}/ext/dbm ext`
     `cp -rf #{upstream}/test/dbm test`
     `cp -f #{upstream}/dbm.gemspec ext/dbm`
     `git checkout ext/dbm/depend`
   when "gdbm"
-    `rm -rf ext/gdbm test/gdbm`
+    FileUtils.rm_rf(%w[ext/gdbm test/gdbm])
     `cp -rf #{upstream}/ext/gdbm ext`
     `cp -rf #{upstream}/test/gdbm test`
     `cp -f #{upstream}/gdbm.gemspec ext/gdbm`
     `git checkout ext/gdbm/depend ext/gdbm/README`
   when "sdbm"
-    `rm -rf ext/sdbm test/sdbm`
+    FileUtils.rm_rf(%w[ext/sdbm test/sdbm])
     `cp -rf #{upstream}/ext/sdbm ext`
     `cp -rf #{upstream}/test/sdbm test`
     `cp -f #{upstream}/sdbm.gemspec ext/sdbm`
     `git checkout ext/sdbm/depend`
   when "etc"
-    `rm -rf ext/etc test/etc`
+    FileUtils.rm_rf(%w[ext/etc test/etc])
     `cp -rf #{upstream}/ext/etc ext`
     `cp -rf #{upstream}/test/etc test`
     `cp -f #{upstream}/etc.gemspec ext/etc`
     `git checkout ext/etc/depend`
   when "date"
-    `rm -rf ext/date test/date`
+    FileUtils.rm_rf(%w[ext/date test/date])
     `cp -rf #{upstream}/ext/date ext`
     `cp -rf #{upstream}/lib ext/date`
     `cp -rf #{upstream}/test/date test`
     `cp -f #{upstream}/date.gemspec ext/date`
     `git checkout ext/date/depend`
-    `rm -f ext/date/lib/date_core.bundle`
+    FileUtils.rm_rf(["ext/date/lib/date_core.bundle"])
   when "zlib"
-    `rm -rf ext/zlib test/zlib`
+    FileUtils.rm_rf(%w[ext/zlib test/zlib])
     `cp -rf #{upstream}/ext/zlib ext`
     `cp -rf #{upstream}/test/zlib test`
     `cp -f #{upstream}/zlib.gemspec ext/zlib`
     `git checkout ext/zlib/depend`
   when "fcntl"
-    `rm -rf ext/fcntl`
+    FileUtils.rm_rf(%w[ext/fcntl])
     `cp -rf #{upstream}/ext/fcntl ext`
     `cp -f #{upstream}/fcntl.gemspec ext/fcntl`
     `git checkout ext/fcntl/depend`
   when "thwait"
-    `rm -rf lib/thwait*`
+    FileUtils.rm_rf(%w[lib/thwait*])
     `cp -rf #{upstream}/lib/* lib`
     `cp -rf #{upstream}/thwait.gemspec lib/thwait`
   when "e2mmap"
-    `rm -rf lib/e2mmap*`
+    FileUtils.rm_rf(%w[lib/e2mmap*])
     `cp -rf #{upstream}/lib/* lib`
     `cp -rf #{upstream}/e2mmap.gemspec lib`
   when "strscan"
-    `rm -rf ext/strscan test/strscan`
+    FileUtils.rm_rf(%w[ext/strscan test/strscan])
     `cp -rf #{upstream}/ext/strscan ext`
     `cp -rf #{upstream}/test/strscan test`
     `cp -f #{upstream}/strscan.gemspec ext/strscan`
-    `rm -f ext/strscan/regenc.h ext/strscan/regint.h`
+    FileUtils.rm_rf(%w["ext/strscan/regenc.h ext/strscan/regint.h"])
     `git checkout ext/strscan/depend`
   when "racc"
-    `rm -rf lib/racc* ext/racc test/racc`
+    FileUtils.rm_rf(%w[lib/racc* ext/racc test/racc])
     `cp -rf #{upstream}/lib/racc* lib`
     `mkdir -p ext/racc/cparse`
     `cp -rf #{upstream}/ext/racc/cparse/* ext/racc/cparse`
@@ -229,7 +231,7 @@ def sync_lib(repo)
   unless File.directory?("../#{repo}")
     abort "Expected '../#{repo}' (#{File.expand_path("../#{repo}")}) to be a directory, but it wasn't."
   end
-  `rm -rf lib/#{repo}.rb lib/#{repo}/* test/test_#{repo}.rb`
+  FileUtils.rm_rf(["lib/#{repo}.rb", "lib/#{repo}/*", "test/test_#{repo}.rb"])
   `cp -rf ../#{repo}/lib/* lib`
   tests = if File.directory?("test/#{repo}")
             "test/#{repo}"
