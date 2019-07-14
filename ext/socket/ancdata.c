@@ -1137,6 +1137,7 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
     rb_io_t *fptr;
     struct msghdr mh;
     struct iovec iov;
+    VALUE tmp;
     int controls_num;
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     VALUE controls_str = 0;
@@ -1151,6 +1152,7 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 #endif
 
     StringValue(data);
+    tmp = rb_str_tmp_frozen_acquire(data);
 
     if (!RB_TYPE_P(controls, T_ARRAY)) {
 	controls = rb_ary_new();
@@ -1261,8 +1263,8 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
     }
     mh.msg_iovlen = 1;
     mh.msg_iov = &iov;
-    iov.iov_base = RSTRING_PTR(data);
-    iov.iov_len = RSTRING_LEN(data);
+    iov.iov_base = RSTRING_PTR(tmp);
+    iov.iov_len = RSTRING_LEN(tmp);
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     if (controls_str) {
         mh.msg_control = RSTRING_PTR(controls_str);
@@ -1295,6 +1297,7 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     RB_GC_GUARD(controls_str);
 #endif
+    rb_str_tmp_frozen_release(data, tmp);
 
     return SSIZET2NUM(ss);
 }
