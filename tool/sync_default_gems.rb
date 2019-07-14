@@ -228,6 +228,17 @@ def sync_default_gems(gem)
   end
 end
 
+def sync_default_gems_with_commits(gem, range)
+  puts "Sync #{$repositories[gem.to_sym]} with commit history."
+
+  IO.popen(%W"git remote") do |f|
+    unless f.read.split.include?(gem)
+      `git remote add #{gem} git@github.com:#{$repositories[gem.to_sym]}.git`
+      `git fetch #{gem}`
+    end
+  end
+end
+
 def sync_lib(repo)
   unless File.directory?("../#{repo}")
     abort "Expected '../#{repo}' (#{File.expand_path("../#{repo}")}) to be a directory, but it wasn't."
@@ -278,5 +289,9 @@ when "up"
 when "all"
   $repositories.keys.each{|gem| sync_default_gems(gem.to_s)}
 else
-  sync_default_gems(ARGV[0])
+  if ARGV[1]
+    sync_default_gems_with_commits(ARGV[0], ARGV[1])
+  else
+    sync_default_gems(ARGV[0])
+  end
 end
