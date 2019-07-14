@@ -3228,7 +3228,7 @@ rb_file_s_umask(int argc, VALUE *argv)
 	omask = umask(NUM2MODET(argv[0]));
         break;
       default:
-	rb_error_arity(argc, 0, 1);
+        rb_error_arity(argc, 0, 1);
     }
     return MODET2NUM(omask);
 }
