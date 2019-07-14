@@ -1,6 +1,5 @@
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 require 'reline'
-require 'reline2'
 require 'test/unit'
 
 module Reline
@@ -8,8 +7,12 @@ module Reline
     def test_mode
         remove_const('IOGate') if const_defined?('IOGate')
         const_set('IOGate', Reline::GeneralIO)
-        @@config.instance_variable_set(:@test_mode, true)
-        @@config.reset
+        send(:core).config.instance_variable_set(:@test_mode, true)
+        send(:core).config.reset
+    end
+
+    def test_reset
+      Reline.instance_variable_set(:@core, nil)
     end
   end
 end
