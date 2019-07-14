@@ -170,7 +170,27 @@ f_abs(VALUE x)
     return rb_funcall(x, id_abs, 0);
 }
 
-fun1(arg)
+static VALUE numeric_arg(VALUE self);
+static VALUE float_arg(VALUE self);
+
+inline static VALUE
+f_arg(VALUE x)
+{
+    if (RB_INTEGER_TYPE_P(x)) {
+        return numeric_arg(x);
+    }
+    else if (RB_FLOAT_TYPE_P(x)) {
+        return float_arg(x);
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL)) {
+        return numeric_arg(x);
+    }
+    else if (RB_TYPE_P(x, T_COMPLEX)) {
+        return rb_complex_arg(x);
+    }
+    return rb_funcall(x, id_arg, 0);
+}
+
 fun1(denominator)
 
 inline static VALUE
