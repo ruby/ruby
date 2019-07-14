@@ -117,22 +117,22 @@ def sync_default_gems(gem)
     `cp #{upstream}/reline.gemspec ./lib/reline`
   when "json"
     FileUtils.rm_rf(%w[ext/json test/json])
-    `cp -rf .#{upstream}/ext/json/ext ext/json`
-    `cp -rf .#{upstream}/tests test/json`
-    `cp -rf .#{upstream}/lib ext/json`
+    `cp -rf #{upstream}/ext/json/ext ext/json`
+    `cp -rf #{upstream}/tests test/json`
+    `cp -rf #{upstream}/lib ext/json`
     FileUtils.rm_rf(%[ext/json/lib/json/pure*])
-    `cp .#{upstream}/json.gemspec ext/json`
+    `cp #{upstream}/json.gemspec ext/json`
     FileUtils.rm_rf(%w[ext/json/lib/json/ext])
     `git checkout ext/json/extconf.rb ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend`
   when "psych"
     FileUtils.rm_rf(%w[ext/psych test/psych])
-    `cp -rf .#{upstream}/ext/psych ./ext`
-    `cp -rf .#{upstream}/lib ./ext/psych`
-    `cp -rf .#{upstream}/test/psych ./test`
+    `cp -rf #{upstream}/ext/psych ./ext`
+    `cp -rf #{upstream}/lib ./ext/psych`
+    `cp -rf #{upstream}/test/psych ./test`
     FileUtils.rm_rf(%w[ext/psych/lib/org ext/psych/lib/psych.jar ext/psych/lib/psych_jars.rb])
     FileUtils.rm_rf(%w[ext/psych/lib/psych.{bundle,so} ext/psych/lib/2.*])
     FileUtils.rm_rf(["ext/psych/yaml/LICENSE"])
-    `cp .#{upstream}/psych.gemspec ext/psych/`
+    `cp #{upstream}/psych.gemspec ext/psych/`
     `git checkout ext/psych/depend`
   when "fiddle"
     FileUtils.rm_rf(%w[ext/fiddle test/fiddle])
