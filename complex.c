@@ -152,7 +152,24 @@ f_sub(VALUE x, VALUE y)
     return rb_funcall(x, '-', 1, y);
 }
 
-fun1(abs)
+inline static VALUE
+f_abs(VALUE x)
+{
+    if (RB_INTEGER_TYPE_P(x)) {
+        return rb_int_abs(x);
+    }
+    else if (RB_FLOAT_TYPE_P(x)) {
+        return rb_float_abs(x);
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL)) {
+        return rb_rational_abs(x);
+    }
+    else if (RB_TYPE_P(x, T_COMPLEX)) {
+        return rb_complex_abs(x);
+    }
+    return rb_funcall(x, id_abs, 0);
+}
+
 fun1(arg)
 fun1(denominator)
 
