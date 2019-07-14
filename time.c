@@ -5090,15 +5090,15 @@ time_mdump(VALUE time)
          * binary (like as Fixnum and Bignum).
          */
         size_t ysize = rb_absint_size(year_extend, NULL);
-        char *p;
+        char *p, buf_year_extend[9];
         if (ysize > LONG_MAX ||
-            (i = ruby_marshal_write_long((long)ysize, buf)) < 0) {
+            (i = ruby_marshal_write_long((long)ysize, buf_year_extend)) < 0) {
             rb_raise(rb_eArgError, "year too %s to marshal: %"PRIsVALUE" UTC",
                      (year == 1900 ? "small" : "big"), vtm.year);
         }
         rb_str_resize(str, sizeof(buf) + i + ysize);
         p = RSTRING_PTR(str) + sizeof(buf);
-        memcpy(p, buf, i);
+        memcpy(p, buf_year_extend, i);
         p += i;
         rb_integer_pack(year_extend, p, ysize, 1, 0, INTEGER_PACK_LITTLE_ENDIAN);
     }
