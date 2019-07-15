@@ -1855,6 +1855,31 @@ class TestArray < Test::Unit::TestCase
     ary = [bug9340, bug9340.dup, bug9340.dup]
     assert_equal 1, ary.uniq.size
     assert_same bug9340, ary.uniq[0]
+
+    sc = Class.new(@cls)
+    a = sc[]
+    b = a.dup
+    assert_instance_of(sc, a.uniq)
+    assert_equal(sc[], a.uniq)
+    assert_equal(b, a)
+
+    a = sc[1]
+    b = a.dup
+    assert_instance_of(sc, a.uniq)
+    assert_equal(sc[1], a.uniq)
+    assert_equal(b, a)
+
+    a = sc[1, 1]
+    b = a.dup
+    assert_instance_of(sc, a.uniq)
+    assert_equal(sc[1], a.uniq)
+    assert_equal(b, a)
+
+    a = sc[1, 1]
+    b = a.dup
+    assert_instance_of(sc, a.uniq{|x| x})
+    assert_equal(sc[1], a.uniq{|x| x})
+    assert_equal(b, a)
   end
 
   def test_uniq_with_block

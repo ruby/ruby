@@ -4991,9 +4991,11 @@ rb_ary_uniq(VALUE ary)
 {
     VALUE hash, uniq;
 
-    if (RARRAY_LEN(ary) <= 1)
-        return rb_ary_dup(ary);
-    if (rb_block_given_p()) {
+    if (RARRAY_LEN(ary) <= 1) {
+        hash = 0;
+        uniq = rb_ary_dup(ary);
+    }
+    else if (rb_block_given_p()) {
 	hash = ary_make_hash_by(ary);
 	uniq = rb_hash_values(hash);
     }
@@ -5002,7 +5004,9 @@ rb_ary_uniq(VALUE ary)
 	uniq = rb_hash_values(hash);
     }
     RBASIC_SET_CLASS(uniq, rb_obj_class(ary));
-    ary_recycle_hash(hash);
+    if (hash) {
+        ary_recycle_hash(hash);
+    }
 
     return uniq;
 }
