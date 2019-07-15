@@ -69,7 +69,7 @@ module Bundler
       Bundler.ui.info "\n"
 
       primary_commands = ["install", "update",
-                          Bundler.feature_flag.cache_command_is_package? ? "cache" : "package",
+                          Bundler.feature_flag.bundler_3_mode? ? "cache" : "package",
                           "exec", "config", "help"]
 
       list = self.class.printable_commands(true)
@@ -410,7 +410,7 @@ module Bundler
       Outdated.new(options, gems).run
     end
 
-    if Bundler.feature_flag.cache_command_is_package?
+    if Bundler.feature_flag.bundler_3_mode?
       map %w[cache] => :package
     else
       desc "cache [OPTIONS]", "Cache all the gems to vendor/cache", :hide => true
@@ -424,7 +424,7 @@ module Bundler
       end
     end
 
-    desc "#{Bundler.feature_flag.cache_command_is_package? ? :cache : :package} [OPTIONS]", "Locks and then caches all of the gems into vendor/cache"
+    desc "#{Bundler.feature_flag.bundler_3_mode? ? :cache : :package} [OPTIONS]", "Locks and then caches all of the gems into vendor/cache"
     method_option "all",  :type => :boolean,
                           :default => Bundler.feature_flag.cache_all?,
                           :banner => "Include all sources (including path and git)."
