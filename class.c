@@ -1871,8 +1871,8 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 
 #define extract_kwarg(keyword, val) \
     (key = (st_data_t)(keyword), values ? \
-     rb_hash_stlike_delete(keyword_hash, &key, (val)) : \
-     rb_hash_stlike_lookup(keyword_hash, key, (val)))
+     (rb_hash_stlike_delete(keyword_hash, &key, &(val)) || ((val) = Qundef, 0)) : \
+     rb_hash_stlike_lookup(keyword_hash, key, NULL))
 
     if (NIL_P(keyword_hash)) keyword_hash = 0;
 
@@ -1880,18 +1880,11 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 	rest = 1;
 	optional = -1-optional;
     }
-    if (values) {
-	for (j = 0; j < required + optional; j++) {
-	    values[j] = Qundef;
-	}
-    }
     if (required) {
 	for (; i < required; i++) {
 	    VALUE keyword = ID2SYM(table[i]);
 	    if (keyword_hash) {
-		st_data_t val;
-		if (extract_kwarg(keyword, &val)) {
-		    if (values) values[i] = (VALUE)val;
+		if (extract_kwarg(keyword, values[i])) {
 		    continue;
 		}
 	    }
@@ -1905,9 +1898,7 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
     j = i;
     if (optional && keyword_hash) {
 	for (i = 0; i < optional; i++) {
-	    st_data_t val;
-	    if (extract_kwarg(ID2SYM(table[required+i]), &val)) {
-		if (values) values[required+i] = (VALUE)val;
+	    if (extract_kwarg(ID2SYM(table[required+i]), values[required+i])) {
 		j++;
 	    }
 	}
@@ -1915,6 +1906,11 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
     if (!rest && keyword_hash) {
 	if (RHASH_SIZE(keyword_hash) > (unsigned int)(values ? 0 : j)) {
 	    unknown_keyword_error(keyword_hash, table, required+optional);
+	}
+    }
+    if (values && !keyword_hash) {
+	for (i = 0; i < required + optional; i++) {
+	    values[i] = Qundef;
 	}
     }
     return j;
