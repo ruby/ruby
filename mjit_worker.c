@@ -548,6 +548,13 @@ COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
 static pid_t
 start_process(const char *abspath, char *const *argv)
 {
+    // Not calling non-async-signal-safe functions between vfork
+    // and execv for safety
+    int dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
+    if (dev_null < 0) {
+        verbose(1, "MJIT: Failed to open a null device: %s", strerror(errno));
+        return -1;
+    }
     if (mjit_opts.verbose >= 2) {
         const char *arg;
         fprintf(stderr, "Starting process: %s", abspath);
@@ -556,9 +563,6 @@ start_process(const char *abspath, char *const *argv)
         fprintf(stderr, "\n");
     }
 
-    // Not calling non-async-signal-safe functions between vfork
-    // and execv for safety
-    int dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
     pid_t pid;
 #ifdef _WIN32
     extern HANDLE rb_w32_start_process(const char *abspath, char *const *argv, int out_fd);
