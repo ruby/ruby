@@ -1302,7 +1302,7 @@ VALUE rb_gvar_defined(struct rb_global_entry *);
 /* array.c */
 
 #ifndef ARRAY_DEBUG
-#define ARRAY_DEBUG 0
+#define ARRAY_DEBUG (0+RUBY_DEBUG)
 #endif
 
 #ifdef ARRAY_DEBUG

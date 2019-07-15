@@ -394,9 +394,10 @@ ar_empty_entry(ar_table_entry *entry)
 #define RHASH_TYPE(hash) (RHASH_AR_TABLE_P(hash) ? &objhash : RHASH_ST_TABLE(hash)->type)
 #define RHASH_AR_TABLE_REF(hash, n) (&RHASH_AR_TABLE(hash)->entries[n])
 
+#define HASH_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(1, expr, #expr)
+
 #if HASH_DEBUG
 #define hash_verify(hash) hash_verify_(hash, __FILE__, __LINE__)
-#define HASH_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(1, expr, #expr)
 
 void
 rb_hash_dump(VALUE hash)
@@ -471,7 +472,6 @@ hash_verify_(VALUE hash, const char *file, int line)
 
 #else
 #define hash_verify(h) ((void)0)
-#define HASH_ASSERT(e) ((void)0)
 #endif
 
 static inline int
