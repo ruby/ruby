@@ -17,7 +17,11 @@
  *   1: enable local assertions.
  */
 #ifndef VM_CHECK_MODE
-#define VM_CHECK_MODE 0
+
+// respect RUBY_DUBUG: if given n is 0, then use RUBY_DEBUG
+#define N_OR_RUBY_DEBUG(n) (((n) > 0) ? (n) : RUBY_DEBUG)
+
+#define VM_CHECK_MODE N_OR_RUBY_DEBUG(0)
 #endif
 
 /**
@@ -46,7 +50,6 @@
 
 #if VM_CHECK_MODE > 0
 #define VM_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(VM_CHECK_MODE > 0, expr, #expr)
-
 #define VM_UNREACHABLE(func) rb_bug(#func ": unreachable")
 
 #else
