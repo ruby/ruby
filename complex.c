@@ -191,7 +191,17 @@ f_arg(VALUE x)
     return rb_funcall(x, id_arg, 0);
 }
 
-fun1(denominator)
+inline static VALUE
+f_denominator(VALUE x)
+{
+    if (RB_TYPE_P(x, T_RATIONAL)) {
+        return RRATIONAL(x)->den;
+    }
+    if (RB_FLOAT_TYPE_P(x)) {
+        return rb_float_denominator(x);
+    }
+    return INT2FIX(1);
+}
 
 inline static VALUE
 f_negate(VALUE x)
@@ -1252,7 +1262,7 @@ nucomp_numerator(VALUE self)
 
     get_dat1(self);
 
-    cd = f_denominator(self);
+    cd = nucomp_denominator(self);
     return f_complex_new2(CLASS_OF(self),
 			  f_mul(f_numerator(dat->real),
 				f_div(cd, f_denominator(dat->real))),
