@@ -30,6 +30,7 @@ NORETURN(void rb_assert_failure(const char *, int, const char *, const char *));
 #endif
 #define RUBY_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(RUBY_DEBUG+(!RUBY_NDEBUG+0), expr, #expr)
 #define RUBY_ASSERT_WHEN(cond, expr) RUBY_ASSERT_MESG_WHEN(cond, expr, #expr)
+#define RUBY_ASSERT_ALWAYS(expr) RUBY_ASSERT_MESG_WHEN(TRUE, expr, #expr)
 
 #ifndef RUBY_DEBUG
 # define RUBY_DEBUG 0

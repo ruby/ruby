@@ -1125,7 +1125,7 @@ ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos
     /* the case optional argument is omitted should be handled in
      * callers of this function.  if another arity case is added,
      * this arity check needs to rewrite. */
-    RUBY_ASSERT_WHEN(TRUE, argc == 1);
+    RUBY_ASSERT_ALWAYS(argc == 1);
 
     n = NUM2LONG(argv[0]);
     len = RARRAY_LEN(ary);
