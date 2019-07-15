@@ -334,8 +334,6 @@ env:
       - TEST_ALL_ISOLATED_TESTS="../test/ruby/test_gc_compact.rb"
       # Disabling -j3 because it seems to cause a hang on building Ruby: https://travis-ci.org/ruby/ruby/jobs/471021727
       - JOBS=
-      # Prevent random failure by missing build dependency like https://travis-ci.org/ruby/ruby/jobs/558571461
-      - ALWAYS_UPDATE_UNICODE=yes
 
   - &dependency
     name: Check dependencies in makefiles
@@ -415,7 +413,12 @@ before_script:
   - "> .rbconfig.time"
   - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
   - date; make touch-unicode-files
-  - date; make -s $JOBS $UPDATE_UNICODE up
+  - |-
+    date
+    if ! make -s $JOBS $UPDATE_UNICODE up; then
+      # Prevent random failure by missing build dependency like https://travis-ci.org/ruby/ruby/jobs/558571461
+      make -s $JOBS $UPDATE_UNICODE ALWAYS_UPDATE_UNICODE=yes up
+    fi
   - date; make -s $JOBS srcs
   - rm -f config.status Makefile rbconfig.rb .rbconfig.time
   - |-
