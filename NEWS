@@ -205,6 +205,12 @@ IRB::
   * Introduce syntax highlight inspired by pry.gem to Binding#irb source lines,
     REPL input, and inspect output of some core-class objects.
 
+  * Introduce multiline mode by Reline.
+
+  * Show documents when completion.
+
+  * Enable auto indent and save/load history by default.
+
 Net::IMAP::
 
   * Add Server Name Indication (SNI) support.  [Feature #15594]
