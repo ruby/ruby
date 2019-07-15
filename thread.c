@@ -1679,7 +1679,8 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     /* enter to Ruby world: You can access Ruby values, methods and so on. */
     r = (*func)(data1);
     /* leave from Ruby world: You can not access Ruby values, etc. */
-    blocking_region_begin(th, brb, prev_unblock.func, prev_unblock.arg, FALSE);
+    int released = blocking_region_begin(th, brb, prev_unblock.func, prev_unblock.arg, FALSE);
+    RUBY_ASSERT_ALWAYS(released);
     return r;
 }
 
