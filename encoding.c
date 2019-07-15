@@ -268,8 +268,7 @@ enc_table_expand(int newsize)
 
     if (enc_table.size >= newsize) return newsize;
     newsize = (newsize + 7) / 8 * 8;
-    ent = realloc(enc_table.list, sizeof(*enc_table.list) * newsize);
-    if (!ent) return -1;
+    ent = xrealloc(enc_table.list, sizeof(*enc_table.list) * newsize);
     memset(ent + enc_table.size, 0, sizeof(*ent)*(newsize - enc_table.size));
     enc_table.list = ent;
     enc_table.size = newsize;
@@ -442,6 +441,9 @@ enc_replicate_with_index(const char *name, rb_encoding *origenc, int idx)
     if (idx >= 0) {
 	set_base_encoding(idx, origenc);
 	set_encoding_const(name, rb_enc_from_index(idx));
+    }
+    else {
+        rb_raise(rb_eArgError, "failed to replicate encoding");
     }
     return idx;
 }
