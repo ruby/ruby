@@ -5,7 +5,6 @@
 
 require 'erb'
 require 'optparse'
-$:.unshift(File.dirname(__FILE__))
 require_relative 'lib/vpath'
 require_relative 'lib/colorize'
 
