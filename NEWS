@@ -212,7 +212,10 @@ Net::IMAP::
 open-uri::
 
   * Warn open-uri's "open" method at Kernel.
-    Use URI.open instead.
+    Use URI.open instead.  [Misc #15893]
+
+  * The default charset of text/* media type is UTF-8 instead of ISO-8859-1.
+    [Bug #15933]
 
 Pathname:
 
