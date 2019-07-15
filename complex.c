@@ -192,6 +192,18 @@ f_arg(VALUE x)
 }
 
 inline static VALUE
+f_numerator(VALUE x)
+{
+    if (RB_TYPE_P(x, T_RATIONAL)) {
+        return RRATIONAL(x)->num;
+    }
+    if (RB_FLOAT_TYPE_P(x)) {
+        return rb_float_numerator(x);
+    }
+    return x;
+}
+
+inline static VALUE
 f_denominator(VALUE x)
 {
     if (RB_TYPE_P(x, T_RATIONAL)) {
@@ -221,7 +233,6 @@ f_negate(VALUE x)
     return rb_funcall(x, id_negate, 0);
 }
 
-fun1(numerator)
 fun1(real_p)
 
 inline static VALUE

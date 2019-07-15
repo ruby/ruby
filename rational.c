@@ -2057,8 +2057,8 @@ static VALUE float_to_r(VALUE self);
  *
  * See also Float#denominator.
  */
-static VALUE
-float_numerator(VALUE self)
+VALUE
+rb_float_numerator(VALUE self)
 {
     double d = RFLOAT_VALUE(self);
     VALUE r;
@@ -2777,7 +2777,7 @@ Init_Rational(void)
     rb_define_method(rb_cInteger, "numerator", integer_numerator, 0);
     rb_define_method(rb_cInteger, "denominator", integer_denominator, 0);
 
-    rb_define_method(rb_cFloat, "numerator", float_numerator, 0);
+    rb_define_method(rb_cFloat, "numerator", rb_float_numerator, 0);
     rb_define_method(rb_cFloat, "denominator", rb_float_denominator, 0);
 
     rb_define_method(rb_cNilClass, "to_r", nilclass_to_r, 0);
