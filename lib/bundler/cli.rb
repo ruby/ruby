@@ -425,7 +425,7 @@ module Bundler
     end
 
     desc "#{Bundler.feature_flag.cache_command_is_package? ? :cache : :package} [OPTIONS]", "Locks and then caches all of the gems into vendor/cache"
-    unless Bundler.feature_flag.cache_command_is_package?
+    unless Bundler.feature_flag.cache_all?
       method_option "all",  :type => :boolean,
                             :banner => "Include all sources (including path and git)."
     end
