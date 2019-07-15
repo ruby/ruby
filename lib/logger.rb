@@ -366,7 +366,7 @@ class Logger
   # +datetime_format+::
   #   Date and time format. Default value is '%Y-%m-%d %H:%M:%S'.
   # +binmode+::
-  #   Use binany mode on the log device. Defaul value is false.
+  #   Use binary mode on the log device. Default value is false.
   # +shift_period_suffix+::
   #   The log file suffix format for +daily+, +weekly+ or +monthly+ rotation.
   #   Default is '%Y%m%d'.
