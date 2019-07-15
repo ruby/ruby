@@ -236,11 +236,8 @@ int ruby_rgengc_debug;
 #define RGENGC_CHECK_MODE  0
 #endif
 
-#if RGENGC_CHECK_MODE > 0
+// Note: using RUBY_ASSERT_WHEN() extend a macro in expr (info by nobu).
 #define GC_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(RGENGC_CHECK_MODE > 0, expr, #expr)
-#else
-#define GC_ASSERT(expr) ((void)0)
-#endif
 
 /* RGENGC_OLD_NEWOBJ_CHECK
  * 0:  disable all assertions
@@ -1946,8 +1943,8 @@ static inline VALUE
 newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected, rb_objspace_t *objspace, VALUE obj)
 {
 #if !__has_feature(memory_sanitizer)
-    assert(BUILTIN_TYPE(obj) == T_NONE);
-    assert((flags & FL_WB_PROTECTED) == 0);
+    GC_ASSERT(BUILTIN_TYPE(obj) == T_NONE);
+    GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
 #endif
 
     /* OBJSETUP */
@@ -2339,7 +2336,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         FL_UNSET(obj, FL_SEEN_OBJ_ID);
 
         if (st_delete(objspace->obj_to_id_tbl, (st_data_t *)&obj, &id)) {
-            assert(id);
+            GC_ASSERT(id);
             st_delete(objspace->id_to_obj_tbl, (st_data_t *)&id, NULL);
         }
         else {
@@ -3439,11 +3436,11 @@ cached_object_id(VALUE obj)
     rb_objspace_t *objspace = &rb_objspace;
 
     if (st_lookup(objspace->obj_to_id_tbl, (st_data_t)obj, &id)) {
-        assert(FL_TEST(obj, FL_SEEN_OBJ_ID));
+        GC_ASSERT(FL_TEST(obj, FL_SEEN_OBJ_ID));
         return nonspecial_obj_id(id);
     }
     else {
-        assert(!FL_TEST(obj, FL_SEEN_OBJ_ID));
+        GC_ASSERT(!FL_TEST(obj, FL_SEEN_OBJ_ID));
         id = obj;
 
         while (1) {
