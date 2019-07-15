@@ -552,17 +552,16 @@ module OpenURI
     # It can be used to guess charset.
     #
     # If charset parameter and block is not given,
-    # nil is returned except text type in HTTP.
-    # In that case, "iso-8859-1" is returned as defined by RFC2616 3.7.1.
+    # nil is returned except text type.
+    # In that case, "utf-8" is returned as defined by RFC6838 4.2.1
     def charset
       type, *parameters = content_type_parse
       if pair = parameters.assoc('charset')
         pair.last.downcase
       elsif block_given?
         yield
-      elsif type && %r{\Atext/} =~ type &&
-            @base_uri && /\Ahttp\z/i =~ @base_uri.scheme
-        "iso-8859-1" # RFC2616 3.7.1
+      elsif type && %r{\Atext/} =~ type
+        "utf-8" # RFC6838 4.2.1
       else
         nil
       end

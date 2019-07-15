@@ -648,7 +648,7 @@ class TestOpenURI < Test::Unit::TestCase
       URI.open("#{url}/nc/") {|f|
         assert_equal("aa", f.read)
         assert_equal("text/plain", f.content_type)
-        assert_equal("iso-8859-1", f.charset)
+        assert_equal("utf-8", f.charset)
         assert_equal("unknown", f.charset { "unknown" })
       }
     }
