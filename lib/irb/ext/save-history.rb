@@ -106,14 +106,7 @@ module IRB
         end
 
         open(history_file, 'w', 0600 ) do |f|
-          hist = history.map { |l|
-            split_lines = l.split("\n")
-            if split_lines.size == 1
-              l
-            else
-              split_lines.join("\\\n")
-            end
-          }
+          hist = history.map{ |l| l.split("\n").join("\\\n") }
           f.puts(hist[-num..-1] || hist)
         end
       end
