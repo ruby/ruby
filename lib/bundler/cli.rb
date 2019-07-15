@@ -410,20 +410,6 @@ module Bundler
       Outdated.new(options, gems).run
     end
 
-    if Bundler.feature_flag.bundler_3_mode?
-      map %w[cache] => :package
-    else
-      desc "cache [OPTIONS]", "Cache all the gems to vendor/cache", :hide => true
-      method_option "all", :type => :boolean,
-                           :banner => "Include all sources (including path and git)."
-      method_option "all-platforms", :type => :boolean, :banner => "Include gems for all platforms present in the lockfile, not only the current one"
-      method_option "no-prune", :type => :boolean, :banner => "Don't remove stale gems from the cache."
-      def cache
-        require_relative "cli/cache"
-        Cache.new(options).run
-      end
-    end
-
     desc "#{Bundler.feature_flag.bundler_3_mode? ? :cache : :package} [OPTIONS]", "Locks and then caches all of the gems into vendor/cache"
     method_option "all",  :type => :boolean,
                           :default => Bundler.feature_flag.cache_all?,
@@ -449,7 +435,7 @@ module Bundler
       require_relative "cli/package"
       Package.new(options).run
     end
-    map %w[pack] => :package
+    map %w[cache pack] => :package
 
     desc "exec [OPTIONS]", "Run the command in context of the bundle"
     method_option :keep_file_descriptors, :type => :boolean, :default => false
