@@ -169,10 +169,10 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    write_warn(str, "\n");
 	}
 	else {
-	    /* emesg is a String instance */
+            /* emesg is a String instance */
 	    const char *tail = 0;
 
-	    if (highlight) write_warn(str, bold);
+            if (highlight) write_warn(str, bold);
 	    if (RSTRING_PTR(epath)[0] == '#')
 		epath = 0;
 	    if ((tail = memchr(einfo, '\n', elen)) != 0) {
