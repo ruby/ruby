@@ -31,9 +31,24 @@ describe "Kernel.lambda" do
     l.lambda?.should be_true
   end
 
-  it "returned the passed Proc if given an existing Proc" do
+  it "returns the passed Proc if given an existing Proc" do
     some_proc = proc {}
     l = lambda(&some_proc)
+    l.should equal(some_proc)
+    l.lambda?.should be_false
+  end
+
+  it "creates a lambda-style Proc when called with zsuper" do
+    l = KernelSpecs::LambdaSpecs::ForwardBlockWithZSuper.new.lambda { 42 }
+    l.lambda?.should be_true
+    l.call.should == 42
+
+    lambda { l.call(:extra) }.should raise_error(ArgumentError)
+  end
+
+  it "returns the passed Proc if given an existing Proc through super" do
+    some_proc = proc { }
+    l = KernelSpecs::LambdaSpecs::SuperAmpersand.new.lambda(&some_proc)
     l.should equal(some_proc)
     l.lambda?.should be_false
   end
