@@ -7306,10 +7306,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 	    dispatch_scan_event(p, tSTRING_CONTENT);
 	}
 	else {
-	    if (str) {
-		rb_str_append(p->delayed, str);
-	    }
-	    else if ((len = p->lex.pcur - p->lex.ptok) > 0) {
+	    if ((len = p->lex.pcur - p->lex.ptok) > 0) {
 		if (!(func & STR_FUNC_REGEXP) && rb_enc_asciicompat(enc)) {
 		    int cr = ENC_CODERANGE_UNKNOWN;
 		    rb_str_coderange_scan_restartable(p->lex.ptok, p->lex.pcur, enc, &cr);
