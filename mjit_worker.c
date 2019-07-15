@@ -548,36 +548,32 @@ COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
 static pid_t
 start_process(const char *abspath, char *const *argv)
 {
-    pid_t pid;
-    // Not calling non-async-signal-safe functions between vfork
-    // and execv for safety
-    int dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
-
     if (mjit_opts.verbose >= 2) {
-        int i;
         const char *arg;
-
         fprintf(stderr, "Starting process: %s", abspath);
-        for (i = 0; (arg = argv[i]) != NULL; i++)
+        for (int i = 0; (arg = argv[i]) != NULL; i++)
             fprintf(stderr, " %s", arg);
         fprintf(stderr, "\n");
     }
-#ifdef _WIN32
-    {
-        extern HANDLE rb_w32_start_process(const char *abspath, char *const *argv, int out_fd);
-        int out_fd = 0;
-        if (mjit_opts.verbose <= 1) {
-            // Discard cl.exe's outputs like:
-            //   _ruby_mjit_p12u3.c
-            //     Creating library C:.../_ruby_mjit_p12u3.lib and object C:.../_ruby_mjit_p12u3.exp
-            out_fd = dev_null;
-        }
 
-        pid = (pid_t)rb_w32_start_process(abspath, argv, out_fd);
-        if (pid == 0) {
-            verbose(1, "MJIT: Failed to create process: %s", dlerror());
-            return -1;
-        }
+    // Not calling non-async-signal-safe functions between vfork
+    // and execv for safety
+    int dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
+    pid_t pid;
+#ifdef _WIN32
+    extern HANDLE rb_w32_start_process(const char *abspath, char *const *argv, int out_fd);
+    int out_fd = 0;
+    if (mjit_opts.verbose <= 1) {
+        // Discard cl.exe's outputs like:
+        //   _ruby_mjit_p12u3.c
+        //     Creating library C:.../_ruby_mjit_p12u3.lib and object C:.../_ruby_mjit_p12u3.exp
+        out_fd = dev_null;
+    }
+
+    pid = (pid_t)rb_w32_start_process(abspath, argv, out_fd);
+    if (pid == 0) {
+        verbose(1, "MJIT: Failed to create process: %s", dlerror());
+        return -1;
     }
 #else
     if ((pid = vfork()) == 0) { /* TODO: reuse some function in process.c */
