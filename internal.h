@@ -825,7 +825,7 @@ enum ruby_rhash_flags {
     RHASH_ENUM_END
 };
 
-#define HASH_PROC_DEFAULT FL_USER2
+#define HASH_PROC_DEFAULT FL_USER12
 
 #define RHASH_AR_TABLE_SIZE_RAW(h) \
   ((unsigned int)((RBASIC(h)->flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT))
@@ -872,6 +872,7 @@ struct RHash {
         st_table *st;
         struct ar_table_struct *ar; /* possibly 0 */
     } as;
+    VALUE shared;
     VALUE ifnone;
 };
 
