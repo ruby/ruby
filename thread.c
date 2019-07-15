@@ -4720,14 +4720,14 @@ thread_shield_alloc(VALUE klass)
 #define GetThreadShieldPtr(obj) ((VALUE)rb_check_typeddata((obj), &thread_shield_data_type))
 #define THREAD_SHIELD_WAITING_MASK (FL_USER0|FL_USER1|FL_USER2|FL_USER3|FL_USER4|FL_USER5|FL_USER6|FL_USER7|FL_USER8|FL_USER9|FL_USER10|FL_USER11|FL_USER12|FL_USER13|FL_USER14|FL_USER15|FL_USER16|FL_USER17|FL_USER18|FL_USER19)
 #define THREAD_SHIELD_WAITING_SHIFT (FL_USHIFT)
-#define rb_thread_shield_waiting(b) (int)((RBASIC(b)->flags&THREAD_SHIELD_WAITING_MASK)>>THREAD_SHIELD_WAITING_SHIFT)
+#define rb_thread_shield_waiting(b) ((RBASIC(b)->flags&THREAD_SHIELD_WAITING_MASK)>>THREAD_SHIELD_WAITING_SHIFT)
 
 static inline void
 rb_thread_shield_waiting_inc(VALUE b)
 {
-    unsigned int w = rb_thread_shield_waiting(b);
+    unsigned long w = rb_thread_shield_waiting(b);
     w++;
-    if (w > (unsigned int)(THREAD_SHIELD_WAITING_MASK>>THREAD_SHIELD_WAITING_SHIFT))
+    if (w > (THREAD_SHIELD_WAITING_MASK>>THREAD_SHIELD_WAITING_SHIFT))
 	rb_raise(rb_eRuntimeError, "waiting count overflow");
     RBASIC(b)->flags &= ~THREAD_SHIELD_WAITING_MASK;
     RBASIC(b)->flags |= ((VALUE)w << THREAD_SHIELD_WAITING_SHIFT);
@@ -4736,7 +4736,7 @@ rb_thread_shield_waiting_inc(VALUE b)
 static inline void
 rb_thread_shield_waiting_dec(VALUE b)
 {
-    unsigned int w = rb_thread_shield_waiting(b);
+    unsigned long w = rb_thread_shield_waiting(b);
     if (!w) rb_raise(rb_eRuntimeError, "waiting count underflow");
     w--;
     RBASIC(b)->flags &= ~THREAD_SHIELD_WAITING_MASK;
