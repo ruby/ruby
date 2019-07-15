@@ -157,6 +157,21 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_equal(42, return_in_callee(42), feature8693)
   end
 
+  def break_in_current(val)
+    1.tap(&->(*) {break 0})
+    val
+  end
+
+  def break_in_callee(val)
+    yield_block(&->(*) {break 0})
+    val
+  end
+
+  def test_break
+    assert_equal(42, break_in_current(42))
+    assert_equal(42, break_in_callee(42))
+  end
+
   def test_do_lambda_source_location
     exp_lineno = __LINE__ + 3
     lmd = ->(x,
