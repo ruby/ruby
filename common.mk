@@ -1474,7 +1474,7 @@ sudo-precheck: PHONY
 	@$(SUDO) echo > $(NULL)
 
 update-man-date: PHONY
-	-$(Q) $(BASERUBY) -I"$(srcdir)/tool" -rvcs -i -p \
+	-$(Q) $(BASERUBY) -I"$(srcdir)/tool/lib" -rvcs -i -p \
 	-e 'BEGIN{@vcs=VCS.detect(ARGV.shift)}' \
 	-e '$$_.sub!(/^(\.Dd ).*/){$$1+@vcs.modified(ARGF.path).strftime("%B %d, %Y")}' \
 	"$(srcdir)" "$(srcdir)"/man/*.1
