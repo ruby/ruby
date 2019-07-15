@@ -83,7 +83,7 @@ module IRB # :nodoc:
       :SIMPLE => {
         :PROMPT_I => ">> ",
         :PROMPT_N => ">> ",
-        :PROMPT_S => nil,
+        :PROMPT_S => "%l> ",
         :PROMPT_C => "?> ",
         :RETURN => "=> %s\n"
       },
