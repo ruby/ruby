@@ -284,3 +284,20 @@ ifneq ($(filter $(VCS),git),)
 update-src::
 	@$(BASERUBY) $(srcdir)/tool/lib/colorize.rb pass "Latest commit hash = $(shell $(filter-out svn,$(VCS)) -C $(srcdir) rev-parse --short=10 HEAD)"
 endif
+
+# Update dependencies and commit the updates to the current branch.
+update-deps:
+	$(eval update_deps := $(shell date +update-deps-%Y%m%d))
+	$(eval deps_dir := $(shell mktemp -d)/$(update_deps))
+	$(eval GIT_DIR := $(shell git -C $(srcdir) rev-parse --absolute-git-dir))
+	git --git-dir=$(GIT_DIR) worktree add $(deps_dir)
+	cp $(srcdir)/tool/config.guess $(srcdir)/tool/config.sub $(deps_dir)/tool
+	[ -f config.status ] && cp config.status $(deps_dir)
+	cd $(deps_dir) && autoconf && \
+	exec ./configure -q -C --enable-load-relative --disable-install-doc --disable-rubygems 'optflags=-O0' 'debugflags=-save-temps=obj -g'
+	$(RUNRUBY) -C $(deps_dir) tool/update-deps --fix
+	git -C $(deps_dir) diff --no-ext-diff --ignore-submodules --exit-code || \
+	    git -C $(deps_dir) commit --all --message='Update dependencies'
+	git --git-dir=$(GIT_DIR) worktree remove $(deps_dir)
+	git --git-dir=$(GIT_DIR) merge --no-edit --ff-only $(update_deps)
+	git --git-dir=$(GIT_DIR) branch --delete $(update_deps)
