@@ -1,6 +1,6 @@
 #!ruby
 
-require_relative 'vpath'
+require_relative 'lib/vpath'
 
 class Checksum
   def initialize(vpath)
