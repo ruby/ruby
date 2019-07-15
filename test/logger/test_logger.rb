@@ -1,6 +1,6 @@
 # coding: US-ASCII
 # frozen_string_literal: false
-require_relative '../helper'
+require_relative 'helper'
 require 'tempfile'
 
 class TestLogger < Test::Unit::TestCase
