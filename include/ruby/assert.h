@@ -23,7 +23,7 @@ NORETURN(void rb_assert_failure(const char *, int, const char *, const char *));
     ((RUBY_DEBUG+0) ? RUBY_ASSERT_MESG((expr), mesg) : \
     __builtin_choose_expr( \
         __builtin_constant_p(cond), \
-        __builtin_choose_expr(cond, RUBY_ASSERT_MESG(expr, mesg), (void)0), \
+        __builtin_choose_expr(cond, RUBY_ASSERT_MESG(expr, mesg), (void)(expr)), \
         RUBY_ASSERT_MESG(!(cond) || (expr), mesg)))
 #else
 # define RUBY_ASSERT_MESG_WHEN(cond, expr, mesg) \
