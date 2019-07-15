@@ -20,7 +20,7 @@
 #ifndef ENC_DEBUG
 #define ENC_DEBUG 0
 #endif
-#define ENC_ASSERT (!ENC_DEBUG)?(void)0:assert
+#define ENC_ASSERT(expr) RUBY_ASSERT_WHEN(ENC_DEBUG, expr)
 #define MUST_STRING(str) (ENC_ASSERT(RB_TYPE_P(str, T_STRING)), str)
 
 #undef rb_ascii8bit_encindex
