@@ -469,7 +469,8 @@ PROLOG_SCRIPT.default = (load_relative || /\s/ =~ bindir) ?
 # -*- ruby -*-
 _=_\\
 =begin
-#{prolog_script}=end
+#{prolog_script.chomp}
+=end
 EOS
 
 installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name, :stub, :trans)
