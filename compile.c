@@ -1710,7 +1710,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 	body->param.size = arg_size;
 
 	if (args->pre_init) { /* m_init */
-	    COMPILE_POPPED(optargs, "init arguments (m)", args->pre_init);
+	    NO_CHECK(COMPILE_POPPED(optargs, "init arguments (m)", args->pre_init));
 	}
 	if (args->post_init) { /* p_init */
             NO_CHECK(COMPILE_POPPED(optargs, "init arguments (p)", args->post_init));
@@ -3961,7 +3961,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 		    opt_p = 0;
 		}
 
-                COMPILE_(anchor, "array element", node->nd_head, popped);
+                NO_CHECK(COMPILE_(anchor, "array element", node->nd_head, popped));
 	    }
 
             if (opt_p) {
@@ -4931,7 +4931,7 @@ compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
     ADD_INSN(ret, line, pop);
     for (vars = node; vars; vars = vars->nd_next) {
 	last = ret->last;
-	COMPILE_POPPED(ret, "capture", vars->nd_head);
+	NO_CHECK(COMPILE_POPPED(ret, "capture", vars->nd_head));
 	last = last->next; /* putobject :var */
 	((INSN*)last)->insn_id = BIN(putnil);
 	((INSN*)last)->operand_size = 0;
