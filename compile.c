@@ -639,7 +639,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     }
 
     if (node == 0) {
-	NO_CHECK(COMPILE(ret, "nil", node));
+        NO_CHECK(COMPILE(ret, "nil", node));
 	iseq_set_local_table(iseq, 0);
     }
     /* assume node is T_NODE */
@@ -1576,7 +1576,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 		dv = Qfalse;
 		break;
 	      default:
-		NO_CHECK(COMPILE_POPPED(optargs, "kwarg", node)); /* nd_type(node) == NODE_KW_ARG */
+                NO_CHECK(COMPILE_POPPED(optargs, "kwarg", node)); /* nd_type(node) == NODE_KW_ARG */
 		dv = complex_mark;
 	    }
 
@@ -1713,7 +1713,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 	    COMPILE_POPPED(optargs, "init arguments (m)", args->pre_init);
 	}
 	if (args->post_init) { /* p_init */
-	    NO_CHECK(COMPILE_POPPED(optargs, "init arguments (p)", args->post_init));
+            NO_CHECK(COMPILE_POPPED(optargs, "init arguments (p)", args->post_init));
 	}
 
 	if (body->type == ISEQ_TYPE_BLOCK) {
@@ -3833,7 +3833,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 		const NODE *key_node = node->nd_head;
 		const NODE *val_node = node->nd_next->nd_head;
 		keywords[i] = key_node->nd_lit;
-		NO_CHECK(COMPILE(ret, "keyword values", val_node));
+                NO_CHECK(COMPILE(ret, "keyword values", val_node));
 	    }
 	    assert(i == len);
 	    return TRUE;
@@ -4056,7 +4056,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 				if (i > 0 || !first) ADD_INSN(ret, line, swap);
 				else ADD_INSN1(ret, line, newhash, INT2FIX(0));
 			    }
-			    NO_CHECK(COMPILE(ret, "keyword splat", kw));
+                            NO_CHECK(COMPILE(ret, "keyword splat", kw));
 			    if (popped) {
 				ADD_INSN(ret, line, pop);
 			    }
@@ -4281,10 +4281,10 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 
     while (rhsn) {
 	if (llen <= rlen) {
-	    NO_CHECK(COMPILE_POPPED(ret, "masgn val (popped)", rhsn->nd_head));
+            NO_CHECK(COMPILE_POPPED(ret, "masgn val (popped)", rhsn->nd_head));
 	}
 	else {
-	    NO_CHECK(COMPILE(ret, "masgn val", rhsn->nd_head));
+            NO_CHECK(COMPILE(ret, "masgn val", rhsn->nd_head));
 	}
 	rhsn = rhsn->nd_next;
 	rlen++;
@@ -4332,7 +4332,7 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
 	    lhsn = lhsn->nd_next;
 	}
 
-	NO_CHECK(COMPILE(ret, "normal masgn rhs", rhsn));
+        NO_CHECK(COMPILE(ret, "normal masgn rhs", rhsn));
 
 	if (!popped) {
 	    ADD_INSN(ret, nd_line(node), dup);
@@ -4433,7 +4433,7 @@ compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, const NODE *cpath)
     }
     else if (cpath->nd_head) {
 	/* Bar::Foo */
-	NO_CHECK(COMPILE(ret, "nd_else->nd_head", cpath->nd_head));
+        NO_CHECK(COMPILE(ret, "nd_else->nd_head", cpath->nd_head));
 	return VM_DEFINECLASS_FLAG_SCOPED;
     }
     else {
@@ -4530,7 +4530,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	}
 	defined_expr0(iseq, ret, node->nd_head, lfinish, Qfalse);
         ADD_INSNL(ret, line, branchunless, lfinish[1]);
-	NO_CHECK(COMPILE(ret, "defined/colon2#nd_head", node->nd_head));
+        NO_CHECK(COMPILE(ret, "defined/colon2#nd_head", node->nd_head));
 
         ADD_INSN3(ret, line, defined,
 		  (rb_is_const_id(node->nd_mid) ?
@@ -4565,7 +4565,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	if (explicit_receiver) {
 	    defined_expr0(iseq, ret, node->nd_recv, lfinish, Qfalse);
             ADD_INSNL(ret, line, branchunless, lfinish[1]);
-	    NO_CHECK(COMPILE(ret, "defined/recv", node->nd_recv));
+            NO_CHECK(COMPILE(ret, "defined/recv", node->nd_recv));
             ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_METHOD),
 		      ID2SYM(node->nd_mid), needstr);
 	}
@@ -4753,7 +4753,7 @@ add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return)
 
 	    ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enlp->prev;
 	    ADD_LABEL(ensure_part, lstart);
-	    NO_CHECK(COMPILE_POPPED(ensure_part, "ensure part", enlp->ensure_node));
+            NO_CHECK(COMPILE_POPPED(ensure_part, "ensure part", enlp->ensure_node));
 	    ADD_LABEL(ensure_part, lend);
 	    ADD_SEQ(ensure, ensure_part);
 	}
@@ -4902,7 +4902,7 @@ compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
 	    ADD_INSN(ret, line, dup);
 	}
 	last = ret->last;
-	NO_CHECK(COMPILE_POPPED(ret, "capture", vars->nd_head));
+        NO_CHECK(COMPILE_POPPED(ret, "capture", vars->nd_head));
 	last = last->next; /* putobject :var */
 	cap = new_insn_send(iseq, line, idAREF, INT2FIX(1),
 			    NULL, INT2FIX(0), NULL);
