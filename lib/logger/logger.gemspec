@@ -1,7 +1,7 @@
 begin
   require_relative "lib/logger/version"
 rescue LoadError # Fallback to load version file in ruby core repository
-  require_relative "logger/version"
+  require_relative "version"
 end
 
 Gem::Specification.new do |spec|
