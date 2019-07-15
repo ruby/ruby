@@ -6,7 +6,7 @@
 BEGIN {
   require 'optparse'
   $:.unshift(File.dirname(__FILE__))
-  require 'vpath'
+  require_relative 'lib/vpath'
   vpath = VPath.new
   header = nil
 
