@@ -1503,6 +1503,7 @@ help: PHONY
 	"  test-spec:           run the Ruby spec suite [SPECOPTS=<specs, opts>]" \
 	"  test-bundler:        run the Bundler spec" \
 	"  test-bundled-gems:   run the test suite of bundled gems" \
+	"  test-tool:           tests under the tool/test" \
 	"  update-gems:         download files of the bundled gems" \
 	"  update-bundled_gems: update the latest version of bundled gems" \
 	"  sync-default-gems:   sync default gems from upstream [GEM=<gem_name>]" \
