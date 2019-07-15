@@ -8636,6 +8636,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			break;
 		      case TS_ISE:
 			FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+			/* fall through */
 		      case TS_IC:
 			argv[j] = op;
 			if (NUM2UINT(op) >= iseq->body->is_size) {
