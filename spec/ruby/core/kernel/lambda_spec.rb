@@ -53,6 +53,13 @@ describe "Kernel.lambda" do
     l.lambda?.should be_false
   end
 
+  it "does not create lambda-style Procs when captured with #method" do
+    kernel_lambda = method(:lambda)
+    l = kernel_lambda.call { 42 }
+    l.lambda?.should be_false
+    l.call(:extra).should == 42
+  end
+
   it "checks the arity of the call when no args are specified" do
     l = lambda { :called }
     l.call.should == :called
