@@ -17,7 +17,6 @@ module Bundler
       auto_config_jobs
       cache_all
       cache_all_platforms
-      cache_command_is_package
       default_install_uses_path
       deployment
       deployment_means_frozen
