@@ -528,7 +528,8 @@ form_args(int num, ...)
         n = args_len(args);
         if ((tmp = (char **)realloc(res, sizeof(char *) * (len + n + 1))) == NULL) {
             free(res);
-            return NULL;
+            res = NULL;
+            break;
         }
         res = tmp;
         MEMCPY(res + len, args, char *, n + 1);
