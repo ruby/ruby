@@ -217,7 +217,7 @@ open-uri::
   * The default charset of text/* media type is UTF-8 instead of ISO-8859-1.
     [Bug #15933]
 
-Pathname:
+Pathname::
 
   * Delegates 3 arguments from Pathname.glob to Dir.glob to
     accept base: keyword.
