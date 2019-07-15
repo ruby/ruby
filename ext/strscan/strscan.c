@@ -294,7 +294,7 @@ strscan_reset(VALUE self)
  *   terminate
  *   clear
  *
- * Set the scan pointer to the end of the string and clear matching data.
+ * \Set the scan pointer to the end of the string and clear matching data.
  */
 static VALUE
 strscan_terminate(VALUE self)
@@ -425,7 +425,7 @@ strscan_get_charpos(VALUE self)
 /*
  * call-seq: pos=(n)
  *
- * Set the byte position of the scan pointer.
+ * \Set the byte position of the scan pointer.
  *
  *   s = StringScanner.new('test string')
  *   s.pos = 7            # -> 7
@@ -826,7 +826,7 @@ strscan_peep(VALUE self, VALUE vlen)
 }
 
 /*
- * Set the scan pointer to the previous position.  Only one previous position is
+ * \Set the scan pointer to the previous position.  Only one previous position is
  * remembered, and it changes with each scanning operation.
  *
  *   s = StringScanner.new('test string')
