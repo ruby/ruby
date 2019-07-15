@@ -226,6 +226,11 @@ Racc::
 
   * Merge 1.4.15 from upstream repository and added cli of racc.
 
+Reline::
+
+  * New stdlib that is compatible with readline stdlib by pure Ruby and also
+    has a multiline mode.
+
 RSS::
 
   * Upgrade to RSS 0.2.8.
