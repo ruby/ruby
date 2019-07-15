@@ -144,8 +144,6 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    write_warn(str, ": ");
 	}
 
-	if (highlight) write_warn(str, bold);
-
 	if (!NIL_P(emesg)) {
 	    einfo = RSTRING_PTR(emesg);
             elen = RSTRING_LEN(emesg);
