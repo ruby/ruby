@@ -5008,13 +5008,15 @@ time_strftime(VALUE time, VALUE format)
 
 int ruby_marshal_write_long(long x, char *buf);
 
+enum {base_dump_size = 8};
+
 /* :nodoc: */
 static VALUE
 time_mdump(VALUE time)
 {
     struct time_object *tobj;
     unsigned long p, s;
-    char buf[8];
+    char buf[base_dump_size];
     int i;
     VALUE str;
 
@@ -5090,7 +5092,7 @@ time_mdump(VALUE time)
          * binary (like as Fixnum and Bignum).
          */
         size_t ysize = rb_absint_size(year_extend, NULL);
-        char *p, buf_year_extend[9];
+        char *p, buf_year_extend[sizeof(long)+1];
         if (ysize > LONG_MAX ||
             (i = ruby_marshal_write_long((long)ysize, buf_year_extend)) < 0) {
             rb_raise(rb_eArgError, "year too %s to marshal: %"PRIsVALUE" UTC",
@@ -5217,7 +5219,7 @@ time_mload(VALUE time, VALUE str)
 
     StringValue(str);
     buf = (unsigned char *)RSTRING_PTR(str);
-    if (RSTRING_LEN(str) < 8) {
+    if (RSTRING_LEN(str) < base_dump_size) {
       invalid_format:
 	rb_raise(rb_eTypeError, "marshaled time format differ");
     }
@@ -5245,11 +5247,11 @@ time_mload(VALUE time, VALUE str)
         if (NIL_P(year)) {
             year = INT2FIX(((int)(p >> 14) & 0xffff) + 1900);
         }
-        if (RSTRING_LEN(str) > 8) {
-            long len = RSTRING_LEN(str) - 8;
+        if (RSTRING_LEN(str) > base_dump_size) {
+            long len = RSTRING_LEN(str) - base_dump_size;
             long ysize = 0;
             VALUE year_extend;
-            const char *ybuf = (const char *)(buf += 8);
+            const char *ybuf = (const char *)(buf += base_dump_size);
             ysize = ruby_marshal_read_long(&ybuf, len);
             len -= ybuf - (const char *)buf;
             if (ysize < 0 || ysize > len) goto invalid_format;
