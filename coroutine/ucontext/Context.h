@@ -13,6 +13,10 @@
 
 #define COROUTINE __attribute__((noreturn)) void
 
+#if INTPTR_MAX <= INT32_MAX
+#define COROUTINE_LIMITED_ADDRESS_SPACE
+#endif
+
 struct coroutine_context
 {
     ucontext_t state;

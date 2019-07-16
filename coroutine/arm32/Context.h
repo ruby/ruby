@@ -11,6 +11,7 @@
 #include <string.h>
 
 #define COROUTINE __attribute__((noreturn)) void
+#define COROUTINE_LIMITED_ADDRESS_SPACE
 
 enum {COROUTINE_REGISTERS = 8};
 
