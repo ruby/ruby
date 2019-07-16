@@ -1977,6 +1977,7 @@ struct rb_execarg {
     unsigned uid_given : 1;
     unsigned gid_given : 1;
     unsigned exception : 1;
+    unsigned exception_given : 1;
     struct waitpid_state *waitpid_state; /* for async process management */
     rb_pid_t pgroup_pgid; /* asis(-1), new pgroup(0), specified pgroup (0<V). */
     VALUE rlimit_limits; /* Qfalse or [[rtype, softlim, hardlim], ...] */
