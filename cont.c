@@ -37,7 +37,16 @@ static VALUE rb_cFiberPool;
 #endif
 
 #define CAPTURE_JUST_VALID_VM_STACK 1
-//#define FIBER_POOL_ALLOCATION_FREE
+
+// Defined in `coroutine/$arch/Context.h`:
+#ifdef COROUTINE_LIMITED_ADDRESS_SPACE
+#define FIBER_POOL_ALLOCATION_FREE
+#define FIBER_POOL_INITIAL_SIZE 8
+#define FIBER_POOL_ALLOCATION_MAXIMUM_SIZE 32
+#else
+#define FIBER_POOL_INITIAL_SIZE 32
+#define FIBER_POOL_ALLOCATION_MAXIMUM_SIZE 4096
+#endif
 
 enum context_type {
     CONTINUATION_CONTEXT = 0,
@@ -461,15 +470,6 @@ fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
     return allocation;
 }
 
-static inline size_t
-fiber_pool_default_allocation_count_limit() {
-    if (sizeof(void*) <= 4) {
-        return 32;
-    } else {
-        return 1024;
-    }
-}
-
 // Initialize the specified fiber pool with the given number of stacks.
 // @param vm_stack_size The size of the vm stack to allocate.
 static void
@@ -542,7 +542,7 @@ fiber_pool_stack_acquire(struct fiber_pool * fiber_pool) {
     if (DEBUG) fprintf(stderr, "fiber_pool_stack_acquire: %p used=%zu\n", fiber_pool->vacancies, fiber_pool->used);
 
     if (!vacancy) {
-        const size_t maximum = fiber_pool_default_allocation_count_limit();
+        const size_t maximum = FIBER_POOL_ALLOCATION_MAXIMUM_SIZE;
         const size_t minimum = fiber_pool->initial_count;
         
         size_t count = fiber_pool->count;
@@ -2335,7 +2335,7 @@ Init_Cont(void)
 #endif
     SET_MACHINE_STACK_END(&th->ec->machine.stack_end);
 
-    fiber_pool_initialize(&shared_fiber_pool, stack_size, 8, vm_stack_size);
+    fiber_pool_initialize(&shared_fiber_pool, stack_size, FIBER_POOL_INITIAL_SIZE, vm_stack_size);
 
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
     rb_define_alloc_func(rb_cFiber, fiber_alloc);
