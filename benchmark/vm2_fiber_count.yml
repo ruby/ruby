@@ -1,3 +1,5 @@
+# On Linux, you will need to increase the maximum number of memory maps:
+# sudo sysctl -w vm.max_map_count=200000
 prelude: |
   fibers = []
 benchmark:
