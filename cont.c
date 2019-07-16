@@ -2337,6 +2337,11 @@ Init_Cont(void)
 
     fiber_pool_initialize(&shared_fiber_pool, stack_size, FIBER_POOL_INITIAL_SIZE, vm_stack_size);
 
+    char * fiber_shared_fiber_pool_free_stacks = getenv("RUBY_SHARED_FIBER_POOL_FREE_STACKS");
+    if (fiber_shared_fiber_pool_free_stacks) {
+        shared_fiber_pool.free_stacks = atoi(fiber_shared_fiber_pool_free_stacks);
+    }
+
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
     rb_define_alloc_func(rb_cFiber, fiber_alloc);
     rb_eFiberError = rb_define_class("FiberError", rb_eStandardError);
