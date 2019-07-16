@@ -417,7 +417,7 @@ before_script:
     date
     if ! make -s $JOBS $UPDATE_UNICODE up; then
       # Prevent random failure by missing build dependency like https://travis-ci.org/ruby/ruby/jobs/558571461
-      make -s $JOBS $UPDATE_UNICODE ALWAYS_UPDATE_UNICODE=yes up
+      make --debug -s $JOBS $UPDATE_UNICODE up
     fi
   - date; make -s $JOBS srcs
   - rm -f config.status Makefile rbconfig.rb .rbconfig.time
