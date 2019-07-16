@@ -273,6 +273,8 @@ dump_object(VALUE obj, struct dump_config *dc)
 
       case T_HASH:
 	dump_append(dc, ", \"size\":%"PRIuSIZE, (size_t)RHASH_SIZE(obj));
+	if (RHASH_SIZE(obj) > 0 && FL_TEST(obj, ELTS_SHARED))
+	    dump_append(dc, ", \"shared\":true");
 	if (FL_TEST(obj, HASH_PROC_DEFAULT))
             dump_append(dc, ", \"default\":\"%#"PRIxVALUE"\"", RHASH_IFNONE(obj));
 	break;
