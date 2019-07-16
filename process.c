@@ -2039,7 +2039,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
                 rb_raise(rb_eArgError, "new_pgroup option specified twice");
             }
             eargp->new_pgroup_given = 1;
-            eargp->new_pgroup_flag = RTEST(val) ? 1 : 0;
+            eargp->new_pgroup_flag = rb_bool_expected(val, "new_pgroup");
         }
         else
 #endif
@@ -2048,7 +2048,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
                 rb_raise(rb_eArgError, "unsetenv_others option specified twice");
             }
             eargp->unsetenv_others_given = 1;
-            eargp->unsetenv_others_do = RTEST(val) ? 1 : 0;
+            eargp->unsetenv_others_do = rb_bool_expected(val, "unsetenv_others");
         }
         else if (id == id_chdir) {
             if (eargp->chdir_given) {
@@ -2072,7 +2072,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
                 rb_raise(rb_eArgError, "close_others option specified twice");
             }
             eargp->close_others_given = 1;
-            eargp->close_others_do = RTEST(val) ? 1 : 0;
+            eargp->close_others_do = rb_bool_expected(val, "close_others");
         }
         else if (id == id_in) {
             key = INT2FIX(0);
@@ -2120,8 +2120,8 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
             if (eargp->exception_given) {
                 rb_raise(rb_eArgError, "exception option specified twice");
             }
-            eargp->exception = RTEST(val);
             eargp->exception_given = 1;
+            eargp->exception = rb_bool_expected(val, "exception");
         }
         else {
 	    return ST_STOP;
@@ -6483,8 +6483,11 @@ proc_daemon(int argc, VALUE *argv)
     int n, nochdir = FALSE, noclose = FALSE;
 
     switch (rb_check_arity(argc, 0, 2)) {
-      case 2: noclose = RTEST(argv[1]);
-      case 1: nochdir = RTEST(argv[0]);
+      case 2:
+        if (!NIL_P(argv[1])) noclose = rb_bool_expected(argv[1], "noclose");
+        /* fallthrough */
+      case 1:
+        if (!NIL_P(argv[0])) nochdir = rb_bool_expected(argv[0], "nochdir");
     }
 
     prefork();
