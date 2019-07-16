@@ -393,7 +393,7 @@ end
 
 if Reline::Core::IS_WINDOWS
   require 'reline/windows'
-  Reline::IOGate = Reline::Core::Windows
+  Reline::IOGate = Reline::Windows
 else
   require 'reline/ansi'
   Reline::IOGate = Reline::ANSI
