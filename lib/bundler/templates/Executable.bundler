@@ -31,7 +31,7 @@ m = Module.new do
         bundler_version = a
       end
       next unless a =~ /\A--bundler(?:[= ](#{Gem::Version::VERSION_PATTERN}))?\z/
-      bundler_version = $1 || ">= 0.a"
+      bundler_version = $1
       update_index = i
     end
     bundler_version
@@ -63,27 +63,30 @@ m = Module.new do
   def bundler_version
     @bundler_version ||=
       env_var_version || cli_arg_version ||
-        lockfile_version || "#{Gem::Requirement.default}.a"
+        lockfile_version
+  end
+
+  def bundler_requirement
+    return "#{Gem::Requirement.default}.a" unless bundler_version
+
+    Gem::Version.new(bundler_version).approximate_recommendation
   end
 
   def load_bundler!
     ENV["BUNDLE_GEMFILE"] ||= gemfile
 
-    activate_bundler(bundler_version)
+    activate_bundler(bundler_requirement)
   end
 
-  def activate_bundler(bundler_version)
-    if Gem::Version.correct?(bundler_version) && Gem::Version.new(bundler_version).release < Gem::Version.new("2.0")
-      bundler_version = "< 2"
-    end
+  def activate_bundler(bundler_requirement)
     gem_error = activation_error_handling do
-      gem "bundler", bundler_version
+      gem "bundler", bundler_requirement
     end
     return if gem_error.nil?
     require_error = activation_error_handling do
       require "bundler/version"
     end
-    return if require_error.nil? && Gem::Requirement.new(bundler_version).satisfied_by?(Gem::Version.new(Bundler::VERSION))
+    return if require_error.nil? && Gem::Requirement.new(bundler_requirement).satisfied_by?(Gem::Version.new(Bundler::VERSION))
     warn "Activating bundler (#{bundler_version}) failed:\n#{gem_error.message}\n\nTo install the version of bundler this project requires, run `gem install bundler -v '#{bundler_version}'`"
     exit 42
   end
