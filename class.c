@@ -1884,7 +1884,7 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 	for (; i < required; i++) {
 	    VALUE keyword = ID2SYM(table[i]);
 	    if (keyword_hash) {
-		if (extract_kwarg(keyword, values[i])) {
+                if (extract_kwarg(keyword, values[i])) {
 		    continue;
 		}
 	    }
@@ -1898,7 +1898,7 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
     j = i;
     if (optional && keyword_hash) {
 	for (i = 0; i < optional; i++) {
-	    if (extract_kwarg(ID2SYM(table[required+i]), values[required+i])) {
+            if (extract_kwarg(ID2SYM(table[required+i]), values[required+i])) {
 		j++;
 	    }
 	}
@@ -1909,9 +1909,9 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 	}
     }
     if (values && !keyword_hash) {
-	for (i = 0; i < required + optional; i++) {
-	    values[i] = Qundef;
-	}
+        for (i = 0; i < required + optional; i++) {
+            values[i] = Qundef;
+        }
     }
     return j;
 #undef extract_kwarg
