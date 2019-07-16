@@ -37,6 +37,7 @@ static VALUE rb_cFiberPool;
 #endif
 
 #define CAPTURE_JUST_VALID_VM_STACK 1
+//#define FIBER_POOL_ALLOCATION_FREE
 
 enum context_type {
     CONTINUATION_CONTEXT = 0,
@@ -81,8 +82,10 @@ struct fiber_pool_vacancy {
     // Details about the vacant stack:
     struct fiber_pool_stack stack;
 
-    // The next vacancy in the linked list.
+    // The vacancy linked list.
+#ifdef FIBER_POOL_ALLOCATION_FREE
     struct fiber_pool_vacancy * previous;
+#endif
     struct fiber_pool_vacancy * next;
 };
 
@@ -123,13 +126,17 @@ struct fiber_pool_allocation {
     // The number of stacks that were allocated.
     size_t count;
 
+#ifdef FIBER_POOL_ALLOCATION_FREE
     // The number of stacks used in this allocation.
     size_t used;
+#endif
 
     struct fiber_pool * pool;
 
-    // The next allocation in the linked list.
+    // The allocation linked list.
+#ifdef FIBER_POOL_ALLOCATION_FREE
     struct fiber_pool_allocation * previous;
+#endif
     struct fiber_pool_allocation * next;
 };
 
@@ -297,13 +304,16 @@ inline static struct fiber_pool_vacancy *
 fiber_pool_vacancy_push(struct fiber_pool_vacancy * vacancy, struct fiber_pool_vacancy * head) {
     vacancy->next = head;
 
+#ifdef FIBER_POOL_ALLOCATION_FREE
     if (head) {
         head->previous = vacancy;
     }
+#endif
 
     return vacancy;
 }
 
+#ifdef FIBER_POOL_ALLOCATION_FREE
 static void
 fiber_pool_vacancy_remove(struct fiber_pool_vacancy * vacancy) {
     if (vacancy->next) {
@@ -328,6 +338,18 @@ fiber_pool_vacancy_pop(struct fiber_pool * pool) {
 
     return vacancy;
 }
+#else
+inline static struct fiber_pool_vacancy *
+fiber_pool_vacancy_pop(struct fiber_pool * pool) {
+    struct fiber_pool_vacancy * vacancy = pool->vacancies;
+
+    if (vacancy) {
+      pool->vacancies = vacancy->next;
+    }
+
+    return vacancy;
+}
+#endif
 
 // Initialize the vacant stack. The [base, size] allocation should not include the guard page.
 // @param base The pointer to the lowest address of the allocated memory.
@@ -365,7 +387,9 @@ fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
     allocation->size = size;
     allocation->stride = stride;
     allocation->count = count;
+#ifdef FIBER_POOL_ALLOCATION_FREE
     allocation->used = 0;
+#endif
     allocation->pool = fiber_pool;
 
     if (DEBUG) fprintf(stderr, "fiber_pool_expand(%zu): %p, %zu/%zu x [%zu:%zu]\n", count, fiber_pool, fiber_pool->used, fiber_pool->count, size, fiber_pool->vm_stack_size);
@@ -411,17 +435,21 @@ fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
           size
         );
 
+#ifdef FIBER_POOL_ALLOCATION_FREE
         vacancies->stack.allocation = allocation;
+#endif
     }
 
     // Insert the allocation into the head of the pool:
     allocation->next = fiber_pool->allocations;
 
+#ifdef FIBER_POOL_ALLOCATION_FREE
     if (allocation->next) {
         allocation->next->previous = allocation;
     }
 
     allocation->previous = NULL;
+#endif
 
     fiber_pool->allocations = allocation;
     fiber_pool->vacancies = vacancies;
@@ -458,6 +486,7 @@ fiber_pool_initialize(struct fiber_pool * fiber_pool, size_t size, size_t count,
     fiber_pool_expand(fiber_pool, count);
 }
 
+#ifdef FIBER_POOL_ALLOCATION_FREE
 // Free the list of fiber pool allocations.
 static void
 fiber_pool_allocation_free(struct fiber_pool_allocation * allocation)
@@ -499,6 +528,7 @@ fiber_pool_allocation_free(struct fiber_pool_allocation * allocation)
 
     ruby_xfree(allocation);
 }
+#endif
 
 // Acquire a stack from the given fiber pool. If none are avilable, allocate more.
 static struct fiber_pool_stack
@@ -528,7 +558,9 @@ fiber_pool_stack_acquire(struct fiber_pool * fiber_pool) {
     // Take the top item from the free list:
     fiber_pool->used += 1;
 
+#ifdef FIBER_POOL_ALLOCATION_FREE
     vacancy->stack.allocation->used += 1;
+#endif
 
     fiber_pool_stack_reset(&vacancy->stack);
 
@@ -573,14 +605,17 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack) {
     // Push the vacancy into the vancancies list:
     stack->pool->vacancies = fiber_pool_vacancy_push(vacancy, stack->pool->vacancies);
     stack->pool->used -= 1;
+
+#ifdef FIBER_POOL_ALLOCATION_FREE
     stack->allocation->used -= 1;
 
     // Release address space and/or dirty memory:
     if (stack->allocation->used == 0) {
         fiber_pool_allocation_free(stack->allocation);
     } else {
-        // fiber_pool_stack_free(stack);
+        fiber_pool_stack_free(stack);
     }
+#endif
 }
 
 static COROUTINE
@@ -690,7 +725,7 @@ rb_ec_verify(const rb_execution_context_t *ec)
 inline static void
 fiber_status_set(rb_fiber_t *fiber, enum fiber_status s)
 {
-    if (DEBUG) fprintf(stderr, "fiber: %p, status: %s -> %s\n", (void *)fiber, fiber_status_name(fiber->status), fiber_status_name(s));
+    // if (DEBUG) fprintf(stderr, "fiber: %p, status: %s -> %s\n", (void *)fiber, fiber_status_name(fiber->status), fiber_status_name(s));
     VM_ASSERT(!FIBER_TERMINATED_P(fiber));
     VM_ASSERT(fiber->status != s);
     fiber_verify(fiber);
@@ -908,7 +943,7 @@ fiber_free(void *ptr)
     rb_fiber_t *fiber = ptr;
     RUBY_FREE_ENTER("fiber");
 
-    if (DEBUG) fprintf(stderr, "fiber_free: %p[%p]\n", fiber, fiber->stack.base);
+    //if (DEBUG) fprintf(stderr, "fiber_free: %p[%p]\n", fiber, fiber->stack.base);
 
     if (fiber->cont.saved_ec.local_storage) {
         st_free_table(fiber->cont.saved_ec.local_storage);
@@ -1211,13 +1246,13 @@ fiber_setcontext(rb_fiber_t *new_fiber, rb_fiber_t *old_fiber)
     /* restore thread context */
     fiber_restore_thread(th, new_fiber);
 
-    if (DEBUG) fprintf(stderr, "fiber_setcontext: %p[%p] -> %p[%p]\n", old_fiber, old_fiber->stack.base, new_fiber, new_fiber->stack.base);
+    // if (DEBUG) fprintf(stderr, "fiber_setcontext: %p[%p] -> %p[%p]\n", old_fiber, old_fiber->stack.base, new_fiber, new_fiber->stack.base);
 
     /* swap machine context */
     coroutine_transfer(&old_fiber->context, &new_fiber->context);
 
-    // It's possible to get here, and new_fiber is already trashed.
-    if (DEBUG) fprintf(stderr, "fiber_setcontext: %p[%p] <- %p[%p]\n", old_fiber, old_fiber->stack.base, new_fiber, new_fiber->stack.base);
+    // It's possible to get here, and new_fiber is already freed.
+    // if (DEBUG) fprintf(stderr, "fiber_setcontext: %p[%p] <- %p[%p]\n", old_fiber, old_fiber->stack.base, new_fiber, new_fiber->stack.base);
 }
 
 NOINLINE(NORETURN(static void cont_restore_1(rb_context_t *)));
