@@ -61,10 +61,9 @@ m = Module.new do
   end
 
   def bundler_version
-    @bundler_version ||= begin
+    @bundler_version ||=
       env_var_version || cli_arg_version ||
         lockfile_version || "#{Gem::Requirement.default}.a"
-    end
   end
 
   def load_bundler!
