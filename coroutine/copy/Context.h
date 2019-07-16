@@ -16,6 +16,10 @@
 
 #define COROUTINE __attribute__((noreturn)) void
 
+#if INTPTR_MAX <= INT32_MAX
+#define COROUTINE_LIMITED_ADDRESS_SPACE
+#endif
+
 // This stack copying implementation which uses a private stack for each coroutine, including the main one.
 #define COROUTINE_PRIVATE_STACK
 
