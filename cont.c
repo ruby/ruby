@@ -157,6 +157,9 @@ struct fiber_pool {
     // The initial number of stacks to allocate.
     size_t initial_count;
 
+    // Whether to madvise(free) the stack or not:
+    int free_stacks;
+
     // The number of stacks that have been used in this pool.
     size_t used;
 
@@ -479,6 +482,7 @@ fiber_pool_initialize(struct fiber_pool * fiber_pool, size_t size, size_t count,
     fiber_pool->size = ((size / RB_PAGE_SIZE) + 1) * RB_PAGE_SIZE;
     fiber_pool->count = 0;
     fiber_pool->initial_count = count;
+    fiber_pool->free_stacks = 1;
     fiber_pool->used = 0;
 
     fiber_pool->vm_stack_size = vm_stack_size;
@@ -612,7 +616,12 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack) {
     // Release address space and/or dirty memory:
     if (stack->allocation->used == 0) {
         fiber_pool_allocation_free(stack->allocation);
-    } else {
+    } else if (stack->pool->free_stacks) {
+        fiber_pool_stack_free(stack);
+    }
+#else
+    // This is entirely optional, but clears the dirty flag from the stack memory, so it won't get swapped to disk when there is memory pressure:
+    if (stack->pool->free_stacks) {
         fiber_pool_stack_free(stack);
     }
 #endif
