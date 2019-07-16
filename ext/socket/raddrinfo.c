@@ -1114,16 +1114,16 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static int
-get_afamily(struct sockaddr *addr, socklen_t len)
+get_afamily(const struct sockaddr *addr, socklen_t len)
 {
-    if ((socklen_t)((char*)&addr->sa_family + sizeof(addr->sa_family) - (char*)addr) <= len)
+    if ((socklen_t)((const char*)&addr->sa_family + sizeof(addr->sa_family) - (char*)addr) <= len)
         return addr->sa_family;
     else
         return AF_UNSPEC;
 }
 
 static int
-ai_get_afamily(rb_addrinfo_t *rai)
+ai_get_afamily(const rb_addrinfo_t *rai)
 {
     return get_afamily(&rai->addr.addr, rai->sockaddr_len);
 }
