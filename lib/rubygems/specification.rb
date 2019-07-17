@@ -133,7 +133,6 @@ class Gem::Specification < Gem::BasicSpecification
 
   @@default_value = {
     :authors                   => [],
-    :autorequire               => nil,
     :bindir                    => 'bin',
     :cert_chain                => [],
     :date                      => nil,
@@ -705,13 +704,6 @@ class Gem::Specification < Gem::BasicSpecification
   attr_accessor :activated
 
   alias :activated? :activated
-
-  ##
-  # Autorequire was used by old RubyGems to automatically require a file.
-  #
-  # Deprecated: It is neither supported nor functional.
-
-  attr_accessor :autorequire # :nodoc:
 
   ##
   # Sets the default executable for this gem.

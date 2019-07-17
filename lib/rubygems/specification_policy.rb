@@ -369,9 +369,6 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
       warning "description and summary are identical"
     end
 
-    # TODO: raise at some given date
-    warning "deprecated autorequire specified" if autorequire
-
     executables.each do |executable|
       validate_shebang_line_in(executable)
     end

@@ -23,7 +23,6 @@ require_paths:
   - lib
 files:
   - lib/keyedlist.rb
-autorequire: keyedlist
 author: Florian Gross
 email: flgr@ccan.de
 has_rdoc: true
@@ -37,7 +36,6 @@ Gem::Specification.new do |s|
   s.summary = %q{A Hash which automatically computes keys.}
   s.files = [%q{lib/keyedlist.rb}]
   s.require_paths = [%q{lib}]
-  s.autorequire = %q{keyedlist}
   s.author = %q{Florian Gross}
   s.email = %q{flgr@ccan.de}
 end
@@ -679,7 +677,6 @@ end
   def test_self_attribute_names
     expected_value = %w[
       authors
-      autorequire
       bindir
       cert_chain
       date
@@ -2691,21 +2688,6 @@ end
       end
 
       assert_equal %{"#{f}" or "#{t}" is not an author}, e.message
-    end
-  end
-
-  def test_validate_autorequire
-    util_setup_validate
-
-    Dir.chdir @tempdir do
-      @a1.autorequire = 'code'
-
-      use_ui @ui do
-        @a1.validate
-      end
-
-      assert_match "#{w}:  deprecated autorequire specified\n",
-                   @ui.error, 'error'
     end
   end
 
