@@ -1,0 +1,12 @@
+# https://bugs.ruby-lang.org/issues/16009
+prelude: |
+  fibers = []
+benchmark:
+  vm2_fiber_reuse_gc: |
+    2000.times do
+      fiber = Fiber.new{Fiber.yield}
+      fibers << fiber
+      fiber.resume
+    end
+    fibers.clear
+loop_count: 100
