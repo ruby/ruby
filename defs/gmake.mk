@@ -185,36 +185,54 @@ endef
 checkout-github: fetch-github
 	git -C "$(srcdir)" checkout "gh-$(PR)"
 
+.PHONY: pull-github
+pull-github: fetch-github
+	$(call pull-github,$(PR))
+
 .PHONY: merge-github
-merge-github: fetch-github
+merge-github: pull-github
 	$(call merge-github,$(PR))
 
-define merge-github
+define pull-github
 	$(eval GITHUB_MERGE_BASE := $(shell git -C "$(srcdir)" log -1 --format=format:%H))
 	$(eval GITHUB_MERGE_BRANCH := $(shell git -C "$(srcdir)" symbolic-ref --short HEAD))
 	$(eval GITHUB_MERGE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(1)-XXXXXX"))
 	git -C "$(srcdir)" worktree add $(notdir $(GITHUB_MERGE_WORKTREE)) "gh-$(1)"
 	git -C "$(GITHUB_MERGE_WORKTREE)" rebase $(GITHUB_MERGE_BRANCH)
-	git -C "$(srcdir)" worktree remove $(notdir $(GITHUB_MERGE_WORKTREE))
-	git -C "$(srcdir)" merge --ff-only "gh-$(1)"
-	git -C "$(srcdir)" branch -D "gh-$(1)"
-	git -C "$(srcdir)" filter-branch -f \
+	git -C "$(GITHUB_MERGE_WORKTREE)" filter-branch -f \
 	  --msg-filter 'cat && echo && echo "Closes: $(GITHUB_RUBY_URL)/pull/$(1)"' \
 	  -- "$(GITHUB_MERGE_BASE)..@"
 	$(eval COMMIT_GPG_SIGN := $(COMMIT_GPG_SIGN))
 	$(if $(filter true,$(COMMIT_GPG_SIGN)), \
-	  git -C "$(srcdir)" rebase --exec "git commit --amend --no-edit -S" "$(GITHUB_MERGE_BASE)"; \
+	  git -C "$(GITHUB_MERGE_WORKTREE)" rebase --exec "git commit --amend --no-edit -S" "$(GITHUB_MERGE_BASE)"; \
 	)
 endef
 
+define merge-github
+	git -C "$(srcdir)" worktree remove $(notdir $(GITHUB_MERGE_WORKTREE))
+	git -C "$(srcdir)" merge --ff-only "gh-$(1)"
+	git -C "$(srcdir)" branch -D "gh-$(1)"
+endef
+
+.PHONY: fetch-github-%
 fetch-github-%:
 	$(call fetch-github,$*)
 
-pr-% merge-github-%: fetch-github-%
+.PHONY: checkout-github-%
+checkout-github-%: fetch-github-%
+	git -C "$(srcdir)" checkout "gh-$(1)"
+
+.PHONY: pr-% pull-github-%
+pr-% pull-github-%: fetch-github-%
+	$(call pull-github,$*)
+
+.PHONY: merge-github-%
+merge-github-%: pull-github-%
 	$(call merge-github,$*)
 
 HELP_EXTRA_TASKS = \
 	"  checkout-github:     checkout GitHub Pull Request [PR=1234]" \
+	"  pull-github:         rebase GitHub Pull Request to new worktree [PR=1234]" \
 	"  merge-github:        merge GitHub Pull Request to current HEAD [PR=1234]" \
 	""
 
