@@ -2235,11 +2235,8 @@ unlink_shared(VALUE hash)
         return;
 
     FL_UNSET(hash, ELTS_SHARED);
-    if (RHASH_AR_TABLE_P(hash)) RHASH_AR_TABLE_SET(hash, 0);
-    if (RHASH_ST_TABLE_P(hash)) {
-        RHASH_ST_TABLE_SET(hash, 0);
-        RHASH_UNSET_ST_FLAG(hash);
-    }
+    RHASH_AR_TABLE_SET(hash, 0);
+    RHASH_UNSET_ST_FLAG(hash);
 
     copy_hash(hash, HASH_SHARED(hash));
     RB_OBJ_WRITE(hash, &RHASH(hash)->shared, Qnil);
