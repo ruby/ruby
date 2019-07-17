@@ -681,10 +681,13 @@ ar_try_convert_table(VALUE hash)
     return;
 }
 
+static void unlink_shared(VALUE hash);
+
 static st_table *
 ar_force_convert_table(VALUE hash, const char *file, int line)
 {
     st_table *new_tab;
+    unlink_shared(hash);
 
     if (RHASH_ST_TABLE_P(hash)) {
         return RHASH_ST_TABLE(hash);
@@ -1491,8 +1494,6 @@ rb_hash_tbl(VALUE hash, const char *file, int line)
     return RHASH_TBL_RAW(hash);
 }
 
-static void unlink_shared(VALUE hash);
-
 static void
 rb_hash_modify(VALUE hash)
 {
@@ -2235,7 +2236,10 @@ unlink_shared(VALUE hash)
 
     FL_UNSET(hash, ELTS_SHARED);
     if (RHASH_AR_TABLE_P(hash)) RHASH_AR_TABLE_SET(hash, 0);
-    if (RHASH_ST_TABLE_P(hash)) RHASH_ST_TABLE_SET(hash, 0);
+    if (RHASH_ST_TABLE_P(hash)) {
+        RHASH_ST_TABLE_SET(hash, 0);
+        RHASH_UNSET_ST_FLAG(hash);
+    }
 
     copy_hash(hash, HASH_SHARED(hash));
     RB_OBJ_WRITE(hash, &RHASH(hash)->shared, Qnil);
