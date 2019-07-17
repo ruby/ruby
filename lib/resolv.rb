@@ -166,13 +166,14 @@ class Resolv
   # Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    begin
-      raise LoadError unless /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
-      require 'win32/resolv'
-      DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
-    rescue LoadError
-      DefaultFileName = '/etc/hosts'
+    if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM and
+      begin
+        require 'win32/resolv'
+        DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
+      rescue LoadError
+      end
     end
+    DefaultFileName ||= '/etc/hosts'
 
     ##
     # Creates a new Resolv::Hosts, using +filename+ for its data source.
