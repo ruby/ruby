@@ -8555,17 +8555,24 @@ time_to_datetime(VALUE self)
  * call-seq:
  *    d.to_time  ->  time
  *
- * Returns a Time object which denotes self.
+ * Returns a Time object which denotes self. If self is a julian date,
+ * convert it to a gregorian date before converting it to Time.
  */
 static VALUE
 date_to_time(VALUE self)
 {
-    get_d1(self);
+    get_d1a(self);
+
+    if (m_julian_p(adat)) {
+        VALUE tmp = d_lite_gregorian(self);
+        get_d1b(tmp);
+        adat = bdat;
+    }
 
     return f_local3(rb_cTime,
-		    m_real_year(dat),
-		    INT2FIX(m_mon(dat)),
-		    INT2FIX(m_mday(dat)));
+        m_real_year(adat),
+        INT2FIX(m_mon(adat)),
+        INT2FIX(m_mday(adat)));
 }
 
 /*
