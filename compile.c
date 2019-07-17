@@ -1650,7 +1650,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 		label = NEW_LABEL(nd_line(node));
 		rb_ary_push(labels, (VALUE)label | 1);
 		ADD_LABEL(optargs, label);
-		NO_CHECK(COMPILE_POPPED(optargs, "optarg", node->nd_body));
+                NO_CHECK(COMPILE_POPPED(optargs, "optarg", node->nd_body));
 		node = node->nd_next;
 		i += 1;
 	    }
