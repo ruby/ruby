@@ -747,7 +747,8 @@ new_array_pattern_tail(struct parser_params *p, VALUE pre_args, VALUE has_rest, 
     NODE *t;
     if (has_rest) {
 	rest_arg = dispatch1(var_field, rest_arg ? rest_arg : Qnil);
-    } else {
+    }
+    else {
 	rest_arg = Qnil;
     }
     t = rb_node_newnode(NODE_ARYPTN, pre_args, rest_arg, post_args, &NULL_LOC);
@@ -4040,7 +4041,7 @@ p_kwrest	: kwrest_mark tIDENTIFIER
 		    }
 		;
 
-p_value	: p_primitive
+p_value 	: p_primitive
 		| p_primitive tDOT2 p_primitive
 		    {
 		    /*%%%*/
@@ -4162,7 +4163,7 @@ p_var_ref	: '^' tIDENTIFIER
 		    }
 		;
 
-p_const	: tCOLON3 cname
+p_const 	: tCOLON3 cname
 		    {
 		    /*%%%*/
 			$$ = NEW_COLON3($2, &@$);
@@ -11234,7 +11235,8 @@ new_array_pattern(struct parser_params *p, NODE *constant, NODE *pre_arg, NODE *
 	NODE *pre_args = NEW_LIST(pre_arg, loc);
 	if (apinfo->pre_args) {
 	    apinfo->pre_args = list_concat(pre_args, apinfo->pre_args);
-	} else {
+	}
+	else {
 	    apinfo->pre_args = pre_args;
 	}
     }
@@ -11258,10 +11260,12 @@ new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, ID
     if (has_rest) {
 	if (rest_arg) {
 	    apinfo->rest_arg = assignable(p, rest_arg, 0, loc);
-	} else {
+	}
+	else {
 	    apinfo->rest_arg = NODE_SPECIAL_NO_NAME_REST;
 	}
-    } else {
+    }
+    else {
 	apinfo->rest_arg = NULL;
     }
 
