@@ -1235,7 +1235,7 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
 {
     struct hash_foreach_arg *arg = (struct hash_foreach_arg *)argp;
     int status;
-    int shared;
+    unsigned int shared;
     st_table *tbl;
 
     if (error) return ST_STOP;
