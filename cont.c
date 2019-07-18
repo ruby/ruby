@@ -709,6 +709,7 @@ fiber_stack_release(rb_fiber_t * fiber)
 
     // The stack is no longer associated with this execution context:
     rb_ec_clear_vm_stack(ec);
+    ec->cfp = NULL;
 }
 
 static const char *
