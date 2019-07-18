@@ -568,7 +568,7 @@ fiber_pool_stack_acquire(struct fiber_pool * fiber_pool) {
     if (!vacancy) {
         const size_t maximum = FIBER_POOL_ALLOCATION_MAXIMUM_SIZE;
         const size_t minimum = fiber_pool->initial_count;
-        
+
         size_t count = fiber_pool->count;
         if (count > maximum) count = maximum;
         if (count < minimum) count = minimum;
