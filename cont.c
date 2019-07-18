@@ -1713,18 +1713,6 @@ fiber_t_alloc(VALUE fiber_value)
     return fiber;
 }
 
-rb_control_frame_t *
-rb_vm_push_frame(rb_execution_context_t *sec,
-                 const rb_iseq_t *iseq,
-                 VALUE type,
-                 VALUE self,
-                 VALUE specval,
-                 VALUE cref_or_me,
-                 const VALUE *pc,
-                 VALUE *sp,
-                 int local_size,
-                 int stack_max);
-
 static VALUE
 fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool)
 {
