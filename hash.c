@@ -2814,7 +2814,9 @@ make_shared_hash(VALUE hash, VALUE old_hash)
     VALUE hidden;
 
     if (RHASH_AR_TABLE_P(old_hash) || RHASH_ST_TABLE_P(old_hash)) {
-        if (HASH_SHARED_P(old_hash)) {
+        if (OBJ_FROZEN(old_hash)) {
+            hidden = old_hash;
+        } else if (HASH_SHARED_P(old_hash)) {
             hidden = HASH_SHARED(old_hash);
         } else {
             hidden = rb_hash_new();
@@ -2831,7 +2833,6 @@ make_shared_hash(VALUE hash, VALUE old_hash)
         if (RHASH_ST_TABLE_P(hash)) st_free_table(RHASH_ST_TABLE(hash));
 
         link_to_shared(hash, hidden);
-        asan_poison_memory_region(&RHASH_ST_TABLE(hash), sizeof(VALUE*));
     } else {
         if (RHASH_AR_TABLE_P(hash)) {
             ar_clear(hash);
