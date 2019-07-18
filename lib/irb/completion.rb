@@ -237,7 +237,7 @@ module IRB
           candidates.uniq!
         end
         if doc_namespace
-          "#{rec.name}#{sep}#{candidates.find{ |i| i == message }}"
+          "#{rec.class.name}#{sep}#{candidates.find{ |i| i == message }}"
         else
           select_message(receiver, message, candidates, sep)
         end
