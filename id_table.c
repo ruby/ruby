@@ -69,11 +69,6 @@ ITEM_SET_KEY(struct rb_id_table *tbl, int i, id_key_t key)
 static inline int
 round_capa(int capa)
 {
-    printf("# round_capa(%d)\n", capa);
-    /* minsize is 4 */
-    if(capa <= 4) {
-        return 4;
-    }
     return 1 << ((SIZEOF_INT * CHAR_BIT) - nlz_int(capa - 1));
 }
 
@@ -81,8 +76,9 @@ static struct rb_id_table *
 rb_id_table_init(struct rb_id_table *tbl, int capa)
 {
     MEMZERO(tbl, struct rb_id_table, 1);
+
     if (capa > 0) {
-	capa = round_capa(capa);
+        capa = (capa <= 4) ? 4 : round_capa(capa);
 	tbl->capa = (int)capa;
 	tbl->items = ZALLOC_N(item_t, capa);
     }
