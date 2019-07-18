@@ -12479,8 +12479,6 @@ rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr)
 
 #ifdef RIPPER
 #ifdef RIPPER_DEBUG
-extern int rb_is_pointer_to_heap(VALUE);
-
 /* :nodoc: */
 static VALUE
 ripper_validate_object(VALUE self, VALUE x)
@@ -12492,8 +12490,6 @@ ripper_validate_object(VALUE self, VALUE x)
         rb_raise(rb_eArgError, "Qundef given");
     if (FIXNUM_P(x)) return x;
     if (SYMBOL_P(x)) return x;
-    if (!rb_is_pointer_to_heap(x))
-        rb_raise(rb_eArgError, "invalid pointer: %p", x);
     switch (BUILTIN_TYPE(x)) {
       case T_STRING:
       case T_OBJECT:
@@ -12504,13 +12500,13 @@ ripper_validate_object(VALUE self, VALUE x)
       case T_RATIONAL:
         return x;
       case T_NODE:
-	if (nd_type(x) != NODE_RIPPER) {
-	    rb_raise(rb_eArgError, "NODE given: %p", x);
+	if (nd_type((NODE *)x) != NODE_RIPPER) {
+	    rb_raise(rb_eArgError, "NODE given: %p", (void *)x);
 	}
 	return ((NODE *)x)->nd_rval;
       default:
         rb_raise(rb_eArgError, "wrong type of ruby object: %p (%s)",
-                 x, rb_obj_classname(x));
+                 (void *)x, rb_obj_classname(x));
     }
     return x;
 }
