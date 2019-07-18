@@ -255,12 +255,15 @@ class Reline::LineEditor
       move_cursor_up(@highest_in_all - 1 - @first_line_started_from)
       @menu_info = nil
     end
+    special_prompt = nil
     if @vi_arg
       prompt = "(arg: #{@vi_arg}) "
       prompt_width = calculate_width(prompt)
+      special_prompt = prompt
     elsif @searching_prompt
       prompt = @searching_prompt
       prompt_width = calculate_width(prompt)
+      special_prompt = prompt
     else
       prompt = @prompt
       prompt_width = calculate_width(prompt, true)
@@ -272,6 +275,7 @@ class Reline::LineEditor
       prompt_list = nil
       if @prompt_proc
         prompt_list = @prompt_proc.(whole_lines)
+        prompt_list[@line_index] = special_prompt if special_prompt
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
@@ -303,6 +307,7 @@ class Reline::LineEditor
       prompt_list = nil
       if @prompt_proc
         prompt_list = @prompt_proc.(new_lines)
+        prompt_list[@line_index] = special_prompt if special_prompt
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
@@ -372,6 +377,7 @@ class Reline::LineEditor
       prompt_list = nil
       if @prompt_proc
         prompt_list = @prompt_proc.(new_buffer)
+        prompt_list[@line_index] = special_prompt if special_prompt
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
@@ -429,6 +435,7 @@ class Reline::LineEditor
       prompt_list = nil
       if @prompt_proc
         prompt_list = @prompt_proc.(whole_lines)
+        prompt_list[@line_index] = special_prompt if special_prompt
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
