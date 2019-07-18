@@ -45,7 +45,7 @@ static VALUE rb_cFiberPool;
 #define FIBER_POOL_ALLOCATION_MAXIMUM_SIZE 32
 #else
 #define FIBER_POOL_INITIAL_SIZE 32
-#define FIBER_POOL_ALLOCATION_MAXIMUM_SIZE 4096
+#define FIBER_POOL_ALLOCATION_MAXIMUM_SIZE 1024
 #endif
 
 enum context_type {
@@ -381,21 +381,61 @@ fiber_pool_vacancy_initialize(struct fiber_pool * fiber_pool, struct fiber_pool_
     return fiber_pool_vacancy_push(vacancy, vacancies);
 }
 
+// Allocate a maximum of count stacks, size given by stride.
+// @param count the number of stacks to allocate / were allocated.
+// @param stride the size of the individual stacks.
+// @return [void *] the allocated memory or NULL if allocation failed.
+inline static void *
+fiber_pool_allocate_memory(size_t * count, size_t stride)
+{
+    while (*count > 1) {
+#if defined(_WIN32)
+        void * base = VirtualAlloc(0, (*count)*stride, MEM_COMMIT, PAGE_READWRITE);
+
+        if (!base) {
+            *count = (*count) >> 1;
+        } else {
+            return base;
+        }
+#else
+        errno = 0;
+        void * base = mmap(NULL, (*count)*stride, PROT_READ | PROT_WRITE, FIBER_STACK_FLAGS, -1, 0);
+
+        if (base == MAP_FAILED) {
+            *count = (*count) >> 1;
+        } else {
+            return base;
+        }
+#endif
+    }
+
+    return NULL;
+}
+
 // Given an existing fiber pool, expand it by the specified number of stacks.
+// @param count the maximum number of stacks to allocate.
+// @return the allocated fiber pool.
+// @sa fiber_pool_allocation_free
 static struct fiber_pool_allocation *
 fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
 {
     STACK_GROW_DIR_DETECTION;
 
-    size_t i;
-    struct fiber_pool_vacancy * vacancies = fiber_pool->vacancies;
-    struct fiber_pool_allocation * allocation = RB_ALLOC(struct fiber_pool_allocation);
-
     size_t size = fiber_pool->size;
     size_t stride = size + RB_PAGE_SIZE;
 
+    // Allocate the memory required for the stacks:
+    void * base = fiber_pool_allocate_memory(&count, stride);
+
+    if (base == NULL) {
+        rb_raise(rb_eFiberError, "can't alloc machine stack to fiber (%zu x %zu bytes): %s", count, size, ERRNOMSG);
+    }
+
+    struct fiber_pool_vacancy * vacancies = fiber_pool->vacancies;
+    struct fiber_pool_allocation * allocation = RB_ALLOC(struct fiber_pool_allocation);
+
     // Initialize fiber pool allocation:
-    allocation->base = NULL;
+    allocation->base = base;
     allocation->size = size;
     allocation->stride = stride;
     allocation->count = count;
@@ -406,24 +446,8 @@ fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
 
     if (DEBUG) fprintf(stderr, "fiber_pool_expand(%zu): %p, %zu/%zu x [%zu:%zu]\n", count, fiber_pool, fiber_pool->used, fiber_pool->count, size, fiber_pool->vm_stack_size);
 
-    // Allocate the memory required for the stacks:
-#if defined(_WIN32)
-    allocation->base = VirtualAlloc(0, count*stride, MEM_COMMIT, PAGE_READWRITE);
-
-    if (!allocation->base) {
-        rb_raise(rb_eFiberError, "can't alloc machine stack to fiber (%zu x %zu bytes): %s", count, size, ERRNOMSG);
-    }
-#else
-    errno = 0;
-    allocation->base = mmap(NULL, count*stride, PROT_READ | PROT_WRITE, FIBER_STACK_FLAGS, -1, 0);
-
-    if (allocation->base == MAP_FAILED) {
-        rb_raise(rb_eFiberError, "can't alloc machine stack to fiber (%zu x %zu bytes): %s", count, size, ERRNOMSG);
-    }
-#endif
-
     // Iterate over all stacks, initializing the vacancy list:
-    for (i = 0; i < count; i += 1) {
+    for (size_t i = 0; i < count; i += 1) {
         void * base = (char*)allocation->base + (stride * i);
         void * page = (char*)base + STACK_DIR_UPPER(size, 0);
 
