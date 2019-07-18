@@ -834,7 +834,9 @@ cont_mark(void *ptr)
     RUBY_MARK_ENTER("cont");
     rb_gc_mark_no_pin(cont->value);
 
-    rb_execution_context_mark(&cont->saved_ec);
+    if (cont->saved_ec.cfp) {
+        rb_execution_context_mark(&cont->saved_ec);
+    }
     rb_gc_mark(cont_thread_value(cont));
 
     if (cont->saved_vm_stack.ptr) {
