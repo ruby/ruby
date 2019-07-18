@@ -1702,6 +1702,7 @@ fiber_t_alloc(VALUE fiber_value)
     fiber->cont.type = FIBER_CONTEXT;
     cont_init(&fiber->cont, th);
     fiber->cont.saved_ec.fiber_ptr = fiber;
+    fiber->cont.saved_ec.cfp = NULL;
     fiber->prev = NULL;
 
     /* fiber->status == 0 == CREATED
