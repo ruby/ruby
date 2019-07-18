@@ -144,7 +144,7 @@ $(TIMESTAMPDIR)/.exec.time:
 	$(Q) exit > $@
 
 .PHONY: commit
-commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS)))
+commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS))) up
 	@$(BASERUBY) -C "$(srcdir)" -I./tool/lib -rvcs -e 'VCS.detect(".").commit'
 	+$(Q) \
 	{ \
