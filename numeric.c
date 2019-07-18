@@ -4673,7 +4673,8 @@ compare_indexes(VALUE a, VALUE b)
 }
 
 static VALUE
-generate_mask(VALUE len) {
+generate_mask(VALUE len)
+{
     return rb_int_minus(rb_int_lshift(INT2FIX(1), len), INT2FIX(1));
 }
 

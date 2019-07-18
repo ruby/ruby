@@ -564,7 +564,8 @@ hash_ar_table_set(VALUE hash, ar_table *ar)
 #define RHASH_AR_TABLE_SIZE_INC(h) HASH_AR_TABLE_SIZE_ADD(h, 1)
 
 static inline void
-RHASH_AR_TABLE_SIZE_DEC(VALUE h) {
+RHASH_AR_TABLE_SIZE_DEC(VALUE h)
+{
     HASH_ASSERT(RHASH_AR_TABLE_P(h));
     int new_size = RHASH_AR_TABLE_SIZE(h) - 1;
 

@@ -313,7 +313,8 @@ fiber_pool_vacancy_reset(struct fiber_pool_vacancy * vacancy)
 }
 
 inline static struct fiber_pool_vacancy *
-fiber_pool_vacancy_push(struct fiber_pool_vacancy * vacancy, struct fiber_pool_vacancy * head) {
+fiber_pool_vacancy_push(struct fiber_pool_vacancy * vacancy, struct fiber_pool_vacancy * head)
+{
     vacancy->next = head;
 
 #ifdef FIBER_POOL_ALLOCATION_FREE
@@ -327,36 +328,40 @@ fiber_pool_vacancy_push(struct fiber_pool_vacancy * vacancy, struct fiber_pool_v
 
 #ifdef FIBER_POOL_ALLOCATION_FREE
 static void
-fiber_pool_vacancy_remove(struct fiber_pool_vacancy * vacancy) {
+fiber_pool_vacancy_remove(struct fiber_pool_vacancy * vacancy)
+{
     if (vacancy->next) {
         vacancy->next->previous = vacancy->previous;
     }
 
     if (vacancy->previous) {
         vacancy->previous->next = vacancy->next;
-    } else {
+    }
+    else {
         // It's the head of the list:
         vacancy->stack.pool->vacancies = vacancy->next;
     }
 }
 
 inline static struct fiber_pool_vacancy *
-fiber_pool_vacancy_pop(struct fiber_pool * pool) {
+fiber_pool_vacancy_pop(struct fiber_pool * pool)
+{
     struct fiber_pool_vacancy * vacancy = pool->vacancies;
 
     if (vacancy) {
-      fiber_pool_vacancy_remove(vacancy);
+        fiber_pool_vacancy_remove(vacancy);
     }
 
     return vacancy;
 }
 #else
 inline static struct fiber_pool_vacancy *
-fiber_pool_vacancy_pop(struct fiber_pool * pool) {
+fiber_pool_vacancy_pop(struct fiber_pool * pool)
+{
     struct fiber_pool_vacancy * vacancy = pool->vacancies;
 
     if (vacancy) {
-      pool->vacancies = vacancy->next;
+        pool->vacancies = vacancy->next;
     }
 
     return vacancy;
@@ -394,7 +399,8 @@ fiber_pool_allocate_memory(size_t * count, size_t stride)
 
         if (!base) {
             *count = (*count) >> 1;
-        } else {
+        }
+        else {
             return base;
         }
 #else
@@ -403,7 +409,8 @@ fiber_pool_allocate_memory(size_t * count, size_t stride)
 
         if (base == MAP_FAILED) {
             *count = (*count) >> 1;
-        } else {
+        }
+        else {
             return base;
         }
 #endif
@@ -466,9 +473,9 @@ fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
 #endif
 
         vacancies = fiber_pool_vacancy_initialize(
-          fiber_pool, vacancies,
-          (char*)base + STACK_DIR_UPPER(0, RB_PAGE_SIZE),
-          size
+            fiber_pool, vacancies,
+            (char*)base + STACK_DIR_UPPER(0, RB_PAGE_SIZE),
+            size
         );
 
 #ifdef FIBER_POOL_ALLOCATION_FREE
@@ -536,14 +543,15 @@ fiber_pool_allocation_free(struct fiber_pool_allocation * allocation)
     }
 
 #ifdef _WIN32
-      VirtualFree(allocation->base, 0, MEM_RELEASE);
+    VirtualFree(allocation->base, 0, MEM_RELEASE);
 #else
-      munmap(allocation->base, allocation->stride * allocation->count);
+    munmap(allocation->base, allocation->stride * allocation->count);
 #endif
 
     if (allocation->previous) {
         allocation->previous->next = allocation->next;
-    } else {
+    }
+    else {
         // We are the head of the list, so update the pool:
         allocation->pool->allocations = allocation->next;
     }
@@ -598,7 +606,8 @@ fiber_pool_stack_acquire(struct fiber_pool * fiber_pool) {
 // We advise the operating system that the stack memory pages are no longer being used.
 // This introduce some performance overhead but allows system to relaim memory when there is pressure.
 static inline void
-fiber_pool_stack_free(struct fiber_pool_stack * stack) {
+fiber_pool_stack_free(struct fiber_pool_stack * stack)
+{
     void * base = fiber_pool_stack_base(stack);
     size_t size = stack->available;
 
@@ -619,7 +628,8 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack) {
 
 // Release and return a stack to the vacancy list.
 static void
-fiber_pool_stack_release(struct fiber_pool_stack * stack) {
+fiber_pool_stack_release(struct fiber_pool_stack * stack)
+{
     struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pointer(stack->base, stack->size);
 
     if (DEBUG) fprintf(stderr, "fiber_pool_stack_release: %p used=%zu\n", stack->base, stack->pool->used);
@@ -640,7 +650,8 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack) {
     // Release address space and/or dirty memory:
     if (stack->allocation->used == 0) {
         fiber_pool_allocation_free(stack->allocation);
-    } else if (stack->pool->free_stacks) {
+    }
+    else if (stack->pool->free_stacks) {
         fiber_pool_stack_free(stack);
     }
 #else
@@ -808,7 +819,7 @@ fiber_ptr(VALUE obj)
 NOINLINE(static VALUE cont_capture(volatile int *volatile stat));
 
 #define THREAD_MUST_BE_RUNNING(th) do { \
-        if (!(th)->ec->tag) rb_raise(rb_eThreadError, "not running thread");	\
+        if (!(th)->ec->tag) rb_raise(rb_eThreadError, "not running thread"); \
     } while (0)
 
 static VALUE
@@ -886,7 +897,8 @@ cont_free(void *ptr)
         ruby_xfree(cont->saved_ec.vm_stack);
         ruby_xfree(cont->ensure_array);
         RUBY_FREE_UNLESS_NULL(cont->machine.stack);
-    } else {
+    }
+    else {
         rb_fiber_t *fiber = (rb_fiber_t*)cont;
         coroutine_destroy(&fiber->context);
         if (!fiber_is_root_p(fiber)) {
@@ -1311,7 +1323,7 @@ cont_restore_1(rb_context_t *cont)
     if (cont->machine.stack_src) {
         FLUSH_REGISTER_WINDOWS;
         MEMCPY(cont->machine.stack_src, cont->machine.stack,
-                VALUE, cont->machine.stack_size);
+               VALUE, cont->machine.stack_size);
     }
 
     ruby_longjmp(cont->jmpbuf, 1);
