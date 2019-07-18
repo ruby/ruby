@@ -76,9 +76,8 @@ static struct rb_id_table *
 rb_id_table_init(struct rb_id_table *tbl, int capa)
 {
     MEMZERO(tbl, struct rb_id_table, 1);
-
     if (capa > 0) {
-        capa = (capa <= 4) ? 4 : round_capa(capa);
+	capa = round_capa(capa);
 	tbl->capa = (int)capa;
 	tbl->items = ZALLOC_N(item_t, capa);
     }
@@ -178,12 +177,14 @@ static void
 hash_table_extend(struct rb_id_table* tbl)
 {
     if (tbl->used + (tbl->used >> 1) >= tbl->capa) {
-	int new_cap = round_capa(tbl->num + (tbl->num >> 1));
+        int capa = tbl->num + (tbl->num >> 1)
+        int new_cap = (capa <= 4) ? 4 : round_capa(capa);
 	int i;
 	item_t* old;
 	struct rb_id_table tmp_tbl = {0, 0, 0};
 	if (new_cap < tbl->capa) {
-	    new_cap = round_capa(tbl->used + (tbl->used >> 1));
+            int capa2 = tbl->used + (tbl->used >> 1)
+	    new_cap = (capa2 <= 4) ? 4 : round_capa(capa2);
 	}
 	tmp_tbl.capa = new_cap;
 	tmp_tbl.items = ZALLOC_N(item_t, new_cap);
