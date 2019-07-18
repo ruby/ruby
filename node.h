@@ -138,7 +138,8 @@ typedef struct rb_code_location_struct {
     rb_code_position_t end_pos;
 } rb_code_location_t;
 
-static inline rb_code_location_t code_loc_gen(rb_code_location_t *loc1, rb_code_location_t *loc2)
+static inline rb_code_location_t
+code_loc_gen(rb_code_location_t *loc1, rb_code_location_t *loc2)
 {
     rb_code_location_t loc;
     loc.beg_pos = loc1->beg_pos;
