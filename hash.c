@@ -438,6 +438,10 @@ hash_verify_(VALUE hash, const char *file, int line)
 {
     HASH_ASSERT(RB_TYPE_P(hash, T_HASH));
 
+    if (HASH_SHARED_P(hash)) {
+        hash = HASH_SHARED(hash);
+    }
+
     if (RHASH_AR_TABLE_P(hash)) {
         unsigned i, n = 0, bound = RHASH_AR_TABLE_BOUND(hash);
 
@@ -2234,9 +2238,9 @@ unlink_shared(VALUE hash)
     if (!HASH_SHARED_P(hash))
         return;
 
-    FL_UNSET(hash, ELTS_SHARED);
-    RHASH_AR_TABLE_SET(hash, 0);
     RHASH_UNSET_ST_FLAG(hash);
+    RHASH_AR_TABLE_SET(hash, 0);
+    FL_UNSET(hash, ELTS_SHARED);
 
     copy_hash(hash, HASH_SHARED(hash));
     RB_OBJ_WRITE(hash, &RHASH(hash)->shared, Qnil);
