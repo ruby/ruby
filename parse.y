@@ -5100,10 +5100,7 @@ opt_f_block_arg	: ',' f_block_arg
 		    }
 		| none
 		    {
-		    /*%%%*/
-			$$ = 0;
-		    /*% %*/
-		    /*% ripper: Qundef %*/
+			$$ = Qnull;
 		    }
 		;
 
