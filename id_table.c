@@ -69,6 +69,7 @@ ITEM_SET_KEY(struct rb_id_table *tbl, int i, id_key_t key)
 static inline int
 round_capa(int capa)
 {
+    printf("# round_capa(%d)\n", capa);
     /* minsize is 4 */
     if(capa <= 4) {
         return 4;
