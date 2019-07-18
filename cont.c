@@ -845,8 +845,6 @@ cont_mark(void *ptr)
     RUBY_MARK_ENTER("cont");
     rb_gc_mark_no_pin(cont->value);
 
-    // Don't try to scan the vm_stack unless it's initialized.
-    // @sa cont_init, fiber_prepare_stack
     if (cont->saved_ec.cfp) {
         rb_execution_context_mark(&cont->saved_ec);
     }
@@ -1085,10 +1083,6 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
 {
     /* save thread context */
     cont_save_thread(cont, th);
-
-    // cfp is not valid until stack is initialized.
-    cont->saved_ec.cfp = NULL;
-
     cont->saved_ec.thread_ptr = th;
     cont->saved_ec.local_storage = NULL;
     cont->saved_ec.local_storage_recursive_hash = Qnil;
