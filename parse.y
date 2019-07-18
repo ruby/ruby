@@ -12487,7 +12487,7 @@ ripper_validate_object(VALUE self, VALUE x)
     if (x == Qtrue) return x;
     if (x == Qnil) return x;
     if (x == Qundef)
-        rb_raise(rb_eArgError, "Qundef given");
+	rb_raise(rb_eArgError, "Qundef given");
     if (FIXNUM_P(x)) return x;
     if (SYMBOL_P(x)) return x;
     switch (BUILTIN_TYPE(x)) {
@@ -12498,15 +12498,20 @@ ripper_validate_object(VALUE self, VALUE x)
       case T_FLOAT:
       case T_COMPLEX:
       case T_RATIONAL:
-        return x;
+	break;
       case T_NODE:
 	if (nd_type((NODE *)x) != NODE_RIPPER) {
 	    rb_raise(rb_eArgError, "NODE given: %p", (void *)x);
 	}
-	return ((NODE *)x)->nd_rval;
+	x = ((NODE *)x)->nd_rval;
+	break;
       default:
-        rb_raise(rb_eArgError, "wrong type of ruby object: %p (%s)",
-                 (void *)x, rb_obj_classname(x));
+	rb_raise(rb_eArgError, "wrong type of ruby object: %p (%s)",
+		 (void *)x, rb_obj_classname(x));
+    }
+    if (!RBASIC_CLASS(x)) {
+	rb_raise(rb_eArgError, "hidden ruby object: %p (%s)",
+		 (void *)x, rb_builtin_type_name(TYPE(x)));
     }
     return x;
 }
