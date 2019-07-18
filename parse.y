@@ -12919,9 +12919,9 @@ InitVM_ripper(void)
     rb_define_method(Ripper, "debug_output=", rb_parser_set_debug_output, 1);
     rb_define_method(Ripper, "error?", ripper_error_p, 0);
 #ifdef RIPPER_DEBUG
-    rb_define_method(rb_mKernel, "assert_Qundef", ripper_assert_Qundef, 2);
-    rb_define_method(rb_mKernel, "rawVALUE", ripper_value, 1);
-    rb_define_method(rb_mKernel, "validate_object", ripper_validate_object, 1);
+    rb_define_method(Ripper, "assert_Qundef", ripper_assert_Qundef, 2);
+    rb_define_method(Ripper, "rawVALUE", ripper_value, 1);
+    rb_define_method(Ripper, "validate_object", ripper_validate_object, 1);
 #endif
 
     rb_define_singleton_method(Ripper, "dedent_string", parser_dedent_string, 2);
