@@ -2463,8 +2463,6 @@ rb_execution_context_update(const rb_execution_context_t *ec)
 
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
         }
-    } else {
-        VM_ASSERT(!ec->cfp);
     }
 }
 
@@ -2497,8 +2495,6 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 
 	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 	}
-    } else {
-        VM_ASSERT(!ec->cfp);
     }
 
     /* mark machine stack */
