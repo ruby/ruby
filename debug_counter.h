@@ -206,6 +206,15 @@ RB_DEBUG_COUNTER(obj_str_fstr)
 RB_DEBUG_COUNTER(obj_ary_embed)
 RB_DEBUG_COUNTER(obj_ary_transient)
 RB_DEBUG_COUNTER(obj_ary_ptr)
+/*
+  ary_shared_create: shared ary by Array#dup and so on.
+  ary_shared: finished in shard.
+  ary_shared_root_occupied: shared_root but has only 1 refcnt.
+    The number (ary_shared - ary_shared_root_occupied) is meaningful.
+ */
+RB_DEBUG_COUNTER(obj_ary_shared_create)
+RB_DEBUG_COUNTER(obj_ary_shared)
+RB_DEBUG_COUNTER(obj_ary_shared_root_occupied)
 
 RB_DEBUG_COUNTER(obj_hash_empty)
 RB_DEBUG_COUNTER(obj_hash_under4)

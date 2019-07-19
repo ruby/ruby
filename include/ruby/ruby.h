@@ -1054,7 +1054,7 @@ struct RArray {
 	    long len;
 	    union {
 		long capa;
-		VALUE shared;
+		VALUE shared_root;
 	    } aux;
 	    const VALUE *ptr;
 	} heap;
