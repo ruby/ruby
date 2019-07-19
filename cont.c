@@ -396,6 +396,12 @@ fiber_pool_vacancy_initialize(struct fiber_pool * fiber_pool, struct fiber_pool_
 inline static void *
 fiber_pool_allocate_memory(size_t * count, size_t stride)
 {
+    // We use a divide-by-2 strategy to try and allocate memory. We are trying
+    // to allocate `count` stacks. In normal situation, this won't fail. But
+    // if we ran out of address space, or we are allocating more memory than
+    // the system would allow (e.g. overcommit * physical memory + swap), we
+    // divide count by two and try again. This condition should only be
+    // encountered in edge cases, but we handle it here gracefully.
     while (*count > 1) {
 #if defined(_WIN32)
         void * base = VirtualAlloc(0, (*count)*stride, MEM_COMMIT, PAGE_READWRITE);
@@ -411,6 +417,7 @@ fiber_pool_allocate_memory(size_t * count, size_t stride)
         void * base = mmap(NULL, (*count)*stride, PROT_READ | PROT_WRITE, FIBER_STACK_FLAGS, -1, 0);
 
         if (base == MAP_FAILED) {
+            // If the allocation fails, count = count / 2, and try again.
             *count = (*count) >> 1;
         }
         else {
