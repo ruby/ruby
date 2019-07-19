@@ -8,3 +8,8 @@
 #undef assert
 #define assert RUBY_ASSERT
 #endif
+
+#ifdef NDEBUG
+  #undef  RUBY_NDEBUG
+  #define RUBY_NDEBUG 1
+#endif
