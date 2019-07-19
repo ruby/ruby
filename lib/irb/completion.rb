@@ -205,7 +205,7 @@ module IRB
         sep = $2
         message = Regexp.quote($3)
 
-        gv = eval("global_variables", bind).collect{|m| m.to_s}
+        gv = eval("global_variables", bind).collect{|m| m.to_s}.append("true", "false", "nil")
         lv = eval("local_variables", bind).collect{|m| m.to_s}
         iv = eval("instance_variables", bind).collect{|m| m.to_s}
         cv = eval("self.class.constants", bind).collect{|m| m.to_s}
