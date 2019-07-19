@@ -77,6 +77,10 @@
 #include <malloc.h>
 #endif
 
+/* from hash.c */
+#define HASH_SHARED_P(_hash) FL_TEST(_hash, ELTS_SHARED)
+#define HASH_SHARED(_hash) RHASH(_hash)->shared
+
 #define rb_setjmp(env) RUBY_SETJMP(env)
 #define rb_jmp_buf rb_jmpbuf_t
 
@@ -2410,26 +2414,34 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_HASH:
 #if USE_DEBUG_COUNTER
-        if (RHASH_SIZE(obj) >= 8) {
-            RB_DEBUG_COUNTER_INC(obj_hash_ge8);
-        }
-        else if (RHASH_SIZE(obj) >= 4) {
-            RB_DEBUG_COUNTER_INC(obj_hash_ge4);
-        }
-        else if (RHASH_SIZE(obj) >= 1) {
-            RB_DEBUG_COUNTER_INC(obj_hash_under4);
-        }
-        else {
-            RB_DEBUG_COUNTER_INC(obj_hash_empty);
-        }
+        if (HASH_SHARED_P(obj)) {
+            RB_DEBUG_COUNTER_INC(obj_hash_shared);
+        } else {
+            if (RHASH_SIZE(obj) >= 8) {
+                RB_DEBUG_COUNTER_INC(obj_hash_ge8);
+            }
+            else if (RHASH_SIZE(obj) >= 4) {
+                RB_DEBUG_COUNTER_INC(obj_hash_ge4);
+            }
+            else if (RHASH_SIZE(obj) >= 1) {
+                RB_DEBUG_COUNTER_INC(obj_hash_under4);
+            }
+            else {
+                RB_DEBUG_COUNTER_INC(obj_hash_empty);
+            }
 
-        if (RHASH_AR_TABLE_P(obj)) {
-            RB_DEBUG_COUNTER_INC(obj_hash_ar);
-        }
-        else {
-            RB_DEBUG_COUNTER_INC(obj_hash_st);
+            if (RHASH_AR_TABLE_P(obj)) {
+                RB_DEBUG_COUNTER_INC(obj_hash_ar);
+            }
+            else {
+                RB_DEBUG_COUNTER_INC(obj_hash_st);
+            }
         }
 #endif
+        if (HASH_SHARED_P(obj)) {
+            break;
+        }
+
         if (/* RHASH_AR_TABLE_P(obj) */ !FL_TEST_RAW(obj, RHASH_ST_TABLE_FLAG)) {
             struct ar_table_struct *tab = RHASH(obj)->as.ar;
 
@@ -3590,6 +3602,10 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	size += rb_ary_memsize(obj);
 	break;
       case T_HASH:
+        if (HASH_SHARED_P(obj)) {
+            break;
+        }
+
         if (RHASH_AR_TABLE_P(obj)) {
             if (RHASH_AR_TABLE(obj) != NULL) {
                 size_t rb_hash_ar_table_size();
@@ -4557,6 +4573,13 @@ pin_key_mark_value(st_data_t key, st_data_t value, st_data_t data)
 static void
 mark_hash(rb_objspace_t *objspace, VALUE hash)
 {
+    gc_mark(objspace, RHASH(hash)->ifnone);
+
+    if (HASH_SHARED_P(hash)) {
+        gc_mark(objspace, HASH_SHARED(hash));
+        return;
+    }
+
     if (rb_hash_compare_by_id_p(hash)) {
         rb_hash_stlike_foreach(hash, pin_key_mark_value, (st_data_t)objspace);
     }
@@ -4572,7 +4595,6 @@ mark_hash(rb_objspace_t *objspace, VALUE hash)
     else {
         VM_ASSERT(!RHASH_TRANSIENT_P(hash));
     }
-    gc_mark(objspace, RHASH(hash)->ifnone);
 }
 
 static void
@@ -8015,7 +8037,11 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         break;
 
       case T_HASH:
-        gc_ref_update_hash(objspace, obj);
+        if (HASH_SHARED_P(obj)) {
+            UPDATE_IF_MOVED(objspace, HASH_SHARED(obj));
+        } else {
+            gc_ref_update_hash(objspace, obj);
+        }
         UPDATE_IF_MOVED(objspace, any->as.hash.ifnone);
         break;
 

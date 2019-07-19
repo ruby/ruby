@@ -223,6 +223,7 @@ RB_DEBUG_COUNTER(obj_hash_ge8)
 RB_DEBUG_COUNTER(obj_hash_ar)
 RB_DEBUG_COUNTER(obj_hash_st)
 RB_DEBUG_COUNTER(obj_hash_transient)
+RB_DEBUG_COUNTER(obj_hash_shared)
 
 RB_DEBUG_COUNTER(obj_hash_force_convert)
 
