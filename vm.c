@@ -2443,6 +2443,8 @@ rb_execution_context_update(const rb_execution_context_t *ec)
 {
     /* update VM stack */
     if (ec->vm_stack) {
+        VM_ASSERT(ec->cfp);
+
         rb_control_frame_t *cfp = ec->cfp;
         rb_control_frame_t *limit_cfp = (void *)(ec->vm_stack + ec->vm_stack_size);
 
@@ -2461,23 +2463,17 @@ rb_execution_context_update(const rb_execution_context_t *ec)
 
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
         }
+    } else {
+        VM_ASSERT(!ec->cfp);
     }
-#if VM_CHECK_MODE > 0
-    void rb_ec_verify(const rb_execution_context_t *ec); /* cont.c */
-    rb_ec_verify(ec);
-#endif
 }
 
 void
 rb_execution_context_mark(const rb_execution_context_t *ec)
 {
-#if VM_CHECK_MODE > 0
-    void rb_ec_verify(const rb_execution_context_t *ec); /* cont.c */
-    rb_ec_verify(ec);
-#endif
-
     /* mark VM stack */
     if (ec->vm_stack) {
+        VM_ASSERT(ec->cfp);
 	VALUE *p = ec->vm_stack;
 	VALUE *sp = ec->cfp->sp;
 	rb_control_frame_t *cfp = ec->cfp;
@@ -2501,6 +2497,8 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 
 	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 	}
+    } else {
+        VM_ASSERT(!ec->cfp);
     }
 
     /* mark machine stack */

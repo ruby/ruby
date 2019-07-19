@@ -759,14 +759,6 @@ fiber_verify(const rb_fiber_t *fiber)
 #endif
 }
 
-#if VM_CHECK_MODE > 0
-void
-rb_ec_verify(const rb_execution_context_t *ec)
-{
-    /* TODO */
-}
-#endif
-
 inline static void
 fiber_status_set(rb_fiber_t *fiber, enum fiber_status s)
 {
