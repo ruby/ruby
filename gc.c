@@ -2417,24 +2417,28 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_HASH:
 #if USE_DEBUG_COUNTER
-        if (RHASH_SIZE(obj) >= 8) {
-            RB_DEBUG_COUNTER_INC(obj_hash_ge8);
-        }
-        else if (RHASH_SIZE(obj) >= 4) {
-            RB_DEBUG_COUNTER_INC(obj_hash_ge4);
-        }
-        else if (RHASH_SIZE(obj) >= 1) {
-            RB_DEBUG_COUNTER_INC(obj_hash_under4);
-        }
-        else {
-            RB_DEBUG_COUNTER_INC(obj_hash_empty);
-        }
+        if (HASH_SHARED_P(obj)) {
+            RB_DEBUG_COUNTER_INC(obj_hash_shared);
+        } else {
+            if (RHASH_SIZE(obj) >= 8) {
+                RB_DEBUG_COUNTER_INC(obj_hash_ge8);
+            }
+            else if (RHASH_SIZE(obj) >= 4) {
+                RB_DEBUG_COUNTER_INC(obj_hash_ge4);
+            }
+            else if (RHASH_SIZE(obj) >= 1) {
+                RB_DEBUG_COUNTER_INC(obj_hash_under4);
+            }
+            else {
+                RB_DEBUG_COUNTER_INC(obj_hash_empty);
+            }
 
-        if (RHASH_AR_TABLE_P(obj)) {
-            RB_DEBUG_COUNTER_INC(obj_hash_ar);
-        }
-        else {
-            RB_DEBUG_COUNTER_INC(obj_hash_st);
+            if (RHASH_AR_TABLE_P(obj)) {
+                RB_DEBUG_COUNTER_INC(obj_hash_ar);
+            }
+            else {
+                RB_DEBUG_COUNTER_INC(obj_hash_st);
+            }
         }
 #endif
         if (HASH_SHARED_P(obj)) {
