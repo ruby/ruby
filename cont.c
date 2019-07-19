@@ -615,7 +615,7 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
     void * base = fiber_pool_stack_base(stack);
     size_t size = stack->available;
 
-    // If this is true, the vacancy information will almost certainly be destroyed:
+    // If this is not true, the vacancy information will almost certainly be destroyed:
     VM_ASSERT(size <= (stack->size - RB_PAGE_SIZE));
 
     if (DEBUG) fprintf(stderr, "fiber_pool_stack_free: %p+%zu [base=%p, size=%zu]\n", base, size, stack->base, stack->size);
@@ -657,7 +657,7 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
     pool->used -= 1;
 
 #ifdef FIBER_POOL_ALLOCATION_FREE
-    fiber_pool_allocation * allocation = stack->allocation;
+    struct fiber_pool_allocation * allocation = stack->allocation;
 
     stack->allocation->used -= 1;
 
