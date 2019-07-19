@@ -5083,7 +5083,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_ARRAY:
         if (FL_TEST(obj, ELTS_SHARED)) {
-            VALUE root = any->as.array.as.heap.aux.shared;
+            VALUE root = any->as.array.as.heap.aux.shared_root;
             gc_mark(objspace, root);
 	}
 	else {
@@ -8007,7 +8007,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
       case T_ARRAY:
         if (FL_TEST(obj, ELTS_SHARED)) {
-            UPDATE_IF_MOVED(objspace, any->as.array.as.heap.aux.shared);
+            UPDATE_IF_MOVED(objspace, any->as.array.as.heap.aux.shared_root);
         }
         else {
             gc_ref_update_array(objspace, obj);
@@ -11219,7 +11219,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	  case T_ARRAY:
             if (FL_TEST(obj, ELTS_SHARED)) {
                 APPENDF((BUFF_ARGS, "shared -> %s",
-                         rb_obj_info(RARRAY(obj)->as.heap.aux.shared)));
+                         rb_obj_info(RARRAY(obj)->as.heap.aux.shared_root)));
             }
             else if (FL_TEST(obj, RARRAY_EMBED_FLAG)) {
                 APPENDF((BUFF_ARGS, "[%s%s] len: %d (embed)",
