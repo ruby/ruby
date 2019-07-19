@@ -46,6 +46,9 @@ COROUTINE coroutine_restore_stack(struct coroutine_context *context);
 // @param size The size of the private stack area.
 // @param base A stack pointer to the base of the main stack. On x86 hardware, this is the upper extent of the region that will be copied to the private stack.
 static inline void coroutine_initialize_main(struct coroutine_context *context, void *stack, size_t size, void *base) {
+    assert(stack);
+    assert(size >= 1024);
+
     context->stack = stack;
     context->size = size;
     context->used = 0;
@@ -65,8 +68,6 @@ static inline void coroutine_initialize(
     void *base
 ) {
     assert(start);
-    assert(stack);
-    assert(size >= 1024);
 
     coroutine_initialize_main(context, stack, size, base);
 
