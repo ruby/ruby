@@ -280,6 +280,8 @@ fiber_pool_stack_base(struct fiber_pool_stack * stack)
 {
     STACK_GROW_DIR_DETECTION;
 
+    VM_ASSERT(stack->current);
+
     return STACK_DIR_UPPER(stack->current, (char*)stack->current - stack->available);
 }
 
@@ -290,6 +292,7 @@ fiber_pool_stack_alloca(struct fiber_pool_stack * stack, size_t offset)
 {
     STACK_GROW_DIR_DETECTION;
 
+    if (DEBUG) fprintf(stderr, "fiber_pool_stack_alloca(%p): %zu/%zu\n", stack, offset, stack->available);
     VM_ASSERT(stack->available >= offset);
 
     // The pointer to the memory being allocated:
@@ -590,6 +593,7 @@ fiber_pool_stack_acquire(struct fiber_pool * fiber_pool) {
     }
 
     VM_ASSERT(vacancy);
+    VM_ASSERT(vacancy->stack.base);
 
     // Take the top item from the free list:
     fiber_pool->used += 1;
@@ -611,9 +615,15 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
     void * base = fiber_pool_stack_base(stack);
     size_t size = stack->available;
 
+    // If this is true, the vacancy information will almost certainly be destroyed:
+    VM_ASSERT(size <= (stack->size - RB_PAGE_SIZE));
+
     if (DEBUG) fprintf(stderr, "fiber_pool_stack_free: %p+%zu [base=%p, size=%zu]\n", base, size, stack->base, stack->size);
 
-#if defined(MADV_FREE_REUSABLE)
+#if VM_CHECK_MODE > 0 && defined(MADV_DONTNEED)
+    // This immediately discards the pages and the memory is reset to zero.
+    madvise(base, size, MADV_DONTNEED);
+#elif defined(MADV_FREE_REUSABLE)
     madvise(base, size, MADV_FREE_REUSABLE);
 #elif defined(MADV_FREE)
     madvise(base, size, MADV_FREE);
@@ -630,21 +640,25 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
 static void
 fiber_pool_stack_release(struct fiber_pool_stack * stack)
 {
+    struct fiber_pool * pool = stack->pool;
     struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pointer(stack->base, stack->size);
 
     if (DEBUG) fprintf(stderr, "fiber_pool_stack_release: %p used=%zu\n", stack->base, stack->pool->used);
 
     // Copy the stack details into the vacancy area:
     vacancy->stack = *stack;
+    // After this point, be careful about updating/using state in stack, since it's copied to the vacancy area.
 
     // Reset the stack pointers and reserve space for the vacancy data:
     fiber_pool_vacancy_reset(vacancy);
 
     // Push the vacancy into the vancancies list:
-    stack->pool->vacancies = fiber_pool_vacancy_push(vacancy, stack->pool->vacancies);
-    stack->pool->used -= 1;
+    pool->vacancies = fiber_pool_vacancy_push(vacancy, stack->pool->vacancies);
+    pool->used -= 1;
 
 #ifdef FIBER_POOL_ALLOCATION_FREE
+    fiber_pool_allocation * allocation = stack->allocation;
+
     stack->allocation->used -= 1;
 
     // Release address space and/or dirty memory:
@@ -652,12 +666,12 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
         fiber_pool_allocation_free(stack->allocation);
     }
     else if (stack->pool->free_stacks) {
-        fiber_pool_stack_free(stack);
+        fiber_pool_stack_free(&vacancy->stack);
     }
 #else
     // This is entirely optional, but clears the dirty flag from the stack memory, so it won't get swapped to disk when there is memory pressure:
     if (stack->pool->free_stacks) {
-        fiber_pool_stack_free(stack);
+        fiber_pool_stack_free(&vacancy->stack);
     }
 #endif
 }
