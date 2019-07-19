@@ -454,11 +454,6 @@ in this section:
     yield self
   end
 
-There is also a performance benefit to using yield over a calling a block
-parameter.  When a block argument is assigned to a variable a Proc object is
-created which holds the block.  When using yield this Proc object is not
-created.
-
 == Exception Handling
 
 Methods have an implied exception handling block so you do not need to use
