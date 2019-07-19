@@ -34,13 +34,19 @@ VALUE rb_cArray;
 #define ARY_MAX_SIZE (LONG_MAX / (int)sizeof(VALUE))
 #define SMALL_ARRAY_LEN 16
 
+static void
+assert_T_ARRAY(VALUE ary)
+{
+    assert(RB_TYPE_P(ary, T_ARRAY));
+}
+
 #define ARY_SHARED_P(ary) \
-  (assert(RB_TYPE_P((VALUE)(ary), T_ARRAY)), \
+  (assert_T_ARRAY((VALUE)(ary)), \
    assert(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
    FL_TEST_RAW((ary),ELTS_SHARED)!=0)
 
 #define ARY_EMBED_P(ary) \
-  (assert(RB_TYPE_P((VALUE)(ary), T_ARRAY)), \
+  (assert_T_ARRAY((VALUE)(ary)), \
    assert(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
    FL_TEST_RAW((ary), RARRAY_EMBED_FLAG) != 0)
 
@@ -56,7 +62,7 @@ VALUE rb_cArray;
 	 (RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT)))
 #define ARY_HEAP_SIZE(a) (assert(!ARY_EMBED_P(a)), assert(ARY_OWNS_HEAP_P(a)), ARY_CAPA(a) * sizeof(VALUE))
 
-#define ARY_OWNS_HEAP_P(a) (assert(RB_TYPE_P((a), T_ARRAY)), \
+#define ARY_OWNS_HEAP_P(a) (assert_T_ARRAY((VALUE)(a)), \
                             !FL_TEST_RAW((a), ELTS_SHARED|RARRAY_EMBED_FLAG))
 
 #define FL_SET_EMBED(a) do { \
@@ -132,7 +138,7 @@ VALUE rb_cArray;
     RB_OBJ_WRITE(_ary_, &RARRAY(_ary_)->as.heap.aux.shared_root, _value_); \
 } while (0)
 #define RARRAY_SHARED_ROOT_FLAG FL_USER5
-#define ARY_SHARED_ROOT_P(ary) (assert(RB_TYPE_P((ary), T_ARRAY)), \
+#define ARY_SHARED_ROOT_P(ary) (assert_T_ARRAY((VALUE)(ary)), \
                                 FL_TEST_RAW((ary), RARRAY_SHARED_ROOT_FLAG))
 #define ARY_SHARED_ROOT_REFCNT(ary) \
     (assert(ARY_SHARED_ROOT_P(ary)), RARRAY(ary)->as.heap.aux.capa)
