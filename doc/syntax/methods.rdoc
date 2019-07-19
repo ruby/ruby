@@ -398,6 +398,17 @@ When calling a method with keyword arguments the arguments may appear in any
 order.  If an unknown keyword argument is sent by the caller an ArgumentError
 is raised.
 
+To require a specific keyword argument, do not include a default value
+for the keyword argument:
+
+  def add_values(first:, second:)
+    first + second
+  end
+  add_values
+  # ArgumentError (missing keywords: first, second)
+  add_values(first: 1, second: 2)
+  # => 3
+
 When mixing keyword arguments and positional arguments, all positional
 arguments must appear before any keyword arguments.
 
