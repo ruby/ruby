@@ -64,7 +64,9 @@ static inline void coroutine_initialize(
     size_t size,
     void *base
 ) {
-    assert(start && stack && size >= 1024);
+    assert(start);
+    assert(stack);
+    assert(size >= 1024);
 
     coroutine_initialize_main(context, stack, size, base);
 
