@@ -283,6 +283,25 @@ This will raise a SyntaxError:
     a + b + c
   end
 
+Default argument values can refer to arguments that have already been
+evaluated as local variables, and argument values are always evaluated
+left to right. So this is allowed:
+
+  def add_values(a = 1, b = a)
+    a + b
+  end
+  add_values
+  # => 2
+
+But this will raise a +NameError+ (unless there is a method named
++b+ defined):
+
+  def add_values(a = b, b = 1)
+    a + b
+  end
+  add_values
+  # NameError (undefined local variable or method `b' for main:Object)
+
 === Array Decomposition
 
 You can decompose (unpack or extract values from) an Array using extra
