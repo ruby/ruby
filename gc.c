@@ -8215,9 +8215,7 @@ gc_compact(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, 
         /* pin objects referenced by maybe pointers */
         rb_gc();
         /* compact */
-        rb_gc_disable();
         gc_compact_after_gc(objspace, use_toward_empty, use_double_pages, TRUE);
-        rb_gc_enable();
     }
     objspace->flags.during_compacting = FALSE;
     return gc_compact_stats(objspace);
@@ -8312,7 +8310,10 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
         moved_list = gc_compact_heap(objspace, compare_pinned);
     }
     heap_eden->freelist = NULL;
+
+    VALUE disabled = rb_gc_disable();
     gc_update_references(objspace);
+    if (!RTEST(disabled)) rb_gc_enable();
 
     if (use_verifier) {
         gc_check_references_for_moved(Qnil);
