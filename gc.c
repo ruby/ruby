@@ -2410,14 +2410,14 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_HASH:
 #if USE_DEBUG_COUNTER
-        if (RHASH_SIZE(obj) >= 8) {
-            RB_DEBUG_COUNTER_INC(obj_hash_ge8);
+        if (RHASH_SIZE(obj) > 8) {
+            RB_DEBUG_COUNTER_INC(obj_hash_g8);
         }
-        else if (RHASH_SIZE(obj) >= 4) {
-            RB_DEBUG_COUNTER_INC(obj_hash_ge4);
+        else if (RHASH_SIZE(obj) > 4) {
+            RB_DEBUG_COUNTER_INC(obj_hash_5_8);
         }
-        else if (RHASH_SIZE(obj) >= 1) {
-            RB_DEBUG_COUNTER_INC(obj_hash_under4);
+        else if (RHASH_SIZE(obj) > 0) {
+            RB_DEBUG_COUNTER_INC(obj_hash_1_4);
         }
         else {
             RB_DEBUG_COUNTER_INC(obj_hash_empty);

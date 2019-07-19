@@ -174,9 +174,9 @@ RB_DEBUG_COUNTER(gc_isptr_maybe)
  *   * str_nofree:        nofree
  *   * str_fstr:          fstr
  *   * hash_empty: hash is empty
- *   * hash_under4:     has under 4 entries
- *   * hash_ge4:        has n entries (4<=n<8)
- *   * hash_ge8:        has n entries (8<=n)
+ *   * hash_1_4:       has 1 to 4 entries
+ *   * hash_5_8:       has 5 to 8 entries
+ *   * hash_g8:        has n entries (n>8)
  *   * match_under4:    has under 4 oniguruma regions allocated
  *   * match_ge4:       has n regions allocated (4<=n<8)
  *   * match_ge8:       has n regions allocated (8<=n)
@@ -217,9 +217,9 @@ RB_DEBUG_COUNTER(obj_ary_shared)
 RB_DEBUG_COUNTER(obj_ary_shared_root_occupied)
 
 RB_DEBUG_COUNTER(obj_hash_empty)
-RB_DEBUG_COUNTER(obj_hash_under4)
-RB_DEBUG_COUNTER(obj_hash_ge4)
-RB_DEBUG_COUNTER(obj_hash_ge8)
+RB_DEBUG_COUNTER(obj_hash_1_4)
+RB_DEBUG_COUNTER(obj_hash_5_8)
+RB_DEBUG_COUNTER(obj_hash_g8)
 RB_DEBUG_COUNTER(obj_hash_ar)
 RB_DEBUG_COUNTER(obj_hash_st)
 RB_DEBUG_COUNTER(obj_hash_transient)
