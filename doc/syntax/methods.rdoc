@@ -459,10 +459,6 @@ parameter.  When a block argument is assigned to a variable a Proc object is
 created which holds the block.  When using yield this Proc object is not
 created.
 
-If you only need to use the block sometimes you can use Proc.new to create a
-proc from the block that was passed to your method.  See Proc.new for further
-details.
-
 == Exception Handling
 
 Methods have an implied exception handling block so you do not need to use
