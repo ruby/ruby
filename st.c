@@ -344,10 +344,7 @@ do_hash(st_data_t key, st_table *tab)
 static int
 get_power2(st_index_t size)
 {
-    unsigned int n;
-
-    for (n = 0; size != 0; n++)
-        size >>= 1;
+    unsigned int n = ST_INDEX_BITS - nlz_intptr(size);
     if (n <= MAX_POWER2)
         return n < MINIMAL_POWER2 ? MINIMAL_POWER2 : n;
 #ifndef NOT_RUBY
