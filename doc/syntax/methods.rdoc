@@ -475,6 +475,28 @@ May be written as:
     # handle exception
   end
 
+Similarly, if you wish to always run code even if an exception is raised,
+you can use +ensure+ without +begin+ and +end+:
+
+  def my_method
+    # code that may raise an exception
+  ensure
+    # code that runs even if previous code raised an exception
+  end
+
+You can also combine +rescue+ with +ensure+ and/or +else+, without
++begin+ and +end+:
+
+  def my_method
+    # code that may raise an exception
+  rescue
+    # handle exception
+  else
+    # only run if no exception raised above
+  ensure
+    # code that runs even if previous code raised an exception
+  end
+
 If you wish to rescue an exception for only part of your method, use +begin+ and
 +end+.  For more details see the page on {exception
 handling}[rdoc-ref:syntax/exceptions.rdoc].
