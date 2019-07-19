@@ -472,13 +472,13 @@ static void
 rb_ary_decrement_share(VALUE shared_root)
 {
     if (shared_root) {
-	long num = ARY_SHARED_ROOT_REFCNT(shared_root) - 1;
+        long num = ARY_SHARED_ROOT_REFCNT(shared_root) - 1;
 	if (num == 0) {
-	    rb_ary_free(shared_root);
-	    rb_gc_force_recycle(shared_root);
+            rb_ary_free(shared_root);
+            rb_gc_force_recycle(shared_root);
 	}
 	else if (num > 0) {
-	    ARY_SET_SHARED_ROOT_REFCNT(shared_root, num);
+            ARY_SET_SHARED_ROOT_REFCNT(shared_root, num);
 	}
     }
 }
@@ -504,7 +504,7 @@ rb_ary_increment_share(VALUE shared_root)
 {
     long num = ARY_SHARED_ROOT_REFCNT(shared_root);
     if (num >= 0) {
-	ARY_SET_SHARED_ROOT_REFCNT(shared_root, num + 1);
+        ARY_SET_SHARED_ROOT_REFCNT(shared_root, num + 1);
     }
     return shared_root;
 }
@@ -531,7 +531,7 @@ rb_ary_modify(VALUE ary)
     rb_ary_modify_check(ary);
     if (ARY_SHARED_P(ary)) {
 	long shared_len, len = RARRAY_LEN(ary);
-	VALUE shared_root = ARY_SHARED_ROOT(ary);
+        VALUE shared_root = ARY_SHARED_ROOT(ary);
 
         ary_verify(shared_root);
 
@@ -543,7 +543,7 @@ rb_ary_modify(VALUE ary)
             rb_ary_decrement_share(shared_root);
             ARY_SET_EMBED_LEN(ary, len);
         }
-	else if (ARY_SHARED_ROOT_OCCUPIED(shared_root) && len > ((shared_len = RARRAY_LEN(shared_root))>>1)) {
+        else if (ARY_SHARED_ROOT_OCCUPIED(shared_root) && len > ((shared_len = RARRAY_LEN(shared_root))>>1)) {
             long shift = RARRAY_CONST_PTR_TRANSIENT(ary) - RARRAY_CONST_PTR_TRANSIENT(shared_root);
 	    FL_UNSET_SHARED(ary);
             ARY_SET_PTR(ary, RARRAY_CONST_PTR_TRANSIENT(shared_root));
@@ -551,8 +551,8 @@ rb_ary_modify(VALUE ary)
             RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
 		MEMMOVE(ptr, ptr+shift, VALUE, len);
 	    });
-	    FL_SET_EMBED(shared_root);
-	    rb_ary_decrement_share(shared_root);
+            FL_SET_EMBED(shared_root);
+            rb_ary_decrement_share(shared_root);
 	}
         else {
             VALUE *ptr = ary_heap_alloc(ary, len);
@@ -579,8 +579,8 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
     }
     if (ARY_SHARED_P(ary)) {
 	if (new_len > RARRAY_EMBED_LEN_MAX) {
-	    VALUE shared_root = ARY_SHARED_ROOT(ary);
-	    if (ARY_SHARED_ROOT_OCCUPIED(shared_root)) {
+            VALUE shared_root = ARY_SHARED_ROOT(ary);
+            if (ARY_SHARED_ROOT_OCCUPIED(shared_root)) {
                 if (ARY_HEAP_PTR(ary) - RARRAY_CONST_PTR_TRANSIENT(shared_root) + new_len <= RARRAY_LEN(shared_root)) {
 		    rb_ary_modify_check(ary);
 
@@ -643,7 +643,7 @@ rb_ary_shared_with_p(VALUE ary1, VALUE ary2)
 {
     if (!ARY_EMBED_P(ary1) && ARY_SHARED_P(ary1) &&
 	!ARY_EMBED_P(ary2) && ARY_SHARED_P(ary2) &&
-	RARRAY(ary1)->as.heap.aux.shared_root == RARRAY(ary2)->as.heap.aux.shared_root &&
+        RARRAY(ary1)->as.heap.aux.shared_root == RARRAY(ary2)->as.heap.aux.shared_root &&
 	RARRAY(ary1)->as.heap.len == RARRAY(ary2)->as.heap.len) {
 	return Qtrue;
     }
@@ -822,7 +822,7 @@ ary_make_shared(VALUE ary)
         rb_ary_transient_heap_evacuate(ary, TRUE);
 	ary_shrink_capa(ary);
 	FL_SET_SHARED_ROOT(ary);
-	ARY_SET_SHARED_ROOT_REFCNT(ary, 1);
+        ARY_SET_SHARED_ROOT_REFCNT(ary, 1);
 	return ary;
     }
     else {
@@ -1347,7 +1347,7 @@ rb_ary_behead(VALUE ary, long n)
 
     rb_ary_modify_check(ary);
     if (ARY_SHARED_P(ary)) {
-	if (ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary))) {
+        if (ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary))) {
 	  setup_occupied_shared:
 	    ary_mem_clear(ary, 0, n);
 	}
@@ -1383,9 +1383,9 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
     }
 
     if (ARY_SHARED_P(ary)) {
-	VALUE shared_root = ARY_SHARED_ROOT(ary);
-	capa = RARRAY_LEN(shared_root);
-	if (ARY_SHARED_ROOT_OCCUPIED(shared_root) && capa > new_len) {
+        VALUE shared_root = ARY_SHARED_ROOT(ary);
+        capa = RARRAY_LEN(shared_root);
+        if (ARY_SHARED_ROOT_OCCUPIED(shared_root) && capa > new_len) {
             rb_ary_modify_check(ary);
             head = RARRAY_CONST_PTR_TRANSIENT(ary);
             sharedp = RARRAY_CONST_PTR_TRANSIENT(shared_root);
@@ -1419,10 +1419,10 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 	    head = sharedp + argc + room;
 	}
 	ARY_SET_PTR(ary, head - argc);
-	assert(ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary)));
+        assert(ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary)));
 
         ary_verify(ary);
-	return ARY_SHARED_ROOT(ary);
+        return ARY_SHARED_ROOT(ary);
     }
     else {
 	/* sliding items */
