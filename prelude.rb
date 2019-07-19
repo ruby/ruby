@@ -39,6 +39,10 @@ class IO
   #
   # read_nonblock causes EOFError on EOF.
   #
+  # On some platforms such as Windows, non-blocking mode is not supported
+  # on IO objects other than sockets. In such cases, Errno::EBADF will
+  # be raised.
+  #
   # If the read byte buffer is not empty,
   # read_nonblock reads from the buffer like readpartial.
   # In this case, the read(2) system call is not called.
