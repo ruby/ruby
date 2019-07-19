@@ -720,7 +720,6 @@ fiber_stack_release(rb_fiber_t * fiber)
 
     // The stack is no longer associated with this execution context:
     rb_ec_clear_vm_stack(ec);
-    ec->cfp = NULL;
 }
 
 static const char *
@@ -837,9 +836,7 @@ cont_mark(void *ptr)
     RUBY_MARK_ENTER("cont");
     rb_gc_mark_no_pin(cont->value);
 
-    if (cont->saved_ec.cfp) {
-        rb_execution_context_mark(&cont->saved_ec);
-    }
+    rb_execution_context_mark(&cont->saved_ec);
     rb_gc_mark(cont_thread_value(cont));
 
     if (cont->saved_vm_stack.ptr) {
@@ -1157,7 +1154,9 @@ cont_capture(volatile int *volatile stat)
     cont->saved_vm_stack.ptr = ALLOC_N(VALUE, ec->vm_stack_size);
     MEMCPY(cont->saved_vm_stack.ptr, ec->vm_stack, VALUE, ec->vm_stack_size);
 #endif
-    rb_ec_clear_vm_stack(&cont->saved_ec);
+    // At this point, `cfp` is valid but `vm_stack` should be cleared:
+    rb_ec_set_vm_stack(&cont->saved_ec, NULL, 0);
+    VM_ASSERT(cont->saved_ec.cfp != NULL);
     cont_save_machine_stack(th, cont);
 
     /* backup ensure_list to array for search in another context */
@@ -1693,8 +1692,10 @@ fiber_t_alloc(VALUE fiber_value)
     fiber->cont.self = fiber_value;
     fiber->cont.type = FIBER_CONTEXT;
     cont_init(&fiber->cont, th);
+
     fiber->cont.saved_ec.fiber_ptr = fiber;
-    fiber->cont.saved_ec.cfp = NULL;
+    rb_ec_clear_vm_stack(&fiber->cont.saved_ec);
+
     fiber->prev = NULL;
 
     /* fiber->status == 0 == CREATED
