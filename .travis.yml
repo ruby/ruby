@@ -421,7 +421,7 @@ before_script:
   - "> .rbconfig.time"
   - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
   - date; make touch-unicode-files
-  - date; make -s $JOBS $UPDATE_UNICODE up || make --debug -s $JOBS $UPDATE_UNICODE up
+  - date; make --debug -s $JOBS $UPDATE_UNICODE up
   - date; make -s $JOBS srcs
   - rm -f config.status Makefile rbconfig.rb .rbconfig.time
   - |-
