@@ -40,14 +40,20 @@ should_be_T_ARRAY(VALUE ary)
     return RB_TYPE_P(ary, T_ARRAY);
 }
 
+static int
+should_not_be_shared_and_embedded(VALUE ary)
+{
+    return !FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG);
+}
+
 #define ARY_SHARED_P(ary) \
   (assert(should_be_T_ARRAY((VALUE)(ary))), \
-   assert(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
+   assert(should_not_be_shared_and_embedded((VALUE)ary)), \
    FL_TEST_RAW((ary),ELTS_SHARED)!=0)
 
 #define ARY_EMBED_P(ary) \
   (assert(should_be_T_ARRAY((VALUE)(ary))), \
-   assert(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
+   assert(should_not_be_shared_and_embedded((VALUE)ary)), \
    FL_TEST_RAW((ary), RARRAY_EMBED_FLAG) != 0)
 
 #define ARY_HEAP_PTR(a) (assert(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.ptr)
