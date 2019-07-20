@@ -2727,7 +2727,6 @@ ruby_thread_init(VALUE self)
 
     th->vm = vm;
     th_init(th, self);
-    rb_ivar_set(self, rb_intern("locals"), rb_hash_new());
 
     th->top_wrapper = 0;
     th->top_self = rb_vm_top_self();
@@ -3235,7 +3234,6 @@ Init_VM(void)
 
 	/* create main thread */
 	th_self = th->self = TypedData_Wrap_Struct(rb_cThread, &thread_data_type, th);
-	rb_iv_set(th_self, "locals", rb_hash_new());
 	vm->main_thread = th;
 	vm->running_thread = th;
 	th->vm = vm;
