@@ -97,12 +97,22 @@ static VALUE rb_cThreadShield;
 static VALUE sym_immediate;
 static VALUE sym_on_blocking;
 static VALUE sym_never;
-static ID id_locals;
 
 enum SLEEP_FLAGS {
     SLEEP_DEADLOCKABLE = 0x1,
     SLEEP_SPURIOUS_CHECK = 0x2
 };
+
+#define THREAD_LOCAL_STORAGE_INITIALISED FL_USER13
+#define THREAD_LOCAL_STORAGE_INITIALISED_P(th) RB_FL_TEST_RAW((th), THREAD_LOCAL_STORAGE_INITIALISED)
+
+static VALUE inline rb_thread_local_storage(VALUE thread) {
+    if (LIKELY(!THREAD_LOCAL_STORAGE_INITIALISED_P(thread))) {
+        rb_ivar_set(thread, idLocals, rb_hash_new());
+        RB_FL_SET_RAW(thread, THREAD_LOCAL_STORAGE_INITIALISED);
+    }
+    return rb_ivar_get(thread, idLocals);
+}
 
 static void sleep_hrtime(rb_thread_t *, rb_hrtime_t, unsigned int fl);
 static void sleep_forever(rb_thread_t *th, unsigned int fl);
@@ -3403,7 +3413,10 @@ rb_thread_variable_get(VALUE thread, VALUE key)
 {
     VALUE locals;
 
-    locals = rb_ivar_get(thread, id_locals);
+    if (LIKELY(!THREAD_LOCAL_STORAGE_INITIALISED_P(thread))) {
+        return Qnil;
+    }
+    locals = rb_thread_local_storage(thread);
     return rb_hash_aref(locals, rb_to_symbol(key));
 }
 
@@ -3425,7 +3438,7 @@ rb_thread_variable_set(VALUE thread, VALUE id, VALUE val)
         rb_frozen_error_raise(thread, "can't modify frozen thread locals");
     }
 
-    locals = rb_ivar_get(thread, id_locals);
+    locals = rb_thread_local_storage(thread);
     return rb_hash_aset(locals, rb_to_symbol(id), val);
 }
 
@@ -3528,8 +3541,11 @@ rb_thread_variables(VALUE thread)
     VALUE locals;
     VALUE ary;
 
-    locals = rb_ivar_get(thread, id_locals);
     ary = rb_ary_new();
+    if (LIKELY(!THREAD_LOCAL_STORAGE_INITIALISED_P(thread))) {
+        return ary;
+    }
+    locals = rb_thread_local_storage(thread);
     rb_hash_foreach(locals, keys_i, ary);
 
     return ary;
@@ -3559,7 +3575,10 @@ rb_thread_variable_p(VALUE thread, VALUE key)
 
     if (!id) return Qfalse;
 
-    locals = rb_ivar_get(thread, id_locals);
+    if (LIKELY(!THREAD_LOCAL_STORAGE_INITIALISED_P(thread))) {
+        return Qfalse;
+    }
+    locals = rb_thread_local_storage(thread);
 
     if (rb_hash_lookup(locals, ID2SYM(id)) != Qnil) {
         return Qtrue;
@@ -5137,7 +5156,6 @@ Init_Thread(void)
     sym_never = ID2SYM(rb_intern("never"));
     sym_immediate = ID2SYM(rb_intern("immediate"));
     sym_on_blocking = ID2SYM(rb_intern("on_blocking"));
-    id_locals = rb_intern("locals");
 
     rb_define_singleton_method(rb_cThread, "new", thread_s_new, -1);
     rb_define_singleton_method(rb_cThread, "start", thread_start, -2);
