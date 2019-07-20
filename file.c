@@ -1222,6 +1222,8 @@ rb_statx(VALUE file, struct statx *stx, unsigned int mask)
 
 # define statx_has_birthtime(st) ((st)->stx_mask & STATX_BTIME)
 
+NORETURN(static void statx_notimplement(const char *field_name));
+
 /* rb_notimplement() shows "function is unimplemented on this machine".
    It is not applicable to statx which behavior depends on the filesystem. */
 static void
