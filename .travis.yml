@@ -159,14 +159,14 @@ env:
   - &WITH_COROUTINE_UCONTEXT
     name: COROUTINE=ucontext
     <<: *linux
-    # <<: *cron-only
+    <<: *cron-only
     env:
       - CONFIG_FLAG='--with-coroutine=ucontext'
 
   - &WITH_COROUTINE_COPY
     name: COROUTINE=copy
     <<: *linux
-    # <<: *cron-only
+    <<: *cron-only
     env:
       - CONFIG_FLAG='--with-coroutine=copy'
 
