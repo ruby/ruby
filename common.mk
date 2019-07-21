@@ -187,7 +187,6 @@ INSTALL_DATA_MODE = 0644
 TESTSDIR      = $(srcdir)/test
 TOOL_TESTSDIR = $(srcdir)/tool/test
 TEST_EXCLUDES = --excludes-dir=$(TESTSDIR)/excludes --name=!/memory_leak/
-EXCLUDE_TESTFRAMEWORK = --exclude=/testunit/ --exclude=/minitest/
 TESTWORKDIR   = testwork
 TESTOPTS      = $(RUBY_TESTOPTS)
 
@@ -715,7 +714,7 @@ clean-spec: PHONY
 	-$(Q) $(RM) $(RUBYSPEC_CAPIEXT)/*.$(OBJEXT) $(RUBYSPEC_CAPIEXT)/*.$(DLEXT)
 	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || exit 0
 
-check: main test test-testframework test-all test-spec
+check: main test test-tool test-all test-spec
 	$(ECHO) check succeeded
 check-ruby: test test-ruby
 
@@ -759,7 +758,7 @@ no-test-testframework: PHONY
 
 test-tool: $(TEST_RUNNABLE)-test-tool
 yes-test-tool: prog PHONY
-	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --test-target-dir="$(TOOL_TESTSDIR)" -- --ruby="$(RUNRUBY)" $(TESTOPTS) $(EXCLUDE_TESTFRAMEWORK)
+	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --test-target-dir="$(TOOL_TESTSDIR)" -- --ruby="$(RUNRUBY)" $(TESTOPTS)
 no-test-tool: PHONY
 
 test-sample: test-basic # backward compatibility for mswin-build
@@ -1496,7 +1495,7 @@ help: PHONY
 	"  runruby:             runs test.rb by ruby you just built" \
 	"  gdb:                 runs test.rb by miniruby under gdb" \
 	"  gdb-ruby:            runs test.rb by ruby under gdb" \
-	"  check:               equals make test test-all test-spec" \
+	"  check:               equals make test test-tool test-all test-spec" \
 	"  test:                ruby core tests" \
 	"  test-all:            all ruby tests [TESTOPTS=-j4 TESTS=<test files>]" \
 	"  test-spec:           run the Ruby spec suite [SPECOPTS=<specs, opts>]" \
