@@ -856,9 +856,6 @@ module Test
       def setup_options(parser, options)
         super
         parser.separator "globbing options:"
-        parser.on '-b', '--basedir=DIR', 'Base directory of test suites.' do |dir|
-          options[:base_directory] = dir
-        end
         parser.on '-x', '--exclude REGEXP', 'Exclude test files on pattern.' do |pattern|
           (options[:reject] ||= []) << pattern
         end

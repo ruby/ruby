@@ -1,9 +1,22 @@
 # frozen_string_literal: false
 require 'rbconfig'
 
-src_testdir = File.dirname(File.realpath(__FILE__))
+tool_dir = File.dirname(File.dirname(File.realpath(__FILE__)))
+src_testdir = nil
+
+while opt = ARGV.shift
+  break if opt == "--"
+  case opt
+  when /\A--test-target-dir=(.*?)\z/
+    src_testdir = File.realpath($1)
+  else
+    raise "unknown runner option: #{ opt }"
+  end
+end
+
+raise "#$0: specify --test-target-dir" if !src_testdir
+
 $LOAD_PATH << src_testdir
-tool_dir = File.join src_testdir, ".."
 $LOAD_PATH.unshift "#{tool_dir}/lib"
 
 # Get bundled gems on load path
