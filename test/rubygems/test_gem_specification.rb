@@ -1126,7 +1126,7 @@ dependencies: []
     Gem::Specification.class_variable_set(:@@stubs, nil)
 
     dir_standard_specs = File.join Gem.dir, 'specifications'
-    dir_default_specs = Gem::BasicSpecification.default_specifications_dir
+    dir_default_specs = Gem.default_specifications_dir
 
     # Create gemspecs in three locations used in stubs
     loaded_spec = Gem::Specification.new 'a', '3'
@@ -1146,7 +1146,7 @@ dependencies: []
     Gem::Specification.class_variable_set(:@@stubs, nil)
 
     dir_standard_specs = File.join Gem.dir, 'specifications'
-    dir_default_specs = Gem::BasicSpecification.default_specifications_dir
+    dir_default_specs = Gem.default_specifications_dir
 
     # Create gemspecs in three locations used in stubs
     loaded_spec = Gem::Specification.new 'a', '3'
@@ -2049,7 +2049,7 @@ dependencies: []
 
   def test_base_dir_default
     default_dir =
-      File.join Gem::Specification.default_specifications_dir, @a1.spec_name
+      File.join Gem.default_specifications_dir, @a1.spec_name
 
     @a1.instance_variable_set :@loaded_from, default_dir
 

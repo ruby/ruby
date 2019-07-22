@@ -80,7 +80,7 @@ class Gem::Uninstaller
 
     dirs =
       Gem::Specification.dirs +
-      [Gem::Specification.default_specifications_dir]
+      [Gem.default_specifications_dir]
 
     Gem::Specification.each_spec dirs do |spec|
       next unless dependency.matches_spec? spec

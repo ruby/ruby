@@ -819,7 +819,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.default_stubs(pattern = "*.gemspec")
     base_dir = Gem.default_dir
     gems_dir = File.join base_dir, "gems"
-    gemspec_stubs_in(default_specifications_dir, pattern) do |path|
+    gemspec_stubs_in(Gem.default_specifications_dir, pattern) do |path|
       Gem::StubSpecification.default_gemspec_stub(path, base_dir, gems_dir)
     end
   end
@@ -858,7 +858,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Loads the default specifications. It should be called only once.
 
   def self.load_defaults
-    each_spec([default_specifications_dir]) do |spec|
+    each_spec([Gem.default_specifications_dir]) do |spec|
       # #load returns nil if the spec is bad, so we just ignore
       # it at this stage
       Gem.register_default_spec(spec)

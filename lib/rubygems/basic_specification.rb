@@ -35,7 +35,14 @@ class Gem::BasicSpecification
   end
 
   def self.default_specifications_dir
-    File.join(Gem.default_dir, "specifications", "default")
+    Gem.default_specifications_dir
+  end
+
+  class << self
+
+    extend Gem::Deprecate
+    deprecate :default_specifications_dir, "Gem::BasicSpecification.default_specifications_dir", 2020, 02
+
   end
 
   ##
@@ -84,7 +91,7 @@ class Gem::BasicSpecification
 
   def default_gem?
     loaded_from &&
-      File.dirname(loaded_from) == self.class.default_specifications_dir
+      File.dirname(loaded_from) == Gem.default_specifications_dir
   end
 
   ##
