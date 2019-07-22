@@ -71,6 +71,13 @@ module Gem
   end
 
   ##
+  # Path to specification files of default gems.
+
+  def self.default_specifications_dir
+    File.join(Gem.default_dir, "specifications", "default")
+  end
+
+  ##
   # Path for gems in the user's home directory
 
   def self.user_dir
