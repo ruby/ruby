@@ -887,7 +887,7 @@ enum ruby_fl_type {
 
 struct RUBY_ALIGNAS(SIZEOF_VALUE) RBasic {
     VALUE flags;
-    VALUE klass;
+    const VALUE klass;
 };
 
 VALUE rb_obj_hide(VALUE obj);
@@ -1054,7 +1054,7 @@ struct RArray {
 	    long len;
 	    union {
 		long capa;
-                VALUE shared_root;
+                const VALUE shared_root;
 	    } aux;
 	    const VALUE *ptr;
 	} heap;
@@ -1109,7 +1109,7 @@ struct RArray {
 struct RRegexp {
     struct RBasic basic;
     struct re_pattern_buffer *ptr;
-    VALUE src;
+    const VALUE src;
     unsigned long usecnt;
 };
 #define RREGEXP_PTR(r) (RREGEXP(r)->ptr)
