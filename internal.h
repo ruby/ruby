@@ -873,7 +873,7 @@ struct RHash {
         struct ar_table_struct *ar; /* possibly 0 */
     } as;
     int iter_lev;
-    VALUE ifnone;
+    const VALUE ifnone;
 };
 
 #ifdef RHASH_ITER_LEV
