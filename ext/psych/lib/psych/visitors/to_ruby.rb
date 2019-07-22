@@ -336,7 +336,7 @@ module Psych
       SHOVEL = '<<'
       def revive_hash hash, o
         o.children.each_slice(2) { |k,v|
-          key = accept(k)
+          key = deduplicate(accept(k))
           val = accept(v)
 
           if key == SHOVEL && k.tag != "tag:yaml.org,2002:str"
@@ -366,6 +366,28 @@ module Psych
 
         }
         hash
+      end
+
+      if String.method_defined?(:-@)
+        def deduplicate key
+          if key.is_a?(String)
+            # It is important to untaint the string, otherwise it won't
+            # be deduplicated into and fstring, but simply frozen.
+            -(key.untaint)
+          else
+            key
+          end
+        end
+      else
+        def deduplicate key
+          if key.is_a?(String)
+            # Deduplication is not supported by this implementation,
+            # but we emulate it's side effects
+            key.untaint.freeze
+          else
+            key
+          end
+        end
       end
 
       def merge_key hash, key, val
