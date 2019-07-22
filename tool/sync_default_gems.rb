@@ -234,9 +234,9 @@ def sync_default_gems_with_commits(gem, range)
   IO.popen(%W"git remote") do |f|
     unless f.read.split.include?(gem)
       `git remote add #{gem} git@github.com:#{$repositories[gem.to_sym]}.git`
-      `git fetch #{gem}`
     end
   end
+  `git fetch #{gem}`
 
   IO.popen(%W"git log --format=%H,%s #{range}") do |f|
     commits = f.read.split("\n").reverse.map{|commit| commit.split(',')}
