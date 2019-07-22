@@ -951,6 +951,8 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
  *  When the method is identified by a string, the string is converted
  *  to a symbol.
  *
+ *  BasicObject implements +__send__+, Kernel implements +send+.
+ *
  *     class Klass
  *       def hello(*args)
  *         "Hello " + args.join(' ')
