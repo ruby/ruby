@@ -4,14 +4,12 @@ require 'rbconfig'
 tool_dir = File.dirname(File.dirname(File.realpath(__FILE__)))
 src_testdir = nil
 
-while opt = ARGV.shift
-  break if opt == "--"
-  case opt
-  when /\A--test-target-dir=(.*?)\z/
-    src_testdir = File.realpath($1)
-  else
-    raise "unknown runner option: #{ opt }"
-  end
+case ARGV.first
+when /\A--test-target-dir=(.*?)\z/
+  ARGV.shift
+  src_testdir = File.realpath($1)
+else
+  raise "unknown runner option: #{ opt }"
 end
 
 raise "#$0: specify --test-target-dir" if !src_testdir
