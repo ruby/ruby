@@ -160,7 +160,7 @@ enum method_optimized_type {
     OPTIMIZED_METHOD_TYPE__MAX
 };
 
-PACKED_STRUCT_UNALIGNED(struct rb_method_definition_struct {
+struct rb_method_definition_struct {
     BITFIELD(rb_method_type_t, type, VM_METHOD_TYPE_MINIMUM_BITS);
     int alias_count : 28;
     int complemented_count : 28;
@@ -177,9 +177,10 @@ PACKED_STRUCT_UNALIGNED(struct rb_method_definition_struct {
     } body;
 
     ID original_id;
-});
+};
 
 typedef struct rb_method_definition_struct rb_method_definition_t;
+STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body)==8);
 
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 #define UNDEFINED_REFINED_METHOD_P(def) \
