@@ -9,7 +9,7 @@ when /\A--test-target-dir=(.*?)\z/
   ARGV.shift
   src_testdir = File.realpath($1)
 else
-  raise "unknown runner option: #{ opt }"
+  raise "unknown runner option: #{ ARGV.first }"
 end
 
 raise "#$0: specify --test-target-dir" if !src_testdir
