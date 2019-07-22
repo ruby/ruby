@@ -12,7 +12,7 @@ TEST_DEPENDS := $(filter-out commit $(TEST_TARGETS),$(MAKECMDGOALS))
 TEST_TARGETS := $(patsubst great,exam,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out great $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst exam,check,$(TEST_TARGETS))
-TEST_TARGETS := $(patsubst check,test-spec test-all test-testframework test-short,$(TEST_TARGETS))
+TEST_TARGETS := $(patsubst check,test-spec test-all test-tool test-short,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-rubyspec,test-spec,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out exam check test-spec $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst love,check,$(TEST_TARGETS))
@@ -64,7 +64,7 @@ endif
 
 ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
 	btest-ruby test-knownbug test-basic \
-	test-testframework test-ruby test-all \
+	test-testframework test-tool test-ruby test-all \
 	test-spec test-bundler-prepare test-bundler \
 	)
 prev_test := $(if $(filter test-spec,$(ORDERED_TEST_TARGETS)),test-spec-precheck)
