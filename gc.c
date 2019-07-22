@@ -3489,6 +3489,8 @@ rb_memory_id(VALUE obj)
  *  Note: that some objects of builtin classes are reused for optimization.
  *  This is the case for immediate values and frozen string literals.
  *
+ *  BasicObject implements +__id__+, Kernel implements +object_id+.
+ *
  *  Immediate values are not passed by reference but are passed by value:
  *  +nil+, +true+, +false+, Fixnums, Symbols, and some Floats.
  *
