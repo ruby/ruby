@@ -3578,8 +3578,8 @@ rb_reg_quote(VALUE str)
  *     Regexp.quote(str)    -> string
  *
  *  Escapes any characters that would have special meaning in a regular
- *  expression. Returns a new escaped string, or self if no characters are
- *  escaped.  For any string,
+ *  expression. Returns a new escaped string with the same or compatible
+ *  encoding. For any string,
  *  <code>Regexp.new(Regexp.escape(<i>str</i>))=~<i>str</i></code> will be true.
  *
  *     Regexp.escape('\*?{}.')   #=> \\\*\?\{\}\.
