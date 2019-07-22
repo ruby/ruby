@@ -714,23 +714,23 @@ extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
  *     fail(exception [, string [, array]], cause: $!)
  *
  *  With no arguments, raises the exception in <code>$!</code> or raises
- *  a RuntimeError if <code>$!</code> is +nil+.
- *  With a single +String+ argument, raises a
- *  +RuntimeError+ with the string as a message. Otherwise,
- *  the first parameter should be the name of an +Exception+
- *  class (or an object that returns an +Exception+ object when sent
- *  an +exception+ message). The optional second parameter sets the
- *  message associated with the exception, and the third parameter is an
- *  array of callback information. Exceptions are caught by the
- *  +rescue+ clause of <code>begin...end</code> blocks.
+ *  a RuntimeError if <code>$!</code> is +nil+.  With a single +String+
+ *  argument, raises a +RuntimeError+ with the string as a message. Otherwise,
+ *  the first parameter should be an +Exception+ class (or another
+ *  object that returns an +Exception+ object when sent an +exception+
+ *  message).  The optional second parameter sets the message associated with
+ *  the exception (accessible via Exception#message), and the third parameter
+ *  is an array of callback information (accessible via Exception#backtrace).
+ *  The +cause+ of the generated exception (accessible via Exception#cause)
+ *  is automatically set to the "current" exception (<code>$!</code>), if any.
+ *  An alternative value, either an +Exception+ object or +nil+, can be
+ *  specified via the +:cause+ argument.
+ *
+ *  Exceptions are caught by the +rescue+ clause of
+ *  <code>begin...end</code> blocks.
  *
  *     raise "Failed to create socket"
  *     raise ArgumentError, "No parameters", caller
- *
- *  The +cause+ of the generated exception is automatically set to the
- *  "current" exception (<code>$!</code>) if any.  An alternative
- *  value, either an +Exception+ object or +nil+, can be specified via
- *  the +:cause+ argument.
  */
 
 VALUE
