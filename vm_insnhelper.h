@@ -203,7 +203,7 @@ static inline int
 THROW_DATA_STATE(const struct vm_throw_data *obj)
 {
     VM_ASSERT(THROW_DATA_P(obj));
-    return (int)obj->throw_state;
+    return obj->throw_state;
 }
 
 static inline int
@@ -224,7 +224,7 @@ static inline void
 THROW_DATA_STATE_SET(struct vm_throw_data *obj, int st)
 {
     VM_ASSERT(THROW_DATA_P(obj));
-    obj->throw_state = (VALUE)st;
+    obj->throw_state = st;
 }
 
 static inline void

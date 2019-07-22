@@ -176,7 +176,7 @@ class_alloc(VALUE flags, VALUE klass)
      */
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SERIAL(obj) = rb_next_class_serial();
-    RCLASS_REFINED_CLASS(obj) = Qnil;
+    RB_OBJ_WRITE(obj, &RCLASS_REFINED_CLASS(obj), Qnil);
     RCLASS_EXT(obj)->allocator = 0;
 
     return (VALUE)obj;

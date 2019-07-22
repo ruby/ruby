@@ -1009,8 +1009,8 @@ struct rb_classext_struct {
      */
     rb_subclass_entry_t **module_subclasses;
     rb_serial_t class_serial;
-    VALUE origin_;
-    VALUE refined_class;
+    const VALUE origin_;
+    const VALUE refined_class;
     rb_alloc_func_t allocator;
 };
 
@@ -1127,10 +1127,10 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
 /*! SVAR (Special VARiable) */
 struct vm_svar {
     VALUE flags;
-    VALUE cref_or_me; /*!< class reference or rb_method_entry_t */
-    VALUE lastline;
-    VALUE backref;
-    VALUE others;
+    const VALUE cref_or_me; /*!< class reference or rb_method_entry_t */
+    const VALUE lastline;
+    const VALUE backref;
+    const VALUE others;
 };
 
 
@@ -1140,9 +1140,9 @@ struct vm_svar {
 struct vm_throw_data {
     VALUE flags;
     VALUE reserved;
-    VALUE throw_obj;
+    const VALUE throw_obj;
     const struct rb_control_frame_struct *catch_frame;
-    VALUE throw_state;
+    int throw_state;
 };
 
 #define THROW_DATA_P(err) RB_TYPE_P((VALUE)(err), T_IMEMO)
@@ -1163,7 +1163,7 @@ struct vm_ifunc {
     VALUE flags;
     VALUE reserved;
     VALUE (*func)(ANYARGS);
-    void *data;
+    const void *data;
     struct vm_ifunc_argc argc;
 };
 
@@ -1220,12 +1220,12 @@ void rb_strterm_mark(VALUE obj);
 struct MEMO {
     VALUE flags;
     VALUE reserved;
-    VALUE v1;
-    VALUE v2;
+    const VALUE v1;
+    const VALUE v2;
     union {
 	long cnt;
 	long state;
-        VALUE value;
+        const VALUE value;
 	VALUE (*func)(ANYARGS);
     } u3;
 };
