@@ -99,8 +99,8 @@ RSpec.configure do |config|
 
   config.before :suite do
     Spec::Rubygems.setup
-    ENV["RUBYOPT"] = original_env["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.spec_dir}/support/hax.rb"
-    ENV["BUNDLE_SPEC_RUN"] = original_env["BUNDLE_SPEC_RUN"] = "true"
+    ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.spec_dir}/support/hax.rb"
+    ENV["BUNDLE_SPEC_RUN"] = "true"
 
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
