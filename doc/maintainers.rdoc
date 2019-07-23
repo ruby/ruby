@@ -90,8 +90,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/pstore.rb]
   _unmaintained_
-[lib/reline.rb, lib/reline/*]
-  aycabta
 [lib/resolv-replace.rb]
   Tanaka Akira (akr)
 [lib/resolv.rb]
@@ -208,6 +206,8 @@ Zachary Scott (zzak)
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/rdoc
+[lib/reline.rb, lib/reline/*]
+  aycabta
 [lib/rexml/*]
   Kouhei Sutou (kou)
 [lib/rss.rb, lib/rss/*]
