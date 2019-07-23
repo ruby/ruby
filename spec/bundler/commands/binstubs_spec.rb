@@ -309,7 +309,7 @@ RSpec.describe "bundle binstubs <gem>" do
         gem "rails"
       G
 
-      bundle! "binstubs rack", forgotten_command_line_options([:path, :bin] => "exec")
+      bundle! "binstubs rack", :path => "exec"
       bundle! :install
 
       expect(bundled_app("exec/rails")).to exist
