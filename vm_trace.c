@@ -198,9 +198,6 @@ clean_hooks(const rb_execution_context_t *ec, rb_hook_list_t *list)
     }
     else {
         /* local events */
-        if (list->events == 0) {
-            ruby_xfree(list);
-        }
     }
 }
 

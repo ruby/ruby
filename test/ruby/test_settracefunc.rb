@@ -2166,4 +2166,21 @@ class TestSetTraceFunc < Test::Unit::TestCase
     tp.enable {obj.example}
     assert ok, "return event should be emitted"
   end
+
+  def test_disable_local_tracepoint_in_trace
+    assert_normal_exit <<-EOS
+    def foo
+      trace = TracePoint.new(:b_return){|tp|
+        tp.disable
+      }
+      trace.enable(target: method(:bar))
+    end
+    def bar
+      100.times{|i|
+        foo; foo
+      }
+    end
+    bar
+    EOS
+  end
 end
