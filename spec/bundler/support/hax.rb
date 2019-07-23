@@ -11,7 +11,8 @@ module Gem
   end
   @platforms = [Gem::Platform::RUBY, Gem::Platform.local]
 
-  if defined?(@path_to_default_spec_map) && !ENV["BUNDLER_SPEC_KEEP_DEFAULT_BUNDLER_GEM"]
+  # We only need this hack for rubygems versions without the BundlerVersionFinder
+  if Gem::Version.new(Gem::VERSION) < Gem::Version.new("2.7.0") || ENV["BUNDLER_SPEC_DISABLE_DEFAULT_BUNDLER_GEM"]
     @path_to_default_spec_map.delete_if do |_path, spec|
       spec.name == "bundler"
     end
