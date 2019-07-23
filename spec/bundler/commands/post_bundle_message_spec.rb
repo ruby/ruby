@@ -101,6 +101,10 @@ RSpec.describe "post bundle message" do
     end
 
     describe "with misspelled or non-existent gem name" do
+      before do
+        bundle "config set force_ruby_platform true"
+      end
+
       it "should report a helpful error message", :bundler => "< 3" do
         install_gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"

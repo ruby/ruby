@@ -524,6 +524,8 @@ RSpec.describe "bundle install with gem sources" do
 
   describe "when requesting a quiet install via --quiet" do
     it "should be quiet" do
+      bundle "config set force_ruby_platform true"
+
       gemfile <<-G
         gem 'rack'
       G
