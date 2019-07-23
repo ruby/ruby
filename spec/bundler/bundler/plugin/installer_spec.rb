@@ -58,7 +58,7 @@ RSpec.describe Bundler::Plugin::Installer do
         end
 
         let(:result) do
-          installer.install(["ga-plugin"], :git => "#{file_uri_for(lib_path("ga-plugin"))}")
+          installer.install(["ga-plugin"], :git => file_uri_for(lib_path("ga-plugin")))
         end
 
         it "returns the installed spec after installing" do
@@ -98,7 +98,7 @@ RSpec.describe Bundler::Plugin::Installer do
 
       context "rubygems plugins" do
         let(:result) do
-          installer.install(["re-plugin"], :source => "#{file_uri_for(gem_repo2)}")
+          installer.install(["re-plugin"], :source => file_uri_for(gem_repo2))
         end
 
         it "returns the installed spec after installing " do
@@ -113,7 +113,7 @@ RSpec.describe Bundler::Plugin::Installer do
 
       context "multiple plugins" do
         let(:result) do
-          installer.install(["re-plugin", "ma-plugin"], :source => "#{file_uri_for(gem_repo2)}")
+          installer.install(["re-plugin", "ma-plugin"], :source => file_uri_for(gem_repo2))
         end
 
         it "returns the installed spec after installing " do

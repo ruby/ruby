@@ -69,7 +69,7 @@ module Bundler
     end
 
     def self.ruby_version
-      str = String.new("#{RUBY_VERSION}")
+      str = String.new(RUBY_VERSION)
       str << "p#{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
       str << " (#{RUBY_RELEASE_DATE} revision #{RUBY_REVISION}) [#{RUBY_PLATFORM}]"
     end
