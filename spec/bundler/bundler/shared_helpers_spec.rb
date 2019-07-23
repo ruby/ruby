@@ -74,7 +74,7 @@ RSpec.describe Bundler::SharedHelpers do
     end
 
     context ".bundle is global .bundle" do
-      let(:global_rubygems_dir) { Pathname.new("#{bundled_app}") }
+      let(:global_rubygems_dir) { Pathname.new(bundled_app) }
 
       before do
         Dir.mkdir ".bundle"

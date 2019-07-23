@@ -550,8 +550,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
     context "and the gemfile changes" do
       it "is still able to find that gem from remote sources" do
-        source_uri = "#{file_uri_for(gem_repo1)}"
-        second_uri = "#{file_uri_for(gem_repo4)}"
+        source_uri = file_uri_for(gem_repo1)
+        second_uri = file_uri_for(gem_repo4)
 
         build_repo4 do
           build_gem "rack", "2.0.1.1.forked"

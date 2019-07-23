@@ -114,7 +114,7 @@ module Bundler
         else
           Bundler.ui.confirm "Settings are listed in order of priority. The top value will be used.\n"
           Bundler.settings.all.each do |setting|
-            Bundler.ui.confirm "#{setting}"
+            Bundler.ui.confirm setting
             show_pretty_values_for(setting)
             Bundler.ui.confirm ""
           end
