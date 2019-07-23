@@ -24,7 +24,8 @@ RSpec.describe "bundle package" do
           gem 'bundler'
         D
 
-        bundle :package, forgotten_command_line_options([:all, :cache_all] => true)
+        bundle "config set cache_all true"
+        bundle :package
 
         expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
         expect(bundled_app("vendor/cache/bundler-0.9.gem")).to_not exist
@@ -54,7 +55,8 @@ RSpec.describe "bundle package" do
             gemspec
           D
 
-          bundle! :package, forgotten_command_line_options([:all, :cache_all] => true)
+          bundle "config set cache_all true"
+          bundle! :package
 
           expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
           expect(bundled_app("vendor/cache/nokogiri-1.4.2.gem")).to exist
@@ -85,7 +87,8 @@ RSpec.describe "bundle package" do
             gemspec
           D
 
-          bundle! :package, forgotten_command_line_options([:all, :cache_all] => true)
+          bundle "config set cache_all true"
+          bundle! :package
 
           expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
           expect(bundled_app("vendor/cache/nokogiri-1.4.2.gem")).to exist
@@ -129,7 +132,8 @@ RSpec.describe "bundle package" do
           gemspec :name => 'mygem_test'
         D
 
-        bundle! :package, forgotten_command_line_options([:all, :cache_all] => true)
+        bundle "config set cache_all true"
+        bundle! :package
 
         expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
         expect(bundled_app("vendor/cache/nokogiri-1.4.2.gem")).to exist
