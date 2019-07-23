@@ -14,9 +14,9 @@ module Net::HTTPHeader
     @header = {}
     return unless initheader
     initheader.each do |key, value|
-      warn "net/http: duplicated HTTP header: #{key}", uplevel: 1 if key?(key) and $VERBOSE
+      warn "net/http: duplicated HTTP header: #{key}", uplevel: 3 if key?(key) and $VERBOSE
       if value.nil?
-        warn "net/http: nil HTTP header: #{key}", uplevel: 1 if $VERBOSE
+        warn "net/http: nil HTTP header: #{key}", uplevel: 3 if $VERBOSE
       else
         value = value.strip # raise error for invalid byte sequences
         if value.count("\r\n") > 0
