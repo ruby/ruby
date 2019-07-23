@@ -54,6 +54,8 @@ RSpec.describe "Bundler.with_env helpers" do
     end
 
     it "removes variables that bundler added", :ruby_repo do
+      ENV.replace(ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) })
+
       original = ruby!('puts ENV.to_a.map {|e| e.join("=") }.sort.join("\n")')
       code = 'puts Bundler.original_env.to_a.map {|e| e.join("=") }.sort.join("\n")'
       bundle_exec_ruby! code.dump
