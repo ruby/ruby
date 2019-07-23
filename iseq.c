@@ -1332,34 +1332,33 @@ rb_iseqw_to_iseq(VALUE iseqw)
 
 /*
  *  call-seq:
- *     iseq.eval -> obj
+ *     iseq.eval([binding]) -> obj
  *
  *  Evaluates the instruction sequence and returns the result.
  *
  *      RubyVM::InstructionSequence.compile("1 + 2").eval #=> 3
- */
-static VALUE
-iseqw_eval(VALUE self)
-{
-    rb_secure(1);
-    return rb_iseq_eval(iseqw_check(self));
-}
-
-/*
- *  call-seq:
- *     iseq.eval_with(binding) -> obj
  *
- *  Evaluates the instruction sequence and returns the result.
+ *  If <em>binding</em> is given, which must be a Binding object, the
+ *  evaluation is performed in its context.
  *
  *      obj = Struct.new(:a, :b).new(1, 2)
  *      bind = obj.instance_eval {binding}
- *      RubyVM::InstructionSequence.compile("a + b").eval_with(bind) #=> 3
+ *      RubyVM::InstructionSequence.compile("a + b").eval(bind) #=> 3
  */
 static VALUE
-iseq_eval_with(VALUE self, VALUE scope)
+iseqw_eval(int argc, const VALUE *argv, VALUE self)
 {
-    rb_secure(1);
-    return rb_iseq_eval_in_scope(iseqw_check(self), scope);
+    VALUE scope;
+
+    if (argc == 0) {
+        rb_secure(1);
+        return rb_iseq_eval(iseqw_check(self));
+    }
+    else {
+        rb_scan_args(argc, argv, "01", &scope);
+        rb_secure(1);
+        return rb_iseq_eval_in_scope(iseqw_check(self), scope);
+    }
 }
 
 /*
@@ -3499,8 +3498,7 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "disasm", iseqw_disasm, 0);
     rb_define_method(rb_cISeq, "disassemble", iseqw_disasm, 0);
     rb_define_method(rb_cISeq, "to_a", iseqw_to_a, 0);
-    rb_define_method(rb_cISeq, "eval", iseqw_eval, 0);
-    rb_define_method(rb_cISeq, "eval_with", iseq_eval_with, 1);
+    rb_define_method(rb_cISeq, "eval", iseqw_eval, -1);
 
     rb_define_method(rb_cISeq, "to_binary", iseqw_to_binary, -1);
     rb_define_singleton_method(rb_cISeq, "load_from_binary", iseqw_s_load_from_binary, 1);

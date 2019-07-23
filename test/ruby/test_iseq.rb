@@ -281,6 +281,13 @@ class TestISeq < Test::Unit::TestCase
     end;
   end
 
+  def test_eval_with_binding
+    obj = Struct.new(:a, :b).new(1, 2)
+    bind = obj.instance_eval {binding}
+    val = RubyVM::InstructionSequence.compile("a + b").eval(bind)
+    assert_equal(3, val)
+  end
+
   def test_inspect
     %W[foo \u{30d1 30b9}].each do |name|
       assert_match(/@#{name}/, ISeq.compile("", name).inspect, name)
