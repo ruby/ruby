@@ -77,7 +77,7 @@ module Spec
     def run(cmd, *args)
       opts = args.last.is_a?(Hash) ? args.pop : {}
       groups = args.map(&:inspect).join(", ")
-      setup = "require 'bundler' ; Bundler.setup(#{groups})\n"
+      setup = "require '#{lib}/bundler' ; Bundler.setup(#{groups})\n"
       ruby(setup + cmd, opts)
     end
     bang :run
