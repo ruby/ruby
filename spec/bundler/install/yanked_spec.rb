@@ -31,6 +31,8 @@ RSpec.context "when installing a bundle that includes yanked gems" do
   end
 
   it "throws the original error when only the Gemfile specifies a gem version that doesn't exist" do
+    bundle "config set force_ruby_platform true"
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo4)}"
       gem "foo", "10.0.0"
