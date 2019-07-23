@@ -22,9 +22,16 @@ node_gc_mark(void *ptr)
     rb_gc_mark((VALUE)data->ast);
 }
 
+static size_t
+node_memsize(const void *ptr)
+{
+    struct ASTNodeData *data = (struct ASTNodeData *)ptr;
+    return rb_ast_memsize(data->ast);
+}
+
 static const rb_data_type_t rb_node_type = {
     "AST/node",
-    {node_gc_mark, RUBY_TYPED_DEFAULT_FREE, 0,},
+    {node_gc_mark, RUBY_TYPED_DEFAULT_FREE, node_memsize,},
     0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
 };
