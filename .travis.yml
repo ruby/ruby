@@ -423,7 +423,7 @@ before_script:
   - |-
     for i in 1 2 3; do
       date; make touch-unicode-files || break
-      ls -l tool/generic_erb.rb template/unicode_norm_gen.tmpl enc/unicode/data/*/ucd/.unicode-tables.time
+      ls -ltT tool/generic_erb.rb template/unicode_norm_gen.tmpl enc/unicode/data/*/ucd/.unicode-tables.time
       date; make -s $JOBS $UPDATE_UNICODE up && break
     done
   - date; make -s $JOBS srcs
