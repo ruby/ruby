@@ -288,6 +288,11 @@ class TestISeq < Test::Unit::TestCase
     assert_equal(3, val)
   end
 
+  def test_eval_with_nil_binding
+    val = RubyVM::InstructionSequence.compile("1 + 2").eval(nil)
+    assert_equal(3, val)
+  end
+
   def test_inspect
     %W[foo \u{30d1 30b9}].each do |name|
       assert_match(/@#{name}/, ISeq.compile("", name).inspect, name)

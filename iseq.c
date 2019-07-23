@@ -1350,13 +1350,16 @@ iseqw_eval(int argc, const VALUE *argv, VALUE self)
 {
     VALUE scope;
 
-    if (argc == 0) {
-        rb_secure(1);
+    rb_check_arity(argc, 0, 1);
+    rb_secure(1);
+
+    if (argc == 1) {
+        rb_scan_args(argc, argv, "1", &scope);
+    }
+    if (argc == 0 || scope == Qnil) {
         return rb_iseq_eval(iseqw_check(self));
     }
     else {
-        rb_scan_args(argc, argv, "01", &scope);
-        rb_secure(1);
         return rb_iseq_eval_in_scope(iseqw_check(self), scope);
     }
 }

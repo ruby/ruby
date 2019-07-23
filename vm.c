@@ -2147,7 +2147,7 @@ rb_iseq_eval_in_scope(const rb_iseq_t *iseq, VALUE scope)
 
     /* save new env */
     if (iseq->body->local_table_size > 0) {
-      vm_bind_update_env(scope, bind, vm_make_env_object(ec, ec->cfp));
+        vm_bind_update_env(scope, bind, vm_make_env_object(ec, ec->cfp));
     }
 
     return vm_exec(ec, TRUE);
