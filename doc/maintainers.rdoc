@@ -90,8 +90,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/pstore.rb]
   _unmaintained_
-[lib/racc/*]
-  Aaron Patterson (tenderlove)
 [lib/reline.rb, lib/reline/*]
   aycabta
 [lib/resolv-replace.rb]
@@ -156,8 +154,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [ext/pty]
   _unmaintained_
-[ext/racc]
-  Aaron Patterson (tenderlove)
 [ext/readline]
   TAKAO Kouji (kouji)
 [ext/ripper]
@@ -266,6 +262,8 @@ Zachary Scott (zzak)
 [ext/psych]
   Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/psych
+[ext/racc]
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
 [ext/sdbm]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/sdbm
