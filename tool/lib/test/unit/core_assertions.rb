@@ -1,11 +1,36 @@
 # frozen_string_literal: true
 
-require_relative '../../envutil'
-
 module Test
   module Unit
     module CoreAssertions
-      include MiniTest::Assertions
+      if defined?(MiniTest)
+        require_relative '../../envutil'
+        # for ruby core testing
+        include MiniTest::Assertions
+      else
+        require 'pp'
+        require_relative 'envutil'
+        include Test::Unit::Assertions
+
+        def _assertions= n # :nodoc:
+          @_assertions = n
+        end
+
+        def _assertions # :nodoc:
+          @_assertions ||= 0
+        end
+
+        ##
+        # Returns a proc that will output +msg+ along with the default message.
+
+        def message msg = nil, ending = nil, &default
+          proc {
+            msg = msg.call.chomp(".") if Proc === msg
+            custom_message = "#{msg}.\n" unless msg.nil? or msg.to_s.empty?
+            "#{custom_message}#{default.call}#{ending || "."}"
+          }
+        end
+      end
 
       def mu_pp(obj) #:nodoc:
         obj.pretty_inspect.chomp
@@ -99,7 +124,7 @@ module Test
         end
         src = <<eom
 # -*- coding: #{line += __LINE__; src.encoding}; -*-
-  require #{__dir__.dump};include Test::Unit::Assertions
+  require "test/unit";include Test::Unit::Assertions;require #{(__dir__ + "/core_assertions").dump};include Test::Unit::CoreAssertions
   END {
     puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
   }
