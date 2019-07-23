@@ -34,7 +34,7 @@ module Bundler
     end
 
     def setup_cache_all
-      all = options.fetch(:all, Bundler.feature_flag.bundler_3_mode? || nil)
+      all = options.fetch(:all, Bundler.feature_flag.cache_all? || nil)
 
       Bundler.settings.set_command_option_if_given :cache_all, all
 
