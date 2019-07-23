@@ -192,6 +192,8 @@ RSpec.describe "bundle flex_install" do
     end
 
     it "suggests bundle update when the Gemfile requires different versions than the lock" do
+      bundle "config set force_ruby_platform true"
+
       nice_error = <<-E.strip.gsub(/^ {8}/, "")
         Bundler could not find compatible versions for gem "rack":
           In snapshot (Gemfile.lock):
