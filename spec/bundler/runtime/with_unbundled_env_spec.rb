@@ -76,11 +76,12 @@ RSpec.describe "Bundler.with_env helpers" do
       expect(last_command.stdboth).not_to include("-rbundler/setup")
     end
 
-    it "should clean up RUBYLIB", :ruby_repo do
+    it "should restore RUBYLIB", :ruby_repo do
       code = "print #{modified_env}['RUBYLIB']"
       ENV["RUBYLIB"] = root.join("lib").to_s + File::PATH_SEPARATOR + "/foo"
+      ENV["BUNDLER_ORIG_RUBYLIB"] = root.join("lib").to_s + File::PATH_SEPARATOR + "/foo-original"
       bundle_exec_ruby! code.dump
-      expect(last_command.stdboth).to include("/foo")
+      expect(last_command.stdboth).to include("/foo-original")
     end
 
     it "should restore the original MANPATH" do
