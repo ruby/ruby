@@ -116,7 +116,7 @@ RSpec.describe "Running bin/* commands" do
       gem "activesupport"
     G
 
-    bundle! :install, forgotten_command_line_options([:binstubs, :bin] => "bin")
+    bundle! :install, :binstubs => "bin"
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
