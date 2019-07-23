@@ -1740,6 +1740,21 @@ rb_eval_string_protect(const char *str, int *pstate)
     return rb_protect(eval_string_protect, (VALUE)str, pstate);
 }
 
+struct eval_string_wrap_arg {
+    VALUE top_self;
+    VALUE klass;
+    const char *str;
+};
+
+static VALUE
+eval_string_wrap_protect(VALUE data)
+{
+    const struct eval_string_wrap_arg *const arg = (struct eval_string_wrap_arg*)data;
+    rb_cref_t *cref = rb_vm_cref_new_toplevel();
+    cref->klass = arg->klass;
+    return eval_string_with_cref(arg->top_self, rb_str_new_cstr(arg->str), cref, rb_str_new_cstr("eval"), 1);
+}
+
 /**
  * Evaluates the given string under a module binding in an isolated binding.
  * This is same as the binding for loaded libraries on "load('foo', true)".
@@ -1759,12 +1774,17 @@ rb_eval_string_wrap(const char *str, int *pstate)
     VALUE self = th->top_self;
     VALUE wrapper = th->top_wrapper;
     VALUE val;
+    struct eval_string_wrap_arg data;
 
     th->top_wrapper = rb_module_new();
     th->top_self = rb_obj_clone(rb_vm_top_self());
     rb_extend_object(th->top_self, th->top_wrapper);
 
-    val = rb_eval_string_protect(str, &state);
+    data.top_self = th->top_self;
+    data.klass = th->top_wrapper;
+    data.str = str;
+
+    val = rb_protect(eval_string_wrap_protect, (VALUE)&data, &state);
 
     th->top_self = self;
     th->top_wrapper = wrapper;
