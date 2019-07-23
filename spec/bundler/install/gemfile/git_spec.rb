@@ -1390,7 +1390,8 @@ In Gemfile:
           gem 'foo'
         end
       G
-      bundle :package, forgotten_command_line_options([:all, :cache_all] => true)
+      bundle "config set cache_all true"
+      bundle :package
       simulate_new_machine
 
       bundle! "install", :env => { "PATH" => "" }
