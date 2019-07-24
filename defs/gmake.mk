@@ -290,7 +290,7 @@ rdoc\:%: PHONY
 	$(Q)$(RUNRUBY) $(srcdir)/libexec/ri --no-standard-docs --doc-dir=$(RDOCOUT) $(patsubst rdoc:%,%,$@)
 
 test_%.rb test/%: programs PHONY
-	+$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) -- $(patsubst test/%,%,$@)
+	+$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --test-target-dir="$(TESTSDIR)" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) -- $(patsubst test/%,%,$@)
 
 clean-srcs-ext::
 	$(Q)$(RM) $(patsubst $(srcdir)/%,%,$(EXT_SRCS))
