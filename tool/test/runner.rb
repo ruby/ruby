@@ -1,38 +1,22 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rbconfig'
 
-tool_dir = File.dirname(File.dirname(File.realpath(__FILE__)))
-src_testdir = nil
-
-case ARGV.first
-when /\A--test-target-dir=(.*?)\z/
-  ARGV.shift
-  src_testdir = File.realpath($1)
-else
-  raise "unknown runner option: #{ ARGV.first }"
-end
-
-raise "#$0: specify --test-target-dir" if !src_testdir
-
-$LOAD_PATH << src_testdir
-$LOAD_PATH.unshift "#{tool_dir}/lib"
-
-# Get bundled gems on load path
-Dir.glob("#{src_testdir}/../gems/*/*.gemspec")
-  .reject {|f| f =~ /minitest|test-unit|power_assert/ }
-  .map {|f| $LOAD_PATH.unshift File.join(File.dirname(f), "lib") }
+$LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 
 require 'test/unit'
 
-ENV["GEM_SKIP"] = ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
+require_relative "../lib/profile_test_all" if ENV.key?('RUBY_TEST_ALL_PROFILE')
+require_relative "../lib/tracepointchecker"
+require_relative "../lib/zombie_hunter"
+require_relative "../lib/iseq_loader_checker"
+require_relative "../test-coverage.rb" if ENV.key?('COVERAGE')
 
-require_relative "#{tool_dir}/lib/profile_test_all" if ENV.has_key?('RUBY_TEST_ALL_PROFILE')
-require_relative "#{tool_dir}/lib/tracepointchecker"
-require_relative "#{tool_dir}/lib/zombie_hunter"
-require_relative "#{tool_dir}/lib/iseq_loader_checker"
-
-if ENV['COVERAGE']
-  require_relative "#{tool_dir}/test-coverage.rb"
+case $0
+when __FILE__
+  dir = __dir__
+when "-e"
+  # No default directory
+else
+  dir = File.expand_path("..", $0)
 end
-
-exit Test::Unit::AutoRunner.run(true, src_testdir)
+Test::Unit::AutoRunner.new(true, dir)
