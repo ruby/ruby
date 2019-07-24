@@ -2,11 +2,19 @@
 
 module Bundler
   class CLI::Outdated
-    attr_reader :options, :gems, :options_include_groups
+    attr_reader :options, :gems, :options_include_groups, :filter_options_patch, :sources
+    attr_accessor :outdated_gems_by_groups, :outdated_gems_list
 
     def initialize(options, gems)
       @options = options
       @gems = gems
+      @sources = Array(options[:source])
+
+      @filter_options_patch = options.keys &
+        %w[filter-major filter-minor filter-patch]
+
+      @outdated_gems_by_groups = {}
+      @outdated_gems_list = []
 
       @options_include_groups = [:group, :groups].any? do |v|
         options.keys.include?(v.to_s)
@@ -15,8 +23,6 @@ module Bundler
 
     def run
       check_for_deployment_mode
-
-      sources = Array(options[:source])
 
       gems.each do |gem_name|
         Bundler::CLI::Common.select_spec(gem_name)
@@ -48,9 +54,6 @@ module Bundler
       strict = options["filter-strict"] ||
         Bundler::CLI::Common.patch_level_options(options).any?
 
-      filter_options_patch = options.keys &
-        %w[filter-major filter-minor filter-patch]
-
       definition_resolution = proc do
         options[:local] ? definition.resolve_with_cache! : definition.resolve_remotely!
       end
@@ -62,8 +65,6 @@ module Bundler
       end
 
       Bundler.ui.info ""
-      outdated_gems_by_groups = {}
-      outdated_gems_list = []
 
       # Loop through the current specs
       gemfile_specs, dependency_specs = current_specs.partition do |spec|
@@ -108,7 +109,7 @@ module Bundler
       end
 
       if outdated_gems_list.empty?
-        display_nothing_outdated_message(filter_options_patch)
+        display_nothing_outdated_message
       else
         unless options[:parseable]
           if options[:pre]
@@ -185,7 +186,7 @@ module Bundler
       active_spec
     end
 
-    def display_nothing_outdated_message(filter_options_patch)
+    def display_nothing_outdated_message
       unless options[:parseable]
         if filter_options_patch.any?
           display = filter_options_patch.map do |o|
