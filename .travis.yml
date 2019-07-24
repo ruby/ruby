@@ -341,7 +341,7 @@ env:
       - TEST_ALL_ISOLATED_TESTS="../test/ruby/test_gc_compact.rb"
       # Disabling -j3 because it seems to cause a hang on building Ruby: https://travis-ci.org/ruby/ruby/jobs/471021727
       - JOBS=
-      # Reset timestamps earily, before updating Homebrew etc.
+      # Reset timestamps early, before updating Homebrew etc.
       - _=$(touch NEWS && find . -type f -exec touch -r NEWS {} +)
 
   - &dependency
