@@ -753,12 +753,12 @@ yes-test-knownbug: prog PHONY
 
 test-testframework: $(TEST_RUNNABLE)-test-testframework
 yes-test-testframework: prog PHONY
-	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --test-target-dir="$(TOOL_TESTSDIR)" --ruby="$(RUNRUBY)" $(TESTOPTS) testunit minitest
+	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) testunit minitest
 no-test-testframework: PHONY
 
 test-tool: $(TEST_RUNNABLE)-test-tool
 yes-test-tool: prog PHONY
-	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --test-target-dir="$(TOOL_TESTSDIR)" --ruby="$(RUNRUBY)" $(TESTOPTS)
+	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS)
 no-test-tool: PHONY
 
 test-sample: test-basic # backward compatibility for mswin-build
@@ -769,10 +769,10 @@ test: test-short
 # for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
 test-all: $(TEST_RUNNABLE)-test-all
 yes-test-all: programs PHONY
-	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --test-target-dir="$(TESTSDIR)" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
+	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
 TESTS_BUILD = mkmf
 no-test-all: PHONY
-	$(gnumake_recursive)$(MINIRUBY) -I"$(srcdir)/lib" "$(TOOL_TESTSDIR)/runner.rb" --test-target-dir="$(TESTSDIR)" $(TESTOPTS) $(TESTS_BUILD)
+	$(gnumake_recursive)$(MINIRUBY) -I"$(srcdir)/lib" "$(TESTSDIR)/runner.rb" $(TESTOPTS) $(TESTS_BUILD)
 
 test-almost: test-all
 yes-test-almost: yes-test-all
@@ -781,7 +781,7 @@ no-test-almost: no-test-all
 test-ruby: $(TEST_RUNNABLE)-test-ruby
 no-test-ruby: PHONY
 yes-test-ruby: prog encs PHONY
-	$(gnumake_recursive)$(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --test-target-dir="$(TESTSDIR)" $(TEST_EXCLUDES) $(TESTOPTS) -- ruby -ext-
+	$(gnumake_recursive)$(RUNRUBY) "$(TESTSDIR)/runner.rb" $(TEST_EXCLUDES) $(TESTOPTS) -- ruby -ext-
 
 extconf: $(PREP)
 	$(Q) $(MAKEDIRS) "$(EXTCONFDIR)"
