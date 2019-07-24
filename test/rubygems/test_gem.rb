@@ -17,7 +17,7 @@ class TestGem < Gem::TestCase
 
   PLUGINS_LOADED = [] # rubocop:disable Style/MutableConstant
 
-  @@project_dir = File.expand_path('../../..', __FILE__).untaint
+  PROJECT_DIR = File.expand_path('../../..', __FILE__).untaint
 
   def setup
     super
@@ -632,7 +632,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_find_files
-    cwd = File.expand_path("test/rubygems", @@project_dir)
+    cwd = File.expand_path("test/rubygems", PROJECT_DIR)
     $LOAD_PATH.unshift cwd
 
     discover_path = File.join 'lib', 'sff', 'discover.rb'
@@ -652,7 +652,7 @@ class TestGem < Gem::TestCase
     Gem.refresh
 
     expected = [
-      File.expand_path('test/rubygems/sff/discover.rb', @@project_dir),
+      File.expand_path('test/rubygems/sff/discover.rb', PROJECT_DIR),
       File.join(foo2.full_gem_path, discover_path),
       File.join(foo1.full_gem_path, discover_path),
     ]
@@ -664,7 +664,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_find_files_with_gemfile
-    cwd = File.expand_path("test/rubygems", @@project_dir)
+    cwd = File.expand_path("test/rubygems", PROJECT_DIR)
     actual_load_path = $LOAD_PATH.unshift(cwd).dup
 
     discover_path = File.join 'lib', 'sff', 'discover.rb'
@@ -689,7 +689,7 @@ class TestGem < Gem::TestCase
     Gem.use_gemdeps(File.join Dir.pwd, 'Gemfile')
 
     expected = [
-      File.expand_path('test/rubygems/sff/discover.rb', @@project_dir),
+      File.expand_path('test/rubygems/sff/discover.rb', PROJECT_DIR),
       File.join(foo1.full_gem_path, discover_path)
     ].sort
 
@@ -700,7 +700,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_find_latest_files
-    cwd = File.expand_path("test/rubygems", @@project_dir)
+    cwd = File.expand_path("test/rubygems", PROJECT_DIR)
     $LOAD_PATH.unshift cwd
 
     discover_path = File.join 'lib', 'sff', 'discover.rb'
@@ -720,7 +720,7 @@ class TestGem < Gem::TestCase
     Gem.refresh
 
     expected = [
-      File.expand_path('test/rubygems/sff/discover.rb', @@project_dir),
+      File.expand_path('test/rubygems/sff/discover.rb', PROJECT_DIR),
       File.join(foo2.full_gem_path, discover_path),
     ]
 
@@ -872,12 +872,12 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_prefix
-    assert_equal @@project_dir, Gem.prefix
+    assert_equal PROJECT_DIR, Gem.prefix
   end
 
   def test_self_prefix_libdir
     orig_libdir = RbConfig::CONFIG['libdir']
-    RbConfig::CONFIG['libdir'] = @@project_dir
+    RbConfig::CONFIG['libdir'] = PROJECT_DIR
 
     assert_nil Gem.prefix
   ensure
@@ -886,7 +886,7 @@ class TestGem < Gem::TestCase
 
   def test_self_prefix_sitelibdir
     orig_sitelibdir = RbConfig::CONFIG['sitelibdir']
-    RbConfig::CONFIG['sitelibdir'] = @@project_dir
+    RbConfig::CONFIG['sitelibdir'] = PROJECT_DIR
 
     assert_nil Gem.prefix
   ensure
@@ -1867,7 +1867,7 @@ You may need to `gem install -g` to install missing gems
 
   def with_plugin(path)
     test_plugin_path = File.expand_path("test/rubygems/plugin/#{path}",
-                                        @@project_dir)
+                                        PROJECT_DIR)
 
     # A single test plugin should get loaded once only, in order to preserve
     # sane test semantics.
