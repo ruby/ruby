@@ -12,20 +12,21 @@ module Psych
     ###
     # This class walks a YAML AST, converting each node to Ruby
     class ToRuby < Psych::Visitors::Visitor
-      def self.create
+      def self.create(symbolize_names: false)
         class_loader = ClassLoader.new
         scanner      = ScalarScanner.new class_loader
-        new(scanner, class_loader)
+        new(scanner, class_loader, symbolize_names: symbolize_names)
       end
 
       attr_reader :class_loader
 
-      def initialize ss, class_loader
+      def initialize ss, class_loader, symbolize_names: false
         super()
         @st = {}
         @ss = ss
         @domain_types = Psych.domain_types
         @class_loader = class_loader
+        @symbolize_names = symbolize_names
       end
 
       def accept target
@@ -336,7 +337,12 @@ module Psych
       SHOVEL = '<<'
       def revive_hash hash, o
         o.children.each_slice(2) { |k,v|
-          key = deduplicate(accept(k))
+          key = accept(k)
+          if @symbolize_names
+            key = key.to_sym
+          else
+            key = deduplicate(key)
+          end
           val = accept(v)
 
           if key == SHOVEL && k.tag != "tag:yaml.org,2002:str"
