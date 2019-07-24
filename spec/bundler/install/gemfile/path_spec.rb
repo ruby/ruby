@@ -370,13 +370,13 @@ RSpec.describe "bundle install with explicit source paths" do
   end
 
   it "works when the path does not have a gemspec but there is a lockfile" do
-    lockfile <<-L
-    PATH
-      remote: vendor/bar
-      specs:
+    lockfile <<~L
+      PATH
+        remote: vendor/bar
+        specs:
 
-    GEM
-      remote: http://rubygems.org
+      GEM
+        remote: http://rubygems.org
     L
 
     in_app_root { FileUtils.mkdir_p("vendor/bar") }
