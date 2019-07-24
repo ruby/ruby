@@ -20,7 +20,7 @@ module Bundler
         @allow_cached = false
         @allow_remote = false
 
-        @root_path = options["root_path"] || Bundler.root
+        @root_path = options["root_path"] || root
 
         if options["path"]
           @path = Pathname.new(options["path"])
@@ -136,7 +136,7 @@ module Bundler
 
       def lockfile_path
         return relative_path(original_path) if original_path.absolute?
-        expand(original_path).relative_path_from(Bundler.root)
+        expand(original_path).relative_path_from(root)
       end
 
       def app_cache_path(custom_path = nil)
