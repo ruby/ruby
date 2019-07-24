@@ -2975,6 +2975,11 @@ Init_VM(void)
      *
      *	    threads.each { |thr| thr.join }
      *
+     *  To retrieve the last value of a thread, use #value
+     *
+     *      thr = Thread.new { sleep 1; "Useful value" }
+     *      thr.value #=> "Useful value"
+     *
      *	=== Thread initialization
      *
      *	In order to create new threads, Ruby provides ::new, ::start, and
@@ -3058,15 +3063,21 @@ Init_VM(void)
      *
      * 	=== Exception handling
      *
-     *	Any thread can raise an exception using the #raise instance method,
-     *	which operates similarly to Kernel#raise.
+     *  When an unhandled exception is raised inside a thread, it will
+     *  terminate. By default, this exception will not propagate to other
+     *  threads. The exception is stored and when another thread calls #value
+     *  or #join, the exception will be re-raised in that thread.
      *
-     *	However, it's important to note that an exception that occurs in any
-     *	thread except the main thread depends on #abort_on_exception. This
-     *	option is +false+ by default, meaning that any unhandled exception will
-     *	cause the thread to terminate silently when waited on by either #join
-     *	or #value. You can change this default by either #abort_on_exception=
-     *	+true+ or setting $DEBUG to +true+.
+     *      t = Thread.new{ raise 'something went wrong' }
+     *      t.value #=> RuntimeError: something went wrong
+     *
+     *  An exception can be raised from outside the thread using the
+     *  Thread#raise instance method, which takes the same parameters as
+     *  Kernel#raise.
+     *
+     *  Setting Thread.abort_on_exception = true, Thread#abort_on_exception =
+     *  true, or $DEBUG = true will cause a subsequent unhandled exception
+     *  raised in a thread to be automatically re-raised in the main thread.
      *
      *	With the addition of the class method ::handle_interrupt, you can now
      *	handle exceptions asynchronously with threads.
