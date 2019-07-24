@@ -423,7 +423,7 @@ before_script:
   - "> .rbconfig.time"
   - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
   - date; make touch-unicode-files
-  - ls -ltT tool/generic_erb.rb template/unicode_norm_gen.tmpl enc/unicode/data/*/ucd/.unicode-tables.time
+  - [ ${TRAVIS_OS_NAME} != osx ] || ls -ltT tool/generic_erb.rb template/unicode_norm_gen.tmpl enc/unicode/data/*/ucd/.unicode-tables.time
   - date; make -s $JOBS $UPDATE_UNICODE up
   - date; make -s $JOBS srcs
   - rm -f config.status Makefile rbconfig.rb .rbconfig.time
