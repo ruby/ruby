@@ -24,7 +24,12 @@ module Bundler
 
         if options["path"]
           @path = Pathname.new(options["path"])
-          @path = expand(@path) unless @path.relative?
+          expanded_path = expand(@path)
+          @path = if @path.relative?
+            expanded_path.relative_path_from(root_path.expand_path)
+          else
+            expanded_path
+          end
         end
 
         @name    = options["name"]
