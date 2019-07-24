@@ -32,16 +32,18 @@ module Psych
 
       def accept target
         result = super
-        return result if @domain_types.empty? || !target.tag
 
-        key = target.tag.sub(/^[!\/]*/, '').sub(/(,\d+)\//, '\1:')
-        key = "tag:#{key}" unless key =~ /^(?:tag:|x-private)/
+        unless @domain_types.empty? || !target.tag
+          key = target.tag.sub(/^[!\/]*/, '').sub(/(,\d+)\//, '\1:')
+          key = "tag:#{key}" unless key =~ /^(?:tag:|x-private)/
 
-        if @domain_types.key? key
-          value, block = @domain_types[key]
-          return block.call value, result
+          if @domain_types.key? key
+            value, block = @domain_types[key]
+            result = block.call value, result
+          end
         end
 
+        result = deduplicate(result).freeze if @freeze
         result
       end
 
@@ -341,7 +343,7 @@ module Psych
           key = accept(k)
           if @symbolize_names
             key = key.to_sym
-          else
+          elsif !@freeze
             key = deduplicate(key)
           end
           val = accept(v)
@@ -378,6 +380,8 @@ module Psych
       if RUBY_VERSION < '2.7'
         def deduplicate key
           if key.is_a?(String)
+            # It is important to untaint the string, otherwise it won't
+            # be deduplicated into an fstring, but simply frozen.
             -(key.untaint)
           else
             key

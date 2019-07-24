@@ -192,6 +192,22 @@ class TestPsych < Psych::TestCase
     assert_equal({ 'hello' => 'world' }, got)
   end
 
+  def test_load_freeze
+    data = Psych.load("--- {foo: ['a']}", freeze: true)
+    assert_predicate data, :frozen?
+    assert_predicate data['foo'], :frozen?
+    assert_predicate data['foo'].first, :frozen?
+  end
+
+  def test_load_freeze_deduplication
+    unless String.method_defined?(:-@) && (-("a" * 20)).equal?((-("a" * 20)))
+      skip "This Ruby implementation doesn't support string deduplication"
+    end
+
+    data = Psych.load("--- ['a']", freeze: true)
+    assert_same 'a', data.first
+  end
+
   def test_load_default_fallback
     assert_equal false, Psych.load("")
   end
