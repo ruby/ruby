@@ -27,7 +27,7 @@ module Bundler
     end
 
     def run
-      check_for_deployment_mode
+      check_for_deployment_mode!
 
       gems.each do |gem_name|
         Bundler::CLI::Common.select_spec(gem_name)
@@ -224,7 +224,7 @@ module Bundler
       Bundler.ui.info output_message.rstrip
     end
 
-    def check_for_deployment_mode
+    def check_for_deployment_mode!
       return unless Bundler.frozen_bundle?
       suggested_command = if Bundler.settings.locations("frozen")[:global]
         "bundle config unset frozen"
