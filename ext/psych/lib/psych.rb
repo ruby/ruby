@@ -276,8 +276,7 @@ module Psych
 
     result = parse(yaml, filename: filename)
     return fallback unless result
-    result = result.to_ruby if result
-    symbolize_names!(result) if symbolize_names
+    result = result.to_ruby(symbolize_names: symbolize_names) if result
     result
   end
 
@@ -353,12 +352,11 @@ module Psych
                                                permitted_symbols.map(&:to_s))
     scanner      = ScalarScanner.new class_loader
     visitor = if aliases
-                Visitors::ToRuby.new scanner, class_loader
+                Visitors::ToRuby.new scanner, class_loader, symbolize_names: symbolize_names
               else
-                Visitors::NoAliasRuby.new scanner, class_loader
+                Visitors::NoAliasRuby.new scanner, class_loader, symbolize_names: symbolize_names
               end
     result = visitor.accept result
-    symbolize_names!(result) if symbolize_names
     result
   end
 
@@ -603,19 +601,6 @@ module Psych
     @load_tags[tag] = klass.name
     @dump_tags[klass] = tag
   end
-
-  def self.symbolize_names!(result)
-    case result
-    when Hash
-      result.keys.each do |key|
-        result[key.to_sym] = symbolize_names!(result.delete(key))
-      end
-    when Array
-      result.map! { |r| symbolize_names!(r) }
-    end
-    result
-  end
-  private_class_method :symbolize_names!
 
   # Workaround for emulating `warn '...', uplevel: 1` in Ruby 2.4 or lower.
   def self.warn_with_uplevel(message, uplevel: 1)
