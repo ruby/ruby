@@ -105,11 +105,7 @@ module Bundler
         display_nothing_outdated_message
       else
         unless options[:parseable]
-          if options[:pre]
-            Bundler.ui.info "Outdated gems included in the bundle (including pre-releases):"
-          else
-            Bundler.ui.info "Outdated gems included in the bundle:"
-          end
+          Bundler.ui.info(header_outdated_message)
         end
 
         if options_include_groups
@@ -125,11 +121,7 @@ module Bundler
             next if (!options[:groups] && !contains_group) || gems.nil?
 
             unless options[:parseable]
-              if groups
-                Bundler.ui.info "===== #{groups_text("Group", groups)} ====="
-              else
-                Bundler.ui.info "===== Without group ====="
-              end
+              Bundler.ui.info(header_group_message(groups))
             end
 
             print_gems(gems)
@@ -146,6 +138,34 @@ module Bundler
 
     def groups_text(group_text, groups)
       "#{group_text}#{groups.split(",").size > 1 ? "s" : ""} \"#{groups}\""
+    end
+
+    def header_outdated_message
+      if options[:pre]
+        "Outdated gems included in the bundle (including pre-releases):"
+      else
+        "Outdated gems included in the bundle:"
+      end
+    end
+
+    def header_group_message(groups)
+      if groups
+        "===== #{groups_text("Group", groups)} ====="
+      else
+        "===== Without group ====="
+      end
+    end
+
+    def nothing_outdated_message
+      if filter_options_patch.any?
+        display = filter_options_patch.map do |o|
+          o.sub("filter-", "")
+        end.join(" or ")
+
+        "No #{display} updates to display.\n"
+      else
+        "Bundle up to date!\n"
+      end
     end
 
     def retrieve_active_spec(strict, definition, current_spec)
@@ -166,15 +186,7 @@ module Bundler
 
     def display_nothing_outdated_message
       unless options[:parseable]
-        if filter_options_patch.any?
-          display = filter_options_patch.map do |o|
-            o.sub("filter-", "")
-          end.join(" or ")
-
-          Bundler.ui.info "No #{display} updates to display.\n"
-        else
-          Bundler.ui.info "Bundle up to date!\n"
-        end
+        Bundler.ui.info(nothing_outdated_message)
       end
     end
 
