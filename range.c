@@ -1455,11 +1455,14 @@ static int r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val);
  *  the end of the sequence must be calculated, which may exhibit poor
  *  performance if <code>c</code> is non-numeric.
  *  Returns <code>false</code> if the begin value of the
- *  range is larger than the end value.
+ *  range is larger than the end value. Also returns +false+ if one of the
+ *  internal calls to <code><=></code> returns +nil+ (indicating the objects
+ *  are not comparable).
  *
  *     ("a".."z").cover?("c")  #=> true
  *     ("a".."z").cover?("5")  #=> false
  *     ("a".."z").cover?("cc") #=> true
+ *     ("a".."z").cover?(1)    #=> false
  *     (1..5).cover?(2..3)     #=> true
  *     (1..5).cover?(0..6)     #=> false
  *     (1..5).cover?(1...6)    #=> true
