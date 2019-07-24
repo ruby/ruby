@@ -60,6 +60,42 @@ RSpec.describe "bundle gem" do
     end
   end
 
+  describe "git repo initialization" do
+    let(:gem_name) { "test-gem" }
+
+    shared_examples_for "a gem with an initial git repo" do
+      before do
+        execute_bundle_gem(gem_name, flags)
+      end
+      it "generates a gem skeleton with a .git folder" do
+        gem_skeleton_assertions(gem_name)
+        expect(bundled_app("test-gem/.git")).to exist
+      end
+    end
+
+    context "when using the default" do
+      it_behaves_like "a gem with an initial git repo" do
+        let(:flags) { "" }
+      end
+    end
+
+    context "when explicitly passing --git" do
+      it_behaves_like "a gem with an initial git repo" do
+        let(:flags) { "--git" }
+      end
+    end
+
+    context "when passing --no-git" do
+      before do
+        execute_bundle_gem(gem_name, "--no-git")
+      end
+      it "generates a gem skeleton without a .git folder" do
+        gem_skeleton_assertions(gem_name)
+        expect(bundled_app("test-gem/.git")).not_to exist
+      end
+    end
+  end
+
   shared_examples_for "--mit flag" do
     before do
       execute_bundle_gem(gem_name, "--mit")

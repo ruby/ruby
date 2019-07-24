@@ -538,6 +538,7 @@ module Bundler
                          :lazy_default => [ENV["BUNDLER_EDITOR"], ENV["VISUAL"], ENV["EDITOR"]].find {|e| !e.nil? && !e.empty? },
                          :desc => "Open generated gemspec in the specified editor (defaults to $EDITOR or $BUNDLER_EDITOR)"
     method_option :ext, :type => :boolean, :default => false, :desc => "Generate the boilerplate for C extension code"
+    method_option :git, :type => :boolean, :default => true, :desc => "Initialize a git repo inside your library."
     method_option :mit, :type => :boolean, :desc => "Generate an MIT license file. Set a default with `bundle config set gem.mit true`."
     method_option :test, :type => :string, :lazy_default => "rspec", :aliases => "-t", :banner => "rspec",
                          :desc => "Generate a test directory for your library, either rspec or minitest. Set a default with `bundle config set gem.test rspec`."
