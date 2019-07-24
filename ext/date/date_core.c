@@ -54,6 +54,14 @@ static double positive_inf, negative_inf;
 static VALUE date_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE datetime_initialize(int argc, VALUE *argv, VALUE self);
 
+#define RETURN_FALSE_UNLESS_NUMERIC(obj) if(!RTEST(rb_obj_is_kind_of((obj), rb_cNumeric))) return Qfalse
+inline static void
+check_numeric(VALUE obj, const char* field) {
+    if(!RTEST(rb_obj_is_kind_of(obj, rb_cNumeric))) {
+        rb_raise(rb_eTypeError, "invalid %s (not numeric)", field);
+    }
+}
+
 inline static int
 f_cmp(VALUE x, VALUE y)
 {
@@ -2470,6 +2478,7 @@ date_s_valid_jd_p(int argc, VALUE *argv, VALUE klass)
 
     rb_scan_args(argc, argv, "11", &vjd, &vsg);
 
+    RETURN_FALSE_UNLESS_NUMERIC(vjd);
     argv2[0] = vjd;
     if (argc < 2)
 	argv2[1] = INT2FIX(DEFAULT_SG);
@@ -2562,6 +2571,9 @@ date_s_valid_civil_p(int argc, VALUE *argv, VALUE klass)
 
     rb_scan_args(argc, argv, "31", &vy, &vm, &vd, &vsg);
 
+    RETURN_FALSE_UNLESS_NUMERIC(vy);
+    RETURN_FALSE_UNLESS_NUMERIC(vm);
+    RETURN_FALSE_UNLESS_NUMERIC(vd);
     argv2[0] = vy;
     argv2[1] = vm;
     argv2[2] = vd;
@@ -2643,6 +2655,8 @@ date_s_valid_ordinal_p(int argc, VALUE *argv, VALUE klass)
 
     rb_scan_args(argc, argv, "21", &vy, &vd, &vsg);
 
+    RETURN_FALSE_UNLESS_NUMERIC(vy);
+    RETURN_FALSE_UNLESS_NUMERIC(vd);
     argv2[0] = vy;
     argv2[1] = vd;
     if (argc < 3)
@@ -2725,6 +2739,9 @@ date_s_valid_commercial_p(int argc, VALUE *argv, VALUE klass)
 
     rb_scan_args(argc, argv, "31", &vy, &vw, &vd, &vsg);
 
+    RETURN_FALSE_UNLESS_NUMERIC(vy);
+    RETURN_FALSE_UNLESS_NUMERIC(vw);
+    RETURN_FALSE_UNLESS_NUMERIC(vd);
     argv2[0] = vy;
     argv2[1] = vw;
     argv2[2] = vd;
@@ -2906,6 +2923,7 @@ date_s_julian_leap_p(VALUE klass, VALUE y)
     VALUE nth;
     int ry;
 
+    check_numeric(y, "year");
     decode_year(y, +1, &nth, &ry);
     return f_boolcast(c_julian_leap_p(ry));
 }
@@ -2927,6 +2945,7 @@ date_s_gregorian_leap_p(VALUE klass, VALUE y)
     VALUE nth;
     int ry;
 
+    check_numeric(y, "year");
     decode_year(y, -1, &nth, &ry);
     return f_boolcast(c_gregorian_leap_p(ry));
 }
@@ -3281,6 +3300,7 @@ date_s_jd(int argc, VALUE *argv, VALUE klass)
       case 2:
 	val2sg(vsg, sg);
       case 1:
+        check_numeric(vjd, "jd");
 	num2num_with_frac(jd, positive_inf);
     }
 
@@ -3333,8 +3353,10 @@ date_s_ordinal(int argc, VALUE *argv, VALUE klass)
       case 3:
 	val2sg(vsg, sg);
       case 2:
+        check_numeric(vd, "yday");
 	num2int_with_frac(d, positive_inf);
       case 1:
+        check_numeric(vy, "year");
 	y = vy;
     }
 
@@ -3413,10 +3435,13 @@ date_initialize(int argc, VALUE *argv, VALUE self)
       case 4:
 	val2sg(vsg, sg);
       case 3:
+        check_numeric(vd, "day");
 	num2int_with_frac(d, positive_inf);
       case 2:
+        check_numeric(vd, "month");
 	m = NUM2INT(vm);
       case 1:
+        check_numeric(vy, "year");
 	y = vy;
     }
 
@@ -3483,10 +3508,13 @@ date_s_commercial(int argc, VALUE *argv, VALUE klass)
       case 4:
 	val2sg(vsg, sg);
       case 3:
+        check_numeric(vd, "cwday");
 	num2int_with_frac(d, positive_inf);
       case 2:
+        check_numeric(vw, "cweek");
 	w = NUM2INT(vw);
       case 1:
+        check_numeric(vy, "year");
 	y = vy;
     }
 
@@ -7244,12 +7272,16 @@ datetime_s_jd(int argc, VALUE *argv, VALUE klass)
       case 5:
 	val2off(vof, rof);
       case 4:
+        check_numeric(vs, "second");
 	num2int_with_frac(s, positive_inf);
       case 3:
+        check_numeric(vmin, "minute");
 	num2int_with_frac(min, 3);
       case 2:
+        check_numeric(vh, "hour");
 	num2int_with_frac(h, 2);
       case 1:
+        check_numeric(vjd, "jd");
 	num2num_with_frac(jd, 1);
     }
 
@@ -7313,14 +7345,19 @@ datetime_s_ordinal(int argc, VALUE *argv, VALUE klass)
       case 6:
 	val2off(vof, rof);
       case 5:
+        check_numeric(vs, "second");
 	num2int_with_frac(s, positive_inf);
       case 4:
+        check_numeric(vmin, "minute");
 	num2int_with_frac(min, 4);
       case 3:
+        check_numeric(vh, "hour");
 	num2int_with_frac(h, 3);
       case 2:
+        check_numeric(vd, "yday");
 	num2int_with_frac(d, 2);
       case 1:
+        check_numeric(vy, "year");
 	y = vy;
     }
 
@@ -7401,16 +7438,22 @@ datetime_initialize(int argc, VALUE *argv, VALUE self)
       case 7:
 	val2off(vof, rof);
       case 6:
+        check_numeric(vs, "second");
 	num2int_with_frac(s, positive_inf);
       case 5:
+        check_numeric(vmin, "minute");
 	num2int_with_frac(min, 5);
       case 4:
+        check_numeric(vh, "hour");
 	num2int_with_frac(h, 4);
       case 3:
+        check_numeric(vd, "day");
 	num2int_with_frac(d, 3);
       case 2:
+        check_numeric(vm, "month");
 	m = NUM2INT(vm);
       case 1:
+        check_numeric(vy, "year");
 	y = vy;
     }
 
@@ -7499,16 +7542,22 @@ datetime_s_commercial(int argc, VALUE *argv, VALUE klass)
       case 7:
 	val2off(vof, rof);
       case 6:
+        check_numeric(vs, "second");
 	num2int_with_frac(s, positive_inf);
       case 5:
+        check_numeric(vmin, "minute");
 	num2int_with_frac(min, 5);
       case 4:
+        check_numeric(vh, "hour");
 	num2int_with_frac(h, 4);
       case 3:
+        check_numeric(vd, "cwday");
 	num2int_with_frac(d, 3);
       case 2:
+        check_numeric(vw, "cweek");
 	w = NUM2INT(vw);
       case 1:
+        check_numeric(vy, "year");
 	y = vy;
     }
 

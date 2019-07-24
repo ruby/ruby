@@ -32,6 +32,56 @@ class TestDateNew < Test::Unit::TestCase
     end
   end
 
+  def test_valid_with_invalid_types
+    o = Object.new
+    assert_equal(false, Date.valid_jd?(o))
+    assert_equal(false, Date.valid_civil?(o, 1, 1))
+    assert_equal(false, Date.valid_civil?(1, o, 1))
+    assert_equal(false, Date.valid_civil?(1, 1, o))
+    assert_equal(false, Date.valid_ordinal?(o, 1))
+    assert_equal(false, Date.valid_ordinal?(1, o))
+    assert_equal(false, Date.valid_commercial?(o, 1, 1))
+    assert_equal(false, Date.valid_commercial?(1, o, 1))
+    assert_equal(false, Date.valid_commercial?(1, 1, o))
+  end
+
+  def test_invalid_types
+    o = Object.new
+    assert_raise(TypeError) { Date.julian_leap?(o) }
+    assert_raise(TypeError) { Date.gregorian_leap?(o) }
+    assert_raise(TypeError) { Date.jd(o) }
+    assert_raise(TypeError) { Date.new(o) }
+    assert_raise(TypeError) { Date.new(1, o) }
+    assert_raise(TypeError) { Date.new(1, 1, o) }
+    assert_raise(TypeError) { Date.ordinal(o) }
+    assert_raise(TypeError) { Date.ordinal(1, o) }
+    assert_raise(TypeError) { Date.commercial(o) }
+    assert_raise(TypeError) { Date.commercial(1, o) }
+    assert_raise(TypeError) { Date.commercial(1, 1, o) }
+
+    assert_raise(TypeError) { DateTime.jd(o) }
+    assert_raise(TypeError) { DateTime.jd(1, o) }
+    assert_raise(TypeError) { DateTime.jd(1, 1, o) }
+    assert_raise(TypeError) { DateTime.jd(1, 1, 1, o) }
+    assert_raise(TypeError) { DateTime.new(o) }
+    assert_raise(TypeError) { DateTime.new(1, o) }
+    assert_raise(TypeError) { DateTime.new(1, 1, o) }
+    assert_raise(TypeError) { DateTime.new(1, 1, 1, o) }
+    assert_raise(TypeError) { DateTime.new(1, 1, 1, 1, o) }
+    assert_raise(TypeError) { DateTime.new(1, 1, 1, 1, 1, o) }
+    assert_raise(TypeError) { DateTime.ordinal(o) }
+    assert_raise(TypeError) { DateTime.ordinal(1, o) }
+    assert_raise(TypeError) { DateTime.ordinal(1, 1, o) }
+    assert_raise(TypeError) { DateTime.ordinal(1, 1, 1, o) }
+    assert_raise(TypeError) { DateTime.ordinal(1, 1, 1, 1, o) }
+    assert_raise(TypeError) { DateTime.commercial(o) }
+    assert_raise(TypeError) { DateTime.commercial(1, o) }
+    assert_raise(TypeError) { DateTime.commercial(1, 1, o) }
+    assert_raise(TypeError) { DateTime.commercial(1, 1, 1, o) }
+    assert_raise(TypeError) { DateTime.commercial(1, 1, 1, 1, o) }
+    assert_raise(TypeError) { DateTime.commercial(1, 1, 1, 1, 1, o) }
+  end
+
   def test_ordinal
     d = Date.ordinal
     dt = DateTime.ordinal
