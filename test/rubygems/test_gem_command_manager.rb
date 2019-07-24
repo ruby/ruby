@@ -4,7 +4,7 @@ require 'rubygems/command_manager'
 
 class TestGemCommandManager < Gem::TestCase
 
-  @@project_dir = File.expand_path('../../..', __FILE__).untaint
+  PROJECT_DIR = File.expand_path('../../..', __FILE__).untaint
 
   def setup
     super
@@ -60,7 +60,7 @@ class TestGemCommandManager < Gem::TestCase
 
   def test_run_interrupt
     old_load_path = $:.dup
-    $: << File.expand_path("test/rubygems", @@project_dir)
+    $: << File.expand_path("test/rubygems", PROJECT_DIR)
     Gem.load_env_plugins
 
     @command_manager.register_command :interrupt
@@ -79,7 +79,7 @@ class TestGemCommandManager < Gem::TestCase
 
   def test_run_crash_command
     old_load_path = $:.dup
-    $: << File.expand_path("test/rubygems", @@project_dir)
+    $: << File.expand_path("test/rubygems", PROJECT_DIR)
 
     @command_manager.register_command :crash
     use_ui @ui do
