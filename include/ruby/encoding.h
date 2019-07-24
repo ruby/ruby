@@ -139,6 +139,8 @@ VALUE rb_enc_str_new(const char*, long, rb_encoding*);
 VALUE rb_enc_str_new_cstr(const char*, rb_encoding*);
 VALUE rb_enc_str_new_static(const char*, long, rb_encoding*);
 VALUE rb_enc_reg_new(const char*, long, rb_encoding*, int);
+VALUE rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc);
+VALUE rb_fstring_enc_cstr(const char *ptr, rb_encoding *enc);
 PRINTF_ARGS(VALUE rb_enc_sprintf(rb_encoding *, const char*, ...), 2, 3);
 VALUE rb_enc_vsprintf(rb_encoding *, const char*, va_list);
 long rb_enc_strlen(const char*, const char*, rb_encoding*);
@@ -162,6 +164,11 @@ VALUE rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ec
     (__builtin_constant_p(str)) ?	       \
 	rb_enc_str_new_static((str), (long)strlen(str), (enc)) : \
 	rb_enc_str_new_cstr((str), (enc)) \
+)
+#define rb_fstring_enc_cstr(str, enc) RB_GNUC_EXTENSION_BLOCK( \
+    (__builtin_constant_p(str)) ?		\
+	rb_fstring_enc_new((str), (long)strlen(str), (enc)) : \
+	rb_fstring_enc_cstr(str, enc) \
 )
 #endif
 

@@ -810,6 +810,10 @@ long rb_str_offset(VALUE, long);
 PUREFUNC(size_t rb_str_capacity(VALUE));
 VALUE rb_str_ellipsize(VALUE, long);
 VALUE rb_str_scrub(VALUE, VALUE);
+VALUE rb_fstring(VALUE);
+VALUE rb_fstring_new(const char *ptr, long len);
+VALUE rb_fstring_cstr(const char *str);
+
 /* symbol.c */
 VALUE rb_sym_all_symbols(void);
 
@@ -875,6 +879,11 @@ VALUE rb_sym_all_symbols(void);
 	rb_exc_new((klass), (ptr), (long)strlen(ptr)) : \
 	rb_exc_new_cstr((klass), (ptr))		\
 )
+# define rb_fstring_cstr(str) RB_GNUC_EXTENSION_BLOCK(	\
+    (__builtin_constant_p(str)) ?		\
+	rb_fstring_new((str), (long)strlen(str)) : \
+	rb_fstring_cstr(str) \
+)
 #endif
 #define rb_str_new2 rb_str_new_cstr
 #define rb_str_new3 rb_str_new_shared
@@ -895,6 +904,10 @@ VALUE rb_sym_all_symbols(void);
 #define rb_usascii_str_new_literal(str) rb_usascii_str_new_lit(str)
 #define rb_utf8_str_new_literal(str) rb_utf8_str_new_lit(str)
 #define rb_enc_str_new_literal(str, enc) rb_enc_str_new_lit(str, enc)
+#define rb_fstring_lit(str) rb_fstring_new((str), rb_strlen_lit(str))
+#define rb_fstring_literal(str) rb_fstring_lit(str)
+#define rb_fstring_enc_lit(str, enc) rb_fstring_enc_new((str), rb_strlen_lit(str), (enc))
+#define rb_fstring_enc_literal(str, enc) rb_fstring_enc_lit(str, enc)
 
 /* struct.c */
 VALUE rb_struct_new(VALUE, ...);
