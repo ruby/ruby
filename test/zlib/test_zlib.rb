@@ -199,10 +199,10 @@ if defined? Zlib
       z = Zlib::Deflate.new
       s = z.deflate("foo", Zlib::FULL_FLUSH)
       z.avail_out = 0
-      z.params(Zlib::NO_COMPRESSION, Zlib::FILTERED)
+      EnvUtil.suppress_warning {z.params(Zlib::NO_COMPRESSION, Zlib::FILTERED)}
       s << z.deflate("bar", Zlib::FULL_FLUSH)
       z.avail_out = 0
-      z.params(Zlib::BEST_COMPRESSION, Zlib::HUFFMAN_ONLY)
+      EnvUtil.suppress_warning {z.params(Zlib::BEST_COMPRESSION, Zlib::HUFFMAN_ONLY)}
       s << z.deflate("baz", Zlib::FINISH)
       assert_equal("foobarbaz", Zlib::Inflate.inflate(s))
 
@@ -415,10 +415,10 @@ if defined? Zlib
       z = Zlib::Deflate.new
       s = z.deflate("foo" * 1000, Zlib::FULL_FLUSH)
       z.avail_out = 0
-      z.params(Zlib::NO_COMPRESSION, Zlib::FILTERED)
+      EnvUtil.suppress_warning {z.params(Zlib::NO_COMPRESSION, Zlib::FILTERED)}
       s << z.deflate("bar" * 1000, Zlib::FULL_FLUSH)
       z.avail_out = 0
-      z.params(Zlib::BEST_COMPRESSION, Zlib::HUFFMAN_ONLY)
+      EnvUtil.suppress_warning {z.params(Zlib::BEST_COMPRESSION, Zlib::HUFFMAN_ONLY)}
       s << z.deflate("baz" * 1000, Zlib::FINISH)
 
       z = Zlib::Inflate.new
