@@ -106,8 +106,7 @@ module Bundler
       else
         unless options[:parseable]
           if options[:pre]
-            Bundler.ui.info "Outdated gems included in the bundle (including " \
-              "pre-releases):"
+            Bundler.ui.info "Outdated gems included in the bundle (including pre-releases):"
           else
             Bundler.ui.info "Outdated gems included in the bundle:"
           end
