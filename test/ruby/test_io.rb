@@ -2240,6 +2240,9 @@ class TestIO < Test::Unit::TestCase
     assert_raise(Errno::ENOENT, Errno::EINVAL) do
       Class.new(IO).binread("|#{EnvUtil.rubybin} -e puts")
     end
+    assert_raise(Errno::ESPIPE) do
+      IO.read("|echo foo", 1, 1)
+    end
   end
 
   def test_reopen
