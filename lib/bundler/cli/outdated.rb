@@ -2,7 +2,7 @@
 
 module Bundler
   class CLI::Outdated
-    attr_reader :options, :gems, :options_include_groups, :filter_options_patch, :sources
+    attr_reader :options, :gems, :options_include_groups, :filter_options_patch, :sources, :strict
     attr_accessor :outdated_gems_by_groups, :outdated_gems_list
 
     def initialize(options, gems)
@@ -19,6 +19,11 @@ module Bundler
       @options_include_groups = [:group, :groups].any? do |v|
         options.keys.include?(v.to_s)
       end
+
+      # the patch level options imply strict is also true. It wouldn't make
+      # sense otherwise.
+      @strict = options["filter-strict"] ||
+        Bundler::CLI::Common.patch_level_options(options).any?
     end
 
     def run
@@ -47,11 +52,6 @@ module Bundler
         options
       )
 
-      # the patch level options imply strict is also true. It wouldn't make
-      # sense otherwise.
-      strict = options["filter-strict"] ||
-        Bundler::CLI::Common.patch_level_options(options).any?
-
       definition_resolution = proc do
         options[:local] ? definition.resolve_with_cache! : definition.resolve_remotely!
       end
@@ -79,7 +79,7 @@ module Bundler
         next if !gems.empty? && !gems.include?(current_spec.name)
 
         dependency = current_dependencies[current_spec.name]
-        active_spec = retrieve_active_spec(strict, definition, current_spec)
+        active_spec = retrieve_active_spec(definition, current_spec)
 
         next if active_spec.nil?
         next if filter_options_patch.any? &&
@@ -168,7 +168,7 @@ module Bundler
       end
     end
 
-    def retrieve_active_spec(strict, definition, current_spec)
+    def retrieve_active_spec(definition, current_spec)
       return unless current_spec.match_platform(Bundler.local_platform)
 
       if strict
