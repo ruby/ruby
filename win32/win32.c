@@ -5845,6 +5845,17 @@ rb_w32_lstati128(const char *path, struct stati128 *st)
     return w32_stati128(path, st, filecp(), TRUE);
 }
 
+off_t
+rb_w32_lseek(int fd, off_t ofs, int whence)
+{
+    SOCKET sock = TO_SOCKET(fd);
+    if (is_socket(sock) || is_pipe(sock)) {
+        errno = ESPIPE;
+        return -1;
+    }
+    return _lseeki64(fd, ofs, whence);
+}
+
 /* License: Ruby's */
 int
 rb_w32_access(const char *path, int mode)
