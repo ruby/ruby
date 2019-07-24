@@ -4,6 +4,8 @@ require 'rubygems/command_manager'
 
 class TestGemCommandManager < Gem::TestCase
 
+  @@project_dir = File.expand_path('../../..', __FILE__).untaint
+
   def setup
     super
 
