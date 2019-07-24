@@ -8,7 +8,7 @@ module Bundler
       @options = options
       @gems = gems
 
-      @options_include_groups = [:group, :groups].select do |v|
+      @options_include_groups = [:group, :groups].any? do |v|
         options.keys.include?(v.to_s)
       end
     end
@@ -119,7 +119,7 @@ module Bundler
           end
         end
 
-        if options_include_groups.any?
+        if options_include_groups
           ordered_groups = outdated_gems_by_groups.keys.compact.sort
           [nil, ordered_groups].flatten.each do |groups|
             gems = outdated_gems_by_groups[groups]
@@ -145,7 +145,6 @@ module Bundler
                 gem[:active_spec],
                 gem[:dependency],
                 groups,
-                options_include_groups.any?
               )
             end
           end
@@ -156,7 +155,6 @@ module Bundler
               gem[:active_spec],
               gem[:dependency],
               gem[:groups],
-              options_include_groups.any?
             )
           end
         end
@@ -201,7 +199,7 @@ module Bundler
       end
     end
 
-    def print_gem(current_spec, active_spec, dependency, groups, options_include_groups)
+    def print_gem(current_spec, active_spec, dependency, groups)
       spec_version = "#{active_spec.version}#{active_spec.git_version}"
       spec_version += " (from #{active_spec.loaded_from})" if Bundler.ui.debug? && active_spec.loaded_from
       current_version = "#{current_spec.version}#{current_spec.git_version}"
