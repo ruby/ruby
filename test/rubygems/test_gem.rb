@@ -17,6 +17,8 @@ class TestGem < Gem::TestCase
 
   PLUGINS_LOADED = [] # rubocop:disable Style/MutableConstant
 
+  @@project_dir = File.expand_path('../../..', __FILE__).untaint
+
   def setup
     super
 
