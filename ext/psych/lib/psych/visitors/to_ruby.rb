@@ -12,21 +12,22 @@ module Psych
     ###
     # This class walks a YAML AST, converting each node to Ruby
     class ToRuby < Psych::Visitors::Visitor
-      def self.create(symbolize_names: false)
+      def self.create(symbolize_names: false, freeze: false)
         class_loader = ClassLoader.new
         scanner      = ScalarScanner.new class_loader
-        new(scanner, class_loader, symbolize_names: symbolize_names)
+        new(scanner, class_loader, symbolize_names: symbolize_names, freeze: freeze)
       end
 
       attr_reader :class_loader
 
-      def initialize ss, class_loader, symbolize_names: false
+      def initialize ss, class_loader, symbolize_names: false, freeze: false
         super()
         @st = {}
         @ss = ss
         @domain_types = Psych.domain_types
         @class_loader = class_loader
         @symbolize_names = symbolize_names
+        @freeze = freeze
       end
 
       def accept target
