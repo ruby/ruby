@@ -268,7 +268,7 @@ module Psych
   # YAML documents that are supplied via user input.  Instead, please use the
   # safe_load method.
   #
-  def self.load yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: false, symbolize_names: false
+  def self.load yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: false, symbolize_names: false, freeze: false
     if legacy_filename != NOT_GIVEN
       warn_with_uplevel 'Passing filename with the 2nd argument of Psych.load is deprecated. Use keyword argument like Psych.load(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
       filename = legacy_filename
@@ -276,7 +276,7 @@ module Psych
 
     result = parse(yaml, filename: filename)
     return fallback unless result
-    result = result.to_ruby(symbolize_names: symbolize_names) if result
+    result = result.to_ruby(symbolize_names: symbolize_names, freeze: freeze) if result
     result
   end
 
@@ -324,7 +324,7 @@ module Psych
   #   Psych.safe_load("---\n foo: bar")                         # => {"foo"=>"bar"}
   #   Psych.safe_load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
   #
-  def self.safe_load yaml, legacy_permitted_classes = NOT_GIVEN, legacy_permitted_symbols = NOT_GIVEN, legacy_aliases = NOT_GIVEN, legacy_filename = NOT_GIVEN, permitted_classes: [], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false
+  def self.safe_load yaml, legacy_permitted_classes = NOT_GIVEN, legacy_permitted_symbols = NOT_GIVEN, legacy_aliases = NOT_GIVEN, legacy_filename = NOT_GIVEN, permitted_classes: [], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false
     if legacy_permitted_classes != NOT_GIVEN
       warn_with_uplevel 'Passing permitted_classes with the 2nd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, permitted_classes: ...) instead.', uplevel: 1 if $VERBOSE
       permitted_classes = legacy_permitted_classes
@@ -352,9 +352,9 @@ module Psych
                                                permitted_symbols.map(&:to_s))
     scanner      = ScalarScanner.new class_loader
     visitor = if aliases
-                Visitors::ToRuby.new scanner, class_loader, symbolize_names: symbolize_names
+                Visitors::ToRuby.new scanner, class_loader, symbolize_names: symbolize_names, freeze: freeze
               else
-                Visitors::NoAliasRuby.new scanner, class_loader, symbolize_names: symbolize_names
+                Visitors::NoAliasRuby.new scanner, class_loader, symbolize_names: symbolize_names, freeze: freeze
               end
     result = visitor.accept result
     result
