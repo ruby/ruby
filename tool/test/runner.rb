@@ -24,12 +24,6 @@ Dir.glob("#{src_testdir}/../gems/*/*.gemspec")
 
 require 'test/unit'
 
-module Gem
-end
-class Gem::TestCase < MiniTest::Unit::TestCase
-  @@project_dir = File.dirname($LOAD_PATH.last)
-end
-
 ENV["GEM_SKIP"] = ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
 
 require_relative "#{tool_dir}/lib/profile_test_all" if ENV.has_key?('RUBY_TEST_ALL_PROFILE')
