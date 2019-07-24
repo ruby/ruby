@@ -47,7 +47,7 @@ DESCRIPTION
   s.rdoc_options = ["--main", "README.md"]
   s.extra_rdoc_files = ["README.md"]
 
-  s.required_ruby_version = Gem::Requirement.new(">= 2.2.2")
+  s.required_ruby_version = Gem::Requirement.new(">= 2.4.0")
   s.rubygems_version = "2.5.1"
   s.required_rubygems_version = Gem::Requirement.new(">= 0")
 
