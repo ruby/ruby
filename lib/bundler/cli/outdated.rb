@@ -2,11 +2,15 @@
 
 module Bundler
   class CLI::Outdated
-    attr_reader :options, :gems
+    attr_reader :options, :gems, :options_include_groups
 
     def initialize(options, gems)
       @options = options
       @gems = gems
+
+      @options_include_groups = [:group, :groups].select do |v|
+        options.keys.include?(v.to_s)
+      end
     end
 
     def run
@@ -113,10 +117,6 @@ module Bundler
           else
             Bundler.ui.info "Outdated gems included in the bundle:"
           end
-        end
-
-        options_include_groups = [:group, :groups].select do |v|
-          options.keys.include?(v.to_s)
         end
 
         if options_include_groups.any?
