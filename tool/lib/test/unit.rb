@@ -1072,6 +1072,14 @@ module Test
       include Test::Unit::TimeoutOption
       include Test::Unit::RunCount
 
+      def run(argv)
+        super
+      rescue NoMemoryError
+        system("cat /proc/meminfo") if File.exist?("/proc/meminfo")
+        system("ps x -opid,args,%cpu,%mem,nlwp,rss,vsz,wchan,stat,start,time,etime,blocked,caught,ignored,pending,f") if File.exist?("/bin/ps")
+        raise
+      end
+
       class << self; undef autorun; end
 
       @@stop_auto_run = false
@@ -1135,10 +1143,6 @@ module Test
           abort @options.banner
         end
         @runner.run(@argv) || true
-      rescue NoMemoryError
-        system("cat /proc/meminfo") if File.exist?("/proc/meminfo")
-        system("ps x -opid,args,%cpu,%mem,nlwp,rss,vsz,wchan,stat,start,time,etime,blocked,caught,ignored,pending,f") if File.exist?("/bin/ps")
-        raise
       end
 
       def self.run(*args)
