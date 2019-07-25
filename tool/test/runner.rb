@@ -19,4 +19,4 @@ when "-e"
 else
   dir = File.expand_path("..", $0)
 end
-Test::Unit::AutoRunner.new(true, dir)
+exit Test::Unit::AutoRunner.run(true, dir)
