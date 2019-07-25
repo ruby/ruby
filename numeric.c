@@ -885,7 +885,7 @@ num_negative_p(VALUE num)
  *  So you should know its esoteric system. See following:
  *
  *  - http://docs.sun.com/source/806-3568/ncg_goldberg.html
- *  - http://wiki.github.com/rdp/ruby_tutorials_core/ruby-talk-faq#wiki-floats_imprecise
+ *  - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#floats_imprecise
  *  - http://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
  */
 
