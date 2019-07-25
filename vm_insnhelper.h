@@ -180,9 +180,11 @@ enum vm_regan_acttype {
 #define INC_GLOBAL_CONSTANT_STATE() (++ruby_vm_global_constant_state)
 
 static inline struct vm_throw_data *
-THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, VALUE st)
+THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, int st)
 {
-    return (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, st, 0);
+    struct vm_throw_data *obj = (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, 0, 0);
+    obj->throw_state = st;
+    return obj;
 }
 
 static inline VALUE
