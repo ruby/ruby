@@ -10313,7 +10313,7 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
 
     extract_binmode(opt, &fmode);
 
-    if (fmode & FMODE_BINMODE) {
+    if ((fmode & FMODE_BINMODE) && v1 == Qnil) {
 	rb_io_ascii8bit_binmode(r);
 	rb_io_ascii8bit_binmode(w);
     }
