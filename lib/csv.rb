@@ -1306,7 +1306,7 @@ class CSV
   # ASCII compatible String.
   #
   def inspect
-    str = ["<#", self.class.to_s, " io_type:"]
+    str = ["#<", self.class.to_s, " io_type:"]
     # show type of wrapped IO
     if    @io == $stdout then str << "$stdout"
     elsif @io == $stdin  then str << "$stdin"
