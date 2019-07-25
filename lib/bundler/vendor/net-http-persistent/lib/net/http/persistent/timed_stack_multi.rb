@@ -1,10 +1,20 @@
 class Bundler::Persistent::Net::HTTP::Persistent::TimedStackMulti < Bundler::ConnectionPool::TimedStack # :nodoc:
 
+  ##
+  # Returns a new hash that has arrays for keys
+  #
+  # Using a class method to limit the bindings referenced by the hash's
+  # default_proc
+
+  def self.hash_of_arrays # :nodoc:
+    Hash.new { |h,k| h[k] = [] }
+  end
+
   def initialize(size = 0, &block)
     super
 
     @enqueued = 0
-    @ques = Hash.new { |h, k| h[k] = [] }
+    @ques = self.class.hash_of_arrays
     @lru = {}
     @key = :"connection_args-#{object_id}"
   end

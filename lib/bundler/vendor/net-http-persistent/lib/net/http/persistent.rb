@@ -211,7 +211,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   ##
   # The version of Bundler::Persistent::Net::HTTP::Persistent you are using
 
-  VERSION = '3.0.1'
+  VERSION = '3.1.0'
 
   ##
   # Exceptions rescued for automatic retry on ruby 2.0.0.  This overlaps with
@@ -411,6 +411,11 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_accessor :read_timeout
 
   ##
+  # Seconds to wait until writing one block.  See Net::HTTP#write_timeout
+
+  attr_accessor :write_timeout
+
+  ##
   # By default SSL sessions are reused to avoid extra SSL handshakes.  Set
   # this to false if you have problems communicating with an HTTPS server
   # like:
@@ -534,6 +539,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
     @keep_alive       = 30
     @open_timeout     = nil
     @read_timeout     = nil
+    @write_timeout    = nil
     @idle_timeout     = 5
     @max_requests     = nil
     @socket_options   = []
@@ -627,10 +633,13 @@ class Bundler::Persistent::Net::HTTP::Persistent
   def connection_for uri
     use_ssl = uri.scheme.downcase == 'https'
 
-    net_http_args = [uri.host, uri.port]
+    net_http_args = [uri.hostname, uri.port]
 
-    net_http_args.concat @proxy_args if
-      @proxy_uri and not proxy_bypass? uri.host, uri.port
+    if @proxy_uri and not proxy_bypass? uri.hostname, uri.port then
+      net_http_args.concat @proxy_args
+    else
+      net_http_args.concat [nil, nil, nil, nil]
+    end
 
     connection = @pool.checkout net_http_args
 
@@ -647,6 +656,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
     end
 
     http.read_timeout = @read_timeout if @read_timeout
+    http.write_timeout = @write_timeout if @write_timeout && http.respond_to?(:write_timeout=)
     http.keep_alive_timeout = @idle_timeout if @idle_timeout
 
     return yield connection
@@ -743,9 +753,8 @@ class Bundler::Persistent::Net::HTTP::Persistent
   # Is +req+ idempotent according to RFC 2616?
 
   def idempotent? req
-    case req
-    when Net::HTTP::Delete, Net::HTTP::Get, Net::HTTP::Head,
-         Net::HTTP::Options, Net::HTTP::Put, Net::HTTP::Trace then
+    case req.method
+    when 'DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT', 'TRACE' then
       true
     end
   end
@@ -933,7 +942,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   # If a block is passed #request behaves like Net::HTTP#request (the body of
   # the response will not have been read).
   #
-  # +req+ must be a Net::HTTPRequest subclass (see Net::HTTP for a list).
+  # +req+ must be a Net::HTTPGenericRequest subclass (see Net::HTTP for a list).
   #
   # If there is an error and the request is idempotent according to RFC 2616
   # it will be retried automatically.

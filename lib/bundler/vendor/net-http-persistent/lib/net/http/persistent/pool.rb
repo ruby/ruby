@@ -20,6 +20,9 @@ class Bundler::Persistent::Net::HTTP::Persistent::Pool < Bundler::ConnectionPool
 
     if stack.empty?
       @available.push conn, connection_args: net_http_args
+
+      Thread.current[@key].delete(net_http_args)
+      Thread.current[@key] = nil if Thread.current[@key].empty?
     end
 
     nil
