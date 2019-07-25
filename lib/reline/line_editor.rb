@@ -811,6 +811,10 @@ class Reline::LineEditor
     i = 0
     while i < @byte_pointer do
       slice = @line.byteslice(i, @byte_pointer - i)
+      unless slice.valid_encoding?
+        i += 1
+        next
+      end
       if quote and slice.start_with?(/(?!\\)#{Regexp.escape(quote)}/) # closing "
         quote = nil
         i += 1
