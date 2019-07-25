@@ -1123,10 +1123,11 @@ module Test
       def initialize(force_standalone = false, default_dir = nil, argv = ARGV)
         @force_standalone = force_standalone
         @runner = Runner.new do |files, options|
-          options[:base_directory] ||= default_dir
+          base = options[:base_directory] ||= default_dir
           files << default_dir if files.empty? and default_dir
           @to_run = files
           yield self if block_given?
+          $LOAD_PATH.unshift base if base
           files
         end
         Runner.runner = @runner
