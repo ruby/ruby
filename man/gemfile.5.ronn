@@ -310,8 +310,7 @@ Git repositories support a number of additional options.
 
   * `branch`, `tag`, and `ref`:
     You `MUST` only specify at most one of these options. The default
-    is `:branch => "master"`
-  * For example:
+    is `:branch => "master"`.  For example:
 
       git "https://github.com/rails/rails.git", :branch => "5-0-stable" do
 
