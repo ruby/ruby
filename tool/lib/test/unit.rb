@@ -856,6 +856,10 @@ module Test
       def setup_options(parser, options)
         super
         parser.separator "globbing options:"
+        parser.on '-B', '--base-directory DIR', 'Base directory to glob.' do |dir|
+          raise OptionParser::InvalidArgument, "not a directory: #{dir}" unless File.directory?(dir)
+          options[:base_directory] = dir
+        end
         parser.on '-x', '--exclude REGEXP', 'Exclude test files on pattern.' do |pattern|
           (options[:reject] ||= []) << pattern
         end
