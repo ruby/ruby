@@ -205,7 +205,12 @@ class RubyLex
 
     begin # check if parser error are available
       verbose, $VERBOSE = $VERBOSE, nil
-      RubyVM::InstructionSequence.compile(code)
+      case RUBY_ENGINE
+      when 'jruby'
+        JRuby.compile_ir(code)
+      else
+        RubyVM::InstructionSequence.compile(code)
+      end
     rescue SyntaxError => e
       case e.message
       when /unterminated (?:string|regexp) meets end of file/
