@@ -238,31 +238,39 @@ def sync_default_gems_with_commits(gem, range)
   end
   `git fetch --no-tags #{gem}`
 
+  commits = []
+
   IO.popen(%W"git log --format=%H,%s #{range}") do |f|
     commits = f.read.split("\n").reverse.map{|commit| commit.split(',')}
+  end
 
-    # Ignore Merge commit for ruby core repository.
-    commits.delete_if{|_, subject| subject =~ /^Merge/}
+  # Ignore Merge commit and insufficiency commit for ruby core repository.
+  commits.delete_if do |sha, subject|
+    files = []
+    IO.popen(%W"git diff-tree --no-commit-id --name-only -r #{sha}") do |f|
+      files = f.read.split("\n")
+    end
+    subject =~ /^Merge/ || files.all?{|file| file =~ /(\.travis.yml|appveyor\.yml|azure\-pipelines\.yml|\.gitignore|Gemfile|README\.md)/}
+  end
 
-    puts "Try to pick these commits:"
-    puts commits.map{|commit| commit.join(": ")}.join("\n")
+  puts "Try to pick these commits:"
+  puts commits.map{|commit| commit.join(": ")}.join("\n")
+  puts "----"
 
-    commits.each do |sha, subject|
-      puts "Pick #{sha} from #{$repositories[gem.to_sym]}."
+  commits.each do |sha, subject|
+    puts "Pick #{sha} from #{$repositories[gem.to_sym]}."
 
-      `git cherry-pick #{sha}`
-      unless $?.success?
-        puts "Failed to pick #{sha}"
-        break
-      end
-
-      prefix = "[#{($repositories[gem.to_sym])}]".gsub(/\//, '\/')
-      suffix = "https://github.com/#{($repositories[gem.to_sym])}/commit/#{sha[0,10]}"
-      `git filter-branch -f --msg-filter 'sed "1s/^/#{prefix} /" && echo && echo #{suffix}' -- HEAD~1..HEAD`
-      unless $?.success?
-        puts "Failed to modify commit message of #{sha}"
-        break
-      end
+    `git cherry-pick #{sha}`
+    unless $?.success?
+      puts "Failed to pick #{sha}"
+      break
+    end
+    prefix = "[#{($repositories[gem.to_sym])}]".gsub(/\//, '\/')
+    suffix = "https://github.com/#{($repositories[gem.to_sym])}/commit/#{sha[0,10]}"
+    `git filter-branch -f --msg-filter 'sed "1s/^/#{prefix} /" && echo && echo #{suffix}' -- HEAD~1..HEAD`
+    unless $?.success?
+      puts "Failed to modify commit message of #{sha}"
+      break
     end
   end
 end
