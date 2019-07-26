@@ -266,7 +266,7 @@ end
 
 def sync_lib(repo)
   unless File.directory?("../#{repo}")
-    abort %[Expected '../#{repo}' (#{File.expand_path("../#{repo}")}) to be a directory, but it wasn't.]
+    abort %[Expected '../#{repo}' \(#{File.expand_path("../#{repo}")}\) to be a directory, but it wasn't.]
   end
   rm_rf(["lib/#{repo}.rb", "lib/#{repo}/*", "test/test_#{repo}.rb"])
   cp_r(Dir.glob("../#{repo}/lib/*"), "lib")
