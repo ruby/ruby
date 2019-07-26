@@ -312,11 +312,11 @@ Git repositories support a number of additional options.
     You `MUST` only specify at most one of these options. The default
     is `:branch => "master"`.  For example:
 
-      git "https://github.com/rails/rails.git", :branch => "5-0-stable" do
+      gem "rails", :git => "https://github.com/rails/rails.git", :branch => "5-0-stable"
 
-      git "https://github.com/rails/rails.git", :tag => "v5.0.0" do
+      gem "rails", :git => "https://github.com/rails/rails.git", :tag => "v5.0.0"
 
-      git "https://github.com/rails/rails.git", :ref => "4aded" do
+      gem "rails", :git => "https://github.com/rails/rails.git", :ref => "4aded"
 
   * `submodules`:
     For reference, a [git submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
