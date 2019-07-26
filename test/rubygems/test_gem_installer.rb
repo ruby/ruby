@@ -2055,11 +2055,11 @@ gem 'other', version
   end
 
   def test_package_attribute
-    spec = quick_gem 'c' do |spec|
+    gem = quick_gem 'c' do |spec|
       util_make_exec spec, '#!/usr/bin/ruby', 'exe'
     end
 
-    installer = util_installer(spec, @gemhome)
+    installer = util_installer(gem, @gemhome)
     assert_respond_to(installer, :package)
     assert_kind_of(Gem::Package, installer.package)
   end
