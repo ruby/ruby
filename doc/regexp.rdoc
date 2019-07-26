@@ -238,7 +238,15 @@ where _name_ is the group name.
         #=> #<MatchData "ototo" vowel:"o">
 
 *Note*: A regexp can't use named backreferences and numbered
-backreferences simultaneously.
+backreferences simultaneously. Also, if a named capture is used in a
+regexp, then parentheses used for grouping which would otherwise result
+in a unnamed capture are treated as non-capturing.
+
+    /(\w)(\w)/.match("ab").captures # => ["a", "b"]
+    /(\w)(\w)/.match("ab").named_captures # => {}
+
+    /(?<c>\w)(\w)/.match("ab").captures # => ["a"]
+    /(?<c>\w)(\w)/.match("ab").named_captures # => {"c"=>"a"}
 
 When named capture groups are used with a literal regexp on the left-hand
 side of an expression and the <tt>=~</tt> operator, the captured text is
