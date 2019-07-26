@@ -21,7 +21,7 @@ language: c
 
 dist: xenial
 
-osx_image: xcode10.1
+osx_image: xcode11
 
 git:
   quiet: true
@@ -332,8 +332,8 @@ env:
     language: ruby
     rvm: 1.9.3
 
-  - &x86_64-darwin17
-    name: x86_64-darwin17
+  - &x86_64-darwin18
+    name: x86_64-darwin18
     <<: *osx
     env:
       - CONFIG_FLAG=--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib
@@ -384,7 +384,7 @@ env:
 matrix:
   include:
     # to reduce time for finishing all jobs, run the slowest osx build first.
-    - <<: *x86_64-darwin17
+    - <<: *x86_64-darwin18
     - <<: *x86_64-linux
     - <<: *i686-linux
     - <<: *jemalloc
