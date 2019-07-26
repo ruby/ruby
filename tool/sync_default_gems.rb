@@ -240,12 +240,15 @@ def sync_default_gems_with_commits(gem, range)
 
   IO.popen(%W"git log --format=%H,%s #{range}") do |f|
     commits = f.read.split("\n").reverse.map{|commit| commit.split(',')}
+
+    # Ignore Merge commit for ruby core repository.
+    commits.delete_if{|_, subject| subject =~ /^Merge/}
+
+    puts "Try to pick these commits:"
+    puts commits.map{|commit| commit.join(": ")}.join("\n")
+
     commits.each do |sha, subject|
       puts "Pick #{sha} from #{$repositories[gem.to_sym]}."
-      if subject =~ /^Merge/
-        puts "Skip #{sha}. Because It was merge commit"
-        next
-      end
 
       `git cherry-pick #{sha}`
       unless $?.success?
