@@ -419,8 +419,9 @@ static void signal_enque(int sig);
  *     Process.kill(signal, pid, ...)    -> integer
  *
  *  Sends the given signal to the specified process id(s) if _pid_ is positive.
- *  If _pid_ is zero _signal_ is sent to all processes whose group ID is equal
- *  to the group ID of the process. _signal_ may be an integer signal number or
+ *  If _pid_ is zero, _signal_ is sent to all processes whose group ID is equal
+ *  to the group ID of the process. If _pid_ is negative, results are dependent
+ *  on the operating system. _signal_ may be an integer signal number or
  *  a POSIX signal name (either with or without a +SIG+ prefix). If _signal_ is
  *  negative (or starts with a minus sign), kills process groups instead of
  *  processes. Not all signals are available on all platforms.
