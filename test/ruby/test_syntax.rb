@@ -1195,6 +1195,10 @@ eom
     end
   end
 
+  def test_return_toplevel_with_argument
+    assert_warn(/argument of top-level return is ignored/) {eval("return 1")}
+  end
+
   def test_syntax_error_in_rescue
     bug12613 = '[ruby-core:76531] [Bug #12613]'
     assert_syntax_error("#{<<-"begin;"}\n#{<<-"end;"}", /Invalid retry/, bug12613)

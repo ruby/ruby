@@ -6372,6 +6372,9 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 	switch (t) {
 	  case ISEQ_TYPE_TOP:
 	  case ISEQ_TYPE_MAIN:
+            if (retval) {
+                rb_warn("argument of top-level return is ignored");
+            }
 	    if (is == iseq) {
 		/* plain top-level, leave directly */
 		type = ISEQ_TYPE_METHOD;
