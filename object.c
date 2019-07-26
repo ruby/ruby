@@ -205,6 +205,25 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
     return Qfalse;
 }
 
+/**
+ * call-seq:
+ *    obj.hash    -> integer
+ *
+ * Generates an Integer hash value for this object.  This function must have the
+ * property that <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
+ *
+ * The hash value is used along with #eql? by the Hash class to determine if
+ * two objects reference the same hash key.  Any hash value that exceeds the
+ * capacity of an Integer will be truncated before being used.
+ *
+ * The hash value for an object may not be identical across invocations or
+ * implementations of Ruby.  If you need a stable identifier across Ruby
+ * invocations and implementations you will need to generate one with a custom
+ * method.
+ *--
+ * \private
+ *++
+ */
 VALUE rb_obj_hash(VALUE obj);
 
 /**
