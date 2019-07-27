@@ -419,6 +419,13 @@ rb_transient_heap_alloc(VALUE obj, size_t req_size)
     }
 }
 
+void rb_transient_heap_free(void)
+{
+    struct transient_heap* theap = transient_heap_get();
+    if (theap->arena) rb_aligned_free(theap->arena);
+    free(theap->promoted_objects);
+}
+
 void
 Init_TransientHeap(void)
 {

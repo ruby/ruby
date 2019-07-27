@@ -3230,6 +3230,7 @@ vm.$(OBJEXT): {$(VPATH)}st.h
 vm.$(OBJEXT): {$(VPATH)}subst.h
 vm.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 vm.$(OBJEXT): {$(VPATH)}thread_native.h
+vm.$(OBJEXT): {$(VPATH)}transient_heap.h
 vm.$(OBJEXT): {$(VPATH)}vm.c
 vm.$(OBJEXT): {$(VPATH)}vm.h
 vm.$(OBJEXT): {$(VPATH)}vm.inc

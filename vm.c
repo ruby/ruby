@@ -25,6 +25,7 @@
 #include "probes.dmyh"
 #endif
 #include "probes_helper.h"
+#include "transient_heap.h"
 
 VALUE rb_str_concat_literals(size_t, const VALUE*);
 
@@ -2324,6 +2325,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 	if (objspace) {
 	    rb_objspace_free(objspace);
 	}
+        rb_transient_heap_free();
 	/* after freeing objspace, you *can't* use ruby_xfree() */
 	ruby_mimfree(vm);
 	ruby_current_vm_ptr = NULL;
