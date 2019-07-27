@@ -73,10 +73,10 @@ describe :io_write, shared: true do
     File.open(@filename, "w") do |f|
       f.set_encoding(Encoding::IBM437)
       # A character whose codepoint differs between UTF-8 and IBM437
-      f.write "ƒ\n".freeze
+      f.write "ƒ".freeze
     end
 
-    File.binread(@filename).bytes.should == [159, 10]
+    File.binread(@filename).bytes.should == [159]
   end
 
   describe "on a pipe" do
