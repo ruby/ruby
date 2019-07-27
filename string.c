@@ -8085,9 +8085,11 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	long idx;
 	int last_null = 0;
 	struct re_registers *regs;
+        VALUE match = 0;
 
-	while ((end = rb_reg_search(spat, str, start, 0)) >= 0) {
-            VALUE match = rb_backref_get();
+        for (; (end = rb_reg_search(spat, str, start, 0)) >= 0;
+             (match ? (rb_match_unbusy(match), rb_backref_set(match)) : (void)0)) {
+            match = rb_backref_get();
             if (!result) rb_match_busy(match);
             regs = RMATCH_REGS(match);
 	    if (start == end && BEG(0) == END(0)) {
@@ -8120,6 +8122,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	    }
 	    if (!NIL_P(limit) && lim <= ++i) break;
 	}
+        if (match) rb_match_unbusy(match);
     }
     if (RSTRING_LEN(str) > 0 && (!NIL_P(limit) || RSTRING_LEN(str) > beg || lim < 0)) {
 	SPLIT_STR(beg, RSTRING_LEN(str)-beg);

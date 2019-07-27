@@ -1292,6 +1292,12 @@ rb_match_busy(VALUE match)
     FL_SET(match, MATCH_BUSY);
 }
 
+void
+rb_match_unbusy(VALUE match)
+{
+    FL_UNSET(match, MATCH_BUSY);
+}
+
 int
 rb_match_count(VALUE match)
 {
