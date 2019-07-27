@@ -253,12 +253,12 @@ describe "Operators" do
   end
 
   it "<=> == === != =~ !~ are non-associative" do
-    lambda { eval("1 <=> 2 <=> 3")  }.should raise_error(SyntaxError)
-    lambda { eval("1 == 2 == 3")  }.should raise_error(SyntaxError)
-    lambda { eval("1 === 2 === 3")  }.should raise_error(SyntaxError)
-    lambda { eval("1 != 2 != 3")  }.should raise_error(SyntaxError)
-    lambda { eval("1 =~ 2 =~ 3")  }.should raise_error(SyntaxError)
-    lambda { eval("1 !~ 2 !~ 3")  }.should raise_error(SyntaxError)
+    -> { eval("1 <=> 2 <=> 3")  }.should raise_error(SyntaxError)
+    -> { eval("1 == 2 == 3")  }.should raise_error(SyntaxError)
+    -> { eval("1 === 2 === 3")  }.should raise_error(SyntaxError)
+    -> { eval("1 != 2 != 3")  }.should raise_error(SyntaxError)
+    -> { eval("1 =~ 2 =~ 3")  }.should raise_error(SyntaxError)
+    -> { eval("1 !~ 2 !~ 3")  }.should raise_error(SyntaxError)
   end
 
   it "<=> == === != =~ !~ have higher precedence than &&" do
@@ -292,8 +292,8 @@ describe "Operators" do
   end
 
   it ".. ... are non-associative" do
-    lambda { eval("1..2..3")  }.should raise_error(SyntaxError)
-    lambda { eval("1...2...3")  }.should raise_error(SyntaxError)
+    -> { eval("1..2..3")  }.should raise_error(SyntaxError)
+    -> { eval("1...2...3")  }.should raise_error(SyntaxError)
   end
 
  it ".. ... have higher precedence than ? :" do

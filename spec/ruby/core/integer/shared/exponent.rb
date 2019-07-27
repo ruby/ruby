@@ -99,9 +99,9 @@ describe :integer_exponent, shared: true do
     end
 
     it "raises a TypeError when given a non-Integer" do
-      lambda { @bignum.send(@method, mock('10')) }.should raise_error(TypeError)
-      lambda { @bignum.send(@method, "10") }.should raise_error(TypeError)
-      lambda { @bignum.send(@method, :symbol) }.should raise_error(TypeError)
+      -> { @bignum.send(@method, mock('10')) }.should raise_error(TypeError)
+      -> { @bignum.send(@method, "10") }.should raise_error(TypeError)
+      -> { @bignum.send(@method, :symbol) }.should raise_error(TypeError)
     end
 
     it "switch to a Float when the values is too big" do

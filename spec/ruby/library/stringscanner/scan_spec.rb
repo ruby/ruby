@@ -51,9 +51,9 @@ describe "StringScanner#scan" do
   end
 
   it "raises a TypeError if pattern isn't a Regexp" do
-    lambda { @s.scan("aoeu")    }.should raise_error(TypeError)
-    lambda { @s.scan(5)         }.should raise_error(TypeError)
-    lambda { @s.scan(:test)     }.should raise_error(TypeError)
-    lambda { @s.scan(mock('x')) }.should raise_error(TypeError)
+    -> { @s.scan("aoeu")    }.should raise_error(TypeError)
+    -> { @s.scan(5)         }.should raise_error(TypeError)
+    -> { @s.scan(:test)     }.should raise_error(TypeError)
+    -> { @s.scan(mock('x')) }.should raise_error(TypeError)
   end
 end

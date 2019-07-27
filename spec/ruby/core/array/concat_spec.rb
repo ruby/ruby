@@ -33,12 +33,12 @@ describe "Array#concat" do
   end
 
   it "raises a #{frozen_error_class} when Array is frozen and modification occurs" do
-    lambda { ArraySpecs.frozen_array.concat [1] }.should raise_error(frozen_error_class)
+    -> { ArraySpecs.frozen_array.concat [1] }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23666]
   it "raises a #{frozen_error_class} when Array is frozen and no modification occurs" do
-    lambda { ArraySpecs.frozen_array.concat([]) }.should raise_error(frozen_error_class)
+    -> { ArraySpecs.frozen_array.concat([]) }.should raise_error(frozen_error_class)
   end
 
   it "keeps tainted status" do

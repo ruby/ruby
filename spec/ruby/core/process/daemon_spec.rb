@@ -107,7 +107,7 @@ end
 platform_is :windows do
   describe "Process.daemon" do
     it "raises a NotImplementedError" do
-      lambda {
+      -> {
         Process.daemon
       }.should raise_error(NotImplementedError)
     end

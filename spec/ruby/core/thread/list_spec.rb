@@ -25,13 +25,13 @@ describe "Thread.list" do
   end
 
   it "includes waiting threads" do
-    c = Channel.new
-    t = Thread.new { c.receive }
+    q = Queue.new
+    t = Thread.new { q.pop }
     begin
       Thread.pass while t.status and t.status != 'sleep'
       Thread.list.should include(t)
     ensure
-      c << nil
+      q << nil
       t.join
     end
   end

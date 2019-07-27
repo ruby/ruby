@@ -9,11 +9,11 @@ describe "Array#bsearch" do
   it_behaves_like :enumeratorized_with_unknown_size, :bsearch, [1,2,3]
 
   it "raises a TypeError if the block returns an Object" do
-    lambda { [1].bsearch { Object.new } }.should raise_error(TypeError)
+    -> { [1].bsearch { Object.new } }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the block returns a String" do
-    lambda { [1].bsearch { "1" } }.should raise_error(TypeError)
+    -> { [1].bsearch { "1" } }.should raise_error(TypeError)
   end
 
   context "with a block returning true or false" do

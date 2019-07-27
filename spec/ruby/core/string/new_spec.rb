@@ -51,8 +51,8 @@ describe "String.new" do
   end
 
   it "raises TypeError on inconvertible object" do
-    lambda { String.new 5 }.should raise_error(TypeError)
-    lambda { String.new nil }.should raise_error(TypeError)
+    -> { String.new 5 }.should raise_error(TypeError)
+    -> { String.new nil }.should raise_error(TypeError)
   end
 
   it "returns a binary String" do

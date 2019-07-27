@@ -15,7 +15,7 @@ describe "Thread#initialize" do
     end
 
     it "raises a ThreadError" do
-      lambda {
+      -> {
         @t.instance_eval do
           initialize {}
         end

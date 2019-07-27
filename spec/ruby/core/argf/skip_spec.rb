@@ -37,6 +37,6 @@ describe "ARGF.skip" do
   # which as a side-effect calls argf.file which will initialize
   # internals of ARGF enough for this to work.
   it "has no effect when nothing has been processed yet" do
-    lambda { ARGF.class.new(@file1_name).skip }.should_not raise_error
+    -> { ARGF.class.new(@file1_name).skip }.should_not raise_error
   end
 end

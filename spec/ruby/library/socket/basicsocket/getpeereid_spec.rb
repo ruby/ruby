@@ -30,7 +30,7 @@ describe 'BasicSocket#getpeereid' do
 
     it 'raises NoMethodError' do
       @sock = TCPServer.new('127.0.0.1', 0)
-      lambda { @sock.getpeereid }.should raise_error(NoMethodError)
+      -> { @sock.getpeereid }.should raise_error(NoMethodError)
     end
   end
 end

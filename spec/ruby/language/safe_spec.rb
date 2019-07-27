@@ -31,7 +31,7 @@ describe "The $SAFE variable" do
 
   [2, 3, 4].each do |n|
     it "cannot be set to #{n}" do
-      lambda {
+      -> {
         proc {
           $SAFE = n
         }.call
@@ -41,7 +41,7 @@ describe "The $SAFE variable" do
 
   ruby_version_is ""..."2.6" do
     it "cannot be set to values below 0" do
-      lambda {
+      -> {
         proc {
           $SAFE = -100
         }.call
@@ -51,7 +51,7 @@ describe "The $SAFE variable" do
 
   ruby_version_is "2.6" do
     it "raises ArgumentError when set to values below 0" do
-      lambda {
+      -> {
         proc {
           $SAFE = -100
         }.call
@@ -60,7 +60,7 @@ describe "The $SAFE variable" do
   end
 
   it "cannot be set to values above 4" do
-    lambda {
+    -> {
       proc {
         $SAFE = 100
       }.call
@@ -71,7 +71,7 @@ describe "The $SAFE variable" do
     it "cannot be manually lowered" do
       proc {
         $SAFE = 1
-        lambda {
+        -> {
           $SAFE = 0
         }.should raise_error(SecurityError, /tried to downgrade safe level from 1 to 0/)
       }.call
@@ -87,7 +87,7 @@ describe "The $SAFE variable" do
 
     it "is automatically lowered when leaving a lambda" do
       $SAFE.should == 0
-      lambda {
+      -> {
         $SAFE = 1
       }.call
       $SAFE.should == 0
@@ -111,7 +111,7 @@ describe "The $SAFE variable" do
 
     it "is not lambda local" do
       $SAFE.should == 0
-      lambda {
+      -> {
         $SAFE = 1
       }.call
       $SAFE.should == 1

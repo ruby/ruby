@@ -7,5 +7,5 @@ describe "SizedQueue#<<" do
 end
 
 describe "SizedQueue#<<" do
-  it_behaves_like :sizedqueue_enq, :<<, ->(n) { SizedQueue.new(n) }
+  it_behaves_like :sizedqueue_enq, :<<, -> n { SizedQueue.new(n) }
 end

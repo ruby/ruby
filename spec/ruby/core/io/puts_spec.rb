@@ -25,7 +25,7 @@ describe "IO#puts" do
   end
 
   it "writes just a newline when given just a newline" do
-    lambda { $stdout.puts "\n" }.should output_to_fd("\n", STDOUT)
+    -> { $stdout.puts "\n" }.should output_to_fd("\n", STDOUT)
   end
 
   it "writes empty string with a newline when given nil as an arg" do
@@ -111,7 +111,7 @@ describe "IO#puts" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.puts("stuff") }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.puts("stuff") }.should raise_error(IOError)
   end
 
   it "writes crlf when IO is opened with newline: :crlf" do

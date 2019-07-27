@@ -7,11 +7,11 @@ describe "StringScanner#clear" do
 
   it "warns in verbose mode that the method is obsolete" do
     s = StringScanner.new("abc")
-    lambda {
+    -> {
       s.clear
     }.should complain(/clear.*obsolete.*terminate/, verbose: true)
 
-    lambda {
+    -> {
       s.clear
     }.should_not complain(verbose: false)
   end

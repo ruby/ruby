@@ -31,7 +31,7 @@ describe "Dir#fileno" do
     end
   else
     it "raises an error when not implemented on the platform" do
-      lambda { @dir.fileno }.should raise_error(NotImplementedError)
+      -> { @dir.fileno }.should raise_error(NotImplementedError)
     end
   end
 end

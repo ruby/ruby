@@ -144,6 +144,9 @@ Lint/UselessAccessModifier:
     - 'core/module/fixtures/classes.rb'
     - 'core/module/module_function_spec.rb'
     - 'core/module/private_class_method_spec.rb'
+    - 'core/module/private_spec.rb'
+    - 'core/module/protected_spec.rb'
+    - 'core/module/public_spec.rb'
     - 'language/fixtures/send.rb'
 
 # Offense count: 6186

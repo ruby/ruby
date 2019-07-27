@@ -26,11 +26,11 @@ describe "Array#sum" do
   end
 
   it 'raises TypeError if any element are not numeric' do
-    lambda { ["a"].sum }.should raise_error(TypeError)
+    -> { ["a"].sum }.should raise_error(TypeError)
   end
 
   it 'raises TypeError if any element cannot be added to init value' do
-    lambda { [1].sum([]) }.should raise_error(TypeError)
+    -> { [1].sum([]) }.should raise_error(TypeError)
   end
 
   it "calls + to sum the elements" do

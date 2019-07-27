@@ -39,7 +39,7 @@ describe "Enumerable#slice_when" do
 
   context "when not given a block" do
     it "raises an ArgumentError" do
-      lambda { @enum.slice_when }.should raise_error(ArgumentError)
+      -> { @enum.slice_when }.should raise_error(ArgumentError)
     end
   end
 

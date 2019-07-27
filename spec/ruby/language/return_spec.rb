@@ -159,7 +159,7 @@ describe "The return keyword" do
     end
 
     it "executes the ensure clause when begin/ensure are inside a lambda" do
-      lambda do
+      -> do
         begin
           return
         ensure
@@ -176,15 +176,15 @@ describe "The return keyword" do
     end
 
     it "causes lambda to return nil if invoked without any arguments" do
-      lambda { return; 456 }.call.should be_nil
+      -> { return; 456 }.call.should be_nil
     end
 
     it "causes lambda to return nil if invoked with an empty expression" do
-      lambda { return (); 456 }.call.should be_nil
+      -> { return (); 456 }.call.should be_nil
     end
 
     it "causes lambda to return the value passed to return" do
-      lambda { return 123; 456 }.call.should == 123
+      -> { return 123; 456 }.call.should == 123
     end
 
     it "causes the method that lexically encloses the block to return" do

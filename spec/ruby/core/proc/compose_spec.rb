@@ -44,6 +44,14 @@ ruby_version_is "2.6" do
 
         (inc << mul).call(2, 3).should == 7
       end
+
+      it "passes blocks to the second proc" do
+        ScratchPad.record []
+        one = proc { |&arg| arg.call :one if arg }
+        two = proc { |&arg| arg.call :two if arg }
+        (one << two).call { |x| ScratchPad << x }
+        ScratchPad.recorded.should == [:two]
+      end
     end
   end
 
@@ -88,6 +96,14 @@ ruby_version_is "2.6" do
         mul = proc { |n, m| n * m }
 
         (mul >> inc).call(2, 3).should == 7
+      end
+
+      it "passes blocks to the first proc" do
+        ScratchPad.record []
+        one = proc { |&arg| arg.call :one if arg }
+        two = proc { |&arg| arg.call :two if arg }
+        (one >> two).call { |x| ScratchPad << x }
+        ScratchPad.recorded.should == [:one]
       end
     end
   end

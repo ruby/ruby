@@ -59,11 +59,11 @@ describe "String#getbyte" do
   end
 
   it "raises an ArgumentError unless given one argument" do
-    lambda { "glark".getbyte     }.should raise_error(ArgumentError)
-    lambda { "food".getbyte(0,0) }.should raise_error(ArgumentError)
+    -> { "glark".getbyte     }.should raise_error(ArgumentError)
+    -> { "food".getbyte(0,0) }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError unless its argument can be coerced into an Integer" do
-    lambda { "a".getbyte('a') }.should raise_error(TypeError)
+    -> { "a".getbyte('a') }.should raise_error(TypeError)
   end
 end

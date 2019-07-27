@@ -99,7 +99,7 @@ describe "Marshal.dump" do
     it "raises a TypeError if _dump returns a non-string" do
       m = mock("marshaled")
       m.should_receive(:_dump).and_return(0)
-      lambda { Marshal.dump(m) }.should raise_error(TypeError)
+      -> { Marshal.dump(m) }.should raise_error(TypeError)
     end
 
     it "favors marshal_dump over _dump" do
@@ -124,11 +124,11 @@ describe "Marshal.dump" do
     end
 
     it "raises TypeError with an anonymous Class" do
-      lambda { Marshal.dump(Class.new) }.should raise_error(TypeError)
+      -> { Marshal.dump(Class.new) }.should raise_error(TypeError)
     end
 
     it "raises TypeError with a singleton Class" do
-      lambda { Marshal.dump(class << self; self end) }.should raise_error(TypeError)
+      -> { Marshal.dump(class << self; self end) }.should raise_error(TypeError)
     end
   end
 
@@ -138,7 +138,7 @@ describe "Marshal.dump" do
     end
 
     it "raises TypeError with an anonymous Module" do
-      lambda { Marshal.dump(Module.new) }.should raise_error(TypeError)
+      -> { Marshal.dump(Module.new) }.should raise_error(TypeError)
     end
   end
 
@@ -308,7 +308,7 @@ describe "Marshal.dump" do
     end
 
     it "raises a TypeError with hash having default proc" do
-      lambda { Marshal.dump(Hash.new {}) }.should raise_error(TypeError)
+      -> { Marshal.dump(Hash.new {}) }.should raise_error(TypeError)
     end
 
     it "dumps a Hash with instance variables" do
@@ -387,7 +387,7 @@ describe "Marshal.dump" do
     it "raises if an Object has a singleton class and singleton methods" do
       obj = Object.new
       def obj.foo; end
-      lambda {
+      -> {
         Marshal.dump(obj)
       }.should raise_error(TypeError, "singleton can't be dumped")
     end
@@ -509,10 +509,10 @@ describe "Marshal.dump" do
 
   it "raises an ArgumentError when the recursion limit is exceeded" do
     h = {'one' => {'two' => {'three' => 0}}}
-    lambda { Marshal.dump(h, 3) }.should raise_error(ArgumentError)
-    lambda { Marshal.dump([h], 4) }.should raise_error(ArgumentError)
-    lambda { Marshal.dump([], 0) }.should raise_error(ArgumentError)
-    lambda { Marshal.dump([[[]]], 1) }.should raise_error(ArgumentError)
+    -> { Marshal.dump(h, 3) }.should raise_error(ArgumentError)
+    -> { Marshal.dump([h], 4) }.should raise_error(ArgumentError)
+    -> { Marshal.dump([], 0) }.should raise_error(ArgumentError)
+    -> { Marshal.dump([[[]]], 1) }.should raise_error(ArgumentError)
   end
 
   it "ignores the recursion limit if the limit is negative" do
@@ -535,7 +535,7 @@ describe "Marshal.dump" do
 
     it "raises an Error when the IO-Object does not respond to #write" do
       obj = mock('test')
-      lambda { Marshal.dump("test", obj) }.should raise_error(TypeError)
+      -> { Marshal.dump("test", obj) }.should raise_error(TypeError)
     end
 
 
@@ -554,31 +554,31 @@ describe "Marshal.dump" do
     it "should raise an error" do
       require "stringio"
 
-      lambda { Marshal.dump(StringIO.new) }.should raise_error(TypeError)
+      -> { Marshal.dump(StringIO.new) }.should raise_error(TypeError)
     end
 
   end
 
   it "raises a TypeError if marshalling a Method instance" do
-    lambda { Marshal.dump(Marshal.method(:dump)) }.should raise_error(TypeError)
+    -> { Marshal.dump(Marshal.method(:dump)) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if marshalling a Proc" do
-    lambda { Marshal.dump(proc {}) }.should raise_error(TypeError)
+    -> { Marshal.dump(proc {}) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if dumping a IO/File instance" do
-    lambda { Marshal.dump(STDIN) }.should raise_error(TypeError)
-    lambda { File.open(__FILE__) { |f| Marshal.dump(f) } }.should raise_error(TypeError)
+    -> { Marshal.dump(STDIN) }.should raise_error(TypeError)
+    -> { File.open(__FILE__) { |f| Marshal.dump(f) } }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if dumping a MatchData instance" do
-    lambda { Marshal.dump(/(.)/.match("foo")) }.should raise_error(TypeError)
+    -> { Marshal.dump(/(.)/.match("foo")) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if dumping a Mutex instance" do
     m = Mutex.new
-    lambda { Marshal.dump(m) }.should raise_error(TypeError)
+    -> { Marshal.dump(m) }.should raise_error(TypeError)
   end
 
   it "returns an untainted string if object is untainted" do

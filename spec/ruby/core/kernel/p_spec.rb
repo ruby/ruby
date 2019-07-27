@@ -42,10 +42,10 @@ describe "Kernel#p" do
     o = mock("Inspector Gadget")
     o.should_receive(:inspect).any_number_of_times.and_return "Next time, Gadget, NEXT TIME!"
 
-    lambda { p(o) }.should output("Next time, Gadget, NEXT TIME!\n")
-    lambda { p(*[o]) }.should output("Next time, Gadget, NEXT TIME!\n")
-    lambda { p(*[o, o]) }.should output("Next time, Gadget, NEXT TIME!\nNext time, Gadget, NEXT TIME!\n")
-    lambda { p([o])}.should output("[#{o.inspect}]\n")
+    -> { p(o) }.should output("Next time, Gadget, NEXT TIME!\n")
+    -> { p(*[o]) }.should output("Next time, Gadget, NEXT TIME!\n")
+    -> { p(*[o, o]) }.should output("Next time, Gadget, NEXT TIME!\nNext time, Gadget, NEXT TIME!\n")
+    -> { p([o])}.should output("[#{o.inspect}]\n")
   end
 
   it "is not affected by setting $\\, $/ or $," do
@@ -55,21 +55,21 @@ describe "Kernel#p" do
     suppress_warning {
       $, = " *helicopter sound*\n"
     }
-    lambda { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
+    -> { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
 
     $\ = " *helicopter sound*\n"
-    lambda { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
+    -> { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
 
     $/ = " *helicopter sound*\n"
-    lambda { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
+    -> { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
   end
 
   it "prints nothing if no argument is given" do
-    lambda { p }.should output("")
+    -> { p }.should output("")
   end
 
   it "prints nothing if called splatting an empty Array" do
-    lambda { p(*[]) }.should output("")
+    -> { p(*[]) }.should output("")
   end
 
 =begin Not sure how to spec this, but wanted to note the behavior here

@@ -28,29 +28,29 @@ describe "Module#public_instance_method" do
   end
 
   it "raises a TypeError when given a name is not Symbol or String" do
-    lambda { Module.new.public_instance_method(nil) }.should raise_error(TypeError)
+    -> { Module.new.public_instance_method(nil) }.should raise_error(TypeError)
   end
 
   it "raises a NameError when given a protected method name" do
-    lambda do
+    -> do
       ModuleSpecs::Basic.public_instance_method(:protected_module)
     end.should raise_error(NameError)
   end
 
   it "raises a NameError if the method is private" do
-    lambda do
+    -> do
       ModuleSpecs::Basic.public_instance_method(:private_module)
     end.should raise_error(NameError)
   end
 
   it "raises a NameError if the method has been undefined" do
-    lambda do
+    -> do
       ModuleSpecs::Parent.public_instance_method(:undefed_method)
     end.should raise_error(NameError)
   end
 
   it "raises a NameError if the method does not exist" do
-    lambda do
+    -> do
       Module.new.public_instance_method(:missing)
     end.should raise_error(NameError)
   end

@@ -101,7 +101,7 @@ describe 'BasicSocket#send' do
 
       describe 'without a destination address' do
         it "raises #{SocketSpecs.dest_addr_req_error}" do
-          lambda { @client.send('hello', 0) }.should raise_error(SocketSpecs.dest_addr_req_error)
+          -> { @client.send('hello', 0) }.should raise_error(SocketSpecs.dest_addr_req_error)
         end
       end
 
@@ -113,7 +113,7 @@ describe 'BasicSocket#send' do
         it 'does not persist the connection after writing to the socket' do
           @client.send('hello', 0, @server.getsockname)
 
-          lambda { @client.send('hello', 0) }.should raise_error(SocketSpecs.dest_addr_req_error)
+          -> { @client.send('hello', 0) }.should raise_error(SocketSpecs.dest_addr_req_error)
         end
       end
 
@@ -161,7 +161,7 @@ describe 'BasicSocket#send' do
         it 'sends the message to the given address instead' do
           @client.send('hello', 0, @alt_server.getsockname).should == 5
 
-          lambda { @server.recv(5) }.should block_caller
+          -> { @server.recv(5) }.should block_caller
 
           @alt_server.recv(5).should == 'hello'
         end

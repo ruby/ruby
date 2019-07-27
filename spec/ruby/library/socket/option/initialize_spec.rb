@@ -32,19 +32,19 @@ describe 'Socket::Option#initialize' do
     end
 
     it 'raises when using an invalid address family' do
-      lambda {
+      -> {
         Socket::Option.new(:INET2, :SOCKET, :KEEPALIVE, @bool)
       }.should raise_error(SocketError)
     end
 
     it 'raises when using an invalid level' do
-      lambda {
+      -> {
         Socket::Option.new(:INET, :CATS, :KEEPALIVE, @bool)
       }.should raise_error(SocketError)
     end
 
     it 'raises when using an invalid option name' do
-      lambda {
+      -> {
         Socket::Option.new(:INET, :SOCKET, :CATS, @bool)
       }.should raise_error(SocketError)
     end
@@ -63,19 +63,19 @@ describe 'Socket::Option#initialize' do
     end
 
     it 'raises when using an invalid address family' do
-      lambda {
+      -> {
         Socket::Option.new('INET2', 'SOCKET', 'KEEPALIVE', @bool)
       }.should raise_error(SocketError)
     end
 
     it 'raises when using an invalid level' do
-      lambda {
+      -> {
         Socket::Option.new('INET', 'CATS', 'KEEPALIVE', @bool)
       }.should raise_error(SocketError)
     end
 
     it 'raises when using an invalid option name' do
-      lambda {
+      -> {
         Socket::Option.new('INET', 'SOCKET', 'CATS', @bool)
       }.should raise_error(SocketError)
     end

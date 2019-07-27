@@ -26,7 +26,7 @@ describe :time_gmtime, shared: true do
       with_timezone("CST", -6) do
         time = Time.now
         time.freeze
-        lambda { time.send(@method) }.should raise_error(RuntimeError)
+        -> { time.send(@method) }.should raise_error(RuntimeError)
       end
     end
   end

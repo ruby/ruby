@@ -18,7 +18,7 @@ describe "Delegator when frozen" do
   end
 
   it "is not writable" do
-    lambda{ @delegate[0] += 2 }.should raise_error( RuntimeError )
+    ->{ @delegate[0] += 2 }.should raise_error( RuntimeError )
   end
 
   it "creates a frozen clone" do
@@ -30,7 +30,7 @@ describe "Delegator when frozen" do
   end
 
   it "causes mutative calls to raise RuntimeError" do
-    lambda{ @delegate.__setobj__("hola!") }.should raise_error( RuntimeError )
+    ->{ @delegate.__setobj__("hola!") }.should raise_error( RuntimeError )
   end
 
   it "returns false if only the delegated object is frozen" do

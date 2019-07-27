@@ -18,10 +18,10 @@ describe "Kernel#singleton_class" do
   end
 
   it "raises TypeError for Fixnum" do
-    lambda { 123.singleton_class }.should raise_error(TypeError)
+    -> { 123.singleton_class }.should raise_error(TypeError)
   end
 
   it "raises TypeError for Symbol" do
-    lambda { :foo.singleton_class }.should raise_error(TypeError)
+    -> { :foo.singleton_class }.should raise_error(TypeError)
   end
 end

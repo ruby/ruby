@@ -106,18 +106,18 @@ describe "StringIO#readline when passed no argument" do
 
   it "raises an IOError if self is at the end" do
     @io.pos = 40
-    lambda { @io.readline }.should raise_error(IOError)
+    -> { @io.readline }.should raise_error(IOError)
   end
 end
 
 describe "StringIO#readline when in write-only mode" do
   it "raises an IOError" do
     io = StringIO.new("xyz", "w")
-    lambda { io.readline }.should raise_error(IOError)
+    -> { io.readline }.should raise_error(IOError)
 
     io = StringIO.new("xyz")
     io.close_read
-    lambda { io.readline }.should raise_error(IOError)
+    -> { io.readline }.should raise_error(IOError)
   end
 end
 

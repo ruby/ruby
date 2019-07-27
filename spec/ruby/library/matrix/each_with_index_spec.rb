@@ -38,13 +38,13 @@ describe "Matrix#each_with_index with an argument" do
   end
 
   it "raises an ArgumentError for unrecognized argument" do
-    lambda {
+    -> {
       @m.each_with_index("all"){}
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @m.each_with_index(nil){}
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @m.each_with_index(:left){}
     }.should raise_error(ArgumentError)
   end

@@ -125,7 +125,7 @@ describe "Net::HTTPGenericRequest#exec when passed socket, version, path" do
                                             "Content-Type" => "text/html")
       request.body_stream = StringIO.new("Some Content")
 
-      lambda { request.exec(@buffered_socket, "1.1", "/some/other/path") }.should raise_error(ArgumentError)
+      -> { request.exec(@buffered_socket, "1.1", "/some/other/path") }.should raise_error(ArgumentError)
     end
   end
 end

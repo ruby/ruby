@@ -27,7 +27,7 @@ describe 'UDPSocket.new' do
   end
 
   it 'raises Errno::EAFNOSUPPORT or Errno::EPROTONOSUPPORT if unsupported family passed' do
-    lambda { UDPSocket.new(-1) }.should raise_error(SystemCallError) { |e|
+    -> { UDPSocket.new(-1) }.should raise_error(SystemCallError) { |e|
       [Errno::EAFNOSUPPORT, Errno::EPROTONOSUPPORT].should include(e.class)
     }
   end

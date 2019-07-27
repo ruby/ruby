@@ -3,7 +3,7 @@ require_relative '../../shared/time/strftime_for_date'
 
 describe "Date#strftime" do
   before :all do
-    @new_date = lambda { |y,m,d| Date.civil(y,m,d) }
+    @new_date = -> y, m, d { Date.civil(y,m,d) }
 
     @date = Date.civil(2000, 4, 9)
   end

@@ -23,7 +23,7 @@ describe "Module#prepend_features" do
   end
 
   it "raises an ArgumentError on a cyclic prepend" do
-    lambda {
+    -> {
       ModuleSpecs::CyclicPrepend.send(:prepend_features, ModuleSpecs::CyclicPrepend)
     }.should raise_error(ArgumentError)
   end
@@ -68,7 +68,7 @@ describe "Module#prepend_features" do
     end
 
     it "raises a TypeError if calling after rebinded to Class" do
-      lambda {
+      -> {
         Module.instance_method(:prepend_features).bind(Class.new).call Module.new
       }.should raise_error(TypeError)
     end

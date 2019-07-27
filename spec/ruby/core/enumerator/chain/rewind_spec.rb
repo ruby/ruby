@@ -36,7 +36,7 @@ ruby_version_is "2.6" do
       @obj.should_not_receive(:rewind)
       @second.should_receive(:rewind).and_raise(RuntimeError)
       @enum.each {}
-      lambda { @enum.rewind }.should raise_error(RuntimeError)
+      -> { @enum.rewind }.should raise_error(RuntimeError)
     end
 
     it "calls rewind only for objects that have actually been iterated on" do
@@ -46,7 +46,7 @@ ruby_version_is "2.6" do
 
       @obj.should_receive(:rewind)
       @second.should_not_receive(:rewind)
-      lambda { @enum.each {} }.should raise_error(RuntimeError)
+      -> { @enum.each {} }.should raise_error(RuntimeError)
       @enum.rewind
     end
   end

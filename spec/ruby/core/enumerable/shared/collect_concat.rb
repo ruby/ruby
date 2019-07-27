@@ -41,7 +41,7 @@ describe :enumerable_collect_concat, shared: true do
     obj = mock("to_ary defined")
     obj.should_receive(:to_ary).and_return("array")
 
-    lambda { [1, obj, 3].send(@method) { |i| i } }.should raise_error(TypeError)
+    -> { [1, obj, 3].send(@method) { |i| i } }.should raise_error(TypeError)
   end
 
   it "returns an enumerator when no block given" do

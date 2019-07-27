@@ -35,8 +35,8 @@ describe "Hash#delete_if" do
   end
 
   it "raises a #{frozen_error_class} if called on a frozen instance" do
-    lambda { HashSpecs.frozen_hash.delete_if { false } }.should raise_error(frozen_error_class)
-    lambda { HashSpecs.empty_frozen_hash.delete_if { true } }.should raise_error(frozen_error_class)
+    -> { HashSpecs.frozen_hash.delete_if { false } }.should raise_error(frozen_error_class)
+    -> { HashSpecs.empty_frozen_hash.delete_if { true } }.should raise_error(frozen_error_class)
   end
 
   it_behaves_like :hash_iteration_no_block, :delete_if

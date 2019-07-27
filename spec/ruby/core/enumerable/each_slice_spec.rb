@@ -15,14 +15,14 @@ describe "Enumerable#each_slice" do
   end
 
   it "raises an ArgumentError if there is not a single parameter > 0" do
-    lambda{ @enum.each_slice(0){}    }.should raise_error(ArgumentError)
-    lambda{ @enum.each_slice(-2){}   }.should raise_error(ArgumentError)
-    lambda{ @enum.each_slice{}       }.should raise_error(ArgumentError)
-    lambda{ @enum.each_slice(2,2){}  }.should raise_error(ArgumentError)
-    lambda{ @enum.each_slice(0)      }.should raise_error(ArgumentError)
-    lambda{ @enum.each_slice(-2)     }.should raise_error(ArgumentError)
-    lambda{ @enum.each_slice         }.should raise_error(ArgumentError)
-    lambda{ @enum.each_slice(2,2)    }.should raise_error(ArgumentError)
+    ->{ @enum.each_slice(0){}    }.should raise_error(ArgumentError)
+    ->{ @enum.each_slice(-2){}   }.should raise_error(ArgumentError)
+    ->{ @enum.each_slice{}       }.should raise_error(ArgumentError)
+    ->{ @enum.each_slice(2,2){}  }.should raise_error(ArgumentError)
+    ->{ @enum.each_slice(0)      }.should raise_error(ArgumentError)
+    ->{ @enum.each_slice(-2)     }.should raise_error(ArgumentError)
+    ->{ @enum.each_slice         }.should raise_error(ArgumentError)
+    ->{ @enum.each_slice(2,2)    }.should raise_error(ArgumentError)
   end
 
   it "tries to convert n to an Integer using #to_int" do

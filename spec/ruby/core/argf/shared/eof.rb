@@ -18,7 +18,7 @@ describe :argf_eof, shared: true do
   it "raises IOError when called on a closed stream" do
     argf [@file1] do
       @argf.read
-      lambda { @argf.send(@method) }.should raise_error(IOError)
+      -> { @argf.send(@method) }.should raise_error(IOError)
     end
   end
 end

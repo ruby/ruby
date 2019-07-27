@@ -3,7 +3,7 @@ require_relative '../fixtures/common'
 describe :proc_call, shared: true do
   it "invokes self" do
     Proc.new { "test!" }.send(@method).should == "test!"
-    lambda { "test!" }.send(@method).should == "test!"
+    -> { "test!" }.send(@method).should == "test!"
     proc { "test!" }.send(@method).should == "test!"
   end
 
@@ -12,9 +12,9 @@ describe :proc_call, shared: true do
     Proc.new { |*args| args }.send(@method, 1, 2, 3, 4).should == [1, 2, 3, 4]
     Proc.new { |_, *args| args }.send(@method, 1, 2, 3).should == [2, 3]
 
-    lambda { |a, b| a + b }.send(@method, 1, 2).should == 3
-    lambda { |*args| args }.send(@method, 1, 2, 3, 4).should == [1, 2, 3, 4]
-    lambda { |_, *args| args }.send(@method, 1, 2, 3).should == [2, 3]
+    -> a, b { a + b }.send(@method, 1, 2).should == 3
+    -> *args { args }.send(@method, 1, 2, 3, 4).should == [1, 2, 3, 4]
+    -> _, *args { args }.send(@method, 1, 2, 3).should == [2, 3]
 
     proc { |a, b| a + b }.send(@method, 1, 2).should == 3
     proc { |*args| args }.send(@method, 1, 2, 3, 4).should == [1, 2, 3, 4]
@@ -65,28 +65,28 @@ describe :proc_call_on_proc_or_lambda, shared: true do
   end
 
   it "raises an ArgumentError on excess arguments when self is a lambda" do
-    lambda {
-      lambda {|x| x}.send(@method, 1, 2)
+    -> {
+      -> x { x }.send(@method, 1, 2)
     }.should raise_error(ArgumentError)
 
-    lambda {
-      lambda {|x| x}.send(@method, 1, 2, 3)
+    -> {
+      -> x { x }.send(@method, 1, 2, 3)
     }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError on missing arguments when self is a lambda" do
-    lambda {
-      lambda {|x| x}.send(@method)
+    -> {
+      -> x { x }.send(@method)
     }.should raise_error(ArgumentError)
 
-    lambda {
-      lambda {|x,y| [x,y]}.send(@method, 1)
+    -> {
+      -> x, y { [x,y] }.send(@method, 1)
     }.should raise_error(ArgumentError)
   end
 
   it "treats a single Array argument as a single argument when self is a lambda" do
-    lambda { |a| a }.send(@method, [1, 2]).should == [1, 2]
-    lambda { |a, b| [a, b] }.send(@method, [1, 2], 3).should == [[1,2], 3]
+    -> a { a }.send(@method, [1, 2]).should == [1, 2]
+    -> a, b { [a, b] }.send(@method, [1, 2], 3).should == [[1,2], 3]
   end
 
   it "treats a single Array argument as a single argument when self is a proc" do

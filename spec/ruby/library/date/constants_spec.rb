@@ -34,11 +34,11 @@ describe "Date constants" do
 
   it "freezes MONTHNAMES, DAYNAMES, ABBR_MONTHNAMES, ABBR_DAYSNAMES" do
     [Date::MONTHNAMES, Date::DAYNAMES, Date::ABBR_MONTHNAMES, Date::ABBR_DAYNAMES].each do |ary|
-      lambda {
+      -> {
         ary << "Unknown"
       }.should raise_error(frozen_error_class, /frozen/)
       ary.compact.each do |name|
-        lambda {
+        -> {
           name << "modified"
         }.should raise_error(frozen_error_class, /frozen/)
       end

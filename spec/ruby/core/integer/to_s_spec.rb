@@ -13,10 +13,10 @@ describe "Integer#to_s" do
       end
 
       it "raises an ArgumentError if the base is less than 2 or higher than 36" do
-        lambda { 123.to_s(-1) }.should raise_error(ArgumentError)
-        lambda { 123.to_s(0)  }.should raise_error(ArgumentError)
-        lambda { 123.to_s(1)  }.should raise_error(ArgumentError)
-        lambda { 123.to_s(37) }.should raise_error(ArgumentError)
+        -> { 123.to_s(-1) }.should raise_error(ArgumentError)
+        -> { 123.to_s(0)  }.should raise_error(ArgumentError)
+        -> { 123.to_s(1)  }.should raise_error(ArgumentError)
+        -> { 123.to_s(37) }.should raise_error(ArgumentError)
       end
     end
 
@@ -59,10 +59,10 @@ describe "Integer#to_s" do
       end
 
       it "raises an ArgumentError if the base is less than 2 or higher than 36" do
-        lambda { 123.to_s(-1) }.should raise_error(ArgumentError)
-        lambda { 123.to_s(0) }.should raise_error(ArgumentError)
-        lambda { 123.to_s(1) }.should raise_error(ArgumentError)
-        lambda { 123.to_s(37) }.should raise_error(ArgumentError)
+        -> { 123.to_s(-1) }.should raise_error(ArgumentError)
+        -> { 123.to_s(0) }.should raise_error(ArgumentError)
+        -> { 123.to_s(1) }.should raise_error(ArgumentError)
+        -> { 123.to_s(37) }.should raise_error(ArgumentError)
       end
     end
 

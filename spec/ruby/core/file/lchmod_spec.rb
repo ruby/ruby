@@ -36,7 +36,7 @@ describe "File.lchmod" do
     end
 
     it "raises a NotImplementedError when called" do
-      lambda { File.lchmod 0 }.should raise_error(NotImplementedError)
+      -> { File.lchmod 0 }.should raise_error(NotImplementedError)
     end
   end
 end

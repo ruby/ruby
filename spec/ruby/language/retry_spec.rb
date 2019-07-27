@@ -32,7 +32,7 @@ describe "The retry statement" do
   end
 
   it "raises a SyntaxError when used outside of a begin statement" do
-    lambda { eval 'retry' }.should raise_error(SyntaxError)
+    -> { eval 'retry' }.should raise_error(SyntaxError)
   end
 end
 

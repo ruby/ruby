@@ -19,7 +19,7 @@ describe :io_pos, shared: true do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.send(@method) }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.send(@method) }.should raise_error(IOError)
   end
 
   it "resets #eof?" do
@@ -62,11 +62,11 @@ describe :io_set_pos, shared: true do
 
   it "does not accept Bignums that don't fit in a C long" do
     File.open @fname do |io|
-      lambda { io.send @method, 2**128 }.should raise_error(RangeError)
+      -> { io.send @method, 2**128 }.should raise_error(RangeError)
     end
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.send @method, 0 }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.send @method, 0 }.should raise_error(IOError)
   end
 end

@@ -1,15 +1,14 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
 
 describe "ThreadGroup#add" do
   before :each do
-    @chan1,@chan2 = Channel.new,Channel.new
-    @thread = Thread.new { @chan1 << :go; @chan2.receive }
-    @chan1.receive
+    @q1, @q2 = Queue.new, Queue.new
+    @thread = Thread.new { @q1 << :go; @q2.pop }
+    @q1.pop
   end
 
   after :each do
-    @chan2 << :done
+    @q2 << :done
     @thread.join
   end
 

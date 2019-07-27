@@ -22,8 +22,8 @@ describe "ARGF.close" do
 
   it "doesn't raise an IOError if called on a closed stream" do
     argf [@file1_name] do
-      lambda { @argf.close }.should_not raise_error
-      lambda { @argf.close }.should_not raise_error
+      -> { @argf.close }.should_not raise_error
+      -> { @argf.close }.should_not raise_error
     end
   end
 end

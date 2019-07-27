@@ -32,9 +32,9 @@ describe "String#end_with?" do
 
   it "ignores arguments not convertible to string" do
     "hello".end_with?().should be_false
-    lambda { "hello".end_with?(1) }.should raise_error(TypeError)
-    lambda { "hello".end_with?(["o"]) }.should raise_error(TypeError)
-    lambda { "hello".end_with?(1, nil, "o") }.should raise_error(TypeError)
+    -> { "hello".end_with?(1) }.should raise_error(TypeError)
+    -> { "hello".end_with?(["o"]) }.should raise_error(TypeError)
+    -> { "hello".end_with?(1, nil, "o") }.should raise_error(TypeError)
   end
 
   it "uses only the needed arguments" do
@@ -49,7 +49,7 @@ describe "String#end_with?" do
 
   it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
     pat = "ア".encode Encoding::EUC_JP
-    lambda do
+    -> do
       "あれ".end_with?(pat)
     end.should raise_error(Encoding::CompatibilityError)
   end

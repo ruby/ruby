@@ -8,7 +8,7 @@ describe :random_urandom, shared: true do
   end
 
   it "raises an ArgumentError on a negative size" do
-    lambda {
+    -> {
       Random.send(@method, -1)
     }.should raise_error(ArgumentError)
   end

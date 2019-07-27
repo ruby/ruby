@@ -18,16 +18,16 @@ describe "Enumerable#minmax" do
   end
 
   it "raises an ArgumentError when elements are incomparable" do
-    lambda do
+    -> do
       EnumerableSpecs::Numerous.new(11,"22").minmax
     end.should raise_error(ArgumentError)
-    lambda do
+    -> do
       EnumerableSpecs::Numerous.new(11,12,22,33).minmax{|a, b| nil}
     end.should raise_error(ArgumentError)
   end
 
   it "raises a NoMethodError for elements without #<=>" do
-    lambda do
+    -> do
       EnumerableSpecs::Numerous.new(BasicObject.new, BasicObject.new).minmax
     end.should raise_error(NoMethodError)
   end

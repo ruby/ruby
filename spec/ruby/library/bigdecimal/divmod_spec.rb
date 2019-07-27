@@ -38,9 +38,9 @@ describe "BigDecimal#mod_part_of_divmod" do
   it "raises ZeroDivisionError if other is zero" do
     bd5667 = BigDecimal("5667.19")
 
-    lambda { bd5667.mod_part_of_divmod(0) }.should raise_error(ZeroDivisionError)
-    lambda { bd5667.mod_part_of_divmod(BigDecimal("0")) }.should raise_error(ZeroDivisionError)
-    lambda { @zero.mod_part_of_divmod(@zero) }.should raise_error(ZeroDivisionError)
+    -> { bd5667.mod_part_of_divmod(0) }.should raise_error(ZeroDivisionError)
+    -> { bd5667.mod_part_of_divmod(BigDecimal("0")) }.should raise_error(ZeroDivisionError)
+    -> { @zero.mod_part_of_divmod(@zero) }.should raise_error(ZeroDivisionError)
   end
 end
 
@@ -140,7 +140,7 @@ describe "BigDecimal#divmod" do
   it "raises ZeroDivisionError if the divisor is zero" do
     (@special_vals + @regular_vals + @zeroes - [@nan]).each do |val|
       @zeroes.each do |zero|
-        lambda { val.divmod(zero) }.should raise_error(ZeroDivisionError)
+        -> { val.divmod(zero) }.should raise_error(ZeroDivisionError)
       end
     end
   end
@@ -172,7 +172,7 @@ describe "BigDecimal#divmod" do
   end
 
   it "raises TypeError if the argument cannot be coerced to BigDecimal" do
-    lambda {
+    -> {
       @one.divmod('1')
     }.should raise_error(TypeError)
   end

@@ -4,13 +4,13 @@ require_relative '../../shared/time/strftime_for_time'
 
 describe "DateTime#strftime" do
   before :all do
-    @new_date = lambda { |y,m,d| DateTime.civil(y,m,d) }
-    @new_time = lambda { |*args| DateTime.civil(*args) }
-    @new_time_in_zone = lambda { |zone,offset,*args|
+    @new_date = -> y, m, d { DateTime.civil(y,m,d) }
+    @new_time = -> *args { DateTime.civil(*args) }
+    @new_time_in_zone = -> zone, offset, *args {
       y, m, d, h, min, s = args
       DateTime.new(y, m||1, d||1, h||0, min||0, s||0, Rational(offset, 24))
     }
-    @new_time_with_offset = lambda { |y,m,d,h,min,s,offset|
+    @new_time_with_offset = -> y, m, d, h, min, s, offset {
       DateTime.new(y,m,d,h,min,s, Rational(offset, 86_400))
     }
 

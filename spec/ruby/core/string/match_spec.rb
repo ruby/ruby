@@ -19,8 +19,8 @@ describe "String#=~" do
   end
 
   it "raises a TypeError if a obj is a string" do
-    lambda { "some string" =~ "another string" }.should raise_error(TypeError)
-    lambda { "a" =~ StringSpecs::MyString.new("b")          }.should raise_error(TypeError)
+    -> { "some string" =~ "another string" }.should raise_error(TypeError)
+    -> { "a" =~ StringSpecs::MyString.new("b")          }.should raise_error(TypeError)
   end
 
   it "invokes obj.=~ with self if obj is neither a string nor regexp" do
@@ -107,9 +107,9 @@ describe "String#match" do
   end
 
   it "raises a TypeError if pattern is not a regexp or a string" do
-    lambda { 'hello'.match(10)   }.should raise_error(TypeError)
+    -> { 'hello'.match(10)   }.should raise_error(TypeError)
     not_supported_on :opal do
-      lambda { 'hello'.match(:ell) }.should raise_error(TypeError)
+      -> { 'hello'.match(:ell) }.should raise_error(TypeError)
     end
   end
 

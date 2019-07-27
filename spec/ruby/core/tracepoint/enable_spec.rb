@@ -247,7 +247,7 @@ describe 'TracePoint#enable' do
 
         block = proc {}
 
-        lambda {
+        -> {
           trace.enable(target: block) do
             block.call # triggers :b_call and :b_return events
           end
@@ -258,7 +258,7 @@ describe 'TracePoint#enable' do
         trace = TracePoint.new(:call) do |tp|
         end
 
-        lambda {
+        -> {
           trace.enable(target: Object.new) do
           end
         }.should raise_error(ArgumentError, /specified target is not supported/)
@@ -269,7 +269,7 @@ describe 'TracePoint#enable' do
           trace = TracePoint.new(:b_call) do
           end
 
-          lambda {
+          -> {
             trace.enable(target: -> {}) do
               trace.enable(target: -> {}) do
               end
@@ -281,7 +281,7 @@ describe 'TracePoint#enable' do
           trace = TracePoint.new(:b_call) do
           end
 
-          lambda {
+          -> {
             trace.enable do
               trace.enable(target: -> {}) do
               end
@@ -293,7 +293,7 @@ describe 'TracePoint#enable' do
           trace = TracePoint.new(:b_call) do
           end
 
-          lambda {
+          -> {
             trace.enable(target: -> {}) do
               trace.enable do
               end
@@ -305,7 +305,7 @@ describe 'TracePoint#enable' do
           trace = TracePoint.new(:b_call) do
           end
 
-          lambda {
+          -> {
             trace.enable(target: -> {}) do
               trace.disable do
               end
@@ -404,7 +404,7 @@ describe 'TracePoint#enable' do
         trace = TracePoint.new(:line) do |tp|
         end
 
-        lambda {
+        -> {
           trace.enable(target_line: 67) do
           end
         }.should raise_error(ArgumentError, /only target_line is specified/)
@@ -422,7 +422,7 @@ describe 'TracePoint#enable' do
         _, lineno = target.source_location
         target_line = lineno + 2
 
-        lambda {
+        -> {
           trace.enable(target_line: target_line, target: target) do
           end
         }.should raise_error(ArgumentError, /target_line is specified, but line event is not specified/)
@@ -432,7 +432,7 @@ describe 'TracePoint#enable' do
         trace = TracePoint.new(:line) do |tp|
         end
 
-        lambda {
+        -> {
           trace.enable(target_line: 1, target: -> { }) do
           end
         }.should raise_error(ArgumentError, /can not enable any hooks/)
@@ -442,7 +442,7 @@ describe 'TracePoint#enable' do
         trace = TracePoint.new(:line) do |tp|
         end
 
-        lambda {
+        -> {
           trace.enable(target_line: Object.new, target: -> { }) do
           end
         }.should raise_error(TypeError, /no implicit conversion of \w+? into Integer/)
@@ -452,7 +452,7 @@ describe 'TracePoint#enable' do
         trace = TracePoint.new(:line) do |tp|
         end
 
-        lambda {
+        -> {
           trace.enable(target_line: -2, target: -> { }) do
           end
         }.should raise_error(ArgumentError, /can not enable any hooks/)

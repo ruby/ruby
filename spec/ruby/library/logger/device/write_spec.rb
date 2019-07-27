@@ -38,14 +38,14 @@ describe "Logger::LogDevice#write" do
   ruby_version_is ""..."2.7" do
     it "fails if the device is already closed" do
       @device.close
-      lambda { @device.write "foo" }.should complain(/\Alog writing failed\./)
+      -> { @device.write "foo" }.should complain(/\Alog writing failed\./)
     end
   end
 
   ruby_version_is "2.7" do
     it "fails if the device is already closed" do
       @device.close
-      lambda { @device.write "foo" }.should complain(/\Alog shifting failed\./)
+      -> { @device.write "foo" }.should complain(/\Alog shifting failed\./)
     end
   end
 end

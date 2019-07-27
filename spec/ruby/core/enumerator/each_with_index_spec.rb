@@ -14,7 +14,7 @@ describe "Enumerator#each_with_index" do
   end
 
   it "raises an ArgumentError if passed extra arguments" do
-    lambda do
+    -> do
       [1].to_enum.each_with_index(:glark)
     end.should raise_error(ArgumentError)
   end

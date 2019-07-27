@@ -31,13 +31,13 @@ describe "String#reverse!" do
   end
 
   it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    lambda { "anna".freeze.reverse!  }.should raise_error(frozen_error_class)
-    lambda { "hello".freeze.reverse! }.should raise_error(frozen_error_class)
+    -> { "anna".freeze.reverse!  }.should raise_error(frozen_error_class)
+    -> { "hello".freeze.reverse! }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23666]
   it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
-    lambda { "".freeze.reverse! }.should raise_error(frozen_error_class)
+    -> { "".freeze.reverse! }.should raise_error(frozen_error_class)
   end
 
   it "reverses a string with multi byte characters" do

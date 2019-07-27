@@ -15,6 +15,6 @@ describe "Date#+" do
   end
 
   it "raises TypeError if argument is not Numeric" do
-    lambda { Date.today + Date.today }.should raise_error(TypeError)
+    -> { Date.today + Date.today }.should raise_error(TypeError)
   end
 end

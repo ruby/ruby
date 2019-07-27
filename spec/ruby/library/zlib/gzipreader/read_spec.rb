@@ -29,7 +29,7 @@ describe "GzipReader#read" do
 
   it "does not accept a negative length to read" do
     gz = Zlib::GzipReader.new @io
-    lambda {
+    -> {
       gz.read(-1)
     }.should raise_error(ArgumentError)
   end

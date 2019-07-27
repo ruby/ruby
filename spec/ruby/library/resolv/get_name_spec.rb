@@ -11,7 +11,7 @@ describe "Resolv#getname" do
 
   it "raises ResolvError when there is no result" do
     res = Resolv.new([])
-    lambda {
+    -> {
       res.getname("should.raise.error")
     }.should raise_error(Resolv::ResolvError)
   end

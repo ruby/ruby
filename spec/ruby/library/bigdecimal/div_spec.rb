@@ -51,9 +51,9 @@ describe "BigDecimal#div" do
   end
 
   it "raises FloatDomainError if NaN is involved" do
-    lambda { @one.div(@nan) }.should raise_error(FloatDomainError)
-    lambda { @nan.div(@one) }.should raise_error(FloatDomainError)
-    lambda { @nan.div(@nan) }.should raise_error(FloatDomainError)
+    -> { @one.div(@nan) }.should raise_error(FloatDomainError)
+    -> { @nan.div(@one) }.should raise_error(FloatDomainError)
+    -> { @nan.div(@nan) }.should raise_error(FloatDomainError)
   end
 
   it "returns 0 if divided by Infinity and no precision given" do
@@ -69,14 +69,14 @@ describe "BigDecimal#div" do
   end
 
   it "raises ZeroDivisionError if divided by zero and no precision given" do
-    lambda { @one.div(@zero) }.should raise_error(ZeroDivisionError)
-    lambda { @one.div(@zero_plus) }.should raise_error(ZeroDivisionError)
-    lambda { @one.div(@zero_minus) }.should raise_error(ZeroDivisionError)
+    -> { @one.div(@zero) }.should raise_error(ZeroDivisionError)
+    -> { @one.div(@zero_plus) }.should raise_error(ZeroDivisionError)
+    -> { @one.div(@zero_minus) }.should raise_error(ZeroDivisionError)
 
-    lambda { @zero.div(@zero) }.should raise_error(ZeroDivisionError)
-    lambda { @zero_minus.div(@zero_plus) }.should raise_error(ZeroDivisionError)
-    lambda { @zero_minus.div(@zero_minus) }.should raise_error(ZeroDivisionError)
-    lambda { @zero_plus.div(@zero_minus) }.should raise_error(ZeroDivisionError)
+    -> { @zero.div(@zero) }.should raise_error(ZeroDivisionError)
+    -> { @zero_minus.div(@zero_plus) }.should raise_error(ZeroDivisionError)
+    -> { @zero_minus.div(@zero_minus) }.should raise_error(ZeroDivisionError)
+    -> { @zero_plus.div(@zero_minus) }.should raise_error(ZeroDivisionError)
   end
 
   it "returns NaN if zero is divided by zero" do
@@ -90,9 +90,9 @@ describe "BigDecimal#div" do
   end
 
   it "raises FloatDomainError if (+|-) Infinity divided by 1 and no precision given" do
-    lambda { @infinity_minus.div(@one) }.should raise_error(FloatDomainError)
-    lambda { @infinity.div(@one) }.should raise_error(FloatDomainError)
-    lambda { @infinity_minus.div(@one_minus) }.should raise_error(FloatDomainError)
+    -> { @infinity_minus.div(@one) }.should raise_error(FloatDomainError)
+    -> { @infinity.div(@one) }.should raise_error(FloatDomainError)
+    -> { @infinity_minus.div(@one_minus) }.should raise_error(FloatDomainError)
   end
 
   it "returns (+|-)Infinity if (+|-)Infinity by 1 and precision given" do

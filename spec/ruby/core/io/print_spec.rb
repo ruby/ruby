@@ -48,6 +48,6 @@ describe IO, "#print" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.print("stuff") }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.print("stuff") }.should raise_error(IOError)
   end
 end

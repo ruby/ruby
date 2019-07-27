@@ -39,14 +39,14 @@ describe "Enumerator#feed" do
   it "raises a TypeError if called more than once without advancing the enumerator" do
     @enum.feed :a
     @enum.next
-    lambda { @enum.feed :b }.should raise_error(TypeError)
+    -> { @enum.feed :b }.should raise_error(TypeError)
   end
 
   it "sets the return value of Yielder#yield" do
     enum = Enumerator.new { |y| ScratchPad << y.yield }
     enum.next
     enum.feed :a
-    lambda { enum.next }.should raise_error(StopIteration)
+    -> { enum.next }.should raise_error(StopIteration)
     ScratchPad.recorded.should == [:a]
   end
 end

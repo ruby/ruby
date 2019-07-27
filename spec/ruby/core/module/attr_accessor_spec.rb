@@ -33,7 +33,7 @@ describe "Module#attr_accessor" do
       attr_accessor :spec_attr_accessor
     end
 
-    lambda { true.spec_attr_accessor = "a" }.should raise_error(RuntimeError)
+    -> { true.spec_attr_accessor = "a" }.should raise_error(RuntimeError)
   end
 
   it "converts non string/symbol/fixnum names to strings using to_str" do
@@ -48,9 +48,9 @@ describe "Module#attr_accessor" do
 
   it "raises a TypeError when the given names can't be converted to strings using to_str" do
     o = mock('o')
-    lambda { Class.new { attr_accessor o } }.should raise_error(TypeError)
+    -> { Class.new { attr_accessor o } }.should raise_error(TypeError)
     (o = mock('123')).should_receive(:to_str).and_return(123)
-    lambda { Class.new { attr_accessor o } }.should raise_error(TypeError)
+    -> { Class.new { attr_accessor o } }.should raise_error(TypeError)
   end
 
   it "applies current visibility to methods created" do
@@ -59,8 +59,8 @@ describe "Module#attr_accessor" do
       attr_accessor :foo
     end
 
-    lambda { c.new.foo }.should raise_error(NoMethodError)
-    lambda { c.new.foo=1 }.should raise_error(NoMethodError)
+    -> { c.new.foo }.should raise_error(NoMethodError)
+    -> { c.new.foo=1 }.should raise_error(NoMethodError)
   end
 
   ruby_version_is ''...'2.5' do

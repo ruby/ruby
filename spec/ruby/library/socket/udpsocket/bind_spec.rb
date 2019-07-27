@@ -18,7 +18,7 @@ describe "UDPSocket#bind" do
   it "raises Errno::EINVAL when already bound" do
     @socket.bind(SocketSpecs.hostname, 0)
 
-    lambda {
+    -> {
       @socket.bind(SocketSpecs.hostname, @socket.addr[1])
     }.should raise_error(Errno::EINVAL)
   end

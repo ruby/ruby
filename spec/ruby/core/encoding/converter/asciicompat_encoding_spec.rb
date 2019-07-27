@@ -2,7 +2,7 @@ require_relative '../../../spec_helper'
 
 describe "Encoding::Converter.asciicompat_encoding" do
   it "accepts an encoding name as a String argument" do
-    lambda { Encoding::Converter.asciicompat_encoding('UTF-8') }.
+    -> { Encoding::Converter.asciicompat_encoding('UTF-8') }.
       should_not raise_error
   end
 

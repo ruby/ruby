@@ -13,16 +13,16 @@ describe :string_concat, shared: true do
   end
 
   it "raises a TypeError if the given argument can't be converted to a String" do
-    lambda { 'hello '.send(@method, [])        }.should raise_error(TypeError)
-    lambda { 'hello '.send(@method, mock('x')) }.should raise_error(TypeError)
+    -> { 'hello '.send(@method, [])        }.should raise_error(TypeError)
+    -> { 'hello '.send(@method, mock('x')) }.should raise_error(TypeError)
   end
 
   it "raises a #{frozen_error_class} when self is frozen" do
     a = "hello"
     a.freeze
 
-    lambda { a.send(@method, "")     }.should raise_error(frozen_error_class)
-    lambda { a.send(@method, "test") }.should raise_error(frozen_error_class)
+    -> { a.send(@method, "")     }.should raise_error(frozen_error_class)
+    -> { a.send(@method, "test") }.should raise_error(frozen_error_class)
   end
 
   it "returns a String when given a subclass instance" do
@@ -71,28 +71,28 @@ describe :string_concat, shared: true do
     end
 
     it "raises RangeError if the argument is an invalid codepoint for self's encoding" do
-      lambda { "".encode(Encoding::US_ASCII).send(@method, 256) }.should raise_error(RangeError)
-      lambda { "".encode(Encoding::EUC_JP).send(@method, 0x81)  }.should raise_error(RangeError)
+      -> { "".encode(Encoding::US_ASCII).send(@method, 256) }.should raise_error(RangeError)
+      -> { "".encode(Encoding::EUC_JP).send(@method, 0x81)  }.should raise_error(RangeError)
     end
 
     it "raises RangeError if the argument is negative" do
-      lambda { "".send(@method, -200)          }.should raise_error(RangeError)
-      lambda { "".send(@method, -bignum_value) }.should raise_error(RangeError)
+      -> { "".send(@method, -200)          }.should raise_error(RangeError)
+      -> { "".send(@method, -bignum_value) }.should raise_error(RangeError)
     end
 
     it "doesn't call to_int on its argument" do
       x = mock('x')
       x.should_not_receive(:to_int)
 
-      lambda { "".send(@method, x) }.should raise_error(TypeError)
+      -> { "".send(@method, x) }.should raise_error(TypeError)
     end
 
     it "raises a #{frozen_error_class} when self is frozen" do
       a = "hello"
       a.freeze
 
-      lambda { a.send(@method, 0)  }.should raise_error(frozen_error_class)
-      lambda { a.send(@method, 33) }.should raise_error(frozen_error_class)
+      -> { a.send(@method, 0)  }.should raise_error(frozen_error_class)
+      -> { a.send(@method, 33) }.should raise_error(frozen_error_class)
     end
   end
 end
@@ -112,7 +112,7 @@ describe :string_concat_encoding, shared: true do
     end
 
     it "raises Encoding::CompatibilityError if neither are empty" do
-      lambda { "x".encode("UTF-16LE").send(@method, "y".encode("UTF-8")) }.should raise_error(Encoding::CompatibilityError)
+      -> { "x".encode("UTF-16LE").send(@method, "y".encode("UTF-8")) }.should raise_error(Encoding::CompatibilityError)
     end
   end
 
@@ -130,7 +130,7 @@ describe :string_concat_encoding, shared: true do
     end
 
     it "raises Encoding::CompatibilityError if neither are empty" do
-      lambda { "x".encode("UTF-8").send(@method, "y".encode("UTF-16LE")) }.should raise_error(Encoding::CompatibilityError)
+      -> { "x".encode("UTF-8").send(@method, "y".encode("UTF-16LE")) }.should raise_error(Encoding::CompatibilityError)
     end
   end
 
@@ -148,7 +148,7 @@ describe :string_concat_encoding, shared: true do
     end
 
     it "raises Encoding::CompatibilityError if neither are ASCII-only" do
-      lambda { "\u00E9".encode("UTF-8").send(@method, "\u00E9".encode("ISO-8859-1")) }.should raise_error(Encoding::CompatibilityError)
+      -> { "\u00E9".encode("UTF-8").send(@method, "\u00E9".encode("ISO-8859-1")) }.should raise_error(Encoding::CompatibilityError)
     end
   end
 

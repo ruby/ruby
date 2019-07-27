@@ -27,7 +27,7 @@ describe "Literal Regexps" do
   end
 
   it "throws SyntaxError for malformed literals" do
-    lambda { eval('/(/') }.should raise_error(SyntaxError)
+    -> { eval('/(/') }.should raise_error(SyntaxError)
   end
 
   #############################################################################
@@ -54,7 +54,7 @@ describe "Literal Regexps" do
 
   it "disallows first part of paired delimiters to be used as non-paired delimiters" do
     LanguageSpecs.paired_delimiters.each do |p0, p1|
-      lambda { eval("%r#{p0} foo #{p0}") }.should raise_error(SyntaxError)
+      -> { eval("%r#{p0} foo #{p0}") }.should raise_error(SyntaxError)
     end
   end
 
@@ -65,11 +65,11 @@ describe "Literal Regexps" do
   end
 
   it "disallows alphabets as non-paired delimiter with %r" do
-    lambda { eval('%ra foo a') }.should raise_error(SyntaxError)
+    -> { eval('%ra foo a') }.should raise_error(SyntaxError)
   end
 
   it "disallows spaces after %r and delimiter" do
-    lambda { eval('%r !foo!') }.should raise_error(SyntaxError)
+    -> { eval('%r !foo!') }.should raise_error(SyntaxError)
   end
 
   it "allows unescaped / to be used with %r" do

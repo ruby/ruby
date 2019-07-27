@@ -32,7 +32,7 @@ ruby_version_is "2.5" do
     end
 
     it "raises a SystemCallError if passed a nonexistent directory" do
-      lambda { Dir.each_child(DirSpecs.nonexistent) {} }.should raise_error(SystemCallError)
+      -> { Dir.each_child(DirSpecs.nonexistent) {} }.should raise_error(SystemCallError)
     end
 
     describe "when no block is given" do

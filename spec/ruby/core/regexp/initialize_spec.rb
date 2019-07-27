@@ -6,10 +6,10 @@ describe "Regexp#initialize" do
   end
 
   it "raises a SecurityError on a Regexp literal" do
-    lambda { //.send(:initialize, "") }.should raise_error(SecurityError)
+    -> { //.send(:initialize, "") }.should raise_error(SecurityError)
   end
 
   it "raises a TypeError on an initialized non-literal Regexp" do
-    lambda { Regexp.new("").send(:initialize, "") }.should raise_error(TypeError)
+    -> { Regexp.new("").send(:initialize, "") }.should raise_error(TypeError)
   end
 end

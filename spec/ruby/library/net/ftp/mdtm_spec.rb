@@ -28,11 +28,11 @@ describe "Net::FTP#mdtm" do
 
   it "raises a Net::FTPPermError when the response code is 550" do
     @server.should_receive(:mdtm).and_respond("550 Requested action not taken.")
-    lambda { @ftp.mdtm("test.file") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.mdtm("test.file") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPTempError when the response code is 421" do
     @server.should_receive(:mdtm).and_respond("421 Service not available, closing control connection.")
-    lambda { @ftp.mdtm("test.file") }.should raise_error(Net::FTPTempError)
+    -> { @ftp.mdtm("test.file") }.should raise_error(Net::FTPTempError)
   end
 end

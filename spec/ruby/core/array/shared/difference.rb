@@ -27,7 +27,7 @@ describe :array_binary_difference, shared: true do
 
   it "raises a TypeError if the argument cannot be coerced to an Array by calling #to_ary" do
     obj = mock('not an array')
-    lambda { [1, 2, 3].send(@method, obj) }.should raise_error(TypeError)
+    -> { [1, 2, 3].send(@method, obj) }.should raise_error(TypeError)
   end
 
   it "does not return subclass instance for Array subclasses" do

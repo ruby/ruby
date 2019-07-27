@@ -55,10 +55,10 @@ describe "Array#pack with format 'X'" do
   end
 
   it "raises an ArgumentError if the output string is empty" do
-    lambda { [1, 2, 3].pack("XC") }.should raise_error(ArgumentError)
+    -> { [1, 2, 3].pack("XC") }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if the count modifier is greater than the bytes in the string" do
-    lambda { [1, 2, 3].pack("C2X3") }.should raise_error(ArgumentError)
+    -> { [1, 2, 3].pack("C2X3") }.should raise_error(ArgumentError)
   end
 end

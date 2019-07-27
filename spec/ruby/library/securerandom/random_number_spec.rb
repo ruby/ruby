@@ -86,7 +86,7 @@ describe "SecureRandom.random_number" do
   end
 
   it "raises ArgumentError if the argument is non-numeric" do
-    lambda {
+    -> {
       SecureRandom.random_number(Object.new)
     }.should raise_error(ArgumentError)
   end

@@ -48,13 +48,13 @@ describe "String#unicode_normalize" do
   end
 
   it "raises an Encoding::CompatibilityError if string is not in an unicode encoding" do
-    lambda do
+    -> do
       [0xE0].pack('C').force_encoding("ISO-8859-1").unicode_normalize(:nfd)
     end.should raise_error(Encoding::CompatibilityError)
   end
 
   it "raises an ArgumentError if the specified form is invalid" do
-    lambda {
+    -> {
       @angstrom.unicode_normalize(:invalid_form)
     }.should raise_error(ArgumentError)
   end
@@ -101,14 +101,14 @@ describe "String#unicode_normalize!" do
   end
 
   it "raises an Encoding::CompatibilityError if the string is not in an unicode encoding" do
-    lambda {
+    -> {
       [0xE0].pack('C').force_encoding("ISO-8859-1").unicode_normalize!
     }.should raise_error(Encoding::CompatibilityError)
   end
 
   it "raises an ArgumentError if the specified form is invalid" do
     ohm = "\u2126"
-    lambda {
+    -> {
       ohm.unicode_normalize!(:invalid_form)
     }.should raise_error(ArgumentError)
   end

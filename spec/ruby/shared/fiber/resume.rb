@@ -50,7 +50,7 @@ describe :fiber_resume, shared: true do
 
   it "accepts any number of arguments" do
     fiber = Fiber.new { |a| }
-    lambda { fiber.send(@method, *(1..10).to_a) }.should_not raise_error
+    -> { fiber.send(@method, *(1..10).to_a) }.should_not raise_error
   end
 
   it "sets the block parameters to its arguments on the first invocation" do
@@ -64,16 +64,16 @@ describe :fiber_resume, shared: true do
   it "raises a FiberError if the Fiber is dead" do
     fiber = Fiber.new { true }
     fiber.send(@method)
-    lambda { fiber.send(@method) }.should raise_error(FiberError)
+    -> { fiber.send(@method) }.should raise_error(FiberError)
   end
 
   it "raises a LocalJumpError if the block includes a return statement" do
     fiber = Fiber.new { return; }
-    lambda { fiber.send(@method) }.should raise_error(LocalJumpError)
+    -> { fiber.send(@method) }.should raise_error(LocalJumpError)
   end
 
   it "raises a LocalJumpError if the block includes a break statement" do
     fiber = Fiber.new { break; }
-    lambda { fiber.send(@method) }.should raise_error(LocalJumpError)
+    -> { fiber.send(@method) }.should raise_error(LocalJumpError)
   end
 end

@@ -39,12 +39,12 @@ describe "Hash.try_convert" do
   it "sends #to_hash to the argument and raises TypeError if it's not a kind of Hash" do
     obj = mock("to_hash")
     obj.should_receive(:to_hash).and_return(Object.new)
-    lambda { Hash.try_convert obj }.should raise_error(TypeError)
+    -> { Hash.try_convert obj }.should raise_error(TypeError)
   end
 
   it "does not rescue exceptions raised by #to_hash" do
     obj = mock("to_hash")
     obj.should_receive(:to_hash).and_raise(RuntimeError)
-    lambda { Hash.try_convert obj }.should raise_error(RuntimeError)
+    -> { Hash.try_convert obj }.should raise_error(RuntimeError)
   end
 end

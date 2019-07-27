@@ -13,7 +13,7 @@ describe "Set#flatten" do
 
   it "raises an ArgumentError when self is recursive" do
     (set = Set[]) << set
-    lambda { set.flatten }.should raise_error(ArgumentError)
+    -> { set.flatten }.should raise_error(ArgumentError)
   end
 
   context "when Set contains a Set-like object" do
@@ -42,7 +42,7 @@ describe "Set#flatten!" do
 
   it "raises an ArgumentError when self is recursive" do
     (set = Set[]) << set
-    lambda { set.flatten! }.should raise_error(ArgumentError)
+    -> { set.flatten! }.should raise_error(ArgumentError)
   end
 
   context "when Set contains a Set-like object" do

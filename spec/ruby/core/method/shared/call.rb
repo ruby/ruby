@@ -9,10 +9,10 @@ describe :method_call, shared: true do
   end
 
   it "raises an ArgumentError when given incorrect number of arguments" do
-    lambda {
+    -> {
       MethodSpecs::Methods.new.method(:two_req).send(@method, 1, 2, 3)
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       MethodSpecs::Methods.new.method(:two_req).send(@method, 1)
     }.should raise_error(ArgumentError)
   end

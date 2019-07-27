@@ -33,7 +33,7 @@ describe "Array#pack with format 'w'" do
   end
 
   it "raises an ArgumentError when passed a negative value" do
-    lambda { [-1].pack("w") }.should raise_error(ArgumentError)
+    -> { [-1].pack("w") }.should raise_error(ArgumentError)
   end
 
   it "returns a binary string" do

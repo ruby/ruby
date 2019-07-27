@@ -7,7 +7,7 @@ describe "An ensure block inside a begin block" do
   end
 
   it "is executed when an exception is raised in it's corresponding begin block" do
-    lambda {
+    -> {
       begin
         ScratchPad << :begin
         raise EnsureSpec::Error
@@ -108,7 +108,7 @@ describe "An ensure block inside a method" do
   end
 
   it "is executed when an exception is raised in the method" do
-    lambda { @obj.raise_in_method_with_ensure }.should raise_error(EnsureSpec::Error)
+    -> { @obj.raise_in_method_with_ensure }.should raise_error(EnsureSpec::Error)
     @obj.executed.should == [:method, :ensure]
   end
 
@@ -165,7 +165,7 @@ describe "An ensure block inside a class" do
   end
 
   it "is executed when an exception is raised" do
-    lambda {
+    -> {
       eval <<-ruby
         class EnsureInClassExample
           ScratchPad << :class
@@ -240,7 +240,7 @@ end
 
 describe "An ensure block inside {} block" do
   it "is not allowed" do
-    lambda {
+    -> {
       eval <<-ruby
         lambda {
           raise
@@ -258,7 +258,7 @@ ruby_version_is "2.5" do
     end
 
     it "is executed when an exception is raised in it's corresponding begin block" do
-      lambda {
+      -> {
         eval(<<-ruby).call
           lambda do
             ScratchPad << :begin

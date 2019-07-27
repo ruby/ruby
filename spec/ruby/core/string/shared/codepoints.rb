@@ -9,7 +9,7 @@ describe :string_codepoints, shared: true do
   it "raises an ArgumentError when self has an invalid encoding and a method is called on the returned Enumerator" do
     s = "\xDF".force_encoding(Encoding::UTF_8)
     s.valid_encoding?.should be_false
-    lambda { s.send(@method).to_a }.should raise_error(ArgumentError)
+    -> { s.send(@method).to_a }.should raise_error(ArgumentError)
   end
 
   it "yields each codepoint to the block if one is given" do
@@ -23,7 +23,7 @@ describe :string_codepoints, shared: true do
   it "raises an ArgumentError if self's encoding is invalid and a block is given" do
     s = "\xDF".force_encoding(Encoding::UTF_8)
     s.valid_encoding?.should be_false
-    lambda { s.send(@method) { } }.should raise_error(ArgumentError)
+    -> { s.send(@method) { } }.should raise_error(ArgumentError)
   end
 
   it "yields codepoints as Fixnums" do

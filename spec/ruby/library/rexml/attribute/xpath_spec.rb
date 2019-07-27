@@ -14,6 +14,6 @@ describe "REXML::Attribute#xpath" do
   end
 
   it "raises an error if attribute has no parent" do
-    lambda { @attr.xpath }.should raise_error(Exception)
+    -> { @attr.xpath }.should raise_error(Exception)
   end
 end

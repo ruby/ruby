@@ -93,7 +93,7 @@ describe "Set#compare_by_identity" do
 
   it "raises a #{frozen_error_class} on frozen sets" do
     set = Set.new.freeze
-    lambda {
+    -> {
       set.compare_by_identity
     }.should raise_error(frozen_error_class, /frozen Hash/)
   end

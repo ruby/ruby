@@ -28,21 +28,21 @@ describe "Net::FTP#size" do
 
   it "raises a Net::FTPPermError when the response code is 500" do
     @server.should_receive(:size).and_respond("500 Syntax error, command unrecognized.")
-    lambda { @ftp.size("test.file") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.size("test.file") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPPermError when the response code is 501" do
     @server.should_receive(:size).and_respond("501 Syntax error in parameters or arguments.")
-    lambda { @ftp.size("test.file") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.size("test.file") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPTempError when the response code is 421" do
     @server.should_receive(:size).and_respond("421 Service not available, closing control connection.")
-    lambda { @ftp.size("test.file") }.should raise_error(Net::FTPTempError)
+    -> { @ftp.size("test.file") }.should raise_error(Net::FTPTempError)
   end
 
   it "raises a Net::FTPPermError when the response code is 550" do
     @server.should_receive(:size).and_respond("550 Requested action not taken.")
-    lambda { @ftp.size("test.file") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.size("test.file") }.should raise_error(Net::FTPPermError)
   end
 end

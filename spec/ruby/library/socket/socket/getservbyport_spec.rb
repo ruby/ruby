@@ -18,6 +18,6 @@ describe 'Socket.getservbyport' do
   end
 
   it 'raises SocketError for an unknown port number' do
-    lambda { Socket.getservbyport(0) }.should raise_error(SocketError)
+    -> { Socket.getservbyport(0) }.should raise_error(SocketError)
   end
 end

@@ -46,6 +46,6 @@ describe "CGI#out when passed no block" do
   end
 
   it "raises a LocalJumpError" do
-    lambda { @cgi.out }.should raise_error(LocalJumpError)
+    -> { @cgi.out }.should raise_error(LocalJumpError)
   end
 end

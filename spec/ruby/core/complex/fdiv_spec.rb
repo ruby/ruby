@@ -2,21 +2,21 @@ require_relative '../../spec_helper'
 
 describe "Complex#fdiv" do
   it "accepts a numeric argument" do
-    lambda { Complex(20).fdiv(2) }.should_not raise_error(TypeError)
-    lambda { Complex(20).fdiv(2.0) }.should_not raise_error(TypeError)
-    lambda { Complex(20).fdiv(bignum_value) }.should_not raise_error(TypeError)
+    -> { Complex(20).fdiv(2) }.should_not raise_error(TypeError)
+    -> { Complex(20).fdiv(2.0) }.should_not raise_error(TypeError)
+    -> { Complex(20).fdiv(bignum_value) }.should_not raise_error(TypeError)
   end
 
   it "accepts a negative numeric argument" do
-    lambda { Complex(20).fdiv(-2) }.should_not raise_error(TypeError)
-    lambda { Complex(20).fdiv(-2.0) }.should_not raise_error(TypeError)
-    lambda { Complex(20).fdiv(-bignum_value) }.should_not raise_error(TypeError)
+    -> { Complex(20).fdiv(-2) }.should_not raise_error(TypeError)
+    -> { Complex(20).fdiv(-2.0) }.should_not raise_error(TypeError)
+    -> { Complex(20).fdiv(-bignum_value) }.should_not raise_error(TypeError)
   end
 
   it "raises a TypeError if passed a non-numeric argument" do
-    lambda { Complex(20).fdiv([]) }.should raise_error(TypeError)
-    lambda { Complex(20).fdiv(:sym) }.should raise_error(TypeError)
-    lambda { Complex(20).fdiv('s') }.should raise_error(TypeError)
+    -> { Complex(20).fdiv([]) }.should raise_error(TypeError)
+    -> { Complex(20).fdiv(:sym) }.should raise_error(TypeError)
+    -> { Complex(20).fdiv('s') }.should raise_error(TypeError)
   end
 
   it "sets the real part to NaN if self's real part is NaN" do

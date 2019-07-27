@@ -9,11 +9,11 @@ describe "ENV.fetch" do
   end
 
   it "raises a TypeError if the key is not a String" do
-    lambda { ENV.fetch :should_never_be_set }.should raise_error(TypeError)
+    -> { ENV.fetch :should_never_be_set }.should raise_error(TypeError)
   end
 
   context "when the key is not found" do
-    it_behaves_like :key_error, ->(obj, key) { obj.fetch(key) }, ENV
+    it_behaves_like :key_error, -> obj, key { obj.fetch(key) }, ENV
 
     it "formats the object with #inspect in the KeyError message" do
       -> {
@@ -31,7 +31,7 @@ describe "ENV.fetch" do
   end
 
   it "warns on block and default parameter given" do
-    lambda do
+    -> do
        ENV.fetch("should_never_be_set", "default") { 1 }.should == 1
     end.should complain(/block supersedes default value argument/)
   end

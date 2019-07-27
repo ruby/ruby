@@ -47,6 +47,6 @@ describe "DateTime.new" do
   end
 
   it "raises an error on invalid arguments" do
-    lambda { new_datetime(minute: 999) }.should raise_error(ArgumentError)
+    -> { new_datetime(minute: 999) }.should raise_error(ArgumentError)
   end
 end

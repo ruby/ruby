@@ -142,12 +142,12 @@ describe "C-API IO function" do
   describe "rb_io_check_closed" do
     it "does not raise an exception if the IO is not closed" do
       # The MRI function is void, so we use should_not raise_error
-      lambda { @o.rb_io_check_closed(@io) }.should_not raise_error
+      -> { @o.rb_io_check_closed(@io) }.should_not raise_error
     end
 
     it "raises an error if the IO is closed" do
       @io.close
-      lambda { @o.rb_io_check_closed(@io) }.should raise_error(IOError)
+      -> { @o.rb_io_check_closed(@io) }.should raise_error(IOError)
     end
   end
 
@@ -155,13 +155,13 @@ describe "C-API IO function" do
   # object is frozen, *not* if it's tainted.
   describe "rb_io_taint_check" do
     it "does not raise an exception if the IO is not frozen" do
-      lambda { @o.rb_io_taint_check(@io) }.should_not raise_error
+      -> { @o.rb_io_taint_check(@io) }.should_not raise_error
     end
 
     it "raises an exception if the IO is frozen" do
       @io.freeze
 
-      lambda { @o.rb_io_taint_check(@io) }.should raise_error(RuntimeError)
+      -> { @o.rb_io_taint_check(@io) }.should raise_error(RuntimeError)
     end
   end
 
@@ -206,15 +206,15 @@ describe "C-API IO function" do
   describe "rb_io_check_readable" do
     it "does not raise an exception if the IO is opened for reading" do
       # The MRI function is void, so we use should_not raise_error
-      lambda { @o.rb_io_check_readable(@r_io) }.should_not raise_error
+      -> { @o.rb_io_check_readable(@r_io) }.should_not raise_error
     end
 
     it "does not raise an exception if the IO is opened for read and write" do
-      lambda { @o.rb_io_check_readable(@rw_io) }.should_not raise_error
+      -> { @o.rb_io_check_readable(@rw_io) }.should_not raise_error
     end
 
     it "raises an IOError if the IO is not opened for reading" do
-      lambda { @o.rb_io_check_readable(@w_io) }.should raise_error(IOError)
+      -> { @o.rb_io_check_readable(@w_io) }.should raise_error(IOError)
     end
 
   end
@@ -222,15 +222,15 @@ describe "C-API IO function" do
   describe "rb_io_check_writable" do
     it "does not raise an exeption if the IO is opened for writing" do
       # The MRI function is void, so we use should_not raise_error
-      lambda { @o.rb_io_check_writable(@w_io) }.should_not raise_error
+      -> { @o.rb_io_check_writable(@w_io) }.should_not raise_error
     end
 
     it "does not raise an exception if the IO is opened for read and write" do
-      lambda { @o.rb_io_check_writable(@rw_io) }.should_not raise_error
+      -> { @o.rb_io_check_writable(@rw_io) }.should_not raise_error
     end
 
     it "raises an IOError if the IO is not opened for reading" do
-      lambda { @o.rb_io_check_writable(@r_io) }.should raise_error(IOError)
+      -> { @o.rb_io_check_writable(@r_io) }.should raise_error(IOError)
     end
   end
 
@@ -242,7 +242,7 @@ describe "C-API IO function" do
 
     it "raises an IOError if the IO is closed" do
       @w_io.close
-      lambda { @o.rb_io_wait_writable(@w_io) }.should raise_error(IOError)
+      -> { @o.rb_io_wait_writable(@w_io) }.should raise_error(IOError)
     end
   end
 
@@ -261,7 +261,7 @@ describe "C-API IO function" do
 
       it "raises and IOError if passed a closed stream" do
         @r_io.close
-        lambda {
+        -> {
           @o.rb_io_wait_readable(@r_io, false)
         }.should raise_error(IOError)
       end

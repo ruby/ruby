@@ -15,6 +15,6 @@ describe "Logger#close" do
 
   it "closes the logging device" do
     @logger.close
-    lambda { @logger.add(nil, "Foo") }.should complain(/\Alog writing failed\./)
+    -> { @logger.add(nil, "Foo") }.should complain(/\Alog writing failed\./)
   end
 end

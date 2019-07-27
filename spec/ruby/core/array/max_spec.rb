@@ -68,16 +68,16 @@ describe "Array#max" do
   end
 
   it "raises a NoMethodError for elements without #<=>" do
-    lambda do
+    -> do
       [BasicObject.new, BasicObject.new].max
     end.should raise_error(NoMethodError)
   end
 
   it "raises an ArgumentError for incomparable elements" do
-    lambda do
+    -> do
       [11,"22"].max
     end.should raise_error(ArgumentError)
-    lambda do
+    -> do
       [11,12,22,33].max{|a, b| nil}
     end.should raise_error(ArgumentError)
   end

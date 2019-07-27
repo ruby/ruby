@@ -58,8 +58,8 @@ describe "Hash#shift" do
   end
 
   it "raises a #{frozen_error_class} if called on a frozen instance" do
-    lambda { HashSpecs.frozen_hash.shift  }.should raise_error(frozen_error_class)
-    lambda { HashSpecs.empty_frozen_hash.shift }.should raise_error(frozen_error_class)
+    -> { HashSpecs.frozen_hash.shift  }.should raise_error(frozen_error_class)
+    -> { HashSpecs.empty_frozen_hash.shift }.should raise_error(frozen_error_class)
   end
 
   it "works when the hash is at capacity" do

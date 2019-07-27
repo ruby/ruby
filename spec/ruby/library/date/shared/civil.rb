@@ -36,14 +36,14 @@ describe :date_civil, shared: true do
   end
 
   it "doesn't create dates for invalid arguments" do
-    lambda { Date.send(@method, 2000, 13, 31) }.should raise_error(ArgumentError)
-    lambda { Date.send(@method, 2000, 12, 32) }.should raise_error(ArgumentError)
-    lambda { Date.send(@method, 2000,  2, 30) }.should raise_error(ArgumentError)
-    lambda { Date.send(@method, 1900,  2, 29) }.should raise_error(ArgumentError)
-    lambda { Date.send(@method, 2000,  2, 29) }.should_not raise_error(ArgumentError)
+    -> { Date.send(@method, 2000, 13, 31) }.should raise_error(ArgumentError)
+    -> { Date.send(@method, 2000, 12, 32) }.should raise_error(ArgumentError)
+    -> { Date.send(@method, 2000,  2, 30) }.should raise_error(ArgumentError)
+    -> { Date.send(@method, 1900,  2, 29) }.should raise_error(ArgumentError)
+    -> { Date.send(@method, 2000,  2, 29) }.should_not raise_error(ArgumentError)
 
-    lambda { Date.send(@method, 1582, 10, 14) }.should raise_error(ArgumentError)
-    lambda { Date.send(@method, 1582, 10, 15) }.should_not raise_error(ArgumentError)
+    -> { Date.send(@method, 1582, 10, 14) }.should raise_error(ArgumentError)
+    -> { Date.send(@method, 1582, 10, 15) }.should_not raise_error(ArgumentError)
 
   end
 

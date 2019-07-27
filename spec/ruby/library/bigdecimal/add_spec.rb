@@ -81,6 +81,12 @@ describe "BigDecimal#add" do
     end
   end
 
+  describe "with Rational" do
+    it "produces a BigDecimal" do
+      (@three + Rational(500, 2)).should == BigDecimal("0.253e3")
+    end
+  end
+
   it "favors the precision specified in the second argument over the global limit" do
     BigDecimalSpecs.with_limit(1) do
       BigDecimal('0.888').add(@zero, 3).should == BigDecimal('0.888')
@@ -165,22 +171,22 @@ describe "BigDecimal#add" do
   end
 
   it "raises TypeError when adds nil" do
-    lambda {
+    -> {
       @one.add(nil, 10)
     }.should raise_error(TypeError)
-    lambda {
+    -> {
       @one.add(nil, 0)
     }.should raise_error(TypeError)
   end
 
   it "raises TypeError when precision parameter is nil" do
-    lambda {
+    -> {
       @one.add(@one, nil)
     }.should raise_error(TypeError)
   end
 
   it "raises ArgumentError when precision parameter is negative" do
-    lambda {
+    -> {
       @one.add(@one, -10)
     }.should raise_error(ArgumentError)
   end

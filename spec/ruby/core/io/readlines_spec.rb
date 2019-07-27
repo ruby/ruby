@@ -17,7 +17,7 @@ describe "IO#readlines" do
 
   it "raises an IOError if the stream is closed" do
     @io.close
-    lambda { @io.readlines }.should raise_error(IOError)
+    -> { @io.readlines }.should raise_error(IOError)
   end
 
   describe "when passed no arguments" do
@@ -138,13 +138,13 @@ describe "IO#readlines" do
   end
 
   it "raises an IOError if the stream is opened for append only" do
-    lambda do
+    -> do
       File.open(@name, "a:utf-8") { |f| f.readlines }
     end.should raise_error(IOError)
   end
 
   it "raises an IOError if the stream is opened for write only" do
-    lambda do
+    -> do
       File.open(@name, "w:utf-8") { |f| f.readlines }
     end.should raise_error(IOError)
   end

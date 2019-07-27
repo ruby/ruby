@@ -10,8 +10,8 @@ describe "Integer#chr without argument" do
   end
 
   it "raises a RangeError is self is less than 0" do
-    lambda { -1.chr }.should raise_error(RangeError)
-    lambda { -bignum_value.chr }.should raise_error(RangeError)
+    -> { -1.chr }.should raise_error(RangeError)
+    -> { -bignum_value.chr }.should raise_error(RangeError)
   end
 
   describe "when Encoding.default_internal is nil" do
@@ -44,8 +44,8 @@ describe "Integer#chr without argument" do
     end
 
     it "raises a RangeError is self is greater than 255" do
-      lambda { 256.chr }.should raise_error(RangeError)
-      lambda { bignum_value.chr }.should raise_error(RangeError)
+      -> { 256.chr }.should raise_error(RangeError)
+      -> { bignum_value.chr }.should raise_error(RangeError)
     end
   end
 
@@ -133,7 +133,7 @@ describe "Integer#chr without argument" do
           [620,    "TIS-620"]
         ].each do |integer, encoding_name|
           Encoding.default_internal = Encoding.find(encoding_name)
-          lambda { integer.chr }.should raise_error(RangeError)
+          -> { integer.chr }.should raise_error(RangeError)
         end
       end
     end
@@ -150,7 +150,7 @@ describe "Integer#chr with an encoding argument" do
   end
 
   it "accepts a String as an argument" do
-    lambda { 0xA4A2.chr('euc-jp') }.should_not raise_error
+    -> { 0xA4A2.chr('euc-jp') }.should_not raise_error
   end
 
   it "converts a String to an Encoding as Encoding.find does" do
@@ -161,12 +161,12 @@ describe "Integer#chr with an encoding argument" do
 
   # http://redmine.ruby-lang.org/issues/4869
   it "raises a RangeError is self is less than 0" do
-    lambda { -1.chr(Encoding::UTF_8) }.should raise_error(RangeError)
-    lambda { -bignum_value.chr(Encoding::EUC_JP) }.should raise_error(RangeError)
+    -> { -1.chr(Encoding::UTF_8) }.should raise_error(RangeError)
+    -> { -bignum_value.chr(Encoding::EUC_JP) }.should raise_error(RangeError)
   end
 
   it "raises a RangeError if self is too large" do
-    lambda { 2206368128.chr(Encoding::UTF_8) }.should raise_error(RangeError)
+    -> { 2206368128.chr(Encoding::UTF_8) }.should raise_error(RangeError)
   end
 
   it "returns a String with the specified encoding" do
@@ -237,7 +237,7 @@ describe "Integer#chr with an encoding argument" do
       [0xDC00, "UTF-16"],
       [0xDFFF, "UTF-16"],
     ].each do |integer, encoding_name|
-      lambda { integer.chr(encoding_name) }.should raise_error(RangeError)
+      -> { integer.chr(encoding_name) }.should raise_error(RangeError)
     end
   end
 end

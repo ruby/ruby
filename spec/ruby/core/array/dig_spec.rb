@@ -20,20 +20,20 @@ describe "Array#dig" do
   end
 
   it "raises a TypeError for a non-numeric index" do
-    lambda {
+    -> {
       ['a'].dig(:first)
     }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if any intermediate step does not respond to #dig" do
     a = [1, 2]
-    lambda {
+    -> {
       a.dig(0, 1)
     }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError if no arguments provided" do
-    lambda {
+    -> {
       [10].dig()
     }.should raise_error(ArgumentError)
   end

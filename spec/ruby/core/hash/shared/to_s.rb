@@ -61,7 +61,7 @@ describe :hash_to_s, shared: true do
     obj.should_receive(:inspect).and_return(obj)
     obj.should_receive(:to_s).and_raise(Exception)
 
-    lambda { { a: obj }.send(@method) }.should raise_error(Exception)
+    -> { { a: obj }.send(@method) }.should raise_error(Exception)
   end
 
   it "handles hashes with recursive values" do

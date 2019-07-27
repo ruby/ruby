@@ -6,15 +6,15 @@ require_relative 'fixtures/utf-8-encoding'
 describe "String#rindex with object" do
   it "raises a TypeError if obj isn't a String, Fixnum or Regexp" do
     not_supported_on :opal do
-      lambda { "hello".rindex(:sym) }.should raise_error(TypeError)
+      -> { "hello".rindex(:sym) }.should raise_error(TypeError)
     end
-    lambda { "hello".rindex(mock('x')) }.should raise_error(TypeError)
+    -> { "hello".rindex(mock('x')) }.should raise_error(TypeError)
   end
 
   it "doesn't try to convert obj to an integer via to_int" do
     obj = mock('x')
     obj.should_not_receive(:to_int)
-    lambda { "hello".rindex(obj) }.should raise_error(TypeError)
+    -> { "hello".rindex(obj) }.should raise_error(TypeError)
   end
 
   it "tries to convert obj to a string via to_str" do
@@ -190,7 +190,7 @@ describe "String#rindex with String" do
   end
 
   it "raises a TypeError when given offset is nil" do
-    lambda { "str".rindex("st", nil) }.should raise_error(TypeError)
+    -> { "str".rindex("st", nil) }.should raise_error(TypeError)
   end
 end
 
@@ -344,7 +344,7 @@ describe "String#rindex with Regexp" do
   end
 
   it "raises a TypeError when given offset is nil" do
-    lambda { "str".rindex(/../, nil) }.should raise_error(TypeError)
+    -> { "str".rindex(/../, nil) }.should raise_error(TypeError)
   end
 
   it "returns the reverse character index of a multibyte character" do
@@ -359,7 +359,7 @@ describe "String#rindex with Regexp" do
 
   it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
     re = Regexp.new "れ".encode(Encoding::EUC_JP)
-    lambda do
+    -> do
       "あれ".rindex re
     end.should raise_error(Encoding::CompatibilityError)
   end

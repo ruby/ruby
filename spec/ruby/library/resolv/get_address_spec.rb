@@ -12,7 +12,7 @@ describe "Resolv#getaddress" do
 
   it "raises ResolvError if the name can not be looked up" do
     res = Resolv.new([])
-    lambda {
+    -> {
       res.getaddress("should.raise.error.")
     }.should raise_error(Resolv::ResolvError)
   end

@@ -26,7 +26,7 @@ with_feature :ancillary_data do
       end
 
       it 'raises SocketError when comparing with :IPV6 and :RIGHTS' do
-        lambda { @data.cmsg_is?(:IPV6, :RIGHTS) }.should raise_error(SocketError)
+        -> { @data.cmsg_is?(:IPV6, :RIGHTS) }.should raise_error(SocketError)
       end
     end
   end

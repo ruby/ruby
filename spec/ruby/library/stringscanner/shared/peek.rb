@@ -19,11 +19,11 @@ describe :strscan_peek, shared: true do
   end
 
   it "raises a ArgumentError when the passed argument is negative" do
-    lambda { @s.send(@method, -2) }.should raise_error(ArgumentError)
+    -> { @s.send(@method, -2) }.should raise_error(ArgumentError)
   end
 
   it "raises a RangeError when the passed argument is a Bignum" do
-    lambda { @s.send(@method, bignum_value) }.should raise_error(RangeError)
+    -> { @s.send(@method, bignum_value) }.should raise_error(RangeError)
   end
 
   it "returns an instance of String when passed a String subclass" do

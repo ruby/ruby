@@ -42,7 +42,7 @@ describe "IO#close_on_exec=" do
 
     it "raises IOError if called on a closed IO" do
       @io.close
-      lambda { @io.close_on_exec = true }.should raise_error(IOError)
+      -> { @io.close_on_exec = true }.should raise_error(IOError)
     end
 
     it "returns nil" do
@@ -74,7 +74,7 @@ describe "IO#close_on_exec?" do
 
     it "raises IOError if called on a closed IO" do
       @io.close
-      lambda { @io.close_on_exec? }.should raise_error(IOError)
+      -> { @io.close_on_exec? }.should raise_error(IOError)
     end
   end
 end

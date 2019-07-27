@@ -6,17 +6,17 @@ describe "Numeric#step" do
 
   describe 'with positional args' do
     it "raises an ArgumentError when step is 0" do
-      lambda { 1.step(5, 0) {} }.should raise_error(ArgumentError)
+      -> { 1.step(5, 0) {} }.should raise_error(ArgumentError)
     end
 
     it "raises an ArgumentError when step is 0.0" do
-      lambda { 1.step(2, 0.0) {} }.should raise_error(ArgumentError)
+      -> { 1.step(2, 0.0) {} }.should raise_error(ArgumentError)
     end
 
     before :all do
       # This lambda definition limits to return the arguments it receives.
       # It's needed to test numeric_step behaviour with positional arguments.
-      @step_args = ->(*args) { args }
+      @step_args = -> *args { args }
     end
 
     it_behaves_like :numeric_step, :step
@@ -40,12 +40,12 @@ describe "Numeric#step" do
           ruby_version_is ""..."2.6" do
             it "raises an ArgumentError when step is 0" do
               enum = 1.step(5, 0)
-              lambda { enum.size }.should raise_error(ArgumentError)
+              -> { enum.size }.should raise_error(ArgumentError)
             end
 
             it "raises an ArgumentError when step is 0.0" do
               enum = 1.step(2, 0.0)
-              lambda { enum.size }.should raise_error(ArgumentError)
+              -> { enum.size }.should raise_error(ArgumentError)
             end
           end
 
@@ -87,11 +87,11 @@ describe "Numeric#step" do
 
   describe 'with keyword arguments' do
     it "doesn't raise an error when step is 0" do
-      lambda { 1.step(to: 5, by: 0) { break } }.should_not raise_error
+      -> { 1.step(to: 5, by: 0) { break } }.should_not raise_error
     end
 
     it "doesn't raise an error when step is 0.0" do
-      lambda { 1.step(to: 2, by: 0.0) { break } }.should_not raise_error
+      -> { 1.step(to: 2, by: 0.0) { break } }.should_not raise_error
     end
 
     it "should loop over self when step is 0 or 0.0" do
@@ -138,7 +138,7 @@ describe "Numeric#step" do
       # This lambda transforms a positional step method args into
       # keyword arguments.
       # It's needed to test numeric_step behaviour with keyword arguments.
-      @step_args = ->(*args) do
+      @step_args = -> *args do
         kw_args = {to: args[0]}
         kw_args[:by] = args[1] if args.size == 2
         [kw_args]
@@ -149,19 +149,19 @@ describe "Numeric#step" do
 
   describe 'with mixed arguments' do
     it "doesn't raise an error when step is 0" do
-      lambda { 1.step(5, by: 0) { break } }.should_not raise_error
+      -> { 1.step(5, by: 0) { break } }.should_not raise_error
     end
 
     it "doesn't raise an error when step is 0.0" do
-      lambda { 1.step(2, by: 0.0) { break } }.should_not raise_error
+      -> { 1.step(2, by: 0.0) { break } }.should_not raise_error
     end
 
     it "raises a ArgumentError when limit and to are defined" do
-      lambda { 1.step(5, 1, to: 5) { break } }.should raise_error(ArgumentError)
+      -> { 1.step(5, 1, to: 5) { break } }.should raise_error(ArgumentError)
     end
 
     it "raises a ArgumentError when step and by are defined" do
-      lambda { 1.step(5, 1, by: 5) { break } }.should raise_error(ArgumentError)
+      -> { 1.step(5, 1, by: 5) { break } }.should raise_error(ArgumentError)
     end
 
     it "should loop over self when step is 0 or 0.0" do
@@ -188,7 +188,7 @@ describe "Numeric#step" do
       # a mix of positional and keyword arguments.
       # It's needed to test numeric_step behaviour with positional mixed with
       # keyword arguments.
-      @step_args = ->(*args) do
+      @step_args = -> *args do
         if args.size == 2
           [args[0], {by: args[1]}]
         else

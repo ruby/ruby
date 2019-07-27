@@ -9,7 +9,7 @@ describe "String#split with String" do
     broken_str.force_encoding('binary')
     broken_str.chop!
     broken_str.force_encoding('utf-8')
-    lambda { str.split(broken_str) }.should raise_error(ArgumentError)
+    -> { str.split(broken_str) }.should raise_error(ArgumentError)
   end
 
   it "splits on multibyte characters" do
@@ -316,8 +316,8 @@ describe "String#split with Regexp" do
   end
 
   it "returns a type error if limit can't be converted to an integer" do
-    lambda {"1.2.3.4".split(".", "three")}.should raise_error(TypeError)
-    lambda {"1.2.3.4".split(".", nil)    }.should raise_error(TypeError)
+    -> {"1.2.3.4".split(".", "three")}.should raise_error(TypeError)
+    -> {"1.2.3.4".split(".", nil)    }.should raise_error(TypeError)
   end
 
   it "doesn't set $~" do
@@ -400,7 +400,7 @@ describe "String#split with Regexp" do
     broken_str.force_encoding('binary')
     broken_str.chop!
     broken_str.force_encoding('utf-8')
-    lambda{ broken_str.split(/\r\n|\r|\n/) }.should raise_error(ArgumentError)
+    ->{ broken_str.split(/\r\n|\r|\n/) }.should raise_error(ArgumentError)
   end
 
   ruby_version_is "2.6" do

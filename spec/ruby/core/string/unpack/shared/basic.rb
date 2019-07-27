@@ -10,20 +10,20 @@ describe :string_unpack_basic, shared: true do
   end
 
   it "raises a TypeError when passed nil" do
-    lambda { "abc".unpack(nil) }.should raise_error(TypeError)
+    -> { "abc".unpack(nil) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed an Integer" do
-    lambda { "abc".unpack(1) }.should raise_error(TypeError)
+    -> { "abc".unpack(1) }.should raise_error(TypeError)
   end
 end
 
 describe :string_unpack_no_platform, shared: true do
   it "raises an ArgumentError when the format modifier is '_'" do
-    lambda { "abcdefgh".unpack(unpack_format("_")) }.should raise_error(ArgumentError)
+    -> { "abcdefgh".unpack(unpack_format("_")) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError when the format modifier is '!'" do
-    lambda { "abcdefgh".unpack(unpack_format("!")) }.should raise_error(ArgumentError)
+    -> { "abcdefgh".unpack(unpack_format("!")) }.should raise_error(ArgumentError)
   end
 end

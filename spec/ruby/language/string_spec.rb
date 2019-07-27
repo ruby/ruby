@@ -282,6 +282,6 @@ describe "Ruby String interpolation" do
     a = "\u3042"
     b = "\xff".force_encoding "binary"
 
-    lambda { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
+    -> { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
   end
 end

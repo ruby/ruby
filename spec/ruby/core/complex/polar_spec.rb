@@ -7,8 +7,8 @@ describe "Complex.polar" do
   end
 
   it "raises a TypeError when given non real arguments" do
-    lambda{ Complex.polar(nil)      }.should raise_error(TypeError)
-    lambda{ Complex.polar(nil, nil) }.should raise_error(TypeError)
+    ->{ Complex.polar(nil)      }.should raise_error(TypeError)
+    ->{ Complex.polar(nil, nil) }.should raise_error(TypeError)
   end
 end
 

@@ -13,7 +13,7 @@ describe "Range#===" do
     it "requires #succ method to be implemented" do
       range = RangeSpecs::WithoutSucc.new(0)..RangeSpecs::WithoutSucc.new(10)
 
-      lambda do
+      -> do
         range === RangeSpecs::WithoutSucc.new(2)
       end.should raise_error(TypeError, /can't iterate from/)
     end

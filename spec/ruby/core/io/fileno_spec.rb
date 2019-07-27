@@ -7,6 +7,6 @@ describe "IO#fileno" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.fileno }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.fileno }.should raise_error(IOError)
   end
 end

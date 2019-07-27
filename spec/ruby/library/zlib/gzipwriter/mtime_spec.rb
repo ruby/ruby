@@ -31,7 +31,7 @@ describe "Zlib::GzipWriter#mtime=" do
     Zlib::GzipWriter.wrap @io do |gzio|
       gzio.write ''
 
-      lambda { gzio.mtime = nil }.should \
+      -> { gzio.mtime = nil }.should \
         raise_error(Zlib::GzipFile::Error, 'header is already written')
     end
   end

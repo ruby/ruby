@@ -29,7 +29,7 @@ describe "Regexp#options" do
   end
 
   it "raises a TypeError on an uninitialized Regexp" do
-    lambda { Regexp.allocate.options }.should raise_error(TypeError)
+    -> { Regexp.allocate.options }.should raise_error(TypeError)
   end
 
   it "includes Regexp::FIXEDENCODING for a Regexp literal with the 'u' option" do

@@ -54,7 +54,7 @@ describe "Encoding::Converter#primitive_errinfo" do
 
   it "returns the state, source encoding, target encoding, erroneous bytes, and the read-again bytes when #convert last raised InvalidByteSequenceError" do
     ec = Encoding::Converter.new("utf-8", "iso-8859-1")
-    lambda { ec.convert("\xf1abcd") }.should raise_error(Encoding::InvalidByteSequenceError)
+    -> { ec.convert("\xf1abcd") }.should raise_error(Encoding::InvalidByteSequenceError)
     ec.primitive_errinfo.should ==
       [:invalid_byte_sequence, "UTF-8", "ISO-8859-1", "\xF1", "a"]
   end
@@ -62,7 +62,7 @@ describe "Encoding::Converter#primitive_errinfo" do
   it "returns the state, source encoding, target encoding, erroneous bytes, and the read-again bytes when #finish last raised InvalidByteSequenceError" do
     ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
     ec.convert("\xa4")
-    lambda { ec.finish }.should raise_error(Encoding::InvalidByteSequenceError)
+    -> { ec.finish }.should raise_error(Encoding::InvalidByteSequenceError)
     ec.primitive_errinfo.should == [:incomplete_input, "EUC-JP", "UTF-8", "\xA4", ""]
   end
 end

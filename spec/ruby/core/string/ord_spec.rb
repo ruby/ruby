@@ -23,6 +23,6 @@ describe "String#ord" do
   end
 
   it "raises an ArgumentError if called on an empty String" do
-    lambda { ''.ord }.should raise_error(ArgumentError)
+    -> { ''.ord }.should raise_error(ArgumentError)
   end
 end

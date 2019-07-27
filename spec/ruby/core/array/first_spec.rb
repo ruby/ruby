@@ -30,11 +30,11 @@ describe "Array#first" do
   end
 
   it "raises an ArgumentError when count is negative" do
-    lambda { [1, 2].first(-1) }.should raise_error(ArgumentError)
+    -> { [1, 2].first(-1) }.should raise_error(ArgumentError)
   end
 
   it "raises a RangeError when count is a Bignum" do
-    lambda { [].first(bignum_value) }.should raise_error(RangeError)
+    -> { [].first(bignum_value) }.should raise_error(RangeError)
   end
 
   it "returns the entire array when count > length" do
@@ -66,11 +66,11 @@ describe "Array#first" do
   end
 
   it "raises a TypeError if the passed argument is not numeric" do
-    lambda { [1,2].first(nil) }.should raise_error(TypeError)
-    lambda { [1,2].first("a") }.should raise_error(TypeError)
+    -> { [1,2].first(nil) }.should raise_error(TypeError)
+    -> { [1,2].first("a") }.should raise_error(TypeError)
 
     obj = mock("nonnumeric")
-    lambda { [1,2].first(obj) }.should raise_error(TypeError)
+    -> { [1,2].first(obj) }.should raise_error(TypeError)
   end
 
   it "does not return subclass instance when passed count on Array subclasses" do
