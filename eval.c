@@ -24,6 +24,10 @@
 #include <sys/prctl.h>
 #endif
 
+#if OPT_GLOBAL_METHOD_CACHE
+void rb_global_method_cache_free(void);
+#endif
+
 NORETURN(void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
 
@@ -254,6 +258,9 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
     rb_threadptr_unlock_all_locking_mutexes(th);
     EC_POP_TAG();
     rb_thread_stop_timer_thread();
+#if OPT_GLOBAL_METHOD_CACHE
+    rb_global_method_cache_free();
+#endif
     ruby_vm_destruct(th->vm);
     if (state) ruby_default_signal(state);
 
