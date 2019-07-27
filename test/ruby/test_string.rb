@@ -1779,6 +1779,9 @@ CODE
 
     result = []; "".split(//, 1) {|s| result << s}
     assert_equal([], result)
+
+    result = []; "aaa,bbb,ccc,ddd".split(/,/) {|s| result << s.gsub(/./, "A")}
+    assert_equal(["AAA"]*4, result)
   ensure
     EnvUtil.suppress_warning {$; = fs}
   end
