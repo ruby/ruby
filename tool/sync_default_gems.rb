@@ -228,6 +228,8 @@ def sync_default_gems(gem)
   end
 end
 
+IGNORE_FILE_PATTERN = /(\.travis.yml|appveyor\.yml|azure\-pipelines\.yml|\.gitignore|Gemfile|README\.md|History\.txt|Rakefile|CODE_OF_CONDUCT\.md)/
+
 def sync_default_gems_with_commits(gem, range)
   puts "Sync #{$repositories[gem.to_sym]} with commit history."
 
@@ -250,7 +252,7 @@ def sync_default_gems_with_commits(gem, range)
     IO.popen(%W"git diff-tree --no-commit-id --name-only -r #{sha}") do |f|
       files = f.read.split("\n")
     end
-    subject =~ /^Merge/ || files.all?{|file| file =~ /(\.travis.yml|appveyor\.yml|azure\-pipelines\.yml|\.gitignore|Gemfile|README\.md)/}
+    subject =~ /^Merge/ || files.all?{|file| file =~ IGNORE_FILE_PATTERN}
   end
 
   puts "Try to pick these commits:"
