@@ -259,14 +259,30 @@ def sync_default_gems_with_commits(gem, range)
   puts commits.map{|commit| commit.join(": ")}.join("\n")
   puts "----"
 
+  failed_commits = []
+
   commits.each do |sha, subject|
     puts "Pick #{sha} from #{$repositories[gem.to_sym]}."
 
-    `git cherry-pick #{sha}`
-    unless $?.success?
-      puts "Failed to pick #{sha}"
-      break
+    skipped = false
+    result = IO.popen(%W"git cherry-pick #{sha}").read
+    if result =~ /nothing\ to\ commit/
+      `git reset`
+      skipped = true
+      puts "Skip empty commit #{sha}"
     end
+    next if skipped
+
+    if result.empty?
+      failed_commits << sha
+      `git reset` && `git checkout .` && `git clean -fd`
+      skipped = true
+      puts "Failed to pick #{sha}"
+    end
+    next if skipped
+
+    puts "Update commit message: #{sha}"
+
     prefix = "[#{($repositories[gem.to_sym])}]".gsub(/\//, '\/')
     suffix = "https://github.com/#{($repositories[gem.to_sym])}/commit/#{sha[0,10]}"
     `git filter-branch -f --msg-filter 'sed "1s/^/#{prefix} /" && echo && echo #{suffix}' -- HEAD~1..HEAD`
@@ -275,6 +291,8 @@ def sync_default_gems_with_commits(gem, range)
       break
     end
   end
+
+  puts failed_commits
 end
 
 def sync_lib(repo)
