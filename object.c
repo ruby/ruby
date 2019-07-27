@@ -186,7 +186,11 @@ rb_eql(VALUE obj1, VALUE obj2)
  *
  *  The #eql? method returns <code>true</code> if +obj+ and +other+
  *  refer to the same hash key.  This is used by Hash to test members
- *  for equality.  For objects of class Object, #eql?  is synonymous
+ *  for equality.  For any pair of objects where #eql? returns +true+,
+ *  the #hash value of both objects must be equal. So any subclass
+ *  that overrides #eql? should also override #hash appropriately.
+ *
+ *  For objects of class Object, #eql?  is synonymous
  *  with #==.  Subclasses normally continue this tradition by aliasing
  *  #eql? to their overridden #== method, but there are exceptions.
  *  Numeric types, for example, perform type conversion across #==,
