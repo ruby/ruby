@@ -337,7 +337,7 @@ env:
     <<: *osx
     env:
       - CONFIG_FLAG=--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib
-      - TEST_ALL_OPTS="--timeout-scale=3.0 --tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx --exclude test_gc_compact"
+      - TEST_ALL_OPTS="--timeout-scale=2.0 --tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx --exclude test_gc_compact"
       - TEST_ALL_ISOLATED_TESTS="../test/ruby/test_gc_compact.rb"
       # Disabling -j3 because it seems to cause a hang on building Ruby: https://travis-ci.org/ruby/ruby/jobs/471021727
       - JOBS=
@@ -480,7 +480,7 @@ before_script:
 
 script:
   - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
-  - travis_wait 40 $SETARCH make -s test-all -o exts TESTOPTS="${TEST_ALL_OPTS=$TESTOPTS}" RUBYOPT="-w"
+  - travis_wait 50 $SETARCH make -s test-all -o exts TESTOPTS="${TEST_ALL_OPTS=$TESTOPTS}" RUBYOPT="-w"
   - |-
     if [ -n "${TEST_ALL_ISOLATED_TESTS}" ]; then
       $SETARCH make -s test-all -o exts TESTS="$TEST_ALL_ISOLATED_TESTS" RUBYOPT="-w"
