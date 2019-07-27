@@ -37,7 +37,7 @@ describe :complex_rect, shared: true do
 
   it "raises an ArgumentError if given any arguments" do
     @numbers.each do |number|
-      lambda { number.send(@method, number) }.should raise_error(ArgumentError)
+      -> { number.send(@method, number) }.should raise_error(ArgumentError)
     end
   end
 end
@@ -57,7 +57,7 @@ describe :complex_rect_class, shared: true do
     it "raises TypeError" do
       n = mock_numeric('n')
       n.should_receive(:real?).any_number_of_times.and_return(false)
-      lambda { Complex.send(@method, n) }.should raise_error(TypeError)
+      -> { Complex.send(@method, n) }.should raise_error(TypeError)
     end
   end
 
@@ -68,7 +68,7 @@ describe :complex_rect_class, shared: true do
         n2 = mock_numeric('n2')
         n1.should_receive(:real?).any_number_of_times.and_return(r1)
         n2.should_receive(:real?).any_number_of_times.and_return(r2)
-        lambda { Complex.send(@method, n1, n2) }.should raise_error(TypeError)
+        -> { Complex.send(@method, n1, n2) }.should raise_error(TypeError)
       end
     end
   end
@@ -87,8 +87,8 @@ describe :complex_rect_class, shared: true do
 
   describe "passed a non-Numeric" do
     it "raises TypeError" do
-      lambda { Complex.send(@method, :sym) }.should raise_error(TypeError)
-      lambda { Complex.send(@method, 0, :sym) }.should raise_error(TypeError)
+      -> { Complex.send(@method, :sym) }.should raise_error(TypeError)
+      -> { Complex.send(@method, 0, :sym) }.should raise_error(TypeError)
     end
   end
 end

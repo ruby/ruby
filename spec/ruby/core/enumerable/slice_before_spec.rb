@@ -41,15 +41,15 @@ describe "Enumerable#slice_before" do
     end
 
     it "does not accept arguments" do
-      lambda {
+      -> {
         @enum.slice_before(1) {}
       }.should raise_error(ArgumentError)
     end
   end
 
   it "raises an ArgumentError when given an incorrect number of arguments" do
-    lambda { @enum.slice_before("one", "two") }.should raise_error(ArgumentError)
-    lambda { @enum.slice_before }.should raise_error(ArgumentError)
+    -> { @enum.slice_before("one", "two") }.should raise_error(ArgumentError)
+    -> { @enum.slice_before }.should raise_error(ArgumentError)
   end
 
   describe "when an iterator method yields more than one value" do

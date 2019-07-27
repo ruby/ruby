@@ -66,7 +66,7 @@ ruby_version_is "2.5" do
     end
 
     it "raises a SystemCallError if called with a nonexistent directory" do
-      lambda { Dir.children DirSpecs.nonexistent }.should raise_error(SystemCallError)
+      -> { Dir.children DirSpecs.nonexistent }.should raise_error(SystemCallError)
     end
   end
 end

@@ -20,6 +20,6 @@ describe "Prime.prime_division" do
   end
 
   it "raises ZeroDivisionError for 0" do
-    lambda { Prime.prime_division(0) }.should raise_error(ZeroDivisionError)
+    -> { Prime.prime_division(0) }.should raise_error(ZeroDivisionError)
   end
 end

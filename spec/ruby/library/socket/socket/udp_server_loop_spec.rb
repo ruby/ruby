@@ -4,7 +4,7 @@ require_relative '../fixtures/classes'
 describe 'Socket.udp_server_loop' do
   describe 'when no connections are available' do
     it 'blocks the caller' do
-      lambda { Socket.udp_server_loop('127.0.0.1', 0) }.should block_caller
+      -> { Socket.udp_server_loop('127.0.0.1', 0) }.should block_caller
     end
   end
 

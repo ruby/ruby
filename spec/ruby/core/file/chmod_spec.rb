@@ -106,11 +106,11 @@ describe "File.chmod" do
   end
 
   it "throws a TypeError if the given path is not coercable into a string" do
-    lambda { File.chmod(0, []) }.should raise_error(TypeError)
+    -> { File.chmod(0, []) }.should raise_error(TypeError)
   end
 
   it "raises an error for a non existent path" do
-    lambda {
+    -> {
       File.chmod(0644, "#{@file}.not.existing")
     }.should raise_error(Errno::ENOENT)
   end

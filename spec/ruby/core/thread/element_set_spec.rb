@@ -17,8 +17,8 @@ describe "Thread#[]=" do
   end
 
   it "raises exceptions on the wrong type of keys" do
-    lambda { Thread.current[nil] = true }.should raise_error(TypeError)
-    lambda { Thread.current[5] = true }.should raise_error(TypeError)
+    -> { Thread.current[nil] = true }.should raise_error(TypeError)
+    -> { Thread.current[5] = true }.should raise_error(TypeError)
   end
 
   it "is not shared across fibers" do

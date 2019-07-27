@@ -104,15 +104,15 @@ describe "File.join" do
   it "raises an ArgumentError if passed a recursive array" do
     a = ["a"]
     a << a
-    lambda { File.join a }.should raise_error(ArgumentError)
+    -> { File.join a }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError exception when args are nil" do
-    lambda { File.join nil }.should raise_error(TypeError)
+    -> { File.join nil }.should raise_error(TypeError)
   end
 
   it "calls #to_str" do
-    lambda { File.join(mock('x')) }.should raise_error(TypeError)
+    -> { File.join(mock('x')) }.should raise_error(TypeError)
 
     bin = mock("bin")
     bin.should_receive(:to_str).exactly(:twice).and_return("bin")
@@ -129,7 +129,7 @@ describe "File.join" do
   end
 
   it "calls #to_path" do
-    lambda { File.join(mock('x')) }.should raise_error(TypeError)
+    -> { File.join(mock('x')) }.should raise_error(TypeError)
 
     bin = mock("bin")
     bin.should_receive(:to_path).exactly(:twice).and_return("bin")

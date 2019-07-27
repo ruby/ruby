@@ -54,9 +54,9 @@ describe "String#slice! with index" do
   end
 
   it "raises a #{frozen_error_class} if self is frozen" do
-    lambda { "hello".freeze.slice!(1)  }.should raise_error(frozen_error_class)
-    lambda { "hello".freeze.slice!(10) }.should raise_error(frozen_error_class)
-    lambda { "".freeze.slice!(0)       }.should raise_error(frozen_error_class)
+    -> { "hello".freeze.slice!(1)  }.should raise_error(frozen_error_class)
+    -> { "hello".freeze.slice!(10) }.should raise_error(frozen_error_class)
+    -> { "".freeze.slice!(0)       }.should raise_error(frozen_error_class)
   end
 
   it "calls to_int on index" do
@@ -118,13 +118,13 @@ describe "String#slice! with index, length" do
   end
 
   it "raises a #{frozen_error_class} if self is frozen" do
-    lambda { "hello".freeze.slice!(1, 2)  }.should raise_error(frozen_error_class)
-    lambda { "hello".freeze.slice!(10, 3) }.should raise_error(frozen_error_class)
-    lambda { "hello".freeze.slice!(-10, 3)}.should raise_error(frozen_error_class)
-    lambda { "hello".freeze.slice!(4, -3) }.should raise_error(frozen_error_class)
-    lambda { "hello".freeze.slice!(10, 3) }.should raise_error(frozen_error_class)
-    lambda { "hello".freeze.slice!(-10, 3)}.should raise_error(frozen_error_class)
-    lambda { "hello".freeze.slice!(4, -3) }.should raise_error(frozen_error_class)
+    -> { "hello".freeze.slice!(1, 2)  }.should raise_error(frozen_error_class)
+    -> { "hello".freeze.slice!(10, 3) }.should raise_error(frozen_error_class)
+    -> { "hello".freeze.slice!(-10, 3)}.should raise_error(frozen_error_class)
+    -> { "hello".freeze.slice!(4, -3) }.should raise_error(frozen_error_class)
+    -> { "hello".freeze.slice!(10, 3) }.should raise_error(frozen_error_class)
+    -> { "hello".freeze.slice!(-10, 3)}.should raise_error(frozen_error_class)
+    -> { "hello".freeze.slice!(4, -3) }.should raise_error(frozen_error_class)
   end
 
   it "calls to_int on idx and length" do
@@ -245,12 +245,12 @@ describe "String#slice! Range" do
 
 
   it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    lambda { "hello".freeze.slice!(1..3)  }.should raise_error(frozen_error_class)
+    -> { "hello".freeze.slice!(1..3)  }.should raise_error(frozen_error_class)
   end
 
   # see redmine #1551
   it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
-    lambda { "hello".freeze.slice!(10..20)}.should raise_error(frozen_error_class)
+    -> { "hello".freeze.slice!(10..20)}.should raise_error(frozen_error_class)
   end
 end
 
@@ -313,11 +313,11 @@ describe "String#slice! with Regexp" do
   end
 
   it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    lambda { "this is a string".freeze.slice!(/s.*t/) }.should raise_error(frozen_error_class)
+    -> { "this is a string".freeze.slice!(/s.*t/) }.should raise_error(frozen_error_class)
   end
 
   it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
-    lambda { "this is a string".freeze.slice!(/zzz/)  }.should raise_error(frozen_error_class)
+    -> { "this is a string".freeze.slice!(/zzz/)  }.should raise_error(frozen_error_class)
   end
 end
 
@@ -403,9 +403,9 @@ describe "String#slice! with Regexp, index" do
   end
 
   it "raises a #{frozen_error_class} if self is frozen" do
-    lambda { "this is a string".freeze.slice!(/s.*t/)  }.should raise_error(frozen_error_class)
-    lambda { "this is a string".freeze.slice!(/zzz/, 0)}.should raise_error(frozen_error_class)
-    lambda { "this is a string".freeze.slice!(/(.)/, 2)}.should raise_error(frozen_error_class)
+    -> { "this is a string".freeze.slice!(/s.*t/)  }.should raise_error(frozen_error_class)
+    -> { "this is a string".freeze.slice!(/zzz/, 0)}.should raise_error(frozen_error_class)
+    -> { "this is a string".freeze.slice!(/(.)/, 2)}.should raise_error(frozen_error_class)
   end
 end
 
@@ -448,7 +448,7 @@ describe "String#slice! with String" do
     o = mock('x')
     o.should_not_receive(:to_str)
 
-    lambda { "hello".slice!(o) }.should raise_error(TypeError)
+    -> { "hello".slice!(o) }.should raise_error(TypeError)
   end
 
   it "returns a subclass instance when given a subclass instance" do
@@ -459,8 +459,8 @@ describe "String#slice! with String" do
   end
 
   it "raises a #{frozen_error_class} if self is frozen" do
-    lambda { "hello hello".freeze.slice!('llo')     }.should raise_error(frozen_error_class)
-    lambda { "this is a string".freeze.slice!('zzz')}.should raise_error(frozen_error_class)
-    lambda { "this is a string".freeze.slice!('zzz')}.should raise_error(frozen_error_class)
+    -> { "hello hello".freeze.slice!('llo')     }.should raise_error(frozen_error_class)
+    -> { "this is a string".freeze.slice!('zzz')}.should raise_error(frozen_error_class)
+    -> { "this is a string".freeze.slice!('zzz')}.should raise_error(frozen_error_class)
   end
 end

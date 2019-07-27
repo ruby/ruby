@@ -33,19 +33,19 @@ ruby_version_is "2.5" do
       end
 
       it "raises EOFError if end-of-file is reached" do
-        lambda { @file.pread(1, 10) }.should raise_error(EOFError)
+        -> { @file.pread(1, 10) }.should raise_error(EOFError)
       end
 
       it "raises IOError when file is not open in read mode" do
         File.open(@fname, "w") do |file|
-          lambda { file.pread(1, 1) }.should raise_error(IOError)
+          -> { file.pread(1, 1) }.should raise_error(IOError)
         end
       end
 
       it "raises IOError when file is closed" do
         file = File.open(@fname, "r+")
         file.close
-        lambda { file.pread(1, 1) }.should raise_error(IOError)
+        -> { file.pread(1, 1) }.should raise_error(IOError)
       end
     end
   end

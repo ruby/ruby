@@ -43,14 +43,14 @@ describe :kernel_Hash, shared: true do
   end
 
   it "raises a TypeError if it doesn't respond to #to_hash" do
-    lambda { @object.send(@method, mock("")) }.should raise_error(TypeError)
+    -> { @object.send(@method, mock("")) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if #to_hash does not return an Hash" do
     obj = mock("Hash() string")
     obj.should_receive(:to_hash).and_return("string")
 
-    lambda { @object.send(@method, obj) }.should raise_error(TypeError)
+    -> { @object.send(@method, obj) }.should raise_error(TypeError)
   end
 end
 

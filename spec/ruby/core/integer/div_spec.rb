@@ -46,21 +46,21 @@ describe "Integer#div" do
     end
 
     it "raises a ZeroDivisionError when the given argument is 0 and a Float" do
-      lambda { 0.div(0.0)   }.should raise_error(ZeroDivisionError)
-      lambda { 10.div(0.0)  }.should raise_error(ZeroDivisionError)
-      lambda { -10.div(0.0) }.should raise_error(ZeroDivisionError)
+      -> { 0.div(0.0)   }.should raise_error(ZeroDivisionError)
+      -> { 10.div(0.0)  }.should raise_error(ZeroDivisionError)
+      -> { -10.div(0.0) }.should raise_error(ZeroDivisionError)
     end
 
     it "raises a ZeroDivisionError when the given argument is 0 and not a Float" do
-      lambda { 13.div(0) }.should raise_error(ZeroDivisionError)
-      lambda { 13.div(-0) }.should raise_error(ZeroDivisionError)
+      -> { 13.div(0) }.should raise_error(ZeroDivisionError)
+      -> { 13.div(-0) }.should raise_error(ZeroDivisionError)
     end
 
     it "raises a TypeError when given a non-numeric argument" do
-      lambda { 13.div(mock('10')) }.should raise_error(TypeError)
-      lambda { 5.div("2") }.should raise_error(TypeError)
-      lambda { 5.div(:"2") }.should raise_error(TypeError)
-      lambda { 5.div([]) }.should raise_error(TypeError)
+      -> { 13.div(mock('10')) }.should raise_error(TypeError)
+      -> { 5.div("2") }.should raise_error(TypeError)
+      -> { 5.div(:"2") }.should raise_error(TypeError)
+      -> { 5.div([]) }.should raise_error(TypeError)
     end
   end
 
@@ -118,9 +118,9 @@ describe "Integer#div" do
     end
 
     it "raises a TypeError when given a non-numeric" do
-      lambda { @bignum.div(mock("10")) }.should raise_error(TypeError)
-      lambda { @bignum.div("2") }.should raise_error(TypeError)
-      lambda { @bignum.div(:symbol) }.should raise_error(TypeError)
+      -> { @bignum.div(mock("10")) }.should raise_error(TypeError)
+      -> { @bignum.div("2") }.should raise_error(TypeError)
+      -> { @bignum.div(:symbol) }.should raise_error(TypeError)
     end
 
     it "returns a result of integer division of self by a float argument" do
@@ -134,13 +134,13 @@ describe "Integer#div" do
 
     # #5490
     it "raises ZeroDivisionError if the argument is 0 and is a Float" do
-      lambda { @bignum.div(0.0) }.should raise_error(ZeroDivisionError)
-      lambda { @bignum.div(-0.0) }.should raise_error(ZeroDivisionError)
+      -> { @bignum.div(0.0) }.should raise_error(ZeroDivisionError)
+      -> { @bignum.div(-0.0) }.should raise_error(ZeroDivisionError)
     end
 
     it "raises ZeroDivisionError if the argument is 0 and is not a Float" do
-      lambda { @bignum.div(0) }.should raise_error(ZeroDivisionError)
-      lambda { @bignum.div(-0) }.should raise_error(ZeroDivisionError)
+      -> { @bignum.div(0) }.should raise_error(ZeroDivisionError)
+      -> { @bignum.div(-0) }.should raise_error(ZeroDivisionError)
     end
   end
 end

@@ -34,18 +34,18 @@ describe "StringScanner#[]" do
 
   it "raises a TypeError if the given index is nil" do
     @s.scan(/(\w+) (\w+) (\d+) /)
-    lambda { @s[nil]}.should raise_error(TypeError)
+    -> { @s[nil]}.should raise_error(TypeError)
   end
 
   it "raises a TypeError when a Range is as argument" do
     @s.scan(/(\w+) (\w+) (\d+) /)
-    lambda { @s[0..2]}.should raise_error(TypeError)
+    -> { @s[0..2]}.should raise_error(TypeError)
   end
 
   it "raises a IndexError when there's no named capture" do
     @s.scan(/(\w+) (\w+) (\d+) /)
-    lambda { @s["wday"]}.should raise_error(IndexError)
-    lambda { @s[:wday]}.should raise_error(IndexError)
+    -> { @s["wday"]}.should raise_error(IndexError)
+    -> { @s[:wday]}.should raise_error(IndexError)
   end
 
   it "returns named capture" do

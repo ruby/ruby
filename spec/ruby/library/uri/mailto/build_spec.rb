@@ -84,7 +84,7 @@ describe "URI::Mailto.build" do
     end
 
     bad.each do |x|
-      lambda { URI::MailTo.build(x) }.should raise_error(URI::InvalidComponentError)
+      -> { URI::MailTo.build(x) }.should raise_error(URI::InvalidComponentError)
     end
 
     ok.flatten.join("\0").should == ok_all

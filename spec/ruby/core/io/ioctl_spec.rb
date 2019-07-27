@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 describe "IO#ioctl" do
   platform_is_not :windows do
     it "raises IOError on closed stream" do
-      lambda { IOSpecs.closed_io.ioctl(5, 5) }.should raise_error(IOError)
+      -> { IOSpecs.closed_io.ioctl(5, 5) }.should raise_error(IOError)
     end
   end
 
@@ -22,7 +22,7 @@ describe "IO#ioctl" do
 
     it "raises an Errno error when ioctl fails" do
       File.open(__FILE__, 'r') do |f|
-        lambda {
+        -> {
           # TIOCGWINSZ in /usr/include/asm-generic/ioctls.h
           f.ioctl 0x5413, nil
         }.should raise_error(Errno::ENOTTY)

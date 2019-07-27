@@ -7,11 +7,11 @@ describe "StringScanner#restsize" do
 
   it "warns in verbose mode that the method is obsolete" do
     s = StringScanner.new("abc")
-    lambda {
+    -> {
       s.restsize
     }.should complain(/restsize.*obsolete.*rest_size/, verbose: true)
 
-    lambda {
+    -> {
       s.restsize
     }.should_not complain(verbose: false)
   end

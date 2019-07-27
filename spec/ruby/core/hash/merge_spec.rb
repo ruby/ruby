@@ -28,7 +28,7 @@ describe "Hash#merge" do
     r = h1.merge(h2) { |k,x,y| "#{k}:#{x+2*y}" }
     r.should == { a: "a:-2", b: "b:9", c: -3, d: 5 }
 
-    lambda {
+    -> {
       h1.merge(h2) { |k, x, y| raise(IndexError) }
     }.should raise_error(IndexError)
 

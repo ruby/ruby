@@ -32,7 +32,7 @@ describe "Time#localtime" do
     it "raises a RuntimeError if the time has a different time zone" do
       time = Time.gm(2007, 1, 9, 12, 0, 0)
       time.freeze
-      lambda { time.localtime }.should raise_error(RuntimeError)
+      -> { time.localtime }.should raise_error(RuntimeError)
     end
   end
 
@@ -118,23 +118,23 @@ describe "Time#localtime" do
 
   it "raises ArgumentError if the String argument is not of the form (+|-)HH:MM" do
     t = Time.now
-    lambda { t.localtime("3600") }.should raise_error(ArgumentError)
+    -> { t.localtime("3600") }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the String argument is not in an ASCII-compatible encoding" do
     t = Time.now
-    lambda { t.localtime("-01:00".encode("UTF-16LE")) }.should raise_error(ArgumentError)
+    -> { t.localtime("-01:00".encode("UTF-16LE")) }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the argument represents a value less than or equal to -86400 seconds" do
     t = Time.new
     t.localtime(-86400 + 1).utc_offset.should == (-86400 + 1)
-    lambda { t.localtime(-86400) }.should raise_error(ArgumentError)
+    -> { t.localtime(-86400) }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the argument represents a value greater than or equal to 86400 seconds" do
     t = Time.new
     t.localtime(86400 - 1).utc_offset.should == (86400 - 1)
-    lambda { t.localtime(86400) }.should raise_error(ArgumentError)
+    -> { t.localtime(86400) }.should raise_error(ArgumentError)
   end
 end

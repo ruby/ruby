@@ -35,11 +35,11 @@ describe "Integer#fdiv" do
   end
 
   it "raises a TypeError when argument isn't numeric" do
-    lambda { 1.fdiv(mock('non-numeric')) }.should raise_error(TypeError)
+    -> { 1.fdiv(mock('non-numeric')) }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError when passed multiple arguments" do
-    lambda { 1.fdiv(6,0.2) }.should raise_error(ArgumentError)
+    -> { 1.fdiv(6,0.2) }.should raise_error(ArgumentError)
   end
 
   it "follows the coercion protocol" do

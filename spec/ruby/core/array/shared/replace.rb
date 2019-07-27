@@ -53,7 +53,7 @@ describe :array_replace, shared: true do
   end
 
   it "raises a #{frozen_error_class} on a frozen array" do
-    lambda {
+    -> {
       ArraySpecs.frozen_array.send(@method, ArraySpecs.frozen_array)
     }.should raise_error(frozen_error_class)
   end

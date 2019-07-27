@@ -8,12 +8,12 @@ describe "OpenSSL::Config#freeze" do
 
   it "freezes" do
     c = OpenSSL::Config.new
-    lambda {
+    -> {
       c['foo'] = [ ['key', 'value'] ]
     }.should_not raise_error
     c.freeze
     c.frozen?.should be_true
-    lambda {
+    -> {
       c['foo'] = [ ['key', 'value'] ]
     }.should raise_error(TypeError)
   end

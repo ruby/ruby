@@ -19,7 +19,7 @@ platform_is :windows do
 
         WIN32OLE.locale.should == 1041
         WIN32OLE.locale = WIN32OLE::LOCALE_SYSTEM_DEFAULT
-        lambda { WIN32OLE.locale = 111 }.should raise_error WIN32OLERuntimeError
+        -> { WIN32OLE.locale = 111 }.should raise_error WIN32OLERuntimeError
         WIN32OLE.locale.should == WIN32OLE::LOCALE_SYSTEM_DEFAULT
       ensure
         WIN32OLE.locale.should == WIN32OLE::LOCALE_SYSTEM_DEFAULT

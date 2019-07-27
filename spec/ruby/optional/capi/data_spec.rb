@@ -32,7 +32,7 @@ describe "CApiWrappedStruct" do
     end
 
     it "raises a TypeError if the object does not wrap a struct" do
-      lambda { @s.get_struct(Object.new) }.should raise_error(TypeError)
+      -> { @s.get_struct(Object.new) }.should raise_error(TypeError)
     end
   end
 

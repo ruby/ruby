@@ -6,7 +6,7 @@ describe "Module#define_singleton_method" do
       define_singleton_method :a do
         42
       end
-      define_singleton_method(:b, lambda {|x| 2*x })
+      define_singleton_method(:b, -> x { 2*x })
     end
 
     klass.a.should == 42

@@ -24,19 +24,19 @@ describe "Array#initialize" do
   end
 
   it "raises an ArgumentError if passed 3 or more arguments" do
-    lambda do
+    -> do
       [1, 2].send :initialize, 1, 'x', true
     end.should raise_error(ArgumentError)
-    lambda do
+    -> do
       [1, 2].send(:initialize, 1, 'x', true) {}
     end.should raise_error(ArgumentError)
   end
 
   it "raises a #{frozen_error_class} on frozen arrays" do
-    lambda do
+    -> do
       ArraySpecs.frozen_array.send :initialize
     end.should raise_error(frozen_error_class)
-    lambda do
+    -> do
       ArraySpecs.frozen_array.send :initialize, ArraySpecs.frozen_array
     end.should raise_error(frozen_error_class)
   end
@@ -53,7 +53,7 @@ describe "Array#initialize with no arguments" do
   end
 
   it "does not use the given block" do
-    lambda{ [1, 2, 3].send(:initialize) { raise } }.should_not raise_error
+    ->{ [1, 2, 3].send(:initialize) { raise } }.should_not raise_error
   end
 end
 
@@ -64,7 +64,7 @@ describe "Array#initialize with (array)" do
   end
 
   it "does not use the given block" do
-    lambda{ [1, 2, 3].send(:initialize) { raise } }.should_not raise_error
+    ->{ [1, 2, 3].send(:initialize) { raise } }.should_not raise_error
   end
 
   it "calls #to_ary to convert the value to an array" do
@@ -81,7 +81,7 @@ describe "Array#initialize with (array)" do
   end
 
   it "raises a TypeError if an Array type argument and a default object" do
-    lambda { [].send(:initialize, [1, 2], 1) }.should raise_error(TypeError)
+    -> { [].send(:initialize, [1, 2], 1) }.should raise_error(TypeError)
   end
 end
 
@@ -103,12 +103,12 @@ describe "Array#initialize with (size, object=nil)" do
   end
 
   it "raises an ArgumentError if size is negative" do
-    lambda { [].send(:initialize, -1, :a) }.should raise_error(ArgumentError)
-    lambda { [].send(:initialize, -1) }.should raise_error(ArgumentError)
+    -> { [].send(:initialize, -1, :a) }.should raise_error(ArgumentError)
+    -> { [].send(:initialize, -1) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if size is too large" do
-    lambda { [].send(:initialize, fixnum_max+1) }.should raise_error(ArgumentError)
+    -> { [].send(:initialize, fixnum_max+1) }.should raise_error(ArgumentError)
   end
 
   it "calls #to_int to convert the size argument to an Integer when object is given" do
@@ -126,7 +126,7 @@ describe "Array#initialize with (size, object=nil)" do
   it "raises a TypeError if the size argument is not an Integer type" do
     obj = mock('nonnumeric')
     obj.stub!(:to_ary).and_return([1, 2])
-    lambda{ [].send(:initialize, obj, :a) }.should raise_error(TypeError)
+    ->{ [].send(:initialize, obj, :a) }.should raise_error(TypeError)
   end
 
   it "yields the index of the element and sets the element to the value of the block" do
@@ -134,7 +134,7 @@ describe "Array#initialize with (size, object=nil)" do
   end
 
   it "uses the block value instead of using the default value" do
-    lambda {
+    -> {
       @result = [].send(:initialize, 3, :obj) { |i| i.to_s }
     }.should complain(/block supersedes default value argument/)
     @result.should == ['0', '1', '2']

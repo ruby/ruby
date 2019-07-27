@@ -70,7 +70,7 @@ describe "Kernel#open" do
   end
 
   it "raises an ArgumentError if not passed one argument" do
-    lambda { open }.should raise_error(ArgumentError)
+    -> { open }.should raise_error(ArgumentError)
   end
 
   describe "when given an object that responds to to_open" do
@@ -129,9 +129,9 @@ describe "Kernel#open" do
 
   it "raises a TypeError if passed a non-String that does not respond to #to_open" do
     obj = mock('non-fileish')
-    lambda { open(obj) }.should raise_error(TypeError)
-    lambda { open(nil) }.should raise_error(TypeError)
-    lambda { open(7)   }.should raise_error(TypeError)
+    -> { open(obj) }.should raise_error(TypeError)
+    -> { open(nil) }.should raise_error(TypeError)
+    -> { open(7)   }.should raise_error(TypeError)
   end
 
   it "accepts nil for mode and permission" do

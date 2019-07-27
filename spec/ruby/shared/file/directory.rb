@@ -24,12 +24,12 @@ describe :file_directory, shared: true do
   end
 
   it "raises a TypeError when passed an Integer" do
-    lambda { @object.send(@method, 1) }.should raise_error(TypeError)
-    lambda { @object.send(@method, bignum_value) }.should raise_error(TypeError)
+    -> { @object.send(@method, 1) }.should raise_error(TypeError)
+    -> { @object.send(@method, bignum_value) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed nil" do
-    lambda { @object.send(@method, nil) }.should raise_error(TypeError)
+    -> { @object.send(@method, nil) }.should raise_error(TypeError)
   end
 end
 

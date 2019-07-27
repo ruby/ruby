@@ -27,7 +27,7 @@ describe "Kernel#instance_variable_defined?" do
   end
 
   it "raises a TypeError if passed an Object not defining #to_str" do
-    lambda do
+    -> do
       obj = mock("kernel instance_variable_defined?")
       @instance.instance_variable_defined? obj
     end.should raise_error(TypeError)

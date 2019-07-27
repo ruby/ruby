@@ -26,7 +26,7 @@ describe "Zlib.crc32" do
     Zlib.crc32(test_string, 2**16).should == 1932511220
     Zlib.crc32("p", ~305419896).should == 4046865307
     Zlib.crc32("p", -305419897).should == 4046865307
-    lambda { Zlib.crc32(test_string, 2**128) }.should raise_error(RangeError)
+    -> { Zlib.crc32(test_string, 2**128) }.should raise_error(RangeError)
   end
 
   it "calculates the CRC checksum for string and initial CRC value for Bignums" do

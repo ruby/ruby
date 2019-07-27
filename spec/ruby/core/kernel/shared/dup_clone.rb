@@ -102,12 +102,12 @@ describe :kernel_dup_clone, shared: true do
   ruby_version_is ''...'2.5' do
     it "raises a TypeError for Complex" do
       c = Complex(1.3, 3.1)
-      lambda { c.send(@method) }.should raise_error(TypeError)
+      -> { c.send(@method) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError for Rational" do
       r = Rational(1, 3)
-      lambda { r.send(@method) }.should raise_error(TypeError)
+      -> { r.send(@method) }.should raise_error(TypeError)
     end
   end
 

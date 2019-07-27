@@ -5,8 +5,8 @@ require 'abbrev'
 #the same manner, as they're more or less aliases
 #of one another
 
-[["Abbrev.abbrev", lambda {|a| Abbrev.abbrev(a)}],
- ["Array#abbrev", lambda {|a| a.abbrev}]
+[["Abbrev.abbrev", -> a { Abbrev.abbrev(a)}],
+ ["Array#abbrev", -> a { a.abbrev}]
 ].each do |(name, func)|
 
   describe name do

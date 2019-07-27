@@ -15,7 +15,7 @@ describe "IO#close_write" do
   it "closes the write end of a duplex I/O stream" do
     @io.close_write
 
-    lambda { @io.write "attempt to write" }.should raise_error(IOError)
+    -> { @io.write "attempt to write" }.should raise_error(IOError)
   end
 
   it "does nothing on subsequent invocations" do
@@ -27,14 +27,14 @@ describe "IO#close_write" do
   it "allows subsequent invocation of close" do
     @io.close_write
 
-    lambda { @io.close }.should_not raise_error
+    -> { @io.close }.should_not raise_error
   end
 
   it "raises an IOError if the stream is readable and not duplexed" do
     io = File.open @path, 'w+'
 
     begin
-      lambda { io.close_write }.should raise_error(IOError)
+      -> { io.close_write }.should raise_error(IOError)
     ensure
       io.close unless io.closed?
     end

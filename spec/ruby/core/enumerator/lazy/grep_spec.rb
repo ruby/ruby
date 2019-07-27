@@ -33,6 +33,39 @@ describe "Enumerator::Lazy#grep" do
     Enumerator::Lazy.new(Object.new, 100) {}.grep(Object).size.should == nil
   end
 
+  it "sets $~ in the block" do
+    "z" =~ /z/ # Reset $~
+    ["abc", "def"].lazy.grep(/b/) { |e|
+      e.should == "abc"
+      $&.should == "b"
+    }.force
+
+    # Set by the failed match of "def"
+    $~.should == nil
+  end
+
+  it "sets $~ in the next block with each" do
+    "z" =~ /z/ # Reset $~
+    ["abc", "def"].lazy.grep(/b/).each { |e|
+      e.should == "abc"
+      $&.should == "b"
+    }
+
+    # Set by the failed match of "def"
+    $~.should == nil
+  end
+
+  it "sets $~ in the next block with map" do
+    "z" =~ /z/ # Reset $~
+    ["abc", "def"].lazy.grep(/b/).map { |e|
+      e.should == "abc"
+      $&.should == "b"
+    }.force
+
+    # Set by the failed match of "def"
+    $~.should == nil
+  end
+
   describe "when the returned lazy enumerator is evaluated by Enumerable#first" do
     it "stops after specified times when not given a block" do
       (0..Float::INFINITY).lazy.grep(Integer).first(3).should == [0, 1, 2]

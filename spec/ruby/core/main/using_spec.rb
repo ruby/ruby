@@ -3,11 +3,11 @@ require_relative 'fixtures/classes'
 
 describe "main.using" do
   it "requires one Module argument" do
-    lambda do
+    -> do
       eval('using', TOPLEVEL_BINDING)
     end.should raise_error(ArgumentError)
 
-    lambda do
+    -> do
       eval('using "foo"', TOPLEVEL_BINDING)
     end.should raise_error(TypeError)
   end
@@ -17,7 +17,7 @@ describe "main.using" do
     load File.expand_path('../fixtures/string_refinement_user.rb', __FILE__)
     MainSpecs::DATA[:in_module].should == 'foo'
     MainSpecs::DATA[:toplevel].should == 'foo'
-    lambda do
+    -> do
       'hello'.foo
     end.should raise_error(NoMethodError)
   end
@@ -25,7 +25,7 @@ describe "main.using" do
   it "uses refinements from the given module for method calls in the target file" do
     require_relative 'fixtures/string_refinement'
     load File.expand_path('../fixtures/string_refinement_user.rb', __FILE__)
-    lambda do
+    -> do
       'hello'.foo
     end.should raise_error(NoMethodError)
     MainSpecs.call_foo('hello').should == 'foo'

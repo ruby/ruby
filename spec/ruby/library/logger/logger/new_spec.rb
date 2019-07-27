@@ -15,7 +15,7 @@ describe "Logger#new" do
 
    it "creates a new logger object" do
      l = Logger.new(STDERR)
-     lambda { l.add(Logger::WARN, "Foo") }.should output_to_fd(/Foo/, STDERR)
+     -> { l.add(Logger::WARN, "Foo") }.should output_to_fd(/Foo/, STDERR)
    end
 
    it "receives a logging device as first argument" do
@@ -28,13 +28,13 @@ describe "Logger#new" do
    end
 
   it "receives a frequency rotation as second argument" do
-     lambda { Logger.new(@log_file, "daily") }.should_not raise_error
-     lambda { Logger.new(@log_file, "weekly") }.should_not raise_error
-     lambda { Logger.new(@log_file, "monthly") }.should_not raise_error
+     -> { Logger.new(@log_file, "daily") }.should_not raise_error
+     -> { Logger.new(@log_file, "weekly") }.should_not raise_error
+     -> { Logger.new(@log_file, "monthly") }.should_not raise_error
   end
 
   it "also receives a number of log files to keep as second argument" do
-    lambda { Logger.new(@log_file, 1).close }.should_not raise_error
+    -> { Logger.new(@log_file, 1).close }.should_not raise_error
   end
 
   it "receives a maximum logfile size as third argument" do

@@ -2,11 +2,11 @@ require_relative '../../spec_helper'
 
 describe "Complex#rationalize" do
   it "raises RangeError if self has non-zero imaginary part" do
-    lambda { Complex(1,5).rationalize }.should raise_error(RangeError)
+    -> { Complex(1,5).rationalize }.should raise_error(RangeError)
   end
 
   it "raises RangeError if self has 0.0 imaginary part" do
-    lambda { Complex(1,0.0).rationalize }.should raise_error(RangeError)
+    -> { Complex(1,0.0).rationalize }.should raise_error(RangeError)
   end
 
   it "returns a Rational if self has zero imaginary part" do
@@ -25,7 +25,7 @@ describe "Complex#rationalize" do
   end
 
   it "raises ArgumentError when passed more than one argument" do
-    lambda { Complex(1,0).rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
-    lambda { Complex(1,0).rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
+    -> { Complex(1,0).rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
+    -> { Complex(1,0).rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
   end
 end

@@ -20,7 +20,7 @@ describe "Process.clock_gettime" do
     end
 
     it 'raises an ArgumentError for an invalid time unit' do
-      lambda { Process.clock_gettime(Process::CLOCK_MONOTONIC, :bad) }.should raise_error(ArgumentError)
+      -> { Process.clock_gettime(Process::CLOCK_MONOTONIC, :bad) }.should raise_error(ArgumentError)
     end
 
     it 'defaults to :float_second' do

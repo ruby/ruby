@@ -41,20 +41,20 @@ describe "Module#const_set" do
   end
 
   it "raises a NameError if the name does not start with a capital letter" do
-    lambda { ConstantSpecs.const_set "name", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "name", 1 }.should raise_error(NameError)
   end
 
   it "raises a NameError if the name starts with a non-alphabetic character" do
-    lambda { ConstantSpecs.const_set "__CONSTX__", 1 }.should raise_error(NameError)
-    lambda { ConstantSpecs.const_set "@Name", 1 }.should raise_error(NameError)
-    lambda { ConstantSpecs.const_set "!Name", 1 }.should raise_error(NameError)
-    lambda { ConstantSpecs.const_set "::Name", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "__CONSTX__", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "@Name", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "!Name", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "::Name", 1 }.should raise_error(NameError)
   end
 
   it "raises a NameError if the name contains non-alphabetic characters except '_'" do
     ConstantSpecs.const_set("CS_CONST404", :const404).should == :const404
-    lambda { ConstantSpecs.const_set "Name=", 1 }.should raise_error(NameError)
-    lambda { ConstantSpecs.const_set "Name?", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "Name=", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "Name?", 1 }.should raise_error(NameError)
   end
 
   it "calls #to_str to convert the given name to a String" do
@@ -66,10 +66,10 @@ describe "Module#const_set" do
 
   it "raises a TypeError if conversion to a String by calling #to_str fails" do
     name = mock('123')
-    lambda { ConstantSpecs.const_set name, 1 }.should raise_error(TypeError)
+    -> { ConstantSpecs.const_set name, 1 }.should raise_error(TypeError)
 
     name.should_receive(:to_str).and_return(123)
-    lambda { ConstantSpecs.const_set name, 1 }.should raise_error(TypeError)
+    -> { ConstantSpecs.const_set name, 1 }.should raise_error(TypeError)
   end
 
   describe "when overwriting an existing constant" do
@@ -126,7 +126,7 @@ describe "Module#const_set" do
     end
 
     it "raises a #{frozen_error_class} before setting the name" do
-      lambda { @frozen.const_set @name, nil }.should raise_error(frozen_error_class)
+      -> { @frozen.const_set @name, nil }.should raise_error(frozen_error_class)
       @frozen.should_not have_constant(@name)
     end
   end

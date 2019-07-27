@@ -37,7 +37,7 @@ describe "Module#public" do
   end
 
   it "raises a NameError when given an undefined name" do
-    lambda do
+    -> do
       Module.new.send(:public, :undefined)
     end.should raise_error(NameError)
   end

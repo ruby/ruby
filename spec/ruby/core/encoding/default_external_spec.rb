@@ -54,10 +54,10 @@ describe "Encoding.default_external=" do
   end
 
   it "raises a TypeError unless the argument is an Encoding or convertible to a String" do
-    lambda { Encoding.default_external = [] }.should raise_error(TypeError)
+    -> { Encoding.default_external = [] }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError if the argument is nil" do
-    lambda { Encoding.default_external = nil }.should raise_error(ArgumentError)
+    -> { Encoding.default_external = nil }.should raise_error(ArgumentError)
   end
 end

@@ -23,7 +23,7 @@ describe "IO#getbyte" do
   end
 
   it "raises an IOError on closed stream" do
-    lambda { IOSpecs.closed_io.getbyte }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.getbyte }.should raise_error(IOError)
   end
 end
 

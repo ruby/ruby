@@ -11,11 +11,11 @@ describe :proc_to_s, shared: true do
 
   describe "for a proc created with lambda" do
     it "returns a description including '(lambda)' and optionally including file and line number" do
-      lambda { "hello" }.send(@method).should =~ /^#<Proc:([^ ]*?)(@([^ ]*)\/to_s\.rb:10)? \(lambda\)>$/
+      -> { "hello" }.send(@method).should =~ /^#<Proc:([^ ]*?)(@([^ ]*)\/to_s\.rb:10)? \(lambda\)>$/
     end
 
     it "has a binary encoding" do
-      lambda { "hello" }.send(@method).encoding.should == Encoding::BINARY
+      -> { "hello" }.send(@method).encoding.should == Encoding::BINARY
     end
   end
 

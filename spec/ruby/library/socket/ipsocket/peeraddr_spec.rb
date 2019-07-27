@@ -16,7 +16,7 @@ describe "Socket::IPSocket#peeraddr" do
   end
 
   it "raises error if socket is not connected" do
-    lambda {
+    -> {
       @server.peeraddr
     }.should raise_error(Errno::ENOTCONN)
   end
@@ -92,7 +92,7 @@ describe 'Socket::IPSocket#peeraddr' do
 
       describe 'using :cats as the argument' do
         it 'raises ArgumentError' do
-          lambda { @client.peeraddr(:cats) }.should raise_error(ArgumentError)
+          -> { @client.peeraddr(:cats) }.should raise_error(ArgumentError)
         end
       end
     end

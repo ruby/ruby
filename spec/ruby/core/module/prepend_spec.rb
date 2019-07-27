@@ -37,11 +37,11 @@ describe "Module#prepend" do
   end
 
   it "raises a TypeError when the argument is not a Module" do
-    lambda { ModuleSpecs::Basic.prepend(Class.new) }.should raise_error(TypeError)
+    -> { ModuleSpecs::Basic.prepend(Class.new) }.should raise_error(TypeError)
   end
 
   it "does not raise a TypeError when the argument is an instance of a subclass of Module" do
-    lambda { ModuleSpecs::SubclassSpec.prepend(ModuleSpecs::Subclass.new) }.should_not raise_error(TypeError)
+    -> { ModuleSpecs::SubclassSpec.prepend(ModuleSpecs::Subclass.new) }.should_not raise_error(TypeError)
   end
 
   it "imports constants" do
@@ -204,7 +204,7 @@ describe "Module#prepend" do
         super << :class
       end
     end
-    lambda { c.new.chain }.should raise_error(NoMethodError)
+    -> { c.new.chain }.should raise_error(NoMethodError)
   end
 
   it "calls prepended after prepend_features" do
@@ -224,7 +224,7 @@ describe "Module#prepend" do
   end
 
   it "detects cyclic prepends" do
-    lambda {
+    -> {
       module ModuleSpecs::P
         prepend ModuleSpecs::P
       end
@@ -232,7 +232,7 @@ describe "Module#prepend" do
   end
 
   it "doesn't accept no-arguments" do
-    lambda {
+    -> {
       Module.new do
         prepend
       end

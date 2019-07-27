@@ -44,6 +44,6 @@ describe "Fiber.yield" do
   end
 
   it "raises a FiberError if called from the root Fiber" do
-    lambda{ Fiber.yield }.should raise_error(FiberError)
+    ->{ Fiber.yield }.should raise_error(FiberError)
   end
 end

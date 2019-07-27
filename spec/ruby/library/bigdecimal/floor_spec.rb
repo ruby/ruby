@@ -41,9 +41,9 @@ describe "BigDecimal#floor" do
   end
 
   it "raise exception, if self is special value" do
-    lambda { @infinity.floor }.should raise_error(FloatDomainError)
-    lambda { @infinity_neg.floor }.should raise_error(FloatDomainError)
-    lambda { @nan.floor }.should raise_error(FloatDomainError)
+    -> { @infinity.floor }.should raise_error(FloatDomainError)
+    -> { @infinity_neg.floor }.should raise_error(FloatDomainError)
+    -> { @nan.floor }.should raise_error(FloatDomainError)
   end
 
   it "returns n digits right of the decimal point if given n > 0" do

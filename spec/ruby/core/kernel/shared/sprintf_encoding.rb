@@ -21,7 +21,7 @@ describe :kernel_sprintf_encoding, shared: true do
     string = "Ä %s".encode('windows-1252')
     argument = "Ђ".encode('windows-1251')
 
-    -> () {
+    -> {
       format(string, argument)
     }.should raise_error(Encoding::CompatibilityError)
   end

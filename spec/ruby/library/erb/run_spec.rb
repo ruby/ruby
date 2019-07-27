@@ -52,7 +52,7 @@ END
 
   it "is not able to h() or u() unless including ERB::Util" do
     input = "<%=h '<>' %>"
-    lambda {
+    -> {
       _steal_stdout { ERB.new(input).run() }
     }.should raise_error(NameError)
   end
@@ -89,7 +89,7 @@ END
     actual = _steal_stdout { myerb2.new.main1() }
     actual.should == expected
 
-    lambda {
+    -> {
       _steal_stdout { myerb2.new.main2() }
     }.should raise_error(NameError)
   end

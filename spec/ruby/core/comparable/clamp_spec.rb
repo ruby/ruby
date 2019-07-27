@@ -4,8 +4,8 @@ require_relative 'fixtures/classes'
 describe 'Comparable#clamp' do
   it 'raises an Argument error unless given 2 parameters' do
     c = ComparableSpecs::Weird.new(0)
-    lambda { c.clamp(c) }.should raise_error(ArgumentError)
-    lambda { c.clamp(c, c, c) }.should raise_error(ArgumentError)
+    -> { c.clamp(c) }.should raise_error(ArgumentError)
+    -> { c.clamp(c, c, c) }.should raise_error(ArgumentError)
   end
 
   it 'raises an Argument error unless the 2 parameters are correctly ordered' do
@@ -13,9 +13,9 @@ describe 'Comparable#clamp' do
     two = ComparableSpecs::WithOnlyCompareDefined.new(2)
     c = ComparableSpecs::Weird.new(3)
 
-    lambda { c.clamp(two, one) }.should raise_error(ArgumentError)
+    -> { c.clamp(two, one) }.should raise_error(ArgumentError)
     one.should_receive(:<=>).any_number_of_times.and_return(nil)
-    lambda { c.clamp(one, two) }.should raise_error(ArgumentError)
+    -> { c.clamp(one, two) }.should raise_error(ArgumentError)
   end
 
   it 'returns self if within the given parameters' do

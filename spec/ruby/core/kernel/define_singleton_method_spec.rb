@@ -21,7 +21,7 @@ describe "Kernel#define_singleton_method" do
       um = KernelSpecs::Parent.method(:parent_class_method).unbind
       KernelSpecs::Child.send :define_singleton_method, :child_class_method, um
       KernelSpecs::Child.child_class_method.should == :foo
-      lambda{KernelSpecs::Parent.child_class_method}.should raise_error(NoMethodError)
+      ->{KernelSpecs::Parent.child_class_method}.should raise_error(NoMethodError)
     end
 
     it "will raise when attempting to define an object's singleton method from another object's singleton method" do
@@ -33,7 +33,7 @@ describe "Kernel#define_singleton_method" do
         end
       end
       um = p.method(:singleton_method).unbind
-      lambda{ other.send :define_singleton_method, :other_singleton_method, um }.should raise_error(TypeError)
+      ->{ other.send :define_singleton_method, :other_singleton_method, um }.should raise_error(TypeError)
     end
 
   end
@@ -41,7 +41,7 @@ describe "Kernel#define_singleton_method" do
   it "defines a new method with the given name and the given block as body in self" do
     class DefineSingletonMethodSpecClass
       define_singleton_method(:block_test1) { self }
-      define_singleton_method(:block_test2, &lambda { self })
+      define_singleton_method(:block_test2, &-> { self })
     end
 
     o = DefineSingletonMethodSpecClass
@@ -50,11 +50,11 @@ describe "Kernel#define_singleton_method" do
   end
 
   it "raises a TypeError when the given method is no Method/Proc" do
-    lambda {
+    -> {
       Class.new { define_singleton_method(:test, "self") }
     }.should raise_error(TypeError)
 
-    lambda {
+    -> {
       Class.new { define_singleton_method(:test, 1234) }
     }.should raise_error(TypeError)
   end
@@ -63,7 +63,7 @@ describe "Kernel#define_singleton_method" do
     obj = Object.new
     obj.define_singleton_method(:test) { "world!" }
     obj.test.should == "world!"
-    lambda {
+    -> {
       Object.new.test
     }.should raise_error(NoMethodError)
   end
@@ -81,7 +81,7 @@ describe "Kernel#define_singleton_method" do
 
   it "raises an ArgumentError when no block is given" do
     obj = Object.new
-    lambda {
+    -> {
       obj.define_singleton_method(:test)
     }.should raise_error(ArgumentError)
   end
@@ -92,7 +92,7 @@ describe "Kernel#define_singleton_method" do
       define_singleton_method(name)
     end
 
-    lambda {
+    -> {
       o.define(:foo) { raise "not used" }
     }.should raise_error(ArgumentError)
   end

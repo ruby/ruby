@@ -22,6 +22,6 @@ describe "Array#take" do
   end
 
   it "raises an ArgumentError when the argument is negative" do
-    lambda{ [1].take(-3) }.should raise_error(ArgumentError)
+    ->{ [1].take(-3) }.should raise_error(ArgumentError)
   end
 end

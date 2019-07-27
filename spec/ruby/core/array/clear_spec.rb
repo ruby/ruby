@@ -29,7 +29,7 @@ describe "Array#clear" do
   end
 
   it "does not accept any arguments" do
-    lambda { [1].clear(true) }.should raise_error(ArgumentError)
+    -> { [1].clear(true) }.should raise_error(ArgumentError)
   end
 
   it "keeps untrusted status" do
@@ -43,6 +43,6 @@ describe "Array#clear" do
   it "raises a #{frozen_error_class} on a frozen array" do
     a = [1]
     a.freeze
-    lambda { a.clear }.should raise_error(frozen_error_class)
+    -> { a.clear }.should raise_error(frozen_error_class)
   end
 end

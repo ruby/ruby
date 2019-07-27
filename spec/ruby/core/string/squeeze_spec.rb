@@ -50,8 +50,8 @@ describe "String#squeeze" do
 
   it "raises an ArgumentError when the parameter is out of sequence" do
     s = "--subbookkeeper--"
-    lambda { s.squeeze("e-b") }.should raise_error(ArgumentError)
-    lambda { s.squeeze("^e-b") }.should raise_error(ArgumentError)
+    -> { s.squeeze("e-b") }.should raise_error(ArgumentError)
+    -> { s.squeeze("^e-b") }.should raise_error(ArgumentError)
   end
 
   it "taints the result when self is tainted" do
@@ -73,9 +73,9 @@ describe "String#squeeze" do
   end
 
   it "raises a TypeError when one set arg can't be converted to a string" do
-    lambda { "hello world".squeeze([])        }.should raise_error(TypeError)
-    lambda { "hello world".squeeze(Object.new)}.should raise_error(TypeError)
-    lambda { "hello world".squeeze(mock('x')) }.should raise_error(TypeError)
+    -> { "hello world".squeeze([])        }.should raise_error(TypeError)
+    -> { "hello world".squeeze(Object.new)}.should raise_error(TypeError)
+    -> { "hello world".squeeze(mock('x')) }.should raise_error(TypeError)
   end
 
   it "returns subclass instances when called on a subclass" do
@@ -99,15 +99,15 @@ describe "String#squeeze!" do
 
   it "raises an ArgumentError when the parameter is out of sequence" do
     s = "--subbookkeeper--"
-    lambda { s.squeeze!("e-b") }.should raise_error(ArgumentError)
-    lambda { s.squeeze!("^e-b") }.should raise_error(ArgumentError)
+    -> { s.squeeze!("e-b") }.should raise_error(ArgumentError)
+    -> { s.squeeze!("^e-b") }.should raise_error(ArgumentError)
   end
 
   it "raises a #{frozen_error_class} when self is frozen" do
     a = "yellow moon"
     a.freeze
 
-    lambda { a.squeeze!("") }.should raise_error(frozen_error_class)
-    lambda { a.squeeze!     }.should raise_error(frozen_error_class)
+    -> { a.squeeze!("") }.should raise_error(frozen_error_class)
+    -> { a.squeeze!     }.should raise_error(frozen_error_class)
   end
 end

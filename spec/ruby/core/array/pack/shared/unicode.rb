@@ -64,7 +64,7 @@ describe :array_pack_unicode, shared: true do
   it "raises a TypeError if #to_int does not return an Integer" do
     obj = mock('to_int')
     obj.should_receive(:to_int).and_return("5")
-    lambda { [obj].pack("U") }.should raise_error(TypeError)
+    -> { [obj].pack("U") }.should raise_error(TypeError)
   end
 
   it "ignores NULL bytes between directives" do
@@ -76,11 +76,11 @@ describe :array_pack_unicode, shared: true do
   end
 
   it "raises a RangeError if passed a negative number" do
-    lambda { [-1].pack("U") }.should raise_error(RangeError)
+    -> { [-1].pack("U") }.should raise_error(RangeError)
   end
 
   it "raises a RangeError if passed a number larger than an unsigned 32-bit integer" do
-    lambda { [2**32].pack("U") }.should raise_error(RangeError)
+    -> { [2**32].pack("U") }.should raise_error(RangeError)
   end
 
   it "sets the output string to UTF-8 encoding" do

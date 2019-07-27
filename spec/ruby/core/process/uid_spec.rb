@@ -20,16 +20,16 @@ end
 describe "Process.uid=" do
   platform_is_not :windows do
     it "raises TypeError if not passed an Integer" do
-      lambda { Process.uid = Object.new }.should raise_error(TypeError)
+      -> { Process.uid = Object.new }.should raise_error(TypeError)
     end
 
     as_user do
       it "raises Errno::ERPERM if run by a non privileged user trying to set the superuser id" do
-        lambda { (Process.uid = 0)}.should raise_error(Errno::EPERM)
+        -> { (Process.uid = 0)}.should raise_error(Errno::EPERM)
       end
 
       it "raises Errno::ERPERM if run by a non privileged user trying to set the superuser id from username" do
-        lambda { Process.uid = "root" }.should raise_error(Errno::EPERM)
+        -> { Process.uid = "root" }.should raise_error(Errno::EPERM)
       end
     end
 

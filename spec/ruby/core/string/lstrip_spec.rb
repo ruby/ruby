@@ -39,12 +39,12 @@ describe "String#lstrip!" do
   end
 
   it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    lambda { "  hello  ".freeze.lstrip! }.should raise_error(frozen_error_class)
+    -> { "  hello  ".freeze.lstrip! }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23657]
   it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
-    lambda { "hello".freeze.lstrip! }.should raise_error(frozen_error_class)
-    lambda { "".freeze.lstrip!      }.should raise_error(frozen_error_class)
+    -> { "hello".freeze.lstrip! }.should raise_error(frozen_error_class)
+    -> { "".freeze.lstrip!      }.should raise_error(frozen_error_class)
   end
 end

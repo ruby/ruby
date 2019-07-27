@@ -229,11 +229,11 @@ end
 describe "StringIO#gets when in write-only mode" do
   it "raises an IOError" do
     io = StringIO.new("xyz", "w")
-    lambda { io.gets }.should raise_error(IOError)
+    -> { io.gets }.should raise_error(IOError)
 
     io = StringIO.new("xyz")
     io.close_read
-    lambda { io.gets }.should raise_error(IOError)
+    -> { io.gets }.should raise_error(IOError)
   end
 end
 

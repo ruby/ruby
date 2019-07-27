@@ -15,7 +15,7 @@ ruby_version_is "2.5" do
     end
 
     it "raises a Math::DomainError if the argument is negative" do
-      lambda { Integer.sqrt(-4) }.should raise_error(Math::DomainError)
+      -> { Integer.sqrt(-4) }.should raise_error(Math::DomainError)
     end
 
     it "accepts any argument that can be coerced to Integer" do
@@ -27,7 +27,7 @@ ruby_version_is "2.5" do
     end
 
     it "raises a TypeError if the argument cannot be coerced to Integer" do
-      lambda { Integer.sqrt("test") }.should raise_error(TypeError)
+      -> { Integer.sqrt("test") }.should raise_error(TypeError)
     end
   end
 end

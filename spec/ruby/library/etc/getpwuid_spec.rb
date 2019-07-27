@@ -27,7 +27,7 @@ platform_is_not :windows do
     end
 
     it "only accepts integers as argument" do
-      lambda {
+      -> {
         Etc.getpwuid("foo")
         Etc.getpwuid(nil)
       }.should raise_error(TypeError)

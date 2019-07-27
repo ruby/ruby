@@ -23,14 +23,14 @@ describe "Method#curry" do
     end
 
     it "raises ArgumentError when the method requires less arguments than the given arity" do
-      lambda { @obj.method(:zero).curry(1) }.should raise_error(ArgumentError)
-      lambda { @obj.method(:one_req_one_opt).curry(3) }.should raise_error(ArgumentError)
-      lambda { @obj.method(:two_req_one_opt_with_block).curry(4) }.should raise_error(ArgumentError)
+      -> { @obj.method(:zero).curry(1) }.should raise_error(ArgumentError)
+      -> { @obj.method(:one_req_one_opt).curry(3) }.should raise_error(ArgumentError)
+      -> { @obj.method(:two_req_one_opt_with_block).curry(4) }.should raise_error(ArgumentError)
     end
 
     it "raises ArgumentError when the method requires more arguments than the given arity" do
-      lambda { @obj.method(:two_req_with_splat).curry(1) }.should raise_error(ArgumentError)
-      lambda { @obj.method(:one_req).curry(0) }.should raise_error(ArgumentError)
+      -> { @obj.method(:two_req_with_splat).curry(1) }.should raise_error(ArgumentError)
+      -> { @obj.method(:one_req).curry(0) }.should raise_error(ArgumentError)
     end
   end
 end

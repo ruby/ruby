@@ -28,8 +28,8 @@ describe "String#partition with String" do
   end
 
   it "raises an error if not convertible to string" do
-    lambda{ "hello".partition(5) }.should raise_error(TypeError)
-    lambda{ "hello".partition(nil) }.should raise_error(TypeError)
+    ->{ "hello".partition(5) }.should raise_error(TypeError)
+    ->{ "hello".partition(nil) }.should raise_error(TypeError)
   end
 
   it "takes precedence over a given block" do

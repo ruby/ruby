@@ -10,7 +10,7 @@ describe :rational_divide_rat, shared: true do
   end
 
   it "raises a ZeroDivisionError when passed a Rational with a numerator of 0" do
-    lambda { Rational(3, 4).send(@method, Rational(0, 1)) }.should raise_error(ZeroDivisionError)
+    -> { Rational(3, 4).send(@method, Rational(0, 1)) }.should raise_error(ZeroDivisionError)
   end
 end
 
@@ -22,7 +22,7 @@ describe :rational_divide_int, shared: true do
   end
 
   it "raises a ZeroDivisionError when passed 0" do
-    lambda { Rational(3, 4).send(@method, 0) }.should raise_error(ZeroDivisionError)
+    -> { Rational(3, 4).send(@method, 0) }.should raise_error(ZeroDivisionError)
   end
 end
 

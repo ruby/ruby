@@ -27,10 +27,10 @@ describe "Set#subset?" do
   end
 
   it "raises an ArgumentError when passed a non-Set" do
-    lambda { Set[].subset?([]) }.should raise_error(ArgumentError)
-    lambda { Set[].subset?(1) }.should raise_error(ArgumentError)
-    lambda { Set[].subset?("test") }.should raise_error(ArgumentError)
-    lambda { Set[].subset?(Object.new) }.should raise_error(ArgumentError)
+    -> { Set[].subset?([]) }.should raise_error(ArgumentError)
+    -> { Set[].subset?(1) }.should raise_error(ArgumentError)
+    -> { Set[].subset?("test") }.should raise_error(ArgumentError)
+    -> { Set[].subset?(Object.new) }.should raise_error(ArgumentError)
   end
 
   context "when comparing to a Set-like object" do

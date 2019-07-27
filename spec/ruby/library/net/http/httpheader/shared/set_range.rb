@@ -50,15 +50,15 @@ describe :net_httpheader_set_range, shared: true do
     end
 
     it "raises a Net::HTTPHeaderSyntaxError when the first Range element is negative" do
-      lambda { @headers.send(@method, -10..5) }.should raise_error(Net::HTTPHeaderSyntaxError)
+      -> { @headers.send(@method, -10..5) }.should raise_error(Net::HTTPHeaderSyntaxError)
     end
 
     it "raises a Net::HTTPHeaderSyntaxError when the last Range element is negative" do
-      lambda { @headers.send(@method, 10..-5) }.should raise_error(Net::HTTPHeaderSyntaxError)
+      -> { @headers.send(@method, 10..-5) }.should raise_error(Net::HTTPHeaderSyntaxError)
     end
 
     it "raises a Net::HTTPHeaderSyntaxError when the last Range element is smaller than the first" do
-      lambda { @headers.send(@method, 10..5) }.should raise_error(Net::HTTPHeaderSyntaxError)
+      -> { @headers.send(@method, 10..5) }.should raise_error(Net::HTTPHeaderSyntaxError)
     end
   end
 
@@ -75,15 +75,15 @@ describe :net_httpheader_set_range, shared: true do
     end
 
     it "raises a Net::HTTPHeaderSyntaxError when start is negative" do
-      lambda { @headers.send(@method, -10, 5) }.should raise_error(Net::HTTPHeaderSyntaxError)
+      -> { @headers.send(@method, -10, 5) }.should raise_error(Net::HTTPHeaderSyntaxError)
     end
 
     it "raises a Net::HTTPHeaderSyntaxError when start + length is negative" do
-      lambda { @headers.send(@method, 10, -15) }.should raise_error(Net::HTTPHeaderSyntaxError)
+      -> { @headers.send(@method, 10, -15) }.should raise_error(Net::HTTPHeaderSyntaxError)
     end
 
     it "raises a Net::HTTPHeaderSyntaxError when length is negative" do
-      lambda { @headers.send(@method, 10, -4) }.should raise_error(Net::HTTPHeaderSyntaxError)
+      -> { @headers.send(@method, 10, -4) }.should raise_error(Net::HTTPHeaderSyntaxError)
     end
   end
 end

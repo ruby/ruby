@@ -12,7 +12,7 @@ describe "IO#read_nonblock" do
   end
 
   it "raises an exception extending IO::WaitReadable when there is no data" do
-    lambda { @read.read_nonblock(5) }.should raise_error(IO::WaitReadable) { |e|
+    -> { @read.read_nonblock(5) }.should raise_error(IO::WaitReadable) { |e|
       platform_is_not :windows do
         e.should be_kind_of(Errno::EAGAIN)
       end
@@ -85,7 +85,7 @@ describe "IO#read_nonblock" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.read_nonblock(5) }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.read_nonblock(5) }.should raise_error(IOError)
   end
 
   it "raises EOFError when the end is reached" do
@@ -94,6 +94,6 @@ describe "IO#read_nonblock" do
 
     @read.read_nonblock(5)
 
-    lambda { @read.read_nonblock(5) }.should raise_error(EOFError)
+    -> { @read.read_nonblock(5) }.should raise_error(EOFError)
   end
 end

@@ -24,7 +24,7 @@ module ObjectSpaceFixtures
   end
 
   def self.define_finalizer
-    handler = lambda { |obj| ScratchPad.record :finalized }
+    handler = -> obj { ScratchPad.record :finalized }
     ObjectSpace.define_finalizer "#{rand 5}", handler
   end
 

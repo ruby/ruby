@@ -9,7 +9,7 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if argument is given" do
-      lambda { @param_overwritefiles.send(@method, 1) }.should raise_error ArgumentError
+      -> { @param_overwritefiles.send(@method, 1) }.should raise_error ArgumentError
     end
 
     it "returns expected value for Scripting Runtime's 'name' method" do

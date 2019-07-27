@@ -18,12 +18,12 @@ describe :string_times, shared: true do
   end
 
   it "raises an ArgumentError when given integer is negative" do
-    lambda { @object.call("cool", -3)    }.should raise_error(ArgumentError)
-    lambda { @object.call("cool", -3.14) }.should raise_error(ArgumentError)
+    -> { @object.call("cool", -3)    }.should raise_error(ArgumentError)
+    -> { @object.call("cool", -3.14) }.should raise_error(ArgumentError)
   end
 
   it "raises a RangeError when given integer is a Bignum" do
-    lambda { @object.call("cool", 999999999999999999999) }.should raise_error(RangeError)
+    -> { @object.call("cool", 999999999999999999999) }.should raise_error(RangeError)
   end
 
   it "returns subclass instances" do
@@ -50,13 +50,13 @@ describe :string_times, shared: true do
 
   platform_is wordsize: 32 do
     it "raises an ArgumentError if the length of the resulting string doesn't fit into a long" do
-      lambda { @object.call("abc", (2 ** 31) - 1) }.should raise_error(ArgumentError)
+      -> { @object.call("abc", (2 ** 31) - 1) }.should raise_error(ArgumentError)
     end
   end
 
   platform_is wordsize: 64 do
     it "raises an ArgumentError if the length of the resulting string doesn't fit into a long" do
-      lambda { @object.call("abc", (2 ** 63) - 1) }.should raise_error(ArgumentError)
+      -> { @object.call("abc", (2 ** 63) - 1) }.should raise_error(ArgumentError)
     end
   end
 end

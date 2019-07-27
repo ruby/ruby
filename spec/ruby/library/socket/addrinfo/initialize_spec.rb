@@ -198,7 +198,7 @@ describe "Addrinfo#initialize" do
 
     describe 'with an invalid IP address' do
       it 'raises SocketError' do
-        block = lambda { Addrinfo.new(['AF_INET6', 80, 'hostname', '127.0.0.1']) }
+        block = -> { Addrinfo.new(['AF_INET6', 80, 'hostname', '127.0.0.1']) }
 
         block.should raise_error(SocketError)
       end
@@ -290,7 +290,7 @@ describe "Addrinfo#initialize" do
       it "raises SocketError when using SOCK_RDM" do
         sockaddr = ['AF_INET', 80, 'hostname', '127.0.0.1']
         value = Socket::SOCK_RDM
-        block = lambda { Addrinfo.new(sockaddr, nil, value) }
+        block = -> { Addrinfo.new(sockaddr, nil, value) }
 
         block.should raise_error(SocketError)
       end
@@ -364,7 +364,7 @@ describe "Addrinfo#initialize" do
           (Socket.constants.grep(/^IPPROTO/) - valid).each do |type|
             it "raises SocketError when using #{type}" do
               value = Socket.const_get(type)
-              block = lambda { Addrinfo.new(@sockaddr, nil, nil, value) }
+              block = -> { Addrinfo.new(@sockaddr, nil, nil, value) }
 
               block.should raise_error(SocketError)
             end
@@ -392,7 +392,7 @@ describe "Addrinfo#initialize" do
           (Socket.constants.grep(/^IPPROTO/) - valid).each do |type|
             it "raises SocketError when using #{type}" do
               value = Socket.const_get(type)
-              block = lambda { Addrinfo.new(@sockaddr, nil, @socktype, value) }
+              block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
               block.should raise_error(SocketError)
             end
@@ -409,7 +409,7 @@ describe "Addrinfo#initialize" do
           Socket.constants.grep(/^IPPROTO/).each do |type|
             it "raises SocketError when using #{type}" do
               value = Socket.const_get(type)
-              block = lambda { Addrinfo.new(@sockaddr, nil, @socktype, value) }
+              block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
               block.should raise_error(SocketError)
             end
@@ -440,7 +440,7 @@ describe "Addrinfo#initialize" do
         Socket.constants.grep(/^IPPROTO/).each do |type|
           it "raises SocketError when using #{type}" do
             value = Socket.const_get(type)
-            block = lambda { Addrinfo.new(@sockaddr, nil, @socktype, value) }
+            block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
             block.should raise_error(SocketError)
           end
@@ -467,7 +467,7 @@ describe "Addrinfo#initialize" do
           (Socket.constants.grep(/^IPPROTO/) - valid).each do |type|
             it "raises SocketError when using #{type}" do
               value = Socket.const_get(type)
-              block = lambda { Addrinfo.new(@sockaddr, nil, @socktype, value) }
+              block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
               block.should raise_error(SocketError)
             end
@@ -495,7 +495,7 @@ describe "Addrinfo#initialize" do
           (Socket.constants.grep(/^IPPROTO/) - valid).each do |type|
             it "raises SocketError when using #{type}" do
               value = Socket.const_get(type)
-              block = lambda { Addrinfo.new(@sockaddr, nil, @socktype, value) }
+              block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
               block.should raise_error(SocketError)
             end

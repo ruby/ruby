@@ -31,31 +31,31 @@ describe "Net::FTP#mkdir" do
 
   it "raises a Net::FTPPermError when the response code is 500" do
     @server.should_receive(:mkd).and_respond("500 Syntax error, command unrecognized.")
-    lambda { @ftp.mkdir("test.folder") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.mkdir("test.folder") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPPermError when the response code is 501" do
     @server.should_receive(:mkd).and_respond("501 Syntax error in parameters or arguments.")
-    lambda { @ftp.mkdir("test.folder") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.mkdir("test.folder") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPPermError when the response code is 502" do
     @server.should_receive(:mkd).and_respond("502 Command not implemented.")
-    lambda { @ftp.mkdir("test.folder") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.mkdir("test.folder") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPTempError when the response code is 421" do
     @server.should_receive(:mkd).and_respond("421 Service not available, closing control connection.")
-    lambda { @ftp.mkdir("test.folder") }.should raise_error(Net::FTPTempError)
+    -> { @ftp.mkdir("test.folder") }.should raise_error(Net::FTPTempError)
   end
 
   it "raises a Net::FTPPermError when the response code is 530" do
     @server.should_receive(:mkd).and_respond("530 Not logged in.")
-    lambda { @ftp.mkdir("test.folder") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.mkdir("test.folder") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPPermError when the response code is 550" do
     @server.should_receive(:mkd).and_respond("550 Requested action not taken.")
-    lambda { @ftp.mkdir("test.folder") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.mkdir("test.folder") }.should raise_error(Net::FTPPermError)
   end
 end

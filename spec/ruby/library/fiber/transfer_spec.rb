@@ -44,7 +44,7 @@ describe "Fiber#transfer" do
 
   it "raises a FiberError when transferring to a Fiber which resumes itself" do
     fiber = Fiber.new { fiber.resume }
-    lambda { fiber.transfer }.should raise_error(FiberError)
+    -> { fiber.transfer }.should raise_error(FiberError)
   end
 
   it "works if Fibers in different Threads each transfer to a Fiber in the same Thread" do

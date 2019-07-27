@@ -33,7 +33,7 @@ describe "ARGF.rewind" do
   it "raises an ArgumentError when end of stream reached" do
     argf [@file1_name, @file2_name] do
       @argf.read
-      lambda { @argf.rewind }.should raise_error(ArgumentError)
+      -> { @argf.rewind }.should raise_error(ArgumentError)
     end
   end
 end

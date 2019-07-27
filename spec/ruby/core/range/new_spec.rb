@@ -25,12 +25,12 @@ describe "Range.new" do
   end
 
   it "raises an ArgumentError when the given start and end can't be compared by using #<=>" do
-    lambda { Range.new(1, mock('x'))         }.should raise_error(ArgumentError)
-    lambda { Range.new(mock('x'), mock('y')) }.should raise_error(ArgumentError)
+    -> { Range.new(1, mock('x'))         }.should raise_error(ArgumentError)
+    -> { Range.new(mock('x'), mock('y')) }.should raise_error(ArgumentError)
 
     b = mock('x')
     (a = mock('nil')).should_receive(:<=>).with(b).and_return(nil)
-    lambda { Range.new(a, b) }.should raise_error(ArgumentError)
+    -> { Range.new(a, b) }.should raise_error(ArgumentError)
   end
 
   ruby_version_is "2.5" do

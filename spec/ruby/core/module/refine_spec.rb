@@ -59,7 +59,7 @@ describe "Module#refine" do
   end
 
   it "raises ArgumentError if not passed an argument" do
-    lambda do
+    -> do
       Module.new do
         refine {}
       end
@@ -67,7 +67,7 @@ describe "Module#refine" do
   end
 
   it "raises TypeError if not passed a class" do
-    lambda do
+    -> do
       Module.new do
         refine("foo") {}
       end
@@ -88,7 +88,7 @@ describe "Module#refine" do
   end
 
   it "raises ArgumentError if not given a block" do
-    lambda do
+    -> do
       Module.new do
         refine String
       end
@@ -109,7 +109,7 @@ describe "Module#refine" do
   it "doesn't apply refinements outside the refine block" do
     Module.new do
       refine(String) {def foo; "foo"; end}
-      -> () {
+      -> {
         "hello".foo
       }.should raise_error(NoMethodError)
     end
@@ -120,7 +120,7 @@ describe "Module#refine" do
       refine(String) {def foo; 'foo'; end}
     end
 
-    lambda {"hello".foo}.should raise_error(NoMethodError)
+    -> {"hello".foo}.should raise_error(NoMethodError)
   end
 
   # When defining multiple refinements in the same module,
@@ -177,7 +177,7 @@ describe "Module#refine" do
 
     result = nil
 
-    -> () {
+    -> {
       Module.new do
         using refinery_integer
         using refinery_array
@@ -575,7 +575,7 @@ describe "Module#refine" do
         refinement = Module.new do
           refine String do
             def to_proc(*args)
-              -> (*) { 'foo' }
+              -> * { 'foo' }
             end
           end
         end
@@ -594,7 +594,7 @@ describe "Module#refine" do
         refinement = Module.new do
           refine String do
             def to_proc(*args)
-              -> (*) { 'foo' }
+              -> * { 'foo' }
             end
           end
         end
@@ -689,7 +689,7 @@ describe "Module#refine" do
       }
       [1,2].orig_count.should == 2
     end
-    lambda { [1,2].orig_count }.should raise_error(NoMethodError)
+    -> { [1,2].orig_count }.should raise_error(NoMethodError)
   end
 
   it 'and alias_method aliases a method within a refinement module, but not outside it' do
@@ -701,7 +701,7 @@ describe "Module#refine" do
       }
       [1,2].orig_count.should == 2
     end
-    lambda { [1,2].orig_count }.should raise_error(NoMethodError)
+    -> { [1,2].orig_count }.should raise_error(NoMethodError)
   end
 
   # Refinements are inherited by module inclusion.

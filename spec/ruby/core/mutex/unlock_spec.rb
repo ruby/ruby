@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 describe "Mutex#unlock" do
   it "raises ThreadError unless Mutex is locked" do
     mutex = Mutex.new
-    lambda { mutex.unlock }.should raise_error(ThreadError)
+    -> { mutex.unlock }.should raise_error(ThreadError)
   end
 
   it "raises ThreadError unless thread owns Mutex" do
@@ -19,7 +19,7 @@ describe "Mutex#unlock" do
     Thread.pass until mutex.locked?
     Thread.pass while th.status and th.status != "sleep"
 
-    lambda { mutex.unlock }.should raise_error(ThreadError)
+    -> { mutex.unlock }.should raise_error(ThreadError)
 
     wait.unlock
     th.join
@@ -33,6 +33,6 @@ describe "Mutex#unlock" do
 
     th.join
 
-    lambda { mutex.unlock }.should raise_error(ThreadError)
+    -> { mutex.unlock }.should raise_error(ThreadError)
   end
 end

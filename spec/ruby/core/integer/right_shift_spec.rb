@@ -79,15 +79,15 @@ describe "Integer#>> (with n >> m)" do
       obj = mock("a string")
       obj.should_receive(:to_int).and_return("asdf")
 
-      lambda { 3 >> obj }.should raise_error(TypeError)
+      -> { 3 >> obj }.should raise_error(TypeError)
     end
 
     it "raises a TypeError when passed nil" do
-      lambda { 3 >> nil }.should raise_error(TypeError)
+      -> { 3 >> nil }.should raise_error(TypeError)
     end
 
     it "raises a TypeError when passed a String" do
-      lambda { 3 >> "4" }.should raise_error(TypeError)
+      -> { 3 >> "4" }.should raise_error(TypeError)
     end
   end
 
@@ -177,15 +177,15 @@ describe "Integer#>> (with n >> m)" do
       obj = mock("a string")
       obj.should_receive(:to_int).and_return("asdf")
 
-      lambda { @bignum >> obj }.should raise_error(TypeError)
+      -> { @bignum >> obj }.should raise_error(TypeError)
     end
 
     it "raises a TypeError when passed nil" do
-      lambda { @bignum >> nil }.should raise_error(TypeError)
+      -> { @bignum >> nil }.should raise_error(TypeError)
     end
 
     it "raises a TypeError when passed a String" do
-      lambda { @bignum >> "4" }.should raise_error(TypeError)
+      -> { @bignum >> "4" }.should raise_error(TypeError)
     end
   end
 end

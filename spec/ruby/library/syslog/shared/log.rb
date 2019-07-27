@@ -9,7 +9,7 @@ describe :syslog_log, shared: true do
     end
 
     it "logs a message" do
-      lambda {
+      -> {
         Syslog.open("rubyspec", Syslog::LOG_PERROR) do
           Syslog.send(@method, "Hello")
         end
@@ -17,7 +17,7 @@ describe :syslog_log, shared: true do
     end
 
     it "accepts sprintf arguments" do
-      lambda {
+      -> {
         Syslog.open("rubyspec", Syslog::LOG_PERROR) do
           Syslog.send(@method, "Hello %s", "world")
           Syslog.send(@method, "%d dogs", 2)
@@ -28,7 +28,7 @@ describe :syslog_log, shared: true do
     it "works as an alias for Syslog.log" do
       level = Syslog.const_get "LOG_#{@method.to_s.upcase}"
       response = "rubyspec: Hello\n"
-      lambda {
+      -> {
         Syslog.open("rubyspec", Syslog::LOG_PERROR) do
           Syslog.send(@method, "Hello")
           Syslog.log(level, "Hello")

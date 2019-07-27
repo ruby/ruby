@@ -23,6 +23,6 @@ describe "Kernel#untrusted?" do
 
   it "has effect on immediate values" do
     d = 1
-    lambda { d.untrust }.should_not raise_error(RuntimeError)
+    -> { d.untrust }.should_not raise_error(RuntimeError)
   end
 end

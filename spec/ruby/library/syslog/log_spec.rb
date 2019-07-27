@@ -15,7 +15,7 @@ platform_is_not :windows do
       end
 
       it "receives a priority as first argument" do
-        lambda {
+        -> {
           Syslog.open("rubyspec", Syslog::LOG_PERROR) do |s|
             s.log(Syslog::LOG_ALERT, "Hello")
             s.log(Syslog::LOG_CRIT, "World")
@@ -24,7 +24,7 @@ platform_is_not :windows do
       end
 
       it "accepts undefined priorities" do
-        lambda {
+        -> {
           Syslog.open("rubyspec", Syslog::LOG_PERROR) do |s|
             s.log(1337, "Hello")
           end
@@ -34,18 +34,18 @@ platform_is_not :windows do
 
       it "fails with TypeError on nil log messages" do
         Syslog.open do |s|
-          lambda { s.log(1, nil) }.should raise_error(TypeError)
+          -> { s.log(1, nil) }.should raise_error(TypeError)
         end
       end
 
       it "fails if the log is closed" do
-        lambda {
+        -> {
           Syslog.log(Syslog::LOG_ALERT, "test")
         }.should raise_error(RuntimeError)
       end
 
       it "accepts printf parameters" do
-        lambda {
+        -> {
           Syslog.open("rubyspec", Syslog::LOG_PERROR) do |s|
             s.log(Syslog::LOG_ALERT, "%s x %d", "chunky bacon", 2)
           end

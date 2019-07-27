@@ -14,6 +14,6 @@ describe "Array.allocate" do
   end
 
   it "does not accept any arguments" do
-    lambda { Array.allocate(1) }.should raise_error(ArgumentError)
+    -> { Array.allocate(1) }.should raise_error(ArgumentError)
   end
 end

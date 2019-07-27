@@ -7,6 +7,6 @@ describe "Fiber#resume" do
     fiber1 = Fiber.new { true }
     fiber2 = Fiber.new { fiber1.transfer; Fiber.yield }
     fiber2.resume
-    lambda { fiber2.resume }.should raise_error(FiberError)
+    -> { fiber2.resume }.should raise_error(FiberError)
   end
 end

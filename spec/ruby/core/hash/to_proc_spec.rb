@@ -24,11 +24,11 @@ describe "Hash#to_proc" do
     end
 
     it "raises ArgumentError if not passed exactly one argument" do
-      lambda {
+      -> {
         @proc.call
       }.should raise_error(ArgumentError)
 
-      lambda {
+      -> {
         @proc.call 1, 2
       }.should raise_error(ArgumentError)
     end
@@ -81,7 +81,7 @@ describe "Hash#to_proc" do
     end
 
     it "raises an ArgumentError when calling #call on the Proc with no arguments" do
-      lambda { @hash.to_proc.call }.should raise_error(ArgumentError)
+      -> { @hash.to_proc.call }.should raise_error(ArgumentError)
     end
   end
 end

@@ -65,7 +65,7 @@ describe "Hash.[]" do
   end
 
   it "raises an ArgumentError for arrays of more than 2 elements" do
-    lambda{ Hash[[[:a, :b, :c]]].should == {} }.should raise_error(ArgumentError)
+    ->{ Hash[[[:a, :b, :c]]].should == {} }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError when passed a list of value-invalid-pairs in an array" do
@@ -89,8 +89,8 @@ describe "Hash.[]" do
   end
 
   it "raises an ArgumentError when passed an odd number of arguments" do
-    lambda { Hash[1, 2, 3] }.should raise_error(ArgumentError)
-    lambda { Hash[1, 2, { 3 => 4 }] }.should raise_error(ArgumentError)
+    -> { Hash[1, 2, 3] }.should raise_error(ArgumentError)
+    -> { Hash[1, 2, { 3 => 4 }] }.should raise_error(ArgumentError)
   end
 
   it "calls to_hash" do

@@ -22,7 +22,7 @@ describe "IO.popen" do
 
   it "raises IOError when writing a read-only pipe" do
     @io = IO.popen(ruby_cmd('puts "foo"'), "r")
-    lambda { @io.write('bar') }.should raise_error(IOError)
+    -> { @io.write('bar') }.should raise_error(IOError)
     @io.read.should == "foo\n"
   end
 end
@@ -55,7 +55,7 @@ describe "IO.popen" do
 
   it "raises IOError when reading a write-only pipe" do
     @io = IO.popen(ruby_cmd('IO.copy_stream(STDIN,STDOUT)'), "w")
-    lambda { @io.read }.should raise_error(IOError)
+    -> { @io.read }.should raise_error(IOError)
   end
 
   it "reads and writes a read/write pipe" do

@@ -26,6 +26,6 @@ describe "Dir.empty?" do
   end
 
   it "raises ENOENT for nonexistent directories" do
-    lambda { Dir.empty? tmp("nonexistent") }.should raise_error(Errno::ENOENT)
+    -> { Dir.empty? tmp("nonexistent") }.should raise_error(Errno::ENOENT)
   end
 end

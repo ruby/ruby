@@ -59,7 +59,7 @@ describe "Thread#priority=" do
 
   describe "when set with a non-integer" do
     it "raises a type error" do
-      lambda{ @thread.priority = Object.new }.should raise_error(TypeError)
+      ->{ @thread.priority = Object.new }.should raise_error(TypeError)
     end
   end
 

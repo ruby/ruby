@@ -17,7 +17,7 @@ describe 'BasicSocket#recvmsg' do
       platform_is_not :windows do
         describe 'using an unbound socket' do
           it 'blocks the caller' do
-            lambda { @server.recvmsg }.should block_caller
+            -> { @server.recvmsg }.should block_caller
           end
         end
       end
@@ -29,7 +29,7 @@ describe 'BasicSocket#recvmsg' do
 
         describe 'without any data available' do
           it 'blocks the caller' do
-            lambda { @server.recvmsg }.should block_caller
+            -> { @server.recvmsg }.should block_caller
           end
         end
 
@@ -126,7 +126,7 @@ describe 'BasicSocket#recvmsg' do
           it 'blocks the caller' do
             socket, _ = @server.accept
             begin
-              lambda { socket.recvmsg }.should block_caller
+              -> { socket.recvmsg }.should block_caller
             ensure
               socket.close
             end
@@ -170,7 +170,7 @@ describe 'BasicSocket#recvmsg' do
               end
 
               it 'raises when receiving the ip_address message' do
-                lambda { @addr.ip_address }.should raise_error(SocketError)
+                -> { @addr.ip_address }.should raise_error(SocketError)
               end
 
               it 'uses the correct address family' do
@@ -186,7 +186,7 @@ describe 'BasicSocket#recvmsg' do
               end
 
               it 'raises when receiving the ip_port message' do
-                lambda { @addr.ip_port }.should raise_error(SocketError)
+                -> { @addr.ip_port }.should raise_error(SocketError)
               end
             end
           end

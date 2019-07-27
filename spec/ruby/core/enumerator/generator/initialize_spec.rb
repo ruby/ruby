@@ -18,7 +18,7 @@ describe "Enumerator::Generator#initialize" do
 
   describe "on frozen instance" do
     it "raises a RuntimeError" do
-      lambda {
+      -> {
         @uninitialized.freeze.send(:initialize) {}
       }.should raise_error(RuntimeError)
     end

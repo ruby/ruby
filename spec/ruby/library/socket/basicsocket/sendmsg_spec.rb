@@ -19,7 +19,7 @@ describe 'BasicSocket#sendmsg' do
       platform_is_not :windows do
         describe 'without a destination address' do
           it "raises #{SocketSpecs.dest_addr_req_error}" do
-            lambda { @client.sendmsg('hello') }.should raise_error(SocketSpecs.dest_addr_req_error)
+            -> { @client.sendmsg('hello') }.should raise_error(SocketSpecs.dest_addr_req_error)
           end
         end
       end
@@ -74,7 +74,7 @@ describe 'BasicSocket#sendmsg' do
         it 'sends the message to the given address instead' do
           @client.sendmsg('hello', 0, @alt_server.getsockname).should == 5
 
-          lambda { @server.recv(5) }.should block_caller
+          -> { @server.recv(5) }.should block_caller
 
           @alt_server.recv(5).should == 'hello'
         end
@@ -101,7 +101,7 @@ describe 'BasicSocket#sendmsg' do
         it 'blocks when the underlying buffer is full' do
           # Buffer sizes may differ per platform, so sadly this is the only
           # reliable way of testing blocking behaviour.
-          lambda do
+          -> do
             10.times { @client.sendmsg('hello' * 1_000_000) }
           end.should block_caller
         end

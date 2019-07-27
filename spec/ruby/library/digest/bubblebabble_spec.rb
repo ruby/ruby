@@ -20,10 +20,10 @@ describe "Digest.bubblebabble" do
   end
 
   it "raises a TypeError when passed nil" do
-    lambda { Digest.bubblebabble(nil) }.should raise_error(TypeError)
+    -> { Digest.bubblebabble(nil) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed a Fixnum" do
-    lambda { Digest.bubblebabble(9001) }.should raise_error(TypeError)
+    -> { Digest.bubblebabble(9001) }.should raise_error(TypeError)
   end
 end

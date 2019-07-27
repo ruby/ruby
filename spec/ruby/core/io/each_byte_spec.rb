@@ -12,7 +12,7 @@ describe "IO#each_byte" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.each_byte {} }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.each_byte {} }.should raise_error(IOError)
   end
 
   it "yields each byte" do

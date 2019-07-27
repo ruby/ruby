@@ -49,12 +49,12 @@ describe "Enumerable#chunk" do
 
   it "raises a RuntimeError if the block returns a Symbol starting with an underscore other than :_alone or :_separator" do
     e = EnumerableSpecs::Numerous.new(1, 2, 3, 2, 1)
-    lambda { e.chunk { |x| :_arbitrary }.to_a }.should raise_error(RuntimeError)
+    -> { e.chunk { |x| :_arbitrary }.to_a }.should raise_error(RuntimeError)
   end
 
   it "does not accept arguments" do
     e = EnumerableSpecs::Numerous.new(1, 2, 3)
-    lambda {
+    -> {
       e.chunk(1) {}
     }.should raise_error(ArgumentError)
   end

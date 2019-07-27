@@ -65,10 +65,10 @@ describe "String#center with length, padding" do
   end
 
   it "raises a TypeError when length can't be converted to an integer" do
-    lambda { "hello".center("x")       }.should raise_error(TypeError)
-    lambda { "hello".center("x", "y")  }.should raise_error(TypeError)
-    lambda { "hello".center([])        }.should raise_error(TypeError)
-    lambda { "hello".center(mock('x')) }.should raise_error(TypeError)
+    -> { "hello".center("x")       }.should raise_error(TypeError)
+    -> { "hello".center("x", "y")  }.should raise_error(TypeError)
+    -> { "hello".center([])        }.should raise_error(TypeError)
+    -> { "hello".center(mock('x')) }.should raise_error(TypeError)
   end
 
   it "calls #to_str to convert padstr to a String" do
@@ -79,14 +79,14 @@ describe "String#center with length, padding" do
   end
 
   it "raises a TypeError when padstr can't be converted to a string" do
-    lambda { "hello".center(20, 100)       }.should raise_error(TypeError)
-    lambda { "hello".center(20, [])      }.should raise_error(TypeError)
-    lambda { "hello".center(20, mock('x')) }.should raise_error(TypeError)
+    -> { "hello".center(20, 100)       }.should raise_error(TypeError)
+    -> { "hello".center(20, [])      }.should raise_error(TypeError)
+    -> { "hello".center(20, mock('x')) }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError if padstr is empty" do
-    lambda { "hello".center(10, "") }.should raise_error(ArgumentError)
-    lambda { "hello".center(0, "")  }.should raise_error(ArgumentError)
+    -> { "hello".center(10, "") }.should raise_error(ArgumentError)
+    -> { "hello".center(0, "")  }.should raise_error(ArgumentError)
   end
 
   it "returns subclass instances when called on subclasses" do
@@ -123,7 +123,7 @@ describe "String#center with length, padding" do
 
     it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
       pat = "ア".encode Encoding::EUC_JP
-      lambda do
+      -> do
         "あれ".center 5, pat
       end.should raise_error(Encoding::CompatibilityError)
     end

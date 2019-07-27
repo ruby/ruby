@@ -38,7 +38,7 @@ END
 
   ruby_version_is "2.6" do
     it "warns invalid trim_mode" do
-      lambda do
+      -> do
         ERBSpecs.new_erb(@eruby_str, trim_mode: '')
       end.should complain(/Invalid ERB trim mode/)
     end
@@ -83,7 +83,7 @@ END
 </p>
 END
 
-    lambda {
+    -> {
       ERBSpecs.new_erb(input, trim_mode: '-').result
     }.should raise_error(SyntaxError)
   end
@@ -143,6 +143,6 @@ END
 
   it "forget local variables defined previous one" do
     ERB.new(@eruby_str).result
-    lambda{ ERB.new("<%= list %>").result }.should raise_error(NameError)
+    ->{ ERB.new("<%= list %>").result }.should raise_error(NameError)
   end
 end

@@ -6,14 +6,14 @@ require_relative '../../shared/time/strftime_for_time'
 
 describe "Time#strftime" do
   before :all do
-    @new_date = lambda { |y,m,d| Time.gm(y,m,d) }
-    @new_time = lambda { |*args| Time.gm(*args) }
-    @new_time_in_zone = lambda { |zone,offset,*args|
+    @new_date = -> y, m, d { Time.gm(y,m,d) }
+    @new_time = -> *args { Time.gm(*args) }
+    @new_time_in_zone = -> zone, offset, *args {
       with_timezone(zone, offset) do
         Time.new(*args)
       end
     }
-    @new_time_with_offset = lambda { |y,m,d,h,min,s,offset|
+    @new_time_with_offset = -> y, m, d, h, min, s, offset {
       Time.new(y,m,d,h,min,s,offset)
     }
 
@@ -25,7 +25,7 @@ describe "Time#strftime" do
 
   # Differences with date
   it "requires an argument" do
-    lambda { @time.strftime }.should raise_error(ArgumentError)
+    -> { @time.strftime }.should raise_error(ArgumentError)
   end
 
   # %Z is zone name or empty for Time

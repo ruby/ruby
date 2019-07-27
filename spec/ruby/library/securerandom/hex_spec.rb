@@ -41,7 +41,7 @@ describe "SecureRandom.hex" do
   end
 
   it "raises ArgumentError on negative arguments" do
-    lambda {
+    -> {
       SecureRandom.hex(-1)
     }.should raise_error(ArgumentError)
   end

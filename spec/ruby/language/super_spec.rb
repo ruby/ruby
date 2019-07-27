@@ -83,8 +83,8 @@ describe "The super keyword" do
       end
     end
 
-    lambda {sub_normal.new.foo}.should raise_error(NoMethodError, /super/)
-    lambda {sub_zsuper.new.foo}.should raise_error(NoMethodError, /super/)
+    -> {sub_normal.new.foo}.should raise_error(NoMethodError, /super/)
+    -> {sub_zsuper.new.foo}.should raise_error(NoMethodError, /super/)
   end
 
   it "uses given block even if arguments are passed explicitly" do
@@ -169,7 +169,7 @@ describe "The super keyword" do
       end
     end
 
-    lambda { klass.new.a(:a_called) }.should raise_error(RuntimeError)
+    -> { klass.new.a(:a_called) }.should raise_error(RuntimeError)
   end
 
   # Rubinius ticket github#157

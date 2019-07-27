@@ -21,26 +21,26 @@ describe "Enumerable#all?" do
   end
 
   it "raises an ArgumentError when more than 1 argument is provided" do
-    lambda { @enum.all?(1, 2, 3) }.should raise_error(ArgumentError)
-    lambda { [].all?(1, 2, 3) }.should raise_error(ArgumentError)
-    lambda { {}.all?(1, 2, 3) }.should raise_error(ArgumentError)
+    -> { @enum.all?(1, 2, 3) }.should raise_error(ArgumentError)
+    -> { [].all?(1, 2, 3) }.should raise_error(ArgumentError)
+    -> { {}.all?(1, 2, 3) }.should raise_error(ArgumentError)
   end
 
   ruby_version_is ""..."2.5" do
     it "raises an ArgumentError when any arguments provided" do
-      lambda { @enum.all?(Proc.new {}) }.should raise_error(ArgumentError)
-      lambda { @enum.all?(nil) }.should raise_error(ArgumentError)
-      lambda { @empty.all?(1) }.should raise_error(ArgumentError)
-      lambda { @enum1.all?(1) {} }.should raise_error(ArgumentError)
+      -> { @enum.all?(Proc.new {}) }.should raise_error(ArgumentError)
+      -> { @enum.all?(nil) }.should raise_error(ArgumentError)
+      -> { @empty.all?(1) }.should raise_error(ArgumentError)
+      -> { @enum1.all?(1) {} }.should raise_error(ArgumentError)
     end
   end
 
   it "does not hide exceptions out of #each" do
-    lambda {
+    -> {
       EnumerableSpecs::ThrowingEach.new.all?
     }.should raise_error(RuntimeError)
 
-    lambda {
+    -> {
       EnumerableSpecs::ThrowingEach.new.all? { false }
     }.should raise_error(RuntimeError)
   end
@@ -113,7 +113,7 @@ describe "Enumerable#all?" do
     end
 
     it "does not hide exceptions out of the block" do
-      lambda {
+      -> {
         @enum.all? { raise "from block" }
       }.should raise_error(RuntimeError)
     end
@@ -157,7 +157,7 @@ describe "Enumerable#all?" do
       end
 
       it "does not hide exceptions out of #each" do
-        lambda {
+        -> {
           EnumerableSpecs::ThrowingEach.new.all?(Integer)
         }.should raise_error(RuntimeError)
       end
@@ -185,7 +185,7 @@ describe "Enumerable#all?" do
 
       it "does not hide exceptions out of pattern#===" do
         pattern = EnumerableSpecs::Pattern.new { raise "from pattern" }
-        lambda {
+        -> {
           @enum.all?(pattern)
         }.should raise_error(RuntimeError)
       end

@@ -36,7 +36,7 @@ platform_is_not :windows do
         obj = mock("process getrlimit integer")
         obj.should_receive(:to_int).and_return(nil)
 
-        lambda { Process.getrlimit(obj) }.should raise_error(TypeError)
+        -> { Process.getrlimit(obj) }.should raise_error(TypeError)
       end
     end
 
@@ -49,7 +49,7 @@ platform_is_not :windows do
       end
 
       it "raises ArgumentError when passed an unknown resource" do
-        lambda { Process.getrlimit(:FOO) }.should raise_error(ArgumentError)
+        -> { Process.getrlimit(:FOO) }.should raise_error(ArgumentError)
       end
     end
 
@@ -62,7 +62,7 @@ platform_is_not :windows do
       end
 
       it "raises ArgumentError when passed an unknown resource" do
-        lambda { Process.getrlimit("FOO") }.should raise_error(ArgumentError)
+        -> { Process.getrlimit("FOO") }.should raise_error(ArgumentError)
       end
     end
 

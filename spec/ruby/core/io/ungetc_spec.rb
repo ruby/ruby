@@ -100,7 +100,7 @@ describe "IO#ungetc" do
   it "makes subsequent unbuffered operations to raise IOError" do
     @io.getc
     @io.ungetc(100)
-    lambda { @io.sysread(1) }.should raise_error(IOError)
+    -> { @io.sysread(1) }.should raise_error(IOError)
   end
 
   it "does not affect the stream and returns nil when passed nil" do
@@ -130,6 +130,6 @@ describe "IO#ungetc" do
   it "raises IOError on closed stream" do
     @io.getc
     @io.close
-    lambda { @io.ungetc(100) }.should raise_error(IOError)
+    -> { @io.ungetc(100) }.should raise_error(IOError)
   end
 end

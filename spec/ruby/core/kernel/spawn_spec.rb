@@ -10,7 +10,7 @@ describe "Kernel#spawn" do
   end
 
   it "executes the given command" do
-    lambda {
+    -> {
       Process.wait spawn("echo spawn")
     }.should output_to_fd("spawn\n")
   end
@@ -18,7 +18,7 @@ end
 
 describe "Kernel.spawn" do
   it "executes the given command" do
-    lambda {
+    -> {
       Process.wait Kernel.spawn("echo spawn")
     }.should output_to_fd("spawn\n")
   end

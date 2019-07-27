@@ -40,11 +40,11 @@ describe "Array#delete_if" do
   end
 
   it "raises a #{frozen_error_class} on a frozen array" do
-    lambda { ArraySpecs.frozen_array.delete_if {} }.should raise_error(frozen_error_class)
+    -> { ArraySpecs.frozen_array.delete_if {} }.should raise_error(frozen_error_class)
   end
 
   it "raises a #{frozen_error_class} on an empty frozen array" do
-    lambda { ArraySpecs.empty_frozen_array.delete_if {} }.should raise_error(frozen_error_class)
+    -> { ArraySpecs.empty_frozen_array.delete_if {} }.should raise_error(frozen_error_class)
   end
 
   it "keeps tainted status" do

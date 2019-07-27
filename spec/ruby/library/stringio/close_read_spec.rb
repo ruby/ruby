@@ -12,7 +12,7 @@ describe "StringIO#close_read" do
 
   it "prevents further reading" do
     @io.close_read
-    lambda { @io.read(1) }.should raise_error(IOError)
+    -> { @io.read(1) }.should raise_error(IOError)
   end
 
   it "allows further writing" do
@@ -22,7 +22,7 @@ describe "StringIO#close_read" do
 
   it "raises an IOError when in write-only mode" do
     io = StringIO.new("example", "w")
-    lambda { io.close_read }.should raise_error(IOError)
+    -> { io.close_read }.should raise_error(IOError)
 
     io = StringIO.new("example")
     io.close_read

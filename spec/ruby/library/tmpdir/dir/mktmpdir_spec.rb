@@ -110,8 +110,8 @@ end
 
 describe "Dir.mktmpdir when passed [Object]" do
   it "raises an ArgumentError" do
-    lambda { Dir.mktmpdir(Object.new) }.should raise_error(ArgumentError)
-    lambda { Dir.mktmpdir(:symbol) }.should raise_error(ArgumentError)
-    lambda { Dir.mktmpdir(10) }.should raise_error(ArgumentError)
+    -> { Dir.mktmpdir(Object.new) }.should raise_error(ArgumentError)
+    -> { Dir.mktmpdir(:symbol) }.should raise_error(ArgumentError)
+    -> { Dir.mktmpdir(10) }.should raise_error(ArgumentError)
   end
 end

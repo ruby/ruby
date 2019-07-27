@@ -4,6 +4,6 @@ describe :kernel_lambda, shared: true do
   end
 
   it "raises an ArgumentError when no block is given" do
-    lambda { send(@method) }.should raise_error(ArgumentError)
+    -> { send(@method) }.should raise_error(ArgumentError)
   end
 end

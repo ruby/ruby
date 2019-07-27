@@ -39,7 +39,7 @@ describe "String#downcase" do
     end
 
     it "does not allow any other additional option" do
-      lambda { "İ".downcase(:turkic, :ascii) }.should raise_error(ArgumentError)
+      -> { "İ".downcase(:turkic, :ascii) }.should raise_error(ArgumentError)
     end
   end
 
@@ -53,7 +53,7 @@ describe "String#downcase" do
     end
 
     it "does not allow any other additional option" do
-      lambda { "İS".downcase(:lithuanian, :ascii) }.should raise_error(ArgumentError)
+      -> { "İS".downcase(:lithuanian, :ascii) }.should raise_error(ArgumentError)
     end
   end
 
@@ -65,7 +65,7 @@ describe "String#downcase" do
   end
 
   it "does not allow invalid options" do
-    lambda { "ABC".downcase(:invalid_option) }.should raise_error(ArgumentError)
+    -> { "ABC".downcase(:invalid_option) }.should raise_error(ArgumentError)
   end
 
   it "taints result when self is tainted" do
@@ -126,7 +126,7 @@ describe "String#downcase!" do
     end
 
     it "does not allow any other additional option" do
-      lambda { a = "İ"; a.downcase!(:turkic, :ascii) }.should raise_error(ArgumentError)
+      -> { a = "İ"; a.downcase!(:turkic, :ascii) }.should raise_error(ArgumentError)
     end
   end
 
@@ -144,7 +144,7 @@ describe "String#downcase!" do
     end
 
     it "does not allow any other additional option" do
-      lambda { a = "İS"; a.downcase!(:lithuanian, :ascii) }.should raise_error(ArgumentError)
+      -> { a = "İS"; a.downcase!(:lithuanian, :ascii) }.should raise_error(ArgumentError)
     end
   end
 
@@ -160,7 +160,7 @@ describe "String#downcase!" do
   end
 
   it "does not allow invalid options" do
-    lambda { a = "ABC"; a.downcase!(:invalid_option) }.should raise_error(ArgumentError)
+    -> { a = "ABC"; a.downcase!(:invalid_option) }.should raise_error(ArgumentError)
   end
 
   it "returns nil if no modifications were made" do
@@ -170,8 +170,8 @@ describe "String#downcase!" do
   end
 
   it "raises a #{frozen_error_class} when self is frozen" do
-    lambda { "HeLlo".freeze.downcase! }.should raise_error(frozen_error_class)
-    lambda { "hello".freeze.downcase! }.should raise_error(frozen_error_class)
+    -> { "HeLlo".freeze.downcase! }.should raise_error(frozen_error_class)
+    -> { "hello".freeze.downcase! }.should raise_error(frozen_error_class)
   end
 
   it "sets the result String encoding to the source String encoding" do

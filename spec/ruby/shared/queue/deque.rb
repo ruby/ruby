@@ -66,7 +66,7 @@ describe :queue_deq, shared: true do
 
     it "raises a ThreadError if the queue is empty" do
       q = @object.call
-      lambda { q.send(@method, true) }.should raise_error(ThreadError)
+      -> { q.send(@method, true) }.should raise_error(ThreadError)
     end
 
     it "removes an item from a closed queue" do
@@ -79,7 +79,7 @@ describe :queue_deq, shared: true do
     it "raises a ThreadError for a closed empty queue" do
       q = @object.call
       q.close
-      lambda { q.send(@method, true) }.should raise_error(ThreadError)
+      -> { q.send(@method, true) }.should raise_error(ThreadError)
     end
   end
 end

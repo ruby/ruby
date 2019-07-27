@@ -92,8 +92,8 @@ describe "Predefined global $~" do
     $~ = /foo/.match("foo")
     $~.should be_an_instance_of(MatchData)
 
-    lambda { $~ = Object.new }.should raise_error(TypeError)
-    lambda { $~ = 1 }.should raise_error(TypeError)
+    -> { $~ = Object.new }.should raise_error(TypeError)
+    -> { $~ = 1 }.should raise_error(TypeError)
   end
 
   it "changes the value of derived capture globals when assigned" do
@@ -233,12 +233,12 @@ describe "Predefined global $stdout" do
   end
 
   it "raises TypeError error if assigned to nil" do
-    lambda { $stdout = nil }.should raise_error(TypeError)
+    -> { $stdout = nil }.should raise_error(TypeError)
   end
 
   it "raises TypeError error if assigned to object that doesn't respond to #write" do
     obj = mock('object')
-    lambda { $stdout = obj }.should raise_error(TypeError)
+    -> { $stdout = obj }.should raise_error(TypeError)
 
     obj.stub!(:write)
     $stdout = obj
@@ -562,15 +562,15 @@ describe "Predefined global $/" do
     obj = mock("$/ value")
     obj.should_not_receive(:to_str)
 
-    lambda { $/ = obj }.should raise_error(TypeError)
+    -> { $/ = obj }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if assigned a Fixnum" do
-    lambda { $/ = 1 }.should raise_error(TypeError)
+    -> { $/ = 1 }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if assigned a boolean" do
-    lambda { $/ = true }.should raise_error(TypeError)
+    -> { $/ = true }.should raise_error(TypeError)
   end
 end
 
@@ -609,15 +609,15 @@ describe "Predefined global $-0" do
     obj = mock("$-0 value")
     obj.should_not_receive(:to_str)
 
-    lambda { $-0 = obj }.should raise_error(TypeError)
+    -> { $-0 = obj }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if assigned a Fixnum" do
-    lambda { $-0 = 1 }.should raise_error(TypeError)
+    -> { $-0 = 1 }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if assigned a boolean" do
-    lambda { $-0 = true }.should raise_error(TypeError)
+    -> { $-0 = true }.should raise_error(TypeError)
   end
 end
 
@@ -631,7 +631,7 @@ describe "Predefined global $," do
   end
 
   it "raises TypeError if assigned a non-String" do
-    lambda { $, = Object.new }.should raise_error(TypeError)
+    -> { $, = Object.new }.should raise_error(TypeError)
   end
 end
 
@@ -658,7 +658,7 @@ describe "Predefined global $." do
     obj = mock("bad-value")
     obj.should_receive(:to_int).and_return('abc')
 
-    lambda { $. = obj }.should raise_error(TypeError)
+    -> { $. = obj }.should raise_error(TypeError)
   end
 end
 
@@ -802,15 +802,15 @@ describe "Execution variable $:" do
   end
 
   it "is read-only" do
-    lambda {
+    -> {
       $: = []
     }.should raise_error(NameError)
 
-    lambda {
+    -> {
       $LOAD_PATH = []
     }.should raise_error(NameError)
 
-    lambda {
+    -> {
       $-I = []
     }.should raise_error(NameError)
   end
@@ -822,11 +822,11 @@ describe "Global variable $\"" do
   end
 
   it "is read-only" do
-    lambda {
+    -> {
       $" = []
     }.should raise_error(NameError)
 
-    lambda {
+    -> {
       $LOADED_FEATURES = []
     }.should raise_error(NameError)
   end
@@ -834,7 +834,7 @@ end
 
 describe "Global variable $<" do
   it "is read-only" do
-    lambda {
+    -> {
       $< = nil
     }.should raise_error(NameError)
   end
@@ -842,7 +842,7 @@ end
 
 describe "Global variable $FILENAME" do
   it "is read-only" do
-    lambda {
+    -> {
       $FILENAME = "-"
     }.should raise_error(NameError)
   end
@@ -850,7 +850,7 @@ end
 
 describe "Global variable $?" do
   it "is read-only" do
-    lambda {
+    -> {
       $? = nil
     }.should raise_error(NameError)
   end
@@ -863,19 +863,19 @@ end
 
 describe "Global variable $-a" do
   it "is read-only" do
-    lambda { $-a = true }.should raise_error(NameError)
+    -> { $-a = true }.should raise_error(NameError)
   end
 end
 
 describe "Global variable $-l" do
   it "is read-only" do
-    lambda { $-l = true }.should raise_error(NameError)
+    -> { $-l = true }.should raise_error(NameError)
   end
 end
 
 describe "Global variable $-p" do
   it "is read-only" do
-    lambda { $-p = true }.should raise_error(NameError)
+    -> { $-p = true }.should raise_error(NameError)
   end
 end
 
@@ -974,7 +974,7 @@ describe "Global variable $0" do
   end
 
   it "raises a TypeError when not given an object that can be coerced to a String" do
-    lambda { $0 = nil }.should raise_error(TypeError)
+    -> { $0 = nil }.should raise_error(TypeError)
   end
 end
 
@@ -1016,7 +1016,7 @@ describe "The predefined standard object nil" do
   end
 
   it "raises a SyntaxError if assigned to" do
-    lambda { eval("nil = true") }.should raise_error(SyntaxError)
+    -> { eval("nil = true") }.should raise_error(SyntaxError)
   end
 end
 
@@ -1026,7 +1026,7 @@ describe "The predefined standard object true" do
   end
 
   it "raises a SyntaxError if assigned to" do
-    lambda { eval("true = false") }.should raise_error(SyntaxError)
+    -> { eval("true = false") }.should raise_error(SyntaxError)
   end
 end
 
@@ -1036,13 +1036,13 @@ describe "The predefined standard object false" do
   end
 
   it "raises a SyntaxError if assigned to" do
-    lambda { eval("false = nil") }.should raise_error(SyntaxError)
+    -> { eval("false = nil") }.should raise_error(SyntaxError)
   end
 end
 
 describe "The self pseudo-variable" do
   it "raises a SyntaxError if assigned to" do
-    lambda { eval("self = 1") }.should raise_error(SyntaxError)
+    -> { eval("self = 1") }.should raise_error(SyntaxError)
   end
 end
 

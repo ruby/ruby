@@ -22,7 +22,7 @@ with_feature :unix_socket do
     end
 
     it 'raises Errno::EADDRINUSE when the socket is already in use' do
-      lambda { UNIXServer.new(@path) }.should raise_error(Errno::EADDRINUSE)
+      -> { UNIXServer.new(@path) }.should raise_error(Errno::EADDRINUSE)
     end
   end
 end

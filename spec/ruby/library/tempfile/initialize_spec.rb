@@ -38,4 +38,9 @@ describe "Tempfile#initialize" do
     @tempfile.send(:initialize, ['shiftjis', 'yml'], encoding: 'SHIFT_JIS')
     @tempfile.external_encoding.should == Encoding::Shift_JIS
   end
+
+  it "does not try to modify the arguments" do
+    @tempfile.send(:initialize, ['frozen'.freeze, 'txt'.freeze], encoding: Encoding::IBM437)
+    @tempfile.external_encoding.should == Encoding::IBM437
+  end
 end

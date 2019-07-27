@@ -8,7 +8,7 @@ describe :process_fork, shared: true do
     end
 
     it "raises a NotImplementedError when called" do
-      lambda { @object.fork }.should raise_error(NotImplementedError)
+      -> { @object.fork }.should raise_error(NotImplementedError)
     end
   end
 

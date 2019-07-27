@@ -7,7 +7,7 @@ describe "A lambda literal -> () { }" do
   it "returns a Proc object when used in a BasicObject method" do
     klass = Class.new(BasicObject) do
       def create_lambda
-        -> () { }
+        -> { }
       end
     end
 
@@ -15,11 +15,11 @@ describe "A lambda literal -> () { }" do
   end
 
   it "does not execute the block" do
-    ->() { fail }.should be_an_instance_of(Proc)
+    -> { fail }.should be_an_instance_of(Proc)
   end
 
   it "returns a lambda" do
-    -> () { }.lambda?.should be_true
+    -> { }.lambda?.should be_true
   end
 
   ruby_version_is "2.6" do
@@ -111,7 +111,7 @@ describe "A lambda literal -> () { }" do
         @a = -> (a:) { a }
       ruby
 
-      lambda { @a.() }.should raise_error(ArgumentError)
+      -> { @a.() }.should raise_error(ArgumentError)
       @a.(a: 1).should == 1
     end
 
@@ -129,7 +129,7 @@ describe "A lambda literal -> () { }" do
 
       @a.().should be_nil
       @a.(a: 1, b: 2).should be_nil
-      lambda { @a.(1) }.should raise_error(ArgumentError)
+      -> { @a.(1) }.should raise_error(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -153,8 +153,8 @@ describe "A lambda literal -> () { }" do
       ruby
 
       @a.(1, 2).should == [1, 2]
-      lambda { @a.() }.should raise_error(ArgumentError)
-      lambda { @a.(1) }.should raise_error(ArgumentError)
+      -> { @a.() }.should raise_error(ArgumentError)
+      -> { @a.(1) }.should raise_error(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -283,7 +283,7 @@ describe "A lambda literal -> () { }" do
 
       it "calls an existing method with the same name as the argument if explicitly using ()" do
         def a; 1; end
-        -> (a=a()) { a }.call.should == 1
+        -> a=a() { a }.call.should == 1
       end
     end
   end

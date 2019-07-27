@@ -3,7 +3,7 @@ require_relative '../fixtures/classes'
 
 describe "Delegator#untaint" do
   before :each do
-    @delegate = lambda { DelegateSpecs::Delegator.new("") }.call
+    @delegate = -> { DelegateSpecs::Delegator.new("") }.call
   end
 
   it "returns self" do

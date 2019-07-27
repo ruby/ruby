@@ -35,7 +35,7 @@ describe :hash_update, shared: true do
   end
 
   it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    lambda do
+    -> do
       HashSpecs.frozen_hash.send(@method, 1 => 2)
     end.should raise_error(frozen_error_class)
   end
@@ -47,12 +47,12 @@ describe :hash_update, shared: true do
     def obj.to_hash() raise Exception, "should not receive #to_hash" end
     obj.freeze
 
-    lambda { HashSpecs.frozen_hash.send(@method, obj) }.should raise_error(frozen_error_class)
+    -> { HashSpecs.frozen_hash.send(@method, obj) }.should raise_error(frozen_error_class)
   end
 
   # see redmine #1571
   it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
-    lambda do
+    -> do
       HashSpecs.frozen_hash.send(@method, HashSpecs.empty_frozen_hash)
     end.should raise_error(frozen_error_class)
   end

@@ -21,7 +21,7 @@ describe :rb_enc_set_index, shared: true do
 
     # This is used because indexes should be considered implementation
     # dependent. So a pair is returned:
-    #   [rb_enc_find_index()->name, rb_enc_get(obj)->name]
+    #   [rb_enc_find_index() -> name, rb_enc_get(obj) -> name]
     result.first.should == result.last
   end
 
@@ -308,7 +308,7 @@ describe "C-API Encoding function" do
     end
 
     it "raises a RuntimeError if the second argument is a Symbol" do
-      lambda { @s.rb_enc_copy(:symbol, @obj) }.should raise_error(RuntimeError)
+      -> { @s.rb_enc_copy(:symbol, @obj) }.should raise_error(RuntimeError)
     end
 
     it "sets the encoding of a Regexp to that of the second argument" do
@@ -359,7 +359,7 @@ describe "C-API Encoding function" do
     end
 
     it "raises a RuntimeError if the argument is Symbol" do
-      lambda { @s.rb_enc_associate(:symbol, "US-ASCII") }.should raise_error(RuntimeError)
+      -> { @s.rb_enc_associate(:symbol, "US-ASCII") }.should raise_error(RuntimeError)
     end
 
     it "sets the encoding of a Regexp to the encoding" do
@@ -386,7 +386,7 @@ describe "C-API Encoding function" do
 
     it "sets the encoding of a Symbol to the encoding" do
       index = @s.rb_enc_find_index("UTF-8")
-      lambda { @s.rb_enc_associate_index(:symbol, index) }.should raise_error(RuntimeError)
+      -> { @s.rb_enc_associate_index(:symbol, index) }.should raise_error(RuntimeError)
     end
   end
 
@@ -440,13 +440,13 @@ describe "C-API Encoding function" do
 
   describe "rb_enc_codepoint_len" do
     it "raises ArgumentError if an empty string is given" do
-      lambda do
+      -> do
         @s.rb_enc_codepoint_len("")
       end.should raise_error(ArgumentError)
     end
 
     it "raises ArgumentError if an invalid byte sequence is given" do
-      lambda do
+      -> do
         @s.rb_enc_codepoint_len([0xa0, 0xa1].pack('CC').force_encoding('utf-8')) # Invalid sequence identifier
       end.should raise_error(ArgumentError)
     end

@@ -49,7 +49,7 @@ describe "Logger#datetime_format=" do
   end
 
   it "follows the Time#strftime format" do
-    lambda { @logger.datetime_format = "%Y-%m" }.should_not raise_error
+    -> { @logger.datetime_format = "%Y-%m" }.should_not raise_error
 
     regex = /\d{4}-\d{2}-\d{2}oo-\w+ar/
     @logger.datetime_format = "%Foo-%Bar"

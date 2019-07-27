@@ -8,7 +8,7 @@ describe "BasicObject" do
   end
 
   it "raises NameError when referencing built-in constants" do
-    lambda { class BasicObjectSpecs::BOSubclass; Kernel; end }.should raise_error(NameError)
+    -> { class BasicObjectSpecs::BOSubclass; Kernel; end }.should raise_error(NameError)
   end
 
   it "does not define built-in constants (according to const_defined?)" do
@@ -85,7 +85,7 @@ describe "BasicObject subclass" do
 
   describe "BasicObject references" do
     it "can refer to BasicObject from within itself" do
-      lambda { BasicObject::BasicObject }.should_not raise_error
+      -> { BasicObject::BasicObject }.should_not raise_error
     end
   end
 end

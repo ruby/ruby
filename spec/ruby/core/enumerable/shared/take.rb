@@ -25,7 +25,7 @@ describe :enumerable_take, shared: true do
   end
 
   it "raises an ArgumentError when count is negative" do
-    lambda { @enum.send(@method, -1) }.should raise_error(ArgumentError)
+    -> { @enum.send(@method, -1) }.should raise_error(ArgumentError)
   end
 
   it "returns the entire array when count > length" do
@@ -40,11 +40,11 @@ describe :enumerable_take, shared: true do
   end
 
   it "raises a TypeError if the passed argument is not numeric" do
-    lambda { @enum.send(@method, nil) }.should raise_error(TypeError)
-    lambda { @enum.send(@method, "a") }.should raise_error(TypeError)
+    -> { @enum.send(@method, nil) }.should raise_error(TypeError)
+    -> { @enum.send(@method, "a") }.should raise_error(TypeError)
 
     obj = mock("nonnumeric")
-    lambda { @enum.send(@method, obj) }.should raise_error(TypeError)
+    -> { @enum.send(@method, obj) }.should raise_error(TypeError)
   end
 
   it "gathers whole arrays as elements when each yields multiple" do

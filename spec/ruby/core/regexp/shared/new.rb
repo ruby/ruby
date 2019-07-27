@@ -30,7 +30,7 @@ describe :regexp_new_string, shared: true do
   end
 
   it "raises a RegexpError when passed an incorrect regexp" do
-    lambda { Regexp.send(@method, "^[$", 0) }.should raise_error(RegexpError)
+    -> { Regexp.send(@method, "^[$", 0) }.should raise_error(RegexpError)
   end
 
   it "does not set Regexp options if only given one argument" do
@@ -98,7 +98,7 @@ describe :regexp_new_string, shared: true do
   end
 
   it "ignores the third argument if it is 'e' or 'euc' (case-insensitive)" do
-    lambda {
+    -> {
       Regexp.send(@method, 'Hi', nil, 'e').encoding.should == Encoding::US_ASCII
       Regexp.send(@method, 'Hi', nil, 'euc').encoding.should == Encoding::US_ASCII
       Regexp.send(@method, 'Hi', nil, 'E').encoding.should == Encoding::US_ASCII
@@ -107,7 +107,7 @@ describe :regexp_new_string, shared: true do
   end
 
   it "ignores the third argument if it is 's' or 'sjis' (case-insensitive)" do
-    lambda {
+    -> {
       Regexp.send(@method, 'Hi', nil, 's').encoding.should == Encoding::US_ASCII
       Regexp.send(@method, 'Hi', nil, 'sjis').encoding.should == Encoding::US_ASCII
       Regexp.send(@method, 'Hi', nil, 'S').encoding.should == Encoding::US_ASCII
@@ -116,7 +116,7 @@ describe :regexp_new_string, shared: true do
   end
 
   it "ignores the third argument if it is 'u' or 'utf8' (case-insensitive)" do
-    lambda {
+    -> {
       Regexp.send(@method, 'Hi', nil, 'u').encoding.should == Encoding::US_ASCII
       Regexp.send(@method, 'Hi', nil, 'utf8').encoding.should == Encoding::US_ASCII
       Regexp.send(@method, 'Hi', nil, 'U').encoding.should == Encoding::US_ASCII
@@ -143,11 +143,11 @@ describe :regexp_new_string, shared: true do
 
   describe "with escaped characters" do
     it "raises a Regexp error if there is a trailing backslash" do
-      lambda { Regexp.send(@method, "\\") }.should raise_error(RegexpError)
+      -> { Regexp.send(@method, "\\") }.should raise_error(RegexpError)
     end
 
     it "does not raise a Regexp error if there is an escaped trailing backslash" do
-      lambda { Regexp.send(@method, "\\\\") }.should_not raise_error(RegexpError)
+      -> { Regexp.send(@method, "\\\\") }.should_not raise_error(RegexpError)
     end
 
     it "accepts a backspace followed by a character" do
@@ -175,7 +175,7 @@ describe :regexp_new_string, shared: true do
     end
 
     it "raises a RegexpError if \\x is not followed by any hexadecimal digits" do
-      lambda { Regexp.send(@method, "\\" + "xn") }.should raise_error(RegexpError)
+      -> { Regexp.send(@method, "\\" + "xn") }.should raise_error(RegexpError)
     end
 
     it "accepts an escaped string interpolation" do
@@ -331,15 +331,15 @@ describe :regexp_new_string, shared: true do
     end
 
     it "raises a RegexpError if less than four digits are given for \\uHHHH" do
-      lambda { Regexp.send(@method, "\\" + "u304") }.should raise_error(RegexpError)
+      -> { Regexp.send(@method, "\\" + "u304") }.should raise_error(RegexpError)
     end
 
     it "raises a RegexpError if the \\u{} escape is empty" do
-      lambda { Regexp.send(@method, "\\" + "u{}") }.should raise_error(RegexpError)
+      -> { Regexp.send(@method, "\\" + "u{}") }.should raise_error(RegexpError)
     end
 
     it "raises a RegexpError if more than six hexadecimal digits are given" do
-      lambda { Regexp.send(@method, "\\" + "u{0ffffff}") }.should raise_error(RegexpError)
+      -> { Regexp.send(@method, "\\" + "u{0ffffff}") }.should raise_error(RegexpError)
     end
 
     it "returns a Regexp with US-ASCII encoding if only 7-bit ASCII characters are present regardless of the input String's encoding" do
@@ -475,7 +475,7 @@ describe :regexp_new_regexp, shared: true do
 
   it "does not honour options given as additional arguments" do
     r = nil
-    lambda {
+    -> {
       r = Regexp.send @method, /hi/, Regexp::IGNORECASE
     }.should complain(/flags ignored/)
     (r.options & Regexp::IGNORECASE).should == 0

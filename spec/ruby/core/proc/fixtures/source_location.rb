@@ -5,7 +5,7 @@ module ProcSpecs
     end
 
     def self.my_lambda
-      lambda { true }
+      -> { true }
     end
 
     def self.my_proc_new
@@ -24,7 +24,7 @@ module ProcSpecs
     end
 
     def self.my_multiline_lambda
-      lambda do
+      -> do
         'a'.upcase
         1 + 22
       end
@@ -43,7 +43,7 @@ module ProcSpecs
     end
 
     def self.my_detached_lambda
-      body = lambda { true }
+      body = -> { true }
       lambda(&body)
     end
 

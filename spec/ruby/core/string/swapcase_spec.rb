@@ -45,7 +45,7 @@ describe "String#swapcase" do
     end
 
     it "does not allow any other additional option" do
-      lambda { "aiS".swapcase(:turkic, :ascii) }.should raise_error(ArgumentError)
+      -> { "aiS".swapcase(:turkic, :ascii) }.should raise_error(ArgumentError)
     end
   end
 
@@ -59,16 +59,16 @@ describe "String#swapcase" do
     end
 
     it "does not allow any other additional option" do
-      lambda { "aiS".swapcase(:lithuanian, :ascii) }.should raise_error(ArgumentError)
+      -> { "aiS".swapcase(:lithuanian, :ascii) }.should raise_error(ArgumentError)
     end
   end
 
   it "does not allow the :fold option for upcasing" do
-    lambda { "abc".swapcase(:fold) }.should raise_error(ArgumentError)
+    -> { "abc".swapcase(:fold) }.should raise_error(ArgumentError)
   end
 
   it "does not allow invalid options" do
-    lambda { "abc".swapcase(:invalid_option) }.should raise_error(ArgumentError)
+    -> { "abc".swapcase(:invalid_option) }.should raise_error(ArgumentError)
   end
 
   it "returns subclass instances when called on a subclass" do
@@ -124,7 +124,7 @@ describe "String#swapcase!" do
     end
 
     it "does not allow any other additional option" do
-      lambda { a = "aiS"; a.swapcase!(:turkic, :ascii) }.should raise_error(ArgumentError)
+      -> { a = "aiS"; a.swapcase!(:turkic, :ascii) }.should raise_error(ArgumentError)
     end
   end
 
@@ -142,16 +142,16 @@ describe "String#swapcase!" do
     end
 
     it "does not allow any other additional option" do
-      lambda { a = "aiS"; a.swapcase!(:lithuanian, :ascii) }.should raise_error(ArgumentError)
+      -> { a = "aiS"; a.swapcase!(:lithuanian, :ascii) }.should raise_error(ArgumentError)
     end
   end
 
   it "does not allow the :fold option for upcasing" do
-    lambda { a = "abc"; a.swapcase!(:fold) }.should raise_error(ArgumentError)
+    -> { a = "abc"; a.swapcase!(:fold) }.should raise_error(ArgumentError)
   end
 
   it "does not allow invalid options" do
-    lambda { a = "abc"; a.swapcase!(:invalid_option) }.should raise_error(ArgumentError)
+    -> { a = "abc"; a.swapcase!(:invalid_option) }.should raise_error(ArgumentError)
   end
 
   it "returns nil if no modifications were made" do
@@ -165,7 +165,7 @@ describe "String#swapcase!" do
   it "raises a #{frozen_error_class} when self is frozen" do
     ["", "hello"].each do |a|
       a.freeze
-      lambda { a.swapcase! }.should raise_error(frozen_error_class)
+      -> { a.swapcase! }.should raise_error(frozen_error_class)
     end
   end
 end

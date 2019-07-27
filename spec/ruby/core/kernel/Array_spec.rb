@@ -77,14 +77,14 @@ describe :kernel_Array, shared: true do
     obj = mock("Array() string")
     obj.should_receive(:to_ary).and_return("string")
 
-    lambda { @object.send(@method, obj) }.should raise_error(TypeError)
+    -> { @object.send(@method, obj) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if #to_a does not return an Array" do
     obj = mock("Array() string")
     obj.should_receive(:to_a).and_return("string")
 
-    lambda { @object.send(@method, obj) }.should raise_error(TypeError)
+    -> { @object.send(@method, obj) }.should raise_error(TypeError)
   end
 end
 

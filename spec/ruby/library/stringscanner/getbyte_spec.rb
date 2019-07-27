@@ -8,11 +8,11 @@ describe "StringScanner#getbyte" do
 
   it "warns in verbose mode that the method is obsolete" do
     s = StringScanner.new("abc")
-    lambda {
+    -> {
       s.getbyte
     }.should complain(/getbyte.*obsolete.*get_byte/, verbose: true)
 
-    lambda {
+    -> {
       s.getbyte
     }.should_not complain(verbose: false)
   end

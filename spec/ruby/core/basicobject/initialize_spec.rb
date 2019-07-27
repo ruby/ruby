@@ -6,7 +6,7 @@ describe "BasicObject#initialize" do
   end
 
   it "does not accept arguments" do
-    lambda {
+    -> {
       BasicObject.new("This", "makes it easier", "to call super", "from other constructors")
     }.should raise_error(ArgumentError)
   end

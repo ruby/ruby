@@ -54,7 +54,7 @@ describe "CApiModule" do
 
     it "raises a TypeError if the constant is not a module" do
       ::CApiModuleSpecsGlobalConst = 7
-      lambda { @m.rb_define_module("CApiModuleSpecsGlobalConst") }.should raise_error(TypeError)
+      -> { @m.rb_define_module("CApiModuleSpecsGlobalConst") }.should raise_error(TypeError)
       Object.send :remove_const, :CApiModuleSpecsGlobalConst
     end
 
@@ -303,7 +303,7 @@ describe "CApiModule" do
       a = cls.new
       @m.rb_define_singleton_method a, "module_specs_singleton_method"
       a.module_specs_singleton_method.should == :test_method
-      lambda { cls.new.module_specs_singleton_method }.should raise_error(NoMethodError)
+      -> { cls.new.module_specs_singleton_method }.should raise_error(NoMethodError)
     end
   end
 
@@ -323,7 +323,7 @@ describe "CApiModule" do
     end
 
     it "does not raise exceptions when passed a missing name" do
-      lambda { @m.rb_undef_method @class, "not_exist" }.should_not raise_error
+      -> { @m.rb_undef_method @class, "not_exist" }.should_not raise_error
     end
 
     describe "when given a frozen Class" do
@@ -332,11 +332,11 @@ describe "CApiModule" do
       end
 
       it "raises a #{frozen_error_class} when passed a name" do
-        lambda { @m.rb_undef_method @frozen, "ruby_test_method" }.should raise_error(frozen_error_class)
+        -> { @m.rb_undef_method @frozen, "ruby_test_method" }.should raise_error(frozen_error_class)
       end
 
       it "raises a #{frozen_error_class} when passed a missing name" do
-        lambda { @m.rb_undef_method @frozen, "not_exist" }.should raise_error(frozen_error_class)
+        -> { @m.rb_undef_method @frozen, "not_exist" }.should raise_error(frozen_error_class)
       end
     end
   end

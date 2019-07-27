@@ -28,7 +28,7 @@ describe "Addrinfo#ip_address" do
       end
 
       it "raises an exception" do
-        lambda { @addrinfo.ip_address }.should raise_error(SocketError)
+        -> { @addrinfo.ip_address }.should raise_error(SocketError)
       end
     end
   end

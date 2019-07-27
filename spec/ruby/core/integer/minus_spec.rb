@@ -20,12 +20,12 @@ describe "Integer#-" do
     end
 
     it "raises a TypeError when given a non-Integer" do
-      lambda {
+      -> {
         (obj = mock('10')).should_receive(:to_int).any_number_of_times.and_return(10)
         13 - obj
       }.should raise_error(TypeError)
-      lambda { 13 - "10"    }.should raise_error(TypeError)
-      lambda { 13 - :symbol }.should raise_error(TypeError)
+      -> { 13 - "10"    }.should raise_error(TypeError)
+      -> { 13 - :symbol }.should raise_error(TypeError)
     end
   end
 
@@ -41,9 +41,9 @@ describe "Integer#-" do
     end
 
     it "raises a TypeError when given a non-Integer" do
-      lambda { @bignum - mock('10') }.should raise_error(TypeError)
-      lambda { @bignum - "10" }.should raise_error(TypeError)
-      lambda { @bignum - :symbol }.should raise_error(TypeError)
+      -> { @bignum - mock('10') }.should raise_error(TypeError)
+      -> { @bignum - "10" }.should raise_error(TypeError)
+      -> { @bignum - :symbol }.should raise_error(TypeError)
     end
   end
 end

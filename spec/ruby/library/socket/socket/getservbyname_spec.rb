@@ -27,6 +27,6 @@ describe "Socket#getservbyname" do
   end
 
   it "raises a SocketError when the service or port is invalid" do
-    lambda { Socket.getservbyname('invalid') }.should raise_error(SocketError)
+    -> { Socket.getservbyname('invalid') }.should raise_error(SocketError)
   end
 end

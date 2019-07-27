@@ -17,11 +17,11 @@ describe :array_pack_string, shared: true do
   end
 
   it "raises an ArgumentError when the Array is empty" do
-    lambda { [].pack(pack_format) }.should raise_error(ArgumentError)
+    -> { [].pack(pack_format) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError when the Array has too few elements" do
-    lambda { ["a"].pack(pack_format(nil, 2)) }.should raise_error(ArgumentError)
+    -> { ["a"].pack(pack_format(nil, 2)) }.should raise_error(ArgumentError)
   end
 
   it "calls #to_str to convert the element to a String" do
@@ -33,7 +33,7 @@ describe :array_pack_string, shared: true do
 
   it "raises a TypeError when the object does not respond to #to_str" do
     obj = mock("not a string")
-    lambda { [obj].pack(pack_format) }.should raise_error(TypeError)
+    -> { [obj].pack(pack_format) }.should raise_error(TypeError)
   end
 
   it "returns a string in encoding of common to the concatenated results" do

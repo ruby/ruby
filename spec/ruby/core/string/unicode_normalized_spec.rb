@@ -37,11 +37,11 @@ describe "String#unicode_normalized?" do
   end
 
   it "raises an Encoding::CompatibilityError if the string is not in an unicode encoding" do
-    lambda { @nfc_normalized_str.force_encoding("ISO-8859-1").unicode_normalized? }.should raise_error(Encoding::CompatibilityError)
+    -> { @nfc_normalized_str.force_encoding("ISO-8859-1").unicode_normalized? }.should raise_error(Encoding::CompatibilityError)
   end
 
   it "raises an ArgumentError if the specified form is invalid" do
-    lambda { @nfc_normalized_str.unicode_normalized?(:invalid_form) }.should raise_error(ArgumentError)
+    -> { @nfc_normalized_str.unicode_normalized?(:invalid_form) }.should raise_error(ArgumentError)
   end
 
   it "returns true if str is in Unicode normalization form (nfc)" do

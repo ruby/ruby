@@ -22,7 +22,7 @@ describe :sizedqueue_enq, shared: true do
     q = @object.call(2)
 
     non_blocking = true
-    add_to_queue = lambda { q.send(@method, Object.new, non_blocking) }
+    add_to_queue = -> { q.send(@method, Object.new, non_blocking) }
 
     q.size.should == 0
     add_to_queue.call
@@ -37,7 +37,7 @@ describe :sizedqueue_enq, shared: true do
     q << 1
 
     t = Thread.new {
-      lambda { q.send(@method, 2) }.should raise_error(ClosedQueueError)
+      -> { q.send(@method, 2) }.should raise_error(ClosedQueueError)
     }
 
     Thread.pass until q.num_waiting == 1

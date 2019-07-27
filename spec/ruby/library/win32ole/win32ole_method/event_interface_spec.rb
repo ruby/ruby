@@ -11,7 +11,7 @@ platform_is :windows do
       end
 
       it "raises ArgumentError if argument is given" do
-        lambda { @on_dbl_click_method.event_interface(1) }.should raise_error ArgumentError
+        -> { @on_dbl_click_method.event_interface(1) }.should raise_error ArgumentError
       end
 
       it "returns expected string for System Monitor Control's 'OnDblClick' method" do
