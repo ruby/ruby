@@ -1141,12 +1141,12 @@ class TestMethod < Test::Unit::TestCase
     m = 1.:succ
     assert_predicate(m, :frozen?, "dot-symbol method reference should be frozen")
     m = 1.method(:succ)
-    assert_equal(m.frozen?, false)
+    assert_not_predicate(m, :frozen?, "#method method reference should not be frozen")
     o = Object.new
     def o.foo; 42; end
     m = o.:foo
     assert_predicate(m, :frozen?, "dot-symbol method reference should be frozen")
     m = o.method(:foo)
-    assert_equal(m.frozen?, false)
+    assert_not_predicate(m, :frozen?, "#method method reference should not be frozen")
   end
 end
