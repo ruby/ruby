@@ -126,10 +126,7 @@ class Gem::Ext::Builder
     when /CMakeLists.txt/ then
       Gem::Ext::CmakeBuilder
     else
-      extension_dir = File.join @gem_dir, File.dirname(extension)
-
-      message = "No builder for extension '#{extension}'"
-      build_error extension_dir, message
+      build_error("No builder for extension '#{extension}'")
     end
   end
 
@@ -196,7 +193,7 @@ EOF
       write_gem_make_out results.join "\n"
     rescue => e
       results << e.message
-      build_error extension_dir, results.join("\n"), $@
+      build_error(results.join("\n"), $@)
     end
   end
 
