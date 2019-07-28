@@ -126,20 +126,19 @@ class Reline::Config
       no += 1
 
       line = line.chomp.lstrip
-      if line[0, 1] == '$'
+      if line.start_with?('$')
         handle_directive(line[1..-1], file, no)
         next
       end
 
       next if @skip_section
 
-      if line.match(/^set +([^ ]+) +([^ ]+)/i)
+      case line
+      when /^set +([^ ]+) +([^ ]+)/i
         var, value = $1.downcase, $2.downcase
         bind_variable(var, value)
         next
-      end
-
-      if line =~ /\s*("#{KEYSEQ_PATTERN}+")\s*:\s*(.*)\s*$/
+      when /\s*("#{KEYSEQ_PATTERN}+")\s*:\s*(.*)\s*$/o
         key, func_name = $1, $2
         keystroke, func = bind_key(key, func_name)
         next unless keystroke
