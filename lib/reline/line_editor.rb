@@ -808,6 +808,8 @@ class Reline::LineEditor
     rest = nil
     break_pointer = nil
     quote = nil
+    closing_quote = nil
+    escaped_quote = nil
     i = 0
     while i < @byte_pointer do
       slice = @line.byteslice(i, @byte_pointer - i)
@@ -815,14 +817,16 @@ class Reline::LineEditor
         i += 1
         next
       end
-      if quote and slice.start_with?(/(?!\\)#{Regexp.escape(quote)}/) # closing "
+      if quote and slice.start_with?(closing_quote)
         quote = nil
         i += 1
-      elsif quote and slice.start_with?(/\\#{Regexp.escape(quote)}/) # escaped \"
+      elsif quote and slice.start_with?(escaped_quote)
         # skip
         i += 2
       elsif slice =~ quote_characters_regexp # find new "
-        quote = $&
+        quote = $~
+        closing_quote = /(?!\\)#{Regexp.escape(quote)}/
+        escaped_quote = /\\#{Regexp.escape(quote)}/
         i += 1
       elsif not quote and slice =~ word_break_regexp
         rest = $'
