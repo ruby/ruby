@@ -134,9 +134,9 @@ class Gem::Ext::Builder
   end
 
   ##
-  # Logs the build +output+ in +build_dir+, then raises Gem::Ext::BuildError.
+  # Logs the build +output+, then raises Gem::Ext::BuildError.
 
-  def build_error(build_dir, output, backtrace = nil) # :nodoc:
+  def build_error(output, backtrace = nil) # :nodoc:
     gem_make_out = write_gem_make_out output
 
     message = <<-EOF
