@@ -151,19 +151,6 @@ EOF
   def build_extension(extension, dest_path) # :nodoc:
     results = []
 
-    # FIXME: Determine if this line is necessary and, if so, why.
-    # Notes:
-    # 1. As far as I can tell, this method is only called by +build_extensions+.
-    # 2. The existence of this line implies +extension+ is, or previously was,
-    #    sometimes +false+ or +nil+.
-    # 3. #1 and #2 combined suggests, but does not confirm, that
-    #    +@specs.extensions+ sometimes contained +false+ or +nil+ values.
-    # 4. Nothing seems to explicitly handle +extension+ being empty,
-    #    which makes me wonder both what it should do and what it does.
-    #
-    # - @duckinator
-    extension ||= '' # I wish I knew why this line existed
-
     builder = builder_for(extension)
 
     extension_dir =
