@@ -108,7 +108,7 @@ class Gem::Ext::Builder
     @build_args = build_args
     @gem_dir    = spec.full_gem_path
 
-    @ran_rake   = nil
+    @ran_rake   = false
   end
 
   ##
@@ -201,9 +201,6 @@ EOF
     dest_path = @spec.extension_dir
 
     FileUtils.rm_f @spec.gem_build_complete_path
-
-    # FIXME: action at a distance: @ran_rake modified deep in build_extension(). - @duckinator
-    @ran_rake = false # only run rake once
 
     @spec.extensions.each do |extension|
       break if @ran_rake
