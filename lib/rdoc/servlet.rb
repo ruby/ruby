@@ -102,9 +102,9 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
     res.body = File.read asset_path
 
     res.content_type = case req.path
-                       when /css$/ then 'text/css'
-                       when /js$/  then 'application/javascript'
-                       else             'application/octet-stream'
+                       when /\.css\z/ then 'text/css'
+                       when /\.js\z/  then 'application/javascript'
+                       else                'application/octet-stream'
                        end
   end
 
