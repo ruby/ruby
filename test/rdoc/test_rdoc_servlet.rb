@@ -237,7 +237,7 @@ class TestRDocServlet < RDoc::TestCase
 
     generator = @s.generator_for store
 
-    readme = store.add_file 'nesting/README.rdoc', parser: RDoc::Parser::Simple
+    store.add_file 'nesting/README.rdoc', parser: RDoc::Parser::Simple
 
     @s.documentation_page store, generator, 'nesting/README_rdoc.html', @req, @res
 
