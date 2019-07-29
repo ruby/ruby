@@ -46,9 +46,7 @@ addons:
       - valgrind
       - zlib1g-dev
   homebrew:
-    # No `brew update` causes "Error: Your Homebrew is outdated" like https://travis-ci.org/ruby/ruby/jobs/547485832,
-    # but doing `brew update` is also problematic like https://travis-ci.org/ruby/ruby/jobs/564916879.
-    # Skipped because `brew update` hangs often
+    # `update: true` is disabled because `brew update` hangs often
     # update: true
     packages:
       - gdbm
