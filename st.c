@@ -563,6 +563,8 @@ stat_col(void)
     FILE *f;
     if (!collision.total) return;
     f = fopen((snprintf(fname, sizeof(fname), "/tmp/col%ld", (long)getpid()), fname), "w");
+    if (f == NULL)
+        return;
     fprintf(f, "collision: %d / %d (%6.2f)\n", collision.all, collision.total,
             ((double)collision.all / (collision.total)) * 100);
     fprintf(f, "num: %d, str: %d, strcase: %d\n", collision.num, collision.str, collision.strcase);
@@ -594,16 +596,27 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
 
     n = get_power2(size);
     tab = (st_table *) malloc(sizeof (st_table));
+    if (tab == NULL)
+        return NULL;
     tab->type = type;
     tab->entry_power = n;
     tab->bin_power = features[n].bin_power;
     tab->size_ind = features[n].size_ind;
     if (n <= MAX_POWER2_FOR_TABLES_WITHOUT_BINS)
         tab->bins = NULL;
-    else
+    else {
         tab->bins = (st_index_t *) malloc(bins_size(tab));
+        if (tab->bins == NULL) {
+            free(tab);
+            return NULL;
+        }
+    }
     tab->entries = (st_table_entry *) malloc(get_allocated_entries(tab)
 					     * sizeof(st_table_entry));
+    if (tab->entries == NULL) {
+        st_free_table(tab);
+        return NULL;
+    }
 #ifdef ST_DEBUG
     memset(tab->entries, ST_INIT_VAL_BYTE,
 	   get_allocated_entries(tab) * sizeof(st_table_entry));
@@ -1301,13 +1314,24 @@ st_copy(st_table *old_tab)
     st_table *new_tab;
 
     new_tab = (st_table *) malloc(sizeof(st_table));
+    if (new_tab == NULL)
+        return NULL;
     *new_tab = *old_tab;
     if (old_tab->bins == NULL)
         new_tab->bins = NULL;
-    else
+    else {
         new_tab->bins = (st_index_t *) malloc(bins_size(old_tab));
+        if (new_tab->bins == NULL) {
+            free(new_tab);
+            return NULL;
+        }
+    }
     new_tab->entries = (st_table_entry *) malloc(get_allocated_entries(old_tab)
 						 * sizeof(st_table_entry));
+    if (new_tab->entries == NULL) {
+        st_free_table(new_tab);
+        return NULL;
+    }
     MEMCPY(new_tab->entries, old_tab->entries, st_table_entry,
 	   get_allocated_entries(old_tab));
     if (old_tab->bins != NULL)
