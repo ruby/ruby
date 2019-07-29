@@ -669,11 +669,11 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
 #ifdef FIBER_POOL_ALLOCATION_FREE
     struct fiber_pool_allocation * allocation = stack->allocation;
 
-    stack->allocation->used -= 1;
+    allocation->used -= 1;
 
     // Release address space and/or dirty memory:
-    if (stack->allocation->used == 0) {
-        fiber_pool_allocation_free(stack->allocation);
+    if (allocation->used == 0) {
+        fiber_pool_allocation_free(allocation);
     }
     else if (stack->pool->free_stacks) {
         fiber_pool_stack_free(&vacancy->stack);
