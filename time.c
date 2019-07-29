@@ -5703,7 +5703,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *  == Timezone argument
  *
  *  A timezone argument must have +local_to_utc+ and +utc_to_local+
- *  methods, and may have +name+ and +abbr+ methods.
+ *  methods, and may have +name+, +abbr+, and +dst?+ methods.
  *
  *  The +local_to_utc+ method should convert a Time-like object from
  *  the timezone to UTC, and +utc_to_local+ is the opposite.  The
@@ -5721,6 +5721,9 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *  object can not be dumped by Marshal.
  *
  *  The +abbr+ method is used by '%Z' in #strftime.
+ *
+ *  The +dst?+ method is called with a +Time+ value and should return whether
+ *  the +Time+ value is in daylight savings time in the zone.
  *
  *  === Auto conversion to Timezone
  *
