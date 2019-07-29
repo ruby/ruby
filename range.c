@@ -1369,7 +1369,7 @@ range_inspect(VALUE range)
     return rb_exec_recursive(inspect_range, range, 0);
 }
 
-static VALUE range_include_internal(VALUE range, VALUE val);
+static VALUE range_include_internal(VALUE range, VALUE val, int string_use_cover);
 
 /*
  *  call-seq:
@@ -1393,7 +1393,7 @@ static VALUE range_include_internal(VALUE range, VALUE val);
 static VALUE
 range_eqq(VALUE range, VALUE val)
 {
-    VALUE ret = range_include_internal(range, val);
+    VALUE ret = range_include_internal(range, val, 1);
     if (ret != Qundef) return ret;
     return r_cover_p(range, RANGE_BEG(range), RANGE_END(range), val);
 }
@@ -1416,13 +1416,13 @@ range_eqq(VALUE range, VALUE val)
 static VALUE
 range_include(VALUE range, VALUE val)
 {
-    VALUE ret = range_include_internal(range, val);
+    VALUE ret = range_include_internal(range, val, 0);
     if (ret != Qundef) return ret;
     return rb_call_super(1, &val);
 }
 
 static VALUE
-range_include_internal(VALUE range, VALUE val)
+range_include_internal(VALUE range, VALUE val, int string_use_cover)
 {
     VALUE beg = RANGE_BEG(range);
     VALUE end = RANGE_END(range);
@@ -1434,11 +1434,16 @@ range_include_internal(VALUE range, VALUE val)
 	!NIL_P(rb_check_to_integer(end, "to_int"))) {
 	return r_cover_p(range, beg, end, val);
     }
-    else if (RB_TYPE_P(beg, T_STRING)) {
-	if (RB_TYPE_P(end, T_STRING)) {
-	    VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
-	    return rb_str_include_range_p(beg, end, val, RANGE_EXCL(range));
-	}
+    else if (RB_TYPE_P(beg, T_STRING) || RB_TYPE_P(end, T_STRING)) {
+        if (RB_TYPE_P(beg, T_STRING) && RB_TYPE_P(end, T_STRING)) {
+            if (string_use_cover) {
+                return r_cover_p(range, beg, end, val);
+            }
+            else {
+                VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
+                return rb_str_include_range_p(beg, end, val, RANGE_EXCL(range));
+            }
+        }
         else if (NIL_P(beg)) {
 	    VALUE r = rb_funcall(val, id_cmp, 1, end);
 	    if (NIL_P(r)) return Qfalse;
