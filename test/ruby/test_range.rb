@@ -528,6 +528,14 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator(5..nil, :===, 0)
   end
 
+  def test_eqq_string
+    assert_operator('A'..'Z', :===, 'ANA')
+    assert_not_operator('A'..'Z', :===, 'ana')
+    assert_operator('A'.., :===, 'ANA')
+    assert_operator(..'Z', :===, 'ANA')
+    assert_operator(nil..nil, :===, 'ANA')
+  end
+
   def test_eqq_time
     bug11113 = '[ruby-core:69052] [Bug #11113]'
     t = Time.now
