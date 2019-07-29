@@ -475,7 +475,7 @@ rb_file_path(VALUE obj)
         rb_raise(rb_eIOError, "File is unnamed (TMPFILE?)");
     }
 
-    return rb_str_dup(fptr->pathv);
+    return rb_obj_taint(rb_str_dup(fptr->pathv));
 }
 
 static size_t
