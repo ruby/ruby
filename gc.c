@@ -9500,6 +9500,8 @@ objspace_malloc_size(rb_objspace_t *objspace, void *ptr, size_t hint)
 {
 #ifdef HAVE_MALLOC_USABLE_SIZE
     return malloc_usable_size(ptr);
+#elif HAVE_LIBJEMALLOC
+    return sallocx(mem, 0);
 #else
     return hint;
 #endif
