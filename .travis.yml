@@ -336,7 +336,8 @@ env:
     <<: *osx
     env:
       - CONFIG_FLAG=--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib
-      - TEST_ALL_OPTS="--timeout-scale=2.0 --tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
+      # Adding `-v` because we're not sure which test could hang forever: https://travis-ci.org/ruby/ruby/jobs/564804923
+      - TEST_ALL_OPTS="-v --timeout-scale=2.0 --tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
       # Disabling -j3 because it seems to cause a hang on building Ruby: https://travis-ci.org/ruby/ruby/jobs/471021727
       - JOBS=
       # Reset timestamps early, before updating Homebrew etc.
