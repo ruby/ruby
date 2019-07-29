@@ -544,7 +544,7 @@ Europe/Lisbon  Sun Dec 31 23:59:59 1911 UT = Sun Dec 31 23:23:14 1911 LMT isdst=
 End
 
   class TZ
-    attr_reader :name, :offset, :offset2
+    attr_reader :name
 
     def initialize(name, abbr, offset, abbr2 = nil, offset2 = nil)
       @name = name
@@ -605,8 +605,6 @@ module TestTimeTZ::WithTZ
   end
 
   def subtest_now(time_class, tz, tzarg, tzname, abbr, utc_offset)
-    abbr, abbr2 = *abbr
-    utc_offset, utc_offset2 = *utc_offset
     t = time_class.now(in: tzarg)
     assert_equal(tz, t.zone)
   end
@@ -659,8 +657,6 @@ module TestTimeTZ::WithTZ
   end
 
   def subtest_marshal(time_class, tz, tzarg, tzname, abbr, utc_offset)
-    abbr, abbr2 = *abbr
-    utc_offset, utc_offset2 = *utc_offset
     t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
     t2 = Marshal.load(Marshal.dump(t))
     assert_equal(t, t2)
