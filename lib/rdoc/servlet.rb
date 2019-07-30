@@ -112,7 +112,7 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
   # GET request entry point.  Fills in +res+ for the path, etc. in +req+.
 
   def do_GET req, res
-    req.path.sub!(/\A#{Regexp.escape @mount_path}/o, '') if @mount_path
+    req.path.sub!(/\A#{Regexp.escape @mount_path}/, '') if @mount_path
 
     case req.path
     when '/' then
