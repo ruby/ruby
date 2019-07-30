@@ -6,7 +6,7 @@ require "open3"
 class TestRakePackage < Minitest::Test
 
   def test_builds_ok
-    skip unless File.exists?(File.expand_path("../../../Rakefile", __FILE__))
+    skip unless File.exist?(File.expand_path("../../../Rakefile", __FILE__))
 
     output, status = Open3.capture2e("rake package")
 
