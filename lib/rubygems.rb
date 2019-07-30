@@ -565,8 +565,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   #++
   #--
   #
-  # FIXME move to pathsupport
-  #
   #++
 
   def self.find_home
