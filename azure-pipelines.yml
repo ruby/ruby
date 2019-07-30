@@ -47,7 +47,7 @@ jobs:
       bundler:
         task: test-bundler
   steps:
-  - script: brew update && brew install autoconf bison openssl
+  - script: brew install autoconf bison openssl
     displayName: "Install dependencies"
   - checkout: self
     fetchDepth: 20
