@@ -216,6 +216,22 @@ class TestResolvDNS < Test::Unit::TestCase
     assert_instance_of Resolv::IPv6, Resolv::IPv6.create('::1:127.0.0.1'), ref
   end
 
+  def test_ipv6_to_s
+    test_cases = [
+      ["2001::abcd:abcd:abcd", "2001::ABcd:abcd:ABCD"],
+      ["2001:db8::1", "2001:db8::0:1"],
+      ["::", "0:0:0:0:0:0:0:0"],
+      ["2001::", "2001::0"],
+      ["2001:db8::1:1:1:1:1", "2001:db8:0:1:1:1:1:1"],
+      ["1::1:0:0:0:1", "1:0:0:1:0:0:0:1"],
+      ["1::1:0:0:1", "1:0:0:0:1:0:0:1"],
+    ]
+
+    test_cases.each do |expected, ipv6|
+      assert_equal expected, Resolv::IPv6.create(ipv6).to_s
+    end
+  end
+
   def test_ipv6_should_be_16
     ref = '[rubygems:1626]'
 
