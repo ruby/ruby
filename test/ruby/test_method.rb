@@ -790,7 +790,7 @@ class TestMethod < Test::Unit::TestCase
     assert_instance_of String, __dir__
     assert_equal(File.dirname(File.realpath(__FILE__)), __dir__)
     bug8436 = '[ruby-core:55123] [Bug #8436]'
-    assert_equal(__dir__, eval("__dir__", binding), bug8436)
+    assert_equal(__dir__, eval("__dir__", binding, *binding.source_location), bug8436)
     bug8662 = '[ruby-core:56099] [Bug #8662]'
     assert_equal("arbitrary", eval("__dir__", binding, "arbitrary/file.rb"), bug8662)
     assert_equal("arbitrary", Object.new.instance_eval("__dir__", "arbitrary/file.rb"), bug8662)

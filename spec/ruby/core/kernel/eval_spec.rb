@@ -159,13 +159,27 @@ describe "Kernel#eval" do
     end
   end
 
-  it "uses the filename of the binding if none is provided" do
-    eval("__FILE__").should == "(eval)"
-    suppress_warning {eval("__FILE__", binding)}.should == __FILE__
-    eval("__FILE__", binding, "success").should == "success"
-    suppress_warning {eval("eval '__FILE__', binding")}.should == "(eval)"
-    suppress_warning {eval("eval '__FILE__', binding", binding)}.should == __FILE__
-    suppress_warning {eval("eval '__FILE__', binding", binding, 'success')}.should == 'success'
+  ruby_version_is ""..."2.8" do
+    it "uses the filename of the binding if none is provided" do
+      eval("__FILE__").should == "(eval)"
+      suppress_warning {eval("__FILE__", binding)}.should == __FILE__
+      eval("__FILE__", binding, "success").should == "success"
+      suppress_warning {eval("eval '__FILE__', binding")}.should == "(eval)"
+      suppress_warning {eval("eval '__FILE__', binding", binding)}.should == __FILE__
+      suppress_warning {eval("eval '__FILE__', binding", binding, 'success')}.should == 'success'
+    end
+  end
+
+  ruby_version_is "2.8" do
+    it "uses (eval) filename if none is provided" do
+      eval("__FILE__").should == "(eval)"
+      eval("__FILE__", binding).should == "(eval)"
+      eval("__FILE__", binding, "success").should == "success"
+      eval("eval '__FILE__', binding").should == "(eval)"
+      eval("eval '__FILE__', binding", binding).should == "(eval)"
+      eval("eval '__FILE__', binding", binding, 'success').should == '(eval)'
+      eval("eval '__FILE__', binding, 'success'", binding).should == 'success'
+    end
   end
 
   # Found via Rubinius bug github:#149

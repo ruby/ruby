@@ -1497,12 +1497,6 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
         if (!NIL_P(fname)) fname = rb_fstring(fname);
 	realpath = fname;
     }
-    else if (bind) {
-	fname = pathobj_path(bind->pathobj);
-	realpath = pathobj_realpath(bind->pathobj);
-	line = bind->first_lineno;
-	rb_parser_warn_location(parser, TRUE);
-    }
     else {
         fname = rb_fstring_lit("(eval)");
     }

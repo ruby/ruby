@@ -315,7 +315,6 @@ struct parser_params {
     unsigned int do_loop: 1;
     unsigned int do_chomp: 1;
     unsigned int do_split: 1;
-    unsigned int warn_location: 1;
 
     NODE *eval_tree_begin;
     NODE *eval_tree;
@@ -9917,19 +9916,6 @@ past_dvar_p(struct parser_params *p, ID id)
 }
 # endif
 
-/* As Ripper#warn does not have arguments for the location, so the
- * following messages cannot be separated */
-#define WARN_LOCATION(type) do { \
-    if (p->warn_location) { \
-	int line; \
-	VALUE file = rb_source_location(&line); \
-	rb_warn3(type" in eval may not return location in binding;" \
-		 " use Binding#source_location instead\n" \
-		 "%"PRIsWARN":%d: warning: in `%"PRIsWARN"'", \
-		 file, WARN_I(line), rb_id2str(rb_frame_this_func())); \
-    } \
-} while (0)
-
 static int
 numparam_nested_p(struct parser_params *p)
 {
@@ -9963,7 +9949,6 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
       case keyword_false:
 	return NEW_FALSE(loc);
       case keyword__FILE__:
-	WARN_LOCATION("__FILE__");
 	{
 	    VALUE file = p->ruby_sourcefile_string;
 	    if (NIL_P(file))
@@ -9975,7 +9960,6 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	}
 	return node;
       case keyword__LINE__:
-	WARN_LOCATION("__LINE__");
 	return NEW_LIT(INT2FIX(p->tokline), loc);
       case keyword__ENCODING__:
         node = NEW_LIT(rb_enc_from_encoding(p->enc), loc);
@@ -12246,14 +12230,6 @@ rb_parser_set_options(VALUE vparser, int print, int loop, int chomp, int split)
     p->do_loop = loop;
     p->do_chomp = chomp;
     p->do_split = split;
-}
-
-void
-rb_parser_warn_location(VALUE vparser, int warn)
-{
-    struct parser_params *p;
-    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
-    p->warn_location = warn;
 }
 
 static NODE *
