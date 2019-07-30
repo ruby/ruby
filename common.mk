@@ -716,6 +716,7 @@ clean-spec: PHONY
 
 check: main test test-tool test-all test-spec
 	$(ECHO) check succeeded
+	- $(GIT) --no-pager -C "$(srcdir)" log -G "^ *# *include" origin/master..HEAD
 check-ruby: test test-ruby
 
 fake: $(CROSS_COMPILING)-fake
