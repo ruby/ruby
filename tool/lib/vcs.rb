@@ -578,9 +578,7 @@ class VCS
       IO.copy_stream(r, path)
     end
 
-    def commit(opts = {})
-      args = [COMMAND, "push"]
-      args << "-n" if dryrun
+    def upstream
       (branch = cmd_read(%W"#{COMMAND} symbolic-ref --short HEAD")).chomp!
       (upstream = cmd_read(%W"#{COMMAND} branch --list --format=%(upstream) #{branch}")).chomp!
       while ref = upstream[%r"\Arefs/heads/(.*)", 1]
@@ -589,7 +587,14 @@ class VCS
       unless %r"\Arefs/remotes/([^/]+)/(.*)" =~ upstream
         raise "Upstream not found"
       end
-      args << $1 << "HEAD:#$2"
+      [$1, $2]
+    end
+
+    def commit(opts = {})
+      args = [COMMAND, "push"]
+      args << "-n" if dryrun
+      remote, branch = upstream
+      args << remote << "HEAD:#{branch}"
       if dryrun?
         STDERR.puts(args.inspect)
         return true
