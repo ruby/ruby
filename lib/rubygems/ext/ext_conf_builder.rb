@@ -45,12 +45,12 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         cmd.push(*args)
 
         begin
-          run(cmd, results) do |status, results|
+          run(cmd, results) do |s, r|
             if File.exist? 'mkmf.log'
-              unless status.success?
-                results << "To see why this extension failed to compile, please check" \
+              unless s.success?
+                r << "To see why this extension failed to compile, please check" \
                   " the mkmf.log which can be found here:\n"
-                results << "  " + File.join(dest_path, 'mkmf.log') + "\n"
+                r << "  " + File.join(dest_path, 'mkmf.log') + "\n"
               end
               FileUtils.mv 'mkmf.log', dest_path
             end
