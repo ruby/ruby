@@ -97,6 +97,7 @@ env:
     os: osx
     compiler: clang
     before_install:
+      - gem uninstall ntlm-http plist -x --force
       - /usr/local/opt/openssl@1.1/bin/openssl version
 
   - &clang-8
