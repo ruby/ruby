@@ -595,9 +595,15 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
 #endif
 
     n = get_power2(size);
+#ifndef RUBY
+    if (n < 0)
+        return NULL;
+#endif
     tab = (st_table *) malloc(sizeof (st_table));
+#ifndef RUBY
     if (tab == NULL)
         return NULL;
+#endif
     tab->type = type;
     tab->entry_power = n;
     tab->bin_power = features[n].bin_power;
@@ -606,17 +612,21 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
         tab->bins = NULL;
     else {
         tab->bins = (st_index_t *) malloc(bins_size(tab));
+#ifndef RUBY
         if (tab->bins == NULL) {
             free(tab);
             return NULL;
         }
+#endif
     }
     tab->entries = (st_table_entry *) malloc(get_allocated_entries(tab)
 					     * sizeof(st_table_entry));
+#ifndef RUBY
     if (tab->entries == NULL) {
         st_free_table(tab);
         return NULL;
     }
+#endif
 #ifdef ST_DEBUG
     memset(tab->entries, ST_INIT_VAL_BYTE,
 	   get_allocated_entries(tab) * sizeof(st_table_entry));
@@ -1314,24 +1324,30 @@ st_copy(st_table *old_tab)
     st_table *new_tab;
 
     new_tab = (st_table *) malloc(sizeof(st_table));
+#ifndef RUBY
     if (new_tab == NULL)
         return NULL;
+#endif
     *new_tab = *old_tab;
     if (old_tab->bins == NULL)
         new_tab->bins = NULL;
     else {
         new_tab->bins = (st_index_t *) malloc(bins_size(old_tab));
+#ifndef RUBY
         if (new_tab->bins == NULL) {
             free(new_tab);
             return NULL;
         }
+#endif
     }
     new_tab->entries = (st_table_entry *) malloc(get_allocated_entries(old_tab)
 						 * sizeof(st_table_entry));
+#ifndef RUBY
     if (new_tab->entries == NULL) {
         st_free_table(new_tab);
         return NULL;
     }
+#endif
     MEMCPY(new_tab->entries, old_tab->entries, st_table_entry,
 	   get_allocated_entries(old_tab));
     if (old_tab->bins != NULL)
