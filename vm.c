@@ -1343,7 +1343,7 @@ rb_source_location(int *pline)
     const rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
-    if (cfp && cfp->iseq) {
+    if (cfp && VM_FRAME_RUBYFRAME_P(cfp)) {
 	if (pline) *pline = rb_vm_get_sourceline(cfp);
 	return rb_iseq_path(cfp->iseq);
     }

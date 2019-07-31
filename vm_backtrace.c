@@ -32,19 +32,36 @@ id2str(ID id)
 inline static int
 calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
 {
-    size_t pos = (size_t)(pc - iseq->body->iseq_encoded);
-    if (LIKELY(pos)) {
-        /* use pos-1 because PC points next instruction at the beginning of instruction */
-        pos--;
+    VM_ASSERT(iseq);
+    VM_ASSERT(iseq->body);
+    VM_ASSERT(iseq->body->iseq_encoded);
+    VM_ASSERT(iseq->body->iseq_size);
+    if (! pc) {
+        /* This can happen during VM bootup. */
+        VM_ASSERT(iseq->body->type == ISEQ_TYPE_TOP);
+        VM_ASSERT(! iseq->body->local_table);
+        VM_ASSERT(! iseq->body->local_table_size);
+        return 0;
     }
-#if VMDEBUG && defined(HAVE_BUILTIN___BUILTIN_TRAP)
     else {
-        /* SDR() is not possible; that causes infinite loop. */
-        rb_print_backtrace();
-        __builtin_trap();
-    }
+        ptrdiff_t n = pc - iseq->body->iseq_encoded;
+        VM_ASSERT(n <= iseq->body->iseq_size);
+        VM_ASSERT(n >= 0);
+        ASSUME(n >= 0);
+        size_t pos = n; /* no overflow */
+        if (LIKELY(pos)) {
+            /* use pos-1 because PC points next instruction at the beginning of instruction */
+            pos--;
+        }
+#if VMDEBUG && defined(HAVE_BUILTIN___BUILTIN_TRAP)
+        else {
+            /* SDR() is not possible; that causes infinite loop. */
+            rb_print_backtrace();
+            __builtin_trap();
+        }
 #endif
-    return rb_iseq_line_no(iseq, pos);
+        return rb_iseq_line_no(iseq, pos);
+    }
 }
 
 int
@@ -1296,7 +1313,7 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     const rb_callable_method_entry_t *cme;
 
     for (i=0; i<limit && cfp != end_cfp;) {
-	if (cfp->iseq && cfp->pc) {
+	if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	    if (start > 0) {
 		start--;
 		continue;
