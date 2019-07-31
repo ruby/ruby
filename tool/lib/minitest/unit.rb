@@ -984,15 +984,6 @@ module MiniTest
 
     def location e # :nodoc:
       last_before_assertion = ""
-
-      # debug https://ci.appveyor.com/project/ruby/ruby/builds/26358355/job/27sp43hbqwqetqu0
-      # TODO: remove it
-      if e.backtrace == nil
-        STDERR.puts e.inspect
-        STDERR.puts e.class.ancestors
-        raise e.inspect
-      end
-
       e.backtrace.reverse_each do |s|
         break if s =~ /in .(assert|refute|flunk|pass|fail|raise|must|wont)/
         last_before_assertion = s
