@@ -1745,7 +1745,7 @@ class TestHash < Test::Unit::TestCase
     assert_raise(RuntimeError){
       hrec(h, nrec){ h[:c] = 3 }
     }
-  rescue SystemStackError => e
+  rescue SystemStackError
     # ignore
   end
 
