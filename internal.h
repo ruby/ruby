@@ -827,8 +827,6 @@ enum ruby_rhash_flags {
     RHASH_TRANSIENT_FLAG = FL_USER12,                                    /* FL 12 */
 #endif
 
-    RHASH_LEV_MASK = (FL_USER13 | FL_USER14 | FL_USER15 |                /* FL 13..19 */
-                      FL_USER16 | FL_USER17 | FL_USER18 | FL_USER19),
     RHASH_LEV_SHIFT = (FL_USHIFT + 13),
     RHASH_LEV_MAX = 127, /* 7 bits */
 
