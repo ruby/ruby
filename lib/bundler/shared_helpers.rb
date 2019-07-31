@@ -4,7 +4,6 @@ require_relative "compatibility_guard"
 
 require "pathname"
 require "rbconfig"
-require "rubygems"
 
 require_relative "version"
 require_relative "constants"
