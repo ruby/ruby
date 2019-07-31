@@ -788,7 +788,12 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError) { Float('0xf.p0') }
     assert_raise(ArgumentError) { Float('0xf.f') }
     assert_raise(ArgumentError) { Float('0xf.fp') }
-    assert_equal(Float::INFINITY, Float('0xf.fp1000000000000000'))
+    begin
+      verbose_bak, $VERBOSE = $VERBOSE, nil
+      assert_equal(Float::INFINITY, Float('0xf.fp1000000000000000'))
+    ensure
+      $VERBOSE = verbose_bak
+    end
     assert_equal(1, suppress_warning {Float("1e10_00")}.infinite?)
     assert_raise(TypeError) { Float(nil) }
     assert_raise(TypeError) { Float(:test) }
