@@ -131,8 +131,10 @@ class TestRDocRubygemsHook < Gem::TestCase
   end
 
   def test_generate_default_gem
-    @a.loaded_from =
-      File.join Gem::Specification.default_specifications_dir, 'a.gemspec'
+    Gem::Deprecate.skip_during do
+      @a.loaded_from =
+        File.join Gem::Specification.default_specifications_dir, 'a.gemspec'
+    end
 
     @hook.generate
 
