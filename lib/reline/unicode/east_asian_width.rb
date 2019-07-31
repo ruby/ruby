@@ -1,6 +1,6 @@
 class Reline::Unicode::EastAsianWidth
   # This is based on EastAsianWidth.txt
-  # http://www.unicode.org/Public/10.0.0/ucd/EastAsianWidth.txt
+  # http://www.unicode.org/Public/12.1.0/ucd/EastAsianWidth.txt
 
   # Fullwidth
   TYPE_F = /^(
