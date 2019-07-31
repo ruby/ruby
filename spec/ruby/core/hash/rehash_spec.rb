@@ -10,7 +10,11 @@ describe "Hash#rehash" do
     h[k2] = 1
 
     k1 << 2
-    h.key?(k1).should == false
+
+    # if k1 is modified to k1', k1.hash and k1'.hash can be same.
+    # So this test has an issue. For the present, this line is commented out.
+    # h.key?(k1).should == false
+
     h.keys.include?(k1).should == true
 
     h.rehash.should equal(h)
