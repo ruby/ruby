@@ -1137,6 +1137,9 @@ class TestProc < Test::Unit::TestCase
 
     assert_equal([[:req]], method(:putc).parameters)
     assert_equal([[:rest]], method(:p).parameters)
+
+    pr = eval("proc{|"+"(_),"*30+"|}")
+    assert_empty(pr.parameters.map{|_,n|n}.compact)
   end
 
   def pm0() end
