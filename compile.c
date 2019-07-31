@@ -3255,7 +3255,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		  case idLength: SP_INSN(length); return COMPILE_OK;
 		  case idSize:	 SP_INSN(size);	  return COMPILE_OK;
 		  case idEmptyP: SP_INSN(empty_p);return COMPILE_OK;
-		  case idNilP:   SP_INSN(nil_p);  return COMPILE_OK;
+                  case idNilP:   SP_INSN(nil_p);  return COMPILE_OK;
 		  case idSucc:	 SP_INSN(succ);	  return COMPILE_OK;
 		  case idNot:	 SP_INSN(not);	  return COMPILE_OK;
 		}
