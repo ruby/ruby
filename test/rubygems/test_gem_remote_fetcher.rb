@@ -158,7 +158,9 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     @fetcher = fetcher
 
     e = assert_raises ArgumentError do
-      fetcher.fetch_size 'gems.example.com/yaml'
+      Gem::Deprecate.skip_during do
+        fetcher.fetch_size 'gems.example.com/yaml'
+      end
     end
 
     assert_equal 'uri scheme is invalid: nil', e.message
@@ -173,7 +175,9 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     uri = 'http://gems.example.com/yaml'
     e = assert_raises Gem::RemoteFetcher::FetchError do
-      fetcher.fetch_size uri
+      Gem::Deprecate.skip_during do
+        fetcher.fetch_size uri
+      end
     end
 
     assert_equal "SocketError: oops (#{uri})", e.message
@@ -182,7 +186,9 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_no_proxy
     use_ui @stub_ui do
       assert_data_from_server @fetcher.fetch_path(@server_uri)
-      assert_equal SERVER_DATA.size, @fetcher.fetch_size(@server_uri)
+      Gem::Deprecate.skip_during do
+        assert_equal SERVER_DATA.size, @fetcher.fetch_size(@server_uri)
+      end
     end
   end
 
