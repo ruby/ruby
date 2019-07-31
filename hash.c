@@ -1505,7 +1505,7 @@ rb_hash_dup(VALUE hash)
 {
     const VALUE flags = RBASIC(hash)->flags;
     VALUE ret = hash_dup(hash, rb_obj_class(hash),
-			 flags & (FL_EXIVAR|FL_TAINT|RHASH_PROC_DEFAULT));
+                         flags & (FL_EXIVAR|FL_TAINT|RHASH_PROC_DEFAULT));
     if (flags & FL_EXIVAR)
         rb_copy_generic_ivar(ret, hash);
     return ret;
@@ -1885,7 +1885,7 @@ rb_hash_default_value(VALUE hash, VALUE key)
 {
     if (rb_method_basic_definition_p(CLASS_OF(hash), id_default)) {
 	VALUE ifnone = RHASH_IFNONE(hash);
-	if (!FL_TEST(hash, RHASH_PROC_DEFAULT)) return ifnone;
+        if (!FL_TEST(hash, RHASH_PROC_DEFAULT)) return ifnone;
 	if (key == Qundef) return Qnil;
 	return rb_funcall(ifnone, id_yield, 2, hash, key);
     }
@@ -3302,7 +3302,7 @@ rb_hash_to_h(VALUE hash)
     }
     if (rb_obj_class(hash) != rb_cHash) {
 	const VALUE flags = RBASIC(hash)->flags;
-	hash = hash_dup(hash, rb_cHash, flags & RHASH_PROC_DEFAULT);
+        hash = hash_dup(hash, rb_cHash, flags & RHASH_PROC_DEFAULT);
     }
     return hash;
 }
@@ -3546,7 +3546,7 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 
 #if 0
     if (!(rb_equal(RHASH_IFNONE(hash1), RHASH_IFNONE(hash2)) &&
-	  FL_TEST(hash1, RHASH_PROC_DEFAULT) == FL_TEST(hash2, RHASH_PROC_DEFAULT)))
+          FL_TEST(hash1, RHASH_PROC_DEFAULT) == FL_TEST(hash2, RHASH_PROC_DEFAULT)))
 	return Qfalse;
 #endif
     return Qtrue;
