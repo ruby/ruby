@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "Hash#rehash" do
-  it "reorganizes the hash by recomputing all key hash codes" do
+  it "reorganizes the Hash by recomputing all key hash codes" do
     k1 = Object.new
     k2 = Object.new
     def k1.hash; 0; end
@@ -23,7 +23,9 @@ describe "Hash#rehash" do
     h.rehash.should equal(h)
     h.key?(k1).should == true
     h[k1].should == :v1
+  end
 
+  it "calls #hash for each key" do
     k1 = mock('k1')
     k2 = mock('k2')
     v1 = mock('v1')
