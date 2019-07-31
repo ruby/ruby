@@ -984,6 +984,9 @@ module MiniTest
 
     def location e # :nodoc:
       last_before_assertion = ""
+
+      return '<empty>' unless e.backtrace # SystemStackError can return nil.
+
       e.backtrace.reverse_each do |s|
         break if s =~ /in .(assert|refute|flunk|pass|fail|raise|must|wont)/
         last_before_assertion = s
