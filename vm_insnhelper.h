@@ -166,7 +166,7 @@ enum vm_regan_acttype {
 #ifndef MJIT_HEADER
 #define CALL_SIMPLE_METHOD() do { \
     rb_snum_t x = leaf ? INSN_ATTR(width) : 0; \
-    rb_snum_t y = attr_width_opt_send_without_block(0, 0); \
+    rb_snum_t y = attr_width_opt_send_without_block(0); \
     rb_snum_t z = x - y; \
     ADD_PC(z); \
     DISPATCH_ORIGINAL_INSN(opt_send_without_block); \

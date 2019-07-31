@@ -34,8 +34,8 @@
 %   case ope.fetch(:type)
 %   when 'ID'
         comment_id(f, (ID)operands[<%= i %>]);
-%   when 'CALL_INFO'
-        comment_id(f, ((CALL_INFO)operands[<%= i %>])->mid);
+%   when 'CALL_DATA'
+        comment_id(f, ((CALL_DATA)operands[<%= i %>])->ci.mid);
 %   when 'VALUE'
         if (SYMBOL_P((VALUE)operands[<%= i %>])) comment_id(f, SYM2ID((VALUE)operands[<%= i %>]));
 %   end

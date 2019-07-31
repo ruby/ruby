@@ -14,10 +14,11 @@
     MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
 % # compiler: Use copied cc to avoid race condition
-    CALL_CACHE cc_copy = status->cc_entries + (cc - body->cc_entries);
+    CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body);
 %
     if (!status->compile_info->disable_send_cache && has_valid_method_type(cc_copy)) {
         const rb_iseq_t *iseq;
+        const CALL_INFO ci = &cd->ci;
         unsigned int argc = ci->orig_argc; // this `argc` variable is for calculating a value's position on stack considering `blockarg`.
 % if insn.name == 'send'
         argc += ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0); // simulate `vm_caller_setup_arg_block`'s `--reg_cfp->sp`
@@ -58,7 +59,7 @@
                 fprintf(f, "    {\n");
                 fprintf(f, "        struct rb_calling_info calling;\n");
 % if insn.name == 'send'
-                fprintf(f, "        calling.block_handler = vm_caller_setup_arg_block(ec, reg_cfp, (CALL_INFO)0x%"PRIxVALUE", (rb_iseq_t *)0x%"PRIxVALUE", FALSE);\n", operands[0], operands[2]);
+                fprintf(f, "        calling.block_handler = vm_caller_setup_arg_block(ec, reg_cfp, (CALL_INFO)0x%"PRIxVALUE", (rb_iseq_t *)0x%"PRIxVALUE", FALSE);\n", (VALUE)ci, (VALUE)blockiseq);
 % else
                 fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
 % end

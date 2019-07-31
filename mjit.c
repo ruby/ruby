@@ -46,7 +46,16 @@ mjit_copy_job_handler(void *data)
 
     const struct rb_iseq_constant_body *body = job->iseq->body;
     if (job->cc_entries) {
-        memcpy(job->cc_entries, body->cc_entries, sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size));
+        unsigned int i;
+        struct rb_call_cache *sink = job->cc_entries;
+        const struct rb_call_data *calls = body->call_data;
+        const struct rb_kwarg_call_data *kw_calls = (struct rb_kwarg_call_data *)&body->call_data[body->ci_size];
+        for (i = 0; i < body->ci_size; i++) {
+            *sink++ = calls[i].cc;
+        }
+        for (i = 0; i < body->ci_kw_size; i++) {
+            *sink++ = kw_calls[i].cc;
+        }
     }
     if (job->is_entries) {
         memcpy(job->is_entries, body->is_entries, sizeof(union iseq_inline_storage_entry) * body->is_size);

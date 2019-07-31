@@ -25,6 +25,21 @@
 #define NOT_COMPILED_STACK_SIZE -1
 #define ALREADY_COMPILED_P(status, pos) (status->stack_size_for_pos[pos] != NOT_COMPILED_STACK_SIZE)
 
+static size_t
+call_data_index(CALL_DATA cd, const struct rb_iseq_constant_body *body)
+{
+    const struct rb_kwarg_call_data *kw_calls = (const struct rb_kwarg_call_data *)&body->call_data[body->ci_size];
+    const struct rb_kwarg_call_data *kw_cd = (const struct rb_kwarg_call_data *)cd;
+
+    VM_ASSERT(cd >= body->call_data && kw_cd < (kw_calls + body->ci_kw_size));
+    if (kw_cd < kw_calls) {
+        return cd - body->call_data;
+    }
+    else {
+        return kw_cd - kw_calls + body->ci_size;
+    }
+}
+
 // For propagating information needed for lazily pushing a frame.
 struct inlined_call_context {
     int orig_argc; // ci->orig_argc
@@ -383,8 +398,9 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
 #endif
 
         if (insn == BIN(opt_send_without_block)) { // `compile_inlined_cancel_handler` supports only `opt_send_without_block`
-            CALL_INFO ci = (CALL_INFO)body->iseq_encoded[pos + 1];
-            CALL_CACHE cc_copy = status->cc_entries + ((CALL_CACHE)body->iseq_encoded[pos + 2] - body->cc_entries); // use copy to avoid race condition
+            CALL_DATA cd = (CALL_DATA)body->iseq_encoded[pos + 1];
+            CALL_INFO ci = &cd->ci;
+            CALL_CACHE cc_copy = status->cc_entries + call_data_index(cd, body); // use copy to avoid race condition
 
             const rb_iseq_t *child_iseq;
             if (has_valid_method_type(cc_copy) &&

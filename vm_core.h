@@ -258,6 +258,16 @@ struct rb_calling_info {
     int kw_splat;
 };
 
+struct rb_call_data {
+    struct rb_call_cache cc;
+    struct rb_call_info ci;
+};
+
+struct rb_kwarg_call_data {
+    struct rb_call_cache cc;
+    struct rb_call_info_with_kwarg ci_kw;
+};
+
 struct rb_execution_context_struct;
 typedef VALUE (*vm_call_handler)(struct rb_execution_context_struct *ec, struct rb_control_frame_struct *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
 
@@ -417,12 +427,12 @@ struct rb_iseq_constant_body {
     struct rb_iseq_struct *local_iseq; /* local_iseq->flip_cnt can be modified */
 
     union iseq_inline_storage_entry *is_entries;
-    struct rb_call_info *ci_entries; /* struct rb_call_info ci_entries[ci_size];
-				      * struct rb_call_info_with_kwarg cikw_entries[ci_kw_size];
-				      * So that:
-				      * struct rb_call_info_with_kwarg *cikw_entries = &body->ci_entries[ci_size];
-				      */
-    struct rb_call_cache *cc_entries; /* size is ci_size + ci_kw_size */
+    struct rb_call_data *call_data; /* A buffer for two arrays:
+                                     * struct rb_call_data calls[ci_size];
+                                     * struct rb_kwarg_call_data kw_calls[ci_kw_size];
+                                     * Such that:
+                                     * struct rb_kwarg_call_data *kw_calls = &body->call_data[ci_size];
+                                     */
 
     struct {
 	rb_snum_t flip_count;
@@ -1121,6 +1131,7 @@ typedef struct iseq_inline_cache_entry *IC;
 typedef union iseq_inline_storage_entry *ISE;
 typedef struct rb_call_info *CALL_INFO;
 typedef struct rb_call_cache *CALL_CACHE;
+typedef struct rb_call_data *CALL_DATA;
 
 void rb_vm_change_state(void);
 

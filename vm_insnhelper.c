@@ -1463,17 +1463,16 @@ check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)())
 }
 
 static inline int
-vm_method_cfunc_is(CALL_INFO ci, CALL_CACHE cc,
-		   VALUE recv, VALUE (*func)())
+vm_method_cfunc_is(CALL_DATA cd, VALUE recv, VALUE (*func)())
 {
-    vm_search_method(ci, cc, recv);
-    return check_cfunc(cc->me, func);
+    vm_search_method(&cd->ci, &cd->cc, recv);
+    return check_cfunc(cd->cc.me, func);
 }
 
 static VALUE
-opt_equal_fallback(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
+opt_equal_fallback(VALUE recv, VALUE obj, CALL_DATA cd)
 {
-    if (vm_method_cfunc_is(ci, cc, recv, rb_obj_equal)) {
+    if (vm_method_cfunc_is(cd, recv, rb_obj_equal)) {
 	return recv == obj ? Qtrue : Qfalse;
     }
 
@@ -1533,7 +1532,7 @@ static
 inline
 #endif
 VALUE
-opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
+opt_eq_func(VALUE recv, VALUE obj, CALL_DATA cd)
 {
     switch (comparable_by_identity(recv, obj)) {
       case 1:
@@ -1556,7 +1555,7 @@ opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
     }
 
   fallback:
-    return opt_equal_fallback(recv, obj, ci, cc);
+    return opt_equal_fallback(recv, obj, cd);
 }
 
 static
@@ -1564,7 +1563,7 @@ static
 inline
 #endif
 VALUE
-opt_eql_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
+opt_eql_func(VALUE recv, VALUE obj, CALL_DATA cd)
 {
     switch (comparable_by_identity(recv, obj)) {
       case 1:
@@ -1586,7 +1585,7 @@ opt_eql_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
     }
 
   fallback:
-    return opt_equal_fallback(recv, obj, ci, cc);
+    return opt_equal_fallback(recv, obj, cd);
 }
 #undef BUILTIN_CLASS_P
 #undef EQ_UNREDEFINED_P
@@ -1594,27 +1593,25 @@ opt_eql_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 VALUE
 rb_equal_opt(VALUE obj1, VALUE obj2)
 {
-    struct rb_call_info ci;
-    struct rb_call_cache cc;
+    struct rb_call_data cd;
 
-    ci.mid = idEq;
-    cc.method_state = 0;
-    cc.class_serial = 0;
-    cc.me = NULL;
-    return opt_eq_func(obj1, obj2, &ci, &cc);
+    cd.ci.mid = idEq;
+    cd.cc.method_state = 0;
+    cd.cc.class_serial = 0;
+    cd.cc.me = NULL;
+    return opt_eq_func(obj1, obj2, &cd);
 }
 
 VALUE
 rb_eql_opt(VALUE obj1, VALUE obj2)
 {
-    struct rb_call_info ci;
-    struct rb_call_cache cc;
+    struct rb_call_data cd;
 
-    ci.mid = idEqlP;
-    cc.method_state = 0;
-    cc.class_serial = 0;
-    cc.me = NULL;
-    return opt_eql_func(obj1, obj2, &ci, &cc);
+    cd.ci.mid = idEqlP;
+    cd.cc.method_state = 0;
+    cd.cc.class_serial = 0;
+    cd.cc.me = NULL;
+    return opt_eql_func(obj1, obj2, &cd);
 }
 
 extern VALUE rb_vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *, int kw_splat);
@@ -3752,8 +3749,7 @@ static VALUE
 vm_sendish(
     struct rb_execution_context_struct *ec,
     struct rb_control_frame_struct *reg_cfp,
-    struct rb_call_info *ci,
-    struct rb_call_cache *cc,
+    struct rb_call_data *cd,
     VALUE block_handler,
     void (*method_explorer)(
         const struct rb_control_frame_struct *reg_cfp,
@@ -3761,6 +3757,8 @@ vm_sendish(
         struct rb_call_cache *cc,
         VALUE recv))
 {
+    CALL_INFO ci = &cd->ci;
+    CALL_CACHE cc = &cd->cc;
     VALUE val;
     int argc = ci->orig_argc;
     VALUE recv = TOPN(argc);
@@ -4116,12 +4114,10 @@ vm_opt_mod(VALUE recv, VALUE obj)
 }
 
 static VALUE
-vm_opt_neq(CALL_INFO ci, CALL_CACHE cc,
-	   CALL_INFO ci_eq, CALL_CACHE cc_eq,
-	   VALUE recv, VALUE obj)
+vm_opt_neq(CALL_DATA cd, CALL_DATA cd_eq, VALUE recv, VALUE obj)
 {
-    if (vm_method_cfunc_is(ci, cc, recv, rb_obj_not_equal)) {
-	VALUE val = opt_eq_func(recv, obj, ci_eq, cc_eq);
+    if (vm_method_cfunc_is(cd, recv, rb_obj_not_equal)) {
+        VALUE val = opt_eq_func(recv, obj, cd_eq);
 
 	if (val != Qundef) {
 	    return RTEST(val) ? Qfalse : Qtrue;
@@ -4392,7 +4388,7 @@ vm_opt_empty_p(VALUE recv)
 VALUE rb_false(VALUE obj);
 
 static VALUE
-vm_opt_nil_p(CALL_INFO ci, CALL_CACHE cc, VALUE recv)
+vm_opt_nil_p(CALL_DATA cd, VALUE recv)
 {
     if (recv == Qnil) {
         if (BASIC_OP_UNREDEFINED_P(BOP_NIL_P, NIL_REDEFINED_OP_FLAG)) {
@@ -4403,7 +4399,7 @@ vm_opt_nil_p(CALL_INFO ci, CALL_CACHE cc, VALUE recv)
         }
     }
     else {
-        if (vm_method_cfunc_is(ci, cc, recv, rb_false)) {
+        if (vm_method_cfunc_is(cd, recv, rb_false)) {
             return Qfalse;
         }
         else {
@@ -4460,9 +4456,9 @@ vm_opt_succ(VALUE recv)
 }
 
 static VALUE
-vm_opt_not(CALL_INFO ci, CALL_CACHE cc, VALUE recv)
+vm_opt_not(CALL_DATA cd, VALUE recv)
 {
-    if (vm_method_cfunc_is(ci, cc, recv, rb_obj_not)) {
+    if (vm_method_cfunc_is(cd, recv, rb_obj_not)) {
 	return RTEST(recv) ? Qfalse : Qtrue;
     }
     else {
