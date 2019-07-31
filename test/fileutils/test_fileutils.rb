@@ -6,6 +6,7 @@ require 'etc'
 require_relative 'fileasserts'
 require 'pathname'
 require 'tmpdir'
+require 'stringio'
 require 'test/unit'
 
 class TestFileUtils < Test::Unit::TestCase
@@ -1671,6 +1672,29 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_chdir
     check_singleton :chdir
+  end
+
+  def test_chdir_verbose
+    assert_output_lines(["cd .", "cd -"], FileUtils) do
+      FileUtils.chdir('.', verbose: true){}
+    end
+  end
+
+  def test_chdir_verbose_frozen
+    o = Object.new
+    o.extend(FileUtils)
+    o.singleton_class.send(:public, :chdir)
+    o.freeze
+    orig_stderr = $stderr
+    $stderr = StringIO.new
+    o.chdir('.', verbose: true){}
+    $stderr.rewind
+    assert_equal(<<-END, $stderr.read)
+cd .
+cd -
+    END
+  ensure
+    $stderr = orig_stderr if orig_stderr
   end
 
   def test_getwd
