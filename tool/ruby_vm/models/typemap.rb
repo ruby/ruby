@@ -12,8 +12,7 @@
 
 RubyVM::Typemap = {
   "..."            => %w[. TS_VARIABLE],
-  "CALL_CACHE"     => %w[E TS_CALLCACHE],
-  "CALL_INFO"      => %w[C TS_CALLINFO],
+  "CALL_DATA"      => %w[C TS_CALLDATA],
   "CDHASH"         => %w[H TS_CDHASH],
   "GENTRY"         => %w[G TS_GENTRY],
   "IC"             => %w[K TS_IC],

@@ -783,13 +783,14 @@ definesmethod
 /* invoke method. */
 DEFINE_INSN
 send
-(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
+(CALL_DATA cd, ISEQ blockiseq)
 (...)
 (VALUE val)
-// attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(&cd->ci);
+// attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
-    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), ci, blockiseq, false);
-    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, vm_search_method_wrap);
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), &cd->ci, blockiseq, false);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -800,14 +801,15 @@ send
 /* Invoke method without block */
 DEFINE_INSN
 opt_send_without_block
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (...)
 (VALUE val)
 // attr bool handles_sp = true;
-// attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(&cd->ci);
+// attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, vm_search_method_wrap);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_method_wrap);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -817,7 +819,7 @@ opt_send_without_block
 
 DEFINE_INSN
 opt_str_freeze
-(VALUE str, CALL_INFO ci, CALL_CACHE cc)
+(VALUE str, CALL_DATA cd)
 ()
 (VALUE val)
 {
@@ -832,11 +834,11 @@ opt_str_freeze
 /* optimized nil? */
 DEFINE_INSN
 opt_nil_p
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
 {
-    val = vm_opt_nil_p(ci, cc, recv);
+    val = vm_opt_nil_p(cd, recv);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
@@ -845,7 +847,7 @@ opt_nil_p
 
 DEFINE_INSN
 opt_str_uminus
-(VALUE str, CALL_INFO ci, CALL_CACHE cc)
+(VALUE str, CALL_DATA cd)
 ()
 (VALUE val)
 {
@@ -887,13 +889,14 @@ opt_newarray_min
 /* super(args) # args.size => num */
 DEFINE_INSN
 invokesuper
-(CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
+(CALL_DATA cd, ISEQ blockiseq)
 (...)
 (VALUE val)
-// attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(&cd->ci);
+// attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {
-    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), ci, blockiseq, true);
-    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, vm_search_super_method);
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), &cd->ci, blockiseq, true);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_super_method);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -904,18 +907,19 @@ invokesuper
 /* yield(args) */
 DEFINE_INSN
 invokeblock
-(CALL_INFO ci)
+(CALL_DATA cd)
 (...)
 (VALUE val)
 // attr bool handles_sp = true;
-// attr rb_snum_t sp_inc = sp_inc_of_invokeblock(ci);
+// attr rb_snum_t sp_inc = sp_inc_of_invokeblock(&cd->ci);
+// attr rb_snum_t comptime_sp_inc = sp_inc_of_invokeblock(ci);
 {
-    static struct rb_call_cache cc = {
-        0, 0, NULL, NULL, vm_invokeblock_i,
-    };
+    if (UNLIKELY(cd->cc.call != vm_invokeblock_i)) {
+        cd->cc.call = vm_invokeblock_i; // check before setting to avoid CoW
+    }
 
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    val = vm_sendish(ec, GET_CFP(), ci, &cc, bh, vm_search_invokeblock);
+    val = vm_sendish(ec, GET_CFP(), cd, bh, vm_search_invokeblock);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -1098,7 +1102,7 @@ opt_case_dispatch
 /* optimized X+Y. */
 DEFINE_INSN
 opt_plus
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1112,7 +1116,7 @@ opt_plus
 /* optimized X-Y. */
 DEFINE_INSN
 opt_minus
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1126,7 +1130,7 @@ opt_minus
 /* optimized X*Y. */
 DEFINE_INSN
 opt_mult
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1140,7 +1144,7 @@ opt_mult
 /* optimized X/Y. */
 DEFINE_INSN
 opt_div
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 /* In case of division by zero, it raises. Thus
@@ -1157,7 +1161,7 @@ opt_div
 /* optimized X%Y. */
 DEFINE_INSN
 opt_mod
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 /* Same discussion as opt_mod. */
@@ -1173,11 +1177,11 @@ opt_mod
 /* optimized X==Y. */
 DEFINE_INSN
 opt_eq
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = opt_eq_func(recv, obj, ci, cc);
+    val = opt_eq_func(recv, obj, cd);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
@@ -1187,11 +1191,11 @@ opt_eq
 /* optimized X!=Y. */
 DEFINE_INSN
 opt_neq
-(CALL_INFO ci_eq, CALL_CACHE cc_eq, CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd_eq, CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = vm_opt_neq(ci, cc, ci_eq, cc_eq, recv, obj);
+    val = vm_opt_neq(cd, cd_eq, recv, obj);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
@@ -1201,7 +1205,7 @@ opt_neq
 /* optimized X<Y. */
 DEFINE_INSN
 opt_lt
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1215,7 +1219,7 @@ opt_lt
 /* optimized X<=Y. */
 DEFINE_INSN
 opt_le
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1229,7 +1233,7 @@ opt_le
 /* optimized X>Y. */
 DEFINE_INSN
 opt_gt
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1243,7 +1247,7 @@ opt_gt
 /* optimized X>=Y. */
 DEFINE_INSN
 opt_ge
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1257,7 +1261,7 @@ opt_ge
 /* << */
 DEFINE_INSN
 opt_ltlt
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 /* This instruction can append an integer, as a codepoint, into a
@@ -1275,7 +1279,7 @@ opt_ltlt
 /* optimized X&Y. */
 DEFINE_INSN
 opt_and
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1289,7 +1293,7 @@ opt_and
 /* optimized X|Y. */
 DEFINE_INSN
 opt_or
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1303,7 +1307,7 @@ opt_or
 /* [] */
 DEFINE_INSN
 opt_aref
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
 /* This is complicated.  In case of hash, vm_opt_aref() resorts to
@@ -1322,7 +1326,7 @@ opt_aref
 /* recv[obj] = set */
 DEFINE_INSN
 opt_aset
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv, VALUE obj, VALUE set)
 (VALUE val)
 /* This is another story than opt_aref.  When vm_opt_aset() resorts
@@ -1339,7 +1343,7 @@ opt_aset
 /* recv[str] = set */
 DEFINE_INSN
 opt_aset_with
-(VALUE key, CALL_INFO ci, CALL_CACHE cc)
+(VALUE key, CALL_DATA cd)
 (VALUE recv, VALUE val)
 (VALUE val)
 /* Same discussion as opt_aset. */
@@ -1362,7 +1366,7 @@ opt_aset_with
 /* recv[str] */
 DEFINE_INSN
 opt_aref_with
-(VALUE key, CALL_INFO ci, CALL_CACHE cc)
+(VALUE key, CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
 /* Same discussion as opt_aref. */
@@ -1381,7 +1385,7 @@ opt_aref_with
 /* optimized length */
 DEFINE_INSN
 opt_length
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
 {
@@ -1395,7 +1399,7 @@ opt_length
 /* optimized size */
 DEFINE_INSN
 opt_size
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
 {
@@ -1409,7 +1413,7 @@ opt_size
 /* optimized empty? */
 DEFINE_INSN
 opt_empty_p
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
 {
@@ -1423,7 +1427,7 @@ opt_empty_p
 /* optimized succ */
 DEFINE_INSN
 opt_succ
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
 {
@@ -1437,11 +1441,11 @@ opt_succ
 /* optimized not */
 DEFINE_INSN
 opt_not
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
 {
-    val = vm_opt_not(ci, cc, recv);
+    val = vm_opt_not(cd, recv);
 
     if (val == Qundef) {
         CALL_SIMPLE_METHOD();
@@ -1451,7 +1455,7 @@ opt_not
 /* optimized regexp match 2 */
 DEFINE_INSN
 opt_regexpmatch2
-(CALL_INFO ci, CALL_CACHE cc)
+(CALL_DATA cd)
 (VALUE obj2, VALUE obj1)
 (VALUE val)
 // attr bool leaf = false; /* match_at() has rb_thread_check_ints() */
