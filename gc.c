@@ -5006,7 +5006,7 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 	    GC_ASSERT(VM_ENV_ESCAPED_P(env->ep));
             gc_mark_values(objspace, (long)env->env_size, env->env);
 	    VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
-            gc_mark(objspace, (VALUE)rb_vm_env_prev_env(env));
+            gc_mark_and_pin(objspace, (VALUE)rb_vm_env_prev_env(env));
 	    gc_mark(objspace, (VALUE)env->iseq);
 	}
 	return;
@@ -7845,11 +7845,9 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
         {
             rb_env_t *env = (rb_env_t *)obj;
             TYPED_UPDATE_IF_MOVED(objspace, rb_iseq_t *, env->iseq);
-            if (gc_object_moved_p(objspace, VM_ENV_ENVVAL(env->ep))) {
-                VM_STACK_ENV_WRITE(env->ep, VM_ENV_DATA_INDEX_ENV, rb_gc_location(VM_ENV_ENVVAL(env->ep)));
-            }
             gc_update_values(objspace, (long)env->env_size, (VALUE *)env->env);
         }
+        break;
         break;
       case imemo_cref:
         UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.cref.klass);
