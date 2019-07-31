@@ -534,6 +534,7 @@ typedef struct rb_objspace {
 
     rb_event_flag_t hook_events;
     size_t total_allocated_objects;
+    unsigned int next_object_id;
 
     rb_heap_t eden_heap;
     rb_heap_t tomb_heap; /* heap for zombies and ghosts */
@@ -581,7 +582,6 @@ typedef struct rb_objspace {
 #if USE_RGENGC
 	size_t minor_gc_count;
 	size_t major_gc_count;
-        size_t object_id_collisions;
 #if RGENGC_PROFILE > 0
 	size_t total_generated_normal_object_count;
 	size_t total_generated_shady_object_count;
@@ -649,9 +649,6 @@ typedef struct rb_objspace {
     } rincgc;
 #endif
 #endif /* USE_RGENGC */
-
-    st_table *id_to_obj_tbl;
-    st_table *obj_to_id_tbl;
 
 #if GC_DEBUG_STRESS_TO_CLASS
     VALUE stress_to_class;
@@ -1466,8 +1463,6 @@ rb_objspace_free(rb_objspace_t *objspace)
 	objspace->eden_heap.total_pages = 0;
 	objspace->eden_heap.total_slots = 0;
     }
-    st_free_table(objspace->id_to_obj_tbl);
-    st_free_table(objspace->obj_to_id_tbl);
     free_stack_chunks(&objspace->mark_stack);
 #if !(defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE)
     if (objspace == &rb_objspace) return;
@@ -2365,20 +2360,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	FL_UNSET(obj, FL_EXIVAR);
     }
 
-    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) {
-        VALUE id;
-
-        FL_UNSET(obj, FL_SEEN_OBJ_ID);
-
-        if (st_delete(objspace->obj_to_id_tbl, (st_data_t *)&obj, &id)) {
-            GC_ASSERT(id);
-            st_delete(objspace->id_to_obj_tbl, (st_data_t *)&id, NULL);
-        }
-        else {
-            rb_bug("Object ID see, but not in mapping table: %s\n", obj_info(obj));
-        }
-    }
-
 #if USE_RGENGC
     if (RVALUE_WB_UNPROTECTED(obj)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
 
@@ -2680,8 +2661,7 @@ Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    objspace->id_to_obj_tbl = st_init_numtable();
-    objspace->obj_to_id_tbl = st_init_numtable();
+    objspace->next_object_id = 1 << (RUBY_IMMEDIATE_MASK - 1);
 
 #if RGENGC_ESTIMATE_OLDMALLOC
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
@@ -3385,6 +3365,28 @@ rb_objspace_garbage_object_p(VALUE obj)
     return is_garbage_object(objspace, obj);
 }
 
+struct find_object_with_id_data {
+    VALUE object_id;
+    VALUE result;
+};
+
+static int
+find_object_with_object_id(void *vstart, void *vend, size_t stride, void *data) {
+    struct find_object_with_id_data * info = (struct find_object_with_id_data *)data;
+
+    VALUE v = (VALUE)vstart;
+    for (; v != (VALUE)vend; v += stride) {
+        if (RBASIC(v)->flags && FL_TEST(v, FL_SEEN_OBJ_ID)) {
+            if (rb_iv_get(v, "_object_id") == info->object_id) {
+                info->result = v;
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
 /*
  *  call-seq:
  *     ObjectSpace._id2ref(object_id) -> an_object
@@ -3408,7 +3410,6 @@ id2ref(VALUE obj, VALUE objid)
 #endif
     rb_objspace_t *objspace = &rb_objspace;
     VALUE ptr;
-    VALUE orig;
     void *p0;
 
     ptr = NUM2PTR(objid);
@@ -3419,11 +3420,19 @@ id2ref(VALUE obj, VALUE objid)
     if (ptr == Qnil) return Qnil;
     if (FIXNUM_P(ptr)) return (VALUE)ptr;
     if (FLONUM_P(ptr)) return (VALUE)ptr;
-    ptr = obj_id_to_ref(objid);
 
-    if (st_lookup(objspace->id_to_obj_tbl, ptr, &orig)) {
-        return orig;
+    struct find_object_with_id_data info;
+    info.object_id = objid;
+    info.result = 0;
+
+    // Scan the heap for an object with objid
+    rb_objspace_each_objects(find_object_with_object_id, &info);
+
+    if (info.result) {
+        return info.result;
     }
+
+    ptr = obj_id_to_ref(objid);
 
     if ((ptr % sizeof(RVALUE)) == (4 << 2)) {
         ID symid = ptr / sizeof(RVALUE);
@@ -3467,32 +3476,14 @@ rb_find_object_id(VALUE obj, VALUE (*get_heap_object_id)(VALUE))
 static VALUE
 cached_object_id(VALUE obj)
 {
-    VALUE id;
     rb_objspace_t *objspace = &rb_objspace;
 
-    if (st_lookup(objspace->obj_to_id_tbl, (st_data_t)obj, &id)) {
-        GC_ASSERT(FL_TEST(obj, FL_SEEN_OBJ_ID));
-        return nonspecial_obj_id(id);
+    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) {
+        return rb_iv_get(obj, "_object_id");
+    } else {
+        FL_SET(obj, FL_SEEN_OBJ_ID);
+        return rb_iv_set(obj, "_object_id", (objspace->next_object_id += 16) | 1);
     }
-    else {
-        GC_ASSERT(!FL_TEST(obj, FL_SEEN_OBJ_ID));
-        id = obj;
-
-        while (1) {
-            /* id is the object id */
-            if (st_lookup(objspace->id_to_obj_tbl, (st_data_t)id, 0)) {
-                objspace->profile.object_id_collisions++;
-                id += sizeof(VALUE);
-            }
-            else {
-                st_insert(objspace->obj_to_id_tbl, (st_data_t)obj, (st_data_t)id);
-                st_insert(objspace->id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
-                FL_SET(obj, FL_SEEN_OBJ_ID);
-                return nonspecial_obj_id(id);
-            }
-        }
-    }
-    return nonspecial_obj_id(obj);
 }
 
 static VALUE
@@ -7374,18 +7365,6 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
     return FALSE;
 }
 
-static int
-update_id_to_obj(st_data_t *key, st_data_t *value, st_data_t arg, int exists)
-{
-    if (exists) {
-        *value = arg;
-        return ST_CONTINUE;
-    }
-    else {
-        return ST_STOP;
-    }
-}
-
 static VALUE
 gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, VALUE moved_list)
 {
@@ -7417,17 +7396,6 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, VALUE moved_list)
 
     if (FL_TEST(src, FL_EXIVAR)) {
         rb_mv_generic_ivar((VALUE)src, (VALUE)dest);
-    }
-
-    VALUE id;
-
-    /* If the source object's object_id has been seen, we need to update
-     * the object to object id mapping. */
-    if (st_lookup(objspace->obj_to_id_tbl, (VALUE)src, &id)) {
-        gc_report(4, objspace, "Moving object with seen id: %p -> %p\n", (void *)src, (void *)dest);
-        st_delete(objspace->obj_to_id_tbl, (st_data_t *)&src, 0);
-        st_insert(objspace->obj_to_id_tbl, (VALUE)dest, id);
-        st_update(objspace->id_to_obj_tbl, (st_data_t)id, update_id_to_obj, (st_data_t)dest);
     }
 
     /* Move the object */
@@ -8641,7 +8609,6 @@ enum gc_stat_sym {
 #if USE_RGENGC
     gc_stat_sym_minor_gc_count,
     gc_stat_sym_major_gc_count,
-    gc_stat_sym_object_id_collisions,
     gc_stat_sym_remembered_wb_unprotected_objects,
     gc_stat_sym_remembered_wb_unprotected_objects_limit,
     gc_stat_sym_old_objects,
@@ -8717,7 +8684,6 @@ setup_gc_stat_symbols(void)
 	S(malloc_increase_bytes_limit);
 #if USE_RGENGC
 	S(minor_gc_count);
-        S(object_id_collisions);
 	S(major_gc_count);
 	S(remembered_wb_unprotected_objects);
 	S(remembered_wb_unprotected_objects_limit);
@@ -8890,7 +8856,6 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(malloc_increase_bytes_limit, malloc_limit);
 #if USE_RGENGC
     SET(minor_gc_count, objspace->profile.minor_gc_count);
-    SET(object_id_collisions, objspace->profile.object_id_collisions);
     SET(major_gc_count, objspace->profile.major_gc_count);
     SET(remembered_wb_unprotected_objects, objspace->rgengc.uncollectible_wb_unprotected_objects);
     SET(remembered_wb_unprotected_objects_limit, objspace->rgengc.uncollectible_wb_unprotected_objects_limit);
