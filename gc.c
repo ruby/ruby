@@ -534,7 +534,7 @@ typedef struct rb_objspace {
 
     rb_event_flag_t hook_events;
     size_t total_allocated_objects;
-    unsigned int next_object_id;
+    VALUE next_object_id;
 
     rb_heap_t eden_heap;
     rb_heap_t tomb_heap; /* heap for zombies and ghosts */
@@ -2656,12 +2656,15 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
+#define OBJ_ID_INCREMENT (INT2FIX(20))
+#define OBJ_ID_INITIAL (INT2FIX(40))
+
 void
 Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    objspace->next_object_id = 1 << (RUBY_IMMEDIATE_MASK - 1);
+    objspace->next_object_id = OBJ_ID_INITIAL;
 
 #if RGENGC_ESTIMATE_OLDMALLOC
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
@@ -3482,7 +3485,9 @@ cached_object_id(VALUE obj)
         return rb_iv_get(obj, "_object_id");
     } else {
         FL_SET(obj, FL_SEEN_OBJ_ID);
-        return rb_iv_set(obj, "_object_id", (objspace->next_object_id += 16) | 1);
+        VALUE obj_id = objspace->next_object_id;
+        objspace->next_object_id = rb_int_plus(objspace->next_object_id, OBJ_ID_INCREMENT);
+        return rb_iv_set(obj, "_object_id", obj_id);
     }
 }
 
@@ -5383,6 +5388,8 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     rb_gc_mark_global_tbl();
 
     if (stress_to_class) rb_gc_mark(stress_to_class);
+
+    rb_gc_mark(objspace->next_object_id);
 
     MARK_CHECKPOINT("finish");
 #undef MARK_CHECKPOINT
