@@ -116,47 +116,62 @@ class TestIO < Test::Unit::TestCase
   def test_binmode_pipe
     EnvUtil.with_default_internal(Encoding::UTF_8) do
       EnvUtil.with_default_external(Encoding::UTF_8) do
-        reader, writer = IO.pipe
-        reader.binmode
-        writer.binmode
+        begin
+          reader, writer = IO.pipe
+          reader.binmode
+          writer.binmode
 
-        reader1, writer1 = IO.pipe
+          reader1, writer1 = IO.pipe
 
-        reader2, writer2 = IO.pipe(binmode: true)
-        assert_predicate writer, :binmode?
-        assert_predicate writer2, :binmode?
-        assert_equal writer.binmode?, writer2.binmode?
-        assert_equal writer.external_encoding, writer2.external_encoding
-        assert_equal writer.internal_encoding, writer2.internal_encoding
-        assert_predicate reader, :binmode?
-        assert_predicate reader2, :binmode?
-        assert_equal reader.binmode?, reader2.binmode?
-        assert_equal reader.external_encoding, reader2.external_encoding
-        assert_equal reader.internal_encoding, reader2.internal_encoding
+          reader2, writer2 = IO.pipe(binmode: true)
+          assert_predicate writer, :binmode?
+          assert_predicate writer2, :binmode?
+          assert_equal writer.binmode?, writer2.binmode?
+          assert_equal writer.external_encoding, writer2.external_encoding
+          assert_equal writer.internal_encoding, writer2.internal_encoding
+          assert_predicate reader, :binmode?
+          assert_predicate reader2, :binmode?
+          assert_equal reader.binmode?, reader2.binmode?
+          assert_equal reader.external_encoding, reader2.external_encoding
+          assert_equal reader.internal_encoding, reader2.internal_encoding
 
-        reader3, writer3 = IO.pipe("UTF-8:UTF-8", binmode: true)
-        assert_predicate writer3, :binmode?
-        assert_equal writer1.external_encoding, writer3.external_encoding
-        assert_equal writer1.internal_encoding, writer3.internal_encoding
-        assert_predicate reader3, :binmode?
-        assert_equal reader1.external_encoding, reader3.external_encoding
-        assert_equal reader1.internal_encoding, reader3.internal_encoding
+          reader3, writer3 = IO.pipe("UTF-8:UTF-8", binmode: true)
+          assert_predicate writer3, :binmode?
+          assert_equal writer1.external_encoding, writer3.external_encoding
+          assert_equal writer1.internal_encoding, writer3.internal_encoding
+          assert_predicate reader3, :binmode?
+          assert_equal reader1.external_encoding, reader3.external_encoding
+          assert_equal reader1.internal_encoding, reader3.internal_encoding
 
-        reader4, writer4 = IO.pipe("UTF-8:UTF-8", binmode: true)
-        assert_predicate writer4, :binmode?
-        assert_equal writer1.external_encoding, writer4.external_encoding
-        assert_equal writer1.internal_encoding, writer4.internal_encoding
-        assert_predicate reader4, :binmode?
-        assert_equal reader1.external_encoding, reader4.external_encoding
-        assert_equal reader1.internal_encoding, reader4.internal_encoding
+          reader4, writer4 = IO.pipe("UTF-8:UTF-8", binmode: true)
+          assert_predicate writer4, :binmode?
+          assert_equal writer1.external_encoding, writer4.external_encoding
+          assert_equal writer1.internal_encoding, writer4.internal_encoding
+          assert_predicate reader4, :binmode?
+          assert_equal reader1.external_encoding, reader4.external_encoding
+          assert_equal reader1.internal_encoding, reader4.internal_encoding
 
-        reader5, writer5 = IO.pipe("UTF-8", "UTF-8", binmode: true)
-        assert_predicate writer5, :binmode?
-        assert_equal writer1.external_encoding, writer5.external_encoding
-        assert_equal writer1.internal_encoding, writer5.internal_encoding
-        assert_predicate reader5, :binmode?
-        assert_equal reader1.external_encoding, reader5.external_encoding
-        assert_equal reader1.internal_encoding, reader5.internal_encoding
+          reader5, writer5 = IO.pipe("UTF-8", "UTF-8", binmode: true)
+          assert_predicate writer5, :binmode?
+          assert_equal writer1.external_encoding, writer5.external_encoding
+          assert_equal writer1.internal_encoding, writer5.internal_encoding
+          assert_predicate reader5, :binmode?
+          assert_equal reader1.external_encoding, reader5.external_encoding
+          assert_equal reader1.internal_encoding, reader5.internal_encoding
+        ensure
+          reader.close if reader
+          writer.close if writer
+          reader1.close if reader1
+          writer1.close if writer1
+          reader2.close if reader2
+          writer2.close if writer2
+          reader3.close if reader3
+          writer3.close if writer3
+          reader4.close if reader4
+          writer4.close if writer4
+          reader5.close if reader5
+          writer5.close if writer5
+        end
       end
     end
   end
