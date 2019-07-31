@@ -11,7 +11,7 @@ module Spec
       "rake" => "~> 12.0",
       "ronn" => "~> 0.7.3",
       "rspec" => "~> 3.6",
-      "rubocop" => "= 0.72.0",
+      "rubocop" => "= 0.74.0",
       "rubocop-performance" => "= 1.4.0",
     }.freeze
 
