@@ -409,14 +409,14 @@ ar_set_entry(VALUE hash, unsigned int index, st_data_t key, st_data_t val, st_ha
 }
 
 #define RHASH_AR_TABLE_SIZE(h) (HASH_ASSERT(RHASH_AR_TABLE_P(h)), \
-                             RHASH_AR_TABLE_SIZE_RAW(h))
+                                RHASH_AR_TABLE_SIZE_RAW(h))
 
 #define RHASH_AR_TABLE_BOUND_RAW(h) \
   ((unsigned int)((RBASIC(h)->flags >> RHASH_AR_TABLE_BOUND_SHIFT) & \
                   (RHASH_AR_TABLE_BOUND_MASK >> RHASH_AR_TABLE_BOUND_SHIFT)))
 
 #define RHASH_AR_TABLE_BOUND(h) (HASH_ASSERT(RHASH_AR_TABLE_P(h)), \
-                              RHASH_AR_TABLE_BOUND_RAW(h))
+                                 RHASH_AR_TABLE_BOUND_RAW(h))
 
 #define RHASH_ST_TABLE_SET(h, s)  rb_hash_st_table_set(h, s)
 #define RHASH_TYPE(hash) (RHASH_AR_TABLE_P(hash) ? &objhash : RHASH_ST_TABLE(hash)->type)
@@ -563,26 +563,35 @@ hash_ar_table_set(VALUE hash, ar_table *ar)
 #define RHASH_SET_ST_FLAG(h)          FL_SET_RAW(h, RHASH_ST_TABLE_FLAG)
 #define RHASH_UNSET_ST_FLAG(h)        FL_UNSET_RAW(h, RHASH_ST_TABLE_FLAG)
 
-#define RHASH_AR_TABLE_BOUND_SET(h, n) do { \
-    st_index_t tmp_n = (n);          \
-    HASH_ASSERT(RHASH_AR_TABLE_P(h)); \
-    HASH_ASSERT(tmp_n <= RHASH_AR_TABLE_MAX_BOUND); \
-    RBASIC(h)->flags &= ~RHASH_AR_TABLE_BOUND_MASK; \
-    RBASIC(h)->flags |= (tmp_n) << RHASH_AR_TABLE_BOUND_SHIFT; \
-} while (0)
+static inline void
+RHASH_AR_TABLE_BOUND_SET(VALUE h, st_index_t n)
+{
+    HASH_ASSERT(RHASH_AR_TABLE_P(h));
+    HASH_ASSERT(n <= RHASH_AR_TABLE_MAX_BOUND);
 
-#define RHASH_AR_TABLE_SIZE_SET(h, n) do { \
-    st_index_t tmp_n = n; \
-    HASH_ASSERT(RHASH_AR_TABLE_P(h)); \
-    RBASIC(h)->flags &= ~RHASH_AR_TABLE_SIZE_MASK; \
-    RBASIC(h)->flags |= (tmp_n) << RHASH_AR_TABLE_SIZE_SHIFT; \
-} while (0)
+    RBASIC(h)->flags &= ~RHASH_AR_TABLE_BOUND_MASK;
+    RBASIC(h)->flags |= n << RHASH_AR_TABLE_BOUND_SHIFT;
+}
 
-#define HASH_AR_TABLE_SIZE_ADD(h, n) do  { \
-    HASH_ASSERT(RHASH_AR_TABLE_P(h)); \
-    RHASH_AR_TABLE_SIZE_SET((h), RHASH_AR_TABLE_SIZE(h)+(n)); \
-    hash_verify(h); \
-} while (0)
+static inline void
+RHASH_AR_TABLE_SIZE_SET(VALUE h, st_index_t n)
+{
+    HASH_ASSERT(RHASH_AR_TABLE_P(h));
+    HASH_ASSERT(n <= RHASH_AR_TABLE_MAX_SIZE);
+
+    RBASIC(h)->flags &= ~RHASH_AR_TABLE_SIZE_MASK;
+    RBASIC(h)->flags |= n << RHASH_AR_TABLE_SIZE_SHIFT;
+}
+
+static inline void
+HASH_AR_TABLE_SIZE_ADD(VALUE h, st_index_t n)
+{
+    HASH_ASSERT(RHASH_AR_TABLE_P(h));
+
+    RHASH_AR_TABLE_SIZE_SET(h, RHASH_AR_TABLE_SIZE(h) + n);
+
+    hash_verify(h);
+}
 
 #define RHASH_AR_TABLE_SIZE_INC(h) HASH_AR_TABLE_SIZE_ADD(h, 1)
 
@@ -602,12 +611,14 @@ RHASH_AR_TABLE_SIZE_DEC(VALUE h)
     hash_verify(h);
 }
 
-#define RHASH_AR_TABLE_CLEAR(h) do { \
-    RBASIC(h)->flags &= ~RHASH_AR_TABLE_SIZE_MASK; \
-    RBASIC(h)->flags &= ~RHASH_AR_TABLE_BOUND_MASK; \
-    hash_ar_table_set(hash, NULL); \
-} while (0)
+static inline void
+RHASH_AR_TABLE_CLEAR(VALUE h)
+{
+    RBASIC(h)->flags &= ~RHASH_AR_TABLE_SIZE_MASK;
+    RBASIC(h)->flags &= ~RHASH_AR_TABLE_BOUND_MASK;
 
+    hash_ar_table_set(h, NULL);
+}
 
 static ar_table*
 ar_alloc_table(VALUE hash)
