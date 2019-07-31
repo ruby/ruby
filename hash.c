@@ -1317,10 +1317,11 @@ iter_lev_in_ivar_set(VALUE hash, int lev)
     rb_ivar_set_internal(hash, rb_intern("hash_iter_lev"), INT2FIX(lev));
 }
 
+#define RHASH_LEV_MASK ((VALUE)RHASH_LEV_MAX << RHASH_LEV_SHIFT)
 static int
 iter_lev_in_flags(VALUE hash)
 {
-    unsigned int u = (unsigned int)(RBASIC(hash)->flags & (unsigned int)RHASH_LEV_MASK) >> RHASH_LEV_SHIFT;
+    unsigned int u = (unsigned int)((RBASIC(hash)->flags >> RHASH_LEV_SHIFT) & RHASH_LEV_MAX);
     return (int)u;
 }
 
