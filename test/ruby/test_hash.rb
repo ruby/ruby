@@ -670,12 +670,21 @@ class TestHash < Test::Unit::TestCase
     assert_not_send([@h, :member?, 'gumby'])
   end
 
+  def hash_hint hv
+    hv & 0xff
+  end
+
   def test_rehash
     a = [ "a", "b" ]
     c = [ "c", "d" ]
     h = @cls[ a => 100, c => 300 ]
     assert_equal(100, h[a])
-    a[0] = "z"
+
+    hv = a.hash
+    begin
+      a[0] << "z"
+    end while hash_hint(a.hash) == hash_hint(hv)
+
     assert_nil(h[a])
     h.rehash
     assert_equal(100, h[a])
