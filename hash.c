@@ -421,7 +421,7 @@ ar_set_entry(VALUE hash, unsigned int index, st_data_t key, st_data_t val, st_ha
 #define RHASH_ST_TABLE_SET(h, s)  rb_hash_st_table_set(h, s)
 #define RHASH_TYPE(hash) (RHASH_AR_TABLE_P(hash) ? &objhash : RHASH_ST_TABLE(hash)->type)
 
-#define HASH_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(1, expr, #expr)
+#define HASH_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(HASH_DEBUG, expr, #expr)
 
 #if HASH_DEBUG
 #define hash_verify(hash) hash_verify_(hash, __FILE__, __LINE__)
