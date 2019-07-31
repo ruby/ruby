@@ -560,8 +560,6 @@ hash_ar_table_set(VALUE hash, ar_table *ar)
     hash_verify(hash);
 }
 
-#define RHASH_AR_TABLE_SET(h, a) hash_ar_table_set(h, a)
-
 #define RHASH_SET_ST_FLAG(h)          FL_SET_RAW(h, RHASH_ST_TABLE_FLAG)
 #define RHASH_UNSET_ST_FLAG(h)        FL_UNSET_RAW(h, RHASH_ST_TABLE_FLAG)
 
@@ -607,7 +605,7 @@ RHASH_AR_TABLE_SIZE_DEC(VALUE h)
 #define RHASH_AR_TABLE_CLEAR(h) do { \
     RBASIC(h)->flags &= ~RHASH_AR_TABLE_SIZE_MASK; \
     RBASIC(h)->flags &= ~RHASH_AR_TABLE_BOUND_MASK; \
-    RHASH_AR_TABLE_SET(hash, NULL); \
+    hash_ar_table_set(hash, NULL); \
 } while (0)
 
 
@@ -626,7 +624,7 @@ ar_alloc_table(VALUE hash)
 
     RHASH_AR_TABLE_SIZE_SET(hash, 0);
     RHASH_AR_TABLE_BOUND_SET(hash, 0);
-    RHASH_AR_TABLE_SET(hash, tab);
+    hash_ar_table_set(hash, tab);
 
     return tab;
 }
@@ -1148,7 +1146,7 @@ ar_copy(VALUE hash1, VALUE hash2)
         RHASH(hash1)->ar_hint.word = RHASH(hash2)->ar_hint.word;
         RHASH_AR_TABLE_BOUND_SET(hash1, RHASH_AR_TABLE_BOUND(hash2));
         RHASH_AR_TABLE_SIZE_SET(hash1, RHASH_AR_TABLE_SIZE(hash2));
-        RHASH_AR_TABLE_SET(hash1, new_tab);
+        hash_ar_table_set(hash1, new_tab);
 
         rb_gc_writebarrier_remember(hash1);
         return new_tab;
@@ -1164,7 +1162,7 @@ ar_copy(VALUE hash1, VALUE hash2)
             ruby_xfree(RHASH_AR_TABLE(hash1));
         }
 
-        RHASH_AR_TABLE_SET(hash1, NULL);
+        hash_ar_table_set(hash1, NULL);
 
         rb_gc_writebarrier_remember(hash1);
         return old_tab;
@@ -1207,7 +1205,7 @@ rb_hash_transient_heap_evacuate(VALUE hash, int promote)
             if (new_tab == NULL) goto promote;
         }
         *new_tab = *old_tab;
-        RHASH_AR_TABLE_SET(hash, new_tab);
+        hash_ar_table_set(hash, new_tab);
     }
     hash_verify(hash);
 }
