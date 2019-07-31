@@ -1317,7 +1317,6 @@ iter_lev_in_ivar_set(VALUE hash, int lev)
     rb_ivar_set_internal(hash, rb_intern("hash_iter_lev"), INT2FIX(lev));
 }
 
-#define RHASH_LEV_MASK ((VALUE)RHASH_LEV_MAX << RHASH_LEV_SHIFT)
 static int
 iter_lev_in_flags(VALUE hash)
 {
