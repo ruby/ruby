@@ -1134,7 +1134,7 @@ st_get_key(st_table *tab, st_data_t key, st_data_t *result)
 
 /* Check the table and rebuild it if it is necessary.  */
 static inline void
-rebuild_table_if_necessary (st_table *tab)
+rebuild_table_if_necessary(st_table *tab)
 {
     st_index_t bound = tab->entries_bound;
 
@@ -1609,46 +1609,46 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_update_callback_func 
 	    curr_entry_ptr = &entries[i];
 	}
 	switch (retval) {
-            case ST_REPLACE:
-                break;
+          case ST_REPLACE:
+            break;
 	  case ST_CONTINUE:
-	      break;
+	    break;
 	  case ST_CHECK:
-	      if (check_p)
-		  break;
+	    if (check_p)
+		break;
 	  case ST_STOP:
 #ifdef ST_DEBUG
-	      st_check(tab);
+	    st_check(tab);
 #endif
-	      return 0;
+	    return 0;
 	  case ST_DELETE: {
-	      st_data_t key = curr_entry_ptr->key;
+	    st_data_t key = curr_entry_ptr->key;
 
-	      again:
-	      if (packed_p) {
-		  bin = find_entry(tab, hash, key);
-		  if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
-		      goto again;
-		  if (bin == UNDEFINED_ENTRY_IND)
-		      break;
-	      }
-	      else {
-		  bin_ind = find_table_bin_ind(tab, hash, key);
-		  if (EXPECT(bin_ind == REBUILT_TABLE_BIN_IND, 0))
-		      goto again;
-		  if (bin_ind == UNDEFINED_BIN_IND)
-		      break;
-		  bin = get_bin(tab->bins, get_size_ind(tab), bin_ind) - ENTRY_BASE;
-		  MARK_BIN_DELETED(tab, bin_ind);
-	      }
-	      curr_entry_ptr = &entries[bin];
-	      MARK_ENTRY_DELETED(curr_entry_ptr);
-	      tab->num_entries--;
-	      update_range_for_deleted(tab, bin);
+	    again:
+	    if (packed_p) {
+		bin = find_entry(tab, hash, key);
+		if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
+		    goto again;
+		if (bin == UNDEFINED_ENTRY_IND)
+		    break;
+	    }
+	    else {
+		bin_ind = find_table_bin_ind(tab, hash, key);
+		if (EXPECT(bin_ind == REBUILT_TABLE_BIN_IND, 0))
+		    goto again;
+		if (bin_ind == UNDEFINED_BIN_IND)
+		    break;
+		bin = get_bin(tab->bins, get_size_ind(tab), bin_ind) - ENTRY_BASE;
+		MARK_BIN_DELETED(tab, bin_ind);
+	    }
+	    curr_entry_ptr = &entries[bin];
+	    MARK_ENTRY_DELETED(curr_entry_ptr);
+	    tab->num_entries--;
+	    update_range_for_deleted(tab, bin);
 #ifdef ST_DEBUG
-	      st_check(tab);
+	    st_check(tab);
 #endif
-	      break;
+	    break;
 	  }
 	}
     }
