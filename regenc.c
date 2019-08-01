@@ -640,18 +640,23 @@ onigenc_single_byte_mbc_to_code(const UChar* p, const UChar* end ARG_UNUSED,
 }
 
 extern int
-onigenc_single_byte_code_to_mbclen(OnigCodePoint code ARG_UNUSED, OnigEncoding enc ARG_UNUSED)
+onigenc_single_byte_code_to_mbclen(OnigCodePoint code, OnigEncoding enc ARG_UNUSED)
 {
+  if (code > 0xff)
+    return ONIGERR_INVALID_CODE_POINT_VALUE;
   return 1;
 }
 
 extern int
 onigenc_single_byte_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc ARG_UNUSED)
 {
+  if (code > 0xff) {
 #ifdef RUBY
-  if (code > 0xff)
     rb_raise(rb_eRangeError, "%u out of char range", code);
+#else
+    return ONIGERR_INVALID_CODE_POINT_VALUE;
 #endif
+  }
   *buf = (UChar )(code & 0xff);
   return 1;
 }
