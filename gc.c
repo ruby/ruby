@@ -2986,18 +2986,12 @@ should_be_callable(VALUE block)
 }
 
 static void
-should_be_finalizable_internal(VALUE obj)
+should_be_finalizable(VALUE obj)
 {
     if (!FL_ABLE(obj)) {
 	rb_raise(rb_eArgError, "cannot define finalizer for %s",
 		 rb_obj_classname(obj));
     }
-}
-
-static void
-should_be_finalizable(VALUE obj)
-{
-    should_be_finalizable_internal(obj);
     rb_check_frozen(obj);
 }
 
@@ -10253,6 +10247,7 @@ wmap_allocate(VALUE klass)
 static int
 wmap_live_p(rb_objspace_t *objspace, VALUE obj)
 {
+    if (!FL_ABLE(obj)) return TRUE;
     if (!is_id_value(objspace, obj)) return FALSE;
     if (!is_live_object(objspace, obj)) return FALSE;
     return TRUE;
@@ -10510,10 +10505,13 @@ wmap_aset(VALUE self, VALUE wmap, VALUE orig)
     struct weakmap *w;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    should_be_finalizable_internal(orig);
-    should_be_finalizable_internal(wmap);
-    define_final0(orig, w->final);
-    define_final0(wmap, w->final);
+    if (FL_ABLE(orig)) {
+        define_final0(orig, w->final);
+    }
+    if (FL_ABLE(wmap)) {
+        define_final0(wmap, w->final);
+    }
+
     st_update(w->obj2wmap, (st_data_t)orig, wmap_aset_update, wmap);
     st_insert(w->wmap2obj, (st_data_t)wmap, (st_data_t)orig);
     return nonspecial_obj_id(orig);
