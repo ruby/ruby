@@ -866,7 +866,7 @@ static VALUE heredoc_dedent(struct parser_params*,VALUE);
 # define rb_warning3L(l,fmt,a,b,c)   WARNING_CALL(WARNING_ARGS_L(l, fmt, 4), (a), (b), (c))
 # define rb_warning4L(l,fmt,a,b,c,d) WARNING_CALL(WARNING_ARGS_L(l, fmt, 5), (a), (b), (c), (d))
 #ifdef RIPPER
-static ID id_warn, id_warning, id_gets, id_assoc, id_or;
+static ID id_warn, id_warning, id_gets, id_assoc;
 # define WARN_S_L(s,l) STR_NEW(s,l)
 # define WARN_S(s) STR_NEW2(s)
 # define WARN_I(i) INT2NUM(i)
@@ -3791,7 +3791,7 @@ p_alt		: p_alt '|' p_expr_basic
 		    /*%%%*/
 			$$ = NEW_NODE(NODE_OR, $1, $3, 0, &@$);
 		    /*% %*/
-		    /*% ripper: binary!($1, STATIC_ID2SYM((id_or)), $3) %*/
+		    /*% ripper: binary!($1, STATIC_ID2SYM(idOr), $3) %*/
 		    }
 		| p_expr_basic
 		;
@@ -12893,7 +12893,6 @@ Init_ripper(void)
     id_warning = rb_intern_const("warning");
     id_gets = rb_intern_const("gets");
     id_assoc = rb_intern_const("=>");
-    id_or = rb_intern_const("|");
 
     (void)yystpcpy; /* may not used in newer bison */
 
