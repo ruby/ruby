@@ -43,7 +43,7 @@ class TestJIT < Test::Unit::TestCase
     if $VERBOSE && !defined?(@@at_exit_hooked)
       at_exit do
         unless TestJIT.untested_insns.empty?
-          warn "untested insns are found!: #{TestJIT.untested_insns.join(' ')}"
+          warn "you may want to add tests for following insns, when you have a chance: #{TestJIT.untested_insns.join(' ')}"
         end
       end
       @@at_exit_hooked = true
@@ -362,6 +362,13 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"foo"', insns: %i[opt_str_freeze])
     begin;
       'foo'.freeze
+    end;
+  end
+
+  def test_compile_insn_opt_nil_p
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'false', insns: %i[opt_nil_p])
+    begin;
+      nil.nil?.nil?
     end;
   end
 
