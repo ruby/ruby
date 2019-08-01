@@ -197,8 +197,8 @@ static const struct signals {
 #endif
 };
 
-static const char signame_prefix[3] = "SIG";
-static const int signame_prefix_len = (int)sizeof(signame_prefix);
+static const char signame_prefix[] = "SIG";
+static const int signame_prefix_len = 3;
 
 static int
 signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
@@ -236,7 +236,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
 	negative = 0;
     }
     if (len >= prefix + signame_prefix_len) {
-	if (memcmp(nm + prefix, signame_prefix, sizeof(signame_prefix)) == 0)
+	if (memcmp(nm + prefix, signame_prefix, signame_prefix_len) == 0)
 	    prefix += signame_prefix_len;
     }
     if (len <= (long)prefix) {
