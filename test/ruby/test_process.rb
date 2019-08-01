@@ -667,7 +667,7 @@ class TestProcess < Test::Unit::TestCase
         end
       EOS
         assert_equal("start\n", io.gets)
-        sleep 0.5
+        sleep 3
         Process.kill(:USR1, io.pid)
         assert_equal("ok\n", io.read)
       }
