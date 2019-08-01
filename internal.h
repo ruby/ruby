@@ -817,7 +817,7 @@ struct RComplex {
 enum ruby_rhash_flags {
     RHASH_PROC_DEFAULT = FL_USER2,                                       /* FL 2 */
     RHASH_ST_TABLE_FLAG = FL_USER3,                                      /* FL 3 */
-    RHASH_AR_TABLE_MAX_SIZE = 8,
+#define RHASH_AR_TABLE_MAX_SIZE SIZEOF_VALUE
     RHASH_AR_TABLE_SIZE_MASK = (FL_USER4|FL_USER5|FL_USER6|FL_USER7),    /* FL 4..7 */
     RHASH_AR_TABLE_SIZE_SHIFT = (FL_USHIFT+4),
     RHASH_AR_TABLE_BOUND_MASK = (FL_USER8|FL_USER9|FL_USER10|FL_USER11), /* FL 8..11 */
@@ -875,6 +875,14 @@ void rb_hash_st_table_set(VALUE hash, st_table *st);
 #define RHASH_UNSET_TRANSIENT_FLAG(h) ((void)0)
 #endif
 
+#if   SIZEOF_VALUE / RHASH_AR_TABLE_MAX_SIZE == 2
+typedef uint16_t ar_hint_t;
+#elif SIZEOF_VALUE / RHASH_AR_TABLE_MAX_SIZE == 1
+typedef unsigned char ar_hint_t;
+#else
+#error unsupported
+#endif
+
 struct RHash {
     struct RBasic basic;
     union {
@@ -883,7 +891,7 @@ struct RHash {
     } as;
     const VALUE ifnone;
     union {
-        unsigned char ary[sizeof(VALUE)];
+        ar_hint_t ary[RHASH_AR_TABLE_MAX_SIZE];
         VALUE word;
     } ar_hint;
 };

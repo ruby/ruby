@@ -325,7 +325,6 @@ typedef st_index_t st_hash_t;
  * * as.st points st_table.
  */
 
-#define RHASH_AR_TABLE_MAX_SIZE      sizeof(VALUE)
 #define RHASH_AR_TABLE_MAX_BOUND     RHASH_AR_TABLE_MAX_SIZE
 
 #define RHASH_AR_TABLE_REF(hash, n) (&RHASH_AR_TABLE(hash)->pairs[n])
@@ -353,20 +352,20 @@ ar_do_hash(st_data_t key)
     return (st_hash_t)rb_any_hash(key);
 }
 
-static inline unsigned char
+static inline ar_hint_t
 ar_do_hash_hint(st_hash_t hash_value)
 {
-    return (unsigned char)hash_value;
+    return (ar_hint_t)hash_value;
 }
 
-static inline unsigned char
+static inline ar_hint_t
 ar_hint(VALUE hash, unsigned int index)
 {
     return RHASH(hash)->ar_hint.ary[index];
 }
 
 static inline void
-ar_hint_set_hint(VALUE hash, unsigned int index, unsigned char hint)
+ar_hint_set_hint(VALUE hash, unsigned int index, ar_hint_t hint)
 {
     RHASH(hash)->ar_hint.ary[index] = hint;
 }
@@ -650,10 +649,10 @@ ar_equal(VALUE x, VALUE y)
 }
 
 static unsigned
-ar_find_entry_hint(VALUE hash, unsigned char hint, st_data_t key)
+ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
 {
     unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
-    const unsigned char *hints = RHASH(hash)->ar_hint.ary;
+    const ar_hint_t *hints = RHASH(hash)->ar_hint.ary;
 
     /* if table is NULL, then bound also should be 0 */
 
@@ -695,7 +694,7 @@ ar_find_entry_hint(VALUE hash, unsigned char hint, st_data_t key)
 static unsigned
 ar_find_entry(VALUE hash, st_hash_t hash_value, st_data_t key)
 {
-    unsigned char hint = ar_do_hash_hint(hash_value);
+    ar_hint_t hint = ar_do_hash_hint(hash_value);
     return ar_find_entry_hint(hash, hint, key);
 }
 
@@ -908,7 +907,7 @@ ar_foreach_check(VALUE hash, int (*func)(ANYARGS), st_data_t arg,
         enum st_retval retval;
         st_data_t key;
         ar_table_pair *pair;
-        unsigned char hint;
+        ar_hint_t hint;
 
         for (i = 0; i < bound; i++) {
             if (ar_cleared_entry(hash, i)) continue;
@@ -6214,4 +6213,6 @@ Init_Hash(void)
 
     /* for callcc */
     ruby_register_rollback_func_for_ensure(hash_foreach_ensure, hash_foreach_ensure_rollback);
+
+    HASH_ASSERT(sizeof(ar_hint_t) * RHASH_AR_TABLE_MAX_SIZE == sizeof(VALUE));
 }
