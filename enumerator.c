@@ -110,7 +110,7 @@ VALUE rb_cEnumerator;
 static VALUE rb_cLazy;
 static ID id_rewind, id_new, id_to_enum;
 static ID id_next, id_result, id_receiver, id_arguments, id_memo, id_method, id_force;
-static ID id_begin, id_end, id_step, id_exclude_end, id_to_proc;
+static ID id_begin, id_end, id_step, id_exclude_end;
 static VALUE sym_each, sym_cycle, sym_yield;
 
 #define id_call idCall
@@ -1305,7 +1305,7 @@ yielder_to_proc(VALUE obj)
 {
     VALUE method = rb_obj_method(obj, sym_yield);
 
-    return rb_funcall(method, id_to_proc, 0);
+    return rb_funcall(method, idTo_proc, 0);
 }
 
 static VALUE
@@ -3683,7 +3683,6 @@ Init_Enumerator(void)
     id_end = rb_intern("end");
     id_step = rb_intern("step");
     id_exclude_end = rb_intern("exclude_end");
-    id_to_proc = rb_intern("to_proc");
     sym_each = ID2SYM(id_each);
     sym_cycle = ID2SYM(rb_intern("cycle"));
     sym_yield = ID2SYM(rb_intern("yield"));
