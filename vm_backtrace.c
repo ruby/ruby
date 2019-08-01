@@ -1313,7 +1313,7 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     const rb_callable_method_entry_t *cme;
 
     for (i=0; i<limit && cfp != end_cfp;) {
-	if (VM_FRAME_RUBYFRAME_P(cfp)) {
+        if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	    if (start > 0) {
 		start--;
 		continue;
