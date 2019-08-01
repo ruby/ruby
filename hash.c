@@ -90,6 +90,7 @@ VALUE rb_cHash;
 
 static VALUE envtbl;
 static ID id_hash, id_yield, id_default, id_flatten_bang;
+static ID id_hash_iter_lev;
 
 VALUE
 rb_hash_set_ifnone(VALUE hash, VALUE ifnone)
@@ -1313,7 +1314,7 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
 static int
 iter_lev_in_ivar(VALUE hash)
 {
-    VALUE levval = rb_ivar_get(hash, rb_intern("hash_iter_lev"));
+    VALUE levval = rb_ivar_get(hash, id_hash_iter_lev);
     HASH_ASSERT(FIXNUM_P(levval));
     return FIX2INT(levval);
 }
@@ -1323,7 +1324,7 @@ void rb_ivar_set_internal(VALUE obj, ID id, VALUE val);
 static void
 iter_lev_in_ivar_set(VALUE hash, int lev)
 {
-    rb_ivar_set_internal(hash, rb_intern("hash_iter_lev"), INT2FIX(lev));
+    rb_ivar_set_internal(hash, id_hash_iter_lev, INT2FIX(lev));
 }
 
 static int
@@ -6048,6 +6049,7 @@ Init_Hash(void)
     id_yield = rb_intern("yield");
     id_default = rb_intern("default");
     id_flatten_bang = rb_intern("flatten!");
+    id_hash_iter_lev = rb_make_internal_id();
 
     rb_cHash = rb_define_class("Hash", rb_cObject);
 
