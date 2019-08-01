@@ -173,8 +173,10 @@ onig_error_code_to_format(OnigPosition code)
     p = "multiplex definition name <%n> call"; break;
   case ONIGERR_NEVER_ENDING_RECURSION:
     p = "never ending recursion"; break;
+#ifdef USE_CAPTURE_HISTORY
   case ONIGERR_GROUP_NUMBER_OVER_FOR_CAPTURE_HISTORY:
     p = "group number is too big for capture history"; break;
+#endif
   case ONIGERR_INVALID_CHAR_PROPERTY_NAME:
     p = "invalid character property name {%n}"; break;
   case ONIGERR_TOO_MANY_CAPTURE_GROUPS:
