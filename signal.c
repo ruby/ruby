@@ -236,7 +236,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
 	negative = 0;
     }
     if (len >= prefix + signame_prefix_len) {
-	if (memcmp(nm + prefix, signame_prefix, signame_prefix_len) == 0)
+        if (memcmp(nm + prefix, signame_prefix, signame_prefix_len) == 0)
 	    prefix += signame_prefix_len;
     }
     if (len <= (long)prefix) {
