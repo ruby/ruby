@@ -1135,14 +1135,16 @@ rb_scope_module_func_set(void)
     vm_cref_set_visibility(METHOD_VISI_PRIVATE, TRUE);
 }
 
+const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
 void
 rb_attr(VALUE klass, ID id, int read, int write, int ex)
 {
     ID attriv;
     rb_method_visibility_t visi;
     const rb_execution_context_t *ec = GET_EC();
+    const rb_cref_t *cref = rb_vm_cref_in_context(klass, klass);
 
-    if (!ex) {
+    if (!ex || !cref) {
 	visi = METHOD_VISI_PUBLIC;
     }
     else {

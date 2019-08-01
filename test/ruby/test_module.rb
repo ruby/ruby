@@ -705,6 +705,32 @@ class TestModule < Test::Unit::TestCase
     assert_equal(false, o.respond_to?(:bar=))
   end
 
+  def test_attr_public_at_toplevel
+    s = Object.new
+    TOPLEVEL_BINDING.eval(<<-END).call(s.singleton_class)
+      proc do |c|
+        c.send(:attr_accessor, :x)
+        c.send(:attr, :y)
+        c.send(:attr_reader, :z)
+        c.send(:attr_writer, :w)
+      end
+    END
+    assert_nil s.x
+    s.x = 1
+    assert_equal 1, s.x
+
+    assert_nil s.y
+    s.instance_variable_set(:@y, 2)
+    assert_equal 2, s.y
+
+    assert_nil s.z
+    s.instance_variable_set(:@z, 3)
+    assert_equal 3, s.z
+
+    s.w = 4
+    assert_equal 4, s.instance_variable_get(:@w)
+  end
+
   def test_const_get_evaled
     c1 = Class.new
     c2 = Class.new(c1)
