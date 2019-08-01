@@ -1926,7 +1926,7 @@ static void
 gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb_event_flag_t event, VALUE data)
 {
     const VALUE *pc = ec->cfp->pc;
-    if (VM_FRAME_RUBYFRAME_P(ec->cfp)) {
+    if (pc && VM_FRAME_RUBYFRAME_P(ec->cfp)) {
         /* increment PC because source line is calculated with PC-1 */
         ec->cfp->pc++;
     }
