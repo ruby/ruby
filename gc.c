@@ -10110,25 +10110,18 @@ wmap_mark_map(st_data_t key, st_data_t val, st_data_t arg)
 }
 #endif
 
-static int
-wmap_pin_obj(st_data_t key, st_data_t val, st_data_t arg)
+static void
+wmap_compact(void *ptr)
 {
-    rb_objspace_t *objspace = (rb_objspace_t *)arg;
-    VALUE obj = (VALUE)val;
-    if (obj && is_live_object(objspace, obj)) {
-        gc_pin(objspace, obj);
-    }
-    else {
-        return ST_DELETE;
-    }
-    return ST_CONTINUE;
+    struct weakmap *w = ptr;
+    if (w->wmap2obj) rb_gc_update_tbl_refs(w->wmap2obj);
+    if (w->obj2wmap) rb_gc_update_tbl_refs(w->obj2wmap);
 }
 
 static void
 wmap_mark(void *ptr)
 {
     struct weakmap *w = ptr;
-    if (w->wmap2obj) st_foreach(w->wmap2obj, wmap_pin_obj, (st_data_t)&rb_objspace);
 #if WMAP_DELETE_DEAD_OBJECT_IN_MARK
     if (w->obj2wmap) st_foreach(w->obj2wmap, wmap_mark_map, (st_data_t)&rb_objspace);
 #endif
@@ -10178,6 +10171,7 @@ static const rb_data_type_t weakmap_type = {
 	wmap_mark,
 	wmap_free,
 	wmap_memsize,
+	wmap_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
