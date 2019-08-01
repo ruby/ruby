@@ -141,7 +141,7 @@ class Gem::S3URISigner
   end
 
   def base64_uri_escape(str)
-    str.gsub("\n", "").gsub(/[\+\/=]/) { |c| BASE64_URI_TRANSLATE[c] }
+    str.gsub(/[\+\/=\n]/, BASE64_URI_TRANSLATE)
   end
 
   def ec2_metadata_credentials_json
@@ -169,7 +169,7 @@ class Gem::S3URISigner
     Gem::Request::ConnectionPools.new(proxy_uri, certs).pool_for(uri)
   end
 
-  BASE64_URI_TRANSLATE = { "+" => "%2B", "/" => "%2F", "=" => "%3D" }.freeze
+  BASE64_URI_TRANSLATE = { "+" => "%2B", "/" => "%2F", "=" => "%3D", "\n" => "" }.freeze
   EC2_METADATA_CREDENTIALS = "http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance".freeze
 
 end
