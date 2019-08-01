@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "pathname"
+require "rbconfig"
 
 module Spec
   module Path
@@ -32,7 +33,7 @@ module Spec
       if Bundler::VERSION.split(".").first.to_i < 3
         system_gem_path(*path)
       else
-        bundled_app(*[".bundle", ENV.fetch("BUNDLER_SPEC_RUBY_ENGINE", Gem.ruby_engine), Gem::ConfigMap[:ruby_version], *path].compact)
+        bundled_app(*[".bundle", ENV.fetch("BUNDLER_SPEC_RUBY_ENGINE", Gem.ruby_engine), RbConfig::CONFIG["ruby_version"], *path].compact)
       end
     end
 
@@ -51,7 +52,7 @@ module Spec
     end
 
     def vendored_gems(path = nil)
-      bundled_app(*["vendor/bundle", Gem.ruby_engine, Gem::ConfigMap[:ruby_version], path].compact)
+      bundled_app(*["vendor/bundle", Gem.ruby_engine, RbConfig::CONFIG["ruby_version"], path].compact)
     end
 
     def cached_gem(path)
