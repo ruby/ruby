@@ -100,7 +100,7 @@ env:
         brew install \
           ccache \
           gdbm \
-          gmp
+          gmp \
           libffi \
           openssl@1.1 \
           zlib
