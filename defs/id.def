@@ -3,7 +3,6 @@ firstline, predefined = __LINE__+1, %[\
   max
   min
   freeze
-  nil?
   inspect
   intern
   object_id
