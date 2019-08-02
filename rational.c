@@ -43,13 +43,6 @@ static ID id_abs, id_idiv, id_integer_p,
 
 static VALUE nurat_to_f(VALUE self);
 
-#define binop(n,op) \
-inline static VALUE \
-f_##n(VALUE x, VALUE y)\
-{\
-    return rb_funcall(x, (op), 1, y); \
-}
-
 #define fun1(n) \
 inline static VALUE \
 f_##n(VALUE x)\
@@ -87,7 +80,13 @@ f_lt_p(VALUE x, VALUE y)
 
 #ifndef NDEBUG
 /* f_mod is used only in f_gcd defined when NDEBUG is not defined */
-binop(mod, '%')
+inline static VALUE
+f_mod(VALUE x, VALUE y)
+{
+    if (RB_INTEGER_TYPE_P(x))
+        return rb_int_modulo(x, y);
+    return rb_funcall(x, '%', 1, y);
+}
 #endif
 
 inline static VALUE
