@@ -2448,21 +2448,40 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_HASH:
 #if USE_DEBUG_COUNTER
-        if (RHASH_SIZE(obj) > 8) {
-            RB_DEBUG_COUNTER_INC(obj_hash_g8);
-        }
-        else if (RHASH_SIZE(obj) > 4) {
-            RB_DEBUG_COUNTER_INC(obj_hash_5_8);
-        }
-        else if (RHASH_SIZE(obj) > 0) {
-            RB_DEBUG_COUNTER_INC(obj_hash_1_4);
-        }
-        else {
+        switch RHASH_SIZE(obj) {
+          case 0:
             RB_DEBUG_COUNTER_INC(obj_hash_empty);
+            break;
+          case 1:
+            RB_DEBUG_COUNTER_INC(obj_hash_1);
+            break;
+          case 2:
+            RB_DEBUG_COUNTER_INC(obj_hash_2);
+            break;
+          case 3:
+            RB_DEBUG_COUNTER_INC(obj_hash_3);
+            break;
+          case 4:
+            RB_DEBUG_COUNTER_INC(obj_hash_4);
+            break;
+          case 5:
+          case 6:
+          case 7:
+          case 8:
+            RB_DEBUG_COUNTER_INC(obj_hash_5_8);
+            break;
+          default:
+            GC_ASSERT(RHASH_SIZE(obj) > 8);
+            RB_DEBUG_COUNTER_INC(obj_hash_g8);
         }
 
         if (RHASH_AR_TABLE_P(obj)) {
-            RB_DEBUG_COUNTER_INC(obj_hash_ar);
+            if (RHASH_AR_TABLE(obj) == NULL) {
+                RB_DEBUG_COUNTER_INC(obj_hash_null);
+            }
+            else {
+                RB_DEBUG_COUNTER_INC(obj_hash_ar);
+            }
         }
         else {
             RB_DEBUG_COUNTER_INC(obj_hash_st);
