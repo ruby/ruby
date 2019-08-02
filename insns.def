@@ -808,20 +808,6 @@ opt_str_freeze
     }
 }
 
-/* optimized nil? */
-DEFINE_INSN
-opt_nil_p
-(CALL_INFO ci, CALL_CACHE cc)
-(VALUE recv)
-(VALUE val)
-{
-    val = vm_opt_nil_p(ci, cc, recv);
-
-    if (val == Qundef) {
-        CALL_SIMPLE_METHOD();
-    }
-}
-
 DEFINE_INSN
 opt_str_uminus
 (VALUE str, CALL_INFO ci, CALL_CACHE cc)

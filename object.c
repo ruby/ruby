@@ -1687,7 +1687,7 @@ rb_true(VALUE obj)
  */
 
 
-MJIT_FUNC_EXPORTED VALUE
+static VALUE
 rb_false(VALUE obj)
 {
     return Qfalse;
