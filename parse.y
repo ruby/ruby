@@ -9741,7 +9741,7 @@ past_dvar_p(struct parser_params *p, ID id)
 
 #define WARN_LOCATION(type) do { \
     if (p->warn_location) { \
-	rb_warning0(type" in eval may not return location in binding;" \
+	rb_warn0(type" in eval may not return location in binding;" \
 		    " use Binding#source_location instead"); \
     } \
 } while (0)
