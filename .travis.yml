@@ -45,15 +45,9 @@ addons:
       - openssl
       - valgrind
       - zlib1g-dev
-  homebrew:
-    update: true
-    packages:
-      - gdbm
-      - gmp
-      - libffi
-      - openssl@1.1
-      - zlib
-      - ccache
+  # # Travis homebrew addon is unstable for now. Use `before_install` instead.
+  # # https://travis-ci.community/t/osx-homebrew-addons-module-not-as-reliable-as-claimed/4054
+  # homebrew:
 
 cache:
   ccache: true
@@ -97,6 +91,19 @@ env:
     compiler: clang
     before_install:
       - gem uninstall ntlm-http plist -x --force
+      # `brew update` on Travis randomly hangs
+      - |-
+        timeout 300 brew update ||
+        timeout 300 brew update ||
+        timeout 300 brew update
+      - |-
+        brew install \
+          ccache \
+          gdbm \
+          gmp
+          libffi \
+          openssl@1.1 \
+          zlib
       - /usr/local/opt/openssl@1.1/bin/openssl version
 
   - &clang-8
