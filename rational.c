@@ -33,8 +33,10 @@
 
 VALUE rb_cRational;
 
-static ID id_abs, id_idiv, id_integer_p,
+static ID id_abs, id_integer_p,
     id_i_num, id_i_den;
+
+#define id_idiv idDiv
 #define id_to_i idTo_i
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
@@ -1601,7 +1603,7 @@ f_ceil(VALUE x)
     return rb_funcall(x, id_ceil, 0);
 }
 
-#define id_quo rb_intern("quo")
+#define id_quo idQuo
 static VALUE
 f_quo(VALUE x, VALUE y)
 {
@@ -2013,7 +2015,7 @@ VALUE
 rb_numeric_quo(VALUE x, VALUE y)
 {
     if (RB_FLOAT_TYPE_P(y)) {
-        return rb_funcall(x, rb_intern("fdiv"), 1, y);
+        return rb_funcallv(x, idFdiv, 1, &y);
     }
 
     if (canonicalization) {
@@ -2711,7 +2713,6 @@ Init_Rational(void)
 #define rb_intern(str) rb_intern_const(str)
 
     id_abs = rb_intern("abs");
-    id_idiv = rb_intern("div");
     id_integer_p = rb_intern("integer?");
     id_i_num = rb_intern("@numerator");
     id_i_den = rb_intern("@denominator");

@@ -33,7 +33,7 @@ extern int signbit(double);
 VALUE rb_cComplex;
 
 static ID id_abs, id_arg,
-    id_denominator, id_fdiv, id_numerator, id_quo,
+    id_denominator, id_numerator,
     id_real_p, id_i_real, id_i_imag,
     id_finite_p, id_infinite_p, id_rationalize,
     id_PI;
@@ -42,6 +42,8 @@ static ID id_abs, id_arg,
 #define id_negate idUMinus
 #define id_expt idPow
 #define id_to_f idTo_f
+#define id_quo idQuo
+#define id_fdiv idFdiv
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -2278,9 +2280,7 @@ Init_Complex(void)
     id_abs = rb_intern("abs");
     id_arg = rb_intern("arg");
     id_denominator = rb_intern("denominator");
-    id_fdiv = rb_intern("fdiv");
     id_numerator = rb_intern("numerator");
-    id_quo = rb_intern("quo");
     id_real_p = rb_intern("real?");
     id_i_real = rb_intern("@real");
     id_i_imag = rb_intern("@image"); /* @image, not @imag */

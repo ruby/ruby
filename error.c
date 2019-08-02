@@ -884,12 +884,13 @@ static VALUE rb_eNOERROR;
 ID ruby_static_id_cause;
 #define id_cause ruby_static_id_cause
 static ID id_message, id_backtrace;
-static ID id_name, id_key, id_args, id_Errno, id_errno, id_i_path;
+static ID id_key, id_args, id_Errno, id_errno, id_i_path;
 static ID id_receiver, id_recv, id_iseq, id_local_variables;
 static ID id_private_call_p, id_top, id_bottom;
 #define id_bt idBt
 #define id_bt_locations idBt_locations
 #define id_mesg idMesg
+#define id_name idName
 
 #undef rb_exc_new_cstr
 
@@ -2538,7 +2539,6 @@ Init_Exception(void)
     id_cause = rb_intern_const("cause");
     id_message = rb_intern_const("message");
     id_backtrace = rb_intern_const("backtrace");
-    id_name = rb_intern_const("name");
     id_key = rb_intern_const("key");
     id_args = rb_intern_const("args");
     id_receiver = rb_intern_const("receiver");
