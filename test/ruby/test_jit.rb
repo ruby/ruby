@@ -365,6 +365,13 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_compile_insn_opt_nil_p
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'false', insns: %i[opt_nil_p])
+    begin;
+      nil.nil?.nil?
+    end;
+  end
+
   def test_compile_insn_opt_str_uminus
     assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"bar"', insns: %i[opt_str_uminus])
     begin;
