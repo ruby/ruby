@@ -119,7 +119,12 @@ f_abs(VALUE x)
     return rb_funcall(x, id_abs, 0);
 }
 
-fun1(integer_p)
+
+inline static VALUE
+f_integer_p(VALUE x)
+{
+    return RB_INTEGER_TYPE_P(x);
+}
 
 inline static VALUE
 f_to_i(VALUE x)
