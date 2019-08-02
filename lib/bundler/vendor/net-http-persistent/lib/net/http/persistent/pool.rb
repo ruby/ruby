@@ -49,5 +49,5 @@ class Bundler::Persistent::Net::HTTP::Persistent::Pool < Bundler::ConnectionPool
   end
 end
 
-require 'bundler/vendor/net-http-persistent/lib/net/http/persistent/timed_stack_multi'
+require_relative 'timed_stack_multi'
 

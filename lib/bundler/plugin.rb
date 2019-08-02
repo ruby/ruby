@@ -4,11 +4,11 @@ require_relative "plugin/api"
 
 module Bundler
   module Plugin
-    autoload :DSL,        "bundler/plugin/dsl"
-    autoload :Events,     "bundler/plugin/events"
-    autoload :Index,      "bundler/plugin/index"
-    autoload :Installer,  "bundler/plugin/installer"
-    autoload :SourceList, "bundler/plugin/source_list"
+    autoload :DSL,        File.expand_path("plugin/dsl", __dir__)
+    autoload :Events,     File.expand_path("plugin/events", __dir__)
+    autoload :Index,      File.expand_path("plugin/index", __dir__)
+    autoload :Installer,  File.expand_path("plugin/installer", __dir__)
+    autoload :SourceList, File.expand_path("plugin/source_list", __dir__)
 
     class MalformattedPlugin < PluginError; end
     class UndefinedCommandError < PluginError; end
