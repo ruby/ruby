@@ -275,7 +275,8 @@ RSpec.describe "bundle gem" do
     end
 
     it "sets a minimum ruby version" do
-      bundler_gemspec = Bundler::GemHelper.new(File.expand_path("../..", __dir__)).gemspec
+      gemspec_path = ruby_core? ? "../../../lib/bundler" : "../.."
+      bundler_gemspec = Bundler::GemHelper.new(File.expand_path(gemspec_path, __dir__)).gemspec
 
       expect(bundler_gemspec.required_ruby_version).to eq(generated_gemspec.required_ruby_version)
     end
