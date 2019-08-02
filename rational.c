@@ -2165,16 +2165,14 @@ integer_rationalize(int argc, VALUE *argv, VALUE self)
 }
 
 static void
-float_decode_internal(VALUE self, VALUE *rf, VALUE *rn)
+float_decode_internal(VALUE self, VALUE *rf, int *n)
 {
     double f;
-    int n;
 
-    f = frexp(RFLOAT_VALUE(self), &n);
+    f = frexp(RFLOAT_VALUE(self), n);
     f = ldexp(f, DBL_MANT_DIG);
-    n -= DBL_MANT_DIG;
+    *n -= DBL_MANT_DIG;
     *rf = rb_dbl2big(f);
-    *rn = INT2FIX(n);
 }
 
 /*
@@ -2200,20 +2198,17 @@ float_decode_internal(VALUE self, VALUE *rf, VALUE *rn)
 static VALUE
 float_to_r(VALUE self)
 {
-    VALUE f, n;
+    VALUE f;
+    int n;
 
     float_decode_internal(self, &f, &n);
 #if FLT_RADIX == 2
-    {
-	long ln = FIX2LONG(n);
-
-	if (ln == 0)
-	    return rb_rational_new1(f);
-	if (ln > 0)
-	    return rb_rational_new1(rb_int_lshift(f, n));
-	ln = -ln;
-	return rb_rational_new2(f, rb_int_lshift(ONE, INT2FIX(ln)));
-    }
+    if (n == 0)
+        return rb_rational_new1(f);
+    if (n > 0)
+        return rb_rational_new1(rb_int_lshift(f, INT2FIX(n)));
+    n = -n;
+    return rb_rational_new2(f, rb_int_lshift(ONE, INT2FIX(n)));
 #else
     f = rb_int_mul(f, rb_int_pow(INT2FIX(FLT_RADIX), n));
     if (RB_TYPE_P(f, T_RATIONAL))
@@ -2241,20 +2236,21 @@ rb_flt_rationalize_with_prec(VALUE flt, VALUE prec)
 VALUE
 rb_flt_rationalize(VALUE flt)
 {
-    VALUE a, b, f, n, p, q;
+    VALUE a, b, f, p, q;
+    int n;
 
     float_decode_internal(flt, &f, &n);
-    if (INT_ZERO_P(f) || FIX2INT(n) >= 0)
-        return rb_rational_new1(rb_int_lshift(f, n));
+    if (INT_ZERO_P(f) || n >= 0)
+        return rb_rational_new1(rb_int_lshift(f, INT2FIX(n)));
 
     {
         VALUE radix_times_f, den;
 
         radix_times_f = rb_int_mul(INT2FIX(FLT_RADIX), f);
 #if FLT_RADIX == 2 && 0
-        den = rb_int_lshift(ONE, INT2FIX(1-FIX2INT(n)));
+        den = rb_int_lshift(ONE, INT2FIX(1-n));
 #else
-        den = rb_int_positive_pow(FLT_RADIX, 1-FIX2INT(n));
+        den = rb_int_positive_pow(FLT_RADIX, 1-n);
 #endif
 
         a = rb_rational_new2(rb_int_minus(radix_times_f, INT2FIX(FLT_RADIX - 1)), den);
