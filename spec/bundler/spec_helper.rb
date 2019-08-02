@@ -102,6 +102,7 @@ RSpec.configure do |config|
     ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.spec_dir}/support/hax.rb"
     ENV["BUNDLE_SPEC_RUN"] = "true"
     ENV["BUNDLE_USER_CONFIG"] = ENV["BUNDLE_USER_CACHE"] = ENV["BUNDLE_USER_PLUGIN"] = nil
+    ENV["GEMRC"] = nil
 
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
