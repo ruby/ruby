@@ -46,8 +46,7 @@ addons:
       - valgrind
       - zlib1g-dev
   homebrew:
-    # `update: true` is disabled because `brew update` hangs often
-    # update: true
+    update: true
     packages:
       - gdbm
       - gmp
