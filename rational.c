@@ -2247,27 +2247,19 @@ rb_flt_rationalize(VALUE flt)
     if (INT_ZERO_P(f) || FIX2INT(n) >= 0)
         return rb_rational_new1(rb_int_lshift(f, n));
 
-#if FLT_RADIX == 2
-    {
-        VALUE two_times_f, den;
-
-        two_times_f = rb_int_mul(TWO, f);
-        den = rb_int_lshift(ONE, rb_int_minus(ONE, n));
-
-        a = rb_rational_new2(rb_int_minus(two_times_f, ONE), den);
-        b = rb_rational_new2(rb_int_plus(two_times_f, ONE), den);
-    }
-#else
     {
         VALUE radix_times_f, den;
 
         radix_times_f = rb_int_mul(INT2FIX(FLT_RADIX), f);
-        den = rb_int_pow(INT2FIX(FLT_RADIX), rb_int_minus(ONE, n));
+#if FLT_RADIX == 2 && 0
+        den = rb_int_lshift(ONE, INT2FIX(1-FIX2INT(n)));
+#else
+        den = rb_int_positive_pow(FLT_RADIX, 1-FIX2INT(n));
+#endif
 
         a = rb_rational_new2(rb_int_minus(radix_times_f, INT2FIX(FLT_RADIX - 1)), den);
         b = rb_rational_new2(rb_int_plus(radix_times_f, INT2FIX(FLT_RADIX - 1)), den);
     }
-#endif
 
     if (nurat_eqeq_p(a, b))
         return float_to_r(flt);
