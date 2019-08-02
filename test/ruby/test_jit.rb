@@ -951,17 +951,17 @@ class TestJIT < Test::Unit::TestCase
   private
 
   # The shortest way to test one proc
-  def assert_compile_once(script, result_inspect:, insns: [])
+  def assert_compile_once(script, result_inspect:, insns: [], uplevel: 1)
     if script.match?(/\A\n.+\n\z/m)
       script = script.gsub(/^/, '  ')
     else
       script = " #{script} "
     end
-    assert_eval_with_jit("p proc {#{script}}.call", stdout: "#{result_inspect}\n", success_count: 1, insns: insns, uplevel: 2)
+    assert_eval_with_jit("p proc {#{script}}.call", stdout: "#{result_inspect}\n", success_count: 1, insns: insns, uplevel: uplevel + 1)
   end
 
   # Shorthand for normal test cases
-  def assert_eval_with_jit(script, stdout: nil, success_count:, min_calls: 1, insns: [], uplevel: 3)
+  def assert_eval_with_jit(script, stdout: nil, success_count:, min_calls: 1, insns: [], uplevel: 1)
     out, err = eval_with_jit(script, verbose: 1, min_calls: min_calls)
     actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
     # Add --jit-verbose=2 logs for cl.exe because compiler's error message is suppressed
@@ -975,7 +975,7 @@ class TestJIT < Test::Unit::TestCase
     insns.each do |insn|
       unless used_insns.include?(insn)
         $stderr.puts
-        warn "'#{insn}' insn is not included in the script. Actual insns are: #{used_insns.join(' ')}\n", uplevel: uplevel
+        warn "'#{insn}' insn is not included in the script. Actual insns are: #{used_insns.join(' ')}\n", uplevel: uplevel+2
       end
       TestJIT.untested_insns.delete(insn)
     end
