@@ -1602,7 +1602,16 @@ f_ceil(VALUE x)
 }
 
 #define id_quo rb_intern("quo")
-#define f_quo(x,y) rb_funcall((x), id_quo, 1, (y))
+static VALUE
+f_quo(VALUE x, VALUE y)
+{
+    if (RB_INTEGER_TYPE_P(x))
+        return rb_int_div(x, y);
+    if (RB_FLOAT_TYPE_P(x))
+        return DBL2NUM(RFLOAT_VALUE(x) / RFLOAT_VALUE(y));
+
+    return rb_funcallv(x, id_quo, 1, &y);
+}
 
 #define f_reciprocal(x) f_quo(ONE, (x))
 
