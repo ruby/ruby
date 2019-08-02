@@ -1772,6 +1772,7 @@ VALUE rb_int_odd_p(VALUE num);
 int rb_int_positive_p(VALUE num);
 int rb_int_negative_p(VALUE num);
 VALUE rb_num_pow(VALUE x, VALUE y);
+VALUE rb_float_ceil(VALUE num, int ndigits);
 
 static inline VALUE
 rb_num_compare_with_zero(VALUE num, ID mid)

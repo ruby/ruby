@@ -2002,12 +2002,19 @@ flo_floor(int argc, VALUE *argv, VALUE num)
 static VALUE
 flo_ceil(int argc, VALUE *argv, VALUE num)
 {
-    double number, f;
     int ndigits = 0;
 
     if (rb_check_arity(argc, 0, 1)) {
 	ndigits = NUM2INT(argv[0]);
     }
+    return rb_float_ceil(num, ndigits);
+}
+
+VALUE
+rb_float_ceil(VALUE num, int ndigits)
+{
+    double number, f;
+
     number = RFLOAT_VALUE(num);
     if (number == 0.0) {
 	return ndigits > 0 ? DBL2NUM(number) : INT2FIX(0);
