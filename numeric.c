@@ -171,7 +171,9 @@ static VALUE flo_to_i(VALUE num);
 static int float_round_overflow(int ndigits, int binexp);
 static int float_round_underflow(int ndigits, int binexp);
 
-static ID id_coerce, id_div, id_divmod;
+static ID id_coerce;
+#define id_div idDiv
+#define id_divmod idDivmod
 #define id_to_i idTo_i
 #define id_eq  idEq
 #define id_cmp idCmp
@@ -3717,7 +3719,7 @@ fix_fdiv_double(VALUE x, VALUE y)
         return double_div_double(FIX2LONG(x), RFLOAT_VALUE(y));
     }
     else {
-        return NUM2DBL(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
+        return NUM2DBL(rb_num_coerce_bin(x, y, idFdiv));
     }
 }
 
@@ -5561,8 +5563,8 @@ Init_Numeric(void)
     _set_Creg(0, 0);
 #endif
     id_coerce = rb_intern("coerce");
-    id_div = rb_intern("div");
-    id_divmod = rb_intern("divmod");
+    id_to = rb_intern("to");
+    id_by = rb_intern("by");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);
@@ -5821,9 +5823,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "prev_float", flo_prev_float, 0);
     rb_define_method(rb_cFloat, "positive?", flo_positive_p, 0);
     rb_define_method(rb_cFloat, "negative?", flo_negative_p, 0);
-
-    id_to = rb_intern("to");
-    id_by = rb_intern("by");
 }
 
 #undef rb_float_value
