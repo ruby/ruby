@@ -43,13 +43,6 @@ static ID id_abs, id_idiv, id_integer_p,
 
 static VALUE nurat_to_f(VALUE self);
 
-#define fun1(n) \
-inline static VALUE \
-f_##n(VALUE x)\
-{\
-    return rb_funcall(x, id_##n, 0);\
-}
-
 inline static VALUE
 f_add(VALUE x, VALUE y)
 {
@@ -1597,7 +1590,16 @@ nurat_to_r(VALUE self)
 }
 
 #define id_ceil rb_intern("ceil")
-#define f_ceil(x) rb_funcall((x), id_ceil, 0)
+static VALUE
+f_ceil(VALUE x)
+{
+    if (RB_INTEGER_TYPE_P(x))
+        return x;
+    if (RB_FLOAT_TYPE_P(x))
+        return rb_float_ceil(x, 0);
+
+    return rb_funcall(x, id_ceil, 0);
+}
 
 #define id_quo rb_intern("quo")
 #define f_quo(x,y) rb_funcall((x), id_quo, 1, (y))
