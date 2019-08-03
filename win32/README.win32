@@ -33,12 +33,12 @@
 
 == How to compile and install
 
-1.  Execute win32\configure.bat on your build directory.
+1.  Execute <tt>win32\configure.bat</tt> on your build directory.
     You can specify the target platform as an argument.
     For example, run `<tt>configure --target=i686-mswin32</tt>'
     You can also specify the install directory.
     For example, run `<tt>configure --prefix=<install_directory></tt>'
-    Default of the install directory is /usr .
+    Default of the install directory is <tt>/usr</tt> .
     The default _PLATFORM_ is `+i386-mswin32_+_MSRTVERSION_' on 32-bit
     platforms, or `+x64-mswin64_+_MSRTVERSION_' on x64 platforms.
     _MSRTVERSION_ is the 2- or 3-digits version of the Microsoft
