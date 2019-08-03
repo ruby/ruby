@@ -67,12 +67,16 @@ to their base names.
     $(RUBYW_INSTALL_NAME).ico or rubyw.ico --> $(RUBYW_INSTALL_NAME).exe
     the others                             --> $(RUBY_SO_NAME).dll
 
-Although no icons are distributed with the ruby source or in the official
-site, you can use anything you like. For example, followings are written
-in Japanese, but you can download at least.
+Although no icons are distributed with the ruby source, you can use
+anything you like. You will be able to find many images by search engines.
+For example, followings are made from {Ruby logo
+kit}[https://cache.ruby-lang.org/pub/misc/logo/ruby-logo-kit.zip]:
 
-* http://homepage1.nifty.com/a_nakata/ruby/ or
-  {icon itself}[http://homepage1.nifty.com/a_nakata/ruby/RubyIcon.ico]
+* Small {favicon}[https://www.ruby-lang.org/favicon.ico] in the official
+  site
+
+* http://ruby.morphball.net/vit-ruby-ico_en.html or
+  {icon itself}[http://ruby.morphball.net/icon/vit-ruby.ico]
 
 == Build examples
 
