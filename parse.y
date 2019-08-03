@@ -5812,7 +5812,7 @@ yycompile(VALUE vparser, struct parser_params *p, VALUE fname, int line)
 	p->ruby_sourcefile = "(none)";
     }
     else {
-	p->ruby_sourcefile_string = rb_fstring(fname);
+	p->ruby_sourcefile_string = rb_str_new_frozen(fname);
 	p->ruby_sourcefile = StringValueCStr(fname);
     }
     p->ruby_sourceline = line - 1;
@@ -9773,7 +9773,7 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	    if (NIL_P(file))
 		file = rb_str_new(0, 0);
 	    else
-		file = rb_str_dup(file);
+		file = rb_str_dup(rb_fstring(file));
 	    node = NEW_STR(add_mark_object(p, file), loc);
 	}
 	return node;
