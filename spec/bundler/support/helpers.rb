@@ -196,7 +196,6 @@ module Spec
     end
 
     def gembin(cmd)
-      lib = File.expand_path("../../../lib", __FILE__)
       old = ENV["RUBYOPT"]
       ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -I#{lib}"
       cmd = bundled_app("bin/#{cmd}") unless cmd.to_s.include?("/")
