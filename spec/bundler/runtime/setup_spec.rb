@@ -12,7 +12,6 @@ RSpec.describe "Bundler.setup" do
       G
 
       ruby <<-RUBY
-        require 'rubygems'
         require 'bundler'
         Bundler.setup
 
@@ -35,7 +34,6 @@ RSpec.describe "Bundler.setup" do
 
     it "doesn't make all groups available" do
       ruby <<-RUBY
-        require 'rubygems'
         require 'bundler'
         Bundler.setup(:default)
 
@@ -51,7 +49,6 @@ RSpec.describe "Bundler.setup" do
 
     it "accepts string for group name" do
       ruby <<-RUBY
-        require 'rubygems'
         require 'bundler'
         Bundler.setup(:default, 'test')
 
@@ -64,7 +61,6 @@ RSpec.describe "Bundler.setup" do
 
     it "leaves all groups available if they were already" do
       ruby <<-RUBY
-        require 'rubygems'
         require 'bundler'
         Bundler.setup
         Bundler.setup(:default)
@@ -78,7 +74,6 @@ RSpec.describe "Bundler.setup" do
 
     it "leaves :default available if setup is called twice" do
       ruby <<-RUBY
-        require 'rubygems'
         require 'bundler'
         Bundler.setup(:default)
         Bundler.setup(:default, :test)
@@ -127,7 +122,6 @@ RSpec.describe "Bundler.setup" do
       ENV["RUBYLIB"] = "rubylib_dir"
 
       ruby <<-RUBY
-        require 'rubygems'
         require 'bundler'
         Bundler.setup
         puts $LOAD_PATH
@@ -150,7 +144,6 @@ RSpec.describe "Bundler.setup" do
       G
 
       ruby! <<-RUBY
-        require 'rubygems'
         require 'bundler'
         Bundler.setup
         puts $LOAD_PATH
@@ -179,7 +172,6 @@ RSpec.describe "Bundler.setup" do
       G
 
       ruby! <<-RUBY
-        require 'rubygems'
         require 'bundler/setup'
         puts $LOAD_PATH
       RUBY
@@ -201,7 +193,6 @@ RSpec.describe "Bundler.setup" do
     G
 
     ruby <<-R
-      require 'rubygems'
       require 'bundler'
 
       begin
@@ -222,7 +213,6 @@ RSpec.describe "Bundler.setup" do
     G
 
     ruby <<-R
-      require 'rubygems'
       require 'bundler'
 
       Bundler.setup
@@ -246,7 +236,6 @@ RSpec.describe "Bundler.setup" do
     G
 
     ruby <<-R
-      require 'rubygems'
       require 'bundler'
 
       Bundler.setup
@@ -300,7 +289,6 @@ RSpec.describe "Bundler.setup" do
 
         ENV["BUNDLE_GEMFILE"] = "Gemfile"
         ruby <<-R
-          require 'rubygems'
           require 'bundler'
 
           begin
@@ -456,7 +444,6 @@ RSpec.describe "Bundler.setup" do
       break_git!
 
       ruby <<-R
-        require 'rubygems'
         require 'bundler'
 
         begin
@@ -478,7 +465,6 @@ RSpec.describe "Bundler.setup" do
       break_git!
 
       ruby <<-R
-        require "rubygems"
         require "bundler"
 
         begin
@@ -937,8 +923,6 @@ end
 
     it "does not pull in system gems" do
       run <<-R
-        require 'rubygems'
-
         begin;
           require 'rack'
         rescue LoadError
@@ -1221,7 +1205,6 @@ end
 
       let(:activation_warning_hack) { strip_whitespace(<<-RUBY) }
         require #{spec_dir.join("support/hax").to_s.dump}
-        require "rubygems"
 
         if Gem::Specification.instance_methods.map(&:to_sym).include?(:activate)
           Gem::Specification.send(:alias_method, :bundler_spec_activate, :activate)
