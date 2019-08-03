@@ -6126,7 +6126,7 @@ rb_big_divmod(VALUE x, VALUE y)
 	y = rb_int2big(FIX2LONG(y));
     }
     else if (!RB_BIGNUM_TYPE_P(y)) {
-	return rb_num_coerce_bin(x, y, idDivmod);
+        return rb_num_coerce_bin(x, y, idDivmod);
     }
     bigdivmod(x, y, &div, &mod);
 
@@ -6214,7 +6214,7 @@ rb_big_fdiv_double(VALUE x, VALUE y)
 	    return big_fdiv_float(x, y);
     }
     else {
-	return NUM2DBL(rb_num_coerce_bin(x, y, idFdiv));
+        return NUM2DBL(rb_num_coerce_bin(x, y, idFdiv));
     }
     v = rb_flo_div_flo(DBL2NUM(dx), DBL2NUM(dy));
     return NUM2DBL(v);
