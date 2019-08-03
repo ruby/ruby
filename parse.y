@@ -9739,10 +9739,16 @@ past_dvar_p(struct parser_params *p, ID id)
 }
 # endif
 
+/* As Ripper#warn does not have arguments for the location, so the
+ * following messages cannot be separated */
 #define WARN_LOCATION(type) do { \
     if (p->warn_location) { \
-	rb_warn0(type" in eval may not return location in binding;" \
-		    " use Binding#source_location instead"); \
+	int line; \
+	VALUE file = rb_source_location(&line); \
+	rb_warn3(type" in eval may not return location in binding;" \
+		 " use Binding#source_location instead\n" \
+		 "%"PRIsWARN":%d: warning: in `%"PRIsWARN"'", \
+		 file, WARN_I(line), rb_id2str(rb_frame_this_func())); \
     } \
 } while (0)
 
