@@ -217,35 +217,6 @@ module Test
       end
 
       # :call-seq:
-      #   assert_throw( tag, failure_message = nil, &block )
-      #
-      #Fails unless the given block throws +tag+, returns the caught
-      #value otherwise.
-      #
-      #An optional failure message may be provided as the final argument.
-      #
-      #    tag = Object.new
-      #    assert_throw(tag, "#{tag} was not thrown!") do
-      #      throw tag
-      #    end
-      def assert_throw(tag, msg = nil)
-        ret = catch(tag) do
-          begin
-            yield(tag)
-          rescue UncaughtThrowError => e
-            thrown = e.tag
-          end
-          msg = message(msg) {
-            "Expected #{mu_pp(tag)} to have been thrown"\
-            "#{%Q[, not #{thrown}] if thrown}"
-          }
-          assert(false, msg)
-        end
-        assert(true)
-        ret
-      end
-
-      # :call-seq:
       #   assert_equal( expected, actual, failure_message = nil )
       #
       #Tests if +expected+ is equal to +actual+.
@@ -549,14 +520,6 @@ EOT
         end
         out, _, status = EnvUtil.invoke_ruby(child_env + %W'-W0', testsrc, true, :merge_to_stdout, **opt)
         assert !status.signaled?, FailDesc[status, message, out]
-      end
-
-      def assert_ruby_status(args, test_stdin="", message=nil, **opt)
-        out, _, status = EnvUtil.invoke_ruby(args, test_stdin, true, :merge_to_stdout, **opt)
-        desc = FailDesc[status, message, out]
-        assert(!status.signaled?, desc)
-        message ||= "ruby exit status is not success:"
-        assert(status.success?, desc)
       end
 
       def assert_warning(pat, msg = nil)
