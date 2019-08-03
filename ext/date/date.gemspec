@@ -18,6 +18,4 @@ Gem::Specification.new do |s|
   s.email = [nil]
   s.homepage = "https://github.com/ruby/date"
   s.license = "BSD-2-Clause"
-
-  s.add_development_dependency "rake-compiler"
 end
