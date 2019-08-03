@@ -91,7 +91,7 @@ kit}[https://cache.ruby-lang.org/pub/misc/logo/ruby-logo-kit.zip]:
     cd \ruby
     win32\configure --prefix=/usr/local
     nmake
-    nmake exam
+    nmake check
     nmake install
 
 * Build on the relative directory from the ruby source directory.
@@ -107,7 +107,7 @@ kit}[https://cache.ruby-lang.org/pub/misc/logo/ruby-logo-kit.zip]:
     cd mswin32
     ..\win32\configure --prefix=/usr/local
     nmake
-    nmake exam
+    nmake check
     nmake install
 
 * Build on the different drive.
@@ -121,7 +121,7 @@ kit}[https://cache.ruby-lang.org/pub/misc/logo/ruby-logo-kit.zip]:
     cd D:\build\ruby
     C:\src\ruby\win32\configure --prefix=/usr/local
     nmake
-    nmake exam
+    nmake check
     nmake install DESTDIR=C:
 
 * Build x64 version (requires native x64 VC++ compiler)
@@ -135,7 +135,7 @@ kit}[https://cache.ruby-lang.org/pub/misc/logo/ruby-logo-kit.zip]:
     cd \ruby
     win32\configure --prefix=/usr/local --target=x64-mswin64
     nmake
-    nmake exam
+    nmake check
     nmake install
 
 == Bugs
