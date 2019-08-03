@@ -53,7 +53,7 @@
 
 4.  Run `<tt>nmake</tt>'
 
-5.  Run `<tt>nmake exam</tt>'
+5.  Run `<tt>nmake check</tt>'
 
 6.  Run `<tt>nmake install</tt>'
 
