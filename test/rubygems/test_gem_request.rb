@@ -261,7 +261,7 @@ class TestGemRequest < Gem::TestCase
   def test_user_agent_engine
     util_save_version
 
-    Object.send :remove_const, :RUBY_ENGINE if defined?(RUBY_ENGINE)
+    Object.send :remove_const, :RUBY_ENGINE
     Object.send :const_set,    :RUBY_ENGINE, 'vroom'
 
     ua = make_request(@uri, nil, nil, nil).user_agent
@@ -274,7 +274,7 @@ class TestGemRequest < Gem::TestCase
   def test_user_agent_engine_ruby
     util_save_version
 
-    Object.send :remove_const, :RUBY_ENGINE if defined?(RUBY_ENGINE)
+    Object.send :remove_const, :RUBY_ENGINE
     Object.send :const_set,    :RUBY_ENGINE, 'ruby'
 
     ua = make_request(@uri, nil, nil, nil).user_agent
@@ -460,7 +460,7 @@ ERROR:  Certificate  is an invalid CA certificate
   end
 
   def util_restore_version
-    Object.send :remove_const, :RUBY_ENGINE if defined?(RUBY_ENGINE)
+    Object.send :remove_const, :RUBY_ENGINE
     Object.send :const_set,    :RUBY_ENGINE, @orig_RUBY_ENGINE if
       defined?(@orig_RUBY_ENGINE)
 
@@ -473,7 +473,7 @@ ERROR:  Certificate  is an invalid CA certificate
   end
 
   def util_save_version
-    @orig_RUBY_ENGINE     = RUBY_ENGINE if defined? RUBY_ENGINE
+    @orig_RUBY_ENGINE     = RUBY_ENGINE
     @orig_RUBY_PATCHLEVEL = RUBY_PATCHLEVEL
     @orig_RUBY_REVISION   = RUBY_REVISION if defined? RUBY_REVISION
   end

@@ -285,7 +285,7 @@ class Gem::Request
     end
     ua << ")"
 
-    ua << " #{RUBY_ENGINE}" if defined?(RUBY_ENGINE) and RUBY_ENGINE != 'ruby'
+    ua << " #{RUBY_ENGINE}" if RUBY_ENGINE != 'ruby'
 
     ua
   end
