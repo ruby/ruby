@@ -129,15 +129,8 @@ module Gem
     end
   end
 
-  ##
-  # A wrapper around RUBY_ENGINE const that may not be defined
-
   def self.ruby_engine
-    if defined? RUBY_ENGINE
-      RUBY_ENGINE
-    else
-      'ruby'
-    end
+    RUBY_ENGINE
   end
 
   ##
