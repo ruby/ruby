@@ -503,11 +503,11 @@ class TestRequire < Test::Unit::TestCase
   end
 
   def test_race_exception
-    skip 'require has had a race condition since 5931857281ce45c1c277aa86d1588119ab00a955' if RubyVM::MJIT.enabled?
     bug5754 = '[ruby-core:41618]'
     path = nil
     stderr = $stderr
     verbose = $VERBOSE
+    skip 'require has had a race condition since 5931857281ce45c1c277aa86d1588119ab00a955' if RubyVM::MJIT.enabled?
     Tempfile.create(%w"bug5754 .rb") {|tmp|
       path = tmp.path
       tmp.print "#{<<~"begin;"}\n#{<<~"end;"}"
