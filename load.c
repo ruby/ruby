@@ -991,7 +991,7 @@ rb_resolve_feature_path(VALUE klass, VALUE fname)
         sym = ID2SYM(rb_intern("so"));
         break;
       default:
-        load_failed(fname);
+        return Qnil;
     }
 
     return rb_ary_new_from_args(2, sym, path);
