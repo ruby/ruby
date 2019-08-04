@@ -857,5 +857,9 @@ class TestRequire < Test::Unit::TestCase
       $:.replace(paths)
       $".replace(loaded)
     end
+
+    def test_resolve_feature_path_with_missing_feature
+      assert_nil($LOAD_PATH.resolve_feature_path("superkalifragilisticoespialidoso"))
+    end
   end
 end
