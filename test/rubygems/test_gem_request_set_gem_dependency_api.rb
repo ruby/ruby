@@ -34,21 +34,22 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     Gem.instance_variable_set :@ruby_version, Gem::Version.new(version)
 
-    yield
+    begin
+      yield
+    ensure
+      Object.send :remove_const, :RUBY_ENGINE             if name
+      Object.send :remove_const, new_engine_version_const if version
 
-  ensure
-    Object.send :remove_const, :RUBY_ENGINE             if name
-    Object.send :remove_const, new_engine_version_const if version
+      Object.send :remove_const, engine_version_const     if name == 'ruby' and
+        Object.const_defined? engine_version_const
 
-    Object.send :remove_const, engine_version_const     if name == 'ruby' and
-      Object.const_defined? engine_version_const
+      Object.const_set :RUBY_ENGINE,         engine         if engine
+      Object.const_set engine_version_const, engine_version unless
+        Object.const_defined? engine_version_const
 
-    Object.const_set :RUBY_ENGINE,         engine         if engine
-    Object.const_set engine_version_const, engine_version unless
-      Object.const_defined? engine_version_const
-
-    Gem.send :remove_instance_variable, :@ruby_version if
-      Gem.instance_variables.include? :@ruby_version
+      Gem.send :remove_instance_variable, :@ruby_version if
+        Gem.instance_variables.include? :@ruby_version
+    end
   end
 
   def test_gempspec_with_multiple_runtime_deps
