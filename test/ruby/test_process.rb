@@ -688,7 +688,7 @@ class TestProcess < Test::Unit::TestCase
         system("cat", :in => "fifo")
       EOS
         assert_equal("start\n", io.gets)
-        sleep 0.2 # wait for the child to stop at opening "fifo"
+        sleep 3 # wait for the child to stop at opening "fifo"
         Process.kill(:USR1, io.pid)
         assert_equal("trap\n", io.readpartial(8))
         File.write("fifo", "ok\n")
