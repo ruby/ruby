@@ -1161,7 +1161,7 @@ opt_eq
 /* This instruction can compare a string with non-string.  This
  * (somewhat) coerces the non-string into a string, via a method
  * call. */
-// attr bool leaf = false; /* has rb_str_equal() */
+// attr bool leaf = true;
 {
     val = opt_eq_func(recv, obj, ci, cc);
 
@@ -1177,7 +1177,7 @@ opt_neq
 (VALUE recv, VALUE obj)
 (VALUE val)
 /* Same discussion as opt_eq. */
-// attr bool leaf = false; /* has rb_str_equal() */
+// attr bool leaf = true;
 {
     val = vm_opt_neq(ci, cc, ci_eq, cc_eq, recv, obj);
 
