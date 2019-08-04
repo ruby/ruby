@@ -2125,6 +2125,22 @@ VALUE rb_str_eql(VALUE str1, VALUE str2);
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 const char *ruby_escaped_char(int c);
 
+/* expect tail call optimization */
+static inline VALUE
+rb_str_eql_internal(const VALUE str1, const VALUE str2)
+{
+    const long len = RSTRING_LEN(str1);
+    const char *ptr1, *ptr2;
+
+    if (len != RSTRING_LEN(str2)) return Qfalse;
+    if (!rb_str_comparable(str1, str2)) return Qfalse;
+    if ((ptr1 = RSTRING_PTR(str1)) == (ptr2 = RSTRING_PTR(str2)))
+        return Qtrue;
+    if (memcmp(ptr1, ptr2, len) == 0)
+        return Qtrue;
+    return Qfalse;
+}
+
 /* symbol.c */
 #ifdef RUBY_ENCODING_H
 VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc);

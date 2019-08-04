@@ -1506,10 +1506,11 @@ opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 	    return rb_float_equal(recv, obj);
 	}
     }
-    else if (BUILTIN_CLASS_P(recv, rb_cString)) {
-	if (EQ_UNREDEFINED_P(STRING)) {
-	    return rb_str_equal(recv, obj);
-	}
+    else if (BUILTIN_CLASS_P(recv, rb_cString) && EQ_UNREDEFINED_P(STRING)) {
+        if (recv == obj) return Qtrue;
+        if (RB_TYPE_P(obj, T_STRING)) {
+            return rb_str_eql_internal(recv, obj);
+        }
     }
 
   fallback:
