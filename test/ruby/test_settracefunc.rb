@@ -2115,4 +2115,16 @@ class TestSetTraceFunc < Test::Unit::TestCase
     }
     assert_equal [], events
   end
+
+  def test_return_event_with_rescue
+    obj = Object.new
+    def obj.example
+      1 if 1 == 1
+    rescue
+    end
+    ok = false
+    tp = TracePoint.new(:return) {ok = true}
+    tp.enable {obj.example}
+    assert ok, "return event should be emitted"
+  end
 end
