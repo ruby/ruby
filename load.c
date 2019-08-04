@@ -1015,7 +1015,7 @@ rb_require_internal(VALUE fname, int safe)
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, RSTRING_PTR(fname));
 
 	if (found) {
-	    if (!path || !(path = rb_fstring(path), ftptr = load_lock(RSTRING_PTR(path)))) {
+            if (!path || !(path = rb_fstring(path), ftptr = load_lock(RSTRING_PTR(path)))) {
 		result = 0;
 	    }
 	    else if (!*ftptr) {
