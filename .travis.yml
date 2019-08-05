@@ -361,6 +361,7 @@ env:
   - &baseruby
     name: "BASERUBY: Ruby 1.9.3"
     os: linux
+    <<: *gcc-8
     <<: *make-test-only
     dist: trusty # xenial no longer has ruby-1.9.3
     language: ruby
