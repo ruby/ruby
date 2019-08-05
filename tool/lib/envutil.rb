@@ -150,6 +150,7 @@ module EnvUtil
         timeout_error = nil
       else
         status = terminate(pid, signal, opt[:pgroup], reprieve)
+        terminated = Time.now
       end
       stdout = th_stdout.value if capture_stdout
       stderr = th_stderr.value if capture_stderr && capture_stderr != :merge_to_stdout
@@ -161,7 +162,7 @@ module EnvUtil
       if timeout_error
         bt = caller_locations
         msg = "execution of #{bt.shift.label} expired timeout (#{timeout} sec)"
-        msg = Test::Unit::Assertions::FailDesc[status, msg, [stdout, stderr].join("\n")].()
+        msg = failure_description(status, terminated, msg, [stdout, stderr].join("\n"))
         raise timeout_error, msg, bt.map(&:to_s)
       end
       return stdout, stderr, status
@@ -284,6 +285,37 @@ module EnvUtil
   else
     def self.diagnostic_reports(signame, pid, now)
     end
+  end
+
+  def self.failure_description(status, now, message = "", out = "")
+    pid = status.pid
+    if signo = status.termsig
+      signame = Signal.signame(signo)
+      sigdesc = "signal #{signo}"
+    end
+    log = diagnostic_reports(signame, pid, now)
+    if signame
+      sigdesc = "SIG#{signame} (#{sigdesc})"
+    end
+    if status.coredump?
+      sigdesc = "#{sigdesc} (core dumped)"
+    end
+    full_message = ''.dup
+    message = message.call if Proc === message
+    if message and !message.empty?
+      full_message << message << "\n"
+    end
+    full_message << "pid #{pid}"
+    full_message << " exit #{status.exitstatus}" if status.exited?
+    full_message << " killed by #{sigdesc}" if sigdesc
+    if out and !out.empty?
+      full_message << "\n" << out.b.gsub(/^/, '| ')
+      full_message.sub!(/(?<!\n)\z/, "\n")
+    end
+    if log
+      full_message << "Diagnostic reports:\n" << log.b.gsub(/^/, '| ')
+    end
+    full_message
   end
 
   def self.gc_stress_to_class?

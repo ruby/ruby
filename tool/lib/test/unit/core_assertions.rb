@@ -41,38 +41,10 @@ module Test
       end
 
       FailDesc = proc do |status, message = "", out = ""|
-        pid = status.pid
         now = Time.now
-        faildesc = proc do
-          if signo = status.termsig
-            signame = Signal.signame(signo)
-            sigdesc = "signal #{signo}"
-          end
-          log = EnvUtil.diagnostic_reports(signame, pid, now)
-          if signame
-            sigdesc = "SIG#{signame} (#{sigdesc})"
-          end
-          if status.coredump?
-            sigdesc = "#{sigdesc} (core dumped)"
-          end
-          full_message = ''.dup
-          message = message.call if Proc === message
-          if message and !message.empty?
-            full_message << message << "\n"
-          end
-          full_message << "pid #{pid}"
-          full_message << " exit #{status.exitstatus}" if status.exited?
-          full_message << " killed by #{sigdesc}" if sigdesc
-          if out and !out.empty?
-            full_message << "\n" << out.b.gsub(/^/, '| ')
-            full_message.sub!(/(?<!\n)\z/, "\n")
-          end
-          if log
-            full_message << "Diagnostic reports:\n" << log.b.gsub(/^/, '| ')
-          end
-          full_message
+        proc do
+          EnvUtil.failure_description(status, now, message, out)
         end
-        faildesc
       end
 
       def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil,
