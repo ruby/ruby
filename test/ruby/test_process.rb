@@ -258,7 +258,7 @@ class TestProcess < Test::Unit::TestCase
       end
     end;
 
-    assert_raise(ArgumentError, /rlimit_cpu/) {
+    assert_raise_with_message(ArgumentError, /rlimit_cpu/) {
       system(RUBY, '-e', 'exit', "rlimit_cpu\0".to_sym => 3600)
     }
   end
