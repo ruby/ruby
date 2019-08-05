@@ -24,30 +24,15 @@ dist: xenial
 git:
   quiet: true
 
-addons:
-  apt:
-    config:
-      retries: true
-    update: true
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - gcc-8
-      - libffi-dev
-      - libgdbm-dev
-      - libgmp-dev
-      - libjemalloc-dev
-      - libncurses5-dev
-      - libncursesw5-dev
-      - libreadline6-dev
-      - libssl-dev
-      - libyaml-dev
-      - openssl
-      - valgrind
-      - zlib1g-dev
-  # # Travis homebrew addon is unstable for now. Use `before_install` instead.
-  # # https://travis-ci.community/t/osx-homebrew-addons-module-not-as-reliable-as-claimed/4054
-  # homebrew:
+# # Not using addons for stability. See `before_install` of `&linux` and `&osx`.
+# addons:
+#   # Travis apt addon is unstable even with `config.retries: true`.
+#   # https://github.com/travis-ci/travis-build/pull/1712
+#   apt:
+#
+#   # Travis homebrew addon is unstable for now. Use `before_install` instead.
+#   # https://travis-ci.community/t/osx-homebrew-addons-module-not-as-reliable-as-claimed/4054
+#   homebrew:
 
 cache:
   ccache: true
@@ -85,6 +70,24 @@ env:
   - &linux
     os: linux
     compiler: gcc-8
+    before_install:
+      - sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+      - travis_apt_get_update
+      - |-
+        sudo -E apt-get -yq --no-install-suggests --no-install-recommends $(travis_apt_get_options) install \
+          gcc-8 \
+          libffi-dev \
+          libgdbm-dev \
+          libgmp-dev \
+          libjemalloc-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libreadline6-dev \
+          libssl-dev \
+          libyaml-dev \
+          openssl \
+          valgrind \
+          zlib1g-dev
 
   - &osx
     os: osx
