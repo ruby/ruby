@@ -10190,7 +10190,7 @@ static const rb_data_type_t weakmap_type = {
 	wmap_mark,
 	wmap_free,
 	wmap_memsize,
-	wmap_compact,
+        wmap_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
