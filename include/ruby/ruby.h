@@ -2337,45 +2337,45 @@ ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mi
 #define __has_attribute(x) 0
 #endif
 # if __has_attribute(diagnose_if)
-#  define rb_scan_args_count_end(fmt, ofs, varc, vari) \
+#  define rb_scan_args_count_end(fmt, ofs, vari) \
      (fmt[ofs] ? rb_scan_args_bad_format(fmt) : (vari))
 # else
-#  define rb_scan_args_count_end(fmt, ofs, varc, vari) \
+#  define rb_scan_args_count_end(fmt, ofs, vari) \
      ((vari)/(!fmt[ofs] || rb_scan_args_bad_format(fmt)))
 # endif
 
-# define rb_scan_args_count_block(fmt, ofs, varc, vari) \
+# define rb_scan_args_count_block(fmt, ofs, vari) \
     (fmt[ofs]!='&' ? \
-     rb_scan_args_count_end(fmt, ofs, varc, vari) : \
-     rb_scan_args_count_end(fmt, ofs+1, varc, vari+1))
+     rb_scan_args_count_end(fmt, ofs, vari) : \
+     rb_scan_args_count_end(fmt, ofs+1, vari+1))
 
-# define rb_scan_args_count_hash(fmt, ofs, varc, vari) \
+# define rb_scan_args_count_hash(fmt, ofs, vari) \
     (fmt[ofs]!=':' ? \
-     rb_scan_args_count_block(fmt, ofs, varc, vari) : \
-     rb_scan_args_count_block(fmt, ofs+1, varc, vari+1))
+     rb_scan_args_count_block(fmt, ofs, vari) : \
+     rb_scan_args_count_block(fmt, ofs+1, vari+1))
 
-# define rb_scan_args_count_trail(fmt, ofs, varc, vari) \
+# define rb_scan_args_count_trail(fmt, ofs, vari) \
     (!rb_scan_args_isdigit(fmt[ofs]) ? \
-     rb_scan_args_count_hash(fmt, ofs, varc, vari) : \
-     rb_scan_args_count_hash(fmt, ofs+1, varc, vari+(fmt[ofs]-'0')))
+     rb_scan_args_count_hash(fmt, ofs, vari) : \
+     rb_scan_args_count_hash(fmt, ofs+1, vari+(fmt[ofs]-'0')))
 
-# define rb_scan_args_count_var(fmt, ofs, varc, vari) \
+# define rb_scan_args_count_var(fmt, ofs, vari) \
     (fmt[ofs]!='*' ? \
-     rb_scan_args_count_trail(fmt, ofs, varc, vari) : \
-     rb_scan_args_count_trail(fmt, ofs+1, varc, vari+1))
+     rb_scan_args_count_trail(fmt, ofs, vari) : \
+     rb_scan_args_count_trail(fmt, ofs+1, vari+1))
 
-# define rb_scan_args_count_opt(fmt, ofs, varc, vari) \
+# define rb_scan_args_count_opt(fmt, ofs, vari) \
     (!rb_scan_args_isdigit(fmt[1]) ? \
-     rb_scan_args_count_var(fmt, ofs, varc, vari) : \
-     rb_scan_args_count_var(fmt, ofs+1, varc, vari+fmt[ofs]-'0'))
+     rb_scan_args_count_var(fmt, ofs, vari) : \
+     rb_scan_args_count_var(fmt, ofs+1, vari+fmt[ofs]-'0'))
 
-# define rb_scan_args_count(fmt, varc) \
+# define rb_scan_args_count(fmt) \
     (!rb_scan_args_isdigit(fmt[0]) ? \
-      rb_scan_args_count_var(fmt, 0, varc, 0) : \
-      rb_scan_args_count_opt(fmt, 1, varc, fmt[0]-'0'))
+      rb_scan_args_count_var(fmt, 0, 0) : \
+      rb_scan_args_count_opt(fmt, 1, fmt[0]-'0'))
 
 # define rb_scan_args_verify_count(fmt, varc) \
-    ((varc)/(rb_scan_args_count(fmt, varc) == (varc) || \
+    ((varc)/(rb_scan_args_count(fmt) == (varc) || \
      rb_scan_args_length_mismatch(fmt, varc)))
 
 # if defined(__has_attribute) && __has_attribute(diagnose_if)
@@ -2516,8 +2516,8 @@ rb_scan_args_set(int argc, const VALUE *argv,
 		 int f_var, int f_hash, int f_block,
 		 VALUE *vars[], RB_UNUSED_VAR(char *fmt), RB_UNUSED_VAR(int varc))
 # if defined(__has_attribute) && __has_attribute(diagnose_if)
-    __attribute__((diagnose_if(rb_scan_args_count(fmt,varc)==0,"bad scan arg format","error")))
-    __attribute__((diagnose_if(rb_scan_args_count(fmt,varc)!=varc,"variable argument length doesn't match","error")))
+    __attribute__((diagnose_if(rb_scan_args_count(fmt)==0,"bad scan arg format","error")))
+    __attribute__((diagnose_if(rb_scan_args_count(fmt)!=varc,"variable argument length doesn't match","error")))
 # endif
 {
     int i, argi = 0, vari = 0, last_idx = -1;
