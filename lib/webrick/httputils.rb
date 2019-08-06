@@ -162,10 +162,7 @@ module WEBrick
         end
       }
       header.each{|key, values|
-        values.each{|value|
-          value.strip!
-          value.gsub!(/\s+/, " ")
-        }
+        values.each(&:strip!)
       }
       header
     end

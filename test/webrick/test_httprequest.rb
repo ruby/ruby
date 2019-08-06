@@ -135,7 +135,7 @@ GET /
     assert_equal("", req.script_name)
     assert_equal("/foo/baz", req.path_info)
     assert_equal("9", req['content-length'])
-    assert_equal("FOO BAR BAZ", req['user-agent'])
+    assert_equal("FOO   BAR BAZ", req['user-agent'])
     assert_equal("hogehoge\n", req.body)
   end
 
