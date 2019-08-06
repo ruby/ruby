@@ -95,10 +95,6 @@ module Spec
       run(cmd, *args)
     end
 
-    def lib
-      root.join("lib")
-    end
-
     def spec
       spec_dir.to_s
     end

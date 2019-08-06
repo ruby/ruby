@@ -104,6 +104,10 @@ module Spec
       tmp("libs", *args)
     end
 
+    def lib
+      root.join("lib")
+    end
+
     def global_plugin_gem(*args)
       home ".bundle", "plugin", "gems", *args
     end
