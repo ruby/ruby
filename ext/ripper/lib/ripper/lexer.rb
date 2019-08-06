@@ -161,7 +161,7 @@ class Ripper
     def on_heredoc_beg(tok)
       @stack.push @buf
       buf = []
-      @buf << buf
+      @buf.push buf
       @buf = buf
       @buf.push Elem.new([lineno(), column()], __callee__, tok, state())
     end
