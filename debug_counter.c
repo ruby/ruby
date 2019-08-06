@@ -44,6 +44,13 @@ rb_debug_counter_show_results(const char *msg)
 }
 
 VALUE
+rb_debug_counter_show(void)
+{
+    rb_debug_counter_show_results("method call");
+    return Qnil;
+}
+
+VALUE
 rb_debug_counter_reset(void)
 {
     for (int i = 0; i < RB_DEBUG_COUNTER_MAX; i++) {

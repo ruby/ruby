@@ -2916,6 +2916,7 @@ Init_VM(void)
     rb_define_singleton_method(rb_cRubyVM, "stat", vm_stat, -1);
 #if USE_DEBUG_COUNTER
     rb_define_singleton_method(rb_cRubyVM, "reset_debug_counters", rb_debug_counter_reset, 0);
+    rb_define_singleton_method(rb_cRubyVM, "show_debug_counters", rb_debug_counter_show, 0);
 #endif
 
     /* FrozenCore (hidden) */
