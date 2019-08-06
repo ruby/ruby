@@ -10207,6 +10207,14 @@ wmap_allocate(VALUE klass)
 }
 
 static int
+wmap_live_p(rb_objspace_t *objspace, VALUE obj)
+{
+    if (!is_id_value(objspace, obj)) return FALSE;
+    if (!is_live_object(objspace, obj)) return FALSE;
+    return TRUE;
+}
+
+static int
 wmap_final_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
     VALUE wmap, *ptr, size, i, j;
@@ -10312,7 +10320,7 @@ wmap_each_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
     VALUE obj = (VALUE)val;
-    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
+    if (wmap_live_p(objspace, obj)) {
 	rb_yield_values(2, (VALUE)key, obj);
     }
     return ST_CONTINUE;
@@ -10335,7 +10343,7 @@ wmap_each_key_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
     VALUE obj = (VALUE)val;
-    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
+    if (wmap_live_p(objspace, obj)) {
 	rb_yield((VALUE)key);
     }
     return ST_CONTINUE;
@@ -10358,7 +10366,7 @@ wmap_each_value_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)arg;
     VALUE obj = (VALUE)val;
-    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
+    if (wmap_live_p(objspace, obj)) {
 	rb_yield(obj);
     }
     return ST_CONTINUE;
@@ -10383,7 +10391,7 @@ wmap_keys_i(st_data_t key, st_data_t val, st_data_t arg)
     rb_objspace_t *objspace = argp->objspace;
     VALUE ary = argp->value;
     VALUE obj = (VALUE)val;
-    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
+    if (wmap_live_p(objspace, obj)) {
 	rb_ary_push(ary, (VALUE)key);
     }
     return ST_CONTINUE;
@@ -10410,7 +10418,7 @@ wmap_values_i(st_data_t key, st_data_t val, st_data_t arg)
     rb_objspace_t *objspace = argp->objspace;
     VALUE ary = argp->value;
     VALUE obj = (VALUE)val;
-    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
+    if (wmap_live_p(objspace, obj)) {
 	rb_ary_push(ary, obj);
     }
     return ST_CONTINUE;
@@ -10479,8 +10487,7 @@ wmap_aref(VALUE self, VALUE wmap)
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
     if (!st_lookup(w->wmap2obj, (st_data_t)wmap, &data)) return Qnil;
     obj = (VALUE)data;
-    if (!is_id_value(objspace, obj)) return Qnil;
-    if (!is_live_object(objspace, obj)) return Qnil;
+    if (!wmap_live_p(objspace, obj)) return Qnil;
     return obj;
 }
 
