@@ -350,6 +350,7 @@ rb_debug_counter_add(enum rb_debug_counter_type type, int add, int cond)
 }
 
 VALUE rb_debug_counter_reset(void);
+VALUE rb_debug_counter_show(void);
 
 #define RB_DEBUG_COUNTER_INC(type)                rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, 1)
 #define RB_DEBUG_COUNTER_INC_UNLESS(type, cond) (!rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, !(cond)))
