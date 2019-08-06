@@ -16,12 +16,11 @@ module Spec
     }.freeze
 
     DEPS = {
-      # artifice doesn't support rack 2.x now.
-      "rack" => "< 2.0",
+      "rack" => "~> 2.0",
       "rack-test" => "~> 1.1",
       "artifice" => "~> 0.6.0",
       "compact_index" => "~> 0.11.0",
-      "sinatra" => "~> 1.4.7",
+      "sinatra" => "~> 2.0",
       # Rake version has to be consistent for tests to pass
       "rake" => "12.3.2",
       "builder" => "~> 3.2",
