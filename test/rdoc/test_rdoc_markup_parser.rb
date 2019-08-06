@@ -22,15 +22,6 @@ class TestRDocMarkupParser < RDoc::TestCase
     assert_equal @RM::Heading.new(3, 'heading three'), parser.build_heading(3)
   end
 
-  def test_char_pos
-    parser = @RMP.new
-    s = parser.setup_scanner 'cät'
-
-    s.scan(/\S+/)
-
-    assert_equal 3, parser.char_pos(s.pos)
-  end
-
   def test_get
     parser = util_parser
 
@@ -1645,15 +1636,6 @@ Example heading:
     ]
 
     assert_equal expected, @RMP.tokenize(str)
-  end
-
-  def test_token_pos
-    parser = @RMP.new
-    s = parser.setup_scanner 'cät'
-
-    s.scan(/\S+/)
-
-    assert_equal [3, 0], parser.token_pos(s.pos)
   end
 
   # HACK move to Verbatim test case
