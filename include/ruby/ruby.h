@@ -2324,11 +2324,11 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 		      ((VALUE*[]){__VA_ARGS__})), \
         rb_scan_args(argc,argvp,fmt,##__VA_ARGS__))
 # if HAVE_ATTRIBUTE_ERRORFUNC
-ERRORFUNC(("bad scan arg format"), int rb_scan_args_bad_format(const char*));
-ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mismatch(const char*,int));
+ERRORFUNC(("bad scan arg format"), void rb_scan_args_bad_format(const char*));
+ERRORFUNC(("variable argument length doesn't match"), void rb_scan_args_length_mismatch(const char*,int));
 # else
-#   define rb_scan_args_bad_format(fmt) 0
-#   define rb_scan_args_length_mismatch(fmt, varc) 0
+#   define rb_scan_args_bad_format(fmt) ((void)0)
+#   define rb_scan_args_length_mismatch(fmt, varc) ((void)0)
 # endif
 
 # define rb_scan_args_isdigit(c) ((unsigned char)((c)-'0')<10)
@@ -2378,7 +2378,7 @@ ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mi
      rb_scan_args_bad_format(fmt) : \
      sizeof(char[1-2*(rb_scan_args_count(fmt)!=(varc))])!=1 ? \
      rb_scan_args_length_mismatch(fmt, varc) : \
-     (int)(varc))
+     (void)0)
 # endif
 
 ALWAYS_INLINE(static int rb_scan_args_lead_p(const char *fmt));
