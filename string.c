@@ -1952,6 +1952,37 @@ rb_str_plus(VALUE str1, VALUE str2)
     return str3;
 }
 
+/* A variant of rb_str_plus that does not raise but return Qundef instead. */
+MJIT_FUNC_EXPORTED VALUE
+rb_str_opt_plus(VALUE str1, VALUE str2)
+{
+    assert(RBASIC_CLASS(str1) == rb_cString);
+    assert(RBASIC_CLASS(str2) == rb_cString);
+    long len1, len2;
+    MAYBE_UNUSED(char) *ptr1, *ptr2;
+    RSTRING_GETMEM(str1, ptr1, len1);
+    RSTRING_GETMEM(str2, ptr2, len2);
+    int enc1 = rb_enc_get_index(str1);
+    int enc2 = rb_enc_get_index(str2);
+
+    if (enc1 < 0) {
+        return Qundef;
+    }
+    else if (enc2 < 0) {
+        return Qundef;
+    }
+    else if (enc1 != enc2) {
+        return Qundef;
+    }
+    else if (len1 > LONG_MAX - len2) {
+        return Qundef;
+    }
+    else {
+        return rb_str_plus(str1, str2);
+    }
+
+}
+
 /*
  *  call-seq:
  *     str * integer   -> new_str
