@@ -113,12 +113,7 @@ RSpec.describe "Bundler.setup" do
   context "load order" do
     def clean_load_path(lp)
       without_bundler_load_path = ruby!("puts $LOAD_PATH").split("\n")
-      lp = lp - [
-        bundler_path.to_s,
-        bundler_path.join("gems/bundler-#{Bundler::VERSION}/lib").to_s,
-        tmp("rubygems/lib").to_s,
-        root.join("../lib").expand_path.to_s,
-      ] - without_bundler_load_path
+      lp -= without_bundler_load_path
       lp.map! {|p| p.sub(/^#{Regexp.union system_gem_path.to_s, default_bundle_path.to_s}/i, "") }
     end
 
