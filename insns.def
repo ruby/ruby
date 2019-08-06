@@ -1080,9 +1080,6 @@ opt_plus
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
-/* Array + anything can be handled inside of opt_plus, and that
- * anything is converted into array using #to_ary. */
-// attr bool leaf = false; /* has rb_to_array_type() */
 {
     val = vm_opt_plus(recv, obj);
 
