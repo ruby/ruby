@@ -804,7 +804,6 @@ end
   context "with bundler is located in symlinked GEM_HOME" do
     let(:gem_home) { Dir.mktmpdir }
     let(:symlinked_gem_home) { Tempfile.new("gem_home").path }
-    let(:bundler_dir) { ruby_core? ? File.expand_path("../../../..", __FILE__) : File.expand_path("../../..", __FILE__) }
     let(:full_name) { "bundler-#{Bundler::VERSION}" }
 
     before do
@@ -814,9 +813,9 @@ end
       Dir.mkdir(gems_dir)
       Dir.mkdir(specifications_dir)
 
-      FileUtils.ln_s(bundler_dir, File.join(gems_dir, full_name))
+      FileUtils.ln_s(root, File.join(gems_dir, full_name))
 
-      gemspec_file = ruby_core? ? "#{bundler_dir}/lib/bundler/bundler.gemspec" : "#{bundler_dir}/bundler.gemspec"
+      gemspec_file = ruby_core? ? "#{root}/lib/bundler/bundler.gemspec" : "#{root}/bundler.gemspec"
       gemspec = File.binread(gemspec_file).
                 sub("Bundler::VERSION", %("#{Bundler::VERSION}"))
       gemspec = gemspec.lines.reject {|line| line =~ %r{lib/bundler/version} }.join
