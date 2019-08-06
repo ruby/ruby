@@ -5687,7 +5687,9 @@ Init_Numeric(void)
     rb_undef_method(CLASS_OF(rb_cFloat), "new");
 
     /*
-     *  Represents the rounding mode for floating point addition.
+     *  Deprecated, do not use.
+     *
+     *  Represents the rounding mode for floating point addition at the start time.
      *
      *  Usually defaults to 1, rounding to the nearest number.
      *
@@ -5700,6 +5702,7 @@ Init_Numeric(void)
      *	3::	Rounding towards negative infinity
      */
     rb_define_const(rb_cFloat, "ROUNDS", INT2FIX(FLT_ROUNDS));
+    rb_deprecate_constant(rb_cFloat, "ROUNDS");
     /*
      *	The base of the floating point, or number of unique digits used to
      *	represent the number.
