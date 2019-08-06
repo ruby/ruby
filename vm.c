@@ -2899,6 +2899,9 @@ static VALUE usage_analysis_register_stop(VALUE self);
 static VALUE usage_analysis_insn_running(VALUE self);
 static VALUE usage_analysis_operand_running(VALUE self);
 static VALUE usage_analysis_register_running(VALUE self);
+static VALUE usage_analysis_insn_clear(VALUE self);
+static VALUE usage_analysis_operand_clear(VALUE self);
+static VALUE usage_analysis_register_clear(VALUE self);
 #endif
 
 void
@@ -3128,6 +3131,9 @@ Init_VM(void)
     rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_INSN_RUNNING", usage_analysis_insn_running, 0);
     rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_OPERAND_RUNNING", usage_analysis_operand_running, 0);
     rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_REGISTER_RUNNING", usage_analysis_register_running, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_INSN_CLEAR", usage_analysis_insn_clear, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_OPERAND_CLEAR", usage_analysis_operand_clear, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_REGISTER_CLEAR", usage_analysis_register_clear, 0);
 #endif
 
     /* ::RubyVM::OPTS, which shows vm build options */
@@ -3540,6 +3546,53 @@ static VALUE
 usage_analysis_register_running(VALUE self)
 {
   if (ruby_vm_collect_usage_func_register == 0) return Qfalse;
+  return Qtrue;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_insn_clear(VALUE self)
+{
+  ID usage_hash;
+  ID bigram_hash;
+  VALUE uh;
+  VALUE bh;
+
+  CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
+  CONST_ID(bigram_hash, "USAGE_ANALYSIS_INSN_BIGRAM");
+  uh = rb_const_get(rb_cRubyVM, usage_hash);
+  bh = rb_const_get(rb_cRubyVM, bigram_hash);
+  rb_hash_clear(uh);
+  rb_hash_clear(bh);
+
+  return Qtrue;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_operand_clear(VALUE self)
+{
+  ID usage_hash;
+  VALUE uh;
+
+  CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
+  uh = rb_const_get(rb_cRubyVM, usage_hash);
+  rb_hash_clear(uh);
+
+  return Qtrue;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_register_clear(VALUE self)
+{
+  ID usage_hash;
+  VALUE uh;
+
+  CONST_ID(usage_hash, "USAGE_ANALYSIS_REGS");
+  uh = rb_const_get(rb_cRubyVM, usage_hash);
+  rb_hash_clear(uh);
+
   return Qtrue;
 }
 
