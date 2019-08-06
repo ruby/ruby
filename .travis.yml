@@ -82,14 +82,17 @@ env:
 
   - &gcc-8
     compiler: gcc-8
-    addons:
-      apt:
-        config:
-          retries: true
-        sources:
-          - ubuntu-toolchain-r-test
-        # `packages` are installed in `before_install` for retries.
+    # # Not using addon to control retries
+    # addons:
+    #   apt:
+    #     sources:
+    #       - ubuntu-toolchain-r-test
     before_install:
+      - |-
+        for seconds in 1 25 100 -1; do
+          sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+          if [[ $? = 0 ]]; then break; else sleep "$seconds" || exit 1; fi
+        done
       - |-
         for seconds in 1 25 100 -1; do
           travis_apt_get_update
@@ -279,14 +282,17 @@ env:
       - GCC_FLAGS=-m32
       - debugflags=-g0
       - SETARCH='setarch i686 --verbose --3gb'
-    addons:
-      apt:
-        config:
-          retries: true
-        sources:
-          - ubuntu-toolchain-r-test
-        # `packages` are installed in `before_install` for retries.
+    # # Not using addon to control retries
+    # addons:
+    #   apt:
+    #     sources:
+    #       - ubuntu-toolchain-r-test
     before_install:
+      - |-
+        for seconds in 1 25 100 -1; do
+          sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+          if [[ $? = 0 ]]; then break; else sleep "$seconds" || exit 1; fi
+        done
       - |-
         for seconds in 1 25 100 -1; do
           travis_apt_get_update
