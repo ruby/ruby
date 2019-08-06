@@ -141,9 +141,8 @@ modv(VALUE x, VALUE y)
 #define neg(x) (subv(INT2FIX(0), (x)))
 
 static VALUE
-quov(VALUE x, VALUE y)
+quor(VALUE x, VALUE y)
 {
-    VALUE ret;
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
         long a, b, c;
         a = FIX2LONG(x);
@@ -155,7 +154,13 @@ quov(VALUE x, VALUE y)
             return LONG2FIX(c);
         }
     }
-    ret = rb_numeric_quo(x, y);
+    return rb_numeric_quo(x, y);
+}
+
+static VALUE
+quov(VALUE x, VALUE y)
+{
+    VALUE ret = quor(x, y);
     if (RB_TYPE_P(ret, T_RATIONAL) &&
         RRATIONAL(ret)->den == INT2FIX(1)) {
         ret = RRATIONAL(ret)->num;
@@ -548,10 +553,16 @@ rb_time_magnify(wideval_t w)
     return wmul(w, WINT2FIXWV(TIME_SCALE));
 }
 
+static VALUE
+rb_time_unmagnify_to_rational(wideval_t w)
+{
+    return quor(w2v(w), INT2FIX(TIME_SCALE));
+}
+
 static wideval_t
 rb_time_unmagnify(wideval_t w)
 {
-    return wquo(w, WINT2FIXWV(TIME_SCALE));
+    return v2w(rb_time_unmagnify_to_rational(w));
 }
 
 static VALUE
@@ -3549,7 +3560,7 @@ time_to_r(VALUE time)
     VALUE v;
 
     GetTimeval(time, tobj);
-    v = w2v(rb_time_unmagnify(tobj->timew));
+    v = rb_time_unmagnify_to_rational(tobj->timew);
     if (!RB_TYPE_P(v, T_RATIONAL)) {
         v = rb_Rational1(v);
     }
