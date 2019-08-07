@@ -19,7 +19,6 @@
 #include "probes.h"
 #include "id.h"
 #include "symbol.h"
-#include "gc.h"
 #include "debug_counter.h"
 #include "transient_heap.h"
 #include "ruby_assert.h"
