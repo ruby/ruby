@@ -20,8 +20,6 @@ language: c
 
 dist: xenial
 
-osx_image: xcode10.1
-
 git:
   quiet: true
 
@@ -47,6 +45,7 @@ addons:
       - valgrind
       - zlib1g-dev
   homebrew:
+    update: true
     packages:
       - gdbm
       - gmp
@@ -237,6 +236,17 @@ env:
 
   - &x86_64-darwin17
     name: x86_64-darwin17
+    osx_image: xcode10.1
+    <<: *osx
+    env:
+      - CONFIG_FLAG=--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib
+      - TEST_ALL_OPTS="--tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
+      # Disabling -j3 because it seems to cause a hang on building Ruby: https://travis-ci.org/ruby/ruby/jobs/471021727
+      - JOBS=
+
+  - &x86_64-darwin18
+    name: x86_64-darwin18
+    osx_image: xcode11
     <<: *osx
     env:
       - CONFIG_FLAG=--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib
@@ -246,6 +256,7 @@ env:
 
   - &universal-darwin17
     name: uinversal.x86_64h-darwin17
+    osx_image: xcode10.1
     <<: *osx
     <<: *cron-only
     <<: *make-test-only
@@ -256,7 +267,7 @@ env:
 matrix:
   include:
     # to reduce time for finishing all jobs, run the slowest osx build first.
-    - <<: *x86_64-darwin17
+    - <<: *x86_64-darwin18
     - <<: *x86_64-linux
     - <<: *i686-linux
     - <<: *jemalloc
