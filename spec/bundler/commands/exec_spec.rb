@@ -849,7 +849,7 @@ __FILE__: #{path.to_s.inspect}
           gem "rack"
         G
         bundle "config path vendor/bundler"
-        bundle :install, :system_bundler => true
+        bundle! :install, :system_bundler => true
       end
 
       it "correctly shells out", :ruby_repo do
