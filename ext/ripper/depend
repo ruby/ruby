@@ -56,7 +56,6 @@ ripper.o: $(hdrdir)/ruby/backward.h
 ripper.o: $(hdrdir)/ruby/defines.h
 ripper.o: $(hdrdir)/ruby/encoding.h
 ripper.o: $(hdrdir)/ruby/intern.h
-ripper.o: $(hdrdir)/ruby/io.h
 ripper.o: $(hdrdir)/ruby/missing.h
 ripper.o: $(hdrdir)/ruby/onigmo.h
 ripper.o: $(hdrdir)/ruby/oniguruma.h

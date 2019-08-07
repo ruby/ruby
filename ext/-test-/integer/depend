@@ -5,12 +5,8 @@ core_ext.o: $(hdrdir)/ruby.h
 core_ext.o: $(hdrdir)/ruby/assert.h
 core_ext.o: $(hdrdir)/ruby/backward.h
 core_ext.o: $(hdrdir)/ruby/defines.h
-core_ext.o: $(hdrdir)/ruby/encoding.h
 core_ext.o: $(hdrdir)/ruby/intern.h
-core_ext.o: $(hdrdir)/ruby/io.h
 core_ext.o: $(hdrdir)/ruby/missing.h
-core_ext.o: $(hdrdir)/ruby/onigmo.h
-core_ext.o: $(hdrdir)/ruby/oniguruma.h
 core_ext.o: $(hdrdir)/ruby/ruby.h
 core_ext.o: $(hdrdir)/ruby/st.h
 core_ext.o: $(hdrdir)/ruby/subst.h

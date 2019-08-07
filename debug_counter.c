@@ -9,11 +9,11 @@
 **********************************************************************/
 
 #include "debug_counter.h"
-#if USE_DEBUG_COUNTER
 #include <stdio.h>
 #include <locale.h>
 #include "internal.h"
 
+#if USE_DEBUG_COUNTER
 static const char *const debug_counter_names[] = {
     ""
 #define RB_DEBUG_COUNTER(name) #name,
