@@ -14,7 +14,6 @@
 #include "ruby/util.h"
 #include "id.h"
 #include "symbol.h"
-#include "transient_heap.h"
 
 #include <assert.h>
 
