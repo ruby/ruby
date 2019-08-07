@@ -123,6 +123,10 @@ class Complex_Test < Test::Unit::TestCase
     assert_raise(TypeError){Complex(Object.new)}
     assert_raise(ArgumentError){Complex()}
     assert_raise(ArgumentError){Complex(1,2,3)}
+    c = Complex(1,0)
+    assert_same(c, Complex(c))
+    assert_same(c, Complex(c, exception: false))
+    assert_raise(ArgumentError){Complex(c, bad_keyword: true)}
 
     if (0.0/0).nan?
       assert_nothing_raised{Complex(0.0/0)}

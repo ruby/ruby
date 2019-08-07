@@ -1323,6 +1323,8 @@ path_unlink(VALUE self)
 static VALUE
 path_f_pathname(VALUE self, VALUE str)
 {
+    if (CLASS_OF(str) == rb_cPathname)
+        return str;
     return rb_class_new_instance(1, &str, rb_cPathname);
 }
 
