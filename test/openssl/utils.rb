@@ -42,10 +42,8 @@ module OpenSSL::TestUtils
 
     def pkey(name)
       OpenSSL::PKey.read(read_file("pkey", name))
-    end
-
-    def pkey_dh(name)
-      # DH parameters can be read by OpenSSL::PKey.read atm
+    rescue OpenSSL::PKey::PKeyError
+      # TODO: DH parameters can be read by OpenSSL::PKey.read atm
       OpenSSL::PKey::DH.new(read_file("pkey", name))
     end
 
@@ -157,9 +155,9 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
 
   def setup
     super
-    @ca_key  = Fixtures.pkey("rsa2048")
-    @svr_key = Fixtures.pkey("rsa1024")
-    @cli_key = Fixtures.pkey("rsa2048")
+    @ca_key  = Fixtures.pkey("rsa-1")
+    @svr_key = Fixtures.pkey("rsa-2")
+    @cli_key = Fixtures.pkey("rsa-3")
     @ca  = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
     @svr = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
     @cli = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
@@ -200,7 +198,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
       ctx.cert_store = store
       ctx.cert = @svr_cert
       ctx.key = @svr_key
-      ctx.tmp_dh_callback = proc { Fixtures.pkey_dh("dh1024") }
+      ctx.tmp_dh_callback = proc { Fixtures.pkey("dh-1") }
       ctx.verify_mode = verify_mode
       ctx_proc.call(ctx) if ctx_proc
 
