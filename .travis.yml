@@ -90,8 +90,8 @@ env:
     before_install:
       - |-
         for seconds in 1 25 100 -1; do
-          sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-          if [[ $? -eq 0 ]]; then break; else sleep "$seconds" || exit 1; fi
+          sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test" && break
+          sleep "$seconds" || exit 1
         done
       - |-
         for seconds in 1 25 100 -1; do
@@ -110,9 +110,10 @@ env:
             libyaml-dev \
             openssl \
             valgrind \
-            zlib1g-dev
+            zlib1g-dev \
+          && break
 
-          if [[ $? -eq 0 ]]; then break; else sleep "$seconds" || exit 1; fi
+          sleep "$seconds" || exit 1
         done
 
   - &clang-8
@@ -143,9 +144,10 @@ env:
             libyaml-dev \
             openssl \
             valgrind \
-            zlib1g-dev
+            zlib1g-dev \
+          && break
 
-          if [[ $? -eq 0 ]]; then break; else sleep "$seconds" || exit 1; fi
+          sleep "$seconds" || exit 1
         done
 
   # --------
@@ -290,8 +292,8 @@ env:
     before_install:
       - |-
         for seconds in 1 25 100 -1; do
-          sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-          if [[ $? -eq 0 ]]; then break; else sleep "$seconds" || exit 1; fi
+          sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test" && break
+          sleep "$seconds" || exit 1
         done
       - |-
         for seconds in 1 25 100 -1; do
@@ -312,9 +314,10 @@ env:
             libssl1.0.0:i386 \
             linux-libc-dev:i386 \
             zlib1g-dev:i386 \
-            zlib1g:i386
+            zlib1g:i386 \
+          && break
 
-          if [[ $? -eq 0 ]]; then break; else sleep "$seconds" || exit 1; fi
+          sleep "$seconds" || exit 1
         done
 
   - &pedanticism
