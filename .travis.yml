@@ -88,67 +88,51 @@ env:
     #     sources:
     #       - ubuntu-toolchain-r-test
     before_install:
+      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+      - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
       - |-
-        for seconds in 1 25 100 -1; do
-          sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test" && break
-          sleep "$seconds" || exit 1
-        done
-      - |-
-        for seconds in 1 25 100 -1; do
-          travis_apt_get_update
-
-          sudo -E apt-get -yq --no-install-suggests --no-install-recommends $travis_apt_get_options install \
-            gcc-8 \
-            libffi-dev \
-            libgdbm-dev \
-            libgmp-dev \
-            libjemalloc-dev \
-            libncurses5-dev \
-            libncursesw5-dev \
-            libreadline6-dev \
-            libssl-dev \
-            libyaml-dev \
-            openssl \
-            valgrind \
-            zlib1g-dev \
-          && break
-
-          sleep "$seconds" || exit 1
-        done
+        tool/travis_retry.sh sudo -E apt-get -yq --no-install-suggests --no-install-recommends $travis_apt_get_options install \
+          gcc-8 \
+          libffi-dev \
+          libgdbm-dev \
+          libgmp-dev \
+          libjemalloc-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libreadline6-dev \
+          libssl-dev \
+          libyaml-dev \
+          openssl \
+          valgrind \
+          zlib1g-dev
 
   - &clang-8
     compiler: clang-8
     addons:
       apt:
-        config:
-          retries: true
+        # Not doing this manually unlike other sources, because it has been stable.
         sources:
           - llvm-toolchain-xenial-8
-        # `packages` are installed in `before_install` for retries.
+        config:
+          retries: true
     before_install:
+      - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
       - |-
-        for seconds in 1 25 100 -1; do
-          travis_apt_get_update
-
-          sudo -E apt-get -yq --no-install-suggests --no-install-recommends $travis_apt_get_options install \
-            clang-8 \
-            llvm-8-tools \
-            libffi-dev \
-            libgdbm-dev \
-            libgmp-dev \
-            libjemalloc-dev \
-            libncurses5-dev \
-            libncursesw5-dev \
-            libreadline6-dev \
-            libssl-dev \
-            libyaml-dev \
-            openssl \
-            valgrind \
-            zlib1g-dev \
-          && break
-
-          sleep "$seconds" || exit 1
-        done
+        tool/travis_retry.sh sudo -E apt-get -yq --no-install-suggests --no-install-recommends $travis_apt_get_options install \
+          clang-8 \
+          llvm-8-tools \
+          libffi-dev \
+          libgdbm-dev \
+          libgmp-dev \
+          libjemalloc-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libreadline6-dev \
+          libssl-dev \
+          libyaml-dev \
+          openssl \
+          valgrind \
+          zlib1g-dev
 
   # --------
 
@@ -290,35 +274,25 @@ env:
     #     sources:
     #       - ubuntu-toolchain-r-test
     before_install:
+      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+      - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
       - |-
-        for seconds in 1 25 100 -1; do
-          sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test" && break
-          sleep "$seconds" || exit 1
-        done
-      - |-
-        for seconds in 1 25 100 -1; do
-          travis_apt_get_update
-
-          sudo -E apt-get -yq --no-install-suggests --no-install-recommends $travis_apt_get_options install \
-            gcc-8-multilib \
-            libffi-dev:i386 \
-            libffi6:i386 \
-            libgdbm-dev:i386 \
-            libgdbm3:i386 \
-            libncurses5-dev:i386 \
-            libncurses5:i386 \
-            libncursesw5-dev:i386 \
-            libreadline6-dev:i386 \
-            libreadline6:i386 \
-            libssl-dev:i386 \
-            libssl1.0.0:i386 \
-            linux-libc-dev:i386 \
-            zlib1g-dev:i386 \
-            zlib1g:i386 \
-          && break
-
-          sleep "$seconds" || exit 1
-        done
+        tool/travis_retry.sh sudo -E apt-get -yq --no-install-suggests --no-install-recommends $travis_apt_get_options install \
+          gcc-8-multilib \
+          libffi-dev:i386 \
+          libffi6:i386 \
+          libgdbm-dev:i386 \
+          libgdbm3:i386 \
+          libncurses5-dev:i386 \
+          libncurses5:i386 \
+          libncursesw5-dev:i386 \
+          libreadline6-dev:i386 \
+          libreadline6:i386 \
+          libssl-dev:i386 \
+          libssl1.0.0:i386 \
+          linux-libc-dev:i386 \
+          zlib1g-dev:i386 \
+          zlib1g:i386
 
   - &pedanticism
     name: -std=c99 -pedantic
