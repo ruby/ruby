@@ -34,6 +34,10 @@
 #define HASH_DEBUG 0
 #endif
 
+#if HASH_DEBUG
+#include "gc.h"
+#endif
+
 #define HAS_EXTRA_STATES(hash, klass) ( \
     ((klass = has_extra_methods(rb_obj_class(hash))) != 0) || \
     FL_TEST((hash), FL_EXIVAR|FL_TAINT|RHASH_PROC_DEFAULT) || \
