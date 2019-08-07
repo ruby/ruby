@@ -848,7 +848,8 @@ __FILE__: #{path.to_s.inspect}
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         G
-        bundle :install, :system_bundler => true, :path => "vendor/bundler"
+        bundle "config path vendor/bundler"
+        bundle :install, :system_bundler => true
       end
 
       it "correctly shells out", :ruby_repo do
