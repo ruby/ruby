@@ -252,7 +252,7 @@ def sync_default_gems_with_commits(gem, range)
     IO.popen(%W"git diff-tree --no-commit-id --name-only -r #{sha}") do |f|
       files = f.read.split("\n")
     end
-    subject =~ /^Merge/ || files.all?{|file| file =~ IGNORE_FILE_PATTERN}
+    subject =~ /^Merge/ || subject =~ /^Auto Merge/ || files.all?{|file| file =~ IGNORE_FILE_PATTERN}
   end
 
   puts "Try to pick these commits:"
