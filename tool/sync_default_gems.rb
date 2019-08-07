@@ -292,6 +292,7 @@ def sync_default_gems_with_commits(gem, range)
     end
   end
 
+  puts "---- failed commits ----"
   puts failed_commits
 end
 
