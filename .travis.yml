@@ -91,7 +91,7 @@ env:
       - |-
         for seconds in 1 25 100 -1; do
           sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-          if [[ $? = 0 ]]; then break; else sleep "$seconds" || exit 1; fi
+          if [[ $? -eq 0 ]]; then break; else sleep "$seconds" || exit 1; fi
         done
       - |-
         for seconds in 1 25 100 -1; do
@@ -112,7 +112,7 @@ env:
             valgrind \
             zlib1g-dev
 
-          if [[ $? = 0 ]]; then break; else sleep "$seconds" || exit 1; fi
+          if [[ $? -eq 0 ]]; then break; else sleep "$seconds" || exit 1; fi
         done
 
   - &clang-8
@@ -145,7 +145,7 @@ env:
             valgrind \
             zlib1g-dev
 
-          if [[ $? = 0 ]]; then break; else sleep "$seconds" || exit 1; fi
+          if [[ $? -eq 0 ]]; then break; else sleep "$seconds" || exit 1; fi
         done
 
   # --------
@@ -291,7 +291,7 @@ env:
       - |-
         for seconds in 1 25 100 -1; do
           sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-          if [[ $? = 0 ]]; then break; else sleep "$seconds" || exit 1; fi
+          if [[ $? -eq 0 ]]; then break; else sleep "$seconds" || exit 1; fi
         done
       - |-
         for seconds in 1 25 100 -1; do
@@ -314,7 +314,7 @@ env:
             zlib1g-dev:i386 \
             zlib1g:i386
 
-          if [[ $? = 0 ]]; then break; else sleep "$seconds" || exit 1; fi
+          if [[ $? -eq 0 ]]; then break; else sleep "$seconds" || exit 1; fi
         done
 
   - &pedanticism
