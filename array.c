@@ -16,7 +16,6 @@
 #include "probes.h"
 #include "id.h"
 #include "debug_counter.h"
-#include "gc.h"
 #include "transient_heap.h"
 #include "internal.h"
 
