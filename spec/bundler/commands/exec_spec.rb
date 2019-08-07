@@ -840,10 +840,10 @@ __FILE__: #{path.to_s.inspect}
   end
 
   context "nested bundle exec" do
-    let(:system_gems_to_install) { super() << :bundler }
-
     context "when bundle in a local path" do
       before do
+        system_gems :bundler
+
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"
@@ -853,7 +853,6 @@ __FILE__: #{path.to_s.inspect}
       end
 
       it "correctly shells out", :ruby_repo do
-        system_gems :bundler
         file = bundled_app("file_that_bundle_execs.rb")
         create_file(file, <<-RB)
           #!#{Gem.ruby}
