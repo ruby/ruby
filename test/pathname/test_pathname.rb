@@ -471,6 +471,12 @@ class TestPathname < Test::Unit::TestCase
     assert_raise(ArgumentError) { Pathname.new("a\0") }
   end
 
+  def test_global_constructor
+    p = Pathname.new('a')
+    assert_equal(p, Pathname('a'))
+    assert_same(p, Pathname(p))
+  end
+
   class AnotherStringLike # :nodoc:
     def initialize(s) @s = s end
     def to_str() @s end
