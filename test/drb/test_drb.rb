@@ -327,4 +327,19 @@ class TestBug4409 < Test::Unit::TestCase
   end
 end
 
+class TestDRbTCP < Test::Unit::TestCase
+  def test_immediate_close
+    server = DRb::DRbServer.new('druby://:0')
+    host, port, = DRb::DRbTCPSocket.send(:parse_uri, server.uri)
+    socket = TCPSocket.open host, port
+    socket.shutdown
+    socket.close
+    client = DRb::DRbTCPSocket.new(server.uri, socket)
+    assert client
+    client.close
+    server.stop_service
+    server.thread.join
+  end
+end
+
 end
