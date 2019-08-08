@@ -3597,6 +3597,71 @@ arith_seq_size(VALUE self)
     return len;
 }
 
+static VALUE
+lazy_with_index_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, offset))
+{
+    VALUE yielder, memo, result;
+    VALUE e = rb_enum_values_pack(argc - 1, argv + 1);
+    long idx;
+
+    yielder = argv[0];
+    memo = rb_attr_get(yielder, id_memo);
+    if (NIL_P(memo))
+        memo = offset;
+    idx = NUM2LONG(memo);
+    result = rb_assoc_new(e, memo);
+    rb_funcall(yielder, idLTLT, 1, result);
+    rb_ivar_set(yielder, id_memo, LONG2NUM(++idx));
+    return Qnil;
+}
+
+static VALUE
+lazy_with_index_iter(RB_BLOCK_CALL_FUNC_ARGLIST(val, offset))
+{
+    VALUE yielder, memo, result;
+    VALUE e = rb_enum_values_pack(argc - 1, argv + 1);
+    long idx;
+
+    yielder = argv[0];
+    memo = rb_attr_get(yielder, id_memo);
+    if (NIL_P(memo))
+        memo = offset;
+    idx = NUM2LONG(memo);
+    result = rb_yield(rb_assoc_new(e, memo));
+    rb_funcall(yielder, idLTLT, 1, result);
+    rb_ivar_set(yielder, id_memo, LONG2NUM(++idx));
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     lazy.with_index(offset = 0) {|(*args), idx| ... }
+ *     lazy.with_index(offset = 0)
+ *
+ *  Iterates the given block for each element with an index, which
+ *  starts from +offset+.  If no block is given, returns a new
+ *  lazy enumerator that includes the index, starting from +offset+
+ *
+ * +offset+:: the starting index to use
+ *
+ * see Enumerator#with_index.
+ */
+static VALUE
+lazy_with_index(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE memo;
+
+    rb_scan_args(argc, argv, "01", &memo);
+    if (NIL_P(memo))
+        memo = LONG2NUM(0);
+
+    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
+                                         rb_block_given_p() ?
+                                         lazy_with_index_iter : lazy_with_index_func,
+                                         memo),
+                           rb_ary_new_from_values(argc, argv), 0);
+}
+
 void
 InitVM_Enumerator(void)
 {
@@ -3654,6 +3719,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "slice_when", lazy_super, -1);
     rb_define_method(rb_cLazy, "chunk_while", lazy_super, -1);
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
+    rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
 
 #if 0 /* for RDoc */
     rb_define_method(rb_cLazy, "to_a", lazy_to_a, 0);
