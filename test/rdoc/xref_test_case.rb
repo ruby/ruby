@@ -22,8 +22,13 @@ class XrefTestCase < RDoc::TestCase
 
     parser = RDoc::Parser::Ruby.new @xref_data, @file_name, XREF_DATA, @options,
                                     stats
+
+    @example_md = @store.add_file 'EXAMPLE.md'
+    @example_md.parser = RDoc::Parser::Markdown
+
     @top_levels = []
     @top_levels.push parser.scan
+    @top_levels.push @example_md
 
     generator = Object.new
     def generator.class_dir() nil end
