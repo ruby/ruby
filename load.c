@@ -1006,7 +1006,7 @@ rb_require_internal(VALUE fname, int safe)
 	    else {
 		switch (found) {
 		  case 'r':
-		    rb_load_internal(path, 0);
+                    rb_load_internal(path, 0);
 		    break;
 
 		  case 's':
