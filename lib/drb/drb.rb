@@ -1024,6 +1024,8 @@ module DRb
 
     def set_sockopt(soc) # :nodoc:
       soc.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
+    rescue IOError, Errno::ECONNRESET, Errno::EINVAL
+      # closed/shutdown socket, ignore error
     end
   end
 
