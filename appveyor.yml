@@ -107,7 +107,7 @@ for:
     - sh ../ruby/configure --disable-install-doc --prefix=/. --build=%MINGW_CHOST% --host=%MINGW_CHOST% --target=%MINGW_CHOST%
     - mingw32-make %mflags% touch-unicode-files
     - mingw32-make -j%JOBS% %UPDATE_UNICODE% up incs
-    - mingw32-make V=1 --debug
+    - mingw32-make -j%JOBS% V=1
     - mingw32-make DESTDIR=../install install-nodoc
     - if not "%GEMS_FOR_TEST%" == "" ..\install\bin\gem install --no-document %GEMS_FOR_TEST%
   test_script:
