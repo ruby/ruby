@@ -320,5 +320,6 @@ update-deps:
 	git -C $(deps_dir) diff --no-ext-diff --ignore-submodules --exit-code || \
 	    git -C $(deps_dir) commit --all --message='Update dependencies'
 	git --git-dir=$(GIT_DIR) worktree remove $(deps_dir)
+	$(RMDIR) $(dir $(deps_dir))
 	git --git-dir=$(GIT_DIR) merge --no-edit --ff-only $(update_deps)
 	git --git-dir=$(GIT_DIR) branch --delete $(update_deps)
