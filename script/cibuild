@@ -1,0 +1,7 @@
+#!/bin/bash
+# Usage: script/cibuild
+# CI build script
+set -e
+
+docker build -t ruby-test . -f Dockerfile.container
+docker build -t ruby-test . -f Dockerfile.ruby --network=none
