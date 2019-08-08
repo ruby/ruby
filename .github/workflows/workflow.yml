@@ -1,0 +1,35 @@
+on: pull_request
+
+jobs:
+  macos:
+    name: make test-all on mac
+    runs-on: macos-latest
+    steps:
+      - name: Disable Firewall
+        run: |
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+      - name: Install libraries
+        run: |
+          brew update
+          brew install gdbm gmp libffi openssl zlib ccache autoconf automake libtool readline
+      - name: Checkout
+        uses: actions/checkout@master
+        with:
+          fetch-depth: 5
+      - name: Set ENV
+        run: |
+          echo '##[set-env name=CONFIGURE_TTY]no'
+          echo '##[set-env name=NPROC]'$(sysctl -n hw.activecpu)
+          echo '##[set-env name=JOBS]'-j$((1 + $(sysctl -n hw.activecpu)))
+      - name: Print ENV
+        run: |
+          echo $CONFIGURE_TTY
+          echo $NPROC
+          echo $JOBS
+      - run: autoconf
+      - name: configure
+        run: ./configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl) --with-readline-dir=$(brew --prefix readline)
+      - run: make $JOBS
+      - run: make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=$CONFIGURE_TTY}"
+      - run: make -s test-all TESTOPTS="${TESTOPTS=$JOBS -q --tty=$CONFIGURE_TTY}"
