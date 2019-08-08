@@ -1013,17 +1013,22 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
     VALUE original_klass = klass;
 
     while (module) {
+        int origin_seen = FALSE;
 	int superclass_seen = FALSE;
 	struct rb_id_table *tbl;
 
+        if (klass == c)
+            origin_seen = TRUE;
 	if (klass_m_tbl && klass_m_tbl == RCLASS_M_TBL(module))
 	    return -1;
 	/* ignore if the module included already in superclasses */
         for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
 	    int type = BUILTIN_TYPE(p);
+            if (c == p)
+                origin_seen = TRUE;
 	    if (type == T_ICLASS) {
 		if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
-		    if (!superclass_seen) {
+                    if (!superclass_seen && origin_seen) {
 			c = p;  /* move insertion point */
 		    }
 		    goto skip;
