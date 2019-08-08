@@ -105,7 +105,7 @@ RSpec.describe "The library itself" do
   end
 
   it "has no malformed whitespace" do
-    exempt = /\.gitmodules|\.marshal|fixtures|vendor|LICENSE|vcr_cassettes|rbreadline\.diff|\.txt$/
+    exempt = /\.gitmodules|fixtures|vendor|LICENSE|vcr_cassettes|rbreadline\.diff|\.txt$/
     error_messages = []
     Dir.chdir(root) do
       files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z`
