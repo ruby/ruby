@@ -9853,6 +9853,8 @@ enum ibf_object_class_index {
     IBF_OBJECT_CLASS_OBJECT,
     IBF_OBJECT_CLASS_ARRAY,
     IBF_OBJECT_CLASS_STANDARD_ERROR,
+    IBF_OBJECT_CLASS_NO_MATCHING_PATTERN_ERROR,
+    IBF_OBJECT_CLASS_TYPE_ERROR,
 };
 
 struct ibf_object_string {
@@ -9947,6 +9949,12 @@ ibf_dump_object_class(struct ibf_dump *dump, VALUE obj)
     else if (obj == rb_eStandardError) {
 	cindex = IBF_OBJECT_CLASS_STANDARD_ERROR;
     }
+    else if (obj == rb_eNoMatchingPatternError) {
+        cindex = IBF_OBJECT_CLASS_NO_MATCHING_PATTERN_ERROR;
+    }
+    else if (obj == rb_eTypeError) {
+        cindex = IBF_OBJECT_CLASS_TYPE_ERROR;
+    }
     else {
 	rb_obj_info_dump(obj);
 	rb_p(obj);
@@ -9968,6 +9976,10 @@ ibf_load_object_class(const struct ibf_load *load, const struct ibf_object_heade
 	return rb_cArray;
       case IBF_OBJECT_CLASS_STANDARD_ERROR:
 	return rb_eStandardError;
+      case IBF_OBJECT_CLASS_NO_MATCHING_PATTERN_ERROR:
+        return rb_eNoMatchingPatternError;
+      case IBF_OBJECT_CLASS_TYPE_ERROR:
+        return rb_eTypeError;
     }
 
     rb_raise(rb_eArgError, "ibf_load_object_class: unknown class (%d)", (int)cindex);
