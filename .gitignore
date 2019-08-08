@@ -27,7 +27,6 @@
 *.swp
 *.yarb
 *~
-.*-*
 .*.list
 .*.time
 .DS_Store
@@ -211,10 +210,6 @@ lcov*.info
 
 # /spec/bundler
 /.rspec_status
-
-# /tool/
-/tool/config.guess
-/tool/config.sub
 
 # /win32/
 /win32/*.ico
