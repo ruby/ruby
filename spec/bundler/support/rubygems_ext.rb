@@ -10,7 +10,7 @@ module Spec
       "automatiek" => "~> 0.2.0",
       "rake" => "~> 12.0",
       "ronn" => "~> 0.7.3",
-      "rspec" => "~> 3.6",
+      "rspec" => "~> 3.8",
       "rubocop" => "= 0.74.0",
       "rubocop-performance" => "= 1.4.0",
     }.freeze
