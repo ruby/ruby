@@ -40,7 +40,7 @@ typedef struct iseq_link_element {
 	ISEQ_ELEMENT_LABEL,
 	ISEQ_ELEMENT_INSN,
 	ISEQ_ELEMENT_ADJUST,
-	ISEQ_ELEMENT_TRACE
+	ISEQ_ELEMENT_TRACE,
     } type;
     struct iseq_link_element *next;
     struct iseq_link_element *prev;
@@ -3869,7 +3869,7 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_roo
 
 enum compile_array_type_t {
     COMPILE_ARRAY_TYPE_ARRAY,
-    COMPILE_ARRAY_TYPE_HASH
+    COMPILE_ARRAY_TYPE_HASH,
 };
 
 static inline int
@@ -9852,7 +9852,7 @@ static const size_t ibf_object_header_align =
 enum ibf_object_class_index {
     IBF_OBJECT_CLASS_OBJECT,
     IBF_OBJECT_CLASS_ARRAY,
-    IBF_OBJECT_CLASS_STANDARD_ERROR
+    IBF_OBJECT_CLASS_STANDARD_ERROR,
 };
 
 struct ibf_object_string {
@@ -9890,7 +9890,7 @@ struct ibf_object_bignum {
 };
 
 enum ibf_object_data_type {
-    IBF_OBJECT_DATA_ENCODING
+    IBF_OBJECT_DATA_ENCODING,
 };
 
 struct ibf_object_complex_rational {
