@@ -978,6 +978,9 @@ static int
 require_internal(rb_execution_context_t *ec, VALUE fname, int safe, int exception)
 {
     volatile int result = -1;
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    volatile VALUE wrapper = th->top_wrapper;
+    volatile VALUE self = th->top_self;
     volatile VALUE errinfo = ec->errinfo;
     enum ruby_tag_type state;
     struct {
@@ -993,6 +996,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int safe, int exceptio
     EC_PUSH_TAG(ec);
     saved.safe = rb_safe_level();
     ec->errinfo = Qnil; /* ensure */
+    th->top_wrapper = 0;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	long handle;
 	int found;
@@ -1029,6 +1033,9 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int safe, int exceptio
 	}
     }
     EC_POP_TAG();
+    th = rb_ec_thread_ptr(ec);
+    th->top_self = self;
+    th->top_wrapper = wrapper;
     if (ftptr) load_unlock(RSTRING_PTR(path), !state);
 
     rb_set_safe_level_force(saved.safe);

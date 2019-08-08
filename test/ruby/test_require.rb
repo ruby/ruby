@@ -384,6 +384,19 @@ class TestRequire < Test::Unit::TestCase
     }
   end
 
+  def test_require_in_wrapped_load
+    Dir.mktmpdir do |tmp|
+      File.write("#{tmp}/1.rb", "require_relative '2'\n")
+      File.write("#{tmp}/2.rb", "class Foo\n""end\n")
+      assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+      path = ""#{tmp.dump}"/1.rb"
+      begin;
+        load path, true
+        assert_instance_of(Class, Foo)
+      end;
+    end
+  end
+
   def test_load_scope
     bug1982 = '[ruby-core:25039] [Bug #1982]'
     Tempfile.create(["test_ruby_test_require", ".rb"]) {|t|
