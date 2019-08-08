@@ -68,7 +68,7 @@ module TestIRB
         "_\n",
       ])
       irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
-      out, err = capture_io do
+      out, err = capture_output do
         irb.eval_input
       end
       assert_empty err

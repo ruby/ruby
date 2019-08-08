@@ -104,7 +104,7 @@ class TestCSVInterfaceRead < Test::Unit::TestCase
   end
 
   def test_open_encoding_nonexistent
-    _output, error = capture_io do
+    _output, error = capture_output do
       CSV.open(@input.path, encoding: "nonexistent") do
       end
     end
