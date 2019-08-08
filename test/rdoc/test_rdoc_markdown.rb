@@ -1,7 +1,7 @@
 # coding: UTF-8
 # frozen_string_literal: true
 
-require 'minitest_helper'
+require_relative 'helper'
 require 'rdoc/markup/block_quote'
 require 'rdoc/markdown'
 
