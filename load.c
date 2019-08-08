@@ -579,7 +579,7 @@ rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
     rb_thread_t *volatile th0 = th;
 #endif
 
-    th->ec->errinfo = Qnil; /* ensure */
+    ec->errinfo = Qnil; /* ensure */
 
     if (!wrap) {
 	th->top_wrapper = 0;
@@ -591,7 +591,7 @@ rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
 	rb_extend_object(th->top_self, th->top_wrapper);
     }
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
     if (state == TAG_NONE) {
 	rb_ast_t *ast;
@@ -624,8 +624,8 @@ rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
         rb_vm_jump_tag_but_local_jump(state);
     }
 
-    if (!NIL_P(th->ec->errinfo)) {
-        rb_exc_raise(th->ec->errinfo);
+    if (!NIL_P(ec->errinfo)) {
+        rb_exc_raise(ec->errinfo);
     }
 }
 
