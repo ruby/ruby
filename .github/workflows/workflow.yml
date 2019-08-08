@@ -33,3 +33,7 @@ jobs:
       - run: make $JOBS
       - run: make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=$CONFIGURE_TTY}"
       - run: make -s test-all TESTOPTS="${TESTOPTS=$JOBS -q --tty=$CONFIGURE_TTY}"
+      - name: Ruby Spec
+        run: make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
+      - name: Leaked Globals
+        run: make -s leaked-globals
