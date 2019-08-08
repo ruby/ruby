@@ -1712,8 +1712,8 @@ class Reline::LineEditor
   end
 
   private def ed_delete_next_char(key, arg: 1)
-    unless @line.empty?
-      byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
+    byte_size = Reline::Unicode.get_next_mbchar_size(@line, @byte_pointer)
+    unless @line.empty? || byte_size == 0
       @line, mbchar = byteslice!(@line, @byte_pointer, byte_size)
       copy_for_vi(mbchar)
       width = Reline::Unicode.get_mbchar_width(mbchar)
