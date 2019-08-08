@@ -1676,8 +1676,14 @@ class TestSetTraceFunc < Test::Unit::TestCase
     tmpdir = Dir.mktmpdir
     path = "#{tmpdir}/hola.rb"
     File.open(path, "w") { |f| f.write("raise") }
-    TracePoint.new(:raise){|tp| next if !target_thread?; events << [tp.event]}.enable{
+    tp = TracePoint.new(:raise) {|tp| events << [tp.event] if target_thread?}
+    tp.enable{
       load path rescue nil
+    }
+    assert_equal [[:raise]], events
+    events.clear
+    tp.enable{
+      require path rescue nil
     }
     assert_equal [[:raise]], events
   ensure
