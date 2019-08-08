@@ -126,7 +126,7 @@ prevent any file from being autorequired.
 
     gem "redis", :require => ["redis/connection/hiredis", "redis"]
     gem "webmock", :require => false
-    gem "debugger", :require => true
+    gem "byebug", :require => true
 
 The argument defaults to the name of the gem. For example, these are identical:
 

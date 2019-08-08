@@ -156,7 +156,7 @@ GEMS
 
 	   gem "redis", :require => ["redis/connection/hiredis", "redis"]
 	   gem "webmock", :require => false
-	   gem "debugger", :require => true
+	   gem "byebug", :require => true
 
 
 
