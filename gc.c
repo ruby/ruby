@@ -958,6 +958,104 @@ static const char *obj_info(VALUE obj);
  * written by Kazutomo Yoshii <kazutomo@mcs.anl.gov>
  */
 
+#if defined(__i386__) || defined(__x86_64__)
+#if defined(__GNUC__)
+
+#if defined(__i386__)
+static int
+has_cpuid()
+{
+    static volatile int initialized = 0;
+    static uint32_t flags;
+    if (initialized)
+        return flags & 0x200000;
+    /* http://wiki.osdev.org/CPUID#Checking_CPUID_availability */
+    __asm__ __volatile__ (
+        "pushf{l|d}\n\t" /* Save EFLAGS */
+        "pushf{l|d}\n\t" /* Store EFLAGS */
+        "xor{l $0x00200000, (%%esp)| dword ptr [esp], 0x00200000}\n\t" /* Invert the ID bit in stored EFLAGS */
+        "popf{l|d}\n\t" /* Load stored EFLAGS (with ID bit inverted) */
+        "pushf{l|d}\n\t" /* Store EFLAGS again (ID bit may or may not be inverted) */
+        "pop {%%}eax\n\t" /* eax = modified EFLAGS (ID bit may or may not be inverted) */
+        "xor {(%%esp), %%eax|eax, [esp]}\n\t" /* eax = whichever bits were changed */
+        "popf{l|d}\n\t" /* Restore original EFLAGS */
+        : "=a" (flags));
+    initialized = 1;
+    return flags & 0x200000;
+}
+#endif
+
+static inline void
+cpuid(uint32_t *eax, uint32_t *ebx, uint32_t *ecx, uint32_t *edx)
+{
+    __asm__ __volatile__ (
+#if defined(__i386__) /* This is needed for -fPIC to work on i386 */
+    "movl %%ebx, %%esi\n\t"
+#endif
+    "cpuid\n\t"
+#if defined(__i386__)
+    "xchgl %%ebx, %%esi\n\t"
+    : "=a" (*eax), "=S" (*ebx), "=c" (*ecx), "=d" (*edx) : "a" (*eax));
+#else
+    : "=a" (*eax), "=b" (*ebx), "=c" (*ecx), "=d" (*edx) : "a" (*eax));
+#endif
+}
+
+#if defined(__i386__)
+static int
+has_sse2()
+{
+    static volatile int initialized = 0;
+    static int hasSSE2 = 0;
+    if (initialized)
+        return hasSSE2;
+#if defined(__SSE2__)
+    if (!has_cpuid()) {
+        initialized = 1;
+        return 0;
+    }
+    uint32_t eax, ebx, ecx, edx;
+    eax = 1;
+    cpuid(&eax, &ebx, &ecx, &edx);
+    if (1 & (edx >> 26))
+        hasSSE2 = 1;
+#endif
+    initialized = 1;
+    return hasSSE2;
+}
+#endif
+
+/* Figure out how to serialze rdtsc.
+ * On Intel processors lfence is enough, AMD requires mfence.
+ * Don't know about the rest(e.g, Hygon processor), do mfence.
+ */
+static int
+how_serialize_rdtsc()
+{
+    static volatile int initialized = 0;
+    static int is_intel_processor = 0;
+    if (initialized)
+        return is_intel_processor;
+#if defined(__i386__)
+    if (!has_sse2()) {
+        initialized = 1;
+        return 0;
+    }
+#endif
+    uint32_t eax, ebx, ecx, edx;
+    eax = 0;
+    cpuid(&eax, &ebx, &ecx, &edx);
+    if ( ebx == 0x756E6547 /* "Genu" */
+         && edx == 0x49656E69 /* "ineI" */
+         && ecx == 0x6C65746E /* "ntel" */ )
+        is_intel_processor = 1;
+    initialized = 1;
+    return is_intel_processor;
+}
+
+#endif
+#endif
+
 #if defined(__GNUC__) && defined(__i386__)
 typedef unsigned long long tick_t;
 #define PRItick "llu"
@@ -965,7 +1063,25 @@ static inline tick_t
 tick(void)
 {
     unsigned long long int x;
-    __asm__ __volatile__ ("rdtsc" : "=A" (x));
+#if defined(__SSE2__)
+    int has_sse2 = has_sse2();
+    int lfence_before_rdtsc = how_serialize_rdtsc();
+    if (lfence_before_rdtsc) {
+        __asm__ __volatile__ (
+            "lfence\n\t"
+            "rdtsc\n\t"
+            : "=A" (x));
+    } else if (has_sse2) {
+        __asm__ __volatile__ (
+            "mfence\n\t"
+            "rdtsc\n\t"
+            : "=A" (x));
+    } else {
+#endif
+        __asm__ __volatile__ ("rdtsc" : "=A" (x));
+#if defined(__SSE2__)
+    }
+#endif
     return x;
 }
 
@@ -977,7 +1093,18 @@ static __inline__ tick_t
 tick(void)
 {
     unsigned long hi, lo;
-    __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
+    int lfence_before_rdtsc = how_serialize_rdtsc();
+    if (lfence_before_rdtsc) {
+        __asm__ __volatile__ (
+            "lfence\n\t"
+            "rdtsc\n\t"
+            : "=a"(lo), "=d"(hi));
+    } else {
+        __asm__ __volatile__ (
+            "mfence\n\t"
+            "rdtsc\n\t"
+            : "=a"(lo), "=d"(hi));
+    }
     return ((unsigned long long)lo)|( ((unsigned long long)hi)<<32);
 }
 
