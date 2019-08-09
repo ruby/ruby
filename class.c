@@ -308,7 +308,7 @@ class_init_copy_check(VALUE clone, VALUE orig)
 	rb_raise(rb_eTypeError, "can't copy singleton class");
     }
 }
-#include "gc.h"
+
 /* :nodoc: */
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
