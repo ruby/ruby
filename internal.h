@@ -1388,6 +1388,22 @@ rb_ary_entry_internal(VALUE ary, long offset)
     return ptr[offset];
 }
 
+/* MRI debug support */
+void rb_obj_info_dump(VALUE obj);
+void  ruby_debug_breakpoint(void);
+
+// show obj data structure without any side-effect
+#define rp(obj) rb_obj_info_dump((VALUE)obj);
+// same as rp, but add message header
+#define rp_m(msg, obj) do { \
+    fprintf(stderr, "%s", (msg)); \
+    rb_obj_info_dump((VALUE)obj); \
+} while (0)
+
+// `ruby_debug_breakpoint()` does nothing,
+// but breakpoint is set in run.gdb, so `make gdb` can stop here.
+#define bp() ruby_debug_breakpoint()
+
 /* bignum.c */
 extern const char ruby_digitmap[];
 double rb_big_fdiv_double(VALUE x, VALUE y);
