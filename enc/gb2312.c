@@ -1,3 +1,5 @@
+#include <ruby/ruby.h>
+#include <ruby/encoding.h>
 #include "regenc.h"
 
 void
