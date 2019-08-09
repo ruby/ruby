@@ -92,6 +92,11 @@ class TestAssignment < Test::Unit::TestCase
     a,b,*c = *[*[1,2]]; assert_equal([1,2,[]], [a,b,c])
   end
 
+  def test_assign_rescue
+    a = raise rescue 2; assert_equal(2, a)
+    a, b = raise rescue [3,4]; assert_equal([3, 4], [a, b])
+  end
+
   def test_assign_abbreviated
     bug2050 = '[ruby-core:25629]'
     a = Hash.new {[]}
