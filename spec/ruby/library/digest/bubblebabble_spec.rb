@@ -6,7 +6,7 @@ describe "Digest.bubblebabble" do
     Digest.bubblebabble('').should be_an_instance_of(String)
   end
 
-  it "returns a String in the The Bubble Babble Binary Data Encoding format" do
+  it "returns a String in the Bubble Babble Binary Data Encoding format" do
     Digest.bubblebabble('').should == 'xexax'
     Digest.bubblebabble('foo').should == 'xinik-zorox'
     Digest.bubblebabble('bar').should == 'ximik-cosex'

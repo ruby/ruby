@@ -57,7 +57,7 @@ class CGI
     #
     #   name:: the name of the cookie.  Required.
     #   value:: the cookie's value or list of values.
-    #   path:: the path for which this cookie applies.  Defaults to the
+    #   path:: the path for which this cookie applies.  Defaults to
     #          the value of the +SCRIPT_NAME+ environment variable.
     #   domain:: the domain for which this cookie applies.
     #   expires:: the time at which this cookie expires, as a +Time+ object.

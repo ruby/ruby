@@ -264,7 +264,7 @@ RSpec.describe "bundle binstubs <gem>" do
     end
 
     context "when using --shebang" do
-      it "sets the specified shebang for the the binstub" do
+      it "sets the specified shebang for the binstub" do
         install_gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"
