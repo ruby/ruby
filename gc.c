@@ -4450,7 +4450,7 @@ stack_check(rb_execution_context_t *ec, int water_mark)
 #define stack_check(ec, water_mark) FALSE
 #endif
 
-#define STACKFRAME_FOR_CALL_CFUNC 838
+#define STACKFRAME_FOR_CALL_CFUNC 1024
 
 MJIT_FUNC_EXPORTED int
 rb_ec_stack_check(rb_execution_context_t *ec)
