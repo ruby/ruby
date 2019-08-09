@@ -1,0 +1,29 @@
+on: pull_request
+
+jobs:
+  macos:
+    name: rake test
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        ruby: [ '2.3.x', '2.4.x', '2.5.x', '2.6.x' ]
+    steps:
+      - name: Disable Firewall
+        run: |
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+      - name: Checkout
+        uses: actions/checkout@master
+        with:
+          fetch-depth: 5
+      - name: Setup ruby
+        uses: actions/setup-ruby@v1
+        with:
+          version: ${{ matrix.ruby }}
+          architecture: 'x64'
+      - name: Install Dependencies
+        run: util/ci.sh before_script
+      - name: Run Test
+        run: util/ci.sh script
+        env:
+          TEST_TOOL: "rubygems"
