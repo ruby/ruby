@@ -865,6 +865,18 @@ module Test
         end
       end
 
+      def complement_test_name f, orig_f
+        basename = File.basename(f)
+
+        if /\.rb\z/ !~ basename
+          return File.join(File.dirname(f), basename+'.rb')
+        elsif /\Atest_/ !~ basename
+          return File.join(File.dirname(f), 'test_'+basename)
+        end if /#{basename}\z/ =~ f # otherwise basename is dirname/
+
+        raise ArgumentError, "file not found: #{orig_f}"
+      end
+
       def non_options(files, options)
         paths = [options.delete(:base_directory), nil].uniq
         if reject = options.delete(:reject)
@@ -872,6 +884,7 @@ module Test
         end
         files.map! {|f|
           f = f.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
+          orig_f = f
           while true
             ret = ((paths if /\A\.\.?(?:\z|\/)/ !~ f) || [nil]).any? do |prefix|
               if prefix
@@ -898,11 +911,7 @@ module Test
               end
             end
             if !ret
-              if /\.rb\z/ =~ f
-                raise ArgumentError, "file not found: #{f}"
-              else
-                f = "#{f}.rb"
-              end
+              f = complement_test_name(f, orig_f)
             else
               break ret
             end
