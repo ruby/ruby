@@ -3209,6 +3209,12 @@ static void*
 mod_cvar_of(VALUE mod, void *data)
 {
     VALUE tmp = mod;
+    if (FL_TEST(mod, FL_SINGLETON)) {
+        if (rb_namespace_p(rb_ivar_get(mod, id__attached__))) {
+            data = mod_cvar_at(tmp, data);
+            tmp = cvar_front_klass(tmp);
+        }
+    }
     for (;;) {
 	data = mod_cvar_at(tmp, data);
 	tmp = RCLASS_SUPER(tmp);
