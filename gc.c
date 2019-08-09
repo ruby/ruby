@@ -10135,6 +10135,7 @@ wmap_compact(void *ptr)
     struct weakmap *w = ptr;
     if (w->wmap2obj) rb_gc_update_tbl_refs(w->wmap2obj);
     if (w->obj2wmap) rb_gc_update_tbl_refs(w->obj2wmap);
+    w->final = rb_gc_location(w->final);
 }
 
 static void
@@ -10144,7 +10145,7 @@ wmap_mark(void *ptr)
 #if WMAP_DELETE_DEAD_OBJECT_IN_MARK
     if (w->obj2wmap) st_foreach(w->obj2wmap, wmap_mark_map, (st_data_t)&rb_objspace);
 #endif
-    rb_gc_mark(w->final);
+    rb_gc_mark_no_pin(w->final);
 }
 
 static int
