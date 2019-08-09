@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle open" do
-  before :each do
+  before do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rails"
