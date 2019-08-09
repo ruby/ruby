@@ -14,7 +14,7 @@
 #include "vm_core.h"
 #include "iseq.h"
 #ifdef HAVE_UCONTEXT_H
-#include "ucontext.h"
+#include <ucontext.h>
 #endif
 
 /* see vm_insnhelper.h for the values */

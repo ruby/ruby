@@ -46,7 +46,7 @@
 #endif
 
 #ifdef __QNXNTO__
-#include "unix.h"
+#include <unix.h>
 #endif
 
 #include <sys/types.h>
