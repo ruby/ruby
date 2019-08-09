@@ -824,7 +824,7 @@ class Reline::LineEditor
         # skip
         i += 2
       elsif slice =~ quote_characters_regexp # find new "
-        quote = $~
+        quote = $&
         closing_quote = /(?!\\)#{Regexp.escape(quote)}/
         escaped_quote = /\\#{Regexp.escape(quote)}/
         i += 1
