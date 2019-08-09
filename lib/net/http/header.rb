@@ -323,7 +323,7 @@ module Net::HTTPHeader
   end
 
   # Returns "true" if the "transfer-encoding" header is present and
-  # set to "chunked".  This is an HTTP/1.1 feature, allowing the
+  # set to "chunked".  This is an HTTP/1.1 feature, allowing
   # the content to be sent in "chunks" without at the outset
   # stating the entire content length.
   def chunked?

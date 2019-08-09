@@ -534,7 +534,7 @@ describe "Module#autoload" do
       end
     end
 
-    it "and fails when finding the undefined autoload constant in the the current scope when declared in current and defined in parent" do
+    it "and fails when finding the undefined autoload constant in the current scope when declared in current and defined in parent" do
       @remove << :DeclaredInCurrentDefinedInParent
       module ModuleSpecs::Autoload
         ScratchPad.record -> {
