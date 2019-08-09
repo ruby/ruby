@@ -22,6 +22,7 @@
 
 static ID id_cmp, id_le_p, id_ge_p, id_eqeq_p;
 static VALUE cDate, cDateTime;
+static VALUE eDateError;
 static VALUE half_days_in_day, day_in_nanoseconds;
 static double positive_inf, negative_inf;
 
@@ -3069,7 +3070,7 @@ old_to_new(VALUE ajd, VALUE of, VALUE sg,
     *rsg = NUM2DBL(sg);
 
     if (*rdf < 0 || *rdf >= DAY_IN_SECONDS)
-	rb_raise(rb_eArgError, "invalid day fraction");
+	rb_raise(eDateError, "invalid day fraction");
 
     if (f_lt_p(*rsf, INT2FIX(0)) ||
 	f_ge_p(*rsf, INT2FIX(SECOND_IN_NANOSECONDS)))
@@ -3231,7 +3232,7 @@ do {\
     s = s##_trunc(v##s, &fr);\
     if (f_nonzero_p(fr)) {\
 	if (argc > n)\
-	    rb_raise(rb_eArgError, "invalid fraction");\
+	    rb_raise(eDateError, "invalid fraction");\
 	fr2 = fr;\
     }\
 } while (0)
@@ -3241,7 +3242,7 @@ do {\
     s = NUM2INT(s##_trunc(v##s, &fr));\
     if (f_nonzero_p(fr)) {\
 	if (argc > n)\
-	    rb_raise(rb_eArgError, "invalid fraction");\
+	    rb_raise(eDateError, "invalid fraction");\
 	fr2 = fr;\
     }\
 } while (0)
@@ -3368,7 +3369,7 @@ date_s_ordinal(int argc, VALUE *argv, VALUE klass)
 			     &nth, &ry,
 			     &rd, &rjd,
 			     &ns))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 
 	ret = d_simple_new_internal(klass,
 				     nth, rjd,
@@ -3452,7 +3453,7 @@ date_initialize(int argc, VALUE *argv, VALUE self)
 	if (!valid_gregorian_p(y, m, d,
 			       &nth, &ry,
 			       &rm, &rd))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 
 	set_to_simple(self, dat, nth, 0, sg, ry, rm, rd, HAVE_CIVIL);
     }
@@ -3464,7 +3465,7 @@ date_initialize(int argc, VALUE *argv, VALUE self)
 			   &nth, &ry,
 			   &rm, &rd, &rjd,
 			   &ns))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 
 	set_to_simple(self, dat, nth, rjd, sg, ry, rm, rd, HAVE_JD | HAVE_CIVIL);
     }
@@ -3526,7 +3527,7 @@ date_s_commercial(int argc, VALUE *argv, VALUE klass)
 				&nth, &ry,
 				&rw, &rd, &rjd,
 				&ns))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 
 	ret = d_simple_new_internal(klass,
 				    nth, rjd,
@@ -3576,7 +3577,7 @@ date_s_weeknum(int argc, VALUE *argv, VALUE klass)
 			     &nth, &ry,
 			     &rw, &rd, &rjd,
 			     &ns))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 
 	ret = d_simple_new_internal(klass,
 				    nth, rjd,
@@ -3625,7 +3626,7 @@ date_s_nth_kday(int argc, VALUE *argv, VALUE klass)
 			      &nth, &ry,
 			      &rm, &rn, &rk, &rjd,
 			      &ns))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 
 	ret = d_simple_new_internal(klass,
 				    nth, rjd,
@@ -4172,7 +4173,7 @@ d_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
     }
 
     if (NIL_P(hash))
-	rb_raise(rb_eArgError, "invalid date");
+	rb_raise(eDateError, "invalid date");
 
     if (NIL_P(ref_hash("jd")) &&
 	NIL_P(ref_hash("yday")) &&
@@ -4189,7 +4190,7 @@ d_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
     }
 
     if (NIL_P(jd))
-	rb_raise(rb_eArgError, "invalid date");
+	rb_raise(eDateError, "invalid date");
     {
 	VALUE nth;
 	int rjd;
@@ -4749,11 +4750,11 @@ d_lite_initialize(int argc, VALUE *argv, VALUE self)
 	sf = vsf;
 	if (f_lt_p(sf, INT2FIX(0)) ||
 	    f_ge_p(sf, INT2FIX(SECOND_IN_NANOSECONDS)))
-	    rb_raise(rb_eArgError, "invalid second fraction");
+	    rb_raise(eDateError, "invalid second fraction");
       case 2:
 	df = NUM2INT(vdf);
 	if (df < 0 || df >= DAY_IN_SECONDS)
-	    rb_raise(rb_eArgError, "invalid day fraction");
+	    rb_raise(eDateError, "invalid day fraction");
       case 1:
 	jd = vjd;
     }
@@ -6063,7 +6064,7 @@ d_lite_rshift(VALUE self, VALUE other)
 			  &rm, &rd, &rjd, &ns))
 	    break;
 	if (--d < 1)
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
     }
     encode_jd(nth, rjd, &rjd2);
     return d_lite_plus(self, f_sub(rjd2, m_real_local_jd(dat)));
@@ -7280,7 +7281,7 @@ datetime_s_jd(int argc, VALUE *argv, VALUE klass)
 	int rh, rmin, rs, rjd, rjd2;
 
 	if (!c_valid_time_p(h, min, s, &rh, &rmin, &rs))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 	canon24oc();
 
 	decode_jd(jd, &nth, &rjd);
@@ -7359,9 +7360,9 @@ datetime_s_ordinal(int argc, VALUE *argv, VALUE klass)
 			     &nth, &ry,
 			     &rd, &rjd,
 			     &ns))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 	if (!c_valid_time_p(h, min, s, &rh, &rmin, &rs))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 	canon24oc();
 
 	rjd2 = jd_local_to_utc(rjd,
@@ -7454,9 +7455,9 @@ datetime_initialize(int argc, VALUE *argv, VALUE self)
 	if (!valid_gregorian_p(y, m, d,
 			       &nth, &ry,
 			       &rm, &rd))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 	if (!c_valid_time_p(h, min, s, &rh, &rmin, &rs))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 	canon24oc();
 
 	set_to_complex(self, dat,
@@ -7475,9 +7476,9 @@ datetime_initialize(int argc, VALUE *argv, VALUE self)
 			   &nth, &ry,
 			   &rm, &rd, &rjd,
 			   &ns))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 	if (!c_valid_time_p(h, min, s, &rh, &rmin, &rs))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 	canon24oc();
 
 	rjd2 = jd_local_to_utc(rjd,
@@ -7559,9 +7560,9 @@ datetime_s_commercial(int argc, VALUE *argv, VALUE klass)
 				&nth, &ry,
 				&rw, &rd, &rjd,
 				&ns))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 	if (!c_valid_time_p(h, min, s, &rh, &rmin, &rs))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 	canon24oc();
 
 	rjd2 = jd_local_to_utc(rjd,
@@ -7630,9 +7631,9 @@ datetime_s_weeknum(int argc, VALUE *argv, VALUE klass)
 			     &nth, &ry,
 			     &rw, &rd, &rjd,
 			     &ns))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 	if (!c_valid_time_p(h, min, s, &rh, &rmin, &rs))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 	canon24oc();
 
 	rjd2 = jd_local_to_utc(rjd,
@@ -7699,9 +7700,9 @@ datetime_s_nth_kday(int argc, VALUE *argv, VALUE klass)
 			      &nth, &ry,
 			      &rm, &rn, &rk, &rjd,
 			      &ns))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 	if (!c_valid_time_p(h, min, s, &rh, &rmin, &rs))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 	canon24oc();
 
 	rjd2 = jd_local_to_utc(rjd,
@@ -7844,7 +7845,7 @@ dt_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
     }
 
     if (NIL_P(hash))
-	rb_raise(rb_eArgError, "invalid date");
+	rb_raise(eDateError, "invalid date");
 
     if (NIL_P(ref_hash("jd")) &&
 	NIL_P(ref_hash("yday")) &&
@@ -7871,7 +7872,7 @@ dt_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
     }
 
     if (NIL_P(jd))
-	rb_raise(rb_eArgError, "invalid date");
+	rb_raise(eDateError, "invalid date");
 
     {
 	int rh, rmin, rs;
@@ -7880,7 +7881,7 @@ dt_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
 			    NUM2INT(ref_hash("min")),
 			    NUM2INT(ref_hash("sec")),
 			    &rh, &rmin, &rs))
-	    rb_raise(rb_eArgError, "invalid date");
+	    rb_raise(eDateError, "invalid date");
 
 	df = time_to_df(rh, rmin, rs);
     }
@@ -9268,6 +9269,7 @@ Init_date_core(void)
      *
      */
     cDate = rb_define_class("Date", rb_cObject);
+    eDateError = rb_define_class_under(cDate, "Error", rb_eArgError);
 
     rb_include_module(cDate, rb_mComparable);
 

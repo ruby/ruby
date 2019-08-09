@@ -659,26 +659,38 @@ class TestDateParse < Test::Unit::TestCase
   end
 
   def test_parse__ex
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       Date.parse('')
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       DateTime.parse('')
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       Date.parse('2001-02-29')
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       DateTime.parse('2001-02-29T23:59:60')
     end
-    assert_nothing_raised(ArgumentError) do
+    assert_nothing_raised(Date::Error) do
       DateTime.parse('2001-03-01T23:59:60')
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       DateTime.parse('2001-03-01T23:59:61')
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       Date.parse('23:55')
+    end
+
+    begin
+      Date.parse('')
+    rescue ArgumentError => e
+      assert e.is_a? Date::Error
+    end
+
+    begin
+      DateTime.parse('')
+    rescue ArgumentError => e
+      assert e.is_a? Date::Error
     end
   end
 

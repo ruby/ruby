@@ -27,7 +27,7 @@ class TestDateNew < Test::Unit::TestCase
   end
 
   def test_jd__ex
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       DateTime.jd(0, 23,59,60,0)
     end
   end
@@ -118,10 +118,10 @@ class TestDateNew < Test::Unit::TestCase
   end
 
   def test_ordinal__ex
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       Date.ordinal(2001,366)
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       DateTime.ordinal(2001,365, 23,59,60, 0)
     end
   end
@@ -181,13 +181,13 @@ class TestDateNew < Test::Unit::TestCase
   end
 
   def test_civil__ex
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       Date.civil(2001,2,29)
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       DateTime.civil(2001,2,28, 23,59,60, 0)
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       DateTime.civil(2001,2,28, 24,59,59, 0)
     end
   end
@@ -248,10 +248,10 @@ class TestDateNew < Test::Unit::TestCase
   end
 
   def test_commercial__ex
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       Date.commercial(1997,53,1)
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       DateTime.commercial(1997,52,1, 23,59,60, 0)
     end
   end
@@ -270,10 +270,10 @@ class TestDateNew < Test::Unit::TestCase
     assert_equal(2452355, d.jd)
     assert_equal([11,22,33], [d.hour, d.min, d.sec])
 
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       Date.weeknum(1999,53,0, 0)
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       Date.weeknum(1999,-53,-1, 0)
     end
   end if Date.respond_to?(:weeknum, true)
@@ -292,10 +292,10 @@ class TestDateNew < Test::Unit::TestCase
     assert_equal(2448682, d.jd)
     assert_equal([11,22,33], [d.hour, d.min, d.sec])
 
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       Date.nth_kday(2006,5, 5,0)
     end
-    assert_raise(ArgumentError) do
+    assert_raise(Date::Error) do
       Date.nth_kday(2006,5, -5,0)
     end
   end if Date.respond_to?(:nth_kday, true)
