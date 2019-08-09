@@ -1056,6 +1056,7 @@ int rb_singleton_class_internal_p(VALUE sklass);
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
 #define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
 
+#define RCLASS_CLONED     FL_USER6
 #define RICLASS_IS_ORIGIN FL_USER5
 
 static inline void
