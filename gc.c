@@ -1031,24 +1031,6 @@ has_sse2()
 }
 #endif
 
-#if defined(__x86_64__)
-static int
-has_rdtscp()
-{
-    static volatile int initialized = 0;
-    static int hasRDTSCP = 0;
-    if (initialized)
-        return hasRDTSCP;
-    uint32_t eax, ebx, ecx, edx;
-    eax = 0x80000001;
-    cpuid(&eax, &ebx, &ecx, &edx);
-    if (1 & (edx >> 27))
-        hasRDTSCP = 1;
-    initialized = 1;
-    return hasRDTSCP;
-}
-#endif
-
 /* Figure out how to serialze rdtsc.
  * On Intel processors lfence is enough, AMD requires mfence.
  * Don't know about the rest(e.g, Hygon processor), do mfence.
@@ -1116,11 +1098,8 @@ static __inline__ tick_t
 tick(void)
 {
     unsigned long hi, lo;
-    int use_rdtscp = has_rdtscp();
     int lfence_before_rdtsc = how_serialize_rdtsc();
-    if (use_rdtscp) {
-        __asm__ __volatile__ ("rdtscp" : "=a"(lo), "=d"(hi));
-    } else if (lfence_before_rdtsc) {
+    if (lfence_before_rdtsc) {
         __asm__ __volatile__ (
             "lfence\n\t"
             "rdtsc\n\t"
