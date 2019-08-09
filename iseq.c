@@ -305,7 +305,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	    for (j = 0; i < keyword->num; i++, j++) {
 		VALUE obj = keyword->default_values[j];
 		if (!SPECIAL_CONST_P(obj)) {
-		    rb_gc_mark(obj);
+		    rb_gc_mark_no_pin(obj);
 		}
 	    }
 	}
