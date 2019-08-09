@@ -785,7 +785,7 @@ vm_get_const_key_cref(const VALUE *ep)
     const rb_cref_t *key_cref = cref;
 
     while (cref) {
-	if (FL_TEST(CREF_CLASS(cref), FL_SINGLETON) ||
+        if (FL_TEST(CREF_CLASS(cref), FL_SINGLETON) ||
             FL_TEST(CREF_CLASS(cref), RCLASS_CLONED)) {
             return key_cref;
 	}
