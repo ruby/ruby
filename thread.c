@@ -70,6 +70,7 @@
 #include "ruby/thread.h"
 #include "ruby/thread_native.h"
 #include "ruby/debug.h"
+#include "gc.h"
 #include "internal.h"
 #include "iseq.h"
 #include "vm_core.h"
