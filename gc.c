@@ -957,6 +957,12 @@ static const char *obj_info(VALUE obj);
  * http://www.mcs.anl.gov/~kazutomo/rdtsc.html
  * written by Kazutomo Yoshii <kazutomo@mcs.anl.gov>
  */
+/* Source code to use RDTSC is modified to serialize
+ * RDTSC, it is unordered on x86 processors and the results
+ * can be non-monotonic if compared on different processors.
+ * https://lkml.org/lkml/2011/5/10/297
+ * modified by https://github.com/ruby/ruby/pull/2330
+ */
 
 #if defined(__i386__) || defined(__x86_64__)
 #if defined(__GNUC__)
