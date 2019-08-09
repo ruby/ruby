@@ -974,7 +974,7 @@ has_cpuid()
     static volatile int initialized = 0;
     static uint32_t flags;
     if (initialized)
-        return flags & 0x200000;
+        return (flags & 0x200000) != 0;
     /* http://wiki.osdev.org/CPUID#Checking_CPUID_availability */
     __asm__ __volatile__ (
         "pushf{l|d}\n\t" /* Save EFLAGS */
@@ -987,7 +987,7 @@ has_cpuid()
         "popf{l|d}\n\t" /* Restore original EFLAGS */
         : "=a" (flags));
     initialized = 1;
-    return flags & 0x200000;
+    return (flags & 0x200000) != 0;
 }
 #endif
 
@@ -1088,14 +1088,13 @@ tick(void)
 {
     unsigned long long int x;
 #if defined(__SSE2__)
-    int has_sse2 = has_sse2();
     int lfence_before_rdtsc = how_serialize_rdtsc();
     if (lfence_before_rdtsc) {
         __asm__ __volatile__ (
             "lfence\n\t"
             "rdtsc\n\t"
             : "=A" (x));
-    } else if (has_sse2) {
+    } else if (has_sse2()) {
         __asm__ __volatile__ (
             "mfence\n\t"
             "rdtsc\n\t"
