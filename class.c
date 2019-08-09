@@ -308,11 +308,17 @@ class_init_copy_check(VALUE clone, VALUE orig)
 	rb_raise(rb_eTypeError, "can't copy singleton class");
     }
 }
-
+#include "gc.h"
 /* :nodoc: */
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
 {
+    /* cloned flag is refer at constant inline cache
+     * see vm_get_const_key_cref() in vm_insnhelper.c
+     */
+    FL_SET(clone, RCLASS_CLONED);
+    FL_SET(orig , RCLASS_CLONED);
+
     if (RB_TYPE_P(clone, T_CLASS)) {
 	class_init_copy_check(clone, orig);
     }

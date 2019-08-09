@@ -785,8 +785,9 @@ vm_get_const_key_cref(const VALUE *ep)
     const rb_cref_t *key_cref = cref;
 
     while (cref) {
-	if (FL_TEST(CREF_CLASS(cref), FL_SINGLETON)) {
-	    return key_cref;
+	if (FL_TEST(CREF_CLASS(cref), FL_SINGLETON) ||
+            FL_TEST(CREF_CLASS(cref), RCLASS_CLONED)) {
+            return key_cref;
 	}
 	cref = CREF_NEXT(cref);
     }
@@ -3722,7 +3723,8 @@ static int
 vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 {
     if (ic->ic_serial == GET_GLOBAL_CONSTANT_STATE()) {
-        return (ic->ic_cref == NULL || ic->ic_cref == vm_get_cref(reg_ep));
+        return (ic->ic_cref == NULL || // no need to check CREF
+                ic->ic_cref == vm_get_cref(reg_ep));
     }
     return FALSE;
 }
