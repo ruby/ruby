@@ -8,7 +8,6 @@ on:
       - '*'
 jobs:
   macos:
-    name: make test-all on mac
     runs-on: macos-latest
     steps:
       - name: Disable Firewall
