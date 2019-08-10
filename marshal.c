@@ -636,7 +636,7 @@ w_encoding(VALUE encname, struct dump_call_arg *arg)
     switch (encname) {
       case Qfalse:
       case Qtrue:
-	w_symbol(ID2SYM(s_encoding_short), arg->arg);
+        w_symbol(ID2SYM(s_encoding_short), arg->arg);
 	w_object(encname, arg->arg, limit);
         return 1;
       case Qnil:
