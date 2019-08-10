@@ -19,4 +19,4 @@ jobs:
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SLACK_MESSAGE: fail! ${{ github.event_name }} ${{ github.event.action }}
-        if: job.steps.test-all.status == failure
+        if: job.steps.test-all.status == "failure"
