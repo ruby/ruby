@@ -1,5 +1,5 @@
-name: check_suite
-on: [check_suite]
+name: check_run
+on: [check_run]
 jobs:
   notification:
     runs-on: ubuntu-latest
