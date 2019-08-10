@@ -189,10 +189,10 @@ class RDoc::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Un
   end
 
   ##
-  # run capture_io with setting $VERBOSE = true
+  # run capture_output with setting $VERBOSE = true
 
-  def verbose_capture_io
-    capture_io do
+  def verbose_capture_output
+    capture_output do
       begin
         orig_verbose = $VERBOSE
         $VERBOSE = true

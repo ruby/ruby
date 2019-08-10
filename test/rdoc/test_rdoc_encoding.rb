@@ -54,7 +54,7 @@ class TestRDocEncoding < RDoc::TestCase
 
     contents = :junk
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       contents = RDoc::Encoding.read_file @tempfile.path, Encoding::US_ASCII
     end
 
@@ -97,7 +97,7 @@ class TestRDocEncoding < RDoc::TestCase
     @tempfile.flush
 
     contents = :junk
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       contents = RDoc::Encoding.read_file @tempfile.path, Encoding::UTF_8
     end
 
