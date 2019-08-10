@@ -576,7 +576,13 @@ w_obj_each(st_data_t key, st_data_t val, st_data_t a)
     struct w_ivar_arg *ivarg = (struct w_ivar_arg *)a;
     struct dump_call_arg *arg = ivarg->dump;
 
-    if (to_be_skipped_id(id)) return ST_CONTINUE;
+    if (to_be_skipped_id(id)) {
+        if (id == s_encoding_short) {
+            rb_warn("instance variable `E' on class %"PRIsVALUE" is not dumped",
+                    CLASS_OF(arg->obj));
+        }
+        return ST_CONTINUE;
+    }
     if (!ivarg->num_ivar) {
         rb_raise(rb_eRuntimeError, "instance variable added to %"PRIsVALUE" instance",
                  CLASS_OF(arg->obj));
