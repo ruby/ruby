@@ -13,3 +13,9 @@ jobs:
       - name: Disable Firewall
         run: |
           echo hello
+      - name: Slack Notify
+        uses: rtCamp/action-slack-notify@v1.0.0
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: fail! ${{ github.event_name }} ${{ github.event.action }}
+        if: failure
