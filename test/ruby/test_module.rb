@@ -565,6 +565,24 @@ class TestModule < Test::Unit::TestCase
     assert_equal("TestModule::User",   User.name)
   end
 
+  def test_accidental_singleton_naming_with_module
+    o = Object.new
+    assert_nil(o.singleton_class.name)
+    class << o
+      module Hi; end
+    end
+    assert_nil(o.singleton_class.name)
+  end
+
+  def test_accidental_singleton_naming_with_class
+    o = Object.new
+    assert_nil(o.singleton_class.name)
+    class << o
+      class Hi; end
+    end
+    assert_nil(o.singleton_class.name)
+  end
+
   def test_classpath
     m = Module.new
     n = Module.new
