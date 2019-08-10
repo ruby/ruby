@@ -2014,6 +2014,10 @@ numeric_denominator(VALUE self)
 VALUE
 rb_numeric_quo(VALUE x, VALUE y)
 {
+    if (RB_TYPE_P(x, T_COMPLEX)) {
+        return rb_complex_div(x, y);
+    }
+
     if (RB_FLOAT_TYPE_P(y)) {
         return rb_funcallv(x, idFdiv, 1, &y);
     }
