@@ -8,4 +8,4 @@ jobs:
         uses: rtCamp/action-slack-notify@v1.0.0
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_MESSAGE: hello ${{ github.event_name }} ${{ github.event.action }}
+          SLACK_MESSAGE: hello ${{ github.event_name }} ${{ github.event.action }} ${{ github.event.check_suite.status }}
