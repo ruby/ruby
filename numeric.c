@@ -1122,8 +1122,8 @@ rb_flo_div_flo(VALUE x, VALUE y)
  * Returns a new Float which is the result of dividing +float+ by +other+.
  */
 
-static VALUE
-flo_div(VALUE x, VALUE y)
+VALUE
+rb_float_div(VALUE x, VALUE y)
 {
     double num = RFLOAT_VALUE(x);
     double den;
@@ -5791,7 +5791,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "+", rb_float_plus, 1);
     rb_define_method(rb_cFloat, "-", flo_minus, 1);
     rb_define_method(rb_cFloat, "*", rb_float_mul, 1);
-    rb_define_method(rb_cFloat, "/", flo_div, 1);
+    rb_define_method(rb_cFloat, "/", rb_float_div, 1);
     rb_define_method(rb_cFloat, "quo", flo_quo, 1);
     rb_define_method(rb_cFloat, "fdiv", flo_quo, 1);
     rb_define_method(rb_cFloat, "%", flo_mod, 1);

@@ -1763,6 +1763,7 @@ VALUE rb_float_plus(VALUE x, VALUE y);
 VALUE rb_int_minus(VALUE x, VALUE y);
 VALUE rb_int_mul(VALUE x, VALUE y);
 VALUE rb_float_mul(VALUE x, VALUE y);
+VALUE rb_float_div(VALUE x, VALUE y);
 VALUE rb_int_idiv(VALUE x, VALUE y);
 VALUE rb_int_modulo(VALUE x, VALUE y);
 VALUE rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode);
