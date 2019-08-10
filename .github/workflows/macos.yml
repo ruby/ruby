@@ -21,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@master
         with:
-          fetch-depth: 5
+          fetch-depth: 20
       - name: Set ENV
         run: |
           echo '##[set-env name=JOBS]'-j$((1 + $(sysctl -n hw.activecpu)))
