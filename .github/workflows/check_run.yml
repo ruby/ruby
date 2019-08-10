@@ -1,25 +1,9 @@
-name: macos
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - '*'
+name: check_run
+on: [check_run]
 jobs:
   latest:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
-      - name: Disable Firewall
-        id: testall
-        run: |
-          exit 1
-      #- name: Slack Notify
-      #  uses: rtCamp/action-slack-notify@v1.0.0
-      #  env:
-      #    SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-      #    SLACK_MESSAGE: fail! ${{ github.event_name }} ${{ github.event.action }}
-      #  if: job.steps.testall.status == failure
       - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
