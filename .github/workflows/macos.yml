@@ -9,6 +9,9 @@ on:
 jobs:
   latest:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        test_task: [ "test-all", "test-spec", "test-bundler" ]
     steps:
       - name: Disable Firewall
         run: |
@@ -31,9 +34,10 @@ jobs:
       - run: make $JOBS
       - name: make test
         run: make -s test TESTOPTS="$JOBS -q --tty=no"
-      - name: make test-all
-        run: make -s test-all TESTOPTS="$JOBS -q --tty=no"
-      - name: make test-spec
-        run: make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
+      - name: make test-*
+        run: make -s ${{ matrix.test_task }}
+        env:
+          TESTOPTS: "$JOBS -q --tty=no"
+          MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
       - name: Leaked Globals
         run: make -s leaked-globals
