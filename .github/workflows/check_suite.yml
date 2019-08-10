@@ -2,7 +2,10 @@ name: check_suite
 on: [check_suite]
 jobs:
   notification:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
-      - name: Test
-        run: echo hello
+      - name: Slack Notify
+        uses: rtCamp/action-slack-notify@v1.0.0
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: hello world
