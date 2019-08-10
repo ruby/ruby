@@ -7,7 +7,7 @@ on:
     paths:
       - '*'
 jobs:
-  macos:
+  latest:
     runs-on: macos-latest
     steps:
       - name: Disable Firewall
@@ -24,21 +24,16 @@ jobs:
           fetch-depth: 5
       - name: Set ENV
         run: |
-          echo '##[set-env name=CONFIGURE_TTY]no'
-          echo '##[set-env name=NPROC]'$(sysctl -n hw.activecpu)
           echo '##[set-env name=JOBS]'-j$((1 + $(sysctl -n hw.activecpu)))
-      - name: Print ENV
-        run: |
-          echo $CONFIGURE_TTY
-          echo $NPROC
-          echo $JOBS
       - run: autoconf
       - name: configure
         run: ./configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl) --with-readline-dir=$(brew --prefix readline)
       - run: make $JOBS
-      - run: make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=$CONFIGURE_TTY}"
-      - run: make -s test-all TESTOPTS="${TESTOPTS=$JOBS -q --tty=$CONFIGURE_TTY}"
-      - name: Ruby Spec
+      - name: make test
+        run: make -s test TESTOPTS="$JOBS -q --tty=no"
+      - name: make test-all
+        run: make -s test-all TESTOPTS="$JOBS -q --tty=no"
+      - name: make test-spec
         run: make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
       - name: Leaked Globals
         run: make -s leaked-globals
