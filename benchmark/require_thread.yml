@@ -15,11 +15,7 @@ prelude: |
     FileUtils.mkdir_p(data_dir)
 
     1.upto(num_files) do |i|
-      f = File.open("#{data_dir}/c#{i}.rb", "w")
-      f.puts <<-END
-        class C#{i}
-        end
-      END
+      File.write("#{data_dir}/c#{i}.rb", "class C#{i}\n""end\n")
     end
   end
 
