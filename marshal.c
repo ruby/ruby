@@ -83,6 +83,7 @@ shortlen(size_t len, BDIGIT *ds)
 static ID s_dump, s_load, s_mdump, s_mload;
 static ID s_dump_data, s_load_data, s_alloc, s_call;
 static ID s_getbyte, s_read, s_write, s_binmode;
+static ID s_encoding_short;
 
 #define name_s_dump	"_dump"
 #define name_s_load	"_load"
@@ -96,6 +97,7 @@ static ID s_getbyte, s_read, s_write, s_binmode;
 #define name_s_read	"read"
 #define name_s_write	"write"
 #define name_s_binmode	"binmode"
+#define name_s_encoding_short "E"
 
 typedef struct {
     VALUE newclass;
@@ -559,7 +561,7 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
     }
 }
 
-#define to_be_skipped_id(id) (id == rb_id_encoding() || id == rb_intern("E") || !rb_id2str(id))
+#define to_be_skipped_id(id) (id == rb_id_encoding() || id == s_encoding_short || !rb_id2str(id))
 
 struct w_ivar_arg {
     struct dump_call_arg *dump;
@@ -634,7 +636,7 @@ w_encoding(VALUE encname, struct dump_call_arg *arg)
     switch (encname) {
       case Qfalse:
       case Qtrue:
-	w_symbol(ID2SYM(rb_intern("E")), arg->arg);
+	w_symbol(ID2SYM(s_encoding_short), arg->arg);
 	w_object(encname, arg->arg, limit);
         return 1;
       case Qnil:
@@ -2293,6 +2295,7 @@ Init_marshal(void)
     set_id(s_read);
     set_id(s_write);
     set_id(s_binmode);
+    set_id(s_encoding_short);
 
     rb_define_module_function(rb_mMarshal, "dump", marshal_dump, -1);
     rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);
