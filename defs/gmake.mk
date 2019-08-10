@@ -149,8 +149,7 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 	+$(Q) \
 	{ \
 	  $(CHDIR) "$(srcdir)"; \
-	  sed -f tool/prereq.status defs/gmake.mk template/Makefile.in; \
-	  sed 's/{[.;]*$$([a-zA-Z0-9_]*)}//g' common.mk; \
+	  exec sed -f tool/prereq.status defs/gmake.mk template/Makefile.in common.mk; \
 	} | \
 	$(MAKE) $(mflags) Q=$(Q) ECHO=$(ECHO) srcdir="$(srcdir)" srcs_vpath="" CHDIR="$(CHDIR)" \
 		BOOTSTRAPRUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BASERUBY)" BASERUBY="$(BASERUBY)" \
