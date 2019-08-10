@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Disable Firewall
         run: |
-          echo hello
+          exit 1
       - name: Slack Notify
         uses: rtCamp/action-slack-notify@v1.0.0
         env:
