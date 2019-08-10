@@ -12,5 +12,4 @@ jobs:
     steps:
       - name: Disable Firewall
         run: |
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+          exit 1
