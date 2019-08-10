@@ -235,7 +235,25 @@ f_negate(VALUE x)
     return rb_funcall(x, id_negate, 0);
 }
 
-fun1(real_p)
+static VALUE nucomp_real_p(VALUE self);
+
+static inline bool
+f_real_p(VALUE x)
+{
+    if (RB_INTEGER_TYPE_P(x)) {
+        return TRUE;
+    }
+    else if (RB_FLOAT_TYPE_P(x)) {
+        return TRUE;
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL)) {
+        return TRUE;
+    }
+    else if (RB_TYPE_P(x, T_COMPLEX)) {
+        return nucomp_real_p(x);
+    }
+    return rb_funcall(x, id_real_p, 0);
+}
 
 inline static VALUE
 f_to_i(VALUE x)
@@ -244,6 +262,7 @@ f_to_i(VALUE x)
 	return rb_str_to_inum(x, 10, 0);
     return rb_funcall(x, id_to_i, 0);
 }
+
 inline static VALUE
 f_to_f(VALUE x)
 {
@@ -1090,7 +1109,8 @@ nucomp_cmp(VALUE self, VALUE other)
         if (RB_TYPE_P(other, T_COMPLEX) && nucomp_real_p(other)) {
             get_dat2(self, other);
             return rb_funcall(adat->real, idCmp, 1, bdat->real);
-        } else if (f_real_p(other)) {
+        }
+        else if (f_real_p(other)) {
             get_dat1(self);
             return rb_funcall(dat->real, idCmp, 1, other);
         }
