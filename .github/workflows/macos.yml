@@ -1,8 +1,11 @@
 name: macos
 on:
-  - push
-  - pull_request
-
+  push:
+    branches:
+      - master
+  pull_request:
+    paths:
+      - *
 jobs:
   macos:
     name: make test-all on mac
