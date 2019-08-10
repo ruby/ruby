@@ -218,7 +218,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
             res["www-authenticate"].scan(DIGESTRES_) do |key, quoted, token|
               params[key.downcase] = token || quoted.delete('\\')
             end
-             params['uri'] = "http://#{addr}:#{port}#{path}"
+            params['uri'] = "http://#{addr}:#{port}#{path}"
           end
 
           g['Authorization'] = credentials_for_request('webrick', "supersecretpassword", params)
