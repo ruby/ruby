@@ -49,6 +49,7 @@ env:
     - UPDATE_UNICODE="UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
     - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
+    - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
 
 .org.ruby-lang.ci.matrix-definitions:
 
@@ -91,7 +92,7 @@ env:
       - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
       - |-
-        tool/travis_retry.sh sudo -E apt-get -yq --no-install-suggests --no-install-recommends $travis_apt_get_options install \
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           gcc-8 \
           libffi-dev \
           libgdbm-dev \
@@ -118,7 +119,7 @@ env:
     before_install:
       - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
       - |-
-        tool/travis_retry.sh sudo -E apt-get -yq --no-install-suggests --no-install-recommends $travis_apt_get_options install \
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           clang-8 \
           llvm-8-tools \
           libffi-dev \
@@ -277,7 +278,7 @@ env:
       - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
       - |-
-        tool/travis_retry.sh sudo -E apt-get -yq --no-install-suggests --no-install-recommends $travis_apt_get_options install \
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           gcc-8-multilib \
           libffi-dev:i386 \
           libffi6:i386 \
