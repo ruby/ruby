@@ -11,7 +11,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Disable Firewall
-        id: test-all
+        id: testall
         run: |
           exit 1
       - name: Slack Notify
@@ -19,4 +19,4 @@ jobs:
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SLACK_MESSAGE: fail! ${{ github.event_name }} ${{ github.event.action }}
-        if: job.steps.test-all.status == "failure"
+        if: job.steps.testall.status == failure
