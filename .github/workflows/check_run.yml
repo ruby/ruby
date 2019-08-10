@@ -1,0 +1,8 @@
+name: check_run
+on: [check_run]
+jobs:
+  notification:
+    runs-on: macos-latest
+    steps:
+      - name: Test
+        run: echo hello
