@@ -285,7 +285,19 @@ f_eqeq_p(VALUE x, VALUE y)
 
 fun2(expt)
 fun2(fdiv)
-fun2(quo)
+
+static VALUE
+f_quo(VALUE x, VALUE y)
+{
+    if (RB_INTEGER_TYPE_P(x))
+        return rb_numeric_quo(x, y);
+    if (RB_FLOAT_TYPE_P(x))
+        return rb_float_div(x, y);
+    if (RB_TYPE_P(x, T_RATIONAL))
+        return rb_numeric_quo(x, y);
+
+    return rb_funcallv(x, id_quo, 1, &y);
+}
 
 inline static int
 f_negative_p(VALUE x)
