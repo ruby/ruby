@@ -53,10 +53,4 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
   s.required_ruby_version = Gem::Requirement.new(">= 2.2.2")
   s.rubygems_version = "2.5.2"
   s.required_rubygems_version = Gem::Requirement.new(">= 2.2")
-
-  s.add_development_dependency("rake")
-  s.add_development_dependency("racc", "> 1.4.10")
-  s.add_development_dependency("kpeg")
-  s.add_development_dependency("minitest", "~> 5")
-  s.add_development_dependency("rubocop")
 end
