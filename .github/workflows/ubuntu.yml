@@ -1,0 +1,41 @@
+name: ubuntu
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - '*'
+jobs:
+  latest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test_task: [ "check", "test-bundler" ]
+    steps:
+      - name: Install libraries
+        run: |
+          set -x
+          sudo sed /etc/apt/sources.list -e "s/^# deb-src/deb-src/g" -i
+          sudo apt-get update
+          sudo apt-get install ruby2.5
+          sudo apt-get build-dep ruby2.5
+      - name: Checkout
+        uses: actions/checkout@master
+        with:
+          fetch-depth: 50
+      - name: Set ENV
+        run: |
+          export JOBS=-j$((1 + $(nproc --all)))
+      - run: autoconf
+      - name: configure
+        run: ./configure -C --disable-install-doc
+      - run: make $JOBS
+      - name: make check/test-bundler
+        run: make -s ${{ matrix.test_task }}
+        env:
+          TESTOPTS: "$JOBS -q --tty=no"
+          MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
+          CI: "true"
+      - name: Leaked Globals
+        run: make -s leaked-globals
