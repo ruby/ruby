@@ -177,7 +177,7 @@ define fetch-github
 	  git -C "$(srcdir)" remote add github $(GITHUB_RUBY_URL); \
 	  $(eval REMOTE_GITHUB_URL := $(GITHUB_RUBY_URL)) \
 	)
-	$(if $(git -C "$(srcdir)" log -1 --oneline "github/pull/$(1)/head" 2> /dev/null), \
+	$(if $(git -C "$(srcdir)" rev-parse "github/pull/$(1)/head" -- 2> /dev/null), \
 	    git -C "$(srcdir)" branch -f "gh-$(1)" "github/pull/$(1)/head", \
 	    git -C "$(srcdir)" fetch -f github "pull/$(1)/head:gh-$(1)" \
 	)
