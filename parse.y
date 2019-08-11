@@ -9890,7 +9890,8 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	if (dyna_in_block(p) && dvar_defined_ref(p, id, &vidp)) {
 	    if (NUMPARAM_ID_P(id) && numparam_nested_p(p)) return 0;
 	    if (id == p->cur_arg) {
-		rb_warn1("circular argument reference - %"PRIsWARN, rb_id2str(id));
+                compile_error(p, "circular argument reference - %"PRIsWARN, rb_id2str(id));
+                return 0;
 	    }
 	    if (vidp) *vidp |= LVAR_USED;
 	    node = NEW_DVAR(id, loc);
@@ -9898,7 +9899,8 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	}
 	if (local_id_ref(p, id, &vidp)) {
 	    if (id == p->cur_arg) {
-		rb_warn1("circular argument reference - %"PRIsWARN, rb_id2str(id));
+                compile_error(p, "circular argument reference - %"PRIsWARN, rb_id2str(id));
+                return 0;
 	    }
 	    if (vidp) *vidp |= LVAR_USED;
 	    node = NEW_LVAR(id, loc);

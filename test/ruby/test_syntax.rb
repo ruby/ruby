@@ -230,27 +230,23 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_keyword_self_reference
-    bug9593 = '[ruby-core:61299] [Bug #9593]'
     o = Object.new
-    assert_warn(/circular argument reference - var/) do
+    assert_raise(SyntaxError) do
       o.instance_eval("def foo(var: defined?(var)) var end")
     end
-    assert_equal(42, o.foo(var: 42))
-    assert_equal("local-variable", o.foo, bug9593)
 
     o = Object.new
-    assert_warn(/circular argument reference - var/) do
+    assert_raise(SyntaxError) do
       o.instance_eval("def foo(var: var) var end")
     end
-    assert_nil(o.foo, bug9593)
 
     o = Object.new
-    assert_warn(/circular argument reference - var/) do
+    assert_raise(SyntaxError) do
       o.instance_eval("def foo(var: bar(var)) var end")
     end
 
     o = Object.new
-    assert_warn(/circular argument reference - var/) do
+    assert_raise(SyntaxError) do
       o.instance_eval("def foo(var: bar {var}) var end")
     end
 
@@ -302,37 +298,33 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_optional_self_reference
-    bug9593 = '[ruby-core:61299] [Bug #9593]'
     o = Object.new
-    assert_warn(/circular argument reference - var/) do
+    assert_raise(SyntaxError) do
       o.instance_eval("def foo(var = defined?(var)) var end")
     end
-    assert_equal(42, o.foo(42))
-    assert_equal("local-variable", o.foo, bug9593)
 
     o = Object.new
-    assert_warn(/circular argument reference - var/) do
+    assert_raise(SyntaxError) do
       o.instance_eval("def foo(var = var) var end")
     end
-    assert_nil(o.foo, bug9593)
 
     o = Object.new
-    assert_warn(/circular argument reference - var/) do
+    assert_raise(SyntaxError) do
       o.instance_eval("def foo(var = bar(var)) var end")
     end
 
     o = Object.new
-    assert_warn(/circular argument reference - var/) do
+    assert_raise(SyntaxError) do
       o.instance_eval("def foo(var = bar {var}) var end")
     end
 
     o = Object.new
-    assert_warn(/circular argument reference - var/) do
+    assert_raise(SyntaxError) do
       o.instance_eval("def foo(var = (def bar;end; var)) var end")
     end
 
     o = Object.new
-    assert_warn(/circular argument reference - var/) do
+    assert_raise(SyntaxError) do
       o.instance_eval("def foo(var = (def self.bar;end; var)) var end")
     end
 

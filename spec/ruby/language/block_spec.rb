@@ -876,20 +876,38 @@ describe "Post-args" do
     end
 
     describe "with a circular argument reference" do
-      it "shadows an existing local with the same name as the argument" do
-        a = 1
-        -> {
-          @proc = eval "proc { |a=a| a }"
-        }.should complain(/circular argument reference/)
-        @proc.call.should == nil
+      ruby_version_is ''...'2.7' do
+        it "warns and uses a nil value when there is an existing local variable with same name" do
+          a = 1
+          -> {
+            @proc = eval "proc { |a=a| a }"
+          }.should complain(/circular argument reference/)
+          @proc.call.should == nil
+        end
+
+        it "warns and uses a nil value when there is an existing method with same name" do
+          def a; 1; end
+          -> {
+            @proc = eval "proc { |a=a| a }"
+          }.should complain(/circular argument reference/)
+          @proc.call.should == nil
+        end
       end
 
-      it "shadows an existing method with the same name as the argument" do
-        def a; 1; end
-        -> {
-          @proc = eval "proc { |a=a| a }"
-        }.should complain(/circular argument reference/)
-        @proc.call.should == nil
+      ruby_version_is '2.7' do
+        it "raises a SyntaxError if using an existing local with the same name as the argument" do
+          a = 1
+          -> {
+            @proc = eval "proc { |a=a| a }"
+          }.should raise_error(SyntaxError)
+        end
+
+        it "raises a SyntaxError if there is an existing method with the same name as the argument" do
+          def a; 1; end
+          -> {
+            @proc = eval "proc { |a=a| a }"
+          }.should raise_error(SyntaxError)
+        end
       end
 
       it "calls an existing method with the same name as the argument if explicitly using ()" do
