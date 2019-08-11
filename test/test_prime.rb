@@ -27,6 +27,14 @@ class TestPrime < Test::Unit::TestCase
     assert_equal PRIMES, primes
   end
 
+  def test_include?
+    assert_equal(false, Prime.include?(nil))
+    assert_equal(true, Prime.include?(3))
+    assert_equal(false, Prime.include?(4))
+    assert_equal(true, Prime.include?(Enumerable))
+    assert_equal(false, Prime.include?(Comparable))
+  end
+
   def test_integer_each_prime
     primes = []
     Integer.each_prime(1000) do |p|
