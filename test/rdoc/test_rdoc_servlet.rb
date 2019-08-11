@@ -294,7 +294,7 @@ class TestRDocServlet < RDoc::TestCase
   end
 
   def test_if_modified_since
-    skip 'File.utime on directory not supported' if Gem.win_platform?
+    omit 'File.utime on directory not supported' if Gem.win_platform?
 
     temp_dir do
       now = Time.now
@@ -307,7 +307,7 @@ class TestRDocServlet < RDoc::TestCase
   end
 
   def test_if_modified_since_not_modified
-    skip 'File.utime on directory not supported' if Gem.win_platform?
+    omit 'File.utime on directory not supported' if Gem.win_platform?
 
     temp_dir do
       now = Time.now
