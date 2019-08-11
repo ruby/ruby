@@ -133,6 +133,13 @@ module WEBrick
       assert_equal 0, logger.messages.length
     end
 
+    def test_200_chunked_does_not_set_content_length
+      res.chunked     = false
+      res["Transfer-Encoding"] = 'chunked'
+      res.setup_header
+      assert_nil res.header.fetch('content-length', nil)
+    end
+
     def test_send_body_io
       IO.pipe {|body_r, body_w|
         body_w.write 'hello'

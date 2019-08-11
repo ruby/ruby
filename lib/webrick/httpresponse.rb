@@ -155,6 +155,7 @@ module WEBrick
     # Sets the response header +field+ to +value+
 
     def []=(field, value)
+      @chunked = value.to_s.downcase == 'chunked' if field.downcase == 'transfer-encoding'
       @header[field.downcase] = value.to_s
     end
 
