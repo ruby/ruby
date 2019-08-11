@@ -6584,9 +6584,9 @@ mk_inspect(union DateData *x, VALUE klass, VALUE to_s)
  * Returns the value as a string for inspection.
  *
  *    Date.new(2001,2,3).inspect
- *		#=> "#<Date: 2001-02-03 ((2451944j,0s,0n),+0s,2299161j)>"
+ *		#=> "#<Date: 2001-02-03>"
  *    DateTime.new(2001,2,3,4,5,6,'-7').inspect
- *		#=> "#<DateTime: 2001-02-03T04:05:06-07:00 ((2451944j,39906s,0n),-25200s,2299161j)>"
+ *		#=> "#<DateTime: 2001-02-03T04:05:06-07:00>"
  */
 static VALUE
 d_lite_inspect(VALUE self)
