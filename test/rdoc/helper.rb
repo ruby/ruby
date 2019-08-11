@@ -6,7 +6,7 @@ rescue NoMethodError, Gem::LoadError, Bundler::GemfileNotFound
   # for ruby tests
 end
 
-require 'test-unit'
+require 'test/unit'
 
 require 'fileutils'
 require 'pp'
