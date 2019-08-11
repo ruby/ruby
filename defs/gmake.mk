@@ -177,7 +177,10 @@ define fetch-github
 	  git -C "$(srcdir)" remote add github $(GITHUB_RUBY_URL); \
 	  $(eval REMOTE_GITHUB_URL := $(GITHUB_RUBY_URL)) \
 	)
-	git -C "$(srcdir)" fetch -f github "pull/$(1)/head:gh-$(1)"
+	$(if $(git -C "$(srcdir)" log -1 --oneline "github/pull/$(1)/head" 2> /dev/null), \
+	    git -C "$(srcdir)" branch -f "gh-$(1)" "github/pull/$(1)/head", \
+	    git -C "$(srcdir)" fetch -f github "pull/$(1)/head:gh-$(1)" \
+	)
 endef
 
 .PHONY: checkout-github
