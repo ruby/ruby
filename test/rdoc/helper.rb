@@ -7,7 +7,6 @@ rescue NoMethodError, Gem::LoadError, Bundler::GemfileNotFound
 end
 
 require 'test-unit'
-# require 'minitest/benchmark' unless ENV['NOBENCHMARK']
 
 require 'fileutils'
 require 'pp'
