@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler", "test-bundled-gems" ]
+        test_task: [ "test-bundler", "test-bundled-gems" ]
     steps:
       - name: Install libraries
         run: |
@@ -35,11 +35,9 @@ jobs:
       - name: configure
         run: ./configure -C --disable-install-doc
       - run: make $JOBS
-      - name: make check/test-bundler/test-bundled-gems
+      - name: make test-bundler/test-bundled-gems
         run: make -s ${{ matrix.test_task }}
         env:
-          TESTOPTS: "$JOBS -q --tty=no"
-          MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
           CI: "true"
       - name: Leaked Globals
         run: make -s leaked-globals
