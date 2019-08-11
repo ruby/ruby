@@ -27,6 +27,10 @@ jobs:
       - name: Set ENV
         run: |
           export JOBS=-j$((1 + $(nproc --all)))
+      - name: Fixed world writable dirs
+        run: |
+          chmod go-w $HOME
+          sudo chmod -R go-w /usr/share
       - run: autoconf
       - name: configure
         run: ./configure -C --disable-install-doc
