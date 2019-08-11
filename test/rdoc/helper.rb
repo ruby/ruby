@@ -203,6 +203,5 @@ class RDoc::TestCase < Test::Unit::TestCase
     end
   end
 
-  alias capture_io capture_output
   alias skip omit
 end
