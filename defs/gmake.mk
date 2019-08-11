@@ -208,6 +208,7 @@ define pull-github
 	$(if $(filter true,$(COMMIT_GPG_SIGN)), \
 	  git -C "$(GITHUB_MERGE_WORKTREE)" rebase --exec "git commit --amend --no-edit -S" "$(GITHUB_MERGE_BASE)"; \
 	)
+	git -C "$(GITHUB_MERGE_WORKTREE)" rebase --exec "git notes add --message 'Merged: $(GITHUB_RUBY_URL)/pull/$(1)'" "$(GITHUB_MERGE_BASE)"
 endef
 
 define merge-github
