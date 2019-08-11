@@ -37,7 +37,5 @@ jobs:
       - run: make $JOBS
       - name: make test-bundler/test-bundled-gems
         run: make -s ${{ matrix.test_task }}
-        env:
-          CI: "true"
       - name: Leaked Globals
         run: make -s leaked-globals

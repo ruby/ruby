@@ -37,6 +37,5 @@ jobs:
         env:
           TESTOPTS: "$JOBS -q --tty=no"
           MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
-          CI: "true"
       - name: Leaked Globals
         run: make -s leaked-globals
