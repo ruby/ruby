@@ -282,8 +282,10 @@ class TestSH < Test::Unit::TestCase
   def test_inspect
     d = Date.new(2001, 2, 3)
     assert_equal(Encoding::US_ASCII, d.inspect.encoding)
+    assert_equal('#<Date: 2001-02-03>', d.inspect)
     d = DateTime.new(2001, 2, 3)
     assert_equal(Encoding::US_ASCII, d.inspect.encoding)
+    assert_equal('#<DateTime: 2001-02-03T00:00:00+00:00>', d.inspect)
   end
 
   def test_strftime
