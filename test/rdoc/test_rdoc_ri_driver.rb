@@ -1029,7 +1029,7 @@ Foo::Bar#bother
   end
 
   def test_did_you_mean
-    skip 'skip test with did_you_men' unless defined? DidYouMean::SpellChecker
+    omit 'omit test with did_you_men' unless defined? DidYouMean::SpellChecker
 
     util_ancestors_store
 
@@ -1227,7 +1227,7 @@ Foo::Bar#bother
 
     with_dummy_pager do
       @driver.page do |io|
-        skip "couldn't find a standard pager" if io == $stdout
+        omit "couldn't find a standard pager" if io == $stdout
 
         assert @driver.paging?
       end
@@ -1239,7 +1239,7 @@ Foo::Bar#bother
   # this test is too fragile. Perhaps using Process.spawn will make this
   # reliable
   def _test_page_in_presence_of_child_status
-    skip 'this test hangs on travis-ci.org' if ENV['CI']
+    omit 'this test hangs on travis-ci.org' if ENV['CI']
     @driver.use_stdout = false
 
     with_dummy_pager do
@@ -1407,7 +1407,7 @@ Foo::Bar#bother
 
     pager = with_dummy_pager do @driver.setup_pager end
 
-    skip "couldn't find a standard pager" unless pager
+    omit "couldn't find a standard pager" unless pager
 
     assert @driver.paging?
   ensure

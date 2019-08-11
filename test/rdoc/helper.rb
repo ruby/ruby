@@ -201,6 +201,4 @@ class RDoc::TestCase < Test::Unit::TestCase
       end
     end
   end
-
-  alias skip omit
 end
