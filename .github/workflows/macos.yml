@@ -11,7 +11,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler" ]
+        test_task: [ "check", "test-bundler", "test-bundled-gems" ]
     steps:
       - name: Disable Firewall
         run: |
@@ -32,7 +32,7 @@ jobs:
       - name: configure
         run: ./configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl) --with-readline-dir=$(brew --prefix readline)
       - run: make $JOBS
-      - name: make check/test-bundler
+      - name: make check/test-bundler/test-bundled-gems
         run: make -s ${{ matrix.test_task }}
         env:
           TESTOPTS: "$JOBS -q --tty=no"
