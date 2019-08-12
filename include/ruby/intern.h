@@ -461,7 +461,6 @@ int rb_mod_method_arity(VALUE, ID);
 int rb_obj_method_arity(VALUE, ID);
 VALUE rb_protect(VALUE (*)(VALUE), VALUE, int*);
 void rb_set_end_proc(void (*)(VALUE), VALUE);
-void rb_exec_end_proc(void);
 void rb_thread_schedule(void);
 void rb_thread_wait_fd(int);
 int rb_thread_fd_writable(int);
@@ -520,7 +519,6 @@ VALUE rb_gc_location(VALUE);
 void rb_gc_force_recycle(VALUE);
 void rb_gc(void);
 void rb_gc_copy_finalizer(VALUE,VALUE);
-void rb_gc_call_finalizer_at_exit(void);
 VALUE rb_gc_enable(void);
 VALUE rb_gc_disable(void);
 VALUE rb_gc_start(void);
@@ -719,7 +717,6 @@ VALUE rb_f_kill(int, const VALUE*);
 #define posix_signal ruby_posix_signal
 RETSIGTYPE (*posix_signal(int, RETSIGTYPE (*)(int)))(int);
 #endif
-void rb_trap_exit(void);
 const char *ruby_signal_name(int);
 void ruby_default_signal(int);
 /* sprintf.c */

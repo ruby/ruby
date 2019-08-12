@@ -847,7 +847,6 @@ void rb_vm_update_references(void *ptr);
 
 void rb_gcdebug_print_obj_condition(VALUE obj);
 
-static void rb_objspace_call_finalizer(rb_objspace_t *objspace);
 static VALUE define_final0(VALUE obj, VALUE block);
 
 static void negative_size_allocation_error(const char *);
@@ -3231,20 +3230,14 @@ force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
 }
 
 void
-rb_gc_call_finalizer_at_exit(void)
-{
-#if RGENGC_CHECK_MODE >= 2
-    gc_verify_internal_consistency(Qnil);
-#endif
-    rb_objspace_call_finalizer(&rb_objspace);
-}
-
-static void
 rb_objspace_call_finalizer(rb_objspace_t *objspace)
 {
     RVALUE *p, *pend;
     size_t i;
 
+#if RGENGC_CHECK_MODE >= 2
+    gc_verify_internal_consistency(Qnil);
+#endif
     gc_rest(objspace);
 
     if (ATOMIC_EXCHANGE(finalizing, 1)) return;
