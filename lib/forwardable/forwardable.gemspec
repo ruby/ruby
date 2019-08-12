@@ -1,8 +1,8 @@
 begin
-  require_relative "lib/forwardable"
+  require_relative "lib/forwardable/version"
 rescue LoadError
   # for Ruby core repository
-  require_relative "../forwardable"
+  require_relative "version"
 end
 
 Gem::Specification.new do |spec|
