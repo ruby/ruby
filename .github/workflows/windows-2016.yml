@@ -1,4 +1,4 @@
-name: macos
+name: windows-2016
 on:
   push:
     branches:
