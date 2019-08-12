@@ -859,6 +859,22 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_frame_omitted_inlining
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true\ntrue\ntrue\n", success_count: 1, min_calls: 2)
+    begin;
+      class Numeric
+        remove_method :zero?
+        def zero?
+          self == 0
+        end
+      end
+
+      3.times do
+        p 0.zero?
+      end
+    end;
+  end
+
   def test_block_handler_with_possible_frame_omitted_inlining
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "70.0\n70.0\n70.0\n", success_count: 2, min_calls: 2)
     begin;
