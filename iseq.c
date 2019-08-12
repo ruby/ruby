@@ -271,7 +271,7 @@ rb_iseq_update_references(rb_iseq_t *iseq)
 static VALUE
 each_insn_value(void *ctx, VALUE obj)
 {
-    rb_gc_mark_no_pin(obj);
+    rb_gc_mark_movable(obj);
     return obj;
 }
 
@@ -289,11 +289,11 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	    rb_iseq_each_value(iseq, each_insn_value, NULL);
 	}
 
-        rb_gc_mark_no_pin(body->variable.coverage);
-        rb_gc_mark_no_pin(body->variable.pc2branchindex);
-        rb_gc_mark_no_pin(body->location.label);
-        rb_gc_mark_no_pin(body->location.base_label);
-        rb_gc_mark_no_pin(body->location.pathobj);
+        rb_gc_mark_movable(body->variable.coverage);
+        rb_gc_mark_movable(body->variable.pc2branchindex);
+        rb_gc_mark_movable(body->location.label);
+        rb_gc_mark_movable(body->location.base_label);
+        rb_gc_mark_movable(body->location.pathobj);
         RUBY_MARK_NO_PIN_UNLESS_NULL((VALUE)body->parent_iseq);
 
 	if (body->param.flags.has_kw && ISEQ_COMPILE_DATA(iseq) == NULL) {
@@ -305,7 +305,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	    for (j = 0; i < keyword->num; i++, j++) {
 		VALUE obj = keyword->default_values[j];
 		if (!SPECIAL_CONST_P(obj)) {
-                    rb_gc_mark_no_pin(obj);
+                    rb_gc_mark_movable(obj);
 		}
 	    }
 	}
@@ -317,7 +317,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 		const struct iseq_catch_table_entry *entry;
 		entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
 		if (entry->iseq) {
-                    rb_gc_mark_no_pin((VALUE)entry->iseq);
+                    rb_gc_mark_movable((VALUE)entry->iseq);
 		}
 	    }
 	}
