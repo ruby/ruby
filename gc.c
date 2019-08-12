@@ -4984,7 +4984,7 @@ gc_mark(rb_objspace_t *objspace, VALUE obj)
 }
 
 void
-rb_gc_mark_no_pin(VALUE ptr)
+rb_gc_mark_movable(VALUE ptr)
 {
     gc_mark(&rb_objspace, ptr);
 }
@@ -10145,7 +10145,7 @@ wmap_mark(void *ptr)
 #if WMAP_DELETE_DEAD_OBJECT_IN_MARK
     if (w->obj2wmap) st_foreach(w->obj2wmap, wmap_mark_map, (st_data_t)&rb_objspace);
 #endif
-    rb_gc_mark_no_pin(w->final);
+    rb_gc_mark_movable(w->final);
 }
 
 static int
