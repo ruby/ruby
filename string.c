@@ -5129,27 +5129,31 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *  Returns a copy of +str+ with the _first_ occurrence of +pattern+
  *  replaced by the second argument. The +pattern+ is typically a Regexp; if
  *  given as a String, any regular expression metacharacters it contains will
- *  be interpreted literally, e.g. <code>'\\\d'</code> will match a backslash
+ *  be interpreted literally, e.g. <code>\d</code> will match a backslash
  *  followed by 'd', instead of a digit.
  *
  *  If +replacement+ is a String it will be substituted for the matched text.
  *  It may contain back-references to the pattern's capture groups of the form
- *  <code>"\\d"</code>, where <i>d</i> is a group number, or
- *  <code>"\\k<n>"</code>, where <i>n</i> is a group name. If it is a
- *  double-quoted string, both back-references must be preceded by an
- *  additional backslash. However, within +replacement+ the special match
- *  variables, such as <code>$&</code>, will not refer to the current match.
- *  If +replacement+ is a String that looks like a pattern's capture group but
- *  is actually not a pattern capture group e.g. <code>"\\'"</code>, then it
- *  will have to be preceded by two backslashes like so <code>"\\\\'"</code>.
+ *  <code>\d</code>, where <i>d</i> is a group number, or
+ *  <code>\k<n></code>, where <i>n</i> is a group name.
+ *  Similarly, <code>\&</code>, <code>\'</code>, <code>\`</code>, and
+ *  <code>\+</code> are corresponded to special variables, <code>$&</code>,
+ *  <code>$'</code>, <code>$`</code>, and <code>$+</code>, respectively.
+ *  (See rdoc-ref:regexp.rdoc in detail.)
+ *  <code>\0</code> is the same as <code>\&</code>.
+ *  <code>\\\\</code> is interpreted as an escape, i.e., a single backslash.
+ *  Note that, within +replacement+ the special match variables, such as
+ *  <code>$&</code>, will not refer to the current match.
  *
  *  If the second argument is a Hash, and the matched text is one of its keys,
  *  the corresponding value is the replacement string.
  *
  *  In the block form, the current match string is passed in as a parameter,
  *  and variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
- *  <code>$&</code>, and <code>$'</code> will be set appropriately. The value
- *  returned by the block will be substituted for the match on each call.
+ *  <code>$&</code>, and <code>$'</code> will be set appropriately.
+ *  (See rdoc-ref:regexp.rdoc in detail.)
+ *  The value returned by the block will be substituted for the match on each
+ *  call.
  *
  *  The result inherits any tainting in the original string or any supplied
  *  replacement string.
@@ -5160,6 +5164,19 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *     "hello".sub(/(?<foo>[aeiou])/, '*\k<foo>*')  #=> "h*e*llo"
  *     'Is SHELL your preferred shell?'.sub(/[[:upper:]]{2,}/, ENV)
  *      #=> "Is /bin/bash your preferred shell?"
+ *
+ *  Note that a string literal consumes backslashes.
+ *  (See rdoc-ref:syntax/literals.rdoc for the detail of string literals.)
+ *  So, back-references are typically preceded by an additional backslash.
+ *  For example, if you want to write a back-reference <code>\&</code> in
+ *  +replacement+ with a double-quoted string literal, you need to write:
+ *  <code>"..\\\\&.."</code>.
+ *  If you want to write a non-back-reference string <code>\&</code> in
+ *  +replacement+, you need first to escape the backslash to prevent
+ *  this method from interpreting it as a back-reference, and then you
+ *  need to escape the backslashes again to prevent a string literal from
+ *  consuming them: <code>"..\\\\\\\\&.."</code>.
+ *  You may want to use the block form to avoid a lot of backslashes.
  */
 
 static VALUE
@@ -5332,24 +5349,31 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *  <i>pattern</i> substituted for the second argument. The <i>pattern</i> is
  *  typically a Regexp; if given as a String, any
  *  regular expression metacharacters it contains will be interpreted
- *  literally, e.g. <code>'\\\d'</code> will match a backslash followed by 'd',
+ *  literally, e.g. <code>\d</code> will match a backslash followed by 'd',
  *  instead of a digit.
  *
- *  If <i>replacement</i> is a String it will be substituted for
- *  the matched text. It may contain back-references to the pattern's capture
- *  groups of the form <code>\\\d</code>, where <i>d</i> is a group number, or
- *  <code>\\\k<n></code>, where <i>n</i> is a group name. If it is a
- *  double-quoted string, both back-references must be preceded by an
- *  additional backslash. However, within <i>replacement</i> the special match
- *  variables, such as <code>$&</code>, will not refer to the current match.
+ *  If +replacement+ is a String it will be substituted for the matched text.
+ *  It may contain back-references to the pattern's capture groups of the form
+ *  <code>\d</code>, where <i>d</i> is a group number, or
+ *  <code>\k<n></code>, where <i>n</i> is a group name.
+ *  Similarly, <code>\&</code>, <code>\'</code>, <code>\`</code>, and
+ *  <code>\+</code> are corresponded to special variables, <code>$&</code>,
+ *  <code>$'</code>, <code>$`</code>, and <code>$+</code>, respectively.
+ *  (See rdoc-ref:regexp.rdoc in detail.)
+ *  <code>\0</code> is the same as <code>\&</code>.
+ *  <code>\\\\</code> is interpreted as an escape, i.e., a single backslash.
+ *  Note that, within +replacement+ the special match variables, such as
+ *  <code>$&</code>, will not refer to the current match.
  *
  *  If the second argument is a Hash, and the matched text is one
  *  of its keys, the corresponding value is the replacement string.
  *
  *  In the block form, the current match string is passed in as a parameter,
  *  and variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
- *  <code>$&</code>, and <code>$'</code> will be set appropriately. The value
- *  returned by the block will be substituted for the match on each call.
+ *  <code>$&</code>, and <code>$'</code> will be set appropriately.
+ *  (See rdoc-ref:regexp.rdoc in detail.)
+ *  The value returned by the block will be substituted for the match on each
+ *  call.
  *
  *  The result inherits any tainting in the original string or any supplied
  *  replacement string.
@@ -5362,6 +5386,19 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *     "hello".gsub(/./) {|s| s.ord.to_s + ' '}      #=> "104 101 108 108 111 "
  *     "hello".gsub(/(?<foo>[aeiou])/, '{\k<foo>}')  #=> "h{e}ll{o}"
  *     'hello'.gsub(/[eo]/, 'e' => 3, 'o' => '*')    #=> "h3ll*"
+ *
+ *  Note that a string literal consumes backslashes.
+ *  (See rdoc-ref:syntax/literals.rdoc for the detail of string literals.)
+ *  So, back-references are typically preceded by an additional backslash.
+ *  For example, if you want to write a back-reference <code>\&</code> in
+ *  +replacement+ with a double-quoted string literal, you need to write:
+ *  <code>"..\\\\&.."</code>.
+ *  If you want to write a non-back-reference string <code>\&</code> in
+ *  +replacement+, you need first to escape the backslash to prevent
+ *  this method from interpreting it as a back-reference, and then you
+ *  need to escape the backslashes again to prevent a string literal from
+ *  consuming them: <code>"..\\\\\\\\&.."</code>.
+ *  You may want to use the block form to avoid a lot of backslashes.
  */
 
 static VALUE
