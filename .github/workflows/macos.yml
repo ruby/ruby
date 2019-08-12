@@ -20,7 +20,7 @@ jobs:
       - name: Install libraries
         run: |
           brew update
-          brew install gdbm gmp libffi openssl zlib ccache autoconf automake libtool readline
+          brew install gdbm gmp libffi openssl@1.1 zlib ccache autoconf automake libtool readline
       - name: Checkout # not using actions/checkout because it's unstable.
         run: git clone --depth=50 https://github.com/ruby/ruby .
       - name: Set ENV
@@ -28,7 +28,7 @@ jobs:
           echo '##[set-env name=JOBS]'-j$((1 + $(sysctl -n hw.activecpu)))
       - run: autoconf
       - name: configure
-        run: ./configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl) --with-readline-dir=$(brew --prefix readline)
+        run: ./configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
       - run: make $JOBS
       - name: make check/test-bundler/test-bundled-gems
         run: make -s ${{ matrix.test_task }}
