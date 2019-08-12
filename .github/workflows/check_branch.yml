@@ -1,5 +1,12 @@
-# This is enabled on protected branches except master.
-# This will be used to achieve [Misc #16094] later.
+# Protected branches:
+#   * master: Synchronized between cgit and GitHub bidirectionally [experimental]
+#   * other branches: Only writable from cgit.
+#
+# Bidirectional sync is still WIP, so "write" is not permitted to ruby-commiters
+# team yet. Still under testing.
+#
+# And this is enabled for "other branches" to prevent us from merging them.
+# See also: https://bugs.ruby-lang.org/issues/16094
 name: check_branch
 on: [pull_request]
 jobs:
