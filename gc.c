@@ -896,7 +896,7 @@ static size_t mark_stack_size(mark_stack_t *stack);
 static void   shrink_stack_chunk_cache(mark_stack_t *stack);
 
 static size_t obj_memsize_of(VALUE obj, int use_all_types);
-static VALUE gc_verify_internal_consistency(VALUE self);
+static void gc_verify_internal_consistency(rb_objspace_t *objspace);
 static int gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj);
 static int gc_verify_heap_pages(rb_objspace_t *objspace);
 
@@ -3236,7 +3236,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     size_t i;
 
 #if RGENGC_CHECK_MODE >= 2
-    gc_verify_internal_consistency(Qnil);
+    gc_verify_internal_consistency(objspace);
 #endif
     gc_rest(objspace);
 
@@ -4082,7 +4082,7 @@ gc_sweep_finish(rb_objspace_t *objspace)
     gc_mode_transition(objspace, gc_mode_none);
 
 #if RGENGC_CHECK_MODE >= 2
-    gc_verify_internal_consistency(Qnil);
+    gc_verify_internal_consistency(objspace);
 #endif
 }
 
@@ -5294,7 +5294,7 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
 #endif
     }
 
-    if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(Qnil);
+    if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
 
     if (is_mark_stack_empty(mstack)) {
 	shrink_stack_chunk_cache(mstack);
@@ -5889,9 +5889,16 @@ gc_verify_heap_pages(rb_objspace_t *objspace)
  *  if RGenGC is supported.
  */
 static VALUE
-gc_verify_internal_consistency(VALUE dummy)
+gc_verify_internal_consistency_m(VALUE dummy)
 {
-    rb_objspace_t *objspace = &rb_objspace;
+    gc_verify_internal_consistency(&rb_objspace);
+
+    return Qnil;
+}
+
+static void
+gc_verify_internal_consistency(rb_objspace_t *objspace)
+{
     struct verify_internal_consistency_struct data = {0};
     struct each_obj_args eo_args;
 
@@ -5962,14 +5969,12 @@ gc_verify_internal_consistency(VALUE dummy)
     }
 
     gc_report(5, objspace, "gc_verify_internal_consistency: OK\n");
-
-    return Qnil;
 }
 
 void
 rb_gc_verify_internal_consistency(void)
 {
-    gc_verify_internal_consistency(Qnil);
+    gc_verify_internal_consistency(&rb_objspace);
 }
 
 static VALUE
@@ -6105,7 +6110,7 @@ gc_marks_finish(rb_objspace_t *objspace)
 #endif /* GC_ENABLE_INCREMENTAL_MARK */
 
 #if RGENGC_CHECK_MODE >= 2
-    gc_verify_internal_consistency(Qnil);
+    gc_verify_internal_consistency(objspace);
 #endif
 
 #if USE_RGENGC
@@ -7018,7 +7023,7 @@ gc_start(rb_objspace_t *objspace, int reason)
     GC_ASSERT(!is_lazy_sweeping(heap_eden));
     GC_ASSERT(!is_incremental_marking(objspace));
 #if RGENGC_CHECK_MODE >= 2
-    gc_verify_internal_consistency(Qnil);
+    gc_verify_internal_consistency(objspace);
 #endif
 
     gc_enter(objspace, "gc_start");
@@ -7121,7 +7126,7 @@ gc_rest(rb_objspace_t *objspace)
     if (marking || sweeping) {
 	gc_enter(objspace, "gc_rest");
 
-	if (RGENGC_CHECK_MODE >= 2) gc_verify_internal_consistency(Qnil);
+	if (RGENGC_CHECK_MODE >= 2) gc_verify_internal_consistency(objspace);
 
 	if (is_incremental_marking(objspace)) {
 	    PUSH_MARK_FUNC_DATA(NULL);
@@ -7222,7 +7227,7 @@ static inline void
 gc_enter(rb_objspace_t *objspace, const char *event)
 {
     GC_ASSERT(during_gc == 0);
-    if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(Qnil);
+    if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
 
     mjit_gc_start_hook();
 
@@ -8343,7 +8348,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     mjit_gc_start_hook(); // prevent MJIT from running while moving pointers related to ISeq
 
     if (use_verifier) {
-        gc_verify_internal_consistency(Qnil);
+        gc_verify_internal_consistency(objspace);
     }
 
     if (use_double_pages) {
@@ -8375,7 +8380,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     heap_eden->using_page = NULL;
 
     if (use_verifier) {
-        gc_verify_internal_consistency(Qnil);
+        gc_verify_internal_consistency(objspace);
     }
 
 #if __has_feature(address_sanitizer)
@@ -11691,7 +11696,7 @@ Init_GC(void)
     }
 
     /* internal methods */
-    rb_define_singleton_method(rb_mGC, "verify_internal_consistency", gc_verify_internal_consistency, 0);
+    rb_define_singleton_method(rb_mGC, "verify_internal_consistency", gc_verify_internal_consistency_m, 0);
     rb_define_singleton_method(rb_mGC, "verify_compaction_references", gc_verify_compaction_references, -1);
     rb_define_singleton_method(rb_mGC, "verify_transient_heap_internal_consistency", gc_verify_transient_heap_internal_consistency, 0);
 #if MALLOC_ALLOCATED_SIZE
