@@ -13,6 +13,8 @@ jobs:
       matrix:
         test_task: [ "check", "test-bundler", "test-bundled-gems" ]
     steps:
+      - name: Print ENV
+        run: env
       - name: Disable Firewall
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
