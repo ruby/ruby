@@ -92,7 +92,7 @@ env:
     #       - ubuntu-toolchain-r-test
     before_install:
       - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-      - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec sudo apt-get update -yq"
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - |-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           gcc-8 \
@@ -119,7 +119,7 @@ env:
         config:
           retries: true
     before_install:
-      - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec sudo apt-get update -yq"
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - |-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           clang-8 \
@@ -278,7 +278,7 @@ env:
     #       - ubuntu-toolchain-r-test
     before_install:
       - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-      - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec sudo apt-get update -yq"
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - |-
         tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           gcc-8-multilib \
