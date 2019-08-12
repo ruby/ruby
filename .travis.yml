@@ -495,7 +495,7 @@ before_script:
 
 script:
   - $SETARCH make -s test -o showflags TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
-  - $SETARCH make -s test-all -o exts TESTOPTS="${TESTOPTS} ${TEST_ALL_OPTS}" RUBYOPT="-w"
+  - travis_wait 50 $SETARCH make -s test-all -o exts TESTOPTS="${TESTOPTS} ${TEST_ALL_OPTS}" RUBYOPT="-w"
   - $SETARCH make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
   - $SETARCH make -s -o showflags leaked-globals
 
