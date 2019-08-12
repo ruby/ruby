@@ -969,7 +969,7 @@ static const char *obj_info(VALUE obj);
 
 #if defined(__i386__)
 static int
-has_cpuid()
+has_cpuid(void)
 {
     static volatile int initialized = 0;
     static uint32_t flags;
@@ -1001,15 +1001,16 @@ cpuid(uint32_t *eax, uint32_t *ebx, uint32_t *ecx, uint32_t *edx)
     "cpuid\n\t"
 #if defined(__i386__)
     "xchgl %%ebx, %%esi\n\t"
-    : "=a" (*eax), "=S" (*ebx), "=c" (*ecx), "=d" (*edx) : "a" (*eax));
+    : "=a" (*eax), "=S" (*ebx), "=c" (*ecx), "=d" (*edx) : "a" (*eax)
 #else
-    : "=a" (*eax), "=b" (*ebx), "=c" (*ecx), "=d" (*edx) : "a" (*eax));
+    : "=a" (*eax), "=b" (*ebx), "=c" (*ecx), "=d" (*edx) : "a" (*eax)
 #endif
+        );
 }
 
 #if defined(__i386__)
 static int
-has_sse2()
+has_sse2(void)
 {
     static volatile int initialized = 0;
     static int hasSSE2 = 0;
@@ -1036,7 +1037,7 @@ has_sse2()
  * Don't know about the rest(e.g, Hygon processor), do mfence.
  */
 static int
-how_serialize_rdtsc()
+how_serialize_rdtsc(void)
 {
     static volatile int initialized = 0;
     static int is_intel_processor = 0;
