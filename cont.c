@@ -579,7 +579,7 @@ fiber_pool_allocation_free(struct fiber_pool_allocation * allocation)
 }
 #endif
 
-// Acquire a stack from the given fiber pool. If none are avilable, allocate more.
+// Acquire a stack from the given fiber pool. If none are available, allocate more.
 static struct fiber_pool_stack
 fiber_pool_stack_acquire(struct fiber_pool * fiber_pool) {
     struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pop(fiber_pool);
