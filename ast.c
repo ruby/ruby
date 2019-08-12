@@ -19,7 +19,14 @@ static void
 node_gc_mark(void *ptr)
 {
     struct ASTNodeData *data = (struct ASTNodeData *)ptr;
-    rb_gc_mark((VALUE)data->ast);
+    rb_gc_mark_movable((VALUE)data->ast);
+}
+
+static void
+node_gc_compact(void *ptr)
+{
+    struct ASTNodeData *data = (struct ASTNodeData *)ptr;
+    data->ast = (rb_ast_t *)rb_gc_location((VALUE)data->ast);
 }
 
 static size_t
@@ -31,7 +38,7 @@ node_memsize(const void *ptr)
 
 static const rb_data_type_t rb_node_type = {
     "AST/node",
-    {node_gc_mark, RUBY_TYPED_DEFAULT_FREE, node_memsize,},
+    {node_gc_mark, RUBY_TYPED_DEFAULT_FREE, node_memsize, node_gc_compact,},
     0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
 };
