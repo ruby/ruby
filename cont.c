@@ -858,7 +858,7 @@ cont_mark(void *ptr)
     rb_context_t *cont = ptr;
 
     RUBY_MARK_ENTER("cont");
-    rb_gc_mark_no_pin(cont->value);
+    rb_gc_mark_movable(cont->value);
 
     rb_execution_context_mark(&cont->saved_ec);
     rb_gc_mark(cont_thread_value(cont));
@@ -967,7 +967,7 @@ void
 rb_fiber_mark_self(const rb_fiber_t *fiber)
 {
     if (fiber->cont.self) {
-        rb_gc_mark_no_pin(fiber->cont.self);
+        rb_gc_mark_movable(fiber->cont.self);
     }
     else {
         rb_execution_context_mark(&fiber->cont.saved_ec);
@@ -992,7 +992,7 @@ fiber_mark(void *ptr)
     rb_fiber_t *fiber = ptr;
     RUBY_MARK_ENTER("cont");
     fiber_verify(fiber);
-    rb_gc_mark_no_pin(fiber->first_proc);
+    rb_gc_mark_movable(fiber->first_proc);
     if (fiber->prev) rb_fiber_mark_self(fiber->prev);
     cont_mark(&fiber->cont);
     RUBY_MARK_LEAVE("cont");

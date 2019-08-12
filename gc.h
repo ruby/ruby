@@ -59,7 +59,7 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 
 #define RUBY_MARK_NO_PIN_UNLESS_NULL(ptr) do { \
     VALUE markobj = (ptr); \
-    if (RTEST(markobj)) {rb_gc_mark_no_pin(markobj);} \
+    if (RTEST(markobj)) {rb_gc_mark_movable(markobj);} \
 } while (0)
 #define RUBY_MARK_UNLESS_NULL(ptr) do { \
     VALUE markobj = (ptr); \

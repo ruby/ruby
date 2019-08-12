@@ -297,7 +297,7 @@ binding_mark(void *ptr)
 
     RUBY_MARK_ENTER("binding");
     block_mark(&bind->block);
-    rb_gc_mark_no_pin(bind->pathobj);
+    rb_gc_mark_movable(bind->pathobj);
     RUBY_MARK_LEAVE("binding");
 }
 
@@ -1363,10 +1363,10 @@ static void
 bm_mark(void *ptr)
 {
     struct METHOD *data = ptr;
-    rb_gc_mark_no_pin(data->recv);
-    rb_gc_mark_no_pin(data->klass);
-    rb_gc_mark_no_pin(data->iclass);
-    rb_gc_mark_no_pin((VALUE)data->me);
+    rb_gc_mark_movable(data->recv);
+    rb_gc_mark_movable(data->klass);
+    rb_gc_mark_movable(data->iclass);
+    rb_gc_mark_movable((VALUE)data->me);
 }
 
 static void

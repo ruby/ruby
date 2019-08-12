@@ -1896,7 +1896,7 @@ autoload_i_mark(void *ptr)
 {
     struct autoload_data_i *p = ptr;
 
-    rb_gc_mark_no_pin(p->feature);
+    rb_gc_mark_movable(p->feature);
 
     /* allow GC to free us if no modules refer to this via autoload_const.ad */
     if (list_empty(&p->constants)) {
@@ -1942,9 +1942,9 @@ autoload_c_mark(void *ptr)
 {
     struct autoload_const *ac = ptr;
 
-    rb_gc_mark_no_pin(ac->mod);
-    rb_gc_mark_no_pin(ac->ad);
-    rb_gc_mark_no_pin(ac->value);
+    rb_gc_mark_movable(ac->mod);
+    rb_gc_mark_movable(ac->ad);
+    rb_gc_mark_movable(ac->value);
 }
 
 static void

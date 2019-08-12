@@ -515,7 +515,7 @@ void rb_mark_hash(struct st_table*);
 void rb_update_st_references(struct st_table *ht);
 void rb_gc_mark_maybe(VALUE);
 void rb_gc_mark(VALUE);
-void rb_gc_mark_no_pin(VALUE);
+void rb_gc_mark_movable(VALUE);
 VALUE rb_gc_location(VALUE);
 void rb_gc_force_recycle(VALUE);
 void rb_gc(void);
