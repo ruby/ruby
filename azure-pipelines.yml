@@ -2,59 +2,6 @@ pr: none # comment out this line if you need to test this file on PR
 trigger:
   - master
 jobs:
-- job: Linux
-  pool:
-    vmImage: 'ubuntu-16.04'
-  strategy:
-    matrix:
-      bundled_gems:
-        task: test-bundled-gems
-      bundler:
-        task: test-bundler
-  steps:
-  - task: UseRubyVersion@0
-    inputs:
-      versionSpec: '2.6.2'
-  - script: |
-      set -x
-      sudo sed /etc/apt/sources.list -e "s/^# deb-src/deb-src/g" -i
-      sudo apt-get update
-      sudo apt-get build-dep ruby2.3
-    displayName: "Install dependencies"
-  - checkout: self
-    fetchDepth: 20
-  - script: |
-      autoconf
-      ./configure
-      make
-    displayName: 'make'
-  - script: |
-      make $(task) TRAVIS=1 TEST_BUNDLED_GEMS_ALLOW_FAILURES=minitest
-    displayName: "test"
-    continueOnError: true # test-bundler is failing on Linux. TODO: fix it and remove this line.
-
-- job: macOS
-  pool:
-    vmImage: 'macos-10.13'
-  strategy:
-    matrix:
-      bundled_gems:
-        task: test-bundled-gems
-  steps:
-  - script: brew install autoconf bison openssl
-    displayName: "Install dependencies"
-  - checkout: self
-    fetchDepth: 20
-  - script: |
-      autoconf
-      ./configure --with-openssl-dir=/usr/local/opt/openssl
-      make
-    displayName: 'make'
-  - script: |
-      make $(task) TEST_BUNDLED_GEMS_ALLOW_FAILURES=minitest
-    displayName: "test"
-    continueOnError: true # test-bundler is failing on macOS. TODO: fix it and remove this line.
-
 # - job: vs2015
 #   pool:
 #     vmImage: "vs2015-win2012r2"
