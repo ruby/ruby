@@ -12,6 +12,7 @@ jobs:
       matrix:
         os: [windows-2016, windows-2019]
         vs: [2017, 2019]
+        test_task: [test]
         exclude:
           - os: windows-2016
             vs: 2019
@@ -42,3 +43,7 @@ jobs:
           set YACC=win_bison
           nmake up
           nmake
+      - name: nmake test
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          nmake ${{ matrix.test_task }}
