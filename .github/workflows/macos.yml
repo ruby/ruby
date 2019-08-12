@@ -20,7 +20,7 @@ jobs:
       - name: Install libraries
         run: |
           timeout 300 brew update || timeout 300 brew update || timeout 300 brew update
-          brew install gdbm gmp libffi openssl@1.1 zlib ccache autoconf automake libtool readline
+          brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
       - name: Checkout # not using actions/checkout because it's unstable.
         run: git clone --depth=50 https://github.com/ruby/ruby .
       - name: Set ENV
