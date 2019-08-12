@@ -22,7 +22,7 @@ jobs:
           brew update
           brew install gdbm gmp libffi openssl zlib ccache autoconf automake libtool readline
       - name: Checkout # not using actions/checkout because it's unstable.
-        run: tool/ci_retry.sh git clone --depth=50 https://github.com/ruby/ruby .
+        run: git clone --depth=50 https://github.com/ruby/ruby .
       - name: Set ENV
         run: |
           echo '##[set-env name=JOBS]'-j$((1 + $(sysctl -n hw.activecpu)))
