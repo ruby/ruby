@@ -1,3 +1,4 @@
+# This is enabled on protected branches except master.
 # This will be used to achieve [Misc #16094] later.
 name: check_branch
 on: [pull_request]
