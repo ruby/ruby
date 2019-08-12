@@ -720,7 +720,6 @@ VALUE rb_f_kill(int, const VALUE*);
 RETSIGTYPE (*posix_signal(int, RETSIGTYPE (*)(int)))(int);
 #endif
 void rb_trap_exit(void);
-void rb_trap_exec(void);
 const char *ruby_signal_name(int);
 void ruby_default_signal(int);
 /* sprintf.c */
