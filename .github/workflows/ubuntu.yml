@@ -20,10 +20,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install ruby2.5
           sudo apt-get build-dep ruby2.5
-      - name: Checkout
-        uses: actions/checkout@master
-        with:
-          fetch-depth: 50
+      - name: Checkout # not using actions/checkout because it's unstable.
+        run: tool/ci_retry.sh git clone --depth=50 https://github.com/ruby/ruby .
       - name: Set ENV
         run: |
           export JOBS=-j$((1 + $(nproc --all)))

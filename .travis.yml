@@ -91,10 +91,10 @@ env:
     #     sources:
     #       - ubuntu-toolchain-r-test
     before_install:
-      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-      - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
+      - tool/ci_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+      - tool/ci_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
       - |-
-        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+        tool/ci_retry.sh sudo -E apt-get $travis_apt_get_options install \
           gcc-8 \
           libffi-dev \
           libgdbm-dev \
@@ -119,9 +119,9 @@ env:
         config:
           retries: true
     before_install:
-      - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
+      - tool/ci_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
       - |-
-        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+        tool/ci_retry.sh sudo -E apt-get $travis_apt_get_options install \
           clang-8 \
           llvm-8-tools \
           libffi-dev \
@@ -277,10 +277,10 @@ env:
     #     sources:
     #       - ubuntu-toolchain-r-test
     before_install:
-      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-      - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
+      - tool/ci_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+      - tool/ci_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
       - |-
-        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+        tool/ci_retry.sh sudo -E apt-get $travis_apt_get_options install \
           gcc-8-multilib \
           libffi-dev:i386 \
           libffi6:i386 \
