@@ -13,6 +13,8 @@ jobs:
         os: [windows-2016, windows-2019]
         vs: [2017, 2019]
         test_task: [test]
+        test_all_task:
+          - "--timeout-scale=3.0 --excludes=../test/excludes/_appveyor -j%JOBS% --exclude readline --exclude win32ole --exclude test_bignum --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca" test-all
         exclude:
           - os: windows-2016
             vs: 2019
@@ -47,3 +49,7 @@ jobs:
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           nmake ${{ matrix.test_task }}
+      - name: nmake test-all
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          nmake ${{ matrix.test_all_task }}
