@@ -1,0 +1,15 @@
+# This will be used to achieve [Misc #16094] later.
+name: check_branch
+on: [pull_request]
+jobs:
+  master:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if branch is master
+        run: |
+          if [ "$BASE_REF" != master ]; then
+            echo "Only master branch accepts a pull request, but it's '$BASE_REF'."
+            exit 1
+          fi
+        env:
+          BASE_REF: ${{ github.base_ref }}
