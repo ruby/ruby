@@ -20,6 +20,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install ruby2.5
           sudo apt-get build-dep ruby2.5
+      - name: Debug
+        run: pwd
       - name: Checkout
         uses: actions/checkout@master
         with:
