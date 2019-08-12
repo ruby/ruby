@@ -5137,9 +5137,9 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *  <code>\d</code>, where <i>d</i> is a group number, or
  *  <code>\k<n></code>, where <i>n</i> is a group name.
  *  Similarly, <code>\&</code>, <code>\'</code>, <code>\`</code>, and
- *  <code>\+</code> are corresponded to special variables, <code>$&</code>,
+ *  <code>\+</code> correspond to special variables, <code>$&</code>,
  *  <code>$'</code>, <code>$`</code>, and <code>$+</code>, respectively.
- *  (See rdoc-ref:regexp.rdoc in detail.)
+ *  (See rdoc-ref:regexp.rdoc for details.)
  *  <code>\0</code> is the same as <code>\&</code>.
  *  <code>\\\\</code> is interpreted as an escape, i.e., a single backslash.
  *  Note that, within +replacement+ the special match variables, such as
@@ -5151,7 +5151,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *  In the block form, the current match string is passed in as a parameter,
  *  and variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
  *  <code>$&</code>, and <code>$'</code> will be set appropriately.
- *  (See rdoc-ref:regexp.rdoc in detail.)
+ *  (See rdoc-ref:regexp.rdoc for details.)
  *  The value returned by the block will be substituted for the match on each
  *  call.
  *
@@ -5166,8 +5166,8 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *      #=> "Is /bin/bash your preferred shell?"
  *
  *  Note that a string literal consumes backslashes.
- *  (See rdoc-ref:syntax/literals.rdoc for the detail of string literals.)
- *  So, back-references are typically preceded by an additional backslash.
+ *  (See rdoc-ref:syntax/literals.rdoc for details about string literals.)
+ *  Back-references are typically preceded by an additional backslash.
  *  For example, if you want to write a back-reference <code>\&</code> in
  *  +replacement+ with a double-quoted string literal, you need to write:
  *  <code>"..\\\\&.."</code>.
@@ -5357,9 +5357,9 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *  <code>\d</code>, where <i>d</i> is a group number, or
  *  <code>\k<n></code>, where <i>n</i> is a group name.
  *  Similarly, <code>\&</code>, <code>\'</code>, <code>\`</code>, and
- *  <code>\+</code> are corresponded to special variables, <code>$&</code>,
+ *  <code>\+</code> correspond to special variables, <code>$&</code>,
  *  <code>$'</code>, <code>$`</code>, and <code>$+</code>, respectively.
- *  (See rdoc-ref:regexp.rdoc in detail.)
+ *  (See rdoc-ref:regexp.rdoc for details.)
  *  <code>\0</code> is the same as <code>\&</code>.
  *  <code>\\\\</code> is interpreted as an escape, i.e., a single backslash.
  *  Note that, within +replacement+ the special match variables, such as
@@ -5371,7 +5371,7 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *  In the block form, the current match string is passed in as a parameter,
  *  and variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
  *  <code>$&</code>, and <code>$'</code> will be set appropriately.
- *  (See rdoc-ref:regexp.rdoc in detail.)
+ *  (See rdoc-ref:regexp.rdoc for details.)
  *  The value returned by the block will be substituted for the match on each
  *  call.
  *
@@ -5388,8 +5388,8 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *     'hello'.gsub(/[eo]/, 'e' => 3, 'o' => '*')    #=> "h3ll*"
  *
  *  Note that a string literal consumes backslashes.
- *  (See rdoc-ref:syntax/literals.rdoc for the detail of string literals.)
- *  So, back-references are typically preceded by an additional backslash.
+ *  (See rdoc-ref:syntax/literals.rdoc for details on string literals.)
+ *  Back-references are typically preceded by an additional backslash.
  *  For example, if you want to write a back-reference <code>\&</code> in
  *  +replacement+ with a double-quoted string literal, you need to write:
  *  <code>"..\\\\&.."</code>.
