@@ -35,6 +35,18 @@ class TestAlias < Test::Unit::TestCase
     end
   end
 
+  class Alias4 < Alias0
+    alias foo1 foo
+    alias foo2 foo1
+    alias foo3 foo2
+  end
+
+  class Alias5 < Alias4
+    alias foo1 foo
+    alias foo3 foo2
+    alias foo2 foo1
+  end
+
   def test_alias
     x = Alias2.new
     assert_equal "foo", x.bar
@@ -45,6 +57,20 @@ class TestAlias < Test::Unit::TestCase
     assert_raise(NoMethodError) { x.foo }
     assert_equal "foo", x.bar
     assert_raise(NoMethodError) { x.quux }
+  end
+
+  def test_alias_inspect
+    o = Alias4.new
+    assert_equal("TestAlias::Alias4(TestAlias::Alias0)#foo()", o.method(:foo).inspect.split[1])
+    assert_equal("TestAlias::Alias4(TestAlias::Alias0)#foo1(foo)()", o.method(:foo1).inspect.split[1])
+    assert_equal("TestAlias::Alias4(TestAlias::Alias0)#foo2(foo)()", o.method(:foo2).inspect.split[1])
+    assert_equal("TestAlias::Alias4(TestAlias::Alias0)#foo3(foo)()", o.method(:foo3).inspect.split[1])
+
+    o = Alias5.new
+    assert_equal("TestAlias::Alias5(TestAlias::Alias0)#foo()", o.method(:foo).inspect.split[1])
+    assert_equal("TestAlias::Alias5(TestAlias::Alias0)#foo1(foo)()", o.method(:foo1).inspect.split[1])
+    assert_equal("TestAlias::Alias5(TestAlias::Alias0)#foo2(foo)()", o.method(:foo2).inspect.split[1])
+    assert_equal("TestAlias::Alias5(TestAlias::Alias0)#foo3(foo)()", o.method(:foo3).inspect.split[1])
   end
 
   def test_nonexistmethod

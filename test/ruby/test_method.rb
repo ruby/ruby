@@ -828,7 +828,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(c, c.instance_method(:foo).owner)
     assert_equal(c, x.method(:foo).owner)
     assert_equal(x.singleton_class, x.method(:bar).owner)
-    assert_not_equal(x.method(:foo), x.method(:bar), bug7613)
+    assert_equal(x.method(:foo), x.method(:bar), bug7613)
     assert_equal(c, x.method(:zot).owner, bug7993)
     assert_equal(c, c.instance_method(:zot).owner, bug7993)
   end

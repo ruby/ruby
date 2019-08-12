@@ -1657,8 +1657,8 @@ method_entry_defined_class(const rb_method_entry_t *me)
  *   meth == other_meth  -> true or false
  *
  * Two method objects are equal if they are bound to the same
- * object and refer to the same method definition and their owners are the
- * same class or module.
+ * object and refer to the same method definition and the classes
+ * defining the methods are the same class or module.
  */
 
 static VALUE
