@@ -2226,12 +2226,18 @@ rb_autoload_load(VALUE mod, ID id)
     struct autoload_data_i *ele;
     struct autoload_const *ac;
     struct autoload_state state;
+    int flag = -1;
+    rb_const_entry_t *ce;
 
     if (!autoload_defined_p(mod, id)) return Qfalse;
     load = check_autoload_required(mod, id, &loading);
     if (!load) return Qfalse;
     src = rb_sourcefile();
     if (src && loading && strcmp(src, loading) == 0) return Qfalse;
+
+    if ((ce = rb_const_lookup(mod, id))) {
+        flag = ce->flag & (CONST_DEPRECATED | CONST_VISIBILITY_MASK);
+    }
 
     /* set ele->state for a marker of autoloading thread */
     if (!(ele = get_autoload_data(load, &ac))) {
@@ -2264,6 +2270,9 @@ rb_autoload_load(VALUE mod, ID id)
     result = rb_ensure(autoload_require, (VALUE)&state,
 		       autoload_reset, (VALUE)&state);
 
+    if (flag > 0 && (ce = rb_const_lookup(mod, id))) {
+        ce->flag |= flag;
+    }
     RB_GC_GUARD(load);
     return result;
 }

@@ -295,6 +295,66 @@ p Foo::Bar
     end
   end
 
+  def test_autoload_private_constant_before_autoload
+    Dir.mktmpdir('autoload') do |tmpdir|
+      File.write(tmpdir+"/zzz.rb", "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        class AutoloadTest
+          ZZZ = :ZZZ
+        end
+      end;
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-'end;'}")
+      bug = '[Bug #11055]'
+      begin;
+        class AutoloadTest
+          autoload :ZZZ, "zzz.rb"
+          private_constant :ZZZ
+          ZZZ
+        end
+        assert_raise(NameError, bug) {AutoloadTest::ZZZ}
+      end;
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-'end;'}")
+      bug = '[Bug #11055]'
+      begin;
+        class AutoloadTest
+          autoload :ZZZ, "zzz.rb"
+          private_constant :ZZZ
+        end
+        assert_raise(NameError, bug) {AutoloadTest::ZZZ}
+      end;
+    end
+  end
+
+  def test_autoload_deprecate_constant_before_autoload
+    Dir.mktmpdir('autoload') do |tmpdir|
+      File.write(tmpdir+"/zzz.rb", "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        class AutoloadTest
+          ZZZ = :ZZZ
+        end
+      end;
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-'end;'}")
+      bug = '[Bug #11055]'
+      begin;
+        class AutoloadTest
+          autoload :ZZZ, "zzz.rb"
+          deprecate_constant :ZZZ
+        end
+        assert_warning(/ZZZ is deprecated/, bug) {class AutoloadTest; ZZZ; end}
+        assert_warning(/ZZZ is deprecated/, bug) {AutoloadTest::ZZZ}
+      end;
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-'end;'}")
+      bug = '[Bug #11055]'
+      begin;
+        class AutoloadTest
+          autoload :ZZZ, "zzz.rb"
+          deprecate_constant :ZZZ
+        end
+        assert_warning(/ZZZ is deprecated/, bug) {AutoloadTest::ZZZ}
+      end;
+    end
+  end
+
   def test_autoload_fork
     EnvUtil.default_warning do
       Tempfile.create(['autoload', '.rb']) {|file|
