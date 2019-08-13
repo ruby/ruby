@@ -26,6 +26,61 @@
 # define RB_INTEGER_TYPE_P(c) (FIXNUM_P(c) || RB_TYPE_P(c, T_BIGNUM))
 #endif
 
+#ifndef HAVE_RB_IO_EXTRACT_MODEENC
+#define rb_io_extract_modeenc strio_extract_modeenc
+static void
+strio_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
+		      int *oflags_p, int *fmode_p, struct rb_io_enc_t *convconfig_p)
+{
+    VALUE mode = *vmode_p;
+    int fmode;
+
+    convconfig_p->enc = convconfig_p->enc2 = 0;
+    if (NIL_P(mode)) {
+	fmode = FMODE_READABLE;
+    }
+    else if (FIXNUM_P(mode)) {
+	int flags = FIX2INT(mode);
+	fmode = rb_io_oflags_fmode(flags);
+    }
+    else {
+	const char *m = StringValueCStr(mode), *n, *e;
+	fmode = rb_io_modestr_fmode(m);
+	n = strchr(m, ':');
+	if (n) {
+	    long len;
+	    char encname[ENCODING_MAXNAMELEN+1];
+	    if (fmode & FMODE_SETENC_BY_BOM) {
+		n = strchr(n, '|');
+	    }
+	    e = strchr(++n, ':');
+	    len = e ? e - n : strlen(n);
+	    if (len > 0 && len <= ENCODING_MAXNAMELEN) {
+		if (e) {
+		    memcpy(encname, n, len);
+		    encname[len] = '\0';
+		    n = encname;
+		}
+		convconfig_p->enc = rb_enc_find(n);
+	    }
+	    if (e && (len = strlen(++e)) > 0 && len <= ENCODING_MAXNAMELEN) {
+		convconfig_p->enc2 = rb_enc_find(e);
+	    }
+	}
+    }
+
+    if (!NIL_P(opthash)) {
+	rb_encoding *extenc = 0, *intenc = 0;
+	if (rb_io_extract_encoding_option(opthash, &extenc, &intenc, &fmode)) {
+	    if (convconfig_p->enc || convconfig_p->enc2) {
+		rb_raise(rb_eArgError, "encoding specified twice");
+	    }
+	}
+    }
+    *fmode_p = fmode;
+}
+#endif
+
 struct StringIO {
     VALUE string;
     rb_encoding *enc;
