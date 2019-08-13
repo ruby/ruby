@@ -2,11 +2,9 @@
 #   * master: Synchronized between cgit and GitHub bidirectionally [experimental]
 #   * other branches: Only writable from cgit.
 #
-# Bidirectional sync is still WIP, so "write" is not permitted to ruby-commiters
-# team yet. Still under testing.
-#
-# And this is enabled for "other branches" to prevent us from merging them.
-# See also: https://bugs.ruby-lang.org/issues/16094
+# Thus this check is mandatory for "other branches" to prevent us from merging them,
+# because these branches are not synchronized from GitHub to cgit at all.
+# Details: https://bugs.ruby-lang.org/issues/16094#note-10
 name: check_branch
 on: [pull_request]
 jobs:
