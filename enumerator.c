@@ -218,7 +218,7 @@ static const rb_data_type_t enumerator_data_type = {
 	enumerator_mark,
 	enumerator_free,
 	enumerator_memsize,
-	enumerator_compact,
+        enumerator_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -265,7 +265,7 @@ static const rb_data_type_t proc_entry_data_type = {
 	proc_entry_mark,
 	proc_entry_free,
 	proc_entry_memsize,
-	proc_entry_compact,
+        proc_entry_compact,
     },
 };
 
@@ -1246,7 +1246,7 @@ static const rb_data_type_t yielder_data_type = {
 	yielder_mark,
 	yielder_free,
 	yielder_memsize,
-	yielder_compact,
+        yielder_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -1386,7 +1386,7 @@ static const rb_data_type_t generator_data_type = {
 	generator_mark,
 	generator_free,
 	generator_memsize,
-	generator_compact,
+        generator_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
