@@ -2740,7 +2740,7 @@ objspace_each_objects_without_setup(rb_objspace_t *objspace, each_obj_callback *
 	pstart = page->start;
 	pend = pstart + page->total_slots;
 
-	if ((*callback)(pstart, pend, sizeof(RVALUE), data)) {
+        if ((*callback)(pstart, pend, sizeof(RVALUE), data)) {
 	    break;
 	}
     }
@@ -2814,11 +2814,11 @@ objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void
     objspace->flags.dont_incremental = TRUE;
 
     if (prev_dont_incremental) {
-	objspace_each_objects_without_setup(objspace, callback, data);
+        objspace_each_objects_without_setup(objspace, callback, data);
     }
     else {
         struct each_obj_args args = {objspace, callback, data};
-	rb_ensure(objspace_each_objects_protected, (VALUE)&args, incremental_enable, Qnil);
+        rb_ensure(objspace_each_objects_protected, (VALUE)&args, incremental_enable, Qnil);
     }
 }
 
