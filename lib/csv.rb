@@ -200,7 +200,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #   data.first.to_h #=> {"Name"=>"Bob", "Department"=>"Engineering", "Salary"=>"1000"}
 #
 #   # Headers provided by developer
-#   data = CSV.parse('Bob,Engeneering,1000', headers: %i[name department salary])
+#   data = CSV.parse('Bob,Engineering,1000', headers: %i[name department salary])
 #   data.first      #=> #<CSV::Row name:"Bob" department:"Engineering" salary:"1000">
 #
 # === Typed data reading
