@@ -594,12 +594,17 @@ class VCS
       args = [COMMAND, "push"]
       args << "-n" if dryrun
       remote, branch = upstream
-      args << remote << "HEAD:#{branch}"
+      args << remote
+      branches = %W[refs/notes/commits:refs/notes/commits HEAD:#{branch}]
       if dryrun?
-        STDERR.puts(args.inspect)
+        branches.each do |b|
+          STDERR.puts((args + [b]).inspect)
+        end
         return true
       end
-      system(*args) or return false
+      branches.each do |b|
+        system(*(args + [b])) or return false
+      end
       true
     end
   end
