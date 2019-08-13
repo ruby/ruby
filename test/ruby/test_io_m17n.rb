@@ -2084,8 +2084,8 @@ EOT
     define_method("test_strip_bom:#{name}") do
       path = "#{name}-bom.txt"
       with_tmpdir {
-        text = "\uFEFFa"
-        stripped = "a"
+        text = "\uFEFF\u0100a"
+        stripped = "\u0100a"
         content = text.encode(name)
         generate_file(path, content)
         result = File.read(path, mode: 'rb:BOM|UTF-8')

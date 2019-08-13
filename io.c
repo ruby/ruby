@@ -6136,12 +6136,9 @@ io_strip_bom(VALUE io)
 		    return ENCINDEX_UTF_32LE;
 		}
 		rb_io_ungetbyte(io, b4);
-		rb_io_ungetbyte(io, b3);
 	    }
-	    else {
-		rb_io_ungetbyte(io, b3);
-		return ENCINDEX_UTF_16LE;
-	    }
+            rb_io_ungetbyte(io, b3);
+            return ENCINDEX_UTF_16LE;
 	}
 	rb_io_ungetbyte(io, b2);
 	break;
