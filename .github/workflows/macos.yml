@@ -21,8 +21,10 @@ jobs:
         run: |
           brew update
           brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
-      - name: Checkout # not using actions/checkout because it's unstable.
-        run: git clone --depth=50 https://github.com/ruby/ruby .
+      - name: Checkout
+        uses: actions/checkout@master
+        with:
+          fetch-depth: 50
       - name: Set ENV
         run: |
           echo '##[set-env name=JOBS]'-j$((1 + $(sysctl -n hw.activecpu)))
