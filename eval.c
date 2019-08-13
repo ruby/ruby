@@ -27,6 +27,9 @@
 NORETURN(void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
 
+static int rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex);
+static int rb_ec_exec_node(rb_execution_context_t *ec, void *n);
+
 VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
 
@@ -176,32 +179,38 @@ ruby_finalize(void)
 int
 ruby_cleanup(volatile int ex)
 {
+    return rb_ec_cleanup(GET_EC(), ex);
+}
+
+static int
+rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
+{
     int state;
     volatile VALUE errs[2];
-    rb_thread_t *th = GET_THREAD();
     int nerr;
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
     volatile int sysex = EXIT_SUCCESS;
     volatile int step = 0;
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(th->ec); });
+        SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(ec); });
 
       step_0: step++;
-	errs[1] = th->ec->errinfo;
-        if (THROW_DATA_P(th->ec->errinfo)) th->ec->errinfo = Qnil;
+        errs[1] = ec->errinfo;
+        if (THROW_DATA_P(ec->errinfo)) ec->errinfo = Qnil;
 	rb_set_safe_level_force(0);
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
-        SAVE_ROOT_JMPBUF(th, rb_ec_teardown(th->ec));
+        SAVE_ROOT_JMPBUF(th, rb_ec_teardown(ec));
 
       step_1: step++;
 	/* protect from Thread#raise */
 	th->status = THREAD_KILLED;
 
-	errs[0] = th->ec->errinfo;
+        errs[0] = ec->errinfo;
 	SAVE_ROOT_JMPBUF(th, rb_thread_terminate_all());
     }
     else {
@@ -211,8 +220,8 @@ ruby_cleanup(volatile int ex)
 	}
 	if (ex == 0) ex = state;
     }
-    th->ec->errinfo = errs[1];
-    sysex = error_handle(th->ec, ex);
+    ec->errinfo = errs[1];
+    sysex = error_handle(ec, ex);
 
     state = 0;
     for (nerr = 0; nerr < numberof(errs); ++nerr) {
@@ -220,7 +229,7 @@ ruby_cleanup(volatile int ex)
 
 	if (!RTEST(err)) continue;
 
-	/* th->ec->errinfo contains a NODE while break'ing */
+        /* ec->errinfo contains a NODE while break'ing */
 	if (THROW_DATA_P(err)) continue;
 
 	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
@@ -239,7 +248,7 @@ ruby_cleanup(volatile int ex)
 
     mjit_finish(true); // We still need ISeqs here.
 
-    rb_ec_finalize(th->ec);
+    rb_ec_finalize(ec);
 
     /* unlock again if finalizer took mutexes. */
     rb_threadptr_unlock_all_locking_mutexes(th);
@@ -252,16 +261,15 @@ ruby_cleanup(volatile int ex)
 }
 
 static int
-ruby_exec_internal(void *n)
+rb_ec_exec_node(rb_execution_context_t *ec, void *n)
 {
     volatile int state;
     rb_iseq_t *iseq = (rb_iseq_t *)n;
-    rb_thread_t * volatile th = GET_THREAD();
-
     if (!n) return 0;
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        rb_thread_t *const th = rb_ec_thread_ptr(ec);
 	SAVE_ROOT_JMPBUF(th, {
 	    rb_iseq_eval_main(iseq);
 	});
@@ -313,12 +321,14 @@ ruby_executable_node(void *n, int *status)
 int
 ruby_run_node(void *n)
 {
+    rb_execution_context_t *ec = GET_EC();
     int status;
     if (!ruby_executable_node(n, &status)) {
-	ruby_cleanup(0);
+        rb_ec_cleanup(ec, 0);
 	return status;
     }
-    return ruby_cleanup(ruby_exec_node(n));
+    ruby_init_stack((void *)&status);
+    return rb_ec_cleanup(ec, rb_ec_exec_node(ec, n));
 }
 
 /*! Runs the given compiled source */
@@ -326,7 +336,7 @@ int
 ruby_exec_node(void *n)
 {
     ruby_init_stack((void *)&n);
-    return ruby_exec_internal(n);
+    return rb_ec_exec_node(GET_EC(), n);
 }
 
 /*
