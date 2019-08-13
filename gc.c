@@ -348,7 +348,11 @@ typedef enum {
     GPR_FLAG_IMMEDIATE_SWEEP   = 0x2000,
     GPR_FLAG_HAVE_FINALIZE     = 0x4000,
     GPR_FLAG_IMMEDIATE_MARK    = 0x8000,
-    GPR_FLAG_FULL_MARK        = 0x10000
+    GPR_FLAG_FULL_MARK        = 0x10000,
+
+    GPR_DEFAULT_REASON =
+        (GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK |
+         GPR_FLAG_IMMEDIATE_SWEEP | GPR_FLAG_CAPI),
 } gc_profile_record_flag;
 
 typedef struct gc_profile_record {
@@ -8268,7 +8272,7 @@ gc_compact(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, 
     objspace->flags.during_compacting = TRUE;
     {
         /* pin objects referenced by maybe pointers */
-        rb_gc();
+        garbage_collect(objspace, GPR_DEFAULT_REASON);
         /* compact */
         gc_compact_after_gc(objspace, use_toward_empty, use_double_pages, TRUE);
     }
@@ -8396,7 +8400,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     mjit_gc_exit_hook(); // unlock MJIT here, because `rb_gc()` calls `mjit_gc_start_hook()` again.
 
     /* GC after compaction to eliminate T_MOVED */
-    rb_gc();
+    garbage_collect(objspace, GPR_DEFAULT_REASON);
 }
 
 /*
@@ -8461,8 +8465,7 @@ void
 rb_gc(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    int reason = GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK |
-                GPR_FLAG_IMMEDIATE_SWEEP | GPR_FLAG_CAPI;
+    int reason = GPR_DEFAULT_REASON;
     garbage_collect(objspace, reason);
 }
 
