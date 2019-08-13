@@ -21,3 +21,7 @@ jobs:
           fi
         env:
           BASE_REF: ${{ github.base_ref }}
+      - name: Debug github context
+        run: echo "$GITHUB_CONTEXT"
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
