@@ -2729,6 +2729,8 @@ Init_gc_stress(void)
 
 typedef int each_obj_callback(void *, void *, size_t, void *);
 
+static void objspace_reachable_objects_from_root(rb_objspace_t *, void (func)(const char *, VALUE, void *), void *);
+
 struct each_obj_args {
     each_obj_callback *callback;
     void *data;
@@ -8337,9 +8339,9 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 }
 
 static VALUE
-gc_check_references_for_moved(VALUE dummy)
+gc_check_references_for_moved(rb_objspace_t *objspace)
 {
-    rb_objspace_reachable_objects_from_root(root_obj_check_moved_i, NULL);
+    objspace_reachable_objects_from_root(objspace, root_obj_check_moved_i, NULL);
     rb_objspace_each_objects(heap_check_moved_i, NULL);
     return Qnil;
 }
@@ -8375,7 +8377,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     if (!RTEST(disabled)) rb_gc_enable();
 
     if (use_verifier) {
-        gc_check_references_for_moved(Qnil);
+        gc_check_references_for_moved(objspace);
     }
 
     rb_clear_method_cache_by_class(rb_cObject);
@@ -9369,6 +9371,12 @@ void
 rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *passing_data)
 {
     rb_objspace_t *objspace = &rb_objspace;
+    objspace_reachable_objects_from_root(objspace, func, passing_data);
+}
+
+static void
+objspace_reachable_objects_from_root(rb_objspace_t *objspace, void (func)(const char *category, VALUE, void *), void *passing_data)
+{
     struct root_objects_data data;
     struct mark_func_data_struct mfd;
 
