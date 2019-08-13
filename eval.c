@@ -120,8 +120,8 @@ ruby_options(int argc, char **argv)
 	SAVE_ROOT_JMPBUF(GET_THREAD(), iseq = ruby_process_options(argc, argv));
     }
     else {
-	rb_ec_clear_current_thread_trace_func(ec);
-	state = error_handle(ec, state);
+        rb_ec_clear_current_thread_trace_func(ec);
+        state = error_handle(ec, state);
 	iseq = (void *)INT2FIX(state);
     }
     EC_POP_TAG();
@@ -133,7 +133,7 @@ rb_ec_teardown(rb_execution_context_t *ec)
 {
     EC_PUSH_TAG(ec);
     if (EC_EXEC_TAG() == TAG_NONE) {
-	rb_vm_trap_exit(rb_ec_vm_ptr(ec));
+        rb_vm_trap_exit(rb_ec_vm_ptr(ec));
     }
     EC_POP_TAG();
     rb_ec_exec_end_proc(ec);
@@ -195,7 +195,7 @@ ruby_cleanup(volatile int ex)
 	rb_set_safe_level_force(0);
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
-	SAVE_ROOT_JMPBUF(th, rb_ec_teardown(th->ec));
+        SAVE_ROOT_JMPBUF(th, rb_ec_teardown(th->ec));
 
       step_1: step++;
 	/* protect from Thread#raise */

@@ -7130,7 +7130,7 @@ gc_rest(rb_objspace_t *objspace)
     if (marking || sweeping) {
 	gc_enter(objspace, "gc_rest");
 
-	if (RGENGC_CHECK_MODE >= 2) gc_verify_internal_consistency(objspace);
+        if (RGENGC_CHECK_MODE >= 2) gc_verify_internal_consistency(objspace);
 
 	if (is_incremental_marking(objspace)) {
 	    PUSH_MARK_FUNC_DATA(NULL);

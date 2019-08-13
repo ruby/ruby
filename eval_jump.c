@@ -121,7 +121,7 @@ rb_ec_exec_end_proc(rb_execution_context_t * ec)
     }
     else {
 	EC_TMPPOP_TAG();
-	error_handle(ec, state);
+        error_handle(ec, state);
 	if (!NIL_P(ec->errinfo)) errinfo = ec->errinfo;
 	EC_REPUSH_TAG();
 	goto again;
