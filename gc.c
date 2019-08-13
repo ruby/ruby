@@ -730,18 +730,9 @@ struct heap_page {
 #define GET_HEAP_MARKING_BITS(x)        (&GET_HEAP_PAGE(x)->marking_bits[0])
 #endif
 
-#ifndef ENABLE_VM_OBJSPACE
-# define ENABLE_VM_OBJSPACE 1
-#endif
-
 /* Aliases */
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 #define rb_objspace (*rb_objspace_of(GET_VM()))
 #define rb_objspace_of(vm) ((vm)->objspace)
-#else
-static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT_MIN}};
-#define rb_objspace_of(vm) (&rb_objspace)
-#endif
 
 #define ruby_initial_gc_stress	gc_params.gc_stress
 
@@ -1422,11 +1413,7 @@ RVALUE_WHITE_P(VALUE obj)
 rb_objspace_t *
 rb_objspace_alloc(void)
 {
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     rb_objspace_t *objspace = calloc(1, sizeof(rb_objspace_t));
-#else
-    rb_objspace_t *objspace = &rb_objspace;
-#endif
     malloc_limit = gc_params.malloc_limit_min;
     list_head_init(&objspace->eden_heap.pages);
     list_head_init(&objspace->tomb_heap.pages);
@@ -1472,9 +1459,6 @@ rb_objspace_free(rb_objspace_t *objspace)
     st_free_table(objspace->id_to_obj_tbl);
     st_free_table(objspace->obj_to_id_tbl);
     free_stack_chunks(&objspace->mark_stack);
-#if !(defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE)
-    if (objspace == &rb_objspace) return;
-#endif
     free(objspace);
 }
 
