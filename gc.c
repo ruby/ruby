@@ -2729,21 +2729,21 @@ Init_gc_stress(void)
 
 typedef int each_obj_callback(void *, void *, size_t, void *);
 
+static void objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void *data);
 static void objspace_reachable_objects_from_root(rb_objspace_t *, void (func)(const char *, VALUE, void *), void *);
 
 struct each_obj_args {
+    rb_objspace_t *objspace;
     each_obj_callback *callback;
     void *data;
 };
 
-static VALUE
-objspace_each_objects(VALUE arg)
+static void
+objspace_each_objects_without_setup(rb_objspace_t *objspace, each_obj_callback *callback, void *data)
 {
     size_t i;
     struct heap_page *page;
     RVALUE *pstart = NULL, *pend;
-    rb_objspace_t *objspace = &rb_objspace;
-    struct each_obj_args *args = (struct each_obj_args *)arg;
 
     i = 0;
     while (i < heap_allocated_pages) {
@@ -2756,11 +2756,17 @@ objspace_each_objects(VALUE arg)
 	pstart = page->start;
 	pend = pstart + page->total_slots;
 
-	if ((*args->callback)(pstart, pend, sizeof(RVALUE), args->data)) {
+	if ((*callback)(pstart, pend, sizeof(RVALUE), data)) {
 	    break;
 	}
     }
+}
 
+static VALUE
+objspace_each_objects_protected(VALUE arg)
+{
+    struct each_obj_args *args = (struct each_obj_args *)arg;
+    objspace_each_objects_without_setup(args->objspace, args->callback, args->data);
     return Qnil;
 }
 
@@ -2812,32 +2818,30 @@ incremental_enable(void)
 void
 rb_objspace_each_objects(each_obj_callback *callback, void *data)
 {
-    struct each_obj_args args;
-    rb_objspace_t *objspace = &rb_objspace;
+    objspace_each_objects(&rb_objspace, callback, data);
+}
+
+static void
+objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void *data)
+{
     int prev_dont_incremental = objspace->flags.dont_incremental;
 
     gc_rest(objspace);
     objspace->flags.dont_incremental = TRUE;
 
-    args.callback = callback;
-    args.data = data;
-
     if (prev_dont_incremental) {
-	objspace_each_objects((VALUE)&args);
+	objspace_each_objects_without_setup(objspace, callback, data);
     }
     else {
-	rb_ensure(objspace_each_objects, (VALUE)&args, incremental_enable, Qnil);
+        struct each_obj_args args = {objspace, callback, data};
+	rb_ensure(objspace_each_objects_protected, (VALUE)&args, incremental_enable, Qnil);
     }
 }
 
 void
 rb_objspace_each_objects_without_setup(each_obj_callback *callback, void *data)
 {
-    struct each_obj_args args;
-    args.callback = callback;
-    args.data = data;
-
-    objspace_each_objects((VALUE)&args);
+    objspace_each_objects_without_setup(&rb_objspace, callback, data);
 }
 
 struct os_each_struct {
@@ -5906,16 +5910,13 @@ static void
 gc_verify_internal_consistency(rb_objspace_t *objspace)
 {
     struct verify_internal_consistency_struct data = {0};
-    struct each_obj_args eo_args;
 
     data.objspace = objspace;
     gc_report(5, objspace, "gc_verify_internal_consistency: start\n");
 
     /* check relations */
 
-    eo_args.callback = verify_internal_consistency_i;
-    eo_args.data = (void *)&data;
-    objspace_each_objects((VALUE)&eo_args);
+    objspace_each_objects_without_setup(objspace, verify_internal_consistency_i, &data);
 
     if (data.err_count != 0) {
 #if RGENGC_CHECK_MODE >= 5
@@ -8232,7 +8233,7 @@ gc_update_references(rb_objspace_t * objspace)
     rb_execution_context_t *ec = GET_EC();
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
 
-    rb_objspace_each_objects_without_setup(gc_ref_update, objspace);
+    objspace_each_objects_without_setup(objspace, gc_ref_update, objspace);
     rb_vm_update_references(vm);
     rb_transient_heap_update_references();
     global_symbols.ids = rb_gc_location(global_symbols.ids);
@@ -8342,7 +8343,7 @@ static VALUE
 gc_check_references_for_moved(rb_objspace_t *objspace)
 {
     objspace_reachable_objects_from_root(objspace, root_obj_check_moved_i, NULL);
-    rb_objspace_each_objects(heap_check_moved_i, NULL);
+    objspace_each_objects(objspace, heap_check_moved_i, NULL);
     return Qnil;
 }
 
