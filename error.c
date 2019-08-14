@@ -1114,7 +1114,7 @@ exc_inspect(VALUE exc)
 
 /*
  *  call-seq:
- *     exception.backtrace    -> array
+ *     exception.backtrace    -> array or nil
  *
  *  Returns any backtrace associated with the exception. The backtrace
  *  is an array of strings, each containing either ``filename:lineNo: in
@@ -1139,6 +1139,12 @@ exc_inspect(VALUE exc)
  *     prog.rb:2:in `a'
  *     prog.rb:6:in `b'
  *     prog.rb:10
+ *
+ *  In the case no backtrace has been set, +nil+ is returned
+ *
+ *    ex = StandardError.new
+ *    ex.backtrace
+ *    #=> nil
 */
 
 static VALUE
@@ -1179,13 +1185,13 @@ rb_get_backtrace(VALUE exc)
 
 /*
  *  call-seq:
- *     exception.backtrace_locations    -> array
+ *     exception.backtrace_locations    -> array or nil
  *
  *  Returns any backtrace associated with the exception. This method is
  *  similar to Exception#backtrace, but the backtrace is an array of
  *  Thread::Backtrace::Location.
  *
- *  Now, this method is not affected by Exception#set_backtrace().
+ *  This method is not affected by Exception#set_backtrace().
  */
 static VALUE
 exc_backtrace_locations(VALUE exc)
