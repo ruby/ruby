@@ -44,7 +44,9 @@ jobs:
       - name: configure
         run: ./configure -C --disable-install-doc
       - run: make $JOBS
+      # TODO: Remove `continue-on-error` once they become stable and also we have a notification for their failure.
       - name: make test-bundler/test-bundled-gems
         run: make -s ${{ matrix.test_task }}
+        continue-on-error: true
       - name: Leaked Globals
         run: make -s leaked-globals
