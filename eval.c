@@ -186,7 +186,7 @@ static int
 rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 {
     int state;
-    volatile VALUE errs[2];
+    volatile VALUE errs[2] = { Qundef, Qundef };
     int nerr;
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     volatile int sysex = EXIT_SUCCESS;
