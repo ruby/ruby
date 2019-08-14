@@ -31,10 +31,19 @@ jobs:
           dependencies: openssl readline zlib
       - name: Install libraries with chocolatey
         run: choco install winflexbison3
-      - name: Checkout
-        uses: actions/checkout@master
-        with:
-          fetch-depth: 50
+      # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
+      - name: Checkout ruby/ruby
+        run: git clone --depth=50 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        if: github.event_name == 'push'
+      - name: Checkout a pull request
+        run: git clone --depth=50 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" . && git reset --hard "$GITHUB_REV"
+        env:
+          GITHUB_REV: ${{ github.event.pull_request.head.sha }}
+          GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
+          GITHUB_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        if: github.event_name == 'pull_request'
       - name: configure
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
