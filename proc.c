@@ -1310,7 +1310,7 @@ rb_block_to_s(VALUE self, const struct rb_block *block, const char *additional_i
       case block_type_iseq:
 	{
 	    const rb_iseq_t *iseq = rb_iseq_check(block->as.captured.code.iseq);
-	    rb_str_catf(str, "%p %"PRIsVALUE":%d", (void *)self,
+            rb_str_catf(str, "%p %"PRIsVALUE":%d", (void *)self,
 			rb_iseq_path(iseq),
 			FIX2INT(iseq->body->location.first_lineno));
 	}
