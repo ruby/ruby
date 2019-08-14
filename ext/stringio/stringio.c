@@ -262,6 +262,73 @@ strio_initialize(int argc, VALUE *argv, VALUE self)
     return strio_init(argc, argv, ptr, self);
 }
 
+static int
+detect_bom(VALUE str, int *bomlen)
+{
+    const char *p;
+    long len;
+
+    RSTRING_GETMEM(str, p, len);
+    if (len < 1) return 0;
+    switch ((unsigned char)p[0]) {
+      case 0xEF:
+	if (len < 2) break;
+	if ((unsigned char)p[1] == 0xBB && len > 2) {
+	    if ((unsigned char)p[2] == 0xBF) {
+		*bomlen = 3;
+		return rb_utf8_encindex();
+	    }
+	}
+	break;
+
+      case 0xFE:
+	if (len < 2) break;
+	if ((unsigned char)p[1] == 0xFF) {
+	    *bomlen = 2;
+	    return rb_enc_find_index("UTF-16BE");
+	}
+	break;
+
+      case 0xFF:
+	if (len < 2) break;
+	if ((unsigned char)p[1] == 0xFE) {
+	    if (len >= 4 && (unsigned char)p[2] == 0 && (unsigned char)p[3] == 0) {
+		*bomlen = 4;
+		return rb_enc_find_index("UTF-32LE");
+	    }
+	    *bomlen = 2;
+	    return rb_enc_find_index("UTF-16LE");
+	}
+	break;
+
+      case 0:
+	if (len < 4) break;
+	if ((unsigned char)p[1] == 0 && (unsigned char)p[2] == 0xFE & (unsigned char)p[3] == 0xFF) {
+	    *bomlen = 4;
+	    return rb_enc_find_index("UTF-32BE");
+	}
+	break;
+    }
+    return 0;
+}
+
+static rb_encoding *
+set_encoding_by_bom(struct StringIO *ptr)
+{
+    int bomlen, idx = detect_bom(ptr->string, &bomlen);
+    rb_encoding *extenc = NULL;
+
+    if (idx) {
+	extenc = rb_enc_from_index(idx);
+	ptr->pos = bomlen;
+	if (ptr->flags & FMODE_WRITABLE) {
+	    rb_enc_associate_index(ptr->string, idx);
+	}
+    }
+    ptr->enc = extenc;
+    return extenc;
+}
+
 static VALUE
 strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
 {
@@ -294,6 +361,7 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
     ptr->enc = convconfig.enc;
     ptr->pos = 0;
     ptr->lineno = 0;
+    if (ptr->flags & FMODE_SETENC_BY_BOM) set_encoding_by_bom(ptr);
     RBASIC(self)->flags |= (ptr->flags & FMODE_READWRITE) * (STRIO_READABLE / FMODE_READABLE);
     return self;
 }
@@ -1677,6 +1745,18 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static VALUE
+strio_set_encoding_by_bom(VALUE self)
+{
+    struct StringIO *ptr = StringIO(self);
+
+    if (ptr->enc) {
+	rb_raise(rb_eArgError, "encoding conversion is set");
+    }
+    if (!set_encoding_by_bom(ptr)) return Qnil;
+    return rb_enc_from_encoding(ptr->enc);
+}
+
 /*
  * Pseudo I/O on String object.
  *
@@ -1778,6 +1858,7 @@ Init_stringio(void)
     rb_define_method(StringIO, "external_encoding", strio_external_encoding, 0);
     rb_define_method(StringIO, "internal_encoding", strio_internal_encoding, 0);
     rb_define_method(StringIO, "set_encoding", strio_set_encoding, -1);
+    rb_define_method(StringIO, "set_encoding_by_bom", strio_set_encoding_by_bom, 0);
 
     {
 	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
