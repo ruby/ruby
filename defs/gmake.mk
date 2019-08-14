@@ -187,6 +187,20 @@ endef
 checkout-github: fetch-github
 	git -C "$(srcdir)" checkout "gh-$(PR)"
 
+.PHONY: update-github
+update-github: checkout-github
+	$(eval PULL_REQUEST_API := https://api.github.com/repos/ruby/ruby/pulls/$(PR))
+	$(if $(GITHUB_TOKEN), \
+	  $(eval PULL_REQUEST := $(shell curl -s -H "Authorization: bearer $$GITHUB_TOKEN" $(PULL_REQUEST_API))), \
+	  $(eval PULL_REQUEST := $(shell curl -s $(PULL_REQUEST_API))) \
+	)
+	$(eval FORK_REPO := $(shell $(BASERUBY) -rjson -e 'print JSON.parse(ARGV[0]).dig("head", "repo", "full_name")' '$(PULL_REQUEST)'))
+	$(eval PR_BRANCH := $(shell $(BASERUBY) -rjson -e 'print JSON.parse(ARGV[0]).dig("head", "ref")' '$(PULL_REQUEST)'))
+	git merge master --no-edit
+	git remote add fork-$(PR) git@github.com:$(FORK_REPO).git
+	git push fork-$(PR) gh-$(PR):$(PR_BRANCH)
+	git remote rm fork-$(PR)
+
 .PHONY: pull-github
 pull-github: fetch-github
 	$(call pull-github,$(PR))
@@ -219,6 +233,7 @@ pr-% pull-github-%: fetch-github-%
 HELP_EXTRA_TASKS = \
 	"  checkout-github:     checkout GitHub Pull Request [PR=1234]" \
 	"  pull-github:         rebase GitHub Pull Request to new worktree [PR=1234]" \
+	"  update-github:       merge master branch and push it to Pull Request [PR=1234]" \
 	""
 
 ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
