@@ -1701,7 +1701,9 @@ module DRb
           end
         end
         return @succ, @result
-      rescue StandardError, ScriptError, Interrupt
+      rescue NoMemoryError, SystemExit, SystemStackError, SecurityError
+        raise
+      rescue Exception
         @result = $!
         return @succ, @result
       end
