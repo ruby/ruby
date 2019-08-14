@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'optparse'
 require 'pathname'
 
@@ -163,7 +164,7 @@ class RDoc::Options
   ##
   # Files matching this pattern will be excluded
 
-  attr_accessor :exclude
+  attr_writer :exclude
 
   ##
   # The list of files to be processed
@@ -212,6 +213,16 @@ class RDoc::Options
   # Include line numbers in the source code
 
   attr_accessor :line_numbers
+
+  ##
+  # The output locale.
+
+  attr_accessor :locale
+
+  ##
+  # The directory where locale data live.
+
+  attr_accessor :locale_dir
 
   ##
   # Name of the file, class or module to display in the initial index page (if
@@ -325,7 +336,7 @@ class RDoc::Options
   # other visibilities may be overridden on a per-method basis with the :doc:
   # directive.
 
-  attr_accessor :visibility
+  attr_reader :visibility
 
   def initialize # :nodoc:
     init_ivars
@@ -333,7 +344,10 @@ class RDoc::Options
 
   def init_ivars # :nodoc:
     @dry_run = false
-    @exclude = []
+    @exclude = %w[
+      ~\z \.orig\z \.rej\z \.bak\z
+      \.gemspec\z
+    ]
     @files = nil
     @force_output = false
     @force_update = true
@@ -343,6 +357,9 @@ class RDoc::Options
     @generators = RDoc::RDoc::GENERATORS
     @hyperlink_all = false
     @line_numbers = false
+    @locale = nil
+    @locale_name = nil
+    @locale_dir = 'locale'
     @main_page = nil
     @markup = 'rdoc'
     @coverage_report = false
@@ -365,29 +382,23 @@ class RDoc::Options
     @visibility = :protected
     @webcvs = nil
     @write_options = false
-
-    if Object.const_defined? :Encoding then
-      @encoding = Encoding::UTF_8
-      @charset = @encoding.name
-    else
-      @encoding = nil
-      @charset = 'UTF-8'
-    end
+    @encoding = Encoding::UTF_8
+    @charset = @encoding.name
   end
 
   def init_with map # :nodoc:
     init_ivars
 
     encoding = map['encoding']
-    @encoding = if Object.const_defined? :Encoding then
-                  encoding ? Encoding.find(encoding) : encoding
-                end
+    @encoding = encoding ? Encoding.find(encoding) : encoding
 
     @charset        = map['charset']
     @exclude        = map['exclude']
     @generator_name = map['generator_name']
     @hyperlink_all  = map['hyperlink_all']
     @line_numbers   = map['line_numbers']
+    @locale_name    = map['locale_name']
+    @locale_dir     = map['locale_dir']
     @main_page      = map['main_page']
     @markup         = map['markup']
     @op_dir         = map['op_dir']
@@ -412,6 +423,8 @@ class RDoc::Options
       @generator_name == other.generator_name and
       @hyperlink_all  == other.hyperlink_all  and
       @line_numbers   == other.line_numbers   and
+      @locale         == other.locale         and
+      @locale_dir     == other.locale_dir and
       @main_page      == other.main_page      and
       @markup         == other.markup         and
       @op_dir         == other.op_dir         and
@@ -484,6 +497,20 @@ class RDoc::Options
   end
 
   ##
+  # Create a regexp for #exclude
+
+  def exclude
+    if @exclude.nil? or Regexp === @exclude then
+      # done, #finish is being re-run
+      @exclude
+    elsif @exclude.empty? then
+      nil
+    else
+      Regexp.new(@exclude.join("|"))
+    end
+  end
+
+  ##
   # Completes any unfinished option setup business such as filtering for
   # existent files, creating a regexp for #exclude and setting a default
   # #template.
@@ -495,13 +522,7 @@ class RDoc::Options
     root = @root.to_s
     @rdoc_include << root unless @rdoc_include.include?(root)
 
-    if @exclude.nil? or Regexp === @exclude then
-      # done, #finish is being re-run
-    elsif @exclude.empty? then
-      @exclude = nil
-    else
-      @exclude = Regexp.new(@exclude.join("|"))
-    end
+    @exclude = self.exclude
 
     finish_page_dir
 
@@ -513,6 +534,13 @@ class RDoc::Options
     unless @template then
       @template     = @generator_name
       @template_dir = template_dir_for @template
+    end
+
+    if @locale_name
+      @locale = RDoc::I18n::Locale[@locale_name]
+      @locale.load(@locale_dir)
+    else
+      @locale = nil
     end
 
     self
@@ -607,16 +635,16 @@ Usage: #{opt.program_name} [options] [names...]
       end
 
       parsers.sort.each do |parser, regexp|
-        opt.banner << "  - #{parser}: #{regexp.join ', '}\n"
+        opt.banner += "  - #{parser}: #{regexp.join ', '}\n"
       end
-      opt.banner << "  - TomDoc:  Only in ruby files\n"
+      opt.banner += "  - TomDoc:  Only in ruby files\n"
 
-      opt.banner << "\n  The following options are deprecated:\n\n"
+      opt.banner += "\n  The following options are deprecated:\n\n"
 
       name_length = DEPRECATED.keys.sort_by { |k| k.length }.last.length
 
       DEPRECATED.sort_by { |k,| k }.each do |name, reason|
-        opt.banner << "    %*1$2$s  %3$s\n" % [-name_length, name, reason]
+        opt.banner += "    %*1$2$s  %3$s\n" % [-name_length, name, reason]
       end
 
       opt.accept Template do |template|
@@ -664,18 +692,28 @@ Usage: #{opt.program_name} [options] [names...]
       opt.separator "Parsing options:"
       opt.separator nil
 
-      if Object.const_defined? :Encoding then
-        opt.on("--encoding=ENCODING", "-e", Encoding.list.map { |e| e.name },
-               "Specifies the output encoding.  All files",
-               "read will be converted to this encoding.",
-               "The default encoding is UTF-8.",
-               "--encoding is preferred over --charset") do |value|
-                 @encoding = Encoding.find value
-                 @charset = @encoding.name # may not be valid value
-               end
+      opt.on("--encoding=ENCODING", "-e", Encoding.list.map { |e| e.name },
+             "Specifies the output encoding.  All files",
+             "read will be converted to this encoding.",
+             "The default encoding is UTF-8.",
+             "--encoding is preferred over --charset") do |value|
+               @encoding = Encoding.find value
+               @charset = @encoding.name # may not be valid value
+             end
 
-        opt.separator nil
+      opt.separator nil
+
+      opt.on("--locale=NAME",
+             "Specifies the output locale.") do |value|
+        @locale_name = value
       end
+
+      opt.on("--locale-data-dir=DIR",
+             "Specifies the directory where locale data live.") do |value|
+        @locale_dir = value
+      end
+
+      opt.separator nil
 
       opt.on("--all", "-a",
              "Synonym for --visibility=private.") do |value|
@@ -1016,8 +1054,7 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.separator nil
 
-      opt.on("--help",
-             "Display this help") do
+      opt.on("--help", "-h", "Display this help") do
         RDoc::RDoc::GENERATORS.each_key do |generator|
           setup_generator generator
         end
@@ -1061,7 +1098,7 @@ Usage: #{opt.program_name} [options] [names...]
 
     unless quiet then
       deprecated.each do |opt|
-        $stderr.puts 'option ' << opt << ' is deprecated: ' << DEPRECATED[opt]
+        $stderr.puts 'option ' + opt + ' is deprecated: ' + DEPRECATED[opt]
       end
     end
 
@@ -1161,16 +1198,19 @@ Usage: #{opt.program_name} [options] [names...]
     end
   end
 
-  ##
-  # This is compatibility code for syck
+  # Sets the minimum visibility of a documented method.
+  #
+  # Accepts +:public+, +:protected+, +:private+, +:nodoc+, or +:all+.
+  #
+  # When +:all+ is passed, visibility is set to +:private+, similarly to
+  # RDOCOPT="--all", see #visibility for more information.
 
-  def to_yaml opts = {} # :nodoc:
-    return super if YAML.const_defined?(:ENGINE) and not YAML::ENGINE.syck?
-
-    YAML.quick_emit self, opts do |out|
-      out.map taguri, to_yaml_style do |map|
-        encode_with map
-      end
+  def visibility= visibility
+    case visibility
+    when :all
+      @visibility = :private
+    else
+      @visibility = visibility
     end
   end
 
@@ -1188,12 +1228,11 @@ Usage: #{opt.program_name} [options] [names...]
   def write_options
     RDoc.load_yaml
 
-    open '.rdoc_options', 'w' do |io|
-      io.set_encoding Encoding::UTF_8 if Object.const_defined? :Encoding
+    File.open '.rdoc_options', 'w' do |io|
+      io.set_encoding Encoding::UTF_8
 
       YAML.dump self, io
     end
   end
 
 end
-

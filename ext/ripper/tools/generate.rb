@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # $Id$
 
 require 'optparse'
@@ -67,16 +68,23 @@ def usage(msg)
 end
 
 def generate_eventids1(ids)
-  buf = ""
+  buf = "".dup
+  buf << %Q[static struct {\n]
   ids.each do |id, arity|
-    buf << %Q[static ID ripper_id_#{id};\n]
+    buf << %Q[    ID id_#{id};\n]
+  end
+  buf << %Q[} ripper_parser_ids;\n]
+  buf << %Q[\n]
+  ids.each do |id, arity|
+    buf << %Q[#define ripper_id_#{id} ripper_parser_ids.id_#{id}\n]
   end
   buf << %Q[\n]
   buf << %Q[static void\n]
   buf << %Q[ripper_init_eventids1(void)\n]
   buf << %Q[{\n]
+  buf << %Q[#define set_id1(name) ripper_id_##name = rb_intern_const("on_"#name)\n]
   ids.each do |id, arity|
-    buf << %Q[    ripper_id_#{id} = rb_intern_const("on_#{id}");\n]
+    buf << %Q[    set_id1(#{id});\n]
   end
   buf << %Q[}\n]
   buf << %Q[\n]
@@ -84,27 +92,23 @@ def generate_eventids1(ids)
   buf << %Q[ripper_init_eventids1_table(VALUE self)\n]
   buf << %Q[{\n]
   buf << %Q[    VALUE h = rb_hash_new();\n]
-  buf << %Q[    ID id;\n]
   buf << %Q[    rb_define_const(self, "PARSER_EVENT_TABLE", h);\n]
   ids.each do |id, arity|
-    buf << %Q[    id = rb_intern_const("#{id}");\n]
-    buf << %Q[    rb_hash_aset(h, ID2SYM(id), INT2NUM(#{arity}));\n]
+    buf << %Q[    rb_hash_aset(h, intern_sym("#{id}"), INT2FIX(#{arity}));\n]
   end
   buf << %Q[}\n]
   buf
 end
 
 def generate_eventids2_table(ids)
-  buf = ""
+  buf = "".dup
   buf << %Q[static void\n]
   buf << %Q[ripper_init_eventids2_table(VALUE self)\n]
   buf << %Q[{\n]
   buf << %Q[    VALUE h = rb_hash_new();\n]
-  buf << %Q[    ID id;\n]
   buf << %Q[    rb_define_const(self, "SCANNER_EVENT_TABLE", h);\n]
   ids.each do |id|
-    buf << %Q[    id = rb_intern_const("#{id}");\n]
-    buf << %Q[    rb_hash_aset(h, ID2SYM(id), INT2NUM(1));\n]
+    buf << %Q[    rb_hash_aset(h, intern_sym("#{id}"), INT2FIX(1));\n]
   end
   buf << %Q[}\n]
   buf
@@ -131,14 +135,23 @@ def check_arity(h)
   abort if invalid
 end
 
+require_relative "dsl"
+
 def read_ids1_with_locations(path)
   h = {}
   File.open(path) {|f|
     f.each do |line|
-      next if /\A\#\s*define\s+s?dispatch/ =~ line
+      next if /\A\#\s*define\s+dispatch/ =~ line
       next if /ripper_dispatch/ =~ line
-      line.scan(/dispatch(\d)\((\w+)/) do |arity, event|
+      line.scan(/\bdispatch(\d)\((\w+)/) do |arity, event|
         (h[event] ||= []).push [f.lineno, arity.to_i]
+      end
+      if line =~ %r</\*% *ripper(?:\[(.*?)\])?: *(.*?) *%\*/>
+        gen = DSL.new($2, ($1 || "").split(","))
+        gen.generate
+        gen.events.each do |event, arity|
+          (h[event] ||= []).push [f.lineno, arity.to_i]
+        end
       end
     end
   }
@@ -146,9 +159,13 @@ def read_ids1_with_locations(path)
 end
 
 def read_ids2(path)
-  File.open(path) {|f|
-    return f.read.scan(/ripper_id_(\w+)/).flatten.uniq.sort
-  }
+  src = File.open(path) {|f| f.read}
+  ids2 = src.scan(/ID\s+ripper_id_(\w+)/).flatten.uniq.sort
+  diff = src.scan(/set_id2\((\w+)\);/).flatten - ids2
+  unless diff.empty?
+    abort "missing scanner IDs: #{diff}"
+  end
+  return ids2
 end
 
 main

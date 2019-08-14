@@ -24,7 +24,6 @@ typedef struct rb_ifaddr_root_tag rb_ifaddr_root_t;
 struct rb_ifaddr_tag {
     int ord;
     struct ifaddrs *ifaddr;
-    rb_ifaddr_root_t *root;
 };
 
 struct rb_ifaddr_root_tag {
@@ -38,11 +37,6 @@ get_root(const rb_ifaddr_t *ifaddr)
 {
     return (rb_ifaddr_root_t *)((char *)&ifaddr[-ifaddr->ord] -
                                 offsetof(rb_ifaddr_root_t, ary));
-}
-
-static void
-ifaddr_mark(void *ptr)
-{
 }
 
 static void
@@ -60,21 +54,19 @@ ifaddr_free(void *ptr)
 static size_t
 ifaddr_memsize(const void *ptr)
 {
+    size_t size = offsetof(rb_ifaddr_root_t, ary);
     const rb_ifaddr_t *ifaddr;
-    const rb_ifaddr_root_t *root;
-    if (ptr == NULL)
-        return 0;
     ifaddr = ptr;
-    root = get_root(ifaddr);
-    return sizeof(rb_ifaddr_root_t) + (root->numifaddrs - 1) * sizeof(rb_ifaddr_t);
+    if (ifaddr->ord == 0) size = sizeof(rb_ifaddr_root_t);
+    size += sizeof(struct ifaddrs);
+    return size;
 }
 
 static const rb_data_type_t ifaddr_type = {
     "socket/ifaddr",
-    {ifaddr_mark, ifaddr_free, ifaddr_memsize,},
+    {0, ifaddr_free, ifaddr_memsize,},
 };
 
-#define IS_IFADDRS(obj) rb_typeddata_is_kind_of((obj), &ifaddr_type)
 static inline rb_ifaddr_t *
 check_ifaddr(VALUE self)
 {
@@ -92,6 +84,12 @@ get_ifaddr(VALUE self)
     return rifaddr;
 }
 
+static struct ifaddrs *
+get_ifaddrs(VALUE self)
+{
+    return get_ifaddr(self)->ifaddr;
+}
+
 static VALUE
 rsock_getifaddrs(void)
 {
@@ -99,7 +97,7 @@ rsock_getifaddrs(void)
     int numifaddrs, i;
     struct ifaddrs *ifaddrs, *ifa;
     rb_ifaddr_root_t *root;
-    VALUE result;
+    VALUE result, addr;
 
     ret = getifaddrs(&ifaddrs);
     if (ret == -1)
@@ -113,20 +111,26 @@ rsock_getifaddrs(void)
     for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next)
         numifaddrs++;
 
-    root = xmalloc(sizeof(rb_ifaddr_root_t) + (numifaddrs-1) * sizeof(rb_ifaddr_t));
-    root->refcount = root->numifaddrs = numifaddrs;
+    addr = TypedData_Wrap_Struct(rb_cSockIfaddr, &ifaddr_type, 0);
+    root = xmalloc(offsetof(rb_ifaddr_root_t, ary) + numifaddrs * sizeof(rb_ifaddr_t));
+    root->refcount = 0;
+    root->numifaddrs = numifaddrs;
 
     ifa = ifaddrs;
     for (i = 0; i < numifaddrs; i++) {
         root->ary[i].ord = i;
         root->ary[i].ifaddr = ifa;
-        root->ary[i].root = root;
         ifa = ifa->ifa_next;
     }
+    RTYPEDDATA_DATA(addr) = &root->ary[0];
+    root->refcount++;
 
     result = rb_ary_new2(numifaddrs);
-    for (i = 0; i < numifaddrs; i++) {
-        rb_ary_push(result, TypedData_Wrap_Struct(rb_cSockIfaddr, &ifaddr_type, &root->ary[i]));
+    rb_ary_push(result, addr);
+    for (i = 1; i < numifaddrs; i++) {
+	addr = TypedData_Wrap_Struct(rb_cSockIfaddr, &ifaddr_type, &root->ary[i]);
+	root->refcount++;
+	rb_ary_push(result, addr);
     }
 
     return result;
@@ -142,8 +146,7 @@ rsock_getifaddrs(void)
 static VALUE
 ifaddr_name(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     return rb_str_new_cstr(ifa->ifa_name);
 }
 
@@ -158,8 +161,7 @@ ifaddr_name(VALUE self)
 static VALUE
 ifaddr_ifindex(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     unsigned int ifindex = if_nametoindex(ifa->ifa_name);
     if (ifindex == 0) {
         rb_raise(rb_eArgError, "invalid interface name: %s", ifa->ifa_name);
@@ -180,8 +182,7 @@ ifaddr_ifindex(VALUE self)
 static VALUE
 ifaddr_flags(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     return IFAFLAGS2NUM(ifa->ifa_flags);
 }
 
@@ -196,8 +197,7 @@ ifaddr_flags(VALUE self)
 static VALUE
 ifaddr_addr(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     if (ifa->ifa_addr)
         return rsock_sockaddr_obj(ifa->ifa_addr, rsock_sockaddr_len(ifa->ifa_addr));
     return Qnil;
@@ -214,8 +214,7 @@ ifaddr_addr(VALUE self)
 static VALUE
 ifaddr_netmask(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     if (ifa->ifa_netmask)
         return rsock_sockaddr_obj(ifa->ifa_netmask, rsock_sockaddr_len(ifa->ifa_netmask));
     return Qnil;
@@ -232,8 +231,7 @@ ifaddr_netmask(VALUE self)
 static VALUE
 ifaddr_broadaddr(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     if ((ifa->ifa_flags & IFF_BROADCAST) && ifa->ifa_broadaddr)
         return rsock_sockaddr_obj(ifa->ifa_broadaddr, rsock_sockaddr_len(ifa->ifa_broadaddr));
     return Qnil;
@@ -250,12 +248,31 @@ ifaddr_broadaddr(VALUE self)
 static VALUE
 ifaddr_dstaddr(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     if ((ifa->ifa_flags & IFF_POINTOPOINT) && ifa->ifa_dstaddr)
         return rsock_sockaddr_obj(ifa->ifa_dstaddr, rsock_sockaddr_len(ifa->ifa_dstaddr));
     return Qnil;
 }
+
+#ifdef HAVE_STRUCT_IF_DATA_IFI_VHID
+/*
+ * call-seq:
+ *   ifaddr.vhid => Integer
+ *
+ * Returns the vhid address of _ifaddr_.
+ * nil is returned if there is no vhid.
+ */
+
+static VALUE
+ifaddr_vhid(VALUE self)
+{
+    struct ifaddrs *ifa = get_ifaddrs(self);
+    if (ifa->ifa_data)
+        return (INT2FIX(((struct if_data*)ifa->ifa_data)->ifi_vhid));
+    else
+        return Qnil;
+}
+#endif
 
 static void
 ifaddr_inspect_flags(ifa_flags_t flags, VALUE result)
@@ -292,6 +309,9 @@ ifaddr_inspect_flags(ifa_flags_t flags, VALUE result)
 #endif
 #ifdef IFF_ALLMULTI
     INSPECT_BIT(IFF_ALLMULTI, "ALLMULTI")
+#endif
+#ifdef IFF_SIMPLEX
+    INSPECT_BIT(IFF_SIMPLEX, "SIMPLEX")
 #endif
 #ifdef IFF_MASTER
     INSPECT_BIT(IFF_MASTER, "MASTER")
@@ -336,11 +356,8 @@ ifaddr_inspect_flags(ifa_flags_t flags, VALUE result)
 static VALUE
 ifaddr_inspect(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     VALUE result;
-
-    ifa = rifaddr->ifaddr;
 
     result = rb_str_new_cstr("#<");
 
@@ -451,6 +468,9 @@ rsock_init_sockifaddr(void)
     rb_define_method(rb_cSockIfaddr, "netmask", ifaddr_netmask, 0);
     rb_define_method(rb_cSockIfaddr, "broadaddr", ifaddr_broadaddr, 0);
     rb_define_method(rb_cSockIfaddr, "dstaddr", ifaddr_dstaddr, 0);
+#ifdef HAVE_STRUCT_IF_DATA_IFI_VHID
+    rb_define_method(rb_cSockIfaddr, "vhid", ifaddr_vhid, 0);
+#endif
 #endif
 
     rb_define_singleton_method(rb_cSocket, "getifaddrs", socket_s_getifaddrs, 0);

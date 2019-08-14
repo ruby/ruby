@@ -1,5 +1,8 @@
+# frozen_string_literal: false
 require 'drb/drb'
 require 'drb/extserv'
+
+module DRbTests
 
 class Foo
   include DRbUndumped
@@ -17,6 +20,8 @@ class Bar
   end
 end
 
+end
+
 if __FILE__ == $0
   def ARGV.shift
     it = super()
@@ -24,8 +29,9 @@ if __FILE__ == $0
     it
   end
 
-  DRb.start_service('druby://localhost:0', Bar.new)
+  DRb.start_service('druby://localhost:0', DRbTests::Bar.new)
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
   es.stop_service if es.alive?
 end
+

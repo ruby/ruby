@@ -1,4 +1,5 @@
-require 'rdoc/ri'
+# frozen_string_literal: true
+require 'rdoc/rdoc'
 
 ##
 # The directories where ri data lives.  Paths can be enumerated via ::each, or
@@ -81,8 +82,6 @@ module RDoc::RI::Paths
   # ri documentation.
 
   def self.gemdirs filter = :latest
-    require 'rubygems' unless defined?(Gem)
-
     ri_paths = {}
 
     all = Gem::Specification.map do |spec|
@@ -184,4 +183,3 @@ module RDoc::RI::Paths
   end
 
 end
-

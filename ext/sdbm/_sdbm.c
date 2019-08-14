@@ -7,8 +7,7 @@
  * core routines
  */
 
-#include "ruby/config.h"
-#include "ruby/defines.h"
+#include "ruby/ruby.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -177,24 +176,24 @@ sdbm_open(register char *file, register int flags, register int mode)
 static int
 fd_set_cloexec(int fd)
 {
-  /* MinGW don't have F_GETFD and FD_CLOEXEC.  [ruby-core:40281] */
+	/* MinGW don't have F_GETFD and FD_CLOEXEC.  [ruby-core:40281] */
 #ifdef F_GETFD
-    int flags, ret;
-    flags = fcntl(fd, F_GETFD); /* should not fail except EBADF. */
-    if (flags == -1) {
-        return -1;
-    }
-    if (2 < fd) {
-        if (!(flags & FD_CLOEXEC)) {
-            flags |= FD_CLOEXEC;
-            ret = fcntl(fd, F_SETFD, flags);
-            if (ret == -1) {
-                return -1;
-            }
-        }
-    }
+	int flags, ret;
+	flags = fcntl(fd, F_GETFD); /* should not fail except EBADF. */
+	if (flags == -1) {
+		return -1;
+	}
+	if (2 < fd) {
+		if (!(flags & FD_CLOEXEC)) {
+			flags |= FD_CLOEXEC;
+			ret = fcntl(fd, F_SETFD, flags);
+			if (ret == -1) {
+				return -1;
+			}
+		}
+	}
 #endif
-    return 0;
+	return 0;
 }
 
 DBM *
@@ -373,7 +372,7 @@ makroom(register DBM *db, long int hash, int need)
 {
 	long newp;
 	char twin[PBLKSIZ];
-#if defined _WIN32 && !defined __CYGWIN__
+#if defined _WIN32
 	char zer[PBLKSIZ];
 	long oldtail;
 #endif
@@ -400,21 +399,21 @@ makroom(register DBM *db, long int hash, int need)
  * here, as sdbm_store will do so, after it inserts the incoming pair.
  */
 
-#if defined _WIN32 && !defined __CYGWIN__
-	/*
-	 * Fill hole with 0 if made it.
-	 * (hole is NOT read as 0)
-	 */
-	oldtail = lseek(db->pagf, 0L, SEEK_END);
-	memset(zer, 0, PBLKSIZ);
-	while (OFF_PAG(newp) > oldtail) {
-		if (lseek(db->pagf, 0L, SEEK_END) < 0 ||
-		    write(db->pagf, zer, PBLKSIZ) < 0) {
+#if defined _WIN32
+		/*
+		 * Fill hole with 0 if made it.
+		 * (hole is NOT read as 0)
+		 */
+		oldtail = lseek(db->pagf, 0L, SEEK_END);
+		memset(zer, 0, PBLKSIZ);
+		while (OFF_PAG(newp) > oldtail) {
+			if (lseek(db->pagf, 0L, SEEK_END) < 0 ||
+			    write(db->pagf, zer, PBLKSIZ) < 0) {
 
-			return 0;
+				return 0;
+			}
+			oldtail += PBLKSIZ;
 		}
-		oldtail += PBLKSIZ;
-	}
 #endif
 
 		if (hash & (db->hmask + 1)) {
@@ -507,7 +506,7 @@ getpage(register DBM *db, register long int hash)
 	while (dbit < db->maxbno && getdbit(db, dbit))
 		dbit = 2 * dbit + ((hash & ((long) 1 << hbit++)) ? 2 : 1);
 
-	debug(("dbit: %d...", dbit));
+	debug(("dbit: %ld...", dbit));
 
 	db->curbit = dbit;
 	db->hmask = masks[hbit];
@@ -532,7 +531,7 @@ getpage(register DBM *db, register long int hash)
 		}
 		db->pagbno = pagb;
 
-		debug(("pag read: %d\n", pagb));
+		debug(("pag read: %ld\n", pagb));
 	}
 	return 1;
 }
@@ -552,7 +551,7 @@ getdbit(register DBM *db, register long int dbit)
 			return 0;
 		db->dirbno = dirb;
 
-		debug(("dir read: %d\n", dirb));
+		debug(("dir read: %ld\n", dirb));
 	}
 
 	return db->dirbuf[c % DBLKSIZ] & (1 << (dbit % BYTESIZ));
@@ -573,7 +572,7 @@ setdbit(register DBM *db, register long int dbit)
 			return 0;
 		db->dirbno = dirb;
 
-		debug(("dir read: %d\n", dirb));
+		debug(("dir read: %ld\n", dirb));
 	}
 
 	db->dirbuf[c % DBLKSIZ] |= (1 << (dbit % BYTESIZ));
@@ -803,7 +802,7 @@ delpair(char *pag, datum key)
 		}
 #else
 #ifdef MEMMOVE
-		memmove(dst, src, m);
+		memmove(dst-m, src-m, m);
 #else
 		while (m--)
 			*--dst = *--src;

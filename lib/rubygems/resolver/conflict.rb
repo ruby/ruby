@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # Used internally to indicate that a dependency conflicted
 # with a spec that would be activated.
@@ -26,7 +27,7 @@ class Gem::Resolver::Conflict
     @failed_dep = failed_dep
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class === other and
       @dependency == other.dependency and
       @activated  == other.activated  and
@@ -52,11 +53,40 @@ class Gem::Resolver::Conflict
 
   def explanation
     activated   = @activated.spec.full_name
-    requirement = @failed_dep.dependency.requirement
+    dependency  = @failed_dep.dependency
+    requirement = dependency.requirement
+    alternates  = dependency.matching_specs.map { |spec| spec.full_name }
 
-    "  Activated %s via:\n    %s\n  instead of (%s) via:\n    %s\n" % [
-      activated,   request_path(@activated).join(', '),
-      requirement, request_path(requester).join(', '),
+    unless alternates.empty?
+      matching = <<-MATCHING.chomp
+
+  Gems matching %s:
+    %s
+      MATCHING
+
+      matching = matching % [
+        dependency,
+        alternates.join(', '),
+      ]
+    end
+
+    explanation = <<-EXPLANATION
+  Activated %s
+  which does not match conflicting dependency (%s)
+
+  Conflicting dependency chains:
+    %s
+
+  versus:
+    %s
+%s
+    EXPLANATION
+
+    explanation % [
+      activated, requirement,
+      request_path(@activated).reverse.join(", depends on\n    "),
+      request_path(@failed_dep).reverse.join(", depends on\n    "),
+      matching,
     ]
   end
 
@@ -67,7 +97,7 @@ class Gem::Resolver::Conflict
     @dependency.name == spec.name
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[Dependency conflict: ', ']' do
       q.breakable
 
@@ -79,7 +109,7 @@ class Gem::Resolver::Conflict
       q.pp @dependency
 
       q.breakable
-      if @dependency == @failed_dep then
+      if @dependency == @failed_dep
         q.text ' failed'
       else
         q.text ' failed dependency '
@@ -91,14 +121,23 @@ class Gem::Resolver::Conflict
   ##
   # Path of activations from the +current+ list.
 
-  def request_path current
+  def request_path(current)
     path = []
 
     while current do
-      requirement = current.request.dependency.requirement
-      path << "#{current.spec.full_name} (#{requirement})"
+      case current
+      when Gem::Resolver::ActivationRequest then
+        path <<
+          "#{current.request.dependency}, #{current.spec.version} activated"
 
-      current = current.parent
+        current = current.parent
+      when Gem::Resolver::DependencyRequest then
+        path << "#{current.dependency}"
+
+        current = current.requester
+      else
+        raise Gem::Exception, "[BUG] unknown request class #{current.class}"
+      end
     end
 
     path = ['user request (gem command or Gemfile)'] if path.empty?
@@ -114,9 +153,3 @@ class Gem::Resolver::Conflict
   end
 
 end
-
-##
-# TODO: Remove in RubyGems 3
-
-Gem::Resolver::DependencyConflict = Gem::Resolver::Conflict # :nodoc:
-

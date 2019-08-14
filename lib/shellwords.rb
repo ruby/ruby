@@ -1,3 +1,4 @@
+# frozen-string-literal: true
 ##
 # == Manipulates strings like the UNIX Bourne shell
 #
@@ -5,11 +6,12 @@
 # of the UNIX Bourne shell.
 #
 # The shellwords() function was originally a port of shellwords.pl,
-# but modified to conform to POSIX / SUSv3 (IEEE Std 1003.1-2001 [1]).
+# but modified to conform to the Shell & Utilities volume of the IEEE
+# Std 1003.1-2008, 2016 Edition [1].
 #
 # === Usage
 #
-# You can use shellwords to parse a string into a Bourne shell friendly Array.
+# You can use Shellwords to parse a string into a Bourne shell friendly Array.
 #
 #   require 'shellwords'
 #
@@ -27,7 +29,7 @@
 #   argv = "they all ran after the farmer's wife".shellsplit
 #        #=> ArgumentError: Unmatched double quote: ...
 #
-# In this case, you might want to use Shellwords.escape, or it's alias
+# In this case, you might want to use Shellwords.escape, or its alias
 # String#shellescape.
 #
 # This method will escape the String for you to safely use with a Bourne shell.
@@ -42,7 +44,7 @@
 #   system(argv.shelljoin)
 #
 # You can use this method to create an escaped string out of an array of tokens
-# separated by a space. In this example we'll use the literal shortcut for
+# separated by a space. In this example we used the literal shortcut for
 # Array.new.
 #
 # === Authors
@@ -54,7 +56,7 @@
 #
 # === Resources
 #
-# 1: {IEEE Std 1003.1-2004}[http://pubs.opengroup.org/onlinepubs/009695399/toc.htm]
+# 1: {IEEE Std 1003.1-2008, 2016 Edition, the Shell & Utilities volume}[http://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html]
 
 module Shellwords
   # Splits a string into an array of tokens in the same way the UNIX
@@ -63,20 +65,34 @@ module Shellwords
   #   argv = Shellwords.split('here are "two words"')
   #   argv #=> ["here", "are", "two words"]
   #
+  # Note, however, that this is not a command line parser.  Shell
+  # metacharacters except for the single and double quotes and
+  # backslash are not treated as such.
+  #
+  #   argv = Shellwords.split('ruby my_prog.rb | less')
+  #   argv #=> ["ruby", "my_prog.rb", "|", "less"]
+  #
   # String#shellsplit is a shortcut for this function.
   #
   #   argv = 'here are "two words"'.shellsplit
   #   argv #=> ["here", "are", "two words"]
   def shellsplit(line)
     words = []
-    field = ''
+    field = String.new
     line.scan(/\G\s*(?>([^\s\\\'\"]+)|'([^\']*)'|"((?:[^\"\\]|\\.)*)"|(\\.?)|(\S))(\s|\z)?/m) do
       |word, sq, dq, esc, garbage, sep|
       raise ArgumentError, "Unmatched double quote: #{line.inspect}" if garbage
-      field << (word || sq || (dq || esc).gsub(/\\(.)/, '\\1'))
+      # 2.2.3 Double-Quotes:
+      #
+      #   The <backslash> shall retain its special meaning as an
+      #   escape character only when followed by one of the following
+      #   characters when considered special:
+      #
+      #   $ ` " \ <newline>
+      field << (word || sq || (dq && dq.gsub(/\\([$`"\\\n])/, '\\1')) || esc.gsub(/\\(.)/, '\\1'))
       if sep
         words << field
-        field = ''
+        field = String.new
       end
     end
     words
@@ -117,24 +133,24 @@ module Shellwords
   # It is the caller's responsibility to encode the string in the right
   # encoding for the shell environment where this string is used.
   #
-  # Multibyte characters are treated as multibyte characters, not bytes.
+  # Multibyte characters are treated as multibyte characters, not as bytes.
   #
   # Returns an empty quoted String if +str+ has a length of zero.
   def shellescape(str)
     str = str.to_s
 
     # An empty argument will be skipped, so return empty quotes.
-    return "''" if str.empty?
+    return "''".dup if str.empty?
 
     str = str.dup
 
-    # Treat multibyte characters as is.  It is caller's responsibility
+    # Treat multibyte characters as is.  It is the caller's responsibility
     # to encode the string in the right encoding for the shell
     # environment.
     str.gsub!(/([^A-Za-z0-9_\-.,:\/@\n])/, "\\\\\\1")
 
     # A LF cannot be escaped with a backslash because a backslash + LF
-    # combo is regarded as line continuation and simply ignored.
+    # combo is regarded as a line continuation and simply ignored.
     str.gsub!(/\n/, "'\n'")
 
     return str
@@ -149,8 +165,8 @@ module Shellwords
   # Builds a command line string from an argument list, +array+.
   #
   # All elements are joined into a single string with fields separated by a
-  # space, where each element is escaped for Bourne shell and stringified using
-  # +to_s+.
+  # space, where each element is escaped for the Bourne shell and stringified
+  # using +to_s+.
   #
   #   ary = ["There's", "a", "time", "and", "place", "for", "everything"]
   #   argv = Shellwords.join(ary)
@@ -206,7 +222,7 @@ class Array
   #   array.shelljoin => string
   #
   # Builds a command line string from an argument list +array+ joining
-  # all elements escaped for Bourne shell and separated by a space.
+  # all elements escaped for the Bourne shell and separated by a space.
   #
   # See Shellwords.shelljoin for details.
   def shelljoin

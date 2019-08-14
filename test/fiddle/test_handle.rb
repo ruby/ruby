@@ -1,6 +1,6 @@
+# frozen_string_literal: true
 begin
   require_relative 'helper'
-  require_relative '../ruby/envutil'
 rescue LoadError
 end
 
@@ -8,68 +8,75 @@ module Fiddle
   class TestHandle < TestCase
     include Fiddle
 
-    include Test::Unit::Assertions
+    def test_safe_handle_open
+      Thread.new do
+        $SAFE = 1
+        assert_raise(SecurityError) {
+          Fiddle::Handle.new(LIBC_SO.dup.taint)
+        }
+      end.join
+    ensure
+      $SAFE = 0
+    end
+
+    def test_safe_function_lookup
+      Thread.new do
+        h = Fiddle::Handle.new(LIBC_SO)
+        $SAFE = 1
+        assert_raise(SecurityError) {
+          h["qsort".dup.taint]
+        }
+      end.join
+    ensure
+      $SAFE = 0
+    end
 
     def test_to_i
       handle = Fiddle::Handle.new(LIBC_SO)
       assert_kind_of Integer, handle.to_i
     end
 
-    def test_static_sym_secure
-      assert_raises(SecurityError) do
-        Thread.new do
-          $SAFE = 2
-          Fiddle::Handle.sym('calloc')
-        end.join
-      end
-    end
-
     def test_static_sym_unknown
-      assert_raises(DLError) { Fiddle::Handle.sym('fooo') }
-      assert_raises(DLError) { Fiddle::Handle['fooo'] }
+      assert_raise(DLError) { Fiddle::Handle.sym('fooo') }
+      assert_raise(DLError) { Fiddle::Handle['fooo'] }
     end
 
     def test_static_sym
-      skip "Fiddle::Handle.sym is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
       begin
         # Linux / Darwin / FreeBSD
         refute_nil Fiddle::Handle.sym('dlopen')
         assert_equal Fiddle::Handle.sym('dlopen'), Fiddle::Handle['dlopen']
+        return
       rescue
-        # NetBSD
-        require 'objspace'
-        refute_nil Fiddle::Handle.sym('Init_objspace')
-        assert_equal Fiddle::Handle.sym('Init_objspace'), Fiddle::Handle['Init_objspace']
       end
-    end
+
+      begin
+        # NetBSD
+        require '-test-/dln/empty'
+        refute_nil Fiddle::Handle.sym('Init_empty')
+        assert_equal Fiddle::Handle.sym('Init_empty'), Fiddle::Handle['Init_empty']
+        return
+      rescue
+      end
+    end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
     def test_sym_closed_handle
       handle = Fiddle::Handle.new(LIBC_SO)
       handle.close
-      assert_raises(DLError) { handle.sym("calloc") }
-      assert_raises(DLError) { handle["calloc"] }
+      assert_raise(DLError) { handle.sym("calloc") }
+      assert_raise(DLError) { handle["calloc"] }
     end
 
     def test_sym_unknown
       handle = Fiddle::Handle.new(LIBC_SO)
-      assert_raises(DLError) { handle.sym('fooo') }
-      assert_raises(DLError) { handle['fooo'] }
+      assert_raise(DLError) { handle.sym('fooo') }
+      assert_raise(DLError) { handle['fooo'] }
     end
 
     def test_sym_with_bad_args
       handle = Handle.new(LIBC_SO)
-      assert_raises(TypeError) { handle.sym(nil) }
-      assert_raises(TypeError) { handle[nil] }
-    end
-
-    def test_sym_secure
-      assert_raises(SecurityError) do
-        Thread.new do
-          $SAFE = 2
-          handle = Handle.new(LIBC_SO)
-          handle.sym('calloc')
-        end.join
-      end
+      assert_raise(TypeError) { handle.sym(nil) }
+      assert_raise(TypeError) { handle[nil] }
     end
 
     def test_sym
@@ -86,31 +93,13 @@ module Fiddle
     def test_handle_close_twice
       handle = Handle.new(LIBC_SO)
       handle.close
-      assert_raises(DLError) do
+      assert_raise(DLError) do
         handle.close
       end
     end
 
     def test_dlopen_returns_handle
       assert_instance_of Handle, dlopen(LIBC_SO)
-    end
-
-    def test_dlopen_safe
-      assert_raises(SecurityError) do
-        Thread.new do
-          $SAFE = 2
-          dlopen(LIBC_SO)
-        end.join
-      end
-    end
-
-    def test_initialize_safe
-      assert_raises(SecurityError) do
-        Thread.new do
-          $SAFE = 2
-          Handle.new(LIBC_SO)
-        end.join
-      end
     end
 
     def test_initialize_noargs
@@ -152,7 +141,11 @@ module Fiddle
         # --- Ubuntu Linux 8.04 dlsym(3)
         handle = Handle::NEXT
         refute_nil handle['malloc']
+        return
       rescue
+      end
+
+      begin
         # BSD
         #
         # If dlsym() is called with the special handle RTLD_NEXT, then the search
@@ -166,14 +159,15 @@ module Fiddle
         # interface, below, should be used, since getpid() is a function and not a
         # data object.)
         # --- FreeBSD 8.0 dlsym(3)
-        require 'objspace'
+        require '-test-/dln/empty'
         handle = Handle::NEXT
-        refute_nil handle['Init_objspace']
+        refute_nil handle['Init_empty']
+        return
+      rescue
       end
     end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
     def test_DEFAULT
-      skip "Handle::DEFAULT is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
       handle = Handle::DEFAULT
       refute_nil handle['malloc']
     end unless /mswin|mingw/ =~ RUBY_PLATFORM
@@ -190,7 +184,15 @@ module Fiddle
     end if /freebsd/=~ RUBY_PLATFORM
 
     def test_no_memory_leak
-      assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Handle.allocate}; GC.start', limit: 1.2, rss: true)
+      assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Handle.allocate}; GC.start', rss: true)
+    end
+
+    if /cygwin|mingw|mswin/ =~ RUBY_PLATFORM
+      def test_fallback_to_ansi
+        k = Fiddle::Handle.new("kernel32.dll")
+        ansi = k["GetFileAttributesA"]
+        assert_equal(ansi, k["GetFileAttributes"], "should fallback to ANSI version")
+      end
     end
   end
 end if defined?(Fiddle)

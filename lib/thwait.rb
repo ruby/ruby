@@ -1,11 +1,11 @@
+# frozen_string_literal: false
 #
 #   thwait.rb - thread synchronization class
 #       $Release Version: 0.9 $
 #       $Revision: 1.3 $
 #       by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd.)
 
-require "thread.rb"
-require "e2mmap.rb"
+require "e2mmap"
 
 #
 # This class watches for termination of multiple threads.  Basic functionality
@@ -25,8 +25,6 @@ require "e2mmap.rb"
 #
 #
 class ThreadsWait
-  RCS_ID='-$Id: thwait.rb,v 1.3 1998/06/26 03:19:34 keiju Exp keiju $-'
-
   extend Exception2MessageMapper
   def_exception("ErrNoWaitingThread", "No threads for waiting.")
   def_exception("ErrNoFinishedThread", "No finished threads.")
@@ -52,12 +50,12 @@ class ThreadsWait
   #
   def initialize(*threads)
     @threads = []
-    @wait_queue = Queue.new
+    @wait_queue = Thread::Queue.new
     join_nowait(*threads) unless threads.empty?
   end
 
   # Returns the array of threads that have not terminated yet.
-  attr :threads
+  attr_reader :threads
 
   #
   # Returns +true+ if there are no threads in the pool still running.

@@ -1,0 +1,52 @@
+%{/* -*- c -*- */
+#define GPERF_DOWNCASE 1
+#define GPERF_CASE_STRNCMP 1
+
+static inline int
+gperf_case_strncmp(const char *s1, const char *s2, size_t n)
+{
+    const UChar *str = (const UChar *)s1;
+    const UChar *s = (const UChar *)s2;
+    return onigenc_with_ascii_strnicmp(ONIG_ENCODING_ASCII, str, str + n, s, (int)n);
+}
+
+enum onigenc_jis_ctype {
+    onigenc_jis_min = ONIGENC_MAX_STD_CTYPE,
+    onigenc_jis_hiragana,
+    onigenc_jis_katakana,
+    onigenc_jis_han,
+    onigenc_jis_latin,
+    onigenc_jis_greek,
+    onigenc_jis_cyrillic,
+    onigenc_jis_max
+};
+
+enum {PropertyListNum = onigenc_jis_max - onigenc_jis_min - 1};
+
+static const OnigCodePoint* const PropertyList[PropertyListNum] = {
+    CR_Hiragana,
+    CR_Katakana,
+    CR_Han,
+    CR_Latin,
+    CR_Greek,
+    CR_Cyrillic,
+};
+
+struct enc_property {
+    signed char name;
+    unsigned char ctype;
+};
+
+static const struct enc_property *onig_jis_property(/*!ANSI{*/const char *str, unsigned int len/*}!ANSI*/);
+%}
+
+struct enc_property;
+
+%%
+hiragana, onigenc_jis_hiragana
+katakana, onigenc_jis_katakana
+han,      onigenc_jis_han
+latin,    onigenc_jis_latin
+greek,    onigenc_jis_greek
+cyrillic, onigenc_jis_cyrillic
+%%

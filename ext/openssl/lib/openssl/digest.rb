@@ -1,7 +1,5 @@
+# frozen_string_literal: false
 #--
-#
-# $RCSfile$
-#
 # = Ruby-space predefined Digest subclasses
 #
 # = Info
@@ -10,23 +8,19 @@
 # All rights reserved.
 #
 # = Licence
-# This program is licenced under the same licence as Ruby.
+# This program is licensed under the same licence as Ruby.
 # (See the file 'LICENCE'.)
-#
-# = Version
-# $Id$
-#
 #++
 
 module OpenSSL
   class Digest
 
-    alg = %w(DSS DSS1 MD2 MD4 MD5 MDC2 RIPEMD160 SHA SHA1)
-    if OPENSSL_VERSION_NUMBER > 0x00908000
-      alg += %w(SHA224 SHA256 SHA384 SHA512)
+    alg = %w(MD2 MD4 MD5 MDC2 RIPEMD160 SHA1 SHA224 SHA256 SHA384 SHA512)
+    if OPENSSL_VERSION_NUMBER < 0x10100000
+      alg += %w(DSS DSS1 SHA)
     end
 
-    # Return the +data+ hash computed with +name+ Digest. +name+ is either the
+    # Return the hash value computed with _name_ Digest. _name_ is either the
     # long name or short name of a supported digest algorithm.
     #
     # === Examples
@@ -56,19 +50,13 @@ module OpenSSL
     # Deprecated.
     #
     # This class is only provided for backwards compatibility.
-    class Digest < Digest # :nodoc:
-      # Deprecated.
-      #
-      # See OpenSSL::Digest.new
-      def initialize(*args)
-        warn('Digest::Digest is deprecated; use Digest')
-        super(*args)
-      end
-    end
+    # Use OpenSSL::Digest instead.
+    class Digest < Digest; end # :nodoc:
+    deprecate_constant :Digest
 
   end # Digest
 
-  # Returns a Digest subclass by +name+.
+  # Returns a Digest subclass by _name_
   #
   #   require 'openssl'
   #
@@ -85,4 +73,3 @@ module OpenSSL
   module_function :Digest
 
 end # OpenSSL
-

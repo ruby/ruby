@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # The global rubygems pool, available via the rubygems.org API.
 # Returns instances of APISpecification.
@@ -24,7 +25,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   # API URL +dep_uri+ which is described at
   # http://guides.rubygems.org/rubygems-org-api
 
-  def initialize dep_uri = 'https://rubygems.org/api/v1/dependencies'
+  def initialize(dep_uri = 'https://rubygems.org/api/v1/dependencies')
     super()
 
     dep_uri = URI dep_uri unless URI === dep_uri # for ruby 1.8
@@ -34,16 +35,22 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
 
     @data   = Hash.new { |h,k| h[k] = [] }
     @source = Gem::Source.new @uri
+
+    @to_fetch = []
   end
 
   ##
   # Return an array of APISpecification objects matching
   # DependencyRequest +req+.
 
-  def find_all req
+  def find_all(req)
     res = []
 
     return res unless @remote
+
+    if @to_fetch.include?(req.name)
+      prefetch_now
+    end
 
     versions(req.name).each do |ver|
       if req.dependency.match? req.name, ver[:number]
@@ -58,12 +65,16 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   # A hint run by the resolver to allow the Set to fetch
   # data for DependencyRequests +reqs+.
 
-  def prefetch reqs
+  def prefetch(reqs)
     return unless @remote
     names = reqs.map { |r| r.dependency.name }
-    needed = names - @data.keys
+    needed = names - @data.keys - @to_fetch
 
-    return if needed.empty?
+    @to_fetch += needed
+  end
+
+  def prefetch_now # :nodoc:
+    needed, @to_fetch = @to_fetch, []
 
     uri = @dep_uri + "?gems=#{needed.sort.join ','}"
     str = Gem::RemoteFetcher.fetcher.fetch_path uri
@@ -82,7 +93,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
     end
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[APISet', ']' do
       q.breakable
       q.text "URI: #{@dep_uri}"
@@ -96,7 +107,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   ##
   # Return data for all versions of the gem +name+.
 
-  def versions name # :nodoc:
+  def versions(name) # :nodoc:
     if @data.key?(name)
       return @data[name]
     end
@@ -112,4 +123,3 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   end
 
 end
-

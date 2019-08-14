@@ -1,5 +1,5 @@
+# frozen_string_literal: false
 require 'test/unit'
-require_relative 'envutil'
 
 class TestAlias < Test::Unit::TestCase
   class Alias0
@@ -122,7 +122,8 @@ class TestAlias < Test::Unit::TestCase
   end
 
   def test_alias_wb_miss
-    assert_normal_exit %q{
+    assert_normal_exit "#{<<-"begin;"}\n#{<<-'end;'}"
+    begin;
       require 'stringio'
       GC.verify_internal_consistency
       GC.start
@@ -130,6 +131,106 @@ class TestAlias < Test::Unit::TestCase
         alias_method :read_nonblock, :sysread
       end
       GC.verify_internal_consistency
+    end;
+  end
+
+  def test_cyclic_zsuper
+    bug9475 = '[ruby-core:60431] [Bug #9475]'
+
+    a = Module.new do
+      def foo
+        "A"
+      end
+    end
+
+    b = Class.new do
+      include a
+      attr_reader :b
+
+      def foo
+        @b ||= 0
+        raise SystemStackError if (@b += 1) > 1
+        # "foo from B"
+        super + "B"
+      end
+    end
+
+    c = Class.new(b) do
+      alias orig_foo foo
+
+      def foo
+        # "foo from C"
+        orig_foo + "C"
+      end
+    end
+
+    b.class_eval do
+      alias orig_foo foo
+      attr_reader :b2
+
+      def foo
+        @b2 ||= 0
+        raise SystemStackError if (@b2 += 1) > 1
+        # "foo from B (again)"
+        orig_foo + "B2"
+      end
+    end
+
+    assert_nothing_raised(SystemStackError, bug9475) do
+      assert_equal("ABC", c.new.foo, bug9475)
+    end
+  end
+
+  def test_alias_in_module
+    bug9663 = '[ruby-core:61635] [Bug #9663]'
+
+    assert_separately(['-', bug9663], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      bug = ARGV[0]
+
+      m = Module.new do
+        alias orig_to_s to_s
+      end
+
+      o = Object.new.extend(m)
+      assert_equal(o.to_s, o.orig_to_s, bug)
+    end;
+  end
+
+  class C0; def foo; end; end
+  class C1 < C0; alias bar foo; end
+
+  def test_alias_method_equation
+    obj = C1.new
+    assert_equal(obj.method(:bar), obj.method(:foo))
+    assert_equal(obj.method(:foo), obj.method(:bar))
+  end
+
+  def test_alias_class_method_added
+    name = nil
+    k = Class.new {
+      def foo;end
+      def self.method_added(mid)
+        @name = instance_method(mid).original_name
+      end
+      alias bar foo
+      name = @name
     }
+    assert_equal(:foo, k.instance_method(:bar).original_name)
+    assert_equal(:foo, name)
+  end
+
+  def test_alias_module_method_added
+    name = nil
+    k = Module.new {
+      def foo;end
+      def self.method_added(mid)
+        @name = instance_method(mid).original_name
+      end
+      alias bar foo
+      name = @name
+    }
+    assert_equal(:foo, k.instance_method(:bar).original_name)
+    assert_equal(:foo, name)
   end
 end

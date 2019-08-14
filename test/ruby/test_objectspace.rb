@@ -1,5 +1,5 @@
+# frozen_string_literal: false
 require 'test/unit'
-require_relative 'envutil'
 
 class TestObjectSpace < Test::Unit::TestCase
   def self.deftest_id2ref(obj)
@@ -78,9 +78,84 @@ End
     end
     assert_in_out_err([], code[""], ["finalized"])
     assert_in_out_err([], code["private "], ["finalized"])
+    c = EnvUtil.labeled_class("C\u{3042}").new
+    o = Object.new
+    assert_raise_with_message(ArgumentError, /C\u{3042}/) {
+      ObjectSpace.define_finalizer(o, c)
+    }
+  end
+
+  def test_finalizer_with_super
+    assert_in_out_err(["-e", <<-END], "", %w(:ok), [])
+      class A
+        def foo
+        end
+      end
+
+      class B < A
+        def foo
+          1.times { super }
+        end
+      end
+
+      class C
+        module M
+        end
+
+        FINALIZER = proc do
+          M.module_eval(__FILE__, "", __LINE__) do
+          end
+        end
+
+        def define_finalizer
+          ObjectSpace.define_finalizer(self, FINALIZER)
+        end
+      end
+
+      class D
+        def foo
+          B.new.foo
+        end
+      end
+
+      C::M.singleton_class.send :define_method, :module_eval do |src, id, line|
+      end
+
+      GC.stress = true
+      10.times do
+        C.new.define_finalizer
+        D.new.foo
+      end
+
+      p :ok
+    END
   end
 
   def test_each_object
+    klass = Class.new
+    new_obj = klass.new
+
+    found = []
+    count = ObjectSpace.each_object(klass) do |obj|
+      found << obj
+    end
+    assert_equal(1, count)
+    assert_equal(1, found.size)
+    assert_same(new_obj, found[0])
+  end
+
+  def test_each_object_enumerator
+    klass = Class.new
+    new_obj = klass.new
+
+    found = []
+    counter = ObjectSpace.each_object(klass)
+    assert_equal(1, counter.each {|obj| found << obj})
+    assert_equal(1, found.size)
+    assert_same(new_obj, found[0])
+  end
+
+  def test_each_object_no_gabage
     assert_separately([], <<-End)
     GC.disable
     eval('begin; 1.times{}; rescue; ensure; end')
@@ -97,5 +172,35 @@ End
       end
     }
     End
+  end
+
+  def test_each_object_recursive_key
+    assert_normal_exit(<<-'end;', '[ruby-core:66742] [Bug #10579]')
+      h = {["foo"]=>nil}
+      p Thread.current[:__recursive_key__]
+    end;
+  end
+
+  def test_each_object_singleton_class
+    assert_separately([], <<-End)
+      class C
+        class << self
+          $c = self
+        end
+      end
+
+      exist = false
+      ObjectSpace.each_object(Class){|o|
+        exist = true if $c == o
+      }
+      assert(exist, 'Bug #11360')
+    End
+
+    klass = Class.new
+    instance = klass.new
+    sclass = instance.singleton_class
+    meta = klass.singleton_class
+    assert_kind_of(meta, sclass)
+    assert_include(ObjectSpace.each_object(meta).to_a, sclass)
   end
 end

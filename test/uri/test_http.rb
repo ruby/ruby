@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'uri/http'
 
@@ -13,6 +14,11 @@ class TestHTTP < Test::Unit::TestCase
 
   def uri_to_ary(uri)
     uri.class.component.collect {|c| uri.send(c)}
+  end
+
+  def test_build
+    u = URI::HTTP.build(host: 'www.example.com', path: '/foo/bar')
+    assert_kind_of(URI::HTTP, u)
   end
 
   def test_parse

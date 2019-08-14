@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   irb/ws-for-case-2.rb -
 #   	$Release Version: 0.9.6$

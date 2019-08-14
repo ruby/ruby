@@ -1,4 +1,5 @@
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require 'minitest_helper'
 
 class TestRDocMarkupToHtmlSnippet < RDoc::Markup::FormatterTestCase
 
@@ -309,7 +310,7 @@ class TestRDocMarkupToHtmlSnippet < RDoc::Markup::FormatterTestCase
   end
 
   def accept_verbatim
-    assert_equal "\n<pre>hi\n  world</pre>\n", @to.res.join
+    assert_equal "\n<pre class=\"ruby\"><span class=\"ruby-identifier\">hi</span>\n  <span class=\"ruby-identifier\">world</span>\n</pre>\n", @to.res.join
     assert_equal 10, @to.characters
   end
 
@@ -427,8 +428,7 @@ class TestRDocMarkupToHtmlSnippet < RDoc::Markup::FormatterTestCase
 
     expected = <<-EXPECTED
 
-<pre>#{inner}
-</pre>
+<pre>#{inner}</pre>
     EXPECTED
 
     assert_equal expected, @to.res.join
@@ -458,8 +458,7 @@ So there you have it
 
     expected = <<-EXPECTED
 <p>Hello
-<p>This is some text, it <strong>will</strong> be cut off after 100 characters
-and an ellipsis must follow
+<p>This is some text, it <strong>will</strong> be cut off after 100 characters and an ellipsis must follow
 <p>So there you #{@ellipsis}
     EXPECTED
 
@@ -494,9 +493,9 @@ be guessed, raises an error if +name+ couldn't be guessed.
     rdoc = <<-RDOC
 = \RDoc - Ruby Documentation System
 
-* {RDoc Project Page}[https://github.com/rdoc/rdoc/]
-* {RDoc Documentation}[http://docs.seattlerb.org/rdoc]
-* {RDoc Bug Tracker}[https://github.com/rdoc/rdoc/issues]
+* {RDoc Project Page}[https://github.com/ruby/rdoc]
+* {RDoc Documentation}[https://ruby.github.io/rdoc]
+* {RDoc Bug Tracker}[https://github.com/ruby/rdoc/issues]
 
 == DESCRIPTION:
 
@@ -563,8 +562,7 @@ NOTE: Given Foo::Bar, Bar is considered a class even though it may be a
     RDOC
 
     expected = <<-EXPECTED
-<p>Extracts the class, selector and method name parts from <code>name</code>
-like Foo::Bar#baz.
+<p>Extracts the class, selector and method name parts from <code>name</code> like Foo::Bar#baz.
 <p>NOTE: Given Foo::Bar, #{@ellipsis}
     EXPECTED
 
@@ -588,8 +586,9 @@ This routine modifies its +comment+ parameter.
     expected = <<-EXPECTED
 <p>Look for directives in a normal comment block:
 
-<pre># :stopdoc:
-#{inner}</pre>
+<pre class=\"ruby\"><span class=\"ruby-comment\"># :stopdoc:</span>
+<span class=\"ruby-comment\">#{inner}</span>
+</pre>
     EXPECTED
 
     actual = @to.convert rdoc
@@ -603,7 +602,7 @@ This routine modifies its +comment+ parameter.
     rdoc = "* text\n" * 2
 
     expected = "<p>text\n"
-    expected.chomp!
+    expected = expected.chomp
     expected << " #{@ellipsis}\n"
 
     actual = @to.convert rdoc
@@ -651,10 +650,10 @@ This routine modifies its +comment+ parameter.
     assert_equal 3, @to.characters
   end
 
-  def test_handle_special_HYPERLINK_link
-    special = RDoc::Markup::Special.new 0, 'link:README.txt'
+  def test_handle_regexp_HYPERLINK_link
+    target = RDoc::Markup::RegexpHandling.new 0, 'link:README.txt'
 
-    link = @to.handle_special_HYPERLINK special
+    link = @to.handle_regexp_HYPERLINK target
 
     assert_equal 'README.txt', link
   end
@@ -665,8 +664,9 @@ This routine modifies its +comment+ parameter.
     expected = <<-EXPECTED
 <p>one
 
-<pre>verb1
-verb2</pre>
+<pre class=\"ruby\"><span class=\"ruby-identifier\">verb1</span>
+<span class=\"ruby-identifier\">verb2</span>
+</pre>
 <p>two
 
     EXPECTED
@@ -707,4 +707,3 @@ verb2</pre>
   end
 
 end
-

@@ -7,16 +7,29 @@ numhash_free(void *ptr)
     if (ptr) st_free_table(ptr);
 }
 
+static size_t
+numhash_memsize(const void *ptr)
+{
+    return st_memsize(ptr);
+}
+
+static const rb_data_type_t numhash_type = {
+    "numhash",
+    {0, numhash_free, numhash_memsize,},
+    0, 0,
+    RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED,
+};
+
 static VALUE
 numhash_alloc(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, 0, numhash_free, 0);
+    return TypedData_Wrap_Struct(klass, &numhash_type, 0);
 }
 
 static VALUE
 numhash_init(VALUE self)
 {
-    st_table *tbl = (st_table *)DATA_PTR(self);
+    st_table *tbl = (st_table *)Check_TypedStruct(self, &numhash_type);
     if (tbl) st_free_table(tbl);
     DATA_PTR(self) = st_init_numtable();
     return self;
@@ -26,8 +39,9 @@ static VALUE
 numhash_aref(VALUE self, VALUE key)
 {
     st_data_t data;
+    st_table *tbl = (st_table *)Check_TypedStruct(self, &numhash_type);
     if (!SPECIAL_CONST_P(key)) rb_raise(rb_eArgError, "not a special const");
-    if (st_lookup((st_table *)DATA_PTR(self), (st_data_t)key, &data))
+    if (st_lookup(tbl, (st_data_t)key, &data))
 	return (VALUE)data;
     return Qnil;
 }
@@ -35,9 +49,10 @@ numhash_aref(VALUE self, VALUE key)
 static VALUE
 numhash_aset(VALUE self, VALUE key, VALUE data)
 {
+    st_table *tbl = (st_table *)Check_TypedStruct(self, &numhash_type);
     if (!SPECIAL_CONST_P(key)) rb_raise(rb_eArgError, "not a special const");
     if (!SPECIAL_CONST_P(data)) rb_raise(rb_eArgError, "not a special const");
-    st_insert((st_table *)DATA_PTR(self), (st_data_t)key, (st_data_t)data);
+    st_insert(tbl, (st_data_t)key, (st_data_t)data);
     return self;
 }
 
@@ -53,7 +68,7 @@ numhash_i(st_data_t key, st_data_t value, st_data_t arg)
 static VALUE
 numhash_each(VALUE self)
 {
-    st_table *table = DATA_PTR(self);
+    st_table *table = (st_table *)Check_TypedStruct(self, &numhash_type);
     st_data_t data = (st_data_t)self;
     return st_foreach_check(table, numhash_i, data, data) ? Qtrue : Qfalse;
 }
@@ -76,7 +91,8 @@ update_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 static VALUE
 numhash_update(VALUE self, VALUE key)
 {
-    if (st_update((st_table *)DATA_PTR(self), (st_data_t)key, update_func, 0))
+    st_table *table = (st_table *)Check_TypedStruct(self, &numhash_type);
+    if (st_update(table, (st_data_t)key, update_func, 0))
 	return Qtrue;
     else
 	return Qfalse;
@@ -91,14 +107,16 @@ numhash_update(VALUE self, VALUE key)
 static VALUE
 numhash_size(VALUE self)
 {
-    return ST2NUM(((st_table *)DATA_PTR(self))->num_entries);
+    st_table *table = (st_table *)Check_TypedStruct(self, &numhash_type);
+    return ST2NUM(table->num_entries);
 }
 
 static VALUE
 numhash_delete_safe(VALUE self, VALUE key)
 {
+    st_table *table = (st_table *)Check_TypedStruct(self, &numhash_type);
     st_data_t val, k = (st_data_t)key;
-    if (st_delete_safe((st_table *)DATA_PTR(self), &k, &val, (st_data_t)self)) {
+    if (st_delete_safe(table, &k, &val, (st_data_t)self)) {
 	return val;
     }
     return Qnil;

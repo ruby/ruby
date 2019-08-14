@@ -1,5 +1,6 @@
+# frozen_string_literal: false
 require 'test/unit'
-require 'thread'
+require 'tempfile'
 
 class TestBacktrace < Test::Unit::TestCase
   def test_exception
@@ -78,10 +79,10 @@ class TestBacktrace < Test::Unit::TestCase
         cs << caller(5)
       }.call
     }.resume
-    assert_equal(3, cs[0].size)
-    assert_equal(2, cs[1].size)
-    assert_equal(1, cs[2].size)
-    assert_equal(0, cs[3].size)
+    assert_equal(2, cs[0].size)
+    assert_equal(1, cs[1].size)
+    assert_equal(0, cs[2].size)
+    assert_equal(nil, cs[3])
     assert_equal(nil, cs[4])
 
     #
@@ -163,6 +164,59 @@ class TestBacktrace < Test::Unit::TestCase
     }
   end
 
+  def test_caller_locations_path
+    loc, = caller_locations(0, 1)
+    assert_equal(__FILE__, loc.path)
+    Tempfile.create(%w"caller_locations .rb") do |f|
+      f.puts "caller_locations(0, 1)[0].tap {|loc| puts loc.path}"
+      f.close
+      dir, base = File.split(f.path)
+      assert_in_out_err(["-C", dir, base], "", [base])
+    end
+  end
+
+  def test_caller_locations_absolute_path
+    loc, = caller_locations(0, 1)
+    assert_equal(__FILE__, loc.absolute_path)
+    Tempfile.create(%w"caller_locations .rb") do |f|
+      f.puts "caller_locations(0, 1)[0].tap {|loc| puts loc.absolute_path}"
+      f.close
+      assert_in_out_err(["-C", *File.split(f.path)], "", [File.realpath(f.path)])
+    end
+  end
+
+  def test_caller_locations_lineno
+    loc, = caller_locations(0, 1)
+    assert_equal(__LINE__-1, loc.lineno)
+    Tempfile.create(%w"caller_locations .rb") do |f|
+      f.puts "caller_locations(0, 1)[0].tap {|loc| puts loc.lineno}"
+      f.close
+      assert_in_out_err(["-C", *File.split(f.path)], "", ["1"])
+    end
+  end
+
+  def test_caller_locations_base_label
+    assert_equal("#{__method__}", caller_locations(0, 1)[0].base_label)
+    loc, = tap {break caller_locations(0, 1)}
+    assert_equal("#{__method__}", loc.base_label)
+    begin
+      raise
+    rescue
+      assert_equal("#{__method__}", caller_locations(0, 1)[0].base_label)
+    end
+  end
+
+  def test_caller_locations_label
+    assert_equal("#{__method__}", caller_locations(0, 1)[0].label)
+    loc, = tap {break caller_locations(0, 1)}
+    assert_equal("block in #{__method__}", loc.label)
+    begin
+      raise
+    rescue
+      assert_equal("rescue in #{__method__}", caller_locations(0, 1)[0].label)
+    end
+  end
+
   def th_rec q, n=10
     if n > 1
       th_rec q, n-1
@@ -173,7 +227,7 @@ class TestBacktrace < Test::Unit::TestCase
 
   def test_thread_backtrace
     begin
-      q = Queue.new
+      q = Thread::Queue.new
       th = Thread.new{
         th_rec q
       }
@@ -195,12 +249,13 @@ class TestBacktrace < Test::Unit::TestCase
       assert_equal(n, th.backtrace_locations(0, n + 1).size)
     ensure
       q << true
+      th.join
     end
   end
 
   def test_thread_backtrace_locations_with_range
     begin
-      q = Queue.new
+      q = Thread::Queue.new
       th = Thread.new{
         th_rec q
       }
@@ -212,6 +267,80 @@ class TestBacktrace < Test::Unit::TestCase
       assert_equal(bt, locs)
     ensure
       q << true
+      th.join
     end
+  end
+
+  def test_core_backtrace_alias
+    obj = BasicObject.new
+    e = assert_raise(NameError) do
+      class << obj
+        alias foo bar
+      end
+    end
+    assert_not_match(/\Acore#/, e.backtrace_locations[0].base_label)
+  end
+
+  def test_core_backtrace_undef
+    obj = BasicObject.new
+    e = assert_raise(NameError) do
+      class << obj
+        undef foo
+      end
+    end
+    assert_not_match(/\Acore#/, e.backtrace_locations[0].base_label)
+  end
+
+  def test_core_backtrace_hash_merge
+    e = assert_raise(TypeError) do
+      {**nil}
+    end
+    assert_not_match(/\Acore#/, e.backtrace_locations[0].base_label)
+  end
+
+  def test_notty_backtrace
+    err = ["-:1:in `<main>': unhandled exception"]
+    assert_in_out_err([], "raise", [], err)
+
+    err = ["-:2:in `foo': foo! (RuntimeError)",
+           "\tfrom -:4:in `<main>'"]
+    assert_in_out_err([], <<-"end;", [], err)
+    def foo
+      raise "foo!"
+    end
+    foo
+    end;
+
+    err = ["-:7:in `rescue in bar': bar! (RuntimeError)",
+           "\tfrom -:4:in `bar'",
+           "\tfrom -:9:in `<main>'",
+           "-:2:in `foo': foo! (RuntimeError)",
+           "\tfrom -:5:in `bar'",
+           "\tfrom -:9:in `<main>'"]
+    assert_in_out_err([], <<-"end;", [], err)
+    def foo
+      raise "foo!"
+    end
+    def bar
+      foo
+    rescue
+      raise "bar!"
+    end
+    bar
+    end;
+  end
+
+  def test_caller_to_enum
+    err = ["-:3:in `foo': unhandled exception", "\tfrom -:in `each'"]
+    assert_in_out_err([], <<-"end;", [], err, "[ruby-core:91911]")
+      def foo
+        return to_enum(__method__) unless block_given?
+        raise
+        yield 1
+      end
+
+      enum = foo
+      enum.next
+    end;
   end
 end

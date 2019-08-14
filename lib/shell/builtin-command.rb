@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   shell/builtin-command.rb -
 #       $Release Version: 0.7 $
@@ -9,10 +10,10 @@
 #
 #
 
-require "shell/filter"
+require_relative "filter"
 
 class Shell
-  class BuiltInCommand<Filter
+  class BuiltInCommand < Filter
     def wait?
       false
     end
@@ -82,20 +83,6 @@ class Shell
       end
     end
   end
-
-#   class Sort < Cat
-#     def initialize(sh, *filenames)
-#       super
-#     end
-#
-#     def each(rs = nil)
-#       ary = []
-#       super{|l|       ary.push l}
-#       for l in ary.sort!
-#       yield l
-#       end
-#     end
-#   end
 
   class AppendIO < BuiltInCommand
     def initialize(sh, io, filter)

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   sync.rb - 2 phase lock with counter
 #       $Release Version: 1.0$
@@ -37,10 +38,6 @@
 #
 #
 
-unless defined? Thread
-  raise "Thread not available for this ruby interpreter"
-end
-
 ##
 # A module that provides a two-phase lock with a counter.
 
@@ -67,7 +64,7 @@ module Sync_m
       Message = "Unknown lock mode(%s)"
       def LockModeFailer.Fail(mode)
         if mode.id2name
-          mode = id2name
+          mode = mode.id2name
         end
         super(mode)
       end
@@ -260,7 +257,7 @@ module Sync_m
     @sync_ex_locker = nil
     @sync_ex_count = 0
 
-    @sync_mutex = Mutex.new
+    @sync_mutex = Thread::Mutex.new
   end
 
   def initialize(*args)
@@ -303,7 +300,7 @@ module Sync_m
         ret = false
       end
     else
-      Err::LockModeFailer.Fail mode
+      Err::LockModeFailer.Fail m
     end
     return ret
   end
@@ -319,6 +316,9 @@ Synchronizer_m = Sync_m
 # details.
 
 class Sync
+
+  VERSION = "0.5.0"
+
   include Sync_m
 end
 

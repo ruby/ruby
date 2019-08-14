@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 class Listener
   attr_reader :ts, :te
   attr_reader :normalize

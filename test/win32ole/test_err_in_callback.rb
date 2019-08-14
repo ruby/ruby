@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # test Win32OLE avoids cfp consistency error when the exception raised
 # in WIN32OLE_EVENT handler block. [ruby-dev:35450]

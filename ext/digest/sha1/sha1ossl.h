@@ -15,6 +15,8 @@
 #endif
 #define SHA1_DIGEST_LENGTH	SHA_DIGEST_LENGTH
 
-void SHA1_Finish(SHA1_CTX *ctx, char *buf);
+static DEFINE_FINISH_FUNC_FROM_FINAL(SHA1)
+#undef SHA1_Finish
+#define SHA1_Finish rb_digest_SHA1_finish
 
 #endif

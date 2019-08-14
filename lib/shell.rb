@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   shell.rb -
 #       $Release Version: 0.7 $
@@ -11,13 +12,12 @@
 
 require "e2mmap"
 
-require "thread" unless defined?(Mutex)
-
 require "forwardable"
 
 require "shell/error"
 require "shell/command-processor"
 require "shell/process-controller"
+require "shell/version"
 
 # Shell implements an idiomatic Ruby interface for common UNIX shell commands.
 #
@@ -87,12 +87,10 @@ require "shell/process-controller"
 #   (sh.cat < "/etc/printcap") | sh.tee("tee11") >> "tee12"
 #
 class Shell
-  @RCS_ID='-$Id: shell.rb,v 1.9 2002/03/04 12:01:10 keiju Exp keiju $-'
 
   include Error
   extend Exception2MessageMapper
 
-#  @cascade = true
   # debug: true -> normal debug
   # debug: 1    -> eval definition debug
   # debug: 2    -> detail inspect debug
@@ -101,14 +99,16 @@ class Shell
 
   @debug_display_process_id = false
   @debug_display_thread_id = true
-  @debug_output_mutex = Mutex.new
+  @debug_output_mutex = Thread::Mutex.new
+  @default_system_path = nil
+  @default_record_separator = nil
 
   class << Shell
     extend Forwardable
 
-    attr_accessor :cascade, :debug, :verbose
+    attr_accessor :cascade, :verbose
+    attr_reader :debug
 
-#    alias cascade? cascade
     alias debug? debug
     alias verbose? verbose
     @verbose = true
@@ -170,7 +170,7 @@ class Shell
     end
 
     # os resource mutex
-    mutex_methods = ["unlock", "lock", "locked?", "synchronize", "try_lock", "exclusive_unlock"]
+    mutex_methods = ["unlock", "lock", "locked?", "synchronize", "try_lock"]
     for m in mutex_methods
       def_delegator("@debug_output_mutex", m, "debug_output_"+m.to_s)
     end
@@ -212,7 +212,8 @@ class Shell
   # Returns the umask
   attr_accessor :umask
   attr_accessor :record_separator
-  attr_accessor :verbose, :debug
+  attr_accessor :verbose
+  attr_reader :debug
 
   def debug=(val)
     @debug = val
@@ -262,7 +263,7 @@ class Shell
   def chdir(path = nil, verbose = @verbose)
     check_point
 
-    if iterator?
+    if block_given?
       notify("chdir(with block) #{path}") if verbose
       cwd_old = @cwd
       begin
@@ -296,7 +297,7 @@ class Shell
   def pushdir(path = nil, verbose = @verbose)
     check_point
 
-    if iterator?
+    if block_given?
       notify("pushdir(with block) #{path}") if verbose
       pushdir(path, nil)
       begin
@@ -355,7 +356,22 @@ class Shell
     @process_controller.kill_job(sig, command)
   end
 
-  # Convenience method for Shell::CommandProcessor.def_system_command
+  # call-seq:
+  #   def_system_command(command, path = command)
+  #
+  # Convenience method for Shell::CommandProcessor.def_system_command.
+  # Defines an instance method which will execute the given shell command.
+  # If the executable is not in Shell.default_system_path, you must
+  # supply the path to it.
+  #
+  #    Shell.def_system_command('hostname')
+  #    Shell.new.hostname # => localhost
+  #
+  #    # How to use an executable that's not in the default path
+  #
+  #    Shell.def_system_command('run_my_program', "~/hello")
+  #    Shell.new.run_my_program # prints "Hello from a C program!"
+  #
   def Shell.def_system_command(command, path = command)
     CommandProcessor.def_system_command(command, path)
   end
@@ -365,7 +381,17 @@ class Shell
     CommandProcessor.undef_system_command(command)
   end
 
-  # Convenience method for Shell::CommandProcessor.alias_command
+  # call-seq:
+  #   alias_command(alias, command, *opts, &block)
+  #
+  # Convenience method for Shell::CommandProcessor.alias_command.
+  # Defines an instance method which will execute a command under
+  # an alternative name.
+  #
+  #    Shell.def_system_command('date')
+  #    Shell.alias_command('date_in_utc', 'date', '-u')
+  #    Shell.new.date_in_utc # => Sat Jan 25 16:59:57 UTC 2014
+  #
   def Shell.alias_command(ali, command, *opts, &block)
     CommandProcessor.alias_command(ali, command, *opts, &block)
   end
@@ -375,7 +401,17 @@ class Shell
     CommandProcessor.unalias_command(ali)
   end
 
-  # Convenience method for Shell::CommandProcessor.install_system_commands
+  # call-seq:
+  #   install_system_commands(pre = "sys_")
+  #
+  # Convenience method for Shell::CommandProcessor.install_system_commands.
+  # Defines instance methods representing all the executable files found in
+  # Shell.default_system_path, with the given prefix prepended to their
+  # names.
+  #
+  #    Shell.install_system_commands
+  #    Shell.new.sys_echo("hello") # => hello
+  #
   def Shell.install_system_commands(pre = "sys_")
     CommandProcessor.install_system_commands(pre)
   end
@@ -410,10 +446,9 @@ class Shell
       _head = true
       STDERR.print opts.collect{|mes|
         mes = mes.dup
-        yield mes if iterator?
+        yield mes if block_given?
         if _head
           _head = false
-#         "shell" " + mes
           prefix + mes
         else
           " "* prefix.size + mes

@@ -1,4 +1,5 @@
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require 'minitest_helper'
 
 class TestRDocMarkupToLabel < RDoc::Markup::FormatterTestCase
 
@@ -82,8 +83,8 @@ class TestRDocMarkupToLabel < RDoc::Markup::FormatterTestCase
     assert_equal 'some_method', @to.convert('some_method')
     assert_equal 'some_method', @to.convert('\\some_method')
 
-    assert_equal '%23some_method', @to.convert('#some_method')
-    assert_equal '%23some_method', @to.convert('\\#some_method')
+    assert_equal '23some_method', @to.convert('#some_method')
+    assert_equal '23some_method', @to.convert('\\#some_method')
   end
 
   def test_convert_em
@@ -92,11 +93,11 @@ class TestRDocMarkupToLabel < RDoc::Markup::FormatterTestCase
   end
 
   def test_convert_em_dash # for HTML conversion
-    assert_equal '--', @to.convert('--')
+    assert_equal '-', @to.convert('--')
   end
 
   def test_convert_escape
-    assert_equal 'a+%3E+b', @to.convert('a > b')
+    assert_equal 'a+-3E+b', @to.convert('a > b')
   end
 
   def test_convert_tidylink

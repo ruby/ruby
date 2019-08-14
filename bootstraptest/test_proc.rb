@@ -224,14 +224,14 @@ assert_equal %q{[[nil, []], [1, []], [1, [2]], [1, [2, 3]]]}, %q{
   Proc.new{|a, *b| [a, b]}.call(1, 2, 3),
   ]
 }
-assert_equal %q{0}, %q{
+assert_equal %q{1}, %q{
   pr = proc{
     $SAFE
   }
   $SAFE = 1
   pr.call
 }
-assert_equal %q{[1, 0]}, %q{
+assert_equal %q{[1, 1]}, %q{
   pr = proc{
     $SAFE += 1
   }

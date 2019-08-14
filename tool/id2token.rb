@@ -1,9 +1,11 @@
 #! /usr/bin/ruby -p
 # -*- coding: us-ascii -*-
+
+# Used to build the Ruby parsing code in common.mk and Ripper.
+
 BEGIN {
   require 'optparse'
-  $:.unshift(File.dirname(__FILE__))
-  require 'vpath'
+  require_relative 'lib/vpath'
   vpath = VPath.new
   header = nil
 

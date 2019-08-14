@@ -1,6 +1,6 @@
 #! /usr/local/bin/ruby -Kn
 # usage: exyacc.rb [yaccfiles]
-# this is coverted from exyacc.pl in the camel book
+# this is covered from exyacc.pl in the camel book
 
 ARGF.each(nil) do |source|
   sbeg = source.index("\n%%") + 1

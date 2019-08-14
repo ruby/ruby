@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: true
 
 require_relative 'helper'
 
@@ -100,6 +101,18 @@ module Psych
         t.close
 
         File.open(t.path, 'rb', :encoding => 'UTF-8') do |f|
+          assert_equal "こんにちは！", Psych.load(f)
+        end
+      }
+    end
+
+    def test_io_utf8_read_as_binary
+      Tempfile.create(['utf8', 'yml']) {|t|
+        t.binmode
+        t.write '--- こんにちは！'.encode('UTF-8')
+        t.close
+
+        File.open(t.path, 'rb', :encoding => 'ascii-8bit') do |f|
           assert_equal "こんにちは！", Psych.load(f)
         end
       }
@@ -247,6 +260,15 @@ module Psych
 --- !fun
       eoyml
       assert_encodings @utf8, @handler.strings
+    end
+
+    def test_dump_non_ascii_string_to_file
+      Tempfile.create(['utf8', 'yml'], :encoding => 'UTF-8') do |t|
+        h = {'one' => 'いち'}
+        Psych.dump(h, t)
+        t.close
+        assert_equal h, Psych.load_file(t.path)
+      end
     end
 
     private

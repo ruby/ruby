@@ -1,5 +1,5 @@
+# frozen_string_literal: false
 require 'test/unit'
-require_relative 'envutil.rb'
 
 class TestCase < Test::Unit::TestCase
   def test_case
@@ -81,7 +81,7 @@ class TestCase < Test::Unit::TestCase
     EOS
 
     assert_in_out_err(['-e', <<-EOS], '', %w[42], [])
-      class Fixnum; undef ===; def ===(o); p 42; true; end; end; case 1; when 1; end
+      class Integer; undef ===; def ===(o); p 42; true; end; end; case 1; when 1; end
     EOS
   end
 
@@ -121,5 +121,26 @@ class TestCase < Test::Unit::TestCase
       when Class.new(BasicObject) { }.new
       end
     }
+  end
+
+  module NilEqq
+    refine NilClass do
+      def === other
+        false
+      end
+    end
+  end
+
+  class NilEqqClass
+    using NilEqq
+
+    def eqq(a)
+      case a; when nil then nil; else :not_nil; end
+    end
+  end
+
+
+  def test_deoptimize_nil
+    assert_equal :not_nil, NilEqqClass.new.eqq(nil)
   end
 end

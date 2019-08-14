@@ -1,4 +1,5 @@
-require "rexml/node"
+# frozen_string_literal: false
+require_relative "node"
 
 module REXML
   ##

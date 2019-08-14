@@ -1,6 +1,5 @@
+# frozen_string_literal: false
 #--
-#
-# $RCSfile$
 #
 # = Ruby-space definitions that completes C-space funcs for BN
 #
@@ -10,23 +9,27 @@
 # All rights reserved.
 #
 # = Licence
-# This program is licenced under the same licence as Ruby.
+# This program is licensed under the same licence as Ruby.
 # (See the file 'LICENCE'.)
-#
-# = Version
-# $Id$
-#
 #++
 
 module OpenSSL
   class BN
     include Comparable
+
+    def pretty_print(q)
+      q.object_group(self) {
+        q.text ' '
+        q.text to_i.to_s
+      }
+    end
   end # BN
 end # OpenSSL
 
 ##
+#--
 # Add double dispatch to Integer
-#
+#++
 class Integer
   # Casts an Integer as an OpenSSL::BN
   #
@@ -35,4 +38,3 @@ class Integer
     OpenSSL::BN::new(self)
   end
 end # Integer
-

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+#
 # This class implements a pretty printing algorithm. It finds line breaks and
 # nice indentations for grouped structure.
 #
@@ -40,7 +42,7 @@ class PrettyPrint
   #     output
   #   end
   #
-  def PrettyPrint.format(output='', maxwidth=79, newline="\n", genspace=lambda {|n| ' ' * n})
+  def PrettyPrint.format(output=''.dup, maxwidth=79, newline="\n", genspace=lambda {|n| ' ' * n})
     q = PrettyPrint.new(output, maxwidth, newline, &genspace)
     yield q
     q.flush
@@ -54,7 +56,7 @@ class PrettyPrint
   # The invocation of +breakable+ in the block doesn't break a line and is
   # treated as just an invocation of +text+.
   #
-  def PrettyPrint.singleline_format(output='', maxwidth=nil, newline=nil, genspace=nil)
+  def PrettyPrint.singleline_format(output=''.dup, maxwidth=nil, newline=nil, genspace=nil)
     q = SingleLine.new(output)
     yield q
     output
@@ -77,7 +79,7 @@ class PrettyPrint
   # The block is used to generate spaces. {|width| ' ' * width} is used if it
   # is not given.
   #
-  def initialize(output='', maxwidth=79, newline="\n", &genspace)
+  def initialize(output=''.dup, maxwidth=79, newline="\n", &genspace)
     @output = output
     @maxwidth = maxwidth
     @newline = newline
@@ -152,28 +154,6 @@ class PrettyPrint
   #   #<PrettyPrint::Group:0x8347e54 @depth=4, @breakables=[], @break=false>
   def current_group
     @group_stack.last
-  end
-
-  # first? is a predicate to test the call is a first call to first? with
-  # current group.
-  #
-  # It is useful to format comma separated values as:
-  #
-  #   q.group(1, '[', ']') {
-  #     xxx.each {|yyy|
-  #       unless q.first?
-  #         q.text ','
-  #         q.breakable
-  #       end
-  #       ... pretty printing yyy ...
-  #     }
-  #   }
-  #
-  # first? is obsoleted in 1.8.2.
-  #
-  def first?
-    warn "PrettyPrint#first? is obsoleted at 1.8.2."
-    current_group.first?
   end
 
   # Breaks the buffer into lines that are shorter than #maxwidth

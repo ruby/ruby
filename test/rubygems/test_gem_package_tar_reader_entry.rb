@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/package/tar_test_case'
 require 'rubygems/package'
 
@@ -8,12 +9,21 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
 
     @contents = ('a'..'z').to_a.join * 100
 
-    @tar = ''
+    @tar = String.new
     @tar << tar_file_header("lib/foo", "", 0, @contents.size, Time.now)
     @tar << @contents
     @tar << "\0" * (512 - (@tar.size % 512))
 
     @entry = util_entry @tar
+  end
+
+  def teardown
+    close_util_entry(@entry)
+    super
+  end
+
+  def close_util_entry(entry)
+    entry.instance_variable_get(:@io).close!
   end
 
   def test_bytes_read
@@ -24,24 +34,28 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     assert_equal 1, @entry.bytes_read
   end
 
+  def test_size
+    assert_equal @contents.size, @entry.size
+  end
+
   def test_close
     @entry.close
 
     assert @entry.bytes_read
 
-    e = assert_raises IOError do @entry.eof? end
+    e = assert_raises(IOError) { @entry.eof? }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raises IOError do @entry.getc end
+    e = assert_raises(IOError) { @entry.getc }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raises IOError do @entry.pos end
+    e = assert_raises(IOError) { @entry.pos }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raises IOError do @entry.read end
+    e = assert_raises(IOError) { @entry.read }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
 
-    e = assert_raises IOError do @entry.rewind end
+    e = assert_raises(IOError) { @entry.rewind }
     assert_equal 'closed Gem::Package::TarReader::Entry', e.message
   end
 
@@ -62,6 +76,7 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
   end
 
   def test_full_name_null
+    skip "jruby strips the null byte and does not think it's corrupt" if Gem.java_platform?
     @entry.header.prefix << "\000"
 
     e = assert_raises Gem::Package::TarInvalidError do
@@ -77,12 +92,26 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
 
   def test_directory_eh
     assert_equal false, @entry.directory?
-    assert_equal true, util_dir_entry.directory?
+    dir_ent = util_dir_entry
+    assert_equal true, dir_ent.directory?
+  ensure
+    close_util_entry(dir_ent) if dir_ent
+  end
+
+  def test_symlink_eh
+    assert_equal false, @entry.symlink?
+    symlink_ent = util_symlink_entry
+    assert_equal true, symlink_ent.symlink?
+  ensure
+    close_util_entry(symlink_ent) if symlink_ent
   end
 
   def test_file_eh
     assert_equal true, @entry.file?
-    assert_equal false, util_dir_entry.file?
+    dir_ent = util_dir_entry
+    assert_equal false, dir_ent.file?
+  ensure
+    close_util_entry(dir_ent) if dir_ent
   end
 
   def test_pos
@@ -105,6 +134,13 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     assert_equal @contents[0...100], @entry.read(100)
   end
 
+  def test_readpartial
+    assert_raises(EOFError) do
+      @entry.read(@contents.size)
+      @entry.readpartial(1)
+    end
+  end
+
   def test_rewind
     char = @entry.getc
 
@@ -116,4 +152,3 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
   end
 
 end
-

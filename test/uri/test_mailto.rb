@@ -1,10 +1,8 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'uri/mailto'
 
-module URI
-
-
-class TestMailTo < Test::Unit::TestCase
+class URI::TestMailTo < Test::Unit::TestCase
   def setup
     @u = URI::MailTo
   end
@@ -25,6 +23,10 @@ class TestMailTo < Test::Unit::TestCase
     ok << ["mailto:chris@example.com"]
     ok[-1] << ["chris@example.com", nil]
     ok[-1] << {:to => "chris@example.com"}
+
+    ok << ["mailto:foo+@example.com,bar@example.com"]
+    ok[-1] << [["foo+@example.com", "bar@example.com"], nil]
+    ok[-1] << {:to => "foo+@example.com,bar@example.com"}
 
     # mailto:infobot@example.com?subject=current-issue
     ok << ["mailto:infobot@example.com?subject=current-issue"]
@@ -92,6 +94,11 @@ class TestMailTo < Test::Unit::TestCase
     ok[-1] << {:to => 'listman@example.com', :headers => [['subject', 'subscribe']]}
     ok[-1] << {:to => 'listman@example.com', :headers => [['subject', 'subscribe']]}
 
+    # mailto:listman@example.com?subject=subscribe
+    ok << ["mailto:listman@example.com?subject=subscribe"]
+    ok[-1] << {:to => 'listman@example.com', :headers => { 'subject' => 'subscribe' }}
+    ok[-1] << {:to => 'listman@example.com', :headers => 'subject=subscribe' }
+
     ok_all = ok.flatten.join("\0")
 
     # mailto:joe@example.com?cc=bob@example.com?body=hello   ; WRONG!
@@ -100,23 +107,78 @@ class TestMailTo < Test::Unit::TestCase
     # mailto:javascript:alert()
     bad << ["javascript:alert()", []]
 
+    # mailto:/example.com/    ; WRONG, not a mail address
+    bad << ["/example.com/", []]
+
     # '=' which is in hname or hvalue is wrong.
     bad << ["foo@example.jp?subject=1+1=2", []]
 
     ok.each do |x|
-      assert_equal(x[0],
-		   @u.build(x[1]).to_s)
-      assert_equal(x[0],
-		   @u.build(x[2]).to_s)
+      assert_equal(x[0], URI.parse(x[0]).to_s)
+      assert_equal(x[0], @u.build(x[1]).to_s)
+      assert_equal(x[0], @u.build(x[2]).to_s)
     end
 
     bad.each do |x|
+      assert_raise(URI::InvalidURIError) {
+        URI.parse(x)
+      }
       assert_raise(URI::InvalidComponentError) {
 	@u.build(x)
       }
     end
 
     assert_equal(ok_all, ok.flatten.join("\0"))
+  end
+
+  def test_initializer
+    assert_raise(URI::InvalidComponentError) do
+      URI::MailTo.new('mailto', 'sdmitry:bla', 'localhost', '2000', nil,
+                      'joe@example.com', nil, nil, 'subject=Ruby')
+    end
+  end
+
+  def test_check_to
+    u = URI::MailTo.build(['joe@example.com', 'subject=Ruby'])
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = '#1@mail.com'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = '@invalid.email'
+    end
+  end
+
+  def test_to_s
+    u = URI::MailTo.build([nil, 'subject=Ruby'])
+
+    u.send(:set_to, nil)
+    assert_equal('mailto:?subject=Ruby', u.to_s)
+
+    u.fragment = 'test'
+    assert_equal('mailto:?subject=Ruby#test', u.to_s)
+  end
+
+  def test_to_mailtext
+    results = []
+    results << ["To: ruby-list@ruby-lang.org\nSubject: subscribe\n\n\n"]
+    results[-1] << { to: 'ruby-list@ruby-lang.org', headers: { 'subject' => 'subscribe' } }
+
+    results << ["To: ruby-list@ruby-lang.org\n\nBody\n"]
+    results[-1] << { to: 'ruby-list@ruby-lang.org', headers: { 'body' => 'Body' } }
+
+    results << ["To: ruby-list@ruby-lang.org, cc@ruby-lang.org\n\n\n"]
+    results[-1] << { to: 'ruby-list@ruby-lang.org', headers: { 'to' => 'cc@ruby-lang.org' } }
+
+    results.each do |expected, params|
+      u = URI::MailTo.build(params)
+      assert_equal(expected, u.to_mailtext)
+    end
+
+    u = URI.parse('mailto:ruby-list@ruby-lang.org?Subject=subscribe&cc=myaddr')
+    assert_equal "To: ruby-list@ruby-lang.org\nSubject: subscribe\nCc: myaddr\n\n\n",
+      u.to_mailtext
   end
 
   def test_select
@@ -126,7 +188,4 @@ class TestMailTo < Test::Unit::TestCase
       u.select(:scheme, :host, :not_exist, :port)
     end
   end
-end
-
-
 end

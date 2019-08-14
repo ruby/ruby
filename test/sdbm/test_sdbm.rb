@@ -1,6 +1,6 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'tmpdir'
-require_relative '../ruby/envutil'
 
 begin
   require 'sdbm'
@@ -108,6 +108,7 @@ class TestSDBM < Test::Unit::TestCase
 
   def test_s_open_error
     skip "doesn't support to avoid read access by owner on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+    skip "skipped because root can open anything" if Process.uid == 0
     assert_instance_of(SDBM, sdbm = SDBM.open("#{@tmpdir}/#{@prefix}", 0))
     assert_raise(Errno::EACCES) {
       SDBM.open("#{@tmpdir}/#{@prefix}", 0)
@@ -171,7 +172,7 @@ class TestSDBM < Test::Unit::TestCase
       num += 1 if i == 0
       assert_equal(num, @sdbm.size)
 
-      # Fixnum
+      # Integer
       assert_equal('200', @sdbm['100'] = '200')
       assert_equal('200', @sdbm['100'])
 
@@ -399,7 +400,7 @@ class TestSDBM < Test::Unit::TestCase
 	n+=1
 	true
       }
-    rescue
+    rescue RuntimeError
     end
     assert_equal(51, n)
     check_size(49, @sdbm)
@@ -519,6 +520,7 @@ class TestSDBM < Test::Unit::TestCase
   end
 
   def test_readonly
+    skip "skipped because root can read anything" if /mswin|mingw/ !~ RUBY_PLATFORM && Process.uid == 0
     @sdbm["bar"] = "baz"
     @sdbm.close
     File.chmod(0444, @path + ".dir")

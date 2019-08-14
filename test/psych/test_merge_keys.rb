@@ -1,9 +1,40 @@
+# frozen_string_literal: true
 require_relative 'helper'
 
 module Psych
   class TestMergeKeys < TestCase
     class Product
       attr_reader :bar
+    end
+
+    def test_merge_key_with_bare_hash
+      doc = Psych.load <<-eodoc
+map:
+  <<:
+    hello: world
+      eodoc
+      hash = { "map" => { "hello" => "world" } }
+      assert_equal hash, doc
+    end
+
+    def test_roundtrip_with_chevron_key
+      h = {}
+      v = { 'a' => h, '<<' => h }
+      assert_cycle v
+    end
+
+    def test_explicit_string
+      doc = Psych.load <<-eoyml
+a: &me { hello: world }
+b: { !!str '<<': *me }
+eoyml
+      expected = {
+        "a" => { "hello" => "world" },
+        "b" => {
+          "<<" => { "hello" => "world" }
+        }
+      }
+      assert_equal expected, doc
     end
 
     def test_mergekey_with_object

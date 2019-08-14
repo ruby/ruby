@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # :stopdoc:
 module IRB
   class Locale

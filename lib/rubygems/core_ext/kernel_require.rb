@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -10,13 +11,8 @@ module Kernel
 
   RUBYGEMS_ACTIVATION_MONITOR = Monitor.new # :nodoc:
 
-  if defined?(gem_original_require) then
-    # Ruby ships with a custom_require, override its require
-    remove_method :require
-  else
-    ##
-    # The Kernel#require from before RubyGems was loaded.
-
+  # Make sure we have a reference to Ruby's original Kernel#require
+  unless defined?(gem_original_require)
     alias gem_original_require require
     private :gem_original_require
   end
@@ -35,27 +31,27 @@ module Kernel
   # The normal <tt>require</tt> functionality of returning false if
   # that file has already been loaded is preserved.
 
-  def require path
+  def require(path)
     RUBYGEMS_ACTIVATION_MONITOR.enter
 
     path = path.to_path if path.respond_to? :to_path
 
-    spec = Gem.find_unresolved_default_spec(path)
-    if spec
+    if spec = Gem.find_unresolved_default_spec(path)
       Gem.remove_unresolved_default_spec(spec)
-      gem(spec.name)
+      begin
+        Kernel.send(:gem, spec.name, "#{Gem::Requirement.default}.a")
+      rescue Exception
+        RUBYGEMS_ACTIVATION_MONITOR.exit
+        raise
+      end
     end
 
     # If there are no unresolved deps, then we can use just try
     # normal require handle loading a gem from the rescue below.
 
-    if Gem::Specification.unresolved_deps.empty? then
-      begin
-        RUBYGEMS_ACTIVATION_MONITOR.exit
-        return gem_original_require(path)
-      ensure
-        RUBYGEMS_ACTIVATION_MONITOR.enter
-      end
+    if Gem::Specification.unresolved_deps.empty?
+      RUBYGEMS_ACTIVATION_MONITOR.exit
+      return gem_original_require(path)
     end
 
     # If +path+ is for a gem that has already been loaded, don't
@@ -64,16 +60,10 @@ module Kernel
     #--
     # TODO request access to the C implementation of this to speed up RubyGems
 
-    spec = Gem::Specification.stubs.find { |s|
-      s.activated? and s.contains_requirable_file? path
-    }
-
-    begin
+    if Gem::Specification.find_active_stub_by_path(path)
       RUBYGEMS_ACTIVATION_MONITOR.exit
       return gem_original_require(path)
-    ensure
-      RUBYGEMS_ACTIVATION_MONITOR.enter
-    end if spec
+    end
 
     # Attempt to find +path+ in any unresolved gems...
 
@@ -89,7 +79,7 @@ module Kernel
     # requested, then find_in_unresolved_tree will find d.rb in d because
     # it's a dependency of c.
     #
-    if found_specs.empty? then
+    if found_specs.empty?
       found_specs = Gem::Specification.find_in_unresolved_tree path
 
       found_specs.each do |found_spec|
@@ -104,46 +94,44 @@ module Kernel
       # versions of the same gem
       names = found_specs.map(&:name).uniq
 
-      if names.size > 1 then
+      if names.size > 1
+        RUBYGEMS_ACTIVATION_MONITOR.exit
         raise Gem::LoadError, "#{path} found in multiple gems: #{names.join ', '}"
       end
 
       # Ok, now find a gem that has no conflicts, starting
       # at the highest version.
-      valid = found_specs.select { |s| s.conflicts.empty? }.last
+      valid = found_specs.find { |s| !s.has_conflicts? }
 
-      unless valid then
+      unless valid
         le = Gem::LoadError.new "unable to find a version of '#{names.first}' to activate"
         le.name = names.first
+        RUBYGEMS_ACTIVATION_MONITOR.exit
         raise le
       end
 
       valid.activate
     end
 
-    begin
-      RUBYGEMS_ACTIVATION_MONITOR.exit
-      return gem_original_require(path)
-    ensure
-      RUBYGEMS_ACTIVATION_MONITOR.enter
-    end
+    RUBYGEMS_ACTIVATION_MONITOR.exit
+    return gem_original_require(path)
   rescue LoadError => load_error
-    if load_error.message.start_with?("Could not find") or
-        (load_error.message.end_with?(path) and Gem.try_activate(path)) then
-      begin
-        RUBYGEMS_ACTIVATION_MONITOR.exit
-        return gem_original_require(path)
-      ensure
-        RUBYGEMS_ACTIVATION_MONITOR.enter
+    RUBYGEMS_ACTIVATION_MONITOR.enter
+
+    begin
+      if load_error.message.start_with?("Could not find") or
+          (load_error.message.end_with?(path) and Gem.try_activate(path))
+        require_again = true
       end
+    ensure
+      RUBYGEMS_ACTIVATION_MONITOR.exit
     end
 
+    return gem_original_require(path) if require_again
+
     raise load_error
-  ensure
-    RUBYGEMS_ACTIVATION_MONITOR.exit
   end
 
   private :require
 
 end
-

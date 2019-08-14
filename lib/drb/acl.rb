@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # Copyright (c) 2000,2002,2003 Masatoshi SEKI
 #
 # acl.rb is copyrighted free software by Masatoshi SEKI.
@@ -48,6 +49,9 @@ class ACL
     # +str+ may be "*" or "all" to match any address, an IP address string
     # to match a specific address, an IP address mask per IPAddr, or one
     # containing "*" to match part of an IPv4 address.
+    #
+    # IPAddr::InvalidPrefixError may be raised when an IP network
+    # address with an invalid netmask/prefix is given.
 
     def initialize(str)
       if str == '*' or str == 'all'
@@ -57,6 +61,10 @@ class ACL
       else
         begin
           @pat = [:ip, IPAddr.new(str)]
+        rescue IPAddr::InvalidPrefixError
+          # In this case, `str` shouldn't be a host name pattern
+          # because it contains a slash.
+          raise
         rescue ArgumentError
           @pat = [:name, dot_pat(str)]
         end
@@ -81,8 +89,7 @@ class ACL
     # Creates a Regexp to match an address.
 
     def dot_pat(str)
-      exp = "^" + dot_pat_str(str) + "$"
-      Regexp.new(exp)
+      /\A#{dot_pat_str(str)}\z/
     end
 
     public
@@ -223,28 +230,10 @@ class ACL
       when 'deny'
         @deny.add(domain)
       else
-        raise "Invalid ACL entry #{list.to_s}"
+        raise "Invalid ACL entry #{list}"
       end
       i += 2
     end
   end
 
 end
-
-if __FILE__ == $0
-  # example
-  list = %w(deny all
-            allow 192.168.1.1
-            allow ::ffff:192.168.1.2
-            allow 192.168.1.3
-            )
-
-  addr = ["AF_INET", 10, "lc630", "192.168.1.3"]
-
-  acl = ACL.new
-  p acl.allow_addr?(addr)
-
-  acl = ACL.new(list, ACL::DENY_ALLOW)
-  p acl.allow_addr?(addr)
-end
-

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/check_command'
 
@@ -9,7 +10,7 @@ class TestGemCommandsCheckCommand < Gem::TestCase
     @cmd = Gem::Commands::CheckCommand.new
   end
 
-  def gem name
+  def gem(name)
     spec = quick_gem name do |gem|
       gem.files = %W[lib/#{name}.rb Rakefile]
     end

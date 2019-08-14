@@ -1,12 +1,16 @@
+# frozen_string_literal: true
 require 'test/unit'
 require 'cgi'
 require 'stringio'
+require_relative 'update_env'
 
 
 class CGITagHelperTest < Test::Unit::TestCase
+  include UpdateEnv
 
 
   def setup
+    @environ = {}
     #@environ = {
     #  'SERVER_PROTOCOL' => 'HTTP/1.1',
     #  'REQUEST_METHOD'  => 'GET',
@@ -17,16 +21,15 @@ class CGITagHelperTest < Test::Unit::TestCase
 
 
   def teardown
-    @environ.each do |key, val| ENV.delete(key) end
+    ENV.update(@environ)
     $stdout = STDOUT
   end
 
 
   def test_cgi_tag_helper_html3
-    @environ = {
+    update_env(
       'REQUEST_METHOD' => 'GET',
-    }
-    ENV.update(@environ)
+    )
     ## html3
     cgi = CGI.new('html3')
     assert_equal('<A HREF=""></A>',cgi.a)
@@ -318,13 +321,11 @@ class CGITagHelperTest < Test::Unit::TestCase
     assert_match(/^<INPUT .*TYPE="checkbox".*>bb<INPUT .*TYPE="checkbox".*>dd$/,str)
     assert_match(/^<INPUT .*NAME="foo".*>bb<INPUT .*NAME="foo".*>dd$/,str)
     assert_match(/^<INPUT .*>bb<INPUT .*CHECKED.*>dd$/,str)
-    assert_match(/<INPUT .*TYPE="text".*>/,cgi.text_field(:name=>"name",:value=>"value")) if RUBY_VERSION>="1.9"
-    if RUBY_VERSION>="1.9"
-      str=cgi.radio_group("foo",["aa","bb"],["cc","dd",false])
-      assert_match(/^<INPUT .*VALUE="aa".*>bb<INPUT .*VALUE="cc".*>dd$/,str)
-      assert_match(/^<INPUT .*TYPE="radio".*>bb<INPUT .*TYPE="radio".*>dd$/,str)
-      assert_match(/^<INPUT .*NAME="foo".*>bb<INPUT .*NAME="foo".*>dd$/,str)
-    end
+    assert_match(/<INPUT .*TYPE="text".*>/,cgi.text_field(:name=>"name",:value=>"value"))
+    str=cgi.radio_group("foo",["aa","bb"],["cc","dd",false])
+    assert_match(/^<INPUT .*VALUE="aa".*>bb<INPUT .*VALUE="cc".*>dd$/,str)
+    assert_match(/^<INPUT .*TYPE="radio".*>bb<INPUT .*TYPE="radio".*>dd$/,str)
+    assert_match(/^<INPUT .*NAME="foo".*>bb<INPUT .*NAME="foo".*>dd$/,str)
   end
 
 =begin
@@ -339,10 +340,9 @@ class CGITagHelperTest < Test::Unit::TestCase
 =end
 
   def test_cgi_tag_helper_html5
-    @environ = {
+    update_env(
       'REQUEST_METHOD' => 'GET',
-    }
-    ENV.update(@environ)
+    )
     ## html5
     cgi = CGI.new('html5')
     assert_equal('<HEADER></HEADER>',cgi.header)

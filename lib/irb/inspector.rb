@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   irb/inspector.rb - inspect methods
 #   	$Release Version: 0.9.6$
@@ -61,20 +62,6 @@ module IRB # :nodoc:
     #     Inspector.def_inspector(key, inspector)
     #     Inspector.def_inspector([key1,...], inspector)
     def self.def_inspector(key, arg=nil, &block)
-  #     if !block_given?
-  #       case arg
-  #       when nil, Proc
-  # 	inspector = IRB::Inspector(init_p)
-  #       when Inspector
-  # 	inspector = init_p
-  #       else
-  # 	IRB.Raise IllegalParameter, init_p
-  #       end
-  #       init_p = nil
-  #     else
-  #       inspector = IRB::Inspector(block, init_p)
-  #     end
-
       if block_given?
         inspector = IRB::Inspector(block, arg)
       else
@@ -119,12 +106,22 @@ module IRB # :nodoc:
   Inspector.def_inspector([false, :to_s, :raw]){|v| v.to_s}
   Inspector.def_inspector([true, :p, :inspect]){|v|
     begin
-      v.inspect
+      result = v.inspect
+      if IRB.conf[:MAIN_CONTEXT]&.use_colorize? && Color.inspect_colorable?(v)
+        result = Color.colorize_code(result)
+      end
+      result
     rescue NoMethodError
       puts "(Object doesn't support #inspect)"
     end
   }
-  Inspector.def_inspector([:pp, :pretty_inspect], proc{require "pp"}){|v| v.pretty_inspect.chomp}
+  Inspector.def_inspector([:pp, :pretty_inspect], proc{require "pp"}){|v|
+    result = v.pretty_inspect.chomp
+    if IRB.conf[:MAIN_CONTEXT]&.use_colorize? && Color.inspect_colorable?(v)
+      result = Color.colorize_code(result)
+    end
+    result
+  }
   Inspector.def_inspector([:yaml, :YAML], proc{require "yaml"}){|v|
     begin
       YAML.dump(v)

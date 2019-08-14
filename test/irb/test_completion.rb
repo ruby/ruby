@@ -1,5 +1,5 @@
+# frozen_string_literal: false
 require 'test/unit'
-require_relative '../ruby/envutil'
 
 module TestIRB
   class TestCompletion < Test::Unit::TestCase
@@ -7,7 +7,8 @@ module TestIRB
       begin
         require "irb/completion"
         bug5938 = '[ruby-core:42244]'
-        cmds = %W[-rirb -rirb/completion -e IRB.setup(__FILE__)
+        bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
+        cmds = bundle_exec + %W[-W0 -rirb -rirb/completion -e IRB.setup(__FILE__)
          -e IRB.conf[:MAIN_CONTEXT]=IRB::Irb.new.context
          -e module\sFoo;def\sself.name;//;end;end
          -e IRB::InputCompletor::CompletionProc.call("[1].first.")

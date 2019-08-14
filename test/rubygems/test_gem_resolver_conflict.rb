@@ -1,10 +1,7 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 
 class TestGemResolverConflict < Gem::TestCase
-
-  def test_self_compatibility
-    assert_same Gem::Resolver::Conflict, Gem::Resolver::DependencyConflict
-  end
 
   def test_explanation
     root  =
@@ -14,7 +11,7 @@ class TestGemResolverConflict < Gem::TestCase
 
     dep = Gem::Resolver::DependencyRequest.new dep('net-ssh', '>= 2.0.13'), nil
 
-    spec = quick_spec 'net-ssh', '2.2.2'
+    spec = util_spec 'net-ssh', '2.2.2'
     active =
       Gem::Resolver::ActivationRequest.new spec, dep
 
@@ -22,10 +19,17 @@ class TestGemResolverConflict < Gem::TestCase
       Gem::Resolver::Conflict.new child, active
 
     expected = <<-EXPECTED
-  Activated net-ssh-2.2.2 via:
-    net-ssh-2.2.2 (>= 2.0.13)
-  instead of (>= 2.6.5) via:
-    net-ssh-2.2.2 (>= 2.0.13), rye-0.9.8 (= 0.9.8)
+  Activated net-ssh-2.2.2
+  which does not match conflicting dependency (>= 2.6.5)
+
+  Conflicting dependency chains:
+    net-ssh (>= 2.0.13), 2.2.2 activated
+
+  versus:
+    rye (= 0.9.8), 0.9.8 activated, depends on
+    net-ssh (>= 2.0.13), 2.2.2 activated, depends on
+    net-ssh (>= 2.6.5)
+
     EXPECTED
 
     assert_equal expected, conflict.explanation
@@ -44,10 +48,15 @@ class TestGemResolverConflict < Gem::TestCase
     conflict = @DR::Conflict.new a1_req, activated
 
     expected = <<-EXPECTED
-  Activated a-2 via:
-    a-2 (= 2)
-  instead of (= 1) via:
-    user request (gem command or Gemfile)
+  Activated a-2
+  which does not match conflicting dependency (= 1)
+
+  Conflicting dependency chains:
+    a (= 2), 2 activated
+
+  versus:
+    a (= 1)
+
     EXPECTED
 
     assert_equal expected, conflict.explanation
@@ -64,12 +73,11 @@ class TestGemResolverConflict < Gem::TestCase
       Gem::Resolver::Conflict.new nil, nil
 
     expected = [
-      'net-ssh-2.2.2 (>= 2.0.13)',
-      'rye-0.9.8 (= 0.9.8)'
+      'net-ssh (>= 2.0.13), 2.2.2 activated',
+      'rye (= 0.9.8), 0.9.8 activated'
     ]
 
     assert_equal expected, conflict.request_path(child.requester)
   end
 
 end
-

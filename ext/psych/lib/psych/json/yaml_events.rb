@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Psych
   module JSON
     module YAMLEvents # :nodoc:

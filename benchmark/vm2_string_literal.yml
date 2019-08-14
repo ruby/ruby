@@ -1,0 +1,4 @@
+benchmark:
+  vm2_string_literal: |
+    x = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+loop_count: 6000000

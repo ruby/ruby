@@ -7,6 +7,8 @@ module RbConfig
 end
 
 class Exports
+  PrivateNames = /(?:Init_|InitVM_|ruby_static_id_|DllMain\b)/
+
   @@subclass = []
   def self.inherited(klass)
     @@subclass << [/#{klass.name.sub(/.*::/, '').downcase}/i, klass]
@@ -107,16 +109,21 @@ class Exports::Mswin < Exports
     objs = objs.collect {|s| s.tr('/', '\\')}
     filetype = nil
     objdump(objs) do |l|
-      if (filetype = l[/^File Type: (.+)/, 1])..(/^\f/ =~ l)
+      if filetype
+        if /^\f/ =~ l
+          filetype = nil
+          next
+        end
         case filetype
         when /OBJECT/, /LIBRARY/
           next if /^[[:xdigit:]]+ 0+ UNDEF / =~ l
           next unless /External/ =~ l
+          next if /(?:_local_stdio_printf_options|v(f|sn?)printf(_s)?_l)\Z/ =~ l
           next unless l.sub!(/.*?\s(\(\)\s+)?External\s+\|\s+/, '')
           is_data = !$1
           if noprefix or /^[@_]/ =~ l
             next if /(?!^)@.*@/ =~ l || /@[[:xdigit:]]{8,32}$/ =~ l ||
-              /^_?(?:Init_|.*_threadptr_|DllMain\b)/ =~ l
+                    /^_?#{PrivateNames}/o =~ l
             l.sub!(/^[@_]/, '') if /@\d+$/ !~ l
           elsif !l.sub!(/^(\S+) \([^@?\`\']*\)$/, '\1')
             next
@@ -127,6 +134,8 @@ class Exports::Mswin < Exports
           next
         end
         yield l.strip, is_data
+      else
+        filetype = l[/^File Type: (.+)/, 1]
       end
     end
     yield "strcasecmp", "msvcrt.stricmp"
@@ -150,7 +159,7 @@ class Exports::Cygwin < Exports
   def each_export(objs)
     symprefix = RbConfig::CONFIG["SYMBOL_PREFIX"]
     symprefix.strip! if symprefix
-    re = /\s(?:(T)|[[:upper:]])\s#{symprefix}((?!Init_|.*_threadptr_|DllMain\b).*)$/
+    re = /\s(?:(T)|[[:upper:]])\s#{symprefix}((?!#{PrivateNames}).*)$/
     objdump(objs) do |l|
       next if /@.*@/ =~ l
       yield $2, !$1 if re =~ l

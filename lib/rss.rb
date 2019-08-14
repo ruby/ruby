@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # = RSS reading and writing
 #
@@ -75,6 +76,8 @@
 
 module RSS
 end
+
+require "rss/version"
 
 require 'rss/1.0'
 require 'rss/2.0'

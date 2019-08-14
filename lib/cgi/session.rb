@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #
 # cgi/session.rb - session support for cgi scripts
 #
@@ -163,24 +164,26 @@ class CGI
 
     # Create a new session id.
     #
-    # The session id is an MD5 hash based upon the time,
-    # a random number, and a constant string.  This routine
-    # is used internally for automatically generated
-    # session ids.
+    # The session id is a secure random number by SecureRandom
+    # if possible, otherwise an SHA512 hash based upon the time,
+    # a random number, and a constant string.  This routine is
+    # used internally for automatically generated session ids.
     def create_new_id
       require 'securerandom'
       begin
+        # by OpenSSL, or system provided entropy pool
         session_id = SecureRandom.hex(16)
       rescue NotImplementedError
-        require 'digest/md5'
-        md5 = Digest::MD5::new
+        # never happens on modern systems
+        require 'digest'
+        d = Digest('SHA512').new
         now = Time::now
-        md5.update(now.to_s)
-        md5.update(String(now.usec))
-        md5.update(String(rand(0)))
-        md5.update(String($$))
-        md5.update('foobar')
-        session_id = md5.hexdigest
+        d.update(now.to_s)
+        d.update(String(now.usec))
+        d.update(String(rand(0)))
+        d.update(String($$))
+        d.update('foobar')
+        session_id = d.hexdigest[0, 32]
       end
       session_id
     end
@@ -400,11 +403,11 @@ class CGI
             for line in f
               line.chomp!
               k, v = line.split('=',2)
-              @hash[CGI::unescape(k)] = Marshal.restore(CGI::unescape(v))
+              @hash[CGI.unescape(k)] = Marshal.restore(CGI.unescape(v))
             end
           ensure
-            f.close unless f.nil?
-            lockf.close if lockf
+            f&.close
+            lockf&.close
           end
         end
         @hash
@@ -418,13 +421,13 @@ class CGI
           lockf.flock File::LOCK_EX
           f = File.open(@path+".new", File::CREAT|File::TRUNC|File::WRONLY, 0600)
           for k,v in @hash
-            f.printf "%s=%s\n", CGI::escape(k), CGI::escape(String(Marshal.dump(v)))
+            f.printf "%s=%s\n", CGI.escape(k), CGI.escape(String(Marshal.dump(v)))
           end
           f.close
           File.rename @path+".new", @path
         ensure
-          f.close if f and !f.closed?
-          lockf.close if lockf
+          f&.close
+          lockf&.close
         end
       end
 
@@ -453,7 +456,7 @@ class CGI
       #
       # +session+ is the session this instance is associated with.
       # +option+ is a list of initialisation options.  None are
-      # currently recognised.
+      # currently recognized.
       def initialize(session, option=nil)
         @session_id = session.session_id
         unless GLOBAL_HASH_TABLE.key?(@session_id)

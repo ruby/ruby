@@ -9,6 +9,7 @@ MAJOR=@MAJOR@
 MINOR=@MINOR@
 TEENY=@TEENY@
 ruby_version=@ruby_version@
+RUBY_API_VERSION=@RUBY_API_VERSION@
 RUBY_PROGRAM_VERSION=@RUBY_PROGRAM_VERSION@
 RUBY_BASE_NAME=@RUBY_BASE_NAME@
 RUBY_VERSION_NAME=@RUBY_VERSION_NAME@
@@ -37,6 +38,8 @@ sitehdrdir=@sitehdrdir@
 rubyarchhdrdir=@rubyarchhdrdir@
 vendorarchhdrdir=@vendorarchhdrdir@
 sitearchhdrdir=@sitearchhdrdir@
+MAINLIBS=@MAINLIBS@
+SOEXT=@SOEXT@
 LIBPATH=@LIBPATH@
 LIBRUBY_A=@LIBRUBY_A@
 LIBRUBY_SO=@LIBRUBY_SO@
@@ -50,7 +53,7 @@ DLDFLAGS=@DLDFLAGS@
 Name: Ruby
 Description: Object Oriented Script Language
 Version: ${ruby_version}
-URL: http://www.ruby-lang.org
+URL: https://www.ruby-lang.org
 Cflags: -I${rubyarchhdrdir} -I${rubyhdrdir}
 Libs: ${DLDFLAGS} ${LIBRUBYARG_SHARED} ${LIBS}
 Requires:

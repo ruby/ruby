@@ -167,19 +167,19 @@ big5_mbc_enc_len0(const UChar* p, const UChar* e, int tridx, const int tbl[])
 static int
 big5_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 {
-    return big5_mbc_enc_len0(p, e, 0, EncLen_BIG5);
+  return big5_mbc_enc_len0(p, e, 0, EncLen_BIG5);
 }
 
 static int
 big5_hkscs_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 {
-    return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_HKSCS);
+  return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_HKSCS);
 }
 
 static int
 big5_uao_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 {
-    return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_UAO);
+  return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_UAO);
 }
 
 static OnigCodePoint
@@ -300,6 +300,7 @@ OnigEncodingDefine(big5, BIG5) = {
   onigenc_not_support_get_ctype_code_range,
   big5_left_adjust_char_head,
   big5_is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
 };
@@ -334,6 +335,7 @@ OnigEncodingDefine(big5_hkscs, BIG5_HKSCS) = {
   onigenc_not_support_get_ctype_code_range,
   big5_left_adjust_char_head,
   big5_is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
 };
@@ -368,6 +370,7 @@ OnigEncodingDefine(big5_uao, BIG5_UAO) = {
   onigenc_not_support_get_ctype_code_range,
   big5_left_adjust_char_head,
   big5_is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
 };

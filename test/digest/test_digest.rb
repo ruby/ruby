@@ -1,5 +1,4 @@
-#!/usr/bin/env ruby
-#
+# frozen_string_literal: false
 # $RoughId: test.rb,v 1.4 2001/07/13 15:38:27 knu Exp $
 # $Id$
 
@@ -68,6 +67,9 @@ module TestDigest
     md1 << "ABC"
 
     assert_equal(md1, md1.clone, self.class::ALGO)
+
+    bug9913 = '[ruby-core:62967] [Bug #9913]'
+    assert_not_equal(md1, nil, bug9913)
 
     md2 = self.class::ALGO.new
     md2 << "A"
@@ -152,8 +154,10 @@ module TestDigest
     include TestDigest
     ALGO = Digest::SHA384
     DATA = {
-      Data1 => "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7",
-      Data2 => "3391fdddfc8dc7393707a65b1b4709397cf8b1d162af05abfe8f450de5f36bc6b0455a8520bc4e6f5fe95b1fe3c8452b",
+      Data1 => "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed"\
+               "8086072ba1e7cc2358baeca134c825a7",
+      Data2 => "3391fdddfc8dc7393707a65b1b4709397cf8b1d162af05abfe8f450de5f36bc6"\
+               "b0455a8520bc4e6f5fe95b1fe3c8452b",
     }
   end if defined?(Digest::SHA384)
 
@@ -161,8 +165,10 @@ module TestDigest
     include TestDigest
     ALGO = Digest::SHA512
     DATA = {
-      Data1 => "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f",
-      Data2 => "204a8fc6dda82f0a0ced7beb8e08a41657c16ef468b228a8279be331a703c33596fd15c13b1b07f9aa1d3bea57789ca031ad85c7a71dd70354ec631238ca3445",
+      Data1 => "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a"\
+               "2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f",
+      Data2 => "204a8fc6dda82f0a0ced7beb8e08a41657c16ef468b228a8279be331a703c335"\
+               "96fd15c13b1b07f9aa1d3bea57789ca031ad85c7a71dd70354ec631238ca3445",
     }
   end if defined?(Digest::SHA512)
 
@@ -174,7 +180,9 @@ module TestDigest
       tmpfile.print str
       tmpfile.close
 
-      assert_equal "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7", Digest::SHA2.file(tmpfile.path, 384).hexdigest
+      assert_equal "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed"\
+                   "8086072ba1e7cc2358baeca134c825a7",
+                   Digest::SHA2.file(tmpfile.path, 384).hexdigest
     }
   end
 
@@ -193,6 +201,80 @@ module TestDigest
     def test_base
       bug3810 = '[ruby-core:32231]'
       assert_raise(NotImplementedError, bug3810) {Digest::Base.new}
+    end
+  end
+
+  class TestInitCopy < Test::Unit::TestCase
+    if defined?(Digest::MD5) and defined?(Digest::RMD160)
+      def test_initialize_copy_md5_rmd160
+        assert_separately(%w[-rdigest], <<-'end;')
+          md5 = Digest::MD5.allocate
+          rmd160 = Digest::RMD160.allocate
+          assert_raise(TypeError) {md5.__send__(:initialize_copy, rmd160)}
+        end;
+      end
+    end
+  end
+
+  class TestDigestParen < Test::Unit::TestCase
+    def test_sha2
+      assert_separately(%w[-rdigest], <<-'end;')
+        assert_nothing_raised {
+          Digest(:SHA256).new
+          Digest(:SHA384).new
+          Digest(:SHA512).new
+        }
+      end;
+    end
+
+    def test_no_lib
+      assert_separately(%w[-rdigest], <<-'end;')
+        class Digest::Nolib < Digest::Class
+        end
+
+        assert_nothing_raised {
+          Digest(:Nolib).new
+        }
+      end;
+    end
+
+    def test_no_lib_no_def
+      assert_separately(%w[-rdigest], <<-'end;')
+        assert_raise(LoadError) {
+          Digest(:Nodef).new
+        }
+      end;
+    end
+
+    def test_race
+      assert_separately(['-rdigest', "-I#{File.dirname(__FILE__)}"], <<-'end;')
+        assert_nothing_raised {
+          t = Thread.start {
+            sleep 0.1
+            Digest(:Foo).new
+          }
+          Digest(:Foo).new
+          t.join
+        }
+      end;
+    end
+
+    def test_race_mixed
+      assert_separately(['-rdigest', "-I#{File.dirname(__FILE__)}"], <<-'end;')
+        assert_nothing_raised {
+          t = Thread.start {
+            sleep 0.1
+            Thread.current.report_on_exception = false
+            Digest::Foo.new
+          }
+          Digest(:Foo).new
+          begin
+            t.join
+          rescue NoMethodError, NameError
+            # NoMethodError is highly likely; NameError is listed just in case
+          end
+        }
+      end;
     end
   end
 end

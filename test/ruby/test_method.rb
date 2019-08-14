@@ -1,6 +1,6 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 require 'test/unit'
-require_relative 'envutil'
 
 class TestMethod < Test::Unit::TestCase
   def setup
@@ -125,6 +125,11 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(eval("class TestCallee; __callee__; end"))
   end
 
+  def test_orphan_callee
+    c = Class.new{def foo; proc{__callee__}; end; alias alias_foo foo}
+    assert_equal(:alias_foo, c.new.alias_foo.call, '[Bug #11046]')
+  end
+
   def test_method_in_define_method_block
     bug4606 = '[ruby-core:35386]'
     c = Class.new do
@@ -192,6 +197,7 @@ class TestMethod < Test::Unit::TestCase
     def o.foo; end
     assert_kind_of(Integer, o.method(:foo).hash)
     assert_equal(Array.instance_method(:map).hash, Array.instance_method(:collect).hash)
+    assert_kind_of(String, o.method(:foo).hash.to_s)
   end
 
   def test_owner
@@ -247,6 +253,13 @@ class TestMethod < Test::Unit::TestCase
     m = o.method(:bar).unbind
     assert_raise(TypeError) { m.bind(Object.new) }
 
+    cx = EnvUtil.labeled_class("X\u{1f431}")
+    assert_raise_with_message(TypeError, /X\u{1f431}/) do
+      o.method(cx)
+    end
+  end
+
+  def test_bind_module_instance_method
     feature4254 = '[ruby-core:34267]'
     m = M.instance_method(:meth)
     assert_equal(:meth, m.bind(Object.new).call, feature4254)
@@ -272,21 +285,44 @@ class TestMethod < Test::Unit::TestCase
     assert_raise(TypeError) do
       Class.new.class_eval { define_method(:bar, o.method(:bar)) }
     end
+    cx = EnvUtil.labeled_class("X\u{1f431}")
+    assert_raise_with_message(TypeError, /X\u{1F431}/) do
+      Class.new {define_method(cx) {}}
+    end
   end
 
-  def test_define_singleton_method
+  def test_define_method_no_proc
     o = Object.new
     def o.foo(c)
       c.class_eval { define_method(:foo) }
     end
     c = Class.new
-    o.foo(c) { :foo }
-    assert_equal(:foo, c.new.foo)
+    assert_raise(ArgumentError) {o.foo(c)}
 
+    bug11283 = '[ruby-core:69655] [Bug #11283]'
+    assert_raise(ArgumentError, bug11283) {o.foo(c) {:foo}}
+  end
+
+  def test_define_singleton_method
     o = Object.new
     o.instance_eval { define_singleton_method(:foo) { :foo } }
     assert_equal(:foo, o.foo)
+  end
 
+  def test_define_singleton_method_no_proc
+    o = Object.new
+    assert_raise(ArgumentError) {
+      o.instance_eval { define_singleton_method(:bar) }
+    }
+
+    bug11283 = '[ruby-core:69655] [Bug #11283]'
+    def o.define(n)
+      define_singleton_method(n)
+    end
+    assert_raise(ArgumentError, bug11283) {o.define(:bar) {:bar}}
+  end
+
+  def test_define_method_invalid_arg
     assert_raise(TypeError) do
       Class.new.class_eval { define_method(:foo, Object.new) }
     end
@@ -382,11 +418,7 @@ class TestMethod < Test::Unit::TestCase
       end
     }
     c2 = Class.new(c1) { define_method(:m) { Proc.new { super() } } }
-    # c2.new.m.call should return :m1, but currently it raise NoMethodError.
-    # see [Bug #4881] and [Bug #3136]
-    assert_raise(NoMethodError) {
-      c2.new.m.call
-    }
+    assert_equal(:m1, c2.new.m.call, 'see [Bug #4881] and [Bug #3136]')
   end
 
   def test_clone
@@ -400,29 +432,32 @@ class TestMethod < Test::Unit::TestCase
 
   def test_inspect
     o = Object.new
-    def o.foo; end
+    def o.foo; end; line_no = __LINE__
     m = o.method(:foo)
-    assert_equal("#<Method: #{ o.inspect }.foo>", m.inspect)
+    assert_equal("#<Method: #{ o.inspect }.foo #{__FILE__}:#{line_no}>", m.inspect)
     m = o.method(:foo)
-    assert_equal("#<UnboundMethod: #{ class << o; self; end.inspect }#foo>", m.unbind.inspect)
+    assert_match("#<UnboundMethod: #{ class << o; self; end.inspect }#foo #{__FILE__}:#{line_no}", m.unbind.inspect)
 
     c = Class.new
-    c.class_eval { def foo; end; }
+    c.class_eval { def foo; end; }; line_no = __LINE__
     m = c.new.method(:foo)
-    assert_equal("#<Method: #{ c.inspect }#foo>", m.inspect)
+    assert_equal("#<Method: #{ c.inspect }#foo #{__FILE__}:#{line_no}>", m.inspect)
     m = c.instance_method(:foo)
-    assert_equal("#<UnboundMethod: #{ c.inspect }#foo>", m.inspect)
+    assert_equal("#<UnboundMethod: #{ c.inspect }#foo #{__FILE__}:#{line_no}>", m.inspect)
 
     c2 = Class.new(c)
     c2.class_eval { private :foo }
     m2 = c2.new.method(:foo)
-    assert_equal("#<Method: #{ c2.inspect }(#{ c.inspect })#foo>", m2.inspect)
+    assert_equal("#<Method: #{ c2.inspect }(#{ c.inspect })#foo #{__FILE__}:#{line_no}>", m2.inspect)
 
     bug7806 = '[ruby-core:52048] [Bug #7806]'
     c3 = Class.new(c)
     c3.class_eval { alias bar foo }
     m3 = c3.new.method(:bar)
-    assert_equal("#<Method: #{c3.inspect}(#{c.inspect})#bar(foo)>", m3.inspect, bug7806)
+    assert_equal("#<Method: #{c3.inspect}(#{c.inspect})#bar(foo) #{__FILE__}:#{line_no}>", m3.inspect, bug7806)
+
+    m.taint
+    assert_predicate(m.inspect, :tainted?, "inspect result should be infected")
   end
 
   def test_callee_top_level
@@ -458,6 +493,22 @@ class TestMethod < Test::Unit::TestCase
     mmethods = M.public_instance_methods
     assert_not_include mmethods, :func, 'module methods are private by default'
     assert_include mmethods, :meth, 'normal methods are public by default'
+  end
+
+  def test_respond_to_missing_argument
+    obj = Struct.new(:mid).new
+    def obj.respond_to_missing?(id, *)
+      self.mid = id
+      true
+    end
+    assert_kind_of(Method, obj.method("bug15640"))
+    assert_kind_of(Symbol, obj.mid)
+    assert_equal("bug15640", obj.mid.to_s)
+
+    arg = Struct.new(:to_str).new("bug15640_2")
+    assert_kind_of(Method, obj.method(arg))
+    assert_kind_of(Symbol, obj.mid)
+    assert_equal("bug15640_2", obj.mid.to_s)
   end
 
   define_method(:pm0) {||}
@@ -564,6 +615,11 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:pmk7).parameters)
   end
 
+  def test_hidden_parameters
+    instance_eval("def m((_)"+",(_)"*256+");end")
+    assert_empty(method(:m).parameters.map{|_,n|n}.compact)
+  end
+
   def test_public_method_with_zsuper_method
     c = Class.new
     c.class_eval do
@@ -653,6 +709,15 @@ class TestMethod < Test::Unit::TestCase
       EOC
   end
 
+  def test_unbound_method_proc_coerce
+    # '&' coercion of an UnboundMethod raises TypeError
+    assert_raise(TypeError) do
+      Class.new do
+        define_method('foo', &Object.instance_method(:to_s))
+      end
+    end
+  end
+
   def test___dir__
     assert_instance_of String, __dir__
     assert_equal(File.dirname(File.realpath(__FILE__)), __dir__)
@@ -660,6 +725,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(__dir__, eval("__dir__", binding), bug8436)
     bug8662 = '[ruby-core:56099] [Bug #8662]'
     assert_equal("arbitrary", eval("__dir__", binding, "arbitrary/file.rb"), bug8662)
+    assert_equal("arbitrary", Object.new.instance_eval("__dir__", "arbitrary/file.rb"), bug8662)
   end
 
   def test_alias_owner
@@ -726,23 +792,6 @@ class TestMethod < Test::Unit::TestCase
     }, '[Bug #7825]'
   end
 
-  def test_unlinked_method_entry_in_method_object_bug
-    bug8100 = '[ruby-core:53640] [Bug #8100]'
-    begin
-      assert_normal_exit %q{
-      loop do
-        def x
-          "hello" * 1000
-        end
-        method(:x).call
-      end
-      }, bug8100, timeout: 2
-    rescue Timeout::Error => e
-    else
-    end
-    assert_raise(Timeout::Error, bug8100) {raise e if e}
-  end
-
   def test_singleton_method
     feature8391 = '[ruby-core:54914] [Feature #8391]'
     c1 = Class.new
@@ -753,5 +802,338 @@ class TestMethod < Test::Unit::TestCase
     assert_raise(NameError, feature8391) {o.singleton_method(:foo)}
     m = assert_nothing_raised(NameError, feature8391) {break o.singleton_method(:bar)}
     assert_equal(:bar, m.call, feature8391)
+  end
+
+  def test_singleton_method_prepend
+    bug14658 = '[Bug #14658]'
+    c1 = Class.new
+    o = c1.new
+    def o.bar; :bar; end
+    class << o; prepend Module.new; end
+    m = assert_nothing_raised(NameError, bug14658) {o.singleton_method(:bar)}
+    assert_equal(:bar, m.call, bug14658)
+
+    o = Object.new
+    assert_raise(NameError, bug14658) {o.singleton_method(:bar)}
+  end
+
+  Feature9783 = '[ruby-core:62212] [Feature #9783]'
+
+  def assert_curry_three_args(m)
+    curried = m.curry
+    assert_equal(6, curried.(1).(2).(3), Feature9783)
+
+    curried = m.curry(3)
+    assert_equal(6, curried.(1).(2).(3), Feature9783)
+
+    assert_raise_with_message(ArgumentError, /wrong number/) {m.curry(2)}
+  end
+
+  def test_curry_method
+    c = Class.new {
+      def three_args(a,b,c) a + b + c end
+    }
+    assert_curry_three_args(c.new.method(:three_args))
+  end
+
+  def test_curry_from_proc
+    c = Class.new {
+      define_method(:three_args) {|x,y,z| x + y + z}
+    }
+    assert_curry_three_args(c.new.method(:three_args))
+  end
+
+  def assert_curry_var_args(m)
+    curried = m.curry(3)
+    assert_equal([1, 2, 3], curried.(1).(2).(3), Feature9783)
+
+    curried = m.curry(2)
+    assert_equal([1, 2], curried.(1).(2), Feature9783)
+
+    curried = m.curry(0)
+    assert_equal([1], curried.(1), Feature9783)
+  end
+
+  def test_curry_var_args
+    c = Class.new {
+      def var_args(*args) args end
+    }
+    assert_curry_var_args(c.new.method(:var_args))
+  end
+
+  def test_curry_from_proc_var_args
+    c = Class.new {
+      define_method(:var_args) {|*args| args}
+    }
+    assert_curry_var_args(c.new.method(:var_args))
+  end
+
+  Feature9781 = '[ruby-core:62202] [Feature #9781]'
+
+  def test_super_method
+    o = Derived.new
+    m = o.method(:foo).super_method
+    assert_equal(Base, m.owner, Feature9781)
+    assert_same(o, m.receiver, Feature9781)
+    assert_equal(:foo, m.name, Feature9781)
+    m = assert_nothing_raised(NameError, Feature9781) {break m.super_method}
+    assert_nil(m, Feature9781)
+  end
+
+  def test_super_method_unbound
+    m = Derived.instance_method(:foo)
+    m = m.super_method
+    assert_equal(Base.instance_method(:foo), m, Feature9781)
+    m = assert_nothing_raised(NameError, Feature9781) {break m.super_method}
+    assert_nil(m, Feature9781)
+
+    bug11419 = '[ruby-core:70254]'
+    m = Object.instance_method(:tap)
+    m = assert_nothing_raised(NameError, bug11419) {break m.super_method}
+    assert_nil(m, bug11419)
+  end
+
+  def test_super_method_module
+    m1 = Module.new {def foo; end}
+    c1 = Class.new(Derived) {include m1; def foo; end}
+    m = c1.instance_method(:foo)
+    assert_equal(c1, m.owner, Feature9781)
+    m = m.super_method
+    assert_equal(m1, m.owner, Feature9781)
+    m = m.super_method
+    assert_equal(Derived, m.owner, Feature9781)
+    m = m.super_method
+    assert_equal(Base, m.owner, Feature9781)
+    m2 = Module.new {def foo; end}
+    o = c1.new.extend(m2)
+    m = o.method(:foo)
+    assert_equal(m2, m.owner, Feature9781)
+    m = m.super_method
+    assert_equal(c1, m.owner, Feature9781)
+    assert_same(o, m.receiver, Feature9781)
+
+    c1 = Class.new {def foo; end}
+    c2 = Class.new(c1) {include m1; include m2}
+    m = c2.instance_method(:foo)
+    assert_equal(m2, m.owner)
+    m = m.super_method
+    assert_equal(m1, m.owner)
+    m = m.super_method
+    assert_equal(c1, m.owner)
+    assert_nil(m.super_method)
+  end
+
+  def test_super_method_removed
+    c1 = Class.new {private def foo; end}
+    c2 = Class.new(c1) {public :foo}
+    c3 = Class.new(c2) {def foo; end}
+    c1.class_eval {undef foo}
+    m = c3.instance_method(:foo)
+    m = assert_nothing_raised(NameError, Feature9781) {break m.super_method}
+    assert_nil(m, Feature9781)
+  end
+
+  def test_prepended_public_zsuper
+    mod = EnvUtil.labeled_module("Mod") {private def foo; :ok end}
+    mods = [mod]
+    obj = Object.new.extend(mod)
+    class << obj
+      public :foo
+    end
+    2.times do |i|
+      mods.unshift(mod = EnvUtil.labeled_module("Mod#{i}") {def foo; end})
+      obj.singleton_class.prepend(mod)
+    end
+    m = obj.method(:foo)
+    assert_equal(mods, mods.map {m.owner.tap {m = m.super_method}})
+    assert_nil(m)
+  end
+
+  def test_super_method_with_prepended_module
+    bug = '[ruby-core:81666] [Bug #13656] should be the method of the parent'
+    c1 = EnvUtil.labeled_class("C1") {def m; end}
+    c2 = EnvUtil.labeled_class("C2", c1) {def m; end}
+    c2.prepend(EnvUtil.labeled_module("M"))
+    m1 = c1.instance_method(:m)
+    m2 = c2.instance_method(:m).super_method
+    assert_equal(m1, m2, bug)
+    assert_equal(c1, m2.owner, bug)
+    assert_equal(m1.source_location, m2.source_location, bug)
+  end
+
+  def test_super_method_after_bind
+    assert_nil String.instance_method(:length).bind(String.new).super_method,
+      '[ruby-core:85231] [Bug #14421]'
+  end
+
+  def rest_parameter(*rest)
+    rest
+  end
+
+  def test_splat_long_array
+    if File.exist?('/etc/os-release') && File.read('/etc/os-release').include?('openSUSE Leap')
+      # For RubyCI's openSUSE machine http://rubyci.s3.amazonaws.com/opensuseleap/ruby-trunk/recent.html, which tends to die with NoMemoryError here.
+      skip 'do not exhaust memory on RubyCI openSUSE Leap machine'
+    end
+    n = 10_000_000
+    assert_equal n  , rest_parameter(*(1..n)).size, '[Feature #10440]'
+  end
+
+  class C
+    D = "Const_D"
+    def foo
+      a = b = c = a = b = c = 12345
+    end
+  end
+
+  def test_to_proc_binding
+    bug11012 = '[ruby-core:68673] [Bug #11012]'
+
+    b = C.new.method(:foo).to_proc.binding
+    assert_equal([], b.local_variables, bug11012)
+    assert_equal("Const_D", b.eval("D"), bug11012) # Check CREF
+
+    assert_raise(NameError, bug11012){ b.local_variable_get(:foo) }
+    assert_equal(123, b.local_variable_set(:foo, 123), bug11012)
+    assert_equal(123, b.local_variable_get(:foo), bug11012)
+    assert_equal(456, b.local_variable_set(:bar, 456), bug11012)
+    assert_equal(123, b.local_variable_get(:foo), bug11012)
+    assert_equal(456, b.local_variable_get(:bar), bug11012)
+    assert_equal([:bar, :foo], b.local_variables.sort, bug11012)
+  end
+
+  class MethodInMethodClass
+    def m1
+      def m2
+      end
+
+      self.class.send(:define_method, :m3){} # [Bug #11754]
+    end
+    private
+  end
+
+  def test_method_in_method_visibility_should_be_public
+    assert_equal([:m1].sort, MethodInMethodClass.public_instance_methods(false).sort)
+    assert_equal([].sort, MethodInMethodClass.private_instance_methods(false).sort)
+
+    MethodInMethodClass.new.m1
+    assert_equal([:m1, :m2, :m3].sort, MethodInMethodClass.public_instance_methods(false).sort)
+    assert_equal([].sort, MethodInMethodClass.private_instance_methods(false).sort)
+  end
+
+  def test_define_method_with_symbol
+    assert_normal_exit %q{
+      define_method(:foo, &:to_s)
+      define_method(:bar, :to_s.to_proc)
+    }, '[Bug #11850]'
+    c = Class.new{
+      define_method(:foo, &:to_s)
+      define_method(:bar, :to_s.to_proc)
+    }
+    obj = c.new
+    assert_equal('1', obj.foo(1))
+    assert_equal('1', obj.bar(1))
+  end
+
+  def test_argument_error_location
+    body = <<-'END_OF_BODY'
+    eval <<-'EOS'
+    $line_lambda = __LINE__; $f = lambda do
+      _x = 1
+    end
+    $line_method = __LINE__; def foo
+      _x = 1
+    end
+    begin
+      $f.call(1)
+    rescue ArgumentError => e
+      assert_equal "(eval):#{$line_lambda.to_s}:in `block in <main>'", e.backtrace.first
+    end
+    begin
+      foo(1)
+    rescue ArgumentError => e
+      assert_equal "(eval):#{$line_method}:in `foo'", e.backtrace.first
+    end
+    EOS
+    END_OF_BODY
+
+    assert_separately [], body
+    # without trace insn
+    assert_separately [], "RubyVM::InstructionSequence.compile_option = {trace_instruction: false}\n" + body
+  end
+
+  def test_eqq
+    assert_operator(0.method(:<), :===, 5)
+    assert_not_operator(0.method(:<), :===, -5)
+  end
+
+  def test_compose_with_method
+    c = Class.new {
+      def f(x) x * 2 end
+      def g(x) x + 1 end
+    }
+    f = c.new.method(:f)
+    g = c.new.method(:g)
+
+    assert_equal(6, (f << g).call(2))
+    assert_equal(6, (g >> f).call(2))
+  end
+
+  def test_compose_with_proc
+    c = Class.new {
+      def f(x) x * 2 end
+    }
+    f = c.new.method(:f)
+    g = proc {|x| x + 1}
+
+    assert_equal(6, (f << g).call(2))
+    assert_equal(6, (g >> f).call(2))
+  end
+
+  def test_compose_with_callable
+    c = Class.new {
+      def f(x) x * 2 end
+    }
+    c2 = Class.new {
+      def call(x) x + 1 end
+    }
+    f = c.new.method(:f)
+    g = c2.new
+
+    assert_equal(6, (f << g).call(2))
+    assert_equal(5, (f >> g).call(2))
+  end
+
+  def test_compose_with_noncallable
+    c = Class.new {
+      def f(x) x * 2 end
+    }
+    f = c.new.method(:f)
+
+    assert_raise(TypeError) {
+      f << 5
+    }
+    assert_raise(TypeError) {
+      f >> 5
+    }
+  end
+
+  def test_method_reference_operator
+    m = 1.:succ
+    assert_equal(1.method(:succ), m)
+    assert_equal(2, m.())
+    m = 1.:+
+    assert_equal(1.method(:+), m)
+    assert_equal(42, m.(41))
+    m = 1.:-@
+    assert_equal(1.method(:-@), m)
+    assert_equal(-1, m.())
+    o = Object.new
+    def o.foo; 42; end
+    m = o.method(:foo)
+    assert_equal(m, o.:foo)
+    def o.method(m); nil; end
+    assert_equal(m, o.:foo)
+    assert_nil(o.method(:foo))
   end
 end

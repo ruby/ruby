@@ -211,6 +211,7 @@ OnigEncodingDefine(cp949, CP949) = {
   onigenc_not_support_get_ctype_code_range,
   cp949_left_adjust_char_head,
   cp949_is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
 };

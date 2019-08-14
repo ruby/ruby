@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'test/unit'
 require 'date'
 
@@ -177,7 +178,8 @@ class TestDateStrptime < Test::Unit::TestCase
      [['11:33:44 PM AMT', '%I:%M:%S %p %Z'], [nil,nil,nil,23,33,44,'AMT',nil,nil], __LINE__],
      [['11:33:44 P.M. AMT', '%I:%M:%S %p %Z'], [nil,nil,nil,23,33,44,'AMT',nil,nil], __LINE__],
 
-     [['fri1feb034pm+5', '%a%d%b%y%H%p%Z'], [2003,2,1,16,nil,nil,'+5',5*3600,5]]
+     [['fri1feb034pm+5', '%a%d%b%y%H%p%Z'], [2003,2,1,16,nil,nil,'+5',5*3600,5]],
+     [['E.  Australia Standard Time', '%Z'], [nil,nil,nil,nil,nil,nil,'E.  Australia Standard Time',10*3600,nil], __LINE__],
     ].each do |x, y|
       h = Date._strptime(*x)
       a = h.values_at(:year,:mon,:mday,:hour,:min,:sec,:zone,:offset,:wday)
@@ -195,8 +197,12 @@ class TestDateStrptime < Test::Unit::TestCase
      [['01', '%y'], [2001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['19 99', '%C %y'], [1999,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['20 01', '%C %y'], [2001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
+     [['30 99', '%C %y'], [3099,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
+     [['30 01', '%C %y'], [3001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['1999', '%C%y'], [1999,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['2001', '%C%y'], [2001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
+     [['3099', '%C%y'], [3099,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
+     [['3001', '%C%y'], [3001,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
 
      [['20060806', '%Y'], [20060806,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
      [['20060806', "%Y\s"], [20060806,nil,nil,nil,nil,nil,nil,nil,nil], __LINE__],
@@ -309,7 +315,6 @@ class TestDateStrptime < Test::Unit::TestCase
   end
 
   def test_strptime__2
-    n = 10**9
     (Date.new(2006,6,1)..Date.new(2007,6,1)).each do |d|
       [
        '%Y %m %d',
@@ -487,6 +492,23 @@ class TestDateStrptime < Test::Unit::TestCase
 
     assert_not_equal({}, Date._strptime(s, '%FT%T%Z'))
     assert_equal(s0, s)
+  end
+
+  def test_sz
+    d = DateTime.strptime('0 -0200', '%s %z')
+    assert_equal([1969, 12, 31, 22, 0, 0], [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+    assert_equal(Rational(-2, 24), d.offset)
+    d = DateTime.strptime('9 +0200', '%s %z')
+    assert_equal([1970, 1, 1, 2, 0, 9], [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+    assert_equal(Rational(2, 24), d.offset)
+
+    d = DateTime.strptime('0 -0200', '%Q %z')
+    assert_equal([1969, 12, 31, 22, 0, 0], [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+    assert_equal(Rational(-2, 24), d.offset)
+    d = DateTime.strptime('9000 +0200', '%Q %z')
+    assert_equal([1970, 1, 1, 2, 0, 9], [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+    assert_equal(Rational(2, 24), d.offset)
+
   end
 
 end

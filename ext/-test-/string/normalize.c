@@ -1,4 +1,3 @@
-#include "ruby.h"
 #include "internal.h"
 
 #ifdef __APPLE__
@@ -12,7 +11,7 @@ normalize_ospath(VALUE str)
 #endif
 
 void
-Init_normalize(VALUE klass)
+Init_string_normalize(VALUE klass)
 {
     rb_define_method(klass, "normalize_ospath", normalize_ospath, 0);
 }

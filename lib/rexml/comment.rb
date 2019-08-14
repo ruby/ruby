@@ -1,4 +1,5 @@
-require "rexml/child"
+# frozen_string_literal: false
+require_relative "child"
 
 module REXML
   ##
@@ -21,7 +22,6 @@ module REXML
     # should be nil, not supplied, or a Parent to be set as the parent
     # of this object
     def initialize( first, second = nil )
-      #puts "IN COMMENT CONSTRUCTOR; SECOND IS #{second.type}"
       super(second)
       if first.kind_of? String
         @string = first
@@ -48,7 +48,7 @@ module REXML
     # ie_hack::
     #    Needed for conformity to the child API, but not used by this class.
     def write( output, indent=-1, transitive=false, ie_hack=false )
-      Kernel.warn("Comment.write is deprecated.  See REXML::Formatters")
+      Kernel.warn("Comment.write is deprecated.  See REXML::Formatters", uplevel: 1)
       indent( output, indent )
       output << START
       output << @string

@@ -1,4 +1,5 @@
-require 'rexml/encoding'
+# frozen_string_literal: false
+require_relative 'encoding'
 
 module REXML
   class Output

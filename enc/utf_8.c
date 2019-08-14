@@ -28,15 +28,22 @@
  */
 
 #include "regenc.h"
+#ifdef RUBY
+# include "encindex.h"
+#endif
+
+#ifndef ENCINDEX_UTF_8
+# define ENCINDEX_UTF_8 0
+#endif
 
 #define USE_INVALID_CODE_SCHEME
 
 #ifdef USE_INVALID_CODE_SCHEME
 /* virtual codepoint values for invalid encoding byte 0xfe and 0xff */
-#define INVALID_CODE_FE   0xfffffffe
-#define INVALID_CODE_FF   0xffffffff
-#define VALID_CODE_LIMIT  0x7fffffff
+# define INVALID_CODE_FE  0xfffffffe
+# define INVALID_CODE_FF  0xffffffff
 #endif
+#define VALID_CODE_LIMIT  0x0010ffff
 
 #define utf8_islead(c)     ((UChar )((c) & 0xc0) != 0x80)
 
@@ -297,9 +304,7 @@ code_to_mbclen(OnigCodePoint code, OnigEncoding enc ARG_UNUSED)
   if      ((code & 0xffffff80) == 0) return 1;
   else if ((code & 0xfffff800) == 0) return 2;
   else if ((code & 0xffff0000) == 0) return 3;
-  else if ((code & 0xffe00000) == 0) return 4;
-  else if ((code & 0xfc000000) == 0) return 5;
-  else if ((code & 0x80000000) == 0) return 6;
+  else if (code <= VALID_CODE_LIMIT) return 4;
 #ifdef USE_INVALID_CODE_SCHEME
   else if (code == INVALID_CODE_FE) return 1;
   else if (code == INVALID_CODE_FF) return 1;
@@ -328,21 +333,8 @@ code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc ARG_UNUSED)
       *p++ = (UChar )(((code>>12) & 0x0f) | 0xe0);
       *p++ = UTF8_TRAILS(code, 6);
     }
-    else if ((code & 0xffe00000) == 0) {
+    else if (code <= VALID_CODE_LIMIT) {
       *p++ = (UChar )(((code>>18) & 0x07) | 0xf0);
-      *p++ = UTF8_TRAILS(code, 12);
-      *p++ = UTF8_TRAILS(code,  6);
-    }
-    else if ((code & 0xfc000000) == 0) {
-      *p++ = (UChar )(((code>>24) & 0x03) | 0xf8);
-      *p++ = UTF8_TRAILS(code, 18);
-      *p++ = UTF8_TRAILS(code, 12);
-      *p++ = UTF8_TRAILS(code,  6);
-    }
-    else if ((code & 0x80000000) == 0) {
-      *p++ = (UChar )(((code>>30) & 0x01) | 0xfc);
-      *p++ = UTF8_TRAILS(code, 24);
-      *p++ = UTF8_TRAILS(code, 18);
       *p++ = UTF8_TRAILS(code, 12);
       *p++ = UTF8_TRAILS(code,  6);
     }
@@ -367,7 +359,7 @@ code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc ARG_UNUSED)
 
 static int
 mbc_case_fold(OnigCaseFoldType flag, const UChar** pp,
-		   const UChar* end, UChar* fold, OnigEncoding enc)
+	      const UChar* end, UChar* fold, OnigEncoding enc)
 {
   const UChar* p = *pp;
 
@@ -395,7 +387,7 @@ mbc_case_fold(OnigCaseFoldType flag, const UChar** pp,
 
 static int
 get_ctype_code_range(OnigCtype ctype, OnigCodePoint *sb_out,
-			  const OnigCodePoint* ranges[], OnigEncoding enc ARG_UNUSED)
+		     const OnigCodePoint* ranges[], OnigEncoding enc ARG_UNUSED)
 {
   *sb_out = 0x80;
   return onigenc_unicode_ctype_code_range(ctype, ranges);
@@ -425,7 +417,7 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 OnigEncodingDefine(utf_8, UTF_8) = {
   mbc_enc_len,
   "UTF-8",     /* name */
-  6,           /* max byte length */
+  4,           /* max byte length */
   1,           /* min byte length */
   is_mbc_newline,
   mbc_to_code,
@@ -439,7 +431,8 @@ OnigEncodingDefine(utf_8, UTF_8) = {
   get_ctype_code_range,
   left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
-  0,
+  onigenc_unicode_case_map,
+  ENCINDEX_UTF_8,
   ONIGENC_FLAG_UNICODE,
 };
 ENC_ALIAS("CP65001", "UTF-8")
@@ -454,4 +447,3 @@ ENC_ALIAS("CP65001", "UTF-8")
 ENC_REPLICATE("UTF8-MAC", "UTF-8")
 ENC_ALIAS("UTF-8-MAC", "UTF8-MAC")
 ENC_ALIAS("UTF-8-HFS", "UTF8-MAC") /* Emacs 23.2 */
-

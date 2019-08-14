@@ -35,6 +35,7 @@
 #include "ruby.h"
 #include "ruby/util.h"
 #define compat_init_setproctitle ruby_init_setproctitle
+RUBY_FUNC_EXPORTED void ruby_init_setproctitle(int argc, char *argv[]);
 
 #ifndef HAVE_SETPROCTITLE
 
@@ -74,6 +75,7 @@
 static char *argv_start = NULL;
 static size_t argv_env_len = 0;
 static size_t argv_len = 0;
+static char **argv1_addr = NULL;
 #endif
 
 #endif /* HAVE_SETPROCTITLE */
@@ -119,7 +121,9 @@ compat_init_setproctitle(int argc, char *argv[])
 			lastenvp = envp[i] + strlen(envp[i]);
 	}
 
-	argv[1] = NULL;
+	/* We keep argv[1], argv[2], etc. at this moment,
+	   because the ps command of AIX refers to them. */
+	argv1_addr = &argv[1];
 	argv_start = argv[0];
 	argv_len = lastargv - argv[0];
 	argv_env_len = lastenvp - argv[0];
@@ -162,6 +166,8 @@ setproctitle(const char *fmt, ...)
 	argvlen = len > argv_len ? argv_env_len : argv_len;
 	for(; len < argvlen; len++)
 		argv_start[len] = SPT_PADCHAR;
+	/* argv[1], argv[2], etc. are no longer valid. */
+	*argv1_addr = NULL;
 #endif
 
 #endif /* SPT_NONE */

@@ -1,4 +1,6 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
+require 'rubygems/installer'
 require 'rubygems/resolver'
 
 class TestGemResolverLockSpecification < Gem::TestCase
@@ -9,11 +11,11 @@ class TestGemResolverLockSpecification < Gem::TestCase
     @LS = Gem::Resolver::LockSpecification
 
     @source = Gem::Source.new @gem_repo
-    @set    = Gem::Resolver::LockSet.new @source
+    @set    = Gem::Resolver::LockSet.new [@source]
   end
 
   def test_initialize
-    spec = @LS.new @set, 'a', v(2), @source, Gem::Platform::RUBY
+    spec = @LS.new @set, 'a', v(2), [@source], Gem::Platform::RUBY
 
     assert_equal 'a',                 spec.name
     assert_equal v(2),                spec.version
@@ -23,7 +25,7 @@ class TestGemResolverLockSpecification < Gem::TestCase
   end
 
   def test_add_dependency
-    l_spec = @LS.new @set, 'a', v(2), @source, Gem::Platform::RUBY
+    l_spec = @LS.new @set, 'a', v(2), [@source], Gem::Platform::RUBY
 
     b_dep = dep('b', '>= 0')
 
@@ -34,11 +36,10 @@ class TestGemResolverLockSpecification < Gem::TestCase
 
   def test_install
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
-      fetcher.clear
+      fetcher.download 'a', 2
     end
 
-    spec = @LS.new @set, 'a', v(2), @source, Gem::Platform::RUBY
+    spec = @LS.new @set, 'a', v(2), [@source], Gem::Platform::RUBY
 
     called = false
 
@@ -50,7 +51,7 @@ class TestGemResolverLockSpecification < Gem::TestCase
   end
 
   def test_install_installed
-    spec = @LS.new @set, 'a', v(2), @source, Gem::Platform::RUBY
+    spec = @LS.new @set, 'a', v(2), [@source], Gem::Platform::RUBY
 
     FileUtils.touch File.join(@gemhome, 'specifications', spec.spec.spec_name)
 
@@ -66,7 +67,7 @@ class TestGemResolverLockSpecification < Gem::TestCase
   def test_spec
     version = v(2)
 
-    l_spec = @LS.new @set, 'a', version, @source, Gem::Platform::RUBY
+    l_spec = @LS.new @set, 'a', version, [@source], Gem::Platform::RUBY
 
     b_dep = dep 'b', '>= 0'
     c_dep = dep 'c', '~> 1'
@@ -83,5 +84,16 @@ class TestGemResolverLockSpecification < Gem::TestCase
     assert_equal [b_dep, c_dep], l_spec.spec.dependencies
   end
 
-end
+  def test_spec_loaded
+    real_spec = util_spec 'a', 2
+    install_specs real_spec
+    real_spec.activate
 
+    version = v(2)
+
+    l_spec = @LS.new @set, 'a', version, [@source], Gem::Platform::RUBY
+
+    assert_same real_spec, l_spec.spec
+  end
+
+end

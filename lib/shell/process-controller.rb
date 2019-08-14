@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   shell/process-controller.rb -
 #       $Release Version: 0.7 $
@@ -9,19 +10,17 @@
 #
 #
 require "forwardable"
-
-require "thread"
 require "sync"
 
 class Shell
   class ProcessController
 
     @ProcessControllers = {}
-    @ProcessControllersMonitor = Mutex.new
-    @ProcessControllersCV = ConditionVariable.new
+    @ProcessControllersMonitor = Thread::Mutex.new
+    @ProcessControllersCV = Thread::ConditionVariable.new
 
-    @BlockOutputMonitor = Mutex.new
-    @BlockOutputCV = ConditionVariable.new
+    @BlockOutputMonitor = Thread::Mutex.new
+    @BlockOutputCV = Thread::ConditionVariable.new
 
     class << self
       extend Forwardable
@@ -96,8 +95,8 @@ class Shell
       @active_jobs = []
       @jobs_sync = Sync.new
 
-      @job_monitor = Mutex.new
-      @job_condition = ConditionVariable.new
+      @job_monitor = Thread::Mutex.new
+      @job_condition = Thread::ConditionVariable.new
     end
 
     attr_reader :shell
@@ -157,19 +156,16 @@ class Shell
           @waiting_jobs.delete command
         else
           command = @waiting_jobs.shift
-#         command.notify "job(%id) pre-start.", @shell.debug?
 
           return unless command
         end
         @active_jobs.push command
         command.start
-#       command.notify "job(%id) post-start.", @shell.debug?
 
         # start all jobs that input from the job
         for job in @waiting_jobs.dup
           start_job(job) if job.input == command
         end
-#       command.notify "job(%id) post2-start.", @shell.debug?
       end
     end
 
@@ -240,8 +236,8 @@ class Shell
 
 
       pid = nil
-      pid_mutex = Mutex.new
-      pid_cv = ConditionVariable.new
+      pid_mutex = Thread::Mutex.new
+      pid_cv = Thread::ConditionVariable.new
 
       Thread.start do
         ProcessController.block_output_synchronize do
@@ -254,7 +250,6 @@ class Shell
 
           pid = fork {
             Thread.list.each do |th|
-#             th.kill unless [Thread.main, Thread.current].include?(th)
               th.kill unless Thread.current == th
             end
 
@@ -263,7 +258,7 @@ class Shell
 
             ObjectSpace.each_object(IO) do |io|
               if ![STDIN, STDOUT, STDERR].include?(io)
-                io.close unless io.closed?
+                io.close
               end
             end
 
@@ -283,8 +278,6 @@ class Shell
         rescue Errno::ECHILD
           command.notify "warn: job(%id) was done already waitpid."
           _pid = true
-          #     rescue
-          #       STDERR.puts $!
         ensure
           command.notify("Job(%id): Wait to finish when Process finished.", @shell.debug?)
           # when the process ends, wait until the command terminates
@@ -296,11 +289,8 @@ class Shell
             redo
           end
 
-#         command.notify "job(%id) pre-pre-finish.", @shell.debug?
           @job_monitor.synchronize do
-#           command.notify "job(%id) pre-finish.", @shell.debug?
             terminate_job(command)
-#           command.notify "job(%id) pre-finish2.", @shell.debug?
             @job_condition.signal
             command.notify "job(%id) finish.", @shell.debug?
           end

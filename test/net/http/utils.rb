@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'webrick'
 begin
   require "webrick/https"
@@ -34,22 +35,23 @@ module TestNetHTTPUtils
   def teardown
     if @server
       @server.shutdown
-      until @server.status == :Stop
-        sleep 0.1
-      end
+      @server_thread.join
+      WEBrick::Utils::TimeoutHandler.terminate
     end
+    @log_tester.call(@log) if @log_tester
     # resume global state
     Net::HTTP.version_1_2
   end
 
   def spawn_server
+    @log = []
+    @log_tester = lambda {|log| assert_equal([], log ) }
     @config = self.class::CONFIG
     server_config = {
       :BindAddress => config('host'),
       :Port => 0,
-      :Logger => WEBrick::Log.new(NullWriter.new),
+      :Logger => WEBrick::Log.new(@log, WEBrick::BasicLog::WARN),
       :AccessLog => [],
-      :ShutdownSocketWithoutClose => true,
       :ServerType => Thread,
     }
     server_config[:OutputBufferSize] = 4 if config('chunked')
@@ -59,22 +61,13 @@ module TestNetHTTPUtils
         :SSLEnable      => true,
         :SSLCertificate => config('ssl_certificate'),
         :SSLPrivateKey  => config('ssl_private_key'),
-        :SSLTmpDhCallback => proc { OpenSSL::TestUtils::TEST_KEY_DH1024 },
+        :SSLTmpDhCallback => config('ssl_tmp_dh_callback'),
       })
     end
     @server = WEBrick::HTTPServer.new(server_config)
     @server.mount('/', Servlet, config('chunked'))
-    @server.start
+    @server_thread = @server.start
     @config['port'] = @server[:Port]
-    n_try_max = 5
-    begin
-      TCPSocket.open(config('host'), config('port')).close
-    rescue Errno::ECONNREFUSED
-      sleep 0.2
-      n_try_max -= 1
-      raise 'cannot spawn server; give up' if n_try_max < 0
-      retry
-    end
   end
 
   $test_net_http = nil

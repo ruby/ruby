@@ -1,35 +1,11 @@
-require 'rbconfig'
+# frozen_string_literal: true
 
-require 'test/unit'
-
-src_testdir = File.dirname(File.realpath(__FILE__))
-$LOAD_PATH << src_testdir
-module Gem
-end
-class Gem::TestCase < MiniTest::Unit::TestCase
-  @@project_dir = File.dirname($LOAD_PATH.last)
-end
-
+# Should be done in rubygems test files?
 ENV["GEM_SKIP"] = ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
 
-require_relative 'profile_test_all' if ENV.has_key?('RUBY_TEST_ALL_PROFILE')
+# Get bundled gems on load path
+Dir.glob("#{__dir__}/../gems/*/*.gemspec")
+  .reject {|f| f =~ /minitest|test-unit|power_assert/ }
+  .map {|f| $LOAD_PATH.unshift File.join(File.dirname(f), "lib") }
 
-module Test::Unit
-  module ZombieHunter
-    def after_teardown
-      super
-      assert_empty(Process.waitall)
-    end
-  end
-  class TestCase
-    include ZombieHunter
-  end
-end
-
-begin
-  exit Test::Unit::AutoRunner.run(true, src_testdir)
-rescue NoMemoryError
-  system("cat /proc/meminfo") if File.exist?("/proc/meminfo")
-  system("ps x -opid,args,%cpu,%mem,nlwp,rss,vsz,wchan,stat,start,time,etime,blocked,caught,ignored,pending,f") if File.exist?("/bin/ps")
-  raise
-end
+require_relative '../tool/test/runner'

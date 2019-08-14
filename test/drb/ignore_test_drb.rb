@@ -1,4 +1,7 @@
+# frozen_string_literal: false
 require 'drbtest'
+
+module DRbTests
 
 class TestDRbReusePort < Test::Unit::TestCase
   include DRbAry
@@ -8,3 +11,4 @@ class TestDRbReusePort < Test::Unit::TestCase
   end
 end
 
+end

@@ -1,6 +1,6 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 require 'test/unit'
-require_relative 'envutil'
 
 class TestObject < Test::Unit::TestCase
   def setup
@@ -12,13 +12,68 @@ class TestObject < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def test_itself
+    feature6373 = '[ruby-core:44704] [Feature #6373]'
+    object = Object.new
+    assert_same(object, object.itself, feature6373)
+  end
+
+  def test_yield_self
+    feature = '[ruby-core:46320] [Feature #6721]'
+    object = Object.new
+    assert_same(self, object.yield_self {self}, feature)
+    assert_same(object, object.yield_self {|x| break x}, feature)
+    enum = object.yield_self
+    assert_instance_of(Enumerator, enum)
+    assert_equal(1, enum.size)
+  end
+
   def test_dup
-    assert_raise(TypeError) { 1.dup }
-    assert_raise(TypeError) { true.dup }
-    assert_raise(TypeError) { nil.dup }
+    assert_equal 1, 1.dup
+    assert_equal true, true.dup
+    assert_equal nil, nil.dup
+    assert_equal false, false.dup
+    x = :x; assert_equal x, x.dup
+    x = "bug13145".intern; assert_equal x, x.dup
+    x = 1 << 64; assert_equal x, x.dup
+    x = 1.72723e-77; assert_equal x, x.dup
 
     assert_raise(TypeError) do
       Object.new.instance_eval { initialize_copy(1) }
+    end
+  end
+
+  def test_clone
+    a = Object.new
+    def a.b; 2 end
+
+    a.freeze
+    c = a.clone
+    assert_equal(true, c.frozen?)
+    assert_equal(2, c.b)
+
+    assert_raise(ArgumentError) {a.clone(freeze: [])}
+    d = a.clone(freeze: false)
+    def d.e; 3; end
+    assert_equal(false, d.frozen?)
+    assert_equal(2, d.b)
+    assert_equal(3, d.e)
+
+    assert_equal 1, 1.clone
+    assert_equal true, true.clone
+    assert_equal nil, nil.clone
+    assert_equal false, false.clone
+    x = :x; assert_equal x, x.dup
+    x = "bug13145".intern; assert_equal x, x.dup
+    x = 1 << 64; assert_equal x, x.clone
+    x = 1.72723e-77; assert_equal x, x.clone
+    assert_raise(ArgumentError) {1.clone(freeze: false)}
+    assert_raise(ArgumentError) {true.clone(freeze: false)}
+    assert_raise(ArgumentError) {nil.clone(freeze: false)}
+    assert_raise(ArgumentError) {false.clone(freeze: false)}
+    x = EnvUtil.labeled_class("\u{1f4a9}").new
+    assert_raise_with_message(ArgumentError, /\u{1f4a9}/) do
+      Object.new.clone(freeze: x)
     end
   end
 
@@ -44,12 +99,12 @@ class TestObject < Test::Unit::TestCase
   def test_taint_frozen_obj
     o = Object.new
     o.freeze
-    assert_raise(RuntimeError) { o.taint }
+    assert_raise(FrozenError) { o.taint }
 
     o = Object.new
     o.taint
     o.freeze
-    assert_raise(RuntimeError) { o.untaint }
+    assert_raise(FrozenError) { o.untaint }
   end
 
   def test_freeze_immediate
@@ -57,6 +112,20 @@ class TestObject < Test::Unit::TestCase
     1.freeze
     assert_equal(true, 1.frozen?)
     assert_equal(true, 2.frozen?)
+    assert_equal(true, true.frozen?)
+    assert_equal(true, false.frozen?)
+    assert_equal(true, nil.frozen?)
+  end
+
+  def test_frozen_error_message
+    name = "C\u{30c6 30b9 30c8}"
+    klass = EnvUtil.labeled_class(name) {
+      attr_accessor :foo
+    }
+    obj = klass.new.freeze
+    assert_raise_with_message(FrozenError, /#{name}/) {
+      obj.foo = 1
+    }
   end
 
   def test_nil_to_f
@@ -158,6 +227,14 @@ class TestObject < Test::Unit::TestCase
     assert_equal([:foo], o.methods(false), bug8044)
   end
 
+  def test_methods_prepend_singleton
+    c = Class.new(Module) {private def foo; end}
+    k = c.new
+    k.singleton_class
+    c.module_eval {prepend(Module.new)}
+    assert_equal([:foo], k.private_methods(false))
+  end
+
   def test_instance_variable_get
     o = Object.new
     o.instance_eval { @foo = :foo }
@@ -213,28 +290,46 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_remove_instance_variable
-    o = Object.new
-    o.instance_eval { @foo = :foo }
-    o.remove_instance_variable(:@foo)
-    assert_equal(false, o.instance_variable_defined?(:@foo))
+    { 'T_OBJECT' => Object.new,
+      'T_CLASS,T_MODULE' => Class.new(Object),
+      'generic ivar' => '',
+    }.each do |desc, o|
+      e = assert_raise(NameError, "#{desc} iv removal raises before set") do
+        o.remove_instance_variable(:@foo)
+      end
+      assert_equal([o, :@foo], [e.receiver, e.name])
+      o.instance_eval { @foo = :foo }
+      assert_equal(:foo, o.remove_instance_variable(:@foo),
+                   "#{desc} iv removal returns original value")
+      assert_not_send([o, :instance_variable_defined?, :@foo],
+                      "#{desc} iv removed successfully")
+      e = assert_raise(NameError, "#{desc} iv removal raises after removal") do
+        o.remove_instance_variable(:@foo)
+      end
+      assert_equal([o, :@foo], [e.receiver, e.name])
+    end
   end
 
-  def test_convert_type
+  def test_convert_string
     o = Object.new
     def o.to_s; 1; end
     assert_raise(TypeError) { String(o) }
     def o.to_s; "o"; end
     assert_equal("o", String(o))
+    def o.to_str; "O"; end
+    assert_equal("O", String(o))
     def o.respond_to?(*) false; end
     assert_raise(TypeError) { String(o) }
   end
 
-  def test_check_convert_type
+  def test_convert_array
     o = Object.new
     def o.to_a; 1; end
     assert_raise(TypeError) { Array(o) }
     def o.to_a; [1]; end
     assert_equal([1], Array(o))
+    def o.to_ary; [2]; end
+    assert_equal([2], Array(o))
     def o.respond_to?(*) false; end
     assert_equal([o], Array(o))
   end
@@ -289,21 +384,30 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_redefine_method_which_may_case_serious_problem
-    assert_in_out_err([], <<-INPUT, [], /warning: redefining `object_id' may cause serious problems$/)
+    assert_in_out_err([], <<-INPUT, [], %r"warning: redefining `object_id' may cause serious problems$")
       $VERBOSE = false
       def (Object.new).object_id; end
     INPUT
 
-    assert_in_out_err([], <<-INPUT, [], /warning: redefining `__send__' may cause serious problems$/)
+    assert_in_out_err([], <<-INPUT, [], %r"warning: redefining `__send__' may cause serious problems$")
       $VERBOSE = false
       def (Object.new).__send__; end
+    INPUT
+
+    bug10421 = '[ruby-dev:48691] [Bug #10421]'
+    assert_in_out_err([], <<-INPUT, ["1"], [], bug10421)
+      $VERBOSE = false
+      class C < BasicObject
+        def object_id; 1; end
+      end
+      puts C.new.object_id
     INPUT
   end
 
   def test_remove_method
     c = Class.new
     c.freeze
-    assert_raise(RuntimeError) do
+    assert_raise(FrozenError) do
       c.instance_eval { remove_method(:foo) }
     end
 
@@ -328,7 +432,7 @@ class TestObject < Test::Unit::TestCase
     assert_raise(NoMethodError, bug2202) {o2.meth2}
 
     %w(object_id __send__ initialize).each do |m|
-      assert_in_out_err([], <<-INPUT, %w(:ok), /warning: removing `#{m}' may cause serious problems$/)
+      assert_in_out_err([], <<-INPUT, %w(:ok), %r"warning: removing `#{m}' may cause serious problems$")
         $VERBOSE = false
         begin
           Class.new.instance_eval { remove_method(:#{m}) }
@@ -336,6 +440,19 @@ class TestObject < Test::Unit::TestCase
           p :ok
         end
       INPUT
+    end
+
+    m = "\u{30e1 30bd 30c3 30c9}"
+    c = Class.new
+    assert_raise_with_message(NameError, /#{m}/) do
+      c.class_eval {remove_method m}
+    end
+    c = Class.new {
+      define_method(m) {}
+      remove_method(m)
+    }
+    assert_raise_with_message(NameError, /#{m}/) do
+      c.class_eval {remove_method m}
     end
   end
 
@@ -562,7 +679,7 @@ class TestObject < Test::Unit::TestCase
     end
     begin
       nil.public_send(o) { x = :ng }
-    rescue
+    rescue TypeError
     end
     assert_equal(:ok, x)
   end
@@ -692,6 +809,16 @@ class TestObject < Test::Unit::TestCase
       end
     EOS
     assert_match(/\bToS\u{3042}:/, x)
+
+    name = "X".freeze
+    x = Object.new.taint
+    class<<x;self;end.class_eval {define_method(:to_s) {name}}
+    assert_same(name, x.to_s)
+    assert_not_predicate(name, :tainted?)
+    assert_raise(FrozenError) {name.taint}
+    assert_equal("X", [x].join(""))
+    assert_not_predicate(name, :tainted?)
+    assert_not_predicate(eval('"X".freeze'), :tainted?)
   end
 
   def test_inspect
@@ -730,10 +857,35 @@ class TestObject < Test::Unit::TestCase
         def initialize
           @\u{3044} = 42
         end
-        new.inspect
+        new
       end
     EOS
-    assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x)
+    assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x.inspect)
+    x.instance_variable_set("@\u{3046}".encode(Encoding::EUC_JP), 6)
+    assert_match(/@\u{3046}=6\b/, x.inspect)
+  end
+
+  def test_singleton_methods
+    assert_equal([], Object.new.singleton_methods)
+    assert_equal([], Object.new.singleton_methods(false))
+    c = Class.new
+    def c.foo; end
+    assert_equal([:foo], c.singleton_methods - [:yaml_tag])
+    assert_equal([:foo], c.singleton_methods(false))
+    assert_equal([], c.singleton_class.singleton_methods(false))
+    c.singleton_class.singleton_class
+    assert_equal([], c.singleton_class.singleton_methods(false))
+
+    o = c.new.singleton_class
+    assert_equal([:foo], o.singleton_methods - [:yaml_tag])
+    assert_equal([], o.singleton_methods(false))
+    o.singleton_class
+    assert_equal([:foo], o.singleton_methods - [:yaml_tag])
+    assert_equal([], o.singleton_methods(false))
+
+    c.extend(Module.new{def bar; end})
+    assert_equal([:bar, :foo], c.singleton_methods.sort - [:yaml_tag])
+    assert_equal([:foo], c.singleton_methods(false))
   end
 
   def test_singleton_class
@@ -760,18 +912,17 @@ class TestObject < Test::Unit::TestCase
   def test_redef_method_missing
     bug5473 = '[ruby-core:40287]'
     ['ArgumentError.new("bug5473")', 'ArgumentError, "bug5473"', '"bug5473"'].each do |code|
-      out, err, status = EnvUtil.invoke_ruby([], <<-SRC, true, true)
+      exc = code[/\A[A-Z]\w+/] || 'RuntimeError'
+      assert_separately([], <<-SRC)
+      $VERBOSE = nil
       class ::Object
         def method_missing(m, *a, &b)
           raise #{code}
         end
       end
 
-      p((1.foo rescue $!))
+      assert_raise_with_message(#{exc}, "bug5473", #{bug5473.dump}) {1.foo}
       SRC
-      assert_send([status, :success?], bug5473)
-      assert_equal("", err, bug5473)
-      assert_equal((eval("raise #{code}") rescue $!.inspect), out.chomp, bug5473)
     end
   end
 
@@ -780,7 +931,7 @@ class TestObject < Test::Unit::TestCase
     b = yield
     assert_nothing_raised("copy") {a.instance_eval {initialize_copy(b)}}
     c = a.dup.freeze
-    assert_raise(RuntimeError, "frozen") {c.instance_eval {initialize_copy(b)}}
+    assert_raise(FrozenError, "frozen") {c.instance_eval {initialize_copy(b)}}
     d = a.dup.trust
     [a, b, c, d]
   end
@@ -804,5 +955,35 @@ class TestObject < Test::Unit::TestCase
     _issue = "Bug #7539"
     assert_raise_with_message(TypeError, "can't convert Array into Integer") {Integer([42])}
     assert_raise_with_message(TypeError, 'no implicit conversion of Array into Integer') {[].first([42])}
+    assert_raise_with_message(TypeError, "can't convert Array into Rational") {Rational([42])}
+  end
+
+  def test_copied_ivar_memory_leak
+    bug10191 = '[ruby-core:64700] [Bug #10191]'
+    assert_no_memory_leak([], <<-"end;", <<-"end;", bug10191, timeout: 60, limit: 1.8)
+      def (a = Object.new).set; @v = nil; end
+      num = 500_000
+    end;
+      num.times {a.clone.set}
+    end;
+  end
+
+  def test_clone_object_should_not_be_old
+    assert_normal_exit <<-EOS, '[Bug #13775]'
+      b = proc { }
+      10.times do |i|
+        b.clone
+        GC.start
+      end
+    EOS
+  end
+
+  def test_matcher
+    assert_warning(/deprecated Object#=~ is called on Object/) do
+      assert_equal(Object.new =~ 42, nil)
+    end
+    assert_warning(/deprecated Object#=~ is called on Array/) do
+      assert_equal([] =~ 42, nil)
+    end
   end
 end

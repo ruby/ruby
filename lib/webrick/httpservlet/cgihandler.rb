@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # cgihandler.rb -- CGIHandler Class
 #
@@ -10,8 +11,8 @@
 
 require 'rbconfig'
 require 'tempfile'
-require 'webrick/config'
-require 'webrick/httpservlet/abstract'
+require_relative '../config'
+require_relative 'abstract'
 
 module WEBrick
   module HTTPServlet
@@ -41,9 +42,6 @@ module WEBrick
       # :stopdoc:
 
       def do_GET(req, res)
-        data = nil
-        status = -1
-
         cgi_in = IO::popen(@cgicmd, "wb")
         cgi_out = Tempfile.new("webrick.cgiout.", @tempdir, mode: IO::BINARY)
         cgi_out.set_encoding("ASCII-8BIT")
@@ -54,6 +52,7 @@ module WEBrick
           meta = req.meta_vars
           meta["SCRIPT_FILENAME"] = @script_filename
           meta["PATH"] = @config[:CGIPathEnv]
+          meta.delete("HTTP_PROXY")
           if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
             meta["SystemRoot"] = ENV["SystemRoot"]
           end
@@ -66,9 +65,7 @@ module WEBrick
           cgi_in.write("%8d" % dump.bytesize)
           cgi_in.write(dump)
 
-          if req.body and req.body.bytesize > 0
-            cgi_in.write(req.body)
-          end
+          req.body { |chunk| cgi_in.write(chunk) }
         ensure
           cgi_in.close
           status = $?.exitstatus

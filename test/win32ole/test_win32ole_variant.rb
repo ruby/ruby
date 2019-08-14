@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   require 'win32ole'
 rescue LoadError
@@ -36,14 +37,10 @@ if defined?(WIN32OLE_VARIANT)
     end
 
     def test_s_new_no_argument
-      ex = nil
-      begin
+      pat = /wrong number of arguments \(.*\b0\b.* 1\.\.3\)/
+      assert_raise_with_message(ArgumentError, pat) do
         WIN32OLE_VARIANT.new
-      rescue ArgumentError
-        ex = $!
       end
-      assert_instance_of(ArgumentError, ex)
-      assert_equal("wrong number of arguments (0 for 1..3)", ex.message);
     end
 
     def test_s_new_one_argument
@@ -309,6 +306,13 @@ if defined?(WIN32OLE_VARIANT)
       assert_equal(ar, ar2.value)
     end
 
+    def test_s_new_vt_record_exc
+      # VT_RECORD (= 36) should not be allowed in WIN32OLE_VARIANT#new
+      assert_raise(ArgumentError) {
+        WIN32OLE_VARIANT.new(nil, 36)
+      }
+    end
+
     def test_s_array
       obj = WIN32OLE_VARIANT.array([2,3], WIN32OLE::VARIANT::VT_I4)
       assert_instance_of(WIN32OLE_VARIANT, obj)
@@ -379,6 +383,40 @@ if defined?(WIN32OLE_VARIANT)
       dt = Time.mktime(2004, 12, 24, 12, 24, 45)
       obj = WIN32OLE_VARIANT.new(dt, WIN32OLE::VARIANT::VT_DATE)
       assert_equal(dt, obj.value)
+    end
+
+    def test_conversion_dbl2date_with_msec
+      # Date is "2014/8/27 12:34:56.789"
+      obj = WIN32OLE_VARIANT.new(41878.524268391200167, WIN32OLE::VARIANT::VT_DATE)
+      t = obj.value
+      assert_equal("2014-08-27 12:34:56", t.strftime('%Y-%m-%d %H:%M:%S'))
+      assert_in_delta(0.789, t.nsec / 1000000000.0, 0.001)
+    end
+
+    def test_conversion_time2date_with_msec
+      t0 = Time.new(2014, 8, 27, 12, 34, 56)
+      t0 += 0.789
+      t1 = WIN32OLE_VARIANT.new(t0).value
+
+      # The t0.nsec is 789000000 and t1.nsec is 789000465
+      # because of error range by conversion Time between VT_DATE Variant.
+      # So check t1 and t0 are in error by less than one millisecond.
+      msg = "Expected:#{t0.strftime('%Y-%m-%dT%H:%M:%S.%N')} but was:#{t1.strftime('%Y-%m-%dT%H:%M:%S.%N')}"
+      assert_in_delta(t0, t1, 0.001, msg)
+
+      t0 = Time.new(2014, 8, 27, 12, 34, 56)
+      t0 += 0.999999999
+      t1 = WIN32OLE_VARIANT.new(t0).value
+      msg = "Expected:#{t0.strftime('%Y-%m-%dT%H:%M:%S.%N')} but was:#{t1.strftime('%Y-%m-%dT%H:%M:%S.%N')}"
+
+      # The t0 is "2014/08/27 12:34.56.999999999" and
+      # the t1 is "2014/08/27 12:34:57.000000628"
+      assert_in_delta(t0, t1, 0.001, msg)
+
+      t0 = Time.now
+      t1 = WIN32OLE_VARIANT.new(t0).value
+      msg = "Expected:#{t0.strftime('%Y-%m-%dT%H:%M:%S.%N')} but was:#{t1.strftime('%Y-%m-%dT%H:%M:%S.%N')}"
+      assert_in_delta(t0, t1, 0.001, msg)
     end
 
     # this test failed because of VariantTimeToSystemTime
@@ -485,9 +523,9 @@ if defined?(WIN32OLE_VARIANT)
 
     def test_create_vt_array_exc
       exc = assert_raise(TypeError) {
-        WIN32OLE_VARIANT.new(1, WIN32OLE::VARIANT::VT_ARRAY);
+        WIN32OLE_VARIANT.new("", WIN32OLE::VARIANT::VT_ARRAY)
       }
-      assert_match(/wrong argument type Fixnum \(expected Array\)/, exc.message)
+      assert_match(/wrong argument type String \(expected Array\)/, exc.message)
     end
 
     def test_create_vt_array_str2ui1array
@@ -649,6 +687,34 @@ if defined?(WIN32OLE_VARIANT)
 
     def test_c_null
       assert_nil(WIN32OLE_VARIANT::Null.value)
+    end
+
+    def test_c_noparam
+      # DISP_E_PARAMNOTFOUND
+      assert_equal(-2147352572, WIN32OLE_VARIANT::NoParam.value)
+    end
+
+    def test_vt_error_noparam
+      v = WIN32OLE_VARIANT.new(-1, WIN32OLE::VARIANT::VT_ERROR)
+      assert_equal(-1, v.value)
+      fso = WIN32OLE.new("Scripting.FileSystemObject")
+      exc = assert_raise(WIN32OLERuntimeError) {
+        fso.openTextFile("NonExistingFile", v, false)
+      }
+      assert_match(/Type mismatch/i, exc.message)
+      exc = assert_raise(WIN32OLERuntimeError) {
+        fso.openTextFile("NonExistingFile", WIN32OLE_VARIANT::NoParam, false)
+      }
+      # 800A0035 is 'file not found' error.
+      assert_match(/800A0035/, exc.message)
+
+      # -2147352572 is DISP_E_PARAMNOTFOUND
+      v = WIN32OLE_VARIANT.new(-2147352572, WIN32OLE::VARIANT::VT_ERROR)
+      exc = assert_raise(WIN32OLERuntimeError) {
+        fso.openTextFile("NonExistingFile", WIN32OLE_VARIANT::NoParam, false)
+      }
+      # 800A0035 is 'file not found' error code.
+      assert_match(/800A0035/, exc.message)
     end
 
   end

@@ -20,7 +20,8 @@ RUBY_EXTERN void ruby_init_ext(const char *name, void (*init)(void));
 static VALUE
 init_golf(VALUE arg)
 {
-    ruby_init_ext("golf.so", Init_golf);
+    Init_golf();
+    rb_provide("golf.so");
     return arg;
 }
 
@@ -32,17 +33,24 @@ goruby_options(int argc, char **argv)
     void *ret;
 
     if ((isatty(0) && isatty(1) && isatty(2)) && (pipe(rw) == 0)) {
+	ssize_t n;
 	infd = dup(0);
+	if (infd < 0) {
+	    close(rw[0]);
+	    close(rw[1]);
+	    goto no_irb;
+	}
 	dup2(rw[0], 0);
 	close(rw[0]);
-	write(rw[1], cmd, sizeof(cmd) - 1);
+	n = write(rw[1], cmd, sizeof(cmd) - 1);
 	close(rw[1]);
-	ret = ruby_options(argc, argv);
+	ret = n > 0 ? ruby_options(argc, argv) : NULL;
 	dup2(infd, 0);
 	close(infd);
 	return ret;
     }
     else {
+      no_irb:
 	return ruby_options(argc, argv);
     }
 }

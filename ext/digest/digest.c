@@ -77,8 +77,8 @@ RUBY_EXTERN void Init_digest_base(void);
  *
  * Different digest algorithms (or hash functions) are available:
  *
- * HMAC::
- *   See FIPS PUB 198 The Keyed-Hash Message Authentication Code (HMAC).
+ * MD5::
+ *  See RFC 1321 The MD5 Message-Digest Algorithm
  * RIPEMD-160::
  *   As Digest::RMD160.
  *   See http://homes.esat.kuleuven.be/~bosselae/ripemd160.html.
@@ -123,6 +123,8 @@ hexencode_str_new(VALUE str_digest)
         p[i + i]     = hex[byte >> 4];
         p[i + i + 1] = hex[byte & 0x0f];
     }
+
+    RB_GC_GUARD(str_digest);
 
     return str;
 }
@@ -372,7 +374,8 @@ rb_digest_instance_equal(VALUE self, VALUE other)
         str2 = rb_digest_instance_digest(0, 0, other);
     } else {
         str1 = rb_digest_instance_to_s(self);
-        str2 = other;
+        str2 = rb_check_string_type(other);
+        if (NIL_P(str2)) return Qfalse;
     }
 
     /* never blindly assume that subclass methods return strings */
@@ -483,7 +486,7 @@ rb_digest_class_s_digest(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_digest_class_s_hexdigest(int argc, VALUE *argv, VALUE klass)
 {
-    return hexencode_str_new(rb_funcall2(klass, id_digest, argc, argv));
+    return hexencode_str_new(rb_funcallv(klass, id_digest, argc, argv));
 }
 
 /* :nodoc: */
@@ -498,6 +501,40 @@ rb_digest_class_init(VALUE self)
  *
  * This abstract class provides a common interface to message digest
  * implementation classes written in C.
+ *
+ * ==Write a Digest subclass in C
+ * Digest::Base provides a common interface to message digest
+ * classes written in C. These classes must provide a struct
+ * of type rb_digest_metadata_t:
+ *  typedef int (*rb_digest_hash_init_func_t)(void *);
+ *  typedef void (*rb_digest_hash_update_func_t)(void *, unsigned char *, size_t);
+ *  typedef int (*rb_digest_hash_finish_func_t)(void *, unsigned char *);
+ *
+ *  typedef struct {
+ *    int api_version;
+ *    size_t digest_len;
+ *    size_t block_len;
+ *    size_t ctx_size;
+ *    rb_digest_hash_init_func_t init_func;
+ *    rb_digest_hash_update_func_t update_func;
+ *    rb_digest_hash_finish_func_t finish_func;
+ *  } rb_digest_metadata_t;
+ *
+ * This structure must be set as an instance variable named +metadata+
+ * (without the +@+ in front of the name). By example:
+ *   static const rb_digest_metadata_t sha1 = {
+ *      RUBY_DIGEST_API_VERSION,
+ *      SHA1_DIGEST_LENGTH,
+ *      SHA1_BLOCK_LENGTH,
+ *      sizeof(SHA1_CTX),
+ *      (rb_digest_hash_init_func_t)SHA1_Init,
+ *      (rb_digest_hash_update_func_t)SHA1_Update,
+ *      (rb_digest_hash_finish_func_t)SHA1_Finish,
+ *  };
+ *
+ *
+ *  rb_ivar_set(cDigest_SHA1, rb_intern("metadata"),
+ *		Data_Wrap_Struct(0, 0, 0, (void *)&sha1));
  */
 
 static rb_digest_metadata_t *
@@ -517,10 +554,12 @@ get_digest_base_metadata(VALUE klass)
     if (NIL_P(p))
         rb_raise(rb_eRuntimeError, "Digest::Base cannot be directly inherited in Ruby");
 
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
     Data_Get_Struct(obj, rb_digest_metadata_t, algo);
 
     switch (algo->api_version) {
-      case 2:
+      case 3:
         break;
 
       /*
@@ -532,6 +571,21 @@ get_digest_base_metadata(VALUE klass)
     }
 
     return algo;
+}
+
+static const rb_data_type_t digest_type = {
+    "digest",
+    {0, RUBY_TYPED_DEFAULT_FREE, 0,},
+    0, 0,
+    (RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED),
+};
+
+static inline void
+algo_init(const rb_digest_metadata_t *algo, void *pctx)
+{
+    if (algo->init_func(pctx) != 1) {
+	rb_raise(rb_eRuntimeError, "Digest initialization failed.");
+    }
 }
 
 static VALUE
@@ -547,10 +601,9 @@ rb_digest_base_alloc(VALUE klass)
 
     algo = get_digest_base_metadata(klass);
 
-    pctx = xmalloc(algo->ctx_size);
-    algo->init_func(pctx);
-
-    obj = Data_Wrap_Struct(klass, 0, xfree, pctx);
+    obj = rb_data_typed_object_zalloc(klass, algo->ctx_size, &digest_type);
+    pctx = RTYPEDDATA_DATA(obj);
+    algo_init(algo, pctx);
 
     return obj;
 }
@@ -567,15 +620,21 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
     rb_check_frozen(copy);
 
     algo = get_digest_base_metadata(rb_obj_class(copy));
+    if (algo != get_digest_base_metadata(rb_obj_class(obj)))
+	rb_raise(rb_eTypeError, "different algorithms");
 
-    Data_Get_Struct(obj, void, pctx1);
-    Data_Get_Struct(copy, void, pctx2);
+    TypedData_Get_Struct(obj, void, &digest_type, pctx1);
+    TypedData_Get_Struct(copy, void, &digest_type, pctx2);
     memcpy(pctx2, pctx1, algo->ctx_size);
 
     return copy;
 }
 
-/* :nodoc: */
+/*
+ * call-seq: digest_base.reset -> digest_base
+ *
+ * Reset the digest to its initial state and return +self+.
+ */
 static VALUE
 rb_digest_base_reset(VALUE self)
 {
@@ -584,14 +643,20 @@ rb_digest_base_reset(VALUE self)
 
     algo = get_digest_base_metadata(rb_obj_class(self));
 
-    Data_Get_Struct(self, void, pctx);
+    TypedData_Get_Struct(self, void, &digest_type, pctx);
 
-    algo->init_func(pctx);
+    algo_init(algo, pctx);
 
     return self;
 }
 
-/* :nodoc: */
+/*
+ * call-seq:
+ *   digest_base.update(string) -> digest_base
+ *   digest_base << string -> digest_base
+ *
+ * Update the digest using given _string_ and return +self+.
+ */
 static VALUE
 rb_digest_base_update(VALUE self, VALUE str)
 {
@@ -600,10 +665,11 @@ rb_digest_base_update(VALUE self, VALUE str)
 
     algo = get_digest_base_metadata(rb_obj_class(self));
 
-    Data_Get_Struct(self, void, pctx);
+    TypedData_Get_Struct(self, void, &digest_type, pctx);
 
     StringValue(str);
     algo->update_func(pctx, (unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str));
+    RB_GC_GUARD(str);
 
     return self;
 }
@@ -618,18 +684,22 @@ rb_digest_base_finish(VALUE self)
 
     algo = get_digest_base_metadata(rb_obj_class(self));
 
-    Data_Get_Struct(self, void, pctx);
+    TypedData_Get_Struct(self, void, &digest_type, pctx);
 
     str = rb_str_new(0, algo->digest_len);
     algo->finish_func(pctx, (unsigned char *)RSTRING_PTR(str));
 
     /* avoid potential coredump caused by use of a finished context */
-    algo->init_func(pctx);
+    algo_init(algo, pctx);
 
     return str;
 }
 
-/* :nodoc: */
+/*
+ * call-seq: digest_base.digest_length -> Integer
+ *
+ * Return the length of the hash value in bytes.
+ */
 static VALUE
 rb_digest_base_digest_length(VALUE self)
 {
@@ -640,7 +710,11 @@ rb_digest_base_digest_length(VALUE self)
     return INT2NUM(algo->digest_len);
 }
 
-/* :nodoc: */
+/*
+ * call-seq: digest_base.block_length -> Integer
+ *
+ * Return the block length of the digest in bytes.
+ */
 static VALUE
 rb_digest_base_block_length(VALUE self)
 {
@@ -654,6 +728,7 @@ rb_digest_base_block_length(VALUE self)
 void
 Init_digest(void)
 {
+#undef rb_intern
     id_reset           = rb_intern("reset");
     id_update          = rb_intern("update");
     id_finish          = rb_intern("finish");

@@ -76,6 +76,6 @@ $list2.add_to_list(20)
 $list2.add_to_list(Point.new(4, 5))
 $list2.add_to_list($list1)
 
-# parenthesises around method arguments can be ommitted unless ambiguous.
+# parenthesises around method arguments can be omitted unless ambiguous.
 print "list1:\n", $list1, "\n"
 print "list2:\n", $list2, "\n"

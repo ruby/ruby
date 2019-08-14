@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/available_set'
 
@@ -42,4 +43,3 @@ class TestGemResolverLocalSpecification < Gem::TestCase
   end
 
 end
-

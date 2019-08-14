@@ -1,4 +1,4 @@
-extern __declspec(dllexport) void
+void
 dlntest_ordinal(void)
 {
 }

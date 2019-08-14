@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #
 # cgi.rb - cgi support library
 #
@@ -9,8 +10,6 @@
 #
 # Documentation: Wakou Aoyama (RDoc'd and embellished by William Webber)
 #
-
-raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 
 # == Overview
 #
@@ -82,7 +81,7 @@ raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 #
 # For instance, suppose the request contains the parameter
 # "favourite_colours" with the multiple values "blue" and "green".  The
-# following behaviour would occur:
+# following behavior would occur:
 #
 #   cgi.params["favourite_colours"]  # => ["blue", "green"]
 #   cgi["favourite_colours"]         # => "blue"
@@ -254,7 +253,7 @@ raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 #           end
 #         end +
 #         cgi.pre do
-#           CGI::escapeHTML(
+#           CGI.escapeHTML(
 #             "params: #{cgi.params.inspect}\n" +
 #             "cookies: #{cgi.cookies.inspect}\n" +
 #             ENV.collect do |key, value|

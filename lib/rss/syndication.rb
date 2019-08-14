@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "rss/1.0"
 
 module RSS
@@ -47,7 +48,7 @@ module RSS
 
     private
     SY_UPDATEPERIOD_AVAILABLE_VALUES = %w(hourly daily weekly monthly yearly)
-    def validate_sy_updatePeriod(value)
+    def validate_sy_updatePeriod(value) # :nodoc:
       unless SY_UPDATEPERIOD_AVAILABLE_VALUES.include?(value)
         raise NotAvailableValueError.new("updatePeriod", value)
       end

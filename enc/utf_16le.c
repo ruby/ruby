@@ -28,11 +28,9 @@
  */
 
 #include "regenc.h"
+#include "iso_8859.h"
 
-#define UTF16_IS_SURROGATE_FIRST(c)    (((c) & 0xfc) == 0xd8)
-#define UTF16_IS_SURROGATE_SECOND(c)   (((c) & 0xfc) == 0xdc)
-#define UTF16_IS_SURROGATE(c)          (((c) & 0xf8) == 0xd8)
-
+#if 0
 static const int EncLen_UTF16[] = {
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -51,6 +49,7 @@ static const int EncLen_UTF16[] = {
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
 };
+#endif
 
 static int
 utf16le_mbc_enc_len(const UChar* p, const OnigUChar* e,
@@ -179,7 +178,7 @@ utf16le_is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp,
   if (*(p+1) == 0) {
     int c, v;
 
-    if (*p == 0xdf && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
+    if (*p == SHARP_s && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
       return TRUE;
     }
 
@@ -243,6 +242,7 @@ OnigEncodingDefine(utf_16le, UTF_16LE) = {
   onigenc_utf16_32_get_ctype_code_range,
   utf16le_left_adjust_char_head,
   onigenc_always_false_is_allowed_reverse_match,
+  onigenc_unicode_case_map,
   0,
   ONIGENC_FLAG_UNICODE,
 };

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/local_remote_options'
 require 'rubygems/command'
@@ -43,8 +44,9 @@ class TestGemLocalRemoteOptions < Gem::TestCase
     spec_fetcher
 
     @cmd.add_local_remote_options
+    Gem.configuration.sources = nil
     @cmd.handle_options %W[--clear-sources]
-    assert_equal Gem.default_sources, Gem.sources
+    assert_equal Gem.default_sources, Gem.sources.to_a
   end
 
   def test_local_eh
@@ -90,6 +92,19 @@ class TestGemLocalRemoteOptions < Gem::TestCase
     assert_equal original_sources, Gem.sources
   end
 
+  def test_short_source_option
+    @cmd.add_source_option
+
+    original_sources = Gem.sources.dup
+
+    source = URI.parse 'http://more-gems.example.com/'
+    @cmd.handle_options %W[-s #{source}]
+
+    original_sources << source
+
+    assert_equal original_sources, Gem.sources
+  end
+
   def test_update_sources_option
     @cmd.add_update_sources_option
 
@@ -109,7 +124,7 @@ class TestGemLocalRemoteOptions < Gem::TestCase
 
     s1 = 'htp://more-gems.example.com'
 
-    assert_raises OptionParser::InvalidArgument do
+    assert_raises ArgumentError do
       @cmd.handle_options %W[--source #{s1}]
     end
 
@@ -117,4 +132,3 @@ class TestGemLocalRemoteOptions < Gem::TestCase
   end
 
 end
-

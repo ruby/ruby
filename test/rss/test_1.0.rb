@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "rexml/document"
 
 require_relative "rss-testcase"

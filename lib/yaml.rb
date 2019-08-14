@@ -1,56 +1,21 @@
-##
-# The YAML module is an alias of Psych, the YAML engine for Ruby.
+# frozen_string_literal: false
 
 begin
   require 'psych'
 rescue LoadError
-  warn "#{caller[0]}:"
-  warn "It seems your ruby installation is missing psych (for YAML output)."
-  warn "To eliminate this warning, please install libyaml and reinstall your ruby."
+  warn "It seems your ruby installation is missing psych (for YAML output).\n" \
+    "To eliminate this warning, please install libyaml and reinstall your ruby.\n",
+    uplevel: 1
   raise
 end
 
 YAML = Psych # :nodoc:
 
-module Psych # :nodoc:
-  # For compatibility, deprecated
-  class EngineManager # :nodoc:
-    attr_reader :yamler # :nodoc:
-
-    def initialize # :nodoc:
-      @yamler = 'psych'
-    end
-
-    def syck? # :nodoc:
-      false
-    end
-
-    # Psych is always used and this method has no effect.
-    #
-    # This method is still present for compatibility.
-    #
-    # You may still use the Syck engine by installing
-    # the 'syck' gem and using the Syck constant.
-    def yamler= engine # :nodoc:
-      case engine
-      when 'syck' then warn "syck has been removed, psych is used instead"
-      when 'psych' then @yamler = 'psych'
-      else
-        raise(ArgumentError, "bad engine")
-      end
-
-      engine
-    end
-  end
-
-  ENGINE = EngineManager.new # :nodoc:
-end
-
 # YAML Ain't Markup Language
 #
 # This module provides a Ruby interface for data serialization in YAML format.
 #
-# The underlying implementation is the libyaml wrapper Psych.
+# The YAML module is an alias of Psych, the YAML engine for Ruby.
 #
 # == Usage
 #
@@ -63,6 +28,9 @@ end
 #     # Emit some YAML
 #     YAML.dump("foo")     # => "--- foo\n...\n"
 #     { :a => 'b'}.to_yaml  # => "---\n:a: b\n"
+#
+# As the implementation is provided by the Psych library, detailed documentation
+# can be found in that library's docs (also part of standard library).
 #
 # == Security
 #
@@ -86,7 +54,7 @@ end
 # For more advanced details on the implementation see Psych, and also check out
 # http://yaml.org for spec details and other helpful information.
 #
-# Pysch is maintained by Aaron Patterson on github: https://github.com/tenderlove/psych
+# Psych is maintained by Aaron Patterson on github: https://github.com/tenderlove/psych
 #
 # Syck can also be found on github: https://github.com/tenderlove/syck
 module YAML

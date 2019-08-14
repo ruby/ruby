@@ -1,4 +1,3 @@
-#include "ruby.h"
 #include "internal.h"
 
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)

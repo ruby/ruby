@@ -1,12 +1,20 @@
+# frozen_string_literal: true
 require 'test/unit'
 require 'date'
 
 class TestDateArith < Test::Unit::TestCase
+  class Rat < Numeric
+    def to_r; self; end
+  end
 
-  def new_offset
+  def test_new_offset
     d = DateTime.new(2002, 3, 14)
     assert_equal(Rational(9, 24), d.new_offset(Rational(9, 24)).offset)
     assert_equal(Rational(9, 24), d.new_offset('+0900').offset)
+    n = Rat.new
+    assert_raise(TypeError) do
+      Timeout.timeout(1) {d.new_offset(n)}
+    end
   end
 
   def test__plus
@@ -35,6 +43,13 @@ class TestDateArith < Test::Unit::TestCase
     end
     assert_raise(e) do
       DateTime.new(2000,2,29) + Time.mktime(2000,2,29)
+    end
+    n = Rat.new
+    assert_raise(e) do
+      Timeout.timeout(1) {Date.new(2000,2,29) + n}
+    end
+    assert_raise(e) do
+      Timeout.timeout(1) {DateTime.new(2000,2,29) + n}
     end
   end
 
@@ -205,7 +220,7 @@ class TestDateArith < Test::Unit::TestCase
     p = Date.new(2001,1,14)
     q = Date.new(2001,1,7)
     i = 0
-    p.downto(q) do |d|
+    p.downto(q) do
       i += 1
     end
     assert_equal(8, i)
@@ -222,7 +237,7 @@ class TestDateArith < Test::Unit::TestCase
     p = Date.new(2001,1,14)
     q = Date.new(2001,1,21)
     i = 0
-    p.upto(q) do |d|
+    p.upto(q) do
       i += 1
     end
     assert_equal(8, i)
@@ -239,13 +254,13 @@ class TestDateArith < Test::Unit::TestCase
     p = Date.new(2001,1,14)
     q = Date.new(2001,1,21)
     i = 0
-    p.step(q, 2) do |d|
+    p.step(q, 2) do
       i += 1
     end
     assert_equal(4, i)
 
     i = 0
-    p.step(q) do |d|
+    p.step(q) do
       i += 1
     end
     assert_equal(8, i)
@@ -261,26 +276,19 @@ class TestDateArith < Test::Unit::TestCase
     assert_equal(8, e.to_a.size)
   end
 
-=begin
-  def test_step__inf
-    p = Date.new(2001,1,14)
-    q = Date.new(2001,1,21)
-    inf = 1.0/0
+  def test_step__compare
+    p = Date.new(2000, 1, 1)
+    q = Date.new(1999, 12, 31)
+    o = Object.new
+    def o.<=>(*);end
+    assert_raise(ArgumentError) {
+      p.step(q, o).to_a
+    }
 
-    if inf.infinite?
-      [p, q].each do |a|
-	[p, q].each do |b|
-	  [inf, -inf].each do |c|
-	    i = 0
-	    a.step(b, c) do |d|
-	      i += 1
-	    end
-	    assert_equal(0, i)
-	  end
-	end
-      end
-    end
+    o = Object.new
+    def o.<=>(*);2;end
+    a = []
+    p.step(q, o) {|d| a << d}
+    assert_empty(a)
   end
-=end
-
 end

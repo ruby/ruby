@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/unpack_command'
 
@@ -66,7 +67,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
     gemhome2 = File.join @tempdir, 'gemhome2'
 
-    Gem.paths = { "GEM_PATH" => [gemhome2, @gemhome], "GEM_HOME" => gemhome2 }
+    Gem.use_paths gemhome2, [gemhome2, @gemhome]
 
     @cmd.options[:args] = %w[a]
 
@@ -86,7 +87,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
     gemhome2 = File.join @tempdir, 'gemhome2'
 
-    Gem.paths = { "GEM_PATH" => [gemhome2, @gemhome], "GEM_HOME" => gemhome2 }
+    Gem.use_paths gemhome2, [gemhome2, @gemhome]
 
     @cmd.options[:args] = %w[z]
 
@@ -101,10 +102,8 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
   def test_execute_remote
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.gem  'a', 2
-
-      fetcher.clear
+      fetcher.download 'a', 1
+      fetcher.download 'a', 2
     end
 
     Gem.configuration.verbose = :really
@@ -133,6 +132,23 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
     assert File.exist?(File.join(@tempdir, 'a-3.a.gemspec'))
     assert File.exist?(File.join(@tempdir, 'b-2.gemspec'))
+  end
+
+  def test_execute_spec_target
+    util_make_gems
+
+    @cmd.options[:args] = %w[a b]
+    @cmd.options[:target] = 'specs'
+    @cmd.options[:spec] = true
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    assert File.exist?(File.join(@tempdir, 'specs/a-3.a.gemspec'))
+    assert File.exist?(File.join(@tempdir, 'specs/b-2.gemspec'))
   end
 
   def test_execute_sudo
@@ -184,8 +200,8 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
     foo_path = File.join(@tempdir, "#{foo_spec.full_name}.gem")
     foo_bar_path = File.join(@tempdir, "#{foo_bar_spec.full_name}.gem")
-    Gem::Installer.new(foo_path).install
-    Gem::Installer.new(foo_bar_path).install
+    Gem::Installer.at(foo_path).install
+    Gem::Installer.at(foo_bar_path).install
 
     @cmd.options[:args] = %w[foo]
 
@@ -207,4 +223,3 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
   end
 
 end
-

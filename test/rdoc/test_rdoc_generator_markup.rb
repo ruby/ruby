@@ -1,4 +1,5 @@
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require 'minitest_helper'
 
 class TestRDocGeneratorMarkup < RDoc::TestCase
 
@@ -38,7 +39,7 @@ class TestRDocGeneratorMarkup < RDoc::TestCase
     @comment = '= Hello'
 
     links = '<span><a href="#label-Hello">&para;</a> ' +
-            '<a href="#documentation">&uarr;</a></span>'
+            '<a href="#top">&uarr;</a></span>'
 
     assert_equal "\n<h1 id=\"label-Hello\">Hello#{links}</h1>\n", description
   end

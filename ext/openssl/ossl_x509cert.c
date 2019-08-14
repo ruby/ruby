@@ -1,30 +1,27 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
 
-#define WrapX509(klass, obj, x509) do { \
+#define NewX509(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509_type, 0)
+#define SetX509(obj, x509) do { \
     if (!(x509)) { \
 	ossl_raise(rb_eRuntimeError, "CERT wasn't initialized!"); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, X509_free, (x509)); \
+    RTYPEDDATA_DATA(obj) = (x509); \
 } while (0)
 #define GetX509(obj, x509) do { \
-    Data_Get_Struct((obj), X509, (x509)); \
+    TypedData_Get_Struct((obj), X509, &ossl_x509_type, (x509)); \
     if (!(x509)) { \
 	ossl_raise(rb_eRuntimeError, "CERT wasn't initialized!"); \
     } \
-} while (0)
-#define SafeGetX509(obj, x509) do { \
-    OSSL_Check_Kind((obj), cX509Cert); \
-    GetX509((obj), (x509)); \
 } while (0)
 
 /*
@@ -32,6 +29,20 @@
  */
 VALUE cX509Cert;
 VALUE eX509CertError;
+
+static void
+ossl_x509_free(void *ptr)
+{
+    X509_free(ptr);
+}
+
+static const rb_data_type_t ossl_x509_type = {
+    "OpenSSL/X509",
+    {
+	0, ossl_x509_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * Public
@@ -42,6 +53,7 @@ ossl_x509_new(X509 *x509)
     X509 *new;
     VALUE obj;
 
+    obj = NewX509(cX509Cert);
     if (!x509) {
 	new = X509_new();
     } else {
@@ -50,40 +62,7 @@ ossl_x509_new(X509 *x509)
     if (!new) {
 	ossl_raise(eX509CertError, NULL);
     }
-    WrapX509(cX509Cert, obj, new);
-
-    return obj;
-}
-
-VALUE
-ossl_x509_new_from_file(VALUE filename)
-{
-    X509 *x509;
-    FILE *fp;
-    VALUE obj;
-
-    SafeStringValue(filename);
-    if (!(fp = fopen(RSTRING_PTR(filename), "r"))) {
-	ossl_raise(eX509CertError, "%s", strerror(errno));
-    }
-    rb_fd_fix_cloexec(fileno(fp));
-    x509 = PEM_read_X509(fp, NULL, NULL, NULL);
-    /*
-     * prepare for DER...
-#if !defined(OPENSSL_NO_FP_API)
-    if (!x509) {
-    	(void)ERR_get_error();
-	rewind(fp);
-
-	x509 = d2i_X509_fp(fp, NULL);
-    }
-#endif
-    */
-    fclose(fp);
-    if (!x509) {
-	ossl_raise(eX509CertError, NULL);
-    }
-    WrapX509(cX509Cert, obj, x509);
+    SetX509(obj, new);
 
     return obj;
 }
@@ -93,7 +72,7 @@ GetX509CertPtr(VALUE obj)
 {
     X509 *x509;
 
-    SafeGetX509(obj, x509);
+    GetX509(obj, x509);
 
     return x509;
 }
@@ -103,9 +82,9 @@ DupX509CertPtr(VALUE obj)
 {
     X509 *x509;
 
-    SafeGetX509(obj, x509);
+    GetX509(obj, x509);
 
-    CRYPTO_add(&x509->references, 1, CRYPTO_LOCK_X509);
+    X509_up_ref(x509);
 
     return x509;
 }
@@ -119,10 +98,10 @@ ossl_x509_alloc(VALUE klass)
     X509 *x509;
     VALUE obj;
 
+    obj = NewX509(klass);
     x509 = X509_new();
     if (!x509) ossl_raise(eX509CertError, NULL);
-
-    WrapX509(klass, obj, x509);
+    SetX509(obj, x509);
 
     return obj;
 }
@@ -144,7 +123,7 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
     }
     arg = ossl_to_der_if_possible(arg);
-    in = ossl_obj2bio(arg);
+    in = ossl_obj2bio(&arg);
     x509 = PEM_read_bio_X509(in, &x, NULL, NULL);
     DATA_PTR(self) = x;
     if (!x509) {
@@ -167,7 +146,7 @@ ossl_x509_copy(VALUE self, VALUE other)
     if (self == other) return self;
 
     GetX509(self, a);
-    SafeGetX509(other, b);
+    GetX509(other, b);
 
     x509 = X509_dup(b);
     if (!x509) ossl_raise(eX509CertError, NULL);
@@ -332,9 +311,7 @@ ossl_x509_set_serial(VALUE self, VALUE num)
     X509 *x509;
 
     GetX509(self, x509);
-
-    x509->cert_info->serialNumber =
-	num_to_asn1integer(num, X509_get_serialNumber(x509));
+    X509_set_serialNumber(x509, num_to_asn1integer(num, X509_get_serialNumber(x509)));
 
     return num;
 }
@@ -354,7 +331,7 @@ ossl_x509_get_signature_algorithm(VALUE self)
     out = BIO_new(BIO_s_mem());
     if (!out) ossl_raise(eX509CertError, NULL);
 
-    if (!i2a_ASN1_OBJECT(out, x509->cert_info->signature->algorithm)) {
+    if (!i2a_ASN1_OBJECT(out, X509_get0_tbs_sigalg(x509)->algorithm)) {
 	BIO_free(out);
 	ossl_raise(eX509CertError, NULL);
     }
@@ -441,10 +418,10 @@ static VALUE
 ossl_x509_get_not_before(VALUE self)
 {
     X509 *x509;
-    ASN1_UTCTIME *asn1time;
+    const ASN1_TIME *asn1time;
 
     GetX509(self, x509);
-    if (!(asn1time = X509_get_notBefore(x509))) { /* NO DUP - don't free! */
+    if (!(asn1time = X509_get0_notBefore(x509))) {
 	ossl_raise(eX509CertError, NULL);
     }
 
@@ -459,13 +436,15 @@ static VALUE
 ossl_x509_set_not_before(VALUE self, VALUE time)
 {
     X509 *x509;
-    time_t sec;
+    ASN1_TIME *asn1time;
 
-    sec = time_to_time_t(time);
     GetX509(self, x509);
-    if (!X509_time_adj(X509_get_notBefore(x509), 0, &sec)) {
-	ossl_raise(eX509CertError, NULL);
+    asn1time = ossl_x509_time_adjust(NULL, time);
+    if (!X509_set1_notBefore(x509, asn1time)) {
+	ASN1_TIME_free(asn1time);
+	ossl_raise(eX509CertError, "X509_set_notBefore");
     }
+    ASN1_TIME_free(asn1time);
 
     return time;
 }
@@ -478,10 +457,10 @@ static VALUE
 ossl_x509_get_not_after(VALUE self)
 {
     X509 *x509;
-    ASN1_TIME *asn1time;
+    const ASN1_TIME *asn1time;
 
     GetX509(self, x509);
-    if (!(asn1time = X509_get_notAfter(x509))) { /* NO DUP - don't free! */
+    if (!(asn1time = X509_get0_notAfter(x509))) {
 	ossl_raise(eX509CertError, NULL);
     }
 
@@ -496,13 +475,15 @@ static VALUE
 ossl_x509_set_not_after(VALUE self, VALUE time)
 {
     X509 *x509;
-    time_t sec;
+    ASN1_TIME *asn1time;
 
-    sec = time_to_time_t(time);
     GetX509(self, x509);
-    if (!X509_time_adj(X509_get_notAfter(x509), 0, &sec)) {
-	ossl_raise(eX509CertError, NULL);
+    asn1time = ossl_x509_time_adjust(NULL, time);
+    if (!X509_set1_notAfter(x509, asn1time)) {
+	ASN1_TIME_free(asn1time);
+	ossl_raise(eX509CertError, "X509_set_notAfter");
     }
+    ASN1_TIME_free(asn1time);
 
     return time;
 }
@@ -527,18 +508,19 @@ ossl_x509_get_public_key(VALUE self)
 
 /*
  * call-seq:
- *    cert.public_key = key => key
+ *    cert.public_key = key
  */
 static VALUE
 ossl_x509_set_public_key(VALUE self, VALUE key)
 {
     X509 *x509;
+    EVP_PKEY *pkey;
 
     GetX509(self, x509);
-    if (!X509_set_pubkey(x509, GetPKeyPtr(key))) { /* DUPs pkey */
-	ossl_raise(eX509CertError, NULL);
-    }
-
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
+    if (!X509_set_pubkey(x509, pkey))
+	ossl_raise(eX509CertError, "X509_set_pubkey");
     return key;
 }
 
@@ -554,7 +536,7 @@ ossl_x509_sign(VALUE self, VALUE key, VALUE digest)
     const EVP_MD *md;
 
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
-    md = GetDigestPtr(digest);
+    md = ossl_evp_get_digestbyname(digest);
     GetX509(self, x509);
     if (!X509_sign(x509, pkey, md)) {
 	ossl_raise(eX509CertError, NULL);
@@ -567,32 +549,35 @@ ossl_x509_sign(VALUE self, VALUE key, VALUE digest)
  * call-seq:
  *    cert.verify(key) => true | false
  *
- * Checks that cert signature is made with PRIVversion of this PUBLIC 'key'
+ * Verifies the signature of the certificate, with the public key _key_. _key_
+ * must be an instance of OpenSSL::PKey.
  */
 static VALUE
 ossl_x509_verify(VALUE self, VALUE key)
 {
     X509 *x509;
     EVP_PKEY *pkey;
-    int i;
 
-    pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
     GetX509(self, x509);
-    if ((i = X509_verify(x509, pkey)) < 0) {
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
+    switch (X509_verify(x509, pkey)) {
+      case 1:
+	return Qtrue;
+      case 0:
+	ossl_clear_error();
+	return Qfalse;
+      default:
 	ossl_raise(eX509CertError, NULL);
     }
-    if (i > 0) {
-	return Qtrue;
-    }
-
-    return Qfalse;
 }
 
 /*
  * call-seq:
- *    cert.check_private_key(key)
+ *    cert.check_private_key(key) -> true | false
  *
- * Checks if 'key' is PRIV key for this cert
+ * Returns +true+ if _key_ is the corresponding private key to the Subject
+ * Public Key Information, +false+ otherwise.
  */
 static VALUE
 ossl_x509_check_private_key(VALUE self, VALUE key)
@@ -604,7 +589,7 @@ ossl_x509_check_private_key(VALUE self, VALUE key)
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
     GetX509(self, x509);
     if (!X509_check_private_key(x509, pkey)) {
-	OSSL_Warning("Check private key:%s", OSSL_ErrMsg());
+	ossl_clear_error();
 	return Qfalse;
     }
 
@@ -646,24 +631,21 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
 {
     X509 *x509;
     X509_EXTENSION *ext;
-    int i;
+    long i;
 
     Check_Type(ary, T_ARRAY);
     /* All ary's members should be X509Extension */
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	OSSL_Check_Kind(RARRAY_PTR(ary)[i], cX509Ext);
+	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Ext);
     }
     GetX509(self, x509);
-    sk_X509_EXTENSION_pop_free(x509->cert_info->extensions, X509_EXTENSION_free);
-    x509->cert_info->extensions = NULL;
+    while ((ext = X509_delete_ext(x509, 0)))
+	X509_EXTENSION_free(ext);
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	ext = DupX509ExtPtr(RARRAY_PTR(ary)[i]);
-
-	if (!X509_add_ext(x509, ext, -1)) { /* DUPs ext - FREE it */
-	    X509_EXTENSION_free(ext);
+	ext = GetX509ExtPtr(RARRAY_AREF(ary, i));
+	if (!X509_add_ext(x509, ext, -1)) { /* DUPs ext */
 	    ossl_raise(eX509CertError, NULL);
 	}
-	X509_EXTENSION_free(ext);
     }
 
     return ary;
@@ -680,12 +662,10 @@ ossl_x509_add_extension(VALUE self, VALUE extension)
     X509_EXTENSION *ext;
 
     GetX509(self, x509);
-    ext = DupX509ExtPtr(extension);
+    ext = GetX509ExtPtr(extension);
     if (!X509_add_ext(x509, ext, -1)) { /* DUPs ext - FREE it */
-	X509_EXTENSION_free(ext);
 	ossl_raise(eX509CertError, NULL);
     }
-    X509_EXTENSION_free(ext);
 
     return extension;
 }
@@ -705,14 +685,34 @@ ossl_x509_inspect(VALUE self)
 }
 
 /*
+ * call-seq:
+ *    cert1 == cert2 -> true | false
+ *
+ * Compares the two certificates. Note that this takes into account all fields,
+ * not just the issuer name and the serial number.
+ */
+static VALUE
+ossl_x509_eq(VALUE self, VALUE other)
+{
+    X509 *a, *b;
+
+    GetX509(self, a);
+    if (!rb_obj_is_kind_of(other, cX509Cert))
+	return Qfalse;
+    GetX509(other, b);
+
+    return !X509_cmp(a, b) ? Qtrue : Qfalse;
+}
+
+/*
  * INIT
  */
 void
-Init_ossl_x509cert()
+Init_ossl_x509cert(void)
 {
-
 #if 0
-    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
     mX509 = rb_define_module_under(mOSSL, "X509");
 #endif
 
@@ -814,7 +814,7 @@ Init_ossl_x509cert()
 
     rb_define_alloc_func(cX509Cert, ossl_x509_alloc);
     rb_define_method(cX509Cert, "initialize", ossl_x509_initialize, -1);
-    rb_define_copy_func(cX509Cert, ossl_x509_copy);
+    rb_define_method(cX509Cert, "initialize_copy", ossl_x509_copy, 1);
 
     rb_define_method(cX509Cert, "to_der", ossl_x509_to_der, 0);
     rb_define_method(cX509Cert, "to_pem", ossl_x509_to_pem, 0);
@@ -842,5 +842,5 @@ Init_ossl_x509cert()
     rb_define_method(cX509Cert, "extensions=", ossl_x509_set_extensions, 1);
     rb_define_method(cX509Cert, "add_extension", ossl_x509_add_extension, 1);
     rb_define_method(cX509Cert, "inspect", ossl_x509_inspect, 0);
+    rb_define_method(cX509Cert, "==", ossl_x509_eq, 1);
 }
-

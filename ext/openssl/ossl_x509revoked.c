@@ -1,30 +1,27 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
 
-#define WrapX509Rev(klass, obj, rev) do { \
+#define NewX509Rev(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509rev_type, 0)
+#define SetX509Rev(obj, rev) do { \
     if (!(rev)) { \
 	ossl_raise(rb_eRuntimeError, "REV wasn't initialized!"); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, X509_REVOKED_free, (rev)); \
+    RTYPEDDATA_DATA(obj) = (rev); \
 } while (0)
 #define GetX509Rev(obj, rev) do { \
-    Data_Get_Struct((obj), X509_REVOKED, (rev)); \
+    TypedData_Get_Struct((obj), X509_REVOKED, &ossl_x509rev_type, (rev)); \
     if (!(rev)) { \
 	ossl_raise(rb_eRuntimeError, "REV wasn't initialized!"); \
     } \
-} while (0)
-#define SafeGetX509Rev(obj, rev) do { \
-    OSSL_Check_Kind((obj), cX509Rev); \
-    GetX509Rev((obj), (rev)); \
 } while (0)
 
 /*
@@ -32,6 +29,20 @@
  */
 VALUE cX509Rev;
 VALUE eX509RevError;
+
+static void
+ossl_x509rev_free(void *ptr)
+{
+    X509_REVOKED_free(ptr);
+}
+
+static const rb_data_type_t ossl_x509rev_type = {
+    "OpenSSL/X509/REV",
+    {
+	0, ossl_x509rev_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * PUBLIC
@@ -42,6 +53,7 @@ ossl_x509revoked_new(X509_REVOKED *rev)
     X509_REVOKED *new;
     VALUE obj;
 
+    obj = NewX509Rev(cX509Rev);
     if (!rev) {
 	new = X509_REVOKED_new();
     } else {
@@ -50,7 +62,7 @@ ossl_x509revoked_new(X509_REVOKED *rev)
     if (!new) {
 	ossl_raise(eX509RevError, NULL);
     }
-    WrapX509Rev(cX509Rev, obj, new);
+    SetX509Rev(obj, new);
 
     return obj;
 }
@@ -60,7 +72,7 @@ DupX509RevokedPtr(VALUE obj)
 {
     X509_REVOKED *rev, *new;
 
-    SafeGetX509Rev(obj, rev);
+    GetX509Rev(obj, rev);
     if (!(new = X509_REVOKED_dup(rev))) {
 	ossl_raise(eX509RevError, NULL);
     }
@@ -77,10 +89,11 @@ ossl_x509revoked_alloc(VALUE klass)
     X509_REVOKED *rev;
     VALUE obj;
 
+    obj = NewX509Rev(klass);
     if (!(rev = X509_REVOKED_new())) {
 	ossl_raise(eX509RevError, NULL);
     }
-    WrapX509Rev(klass, obj, rev);
+    SetX509Rev(obj, rev);
 
     return obj;
 }
@@ -93,22 +106,47 @@ ossl_x509revoked_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
+ossl_x509revoked_initialize_copy(VALUE self, VALUE other)
+{
+    X509_REVOKED *rev, *rev_other, *rev_new;
+
+    rb_check_frozen(self);
+    GetX509Rev(self, rev);
+    GetX509Rev(other, rev_other);
+
+    rev_new = X509_REVOKED_dup(rev_other);
+    if (!rev_new)
+	ossl_raise(eX509RevError, "X509_REVOKED_dup");
+
+    SetX509Rev(self, rev_new);
+    X509_REVOKED_free(rev);
+
+    return self;
+}
+
+static VALUE
 ossl_x509revoked_get_serial(VALUE self)
 {
     X509_REVOKED *rev;
 
     GetX509Rev(self, rev);
 
-    return asn1integer_to_num(rev->serialNumber);
+    return asn1integer_to_num(X509_REVOKED_get0_serialNumber(rev));
 }
 
 static VALUE
 ossl_x509revoked_set_serial(VALUE self, VALUE num)
 {
     X509_REVOKED *rev;
+    ASN1_INTEGER *asn1int;
 
     GetX509Rev(self, rev);
-    rev->serialNumber = num_to_asn1integer(num, rev->serialNumber);
+    asn1int = num_to_asn1integer(num, NULL);
+    if (!X509_REVOKED_set_serialNumber(rev, asn1int)) {
+	ASN1_INTEGER_free(asn1int);
+	ossl_raise(eX509RevError, "X509_REVOKED_set_serialNumber");
+    }
+    ASN1_INTEGER_free(asn1int);
 
     return num;
 }
@@ -117,23 +155,29 @@ static VALUE
 ossl_x509revoked_get_time(VALUE self)
 {
     X509_REVOKED *rev;
+    const ASN1_TIME *time;
 
     GetX509Rev(self, rev);
+    time = X509_REVOKED_get0_revocationDate(rev);
+    if (!time)
+	return Qnil;
 
-    return asn1time_to_time(rev->revocationDate);
+    return asn1time_to_time(time);
 }
 
 static VALUE
 ossl_x509revoked_set_time(VALUE self, VALUE time)
 {
     X509_REVOKED *rev;
-    time_t sec;
+    ASN1_TIME *asn1time;
 
-    sec = time_to_time_t(time);
     GetX509Rev(self, rev);
-    if (!X509_time_adj(rev->revocationDate, 0, &sec)) {
-	ossl_raise(eX509RevError, NULL);
+    asn1time = ossl_x509_time_adjust(NULL, time);
+    if (!X509_REVOKED_set_revocationDate(rev, asn1time)) {
+	ASN1_TIME_free(asn1time);
+	ossl_raise(eX509RevError, "X509_REVOKED_set_revocationDate");
     }
+    ASN1_TIME_free(asn1time);
 
     return time;
 }
@@ -171,19 +215,19 @@ ossl_x509revoked_set_extensions(VALUE self, VALUE ary)
 {
     X509_REVOKED *rev;
     X509_EXTENSION *ext;
-    int i;
+    long i;
     VALUE item;
 
     Check_Type(ary, T_ARRAY);
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	OSSL_Check_Kind(RARRAY_PTR(ary)[i], cX509Ext);
+	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Ext);
     }
     GetX509Rev(self, rev);
-    sk_X509_EXTENSION_pop_free(rev->extensions, X509_EXTENSION_free);
-    rev->extensions = NULL;
+    while ((ext = X509_REVOKED_delete_ext(rev, 0)))
+	X509_EXTENSION_free(ext);
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	item = RARRAY_PTR(ary)[i];
-	ext = DupX509ExtPtr(item);
+	item = RARRAY_AREF(ary, i);
+	ext = GetX509ExtPtr(item);
 	if(!X509_REVOKED_add_ext(rev, ext, -1)) {
 	    ossl_raise(eX509RevError, NULL);
 	}
@@ -198,25 +242,52 @@ ossl_x509revoked_add_extension(VALUE self, VALUE ext)
     X509_REVOKED *rev;
 
     GetX509Rev(self, rev);
-    if(!X509_REVOKED_add_ext(rev, DupX509ExtPtr(ext), -1)) {
+    if (!X509_REVOKED_add_ext(rev, GetX509ExtPtr(ext), -1)) {
 	ossl_raise(eX509RevError, NULL);
     }
 
     return ext;
 }
 
+static VALUE
+ossl_x509revoked_to_der(VALUE self)
+{
+    X509_REVOKED *rev;
+    VALUE str;
+    int len;
+    unsigned char *p;
+
+    GetX509Rev(self, rev);
+    len = i2d_X509_REVOKED(rev, NULL);
+    if (len <= 0)
+	ossl_raise(eX509RevError, "i2d_X509_REVOKED");
+    str = rb_str_new(NULL, len);
+    p = (unsigned char *)RSTRING_PTR(str);
+    if (i2d_X509_REVOKED(rev, &p) <= 0)
+	ossl_raise(eX509RevError, "i2d_X509_REVOKED");
+    ossl_str_adjust(str, p);
+    return str;
+}
+
 /*
  * INIT
  */
 void
-Init_ossl_x509revoked()
+Init_ossl_x509revoked(void)
 {
+#if 0
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
+    mX509 = rb_define_module_under(mOSSL, "X509");
+#endif
+
     eX509RevError = rb_define_class_under(mX509, "RevokedError", eOSSLError);
 
     cX509Rev = rb_define_class_under(mX509, "Revoked", rb_cObject);
 
     rb_define_alloc_func(cX509Rev, ossl_x509revoked_alloc);
     rb_define_method(cX509Rev, "initialize", ossl_x509revoked_initialize, -1);
+    rb_define_method(cX509Rev, "initialize_copy", ossl_x509revoked_initialize_copy, 1);
 
     rb_define_method(cX509Rev, "serial", ossl_x509revoked_get_serial, 0);
     rb_define_method(cX509Rev, "serial=", ossl_x509revoked_set_serial, 1);
@@ -225,5 +296,5 @@ Init_ossl_x509revoked()
     rb_define_method(cX509Rev, "extensions", ossl_x509revoked_get_extensions, 0);
     rb_define_method(cX509Rev, "extensions=", ossl_x509revoked_set_extensions, 1);
     rb_define_method(cX509Rev, "add_extension", ossl_x509revoked_add_extension, 1);
+    rb_define_method(cX509Rev, "to_der", ossl_x509revoked_to_der, 0);
 }
-

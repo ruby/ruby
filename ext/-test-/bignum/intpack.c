@@ -1,4 +1,3 @@
-#include "ruby.h"
 #include "internal.h"
 
 static VALUE

@@ -12,9 +12,6 @@
 #define RFLOAT_VALUE(val) (RFLOAT(val)->value)
 #endif
 
-#ifndef RARRAY_PTR
-#define RARRAY_PTR(ARRAY) RARRAY(ARRAY)->ptr
-#endif
 #ifndef RARRAY_LEN
 #define RARRAY_LEN(ARRAY) RARRAY(ARRAY)->len
 #endif
@@ -181,7 +178,7 @@ static FBuffer *fbuffer_dup(FBuffer *fb)
 
 static VALUE fbuffer_to_s(FBuffer *fb)
 {
-    VALUE result = rb_str_new(FBUFFER_PAIR(fb));
+    VALUE result = rb_str_new(FBUFFER_PTR(fb), FBUFFER_LEN(fb));
     fbuffer_free(fb);
     FORCE_UTF8(result);
     return result;

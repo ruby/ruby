@@ -1,10 +1,11 @@
+# frozen_string_literal: true
 require 'rubygems/command'
 require 'rubygems/commands/query_command'
 
 class Gem::Commands::SearchCommand < Gem::Commands::QueryCommand
 
   def initialize
-    super 'search', 'Display remote gems whose name contains STRING'
+    super 'search', 'Display remote gems whose name matches REGEXP'
 
     remove_option '--name-matches'
 
@@ -12,7 +13,7 @@ class Gem::Commands::SearchCommand < Gem::Commands::QueryCommand
   end
 
   def arguments # :nodoc:
-    "STRING        fragment of gem name to search for"
+    "REGEXP        regexp to search for in gem name"
   end
 
   def defaults_str # :nodoc:
@@ -21,8 +22,8 @@ class Gem::Commands::SearchCommand < Gem::Commands::QueryCommand
 
   def description # :nodoc:
     <<-EOF
-The search command displays remote gems whose name contains the given
-string.
+The search command displays remote gems whose name matches the given
+regexp.
 
 The --details option displays additional details from the gem but will
 take a little longer to complete as it must download the information
@@ -33,8 +34,7 @@ To list local gems use the list command.
   end
 
   def usage # :nodoc:
-    "#{program_name} [STRING]"
+    "#{program_name} [REGEXP]"
   end
 
 end
-

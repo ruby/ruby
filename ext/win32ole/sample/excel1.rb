@@ -1,8 +1,9 @@
+# frozen_string_literal: false
 require 'win32ole'
 
 application = WIN32OLE.new('Excel.Application')
 
-application.visible = TRUE
+application.visible = true
 workbook = application.Workbooks.Add();
 worksheet = workbook.Worksheets(1);
 
@@ -26,8 +27,11 @@ range = worksheet.Range("A1:D2");
 range.Select
 chart = workbook.Charts.Add;
 
-workbook.saved = TRUE;
-sleep 0.5
+workbook.saved = true;
+
+print "Now quit Excel... Please enter."
+gets
+
 application.ActiveWorkbook.Close(0);
 application.Quit();
 

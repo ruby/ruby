@@ -48,7 +48,7 @@ extern "C" {
 RUBY_SYMBOL_EXPORT_BEGIN
 
 #define DECIMAL_SIZE_OF_BITS(n) (((n) * 3010 + 9998) / 9999)
-/* an approximation of ceil(n * log10(2)), upto 65536 at least */
+/* an approximation of ceil(n * log10(2)), up to 65536 at least */
 
 #define scan_oct(s,l,e) ((int)ruby_scan_oct((s),(l),(e)))
 unsigned long ruby_scan_oct(const char *, size_t, size_t *);
@@ -64,29 +64,16 @@ void ruby_qsort(void *, const size_t, const size_t,
 
 void ruby_setenv(const char *, const char *);
 void ruby_unsetenv(const char *);
-#undef setenv
-#undef unsetenv
-#define setenv(name,val) ruby_setenv((name),(val))
-#define unsetenv(name,val) ruby_unsetenv(name)
 
 char *ruby_strdup(const char *);
 #undef strdup
 #define strdup(s) ruby_strdup(s)
 
 char *ruby_getcwd(void);
-#define my_getcwd() ruby_getcwd()
 
 double ruby_strtod(const char *, char **);
 #undef strtod
 #define strtod(s,e) ruby_strtod((s),(e))
-
-#if defined _MSC_VER && _MSC_VER >= 1300
-#pragma warning(push)
-#pragma warning(disable:4723)
-#endif
-#if defined _MSC_VER && _MSC_VER >= 1300
-#pragma warning(pop)
-#endif
 
 void ruby_each_words(const char *, void (*)(const char*, int, void*), void *);
 

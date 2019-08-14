@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'resolv'
 require 'socket'
@@ -17,12 +18,23 @@ class TestResolvAddr < Test::Unit::TestCase
 
   def test_invalid_byte_comment
     bug9273 = '[ruby-core:59239] [Bug #9273]'
-    Tempfile.open('resolv_test_addr_') do |tmpfile|
+    Tempfile.create('resolv_test_addr_') do |tmpfile|
       tmpfile.print("\xff\x00\x40")
       tmpfile.close
       hosts = Resolv::Hosts.new(tmpfile.path)
       assert_nothing_raised(ArgumentError, bug9273) do
         hosts.each_address("") {break}
+      end
+    end
+  end
+
+  def test_hosts_by_command
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        hosts = Resolv::Hosts.new("|echo error")
+        assert_raise(Errno::ENOENT, Errno::EINVAL) do
+          hosts.each_name("") {}
+        end
       end
     end
   end

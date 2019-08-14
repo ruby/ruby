@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # cookie.rb -- Cookie class
 #
@@ -9,7 +10,7 @@
 # $IPR: cookie.rb,v 1.16 2002/09/21 12:23:35 gotoyuzo Exp $
 
 require 'time'
-require 'webrick/httputils'
+require_relative 'httputils'
 
 module WEBrick
 
@@ -112,7 +113,7 @@ module WEBrick
         ret = []
         cookie = nil
         ver = 0
-        str.split(/[;,]\s+/).each{|x|
+        str.split(/;\s+/).each{|x|
           key, val = x.split(/=/,2)
           val = val ? HTTPUtils::dequote(val) : ""
           case key

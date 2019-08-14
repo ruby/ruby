@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'singleton'
 
@@ -20,19 +21,19 @@ class TestSingleton < Test::Unit::TestCase
   end
 
   def test_initialize_raises_exception
-    assert_raises NoMethodError do
+    assert_raise NoMethodError do
       SingletonTest.new
     end
   end
 
   def test_allocate_raises_exception
-    assert_raises NoMethodError do
+    assert_raise NoMethodError do
       SingletonTest.allocate
     end
   end
 
   def test_clone_raises_exception
-    exception = assert_raises TypeError do
+    exception = assert_raise TypeError do
       SingletonTest.instance.clone
     end
 
@@ -42,7 +43,7 @@ class TestSingleton < Test::Unit::TestCase
   end
 
   def test_dup_raises_exception
-    exception = assert_raises TypeError do
+    exception = assert_raise TypeError do
       SingletonTest.instance.dup
     end
 
@@ -54,7 +55,7 @@ class TestSingleton < Test::Unit::TestCase
   def test_include_in_module_raises_exception
     mod = Module.new
 
-    exception = assert_raises TypeError do
+    exception = assert_raise TypeError do
       mod.class_eval do
         include Singleton
       end
@@ -66,7 +67,7 @@ class TestSingleton < Test::Unit::TestCase
   end
 
   def test_extending_singleton_raises_exception
-    assert_raises NoMethodError do
+    assert_raise NoMethodError do
       'foo'.extend Singleton
     end
   end

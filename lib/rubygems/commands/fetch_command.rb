@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/command'
 require 'rubygems/local_remote_options'
 require 'rubygems/version_option'
@@ -55,14 +56,14 @@ then repackaging it.
       specs_and_sources, errors =
         Gem::SpecFetcher.fetcher.spec_for_dependency dep
 
-      if platform then
+      if platform
         filtered = specs_and_sources.select { |s,| s.platform == platform }
         specs_and_sources = filtered unless filtered.empty?
       end
 
       spec, source = specs_and_sources.max_by { |s,| s.version }
 
-      if spec.nil? then
+      if spec.nil?
         show_lookup_failure gem_name, version, errors, options[:domain]
         next
       end
@@ -74,4 +75,3 @@ then repackaging it.
   end
 
 end
-

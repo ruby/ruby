@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative "rss-testcase"
 
 require "rss/maker"
@@ -85,9 +86,7 @@ module RSS
       end
       target = chain_reader(rss20, feed_readers)
       if [true, false].include?(value)
-        feed_expected_value = value = value ? "yes" : "no"
-      else
-        feed_expected_value = value
+        value = value ? "yes" : "no"
       end
       assert_equal(value, target.itunes_block)
       assert_equal(boolean_value, target.itunes_block?)
@@ -251,14 +250,21 @@ module RSS
                                       feed_readers)
         _assert_maker_itunes_duration(0, 4, 5, "4:05", maker_readers,
                                       feed_readers)
+        _assert_maker_itunes_duration(0, 0, 5, "0:05", maker_readers,
+                                      feed_readers)
+        _assert_maker_itunes_duration_by_value(0, 5, 15, "315", maker_readers,
+                                               feed_readers)
+        _assert_maker_itunes_duration_by_value(1, 0, 1, "3601", maker_readers,
+                                               feed_readers)
 
-        _assert_maker_itunes_duration_invalid_value("5", maker_readers)
         _assert_maker_itunes_duration_invalid_value("09:07:14:05", maker_readers)
         _assert_maker_itunes_duration_invalid_value("10:5", maker_readers)
         _assert_maker_itunes_duration_invalid_value("10:03:5", maker_readers)
         _assert_maker_itunes_duration_invalid_value("10:3:05", maker_readers)
 
         _assert_maker_itunes_duration_invalid_value("xx:xx:xx", maker_readers)
+
+        _assert_maker_itunes_duration_invalid_value("", maker_readers)
       end
     end
 
@@ -280,10 +286,20 @@ module RSS
     def assert_maker_itunes_explicit(maker_readers, feed_readers=nil)
       _wrap_assertion do
         feed_readers ||= maker_readers
-        _assert_maker_itunes_explicit(true, "yes", maker_readers, feed_readers)
+        _assert_maker_itunes_explicit(true, "explicit",
+                                      maker_readers, feed_readers)
+        _assert_maker_itunes_explicit(true, "yes",
+                                      maker_readers, feed_readers)
+        _assert_maker_itunes_explicit(true, "true",
+                                      maker_readers, feed_readers)
         _assert_maker_itunes_explicit(false, "clean",
                                       maker_readers, feed_readers)
-        _assert_maker_itunes_explicit(nil, "no", maker_readers, feed_readers)
+        _assert_maker_itunes_explicit(false, "no",
+                                      maker_readers, feed_readers)
+        _assert_maker_itunes_explicit(false, "false",
+                                      maker_readers, feed_readers)
+        _assert_maker_itunes_explicit(nil, "invalid",
+                                      maker_readers, feed_readers)
       end
     end
 

@@ -1,6 +1,6 @@
 # coding: US-ASCII
-require 'test/unit'
-require 'logger'
+# frozen_string_literal: false
+require_relative 'helper'
 require 'tempfile'
 
 class TestLogger < Test::Unit::TestCase
@@ -69,6 +69,50 @@ class TestLogger < Test::Unit::TestCase
     assert(!@logger.fatal?)
   end
 
+  def test_symbol_level
+    logger_symbol_levels = {
+      debug:   DEBUG,
+      info:    INFO,
+      warn:    WARN,
+      error:   ERROR,
+      fatal:   FATAL,
+      unknown: UNKNOWN,
+      DEBUG:   DEBUG,
+      INFO:    INFO,
+      WARN:    WARN,
+      ERROR:   ERROR,
+      FATAL:   FATAL,
+      UNKNOWN: UNKNOWN,
+    }
+    logger_symbol_levels.each do |symbol, level|
+      @logger.level = symbol
+      assert(@logger.level == level)
+    end
+    assert_raise(ArgumentError) { @logger.level = :something_wrong }
+  end
+
+  def test_string_level
+    logger_string_levels = {
+      'debug'   => DEBUG,
+      'info'    => INFO,
+      'warn'    => WARN,
+      'error'   => ERROR,
+      'fatal'   => FATAL,
+      'unknown' => UNKNOWN,
+      'DEBUG'   => DEBUG,
+      'INFO'    => INFO,
+      'WARN'    => WARN,
+      'ERROR'   => ERROR,
+      'FATAL'   => FATAL,
+      'UNKNOWN' => UNKNOWN,
+    }
+    logger_string_levels.each do |string, level|
+      @logger.level = string
+      assert(@logger.level == level)
+    end
+    assert_raise(ArgumentError) { @logger.level = 'something_wrong' }
+  end
+
   def test_progname
     assert_nil(@logger.progname)
     @logger.progname = "name"
@@ -76,6 +120,7 @@ class TestLogger < Test::Unit::TestCase
   end
 
   def test_datetime_format
+    verbose, $VERBOSE = $VERBOSE, false
     dummy = STDERR
     logger = Logger.new(dummy)
     log = log_add(logger, INFO, "foo")
@@ -86,6 +131,8 @@ class TestLogger < Test::Unit::TestCase
     logger.datetime_format = ""
     log = log_add(logger, INFO, "foo")
     assert_match(/^$/, log.datetime)
+  ensure
+    $VERBOSE = verbose
   end
 
   def test_formatter
@@ -121,6 +168,54 @@ class TestLogger < Test::Unit::TestCase
     assert_nil(logger.datetime_format)
   end
 
+  def test_initialize_with_level
+    # default
+    logger = Logger.new(STDERR)
+    assert_equal(Logger::DEBUG, logger.level)
+    # config
+    logger = Logger.new(STDERR, level: :info)
+    assert_equal(Logger::INFO, logger.level)
+  end
+
+  def test_initialize_with_progname
+    # default
+    logger = Logger.new(STDERR)
+    assert_equal(nil, logger.progname)
+    # config
+    logger = Logger.new(STDERR, progname: :progname)
+    assert_equal(:progname, logger.progname)
+  end
+
+  def test_initialize_with_formatter
+    # default
+    logger = Logger.new(STDERR)
+    log = log(logger, :info, "foo")
+    assert_equal("foo\n", log.msg)
+    # config
+    logger = Logger.new(STDERR, formatter: proc { |severity, timestamp, progname, msg|
+      "#{severity}:#{msg}\n\n"
+    })
+    line = log_raw(logger, :info, "foo")
+    assert_equal("INFO:foo\n\n", line)
+  end
+
+  def test_initialize_with_datetime_format
+    # default
+    logger = Logger.new(STDERR)
+    log = log_add(logger, INFO, "foo")
+    assert_match(/^\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d.\s*\d+ $/, log.datetime)
+    # config
+    logger = Logger.new(STDERR, datetime_format: "%d%b%Y@%H:%M:%S")
+    log = log_add(logger, INFO, "foo")
+    assert_match(/^\d\d\w\w\w\d\d\d\d@\d\d:\d\d:\d\d$/, log.datetime)
+  end
+
+  def test_reopen
+    logger = Logger.new(STDERR)
+    logger.reopen(STDOUT)
+    assert_equal(STDOUT, logger.instance_variable_get(:@logdev).dev)
+  end
+
   def test_add
     logger = Logger.new(nil)
     logger.progname = "my_progname"
@@ -139,6 +234,33 @@ class TestLogger < Test::Unit::TestCase
     log = log_add(logger, WARN, nil, "progname?")
     assert_equal("progname?\n", log.msg)
     assert_equal("my_progname", log.progname)
+    #
+    logger = Logger.new(nil)
+    log = log_add(logger, INFO, nil, false)
+    assert_equal("false\n", log.msg)
+  end
+
+  def test_add_binary_data_with_binmode_logdev
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      begin
+        tempfile = Tempfile.new("logger")
+        tempfile.close
+        filename = tempfile.path
+        File.unlink(filename)
+
+        logger = Logger.new filename, binmode: true
+        logger.level = Logger::DEBUG
+
+        str = +"\x80"
+        str.force_encoding("ASCII-8BIT")
+
+        logger.add Logger::DEBUG, str
+        assert_equal(2, File.binread(filename).split(/\n/).size)
+      ensure
+        logger.close
+        tempfile.unlink
+      end
+    end
   end
 
   def test_level_log
@@ -226,7 +348,7 @@ class TestLogger < Test::Unit::TestCase
     r, w = IO.pipe
     logger = Logger.new(w)
     logger << "msg"
-    read_ready, = IO.select([r], nil, nil, 0.1)
+    IO.select([r], nil, nil, 0.1)
     w.close
     msg = r.read
     r.close
@@ -235,7 +357,7 @@ class TestLogger < Test::Unit::TestCase
     r, w = IO.pipe
     logger = Logger.new(w)
     logger << "msg2\n\n"
-    read_ready, = IO.select([r], nil, nil, 0.1)
+    IO.select([r], nil, nil, 0.1)
     w.close
     msg = r.read
     r.close

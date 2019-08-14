@@ -24,6 +24,9 @@ static void vm_analysis_insn(int insn);
 #elif defined(__GNUC__) && defined(__i386__)
 #define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("e" reg)
 
+#elif defined(__GNUC__) && defined(__powerpc64__)
+#define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("r" reg)
+
 #else
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 #endif
@@ -42,12 +45,12 @@ vm_stack_overflow_for_insn(void)
 
 #if !OPT_CALL_THREADED_CODE
 static VALUE
-vm_exec_core(rb_thread_t *th, VALUE initial)
+vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 {
 
 #if OPT_STACK_CACHING
 #if 0
-#elif __GNUC__ && __x86_64__ && !defined(__native_client__)
+#elif __GNUC__ && __x86_64__
     DECL_SC_REG(VALUE, a, "12");
     DECL_SC_REG(VALUE, b, "13");
 #else
@@ -57,22 +60,23 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #endif
 
 #if defined(__GNUC__) && defined(__i386__)
-    DECL_SC_REG(VALUE *, pc, "di");
+    DECL_SC_REG(const VALUE *, pc, "di");
     DECL_SC_REG(rb_control_frame_t *, cfp, "si");
 #define USE_MACHINE_REGS 1
 
 #elif defined(__GNUC__) && defined(__x86_64__)
-    DECL_SC_REG(VALUE *, pc, "14");
-# if defined(__native_client__)
-    DECL_SC_REG(rb_control_frame_t *, cfp, "13");
-# else
+    DECL_SC_REG(const VALUE *, pc, "14");
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
-# endif
+#define USE_MACHINE_REGS 1
+
+#elif defined(__GNUC__) && defined(__powerpc64__)
+    DECL_SC_REG(const VALUE *, pc, "14");
+    DECL_SC_REG(rb_control_frame_t *, cfp, "15");
 #define USE_MACHINE_REGS 1
 
 #else
     register rb_control_frame_t *reg_cfp;
-    VALUE *reg_pc;
+    const VALUE *reg_pc;
 #endif
 
 #if USE_MACHINE_REGS
@@ -80,25 +84,25 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #undef  RESTORE_REGS
 #define RESTORE_REGS() \
 { \
-  REG_CFP = th->cfp; \
+  VM_REG_CFP = ec->cfp; \
   reg_pc  = reg_cfp->pc; \
 }
 
-#undef  REG_PC
-#define REG_PC reg_pc
+#undef  VM_REG_PC
+#define VM_REG_PC reg_pc
 #undef  GET_PC
 #define GET_PC() (reg_pc)
 #undef  SET_PC
-#define SET_PC(x) (reg_cfp->pc = REG_PC = (x))
+#define SET_PC(x) (reg_cfp->pc = VM_REG_PC = (x))
 #endif
 
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 #include "vmtc.inc"
-    if (UNLIKELY(th == 0)) {
+    if (UNLIKELY(ec == 0)) {
 	return (VALUE)insns_address_table;
     }
 #endif
-    reg_cfp = th->cfp;
+    reg_cfp = ec->cfp;
     reg_pc = reg_cfp->pc;
 
 #if OPT_STACK_CACHING
@@ -136,26 +140,27 @@ rb_vm_get_insns_address_table(void)
 }
 
 static VALUE
-vm_exec_core(rb_thread_t *th, VALUE initial)
+vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 {
-    register rb_control_frame_t *reg_cfp = th->cfp;
+    register rb_control_frame_t *reg_cfp = ec->cfp;
+    rb_thread_t *th;
 
     while (1) {
-	reg_cfp = ((rb_insn_func_t) (*GET_PC()))(th, reg_cfp);
+	reg_cfp = ((rb_insn_func_t) (*GET_PC()))(ec, reg_cfp);
 
 	if (UNLIKELY(reg_cfp == 0)) {
 	    break;
 	}
     }
 
-    if (th->retval != Qundef) {
+    if ((th = rb_ec_thread_ptr(ec))->retval != Qundef) {
 	VALUE ret = th->retval;
 	th->retval = Qundef;
 	return ret;
     }
     else {
-	VALUE err = th->errinfo;
-	th->errinfo = Qnil;
+	VALUE err = ec->errinfo;
+	ec->errinfo = Qnil;
 	return err;
     }
 }

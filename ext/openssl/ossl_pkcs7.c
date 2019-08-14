@@ -1,64 +1,57 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
 
-#define WrapPKCS7(klass, obj, pkcs7) do { \
+#define NewPKCS7(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_pkcs7_type, 0)
+#define SetPKCS7(obj, pkcs7) do { \
     if (!(pkcs7)) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7 wasn't initialized."); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, PKCS7_free, (pkcs7)); \
+    RTYPEDDATA_DATA(obj) = (pkcs7); \
 } while (0)
 #define GetPKCS7(obj, pkcs7) do { \
-    Data_Get_Struct((obj), PKCS7, (pkcs7)); \
+    TypedData_Get_Struct((obj), PKCS7, &ossl_pkcs7_type, (pkcs7)); \
     if (!(pkcs7)) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7 wasn't initialized."); \
     } \
 } while (0)
-#define SafeGetPKCS7(obj, pkcs7) do { \
-    OSSL_Check_Kind((obj), cPKCS7); \
-    GetPKCS7((obj), (pkcs7)); \
-} while (0)
 
-#define WrapPKCS7si(klass, obj, p7si) do { \
+#define NewPKCS7si(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_pkcs7_signer_info_type, 0)
+#define SetPKCS7si(obj, p7si) do { \
     if (!(p7si)) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7si wasn't initialized."); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, PKCS7_SIGNER_INFO_free, (p7si)); \
+    RTYPEDDATA_DATA(obj) = (p7si); \
 } while (0)
 #define GetPKCS7si(obj, p7si) do { \
-    Data_Get_Struct((obj), PKCS7_SIGNER_INFO, (p7si)); \
+    TypedData_Get_Struct((obj), PKCS7_SIGNER_INFO, &ossl_pkcs7_signer_info_type, (p7si)); \
     if (!(p7si)) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7si wasn't initialized."); \
     } \
 } while (0)
-#define SafeGetPKCS7si(obj, p7si) do { \
-    OSSL_Check_Kind((obj), cPKCS7Signer); \
-    GetPKCS7si((obj), (p7si)); \
-} while (0)
 
-#define WrapPKCS7ri(klass, obj, p7ri) do { \
+#define NewPKCS7ri(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_pkcs7_recip_info_type, 0)
+#define SetPKCS7ri(obj, p7ri) do { \
     if (!(p7ri)) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7ri wasn't initialized."); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, PKCS7_RECIP_INFO_free, (p7ri)); \
+    RTYPEDDATA_DATA(obj) = (p7ri); \
 } while (0)
 #define GetPKCS7ri(obj, p7ri) do { \
-    Data_Get_Struct((obj), PKCS7_RECIP_INFO, (p7ri)); \
+    TypedData_Get_Struct((obj), PKCS7_RECIP_INFO, &ossl_pkcs7_recip_info_type, (p7ri)); \
     if (!(p7ri)) { \
 	ossl_raise(rb_eRuntimeError, "PKCS7ri wasn't initialized."); \
     } \
-} while (0)
-#define SafeGetPKCS7ri(obj, p7ri) do { \
-    OSSL_Check_Kind((obj), cPKCS7Recipient); \
-    GetPKCS7ri((obj), (p7ri)); \
 } while (0)
 
 #define numberof(ary) (int)(sizeof(ary)/sizeof((ary)[0]))
@@ -76,19 +69,78 @@ VALUE cPKCS7Signer;
 VALUE cPKCS7Recipient;
 VALUE ePKCS7Error;
 
+static void
+ossl_pkcs7_free(void *ptr)
+{
+    PKCS7_free(ptr);
+}
+
+static const rb_data_type_t ossl_pkcs7_type = {
+    "OpenSSL/PKCS7",
+    {
+	0, ossl_pkcs7_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+static void
+ossl_pkcs7_signer_info_free(void *ptr)
+{
+    PKCS7_SIGNER_INFO_free(ptr);
+}
+
+static const rb_data_type_t ossl_pkcs7_signer_info_type = {
+    "OpenSSL/PKCS7/SIGNER_INFO",
+    {
+	0, ossl_pkcs7_signer_info_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+static void
+ossl_pkcs7_recip_info_free(void *ptr)
+{
+    PKCS7_RECIP_INFO_free(ptr);
+}
+
+static const rb_data_type_t ossl_pkcs7_recip_info_type = {
+    "OpenSSL/PKCS7/RECIP_INFO",
+    {
+	0, ossl_pkcs7_recip_info_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 /*
  * Public
  * (MADE PRIVATE UNTIL SOMEBODY WILL NEED THEM)
  */
+static PKCS7_SIGNER_INFO *
+ossl_PKCS7_SIGNER_INFO_dup(const PKCS7_SIGNER_INFO *si)
+{
+    return (PKCS7_SIGNER_INFO *)ASN1_dup((i2d_of_void *)i2d_PKCS7_SIGNER_INFO,
+					 (d2i_of_void *)d2i_PKCS7_SIGNER_INFO,
+					 (char *)si);
+}
+
+static PKCS7_RECIP_INFO *
+ossl_PKCS7_RECIP_INFO_dup(const PKCS7_RECIP_INFO *si)
+{
+    return (PKCS7_RECIP_INFO *)ASN1_dup((i2d_of_void *)i2d_PKCS7_RECIP_INFO,
+					(d2i_of_void *)d2i_PKCS7_RECIP_INFO,
+					(char *)si);
+}
+
 static VALUE
 ossl_pkcs7si_new(PKCS7_SIGNER_INFO *p7si)
 {
     PKCS7_SIGNER_INFO *pkcs7;
     VALUE obj;
 
-    pkcs7 = p7si ? PKCS7_SIGNER_INFO_dup(p7si) : PKCS7_SIGNER_INFO_new();
+    obj = NewPKCS7si(cPKCS7Signer);
+    pkcs7 = p7si ? ossl_PKCS7_SIGNER_INFO_dup(p7si) : PKCS7_SIGNER_INFO_new();
     if (!pkcs7) ossl_raise(ePKCS7Error, NULL);
-    WrapPKCS7si(cPKCS7Signer, obj, pkcs7);
+    SetPKCS7si(obj, pkcs7);
 
     return obj;
 }
@@ -98,8 +150,8 @@ DupPKCS7SignerPtr(VALUE obj)
 {
     PKCS7_SIGNER_INFO *p7si, *pkcs7;
 
-    SafeGetPKCS7si(obj, p7si);
-    if (!(pkcs7 = PKCS7_SIGNER_INFO_dup(p7si))) {
+    GetPKCS7si(obj, p7si);
+    if (!(pkcs7 = ossl_PKCS7_SIGNER_INFO_dup(p7si))) {
 	ossl_raise(ePKCS7Error, NULL);
     }
 
@@ -112,9 +164,10 @@ ossl_pkcs7ri_new(PKCS7_RECIP_INFO *p7ri)
     PKCS7_RECIP_INFO *pkcs7;
     VALUE obj;
 
-    pkcs7 = p7ri ? PKCS7_RECIP_INFO_dup(p7ri) : PKCS7_RECIP_INFO_new();
+    obj = NewPKCS7ri(cPKCS7Recipient);
+    pkcs7 = p7ri ? ossl_PKCS7_RECIP_INFO_dup(p7ri) : PKCS7_RECIP_INFO_new();
     if (!pkcs7) ossl_raise(ePKCS7Error, NULL);
-    WrapPKCS7ri(cPKCS7Recipient, obj, pkcs7);
+    SetPKCS7ri(obj, pkcs7);
 
     return obj;
 }
@@ -124,8 +177,8 @@ DupPKCS7RecipientPtr(VALUE obj)
 {
     PKCS7_RECIP_INFO *p7ri, *pkcs7;
 
-    SafeGetPKCS7ri(obj, p7ri);
-    if (!(pkcs7 = PKCS7_RECIP_INFO_dup(p7ri))) {
+    GetPKCS7ri(obj, p7ri);
+    if (!(pkcs7 = ossl_PKCS7_RECIP_INFO_dup(p7ri))) {
 	ossl_raise(ePKCS7Error, NULL);
     }
 
@@ -143,13 +196,14 @@ ossl_pkcs7_s_read_smime(VALUE klass, VALUE arg)
     PKCS7 *pkcs7;
     VALUE ret, data;
 
-    in = ossl_obj2bio(arg);
+    ret = NewPKCS7(cPKCS7);
+    in = ossl_obj2bio(&arg);
     out = NULL;
     pkcs7 = SMIME_read_PKCS7(in, &out);
     BIO_free(in);
     if(!pkcs7) ossl_raise(ePKCS7Error, NULL);
     data = out ? ossl_membio2str(out) : Qnil;
-    WrapPKCS7(cPKCS7, ret, pkcs7);
+    SetPKCS7(ret, pkcs7);
     ossl_pkcs7_set_data(ret, data);
     ossl_pkcs7_set_err_string(ret, Qnil);
 
@@ -172,10 +226,10 @@ ossl_pkcs7_s_write_smime(int argc, VALUE *argv, VALUE klass)
     rb_scan_args(argc, argv, "12", &pkcs7, &data, &flags);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     if(NIL_P(data)) data = ossl_pkcs7_get_data(pkcs7);
-    SafeGetPKCS7(pkcs7, p7);
+    GetPKCS7(pkcs7, p7);
     if(!NIL_P(data) && PKCS7_is_detached(p7))
 	flg |= PKCS7_DETACHED;
-    in = NIL_P(data) ? NULL : ossl_obj2bio(data);
+    in = NIL_P(data) ? NULL : ossl_obj2bio(&data);
     if(!(out = BIO_new(BIO_s_mem()))){
         BIO_free(in);
         ossl_raise(ePKCS7Error, NULL);
@@ -211,7 +265,8 @@ ossl_pkcs7_s_sign(int argc, VALUE *argv, VALUE klass)
     x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
-    in = ossl_obj2bio(data);
+    ret = NewPKCS7(cPKCS7);
+    in = ossl_obj2bio(&data);
     if(NIL_P(certs)) x509s = NULL;
     else{
 	x509s = ossl_protect_x509_ary2sk(certs, &status);
@@ -225,7 +280,7 @@ ossl_pkcs7_s_sign(int argc, VALUE *argv, VALUE klass)
 	sk_X509_pop_free(x509s, X509_free);
 	ossl_raise(ePKCS7Error, NULL);
     }
-    WrapPKCS7(cPKCS7, ret, pkcs7);
+    SetPKCS7(ret, pkcs7);
     ossl_pkcs7_set_data(ret, data);
     ossl_pkcs7_set_err_string(ret, Qnil);
     BIO_free(in);
@@ -264,9 +319,10 @@ ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
 #endif
 
     }
-    else ciph = GetCipherPtr(cipher); /* NO NEED TO DUP */
+    else ciph = ossl_evp_get_cipherbyname(cipher);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
-    in = ossl_obj2bio(data);
+    ret = NewPKCS7(cPKCS7);
+    in = ossl_obj2bio(&data);
     x509s = ossl_protect_x509_ary2sk(certs, &status);
     if(status){
 	BIO_free(in);
@@ -278,7 +334,7 @@ ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
 	ossl_raise(ePKCS7Error, NULL);
     }
     BIO_free(in);
-    WrapPKCS7(cPKCS7, ret, p7);
+    SetPKCS7(ret, p7);
     ossl_pkcs7_set_data(ret, data);
     sk_X509_pop_free(x509s, X509_free);
 
@@ -291,10 +347,11 @@ ossl_pkcs7_alloc(VALUE klass)
     PKCS7 *pkcs7;
     VALUE obj;
 
+    obj = NewPKCS7(klass);
     if (!(pkcs7 = PKCS7_new())) {
 	ossl_raise(ePKCS7Error, NULL);
     }
-    WrapPKCS7(klass, obj, pkcs7);
+    SetPKCS7(obj, pkcs7);
 
     return obj;
 }
@@ -316,7 +373,7 @@ ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
     if(rb_scan_args(argc, argv, "01", &arg) == 0)
 	return self;
     arg = ossl_to_der_if_possible(arg);
-    in = ossl_obj2bio(arg);
+    in = ossl_obj2bio(&arg);
     p7 = PEM_read_bio_PKCS7(in, &pkcs, NULL, NULL);
     if (!p7) {
 	OSSL_BIO_reset(in);
@@ -345,7 +402,7 @@ ossl_pkcs7_copy(VALUE self, VALUE other)
     if (self == other) return self;
 
     GetPKCS7(self, a);
-    SafeGetPKCS7(other, b);
+    GetPKCS7(other, b);
 
     pkcs7 = PKCS7_dup(b);
     if (!pkcs7) {
@@ -362,9 +419,10 @@ ossl_pkcs7_sym2typeid(VALUE sym)
 {
     int i, ret = Qnil;
     const char *s;
+    size_t l;
 
-    static struct {
-        const char *name;
+    static const struct {
+        char name[20];
         int nid;
     } p7_type_tab[] = {
         { "signed",             NID_pkcs7_signed },
@@ -373,14 +431,16 @@ ossl_pkcs7_sym2typeid(VALUE sym)
         { "enveloped",          NID_pkcs7_enveloped },
         { "encrypted",          NID_pkcs7_encrypted },
         { "digest",             NID_pkcs7_digest },
-        { NULL,                 0 },
     };
 
-    if(TYPE(sym) == T_SYMBOL) s = rb_id2name(SYM2ID(sym));
-    else s = StringValuePtr(sym);
-    for(i = 0; i < numberof(p7_type_tab); i++){
-	if(p7_type_tab[i].name == NULL)
-	    ossl_raise(ePKCS7Error, "unknown type \"%s\"", s);
+    if (SYMBOL_P(sym)) sym = rb_sym2str(sym);
+    else StringValue(sym);
+    RSTRING_GETMEM(sym, s, l);
+
+    for(i = 0; ; i++){
+	if(i == numberof(p7_type_tab))
+	    ossl_raise(ePKCS7Error, "unknown type \"%"PRIsVALUE"\"", sym);
+	if(strlen(p7_type_tab[i].name) != l) continue;
 	if(strcmp(p7_type_tab[i].name, s) == 0){
 	    ret = p7_type_tab[i].nid;
 	    break;
@@ -465,7 +525,7 @@ ossl_pkcs7_set_cipher(VALUE self, VALUE cipher)
     PKCS7 *pkcs7;
 
     GetPKCS7(self, pkcs7);
-    if (!PKCS7_set_cipher(pkcs7, GetCipherPtr(cipher))) {
+    if (!PKCS7_set_cipher(pkcs7, ossl_evp_get_cipherbyname(cipher))) {
 	ossl_raise(ePKCS7Error, NULL);
     }
 
@@ -700,10 +760,12 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
     VALUE data;
     const char *msg;
 
+    GetPKCS7(self, p7);
     rb_scan_args(argc, argv, "22", &certs, &store, &indata, &flags);
+    x509st = GetX509StorePtr(store);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     if(NIL_P(indata)) indata = ossl_pkcs7_get_data(self);
-    in = NIL_P(indata) ? NULL : ossl_obj2bio(indata);
+    in = NIL_P(indata) ? NULL : ossl_obj2bio(&indata);
     if(NIL_P(certs)) x509s = NULL;
     else{
 	x509s = ossl_protect_x509_ary2sk(certs, &status);
@@ -712,8 +774,6 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
 	    rb_jump_tag(status);
 	}
     }
-    x509st = GetX509StorePtr(store);
-    GetPKCS7(self, p7);
     if(!(out = BIO_new(BIO_s_mem()))){
 	BIO_free(in);
 	sk_X509_pop_free(x509s, X509_free);
@@ -721,13 +781,13 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
     }
     ok = PKCS7_verify(p7, x509s, x509st, in, out, flg);
     BIO_free(in);
-    if (ok < 0) ossl_raise(ePKCS7Error, NULL);
-    msg = ERR_reason_error_string(ERR_get_error());
+    sk_X509_pop_free(x509s, X509_free);
+    if (ok < 0) ossl_raise(ePKCS7Error, "PKCS7_verify");
+    msg = ERR_reason_error_string(ERR_peek_error());
     ossl_pkcs7_set_err_string(self, msg ? rb_str_new2(msg) : Qnil);
-    ERR_clear_error();
+    ossl_clear_error();
     data = ossl_membio2str(out);
     ossl_pkcs7_set_data(self, data);
-    sk_X509_pop_free(x509s, X509_free);
 
     return (ok == 1) ? Qtrue : Qfalse;
 }
@@ -743,9 +803,9 @@ ossl_pkcs7_decrypt(int argc, VALUE *argv, VALUE self)
     BIO *out;
     VALUE str;
 
-    rb_scan_args(argc, argv, "21", &pkey, &cert, &flags);
+    rb_scan_args(argc, argv, "12", &pkey, &cert, &flags);
     key = GetPrivPKeyPtr(pkey); /* NO NEED TO DUP */
-    x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
+    x509 = NIL_P(cert) ? NULL : GetX509CertPtr(cert); /* NO NEED TO DUP */
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     GetPKCS7(self, p7);
     if(!(out = BIO_new(BIO_s_mem())))
@@ -767,12 +827,12 @@ ossl_pkcs7_add_data(VALUE self, VALUE data)
     char buf[4096];
     int len;
 
-    in = ossl_obj2bio(data);
     GetPKCS7(self, pkcs7);
     if(PKCS7_type_is_signed(pkcs7)){
 	if(!PKCS7_content_new(pkcs7, NID_pkcs7_data))
 	    ossl_raise(ePKCS7Error, NULL);
     }
+    in = ossl_obj2bio(&data);
     if(!(out = PKCS7_dataInit(pkcs7, NULL))) goto err;
     for(;;){
 	if((len = BIO_read(in, buf, sizeof(buf))) <= 0)
@@ -784,7 +844,7 @@ ossl_pkcs7_add_data(VALUE self, VALUE data)
     ossl_pkcs7_set_data(self, Qnil);
 
  err:
-    BIO_free(out);
+    BIO_free_all(out);
     BIO_free(in);
     if(ERR_peek_error()){
 	ossl_raise(ePKCS7Error, NULL);
@@ -842,10 +902,11 @@ ossl_pkcs7si_alloc(VALUE klass)
     PKCS7_SIGNER_INFO *p7si;
     VALUE obj;
 
+    obj = NewPKCS7si(klass);
     if (!(p7si = PKCS7_SIGNER_INFO_new())) {
 	ossl_raise(ePKCS7Error, NULL);
     }
-    WrapPKCS7si(klass, obj, p7si);
+    SetPKCS7si(obj, p7si);
 
     return obj;
 }
@@ -860,7 +921,7 @@ ossl_pkcs7si_initialize(VALUE self, VALUE cert, VALUE key, VALUE digest)
 
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
     x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
-    md = GetDigestPtr(digest);
+    md = ossl_evp_get_digestbyname(digest);
     GetPKCS7si(self, p7si);
     if (!(PKCS7_SIGNER_INFO_set(p7si, x509, pkey, (EVP_MD*)md))) {
 	ossl_raise(ePKCS7Error, NULL);
@@ -921,10 +982,11 @@ ossl_pkcs7ri_alloc(VALUE klass)
     PKCS7_RECIP_INFO *p7ri;
     VALUE obj;
 
+    obj = NewPKCS7ri(klass);
     if (!(p7ri = PKCS7_RECIP_INFO_new())) {
 	ossl_raise(ePKCS7Error, NULL);
     }
-    WrapPKCS7ri(klass, obj, p7ri);
+    SetPKCS7ri(obj, p7ri);
 
     return obj;
 }
@@ -978,8 +1040,14 @@ ossl_pkcs7ri_get_enc_key(VALUE self)
  * INIT
  */
 void
-Init_ossl_pkcs7()
+Init_ossl_pkcs7(void)
 {
+#undef rb_intern
+#if 0
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
+#endif
+
     cPKCS7 = rb_define_class_under(mOSSL, "PKCS7", rb_cObject);
     ePKCS7Error = rb_define_class_under(cPKCS7, "PKCS7Error", eOSSLError);
     rb_define_singleton_method(cPKCS7, "read_smime", ossl_pkcs7_s_read_smime, 1);
@@ -989,7 +1057,7 @@ Init_ossl_pkcs7()
     rb_attr(cPKCS7, rb_intern("data"), 1, 0, Qfalse);
     rb_attr(cPKCS7, rb_intern("error_string"), 1, 1, Qfalse);
     rb_define_alloc_func(cPKCS7, ossl_pkcs7_alloc);
-    rb_define_copy_func(cPKCS7, ossl_pkcs7_copy);
+    rb_define_method(cPKCS7, "initialize_copy", ossl_pkcs7_copy, 1);
     rb_define_method(cPKCS7, "initialize", ossl_pkcs7_initialize, -1);
     rb_define_method(cPKCS7, "type=", ossl_pkcs7_set_type, 1);
     rb_define_method(cPKCS7, "type", ossl_pkcs7_get_type, 0);

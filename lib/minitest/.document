@@ -1,2 +1,0 @@
-# Ignore README.txt, it is included in the minitest documentation.
-*.rb

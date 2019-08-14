@@ -1,6 +1,6 @@
+# frozen_string_literal: true
 begin
   require_relative 'helper'
-  require_relative '../ruby/envutil'
 rescue LoadError
 end
 
@@ -9,8 +9,6 @@ module Fiddle
     def dlwrap arg
       Fiddle.dlwrap arg
     end
-
-    include Test::Unit::Assertions
 
     def test_cptr_to_int
       null = Fiddle::NULL
@@ -35,7 +33,7 @@ module Fiddle
     end
 
     def test_to_str
-      str = "hello world"
+      str = Marshal.load(Marshal.dump("hello world"))
       ptr = Pointer[str]
 
       assert_equal 3, ptr.to_str(3).length
@@ -46,7 +44,7 @@ module Fiddle
     end
 
     def test_to_s
-      str = "hello world"
+      str = Marshal.load(Marshal.dump("hello world"))
       ptr = Pointer[str]
 
       assert_equal 3, ptr.to_s(3).length
@@ -106,7 +104,7 @@ module Fiddle
       ptr2 = Pointer.to_ptr Struct.new(:to_ptr).new(ptr)
       assert_equal ptr, ptr2
 
-      assert_raises(Fiddle::DLError) do
+      assert_raise(Fiddle::DLError) do
         Pointer.to_ptr Struct.new(:to_ptr).new(nil)
       end
     end
@@ -154,11 +152,7 @@ module Fiddle
     def test_free=
       assert_normal_exit(<<-"End", '[ruby-dev:39269]')
         require 'fiddle'
-        Fiddle::LIBC_SO = #{Fiddle::LIBC_SO.dump}
-        Fiddle::LIBM_SO = #{Fiddle::LIBM_SO.dump}
         include Fiddle
-        @libc = dlopen(LIBC_SO)
-        @libm = dlopen(LIBM_SO)
         free = Fiddle::Function.new(Fiddle::RUBY_FREE, [TYPE_VOIDP], TYPE_VOID)
         ptr = Fiddle::Pointer.malloc(4)
         ptr.free = free
@@ -202,7 +196,7 @@ module Fiddle
         assert_equal(str[0].ord, ptr[0])
         assert_equal(str[1].ord, ptr[1])
       }
-      str = 'abc'
+      str = Marshal.load(Marshal.dump('abc'))
       ptr = Pointer[str]
       check.call(str, ptr)
 
@@ -232,7 +226,7 @@ module Fiddle
     end
 
     def test_no_memory_leak
-      assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Pointer.allocate}', limit: 1.2, rss: true)
+      assert_no_memory_leak(%w[-W0 -rfiddle.so], '', '100_000.times {Fiddle::Pointer.allocate}', rss: true)
     end
   end
 end if defined?(Fiddle)

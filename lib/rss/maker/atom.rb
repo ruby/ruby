@@ -1,6 +1,7 @@
-require "rss/atom"
+# frozen_string_literal: false
+require_relative "../atom"
 
-require "rss/maker/base"
+require_relative "base"
 
 module RSS
   module Maker

@@ -1,0 +1,191 @@
+diff -ru libffi-3.2.1/src/x86/ffi.c libffi-3.2.1/src/x86/ffi.c
+--- libffi-3.2.1/src/x86/ffi.c	2014-11-08 21:47:24.000000000 +0900
++++ libffi-3.2.1/src/x86/ffi.c	2014-12-25 18:46:14.806761900 +0900
+@@ -99,11 +99,13 @@
+        i != 0;
+        i--, p_arg += dir, p_argv += dir)
+     {
++      size_t z;
++
+       /* Align if necessary */
+       if ((sizeof(void*) - 1) & (size_t) argp)
+         argp = (char *) ALIGN(argp, sizeof(void*));
+ 
+-      size_t z = (*p_arg)->size;
++      z = (*p_arg)->size;
+ 
+ #ifdef X86_WIN64
+       if (z > FFI_SIZEOF_ARG
+@@ -202,6 +204,7 @@
+      on top of stack, so that those can be moved to registers by call-handler.  */
+   if (stack_args_count > 0)
+     {
++      int i;
+       if (dir < 0 && stack_args_count > 1)
+         {
+           /* Reverse order if iterating arguments backwards */
+@@ -210,7 +213,6 @@
+           *(ffi_arg*) p_stack_data[stack_args_count - 1] = tmp;
+         }
+       
+-      int i;
+       for (i = 0; i < stack_args_count; i++)
+         {
+           if (p_stack_data[i] != argp2)
+@@ -569,11 +571,12 @@
+        i < cif->nargs && passed_regs < max_stack_count;
+        i++, p_arg++)
+     {
++      size_t sz;
+       if ((*p_arg)->type == FFI_TYPE_FLOAT
+          || (*p_arg)->type == FFI_TYPE_STRUCT)
+         continue;
+ 
+-      size_t sz = (*p_arg)->size;
++      sz = (*p_arg)->size;
+       if(sz == 0 || sz > FFI_SIZEOF_ARG)
+         continue;
+ 
+@@ -599,11 +602,13 @@
+        i != 0;
+        i--, p_arg += dir, p_argv += dir)
+     {
++      size_t z;
++
+       /* Align if necessary */
+       if ((sizeof(void*) - 1) & (size_t) argp)
+         argp = (char *) ALIGN(argp, sizeof(void*));
+ 
+-      size_t z = (*p_arg)->size;
++      z = (*p_arg)->size;
+ 
+ #ifdef X86_WIN64
+       if (z > FFI_SIZEOF_ARG
+@@ -642,7 +647,7 @@
+ #endif
+     }
+ 
+-  return (size_t)argp - (size_t)stack;
++  return (int)((size_t)argp - (size_t)stack);
+ }
+ 
+ #define FFI_INIT_TRAMPOLINE_WIN64(TRAMP,FUN,CTX,MASK) \
+@@ -855,11 +860,12 @@
+   
+   for (i = 0; i < cif->nargs && passed_regs <= max_regs; i++)
+     {
++      size_t sz;
+       if (cif->arg_types[i]->type == FFI_TYPE_FLOAT
+          || cif->arg_types[i]->type == FFI_TYPE_STRUCT)
+         continue;
+ 
+-      size_t sz = cif->arg_types[i]->size;
++      sz = cif->arg_types[i]->size;
+       if (sz == 0 || sz > FFI_SIZEOF_ARG)
+         continue;
+ 
+diff -ru libffi-3.2.1/src/x86/ffitarget.h libffi-3.2.1/src/x86/ffitarget.h
+--- libffi-3.2.1/src/x86/ffitarget.h	2014-11-08 21:47:24.000000000 +0900
++++ libffi-3.2.1/src/x86/ffitarget.h	2014-12-22 15:45:54.000000000 +0900
+@@ -50,7 +50,9 @@
+ #endif
+ 
+ #define FFI_TARGET_SPECIFIC_STACK_SPACE_ALLOCATION
++#ifndef _MSC_VER
+ #define FFI_TARGET_HAS_COMPLEX_TYPE
++#endif
+ 
+ /* ---- Generic type definitions ----------------------------------------- */
+ 
+diff -ru libffi-3.2.1/src/x86/win64.S libffi-3.2.1/src/x86/win64.S
+--- libffi-3.2.1/src/x86/win64.S	2014-11-08 21:47:24.000000000 +0900
++++ libffi-3.2.1/src/x86/win64.S	2014-12-22 16:14:40.000000000 +0900
+@@ -127,7 +127,7 @@
+ 
+ 	mov	rcx, QWORD PTR RVALUE[rbp]
+ 	mov	DWORD PTR [rcx], eax
+-	jmp	ret_void$
++	jmp	SHORT ret_void$
+ 
+ ret_struct2b$:
+  	cmp	DWORD PTR CIF_FLAGS[rbp], FFI_TYPE_SMALL_STRUCT_2B
+@@ -135,7 +135,7 @@
+ 
+ 	mov	rcx, QWORD PTR RVALUE[rbp]
+ 	mov	WORD PTR [rcx], ax
+-	jmp	ret_void$
++	jmp	SHORT ret_void$
+ 
+ ret_struct1b$:
+  	cmp	DWORD PTR CIF_FLAGS[rbp], FFI_TYPE_SMALL_STRUCT_1B
+@@ -143,7 +143,7 @@
+ 
+ 	mov	rcx, QWORD PTR RVALUE[rbp]
+ 	mov	BYTE PTR [rcx], al
+-	jmp	ret_void$
++	jmp	SHORT ret_void$
+ 
+ ret_uint8$:
+  	cmp	DWORD PTR CIF_FLAGS[rbp], FFI_TYPE_UINT8
+@@ -152,7 +152,7 @@
+ 	mov	rcx, QWORD PTR RVALUE[rbp]
+ 	movzx   rax, al
+ 	mov	QWORD PTR [rcx], rax
+-	jmp	ret_void$
++	jmp	SHORT ret_void$
+ 
+ ret_sint8$:
+  	cmp	DWORD PTR CIF_FLAGS[rbp], FFI_TYPE_SINT8
+@@ -161,7 +161,7 @@
+ 	mov	rcx, QWORD PTR RVALUE[rbp]
+ 	movsx   rax, al
+ 	mov	QWORD PTR [rcx], rax
+-	jmp	ret_void$
++	jmp	SHORT ret_void$
+ 
+ ret_uint16$:
+  	cmp	DWORD PTR CIF_FLAGS[rbp], FFI_TYPE_UINT16
+@@ -188,7 +188,13 @@
+ 	mov	rcx, QWORD PTR RVALUE[rbp]
+ 	mov     eax, eax
+ 	mov	QWORD PTR [rcx], rax
+-	jmp	SHORT ret_void$
++
++ret_void$:
++	xor	rax, rax
++
++	lea	rsp, QWORD PTR [rbp+16]
++	pop	rbp
++	ret	0
+ 
+ ret_sint32$:
+  	cmp	DWORD PTR CIF_FLAGS[rbp], FFI_TYPE_SINT32
+@@ -247,13 +253,6 @@
+ 	cdqe
+ 	mov	QWORD PTR [rcx], rax
+  	jmp	SHORT ret_void$
+-
+-ret_void$:
+-	xor	rax, rax
+-
+-	lea	rsp, QWORD PTR [rbp+16]
+-	pop	rbp
+-	ret	0
+ ffi_call_win64 ENDP
+ _TEXT	ENDS
+ END
+diff -ru libffi-3.2.1/include/ffi.h.in libffi-3.2.1/include/ffi.h.in
+--- libffi-3.2.1/include/ffi.h.in	2014-11-08 21:47:24.000000000 +0900
++++ libffi-3.2.1/include/ffi.h.in	2015-01-11 12:35:30.000000000 +0900
+@@ -103,6 +103,11 @@
+ #   undef  FFI_64_BIT_MAX
+ #   define FFI_64_BIT_MAX 9223372036854775807LL
+ #  endif
++#  ifdef _MSC_VER
++#   define FFI_LONG_LONG_MAX _I64_MAX
++#   undef  FFI_64_BIT_MAX
++#   define FFI_64_BIT_MAX 9223372036854775807I64
++#  endif
+ # endif
+ #endif
+ 

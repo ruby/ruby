@@ -1,10 +1,13 @@
 #!/usr/bin/env ruby
 
+# Gets the most recent revision of a file in a VCS-agnostic way.
+# Used by Doxygen, Makefiles and merger.rb.
+
 require 'optparse'
 
 # this file run with BASERUBY, which may be older than 1.9, so no
 # require_relative
-require File.expand_path('../vcs', __FILE__)
+require File.expand_path('../lib/vcs', __FILE__)
 
 Program = $0
 
@@ -16,7 +19,9 @@ def self.output=(output)
   @output = output
 end
 @suppress_not_found = false
+@limit = 20
 
+format = '%Y-%m-%dT%H:%M:%S%z'
 srcdir = nil
 parser = OptionParser.new {|opts|
   opts.on("--srcdir=PATH", "use PATH as source directory") do |path|
@@ -31,11 +36,62 @@ parser = OptionParser.new {|opts|
   opts.on("--doxygen", "Doxygen format") do
     self.output = :doxygen
   end
+  opts.on("--modified[=FORMAT]", "modified time") do |fmt|
+    self.output = :modified
+    format = fmt if fmt
+  end
+  opts.on("--limit=NUM", "limit branch name length (#@limit)", Integer) do |n|
+    @limit = n
+  end
   opts.on("-q", "--suppress_not_found") do
     @suppress_not_found = true
   end
 }
 parser.parse! rescue abort "#{File.basename(Program)}: #{$!}\n#{parser}"
+
+vcs = nil
+@output =
+  case @output
+  when :changed, nil
+    Proc.new {|last, changed|
+      changed
+    }
+  when :revision_h
+    Proc.new {|last, changed, modified, branch, title|
+      short = vcs.short_revision(last)
+      if /[^\x00-\x7f]/ =~ title and title.respond_to?(:force_encoding)
+        title = title.dup.force_encoding("US-ASCII")
+      end
+      [
+        "#define RUBY_REVISION #{short.inspect}",
+        ("#define RUBY_FULL_REVISION #{last.inspect}" unless short == last),
+        if branch
+          e = '..'
+          limit = @limit
+          name = branch.sub(/\A(.{#{limit-e.size}}).{#{e.size+1},}/o) {$1+e}
+          name = name.dump.sub(/\\#/, '#')
+          "#define RUBY_BRANCH_NAME #{name}"
+        end,
+        if title
+          title = title.dump.sub(/\\#/, '#')
+          "#define RUBY_LAST_COMMIT_TITLE #{title}"
+        end,
+        if modified
+          modified.utc.strftime('#define RUBY_RELEASE_DATETIME "%FT%TZ"')
+        end,
+      ].compact
+    }
+  when :doxygen
+    Proc.new {|last, changed|
+      "r#{changed}/r#{last}"
+    }
+  when :modified
+    Proc.new {|last, changed, modified|
+      modified.strftime(format)
+    }
+  else
+    raise "unknown output format `#{@output}'"
+  end
 
 srcdir ||= File.dirname(File.dirname(Program))
 begin
@@ -43,21 +99,15 @@ begin
 rescue VCS::NotFoundError => e
   abort "#{File.basename(Program)}: #{e.message}" unless @suppress_not_found
 else
-  begin
-    last, changed = vcs.get_revisions(ARGV.shift)
-  rescue => e
-    abort "#{File.basename(Program)}: #{e.message}" unless @suppress_not_found
-    exit false
+  ok = true
+  (ARGV.empty? ? [nil] : ARGV).each do |arg|
+    begin
+      puts @output[*vcs.get_revisions(arg)]
+    rescue => e
+      next if @suppress_not_found and VCS::NotFoundError === e
+      warn "#{File.basename(Program)}: #{e.message}"
+      ok = false
+    end
   end
-end
-
-case @output
-when :changed, nil
-  puts changed
-when :revision_h
-  puts "#define RUBY_REVISION #{changed.to_i}"
-when :doxygen
-  puts "r#{changed}/r#{last}"
-else
-  raise "unknown output format `#{@output}'"
+  exit ok
 end

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # OLEProperty
 # helper class of Property with arguments.
 class OLEProperty

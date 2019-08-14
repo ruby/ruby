@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # IO wrapper that creates digests of contents written to the IO it wraps.
 
@@ -30,7 +31,7 @@ class Gem::Package::DigestIO
   #   digests['SHA1'].hexdigest   #=> "aaf4c61d[...]"
   #   digests['SHA512'].hexdigest #=> "9b71d224[...]"
 
-  def self.wrap io, digests
+  def self.wrap(io, digests)
     digest_io = new io, digests
 
     yield digest_io
@@ -42,7 +43,7 @@ class Gem::Package::DigestIO
   # Creates a new DigestIO instance.  Using ::wrap is recommended, see the
   # ::wrap documentation for documentation of +io+ and +digests+.
 
-  def initialize io, digests
+  def initialize(io, digests)
     @io = io
     @digests = digests
   end
@@ -50,7 +51,7 @@ class Gem::Package::DigestIO
   ##
   # Writes +data+ to the underlying IO and updates the digests
 
-  def write data
+  def write(data)
     result = @io.write data
 
     @digests.each do |_, digest|
@@ -61,4 +62,3 @@ class Gem::Package::DigestIO
   end
 
 end
-

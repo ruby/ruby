@@ -1,8 +1,16 @@
+# frozen_string_literal: true
 #--
 # Methods for generating HTML, parsing CGI-related parameters, and
 # generating HTTP responses.
 #++
 class CGI
+  unless const_defined?(:Util)
+    module Util
+      @@accept_charset = "UTF-8" # :nodoc:
+    end
+    include Util
+    extend Util
+  end
 
   $CGI_ENV = ENV    # for FCGI support
 
@@ -145,7 +153,7 @@ class CGI
   #               "language"   => "ja",
   #               "expires"    => Time.now + 30,
   #               "cookie"     => [cookie1, cookie2],
-  #               "my_header1" => "my_value"
+  #               "my_header1" => "my_value",
   #               "my_header2" => "my_value")
   #
   # This method does not perform charset conversion.
@@ -181,7 +189,7 @@ class CGI
   alias :header :http_header
 
   def _header_for_string(content_type) #:nodoc:
-    buf = ''
+    buf = ''.dup
     if nph?()
       buf << "#{$CGI_ENV['SERVER_PROTOCOL'] || 'HTTP/1.0'} 200 OK#{EOL}"
       buf << "Date: #{CGI.rfc1123_date(Time.now)}#{EOL}"
@@ -197,7 +205,7 @@ class CGI
   private :_header_for_string
 
   def _header_for_hash(options)  #:nodoc:
-    buf = ''
+    buf = ''.dup
     ## add charset to option['type']
     options['type'] ||= 'text/html'
     charset = options.delete('charset')
@@ -259,7 +267,7 @@ class CGI
   def _header_for_modruby(buf)  #:nodoc:
     request = Apache::request
     buf.scan(/([^:]+): (.+)#{EOL}/o) do |name, value|
-      warn sprintf("name:%s value:%s\n", name, value) if $DEBUG
+      $stderr.printf("name:%s value:%s\n", name, value) if $DEBUG
       case name
       when 'Set-Cookie'
         request.headers_out.add(name, value)
@@ -367,14 +375,14 @@ class CGI
 
   # Parse an HTTP query string into a hash of key=>value pairs.
   #
-  #   params = CGI::parse("query_string")
+  #   params = CGI.parse("query_string")
   #     # {"name1" => ["value1", "value2", ...],
   #     #  "name2" => ["value1", "value2", ...], ... }
   #
-  def CGI::parse(query)
+  def self.parse(query)
     params = {}
     query.split(/[&;]/).each do |pairs|
-      key, value = pairs.split('=',2).collect{|v| CGI::unescape(v) }
+      key, value = pairs.split('=',2).collect{|v| CGI.unescape(v) }
 
       next unless key
 
@@ -388,9 +396,6 @@ class CGI
 
   # Maximum content length of post data
   ##MAX_CONTENT_LENGTH  = 2 * 1024 * 1024
-
-  # Maximum content length of multipart data
-  MAX_MULTIPART_LENGTH  = 128 * 1024 * 1024
 
   # Maximum number of request parameters when multipart
   MAX_MULTIPART_COUNT = 128
@@ -416,7 +421,7 @@ class CGI
   module QueryExtension
 
     %w[ CONTENT_LENGTH SERVER_PORT ].each do |env|
-      define_method(env.sub(/^HTTP_/, '').downcase) do
+      define_method(env.delete_prefix('HTTP_').downcase) do
         (val = env_table[env]) && Integer(val)
       end
     end
@@ -429,7 +434,7 @@ class CGI
         HTTP_ACCEPT HTTP_ACCEPT_CHARSET HTTP_ACCEPT_ENCODING
         HTTP_ACCEPT_LANGUAGE HTTP_CACHE_CONTROL HTTP_FROM HTTP_HOST
         HTTP_NEGOTIATE HTTP_PRAGMA HTTP_REFERER HTTP_USER_AGENT ].each do |env|
-      define_method(env.sub(/^HTTP_/, '').downcase) do
+      define_method(env.delete_prefix('HTTP_').downcase) do
         env_table[env]
       end
     end
@@ -482,8 +487,7 @@ class CGI
       @files = {}
       boundary_rexp = /--#{Regexp.quote(boundary)}(#{EOL}|--)/
       boundary_size = "#{EOL}--#{boundary}#{EOL}".bytesize
-      boundary_end  = nil
-      buf = ''
+      buf = ''.dup
       bufsize = 10 * 1024
       max_count = MAX_MULTIPART_COUNT
       n = 0
@@ -538,19 +542,19 @@ class CGI
         body.rewind
         ## original filename
         /Content-Disposition:.* filename=(?:"(.*?)"|([^;\r\n]*))/i.match(head)
-        filename = $1 || $2 || ''
+        filename = $1 || $2 || ''.dup
         filename = CGI.unescape(filename) if unescape_filename?()
         body.instance_variable_set(:@original_filename, filename.taint)
         ## content type
         /Content-Type: (.*)/i.match(head)
-        (content_type = $1 || '').chomp!
+        (content_type = $1 || ''.dup).chomp!
         body.instance_variable_set(:@content_type, content_type.taint)
         ## query parameter name
         /Content-Disposition:.* name=(?:"(.*?)"|([^;\r\n]*))/i.match(head)
         name = $1 || $2 || ''
         if body.original_filename.empty?
           value=body.read.dup.force_encoding(@accept_charset)
-          body.unlink if defined?(Tempfile) && body.kind_of?(Tempfile)
+          body.close! if defined?(Tempfile) && body.kind_of?(Tempfile)
           (params[name] ||= []) << value
           unless value.valid_encoding?
             if @accept_charset_error_block
@@ -578,7 +582,7 @@ class CGI
       if tempfiles
         tempfiles.each {|t|
           if t.path
-            t.unlink
+            t.close!
           end
         }
       end
@@ -592,7 +596,7 @@ class CGI
       else
         begin
           require 'stringio'
-          body = StringIO.new("".force_encoding(Encoding::ASCII_8BIT))
+          body = StringIO.new("".b)
         rescue LoadError
           require 'tempfile'
           body = Tempfile.new('CGI', encoding: Encoding::ASCII_8BIT)
@@ -644,14 +648,15 @@ class CGI
     # Reads query parameters in the @params field, and cookies into @cookies.
     def initialize_query()
       if ("POST" == env_table['REQUEST_METHOD']) and
-         %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|.match(env_table['CONTENT_TYPE'])
-        raise StandardError.new("too large multipart data.") if env_table['CONTENT_LENGTH'].to_i > MAX_MULTIPART_LENGTH
+        %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|.match(env_table['CONTENT_TYPE'])
+        current_max_multipart_length = @max_multipart_length.respond_to?(:call) ? @max_multipart_length.call : @max_multipart_length
+        raise StandardError.new("too large multipart data.") if env_table['CONTENT_LENGTH'].to_i > current_max_multipart_length
         boundary = $1.dup
         @multipart = true
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
       else
         @multipart = false
-        @params = CGI::parse(
+        @params = CGI.parse(
                     case env_table['REQUEST_METHOD']
                     when "GET", "HEAD"
                       if defined?(MOD_RUBY)
@@ -681,7 +686,7 @@ class CGI
         end
       end
 
-      @cookies = CGI::Cookie::parse((env_table['HTTP_COOKIE'] or env_table['COOKIE']))
+      @cookies = CGI::Cookie.parse((env_table['HTTP_COOKIE'] or env_table['COOKIE']))
     end
     private :initialize_query
 
@@ -702,7 +707,7 @@ class CGI
         if value
           return value
         elsif defined? StringIO
-          StringIO.new("".force_encoding(Encoding::ASCII_8BIT))
+          StringIO.new("".b)
         else
           Tempfile.new("CGI",encoding: Encoding::ASCII_8BIT)
         end
@@ -736,7 +741,7 @@ class CGI
   #
   #   CGI.accept_charset = "EUC-JP"
   #
-  @@accept_charset="UTF-8"
+  @@accept_charset="UTF-8" if false # needed for rdoc?
 
   # Return the accept character set for all new CGI instances.
   def self.accept_charset
@@ -751,6 +756,16 @@ class CGI
   # Return the accept character set for this CGI instance.
   attr_reader :accept_charset
 
+  # @@max_multipart_length is the maximum length of multipart data.
+  # The default value is 128 * 1024 * 1024 bytes
+  #
+  # The default can be set to something else in the CGI constructor,
+  # via the :max_multipart_length key in the option hash.
+  #
+  # See CGI.new documentation.
+  #
+  @@max_multipart_length= 128 * 1024 * 1024
+
   # Create a new CGI instance.
   #
   # :call-seq:
@@ -764,7 +779,7 @@ class CGI
   #   +options_hash+ form, since it also allows you specify the charset you
   #   will accept.
   # <tt>options_hash</tt>::
-  #   A Hash that recognizes two options:
+  #   A Hash that recognizes three options:
   #
   #   <tt>:accept_charset</tt>::
   #     specifies encoding of received query string.  If omitted,
@@ -793,6 +808,18 @@ class CGI
   #     "html4Fr":: HTML 4.0 with Framesets
   #     "html5":: HTML 5
   #
+  #   <tt>:max_multipart_length</tt>::
+  #     Specifies maximum length of multipart data. Can be an Integer scalar or
+  #     a lambda, that will be evaluated when the request is parsed. This
+  #     allows more complex logic to be set when determining whether to accept
+  #     multipart data (e.g. consult a registered users upload allowance)
+  #
+  #     Default is 128 * 1024 * 1024 bytes
+  #
+  #         cgi=CGI.new(:max_multipart_length => 268435456) # simple scalar
+  #
+  #         cgi=CGI.new(:max_multipart_length => -> {check_filesystem}) # lambda
+  #
   # <tt>block</tt>::
   #   If provided, the block is called when an invalid encoding is
   #   encountered. For example:
@@ -810,7 +837,10 @@ class CGI
   # CGI locations, which varies according to the REQUEST_METHOD.
   def initialize(options = {}, &block) # :yields: name, value
     @accept_charset_error_block = block_given? ? block : nil
-    @options={:accept_charset=>@@accept_charset}
+    @options={
+      :accept_charset=>@@accept_charset,
+      :max_multipart_length=>@@max_multipart_length
+    }
     case options
     when Hash
       @options.merge!(options)
@@ -818,6 +848,7 @@ class CGI
       @options[:tag_maker]=options
     end
     @accept_charset=@options[:accept_charset]
+    @max_multipart_length=@options[:max_multipart_length]
     if defined?(MOD_RUBY) && !ENV.key?("GATEWAY_INTERFACE")
       Apache.request.setup_cgi_env
     end
@@ -831,29 +862,27 @@ class CGI
 
     case @options[:tag_maker]
     when "html3"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html3
       extend HtmlExtension
     when "html4"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html4
       extend HtmlExtension
     when "html4Tr"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html4Tr
       extend HtmlExtension
     when "html4Fr"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html4Tr
       extend Html4Fr
       extend HtmlExtension
     when "html5"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html5
       extend HtmlExtension
     end
   end
 
 end   # class CGI
-
-

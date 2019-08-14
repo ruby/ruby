@@ -1,4 +1,5 @@
-require "rexml/child"
+# frozen_string_literal: false
+require_relative "../child"
 module REXML
   module DTD
     class AttlistDecl < Child

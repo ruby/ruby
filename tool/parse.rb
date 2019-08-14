@@ -1,3 +1,6 @@
+# Used as part of the "make parse" Makefile target.
+# See common.mk for details.
+
 $file = ARGV[0]
 $str  = ARGF.read.sub(/^__END__.*\z/m, '')
 puts '# ' + '-' * 70

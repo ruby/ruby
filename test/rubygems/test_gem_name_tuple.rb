@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/name_tuple'
 
@@ -33,5 +34,11 @@ class TestGemNameTuple < Gem::TestCase
     assert_equal "a-0.gemspec", n.spec_name
   end
 
-end
+  def test_spaceship
+    a   = Gem::NameTuple.new 'a', Gem::Version.new(0), Gem::Platform::RUBY
+    a_p = Gem::NameTuple.new 'a', Gem::Version.new(0), Gem::Platform.local
 
+    assert_equal 1, a_p.<=>(a)
+  end
+
+end

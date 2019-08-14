@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "socket"
   require "test/unit"
@@ -6,10 +8,19 @@ end
 
 
 class TestSocket_TCPSocket < Test::Unit::TestCase
+  def test_inspect
+    TCPServer.open("localhost", 0) {|server|
+      assert_match(/AF_INET/, server.inspect)
+      TCPSocket.open("localhost", server.addr[1]) {|client|
+        assert_match(/AF_INET/, client.inspect)
+      }
+    }
+  end
+
   def test_initialize_failure
     # These addresses are chosen from TEST-NET-1, TEST-NET-2, and TEST-NET-3.
     # [RFC 5737]
-    # They are choosen because probably they are not used as a host address.
+    # They are chosen because probably they are not used as a host address.
     # Anyway the addresses are used for bind() and should be failed.
     # So no packets should be generated.
     test_ip_addresses = [
@@ -45,36 +56,43 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_recvfrom
-    svr = TCPServer.new("localhost", 0)
-    th = Thread.new {
-      c = svr.accept
-      c.write "foo"
-      c.close
+    TCPServer.open("localhost", 0) {|svr|
+      th = Thread.new {
+        c = svr.accept
+        c.write "foo"
+        c.close
+      }
+      addr = svr.addr
+      TCPSocket.open(addr[3], addr[1]) {|sock|
+        assert_equal(["foo", nil], sock.recvfrom(0x10000))
+      }
+      th.join
     }
-    addr = svr.addr
-    sock = TCPSocket.open(addr[3], addr[1])
-    assert_equal(["foo", nil], sock.recvfrom(0x10000))
-  ensure
-    th.kill if th
-    th.join if th
   end
 
   def test_encoding
-    svr = TCPServer.new("localhost", 0)
-    th = Thread.new {
-      c = svr.accept
-      c.write "foo\r\n"
-      c.close
+    TCPServer.open("localhost", 0) {|svr|
+      th = Thread.new {
+        c = svr.accept
+        c.write "foo\r\n"
+        c.close
+      }
+      addr = svr.addr
+      TCPSocket.open(addr[3], addr[1]) {|sock|
+        assert_equal(true, sock.binmode?)
+        s = sock.gets
+        assert_equal("foo\r\n", s)
+        assert_equal(Encoding.find("ASCII-8BIT"), s.encoding)
+      }
+      th.join
     }
-    addr = svr.addr
-    sock = TCPSocket.open(addr[3], addr[1])
-    assert_equal(true, sock.binmode?)
-    s = sock.gets
-    assert_equal("foo\r\n", s)
-    assert_equal(Encoding.find("ASCII-8BIT"), s.encoding)
-  ensure
-    th.kill if th
-    th.join if th
-    sock.close if sock
+  end
+
+  def test_accept_nonblock
+    TCPServer.open("localhost", 0) {|svr|
+      assert_raise(IO::WaitReadable) { svr.accept_nonblock }
+      assert_equal :wait_readable, svr.accept_nonblock(exception: false)
+      assert_raise(IO::WaitReadable) { svr.accept_nonblock(exception: true) }
+    }
   end
 end if defined?(TCPSocket)

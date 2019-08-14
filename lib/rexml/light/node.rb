@@ -1,4 +1,5 @@
-require 'rexml/xmltokens'
+# frozen_string_literal: false
+require_relative '../xmltokens'
 
 # [ :element, parent, name, attributes, children* ]
   # a = Node.new

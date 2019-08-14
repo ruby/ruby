@@ -7,6 +7,7 @@ if "%1" == "" goto :end
     shift
     set dir=%dir:/=\%
     :rmdirs
+        if /%dir:~-2%/ == /\./ set dir=%dir:~0,-2%
         if not exist "%dir%\." goto :begin
         if "%dir%" == "." goto :begin
         if "%dir%" == ".." goto :begin

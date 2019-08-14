@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 =begin
 
 = net/https -- SSL/TLS enhancement for Net::HTTP.
@@ -13,10 +14,10 @@
   All rights reserved.
 
 == Licence
-  This program is licenced under the same licence as Ruby.
+  This program is licensed under the same licence as Ruby.
   (See the file 'LICENCE'.)
 
 =end
 
-require 'net/http'
+require_relative 'http'
 require 'openssl'

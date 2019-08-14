@@ -2948,7 +2948,7 @@ Tue Nov  5 03:31:23 2013  Koichi Sasada  <ko1@atdot.net>
 	  Young objects will be promoted to old objects after one GC.
 	  Old objects are not collect until major (full) GC.
 
-	  The issue of this approach is some objects can promoted as old
+	  The issue of this approach is some objects can promote as old
 	  objects accidentally and not freed until major GC.
 	  Major GC is not frequently so short-lived but accidentally becoming
 	  old objects are not freed.

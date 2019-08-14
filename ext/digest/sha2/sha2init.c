@@ -1,9 +1,12 @@
 /* $RoughId: sha2init.c,v 1.3 2001/07/13 20:00:43 knu Exp $ */
 /* $Id$ */
 
-#include "digest.h"
+#include <ruby/ruby.h>
+#include "../digest.h"
 #if defined(SHA2_USE_OPENSSL)
 #include "sha2ossl.h"
+#elif defined(SHA2_USE_COMMONDIGEST)
+#include "sha2cc.h"
 #else
 #include "sha2.h"
 #endif
@@ -29,7 +32,7 @@ FOREACH_BITLEN(DEFINE_ALGO_METADATA)
  * Standards and Technology), described in FIPS PUB 180-2.
  */
 void
-Init_sha2()
+Init_sha2(void)
 {
     VALUE mDigest, cDigest_Base;
     ID id_metadata;
@@ -41,7 +44,7 @@ Init_sha2()
 
     rb_require("digest");
 
-    id_metadata = rb_intern("metadata");
+    id_metadata = rb_intern_const("metadata");
 
     mDigest = rb_path2class("Digest");
     cDigest_Base = rb_path2class("Digest::Base");
@@ -50,7 +53,9 @@ Init_sha2()
     cDigest_SHA##bitlen = rb_define_class_under(mDigest, "SHA" #bitlen, cDigest_Base); \
 \
     rb_ivar_set(cDigest_SHA##bitlen, id_metadata, \
-      Data_Wrap_Struct(rb_cObject, 0, 0, (void *)&sha##bitlen));
+		Data_Wrap_Struct(0, 0, 0, (void *)&sha##bitlen));
 
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
     FOREACH_BITLEN(DEFINE_ALGO_CLASS)
 }

@@ -1,1 +1,12 @@
-win32ole.o : win32ole.c $(hdrdir)/ruby.h $(hdrdir)/config.h $(hdrdir)/defines.h
+WIN32OLE_HEADERS = $(HDRS) $(ruby_headers)
+win32ole.o : win32ole.c $(WIN32OLE_HEADERS)
+win32ole_variant_m.o : win32ole_variant_m.c $(WIN32OLE_HEADERS)
+win32ole_typelib.o : win32ole_typelib.c $(WIN32OLE_HEADERS)
+win32ole_type.o : win32ole_type.c $(WIN32OLE_HEADERS)
+win32ole_variable.o : win32ole_variable.c $(WIN32OLE_HEADERS)
+win32ole_method.o : win32ole_method.c $(WIN32OLE_HEADERS)
+win32ole_param.o : win32ole_param.c $(WIN32OLE_HEADERS)
+win32ole_variant.o : win32ole_variant.c $(WIN32OLE_HEADERS)
+win32ole_event.o : win32ole_event.c $(WIN32OLE_HEADERS)
+win32ole_record.o : win32ole_record.c $(WIN32OLE_HEADERS)
+win32ole_error.o : win32ole_error.c $(WIN32OLE_HEADERS)

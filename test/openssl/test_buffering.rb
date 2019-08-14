@@ -1,8 +1,9 @@
+# frozen_string_literal: false
 require_relative 'utils'
-require 'stringio'
 
-class OpenSSL::TestBuffering < Test::Unit::TestCase
+if defined?(OpenSSL)
 
+class OpenSSL::TestBuffering < OpenSSL::TestCase
   class IO
     include OpenSSL::Buffering
 
@@ -36,36 +37,37 @@ class OpenSSL::TestBuffering < Test::Unit::TestCase
   end
 
   def setup
+    super
     @io = IO.new
   end
 
   def test_flush
     @io.write 'a'
 
-    refute @io.sync
+    assert_not_predicate @io, :sync
     assert_empty @io.string
 
     assert_equal @io, @io.flush
 
-    refute @io.sync
+    assert_not_predicate @io, :sync
     assert_equal 'a', @io.string
   end
 
   def test_flush_error
     @io.write 'a'
 
-    refute @io.sync
+    assert_not_predicate @io, :sync
     assert_empty @io.string
 
     def @io.syswrite *a
       raise SystemCallError, 'fail'
     end
 
-    assert_raises SystemCallError do
+    assert_raise SystemCallError do
       @io.flush
     end
 
-    refute @io.sync, 'sync must not change'
+    assert_not_predicate @io, :sync, 'sync must not change'
   end
 
   def test_getc
@@ -83,5 +85,6 @@ class OpenSSL::TestBuffering < Test::Unit::TestCase
     end
     assert_equal([97, 98, 99], res)
   end
+end
 
-end if defined?(OpenSSL)
+end

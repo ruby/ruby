@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 class CGI
   # Base module for HTML-generation mixins.
   #
@@ -25,14 +26,14 @@ class CGI
     #   - O EMPTY
     def nOE_element(element, attributes = {})
       attributes={attributes=>nil} if attributes.kind_of?(String)
-      s = "<#{element.upcase}"
+      s = "<#{element.upcase}".dup
       attributes.each do|name, value|
         next unless value
         s << " "
-        s << CGI::escapeHTML(name.to_s)
+        s << CGI.escapeHTML(name.to_s)
         if value != true
           s << '="'
-          s << CGI::escapeHTML(value.to_s)
+          s << CGI.escapeHTML(value.to_s)
           s << '"'
         end
       end
@@ -407,7 +408,7 @@ class CGI
       end
       pretty = attributes.delete("PRETTY")
       pretty = "  " if true == pretty
-      buf = ""
+      buf = "".dup
 
       if attributes.has_key?("DOCTYPE")
         if attributes["DOCTYPE"]
@@ -422,7 +423,7 @@ class CGI
       buf << super(attributes)
 
       if pretty
-        CGI::pretty(buf, pretty)
+        CGI.pretty(buf, pretty)
       else
         buf
       end

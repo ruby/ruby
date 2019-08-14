@@ -1,5 +1,6 @@
 # coding: US-ASCII
-require 'rexml/encoding'
+# frozen_string_literal: false
+require_relative 'encoding'
 
 module REXML
   # Generates Source-s.  USE THIS CLASS.
@@ -185,7 +186,7 @@ module REXML
       # You'll notice that this next section is very similar to the same
       # section in match(), but just a liiittle different.  This is
       # because it is a touch faster to do it this way with scan()
-      # than the way match() does it; enough faster to warrent duplicating
+      # than the way match() does it; enough faster to warrant duplicating
       # some code
       if rv.size == 0
         until @buffer =~ pattern or @source.nil?
@@ -253,6 +254,7 @@ module REXML
           end
         rescue
         end
+        @er_source.seek(pos)
       rescue IOError
         pos = -1
         line = -1
@@ -285,7 +287,7 @@ module REXML
       case @encoding
       when "UTF-16BE", "UTF-16LE"
         @source.binmode
-        @source.set_encoding(@encoding)
+        @source.set_encoding(@encoding, @encoding)
       end
       @line_break = encode(">")
       @pending_buffer, @buffer = @buffer, ""

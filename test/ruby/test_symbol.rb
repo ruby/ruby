@@ -1,5 +1,5 @@
+# frozen_string_literal: false
 require 'test/unit'
-require_relative 'envutil'
 
 class TestSymbol < Test::Unit::TestCase
   # [ruby-core:3573]
@@ -11,6 +11,19 @@ class TestSymbol < Test::Unit::TestCase
       assert_not_match(/\A:"/, n, bug5136)
     end
     assert_nothing_raised(SyntaxError) {assert_equal(sym, eval(n))}
+  end
+
+  def test_intern
+    assert_equal(':""', ''.intern.inspect)
+    assert_equal(':$foo', '$foo'.intern.inspect)
+    assert_equal(':"!foo"', '!foo'.intern.inspect)
+    assert_equal(':"foo=="', "foo==".intern.inspect)
+  end
+
+  def test_all_symbols
+    x = Symbol.all_symbols
+    assert_kind_of(Array, x)
+    assert_empty(x.reject {|s| s.is_a?(Symbol) })
   end
 
   def test_inspect_invalid
@@ -107,6 +120,129 @@ class TestSymbol < Test::Unit::TestCase
     end
   end
 
+  def test_to_proc_yield
+    assert_ruby_status([], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 5.0)
+    begin;
+      GC.stress = true
+      true.tap(&:itself)
+    end;
+  end
+
+  def test_to_proc_new_proc
+    assert_ruby_status([], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 5.0)
+    begin;
+      GC.stress = true
+      2.times {Proc.new(&:itself)}
+    end;
+  end
+
+  def test_to_proc_no_method
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 5.0)
+    begin;
+      bug11566 = '[ruby-core:70980] [Bug #11566]'
+      assert_raise(NoMethodError, bug11566) {Proc.new(&:foo).(1)}
+      assert_raise(NoMethodError, bug11566) {:foo.to_proc.(1)}
+    end;
+  end
+
+  def test_to_proc_arg
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 5.0)
+    begin;
+      def (obj = Object.new).proc(&b) b; end
+      assert_same(:itself.to_proc, obj.proc(&:itself))
+    end;
+  end
+
+  def test_to_proc_call_with_symbol_proc
+    first = 1
+    bug11594 = "[ruby-core:71088] [Bug #11594] corrupted the first local variable"
+    # symbol which does not have a Proc
+    ->(&blk) {}.call(&:test_to_proc_call_with_symbol_proc)
+    assert_equal(1, first, bug11594)
+  end
+
+  class TestToPRocArgWithRefinements; end
+  def _test_to_proc_arg_with_refinements_call(&block)
+    block.call TestToPRocArgWithRefinements.new
+  end
+  using Module.new {
+    refine TestToPRocArgWithRefinements do
+      def hoge
+        :hoge
+      end
+    end
+  }
+  def test_to_proc_arg_with_refinements
+    assert_equal(:hoge, _test_to_proc_arg_with_refinements_call(&:hoge))
+  end
+
+  def self._test_to_proc_arg_with_refinements_call(&block)
+    block.call TestToPRocArgWithRefinements.new
+  end
+  _test_to_proc_arg_with_refinements_call(&:hoge)
+  using Module.new {
+    refine TestToPRocArgWithRefinements do
+      def hoge
+        :hogehoge
+      end
+    end
+  }
+  def test_to_proc_arg_with_refinements_override
+    assert_equal(:hogehoge, _test_to_proc_arg_with_refinements_call(&:hoge))
+  end
+
+  def test_to_proc_arg_with_refinements_undefined
+    assert_raise(NoMethodError) do
+      _test_to_proc_arg_with_refinements_call(&:foo)
+    end
+  end
+
+  private def return_from_proc
+    Proc.new { return 1 }.tap(&:call)
+  end
+
+  def test_return_from_symbol_proc
+    bug12462 = '[ruby-core:75856] [Bug #12462]'
+    assert_equal(1, return_from_proc, bug12462)
+  end
+
+  def test_to_proc_for_hash_each
+    bug11830 = '[ruby-core:72205] [Bug #11830]'
+    assert_normal_exit("#{<<-"begin;"}\n#{<<-'end;'}", bug11830)
+    begin;
+      {}.each(&:destroy)
+    end;
+  end
+
+  def test_to_proc_iseq
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}", timeout: 5)
+    begin;
+      bug11845 = '[ruby-core:72381] [Bug #11845]'
+      assert_nil(:class.to_proc.source_location, bug11845)
+      assert_equal([[:rest]], :class.to_proc.parameters, bug11845)
+      c = Class.new {define_method(:klass, :class.to_proc)}
+      m = c.instance_method(:klass)
+      assert_nil(m.source_location, bug11845)
+      assert_equal([[:rest]], m.parameters, bug11845)
+    end;
+  end
+
+  def test_to_proc_binding
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}", timeout: 5)
+    begin;
+      bug12137 = '[ruby-core:74100] [Bug #12137]'
+      assert_raise(ArgumentError, bug12137) {
+        :succ.to_proc.binding
+      }
+    end;
+  end
+
+  def test_to_proc_instance_exec
+    bug = '[ruby-core:78839] [Bug #13074] should evaluate on the argument'
+    assert_equal(2, BasicObject.new.instance_exec(1, &:succ), bug)
+    assert_equal(3, BasicObject.new.instance_exec(1, 2, &:+), bug)
+  end
+
   def test_call
     o = Object.new
     def o.foo(x, y); x + y; end
@@ -142,6 +278,35 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal([false, false], m2.call(self, m2), "#{bug8531} nested without block")
   end
 
+  def test_block_curry_proc
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+    b = proc { true }.curry
+    assert(b.call, "without block")
+    assert(b.call { |o| o.to_s }, "with block")
+    assert(b.call(&:to_s), "with sym block")
+    end;
+  end
+
+  def test_block_curry_lambda
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+    b = lambda { true }.curry
+    assert(b.call, "without block")
+    assert(b.call { |o| o.to_s }, "with block")
+    assert(b.call(&:to_s), "with sym block")
+    end;
+  end
+
+  def test_block_method_to_proc
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+    b = method(:tap).to_proc
+    assert(b.call { |o| o.to_s }, "with block")
+    assert(b.call(&:to_s), "with sym block")
+    end;
+  end
+
   def test_succ
     assert_equal(:fop, :foo.succ)
   end
@@ -157,7 +322,19 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(0, :FoO.casecmp(:fOO))
     assert_equal(1, :FoO.casecmp(:BaR))
     assert_equal(-1, :baR.casecmp(:FoO))
+
     assert_nil(:foo.casecmp("foo"))
+    assert_nil(:foo.casecmp(Object.new))
+  end
+
+  def test_casecmp?
+    assert_equal(true, :FoO.casecmp?(:fOO))
+    assert_equal(false, :FoO.casecmp?(:BaR))
+    assert_equal(false, :baR.casecmp?(:FoO))
+    assert_equal(true, :äöü.casecmp?(:ÄÖÜ))
+
+    assert_nil(:foo.casecmp?("foo"))
+    assert_nil(:foo.casecmp?(Object.new))
   end
 
   def test_length
@@ -177,7 +354,73 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(:fOo, :FoO.swapcase)
   end
 
-  def test_symbol_poped
+  def test_MATCH # '=~'
+    assert_equal(10,  :"FeeFieFoo-Fum" =~ /Fum$/)
+    assert_equal(nil, "FeeFieFoo-Fum" =~ /FUM$/)
+
+    o = Object.new
+    def o.=~(x); x + "bar"; end
+    assert_equal("foobar", :"foo" =~ o)
+
+    assert_raise(TypeError) { :"foo" =~ "foo" }
+  end
+
+  def test_match_method
+    assert_equal("bar", :"foobarbaz".match(/bar/).to_s)
+
+    o = Regexp.new('foo')
+    def o.match(x, y, z); x + y + z; end
+    assert_equal("foobarbaz", :"foo".match(o, "bar", "baz"))
+    x = nil
+    :"foo".match(o, "bar", "baz") {|y| x = y }
+    assert_equal("foobarbaz", x)
+
+    assert_raise(ArgumentError) { :"foo".match }
+  end
+
+  def test_match_p_regexp
+    /backref/ =~ 'backref'
+    # must match here, but not in a separate method, e.g., assert_send,
+    # to check if $~ is affected or not.
+    assert_equal(true, "".match?(//))
+    assert_equal(true, :abc.match?(/.../))
+    assert_equal(true, 'abc'.match?(/b/))
+    assert_equal(true, 'abc'.match?(/b/, 1))
+    assert_equal(true, 'abc'.match?(/../, 1))
+    assert_equal(true, 'abc'.match?(/../, -2))
+    assert_equal(false, 'abc'.match?(/../, -4))
+    assert_equal(false, 'abc'.match?(/../, 4))
+    assert_equal(true, ("\u3042" + '\x').match?(/../, 1))
+    assert_equal(true, ''.match?(/\z/))
+    assert_equal(true, 'abc'.match?(/\z/))
+    assert_equal(true, 'Ruby'.match?(/R.../))
+    assert_equal(false, 'Ruby'.match?(/R.../, 1))
+    assert_equal(false, 'Ruby'.match?(/P.../))
+    assert_equal('backref', $&)
+  end
+
+  def test_match_p_string
+    /backref/ =~ 'backref'
+    # must match here, but not in a separate method, e.g., assert_send,
+    # to check if $~ is affected or not.
+    assert_equal(true, "".match?(''))
+    assert_equal(true, :abc.match?('...'))
+    assert_equal(true, 'abc'.match?('b'))
+    assert_equal(true, 'abc'.match?('b', 1))
+    assert_equal(true, 'abc'.match?('..', 1))
+    assert_equal(true, 'abc'.match?('..', -2))
+    assert_equal(false, 'abc'.match?('..', -4))
+    assert_equal(false, 'abc'.match?('..', 4))
+    assert_equal(true, ("\u3042" + '\x').match?('..', 1))
+    assert_equal(true, ''.match?('\z'))
+    assert_equal(true, 'abc'.match?('\z'))
+    assert_equal(true, 'Ruby'.match?('R...'))
+    assert_equal(false, 'Ruby'.match?('R...', 1))
+    assert_equal(false, 'Ruby'.match?('P...'))
+    assert_equal('backref', $&)
+  end
+
+  def test_symbol_popped
     assert_nothing_raised { eval('a = 1; :"#{ a }"; 1') }
   end
 
@@ -193,11 +436,40 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(Encoding::US_ASCII, "$-A".force_encoding("iso-8859-15").intern.encoding)
     assert_equal(Encoding::US_ASCII, "foobar~!".force_encoding("iso-8859-15").intern.encoding)
     assert_equal(Encoding::UTF_8, "\u{2192}".intern.encoding)
-    assert_raise(EncodingError) {"\xb0a".force_encoding("utf-8").intern}
+    assert_raise_with_message(EncodingError, /\\xb0/i) {"\xb0a".force_encoding("utf-8").intern}
   end
 
   def test_singleton_method
     assert_raise(TypeError) { a = :foo; def a.foo; end }
+  end
+
+  SymbolsForEval = [
+    :foo,
+    "dynsym_#{Random.rand(10000)}_#{Time.now}".to_sym
+  ]
+
+  def test_instance_eval
+    bug11086 = '[ruby-core:68961] [Bug #11086]'
+    SymbolsForEval.each do |sym|
+      assert_nothing_raised(TypeError, sym, bug11086) {
+        sym.instance_eval {}
+      }
+      assert_raise(TypeError, sym, bug11086) {
+        sym.instance_eval {def foo; end}
+      }
+    end
+  end
+
+  def test_instance_exec
+    bug11086 = '[ruby-core:68961] [Bug #11086]'
+    SymbolsForEval.each do |sym|
+      assert_nothing_raised(TypeError, sym, bug11086) {
+        sym.instance_exec {}
+      }
+      assert_raise(TypeError, sym, bug11086) {
+        sym.instance_exec {def foo; end}
+      }
+    end
   end
 
   def test_frozen_symbol
@@ -208,17 +480,87 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(true, :foo.to_sym.frozen?)
   end
 
-  def test_sym_find
-    assert_separately(%w[--disable=gems], <<-"end;")
-      assert_equal :intern, Symbol.find("intern")
-      assert_raise(TypeError){ Symbol.find(true) }
+  def test_symbol_gc_1
+    assert_normal_exit('".".intern;GC.start(immediate_sweep:false);eval %[GC.start;".".intern]',
+                       '',
+                       child_env: '--disable-gems')
+    assert_normal_exit('".".intern;GC.start(immediate_sweep:false);eval %[GC.start;:"."]',
+                       '',
+                       child_env: '--disable-gems')
+    assert_normal_exit('".".intern;GC.start(immediate_sweep:false);eval %[GC.start;%i"."]',
+                       '',
+                       child_env: '--disable-gems')
+    assert_normal_exit('tap{".".intern};GC.start(immediate_sweep:false);' +
+                       'eval %[syms=Symbol.all_symbols;GC.start;syms.each(&:to_sym)]',
+                       '',
+                       child_env: '--disable-gems')
+  end
 
-      str = "__noexistent__"
-      assert_equal nil, Symbol.find(str)
-      assert_equal nil, Symbol.find(str)
-      sym = str.intern
-      assert_equal str, sym.to_s
-      assert_equal sym, Symbol.find(str)
+  def test_dynamic_attrset_id
+    bug10259 = '[ruby-dev:48559] [Bug #10259]'
+    class << (obj = Object.new)
+      attr_writer :unagi
+    end
+    assert_nothing_raised(NoMethodError, bug10259) {obj.send("unagi=".intern, 1)}
+  end
+
+  def test_symbol_fstr_leak
+    bug10686 = '[ruby-core:67268] [Bug #10686]'
+    x = x = 0
+    assert_no_memory_leak([], '200_000.times { |i| i.to_s.to_sym }; GC.start', "#{<<-"begin;"}\n#{<<-"end;"}", bug10686, limit: 1.71, rss: true, timeout: 20)
+    begin;
+      200_000.times { |i| (i + 200_000).to_s.to_sym }
     end;
+  end
+
+  def test_hash_redefinition
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      bug11035 = '[ruby-core:68767] [Bug #11035]'
+      class Symbol
+        def hash
+          raise
+        end
+      end
+
+      h = {}
+      assert_nothing_raised(RuntimeError, bug11035) {
+        h[:foo] = 1
+      }
+      assert_nothing_raised(RuntimeError, bug11035) {
+        h['bar'.to_sym] = 2
+      }
+    end;
+  end
+
+  def test_not_freeze
+    bug11721 = '[ruby-core:71611] [Bug #11721]'
+    str = "\u{1f363}".taint
+    assert_not_predicate(str, :frozen?)
+    assert_equal str, str.to_sym.to_s
+    assert_not_predicate(str, :frozen?, bug11721)
+  end
+
+  def test_hash_nondeterministic
+    ruby = EnvUtil.rubybin
+    assert_not_equal :foo.hash, `#{ruby} -e 'puts :foo.hash'`.to_i,
+                     '[ruby-core:80430] [Bug #13376]'
+
+    sym = "dynsym_#{Random.rand(10000)}_#{Time.now}"
+    assert_not_equal sym.to_sym.hash,
+                     `#{ruby} -e 'puts #{sym.inspect}.to_sym.hash'`.to_i
+  end
+
+  def test_eq_can_be_redefined
+    assert_in_out_err([], <<-RUBY, ["foo"], [])
+      class Symbol
+        remove_method :==
+        def ==(obj)
+          "foo"
+        end
+      end
+
+      puts :a == :a
+    RUBY
   end
 end

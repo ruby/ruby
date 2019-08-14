@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'psych/helper'
 
 module Psych
@@ -65,7 +66,7 @@ module Psych
         @stream.push list
 
         json = @io.string
-        assert_match(/]$/, json)
+        assert_match(/\]$/, json)
         assert_match(/^--- \[/, json)
         assert_match(/["]one["]/, json)
         assert_match(/["]two["]/, json)

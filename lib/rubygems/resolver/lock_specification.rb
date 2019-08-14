@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # The LockSpecification comes from a lockfile (Gem::RequestSet::Lockfile).
 #
@@ -6,13 +7,16 @@
 
 class Gem::Resolver::LockSpecification < Gem::Resolver::Specification
 
-  def initialize set, name, version, source, platform
+  attr_reader :sources
+
+  def initialize(set, name, version, sources, platform)
     super()
 
     @name     = name
     @platform = platform
     @set      = set
-    @source   = source
+    @source   = sources.first
+    @sources  = sources
     @version  = version
 
     @dependencies = []
@@ -23,10 +27,10 @@ class Gem::Resolver::LockSpecification < Gem::Resolver::Specification
   # This is a null install as a locked specification is considered installed.
   # +options+ are ignored.
 
-  def install options
+  def install(options = {})
     destination = options[:install_dir] || Gem.dir
 
-    if File.exist? File.join(destination, 'specifications', spec.spec_name) then
+    if File.exist? File.join(destination, 'specifications', spec.spec_name)
       yield nil
       return
     end
@@ -37,14 +41,40 @@ class Gem::Resolver::LockSpecification < Gem::Resolver::Specification
   ##
   # Adds +dependency+ from the lockfile to this specification
 
-  def add_dependency dependency # :nodoc:
+  def add_dependency(dependency) # :nodoc:
     @dependencies << dependency
+  end
+
+  def pretty_print(q) # :nodoc:
+    q.group 2, '[LockSpecification', ']' do
+      q.breakable
+      q.text "name: #{@name}"
+
+      q.breakable
+      q.text "version: #{@version}"
+
+      unless @platform == Gem::Platform::RUBY
+        q.breakable
+        q.text "platform: #{@platform}"
+      end
+
+      unless @dependencies.empty?
+        q.breakable
+        q.text 'dependencies:'
+        q.breakable
+        q.pp @dependencies
+      end
+    end
   end
 
   ##
   # A specification constructed from the lockfile is returned
 
   def spec
+    @spec ||= Gem::Specification.find do |spec|
+      spec.name == @name and spec.version == @version
+    end
+
     @spec ||= Gem::Specification.new do |s|
       s.name     = @name
       s.version  = @version
@@ -55,4 +85,3 @@ class Gem::Resolver::LockSpecification < Gem::Resolver::Specification
   end
 
 end
-

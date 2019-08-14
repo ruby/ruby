@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require '-test-/debug'
 
@@ -25,12 +26,12 @@ class TestProfileFrames < Test::Unit::TestCase
     }.resume
 
     labels = [
-      "block (2 levels) in test_profile_frames",
+      "test_profile_frames",
       "zab",
       "baz",
       "bar",
       "foo",
-      "block in test_profile_frames",
+      "test_profile_frames",
     ]
     base_labels = [
       "test_profile_frames",
@@ -41,12 +42,12 @@ class TestProfileFrames < Test::Unit::TestCase
       "test_profile_frames",
     ]
     full_labels = [
-      "block (2 levels) in TestProfileFrames#test_profile_frames",
+      "TestProfileFrames#test_profile_frames",
       "#{obj.inspect}.zab",
       "SampleClassForTestProfileFrames::Sample2#baz",
       "SampleClassForTestProfileFrames.bar",
       "SampleClassForTestProfileFrames#foo",
-      "block in TestProfileFrames#test_profile_frames",
+      "TestProfileFrames#test_profile_frames",
     ]
     classes = [
       TestProfileFrames,
@@ -100,5 +101,22 @@ class TestProfileFrames < Test::Unit::TestCase
         assert_equal(m.source_location[1], first_lineno, err_msg)
       end
     }
+  end
+
+  def test_ifunc_frame
+    bug11851 = '[ruby-core:72409] [Bug #11851]'
+    assert_ruby_status([], <<~'end;', bug11851) # do
+      require '-test-/debug'
+      class A
+        include Bug::Debug
+        def x
+          profile_frames(0, 10)
+        end
+      end
+      def a
+        [A.new].each(&:x)
+      end
+      a
+    end;
   end
 end

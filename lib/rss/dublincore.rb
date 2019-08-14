@@ -1,4 +1,5 @@
-require "rss/rss"
+# frozen_string_literal: false
+require_relative "rss"
 
 module RSS
   # The prefix for the Dublin Core XML namespace.
@@ -160,4 +161,4 @@ end
 
 require 'rss/dublincore/1.0'
 require 'rss/dublincore/2.0'
-require 'rss/dublincore/atom'
+require_relative 'dublincore/atom'

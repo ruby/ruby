@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'timeout'
 require 'tmpdir'
@@ -35,7 +36,7 @@ class TestNotImplement < Test::Unit::TestCase
         proc {`ps -l #{pid}`}
       end
     assert_nothing_raised(Timeout::Error, ps) do
-      Timeout.timeout(5) {
+      EnvUtil.timeout(20) {
         pid = fork {}
         Process.wait pid
         pid = nil

@@ -35,7 +35,7 @@ assert_normal_exit %q{
 
 assert_normal_exit %q{
   ObjectSpace.define_finalizer("") do
-    Mutex.new.lock
+    Thread::Mutex.new.lock
   end
 }, '[ruby-dev:44049]'
 

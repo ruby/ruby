@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #
 #  old-fashioned 'shl' like program
 #  by A. Ito
@@ -10,39 +11,40 @@
 #     q        quit
 
 require 'pty'
+require 'io/console'
 
 $shells = []
-$n_shells = 0
 
 $r_pty = nil
 $w_pty = nil
 
 def writer
-  system "stty -echo raw"
+  STDIN.raw!
   begin
     while true
       c = STDIN.getc
-      if c == 26 then # C-z
-        $reader.raise(nil)
+      if c == ?\C-z then
+        $reader.raise('Suspend')
         return 'Suspend'
       end
       $w_pty.print c.chr
       $w_pty.flush
     end
   rescue
-    $reader.raise(nil)
+    $reader.raise('Exit')
     return 'Exit'
   ensure
-    system "stty echo -raw"
+    STDIN.cooked!
   end
 end
 
 $reader = Thread.new {
   while true
     begin
-      next if $r_pty.nil?
+      Thread.stop unless $r_pty
       c = $r_pty.getc
       if c.nil? then
+        Thread.main.raise('Exit')
         Thread.stop
       end
       print c.chr
@@ -59,19 +61,14 @@ $reader = Thread.new {
 while true
   print ">> "
   STDOUT.flush
+  n = nil
   case gets
   when /^c/i
-    $shells[$n_shells] = PTY.spawn("/bin/csh")
-    $r_pty,$w_pty = $shells[$n_shells]
-    $n_shells += 1
-    $reader.run
-    if writer == 'Exit'
-      $n_shells -= 1
-      $shells[$n_shells] = nil
-    end
+    $shells << PTY.spawn("/bin/csh")
+    n = -1
   when /^p/i
-    for i in 0..$n_shells
-      unless $shells[i].nil?
+    $shells.each_with_index do |s, i|
+      if s
         print i,"\n"
       end
     end
@@ -79,14 +76,18 @@ while true
     n = $1.to_i
     if $shells[n].nil?
       print "\##{i} doesn't exist\n"
-    else
-      $r_pty,$w_pty = $shells[n]
-      $reader.run
-      if writer == 'Exit' then
-        $shells[n] = nil
-      end
+      n = nil
     end
   when /^q/i
     exit
+  end
+  if n
+    $r_pty, $w_pty, pid = $shells[n]
+    $reader.run
+    if writer == 'Exit' then
+      Process.wait(pid)
+      $shells[n] = nil
+      $shells.pop until $shells.empty? or $shells[-1]
+    end
   end
 end

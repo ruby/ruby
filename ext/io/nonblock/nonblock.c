@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  io/wait.c -
+  io/nonblock.c -
 
   $Author$
   created at: Tue Jul 14 21:53:18 2009
@@ -50,21 +50,22 @@ rb_io_nonblock_p(VALUE io)
 #endif
 
 #ifdef F_SETFL
-static void
+static int
 io_nonblock_set(int fd, int f, int nb)
 {
     if (nb) {
 	if ((f & O_NONBLOCK) != 0)
-	    return;
+	    return 0;
 	f |= O_NONBLOCK;
     }
     else {
 	if ((f & O_NONBLOCK) == 0)
-	    return;
+	    return 0;
 	f &= ~O_NONBLOCK;
     }
     if (fcntl(fd, F_SETFL, f) == -1)
 	rb_sys_fail(0);
+    return 1;
 }
 
 /*
@@ -79,7 +80,10 @@ rb_io_nonblock_set(VALUE io, VALUE nb)
 {
     rb_io_t *fptr;
     GetOpenFile(io, fptr);
-    io_nonblock_set(fptr->fd, io_nonblock_mode(fptr->fd), RTEST(nb));
+    if (RTEST(nb))
+	rb_io_set_nonblock(fptr);
+    else
+	io_nonblock_set(fptr->fd, io_nonblock_mode(fptr->fd), RTEST(nb));
     return io;
 }
 
@@ -118,7 +122,8 @@ rb_io_nonblock_block(int argc, VALUE *argv, VALUE io)
     f = io_nonblock_mode(fptr->fd);
     restore[0] = fptr->fd;
     restore[1] = f;
-    io_nonblock_set(fptr->fd, f, nb);
+    if (!io_nonblock_set(fptr->fd, f, nb))
+	return rb_yield(io);
     return rb_ensure(rb_yield, io, io_nonblock_restore, (VALUE)restore);
 }
 #else

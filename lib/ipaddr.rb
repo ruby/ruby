@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #
 # ipaddr.rb - A class to manipulate an IP address
 #
@@ -42,7 +43,7 @@ class IPAddr
 
   # 32 bit mask for IPv4
   IN4MASK = 0xffffffff
-  # 128 bit mask for IPv4
+  # 128 bit mask for IPv6
   IN6MASK = 0xffffffffffffffffffffffffffffffff
   # Format string for IPv6
   IN6FORMAT = (["%.4x"] * 8).join(':')
@@ -102,13 +103,13 @@ class IPAddr
 
   # Creates a new ipaddr containing the given network byte ordered
   # string form of an IP address.
-  def IPAddr::new_ntoh(addr)
-    return IPAddr.new(IPAddr::ntop(addr))
+  def self.new_ntoh(addr)
+    return new(ntop(addr))
   end
 
   # Convert a network byte ordered string form of an IP address into
   # human readable form.
-  def IPAddr::ntop(addr)
+  def self.ntop(addr)
     case addr.size
     when 4
       s = addr.unpack('C4').join('.')
@@ -148,7 +149,10 @@ class IPAddr
   # Returns true if two ipaddrs are equal.
   def ==(other)
     other = coerce_other(other)
-    return @family == other.family && @addr == other.to_i
+  rescue
+    false
+  else
+    @family == other.family && @addr == other.to_i
   end
 
   # Returns a new ipaddr built by masking IP address with the given
@@ -255,6 +259,50 @@ class IPAddr
     return @family == Socket::AF_INET6
   end
 
+  # Returns true if the ipaddr is a loopback address.
+  def loopback?
+    case @family
+    when Socket::AF_INET
+      @addr & 0xff000000 == 0x7f000000
+    when Socket::AF_INET6
+      @addr == 1
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
+  # Returns true if the ipaddr is a private address.  IPv4 addresses
+  # in 10.0.0.0/8, 172.16.0.0/12 and 192.168.0.0/16 as defined in RFC
+  # 1918 and IPv6 Unique Local Addresses in fc00::/7 as defined in RFC
+  # 4193 are considered private.
+  def private?
+    case @family
+    when Socket::AF_INET
+      @addr & 0xff000000 == 0x0a000000 ||    # 10.0.0.0/8
+        @addr & 0xfff00000 == 0xac100000 ||  # 172.16.0.0/12
+        @addr & 0xffff0000 == 0xc0a80000     # 192.168.0.0/16
+    when Socket::AF_INET6
+      @addr & 0xfe00_0000_0000_0000_0000_0000_0000_0000 == 0xfc00_0000_0000_0000_0000_0000_0000_0000
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
+  # Returns true if the ipaddr is a link-local address.  IPv4
+  # addresses in 169.254.0.0/16 reserved by RFC 3927 and Link-Local
+  # IPv6 Unicast Addresses in fe80::/10 reserved by RFC 4291 are
+  # considered link-local.
+  def link_local?
+    case @family
+    when Socket::AF_INET
+      @addr & 0xffff0000 == 0xa9fe0000 # 169.254.0.0/16
+    when Socket::AF_INET6
+      @addr & 0xffc0_0000_0000_0000_0000_0000_0000_0000 == 0xfe80_0000_0000_0000_0000_0000_0000_0000
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
   # Returns true if the ipaddr is an IPv4-mapped IPv6 address.
   def ipv4_mapped?
     return ipv6? && (@addr >> 32) == 0xffff
@@ -262,12 +310,19 @@ class IPAddr
 
   # Returns true if the ipaddr is an IPv4-compatible IPv6 address.
   def ipv4_compat?
+    warn "IPAddr\##{__callee__} is obsolete", uplevel: 1 if $VERBOSE
+    _ipv4_compat?
+  end
+
+  def _ipv4_compat?
     if !ipv6? || (@addr >> 32) != 0
       return false
     end
     a = (@addr & IN4MASK)
     return a != 0 && a != 1
   end
+
+  private :_ipv4_compat?
 
   # Returns a new ipaddr built by converting the native IPv4 address
   # into an IPv4-mapped IPv6 address.
@@ -281,6 +336,7 @@ class IPAddr
   # Returns a new ipaddr built by converting the native IPv4 address
   # into an IPv4-compatible IPv6 address.
   def ipv4_compat
+    warn "IPAddr\##{__callee__} is obsolete", uplevel: 1 if $VERBOSE
     if !ipv4?
       raise InvalidAddressError, "not an IPv4 address"
     end
@@ -291,7 +347,7 @@ class IPAddr
   # native IPv4 address.  If the IP address is not an IPv4-mapped or
   # IPv4-compatible IPv6 address, returns self.
   def native
-    if !ipv4_mapped? && !ipv4_compat?
+    if !ipv4_mapped? && !_ipv4_compat?
       return self
     end
     return self.clone.set(@addr & IN4MASK, Socket::AF_INET)
@@ -334,10 +390,10 @@ class IPAddr
   # Compares the ipaddr with another.
   def <=>(other)
     other = coerce_other(other)
-
-    return nil if other.family != @family
-
-    return @addr <=> other.to_i
+  rescue
+    nil
+  else
+    @addr <=> other.to_i if other.family == @family
   end
   include Comparable
 
@@ -365,6 +421,35 @@ class IPAddr
     end
 
     return clone.set(begin_addr, @family)..clone.set(end_addr, @family)
+  end
+
+  # Returns the prefix length in bits for the ipaddr.
+  def prefix
+    case @family
+    when Socket::AF_INET
+      n = IN4MASK ^ @mask_addr
+      i = 32
+    when Socket::AF_INET6
+      n = IN6MASK ^ @mask_addr
+      i = 128
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+    while n.positive?
+      n >>= 1
+      i -= 1
+    end
+    i
+  end
+
+  # Sets the prefix length in bits
+  def prefix=(prefix)
+    case prefix
+    when Integer
+      mask!(prefix)
+    else
+      raise InvalidPrefixError, "prefix must be an integer"
+    end
   end
 
   # Returns a string containing a human-readable representation of the
@@ -409,8 +494,9 @@ class IPAddr
 
   # Set current netmask to given mask.
   def mask!(mask)
-    if mask.kind_of?(String)
-      if mask =~ /^\d+$/
+    case mask
+    when String
+      if mask =~ /\A\d+\z/
         prefixlen = mask.to_i
       else
         m = IPAddr.new(mask)
@@ -418,6 +504,10 @@ class IPAddr
           raise InvalidPrefixError, "address family is not same"
         end
         @mask_addr = m.to_i
+        n = @mask_addr ^ m.instance_variable_get(:@mask_addr)
+        unless ((n + 1) & n).zero?
+          raise InvalidPrefixError, "invalid mask #{mask}"
+        end
         @addr &= @mask_addr
         return self
       end
@@ -478,7 +568,7 @@ class IPAddr
       end
     end
     prefix, prefixlen = addr.split('/')
-    if prefix =~ /^\[(.*)\]$/i
+    if prefix =~ /\A\[(.*)\]\z/i
       prefix = $1
       family = Socket::AF_INET6
     end
@@ -504,6 +594,8 @@ class IPAddr
     else
       @mask_addr = (@family == Socket::AF_INET) ? IN4MASK : IN6MASK
     end
+  rescue InvalidAddressError => e
+    raise e.class, "#{e.message}: #{addr}"
   end
 
   def coerce_other(other)
@@ -654,282 +746,5 @@ unless Socket.const_defined? :AF_INET6
         getaddress_orig(s)
       end
     end
-  end
-end
-
-if $0 == __FILE__
-  eval DATA.read, nil, $0, __LINE__+4
-end
-
-__END__
-
-require 'test/unit'
-
-class TC_IPAddr < Test::Unit::TestCase
-  def test_s_new
-    [
-      ["3FFE:505:ffff::/48"],
-      ["0:0:0:1::"],
-      ["2001:200:300::/48"],
-      ["2001:200:300::192.168.1.2/48"],
-      ["1:2:3:4:5:6:7::"],
-      ["::2:3:4:5:6:7:8"],
-    ].each { |args|
-      assert_nothing_raised {
-        IPAddr.new(*args)
-      }
-    }
-
-    a = IPAddr.new
-    assert_equal("::", a.to_s)
-    assert_equal("0000:0000:0000:0000:0000:0000:0000:0000", a.to_string)
-    assert_equal(Socket::AF_INET6, a.family)
-
-    a = IPAddr.new("0123:4567:89ab:cdef:0ABC:DEF0:1234:5678")
-    assert_equal("123:4567:89ab:cdef:abc:def0:1234:5678", a.to_s)
-    assert_equal("0123:4567:89ab:cdef:0abc:def0:1234:5678", a.to_string)
-    assert_equal(Socket::AF_INET6, a.family)
-
-    a = IPAddr.new("3ffe:505:2::/48")
-    assert_equal("3ffe:505:2::", a.to_s)
-    assert_equal("3ffe:0505:0002:0000:0000:0000:0000:0000", a.to_string)
-    assert_equal(Socket::AF_INET6, a.family)
-    assert_equal(false, a.ipv4?)
-    assert_equal(true, a.ipv6?)
-    assert_equal("#<IPAddr: IPv6:3ffe:0505:0002:0000:0000:0000:0000:0000/ffff:ffff:ffff:0000:0000:0000:0000:0000>", a.inspect)
-
-    a = IPAddr.new("3ffe:505:2::/ffff:ffff:ffff::")
-    assert_equal("3ffe:505:2::", a.to_s)
-    assert_equal("3ffe:0505:0002:0000:0000:0000:0000:0000", a.to_string)
-    assert_equal(Socket::AF_INET6, a.family)
-
-    a = IPAddr.new("0.0.0.0")
-    assert_equal("0.0.0.0", a.to_s)
-    assert_equal("0.0.0.0", a.to_string)
-    assert_equal(Socket::AF_INET, a.family)
-
-    a = IPAddr.new("192.168.1.2")
-    assert_equal("192.168.1.2", a.to_s)
-    assert_equal("192.168.1.2", a.to_string)
-    assert_equal(Socket::AF_INET, a.family)
-    assert_equal(true, a.ipv4?)
-    assert_equal(false, a.ipv6?)
-
-    a = IPAddr.new("192.168.1.2/24")
-    assert_equal("192.168.1.0", a.to_s)
-    assert_equal("192.168.1.0", a.to_string)
-    assert_equal(Socket::AF_INET, a.family)
-    assert_equal("#<IPAddr: IPv4:192.168.1.0/255.255.255.0>", a.inspect)
-
-    a = IPAddr.new("192.168.1.2/255.255.255.0")
-    assert_equal("192.168.1.0", a.to_s)
-    assert_equal("192.168.1.0", a.to_string)
-    assert_equal(Socket::AF_INET, a.family)
-
-    assert_equal("0:0:0:1::", IPAddr.new("0:0:0:1::").to_s)
-    assert_equal("2001:200:300::", IPAddr.new("2001:200:300::/48").to_s)
-
-    assert_equal("2001:200:300::", IPAddr.new("[2001:200:300::]/48").to_s)
-    assert_equal("1:2:3:4:5:6:7:0", IPAddr.new("1:2:3:4:5:6:7::").to_s)
-    assert_equal("0:2:3:4:5:6:7:8", IPAddr.new("::2:3:4:5:6:7:8").to_s)
-
-    assert_raises(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.256") }
-    assert_raises(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.011") }
-    assert_raises(IPAddr::InvalidAddressError) { IPAddr.new("fe80::1%fxp0") }
-    assert_raises(IPAddr::InvalidAddressError) { IPAddr.new("[192.168.1.2]/120") }
-    assert_raises(IPAddr::InvalidPrefixError) { IPAddr.new("::1/255.255.255.0") }
-    assert_raises(IPAddr::InvalidPrefixError) { IPAddr.new("::1/129") }
-    assert_raises(IPAddr::InvalidPrefixError) { IPAddr.new("192.168.0.1/33") }
-    assert_raises(IPAddr::AddressFamilyError) { IPAddr.new(1) }
-    assert_raises(IPAddr::AddressFamilyError) { IPAddr.new("::ffff:192.168.1.2/120", Socket::AF_INET) }
-  end
-
-  def test_s_new_ntoh
-    addr = ''
-    IPAddr.new("1234:5678:9abc:def0:1234:5678:9abc:def0").hton.each_byte { |c|
-      addr += sprintf("%02x", c)
-    }
-    assert_equal("123456789abcdef0123456789abcdef0", addr)
-    addr = ''
-    IPAddr.new("123.45.67.89").hton.each_byte { |c|
-      addr += sprintf("%02x", c)
-    }
-    assert_equal(sprintf("%02x%02x%02x%02x", 123, 45, 67, 89), addr)
-    a = IPAddr.new("3ffe:505:2::")
-    assert_equal("3ffe:505:2::", IPAddr.new_ntoh(a.hton).to_s)
-    a = IPAddr.new("192.168.2.1")
-    assert_equal("192.168.2.1", IPAddr.new_ntoh(a.hton).to_s)
-  end
-
-  def test_ipv4_compat
-    a = IPAddr.new("::192.168.1.2")
-    assert_equal("::192.168.1.2", a.to_s)
-    assert_equal("0000:0000:0000:0000:0000:0000:c0a8:0102", a.to_string)
-    assert_equal(Socket::AF_INET6, a.family)
-    assert_equal(true, a.ipv4_compat?)
-    b = a.native
-    assert_equal("192.168.1.2", b.to_s)
-    assert_equal(Socket::AF_INET, b.family)
-    assert_equal(false, b.ipv4_compat?)
-
-    a = IPAddr.new("192.168.1.2")
-    b = a.ipv4_compat
-    assert_equal("::192.168.1.2", b.to_s)
-    assert_equal(Socket::AF_INET6, b.family)
-  end
-
-  def test_ipv4_mapped
-    a = IPAddr.new("::ffff:192.168.1.2")
-    assert_equal("::ffff:192.168.1.2", a.to_s)
-    assert_equal("0000:0000:0000:0000:0000:ffff:c0a8:0102", a.to_string)
-    assert_equal(Socket::AF_INET6, a.family)
-    assert_equal(true, a.ipv4_mapped?)
-    b = a.native
-    assert_equal("192.168.1.2", b.to_s)
-    assert_equal(Socket::AF_INET, b.family)
-    assert_equal(false, b.ipv4_mapped?)
-
-    a = IPAddr.new("192.168.1.2")
-    b = a.ipv4_mapped
-    assert_equal("::ffff:192.168.1.2", b.to_s)
-    assert_equal(Socket::AF_INET6, b.family)
-  end
-
-  def test_reverse
-    assert_equal("f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.2.0.0.0.5.0.5.0.e.f.f.3.ip6.arpa", IPAddr.new("3ffe:505:2::f").reverse)
-    assert_equal("1.2.168.192.in-addr.arpa", IPAddr.new("192.168.2.1").reverse)
-  end
-
-  def test_ip6_arpa
-    assert_equal("f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.2.0.0.0.5.0.5.0.e.f.f.3.ip6.arpa", IPAddr.new("3ffe:505:2::f").ip6_arpa)
-    assert_raises(IPAddr::InvalidAddressError) {
-      IPAddr.new("192.168.2.1").ip6_arpa
-    }
-  end
-
-  def test_ip6_int
-    assert_equal("f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.2.0.0.0.5.0.5.0.e.f.f.3.ip6.int", IPAddr.new("3ffe:505:2::f").ip6_int)
-    assert_raises(IPAddr::InvalidAddressError) {
-      IPAddr.new("192.168.2.1").ip6_int
-    }
-  end
-
-  def test_to_s
-    assert_equal("3ffe:0505:0002:0000:0000:0000:0000:0001", IPAddr.new("3ffe:505:2::1").to_string)
-    assert_equal("3ffe:505:2::1", IPAddr.new("3ffe:505:2::1").to_s)
-  end
-end
-
-class TC_Operator < Test::Unit::TestCase
-
-  IN6MASK32  = "ffff:ffff::"
-  IN6MASK128 = "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"
-
-  def setup
-    @in6_addr_any = IPAddr.new()
-    @a = IPAddr.new("3ffe:505:2::/48")
-    @b = IPAddr.new("0:0:0:1::")
-    @c = IPAddr.new(IN6MASK32)
-  end
-  alias set_up setup
-
-  def test_or
-    assert_equal("3ffe:505:2:1::", (@a | @b).to_s)
-    a = @a
-    a |= @b
-    assert_equal("3ffe:505:2:1::", a.to_s)
-    assert_equal("3ffe:505:2::", @a.to_s)
-    assert_equal("3ffe:505:2:1::",
-                 (@a | 0x00000000000000010000000000000000).to_s)
-  end
-
-  def test_and
-    assert_equal("3ffe:505::", (@a & @c).to_s)
-    a = @a
-    a &= @c
-    assert_equal("3ffe:505::", a.to_s)
-    assert_equal("3ffe:505:2::", @a.to_s)
-    assert_equal("3ffe:505::", (@a & 0xffffffff000000000000000000000000).to_s)
-  end
-
-  def test_shift_right
-    assert_equal("0:3ffe:505:2::", (@a >> 16).to_s)
-    a = @a
-    a >>= 16
-    assert_equal("0:3ffe:505:2::", a.to_s)
-    assert_equal("3ffe:505:2::", @a.to_s)
-  end
-
-  def test_shift_left
-    assert_equal("505:2::", (@a << 16).to_s)
-    a = @a
-    a <<= 16
-    assert_equal("505:2::", a.to_s)
-    assert_equal("3ffe:505:2::", @a.to_s)
-  end
-
-  def test_carrot
-    a = ~@in6_addr_any
-    assert_equal(IN6MASK128, a.to_s)
-    assert_equal("::", @in6_addr_any.to_s)
-  end
-
-  def test_equal
-    assert_equal(true, @a == IPAddr.new("3FFE:505:2::"))
-    assert_equal(true, @a == IPAddr.new("3ffe:0505:0002::"))
-    assert_equal(true, @a == IPAddr.new("3ffe:0505:0002:0:0:0:0:0"))
-    assert_equal(false, @a == IPAddr.new("3ffe:505:3::"))
-    assert_equal(true, @a != IPAddr.new("3ffe:505:3::"))
-    assert_equal(false, @a != IPAddr.new("3ffe:505:2::"))
-  end
-
-  def test_mask
-    a = @a.mask(32)
-    assert_equal("3ffe:505::", a.to_s)
-    assert_equal("3ffe:505:2::", @a.to_s)
-  end
-
-  def test_include?
-    assert_equal(true, @a.include?(IPAddr.new("3ffe:505:2::")))
-    assert_equal(true, @a.include?(IPAddr.new("3ffe:505:2::1")))
-    assert_equal(false, @a.include?(IPAddr.new("3ffe:505:3::")))
-    net1 = IPAddr.new("192.168.2.0/24")
-    assert_equal(true, net1.include?(IPAddr.new("192.168.2.0")))
-    assert_equal(true, net1.include?(IPAddr.new("192.168.2.255")))
-    assert_equal(false, net1.include?(IPAddr.new("192.168.3.0")))
-    # test with integer parameter
-    int = (192 << 24) + (168 << 16) + (2 << 8) + 13
-
-    assert_equal(true, net1.include?(int))
-    assert_equal(false, net1.include?(int+255))
-
-  end
-
-  def test_hash
-    a1 = IPAddr.new('192.168.2.0')
-    a2 = IPAddr.new('192.168.2.0')
-    a3 = IPAddr.new('3ffe:505:2::1')
-    a4 = IPAddr.new('3ffe:505:2::1')
-    a5 = IPAddr.new('127.0.0.1')
-    a6 = IPAddr.new('::1')
-    a7 = IPAddr.new('192.168.2.0/25')
-    a8 = IPAddr.new('192.168.2.0/25')
-
-    h = { a1 => 'ipv4', a2 => 'ipv4', a3 => 'ipv6', a4 => 'ipv6', a5 => 'ipv4', a6 => 'ipv6', a7 => 'ipv4', a8 => 'ipv4'}
-    assert_equal(5, h.size)
-    assert_equal('ipv4', h[a1])
-    assert_equal('ipv4', h[a2])
-    assert_equal('ipv6', h[a3])
-    assert_equal('ipv6', h[a4])
-
-    require 'set'
-    s = Set[a1, a2, a3, a4, a5, a6, a7, a8]
-    assert_equal(5, s.size)
-    assert_equal(true, s.include?(a1))
-    assert_equal(true, s.include?(a2))
-    assert_equal(true, s.include?(a3))
-    assert_equal(true, s.include?(a4))
-    assert_equal(true, s.include?(a5))
-    assert_equal(true, s.include?(a6))
   end
 end

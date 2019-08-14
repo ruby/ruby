@@ -1,6 +1,8 @@
+# frozen_string_literal: true
 ##
 # The Dependency class holds a Gem name and a Gem::Requirement.
 
+require "rubygems/bundler_version_finder"
 require "rubygems/requirement"
 
 class Gem::Dependency
@@ -17,7 +19,7 @@ class Gem::Dependency
   TYPES = [
     :development,
     :runtime,
-  ]
+  ].freeze
 
   ##
   # Dependency name or regular expression.
@@ -34,7 +36,7 @@ class Gem::Dependency
   # argument can optionally be the dependency type, which defaults to
   # <tt>:runtime</tt>.
 
-  def initialize name, *requirements
+  def initialize(name, *requirements)
     case name
     when String then # ok
     when Regexp then
@@ -74,7 +76,7 @@ class Gem::Dependency
   end
 
   def inspect # :nodoc:
-    if @prerelease
+    if prerelease?
       "<%s type=%p name=%p requirements=%p prerelease=ok>" %
         [self.class, self.type, self.name, requirement.to_s]
     else
@@ -98,7 +100,7 @@ class Gem::Dependency
     @requirement.none?
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 1, 'Gem::Dependency.new(', ')' do
       q.pp name
       q.text ','
@@ -145,13 +147,12 @@ class Gem::Dependency
     @requirement = @version_requirements if defined?(@version_requirements)
   end
 
-  # DOC: this method needs documentation or :nodoc''d
   def requirements_list
     requirement.as_list
   end
 
   def to_s # :nodoc:
-    if type != :runtime then
+    if type != :runtime
       "#{name} (#{requirement}, #{type})"
     else
       "#{name} (#{requirement})"
@@ -165,7 +166,11 @@ class Gem::Dependency
     @type ||= :runtime
   end
 
-  def == other # :nodoc:
+  def runtime?
+    @type == :runtime || !@type
+  end
+
+  def ==(other) # :nodoc:
     Gem::Dependency === other &&
       self.name        == other.name &&
       self.type        == other.type &&
@@ -175,7 +180,7 @@ class Gem::Dependency
   ##
   # Dependencies are ordered by name.
 
-  def <=> other
+  def <=>(other)
     self.name <=> other.name
   end
 
@@ -185,7 +190,7 @@ class Gem::Dependency
   # other has only an equal version requirement that satisfies this
   # dependency.
 
-  def =~ other
+  def =~(other)
     unless Gem::Dependency === other
       return unless other.respond_to?(:name) && other.respond_to?(:version)
       other = Gem::Dependency.new other.name, other.version
@@ -205,9 +210,19 @@ class Gem::Dependency
 
   alias === =~
 
-  # DOC: this method needs either documented or :nodoc'd
+  ##
+  # :call-seq:
+  #   dep.match? name          => true or false
+  #   dep.match? name, version => true or false
+  #   dep.match? spec          => true or false
+  #
+  # Does this dependency match the specification described by +name+ and
+  # +version+ or match +spec+?
+  #
+  # NOTE:  Unlike #matches_spec? this method does not return true when the
+  # version is a prerelease version unless this is a prerelease dependency.
 
-  def match? obj, version=nil
+  def match?(obj, version=nil, allow_prerelease=false)
     if !version
       name = obj.name
       version = obj.version
@@ -216,14 +231,25 @@ class Gem::Dependency
     end
 
     return false unless self.name === name
-    return true if requirement.none?
 
-    requirement.satisfied_by? Gem::Version.new(version)
+    version = Gem::Version.new version
+
+    return true if requirement.none? and not version.prerelease?
+    return false if version.prerelease? and
+                    not allow_prerelease and
+                    not prerelease?
+
+    requirement.satisfied_by? version
   end
 
-  # DOC: this method needs either documented or :nodoc'd
+  ##
+  # Does this dependency match +spec+?
+  #
+  # NOTE:  This is not a convenience method.  Unlike #match? this method
+  # returns true when +spec+ is a prerelease version even if this dependency
+  # is not a prerelease dependency.
 
-  def matches_spec? spec
+  def matches_spec?(spec)
     return false unless name === spec.name
     return true  if requirement.none?
 
@@ -233,8 +259,8 @@ class Gem::Dependency
   ##
   # Merges the requirements of +other+ into this dependency
 
-  def merge other
-    unless name == other.name then
+  def merge(other)
+    unless name == other.name
       raise ArgumentError,
             "#{self} and #{other} have different names"
     end
@@ -249,21 +275,21 @@ class Gem::Dependency
     self.class.new name, self_req.as_list.concat(other_req.as_list)
   end
 
-  # DOC: this method needs either documented or :nodoc'd
+  def matching_specs(platform_only = false)
+    env_req = Gem.env_requirement(name)
+    matches = Gem::Specification.stubs_for(name).find_all do |spec|
+      requirement.satisfied_by?(spec.version) && env_req.satisfied_by?(spec.version)
+    end.map(&:to_spec)
 
-  def matching_specs platform_only = false
-    matches = Gem::Specification.stubs.find_all { |spec|
-      self.name === spec.name and # TODO: == instead of ===
-        requirement.satisfied_by? spec.version
-    }.map(&:to_spec)
+    Gem::BundlerVersionFinder.filter!(matches) if name == "bundler".freeze
 
     if platform_only
-      matches.reject! { |spec|
-        not Gem::Platform.match spec.platform
-      }
+      matches.reject! do |spec|
+        spec.nil? || !Gem::Platform.match(spec.platform)
+      end
     end
 
-    matches = matches.sort_by { |s| s.sort_obj } # HACK: shouldn't be needed
+    matches
   end
 
   ##
@@ -273,29 +299,19 @@ class Gem::Dependency
     @requirement.specific?
   end
 
-  # DOC: this method needs either documented or :nodoc'd
-
   def to_specs
     matches = matching_specs true
 
     # TODO: check Gem.activated_spec[self.name] in case matches falls outside
 
-    if matches.empty? then
-      specs = Gem::Specification.find_all { |s|
-                s.name == name
-              }.map { |x| x.full_name }
+    if matches.empty?
+      specs = Gem::Specification.stubs_for name
 
       if specs.empty?
-        total = Gem::Specification.to_a.size
-        error = Gem::LoadError.new \
-          "Could not find '#{name}' (#{requirement}) among #{total} total gem(s)"
+        raise Gem::MissingSpecError.new name, requirement
       else
-        error = Gem::LoadError.new \
-          "Could not find '#{name}' (#{requirement}) - did find: [#{specs.join ','}]"
+        raise Gem::MissingSpecVersionError.new name, requirement, specs
       end
-      error.name        = self.name
-      error.requirement = self.requirement
-      raise error
     end
 
     # TODO: any other resolver validations should go here
@@ -303,11 +319,19 @@ class Gem::Dependency
     matches
   end
 
-  # DOC: this method needs either documented or :nodoc'd
-
   def to_spec
-    matches = self.to_specs
+    matches = self.to_specs.compact
 
-    matches.find { |spec| spec.activated? } or matches.last
+    active = matches.find { |spec| spec.activated? }
+    return active if active
+
+    return matches.first if prerelease?
+
+    # Move prereleases to the end of the list for >= 0 requirements
+    pre, matches = matches.partition { |spec| spec.version.prerelease? }
+    matches += pre if requirement == Gem::Requirement.default
+
+    matches.first
   end
+
 end

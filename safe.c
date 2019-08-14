@@ -12,8 +12,6 @@
 /* safe-level:
    0 - strings from streams/environment/ARGV are tainted (default)
    1 - no dangerous operation by tainted value
-   2 - process/file operations prohibited
-   3 - all generated objects are tainted
 */
 
 #define SAFE_LEVEL_MAX RUBY_SAFE_LEVEL_MAX
@@ -25,36 +23,45 @@
 
 #undef rb_secure
 #undef rb_set_safe_level
-#undef ruby_safe_level_4_warning
+#undef ruby_safe_level_2_warning
 
 int
-ruby_safe_level_4_warning(void)
+ruby_safe_level_2_warning(void)
 {
-    return 4;
+    return 2;
 }
 
 int
 rb_safe_level(void)
 {
-    return GET_THREAD()->safe_level;
+    return GET_VM()->safe_level_;
 }
 
 void
 rb_set_safe_level_force(int safe)
 {
-    GET_THREAD()->safe_level = safe;
+    GET_VM()->safe_level_ = safe;
 }
 
 void
 rb_set_safe_level(int level)
 {
-    rb_thread_t *th = GET_THREAD();
+    rb_vm_t *vm = GET_VM();
 
-    if (level > th->safe_level) {
-	if (level > SAFE_LEVEL_MAX) {
-	    rb_raise(rb_eArgError, "$SAFE=4 is obsolete");
-	}
-	th->safe_level = level;
+    if (level > SAFE_LEVEL_MAX) {
+	rb_raise(rb_eArgError, "$SAFE=2 to 4 are obsolete");
+    }
+    else if (level < 0) {
+	rb_raise(rb_eArgError, "$SAFE should be >= 0");
+    }
+    else {
+	int line;
+	const char *path = rb_source_location_cstr(&line);
+
+	if (0) fprintf(stderr, "%s:%d $SAFE %d -> %d\n",
+		       path ? path : "-", line, vm->safe_level_, level);
+
+	vm->safe_level_ = level;
     }
 }
 
@@ -68,20 +75,7 @@ static void
 safe_setter(VALUE val)
 {
     int level = NUM2INT(val);
-    rb_thread_t *th = GET_THREAD();
-
-    if (level < th->safe_level) {
-	rb_raise(rb_eSecurityError,
-		 "tried to downgrade safe level from %d to %d",
-		 th->safe_level, level);
-    }
-    if (level == 3) {
-	rb_warning("$SAFE=3 does no sandboxing");
-    }
-    if (level > SAFE_LEVEL_MAX) {
-	rb_raise(rb_eArgError, "$SAFE=4 is obsolete");
-    }
-    th->safe_level = level;
+    rb_set_safe_level(level);
 }
 
 void
@@ -90,8 +84,8 @@ rb_secure(int level)
     if (level <= rb_safe_level()) {
 	ID caller_name = rb_frame_callee();
 	if (caller_name) {
-	    rb_raise(rb_eSecurityError, "Insecure operation `%s' at level %d",
-		     rb_id2name(caller_name), rb_safe_level());
+	    rb_raise(rb_eSecurityError, "Insecure operation `%"PRIsVALUE"' at level %d",
+		     rb_id2str(caller_name), rb_safe_level());
 	}
 	else {
 	    rb_raise(rb_eSecurityError, "Insecure operation at level %d",
@@ -110,8 +104,8 @@ rb_insecure_operation(void)
 {
     ID caller_name = rb_frame_callee();
     if (caller_name) {
-	rb_raise(rb_eSecurityError, "Insecure operation - %s",
-		 rb_id2name(caller_name));
+	rb_raise(rb_eSecurityError, "Insecure operation - %"PRIsVALUE,
+		 rb_id2str(caller_name));
     }
     else {
 	rb_raise(rb_eSecurityError, "Insecure operation: -r");

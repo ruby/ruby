@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # This is test for [ruby-Bugs#3237]
 #
@@ -7,17 +8,22 @@ rescue LoadError
 end
 require "test/unit"
 
+if defined?(WIN32OLE)
+  module Word; end
+end
+
 def word_installed?
   installed = false
   w = nil
   if defined?(WIN32OLE)
     begin
       w = WIN32OLE.new('Word.Application')
+      WIN32OLE.const_load(w, Word)
       installed = true
     rescue
     ensure
       if w
-        w.quit
+        w.quit(Word::WdDoNotSaveChanges)
         w = nil
       end
     end
@@ -26,20 +32,17 @@ def word_installed?
 end
 
 if defined?(WIN32OLE)
-  dotest = word_installed?
-  if !dotest
-    STDERR.puts("\n#{__FILE__} skipped(Microsoft Word not found.)")
-  end
-  if dotest
-    class TestWIN32OLE_WITH_WORD < Test::Unit::TestCase
+  class TestWIN32OLE_WITH_WORD < Test::Unit::TestCase
+    unless word_installed?
+      def test_dummy_for_skip_message
+        skip "Microsoft Word is not installed"
+      end
+    else
       def setup
         begin
           @obj = WIN32OLE.new('Word.Application')
         rescue WIN32OLERuntimeError
           @obj = nil
-          if !$skipped
-              $skipped = true
-          end
         end
       end
 
@@ -48,7 +51,6 @@ if defined?(WIN32OLE)
           @obj.visible = true
           @obj.wordbasic.disableAutoMacros(true)
           assert(true)
-        else
         end
       end
 
@@ -62,7 +64,7 @@ if defined?(WIN32OLE)
 
       def teardown
         if @obj
-          @obj.quit
+          @obj.quit(Word::WdDoNotSaveChanges)
           @obj = nil
         end
       end

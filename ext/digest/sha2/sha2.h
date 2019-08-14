@@ -165,52 +165,52 @@ typedef SHA512_CTX SHA384_CTX;
 
 #ifndef NOPROTO
 
-void SHA256_Init(SHA256_CTX *);
+int SHA256_Init(SHA256_CTX *);
 void SHA256_Update(SHA256_CTX*, const uint8_t*, size_t);
-void SHA256_Final(uint8_t[SHA256_DIGEST_LENGTH], SHA256_CTX*);
+int SHA256_Final(uint8_t[SHA256_DIGEST_LENGTH], SHA256_CTX*);
 char* SHA256_End(SHA256_CTX*, char[SHA256_DIGEST_STRING_LENGTH]);
 char* SHA256_Data(const uint8_t*, size_t, char[SHA256_DIGEST_STRING_LENGTH]);
 
-void SHA384_Init(SHA384_CTX*);
+int SHA384_Init(SHA384_CTX*);
 void SHA384_Update(SHA384_CTX*, const uint8_t*, size_t);
-void SHA384_Final(uint8_t[SHA384_DIGEST_LENGTH], SHA384_CTX*);
+int SHA384_Final(uint8_t[SHA384_DIGEST_LENGTH], SHA384_CTX*);
 char* SHA384_End(SHA384_CTX*, char[SHA384_DIGEST_STRING_LENGTH]);
 char* SHA384_Data(const uint8_t*, size_t, char[SHA384_DIGEST_STRING_LENGTH]);
 
-void SHA512_Init(SHA512_CTX*);
+int SHA512_Init(SHA512_CTX*);
 void SHA512_Update(SHA512_CTX*, const uint8_t*, size_t);
-void SHA512_Final(uint8_t[SHA512_DIGEST_LENGTH], SHA512_CTX*);
+int SHA512_Final(uint8_t[SHA512_DIGEST_LENGTH], SHA512_CTX*);
 char* SHA512_End(SHA512_CTX*, char[SHA512_DIGEST_STRING_LENGTH]);
 char* SHA512_Data(const uint8_t*, size_t, char[SHA512_DIGEST_STRING_LENGTH]);
 
 #else /* NOPROTO */
 
-void SHA256_Init();
+int SHA256_Init();
 void SHA256_Update();
 #ifdef RUBY
-void SHA256_Finish();
+int SHA256_Finish();
 #else
-void SHA256_Final();
+int SHA256_Final();
 #endif /* RUBY */
 char* SHA256_End();
 char* SHA256_Data();
 
-void SHA384_Init();
+int SHA384_Init();
 void SHA384_Update();
 #ifdef RUBY
-void SHA384_Finish();
+int SHA384_Finish();
 #else
-void SHA384_Final();
+int SHA384_Final();
 #endif /* RUBY */
 char* SHA384_End();
 char* SHA384_Data();
 
-void SHA512_Init();
+int SHA512_Init();
 void SHA512_Update();
 #ifdef RUBY
-void SHA512_Finish();
+int SHA512_Finish();
 #else
-void SHA512_Final();
+int SHA512_Final();
 #endif /* RUBY */
 char* SHA512_End();
 char* SHA512_Data();

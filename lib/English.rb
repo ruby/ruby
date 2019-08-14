@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #  Include the English library file in a Ruby script, and you can
 #  reference the global variables such as \VAR{\$\_} using less
 #  cryptic names, listed below.
@@ -6,7 +7,7 @@
 #
 #      $\ = ' -- '
 #      "waterbuffalo" =~ /buff/
-#      print $", $', $$, "\n"
+#      print $', $$, "\n"
 #
 #  With English:
 #
@@ -14,7 +15,7 @@
 #
 #      $OUTPUT_FIELD_SEPARATOR = ' -- '
 #      "waterbuffalo" =~ /buff/
-#      print $LOADED_FEATURES, $POSTMATCH, $PID, "\n"
+#      print $POSTMATCH, $PID, "\n"
 #
 #  Below is a full list of descriptive aliases and their associated global
 #  variable:
@@ -152,9 +153,7 @@ alias $CHILD_STATUS            $?
 # scope.
 alias $LAST_MATCH_INFO         $~
 
-# If set to any value apart from +nil+ or +false+, all pattern matches
-# will be case insensitive, string comparisons will ignore case, and
-# string hash values will be case insensitive. Deprecated
+# This variable is no longer effective. Deprecated.
 alias $IGNORECASE              $=
 
 # An array of strings containing the command-line

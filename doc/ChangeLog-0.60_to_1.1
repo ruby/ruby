@@ -1,0 +1,3955 @@
+Tue Aug 12 16:02:18 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c: option variables: $-0, $-p(readonly), $-v,
+	  $-I(load_path), $-a(readonly), $-K, $-d, $-F, $-i, $-l.
+
+	* parse.y (yylex): ignore rd (ruby document) in the code.
+
+Mon Aug 11 12:37:58 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (Init_Regexp): $-K as alias to the $KCODE.
+
+	* io.c (Init_IO): new virtual variable $-i for the value of -i
+ 	  option.
+
+	* enum.c (Init_Enumerable): include? as alias of member?
+
+Fri Aug  8 11:16:50 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (io_foreach): now the record separator can be specified.
+
+	* io.c (io_s_readlines): new method to read in whole file (or
+ 	  command output) from path.
+
+	* ext/socket/socket.c (Init_socket): recvfrom did not work.
+
+	* ext/socket/socket.c (sock_send): forgot to check nil for false
+	  value.
+
+Thu Aug  7 11:40:01 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (mod_constants): lists constants defiend in the
+	  modules/classes.
+
+	* variable.c (rb_const_set): no longer warns about constant
+	  overriding by subclasses.
+
+	* eval.c (mod_eval): does eval() on module's context. local
+	  variables are shared with outer scope.
+
+	* object.c (Init_Object): remove private_attr/public_attr.
+
+Wed Aug  6 14:21:36 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (mod_attr): forgot to check nil for false value.
+
+Mon Aug  4 11:50:28 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (class_s_new): need not to specify names to create
+	  classes (or modules) dynamically.
+
+	* variable.c (rb_class_path): scan class constants for anonymous
+	  classes/modules to make up pathes.
+
+Wed Jul 30 08:45:12 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_eval): stop to cache const value in nodes.
+
+Sat Jul 26 03:17:22 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* numeric.c (flo_to_s): wrong .0 at end.
+
+Sat Jul 26 00:36:36 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (error_print): always print exception type in the
+ 	  toplevel exception handler.
+
+	* string.c (str_hash): wrong hash value.
+
+Thu Jul 24 11:05:51 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (uscore_get): proper error message for unset $_.
+
+Wed Jul 23 09:56:55 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* object.c (obj_methods): returns list of method names of the
+	  specified object.
+
+	* class.c (mod_instance_methods): returns list of method names of
+	  the class instnace.
+
+Fri Jul 11 22:38:55 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* object.c (class_superclass): returns class's superclass
+ 	  itself. (1.1)
+
+	* object.c (obj_type): returns object's class itself. (1.1)
+
+	* class.c (mod_included_modules): list included modules.
+
+	* object.c (class_superclass): raises error for Object.
+
+Thu Jul  3 09:54:02 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (SETUP_ARGS): save source position, remove nd_line().
+
+	* eval.c (rb_call): replace modulo by bit-masking.
+
+	* eval.c (POP_SCOPE): force recycle scope object to reduce gc rate.
+
+	* gc.c (obj_free): aboid calling run_final() when no finalizer is set.
+
+	* eval.c (PUSH_VARS): do not allocate the dynamic scope's end-mark
+	  object.
+
+Wed Jul  2 14:25:07 1997  KIMURA Koichi  <kkimura@pure.cpdc.canon.co.jp>
+
+	* Native mswin32 support.
+
+Tue Jul  1 09:59:00 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970701
+
+	* parse.y (mrhs): allow rest-star(*) in right hand side.
+
+Tue Jun 24 19:04:31 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970624
+
+Sat Jun 20 22:22:51 1997  Michio "Karl" Jinbo  <karl@marcer.nagaokaut.ac.jp>
+
+	* eval.c: freebsd 3.0 <sys/select.h> support.
+
+Fri Jun 20 01:24:45 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970620
+
+	* gc.c: eliminate uninitilalized field of Hash, Array etc., to
+	  avoid dumping core.
+
+Thu Jun 19 01:29:44 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970619
+
+	* string.c (str_split_method): wrong limit.
+
+Sat Jun 14 01:54:16 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* class.c (rb_singleton_class): no singleton for special
+	  constants (now raises exception).
+
+	* eval.c (ruby_init): cbase in TOPLEVEL_BINDING need to be
+	  initialized.
+
+Sat Jun 14 01:01:16 1997  maeda shugo  <shugo@po.aianet.ne.jp>
+
+	* array.c (sort_2): wrong comparison.
+
+Sat Jun 14 00:53:44 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* hash.c (hash_foreach): safe iteration.
+
+Fri Jun 13 14:04:56 1997  Michio "Karl" Jinbo  <karl@marcer.nagaokaut.ac.jp>
+
+	* configure.in: -Bshareable option for netbsd.
+
+Fri Jun 13 01:16:22 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* io.c (pipe_open): call io_unbuffered() only for writable pipes.
+
+Thu Jun 12 01:14:15 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970612
+
+	* ext/socket/socket.c (sock_new): use io_unbuffered().
+
+	* ext/marshal/marshal.c (w_long): compact long format, which
+	  supports 64 bit architectures (unless longs are >32 bit size).
+
+	* ext/marshal/marshal.c: allows recursive data for marshaling.
+
+	* parse.y (rb_intern): raise exception for non-internable string.
+
+	* ext/marshal/marshal.c (marshal_load): allows direct loading from
+ 	  strings.
+
+	* ext/marshal/marshal.c (marshal_dump): allows direct dump to strings.
+
+	* ext/marshal/marshal.c (marshal_dump): interface changed.
+
+Wed Jun 11 18:26:00 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* gc.c (rb_newobj): remove needless memset().
+
+Mon Jun  9 13:03:43 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_eval): reduce condition checks from while/until loop.
+
+	* eval.c (rb_eval): wrong jump point for `next'.
+
+Fri Jun  6 11:47:39 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ruby.c (ruby_set_argv): initialize dln_argv0 for dln_a_out.
+
+	* ext/socket/socket.c (open_unix): display path name for exceptions.
+
+	* ruby.c (proc_options): option -S did not work well.
+
+Fri May 30 02:14:44 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970530
+
+	* eval.c (eval): set $! properly if exception raised in eval().
+
+	* io.c (io_write): now handles non T_FILE object.
+
+	* io.c (io_defset): $< can be anything which has `write' method.
+
+Thu May 29 15:40:22 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (eval): $@ is always an array (not string).
+
+	* pack.c (pack_unpack): avoid corrupting memory for unexpected
+	  input strings.
+
+Wed May 28 12:46:13 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970528
+
+	* process.c (rb_waitpid): do not block other threads.
+
+Tue May 27 12:02:31 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (ruby_init): split initialize and processing command line
+	  options.
+
+	* ruby.c (ruby_options): ruby_init(0, 0, envp) dumps core.
+
+Tue May 20 18:59:45 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* variable.c (rb_ivar_set): invalid instance variable access for
+	  built-in object raises TypeError.
+
+Fri May 16 17:32:21 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970516
+
+	* dir.c (push_globs): was freeing non heap pointer.
+
+	* gc.c: remove some duplicated prototypes.
+
+	* ext/kconv/kconv.c: fix prototypes.
+
+Fri May  9 11:38:59 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970509
+
+	* gc.c (obj_free): avoid free(NULL).
+
+	* eval.c (rb_check_safe_str): argument missing for TypeError().
+
+Thu May  8 01:14:28 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* file.c (file_s_dirname): need to return "." for path without
+	  slashes.
+
+Wed May  7 19:18:48 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* process.c (f_fork): child processe does not inherit parent's
+ 	  itimer setting on linux.  call setitimer() again in the child
+	  process.
+
+Sat May  3 02:49:43 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/curses/curses.c: modified for portability and add to the
+ 	  standard distribution.
+
+Wed Apr 30 00:34:00 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* file.c (file_s_size): returns 0 for empty files (not FALSE).
+
+Fri Apr 25 02:17:50 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970425
+
+	* eval.c (f_load): free unused name-table.
+
+	* eval.c (f_load): copy local variable name-table.
+
+	* gc.c (obj_free): avoid free(NULL).
+
+	* eval.c (rb_eval): forgot to make link from the scope object to
+	  NODE_SCOPE.  It may crash the interpreter.
+
+Thu Apr 24 00:35:09 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* random.c (f_srand): save old seed anyway.  srand() returns no
+ 	  value on some systems.
+
+	* gc.c (obj_free): avoid double free of the local variable name
+	  table.
+
+	* parse.y (top_local_setup): modify realloc to handle offset.
+
+Tue Apr 22 12:58:26 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970422
+
+Thu Apr 17 00:40:51 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* configure.in (rb_cv_bsdpgrp): proper check for BSD
+	  setpgrp/setpgrp.
+
+Wed Apr 16 16:14:02 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (proc_call): proc called in other thread must be orphan.
+
+Tue Apr 15 10:46:31 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970415
+
+	* gc.c (obj_free): NODE_SCOPE marked from SCOPE object.
+
+	* gc.c (gc_mark): some nodes marked wrong.
+
+	* process.c (proc_getpgrp): wrong argument
+
+Fri Apr 14 18:32:42 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970414
+
+Fri Apr 12 01:20:12 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ruby.h: String pointer changed to unsigned char.
+
+Fri Apr 11 10:27:29 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970411
+
+	* Makefile.in: create libruby.a before linking ruby.
+
+	* string.c (str_strip_bang): >0x80 characters for isspace().
+
+	* eval.c (proc_call): set safe-level temporally
+
+	* eval.c (proc_s_new): save safe-level in the proc context.
+
+	* eval.c (rb_eval): no class/module extension in safe mode.
+
+Thu Apr 10 02:10:41 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* gc.c (gc_mark): remove some pointer checks for speeding up.
+
+	* ruby.c (ruby_options): set $0 temporally for -r option.
+
+	* eval.c: built-in security feature.
+
+	* gc.c (gc_sweep): do not free nodes during compile.
+
+	* parse.y (yycompile): set flag when compiling.
+
+Wed Apr  9 10:19:02 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ruby.c: forgot to include <ctype.h> for isspace().
+
+	* file.c: provide S_ISREG for some platforms.
+
+	* io.c (Init_IO): added some $< operations.
+
+	* lib/ping.rb: check host upness using TCP echo.
+
+Tue Apr  8 00:10:15 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* io.c (arg_read): bug with 0 length input.
+
+Mon Apr  7 11:36:16 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/fcntl/fcntl.c: module for fcntl constants.
+
+	* eval.c (rb_alias): bug when original was an alias.
+
+	* parse.y (primary): syntax to access singleton class.
+
+	* eval.c (mod_public_method): method's to specify visibitily of
+	  the class methods.  make_method_{public,private} removed.
+
+Fri Apr  4 21:43:57 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970404
+
+	* gc.c (obj_free): finalizer added for experiment.
+
+Thu Apr  3 02:12:31 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_schedule): make Fatal rise on main_thread on
+	  deadlocks.
+
+	* eval.c (thread_join): raise ThreadError instead of Fatal, in
+	  case of deadlock.
+
+	* regex.c (re_compile_fastmap): uninitialized local variable.
+
+	* parse.y (parse_regx): new option //[nes] to specify character
+	  code for regexp literals.  Last specified code option is valid.
+
+	* re.c (reg_s_new): additional 3rd argument to specify compiled
+ 	  regexp's character code.
+
+	* re.c (reg_new_1): regexp character code can be specified for
+	  each regexp object.
+
+Wed Apr  2 14:51:06 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_create): handle uncaught throw.
+
+	* eval.c (thread_create): halt on some deadlock conditions.
+
+	* regex.c (is_in_list): wrong result for non-mbc higher-byte
+	  characters.
+
+	* regex.c (re_match): wrong skip for multi-byte characters.
+
+	* regex.c (re_compile_fastmap): wrong fastmap in non-mbc mode.
+
+	* hash.c (Init_Hash): hash compatible features added to ENV.
+
+Tue Apr  1 15:24:06 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (obj_extend): remove Object#extend as an iterator which
+ 	  is in experimental state, since it unveils internal singleton
+ 	  classes.
+
+Mon Mar 31 14:29:39 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970331
+
+Sun Mar 30 19:40:57 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* parse.y (terms): avoided win32 gcc's optimization bug.
+
+Sat Mar 29 11:21:58 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* struct.c (make_struct): St[val,..] creates new structure.
+
+Fri Mar 28 11:24:51 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (obj_make_private): new method make_method_{public,private}
+	  to change visibility of singleton methods.
+
+	* regex.c (re_compile_pattern): enables numeric literal >= 0x80 in
+	  the character class.
+
+	* regex.c (re_compile_pattern): enabled numeric literal >= 0x80,
+	  in multibyte mode.
+
+	* regex.c (re_compile_fastmap): modified exantn and charset(_not)
+	  to set fastmap for higher bytes properly.
+
+	* regex.c (is_in_list): now matches numeric literals.
+
+Thu Mar 27 13:34:20 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* pack.c (pack_unpack): extra null byte after unpacked string.
+
+Wed Mar 26 15:20:34 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* regex.c (re_compile_pattern): register numbers must be fit in a
+ 	  byte (0 <= regnum <= 0xff).
+
+	* regex.c (re_compile_fastmap): forgot to set mbchar map for
+ 	  charset_not if RE_MBCTYPE is on.
+
+	* regex.c (re_compile_pattern): set list bits for multi-byte
+	  characters for \W, \S, \D in range expression.
+
+	* object.c (obj_is_kind_of): defined that nil itself is kind of
+ 	  nil.  TRUE is kind of TRUE, FALSE is kind of FALSE likewise.
+  	  This change makes `obj.kind_of?(eval(obj.type))' always true.
+
+Tue Mar 25 14:08:43 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* lib/English.rb: provides nicer English alias for the variables.
+
+	* parse.y (expr): alias $var1 $var2 makes alias of the global
+	  variable.
+
+Mon Mar 24 18:23:20 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970324
+
+Thu Mar 20 22:04:59 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (mod_modfunc): forget to clear method cache.
+
+Wed Mar 19 17:06:55 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (program): set methods' default private/public status
+	  correctly under eval().
+
+	* eval.c (eval): set the_class correctly while evaluating string.
+
+Tue Mar 18 12:23:53 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (eval): yield can be called from eval().
+
+	* version 1.0-970318
+
+	* parse.y (program): regexp in condition expression should do
+	  matching operation with $_.
+
+	* re.c (reg_regsub): wrong substitution.
+
+Fri Mar 14 14:36:28 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* hash.c (hash_invert): returns value to key mapping of the
+	  associative array.
+
+	* ext/socket/extconf.rb: set environment variable SOCKS_SERVER to
+	  compile with libsocks.a.
+
+	* ext/socket/socket.c (socks_s_open): SOCKSsocket class to access
+	  internet via SOCKS library.
+
+	* sprintf.c (f_sprintf): unsigned formats display leading double
+ 	  dots for imaginary sequence of signed bit to the left.
+
+	* sprintf.c (f_sprintf): correct width and precision formatting
+	  for big integers.
+
+	* parse.y (yylex): enables negative hex/octal numbers and `_' in
+	  non-decimal numbers.
+
+	* sprintf.c (f_sprintf): %u added for unsigned decimal format.
+
+Thu Mar 13 10:24:27 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* sprintf.c (f_sprintf): wrong output for bignums.
+
+	* array.c (ary_reverse_each): iterates in reverse order.
+
+	* pack.c (pack_unpack): L unpacked signed long.
+
+	* io.c (f_backquote): now returns an empty string for no output.
+
+Wed Mar 12 10:20:30 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/socks/socks.c: socket module with socks library.
+
+Mon Mar 10 20:44:22 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* re.c (reg_regsub): \& for substitution.  \`, \', and \+ are
+	  avaiable also.
+
+Thu Mar  6 01:47:03 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970306
+
+	* sample/rubydb.el (gud): ruby debugger emacs interface
+
+	* lib/debug.rb: ruby debugger
+
+	* parse.y (exprs): more accurate line number display.
+
+Wed Mar  5 21:31:46 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970305
+
+Tue Mar  4 12:28:32 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ruby.c (proc_options): search through RUBYPATH and PATH for
+	  option -S.
+
+Mon Mar  3 22:44:55 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_status): returns nil for exception terminated
+	  threads.
+
+	* eval.c (thread_value): re-raise exceptions.
+
+Sat Mar  1 00:59:47 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_eval): restore $! value after rescue clause, to
+	  re-raise exceptions correctly.
+
+Fri Feb 28 16:43:38 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970228
+
+Thu Feb 27 11:23:41 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_yield_0): redo raises exception
+
+	* eval.c (thread_schedule): bug in interrupt handling by rescue.
+
+Wed Feb 26 00:55:36 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (eval): forgot to restore dynamic local variable
+	  bindings.
+
+Tue Feb 25 11:22:08 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/aix_ld.rb: AIX dynamic load support (not tested).
+
+	* eval.c (rb_eval): wrong return value for defined? super.
+
+	* error.c (exception): more error check.
+
+	* re.c (reg_regsub): wrong substitution when sub expanded to null
+ 	  string.
+
+Fri Feb 21 13:01:47 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970221
+
+	* eval.c (f_require): volatile added.  register variable was
+ 	  recycled, so that GC did not mark that variable.
+
+	* object.c (Init_Object): forget to mark main object (was mostly
+	  ok, but made trouble with early GC.)
+
+Thu Feb 20 11:50:50 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970220
+
+Thu Feb 20 11:25:50 1997  Yasuo OHBA  <jammy@shljapan.co.jp>
+
+	* lib/date.rb: update
+
+Thu Feb 20 08:25:57 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (yylex): forgot tokfix() before rb_intern().
+
+	* lib/tk.rb (TkVariable): give up using trace_var.
+
+Wed Feb 19 00:24:35 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970219
+
+	* pack.c (pack_pack): packed by null for A specifier. must be
+	  space filled.
+
+	* pack.c (pack_unpack): bug in skipping spaces
+
+	* gc.c (xmalloc): garbage collect for every 4 Meg. allocation.
+
+	* string.c (str_split_method): limit worked wrong way.
+
+	* io.c (io_gets_method): misunderstand 0xff in binary files when
+	  $/ == nil.
+
+	* re.c (reg_regsub): re-implement.
+
+	* ext/socket/socket.c (thread_connect): remove O_NONBLOCK, which
+	  is not defined on some platform like NeXT.
+
+Mon Feb 17 13:08:30 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970217
+
+	* object.c (mod_eqq): === extended for subclass check (to use case
+	  as typecase).
+
+Sat Feb 15 02:07:22 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* regex.c (re_compile_pattern): wrong match backref at end of pattern.
+
+	* io.c (arg_read): now works beyond end of file.
+
+Thu Feb 13 16:21:24 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (expr): return/yield now accept normal argument format.
+
+	* parse.y (yylex): a star in `yield *x' must not be multiplication
+	  operator.
+
+Wed Feb 12 15:06:44 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* time.c (time_plus): bug in simple addition.
+
+	* eval.c (thread_raise): raise exceptions from outside.
+
+	* eval.c (Init_Thread): Thread#alive? -- alias for Thread#status.
+
+Mon Feb 10 00:38:55 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ruby.h (Data_Make_Struct): rename macros.
+
+Sun Feb  8 11:48:13 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* io.c (f_syscall): argument offset was wrong.
+
+Fri Feb  7 18:01:17 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970207
+
+	* eval.c: add volatiles to avoid variable crobbering by longjmp().
+
+	* eval.c (f_raise): 1st argument can be the GlobalExit object now.
+
+	* array.c (ary_unshift): no longer accept more than 2 args.
+
+	* eval.c (f_raise): bug if 2nd argument is the exception.
+
+Tue Feb  4 00:37:29 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970204
+
+	* eval.c (eval): check compile errors by nerrs.
+
+	* eval.c (rb_eval): check syntax error by nerrs, not by the return
+ 	  value, which may be NULL.
+
+	* eval.c (compile): Do not clear errinfo.
+
+Mon Feb  3 10:13:06 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (obj_extend): move real inclusion to Module#extend_object
+	  to allow redfinition.
+
+	* object.c (Init_Object): Kernel class is now Module. Object class
+	  became the true root class.
+
+	* object.c (obj_inspect): remove useless buffer.
+
+	* hash.c (any_cmp): disable interrupts and context switching.
+
+	* st.c: remove ALLOW_INTS to disable interrupt during operations.
+
+Fri Jan 31 22:10:08 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* hash.c (hash_rehash): re-register all key-value.
+
+Thu Jan 30 02:14:49 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* io.c (io_reopen): re-implement according to clone() way.
+
+	* io.c (io_clone): copy IO object.
+
+	* struct.c (struct_eql): compare elements by eql?.
+
+	* io.c (io_mode_flags): detect "rb", "wb" etc.
+
+	* io.h (FMODE_BINMODE): added.
+
+	* ext/socket/socket.c (Init_socket): undef BasicSocket.new
+
+	* file.c (Init_File): File.new(path[,mode])
+
+	* io.c (Init_IO): IO.new(fd[,mode])
+
+	* eval.c (rb_method_boundp): forgot to enable priv argument.
+
+	* object.c (Init_Object): remove `=~' from Kernel class.
+
+	* ext/socket/socket.c (open_inet): initialize sockaddr before
+	  calling bind(2).
+
+	* sample/ruby-mode.el (ruby-calculate-indent): skip comment lines
+
+Wed Jan 29 18:43:22 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (Init_Thread): DEFER_INTS during initializing threads.
+
+	* hash.c (Init_Hash): Hash#eql? checks for object identity.
+
+	* eval.c (thread_set_critical): wrong value assigned.
+
+Mon Jan 27 16:10:51 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* io.c (io_print): remove print_on().
+
+	* eval.c (f_missing): proper error message for undefined method
+	  without argument
+
+Sat Jan 25 23:32:32 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (str_sub_s): false alert - sub() does not modify string.
+
+	* array.c (ary_times): negative multiplication detected
+
+	* string.c (str_times): negative multiplication detected
+
+Fri Jan 24 10:51:39 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* time.c (time_arg): month -> 0 == "jan" == "1" == "01", little bit
+	  confusing but wanted to conform japanese style.
+
+	* version 1.0-970124
+
+Fri Jan 24 09:52:49 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* util.c (_fixpath): supports SJIS filenames on DJGPP.
+
+Thu Jan 23 16:52:06 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* README.EXT: update. partially translated into English.
+
+	* ext/extmk.rb.in: inherit $LDFLAGS to the final link.
+
+	* ext/socket/socket.c (Init_socket): add various constants.
+
+Mon Jan 23 11:40:59 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* eval.c (Init_Thread): allocate main_thread first to avoid crash.
+
+Thu Jan 23 02:09:26 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* gc.c (ObjectSpace): API modified. each_object method will do all
+ 	  the iteration.
+
+	* eval.c (proc_call): wrong return from nested lambda.
+
+	* ext/GD/GD.c: debugged.
+
+Wed Jan 22 16:12:25 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970122
+
+	* gc.c (gc_mark): forgot to mark match->str.
+
+	* ext/GD/GD.c: GD interface module.
+
+	* eval.c (PUSH_BLOCK): wrong value pushed as the block level.
+
+Mon Jan 20 14:01:31 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_run): no context switch in the critical section.
+
+Mon Jan 20 09:40:59 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* utils.c: supports 8+3 filenames
+
+Sat Jan 18 01:23:03 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970118
+
+	* regex.c (PATFETCH): need cast to unsigned char.
+
+	* io.c (io_ctl): bug in case when arg is not a string.
+
+	* lib/tk.rb: forgot that Kernel#type returns the class name now.
+
+	* regex.c (re_search): "abc\n" =~ "^$" should not match.
+
+Fri Jan 17 12:31:37 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970117
+
+	* ruby.c (ruby_options): constant PLATFORM, which is in the {cpu}-{os}
+	  form, defined.
+
+	* configure.in: platform information embedded in the interpreter.
+
+	* regex.c (re_search): /^$/ did not match to "" by wrong exit condition.
+
+	* lib/thread.rb: re-write Mutex/Queue based on Thread.critical.
+
+	* eval.c (thread_set_critical): remove Thread.exclusive, add
+	  Thread.critical = TRUE/FALSE instead.
+
+	* re.c (reg_search): re-compile pattern if needed
+
+	* regex.c (PATFETCH): do translate at compile time
+
+Thu Jan 16 00:49:10 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* gc.c (gc_mark_frame): forgot to mark frame->cbase.
+
+	* regex.c (re_compile_pattern): /a$|b)/ causes error.
+
+	* regex.c (re_compile_pattern): /(^|b)/ causes error.
+
+	* version 1.0-970116
+
+	* re.c (Init_Regexp): set RE_CONTEXTUAL_INVALID_OPS flag.
+
+Tue Jan 14 02:09:06 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (proc_call): Proc#callをイテレータとして呼んだ時に対応
+
+	* configure.in: nextstep対応？
+
+	* eval.c (rb_eval): a[b]=cで無駄な配列を割り当てない
+
+	* eval.c (f_send): イテレータとして呼ばれたらイテレータとしてメソッ
+	  ドを呼ぶ．
+
+	* string.c (str_new4): match共有用の生成関数
+
+	* re.c (reg_search): matchの実体(文字列)をマッチを行った文字列と
+	  copy-on-writeで共有
+
+	* string.c (str_hash): toupperをかける条件が違っていた
+
+	* array.c (sort_2): FixnumとStringを特別扱いして高速化
+
+Mon Jan 13 11:03:53 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_create): threadが生成されるまで割込みを設定しない
+
+	* eval.c (Init_Thread): 割込みタイミングを100msecに
+
+Sat Jan 11 00:17:05 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* regex.c (re_search): マッチに失敗する場合があった(本当に直ったか？)
+
+	* io.c (io_ioctl,io_fcntl): 第2引数を省略可能に
+
+	* io.c (io_ioctl,io_fcntl): 戻り値がIOだった．整数(システムコール
+	  の戻り値)を返すようにした．
+
+	* io.c (io_ctl): 引数が整数の時に対応
+
+	* io.c (io_fcntl): file.cから移動
+
+Fri Jan 10 17:01:47 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-970110
+
+	* ext/socket/socket.c (thread_connect): open(connect(2))で他の
+	  threadをブロックしないように
+
+	* eval.c (thread_create): exitでないときにexitだと思い込む
+
+Mon Jan  6 17:42:22 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (str_sub_s): 文字列長より長いoffsetの検出
+
+	* regex.c (re_search): 空にマッチするパターン後の$で失敗
+
+Thu Jan  2 16:36:23 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* file.c (file_reopen): Fileのreopen(pathまたはIOで指定)．
+
+	* io.c (io_reopen): IOのreopen(IOで指定) -- change classつき
+
+Wed Jan  1 11:09:01 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* io.c (f_select): timeoutでnilを返す
+
+Fri Dec 27 13:06:44 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* file.c (file_s_open): サブクラスではそのクラスのインスタンスを返
+	  すように．
+
+Fri Dec 27 08:58:27 1996  <ono@isl.nara.sharp.co.jp>
+
+	* numeric.c (flo_to_s): index()を使わない．strstr()に．
+
+Thu Dec 26 01:34:17 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* lib/tk.rb: placeが使えるように
+
+	* pack.c (endian): マクロDYNAMIC_ENDIANを指定すると実行時にendian
+	  を判定するように．
+
+	* eval.c (thread_alloc): 初期化忘れのメンバがあった．
+
+Wed Dec 25 00:33:19 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-961225
+
+	* io.c (Init_IO): newを無効化
+
+	* lib/tkthcore.rb: tk_call "global $foo; set foo 5"などもできるように
+
+	* eval.c (thread_restore_context): $~, $_でスタックを壊していた
+
+	* process.c (rb_waitpid): threadに一応対応
+
+Tue Dec 24 15:20:58 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.4-961224
+
+	* configure.in: charがunsignedかどうかもチェック
+
+	* regex.c (SIGN_EXTEND_CHAR): __CHAR_UNSIGNED__にも対応
+
+	* pack.c (pack_unpack): 明示的にsigned charを指定．
+
+Mon Dec 23 14:41:23 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ruby.c (load_file): 標準入力からのスクリプトで一時ファイルを使わ
+	  ないように
+
+	* object.c (f_integer): `0x', `0'などでbaseを解釈するように．
+
+Fri Dec 20 01:44:39 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* Makefile.in (flock.o): flockに対応
+
+Thu Dec 19 20:13:32 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.4-961219
+
+Wed Dec 18 00:06:48 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* glob.c (glob_filename): strrchrがマクロの場合に対応
+
+	* configure.in: <sys/select.h>をチェック
+
+	* ext/kconv/kconv.c: 1.62ベースに
+
+	* ext/kconv/kconv.c: Kconvモジュール
+
+	* string.c (str_substr): lenが元の文字列より長い時に対応
+
+	* parse.y (iterator): 「$bar do .. end」などは許さないように
+
+	* parse.y (iterator): FID(foo!,foo?)をdo形式のイテレータにできる．
+
+	* missing/flock.c (flock): lockf()を使って代替
+
+	* file.c (file_flock): flockを実装
+
+Tue Dec 17 12:13:38 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.4-961217
+
+Fri Dec 13 02:05:03 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* configure.in: RUBYLIBのカレントを後回し(@mix/awk offline)
+
+	* dln.c: AIXに対応した？(@mix/awk offline)
+
+	* eval.c (thread_schedule): critical sectionでも明示的なコンテキス
+	  トスイッチは起きないとまずい
+
+	* re.c (reg_search): matchに失敗した時に$~をnilに．
+
+	* re.c (reg_search): 毎回matchを生成するように
+
+Thu Dec 12 17:03:30 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* numeric.c (flo_to_s): 2.0.to_s -> 2.0に
+
+	* eval.c (thread_save_context): $_, $~をthread毎に保存
+
+	* eval.c (thread_kill): main threadではexit(0)
+
+	* string.c (str_split_method): 間違った結果を返していた
+
+Thu Dec 12 15:32:48 1996  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* dir.c: CYGWIN32対応
+
+	* ext/socket/socket.c: CYGWIN32対応
+
+	* io.c: CYGWIN32対応
+
+Thu Dec 12 14:43:51 1996  Jun Kuroda  <j_kuro@pluto.ai.kutech.ac.jp>
+
+	* lib/tk.rb: wish4.2も探索候補に含める
+
+	* config.guess: JCC対応
+
+Thu Dec 12 00:41:17 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.4-961212
+
+	* parse.y (parse_string): """..."""はやはり無くすことにした
+
+	* parse.y (parse_regx): %r|...|でterminatorを \ でエスケープできる
+	  ように
+
+	* signal.c (posix_signal): sigactionを使うsignal
+
+	* configure.in: posix signal/bsd signalの検出
+
+Wed Dec 11 17:47:35 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_schedule): critical sectionではコンテキストスイッ
+	  チが起きないように
+
+	* lib/thread.rb: SharedMutexクラス
+
+	* lib/jcode.rb: String#scanを使うように
+
+Tue Dec 10 12:21:28 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.3-961210
+
+	* string.c (str_split_method): 正規表現に()を含む時にバグ
+
+	* lib/jcode.rb: ちょっとましになった
+
+	* string.c (tr_setup_table): 置換文字が短すぎる(2文字)のときのバグ
+
+Mon Dec  9 11:38:04 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (str_scan): 文字列のマッチを行う．イテレータとしても動
+	  作する
+
+	* regex.c (re_copy_registers): allocatedが初期化されていなかった
+
+	* re.c (match_to_s): $~の文字列化
+
+	* re.c (match_to_a): $~を配列化できるように
+
+	* re.c (match_getter): レジスタが初期化されていなかった
+
+Thu Dec  5 11:06:10 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (str_split_method): マッチしなかった括弧は空文字列を
+	  pushするべきではない
+
+	* string.c (str_succ): アルファベットを含まない文字に対応
+
+Wed Dec  4 10:48:09 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.3-961204
+
+	* io.c (io_binmode): DJGPPでのbinmode対応
+
+	* sprintf.c (f_sprintf): intの範囲の数値は直接sprintfで変換する
+
+	* sprintf.c (f_sprintf): "%02s"に頼らない
+
+	* re.c (reg_search): indexでSEGV
+
+Tue Dec  3 10:09:36 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.3-961203
+
+	* ext/extmk.rb.in (install): INSTALL_DATAからINSTALLに変更
+
+	* dln.c: hpux対応
+
+	* string.c (str_aset_method): 負の値を含む範囲でも例外を起こさない
+
+	* array.c (ary_replace): 負の値を含む範囲でも例外を起こさない
+
+	* array.c (beg_len): beg==endの時，長さ0に
+
+Mon Dec  2 14:07:12 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* configure.in: HP shl対応
+
+	* string.c (str_upto): beg > endの時無限ループに落ちるのを止めた
+
+	* range.c (range_each): String#uptoが再定義された場合に対応
+
+	* string.c (str_split_method): "ABC".split(/(B)/)が誤動作
+
+Sat Nov 30 01:43:52 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_eval): undefでSEGV
+
+Fri Nov 29 12:17:59 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* sample/ruby-mode.el (ruby-parse-region): %Q#..#などに対応．しか
+	  し，区切り文字が演算子で行末にある場合には対応できなかった．
+
+	* re.c (reg_raise): 例外でもスラッシュをエスケープ
+
+	* re.c (reg_inspect): スラッシュをエスケープ
+
+	* parse.y (parse_string): `%[QqXxRr](.)..\1'なる文字列形式(テスト
+	  採用)
+
+	* parse.y (parse_qstring): '''...'''の形式
+
+	* ext/dbm/dbm.c (Init_dbm): 述語key?,value?の追加
+
+	* ext/dbm/dbm.c (Init_dbm): includes->include?
+
+	* hash.c (Init_Hash): 述語key?,value?,include?の追加
+
+	* eval.c (rb_eval): unlessでelse節が実行されない(うーん)
+
+	* string.c (str_sub_iter_s): イテレータブロック内でマッチが行われ
+	  ると位置がずれる(時に無限ループに落ちる)
+
+	* string.c (str_resize): lenが0の時sizeの調整が行われなかった
+
+Thu Nov 28 00:59:54 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.3-961128
+
+	* parse.y (parse_string): 3-quote styleの文字列(例:"""abc"d"e""")
+
+	* configure.in (EXTSTATIC): extを静的にリンクする時にはrubyはdllを
+	  使うように
+
+	* io.c (Init_IO): getsの引数が間違っていた
+
+	* string.c (str_each_line): RSを明示的に指定できるように
+
+Wed Nov 27 12:37:46 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.3-961127
+
+	* eval.c (rb_eval): iver defined? でselfを指定するのを忘れた
+
+	* io.c: gets等でRSを明示的に指定できるように
+
+	* ext/extmk.rb.in (install): static linkに失敗
+
+Tue Nov 26 10:33:04 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.3-961126
+
+	* string.c (str_sub_s): 置換後の文字列長さが間違っていた
+
+Mon Nov 25 09:11:22 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* numeric.c (fix_rshift): 32以上の右シフトで0を返すように(Cの
+	  rshiftは(x>>(y%32))を返していた)．
+
+	* string.c (str_gsub): 置換が行われない場合があった
+
+	* string.c (str_resize): 本当に必要な時だけrealloc
+
+Thu Nov 21 04:13:21 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* configure.in (EXTSTATIC): --with-static-linked-extで全てのモジュー
+	  ルを静的リンクするように
+
+	* pack.c (pack_unpack): 行末の改行がない時にもチェックサムをスキッ
+	  プするように
+
+Wed Nov 20 21:42:51 1996  Yasuo OHBA  <jammy@shljapan.co.jp>
+
+	* configure.in: freebsd対応
+
+Wed Nov 20 10:24:24 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/extmk.rb.in (install): 通常リンク用のLDFLAGSとダイナミックリ
+	  ンク用のDLDFALGSを分離
+
+	* ext/extmk.rb.in (install): コンパイルの成功したものを静的リンク
+	  のリストに追加する
+
+	* eval.c (f_missing): オブジェクトの文字列表現が長すぎる時バッファ
+	  を書き潰していた
+
+	* process.c (proc_exec_v): forkした後例外を発生させてはいけない
+
+Tue Nov 19 13:28:15 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.3-961119
+
+	* eval.c (mod_method_defined): Module#method_defined? の追加
+
+	* parse.y (call_args): 引数が唯一のコマンドコールである時のバグ(戻
+	  り値が展開されてしまう)
+
+Mon Nov 18 13:28:18 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (str_sub): 失敗した時にnilを返していた
+
+	* string.c (str_split_method): 検索開始位置が移動してなかった
+
+	* ext/socket/socket.c (sock_s_getservbyaname): まだ間違っていた
+
+	* version 0.99.3-961118
+
+	* string.c (str_sub_s): 元の文字列を置換するのを止めた
+
+	* pack.c (encodes): 領域外をアクセスしていた
+
+Fri Nov 15 17:10:35 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* bignum.c (big_divmod): Bignumが引数の場合の対応忘れ
+
+	* sample/ruby-mode.el (ruby-expr-beg): word?形式への対応が不完全
+
+Wed Nov 13 15:42:40 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (str_tr_s_bang): tr_sでtrが行われていなかった
+
+	* eval.c (rb_eval): autoloadクラスのチェック
+
+	* string.c (f_sub): subがsub!と同じ動作になっていた
+
+	* eval.c (thread_sleep): stopとsleepの分離
+
+Mon Nov 11 13:53:19 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.3-961111
+
+	* numeric.c (fix_step): to, stepが整数以外の場合に対応
+
+	* eval.c (rb_call): dynamic varがdynamic scopingになっていた(これ
+	  はまずい)
+
+	* string.c (str_chop_bang): 長さ0の文字列のchopで，領域外のアクセ
+	  スが発生していた．
+
+	* parse.y (yyerror): 割り当てた領域外をアクセスしていた
+
+Fri Nov  8 11:54:46 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_yield): scopeをheapにコピー
+
+Thu Nov  7 09:56:53 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* numeric.c (num_coerce): とりあえず両辺をFloatに変換することに
+
+Wed Nov  6 10:45:13 1996  Yasuo OHBA  <jammy@shljapan.co.jp>
+
+	* lib/parsearg.rb: 第2引数を変更．
+
+Tue Nov  5 14:21:09 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.3-961105
+
+Sat Nov  2 01:11:40 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* bignum.c (big_pow): typo (dy -> dx)
+
+	* bignum.c (big_divmod): 知らない型はfloatに変換してみる
+
+	* numeric.c (fix_lshift): 境界条件のバグ(負になっていた)
+
+	* bignum.c (big_pow): 無駄なfloatへの変換をなくした
+
+	* math.c (math_atan2): typo(x -> y)
+
+Fri Nov  1 15:30:59 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/socket/socket.c (sock_gethostname): gethostnameがない時には
+	  unameを使ってホスト名を得る
+
+	* ext/etc/etc.c (etc_getlogin): getloginがNULLを返しても環境変数を
+	  調べるように
+
+	* object.c (krn_clone): オブジェクトのフラグもコピー
+
+	* hash.c (rb_cmp): ハッシュの比較を`=='でなく`eql?'に変更
+
+	* math.c (Need_Float): Float()を使って変換する
+
+	* compar.c (cmp_gt): 以前の右辺を返す仕様の名残が残っていた
+
+Thu Oct 31 12:55:51 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.3-961031
+
+	* numeric.c (Init_Numeric): typo
+
+	* eval.c (error_print): 長すぎるtrace backを途中省略する
+
+	* regex.c (re_compile_pattern): 全角のrangeに対応
+
+Wed Oct 30 03:03:18 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.3-961030
+
+	* io.c (f_ungetc): 関数を追加
+
+	* eval.c (dyna_var_asgn): return値忘れ
+
+Tue Oct 29 10:05:28 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (f_split): 関数splitを追加
+
+	* eval.c (rb_call): ネストした外側のクラス/モジュールの定数を参照
+	  できるように
+
+Mon Oct 28 09:51:03 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (str_sub): offsetが文字の末尾にある時のチェック
+
+	* regex.c (re_match): 割り当てるレジスタの数が1多かった
+
+	* io.c (io_gets): $/ = ""の動作をperlに合わせる(awkとはちょっと違
+	  うらしい)
+
+	* io.c (io_gets): $/ = nilの時少し高速化
+
+	* string.c (str_split_method): 括弧がnullにマッチした時にも無視し
+	  ないように
+
+	* string.c (str_split_method): 括弧にマッチした分はlimitの数に含め
+	  ないように．
+
+	* numeric.c (num_coerce_bin): coerceの定義を変更，2要素の配列
+	  [x,y]を返すように
+
+	* sample/ruby-mode.el (ruby-calculate-indent): "do |aa|"の対応を改
+	  善した．
+
+Sat Oct 26 01:43:51 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/marshal/marshal.c (w_object): ビルトインクラスのサブクラスを
+	  正しく復旧できるように
+
+	* ext/marshal/marshal.c (w_object): ユーザ定義dumpの優先
+
+	* numeric.c (flo_coerce): Float()を使って定義
+
+	* numeric.c (Init_Numeric): Numericのnewのundefはまずい
+
+	* ext/marshal/marshal.c (w_symbol): シンボルの内容(文字列)は一度し
+	  かファイルに書き出さない．
+
+	* sample/ruby-mode.el (ruby-parse-region): if/while修飾子に対応し
+	  なくなっていた
+
+	* bignum.c (Init_Bignum): Bignum.newを除く
+
+	* eval.c (rb_eval): 引数評価後にファイル名と行番号を再設定
+
+	* numeric.c (flo_div): typo
+
+	* sample/ruby-mode.el (ruby-parse-region): def /, def `に対応
+
+Fri Oct 25 09:26:29 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* sample/ruby-mode.el (ruby-calculate-indent): "do |aa|"に対応
+
+	* array.c (ary_aset): indexがfixnumの場合ちょっと高速化
+
+	* eval.c (thread_fd_writable): 書き込み前のselectチェック
+
+	* array.c (ary_assoc): 無限ループに落ちた
+
+	* eval.c (thread_wait_for): selectがエラー終了した時，linux以外で
+	  の動作が正しくなかった．
+
+Thu Oct 24 08:26:48 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (backtrace): `$@'を文字列から配列に変更した．
+
+	* eval.c (eval): eval中の例外発生位置を保存する
+
+	* bignum.c (bigsub): オペランドの大小比較の失敗
+
+	* re.c (reg_search): 直接参照がない時にも`$~'がセットされるように
+
+Wed Oct 23 10:40:10 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.2-961023
+
+	* ext/marshal/marshal.c (r_bytes): mallocをやめ，allocaを使う
+
+	* sample/ruby-mode.el (ruby-calculate-indent): 括弧の対応を変更．
+	  ()内ではインデントをレベルを合わせるように
+
+Tue Oct 22 12:59:11 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* hash.c (hash_s_new): sizeを指定できるように
+
+	* ext/marshal/marshal.c (w_object): dumpする深さ制限を指定できるよ
+	  うに
+
+	* array.c (ary_s_new): sizeを指定した時の初期化忘れ
+
+	* object.c (f_float): big2dblの宣言忘れ．
+
+	* bignum.c (bigsub): 大きさの近いBignum同士の演算で結果が負になる
+	  場合に間違いがあった．
+
+	* array.c (ary_aset): 置換先と置換元が同じ長さの時内容を
+	  shift(memmove)しないように．
+
+	* ext/marshal/marshal.c (marshal_dump): ファイルフォーマットにバー
+	  ジョンを埋め込むように
+
+	* ext/marshal/marshal.c (tmpnam): linux-aout-dln用に定義
+
+Mon Oct 21 08:40:20 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/socket/socket.c (sock_s_gethostbyname): hostent構造体の情報
+	  を返す
+	  (sock_s_gethostbyaddr): IPアドレスからhostent構造体を得る
+	  (sock_s_getservbyaname): getservbyname(3)
+
+Fri Oct 18 10:37:36 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* sample/ruby-mode.el (ruby-indent-to): 移動先カラムが負になるバグ
+
+	* eval.c (compile): evalで元ソースの行番号でエラーを表示する
+
+Thu Oct 17 09:52:28 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (eval): evalで文法エラーがあった時にSEGV
+
+	* lib/safe.rb: Restricted.evalの中だけ制限を加える．
+
+	* eval.c (error_print): バックトレースの出力．callerで例外発生位置
+	  を調整した時に問題が出る(そんなことをしなければ良いのだが…)
+
+	* eval.c (make_backtrace): バックトレースの生成
+
+Wed Oct 16 12:56:22 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ruby-man-0.99.2-jp/index.html: 日本語版ドキュメントの完成(長かった…)
+
+	* re.c (reg_regcomp): $=がnilの時の処理
+
+	* string.c (f_chop): $_に対するchop
+
+Tue Oct 15 11:04:23 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.2-961015
+
+Mon Oct 14 18:22:38 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_schedule): BOW対応．selectが-1を返した時にバグ(実
+	  はdo .. whileがcontinueで先頭にジャンプすると思い込んでいた．条
+	  件の直前だったのね ^^);;;;;
+
+	* sample/ruby-mode.el (ruby-mode-syntax-table): ?のsyntaxが"/"では
+	  まずいらしい
+
+	* hash.c (rb_hash): name conflict
+
+Fri Oct 11 00:23:05 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.2-961011
+
+	* ext/marshal/marshal.c (w_object): 結局動いていなかった循環オブジェ
+	  クト対応を外した．
+
+	* hash.c (rb_hash): Fixnumと文字列の高速化
+
+	* ext/marshal/marshal.c (w_object): 無駄なデータの削除(フォーマッ
+	  トの非互換性)
+
+	* io.c (io_readline): 戻り値の不備
+
+	* ext/marshal/marshal.c (marshal_dumps): MSDOS対応
+
+	* ruby.c (load_file): MSDOS対応
+
+Wed Oct  9 17:46:27 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/extmk.rb.in (install): 無駄なコピーを避ける
+
+	* string.c (str_sub_method): マッチがなかった時のString#subの値が
+	  違っていた．
+
+	* eval.c (obj_extend): extendした時にobject_extendedを呼ぶように
+
+Tue Oct  8 00:55:38 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_alloc): 割当の平均化
+
+	* eval.c (thread_schedule): joinのバグを修正
+
+	* eval.c (thread_wait_for): selectへの割込みなどに対応
+
+	* eval.c (thread_select): linuxのselectの挙動に対応(timeoutが変化
+	  する)
+
+Mon Oct  7 09:47:19 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.2-961007
+
+	* eval.c (PUSH_BLOCK): the_classの保存を忘れていた．
+
+	* ext/dbm/dbm.c (fdbm_store): sizeの保存する場所が間違っていた
+
+	* ext/socket/socket.c (s_accept): thread対応していなかった
+
+Sat Oct  5 01:32:27 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* io.c (io_readchar): EOFで例外を発生させる
+
+Fri Oct  4 11:59:54 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/marshal/marshal.c (w_object): HashとObjectの復旧に必要なハッ
+	  シュテーブルが渡されていなかった．
+
+	* variable.c (rb_path2class): ユーザ定義クラスの復旧に失敗していた
+
+	* variable.c (rb_path2class): クラスが存在しない時のエラーをFatal
+	  からNameErrorへ．
+
+	* range.c (range_s_new): first,lastが両方Numericの時エラーになって
+	  いた．
+
+	* range.c: start->first, end->last
+
+Wed Oct  2 02:02:46 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* file.c: DJGPPでchmod,chownを使えるように(ってDOSにchownがあるのか?)
+
+	* class.c (rb_singleton_class): ビルトインクラスもextendしたり特異
+	  メソッドを追加したりできるように
+
+	* variable.c (rb_set_class_path): ユーザ定義のトップレベルクラスに
+	  pathを設定しない
+
+	* eval.c (eval): 例外がRuntimeErrorに化けていた
+
+	* eval.c (eval): eval中の例外の表現の改善
+
+	* eval.c (eval): eval_with_bindingとの一本化
+
+	* eval.c (rb_eval): クラス/モジュール定義の中から定義中のクラス/モ
+	  ジュールが参照できるように
+
+Tue Oct  1 01:40:09 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.2-961001
+
+	* parse.y: cur_crefが2度宣言されていた
+
+	* signal.c (trap): SIGSEGV，SIGBUSのない機種に対応
+
+	* io.c (Init_IO): 引数タイプの指定間違い
+
+Mon Sep 30 15:28:00 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.2-960930
+
+	* config.guess,config.sub: $host_osが正しく設定されない
+
+	* eval.c (rb_eval): yieldで正しくないselfが設定されていた
+
+	* eval.c (ruby_run): toplevelの例外処理のバグ
+
+Mon Sep 30 09:13:26 1996  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* djgpp対応
+
+Sat Sep 28 02:45:10 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.2-960928
+
+	* sample/ruby-mode.el (ruby-beginning-of-block): ブロックの先頭に
+	  移動(正しくインデントしていないと動作しない)
+	  (ruby-end-of-block): 同上
+
+	* eval.c (class_s_new): Class#newがイテレータとして呼ばれた時は
+	  initializeもイテレータとして呼ばれるように
+
+	* signal.c (sigsegv): SEGVでbacktraceを表示するように
+
+Fri Sep 27 09:51:07 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.2-960927
+
+	* eval.c (error_print): 引数のないraiseでメッセージが正しく表示さ
+	  れるように．
+
+	* eval.c (rb_longjmp): mesgがnilの時RuntimeErrorを生成する．
+
+	* eval.c (f_raise): 引数がない時に対応
+
+	* eval.c (thread_mark): stack上にないデータのアドレス変換を行って
+	  いた．
+
+	* eval.c (Init_Thread): 割込みの間隔が1秒と長すぎた．
+
+Thu Sep 26 16:02:45 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_schedule): 一度ペンディングになるとフラグがクリア
+	  されていなかった．
+
+	* process.c (rb_proc_exec): system/execの引数が空文字列であった場
+	  合，例外を発生すべきだった．
+
+	* config.sub/config.guess: 新しいものに置き換え
+
+Thu Sep 26 15:41:35 1996  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* io.c (next_argv): -i.bakをBOWとDOSに対応．
+
+Thu Sep 26 01:31:43 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* io.c (io_sysread): EOFで例外
+
+	* io.c (f_readline): EOFで例外を発生するように．getsは互換性のため
+	  nilを返すままにする
+
+	* eval.c (proc_call): lambdaからのreturnでIN_BLOCKフラグが立ったま
+	  まだった
+
+	* eval.c (PUSH_BLOCK2): threadに対応するためBlockを一度stackにコピー
+
+Wed Sep 25 11:54:11 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (method_call): Const::method()形式を使えるようにしてみた．
+	  引数括弧は省略できない．
+
+	* sample/test.rb: Process.killの存在を確かめてからテストを行う
+
+	* eval.c (eval_with_binding): 第2引数としてbinding(またはlambda)を
+	  与えるとその環境でevalを実行するようにした
+
+	* eval.c (f_binding): 現在のbindingを返す関数
+
+	* eval.c: block構造体にthe_classを保存するメンバを追加
+
+	* process.c (Init_process): kill,wait,waitpidをProcessに移動
+
+Tue Sep 24 02:44:43 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* sample/ruby-mode.el: いろいろ問題が多いので以前の高速化は破棄．
+	  別のアプローチを使った．
+
+	* lib/tk.rb (Tk.pack): 複数のウィンドウを受け付けるpack
+
+Sat Sep 21 11:08:09 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (exprs): 空文も受け付けるように文法を変更．今までは改行
+	  の連続だけが許されていた．
+
+Fri Sep 20 11:39:18 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* Failの大半を名前つき例外に変更．
+
+	* re.c (Init_Regexp): 名前つき例外を導入．
+
+	* eval.c (f_missing): Objectはinspectしない．
+
+	* object.c (inspect_i): Object#inspectでloopに対応．
+
+	* regex.c (re_search): /^$/が""にマッチしなかった．
+
+Thu Sep 19 19:25:12 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* regex.c (re_search): /^$/が非空行にマッチしていた．
+
+Tue Sep 17 10:28:11 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.2-960917
+
+Mon Sep 16 10:47:56 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* sample/ruby-mode.el (ruby-calculate-indent): 演算子継続の場合の
+	  文字列の判定のバグ
+
+	* sample/ruby-mode.el (ruby-calculate-indent): elseなどの次の行の
+	  インデント計算を正しく．
+
+Sat Sep 14 08:37:19 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.2-960914
+
+Fri Sep 13 08:06:03 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/socket/socket.c (tcpaddr): port番号にntohsをつけ忘れ
+
+	* dln.c (link_undef): テーブルの種類が間違っていた．
+
+	* bignum.c (bigadd): 引き算が発生する時に計算違いが起きていた．
+
+	* parse.y (iter_do_block): do..endでもdynamic variableを．
+
+	* bignum.c (big_pow): より正確な計算を(整数同士ではfloatに変換しな
+	  い)．
+
+Thu Sep 12 13:11:55 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* variable.c (rb_set_class_path): Stringクラスが初期化される前に
+	  Stringを作っていた．組込みクラスにはpathはいらない
+
+	* parse.y (yylex): 0.1が0になっていた
+
+	* parse.y (yylex): 行番号の不整合
+
+	* gc.c (oblist_live_obj): 今「生きている」全部のオブジェクトを返す
+	  イテレータ．そのクラス(またはサブクラス)の全部のインスタンスを返
+	  すeach_object_ofも定義した．
+
+	* class.c (rb_define_class_id): 無駄なクラスを割り当てていた．結果
+	  として未初期化のクラスオブジェクトが存在していた．
+
+Wed Sep 11 00:56:23 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (yylex): octalの定数の検出をより正確に(090はエラーとか)．
+
+	* bignum.c (big_minus): yがxより大きい場合にエラー．
+
+	* parse.y (yylex): エラー行番号の表示をより正確に
+
+	* sample/ruby-mode.el (ruby-expr-beg): 変数名が1文字の時誤動作して
+	  いた．
+
+	* sample/ruby-mode.el (ruby-calculate-indent): ?/でループに落ちい
+	  たバグを修正．
+
+	* enum.c (enum_min,enum_max): sortのようにイテレータとしても動作す
+	  るように．
+
+	* enum.c (enum_find_all): typo
+
+Tue Sep 10 12:07:12 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* node.h (nd_line): NODEのlineをflagsに押し込めてオブジェクトサイ
+	  ズを小さくした．制限:32bit intのマシンの場合，ファイルの行数が
+	  32767を越えると正常に表示されない．
+
+	* st.c: hashとcompareの関数メンバを構造体にパック，クラス的な使い
+	  方を行う．1 tableあたり4 byteの節約．
+
+Mon Sep  9 16:35:54 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* file.c (file_truncate): 提供されない時には特別な例外を発生するよ
+	  うに．
+
+	* eval.c (Init_Proc): 不適切な位置のlocal-jumpを例外に．
+
+Sat Sep  7 17:06:15 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (proc_call): まだスコープがスタック上にある時には局所脱出
+	  を有効にする．これで，procを生成してcallすることは，スコープを脱
+	  出しない限り，yieldと同じ意味を持つことになる．
+
+Fri Sep  6 13:30:59 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* sample/ruby-mode.el (ruby-indent-to): インデントが変わらない時に
+	  はバッファを変更しない．
+	  (ruby-calculate-indent): まず文字列の内部か判断してから，前の行
+	  からパーズを行う．defunが大きくなった時の高速化．
+	  (ruby-in-string-p): 文字列の内部かどうかを判断する関数(以前の
+	  parseから分離)
+	  (ruby-parse-region): 文字列に対する処理をはずす．
+	  (ruby-beginning-of-block): ブロックの先頭に
+	  (ruby-end-of-block): ブロックの末尾に(遅い…)
+
+Thu Sep  5 14:23:07 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* file.c (file_s_split): [dirname,basename]にsplitする．
+
+	* eval.c (rb_eval): evalの中でも定数の値が正しくなるように．これで
+	  定数に関しては静的なスコープが保証されるようになった．
+
+	* st.c (rehash): ハッシュ拡大の系数を2から1.79に．割算がより良い値
+	  を返すように．
+
+Thu Sep  5 00:32:07 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (class_superclass) クラスのスーパークラスを返すメソッド．
+
+Wed Sep  4 16:54:56 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* random.c (f_rand): Bignumやlongの範囲を越えるFloatに対する乱数も
+	  発生できるように．
+
+	* struct.c (struct_alloc): Fatalではなく例外を発生させるように(通
+	  常の使用で発生しうる)．
+
+	* struct.c (struct_s_members): Structの特異メソッドではなく，生成
+	  されたStructクラスの特異メソッドにした．
+
+	* st.c (st_init_table): ruby専用にパラメタを固定にした(サイ
+	  ズが減った)
+
+Mon Sep  2 11:37:59 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* array.c (ary_shift): capaがあまりにも大きい時には領域をREALLOC
+	(ary_pop): 同上
+
+	* string.c (str_inspect): multibyte character 対応にミス．
+	(str_inspect): unsigned charにしないと符号展開されてしまう
+
+	* parse.y (primary): `::'をprimaryに移動 Foo::Bar.Bazがエラーにな
+	  らないように．
+
+	* parse.y (primary): オペレータ形式の特異メソッドが定義できない
+
+	* random.c (f_rand): maxが0の時に対応
+
+	* io.c (io_printf): 関数を定義していたがインタプリタに登録していな
+	  かった．
+
+	* file.c (file_s_basename): 第2引数が無い時にエラー．
+
+Thu Aug 29 10:49:40 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (expr): イテレータの新形式に「method do .. end」形式を採
+	  用した．もちろん昔の形式も有効．
+
+	* sample/ruby-mode.el (ruby-calculate-indent): endの数の方が多い場
+	  合にもエラーを起こさないように．
+
+Wed Aug 28 09:41:36 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* numeric.c (upto,downto,step,times): 対象がfixnumの範囲を越えても
+	  動作するように．
+
+Mon Aug 26 10:04:37 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* missing/setenv.c (envix): typo(missing `== 0' for memcmp)
+
+	* dir.c (dir_foreach): foreach(dir open -> read loop -> closeまで)
+
+	* io.c (io_foreach): foreach(file open -> read loop -> closeまで)
+
+	* Fatalのうち捕捉可能ないくつかを例外に．
+
+Sat Aug 24 23:56:37 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* bignum.c (bigdivmod): FIX2INT -> INT2FIX 大間違い
+
+Fri Aug 23 18:13:03 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* regex.c (re_free_registers): allocateしていない時には当然 free
+	  してはいけない．
+
+Thu Aug 22 01:20:35 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_create): 外側から強制終了させられたthreadは
+	  cleanupする必要が無い．
+
+Wed Aug 21 09:57:28 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_create): threadを終了させた大域脱出の情報を
+	  main_threadに渡すように．
+
+	* parse.y (call_args): 最終引数に括弧を省略したメソッド呼出しを置
+	  けるように(例: print foo bar, baz == print(foo(bar,baz)))
+
+Tue Aug 20 13:37:16 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (masign): 多重代入とrest引数の動作を合わせて空の配列を代
+	  入するように．
+
+	* parse.y (arg): defined?の強度をもうちょっと強く
+
+	* eval.c (error_print): -wで例外名も表示するように
+
+	* eval.c (rb_eval): 新構文に対応
+	(handle_rescue): 捕捉する例外を kind_of? で同定
+
+	* parse.y (primary): rescueの構文を変更(同定引数の追加，複数rescue)
+
+	* Fail()のかなりを適当な例外を使うように
+
+	* eval.c (thread_interrupt): Interrupt(今はnon-local jump)は
+	  main-threadに送られるように．
+
+	* eval.c (rb_longjmp): $! の内容を文字列から例外クラスに変更
+	(rb_raise): rb_fail から名称変更
+	(rb_interrupt): 例外化
+	(rb_exit): 例外化
+
+	* error.c (Init_Exception): 例外クラスの新設(文字列のサブクラス)
+
+Mon Aug 19 19:40:52 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* signal.c (trap): 古いハンドラを返すように．
+
+Wed Aug 14 00:07:18 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_trap_eval): ハンドラのためにthreadをforkすることを止
+	  めた．
+
+	* eval.c (thread_mark): thread毎の $!, $@ をマークし忘れ
+
+	* ext/dbm/dbm.c (fdbm_delete): イテレータとして呼ばれた場合，要素
+	  が無ければブロックを評価する．
+
+	* hash.c (hash_delete): イテレータとして呼ばれた場合，要素が無けれ
+	  ばブロックを評価する．
+
+	* array.c (ary_delete): イテレータとして呼ばれた場合，要素が無けれ
+	  ばブロックを評価する．
+
+	* eval.c (rb_interrupt): SIGINTのデフォルトをexitから特別な大域脱
+	  出に．やはり割り込まれた位置の表示が無いのは寂しいので．
+
+Tue Aug 13 01:34:00 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_exit): sub-thread内でのexitもstatusを保存するように
+	(thread_create): 自thread内のexitに対応
+
+	* signal.c (sighandle): SIGINTのデフォルトハンドラはexitするように
+	  (以前は例外を発生していた)．
+
+	* 例外の一部をFatalに．
+
+	* string.c (str_aset): 文字列の置換の対象が部分文字列でなかった時，
+	  例外を発生させないように
+
+	* eval.c (proc_call): Procの中からbreak/nextは通し，他のものは通さ
+	  ないように
+
+Mon Aug 12 14:15:09 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* object.c (krn_type): 文字列を返す
+
+	* eval.c (thread_create): sub-thread内でのexitに対応
+
+	* numeric.c (fix_type): 文字列を返す
+
+	* io.c (f_p): デバッグ用データ表示メソッド
+
+	* eval.c (f_missing): nil/TRUE/FALSEを特別扱い
+
+	* string.c (str_inspect): 長い文字列を短縮表示．inspectの働きを
+	  human readable stringの生成に統一(re-generatable string は正式に
+	  無くなった)．
+
+Sat Aug 10 16:54:21 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* object.c (Init_Object): kernel/nil/false/trueのクラス名を変更(小
+	  文字に)，rubyスクリプトからアクセスできないように．
+
+	* eval.c (rb_eval): CONSTANTのアクセス先を単純化．crefを使わない．
+
+	* eval.c (f_eval): 特異メソッド内でも定数の値が正しくなるように
+
+Fri Aug  9 12:23:17 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* array.c (ary_concat): append -> concat Stringに合わせた
+
+	* parse.y (yylex): `$;'が使えなかった．
+
+	* array.c (ary_push_method): 複数引数を受け付けるように．
+	(ary_unshift): 複数引数を受け付けるように．
+
+	* io.c (io_popen): IO.popenでcommand pipeが開けるように．
+
+	* object.c (Init_Object): KernelとNilをruby scriptからアクセスでき
+	  ないように．
+
+Thu Aug  8 01:21:47 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* object.c (f_integer): 整数への変換関数
+	(f_float): 実数への変換関数
+	(f_string): 文字列への変換関数
+	(f_array): 配列への変換関数
+
+	* bignum.c (big_to_i): FIXNUMの範囲でない時はBignumのまま返すよう
+	  に変更．
+
+Wed Aug  7 09:28:38 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99.1-960807
+
+	* parse.y (mlhs): 「*foo = 1,2,3」タイプの多重代入も可能に．
+
+	* object.c (Init_Object): クラスTrue/Falseをruby scriptからアクセ
+	  スできないように．
+
+	* object.c (nil_inspect): inspect表現は"nil"に
+
+	* io.c (io_print): nilのprintをnilに．
+
+	* object.c (nil_to_s): nilの文字列表現を""に．
+
+Tue Aug  6 01:12:32 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* dir.c (dir_s_open): file descripterが足りない時にはgcしてからも
+	  う一度openしてみる．
+
+	* io.c (rb_fopen): すべてのfopen()についてfile descripterが足りな
+	  い時にはgcしてからもう一度openしてみる．
+
+	* ext/socket/socket.c (Init_socket): 定数の追加．
+
+	* sample/ruby-mode.el (ruby-indent-to): インデント後のカーソル位置
+	  の調整を正しく．
+
+	* gc.c (gc): 割込みチェックを行わない(Cコードの中で安心して
+	  malloc()が使えなくなるので)．
+
+	* st.c (call_hash_func): signalとthreadによる割込みに対応．
+
+	* sig.h (DEFER_INTS): 割込み禁止区間の指定
+
+	* eval.c (f_require): threadによるrequireの競合に対応(最初の
+	  requireが終了するまで他のthreadは待つ)．
+
+	* bignum.c (str2inum): 0x80000000の値が負になっていた
+
+	* sprintf.c (f_sprintf): 文字列末尾，行末の単独の`%'に対応
+
+	* bignum.c (big_cmp): 比較の結果が逆になる時があった．
+
+Mon Aug  5 10:58:13 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* process.c (proc_exec_v): 例外のメッセージを分かりやすく．
+
+	* ext/dbm/dbm.c (fdbm_store): nilを格納すると要素の削除になる
+
+	* ext/dbm/dbm.c: サイズをキャッシュ．
+
+Sat Aug  3 01:52:52 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_fail): `fail'が引数無しで呼ばれた時だけ以前の`$@'を保
+	  存するように．
+
+	* eval.c (f_fail): frameの調整
+
+Fri Aug  2 11:26:21 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/socket/socket.c (bsock_setopt): valとしてTRUE/FALSE/Fixnumも
+	  受け付けるように．
+
+	* ext/socket/socket.c (Init_socket): SO_REUSEADDR等の定数の追加
+
+	* ext/md5/md5init.c: md5モジュール(初の複数ファイルからなるモジュー
+	  ルでもある)
+
+	* ruby.h (Make_Data_Struct): Data: objectのinstance変数に格納 ->
+	  Data型のObjectに(Dir,Time,Proc,Thread,DBM)
+
+Thu Aug  1 11:38:44 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/dbm/dbm.c (fdbm_store): valueが文字で無い時に対応
+
+Wed Jul 31 10:53:42 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/socket/socket.c (open_inet): htonsが必要であった
+	(tcpaddr): ntohlで変換した
+
+	* process.c (rb_proc_exec): execvp -> execv
+
+Tue Jul 30 17:48:33 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c: `$?'をthread localに
+
+	* Makefile.in (install): install時にstripを行う
+
+	* configure.in: install時のstripの検出
+
+	* configure.in: NEXTSTEP対応
+
+	* version 0.99.1-960730
+
+Tue Jul 30 16:40:35 1996  SHIROYAMA Takayuki  <psi@fortune.nest.or.jp>
+
+	* dln.c (dln_load): NeXT dln(mach-o)対応．configureは未対応
+
+Tue Jul 30 09:46:51 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* process.c (f_system): 複数引数もとれるように
+
+	* process.c (f_exec): 複数引数もとれるように
+
+	* array.c (ary_append): 配列(またはEnum)の要素を破壊的に追加
+
+	* array.c (ary_plus): Enumはその要素を追加
+
+	* file.c (file_s_open): File.openを追加
+
+	* struct.c (struct_new): FIX2INTを忘れていた
+
+	* file.c (Init_File): exists? -> exist?
+
+	* object.c (obj_is_kind_of): is_kind_of? -> kind_of?, is_a?
+
+	* object.c (obj_is_instance_of): is_instance_of? -> instance_of?
+
+Mon Jul 29 16:40:02 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (parse_regx): 式展開を行った場合，casefoldの設定ができて
+	  いなかった．
+
+	* object.c (true_type): TRUE/FALSEにtypeを実装．
+
+	* parse.y (read_escape): 3文字以内のoctalに対応(\0とか)
+
+Fri Jul 26 00:31:45 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* array.c (ary_reverse_bang): in-placeで配列を反転させる
+	(ary_sort_bang): in-placeでsortする
+	(ary_sort): sortした配列を返すように
+	(ary_delete_at): 指定した位置の要素を削除する
+
+	* eval.c (rb_call): stack深さチェックを毎回は行わないように
+
+	* error.c (Warning): 実行中のwarningが表示されていなかった
+
+	* eval.c (compile): 例外発生を分離．
+
+	* eval.c (f_eval): 変数rb_in_evalを正しく管理するように
+
+	* ext/dbm/dbm.c (fdbm_store): 格納するkeyを文字列に変換
+
+	* eval.c (rb_call): 無限再帰のチェックを大域脱出を行うC methodにも
+	  対応させた．threadのstack深さチェックルーチンを流用．
+
+	* parse.y (yylex): 第1引数のunary -/+の判定が間違っていた．
+
+	* parse.y (yylex): unary +で数字を余計に読んでいた(ex. +5 -> 55)
+
+Thu Jul 25 12:15:04 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (yylex): 曖昧でない引数に対して警告を出していた．
+
+	* eval.c (iterator_p): 引数で呼んでも正しい結果を返すように．
+
+	* parse.y: break/next/redo/retryのメソッド化．
+
+	* sample/ruby-mode.el (ruby-calculate-indent): nestのチェックミス
+
+	* sample/ruby-mode.el (ruby-parse-region): 予約語のチェックを強化
+
+	* parse.y (primary): unless/untilの復活
+
+Tue Jul 23 18:50:10 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* array.c (Array#empty?), Hash.c (Hash#empty?), ext/dbm/dbm.c (DBM#empty?):
+	  空の判定述語
+
+	* eval.c (f_unless): ifの逆をするイテレータ
+
+	* eval.c (f_until): whileの逆をするイテレータ
+
+	* parse.y: notの優先順位をand/orより高く
+
+	* parse.y (expr): `!'を引数括弧を省略したcallでも有効に
+
+Mon Jul 22 10:15:38 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99-960722
+
+	* array.c (ary_print_on): OFSのNILチェックが不完全
+
+	* ruby.c  (load_file): 標準入力からのスクリプトが空の時に対応．
+
+	* ruby.c (proc_options): -wでは引数無しの時には標準入力からスクリ
+	  プトをとる(-vではたんに終了する)．
+
+	* array.c (ary_compact): nilの要素を取り除くメソッド
+
+	* array.c (ary_nitems): nilでない要素を数えるメソッド
+
+Sun Jul 20 00:51:53 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ruby.c (proc_options): -w optionを追加
+
+	* parse.y: {}が閉じていない時には展開しない文字列を
+
+Fri Jul 19 16:16:05 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99-960719
+
+	* lib/find.rb: 石塚版(pruneの拡張付き)
+
+	* file.c (test_l): lstatで調べないとね．
+
+	* eval.c (f_throw): 第2引数を省略可能に．
+
+	* parse.y (str_extend): {}のネストに対応
+
+Thu Jul 18 18:25:46 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99-960718
+
+	* parse.y (str_extend): 文字列中の式展開に \" ' ` / を含む事ができ
+	  るように．
+
+Tue Jul 16 15:55:31 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* sample/ruby-mode.el (ruby-parse-region): 正規表現内のエスケープ
+	  に対応
+
+	* version 0.99-960716
+
+Fri Jul 12 10:06:19 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* io.c (f_select): 引数のclose check.
+
+	* ruby.c (load_file): #!行の引数チェックを第1引数に限定(実をいうと
+	  DOS改行対策)
+
+Wed Jul 10 17:18:35 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99-960710
+
+	* time.c (time_s_timegm/time_s_timelocal): 時間を生成するメソッド
+
+Mon Jun 17 15:59:20 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99-960617
+
+	* parse.y (yyerror): エラー表示の簡略化．
+
+Wed Jun 12 14:11:01 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* signal.c (rb_trap_exit): trap 0はthreadを生成せずに処理する．
+
+Fri Jun  7 10:17:01 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* array.c/hash.c (indexes): 配列1引数のパターンを無くした．配列の
+	  場合は`*ary'を使ってもらおう．
+
+	* eval.c (thread_wait_threads): main_threadが終了する前に他の
+	  threadを待つ(強制的には終了させない)．
+	  (ruby_run): 他のthreadを待っている間にシグナルが来たら，全thread
+	  を強制終了させる．
+
+	* eval.c (rb_fail): メソッド名を`$!'に埋め込む．
+
+	* eval.c (thread_create): main_threadのコンテクストがセーブされな
+	  い場合があった．
+
+	* process.c (f_sleep): 時間を指定せず，threadがひとつしかない状況
+	  にも対応．
+
+	* eval.c (thread_create): create後，fnを呼び出す前にcontext switch
+	  が起きると違うcontextでfnが実行されてしまうバグ．
+
+Mon Jun  3 08:03:17 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* struct.c (struct_s_def): メンバの指定を文字列，シンボル(FIXNUM)
+	  双方で可能にした．
+
+	* ext/etc/etc.c (Init_etc): 構造体オブジェクトをGCから保護した．
+
+	* error.c (rb_sys_fail): nil/FALSEを引数として受け付けるように．
+
+Thu May 30 16:19:08 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_select): EINTRに対応．
+
+Wed May 29 11:04:51 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (f_catch): catch/throwを実装した．
+
+Tue May 28 13:30:52 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99-960528
+
+	* eval.c (thread_cleanup): main threadが終了すると他のthreadも終了
+	  することの明確化．
+
+	* signal.c (trap): SIGINTのデフォルトの設定ミス(本当にSIG_DFLでは
+	  まずかった)．rubyではちゃんとハンドルしないと．
+
+	* eval.c (thread_interrupt): SIGINTはmain_threadに例外を発生させる
+	  ように．
+
+Mon May 27 15:13:31 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_status): threadの状態を返すメソッド．threadの終了
+	  を待たない．
+
+	* eval.c (thread_value): 一種のpromiseを実装するためのメソッド．
+
+	* eval.c (thread_join): 待っているthreadが例外を起こした時には，
+	  joinがその例外を発生するように．
+
+	* eval.c (thread_create): threadでの例外をpropagateしないように．
+
+Fri May 24 10:47:53 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* enum.c (Init_Enumerable): `size' as alias to the `length'
+
+	* eval.c (thread_save_context): `$@', `$!'をスレッド毎にセーブ．
+
+	* eval.c (superclass): エラー表示をより親切に．
+
+Thu May 23 10:38:41 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.99-960523
+
+	* eval.c (superclass): エラー時にスーパークラス名を(分かれば)表示
+	  するように．
+
+Wed May 22 19:48:42 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (superclass): スーパークラスの指定子を`:'から`<'に変更．
+
+Tue May 21 09:27:59 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* lib/thread.rb: threadをサポートするクラス(Mutex, Queue)．
+
+Mon May 20 09:39:49 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* time.c (time_cmp): 浮動小数点数も扱えるように．
+	(time_minus): Time - Timeが浮動小数点数を返すように．
+
+Fri May 17 15:40:10 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* process.c (rb_proc_exec): Thread対応時にexecの直前に
+	  ITIMER_VIRTUALをリセットする．
+
+Tue May 14 02:12:44 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* signal.c (sighandle): SIGINTに対してデフォルトで例外を発生させる
+	  のをやめ，status 130でexitするようにした．
+
+	* eval.c (thread_schedule): Threadのバグはほとんどとれたようだ．
+
+Fri May 10 11:21:08 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (thread_schedule): ユーザレベルThread機能．効率はともかく
+	  移植性はある．今後，thread間の通信機能を実装する予定．
+
+Thu May  2 21:22:31 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* time.c (time_timeval): struct timevalを直接返すように(static変数
+	  を使わない)．
+
+Wed May  1 17:27:32 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* process.c (f_sleep): 整数以外のtimeを指定できるように．
+
+Thu Apr 25 08:19:15 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* file.c (file_s_dirname): ファイル名が"/"を含まない時，"."を返す
+	  ように(GNU dirnameの仕様)．
+
+	* file.c (file_s_basename): まだnilと0を混同しているソースが残って
+	  いた．
+
+	* parse.y (exprs): エラーリカバリを追加．
+
+Wed Apr 24 15:51:05 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (str_chop_bang): CRLFの場合2 bytesをchop!するように．
+
+	* ext/socket/socket.c (tcp_svr_s_open): まだnilと0を混同しているソー
+	  スが残っていた．
+
+Tue Apr 23 18:14:25 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* pack.c (pack_pack): "A/a"のバグ．余計なpaddingが入っていた．
+
+Thu Apr 18 13:02:11 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* configure.in: アーキテクチャ依存部を別ディレクトリにインストール
+	  するように．
+
+	* parse.y (yyerror): エラー発生時にエラー行とその位置を表示するよ
+	  うに．
+
+Wed Apr 17 14:22:42 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* defines.h: SAFE_SIGHANDLEを無くし，危険な選択はできないように．
+
+	* io.c (io_ungetc): 新機能．
+
+	* ruby.c (load_file): ファイルからの読み込み方式が変わったのに対応．
+
+	* parse.y (compile_file): ファイルからの入力を一度全部読み込むのを
+	  止めて，getsを使うことにした．
+
+Wed Apr 10 17:40:11 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.98
+
+Tue Apr  9 09:54:30 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (iter_block): イテレータブロックの指定をメソッド呼び出し
+	  に限定．文法の明確化．
+
+	* eval.c (rb_eval): 条件式の正規表現の比較をinline化．
+
+	* eval.c (rb_eval): defined? の 定義情報(種別)を文字列で返す．
+
+	* node.h: NODE_BEGIN -> NODE_RESCUE, NODE_ENSUREに分離．
+
+	* eval.c (rb_eval): option -n/-pのトップレベルループのinline展開．
+
+	* parse.y (cond0): 条件式中の文字列は比較の対象としない
+
+Wed Mar 27 12:33:54 1996  Tairo Nomura  <tairo@hucom.tp.titech.ac.jp>
+
+	* defines.h: NeXT対応
+
+Wed Mar 27 10:02:44 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y: 予約語の変更 continue -> next
+
+Mon Mar 25 07:34:37 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (parse_regx): o(once)オプションを追加．
+
+Fri Mar 22 14:25:35 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.97d
+
+	* eval.c (dyna_var_defined): 動的ローカル変数の定義チェック用ルー
+	  チン．
+
+	* parse.y (gettable): eval()の中での動的ローカル変数(既に値を持っ
+	  ているもの)の検出に失敗していた．
+
+Tue Mar 19 10:46:47 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.97c
+
+	* re.c (reg_s_new): compile時にsegmentation fault．
+
+	* parse.y (str_extend): いつもevalするように．
+
+Wed Mar 13 11:00:42 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (str_extend): 文字列中の式展開の不備を無くした．
+
+	* parse.y: 下手なエラーリカバリを外した．
+
+Tue Mar 12 12:30:20 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rescue): 間違ってensureでも例外を捕捉していた．
+
+Wed Mar  6 12:11:03 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (var_extend): 変数展開"#{}"で，任意の式を書けるようにし
+	  た，これで「変数」展開では無くなっちゃったなあ．
+
+	* regex.c (init_syntax_once): `_'をwordに追加．
+
+	* regex.c (re_compile_pattern): `\w',`\W'の判定をsyntax tableを使
+	  うように．
+
+Tue Feb 27 10:15:32 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* object.c (obj_inspect): 表示するインスタンス変数が無い時には，
+	  to_sを使う．
+
+	* configure.in: dlnの検出を自動的に．
+
+Mon Feb 26 19:55:33 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ruby.c (readin): read(2)で一度にファイルが読み込めない場合に対応．
+
+Sat Feb 24 14:47:18 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.97b
+
+Fri Feb 23 11:26:02 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* class.c (rb_define_module): C言語で定義されたモジュールのPATHの
+	  設定忘れ．文字列化でcore dump．
+
+	* eval.c (mod_include): 戻り値をnilに．
+
+	* version 0.97a
+
+Thu Feb 22 21:03:42 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* array.c (ary_times): 「配列*文字列」がjoinと同じ働きをするように．
+
+Wed Feb 21 11:18:09 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* configure.in : fileCountをcache．
+
+	* configure.in : LinuxでELF環境を自動的に検出できるよう．
+
+Tue Feb 20 11:18:09 1996  Mitsuhide Satou  <mit-sato@aries.bekkoame.or.jp>
+
+	* FreeBSD dynamic link対応．
+
+Fri Feb 16 08:50:01 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* object.c (obj_inspect): インスタンス変数を持たないオブジェクトも
+	  正しく表示されるように．
+
+Wed Feb 14 16:56:44 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_eval): 条件式の`2..2'など左辺成立直後に右辺が成立する
+	  パターンにバグ．
+
+Tue Feb 13 18:22:22 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.97
+
+Fri Feb  9 21:32:55 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* lib/tkscrollbox.rb: スクロールでtclの設定を行い，ruby<->wishの不
+	  要な通信を無くした．
+
+Wed Feb  7 10:26:52 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (str_aref): indexをunsigned intでとっていた．
+
+	* string.c (str_aref): 範囲外のindexに対してnilを返す．
+
+	* parse.y (special_local_set): `$_'が宣言無しに使われた場合に対応．
+	  関数をvariable.cから移動．
+
+	* string.c (str_sub): 置換開始位置が間違っていた．
+
+Tue Feb  6 16:17:31 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* sample/ruby-mode.el (ruby-parse-region): コメントの読み飛ばしの
+	  バグ．
+
+Fri Feb  2 18:35:28 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* variable.c (lastline_get): `$_'を`$~'と同じようにSCOPEローカルな
+	  変数にした．
+
+Thu Feb  1 14:14:07 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* file.c: statのcacheをやめた．
+
+Wed Jan 31 07:13:08 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (proc_s_new): procの中でyieldを呼ばれた時にcore dumpして
+	  いた．とりあえず例外を発生させる．
+
+	* variable.c (rb_class2path): singleton classに対応．
+
+	* ext/etc/etc.c (Init_etc): struct_defineのターミネータがnilだった
+	  (0でなければならない)．
+
+	* ext/marshal/marshal.c: TRUE/FALSEを吐き出せるように．
+
+	* eval.c (rb_get_method_body): キャッシュのalias対応，いままでは
+	  aliasはキャッシュに入っていなかった．
+
+Tue Jan 30 09:55:13 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_eval): NODE_BLOCK - tail recursive(というほどでもない
+	  が)．
+
+	* io.c (io_pipe): pipe(2)を実装した．
+
+	* eval.c (rb_eval): Qselfをなくした．thread対応への第一歩．先は遠
+	  いが…．
+
+	* eval.c (proc_call): procの中でのreturnはprocの終了を意味するよう
+	  に．ただし，procからのyieldの中でのreturnは例外を発生する．
+
+Wed Jan 24 11:33:48 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.96a
+
+	* dir.c (dir_each): `$_'の値を変更するのをやめた．
+
+	* io.c (f_readlines): nilとFALSEの分離のあおりで無限ループに落ちて
+	  いた．
+
+	* ruby.c (ruby_options): $0の設定ミス．
+
+Tue Jan 23 15:28:21 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_eval): ``は文字列を引数とするメソッド(`)呼び出しのシ
+	  ンタックスシュガーであるとした．
+
+	* ruby.c (addpath): `-I'オプションでディレクトリが「前に」追加され
+	  るように変更．
+
+Fri Jan 19 11:23:12 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* dln.c (load_1): N_INDR対応(出来たような気がする)．
+
+Thu Jan 18 18:14:20 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ruby.texi: FALSEとnilの分離を反映した．
+
+Tue Jan 16 17:39:23 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.96 - とりあえずnilとFALSEを区別する版
+
+Wed Jan 10 15:31:48 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* re.c (reg_match): マッチしなかった時の戻り値はFALSE．
+
+	* object.c (rb_equal): `0 == nil'がTRUEになるバグ．
+
+Tue Jan  9 00:44:58 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* nilとFALSEが分離可能に変更．
+
+	* nilとFALSEと0の区別を厳密に．
+
+	* struct.c (struct_new): 引数を0で終る必要が無くなった．
+
+	* object.c (inspect_i): オブジェクトのチェックのバグ(Fixnumでcore
+	  dumpしていた)．
+
+	* range.c (range_to_s): Rangeの表示を改善．
+
+	* object.c (true_inspect): TRUEの表示を`TRUE'に．
+
+Mon Jan  8 15:02:33 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* numeric.c (fix_mul): divide by zero errorが発生した(オーバーフロー
+	  検出のバグ)
+
+	* texinfo.texをパッケージに含めた．
+
+Sun Dec 31 00:08:49 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_eval): `::'では，そのクラスで定義された定数を参照する
+	  ように変更．
+
+	* string.c (Init_String): eachをeach_lineに戻した．
+
+Thu Dec 28 12:31:55 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_eval): caseの演算子を`=~'から`==='に．
+
+	* variable.c (rb_const_set): クラス定数の再定義を許す(同じクラスで
+	  は不可)．警告は出す．
+
+Wed Dec 27 13:27:52 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.95c
+
+	* ext/tkutil/tkutil.c: wishがあってもなくても一応コンパイルだけは
+	  するように．
+
+	* lib/tk.rb: 環境変数PATHから{wish|wish4.0}を探すように．
+
+Tue Dec 26 01:03:42 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* sample/ruby-mode.el (ruby-parse-region): 正規表現の検出強化．
+
+	* numeric.c (fix_mul): 乗算のオーバーフロー検出アルゴリズムのバグ．
+
+	* ext/extmk.rb.in: ./install-shを使う場合のPATHを調整．
+
+	* Makefile.in (install): lib/*.rbを一つずつインストール．
+
+	* io.c (io_each_line): イテレータの戻り値をnilで統一．
+
+Fri Dec 22 10:34:32 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.95b
+
+	* variable.c (f_untrace_var): 第2引数を指定すると特定のtraceを削除
+	  できるように．
+
+	* variable.c (f_trace_var): 第2引数がnilの時，traceを削除する．
+
+	* lib/tk.rb (file_readable/file_writable): 第2引数をnilにすること
+	  によるevent handlerの削除．
+
+	* parse.y (variable): ドキュメントに`__FILE__'と`__LINE__'が残って
+	  いた．`caller(0)'で代用したはずだったのに．
+
+	* eval.c (f_eval): $!のリセット．
+
+	* error.c (err_sprintf): 勝手に"\n"を付加するのを止めた．
+
+	* parse.y (f_arglist): 引数リスト直後のif/whileの読み間違い．
+	  lex_stateの値が設定されていなかった．
+
+Thu Dec 21 00:56:57 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.95a - ^^;;;
+
+	* lib/tkscrollbox.rb: パッケージに入ってなかった．
+
+	* configure.in: FILE structureのチェックにバグ．
+
+	* Makefile.in (clean): ext以下をinstallしていた．
+
+	* ext/socket/extconf.rb: Solarisにおける-lnlsのチェック．
+
+	* array.c (beg_len): バグがあった…．悲しい．
+
+	* version 0.95 - fj.sourcesに
+
+	* eval.c (rb_eval): rescueのロジックをrb_rescue()に一元化．
+
+Wed Dec 20 19:30:58 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* Makefile.in: 不要なコンパイルの回避(より完全に)．
+
+	* class.c (singleton_class_new): `single'->`singleton'
+
+Tue Dec 19 07:14:33 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* io.c (closed?): IOがcloseされているかどうかを知る述語．
+
+	* parse.y (primary): 特異メソッドの引数のlex_stateが不適切．
+
+	* lib/tk.rb: tcl->rubyの変換関数の用意．
+
+	* ext/extmk.rb.in (install): installの2重コンパイルの回避．
+
+	* array.c (range_beg_len): range指定の不適切なエラーを訂正．
+
+	* string.c (str_aref): range指定のバグを削除．
+
+	* lib/tk.rb (tk_split_list): Tclのリストに対応．
+
+Mon Dec 18 09:58:12 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.94
+
+	* dln.c (dln_load): HP対応(未確認)
+
+	* eval.c (Init_Proc): BlockをProcに改名．
+
+Sat Dec 16 13:46:14 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_eval): retryでイテレータの再実行ができるように．
+
+Fri Dec 15 17:14:30 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c: proc:lambdaの親しみやすい別名
+
+Thu Dec 14 17:21:55 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (dyna_var_asgn): イテレータブロック内で最初に初期化された
+	  ローカル変数の有効範囲をそのブロック内に限定．これでlambdaと呼べ
+	  ないことはない．
+
+Wed Dec 13 02:30:58 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* gc.c: autoloadのマークミス．
+
+	* lib/tk.rb: wishからの複数行の戻り値に対応
+
+	* lib/tkcomposite.rb: 複合widget
+
+	* variable.c (rb_class2path): ICLASSに対応してなかった．
+
+	* eval.c (ruby_run): exit(0)のバグ
+
+Sat Dec  9 01:21:24 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/marshal/marshal.c (dumps|load): 文字列に対する入出力を可能に
+	  した(ただし実はファイル経由なのだ)．
+
+Fri Dec  8 18:29:11 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/marshal/marshal.c: シンボルを一度だけ初期化する．
+
+Thu Dec  7 07:58:50 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (yylex): 第1引数の正規表現の認識にエラーがあった．同時に
+	  状態数を減らした．
+
+	* string.c (str_sub): 置換でスキップ幅が大きすぎた．
+
+Wed Dec  6 15:14:23 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (str_sub_method): sub/gsub(!なし)は置換が行なわれなかっ
+	  た時，置換前の文字列を返す．
+
+Tue Dec  5 00:55:15 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (yylex): 括弧を省略した時の引数展開の`*'に対応．
+
+	* eval.c (ruby_run): EXITハンドラ内での例外に対応．
+
+	* bignum.c (big_cmp): BignumとFixnumの比較で落ちる．
+
+Mon Dec  4 14:21:18 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (call_op): コンパイル時の定数式の展開をやめた．労多くし
+	  て益少ないと判断したので．
+
+Thu Nov 30 01:35:15 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* lib/tk.rb: {Radio,Check}Buttonのvariableの実装．
+
+	* eval.c (rb_yield_0): Block.callがネストした時のバグ．
+
+	* io.c (f_select): 常に配列3つをふくむ配列を返すように
+
+	* lib/tk.rb: fileeventをruby側で実装．
+
+Wed Nov 29 17:53:23 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* variable.c (rb_ivar_get): selfを常に指定するように．
+
+Tue Nov 14 00:07:29 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* lib/tk.rb: Tk4.0対応
+
+Mon Nov 13 16:23:32 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.93
+
+Thu Nov  9 23:26:01 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* gc.c (gc_mark): モジュールのMixinのマーク忘れ．
+
+	* parse.y (f_arglist): メソッド定義の引数を括弧で括らなくても良い
+	  ようにした．
+
+Wed Nov  8 00:17:51 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_yield_0): 未初期化のローカル変数があった．
+
+	* eval.c (rb_eval): pendig signalのチェックをeval実行後に行うよう
+	  にした．でないとシグナルの発生と検出が遠く離れてしまう事がある．
+
+	* parse.y: class文のsuperclass部を定数から式に拡張した．
+
+	* lib/tk.rb: Tkのほぼ全ウィンドウクラスに対応．キャンバスとテキス
+	  ト上のオブジェクトが残っている．
+
+Tue Nov  7 08:18:37 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* signal.c (trap): ブロックを指定できるように．
+
+Mon Nov  6 16:44:00 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (f_caller): 呼出元の情報を得る．
+
+	* ext/tkutil/tkutil.c: wishのstderr出力を監視することで，エラー処
+	  理を行う．
+
+	* ext/tkutil/tkutil.c: wishとの通信部をCで記述．
+
+Sat Nov  4 01:12:59 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* sample/ruby-mode.el (ruby-calculate-indent): インデントの計算を
+	  もう少しスマートにした(正規表現のチェック，継続行のチェック)．
+
+	* eval.c (rb_call): 無限再帰を避けるため，関数のネストレベルの制限
+	  を行なう．
+
+	* lib/tk.rb: Tkインターフェース．まだ不完全だが．
+
+	* eval.c (rb_yield_0): 空のBlockのバグ．
+
+	* sample/ruby-mode.el (ruby-calculate-indent): 行末の演算子による
+	  行継続に対応．
+
+Fri Nov  3 12:56:21 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_call): 本体が空の関数の実行にバグ．
+
+	* parse.y (var_extend): 文字列の末尾の変数展開のバグ．
+
+	* variable.c (rb_gvar_set): traceの評価時にに変数値を与えるように．
+
+	* eval.c (f_require): ruby scriptのrequireにbug．
+
+	* variable.c (rb_const_get): モジュールのinclude対策．
+
+Thu Oct 19 13:56:06 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* dln.c (dln_load): HP対応でのtypo.
+
+Wed Oct 18 17:39:39 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.92
+
+	* object.c (krn_type): オブジェクトの動的な型を返すメソッド．
+
+Tue Oct 17 00:48:18 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ruby.c (proc_options): -X オプション．chdirだけを行う．
+
+	* re.c (reg_search): 漢字コードを途中で変更できるように．コンパイ
+	  ル時のコードが変更された時にはマッチの直前に正規表現の再コンパイ
+	  ルを行う．定数KCODEから変数$KCODEへ．
+
+	* parse.y: ()のなかにcompexprを許す．
+
+	* re.c (reg_search): メモリリークを直した．
+
+Fri Oct 13 13:19:19 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (str_sub): 文字列置換にバグ．
+
+	* string.c (str_strip_bang): 文字列の後ろの長さの調整が行われてい
+	  なかった．
+
+	* re.c (reg_search): $&, $1...はローカルに束縛するようになった．呼
+	  び出したメソッドでのマッチは現スコープの$&などの値に影響しない．
+	  マッチの情報をスコープ外で得たいときには$~を使って束縛情報を持ち
+	  出す必要がある．
+
+Thu Oct 12 00:33:33 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* re.c (reg_search): String:split, String:indexでは$&, $1...が変化
+	  しないようにした．
+
+	* io.c (rb_str_setter): setterの仕様が変更になっていた．
+
+	* variable.c (f_trace_var): 第2引数を省略してイテレータとして呼べ
+	  るように．
+
+Wed Oct 11 11:50:59 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.91
+
+	* variable.c (var_setter): 引数が間違っていた．致命的バグ．
+
+	* io.c (pipe_open): $stderrの値が変更されている時にはそちらを
+	  子プロセスのstderrに設定する．
+
+Mon Oct  9 13:06:33 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* object.c (mod_to_s): モジュール内のモジュールは`::'を使った表現
+	  で表示されるように．
+
+	* variable.c (rb_gvar_set): 代入によるループが発生しないように，
+	  trace内での代入ではtraceを評価しない．
+
+	* struct.c (struct_equal): structのequal判定にクラスの一致を含めた．
+
+Sat Oct  7 00:18:32 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_eval): defined?の機能を拡張(yieldのチェック，superの
+	  存在など)．
+
+Fri Oct  6 12:06:47 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.90
+
+	* st.c (st_foreach): 要素を削除した時に要素数が変化していなかった．
+
+	* hash.c (hash_values): バグ修正．keysを返していた…．
+
+	* parse.y (call_op): defined? の引数では定数の畳み込みを行わない
+	  (チェックする前にコンパイルエラーになっては困る)．
+
+	* スコープ生成の一部見直し．
+
+Thu Oct  5 00:29:43 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* 関数とクラスの命名規則を変更した．関数名，変数名の全面書き換え．
+
+	* gc.c (looks_pointerp): ヒープチェックの高速化．
+
+	* struct.c (Fstruct_aset): 構造体に対する`[]='．
+	(struct_set): 構造体メンバに対する代入．
+
+Wed Oct  4 09:54:07 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.89
+
+	* eval.c (Frequire): ダイナミックロードのエラーチェックを厳しく．
+
+	* struct.c: structの構造を完全に書き換えた．以前は順序付きの
+	  id->valueの連想配列であったが，今度は構造体毎に新しいクラスを生
+	  成するようにした．
+
+	* parse.y: `::'の意味をAssocの生成からクラス(モジュール)内の定数ア
+	  クセスへ変更．
+
+	* assoc.c: なくす．
+
+Tue Oct  3 13:31:08 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* variable.c (Ftrace_var): trace_var, 大域変数への書き込みhookを設
+	  定する．
+
+	* variable.c: global_entryの構成を書き換えた．これでtrace_varを実
+	  装できる．
+
+	* file.c (Ffile_stat): "&"で直前のfstatの結果も参照できるように．
+
+Fri Sep 29 14:15:13 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.88
+
+	* dln.c (dln_load): AIXとHPに対応したコードを入れた(動作は未確認)．
+
+	* ext/extmk.rb.in: 必要に応じて，定数EXTLIBを定義するように．
+
+	* dln.c (dln_load): dln独立に書き換える．将来の拡張用．
+	(load_1): dln_a_outにおいてソースコードでライブラリを明示的にロー
+	ドする必要がないように変更した．
+
+Thu Sep 28 13:31:37 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* sample/ruby-mode.el: もっとましなhilit19対応(正規表現)．
+
+Wed Sep 27 04:12:44 1995  Takahasi Mamoru  <taka@soum.co.jp>
+
+	* sample/test.rb: echoで-nを使わないように(SysV対策)．
+
+	* ext/extmk.rb.in: sub -> sub!
+
+Tue Sep 26 19:12:42 1995  Yasuo OHBA  <jammy@csg.mes.co.jp>
+
+	* dln.c (dln_find_1): `.', `..'から始まるパスに対応した.
+
+Mon Sep 25 12:33:03 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.87
+
+Sat Sep 23 10:00:18 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (Fmod_modfunc): メソッドをprivateにし，同時に特異メソッド
+	  も定義するメソッド．パッケージ的使い方のモジュール用．
+
+Fri Sep 22 11:02:44 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* lib/find.rb: findを提供するライブラリ
+
+	* variable.c (rb_define_variable): hookの設定を分離．
+	(add_hook): 1変数に対して複数のhookを設定できるように．
+
+Thu Sep 21 00:22:11 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (Fstr_frozen): 文字列が更新不可かどうかをチェックする述
+	  語メソッド．
+
+	* hash.c (Fhash_aset): keyが文字列の時，キーの内容が変化しないよう
+	  に，dupしてfreezeする．
+
+Wed Sep 20 16:12:44 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.86
+
+	* ext/extmk.rb.in (have_header): キャッシュにバグ．
+
+	* ext/extmk.rb.in (have_library): 引数の順序が変わった．
+
+Thu Sep 14 18:00:59 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* object.c (obj_is_instance_of): is_member_ofから名称変更．
+
+	Wed Sep 13 15:44:35 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (Fstr_tr_bang): 範囲外の文字に対する変換バグ．
+
+Tue Sep 12 14:27:58 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* file.c (Sfile_expand_path): expand_file_name -> expand_pathに名
+	  称変更．
+
+	* enum.c (Fenum_member): includes? -> member? に名称変更．
+
+	* string.c (Fstr_each_byte): StringはByteArrayであるという基本に戻っ
+	  て，eachの定義をeach_byteに変更した．今までのeachはeach_lineでア
+	  クセスできる．
+
+Mon Sep 11 18:31:17 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* file.c (cache_stat): ファイル名として"&"を指定すると直前の
+	  stat(2)の結果を再利用するように．
+
+Fri Sep  8 14:18:51 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ruby.texi: `!', `?'に対応してアップデート．
+
+	* parse.y: defined -> defined?
+
+	* file.c: FileOpの一文字メソッドをなくす．一文字テストはtestメソッ
+	  ドにまかせる．
+
+	* parse.y (yylex): 変数名の後ろに`?'も許す．述語メソッドの後ろに
+	  `?'を追加する．
+
+Thu Sep  7 20:01:33 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c: 文字列の中身を更新するメソッドの名前の終りに`!'を付加．
+	  `!'の無いバージョンも用意した．
+
+	* parse.y: 変数名の後ろに`!'を許す．
+
+Wed Sep  6 14:12:19 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.85
+
+	* string.c (Fstr_dup): 文字列の複製を作る
+	(Fstr_freeze): 文字列の更新不可属性を設定できるように．
+	(Fsub/Fgsub): $_の内容をdupしてから置換を行うように．
+
+	* ruby.h (CLONESETUP): flagsの状態もコピー
+
+Tue Sep  5 01:27:50 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* sample/test.rb: 失敗の検出を厳しく．
+
+Fri Aug 25 14:31:02 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* process.c (Ffork): イテレータとしても動作するように．
+
+	* version 0.84
+
+	* signal.c (sig_beg): ハンドラが設定されている時には再設定しない．
+
+	* ext/extmk.rb.in (create_makefile): shared objectのリンクの際に
+	  `-l'オプションを指定するように．
+
+	* signal.c (trap): `EXIT'で終了処理を行う設定が出来る．
+
+Wed Aug 16 00:13:22 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* signal.c (sig_beg): デフォルトではbegin節の中でだけSIGINTを捕捉
+	  するように変更．
+
+	* io.c (io_ctl): fcntlを持たないシステムにも対応．
+
+	* 各ディレクトリに分散していたMANIFESTをまとめた．拡張モジュール毎
+	  には必要．
+
+	* string.c (Sstr_new,str_sub,Fstr_crypt): 引数を自動的に文字列に変
+	  換するように．
+
+Sat Aug 12 00:44:02 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* string.c (Fstr_crypt): PD cryptを用意した．
+
+Fri Aug 11 14:37:03 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* assoc.c (Fassoc_clone): assocもcloneできるように．
+
+	* io.c: マクロREAD_DATA_PENDINGの定義を変更(Linux対応)
+
+	* io.c (io_fptr_finalize): fptrの解放時の処理を指定できるように．
+
+Wed Aug  9 16:52:41 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* eval.c (rb_provided): 複数のfeatureをロードすると無限ループに落
+	  ちるという単純な(しかし凶悪な)ミス．
+
+	* ext/extmk.rb.in (install): dlopen対応を行った．今までdlnにしか十
+	  分に対応していなかった．
+
+Tue Aug  8 14:17:06 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.83
+
+Mon Aug  7 12:47:41 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y: resque -> rescue．恥ずかしいがtypoを残しておくわけには
+	  いかないよなあ．なんで今まで気がつかなかったのか…．
+
+Thu Aug  3 18:18:05 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* missing/nt.c: NT移植用の関数群をまとめた．
+
+	* variable.c (rb_const_get): また例外を発生するようにした．defined
+	  がある以上例外を発生させない理由がないので(例外が発生した方がタ
+	  イプミスの検出などの点で有利)．
+
+	* variable.c (Fautoload): autoloadを実装．今度は使えるか．
+
+Mon Jul 31 15:44:21 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (arg_ambiguous): 第1引数のあいまいさを警告(-vオプション
+	  で有効)．
+
+	* eval.c (rb_eval): `-v'オプションをつけて`def'が呼ばれると不必要
+	  なエラーメッセージが出た．
+
+	* parse.y (yylex): メソッドの第1引数の判定をもうちょっと賢くした．
+
+Fri Jul 28 19:04:43 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (yylex): `+/-/['の直前に空白が来るかどうかで動作を変更し
+	  た(混乱のもとか?)
+
+Wed Jul 26 09:21:23 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.82a
+
+	* sprintf.c (Fsprintf): `%s'で'\0'を含む文字列に対応．
+
+	* pack.c (Fpck_pack): packの要素確保のバグ．
+
+	* eval.c (Floop): 無限ループのイテレータ．
+
+	* io.c (next_argv): 存在しないファイル名が指定された時のエラー処理
+	  が行われていなかった．
+
+Mon Jul 24 17:37:34 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.82
+
+	* ext/extmk.rb.in (install): 拡張モジュールをstatic linkする場合は
+	  そのモジュールが既にrequireされたのと同じようにfeatureを設定する．
+	  これで拡張モジュールの機能が必要な時には(static linkされているか
+	  どうかにかかわらず)requireすればよくなる．
+
+	* eval.c (Frequire): `$"'に格納する文字列をフルパスでなくフィーチャ
+	  名とする．rubyスクリプトをロードした時には`.rb'，オブジェクトを
+	  ロードした時には`.o'をフィーチャ名に付加する．lispのrequireと
+	  provideの働きに(少し)近い．
+
+Thu Jul 20 12:50:05 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* Makefile.in (test): make testができるように．
+
+	* struct.c (struct_new): typo.
+
+	* eval.c (rb_eval): `defined'を追加．メソッド/変数/定数の定義状態
+	  を知る事が出来る．
+
+Wed Jul 19 18:04:01 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.81
+
+Mon Jul 17 14:53:51 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* variable.c (rb_const_get): 未初期化のCONSTANTの値をnilにした．し
+	  かし，今後また例外に戻す可能性はある．要はoptionalなクラス/モジュー
+	  ルが存在するかチェックしたいだけなんだな．
+
+	* st.c (int): grow_factorを固定にした(大嶋さんのマシンに対応)．
+
+Fri Jul 14 00:48:40 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* ext/extmk.rb.in: キャッシュのバグを修正．
+
+	* parse.y (var_extend): #{$数字}に対応した．
+
+	* dln.c (dln_load_1): `Init_FILENAME'だけを有効に．`init_*'は今後
+	  実行しない．
+
+	* ext/etc/etc.c : Etcモジュールを拡張モジュールとして分離．実はNT
+	  対応への布石だったりするかもしれない．
+
+Tue Jul 11 17:12:48 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* gcc -Wallで出たwarningを元にソースを変更．
+
+	* signal.c (trap): typo.
+
+Fri Jul  7 10:08:51 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.80
+
+	* ruby.texi: texinfo documentを提供．specとruby.1は無くなった．
+
+	* signal.c (Ftrap): 割込み禁止中の例外発生に対応．
+
+	* eval.c (Flambda): Blockオブジェクトを返す．Block.newと同義．
+
+Thu Jul  6 00:35:03 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* signal.c (Ftrap): SIG_DFLの処理を変更．SIGINTへのデフォルトハン
+	ドラを用意(例外を発生する)．
+
+	* file.c (Sfile_expand_fname): パス名を絶対パスに展開するメソッド．
+	(Sfile_basename): basenameを得るメソッド．拡張子も外せる．
+	(Sfile_dirname): basenameの反対．
+
+	* eval.c (rb_call): argument評価中の例外発生に対応．
+
+	* file.c (Ftest): `M', `A', `C'を追加.
+
+Tue Jul  4 12:36:33 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* file.c (Ftest): ファイルテスト用メソッド．
+
+	* ruby.c (proc_options): `-r'オプションを追加．
+
+	* parse.y (f_args): デフォルト引数を追加．
+
+	* eval.c (rb_call): 該当する引数が無い時，rest引数の値をnilに．
+
+	* numeric.c (num_equal): 数値以外との比較で例外が発生していた．
+	  FALSEを返すように．
+
+	* eval.c (masign): 多重代入のrest部の動作がおかしかった．
+
+Sat Jun 17 01:03:16 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* parse.y (gettable): 未初期化のローカル変数の参照(独立した識別子)
+	  は正式にメソッド呼び出しとした．
+
+	* parse.y (read_escape): tokenbufを使わないように修正．それにとも
+	  ない，`\C-x',`\M-x'などのエスケープ表現を復活．これでドキュメン
+	  トと実際の処理系が一致した．
+
+Thu Jun 15 15:42:00 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* re.c (re_regcomp): cacheのチェックを改善．
+
+Mon Jun 12 18:50:51 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 0.79
+
+Sat Jun 10 00:25:01 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* re.c (re_regcomp): cache判定に`$='の値も反映させた．
+
+	* sample/test.rb: test suite作成．
+
+Fri Jun  9 15:58:34 1995  Yukihiro Matsumoto  <matz@ix-02>
+
+	* re.c (re_regcomp): cacheの判定が間違っていた．
+
+Fri Jun  9 00:01:35 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c (rb_yield): block構造体に初期化していないメンバ(iter)があっ
+	  たのでイテレータのネストが正しく動作しなかった．
+
+Thu Jun  8 00:59:03 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* re.c (=~): String以外との比較がFALSEを返すように(例外を発生して
+	  いた)．
+
+	* extmk.rb.in: 判定した値をファイルにキャッシュするようにした．
+
+	* assoc.c (to_a): to_aメソッドが再定義されていなかった．
+
+	* eval.c (rb_eval): 初期化されていないローカル変数へのアクセスを引
+	  数の無いメソッド呼び出しと解釈する．ただし，(現状では)メソッドが
+	  定義されていない場合，エラーにせず変数未初期化のwaringを出して
+	  nilを返している．「ruby -pe print」などが実行できるという意味で
+	  はありがたいこの仕様は，しかし今後の検討が必要である．-- メソッ
+	  ド呼び出しとするのを止めるか(以前の仕様)，いつもメソッド呼び出し
+	  とする(未定義ならばエラー)か，今の仕様で行くか．
+
+	* eval.c (rb_eval): 初期化されていないローカル変数へのアクセスで
+	  (evalなどで)初期化された事が分かった時には以後初期化されたローカ
+	  ル変数とみなす．
+
+Wed Jun  7 11:58:12 1995  Yukihiro Matsumoto  <matz@ix-02>
+
+	* eval.c (rb_fail): 例外処理後も`$!'をクリアしないように．
+	  (rb_fail): `$!'変数に最後に改行を追加しない．
+
+	* io.c (Fprint): privateメソッドに変更．引数を取らない時の動作を変
+	  更(`$_'を出力する)．
+	  (Fio_print): 出力先指定のprintメソッド．
+	  (Fio_printf): 出力先指定のprintfメソッド．
+
+	* parse.y: not演算子の追加．優先順位の低い`!'演算子．
+
+Mon Jun  5 19:00:55 1995  Yukihiro Matsumoto  <matz@ix-02>
+
+	* version 0.78
+
+Fri Jun  2 17:52:03 1995  Yukihiro Matsumoto  <matz@ix-02>
+
+	* ruby.c (proc_options): -Iオプションで`$:'への追加される順番を修
+	  正した．
+
+Fri Jun  2 00:36:34 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* parse.y: while修飾子の動作を通常のwhileと同じにした．ただし，
+	  begin式へのwhile修飾子だけはdo..while型のループとなる．
+
+Wed May 31 18:36:30 1995  Yukihiro Matsumoto  <matz@ix-02>
+
+	* version 0.77
+
+Mon May 29 18:39:37 1995  Yukihiro Matsumoto  <matz@ix-02>
+
+	* ext/extmk.rb.in (install): 拡張モジュールもインストールできるよ
+	  うに．
+
+Fri May 26 14:43:01 1995  Yukihiro Matsumoto  <matz@ix-02>
+
+	* process.c (Fsystem): 戻り値をサブプロセスの失敗/成功を表す真偽値
+	  にした．終了ステータスは`$?'で得る．
+
+Tue May 23 10:58:11 1995  Yukihiro Matsumoto  <matz@ix-02>
+
+	* string.c (Fstr_upto): 無限ループに陥らないように．
+
+	* parse.y (cond): `||'などの右辺に制御式が書けるように，条件式がか
+	  ならずしも値を持たなくても良いようにした．
+
+	* ext/marshal/marshal.c: オブジェクトの読み書きをメソッドの再定義
+	  でコントロールできるように．インスタンスが`_dump_to'というメソッ
+	  ドを定義している時はそちらを使うように．
+
+	* ext/extmk.rb.in: static linkも設定できるような仕様にした．
+	  ext/Setupというファイルにディレクトリ名を記述するとそのディレク
+	  トリに存在するモジュールはstatic linkされる(はず)．
+
+	* eval.c (rb_eval): `..'を文法に組み込み，`..'と`...'の動作をperl
+	  に合わせた．
+
+Sat May 20 01:22:48 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* io.c (select): timeout時と割込み時の動作の明確化．
+
+Fri May 19 15:33:23 1995  Yukihiro Matsumoto  <matz@ix-02>
+
+	* version 0.76
+
+Fri May 19 00:48:08 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* string.c (Fstr_each): イテレータブロック中で文字列の変更が行われ
+	  たかどうかをチェック．ポインタの値が変わっていれば例外を発生する．
+
+	* ruby-mode.el: ruby-electric-braceの新設．
+
+Thu May 18 12:27:23 1995  Yukihiro Matsumoto  <matz@ix-02>
+
+	* string.c (Fstr_tr): trの置換対象に`\0'を含む時に正しく置換を行わ
+	  ないバグがあった．更に置換文字列をASCII順に指定しないと動作しな
+	  い問題もあった．結果としてtrを書き換えたので，copyrightの問題は
+	  無くなった(と思う)．
+
+	* gc.c (gc): the_scopeをマークしていなかったので，ローカル変数の指
+	  しているオブジェクトが間違って解放される場合があった．
+
+	* gc.c (mark_locations_array): 若干の高速化．
+
+Mon May 15 11:43:49 1995  Yukihiro Matsumoto  <matz@ix-02>
+
+	* ext/extmk.rb.in: Dynamic Loadモジュールのコンパイル用チェックを
+	  行うruby script．autoconfに近い感覚で使える．新しいモジュールを
+	  提供したい人はextの下にディレクトリを作るだけで良い．必須のファ
+	  イルはファイル名の一覧を記録した`MANIFEST'というファイルのみ．必
+	  要に応じて`depend'(ファイルの依存関係を記述するファイル gcc -MM
+	  の出力)，`extconf.rb'(コンパイル用にライブラリと関数の存在チェッ
+	  クするファイル)を用意できる．
+
+	* eval.c (rb_call): rubyメソッドの引数チェック時に未初期化の
+	  jmp_bufを使用していた．
+
+	* parse.y: `or'と`and'の優先順位を同じにした．
+
+Wed May  3 18:21:36 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* dln.c: Linuxでは`__.SYMDEF/'であった．
+
+	* dln.c: system callのエラーチェックを忘れていた．
+
+Wed Apr 26 09:50:56 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: イテレータブロックの変数宣言を`|'で括るようにした．これ
+	  でイテレータ変数がない時は宣言そのものを省略できる．文法の変更は
+	  久しぶりだ．
+
+Tue Apr 25 12:04:17 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c(require): loadからダイナミックロードの機能を移してきた．
+	  さらに拡張子の補完機能を追加してユーザがdln/dlopenの差を意識する
+	  必要のないようにした．
+
+	* string.c(sub,sub): イテレータとしても動作するように．
+
+	* object.c: init_object -> initialize.
+
+Mon Apr 24 14:22:39 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* NEWS-OS 3.4対応
+
+	* io.c: Solarisのstdioの動作が違うようだ．signalでEOFを返してしま
+	  う…．perlでも同様の問題がある．
+
+Fri Apr 21 20:04:39 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.75
+
+	* signal.c: trapがなくなっていた．うーむ．
+
+	* configure: Solaris 2.3対応．
+
+	* io.c: #elifのないcppもある．
+
+	* dir.c: autoconf 2.xへの対応が不十分
+
+Thu Apr 20 12:31:24 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.74
+
+	* env.h, gc.c, regex.c: IRIXへの移植対応
+
+	* configure: dlopen用にpicを生成するoptionの検出のため，システムタ
+	  イプをチェックするように．
+
+Tue Apr 18 19:08:17 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* gc.c(xrealloc): ptr=nilの時，malloc()と同じ働きを
+
+	* array.c(astore): 空の配列の0番目の要素に代入するとsize=0で
+	  realloc()を呼んでいた．
+
+	* configure, glob.c: Solaris 2.xでコンパイルできるように
+
+Mon Apr 10 18:36:06 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.73
+
+Fri Apr  7 13:51:08 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* cons.c->assoc.c: consの余計な機能は外してpairとしての機能だけを
+	  残した．Enumerableをincludeするのもやめた．
+
+	* string.c(esub): 文字列置換イテレータ．perlのs///eの相当する．
+
+Wed Apr  5 11:35:21 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.72
+
+	* EWS4800対応
+
+	* file.c: utimesがない時はutimeを使うように．
+
+Mon Apr  3 15:19:41 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.71
+
+	* regexp.c(re_match): バグがあった．match_2を削除した時にenbugして
+	  いたのだった．
+
+Mon Mar 27 15:41:43 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* dict.c: Dict->Hashに全面的に移行．
+
+Thu Mar 23 20:30:00 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* dbm.c,socket.c: extディレクトリに分離．
+
+	* configure: dln周りのチェックの強化
+
+	* dln.c: initの呼び出しをdlopen()版に合わせた．
+
+Mon Mar 20 17:45:08 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* configure: autoconf 2.2に対応(一部)．
+
+Fri Mar 17 15:56:44 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* dln.c: dlopenのあるマシンではそちらを使うように．ただし，ちゃん
+	  と動いているかどうかは自信がない．
+
+	* regex.c: virtual concatinationをやめた．
+
+Thu Mar 16 11:32:57 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.70
+
+	* eval.c,regex.c: gccでのコンパイルエラー．
+
+	* io.c: inplace-editで拡張子が指定されない場合，もとのファイルを削
+	  除する．
+
+Wed Mar 15 14:59:18 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.69
+
+	* eval.c(method_missing): unknownから名称変更．
+
+	* eval.c(single_method_added): 特異メソッドが定義された時に呼ばれ
+	  るメソッド．hookとして使える．実際に定義される直前に呼ばれる．
+
+Tue Mar 14 14:46:44 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* ruby.c(proc_options): 引数の解析を自分でやることにより引数指定の
+	  方法がperlに近付いた．getopt_longはもう使わない．
+
+	* dir.c(glob): `{}'のネストを許すようにした．
+
+Mon Mar 13 17:56:25 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* glob.c: Glob(ワイルドカードオブジェクト)はなくなった．ワイルドカー
+	  ドの展開はDir.glob(文字列)を使う．ワイルドカードのマッチは正規表
+	  現で代用．
+
+Fri Mar 10 18:35:46 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: Mathのようなモジュールは自分自身でextendする．
+
+	* eval.c: クラスやモジュールを定義する時，既に同名のものがあれば追
+	  加定義となるように．ただし．superクラスの違いなどはチェックする．
+
+	* regex.c: debug.
+
+	* math.c: 定数PIとEを定義．
+
+Thu Mar  9 21:35:12 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* regex.c: EUC,SJISモードでは0x80以上の8進，16進リテラルを禁止．
+
+	* regex.c: クラス内でも数値リテラル・文字クラスが使えるようした．
+
+Wed Mar  8 17:39:05 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* regex.c: \200など括弧の数以上の表現は8進リテラルと解釈する．ただ
+	  し，\1から\9までは例外．
+
+	* regex.c: \9以上のリファレンスも有効にした．
+
+Tue Mar  7 14:26:01 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c(public/private): スコープ制御メソッドの名称変更．静的なア
+	  クセスも出来るようにしてみたが，不採用．
+
+Mon Mar  6 19:34:32 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c(inlcude): メソッド化．動的にモジュールをインクルードでき
+	  るように．さらに任意のオブジェクトにもモジュールをインクルードで
+	  きるメソッド `extend'も用意した．
+
+	* parse.y: 文法からincludeを削除．メソッド化．
+
+Tue Feb 28 15:35:10 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: 配列，連想配列の最後に`,'をおけるように．
+
+Fri Feb 24 13:15:43 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.68
+
+Thu Feb 23 11:19:19 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: resque節のselfの値が間違っていた．
+
+	* eval.c(rb_clear_cache): キャッシュのクリアし忘れがあった．
+
+	* eval.c: 定数のスコープをクラス内の静的スコープに変更した．これに
+	  よって，特異メソッドから参照される定数は，レシーバのクラスではな
+	  く，定義されたスコープのクラスの定数となる．
+
+Wed Feb 22 00:51:38 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* regex.c: ignorecaseを正規表現のコンパイル前に指定しないと正しく
+	  動作しない．修正．
+
+	* string.c(toupper,tolower): bug fix.
+
+	* ENV,VERSION: readonly変数から定数へ．
+
+Tue Feb 21 18:56:56 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* io.c(STDIN, STDOUT, STDERR): 定数として定義．
+
+	* io.c(select): bug fix.
+
+	* version 0.67
+
+Mon Feb 20 16:10:14 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y(yylex): 定数を`%識別子'から，第1文字が大文字の識別子に変
+	  更．それにともないクラスは定数となった．
+
+	* eval.c: クラス定義内のselfがクラス定義外部のthe_classだった．
+
+	* variable.c(rb_name_class): クラス名をインスタンス変数に格納する．
+
+Thu Feb 16 15:36:17 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: BLOCKをbraceで表現する文法に変更したものを作ってみる．
+	  MLに提示してみるが反応がない．
+
+	* object.c(do,forever): なくした．
+
+Wed Feb 15 13:20:49 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* re.c(new): 第2引数が与えられて，かつnilでないときだけ設定するよ
+	  うに(以前はnilの時にも設定を行なっていた)．
+
+	* parse.y(parse_regexp): 正規表現リテラルで大文字小文字を無視する
+	  かどうか指定できるように．
+
+Tue Feb 14 00:55:33 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* parse.y: (compexpr) -> (expr).
+
+Fri Feb 10 16:30:00 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* ruby.c(load_file): scriptを読み込む時だけ"#!"の解析を行うように．
+
+	* ruby.c(readin): ファイル読み込み時に先頭に"#!"があり，その行が
+	  "ruby"という文字列を含む時，rubyに引数が与えられていれば，その引
+	  数も有効になる．
+
+	* parse.y(yylex): コメント行の終りが`\'であった時，次の行に継続し
+	  ているとみなすようにした．
+
+Thu Feb  9 16:18:37 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.66
+
+	* parse.y: protectをbeginに変更．begin..endは例外処理だけでなく，
+	  文括弧としても働くことになった．
+
+Wed Feb  1 19:48:24 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.65
+
+	* string.c(str_replace): 置き換える文字列の長さが等しい時メモリコ
+	  ピーをしない．
+
+	* string.c(rindex): バグ修正．
+
+Mon Jan 30 11:23:05 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y(value_expr): ifのチェックを追加．
+
+	* gc.c(gc_mark): free cellの扱いにバグ．
+
+	* parse.y: 文法の変更(よりシンプルに)．例外を減らした．
+
+Thu Jan 26 00:52:55 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* parse.y: 引数として連想配列を置くことができるように．この場合，
+	  連想配列リテラルが最終引数となる．
+
+	* parse.y: 配列参照の`[]'内が空でもよいことにした．
+
+Tue Jan 24 14:45:15 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* class.c(rb_include_module): `-v'を指定した時にはincludeしたモジュー
+	  ルとクラス定数が衝突していないかチェックする．
+
+Mon Jan 23 10:42:09 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y(rb_class2name): メタクラスに関するbug fix.
+
+	* dict.c: Dict[..]で辞書の生成が出来るように．
+
+	* array.c: Array[..]で配列の生成が出来るように．
+
+	* parse.y: 辞書の表現として{a,b,..}という形式も許すように．
+
+Fri Jan 20 10:28:38 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* re.c(Regexp.quote): 正規表現をエスケープするメソッド．
+
+	* 無駄なrb_intern()を減らした．
+
+	* parse.y: `!', `!=', `!~'を特殊演算子にする．よってこれらは再定義
+	  できなくなった．
+
+Wed Jan 18 13:20:41 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: 文法の整理(unless,untilをなくした)．
+
+Tue Jan 17 11:11:27 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: defでメソッド再定義時にはスーパークラスのメソッドの可視
+	  性を継承する．最初の定義の時は今までと同じデフォルト(トップレベ
+	  ルで関数的，クラス定義内で通常メソッド)．
+
+	* object.c(Class#new): オブジェクトの生成時に関数的メソッド
+	  init_objectが必ず呼ばれるように変更．
+
+	* eval.c: 未定義のメソッドに対してunknownメソッドが呼ばれるように
+	  なった．エラー表示が今までと同じになるようにenvを調節している．
+
+Fri Jan 13 14:40:30 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* gc.c: gcを若干書き換えて整理した．が，あまり変化はなかったようだ．
+
+	* parse.y(yylex): symbolを\symから:symに変更した．
+
+Thu Jan 12 01:39:28 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c: 新規関数 rb_eval_string()．
+
+	* gc.c: gc_mark()を一部非再帰化．
+
+	* variable.c(rb_ivar_{get,set}): インスタンス変数のアクセス周りで
+	  チェックが足りなかった．
+
+	* variable.c: クラス定数とインスタンス変数でハッシュテーブルを共有
+	  するようにした．
+
+	* ruby.h: iv_tblをRBasicからRObjectとRClassへ移動した．これにより，
+	  ObjectとClass,Moduleしかインスタンス変数を持てなくなる．が，メモ
+	  リ効率は若干向上する．
+
+Tue Jan 10 00:58:20 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* 0.64 released
+
+	* eval.c: レシーバと引数は常にiterではない．
+
+	* cons.c(aref,aset): negative offset対応．
+
+Mon Jan  9 14:40:39 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: foo{..}の形式において，fooをローカル変数やクラス名では
+	  なく，引数なしの関数型メソッド呼び出しとみなすようにした．
+
+	* list.c -> cons.c: 名称変更(クラス名も)．
+
+	* list.c: a::b::c::nilをリスト(a b c)とみなすlisp形式から，a::b::c
+	  をリスト(a b c)とみなすruby形式に変更．[], []=, eachもそれに会わ
+	  せた仕様とする．
+
+	* list.c: consペアとしての機能を強調．仕様変更．
+
+Sat Jan  7 01:26:26 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c: 自己代入の不具合修正．
+
+	* eval.c(masign): 多重代入が配列もリストもとれるようにした．
+
+	* list.c: assocを2要素の配列からList(CONSペア)に変更した．
+
+Fri Jan  6 13:42:12 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: a[b]+=cやa.b+=cなどの自己代入形式で，aやbを2度評価しな
+	  くなった．
+
+	* eval.c: iterator設定のバグフィックス．
+
+	* list.c: Listクラスを新設．
+
+Thu Jan  5 13:55:00 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: SCOPEのメモリリークをなくした．
+
+	* eval.c: built-inメソッドへの引数の引き渡し方を変更して，配列の生
+	  成数を減らした．
+
+	* re.c: match-dataを毎回生成することをやめた．`$~'をアクセスした時
+	  にon-demandで生成する．
+
+	* string.c etc: 不必要なmemmoveをmemcpyに置換．
+
+	* parse.y: =~, !~は副作用があるのでコンパイル時に展開できない．
+
+Tue Jan  3 02:04:36 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c: rest引数のbug fix.
+
+	* eval.c,gc.c: scopeをオブジェクトにした．
+
+	* eval.c: envとscopeの扱いを変更した．
+
+Wed Dec 28 09:46:57 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: evalでローカル変数が追加された場合に対応した．
+
+	* parse.y: 演算子を含むaliasのbug fix.
+
+Tue Dec 27 16:45:20 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: def A Bをalias A Bに変更．
+
+	* eval.c: alias関係のbug修正．nodeをオブジェクト化した時にenbugし
+	  たようだ．
+
+	* signal.c: システムコールの再定義を止めた．
+
+	* io.c(select): write/exceptのフラグ設定にバグ．
+
+	* Makefile.in: static link用オプションをMake変数として独立させた．
+
+Tue Dec 20 00:46:19 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* 0.63 released
+
+	* eval.c(rb_call): superの呼び出しで落ちる．argc, argvの設定を忘れ
+	  ていた．
+
+	* parse.y(read_escape): 展開エラー．
+
+	* variable.c: 定義済みの変数のhookを変更しないように．
+
+Mon Dec 19 12:01:10 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y(cond): 条件式に代入式が置かれた場合，`-v'オプションで警
+	  告が出るように．
+
+	* parse.y(**): 冪乗演算子`**'の優先順位を単項演算子より高くした．
+
+	* parse.y(and,or): 優先順位の低い演算子`and', `or'.
+
+	* 0.62 released.
+
+	* eval.c: 不必要になったPUSH_ENV, POP_ENVを減らした．
+
+	* env.h: ENVIONからselfをはずした．PUSH_ENVはsuperの準備のためだけ
+	  に用いることにした．
+
+	* eval.c: 下記のオブジェクト化で遅くなった実行速度をもとに戻した．
+
+Mon Dec 17 23:01:10 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: env.{argv,argc}とscope.local_varsのオブジェクト化．
+
+	* eval.c: 1スコープ内で複数Blockを生成したときのバグを修正．
+
+Fri Dec 16 15:52:06 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: `&&'と`||'の両辺はいつでも条件式とした．
+
+Thu Dec 15 00:16:04 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c(Block): Blockオブジェクトを実現．
+
+	* node.h: NODE_QLISTはなくなった．
+
+	* eval.c(rb_call): 引数への代入を名前で一つずつ代入するのをやめて，
+	  一度にコピーするようにした．
+
+	* eval.c(rb_call): rubyで記述されたメソッドへの引数渡しをinline化．
+
+	* eval.c: イテレータ判定処理の全面書き換え．不適切なイテレータ呼び
+	  出しをなくした．例えば「[foo(),bar()]{i|baz(i)}」でfooもbarもイ
+	  テレータとして呼び出され*ない*．
+
+	* eval.c(rb_call): SCOPE処理をinline化．メソッド呼び出しの若干の高
+	  速化．
+
+Wed Dec 14 18:09:33 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* node.h: nodeもオブジェクトにする．よってGCで回収される．
+
+Thu Dec  8 14:17:29 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* 0.60 released - alpha test baseline.

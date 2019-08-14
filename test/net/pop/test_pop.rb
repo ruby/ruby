@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'net/pop'
 require 'test/unit'
 require 'digest/md5'
@@ -63,11 +64,40 @@ class TestPOP < Test::Unit::TestCase
     end
   end
 
+  def test_popmail
+    # totally not representative of real messages, but
+    # enough to test frozen bugs
+    lines = [ "[ruby-core:85210]" , "[Bug #14416]" ].freeze
+    command = Object.new
+    command.instance_variable_set(:@lines, lines)
+
+    def command.retr(n)
+      @lines.each { |l| yield "#{l}\r\n" }
+    end
+
+    def command.top(number, nl)
+      @lines.each do |l|
+        yield "#{l}\r\n"
+        break if (nl -= 1) <= 0
+      end
+    end
+
+    net_pop = :unused
+    popmail = Net::POPMail.new(1, 123, net_pop, command)
+    res = popmail.pop
+    assert_equal "[ruby-core:85210]\r\n[Bug #14416]\r\n", res
+    assert_not_predicate res, :frozen?
+
+    res = popmail.top(1)
+    assert_equal "[ruby-core:85210]\r\n", res
+    assert_not_predicate res, :frozen?
+  end
+
   def pop_test(apop=false)
     host = 'localhost'
     server = TCPServer.new(host, 0)
     port = server.addr[1]
-    thread = Thread.start do
+    server_thread = Thread.start do
       sock = server.accept
       begin
         pop_server_loop(sock, apop)
@@ -75,20 +105,24 @@ class TestPOP < Test::Unit::TestCase
         sock.close
       end
     end
-    begin
-      pop = Net::POP3::APOP(apop).new(host, port)
-      #pop.set_debug_output $stderr
-      yield pop
-    ensure
+    client_thread = Thread.start do
       begin
-        pop.finish
-      rescue IOError
-        raise unless $!.message == "POP session not yet started"
+        begin
+          pop = Net::POP3::APOP(apop).new(host, port)
+          #pop.set_debug_output $stderr
+          yield pop
+        ensure
+          begin
+            pop.finish
+          rescue IOError
+            raise unless $!.message == "POP session not yet started"
+          end
+        end
+      ensure
+        server.close
       end
     end
-  ensure
-    server.close
-    thread.value
+    assert_join_threads([client_thread, server_thread])
   end
 
   def pop_server_loop(sock, apop)

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #
 # extconf.rb
 #
@@ -12,7 +13,66 @@ dir_config 'zlib'
 
 if %w'z libz zlib1 zlib zdll zlibwapi'.find {|z| have_library(z, 'deflateReset')} and
     have_header('zlib.h') then
+  have_zlib = true
+else
+  unless File.directory?(zsrc = "#{$srcdir}/zlib")
+    dirs = Dir.open($srcdir) {|z| z.grep(/\Azlib-\d+[.\d]*\z/) {|x|"#{$srcdir}/#{x}"}}
+    dirs.delete_if {|x| !File.directory?(x)}
+    zsrc = dirs.max_by {|x| x.scan(/\d+/).map(&:to_i)}
+  end
+  if zsrc
+    addconf = [
+      "ZSRC = $(srcdir)/#{File.basename(zsrc)}\n",
+      "all:\n",
+    ]
+    $INCFLAGS << " -I$(ZSRC)"
+    if $mswin or $mingw
+      dll = "zlib1.dll"
+      $extso << dll
+      $cleanfiles << "$(topdir)/#{dll}" << "$(ZIMPLIB)"
+      zmk = "\t$(MAKE) -f $(ZMKFILE) TOP=$(ZSRC)"
+      if $nmake
+        zmkfile = "$(ZSRC)/win32/Makefile.msc"
+        m = "#{zsrc}/win32/Makefile.msc"
+      else
+        zmkfile = "$(ZSRC)/win32/Makefile.gcc"
+        m = "#{zsrc}/win32/Makefile.gcc"
+        zmk += " PREFIX="
+        zmk << CONFIG['CC'][/(.*-)gcc([^\/]*)\z/, 1]
+        zmk << " CC=$(CC)" if $2
+      end
+      m = File.read(m)
+      zimplib = m[/^IMPLIB[ \t]*=[ \t]*(\S+)/, 1]
+      $LOCAL_LIBS << " " << zimplib
+      unless $nmake or /^TOP[ \t]/ =~ m
+        m.gsub!(/win32\/zlib\.def/, '$(TOP)/\&')
+        m.gsub!(/^(\t.*[ \t])(\S+\.rc)/, '\1-I$(<D) $<')
+        m = "TOP = .\n""VPATH=$(TOP)\n" + m
+        zmkfile = File.basename(zmkfile)
+        File.rename(zmkfile, zmkfile+".orig") if File.exist?(zmkfile)
+        File.write(zmkfile, m)
+      end
+      addconf.push(
+        "ZMKFILE = #{zmkfile}\n",
+        "ZIMPLIB = #{zimplib}\n",
+        "$(TARGET_SO): $(ZIMPLIB)\n",
+        "$(ZIMPLIB):\n",
+        "#{zmk} $@\n",
+        "install-so: $(topdir)/#{dll}",
+        "$(topdir)/#{dll}: $(ZIMPLIB)\n",
+        "\t$(Q) $(COPY) #{dll} $(@D)\n",
+        "clean: clean-zsrc\n",
+        "clean-zsrc:\n",
+        "#{zmk} clean\n",
+      )
+    end
+    Logging.message "using zlib in #{zsrc}\n"
+    $defs << "-DHAVE_ZLIB_H"
+    have_zlib = true
+  end
+end
 
+if have_zlib
   defines = []
 
   Logging::message 'checking for kind of operating system... '
@@ -20,8 +80,6 @@ if %w'z libz zlib1 zlib zdll zlibwapi'.find {|z| have_library(z, 'deflateReset')
     case RUBY_PLATFORM.split('-',2)[1]
     when 'amigaos' then
       os_code = 'AMIGA'
-    when /\Aos2[\-_]emx\z/ then
-      os_code = 'OS2'
     when /mswin|mingw|bccwin/ then
       # NOTE: cygwin should be regarded as Unix.
       os_code = 'WIN32'
@@ -36,7 +94,6 @@ if %w'z libz zlib1 zlib zdll zlibwapi'.find {|z| have_library(z, 'deflateReset')
     'OS_VMS'     => 'VMS',
     'OS_UNIX'    => 'Unix',
     'OS_ATARI'   => 'Atari',
-    'OS_OS2'     => 'OS/2',
     'OS_MACOS'   => 'MacOS',
     'OS_TOPS20'  => 'TOPS20',
     'OS_WIN32'   => 'Win32',
@@ -55,10 +112,21 @@ if %w'z libz zlib1 zlib zdll zlibwapi'.find {|z| have_library(z, 'deflateReset')
 
   $defs.concat(defines.collect{|d|' -D'+d})
 
-  have_func('crc32_combine', 'zlib.h')
-  have_func('adler32_combine', 'zlib.h')
-  have_type('z_crc_t', 'zlib.h')
+  if zsrc
+    $defs << "-DHAVE_CRC32_COMBINE"
+    $defs << "-DHAVE_ADLER32_COMBINE"
+    $defs << "-DHAVE_TYPE_Z_CRC_T"
+  else
+    have_func('crc32_combine', 'zlib.h')
+    have_func('adler32_combine', 'zlib.h')
+    have_type('z_crc_t', 'zlib.h')
+  end
 
-  create_makefile('zlib')
+  create_makefile('zlib') {|conf|
+    if zsrc
+      conf.concat addconf if addconf
+    end
+    conf
+  }
 
 end

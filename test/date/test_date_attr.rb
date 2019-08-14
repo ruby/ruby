@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'test/unit'
 require 'date'
 
@@ -8,15 +9,6 @@ class TestDateAttr < Test::Unit::TestCase
     datetime = DateTime.new(1965, 5, 23, 22, 31, 59)
 
     [date, datetime].each_with_index do |d, i|
-=begin
-      if i == 0
-	assert_match(/\#<Date\d?: 1965-05-23 \(4877807\/2,0,2299161\)>/,
-		     d.inspect)
-      else
-	assert_match(/\#<DateTime\d?: 1965-05-23T22:31:59\+00:00 \(210721343519\/86400,0,2299161\)>/,
-		     d.inspect)
-      end
-=end
 
       if i == 0
 	assert_equal('1965-05-23', d.to_s)
@@ -96,17 +88,16 @@ class TestDateAttr < Test::Unit::TestCase
   end
 
   def test_nth_kday
-    skip unless Date.new.respond_to?(:nth_kday?, true)
-    assert_equal(false, Date.new(2001,1,14).__send__(:nth_kday?, 1,0))
-    assert_equal(true, Date.new(2001,1,14).__send__(:nth_kday?, 2,0))
-    assert_equal(false, Date.new(2001,1,14).__send__(:nth_kday?, 3,0))
-    assert_equal(false, Date.new(2001,1,14).__send__(:nth_kday?, 4,0))
-    assert_equal(false, Date.new(2001,1,14).__send__(:nth_kday?, 5,0))
-    assert_equal(false, Date.new(2001,1,14).__send__(:nth_kday?, -1,0))
-    assert_equal(false, Date.new(2001,1,14).__send__(:nth_kday?, -2,0))
-    assert_equal(true, Date.new(2001,1,14).__send__(:nth_kday?, -3,0))
-    assert_equal(false, Date.new(2001,1,14).__send__(:nth_kday?, -4,0))
-    assert_equal(false, Date.new(2001,1,14).__send__(:nth_kday?, -5,0))
-  end
+    assert_equal(false, Date.new(2001,1,14).nth_kday?(1,0))
+    assert_equal(true, Date.new(2001,1,14).nth_kday?(2,0))
+    assert_equal(false, Date.new(2001,1,14).nth_kday?(3,0))
+    assert_equal(false, Date.new(2001,1,14).nth_kday?(4,0))
+    assert_equal(false, Date.new(2001,1,14).nth_kday?(5,0))
+    assert_equal(false, Date.new(2001,1,14).nth_kday?(-1,0))
+    assert_equal(false, Date.new(2001,1,14).nth_kday?(-2,0))
+    assert_equal(true, Date.new(2001,1,14).nth_kday?(-3,0))
+    assert_equal(false, Date.new(2001,1,14).nth_kday?(-4,0))
+    assert_equal(false, Date.new(2001,1,14).nth_kday?(-5,0))
+  end if Date.new.respond_to?(:nth_kday?, true)
 
 end

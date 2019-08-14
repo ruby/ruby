@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #
 # GetoptLong for Ruby
 #
@@ -152,7 +153,7 @@ class GetoptLong
     #
     # Whether error messages are output to $stderr.
     #
-    @quiet = FALSE
+    @quiet = false
 
     #
     # Status code.
@@ -309,7 +310,7 @@ class GetoptLong
         #
         next if i == argument_flag
         begin
-          if !i.is_a?(String) || i !~ /^-([^-]|-.+)$/
+          if !i.is_a?(String) || i !~ /\A-([^-]|-.+)\z/
             raise ArgumentError, "an invalid option `#{i}'"
           end
           if (@canonical_names.include?(i))
@@ -446,7 +447,7 @@ class GetoptLong
       terminate
       return nil
     elsif @ordering == PERMUTE
-      while 0 < ARGV.length && ARGV[0] !~ /^-./
+      while 0 < ARGV.length && ARGV[0] !~ /\A-./
         @non_option_arguments.push(ARGV.shift)
       end
       if ARGV.length == 0
@@ -455,7 +456,7 @@ class GetoptLong
       end
       argument = ARGV.shift
     elsif @ordering == REQUIRE_ORDER
-      if (ARGV[0] !~ /^-./)
+      if (ARGV[0] !~ /\A-./)
         terminate
         return nil
       end
@@ -476,7 +477,7 @@ class GetoptLong
     #
     # Check for long and short options.
     #
-    if argument =~ /^(--[^=]+)/ && @rest_singles.length == 0
+    if argument =~ /\A(--[^=]+)/ && @rest_singles.length == 0
       #
       # This is a long style option, which start with `--'.
       #
@@ -506,7 +507,7 @@ class GetoptLong
       # Check an argument to the option.
       #
       if @argument_flags[option_name] == REQUIRED_ARGUMENT
-        if argument =~ /=(.*)$/
+        if argument =~ /=(.*)/m
           option_argument = $1
         elsif 0 < ARGV.length
           option_argument = ARGV.shift
@@ -515,19 +516,19 @@ class GetoptLong
                     "option `#{argument}' requires an argument")
         end
       elsif @argument_flags[option_name] == OPTIONAL_ARGUMENT
-        if argument =~ /=(.*)$/
+        if argument =~ /=(.*)/m
           option_argument = $1
-        elsif 0 < ARGV.length && ARGV[0] !~ /^-./
+        elsif 0 < ARGV.length && ARGV[0] !~ /\A-./
           option_argument = ARGV.shift
         else
           option_argument = ''
         end
-      elsif argument =~ /=(.*)$/
+      elsif argument =~ /=(.*)/m
         set_error(NeedlessArgument,
                   "option `#{option_name}' doesn't allow an argument")
       end
 
-    elsif argument =~ /^(-(.))(.*)/
+    elsif argument =~ /\A(-(.))(.*)/m
       #
       # This is a short style option, which start with `-' (not `--').
       # Short options may be catenated (e.g. `-l -g' is equivalent to
@@ -554,7 +555,7 @@ class GetoptLong
           if 0 < @rest_singles.length
             option_argument = @rest_singles
             @rest_singles = ''
-          elsif 0 < ARGV.length && ARGV[0] !~ /^-./
+          elsif 0 < ARGV.length && ARGV[0] !~ /\A-./
             option_argument = ARGV.shift
           else
             option_argument = ''
@@ -574,7 +575,7 @@ class GetoptLong
     else
       #
       # This is a non-option argument.
-      # Only RETURN_IN_ORDER falled into here.
+      # Only RETURN_IN_ORDER fell into here.
       #
       return '', argument
     end

@@ -1,4 +1,5 @@
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require 'minitest_helper'
 
 class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
@@ -24,7 +25,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
   def accept_heading
     links = '<span><a href="#label-Hello">&para;</a> ' +
-            '<a href="#documentation">&uarr;</a></span>'
+            '<a href="#top">&uarr;</a></span>'
     expected = "\n<h5 id=\"label-Hello\">Hello#{links}</h5>\n"
 
     assert_equal expected, @to.res.join
@@ -32,35 +33,35 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
   def accept_heading_1
     links = '<span><a href="#label-Hello">&para;</a> ' +
-            '<a href="#documentation">&uarr;</a></span>'
+            '<a href="#top">&uarr;</a></span>'
 
     assert_equal "\n<h1 id=\"label-Hello\">Hello#{links}</h1>\n", @to.res.join
   end
 
   def accept_heading_2
     links = '<span><a href="#label-Hello">&para;</a> ' +
-            '<a href="#documentation">&uarr;</a></span>'
+            '<a href="#top">&uarr;</a></span>'
 
     assert_equal "\n<h2 id=\"label-Hello\">Hello#{links}</h2>\n", @to.res.join
   end
 
   def accept_heading_3
     links = '<span><a href="#label-Hello">&para;</a> ' +
-            '<a href="#documentation">&uarr;</a></span>'
+            '<a href="#top">&uarr;</a></span>'
 
     assert_equal "\n<h3 id=\"label-Hello\">Hello#{links}</h3>\n", @to.res.join
   end
 
   def accept_heading_4
     links = '<span><a href="#label-Hello">&para;</a> ' +
-            '<a href="#documentation">&uarr;</a></span>'
+            '<a href="#top">&uarr;</a></span>'
 
     assert_equal "\n<h4 id=\"label-Hello\">Hello#{links}</h4>\n", @to.res.join
   end
 
   def accept_heading_b
     links = '<span><a href="#label-Hello">&para;</a> ' +
-            '<a href="#documentation">&uarr;</a></span>'
+            '<a href="#top">&uarr;</a></span>'
     inner = "<strong>Hello</strong>"
 
     assert_equal "\n<h1 id=\"label-Hello\">#{inner}#{links}</h1>\n",
@@ -69,7 +70,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
   def accept_heading_suppressed_crossref
     links = '<span><a href="#label-Hello">&para;</a> ' +
-            '<a href="#documentation">&uarr;</a></span>'
+            '<a href="#top">&uarr;</a></span>'
 
     assert_equal "\n<h1 id=\"label-Hello\">Hello#{links}</h1>\n", @to.res.join
   end
@@ -292,7 +293,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_verbatim
-    assert_equal "\n<pre>hi\n  world</pre>\n", @to.res.join
+    assert_equal "\n<pre class=\"ruby\"><span class=\"ruby-identifier\">hi</span>\n  <span class=\"ruby-identifier\">world</span>\n</pre>\n", @to.res.join
   end
 
   def end_accepting
@@ -348,7 +349,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     @to.accept_heading @RM::Heading.new(7, 'Hello')
 
     links = '<span><a href="#label-Hello">&para;</a> ' +
-            '<a href="#documentation">&uarr;</a></span>'
+            '<a href="#top">&uarr;</a></span>'
 
     assert_equal "\n<h6 id=\"label-Hello\">Hello#{links}</h6>\n", @to.res.join
   end
@@ -360,7 +361,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     @to.accept_heading head(1, 'Hello')
 
     links = '<span><a href="#class-Foo-label-Hello">&para;</a> ' +
-            '<a href="#documentation">&uarr;</a></span>'
+            '<a href="#top">&uarr;</a></span>'
 
     assert_equal "\n<h1 id=\"class-Foo-label-Hello\">Hello#{links}</h1>\n",
                  @to.res.join
@@ -373,7 +374,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     @to.accept_heading @RM::Heading.new(1, 'Hello')
 
     links = '<span><a href="#method-i-foo-label-Hello">&para;</a> ' +
-            '<a href="#documentation">&uarr;</a></span>'
+            '<a href="#top">&uarr;</a></span>'
 
     assert_equal "\n<h1 id=\"method-i-foo-label-Hello\">Hello#{links}</h1>\n",
                  @to.res.join
@@ -394,7 +395,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
     @to.accept_paragraph para("hello\n", "world\n")
 
-    assert_equal "\n<p>hello world</p>\n", @to.res.join
+    assert_equal "\n<p>hello world </p>\n", @to.res.join
   end
 
   def test_accept_heading_output_decoration
@@ -404,7 +405,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
     @to.accept_heading @RM::Heading.new(1, 'Hello')
 
-    assert_equal "\n<h1>Hello<span><a href=\"#label-Hello\">&para;</a> <a href=\"#documentation\">&uarr;</a></span></h1>\n", @to.res.join
+    assert_equal "\n<h1>Hello<span><a href=\"#label-Hello\">&para;</a> <a href=\"#top\">&uarr;</a></span></h1>\n", @to.res.join
   end
 
   def test_accept_heading_output_decoration_with_pipe
@@ -444,7 +445,22 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
     expected = <<-EXPECTED
 
-<pre>#{inner}
+<pre>#{inner}</pre>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
+  def test_accept_verbatim_nl_after_backslash
+    verb = @RM::Verbatim.new("a = 1 if first_flag_var and \\\n", "  this_is_flag_var\n")
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-EXPECTED
+
+<pre class="ruby"><span class="ruby-identifier">a</span> = <span class="ruby-value">1</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">first_flag_var</span> <span class="ruby-keyword">and</span> \\
+  <span class="ruby-identifier">this_is_flag_var</span>
 </pre>
     EXPECTED
 
@@ -469,6 +485,106 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal expected, @to.res.join
   end
 
+  def test_accept_verbatim_escape_in_string
+    code = <<-'RUBY'
+def foo
+  [
+    '\\',
+    '\'',
+    "'",
+    "\'\"\`",
+    "\#",
+    "\#{}",
+    "#",
+    "#{}",
+    /'"/,
+    /\'\"/,
+    /\//,
+    /\\/,
+    /\#/,
+    /\#{}/,
+    /#/,
+    /#{}/
+  ]
+end
+def bar
+end
+    RUBY
+    verb = @RM::Verbatim.new(*code.split(/(?<=\n)/))
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-'EXPECTED'
+
+<pre class="ruby"><span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">foo</span>
+  [
+    <span class="ruby-string">&#39;\\&#39;</span>,
+    <span class="ruby-string">&#39;\&#39;&#39;</span>,
+    <span class="ruby-string">&quot;&#39;&quot;</span>,
+    <span class="ruby-string">&quot;\&#39;\&quot;\`&quot;</span>,
+    <span class="ruby-string">&quot;\#&quot;</span>,
+    <span class="ruby-string">&quot;\#{}&quot;</span>,
+    <span class="ruby-string">&quot;#&quot;</span>,
+    <span class="ruby-node">&quot;#{}&quot;</span>,
+    <span class="ruby-regexp">/&#39;&quot;/</span>,
+    <span class="ruby-regexp">/\&#39;\&quot;/</span>,
+    <span class="ruby-regexp">/\//</span>,
+    <span class="ruby-regexp">/\\/</span>,
+    <span class="ruby-regexp">/\#/</span>,
+    <span class="ruby-regexp">/\#{}/</span>,
+    <span class="ruby-regexp">/#/</span>,
+    <span class="ruby-regexp">/#{}/</span>
+  ]
+<span class="ruby-keyword">end</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">bar</span>
+<span class="ruby-keyword">end</span>
+</pre>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
+  def test_accept_verbatim_escape_in_backtick
+    code = <<-'RUBY'
+def foo
+  [
+    `\\`,
+    `\'\"\``,
+    `\#`,
+    `\#{}`,
+    `#`,
+    `#{}`
+  ]
+end
+def bar
+end
+    RUBY
+    verb = @RM::Verbatim.new(*code.split(/(?<=\n)/))
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-'EXPECTED'
+
+<pre class="ruby"><span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">foo</span>
+  [
+    <span class="ruby-string">`\\`</span>,
+    <span class="ruby-string">`\&#39;\&quot;\``</span>,
+    <span class="ruby-string">`\#`</span>,
+    <span class="ruby-string">`\#{}`</span>,
+    <span class="ruby-string">`#`</span>,
+    <span class="ruby-node">`#{}`</span>
+  ]
+<span class="ruby-keyword">end</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">bar</span>
+<span class="ruby-keyword">end</span>
+</pre>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
   def test_accept_verbatim_ruby
     verb = @RM::Verbatim.new("1 + 1\n")
     verb.format = :ruby
@@ -481,6 +597,36 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 <pre class="ruby"><span class="ruby-value">1</span> <span class="ruby-operator">+</span> <span class="ruby-value">1</span>
 </pre>
     EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
+  def test_accept_verbatim_redefinable_operators
+    functions = %w[| ^ & <=> == === =~ > >= < <= << >> + - * / % ** ~ +@ -@ [] []= ` !  != !~].map { |redefinable_op|
+      ["def #{redefinable_op}\n", "end\n"]
+    }.flatten
+
+    verb = @RM::Verbatim.new(*functions)
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-EXPECTED
+
+<pre class="ruby">
+    EXPECTED
+    expected = expected.rstrip
+
+    %w[| ^ &amp; &lt;=&gt; == === =~ &gt; &gt;= &lt; &lt;= &lt;&lt; &gt;&gt; + - * / % ** ~ +@ -@ [] []= ` !  != !~].each do |html_escaped_op|
+      expected += <<-EXPECTED
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">#{html_escaped_op}</span>
+<span class="ruby-keyword">end</span>
+      EXPECTED
+    end
+
+    expected += <<-EXPECTED
+</pre>
+EXPECTED
 
     assert_equal expected, @to.res.join
   end
@@ -581,18 +727,18 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal '<img src="https://example.com/image.png" />', @to.gen_url('https://example.com/image.png', 'ignored')
   end
 
-  def test_handle_special_HYPERLINK_link
-    special = RDoc::Markup::Special.new 0, 'link:README.txt'
+  def test_handle_regexp_HYPERLINK_link
+    target = RDoc::Markup::RegexpHandling.new 0, 'link:README.txt'
 
-    link = @to.handle_special_HYPERLINK special
+    link = @to.handle_regexp_HYPERLINK target
 
     assert_equal '<a href="README.txt">README.txt</a>', link
   end
 
-  def test_handle_special_HYPERLINK_irc
-    special = RDoc::Markup::Special.new 0, 'irc://irc.freenode.net/#ruby-lang'
+  def test_handle_regexp_HYPERLINK_irc
+    target = RDoc::Markup::RegexpHandling.new 0, 'irc://irc.freenode.net/#ruby-lang'
 
-    link = @to.handle_special_HYPERLINK special
+    link = @to.handle_regexp_HYPERLINK target
 
     assert_equal '<a href="irc://irc.freenode.net/#ruby-lang">irc.freenode.net/#ruby-lang</a>', link
   end
@@ -604,8 +750,9 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 <ul><li>
 <p>one</p>
 
-<pre>verb1
-verb2</pre>
+<pre class=\"ruby\"><span class=\"ruby-identifier\">verb1</span>
+<span class=\"ruby-identifier\">verb2</span>
+</pre>
 </li><li>
 <p>two</p>
 </li></ul>
@@ -615,16 +762,35 @@ verb2</pre>
   end
 
   def test_parseable_eh
-    assert @to.parseable?('def x() end'),      'def'
-    assert @to.parseable?('class C end'),      'class'
-    assert @to.parseable?('module M end'),     'module'
-    assert @to.parseable?('a # => blah'),      '=>'
-    assert @to.parseable?('x { |y| ... }'),    '{ |x|'
-    assert @to.parseable?('x do |y| ... end'), 'do |x|'
-    refute @to.parseable?('* 1'),              '* 1'
-    refute @to.parseable?('# only a comment'), '# only a comment'
-    refute @to.parseable?('<% require "foo" %>'),    'ERB'
-    refute @to.parseable?('class="foo"'),      'HTML class'
+    valid_syntax = [
+      'def x() end',
+      'def x; end',
+      'class C; end',
+      "module M end",
+      'a # => blah',
+      'x { |y| nil }',
+      'x do |y| nil end',
+      '# only a comment',
+      'require "foo"',
+      'cls="foo"'
+    ]
+    invalid_syntax = [
+      'def x end',
+      'class C < end',
+      'module M < C end',
+      'a=># blah',
+      'x { |y| ... }',
+      'x do |y| ... end',
+      '// only a comment',
+      '<% require "foo" %>',
+      'class="foo"'
+    ]
+    valid_syntax.each do |t|
+      assert @to.parseable?(t), "valid syntax considered invalid: #{t}"
+    end
+    invalid_syntax.each do |t|
+      refute @to.parseable?(t), "invalid syntax considered valid: #{t}"
+    end
   end
 
   def test_to_html

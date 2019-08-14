@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #
 # cgi/session/pstore.rb - persistent storage of marshalled session data
 #
@@ -9,7 +10,7 @@
 # persistent of session data on top of the pstore library.  See
 # cgi/session.rb for more details on session storage managers.
 
-require 'cgi/session'
+require_relative '../session'
 require 'pstore'
 
 class CGI
@@ -97,15 +98,4 @@ class CGI
     end
   end
 end
-
-if $0 == __FILE__
-  # :enddoc:
-  STDIN.reopen("/dev/null")
-  cgi = CGI.new
-  session = CGI::Session.new(cgi, 'database_manager' => CGI::Session::PStore)
-  session['key'] = {'k' => 'v'}
-  puts session['key'].class
-  fail unless Hash === session['key']
-  puts session['key'].inspect
-  fail unless session['key'].inspect == '{"k"=>"v"}'
-end
+# :enddoc:

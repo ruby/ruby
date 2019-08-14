@@ -1,5 +1,5 @@
+# frozen_string_literal: false
 require 'test/unit'
-require_relative '../../ruby/envutil'
 
 module Bug
   module Win32

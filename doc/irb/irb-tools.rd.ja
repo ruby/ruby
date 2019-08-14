@@ -112,7 +112,7 @@ XMPメソッド群のコンテキストは, 呼び出す前のコンテキスト
 マルチスレッドには対応していません.
 
 = frame.rb
-現在実行中のフレーム情報を取り扱うためのクラスです. 
+現在実行中のフレーム情報を取り扱うためのクラスです.
 
 * IRB::Frame.top(n = 0)
   上からn番目のコンテキストを取り出します. nは0が最上位になります.
@@ -127,7 +127,7 @@ set_trace_funcを用いてRubyの実行をトレースしています. マルチ
 は対応していません.
 
 = completion.rb
-irbのcompletion機能を提供するものです. 
+irbのcompletion機能を提供するものです.
 
 == 使い方
 
@@ -144,7 +144,7 @@ irb実行中に (TAB) を押すとコンプレーションします.
 トップレベルで(TAB)を押すとすべての構文要素, クラス, メソッドの候補がで
 ます. 候補が唯一ならば完全に補完します.
 
-  irb(main):001:0> in    
+  irb(main):001:0> in
   in                    inspect               instance_eval
   include               install_alias_method  instance_of?
   initialize            install_aliases       instance_variables
@@ -168,8 +168,8 @@ irb実行中に (TAB) を押すとコンプレーションします.
   foo.dup                 foo.kind_of?            foo.to_s
   foo.eql?                foo.method              foo.type
   foo.equal?              foo.methods             foo.untaint
-  foo.extend              foo.nil?                
-  foo.freeze              foo.private_methods     
+  foo.extend              foo.nil?
+  foo.freeze              foo.private_methods
 
 =end
 

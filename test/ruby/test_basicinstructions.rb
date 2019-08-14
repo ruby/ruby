@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 ConstTest = 3
@@ -116,7 +117,6 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal({1=>2}, {1=>2})
     assert_equal({1=>2, 3=>4}, {1=>2, 3=>4})
     assert_equal({1=>2, 3=>4}, {3=>4, 1=>2})
-    # assert_equal({1=>2, 3=>4}, {1,2, 3,4}) # 1.9 doesn't support
     assert_equal({"key"=>"val"}, {"key"=>"val"})
   end
 
@@ -210,9 +210,9 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_raise(NameError) { a }
     assert_raise(NameError) { b }
     assert_raise(NameError) { c }
-    a = "NOT OK"
-    b = "NOT OK"
-    c = "NOT OK"
+    a = a = "NOT OK"
+    b = b = "NOT OK"
+    c = c = "NOT OK"
   end
 
   class Const
@@ -610,8 +610,8 @@ class TestBasicInstructions < Test::Unit::TestCase
     x = OP.new
     assert_equal 42, x.foo = 42, bug7773
     assert_equal 42, x.foo, bug7773
-    assert_equal -6, x.send(:foo=, -6), bug7773
-    assert_equal -6, x.foo, bug7773
+    assert_equal (-6), x.send(:foo=, -6), bug7773
+    assert_equal (-6), x.foo, bug7773
     assert_equal :Bug1996, x.send(:x=, :case_when_setter_returns_other_value), bug7773
     assert_equal :case_when_setter_returns_other_value, x.x, bug7773
   end
@@ -696,5 +696,27 @@ class TestBasicInstructions < Test::Unit::TestCase
     a = nil
     assert_equal [], [*a]
     assert_equal [1], [1, *a]
+  end
+
+  def test_special_const_instance_variables
+    assert_separately(%w(-W0), <<-INPUT, timeout: 60)
+    module M
+      def get
+        # we can not set instance variables on special const objects.
+        # However, we can access instance variables with default value (nil).
+        @ivar
+      end
+    end
+    class Integer; include M; end
+    class Float; include M; end
+    class Symbol; include M; end
+    class FalseClass; include M; end
+    class TrueClass; include M; end
+    class NilClass; include M; end
+
+    [123, 1.2, :sym, false, true, nil].each{|obj|
+      assert_equal(nil, obj.get)
+    }
+    INPUT
   end
 end

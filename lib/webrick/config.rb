@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # config.rb -- Default configurations.
 #
@@ -8,19 +9,25 @@
 #
 # $IPR: config.rb,v 1.52 2003/07/22 19:20:42 gotoyuzo Exp $
 
-require 'webrick/version'
-require 'webrick/httpversion'
-require 'webrick/httputils'
-require 'webrick/utils'
-require 'webrick/log'
+require_relative 'version'
+require_relative 'httpversion'
+require_relative 'httputils'
+require_relative 'utils'
+require_relative 'log'
 
 module WEBrick
   module Config
     LIBDIR = File::dirname(__FILE__) # :nodoc:
 
     # for GenericServer
-    General = {
-      :ServerName     => Utils::getservername,
+    General = Hash.new { |hash, key|
+      case key
+      when :ServerName
+        hash[key] = Utils.getservername
+      else
+        nil
+      end
+    }.update(
       :BindAddress    => nil,   # "0.0.0.0" or "::" or nil
       :Port           => nil,   # users MUST specify this!!
       :MaxClients     => 100,   # maximum number of the concurrent connections
@@ -33,9 +40,9 @@ module WEBrick
       :StartCallback  => nil,
       :StopCallback   => nil,
       :AcceptCallback => nil,
-      :DoNotReverseLookup => nil,
+      :DoNotReverseLookup => true,
       :ShutdownSocketWithoutClose => false,
-    }
+    )
 
     # for HTTPServer, HTTPRequest, HTTPResponse ...
     HTTP = General.dup.update(

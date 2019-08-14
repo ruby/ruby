@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # Resolver sets are used to look up specifications (and their
 # dependencies) used in resolution.  This set is abstract.
@@ -9,15 +10,28 @@ class Gem::Resolver::Set
 
   attr_accessor :remote
 
+  ##
+  # Errors encountered when resolving gems
+
+  attr_accessor :errors
+
+  ##
+  # When true, allows matching of requests to prerelease gems.
+
+  attr_accessor :prerelease
+
   def initialize # :nodoc:
-    @remote = true
+    require 'uri'
+    @prerelease = false
+    @remote     = true
+    @errors     = []
   end
 
   ##
   # The find_all method must be implemented.  It returns all Resolver
   # Specification objects matching the given DependencyRequest +req+.
 
-  def find_all req
+  def find_all(req)
     raise NotImplementedError
   end
 
@@ -29,7 +43,7 @@ class Gem::Resolver::Set
   # When overridden, the #prefetch method should look up specifications
   # matching +reqs+.
 
-  def prefetch reqs
+  def prefetch(reqs)
   end
 
   ##
@@ -41,4 +55,3 @@ class Gem::Resolver::Set
   end
 
 end
-

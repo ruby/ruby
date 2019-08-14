@@ -1,9 +1,9 @@
+#frozen_string_literal: false
 unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
 require 'date'
 
-# Date serialization/deserialization
 class Date
 
   # Deserializes JSON string by converting Julian year <tt>y</tt>, month

@@ -41,9 +41,6 @@ socks_s_close(VALUE sock)
 {
     rb_io_t *fptr;
 
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
-	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
-    }
     GetOpenFile(sock, fptr);
     shutdown(fptr->fd, 2);
     return rb_io_close(sock);

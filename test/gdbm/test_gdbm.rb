@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   require 'gdbm'
 rescue LoadError
@@ -5,21 +6,17 @@ end
 
 if defined? GDBM
   require 'test/unit'
+  require 'envutil' unless defined?(EnvUtil)
   require 'tmpdir'
   require 'fileutils'
-  require_relative '../ruby/envutil'
 
   class TestGDBM_RDONLY < Test::Unit::TestCase
     def TestGDBM_RDONLY.uname_s
       require 'rbconfig'
       case RbConfig::CONFIG['target_os']
       when 'cygwin'
-        require 'Win32API'
-        uname = Win32API.new('cygwin1', 'uname', 'P', 'I')
-        utsname = ' ' * 100
-        raise 'cannot get system name' if uname.call(utsname) == -1
-
-        utsname.unpack('A20' * 5)[0]
+        require 'etc'
+	Etc.uname[:sysname]
       else
         RbConfig::CONFIG['target_os']
       end
@@ -46,6 +43,8 @@ if defined? GDBM
     end
 
     def test_delete_rdonly
+      skip("skipped because root can open anything") if Process.uid == 0
+
       if /^CYGWIN_9/ !~ SYSTEM
         assert_raise(GDBMError) {
           @gdbm_rdonly.delete("foo")
@@ -69,6 +68,13 @@ if defined? GDBM
       assert_nil(@gdbm.close)
       ObjectSpace.each_object(GDBM) do |obj|
         obj.close unless obj.closed?
+      end
+      begin
+        FileUtils.remove_entry_secure @tmpdir
+      rescue
+        system("fuser", *Dir.entries(@tmpdir).grep(/\A(?!\.\.?\z)/), chdir: @tmpdir)
+      else
+        return
       end
       FileUtils.remove_entry_secure @tmpdir
     end
@@ -151,14 +157,14 @@ if defined? GDBM
     end
 
     def test_s_open_lock
-      skip "GDBM.open would block when opening already locked gdbm file on platforms without flock and with lockf" if /solaris/ =~ RUBY_PLATFORM
+      skip "GDBM.open would block when opening already locked gdbm file on platforms without flock and with lockf" if /solaris|aix/ =~ RUBY_PLATFORM
 
       dbname = "#{@tmpdir}/#{@prefix}"
 
       open_db_child(dbname) do
         assert_raise(Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EACCES) {
           GDBM.open(dbname, 0644) {|gdbm|
-            assert_instance_of(GDBM, gdbm)
+            assert(false)
           }
         }
       end
@@ -207,6 +213,8 @@ if defined? GDBM
     end if defined? GDBM::NOLOCK # gdbm 1.8.0 specific
 
     def test_s_open_error
+      skip "because root can open anything" if Process.uid == 0
+
       assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", 0))
       assert_raise(Errno::EACCES, Errno::EWOULDBLOCK) {
         GDBM.open("#{@tmpdir}/#{@prefix}", 0)
@@ -270,7 +278,7 @@ if defined? GDBM
         num += 1 if i == 0
         assert_equal(num, @gdbm.size)
 
-        # Fixnum
+        # Integer
         assert_equal('200', @gdbm['100'] = '200')
         assert_equal('200', @gdbm['100'])
 
@@ -395,6 +403,10 @@ if defined? GDBM
       assert_equal(@gdbm, ret)
     end
 
+    def test_each_key_without_block
+      assert_kind_of Enumerator, @gdbm.each_key
+    end
+
     def test_keys
       assert_equal([], @gdbm.keys)
 
@@ -502,7 +514,7 @@ if defined? GDBM
           n+=1
           true
         }
-      rescue
+      rescue RuntimeError
       end
       assert_equal(51, n)
       check_size(49, @gdbm)
@@ -587,6 +599,7 @@ if defined? GDBM
 
       size2 = File.size(@path)
       @gdbm.reorganize
+      @gdbm.sync
       size3 = File.size(@path)
 
       # p [size1, size2, size3]
@@ -713,7 +726,8 @@ if defined? GDBM
     def test_freeze
       GDBM.open("#{@tmproot}/a.dbm") {|d|
         d.freeze
-        assert_raise(RuntimeError) { d["k"] = "v" }
+        expected_error = defined?(FrozenError) ? FrozenError : RuntimeError
+        assert_raise(expected_error) { d["k"] = "v" }
       }
     end
   end

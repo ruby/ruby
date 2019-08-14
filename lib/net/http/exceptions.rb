@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # Net::HTTP exception class.
 # You cannot use Net::HTTPExceptions directly; instead, you must use
 # its subclasses.
@@ -19,7 +20,14 @@ class Net::HTTPServerException < Net::ProtoServerError
   # We cannot use the name "HTTPServerError", it is the name of the response.
   include Net::HTTPExceptions
 end
+
+# for compatibility
+Net::HTTPClientException = Net::HTTPServerException
+
 class Net::HTTPFatalError < Net::ProtoFatalError
   include Net::HTTPExceptions
 end
 
+module Net
+  deprecate_constant(:HTTPServerException)
+end

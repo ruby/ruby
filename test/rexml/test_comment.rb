@@ -1,8 +1,9 @@
+# frozen_string_literal: false
 require "test/unit/testcase"
 
 require 'rexml/document'
 
-module REXMLTest
+module REXMLTests
   class CommentTester < Test::Unit::TestCase
     # Bug #5278
     def test_hyphen_end_line_in_doctype

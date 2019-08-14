@@ -1,25 +1,16 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 # $RoughId: extconf.rb,v 1.3 2001/08/14 19:54:51 knu Exp $
 # $Id$
 
 require "mkmf"
+require File.expand_path("../../digest_conf", __FILE__)
 
 $defs << "-DHAVE_CONFIG_H"
-$INCFLAGS << " -I$(srcdir)/.."
 
 $objs = [ "md5init.#{$OBJEXT}" ]
 
-dir_config("openssl")
-pkg_config("openssl")
-require File.expand_path('../../../openssl/deprecation', __FILE__)
-
-if !with_config("bundled-md5") &&
-    have_library("crypto") && OpenSSL.check_func("MD5_Transform", "openssl/md5.h")
-  $objs << "md5ossl.#{$OBJEXT}"
-
-else
-  $objs << "md5.#{$OBJEXT}"
-end
+digest_conf("md5")
 
 have_header("sys/cdefs.h")
 

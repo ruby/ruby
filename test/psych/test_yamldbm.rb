@@ -1,5 +1,4 @@
-# -*- coding: UTF-8 -*-
-
+# frozen_string_literal: true
 require_relative 'helper'
 require 'tmpdir'
 
@@ -13,7 +12,6 @@ module Psych
 
   class YAMLDBMTest < TestCase
     def setup
-      @engine, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'psych'
       @dir = Dir.mktmpdir("rubytest-file")
       File.chown(-1, Process.gid, @dir)
       @yamldbm_file = make_tmp_filename("yamldbm")
@@ -21,7 +19,6 @@ module Psych
     end
 
     def teardown
-      YAML::ENGINE.yamler = @engine
       @yamldbm.clear
       @yamldbm.close
       FileUtils.remove_entry_secure @dir
@@ -81,7 +78,6 @@ module Psych
     # end
 
     def test_key
-      skip 'only on ruby 2.0.0' if RUBY_VERSION < '2.0.0'
       @yamldbm['a'] = 'b'
       @yamldbm['c'] = 'd'
       assert_equal 'a', @yamldbm.key('b')

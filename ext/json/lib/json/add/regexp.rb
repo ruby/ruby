@@ -1,8 +1,8 @@
+#frozen_string_literal: false
 unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
 
-# Regexp serialization/deserialization
 class Regexp
 
   # Deserializes JSON string by constructing new Regexp object with source

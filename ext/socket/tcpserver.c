@@ -64,49 +64,16 @@ tcp_accept(VALUE sock)
     return rsock_s_accept(rb_cTCPSocket, fptr->fd, &from.addr, &fromlen);
 }
 
-/*
- * call-seq:
- *   tcpserver.accept_nonblock => tcpsocket
- *
- * Accepts an incoming connection using accept(2) after
- * O_NONBLOCK is set for the underlying file descriptor.
- * It returns an accepted TCPSocket for the incoming connection.
- *
- * === Example
- * 	require 'socket'
- * 	serv = TCPServer.new(2202)
- * 	begin # emulate blocking accept
- * 	  sock = serv.accept_nonblock
- * 	rescue IO::WaitReadable, Errno::EINTR
- * 	  IO.select([serv])
- * 	  retry
- * 	end
- * 	# sock is an accepted socket.
- *
- * Refer to Socket#accept for the exceptions that may be thrown if the call
- * to TCPServer#accept_nonblock fails.
- *
- * TCPServer#accept_nonblock may raise any error corresponding to accept(2) failure,
- * including Errno::EWOULDBLOCK.
- *
- * If the exception is Errno::EWOULDBLOCK, Errno::AGAIN, Errno::ECONNABORTED, Errno::EPROTO,
- * it is extended by IO::WaitReadable.
- * So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
- *
- * === See
- * * TCPServer#accept
- * * Socket#accept
- */
+/* :nodoc: */
 static VALUE
-tcp_accept_nonblock(VALUE sock)
+tcp_accept_nonblock(VALUE sock, VALUE ex)
 {
     rb_io_t *fptr;
     union_sockaddr from;
-    socklen_t fromlen;
+    socklen_t len = (socklen_t)sizeof(from);
 
     GetOpenFile(sock, fptr);
-    fromlen = (socklen_t)sizeof(from);
-    return rsock_s_accept_nonblock(rb_cTCPSocket, fptr, &from.addr, &fromlen);
+    return rsock_s_accept_nonblock(rb_cTCPSocket, ex, fptr, &from.addr, &len);
 }
 
 /*
@@ -171,7 +138,8 @@ rsock_init_tcpserver(void)
      */
     rb_cTCPServer = rb_define_class("TCPServer", rb_cTCPSocket);
     rb_define_method(rb_cTCPServer, "accept", tcp_accept, 0);
-    rb_define_method(rb_cTCPServer, "accept_nonblock", tcp_accept_nonblock, 0);
+    rb_define_private_method(rb_cTCPServer,
+			     "__accept_nonblock", tcp_accept_nonblock, 1);
     rb_define_method(rb_cTCPServer, "sysaccept", tcp_sysaccept, 0);
     rb_define_method(rb_cTCPServer, "initialize", tcp_svr_init, -1);
     rb_define_method(rb_cTCPServer, "listen", rsock_sock_listen, 1); /* in socket.c */

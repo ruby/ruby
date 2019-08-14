@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/source'
 
@@ -25,6 +26,21 @@ class TestGemSourceGit < Gem::TestCase
     @source.checkout
 
     assert_path_exists File.join @source.install_dir, 'a.gemspec'
+  end
+
+  def test_checkout_master
+    Dir.chdir @repository do
+      system @git, 'checkout', '-q', '-b', 'other'
+      system @git, 'mv',             'a.gemspec', 'b.gemspec'
+      system @git, 'commit',   '-q', '-a', '-m', 'rename gemspec'
+      system @git, 'checkout', '-q', 'master'
+    end
+
+    @source = Gem::Source::Git.new @name, @repository, 'other', false
+
+    @source.checkout
+
+    assert_path_exists File.join @source.install_dir, 'b.gemspec'
   end
 
   def test_checkout_local
@@ -165,6 +181,17 @@ class TestGemSourceGit < Gem::TestCase
     source.cache
 
     refute_equal master_head, source.rev_parse
+
+    source = Gem::Source::Git.new @name, @repository, 'nonexistent', false
+
+    source.cache
+
+    e = assert_raises Gem::Exception do
+      capture_subprocess_io {source.rev_parse}
+    end
+
+    assert_equal "unable to find reference nonexistent in #{@repository}",
+                   e.message
   end
 
   def test_root_dir
@@ -179,14 +206,18 @@ class TestGemSourceGit < Gem::TestCase
     git       = Gem::Source::Git.new 'a', 'git/a', 'master', false
     remote    = Gem::Source.new @gem_repo
     installed = Gem::Source::Installed.new
+    vendor    = Gem::Source::Vendor.new 'vendor/foo'
 
-    assert_equal( 0, git.      <=>(git),       'git    <=> git')
+    assert_equal(0, git.      <=>(git),       'git    <=> git')
 
-    assert_equal( 1, git.      <=>(remote),    'git    <=> remote')
+    assert_equal(1, git.      <=>(remote),    'git    <=> remote')
     assert_equal(-1, remote.   <=>(git),       'remote <=> git')
 
-    assert_equal( 1, installed.<=>(git),       'installed <=> git')
-    assert_equal(-1, git.      <=>(installed), 'git       <=> installed')
+    assert_equal(1, git.      <=>(installed), 'git       <=> installed')
+    assert_equal(-1, installed.<=>(git),       'installed <=> git')
+
+    assert_equal(-1, git.      <=>(vendor),    'git       <=> vendor')
+    assert_equal(1, vendor.   <=>(git),       'vendor    <=> git')
   end
 
   def test_specs
@@ -198,18 +229,13 @@ class TestGemSourceGit < Gem::TestCase
       Dir.chdir 'b' do
         b = Gem::Specification.new 'b', 1
 
-        open 'b.gemspec', 'w' do |io|
+        File.open 'b.gemspec', 'w' do |io|
           io.write b.to_ruby
         end
 
         system @git, 'add', 'b.gemspec'
         system @git, 'commit', '--quiet', '-m', 'add b/b.gemspec'
       end
-
-      FileUtils.touch 'c.gemspec'
-
-      system @git, 'add', 'c.gemspec'
-      system @git, 'commit', '--quiet', '-m', 'add c.gemspec'
     end
 
     specs = nil
@@ -254,6 +280,10 @@ class TestGemSourceGit < Gem::TestCase
     end
   end
 
+  def test_uri
+    assert_equal URI(@repository), @source.uri
+  end
+
   def test_uri_hash
     assert_equal @hash, @source.uri_hash
 
@@ -271,4 +301,3 @@ class TestGemSourceGit < Gem::TestCase
   end
 
 end
-

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # This script check that Win32OLE can execute InvokeVerb method of FolderItem2.
 #

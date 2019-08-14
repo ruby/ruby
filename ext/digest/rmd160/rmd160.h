@@ -26,7 +26,7 @@
 #ifndef _RMD160_H_
 #define _RMD160_H_
 
-#include "defs.h"
+#include "../defs.h"
 
 typedef struct {
 	uint32_t	state[5];	/* state (ABCDE) */
@@ -43,10 +43,10 @@ typedef struct {
 #endif
 
 __BEGIN_DECLS
-void	RMD160_Init _((RMD160_CTX *));
+int	RMD160_Init _((RMD160_CTX *));
 void	RMD160_Transform _((uint32_t[5], const uint32_t[16]));
 void	RMD160_Update _((RMD160_CTX *, const uint8_t *, size_t));
-void	RMD160_Finish _((RMD160_CTX *, uint8_t[20]));
+int	RMD160_Finish _((RMD160_CTX *, uint8_t[20]));
 __END_DECLS
 
 #define RMD160_BLOCK_LENGTH             64

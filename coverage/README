@@ -1,0 +1,17 @@
+Usage
+
+The make task `update-coverage' retrieves simplecov for coverage report.
+
+COVERAGE=1 make test-all TESTS=test/cgi
+
+it generates test coverage to coverage directory.
+
+Limitation
+
+ * test_coverage.rb and test_process.rb broke test suit with SimpleCov
+ * some tests failed randomly.
+
+TODO
+
+ * more reduce bundled simplecov(additional configuration, formatter, etc)
+ * measure rubyspec coverage

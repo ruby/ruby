@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/dependency_command'
 
@@ -5,7 +6,7 @@ class TestGemCommandsDependencyCommand < Gem::TestCase
 
   def setup
     super
-
+    @stub_ui = Gem::MockGemUi.new
     @cmd = Gem::Commands::DependencyCommand.new
     @cmd.options[:domain] = :local
   end
@@ -18,16 +19,18 @@ class TestGemCommandsDependencyCommand < Gem::TestCase
 
     @cmd.options[:args] = %w[foo]
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
     assert_equal "Gem foo-2\n  bar (> 1)\n  baz (> 1)\n\n",
-                 @ui.output
-    assert_equal '', @ui.error
+                 @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_no_args
+    install_specs util_spec 'x', '2'
+
     spec_fetcher do |fetcher|
       fetcher.spec 'a', 1
       fetcher.spec 'a', '2.a'
@@ -37,7 +40,7 @@ class TestGemCommandsDependencyCommand < Gem::TestCase
 
     @cmd.options[:args] = []
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -51,39 +54,43 @@ Gem dep_x-1
 
 Gem pl-1-x86-linux
 
+Gem x-2
+
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_no_match
     @cmd.options[:args] = %w[foo]
 
     assert_raises Gem::MockGemUi::TermError do
-      use_ui @ui do
+      use_ui @stub_ui do
         @cmd.execute
       end
     end
 
-    assert_equal "No gems found matching foo (>= 0)\n", @ui.output
-    assert_equal '', @ui.error
+    assert_equal "No gems found matching foo (>= 0)\n", @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_pipe_format
-    util_spec 'foo' do |gem|
+    spec = util_spec 'foo' do |gem|
       gem.add_dependency 'bar', '> 1'
     end
+    install_specs util_spec 'bar', 2
+    install_specs spec
 
     @cmd.options[:args] = %w[foo]
     @cmd.options[:pipe_format] = true
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
-    assert_equal "bar --version '> 1'\n", @ui.output
-    assert_equal '', @ui.error
+    assert_equal "bar --version '> 1'\n", @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_regexp
@@ -94,9 +101,9 @@ Gem pl-1-x86-linux
       fetcher.spec 'b',      2
     end
 
-    @cmd.options[:args] = %w[/[ab]/]
+    @cmd.options[:args] = %w[[ab]]
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -111,8 +118,8 @@ Gem b-2
 
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_reverse
@@ -128,7 +135,7 @@ Gem b-2
     @cmd.options[:args] = %w[foo]
     @cmd.options[:reverse_dependencies] = true
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
@@ -140,8 +147,8 @@ Gem foo-2
 
     EOF
 
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal expected, @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_reverse_remote
@@ -150,7 +157,7 @@ Gem foo-2
     @cmd.options[:domain] = :remote
 
     assert_raises Gem::MockGemUi::TermError do
-      use_ui @ui do
+      use_ui @stub_ui do
         @cmd.execute
       end
     end
@@ -159,11 +166,13 @@ Gem foo-2
 ERROR:  Only reverse dependencies for local gems are supported.
     EOF
 
-    assert_equal '', @ui.output
-    assert_equal expected, @ui.error
+    assert_equal '', @stub_ui.output
+    assert_equal expected, @stub_ui.error
   end
 
   def test_execute_remote
+    install_specs util_spec 'bar', '2'
+
     spec_fetcher do |fetcher|
       fetcher.spec 'foo', 2, 'bar' => '> 1'
     end
@@ -171,12 +180,12 @@ ERROR:  Only reverse dependencies for local gems are supported.
     @cmd.options[:args] = %w[foo]
     @cmd.options[:domain] = :remote
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
-    assert_equal "Gem foo-2\n  bar (> 1)\n\n", @ui.output
-    assert_equal '', @ui.error
+    assert_equal "Gem foo-2\n  bar (> 1)\n\n", @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_remote_version
@@ -192,12 +201,12 @@ ERROR:  Only reverse dependencies for local gems are supported.
     @cmd.options[:domain] = :remote
     @cmd.options[:version] = req '= 1'
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
-    assert_equal "Gem a-1\n\n", @ui.output
-    assert_equal '', @ui.error
+    assert_equal "Gem a-1\n\n", @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
   def test_execute_prerelease
@@ -209,13 +218,12 @@ ERROR:  Only reverse dependencies for local gems are supported.
     @cmd.options[:domain] = :remote
     @cmd.options[:prerelease] = true
 
-    use_ui @ui do
+    use_ui @stub_ui do
       @cmd.execute
     end
 
-    assert_equal "Gem a-2.a\n\n", @ui.output
-    assert_equal '', @ui.error
+    assert_equal "Gem a-2.a\n\n", @stub_ui.output
+    assert_equal '', @stub_ui.error
   end
 
 end
-

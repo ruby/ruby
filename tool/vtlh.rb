@@ -1,3 +1,5 @@
+# Convert addresses to line numbers for MiniRuby.
+
 # ARGF = open('ha')
 cd = `pwd`.chomp + '/'
 ARGF.each{|line|

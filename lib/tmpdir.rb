@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #
 # tmpdir - retrieve temporary directory path
 #
@@ -7,7 +8,7 @@
 require 'fileutils'
 begin
   require 'etc.so'
-rescue LoadError
+rescue LoadError # rescue LoadError for miniruby
 end
 
 class Dir
@@ -17,12 +18,12 @@ class Dir
   ##
   # Returns the operating system's temporary file path.
 
-  def Dir::tmpdir
+  def self.tmpdir
     if $SAFE > 0
-      tmp = @@systmpdir
+      @@systmpdir.dup
     else
       tmp = nil
-      for dir in [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp', '.']
+      [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp', '.'].each do |dir|
         next if !dir
         dir = File.expand_path(dir)
         if stat = File.stat(dir) and stat.directory? and stat.writable? and
@@ -31,7 +32,7 @@ class Dir
           break
         end rescue nil
       end
-      raise ArgumentError, "could not find a temporary directory" if !tmp
+      raise ArgumentError, "could not find a temporary directory" unless tmp
       tmp
     end
   end
@@ -81,15 +82,21 @@ class Dir
   #    FileUtils.remove_entry dir
   #  end
   #
-  def Dir.mktmpdir(prefix_suffix=nil, *rest)
-    path = Tmpname.create(prefix_suffix || "d", *rest) {|n| mkdir(n, 0700)}
+  def self.mktmpdir(prefix_suffix=nil, *rest)
+    base = nil
+    path = Tmpname.create(prefix_suffix || "d", *rest) {|path, _, _, d|
+      base = d
+      mkdir(path, 0700)
+    }
     if block_given?
       begin
         yield path
       ensure
-        stat = File.stat(File.dirname(path))
-        if stat.world_writable? and !stat.sticky?
-          raise ArgumentError, "parent directory is world writable but not sticky"
+        unless base
+          stat = File.stat(File.dirname(path))
+          if stat.world_writable? and !stat.sticky?
+            raise ArgumentError, "parent directory is world writable but not sticky"
+          end
         end
         FileUtils.remove_entry path
       end
@@ -105,41 +112,29 @@ class Dir
       Dir.tmpdir
     end
 
-    def make_tmpname(prefix_suffix, n)
-      case prefix_suffix
-      when String
-        prefix = prefix_suffix
-        suffix = ""
-      when Array
-        prefix = prefix_suffix[0]
-        suffix = prefix_suffix[1]
-      else
-        raise ArgumentError, "unexpected prefix_suffix: #{prefix_suffix.inspect}"
-      end
-      t = Time.now.strftime("%Y%m%d")
-      path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}"
-      path << "-#{n}" if n
-      path << suffix
-    end
+    UNUSABLE_CHARS = [File::SEPARATOR, File::ALT_SEPARATOR, File::PATH_SEPARATOR, ":"].uniq.join("").freeze
 
-    def create(basename, *rest)
-      if opts = Hash.try_convert(rest[-1])
-        opts = opts.dup if rest.pop.equal?(opts)
-        max_try = opts.delete(:max_try)
-        opts = [opts]
-      else
-        opts = []
-      end
-      tmpdir, = *rest
+    def create(basename, tmpdir=nil, max_try: nil, **opts)
       if $SAFE > 0 and tmpdir.tainted?
         tmpdir = '/tmp'
       else
+        origdir = tmpdir
         tmpdir ||= tmpdir()
       end
       n = nil
+      prefix, suffix = basename
+      prefix = (String.try_convert(prefix) or
+                raise ArgumentError, "unexpected prefix: #{prefix.inspect}")
+      prefix = prefix.delete(UNUSABLE_CHARS)
+      suffix &&= (String.try_convert(suffix) or
+                  raise ArgumentError, "unexpected suffix: #{suffix.inspect}")
+      suffix &&= suffix.delete(UNUSABLE_CHARS)
       begin
-        path = File.join(tmpdir, make_tmpname(basename, n))
-        yield(path, n, *opts)
+        t = Time.now.strftime("%Y%m%d")
+        path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}"\
+               "#{n ? %[-#{n}] : ''}#{suffix||''}"
+        path = File.join(tmpdir, path)
+        yield(path, n, opts, origdir)
       rescue Errno::EEXIST
         n ||= 0
         n += 1

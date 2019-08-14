@@ -1,7 +1,9 @@
+# frozen_string_literal: false
 require "test/unit"
 require "rexml/document"
 require "rexml/parsers/treeparser"
 
+module REXMLTests
 class TestTreeParser < Test::Unit::TestCase
   class TestInvalid < self
     def test_unmatched_close_tag
@@ -10,7 +12,7 @@ class TestTreeParser < Test::Unit::TestCase
         parse(xml)
       end
       assert_equal(<<-MESSAGE, exception.to_s)
-Missing end tag for 'root' (got "not-root")
+Missing end tag for 'root' (got 'not-root')
 Line: 1
 Position: #{xml.bytesize}
 Last 80 unconsumed characters:
@@ -37,4 +39,5 @@ Last 80 unconsumed characters:
       parser.parse
     end
   end
+end
 end

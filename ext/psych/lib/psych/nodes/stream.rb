@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Psych
   module Nodes
     ###
@@ -32,6 +33,8 @@ module Psych
         super()
         @encoding = encoding
       end
+
+      def stream?; true; end
     end
   end
 end

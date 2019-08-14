@@ -30,6 +30,7 @@
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
+     defined(__powerpc64__) || \
      defined(__mc68020__)
 #   define UNALIGNED_WORD_ACCESS 1
 # endif
@@ -385,16 +386,15 @@ sip_hash_dump(sip_hash *h)
 }
 #endif /* SIP_HASH_STREAMING */
 
-#define SIP_2_ROUND(m, v0, v1, v2, v3)	\
+#define SIP_ROUND(m, v0, v1, v2, v3)	\
 do {					\
     XOR64_TO((v3), (m));		\
-    SIP_COMPRESS(v0, v1, v2, v3);	\
     SIP_COMPRESS(v0, v1, v2, v3);	\
     XOR64_TO((v0), (m));		\
 } while (0)
 
 uint64_t
-sip_hash24(const uint8_t key[16], const uint8_t *data, size_t len)
+sip_hash13(const uint8_t key[16], const uint8_t *data, size_t len)
 {
     uint64_t k0, k1;
     uint64_t v0, v1, v2, v3;
@@ -414,13 +414,13 @@ sip_hash24(const uint8_t key[16], const uint8_t *data, size_t len)
         uint64_t *data64 = (uint64_t *)data;
         while (data64 != (uint64_t *) end) {
 	    m = *data64++;
-	    SIP_2_ROUND(m, v0, v1, v2, v3);
+	    SIP_ROUND(m, v0, v1, v2, v3);
         }
     }
 #else
     for (; data != end; data += sizeof(uint64_t)) {
 	m = U8TO64_LE(data);
-	SIP_2_ROUND(m, v0, v1, v2, v3);
+	SIP_ROUND(m, v0, v1, v2, v3);
     }
 #endif
 
@@ -467,11 +467,10 @@ sip_hash24(const uint8_t key[16], const uint8_t *data, size_t len)
 	    break;
     }
 
-    SIP_2_ROUND(last, v0, v1, v2, v3);
+    SIP_ROUND(last, v0, v1, v2, v3);
 
     XOR64_INT(v2, 0xff);
 
-    SIP_COMPRESS(v0, v1, v2, v3);
     SIP_COMPRESS(v0, v1, v2, v3);
     SIP_COMPRESS(v0, v1, v2, v3);
     SIP_COMPRESS(v0, v1, v2, v3);

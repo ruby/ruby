@@ -18,8 +18,8 @@ if $DEBUG
   puts DRb.uri
   DRb.thread.join
 else
-  STDIN.reopen('/dev/null')
-  STDOUT.reopen('/dev/null', 'w')
-  STDERR.reopen('/dev/null', 'w')
+  STDIN.reopen(IO::NULL)
+  STDOUT.reopen(IO::NULL, 'w')
+  STDERR.reopen(IO::NULL, 'w')
   DRb.thread.join
 end

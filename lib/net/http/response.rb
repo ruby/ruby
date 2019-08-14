@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # HTTP response class.
 #
 # This class wraps together the response header and the response body (the
@@ -37,7 +38,7 @@ class Net::HTTPResponse
 
     def read_status_line(sock)
       str = sock.readline
-      m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)\s*(.*)\z/in.match(str) or
+      m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)(?:\s+(.*))?\z/in.match(str) or
         raise Net::HTTPBadResponse, "wrong status line: #{str.dump}"
       m.captures
     end
@@ -116,7 +117,9 @@ class Net::HTTPResponse
   end
 
   def error!   #:nodoc:
-    raise error_type().new(@code + ' ' + @message.dump, self)
+    message = @code
+    message += ' ' + @message.dump if @message
+    raise error_type().new(message, self)
   end
 
   def error_type   #:nodoc:
@@ -137,17 +140,17 @@ class Net::HTTPResponse
   #
 
   def response   #:nodoc:
-    warn "#{caller(1)[0]}: warning: Net::HTTPResponse#response is obsolete" if $VERBOSE
+    warn "Net::HTTPResponse#response is obsolete", uplevel: 1 if $VERBOSE
     self
   end
 
   def header   #:nodoc:
-    warn "#{caller(1)[0]}: warning: Net::HTTPResponse#header is obsolete" if $VERBOSE
+    warn "Net::HTTPResponse#header is obsolete", uplevel: 1 if $VERBOSE
     self
   end
 
   def read_header   #:nodoc:
-    warn "#{caller(1)[0]}: warning: Net::HTTPResponse#read_header is obsolete" if $VERBOSE
+    warn "Net::HTTPResponse#read_header is obsolete", uplevel: 1 if $VERBOSE
     self
   end
 
@@ -239,10 +242,10 @@ class Net::HTTPResponse
   ##
   # Checks for a supported Content-Encoding header and yields an Inflate
   # wrapper for this response's socket when zlib is present.  If the
-  # Content-Encoding is unsupported or zlib is missing the plain socket is
+  # Content-Encoding is not supported or zlib is missing, the plain socket is
   # yielded.
   #
-  # If a Content-Range header is present a plain socket is yielded as the
+  # If a Content-Range header is present, a plain socket is yielded as the
   # bytes in the range may not be a complete deflate block.
 
   def inflater # :nodoc:
@@ -250,7 +253,8 @@ class Net::HTTPResponse
     return yield @socket unless @decode_content
     return yield @socket if self['content-range']
 
-    case self['content-encoding']
+    v = self['content-encoding']
+    case v&.downcase
     when 'deflate', 'gzip', 'x-gzip' then
       self.delete 'content-encoding'
 
@@ -259,7 +263,12 @@ class Net::HTTPResponse
       begin
         yield inflate_body_io
       ensure
-        inflate_body_io.finish
+        orig_err = $!
+        begin
+          inflate_body_io.finish
+        rescue => err
+          raise orig_err || err
+        end
       end
     when 'none', 'identity' then
       self.delete 'content-encoding'
@@ -301,7 +310,6 @@ class Net::HTTPResponse
   # See RFC 2616 section 3.6.1 for definitions
 
   def read_chunked(dest, chunk_data_io) # :nodoc:
-    len = nil
     total = 0
     while true
       line = @socket.readline
@@ -354,6 +362,7 @@ class Net::HTTPResponse
     # Finishes the inflate stream.
 
     def finish
+      return if @inflate.total_in == 0
       @inflate.finish
     end
 
@@ -364,8 +373,14 @@ class Net::HTTPResponse
     # entire body in memory.
 
     def inflate_adapter(dest)
+      if dest.respond_to?(:set_encoding)
+        dest.set_encoding(Encoding::ASCII_8BIT)
+      elsif dest.respond_to?(:force_encoding)
+        dest.force_encoding(Encoding::ASCII_8BIT)
+      end
       block = proc do |compressed_chunk|
         @inflate.inflate(compressed_chunk) do |chunk|
+          compressed_chunk.clear
           dest << chunk
         end
       end

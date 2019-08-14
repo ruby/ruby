@@ -1,55 +1,66 @@
+# frozen_string_literal: true
 require 'net/http'
-require 'thread'
 require 'time'
 require 'rubygems/user_interaction'
 
 class Gem::Request
 
+  extend Gem::UserInteraction
   include Gem::UserInteraction
 
-  attr_reader :proxy_uri
+  ###
+  # Legacy.  This is used in tests.
+  def self.create_with_proxy(uri, request_class, last_modified, proxy) # :nodoc:
+    cert_files = get_cert_files
+    proxy ||= get_proxy_from_env(uri.scheme)
+    pool = ConnectionPools.new proxy_uri(proxy), cert_files
 
-  def initialize(uri, request_class, last_modified, proxy)
+    new(uri, request_class, last_modified, pool.pool_for(uri))
+  end
+
+  def self.proxy_uri(proxy) # :nodoc:
+    case proxy
+    when :no_proxy then nil
+    when URI::HTTP then proxy
+    else URI.parse(proxy)
+    end
+  end
+
+  def initialize(uri, request_class, last_modified, pool)
     @uri = uri
     @request_class = request_class
     @last_modified = last_modified
     @requests = Hash.new 0
-    @connections = {}
-    @connections_mutex = Mutex.new
     @user_agent = user_agent
 
-    @proxy_uri =
-      case proxy
-      when :no_proxy then nil
-      when nil       then get_proxy_from_env uri.scheme
-      when URI::HTTP then proxy
-      else URI.parse(proxy)
-      end
-    @env_no_proxy = get_no_proxy_from_env
+    @connection_pool = pool
   end
 
-  def add_rubygems_trusted_certs(store)
-    pattern = File.expand_path("./ssl_certs/*.pem", File.dirname(__FILE__))
-    Dir.glob(pattern).each do |ssl_cert_file|
-      store.add_file ssl_cert_file
-    end
+  def proxy_uri; @connection_pool.proxy_uri; end
+  def cert_files; @connection_pool.cert_files; end
+
+  def self.get_cert_files
+    pattern = File.expand_path("./ssl_certs/*/*.pem", File.dirname(__FILE__))
+    Dir.glob(pattern)
   end
 
-  def configure_connection_for_https(connection)
+  def self.configure_connection_for_https(connection, cert_files)
     require 'net/https'
     connection.use_ssl = true
     connection.verify_mode =
       Gem.configuration.ssl_verify_mode || OpenSSL::SSL::VERIFY_PEER
     store = OpenSSL::X509::Store.new
 
-    if Gem.configuration.ssl_client_cert then
+    if Gem.configuration.ssl_client_cert
       pem = File.read Gem.configuration.ssl_client_cert
       connection.cert = OpenSSL::X509::Certificate.new pem
       connection.key = OpenSSL::PKey::RSA.new pem
     end
 
     store.set_default_paths
-    add_rubygems_trusted_certs(store)
+    cert_files.each do |ssl_cert_file|
+      store.add_file ssl_cert_file
+    end
     if Gem.configuration.ssl_ca_cert
       if File.directory? Gem.configuration.ssl_ca_cert
         store.add_path Gem.configuration.ssl_ca_cert
@@ -58,12 +69,60 @@ class Gem::Request
       end
     end
     connection.cert_store = store
+
+    connection.verify_callback = proc do |preverify_ok, store_context|
+      verify_certificate store_context unless preverify_ok
+
+      preverify_ok
+    end
+
+    connection
   rescue LoadError => e
     raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
                  e.message =~ / -- openssl$/
 
     raise Gem::Exception.new(
-            'Unable to require openssl, install OpenSSL and rebuild ruby (preferred) or use non-HTTPS sources')
+            'Unable to require openssl, install OpenSSL and rebuild Ruby (preferred) or use non-HTTPS sources')
+  end
+
+  def self.verify_certificate(store_context)
+    depth  = store_context.error_depth
+    error  = store_context.error_string
+    number = store_context.error
+    cert   = store_context.current_cert
+
+    ui.alert_error "SSL verification error at depth #{depth}: #{error} (#{number})"
+
+    extra_message = verify_certificate_message number, cert
+
+    ui.alert_error extra_message if extra_message
+  end
+
+  def self.verify_certificate_message(error_number, cert)
+    return unless cert
+    case error_number
+    when OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED then
+      "Certificate #{cert.subject} expired at #{cert.not_after.iso8601}"
+    when OpenSSL::X509::V_ERR_CERT_NOT_YET_VALID then
+      "Certificate #{cert.subject} not valid until #{cert.not_before.iso8601}"
+    when OpenSSL::X509::V_ERR_CERT_REJECTED then
+      "Certificate #{cert.subject} is rejected"
+    when OpenSSL::X509::V_ERR_CERT_UNTRUSTED then
+      "Certificate #{cert.subject} is not trusted"
+    when OpenSSL::X509::V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT then
+      "Certificate #{cert.issuer} is not trusted"
+    when OpenSSL::X509::V_ERR_INVALID_CA then
+      "Certificate #{cert.subject} is an invalid CA certificate"
+    when OpenSSL::X509::V_ERR_INVALID_PURPOSE then
+      "Certificate #{cert.subject} has an invalid purpose"
+    when OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN then
+      "Root certificate is not trusted (#{cert.subject})"
+    when OpenSSL::X509::V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY then
+      "You must add #{cert.issuer} to your local trusted store"
+    when
+      OpenSSL::X509::V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE then
+      "Cannot verify certificate issued by #{cert.issuer}"
+    end
   end
 
   ##
@@ -71,31 +130,7 @@ class Gem::Request
   # connection, using a proxy if needed.
 
   def connection_for(uri)
-    net_http_args = [uri.host, uri.port]
-
-    if @proxy_uri and not no_proxy?(uri.host) then
-      net_http_args += [
-        @proxy_uri.host,
-        @proxy_uri.port,
-        Gem::UriFormatter.new(@proxy_uri.user).unescape,
-        Gem::UriFormatter.new(@proxy_uri.password).unescape,
-      ]
-    end
-
-    connection_id = [Thread.current.object_id, *net_http_args].join ':'
-
-    connection = @connections_mutex.synchronize do
-      @connections[connection_id] ||= Net::HTTP.new(*net_http_args)
-      @connections[connection_id]
-    end
-
-    if https?(uri) and not connection.started? then
-      configure_connection_for_https(connection)
-    end
-
-    connection.start unless connection.started?
-
-    connection
+    @connection_pool.checkout
   rescue defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : Errno::EHOSTDOWN,
          Errno::EHOSTDOWN => e
     raise Gem::RemoteFetcher::FetchError.new(e.message, uri)
@@ -104,7 +139,7 @@ class Gem::Request
   def fetch
     request = @request_class.new @uri.request_uri
 
-    unless @uri.nil? || @uri.user.nil? || @uri.user.empty? then
+    unless @uri.nil? || @uri.user.nil? || @uri.user.empty?
       request.basic_auth Gem::UriFormatter.new(@uri.user).unescape,
                          Gem::UriFormatter.new(@uri.password).unescape
     end
@@ -113,12 +148,45 @@ class Gem::Request
     request.add_field 'Connection', 'keep-alive'
     request.add_field 'Keep-Alive', '30'
 
-    if @last_modified then
+    if @last_modified
       request.add_field 'If-Modified-Since', @last_modified.httpdate
     end
 
     yield request if block_given?
 
+    perform_request request
+  end
+
+  ##
+  # Returns a proxy URI for the given +scheme+ if one is set in the
+  # environment variables.
+
+  def self.get_proxy_from_env(scheme = 'http')
+    _scheme = scheme.downcase
+    _SCHEME = scheme.upcase
+    env_proxy = ENV["#{_scheme}_proxy"] || ENV["#{_SCHEME}_PROXY"]
+
+    no_env_proxy = env_proxy.nil? || env_proxy.empty?
+
+    if no_env_proxy
+      return (_scheme == 'https' || _scheme == 'http') ?
+        :no_proxy : get_proxy_from_env('http')
+    end
+
+    uri = URI(Gem::UriFormatter.new(env_proxy).normalize)
+
+    if uri and uri.user.nil? and uri.password.nil?
+      user     = ENV["#{_scheme}_proxy_user"] || ENV["#{_SCHEME}_PROXY_USER"]
+      password = ENV["#{_scheme}_proxy_pass"] || ENV["#{_SCHEME}_PROXY_PASS"]
+
+      uri.user     = Gem::UriFormatter.new(user).escape
+      uri.password = Gem::UriFormatter.new(password).escape
+    end
+
+    uri
+  end
+
+  def perform_request(request) # :nodoc:
     connection = connection_for @uri
 
     retried = false
@@ -127,8 +195,7 @@ class Gem::Request
     begin
       @requests[connection.object_id] += 1
 
-      say "#{request.method} #{@uri}" if
-        Gem.configuration.really_verbose
+      verbose "#{request.method} #{@uri}"
 
       file_name = File.basename(@uri.path)
       # perform download progress reporter only for gems
@@ -138,7 +205,7 @@ class Gem::Request
           if Net::HTTPOK === incomplete_response
             reporter.fetch(file_name, incomplete_response.content_length)
             downloaded = 0
-            data = ''
+            data = String.new
 
             incomplete_response.read_body do |segment|
               data << segment
@@ -157,11 +224,10 @@ class Gem::Request
         response = connection.request request
       end
 
-      say "#{response.code} #{response.message}" if
-        Gem.configuration.really_verbose
+      verbose "#{response.code} #{response.message}"
 
     rescue Net::HTTPBadResponse
-      say "bad response" if Gem.configuration.really_verbose
+      verbose "bad response"
 
       reset connection
 
@@ -169,6 +235,10 @@ class Gem::Request
 
       bad_response = true
       retry
+    rescue Net::HTTPFatalError
+      verbose "fatal error"
+
+      raise Gem::RemoteFetcher::FetchError.new('fatal error', @uri)
     # HACK work around EOFError bug in Net::HTTP
     # NOTE Errno::ECONNABORTED raised a lot on Windows, and make impossible
     # to install gems.
@@ -176,8 +246,7 @@ class Gem::Request
            Errno::ECONNABORTED, Errno::ECONNRESET, Errno::EPIPE
 
       requests = @requests[connection.object_id]
-      say "connection reset after #{requests} requests, retrying" if
-        Gem.configuration.really_verbose
+      verbose "connection reset after #{requests} requests, retrying"
 
       raise Gem::RemoteFetcher::FetchError.new('too many connection resets', @uri) if retried
 
@@ -188,57 +257,8 @@ class Gem::Request
     end
 
     response
-  end
-
-  ##
-  # Returns list of no_proxy entries (if any) from the environment
-
-  def get_no_proxy_from_env
-    env_no_proxy = ENV['no_proxy'] || ENV['NO_PROXY']
-
-    return [] if env_no_proxy.nil?  or env_no_proxy.empty?
-
-    env_no_proxy.split(/\s*,\s*/)
-  end
-
-  ##
-  # Returns a proxy URI for the given +scheme+ if one is set in the
-  # environment variables.
-
-  def get_proxy_from_env scheme = 'http'
-    _scheme = scheme.downcase
-    _SCHEME = scheme.upcase
-    env_proxy = ENV["#{_scheme}_proxy"] || ENV["#{_SCHEME}_PROXY"]
-
-    no_env_proxy = env_proxy.nil? || env_proxy.empty?
-
-    return get_proxy_from_env 'http' if no_env_proxy and _scheme != 'http'
-    return nil                       if no_env_proxy
-
-    uri = URI(Gem::UriFormatter.new(env_proxy).normalize)
-
-    if uri and uri.user.nil? and uri.password.nil? then
-      user     = ENV["#{_scheme}_proxy_user"] || ENV["#{_SCHEME}_PROXY_USER"]
-      password = ENV["#{_scheme}_proxy_pass"] || ENV["#{_SCHEME}_PROXY_PASS"]
-
-      uri.user     = Gem::UriFormatter.new(user).escape
-      uri.password = Gem::UriFormatter.new(password).escape
-    end
-
-    uri
-  end
-
-  def https?(uri)
-    uri.scheme.downcase == 'https'
-  end
-
-  def no_proxy? host
-    host = host.downcase
-    @env_no_proxy.each do |pattern|
-      pattern = pattern.downcase
-      return true if host[-pattern.length, pattern.length ] == pattern
-    end
-    return false
+  ensure
+    @connection_pool.checkin connection
   end
 
   ##
@@ -252,23 +272,26 @@ class Gem::Request
   end
 
   def user_agent
-    ua = "RubyGems/#{Gem::VERSION} #{Gem::Platform.local}"
+    ua = "RubyGems/#{Gem::VERSION} #{Gem::Platform.local}".dup
 
     ruby_version = RUBY_VERSION
     ruby_version += 'dev' if RUBY_PATCHLEVEL == -1
 
     ua << " Ruby/#{ruby_version} (#{RUBY_RELEASE_DATE}"
-    if RUBY_PATCHLEVEL >= 0 then
+    if RUBY_PATCHLEVEL >= 0
       ua << " patchlevel #{RUBY_PATCHLEVEL}"
-    elsif defined?(RUBY_REVISION) then
+    elsif defined?(RUBY_REVISION)
       ua << " revision #{RUBY_REVISION}"
     end
     ua << ")"
 
-    ua << " #{RUBY_ENGINE}" if defined?(RUBY_ENGINE) and RUBY_ENGINE != 'ruby'
+    ua << " #{RUBY_ENGINE}" if RUBY_ENGINE != 'ruby'
 
     ua
   end
 
 end
 
+require 'rubygems/request/http_pool'
+require 'rubygems/request/https_pool'
+require 'rubygems/request/connection_pools'

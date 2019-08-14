@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: true
 
 require_relative 'helper'
 
@@ -6,13 +7,12 @@ module Psych
   class TestEmitter < TestCase
     def setup
       super
-      @out = StringIO.new('')
+      @out = StringIO.new(''.dup)
       @emitter = Psych::Emitter.new @out
     end
 
     def test_line_width
-      assert_equal 0, @emitter.line_width
-      assert_equal 10, @emitter.line_width = 10
+      @emitter.line_width = 10
       assert_equal 10, @emitter.line_width
     end
 
@@ -54,6 +54,7 @@ module Psych
         [[], 'foo', false],
         [[], ['foo'], false],
         [[], [nil,nil], false],
+        [[1,1], [[nil, "tag:TALOS"]], 0],
       ].each do |args|
         assert_raises(TypeError) do
           @emitter.start_document(*args)
@@ -89,6 +90,23 @@ module Psych
       assert_raises(TypeError) do
         @emitter.start_sequence(nil, nil, true, :foo)
       end
+    end
+
+    def test_resizing_tags
+      @emitter.start_stream Psych::Nodes::Stream::UTF8
+
+      tags = []
+      version = [1,1]
+      obj = Object.new
+      obj.instance_variable_set(:@tags, tags)
+      def obj.to_str
+        (1..10).map{|x| @tags.push(["AAAA","BBBB"])}
+        return "x"
+      end
+
+      tags.push([obj, "tag:TALOS"])
+      @emitter.start_document(version, tags, 0)
+      assert(true)
     end
   end
 end

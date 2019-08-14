@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # RDoc uses generators to turn parsed source code in the form of an
 # RDoc::CodeObject tree into some form of output.  RDoc comes with the HTML
@@ -45,6 +46,6 @@ module RDoc::Generator
   autoload :Darkfish,  'rdoc/generator/darkfish'
   autoload :JsonIndex, 'rdoc/generator/json_index'
   autoload :RI,        'rdoc/generator/ri'
+  autoload :POT,       'rdoc/generator/pot'
 
 end
-

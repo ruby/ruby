@@ -1,5 +1,5 @@
+# frozen_string_literal: false
 require 'test/unit'
-require_relative 'envutil'
 
 class TestEncoding < Test::Unit::TestCase
 
@@ -34,6 +34,9 @@ class TestEncoding < Test::Unit::TestCase
       assert_raise(TypeError) { e.dup }
       assert_raise(TypeError) { e.clone }
       assert_equal(e.object_id, Marshal.load(Marshal.dump(e)).object_id)
+      assert_not_predicate(e, :tainted?)
+      Marshal.load(Marshal.dump(e).taint)
+      assert_not_predicate(e, :tainted?, '[ruby-core:71793] [Bug #11760]')
     end
   end
 
@@ -107,14 +110,20 @@ class TestEncoding < Test::Unit::TestCase
     bin = "a".force_encoding(Encoding::ASCII_8BIT)
     asc = "b".force_encoding(Encoding::US_ASCII)
     assert_equal(Encoding::ASCII_8BIT, Encoding.compatible?(bin, asc))
+    bin = "\xff".force_encoding(Encoding::ASCII_8BIT).to_sym
+    asc = "b".force_encoding(Encoding::ASCII_8BIT)
+    assert_equal(Encoding::ASCII_8BIT, Encoding.compatible?(bin, asc))
+    assert_equal(Encoding::UTF_8, Encoding.compatible?("\u{3042}".to_sym, ua.to_sym))
   end
 
   def test_errinfo_after_autoload
+    assert_separately(%w[--disable=gems], "#{<<~"begin;"}\n#{<<~'end;'}")
     bug9038 = '[ruby-core:57949] [Bug #9038]'
-    assert_separately(%w[--disable=gems], <<-"end;")
-      assert_raise_with_message(SyntaxError, /unknown regexp option - Q/, #{bug9038.dump}) {
+    begin;
+      e = assert_raise_with_message(SyntaxError, /unknown regexp option - Q/, bug9038) {
         eval("/regexp/sQ")
       }
+      assert_include(e.message, "/regexp/sQ\n")
     end;
   end
 end

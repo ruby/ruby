@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # $Id$
 
 require 'optparse'
@@ -23,7 +24,7 @@ def main
   unless ARGV.size == 1
     abort "wrong number of arguments (#{ARGV.size} for 1)"
   end
-  out = ""
+  out = "".dup
   File.open(ARGV[0]) {|f|
     prelude f, out
     grammar f, out
@@ -39,14 +40,10 @@ def main
 end
 
 def prelude(f, out)
+  @exprs = {}
+  lex_state_def = false
   while line = f.gets
     case line
-    when %r</\*%%%\*/>
-      out << '/*' << $/
-    when %r</\*%>
-      out << '*/' << $/
-    when %r<%\*/>
-      out << $/
     when /\A%%/
       out << '%%' << $/
       return
@@ -54,21 +51,37 @@ def prelude(f, out)
       out << line.sub(/<\w+>/, '<val>')
     when /\A%type/
       out << line.sub(/<\w+>/, '<val>')
+    when /^enum lex_state_(?:bits|e) \{/
+      lex_state_def = true
+      out << line
+    when /^\}/
+      lex_state_def = false
+      out << line
     else
       out << line
+    end
+    if lex_state_def
+      case line
+      when /^\s*(EXPR_\w+),\s+\/\*(.+)\*\//
+        @exprs[$1.chomp("_bit")] = $2.strip
+      when /^\s*(EXPR_\w+)\s+=\s+(.+)$/
+        name = $1
+        val = $2.chomp(",")
+        @exprs[name] = "equals to " + (val.start_with?("(") ? "<tt>#{val}</tt>" : "+#{val}+")
+      end
     end
   end
 end
 
+require_relative "dsl"
+
 def grammar(f, out)
   while line = f.gets
     case line
+    when %r</\*% *ripper(?:\[(.*?)\])?: *(.*?) *%\*/>
+      out << DSL.new($2, ($1 || "").split(",")).generate << $/
     when %r</\*%%%\*/>
       out << '#if 0' << $/
-    when %r</\*%c%\*/>
-      out << '/*' << $/
-    when %r</\*%c>
-      out << '*/' << $/
     when %r</\*%>
       out << '#endif' << $/
     when %r<%\*/>
@@ -83,9 +96,12 @@ def grammar(f, out)
 end
 
 def usercode(f, out)
-  while line = f.gets
-    out << line
-  end
+  require 'erb'
+  compiler = ERB::Compiler.new('%-')
+  compiler.put_cmd = compiler.insert_cmd = "out.<<"
+  lineno = f.lineno
+  src, = compiler.compile(f.read)
+  eval(src, binding, f.path, lineno)
 end
 
 main

@@ -12,21 +12,12 @@
 #ifndef RUBY_THREAD_WIN32_H
 #define RUBY_THREAD_WIN32_H
 
-#include <windows.h>
-
 # ifdef __CYGWIN__
 # undef _WIN32
 # endif
 
 WINBASEAPI BOOL WINAPI
 TryEnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
-
-typedef HANDLE rb_nativethread_id_t;
-
-typedef union rb_thread_lock_union {
-    HANDLE mutex;
-    CRITICAL_SECTION crit;
-} rb_nativethread_lock_t;
 
 typedef struct rb_thread_cond_struct {
     struct cond_event_entry *next;

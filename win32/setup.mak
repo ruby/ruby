@@ -19,25 +19,21 @@ MAKE = $(MAKE) -f $(MAKEFILE)
 !else
 MAKEFILE = Makefile
 !endif
-ARCH = PROCESSOR_ARCHITECTURE
 CPU = PROCESSOR_LEVEL
-CC = cl -nologo
+CC = $(CC) -nologo
 CPP = $(CC) -EP
+AS = $(AS) -nologo
 
 all: -prologue- -generic- -epilogue-
-i386-mswin32: -prologue32- -i386- -epilogue-
-i486-mswin32: -prologue32- -i486- -epilogue-
-i586-mswin32: -prologue32- -i586- -epilogue-
-i686-mswin32: -prologue32- -i686- -epilogue-
-alpha-mswin32: -prologue32- -alpha- -epilogue-
-x64-mswin64: -prologue64- -x64- -epilogue-
-ia64-mswin64: -prologue64- -ia64- -epilogue-
+i386-mswin32: -prologue- -i386- -epilogue-
+i486-mswin32: -prologue- -i486- -epilogue-
+i586-mswin32: -prologue- -i586- -epilogue-
+i686-mswin32: -prologue- -i686- -epilogue-
+alpha-mswin32: -prologue- -alpha- -epilogue-
+x64-mswin64: -prologue- -x64- -epilogue-
 
--prologue-: -basic-vars- -system-vars- -version- -program-name-
-
--prologue32-: -basic-vars- -system-vars32- -version- -program-name-
-
--prologue64-: -basic-vars- -system-vars64- -version- -program-name-
+-prologue-: -basic-vars-
+-generic-: -osname-
 
 -basic-vars-: nul
 	@type << > $(MAKEFILE)
@@ -45,15 +41,15 @@ ia64-mswin64: -prologue64- -ia64- -epilogue-
 MAKE = nmake
 srcdir = $(srcdir:\=/)
 prefix = $(prefix:\=/)
+!if defined(libdir_basename)
+libdir_basename = $(libdir_basename)
+!endif
 EXTSTATIC = $(EXTSTATIC)
 !if defined(RDOCTARGET)
 RDOCTARGET = $(RDOCTARGET)
 !endif
-!if defined(EXTOUT)
+!if defined(EXTOUT) && "$(EXTOUT)" != ".ext"
 EXTOUT = $(EXTOUT)
-!endif
-!if defined(BASERUBY)
-BASERUBY = $(BASERUBY:/=\)
 !endif
 !if defined(NTVER)
 NTVER = $(NTVER)
@@ -61,28 +57,48 @@ NTVER = $(NTVER)
 !if defined(USE_RUBYGEMS)
 USE_RUBYGEMS = $(USE_RUBYGEMS)
 !endif
-
-<<
-!if !defined(BASERUBY)
-	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I>> $(MAKEFILE)
-	@echo !if "$$(BASERUBY)" == "">> $(MAKEFILE)
-	@echo BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1 >> $(MAKEFILE)
-	@echo !endif>> $(MAKEFILE)
+!if defined(ENABLE_DEBUG_ENV)
+ENABLE_DEBUG_ENV = $(ENABLE_DEBUG_ENV)
+!endif
+!if defined(MJIT_SUPPORT)
+MJIT_SUPPORT = $(MJIT_SUPPORT)
 !endif
 
--system-vars-: -osname- -runtime- -headers-
+# TOOLS
+<<
+!if defined(BASERUBY)
+	@echo BASERUBY = $(BASERUBY:/=\)>> $(MAKEFILE)
+!else
+	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I>> $(MAKEFILE)
+!endif
+	@type << >> $(MAKEFILE)
+$(BANG)if "$$(BASERUBY)" == ""
+BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1
+HAVE_BASERUBY = no
+$(BANG)elseif [($$(BASERUBY) -eexit) > nul 2> nul] == 0
+HAVE_BASERUBY = yes
+$(BANG)else
+HAVE_BASERUBY = no
+$(BANG)endif
+<<
+!if "$(GIT)" != ""
+	@echo GIT = $(GIT)>> $(MAKEFILE)
+!endif
+!if "$(HAVE_GIT)" != ""
+	@echo HAVE_GIT = $(HAVE_GIT)>> $(MAKEFILE)
+!endif
 
--system-vars32-: -osname32- -runtime- -headers-
+-osname-section-:
+	@$(APPEND)
+	@echo # TARGET>>$(MAKEFILE)
 
--system-vars64-: -osname64- -runtime- -headers-
-
--osname32-: nul
+-osname32-: -osname-section-
 	@echo TARGET_OS = mswin32>>$(MAKEFILE)
 
--osname64-: nul
+-osname64-: -osname-section-
 	@echo TARGET_OS = mswin64>>$(MAKEFILE)
 
--osname-: nul
+-osname-: -osname-section-
 	@echo !ifndef TARGET_OS>>$(MAKEFILE)
 	@($(CC) -c <<conftest.c > nul && (echo TARGET_OS = mswin32) || (echo TARGET_OS = mswin64)) >>$(MAKEFILE)
 #ifdef _WIN64
@@ -91,6 +107,12 @@ USE_RUBYGEMS = $(USE_RUBYGEMS)
 <<
 	@echo !endif>>$(MAKEFILE)
 	@$(WIN32DIR:/=\)\rm.bat conftest.*
+
+-compiler-: -compiler-section- -version- -runtime- -headers-
+
+-compiler-section-:
+	@$(APPEND)
+	@echo # COMPILER>>$(MAKEFILE)
 
 -runtime-: nul
 	@$(CC) -MD <<conftest.c user32.lib -link > nul
@@ -109,21 +131,34 @@ check-psapi.h: nul
 int main(void) {return (EnumProcesses(NULL,0,NULL) ? 0 : 1);}
 <<
 
--version-: nul
-	@$(APPEND)
+-version-: nul verconf.mk
 	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | findstr "=" >>$(MAKEFILE)
-#define RUBY_REVISION 0
-#include "version.h"
-MAJOR = RUBY_API_VERSION_MAJOR
-MINOR = RUBY_API_VERSION_MINOR
-TEENY = RUBY_API_VERSION_TEENY
-RUBY_PROGRAM_VERSION = RUBY_VERSION
-RUBY_PROGRAM_RELEASE_DATE = RUBY_RELEASE_DATE
 MSC_VER = _MSC_VER
+<<
+
+verconf.mk: nul
+	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
+@echo off
+#define RUBY_REVISION 0
+#define STRINGIZE0(expr) #expr
+#define STRINGIZE(x) STRINGIZE0(x)
+#include "version.h"
+for %%I in (RUBY_RELEASE_DATE) do set ruby_release_date=%%~I
+#undef RUBY_RELEASE_DATE
+echo RUBY_RELEASE_DATE = %ruby_release_date:""=%
+echo MAJOR = RUBY_VERSION_MAJOR
+echo MINOR = RUBY_VERSION_MINOR
+echo TEENY = RUBY_VERSION_TEENY
+#if defined RUBY_PATCHLEVEL && RUBY_PATCHLEVEL < 0
+echo RUBY_DEVEL = yes
+#endif
+del %0 & exit
 <<
 
 -program-name-:
 	@type << >>$(MAKEFILE)
+
+# PROGRAM-NAME
 !ifdef PROGRAM_PREFIX
 PROGRAM_PREFIX = $(PROGRAM_PREFIX)
 !endif
@@ -139,42 +174,23 @@ RUBY_SO_NAME = $(RUBY_SO_NAME)
 <<
 
 -generic-: nul
-!if defined($(ARCH)) || defined($(CPU))
-	@type << >>$(MAKEFILE)
-!if defined($(ARCH))
-!if "$(PROCESSOR_ARCHITECTURE)" == "AMD64"
-$(ARCH) = x64
-!elseif "$(PROCESSOR_ARCHITECTURE)" == "IA64"
-$(ARCH) = ia64
-!elseif defined(PROCESSOR_ARCHITEW6432)
-$(BANG)if "$$(TARGET_OS)" == "mswin64"
-!if "$(PROCESSOR_ARCHITECTURE)" == "IA64"
-$(ARCH) = ia64
-!else
-$(ARCH) = x64
-!endif
-$(BANG)else
-$(ARCH) = $(PROCESSOR_ARCHITECTURE)
-$(BANG)endif
-!else
-$(ARCH) = $(PROCESSOR_ARCHITECTURE)
-!endif
-!endif
-!if defined($(CPU))
-$(CPU) = $(PROCESSOR_LEVEL)
-!endif
-
+	@$(CPP) <<conftest.c 2>nul | findstr = >>$(MAKEFILE)
+#if defined _M_X64
+MACHINE = x64
+#else
+MACHINE = x86
+#endif
 <<
+!if defined($(CPU))
+	@echo>>$(MAKEFILE) $(CPU) = $(PROCESSOR_LEVEL)
 !endif
 
--alpha-: nul
-	@echo $(ARCH) = alpha>>$(MAKEFILE)
--x64-: nul
-	@echo $(ARCH) = x64>>$(MAKEFILE)
--ia64-: nul
-	@echo $(ARCH) = ia64>>$(MAKEFILE)
--ix86-: nul
-	@echo $(ARCH) = x86>>$(MAKEFILE)
+-alpha-: -osname32-
+	@echo MACHINE = alpha>>$(MAKEFILE)
+-x64-: -osname64-
+	@echo MACHINE = x64>>$(MAKEFILE)
+-ix86-: -osname32-
+	@echo MACHINE = x86>>$(MAKEFILE)
 
 -i386-: -ix86-
 	@echo $(CPU) = 3>>$(MAKEFILE)
@@ -185,9 +201,11 @@ $(CPU) = $(PROCESSOR_LEVEL)
 -i686-: -ix86-
 	@echo $(CPU) = 6>>$(MAKEFILE)
 
--epilogue-: -encs-
+-epilogue-: -compiler- -program-name- -encs-
 
 -encs-: nul
+	@$(APPEND)
+	@echo # ENCODING>>$(MAKEFILE)
 	@$(MAKE) -l -f $(srcdir)/win32/enc-setup.mak srcdir="$(srcdir)" MAKEFILE=$(MAKEFILE)
 
 -epilogue-: nul
@@ -200,13 +218,18 @@ $(CPU) = $(PROCESSOR_LEVEL)
 
 # RUBY_INSTALL_NAME = ruby
 # RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
-# CFLAGS = -nologo -MD $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)
-# CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
+# CFLAGS = $$(RUNTIMEFLAG) $$(DEBUGFLAGS) $$(WARNFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG) $$(COMPILERFLAG)
+# CPPFLAGS =
 # STACK = 0x2000000
 # LDFLAGS = $$(CFLAGS) -Fm
 # XLDFLAGS =
 # RFLAGS = -r
 # EXTLIBS =
+CC = $(CC)
+AS = $(AS)
+<<
+	@(for %I in (cl.exe) do @set MJIT_CC=%~$$PATH:I) && (call echo MJIT_CC = "%MJIT_CC:\=/%" -nologo>>$(MAKEFILE))
+	@type << >>$(MAKEFILE)
 
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<

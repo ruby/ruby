@@ -1,6 +1,7 @@
+# frozen_string_literal: false
 require 'forwardable'
 
-require 'rss/rss'
+require_relative '../rss'
 
 module RSS
   module Maker
@@ -367,7 +368,7 @@ module RSS
         self.date ||= self.dc_date
         super
       ensure
-        date = keep[:date]
+        self.date = keep[:date]
         dc_dates.replace(keep[:dc_dates])
       end
 

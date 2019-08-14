@@ -22,6 +22,7 @@
 static void dln_loaderror(const char *format, ...);
 #endif
 #include "dln.h"
+#include "internal.h"
 
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
@@ -47,6 +48,7 @@ void *xcalloc();
 void *xrealloc();
 #endif
 
+#undef free
 #define free(x) xfree(x)
 
 #include <stdio.h>
@@ -84,10 +86,6 @@ char *getenv();
 # endif
 #endif
 
-#if defined(__BEOS__) || defined(__HAIKU__)
-# include <image.h>
-#endif
-
 #ifndef dln_loaderror
 static void
 dln_loaderror(const char *format, ...)
@@ -105,13 +103,12 @@ dln_loaderror(const char *format, ...)
 # define USE_DLN_DLOPEN
 #endif
 
-#ifndef FUNCNAME_PATTERN
-# if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(__BORLANDC__) || defined(NeXT) || defined(__WATCOMC__) || defined(MACOSX_DYLD)
-#  define FUNCNAME_PREFIX "_Init_"
-# else
-#  define FUNCNAME_PREFIX "Init_"
-# endif
+#if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(NeXT) || defined(MACOSX_DYLD)
+# define EXTERNAL_PREFIX "_"
+#else
+# define EXTERNAL_PREFIX ""
 #endif
+#define FUNCNAME_PREFIX EXTERNAL_PREFIX"Init_"
 
 #if defined __CYGWIN__ || defined DOSISH
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
@@ -235,13 +232,13 @@ load_header(int fd, struct exec *hdrp, long disp)
 #  define R_RIGHTSHIFT(r)	(reloc_r_rightshift[(r)->r_type])
 #  define R_BITSIZE(r) 		(reloc_r_bitsize[(r)->r_type])
 #  define R_LENGTH(r)		(reloc_r_length[(r)->r_type])
-static int reloc_r_rightshift[] = {
+static const int reloc_r_rightshift[] = {
   0, 0, 0, 0, 0, 0, 2, 2, 10, 0, 0, 0, 0, 0, 0,
 };
-static int reloc_r_bitsize[] = {
+static const int reloc_r_bitsize[] = {
   8, 16, 32, 8, 16, 32, 30, 22, 22, 22, 13, 10, 32, 32, 16,
 };
-static int reloc_r_length[] = {
+static const int reloc_r_length[] = {
   0, 1, 2, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 };
 #  define R_PCREL(r) \
@@ -1117,12 +1114,12 @@ dln_sym(const char *name)
 #endif
 #endif
 
-#if defined _WIN32 && !defined __CYGWIN__
+#ifdef _WIN32
 #include <windows.h>
 #include <imagehlp.h>
 #endif
 
-#if defined _WIN32 && !defined __CYGWIN__
+#ifdef _WIN32
 static const char *
 dln_strerror(char *message, size_t size)
 {
@@ -1174,7 +1171,7 @@ dln_strerror(void)
 }
 #endif
 
-#if defined(_AIX) && ! defined(_IA64)
+#if defined(_AIX)
 static void
 aix_loaderror(const char *pathname)
 {
@@ -1246,30 +1243,51 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 #define translit_separator(str) (void)(str)
 #endif
 
+#ifdef USE_DLN_DLOPEN
+COMPILER_WARNING_PUSH
+#if defined(__clang__) || GCC_VERSION_SINCE(4, 2, 0)
+COMPILER_WARNING_IGNORED(-Wpedantic)
+#endif
+static bool
+dln_incompatible_library_p(void *handle)
+{
+    void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
+    return ex && ex != ruby_xmalloc;
+}
+COMPILER_WARNING_POP
+#endif
+
 void*
 dln_load(const char *file)
 {
+#if (defined _WIN32 || defined USE_DLN_DLOPEN) && defined RUBY_EXPORT
+    static const char incompatible[] = "incompatible library version";
+#endif
 #if !defined(_AIX) && !defined(NeXT)
     const char *error = 0;
-#define DLN_ERROR() (error = dln_strerror(), strcpy(ALLOCA_N(char, strlen(error) + 1), error))
 #endif
 
-#if defined _WIN32 && !defined __CYGWIN__
+#if defined _WIN32
     HINSTANCE handle;
-    char winfile[MAXPATHLEN];
+    WCHAR *winfile;
     char message[1024];
     void (*init_fct)();
     char *buf;
 
-    if (strlen(file) >= MAXPATHLEN) dln_loaderror("filename too long");
-
     /* Load the file as an object one */
     init_funcname(&buf, file);
 
-    strlcpy(winfile, file, sizeof(winfile));
+    /* Convert the file path to wide char */
+    winfile = rb_w32_mbstr_to_wstr(CP_UTF8, file, -1, NULL);
+    if (!winfile) {
+	dln_memerror();
+    }
 
     /* Load file */
-    if ((handle = LoadLibrary(winfile)) == NULL) {
+    handle = LoadLibraryW(winfile);
+    free(winfile);
+
+    if (!handle) {
 	error = dln_strerror();
 	goto failed;
     }
@@ -1277,7 +1295,7 @@ dln_load(const char *file)
 #if defined _WIN32 && defined RUBY_EXPORT
     if (!rb_w32_check_imported(handle, rb_libruby_handle())) {
 	FreeLibrary(handle);
-	error = "incompatible library version";
+	error = incompatible;
 	goto failed;
     }
 #endif
@@ -1319,35 +1337,33 @@ dln_load(const char *file)
 # define RTLD_GLOBAL 0
 #endif
 
-#ifdef __native_client__
-	char* p, *orig;
-        if (file[0] == '.' && file[1] == '/') file+=2;
-	orig = strdup(file);
-	for (p = file; *p; ++p) {
-	    if (*p == '/') *p = '_';
-	}
-#endif
 	/* Load file */
 	if ((handle = (void*)dlopen(file, RTLD_LAZY|RTLD_GLOBAL)) == NULL) {
-#ifdef __native_client__
-            free(orig);
-#endif
 	    error = dln_strerror();
 	    goto failed;
 	}
+# if defined RUBY_EXPORT
+	{
+	    if (dln_incompatible_library_p(handle)) {
+
+#   if defined __APPLE__ && \
+    defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
+    (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_11)
+		/* dlclose() segfaults */
+		rb_fatal("%s - %s", incompatible, file);
+#   else
+		dlclose(handle);
+		error = incompatible;
+		goto failed;
+#   endif
+	    }
+	}
+# endif
 
 	init_fct = (void(*)())(VALUE)dlsym(handle, buf);
-#ifdef __native_client__
-	strcpy(file, orig);
-	free(orig);
-#endif
-#if defined __SYMBIAN32__
 	if (init_fct == NULL) {
-	    init_fct = (void(*)())dlsym(handle, "1"); /* Some Symbian versions do not support symbol table in DLL, ordinal numbers only */
-	}
-#endif
-	if (init_fct == NULL) {
-	    error = DLN_ERROR();
+	    const size_t errlen = strlen(error = dln_strerror()) + 1;
+	    error = memcpy(ALLOCA_N(char, errlen), error, errlen);
 	    dlclose(handle);
 	    goto failed;
 	}
@@ -1384,7 +1400,7 @@ dln_load(const char *file)
     }
 #endif /* hpux */
 
-#if defined(_AIX) && ! defined(_IA64)
+#if defined(_AIX)
 #define DLN_DEFINED
     {
 	void (*init_fct)();
@@ -1439,54 +1455,6 @@ dln_load(const char *file)
 	return (void*)init_fct;
     }
 #endif
-
-#if defined(__BEOS__) || defined(__HAIKU__)
-# define DLN_DEFINED
-    {
-      status_t err_stat;  /* BeOS error status code */
-      image_id img_id;    /* extension module unique id */
-      void (*init_fct)(); /* initialize function for extension module */
-
-      /* load extension module */
-      img_id = load_add_on(file);
-      if (img_id <= 0) {
-	dln_loaderror("Failed to load add_on %.200s error_code=%x",
-	  file, img_id);
-      }
-
-      /* find symbol for module initialize function. */
-      /* The Be Book KernelKit Images section described to use
-	 B_SYMBOL_TYPE_TEXT for symbol of function, not
-	 B_SYMBOL_TYPE_CODE. Why ? */
-      /* strcat(init_fct_symname, "__Fv"); */  /* parameter nothing. */
-      /* "__Fv" dont need! The Be Book Bug ? */
-      err_stat = get_image_symbol(img_id, buf,
-				  B_SYMBOL_TYPE_TEXT, (void **)&init_fct);
-
-      if (err_stat != B_NO_ERROR) {
-	char real_name[MAXPATHLEN];
-
-	strlcpy(real_name, buf, MAXPATHLEN);
-	strlcat(real_name, "__Fv", MAXPATHLEN);
-        err_stat = get_image_symbol(img_id, real_name,
-				    B_SYMBOL_TYPE_TEXT, (void **)&init_fct);
-      }
-
-      if ((B_BAD_IMAGE_ID == err_stat) || (B_BAD_INDEX == err_stat)) {
-	unload_add_on(img_id);
-	dln_loaderror("Failed to lookup Init function %.200s", file);
-      }
-      else if (B_NO_ERROR != err_stat) {
-	char errmsg[] = "Internal of BeOS version. %.200s (symbol_name = %s)";
-	unload_add_on(img_id);
-	dln_loaderror(errmsg, strerror(err_stat), buf);
-      }
-
-      /* call module initialize function. */
-      (*init_fct)();
-      return (void*)img_id;
-    }
-#endif /* __BEOS__ || __HAIKU__ */
 
 #ifndef DLN_DEFINED
     dln_notimplement();

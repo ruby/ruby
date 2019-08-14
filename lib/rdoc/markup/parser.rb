@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'strscan'
 
 ##
@@ -8,8 +9,9 @@ require 'strscan'
 # RDoc::Markup::ToHTML.
 #
 # The parser only handles the block-level constructs Paragraph, List,
-# ListItem, Heading, Verbatim, BlankLine and Rule.  Inline markup such as
-# <tt>\+blah\+</tt> is handled separately by RDoc::Markup::AttributeManager.
+# ListItem, Heading, Verbatim, BlankLine, Rule and BlockQuote.
+# Inline markup such as <tt>\+blah\+</tt> is handled separately by
+# RDoc::Markup::AttributeManager.
 #
 # To see what markup the Parser implements read RDoc.  To see how to use
 # RDoc markup to format text in your program read RDoc::Markup.
@@ -78,8 +80,6 @@ class RDoc::Markup::Parser
     @binary_input   = nil
     @current_token  = nil
     @debug          = false
-    @have_encoding  = Object.const_defined? :Encoding
-    @have_byteslice = ''.respond_to? :byteslice
     @input          = nil
     @input_encoding = nil
     @line           = 0
@@ -250,7 +250,7 @@ class RDoc::Markup::Parser
 
     min_indent = nil
     generate_leading_spaces = true
-    line = ''
+    line = ''.dup
 
     until @tokens.empty? do
       type, data, column, = get
@@ -258,7 +258,7 @@ class RDoc::Markup::Parser
       if type == :NEWLINE then
         line << data
         verbatim << line
-        line = ''
+        line = ''.dup
         generate_leading_spaces = true
         next
       end
@@ -323,15 +323,7 @@ class RDoc::Markup::Parser
   # The character offset for the input string at the given +byte_offset+
 
   def char_pos byte_offset
-    if @have_byteslice then
-      @input.byteslice(0, byte_offset).length
-    elsif @have_encoding then
-      matched = @binary_input[0, byte_offset]
-      matched.force_encoding @input_encoding
-      matched.length
-    else
-      byte_offset
-    end
+    @input.byteslice(0, byte_offset).length
   end
 
   ##
@@ -390,6 +382,17 @@ class RDoc::Markup::Parser
       when :TEXT then
         unget
         parse_text parent, indent
+      when :BLOCKQUOTE then
+        type, _, column = get
+        if type == :NEWLINE
+          type, _, column = get
+        end
+        unget if type
+        bq = RDoc::Markup::BlockQuote.new
+        p :blockquote_start => [data, column] if @debug
+        parse bq, column
+        p :blockquote_end => indent if @debug
+        parent << bq
       when *LIST_TOKENS then
         unget
         parent << build_list(indent)
@@ -428,11 +431,6 @@ class RDoc::Markup::Parser
     @line     = 0
     @line_pos = 0
     @input    = input.dup
-
-    if @have_encoding and not @have_byteslice then
-      @input_encoding = @input.encoding
-      @binary_input   = @input.force_encoding Encoding::BINARY
-    end
 
     @s = StringScanner.new input
   end
@@ -518,8 +516,12 @@ class RDoc::Markup::Parser
                  # text:: followed by spaces or end of line => :NOTE
                  when @s.scan(/(.*?)::( +|\r?$)/) then
                    [:NOTE, @s[1], *token_pos(pos)]
+                 # >>> followed by end of line => :BLOCKQUOTE
+                 when @s.scan(/>>> *(\w+)?$/) then
+                   [:BLOCKQUOTE, @s[1], *token_pos(pos)]
                  # anything else: :TEXT
-                 else @s.scan(/(.*?)(  )?\r?$/)
+                 else
+                   @s.scan(/(.*?)(  )?\r?$/)
                    token = [:TEXT, @s[1], *token_pos(pos)]
 
                    if @s[2] then
@@ -555,4 +557,3 @@ class RDoc::Markup::Parser
   end
 
 end
-

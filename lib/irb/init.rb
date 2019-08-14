@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   irb/init.rb - irb initialize module
 #   	$Release Version: 0.9.6$
@@ -12,10 +13,10 @@
 module IRB # :nodoc:
 
   # initialize config
-  def IRB.setup(ap_path)
+  def IRB.setup(ap_path, argv: ::ARGV)
     IRB.init_config(ap_path)
     IRB.init_error
-    IRB.parse_opts
+    IRB.parse_opts(argv: argv)
     IRB.run_config
     IRB.load_modules
 
@@ -42,8 +43,8 @@ module IRB # :nodoc:
     @CONF[:LOAD_MODULES] = []
     @CONF[:IRB_RC] = nil
 
-    @CONF[:MATH_MODE] = false
     @CONF[:USE_READLINE] = false unless defined?(ReadlineInputMethod)
+    @CONF[:USE_COLORIZE] = true
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
     @CONF[:USE_LOADER] = false
@@ -53,177 +54,173 @@ module IRB # :nodoc:
     @CONF[:VERBOSE] = nil
 
     @CONF[:EVAL_HISTORY] = nil
-    @CONF[:SAVE_HISTORY] = nil
+    @CONF[:SAVE_HISTORY] = 1000
 
     @CONF[:BACK_TRACE_LIMIT] = 16
 
     @CONF[:PROMPT] = {
       :NULL => {
-	:PROMPT_I => nil,
-	:PROMPT_N => nil,
-	:PROMPT_S => nil,
-	:PROMPT_C => nil,
-	:RETURN => "%s\n"
+        :PROMPT_I => nil,
+        :PROMPT_N => nil,
+        :PROMPT_S => nil,
+        :PROMPT_C => nil,
+        :RETURN => "%s\n"
       },
       :DEFAULT => {
-	:PROMPT_I => "%N(%m):%03n:%i> ",
-	:PROMPT_N => "%N(%m):%03n:%i> ",
-	:PROMPT_S => "%N(%m):%03n:%i%l ",
-	:PROMPT_C => "%N(%m):%03n:%i* ",
-	:RETURN => "=> %s\n"
+        :PROMPT_I => "%N(%m):%03n:%i> ",
+        :PROMPT_N => "%N(%m):%03n:%i> ",
+        :PROMPT_S => "%N(%m):%03n:%i%l ",
+        :PROMPT_C => "%N(%m):%03n:%i* ",
+        :RETURN => "=> %s\n"
       },
       :CLASSIC => {
-	:PROMPT_I => "%N(%m):%03n:%i> ",
-	:PROMPT_N => "%N(%m):%03n:%i> ",
-	:PROMPT_S => "%N(%m):%03n:%i%l ",
-	:PROMPT_C => "%N(%m):%03n:%i* ",
-	:RETURN => "%s\n"
+        :PROMPT_I => "%N(%m):%03n:%i> ",
+        :PROMPT_N => "%N(%m):%03n:%i> ",
+        :PROMPT_S => "%N(%m):%03n:%i%l ",
+        :PROMPT_C => "%N(%m):%03n:%i* ",
+        :RETURN => "%s\n"
       },
       :SIMPLE => {
-	:PROMPT_I => ">> ",
-	:PROMPT_N => ">> ",
-	:PROMPT_S => nil,
-	:PROMPT_C => "?> ",
-	:RETURN => "=> %s\n"
+        :PROMPT_I => ">> ",
+        :PROMPT_N => ">> ",
+        :PROMPT_S => "%l> ",
+        :PROMPT_C => "?> ",
+        :RETURN => "=> %s\n"
       },
       :INF_RUBY => {
-	:PROMPT_I => "%N(%m):%03n:%i> ",
-#	:PROMPT_N => "%N(%m):%03n:%i> ",
-	:PROMPT_N => nil,
-	:PROMPT_S => nil,
-	:PROMPT_C => nil,
-	:RETURN => "%s\n",
-	:AUTO_INDENT => true
+        :PROMPT_I => "%N(%m):%03n:%i> ",
+        :PROMPT_N => nil,
+        :PROMPT_S => nil,
+        :PROMPT_C => nil,
+        :RETURN => "%s\n",
+        :AUTO_INDENT => true
       },
       :XMP => {
-	:PROMPT_I => nil,
-	:PROMPT_N => nil,
-	:PROMPT_S => nil,
-	:PROMPT_C => nil,
-	:RETURN => "    ==>%s\n"
+        :PROMPT_I => nil,
+        :PROMPT_N => nil,
+        :PROMPT_S => nil,
+        :PROMPT_C => nil,
+        :RETURN => "    ==>%s\n"
       }
     }
 
     @CONF[:PROMPT_MODE] = (STDIN.tty? ? :DEFAULT : :NULL)
-    @CONF[:AUTO_INDENT] = false
+    @CONF[:AUTO_INDENT] = true
 
     @CONF[:CONTEXT_MODE] = 3 # use binding in function on TOPLEVEL_BINDING
     @CONF[:SINGLE_IRB] = false
 
-#    @CONF[:LC_MESSAGES] = "en"
     @CONF[:LC_MESSAGES] = Locale.new
 
     @CONF[:AT_EXIT] = []
-
-    @CONF[:DEBUG_LEVEL] = 0
   end
 
   def IRB.init_error
     @CONF[:LC_MESSAGES].load("irb/error.rb")
   end
 
-  FEATURE_IOPT_CHANGE_VERSION = "1.9.0"
-
   # option analyzing
-  def IRB.parse_opts
+  def IRB.parse_opts(argv: ::ARGV)
     load_path = []
-    while opt = ARGV.shift
+    while opt = argv.shift
       case opt
       when "-f"
-	@CONF[:RC] = false
-      when "-m"
-	@CONF[:MATH_MODE] = true
+        @CONF[:RC] = false
       when "-d"
-	$DEBUG = true
-	$VERBOSE = true
+        $DEBUG = true
+        $VERBOSE = true
       when "-w"
-	$VERBOSE = true
+        $VERBOSE = true
       when /^-W(.+)?/
-	opt = $1 || ARGV.shift
-	case opt
-	when "0"
-	  $VERBOSE = nil
-	when "1"
-	  $VERBOSE = false
-	else
-	  $VERBOSE = true
-	end
+        opt = $1 || argv.shift
+        case opt
+        when "0"
+          $VERBOSE = nil
+        when "1"
+          $VERBOSE = false
+        else
+          $VERBOSE = true
+        end
       when /^-r(.+)?/
-	opt = $1 || ARGV.shift
-	@CONF[:LOAD_MODULES].push opt if opt
+        opt = $1 || argv.shift
+        @CONF[:LOAD_MODULES].push opt if opt
       when /^-I(.+)?/
-        opt = $1 || ARGV.shift
-	load_path.concat(opt.split(File::PATH_SEPARATOR)) if opt
+        opt = $1 || argv.shift
+        load_path.concat(opt.split(File::PATH_SEPARATOR)) if opt
       when '-U'
-	set_encoding("UTF-8", "UTF-8")
+        set_encoding("UTF-8", "UTF-8")
       when /^-E(.+)?/, /^--encoding(?:=(.+))?/
-	opt = $1 || ARGV.shift
-	set_encoding(*opt.split(':', 2))
+        opt = $1 || argv.shift
+        set_encoding(*opt.split(':', 2))
       when "--inspect"
-	if /^-/ !~ ARGV.first
-	  @CONF[:INSPECT_MODE] = ARGV.shift
-	else
-	  @CONF[:INSPECT_MODE] = true
-	end
+        if /^-/ !~ argv.first
+          @CONF[:INSPECT_MODE] = argv.shift
+        else
+          @CONF[:INSPECT_MODE] = true
+        end
       when "--noinspect"
-	@CONF[:INSPECT_MODE] = false
+        @CONF[:INSPECT_MODE] = false
       when "--readline"
-	@CONF[:USE_READLINE] = true
+        @CONF[:USE_READLINE] = true
       when "--noreadline"
-	@CONF[:USE_READLINE] = false
+        @CONF[:USE_READLINE] = false
+      when "--reidline"
+        @CONF[:USE_REIDLINE] = true
+      when "--noreidline"
+        @CONF[:USE_REIDLINE] = false
       when "--echo"
-	@CONF[:ECHO] = true
+        @CONF[:ECHO] = true
       when "--noecho"
-	@CONF[:ECHO] = false
+        @CONF[:ECHO] = false
       when "--verbose"
-	@CONF[:VERBOSE] = true
+        @CONF[:VERBOSE] = true
       when "--noverbose"
-	@CONF[:VERBOSE] = false
+        @CONF[:VERBOSE] = false
+      when "--colorize"
+        @CONF[:USE_COLORIZE] = true
+      when "--nocolorize"
+        @CONF[:USE_COLORIZE] = false
       when /^--prompt-mode(?:=(.+))?/, /^--prompt(?:=(.+))?/
-	opt = $1 || ARGV.shift
-	prompt_mode = opt.upcase.tr("-", "_").intern
-	@CONF[:PROMPT_MODE] = prompt_mode
+        opt = $1 || argv.shift
+        prompt_mode = opt.upcase.tr("-", "_").intern
+        @CONF[:PROMPT_MODE] = prompt_mode
       when "--noprompt"
-	@CONF[:PROMPT_MODE] = :NULL
+        @CONF[:PROMPT_MODE] = :NULL
       when "--inf-ruby-mode"
-	@CONF[:PROMPT_MODE] = :INF_RUBY
+        @CONF[:PROMPT_MODE] = :INF_RUBY
       when "--sample-book-mode", "--simple-prompt"
-	@CONF[:PROMPT_MODE] = :SIMPLE
+        @CONF[:PROMPT_MODE] = :SIMPLE
       when "--tracer"
-	@CONF[:USE_TRACER] = true
+        @CONF[:USE_TRACER] = true
       when /^--back-trace-limit(?:=(.+))?/
-	@CONF[:BACK_TRACE_LIMIT] = ($1 || ARGV.shift).to_i
+        @CONF[:BACK_TRACE_LIMIT] = ($1 || argv.shift).to_i
       when /^--context-mode(?:=(.+))?/
-	@CONF[:CONTEXT_MODE] = ($1 || ARGV.shift).to_i
+        @CONF[:CONTEXT_MODE] = ($1 || argv.shift).to_i
       when "--single-irb"
-	@CONF[:SINGLE_IRB] = true
-      when /^--irb_debug(?:=(.+))?/
-	@CONF[:DEBUG_LEVEL] = ($1 || ARGV.shift).to_i
+        @CONF[:SINGLE_IRB] = true
       when "-v", "--version"
-	print IRB.version, "\n"
-	exit 0
+        print IRB.version, "\n"
+        exit 0
       when "-h", "--help"
-	require "irb/help"
-	IRB.print_usage
-	exit 0
+        require_relative "help"
+        IRB.print_usage
+        exit 0
       when "--"
-	if opt = ARGV.shift
-	  @CONF[:SCRIPT] = opt
-	  $0 = opt
-	end
+        if opt = argv.shift
+          @CONF[:SCRIPT] = opt
+          $0 = opt
+        end
         break
       when /^-/
-	IRB.fail UnrecognizedSwitch, opt
+        IRB.fail UnrecognizedSwitch, opt
       else
-	@CONF[:SCRIPT] = opt
-	$0 = opt
-	break
+        @CONF[:SCRIPT] = opt
+        $0 = opt
+        break
       end
     end
-    if RUBY_VERSION >= FEATURE_IOPT_CHANGE_VERSION
-      load_path.collect! do |path|
-	/\A\.\// =~ path ? path : File.expand_path(path)
-      end
+    load_path.collect! do |path|
+      /\A\.\// =~ path ? path : File.expand_path(path)
     end
     $LOAD_PATH.unshift(*load_path)
 
@@ -233,14 +230,14 @@ module IRB # :nodoc:
   def IRB.run_config
     if @CONF[:RC]
       begin
-	load rc_file
+        load rc_file
       rescue LoadError, Errno::ENOENT
       rescue # StandardError, ScriptError
-	print "load error: #{rc_file}\n"
-	print $!.class, ": ", $!, "\n"
-	for err in $@[0, $@.size - 2]
-	  print "\t", err, "\n"
-	end
+        print "load error: #{rc_file}\n"
+        print $!.class, ": ", $!, "\n"
+        for err in $@[0, $@.size - 2]
+          print "\t", err, "\n"
+        end
       end
     end
   end
@@ -249,11 +246,11 @@ module IRB # :nodoc:
   def IRB.rc_file(ext = IRBRC_EXT)
     if !@CONF[:RC_NAME_GENERATOR]
       rc_file_generators do |rcgen|
-	@CONF[:RC_NAME_GENERATOR] ||= rcgen
-	if File.exist?(rcgen.call(IRBRC_EXT))
-	  @CONF[:RC_NAME_GENERATOR] = rcgen
-	  break
-	end
+        @CONF[:RC_NAME_GENERATOR] ||= rcgen
+        if File.exist?(rcgen.call(IRBRC_EXT))
+          @CONF[:RC_NAME_GENERATOR] = rcgen
+          break
+        end
       end
     end
     case rc_file = @CONF[:RC_NAME_GENERATOR].call(ext)
@@ -283,9 +280,9 @@ module IRB # :nodoc:
   def IRB.load_modules
     for m in @CONF[:LOAD_MODULES]
       begin
-	require m
+        require m
       rescue LoadError => err
-	warn err.backtrace[0] << ":#{err.class}: #{err}"
+        warn "#{err.class}: #{err}", uplevel: 0
       end
     end
   end
@@ -300,7 +297,7 @@ module IRB # :nodoc:
       Encoding.default_internal = intern unless intern.nil? || intern.empty?
       @CONF[:ENCODINGS] = IRB::DefaultEncodings.new(extern, intern)
       [$stdin, $stdout, $stderr].each do |io|
-	io.set_encoding(extern, intern)
+        io.set_encoding(extern, intern)
       end
       @CONF[:LC_MESSAGES].instance_variable_set(:@encoding, extern)
     ensure

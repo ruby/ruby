@@ -1,3 +1,5 @@
+# encoding: UTF-8
+# frozen_string_literal: true
 require_relative 'helper'
 
 module Psych
@@ -15,13 +17,76 @@ module Psych
       end
     end
 
+    def test_string_with_newline
+      assert_equal "1\n2", Psych.load("--- ! '1\n\n  2'\n")
+    end
+
     def test_no_doublequotes_with_special_characters
       assert_equal 2, Psych.dump(%Q{<%= ENV["PATH"] %>}).count('"')
     end
 
+    def test_no_quotes_when_start_with_non_ascii_character
+      yaml = Psych.dump 'Český non-ASCII'.encode(Encoding::UTF_8)
+      assert_match(/---\s*[^"'!]+$/, yaml)
+    end
+
     def test_doublequotes_when_there_is_a_single
-      yaml = Psych.dump "@123'abc"
+      str = "@123'abc"
+      yaml = Psych.dump str
       assert_match(/---\s*"/, yaml)
+      assert_equal str, Psych.load(yaml)
+    end
+
+    def test_plain_when_shorten_than_line_width_and_no_final_line_break
+      str = "Lorem ipsum"
+      yaml = Psych.dump str, line_width: 12
+      assert_match(/---\s*[^>|]+\n/, yaml)
+      assert_equal str, Psych.load(yaml)
+    end
+
+    def test_plain_when_shorten_than_line_width_and_with_final_line_break
+      str = "Lorem ipsum\n"
+      yaml = Psych.dump str, line_width: 12
+      assert_match(/---\s*[^>|]+\n/, yaml)
+      assert_equal str, Psych.load(yaml)
+    end
+
+    def test_folded_when_longer_than_line_width_and_with_final_line_break
+      str = "Lorem ipsum dolor sit\n"
+      yaml = Psych.dump str, line_width: 12
+      assert_match(/---\s*>\n(.*\n){2}\Z/, yaml)
+      assert_equal str, Psych.load(yaml)
+    end
+
+    # http://yaml.org/spec/1.2/2009-07-21/spec.html#id2593651
+    def test_folded_strip_when_longer_than_line_width_and_no_newlines
+      str = "Lorem ipsum dolor sit amet, consectetur"
+      yaml = Psych.dump str, line_width: 12
+      assert_match(/---\s*>-\n(.*\n){3}\Z/, yaml)
+      assert_equal str, Psych.load(yaml)
+    end
+
+    def test_literal_when_inner_and_final_line_break
+      [
+        "Lorem ipsum\ndolor\n",
+        "Lorem ipsum\nZolor\n",
+      ].each do |str|
+        yaml = Psych.dump str, line_width: 12
+        assert_match(/---\s*\|\n(.*\n){2}\Z/, yaml)
+        assert_equal str, Psych.load(yaml)
+      end
+    end
+
+    # http://yaml.org/spec/1.2/2009-07-21/spec.html#id2593651
+    def test_literal_strip_when_inner_line_break_and_no_final_line_break
+      [
+        "Lorem ipsum\ndolor",
+        "Lorem ipsum\nZolor",
+      ].each do |str|
+        yaml = Psych.dump str, line_width: 12
+        assert_match(/---\s*\|-\n(.*\n){2}\Z/, yaml)
+        assert_equal str, Psych.load(yaml)
+      end
     end
 
     def test_cycle_x
@@ -32,6 +97,10 @@ module Psych
     def test_dash_dot
       assert_cycle '-.'
       assert_cycle '+.'
+    end
+
+    def test_float_with_no_fractional_before_exponent
+      assert_cycle '0.E+0'
     end
 
     def test_string_subclass_with_anchor
@@ -60,7 +129,7 @@ string: &70121654388580 !ruby/string
     end
 
     def test_another_subclass_with_attributes
-      y = Psych.load Psych.dump Y.new("foo").tap {|y| y.val = 1}
+      y = Psych.load Psych.dump Y.new("foo").tap {|o| o.val = 1}
       assert_equal "foo", y
       assert_equal Y, y.class
       assert_equal 1, y.val
@@ -85,7 +154,7 @@ string: &70121654388580 !ruby/string
     end
 
     def test_subclass_with_attributes
-      y = Psych.load Psych.dump Y.new.tap {|y| y.val = 1}
+      y = Psych.load Psych.dump Y.new.tap {|o| o.val = 1}
       assert_equal Y, y.class
       assert_equal 1, y.val
     end
@@ -97,7 +166,7 @@ string: &70121654388580 !ruby/string
     end
 
     def test_nonascii_string_as_binary
-      string = "hello \x80 world!"
+      string = "hello \x80 world!".dup
       string.force_encoding 'ascii-8bit'
       yml = Psych.dump string
       assert_match(/binary/, yml)
@@ -105,7 +174,7 @@ string: &70121654388580 !ruby/string
     end
 
     def test_binary_string_null
-      string = "\x00"
+      string = "\x00\x92".b
       yml = Psych.dump string
       assert_match(/binary/, yml)
       assert_equal string, Psych.load(yml)
@@ -118,8 +187,8 @@ string: &70121654388580 !ruby/string
       assert_equal string, Psych.load(yml)
     end
 
-    def test_non_binary_string
-      string = binary_string(0.29)
+    def test_ascii_only_binary_string
+      string = "non bnry string".b
       yml = Psych.dump string
       refute_match(/binary/, yml)
       assert_equal string, Psych.load(yml)
@@ -133,7 +202,7 @@ string: &70121654388580 !ruby/string
     end
 
     def test_string_with_ivars
-      food = "is delicious"
+      food = "is delicious".dup
       ivar = "on rock and roll"
       food.instance_variable_set(:@we_built_this_city, ivar)
 
@@ -151,9 +220,9 @@ string: &70121654388580 !ruby/string
     end
 
     def binary_string percentage = 0.31, length = 100
-      string = ''
+      string = ''.b
       (percentage * length).to_i.times do |i|
-        string << "\b"
+        string << "\x92".b
       end
       string << 'a' * (length - string.length)
       string

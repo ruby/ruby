@@ -1,7 +1,5 @@
+# frozen_string_literal: false
 #--
-#
-# $RCSfile$
-#
 # = Ruby-space definitions that completes C-space funcs for X509 and subclasses
 #
 # = Info
@@ -10,12 +8,8 @@
 # All rights reserved.
 #
 # = Licence
-# This program is licenced under the same licence as Ruby.
+# This program is licensed under the same licence as Ruby.
 # (See the file 'LICENCE'.)
-#
-# = Version
-# $Id$
-#
 #++
 
 module OpenSSL
@@ -47,6 +41,11 @@ module OpenSSL
     end
 
     class Extension
+      def ==(other)
+        return false unless Extension === other
+        to_der == other.to_der
+      end
+
       def to_s # "oid = critical, value"
         str = self.oid
         str << " = "
@@ -70,7 +69,7 @@ module OpenSSL
         HexPair = /#{HexChar}#{HexChar}/
         HexString = /#{HexPair}+/
         Pair = /\\(?:[#{Special}]|\\|"|#{HexPair})/
-        StringChar = /[^#{Special}\\"]/
+        StringChar = /[^\\"#{Special}]/
         QuoteChar = /[^\\"]/
         AttributeType = /[a-zA-Z][0-9a-zA-Z]*|[0-9]+(?:\.[0-9]+)*/
         AttributeValue = /
@@ -145,17 +144,71 @@ module OpenSSL
         end
 
         def parse_openssl(str, template=OBJECT_TYPE_TEMPLATE)
-          ary = str.scan(/\s*([^\/,]+)\s*/).collect{|i| i[0].split("=", 2) }
+          if str.start_with?("/")
+            # /A=B/C=D format
+            ary = str[1..-1].split("/").map { |i| i.split("=", 2) }
+          else
+            # Comma-separated
+            ary = str.split(",").map { |i| i.strip.split("=", 2) }
+          end
           self.new(ary, template)
         end
 
         alias parse parse_openssl
+      end
+
+      def pretty_print(q)
+        q.object_group(self) {
+          q.text ' '
+          q.text to_s(OpenSSL::X509::Name::RFC2253)
+        }
+      end
+    end
+
+    class Attribute
+      def ==(other)
+        return false unless Attribute === other
+        to_der == other.to_der
       end
     end
 
     class StoreContext
       def cleanup
         warn "(#{caller.first}) OpenSSL::X509::StoreContext#cleanup is deprecated with no replacement" if $VERBOSE
+      end
+    end
+
+    class Certificate
+      def pretty_print(q)
+        q.object_group(self) {
+          q.breakable
+          q.text 'subject='; q.pp self.subject; q.text ','; q.breakable
+          q.text 'issuer='; q.pp self.issuer; q.text ','; q.breakable
+          q.text 'serial='; q.pp self.serial; q.text ','; q.breakable
+          q.text 'not_before='; q.pp self.not_before; q.text ','; q.breakable
+          q.text 'not_after='; q.pp self.not_after
+        }
+      end
+    end
+
+    class CRL
+      def ==(other)
+        return false unless CRL === other
+        to_der == other.to_der
+      end
+    end
+
+    class Revoked
+      def ==(other)
+        return false unless Revoked === other
+        to_der == other.to_der
+      end
+    end
+
+    class Request
+      def ==(other)
+        return false unless Request === other
+        to_der == other.to_der
       end
     end
   end

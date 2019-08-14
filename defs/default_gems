@@ -1,5 +1,0 @@
-# gem		base directory		versioning file			[executable files under bin]
-rake		lib/rake		lib/rake/version.rb		[rake]
-rdoc		lib/rdoc		lib/rdoc.rb			[rdoc ri]
-minitest	lib/minitest		lib/minitest/unit.rb
-json		ext/json		ext/json/lib/json/version.rb

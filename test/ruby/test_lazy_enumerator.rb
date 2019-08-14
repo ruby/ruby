@@ -1,5 +1,5 @@
+# frozen_string_literal: false
 require 'test/unit'
-require_relative 'envutil'
 
 class TestLazyEnumerator < Test::Unit::TestCase
   class Step
@@ -14,7 +14,14 @@ class TestLazyEnumerator < Test::Unit::TestCase
 
     def each(*args)
       @args = args
-      @enum.each {|i| @current = i; yield i}
+      @enum.each do |v|
+        @current = v
+        if v.is_a? Enumerable
+          yield(*v)
+        else
+          yield(v)
+        end
+      end
     end
   end
 
@@ -25,7 +32,7 @@ class TestLazyEnumerator < Test::Unit::TestCase
 
     a = [1, 2, 3].lazy
     a.freeze
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       a.__send__ :initialize, [4, 5], &->(y, *v) { y << yield(*v) }
     }
   end
@@ -98,6 +105,15 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(3, a.current)
     assert_equal(2, a.lazy.map {|x| x * 2}.first)
     assert_equal(1, a.current)
+  end
+
+  def test_map_packed_nested
+    bug = '[ruby-core:81638] [Bug#13648]'
+
+    a = Step.new([[1, 2]])
+    expected = [[[1, 2]]]
+    assert_equal(expected, a.map {|*args| args}.map {|*args| args}.to_a)
+    assert_equal(expected, a.lazy.map {|*args| args}.map {|*args| args}.to_a, bug)
   end
 
   def test_flat_map
@@ -198,6 +214,34 @@ class TestLazyEnumerator < Test::Unit::TestCase
                  e.lazy.grep(proc {|x| x == [2, "2"]}, &:join).force)
   end
 
+  def test_grep_v
+    a = Step.new('a'..'f')
+    assert_equal('b', a.grep_v(/a/).first)
+    assert_equal('f', a.current)
+    assert_equal('a', a.lazy.grep_v(/c/).first)
+    assert_equal('a', a.current)
+    assert_equal(%w[b c d f], a.grep_v(proc {|x| /[aeiou]/ =~ x}))
+    assert_equal(%w[b c d f], a.lazy.grep_v(proc {|x| /[aeiou]/ =~ x}).to_a)
+  end
+
+  def test_grep_v_with_block
+    a = Step.new('a'..'f')
+    assert_equal('B', a.grep_v(/a/) {|i| i.upcase}.first)
+    assert_equal('B', a.lazy.grep_v(/a/) {|i| i.upcase}.first)
+  end
+
+  def test_grep_v_multiple_values
+    e = Enumerator.new { |yielder|
+      3.times { |i|
+        yielder.yield(i, i.to_s)
+      }
+    }
+    assert_equal([[0, "0"], [1, "1"]], e.grep_v(proc {|x| x == [2, "2"]}))
+    assert_equal([[0, "0"], [1, "1"]], e.lazy.grep_v(proc {|x| x == [2, "2"]}).force)
+    assert_equal(["00", "11"],
+                 e.lazy.grep_v(proc {|x| x == [2, "2"]}, &:join).force)
+  end
+
   def test_zip
     a = Step.new(1..3)
     assert_equal([1, "a"], a.zip("a".."c").first)
@@ -245,6 +289,11 @@ class TestLazyEnumerator < Test::Unit::TestCase
     a = Step.new(1..10)
     assert_equal([], a.lazy.take(0).force)
     assert_equal(nil, a.current)
+  end
+
+  def test_take_bad_arg
+    a = Step.new(1..10)
+    assert_raise(ArgumentError) { a.lazy.take(-1) }
   end
 
   def test_take_recycle
@@ -452,6 +501,15 @@ EOS
     assert_equal Float::INFINITY, loop.lazy.cycle.size
     assert_equal nil, lazy.select{}.cycle(4).size
     assert_equal nil, lazy.select{}.cycle.size
+
+    class << (obj = Object.new)
+      def each; end
+      def size; 0; end
+      include Enumerable
+    end
+    lazy = obj.lazy
+    assert_equal 0, lazy.cycle.size
+    assert_raise(TypeError) {lazy.cycle("").size}
   end
 
   def test_map_zip
@@ -470,6 +528,7 @@ EOS
     bug7507 = '[ruby-core:51510]'
     {
       slice_before: //,
+      slice_after: //,
       with_index: nil,
       cycle: nil,
       each_with_object: 42,
@@ -480,6 +539,19 @@ EOS
       assert_equal Enumerator::Lazy, [].lazy.send(method, *arg).class, bug7507
     end
     assert_equal Enumerator::Lazy, [].lazy.chunk{}.class, bug7507
+    assert_equal Enumerator::Lazy, [].lazy.slice_when{}.class, bug7507
+  end
+
+  def test_each_cons_limit
+    n = 1 << 120
+    assert_equal([1, 2], (1..n).lazy.each_cons(2).first)
+    assert_equal([[1, 2], [2, 3]], (1..n).lazy.each_cons(2).first(2))
+  end
+
+  def test_each_slice_limit
+    n = 1 << 120
+    assert_equal([1, 2], (1..n).lazy.each_slice(2).first)
+    assert_equal([[1, 2], [3, 4]], (1..n).lazy.each_slice(2).first(2))
   end
 
   def test_no_warnings
@@ -489,5 +561,30 @@ EOS
     assert_warning("") {le.take(1).force}
     assert_warning("") {le.drop(1).force}
     assert_warning("") {le.drop_while{false}.force}
+  end
+
+  def test_symbol_chain
+    assert_equal(["1", "3"], [1, 2, 3].lazy.reject(&:even?).map(&:to_s).force)
+    assert_raise(NoMethodError) do
+      [1, 2, 3].lazy.map(&:undefined).map(&:to_s).force
+    end
+  end
+
+  def test_uniq
+    u = (1..Float::INFINITY).lazy.uniq do |x|
+      raise "too big" if x > 10000
+      (x**2) % 10
+    end
+    assert_equal([1, 2, 3, 4, 5, 10], u.first(6))
+    assert_equal([1, 2, 3, 4, 5, 10], u.first(6))
+  end
+
+  def test_filter_map
+    e = (1..Float::INFINITY).lazy.filter_map do |x|
+      raise "too big" if x > 10000
+      (x**2) % 10 if x.even?
+    end
+    assert_equal([4, 6, 6, 4, 0, 4], e.first(6))
+    assert_equal([4, 6, 6, 4, 0, 4], e.first(6))
   end
 end

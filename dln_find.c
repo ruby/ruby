@@ -48,13 +48,6 @@ char *dln_argv0;
 #   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
-#ifdef HAVE_SYS_PARAM_H
-# include <sys/param.h>
-#endif
-#ifndef MAXPATHLEN
-# define MAXPATHLEN 1024
-#endif
-
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
@@ -78,11 +71,12 @@ dln_find_exe_r(const char *fname, const char *path, char *buf, size_t size
     }
 
     if (!path) {
-#if defined(_WIN32)
-	path = "/usr/local/bin;/usr/ucb;/usr/bin;/bin;.";
-#else
-	path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";
-#endif
+	path =
+	    "/usr/local/bin" PATH_SEP
+	    "/usr/ucb" PATH_SEP
+	    "/usr/bin" PATH_SEP
+	    "/bin" PATH_SEP
+	    ".";
     }
     buf = dln_find_1(fname, path, buf, size, 1 DLN_FIND_EXTRA_ARG);
     if (envpath) free(envpath);
@@ -275,13 +269,15 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	    }
 	    goto next;
 	}
-#endif /* _WIN32 or __EMX__ */
+#endif
 
-	if (stat(fbuf, &st) == 0) {
+#ifndef S_ISREG
+# define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
+	if (stat(fbuf, &st) == 0 && S_ISREG(st.st_mode)) {
 	    if (exe_flag == 0) return fbuf;
 	    /* looking for executable */
-	    if (!S_ISDIR(st.st_mode) && eaccess(fbuf, X_OK) == 0)
-		return fbuf;
+	    if (eaccess(fbuf, X_OK) == 0) return fbuf;
 	}
       next:
 	/* if not, and no other alternatives, life is bleak */

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'optparse/ac'
 
@@ -13,7 +14,7 @@ class TestOptionParser::AutoConf < Test::Unit::TestCase
   end
 
   class DummyOutput < String
-    alias write <<
+    alias write concat
   end
   def no_error(*args)
     $stderr, stderr = DummyOutput.new, $stderr
@@ -29,6 +30,13 @@ class TestOptionParser::AutoConf < Test::Unit::TestCase
     assert_equal(true, @foo)
     @opt.parse!(%w"--enable-bar")
     assert_equal(true, @bar)
+  end
+
+  def test_enable_value
+    @opt.parse!(%w"--enable-foo=A")
+    assert_equal("A", @foo)
+    @opt.parse!(%w"--enable-bar=B")
+    assert_equal("B", @bar)
   end
 
   def test_disable

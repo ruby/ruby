@@ -1,6 +1,7 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: true
 
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocParser < RDoc::TestCase
 
@@ -15,9 +16,22 @@ class TestRDocParser < RDoc::TestCase
     @options = RDoc::Options.new
   end
 
+  def test_class_binary_eh_ISO_2022_JP
+    iso_2022_jp = File.join Dir.tmpdir, "test_rdoc_parser_#{$$}.rd"
+
+    File.open iso_2022_jp, 'wb' do |io|
+      io.write "# coding: ISO-2022-JP\n"
+      io.write ":\e$B%3%^%s%I\e(B:\n"
+    end
+
+    refute @RP.binary? iso_2022_jp
+  ensure
+    File.unlink iso_2022_jp
+  end
+
   def test_class_binary_eh_marshal
     marshal = File.join Dir.tmpdir, "test_rdoc_parser_#{$$}.marshal"
-    open marshal, 'wb' do |io|
+    File.open marshal, 'wb' do |io|
       io.write Marshal.dump('')
       io.write 'lots of text ' * 500
     end
@@ -33,9 +47,7 @@ class TestRDocParser < RDoc::TestCase
   end
 
   def test_class_binary_large_japanese_rdoc
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
-    capture_io do
+    capture_output do
       begin
         extenc, Encoding.default_external =
           Encoding.default_external, Encoding::US_ASCII
@@ -48,8 +60,6 @@ class TestRDocParser < RDoc::TestCase
   end
 
   def test_class_binary_japanese_rdoc
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     file_name = File.expand_path '../test.ja.rdoc', __FILE__
     refute @RP.binary?(file_name)
   end
@@ -82,7 +92,7 @@ class TestRDocParser < RDoc::TestCase
   def test_class_for_executable
     temp_dir do
       content = "#!/usr/bin/env ruby -w\n"
-      open 'app', 'w' do |io| io.write content end
+      File.open 'app', 'w' do |io| io.write content end
       app = @store.add_file 'app'
 
       parser = @RP.for app, 'app', content, @options, :stats
@@ -96,7 +106,7 @@ class TestRDocParser < RDoc::TestCase
   def test_class_for_forbidden
     skip 'chmod not supported' if Gem.win_platform?
 
-    Tempfile.open 'forbidden' do |io|
+    tf = Tempfile.open 'forbidden' do |io|
       begin
         File.chmod 0000, io.path
         forbidden = @store.add_file io.path
@@ -107,14 +117,16 @@ class TestRDocParser < RDoc::TestCase
       ensure
         File.chmod 0400, io.path
       end
+      io
     end
+    tf.close!
   end
 
   def test_class_for_modeline
     temp_dir do
       content = "# -*- rdoc -*-\n= NEWS\n"
 
-      open 'NEWS', 'w' do |io| io.write content end
+      File.open 'NEWS', 'w' do |io| io.write content end
       app = @store.add_file 'NEWS'
 
       parser = @RP.for app, 'NEWS', content, @options, :stats
@@ -128,7 +140,7 @@ class TestRDocParser < RDoc::TestCase
   def test_can_parse_modeline
     readme_ext = File.join Dir.tmpdir, "README.EXT.#{$$}"
 
-    open readme_ext, 'w' do |io|
+    File.open readme_ext, 'w' do |io|
       io.puts "# README.EXT -  -*- rdoc -*- created at: Mon Aug 7 16:45:54 JST 1995"
       io.puts
       io.puts "This document explains how to make extension libraries for Ruby."
@@ -150,7 +162,7 @@ class TestRDocParser < RDoc::TestCase
   def test_check_modeline
     readme_ext = File.join Dir.tmpdir, "README.EXT.#{$$}"
 
-    open readme_ext, 'w' do |io|
+    File.open readme_ext, 'w' do |io|
       io.puts "# README.EXT -  -*- RDoc -*- created at: Mon Aug 7 16:45:54 JST 1995"
       io.puts
       io.puts "This document explains how to make extension libraries for Ruby."
@@ -164,7 +176,7 @@ class TestRDocParser < RDoc::TestCase
   def test_check_modeline_coding
     readme_ext = File.join Dir.tmpdir, "README.EXT.#{$$}"
 
-    open readme_ext, 'w' do |io|
+    File.open readme_ext, 'w' do |io|
       io.puts "# -*- coding: utf-8 -*-"
     end
 
@@ -176,7 +188,7 @@ class TestRDocParser < RDoc::TestCase
   def test_check_modeline_with_other
     readme_ext = File.join Dir.tmpdir, "README.EXT.#{$$}"
 
-    open readme_ext, 'w' do |io|
+    File.open readme_ext, 'w' do |io|
       io.puts "# README.EXT -  -*- mode: RDoc; indent-tabs-mode: nil -*-"
       io.puts
       io.puts "This document explains how to make extension libraries for Ruby."
@@ -190,7 +202,7 @@ class TestRDocParser < RDoc::TestCase
   def test_check_modeline_no_modeline
     readme_ext = File.join Dir.tmpdir, "README.EXT.#{$$}"
 
-    open readme_ext, 'w' do |io|
+    File.open readme_ext, 'w' do |io|
       io.puts "This document explains how to make extension libraries for Ruby."
     end
 
@@ -309,4 +321,3 @@ class TestRDocParser < RDoc::TestCase
   end
 
 end
-

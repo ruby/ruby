@@ -1,13 +1,12 @@
 # coding: utf-8
+# frozen_string_literal: true
 
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocMarkupParser < RDoc::TestCase
 
   def setup
     super
-
-    @have_byteslice = ''.respond_to? :byteslice
 
     @RMP = @RM::Parser
   end
@@ -29,11 +28,7 @@ class TestRDocMarkupParser < RDoc::TestCase
 
     s.scan(/\S+/)
 
-    if @have_byteslice or @have_encoding then
-      assert_equal 3, parser.char_pos(s.pos)
-    else
-      assert_equal 4, parser.char_pos(s.pos)
-    end
+    assert_equal 3, parser.char_pos(s.pos)
   end
 
   def test_get
@@ -1050,6 +1045,41 @@ the time
     assert_equal expected, @RMP.parse("  1\n   2\n\n    3").parts
   end
 
+  def test_parse_block_quote
+    expected = [
+      @RM::BlockQuote.new(@RM::Paragraph.new("foo"))
+    ]
+    assert_equal expected, @RMP.parse(<<-DOC).parts
+>>>
+  foo
+    DOC
+
+    expected = [
+      @RM::BlockQuote.new(@RM::Paragraph.new("foo"),
+                          @RM::Verbatim.new("code\n"),
+                          @RM::Paragraph.new("bar"))
+    ]
+    assert_equal expected, @RMP.parse(<<-DOC).parts
+>>>
+  foo
+    code
+  bar
+    DOC
+
+    expected = [
+      @RM::BlockQuote.new(@RM::Paragraph.new("foo"),
+                          @RM::BlockQuote.new(@RM::Paragraph.new("bar")),
+                          @RM::Paragraph.new("zot"))
+    ]
+    assert_equal expected, @RMP.parse(<<-DOC).parts
+>>>
+  foo
+  >>>
+    bar
+  zot
+    DOC
+  end
+
   def test_peek_token
     parser = util_parser
 
@@ -1073,7 +1103,7 @@ the time
 
     assert_equal [:NEWLINE, "\n", 9, 0], parser.peek_token
 
-    assert_equal nil, parser.skip(:NONE, false)
+    assert_nil parser.skip(:NONE, false)
 
     assert_equal [:NEWLINE, "\n", 9, 0], parser.peek_token
   end
@@ -1359,8 +1389,6 @@ cat::
   end
 
   def test_tokenize_note_utf_8
-    skip 'Encoding not implemented' unless @have_encoding
-
     str = <<-STR
 cät:: l1a
       l1b
@@ -1625,11 +1653,7 @@ Example heading:
 
     s.scan(/\S+/)
 
-    if @have_encoding or @have_byteslice then
-      assert_equal [3, 0], parser.token_pos(s.pos)
-    else
-      assert_equal [4, 0], parser.token_pos(s.pos)
-    end
+    assert_equal [3, 0], parser.token_pos(s.pos)
   end
 
   # HACK move to Verbatim test case
@@ -1677,4 +1701,3 @@ some more text over here
   end
 
 end
-

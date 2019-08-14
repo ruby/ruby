@@ -24,7 +24,7 @@
 #define DSIZE_TYPE TYPEOF_DATUM_DSIZE
 #if SIZEOF_DATUM_DSIZE > SIZEOF_INT
 # define RSTRING_DSIZE(s) RSTRING_LEN(s)
-# define TOO_LONG(n) 0
+# define TOO_LONG(n) ((void)(n),0)
 #else
 # define RSTRING_DSIZE(s) RSTRING_LENINT(s)
 # define TOO_LONG(n) ((long)(+(DSIZE_TYPE)(n)) != (n))
@@ -39,6 +39,8 @@ struct dbmdata {
     DBM *di_dbm;
 };
 
+NORETURN(static void closed_dbm(void));
+
 static void
 closed_dbm(void)
 {
@@ -46,24 +48,40 @@ closed_dbm(void)
 }
 
 #define GetDBM(obj, dbmp) do {\
-    Data_Get_Struct((obj), struct dbmdata, (dbmp));\
-    if ((dbmp) == 0) closed_dbm();\
+    TypedData_Get_Struct((obj), struct dbmdata, &dbm_type, (dbmp));\
     if ((dbmp)->di_dbm == 0) closed_dbm();\
 } while (0)
 
-#define GetDBM2(obj, data, dbm) do {\
-    GetDBM((obj), (data));\
-    (dbm) = dbmp->di_dbm;\
+#define GetDBM2(obj, dbmp, dbm) do {\
+    GetDBM((obj), (dbmp));\
+    (dbm) = (dbmp)->di_dbm;\
 } while (0)
 
 static void
-free_dbm(struct dbmdata *dbmp)
+free_dbm(void *ptr)
 {
-    if (dbmp) {
-	if (dbmp->di_dbm) dbm_close(dbmp->di_dbm);
-	xfree(dbmp);
-    }
+    struct dbmdata *dbmp = ptr;
+    if (dbmp->di_dbm)
+	dbm_close(dbmp->di_dbm);
+    xfree(dbmp);
 }
+
+static size_t
+memsize_dbm(const void *ptr)
+{
+    const struct dbmdata *dbmp = ptr;
+    size_t size = sizeof(*dbmp);
+    if (dbmp->di_dbm)
+	size += DBM_SIZEOF_DBM;
+    return size;
+}
+
+static const rb_data_type_t dbm_type = {
+    "dbm",
+    {0, free_dbm, memsize_dbm,},
+    0, 0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * call-seq:
@@ -94,9 +112,7 @@ fdbm_closed(VALUE obj)
 {
     struct dbmdata *dbmp;
 
-    Data_Get_Struct(obj, struct dbmdata, dbmp);
-    if (dbmp == 0)
-	return Qtrue;
+    TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);
     if (dbmp->di_dbm == 0)
 	return Qtrue;
 
@@ -106,7 +122,9 @@ fdbm_closed(VALUE obj)
 static VALUE
 fdbm_alloc(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, 0, free_dbm, 0);
+    struct dbmdata *dbmp;
+
+    return TypedData_Make_Struct(klass, struct dbmdata, &dbm_type, dbmp);
 }
 
 /*
@@ -125,12 +143,12 @@ fdbm_alloc(VALUE klass)
 static VALUE
 fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 {
-    volatile VALUE file;
-    VALUE vmode, vflags;
+    VALUE file, vmode, vflags;
     DBM *dbm;
     struct dbmdata *dbmp;
     int mode, flags = 0;
 
+    TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);
     if (rb_scan_args(argc, argv, "12", &file, &vmode, &vflags) == 1) {
 	mode = 0666;		/* default value */
     }
@@ -172,24 +190,24 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
     }
 
     if (dbm) {
-    /*
-     * History of dbm_pagfno() and dbm_dirfno() in ndbm and its compatibles.
-     * (dbm_pagfno() and dbm_dirfno() is not standardized.)
-     *
-     * 1986: 4.3BSD provides ndbm.
-     *       It provides dbm_pagfno() and dbm_dirfno() as macros.
-     * 1991: gdbm-1.5 provides them as functions.
-     *       They returns a same descriptor.
-     *       (Earlier releases may have the functions too.)
-     * 1991: Net/2 provides Berkeley DB.
-     *       It doesn't provide dbm_pagfno() and dbm_dirfno().
-     * 1992: 4.4BSD Alpha provides Berkeley DB with dbm_dirfno() as a function.
-     *       dbm_pagfno() is a macro as DBM_PAGFNO_NOT_AVAILABLE.
-     * 1997: Berkeley DB 2.0 is released by Sleepycat Software, Inc.
-     *       It defines dbm_pagfno() and dbm_dirfno() as macros.
-     * 2011: gdbm-1.9 creates a separate dir file.
-     *       dbm_pagfno() and dbm_dirfno() returns different descriptors.
-     */
+	/*
+	 * History of dbm_pagfno() and dbm_dirfno() in ndbm and its compatibles.
+	 * (dbm_pagfno() and dbm_dirfno() is not standardized.)
+	 *
+	 * 1986: 4.3BSD provides ndbm.
+	 *       It provides dbm_pagfno() and dbm_dirfno() as macros.
+	 * 1991: gdbm-1.5 provides them as functions.
+	 *       They returns a same descriptor.
+	 *       (Earlier releases may have the functions too.)
+	 * 1991: Net/2 provides Berkeley DB.
+	 *       It doesn't provide dbm_pagfno() and dbm_dirfno().
+	 * 1992: 4.4BSD Alpha provides Berkeley DB with dbm_dirfno() as a function.
+	 *       dbm_pagfno() is a macro as DBM_PAGFNO_NOT_AVAILABLE.
+	 * 1997: Berkeley DB 2.0 is released by Sleepycat Software, Inc.
+	 *       It defines dbm_pagfno() and dbm_dirfno() as macros.
+	 * 2011: gdbm-1.9 creates a separate dir file.
+	 *       dbm_pagfno() and dbm_dirfno() returns different descriptors.
+	 */
 #if defined(HAVE_DBM_PAGFNO)
         rb_fd_fix_cloexec(dbm_pagfno(dbm));
 #endif
@@ -198,8 +216,8 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 #endif
 
 #if defined(RUBYDBM_DB_HEADER) && defined(HAVE_TYPE_DBC)
-    /* Disable Berkeley DB error messages such as:
-     * DB->put: attempt to modify a read-only database */
+	/* Disable Berkeley DB error messages such as:
+	 * DB->put: attempt to modify a read-only database */
         ((DBC*)dbm)->dbp->set_errfile(((DBC*)dbm)->dbp, NULL);
 #endif
     }
@@ -209,8 +227,8 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 	rb_sys_fail_str(file);
     }
 
-    dbmp = ALLOC(struct dbmdata);
-    DATA_PTR(obj) = dbmp;
+    if (dbmp->di_dbm)
+	dbm_close(dbmp->di_dbm);
     dbmp->di_dbm = dbm;
     dbmp->di_size = -1;
 
@@ -228,7 +246,7 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 static VALUE
 fdbm_s_open(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE obj = Data_Wrap_Struct(klass, 0, free_dbm, 0);
+    VALUE obj = fdbm_alloc(klass);
 
     if (NIL_P(fdbm_initialize(argc, argv, obj))) {
 	return Qnil;
@@ -320,8 +338,6 @@ fdbm_key(VALUE obj, VALUE valstr)
     ExportStringValue(valstr);
     len = RSTRING_LEN(valstr);
     if (TOO_LONG(len)) return Qnil;
-    val.dptr = RSTRING_PTR(valstr);
-    val.dsize = (DSIZE_TYPE)len;
 
     GetDBM2(obj, dbmp, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
@@ -488,8 +504,8 @@ fdbm_delete_if(VALUE obj)
     DBM *dbm;
     VALUE keystr, valstr;
     VALUE ret, ary = rb_ary_tmp_new(0);
-    int i, status = 0;
-    long n;
+    int status = 0;
+    long i, n;
 
     fdbm_modify(obj);
     GetDBM2(obj, dbmp, dbm);
@@ -508,7 +524,7 @@ fdbm_delete_if(VALUE obj)
     }
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
-	keystr = RARRAY_PTR(ary)[i];
+	keystr = RARRAY_AREF(ary, i);
 	key.dptr = RSTRING_PTR(keystr);
 	key.dsize = (DSIZE_TYPE)RSTRING_LEN(keystr);
 	if (dbm_delete(dbm, key)) {
@@ -579,11 +595,13 @@ static VALUE fdbm_store(VALUE,VALUE,VALUE);
 static VALUE
 update_i(RB_BLOCK_CALL_FUNC_ARGLIST(pair, dbm))
 {
+    const VALUE *ptr;
     Check_Type(pair, T_ARRAY);
     if (RARRAY_LEN(pair) < 2) {
 	rb_raise(rb_eArgError, "pair must be [key, value]");
     }
-    fdbm_store(dbm, RARRAY_PTR(pair)[0], RARRAY_PTR(pair)[1]);
+    ptr = RARRAY_CONST_PTR(pair);
+    fdbm_store(dbm, ptr[0], ptr[1]);
     return Qnil;
 }
 
@@ -976,7 +994,7 @@ fdbm_reject(VALUE obj)
  *   It is based on dbm library in Unix Version 7 but has different API to
  *   support multiple databases in a process.
  * - {Berkeley DB}[http://en.wikipedia.org/wiki/Berkeley_DB] versions
- *   1 thru 5, also known as BDB and Sleepycat DB, now owned by Oracle
+ *   1 thru 6, also known as BDB and Sleepycat DB, now owned by Oracle
  *   Corporation.
  * - Berkeley DB 1.x, still found in 4.4BSD derivatives (FreeBSD, OpenBSD, etc).
  * - {gdbm}[http://www.gnu.org/software/gdbm/], the GNU implementation of dbm.
@@ -1014,7 +1032,7 @@ fdbm_reject(VALUE obj)
  * == Example
  *
  *  require 'dbm'
- *  db = DBM.open('rfcs', 666, DBM::WRCREAT)
+ *  db = DBM.open('rfcs', 0666, DBM::WRCREAT)
  *  db['822'] = 'Standard for the Format of ARPA Internet Text Messages'
  *  db['1123'] = 'Requirements for Internet Hosts - Application and Support'
  *  db['3068'] = 'An Anycast Prefix for 6to4 Relay Routers'

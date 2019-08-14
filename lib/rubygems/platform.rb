@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require "rubygems/deprecate"
 
 ##
@@ -17,7 +18,7 @@ class Gem::Platform
 
   def self.local
     arch = RbConfig::CONFIG['arch']
-    arch = "#{arch}_60" if arch =~ /mswin32$/
+    arch = "#{arch}_60" if arch =~ /mswin(?:32|64)$/
     @local ||= new(arch)
   end
 
@@ -55,7 +56,7 @@ class Gem::Platform
     when String then
       arch = arch.split '-'
 
-      if arch.length > 2 and arch.last !~ /\d/ then # reassemble x86-linux-gnu
+      if arch.length > 2 and arch.last !~ /\d/  # reassemble x86-linux-gnu
         extra = arch.pop
         arch.last << "-#{extra}"
       end
@@ -67,7 +68,7 @@ class Gem::Platform
              else cpu
              end
 
-      if arch.length == 2 and arch.last =~ /^\d+(\.\d+)?$/ then # for command-line
+      if arch.length == 2 and arch.last =~ /^\d+(\.\d+)?$/  # for command-line
         @os, @version = arch
         return
       end
@@ -95,6 +96,7 @@ class Gem::Platform
                         [os, version]
                       when /netbsdelf/ then             [ 'netbsdelf', nil ]
                       when /openbsd(\d+\.\d+)?/ then    [ 'openbsd',   $1  ]
+                      when /bitrig(\d+\.\d+)?/ then     [ 'bitrig',    $1  ]
                       when /solaris(\d+\.\d+)?/ then    [ 'solaris',   $1  ]
                       # test
                       when /^(\w+_platform)(\d+)?/ then [ $1,          $2  ]
@@ -110,7 +112,7 @@ class Gem::Platform
   end
 
   def inspect
-    "#<%s:0x%x @cpu=%p, @os=%p, @version=%p>" % [self.class, object_id, *to_a]
+    "%s @cpu=%p, @os=%p, @version=%p>" % [super[0..-2], *to_a]
   end
 
   def to_a
@@ -147,8 +149,8 @@ class Gem::Platform
     return nil unless Gem::Platform === other
 
     # cpu
-    (@cpu == 'universal' or other.cpu == 'universal' or @cpu == other.cpu or
-     (@cpu == 'arm' and other.cpu =~ /\Aarm/)) and
+    ([nil,'universal'].include?(@cpu) or [nil, 'universal'].include?(other.cpu) or @cpu == other.cpu or
+    (@cpu == 'arm' and other.cpu =~ /\Aarm/)) and
 
     # os
     @os == other.os and
@@ -173,6 +175,7 @@ class Gem::Platform
               when /^dalvik(\d+)?$/       then [nil,         'dalvik',  $1    ]
               when /dotnet(\-(\d+\.\d+))?/ then ['universal','dotnet',  $2    ]
               when /mswin32(\_(\d+))?/    then ['x86',       'mswin32', $2    ]
+              when /mswin64(\_(\d+))?/    then ['x64',       'mswin64', $2    ]
               when 'powerpc-darwin'       then ['powerpc',   'darwin',  nil   ]
               when /powerpc-darwin(\d)/   then ['powerpc',   'darwin',  $1    ]
               when /sparc-solaris2.8/     then ['sparc',     'solaris', '2.8' ]
@@ -192,12 +195,12 @@ class Gem::Platform
   # A pure-Ruby gem that may use Gem::Specification#extensions to build
   # binary files.
 
-  RUBY = 'ruby'
+  RUBY = 'ruby'.freeze
 
   ##
   # A platform-specific gem that is built for the packaging Ruby's platform.
   # This will be replaced with Gem::Platform::local.
 
-  CURRENT = 'current'
-end
+  CURRENT = 'current'.freeze
 
+end

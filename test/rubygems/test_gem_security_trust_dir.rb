@@ -1,6 +1,7 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 
-unless defined?(OpenSSL::SSL) then
+unless defined?(OpenSSL::SSL)
   warn 'Skipping Gem::Security::TrustDir tests.  openssl not found.'
 end
 
@@ -17,7 +18,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
   end
 
   def test_cert_path
-    digest = OpenSSL::Digest::SHA1.hexdigest PUBLIC_CERT.subject.to_s
+    digest = Gem::Security::DIGEST_ALGORITHM.hexdigest PUBLIC_CERT.subject.to_s
 
     expected = File.join @dest_dir, "cert-#{digest}.pem"
 
@@ -41,7 +42,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
   end
 
   def test_name_path
-    digest = OpenSSL::Digest::SHA1.hexdigest PUBLIC_CERT.subject.to_s
+    digest = Gem::Security::DIGEST_ALGORITHM.hexdigest PUBLIC_CERT.subject.to_s
 
     expected = File.join @dest_dir, "cert-#{digest}.pem"
 
@@ -70,6 +71,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
     assert_path_exists @dest_dir
 
     mask = 040700 & (~File.umask)
+    mask |= 0200000 if /aix/ =~ RUBY_PLATFORM
 
     assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
   end
@@ -90,9 +92,9 @@ class TestGemSecurityTrustDir < Gem::TestCase
     @trust_dir.verify
 
     mask = 040700 & (~File.umask)
+    mask |= 0200000 if /aix/ =~ RUBY_PLATFORM
 
     assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
   end
 
 end if defined?(OpenSSL::SSL)
-

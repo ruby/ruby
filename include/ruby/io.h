@@ -12,6 +12,10 @@
 #ifndef RUBY_IO_H
 #define RUBY_IO_H 1
 
+#ifdef RUBY_INTERNAL_H
+#error "Include this file before internal.h"
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #if 0
@@ -20,7 +24,6 @@ extern "C" {
 #endif
 
 #include <stdio.h>
-#include <errno.h>
 #include "ruby/encoding.h"
 
 #if defined(HAVE_STDIO_EXT_H)
@@ -28,6 +31,7 @@ extern "C" {
 #endif
 
 #include "ruby/config.h"
+#include <errno.h>
 #if defined(HAVE_POLL)
 #  ifdef _AIX
 #    define reqevents events
@@ -51,16 +55,17 @@ extern "C" {
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
-typedef struct {
+PACKED_STRUCT_UNALIGNED(struct rb_io_buffer_t {
     char *ptr;                  /* off + len <= capa */
     int off;
     int len;
     int capa;
-} rb_io_buffer_t;
+});
+typedef struct rb_io_buffer_t rb_io_buffer_t;
 
 typedef struct rb_io_t {
-    int fd;                     /* file descriptor */
     FILE *stdio_file;		/* stdio ptr for read/write if available */
+    int fd;                     /* file descriptor */
     int mode;			/* mode flags: FMODE_XXXs */
     rb_pid_t pid;		/* child's pid (for pipes) */
     int lineno;			/* number of lines read */
@@ -89,12 +94,14 @@ typedef struct rb_io_t {
 
     rb_econv_t *writeconv;
     VALUE writeconv_asciicompat;
+    int writeconv_initialized;
     int writeconv_pre_ecflags;
     VALUE writeconv_pre_ecopts;
-    int writeconv_initialized;
 
     VALUE write_lock;
 } rb_io_t;
+
+typedef struct rb_io_enc_t rb_io_enc_t;
 
 #define HAVE_RB_IO_T 1
 
@@ -108,65 +115,29 @@ typedef struct rb_io_t {
 #define FMODE_APPEND                0x00000040
 #define FMODE_CREATE                0x00000080
 /* #define FMODE_NOREVLOOKUP        0x00000100 */
-#define FMODE_WSPLIT                0x00000200
-#define FMODE_WSPLIT_INITIALIZED    0x00000400
+#define FMODE_EXCL                  0x00000400
 #define FMODE_TRUNC                 0x00000800
 #define FMODE_TEXTMODE              0x00001000
 /* #define FMODE_PREP               0x00010000 */
 #define FMODE_SETENC_BY_BOM         0x00100000
+/* #define FMODE_UNIX                  0x00200000 */
+/* #define FMODE_INET                  0x00400000 */
+/* #define FMODE_INET6                 0x00800000 */
 
 #define GetOpenFile(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)
 
-#define RB_IO_BUFFER_INIT(buf) do {\
-    (buf).ptr = NULL;\
-    (buf).off = 0;\
-    (buf).len = 0;\
-    (buf).capa = 0;\
-} while (0)
-
 #define MakeOpenFile(obj, fp) do {\
-    if (RFILE(obj)->fptr) {\
-	rb_io_close(obj);\
-	rb_io_fptr_finalize(RFILE(obj)->fptr);\
-	RFILE(obj)->fptr = 0;\
-    }\
-    (fp) = 0;\
-    RB_IO_FPTR_NEW(fp);\
-    RFILE(obj)->fptr = (fp);\
+    (fp) = rb_io_make_open_file(obj);\
 } while (0)
 
-#define RB_IO_FPTR_NEW(fp) do {\
-    (fp) = ALLOC(rb_io_t);\
-    (fp)->fd = -1;\
-    (fp)->stdio_file = NULL;\
-    (fp)->mode = 0;\
-    (fp)->pid = 0;\
-    (fp)->lineno = 0;\
-    (fp)->pathv = Qnil;\
-    (fp)->finalize = 0;\
-    RB_IO_BUFFER_INIT((fp)->wbuf);\
-    RB_IO_BUFFER_INIT((fp)->rbuf);\
-    RB_IO_BUFFER_INIT((fp)->cbuf);\
-    (fp)->readconv = NULL;\
-    (fp)->writeconv = NULL;\
-    (fp)->writeconv_asciicompat = Qnil;\
-    (fp)->writeconv_pre_ecflags = 0;\
-    (fp)->writeconv_pre_ecopts = Qnil;\
-    (fp)->writeconv_initialized = 0;\
-    (fp)->tied_io_for_writing = 0;\
-    (fp)->encs.enc = NULL;\
-    (fp)->encs.enc2 = NULL;\
-    (fp)->encs.ecflags = 0;\
-    (fp)->encs.ecopts = Qnil;\
-    (fp)->write_lock = 0;\
-} while (0)
+rb_io_t *rb_io_make_open_file(VALUE obj);
 
 FILE *rb_io_stdio_file(rb_io_t *fptr);
 
 FILE *rb_fdopen(int, const char*);
 int rb_io_modestr_fmode(const char *modestr);
 int rb_io_modestr_oflags(const char *modestr);
-int rb_io_oflags_fmode(int oflags);
+CONSTFUNC(int rb_io_oflags_fmode(int oflags));
 void rb_io_check_writable(rb_io_t*);
 void rb_io_check_readable(rb_io_t*);
 void rb_io_check_char_readable(rb_io_t *fptr);
@@ -184,11 +155,12 @@ int rb_io_wait_writable(int);
 int rb_wait_for_single_fd(int fd, int events, struct timeval *tv);
 void rb_io_set_nonblock(rb_io_t *fptr);
 int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p);
+void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *oflags_p, int *fmode_p, rb_io_enc_t *convconfig_p);
 ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
 
 /* compatibility for ruby 1.8 and older */
-#define rb_io_mode_flags(modestr) rb_io_modestr_fmode(modestr)
-#define rb_io_modenum_flags(oflags) rb_io_oflags_fmode(oflags)
+#define rb_io_mode_flags(modestr) [<"rb_io_mode_flags() is obsolete; use rb_io_modestr_fmode()">]
+#define rb_io_modenum_flags(oflags) [<"rb_io_modenum_flags() is obsolete; use rb_io_oflags_fmode()">]
 
 VALUE rb_io_taint_check(VALUE);
 NORETURN(void rb_eof_error(void));

@@ -1,4 +1,5 @@
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require 'minitest_helper'
 
 class TestRDocParserSimple < RDoc::TestCase
 
@@ -17,7 +18,7 @@ class TestRDocParserSimple < RDoc::TestCase
   def teardown
     super
 
-    @tempfile.close
+    @tempfile.close!
   end
 
   def test_initialize_metadata

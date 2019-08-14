@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # A singleton class
 
@@ -8,6 +9,10 @@ class RDoc::SingleClass < RDoc::ClassModule
 
   def ancestors
     superclass ? super + [superclass] : super
+  end
+
+  def aref_prefix # :nodoc:
+    'sclass'
   end
 
   ##

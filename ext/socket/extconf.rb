@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'mkmf'
 
 AF_INET6_SOCKET_CREATION_TEST = <<EOF
@@ -309,6 +310,7 @@ end
   xti.h
   netinet/in_systm.h
   netinet/tcp.h
+  netinet/tcp_fsm.h
   netinet/udp.h
   arpa/inet.h
   netpacket/packet.h
@@ -370,21 +372,74 @@ have_msg_control = nil
 have_msg_control = have_struct_member('struct msghdr', 'msg_control', headers) unless $mswin or $mingw
 have_struct_member('struct msghdr', 'msg_accrights', headers)
 
+if have_type("struct tcp_info", headers)
+  have_const("TCP_ESTABLISHED", headers)
+  have_const("TCP_SYN_SENT", headers)
+  have_const("TCP_SYN_RECV", headers)
+  have_const("TCP_FIN_WAIT1", headers)
+  have_const("TCP_FIN_WAIT2", headers)
+  have_const("TCP_TIME_WAIT", headers)
+  have_const("TCP_CLOSE", headers)
+  have_const("TCP_CLOSE_WAIT", headers)
+  have_const("TCP_LAST_ACK", headers)
+  have_const("TCP_LISTEN", headers)
+  have_const("TCP_CLOSING", headers)
+  have_struct_member('struct tcp_info', 'tcpi_state', headers)
+  if /solaris/ !~ RUBY_PLATFORM
+    have_struct_member('struct tcp_info', 'tcpi_ca_state', headers)
+  end
+  have_struct_member('struct tcp_info', 'tcpi_retransmits', headers)
+  have_struct_member('struct tcp_info', 'tcpi_probes', headers)
+  have_struct_member('struct tcp_info', 'tcpi_backoff', headers)
+  have_struct_member('struct tcp_info', 'tcpi_options', headers)
+  have_struct_member('struct tcp_info', 'tcpi_snd_wscale', headers)
+  have_struct_member('struct tcp_info', 'tcpi_rcv_wscale', headers)
+  have_struct_member('struct tcp_info', 'tcpi_rto', headers)
+  have_struct_member('struct tcp_info', 'tcpi_ato', headers)
+  have_struct_member('struct tcp_info', 'tcpi_snd_mss', headers)
+  have_struct_member('struct tcp_info', 'tcpi_rcv_mss', headers)
+  have_struct_member('struct tcp_info', 'tcpi_unacked', headers)
+  have_struct_member('struct tcp_info', 'tcpi_sacked', headers)
+  have_struct_member('struct tcp_info', 'tcpi_lost', headers)
+  have_struct_member('struct tcp_info', 'tcpi_retrans', headers)
+  have_struct_member('struct tcp_info', 'tcpi_fackets', headers)
+  have_struct_member('struct tcp_info', 'tcpi_last_data_sent', headers)
+  have_struct_member('struct tcp_info', 'tcpi_last_ack_sent', headers)
+  have_struct_member('struct tcp_info', 'tcpi_last_data_recv', headers)
+  have_struct_member('struct tcp_info', 'tcpi_last_ack_recv', headers)
+  have_struct_member('struct tcp_info', 'tcpi_pmtu', headers)
+  have_struct_member('struct tcp_info', 'tcpi_rcv_ssthresh', headers)
+  have_struct_member('struct tcp_info', 'tcpi_rtt', headers)
+  have_struct_member('struct tcp_info', 'tcpi_rttvar', headers)
+  have_struct_member('struct tcp_info', 'tcpi_snd_ssthresh', headers)
+  have_struct_member('struct tcp_info', 'tcpi_snd_cwnd', headers)
+  have_struct_member('struct tcp_info', 'tcpi_advmss', headers)
+  have_struct_member('struct tcp_info', 'tcpi_reordering', headers)
+  have_struct_member('struct tcp_info', 'tcpi_rcv_rtt', headers)
+  have_struct_member('struct tcp_info', 'tcpi_rcv_space', headers)
+  have_struct_member('struct tcp_info', 'tcpi_total_retrans', headers)
+
+  # FreeBSD extension
+  have_struct_member('struct tcp_info', 'tcpi_snd_wnd', headers)
+  have_struct_member('struct tcp_info', 'tcpi_snd_bwnd', headers)
+  have_struct_member('struct tcp_info', 'tcpi_snd_nxt', headers)
+  have_struct_member('struct tcp_info', 'tcpi_rcv_nxt', headers)
+  have_struct_member('struct tcp_info', 'tcpi_toe_tid', headers)
+  have_struct_member('struct tcp_info', 'tcpi_snd_rexmitpack', headers)
+  have_struct_member('struct tcp_info', 'tcpi_rcv_ooopack', headers)
+  have_struct_member('struct tcp_info', 'tcpi_snd_zerowin', headers)
+end
+
 case RUBY_PLATFORM
 when /mswin(32|64)|mingw/
   test_func = "WSACleanup"
+  have_library("iphlpapi")
   have_library("ws2_32", "WSACleanup", headers)
 when /cygwin/
   test_func = "socket(0,0,0)"
-when /beos/
-  test_func = "socket(0,0,0)"
-  have_library("net", "socket(0,0,0)", headers)
 when /haiku/
   test_func = "socket(0,0,0)"
   have_library("network", "socket(0,0,0)", headers)
-when /i386-os2_emx/
-  test_func = "socket(0,0,0)"
-  have_library("socket", "socket(0,0,0)", headers)
 else
   test_func = "socket(0,0,0)"
   have_library("nsl", 't_open("", 0, (struct t_info *)NULL)', headers) # SunOS
@@ -422,6 +477,7 @@ EOF
     have_func('inet_aton("", (struct in_addr *)0)', headers)
   have_func('getservbyport(0, "")', headers)
   have_func("getifaddrs((struct ifaddrs **)NULL)", headers)
+  have_struct_member("struct if_data", "ifi_vhid", headers) # FreeBSD
 
   have_func("getpeereid", headers)
 
@@ -451,7 +507,7 @@ EOF
   end
 
   ipv6 = false
-  default_ipv6 = /beos|haiku/ !~ RUBY_PLATFORM
+  default_ipv6 = /haiku/ !~ RUBY_PLATFORM
   if enable_config("ipv6", default_ipv6)
     if checking_for("ipv6") {try_link(AF_INET6_SOCKET_CREATION_TEST)}
       $defs << "-DENABLE_IPV6" << "-DINET6"
@@ -508,29 +564,16 @@ EOS
   case enable_config("wide-getaddrinfo")
   when true
     getaddr_info_ok = :wide
-  when nil
+  when nil, false
+    getaddr_info_ok = (:wide if getaddr_info_ok.nil?)
     if have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
-      getaddr_info_ok = :os
-      if !CROSS_COMPILING &&
-         !checking_for("system getaddrinfo working") {
+      if CROSS_COMPILING ||
+         $mingw || $mswin ||
+         checking_for("system getaddrinfo working") {
            try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)
          }
-        getaddr_info_ok = :wide
+        getaddr_info_ok = :os
       end
-    else
-      getaddr_info_ok = :wide
-    end
-  when false
-    if have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
-      getaddr_info_ok = :os
-      if !CROSS_COMPILING &&
-         !checking_for("system getaddrinfo working") {
-           try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)
-         }
-        getaddr_info_ok = nil
-      end
-    else
-      getaddr_info_ok = nil
     end
   else
     raise "unexpected enable_config() value"
@@ -613,7 +656,7 @@ EOS
 #include <netinet/in.h>
 int t(struct in6_addr *addr) {return IN6_IS_ADDR_UNSPECIFIED(addr);}
 SRC
-    print "fixing apple's netinet6/in6.rb ..."; $stdout.flush
+    print "fixing apple's netinet6/in6.h ..."; $stdout.flush
     in6 = File.read("/usr/include/#{hdr}")
     if in6.gsub!(/\*\(const\s+__uint32_t\s+\*\)\(const\s+void\s+\*\)\(&(\(\w+\))->s6_addr\[(\d+)\]\)/) do
         i, r = $2.to_i.divmod(4)

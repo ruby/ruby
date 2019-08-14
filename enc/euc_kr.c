@@ -188,7 +188,33 @@ OnigEncodingDefine(euc_kr, EUC_KR) = {
   onigenc_not_support_get_ctype_code_range,
   euckr_left_adjust_char_head,
   euckr_is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
 };
 ENC_ALIAS("eucKR", "EUC-KR")
+
+#ifndef RUBY
+/* Same with OnigEncodingEUC_KR except the name */
+OnigEncodingDefine(euc_cn, EUC_CN) = {
+  euckr_mbc_enc_len,
+  "EUC-CN",   /* name */
+  2,          /* max enc length */
+  1,          /* min enc length */
+  onigenc_is_mbc_newline_0x0a,
+  euckr_mbc_to_code,
+  onigenc_mb2_code_to_mbclen,
+  euckr_code_to_mbc,
+  euckr_mbc_case_fold,
+  onigenc_ascii_apply_all_case_fold,
+  onigenc_ascii_get_case_fold_codes_by_str,
+  onigenc_minimum_property_name_to_ctype,
+  euckr_is_code_ctype,
+  onigenc_not_support_get_ctype_code_range,
+  euckr_left_adjust_char_head,
+  euckr_is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
+  0,
+  ONIGENC_FLAG_NONE,
+};
+#endif /* RUBY */

@@ -1,6 +1,7 @@
-require "rss/0.9"
+# frozen_string_literal: false
+require_relative "../0.9"
 
-require "rss/maker/base"
+require_relative "base"
 
 module RSS
   module Maker
@@ -277,7 +278,7 @@ module RSS
             vars = super
             if @maker.feed_version == "0.91"
               vars << "title" unless title {|t| t.have_required_values?}
-              vars << "link" unless link {|l| l.have_required_values?}
+              vars << "link" unless link
             end
             vars
           end

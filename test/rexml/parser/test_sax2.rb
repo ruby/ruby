@@ -1,7 +1,9 @@
+# frozen_string_literal: false
 require "test/unit"
 require "rexml/parsers/sax2parser"
 require "rexml/sax2listener"
 
+module REXMLTests
 class TestSAX2Parser < Test::Unit::TestCase
   class TestDocumentTypeDeclaration < self
     private
@@ -197,4 +199,5 @@ class TestSAX2Parser < Test::Unit::TestCase
       end
     end
   end
+end
 end

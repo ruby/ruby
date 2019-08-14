@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'win32/importer'
 
 module Win32
@@ -66,6 +67,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
 
   WCHAR = Encoding::UTF_16LE
   WCHAR_NUL = "\0".encode(WCHAR).freeze
+  WCHAR_CR = "\r".encode(WCHAR).freeze
   WCHAR_SIZE = WCHAR_NUL.bytesize
   LOCALE = Encoding.find(Encoding.locale_charmap)
 
@@ -173,10 +175,20 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       FormatMessageW = Kernel32.extern "int FormatMessageW(int, void *, int, int, void *, int, void *)", :stdcall
       def initialize(code)
         @code = code
-        msg = WCHAR_NUL * 1024
-        len = FormatMessageW.call(0x1200, 0, code, 0, msg, 1024, 0)
-        msg = msg[0, len].encode(LOCALE)
-        super msg.tr("\r".encode(msg.encoding), '').chomp
+        buff = WCHAR_NUL * 1024
+        lang = 0
+        begin
+          len = FormatMessageW.call(0x1200, 0, code, lang, buff, 1024, 0)
+          msg = buff.byteslice(0, len * WCHAR_SIZE)
+          msg.delete!(WCHAR_CR)
+          msg.chomp!
+          msg.encode!(LOCALE)
+        rescue EncodingError
+          raise unless lang == 0
+          lang = 0x0409         # en_US
+          retry
+        end
+        super msg
       end
       attr_reader :code
     end
@@ -222,8 +234,8 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         "long RegEnumKeyExW(void *, long, void *, void *, void *, void *, void *, void *)",
         "long RegQueryValueExW(void *, void *, void *, void *, void *, void *)",
         "long RegSetValueExW(void *, void *, long, long, void *, long)",
-        "long RegDeleteValue(void *, void *)",
-        "long RegDeleteKey(void *, void *)",
+        "long RegDeleteValueW(void *, void *)",
+        "long RegDeleteKeyW(void *, void *)",
         "long RegFlushKey(void *)",
         "long RegCloseKey(void *)",
         "long RegQueryInfoKey(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)",
@@ -290,7 +302,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         name = WCHAR_NUL * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
         check RegEnumValueW.call(hkey, index, name, size, 0, 0, 0, 0)
-        name[0, unpackdw(size)]
+        name.byteslice(0, unpackdw(size) * WCHAR_SIZE)
       end
 
       def EnumKey(hkey, index)
@@ -298,7 +310,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         size = packdw(Constants::MAX_KEY_LENGTH)
         wtime = ' ' * 8
         check RegEnumKeyExW.call(hkey, index, name, size, 0, 0, 0, wtime)
-        [ name[0, unpackdw(size)], unpackqw(wtime) ]
+        [ name.byteslice(0, unpackdw(size) * WCHAR_SIZE), unpackqw(wtime) ]
       end
 
       def QueryValue(hkey, name)
@@ -315,17 +327,17 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         case type
         when REG_SZ, REG_EXPAND_SZ, REG_MULTI_SZ
           data = data.encode(WCHAR)
-          size ||= data.size + 1
+          size ||= data.bytesize + WCHAR_SIZE
         end
         check RegSetValueExW.call(hkey, make_wstr(name), 0, type, data, size)
       end
 
       def DeleteValue(hkey, name)
-        check RegDeleteValue.call(hkey, make_wstr(name))
+        check RegDeleteValueW.call(hkey, make_wstr(name))
       end
 
       def DeleteKey(hkey, name)
-        check RegDeleteKey.call(hkey, make_wstr(name))
+        check RegDeleteKeyW.call(hkey, make_wstr(name))
       end
 
       def FlushKey(hkey)
@@ -366,15 +378,16 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       }
     end
 
-    @@type2name = { }
-    %w[
+    @@type2name = %w[
       REG_NONE REG_SZ REG_EXPAND_SZ REG_BINARY REG_DWORD
       REG_DWORD_BIG_ENDIAN REG_LINK REG_MULTI_SZ
       REG_RESOURCE_LIST REG_FULL_RESOURCE_DESCRIPTOR
       REG_RESOURCE_REQUIREMENTS_LIST REG_QWORD
-    ].each do |type|
-      @@type2name[Constants.const_get(type)] = type
-    end
+    ].inject([]) do |ary, type|
+      type.freeze
+      ary[Constants.const_get(type)] = type
+      ary
+    end.freeze
 
     #
     # Convert registry type value to readable string.
@@ -562,9 +575,9 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         begin
           type, data = read(subkey)
         rescue Error
-          next
+        else
+          yield subkey, type, data
         end
-        yield subkey, type, data
         index += 1
       end
       index
@@ -622,7 +635,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     #    Array of String
     # :REG_DWORD, REG_DWORD_BIG_ENDIAN, REG_QWORD
     #    Integer
-    # :REG_BINARY
+    # :REG_BINARY, REG_NONE
     #    String (contains binary data)
     #
     # When rtype is specified, the value type must be included by
@@ -630,14 +643,16 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     def read(name, *rtype)
       type, data = API.QueryValue(@hkey, name)
       unless rtype.empty? or rtype.include?(type)
-        raise TypeError, "Type mismatch (expect #{rtype.inspect} but #{type} present)"
+        raise TypeError, "Type mismatch (expect [#{
+          rtype.map{|t|Registry.type2name(t)}.join(', ')}] but #{
+          Registry.type2name(type)} present)"
       end
       case type
       when REG_SZ, REG_EXPAND_SZ
         [ type, data.encode(name.encoding, WCHAR).chop ]
       when REG_MULTI_SZ
         [ type, data.encode(name.encoding, WCHAR).split(/\0/) ]
-      when REG_BINARY
+      when REG_BINARY, REG_NONE
         [ type, data ]
       when REG_DWORD
         [ type, API.unpackdw(data) ]
@@ -646,7 +661,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       when REG_QWORD
         [ type, API.unpackqw(data) ]
       else
-        raise TypeError, "Type #{type} is not supported."
+        raise TypeError, "Type #{Registry.type2name(type)} is not supported."
       end
     end
 
@@ -669,7 +684,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       when REG_EXPAND_SZ
         Registry.expand_environ(data)
       else
-        raise TypeError, "Type #{type} is not supported."
+        raise TypeError, "Type #{Registry.type2name(type)} is not supported."
       end
     end
 
@@ -733,7 +748,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       when REG_MULTI_SZ
         data = data.to_a.map {|s| s.encode(WCHAR)}.join(WCHAR_NUL) << WCHAR_NUL
         termsize = WCHAR_SIZE
-      when REG_BINARY
+      when REG_BINARY, REG_NONE
         data = data.to_s
       when REG_DWORD
         data = API.packdw(data.to_i)
@@ -742,7 +757,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       when REG_QWORD
         data = API.packqw(data.to_i)
       else
-        raise TypeError, "Unsupported type #{type}"
+        raise TypeError, "Unsupported type #{Registry.type2name(type)}"
       end
       API.SetValue(@hkey, name, type, data, data.bytesize + termsize)
     end

@@ -1,5 +1,9 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'matrix'
+
+class SubMatrix < Matrix
+end
 
 class TestMatrix < Test::Unit::TestCase
   def setup
@@ -8,6 +12,12 @@ class TestMatrix < Test::Unit::TestCase
     @m3 = @m1.clone
     @m4 = Matrix[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
     @n1 = Matrix[[2,3,4], [5,6,7]]
+    @c1 = Matrix[[Complex(1,2), Complex(0,1), 0], [1, 2, 3]]
+    @e1 = Matrix.empty(2,0)
+    @e2 = Matrix.empty(0,3)
+    @a3  = Matrix[[4, 1, -3], [0, 3, 7], [11, -4, 2]]
+    @a5  = Matrix[[2, 0, 9, 3, 9], [8, 7, 0, 1, 9], [7, 5, 6, 6, 5], [0, 7, 8, 3, 0], [7, 8, 2, 3, 1]]
+    @b3  = Matrix[[-7, 7, -10], [9, -3, -2], [-1, 3, 9]]
   end
 
   def test_matrix
@@ -54,6 +64,15 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal @m1.hash, @m1.hash
     assert_equal @m1.hash, @m2.hash
     assert_equal @m1.hash, @m3.hash
+  end
+
+  def test_uplus
+    assert_equal(@m1, +@m1)
+  end
+
+  def test_negate
+    assert_equal(Matrix[[-1, -2, -3], [-4, -5, -6]], -@m1)
+    assert_equal(@m1, -(-@m1))
   end
 
   def test_rank
@@ -155,12 +174,17 @@ class TestMatrix < Test::Unit::TestCase
   end
 
   def test_inverse
+    assert_equal(Matrix.empty(0, 0), Matrix.empty.inverse)
     assert_equal(Matrix[[-1, 1], [0, -1]], Matrix[[-1, -1], [0, -1]].inverse)
+    assert_raise(ExceptionForMatrix::ErrDimensionMismatch) { @m1.inverse }
   end
 
   def test_determinant
+    assert_equal(0, Matrix[[0,0],[0,0]].determinant)
     assert_equal(45, Matrix[[7,6], [3,9]].determinant)
     assert_equal(-18, Matrix[[2,0,1],[0,-2,2],[1,2,3]].determinant)
+    assert_equal(-7, Matrix[[0,0,1],[0,7,6],[1,3,9]].determinant)
+    assert_equal(42, Matrix[[7,0,1,0,12],[8,1,1,9,1],[4,0,0,-7,17],[-1,0,0,-4,8],[10,1,1,8,6]].determinant)
   end
 
   def test_new_matrix
@@ -170,8 +194,32 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal(@m1, Matrix[o, [4,5,6]])
   end
 
+  def test_round
+    a = Matrix[[1.0111, 2.32320, 3.04343], [4.81, 5.0, 6.997]]
+    b = Matrix[[1.01, 2.32, 3.04], [4.81, 5.0, 7.0]]
+    assert_equal(a.round(2), b)
+  end
+
   def test_rows
     assert_equal(@m1, Matrix.rows([[1, 2, 3], [4, 5, 6]]))
+  end
+
+  def test_rows_copy
+    rows1 = [[1], [1]]
+    rows2 = [[1], [1]]
+
+    m1 = Matrix.rows(rows1, copy = false)
+    m2 = Matrix.rows(rows2, copy = true)
+
+    rows1.uniq!
+    rows2.uniq!
+
+    assert_equal([[1]],      m1.to_a)
+    assert_equal([[1], [1]], m2.to_a)
+  end
+
+  def test_to_matrix
+    assert @m1.equal? @m1.to_matrix
   end
 
   def test_columns
@@ -179,11 +227,13 @@ class TestMatrix < Test::Unit::TestCase
   end
 
   def test_diagonal
+    assert_equal(Matrix.empty(0, 0), Matrix.diagonal( ))
     assert_equal(Matrix[[3,0,0],[0,2,0],[0,0,1]], Matrix.diagonal(3, 2, 1))
     assert_equal(Matrix[[4,0,0,0],[0,3,0,0],[0,0,2,0],[0,0,0,1]], Matrix.diagonal(4, 3, 2, 1))
   end
 
   def test_scalar
+    assert_equal(Matrix.empty(0, 0), Matrix.scalar(0, 1))
     assert_equal(Matrix[[2,0,0],[0,2,0],[0,0,2]], Matrix.scalar(3, 2))
     assert_equal(Matrix[[2,0,0,0],[0,2,0,0],[0,0,2,0],[0,0,0,2]], Matrix.scalar(4, 2))
   end
@@ -233,7 +283,18 @@ class TestMatrix < Test::Unit::TestCase
   end
 
   def test_collect
-    assert_equal(Matrix[[1, 4, 9], [16, 25, 36]], @m1.collect {|x| x ** 2 })
+    m1 = Matrix.zero(2,2)
+    m2 = Matrix.build(3,4){|row, col| 1}
+
+    assert_equal(Matrix[[5, 5, 5, 5], [5, 5, 5, 5], [5, 5, 5, 5]], m2.collect{|e| e * 5})
+    assert_equal(Matrix[[7, 0],[0, 7]], m1.collect(:diagonal){|e| e + 7})
+    assert_equal(Matrix[[0, 5],[5, 0]], m1.collect(:off_diagonal){|e| e + 5})
+    assert_equal(Matrix[[8, 1, 1, 1], [8, 8, 1, 1], [8, 8, 8, 1]], m2.collect(:lower){|e| e + 7})
+    assert_equal(Matrix[[1, 1, 1, 1], [-11, 1, 1, 1], [-11, -11, 1, 1]], m2.collect(:strict_lower){|e| e - 12})
+    assert_equal(Matrix[[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], m2.collect(:strict_upper){|e| e ** 2})
+    assert_equal(Matrix[[-1, -1, -1, -1], [1, -1, -1, -1], [1, 1, -1, -1]], m2.collect(:upper){|e| -e})
+    assert_raise(ArgumentError) {m1.collect(:test){|e| e + 7}}
+    assert_not_equal(m2, m2.collect {|e| e * 2 })
   end
 
   def test_minor
@@ -244,6 +305,59 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal(Matrix[[4, 5]], @m1.minor(1, 1, 0, 2))
     assert_equal(Matrix[[2], [5]], @m1.minor(0, 2, 1, 1))
     assert_raise(ArgumentError) { @m1.minor(0) }
+  end
+
+  def test_first_minor
+    assert_equal(Matrix.empty(0, 0), Matrix[[1]].first_minor(0, 0))
+    assert_equal(Matrix.empty(0, 2), Matrix[[1, 4, 2]].first_minor(0, 1))
+    assert_equal(Matrix[[1, 3]], @m1.first_minor(1, 1))
+    assert_equal(Matrix[[4, 6]], @m1.first_minor(0, 1))
+    assert_equal(Matrix[[1, 2]], @m1.first_minor(1, 2))
+    assert_raise(RuntimeError) { Matrix.empty(0, 0).first_minor(0, 0) }
+    assert_raise(ArgumentError) { @m1.first_minor(4, 0) }
+    assert_raise(ArgumentError) { @m1.first_minor(0, -1) }
+    assert_raise(ArgumentError) { @m1.first_minor(-1, 4) }
+  end
+
+  def test_cofactor
+    assert_equal(1, Matrix[[1]].cofactor(0, 0))
+    assert_equal(9, Matrix[[7,6],[3,9]].cofactor(0, 0))
+    assert_equal(0, Matrix[[0,0],[0,0]].cofactor(0, 0))
+    assert_equal(3, Matrix[[0,0,1],[0,7,6],[1,3,9]].cofactor(1, 0))
+    assert_equal(-21, Matrix[[7,0,1,0,12],[8,1,1,9,1],[4,0,0,-7,17],[-1,0,0,-4,8],[10,1,1,8,6]].cofactor(2, 3))
+    assert_raise(RuntimeError) { Matrix.empty(0, 0).cofactor(0, 0) }
+    assert_raise(ArgumentError) { Matrix[[0,0],[0,0]].cofactor(-1, 4) }
+    assert_raise(ExceptionForMatrix::ErrDimensionMismatch) { Matrix[[2,0,1],[0,-2,2]].cofactor(0, 0) }
+  end
+
+  def test_adjugate
+    assert_equal(Matrix.empty, Matrix.empty.adjugate)
+    assert_equal(Matrix[[1]], Matrix[[5]].adjugate)
+    assert_equal(Matrix[[9,-6],[-3,7]], Matrix[[7,6],[3,9]].adjugate)
+    assert_equal(Matrix[[45,3,-7],[6,-1,0],[-7,0,0]], Matrix[[0,0,1],[0,7,6],[1,3,9]].adjugate)
+    assert_equal(Matrix.identity(5), (@a5.adjugate * @a5) / @a5.det)
+    assert_equal(Matrix.I(3), Matrix.I(3).adjugate)
+    assert_equal((@a3 * @b3).adjugate, @b3.adjugate * @a3.adjugate)
+    assert_equal(4**(@a3.row_count-1) * @a3.adjugate, (4 * @a3).adjugate)
+    assert_raise(ExceptionForMatrix::ErrDimensionMismatch) { @m1.adjugate }
+  end
+
+  def test_laplace_expansion
+    assert_equal(1, Matrix[[1]].laplace_expansion(row: 0))
+    assert_equal(45, Matrix[[7,6], [3,9]].laplace_expansion(row: 1))
+    assert_equal(0, Matrix[[0,0],[0,0]].laplace_expansion(column: 0))
+    assert_equal(-7, Matrix[[0,0,1],[0,7,6],[1,3,9]].laplace_expansion(column: 2))
+
+    assert_equal(Vector[3, -2], Matrix[[Vector[1, 0], Vector[0, 1]], [2, 3]].laplace_expansion(row: 0))
+
+    assert_raise(ExceptionForMatrix::ErrDimensionMismatch) { @m1.laplace_expansion(row: 1) }
+    assert_raise(ArgumentError) { Matrix[[7,6], [3,9]].laplace_expansion() }
+    assert_raise(ArgumentError) { Matrix[[7,6], [3,9]].laplace_expansion(foo: 1) }
+    assert_raise(ArgumentError) { Matrix[[7,6], [3,9]].laplace_expansion(row: 1, column: 1) }
+    assert_raise(ArgumentError) { Matrix[[7,6], [3,9]].laplace_expansion(row: 2) }
+    assert_raise(ArgumentError) { Matrix[[0,0,1],[0,7,6],[1,3,9]].laplace_expansion(column: -1) }
+
+    assert_raise(RuntimeError) { Matrix.empty(0, 0).laplace_expansion(row: 0) }
   end
 
   def test_regular?
@@ -315,6 +429,20 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal(Matrix[[1,1],[1,1]], Matrix[[2,2],[2,2]] / o)
   end
 
+  def test_hadamard_product
+    assert_equal(Matrix[[1,4], [9,16]], Matrix[[1,2], [3,4]].hadamard_product(Matrix[[1,2], [3,4]]))
+    assert_equal(Matrix[[2, 6, 12], [20, 30, 42]], @m1.hadamard_product(@n1))
+    o = Object.new
+    def o.to_matrix
+      Matrix[[1, 2, 3], [-1, 0, 1]]
+    end
+    assert_equal(Matrix[[1, 4, 9], [-4, 0, 6]], @m1.hadamard_product(o))
+    e = Matrix.empty(3, 0)
+    assert_equal(e, e.hadamard_product(e))
+    e = Matrix.empty(0, 3)
+    assert_equal(e, e.hadamard_product(e))
+  end
+
   def test_exp
     assert_equal(Matrix[[67,96],[48,99]], Matrix[[7,6],[3,9]] ** 2)
     assert_equal(Matrix.I(5), Matrix.I(5) ** -1)
@@ -322,10 +450,7 @@ class TestMatrix < Test::Unit::TestCase
   end
 
   def test_det
-    assert_equal(45, Matrix[[7,6],[3,9]].det)
-    assert_equal(0, Matrix[[0,0],[0,0]].det)
-    assert_equal(-7, Matrix[[0,0,1],[0,7,6],[1,3,9]].det)
-    assert_equal(42, Matrix[[7,0,1,0,12],[8,1,1,9,1],[4,0,0,-7,17],[-1,0,0,-4,8],[10,1,1,8,6]].det)
+    assert_equal(Matrix.instance_method(:determinant), Matrix.instance_method(:det))
   end
 
   def test_rank2
@@ -342,6 +467,40 @@ class TestMatrix < Test::Unit::TestCase
 
   def test_transpose
     assert_equal(Matrix[[1,4],[2,5],[3,6]], @m1.transpose)
+  end
+
+  def test_conjugate
+    assert_equal(Matrix[[Complex(1,-2), Complex(0,-1), 0], [1, 2, 3]], @c1.conjugate)
+  end
+
+  def test_eigensystem
+    m = Matrix[[1, 2], [3, 4]]
+    v, d, v_inv = m.eigensystem
+    assert(d.diagonal?)
+    assert_equal(v.inv, v_inv)
+    assert_equal((v * d * v_inv).round(5), m)
+  end
+
+  def test_imaginary
+    assert_equal(Matrix[[2, 1, 0], [0, 0, 0]], @c1.imaginary)
+  end
+
+  def test_lup
+    m = Matrix[[1, 2], [3, 4]]
+    l, u, p = m.lup
+    assert(l.lower_triangular?)
+    assert(u.upper_triangular?)
+    assert(p.permutation?)
+    assert(l * u == p * m)
+    assert_equal(m.lup.solve([2, 5]), Vector[1, Rational(1,2)])
+  end
+
+  def test_real
+    assert_equal(Matrix[[1, 0, 0], [1, 2, 3]], @c1.real)
+  end
+
+  def test_rect
+    assert_equal([Matrix[[1, 0, 0], [1, 2, 3]], Matrix[[2, 1, 0], [0, 0, 0]]], @c1.rect)
   end
 
   def test_row_vectors
@@ -422,5 +581,210 @@ class TestMatrix < Test::Unit::TestCase
       [1, 1]
     end
     assert_equal(1, s1 ** o)
+  end
+
+  def test_hstack
+    assert_equal Matrix[[1,2,3,2,3,4,1,2,3], [4,5,6,5,6,7,4,5,6]],
+      @m1.hstack(@n1, @m1)
+    # Error checking:
+    assert_raise(TypeError) { @m1.hstack(42) }
+    assert_raise(TypeError) { Matrix.hstack(42, @m1) }
+    assert_raise(Matrix::ErrDimensionMismatch) { @m1.hstack(Matrix.identity(3)) }
+    assert_raise(Matrix::ErrDimensionMismatch) { @e1.hstack(@e2) }
+    # Corner cases:
+    assert_equal @m1, @m1.hstack
+    assert_equal @e1, @e1.hstack(@e1)
+    assert_equal Matrix.empty(0,6), @e2.hstack(@e2)
+    assert_equal SubMatrix, SubMatrix.hstack(@e1).class
+    # From Vectors:
+    assert_equal Matrix[[1, 3],[2, 4]], Matrix.hstack(Vector[1,2], Vector[3, 4])
+  end
+
+  def test_vstack
+    assert_equal Matrix[[1,2,3], [4,5,6], [2,3,4], [5,6,7], [1,2,3], [4,5,6]],
+      @m1.vstack(@n1, @m1)
+    # Error checking:
+    assert_raise(TypeError) { @m1.vstack(42) }
+    assert_raise(TypeError) { Matrix.vstack(42, @m1) }
+    assert_raise(Matrix::ErrDimensionMismatch) { @m1.vstack(Matrix.identity(2)) }
+    assert_raise(Matrix::ErrDimensionMismatch) { @e1.vstack(@e2) }
+    # Corner cases:
+    assert_equal @m1, @m1.vstack
+    assert_equal Matrix.empty(4,0), @e1.vstack(@e1)
+    assert_equal @e2, @e2.vstack(@e2)
+    assert_equal SubMatrix, SubMatrix.vstack(@e1).class
+    # From Vectors:
+    assert_equal Matrix[[1],[2],[3]], Matrix.vstack(Vector[1,2], Vector[3])
+  end
+
+  def test_combine
+    x = Matrix[[6, 6], [4, 4]]
+    y = Matrix[[1, 2], [3, 4]]
+    assert_equal Matrix[[5, 4], [1, 0]], Matrix.combine(x, y) {|a, b| a - b}
+    assert_equal Matrix[[5, 4], [1, 0]], x.combine(y) {|a, b| a - b}
+    # Without block
+    assert_equal Matrix[[5, 4], [1, 0]], Matrix.combine(x, y).each {|a, b| a - b}
+    # With vectors
+    assert_equal Matrix[[111], [222]], Matrix.combine(Matrix[[1], [2]], Vector[10,20], Vector[100,200], &:sum)
+    # Basic checks
+    assert_raise(Matrix::ErrDimensionMismatch) { @m1.combine(x) { raise } }
+    # Edge cases
+    assert_equal Matrix.empty, Matrix.combine{ raise }
+    assert_equal Matrix.empty(3,0), Matrix.combine(Matrix.empty(3,0), Matrix.empty(3,0)) { raise }
+    assert_equal Matrix.empty(0,3), Matrix.combine(Matrix.empty(0,3), Matrix.empty(0,3)) { raise }
+  end
+
+  def test_set_element
+    src = Matrix[
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ]
+    rows = {
+      range:   [1..2, 1...3, 1..-1, -2..2, 1.., 1..., -2.., -2...],
+      int:     [2, -1],
+      invalid: [-4, 4, -4..2, 2..-4, 0...0, 2..0, -4..],
+    }
+    columns = {
+      range:   [2..3, 2...4, 2..-1, -2..3, 2.., 2..., -2..., -2..],
+      int:     [3, -1],
+      invalid: [-5, 5, -5..2, 2..-5, 0...0, -5..],
+    }
+    values = {
+      element: 42,
+      matrix:  Matrix[[20, 21], [22, 23]],
+      vector:  Vector[30, 31],
+      row:     Matrix[[60, 61]],
+      column:  Matrix[[50], [51]],
+      mismatched_matrix: Matrix.identity(3),
+      mismatched_vector: Vector[0, 1, 2, 3],
+    }
+    solutions = {
+      [:int, :int] => {
+        element: Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 42]],
+      },
+      [:range , :int] => {
+        element: Matrix[[1, 2, 3, 4], [5, 6, 7, 42], [9, 10, 11, 42]],
+        column:  Matrix[[1, 2, 3, 4], [5, 6, 7, 50], [9, 10, 11, 51]],
+        vector:  Matrix[[1, 2, 3, 4], [5, 6, 7, 30], [9, 10, 11, 31]],
+      },
+      [:int, :range] => {
+        element: Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 42, 42]],
+        row:     Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 60, 61]],
+        vector:  Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 30, 31]],
+      },
+      [:range , :range] => {
+        element: Matrix[[1, 2, 3, 4], [5, 6, 42, 42], [9, 10, 42, 42]],
+        matrix:  Matrix[[1, 2, 3, 4], [5, 6, 20, 21], [9, 10, 22, 23]],
+      },
+    }
+    solutions.default = Hash.new(IndexError)
+
+    rows.each do |row_style, row_arguments|
+      row_arguments.each do |row_argument|
+        columns.each do |column_style, column_arguments|
+          column_arguments.each do |column_argument|
+            values.each do |value_type, value|
+              expected = solutions[[row_style, column_style]][value_type] || Matrix::ErrDimensionMismatch
+
+              result = src.clone
+              begin
+                result[row_argument, column_argument] = value
+                assert_equal expected, result,
+                  "m[#{row_argument.inspect}][#{column_argument.inspect}] = #{value.inspect} failed"
+              rescue Exception => e
+                raise if e.class != expected
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  def test_map!
+    m1 = Matrix.zero(2,2)
+    m2 = Matrix.build(3,4){|row, col| 1}
+    m3 = Matrix.zero(3,5).freeze
+    m4 = Matrix.empty.freeze
+
+    assert_equal Matrix[[5, 5, 5, 5], [5, 5, 5, 5], [5, 5, 5, 5]], m2.map!{|e| e * 5}
+    assert_equal Matrix[[7, 0],[0, 7]], m1.map!(:diagonal){|e| e + 7}
+    assert_equal Matrix[[7, 5],[5, 7]], m1.map!(:off_diagonal){|e| e + 5}
+    assert_equal Matrix[[12, 5, 5, 5], [12, 12, 5, 5], [12, 12, 12, 5]], m2.map!(:lower){|e| e + 7}
+    assert_equal Matrix[[12, 5, 5, 5], [0, 12, 5, 5], [0, 0, 12, 5]], m2.map!(:strict_lower){|e| e - 12}
+    assert_equal Matrix[[12, 25, 25, 25], [0, 12, 25, 25], [0, 0, 12, 25]], m2.map!(:strict_upper){|e| e ** 2}
+    assert_equal Matrix[[-12, -25, -25, -25], [0, -12, -25, -25], [0, 0, -12, -25]], m2.map!(:upper){|e| -e}
+    assert_equal m1, m1.map!{|e| e ** 2 }
+    assert_equal m2, m2.map!(:lower){ |e| e - 3 }
+    assert_raise(ArgumentError) {m1.map!(:test){|e| e + 7}}
+    assert_raise(FrozenError) { m3.map!{|e| e * 2} }
+    assert_raise(FrozenError) { m4.map!{} }
+  end
+
+  def test_freeze
+    m = Matrix[[1, 2, 3],[4, 5, 6]]
+    f = m.freeze
+    assert_equal true, f.frozen?
+    assert m.equal?(f)
+    assert m.equal?(f.freeze)
+    assert_raise(FrozenError){ m[0, 1] = 56 }
+    assert_equal m.dup, m
+  end
+
+  def test_clone
+    a = Matrix[[4]]
+    def a.foo
+      42
+    end
+
+    m = a.clone
+    m[0, 0] = 2
+    assert_equal a, m * 2
+    assert_equal 42, m.foo
+
+    a.freeze
+    m = a.clone
+    assert m.frozen?
+    assert_equal 42, m.foo
+  end
+
+  def test_dup
+    a = Matrix[[4]]
+    def a.foo
+      42
+    end
+    a.freeze
+
+    m = a.dup
+    m[0, 0] = 2
+    assert_equal a, m * 2
+    assert !m.respond_to?(:foo)
+  end
+
+  def test_eigenvalues_and_eigenvectors_symmetric
+    m = Matrix[
+      [8, 1],
+      [1, 8]
+    ]
+    values = m.eigensystem.eigenvalues
+    assert_in_epsilon(7.0, values[0])
+    assert_in_epsilon(9.0, values[1])
+    vectors = m.eigensystem.eigenvectors
+    assert_in_epsilon(-vectors[0][0], vectors[0][1])
+    assert_in_epsilon(vectors[1][0], vectors[1][1])
+  end
+
+  def test_eigenvalues_and_eigenvectors_nonsymmetric
+    m = Matrix[
+      [8, 1],
+      [4, 5]
+    ]
+    values = m.eigensystem.eigenvalues
+    assert_in_epsilon(9.0, values[0])
+    assert_in_epsilon(4.0, values[1])
+    vectors = m.eigensystem.eigenvectors
+    assert_in_epsilon(vectors[0][0], vectors[0][1])
+    assert_in_epsilon(-4 * vectors[1][0], vectors[1][1])
   end
 end

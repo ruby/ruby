@@ -1,4 +1,5 @@
-require 'cgi/util'
+# frozen_string_literal: true
+require_relative 'util'
 class CGI
   # Class representing an HTTP cookie.
   #
@@ -10,29 +11,32 @@ class CGI
   # == Examples of use
   #   cookie1 = CGI::Cookie.new("name", "value1", "value2", ...)
   #   cookie1 = CGI::Cookie.new("name" => "name", "value" => "value")
-  #   cookie1 = CGI::Cookie.new('name'    => 'name',
-  #                              'value'   => ['value1', 'value2', ...],
-  #                              'path'    => 'path',   # optional
-  #                              'domain'  => 'domain', # optional
-  #                              'expires' => Time.now, # optional
-  #                              'secure'  => true      # optional
+  #   cookie1 = CGI::Cookie.new('name'     => 'name',
+  #                             'value'    => ['value1', 'value2', ...],
+  #                             'path'     => 'path',   # optional
+  #                             'domain'   => 'domain', # optional
+  #                             'expires'  => Time.now, # optional
+  #                             'secure'   => true,     # optional
+  #                             'httponly' => true      # optional
   #                             )
   #
   #   cgi.out("cookie" => [cookie1, cookie2]) { "string" }
   #
-  #   name    = cookie1.name
-  #   values  = cookie1.value
-  #   path    = cookie1.path
-  #   domain  = cookie1.domain
-  #   expires = cookie1.expires
-  #   secure  = cookie1.secure
+  #   name     = cookie1.name
+  #   values   = cookie1.value
+  #   path     = cookie1.path
+  #   domain   = cookie1.domain
+  #   expires  = cookie1.expires
+  #   secure   = cookie1.secure
+  #   httponly = cookie1.httponly
   #
-  #   cookie1.name    = 'name'
-  #   cookie1.value   = ['value1', 'value2', ...]
-  #   cookie1.path    = 'path'
-  #   cookie1.domain  = 'domain'
-  #   cookie1.expires = Time.now + 30
-  #   cookie1.secure  = true
+  #   cookie1.name     = 'name'
+  #   cookie1.value    = ['value1', 'value2', ...]
+  #   cookie1.path     = 'path'
+  #   cookie1.domain   = 'domain'
+  #   cookie1.expires  = Time.now + 30
+  #   cookie1.secure   = true
+  #   cookie1.httponly = true
   class Cookie < Array
     @@accept_charset="UTF-8" unless defined?(@@accept_charset)
 
@@ -53,13 +57,15 @@ class CGI
     #
     #   name:: the name of the cookie.  Required.
     #   value:: the cookie's value or list of values.
-    #   path:: the path for which this cookie applies.  Defaults to the
+    #   path:: the path for which this cookie applies.  Defaults to
     #          the value of the +SCRIPT_NAME+ environment variable.
     #   domain:: the domain for which this cookie applies.
     #   expires:: the time at which this cookie expires, as a +Time+ object.
     #   secure:: whether this cookie is a secure cookie or not (default to
     #            false).  Secure cookies are only transmitted to HTTPS
     #            servers.
+    #   httponly:: whether this cookie is a HttpOnly cookie or not (default to
+    #            false).  HttpOnly cookies are not available to javascript.
     #
     #   These keywords correspond to attributes of the cookie object.
     def initialize(name = "", *value)
@@ -70,6 +76,7 @@ class CGI
         %r|^(.*/)|.match(ENV["SCRIPT_NAME"])
         @path = ($1 or "")
         @secure = false
+        @httponly = false
         return super(value)
       end
 
@@ -89,7 +96,8 @@ class CGI
       end
       @domain = options["domain"]
       @expires = options["expires"]
-      @secure = options["secure"] == true ? true : false
+      @secure = options["secure"] == true
+      @httponly = options["httponly"] == true
 
       super(value)
     end
@@ -103,7 +111,9 @@ class CGI
     # Time at which this cookie expires, as a +Time+
     attr_accessor :expires
     # True if this cookie is secure; false otherwise
-    attr_reader("secure")
+    attr_reader :secure
+    # True if this cookie is httponly; false otherwise
+    attr_reader :httponly
 
     # Returns the value or list of values for this cookie.
     def value
@@ -123,14 +133,22 @@ class CGI
       @secure
     end
 
+    # Set whether the Cookie is a httponly cookie or not.
+    #
+    # +val+ must be a boolean.
+    def httponly=(val)
+      @httponly = !!val
+    end
+
     # Convert the Cookie to its string representation.
     def to_s
       val = collect{|v| CGI.escape(v) }.join("&")
-      buf = "#{@name}=#{val}"
+      buf = "#{@name}=#{val}".dup
       buf << "; domain=#{@domain}" if @domain
       buf << "; path=#{@path}"     if @path
-      buf << "; expires=#{CGI::rfc1123_date(@expires)}" if @expires
-      buf << "; secure"            if @secure == true
+      buf << "; expires=#{CGI.rfc1123_date(@expires)}" if @expires
+      buf << "; secure"            if @secure
+      buf << "; HttpOnly"          if @httponly
       buf
     end
 
@@ -144,7 +162,7 @@ class CGI
       cookies = Hash.new([])
       return cookies unless raw_cookie
 
-      raw_cookie.split(/[;,]\s?/).each do |pairs|
+      raw_cookie.split(/;\s?/).each do |pairs|
         name, values = pairs.split('=',2)
         next unless name and values
         name = CGI.unescape(name)

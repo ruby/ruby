@@ -1,7 +1,8 @@
-require 'rexml/parsers/baseparser'
-require 'rexml/parseexception'
-require 'rexml/namespace'
-require 'rexml/text'
+# frozen_string_literal: false
+require_relative 'baseparser'
+require_relative '../parseexception'
+require_relative '../namespace'
+require_relative '../text'
 
 module REXML
   module Parsers
@@ -229,7 +230,6 @@ module REXML
       def get_procs( symbol, name )
         return nil if @procs.size == 0
         @procs.find_all do |sym, match, block|
-          #puts sym.inspect+"=="+symbol.inspect+ "\t"+match.inspect+"=="+name.inspect+ "\t"+( (sym.nil? or symbol == sym) and ((name.nil? and match.nil?) or match.nil? or ( (name == match) or (match.kind_of? Regexp and name =~ match)))).to_s
           (
             (sym.nil? or symbol == sym) and
             ((name.nil? and match.nil?) or match.nil? or (

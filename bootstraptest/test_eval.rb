@@ -109,7 +109,7 @@ assert_equal %q{foo}, %q{
   }
 }
 assert_equal %q{1}, %q{
-  class Fixnum
+  class Integer
     Const = 1
   end
   1.instance_eval %{

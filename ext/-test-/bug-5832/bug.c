@@ -7,7 +7,7 @@ bug_funcall_callback(VALUE self, VALUE obj)
 }
 
 void
-Init_bug(void)
+Init_bug_5832(void)
 {
     VALUE mBug = rb_define_module("Bug");
     rb_define_module_function(mBug, "funcall_callback", bug_funcall_callback, 1);

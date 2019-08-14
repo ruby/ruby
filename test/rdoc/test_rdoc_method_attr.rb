@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require File.expand_path '../xref_test_case', __FILE__
 
 class TestRDocMethodAttr < XrefTestCase
@@ -7,7 +8,6 @@ class TestRDocMethodAttr < XrefTestCase
   end
 
   def test_block_params_equal
-
     m = RDoc::MethodAttr.new(nil, 'foo')
 
     m.block_params = ''
@@ -148,9 +148,40 @@ class TestRDocMethodAttr < XrefTestCase
     assert_equal expected, @c1_m.search_record
   end
 
+  def test_spaceship
+    assert_nil @c1_m.<=>(RDoc::CodeObject.new)
+  end
+
   def test_equals2
     assert_equal @c1_m, @c1_m
     refute_equal @c1_m, @parent_m
+  end
+
+  def test_pretty_print
+    temp_dir do |tmpdir|
+      s = RDoc::RI::Store.new tmpdir
+      s.rdoc = @rdoc
+
+      top_level = s.add_file 'file.rb'
+      meth_bang = RDoc::AnyMethod.new nil, 'method!'
+      meth_bang.record_location top_level
+
+      meth_bang_alias = RDoc::Alias.new nil, 'method!', 'method_bang', ''
+      meth_bang_alias.record_location top_level
+
+      klass = top_level.add_class RDoc::NormalClass, 'Object'
+      klass.add_method meth_bang
+
+      meth_bang.add_alias meth_bang_alias, klass
+
+      s.save
+
+      meth_alias_from_store = s.load_method 'Object', '#method_bang'
+
+      expected = "[RDoc::AnyMethod Object#method_bang public alias for method!]"
+      actual =  mu_pp meth_alias_from_store
+      assert_equal expected, actual
+    end
   end
 
   def test_to_s

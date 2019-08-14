@@ -22,7 +22,7 @@ constant_arg(VALUE arg, int (*str_to_int)(const char*, long, int*), const char *
     int ret;
 
     if (SYMBOL_P(arg)) {
-        arg = rb_sym_to_s(arg);
+        arg = rb_sym2str(arg);
         goto str;
     }
     else if (!NIL_P(tmp = rb_check_string_type(arg))) {

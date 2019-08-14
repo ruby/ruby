@@ -1,7 +1,7 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
-require "thread"
-require_relative 'envutil'
+require "-test-/file"
 require_relative 'ut_eof'
 
 class TestFile < Test::Unit::TestCase
@@ -87,7 +87,7 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_bom_32le
-    assert_bom(["\xFF\xFE\0", "\0"], __method__)
+    assert_bom(["\xFF", "\xFE\0\0"], __method__)
   end
 
   def test_truncate_wbuf
@@ -121,10 +121,10 @@ class TestFile < Test::Unit::TestCase
 
   def test_truncate_size
     Tempfile.create("test-truncate") do |f|
-      q1 = Queue.new
-      q2 = Queue.new
+      q1 = Thread::Queue.new
+      q2 = Thread::Queue.new
 
-      Thread.new do
+      th = Thread.new do
         data = ''
         64.times do |i|
           data << i.to_s
@@ -142,6 +142,7 @@ class TestFile < Test::Unit::TestCase
         assert_equal size, f.size
         q2.push true
       end
+      th.join
     end
   end
 
@@ -258,6 +259,58 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
+  def test_realpath_encoding
+    fsenc = Encoding.find("filesystem")
+    nonascii = "\u{0391 0410 0531 10A0 05d0 2C00 3042}"
+    tst = "A"
+    nonascii.each_char {|c| tst << c.encode(fsenc) rescue nil}
+    Dir.mktmpdir('rubytest-realpath') {|tmpdir|
+      realdir = File.realpath(tmpdir)
+      open(File.join(tmpdir, tst), "w") {}
+      a = File.join(tmpdir, "x")
+      begin
+        File.symlink(tst, a)
+      rescue Errno::EACCES, Errno::EPERM
+        skip "need privilege"
+      end
+      assert_equal(File.join(realdir, tst), File.realpath(a))
+      File.unlink(a)
+
+      tst = "A" + nonascii
+      open(File.join(tmpdir, tst), "w") {}
+      File.symlink(tst, a)
+      assert_equal(File.join(realdir, tst), File.realpath(a.encode("UTF-8")))
+    }
+  end
+
+  def test_realpath_taintedness
+    Dir.mktmpdir('rubytest-realpath') {|tmpdir|
+      dir = File.realpath(tmpdir).untaint
+      File.write(File.join(dir, base = "test.file"), '')
+      base.taint
+      dir.taint
+      assert_predicate(File.realpath(base, dir), :tainted?)
+      base.untaint
+      dir.taint
+      assert_predicate(File.realpath(base, dir), :tainted?)
+      base.taint
+      dir.untaint
+      assert_predicate(File.realpath(base, dir), :tainted?)
+      base.untaint
+      dir.untaint
+      assert_predicate(File.realpath(base, dir), :tainted?)
+      assert_predicate(Dir.chdir(dir) {File.realpath(base)}, :tainted?)
+    }
+  end
+
+  def test_realpath_special_symlink
+    IO.pipe do |r, w|
+      if File.pipe?(path = "/dev/fd/#{r.fileno}")
+        assert_file.identical?(File.realpath(path), path)
+      end
+    end
+  end
+
   def test_realdirpath
     Dir.mktmpdir('rubytest-realdirpath') {|tmpdir|
       realdir = File.realpath(tmpdir)
@@ -275,6 +328,16 @@ class TestFile < Test::Unit::TestCase
       end
     end
   end
+
+  def test_realdirpath_junction
+    Dir.mktmpdir('rubytest-realpath') {|tmpdir|
+      Dir.chdir(tmpdir) do
+        Dir.mkdir('foo')
+        skip "cannot run mklink" unless system('mklink /j bar foo > nul')
+        assert_equal(File.realpath('foo'), File.realpath('bar'))
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_utime_with_minus_time_segv
     bug5596 = '[ruby-dev:44838]'
@@ -311,6 +374,42 @@ class TestFile < Test::Unit::TestCase
     assert_equal(mod_time_contents, stats.mtime, bug6385)
   end
 
+  def test_stat
+    tb = Process.clock_gettime(Process::CLOCK_REALTIME)
+    Tempfile.create("stat") {|file|
+      tb = (tb + Process.clock_gettime(Process::CLOCK_REALTIME)) / 2
+      file.close
+      path = file.path
+
+      t0 = Process.clock_gettime(Process::CLOCK_REALTIME)
+      File.write(path, "foo")
+      sleep 2
+      File.write(path, "bar")
+      sleep 2
+      File.read(path)
+      File.chmod(0644, path)
+      sleep 2
+      File.read(path)
+
+      delta = 1
+      stat = File.stat(path)
+      assert_in_delta tb,   stat.birthtime.to_f, delta
+      assert_in_delta t0+2, stat.mtime.to_f, delta
+      if stat.birthtime != stat.ctime
+        assert_in_delta t0+4, stat.ctime.to_f, delta
+      end
+      if /mswin|mingw/ !~ RUBY_PLATFORM && !Bug::File::Fs.noatime?(path)
+        # Windows delays updating atime
+        assert_in_delta t0+6, stat.atime.to_f, delta
+      end
+    }
+  rescue NotImplementedError
+  end
+
+  def test_stat_inode
+    assert_not_equal 0, File.stat(__FILE__).ino
+  end
+
   def test_chmod_m17n
     bug5671 = '[ruby-dev:44898]'
     Dir.mktmpdir('test-file-chmod-m17n-') do |tmpdir|
@@ -344,6 +443,19 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
+  def test_file_share_delete
+    Dir.mktmpdir(__method__.to_s) do |tmpdir|
+      tmp = File.join(tmpdir, 'x')
+      File.open(tmp, mode: IO::WRONLY | IO::CREAT | IO::BINARY | IO::SHARE_DELETE) do |f|
+        assert_file.exist?(tmp)
+        assert_nothing_raised do
+          File.unlink(tmp)
+        end
+      end
+      assert_file.not_exist?(tmp)
+    end
+  end
+
   def test_conflicting_encodings
     Dir.mktmpdir(__method__.to_s) do |tmpdir|
       tmp = File.join(tmpdir, 'x')
@@ -361,6 +473,8 @@ class TestFile < Test::Unit::TestCase
     (0..1).each do |level|
       assert_nothing_raised(SecurityError, bug5374) {in_safe[level]}
     end
+  ensure
+    $SAFE = 0
   end
 
   if /(bcc|ms|cyg)win|mingw|emx/ =~ RUBY_PLATFORM
@@ -383,4 +497,26 @@ class TestFile < Test::Unit::TestCase
       assert_file.not_exist?(path)
     end
   end
+
+  def test_open_tempfile_path
+    Dir.mktmpdir(__method__.to_s) do |tmpdir|
+      begin
+        io = File.open(tmpdir, File::RDWR | File::TMPFILE)
+      rescue Errno::EINVAL
+        skip 'O_TMPFILE not supported (EINVAL)'
+      rescue Errno::EISDIR
+        skip 'O_TMPFILE not supported (EISDIR)'
+      rescue Errno::EOPNOTSUPP
+        skip 'O_TMPFILE not supported (EOPNOTSUPP)'
+      end
+
+      io.write "foo"
+      io.flush
+      assert_equal 3, io.size
+      assert_raise(IOError) { io.path }
+    ensure
+      io&.close
+    end
+  end if File::Constants.const_defined?(:TMPFILE)
+
 end

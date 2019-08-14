@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   irb/context.rb - irb context
 #   	$Release Version: 0.9.6$
@@ -8,8 +9,10 @@
 #
 #
 #
-require "irb/workspace"
-require "irb/inspector"
+require_relative "workspace"
+require_relative "inspector"
+require_relative "input-method"
+require_relative "output-method"
 
 module IRB
   # A class that wraps the current state of the irb session, including the
@@ -19,18 +22,17 @@ module IRB
     #
     # The optional +input_method+ argument:
     #
-    # +nil+::     uses stdin or Readline
+    # +nil+::     uses stdin or Reidline or Readline
     # +String+::  uses a File
     # +other+::   uses this as InputMethod
     def initialize(irb, workspace = nil, input_method = nil, output_method = nil)
       @irb = irb
       if workspace
-	@workspace = workspace
+        @workspace = workspace
       else
-	@workspace = WorkSpace.new
+        @workspace = WorkSpace.new
       end
       @thread = Thread.current if defined? Thread
-#      @irb_level = 0
 
       # copy of default configuration
       @ap_name = IRB.conf[:AP_NAME]
@@ -38,11 +40,12 @@ module IRB
       @load_modules = IRB.conf[:LOAD_MODULES]
 
       @use_readline = IRB.conf[:USE_READLINE]
+      @use_reidline = IRB.conf[:USE_REIDLINE]
+      @use_colorize = IRB.conf[:USE_COLORIZE]
       @verbose = IRB.conf[:VERBOSE]
       @io = nil
 
       self.inspect_mode = IRB.conf[:INSPECT_MODE]
-      self.math_mode = IRB.conf[:MATH_MODE] if IRB.conf[:MATH_MODE]
       self.use_tracer = IRB.conf[:USE_TRACER] if IRB.conf[:USE_TRACER]
       self.use_loader = IRB.conf[:USE_LOADER] if IRB.conf[:USE_LOADER]
       self.eval_history = IRB.conf[:EVAL_HISTORY] if IRB.conf[:EVAL_HISTORY]
@@ -55,52 +58,69 @@ module IRB
       self.prompt_mode = IRB.conf[:PROMPT_MODE]
 
       if IRB.conf[:SINGLE_IRB] or !defined?(IRB::JobManager)
-	@irb_name = IRB.conf[:IRB_NAME]
+        @irb_name = IRB.conf[:IRB_NAME]
       else
-	@irb_name = IRB.conf[:IRB_NAME]+"#"+IRB.JobManager.n_jobs.to_s
+        @irb_name = IRB.conf[:IRB_NAME]+"#"+IRB.JobManager.n_jobs.to_s
       end
       @irb_path = "(" + @irb_name + ")"
 
       case input_method
       when nil
-	case use_readline?
-	when nil
-	  if (defined?(ReadlineInputMethod) && STDIN.tty? &&
-	      IRB.conf[:PROMPT_MODE] != :INF_RUBY)
-	    @io = ReadlineInputMethod.new
-	  else
-	    @io = StdioInputMethod.new
-	  end
-	when false
-	  @io = StdioInputMethod.new
-	when true
-	  if defined?(ReadlineInputMethod)
-	    @io = ReadlineInputMethod.new
-	  else
-	    @io = StdioInputMethod.new
-	  end
-	end
+        @io = nil
+        case use_reidline?
+        when nil
+          if STDIN.tty? && IRB.conf[:PROMPT_MODE] != :INF_RUBY && !use_readline?
+            @io = ReidlineInputMethod.new
+          else
+            @io = nil
+          end
+        when false
+          @io = nil
+        when true
+          @io = ReidlineInputMethod.new
+        end
+        unless @io
+          case use_readline?
+          when nil
+            if (defined?(ReadlineInputMethod) && STDIN.tty? &&
+                IRB.conf[:PROMPT_MODE] != :INF_RUBY)
+              @io = ReadlineInputMethod.new
+            else
+              @io = nil
+            end
+          when false
+            @io = nil
+          when true
+            if defined?(ReadlineInputMethod)
+              @io = ReadlineInputMethod.new
+            else
+              @io = nil
+            end
+          else
+            @io = nil
+          end
+        end
+        @io = StdioInputMethod.new unless @io
 
       when String
-	@io = FileInputMethod.new(input_method)
-	@irb_name = File.basename(input_method)
-	@irb_path = input_method
+        @io = FileInputMethod.new(input_method)
+        @irb_name = File.basename(input_method)
+        @irb_path = input_method
       else
-	@io = input_method
+        @io = input_method
       end
       self.save_history = IRB.conf[:SAVE_HISTORY] if IRB.conf[:SAVE_HISTORY]
 
       if output_method
-	@output_method = output_method
+        @output_method = output_method
       else
-	@output_method = StdioOutputMethod.new
+        @output_method = StdioOutputMethod.new
       end
 
       @echo = IRB.conf[:ECHO]
       if @echo.nil?
-	@echo = true
+        @echo = true
       end
-      self.debug_level = IRB.conf[:DEBUG_LEVEL]
     end
 
     # The top-level workspace, see WorkSpace#main
@@ -116,9 +136,9 @@ module IRB
     attr_reader :thread
     # The current input method
     #
-    # Can be either StdioInputMethod, ReadlineInputMethod, FileInputMethod or
-    # other specified when the context is created. See ::new for more
-    # information on +input_method+.
+    # Can be either StdioInputMethod, ReadlineInputMethod,
+    # ReidlineInputMethod, FileInputMethod or other specified when the
+    # context is created. See ::new for more # information on +input_method+.
     attr_accessor :io
 
     # Current irb session
@@ -136,12 +156,22 @@ module IRB
     # +input_method+ passed to Context.new
     attr_accessor :irb_path
 
+    # Whether +Reidline+ is enabled or not.
+    #
+    # A copy of the default <code>IRB.conf[:USE_REIDLINE]</code>
+    #
+    # See #use_reidline= for more information.
+    attr_reader :use_reidline
     # Whether +Readline+ is enabled or not.
     #
     # A copy of the default <code>IRB.conf[:USE_READLINE]</code>
     #
     # See #use_readline= for more information.
     attr_reader :use_readline
+    # Whether colorization is enabled or not.
+    #
+    # A copy of the default <code>IRB.conf[:USE_COLORIZE]</code>
+    attr_reader :use_colorize
     # A copy of the default <code>IRB.conf[:INSPECT_MODE]</code>
     attr_reader :inspect_mode
 
@@ -164,17 +194,17 @@ module IRB
     # Can be either the default <code>IRB.conf[:AUTO_INDENT]</code>, or the
     # mode set by #prompt_mode=
     #
-    # To enable auto-indentation in irb:
+    # To disable auto-indentation in irb:
     #
-    #     IRB.conf[:AUTO_INDENT] = true
-    #
-    # or
-    #
-    #     irb_context.auto_indent_mode = true
+    #     IRB.conf[:AUTO_INDENT] = false
     #
     # or
     #
-    #     IRB.CurrentContext.auto_indent_mode = true
+    #     irb_context.auto_indent_mode = false
+    #
+    # or
+    #
+    #     IRB.CurrentContext.auto_indent_mode = false
     #
     # See IRB@Configuration for more information.
     attr_accessor :auto_indent_mode
@@ -210,10 +240,6 @@ module IRB
     #
     # A copy of the default <code>IRB.conf[:VERBOSE]</code>
     attr_accessor :verbose
-    # The debug level of irb
-    #
-    # See #debug_level= for more information.
-    attr_reader :debug_level
 
     # The limit of backtrace lines displayed as top +n+ and tail +n+.
     #
@@ -224,8 +250,12 @@ module IRB
     # See IRB@Command+line+options for more command line options.
     attr_accessor :back_trace_limit
 
+    # Alias for #use_reidline
+    alias use_reidline? use_reidline
     # Alias for #use_readline
     alias use_readline? use_readline
+    # Alias for #use_colorize
+    alias use_colorize? use_colorize
     # Alias for #rc
     alias rc? rc
     alias ignore_sigint? ignore_sigint
@@ -235,23 +265,27 @@ module IRB
     # Returns whether messages are displayed or not.
     def verbose?
       if @verbose.nil?
-	if defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)
-	  false
-	elsif !STDIN.tty? or @io.kind_of?(FileInputMethod)
-	  true
-	else
-	  false
-	end
+        if @io.kind_of?(ReidlineInputMethod)
+          false
+        elsif defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)
+          false
+        elsif !STDIN.tty? or @io.kind_of?(FileInputMethod)
+          true
+        else
+          false
+        end
       else
-	@verbose
+        @verbose
       end
     end
 
     # Whether #verbose? is +true+, and +input_method+ is either
-    # StdioInputMethod or ReadlineInputMethod, see #io for more information.
+    # StdioInputMethod or ReidlineInputMethod or ReadlineInputMethod, see #io
+    # for more information.
     def prompting?
       verbose? || (STDIN.tty? && @io.kind_of?(StdioInputMethod) ||
-		(defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)))
+                   @io.kind_of?(ReidlineInputMethod) ||
+                   (defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)))
     end
 
     # The return value of the last statement evaluated.
@@ -261,7 +295,7 @@ module IRB
     # to #last_value.
     def set_last_value(value)
       @last_value = value
-      @workspace.evaluate self, "_ = IRB.CurrentContext.last_value"
+      @workspace.local_variable_set :_, value
     end
 
     # Sets the +mode+ of the prompt in this context.
@@ -276,9 +310,9 @@ module IRB
       @prompt_n = pconf[:PROMPT_N]
       @return_format = pconf[:RETURN]
       if ai = pconf.include?(:AUTO_INDENT)
-	@auto_indent_mode = ai
+        @auto_indent_mode = ai
       else
-	@auto_indent_mode = IRB.conf[:AUTO_INDENT]
+        @auto_indent_mode = IRB.conf[:AUTO_INDENT]
       end
     end
 
@@ -309,41 +343,41 @@ module IRB
     def inspect_mode=(opt)
 
       if i = Inspector::INSPECTORS[opt]
-	@inspect_mode = opt
-	@inspect_method = i
-	i.init
+        @inspect_mode = opt
+        @inspect_method = i
+        i.init
       else
-	case opt
-	when nil
-	  if Inspector.keys_with_inspector(Inspector::INSPECTORS[true]).include?(@inspect_mode)
-	    self.inspect_mode = false
-	  elsif Inspector.keys_with_inspector(Inspector::INSPECTORS[false]).include?(@inspect_mode)
-	    self.inspect_mode = true
-	  else
-	    puts "Can't switch inspect mode."
-	    return
-	  end
-	when /^\s*\{.*\}\s*$/
-	  begin
-	    inspector = eval "proc#{opt}"
-	  rescue Exception
-	    puts "Can't switch inspect mode(#{opt})."
-	    return
-	  end
-	  self.inspect_mode = inspector
-	when Proc
-	  self.inspect_mode = IRB::Inspector(opt)
-	when Inspector
-	  prefix = "usr%d"
-	  i = 1
-	  while Inspector::INSPECTORS[format(prefix, i)]; i += 1; end
-	  @inspect_mode = format(prefix, i)
-	  @inspect_method = opt
-	  Inspector.def_inspector(format(prefix, i), @inspect_method)
-	else
-	  puts "Can't switch inspect mode(#{opt})."
-	  return
-	end
+        case opt
+        when nil
+          if Inspector.keys_with_inspector(Inspector::INSPECTORS[true]).include?(@inspect_mode)
+            self.inspect_mode = false
+          elsif Inspector.keys_with_inspector(Inspector::INSPECTORS[false]).include?(@inspect_mode)
+            self.inspect_mode = true
+          else
+            puts "Can't switch inspect mode."
+            return
+          end
+        when /^\s*\{.*\}\s*$/
+          begin
+            inspector = eval "proc#{opt}"
+          rescue Exception
+            puts "Can't switch inspect mode(#{opt})."
+            return
+          end
+          self.inspect_mode = inspector
+        when Proc
+          self.inspect_mode = IRB::Inspector(opt)
+        when Inspector
+          prefix = "usr%d"
+          i = 1
+          while Inspector::INSPECTORS[format(prefix, i)]; i += 1; end
+          @inspect_mode = format(prefix, i)
+          @inspect_method = opt
+          Inspector.def_inspector(format(prefix, i), @inspect_method)
+        else
+          puts "Can't switch inspect mode(#{opt})."
+          return
+        end
       end
       print "Switch to#{unless @inspect_mode; ' non';end} inspect mode.\n" if verbose?
       @inspect_mode
@@ -360,26 +394,14 @@ module IRB
       print "Do nothing."
     end
 
-    # Sets the debug level of irb
-    #
-    # Can also be set using the +--irb_debug+ command line option.
-    #
-    # See IRB@Command+line+options for more command line options.
-    def debug_level=(value)
-      @debug_level = value
-      RubyLex.debug_level = value
-    end
-
-    # Whether or not debug mode is enabled, see #debug_level=.
-    def debug?
-      @debug_level > 0
-    end
-
-    def evaluate(line, line_no) # :nodoc:
+    def evaluate(line, line_no, exception: nil) # :nodoc:
       @line_no = line_no
+      if exception
+        line_no -= 1
+        line = "begin ::Kernel.raise _; rescue _.class\n#{line}\n""end"
+        @workspace.local_variable_set(:_, exception)
+      end
       set_last_value(@workspace.evaluate(self, line, irb_path, line_no))
-#      @workspace.evaluate("_ = IRB.conf[:MAIN_CONTEXT]._")
-#      @_ = @workspace.evaluate(line, irb_path, line_no)
     end
 
     def inspect_last_value # :nodoc:
@@ -400,19 +422,19 @@ module IRB
     def inspect # :nodoc:
       array = []
       for ivar in instance_variables.sort{|e1, e2| e1 <=> e2}
-	ivar = ivar.to_s
-	name = ivar.sub(/^@(.*)$/, '\1')
-	val = instance_eval(ivar)
-	case ivar
-	when *NOPRINTING_IVARS
-	  array.push format("conf.%s=%s", name, "...")
-	when *NO_INSPECTING_IVARS
-	  array.push format("conf.%s=%s", name, val.to_s)
-	when *IDNAME_IVARS
-	  array.push format("conf.%s=:%s", name, val.id2name)
-	else
-	  array.push format("conf.%s=%s", name, val.inspect)
-	end
+        ivar = ivar.to_s
+        name = ivar.sub(/^@(.*)$/, '\1')
+        val = instance_eval(ivar)
+        case ivar
+        when *NOPRINTING_IVARS
+          array.push format("conf.%s=%s", name, "...")
+        when *NO_INSPECTING_IVARS
+          array.push format("conf.%s=%s", name, val.to_s)
+        when *IDNAME_IVARS
+          array.push format("conf.%s=:%s", name, val.id2name)
+        else
+          array.push format("conf.%s=%s", name, val.inspect)
+        end
       end
       array.join("\n")
     end

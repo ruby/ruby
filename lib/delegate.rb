@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # = delegate -- Support for the Delegation Pattern
 #
 # Documentation by James Edward Gray II and Gavin Sinclair
@@ -17,15 +18,10 @@
 # yourself needing this control, have a look at Forwardable which is also in
 # the standard library.  It may suit your needs better.)
 #
-# SimpleDelegator's implementation serves as a nice example if the use of
+# SimpleDelegator's implementation serves as a nice example of the use of
 # Delegator:
 #
 #   class SimpleDelegator < Delegator
-#     def initialize(obj)
-#       super                  # pass obj to Delegator constructor, required
-#       @delegate_sd_obj = obj # store obj for future use
-#     end
-#
 #     def __getobj__
 #       @delegate_sd_obj # return object we are delegating to, required
 #     end
@@ -44,11 +40,11 @@ class Delegator < BasicObject
   kernel = ::Kernel.dup
   kernel.class_eval do
     alias __raise__ raise
-    [:to_s,:inspect,:=~,:!~,:===,:<=>,:eql?,:hash].each do |m|
+    [:to_s, :inspect, :=~, :!~, :===, :<=>, :hash].each do |m|
       undef_method m
     end
     private_instance_methods.each do |m|
-      if /\Ablock_given\?\z|iterator\?\z|\A__.*__\z/ =~ m
+      if /\Ablock_given\?\z|\Aiterator\?\z|\A__.*__\z/ =~ m
         next
       end
       undef_method m
@@ -61,6 +57,12 @@ class Delegator < BasicObject
     ::Object.const_get(n)
   end
   # :startdoc:
+
+  ##
+  # :method: raise
+  # Use #__raise__ if your Delegator does not have a object to delegate the
+  # #raise method call.
+  #
 
   #
   # Pass in the _obj_ to delegate method calls to.  All methods supported by
@@ -76,16 +78,13 @@ class Delegator < BasicObject
   def method_missing(m, *args, &block)
     r = true
     target = self.__getobj__ {r = false}
-    begin
-      if r && target.respond_to?(m)
-        target.__send__(m, *args, &block)
-      elsif ::Kernel.respond_to?(m, true)
-        ::Kernel.instance_method(m).bind(self).(*args, &block)
-      else
-        super(m, *args, &block)
-      end
-    ensure
-      $@.delete_if {|t| %r"\A#{Regexp.quote(__FILE__)}:(?:#{[__LINE__-7, __LINE__-5, __LINE__-3].join('|')}):"o =~ t} if $@
+
+    if r && target.respond_to?(m)
+      target.__send__(m, *args, &block)
+    elsif ::Kernel.method_defined?(m) || ::Kernel.private_method_defined?(m)
+      ::Kernel.instance_method(m).bind(self).(*args, &block)
+    else
+      super(m, *args, &block)
     end
   end
 
@@ -98,7 +97,7 @@ class Delegator < BasicObject
     target = self.__getobj__ {r = false}
     r &&= target.respond_to?(m, include_private)
     if r && include_private && !target.respond_to?(m, false)
-      warn "#{caller(3)[0]}: delegator does not forward private method \##{m}"
+      warn "delegator does not forward private method \##{m}", uplevel: 3
       return false
     end
     r
@@ -147,6 +146,14 @@ class Delegator < BasicObject
   end
 
   #
+  # Returns true if two objects are considered of equal value.
+  #
+  def eql?(obj)
+    return true if obj.equal?(self)
+    obj.eql?(__getobj__)
+  end
+
+  #
   # Delegates ! to the \_\_getobj\_\_
   #
   def !
@@ -176,7 +183,7 @@ class Delegator < BasicObject
     ivars = instance_variables.reject {|var| /\A@delegate_/ =~ var}
     [
       :__v2__,
-      ivars, ivars.map{|var| instance_variable_get(var)},
+      ivars, ivars.map {|var| instance_variable_get(var)},
       __getobj__
     ]
   end
@@ -187,7 +194,7 @@ class Delegator < BasicObject
   def marshal_load(data)
     version, vars, values, obj = data
     if version == :__v2__
-      vars.each_with_index{|var, i| instance_variable_set(var, values[i])}
+      vars.each_with_index {|var, i| instance_variable_set(var, values[i])}
       __setobj__(obj)
     else
       __setobj__(data)
@@ -235,7 +242,7 @@ class Delegator < BasicObject
   end
 
   @delegator_api = self.public_instance_methods
-  def self.public_api   # :nodoc:
+  def self.public_api # :nodoc:
     @delegator_api
   end
 end
@@ -248,7 +255,7 @@ end
 #
 #   class User
 #     def born_on
-#       Date.new(1989, 09, 10)
+#       Date.new(1989, 9, 10)
 #     end
 #   end
 #
@@ -306,7 +313,7 @@ end
 #    Non-Nil:  7
 #     Unique:  6
 #
-class SimpleDelegator<Delegator
+class SimpleDelegator < Delegator
   # Returns the current object method calls are being delegated to.
   def __getobj__
     unless defined?(@delegate_sd_obj)
@@ -339,11 +346,7 @@ end
 def Delegator.delegating_block(mid) # :nodoc:
   lambda do |*args, &block|
     target = self.__getobj__
-    begin
-      target.__send__(mid, *args, &block)
-    ensure
-      $@.delete_if {|t| /\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:/o =~ t} if $@
-    end
+    target.__send__(mid, *args, &block)
   end
 end
 
@@ -352,6 +355,14 @@ end
 # your class.
 #
 #   class MyClass < DelegateClass(ClassToDelegateTo) # Step 1
+#     def initialize
+#       super(obj_of_ClassToDelegateTo)              # Step 2
+#     end
+#   end
+#
+# or:
+#
+#   MyClass = DelegateClass(ClassToDelegateTo) do    # Step 1
 #     def initialize
 #       super(obj_of_ClassToDelegateTo)              # Step 2
 #     end
@@ -380,13 +391,15 @@ end
 #     # ...
 #   end
 #
-def DelegateClass(superclass)
+def DelegateClass(superclass, &block)
   klass = Class.new(Delegator)
-  methods = superclass.instance_methods
-  methods -= ::Delegator.public_api
-  methods -= [:to_s,:inspect,:=~,:!~,:===]
+  ignores = [*::Delegator.public_api, :to_s, :inspect, :=~, :!~, :===]
+  protected_instance_methods = superclass.protected_instance_methods
+  protected_instance_methods -= ignores
+  public_instance_methods = superclass.public_instance_methods
+  public_instance_methods -= ignores
   klass.module_eval do
-    def __getobj__  # :nodoc:
+    def __getobj__ # :nodoc:
       unless defined?(@delegate_dc_obj)
         return yield if block_given?
         __raise__ ::ArgumentError, "not delegated"
@@ -397,49 +410,20 @@ def DelegateClass(superclass)
       __raise__ ::ArgumentError, "cannot delegate to self" if self.equal?(obj)
       @delegate_dc_obj = obj
     end
-    methods.each do |method|
+    protected_instance_methods.each do |method|
+      define_method(method, Delegator.delegating_block(method))
+      protected method
+    end
+    public_instance_methods.each do |method|
       define_method(method, Delegator.delegating_block(method))
     end
   end
   klass.define_singleton_method :public_instance_methods do |all=true|
-    super(all) - superclass.protected_instance_methods
+    super(all) | superclass.public_instance_methods
   end
   klass.define_singleton_method :protected_instance_methods do |all=true|
     super(all) | superclass.protected_instance_methods
   end
+  klass.module_eval(&block) if block
   return klass
-end
-
-# :enddoc:
-
-if __FILE__ == $0
-  class ExtArray<DelegateClass(Array)
-    def initialize()
-      super([])
-    end
-  end
-
-  ary = ExtArray.new
-  p ary.class
-  ary.push 25
-  p ary
-  ary.push 42
-  ary.each {|x| p x}
-
-  foo = Object.new
-  def foo.test
-    25
-  end
-  def foo.iter
-    yield self
-  end
-  def foo.error
-    raise 'this is OK'
-  end
-  foo2 = SimpleDelegator.new(foo)
-  p foo2
-  foo2.instance_eval{print "foo\n"}
-  p foo.test == foo2.test       # => true
-  p foo2.iter{[55,true]}        # => true
-  foo2.error                    # raise error!
 end

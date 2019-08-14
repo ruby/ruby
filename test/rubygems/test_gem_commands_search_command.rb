@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/search_command'
 
@@ -14,4 +15,3 @@ class TestGemCommandsSearchCommand < Gem::TestCase
   end
 
 end
-

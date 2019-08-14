@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/ext'
 require 'rubygems/installer'
@@ -31,7 +32,7 @@ class TestGemExtBuilder < Gem::TestCase
     results = []
 
     Dir.chdir @ext do
-      open 'Makefile', 'w' do |io|
+      File.open 'Makefile', 'w' do |io|
         io.puts <<-MAKEFILE
 all:
 \t@#{Gem.ruby} -e "puts %Q{all: \#{ENV['DESTDIR']}}"
@@ -49,15 +50,9 @@ install:
 
     results = results.join "\n"
 
-    if RUBY_VERSION > '2.0' then
-      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" clean$%,   results
-      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}"$%,         results
-      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
-    else
-      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}" clean$%,   results
-      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}"$%,         results
-      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
-    end
+    assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" clean$%,   results
+    assert_match %r%"DESTDIR=#{ENV['DESTDIR']}"$%,         results
+    assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
 
     if /nmake/ !~ results
       assert_match %r%^clean: destination$%,   results
@@ -71,7 +66,7 @@ install:
     results = []
 
     Dir.chdir @ext do
-      open 'Makefile', 'w' do |io|
+      File.open 'Makefile', 'w' do |io|
         io.puts <<-MAKEFILE
 all:
 \t@#{Gem.ruby} -e "puts %Q{all: \#{ENV['DESTDIR']}}"
@@ -86,15 +81,9 @@ install:
 
     results = results.join "\n"
 
-    if RUBY_VERSION > '2.0' then
-      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" clean$%,   results
-      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}"$%,         results
-      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
-    else
-      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}" clean$%,   results
-      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}"$%,         results
-      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
-    end
+    assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" clean$%,   results
+    assert_match %r%"DESTDIR=#{ENV['DESTDIR']}"$%,         results
+    assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
   end
 
   def test_build_extensions
@@ -106,7 +95,7 @@ install:
 
     extconf_rb = File.join ext_dir, 'extconf.rb'
 
-    open extconf_rb, 'w' do |f|
+    File.open extconf_rb, 'w' do |f|
       f.write <<-'RUBY'
         require 'mkmf'
 
@@ -132,13 +121,28 @@ install:
     assert_path_exists File.join @spec.gem_dir, 'lib', 'a', 'b.rb'
   end
 
+  def test_build_extensions_with_gemhome_with_space
+    new_gemhome = File.join @tempdir, 'gem home'
+    File.rename(@gemhome, new_gemhome)
+    @gemhome = new_gemhome
+    Gem.use_paths(@gemhome)
+    @spec = util_spec 'a'
+    @builder = Gem::Ext::Builder.new @spec, ''
+
+    test_build_extensions
+  end
+
   def test_build_extensions_install_ext_only
     class << Gem
+
       alias orig_install_extension_in_lib install_extension_in_lib
+
+      remove_method :install_extension_in_lib
 
       def Gem.install_extension_in_lib
         false
       end
+
     end
 
     @spec.extensions << 'ext/extconf.rb'
@@ -149,7 +153,7 @@ install:
 
     extconf_rb = File.join ext_dir, 'extconf.rb'
 
-    open extconf_rb, 'w' do |f|
+    File.open extconf_rb, 'w' do |f|
       f.write <<-'RUBY'
         require 'mkmf'
 
@@ -175,9 +179,11 @@ install:
     refute_path_exists File.join @spec.gem_dir, 'lib', 'a', 'b.rb'
   ensure
     class << Gem
+
       remove_method :install_extension_in_lib
 
       alias install_extension_in_lib orig_install_extension_in_lib
+
     end
   end
 
@@ -208,6 +214,8 @@ install:
   end
 
   def test_build_extensions_extconf_bad
+    cwd = Dir.pwd
+
     @spec.extensions << 'extconf.rb'
 
     FileUtils.mkdir_p @spec.gem_dir
@@ -220,13 +228,13 @@ install:
 
     assert_match(/\AERROR: Failed to build gem native extension.$/, e.message)
 
-    assert_equal "Building native extensions.  This could take a while...\n",
+    assert_equal "Building native extensions. This could take a while...\n",
                  @ui.output
     assert_equal '', @ui.error
 
     gem_make_out = File.join @spec.extension_dir, 'gem_make.out'
 
-    assert_match %r%#{Regexp.escape Gem.ruby} extconf\.rb%,
+    assert_match %r%#{Regexp.escape Gem.ruby}.* extconf\.rb%,
                  File.read(gem_make_out)
     assert_match %r%: No such file%,
                  File.read(gem_make_out)
@@ -234,10 +242,12 @@ install:
     refute_path_exists @spec.gem_build_complete_path
 
     skip "Gem.ruby is not the name of the binary being run in the end" \
-      unless File.read(gem_make_out).include? "#{Regexp.escape Gem.ruby}:"
+      unless File.read(gem_make_out).include? "#{Gem.ruby}:"
 
     assert_match %r%#{Regexp.escape Gem.ruby}: No such file%,
                  File.read(gem_make_out)
+
+    assert_equal cwd, Dir.pwd
   end
 
   def test_build_extensions_unsupported
@@ -253,7 +263,7 @@ install:
 
     assert_match(/^\s*No builder for extension ''$/, e.message)
 
-    assert_equal "Building native extensions.  This could take a while...\n",
+    assert_equal "Building native extensions. This could take a while...\n",
                  @ui.output
     assert_equal '', @ui.error
 
@@ -271,7 +281,7 @@ install:
 
     FileUtils.mkdir_p @spec.gem_dir
 
-    open File.join(@spec.gem_dir, "extconf.rb"), "w" do |f|
+    File.open File.join(@spec.gem_dir, "extconf.rb"), "w" do |f|
       f.write <<-'RUBY'
         puts "IN EXTCONF"
         extconf_args = File.join File.dirname(__FILE__), 'extconf_args'
@@ -304,7 +314,7 @@ install:
 
     build_info_file = File.join build_info_dir, "#{@spec.full_name}.info"
 
-    open build_info_file, 'w' do |io|
+    File.open build_info_file, 'w' do |io|
       io.puts '--with-foo-dir=/nonexistent'
     end
 
@@ -319,5 +329,4 @@ install:
     assert_equal %w[--with-foo-dir=/nonexistent], builder.build_args
   end
 
-end
-
+end unless Gem.java_platform?

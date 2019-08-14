@@ -1,6 +1,7 @@
-require "rexml/parseexception"
-require "rexml/formatters/pretty"
-require "rexml/formatters/default"
+# frozen_string_literal: false
+require_relative "parseexception"
+require_relative "formatters/pretty"
+require_relative "formatters/default"
 
 module REXML
   # Represents a node in the tree.  Nodes are never encountered except as
@@ -25,7 +26,7 @@ module REXML
     #   REXML::Formatters package for changing the output style.
     def to_s indent=nil
       unless indent.nil?
-        Kernel.warn( "#{self.class.name}.to_s(indent) parameter is deprecated" )
+        Kernel.warn( "#{self.class.name}.to_s(indent) parameter is deprecated", uplevel: 1)
         f = REXML::Formatters::Pretty.new( indent )
         f.write( self, rv = "" )
       else

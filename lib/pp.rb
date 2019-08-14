@@ -1,35 +1,9 @@
+# frozen_string_literal: true
+
 require 'prettyprint'
-
-module Kernel
-  # Returns a pretty printed object as a string.
-  #
-  # In order to use this method you must first require the PP module:
-  #
-  #   require 'pp'
-  #
-  # See the PP module for more information.
-  def pretty_inspect
-    PP.pp(self, '')
-  end
-
-  private
-  # prints arguments in pretty form.
-  #
-  # pp returns argument(s).
-  def pp(*objs) # :nodoc:
-    objs.each {|obj|
-      PP.pp(obj)
-    }
-    objs.size <= 1 ? objs.first : objs
-  end
-  module_function :pp # :nodoc:
-end
 
 ##
 # A pretty-printer for Ruby objects.
-#
-# All examples assume you have loaded the PP class with:
-#   require 'pp'
 #
 ##
 # == What PP Does
@@ -310,7 +284,7 @@ class PP < PrettyPrint
         inspect_method = method_method.call(:inspect)
       rescue NameError
       end
-      if inspect_method && /\(Kernel\)#/ !~ inspect_method.inspect
+      if inspect_method && inspect_method.owner != Kernel
         q.text self.inspect
       elsif !inspect_method && self.respond_to?(:inspect)
         q.text self.inspect
@@ -344,10 +318,10 @@ class PP < PrettyPrint
     # However, doing this requires that every class that #inspect is called on
     # implement #pretty_print, or a RuntimeError will be raised.
     def pretty_print_inspect
-      if /\(PP::ObjectMixin\)#/ =~ Object.instance_method(:method).bind(self).call(:pretty_print).inspect
+      if Object.instance_method(:method).bind(self).call(:pretty_print).owner == PP::ObjectMixin
         raise "pretty_print is not overridden for #{self.class}"
       end
-      PP.singleline_pp(self, '')
+      PP.singleline_pp(self, ''.dup)
     end
   end
 end
@@ -412,7 +386,22 @@ class Range # :nodoc:
     q.breakable ''
     q.text(self.exclude_end? ? '...' : '..')
     q.breakable ''
-    q.pp self.end
+    q.pp self.end if self.end
+  end
+end
+
+class String # :nodoc:
+  def pretty_print(q) # :nodoc:
+    lines = self.lines
+    if lines.size > 1
+      q.group(0, '', '') do
+        q.seplist(lines, lambda { q.text ' +'; q.breakable }) do |v|
+          q.pp v
+        end
+      end
+    else
+      q.text inspect
+    end
   end
 end
 
@@ -469,8 +458,10 @@ class File < IO # :nodoc:
         q.comma_breakable
         q.group {
           q.text sprintf("rdev=0x%x", self.rdev)
-          q.breakable
-          q.text sprintf('(%d, %d)', self.rdev_major, self.rdev_minor)
+          if self.rdev_major && self.rdev_minor
+            q.breakable
+            q.text sprintf('(%d, %d)', self.rdev_major, self.rdev_minor)
+          end
         }
         q.comma_breakable
         q.text "size="; q.pp self.size; q.comma_breakable
@@ -523,6 +514,40 @@ class MatchData # :nodoc:
   end
 end
 
+class RubyVM::AbstractSyntaxTree::Node
+  def pretty_print_children(q, names = [])
+    children.zip(names) do |c, n|
+      if n
+        q.breakable
+        q.text "#{n}:"
+      end
+      q.group(2) do
+        q.breakable
+        q.pp c
+      end
+    end
+  end
+
+  def pretty_print(q)
+    q.group(1, "(#{type}@#{first_lineno}:#{first_column}-#{last_lineno}:#{last_column}", ")") {
+      case type
+      when :SCOPE
+        pretty_print_children(q, %w"tbl args body")
+      when :ARGS
+        pretty_print_children(q, %w[pre_num pre_init opt first_post post_num post_init rest kw kwrest block])
+      when :DEFN
+        pretty_print_children(q, %w[mid body])
+      when :ARYPTN
+        pretty_print_children(q, %w[const pre rest post])
+      when :HSHPTN
+        pretty_print_children(q, %w[const kw kwrest])
+      else
+        pretty_print_children(q)
+      end
+    }
+  end
+end
+
 class Object < BasicObject # :nodoc:
   include PP::ObjectMixin
 end
@@ -542,3 +567,27 @@ end
     end
   }
 }
+
+module Kernel
+  # Returns a pretty printed object as a string.
+  #
+  # In order to use this method you must first require the PP module:
+  #
+  #   require 'pp'
+  #
+  # See the PP module for more information.
+  def pretty_inspect
+    PP.pp(self, ''.dup)
+  end
+
+  # prints arguments in pretty form.
+  #
+  # pp returns argument(s).
+  def pp(*objs)
+    objs.each {|obj|
+      PP.pp(obj)
+    }
+    objs.size <= 1 ? objs.first : objs
+  end
+  module_function :pp
+end

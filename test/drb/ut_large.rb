@@ -1,6 +1,9 @@
+# frozen_string_literal: false
 require 'drb/drb'
 require 'drb/extserv'
 require 'timeout'
+
+module DRbTests
 
 class DRbLarge
   include DRbUndumped
@@ -10,16 +13,36 @@ class DRbLarge
   end
 
   def sum(ary)
-    sum = 0
-    ary.each do |e|
-      sum += e.to_i
+    ary.inject(:+)
+  end
+
+  def multiply(ary)
+    ary.inject(:*)
+  end
+
+  def avg(ary)
+    return if ary.empty?
+    if ary.any? {|n| n.is_a? String}
+      raise TypeError
+    else
+      sum(ary).to_f / ary.count
     end
-    sum
+  end
+
+  def median(ary)
+    return if ary.empty?
+    if ary.any? {|n| n.is_a? String}
+      raise TypeError
+    else
+      avg ary.sort[((ary.length - 1) / 2)..(ary.length / 2)]
+    end
   end
 
   def arg_test(*arg)
     # nop
   end
+end
+
 end
 
 if __FILE__ == $0
@@ -31,7 +54,7 @@ if __FILE__ == $0
 
   DRb::DRbServer.default_argc_limit(3)
   DRb::DRbServer.default_load_limit(100000)
-  DRb.start_service('druby://localhost:0', DRbLarge.new)
+  DRb.start_service('druby://localhost:0', DRbTests::DRbLarge.new)
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
   es.stop_service if es.alive?

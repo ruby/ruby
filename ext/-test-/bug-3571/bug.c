@@ -16,7 +16,7 @@ bug_start(VALUE self, VALUE hash)
 }
 
 void
-Init_bug(void)
+Init_bug_3571(void)
 {
     VALUE mBug = rb_define_module("Bug");
     rb_define_module_function(mBug, "start", bug_start, 0);

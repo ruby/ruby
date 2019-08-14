@@ -1,4 +1,5 @@
-require "rexml/child"
+# frozen_string_literal: false
+require_relative "child"
 
 module REXML
   # A parent has children, and has methods for accessing them.  The Parent
@@ -15,10 +16,8 @@ module REXML
     end
 
     def add( object )
-      #puts "PARENT GOTS #{size} CHILDREN"
       object.parent = self
       @children << object
-      #puts "PARENT NOW GOTS #{size} CHILDREN"
       object
     end
 

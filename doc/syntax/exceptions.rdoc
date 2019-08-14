@@ -8,7 +8,7 @@ Exceptions are rescued in a +begin+/+end+ block:
     # handle exception
   end
 
-If you are inside a method you do not need to use +begin+ or +end+ unless you
+If you are inside a method, you do not need to use +begin+ or +end+ unless you
 wish to limit the scope of rescued exceptions:
 
   def my_method
@@ -29,7 +29,7 @@ variable_name</tt> at the end of the +rescue+ line:
     raise # re-raise the current exception
   end
 
-By default StandardError and its subclasses are rescued.  You can rescue a
+By default, StandardError and its subclasses are rescued.  You can rescue a
 specific set of exception classes (and their subclasses) by listing them after
 +rescue+:
 
@@ -52,7 +52,7 @@ You may rescue different types of exceptions in different ways:
   end
 
 The exception is matched to the rescue section starting at the top, and matches
-only once.  If an ArgumentError is raised in the begin section it will not be
+only once.  If an ArgumentError is raised in the begin section, it will not be
 handled in the StandardError section.
 
 You may retry rescued exceptions:
@@ -93,4 +93,3 @@ You may also run some code when an exception is not raised:
   ensure
     # ...
   end
-

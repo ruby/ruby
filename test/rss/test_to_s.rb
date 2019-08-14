@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "rexml/document"
 
 require_relative "rss-testcase"
@@ -100,6 +101,36 @@ module RSS
       assert_items20(@item_infos, rss.items)
       assert_image20(@image_info, rss.image)
       assert_textinput20(@textinput_info, rss.textinput)
+    end
+
+    def test_time_w3cdtf
+      assert_equal("2015-09-05T01:25:48.0001Z",
+                   Time.utc(2015, 9, 5, 1, 25, 48, 100).w3cdtf,
+                   '[ruby-core:70667] [Bug #11509]')
+    end
+
+    def test_20_empty_text
+      title = "Blog entries"
+      link = "http://blog.example.com/"
+      description = ""
+      rss = RSS::Maker.make("2.0") do |maker|
+        maker.channel.title = title
+        maker.channel.link = link
+        maker.channel.description = description
+      end
+
+      parsed_rss = RSS::Parser.parse(rss.to_s)
+      assert_equal({
+                     title: title,
+                     link: link,
+                     description: description,
+                   },
+                   {
+                     title: parsed_rss.channel.title,
+                     link: parsed_rss.channel.link,
+                     description: parsed_rss.channel.description,
+                   },
+                   "[ruby-core:80965] [Bug #13531]")
     end
 
     private

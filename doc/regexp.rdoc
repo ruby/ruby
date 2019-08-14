@@ -63,9 +63,10 @@ The following are <i>metacharacters</i> <tt>(</tt>, <tt>)</tt>,
 <tt>[</tt>, <tt>]</tt>, <tt>{</tt>, <tt>}</tt>, <tt>.</tt>, <tt>?</tt>,
 <tt>+</tt>, <tt>*</tt>. They have a specific meaning when appearing in a
 pattern. To match them literally they must be backslash-escaped. To match
-a backslash literally backslash-escape that: <tt>\\\\\\</tt>.
+a backslash literally, backslash-escape it: <tt>\\\\</tt>.
 
     /1 \+ 2 = 3\?/.match('Does 1 + 2 = 3?') #=> #<MatchData "1 + 2 = 3?">
+    /a\\\\b/.match('a\\\\b')                    #=> #<MatchData "a\\b">
 
 Patterns behave like double-quoted strings so can contain the same
 backslash escapes.
@@ -128,8 +129,8 @@ The following metacharacters also behave like character classes:
 * <tt>/\D/</tt> - A non-digit character (<tt>[^0-9]</tt>)
 * <tt>/\h/</tt> - A hexdigit character (<tt>[0-9a-fA-F]</tt>)
 * <tt>/\H/</tt> - A non-hexdigit character (<tt>[^0-9a-fA-F]</tt>)
-* <tt>/\s/</tt> - A whitespace character: <tt>/[ \t\r\n\f]/</tt>
-* <tt>/\S/</tt> - A non-whitespace character: <tt>/[^ \t\r\n\f]/</tt>
+* <tt>/\s/</tt> - A whitespace character: <tt>/[ \t\r\n\f\v]/</tt>
+* <tt>/\S/</tt> - A non-whitespace character: <tt>/[^ \t\r\n\f\v]/</tt>
 
 POSIX <i>bracket expressions</i> are also similar to character classes.
 They provide a portable alternative to the above, with the added benefit
@@ -227,7 +228,7 @@ Capture groups can be referred to by name when defined with the
 constructs.
 
     /\$(?<dollars>\d+)\.(?<cents>\d+)/.match("$3.67")
-        => #<MatchData "$3.67" dollars:"3" cents:"67">
+        #=> #<MatchData "$3.67" dollars:"3" cents:"67">
     /\$(?<dollars>\d+)\.(?<cents>\d+)/.match("$3.67")[:dollars] #=> "3"
 
 Named groups can be backreferenced with <tt>\k<</tt><i>name</i><tt>></tt>,
@@ -237,7 +238,15 @@ where _name_ is the group name.
         #=> #<MatchData "ototo" vowel:"o">
 
 *Note*: A regexp can't use named backreferences and numbered
-backreferences simultaneously.
+backreferences simultaneously. Also, if a named capture is used in a
+regexp, then parentheses used for grouping which would otherwise result
+in a unnamed capture are treated as non-capturing.
+
+    /(\w)(\w)/.match("ab").captures # => ["a", "b"]
+    /(\w)(\w)/.match("ab").named_captures # => {}
+
+    /(?<c>\w)(\w)/.match("ab").captures # => ["a"]
+    /(?<c>\w)(\w)/.match("ab").named_captures # => {"c"=>"a"}
 
 When named capture groups are used with a literal regexp on the left-hand
 side of an expression and the <tt>=~</tt> operator, the captured text is
@@ -470,7 +479,19 @@ characters, <i>anchoring</i> the match to a specific position.
 * <tt>\Z</tt> - Matches end of string. If string ends with a newline,
   it matches just before newline
 * <tt>\z</tt> - Matches end of string
-* <tt>\G</tt> - Matches point where last match finished
+* <tt>\G</tt> - Matches first matching position:
+
+  In methods like <tt>String#gsub</tt> and <tt>String#scan</tt>, it changes on each iteration.
+  It initially matches the beginning of subject, and in each following iteration it matches where the last match finished.
+
+      "    a b c".gsub(/ /, '_')    #=> "____a_b_c"
+      "    a b c".gsub(/\G /, '_')  #=> "____a b c"
+
+  In methods like <tt>Regexp#match</tt> and <tt>String#match</tt> that take an (optional) offset, it matches where the search begins.
+
+      "hello, world".match(/,/, 3)    #=> #<MatchData ",">
+      "hello, world".match(/\G,/, 3)  #=> nil
+
 * <tt>\b</tt> - Matches word boundaries when outside brackets;
   backspace (0x08) when inside brackets
 * <tt>\B</tt> - Matches non-word boundaries
@@ -528,10 +549,15 @@ options which control how the pattern can match.
 subexpression level with the
 <tt>(?</tt><i>on</i><tt>-</tt><i>off</i><tt>)</tt> construct, which
 enables options <i>on</i>, and disables options <i>off</i> for the
-expression enclosed by the parentheses.
+expression enclosed by the parentheses:
 
-    /a(?i:b)c/.match('aBc') #=> #<MatchData "aBc">
-    /a(?i:b)c/.match('abc') #=> #<MatchData "abc">
+    /a(?i:b)c/.match('aBc')   #=> #<MatchData "aBc">
+    /a(?-i:b)c/i.match('ABC') #=> nil
+
+Additionally, these options can also be toggled for the remainder of the
+pattern:
+
+    /a(?i)bc/.match('abC') #=> #<MatchData "abC">
 
 Options may also be used with <tt>Regexp.new</tt>:
 
@@ -545,7 +571,7 @@ Options may also be used with <tt>Regexp.new</tt>:
 As mentioned above, the <tt>x</tt> option enables <i>free-spacing</i>
 mode. Literal white space inside the pattern is ignored, and the
 octothorpe (<tt>#</tt>) character introduces a comment until the end of
-the line. This allows the components of the pattern to be organised in a
+the line. This allows the components of the pattern to be organized in a
 potentially more readable fashion.
 
 A contrived pattern to match a number with optional decimal places:
@@ -558,12 +584,18 @@ A contrived pattern to match a number with optional decimal places:
     \Z/x
     float_pat.match('3.14') #=> #<MatchData "3.14" 1:".14">
 
-*Note*: To match whitespace in an <tt>x</tt> pattern use an escape such as
-<tt>\s</tt> or <tt>\p{Space}</tt>.
+There are a number of strategies for matching whitespace:
+
+* Use a pattern such as <tt>\s</tt> or <tt>\p{Space}</tt>.
+* Use escaped whitespace such as <tt>\ </tt>, i.e. a space preceded by a backslash.
+* Use a character class such as <tt>[ ]</tt>.
 
 Comments can be included in a non-<tt>x</tt> pattern with the
 <tt>(?#</tt><i>comment</i><tt>)</tt> construct, where <i>comment</i> is
 arbitrary text ignored by the regexp engine.
+
+Comments in regexp literals cannot include unescaped terminator
+characters.
 
 == Encoding
 
@@ -589,9 +621,9 @@ regexp's encoding can be explicitly fixed by supplying
 <tt>Regexp.new</tt>:
 
     r = Regexp.new("a".force_encoding("iso-8859-1"),Regexp::FIXEDENCODING)
-    r =~"a\u3042"
-       #=> Encoding::CompatibilityError: incompatible encoding regexp match
-            (ISO-8859-1 regexp with UTF-8 string)
+    r =~ "a\u3042"
+       # raises Encoding::CompatibilityError: incompatible encoding regexp match
+       #         (ISO-8859-1 regexp with UTF-8 string)
 
 == Special global variables
 

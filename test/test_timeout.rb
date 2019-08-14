@@ -1,27 +1,21 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'timeout'
-require 'thread'
 
 class TestTimeout < Test::Unit::TestCase
   def test_queue
-    q = Queue.new
+    q = Thread::Queue.new
     assert_raise(Timeout::Error, "[ruby-dev:32935]") {
-      timeout(0.01) { q.pop }
+      Timeout.timeout(0.01) { q.pop }
     }
   end
 
   def test_timeout
-    flag = true
-    Thread.start {
-      sleep 0.01
-      flag = false
-    }
-    assert_nothing_raised("[ruby-dev:38319]") do
-      Timeout.timeout(1) {
-        Thread.pass while flag
+    assert_raise(Timeout::Error) do
+      Timeout.timeout(0.1) {
+        nil while true
       }
     end
-    assert !flag, "[ruby-dev:38319]"
   end
 
   def test_cannot_convert_into_time_interval
@@ -34,7 +28,7 @@ class TestTimeout < Test::Unit::TestCase
     bug8730 = '[Bug #8730]'
     e = nil
     assert_raise_with_message(Timeout::Error, /execution expired/, bug8730) do
-      timeout 0.01 do
+      Timeout.timeout 0.01 do
         begin
           sleep 3
         rescue Exception => e
@@ -48,14 +42,14 @@ class TestTimeout < Test::Unit::TestCase
     exc = Class.new(RuntimeError)
     e = nil
     assert_nothing_raised(exc) do
-      timeout 0.01, exc do
+      Timeout.timeout 0.01, exc do
         begin
           sleep 3
         rescue exc => e
         end
       end
     end
-    assert_raise_with_message(exc, /execution expired/) {raise e if e}
+    assert_raise_with_message(exc, 'execution expired') {raise e if e}
   end
 
   def test_custom_exception
@@ -64,14 +58,24 @@ class TestTimeout < Test::Unit::TestCase
       def initialize(msg) super end
     end
     assert_nothing_raised(ArgumentError, bug9354) do
-      assert_equal(:ok, timeout(100, err) {:ok})
+      assert_equal(:ok, Timeout.timeout(100, err) {:ok})
+    end
+    assert_raise_with_message(err, 'execution expired') do
+      Timeout.timeout 0.01, err do
+        sleep 3
+      end
+    end
+    assert_raise_with_message(err, /connection to ruby-lang.org expired/) do
+      Timeout.timeout 0.01, err, "connection to ruby-lang.org expired" do
+        sleep 3
+      end
     end
   end
 
   def test_exit_exception
-    assert_raise_with_message(Timeout::ExitException, "boon") do
-      Timeout.timeout(10, Timeout::ExitException) do
-        raise Timeout::ExitException, "boon"
+    assert_raise_with_message(Timeout::Error, "boon") do
+      Timeout.timeout(10, Timeout::Error) do
+        raise Timeout::Error, "boon"
       end
     end
   end
@@ -85,5 +89,22 @@ class TestTimeout < Test::Unit::TestCase
     assert_raise_with_message(Timeout::Error, 'execution expired', bug9380) do
       Timeout.timeout(0.01) {e.next}
     end
+  end
+
+  def test_handle_interrupt
+    bug11344 = '[ruby-dev:49179] [Bug #11344]'
+    ok = false
+    assert_raise(Timeout::Error) {
+      Thread.handle_interrupt(Timeout::Error => :never) {
+        Timeout.timeout(0.01) {
+          sleep 0.2
+          ok = true
+          Thread.handle_interrupt(Timeout::Error => :on_blocking) {
+            sleep 0.2
+          }
+        }
+      }
+    }
+    assert(ok, bug11344)
   end
 end

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # = uri/https.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
@@ -7,7 +8,7 @@
 # See URI for general documentation
 #
 
-require 'uri/http'
+require_relative 'http'
 
 module URI
 

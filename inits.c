@@ -9,7 +9,6 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
 #include "internal.h"
 
 #define CALL(n) {void Init_##n(void); Init_##n();}
@@ -17,7 +16,13 @@
 void
 rb_call_inits(void)
 {
-    CALL(RandomSeed);
+#if USE_TRANSIENT_HEAP
+    CALL(TransientHeap);
+#endif
+    CALL(vm_postponed_job);
+    CALL(Method);
+    CALL(RandomSeedCore);
+    CALL(encodings);
     CALL(sym);
     CALL(var_tables);
     CALL(Object);
@@ -46,7 +51,6 @@ rb_call_inits(void)
     CALL(Time);
     CALL(Random);
     CALL(signal);
-    CALL(process);
     CALL(load);
     CALL(Proc);
     CALL(Binding);
@@ -56,10 +60,14 @@ rb_call_inits(void)
     CALL(VM);
     CALL(ISeq);
     CALL(Thread);
+    CALL(process);
     CALL(Cont);
     CALL(Rational);
     CALL(Complex);
     CALL(version);
     CALL(vm_trace);
+    CALL(vm_stack_canary);
+    CALL(ast);
+    CALL(gc_stress);
 }
 #undef CALL

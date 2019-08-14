@@ -1,5 +1,6 @@
+# frozen_string_literal: false
 require 'test/unit'
-require "-test-/string/string"
+require "-test-/string"
 require "tempfile"
 
 class Test_StringNormalize < Test::Unit::TestCase
@@ -59,7 +60,6 @@ class Test_StringNormalize < Test::Unit::TestCase
       assert_equal expected, result,
         "#{expected.dump} is expected but #{src.dump}"
     end
-  rescue NotImplementedError
   end
 
   def test_not_normalize_kc
@@ -79,7 +79,6 @@ class Test_StringNormalize < Test::Unit::TestCase
       assert_equal src, result,
         "#{src.dump} is expected not to be normalized, but #{result.dump}"
     end
-  rescue NotImplementedError
   end
 
   def test_dont_normalize_hfsplus
@@ -101,6 +100,11 @@ class Test_StringNormalize < Test::Unit::TestCase
       assert_equal src, result,
         "#{src.dump} is expected not to be normalized, but #{result.dump}"
     end
-  rescue NotImplementedError
   end
-end
+
+  def test_invalid_sequence
+    assert_separately(%w[-r-test-/string], <<-'end;')
+      assert_equal("\u{fffd}", Bug::String.new("\xff").normalize_ospath)
+    end;
+  end
+end if Bug::String.method_defined?(:normalize_ospath)

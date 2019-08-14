@@ -1,11 +1,20 @@
+# frozen_string_literal: true
 require 'rubygems'
 require 'rubygems/package'
 require 'time'
+require 'tmpdir'
 
+rescue_exceptions = [LoadError]
+begin
+  require 'bundler/errors'
+rescue LoadError # this rubygems + old ruby
+else # this rubygems + ruby trunk with bundler
+  rescue_exceptions << Bundler::GemfileNotFound
+end
 begin
   gem 'builder'
   require 'builder/xchar'
-rescue LoadError
+rescue *rescue_exceptions
 end
 
 ##
@@ -53,7 +62,7 @@ class Gem::Indexer
     require 'tmpdir'
     require 'zlib'
 
-    unless defined?(Builder::XChar) then
+    unless defined?(Builder::XChar)
       raise "Gem::Indexer requires that the XML Builder library be installed:" +
             "\n\tgem install builder"
     end
@@ -63,7 +72,7 @@ class Gem::Indexer
     @build_modern = options[:build_modern]
 
     @dest_directory = directory
-    @directory = File.join(Dir.tmpdir, "gem_generate_index_#{$$}")
+    @directory = Dir.mktmpdir 'gem_generate_index'
 
     marshal_name = "Marshal.#{Gem.marshal_version}"
 
@@ -93,40 +102,22 @@ class Gem::Indexer
   end
 
   ##
-  # Abbreviate the spec for downloading.  Abbreviated specs are only used for
-  # searching, downloading and related activities and do not need deployment
-  # specific information (e.g. list of files).  So we abbreviate the spec,
-  # making it much smaller for quicker downloads.
-  #--
-  # TODO move to Gem::Specification
+  # Build various indices
 
-  def abbreviate(spec)
-    spec.files = []
-    spec.test_files = []
-    spec.rdoc_options = []
-    spec.extra_rdoc_files = []
-    spec.cert_chain = []
-    spec
-  end
+  def build_indices
+    specs = map_gems_to_specs gem_file_list
+    Gem::Specification._resort! specs
+    build_marshal_gemspecs specs
+    build_modern_indices specs if @build_modern
 
-  ##
-  # Build various indicies
-
-  def build_indicies
-    Gem::Specification.dirs = []
-    Gem::Specification.add_specs(*map_gems_to_specs(gem_file_list))
-
-    build_marshal_gemspecs
-    build_modern_indicies if @build_modern
-
-    compress_indicies
+    compress_indices
   end
 
   ##
   # Builds Marshal quick index gemspecs.
 
-  def build_marshal_gemspecs
-    count = Gem::Specification.count { |s| not s.default_gem? }
+  def build_marshal_gemspecs(specs)
+    count = specs.count
     progress = ui.progress_reporter count,
                                     "Generating Marshal quick index gemspecs for #{count} gems",
                                     "Complete"
@@ -134,13 +125,16 @@ class Gem::Indexer
     files = []
 
     Gem.time 'Generated Marshal quick index gemspecs' do
-      Gem::Specification.each do |spec|
+      specs.each do |spec|
         next if spec.default_gem?
         spec_file_name = "#{spec.original_name}.gemspec.rz"
         marshal_name = File.join @quick_marshal_dir, spec_file_name
 
         marshal_zipped = Gem.deflate Marshal.dump(spec)
-        open marshal_name, 'wb' do |io| io.write marshal_zipped end
+
+        File.open marshal_name, 'wb' do |io|
+          io.write marshal_zipped
+        end
 
         files << marshal_name
 
@@ -170,7 +164,7 @@ class Gem::Indexer
           platform = spec.original_platform
 
           # win32-api-1.0.4-x86-mswin32-60
-          unless String === platform then
+          unless String === platform
             alert_warning "Skipping invalid platform in gem: #{spec.full_name}"
             next
           end
@@ -186,16 +180,14 @@ class Gem::Indexer
   end
 
   ##
-  # Builds indicies for RubyGems 1.2 and newer. Handles full, latest, prerelease
+  # Builds indices for RubyGems 1.2 and newer. Handles full, latest, prerelease
 
-  def build_modern_indicies
-    specs = Gem::Specification.reject { |s| s.default_gem? }
-
-    prerelease, released = specs.partition { |s|
+  def build_modern_indices(specs)
+    prerelease, released = specs.partition do |s|
       s.version.prerelease?
-    }
+    end
     latest_specs =
-      Gem::Specification.latest_specs.reject { |s| s.default_gem? }
+      Gem::Specification._latest_specs specs
 
     build_modern_index(released.sort, @specs_index, 'specs')
     build_modern_index(latest_specs.sort, @latest_specs_index, 'latest specs')
@@ -210,9 +202,9 @@ class Gem::Indexer
                "#{@prerelease_specs_index}.gz"]
   end
 
-  def map_gems_to_specs gems
-    gems.map { |gemfile|
-      if File.size(gemfile) == 0 then
+  def map_gems_to_specs(gems)
+    gems.map do |gemfile|
+      if File.size(gemfile) == 0
         alert_warning "Skipping zero-length gem: #{gemfile}"
         next
       end
@@ -221,21 +213,11 @@ class Gem::Indexer
         spec = Gem::Package.new(gemfile).spec
         spec.loaded_from = gemfile
 
-        # HACK: fuck this shit - borks all tests that use pl1
-        # if File.basename(gemfile, ".gem") != spec.original_name then
-        #   exp = spec.full_name
-        #   exp << " (#{spec.original_name})" if
-        #     spec.original_name != spec.full_name
-        #   msg = "Skipping misnamed gem: #{gemfile} should be named #{exp}"
-        #   alert_warning msg
-        #   next
-        # end
-
-        abbreviate spec
-        sanitize spec
+        spec.abbreviate
+        spec.sanitize
 
         spec
-      rescue SignalException => e
+      rescue SignalException
         alert_error "Received signal, exiting"
         raise
       rescue Exception => e
@@ -244,19 +226,19 @@ class Gem::Indexer
                "\t#{e.backtrace.join "\n\t"}"].join("\n")
         alert_error msg
       end
-    }.compact
+    end.compact
   end
 
   ##
-  # Compresses indicies on disk
+  # Compresses indices on disk
   #--
   # All future files should be compressed using gzip, not deflate
 
-  def compress_indicies
-    say "Compressing indicies"
+  def compress_indices
+    say "Compressing indices"
 
-    Gem.time 'Compressed indicies' do
-      if @build_modern then
+    Gem.time 'Compressed indices' do
+      if @build_modern
         gzip @specs_index
         gzip @latest_specs_index
         gzip @prerelease_specs_index
@@ -290,7 +272,7 @@ class Gem::Indexer
 
     zipped = Gem.deflate data
 
-    open "#{filename}.#{extension}", 'wb' do |io|
+    File.open "#{filename}.#{extension}", 'wb' do |io|
       io.write zipped
     end
   end
@@ -299,16 +281,16 @@ class Gem::Indexer
   # List of gem file names to index.
 
   def gem_file_list
-    Dir[File.join(@dest_directory, "gems", '*.gem')]
+    Gem::Util.glob_files_in_dir("*.gem", File.join(@dest_directory, "gems"))
   end
 
   ##
-  # Builds and installs indicies.
+  # Builds and installs indices.
 
   def generate_index
     make_temp_directories
-    build_indicies
-    install_indicies
+    build_indices
+    install_indices
   rescue SignalException
   ensure
     FileUtils.rm_rf @directory
@@ -324,9 +306,9 @@ class Gem::Indexer
   end
 
   ##
-  # Install generated indicies into the destination directory.
+  # Install generated indices into the destination directory.
 
-  def install_indicies
+  def install_indices
     verbose = Gem.configuration.really_verbose
 
     say "Moving index into production dir #{@dest_directory}" if verbose
@@ -334,7 +316,7 @@ class Gem::Indexer
     files = @files
     files.delete @quick_marshal_dir if files.include? @quick_dir
 
-    if files.include? @quick_marshal_dir and not files.include? @quick_dir then
+    if files.include? @quick_marshal_dir and not files.include? @quick_dir
       files.delete @quick_marshal_dir
 
       dst_name = File.join(@dest_directory, @quick_marshal_dir_base)
@@ -375,40 +357,8 @@ class Gem::Indexer
     data = Gem.read_binary path
     compressed_data = Gem.read_binary "#{path}.#{extension}"
 
-    unless data == Gem.inflate(compressed_data) then
+    unless data == Gem::Util.inflate(compressed_data)
       raise "Compressed file #{compressed_path} does not match uncompressed file #{path}"
-    end
-  end
-
-  ##
-  # Sanitize the descriptive fields in the spec.  Sometimes non-ASCII
-  # characters will garble the site index.  Non-ASCII characters will
-  # be replaced by their XML entity equivalent.
-
-  def sanitize(spec)
-    spec.summary              = sanitize_string(spec.summary)
-    spec.description          = sanitize_string(spec.description)
-    spec.post_install_message = sanitize_string(spec.post_install_message)
-    spec.authors              = spec.authors.collect { |a| sanitize_string(a) }
-
-    spec
-  end
-
-  ##
-  # Sanitize a single string.
-
-  def sanitize_string(string)
-    return string unless string
-
-    # HACK the #to_s is in here because RSpec has an Array of Arrays of
-    # Strings for authors.  Need a way to disallow bad values on gemspec
-    # generation.  (Probably won't happen.)
-    string = string.to_s
-
-    begin
-      Builder::XChar.encode string
-    rescue NameError, NoMethodError
-      string.to_xs
     end
   end
 
@@ -427,7 +377,7 @@ class Gem::Indexer
       gem_mtime >= specs_mtime
     end
 
-    if updated_gems.empty? then
+    if updated_gems.empty?
       say 'No new gems'
       terminate_interaction 0
     end
@@ -435,10 +385,7 @@ class Gem::Indexer
     specs = map_gems_to_specs updated_gems
     prerelease, released = specs.partition { |s| s.version.prerelease? }
 
-    Gem::Specification.dirs = []
-    Gem::Specification.add_specs(*specs)
-
-    files = build_marshal_gemspecs
+    files = build_marshal_gemspecs specs
 
     Gem.time 'Updated indexes' do
       update_specs_index released, @dest_specs_index, @specs_index
@@ -448,7 +395,7 @@ class Gem::Indexer
                          @prerelease_specs_index)
     end
 
-    compress_indicies
+    compress_indices
 
     verbose = Gem.configuration.really_verbose
 
@@ -491,8 +438,9 @@ class Gem::Indexer
 
     specs_index = compact_specs specs_index.uniq.sort
 
-    open dest, 'wb' do |io|
+    File.open dest, 'wb' do |io|
       Marshal.dump specs_index, io
     end
   end
+
 end

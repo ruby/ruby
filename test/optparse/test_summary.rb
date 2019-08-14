@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative 'test_optparse'
 
 class TestOptionParser::SummaryTest < TestOptionParser
@@ -42,5 +43,16 @@ class TestOptionParser::SummaryTest < TestOptionParser
     o = OptionParser.new("foo bar")
     assert_equal("foo bar\n", o.to_s, bug6348)
     assert_equal(["foo bar"], o.to_a, bug6348)
+  end
+
+  def test_ver
+    o = OptionParser.new("foo bar")
+    o.program_name = "foo"
+    assert_warning('') {assert_nil(o.version)}
+    assert_warning('') {assert_nil(o.release)}
+    o.version = [0, 1]
+    assert_equal "foo 0.1", o.ver
+    o.release = "rel"
+    assert_equal "foo 0.1 (rel)", o.ver
   end
 end

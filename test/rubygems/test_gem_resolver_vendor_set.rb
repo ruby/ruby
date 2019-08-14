@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 
 class TestGemResolverVendorSet < Gem::TestCase
@@ -11,9 +12,11 @@ class TestGemResolverVendorSet < Gem::TestCase
   def test_add_vendor_gem
     name, version, directory = vendor_gem
 
-    @set.add_vendor_gem name, directory
+    added = @set.add_vendor_gem name, directory
 
     spec = @set.load_spec name, version, Gem::Platform::RUBY, nil
+
+    assert_equal spec, added
 
     assert_equal "#{name}-#{version}", spec.full_name
 
@@ -55,6 +58,20 @@ class TestGemResolverVendorSet < Gem::TestCase
     assert_equal expected, found
   end
 
+  def test_find_all_prerelease
+    name, _, directory = vendor_gem 'a', '1.a'
+
+    @set.add_vendor_gem name, directory
+
+    req = Gem::Resolver::DependencyRequest.new dep('a'), nil
+
+    assert_empty @set.find_all req
+
+    req = Gem::Resolver::DependencyRequest.new dep('a', '>= 0.a'), nil
+
+    refute_empty @set.find_all req
+  end
+
   def test_load_spec
     error = Object.const_defined?(:KeyError) ? KeyError : IndexError
 
@@ -64,4 +81,3 @@ class TestGemResolverVendorSet < Gem::TestCase
   end
 
 end
-

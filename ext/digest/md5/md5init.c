@@ -1,9 +1,12 @@
 /* $RoughId: md5init.c,v 1.2 2001/07/13 19:49:10 knu Exp $ */
 /* $Id$ */
 
-#include "digest.h"
-#if defined(HAVE_OPENSSL_MD5_H)
+#include <ruby/ruby.h>
+#include "../digest.h"
+#if defined(MD5_USE_OPENSSL)
 #include "md5ossl.h"
+#elif defined(MD5_USE_COMMONDIGEST)
+#include "md5cc.h"
 #else
 #include "md5.h"
 #endif
@@ -19,12 +22,32 @@ static const rb_digest_metadata_t md5 = {
 };
 
 /*
+ * Document-class: Digest::MD5 < Digest::Base
  * A class for calculating message digests using the MD5
  * Message-Digest Algorithm by RSA Data Security, Inc., described in
  * RFC1321.
+ *
+ * MD5 calculates a digest of 128 bits (16 bytes).
+ *
+ * == Examples
+ *  require 'digest'
+ *
+ *  # Compute a complete digest
+ *  Digest::MD5.hexdigest 'abc'      #=> "90015098..."
+ *
+ *  # Compute digest by chunks
+ *  md5 = Digest::MD5.new               # =>#<Digest::MD5>
+ *  md5.update "ab"
+ *  md5 << "c"                           # alias for #update
+ *  md5.hexdigest                        # => "90015098..."
+ *
+ *  # Use the same object to compute another digest
+ *  md5.reset
+ *  md5 << "message"
+ *  md5.hexdigest                        # => "78e73102..."
  */
 void
-Init_md5()
+Init_md5(void)
 {
     VALUE mDigest, cDigest_Base, cDigest_MD5;
 
@@ -38,6 +61,8 @@ Init_md5()
 
     cDigest_MD5 = rb_define_class_under(mDigest, "MD5", cDigest_Base);
 
-    rb_ivar_set(cDigest_MD5, rb_intern("metadata"),
-      Data_Wrap_Struct(rb_cObject, 0, 0, (void *)&md5));
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
+    rb_iv_set(cDigest_MD5, "metadata",
+	      Data_Wrap_Struct(0, 0, 0, (void *)&md5));
 }

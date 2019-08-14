@@ -13,7 +13,23 @@
 <%
 defs = File.join(File.dirname(File.dirname(erb.filename)), "defs/id.def")
 ids = eval(File.read(defs), binding, defs)
+ops = ids[:token_op].uniq {|id, op, token| token && op}
 %>
+% ops.each do |_id, _op, token|
+%   next unless token
+#define t<%=token%> RUBY_TOKEN(<%=token%>)
+% end
+
+static const struct {
+    unsigned short token;
+    const char name[3], term;
+} op_tbl[] = {
+% ops.each do |_id, op, token|
+%   next unless token
+    {t<%=token%>, "<%=op%>"},
+% end
+};
+
 static void
 Init_id(void)
 {

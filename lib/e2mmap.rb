@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #
 #--
 #   e2mmap.rb - for Ruby 1.1
@@ -52,7 +53,6 @@
 #
 #
 module Exception2MessageMapper
-  @RCS_ID='-$Id: e2mmap.rb,v 1.10 1999/02/17 12:33:17 keiju Exp keiju $-'
 
   E2MM = Exception2MessageMapper # :nodoc:
 
@@ -62,16 +62,20 @@ module Exception2MessageMapper
   end
 
   def bind(cl)
-    self.module_eval %[
+    self.module_eval "#{<<-"begin;"}\n#{<<-"end;"}", __FILE__, __LINE__+1
+    begin;
       def Raise(err = nil, *rest)
         Exception2MessageMapper.Raise(self.class, err, *rest)
       end
       alias Fail Raise
 
+      class << self
+        undef included
+      end
       def self.included(mod)
         mod.extend Exception2MessageMapper
       end
-    ]
+    end;
   end
 
   # Fail(err, *rest)
@@ -128,9 +132,9 @@ module Exception2MessageMapper
   #     define exception named ``c'' with message m.
   #
   def E2MM.def_exception(k, n, m, s = StandardError)
-    n = n.id2name if n.kind_of?(Fixnum)
     e = Class.new(s)
     E2MM.instance_eval{@MessageMap[[k, e]] = m}
+    k.module_eval {remove_const(n)} if k.const_defined?(n, false)
     k.const_set(n, e)
   end
 
@@ -142,8 +146,6 @@ module Exception2MessageMapper
   def E2MM.Raise(klass = E2MM, err = nil, *rest)
     if form = e2mm_message(klass, err)
       b = $@.nil? ? caller(1) : $@
-      #p $@
-      #p __FILE__
       b.shift if b[0] =~ /^#{Regexp.quote(__FILE__)}:/
       raise err, sprintf(form, *rest), b
     else
@@ -157,7 +159,6 @@ module Exception2MessageMapper
   def E2MM.e2mm_message(klass, exp)
     for c in klass.ancestors
       if mes = @MessageMap[[c,exp]]
-        #p mes
         m = klass.instance_eval('"' + mes + '"')
         return m
       end

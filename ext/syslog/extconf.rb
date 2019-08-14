@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # $RoughId: extconf.rb,v 1.3 2001/11/24 17:49:26 knu Exp $
 # $Id$
 

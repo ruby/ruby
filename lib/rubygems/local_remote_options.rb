@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -23,8 +24,10 @@ module Gem::LocalRemoteOptions
         raise OptionParser::InvalidArgument, value
       end
 
-      unless ['http', 'https', 'file'].include?(uri.scheme)
-         raise OptionParser::InvalidArgument, value
+      valid_uri_schemes = ["http", "https", "file", "s3"]
+      unless valid_uri_schemes.include?(uri.scheme)
+        msg = "Invalid uri scheme for #{value}\nPreface URLs with one of #{valid_uri_schemes.map{|s| "#{s}://"}}"
+        raise ArgumentError, msg
       end
 
       value
@@ -100,12 +103,12 @@ module Gem::LocalRemoteOptions
   def add_source_option
     accept_uri_http
 
-    add_option(:"Local/Remote", '--source URL', URI::HTTP,
-               'Add URL as a remote source for gems') do |source, options|
+    add_option(:"Local/Remote", '-s', '--source URL', URI::HTTP,
+               'Append URL to list of remote gem sources') do |source, options|
 
       source << '/' if source !~ /\/\z/
 
-      if options.delete :sources_cleared then
+      if options.delete :sources_cleared
         Gem.sources = [source]
       else
         Gem.sources << source unless Gem.sources.include?(source)
@@ -145,4 +148,3 @@ module Gem::LocalRemoteOptions
   end
 
 end
-

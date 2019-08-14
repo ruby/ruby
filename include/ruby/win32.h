@@ -35,6 +35,9 @@ extern "C++" {			/* template without extern "C++" */
 #if !defined(_WIN64) && !defined(WIN32)
 #define WIN32
 #endif
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+#include <windows.h>
+#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #if !defined(_MSC_VER) || _MSC_VER >= 1400
@@ -77,7 +80,7 @@ extern "C++" {			/* template without extern "C++" */
 #endif
 #include <io.h>
 #include <malloc.h>
-#if defined __MINGW32__ || __BORLANDC__ >= 0x0580
+#if defined __MINGW32__
 # include <stdint.h>
 #else
 # if !defined(_INTPTR_T_DEFINED)
@@ -124,33 +127,26 @@ typedef unsigned int uintptr_t;
 
 #define WNOHANG -1
 
+#define O_SHARE_DELETE 0x20000000 /* for rb_w32_open(), rb_w32_wopen() */
+
 typedef int clockid_t;
 #define CLOCK_REALTIME  0
 #define CLOCK_MONOTONIC 1
 
-#undef getc
-#undef putc
-#undef fgetc
-#undef fputc
-#undef getchar
-#undef putchar
-#undef fgetchar
-#undef fputchar
 #undef utime
 #undef lseek
 #undef stat
 #undef fstat
-#define getc(_stream)		rb_w32_getc(_stream)
-#define getchar()		rb_w32_getc(stdin)
-#define putc(_c, _stream)	rb_w32_putc(_c, _stream)
-#define putchar(_c)		rb_w32_putc(_c, stdout)
 #ifdef RUBY_EXPORT
-#define fgetc(_stream)		getc(_stream)
-#define fputc(_c, _stream)	putc(_c, _stream)
-#define fgetchar()		getchar()
-#define fputchar(_c)		putchar(_c)
 #define utime(_p, _t)		rb_w32_utime(_p, _t)
-#define lseek(_f, _o, _w)	_lseeki64(_f, _o, _w)
+#undef HAVE_UTIMES
+#define HAVE_UTIMES 1
+#define utimes(_p, _t)		rb_w32_utimes(_p, _t)
+#undef HAVE_UTIMENSAT
+#define HAVE_UTIMENSAT 1
+#define AT_FDCWD		-100
+#define utimensat(_d, _p, _t, _f)	rb_w32_utimensat(_d, _p, _t, _f)
+#define lseek(_f, _o, _w)	rb_w32_lseek(_f, _o, _w)
 
 #define pipe(p)			rb_w32_pipe(p)
 #define open			rb_w32_open
@@ -162,29 +158,11 @@ typedef int clockid_t;
 #define getppid()		rb_w32_getppid()
 #define sleep(x)		rb_w32_Sleep((x)*1000)
 #define Sleep(msec)		(void)rb_w32_Sleep(msec)
-#define fstati64(fd,st) 	rb_w32_fstati64(fd,st)
-#ifdef __BORLANDC__
-#define creat(p, m)		_creat(p, m)
-#define eof()			_eof()
-#define filelength(h)		_filelength(h)
-#define mktemp(t)		_mktemp(t)
-#define tell(h)			_tell(h)
-#define _open			_sopen
-#define sopen			_sopen
-#undef fopen
-#define fopen(p, m)		rb_w32_fopen(p, m)
-#undef fdopen
-#define fdopen(h, m)		rb_w32_fdopen(h, m)
-#undef fsopen
-#define fsopen(p, m, sh)	rb_w32_fsopen(p, m, sh)
-#endif /* __BORLANDC__ */
 
 #undef execv
 #define execv(path,argv)	rb_w32_aspawn(P_OVERLAY,path,argv)
-#if !defined(__BORLANDC__)
 #undef isatty
 #define isatty(h)		rb_w32_isatty(h)
-#endif /* __BORLANDC__ */
 
 #undef mkdir
 #define mkdir(p, m)		rb_w32_mkdir(p, m)
@@ -194,27 +172,43 @@ typedef int clockid_t;
 #define unlink(p)		rb_w32_unlink(p)
 #endif /* RUBY_EXPORT */
 
+/* same with stati64 except the size of st_ino and nanosecond timestamps */
+struct stati128 {
+  _dev_t st_dev;
+  unsigned __int64 st_ino;
+  __int64 st_inohigh;
+  unsigned short st_mode;
+  short st_nlink;
+  short st_uid;
+  short st_gid;
+  _dev_t st_rdev;
+  __int64 st_size;
+  __time64_t st_atime;
+  long st_atimensec;
+  __time64_t st_mtime;
+  long st_mtimensec;
+  __time64_t st_ctime;
+  long st_ctimensec;
+};
+
 #if SIZEOF_OFF_T == 8
 #define off_t __int64
-#define stat stati64
-#define fstat(fd,st)		fstati64(fd,st)
-#if defined(__BORLANDC__)
-#define stati64(path, st) rb_w32_stati64(path, st)
-#elif !defined(_MSC_VER) || RT_VER < 80
-#define stati64 _stati64
-#ifndef _stati64
-#define _stati64(path, st) rb_w32_stati64(path, st)
-#endif
-#else
-#define stati64 _stat64
-#define _stat64(path, st) rb_w32_stati64(path, st)
-#endif
+#define stat stati128
+#undef SIZEOF_STRUCT_STAT_ST_INO
+#define SIZEOF_STRUCT_STAT_ST_INO sizeof(unsigned __int64)
+#define HAVE_STRUCT_STAT_ST_INOHIGH
+#define HAVE_STRUCT_STAT_ST_ATIMENSEC
+#define HAVE_STRUCT_STAT_ST_MTIMENSEC
+#define HAVE_STRUCT_STAT_ST_CTIMENSEC
+#define fstat(fd,st)		rb_w32_fstati128(fd,st)
+#define stati128(path, st)	rb_w32_stati128(path,st)
 #else
 #define stat(path,st)		rb_w32_stat(path,st)
 #define fstat(fd,st)		rb_w32_fstat(fd,st)
 extern int rb_w32_stat(const char *, struct stat *);
 extern int rb_w32_fstat(int, struct stat *);
 #endif
+#define lstat(path,st)		rb_w32_lstati128(path,st)
 #define access(path,mode)	rb_w32_access(path,mode)
 
 #define strcasecmp		_stricmp
@@ -262,8 +256,8 @@ struct ifaddrs {
 #define IFF_POINTOPOINT IFF_POINTTOPOINT
 #endif
 
+extern void   rb_w32_sysinit(int *, char ***);
 extern DWORD  rb_w32_osid(void);
-extern int    rb_w32_cmdvector(const char *, char ***);
 extern rb_pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *, int *);
 extern int    flock(int fd, int oper);
 extern int    rb_w32_io_cancelable_p(int);
@@ -316,6 +310,11 @@ extern int chown(const char *, int, int);
 extern int rb_w32_uchown(const char *, int, int);
 extern int link(const char *, const char *);
 extern int rb_w32_ulink(const char *, const char *);
+extern ssize_t readlink(const char *, char *, size_t);
+extern ssize_t rb_w32_ureadlink(const char *, char *, size_t);
+extern ssize_t rb_w32_wreadlink(const WCHAR *, WCHAR *, size_t);
+extern int symlink(const char *src, const char *link);
+extern int rb_w32_usymlink(const char *src, const char *link);
 extern int gettimeofday(struct timeval *, struct timezone *);
 extern int clock_gettime(clockid_t, struct timespec *);
 extern int clock_getres(clockid_t, struct timespec *);
@@ -328,11 +327,10 @@ extern rb_pid_t rb_w32_uaspawn(int, const char *, char *const *);
 extern rb_pid_t rb_w32_uaspawn_flags(int, const char *, char *const *, DWORD);
 extern int kill(int, int);
 extern int fcntl(int, int, ...);
+extern int rb_w32_set_nonblock(int);
 extern rb_pid_t rb_w32_getpid(void);
 extern rb_pid_t rb_w32_getppid(void);
-#if !defined(__BORLANDC__)
 extern int rb_w32_isatty(int);
-#endif
 extern int rb_w32_uchdir(const char *);
 extern int rb_w32_mkdir(const char *, int);
 extern int rb_w32_umkdir(const char *, int);
@@ -341,20 +339,15 @@ extern int rb_w32_urmdir(const char *);
 extern int rb_w32_unlink(const char *);
 extern int rb_w32_uunlink(const char *);
 extern int rb_w32_uchmod(const char *, int);
-extern int rb_w32_stati64(const char *, struct stati64 *);
-extern int rb_w32_ustati64(const char *, struct stati64 *);
+extern int rb_w32_stati128(const char *, struct stati128 *);
+extern int rb_w32_ustati128(const char *, struct stati128 *);
+extern int rb_w32_lstati128(const char *, struct stati128 *);
+extern int rb_w32_ulstati128(const char *, struct stati128 *);
 extern int rb_w32_access(const char *, int);
 extern int rb_w32_uaccess(const char *, int);
 extern char rb_w32_fd_is_text(int);
-extern int rb_w32_fstati64(int, struct stati64 *);
+extern int rb_w32_fstati128(int, struct stati128 *);
 extern int rb_w32_dup2(int, int);
-
-#ifdef __BORLANDC__
-extern off_t _lseeki64(int, off_t, int);
-extern FILE *rb_w32_fopen(const char *, const char *);
-extern FILE *rb_w32_fdopen(int, const char *);
-extern FILE *rb_w32_fsopen(const char *, const char *, int);
-#endif
 
 #include <float.h>
 
@@ -396,19 +389,6 @@ __declspec(dllimport) extern int finite(double);
 #define S_IFIFO _S_IFIFO
 #endif
 
-#if 0 && defined __BORLANDC__
-#undef S_ISDIR
-#undef S_ISFIFO
-#undef S_ISBLK
-#undef S_ISCHR
-#undef S_ISREG
-#define S_ISDIR(m)  (((unsigned short)(m) & S_IFMT) == S_IFDIR)
-#define S_ISFIFO(m) (((unsigned short)(m) & S_IFMT) == S_IFIFO)
-#define S_ISBLK(m)  (((unsigned short)(m) & S_IFMT) == S_IFBLK)
-#define S_ISCHR(m)  (((unsigned short)(m) & S_IFMT) == S_IFCHR)
-#define S_ISREG(m)  (((unsigned short)(m) & S_IFMT) == S_IFREG)
-#endif
-
 #if !defined S_IRUSR && !defined __MINGW32__
 #define S_IRUSR 0400
 #endif
@@ -439,14 +419,17 @@ __declspec(dllimport) extern int finite(double);
 #define S_IXOTH 0001
 #endif
 
+#define S_IFLNK 0xa000
+
 /*
  * define this so we can do inplace editing
  */
 
 #define SUFFIX
 
-extern int 	 rb_w32_ftruncate(int fd, off_t length);
-extern int 	 rb_w32_truncate(const char *path, off_t length);
+extern int rb_w32_ftruncate(int fd, off_t length);
+extern int rb_w32_truncate(const char *path, off_t length);
+extern int rb_w32_utruncate(const char *path, off_t length);
 
 #undef HAVE_FTRUNCATE
 #define HAVE_FTRUNCATE 1
@@ -479,8 +462,6 @@ extern rb_gid_t  getgid (void);
 extern rb_gid_t  getegid (void);
 extern int       setuid (rb_uid_t);
 extern int       setgid (rb_gid_t);
-
-extern int fstati64(int, struct stati64 *);
 
 extern char *rb_w32_strerror(int);
 
@@ -619,15 +600,14 @@ extern char *rb_w32_strerror(int);
 #endif
 
 #define F_DUPFD 0
-#if 0
 #define F_GETFD 1
 #define F_SETFD 2
+#if 0
 #define F_GETFL 3
 #endif
 #define F_SETFL 4
-#if 0
+#define F_DUPFD_CLOEXEC 67
 #define FD_CLOEXEC 1 /* F_GETFD, F_SETFD */
-#endif
 #define O_NONBLOCK 1
 
 #undef FD_SET
@@ -763,8 +743,6 @@ struct tm *localtime_r(const time_t *, struct tm *);
 
 /* thread stuff */
 int  rb_w32_sleep(unsigned long msec);
-int  rb_w32_putc(int, FILE*);
-int  rb_w32_getc(FILE*);
 int  rb_w32_open(const char *, int, ...);
 int  rb_w32_uopen(const char *, int, ...);
 int  rb_w32_wopen(const WCHAR *, int, ...);
@@ -773,14 +751,21 @@ int  rb_w32_fclose(FILE*);
 int  rb_w32_pipe(int[2]);
 ssize_t rb_w32_read(int, void *, size_t);
 ssize_t rb_w32_write(int, const void *, size_t);
+off_t  rb_w32_lseek(int, off_t, int);
 int  rb_w32_utime(const char *, const struct utimbuf *);
 int  rb_w32_uutime(const char *, const struct utimbuf *);
+int  rb_w32_utimes(const char *, const struct timeval *);
+int  rb_w32_uutimes(const char *, const struct timeval *);
+int  rb_w32_utimensat(int /* must be AT_FDCWD */, const char *, const struct timespec *, int /* must be 0 */);
+int  rb_w32_uutimensat(int /* must be AT_FDCWD */, const char *, const struct timespec *, int /* must be 0 */);
 long rb_w32_write_console(uintptr_t, int);	/* use uintptr_t instead of VALUE because it's not defined yet here */
 int  WINAPI rb_w32_Sleep(unsigned long msec);
 int  rb_w32_wait_events_blocking(HANDLE *events, int num, DWORD timeout);
 int  rb_w32_time_subtract(struct timeval *rest, const struct timeval *wait);
 int  rb_w32_wrap_io_handle(HANDLE, int);
 int  rb_w32_unwrap_io_handle(int);
+WCHAR *rb_w32_mbstr_to_wstr(UINT, const char *, int, long *);
+char *rb_w32_wstr_to_mbstr(UINT, const WCHAR *, int, long *);
 
 /*
 == ***CAUTION***
@@ -794,7 +779,8 @@ uintptr_t rb_w32_asynchronize(asynchronous_func_t func, uintptr_t self, int argc
 
 RUBY_SYMBOL_EXPORT_END
 
-#ifdef __MINGW_ATTRIB_PURE
+#if (defined(__MINGW64_VERSION_MAJOR) || defined(__MINGW64__)) && !defined(__cplusplus)
+#ifdef RUBY_MINGW64_BROKEN_FREXP_MODF
 /* License: Ruby's */
 /* get rid of bugs in math.h of mingw */
 #define frexp(_X, _Y) __extension__ ({\
@@ -812,13 +798,6 @@ RUBY_SYMBOL_EXPORT_END
 })
 #endif
 
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
-
 #if defined(__MINGW64__)
 /*
  * Use powl() instead of broken pow() of x86_64-w64-mingw32.
@@ -828,13 +807,19 @@ RUBY_SYMBOL_EXPORT_END
 static inline double
 rb_w32_pow(double x, double y)
 {
-    return powl(x, y);
+    return (double)powl(x, y);
 }
 #elif defined(__MINGW64_VERSION_MAJOR)
 double rb_w32_pow(double x, double y);
 #endif
-#if defined(__MINGW64_VERSION_MAJOR) || defined(__MINGW64__)
 #define pow rb_w32_pow
+#endif
+
+#if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
+#endif
+}  /* extern "C" { */
 #endif
 
 #endif /* RUBY_WIN32_H */

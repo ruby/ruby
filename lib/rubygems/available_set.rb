@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 class Gem::AvailableSet
 
   include Enumerable
@@ -102,7 +103,7 @@ class Gem::AvailableSet
   # Other options are :shallow for only direct development dependencies of the
   # gems in this set or :all for all development dependencies.
 
-  def to_request_set development = :none
+  def to_request_set(development = :none)
     request_set = Gem::RequestSet.new
     request_set.development = :all == development
 
@@ -126,7 +127,7 @@ class Gem::AvailableSet
     dep = req.dependency
 
     match = @set.find_all do |t|
-      dep.matches_spec? t.spec
+      dep.match? t.spec
     end
 
     match.map do |t|
@@ -161,4 +162,5 @@ class Gem::AvailableSet
   def inject_into_list(dep_list)
     @set.each { |t| dep_list.add t.spec }
   end
+
 end

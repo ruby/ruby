@@ -1,8 +1,9 @@
+# frozen_string_literal: true
 require 'test/unit'
 require 'cgi'
 require 'tempfile'
 require 'stringio'
-require_relative '../ruby/envutil'
+require_relative 'update_env'
 
 
 ##
@@ -32,7 +33,7 @@ class MultiPart
 
   def initialize(boundary=nil)
     @boundary = boundary || create_boundary()
-    @buf = ''
+    @buf = ''.dup
     @buf.force_encoding(::Encoding::ASCII_8BIT) if defined?(::Encoding)
   end
   attr_reader :boundary
@@ -45,15 +46,14 @@ class MultiPart
     buf << "Content-Disposition: form-data: name=\"#{name}\"#{s}\r\n"
     buf << "Content-Type: #{content_type}\r\n" if content_type
     buf << "\r\n"
-    value = value.dup.force_encoding(::Encoding::ASCII_8BIT) if defined?(::Encoding)
-    buf << value
+    buf << value.b
     buf << "\r\n"
     return self
   end
 
   def close
     buf = @buf
-    @buf = ''
+    @buf = ''.dup
     return buf << "--#{boundary}--\r\n"
   end
 
@@ -105,20 +105,25 @@ end
 
 
 class CGIMultipartTest < Test::Unit::TestCase
+  include UpdateEnv
+
 
   def setup
-    ENV['REQUEST_METHOD'] = 'POST'
+    @environ = {}
+    update_env(
+      'REQUEST_METHOD' => 'POST',
+      'CONTENT_TYPE' => nil,
+      'CONTENT_LENGTH' => nil,
+    )
     @tempfiles = []
   end
 
   def teardown
-    %w[ REQUEST_METHOD CONTENT_TYPE CONTENT_LENGTH REQUEST_METHOD ].each do |name|
-      ENV.delete(name)
-    end
+    ENV.update(@environ)
     $stdin.close() if $stdin.is_a?(Tempfile)
     $stdin = STDIN
     @tempfiles.each {|t|
-      t.unlink
+      t.close!
     }
   end
 
@@ -145,29 +150,27 @@ class CGIMultipartTest < Test::Unit::TestCase
     $stdin = tmpfile
   end
 
-  def _test_multipart
+  def _test_multipart(cgi_options={})
     caller(0).find {|s| s =~ /in `test_(.*?)'/ }
     #testname = $1
     #$stderr.puts "*** debug: testname=#{testname.inspect}"
     _prepare(@data)
-    cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
+    options = {:accept_charset=>"UTF-8"}
+    options.merge! cgi_options
+    cgi = CGI.new(options)
     expected_names = @data.collect{|hash| hash[:name] }.sort
     assert_equal(expected_names, cgi.params.keys.sort)
     threshold = 1024*10
     @data.each do |hash|
       name = hash[:name]
       expected = hash[:value]
-      if RUBY_VERSION>="1.9"
-        if hash[:filename] #if file
-          expected_class = @expected_class || (hash[:value].length < threshold ? StringIO : Tempfile)
-          assert(cgi.files.keys.member?(hash[:name]))
-        else
-          expected_class = String
-          assert_equal(expected, cgi[name])
-          assert_equal(false,cgi.files.keys.member?(hash[:name]))
-        end
-      else
+      if hash[:filename] #if file
         expected_class = @expected_class || (hash[:value].length < threshold ? StringIO : Tempfile)
+        assert(cgi.files.keys.member?(hash[:name]))
+      else
+        expected_class = String
+        assert_equal(expected, cgi[name])
+        assert_equal(false,cgi.files.keys.member?(hash[:name]))
       end
       assert_kind_of(expected_class, cgi[name])
       assert_equal(expected, cgi[name].read())
@@ -179,7 +182,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       cgi.params.each {|name, vals|
         vals.each {|val|
           if val.kind_of?(Tempfile) && val.path
-            val.unlink
+            val.close!
           end
         }
       }
@@ -199,7 +202,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '----WebKitFormBoundaryAAfvAII+YL9102cX'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A".dup},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('small.png'),
@@ -215,7 +218,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '----WebKitFormBoundaryAAfvAII+YL9102cX'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A".dup},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('large.png'),
@@ -243,16 +246,29 @@ class CGIMultipartTest < Test::Unit::TestCase
       {:name=>'image1', :value=>_read('large.png'),
        :filename=>'large.png', :content_type=>'image/png'},  # large image
     ]
-    original = _set_const(CGI, :MAX_MULTIPART_LENGTH, 2 * 1024)
     begin
       ex = assert_raise(StandardError) do
-        _test_multipart()
+        _test_multipart(:max_multipart_length=>2 * 1024) # set via simple scalar
       end
       assert_equal("too large multipart data.", ex.message)
     ensure
-      _set_const(CGI, :MAX_MULTIPART_LENGTH, original)
     end
-  end if CGI.const_defined?(:MAX_MULTIPART_LENGTH)
+  end
+
+
+  def test_cgi_multipart_maxmultipartlength_lambda
+    @data = [
+      {:name=>'image1', :value=>_read('large.png'),
+       :filename=>'large.png', :content_type=>'image/png'},  # large image
+    ]
+    begin
+      ex = assert_raise(StandardError) do
+        _test_multipart(:max_multipart_length=>lambda{2*1024}) # set via lambda
+      end
+      assert_equal("too large multipart data.", ex.message)
+    ensure
+    end
+  end
 
 
   def test_cgi_multipart_maxmultipartcount
@@ -286,7 +302,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       input2
     end
     ex = assert_raise(EOFError) do
-      RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
+      CGI.new(:accept_charset=>"UTF-8")
     end
     assert_equal("bad content body", ex.message)
     #
@@ -297,7 +313,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       input2
     end
     ex = assert_raise(EOFError) do
-      RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
+      CGI.new(:accept_charset=>"UTF-8")
     end
     assert_equal("bad content body", ex.message)
   end
@@ -307,15 +323,15 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '(.|\n)*'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A".dup},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('small.png'),
        :filename=>'small.png',  :content_type=>'image/png'},  # small image
     ]
-    @data[1][:value].force_encoding("UTF-8") if RUBY_VERSION>="1.9"
+    @data[1][:value].force_encoding("UTF-8")
     _prepare(@data)
-    cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
+    cgi = CGI.new(:accept_charset=>"UTF-8")
     assert_equal('file1.html', cgi['file1'].original_filename)
   end
 
@@ -327,10 +343,10 @@ class CGIMultipartTest < Test::Unit::TestCase
       {:name=>'foo',  :value=>"bar"},
     ]
     _prepare(@data)
-    cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
+    cgi = CGI.new(:accept_charset=>"UTF-8")
     assert_equal(cgi['foo'], 'bar')
     assert_equal(cgi['file'].read, 'b'*10134)
-    cgi['file'].unlink if cgi['file'].kind_of? Tempfile
+    cgi['file'].close! if cgi['file'].kind_of? Tempfile
   end
 
   def test_cgi_multipart_without_tempfile
@@ -339,7 +355,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       require 'stringio'
       ENV['REQUEST_METHOD'] = 'POST'
       ENV['CONTENT_TYPE'] = 'multipart/form-data; boundary=foobar1234'
-      body = <<-BODY
+      body = <<-BODY.gsub(/\n/, "\r\n")
 --foobar1234
 Content-Disposition: form-data: name=\"name1\"
 
@@ -354,7 +370,6 @@ Content-Type: text/html
 
 --foobar1234--
 BODY
-      body.gsub!(/\n/, "\r\n")
       ENV['CONTENT_LENGTH'] = body.size.to_s
       $stdin = StringIO.new(body)
       CGI.new

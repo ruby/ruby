@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: true
 #--
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
@@ -105,12 +106,10 @@ class Gem::Package::TarWriter
   def add_file(name, mode) # :yields: io
     check_closed
 
-    raise Gem::Package::NonSeekableIO unless @io.respond_to? :pos=
-
     name, prefix = split_name name
 
     init_pos = @io.pos
-    @io.write "\0" * 512 # placeholder for the header
+    @io.write Gem::Package::TarHeader::EMPTY_HEADER # placeholder for the header
 
     yield RestrictedStream.new(@io) if block_given?
 
@@ -124,7 +123,7 @@ class Gem::Package::TarWriter
 
     header = Gem::Package::TarHeader.new :name => name, :mode => mode,
                                          :size => size, :prefix => prefix,
-                                         :mtime => Time.now
+                                         :mtime => ENV["SOURCE_DATE_EPOCH"] ? Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc : Time.now
 
     @io.write header
     @io.pos = final_pos
@@ -140,11 +139,11 @@ class Gem::Package::TarWriter
   #
   # The created digest object is returned.
 
-  def add_file_digest name, mode, digest_algorithms # :yields: io
+  def add_file_digest(name, mode, digest_algorithms) # :yields: io
     digests = digest_algorithms.map do |digest_algorithm|
       digest = digest_algorithm.new
       digest_name =
-        if digest.respond_to? :name then
+        if digest.respond_to? :name
           digest.name
         else
           /::([^:]+)$/ =~ digest_algorithm.name
@@ -173,7 +172,7 @@ class Gem::Package::TarWriter
   #
   # Returns the digest.
 
-  def add_file_signed name, mode, signer
+  def add_file_signed(name, mode, signer)
     digest_algorithms = [
       signer.digest_algorithm,
       Digest::SHA512,
@@ -185,17 +184,18 @@ class Gem::Package::TarWriter
 
     signature_digest = digests.values.compact.find do |digest|
       digest_name =
-        if digest.respond_to? :name then
+        if digest.respond_to? :name
           digest.name
         else
-          /::([^:]+)$/ =~ digest.class.name
-          $1
+          digest.class.name[/::([^:]+)\z/, 1]
         end
 
       digest_name == signer.digest_name
     end
 
-    if signer.key then
+    raise "no #{signer.digest_name} in #{digests.values.compact}" unless signature_digest
+
+    if signer.key
       signature = signer.sign signature_digest.digest
 
       add_file_simple "#{name}.sig", 0444, signature.length do |io|
@@ -217,7 +217,7 @@ class Gem::Package::TarWriter
 
     header = Gem::Package::TarHeader.new(:name => name, :mode => mode,
                                          :size => size, :prefix => prefix,
-                                         :mtime => Time.now).to_s
+                                         :mtime => ENV["SOURCE_DATE_EPOCH"] ? Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc : Time.now).to_s
 
     @io.write header
     os = BoundedStream.new @io, size
@@ -229,6 +229,25 @@ class Gem::Package::TarWriter
 
     remainder = (512 - (size % 512)) % 512
     @io.write("\0" * remainder)
+
+    self
+  end
+
+  ##
+  # Adds symlink +name+ with permissions +mode+, linking to +target+.
+
+  def add_symlink(name, target, mode)
+    check_closed
+
+    name, prefix = split_name name
+
+    header = Gem::Package::TarHeader.new(:name => name, :mode => mode,
+                                         :size => 0, :typeflag => "2",
+                                         :linkname => target,
+                                         :prefix => prefix,
+                                         :mtime => ENV["SOURCE_DATE_EPOCH"] ? Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc : Time.now).to_s
+
+    @io.write header
 
     self
   end
@@ -279,7 +298,7 @@ class Gem::Package::TarWriter
     header = Gem::Package::TarHeader.new :name => name, :mode => mode,
                                          :typeflag => "5", :size => 0,
                                          :prefix => prefix,
-                                         :mtime => Time.now
+                                         :mtime => ENV["SOURCE_DATE_EPOCH"] ? Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc : Time.now
 
     @io.write header
 
@@ -290,26 +309,26 @@ class Gem::Package::TarWriter
   # Splits +name+ into a name and prefix that can fit in the TarHeader
 
   def split_name(name) # :nodoc:
-    raise Gem::Package::TooLongFileName if name.bytesize > 256
+    if name.bytesize > 256
+      raise Gem::Package::TooLongFileName.new("File \"#{name}\" has a too long path (should be 256 or less)")
+    end
 
-    if name.bytesize <= 100 then
-      prefix = ""
-    else
-      parts = name.split(/\//)
-      newname = parts.pop
-      nxt = ""
-
-      loop do
-        nxt = parts.pop
-        break if newname.bytesize + 1 + nxt.bytesize > 100
-        newname = nxt + "/" + newname
+    prefix = ''
+    if name.bytesize > 100
+      parts = name.split('/', -1) # parts are never empty here
+      name = parts.pop            # initially empty for names with a trailing slash ("foo/.../bar/")
+      prefix = parts.join('/')    # if empty, then it's impossible to split (parts is empty too)
+      while !parts.empty? && (prefix.bytesize > 155 || name.empty?)
+        name = parts.pop + '/' + name
+        prefix = parts.join('/')
       end
 
-      prefix = (parts + [nxt]).join "/"
-      name = newname
+      if name.bytesize > 100 or prefix.empty?
+        raise Gem::Package::TooLongFileName.new("File \"#{prefix}/#{name}\" has a too long name (should be 100 or less)")
+      end
 
-      if name.bytesize > 100 or prefix.bytesize > 155 then
-        raise Gem::Package::TooLongFileName
+      if prefix.bytesize > 155
+        raise Gem::Package::TooLongFileName.new("File \"#{prefix}/#{name}\" has a too long base path (should be 155 or less)")
       end
     end
 
@@ -317,4 +336,3 @@ class Gem::Package::TarWriter
   end
 
 end
-

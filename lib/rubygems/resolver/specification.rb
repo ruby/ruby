@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # A Resolver::Specification contains a subset of the information
 # contained in a Gem::Specification.  Only the information necessary for
@@ -31,6 +32,14 @@ class Gem::Resolver::Specification
   attr_reader :source
 
   ##
+  # The Gem::Specification for this Resolver::Specification.
+  #
+  # Implementers, note that #install updates @spec, so be sure to cache the
+  # Gem::Specification in @spec when overriding.
+
+  attr_reader :spec
+
+  ##
   # The version of the gem for this specification.
 
   attr_reader :version
@@ -48,6 +57,13 @@ class Gem::Resolver::Specification
   end
 
   ##
+  # Fetches development dependencies if the source does not provide them by
+  # default (see APISpecification).
+
+  def fetch_development_dependencies # :nodoc:
+  end
+
+  ##
   # The name and version of the specification.
   #
   # Unlike Gem::Specification#full_name, the platform is not included.
@@ -61,21 +77,28 @@ class Gem::Resolver::Specification
   # install method yields a Gem::Installer instance, which indicates the
   # gem will be installed, or +nil+, which indicates the gem is already
   # installed.
+  #
+  # After installation #spec is updated to point to the just-installed
+  # specification.
 
-  def install options
+  def install(options = {})
     require 'rubygems/installer'
 
-    destination = options[:install_dir] || Gem.dir
+    gem = download options
 
-    Gem.ensure_gem_subdirectories destination
-
-    gem = source.download spec, destination
-
-    installer = Gem::Installer.new gem, options
+    installer = Gem::Installer.at gem, options
 
     yield installer if block_given?
 
-    installer.install
+    @spec = installer.install
+  end
+
+  def download(options)
+    dir = options[:install_dir] || Gem.dir
+
+    Gem.ensure_gem_subdirectories dir
+
+    source.download spec, dir
   end
 
   ##
@@ -85,5 +108,8 @@ class Gem::Resolver::Specification
     Gem::Platform.match spec.platform
   end
 
-end
+  def local? # :nodoc:
+    false
+  end
 
+end
