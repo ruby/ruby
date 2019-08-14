@@ -21,12 +21,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Install libraries with vcpkg
-        run: |
-          vcpkg --triplet x64-windows install %dependencies% || (
-            sleep 4 && vcpkg --triplet x64-windows install %dependencies%
-          ) || (
-            sleep 25 && vcpkg --triplet x64-windows install %dependencies%
-          )
+        run: .\win32\ci_retry.cmd vcpkg --triplet x64-windows install %dependencies%
         env:
           dependencies: openssl readline zlib
       - name: Install libraries with chocolatey
