@@ -849,8 +849,6 @@ https://github.com/ruby/rdoc/issues
 
   # Formatters
   autoload :Formatter,             'rdoc/markup/formatter'
-  autoload :FormatterTestCase,     'rdoc/markup/formatter_test_case'
-  autoload :TextFormatterTestCase, 'rdoc/markup/text_formatter_test_case'
 
   autoload :ToAnsi,                'rdoc/markup/to_ansi'
   autoload :ToBs,                  'rdoc/markup/to_bs'
