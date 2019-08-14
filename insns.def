@@ -264,7 +264,7 @@ getconstant
 /* getconstant can kick autoload */
 // attr bool leaf = false; /* has rb_autoload_load() */
 {
-    val = vm_get_ev_const(ec, klass, id, allow_nil, 0);
+    val = vm_get_ev_const(ec, klass, id, allow_nil == Qtrue, 0);
 }
 
 /* Set constant variable id under cbase class or module.
