@@ -5,10 +5,10 @@
 # Thus this check is mandatory for "other branches" to prevent us from merging them,
 # because these branches are not synchronized from GitHub to cgit at all.
 # Details: https://bugs.ruby-lang.org/issues/16094#note-10
-name: check_branch
+name: pull_request
 on: [pull_request]
 jobs:
-  master:
+  check_branch:
     runs-on: ubuntu-latest
     steps:
       - name: Check if branch is master
