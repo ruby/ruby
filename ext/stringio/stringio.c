@@ -35,8 +35,11 @@ strio_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
     VALUE mode = *vmode_p;
     VALUE intmode;
     int fmode;
+    int has_enc = 0, has_vmode = 0;
 
     convconfig_p->enc = convconfig_p->enc2 = 0;
+
+  vmode_handle:
     if (NIL_P(mode)) {
 	fmode = FMODE_READABLE;
     }
@@ -51,6 +54,7 @@ strio_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 	if (n) {
 	    long len;
 	    char encname[ENCODING_MAXNAMELEN+1];
+	    has_enc = 1;
 	    if (fmode & FMODE_SETENC_BY_BOM) {
 		n = strchr(n, '|');
 	    }
@@ -72,8 +76,23 @@ strio_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 
     if (!NIL_P(opthash)) {
 	rb_encoding *extenc = 0, *intenc = 0;
+	VALUE v;
+	if (!has_vmode) {
+	    ID id_mode;
+	    CONST_ID(id_mode, "mode");
+	    v = rb_hash_aref(opthash, ID2SYM(id_mode));
+	    if (!NIL_P(v)) {
+		if (!NIL_P(mode)) {
+		    rb_raise(rb_eArgError, "mode specified twice");
+		}
+		has_vmode = 1;
+		mode = v;
+		goto vmode_handle;
+	    }
+	}
+
 	if (rb_io_extract_encoding_option(opthash, &extenc, &intenc, &fmode)) {
-	    if (convconfig_p->enc || convconfig_p->enc2) {
+	    if (has_enc) {
 		rb_raise(rb_eArgError, "encoding specified twice");
 	    }
 	}
