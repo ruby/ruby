@@ -348,7 +348,11 @@ typedef enum {
     GPR_FLAG_IMMEDIATE_SWEEP   = 0x2000,
     GPR_FLAG_HAVE_FINALIZE     = 0x4000,
     GPR_FLAG_IMMEDIATE_MARK    = 0x8000,
-    GPR_FLAG_FULL_MARK        = 0x10000
+    GPR_FLAG_FULL_MARK        = 0x10000,
+
+    GPR_DEFAULT_REASON =
+        (GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK |
+         GPR_FLAG_IMMEDIATE_SWEEP | GPR_FLAG_CAPI),
 } gc_profile_record_flag;
 
 typedef struct gc_profile_record {
@@ -726,18 +730,9 @@ struct heap_page {
 #define GET_HEAP_MARKING_BITS(x)        (&GET_HEAP_PAGE(x)->marking_bits[0])
 #endif
 
-#ifndef ENABLE_VM_OBJSPACE
-# define ENABLE_VM_OBJSPACE 1
-#endif
-
 /* Aliases */
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 #define rb_objspace (*rb_objspace_of(GET_VM()))
 #define rb_objspace_of(vm) ((vm)->objspace)
-#else
-static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT_MIN}};
-#define rb_objspace_of(vm) (&rb_objspace)
-#endif
 
 #define ruby_initial_gc_stress	gc_params.gc_stress
 
@@ -847,7 +842,6 @@ void rb_vm_update_references(void *ptr);
 
 void rb_gcdebug_print_obj_condition(VALUE obj);
 
-static void rb_objspace_call_finalizer(rb_objspace_t *objspace);
 static VALUE define_final0(VALUE obj, VALUE block);
 
 static void negative_size_allocation_error(const char *);
@@ -897,7 +891,7 @@ static size_t mark_stack_size(mark_stack_t *stack);
 static void   shrink_stack_chunk_cache(mark_stack_t *stack);
 
 static size_t obj_memsize_of(VALUE obj, int use_all_types);
-static VALUE gc_verify_internal_consistency(VALUE self);
+static void gc_verify_internal_consistency(rb_objspace_t *objspace);
 static int gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj);
 static int gc_verify_heap_pages(rb_objspace_t *objspace);
 
@@ -1419,11 +1413,7 @@ RVALUE_WHITE_P(VALUE obj)
 rb_objspace_t *
 rb_objspace_alloc(void)
 {
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     rb_objspace_t *objspace = calloc(1, sizeof(rb_objspace_t));
-#else
-    rb_objspace_t *objspace = &rb_objspace;
-#endif
     malloc_limit = gc_params.malloc_limit_min;
     list_head_init(&objspace->eden_heap.pages);
     list_head_init(&objspace->tomb_heap.pages);
@@ -1469,9 +1459,6 @@ rb_objspace_free(rb_objspace_t *objspace)
     st_free_table(objspace->id_to_obj_tbl);
     st_free_table(objspace->obj_to_id_tbl);
     free_stack_chunks(&objspace->mark_stack);
-#if !(defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE)
-    if (objspace == &rb_objspace) return;
-#endif
     free(objspace);
 }
 
@@ -2726,19 +2713,21 @@ Init_gc_stress(void)
 
 typedef int each_obj_callback(void *, void *, size_t, void *);
 
+static void objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void *data);
+static void objspace_reachable_objects_from_root(rb_objspace_t *, void (func)(const char *, VALUE, void *), void *);
+
 struct each_obj_args {
+    rb_objspace_t *objspace;
     each_obj_callback *callback;
     void *data;
 };
 
-static VALUE
-objspace_each_objects(VALUE arg)
+static void
+objspace_each_objects_without_setup(rb_objspace_t *objspace, each_obj_callback *callback, void *data)
 {
     size_t i;
     struct heap_page *page;
     RVALUE *pstart = NULL, *pend;
-    rb_objspace_t *objspace = &rb_objspace;
-    struct each_obj_args *args = (struct each_obj_args *)arg;
 
     i = 0;
     while (i < heap_allocated_pages) {
@@ -2751,11 +2740,17 @@ objspace_each_objects(VALUE arg)
 	pstart = page->start;
 	pend = pstart + page->total_slots;
 
-	if ((*args->callback)(pstart, pend, sizeof(RVALUE), args->data)) {
+        if ((*callback)(pstart, pend, sizeof(RVALUE), data)) {
 	    break;
 	}
     }
+}
 
+static VALUE
+objspace_each_objects_protected(VALUE arg)
+{
+    struct each_obj_args *args = (struct each_obj_args *)arg;
+    objspace_each_objects_without_setup(args->objspace, args->callback, args->data);
     return Qnil;
 }
 
@@ -2807,32 +2802,30 @@ incremental_enable(void)
 void
 rb_objspace_each_objects(each_obj_callback *callback, void *data)
 {
-    struct each_obj_args args;
-    rb_objspace_t *objspace = &rb_objspace;
+    objspace_each_objects(&rb_objspace, callback, data);
+}
+
+static void
+objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void *data)
+{
     int prev_dont_incremental = objspace->flags.dont_incremental;
 
     gc_rest(objspace);
     objspace->flags.dont_incremental = TRUE;
 
-    args.callback = callback;
-    args.data = data;
-
     if (prev_dont_incremental) {
-	objspace_each_objects((VALUE)&args);
+        objspace_each_objects_without_setup(objspace, callback, data);
     }
     else {
-	rb_ensure(objspace_each_objects, (VALUE)&args, incremental_enable, Qnil);
+        struct each_obj_args args = {objspace, callback, data};
+        rb_ensure(objspace_each_objects_protected, (VALUE)&args, incremental_enable, Qnil);
     }
 }
 
 void
 rb_objspace_each_objects_without_setup(each_obj_callback *callback, void *data)
 {
-    struct each_obj_args args;
-    args.callback = callback;
-    args.data = data;
-
-    objspace_each_objects((VALUE)&args);
+    objspace_each_objects_without_setup(&rb_objspace, callback, data);
 }
 
 struct os_each_struct {
@@ -3231,20 +3224,14 @@ force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
 }
 
 void
-rb_gc_call_finalizer_at_exit(void)
-{
-#if RGENGC_CHECK_MODE >= 2
-    gc_verify_internal_consistency(Qnil);
-#endif
-    rb_objspace_call_finalizer(&rb_objspace);
-}
-
-static void
 rb_objspace_call_finalizer(rb_objspace_t *objspace)
 {
     RVALUE *p, *pend;
     size_t i;
 
+#if RGENGC_CHECK_MODE >= 2
+    gc_verify_internal_consistency(objspace);
+#endif
     gc_rest(objspace);
 
     if (ATOMIC_EXCHANGE(finalizing, 1)) return;
@@ -4089,7 +4076,7 @@ gc_sweep_finish(rb_objspace_t *objspace)
     gc_mode_transition(objspace, gc_mode_none);
 
 #if RGENGC_CHECK_MODE >= 2
-    gc_verify_internal_consistency(Qnil);
+    gc_verify_internal_consistency(objspace);
 #endif
 }
 
@@ -4984,7 +4971,7 @@ gc_mark(rb_objspace_t *objspace, VALUE obj)
 }
 
 void
-rb_gc_mark_no_pin(VALUE ptr)
+rb_gc_mark_movable(VALUE ptr)
 {
     gc_mark(&rb_objspace, ptr);
 }
@@ -5301,7 +5288,7 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
 #endif
     }
 
-    if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(Qnil);
+    if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
 
     if (is_mark_stack_empty(mstack)) {
 	shrink_stack_chunk_cache(mstack);
@@ -5896,20 +5883,24 @@ gc_verify_heap_pages(rb_objspace_t *objspace)
  *  if RGenGC is supported.
  */
 static VALUE
-gc_verify_internal_consistency(VALUE dummy)
+gc_verify_internal_consistency_m(VALUE dummy)
 {
-    rb_objspace_t *objspace = &rb_objspace;
+    gc_verify_internal_consistency(&rb_objspace);
+
+    return Qnil;
+}
+
+static void
+gc_verify_internal_consistency(rb_objspace_t *objspace)
+{
     struct verify_internal_consistency_struct data = {0};
-    struct each_obj_args eo_args;
 
     data.objspace = objspace;
     gc_report(5, objspace, "gc_verify_internal_consistency: start\n");
 
     /* check relations */
 
-    eo_args.callback = verify_internal_consistency_i;
-    eo_args.data = (void *)&data;
-    objspace_each_objects((VALUE)&eo_args);
+    objspace_each_objects_without_setup(objspace, verify_internal_consistency_i, &data);
 
     if (data.err_count != 0) {
 #if RGENGC_CHECK_MODE >= 5
@@ -5969,14 +5960,12 @@ gc_verify_internal_consistency(VALUE dummy)
     }
 
     gc_report(5, objspace, "gc_verify_internal_consistency: OK\n");
-
-    return Qnil;
 }
 
 void
 rb_gc_verify_internal_consistency(void)
 {
-    gc_verify_internal_consistency(Qnil);
+    gc_verify_internal_consistency(&rb_objspace);
 }
 
 static VALUE
@@ -6112,7 +6101,7 @@ gc_marks_finish(rb_objspace_t *objspace)
 #endif /* GC_ENABLE_INCREMENTAL_MARK */
 
 #if RGENGC_CHECK_MODE >= 2
-    gc_verify_internal_consistency(Qnil);
+    gc_verify_internal_consistency(objspace);
 #endif
 
 #if USE_RGENGC
@@ -7025,7 +7014,7 @@ gc_start(rb_objspace_t *objspace, int reason)
     GC_ASSERT(!is_lazy_sweeping(heap_eden));
     GC_ASSERT(!is_incremental_marking(objspace));
 #if RGENGC_CHECK_MODE >= 2
-    gc_verify_internal_consistency(Qnil);
+    gc_verify_internal_consistency(objspace);
 #endif
 
     gc_enter(objspace, "gc_start");
@@ -7128,7 +7117,7 @@ gc_rest(rb_objspace_t *objspace)
     if (marking || sweeping) {
 	gc_enter(objspace, "gc_rest");
 
-	if (RGENGC_CHECK_MODE >= 2) gc_verify_internal_consistency(Qnil);
+        if (RGENGC_CHECK_MODE >= 2) gc_verify_internal_consistency(objspace);
 
 	if (is_incremental_marking(objspace)) {
 	    PUSH_MARK_FUNC_DATA(NULL);
@@ -7229,7 +7218,7 @@ static inline void
 gc_enter(rb_objspace_t *objspace, const char *event)
 {
     GC_ASSERT(during_gc == 0);
-    if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(Qnil);
+    if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
 
     mjit_gc_start_hook();
 
@@ -8228,7 +8217,7 @@ gc_update_references(rb_objspace_t * objspace)
     rb_execution_context_t *ec = GET_EC();
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
 
-    rb_objspace_each_objects_without_setup(gc_ref_update, objspace);
+    objspace_each_objects_without_setup(objspace, gc_ref_update, objspace);
     rb_vm_update_references(vm);
     rb_transient_heap_update_references();
     global_symbols.ids = rb_gc_location(global_symbols.ids);
@@ -8270,7 +8259,7 @@ gc_compact(rb_objspace_t *objspace, int use_toward_empty, int use_double_pages, 
     objspace->flags.during_compacting = TRUE;
     {
         /* pin objects referenced by maybe pointers */
-        rb_gc();
+        garbage_collect(objspace, GPR_DEFAULT_REASON);
         /* compact */
         gc_compact_after_gc(objspace, use_toward_empty, use_double_pages, TRUE);
     }
@@ -8335,10 +8324,10 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 }
 
 static VALUE
-gc_check_references_for_moved(VALUE dummy)
+gc_check_references_for_moved(rb_objspace_t *objspace)
 {
-    rb_objspace_reachable_objects_from_root(root_obj_check_moved_i, NULL);
-    rb_objspace_each_objects(heap_check_moved_i, NULL);
+    objspace_reachable_objects_from_root(objspace, root_obj_check_moved_i, NULL);
+    objspace_each_objects(objspace, heap_check_moved_i, NULL);
     return Qnil;
 }
 
@@ -8350,7 +8339,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     mjit_gc_start_hook(); // prevent MJIT from running while moving pointers related to ISeq
 
     if (use_verifier) {
-        gc_verify_internal_consistency(Qnil);
+        gc_verify_internal_consistency(objspace);
     }
 
     if (use_double_pages) {
@@ -8373,7 +8362,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     if (!RTEST(disabled)) rb_gc_enable();
 
     if (use_verifier) {
-        gc_check_references_for_moved(Qnil);
+        gc_check_references_for_moved(objspace);
     }
 
     rb_clear_method_cache_by_class(rb_cObject);
@@ -8382,7 +8371,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     heap_eden->using_page = NULL;
 
     if (use_verifier) {
-        gc_verify_internal_consistency(Qnil);
+        gc_verify_internal_consistency(objspace);
     }
 
 #if __has_feature(address_sanitizer)
@@ -8398,7 +8387,7 @@ gc_compact_after_gc(rb_objspace_t *objspace, int use_toward_empty, int use_doubl
     mjit_gc_exit_hook(); // unlock MJIT here, because `rb_gc()` calls `mjit_gc_start_hook()` again.
 
     /* GC after compaction to eliminate T_MOVED */
-    rb_gc();
+    garbage_collect(objspace, GPR_DEFAULT_REASON);
 }
 
 /*
@@ -8463,8 +8452,7 @@ void
 rb_gc(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    int reason = GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK |
-                GPR_FLAG_IMMEDIATE_SWEEP | GPR_FLAG_CAPI;
+    int reason = GPR_DEFAULT_REASON;
     garbage_collect(objspace, reason);
 }
 
@@ -9368,6 +9356,12 @@ void
 rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *passing_data)
 {
     rb_objspace_t *objspace = &rb_objspace;
+    objspace_reachable_objects_from_root(objspace, func, passing_data);
+}
+
+static void
+objspace_reachable_objects_from_root(rb_objspace_t *objspace, void (func)(const char *category, VALUE, void *), void *passing_data)
+{
     struct root_objects_data data;
     struct mark_func_data_struct mfd;
 
@@ -10135,6 +10129,7 @@ wmap_compact(void *ptr)
     struct weakmap *w = ptr;
     if (w->wmap2obj) rb_gc_update_tbl_refs(w->wmap2obj);
     if (w->obj2wmap) rb_gc_update_tbl_refs(w->obj2wmap);
+    w->final = rb_gc_location(w->final);
 }
 
 static void
@@ -10144,7 +10139,7 @@ wmap_mark(void *ptr)
 #if WMAP_DELETE_DEAD_OBJECT_IN_MARK
     if (w->obj2wmap) st_foreach(w->obj2wmap, wmap_mark_map, (st_data_t)&rb_objspace);
 #endif
-    rb_gc_mark(w->final);
+    rb_gc_mark_movable(w->final);
 }
 
 static int
@@ -11697,7 +11692,7 @@ Init_GC(void)
     }
 
     /* internal methods */
-    rb_define_singleton_method(rb_mGC, "verify_internal_consistency", gc_verify_internal_consistency, 0);
+    rb_define_singleton_method(rb_mGC, "verify_internal_consistency", gc_verify_internal_consistency_m, 0);
     rb_define_singleton_method(rb_mGC, "verify_compaction_references", gc_verify_compaction_references, -1);
     rb_define_singleton_method(rb_mGC, "verify_transient_heap_internal_consistency", gc_verify_transient_heap_internal_consistency, 0);
 #if MALLOC_ALLOCATED_SIZE

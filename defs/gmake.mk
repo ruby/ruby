@@ -187,13 +187,23 @@ endef
 checkout-github: fetch-github
 	git -C "$(srcdir)" checkout "gh-$(PR)"
 
+.PHONY: update-github
+update-github: checkout-github
+	$(eval PULL_REQUEST_API := https://api.github.com/repos/ruby/ruby/pulls/$(PR))
+	$(if $(GITHUB_TOKEN), \
+	  $(eval PULL_REQUEST := $(shell curl -s -H "Authorization: bearer $$GITHUB_TOKEN" $(PULL_REQUEST_API))), \
+	  $(eval PULL_REQUEST := $(shell curl -s $(PULL_REQUEST_API))) \
+	)
+	$(eval FORK_REPO := $(shell $(BASERUBY) -rjson -e 'print JSON.parse(ARGV[0]).dig("head", "repo", "full_name")' '$(PULL_REQUEST)'))
+	$(eval PR_BRANCH := $(shell $(BASERUBY) -rjson -e 'print JSON.parse(ARGV[0]).dig("head", "ref")' '$(PULL_REQUEST)'))
+	git merge master --no-edit
+	git remote add fork-$(PR) git@github.com:$(FORK_REPO).git
+	git push fork-$(PR) gh-$(PR):$(PR_BRANCH)
+	git remote rm fork-$(PR)
+
 .PHONY: pull-github
 pull-github: fetch-github
 	$(call pull-github,$(PR))
-
-.PHONY: merge-github
-merge-github: pull-github
-	$(call merge-github,$(PR))
 
 define pull-github
 	$(eval GITHUB_MERGE_BASE := $(shell git -C "$(srcdir)" log -1 --format=format:%H))
@@ -208,12 +218,6 @@ define pull-github
 	git -C "$(GITHUB_MERGE_WORKTREE)" rebase --exec "git notes add --message 'Merged: $(GITHUB_RUBY_URL)/pull/$(1)'" "$(GITHUB_MERGE_BASE)"
 endef
 
-define merge-github
-	git -C "$(srcdir)" worktree remove $(notdir $(GITHUB_MERGE_WORKTREE))
-	git -C "$(srcdir)" merge --ff-only "gh-$(1)"
-	git -C "$(srcdir)" branch -D "gh-$(1)"
-endef
-
 .PHONY: fetch-github-%
 fetch-github-%:
 	$(call fetch-github,$*)
@@ -226,14 +230,10 @@ checkout-github-%: fetch-github-%
 pr-% pull-github-%: fetch-github-%
 	$(call pull-github,$*)
 
-.PHONY: merge-github-%
-merge-github-%: pull-github-%
-	$(call merge-github,$*)
-
 HELP_EXTRA_TASKS = \
 	"  checkout-github:     checkout GitHub Pull Request [PR=1234]" \
 	"  pull-github:         rebase GitHub Pull Request to new worktree [PR=1234]" \
-	"  merge-github:        merge GitHub Pull Request to current HEAD [PR=1234]" \
+	"  update-github:       merge master branch and push it to Pull Request [PR=1234]" \
 	""
 
 ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
@@ -291,6 +291,9 @@ rdoc\:%: PHONY
 
 test_%.rb test/%: programs PHONY
 	+$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) -- $(patsubst test/%,%,$@)
+
+spec/bundler/%: PHONY
+	+$(Q)$(exec) $(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec --require spec_helper $(RSPECOPTS) $@
 
 spec/%: programs exts PHONY
 	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
