@@ -890,12 +890,12 @@ vm_get_iclass(rb_control_frame_t *cfp, VALUE klass)
 }
 
 static inline VALUE
-vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, int is_defined)
+vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, int allow_nil, int is_defined)
 {
     void rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id);
     VALUE val;
 
-    if (orig_klass == Qnil) {
+    if (orig_klass == Qnil && allow_nil) {
 	/* in current lexical scope */
         const rb_cref_t *root_cref = vm_get_cref(ec->cfp->ep);
 	const rb_cref_t *cref;
@@ -3146,7 +3146,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
       }
       case DEFINED_CONST:
 	klass = v;
-	if (vm_get_ev_const(ec, klass, SYM2ID(obj), 1)) {
+	if (vm_get_ev_const(ec, klass, SYM2ID(obj), 1, 1)) {
 	    expr_type = DEFINED_CONST;
 	}
 	break;
