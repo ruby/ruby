@@ -357,7 +357,7 @@ class Gem::Installer
   def run_pre_install_hooks # :nodoc:
     Gem.pre_install_hooks.each do |hook|
       if hook.call(self) == false
-        location = " at #{$1}" if hook.inspect =~ /@(.*:\d+)/
+        location = " at #{$1}" if hook.inspect =~ / (.*:\d+)/
 
         message = "pre-install hook#{location} failed for #{spec.full_name}"
         raise Gem::InstallError, message
