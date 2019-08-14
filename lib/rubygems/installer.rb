@@ -370,7 +370,7 @@ class Gem::Installer
       if hook.call(self) == false
         FileUtils.rm_rf gem_dir
 
-        location = " at #{$1}" if hook.inspect =~ /@(.*:\d+)/
+        location = " at #{$1}" if hook.inspect =~ / (.*:\d+)/
 
         message = "post-build hook#{location} failed for #{spec.full_name}"
         raise Gem::InstallError, message
