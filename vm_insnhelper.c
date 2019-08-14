@@ -3146,7 +3146,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
       }
       case DEFINED_CONST:
 	klass = v;
-	if (vm_get_ev_const(ec, klass, SYM2ID(obj), 1, 1)) {
+        if (vm_get_ev_const(ec, klass, SYM2ID(obj), 1, 1)) {
 	    expr_type = DEFINED_CONST;
 	}
 	break;
