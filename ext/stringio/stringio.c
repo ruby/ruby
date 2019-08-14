@@ -33,14 +33,15 @@ strio_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 		      int *oflags_p, int *fmode_p, struct rb_io_enc_t *convconfig_p)
 {
     VALUE mode = *vmode_p;
+    VALUE intmode;
     int fmode;
 
     convconfig_p->enc = convconfig_p->enc2 = 0;
     if (NIL_P(mode)) {
 	fmode = FMODE_READABLE;
     }
-    else if (FIXNUM_P(mode)) {
-	int flags = FIX2INT(mode);
+    else if (!NIL_P(intmode = rb_check_to_integer(mode, "to_int"))) {
+	int flags = NUM2INT(intmode);
 	fmode = rb_io_oflags_fmode(flags);
     }
     else {
