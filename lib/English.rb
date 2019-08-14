@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 #  Include the English library file in a Ruby script, and you can
 #  reference the global variables such as \VAR{\$\_} using less
-#  cryptic names, listed in the following table.% \vref{tab:english}.
+#  cryptic names, listed below.
 #
 #  Without 'English':
 #
