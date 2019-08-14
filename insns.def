@@ -252,14 +252,14 @@ setclassvariable
     rb_cvar_set(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP()), id, val);
 }
 
-/* Get constant variable id. If klass is Qnil and allow_nil is true, constants
+/* Get constant variable id. If klass is Qnil and allow_nil is Qtrue, constants
    are searched in the current scope. Otherwise, get constant under klass
    class or module.
  */
 DEFINE_INSN
 getconstant
-(ID id, VALUE allow_nil)
-(VALUE klass)
+(ID id)
+(VALUE klass, VALUE allow_nil)
 (VALUE val)
 /* getconstant can kick autoload */
 // attr bool leaf = false; /* has rb_autoload_load() */
