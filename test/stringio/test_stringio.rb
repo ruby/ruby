@@ -795,6 +795,20 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("\0\0\0a\0\0\0b\0\0\0c", s.read)
   end
 
+  %w/UTF-8 UTF-16BE UTF-16LE UTF-32BE UTF-32LE/.each do |name|
+    define_method("test_strip_bom:#{name}") do
+      text = "\uFEFF\u0100a"
+      content = text.encode(name)
+      result = StringIO.new(content, mode: 'rb:BOM|UTF-8').read
+      assert_equal(Encoding.find(name), result.encoding, name)
+      assert_equal(content[1..-1].b, result.b, name)
+
+      StringIO.open(content) {|f|
+        assert_equal(Encoding.find(name), f.set_encoding_by_bom)
+      }
+    end
+  end
+
   def assert_string(content, encoding, str, mesg = nil)
     assert_equal([content, encoding], [str, str.encoding], mesg)
   end
