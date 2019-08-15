@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "bundler/worker"
-require "bundler/installer/gem_installer"
+require_relative "../worker"
+require_relative "gem_installer"
 
 module Bundler
   class ParallelInstaller

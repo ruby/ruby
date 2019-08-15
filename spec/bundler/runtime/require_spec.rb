@@ -136,8 +136,8 @@ RSpec.describe "Bundler.require" do
     G
 
     run "Bundler.require"
-    expect(last_command.stderr).to match("error while trying to load the gem 'faulty'")
-    expect(last_command.stderr).to match("Gem Internal Error Message")
+    expect(err).to match("error while trying to load the gem 'faulty'")
+    expect(err).to match("Gem Internal Error Message")
   end
 
   it "doesn't swallow the error when the library has an unrelated error" do
@@ -198,7 +198,7 @@ RSpec.describe "Bundler.require" do
       RUBY
       ruby(cmd)
 
-      expect(last_command.stderr).to be_empty
+      expect(err).to be_empty
     end
 
     it "does not mangle explicitly given requires" do
@@ -373,7 +373,7 @@ RSpec.describe "Bundler.require" do
 
   it "does not load rubygems gemspecs that are used" do
     install_gemfile! <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
 
@@ -422,22 +422,22 @@ end
 RSpec.describe "Bundler.require with platform specific dependencies" do
   it "does not require the gems that are pinned to other platforms" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
 
       platforms :#{not_local_tag} do
-        gem "fail", :require => "omgomg"
+        gem "platform_specific", :require => "omgomg"
       end
 
       gem "rack", "1.0.0"
     G
 
     run "Bundler.require"
-    expect(last_command.stderr).to be_empty
+    expect(err).to be_empty
   end
 
   it "requires gems pinned to multiple platforms, including the current one" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
 
       platforms :#{not_local_tag}, :#{local_tag} do
         gem "rack", :require => "rack"
@@ -447,6 +447,6 @@ RSpec.describe "Bundler.require with platform specific dependencies" do
     run "Bundler.require; puts RACK"
 
     expect(out).to eq("1.0.0")
-    expect(last_command.stderr).to be_empty
+    expect(err).to be_empty
   end
 end

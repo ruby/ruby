@@ -7,6 +7,7 @@ describe "BigDecimal#sub" do
     @one = BigDecimal("1")
     @zero = BigDecimal("0")
     @two = BigDecimal("2")
+    @three = BigDecimal("3")
     @nan = BigDecimal("NaN")
     @infinity = BigDecimal("Infinity")
     @infinity_minus = BigDecimal("-Infinity")
@@ -39,6 +40,12 @@ describe "BigDecimal#sub" do
       object = mock("Object")
       object.should_receive(:coerce).with(@frac_3).and_return([@frac_3, @frac_4])
       @frac_3.sub(object, 1).should == BigDecimal("-0.9E15")
+    end
+  end
+
+  describe "with Rational" do
+    it "produces a BigDecimal" do
+      (@three - Rational(500, 2)).should == BigDecimal('-0.247e3')
     end
   end
 

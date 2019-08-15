@@ -5,6 +5,7 @@ sha1init.o: $(LOCAL_HDRS)
 sha1init.o: $(RUBY_EXTCONF_H)
 sha1init.o: $(arch_hdrdir)/ruby/config.h
 sha1init.o: $(hdrdir)/ruby.h
+sha1init.o: $(hdrdir)/ruby/assert.h
 sha1init.o: $(hdrdir)/ruby/backward.h
 sha1init.o: $(hdrdir)/ruby/defines.h
 sha1init.o: $(hdrdir)/ruby/intern.h

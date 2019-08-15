@@ -3,7 +3,7 @@
 RSpec.describe "install with --deployment or --frozen" do
   before do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
   end
@@ -94,7 +94,7 @@ RSpec.describe "install with --deployment or --frozen" do
 
   it "works with sources given by a block" do
     install_gemfile! <<-G
-      source "file://#{gem_repo1}" do
+      source "#{file_uri_for(gem_repo1)}" do
         gem "rack"
       end
     G
@@ -123,7 +123,7 @@ RSpec.describe "install with --deployment or --frozen" do
 
     it "explodes with the --deployment flag if you make a change and don't check in the lockfile" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "rack-obama"
       G
@@ -139,7 +139,7 @@ RSpec.describe "install with --deployment or --frozen" do
     it "works if a path gem is missing but is in a without group" do
       build_lib "path_gem"
       install_gemfile! <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rake"
         gem "path_gem", :path => "#{lib_path("path_gem-1.0")}", :group => :development
       G
@@ -154,7 +154,7 @@ RSpec.describe "install with --deployment or --frozen" do
     it "explodes if a path gem is missing" do
       build_lib "path_gem"
       install_gemfile! <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rake"
         gem "path_gem", :path => "#{lib_path("path_gem-1.0")}", :group => :development
       G
@@ -167,7 +167,7 @@ RSpec.describe "install with --deployment or --frozen" do
 
     it "can have --frozen set via an environment variable", :bundler => "< 3" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "rack-obama"
       G
@@ -183,7 +183,7 @@ RSpec.describe "install with --deployment or --frozen" do
 
     it "can have --deployment set via an environment variable" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "rack-obama"
       G
@@ -199,7 +199,7 @@ RSpec.describe "install with --deployment or --frozen" do
 
     it "can have --frozen set to false via an environment variable" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "rack-obama"
       G
@@ -214,7 +214,7 @@ RSpec.describe "install with --deployment or --frozen" do
 
     it "explodes if you remove a gem and don't check in the lockfile" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "activesupport"
       G
 
@@ -227,7 +227,7 @@ RSpec.describe "install with --deployment or --frozen" do
 
     it "explodes if you add a source" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", :git => "git://hubz.com"
       G
 
@@ -241,12 +241,12 @@ RSpec.describe "install with --deployment or --frozen" do
       build_git "rack"
 
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", :git => "#{lib_path("rack-1.0")}"
       G
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
@@ -262,13 +262,13 @@ RSpec.describe "install with --deployment or --frozen" do
       build_git "rack", :path => lib_path("rack")
 
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", :git => "#{lib_path("rack")}"
         gem "foo", :git => "#{lib_path("rack")}"
       G
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "foo", :git => "#{lib_path("rack")}"
       G
@@ -360,13 +360,13 @@ RSpec.describe "install with --deployment or --frozen" do
       bundle! "config set --local deployment true"
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "1.0.0"
         gem "rack-obama"
       G
 
       expect(the_bundle).not_to include_gems "rack 1.0.0"
-      expect(last_command.stderr).to include strip_whitespace(<<-E).strip
+      expect(err).to include strip_whitespace(<<-E).strip
 The dependencies in your gemfile changed
 
 You have added to the Gemfile:
@@ -388,7 +388,9 @@ You have deleted from the Gemfile:
 
       bundle! :install
       expect(the_bundle).to include_gems "foo 1.0"
-      bundle! :package, forgotten_command_line_options([:all, :cache_all] => true)
+
+      bundle "config set cache_all true"
+      bundle! :package
       expect(bundled_app("vendor/cache/foo")).to be_directory
 
       bundle! "install --local"

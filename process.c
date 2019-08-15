@@ -1992,6 +1992,7 @@ rb_execarg_addopt_rlimit(struct rb_execarg *eargp, int rtype, VALUE val)
 }
 #endif
 
+#define TO_BOOL(val, name) NIL_P(val) ? 0 : rb_bool_expected((val), name)
 int
 rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
 {
@@ -2039,7 +2040,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
                 rb_raise(rb_eArgError, "new_pgroup option specified twice");
             }
             eargp->new_pgroup_given = 1;
-            eargp->new_pgroup_flag = RTEST(val) ? 1 : 0;
+            eargp->new_pgroup_flag = TO_BOOL(val, "new_pgroup");
         }
         else
 #endif
@@ -2048,7 +2049,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
                 rb_raise(rb_eArgError, "unsetenv_others option specified twice");
             }
             eargp->unsetenv_others_given = 1;
-            eargp->unsetenv_others_do = RTEST(val) ? 1 : 0;
+            eargp->unsetenv_others_do = TO_BOOL(val, "unsetenv_others");
         }
         else if (id == id_chdir) {
             if (eargp->chdir_given) {
@@ -2072,7 +2073,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
                 rb_raise(rb_eArgError, "close_others option specified twice");
             }
             eargp->close_others_given = 1;
-            eargp->close_others_do = RTEST(val) ? 1 : 0;
+            eargp->close_others_do = TO_BOOL(val, "close_others");
         }
         else if (id == id_in) {
             key = INT2FIX(0);
@@ -2116,6 +2117,13 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
 		     "gid option is unimplemented on this machine");
 #endif
 	}
+        else if (id == id_exception) {
+            if (eargp->exception_given) {
+                rb_raise(rb_eArgError, "exception option specified twice");
+            }
+            eargp->exception_given = 1;
+            eargp->exception = TO_BOOL(val, "exception");
+        }
         else {
 	    return ST_STOP;
         }
@@ -2592,23 +2600,16 @@ rb_execarg_get(VALUE execarg_obj)
 }
 
 static VALUE
-rb_execarg_init(int argc, const VALUE *orig_argv, int accept_shell, VALUE execarg_obj, int allow_exc_opt)
+rb_execarg_init(int argc, const VALUE *orig_argv, int accept_shell, VALUE execarg_obj)
 {
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
-    VALUE prog, ret, exception = Qnil;
+    VALUE prog, ret;
     VALUE env = Qnil, opthash = Qnil;
     VALUE argv_buf;
     VALUE *argv = ALLOCV_N(VALUE, argv_buf, argc);
     MEMCPY(argv, orig_argv, VALUE, argc);
     prog = rb_exec_getargs(&argc, &argv, accept_shell, &env, &opthash);
-    if (allow_exc_opt && !NIL_P(opthash) && rb_hash_has_key(opthash, ID2SYM(id_exception))) {
-        opthash = rb_hash_dup(opthash);
-        exception = rb_hash_delete(opthash, ID2SYM(id_exception));
-    }
     rb_exec_fillarg(prog, argc, argv, env, opthash, execarg_obj);
-    if (RTEST(exception)) {
-        eargp->exception = 1;
-    }
     ALLOCV_END(argv_buf);
     ret = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
     RB_GC_GUARD(execarg_obj);
@@ -2621,7 +2622,10 @@ rb_execarg_new(int argc, const VALUE *argv, int accept_shell, int allow_exc_opt)
     VALUE execarg_obj;
     struct rb_execarg *eargp;
     execarg_obj = TypedData_Make_Struct(0, struct rb_execarg, &exec_arg_data_type, eargp);
-    rb_execarg_init(argc, argv, accept_shell, execarg_obj, allow_exc_opt);
+    rb_execarg_init(argc, argv, accept_shell, execarg_obj);
+    if (!allow_exc_opt && eargp->exception_given) {
+        rb_raise(rb_eArgError, "exception option is not allowed");
+    }
     return execarg_obj;
 }
 
@@ -6099,11 +6103,9 @@ static VALUE
 p_sys_setregid(VALUE obj, VALUE rid, VALUE eid)
 {
     rb_gid_t rgid, egid;
-    PREPARE_GETGRNAM;
     check_gid_switch();
     rgid = OBJ2GID(rid);
     egid = OBJ2GID(eid);
-    FINISH_GETGRNAM;
     if (setregid(rgid, egid) != 0) rb_sys_fail(0);
     return Qnil;
 }
@@ -6127,12 +6129,10 @@ static VALUE
 p_sys_setresgid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 {
     rb_gid_t rgid, egid, sgid;
-    PREPARE_GETGRNAM;
     check_gid_switch();
     rgid = OBJ2GID(rid);
     egid = OBJ2GID(eid);
     sgid = OBJ2GID(sid);
-    FINISH_GETGRNAM;
     if (setresgid(rgid, egid, sgid) != 0) rb_sys_fail(0);
     return Qnil;
 }
@@ -6484,8 +6484,8 @@ proc_daemon(int argc, VALUE *argv)
     int n, nochdir = FALSE, noclose = FALSE;
 
     switch (rb_check_arity(argc, 0, 2)) {
-      case 2: noclose = RTEST(argv[1]);
-      case 1: nochdir = RTEST(argv[0]);
+      case 2: noclose = TO_BOOL(argv[1], "noclose");
+      case 1: nochdir = TO_BOOL(argv[0], "nochdir");
     }
 
     prefork();

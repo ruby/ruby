@@ -107,7 +107,7 @@ module IRB # :nodoc:
   Inspector.def_inspector([true, :p, :inspect]){|v|
     begin
       result = v.inspect
-      if Color.inspect_colorable?(v)
+      if IRB.conf[:MAIN_CONTEXT]&.use_colorize? && Color.inspect_colorable?(v)
         result = Color.colorize_code(result)
       end
       result
@@ -117,7 +117,7 @@ module IRB # :nodoc:
   }
   Inspector.def_inspector([:pp, :pretty_inspect], proc{require "pp"}){|v|
     result = v.pretty_inspect.chomp
-    if Color.inspect_colorable?(v)
+    if IRB.conf[:MAIN_CONTEXT]&.use_colorize? && Color.inspect_colorable?(v)
       result = Color.colorize_code(result)
     end
     result

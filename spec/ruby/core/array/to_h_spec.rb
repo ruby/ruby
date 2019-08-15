@@ -24,15 +24,19 @@ describe "Array#to_h" do
   end
 
   it "raises TypeError if an element is not an array" do
-    lambda { [:x].to_h }.should raise_error(TypeError)
+    -> { [:x].to_h }.should raise_error(TypeError)
   end
 
   it "raises ArgumentError if an element is not a [key, value] pair" do
-    lambda { [[:x]].to_h }.should raise_error(ArgumentError)
+    -> { [[:x]].to_h }.should raise_error(ArgumentError)
   end
 
   it "does not accept arguments" do
-    lambda { [].to_h(:a, :b) }.should raise_error(ArgumentError)
+    -> { [].to_h(:a, :b) }.should raise_error(ArgumentError)
+  end
+
+  it "produces a hash that returns nil for a missing element" do
+    [[:a, 1], [:b, 2]].to_h[:c].should be_nil
   end
 
   ruby_version_is "2.6" do

@@ -9,28 +9,28 @@ describe "Module#const_get" do
   end
 
   it "raises a NameError if no constant is defined in the search path" do
-    lambda { ConstantSpecs.const_get :CS_CONSTX }.should raise_error(NameError)
+    -> { ConstantSpecs.const_get :CS_CONSTX }.should raise_error(NameError)
   end
 
   it "raises a NameError with the not found constant symbol" do
-    error_inspection = lambda { |e| e.name.should == :CS_CONSTX }
-    lambda { ConstantSpecs.const_get :CS_CONSTX }.should raise_error(NameError, &error_inspection)
+    error_inspection = -> e { e.name.should == :CS_CONSTX }
+    -> { ConstantSpecs.const_get :CS_CONSTX }.should raise_error(NameError, &error_inspection)
   end
 
   it "raises a NameError if the name does not start with a capital letter" do
-    lambda { ConstantSpecs.const_get "name" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_get "name" }.should raise_error(NameError)
   end
 
   it "raises a NameError if the name starts with a non-alphabetic character" do
-    lambda { ConstantSpecs.const_get "__CONSTX__" }.should raise_error(NameError)
-    lambda { ConstantSpecs.const_get "@CS_CONST1" }.should raise_error(NameError)
-    lambda { ConstantSpecs.const_get "!CS_CONST1" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_get "__CONSTX__" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_get "@CS_CONST1" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_get "!CS_CONST1" }.should raise_error(NameError)
   end
 
   it "raises a NameError if the name contains non-alphabetic characters except '_'" do
     Object.const_get("CS_CONST1").should == :const1
-    lambda { ConstantSpecs.const_get "CS_CONST1=" }.should raise_error(NameError)
-    lambda { ConstantSpecs.const_get "CS_CONST1?" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_get "CS_CONST1=" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_get "CS_CONST1?" }.should raise_error(NameError)
   end
 
   it "calls #to_str to convert the given name to a String" do
@@ -41,10 +41,10 @@ describe "Module#const_get" do
 
   it "raises a TypeError if conversion to a String by calling #to_str fails" do
     name = mock('123')
-    lambda { ConstantSpecs.const_get(name) }.should raise_error(TypeError)
+    -> { ConstantSpecs.const_get(name) }.should raise_error(TypeError)
 
     name.should_receive(:to_str).and_return(123)
-    lambda { ConstantSpecs.const_get(name) }.should raise_error(TypeError)
+    -> { ConstantSpecs.const_get(name) }.should raise_error(TypeError)
   end
 
   it "calls #const_missing on the receiver if unable to locate the constant" do
@@ -53,21 +53,21 @@ describe "Module#const_get" do
   end
 
   it "does not search the singleton class of a Class or Module" do
-    lambda do
+    -> do
       ConstantSpecs::ContainerA::ChildA.const_get(:CS_CONST14)
     end.should raise_error(NameError)
-    lambda { ConstantSpecs.const_get(:CS_CONST14) }.should raise_error(NameError)
+    -> { ConstantSpecs.const_get(:CS_CONST14) }.should raise_error(NameError)
   end
 
   it "does not search the containing scope" do
     ConstantSpecs::ContainerA::ChildA.const_get(:CS_CONST20).should == :const20_2
-    lambda do
+    -> do
       ConstantSpecs::ContainerA::ChildA.const_get(:CS_CONST5)
     end.should raise_error(NameError)
   end
 
   it "raises a NameError if the constant is defined in the receiver's superclass and the inherit flag is false" do
-    lambda do
+    -> do
       ConstantSpecs::ContainerA::ChildA.const_get(:CS_CONST4, false)
     end.should raise_error(NameError)
   end
@@ -77,13 +77,13 @@ describe "Module#const_get" do
   end
 
   it "raises a NameError when the receiver is a Module, the constant is defined at toplevel and the inherit flag is false" do
-    lambda do
+    -> do
       ConstantSpecs::ModuleA.const_get(:CS_CONST1, false)
     end.should raise_error(NameError)
   end
 
   it "raises a NameError when the receiver is a Class, the constant is defined at toplevel and the inherit flag is false" do
-    lambda do
+    -> do
       ConstantSpecs::ContainerA::ChildA.const_get(:CS_CONST1, false)
     end.should raise_error(NameError)
   end
@@ -97,19 +97,19 @@ describe "Module#const_get" do
   end
 
   it "raises a NameError if the name includes two successive scope separators" do
-    lambda { ConstantSpecs.const_get("ClassA::::CS_CONST10") }.should raise_error(NameError)
+    -> { ConstantSpecs.const_get("ClassA::::CS_CONST10") }.should raise_error(NameError)
   end
 
   it "raises a NameError if only '::' is passed" do
-    lambda { ConstantSpecs.const_get("::") }.should raise_error(NameError)
+    -> { ConstantSpecs.const_get("::") }.should raise_error(NameError)
   end
 
   it "raises a NameError if a Symbol has a toplevel scope qualifier" do
-    lambda { ConstantSpecs.const_get(:'::CS_CONST1') }.should raise_error(NameError)
+    -> { ConstantSpecs.const_get(:'::CS_CONST1') }.should raise_error(NameError)
   end
 
   it "raises a NameError if a Symbol is a scoped constant name" do
-    lambda { ConstantSpecs.const_get(:'ClassA::CS_CONST10') }.should raise_error(NameError)
+    -> { ConstantSpecs.const_get(:'ClassA::CS_CONST10') }.should raise_error(NameError)
   end
 
   it "does read private constants" do
@@ -220,7 +220,7 @@ describe "Module#const_get" do
       ConstantSpecs::ClassB::CS_CONST309 = :const309_1
       ConstantSpecs::ClassB.const_get(:CS_CONST309).should == :const309_1
 
-      lambda {
+      -> {
         ConstantSpecs::ClassB::CS_CONST309 = :const309_2
       }.should complain(/already initialized constant/)
       ConstantSpecs::ClassB.const_get(:CS_CONST309).should == :const309_2

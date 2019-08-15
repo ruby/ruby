@@ -16,7 +16,7 @@ describe 'UDPSocket#recvfrom_nonblock' do
     platform_is_not :windows do
       describe 'using an unbound socket' do
         it 'raises IO::WaitReadable' do
-          lambda { @server.recvfrom_nonblock(1) }.should raise_error(IO::WaitReadable)
+          -> { @server.recvfrom_nonblock(1) }.should raise_error(IO::WaitReadable)
         end
       end
     end
@@ -32,7 +32,11 @@ describe 'UDPSocket#recvfrom_nonblock' do
 
       describe 'without any data available' do
         it 'raises IO::WaitReadable' do
-          lambda { @server.recvfrom_nonblock(1) }.should raise_error(IO::WaitReadable)
+          -> { @server.recvfrom_nonblock(1) }.should raise_error(IO::WaitReadable)
+        end
+
+        it 'returns :wait_readable with exception: false' do
+          @server.recvfrom_nonblock(1, exception: false).should == :wait_readable
         end
       end
 

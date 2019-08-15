@@ -36,11 +36,11 @@ describe "IO.read" do
   end
 
   it "raises an IOError if the options Hash specifies write mode" do
-    lambda { IO.read(@fname, 3, 0, {mode: "w"}) }.should raise_error(IOError)
+    -> { IO.read(@fname, 3, 0, {mode: "w"}) }.should raise_error(IOError)
   end
 
   it "raises an IOError if the options Hash specifies append only mode" do
-    lambda { IO.read(@fname, {mode: "a"}) }.should raise_error(IOError)
+    -> { IO.read(@fname, {mode: "a"}) }.should raise_error(IOError)
   end
 
   it "reads the file if the options Hash includes read mode" do
@@ -79,20 +79,20 @@ describe "IO.read" do
 
   it "raises an Errno::ENOENT when the requested file does not exist" do
     rm_r @fname
-    lambda { IO.read @fname }.should raise_error(Errno::ENOENT)
+    -> { IO.read @fname }.should raise_error(Errno::ENOENT)
   end
 
   it "raises a TypeError when not passed a String type" do
-    lambda { IO.read nil }.should raise_error(TypeError)
+    -> { IO.read nil }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError when not passed a valid length" do
-    lambda { IO.read @fname, -1 }.should raise_error(ArgumentError)
+    -> { IO.read @fname, -1 }.should raise_error(ArgumentError)
   end
 
   it "raises an Errno::EINVAL when not passed a valid offset" do
-    lambda { IO.read @fname, 0, -1  }.should raise_error(Errno::EINVAL)
-    lambda { IO.read @fname, -1, -1 }.should raise_error(Errno::EINVAL)
+    -> { IO.read @fname, 0, -1  }.should raise_error(Errno::EINVAL)
+    -> { IO.read @fname, -1, -1 }.should raise_error(Errno::EINVAL)
   end
 
   it "uses the external encoding specified via the :external_encoding option" do
@@ -137,7 +137,7 @@ describe "IO.read from a pipe" do
 
   platform_is_not :windows do
     it "raises Errno::ESPIPE if passed an offset" do
-      lambda {
+      -> {
         IO.read("|sh -c 'echo hello'", 1, 1)
       }.should raise_error(Errno::ESPIPE)
     end
@@ -148,7 +148,7 @@ quarantine! do # The process tried to write to a nonexistent pipe.
     # TODO: It should raise Errno::ESPIPE on Windows as well
     # once https://bugs.ruby-lang.org/issues/12230 is fixed.
     it "raises Errno::EINVAL if passed an offset" do
-      lambda {
+      -> {
         IO.read("|cmd.exe /C echo hello", 1, 1)
       }.should raise_error(Errno::EINVAL)
     end
@@ -301,7 +301,7 @@ describe "IO#read" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.read }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.read }.should raise_error(IOError)
   end
 
 
@@ -380,16 +380,16 @@ describe "IO#read in binary mode" do
 
     result = File.open(@name, "rb") { |f| f.read }.chomp
 
-    result.encoding.should == Encoding::ASCII_8BIT
+    result.encoding.should == Encoding::BINARY
     xE2 = [226].pack('C*')
-    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::ASCII_8BIT)
+    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::BINARY)
   end
 
   it "does not transcode file contents when an internal encoding is specified" do
     result = File.open(@name, "r:binary:utf-8") { |f| f.read }.chomp
-    result.encoding.should == Encoding::ASCII_8BIT
+    result.encoding.should == Encoding::BINARY
     xE2 = [226].pack('C*')
-    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::ASCII_8BIT)
+    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::BINARY)
   end
 end
 
@@ -420,37 +420,37 @@ describe "IO.read with BOM" do
   it "reads a file without a bom" do
     name = fixture __FILE__, "no_bom_UTF-8.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "UTF-8\n"
+    result.force_encoding("binary").should == "UTF-8\n"
   end
 
   it "reads a file with a utf-8 bom" do
     name = fixture __FILE__, "bom_UTF-8.txt"
     result = File.read(name, mode: "rb:BOM|utf-16le")
-    result.force_encoding("ascii-8bit").should == "UTF-8\n"
+    result.force_encoding("binary").should == "UTF-8\n"
   end
 
   it "reads a file with a utf-16le bom" do
     name = fixture __FILE__, "bom_UTF-16LE.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "U\x00T\x00F\x00-\x001\x006\x00L\x00E\x00\n\x00"
+    result.force_encoding("binary").should == "U\x00T\x00F\x00-\x001\x006\x00L\x00E\x00\n\x00"
   end
 
   it "reads a file with a utf-16be bom" do
     name = fixture __FILE__, "bom_UTF-16BE.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "\x00U\x00T\x00F\x00-\x001\x006\x00B\x00E\x00\n"
+    result.force_encoding("binary").should == "\x00U\x00T\x00F\x00-\x001\x006\x00B\x00E\x00\n"
   end
 
   it "reads a file with a utf-32le bom" do
     name = fixture __FILE__, "bom_UTF-32LE.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "U\x00\x00\x00T\x00\x00\x00F\x00\x00\x00-\x00\x00\x003\x00\x00\x002\x00\x00\x00L\x00\x00\x00E\x00\x00\x00\n\x00\x00\x00"
+    result.force_encoding("binary").should == "U\x00\x00\x00T\x00\x00\x00F\x00\x00\x00-\x00\x00\x003\x00\x00\x002\x00\x00\x00L\x00\x00\x00E\x00\x00\x00\n\x00\x00\x00"
   end
 
   it "reads a file with a utf-32be bom" do
     name = fixture __FILE__, "bom_UTF-32BE.txt"
     result = File.read(name, mode: "rb:BOM|utf-8")
-    result.force_encoding("ascii-8bit").should == "\x00\x00\x00U\x00\x00\x00T\x00\x00\x00F\x00\x00\x00-\x00\x00\x003\x00\x00\x002\x00\x00\x00B\x00\x00\x00E\x00\x00\x00\n"
+    result.force_encoding("binary").should == "\x00\x00\x00U\x00\x00\x00T\x00\x00\x00F\x00\x00\x00-\x00\x00\x003\x00\x00\x002\x00\x00\x00B\x00\x00\x00E\x00\x00\x00\n"
   end
 end
 
@@ -480,11 +480,11 @@ end
 
 describe :io_read_size_internal_encoding, shared: true do
   it "reads bytes when passed a size" do
-    @io.read(2).should == [164, 162].pack('C*').force_encoding(Encoding::ASCII_8BIT)
+    @io.read(2).should == [164, 162].pack('C*').force_encoding(Encoding::BINARY)
   end
 
-  it "returns a String in ASCII-8BIT when passed a size" do
-    @io.read(4).encoding.should equal(Encoding::ASCII_8BIT)
+  it "returns a String in BINARY when passed a size" do
+    @io.read(4).encoding.should equal(Encoding::BINARY)
   end
 
   it "does not change the buffer's encoding when passed a limit" do

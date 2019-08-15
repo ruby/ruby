@@ -58,7 +58,7 @@ RSpec.describe Bundler::Plugin::Installer do
         end
 
         let(:result) do
-          installer.install(["ga-plugin"], :git => "file://#{lib_path("ga-plugin")}")
+          installer.install(["ga-plugin"], :git => file_uri_for(lib_path("ga-plugin")))
         end
 
         it "returns the installed spec after installing" do
@@ -66,7 +66,7 @@ RSpec.describe Bundler::Plugin::Installer do
           expect(spec.full_name).to eq "ga-plugin-1.0"
         end
 
-        it "has expected full gem path" do
+        it "has expected full_gem_path" do
           rev = revision_for(lib_path("ga-plugin"))
           expect(result["ga-plugin"].full_gem_path).
             to eq(Bundler::Plugin.root.join("bundler", "gems", "ga-plugin-#{rev[0..11]}").to_s)
@@ -89,7 +89,7 @@ RSpec.describe Bundler::Plugin::Installer do
           expect(spec.full_name).to eq "ga-plugin-1.0"
         end
 
-        it "has expected full gem path" do
+        it "has expected full_gem_path" do
           rev = revision_for(lib_path("ga-plugin"))
           expect(result["ga-plugin"].full_gem_path).
             to eq(Bundler::Plugin.root.join("bundler", "gems", "ga-plugin-#{rev[0..11]}").to_s)
@@ -98,14 +98,14 @@ RSpec.describe Bundler::Plugin::Installer do
 
       context "rubygems plugins" do
         let(:result) do
-          installer.install(["re-plugin"], :source => "file://#{gem_repo2}")
+          installer.install(["re-plugin"], :source => file_uri_for(gem_repo2))
         end
 
         it "returns the installed spec after installing " do
           expect(result["re-plugin"]).to be_kind_of(Bundler::RemoteSpecification)
         end
 
-        it "has expected full_gem)path" do
+        it "has expected full_gem_path" do
           expect(result["re-plugin"].full_gem_path).
             to eq(global_plugin_gem("re-plugin-1.0").to_s)
         end
@@ -113,7 +113,7 @@ RSpec.describe Bundler::Plugin::Installer do
 
       context "multiple plugins" do
         let(:result) do
-          installer.install(["re-plugin", "ma-plugin"], :source => "file://#{gem_repo2}")
+          installer.install(["re-plugin", "ma-plugin"], :source => file_uri_for(gem_repo2))
         end
 
         it "returns the installed spec after installing " do
@@ -121,7 +121,7 @@ RSpec.describe Bundler::Plugin::Installer do
           expect(result["ma-plugin"]).to be_kind_of(Bundler::RemoteSpecification)
         end
 
-        it "has expected full_gem)path" do
+        it "has expected full_gem_path" do
           expect(result["re-plugin"].full_gem_path).to eq(global_plugin_gem("re-plugin-1.0").to_s)
           expect(result["ma-plugin"].full_gem_path).to eq(global_plugin_gem("ma-plugin-1.0").to_s)
         end

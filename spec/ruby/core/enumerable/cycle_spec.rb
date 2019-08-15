@@ -71,12 +71,12 @@ describe "Enumerable#cycle" do
 
     it "raises a TypeError when the passed n cannot be coerced to Integer" do
       enum = EnumerableSpecs::Numerous.new
-      lambda{ enum.cycle("cat"){} }.should raise_error(TypeError)
+      ->{ enum.cycle("cat"){} }.should raise_error(TypeError)
     end
 
     it "raises an ArgumentError if more arguments are passed" do
       enum = EnumerableSpecs::Numerous.new
-      lambda{ enum.cycle(1, 2) {} }.should raise_error(ArgumentError)
+      ->{ enum.cycle(1, 2) {} }.should raise_error(ArgumentError)
     end
 
     it "gathers whole arrays as elements when each yields multiple" do
