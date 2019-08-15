@@ -201,8 +201,7 @@ module Spec
     end
 
     def gem_command(command, args = "")
-      gem = ENV["BUNDLE_GEM"] || "#{Gem.ruby} -S gem --backtrace"
-      sys_exec("#{gem} #{command} #{args}")
+      sys_exec("#{Path.gem_bin} #{command} #{args}")
     end
     bang :gem_command
 
