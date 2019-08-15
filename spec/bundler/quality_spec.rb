@@ -225,13 +225,7 @@ RSpec.describe "The library itself" do
   end
 
   it "can still be built" do
-    if ruby_core?
-      spec = Gem::Specification.load(gemspec.to_s)
-      spec.bindir = "libexec"
-      File.open(root.join("bundler.gemspec").to_s, "w") {|f| f.write spec.to_ruby }
-      Dir.chdir(root) { gem_command! :build, root.join("bundler.gemspec") }
-      FileUtils.rm(root.join("bundler.gemspec"))
-    else
+    with_root_gemspec do |gemspec|
       Dir.chdir(root) { gem_command! :build, gemspec }
     end
 
