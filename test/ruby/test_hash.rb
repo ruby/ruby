@@ -149,10 +149,9 @@ class TestHash < Test::Unit::TestCase
     assert_equal(nil, h['b'])
     assert_equal(300, h['c'])
 
-    h = @cls[[["a", 100], "b", ["c", 300]]]
-    assert_equal(100, h['a'])
-    assert_equal(nil, h['b'])
-    assert_equal(300, h['c'])
+    assert_raise(ArgumentError) do
+      @cls[[["a", 100], "b", ["c", 300]]]
+    end
   end
 
   def test_s_AREF_duplicated_key
@@ -671,12 +670,21 @@ class TestHash < Test::Unit::TestCase
     assert_not_send([@h, :member?, 'gumby'])
   end
 
+  def hash_hint hv
+    hv & 0xff
+  end
+
   def test_rehash
     a = [ "a", "b" ]
     c = [ "c", "d" ]
     h = @cls[ a => 100, c => 300 ]
     assert_equal(100, h[a])
-    a[0] = "z"
+
+    hv = a.hash
+    begin
+      a[0] << "z"
+    end while hash_hint(a.hash) == hash_hint(hv)
+
     assert_nil(h[a])
     h.rehash
     assert_equal(100, h[a])
@@ -753,6 +761,14 @@ class TestHash < Test::Unit::TestCase
     h = @cls[]
     h.replace(@cls[].compare_by_identity)
     assert_predicate(h, :compare_by_identity?)
+  end
+
+  def test_replace_bug15358
+    h1 = {}
+    h2 = {a:1,b:2,c:3,d:4,e:5}
+    h2.replace(h1)
+    GC.start
+    assert(true)
   end
 
   def test_shift
@@ -936,8 +952,8 @@ class TestHash < Test::Unit::TestCase
 
   def test_create
     assert_equal({1=>2, 3=>4}, @cls[[[1,2],[3,4]]])
-    assert_raise(ArgumentError) { Hash[0, 1, 2] }
-    assert_warning(/wrong element type Integer at 1 /) {@cls[[[1, 2], 3]]}
+    assert_raise(ArgumentError) { @cls[0, 1, 2] }
+    assert_raise(ArgumentError) { @cls[[[0, 1], 2]] }
     bug5406 = '[ruby-core:39945]'
     assert_raise(ArgumentError, bug5406) { @cls[[[1, 2], [3, 4, 5]]] }
     assert_equal({1=>2, 3=>4}, @cls[1,2,3,4])
@@ -1702,6 +1718,44 @@ class TestHash < Test::Unit::TestCase
 
     assert_equal(0, 1_000_000.times.count{a=Object.new.hash; b=Object.new.hash; a < 0 && b < 0 && a + b > 0}, bug14218)
     assert_equal(0, 1_000_000.times.count{a=Object.new.hash; b=Object.new.hash; 0 + a + b != 0 + b + a}, bug14218)
+  end
+
+  def test_reserved_hash_val
+    s = Struct.new(:hash)
+    h = {}
+    keys = [*0..8]
+    keys.each {|i| h[s.new(i)]=true}
+    msg = proc {h.inspect}
+    assert_equal(keys, h.keys.map(&:hash), msg)
+  end
+
+  def hrec h, n, &b
+    if n > 0
+      h.each{hrec(h, n-1, &b)}
+    else
+      yield
+    end
+  end
+
+  def test_huge_iter_level
+    nrec = 200
+
+    h = @cls[a: 1]
+    hrec(h, nrec){}
+    h[:c] = 3
+    assert_equal(3, h[:c])
+
+    h = @cls[a: 1]
+    h.freeze # set hidden attribute for a frozen object
+    hrec(h, nrec){}
+    assert_equal(1, h.size)
+
+    h = @cls[a: 1]
+    assert_raise(RuntimeError){
+      hrec(h, nrec){ h[:c] = 3 }
+    }
+  rescue SystemStackError
+    # ignore
   end
 
   class TestSubHash < TestHash

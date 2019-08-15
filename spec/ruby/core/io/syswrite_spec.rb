@@ -31,13 +31,13 @@ describe "IO#syswrite on a file" do
 
   it "warns if called immediately after a buffered IO#write" do
     @file.write("abcde")
-    lambda { @file.syswrite("fghij") }.should complain(/syswrite/)
+    -> { @file.syswrite("fghij") }.should complain(/syswrite/)
   end
 
   it "does not warn if called after IO#write with intervening IO#sysread" do
     @file.syswrite("abcde")
     @file.sysread(5)
-    lambda { @file.syswrite("fghij") }.should_not complain
+    -> { @file.syswrite("fghij") }.should_not complain
   end
 
   it "writes to the actual file position when called after buffered IO#read" do
@@ -55,7 +55,7 @@ describe "IO#syswrite on a pipe" do
     r, w = IO.pipe
     begin
       w.nonblock = true
-      larger_than_pipe_capacity = 100 * 1024
+      larger_than_pipe_capacity = 2 * 1024 * 1024
       written = w.syswrite("a"*larger_than_pipe_capacity)
       written.should > 0
       written.should < larger_than_pipe_capacity

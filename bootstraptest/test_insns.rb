@@ -10,8 +10,10 @@ begin
 rescue LoadError
   # OK, just skip
 else
-  $FIXNUM_MAX = RbConfig::LIMITS["FIXNUM_MAX"]
-  $FIXNUM_MIN = RbConfig::LIMITS["FIXNUM_MIN"]
+  if defined? RbConfig::LIMITS
+    $FIXNUM_MAX = RbConfig::LIMITS["FIXNUM_MAX"]
+    $FIXNUM_MIN = RbConfig::LIMITS["FIXNUM_MIN"]
+  end
 end
 
 fsl   = { frozen_string_literal: true } # used later
@@ -26,20 +28,20 @@ tests = [
   [ 'getlocal *, 1', %q{ x = true; -> { x }.call }, ],
   [ 'getlocal',      %q{ x = true; -> { -> { x }.() }.() }, ],
 
-  [ 'setblockparam', <<~'},', ], # {
+  [ 'setblockparam', <<-'},', ], # {
     def m&b
       b = # here
         proc { true }
     end
     m { false }.call
   },
-  [ 'getblockparam', <<~'},', ], # {
+  [ 'getblockparam', <<-'},', ], # {
     def m&b
       b # here
     end
     m { true }.call
   },
-  [ 'getblockparamproxy', <<~'},', ], # {
+  [ 'getblockparamproxy', <<-'},', ], # {
     def m&b
       b # here
         .call
@@ -99,11 +101,11 @@ tests = [
   [ 'expandarray', %q{ y = [ true, false, nil ]; x, *z, w = y; x }, ],
   [ 'splatarray',  %q{ x, = *(y = true), false; x }, ],
   [ 'concatarray', %q{ ["t", "r", *x = "u", "e"].join }, ],
-  [ 'concatarray', <<~'},', ],  # {
+  [ 'concatarray', <<-'},', ],  # {
     class X; def to_a; ['u']; end; end
     ['t', 'r', *X.new, 'e'].join
   },
-  [ 'concatarray', <<~'},', ],  # {
+  [ 'concatarray', <<-'},', ],  # {
     r = false
     t = [true, nil]
     q, w, e = r, *t             # here
@@ -120,7 +122,7 @@ tests = [
   [ 'dup',     %q{ x = y = true; x }, ],
   [ 'dupn',    %q{ Object::X ||= true }, ],
   [ 'reverse', %q{ q, (w, e), r = 1, [2, 3], 4; e == 3 }, ],
-  [ 'swap',    <<~'},', ],      # {
+  [ 'swap',    <<-'},', ],      # {
     x = [[false, true]]
     for i, j in x               # here
       ;
@@ -135,7 +137,7 @@ tests = [
   [ 'defined',      %q{ !defined?(x) }, ],
   [ 'checkkeyword', %q{ def x x:rand;x end; x x: true }, ],
   [ 'checktype',    %q{ x = true; "#{x}" }, ],
-  [ 'checkmatch',   <<~'},', ], # {
+  [ 'checkmatch',   <<-'},', ], # {
     x = y = true
     case x
     when false
@@ -145,7 +147,7 @@ tests = [
     end
     y == nil
   },
-  [ 'checkmatch',   <<~'},', ], # {
+  [ 'checkmatch',   <<-'},', ], # {
     x, y = true, [false]
     case x
     when *y                     # here
@@ -155,7 +157,7 @@ tests = [
     end
     z
   },
-  [ 'checkmatch',   <<~'},', ], # {
+  [ 'checkmatch',   <<-'},', ], # {
     x = false
     begin
       raise
@@ -171,7 +173,7 @@ tests = [
   [ 'defineclass', %q{ X = Class.new;  class X;     true end }, ],
   [ 'defineclass', %q{ X = Class.new;  class Y < X; true end }, ],
   [ 'defineclass', %q{ X = Class.new;  class << X;  true end }, ],
-  [ 'defineclass', <<~'},', ], # {
+  [ 'defineclass', <<-'},', ], # {
     X = Class.new
     Y = Class.new(X)
     class Y < X
@@ -182,7 +184,7 @@ tests = [
   [ 'opt_send_without_block', %q{ true.to_s }, ],
   [ 'send',                   %q{ true.tap {|i| i.to_s } }, ],
   [ 'leave',                  %q{ def x; true; end; x }, ],
-  [ 'invokesuper',            <<~'},', ], # {
+  [ 'invokesuper',            <<-'},', ], # {
     class X < String
       def empty?
         super                   # here
@@ -190,7 +192,7 @@ tests = [
     end
    X.new.empty?
   },
-  [ 'invokeblock',            <<~'},', ], # {
+  [ 'invokeblock',            <<-'},', ], # {
     def x
       return yield self         # here
     end
@@ -200,8 +202,9 @@ tests = [
   },
 
   [ 'opt_str_freeze', %q{ 'true'.freeze }, ],
+  [ 'opt_nil_p',      %q{ nil.nil? }, ],
   [ 'opt_str_uminus', %q{ -'true' }, ],
-  [ 'opt_str_freeze', <<~'},', ], # {
+  [ 'opt_str_freeze', <<-'},', ], # {
     class String
       def freeze
         true
@@ -212,7 +215,7 @@ tests = [
 
   [ 'opt_newarray_max', %q{ [ ].max.nil? }, ],
   [ 'opt_newarray_max', %q{ [1, x = 2, 3].max == 3 }, ],
-  [ 'opt_newarray_max', <<~'},', ], # {
+  [ 'opt_newarray_max', <<-'},', ], # {
     class Array
       def max
         true
@@ -222,7 +225,7 @@ tests = [
   },
   [ 'opt_newarray_min', %q{ [ ].min.nil? }, ],
   [ 'opt_newarray_min', %q{ [3, x = 2, 1].min == 1 }, ],
-  [ 'opt_newarray_min', <<~'},', ], # {
+  [ 'opt_newarray_min', <<-'},', ], # {
     class Array
       def min
         true
@@ -238,12 +241,12 @@ tests = [
   [ 'branchunless', %q{ x = nil;  x &&= true; x.nil? }, ],
   [ 'branchnil',    %q{ x = true; x&.to_s }, ],
   [ 'branchnil',    %q{ x = nil;  (x&.to_s).nil? }, ],
-  [ 'jump',         <<~'},', ], # {
+  [ 'jump',         <<-'},', ], # {
     y = 1
     x = if y == 0 then nil elsif y == 1 then true else nil end
     x
   },
-  [ 'jump',         <<~'},', ], # {
+  [ 'jump',         <<-'},', ], # {
     # ultra complicated situation: this ||= assignment only generates
     # 15 instructions, not including the class definition.
     class X; attr_accessor :x; end
@@ -252,14 +255,14 @@ tests = [
   },
 
   [ 'once', %q{ /#{true}/o =~ "true" && $~ }, ],
-  [ 'once', <<~'},', ],         # {
+  [ 'once', <<-'},', ],         # {
     def once expr
       return /#{expr}/o         # here
     end
     x = once(true); x = once(false); x = once(nil);
     x =~ "true" && $~
   },
-  [ 'once', <<~'},', ],         # {
+  [ 'once', <<-'},', ],         # {
     # recursive once
     def once n
       return %r/#{
@@ -273,7 +276,7 @@ tests = [
     x = once(128); x = once(7); x = once(16);
     x =~ "true" && $~
   },
-  [ 'once', <<~'},', ],         # {
+  [ 'once', <<-'},', ],         # {
     # inter-thread lockup situation
     def once n
       return Thread.start n do |m|
@@ -321,12 +324,12 @@ tests = [
   [ 'opt_mod',     %q{ '%s' % [ true ] }, ],
 
   [ 'opt_eq', %q{ 1 == 1 }, ],
-  [ 'opt_eq', <<~'},', ],       # {
+  [ 'opt_eq', <<-'},', ],       # {
     class X; def == other; true; end; end
     X.new == true
   },
   [ 'opt_neq', %q{ 1 != 0 }, ],
-  [ 'opt_neq', <<~'},', ],       # {
+  [ 'opt_neq', <<-'},', ],       # {
     class X; def != other; true; end; end
     X.new != true
   },
@@ -358,7 +361,7 @@ tests = [
   [ 'opt_aset', %q{ [][0] = true }, ],
   [ 'opt_aset', %q{ {}[0] = true }, ],
   [ 'opt_aset', %q{ x = 'frue'; x[0] = 't'; x }, ],
-  [ 'opt_aset', <<~'},', ], # {
+  [ 'opt_aset', <<-'},', ], # {
     # opt_aref / opt_aset mixup situation
     class X; def x; {}; end; end
     x = X.new
@@ -391,18 +394,18 @@ tests = [
   [ 'opt_succ',  %q{ x = Time.at(0); x.succ == Time.at(1) }, ],
 
   [ 'opt_not',  %q{ ! false }, ],
-  [ 'opt_neq', <<~'},', ],       # {
+  [ 'opt_neq', <<-'},', ],       # {
     class X; def !; true; end; end
     ! X.new
   },
 
   [ 'opt_regexpmatch1',  %q{ /true/ =~ 'true' && $~ }, ],
-  [ 'opt_regexpmatch1', <<~'},', ],       # {
+  [ 'opt_regexpmatch1', <<-'},', ],       # {
     class Regexp; def =~ other; true; end; end
     /true/ =~ 'true'
   },
   [ 'opt_regexpmatch2',  %q{ 'true' =~ /true/ && $~ }, ],
-  [ 'opt_regexpmatch2', <<~'},', ],       # {
+  [ 'opt_regexpmatch2', <<-'},', ],       # {
     class String; def =~ other; true; end; end
     'true' =~ /true/
   },
@@ -416,5 +419,5 @@ tests.compact.each {|(insn, expr, *a)| assert_equal 'true', expr, insn, *a }
 # with trace
 tests.compact.each {|(insn, expr, *a)|
   progn = "set_trace_func(proc{})\n" + expr
-  assert_equal 'true', progn, insn, *a
+  assert_equal 'true', progn, 'trace_' + insn, *a
 }

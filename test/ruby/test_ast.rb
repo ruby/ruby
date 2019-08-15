@@ -3,7 +3,7 @@ require 'test/unit'
 require 'tempfile'
 
 class RubyVM
-  module AST
+  module AbstractSyntaxTree
     class Node
       class CodePosition
         include Comparable
@@ -64,19 +64,19 @@ class TestAst < Test::Unit::TestCase
 
     def ast
       return @ast if defined?(@ast)
-      @ast = RubyVM::AST.parse_file(@path)
+      @ast = RubyVM::AbstractSyntaxTree.parse_file(@path)
     end
 
     private
 
     def validate_range0(node)
       beg_pos, end_pos = node.beg_pos, node.end_pos
-      children = node.children.grep(RubyVM::AST::Node)
+      children = node.children.grep(RubyVM::AbstractSyntaxTree::Node)
 
       return true if children.empty?
       # These NODE_D* has NODE_ARRAY as nd_next->nd_next whose last locations
       # we can not update when item is appended.
-      return true if ["NODE_DSTR", "NODE_DXSTR", "NODE_DREGX", "NODE_DSYM"].include? node.type
+      return true if [:DSTR, :DXSTR, :DREGX, :DSYM].include? node.type
 
       min = children.map(&:beg_pos).min
       max = children.map(&:end_pos).max
@@ -99,7 +99,7 @@ class TestAst < Test::Unit::TestCase
 
     def validate_not_cared0(node)
       beg_pos, end_pos = node.beg_pos, node.end_pos
-      children = node.children.grep(RubyVM::AST::Node)
+      children = node.children.grep(RubyVM::AbstractSyntaxTree::Node)
 
       @errors << { type: :first_lineno, node: node } if beg_pos.lineno == 0
       @errors << { type: :first_column, node: node } if beg_pos.column == -1
@@ -130,33 +130,47 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  private def parse(src)
+    EnvUtil.suppress_warning {
+      RubyVM::AbstractSyntaxTree.parse(src)
+    }
+  end
+
   def test_allocate
-    assert_raise(TypeError) {RubyVM::AST::Node.allocate}
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree::Node.allocate}
+  end
+
+  def test_parse_argument_error
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(0)}
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(nil)}
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(false)}
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(true)}
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(:foo)}
   end
 
   def test_column_with_long_heredoc_identifier
     term = "A"*257
-    ast = RubyVM::AST.parse("<<-#{term}\n""ddddddd\n#{term}\n")
+    ast = parse("<<-#{term}\n""ddddddd\n#{term}\n")
     node = ast.children[2]
-    assert_equal("NODE_STR", node.type)
+    assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
   end
 
   def test_column_of_heredoc
-    node = RubyVM::AST.parse("<<-SRC\nddddddd\nSRC\n").children[2]
-    assert_equal("NODE_STR", node.type)
+    node = parse("<<-SRC\nddddddd\nSRC\n").children[2]
+    assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
     assert_equal(6, node.last_column)
 
-    node = RubyVM::AST.parse("<<SRC\nddddddd\nSRC\n").children[2]
-    assert_equal("NODE_STR", node.type)
+    node = parse("<<SRC\nddddddd\nSRC\n").children[2]
+    assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
     assert_equal(5, node.last_column)
   end
 
   def test_parse_raises_syntax_error
-    assert_raise_with_message(SyntaxError, /keyword_end/) do
-      RubyVM::AST.parse("end")
+    assert_raise_with_message(SyntaxError, /\bend\b/) do
+      RubyVM::AbstractSyntaxTree.parse("end")
     end
   end
 
@@ -164,63 +178,134 @@ class TestAst < Test::Unit::TestCase
     Tempfile.create(%w"test_ast .rb") do |f|
       f.puts "end"
       f.close
-      assert_raise_with_message(SyntaxError, /keyword_end/) do
-        RubyVM::AST.parse_file(f.path)
+      assert_raise_with_message(SyntaxError, /\bend\b/) do
+        RubyVM::AbstractSyntaxTree.parse_file(f.path)
       end
     end
   end
 
+  def test_of
+    proc = Proc.new { 1 + 2 }
+    method = self.method(__method__)
+
+    node_proc = RubyVM::AbstractSyntaxTree.of(proc)
+    node_method = RubyVM::AbstractSyntaxTree.of(method)
+
+    assert_instance_of(RubyVM::AbstractSyntaxTree::Node, node_proc)
+    assert_instance_of(RubyVM::AbstractSyntaxTree::Node, node_method)
+    assert_raise(TypeError) { RubyVM::AbstractSyntaxTree.of("1 + 2") }
+
+    Tempfile.create(%w"test_of .rb") do |tmp|
+      tmp.print "#{<<-"begin;"}\n#{<<-'end;'}"
+      begin;
+        SCRIPT_LINES__ = {}
+        assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(proc {|x| x}))
+      end;
+      tmp.close
+      assert_separately(["-", tmp.path], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        load ARGV[0]
+        assert_empty(SCRIPT_LINES__)
+      end;
+    end
+  end
+
   def test_scope_local_variables
-    node = RubyVM::AST.parse("x = 0")
+    node = RubyVM::AbstractSyntaxTree.parse("_x = 0")
     lv, _, body = *node.children
-    assert_equal([:x], lv)
-    assert_equal("NODE_LASGN", body.type)
+    assert_equal([:_x], lv)
+    assert_equal(:LASGN, body.type)
   end
 
   def test_call
-    node = RubyVM::AST.parse("nil.foo")
+    node = RubyVM::AbstractSyntaxTree.parse("nil.foo")
     _, _, body = *node.children
-    assert_equal("NODE_CALL", body.type)
+    assert_equal(:CALL, body.type)
     recv, mid, args = body.children
-    assert_equal("NODE_NIL", recv.type)
+    assert_equal(:NIL, recv.type)
     assert_equal(:foo, mid)
     assert_nil(args)
   end
 
   def test_fcall
-    node = RubyVM::AST.parse("foo()")
+    node = RubyVM::AbstractSyntaxTree.parse("foo()")
     _, _, body = *node.children
-    assert_equal("NODE_FCALL", body.type)
+    assert_equal(:FCALL, body.type)
     mid, args = body.children
     assert_equal(:foo, mid)
     assert_nil(args)
   end
 
   def test_vcall
-    node = RubyVM::AST.parse("foo")
+    node = RubyVM::AbstractSyntaxTree.parse("foo")
     _, _, body = *node.children
-    assert_equal("NODE_VCALL", body.type)
+    assert_equal(:VCALL, body.type)
     mid, args = body.children
     assert_equal(:foo, mid)
     assert_nil(args)
   end
 
   def test_defn
-    node = RubyVM::AST.parse("def a; end")
+    node = RubyVM::AbstractSyntaxTree.parse("def a; end")
     _, _, body = *node.children
-    assert_equal("NODE_DEFN", body.type)
+    assert_equal(:DEFN, body.type)
     mid, defn = body.children
     assert_equal(:a, mid)
-    assert_equal("NODE_SCOPE", defn.type)
+    assert_equal(:SCOPE, defn.type)
   end
 
   def test_defs
-    node = RubyVM::AST.parse("def a.b; end")
+    node = RubyVM::AbstractSyntaxTree.parse("def a.b; end")
     _, _, body = *node.children
-    assert_equal("NODE_DEFS", body.type)
+    assert_equal(:DEFS, body.type)
     recv, mid, defn = body.children
-    assert_equal("NODE_VCALL", recv.type)
+    assert_equal(:VCALL, recv.type)
     assert_equal(:b, mid)
-    assert_equal("NODE_SCOPE", defn.type)
+    assert_equal(:SCOPE, defn.type)
+  end
+
+  def test_methref
+    node = RubyVM::AbstractSyntaxTree.parse("obj.:foo")
+    _, _, body = *node.children
+    assert_equal(:METHREF, body.type)
+    recv, mid = body.children
+    assert_equal(:VCALL, recv.type)
+    assert_equal(:foo, mid)
+  end
+
+  def test_dstr
+    node = parse('"foo#{1}bar"')
+    _, _, body = *node.children
+    assert_equal(:DSTR, body.type)
+    head, body = body.children
+    assert_equal("foo", head)
+    assert_equal(:EVSTR, body.type)
+    body, = body.children
+    assert_equal(:LIT, body.type)
+    assert_equal([1], body.children)
+  end
+
+  def test_while
+    node = RubyVM::AbstractSyntaxTree.parse('1 while qux')
+    _, _, body = *node.children
+    assert_equal(:WHILE, body.type)
+    type1 = body.children[2]
+    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end while qux')
+    _, _, body = *node.children
+    assert_equal(:WHILE, body.type)
+    type2 = body.children[2]
+    assert_not_equal(type1, type2)
+  end
+
+  def test_until
+    node = RubyVM::AbstractSyntaxTree.parse('1 until qux')
+    _, _, body = *node.children
+    assert_equal(:UNTIL, body.type)
+    type1 = body.children[2]
+    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end until qux')
+    _, _, body = *node.children
+    assert_equal(:UNTIL, body.type)
+    type2 = body.children[2]
+    assert_not_equal(type1, type2)
   end
 end

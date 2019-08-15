@@ -1,4 +1,4 @@
-require "bundler/vendor/thor/lib/thor/parser/argument"
-require "bundler/vendor/thor/lib/thor/parser/arguments"
-require "bundler/vendor/thor/lib/thor/parser/option"
-require "bundler/vendor/thor/lib/thor/parser/options"
+require_relative "parser/argument"
+require_relative "parser/arguments"
+require_relative "parser/option"
+require_relative "parser/options"

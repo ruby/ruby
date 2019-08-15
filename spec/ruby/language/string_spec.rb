@@ -195,11 +195,11 @@ describe "Ruby character strings" do
     # TODO: spec other source encodings
     describe "with ASCII_8BIT source encoding" do
       it "produces an ASCII string when escaping ASCII characters via \\u" do
-        "\u0000".encoding.should == Encoding::ASCII_8BIT
+        "\u0000".encoding.should == Encoding::BINARY
       end
 
       it "produces an ASCII string when escaping ASCII characters via \\u{}" do
-        "\u{0000}".encoding.should == Encoding::ASCII_8BIT
+        "\u{0000}".encoding.should == Encoding::BINARY
       end
 
       it "produces a UTF-8-encoded string when escaping non-ASCII characters via \\u" do
@@ -257,33 +257,31 @@ describe "Ruby String literals" do
 
 end
 
-with_feature :encoding do
-  describe "Ruby String interpolation" do
-    it "creates a String having an Encoding compatible with all components" do
-      a = "\u3042"
-      b = "abc".encode("ascii-8bit")
+describe "Ruby String interpolation" do
+  it "creates a String having an Encoding compatible with all components" do
+    a = "\u3042"
+    b = "abc".encode("binary")
 
-      str = "#{a} x #{b}"
+    str = "#{a} x #{b}"
 
-      str.should == "\xe3\x81\x82\x20\x78\x20\x61\x62\x63".force_encoding("utf-8")
-      str.encoding.should == Encoding::UTF_8
-    end
+    str.should == "\xe3\x81\x82\x20\x78\x20\x61\x62\x63".force_encoding("utf-8")
+    str.encoding.should == Encoding::UTF_8
+  end
 
-    it "creates a String having the Encoding of the components when all are the same Encoding" do
-      a = "abc".force_encoding("euc-jp")
-      b = "def".force_encoding("euc-jp")
-      str = '"#{a} x #{b}"'.force_encoding("euc-jp")
+  it "creates a String having the Encoding of the components when all are the same Encoding" do
+    a = "abc".force_encoding("euc-jp")
+    b = "def".force_encoding("euc-jp")
+    str = '"#{a} x #{b}"'.force_encoding("euc-jp")
 
-      result = eval(str)
-      result.should == "\x61\x62\x63\x20\x78\x20\x64\x65\x66".force_encoding("euc-jp")
-      result.encoding.should == Encoding::EUC_JP
-    end
+    result = eval(str)
+    result.should == "\x61\x62\x63\x20\x78\x20\x64\x65\x66".force_encoding("euc-jp")
+    result.encoding.should == Encoding::EUC_JP
+  end
 
-    it "raises an Encoding::CompatibilityError if the Encodings are not compatible" do
-      a = "\u3042"
-      b = "\xff".force_encoding "ascii-8bit"
+  it "raises an Encoding::CompatibilityError if the Encodings are not compatible" do
+    a = "\u3042"
+    b = "\xff".force_encoding "binary"
 
-      lambda { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
-    end
+    -> { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
   end
 end

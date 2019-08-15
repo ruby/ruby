@@ -592,11 +592,10 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
  *  The optional <i>encoding</i> keyword argument specifies the encoding of the directory.
  *  If not specified, the filesystem encoding is used.
  *
- *  With no block, <code>open</code> is a synonym for
- *  <code>Dir::new</code>. If a block is present, it is passed
- *  <i>aDir</i> as a parameter. The directory is closed at the end of
- *  the block, and <code>Dir::open</code> returns the value of the
- *  block.
+ *  With no block, <code>open</code> is a synonym for Dir::new. If a
+ *  block is present, it is passed <i>aDir</i> as a parameter. The
+ *  directory is closed at the end of the block, and Dir::open returns
+ *  the value of the block.
  */
 static VALUE
 dir_s_open(int argc, VALUE *argv, VALUE klass)
@@ -859,7 +858,6 @@ dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE), VALUE arg, int children_o
 #endif
 	path = rb_external_str_new_with_enc(name, namlen, dirp->enc);
 	(*each)(arg, path);
-	if (dirp->dir == NULL) dir_closed();
     }
     return dir;
 }
@@ -870,8 +868,7 @@ dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE), VALUE arg, int children_o
  *     dir.pos -> integer
  *     dir.tell -> integer
  *
- *  Returns the current position in <em>dir</em>. See also
- *  <code>Dir#seek</code>.
+ *  Returns the current position in <em>dir</em>. See also Dir#seek.
  *
  *     d = Dir.new("testdir")
  *     d.tell   #=> 0
@@ -898,7 +895,7 @@ dir_tell(VALUE dir)
  *     dir.seek( integer ) -> dir
  *
  *  Seeks to a particular location in <em>dir</em>. <i>integer</i>
- *  must be a value returned by <code>Dir#tell</code>.
+ *  must be a value returned by Dir#tell.
  *
  *     d = Dir.new("testdir")   #=> #<Dir:0x401b3c40>
  *     d.read                   #=> "."
@@ -926,8 +923,7 @@ dir_seek(VALUE dir, VALUE pos)
  *  call-seq:
  *     dir.pos = integer  -> integer
  *
- *  Synonym for <code>Dir#seek</code>, but returns the position
- *  parameter.
+ *  Synonym for Dir#seek, but returns the position parameter.
  *
  *     d = Dir.new("testdir")   #=> #<Dir:0x401b3c40>
  *     d.read                   #=> "."
@@ -1044,8 +1040,8 @@ chdir_restore(struct chdir_data *args)
  *  Changes the current working directory of the process to the given
  *  string. When called without an argument, changes the directory to
  *  the value of the environment variable <code>HOME</code>, or
- *  <code>LOGDIR</code>. <code>SystemCallError</code> (probably
- *  <code>Errno::ENOENT</code>) if the target directory does not exist.
+ *  <code>LOGDIR</code>. SystemCallError (probably Errno::ENOENT) if
+ *  the target directory does not exist.
  *
  *  If a block is given, it is passed the name of the new current
  *  directory, and the block is executed with that as the current
@@ -1080,9 +1076,8 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
 {
     VALUE path = Qnil;
 
-    if (rb_scan_args(argc, argv, "01", &path) == 1) {
-	FilePathValue(path);
-	path = rb_str_encode_ospath(path);
+    if (rb_check_arity(argc, 0, 1) == 1) {
+        path = rb_str_encode_ospath(rb_get_path(argv[0]));
     }
     else {
 	const char *dist = getenv("HOME");
@@ -1243,11 +1238,10 @@ nogvl_mkdir(void *ptr)
  *
  *  Makes a new directory named by <i>string</i>, with permissions
  *  specified by the optional parameter <i>anInteger</i>. The
- *  permissions may be modified by the value of
- *  <code>File::umask</code>, and are ignored on NT. Raises a
- *  <code>SystemCallError</code> if the directory cannot be created. See
- *  also the discussion of permissions in the class documentation for
- *  <code>File</code>.
+ *  permissions may be modified by the value of File::umask, and are
+ *  ignored on NT. Raises a SystemCallError if the directory cannot be
+ *  created. See also the discussion of permissions in the class
+ *  documentation for File.
  *
  *    Dir.mkdir(File.join(Dir.home, ".foo"), 0700) #=> 0
  *
@@ -1289,8 +1283,8 @@ nogvl_rmdir(void *ptr)
  *     Dir.rmdir( string ) -> 0
  *     Dir.unlink( string ) -> 0
  *
- *  Deletes the named directory. Raises a subclass of
- *  <code>SystemCallError</code> if the directory isn't empty.
+ *  Deletes the named directory. Raises a subclass of SystemCallError
+ *  if the directory isn't empty.
  */
 static VALUE
 dir_s_rmdir(VALUE obj, VALUE dir)
@@ -2053,6 +2047,10 @@ join_path_from_pattern(struct glob_pattern **beg)
 	  case RECURSIVE:
 	    str = "**";
 	    break;
+	  case MATCH_DIR:
+	    /* append last slash */
+	    str = "";
+	    break;
 	  default:
 	    str = p->str;
 	    if (!str) continue;
@@ -2062,7 +2060,8 @@ join_path_from_pattern(struct glob_pattern **beg)
 	    path = GLOB_ALLOC_N(char, path_len + 1);
 	    memcpy(path, str, path_len);
 	    path[path_len] = '\0';
-	} else {
+        }
+        else {
 	    size_t len = strlen(str);
 	    char *tmp;
 	    tmp = GLOB_REALLOC(path, path_len + len + 2);
@@ -2429,6 +2428,24 @@ push_caller(const char *path, VALUE val, void *enc)
     return status;
 }
 
+static int ruby_glob0(const char *path, int fd, const char *base, int flags,
+                      const ruby_glob_funcs_t *funcs, VALUE arg, rb_encoding *enc);
+
+struct push_glob0_args {
+    int fd;
+    const char *base;
+    int flags;
+    const ruby_glob_funcs_t *funcs;
+    VALUE arg;
+};
+
+static int
+push_glob0_caller(const char *path, VALUE val, void *enc)
+{
+    struct push_glob0_args *arg = (struct push_glob0_args *)val;
+    return ruby_glob0(path, arg->fd, arg->base, arg->flags, arg->funcs, arg->arg, enc);
+}
+
 static int
 ruby_glob0(const char *path, int fd, const char *base, int flags,
 	   const ruby_glob_funcs_t *funcs, VALUE arg,
@@ -2441,6 +2458,17 @@ ruby_glob0(const char *path, int fd, const char *base, int flags,
     int status, dirsep = FALSE;
 
     start = root = path;
+
+    if (*root == '{') {
+        struct push_glob0_args args;
+        args.fd = fd;
+        args.base = base;
+        args.flags = flags;
+        args.funcs = funcs;
+        args.arg = arg;
+        return ruby_brace_expand(path, flags, push_glob0_caller, (VALUE)&args, enc, Qfalse);
+    }
+
     flags |= FNM_SYSCASE;
 #if defined DOSISH
     root = rb_enc_path_skip_prefix(root, root + strlen(root), enc);
@@ -2941,8 +2969,8 @@ dir_collect(VALUE dir)
  *     Dir.entries( dirname, encoding: enc ) -> array
  *
  *  Returns an array containing all of the filenames in the given
- *  directory. Will raise a <code>SystemCallError</code> if the named
- *  directory doesn't exist.
+ *  directory. Will raise a SystemCallError if the named directory
+ *  doesn't exist.
  *
  *  The optional <i>encoding</i> keyword argument specifies the encoding of the
  *  directory. If not specified, the filesystem encoding is used.
@@ -3049,8 +3077,8 @@ dir_collect_children(VALUE dir)
  *     Dir.children( dirname, encoding: enc ) -> array
  *
  *  Returns an array containing all of the filenames except for "."
- *  and ".." in the given directory. Will raise a
- *  <code>SystemCallError</code> if the named directory doesn't exist.
+ *  and ".." in the given directory. Will raise a SystemCallError if
+ *  the named directory doesn't exist.
  *
  *  The optional <i>encoding</i> keyword argument specifies the encoding of the
  *  directory. If not specified, the filesystem encoding is used.
@@ -3357,10 +3385,9 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
 }
 
 /*
- *  Objects of class <code>Dir</code> are directory streams representing
- *  directories in the underlying file system. They provide a variety of
- *  ways to list directories and their contents. See also
- *  <code>File</code>.
+ *  Objects of class Dir are directory streams representing
+ *  directories in the underlying file system. They provide a variety
+ *  of ways to list directories and their contents. See also File.
  *
  *  The directory used in these examples contains the two regular files
  *  (<code>config.h</code> and <code>main.rb</code>), the parent

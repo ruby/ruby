@@ -9,7 +9,6 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
 
   def arguments # :nodoc:
     args = <<-EOF
-          packageversion  display the package version
           gemdir          display the path where gems are installed
           gempath         display path used to search for gems
           version         display the gem format version
@@ -76,8 +75,6 @@ lib/rubygems/defaults/operating_system.rb
     arg = options[:args][0]
     out <<
       case arg
-      when /^packageversion/ then
-        Gem::RubyGemsPackageVersion
       when /^version/ then
         Gem::VERSION
       when /^gemdir/, /^gemhome/, /^home/, /^GEM_HOME/ then
@@ -97,7 +94,7 @@ lib/rubygems/defaults/operating_system.rb
     true
   end
 
-  def add_path out, path
+  def add_path(out, path)
     path.each do |component|
       out << "     - #{component}\n"
     end

@@ -101,7 +101,7 @@ Gem x-2
       fetcher.spec 'b',      2
     end
 
-    @cmd.options[:args] = %w[/[ab]/]
+    @cmd.options[:args] = %w[[ab]]
 
     use_ui @stub_ui do
       @cmd.execute
@@ -227,4 +227,3 @@ ERROR:  Only reverse dependencies for local gems are supported.
   end
 
 end
-

@@ -65,8 +65,8 @@ module RSS
   end
 end
 
-require "rss/maker/1.0"
-require "rss/maker/2.0"
+require_relative "maker/1.0"
+require_relative "maker/2.0"
 require_relative "maker/feed"
 require_relative "maker/entry"
 require_relative "maker/content"

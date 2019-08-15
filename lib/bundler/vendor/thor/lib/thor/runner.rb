@@ -1,9 +1,9 @@
-require "bundler/vendor/thor/lib/thor"
-require "bundler/vendor/thor/lib/thor/group"
-require "bundler/vendor/thor/lib/thor/core_ext/io_binary_read"
+require_relative "../thor"
+require_relative "group"
+require_relative "core_ext/io_binary_read"
 
 require "yaml"
-require "digest"
+require "digest/md5"
 require "pathname"
 
 class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLength
@@ -90,7 +90,7 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLeng
     end
 
     thor_yaml[as] = {
-      :filename   => Digest(:MD5).hexdigest(name + as),
+      :filename   => Digest::MD5.hexdigest(name + as),
       :location   => location,
       :namespaces => Bundler::Thor::Util.namespaces_in_content(contents, base)
     }
@@ -111,7 +111,7 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLeng
 
   desc "version", "Show Bundler::Thor version"
   def version
-    require "bundler/vendor/thor/lib/thor/version"
+    require_relative "version"
     say "Bundler::Thor #{Bundler::Thor::VERSION}"
   end
 

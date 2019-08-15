@@ -2,16 +2,17 @@ BUNDLE-ADD(1)							 BUNDLE-ADD(1)
 
 
 
-1mNAME0m
-       1mbundle-add 22m- Add gem to the Gemfile and run bundle install
+NAME
+       bundle-add - Add gem to the Gemfile and run bundle install
 
-1mSYNOPSIS0m
-       1mbundle     add     4m22mGEM_NAME24m	 [--group=GROUP]     [--version=VERSION]
-       [--source=SOURCE] [--skip-install] [--strict] [--optimistic]
+SYNOPSIS
+       bundle	  add	  GEM_NAME     [--group=GROUP]	   [--version=VERSION]
+       [--source=SOURCE]   [--git=GIT]	 [--branch=BRANCH]    [--skip-install]
+       [--strict] [--optimistic]
 
-1mDESCRIPTION0m
-       Adds the named gem to  the  Gemfile  and  run  1mbundle	install22m.  1mbundle0m
-       1minstall 22mcan be avoided by using the flag 1m--skip-install22m.
+DESCRIPTION
+       Adds  the  named  gem  to  the  Gemfile	and run bundle install. bundle
+       install can be avoided by using the flag --skip-install.
 
        Example:
 
@@ -19,34 +20,39 @@ BUNDLE-ADD(1)							 BUNDLE-ADD(1)
 
        bundle add rails --version "< 3.0, > 1.1"
 
-       bundle  add  rails  --version  "~>  5.0.0" --source "https://gems.exam-
+       bundle add rails  --version  "~>  5.0.0"  --source  "https://gems.exam-
        ple.com" --group "development"
 
        bundle add rails --skip-install
 
        bundle add rails --group "development, test"
 
-1mOPTIONS0m
-       1m--version22m, 1m-v0m
+OPTIONS
+       --version, -v
 	      Specify version requirements(s) for the added gem.
 
-       1m--group22m, 1m-g0m
-	      Specify the group(s) for the added gem. Multiple	groups	should
+       --group, -g
+	      Specify  the  group(s) for the added gem. Multiple groups should
 	      be separated by commas.
 
-       1m--source22m, , 1m-s0m
+       --source, , -s
 	      Specify the source for the added gem.
 
-       1m--skip-install0m
+       --git  Specify the git source for the added gem.
+
+       --branch
+	      Specify the git branch for the added gem.
+
+       --skip-install
 	      Adds the gem to the Gemfile but does not install it.
 
-       1m--optimistic0m
+       --optimistic
 	      Adds optimistic declaration of version
 
-       1m--strict0m
+       --strict
 	      Adds strict declaration of version
 
 
 
 
-				 October 2018			 BUNDLE-ADD(1)
+				   May 2019			 BUNDLE-ADD(1)

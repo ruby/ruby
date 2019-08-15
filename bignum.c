@@ -385,6 +385,7 @@ bdigitdbl2bary(BDIGIT *ds, size_t n, BDIGIT_DBL num)
 static int
 bary_cmp(const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
+    size_t i;
     BARY_TRUNC(xds, xn);
     BARY_TRUNC(yds, yn);
 
@@ -393,11 +394,12 @@ bary_cmp(const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
     if (xn > yn)
         return 1;
 
-    while (xn-- && xds[xn] == yds[xn])
-        ;
-    if (xn == (size_t)-1)
+    for (i = 0; i < xn; i++)
+        if (xds[xn - i - 1] != yds[yn - i - 1])
+            break;
+    if (i == xn)
         return 0;
-    return xds[xn] < yds[xn] ? -1 : 1;
+    return xds[xn - i - 1] < yds[yn - i - 1] ? -1 : 1;
 }
 
 static BDIGIT
@@ -418,15 +420,16 @@ bary_small_lshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift)
 static void
 bary_small_rshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift, BDIGIT higher_bdigit)
 {
+    size_t i;
     BDIGIT_DBL num = 0;
 
     assert(0 <= shift && shift < BITSPERDIG);
 
     num = BIGUP(higher_bdigit);
-    while (n--) {
-	BDIGIT x = xds[n];
+    for (i = 0; i < n; i++) {
+        BDIGIT x = xds[n - i - 1];
 	num = (num | x) >> shift;
-	zds[n] = BIGLO(num);
+        zds[n - i - 1] = BIGLO(num);
 	num = BIGUP(x);
     }
 }
@@ -445,8 +448,9 @@ bary_zero_p(const BDIGIT *xds, size_t xn)
 static void
 bary_neg(BDIGIT *ds, size_t n)
 {
-    while (n--)
-        ds[n] = BIGLO(~ds[n]);
+    size_t i;
+    for (i = 0; i < n; i++)
+        ds[n - i - 1] = BIGLO(~ds[n - i - 1]);
 }
 
 static int
@@ -616,8 +620,12 @@ static int
 bytes_2comp(unsigned char *buf, size_t len)
 {
     size_t i;
-    for (i = 0; i < len; i++)
-        buf[i] = ~buf[i];
+    for (i = 0; i < len; i++) {
+        signed char c = buf[i];
+        signed int d = ~c;
+        unsigned int e = d & 0xFF;
+        buf[i] = e;
+    }
     for (i = 0; i < len; i++) {
         buf[i]++;
         if (buf[i] != 0)
@@ -1439,7 +1447,9 @@ bary_add_one(BDIGIT *ds, size_t n)
 {
     size_t i;
     for (i = 0; i < n; i++) {
-	ds[i] = BIGLO(ds[i]+1);
+        BDIGIT_DBL n = ds[i];
+        n += 1;
+        ds[i] = BIGLO(n);
         if (ds[i] != 0)
             return 0;
     }
@@ -1507,15 +1517,16 @@ bigdivrem_mulsub(BDIGIT *zds, size_t zn, BDIGIT x, const BDIGIT *yds, size_t yn)
     i = 0;
 
     do {
-        BDIGIT_DBL ee;
+        BDIGIT_DBL_SIGNED ee;
         t2 += (BDIGIT_DBL)yds[i] * x;
         ee = num - BIGLO(t2);
-        num = (BDIGIT_DBL)zds[i] + ee;
+        num = (BDIGIT_DBL_SIGNED)zds[i] + ee;
         if (ee) zds[i] = BIGLO(num);
         num = BIGDN(num);
         t2 = BIGDN(t2);
     } while (++i < yn);
-    num += zds[i] - t2; /* borrow from high digit; don't update */
+    num -= (BDIGIT_DBL_SIGNED)t2;
+    num += (BDIGIT_DBL_SIGNED)zds[yn]; /* borrow from high digit; don't update */
     return num;
 }
 
@@ -2561,6 +2572,7 @@ bigdivrem1(void *ptr)
     return 0;
 }
 
+/* async-signal-safe */
 static void
 rb_big_stop(void *ptr)
 {
@@ -2583,10 +2595,9 @@ bigdivrem_single1(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT x_higher_bdi
         size_t i;
         BDIGIT_DBL t2;
         t2 = x_higher_bdigit;
-        i = xn;
-        while (i--) {
-            t2 = BIGUP(t2) + xds[i];
-            qds[i] = (BDIGIT)(t2 / y);
+        for (i = 0; i < xn; i++) {
+            t2 = BIGUP(t2) + xds[xn - i - 1];
+            qds[xn - i - 1] = (BDIGIT)(t2 / y);
             t2 %= y;
         }
         return (BDIGIT)t2;
@@ -2626,7 +2637,7 @@ bigdivrem_restoring(BDIGIT *zds, size_t zn, BDIGIT *yds, size_t yn)
     if (bds.zn > 10000 || bds.yn > 10000) {
       retry:
 	bds.stop = Qfalse;
-	rb_thread_call_without_gvl(bigdivrem1, &bds, rb_big_stop, &bds);
+        rb_nogvl(bigdivrem1, &bds, rb_big_stop, &bds, RB_NOGVL_UBF_ASYNC_SAFE);
 
 	if (bds.stop == Qtrue) {
 	    /* execute trap handler, but exception was not raised. */
@@ -5083,6 +5094,9 @@ rb_big2str(VALUE x, int base)
 static unsigned long
 big2ulong(VALUE x, const char *type)
 {
+#if SIZEOF_LONG > SIZEOF_BDIGIT
+    size_t i;
+#endif
     size_t len = BIGNUM_LEN(x);
     unsigned long num;
     BDIGIT *ds;
@@ -5097,9 +5111,9 @@ big2ulong(VALUE x, const char *type)
     num = (unsigned long)ds[0];
 #else
     num = 0;
-    while (len--) {
+    for (i = 0; i < len; i++) {
 	num <<= BITSPERDIG;
-	num += (unsigned long)ds[len]; /* overflow is already checked */
+        num += (unsigned long)ds[len - i - 1]; /* overflow is already checked */
     }
 #endif
     return num;
@@ -5141,6 +5155,9 @@ rb_big2long(VALUE x)
 static unsigned LONG_LONG
 big2ull(VALUE x, const char *type)
 {
+#if SIZEOF_LONG_LONG > SIZEOF_BDIGIT
+    size_t i;
+#endif
     size_t len = BIGNUM_LEN(x);
     unsigned LONG_LONG num;
     BDIGIT *ds = BDIGITS(x);
@@ -5153,9 +5170,9 @@ big2ull(VALUE x, const char *type)
     num = (unsigned LONG_LONG)ds[0];
 #else
     num = 0;
-    while (len--) {
+    for (i = 0; i < len; i++) {
 	num = BIGUP(num);
-	num += ds[len];
+        num += ds[len - i - 1];
     }
 #endif
     return num;
@@ -5262,8 +5279,13 @@ big2dbl(VALUE x)
 		    }
 		}
 		if (carry) {
-		    dl &= BDIGMAX << bits;
-		    dl = BIGLO(dl + ((BDIGIT)1 << bits));
+                    BDIGIT mask = BDIGMAX;
+                    BDIGIT bit = 1;
+                    mask <<= bits;
+                    bit <<= bits;
+                    dl &= mask;
+                    dl += bit;
+                    dl = BIGLO(dl);
 		    if (!dl) d += 1;
 		}
 	    }
@@ -5478,8 +5500,8 @@ rb_big_le(VALUE x, VALUE y)
  *     big == obj  -> true or false
  *
  *  Returns <code>true</code> only if <i>obj</i> has the same value
- *  as <i>big</i>. Contrast this with <code>Integer#eql?</code>, which
- *  requires <i>obj</i> to be a <code>Integer</code>.
+ *  as <i>big</i>. Contrast this with Integer#eql?, which requires
+ *  <i>obj</i> to be a Integer.
  *
  *     68719476736 == 68719476736.0   #=> true
  */
@@ -6032,12 +6054,15 @@ rb_big_divide(VALUE x, VALUE y, ID op)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
 	if (op == '/') {
-	    return DBL2NUM(rb_big2dbl(x) / RFLOAT_VALUE(y));
+            double dx = rb_big2dbl(x);
+            return rb_flo_div_flo(DBL2NUM(dx), y);
 	}
 	else {
+            VALUE v;
 	    double dy = RFLOAT_VALUE(y);
 	    if (dy == 0.0) rb_num_zerodiv();
-	    return rb_dbl2big(rb_big2dbl(x) / dy);
+            v = rb_big_divide(x, y, '/');
+            return rb_dbl2big(RFLOAT_VALUE(v));
 	}
     }
     else {
@@ -6057,7 +6082,7 @@ rb_big_div(VALUE x, VALUE y)
 VALUE
 rb_big_idiv(VALUE x, VALUE y)
 {
-    return rb_big_divide(x, y, rb_intern("div"));
+    return rb_big_divide(x, y, idDiv);
 }
 
 VALUE
@@ -6101,7 +6126,7 @@ rb_big_divmod(VALUE x, VALUE y)
 	y = rb_int2big(FIX2LONG(y));
     }
     else if (!RB_BIGNUM_TYPE_P(y)) {
-	return rb_num_coerce_bin(x, y, rb_intern("divmod"));
+        return rb_num_coerce_bin(x, y, idDivmod);
     }
     bigdivmod(x, y, &div, &mod);
 
@@ -6170,6 +6195,7 @@ double
 rb_big_fdiv_double(VALUE x, VALUE y)
 {
     double dx, dy;
+    VALUE v;
 
     dx = big2dbl(x);
     if (FIXNUM_P(y)) {
@@ -6188,9 +6214,10 @@ rb_big_fdiv_double(VALUE x, VALUE y)
 	    return big_fdiv_float(x, y);
     }
     else {
-	return NUM2DBL(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
+        return NUM2DBL(rb_num_coerce_bin(x, y, idFdiv));
     }
-    return dx / dy;
+    v = rb_flo_div_flo(DBL2NUM(dx), DBL2NUM(dy));
+    return NUM2DBL(v);
 }
 
 VALUE
@@ -6211,7 +6238,7 @@ rb_big_pow(VALUE x, VALUE y)
     if (RB_FLOAT_TYPE_P(y)) {
 	d = RFLOAT_VALUE(y);
 	if ((BIGNUM_NEGATIVE_P(x) && !BIGZEROP(x))) {
-	    return rb_dbl_complex_polar(pow(-rb_big2dbl(x), d), d);
+            return rb_dbl_complex_new_polar_pi(pow(-rb_big2dbl(x), d), d);
 	}
     }
     else if (RB_BIGNUM_TYPE_P(y)) {

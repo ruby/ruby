@@ -1,4 +1,4 @@
-% # -*- mode:c; style:ruby; coding: utf-8; indent-tabs-mode: nil -*-
+% # -*- C -*-
 % # Copyright (c) 2018 Takashi Kokubun.  All rights reserved.
 % #
 % # This file is a part of  the programming language Ruby.  Permission is hereby
@@ -17,7 +17,7 @@
     IC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->cache;
 %
 % # compiler: Consider cfp->self as T_OBJECT if ic_copy->ic_serial is set
-    if (ic_copy->ic_serial) {
+    if (!status->compile_info->disable_ivar_cache && ic_copy->ic_serial) {
 % # JIT: optimize away motion of sp and pc. This path does not call rb_warning() and so it's always leaf and not `handles_sp`.
 % # <%= render 'mjit_compile_pc_and_sp', locals: { insn: insn } -%>
 %
@@ -41,8 +41,8 @@
 % end
         fprintf(f, "    else {\n");
         fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
-        fprintf(f, "        reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1);
-        fprintf(f, "        goto cancel;\n");
+        fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
+        fprintf(f, "        goto ivar_cancel;\n");
         fprintf(f, "    }\n");
 
 % # compiler: Move JIT compiler's internal stack pointer
@@ -51,4 +51,4 @@
         break;
     }
 }
-#endif /* OPT_IC_FOR_IVAR */
+#endif // OPT_IC_FOR_IVAR

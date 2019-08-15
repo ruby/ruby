@@ -123,6 +123,7 @@ mutex_ptr(VALUE obj)
     rb_mutex_t *mutex;
 
     TypedData_Get_Struct(obj, rb_mutex_t, &mutex_data_type, mutex);
+
     return mutex;
 }
 
@@ -281,14 +282,18 @@ do_mutex_lock(VALUE self, int interruptible_p)
 		th->status = prev_status;
 	    }
 	    th->vm->sleeper--;
-	    if (mutex->th == th) mutex_locked(th, self);
 
             if (interruptible_p) {
+                /* release mutex before checking for interrupts...as interrupt checking
+                 * code might call rb_raise() */
+                if (mutex->th == th) mutex->th = 0;
                 RUBY_VM_CHECK_INTS_BLOCKING(th->ec); /* may release mutex */
                 if (!mutex->th) {
                     mutex->th = th;
                     mutex_locked(th, self);
                 }
+            } else {
+                if (mutex->th == th) mutex_locked(th, self);
             }
 	}
     }
@@ -398,9 +403,7 @@ rb_mutex_unlock(VALUE self)
 static void
 rb_mutex_abandon_keeping_mutexes(rb_thread_t *th)
 {
-    if (th->keeping_mutexes) {
-	rb_mutex_abandon_all(th->keeping_mutexes);
-    }
+    rb_mutex_abandon_all(th->keeping_mutexes);
     th->keeping_mutexes = NULL;
 }
 
@@ -410,8 +413,7 @@ rb_mutex_abandon_locking_mutex(rb_thread_t *th)
     if (th->locking_mutex) {
         rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
 
-        if (mutex->th == th)
-            rb_mutex_abandon_all(mutex);
+        list_head_init(&mutex->waitq);
         th->locking_mutex = Qfalse;
     }
 }
@@ -427,20 +429,6 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
 	mutex->th = 0;
 	mutex->next_mutex = 0;
 	list_head_init(&mutex->waitq);
-    }
-}
-
-/*
- * All other threads are dead in the a new child process, so waitqs
- * contain references to dead threads which we need to clean up
- */
-static void
-rb_mutex_cleanup_keeping_mutexes(const rb_thread_t *current_thread)
-{
-    rb_mutex_t *mutex = current_thread->keeping_mutexes;
-    while (mutex) {
-        list_head_init(&mutex->waitq);
-        mutex = mutex->next_mutex;
     }
 }
 #endif
@@ -506,7 +494,7 @@ mutex_sleep(int argc, VALUE *argv, VALUE self)
 {
     VALUE timeout;
 
-    rb_scan_args(argc, argv, "01", &timeout);
+    timeout = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
     return rb_mutex_sleep(self, timeout);
 }
 
@@ -919,7 +907,7 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block)
 
 	    qw.w.th = GET_THREAD();
 	    qw.as.q = q;
-	    list_add_tail(&qw.as.q->waitq, &qw.w.node);
+	    list_add_tail(queue_waitq(qw.as.q), &qw.w.node);
 	    qw.as.q->num_waiting++;
 
 	    rb_ensure(queue_sleep, self, queue_sleep_done, (VALUE)&qw);

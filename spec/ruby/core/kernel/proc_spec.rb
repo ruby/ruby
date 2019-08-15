@@ -15,7 +15,7 @@ describe "Kernel.proc" do
   end
 
   it "returned the passed Proc if given an existing Proc" do
-    some_lambda = lambda {}
+    some_lambda = -> {}
     some_lambda.lambda?.should be_true
     l = proc(&some_lambda)
     l.should equal(some_lambda)
@@ -36,15 +36,27 @@ describe "Kernel.proc" do
 end
 
 describe "Kernel#proc" do
-  it "uses the implicit block from an enclosing method" do
-    def some_method
-      proc
+  ruby_version_is ""..."2.7" do
+    it "uses the implicit block from an enclosing method" do
+      def some_method
+        proc
+      end
+
+      prc = some_method { "hello" }
+
+      prc.call.should == "hello"
     end
-
-    prc = some_method { "hello" }
-
-    prc.call.should == "hello"
   end
 
-  it "needs to be reviewed for spec completeness"
+  ruby_version_is "2.7" do
+    it "can be created when called with no block" do
+      def some_method
+        proc
+      end
+
+      -> {
+        some_method { "hello" }
+      }.should complain(/Capturing the given block using Proc.new is deprecated/)
+    end
+  end
 end

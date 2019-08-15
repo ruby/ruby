@@ -14,6 +14,8 @@
 
 require "e2mmap"
 
+require_relative "matrix/version"
+
 module ExceptionForMatrix # :nodoc:
   extend Exception2MessageMapper
   def_e2message(TypeError, "wrong argument type %s (expected %s)")
@@ -514,12 +516,11 @@ class Matrix
   #     # => prints the numbers 1 to 4
   #   Matrix[ [1,2], [3,4] ].each(:strict_lower).to_a # => [3]
   #
-  def each(which = :all) # :yield: e
+  def each(which = :all, &block) # :yield: e
     return to_enum :each, which unless block_given?
     last = column_count - 1
     case which
     when :all
-      block = Proc.new
       @rows.each do |row|
         row.each(&block)
       end

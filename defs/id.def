@@ -3,6 +3,7 @@ firstline, predefined = __LINE__+1, %[\
   max
   min
   freeze
+  nil?
   inspect
   intern
   object_id
@@ -48,6 +49,11 @@ firstline, predefined = __LINE__+1, %[\
   not                                                   NOT
   and                                                   AND
   or                                                    OR
+  div
+  divmod
+  fdiv
+  quo
+  name
 
   _                                                     UScore
   "/*NULL*/"                                            NULL
@@ -65,17 +71,21 @@ firstline, predefined = __LINE__+1, %[\
   core#set_postexe
   core#hash_merge_ptr
   core#hash_merge_kwd
+  core#raise
 
   -                                                     debug#created_info
 
   $_                                                    LASTLINE
   $~                                                    BACKREF
+  $!                                                    ERROR_INFO
 ]
 
 # VM ID         OP      Parser Token
 token_ops = %[\
   Dot2          ..      DOT2
   Dot3          ...     DOT3
+  BDot2         ..      BDOT2
+  BDot3         ...     BDOT3
   UPlus         +@      UPLUS
   UMinus        -@      UMINUS
   Pow           **      POW
@@ -106,6 +116,8 @@ token_ops = %[\
   ANDOP         &&
   OROP          ||
   ANDDOT        &.
+  METHREF       .:
+  PIPE          |>
 ]
 
 class KeywordError < RuntimeError

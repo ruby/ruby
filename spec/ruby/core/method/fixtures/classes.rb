@@ -181,4 +181,29 @@ module MethodSpecs
     end
   end
 
+  class Composition
+    def upcase(s)
+      s.upcase
+    end
+
+    def succ(s)
+      s.succ
+    end
+
+    def pow_2(n)
+      n * n
+    end
+
+    def double(n)
+      n + n
+    end
+
+    def inc(n)
+      n + 1
+    end
+
+    def mul(n, m)
+      n * m
+    end
+  end
 end

@@ -36,7 +36,7 @@ enum arg_setup_type {
 static inline void
 arg_rest_dup(struct args_info *args)
 {
-    if(!args->rest_dupped) {
+    if (!args->rest_dupped) {
         args->rest = rb_ary_dup(args->rest);
         args->rest_dupped = TRUE;
     }
@@ -525,6 +525,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     VALUE * const orig_sp = ec->cfp->sp;
     unsigned int i;
 
+    vm_check_canary(ec, orig_sp);
     /*
      * Extend SP for GC.
      *
@@ -782,6 +783,7 @@ vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calli
     VALUE *argv = cfp->sp - argc;
     VALUE ary = argv[argc-1];
 
+    vm_check_canary(GET_EC(), cfp->sp);
     cfp->sp--;
 
     if (!NIL_P(ary)) {
@@ -851,13 +853,24 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     ID mid;
     const rb_callable_method_entry_t *me;
     rb_execution_context_t *ec;
+    const VALUE symbol = RARRAY_AREF(callback_arg, 0);
+    const VALUE refinements = RARRAY_AREF(callback_arg, 1);
+    VALUE klass;
 
     if (argc-- < 1) {
 	rb_raise(rb_eArgError, "no receiver given");
     }
     obj = *argv++;
-    mid = SYM2ID(callback_arg);
-    me = rb_callable_method_entry_with_refinements(CLASS_OF(obj), mid, NULL);
+
+    mid = SYM2ID(symbol);
+    for (klass = CLASS_OF(obj); klass; klass = RCLASS_SUPER(klass)) {
+        me = rb_callable_method_entry(klass, mid);
+        if (me) {
+            me = rb_resolve_refined_method_callable(refinements, me);
+            if (me) break;
+        }
+    }
+
     ec = GET_EC();
     if (!NIL_P(blockarg)) {
 	vm_passed_block_handler_set(ec, blockarg);
@@ -870,7 +883,7 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
 
 static VALUE
 vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
-                          const struct rb_call_info *ci, rb_iseq_t *blockiseq, const int is_super)
+                          const struct rb_call_info *ci, const rb_iseq_t *blockiseq, const int is_super)
 {
     if (ci->flag & VM_CALL_ARGS_BLOCKARG) {
 	VALUE block_code = *(--reg_cfp->sp);
@@ -888,7 +901,11 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
 		VALUE func = rb_hash_lookup(ref, block_code);
 		if (NIL_P(func)) {
 		    /* TODO: limit cached funcs */
-		    func = rb_func_proc_new(refine_sym_proc_call, block_code);
+                    VALUE callback_arg = rb_ary_tmp_new(2);
+                    rb_ary_push(callback_arg, block_code);
+                    rb_ary_push(callback_arg, ref);
+                    OBJ_FREEZE_RAW(callback_arg);
+                    func = rb_func_proc_new(refine_sym_proc_call, callback_arg);
 		    rb_hash_aset(ref, block_code, func);
 		}
 		block_code = func;

@@ -22,9 +22,9 @@
 
 require_relative 'protocol'
 require 'uri'
+autoload :OpenSSL, 'openssl'
 
 module Net   #:nodoc:
-  autoload :OpenSSL, 'openssl'
 
   # :stopdoc:
   class HTTPBadResponse < StandardError; end
@@ -1520,7 +1520,7 @@ module Net   #:nodoc:
       rescue Net::OpenTimeout
         raise
       rescue Net::ReadTimeout, IOError, EOFError,
-             Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE,
+             Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE, Errno::ETIMEDOUT,
              # avoid a dependency on OpenSSL
              defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : IOError,
              Timeout::Error => exception

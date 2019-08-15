@@ -10,6 +10,7 @@ require 'tempfile'
 require 'shellwords'
 
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
+
   FileEntry = FileUtils::Entry_ # :nodoc:
 
   def self.build(extension, dest_path, results, args=[], lib_dir=nil)
@@ -44,15 +45,15 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         cmd.push(*args)
 
         begin
-          run cmd, results
-        ensure
-          if File.exist? 'mkmf.log'
-            unless $?.success? then
-              results << "To see why this extension failed to compile, please check" \
-                " the mkmf.log which can be found here:\n"
-              results << "  " + File.join(dest_path, 'mkmf.log') + "\n"
+          run(cmd, results) do |s, r|
+            if File.exist? 'mkmf.log'
+              unless s.success?
+                r << "To see why this extension failed to compile, please check" \
+                  " the mkmf.log which can be found here:\n"
+                r << "  " + File.join(dest_path, 'mkmf.log') + "\n"
+              end
+              FileUtils.mv 'mkmf.log', dest_path
             end
-            FileUtils.mv 'mkmf.log', dest_path
           end
           siteconf.unlink
         end
@@ -63,7 +64,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
         if tmp_dest
           # TODO remove in RubyGems 3
-          if Gem.install_extension_in_lib and lib_dir then
+          if Gem.install_extension_in_lib and lib_dir
             FileUtils.mkdir_p lib_dir
             entries = Dir.entries(tmp_dest) - %w[. ..]
             entries = entries.map { |entry| File.join tmp_dest, entry }
@@ -87,8 +88,9 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   end
 
   private
+
   def self.get_relative_path(path)
-    path[0..Dir.pwd.length-1] = '.' if path.start_with?(Dir.pwd)
+    path[0..Dir.pwd.length - 1] = '.' if path.start_with?(Dir.pwd)
     path
   end
 

@@ -58,6 +58,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal '[assign(var_field(a),ref(a))]', parse('a=a')
     assert_equal '[ref(nil)]', parse('nil')
     assert_equal '[ref(true)]', parse('true')
+    assert_include parse('proc{@1}'), '[ref(@1)]'
   end
 
   def test_vcall
@@ -434,6 +435,13 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal "[call(ref(self),&.,foo,[])]", tree
   end
 
+  def test_methref
+    thru_methref = false
+    tree = parse("obj.:foo", :on_methref) {thru_methref = true}
+    assert_equal true, thru_methref
+    assert_equal "[methref(vcall(obj),foo)]", tree
+  end
+
   def test_excessed_comma
     thru_excessed_comma = false
     parse("proc{|x,|}", :on_excessed_comma) {thru_excessed_comma = true}
@@ -474,7 +482,17 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     }
     assert_equal true, thru_heredoc_dedent
     assert_match(/string_content\(\), heredoc\n/, tree)
+    assert_equal(" heredoc\n", str.children[1])
     assert_equal(1, width)
+  end
+
+  def test_unterminated_heredoc
+    assert_match("can't find string \"a\" anywhere before EOF", compile_error("<<a"))
+    assert_match("can't find string \"a\" anywhere before EOF", compile_error('<<"a"'))
+    assert_match("can't find string \"a\" anywhere before EOF", compile_error("<<'a'"))
+    msg = nil
+    parse('<<"', :on_parse_error) {|_, e| msg = e}
+    assert_equal("unterminated here document identifier", msg)
   end
 
   def test_massign
@@ -520,7 +538,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     tree = parse("a, *b = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
     assert_equal false, thru_mlhs_add_post
     assert_include(tree, "massign([var_field(a),*var_field(b)],")
-    thru_massign_add_post = false
+    thru_mlhs_add_post = false
     tree = parse("a, *b, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
     assert_equal true, thru_mlhs_add_post
     assert_include(tree, "massign([var_field(a),*var_field(b),var_field(c)],")
@@ -731,6 +749,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_ifop = false
     parse('a ? b : c', :on_ifop) {thru_ifop = true}
     assert_equal true, thru_ifop
+  end
+
+  def test_ignored_nl
+    ignored_nl = []
+    parse("foo # comment\n...\n", :on_ignored_nl) {|_, a| ignored_nl << a}
+    assert_equal ["\n"], ignored_nl
   end
 
   def test_lambda
@@ -1458,7 +1482,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("[fcall(proc,[],&block([],[void()]))]", parse("proc{|;y|}"))
     if defined?(Process::RLIMIT_AS)
       dir = File.dirname(__FILE__)
-      as = (RubyVM::MJIT.enabled? ? 150 : 100) * 1024 * 1024
+      as = 100 * 1024 * 1024 # 100MB
+      as *= 2 if RubyVM::MJIT.enabled? # space for compiler
       assert_in_out_err(%W(-I#{dir} -rdummyparser),
                         "Process.setrlimit(Process::RLIMIT_AS,#{as}); "\
                         "puts DummyParser.new('proc{|;y|!y}').parse",
@@ -1470,15 +1495,18 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("unterminated regexp meets end of file", compile_error('/'))
   end
 
+  def test_invalid_numbered_parameter_name
+    assert_equal("leading zero is not allowed as a numbered parameter", compile_error('proc{@0}'))
+  end
+
   def test_invalid_instance_variable_name
-    assert_equal("`@1' is not allowed as an instance variable name", compile_error('@1'))
-    assert_equal("`@%' is not allowed as an instance variable name", compile_error('@%'))
+    assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@%'))
     assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@'))
   end
 
   def test_invalid_class_variable_name
     assert_equal("`@@1' is not allowed as a class variable name", compile_error('@@1'))
-    assert_equal("`@@%' is not allowed as a class variable name", compile_error('@@%'))
+    assert_equal("`@@' without identifiers is not allowed as a class variable name", compile_error('@@%'))
     assert_equal("`@@' without identifiers is not allowed as a class variable name", compile_error('@@'))
   end
 
@@ -1497,5 +1525,23 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     fmt = nil
     assert_warn("") {fmt, = warn("\r;")}
     assert_match(/encountered/, fmt)
+  end
+
+  def test_in
+    thru_in = false
+    parse('case 0; in 0; end', :on_in) {thru_in = true}
+    assert_equal true, thru_in
+  end
+
+  def test_aryptn
+    thru_aryptn = false
+    parse('case 0; in [0]; end', :on_aryptn) {thru_aryptn = true}
+    assert_equal true, thru_aryptn
+  end
+
+  def test_hshptn
+    thru_hshptn = false
+    parse('case 0; in {a:}; end', :on_hshptn) {thru_hshptn = true}
+    assert_equal true, thru_hshptn
   end
 end if ripper_test

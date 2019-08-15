@@ -93,6 +93,13 @@ class TestSyntax < Test::Unit::TestCase
     assert_valid_syntax("tap (proc do end)", __FILE__, bug9726)
   end
 
+  def test_methodref_literal
+    assert_separately [], <<-EOS
+      eval 'nil.:|;1'
+      1000.times{eval 'nil.:|;1'}
+    EOS
+  end
+
   def test_normal_argument
     assert_valid_syntax('def foo(x) end')
     assert_syntax_error('def foo(X) end', /constant/)
@@ -515,8 +522,8 @@ WARN
   end
 
   def test_duplicated_when
-    w = 'warning: duplicated when clause is ignored'
-    assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
+    w = 'warning: duplicated `when\' clause with line 3 is ignored'
+    assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m) {
       eval %q{
         case 1
         when 1, 1
@@ -525,7 +532,7 @@ WARN
         end
       }
     }
-    assert_warning(/#{w}/){#/3: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
+    assert_warning(/#{w}/) {#/3: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
       a = a = 1
       eval %q{
         case 1
@@ -535,6 +542,17 @@ WARN
         end
       }
     }
+  end
+
+  def test_duplicated_when_check_option
+    w = /duplicated `when\' clause with line 3 is ignored/
+    assert_in_out_err(%[-wc], "#{<<~"begin;"}\n#{<<~'end;'}", ["Syntax OK"], w)
+    begin;
+      case 1
+      when 1
+      when 1
+      end
+    end;
   end
 
   def test_invalid_break
@@ -742,6 +760,8 @@ e"
       \
       TEXT
     end;
+
+    assert_equal("  TEXT\n", eval("<<~eos\n" "  \\\n" "TEXT\n" "eos\n"))
   end
 
   def test_lineno_after_heredoc
@@ -761,6 +781,42 @@ eom
 
   def test_dedented_heredoc_concatenation
     assert_equal("\n0\n1", eval("<<~0 '1'\n \n0\#{}\n0"))
+  end
+
+  def test_heredoc_mixed_encoding
+    e = assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+      #encoding: cp932
+      <<-TEXT
+      \xe9\x9d\u1234
+      TEXT
+    HEREDOC
+    assert_not_match(/end-of-input/, e.message)
+
+    e = assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+      #encoding: cp932
+      <<-TEXT
+      \xe9\x9d
+      \u1234
+      TEXT
+    HEREDOC
+    assert_not_match(/end-of-input/, e.message)
+
+    e = assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+      #encoding: cp932
+      <<-TEXT
+      \u1234\xe9\x9d
+      TEXT
+    HEREDOC
+    assert_not_match(/end-of-input/, e.message)
+
+    e = assert_syntax_error(<<-'HEREDOC', 'UTF-8 mixed within Windows-31J source')
+      #encoding: cp932
+      <<-TEXT
+      \u1234
+      \xe9\x9d
+      TEXT
+    HEREDOC
+    assert_not_match(/end-of-input/, e.message)
   end
 
   def test_lineno_operation_brace_block
@@ -852,9 +908,20 @@ eom
     assert_syntax_error("puts <<""EOS\n""ng\n""EOS\r""NO\n", /can't find string "EOS" anywhere before EOF/)
   end
 
-  def test_heredoc_newline
-    assert_warn(/ends with a newline/) do
-      eval("<<\"EOS\n\"\nEOS\n")
+  def test_heredoc_no_terminator
+    assert_syntax_error("puts <<""A\n", /can't find string "A" anywhere before EOF/)
+    assert_syntax_error("puts <<""A + <<""B\n", /can't find string "A" anywhere before EOF/)
+    assert_syntax_error("puts <<""A + <<""B\n", /can't find string "B" anywhere before EOF/)
+  end
+
+  def test_unterminated_heredoc
+    assert_syntax_error("<<\"EOS\n\nEOS\n", /unterminated/)
+    assert_syntax_error("<<\"EOS\n\"\nEOS\n", /unterminated/)
+  end
+
+  def test_unterminated_heredoc_cr
+    %W[\r\n \n].each do |nl|
+      assert_syntax_error("<<\"\r\"#{nl}\r#{nl}", /unterminated/, nil, "CR with #{nl.inspect}")
     end
   end
 
@@ -888,8 +955,8 @@ eom
     bug10957 = '[ruby-core:68477] [Bug #10957]'
     assert_ruby_status(['-c', '-e', 'p ()..0'], "", bug10957)
     assert_ruby_status(['-c', '-e', 'p ()...0'], "", bug10957)
-    assert_syntax_error('0..%w.', /unterminated string/, bug10957)
-    assert_syntax_error('0...%w.', /unterminated string/, bug10957)
+    assert_syntax_error('0..%q.', /unterminated string/, bug10957)
+    assert_syntax_error('0...%q.', /unterminated string/, bug10957)
   end
 
   def test_too_big_nth_ref
@@ -905,9 +972,20 @@ eom
     assert_syntax_error(":#\n foo", /unexpected ':'/)
   end
 
+  def test_invalid_literal_message
+    assert_syntax_error("def :foo", /unexpected symbol literal/)
+    assert_syntax_error("def 'foo'", /unexpected string literal/)
+  end
+
   def test_fluent_dot
     assert_valid_syntax("a\n.foo")
     assert_valid_syntax("a\n&.foo")
+    assert_valid_syntax("a\n.:foo")
+  end
+
+  def test_safe_call_in_massign_lhs
+    assert_syntax_error("*a&.x=0", /multiple assignment destination/)
+    assert_syntax_error("a&.x,=0", /multiple assignment destination/)
   end
 
   def test_no_warning_logop_literal
@@ -949,9 +1027,7 @@ eom
       eval('1 if !//')
     end
     assert_warn('') do
-      verbose_bak, $VERBOSE = $VERBOSE, nil
       eval('1 if !(true..false)')
-      $VERBOSE = verbose_bak
     end
     assert_warning('') do
       eval('1 if !1')
@@ -989,7 +1065,7 @@ eom
   end
 
   def test_parenthesised_statement_argument
-    assert_syntax_error("foo(bar rescue nil)", /unexpected modifier_rescue/)
+    assert_syntax_error("foo(bar rescue nil)", /unexpected `rescue' modifier/)
     assert_valid_syntax("foo (bar rescue nil)")
   end
 
@@ -1119,6 +1195,10 @@ eom
     end
   end
 
+  def test_return_toplevel_with_argument
+    assert_warn(/argument of top-level return is ignored/) {eval("return 1")}
+  end
+
   def test_syntax_error_in_rescue
     bug12613 = '[ruby-core:76531] [Bug #12613]'
     assert_syntax_error("#{<<-"begin;"}\n#{<<-"end;"}", /Invalid retry/, bug12613)
@@ -1134,6 +1214,12 @@ eom
         break
       end
     end;
+  end
+
+  def test_syntax_error_at_newline
+    expected = "\n        ^"
+    assert_syntax_error("%[abcdef", expected)
+    assert_syntax_error("%[abcdef\n", expected)
   end
 
   def test_invalid_jump
@@ -1277,6 +1363,46 @@ eom
   def test_command_with_cmd_brace_block
     assert_valid_syntax('obj.foo (1) {}')
     assert_valid_syntax('obj::foo (1) {}')
+  end
+
+  def test_numbered_parameter
+    assert_valid_syntax('proc {@1}')
+    assert_equal(3, eval('[1,2].then {@1+@2}'))
+    assert_equal("12", eval('[1,2].then {"#@1#@2"}'))
+    assert_equal(3, eval('->{@1+@2}.call(1,2)'))
+    assert_equal(4, eval('->(a=->{@1}){a}.call.call(4)'))
+    assert_equal(5, eval('-> a: ->{@1} {a}.call.call(5)'))
+    assert_syntax_error('proc {|| @1}', /ordinary parameter is defined/)
+    assert_syntax_error('proc {|;a| @1}', /ordinary parameter is defined/)
+    assert_syntax_error("proc {|\n| @1}", /ordinary parameter is defined/)
+    assert_syntax_error('proc {|x| @1}', /ordinary parameter is defined/)
+    assert_syntax_error('->(){@1}', /ordinary parameter is defined/)
+    assert_syntax_error('->(x){@1}', /ordinary parameter is defined/)
+    assert_syntax_error('->x{@1}', /ordinary parameter is defined/)
+    assert_syntax_error('->x:@2{}', /ordinary parameter is defined/)
+    assert_syntax_error('->x=@1{}', /ordinary parameter is defined/)
+    assert_syntax_error('proc {@1 = nil}', /Can't assign to numbered parameter @1/)
+    assert_syntax_error('proc {@01}', /leading zero/)
+    assert_syntax_error('proc {@1_}', /unexpected/)
+    assert_syntax_error('proc {@9999999999999999}', /too large/)
+    assert_syntax_error('@1', /outside block/)
+  end
+
+  def test_pipeline_operator
+    assert_valid_syntax('x |> y')
+    x = nil
+    assert_equal("121", eval('x = 12 |> pow(2) |> to_s 11'))
+    assert_equal(12, x)
+    assert_equal([2, 4, 6], eval("1.. |> take 3\n|> map do @1 * 2 end"))
+    assert_syntax_error('a|>-b', /unexpected '-'/)
+  end
+
+  def test_value_expr_in_condition
+    mesg = /void value expression/
+    assert_syntax_error("tap {a = (true ? next : break)}", mesg)
+    assert_valid_syntax("tap {a = (true ? true : break)}")
+    assert_valid_syntax("tap {a = (break if false)}")
+    assert_valid_syntax("tap {a = (break unless true)}")
   end
 
   private

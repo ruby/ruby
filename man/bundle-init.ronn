@@ -26,4 +26,4 @@ results in all string literals in the file being implicitly frozen.
 
 ## SEE ALSO
 
-[Gemfile(5)](http://bundler.io/man/gemfile.5.html)
+[Gemfile(5)](https://bundler.io/man/gemfile.5.html)

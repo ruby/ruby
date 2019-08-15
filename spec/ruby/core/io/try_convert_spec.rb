@@ -38,12 +38,12 @@ describe "IO.try_convert" do
   it "raises a TypeError if the object does not return an IO from #to_io" do
     obj = mock("io")
     obj.should_receive(:to_io).and_return("io")
-    lambda { IO.try_convert(obj) }.should raise_error(TypeError)
+    -> { IO.try_convert(obj) }.should raise_error(TypeError)
   end
 
   it "propagates an exception raised by #to_io" do
     obj = mock("io")
     obj.should_receive(:to_io).and_raise(TypeError.new)
-    lambda{ IO.try_convert(obj) }.should raise_error(TypeError)
+    ->{ IO.try_convert(obj) }.should raise_error(TypeError)
   end
 end

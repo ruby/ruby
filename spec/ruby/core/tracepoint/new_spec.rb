@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe 'TracePoint.new' do
   it 'returns a new TracePoint object, not enabled by default' do
-    TracePoint.new(:call) {}.enabled?.should be_false
+    TracePoint.new(:line) {}.enabled?.should be_false
   end
 
   it 'includes :line event when event is not specified' do
@@ -23,12 +23,11 @@ describe 'TracePoint.new' do
 
   it 'converts given event name as string into symbol using to_sym' do
     event_name = nil
-    (o = mock('return')).should_receive(:to_sym).and_return(:return)
+    (o = mock('line')).should_receive(:to_sym).and_return(:line)
 
-    TracePoint.new(o) { |tp| event_name = tp.event}.enable do
-      event_name.should equal(nil)
-      TracePointSpec.test
-      event_name.should equal(:return)
+    TracePoint.new(o) { |tp| event_name = tp.event }.enable do
+      line_event = true
+      event_name.should == :line
     end
   end
 
@@ -56,13 +55,13 @@ describe 'TracePoint.new' do
     -> { TracePoint.new(o) {}}.should raise_error(TypeError)
   end
 
-  ruby_bug "#140740", ""..."2.5" do
+  ruby_version_is "2.5" do
     it 'expects to be called with a block' do
-      -> { TracePoint.new(:line) }.should raise_error(ArgumentError)
+      -> { TracePoint.new(:line) }.should raise_error(ArgumentError, "must be called with a block")
     end
   end
 
-  it "raises a Argument error when the give argument doesn't match an event name" do
-    -> { TracePoint.new(:test) }.should raise_error(ArgumentError)
+  it "raises a Argument error when the given argument doesn't match an event name" do
+    -> { TracePoint.new(:test) }.should raise_error(ArgumentError, "unknown event: test")
   end
 end

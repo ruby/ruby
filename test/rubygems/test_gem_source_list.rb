@@ -3,6 +3,7 @@ require 'rubygems/source_list'
 require 'rubygems/test_case'
 
 class TestGemSourceList < Gem::TestCase
+
   def setup
     super
 

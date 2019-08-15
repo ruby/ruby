@@ -4,6 +4,11 @@ require 'test/unit'
 class TestString < Test::Unit::TestCase
   ENUMERATOR_WANTARRAY = RUBY_VERSION >= "3.0.0"
 
+  WIDE_ENCODINGS = [
+     Encoding::UTF_16BE, Encoding::UTF_16LE,
+     Encoding::UTF_32BE, Encoding::UTF_32LE,
+  ]
+
   def initialize(*args)
     @cls = String
     @aref_re_nth = true
@@ -68,6 +73,20 @@ class TestString < Test::Unit::TestCase
     assert_raise(FrozenError){ str.__send__(:initialize, encoding: 'euc-jp') }
     assert_raise(FrozenError){ str.__send__(:initialize, 'abc', encoding: 'euc-jp') }
     assert_raise(FrozenError){ str.__send__(:initialize, 'abc', capacity: 1000, encoding: 'euc-jp') }
+
+    str = S("")
+    assert_equal("mystring", str.__send__(:initialize, "mystring"))
+    str = S("mystring")
+    assert_equal("mystring", str.__send__(:initialize, str))
+    str = S("")
+    assert_equal("mystring", str.__send__(:initialize, "mystring", capacity: 1000))
+    str = S("mystring")
+    assert_equal("mystring", str.__send__(:initialize, str, capacity: 1000))
+  end
+
+  def test_initialize_shared
+    String.new(str = "mystring" * 10).__send__(:initialize, capacity: str.bytesize)
+    assert_equal("mystring", str[0, 8])
   end
 
   def test_initialize_nonstring
@@ -646,23 +665,35 @@ CODE
     assert_raise(ArgumentError) { "foo".count }
   end
 
+  def crypt_supports_des_crypt?
+    /openbsd/ !~ RUBY_PLATFORM
+  end
+
   def test_crypt
-    assert_equal(S('aaGUC/JkO9/Sc'), S("mypassword").crypt(S("aa")))
-    assert_not_equal(S('aaGUC/JkO9/Sc'), S("mypassword").crypt(S("ab")))
+    if crypt_supports_des_crypt?
+      pass      = "aaGUC/JkO9/Sc"
+      good_salt = "aa"
+      bad_salt  = "ab"
+    else
+      pass      = "$2a$04$0WVaz0pV3jzfZ5G5tpmHWuBQGbkjzgtSc3gJbmdy0GAGMa45MFM2."
+      good_salt = "$2a$04$0WVaz0pV3jzfZ5G5tpmHWu"
+      bad_salt  = "$2a$04$0WVaz0pV3jzfZ5G5tpmHXu"
+    end
+    assert_equal(S(pass), S("mypassword").crypt(S(good_salt)))
+    assert_not_equal(S(pass), S("mypassword").crypt(S(bad_salt)))
     assert_raise(ArgumentError) {S("mypassword").crypt(S(""))}
     assert_raise(ArgumentError) {S("mypassword").crypt(S("\0a"))}
     assert_raise(ArgumentError) {S("mypassword").crypt(S("a\0"))}
     assert_raise(ArgumentError) {S("poison\u0000null").crypt(S("aa"))}
-    [Encoding::UTF_16BE, Encoding::UTF_16LE,
-     Encoding::UTF_32BE, Encoding::UTF_32LE].each do |enc|
+    WIDE_ENCODINGS.each do |enc|
       assert_raise(ArgumentError) {S("mypassword").crypt(S("aa".encode(enc)))}
       assert_raise(ArgumentError) {S("mypassword".encode(enc)).crypt(S("aa"))}
     end
 
     @cls == String and
-      assert_no_memory_leak([], 's = ""', "#{<<~"begin;"}\n#{<<~'end;'}")
+      assert_no_memory_leak([], "s = ''; salt_proc = proc{#{(crypt_supports_des_crypt? ? '..' : good_salt).inspect}}", "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
-      1000.times { s.crypt(-"..").clear  }
+      1000.times { s.crypt(-salt_proc.call).clear  }
     end;
   end
 
@@ -878,20 +909,15 @@ CODE
         assert_equal [65, 66, 67], s.bytes {}
       }
     else
-      warning = /passing a block to String#bytes is deprecated/
-      assert_warning(warning) {
-        res = []
-        assert_equal s.object_id, s.bytes {|x| res << x }.object_id
-        assert_equal(65, res[0])
-        assert_equal(66, res[1])
-        assert_equal(67, res[2])
-      }
-      assert_warning(warning) {
-        s = S("ABC")
-        res = []
-        assert_same s, s.bytes {|x| res << x }
-        assert_equal [65, 66, 67], res
-      }
+      res = []
+      assert_equal s.object_id, s.bytes {|x| res << x }.object_id
+      assert_equal(65, res[0])
+      assert_equal(66, res[1])
+      assert_equal(67, res[2])
+      s = S("ABC")
+      res = []
+      assert_same s, s.bytes {|x| res << x }
+      assert_equal [65, 66, 67], res
     end
   end
 
@@ -922,20 +948,15 @@ CODE
         assert_equal [0x3042, 0x3044, 0x3046], s.codepoints {}
       }
     else
-      warning = /passing a block to String#codepoints is deprecated/
-      assert_warning(warning) {
-        res = []
-        assert_equal s.object_id, s.codepoints {|x| res << x }.object_id
-        assert_equal(0x3042, res[0])
-        assert_equal(0x3044, res[1])
-        assert_equal(0x3046, res[2])
-      }
-      assert_warning(warning) {
-        s = S("ABC")
-        res = []
-        assert_same s, s.codepoints {|x| res << x }
-        assert_equal [65, 66, 67], res
-      }
+      res = []
+      assert_equal s.object_id, s.codepoints {|x| res << x }.object_id
+      assert_equal(0x3042, res[0])
+      assert_equal(0x3044, res[1])
+      assert_equal(0x3046, res[2])
+      s = S("ABC")
+      res = []
+      assert_same s, s.codepoints {|x| res << x }
+      assert_equal [65, 66, 67], res
     end
   end
 
@@ -960,19 +981,17 @@ CODE
         assert_equal ["A", "B", "C"], s.chars {}
       }
     else
-      warning = /passing a block to String#chars is deprecated/
-      assert_warning(warning) {
-        res = []
-        assert_equal s.object_id, s.chars {|x| res << x }.object_id
-        assert_equal("A", res[0])
-        assert_equal("B", res[1])
-        assert_equal("C", res[2])
-      }
+      res = []
+      assert_equal s.object_id, s.chars {|x| res << x }.object_id
+      assert_equal("A", res[0])
+      assert_equal("B", res[1])
+      assert_equal("C", res[2])
     end
   end
 
   def test_each_grapheme_cluster
     [
+      "\u{0D 0A}",
       "\u{20 200d}",
       "\u{600 600}",
       "\u{600 20}",
@@ -986,15 +1005,19 @@ CODE
     ].each do |g|
       assert_equal [g], g.each_grapheme_cluster.to_a
       assert_equal 1, g.each_grapheme_cluster.size
+      assert_predicate g.dup.taint.each_grapheme_cluster.to_a[0], :tainted?
     end
 
     [
-      ["\u{a 308}", ["\u000A", "\u0308"]],
-      ["\u{d 308}", ["\u000D", "\u0308"]],
+      ["\u{a 324}", ["\u000A", "\u0324"]],
+      ["\u{d 324}", ["\u000D", "\u0324"]],
       ["abc", ["a", "b", "c"]],
     ].each do |str, grapheme_clusters|
       assert_equal grapheme_clusters, str.each_grapheme_cluster.to_a
       assert_equal grapheme_clusters.size, str.each_grapheme_cluster.size
+      str.dup.taint.each_grapheme_cluster do |g|
+        assert_predicate g, :tainted?
+      end
     end
 
     s = ("x"+"\u{10ABCD}"*250000)
@@ -1013,12 +1036,20 @@ CODE
       "\u{1F468 200D 1F393}",
       "\u{1F46F 200D 2642 FE0F}",
       "\u{1f469 200d 2764 fe0f 200d 1f469}",
-    ].each do |g|
+    ].product([Encoding::UTF_8, *WIDE_ENCODINGS]) do |g, enc|
+      g = g.encode(enc)
       assert_equal [g], g.grapheme_clusters
+      assert_predicate g.taint.grapheme_clusters[0], :tainted?
     end
 
-    assert_equal ["\u000A", "\u0308"], "\u{a 308}".grapheme_clusters
-    assert_equal ["\u000D", "\u0308"], "\u{d 308}".grapheme_clusters
+    [
+      "\u{a 324}",
+      "\u{d 324}",
+      "abc",
+    ].product([Encoding::UTF_8, *WIDE_ENCODINGS]) do |g, enc|
+      g = g.encode(enc)
+      assert_equal g.chars, g.grapheme_clusters
+    end
     assert_equal ["a", "b", "c"], "abc".b.grapheme_clusters
 
     if ENUMERATOR_WANTARRAY
@@ -1026,15 +1057,14 @@ CODE
         assert_equal ["A", "B", "C"], "ABC".grapheme_clusters {}
       }
     else
-      warning = /passing a block to String#grapheme_clusters is deprecated/
-      assert_warning(warning) {
-        s = "ABC".b
-        res = []
-        assert_same s, s.grapheme_clusters {|x| res << x }
-        assert_equal("A", res[0])
-        assert_equal("B", res[1])
-        assert_equal("C", res[2])
-      }
+      s = "ABC".b.taint
+      res = []
+      assert_same s, s.grapheme_clusters {|x| res << x }
+      assert_equal(3, res.size)
+      assert_equal("A", res[0])
+      assert_equal("B", res[1])
+      assert_equal("C", res[2])
+      res.each {|g| assert_predicate(g, :tainted?)}
     end
   end
 
@@ -1147,12 +1177,10 @@ CODE
         assert_equal ["hello\n", "world"], s.lines {}
       }
     else
-      assert_warning(/passing a block to String#lines is deprecated/) {
-        res = []
-        assert_equal s.object_id, s.lines {|x| res << x }.object_id
-        assert_equal(S("hello\n"), res[0])
-        assert_equal(S("world"),  res[1])
-      }
+      res = []
+      assert_equal s.object_id, s.lines {|x| res << x }.object_id
+      assert_equal(S("hello\n"), res[0])
+      assert_equal(S("world"),  res[1])
     end
   end
 
@@ -1712,7 +1740,7 @@ CODE
 
     assert_equal([], "".split(//, 1))
   ensure
-    $; = fs
+    EnvUtil.suppress_warning {$; = fs}
   end
 
   def test_split_with_block
@@ -1751,8 +1779,11 @@ CODE
 
     result = []; "".split(//, 1) {|s| result << s}
     assert_equal([], result)
+
+    result = []; "aaa,bbb,ccc,ddd".split(/,/) {|s| result << s.gsub(/./, "A")}
+    assert_equal(["AAA"]*4, result)
   ensure
-    $; = fs
+    EnvUtil.suppress_warning {$; = fs}
   end
 
   def test_fs
@@ -1760,7 +1791,7 @@ CODE
       $; = []
     }
 
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately(%W[-W0], "#{<<~"begin;"}\n#{<<~'end;'}")
     bug = '[ruby-core:79582] $; must not be GCed'
     begin;
       $; = " "
@@ -1770,6 +1801,13 @@ CODE
       GC.start
       assert_equal([], "".split, bug)
     end;
+
+    begin
+      fs = $;
+      assert_warn(/\$; will be deprecated/) {$; = " "}
+    ensure
+      EnvUtil.suppress_warning {$; = fs}
+    end
   end
 
   def test_split_encoding
@@ -1783,10 +1821,7 @@ CODE
 
   def test_split_wchar
     bug8642 = '[ruby-core:56036] [Bug #8642]'
-    [
-     Encoding::UTF_16BE, Encoding::UTF_16LE,
-     Encoding::UTF_32BE, Encoding::UTF_32LE,
-    ].each do |enc|
+    WIDE_ENCODINGS.each do |enc|
       s = S("abc,def".encode(enc))
       assert_equal(["abc", "def"].map {|c| c.encode(enc)},
                    s.split(",".encode(enc)),
@@ -1975,6 +2010,12 @@ CODE
     r.taint
     a.sub!(/./, r)
     assert_predicate(a, :tainted?)
+
+    bug16105 = '[Bug #16105] heap-use-after-free'
+    a = S("ABCDEFGHIJKLMNOPQRSTUVWXYZ012345678")
+    b = a.dup
+    c = a.slice(1, 100)
+    assert_equal("AABCDEFGHIJKLMNOPQRSTUVWXYZ012345678", b.sub!(c, b), bug16105)
   end
 
   def test_succ
@@ -2964,6 +3005,23 @@ CODE
   end
 =end
 
+  def test_nesting_shared
+    a = ('a' * 24).encode(Encoding::ASCII).gsub('x', '')
+    hash = {}
+    hash[a] = true
+    assert_equal(('a' * 24), a)
+    4.times { GC.start }
+    assert_equal(('a' * 24), a, '[Bug #15792]')
+  end
+
+  def test_nesting_shared_b
+    a = ('j' * 24).b.b
+    eval('', binding, a)
+    assert_equal(('j' * 24), a)
+    4.times { GC.start }
+    assert_equal(('j' * 24), a, '[Bug #15934]')
+  end
+
   def test_shared_force_encoding
     s = "\u{3066}\u{3059}\u{3068}".gsub(//, '')
     h = {}
@@ -2979,8 +3037,7 @@ CODE
 
   def test_ascii_incomat_inspect
     bug4081 = '[ruby-core:33283]'
-    [Encoding::UTF_16LE, Encoding::UTF_16BE,
-     Encoding::UTF_32LE, Encoding::UTF_32BE].each do |e|
+    WIDE_ENCODINGS.each do |e|
       assert_equal('"abc"', "abc".encode(e).inspect)
       assert_equal('"\\u3042\\u3044\\u3046"', "\u3042\u3044\u3046".encode(e).inspect)
       assert_equal('"ab\\"c"', "ab\"c".encode(e).inspect, bug4081)
@@ -3125,6 +3182,24 @@ CODE
 
     bar = %w(b a r).join('')
     assert_same(str, -bar, "uminus deduplicates [Feature #13077]")
+  end
+
+  def test_uminus_no_freeze_not_bare
+    str = @cls.new("foo")
+    assert_instance_of(@cls, -str)
+    assert_equal(false, str.frozen?)
+
+    str = @cls.new("foo")
+    str.instance_variable_set(:@iv, 1)
+    assert_instance_of(@cls, -str)
+    assert_equal(false, str.frozen?)
+    assert_equal(1, str.instance_variable_get(:@iv))
+
+    str = @cls.new("foo")
+    str.taint
+    assert_instance_of(@cls, -str)
+    assert_equal(false, str.frozen?)
+    assert_predicate(str, :tainted?)
   end
 
   def test_ord

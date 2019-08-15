@@ -11,7 +11,7 @@ describe "Module#const_missing" do
   end
 
   it "raises NameError and includes the name of the value that wasn't found" do
-    lambda {
+    -> {
       ConstantSpecs.const_missing("HelloMissing")
     }.should raise_error(NameError, /ConstantSpecs::HelloMissing/)
   end
