@@ -281,7 +281,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_build_signed_gem
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+    skip 'openssl is missing' unless defined?(OpenSSL::SSL) && !java_platform?
 
     trust_dir = Gem::Security.trust_dir
 
@@ -308,7 +308,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_build_signed_gem_with_cert_expiration_length_days
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+    skip 'openssl is missing' unless defined?(OpenSSL::SSL) && !java_platform?
 
     gem_path = File.join Gem.user_home, ".gem"
     Dir.mkdir gem_path
@@ -352,7 +352,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_build_auto_resign_cert
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+    skip 'openssl is missing' unless defined?(OpenSSL::SSL) && !java_platform?
 
     gem_path = File.join Gem.user_home, ".gem"
     Dir.mkdir gem_path
@@ -389,7 +389,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     output = @ui.output.split "\n"
     assert_equal "INFO:  Your certificate has expired, trying to re-sign it...", output.shift
     assert_equal "INFO:  Your cert: #{tmp_expired_cert_file } has been auto re-signed with the key: #{tmp_private_key_file}", output.shift
-    assert_match /INFO:  Your expired cert will be located at: .+\Wgem-public_cert\.pem\.expired\.[0-9]+/, output.shift
+    assert_match(/INFO:  Your expired cert will be located at: .+\Wgem-public_cert\.pem\.expired\.[0-9]+/, output.shift)
   end
 
 end

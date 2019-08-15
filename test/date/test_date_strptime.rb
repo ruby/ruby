@@ -178,7 +178,8 @@ class TestDateStrptime < Test::Unit::TestCase
      [['11:33:44 PM AMT', '%I:%M:%S %p %Z'], [nil,nil,nil,23,33,44,'AMT',nil,nil], __LINE__],
      [['11:33:44 P.M. AMT', '%I:%M:%S %p %Z'], [nil,nil,nil,23,33,44,'AMT',nil,nil], __LINE__],
 
-     [['fri1feb034pm+5', '%a%d%b%y%H%p%Z'], [2003,2,1,16,nil,nil,'+5',5*3600,5]]
+     [['fri1feb034pm+5', '%a%d%b%y%H%p%Z'], [2003,2,1,16,nil,nil,'+5',5*3600,5]],
+     [['E.  Australia Standard Time', '%Z'], [nil,nil,nil,nil,nil,nil,'E.  Australia Standard Time',10*3600,nil], __LINE__],
     ].each do |x, y|
       h = Date._strptime(*x)
       a = h.values_at(:year,:mon,:mday,:hour,:min,:sec,:zone,:offset,:wday)

@@ -6,19 +6,13 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
 
   def setup
     super
-    common_installer_setup
-
-    build_rake_in do
-      use_ui @ui do
-        @installer.install
-      end
-    end
-
     @cmd = Gem::Commands::UninstallCommand.new
     @executable = File.join(@gemhome, 'bin', 'executable')
   end
 
   def test_execute_all_named
+    initial_install
+
     util_make_gems
 
     default = new_default_spec 'default', '1'
@@ -48,6 +42,8 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
   end
 
   def test_execute_dependency_order
+    initial_install
+
     c = quick_gem 'c' do |spec|
       spec.add_dependency 'a'
     end
@@ -76,15 +72,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
   end
 
   def test_execute_removes_executable
-    ui = Gem::MockGemUi.new
-
-    util_setup_gem ui
-
-    build_rake_in do
-      use_ui ui do
-        @installer.install
-      end
-    end
+    initial_install
 
     if win_platform?
       assert File.exist?(@executable)
@@ -113,12 +101,14 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
   end
 
   def test_execute_removes_formatted_executable
+    installer = setup_base_installer
+
     FileUtils.rm_f @executable # Wish this didn't happen in #setup
 
     Gem::Installer.exec_format = 'foo-%s-bar'
 
-    @installer.format_executable = true
-    @installer.install
+    installer.format_executable = true
+    installer.install
 
     formatted_executable = File.join @gemhome, 'bin', 'foo-executable-bar'
     assert_equal true, File.exist?(formatted_executable)
@@ -137,11 +127,11 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     @gem = File.join @tempdir, @spec.file_name
     FileUtils.touch @gem
 
-    util_setup_gem
+    installer = util_setup_gem
 
     build_rake_in do
       use_ui @ui do
-        @installer.install
+        installer.install
       end
     end
 
@@ -157,10 +147,11 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
   end
 
   def test_execute_with_version_leaves_non_matching_versions
+    initial_install
+
     ui = Gem::MockGemUi.new
 
     util_make_gems
-    util_setup_gem ui
 
     assert_equal 3, Gem::Specification.find_all_by_name('a').length
 
@@ -178,10 +169,11 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
   end
 
   def test_execute_with_version_specified_as_colon
+    initial_install
+
     ui = Gem::MockGemUi.new "y\n"
 
     util_make_gems
-    util_setup_gem ui
 
     assert_equal 3, Gem::Specification.find_all_by_name('a').length
 
@@ -254,6 +246,8 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
   end
 
   def test_execute_with_force_and_without_version_uninstalls_everything
+    initial_install
+
     ui = Gem::MockGemUi.new "y\n"
 
     a_1, = util_gem 'a', 1
@@ -261,8 +255,6 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
 
     a_3a, = util_gem 'a', '3.a'
     install_gem a_3a
-
-    util_setup_gem ui
 
     assert_equal 3, Gem::Specification.find_all_by_name('a').length
 
@@ -279,10 +271,11 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
   end
 
   def test_execute_with_force_ignores_dependencies
+    initial_install
+
     ui = Gem::MockGemUi.new
 
     util_make_gems
-    util_setup_gem ui
 
     assert Gem::Specification.find_all_by_name('dep_x').length > 0
     assert Gem::Specification.find_all_by_name('x').length > 0
@@ -359,20 +352,22 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
   end
 
   def test_handle_options_vendor
-    use_ui @ui do
-      @cmd.handle_options %w[--vendor]
-    end
+    vendordir(File.join(@tempdir, 'vendor')) do
+      use_ui @ui do
+        @cmd.handle_options %w[--vendor]
+      end
 
-    assert @cmd.options[:vendor]
-    assert_equal Gem.vendor_dir, @cmd.options[:install_dir]
+      assert @cmd.options[:vendor]
+      assert_equal Gem.vendor_dir, @cmd.options[:install_dir]
 
-    assert_empty @ui.output
+      assert_empty @ui.output
 
-    expected = <<-EXPECTED
+      expected = <<-EXPECTED
 WARNING:  Use your OS package manager to uninstall vendor gems
-    EXPECTED
+      EXPECTED
 
-    assert_match expected, @ui.error
+      assert_match expected, @ui.error
+    end
   end
 
   def test_execute_two_version
@@ -395,21 +390,17 @@ WARNING:  Use your OS package manager to uninstall vendor gems
   end
 
   def test_handle_options_vendor_missing
-    orig_vendordir = RbConfig::CONFIG['vendordir']
-    RbConfig::CONFIG.delete 'vendordir'
+    vendordir(nil) do
+      e = assert_raises OptionParser::InvalidOption do
+        @cmd.handle_options %w[--vendor]
+      end
 
-    e = assert_raises OptionParser::InvalidOption do
-      @cmd.handle_options %w[--vendor]
+      assert_equal 'invalid option: --vendor your platform is not supported',
+                   e.message
+
+      refute @cmd.options[:vendor]
+      refute @cmd.options[:install_dir]
     end
-
-    assert_equal 'invalid option: --vendor your platform is not supported',
-                 e.message
-
-    refute @cmd.options[:vendor]
-    refute @cmd.options[:install_dir]
-
-  ensure
-    RbConfig::CONFIG['vendordir'] = orig_vendordir
   end
 
   def test_execute_with_gem_not_installed
@@ -425,6 +416,8 @@ WARNING:  Use your OS package manager to uninstall vendor gems
   end
 
   def test_execute_with_gem_uninstall_error
+    initial_install
+
     util_make_gems
 
     @cmd.options[:args] = %w[a]
@@ -449,6 +442,19 @@ WARNING:  Use your OS package manager to uninstall vendor gems
 
     assert_empty @ui.output
     assert_match %r!Error: unable to successfully uninstall '#{@spec.name}'!, @ui.error
+  end
+
+  private
+
+  def initial_install
+    installer = setup_base_installer
+    common_installer_setup
+
+    build_rake_in do
+      use_ui @ui do
+        installer.install
+      end
+    end
   end
 
 end

@@ -66,7 +66,7 @@ module Bundler
       Bundler.load.cache if Bundler.app_cache.exist? && !options["no-cache"] && !Bundler.frozen_bundle?
 
       Bundler.ui.confirm "Bundle complete! #{dependencies_count_for(definition)}, #{gems_installed_for(definition)}."
-      Bundler::CLI::Common.output_without_groups_message
+      Bundler::CLI::Common.output_without_groups_message(:install)
 
       if Bundler.use_system_gems?
         Bundler.ui.confirm "Use `bundle info [gemname]` to see where a bundled gem is installed."
@@ -80,7 +80,7 @@ module Bundler
       warn_ambiguous_gems
 
       if CLI::Common.clean_after_install?
-        require "bundler/cli/clean"
+        require_relative "clean"
         Bundler::CLI::Clean.new(options).run
       end
     rescue GemNotFound, VersionConflict => e

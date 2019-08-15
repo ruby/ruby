@@ -13,6 +13,6 @@ describe "String#codepoints" do
   it "raises an ArgumentError when no block is given if self has an invalid encoding" do
     s = "\xDF".force_encoding(Encoding::UTF_8)
     s.valid_encoding?.should be_false
-    lambda { s.codepoints }.should raise_error(ArgumentError)
+    -> { s.codepoints }.should raise_error(ArgumentError)
   end
 end

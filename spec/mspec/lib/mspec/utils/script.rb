@@ -39,8 +39,8 @@ class MSpecScript
   end
 
   def initialize
-    ruby_version_is ""..."2.3" do
-      abort "MSpec needs Ruby 2.3 or more recent"
+    ruby_version_is ""..."2.4" do
+      abort "MSpec needs Ruby 2.4 or more recent"
     end
 
     config[:formatter] = nil
@@ -191,7 +191,7 @@ class MSpecScript
     patterns.each do |pattern|
       begin
         expanded = File.realpath(pattern)
-      rescue Errno::ENOENT
+      rescue Errno::ENOENT, Errno::ENOTDIR
         next
       end
       if File.file?(expanded) && expanded.end_with?('.rb')

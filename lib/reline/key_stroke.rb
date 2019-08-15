@@ -13,29 +13,7 @@ class Reline::KeyStroke
 
   def initialize(config)
     @config = config
-    @buffer = []
   end
-
-  def input_to(bytes)
-    case match_status(bytes)
-    when :matching
-      nil
-    when :matched
-      expand(bytes)
-    when :unmatched
-      bytes
-    end
-  end
-
-  def input_to!(bytes)
-    if bytes.nil?
-      return @buffer.push(nil)&.tap { clear }
-    end
-    @buffer.concat Array(bytes)
-    input_to(@buffer)&.tap { clear }
-  end
-
-  private
 
   def match_status(input)
     key_mapping.keys.select { |lhs|
@@ -67,11 +45,9 @@ class Reline::KeyStroke
     end
   end
 
-  def key_mapping
-    @config[:key_mapping].transform_keys(&:bytes)
-  end
+  private
 
-  def clear
-    @buffer = []
+  def key_mapping
+    @config.key_bindings
   end
 end

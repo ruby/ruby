@@ -1,4 +1,14 @@
 class Reline::ANSI
+  RAW_KEYSTROKE_CONFIG = {
+    [27, 91, 65] => :ed_prev_history,     # ↑
+    [27, 91, 66] => :ed_next_history,     # ↓
+    [27, 91, 67] => :ed_next_char,        # →
+    [27, 91, 68] => :ed_prev_char,        # ←
+    [27, 91, 51, 126] => :key_delete,     # Del
+    [27, 91, 49, 126] => :ed_move_to_beg, # Home
+    [27, 91, 52, 126] => :ed_move_to_end, # End
+  }.each_key(&:freeze).freeze
+
   @@input = STDIN
   def self.input=(val)
     @@input = val
@@ -9,7 +19,11 @@ class Reline::ANSI
     @@output = val
   end
 
+  @@buf = []
   def self.getc
+    unless @@buf.empty?
+      return @@buf.shift
+    end
     c = nil
     loop do
       result = select([@@input], [], [], 0.1)
@@ -18,6 +32,10 @@ class Reline::ANSI
       break
     end
     c&.ord
+  end
+
+  def self.ungetc(c)
+    @@buf.unshift(c)
   end
 
   def self.get_screen_size
@@ -92,7 +110,7 @@ class Reline::ANSI
     int_handle = Signal.trap('INT', 'IGNORE')
     otio = `stty -g`.chomp
     setting = ' -echo -icrnl cbreak'
-    if (`stty -a`.scan(/-parenb\b/).first == '-parenb')
+    if /-parenb\b/ =~ `stty -a`
       setting << ' pass8'
     end
     setting << ' -ixoff'
