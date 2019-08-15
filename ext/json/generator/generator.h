@@ -1,7 +1,6 @@
 #ifndef _GENERATOR_H_
 #define _GENERATOR_H_
 
-#include <string.h>
 #include <math.h>
 #include <ctype.h>
 

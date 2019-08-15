@@ -210,6 +210,10 @@ rb_vsprintf(const char *format, va_list ap) ::
   must be a VALUE).  Since it conflicts with "%i", for integers in
   format strings, use "%d".
 
+rb_str_append(VALUE str1, VALUE str2) ::
+
+  Appends Ruby string str2 to Ruby string str1.
+
 rb_str_cat(VALUE str, const char *ptr, long len) ::
 
   Appends len bytes of data from ptr to the Ruby string.
@@ -225,15 +229,15 @@ rb_str_vcatf(VALUE str, const char* format, va_list ap) ::
 
   Appends C string format and successive arguments to Ruby string
   str according to a printf-like format.  These functions are
-  equivalent to rb_str_cat2(str, rb_sprintf(format, ...)) and
-  rb_str_cat2(str, rb_vsprintf(format, ap)), respectively.
+  equivalent to rb_str_append(str, rb_sprintf(format, ...)) and
+  rb_str_append(str, rb_vsprintf(format, ap)), respectively.
 
 rb_enc_str_new(const char *ptr, long len, rb_encoding *enc) ::
 rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc) ::
 
   Creates a new Ruby string with the specified encoding.
 
-rb_enc_str_new_literal(const char *ptr) ::
+rb_enc_str_new_literal(const char *ptr, rb_encoding *enc) ::
 
   Creates a new Ruby string from a C string literal with the specified
   encoding.
@@ -275,6 +279,14 @@ rb_str_set_len(VALUE str, long len) ::
   up to len bytes, regardless RSTRING_LEN(str).  len must not exceed
   the capacity of str.
 
+rb_str_modify(VALUE str) ::
+
+  Prepares a Ruby string to modify.  If str is not modifiable, this
+  function raises an exception, or if the buffer of str is shared,
+  this function allocates new buffer to make it unshared.  Always
+  you MUST call this function before modifying the contents using
+  RSTRING_PTR and/or rb_str_set_len.
+
 ==== Array Functions
 
 rb_ary_new() ::
@@ -305,7 +317,7 @@ rb_ary_to_ary(VALUE obj) ::
 There are many functions to operate an array.  They may dump core if other
 types are given.
 
-rb_ary_aref(argc, VALUE *argv, VALUE ary) ::
+rb_ary_aref(int argc, const VALUE *argv, VALUE ary) ::
 
   Equivalent to Array#[].
 
@@ -654,6 +666,8 @@ If it doesn't, you have to call rb_undef_alloc_func(klass).
 rb_data_type_t is defined like this.  Let's take a look at each
 member of the struct.
 
+  typedef struct rb_data_type_struct rb_data_type_t;
+
   struct rb_data_type_struct {
           const char *wrap_struct_name;
           struct {
@@ -740,7 +754,7 @@ be assigned to sval, which should be a pointer of the type specified.
 ==== Ruby object to C struct
 
 To retrieve the C pointer from the Data object, use the macro
-Data_Get_Struct().
+TypedData_Get_Struct().
 
   TypedData_Get_Struct(obj, type, &data_type, sval)
 
@@ -888,6 +902,10 @@ which contains the arguments to the method.
 but are not exported to the Ruby world.  You need to protect them by
 
   void rb_global_variable(VALUE *var)
+
+or the objects themselves by
+
+  void rb_gc_register_mark_object(VALUE object)
 
 === Prepare extconf.rb
 
@@ -1331,8 +1349,11 @@ void rb_define_hooked_variable(const char *name, VALUE *var, VALUE (*getter)(), 
 
 void rb_global_variable(VALUE *var) ::
 
-  GC requires C global variables which hold Ruby values to be marked.
-  rb_global_variable tells GC to protect these variables.
+  Tells GC to protect C global variable, which holds Ruby value to be marked.
+
+void rb_gc_register_mark_object(VALUE object) ::
+
+  Tells GC to protect the +object+, which may not be referenced anywhere.
 
 === Constant Definition
 
@@ -1599,6 +1620,96 @@ Note: In the format string, "%"PRIsVALUE can be used for Object#to_s
 must be a VALUE).  Since it conflicts with "%i", for integers in
 format strings, use "%d".
 
+=== Threading
+
+As of Ruby 1.9, Ruby supports native 1:1 threading with one kernel
+thread per Ruby Thread object.  Currently, there is a GVL (Global VM Lock)
+which prevents simultaneous execution of Ruby code which may be released
+by the rb_thread_call_without_gvl and rb_thread_call_without_gvl2 functions.
+These functions are tricky-to-use and documented in thread.c; do not
+use them before reading comments in thread.c.
+
+void rb_thread_schedule(void) ::
+
+  Give the scheduler a hint to pass execution to another thread.
+
+=== Input/Output (IO) on a single file descriptor
+
+int rb_io_wait_readable(int fd) ::
+
+  Wait indefinitely for the given FD to become readable, allowing other
+  threads to be scheduled.  Returns a true value if a read may be
+  performed, false if there is an unrecoverable error.
+
+int rb_io_wait_writable(int fd) ::
+
+  Like rb_io_wait_readable, but for writability.
+
+int rb_wait_for_single_fd(int fd, int events, struct timeval *timeout) ::
+
+  Allows waiting on a single FD for one or multiple events with a
+  specified timeout.
+
+  +events+ is a mask of any combination of the following values:
+
+  * RB_WAITFD_IN - wait for readability of normal data
+  * RB_WAITFD_OUT - wait for writability
+  * RB_WAITFD_PRI - wait for readability of urgent data
+
+  Use a NULL +timeout+ to wait indefinitely.
+
+=== I/O Multiplexing
+
+Ruby supports I/O multiplexing based on the select(2) system call.
+The Linux select_tut(2) manpage
+<http://man7.org/linux/man-pages/man2/select_tut.2.html>
+provides a good overview on how to use select(2), and the Ruby API has
+analogous functions and data structures to the well-known select API.
+Understanding of select(2) is required to understand this section.
+
+typedef struct rb_fdset_t ::
+
+  The data structure which wraps the fd_set bitmap used by select(2).
+  This allows Ruby to use FD sets larger than that allowed by
+  historic limitations on modern platforms.
+
+void rb_fd_init(rb_fdset_t *) ::
+
+  Initializes the rb_fdset_t, it must be initialized before other rb_fd_*
+  operations.  Analogous to calling malloc(3) to allocate an fd_set.
+
+void rb_fd_term(rb_fdset_t *) ::
+
+  Destroys the rb_fdset_t, releasing any memory and resources it used.
+  It must be reinitialized using rb_fd_init before future use.
+  Analogous to calling free(3) to release memory for an fd_set.
+
+void rb_fd_zero(rb_fdset_t *) ::
+
+  Clears all FDs from the rb_fdset_t, analogous to FD_ZERO(3).
+
+void rb_fd_set(int fd, rb_fdset_t *) ::
+
+  Adds a given FD in the rb_fdset_t, analogous to FD_SET(3).
+
+void rb_fd_clr(int fd, rb_fdset_t *) ::
+
+  Removes a given FD from the rb_fdset_t, analogous to FD_CLR(3).
+
+int rb_fd_isset(int fd, const rb_fdset_t *) ::
+
+  Returns true if a given FD is set in the rb_fdset_t, false if not.
+  Analogous to FD_ISSET(3).
+
+int rb_thread_fd_select(int nfds, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *exceptfds, struct timeval *timeout) ::
+
+  Analogous to the select(2) system call, but allows other Ruby
+  threads to be scheduled while waiting.
+
+  When only waiting on a single FD, favor rb_io_wait_readable,
+  rb_io_wait_writable, or rb_wait_for_single_fd functions since
+  they can be optimized for specific platforms (currently, only Linux).
+
 === Initialize and Start the Interpreter
 
 The embedding API functions are below (not needed for extension libraries):
@@ -1717,7 +1828,7 @@ RGenGC (mostly) keeps compatibility.
 
 Generally, the use of the technique called write barriers is required in
 extension libraries for generational GC
-(http://en.wikipedia.org/wiki/Garbage_collection_%28computer_science%29).
+(https://en.wikipedia.org/wiki/Garbage_collection_%28computer_science%29).
 RGenGC works fine without write barriers in extension libraries.
 
 If your library adheres to the following tips, performance can

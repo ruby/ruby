@@ -4,6 +4,8 @@ require 'rubygems/command_manager'
 
 class TestGemCommandManager < Gem::TestCase
 
+  PROJECT_DIR = File.expand_path('../../..', __FILE__).untaint
+
   def setup
     super
 
@@ -29,6 +31,12 @@ class TestGemCommandManager < Gem::TestCase
                  e.message
   end
 
+  def test_find_alias_command
+    command = @command_manager.find_command 'i'
+
+    assert_kind_of Gem::Commands::InstallCommand, command
+  end
+
   def test_find_command_ambiguous_exact
     ins_command = Class.new
     Gem::Commands.send :const_set, :InsCommand, ins_command
@@ -52,7 +60,7 @@ class TestGemCommandManager < Gem::TestCase
 
   def test_run_interrupt
     old_load_path = $:.dup
-    $: << File.expand_path("test/rubygems", @@project_dir)
+    $: << File.expand_path("test/rubygems", PROJECT_DIR)
     Gem.load_env_plugins
 
     @command_manager.register_command :interrupt
@@ -71,7 +79,7 @@ class TestGemCommandManager < Gem::TestCase
 
   def test_run_crash_command
     old_load_path = $:.dup
-    $: << File.expand_path("test/rubygems", @@project_dir)
+    $: << File.expand_path("test/rubygems", PROJECT_DIR)
 
     @command_manager.register_command :crash
     use_ui @ui do
@@ -114,14 +122,14 @@ class TestGemCommandManager < Gem::TestCase
       assert_equal :both, check_options[:domain]
       assert_equal true, check_options[:wrappers]
       assert_equal Gem::Requirement.default, check_options[:version]
-      assert_equal nil, check_options[:install_dir]
-      assert_equal nil, check_options[:bin_dir]
+      assert_nil   check_options[:install_dir]
+      assert_nil   check_options[:bin_dir]
 
       #check settings
       check_options = nil
       @command_manager.process_args %w[
-        install --force --local --rdoc --install-dir .
-                --version 3.0 --no-wrapper --bindir .
+        install --force --local --document=ri,rdoc --install-dir .
+        --version 3.0 --no-wrapper --bindir .
       ]
       assert_equal %w[rdoc ri], check_options[:document].sort
       assert_equal true, check_options[:force]
@@ -254,11 +262,10 @@ class TestGemCommandManager < Gem::TestCase
 
     #check settings
     check_options = nil
-    @command_manager.process_args %w[update --force --rdoc --install-dir .]
+    @command_manager.process_args %w[update --force --document=ri --install-dir .]
     assert_includes check_options[:document], 'ri'
     assert_equal true, check_options[:force]
     assert_equal Dir.pwd, check_options[:install_dir]
   end
 
 end
-

@@ -417,7 +417,7 @@ with all sufficient information, see the ChangeLog file.
     * FTP
       * URI('ftp://example.com/foo').path #=> 'foo'
       * URI('ftp://example.com/%2Ffoo').path #=> '/foo'
-      * URI::FTP.build([nil, 'example.com', nil, '/foo', 'i').to_s #=> 'ftp://example.com/%2Ffoo;type=i'
+      * URI::FTP.build([nil, 'example.com', nil, '/foo', 'i']).to_s #=> 'ftp://example.com/%2Ffoo;type=i'
     * URI merge
       * URI('http://a/b/c/d;p?q').merge('?y') == URI('http://a/b/c/d;p?y')
       * URI('http://a/b/c/d;p?q').merge('/./g') == URI('http://a/g')

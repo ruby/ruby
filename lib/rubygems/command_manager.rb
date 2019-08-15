@@ -7,6 +7,7 @@
 
 require 'rubygems/command'
 require 'rubygems/user_interaction'
+require 'rubygems/text'
 
 ##
 # The command manager registers and installs all the individual sub-commands
@@ -32,6 +33,7 @@ require 'rubygems/user_interaction'
 
 class Gem::CommandManager
 
+  include Gem::Text
   include Gem::UserInteraction
 
   BUILTIN_COMMANDS = [ # :nodoc:
@@ -45,6 +47,7 @@ class Gem::CommandManager
     :fetch,
     :generate_index,
     :help,
+    :info,
     :install,
     :list,
     :lock,
@@ -58,6 +61,8 @@ class Gem::CommandManager
     :rdoc,
     :search,
     :server,
+    :signin,
+    :signout,
     :sources,
     :specification,
     :stale,
@@ -66,7 +71,11 @@ class Gem::CommandManager
     :update,
     :which,
     :yank,
-  ]
+  ].freeze
+
+  ALIAS_COMMANDS = {
+    'i' => 'install'
+  }.freeze
 
   ##
   # Return the authoritative instance of the command manager.
@@ -138,17 +147,17 @@ class Gem::CommandManager
   def run(args, build_args=nil)
     process_args(args, build_args)
   rescue StandardError, Timeout::Error => ex
-    alert_error "While executing gem ... (#{ex.class})\n    #{ex}"
+    alert_error clean_text("While executing gem ... (#{ex.class})\n    #{ex}")
     ui.backtrace ex
 
     terminate_interaction(1)
   rescue Interrupt
-    alert_error "Interrupted"
+    alert_error clean_text("Interrupted")
     terminate_interaction(1)
   end
 
   def process_args(args, build_args=nil)
-    if args.empty? then
+    if args.empty?
       say Gem::Command::HELP
       terminate_interaction 1
     end
@@ -161,7 +170,7 @@ class Gem::CommandManager
       say Gem::VERSION
       terminate_interaction 0
     when /^-/ then
-      alert_error "Invalid option: #{args.first}.  See 'gem --help'."
+      alert_error clean_text("Invalid option: #{args.first}. See 'gem --help'.")
       terminate_interaction 1
     else
       cmd_name = args.shift.downcase
@@ -171,16 +180,23 @@ class Gem::CommandManager
   end
 
   def find_command(cmd_name)
+    cmd_name = find_alias_command cmd_name
+
     possibilities = find_command_possibilities cmd_name
 
-    if possibilities.size > 1 then
+    if possibilities.size > 1
       raise Gem::CommandLineError,
             "Ambiguous command #{cmd_name} matches [#{possibilities.join(', ')}]"
-    elsif possibilities.empty? then
+    elsif possibilities.empty?
       raise Gem::CommandLineError, "Unknown command #{cmd_name}"
     end
 
     self[possibilities.first]
+  end
+
+  def find_alias_command(cmd_name)
+    alias_name = ALIAS_COMMANDS[cmd_name]
+    alias_name ? alias_name : cmd_name
   end
 
   def find_command_possibilities(cmd_name)
@@ -210,10 +226,9 @@ class Gem::CommandManager
     rescue Exception => e
       e = load_error if load_error
 
-      alert_error "Loading command: #{command_name} (#{e.class})\n\t#{e}"
+      alert_error clean_text("Loading command: #{command_name} (#{e.class})\n\t#{e}")
       ui.backtrace e
     end
   end
 
 end
-

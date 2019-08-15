@@ -382,8 +382,8 @@ math_atanh(VALUE unused_obj, VALUE x)
     /* check for domain error */
     if (d <  -1.0 || +1.0 <  d) domain_error("atanh");
     /* check for pole error */
-    if (d == -1.0) return DBL2NUM(-INFINITY);
-    if (d == +1.0) return DBL2NUM(+INFINITY);
+    if (d == -1.0) return DBL2NUM(-HUGE_VAL);
+    if (d == +1.0) return DBL2NUM(+HUGE_VAL);
     return DBL2NUM(atanh(d));
 }
 
@@ -426,6 +426,7 @@ math_exp(VALUE unused_obj, VALUE x)
 #endif
 
 static double math_log1(VALUE x);
+FUNC_MINIMIZED(static VALUE math_log(int, const VALUE *, VALUE));
 
 /*
  *  call-seq:
@@ -450,6 +451,12 @@ static double math_log1(VALUE x);
 
 static VALUE
 math_log(int argc, const VALUE *argv, VALUE unused_obj)
+{
+    return rb_math_log(argc, argv);
+}
+
+VALUE
+rb_math_log(int argc, const VALUE *argv)
 {
     VALUE x, base;
     double d;
@@ -488,7 +495,7 @@ math_log1(VALUE x)
     /* check for domain error */
     if (d < 0.0) domain_error("log");
     /* check for pole error */
-    if (d == 0.0) return -INFINITY;
+    if (d == 0.0) return -HUGE_VAL;
 
     return log(d) + numbits * M_LN2; /* log(d * 2 ** numbits) */
 }
@@ -531,7 +538,7 @@ math_log2(VALUE unused_obj, VALUE x)
     /* check for domain error */
     if (d < 0.0) domain_error("log2");
     /* check for pole error */
-    if (d == 0.0) return DBL2NUM(-INFINITY);
+    if (d == 0.0) return DBL2NUM(-HUGE_VAL);
 
     return DBL2NUM(log2(d) + numbits); /* log2(d * 2 ** numbits) */
 }
@@ -561,7 +568,7 @@ math_log10(VALUE unused_obj, VALUE x)
     /* check for domain error */
     if (d < 0.0) domain_error("log10");
     /* check for pole error */
-    if (d == 0.0) return DBL2NUM(-INFINITY);
+    if (d == 0.0) return DBL2NUM(-HUGE_VAL);
 
     return DBL2NUM(log10(d) + numbits * log10(2)); /* log10(d * 2 ** numbits) */
 }
@@ -590,6 +597,13 @@ math_log10(VALUE unused_obj, VALUE x)
  *    #   [8, 2.82842712474619, 8.0]
  *    #   [9, 3.0, 9.0]
  *    #   [10, 3.16227766016838, 10.0]
+ *
+ *  Note that the limited precision of floating point arithmetic
+ *  might lead to surprising results:
+ *
+ *    Math.sqrt(10**46).to_i  #=> 99999999999999991611392 (!)
+ *
+ *  See also BigDecimal#sqrt and Integer.sqrt.
  */
 
 static VALUE
@@ -675,7 +689,14 @@ rb_math_sqrt(VALUE x)
 static VALUE
 math_cbrt(VALUE unused_obj, VALUE x)
 {
-    return DBL2NUM(cbrt(Get_Double(x)));
+    double f = Get_Double(x);
+    double r = cbrt(f);
+#if defined __GLIBC__
+    if (isfinite(r)) {
+	r = (2.0 * r + (f / r / r)) / 3.0;
+    }
+#endif
+    return DBL2NUM(r);
 }
 
 /*
@@ -771,41 +792,6 @@ math_erfc(VALUE unused_obj, VALUE x)
     return DBL2NUM(erfc(Get_Double(x)));
 }
 
-#if defined __MINGW32__
-static inline double
-ruby_tgamma(const double d)
-{
-    const double g = tgamma(d);
-    if (isinf(g)) {
-	if (d == 0.0 && signbit(d)) return -INFINITY;
-    }
-    if (isnan(g)) {
-	if (!signbit(d)) return INFINITY;
-    }
-    return g;
-}
-#define tgamma(d) ruby_tgamma(d)
-#endif
-
-#if defined LGAMMA_R_PM0_FIX
-static inline double
-ruby_lgamma_r(const double d, int *sign)
-{
-    const double g = lgamma_r(d, sign);
-    if (isinf(g)) {
-	if (d == 0.0 && signbit(d)) {
-	    *sign = -1;
-	    return INFINITY;
-	} else if (d == 0.0 && !signbit(d)) {
-	    *sign = 1;
-	    return INFINITY;
-	}
-    }
-    return g;
-}
-#define lgamma_r(d, sign) ruby_lgamma_r(d, sign)
-#endif
-
 /*
  * call-seq:
  *    Math.gamma(x)  -> Float
@@ -881,7 +867,13 @@ math_gamma(VALUE unused_obj, VALUE x)
     double d;
     d = Get_Double(x);
     /* check for domain error */
-    if (isinf(d) && signbit(d)) domain_error("gamma");
+    if (isinf(d)) {
+	if (signbit(d)) domain_error("gamma");
+	return DBL2NUM(HUGE_VAL);
+    }
+    if (d == 0.0) {
+	return signbit(d) ? DBL2NUM(-HUGE_VAL) : DBL2NUM(HUGE_VAL);
+    }
     if (d == floor(d)) {
 	if (d < 0.0) domain_error("gamma");
 	if (1.0 <= d && d <= (double)NFACT_TABLE) {
@@ -915,7 +907,11 @@ math_lgamma(VALUE unused_obj, VALUE x)
     /* check for domain error */
     if (isinf(d)) {
 	if (signbit(d)) domain_error("lgamma");
-	return rb_assoc_new(DBL2NUM(INFINITY), INT2FIX(1));
+	return rb_assoc_new(DBL2NUM(HUGE_VAL), INT2FIX(1));
+    }
+    if (d == 0.0) {
+	VALUE vsign = signbit(d) ? INT2FIX(-1) : INT2FIX(+1);
+	return rb_assoc_new(DBL2NUM(HUGE_VAL), vsign);
     }
     v = DBL2NUM(lgamma_r(d, &sign));
     return rb_assoc_new(v, INT2FIX(sign));
@@ -941,13 +937,6 @@ exp1(cos)
 exp1(cosh)
 exp1(exp)
 exp2(hypot)
-
-VALUE
-rb_math_log(int argc, const VALUE *argv)
-{
-    return math_log(argc, argv, 0);
-}
-
 exp1(sin)
 exp1(sinh)
 #if 0

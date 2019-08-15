@@ -1,0 +1,21 @@
+%# -*- C -*-
+%# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+CONSTFUNC(MAYBE_UNUSED(static int insn_len(VALUE insn)));
+
+int
+insn_len(VALUE i)
+{
+    static const char t[] = {
+% RubyVM::Instructions.each_slice 23 do |a|
+        <%= a.map(&:width).join(', ') -%>,
+% end
+    };
+
+    ASSERT_VM_INSTRUCTION_SIZE(t);
+    return t[i];
+}

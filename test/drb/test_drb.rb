@@ -7,28 +7,13 @@ class TestDRbCore < Test::Unit::TestCase
   include DRbCore
 
   def setup
+    super
     setup_service 'ut_drb.rb'
-    super
-  end
-
-  def teardown
-    super
-    DRbService.finish
   end
 end
 
-class TestDRbYield < Test::Unit::TestCase
+module DRbYield
   include DRbBase
-
-  def setup
-    setup_service 'ut_drb.rb'
-    super
-  end
-
-  def teardown
-    super
-    DRbService.finish
-  end
 
   def test_01_one
     @there.echo_yield_1([]) {|one|
@@ -121,15 +106,31 @@ class TestDRbYield < Test::Unit::TestCase
 
   def test_06_taint
     x = proc {}
-    assert(! x.tainted?)
+    assert_not_predicate(x, :tainted?)
     @there.echo_yield(x) {|o|
       assert_equal(x, o)
-      assert(! x.tainted?)
+      assert_not_predicate(x, :tainted?)
     }
   end
 end
 
-class TestDRbRubyYield < TestDRbYield
+class TestDRbYield < Test::Unit::TestCase
+  include DRbYield
+
+  def setup
+    super
+    setup_service 'ut_drb.rb'
+  end
+end
+
+class TestDRbRubyYield < Test::Unit::TestCase
+  include DRbYield
+
+  def setup
+    @there = self
+    super
+  end
+
   def echo_yield(*arg)
     yield(*arg)
   end
@@ -153,15 +154,11 @@ class TestDRbRubyYield < TestDRbYield
     end
   end
 
-  def setup
-    @there = self
-  end
-
-  def teardown
-  end
 end
 
-class TestDRbRuby18Yield < TestDRbRubyYield
+class TestDRbRuby18Yield < Test::Unit::TestCase
+  include DRbYield
+
   class YieldTest18
     def echo_yield(*arg, &proc)
       proc.call(*arg)
@@ -188,6 +185,7 @@ class TestDRbRuby18Yield < TestDRbRubyYield
 
   def setup
     @there = YieldTest18.new
+    super
   end
 end
 
@@ -195,13 +193,8 @@ class TestDRbAry < Test::Unit::TestCase
   include DRbAry
 
   def setup
+    super
     setup_service 'ut_array.rb'
-    super
-  end
-
-  def teardown
-    super
-    DRbService.finish
   end
 end
 
@@ -209,8 +202,8 @@ class TestDRbMServer < Test::Unit::TestCase
   include DRbBase
 
   def setup
-    setup_service 'ut_drb.rb'
     super
+    setup_service 'ut_drb.rb'
     @server = (1..3).collect do |n|
       DRb::DRbServer.new("druby://localhost:0", Onecky.new(n.to_s))
     end
@@ -221,7 +214,6 @@ class TestDRbMServer < Test::Unit::TestCase
       s.stop_service
     end
     super
-    DRbService.finish
   end
 
   def test_01
@@ -229,63 +221,11 @@ class TestDRbMServer < Test::Unit::TestCase
   end
 end
 
-class TestDRbSafe1 < TestDRbAry
+class TestDRbSafe1 < Test::Unit::TestCase
+  include DRbAry
   def setup
+    super
     setup_service 'ut_safe1.rb'
-  end
-
-  def teardown
-    super
-    DRbService.finish
-  end
-end
-
-class TestDRbEval # < Test::Unit::TestCase
-  def setup
-    super
-    @ext = DRbService.ext_service('ut_eval.rb')
-    @there = @ext.front
-  end
-
-  def teardown
-    @ext.stop_service if @ext
-  end
-
-  def test_01_safe1_safe4_eval
-    assert_raise(SecurityError) do
-      @there.method_missing(:instance_eval, 'ENV.inspect')
-    end
-
-    assert_raise(SecurityError) do
-      @there.method_missing(:send, :eval, 'ENV.inspect')
-    end
-
-    remote_class = @there.remote_class
-
-    assert_raise(SecurityError) do
-      remote_class.class_eval('ENV.inspect')
-    end
-
-    assert_raise(SecurityError) do
-      remote_class.module_eval('ENV.inspect')
-    end
-
-    four = @there.four
-    assert_equal(1, four.method_missing(:send, :eval, '1'))
-
-    remote_class = four.remote_class
-
-    assert_equal(1, remote_class.class_eval('1'))
-
-    assert_equal(1, remote_class.module_eval('1'))
-
-    assert_raise(SecurityError) do
-      remote_class.class_eval('ENV = {}')
-    end
-
-    assert_raise(SecurityError) do
-      remote_class.module_eval('ENV = {}')
-    end
   end
 end
 
@@ -293,13 +233,8 @@ class TestDRbLarge < Test::Unit::TestCase
   include DRbBase
 
   def setup
+    super
     setup_service 'ut_large.rb'
-    super
-  end
-
-  def teardown
-    super
-    DRbService.finish
   end
 
   def test_01_large_ary
@@ -315,9 +250,9 @@ class TestDRbLarge < Test::Unit::TestCase
     ary = ["Hello, World"] * 10240
     assert_equal(10240, @there.size(ary))
     assert_equal(ary[0..ary.length].inject(:+), @there.sum(ary))
-    assert_raise (TypeError) {@there.multiply(ary)}
-    assert_raise (TypeError) {@there.avg(ary)}
-    assert_raise (TypeError) {@there.median(ary)}
+    assert_raise(TypeError) {@there.multiply(ary)}
+    assert_raise(TypeError) {@there.avg(ary)}
+    assert_raise(TypeError) {@there.median(ary)}
   end
 
   def test_03_large_ary
@@ -382,18 +317,13 @@ class TestBug4409 < Test::Unit::TestCase
   include DRbBase
 
   def setup
+    super
     setup_service 'ut_eq.rb'
-    super
-  end
-
-  def teardown
-    super
-    DRbService.finish
   end
 
   def test_bug4409
     foo = @there.foo
-    assert(@there.foo?(foo))
+    assert_operator(@there, :foo?, foo)
   end
 end
 

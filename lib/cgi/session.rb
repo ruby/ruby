@@ -403,11 +403,11 @@ class CGI
             for line in f
               line.chomp!
               k, v = line.split('=',2)
-              @hash[CGI::unescape(k)] = Marshal.restore(CGI::unescape(v))
+              @hash[CGI.unescape(k)] = Marshal.restore(CGI.unescape(v))
             end
           ensure
-            f.close unless f.nil?
-            lockf.close if lockf
+            f&.close
+            lockf&.close
           end
         end
         @hash
@@ -421,13 +421,13 @@ class CGI
           lockf.flock File::LOCK_EX
           f = File.open(@path+".new", File::CREAT|File::TRUNC|File::WRONLY, 0600)
           for k,v in @hash
-            f.printf "%s=%s\n", CGI::escape(k), CGI::escape(String(Marshal.dump(v)))
+            f.printf "%s=%s\n", CGI.escape(k), CGI.escape(String(Marshal.dump(v)))
           end
           f.close
           File.rename @path+".new", @path
         ensure
-          f.close if f
-          lockf.close if lockf
+          f&.close
+          lockf&.close
         end
       end
 

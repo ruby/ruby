@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require 'rexml/validation/validationexception'
+require_relative 'validationexception'
 
 module REXML
   module Validation

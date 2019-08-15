@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 begin
   require_relative 'helper'
 rescue LoadError
@@ -13,12 +13,14 @@ module Fiddle
 
     def test_syscall_with_tainted_string
       f = Function.new(@libc['system'], [TYPE_VOIDP], TYPE_INT)
-      assert_raises(SecurityError) do
-        Thread.new {
-          $SAFE = 1
-          f.call("uname -rs".taint)
-        }.join
-      end
+      Thread.new {
+        $SAFE = 1
+        assert_raise(SecurityError) do
+          f.call("uname -rs".dup.taint)
+        end
+      }.join
+    ensure
+      $SAFE = 0
     end
 
     def test_sinf
@@ -38,7 +40,7 @@ module Fiddle
     def test_string
       stress, GC.stress = GC.stress, true
       f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
-      buff = "000"
+      buff = +"000"
       str = f.call(buff, "123")
       assert_equal("123", buff)
       assert_equal("123", str.to_s)

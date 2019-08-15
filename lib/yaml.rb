@@ -1,13 +1,11 @@
 # frozen_string_literal: false
-##
-# The YAML module is an alias of Psych, the YAML engine for Ruby.
 
 begin
   require 'psych'
 rescue LoadError
-  warn "#{caller[0]}:"
-  warn "It seems your ruby installation is missing psych (for YAML output)."
-  warn "To eliminate this warning, please install libyaml and reinstall your ruby."
+  warn "It seems your ruby installation is missing psych (for YAML output).\n" \
+    "To eliminate this warning, please install libyaml and reinstall your ruby.\n",
+    uplevel: 1
   raise
 end
 
@@ -17,7 +15,7 @@ YAML = Psych # :nodoc:
 #
 # This module provides a Ruby interface for data serialization in YAML format.
 #
-# The underlying implementation is the libyaml wrapper Psych.
+# The YAML module is an alias of Psych, the YAML engine for Ruby.
 #
 # == Usage
 #
@@ -30,6 +28,9 @@ YAML = Psych # :nodoc:
 #     # Emit some YAML
 #     YAML.dump("foo")     # => "--- foo\n...\n"
 #     { :a => 'b'}.to_yaml  # => "---\n:a: b\n"
+#
+# As the implementation is provided by the Psych library, detailed documentation
+# can be found in that library's docs (also part of standard library).
 #
 # == Security
 #

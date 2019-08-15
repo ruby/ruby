@@ -17,8 +17,8 @@ ruby$target:::method-entry
 	  row.first == 'Foo'  && row[1] == 'foo'
 	}
 
-	assert_equal 10, foo_calls.length
-	line = '2'
+	assert_equal 10, foo_calls.length, probes.inspect
+	line = '3'
 	foo_calls.each { |f| assert_equal line, f[3] }
 	foo_calls.each { |f| assert_equal rb_file, f[2] }
       }
@@ -37,8 +37,8 @@ ruby$target:::method-return
 	  row.first == 'Foo'  && row[1] == 'foo'
 	}
 
-	assert_equal 10, foo_calls.length
-	line = '2'
+	assert_equal 10, foo_calls.length, probes.inspect
+	line = '3'
 	foo_calls.each { |f| assert_equal line, f[3] }
 	foo_calls.each { |f| assert_equal rb_file, f[2] }
       }
@@ -46,6 +46,7 @@ ruby$target:::method-return
 
     def ruby_program
       <<-eoruby
+      TracePoint.new{}.__enable(nil, nil, Thread.current)
       class Foo
 	def self.foo; end
       end

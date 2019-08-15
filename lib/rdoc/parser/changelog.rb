@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'time'
 
 ##
@@ -29,13 +29,13 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
     if last =~ /\)\s*\z/ and continuation =~ /\A\(/ then
       last.sub!(/\)\s*\z/, ',')
-      continuation.sub!(/\A\(/, '')
+      continuation = continuation.sub(/\A\(/, '')
     end
 
     if last =~ /\s\z/ then
       last << continuation
     else
-      last << ' ' << continuation
+      last << ' ' + continuation
     end
   end
 
@@ -162,12 +162,12 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
         entry_body = []
       when /^(\t| {8})?\*\s*(.*)/ then # "\t* file.c (func): ..."
-        entry_body << $2
+        entry_body << $2.dup
       when /^(\t| {8})?\s*(\(.*)/ then # "\t(func): ..."
         entry = $2
 
         if entry_body.last =~ /:/ then
-          entry_body << entry
+          entry_body << entry.dup
         else
           continue_entry_body entry_body, entry
         end

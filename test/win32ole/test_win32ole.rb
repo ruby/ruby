@@ -58,9 +58,10 @@ if defined?(WIN32OLE)
 
     def test_no_method_error
       exc = assert_raise(NoMethodError) {
-          @dict1.non_exist_method
+        @dict1.non_exist_method
       }
       assert_match(/non_exist_method/, exc.message)
+      assert_kind_of(WIN32OLE, exc.receiver)
     end
 
     def test_ole_methods
@@ -68,7 +69,12 @@ if defined?(WIN32OLE)
       mnames = methods.collect {|m|
         m.name
       }
-      assert(mnames.include?("Add"))
+      assert_include(mnames, 'Add')
+    end
+
+    def test_methods
+      methods = @dict1.methods
+      assert_include(methods, :Add)
     end
 
     def test_ole_func_methods
@@ -76,7 +82,7 @@ if defined?(WIN32OLE)
       mnames = methods.collect {|m|
         m.name
       }
-      assert(mnames.include?("Add"))
+      assert_include(mnames, 'Add')
     end
 
     def test_ole_put_methods
@@ -84,7 +90,7 @@ if defined?(WIN32OLE)
       mnames = methods.collect {|m|
         m.name
       }
-      assert(mnames.include?("CompareMode"))
+      assert_include(mnames, 'CompareMode')
     end
 
     def test_ole_get_methods
@@ -92,7 +98,7 @@ if defined?(WIN32OLE)
       mnames = methods.collect {|m|
         m.name
       }
-      assert(mnames.include?("Count"))
+      assert_include(mnames, 'Count')
     end
 
     def test_ole_mehtod_help
@@ -175,12 +181,15 @@ if defined?(WIN32OLE)
         $SAFE = 1
         svr = "Scripting.Dictionary"
         svr.taint
+        Thread.current.report_on_exception = false
         WIN32OLE.new(svr)
       }
       exc = assert_raise(SecurityError) {
         th.join
       }
       assert_match(/insecure object creation - `Scripting.Dictionary'/, exc.message)
+    ensure
+      $SAFE = 0
     end
 
     def test_s_new_exc_host_tainted
@@ -189,12 +198,15 @@ if defined?(WIN32OLE)
         svr = "Scripting.Dictionary"
         host = "localhost"
         host.taint
+        Thread.current.report_on_exception = false
         WIN32OLE.new(svr, host)
       }
       exc = assert_raise(SecurityError) {
         th.join
       }
       assert_match(/insecure object creation - `localhost'/, exc.message)
+    ensure
+      $SAFE = 0
     end
 
     def test_s_new_DCOM
@@ -227,12 +239,15 @@ if defined?(WIN32OLE)
         $SAFE = 1
         svr = "winmgmts:"
         svr.taint
+        Thread.current.report_on_exception = false
         WIN32OLE.connect(svr)
       }
       exc = assert_raise(SecurityError) {
         th.join
       }
       assert_match(/insecure connection - `winmgmts:'/, exc.message)
+    ensure
+      $SAFE = 0
     end
 
     def test_invoke_accept_symbol_hash_key
