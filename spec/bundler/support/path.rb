@@ -132,6 +132,18 @@ module Spec
       tmp "tmpdir", *args
     end
 
+    def with_root_gemspec
+      if ruby_core?
+        spec = Gem::Specification.load(gemspec.to_s)
+        spec.bindir = "libexec"
+        File.open(root.join("bundler.gemspec").to_s, "w") {|f| f.write spec.to_ruby }
+        yield(root.join("bundler.gemspec"))
+        FileUtils.rm(root.join("bundler.gemspec"))
+      else
+        yield(gemspec)
+      end
+    end
+
     def ruby_core?
       # avoid to wornings
       @ruby_core ||= nil

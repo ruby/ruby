@@ -298,13 +298,7 @@ module Spec
       gem_repo = options.fetch(:gem_repo) { gem_repo1 }
       gems.each do |g|
         path = if g == :bundler
-          if ruby_core?
-            spec = Gem::Specification.load(gemspec.to_s)
-            spec.bindir = "libexec"
-            File.open(root.join("bundler.gemspec").to_s, "w") {|f| f.write spec.to_ruby }
-            Dir.chdir(root) { gem_command! :build, root.join("bundler.gemspec") }
-            FileUtils.rm(root.join("bundler.gemspec"))
-          else
+          with_root_gemspec do |gemspec|
             Dir.chdir(root) { gem_command! :build, gemspec }
           end
           bundler_path = root.join("bundler-#{Bundler::VERSION}.gem")
