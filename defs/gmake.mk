@@ -202,7 +202,7 @@ update-github: fetch-github
 	$(eval GITHUB_UPDATE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(PR)-XXXXXX"))
 	git -C "$(srcdir)" worktree add $(notdir $(GITHUB_UPDATE_WORKTREE)) "gh-$(PR)"
 	git -C "$(GITHUB_UPDATE_WORKTREE)" merge master --no-edit
-	@$(BASERUBY) -e 'print "Are you sure to push this to PR=$(PR)? [Y/n]: "; exit(gets.chomp == "n" ? 1 : 0)'
+	@$(BASERUBY) -e 'print "Are you sure to push this to PR=$(PR)? [Y/n]: "; exit(gets.chomp != "n")'
 	git -C "$(srcdir)" remote add fork-$(PR) git@github.com:$(FORK_REPO).git
 	git -C "$(GITHUB_UPDATE_WORKTREE)" push fork-$(PR) gh-$(PR):$(PR_BRANCH)
 	git -C "$(srcdir)" remote rm fork-$(PR)
