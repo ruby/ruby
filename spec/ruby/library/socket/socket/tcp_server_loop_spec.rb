@@ -4,7 +4,7 @@ require_relative '../fixtures/classes'
 describe 'Socket.tcp_server_loop' do
   describe 'when no connections are available' do
     it 'blocks the caller' do
-      lambda { Socket.tcp_server_loop('127.0.0.1', 0) }.should block_caller
+      -> { Socket.tcp_server_loop('127.0.0.1', 0) }.should block_caller
     end
   end
 
@@ -45,7 +45,7 @@ describe 'Socket.tcp_server_loop' do
       # At this point the connection has been set up but the thread may not yet
       # have returned, thus we'll need to wait a little longer for it to
       # complete.
-      thread.join(2)
+      thread.join
 
       @sock.should be_an_instance_of(Socket)
       addr.should be_an_instance_of(Addrinfo)

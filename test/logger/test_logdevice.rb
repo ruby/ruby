@@ -1,7 +1,6 @@
 # coding: US-ASCII
 # frozen_string_literal: false
-require 'test/unit'
-require 'logger'
+require_relative 'helper'
 require 'tempfile'
 require 'tmpdir'
 
@@ -46,6 +45,7 @@ class TestLogDevice < Test::Unit::TestCase
     begin
       assert_file.exist?(@filename)
       assert_predicate(logdev.dev, :sync)
+      refute_predicate(logdev.dev, :binmode?)
       assert_equal(@filename, logdev.filename)
       logdev.write('hello')
     ensure
@@ -54,12 +54,29 @@ class TestLogDevice < Test::Unit::TestCase
     # create logfile whitch is already exist.
     logdev = d(@filename)
     begin
+      assert_predicate(logdev.dev, :sync)
+      refute_predicate(logdev.dev, :binmode?)
       logdev.write('world')
       logfile = File.read(@filename)
       assert_equal(2, logfile.split(/\n/).size)
       assert_match(/^helloworld$/, logfile)
     ensure
       logdev.close
+    end
+    # logfile object with path
+    tempfile = Tempfile.new("logger")
+    tempfile.sync = true
+    logdev = d(tempfile)
+    begin
+      logdev.write('world')
+      logfile = File.read(tempfile.path)
+      assert_equal(1, logfile.split(/\n/).size)
+      assert_match(/^world$/, logfile)
+      assert_equal(tempfile.path, logdev.filename)
+    ensure
+      logdev.close
+      File.unlink(tempfile)
+      tempfile.close(true)
     end
   end
 

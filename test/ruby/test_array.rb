@@ -280,10 +280,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[],  @cls[1] - @cls[1])
     assert_equal(@cls[1], @cls[1, 2, 3, 4, 5] - @cls[2, 3, 4, 5])
     assert_equal(@cls[1, 1, 1, 1], @cls[1, 2, 1, 3, 1, 4, 1, 5] - @cls[2, 3, 4, 5])
-    a = @cls[]
-    1000.times { a << 1 }
-    assert_equal(1000, a.length)
-    assert_equal(@cls[1] * 1000, a - @cls[2])
     assert_equal(@cls[1, 1],  @cls[1, 2, 1] - @cls[2])
     assert_equal(@cls[1, 2, 3], @cls[1, 2, 3] - @cls[4, 5, 6])
   end
@@ -1805,6 +1801,25 @@ class TestArray < Test::Unit::TestCase
       def coerce(x) [x, 1] end
     end
     assert_same(obj, [obj, 1.0].max)
+  end
+
+  def test_minmax
+    assert_equal([1, 3], [1, 2, 3, 1, 2].minmax)
+    assert_equal([3, 1], [1, 2, 3, 1, 2].minmax {|a,b| b <=> a })
+    cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
+    assert_equal([[3, 2], [1, 3]], [1, 2, 3, 1, 2].each_with_index.minmax(&cond))
+    ary = %w(albatross dog horse)
+    assert_equal(["albatross", "horse"], ary.minmax)
+    assert_equal(["dog", "albatross"], ary.minmax {|a,b| a.length <=> b.length })
+    assert_equal([1, 3], [3,2,1].minmax)
+
+    class << (obj = Object.new)
+      def <=>(x) 1 <=> x end
+      def coerce(x) [x, 1] end
+    end
+    ary = [obj, 1.0].minmax
+    assert_same(obj, ary[0])
+    assert_equal(obj, ary[1])
   end
 
   def test_uniq

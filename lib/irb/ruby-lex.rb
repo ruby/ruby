@@ -47,8 +47,8 @@ class RubyLex
         result = []
         lines.each_index { |i|
           c = lines[0..i].map{ |l| l + "\n" }.join
-          ltype, indent, continue, = check_state(c)
-          result << @prompt.call(ltype, indent, continue, @line_no + i)
+          ltype, indent, continue, code_block_open = check_state(c)
+          result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + i)
         }
         result
       end
@@ -205,7 +205,12 @@ class RubyLex
 
     begin # check if parser error are available
       verbose, $VERBOSE = $VERBOSE, nil
-      RubyVM::InstructionSequence.compile(code)
+      case RUBY_ENGINE
+      when 'jruby'
+        JRuby.compile_ir(code)
+      else
+        RubyVM::InstructionSequence.compile(code)
+      end
     rescue SyntaxError => e
       case e.message
       when /unterminated (?:string|regexp) meets end of file/

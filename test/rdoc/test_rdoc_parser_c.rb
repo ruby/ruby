@@ -337,7 +337,7 @@ void Init_Blah(void) {
 }
     EOF
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       refute util_get_class(content, 'cDate')
     end
 
@@ -657,7 +657,7 @@ void Init_Blah(void) {
 
     klass = nil
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       klass = util_get_class content, 'cDate'
     end
 
@@ -680,7 +680,7 @@ void Init_Blah(void) {
 
     klass = nil
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       klass = util_get_class content, 'cDate'
     end
 
@@ -703,7 +703,7 @@ void Init_Blah(void) {
 
     klass = nil
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       klass = util_get_class content, 'cDate'
     end
 
@@ -770,7 +770,7 @@ void Init_Blah(void) {
     parser.missing_dependencies['y'] = ['y', :class, 'Y', 'Object', 'z']
     parser.missing_dependencies['z'] = ['z', :class, 'Z', 'Object', 'y']
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       parser.do_missing
     end
 
@@ -1381,7 +1381,7 @@ commercial() -> Date <br />
   end
 
   def test_find_modifiers_yields
-    comment = RDoc::Comment.new <<-COMMENT
+    comment = RDoc::Comment.new <<-COMMENT, @top_level, :c
 /* :yields: a, b
  *
  * Blah

@@ -433,6 +433,16 @@ class TestISeq < Test::Unit::TestCase
     assert_iseq_to_binary("@x ||= (1..2)")
   end
 
+  def test_to_binary_pattern_matching
+    code = "case foo in []; end"
+    iseq = compile(code)
+    assert_include(iseq.disasm, "TypeError")
+    assert_include(iseq.disasm, "NoMatchingPatternError")
+    EnvUtil.suppress_warning do
+      assert_iseq_to_binary(code, "[Feature #14912]")
+    end
+  end
+
   def test_to_binary_line_info
     assert_iseq_to_binary("#{<<~"begin;"}\n#{<<~'end;'}", '[Bug #14660]').eval
     begin;

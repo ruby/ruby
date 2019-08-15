@@ -99,7 +99,8 @@ module Bundler
 
       uri = URI.parse("#{remote_uri}#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}.rz")
       if uri.scheme == "file"
-        Bundler.load_marshal Bundler.rubygems.inflate(Gem.read_binary(uri.path))
+        path = Bundler.rubygems.correct_for_windows_path(uri.path)
+        Bundler.load_marshal Bundler.rubygems.inflate(Gem.read_binary(path))
       elsif cached_spec_path = gemspec_cached_path(spec_file_name)
         Bundler.load_gemspec(cached_spec_path)
       else
@@ -241,7 +242,7 @@ module Bundler
           Bundler.settings[:ssl_client_cert]
         raise SSLError if needs_ssl && !defined?(OpenSSL::SSL)
 
-        con = PersistentHTTP.new "bundler", :ENV
+        con = PersistentHTTP.new :name => "bundler", :proxy => :ENV
         if gem_proxy = Bundler.rubygems.configuration[:http_proxy]
           con.proxy = URI.parse(gem_proxy) if gem_proxy != :no_proxy
         end

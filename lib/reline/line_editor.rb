@@ -53,6 +53,7 @@ class Reline::LineEditor
   OSC_REGEXP = /\e\]\d+(?:;[^;]+)*\a/
   NON_PRINTING_START = "\1"
   NON_PRINTING_END = "\2"
+  WIDTH_SCANNER = /\G(?:#{NON_PRINTING_START}|#{NON_PRINTING_END}|#{CSI_REGEXP}|#{OSC_REGEXP}|\X)/
 
   def initialize(config)
     @config = config
@@ -66,7 +67,7 @@ class Reline::LineEditor
     @old_trap = Signal.trap('SIGINT') {
       scroll_down(@highest_in_all - @first_line_started_from)
       Reline::IOGate.move_cursor_column(0)
-      @old_trap.()
+      @old_trap.call if @old_trap.respond_to?(:call) # can also be string, ex: "DEFAULT"
     }
   end
 
@@ -136,14 +137,7 @@ class Reline::LineEditor
   end
 
   private def calculate_height_by_width(width)
-    return 1 if width.zero?
-    height = 1
-    max_width = @screen_size.last
-    while width > max_width * height
-      height += 1
-    end
-    height += 1 if (width % max_width).zero?
-    height
+    width.div(@screen_size.last) + 1
   end
 
   private def split_by_width(prompt, str, max_width)
@@ -152,35 +146,23 @@ class Reline::LineEditor
     width = 0
     rest = "#{prompt}#{str}".encode(Encoding::UTF_8)
     in_zero_width = false
-    loop do
-      break if rest.empty?
-      if rest.start_with?(NON_PRINTING_START)
-        rest.delete_prefix!(NON_PRINTING_START)
+    rest.scan(WIDTH_SCANNER) do |gc|
+      case gc
+      when NON_PRINTING_START
         in_zero_width = true
-      elsif rest.start_with?(NON_PRINTING_END)
-        rest.delete_prefix!(NON_PRINTING_END)
+      when NON_PRINTING_END
         in_zero_width = false
-      elsif rest.start_with?(CSI_REGEXP)
-        lines.last << $&
-        rest = $'
-      elsif rest.start_with?(OSC_REGEXP)
-        lines.last << $&
-        rest = $'
+      when CSI_REGEXP, OSC_REGEXP
+        lines.last << gc
       else
-        gcs = rest.grapheme_clusters
-        gc = gcs.first
-        rest = gcs[1..-1].join
-        if in_zero_width
-          mbchar_width = 0
-        else
+        unless in_zero_width
           mbchar_width = Reline::Unicode.get_mbchar_width(gc)
-        end
-        width += mbchar_width
-        if width > max_width
-          width = mbchar_width
-          lines << nil
-          lines << String.new(encoding: @encoding)
-          height += 1
+          if (width += mbchar_width) > max_width
+            width = mbchar_width
+            lines << nil
+            lines << String.new(encoding: @encoding)
+            height += 1
+          end
         end
         lines.last << gc
       end
@@ -259,7 +241,7 @@ class Reline::LineEditor
     @byte_pointer = new_byte_pointer
   end
 
-  def rerender # TODO: support physical and logical lines
+  def rerender
     return if @line.nil?
     if @menu_info
       scroll_down(@highest_in_all - @first_line_started_from)
@@ -273,12 +255,15 @@ class Reline::LineEditor
       move_cursor_up(@highest_in_all - 1 - @first_line_started_from)
       @menu_info = nil
     end
+    special_prompt = nil
     if @vi_arg
       prompt = "(arg: #{@vi_arg}) "
       prompt_width = calculate_width(prompt)
+      special_prompt = prompt
     elsif @searching_prompt
       prompt = @searching_prompt
       prompt_width = calculate_width(prompt)
+      special_prompt = prompt
     else
       prompt = @prompt
       prompt_width = calculate_width(prompt, true)
@@ -290,6 +275,7 @@ class Reline::LineEditor
       prompt_list = nil
       if @prompt_proc
         prompt_list = @prompt_proc.(whole_lines)
+        prompt_list[@line_index] = special_prompt if special_prompt
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
@@ -321,6 +307,7 @@ class Reline::LineEditor
       prompt_list = nil
       if @prompt_proc
         prompt_list = @prompt_proc.(new_lines)
+        prompt_list[@line_index] = special_prompt if special_prompt
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
@@ -390,6 +377,7 @@ class Reline::LineEditor
       prompt_list = nil
       if @prompt_proc
         prompt_list = @prompt_proc.(new_buffer)
+        prompt_list[@line_index] = special_prompt if special_prompt
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
@@ -447,6 +435,7 @@ class Reline::LineEditor
       prompt_list = nil
       if @prompt_proc
         prompt_list = @prompt_proc.(whole_lines)
+        prompt_list[@line_index] = special_prompt if special_prompt
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
@@ -800,11 +789,11 @@ class Reline::LineEditor
       md = new_lines[@line_index].match(/\A */)
       prev_indent = md[0].count(' ')
       if @check_new_auto_indent
-        @buffer_of_lines[@line_index] = ' ' * new_indent + @buffer_of_lines[@line_index].gsub(/\A */, '')
+        @buffer_of_lines[@line_index] = ' ' * new_indent + @buffer_of_lines[@line_index].lstrip
         @cursor = new_indent
         @byte_pointer = new_indent
       else
-        @line = ' ' * new_indent + @line.gsub(/\A */, '')
+        @line = ' ' * new_indent + @line.lstrip
         @cursor += new_indent - prev_indent
         @byte_pointer += new_indent - prev_indent
       end
@@ -819,17 +808,25 @@ class Reline::LineEditor
     rest = nil
     break_pointer = nil
     quote = nil
+    closing_quote = nil
+    escaped_quote = nil
     i = 0
     while i < @byte_pointer do
       slice = @line.byteslice(i, @byte_pointer - i)
-      if quote and slice.start_with?(/(?!\\)#{Regexp.escape(quote)}/) # closing "
+      unless slice.valid_encoding?
+        i += 1
+        next
+      end
+      if quote and slice.start_with?(closing_quote)
         quote = nil
         i += 1
-      elsif quote and slice.start_with?(/\\#{Regexp.escape(quote)}/) # escaped \"
+      elsif quote and slice.start_with?(escaped_quote)
         # skip
         i += 2
       elsif slice =~ quote_characters_regexp # find new "
         quote = $&
+        closing_quote = /(?!\\)#{Regexp.escape(quote)}/
+        escaped_quote = /\\#{Regexp.escape(quote)}/
         i += 1
       elsif not quote and slice =~ word_break_regexp
         rest = $'
@@ -962,28 +959,17 @@ class Reline::LineEditor
       width = 0
       rest = str.encode(Encoding::UTF_8)
       in_zero_width = false
-      loop do
-        break if rest.empty?
-        if rest.start_with?(NON_PRINTING_START)
-          rest.delete_prefix!(NON_PRINTING_START)
+      rest.scan(WIDTH_SCANNER) do |gc|
+        case gc
+        when NON_PRINTING_START
           in_zero_width = true
-        elsif rest.start_with?(NON_PRINTING_END)
-          rest.delete_prefix!(NON_PRINTING_END)
+        when NON_PRINTING_END
           in_zero_width = false
-        elsif rest.start_with?(CSI_REGEXP)
-          rest = $'
-        elsif rest.start_with?(OSC_REGEXP)
-          rest = $'
+        when CSI_REGEXP, OSC_REGEXP
         else
-          gcs = rest.grapheme_clusters
-          gc = gcs.first
-          rest = gcs[1..-1].join
-          if in_zero_width
-            mbchar_width = 0
-          else
-            mbchar_width = Reline::Unicode.get_mbchar_width(gc)
+          unless in_zero_width
+            width += Reline::Unicode.get_mbchar_width(gc)
           end
-          width += mbchar_width
         end
       end
       width
@@ -1893,7 +1879,7 @@ class Reline::LineEditor
     if @is_multiline and @buffer_of_lines.size > @line_index + 1
       @cursor = calculate_width(@line)
       @byte_pointer = @line.bytesize
-      @line += ' ' + @buffer_of_lines.delete_at(@line_index + 1).gsub(/\A +/, '')
+      @line += ' ' + @buffer_of_lines.delete_at(@line_index + 1).lstrip
       @cursor_max = calculate_width(@line)
       @buffer_of_lines[@line_index] = @line
       @rerender_all = true

@@ -2054,6 +2054,16 @@ gem 'other', version
     assert_equal ['exe/executable'], default_spec.files
   end
 
+  def test_package_attribute
+    gem = quick_gem 'c' do |spec|
+      util_make_exec spec, '#!/usr/bin/ruby', 'exe'
+    end
+
+    installer = util_installer(gem, @gemhome)
+    assert_respond_to(installer, :package)
+    assert_kind_of(Gem::Package, installer.package)
+  end
+
   def old_ruby_required(requirement)
     spec = util_spec 'old_ruby_required', '1' do |s|
       s.required_ruby_version = requirement

@@ -35,11 +35,14 @@
 #include "timev.h"
 #include "id.h"
 
-static ID id_divmod, id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
-static ID id_quo, id_div;
+static ID id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
 static ID id_nanosecond, id_microsecond, id_millisecond, id_nsec, id_usec;
 static ID id_local_to_utc, id_utc_to_local, id_find_timezone;
-static ID id_year, id_mon, id_mday, id_hour, id_min, id_sec, id_isdst, id_name;
+static ID id_year, id_mon, id_mday, id_hour, id_min, id_sec, id_isdst;
+#define id_quo idQuo
+#define id_div idDiv
+#define id_divmod idDivmod
+#define id_name idName
 #define UTC_ZONE Qundef
 
 #ifndef TM_IS_TIME
@@ -138,9 +141,8 @@ modv(VALUE x, VALUE y)
 #define neg(x) (subv(INT2FIX(0), (x)))
 
 static VALUE
-quov(VALUE x, VALUE y)
+quor(VALUE x, VALUE y)
 {
-    VALUE ret;
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
         long a, b, c;
         a = FIX2LONG(x);
@@ -152,7 +154,13 @@ quov(VALUE x, VALUE y)
             return LONG2FIX(c);
         }
     }
-    ret = rb_numeric_quo(x, y);
+    return rb_numeric_quo(x, y);
+}
+
+static VALUE
+quov(VALUE x, VALUE y)
+{
+    VALUE ret = quor(x, y);
     if (RB_TYPE_P(ret, T_RATIONAL) &&
         RRATIONAL(ret)->den == INT2FIX(1)) {
         ret = RRATIONAL(ret)->num;
@@ -545,10 +553,16 @@ rb_time_magnify(wideval_t w)
     return wmul(w, WINT2FIXWV(TIME_SCALE));
 }
 
+static VALUE
+rb_time_unmagnify_to_rational(wideval_t w)
+{
+    return quor(w2v(w), INT2FIX(TIME_SCALE));
+}
+
 static wideval_t
 rb_time_unmagnify(wideval_t w)
 {
-    return wquo(w, WINT2FIXWV(TIME_SCALE));
+    return v2w(rb_time_unmagnify_to_rational(w));
 }
 
 static VALUE
@@ -2087,6 +2101,7 @@ utc_offset_arg(VALUE arg)
 	    if (s[6] != ':') goto invalid_utc_offset;
 	    if (!ISDIGIT(s[7]) || !ISDIGIT(s[8])) goto invalid_utc_offset;
 	    n += (s[7] * 10 + s[8] - '0' * 11);
+            /* fall through */
 	  case 6:
 	    if (s[0] != '+' && s[0] != '-') goto invalid_utc_offset;
 	    if (!ISDIGIT(s[1]) || !ISDIGIT(s[2])) goto invalid_utc_offset;
@@ -2200,6 +2215,16 @@ extract_vtm(VALUE time, struct vtm *vtm, VALUE subsecx)
     return t;
 }
 
+static void
+zone_set_dst(VALUE zone, struct time_object *tobj, VALUE tm)
+{
+    ID id_dst_p;
+    VALUE dst;
+    CONST_ID(id_dst_p, "dst?");
+    dst = rb_check_funcall(zone, id_dst_p, 1, &tm);
+    tobj->vtm.isdst = (dst != Qundef && RTEST(dst));
+}
+
 static int
 zone_timelocal(VALUE zone, VALUE time)
 {
@@ -2219,6 +2244,7 @@ zone_timelocal(VALUE zone, VALUE time)
         s = wadd(s, v2w(tobj->vtm.subsecx));
     }
     tobj->timew = s;
+    zone_set_dst(zone, tobj, tm);
     return 1;
 }
 
@@ -2238,6 +2264,7 @@ zone_localtime(VALUE zone, VALUE time)
     s = extract_vtm(local, &tobj->vtm, subsecx);
     tobj->tm_got = 1;
     zone_set_offset(zone, tobj, s, t);
+    zone_set_dst(zone, tobj, tm);
     return 1;
 }
 
@@ -3533,7 +3560,7 @@ time_to_r(VALUE time)
     VALUE v;
 
     GetTimeval(time, tobj);
-    v = w2v(rb_time_unmagnify(tobj->timew));
+    v = rb_time_unmagnify_to_rational(tobj->timew);
     if (!RB_TYPE_P(v, T_RATIONAL)) {
         v = rb_Rational1(v);
     }
@@ -5007,13 +5034,15 @@ time_strftime(VALUE time, VALUE format)
 
 int ruby_marshal_write_long(long x, char *buf);
 
+enum {base_dump_size = 8};
+
 /* :nodoc: */
 static VALUE
 time_mdump(VALUE time)
 {
     struct time_object *tobj;
     unsigned long p, s;
-    char buf[8];
+    char buf[base_dump_size + sizeof(long) + 1];
     int i;
     VALUE str;
 
@@ -5080,7 +5109,6 @@ time_mdump(VALUE time)
 	s = RSHIFT(s, 8);
     }
 
-    str = rb_str_new(buf, 8);
     if (!NIL_P(year_extend)) {
         /*
          * Append extended year distance from 1900..(1900+0xffff).  In
@@ -5089,17 +5117,21 @@ time_mdump(VALUE time)
          * binary (like as Fixnum and Bignum).
          */
         size_t ysize = rb_absint_size(year_extend, NULL);
-        char *p;
+        char *p, *const buf_year_extend = buf + base_dump_size;
         if (ysize > LONG_MAX ||
-            (i = ruby_marshal_write_long((long)ysize, buf)) < 0) {
+            (i = ruby_marshal_write_long((long)ysize, buf_year_extend)) < 0) {
             rb_raise(rb_eArgError, "year too %s to marshal: %"PRIsVALUE" UTC",
                      (year == 1900 ? "small" : "big"), vtm.year);
         }
-        rb_str_resize(str, sizeof(buf) + i + ysize);
-        p = RSTRING_PTR(str) + sizeof(buf);
+        i += base_dump_size;
+        str = rb_str_new(NULL, i + ysize);
+        p = RSTRING_PTR(str);
         memcpy(p, buf, i);
         p += i;
         rb_integer_pack(year_extend, p, ysize, 1, 0, INTEGER_PACK_LITTLE_ENDIAN);
+    }
+    else {
+        str = rb_str_new(buf, base_dump_size);
     }
     rb_copy_generic_ivar(str, time);
     if (!rb_equal(nano, INT2FIX(0))) {
@@ -5216,7 +5248,7 @@ time_mload(VALUE time, VALUE str)
 
     StringValue(str);
     buf = (unsigned char *)RSTRING_PTR(str);
-    if (RSTRING_LEN(str) < 8) {
+    if (RSTRING_LEN(str) < base_dump_size) {
       invalid_format:
 	rb_raise(rb_eTypeError, "marshaled time format differ");
     }
@@ -5244,11 +5276,11 @@ time_mload(VALUE time, VALUE str)
         if (NIL_P(year)) {
             year = INT2FIX(((int)(p >> 14) & 0xffff) + 1900);
         }
-        if (RSTRING_LEN(str) > 8) {
-            long len = RSTRING_LEN(str) - 8;
+        if (RSTRING_LEN(str) > base_dump_size) {
+            long len = RSTRING_LEN(str) - base_dump_size;
             long ysize = 0;
             VALUE year_extend;
-            const char *ybuf = (const char *)(buf += 8);
+            const char *ybuf = (const char *)(buf += base_dump_size);
             ysize = ruby_marshal_read_long(&ybuf, len);
             len -= ybuf - (const char *)buf;
             if (ysize < 0 || ysize > len) goto invalid_format;
@@ -5317,6 +5349,7 @@ end_submicro: ;
     if (!NIL_P(zone)) {
         zone = mload_zone(time, zone);
 	tobj->vtm.zone = zone;
+        zone_localtime(zone, time);
     }
 
     return time;
@@ -5581,7 +5614,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
     if (abbr != Qundef) {
         goto found;
     }
-    abbr = rb_check_funcall_default(zone, rb_intern("name"), 0, 0, Qnil);
+    abbr = rb_check_funcall_default(zone, idName, 0, 0, Qnil);
   found:
     return rb_obj_as_string(abbr);
 }
@@ -5684,7 +5717,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *  == Timezone argument
  *
  *  A timezone argument must have +local_to_utc+ and +utc_to_local+
- *  methods, and may have +name+ and +abbr+ methods.
+ *  methods, and may have +name+, +abbr+, and +dst?+ methods.
  *
  *  The +local_to_utc+ method should convert a Time-like object from
  *  the timezone to UTC, and +utc_to_local+ is the opposite.  The
@@ -5703,6 +5736,9 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *
  *  The +abbr+ method is used by '%Z' in #strftime.
  *
+ *  The +dst?+ method is called with a +Time+ value and should return whether
+ *  the +Time+ value is in daylight savings time in the zone.
+ *
  *  === Auto conversion to Timezone
  *
  *  At loading marshaled data, a timezone name will be converted to a timezone
@@ -5718,9 +5754,6 @@ Init_Time(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    id_quo = rb_intern("quo");
-    id_div = rb_intern("div");
-    id_divmod = rb_intern("divmod");
     id_submicro = rb_intern("submicro");
     id_nano_num = rb_intern("nano_num");
     id_nano_den = rb_intern("nano_den");
@@ -5740,7 +5773,6 @@ Init_Time(void)
     id_min = rb_intern("min");
     id_sec = rb_intern("sec");
     id_isdst = rb_intern("isdst");
-    id_name = rb_intern("name");
     id_find_timezone = rb_intern("find_timezone");
 
     rb_cTime = rb_define_class("Time", rb_cObject);
