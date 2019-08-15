@@ -11,15 +11,18 @@ RSpec.describe Bundler::Fetcher::CompactIndex do
   end
 
   describe "#specs_for_names" do
+    let(:thread_list) { Thread.list.select {|thread| thread.status == "run" } }
+    let(:thread_inspection) { thread_list.map {|th| "  * #{th}:\n    #{th.backtrace_locations.join("\n    ")}" }.join("\n") }
+
     it "has only one thread open at the end of the run" do
       compact_index.specs_for_names(["lskdjf"])
 
-      thread_count = Thread.list.count {|thread| thread.status == "run" }
-      expect(thread_count).to eq 1
+      thread_count = thread_list.count
+      expect(thread_count).to eq(1), "Expected 1 active thread after `#specs_for_names`, but found #{thread_count}. In particular, found:\n#{thread_inspection}"
     end
 
     it "calls worker#stop during the run" do
-      expect_any_instance_of(Bundler::Worker).to receive(:stop).at_least(:once)
+      expect_any_instance_of(Bundler::Worker).to receive(:stop).at_least(:once).and_call_original
 
       compact_index.specs_for_names(["lskdjf"])
     end

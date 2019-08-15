@@ -55,7 +55,7 @@ describe 'TracePoint.new' do
     -> { TracePoint.new(o) {}}.should raise_error(TypeError)
   end
 
-  ruby_bug "#140740", ""..."2.5" do
+  ruby_version_is "2.5" do
     it 'expects to be called with a block' do
       -> { TracePoint.new(:line) }.should raise_error(ArgumentError, "must be called with a block")
     end

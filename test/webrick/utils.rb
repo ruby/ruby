@@ -45,7 +45,7 @@ module TestWEBrick
       :Logger => WEBrick::Log.new(log_ary, WEBrick::BasicLog::WARN),
       :AccessLog => [[access_log_ary, ""]]
     }.update(config))
-    server = capture_io {break klass.new(config)}
+    server = capture_output {break klass.new(config)}
     server_thread = server.start
     server_thread2 = Thread.new {
       server_thread.join

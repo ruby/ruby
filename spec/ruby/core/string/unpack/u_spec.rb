@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
@@ -12,11 +12,11 @@ describe "String#unpack with format 'U'" do
   it_behaves_like :string_unpack_taint, 'U'
 
   it "raises ArgumentError on a malformed byte sequence" do
-    lambda { "\xE3".unpack('U') }.should raise_error(ArgumentError)
+    -> { "\xE3".unpack('U') }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError on a malformed byte sequence and doesn't continue when used with the * modifier" do
-    lambda { "\xE3".unpack('U*') }.should raise_error(ArgumentError)
+    -> { "\xE3".unpack('U*') }.should raise_error(ArgumentError)
   end
 end
 
@@ -31,10 +31,10 @@ describe "String#unpack with format 'u'" do
 
   it "decodes into raw (ascii) string values" do
     str = "".unpack("u")[0]
-    str.encoding.name.should == 'ASCII-8BIT'
+    str.encoding.should == Encoding::BINARY
 
     str = "1".force_encoding('UTF-8').unpack("u")[0]
-    str.encoding.name.should == 'ASCII-8BIT'
+    str.encoding.should == Encoding::BINARY
   end
 
   it "decodes the complete string ignoring newlines when given a single directive" do

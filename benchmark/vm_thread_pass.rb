@@ -1,8 +1,8 @@
-# Plenty Thtread.pass
+# Plenty Thread.pass
 # A performance may depend on GVL implementation.
 
-tmax = (ARGV.shift || 2).to_i
-lmax = 200_000 / tmax
+tmax = (ARGV.shift || 8).to_i
+lmax = 400_000 / tmax
 
 (1..tmax).map{
   Thread.new{

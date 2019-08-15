@@ -9,6 +9,7 @@ require 'strscan'
 require 'optparse'
 require 'abbrev'
 require 'pp'
+require 'shellwords'
 begin
   require 'readline'
 rescue LoadError
@@ -239,6 +240,10 @@ def find_svn_log(pattern)
   `svn log --xml --stop-on-copy --search="#{pattern}" #{RUBY_REPO_PATH}`
 end
 
+def find_git_log(pattern)
+  `git #{RUBY_REPO_PATH ? "-C #{RUBY_REPO_PATH.shellecape}" : ""} log --grep="#{pattern}"`
+end
+
 def show_last_journal(http, uri)
   res = http.get("#{uri.path}?include=journals")
   res.value
@@ -266,7 +271,7 @@ def backport_command_string
 
       # check if the Git revision is included in trunk
       begin
-        uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/ruby-git/revisions/#{c}")
+        uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/git/revisions/#{c}")
         uri.read($openuri_options)
         true
       rescue
@@ -377,7 +382,7 @@ eom
       uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/trunk/revisions/#{rev}/issues.json")
     when /\A\h{7,40}\z/ # Git
       rev = args
-      uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/ruby-git/revisions/#{rev}/issues.json")
+      uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/git/revisions/#{rev}/issues.json")
     else
       raise CommandSyntaxError
     end
@@ -431,11 +436,19 @@ eom
       next
     end
 
-    log = find_svn_log("##@issue]")
-    if log && /revision="(?<rev>\d+)/ =~ log
+    if system("svn info #{RUBY_REPO_PATH&.shellescape}", %i(out err) => IO::NULL) # SVN
+      if (log = find_svn_log("##@issue]")) && (/revision="(?<rev>\d+)/ =~ log)
+        rev = "r#{rev}"
+      end
+    else # Git
+      if log = find_git_log("##@issue]")
+        /^commit (?<rev>\h{40})$/ =~ log
+      end
+    end
+    if log && rev
       str = log[/merge revision\(s\) ([^:]+)(?=:)/]
       str.insert(5, "d")
-      str = "ruby_#{TARGET_VERSION.tr('.','_')} r#{rev} #{str}."
+      str = "ruby_#{TARGET_VERSION.tr('.','_')} #{rev} #{str}."
       if notes
         str << "\n"
         str << notes

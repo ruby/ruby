@@ -53,13 +53,13 @@ describe "Socket#connect_nonblock" do
 
   platform_is_not :freebsd, :solaris, :aix do
     it "raises Errno::EINPROGRESS when the connect would block" do
-      lambda do
+      -> do
         @socket.connect_nonblock(@addr)
       end.should raise_error(Errno::EINPROGRESS)
     end
 
     it "raises Errno::EINPROGRESS with IO::WaitWritable mixed in when the connect would block" do
-      lambda do
+      -> do
         @socket.connect_nonblock(@addr)
       end.should raise_error(IO::WaitWritable)
     end
@@ -95,7 +95,7 @@ describe 'Socket#connect_nonblock' do
       end
 
       it 'raises TypeError when passed an Integer' do
-        lambda { @client.connect_nonblock(666) }.should raise_error(TypeError)
+        -> { @client.connect_nonblock(666) }.should raise_error(TypeError)
       end
     end
 
@@ -114,24 +114,24 @@ describe 'Socket#connect_nonblock' do
       platform_is_not :windows do
         it 'raises Errno::EISCONN when already connected' do
           @server.listen(1)
-          @client.connect(@server.getsockname).should == 0
+          @client.connect(@server.connect_address).should == 0
 
-          lambda {
-            @client.connect_nonblock(@server.getsockname)
+          -> {
+            @client.connect_nonblock(@server.connect_address)
 
             # A second call needed if non-blocking sockets become default
             # XXX honestly I don't expect any real code to care about this spec
             # as it's too implementation-dependent and checking for connect()
             # errors is futile anyways because of TOCTOU
-            @client.connect_nonblock(@server.getsockname)
+            @client.connect_nonblock(@server.connect_address)
           }.should raise_error(Errno::EISCONN)
         end
 
         it 'returns 0 when already connected in exceptionless mode' do
           @server.listen(1)
-          @client.connect(@server.getsockname).should == 0
+          @client.connect(@server.connect_address).should == 0
 
-          @client.connect_nonblock(@server.getsockname, exception: false).should == 0
+          @client.connect_nonblock(@server.connect_address, exception: false).should == 0
         end
       end
 
@@ -139,8 +139,8 @@ describe 'Socket#connect_nonblock' do
         it 'raises IO:EINPROGRESSWaitWritable when the connection would block' do
           @server.bind(@sockaddr)
 
-          lambda {
-            @client.connect_nonblock(@server.getsockname)
+          -> {
+            @client.connect_nonblock(@server.connect_address)
           }.should raise_error(IO::EINPROGRESSWaitWritable)
         end
       end

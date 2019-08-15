@@ -17,6 +17,7 @@ class TestGc < Test::Unit::TestCase
       1.upto(10000) {
         tmp = [0,1,2,3,4,5,6,7,8,9]
       }
+      tmp
     end
     l=nil
     100000.times {
@@ -382,6 +383,10 @@ class TestGc < Test::Unit::TestCase
       GC.stress = true
       C.new
     end;
+  end
+
+  def test_gc_stress_at_startup
+    assert_in_out_err([{"RUBY_DEBUG"=>"gc_stress"}], '', [], [], '[Bug #15784]', success: true, timeout: 60)
   end
 
   def test_gc_disabled_start

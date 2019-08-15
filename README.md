@@ -1,13 +1,14 @@
-[![Build Status](https://travis-ci.org/ruby/ruby.svg?branch=trunk)](https://travis-ci.org/ruby/ruby)
-[![wercker status](https://app.wercker.com/status/e5e7e1704f62b76525022aa424aef6ef/s/trunk "wercker status")](https://app.wercker.com/project/byKey/e5e7e1704f62b76525022aa424aef6ef)
-[![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/trunk?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/trunk)
-[![Build Status](https://dev.azure.com/rubylang/ruby/_apis/build/status/ruby.ruby?branchName=trunk)](https://dev.azure.com/rubylang/ruby/_build/latest?definitionId=3&branchName=trunk)
+[![Build Status](https://travis-ci.org/ruby/ruby.svg?branch=master)](https://travis-ci.org/ruby/ruby)
+[![wercker status](https://app.wercker.com/status/e5e7e1704f62b76525022aa424aef6ef/s/master "wercker status")](https://app.wercker.com/project/byKey/e5e7e1704f62b76525022aa424aef6ef)
+[![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
+[![Build Status](https://dev.azure.com/rubylang/ruby/_apis/build/status/ruby.ruby?branchName=master)](https://dev.azure.com/rubylang/ruby/_build/latest?definitionId=3&branchName=master)
 
 # What's Ruby
 
-Ruby is the interpreted scripting language for quick and easy object-oriented
-programming. It has many features to process text files and to manage system
-(as in Perl). It is simple, straight-forward, and extensible.
+Ruby is an interpreted object-oriented programming language often
+used for web development. It also offers many scripting features
+to process plain text and serialized files, or manage system tasks.
+It is simple, straightforward, and extensible.
 
 ## Features of Ruby
 
@@ -21,7 +22,7 @@ programming. It has many features to process text files and to manage system
 *   Dynamic Loading of Object Files (on some architectures)
 *   Highly Portable (works on many Unix-like/POSIX compatible platforms as
     well as Windows, macOS, Haiku, etc.) cf.
-    https://github.com/ruby/ruby/blob/trunk/doc/contributing.rdoc#platform-maintainers
+    https://github.com/ruby/ruby/blob/master/doc/contributing.rdoc#platform-maintainers
 
 
 ## How to get Ruby
@@ -42,8 +43,8 @@ to see the list of branches:
 
     $ git ls-remote https://github.com/ruby/ruby.git
 
-You may also want to use https://git.ruby-lang.org/ruby.git (actual trunk of Ruby source)
-for better latency in Japan.
+You may also want to use https://git.ruby-lang.org/ruby.git (actual master of Ruby source)
+if you are a committer.
 
 ### Subversion
 
@@ -68,7 +69,7 @@ send the following phrase:
     subscribe
 
 in the mail body (not subject) to the address
-<ruby-talk-request@ruby-lang.org>.
+[ruby-talk-request@ruby-lang.org](mailto:ruby-talk-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe).
 
 ## How to compile and install
 

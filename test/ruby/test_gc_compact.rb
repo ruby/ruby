@@ -53,7 +53,7 @@ class TestGCCompact < Test::Unit::TestCase
       # All object ids should be equal
       assert_equal 0, assert_object_ids(list_of_objects) # should be 0
 
-      GC.verify_compaction_references
+      GC.verify_compaction_references(toward: :empty)
 
       # Some should have moved
       id_count = assert_object_ids(list_of_objects)
@@ -81,7 +81,7 @@ class TestGCCompact < Test::Unit::TestCase
     loc = memory_location(new_tenant)
     assert loc, "should have a memory location"
 
-    if (ENV['TRAVIS'] && RUBY_PLATFORM =~ /darwin/) || RubyVM::MJIT.enabled?
+    if (ENV['TRAVIS'] && RUBY_PLATFORM =~ /darwin/)
       skip "tests are failing on Travis osx / Wercker from here"
     end
 
@@ -105,13 +105,13 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_many_collisions
-    skip if RubyVM::MJIT.enabled?
-
     list_of_objects = big_list
     ids       = list_of_objects.map(&:object_id)
     addresses = list_of_objects.map(&self.:memory_location)
 
-    GC.verify_compaction_references
+    GC.verify_compaction_references(toward: :empty)
+
+    skip "time consuming"
 
     new_tenants = 10.times.map {
       find_object_in_recycled_slot(addresses)
@@ -120,5 +120,14 @@ class TestGCCompact < Test::Unit::TestCase
     collisions = GC.stat(:object_id_collisions)
     skip "couldn't get objects to collide" if collisions == 0
     assert_operator collisions, :>, 0
+    ids.clear
+    new_tenants.clear
+  end
+
+  def test_complex_hash_keys
+    list_of_objects = big_list
+    hash = list_of_objects.hash
+    GC.verify_compaction_references(toward: :empty)
+    assert_equal hash, list_of_objects.hash
   end
 end

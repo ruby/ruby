@@ -13,18 +13,18 @@ describe "Date#+" do
   end
 
   it "raises a TypeError when passed a Symbol" do
-    lambda { Date.civil(2007,2,27) + :hello }.should raise_error(TypeError)
+    -> { Date.civil(2007,2,27) + :hello }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed a String" do
-    lambda { Date.civil(2007,2,27) + "hello" }.should raise_error(TypeError)
+    -> { Date.civil(2007,2,27) + "hello" }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed a Date" do
-    lambda { Date.civil(2007,2,27) + Date.new }.should raise_error(TypeError)
+    -> { Date.civil(2007,2,27) + Date.new }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed an Object" do
-    lambda { Date.civil(2007,2,27) + Object.new }.should raise_error(TypeError)
+    -> { Date.civil(2007,2,27) + Object.new }.should raise_error(TypeError)
   end
 end

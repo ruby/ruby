@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "bundler/rubygems_integration"
-require "bundler/source/git/git_proxy"
+require_relative "rubygems_integration"
+require_relative "source/git/git_proxy"
 
 module Bundler
   class Env
@@ -69,7 +69,7 @@ module Bundler
     end
 
     def self.ruby_version
-      str = String.new("#{RUBY_VERSION}")
+      str = String.new(RUBY_VERSION)
       str << "p#{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
       str << " (#{RUBY_RELEASE_DATE} revision #{RUBY_REVISION}) [#{RUBY_PLATFORM}]"
     end
@@ -100,8 +100,9 @@ module Bundler
       out << ["  Full Path", Gem.ruby]
       out << ["  Config Dir", Pathname.new(Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE).dirname]
       out << ["RubyGems", Gem::VERSION]
-      out << ["  Gem Home", ENV.fetch("GEM_HOME") { Gem.dir }]
-      out << ["  Gem Path", ENV.fetch("GEM_PATH") { Gem.path.join(File::PATH_SEPARATOR) }]
+      out << ["  Gem Home", Gem.dir]
+      out << ["  Gem Path", Gem.path.join(File::PATH_SEPARATOR)]
+      out << ["  User Home", Gem.user_home]
       out << ["  User Path", Gem.user_dir]
       out << ["  Bin Dir", Gem.bindir]
       if defined?(OpenSSL)

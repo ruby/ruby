@@ -21,7 +21,7 @@ describe :hash_each, shared: true do
     ary.sort.should == ["a", "b", "c"]
   end
 
-  it "yields 2 values and not an Array of 2 elements" do
+  it "yields 2 values and not an Array of 2 elements when given a callable of arity 2" do
     obj = Object.new
     def obj.foo(key, value)
       ScratchPad << key << value

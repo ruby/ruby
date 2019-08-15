@@ -94,7 +94,7 @@ class Downloader
         super(UNICODE_PUBLIC+name_dir_part+beta_name, name, dir, since, options)
       else
         index_file = Pathname.new(under(dir, name_dir_part+'index.html'))
-        if index_file.exist?
+        if index_file.exist? and name_dir_part !~ /^(12\.1\.0|emoji\/12\.0)/
           raise "Although Unicode is not in beta, file #{index_file} exists. " +
                 "Remove all files in this directory and in .downloaded-cache/ " +
                 "because they may be leftovers from the beta period."
@@ -121,7 +121,7 @@ class Downloader
         options['If-Modified-Since'] = since
       end
     end
-    options['Accept-Encoding'] = '*' # to disable Net::HTTP::GenericRequest#decode_content
+    options['Accept-Encoding'] = 'identity' # to disable Net::HTTP::GenericRequest#decode_content
     options
   end
 
@@ -192,7 +192,7 @@ class Downloader
       $stdout.flush
     end
     begin
-      data = with_retry(6) do
+      data = with_retry(9) do
         url.read(options.merge(http_options(file, since.nil? ? true : since)))
       end
     rescue OpenURI::HTTPError => http_error
