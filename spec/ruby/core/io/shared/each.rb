@@ -38,7 +38,7 @@ describe :io_each, shared: true do
     end
 
     it "raises an IOError when self is not readable" do
-      lambda { IOSpecs.closed_io.send(@method) {} }.should raise_error(IOError)
+      -> { IOSpecs.closed_io.send(@method) {} }.should raise_error(IOError)
     end
 
     it "makes line count accessible via lineno" do
@@ -74,7 +74,7 @@ describe :io_each, shared: true do
     describe "when limit is 0" do
       it "raises an ArgumentError" do
         # must pass block so Enumerator is evaluated and raises
-        lambda { @io.send(@method, 0){} }.should raise_error(ArgumentError)
+        -> { @io.send(@method, 0){} }.should raise_error(ArgumentError)
       end
     end
   end

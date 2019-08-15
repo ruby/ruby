@@ -18,6 +18,7 @@ require 'rubygems/compatibility'
 require 'rubygems/defaults'
 require 'rubygems/deprecate'
 require 'rubygems/errors'
+require 'rubygems/path_support'
 
 ##
 # RubyGems is the Ruby standard for publishing and managing third party
@@ -564,8 +565,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   #++
   #--
   #
-  # FIXME move to pathsupport
-  #
   #++
 
   def self.find_home
@@ -644,14 +643,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # <tt>https://rubygems.org</tt>.
 
   def self.host
-    # TODO: move to utils
     @host ||= Gem::DEFAULT_HOST
   end
 
   ## Set the default RubyGems API host.
 
   def self.host=(host)
-    # TODO: move to utils
     @host = host
   end
 
@@ -667,6 +664,21 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     index = $LOAD_PATH.index RbConfig::CONFIG['sitelibdir']
 
     index
+  end
+
+  ##
+  # Add a list of paths to the $LOAD_PATH at the proper place.
+
+  def self.add_to_load_path(*paths)
+    insert_index = load_path_insert_index
+
+    if insert_index
+      # gem directories must come after -I and ENV['RUBYLIB']
+      $LOAD_PATH.insert(insert_index, *paths)
+    else
+      # we are probably testing in core, -I and RUBYLIB don't apply
+      $LOAD_PATH.unshift(*paths)
+    end
   end
 
   @yaml_loaded = false
@@ -1083,6 +1095,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
+  # Is this a java platform?
+
+  def self.java_platform?
+    RUBY_PLATFORM == "java"
+  end
+
+  ##
   # Load +plugins+ as Ruby files
 
   def self.load_plugin_files(plugins) # :nodoc:
@@ -1185,7 +1204,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     require 'rubygems/user_interaction'
     Gem::DefaultUserInteraction.use_ui(ui) do
       require "bundler"
-      @gemdeps = Bundler.setup
+      begin
+        @gemdeps = Bundler.setup
+      ensure
+        if Gem::DefaultUserInteraction.ui.is_a?(Gem::SilentUI)
+          Gem::DefaultUserInteraction.ui.close
+        end
+      end
       Bundler.ui = nil
       @gemdeps.requested_specs.map(&:to_spec).sort_by(&:name)
     end
@@ -1242,7 +1267,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     #
 
     def register_default_spec(spec)
-      new_format = Gem.default_gems_use_full_paths? || spec.require_paths.any? {|path| spec.files.any? {|f| f.start_with? path } }
+      new_format = spec.require_paths.any? {|path| spec.files.any? {|f| f.start_with? path } }
 
       if new_format
         prefix_group = spec.require_paths.map {|f| f + "/"}.join("|")
@@ -1370,14 +1395,12 @@ begin
 rescue LoadError
 end
 
-if defined?(RUBY_ENGINE)
-  begin
-    ##
-    # Defaults the Ruby implementation wants to provide for RubyGems
+begin
+  ##
+  # Defaults the Ruby implementation wants to provide for RubyGems
 
-    require "rubygems/defaults/#{RUBY_ENGINE}"
-  rescue LoadError
-  end
+  require "rubygems/defaults/#{RUBY_ENGINE}"
+rescue LoadError
 end
 
 ##

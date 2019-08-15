@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/remote_specification"
+require_relative "remote_specification"
 
 module Bundler
   class StubSpecification < RemoteSpecification
@@ -55,8 +55,6 @@ module Bundler
       stub.full_require_paths
     end
 
-    # This is what we do in bundler/rubygems_ext
-    # full_require_paths is always implemented
     def load_paths
       full_require_paths
     end
@@ -65,10 +63,8 @@ module Bundler
       stub.loaded_from
     end
 
-    if Bundler.rubygems.stubs_provide_full_functionality?
-      def matches_for_glob(glob)
-        stub.matches_for_glob(glob)
-      end
+    def matches_for_glob(glob)
+      stub.matches_for_glob(glob)
     end
 
     def raw_require_paths

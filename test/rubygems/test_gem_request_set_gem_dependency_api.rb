@@ -20,35 +20,28 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def with_engine_version(name, version)
-    engine               = RUBY_ENGINE if Object.const_defined? :RUBY_ENGINE
-    engine_version_const = "#{Gem.ruby_engine.upcase}_VERSION"
-    engine_version       = Object.const_get engine_version_const
+    engine = RUBY_ENGINE
+    engine_version = RUBY_ENGINE_VERSION
 
-    Object.send :remove_const, :RUBY_ENGINE         if engine
-    Object.send :remove_const, engine_version_const if name == 'ruby' and
-      Object.const_defined? engine_version_const
+    Object.send :remove_const, :RUBY_ENGINE
+    Object.send :remove_const, :RUBY_ENGINE_VERSION
 
-    new_engine_version_const = "#{name.upcase}_VERSION"
-    Object.const_set :RUBY_ENGINE,             name    if name
-    Object.const_set new_engine_version_const, version if version
+    Object.const_set :RUBY_ENGINE, name if name
+    Object.const_set :RUBY_ENGINE_VERSION, version if version
 
     Gem.instance_variable_set :@ruby_version, Gem::Version.new(version)
 
-    yield
+    begin
+      yield
+    ensure
+      Object.send :remove_const, :RUBY_ENGINE if name
+      Object.send :remove_const, :RUBY_ENGINE_VERSION if version
 
-  ensure
-    Object.send :remove_const, :RUBY_ENGINE             if name
-    Object.send :remove_const, new_engine_version_const if version
+      Object.const_set :RUBY_ENGINE, engine
+      Object.const_set :RUBY_ENGINE_VERSION, engine_version
 
-    Object.send :remove_const, engine_version_const     if name == 'ruby' and
-      Object.const_defined? engine_version_const
-
-    Object.const_set :RUBY_ENGINE,         engine         if engine
-    Object.const_set engine_version_const, engine_version unless
-      Object.const_defined? engine_version_const
-
-    Gem.send :remove_instance_variable, :@ruby_version if
-      Gem.instance_variables.include? :@ruby_version
+      Gem.send :remove_instance_variable, :@ruby_version
+    end
   end
 
   def test_gempspec_with_multiple_runtime_deps
@@ -837,23 +830,20 @@ end
 
   def test_with_engine_version
     version = RUBY_VERSION
-    engine  = Gem.ruby_engine
-
-    engine_version_const = "#{Gem.ruby_engine.upcase}_VERSION"
-    engine_version       = Object.const_get engine_version_const
+    engine = Gem.ruby_engine
+    engine_version = RUBY_ENGINE_VERSION
 
     with_engine_version 'other', '1.2.3' do
       assert_equal 'other', Gem.ruby_engine
-      assert_equal '1.2.3', OTHER_VERSION
+      assert_equal '1.2.3', RUBY_ENGINE_VERSION
 
-      assert_equal version, RUBY_VERSION if engine
+      assert_equal version, RUBY_VERSION
     end
 
     assert_equal version, RUBY_VERSION
     assert_equal engine,  Gem.ruby_engine
 
-    assert_equal engine_version, Object.const_get(engine_version_const) if
-      engine
+    assert_equal engine_version, RUBY_ENGINE_VERSION if engine
   end
 
-end
+end unless Gem.java_platform?

@@ -1132,16 +1132,18 @@ module REXML
         old_attr[value.prefix] = value
       elsif old_attr.prefix != value.prefix
         # Check for conflicting namespaces
-        raise ParseException.new(
-          "Namespace conflict in adding attribute \"#{value.name}\": "+
-          "Prefix \"#{old_attr.prefix}\" = "+
-          "\"#{@element.namespace(old_attr.prefix)}\" and prefix "+
-          "\"#{value.prefix}\" = \"#{@element.namespace(value.prefix)}\"") if
-          value.prefix != "xmlns" and old_attr.prefix != "xmlns" and
-          @element.namespace( old_attr.prefix ) ==
-            @element.namespace( value.prefix )
-          store value.name, { old_attr.prefix   => old_attr,
-            value.prefix                => value }
+        if value.prefix != "xmlns" and old_attr.prefix != "xmlns"
+          old_namespace = old_attr.namespace
+          new_namespace = value.namespace
+          if old_namespace == new_namespace
+            raise ParseException.new(
+                    "Namespace conflict in adding attribute \"#{value.name}\": "+
+                    "Prefix \"#{old_attr.prefix}\" = \"#{old_namespace}\" and "+
+                    "prefix \"#{value.prefix}\" = \"#{new_namespace}\"")
+          end
+        end
+        store value.name, {old_attr.prefix => old_attr,
+                           value.prefix    => value}
       else
         store value.name, value
       end

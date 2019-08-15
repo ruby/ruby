@@ -171,7 +171,9 @@ static VALUE flo_to_i(VALUE num);
 static int float_round_overflow(int ndigits, int binexp);
 static int float_round_underflow(int ndigits, int binexp);
 
-static ID id_coerce, id_div, id_divmod;
+static ID id_coerce;
+#define id_div idDiv
+#define id_divmod idDivmod
 #define id_to_i idTo_i
 #define id_eq  idEq
 #define id_cmp idCmp
@@ -1120,8 +1122,8 @@ rb_flo_div_flo(VALUE x, VALUE y)
  * Returns a new Float which is the result of dividing +float+ by +other+.
  */
 
-static VALUE
-flo_div(VALUE x, VALUE y)
+VALUE
+rb_float_div(VALUE x, VALUE y)
 {
     double num = RFLOAT_VALUE(x);
     double den;
@@ -2002,12 +2004,19 @@ flo_floor(int argc, VALUE *argv, VALUE num)
 static VALUE
 flo_ceil(int argc, VALUE *argv, VALUE num)
 {
-    double number, f;
     int ndigits = 0;
 
     if (rb_check_arity(argc, 0, 1)) {
 	ndigits = NUM2INT(argv[0]);
     }
+    return rb_float_ceil(num, ndigits);
+}
+
+VALUE
+rb_float_ceil(VALUE num, int ndigits)
+{
+    double number, f;
+
     number = RFLOAT_VALUE(num);
     if (number == 0.0) {
 	return ndigits > 0 ? DBL2NUM(number) : INT2FIX(0);
@@ -3418,8 +3427,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
       case 1:
 	break;
       default:
-	rb_check_arity(argc, 0, 1);
-	break;
+        rb_error_arity(argc, 0, 1);
     }
     enc = rb_to_encoding(argv[0]);
     if (!enc) enc = rb_ascii8bit_encoding();
@@ -3711,7 +3719,7 @@ fix_fdiv_double(VALUE x, VALUE y)
         return double_div_double(FIX2LONG(x), RFLOAT_VALUE(y));
     }
     else {
-        return NUM2DBL(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
+        return NUM2DBL(rb_num_coerce_bin(x, y, idFdiv));
     }
 }
 
@@ -4197,7 +4205,6 @@ fix_cmp(VALUE x, VALUE y)
     else {
 	return rb_num_coerce_cmp(x, y, id_cmp);
     }
-    return rb_num_coerce_cmp(x, y, id_cmp);
 }
 
 VALUE
@@ -4630,8 +4637,8 @@ rb_int_rshift(VALUE x, VALUE y)
     return Qnil;
 }
 
-static VALUE
-fix_aref(VALUE fix, VALUE idx)
+MJIT_FUNC_EXPORTED VALUE
+rb_fix_aref(VALUE fix, VALUE idx)
 {
     long val = FIX2LONG(fix);
     long i;
@@ -4675,7 +4682,8 @@ compare_indexes(VALUE a, VALUE b)
 }
 
 static VALUE
-generate_mask(VALUE len) {
+generate_mask(VALUE len)
+{
     return rb_int_minus(rb_int_lshift(INT2FIX(1), len), INT2FIX(1));
 }
 
@@ -4722,7 +4730,7 @@ int_aref1(VALUE num, VALUE arg)
 
 one_bit:
     if (FIXNUM_P(num)) {
-        return fix_aref(num, arg);
+        return rb_fix_aref(num, arg);
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
         return rb_big_aref(num, arg);
@@ -5555,8 +5563,8 @@ Init_Numeric(void)
     _set_Creg(0, 0);
 #endif
     id_coerce = rb_intern("coerce");
-    id_div = rb_intern("div");
-    id_divmod = rb_intern("divmod");
+    id_to = rb_intern("to");
+    id_by = rb_intern("by");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);
@@ -5679,7 +5687,9 @@ Init_Numeric(void)
     rb_undef_method(CLASS_OF(rb_cFloat), "new");
 
     /*
-     *  Represents the rounding mode for floating point addition.
+     *  Deprecated, do not use.
+     *
+     *  Represents the rounding mode for floating point addition at the start time.
      *
      *  Usually defaults to 1, rounding to the nearest number.
      *
@@ -5692,6 +5702,7 @@ Init_Numeric(void)
      *	3::	Rounding towards negative infinity
      */
     rb_define_const(rb_cFloat, "ROUNDS", INT2FIX(FLT_ROUNDS));
+    rb_deprecate_constant(rb_cFloat, "ROUNDS");
     /*
      *	The base of the floating point, or number of unique digits used to
      *	represent the number.
@@ -5780,7 +5791,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "+", rb_float_plus, 1);
     rb_define_method(rb_cFloat, "-", flo_minus, 1);
     rb_define_method(rb_cFloat, "*", rb_float_mul, 1);
-    rb_define_method(rb_cFloat, "/", flo_div, 1);
+    rb_define_method(rb_cFloat, "/", rb_float_div, 1);
     rb_define_method(rb_cFloat, "quo", flo_quo, 1);
     rb_define_method(rb_cFloat, "fdiv", flo_quo, 1);
     rb_define_method(rb_cFloat, "%", flo_mod, 1);
@@ -5815,9 +5826,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "prev_float", flo_prev_float, 0);
     rb_define_method(rb_cFloat, "positive?", flo_positive_p, 0);
     rb_define_method(rb_cFloat, "negative?", flo_negative_p, 0);
-
-    id_to = rb_intern("to");
-    id_by = rb_intern("by");
 }
 
 #undef rb_float_value

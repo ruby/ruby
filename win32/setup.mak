@@ -31,7 +31,6 @@ i586-mswin32: -prologue- -i586- -epilogue-
 i686-mswin32: -prologue- -i686- -epilogue-
 alpha-mswin32: -prologue- -alpha- -epilogue-
 x64-mswin64: -prologue- -x64- -epilogue-
-ia64-mswin64: -prologue- -ia64- -epilogue-
 
 -prologue-: -basic-vars-
 -generic-: -osname-
@@ -178,8 +177,6 @@ RUBY_SO_NAME = $(RUBY_SO_NAME)
 	@$(CPP) <<conftest.c 2>nul | findstr = >>$(MAKEFILE)
 #if defined _M_X64
 MACHINE = x64
-#elif defined _M_IA64
-MACHINE = ia64
 #else
 MACHINE = x86
 #endif
@@ -192,8 +189,6 @@ MACHINE = x86
 	@echo MACHINE = alpha>>$(MAKEFILE)
 -x64-: -osname64-
 	@echo MACHINE = x64>>$(MAKEFILE)
--ia64-: -osname64-
-	@echo MACHINE = ia64>>$(MAKEFILE)
 -ix86-: -osname32-
 	@echo MACHINE = x86>>$(MAKEFILE)
 
