@@ -484,13 +484,26 @@ describe "The return keyword" do
       end
 
       describe "return with argument" do
-        # https://bugs.ruby-lang.org/issues/14062
-        it "does not affect exit status" do
-          ruby_exe(<<-END_OF_CODE).should == ""
-            return 10
-          END_OF_CODE
+        ruby_version_is ""..."2.7" do
+          it "does not affect exit status" do
+            ruby_exe(<<-END_OF_CODE).should == ""
+              return 10
+            END_OF_CODE
 
-          $?.exitstatus.should == 0
+            $?.exitstatus.should == 0
+          end
+        end
+
+        ruby_version_is "2.7" do
+          it "warns but does not affect exit status" do
+            ruby_exe(<<-END_OF_CODE).should == "-e: warning: argument of top-level return is ignored\n"
+              $stderr.reopen($stdout)
+              system(ENV['RUBY_EXE'], '-e', 'return 10')
+              exit($?.exitstatus)
+            END_OF_CODE
+
+            $?.exitstatus.should == 0
+          end
         end
       end
     end

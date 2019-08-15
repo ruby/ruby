@@ -129,7 +129,7 @@ class TestGemCommandManager < Gem::TestCase
       check_options = nil
       @command_manager.process_args %w[
         install --force --local --document=ri,rdoc --install-dir .
-                --version 3.0 --no-wrapper --bindir .
+        --version 3.0 --no-wrapper --bindir .
       ]
       assert_equal %w[rdoc ri], check_options[:document].sort
       assert_equal true, check_options[:force]

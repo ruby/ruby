@@ -4,7 +4,12 @@ BEGIN {
 
   colorize = Colorize.new
   file = ARGV.shift
-  unless /\Abison .* (\d+)\.\d+/ =~ IO.popen(ARGV+%w[--version], &:read)
+  begin
+    version = IO.popen(ARGV+%w[--version], &:read)
+  rescue Errno::ENOENT
+    abort "Failed to run `#{colorize.fail ARGV.join(' ')}'; You may have to install it."
+  end
+  unless /\Abison .* (\d+)\.\d+/ =~ version
     puts colorize.fail("not bison")
     exit
   end

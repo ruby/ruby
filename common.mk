@@ -47,7 +47,7 @@ GEM_PATH =
 GEM_VENDOR =
 
 BENCHMARK_DRIVER_GIT_URL = https://github.com/benchmark-driver/benchmark-driver
-BENCHMARK_DRIVER_GIT_REF = v0.14.19
+BENCHMARK_DRIVER_GIT_REF = v0.14.20
 SIMPLECOV_GIT_URL = https://github.com/colszowka/simplecov.git
 SIMPLECOV_GIT_REF = v0.17.0
 SIMPLECOV_HTML_GIT_URL = https://github.com/colszowka/simplecov-html.git
@@ -716,6 +716,7 @@ clean-spec: PHONY
 
 check: main test test-tool test-all test-spec
 	$(ECHO) check succeeded
+	- $(GIT) --no-pager -C "$(srcdir)" log --format=oneline -G "^ *# *include" origin/master..HEAD
 check-ruby: test test-ruby
 
 fake: $(CROSS_COMPILING)-fake
