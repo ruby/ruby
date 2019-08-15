@@ -817,8 +817,8 @@ end
 
       gemspec_file = ruby_core? ? "#{root}/lib/bundler/bundler.gemspec" : "#{root}/bundler.gemspec"
       gemspec = File.binread(gemspec_file).
-                sub("Bundler::VERSION", %("#{Bundler::VERSION}"))
-      gemspec = gemspec.lines.reject {|line| line =~ %r{lib/bundler/version} }.join
+                sub("Bundler::VERSION", %("#{Bundler::VERSION}")).
+                lines.reject {|line| line =~ %r{lib/bundler/version} }.join
 
       File.open(File.join(specifications_dir, "#{full_name}.gemspec"), "wb") do |f|
         f.write(gemspec)
