@@ -773,7 +773,7 @@ end
     full_gem_name = gem_name + "-1.0"
     ext_dir = File.join(tmp("extensions", full_gem_name))
 
-    install_gem full_gem_name
+    install_gems full_gem_name
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
