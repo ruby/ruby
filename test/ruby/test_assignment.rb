@@ -92,6 +92,11 @@ class TestAssignment < Test::Unit::TestCase
     a,b,*c = *[*[1,2]]; assert_equal([1,2,[]], [a,b,c])
   end
 
+  def test_assign_rescue
+    a = raise rescue 2; assert_equal(2, a)
+    a, b = raise rescue [3,4]; assert_equal([3, 4], [a, b])
+  end
+
   def test_assign_abbreviated
     bug2050 = '[ruby-core:25629]'
     a = Hash.new {[]}
@@ -129,17 +134,17 @@ class TestAssignment < Test::Unit::TestCase
     }
 
     assert_raise(NoMethodError, bug11096) {
-      assert_equal(43, o.instance_eval {self.foo += 1})
+      o.instance_eval {self.foo += 1}
     }
     assert_raise(NoMethodError, bug11096) {
-      assert_equal(1, o.instance_eval {self.foo &&= 1})
+      o.instance_eval {self.foo &&= 1}
     }
 
     assert_raise(NoMethodError, bug11096) {
-      assert_equal(43, o.instance_eval {self[0] += 1})
+      o.instance_eval {self[0] += 1}
     }
     assert_raise(NoMethodError, bug11096) {
-      assert_equal(1, o.instance_eval {self[0] &&= 1})
+      o.instance_eval {self[0] &&= 1}
     }
   end
 
@@ -480,11 +485,10 @@ class TestAssignment < Test::Unit::TestCase
     assert_equal 1, a
     assert_equal [2, 3], b
 
-    # not supported yet
-    #a, *b, c = 1, 2, 3, 4
-    #assert_equal 1, a
-    #assert_equal [2,3], b
-    #assert_equal 4, c
+    a, *b, c = 1, 2, 3, 4
+    assert_equal 1, a
+    assert_equal [2,3], b
+    assert_equal 4, c
 
     a = 1, 2
     assert_equal [1, 2], a

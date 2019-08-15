@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'tmpdir'
+require '-test-/file'
 
 class TestDir_M17N < Test::Unit::TestCase
   def with_tmpdir
@@ -59,6 +60,8 @@ class TestDir_M17N < Test::Unit::TestCase
 
   def test_filename_extutf8_invalid
     return if /cygwin/ =~ RUBY_PLATFORM
+    # High Sierra's APFS cannot use invalid filenames
+    return if Bug::File::Fs.fsname(Dir.tmpdir) == "apfs"
     with_tmpdir {|d|
       assert_separately(%w[-EASCII-8BIT], <<-'EOS', :chdir=>d)
         filename = "\xff".force_encoding("ASCII-8BIT") # invalid byte sequence as UTF-8
@@ -375,7 +378,12 @@ class TestDir_M17N < Test::Unit::TestCase
       a = "file_one*".force_encoding Encoding::IBM437
       b = "file_two*".force_encoding Encoding::EUC_JP
       assert_equal([a, b].map(&:encoding), Dir[a, b].map(&:encoding))
-      dir = "\u{76EE 5F551}"
+      if Bug::File::Fs.fsname(Dir.pwd) == "apfs"
+        # High Sierra's APFS cannot use filenames with undefined character
+        dir = "\u{76EE}"
+      else
+        dir = "\u{76EE 5F551}"
+      end
       Dir.mkdir(dir)
       list << dir
       bug12081 = '[ruby-core:73868] [Bug #12081]'
@@ -404,12 +412,12 @@ class TestDir_M17N < Test::Unit::TestCase
     with_tmpdir {|d|
       orig = %W"d\u{e9}tente x\u{304c 304e 3050 3052 3054}"
       orig.each {|n| open(n, "w") {}}
+      enc = Encoding.find("filesystem")
+      enc = Encoding::ASCII_8BIT if enc == Encoding::US_ASCII
       if /mswin|mingw/ =~ RUBY_PLATFORM
-        opts = {:encoding => Encoding.default_external}
+        opts = {:encoding => enc}
         orig.map! {|o| o.encode("filesystem") rescue o.tr("^a-z", "?")}
       else
-        enc = Encoding.find("filesystem")
-        enc = Encoding::ASCII_8BIT if enc == Encoding::US_ASCII
         orig.each {|o| o.force_encoding(enc) }
       end
       ents = Dir.entries(".", opts).reject {|n| /\A\./ =~ n}

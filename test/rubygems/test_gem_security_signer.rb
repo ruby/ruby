@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
 
-unless defined?(OpenSSL::SSL) then
+unless defined?(OpenSSL::SSL)
   warn 'Skipping Gem::Security::Signer tests.  openssl not found.'
 end
 
@@ -121,12 +121,12 @@ class TestGemSecuritySigner < Gem::TestCase
     signature = signer.sign 'hello'
 
     expected = <<-EXPECTED
-pxSf9ScaghbMNmNp8fqSJj7BiIGpbuoOVYCOM3TJNH9STLILA5z3xKp3gM6w
-VJ7aGsh9KCP485ftS3J9Kb/lKJsyoSkkRSQ5QG+LnyZwMuWlThPDR5o7q6al
-0oxE7vvbbqxFqcT4ojWIkwxJxOluFWmt2D8I6QTX2vLAn09y+Kl66AOrT7R5
-UinbXkz04VwcNvkBqJyko3yWxFKiGNpntZQg4jIw4L+h97EOaZp8H96udzQH
-Da3K0YZ6FsqLDFNnWAFhve3kmpE3CludpvDqH0piq0zKqnOiqAcvICIpPaJP
-c7NM7KZZjj7G++SXjYTEI1PHSA7aFQ/i/+qSUvx+Pg==
+cHze2sEfRysoUMCfGVAx/7o8jxj5liJJ2ptNxe2jf3l+EZvyjdqpXo9Ndzxx
+6xLp2rxLG4K2//ip4aCH5Sh7hnia+F5u6iuLBETPlklPrmw5dnuKZxolz+vM
+0O1aOZsQHcVzQoESTGjkms3KZk+gn3lg0sSBbAV5/LyDYoHCEjxlcA5D+Olb
+rDmRyBMOnMS+q489OZ5Hr6B2YJJ3QbUwIZNhUeNmOxIBEYTrrKkZ92qkxbRN
+qhlqFP4jR6zXFeyBCOr0KpTiWBNuxBFXDsxmhGyt2BOIjD6qmKn7RSIfYg/U
+toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
     EXPECTED
 
     assert_equal expected, [signature].pack('m')
@@ -135,12 +135,15 @@ c7NM7KZZjj7G++SXjYTEI1PHSA7aFQ/i/+qSUvx+Pg==
   def test_sign_expired
     signer = Gem::Security::Signer.new PRIVATE_KEY, [EXPIRED_CERT]
 
-    assert_raises Gem::Security::Exception do
+    e = assert_raises Gem::Security::Exception do
       signer.sign 'hello'
     end
+
+    assert_match "certificate /CN=nobody/DC=example not valid after 1970-01-01 00:00:00 UTC", e.message
   end
 
   def test_sign_expired_auto_update
+    skip if Gem.java_platform?
     FileUtils.mkdir_p File.join(Gem.user_home, '.gem'), :mode => 0700
 
     private_key_path = File.join(Gem.user_home, '.gem', 'gem-private_key.pem')
@@ -214,4 +217,3 @@ c7NM7KZZjj7G++SXjYTEI1PHSA7aFQ/i/+qSUvx+Pg==
   end
 
 end if defined?(OpenSSL::SSL)
-

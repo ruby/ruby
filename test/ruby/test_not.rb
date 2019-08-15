@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 
-class TestIfunless < Test::Unit::TestCase
+class TestNot < Test::Unit::TestCase
   def test_not_with_grouped_expression
     assert_equal(false, (not (true)))
     assert_equal(true, (not (false)))

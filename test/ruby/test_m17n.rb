@@ -269,6 +269,13 @@ class TestM17N < Test::Unit::TestCase
     assert_empty(encs, bug10598)
   end
 
+  def test_utf_without_bom_valid
+    encs = [Encoding::UTF_16, Encoding::UTF_32].find_all {|enc|
+      !(+"abcd").encode!(enc).force_encoding(enc).valid_encoding?
+    }
+    assert_empty(encs)
+  end
+
   def test_object_utf16_32_inspect
     EnvUtil.suppress_warning do
       begin
@@ -358,7 +365,10 @@ class TestM17N < Test::Unit::TestCase
       "\u3042".encode("UTF-16LE"),
       "\u3042".encode("UTF-16BE"),
     ].each do |str|
-      assert_equal(str, eval(str.dump), "[ruby-dev:33142]")
+      dump = str.dump
+      assert_equal(str, eval(dump), "[ruby-dev:33142]")
+      assert_equal(str, dump.undump)
+      assert_equal(str, eval("# frozen-string-literal: true\n#{dump}"), '[Bug #14687]')
     end
   end
 
@@ -465,7 +475,7 @@ class TestM17N < Test::Unit::TestCase
   def test_regexp_ascii_none
     r = /a/n
 
-    assert_warning(%r{regexp match /\.\.\./n against to}) {
+    assert_warning(%r{historical binary regexp match /\.\.\./n against}) {
       assert_regexp_generic_ascii(r)
     }
 
@@ -474,13 +484,13 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(0, r =~ s("a"))
     assert_equal(0, r =~ u("a"))
     assert_equal(nil, r =~ a("\xc2\xa1"))
-    assert_warning(%r{regexp match /\.\.\./n against to EUC-JP string}) {
+    assert_warning(%r{historical binary regexp match /\.\.\./n against EUC-JP string}) {
       assert_equal(nil, r =~ e("\xc2\xa1"))
     }
-    assert_warning(%r{regexp match /\.\.\./n against to Windows-31J string}) {
+    assert_warning(%r{historical binary regexp match /\.\.\./n against Windows-31J string}) {
       assert_equal(nil, r =~ s("\xc2\xa1"))
     }
-    assert_warning(%r{regexp match /\.\.\./n against to UTF-8 string}) {
+    assert_warning(%r{historical binary regexp match /\.\.\./n against UTF-8 string}) {
       assert_equal(nil, r =~ u("\xc2\xa1"))
     }
 
@@ -605,6 +615,8 @@ class TestM17N < Test::Unit::TestCase
     r1 = Regexp.new('\xa1'.force_encoding("ascii-8bit"))
     r2 = eval('/\xa1#{r1}/'.force_encoding('ascii-8bit'))
     assert_equal(Encoding::ASCII_8BIT, r2.encoding)
+
+    [r1, r2]
   end
 
   def test_regexp_named_class
@@ -725,7 +737,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_union_1_regexp
     assert_regexp_generic_ascii(Regexp.union(//))
-    assert_warning(%r{regexp match /.../n against to}) {
+    assert_warning(%r{historical binary regexp match /.../n against}) {
       assert_regexp_generic_ascii(Regexp.union(//n))
     }
     assert_regexp_fixed_eucjp(Regexp.union(//e))
@@ -768,7 +780,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_dynamic_ascii_regexp
-    assert_warning(%r{regexp match /.../n against to}) {
+    assert_warning(%r{historical binary regexp match /.../n against}) {
       assert_regexp_generic_ascii(/#{ }/n)
     }
     assert_regexp_fixed_ascii8bit(/#{ }\xc2\xa1/n)
@@ -1521,6 +1533,17 @@ class TestM17N < Test::Unit::TestCase
     }
   end
 
+  def test_setbyte_range
+    s = u("\xE3\x81\x82\xE3\x81\x84")
+    assert_nothing_raised { s.setbyte(0, -1) }
+    assert_nothing_raised { s.setbyte(0, 0x00) }
+    assert_nothing_raised { s.setbyte(0, 0x7F) }
+    assert_nothing_raised { s.setbyte(0, 0x80) }
+    assert_nothing_raised { s.setbyte(0, 0xff) }
+    assert_nothing_raised { s.setbyte(0, 0x100) }
+    assert_nothing_raised { s.setbyte(0, 0x4f7574206f6620636861722072616e6765) }
+  end
+
   def test_compatible
     assert_nil Encoding.compatible?("",0)
     assert_equal(Encoding::UTF_8, Encoding.compatible?(u(""), ua("abc")))
@@ -1581,6 +1604,19 @@ class TestM17N < Test::Unit::TestCase
     assert_predicate(str.dup.taint.scrub, :tainted?)
   end
 
+  def test_scrub_modification_inside_block
+    str = ("abc\u3042".b << "\xE3\x80".b).force_encoding('UTF-8')
+    assert_raise(RuntimeError) {str.scrub{|_| str << "1234567890"; "?" }}
+
+    str = "\x00\xD8\x42\x30".force_encoding(Encoding::UTF_16LE)
+    assert_raise(RuntimeError) do
+      str.scrub do |_|
+        str << "1\x002\x00".force_encoding('UTF-16LE')
+        "?\x00".force_encoding('UTF-16LE')
+      end
+    end
+  end
+
   def test_scrub_replace_default
     assert_equal("\uFFFD\uFFFD\uFFFD", u("\x80\x80\x80").scrub)
     assert_equal("\uFFFDA", u("\xF4\x80\x80A").scrub)
@@ -1623,8 +1659,9 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(ArgumentError){ u("\xE3\x81\x82\xE3\x81\x82\xE3\x81").scrub{u("\x81")} }
     assert_equal(e("\xA4\xA2\xA2\xAE"), e("\xA4\xA2\xA4").scrub{e("\xA2\xAE")})
 
-    assert_equal(u("\x81"), u("a\x81").scrub {|c| break c})
+    assert_equal(u("\x81"), u("a\x81c").scrub {|c| break c})
     assert_raise(ArgumentError) {u("a\x81").scrub {|c| c}}
+    assert_raise(ArgumentError) {u("a").scrub("?") {|c| c}}
   end
 
   def test_scrub_widechar
@@ -1640,6 +1677,12 @@ class TestM17N < Test::Unit::TestCase
     assert_equal("\uFFFD".encode("UTF-32LE"),
                  "\xff".force_encoding(Encoding::UTF_32LE).
                  scrub)
+    c = nil
+    assert_equal("?\u3042".encode(Encoding::UTF_16LE),
+                 "\x00\xD8\x42\x30".force_encoding(Encoding::UTF_16LE).
+                   scrub {|e| c = e; "?".encode(Encoding::UTF_16LE)})
+    assert_equal("\x00\xD8".force_encoding(Encoding::UTF_16LE), c)
+    assert_raise(ArgumentError) {"\uFFFD\u3042".encode("UTF-16BE").scrub("") {}}
   end
 
   def test_scrub_dummy_encoding

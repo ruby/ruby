@@ -5,7 +5,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2016  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2017  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,8 +38,8 @@ extern "C" {
 #endif
 
 #define ONIGMO_VERSION_MAJOR   6
-#define ONIGMO_VERSION_MINOR   0
-#define ONIGMO_VERSION_TEENY   0
+#define ONIGMO_VERSION_MINOR   1
+#define ONIGMO_VERSION_TEENY   3
 
 #ifndef ONIG_EXTERN
 # ifdef RUBY_EXTERN
@@ -434,7 +434,7 @@ int onigenc_str_bytelen_null(OnigEncoding enc, const OnigUChar* p);
 /* PART: regular expression */
 
 /* config parameters */
-#define ONIG_NREGION                          10
+#define ONIG_NREGION                          4
 #define ONIG_MAX_CAPTURE_GROUP_NUM         32767
 #define ONIG_MAX_BACKREF_NUM                1000
 #define ONIG_MAX_REPEAT_NUM               100000
@@ -580,7 +580,8 @@ ONIG_EXTERN const OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIG_SYN_OP2_QMARK_VBAR_BRANCH_RESET    (1U<<28) /* (?|...) */         /* NOTIMPL */
 #define ONIG_SYN_OP2_QMARK_LPAREN_CONDITION     (1U<<29) /* (?(cond)yes...|no...) */
 #define ONIG_SYN_OP2_QMARK_CAPITAL_P_NAMED_GROUP (1U<<30) /* (?P<name>...), (?P=name), (?P>name) -- Python/PCRE */
-#define ONIG_SYN_OP2_OPTION_JAVA                (1U<<31) /* (?idmsux), (?-idmsux) */ /* NOTIMPL */
+#define ONIG_SYN_OP2_QMARK_TILDE_ABSENT         (1U<<31) /* (?~...) */
+/* #define ONIG_SYN_OP2_OPTION_JAVA                (1U<<xx) */ /* (?idmsux), (?-idmsux) */ /* NOTIMPL */
 
 /* syntax (behavior) */
 #define ONIG_SYN_CONTEXT_INDEP_ANCHORS           (1U<<31) /* not implemented */
@@ -700,6 +701,7 @@ ONIG_EXTERN const OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIG_IS_CAPTURE_HISTORY_GROUP(r, i) \
   ((i) <= ONIG_MAX_CAPTURE_HISTORY_GROUP && (r)->list && (r)->list[i])
 
+#ifdef USE_CAPTURE_HISTORY
 typedef struct OnigCaptureTreeNodeStruct {
   int group;   /* group number */
   OnigPosition beg;
@@ -708,6 +710,7 @@ typedef struct OnigCaptureTreeNodeStruct {
   int num_childs;
   struct OnigCaptureTreeNodeStruct** childs;
 } OnigCaptureTreeNode;
+#endif
 
 /* match result region type */
 struct re_registers {
@@ -715,8 +718,10 @@ struct re_registers {
   int  num_regs;
   OnigPosition* beg;
   OnigPosition* end;
+#ifdef USE_CAPTURE_HISTORY
   /* extended */
   OnigCaptureTreeNode* history_root;  /* capture history tree root */
+#endif
 };
 
 /* capture tree traverse */
@@ -824,7 +829,7 @@ int onig_new(OnigRegex*, const OnigUChar* pattern, const OnigUChar* pattern_end,
 ONIG_EXTERN
 int onig_reg_init(OnigRegex reg, OnigOptionType option, OnigCaseFoldType case_fold_flag, OnigEncoding enc, const OnigSyntaxType* syntax);
 ONIG_EXTERN
-int onig_new_without_alloc(OnigRegex, const OnigUChar* pattern, const OnigUChar* pattern_end, OnigOptionType option, OnigEncoding enc, OnigSyntaxType* syntax, OnigErrorInfo* einfo);
+int onig_new_without_alloc(OnigRegex, const OnigUChar* pattern, const OnigUChar* pattern_end, OnigOptionType option, OnigEncoding enc, const OnigSyntaxType* syntax, OnigErrorInfo* einfo);
 ONIG_EXTERN
 int onig_new_deluxe(OnigRegex* reg, const OnigUChar* pattern, const OnigUChar* pattern_end, OnigCompileInfo* ci, OnigErrorInfo* einfo);
 ONIG_EXTERN
@@ -865,8 +870,10 @@ ONIG_EXTERN
 int onig_number_of_captures(const OnigRegexType *reg);
 ONIG_EXTERN
 int onig_number_of_capture_histories(const OnigRegexType *reg);
+#ifdef USE_CAPTURE_HISTORY
 ONIG_EXTERN
 OnigCaptureTreeNode* onig_get_capture_tree(OnigRegion* region);
+#endif
 ONIG_EXTERN
 int onig_capture_tree_traverse(OnigRegion* region, int at, int(*callback_func)(int,OnigPosition,OnigPosition,int,int,void*), void* arg);
 ONIG_EXTERN

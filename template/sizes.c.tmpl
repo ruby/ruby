@@ -25,6 +25,7 @@ conditions = {
 #endif
 
 % end
+extern void Init_limits(void);
 void
 Init_sizeof(void)
 {
@@ -46,6 +47,8 @@ Init_sizeof(void)
     DEFINE(<%= type %>, <%= type.tr_cpp %>);
 #endif
 % end
+    OBJ_FREEZE(s);
 
 #undef DEFINE
+    Init_limits();
 }

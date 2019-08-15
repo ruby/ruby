@@ -18,7 +18,6 @@
  * Following definitions are default values.
  */
 
-#define OPT_TRACE_INSTRUCTION           1
 #define OPT_TAILCALL_OPTIMIZATION       0
 #define OPT_PEEPHOLE_OPTIMIZATION       1
 #define OPT_SPECIALISED_INSTRUCTION     1
@@ -31,15 +30,29 @@
  */
 
 /* C compiler dependent */
-#define OPT_DIRECT_THREADED_CODE     1
-#define OPT_TOKEN_THREADED_CODE      0
-#define OPT_CALL_THREADED_CODE       0
+
+/*
+ * 0: direct (using labeled goto using GCC special)
+ * 1: token (switch/case)
+ * 2: call (function call for each insn dispatch)
+ */
+#ifndef OPT_THREADED_CODE
+#define OPT_THREADED_CODE 0
+#endif
+
+#define OPT_DIRECT_THREADED_CODE (OPT_THREADED_CODE == 0)
+#define OPT_TOKEN_THREADED_CODE  (OPT_THREADED_CODE == 1)
+#define OPT_CALL_THREADED_CODE   (OPT_THREADED_CODE == 2)
 
 /* VM running option */
 #define OPT_CHECKED_RUN              1
 #define OPT_INLINE_METHOD_CACHE      1
 #define OPT_GLOBAL_METHOD_CACHE      1
 #define OPT_BLOCKINLINING            0
+
+#ifndef OPT_IC_FOR_IVAR
+#define OPT_IC_FOR_IVAR 1
+#endif
 
 /* architecture independent, affects generated code */
 #define OPT_OPERANDS_UNIFICATION     1

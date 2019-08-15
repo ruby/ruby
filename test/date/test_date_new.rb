@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'date'
 
@@ -203,50 +203,48 @@ class TestDateNew < Test::Unit::TestCase
   end
 
   def test_weeknum
-    skip unless Date.respond_to?(:weeknum, true)
-    d = Date.__send__(:weeknum)
-    dt = DateTime.__send__(:weeknum)
+    d = Date.weeknum
+    dt = DateTime.weeknum
     assert_equal([-4712, 1, 1], [d.year, d.mon, d.mday])
     assert_equal([-4712, 1, 1], [dt.year, dt.mon, dt.mday])
     assert_equal([0, 0, 0], [dt.hour, dt.min, dt.sec])
 
-    d = Date.__send__(:weeknum, 2002,11,4, 0)
+    d = Date.weeknum(2002,11,4, 0)
     assert_equal(2452355, d.jd)
 
-    d = DateTime.__send__(:weeknum, 2002,11,4, 0, 11,22,33)
+    d = DateTime.weeknum(2002,11,4, 0, 11,22,33)
     assert_equal(2452355, d.jd)
     assert_equal([11,22,33], [d.hour, d.min, d.sec])
 
     assert_raise(ArgumentError) do
-      Date.__send__(:weeknum, 1999,53,0, 0)
+      Date.weeknum(1999,53,0, 0)
     end
     assert_raise(ArgumentError) do
-      Date.__send__(:weeknum, 1999,-53,-1, 0)
+      Date.weeknum(1999,-53,-1, 0)
     end
-  end
+  end if Date.respond_to?(:weeknum, true)
 
   def test_nth_kday
-    skip unless Date.respond_to?(:nth_kday, true)
-    d = Date.__send__(:nth_kday)
-    dt = DateTime.__send__(:nth_kday)
+    d = Date.nth_kday
+    dt = DateTime.nth_kday
     assert_equal([-4712, 1, 1], [d.year, d.mon, d.mday])
     assert_equal([-4712, 1, 1], [dt.year, dt.mon, dt.mday])
     assert_equal([0, 0, 0], [dt.hour, dt.min, dt.sec])
 
-    d = Date.__send__(:nth_kday, 1992,2, 5,6)
+    d = Date.nth_kday(1992,2, 5,6)
     assert_equal(2448682, d.jd)
 
-    d = DateTime.__send__(:nth_kday, 1992,2, 5,6, 11,22,33)
+    d = DateTime.nth_kday(1992,2, 5,6, 11,22,33)
     assert_equal(2448682, d.jd)
     assert_equal([11,22,33], [d.hour, d.min, d.sec])
 
     assert_raise(ArgumentError) do
-      Date.__send__(:nth_kday, 2006,5, 5,0)
+      Date.nth_kday(2006,5, 5,0)
     end
     assert_raise(ArgumentError) do
-      Date.__send__(:nth_kday, 2006,5, -5,0)
+      Date.nth_kday(2006,5, -5,0)
     end
-  end
+  end if Date.respond_to?(:nth_kday, true)
 
   def test_today
     z = Time.now
@@ -269,4 +267,12 @@ class TestDateNew < Test::Unit::TestCase
     assert_in_delta(t, t2, t - z + 2)
   end
 
+  def test_memsize
+    require 'objspace'
+    t = DateTime.now
+    size = ObjectSpace.memsize_of(t)
+    t.__send__(:initialize_copy, Date.today)
+    assert_instance_of(DateTime, t)
+    assert_equal(size, ObjectSpace.memsize_of(t), "not reallocated but memsize changed")
+  end
 end

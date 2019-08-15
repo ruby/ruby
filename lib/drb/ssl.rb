@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require 'socket'
 require 'openssl'
-require 'drb/drb'
+require_relative 'drb'
 require 'singleton'
 
 module DRb
@@ -162,7 +162,7 @@ module DRb
           return
         end
 
-        rsa = OpenSSL::PKey::RSA.new(1024){|p, n|
+        rsa = OpenSSL::PKey::RSA.new(2048){|p, n|
           next unless self[:verbose]
           case p
           when 0; $stderr.putc "."  # BN_generate_prime
@@ -196,7 +196,7 @@ module DRb
         if comment = self[:SSLCertComment]
           cert.add_extension(ef.create_extension("nsComment", comment))
         end
-        cert.sign(rsa, OpenSSL::Digest::SHA1.new)
+        cert.sign(rsa, OpenSSL::Digest::SHA256.new)
 
         @cert = cert
         @pkey = rsa
@@ -226,13 +226,13 @@ module DRb
     #
     # Raises DRbBadScheme or DRbBadURI if +uri+ is not matching or malformed
     def self.parse_uri(uri) # :nodoc:
-      if uri =~ /^drbssl:\/\/(.*?):(\d+)(\?(.*))?$/
+      if /\Adrbssl:\/\/(.*?):(\d+)(\?(.*))?\z/ =~ uri
         host = $1
         port = $2.to_i
         option = $4
         [host, port, option]
       else
-        raise(DRbBadScheme, uri) unless uri =~ /^drbssl:/
+        raise(DRbBadScheme, uri) unless uri.start_with?('drbssl:')
         raise(DRbBadURI, 'can\'t parse uri:' + uri)
       end
     end
@@ -336,7 +336,7 @@ module DRb
       end
       self.class.new(uri, ssl, @config, true)
       rescue OpenSSL::SSL::SSLError
-        warn("#{__FILE__}:#{__LINE__}: warning: #{$!.message} (#{$!.class})") if @config[:verbose]
+        warn("#{$!.message} (#{$!.class})", uplevel: 0) if @config[:verbose]
         retry
       end
     end

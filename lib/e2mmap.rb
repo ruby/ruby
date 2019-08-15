@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #--
 #   e2mmap.rb - for Ruby 1.1

@@ -95,6 +95,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define ENCLOSE_OPTION           (1<<1)
 #define ENCLOSE_STOP_BACKTRACK   (1<<2)
 #define ENCLOSE_CONDITION        (1<<3)
+#define ENCLOSE_ABSENT           (1<<4)
 
 #define NODE_STR_MARGIN         16
 #define NODE_STR_BUF_SIZE       24  /* sizeof(CClassNode) - sizeof(int)*4 */
@@ -185,7 +186,7 @@ typedef struct {
   int target_empty_info;
   struct _Node* head_exact;
   struct _Node* next_head_exact;
-  int is_refered;     /* include called node. don't eliminate even if {0} */
+  int is_referred;     /* include called node. don't eliminate even if {0} */
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
   int comb_exp_check_num;  /* 1,2,3...: check,  0: no check  */
 #endif

@@ -2,7 +2,7 @@
 require 'test/unit'
 require "-test-/bignum"
 
-class TestBignum < Test::Unit::TestCase
+class Test_Bignum < Test::Unit::TestCase
   class TestDiv < Test::Unit::TestCase
 
     SIZEOF_BDIGIT = Integer::SIZEOF_BDIGIT

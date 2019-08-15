@@ -1,5 +1,5 @@
-# frozen_string_literal: false
-require 'cgi/util'
+# frozen_string_literal: true
+require_relative 'util'
 class CGI
   # Class representing an HTTP cookie.
   #
@@ -57,7 +57,7 @@ class CGI
     #
     #   name:: the name of the cookie.  Required.
     #   value:: the cookie's value or list of values.
-    #   path:: the path for which this cookie applies.  Defaults to the
+    #   path:: the path for which this cookie applies.  Defaults to
     #          the value of the +SCRIPT_NAME+ environment variable.
     #   domain:: the domain for which this cookie applies.
     #   expires:: the time at which this cookie expires, as a +Time+ object.
@@ -143,10 +143,10 @@ class CGI
     # Convert the Cookie to its string representation.
     def to_s
       val = collect{|v| CGI.escape(v) }.join("&")
-      buf = "#{@name}=#{val}"
+      buf = "#{@name}=#{val}".dup
       buf << "; domain=#{@domain}" if @domain
       buf << "; path=#{@path}"     if @path
-      buf << "; expires=#{CGI::rfc1123_date(@expires)}" if @expires
+      buf << "; expires=#{CGI.rfc1123_date(@expires)}" if @expires
       buf << "; secure"            if @secure
       buf << "; HttpOnly"          if @httponly
       buf

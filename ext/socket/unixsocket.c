@@ -25,6 +25,28 @@ unixsock_connect_internal(VALUE a)
 			        arg->sockaddrlen, 0);
 }
 
+static VALUE
+unixsock_path_value(VALUE path)
+{
+#ifdef __linux__
+#define TO_STR_FOR_LINUX_ABSTRACT_NAMESPACE 0
+
+    VALUE name = path;
+#if TO_STR_FOR_LINUX_ABSTRACT_NAMESPACE
+    const int isstr = !NIL_P(name = rb_check_string_type(name));
+#else
+    const int isstr = RB_TYPE_P(name, T_STRING);
+#endif
+    if (isstr) {
+        if (RSTRING_LEN(name) == 0 || RSTRING_PTR(name)[0] == '\0') {
+            rb_check_safe_obj(name);
+            return name;             /* ignore encoding */
+        }
+    }
+#endif
+    return rb_get_path(path);
+}
+
 VALUE
 rsock_init_unixsock(VALUE sock, VALUE path, int server)
 {
@@ -33,7 +55,7 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
     int fd, status;
     rb_io_t *fptr;
 
-    SafeStringValue(path);
+    path = unixsock_path_value(path);
 
     INIT_SOCKADDR_UN(&sockaddr, sizeof(struct sockaddr_un));
     if (sizeof(sockaddr.sun_path) < (size_t)RSTRING_LEN(path)) {
@@ -317,6 +339,12 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
     struct iomsg_arg arg;
     struct iovec vec[2];
     char buf[1];
+    unsigned int gc_reason = 0;
+    enum {
+        GC_REASON_EMSGSIZE = 0x1,
+        GC_REASON_TRUNCATE = 0x2,
+        GC_REASON_ENOMEM = 0x4
+    };
 
     int fd;
 #if FD_PASSING_BY_MSG_CONTROL
@@ -332,6 +360,7 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
     if (argc <= 1)
 	mode = Qnil;
 
+retry:
     GetOpenFile(sock, fptr);
 
     arg.msg.msg_name = NULL;
@@ -359,12 +388,31 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 
     arg.fd = fptr->fd;
     while ((int)BLOCKING_REGION_FD(recvmsg_blocking, &arg) == -1) {
+        int e = errno;
+        if (e == EMSGSIZE && !(gc_reason & GC_REASON_EMSGSIZE)) {
+            /* FreeBSD gets here when we're out of FDs */
+            gc_reason |= GC_REASON_EMSGSIZE;
+            rb_gc_for_fd(EMFILE);
+            goto retry;
+        }
+        else if (e == ENOMEM && !(gc_reason & GC_REASON_ENOMEM)) {
+            /* ENOMEM is documented in recvmsg manpages */
+            gc_reason |= GC_REASON_ENOMEM;
+            rb_gc_for_fd(e);
+            goto retry;
+        }
 	if (!rb_io_wait_readable(arg.fd))
-	    rsock_sys_fail_path("recvmsg(2)", fptr->pathv);
+	    rsock_syserr_fail_path(e, "recvmsg(2)", fptr->pathv);
     }
 
 #if FD_PASSING_BY_MSG_CONTROL
     if (arg.msg.msg_controllen < (socklen_t)sizeof(struct cmsghdr)) {
+        /* FreeBSD and Linux both get here when we're out of FDs */
+        if (!(gc_reason & GC_REASON_TRUNCATE)) {
+            gc_reason |= GC_REASON_TRUNCATE;
+            rb_gc_for_fd(EMFILE);
+            goto retry;
+        }
 	rb_raise(rb_eSocket,
 		 "file descriptor was not passed (msg_controllen=%d smaller than sizeof(struct cmsghdr)=%d)",
 		 (int)arg.msg.msg_controllen, (int)sizeof(struct cmsghdr));
