@@ -304,7 +304,7 @@ module Bundler
       exe_file = File.expand_path("../../../exe/bundle", __FILE__)
 
       # for Ruby core repository testing
-      exe_file = File.expand_path("../../../bin/bundle", __FILE__) unless File.exist?(exe_file)
+      exe_file = File.expand_path("../../../libexec/bundle", __FILE__) unless File.exist?(exe_file)
 
       # bundler is a default gem, exe path is separate
       exe_file = Bundler.rubygems.bin_path("bundler", "bundle", VERSION) unless File.exist?(exe_file)
