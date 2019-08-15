@@ -60,7 +60,7 @@ RSpec.describe "compact index api" do
     # can't use `include_gems` here since the `require` will conflict on a
     # case-insensitive FS
     run! "Bundler.require; puts Gem.loaded_specs.values_at('rack', 'Rack').map(&:full_name)"
-    expect(last_command.stdout).to eq("rack-1.0\nRack-0.1")
+    expect(out).to eq("rack-1.0\nRack-0.1")
   end
 
   it "should handle multiple gem dependencies on the same gem" do
@@ -93,7 +93,7 @@ RSpec.describe "compact index api" do
 
     gemfile <<-G
       source "#{source_uri}"
-      git "file:///#{lib_path("foo-1.0")}" do
+      git "#{file_uri_for(lib_path("foo-1.0"))}" do
         gem 'foo'
       end
     G
@@ -111,7 +111,7 @@ RSpec.describe "compact index api" do
 
     gemfile <<-G
       source "#{source_uri}"
-      gem 'foo', :git => "file:///#{lib_path("foo-1.0")}"
+      gem 'foo', :git => "#{file_uri_for(lib_path("foo-1.0"))}"
     G
 
     bundle! :install, :artifice => "compact_index"
@@ -125,7 +125,7 @@ RSpec.describe "compact index api" do
     build_git "foo"
     gemfile <<-G
       source "#{source_uri}"
-      gem 'foo', :git => "file:///#{lib_path("foo-1.0")}"
+      gem 'foo', :git => "#{file_uri_for(lib_path("foo-1.0"))}"
     G
 
     bundle "install", :artifice => "compact_index"
@@ -623,7 +623,7 @@ The checksum of /versions does not match the checksum provided by the server! So
     it "strips http basic auth creds when warning about ambiguous sources", :bundler => "< 3" do
       gemfile <<-G
         source "#{basic_auth_source_uri}"
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 

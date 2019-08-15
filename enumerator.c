@@ -110,7 +110,7 @@ VALUE rb_cEnumerator;
 static VALUE rb_cLazy;
 static ID id_rewind, id_new, id_to_enum;
 static ID id_next, id_result, id_receiver, id_arguments, id_memo, id_method, id_force;
-static ID id_begin, id_end, id_step, id_exclude_end, id_to_proc;
+static ID id_begin, id_end, id_step, id_exclude_end;
 static VALUE sym_each, sym_cycle, sym_yield;
 
 #define id_call idCall
@@ -178,15 +178,30 @@ static void
 enumerator_mark(void *p)
 {
     struct enumerator *ptr = p;
-    rb_gc_mark(ptr->obj);
-    rb_gc_mark(ptr->args);
-    rb_gc_mark(ptr->fib);
-    rb_gc_mark(ptr->dst);
-    rb_gc_mark(ptr->lookahead);
-    rb_gc_mark(ptr->feedvalue);
-    rb_gc_mark(ptr->stop_exc);
-    rb_gc_mark(ptr->size);
-    rb_gc_mark(ptr->procs);
+    rb_gc_mark_movable(ptr->obj);
+    rb_gc_mark_movable(ptr->args);
+    rb_gc_mark_movable(ptr->fib);
+    rb_gc_mark_movable(ptr->dst);
+    rb_gc_mark_movable(ptr->lookahead);
+    rb_gc_mark_movable(ptr->feedvalue);
+    rb_gc_mark_movable(ptr->stop_exc);
+    rb_gc_mark_movable(ptr->size);
+    rb_gc_mark_movable(ptr->procs);
+}
+
+static void
+enumerator_compact(void *p)
+{
+    struct enumerator *ptr = p;
+    ptr->obj = rb_gc_location(ptr->obj);
+    ptr->args = rb_gc_location(ptr->args);
+    ptr->fib = rb_gc_location(ptr->fib);
+    ptr->dst = rb_gc_location(ptr->dst);
+    ptr->lookahead = rb_gc_location(ptr->lookahead);
+    ptr->feedvalue = rb_gc_location(ptr->feedvalue);
+    ptr->stop_exc = rb_gc_location(ptr->stop_exc);
+    ptr->size = rb_gc_location(ptr->size);
+    ptr->procs = rb_gc_location(ptr->procs);
 }
 
 #define enumerator_free RUBY_TYPED_DEFAULT_FREE
@@ -203,6 +218,7 @@ static const rb_data_type_t enumerator_data_type = {
 	enumerator_mark,
 	enumerator_free,
 	enumerator_memsize,
+        enumerator_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -223,8 +239,16 @@ static void
 proc_entry_mark(void *p)
 {
     struct proc_entry *ptr = p;
-    rb_gc_mark(ptr->proc);
-    rb_gc_mark(ptr->memo);
+    rb_gc_mark_movable(ptr->proc);
+    rb_gc_mark_movable(ptr->memo);
+}
+
+static void
+proc_entry_compact(void *p)
+{
+    struct proc_entry *ptr = p;
+    ptr->proc = rb_gc_location(ptr->proc);
+    ptr->memo = rb_gc_location(ptr->memo);
 }
 
 #define proc_entry_free RUBY_TYPED_DEFAULT_FREE
@@ -241,6 +265,7 @@ static const rb_data_type_t proc_entry_data_type = {
 	proc_entry_mark,
 	proc_entry_free,
 	proc_entry_memsize,
+        proc_entry_compact,
     },
 };
 
@@ -1197,7 +1222,14 @@ static void
 yielder_mark(void *p)
 {
     struct yielder *ptr = p;
-    rb_gc_mark(ptr->proc);
+    rb_gc_mark_movable(ptr->proc);
+}
+
+static void
+yielder_compact(void *p)
+{
+    struct yielder *ptr = p;
+    ptr->proc = rb_gc_location(ptr->proc);
 }
 
 #define yielder_free RUBY_TYPED_DEFAULT_FREE
@@ -1214,6 +1246,7 @@ static const rb_data_type_t yielder_data_type = {
 	yielder_mark,
 	yielder_free,
 	yielder_memsize,
+        yielder_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -1305,7 +1338,7 @@ yielder_to_proc(VALUE obj)
 {
     VALUE method = rb_obj_method(obj, sym_yield);
 
-    return rb_funcall(method, id_to_proc, 0);
+    return rb_funcall(method, idTo_proc, 0);
 }
 
 static VALUE
@@ -1327,8 +1360,16 @@ static void
 generator_mark(void *p)
 {
     struct generator *ptr = p;
-    rb_gc_mark(ptr->proc);
-    rb_gc_mark(ptr->obj);
+    rb_gc_mark_movable(ptr->proc);
+    rb_gc_mark_movable(ptr->obj);
+}
+
+static void
+generator_compact(void *p)
+{
+    struct generator *ptr = p;
+    ptr->proc = rb_gc_location(ptr->proc);
+    ptr->obj = rb_gc_location(ptr->obj);
 }
 
 #define generator_free RUBY_TYPED_DEFAULT_FREE
@@ -1345,6 +1386,7 @@ static const rb_data_type_t generator_data_type = {
 	generator_mark,
 	generator_free,
 	generator_memsize,
+        generator_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -2027,6 +2069,39 @@ lazy_select(VALUE obj)
 }
 
 static struct MEMO *
+lazy_filter_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+{
+    VALUE value = lazyenum_yield_values(proc_entry, result);
+    if (!RTEST(value)) return 0;
+    LAZY_MEMO_SET_VALUE(result, value);
+    LAZY_MEMO_RESET_PACKED(result);
+    return result;
+}
+
+static const lazyenum_funcs lazy_filter_map_funcs = {
+    lazy_filter_map_proc, 0,
+};
+
+/*
+ *  call-seq:
+ *     lazy.filter_map { |obj| block } -> lazy_enumerator
+ *
+ *  Like Enumerable#filter_map, but chains operation to be lazy-evaluated.
+ *
+ *     (1..).lazy.filter_map { |i| i * 2 if i.even? }.first(5) #=> [4, 8, 12, 16, 20]
+ */
+
+static VALUE
+lazy_filter_map(VALUE obj)
+{
+    if (!rb_block_given_p()) {
+        rb_raise(rb_eArgError, "tried to call lazy filter_map without a block");
+    }
+
+    return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_filter_map_funcs);
+}
+
+static struct MEMO *
 lazy_reject_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
     VALUE chain = lazyenum_yield(proc_entry, result);
@@ -2640,7 +2715,14 @@ static void
 enum_chain_mark(void *p)
 {
     struct enum_chain *ptr = p;
-    rb_gc_mark(ptr->enums);
+    rb_gc_mark_movable(ptr->enums);
+}
+
+static void
+enum_chain_compact(void *p)
+{
+    struct enum_chain *ptr = p;
+    ptr->enums = rb_gc_location(ptr->enums);
 }
 
 #define enum_chain_free RUBY_TYPED_DEFAULT_FREE
@@ -2657,6 +2739,7 @@ static const rb_data_type_t enum_chain_data_type = {
         enum_chain_mark,
         enum_chain_free,
         enum_chain_memsize,
+        enum_chain_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -3555,6 +3638,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "select", lazy_select, 0);
     rb_define_method(rb_cLazy, "find_all", lazy_select, 0);
     rb_define_method(rb_cLazy, "filter", lazy_select, 0);
+    rb_define_method(rb_cLazy, "filter_map", lazy_filter_map, 0);
     rb_define_method(rb_cLazy, "reject", lazy_reject, 0);
     rb_define_method(rb_cLazy, "grep", lazy_grep, 1);
     rb_define_method(rb_cLazy, "grep_v", lazy_grep_v, 1);
@@ -3649,7 +3733,6 @@ Init_Enumerator(void)
     id_end = rb_intern("end");
     id_step = rb_intern("step");
     id_exclude_end = rb_intern("exclude_end");
-    id_to_proc = rb_intern("to_proc");
     sym_each = ID2SYM(id_each);
     sym_cycle = ID2SYM(rb_intern("cycle"));
     sym_yield = ID2SYM(rb_intern("yield"));

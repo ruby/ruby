@@ -1,6 +1,4 @@
-lib = File.expand_path("lib", __dir__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require "<%= config[:namespaced_path] %>/version"
+require_relative 'lib/<%=config[:namespaced_path]%>/version'
 
 Gem::Specification.new do |spec|
   spec.name          = <%= config[:name].inspect %>
@@ -14,6 +12,7 @@ Gem::Specification.new do |spec|
 <%- if config[:mit] -%>
   spec.license       = "MIT"
 <%- end -%>
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
 
   spec.metadata["allowed_push_host"] = "TODO: Set to 'http://mygemserver.com'"
 
@@ -31,14 +30,5 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 <%- if config[:ext] -%>
   spec.extensions    = ["ext/<%= config[:underscored_name] %>/extconf.rb"]
-<%- end -%>
-
-  spec.add_development_dependency "bundler", "~> <%= config[:bundler_version] %>"
-  spec.add_development_dependency "rake", "~> 12.0"
-<%- if config[:ext] -%>
-  spec.add_development_dependency "rake-compiler"
-<%- end -%>
-<%- if config[:test] -%>
-  spec.add_development_dependency "<%= config[:test] %>", "~> <%= config[:test_framework_version] %>"
 <%- end -%>
 end

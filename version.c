@@ -70,7 +70,7 @@ Init_version(void)
      */
     rb_define_global_const("RUBY_PATCHLEVEL", MKINT(patchlevel));
     /*
-     * The SVN revision for this ruby.
+     * The GIT commit hash for this ruby.
      */
     rb_define_global_const("RUBY_REVISION", MKSTR(revision));
     /*

@@ -1,0 +1,8 @@
+benchmark:
+  vm_thread_alive_check: |
+    t = Thread.new{}
+    while t.alive?
+      Thread.pass
+    end
+loop_count: 50_000
+

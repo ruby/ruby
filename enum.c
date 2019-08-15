@@ -14,15 +14,14 @@
 #include "ruby/util.h"
 #include "id.h"
 #include "symbol.h"
-#include "transient_heap.h"
 
 #include <assert.h>
 
 VALUE rb_mEnumerable;
 
 static ID id_next;
-static ID id_div;
 
+#define id_div idDiv
 #define id_each idEach
 #define id_eqq  idEqq
 #define id_cmp  idCmp
@@ -436,7 +435,7 @@ enum_size_over_p(VALUE obj, long n)
  *
  *     [:foo, :bar].filter { |x| x == :foo }   #=> [:foo]
  *
- *  See also Enumerable#reject.
+ *  See also Enumerable#reject, Enumerable#grep.
  */
 
 static VALUE
@@ -1009,8 +1008,7 @@ tally_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *  elements and the values are numbers of elements in the collection
  *  that correspond to the key.
  *
- *     (1..6).tally   #=> {1=>1, 2=>1, 3=>1, 4=>1, 5=>1, 6=>1}
- *
+ *     ["a", "b", "c", "b"].tally #=> {"a"=>1, "b"=>2, "c"=>1}
  */
 
 static VALUE
@@ -1221,6 +1219,10 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  *
  *     sorted = Dir["*"].sort_by { |f| test(?M, f) }
  *     sorted   #=> ["mon", "tues", "wed", "thurs"]
+ *
+ *  To produce the reverse of a specific order, the following can be used:
+ *
+ *    ary.sort_by { ... }.reverse!
  */
 
 static VALUE
@@ -2528,10 +2530,15 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
 {
     VALUE n, size;
     long slice_size = NUM2LONG(RARRAY_AREF(args, 0));
+    ID infinite_p;
+    CONST_ID(infinite_p, "infinite?");
     if (slice_size <= 0) rb_raise(rb_eArgError, "invalid slice size");
 
     size = enum_size(obj, 0, 0);
     if (size == Qnil) return Qnil;
+    if (RB_FLOAT_TYPE_P(size) && RTEST(rb_funcall(size, infinite_p, 0))) {
+        return size;
+    }
 
     n = add_int(size, slice_size-1);
     return div_int(n, slice_size);
@@ -4193,5 +4200,4 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "uniq", enum_uniq, 0);
 
     id_next = rb_intern("next");
-    id_div = rb_intern("div");
 }

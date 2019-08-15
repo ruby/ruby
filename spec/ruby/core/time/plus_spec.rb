@@ -17,9 +17,9 @@ describe "Time#+" do
   end
 
   it "raises a TypeError if given argument is a coercible String" do
-    lambda { Time.now + "1" }.should raise_error(TypeError)
-    lambda { Time.now + "0.1" }.should raise_error(TypeError)
-    lambda { Time.now + "1/3" }.should raise_error(TypeError)
+    -> { Time.now + "1" }.should raise_error(TypeError)
+    -> { Time.now + "0.1" }.should raise_error(TypeError)
+    -> { Time.now + "1/3" }.should raise_error(TypeError)
   end
 
   it "increments the time by the specified amount as rational numbers" do
@@ -32,8 +32,8 @@ describe "Time#+" do
   end
 
   it "raises TypeError on argument that can't be coerced into Rational" do
-    lambda { Time.now + Object.new }.should raise_error(TypeError)
-    lambda { Time.now + "stuff" }.should raise_error(TypeError)
+    -> { Time.now + Object.new }.should raise_error(TypeError)
+    -> { Time.now + "stuff" }.should raise_error(TypeError)
   end
 
   it "returns a UTC time if self is UTC" do
@@ -74,11 +74,11 @@ describe "Time#+" do
   end
 
   it "raises TypeError on Time argument" do
-    lambda { Time.now + Time.now }.should raise_error(TypeError)
+    -> { Time.now + Time.now }.should raise_error(TypeError)
   end
 
   it "raises TypeError on nil argument" do
-    lambda { Time.now + nil }.should raise_error(TypeError)
+    -> { Time.now + nil }.should raise_error(TypeError)
   end
 
   #see [ruby-dev:38446]

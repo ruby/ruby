@@ -2,9 +2,9 @@
 require_relative '../../spec_helper'
 
 describe "String#b" do
-  it "returns an ASCII-8BIT encoded string" do
-    "Hello".b.should == "Hello".force_encoding(Encoding::ASCII_8BIT)
-    "こんちには".b.should == "こんちには".force_encoding(Encoding::ASCII_8BIT)
+  it "returns a binary encoded string" do
+    "Hello".b.should == "Hello".force_encoding(Encoding::BINARY)
+    "こんちには".b.should == "こんちには".force_encoding(Encoding::BINARY)
   end
 
   it "returns new string without modifying self" do

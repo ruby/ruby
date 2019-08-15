@@ -10,7 +10,6 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     LINES
     @line_editor = Reline::LineEditor.new(@config)
     @line_editor.reset(@prompt, (RELINE_TEST_ENCODING rescue Encoding.default_external))
-    @line_editor.retrieve_completion_block = Reline.method(:retrieve_completion_block)
   end
 
   def test_vi_command_mode
@@ -989,7 +988,7 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_line('abcde foo_bar_baz ABCDE')
   end
 
-  def test_ed_move_to_beg
+  def test_vi_first_print
     input_keys("abcde\C-[^")
     assert_byte_pointer_size('')
     assert_cursor(0)
@@ -1003,6 +1002,23 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     input_keys("   abcde  ABCDE  \C-[^")
     assert_byte_pointer_size('   ')
     assert_cursor(3)
+    assert_cursor_max(17)
+  end
+
+  def test_ed_move_to_beg
+    input_keys("abcde\C-[0")
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(5)
+    input_keys("0\C-ki")
+    input_keys(" abcde\C-[0")
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(6)
+    input_keys("0\C-ki")
+    input_keys("   abcde  ABCDE  \C-[0")
+    assert_byte_pointer_size('')
+    assert_cursor(0)
     assert_cursor_max(17)
   end
 

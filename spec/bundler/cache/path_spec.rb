@@ -9,7 +9,8 @@
         gem "foo", :path => '#{bundled_app("lib/foo")}'
       G
 
-      bundle cmd, forgotten_command_line_options([:all, :cache_all] => true)
+      bundle "config set cache_all true"
+      bundle cmd
       expect(bundled_app("vendor/cache/foo-1.0")).not_to exist
       expect(the_bundle).to include_gems "foo 1.0"
     end
@@ -21,7 +22,8 @@
         gem "foo", :path => '#{lib_path("foo-1.0")}'
       G
 
-      bundle cmd, forgotten_command_line_options([:all, :cache_all] => true)
+      bundle "config set cache_all true"
+      bundle cmd
       expect(bundled_app("vendor/cache/foo-1.0")).to exist
       expect(bundled_app("vendor/cache/foo-1.0/.bundlecache")).to be_file
 
@@ -39,7 +41,8 @@
         gem "#{libname}", :path => '#{libpath}'
       G
 
-      bundle cmd, forgotten_command_line_options([:all, :cache_all] => true)
+      bundle "config set cache_all true"
+      bundle cmd
       expect(bundled_app("vendor/cache/#{libname}")).to exist
       expect(bundled_app("vendor/cache/#{libname}/.bundlecache")).to be_file
 
@@ -54,13 +57,14 @@
         gem "foo", :path => '#{lib_path("foo-1.0")}'
       G
 
-      bundle cmd, forgotten_command_line_options([:all, :cache_all] => true)
+      bundle "config set cache_all true"
+      bundle cmd
 
       build_lib "foo" do |s|
         s.write "lib/foo.rb", "puts :CACHE"
       end
 
-      bundle cmd, forgotten_command_line_options([:all, :cache_all] => true)
+      bundle cmd
 
       expect(bundled_app("vendor/cache/foo-1.0")).to exist
       FileUtils.rm_rf lib_path("foo-1.0")
@@ -76,13 +80,14 @@
         gem "foo", :path => '#{lib_path("foo-1.0")}'
       G
 
-      bundle cmd, forgotten_command_line_options([:all, :cache_all] => true)
+      bundle "config set cache_all true"
+      bundle cmd
 
       install_gemfile <<-G
         gem "bar", :path => '#{lib_path("bar-1.0")}'
       G
 
-      bundle cmd, forgotten_command_line_options([:all, :cache_all] => true)
+      bundle cmd
       expect(bundled_app("vendor/cache/bar-1.0")).not_to exist
     end
 
@@ -105,7 +110,8 @@
         gem "foo", :path => '#{lib_path("foo-1.0")}'
       G
 
-      bundle cmd, forgotten_command_line_options([:all, :cache_all] => true)
+      bundle "config set cache_all true"
+      bundle cmd
       build_lib "bar"
 
       install_gemfile <<-G
@@ -124,7 +130,8 @@
         gem "foo", :path => '#{lib_path("foo-1.0")}'
       G
 
-      bundle cmd, forgotten_command_line_options([:all, :cache_all] => true)
+      bundle "config set cache_all true"
+      bundle cmd
       build_lib "baz"
 
       gemfile <<-G

@@ -782,7 +782,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
   # You may also provide +engine:+ and +engine_version:+ options to restrict
   # this gem dependencies file to a particular ruby engine and its engine
   # version.  This matching is performed by using the RUBY_ENGINE and
-  # engine_specific VERSION constants.  (For JRuby, JRUBY_VERSION).
+  # RUBY_ENGINE_VERSION constants.
 
   def ruby(version, options = {})
     engine         = options[:engine]
@@ -809,11 +809,9 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     end
 
     if engine_version
-      my_engine_version = Object.const_get "#{Gem.ruby_engine.upcase}_VERSION"
-
-      if engine_version != my_engine_version
+      if engine_version != RUBY_ENGINE_VERSION
         message =
-          "Your Ruby engine version is #{Gem.ruby_engine} #{my_engine_version}, " +
+          "Your Ruby engine version is #{Gem.ruby_engine} #{RUBY_ENGINE_VERSION}, " +
           "but your #{gem_deps_file} requires #{engine} #{engine_version}"
 
         raise Gem::RubyVersionMismatch, message

@@ -3,7 +3,7 @@ require "test/unit"
 
 require "csv"
 
-require_relative "../lib/with_different_ofs.rb"
+require_relative "../lib/with_different_ofs"
 
 module Helper
   def with_chunk_size(chunk_size)

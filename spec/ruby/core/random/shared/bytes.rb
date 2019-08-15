@@ -7,8 +7,8 @@ describe :random_bytes, shared: true do
     @object.bytes(15).length.should == 15
   end
 
-  it "returns an ASCII-8BIT String" do
-    @object.bytes(15).encoding.should == Encoding::ASCII_8BIT
+  it "returns a binary String" do
+    @object.bytes(15).encoding.should == Encoding::BINARY
   end
 
   it "returns a random binary String" do

@@ -14,6 +14,8 @@
 
 require "e2mmap"
 
+require_relative "matrix/version"
+
 module ExceptionForMatrix # :nodoc:
   extend Exception2MessageMapper
   def_e2message(TypeError, "wrong argument type %s (expected %s)")

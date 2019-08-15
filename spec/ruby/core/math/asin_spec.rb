@@ -17,15 +17,15 @@ describe "Math.asin" do
   end
 
   it "raises an Math::DomainError if the argument is greater than 1.0" do
-    lambda { Math.asin(1.0001) }.should raise_error( Math::DomainError)
+    -> { Math.asin(1.0001) }.should raise_error( Math::DomainError)
   end
 
   it "raises an Math::DomainError if the argument is less than -1.0" do
-    lambda { Math.asin(-1.0001) }.should raise_error( Math::DomainError)
+    -> { Math.asin(-1.0001) }.should raise_error( Math::DomainError)
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    lambda { Math.asin("test") }.should raise_error(TypeError)
+    -> { Math.asin("test") }.should raise_error(TypeError)
   end
 
   it "returns NaN given NaN" do
@@ -33,7 +33,7 @@ describe "Math.asin" do
   end
 
   it "raises a TypeError if the argument is nil" do
-    lambda { Math.asin(nil) }.should raise_error(TypeError)
+    -> { Math.asin(nil) }.should raise_error(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

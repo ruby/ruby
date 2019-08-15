@@ -42,11 +42,11 @@ describe :socket_socketpair, shared: true do
       end
 
       it 'raises SocketError for an unknown address family' do
-        lambda { Socket.public_send(@method, :CATS, :STREAM) }.should raise_error(SocketError)
+        -> { Socket.public_send(@method, :CATS, :STREAM) }.should raise_error(SocketError)
       end
 
       it 'raises SocketError for an unknown socket type' do
-        lambda { Socket.public_send(@method, :UNIX, :CATS) }.should raise_error(SocketError)
+        -> { Socket.public_send(@method, :UNIX, :CATS) }.should raise_error(SocketError)
       end
     end
 
@@ -61,11 +61,11 @@ describe :socket_socketpair, shared: true do
       end
 
       it 'raises SocketError for an unknown address family' do
-        lambda { Socket.public_send(@method, 'CATS', 'STREAM') }.should raise_error(SocketError)
+        -> { Socket.public_send(@method, 'CATS', 'STREAM') }.should raise_error(SocketError)
       end
 
       it 'raises SocketError for an unknown socket type' do
-        lambda { Socket.public_send(@method, 'UNIX', 'CATS') }.should raise_error(SocketError)
+        -> { Socket.public_send(@method, 'UNIX', 'CATS') }.should raise_error(SocketError)
       end
     end
 
@@ -92,7 +92,7 @@ describe :socket_socketpair, shared: true do
         family.stub!(:to_str).and_return(Socket::AF_UNIX)
         type.stub!(:to_str).and_return(Socket::SOCK_STREAM)
 
-        lambda { Socket.public_send(@method, family, type) }.should raise_error(TypeError)
+        -> { Socket.public_send(@method, family, type) }.should raise_error(TypeError)
       end
 
       it 'raises SocketError for an unknown address family' do
@@ -102,7 +102,7 @@ describe :socket_socketpair, shared: true do
         family.stub!(:to_str).and_return('CATS')
         type.stub!(:to_str).and_return('STREAM')
 
-        lambda { Socket.public_send(@method, family, type) }.should raise_error(SocketError)
+        -> { Socket.public_send(@method, family, type) }.should raise_error(SocketError)
       end
 
       it 'raises SocketError for an unknown socket type' do
@@ -112,7 +112,7 @@ describe :socket_socketpair, shared: true do
         family.stub!(:to_str).and_return('UNIX')
         type.stub!(:to_str).and_return('CATS')
 
-        lambda { Socket.public_send(@method, family, type) }.should raise_error(SocketError)
+        -> { Socket.public_send(@method, family, type) }.should raise_error(SocketError)
       end
     end
 

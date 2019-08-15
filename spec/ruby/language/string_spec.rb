@@ -195,11 +195,11 @@ describe "Ruby character strings" do
     # TODO: spec other source encodings
     describe "with ASCII_8BIT source encoding" do
       it "produces an ASCII string when escaping ASCII characters via \\u" do
-        "\u0000".encoding.should == Encoding::ASCII_8BIT
+        "\u0000".encoding.should == Encoding::BINARY
       end
 
       it "produces an ASCII string when escaping ASCII characters via \\u{}" do
-        "\u{0000}".encoding.should == Encoding::ASCII_8BIT
+        "\u{0000}".encoding.should == Encoding::BINARY
       end
 
       it "produces a UTF-8-encoded string when escaping non-ASCII characters via \\u" do
@@ -260,7 +260,7 @@ end
 describe "Ruby String interpolation" do
   it "creates a String having an Encoding compatible with all components" do
     a = "\u3042"
-    b = "abc".encode("ascii-8bit")
+    b = "abc".encode("binary")
 
     str = "#{a} x #{b}"
 
@@ -280,8 +280,8 @@ describe "Ruby String interpolation" do
 
   it "raises an Encoding::CompatibilityError if the Encodings are not compatible" do
     a = "\u3042"
-    b = "\xff".force_encoding "ascii-8bit"
+    b = "\xff".force_encoding "binary"
 
-    lambda { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
+    -> { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
   end
 end
