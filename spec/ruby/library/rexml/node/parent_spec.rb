@@ -18,4 +18,3 @@ describe "REXML::Node#parent?" do
     e.parent?.should == false
   end
 end
-

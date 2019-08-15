@@ -11,13 +11,8 @@ module Kernel
 
   RUBYGEMS_ACTIVATION_MONITOR = Monitor.new # :nodoc:
 
-  if defined?(gem_original_require) then
-    # Ruby ships with a custom_require, override its require
-    remove_method :require
-  else
-    ##
-    # The Kernel#require from before RubyGems was loaded.
-
+  # Make sure we have a reference to Ruby's original Kernel#require
+  unless defined?(gem_original_require)
     alias gem_original_require require
     private :gem_original_require
   end
@@ -36,7 +31,7 @@ module Kernel
   # The normal <tt>require</tt> functionality of returning false if
   # that file has already been loaded is preserved.
 
-  def require path
+  def require(path)
     RUBYGEMS_ACTIVATION_MONITOR.enter
 
     path = path.to_path if path.respond_to? :to_path
@@ -44,7 +39,7 @@ module Kernel
     if spec = Gem.find_unresolved_default_spec(path)
       Gem.remove_unresolved_default_spec(spec)
       begin
-        Kernel.send(:gem, spec.name)
+        Kernel.send(:gem, spec.name, "#{Gem::Requirement.default}.a")
       rescue Exception
         RUBYGEMS_ACTIVATION_MONITOR.exit
         raise
@@ -54,7 +49,7 @@ module Kernel
     # If there are no unresolved deps, then we can use just try
     # normal require handle loading a gem from the rescue below.
 
-    if Gem::Specification.unresolved_deps.empty? then
+    if Gem::Specification.unresolved_deps.empty?
       RUBYGEMS_ACTIVATION_MONITOR.exit
       return gem_original_require(path)
     end
@@ -84,7 +79,7 @@ module Kernel
     # requested, then find_in_unresolved_tree will find d.rb in d because
     # it's a dependency of c.
     #
-    if found_specs.empty? then
+    if found_specs.empty?
       found_specs = Gem::Specification.find_in_unresolved_tree path
 
       found_specs.each do |found_spec|
@@ -99,7 +94,7 @@ module Kernel
       # versions of the same gem
       names = found_specs.map(&:name).uniq
 
-      if names.size > 1 then
+      if names.size > 1
         RUBYGEMS_ACTIVATION_MONITOR.exit
         raise Gem::LoadError, "#{path} found in multiple gems: #{names.join ', '}"
       end
@@ -108,7 +103,7 @@ module Kernel
       # at the highest version.
       valid = found_specs.find { |s| !s.has_conflicts? }
 
-      unless valid then
+      unless valid
         le = Gem::LoadError.new "unable to find a version of '#{names.first}' to activate"
         le.name = names.first
         RUBYGEMS_ACTIVATION_MONITOR.exit
@@ -125,7 +120,7 @@ module Kernel
 
     begin
       if load_error.message.start_with?("Could not find") or
-          (load_error.message.end_with?(path) and Gem.try_activate(path)) then
+          (load_error.message.end_with?(path) and Gem.try_activate(path))
         require_again = true
       end
     ensure

@@ -5,6 +5,6 @@ describe "Range#eql?" do
   it_behaves_like :range_eql, :eql?
 
   it "returns false if the endpoints are not eql?" do
-    (0..1).send(@method, 0..1.0).should == false
+    (0..1).should_not eql(0..1.0)
   end
 end

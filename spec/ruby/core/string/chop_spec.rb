@@ -19,7 +19,7 @@ describe "String#chop" do
     "abc\r\n".chop.should == "abc"
   end
 
-  it "removes the carrige return, newline if they are the only characters" do
+  it "removes the carriage return, newline if they are the only characters" do
     "\r\n".chop.should == ""
   end
 
@@ -27,19 +27,17 @@ describe "String#chop" do
     "abc\r\n\r\n".chop.should == "abc\r\n"
   end
 
-  with_feature :encoding do
-    it "removes a multi-byte character" do
-      "あれ".chop.should == "あ"
-    end
+  it "removes a multi-byte character" do
+    "あれ".chop.should == "あ"
+  end
 
-    it "removes the final carriage return, newline from a multibyte String" do
-      "あれ\r\n".chop.should == "あれ"
-    end
+  it "removes the final carriage return, newline from a multibyte String" do
+    "あれ\r\n".chop.should == "あれ"
+  end
 
-    it "removes the final carriage return, newline from a non-ASCII String" do
-      str = "abc\r\n".encode "utf-32be"
-      str.chop.should == "abc".encode("utf-32be")
-    end
+  it "removes the final carriage return, newline from a non-ASCII String" do
+    str = "abc\r\n".encode "utf-32be"
+    str.chop.should == "abc".encode("utf-32be")
   end
 
   it "returns an empty string when applied to an empty string" do
@@ -83,7 +81,7 @@ describe "String#chop!" do
     "abc\r\n".chop!.should == "abc"
   end
 
-  it "removes the carrige return, newline if they are the only characters" do
+  it "removes the carriage return, newline if they are the only characters" do
     "\r\n".chop!.should == ""
   end
 
@@ -91,19 +89,17 @@ describe "String#chop!" do
     "abc\r\n\r\n".chop!.should == "abc\r\n"
   end
 
-  with_feature :encoding do
-    it "removes a multi-byte character" do
-      "あれ".chop!.should == "あ"
-    end
+  it "removes a multi-byte character" do
+    "あれ".chop!.should == "あ"
+  end
 
-    it "removes the final carriage return, newline from a multibyte String" do
-      "あれ\r\n".chop!.should == "あれ"
-    end
+  it "removes the final carriage return, newline from a multibyte String" do
+    "あれ\r\n".chop!.should == "あれ"
+  end
 
-    it "removes the final carriage return, newline from a non-ASCII String" do
-      str = "abc\r\n".encode "utf-32be"
-      str.chop!.should == "abc".encode("utf-32be")
-    end
+  it "removes the final carriage return, newline from a non-ASCII String" do
+    str = "abc\r\n".encode "utf-32be"
+    str.chop!.should == "abc".encode("utf-32be")
   end
 
   it "returns self if modifications were made" do
@@ -116,13 +112,13 @@ describe "String#chop!" do
   end
 
   it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    lambda { "string\n\r".freeze.chop! }.should raise_error(frozen_error_class)
+    -> { "string\n\r".freeze.chop! }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23666]
   it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
     a = ""
     a.freeze
-    lambda { a.chop! }.should raise_error(frozen_error_class)
+    -> { a.chop! }.should raise_error(frozen_error_class)
   end
 end

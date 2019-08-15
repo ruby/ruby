@@ -105,7 +105,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
   end
 
   def test_execute_field
-    foo = new_spec 'foo', '2'
+    foo = util_spec 'foo', '2'
 
     install_specs foo
 
@@ -137,7 +137,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
   end
 
   def test_execute_marshal
-    foo = new_spec 'foo', '2'
+    foo = util_spec 'foo', '2'
 
     install_specs foo
 
@@ -248,4 +248,3 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
   end
 
 end
-

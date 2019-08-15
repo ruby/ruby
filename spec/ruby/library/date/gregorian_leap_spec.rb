@@ -13,4 +13,3 @@ describe "Date#gregorian_leap?" do
     Date.gregorian_leap?(2002).should be_false
   end
 end
-

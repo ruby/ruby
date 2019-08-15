@@ -6,6 +6,12 @@
 show = false
 precommand = []
 srcdir = File.realpath('..', File.dirname(__FILE__))
+case
+when ENV['RUNRUBY_USE_GDB'] == 'true'
+  debugger = :gdb
+when ENV['RUNRUBY_USE_LLDB'] == 'true'
+  debugger = :lldb
+end
 while arg = ARGV[0]
   break ARGV.shift if arg == '--'
   case arg
@@ -33,6 +39,8 @@ while arg = ARGV[0]
     case value
     when nil
       debugger = :gdb
+    when "lldb"
+      debugger = :lldb
     when "no"
     else
       debugger = Shellwords.shellwords(value)
@@ -130,15 +138,24 @@ end
 
 ENV.update env
 
-if debugger or ENV['RUNRUBY_USE_GDB'] == 'true'
-  if debugger == :gdb or !debugger
-    debugger = %w'gdb'
+if debugger
+  case debugger
+  when :gdb, nil
+    debugger = %W'gdb -x #{srcdir}/.gdbinit'
     if File.exist?(gdb = 'run.gdb') or
       File.exist?(gdb = File.join(abs_archdir, 'run.gdb'))
       debugger.push('-x', gdb)
     end
     debugger << '--args'
+  when :lldb
+    debugger = ['lldb', '-O', "command script import #{srcdir}/misc/lldb_cruby.py"]
+    if File.exist?(lldb = 'run.lldb') or
+      File.exist?(lldb = File.join(abs_archdir, 'run.lldb'))
+      debugger.push('-s', lldb)
+    end
+    debugger << '--'
   end
+
   if idx = precommand.index(:debugger)
     precommand[idx, 1] = debugger
   else

@@ -18,7 +18,7 @@ for data structures in YOUR code.  Ruby implements deferred signal
 handling by registering short C functions with only
 {async-signal-safe functions}[http://man7.org/linux/man-pages/man7/signal-safety.7.html] as
 signal handlers.  These short C functions only do enough tell the VM to
-run callbacks registered via Signal.trap later in the main VM loop.
+run callbacks registered via Signal.trap later in the main Ruby Thread.
 
 == Unsafe methods to call in Signal.trap blocks
 
@@ -46,7 +46,7 @@ unsafe.
   including Array, Hash, String, Struct, Time.
 
 * Common Array, Hash, String, Struct operations which do not execute a block
-  are generally safe; but beware if iteration is occuring elsewhere.
+  are generally safe; but beware if iteration is occurring elsewhere.
 
 * Hash#[], Hash#[]= (unless Hash.new was given an unsafe block)
 

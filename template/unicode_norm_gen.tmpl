@@ -42,7 +42,7 @@ end
 class Array
   def to_UTF8() collect {|c| c.to_UTF8}.join('') end
 
-  def each_regexp_chars(n = 8) # converts an array of Integers to character ranges
+  def each_regexp_chars(n = 1) # converts an array of Integers to character ranges
     sort.inject([]) do |ranges, value|
       if ranges.last and ranges.last[1]+1>=value
         ranges.last[1] = value
@@ -193,28 +193,28 @@ module UnicodeNormalize  # :nodoc:
     "<%end%>]"
 
   class_table = {
-% combining_class.each_slice(8) do |slice|
-   <% slice.each do |key, value|%> "<%=key.to_UTF8%>"=><%=value%><%=%>,<% end%>
+% combining_class.each do |key, value|
+    "<%=key.to_UTF8%>"=><%=value%><%=%>,
 % end
   }
   class_table.default = 0
   CLASS_TABLE = class_table.freeze
 
   DECOMPOSITION_TABLE = {
-% decomposition_table.each_slice(8) do |slice|
-   <% slice.each do |key, value|%> "<%=key.to_UTF8%>"=>"<%=value.to_UTF8%>"<%=%>,<% end%>
+% decomposition_table.each do |key, value|
+    "<%=key.to_UTF8%>"=>"<%=value.to_UTF8%>"<%=%>,
 % end
   }.freeze
 
   KOMPATIBLE_TABLE = {
-% kompatible_table.each_slice(8) do |slice|
-   <% slice.each do |key, value|%> "<%=key.to_UTF8%>"=>"<%=value.to_UTF8%>"<%=%>,<% end%>
+% kompatible_table.each do |key, value|
+    "<%=key.to_UTF8%>"=>"<%=value.to_UTF8%>"<%=%>,
 % end
   }.freeze
 
   COMPOSITION_TABLE = {
-% composition_table.each_slice(8) do |slice|
-   <% slice.each do |key, value|%> "<%=key.to_UTF8%>"=>"<%=value.to_UTF8%>"<%=%>,<% end%>
+% composition_table.each do |key, value|
+    "<%=key.to_UTF8%>"=>"<%=value.to_UTF8%>"<%=%>,
 % end
   }.freeze
 end

@@ -32,7 +32,7 @@ platform_is_not :windows do
     end
 
     it "checks if the file is writable if writing zero bytes" do
-      lambda {
+      -> {
          @readonly_file.write_nonblock("")
       }.should raise_error(IOError)
     end
@@ -54,7 +54,7 @@ describe 'IO#write_nonblock' do
   end
 
   it "raises an exception extending IO::WaitWritable when the write would block" do
-    lambda {
+    -> {
       loop { @write.write_nonblock('a' * 10_000) }
     }.should raise_error(IO::WaitWritable) { |e|
       platform_is_not :windows do
@@ -66,19 +66,16 @@ describe 'IO#write_nonblock' do
     }
   end
 
-  ruby_version_is "2.3" do
-    context "when exception option is set to false" do
-      it "returns :wait_writable when the operation would block" do
-        loop { break if @write.write_nonblock("a" * 10_000, exception: false) == :wait_writable }
-        1.should == 1
-      end
+  context "when exception option is set to false" do
+    it "returns :wait_writable when the operation would block" do
+      loop { break if @write.write_nonblock("a" * 10_000, exception: false) == :wait_writable }
+      1.should == 1
     end
   end
 
   platform_is_not :windows do
     it 'sets the IO in nonblock mode' do
       require 'io/nonblock'
-      @write.nonblock?.should == false
       @write.write_nonblock('a')
       @write.nonblock?.should == true
     end

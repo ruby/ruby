@@ -1,4 +1,4 @@
-%# -*- mode:c; style:ruby; coding: utf-8; indent-tabs-mode: nil -*-
+%# -*- C -*-
 %# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
 %#
 %# This file is a part of  the programming language Ruby.  Permission is hereby
@@ -6,18 +6,16 @@
 %# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 %# details.
 CONSTFUNC(MAYBE_UNUSED(static int insn_len(VALUE insn)));
-extern const char rb_vm_insn_len_info[];
-
-#ifdef RUBY_VM_INSNS_INFO
-const char rb_vm_insn_len_info[] = {
-% RubyVM::Instructions.each_slice 25 do |a|
-    <%= a.map(&:width).join(', ') -%>,
-% end
-};
-#endif
 
 int
 insn_len(VALUE i)
 {
-    return rb_vm_insn_len_info[i];
+    static const char t[] = {
+% RubyVM::Instructions.each_slice 23 do |a|
+        <%= a.map(&:width).join(', ') -%>,
+% end
+    };
+
+    ASSERT_VM_INSTRUCTION_SIZE(t);
+    return t[i];
 }

@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require 'monitor'
 require 'drb/drb'
-require 'rinda/rinda'
+require_relative 'rinda'
 require 'forwardable'
 
 module Rinda

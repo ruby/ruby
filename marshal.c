@@ -9,10 +9,6 @@
 
 **********************************************************************/
 
-#if defined __GNUC__ && __GNUC__ < 3
-# error too old GCC
-#endif
-
 #include "ruby/ruby.h"
 #include "ruby/io.h"
 #include "internal.h"
@@ -87,6 +83,7 @@ shortlen(size_t len, BDIGIT *ds)
 static ID s_dump, s_load, s_mdump, s_mload;
 static ID s_dump_data, s_load_data, s_alloc, s_call;
 static ID s_getbyte, s_read, s_write, s_binmode;
+static ID s_encoding_short;
 
 #define name_s_dump	"_dump"
 #define name_s_load	"_load"
@@ -100,6 +97,7 @@ static ID s_getbyte, s_read, s_write, s_binmode;
 #define name_s_read	"read"
 #define name_s_write	"write"
 #define name_s_binmode	"binmode"
+#define name_s_encoding_short "E"
 
 typedef struct {
     VALUE newclass;
@@ -260,8 +258,9 @@ class2path(VALUE klass)
     return path;
 }
 
+int ruby_marshal_write_long(long x, char *buf);
 static void w_long(long, struct dump_arg*);
-static void w_encoding(VALUE encname, struct dump_call_arg *arg);
+static int w_encoding(VALUE encname, struct dump_call_arg *arg);
 static VALUE encoding_name(VALUE obj, struct dump_arg *arg);
 
 static void
@@ -302,26 +301,36 @@ static void
 w_long(long x, struct dump_arg *arg)
 {
     char buf[sizeof(long)+1];
+    int i = ruby_marshal_write_long(x, buf);
+    if (i < 0) {
+        rb_raise(rb_eTypeError, "long too big to dump");
+    }
+    w_nbyte(buf, i, arg);
+}
+
+int
+ruby_marshal_write_long(long x, char *buf)
+{
     int i;
 
 #if SIZEOF_LONG > 4
     if (!(RSHIFT(x, 31) == 0 || RSHIFT(x, 31) == -1)) {
 	/* big long does not fit in 4 bytes */
-	rb_raise(rb_eTypeError, "long too big to dump");
+        return -1;
     }
 #endif
 
     if (x == 0) {
-	w_byte(0, arg);
-	return;
+        buf[0] = 0;
+        return 1;
     }
     if (0 < x && x < 123) {
-	w_byte((char)(x + 5), arg);
-	return;
+        buf[0] = (char)(x + 5);
+        return 1;
     }
     if (-124 < x && x < 0) {
-	w_byte((char)((x - 5)&0xff), arg);
-	return;
+        buf[0] = (char)((x - 5)&0xff);
+        return 1;
     }
     for (i=1;i<(int)sizeof(long)+1;i++) {
 	buf[i] = (char)(x & 0xff);
@@ -335,7 +344,7 @@ w_long(long x, struct dump_arg *arg)
 	    break;
 	}
     }
-    w_nbyte(buf, i+1, arg);
+    return i+1;
 }
 
 #ifdef DBL_MANT_DIG
@@ -363,12 +372,12 @@ load_mantissa(double d, const char *buf, long len)
 	do {
 	    m = 0;
 	    switch (len) {
-	      default: m = *buf++ & 0xff;
+              default: m = *buf++ & 0xff; /* fall through */
 #if MANT_BITS > 24
-	      case 3: m = (m << 8) | (*buf++ & 0xff);
+              case 3: m = (m << 8) | (*buf++ & 0xff); /* fall through */
 #endif
 #if MANT_BITS > 16
-	      case 2: m = (m << 8) | (*buf++ & 0xff);
+              case 2: m = (m << 8) | (*buf++ & 0xff); /* fall through */
 #endif
 #if MANT_BITS > 8
 	      case 1: m = (m << 8) | (*buf++ & 0xff);
@@ -405,8 +414,8 @@ w_float(double d, struct dump_arg *arg)
 	w_cstr("nan", arg);
     }
     else if (d == 0.0) {
-	if (1.0/d < 0) w_cstr("-0", arg);
-	else           w_cstr("0", arg);
+        if (signbit(d)) w_cstr("-0", arg);
+        else            w_cstr("0", arg);
     }
     else {
 	int decpt, sign, digs, len = 0;
@@ -552,16 +561,33 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
     }
 }
 
-#define to_be_skipped_id(id) (id == rb_id_encoding() || id == rb_intern("E") || !rb_id2str(id))
+#define to_be_skipped_id(id) (id == rb_id_encoding() || id == s_encoding_short || !rb_id2str(id))
+
+struct w_ivar_arg {
+    struct dump_call_arg *dump;
+    st_data_t num_ivar;
+};
 
 static int
 w_obj_each(st_data_t key, st_data_t val, st_data_t a)
 {
     ID id = (ID)key;
     VALUE value = (VALUE)val;
-    struct dump_call_arg *arg = (struct dump_call_arg *)a;
+    struct w_ivar_arg *ivarg = (struct w_ivar_arg *)a;
+    struct dump_call_arg *arg = ivarg->dump;
 
-    if (to_be_skipped_id(id)) return ST_CONTINUE;
+    if (to_be_skipped_id(id)) {
+        if (id == s_encoding_short) {
+            rb_warn("instance variable `E' on class %"PRIsVALUE" is not dumped",
+                    CLASS_OF(arg->obj));
+        }
+        return ST_CONTINUE;
+    }
+    if (!ivarg->num_ivar) {
+        rb_raise(rb_eRuntimeError, "instance variable added to %"PRIsVALUE" instance",
+                 CLASS_OF(arg->obj));
+    }
+    --ivarg->num_ivar;
     w_symbol(ID2SYM(id), arg->arg);
     w_object(value, arg->arg, arg->limit);
     return ST_CONTINUE;
@@ -578,32 +604,37 @@ obj_count_ivars(st_data_t key, st_data_t val, st_data_t a)
 static VALUE
 encoding_name(VALUE obj, struct dump_arg *arg)
 {
-    int encidx = rb_enc_get_index(obj);
-    rb_encoding *enc = 0;
-    st_data_t name;
+    if (rb_enc_capable(obj)) {
+        int encidx = rb_enc_get_index(obj);
+        rb_encoding *enc = 0;
+        st_data_t name;
 
-    if (encidx <= 0 || !(enc = rb_enc_from_index(encidx))) {
-	return Qnil;
-    }
+        if (encidx <= 0 || !(enc = rb_enc_from_index(encidx))) {
+            return Qnil;
+        }
 
-    /* special treatment for US-ASCII and UTF-8 */
-    if (encidx == rb_usascii_encindex()) {
-	return Qfalse;
-    }
-    else if (encidx == rb_utf8_encindex()) {
-	return Qtrue;
-    }
+        /* special treatment for US-ASCII and UTF-8 */
+        if (encidx == rb_usascii_encindex()) {
+            return Qfalse;
+        }
+        else if (encidx == rb_utf8_encindex()) {
+            return Qtrue;
+        }
 
-    if (arg->encodings ?
-	!st_lookup(arg->encodings, (st_data_t)rb_enc_name(enc), &name) :
-	(arg->encodings = st_init_strcasetable(), 1)) {
-	name = (st_data_t)rb_str_new_cstr(rb_enc_name(enc));
-	st_insert(arg->encodings, (st_data_t)rb_enc_name(enc), name);
+        if (arg->encodings ?
+            !st_lookup(arg->encodings, (st_data_t)rb_enc_name(enc), &name) :
+            (arg->encodings = st_init_strcasetable(), 1)) {
+            name = (st_data_t)rb_str_new_cstr(rb_enc_name(enc));
+            st_insert(arg->encodings, (st_data_t)rb_enc_name(enc), name);
+        }
+        return (VALUE)name;
     }
-    return (VALUE)name;
+    else {
+        return Qnil;
+    }
 }
 
-static void
+static int
 w_encoding(VALUE encname, struct dump_call_arg *arg)
 {
     int limit = arg->limit;
@@ -611,13 +642,15 @@ w_encoding(VALUE encname, struct dump_call_arg *arg)
     switch (encname) {
       case Qfalse:
       case Qtrue:
-	w_symbol(ID2SYM(rb_intern("E")), arg->arg);
+        w_symbol(ID2SYM(s_encoding_short), arg->arg);
 	w_object(encname, arg->arg, limit);
+        return 1;
       case Qnil:
-	return;
+        return 0;
     }
     w_symbol(ID2SYM(rb_id_encoding()), arg->arg);
     w_object(encname, arg->arg, limit);
+    return 1;
 }
 
 static st_index_t
@@ -642,12 +675,24 @@ has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
 }
 
 static void
+w_ivar_each(VALUE obj, st_index_t num, struct dump_call_arg *arg)
+{
+    struct w_ivar_arg ivarg = {arg, num};
+    if (!num) return;
+    rb_ivar_foreach(obj, w_obj_each, (st_data_t)&ivarg);
+    if (ivarg.num_ivar) {
+        rb_raise(rb_eRuntimeError, "instance variable removed from %"PRIsVALUE" instance",
+                 CLASS_OF(arg->obj));
+    }
+}
+
+static void
 w_ivar(st_index_t num, VALUE ivobj, VALUE encname, struct dump_call_arg *arg)
 {
     w_long(num, arg->arg);
-    w_encoding(encname, arg);
+    num -= w_encoding(encname, arg);
     if (ivobj != Qundef) {
-	rb_ivar_foreach(ivobj, w_obj_each, (st_data_t)arg);
+        w_ivar_each(ivobj, num, arg);
     }
 }
 
@@ -658,9 +703,7 @@ w_objivar(VALUE obj, struct dump_call_arg *arg)
 
     rb_ivar_foreach(obj, obj_count_ivars, (st_data_t)&num);
     w_long(num, arg->arg);
-    if (num != 0) {
-        rb_ivar_foreach(obj, w_obj_each, (st_data_t)arg);
-    }
+    w_ivar_each(obj, num, arg);
 }
 
 static void
@@ -679,6 +722,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     if (limit > 0) limit--;
     c_arg.limit = limit;
     c_arg.arg = arg;
+    c_arg.obj = obj;
 
     if (st_lookup(arg->data, obj, &num)) {
 	w_byte(TYPE_LINK, arg);
@@ -816,6 +860,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 		char sign = BIGNUM_SIGN(obj) ? '+' : '-';
 		size_t len = BIGNUM_LEN(obj);
 		size_t slen;
+                size_t j;
 		BDIGIT *d = BIGNUM_DIGITS(obj);
 
                 slen = SHORTLEN(len);
@@ -825,7 +870,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 		w_byte(sign, arg);
 		w_long((long)slen, arg);
-		while (len--) {
+                for (j = 0; j < len; j++) {
 #if SIZEOF_BDIGIT > SIZEOF_SHORT
 		    BDIGIT num = *d;
 		    int i;
@@ -833,7 +878,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 		    for (i=0; i<SIZEOF_BDIGIT; i+=SIZEOF_SHORT) {
 			w_short(num & SHORTMASK, arg);
 			num = SHORTDN(num);
-			if (len == 0 && num == 0) break;
+                        if (j == len - 1 && num == 0) break;
 		    }
 #else
 		    w_short(*d, arg);
@@ -880,13 +925,13 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    if (NIL_P(RHASH_IFNONE(obj))) {
 		w_byte(TYPE_HASH, arg);
 	    }
-	    else if (FL_TEST(obj, HASH_PROC_DEFAULT)) {
+            else if (FL_TEST(obj, RHASH_PROC_DEFAULT)) {
 		rb_raise(rb_eTypeError, "can't dump hash with default proc");
 	    }
 	    else {
 		w_byte(TYPE_HASH_DEF, arg);
 	    }
-	    w_long(RHASH_SIZE(obj), arg);
+            w_long(rb_hash_size_num(obj), arg);
 	    rb_hash_foreach(obj, hash_each, (st_data_t)&c_arg);
 	    if (!NIL_P(RHASH_IFNONE(obj))) {
 		w_object(RHASH_IFNONE(obj), arg, limit);
@@ -1226,6 +1271,19 @@ r_long(struct load_arg *arg)
     return x;
 }
 
+long
+ruby_marshal_read_long(const char **buf, long len)
+{
+    long x;
+    struct RString src;
+    struct load_arg arg;
+    memset(&arg, 0, sizeof(arg));
+    arg.src = rb_setup_fake_str(&src, *buf, len, 0);
+    x = r_long(&arg);
+    *buf += arg.offset;
+    return x;
+}
+
 static VALUE
 r_bytes1(long len, struct load_arg *arg)
 {
@@ -1486,7 +1544,12 @@ r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
 	    VALUE val = r_object(arg);
 	    int idx = sym2encidx(sym, val);
 	    if (idx >= 0) {
-		rb_enc_associate_index(obj, idx);
+                if (rb_enc_capable(obj)) {
+                    rb_enc_associate_index(obj, idx);
+                }
+                else {
+                    rb_raise(rb_eArgError, "%"PRIsVALUE" is not enc_capable", obj);
+                }
 		if (has_encoding) *has_encoding = TRUE;
 	    }
 	    else {
@@ -1744,6 +1807,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		      case 'L': case 'N': case 'O': case 'P': case 'Q': case 'R':
 		      case 'S': case 'T': case 'U': case 'V': case 'X': case 'Y':
 			if (bs & 1) --dst;
+                        /* fall through */
 		      default: bs = 0; break;
 		    }
 		}
@@ -2237,6 +2301,7 @@ Init_marshal(void)
     set_id(s_read);
     set_id(s_write);
     set_id(s_binmode);
+    set_id(s_encoding_short);
 
     rb_define_module_function(rb_mMarshal, "dump", marshal_dump, -1);
     rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);

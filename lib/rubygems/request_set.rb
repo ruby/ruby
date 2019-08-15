@@ -91,7 +91,7 @@ class Gem::RequestSet
   #
   #   set = Gem::RequestSet.new nokogiri, pg
 
-  def initialize *deps
+  def initialize(*deps)
     @dependencies = deps
 
     @always_install      = []
@@ -119,8 +119,8 @@ class Gem::RequestSet
   ##
   # Declare that a gem of name +name+ with +reqs+ requirements is needed.
 
-  def gem name, *reqs
-    if dep = @dependency_names[name] then
+  def gem(name, *reqs)
+    if dep = @dependency_names[name]
       dep.requirement.concat reqs
     else
       dep = Gem::Dependency.new name, *reqs
@@ -132,7 +132,7 @@ class Gem::RequestSet
   ##
   # Add +deps+ Gem::Dependency objects to the set.
 
-  def import deps
+  def import(deps)
     @dependencies.concat deps
   end
 
@@ -143,7 +143,7 @@ class Gem::RequestSet
   # The +installer+ will be +nil+ if a gem matching the request was already
   # installed.
 
-  def install options, &block # :yields: request, installer
+  def install(options, &block) # :yields: request, installer
     if dir = options[:install_dir]
       requests = install_into dir, false, options, &block
       return requests
@@ -152,12 +152,39 @@ class Gem::RequestSet
     @prerelease = options[:prerelease]
 
     requests = []
+    download_queue = Queue.new
 
+    # Create a thread-safe list of gems to download
     sorted_requests.each do |req|
-      if req.installed? then
+      download_queue << req
+    end
+
+    # Create N threads in a pool, have them download all the gems
+    threads = Gem.configuration.concurrent_downloads.times.map do
+      # When a thread pops this item, it knows to stop running. The symbol
+      # is queued here so that there will be one symbol per thread.
+      download_queue << :stop
+
+      Thread.new do
+        # The pop method will block waiting for items, so the only way
+        # to stop a thread from running is to provide a final item that
+        # means the thread should stop.
+        while req = download_queue.pop
+          break if req == :stop
+          req.spec.download options unless req.installed?
+        end
+      end
+    end
+
+    # Wait for all the downloads to finish before continuing
+    threads.each(&:value)
+
+    # Install requested gems after they have been downloaded
+    sorted_requests.each do |req|
+      if req.installed?
         req.spec.spec.build_extensions
 
-        if @always_install.none? { |spec| spec == req.spec.spec } then
+        if @always_install.none? { |spec| spec == req.spec.spec }
           yield req, nil if block_given?
           next
         end
@@ -171,7 +198,9 @@ class Gem::RequestSet
         rescue Gem::RuntimeRequirementNotMetError => e
           recent_match = req.spec.set.find_all(req.request).sort_by(&:version).reverse_each.find do |s|
             s = s.spec
-            s.required_ruby_version.satisfied_by?(Gem.ruby_version) && s.required_rubygems_version.satisfied_by?(Gem.rubygems_version)
+            s.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
+              s.required_rubygems_version.satisfied_by?(Gem.rubygems_version) &&
+              Gem::Platform.installable?(s)
           end
           if recent_match
             suggestion = "The last version of #{req.request} to support your Ruby & RubyGems was #{recent_match.version}. Try installing it with `gem install #{recent_match.name} -v #{recent_match.version}`"
@@ -189,22 +218,7 @@ class Gem::RequestSet
 
     return requests if options[:gemdeps]
 
-    specs = requests.map do |request|
-      case request
-      when Gem::Resolver::ActivationRequest then
-        request.spec.spec
-      else
-        request
-      end
-    end
-
-    require 'rubygems/dependency_installer'
-    inst = Gem::DependencyInstaller.new options
-    inst.installed_gems.replace specs
-
-    Gem.done_installing_hooks.each do |hook|
-      hook.call inst, specs
-    end unless Gem.done_installing_hooks.empty?
+    install_hooks requests, options
 
     requests
   end
@@ -216,7 +230,7 @@ class Gem::RequestSet
   # If +:without_groups+ is given in the +options+, those groups in the gem
   # dependencies file are not used.  See Gem::Installer for other +options+.
 
-  def install_from_gemdeps options, &block
+  def install_from_gemdeps(options, &block)
     gemdeps = options[:gemdeps]
 
     @install_dir = options[:install_dir] || Gem.dir
@@ -241,7 +255,7 @@ class Gem::RequestSet
     else
       installed = install options, &block
 
-      if options.fetch :lock, true then
+      if options.fetch :lock, true
         lockfile =
           Gem::RequestSet::Lockfile.build self, gemdeps, gem_deps_api.dependencies
         lockfile.write
@@ -251,7 +265,7 @@ class Gem::RequestSet
     end
   end
 
-  def install_into dir, force = true, options = {}
+  def install_into(dir, force = true, options = {})
     gem_home, ENV['GEM_HOME'] = ENV['GEM_HOME'], dir
 
     existing = force ? [] : specs_in(dir)
@@ -269,7 +283,7 @@ class Gem::RequestSet
     sorted_requests.each do |request|
       spec = request.spec
 
-      if existing.find { |s| s.full_name == spec.full_name } then
+      if existing.find { |s| s.full_name == spec.full_name }
         yield request, nil if block_given?
         next
       end
@@ -281,15 +295,39 @@ class Gem::RequestSet
       installed << request
     end
 
+    install_hooks installed, options
+
     installed
   ensure
     ENV['GEM_HOME'] = gem_home
   end
 
   ##
+  # Call hooks on installed gems
+
+  def install_hooks(requests, options)
+    specs = requests.map do |request|
+      case request
+      when Gem::Resolver::ActivationRequest then
+        request.spec.spec
+      else
+        request
+      end
+    end
+
+    require "rubygems/dependency_installer"
+    inst = Gem::DependencyInstaller.new options
+    inst.installed_gems.replace specs
+
+    Gem.done_installing_hooks.each do |hook|
+      hook.call inst, specs
+    end unless Gem.done_installing_hooks.empty?
+  end
+
+  ##
   # Load a dependency management file.
 
-  def load_gemdeps path, without_groups = [], installing = false
+  def load_gemdeps(path, without_groups = [], installing = false)
     @git_set    = Gem::Resolver::GitSet.new
     @vendor_set = Gem::Resolver::VendorSet.new
     @source_set = Gem::Resolver::SourceSet.new
@@ -310,29 +348,29 @@ class Gem::RequestSet
     gf.load
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[RequestSet:', ']' do
       q.breakable
 
-      if @remote then
+      if @remote
         q.text 'remote'
         q.breakable
       end
 
-      if @prerelease then
+      if @prerelease
         q.text 'prerelease'
         q.breakable
       end
 
-      if @development_shallow then
+      if @development_shallow
         q.text 'shallow development'
         q.breakable
-      elsif @development then
+      elsif @development
         q.text 'development'
         q.breakable
       end
 
-      if @soft_missing then
+      if @soft_missing
         q.text 'soft missing'
       end
 
@@ -356,7 +394,7 @@ class Gem::RequestSet
   # Resolve the requested dependencies and return an Array of Specification
   # objects to be activated.
 
-  def resolve set = Gem::Resolver::BestSet.new
+  def resolve(set = Gem::Resolver::BestSet.new)
     @sets << set
     @sets << @git_set
     @sets << @vendor_set
@@ -405,25 +443,25 @@ class Gem::RequestSet
     @specs ||= @requests.map { |r| r.full_spec }
   end
 
-  def specs_in dir
-    Dir["#{dir}/specifications/*.gemspec"].map do |g|
+  def specs_in(dir)
+    Gem::Util.glob_files_in_dir("*.gemspec", File.join(dir, "specifications")).map do |g|
       Gem::Specification.load g
     end
   end
 
-  def tsort_each_node &block # :nodoc:
+  def tsort_each_node(&block) # :nodoc:
     @requests.each(&block)
   end
 
-  def tsort_each_child node # :nodoc:
+  def tsort_each_child(node) # :nodoc:
     node.spec.dependencies.each do |dep|
       next if dep.type == :development and not @development
 
-      match = @requests.find { |r|
+      match = @requests.find do |r|
         dep.match? r.spec.name, r.spec.version, @prerelease
-      }
+      end
 
-      unless match then
+      unless match
         next if dep.type == :development and @development_shallow
         next if @soft_missing
         raise Gem::DependencyError,

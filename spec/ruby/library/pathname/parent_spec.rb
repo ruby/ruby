@@ -16,4 +16,3 @@ describe "Pathname#parent" do
   end
 
 end
-

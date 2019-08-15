@@ -1,23 +1,28 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/cert_command'
-require 'rubygems/fix_openssl_warnings' if RUBY_VERSION < "1.9"
 
-unless defined?(OpenSSL::SSL) then
+unless defined?(OpenSSL::SSL)
   warn 'Skipping `gem cert` tests.  openssl not found.'
+end
+
+if Gem.java_platform?
+  warn 'Skipping `gem cert` tests on jruby.'
 end
 
 class TestGemCommandsCertCommand < Gem::TestCase
 
   ALTERNATE_CERT = load_cert 'alternate'
+  EXPIRED_PUBLIC_CERT = load_cert 'expired'
 
   ALTERNATE_KEY_FILE = key_path 'alternate'
   PRIVATE_KEY_FILE   = key_path 'private'
   PUBLIC_KEY_FILE    = key_path 'public'
 
-  ALTERNATE_CERT_FILE = cert_path 'alternate'
-  CHILD_CERT_FILE     = cert_path 'child'
-  PUBLIC_CERT_FILE    = cert_path 'public'
+  ALTERNATE_CERT_FILE      = cert_path 'alternate'
+  CHILD_CERT_FILE          = cert_path 'child'
+  PUBLIC_CERT_FILE         = cert_path 'public'
+  EXPIRED_PUBLIC_CERT_FILE = cert_path 'expired'
 
   def setup
     super
@@ -25,6 +30,14 @@ class TestGemCommandsCertCommand < Gem::TestCase
     @cmd = Gem::Commands::CertCommand.new
 
     @trust_dir = Gem::Security.trust_dir
+
+    @cleanup = []
+  end
+
+  def teardown
+    FileUtils.rm_f(@cleanup)
+
+    super
   end
 
   def test_certificates_matching
@@ -158,7 +171,7 @@ Added '/CN=alternate/DC=example'
     @cmd.handle_options %W[
       --build nobody@example.com
       --days 26
-      ]
+    ]
 
     @build_ui = Gem::MockGemUi.new "#{passphrase}\n#{passphrase}"
 
@@ -191,7 +204,6 @@ Added '/CN=alternate/DC=example'
 
     test = (cert.not_after - cert.not_before).to_i / (24 * 60 * 60)
     assert_equal(test, 26)
-
   end
 
   def test_execute_build_bad_passphrase_confirmation
@@ -583,6 +595,70 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     assert_equal expected, @ui.error
   end
 
+  def test_execute_re_sign
+    gem_path = File.join Gem.user_home, ".gem"
+    Dir.mkdir gem_path
+
+    path = File.join @tempdir, 'cert.pem'
+    Gem::Security.write EXPIRED_PUBLIC_CERT, path, 0600
+
+    assert_equal '/CN=nobody/DC=example', EXPIRED_PUBLIC_CERT.issuer.to_s
+
+    tmp_expired_cert_file = File.join(Dir.tmpdir, File.basename(EXPIRED_PUBLIC_CERT_FILE))
+    @cleanup << tmp_expired_cert_file
+    File.write(tmp_expired_cert_file, File.read(EXPIRED_PUBLIC_CERT_FILE))
+
+    @cmd.handle_options %W[
+      --private-key #{PRIVATE_KEY_FILE}
+      --certificate #{tmp_expired_cert_file}
+      --re-sign
+    ]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected_path = File.join(gem_path, "#{File.basename(tmp_expired_cert_file)}.expired")
+
+    assert_match(
+      /INFO:  Your certificate #{tmp_expired_cert_file} has been re-signed\nINFO:  Your expired certificate will be located at: #{expected_path}\.[0-9]+/,
+      @ui.output
+    )
+    assert_equal '', @ui.error
+  end
+
+  def test_execute_re_sign_with_cert_expiration_length_days
+    gem_path = File.join Gem.user_home, ".gem"
+    Dir.mkdir gem_path
+
+    path = File.join @tempdir, 'cert.pem'
+    Gem::Security.write EXPIRED_PUBLIC_CERT, path, 0600
+
+    assert_equal '/CN=nobody/DC=example', EXPIRED_PUBLIC_CERT.issuer.to_s
+
+    tmp_expired_cert_file = File.join(Dir.tmpdir, File.basename(EXPIRED_PUBLIC_CERT_FILE))
+    @cleanup << tmp_expired_cert_file
+    File.write(tmp_expired_cert_file, File.read(EXPIRED_PUBLIC_CERT_FILE))
+
+    @cmd.handle_options %W[
+      --private-key #{PRIVATE_KEY_FILE}
+      --certificate #{tmp_expired_cert_file}
+      --re-sign
+    ]
+
+    Gem.configuration.cert_expiration_length_days = 28
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    re_signed_cert = OpenSSL::X509::Certificate.new(File.read(tmp_expired_cert_file))
+    cert_days_to_expire = (re_signed_cert.not_after - re_signed_cert.not_before).to_i / (24 * 60 * 60)
+
+    assert_equal(28, cert_days_to_expire)
+    assert_equal '', @ui.error
+  end
+
   def test_handle_options
     @cmd.handle_options %W[
       --add #{PUBLIC_CERT_FILE}
@@ -731,5 +807,4 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
                  e.message
   end
 
-end if defined?(OpenSSL::SSL)
-
+end if defined?(OpenSSL::SSL) && !Gem.java_platform?

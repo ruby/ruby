@@ -83,14 +83,20 @@ class Dir
   #  end
   #
   def self.mktmpdir(prefix_suffix=nil, *rest)
-    path = Tmpname.create(prefix_suffix || "d", *rest) {|n| mkdir(n, 0700)}
+    base = nil
+    path = Tmpname.create(prefix_suffix || "d", *rest) {|path, _, _, d|
+      base = d
+      mkdir(path, 0700)
+    }
     if block_given?
       begin
         yield path
       ensure
-        stat = File.stat(File.dirname(path))
-        if stat.world_writable? and !stat.sticky?
-          raise ArgumentError, "parent directory is world writable but not sticky"
+        unless base
+          stat = File.stat(File.dirname(path))
+          if stat.world_writable? and !stat.sticky?
+            raise ArgumentError, "parent directory is world writable but not sticky"
+          end
         end
         FileUtils.remove_entry path
       end
@@ -106,24 +112,29 @@ class Dir
       Dir.tmpdir
     end
 
+    UNUSABLE_CHARS = [File::SEPARATOR, File::ALT_SEPARATOR, File::PATH_SEPARATOR, ":"].uniq.join("").freeze
+
     def create(basename, tmpdir=nil, max_try: nil, **opts)
       if $SAFE > 0 and tmpdir.tainted?
         tmpdir = '/tmp'
       else
+        origdir = tmpdir
         tmpdir ||= tmpdir()
       end
       n = nil
       prefix, suffix = basename
       prefix = (String.try_convert(prefix) or
                 raise ArgumentError, "unexpected prefix: #{prefix.inspect}")
+      prefix = prefix.delete(UNUSABLE_CHARS)
       suffix &&= (String.try_convert(suffix) or
                   raise ArgumentError, "unexpected suffix: #{suffix.inspect}")
+      suffix &&= suffix.delete(UNUSABLE_CHARS)
       begin
         t = Time.now.strftime("%Y%m%d")
         path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}"\
                "#{n ? %[-#{n}] : ''}#{suffix||''}"
         path = File.join(tmpdir, path)
-        yield(path, n, opts)
+        yield(path, n, opts, origdir)
       rescue Errno::EEXIST
         n ||= 0
         n += 1

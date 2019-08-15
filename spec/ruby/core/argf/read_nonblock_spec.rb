@@ -64,17 +64,15 @@ platform_is_not :windows do
 
       it 'raises IO::EAGAINWaitReadable when empty' do
         argf ['-'] do
-          lambda {
+          -> {
             @argf.read_nonblock(4)
           }.should raise_error(IO::EAGAINWaitReadable)
         end
       end
 
-      ruby_version_is "2.3" do
-        it 'returns :wait_readable when the :exception is set to false' do
-          argf ['-'] do
-            @argf.read_nonblock(4, nil, exception: false).should == :wait_readable
-          end
+      it 'returns :wait_readable when the :exception is set to false' do
+        argf ['-'] do
+          @argf.read_nonblock(4, nil, exception: false).should == :wait_readable
         end
       end
     end

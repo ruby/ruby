@@ -58,11 +58,11 @@ describe "String#scan" do
   end
 
   it "raises a TypeError if pattern isn't a Regexp and can't be converted to a String" do
-    lambda { "cruel world".scan(5)         }.should raise_error(TypeError)
+    -> { "cruel world".scan(5)         }.should raise_error(TypeError)
     not_supported_on :opal do
-      lambda { "cruel world".scan(:test)   }.should raise_error(TypeError)
+      -> { "cruel world".scan(:test)   }.should raise_error(TypeError)
     end
-    lambda { "cruel world".scan(mock('x')) }.should raise_error(TypeError)
+    -> { "cruel world".scan(mock('x')) }.should raise_error(TypeError)
   end
 
   it "taints the results if the String argument is tainted" do
@@ -83,6 +83,11 @@ describe "String#scan" do
   it "taints the results when passed a Regexp argument if self is tainted" do
     a = "hello".taint.scan(/./)
     a.each { |m| m.tainted?.should be_true }
+  end
+
+  # jruby/jruby#5513
+  it "does not raise any errors when passed a multi-byte string" do
+    "あああaaaあああ".scan("あああ").should == ["あああ", "あああ"]
   end
 end
 

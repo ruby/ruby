@@ -157,7 +157,8 @@ module Fiddle
     # :stopdoc:
     CALL_TYPE_TO_ABI = Hash.new { |h, k|
       raise RuntimeError, "unsupported call type: #{k}"
-    }.merge({ :stdcall => (Function::STDCALL rescue Function::DEFAULT),
+    }.merge({ :stdcall => Function.const_defined?(:STDCALL) ? Function::STDCALL :
+                          Function::DEFAULT,
               :cdecl   => Function::DEFAULT,
               nil      => Function::DEFAULT
             }).freeze

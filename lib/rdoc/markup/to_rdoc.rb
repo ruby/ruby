@@ -45,7 +45,7 @@ class RDoc::Markup::ToRdoc < RDoc::Markup::Formatter
   def initialize markup = nil
     super nil, markup
 
-    @markup.add_special(/\\\S/, :SUPPRESSED_CROSSREF)
+    @markup.add_regexp_handling(/\\\S/, :SUPPRESSED_CROSSREF)
     @width = 78
     init_tags
 
@@ -234,7 +234,7 @@ class RDoc::Markup::ToRdoc < RDoc::Markup::Formatter
       @res << part
     end
 
-    @res << "\n" unless @res =~ /\n\z/
+    @res << "\n"
   end
 
   ##
@@ -253,10 +253,10 @@ class RDoc::Markup::ToRdoc < RDoc::Markup::Formatter
   end
 
   ##
-  # Removes preceding \\ from the suppressed crossref +special+
+  # Removes preceding \\ from the suppressed crossref +target+
 
-  def handle_special_SUPPRESSED_CROSSREF special
-    text = special.text
+  def handle_regexp_SUPPRESSED_CROSSREF target
+    text = target.text
     text = text.sub('\\', '') unless in_tt?
     text
   end
@@ -264,7 +264,7 @@ class RDoc::Markup::ToRdoc < RDoc::Markup::Formatter
   ##
   # Adds a newline to the output
 
-  def handle_special_HARD_BREAK special
+  def handle_regexp_HARD_BREAK target
     "\n"
   end
 

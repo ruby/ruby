@@ -10,6 +10,8 @@ require 'strscan'
 
 module RDoc::Text
 
+  attr_accessor :language
+
   ##
   # Maps markup formats to classes that can parse them.  If the format is
   # unknown, "rdoc" format is used.
@@ -111,8 +113,12 @@ module RDoc::Text
   def normalize_comment text
     return text if text.empty?
 
-    text = strip_stars    text
-    text = strip_hashes   text
+    case language
+    when :ruby
+      text = strip_hashes text
+    when :c
+      text = strip_stars text
+    end
     text = expand_tabs    text
     text = flush_left     text
     text = strip_newlines text
@@ -169,7 +175,7 @@ module RDoc::Text
 
     encoding = text.encoding
 
-    text = text.gsub %r%Document-method:\s+[\w:.#=!?]+%, ''
+    text = text.gsub %r%Document-method:\s+[\w:.#=!?|^&<>~+\-/*\%@`\[\]]+%, ''
 
     space = ' '
     space = RDoc::Encoding.change_encoding space, encoding if encoding

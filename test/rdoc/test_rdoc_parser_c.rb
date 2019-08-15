@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 =begin
   TODO: test call-seq parsing
@@ -327,7 +327,7 @@ VALUE cFoo = boot_defclass("Foo", 0);
 
     klass = util_get_class content, 'cFoo'
     assert_equal "this is the Foo boot class", klass.comment.text
-    assert_equal nil, klass.superclass
+    assert_nil klass.superclass
   end
 
   def test_do_aliases_missing_class
@@ -337,7 +337,7 @@ void Init_Blah(void) {
 }
     EOF
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       refute util_get_class(content, 'cDate')
     end
 
@@ -657,7 +657,7 @@ void Init_Blah(void) {
 
     klass = nil
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       klass = util_get_class content, 'cDate'
     end
 
@@ -680,7 +680,7 @@ void Init_Blah(void) {
 
     klass = nil
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       klass = util_get_class content, 'cDate'
     end
 
@@ -703,7 +703,7 @@ void Init_Blah(void) {
 
     klass = nil
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       klass = util_get_class content, 'cDate'
     end
 
@@ -770,7 +770,7 @@ void Init_Blah(void) {
     parser.missing_dependencies['y'] = ['y', :class, 'Y', 'Object', 'z']
     parser.missing_dependencies['z'] = ['z', :class, 'Z', 'Object', 'y']
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       parser.do_missing
     end
 
@@ -1377,11 +1377,11 @@ commercial() -> Date <br />
 
     parser.find_modifiers comment, method_obj
 
-    assert_equal nil, method_obj.document_self
+    assert_nil method_obj.document_self
   end
 
   def test_find_modifiers_yields
-    comment = RDoc::Comment.new <<-COMMENT
+    comment = RDoc::Comment.new <<-COMMENT, @top_level, :c
 /* :yields: a, b
  *
  * Blah
@@ -1628,6 +1628,19 @@ Init_IO(void) {
     assert_equal "Method Comment!   ", read_method.comment.text
     assert_equal "rb_io_s_read", read_method.c_function
     assert read_method.singleton
+  end
+
+  def test_define_method_dynamically
+    content = <<-EOF
+void
+Init_foo(void)
+{
+    rb_define_singleton_method(obj, "foo", foo, -1);
+}
+    EOF
+
+    klass = util_get_class content, 'obj'
+    assert_nil klass
   end
 
   def test_define_method_with_prototype

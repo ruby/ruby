@@ -19,9 +19,8 @@ describe "Zlib::GzipFile#orig_name" do
     Zlib::GzipWriter.wrap @io do |gzio|
       gzio.close
 
-      lambda { gzio.orig_name }.should \
+      -> { gzio.orig_name }.should \
         raise_error(Zlib::GzipFile::Error, 'closed gzip stream')
     end
   end
 end
-

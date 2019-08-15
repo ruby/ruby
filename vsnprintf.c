@@ -535,6 +535,7 @@ static int exponent(char *, int, int);
 #define	SHORTINT	0x040		/* short integer */
 #define	ZEROPAD		0x080		/* zero (as opposed to blank) pad */
 #define FPT		0x100		/* Floating point number */
+ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static ssize_t BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap));
 static ssize_t
 BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 {
@@ -1250,7 +1251,7 @@ cvt(double value, int ndigits, int flags, char *sign, int *decpt, int ch, int *l
 	if (value < 0) {
 		value = -value;
 		*sign = '-';
-	} else if (value == 0.0 && 1.0/value < 0) {
+	} else if (value == 0.0 && signbit(value)) {
 	    *sign = '-';
 	} else {
 	    *sign = '\000';

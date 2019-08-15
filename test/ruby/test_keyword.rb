@@ -506,7 +506,10 @@ class TestKeywordArguments < Test::Unit::TestCase
   def test_splat_hash
     m = Object.new
     def m.f() :ok; end
+    def m.f1(a) a; end
     def m.f2(a = nil) a; end
+    def m.f3(**a) a; end
+    def m.f4(*a) a; end
     o = {a: 1}
     assert_raise_with_message(ArgumentError, /unknown keyword: a/) {
       m.f(**o)
@@ -515,11 +518,26 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(:ok, m.f(**o), '[ruby-core:68124] [Bug #10856]')
     a = []
     assert_equal(:ok, m.f(*a, **o), '[ruby-core:83638] [Bug #10856]')
+    assert_equal(:OK, m.f1(*a, :OK, **o), '[ruby-core:91825] [Bug #10856]')
+    assert_equal({}, m.f1(*a, o), '[ruby-core:91825] [Bug #10856]')
 
     o = {a: 42}
-    assert_equal({a: 42}, m.f2(**o), '[ruby-core:82280] [Bug #13791]')
+    assert_warning(/splat keyword/, 'splat to mandatory') do
+      assert_equal({a: 42}, m.f1(**o))
+    end
+    assert_warning(/splat keyword/) do
+      assert_equal({a: 42}, m.f2(**o), '[ruby-core:82280] [Bug #13791]')
+    end
+    assert_warning('', 'splat to kwrest') do
+      assert_equal({a: 42}, m.f3(**o))
+    end
+    assert_warning('', 'splat to rest') do
+      assert_equal([{a: 42}], m.f4(**o))
+    end
 
-    assert_equal({a: 42}, m.f2("a".to_sym => 42), '[ruby-core:82291] [Bug #13793]')
+    assert_warning('') do
+      assert_equal({a: 42}, m.f2("a".to_sym => 42), '[ruby-core:82291] [Bug #13793]')
+    end
 
     o = {}
     a = [:ok]
@@ -547,7 +565,8 @@ class TestKeywordArguments < Test::Unit::TestCase
 
   def test_dynamic_symbol_keyword
     bug10266 = '[ruby-dev:48564] [Bug #10266]'
-    assert_separately(['-', bug10266], <<-'end;') #    do
+    assert_separately(['-', bug10266], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
       bug = ARGV.shift
       "hoge".to_sym
       assert_nothing_raised(bug) {eval("def a(hoge:); end")}
@@ -729,5 +748,9 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(:ok, many_kwargs(d7: :ok)[i], "#{i}: d7"); i+=1
 
     assert_equal(:ok, many_kwargs(e0: :ok)[i], "#{i}: e0"); i+=1
+  end
+
+  def test_splat_empty_hash_with_block_passing
+    assert_valid_syntax("bug15087(**{}, &nil)")
   end
 end

@@ -1,31 +1,31 @@
 require 'timeout'
 
 def progress(n = 5)
-  n.times {|i| print i; STDOUT.flush; sleep 1; i+= 1}
+  n.times {|i| print i; STDOUT.flush; sleep 1}
   puts "never reach"
 end
 
-p timeout(5) {
+p Timeout.timeout(5) {
   45
 }
-p timeout(5, Timeout::Error) {
+p Timeout.timeout(5, Timeout::Error) {
   45
 }
-p timeout(nil) {
+p Timeout.timeout(nil) {
   54
 }
-p timeout(0) {
+p Timeout.timeout(0) {
   54
 }
 begin
-  timeout(5) {progress}
+  Timeout.timeout(5) {progress}
 rescue => e
   puts e.message
 end
 begin
-  timeout(3) {
+  Timeout.timeout(3) {
     begin
-      timeout(5) {progress}
+      Timeout.timeout(5) {progress}
     rescue => e
       puts "never reach"
     end
@@ -36,7 +36,7 @@ end
 class MyTimeout < StandardError
 end
 begin
-  timeout(2, MyTimeout) {progress}
+  Timeout.timeout(2, MyTimeout) {progress}
 rescue MyTimeout => e
   puts e.message
 end

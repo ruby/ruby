@@ -424,7 +424,7 @@ sockopt_ipv4_multicast_loop(VALUE self)
     }
 #endif
     rb_raise(rb_eTypeError, "ipv4_multicast_loop socket option expected");
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 #define inspect_ipv4_multicast_loop(a,b,c,d) \
@@ -475,7 +475,7 @@ sockopt_ipv4_multicast_ttl(VALUE self)
     }
 #endif
     rb_raise(rb_eTypeError, "ipv4_multicast_ttl socket option expected");
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 #define inspect_ipv4_multicast_ttl(a,b,c,d) \

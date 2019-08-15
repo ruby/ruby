@@ -9,4 +9,3 @@ describe "Digest::SHA512#digest_length" do
   end
 
 end
-

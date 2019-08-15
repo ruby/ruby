@@ -25,12 +25,10 @@ module RDoc::Parser::RubyTools
         tk = @scanner[@scanner_point]
         @scanner_point += 1
         @read.push tk[:text]
-        puts "get_tk1 => #{tk.inspect}" if $TOKEN_DEBUG
       end
     else
       @read.push @unget_read.shift
       tk = @tokens.shift
-      puts "get_tk2 => #{tk.inspect}" if $TOKEN_DEBUG
     end
 
     if tk == nil || :on___end__ == tk[:kind]
@@ -111,17 +109,27 @@ module RDoc::Parser::RubyTools
     @scanner_point = 0
   end
 
-  def tk_nl?(tk)
-    :on_nl == tk[:kind] or :on_ignored_nl == tk[:kind]
+  ##
+  # Skips whitespace tokens including newlines
+
+  def skip_tkspace
+    tokens = []
+
+    while (tk = get_tk) and (:on_sp == tk[:kind] or :on_nl == tk[:kind] or :on_ignored_nl == tk[:kind]) do
+      tokens.push(tk)
+    end
+
+    unget_tk(tk)
+    tokens
   end
 
   ##
-  # Skips whitespace tokens including newlines if +skip_nl+ is true
+  # Skips whitespace tokens excluding newlines
 
-  def skip_tkspace(skip_nl = true)
+  def skip_tkspace_without_nl
     tokens = []
 
-    while (tk = get_tk) and (:on_sp == tk[:kind] or (skip_nl and tk_nl?(tk))) do
+    while (tk = get_tk) and :on_sp == tk[:kind] do
       tokens.push(tk)
     end
 

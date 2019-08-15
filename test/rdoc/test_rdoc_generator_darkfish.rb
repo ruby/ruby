@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocGeneratorDarkfish < RDoc::TestCase
 
@@ -39,7 +39,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
 
     @top_level.add_constant @alias_constant
 
-    @klass.add_module_alias @klass, 'A', @top_level
+    @klass.add_module_alias @klass, @klass.name, @alias_constant, @top_level
 
     @meth = RDoc::AnyMethod.new nil, 'method'
     @meth_bang = RDoc::AnyMethod.new nil, 'method!'
@@ -135,7 +135,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
   end
 
   def test_install_rdoc_static_file
-    src = Pathname(__FILE__)
+    src = Pathname File.expand_path(__FILE__, @pwd)
     dst = File.join @tmpdir, File.basename(src)
     options = {}
 

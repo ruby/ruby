@@ -1,5 +1,5 @@
 #! /your/favourite/path/to/ruby
-# -*- mode: ruby; coding: utf-8; indent-tabs-mode: nil; ruby-indent-level: 2 -*-
+# -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-
 #
@@ -18,6 +18,7 @@ RubyVM::Typemap = {
   "GENTRY"         => %w[G TS_GENTRY],
   "IC"             => %w[K TS_IC],
   "ID"             => %w[I TS_ID],
+  "ISE"            => %w[T TS_ISE],
   "ISEQ"           => %w[S TS_ISEQ],
   "OFFSET"         => %w[O TS_OFFSET],
   "VALUE"          => %w[V TS_VALUE],

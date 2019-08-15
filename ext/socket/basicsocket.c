@@ -314,6 +314,18 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     level = rsock_level_arg(family, lev);
     option = rsock_optname_arg(family, level, optname);
     len = 256;
+#ifdef _AIX
+    switch (option) {
+      case SO_DEBUG:
+      case SO_REUSEADDR:
+      case SO_KEEPALIVE:
+      case SO_DONTROUTE:
+      case SO_BROADCAST:
+      case SO_OOBINLINE:
+        /* AIX doesn't set len for boolean options */
+        len = sizeof(int);
+    }
+#endif
     buf = ALLOCA_N(char,len);
 
     rb_io_check_closed(fptr);

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require 'net/http'
-require 'thread'
 require 'time'
 require 'rubygems/user_interaction'
 
@@ -11,15 +10,15 @@ class Gem::Request
 
   ###
   # Legacy.  This is used in tests.
-  def self.create_with_proxy uri, request_class, last_modified, proxy # :nodoc:
+  def self.create_with_proxy(uri, request_class, last_modified, proxy) # :nodoc:
     cert_files = get_cert_files
     proxy ||= get_proxy_from_env(uri.scheme)
-    pool       = ConnectionPools.new proxy_uri(proxy), cert_files
+    pool = ConnectionPools.new proxy_uri(proxy), cert_files
 
     new(uri, request_class, last_modified, pool.pool_for(uri))
   end
 
-  def self.proxy_uri proxy # :nodoc:
+  def self.proxy_uri(proxy) # :nodoc:
     case proxy
     when :no_proxy then nil
     when URI::HTTP then proxy
@@ -52,7 +51,7 @@ class Gem::Request
       Gem.configuration.ssl_verify_mode || OpenSSL::SSL::VERIFY_PEER
     store = OpenSSL::X509::Store.new
 
-    if Gem.configuration.ssl_client_cert then
+    if Gem.configuration.ssl_client_cert
       pem = File.read Gem.configuration.ssl_client_cert
       connection.cert = OpenSSL::X509::Certificate.new pem
       connection.key = OpenSSL::PKey::RSA.new pem
@@ -86,7 +85,7 @@ class Gem::Request
             'Unable to require openssl, install OpenSSL and rebuild Ruby (preferred) or use non-HTTPS sources')
   end
 
-  def self.verify_certificate store_context
+  def self.verify_certificate(store_context)
     depth  = store_context.error_depth
     error  = store_context.error_string
     number = store_context.error
@@ -99,7 +98,7 @@ class Gem::Request
     ui.alert_error extra_message if extra_message
   end
 
-  def self.verify_certificate_message error_number, cert
+  def self.verify_certificate_message(error_number, cert)
     return unless cert
     case error_number
     when OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED then
@@ -118,9 +117,11 @@ class Gem::Request
       "Certificate #{cert.subject} has an invalid purpose"
     when OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN then
       "Root certificate is not trusted (#{cert.subject})"
-    when OpenSSL::X509::V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY,
-      OpenSSL::X509::V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE then
+    when OpenSSL::X509::V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY then
       "You must add #{cert.issuer} to your local trusted store"
+    when
+      OpenSSL::X509::V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE then
+      "Cannot verify certificate issued by #{cert.issuer}"
     end
   end
 
@@ -138,7 +139,7 @@ class Gem::Request
   def fetch
     request = @request_class.new @uri.request_uri
 
-    unless @uri.nil? || @uri.user.nil? || @uri.user.empty? then
+    unless @uri.nil? || @uri.user.nil? || @uri.user.empty?
       request.basic_auth Gem::UriFormatter.new(@uri.user).unescape,
                          Gem::UriFormatter.new(@uri.password).unescape
     end
@@ -147,7 +148,7 @@ class Gem::Request
     request.add_field 'Connection', 'keep-alive'
     request.add_field 'Keep-Alive', '30'
 
-    if @last_modified then
+    if @last_modified
       request.add_field 'If-Modified-Since', @last_modified.httpdate
     end
 
@@ -160,19 +161,21 @@ class Gem::Request
   # Returns a proxy URI for the given +scheme+ if one is set in the
   # environment variables.
 
-  def self.get_proxy_from_env scheme = 'http'
+  def self.get_proxy_from_env(scheme = 'http')
     _scheme = scheme.downcase
     _SCHEME = scheme.upcase
     env_proxy = ENV["#{_scheme}_proxy"] || ENV["#{_SCHEME}_PROXY"]
 
     no_env_proxy = env_proxy.nil? || env_proxy.empty?
 
-    return get_proxy_from_env 'http' if no_env_proxy and _scheme != 'http'
-    return :no_proxy                 if no_env_proxy
+    if no_env_proxy
+      return (_scheme == 'https' || _scheme == 'http') ?
+        :no_proxy : get_proxy_from_env('http')
+    end
 
     uri = URI(Gem::UriFormatter.new(env_proxy).normalize)
 
-    if uri and uri.user.nil? and uri.password.nil? then
+    if uri and uri.user.nil? and uri.password.nil?
       user     = ENV["#{_scheme}_proxy_user"] || ENV["#{_SCHEME}_PROXY_USER"]
       password = ENV["#{_scheme}_proxy_pass"] || ENV["#{_SCHEME}_PROXY_PASS"]
 
@@ -183,7 +186,7 @@ class Gem::Request
     uri
   end
 
-  def perform_request request # :nodoc:
+  def perform_request(request) # :nodoc:
     connection = connection_for @uri
 
     retried = false
@@ -275,14 +278,14 @@ class Gem::Request
     ruby_version += 'dev' if RUBY_PATCHLEVEL == -1
 
     ua << " Ruby/#{ruby_version} (#{RUBY_RELEASE_DATE}"
-    if RUBY_PATCHLEVEL >= 0 then
+    if RUBY_PATCHLEVEL >= 0
       ua << " patchlevel #{RUBY_PATCHLEVEL}"
-    elsif defined?(RUBY_REVISION) then
+    elsif defined?(RUBY_REVISION)
       ua << " revision #{RUBY_REVISION}"
     end
     ua << ")"
 
-    ua << " #{RUBY_ENGINE}" if defined?(RUBY_ENGINE) and RUBY_ENGINE != 'ruby'
+    ua << " #{RUBY_ENGINE}" if RUBY_ENGINE != 'ruby'
 
     ua
   end

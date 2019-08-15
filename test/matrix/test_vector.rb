@@ -27,6 +27,108 @@ class TestVector < Test::Unit::TestCase
     assert_raise(ArgumentError) { Vector.basis(index: 3) }
   end
 
+  def test_get_element
+    assert_equal(@v1[0..], [1, 2, 3])
+    assert_equal(@v1[0..1], [1, 2])
+    assert_equal(@v1[2], 3)
+    assert_equal(@v1[4], nil)
+  end
+
+  def test_set_element
+
+    assert_block do
+      v = Vector[5, 6, 7, 8, 9]
+      v[1..2] = Vector[1, 2]
+      v == Vector[5, 1, 2, 8, 9]
+    end
+
+    assert_block do
+      v = Vector[6, 7, 8]
+      v[1..2] = Matrix[[1, 3]]
+      v == Vector[6, 1, 3]
+    end
+
+    assert_block do
+      v = Vector[1, 2, 3, 4, 5, 6]
+      v[0..2] = 8
+      v == Vector[8, 8, 8, 4, 5, 6]
+    end
+
+    assert_block do
+      v = Vector[1, 3, 4, 5]
+      v[2] = 5
+      v == Vector[1, 3, 5, 5]
+    end
+
+    assert_block do
+      v = Vector[2, 3, 5]
+      v[-2] = 13
+      v == Vector[2, 13, 5]
+    end
+
+    assert_block do
+      v = Vector[4, 8, 9, 11, 30]
+      v[1..-2] = Vector[1, 2, 3]
+      v == Vector[4, 1, 2, 3, 30]
+    end
+
+    assert_raise(IndexError) {Vector[1, 3, 4, 5][5..6] = 17}
+    assert_raise(IndexError) {Vector[1, 3, 4, 5][6] = 17}
+    assert_raise(Matrix::ErrDimensionMismatch) {Vector[1, 3, 4, 5][0..2] = Matrix[[1], [2], [3]]}
+    assert_raise(ArgumentError) {Vector[1, 2, 3, 4, 5, 6][0..2] = Vector[1, 2, 3, 4, 5, 6]}
+    assert_raise(FrozenError) { Vector[7, 8, 9].freeze[0..1] = 5}
+  end
+
+  def test_map!
+    v1 = Vector[1, 2, 3]
+    v2 = Vector[1, 3, 5].freeze
+    v3 = Vector[].freeze
+    assert_equal Vector[1, 4, 9], v1.map!{|e| e ** 2}
+    assert_equal v1, v1.map!{|e| e - 8}
+    assert_raise(FrozenError) { v2.map!{|e| e + 2 }}
+    assert_raise(FrozenError){ v3.map!{} }
+  end
+
+  def test_freeze
+    v = Vector[1,2,3]
+    f = v.freeze
+    assert_equal true, f.frozen?
+    assert v.equal?(f)
+    assert v.equal?(f.freeze)
+    assert_raise(FrozenError){ v[1] = 56 }
+    assert_equal v.dup, v
+  end
+
+  def test_clone
+    a = Vector[4]
+    def a.foo
+      42
+    end
+
+    v = a.clone
+    v[0] = 2
+    assert_equal a, v * 2
+    assert_equal 42, v.foo
+
+    a.freeze
+    v = a.clone
+    assert v.frozen?
+    assert_equal 42, v.foo
+  end
+
+  def test_dup
+    a = Vector[4]
+    def a.foo
+      42
+    end
+    a.freeze
+
+    v = a.dup
+    v[0] = 2
+    assert_equal a, v * 2
+    assert !v.respond_to?(:foo)
+  end
+
   def test_identity
     assert_same @v1, @v1
     assert_not_same @v1, @v2
@@ -223,6 +325,8 @@ class TestVector < Test::Unit::TestCase
     assert_in_epsilon(Math::PI/2, Vector[1, 0].angle_with(Vector[0, -1]))
     assert_in_epsilon(Math::PI/4, Vector[2, 2].angle_with(Vector[0, 1]))
     assert_in_delta(0.0, Vector[1, 1].angle_with(Vector[1, 1]), 0.00001)
+    assert_equal(Vector[6, 6].angle_with(Vector[7, 7]), 0.0)
+    assert_equal(Vector[6, 6].angle_with(Vector[-7, -7]), Math::PI)
 
     assert_raise(Vector::ZeroVectorError) { Vector[1, 1].angle_with(Vector[0, 0]) }
     assert_raise(Vector::ZeroVectorError) { Vector[0, 0].angle_with(Vector[1, 1]) }

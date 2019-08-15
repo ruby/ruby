@@ -1171,7 +1171,7 @@ dln_strerror(void)
 }
 #endif
 
-#if defined(_AIX) && ! defined(_IA64)
+#if defined(_AIX)
 static void
 aix_loaderror(const char *pathname)
 {
@@ -1244,12 +1244,9 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 #endif
 
 #ifdef USE_DLN_DLOPEN
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wpedantic"
-#elif defined(__GNUC__) && (__GNUC__ >= 5)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
+COMPILER_WARNING_PUSH
+#if defined(__clang__) || GCC_VERSION_SINCE(4, 2, 0)
+COMPILER_WARNING_IGNORED(-Wpedantic)
 #endif
 static bool
 dln_incompatible_library_p(void *handle)
@@ -1257,11 +1254,7 @@ dln_incompatible_library_p(void *handle)
     void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
     return ex && ex != ruby_xmalloc;
 }
-#ifdef __clang__
-#pragma clang diagnostic pop
-#elif defined(__GNUC__) && (__GNUC__ >= 5)
-#pragma GCC diagnostic pop
-#endif
+COMPILER_WARNING_POP
 #endif
 
 void*
@@ -1407,7 +1400,7 @@ dln_load(const char *file)
     }
 #endif /* hpux */
 
-#if defined(_AIX) && ! defined(_IA64)
+#if defined(_AIX)
 #define DLN_DEFINED
     {
 	void (*init_fct)();

@@ -147,12 +147,15 @@ class RDoc::Generator::JsonIndex
 
       JSON.dump data, io, 0
     end
+    unless ENV['SOURCE_DATE_EPOCH'].nil?
+      index_file.utime index_file.atime, Time.at(ENV['SOURCE_DATE_EPOCH'].to_i).gmtime
+    end
 
     Dir.chdir @template_dir do
       Dir['**/*.js'].each do |source|
         dest = File.join out_dir, source
 
-        FileUtils.install source, dest, :mode => 0644, :verbose => $DEBUG_RDOC
+        FileUtils.install source, dest, :mode => 0644, :preserve => true, :verbose => $DEBUG_RDOC
       end
     end
   end
