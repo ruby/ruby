@@ -1,8 +1,15 @@
 # frozen_string_literal: true
 
+begin
+  require_relative "lib/matrix/version"
+rescue LoadError
+  # for Ruby core repository
+  require_relative "version"
+end
+
 Gem::Specification.new do |spec|
   spec.name          = "matrix"
-  spec.version       = "0.1.0"
+  spec.version       = Matrix::VERSION
   spec.authors       = ["Marc-Andre Lafortune"]
   spec.email         = ["ruby-core@marc-andre.ca"]
 
@@ -11,7 +18,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ruby/matrix"
   spec.license       = "BSD-2-Clause"
 
-  spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "lib/matrix.rb", "matrix.gemspec"]
+  spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "lib/matrix.rb", "lib/matrix/eigenvalue_decomposition.rb", "lib/matrix/lup_decomposition.rb", "lib/matrix/version.rb", "matrix.gemspec"]
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]

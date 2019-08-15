@@ -14,12 +14,12 @@ describe "Mutex#lock" do
   it "blocks the caller if already locked" do
     m = Mutex.new
     m.lock
-    lambda { m.lock }.should block_caller
+    -> { m.lock }.should block_caller
   end
 
   it "does not block the caller if not locked" do
     m = Mutex.new
-    lambda { m.lock }.should_not block_caller
+    -> { m.lock }.should_not block_caller
   end
 
   # Unable to find a specific ticket but behavior change may be

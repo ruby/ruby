@@ -1251,6 +1251,17 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_s_glob_3args
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("f", "w") {|f| f.write "abc" }
+      Dir.chdir("/") {
+        assert_equal(
+          [Pathname("."), Pathname(".."), Pathname("f")],
+          Pathname.glob("*", File::FNM_DOTMATCH, base: dir).sort)
+      }
+    }
+  end
+
   def test_s_getwd
     wd = Pathname.getwd
     assert_kind_of(Pathname, wd)

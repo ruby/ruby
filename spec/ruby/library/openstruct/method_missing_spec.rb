@@ -7,12 +7,12 @@ describe "OpenStruct#method_missing when called with a method name ending in '='
   end
 
   it "raises an ArgumentError when not passed any additional arguments" do
-    lambda { @os.method_missing(:test=) }.should raise_error(ArgumentError)
+    -> { @os.method_missing(:test=) }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError when self is frozen" do
     @os.freeze
-    lambda { @os.method_missing(:test=, "test") }.should raise_error(RuntimeError)
+    -> { @os.method_missing(:test=, "test") }.should raise_error(RuntimeError)
   end
 
   it "creates accessor methods" do
@@ -29,13 +29,13 @@ end
 describe "OpenStruct#method_missing when passed additional arguments" do
   it "raises a NoMethodError when the key does not exist" do
     os = OpenStruct.new
-    lambda { os.method_missing(:test, 1, 2, 3) }.should raise_error(NoMethodError)
+    -> { os.method_missing(:test, 1, 2, 3) }.should raise_error(NoMethodError)
   end
 
   ruby_version_is "2.7" do
     it "raises an ArgumentError when the key exists" do
       os = OpenStruct.new(test: 20)
-      lambda { os.method_missing(:test, 1, 2, 3) }.should raise_error(ArgumentError)
+      -> { os.method_missing(:test, 1, 2, 3) }.should raise_error(ArgumentError)
     end
   end
 end

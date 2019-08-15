@@ -808,6 +808,12 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(ZeroDivisionError) {Rational("1/0")}
   end
 
+  def test_Rational_with_invalid_exception
+    assert_raise(ArgumentError) {
+      Rational("1/1", exception: 1)
+    }
+  end
+
   def test_Rational_without_exception
     assert_nothing_raised(ArgumentError) {
       assert_equal(nil, Rational("5/3x", exception: false))

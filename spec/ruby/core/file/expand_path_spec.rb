@@ -92,7 +92,7 @@ describe "File.expand_path" do
     end
 
     it "raises an ArgumentError if the path is not valid" do
-      lambda { File.expand_path("~a_not_existing_user") }.should raise_error(ArgumentError)
+      -> { File.expand_path("~a_not_existing_user") }.should raise_error(ArgumentError)
     end
 
     it "expands ~ENV['USER'] to the user's home directory" do
@@ -117,9 +117,9 @@ describe "File.expand_path" do
   end
 
   it "raises a TypeError if not passed a String type" do
-    lambda { File.expand_path(1)    }.should raise_error(TypeError)
-    lambda { File.expand_path(nil)  }.should raise_error(TypeError)
-    lambda { File.expand_path(true) }.should raise_error(TypeError)
+    -> { File.expand_path(1)    }.should raise_error(TypeError)
+    -> { File.expand_path(nil)  }.should raise_error(TypeError)
+    -> { File.expand_path(true) }.should raise_error(TypeError)
   end
 
   platform_is_not :windows do
@@ -159,7 +159,7 @@ describe "File.expand_path" do
   platform_is_not :windows do
     it "raises an Encoding::CompatibilityError if the external encoding is not compatible" do
       Encoding.default_external = Encoding::UTF_16BE
-      lambda { File.expand_path("./a") }.should raise_error(Encoding::CompatibilityError)
+      -> { File.expand_path("./a") }.should raise_error(Encoding::CompatibilityError)
     end
   end
 
@@ -244,7 +244,7 @@ platform_is_not :windows do
 
     it "raises an ArgumentError when passed '~' if HOME == ''" do
       ENV["HOME"] = ""
-      lambda { File.expand_path("~") }.should raise_error(ArgumentError)
+      -> { File.expand_path("~") }.should raise_error(ArgumentError)
     end
   end
 
@@ -259,7 +259,7 @@ platform_is_not :windows do
 
     it "raises an ArgumentError" do
       ENV["HOME"] = "non-absolute"
-      lambda { File.expand_path("~") }.should raise_error(ArgumentError, 'non-absolute home')
+      -> { File.expand_path("~") }.should raise_error(ArgumentError, 'non-absolute home')
     end
   end
 end

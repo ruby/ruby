@@ -1407,6 +1407,9 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
 
     message = e.full_message(highlight: true)
     assert_match(/\e/, message)
+    assert_not_match(/(\e\[1)m\1/, message)
+    e2 = assert_raise(RuntimeError) {raise RuntimeError, "", bt}
+    assert_not_match(/(\e\[1)m\1/, e2.full_message(highlight: true))
 
     message = e.full_message
     if Exception.to_tty?

@@ -13,7 +13,7 @@ describe :proc_equal, shared: true do
     p = Proc.new { :foo }
     p.send(@method, p).should be_true
 
-    p = lambda { :foo }
+    p = -> { :foo }
     p.send(@method, p).should be_true
   end
 
@@ -24,7 +24,7 @@ describe :proc_equal, shared: true do
     p = Proc.new { :foo }
     p.send(@method, p.dup).should be_true
 
-    p = lambda { :foo }
+    p = -> { :foo }
     p.send(@method, p.dup).should be_true
   end
 
@@ -43,18 +43,18 @@ describe :proc_equal, shared: true do
   end
 
   it "returns true if both lambdas with the same body and environment" do
-    x = lambda { :foo }
-    x2 = lambda { :foo }
+    x = -> { :foo }
+    x2 = -> { :foo }
     x.send(@method, x2).should be_true
   end
 
   it "returns true if both different kinds of procs with the same body and env" do
-    p = lambda { :foo }
+    p = -> { :foo }
     p2 = proc { :foo }
     p.send(@method, p2).should be_true
 
     x = proc { :bar }
-    x2 = lambda { :bar }
+    x2 = -> { :bar }
     x.send(@method, x2).should be_true
   end
 
@@ -65,7 +65,7 @@ describe :proc_equal, shared: true do
     p = Proc.new { :foo }
     p.send(@method, Object.new).should be_false
 
-    p = lambda { :foo }
+    p = -> { :foo }
     p.send(@method, :foo).should be_false
   end
 
@@ -76,8 +76,8 @@ describe :proc_equal, shared: true do
   end
 
   it "returns false if self and other are both lambdas but have different bodies" do
-    p = lambda { :foo }
-    p2 = lambda { :bar }
+    p = -> { :foo }
+    p2 = -> { :bar }
     p.send(@method, p2).should be_false
   end
 end
@@ -94,7 +94,7 @@ describe :proc_equal_undefined, shared: true do
     p = Proc.new { :foo }
     p.send(@method, p.dup).should be_false
 
-    p = lambda { :foo }
+    p = -> { :foo }
     p.send(@method, p.dup).should be_false
   end
 end

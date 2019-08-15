@@ -69,7 +69,7 @@ module Bundler
       Bundler.ui.info "\n"
 
       primary_commands = ["install", "update",
-                          Bundler.feature_flag.cache_command_is_package? ? "cache" : "package",
+                          Bundler.feature_flag.bundler_3_mode? ? "cache" : "package",
                           "exec", "config", "help"]
 
       list = self.class.printable_commands(true)
@@ -410,24 +410,8 @@ module Bundler
       Outdated.new(options, gems).run
     end
 
-    if Bundler.feature_flag.cache_command_is_package?
-      map %w[cache] => :package
-    else
-      desc "cache [OPTIONS]", "Cache all the gems to vendor/cache", :hide => true
-      unless Bundler.feature_flag.cache_command_is_package?
-        method_option "all", :type => :boolean,
-                             :banner => "Include all sources (including path and git)."
-      end
-      method_option "all-platforms", :type => :boolean, :banner => "Include gems for all platforms present in the lockfile, not only the current one"
-      method_option "no-prune", :type => :boolean, :banner => "Don't remove stale gems from the cache."
-      def cache
-        require_relative "cli/cache"
-        Cache.new(options).run
-      end
-    end
-
-    desc "#{Bundler.feature_flag.cache_command_is_package? ? :cache : :package} [OPTIONS]", "Locks and then caches all of the gems into vendor/cache"
-    unless Bundler.feature_flag.cache_command_is_package?
+    desc "#{Bundler.feature_flag.bundler_3_mode? ? :cache : :package} [OPTIONS]", "Locks and then caches all of the gems into vendor/cache"
+    unless Bundler.feature_flag.cache_all?
       method_option "all",  :type => :boolean,
                             :banner => "Include all sources (including path and git)."
     end
@@ -452,7 +436,7 @@ module Bundler
       require_relative "cli/package"
       Package.new(options).run
     end
-    map %w[pack] => :package
+    map %w[cache pack] => :package
 
     desc "exec [OPTIONS]", "Run the command in context of the bundle"
     method_option :keep_file_descriptors, :type => :boolean, :default => false

@@ -186,11 +186,14 @@ class TestDateStrftime < Test::Unit::TestCase
     (-24..24).collect{|x| '%+.2d' % x}.each do |hh|
       %w(00 30).each do |mm|
 	r = hh + mm
-	if r[-4,4] == '2430'
-	  r = '+0000'
-	end
+	next if r.end_with?('2430')
 	d = DateTime.parse(s + hh + mm)
 	assert_equal(r, d.strftime('%z'))
+      end
+    end
+    %w[+2430 -2430].each do |r|
+      assert_warning(/invalid offset/) do
+        DateTime.parse(s + r)
       end
     end
   end
