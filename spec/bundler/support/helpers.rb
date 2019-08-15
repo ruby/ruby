@@ -297,20 +297,13 @@ module Spec
       options = gems.last.is_a?(Hash) ? gems.pop : {}
       gem_repo = options.fetch(:gem_repo) { gem_repo1 }
       gems.each do |g|
-        path = if g == :bundler
-          with_root_gemspec do |gemspec|
-            Dir.chdir(root) { gem_command! :build, gemspec }
-          end
-          bundler_path = root.join("bundler-#{Bundler::VERSION}.gem")
+        if g == :bundler
+          with_built_bundler {|gem_path| install_gem(gem_path) }
         elsif g.to_s =~ %r{\A(?:[A-Z]:)?/.*\.gem\z}
-          g
+          install_gem(g)
         else
-          "#{gem_repo}/gems/#{g}.gem"
+          install_gem("#{gem_repo}/gems/#{g}.gem")
         end
-
-        install_gem(path)
-
-        bundler_path && bundler_path.rmtree
       end
     end
 
@@ -318,6 +311,20 @@ module Spec
       raise "OMG `#{path}` does not exist!" unless File.exist?(path)
 
       gem_command! :install, "--no-document --ignore-dependencies '#{path}'"
+    end
+
+    def with_built_bundler
+      with_root_gemspec do |gemspec|
+        Dir.chdir(root) { gem_command! :build, gemspec.to_s }
+      end
+
+      bundler_path = root + "bundler-#{Bundler::VERSION}.gem"
+
+      begin
+        yield(bundler_path)
+      ensure
+        bundler_path.rmtree
+      end
     end
 
     def with_gem_path_as(path)
