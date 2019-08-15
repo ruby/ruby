@@ -226,20 +226,22 @@ RSpec.describe "The library itself" do
 
   it "can still be built" do
     Dir.chdir(root) do
-      begin
-        if ruby_core?
-          spec = Gem::Specification.load(gemspec.to_s)
-          spec.bindir = "libexec"
-          File.open(root.join("bundler.gemspec").to_s, "w") {|f| f.write spec.to_ruby }
-          gem_command! :build, root.join("bundler.gemspec")
-          FileUtils.rm(root.join("bundler.gemspec"))
-        else
-          gem_command! :build, gemspec
-        end
+      if ruby_core?
+        spec = Gem::Specification.load(gemspec.to_s)
+        spec.bindir = "libexec"
+        File.open(root.join("bundler.gemspec").to_s, "w") {|f| f.write spec.to_ruby }
+        gem_command! :build, root.join("bundler.gemspec")
+        FileUtils.rm(root.join("bundler.gemspec"))
+      else
+        gem_command! :build, gemspec
+      end
 
+      bundler_path = root.join("bundler-#{Bundler::VERSION}.gem")
+
+      begin
         expect(err).to be_empty, "bundler should build as a gem without warnings, but\n#{err}"
       ensure
-        root.join("bundler-#{Bundler::VERSION}.gem").rmtree
+        bundler_path.rmtree
       end
     end
   end
