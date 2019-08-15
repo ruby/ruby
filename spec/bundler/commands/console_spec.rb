@@ -3,7 +3,7 @@
 RSpec.describe "bundle console", :bundler => "< 3" do
   before :each do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
       gem "activesupport", :group => :test
       gem "rack_middleware", :group => :development
@@ -28,7 +28,7 @@ RSpec.describe "bundle console", :bundler => "< 3" do
 
   it "starts another REPL if configured as such" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "pry"
     G
     bundle "config set console pry"
@@ -87,7 +87,7 @@ RSpec.describe "bundle console", :bundler => "< 3" do
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
       gem "activesupport", :group => :test
       gem "rack_middleware", :group => :development

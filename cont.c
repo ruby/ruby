@@ -579,7 +579,7 @@ fiber_pool_allocation_free(struct fiber_pool_allocation * allocation)
 }
 #endif
 
-// Acquire a stack from the given fiber pool. If none are avilable, allocate more.
+// Acquire a stack from the given fiber pool. If none are available, allocate more.
 static struct fiber_pool_stack
 fiber_pool_stack_acquire(struct fiber_pool * fiber_pool) {
     struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pop(fiber_pool);
@@ -669,11 +669,11 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
 #ifdef FIBER_POOL_ALLOCATION_FREE
     struct fiber_pool_allocation * allocation = stack->allocation;
 
-    stack->allocation->used -= 1;
+    allocation->used -= 1;
 
     // Release address space and/or dirty memory:
-    if (stack->allocation->used == 0) {
-        fiber_pool_allocation_free(stack->allocation);
+    if (allocation->used == 0) {
+        fiber_pool_allocation_free(allocation);
     }
     else if (stack->pool->free_stacks) {
         fiber_pool_stack_free(&vacancy->stack);
@@ -858,7 +858,7 @@ cont_mark(void *ptr)
     rb_context_t *cont = ptr;
 
     RUBY_MARK_ENTER("cont");
-    rb_gc_mark_no_pin(cont->value);
+    rb_gc_mark_movable(cont->value);
 
     rb_execution_context_mark(&cont->saved_ec);
     rb_gc_mark(cont_thread_value(cont));
@@ -967,7 +967,7 @@ void
 rb_fiber_mark_self(const rb_fiber_t *fiber)
 {
     if (fiber->cont.self) {
-        rb_gc_mark_no_pin(fiber->cont.self);
+        rb_gc_mark_movable(fiber->cont.self);
     }
     else {
         rb_execution_context_mark(&fiber->cont.saved_ec);
@@ -992,7 +992,7 @@ fiber_mark(void *ptr)
     rb_fiber_t *fiber = ptr;
     RUBY_MARK_ENTER("cont");
     fiber_verify(fiber);
-    rb_gc_mark_no_pin(fiber->first_proc);
+    rb_gc_mark_movable(fiber->first_proc);
     if (fiber->prev) rb_fiber_mark_self(fiber->prev);
     cont_mark(&fiber->cont);
     RUBY_MARK_LEAVE("cont");

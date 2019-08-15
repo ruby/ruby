@@ -902,7 +902,7 @@ end
 
   def test_parse_class_lower_name_warning
     @options.verbosity = 2
-    stds = capture_io do
+    stds = capture_output do
       util_parser "class foo\nend"
       tk = @parser.get_tk
       @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, @comment
@@ -913,7 +913,7 @@ end
 
   def test_parse_syntax_error_code
     @options.verbosity = 2
-    stds = capture_io do
+    stds = capture_output do
       begin
         util_parser <<INVALID_CODE
 # invalid class name
