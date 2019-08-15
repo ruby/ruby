@@ -271,7 +271,7 @@ rb_iseq_update_references(rb_iseq_t *iseq)
 static VALUE
 each_insn_value(void *ctx, VALUE obj)
 {
-    rb_gc_mark_no_pin(obj);
+    rb_gc_mark_movable(obj);
     return obj;
 }
 
@@ -289,11 +289,11 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	    rb_iseq_each_value(iseq, each_insn_value, NULL);
 	}
 
-        rb_gc_mark_no_pin(body->variable.coverage);
-        rb_gc_mark_no_pin(body->variable.pc2branchindex);
-        rb_gc_mark_no_pin(body->location.label);
-        rb_gc_mark_no_pin(body->location.base_label);
-        rb_gc_mark_no_pin(body->location.pathobj);
+        rb_gc_mark_movable(body->variable.coverage);
+        rb_gc_mark_movable(body->variable.pc2branchindex);
+        rb_gc_mark_movable(body->location.label);
+        rb_gc_mark_movable(body->location.base_label);
+        rb_gc_mark_movable(body->location.pathobj);
         RUBY_MARK_NO_PIN_UNLESS_NULL((VALUE)body->parent_iseq);
 
 	if (body->param.flags.has_kw && ISEQ_COMPILE_DATA(iseq) == NULL) {
@@ -305,7 +305,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	    for (j = 0; i < keyword->num; i++, j++) {
 		VALUE obj = keyword->default_values[j];
 		if (!SPECIAL_CONST_P(obj)) {
-		    rb_gc_mark(obj);
+                    rb_gc_mark_movable(obj);
 		}
 	    }
 	}
@@ -317,7 +317,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 		const struct iseq_catch_table_entry *entry;
 		entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
 		if (entry->iseq) {
-                    rb_gc_mark_no_pin((VALUE)entry->iseq);
+                    rb_gc_mark_movable((VALUE)entry->iseq);
 		}
 	    }
 	}
@@ -361,8 +361,8 @@ param_keyword_size(const struct rb_iseq_param_keyword *pkw)
     return size;
 }
 
-static size_t
-iseq_memsize(const rb_iseq_t *iseq)
+size_t
+rb_iseq_memsize(const rb_iseq_t *iseq)
 {
     size_t size = 0; /* struct already counted as RVALUE size */
     const struct rb_iseq_constant_body *body = iseq->body;
@@ -370,41 +370,41 @@ iseq_memsize(const rb_iseq_t *iseq)
 
     /* TODO: should we count original_iseq? */
 
-    if (body) {
-	struct rb_call_info_with_kwarg *ci_kw_entries = (struct rb_call_info_with_kwarg *)&body->ci_entries[body->ci_size];
+    if (ISEQ_EXECUTABLE_P(iseq) && body) {
+        struct rb_call_info_with_kwarg *ci_kw_entries = (struct rb_call_info_with_kwarg *)&body->ci_entries[body->ci_size];
 
-	size += sizeof(struct rb_iseq_constant_body);
-	size += body->iseq_size * sizeof(VALUE);
-	size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
-	size += body->local_table_size * sizeof(ID);
-	if (body->catch_table) {
-	    size += iseq_catch_table_bytes(body->catch_table->size);
-	}
-	size += (body->param.opt_num + 1) * sizeof(VALUE);
-	size += param_keyword_size(body->param.keyword);
+        size += sizeof(struct rb_iseq_constant_body);
+        size += body->iseq_size * sizeof(VALUE);
+        size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
+        size += body->local_table_size * sizeof(ID);
+        if (body->catch_table) {
+            size += iseq_catch_table_bytes(body->catch_table->size);
+        }
+        size += (body->param.opt_num + 1) * sizeof(VALUE);
+        size += param_keyword_size(body->param.keyword);
 
-	/* body->is_entries */
-	size += body->is_size * sizeof(union iseq_inline_storage_entry);
+        /* body->is_entries */
+        size += body->is_size * sizeof(union iseq_inline_storage_entry);
 
-	/* body->ci_entries */
-	size += body->ci_size * sizeof(struct rb_call_info);
-	size += body->ci_kw_size * sizeof(struct rb_call_info_with_kwarg);
+        /* body->ci_entries */
+        size += body->ci_size * sizeof(struct rb_call_info);
+        size += body->ci_kw_size * sizeof(struct rb_call_info_with_kwarg);
 
-	/* body->cc_entries */
-	size += body->ci_size * sizeof(struct rb_call_cache);
-	size += body->ci_kw_size * sizeof(struct rb_call_cache);
+        /* body->cc_entries */
+        size += body->ci_size * sizeof(struct rb_call_cache);
+        size += body->ci_kw_size * sizeof(struct rb_call_cache);
 
-	if (ci_kw_entries) {
-	    unsigned int i;
+        if (ci_kw_entries) {
+            unsigned int i;
 
-	    for (i = 0; i < body->ci_kw_size; i++) {
-		const struct rb_call_info_kw_arg *kw_arg = ci_kw_entries[i].kw_arg;
+            for (i = 0; i < body->ci_kw_size; i++) {
+                const struct rb_call_info_kw_arg *kw_arg = ci_kw_entries[i].kw_arg;
 
-		if (kw_arg) {
-		    size += rb_call_info_kw_arg_bytes(kw_arg->keyword_len);
-		}
-	    }
-	}
+                if (kw_arg) {
+                    size += rb_call_info_kw_arg_bytes(kw_arg->keyword_len);
+                }
+            }
+        }
     }
 
     compile_data = ISEQ_COMPILE_DATA(iseq);
@@ -1109,7 +1109,7 @@ iseqw_mark(void *ptr)
 static size_t
 iseqw_memsize(const void *ptr)
 {
-    return iseq_memsize((const rb_iseq_t *)ptr);
+    return rb_iseq_memsize((const rb_iseq_t *)ptr);
 }
 
 static const rb_data_type_t iseqw_data_type = {
@@ -3472,7 +3472,9 @@ succ_index_lookup(const struct succ_index_table *sd, int x)
  *  Document-class: RubyVM::InstructionSequence
  *
  *  The InstructionSequence class represents a compiled sequence of
- *  instructions for the Ruby Virtual Machine.
+ *  instructions for the Ruby Virtual Machine. Not all implementations of Ruby
+ *  may implement this class, and for the implementations that implement it,
+ *  the methods defined and behavior of the methods can change in any version.
  *
  *  With it, you can get a handle to the instructions that make up a method or
  *  a proc, compile strings of Ruby code down to VM instructions, and

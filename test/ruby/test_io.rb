@@ -113,6 +113,65 @@ class TestIO < Test::Unit::TestCase
     ].each{|thr| thr.join}
   end
 
+  def test_binmode_pipe
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      EnvUtil.with_default_external(Encoding::UTF_8) do
+        begin
+          reader0, writer0 = IO.pipe
+          reader0.binmode
+          writer0.binmode
+
+          reader1, writer1 = IO.pipe
+
+          reader2, writer2 = IO.pipe(binmode: true)
+          assert_predicate writer0, :binmode?
+          assert_predicate writer2, :binmode?
+          assert_equal writer0.binmode?, writer2.binmode?
+          assert_equal writer0.external_encoding, writer2.external_encoding
+          assert_equal writer0.internal_encoding, writer2.internal_encoding
+          assert_predicate reader0, :binmode?
+          assert_predicate reader2, :binmode?
+          assert_equal reader0.binmode?, reader2.binmode?
+          assert_equal reader0.external_encoding, reader2.external_encoding
+          assert_equal reader0.internal_encoding, reader2.internal_encoding
+
+          reader3, writer3 = IO.pipe("UTF-8:UTF-8", binmode: true)
+          assert_predicate writer3, :binmode?
+          assert_equal writer1.external_encoding, writer3.external_encoding
+          assert_equal writer1.internal_encoding, writer3.internal_encoding
+          assert_predicate reader3, :binmode?
+          assert_equal reader1.external_encoding, reader3.external_encoding
+          assert_equal reader1.internal_encoding, reader3.internal_encoding
+
+          reader4, writer4 = IO.pipe("UTF-8:UTF-8", binmode: true)
+          assert_predicate writer4, :binmode?
+          assert_equal writer1.external_encoding, writer4.external_encoding
+          assert_equal writer1.internal_encoding, writer4.internal_encoding
+          assert_predicate reader4, :binmode?
+          assert_equal reader1.external_encoding, reader4.external_encoding
+          assert_equal reader1.internal_encoding, reader4.internal_encoding
+
+          reader5, writer5 = IO.pipe("UTF-8", "UTF-8", binmode: true)
+          assert_predicate writer5, :binmode?
+          assert_equal writer1.external_encoding, writer5.external_encoding
+          assert_equal writer1.internal_encoding, writer5.internal_encoding
+          assert_predicate reader5, :binmode?
+          assert_equal reader1.external_encoding, reader5.external_encoding
+          assert_equal reader1.internal_encoding, reader5.internal_encoding
+        ensure
+          [
+            reader0, writer0,
+            reader1, writer1,
+            reader2, writer2,
+            reader3, writer3,
+            reader4, writer4,
+            reader5, writer5,
+          ].compact.map(&:close)
+        end
+      end
+    end
+  end
+
   def test_pipe_block
     x = nil
     ret = IO.pipe {|r, w|
@@ -1717,23 +1776,25 @@ class TestIO < Test::Unit::TestCase
           f.gets; assert_equal(3, $.)
         end
       SRC
-
-      pipe(proc do |w|
-        w.puts "foo"
-        w.puts "bar"
-        w.puts "baz"
-        w.close
-      end, proc do |r|
-        r.gets; assert_equal(1, $.)
-        r.gets; assert_equal(2, $.)
-        r.lineno = 1000; assert_equal(2, $.)
-        r.gets; assert_equal(1001, $.)
-        r.gets; assert_equal(1001, $.)
-      end)
     }
   end
 
-  def test_readline
+  def test_set_lineno_gets
+    pipe(proc do |w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+    end, proc do |r|
+      r.gets; assert_equal(1, $.)
+      r.gets; assert_equal(2, $.)
+      r.lineno = 1000; assert_equal(2, $.)
+      r.gets; assert_equal(1001, $.)
+      r.gets; assert_equal(1001, $.)
+    end)
+  end
+
+  def test_set_lineno_readline
     pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
@@ -2239,6 +2300,9 @@ class TestIO < Test::Unit::TestCase
     end
     assert_raise(Errno::ENOENT, Errno::EINVAL) do
       Class.new(IO).binread("|#{EnvUtil.rubybin} -e puts")
+    end
+    assert_raise(Errno::ESPIPE) do
+      IO.read("|echo foo", 1, 1)
     end
   end
 

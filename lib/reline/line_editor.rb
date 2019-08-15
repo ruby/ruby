@@ -241,7 +241,7 @@ class Reline::LineEditor
     @byte_pointer = new_byte_pointer
   end
 
-  def rerender # TODO: support physical and logical lines
+  def rerender
     return if @line.nil?
     if @menu_info
       scroll_down(@highest_in_all - @first_line_started_from)
@@ -808,17 +808,25 @@ class Reline::LineEditor
     rest = nil
     break_pointer = nil
     quote = nil
+    closing_quote = nil
+    escaped_quote = nil
     i = 0
     while i < @byte_pointer do
       slice = @line.byteslice(i, @byte_pointer - i)
-      if quote and slice.start_with?(/(?!\\)#{Regexp.escape(quote)}/) # closing "
+      unless slice.valid_encoding?
+        i += 1
+        next
+      end
+      if quote and slice.start_with?(closing_quote)
         quote = nil
         i += 1
-      elsif quote and slice.start_with?(/\\#{Regexp.escape(quote)}/) # escaped \"
+      elsif quote and slice.start_with?(escaped_quote)
         # skip
         i += 2
       elsif slice =~ quote_characters_regexp # find new "
         quote = $&
+        closing_quote = /(?!\\)#{Regexp.escape(quote)}/
+        escaped_quote = /\\#{Regexp.escape(quote)}/
         i += 1
       elsif not quote and slice =~ word_break_regexp
         rest = $'

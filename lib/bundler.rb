@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "bundler/compatibility_guard"
-
 require_relative "bundler/vendored_fileutils"
 require "pathname"
 require "rbconfig"
@@ -152,7 +150,7 @@ module Bundler
     end
 
     def ruby_scope
-      "#{Bundler.rubygems.ruby_engine}/#{Bundler.rubygems.config_map[:ruby_version]}"
+      "#{Bundler.rubygems.ruby_engine}/#{RbConfig::CONFIG["ruby_version"]}"
     end
 
     def user_home
@@ -564,7 +562,7 @@ EOF
   private
 
     def eval_yaml_gemspec(path, contents)
-      Kernel.send(:require, "bundler/psyched_yaml")
+      require_relative "bundler/psyched_yaml"
 
       # If the YAML is invalid, Syck raises an ArgumentError, and Psych
       # raises a Psych::SyntaxError. See psyched_yaml.rb for more info.

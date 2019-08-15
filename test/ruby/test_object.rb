@@ -865,6 +865,29 @@ class TestObject < Test::Unit::TestCase
     assert_match(/@\u{3046}=6\b/, x.inspect)
   end
 
+  def test_singleton_methods
+    assert_equal([], Object.new.singleton_methods)
+    assert_equal([], Object.new.singleton_methods(false))
+    c = Class.new
+    def c.foo; end
+    assert_equal([:foo], c.singleton_methods - [:yaml_tag])
+    assert_equal([:foo], c.singleton_methods(false))
+    assert_equal([], c.singleton_class.singleton_methods(false))
+    c.singleton_class.singleton_class
+    assert_equal([], c.singleton_class.singleton_methods(false))
+
+    o = c.new.singleton_class
+    assert_equal([:foo], o.singleton_methods - [:yaml_tag])
+    assert_equal([], o.singleton_methods(false))
+    o.singleton_class
+    assert_equal([:foo], o.singleton_methods - [:yaml_tag])
+    assert_equal([], o.singleton_methods(false))
+
+    c.extend(Module.new{def bar; end})
+    assert_equal([:bar, :foo], c.singleton_methods.sort - [:yaml_tag])
+    assert_equal([:foo], c.singleton_methods(false))
+  end
+
   def test_singleton_class
     x = Object.new
     xs = class << x; self; end

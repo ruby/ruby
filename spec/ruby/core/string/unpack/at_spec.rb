@@ -24,6 +24,6 @@ describe "String#unpack with format '@'" do
   end
 
   it "raises an ArgumentError if the count exceeds the size of the String" do
-    lambda { "\x01\x02\x03\x04".unpack("C2@5C") }.should raise_error(ArgumentError)
+    -> { "\x01\x02\x03\x04".unpack("C2@5C") }.should raise_error(ArgumentError)
   end
 end

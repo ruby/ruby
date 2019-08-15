@@ -17,7 +17,7 @@ describe "IO#seek" do
   end
 
   it "moves the read position relative to the current position with SEEK_CUR" do
-    lambda { @io.seek(-1) }.should raise_error(Errno::EINVAL)
+    -> { @io.seek(-1) }.should raise_error(Errno::EINVAL)
     @io.seek(10, IO::SEEK_CUR)
     @io.readline.should == "igne une.\n"
     @io.seek(-5, IO::SEEK_CUR)

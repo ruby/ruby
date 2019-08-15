@@ -974,21 +974,10 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
     int num_trans;
     rb_econv_t *ec;
 
-    int sidx, didx;
-
-    if (*sname) {
-        sidx = rb_enc_find_index(sname);
-        if (0 <= sidx) {
-            rb_enc_from_index(sidx);
-        }
-    }
-
-    if (*dname) {
-        didx = rb_enc_find_index(dname);
-        if (0 <= didx) {
-            rb_enc_from_index(didx);
-        }
-    }
+    /* Just check if sname and dname are defined */
+    /* (This check is needed?) */
+    if (*sname) rb_enc_find_index(sname);
+    if (*dname) rb_enc_find_index(dname);
 
     if (*sname == '\0' && *dname == '\0') {
         num_trans = 0;

@@ -277,16 +277,18 @@ class TestDateArith < Test::Unit::TestCase
   end
 
   def test_step__compare
+    p = Date.new(2000, 1, 1)
+    q = Date.new(1999, 12, 31)
     o = Object.new
     def o.<=>(*);end
     assert_raise(ArgumentError) {
-      Date.new(2000, 1, 1).step(3, o).to_a
+      p.step(q, o).to_a
     }
 
     o = Object.new
     def o.<=>(*);2;end
     a = []
-    Date.new(2000, 1, 1).step(3, o) {|d| a << d}
+    p.step(q, o) {|d| a << d}
     assert_empty(a)
   end
 end

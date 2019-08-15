@@ -1801,7 +1801,7 @@ SRC
   #
   # Where {option} is, for instance, <code>--cflags</code>.
   #
-  # The values obtained are appended to +$CFLAGS+, +$LDFLAGS+ and
+  # The values obtained are appended to +$INCFLAGS+, +$CFLAGS+, +$LDFLAGS+ and
   # +$libs+.
   #
   # If an <code>option</code> argument is given, the config command is
@@ -1857,9 +1857,9 @@ SRC
 
       $LDFLAGS = [orig_ldflags, ldflags].join(' ')
       Logging::message "package configuration for %s\n", pkg
-      Logging::message "cflags: %s\nldflags: %s\nlibs: %s\n\n",
-                       cflags, ldflags, libs
-      [cflags, ldflags, libs]
+      Logging::message "incflags: %s\ncflags: %s\nldflags: %s\nlibs: %s\n\n",
+                       incflags, cflags, ldflags, libs
+      [[incflags, cflags].join(' '), ldflags, libs]
     else
       Logging::message "package configuration for %s is not found\n", pkg
       nil

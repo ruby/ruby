@@ -105,7 +105,7 @@ def sync_default_gems(gem)
   when "rdoc"
     rm_rf(%w[lib/rdoc* test/rdoc libexec/rdoc libexec/ri])
     cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
-    cp_r("#{upstream}/test", "test/rdoc")
+    cp_r("#{upstream}/test/rdoc", "test")
     cp_r("#{upstream}/rdoc.gemspec", "lib/rdoc")
     cp_r("#{upstream}/exe/rdoc", "libexec")
     cp_r("#{upstream}/exe/ri", "libexec")
@@ -228,45 +228,77 @@ def sync_default_gems(gem)
   end
 end
 
+IGNORE_FILE_PATTERN = /(\.travis.yml|appveyor\.yml|azure\-pipelines\.yml|\.gitignore|Gemfile|README\.md|History\.txt|Rakefile|CODE_OF_CONDUCT\.md)/
+
 def sync_default_gems_with_commits(gem, range)
   puts "Sync #{$repositories[gem.to_sym]} with commit history."
 
   IO.popen(%W"git remote") do |f|
     unless f.read.split.include?(gem)
       `git remote add #{gem} git@github.com:#{$repositories[gem.to_sym]}.git`
-      `git fetch #{gem}`
     end
   end
+  `git fetch --no-tags #{gem}`
+
+  commits = []
 
   IO.popen(%W"git log --format=%H,%s #{range}") do |f|
     commits = f.read.split("\n").reverse.map{|commit| commit.split(',')}
-    commits.each do |sha, subject|
-      puts "Pick #{sha} from #{$repositories[gem.to_sym]}."
-      if subject =~ /^Merge/
-        puts "Skip #{sha}. Because It was merge commit"
-        next
-      end
+  end
 
-      `git cherry-pick #{sha}`
-      unless $?.success?
-        puts "Failed to pick #{sha}"
-        break
-      end
+  # Ignore Merge commit and insufficiency commit for ruby core repository.
+  commits.delete_if do |sha, subject|
+    files = []
+    IO.popen(%W"git diff-tree --no-commit-id --name-only -r #{sha}") do |f|
+      files = f.read.split("\n")
+    end
+    subject =~ /^Merge/ || subject =~ /^Auto Merge/ || files.all?{|file| file =~ IGNORE_FILE_PATTERN}
+  end
 
-      prefix = "[#{($repositories[gem.to_sym])}]".gsub(/\//, '\/')
-      suffix = "https://github.com/#{($repositories[gem.to_sym])}/commit/#{sha[0,10]}"
-      `git filter-branch -f --msg-filter 'sed "1s/^/#{prefix} /" && echo && echo #{suffix}' -- HEAD~1..HEAD`
-      unless $?.success?
-        puts "Failed to modify commit message of #{sha}"
-        break
-      end
+  puts "Try to pick these commits:"
+  puts commits.map{|commit| commit.join(": ")}.join("\n")
+  puts "----"
+
+  failed_commits = []
+
+  commits.each do |sha, subject|
+    puts "Pick #{sha} from #{$repositories[gem.to_sym]}."
+
+    skipped = false
+    result = IO.popen(%W"git cherry-pick #{sha}").read
+    if result =~ /nothing\ to\ commit/
+      `git reset`
+      skipped = true
+      puts "Skip empty commit #{sha}"
+    end
+    next if skipped
+
+    if result.empty?
+      failed_commits << sha
+      `git reset` && `git checkout .` && `git clean -fd`
+      skipped = true
+      puts "Failed to pick #{sha}"
+    end
+    next if skipped
+
+    puts "Update commit message: #{sha}"
+
+    prefix = "[#{($repositories[gem.to_sym])}]".gsub(/\//, '\/')
+    suffix = "https://github.com/#{($repositories[gem.to_sym])}/commit/#{sha[0,10]}"
+    `git filter-branch -f --msg-filter 'sed "1s/^/#{prefix} /" && echo && echo #{suffix}' -- HEAD~1..HEAD`
+    unless $?.success?
+      puts "Failed to modify commit message of #{sha}"
+      break
     end
   end
+
+  puts "---- failed commits ----"
+  puts failed_commits
 end
 
 def sync_lib(repo)
   unless File.directory?("../#{repo}")
-    abort "Expected '../#{repo}' (#{File.expand_path("../#{repo}")}) to be a directory, but it wasn't."
+    abort %[Expected '../#{repo}' \(#{File.expand_path("../#{repo}")}\) to be a directory, but it wasn't.]
   end
   rm_rf(["lib/#{repo}.rb", "lib/#{repo}/*", "test/test_#{repo}.rb"])
   cp_r(Dir.glob("../#{repo}/lib/*"), "lib")

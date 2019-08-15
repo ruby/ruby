@@ -61,7 +61,7 @@ platform_is_not :windows do
     it "raises an Errno::ELOOP if the symlink points to itself" do
       File.unlink @link
       File.symlink(@link, @link)
-      lambda { File.realdirpath(@link) }.should raise_error(Errno::ELOOP)
+      -> { File.realdirpath(@link) }.should raise_error(Errno::ELOOP)
     end
 
     it "returns the real (absolute) pathname if the file is absent" do
@@ -69,7 +69,7 @@ platform_is_not :windows do
     end
 
     it "raises Errno::ENOENT if the directory is absent" do
-      lambda { File.realdirpath(@fake_file_in_fake_dir) }.should raise_error(Errno::ENOENT)
+      -> { File.realdirpath(@fake_file_in_fake_dir) }.should raise_error(Errno::ENOENT)
     end
 
     it "returns the real (absolute) pathname if the symlink points to an absent file" do
@@ -77,7 +77,7 @@ platform_is_not :windows do
     end
 
     it "raises Errno::ENOENT if the symlink points to an absent directory" do
-      lambda { File.realdirpath(@fake_link_to_fake_dir) }.should raise_error(Errno::ENOENT)
+      -> { File.realdirpath(@fake_link_to_fake_dir) }.should raise_error(Errno::ENOENT)
     end
   end
 end

@@ -23,19 +23,19 @@ describe "IO#close" do
 
   it "raises an IOError reading from a closed IO" do
     @io.close
-    lambda { @io.read }.should raise_error(IOError)
+    -> { @io.read }.should raise_error(IOError)
   end
 
   it "raises an IOError writing to a closed IO" do
     @io.close
-    lambda { @io.write "data" }.should raise_error(IOError)
+    -> { @io.write "data" }.should raise_error(IOError)
   end
 
   it 'does not close the stream if autoclose is false' do
     other_io = IO.new(@io.fileno)
     other_io.autoclose = false
     other_io.close
-    lambda { @io.write "data" }.should_not raise_error(IOError)
+    -> { @io.write "data" }.should_not raise_error(IOError)
   end
 
   it "does nothing if already closed" do
@@ -49,7 +49,7 @@ describe "IO#close" do
       read_io, write_io = IO.pipe
       going_to_read = false
       thread = Thread.new do
-        lambda do
+        -> do
           going_to_read = true
           read_io.read
         end.should raise_error(IOError, 'stream closed in another thread')
@@ -72,7 +72,7 @@ describe "IO#close on an IO.popen stream" do
 
     io.close
 
-    lambda { io.pid }.should raise_error(IOError)
+    -> { io.pid }.should raise_error(IOError)
   end
 
   it "sets $?" do

@@ -2260,14 +2260,14 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
         [x*64-darwin*], [
             rb_cv_coroutine=amd64
         ],
-        [x*64-linux], [
+        [x*64-linux*], [
             AS_CASE(["$ac_cv_sizeof_voidp"],
                 [8], [ rb_cv_coroutine=amd64 ],
                 [4], [ rb_cv_coroutine=x86 ],
                 [*], [ rb_cv_coroutine= ]
             )
         ],
-        [*86-linux], [
+        [*86-linux*], [
             rb_cv_coroutine=x86
         ],
         [x64-mingw32], [
@@ -2276,13 +2276,13 @@ AS_CASE([$rb_cv_coroutine], [yes|''], [
         [*86-mingw32], [
             rb_cv_coroutine=win32
         ],
-        [armv7*-linux-*], [
+        [armv7*-linux*], [
             rb_cv_coroutine=ucontext
         ],
-        [aarch64-linux], [
+        [aarch64-linux*], [
             rb_cv_coroutine=arm64
         ],
-        [powerpc64le-linux], [
+        [powerpc64le-linux*], [
             rb_cv_coroutine=ppc64le
         ],
         [x86_64-openbsd*], [

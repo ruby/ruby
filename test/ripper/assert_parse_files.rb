@@ -5,24 +5,6 @@ module TestRipper; end
 class TestRipper::Generic < Test::Unit::TestCase
   SRCDIR = File.expand_path("../../..", __FILE__)
 
-  %w[sample ext].each do |dir|
-    define_method("test_parse_files:#{dir}") do
-      assert_parse_files(dir)
-    end
-  end
-
-  %w[lib test].each do |dir|
-    define_method("test_parse_files:#{dir}") do
-      assert_parse_files(dir, "*.rb")
-    end
-    Dir["#{SRCDIR}/#{dir}/*/"].each do |dir|
-      dir = dir[(SRCDIR.length+1)..-2]
-      define_method("test_parse_files:#{dir}") do
-        assert_parse_files(dir)
-      end
-    end
-  end
-
   def assert_parse_files(dir, pattern = "**/*.rb")
     assert_separately(%W[--disable-gem -rripper - #{SRCDIR}/#{dir} #{pattern}],
                       __FILE__, __LINE__, "#{<<-"begin;"}\n#{<<-'end;'}", timeout: Float::INFINITY)

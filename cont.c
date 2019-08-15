@@ -292,7 +292,7 @@ fiber_pool_stack_alloca(struct fiber_pool_stack * stack, size_t offset)
 {
     STACK_GROW_DIR_DETECTION;
 
-    if (DEBUG) fprintf(stderr, "fiber_pool_stack_alloca(%p): %zu/%zu\n", stack, offset, stack->available);
+    if (DEBUG) fprintf(stderr, "fiber_pool_stack_alloca(%p): %"PRIuSIZE"/%"PRIuSIZE"\n", stack, offset, stack->available);
     VM_ASSERT(stack->available >= offset);
 
     // The pointer to the memory being allocated:
@@ -445,7 +445,7 @@ fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
     void * base = fiber_pool_allocate_memory(&count, stride);
 
     if (base == NULL) {
-        rb_raise(rb_eFiberError, "can't alloc machine stack to fiber (%zu x %zu bytes): %s", count, size, ERRNOMSG);
+        rb_raise(rb_eFiberError, "can't alloc machine stack to fiber (%"PRIuSIZE" x %"PRIuSIZE" bytes): %s", count, size, ERRNOMSG);
     }
 
     struct fiber_pool_vacancy * vacancies = fiber_pool->vacancies;
@@ -461,7 +461,10 @@ fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
 #endif
     allocation->pool = fiber_pool;
 
-    if (DEBUG) fprintf(stderr, "fiber_pool_expand(%zu): %p, %zu/%zu x [%zu:%zu]\n", count, fiber_pool, fiber_pool->used, fiber_pool->count, size, fiber_pool->vm_stack_size);
+    if (DEBUG) {
+        fprintf(stderr, "fiber_pool_expand(%"PRIuSIZE"): %p, %"PRIuSIZE"/%"PRIuSIZE" x [%"PRIuSIZE":%"PRIuSIZE"]\n",
+                count, fiber_pool, fiber_pool->used, fiber_pool->count, size, fiber_pool->vm_stack_size);
+    }
 
     // Iterate over all stacks, initializing the vacancy list:
     for (size_t i = 0; i < count; i += 1) {
@@ -540,7 +543,7 @@ fiber_pool_allocation_free(struct fiber_pool_allocation * allocation)
 
     VM_ASSERT(allocation->used == 0);
 
-    if (DEBUG) fprintf(stderr, "fiber_pool_allocation_free: %p base=%p count=%zu\n", allocation, allocation->base, allocation->count);
+    if (DEBUG) fprintf(stderr, "fiber_pool_allocation_free: %p base=%p count=%"PRIuSIZE"\n", allocation, allocation->base, allocation->count);
 
     size_t i;
     for (i = 0; i < allocation->count; i += 1) {
@@ -576,12 +579,12 @@ fiber_pool_allocation_free(struct fiber_pool_allocation * allocation)
 }
 #endif
 
-// Acquire a stack from the given fiber pool. If none are avilable, allocate more.
+// Acquire a stack from the given fiber pool. If none are available, allocate more.
 static struct fiber_pool_stack
 fiber_pool_stack_acquire(struct fiber_pool * fiber_pool) {
     struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pop(fiber_pool);
 
-    if (DEBUG) fprintf(stderr, "fiber_pool_stack_acquire: %p used=%zu\n", fiber_pool->vacancies, fiber_pool->used);
+    if (DEBUG) fprintf(stderr, "fiber_pool_stack_acquire: %p used=%"PRIuSIZE"\n", fiber_pool->vacancies, fiber_pool->used);
 
     if (!vacancy) {
         const size_t maximum = FIBER_POOL_ALLOCATION_MAXIMUM_SIZE;
@@ -625,7 +628,7 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
     // If this is not true, the vacancy information will almost certainly be destroyed:
     VM_ASSERT(size <= (stack->size - RB_PAGE_SIZE));
 
-    if (DEBUG) fprintf(stderr, "fiber_pool_stack_free: %p+%zu [base=%p, size=%zu]\n", base, size, stack->base, stack->size);
+    if (DEBUG) fprintf(stderr, "fiber_pool_stack_free: %p+%"PRIuSIZE" [base=%p, size=%"PRIuSIZE"]\n", base, size, stack->base, stack->size);
 
 #if VM_CHECK_MODE > 0 && defined(MADV_DONTNEED)
     // This immediately discards the pages and the memory is reset to zero.
@@ -650,7 +653,7 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
     struct fiber_pool * pool = stack->pool;
     struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pointer(stack->base, stack->size);
 
-    if (DEBUG) fprintf(stderr, "fiber_pool_stack_release: %p used=%zu\n", stack->base, stack->pool->used);
+    if (DEBUG) fprintf(stderr, "fiber_pool_stack_release: %p used=%"PRIuSIZE"\n", stack->base, stack->pool->used);
 
     // Copy the stack details into the vacancy area:
     vacancy->stack = *stack;
@@ -666,11 +669,11 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
 #ifdef FIBER_POOL_ALLOCATION_FREE
     struct fiber_pool_allocation * allocation = stack->allocation;
 
-    stack->allocation->used -= 1;
+    allocation->used -= 1;
 
     // Release address space and/or dirty memory:
-    if (stack->allocation->used == 0) {
-        fiber_pool_allocation_free(stack->allocation);
+    if (allocation->used == 0) {
+        fiber_pool_allocation_free(allocation);
     }
     else if (stack->pool->free_stacks) {
         fiber_pool_stack_free(&vacancy->stack);
@@ -855,7 +858,7 @@ cont_mark(void *ptr)
     rb_context_t *cont = ptr;
 
     RUBY_MARK_ENTER("cont");
-    rb_gc_mark_no_pin(cont->value);
+    rb_gc_mark_movable(cont->value);
 
     rb_execution_context_mark(&cont->saved_ec);
     rb_gc_mark(cont_thread_value(cont));
@@ -964,7 +967,7 @@ void
 rb_fiber_mark_self(const rb_fiber_t *fiber)
 {
     if (fiber->cont.self) {
-        rb_gc_mark_no_pin(fiber->cont.self);
+        rb_gc_mark_movable(fiber->cont.self);
     }
     else {
         rb_execution_context_mark(&fiber->cont.saved_ec);
@@ -989,7 +992,7 @@ fiber_mark(void *ptr)
     rb_fiber_t *fiber = ptr;
     RUBY_MARK_ENTER("cont");
     fiber_verify(fiber);
-    rb_gc_mark_no_pin(fiber->first_proc);
+    rb_gc_mark_movable(fiber->first_proc);
     if (fiber->prev) rb_fiber_mark_self(fiber->prev);
     cont_mark(&fiber->cont);
     RUBY_MARK_LEAVE("cont");

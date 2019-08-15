@@ -186,7 +186,11 @@ rb_eql(VALUE obj1, VALUE obj2)
  *
  *  The #eql? method returns <code>true</code> if +obj+ and +other+
  *  refer to the same hash key.  This is used by Hash to test members
- *  for equality.  For objects of class Object, #eql?  is synonymous
+ *  for equality.  For any pair of objects where #eql? returns +true+,
+ *  the #hash value of both objects must be equal. So any subclass
+ *  that overrides #eql? should also override #hash appropriately.
+ *
+ *  For objects of class Object, #eql?  is synonymous
  *  with #==.  Subclasses normally continue this tradition by aliasing
  *  #eql? to their overridden #== method, but there are exceptions.
  *  Numeric types, for example, perform type conversion across #==,
@@ -205,6 +209,25 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
     return Qfalse;
 }
 
+/**
+ * call-seq:
+ *    obj.hash    -> integer
+ *
+ * Generates an Integer hash value for this object.  This function must have the
+ * property that <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
+ *
+ * The hash value is used along with #eql? by the Hash class to determine if
+ * two objects reference the same hash key.  Any hash value that exceeds the
+ * capacity of an Integer will be truncated before being used.
+ *
+ * The hash value for an object may not be identical across invocations or
+ * implementations of Ruby.  If you need a stable identifier across Ruby
+ * invocations and implementations you will need to generate one with a custom
+ * method.
+ *--
+ * \private
+ *++
+ */
 VALUE rb_obj_hash(VALUE obj);
 
 /**
@@ -1664,7 +1687,7 @@ rb_true(VALUE obj)
  */
 
 
-static VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_false(VALUE obj)
 {
     return Qfalse;
@@ -4137,7 +4160,7 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
  *      DELEGATE = [:puts, :p]
  *
  *      def method_missing(name, *args, &block)
- *        super unless DELEGATE.include? name
+ *        return super unless DELEGATE.include? name
  *        ::Kernel.send(name, *args, &block)
  *      end
  *

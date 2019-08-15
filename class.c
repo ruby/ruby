@@ -176,7 +176,7 @@ class_alloc(VALUE flags, VALUE klass)
      */
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SERIAL(obj) = rb_next_class_serial();
-    RCLASS_REFINED_CLASS(obj) = Qnil;
+    RB_OBJ_WRITE(obj, &RCLASS_REFINED_CLASS(obj), Qnil);
     RCLASS_EXT(obj)->allocator = 0;
 
     return (VALUE)obj;
@@ -313,6 +313,12 @@ class_init_copy_check(VALUE clone, VALUE orig)
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
 {
+    /* cloned flag is refer at constant inline cache
+     * see vm_get_const_key_cref() in vm_insnhelper.c
+     */
+    FL_SET(clone, RCLASS_CLONED);
+    FL_SET(orig , RCLASS_CLONED);
+
     if (RB_TYPE_P(clone, T_CLASS)) {
 	class_init_copy_check(clone, orig);
     }
@@ -1447,6 +1453,9 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
     int recur = TRUE;
 
     if (rb_check_arity(argc, 0, 1)) recur = RTEST(argv[0]);
+    if (RB_TYPE_P(obj, T_CLASS) && FL_TEST(obj, FL_SINGLETON)) {
+        rb_singleton_class(obj);
+    }
     klass = CLASS_OF(obj);
     origin = RCLASS_ORIGIN(klass);
     me_arg.list = st_init_numtable();

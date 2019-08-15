@@ -815,17 +815,27 @@ struct RComplex {
 #define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
 
 enum ruby_rhash_flags {
-    RHASH_ST_TABLE_FLAG = FL_USER3,
-    RHASH_AR_TABLE_MAX_SIZE = 8,
-    RHASH_AR_TABLE_SIZE_MASK = (FL_USER4|FL_USER5|FL_USER6|FL_USER7),
+    RHASH_PROC_DEFAULT = FL_USER2,                                       /* FL 2 */
+    RHASH_ST_TABLE_FLAG = FL_USER3,                                      /* FL 3 */
+#define RHASH_AR_TABLE_MAX_SIZE SIZEOF_VALUE
+    RHASH_AR_TABLE_SIZE_MASK = (FL_USER4|FL_USER5|FL_USER6|FL_USER7),    /* FL 4..7 */
     RHASH_AR_TABLE_SIZE_SHIFT = (FL_USHIFT+4),
-    RHASH_AR_TABLE_BOUND_MASK = (FL_USER8|FL_USER9|FL_USER10|FL_USER11),
+    RHASH_AR_TABLE_BOUND_MASK = (FL_USER8|FL_USER9|FL_USER10|FL_USER11), /* FL 8..11 */
     RHASH_AR_TABLE_BOUND_SHIFT = (FL_USHIFT+8),
+
+    // we can not put it in "enum" because it can exceed "int" range.
+#define RHASH_LEV_MASK (FL_USER13 | FL_USER14 | FL_USER15 |                /* FL 13..19 */ \
+                        FL_USER16 | FL_USER17 | FL_USER18 | FL_USER19)
+
+#if USE_TRANSIENT_HEAP
+    RHASH_TRANSIENT_FLAG = FL_USER12,                                    /* FL 12 */
+#endif
+
+    RHASH_LEV_SHIFT = (FL_USHIFT + 13),
+    RHASH_LEV_MAX = 127, /* 7 bits */
 
     RHASH_ENUM_END
 };
-
-#define HASH_PROC_DEFAULT FL_USER2
 
 #define RHASH_AR_TABLE_SIZE_RAW(h) \
   ((unsigned int)((RBASIC(h)->flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT))
@@ -856,7 +866,6 @@ void rb_hash_st_table_set(VALUE hash, st_table *st);
 #define RHASH_AR_TABLE_BOUND_SHIFT   RHASH_AR_TABLE_BOUND_SHIFT
 
 #if USE_TRANSIENT_HEAP
-#define RHASH_TRANSIENT_FLAG      FL_USER14
 #define RHASH_TRANSIENT_P(hash)   FL_TEST_RAW((hash), RHASH_TRANSIENT_FLAG)
 #define RHASH_SET_TRANSIENT_FLAG(h)   FL_SET_RAW(h, RHASH_TRANSIENT_FLAG)
 #define RHASH_UNSET_TRANSIENT_FLAG(h) FL_UNSET_RAW(h, RHASH_TRANSIENT_FLAG)
@@ -866,25 +875,34 @@ void rb_hash_st_table_set(VALUE hash, st_table *st);
 #define RHASH_UNSET_TRANSIENT_FLAG(h) ((void)0)
 #endif
 
+#if   SIZEOF_VALUE / RHASH_AR_TABLE_MAX_SIZE == 2
+typedef uint16_t ar_hint_t;
+#elif SIZEOF_VALUE / RHASH_AR_TABLE_MAX_SIZE == 1
+typedef unsigned char ar_hint_t;
+#else
+#error unsupported
+#endif
+
 struct RHash {
     struct RBasic basic;
     union {
         st_table *st;
         struct ar_table_struct *ar; /* possibly 0 */
     } as;
-    int iter_lev;
-    VALUE ifnone;
+    const VALUE ifnone;
+    union {
+        ar_hint_t ary[RHASH_AR_TABLE_MAX_SIZE];
+        VALUE word;
+    } ar_hint;
 };
 
-#ifdef RHASH_ITER_LEV
-#  undef RHASH_ITER_LEV
+#ifdef RHASH_IFNONE
 #  undef RHASH_IFNONE
 #  undef RHASH_SIZE
 
-#  define RHASH_ITER_LEV(h)  (RHASH(h)->iter_lev)
 #  define RHASH_IFNONE(h)    (RHASH(h)->ifnone)
 #  define RHASH_SIZE(h)      (RHASH_AR_TABLE_P(h) ? RHASH_AR_TABLE_SIZE_RAW(h) : RHASH_ST_SIZE(h))
-#endif /* #ifdef RHASH_ITER_LEV */
+#endif /* ifdef RHASH_IFNONE */
 
 struct RMoved {
     VALUE flags;
@@ -1009,8 +1027,8 @@ struct rb_classext_struct {
      */
     rb_subclass_entry_t **module_subclasses;
     rb_serial_t class_serial;
-    VALUE origin_;
-    VALUE refined_class;
+    const VALUE origin_;
+    const VALUE refined_class;
     rb_alloc_func_t allocator;
 };
 
@@ -1038,6 +1056,7 @@ int rb_singleton_class_internal_p(VALUE sklass);
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
 #define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
 
+#define RCLASS_CLONED     FL_USER6
 #define RICLASS_IS_ORIGIN FL_USER5
 
 static inline void
@@ -1127,10 +1146,10 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
 /*! SVAR (Special VARiable) */
 struct vm_svar {
     VALUE flags;
-    VALUE cref_or_me; /*!< class reference or rb_method_entry_t */
-    VALUE lastline;
-    VALUE backref;
-    VALUE others;
+    const VALUE cref_or_me; /*!< class reference or rb_method_entry_t */
+    const VALUE lastline;
+    const VALUE backref;
+    const VALUE others;
 };
 
 
@@ -1140,9 +1159,9 @@ struct vm_svar {
 struct vm_throw_data {
     VALUE flags;
     VALUE reserved;
-    VALUE throw_obj;
+    const VALUE throw_obj;
     const struct rb_control_frame_struct *catch_frame;
-    VALUE throw_state;
+    int throw_state;
 };
 
 #define THROW_DATA_P(err) RB_TYPE_P((VALUE)(err), T_IMEMO)
@@ -1163,7 +1182,7 @@ struct vm_ifunc {
     VALUE flags;
     VALUE reserved;
     VALUE (*func)(ANYARGS);
-    void *data;
+    const void *data;
     struct vm_ifunc_argc argc;
 };
 
@@ -1220,12 +1239,12 @@ void rb_strterm_mark(VALUE obj);
 struct MEMO {
     VALUE flags;
     VALUE reserved;
-    VALUE v1;
-    VALUE v2;
+    const VALUE v1;
+    const VALUE v2;
     union {
 	long cnt;
 	long state;
-        VALUE value;
+        const VALUE value;
 	VALUE (*func)(ANYARGS);
     } u3;
 };
@@ -1368,6 +1387,22 @@ rb_ary_entry_internal(VALUE ary, long offset)
     }
     return ptr[offset];
 }
+
+/* MRI debug support */
+void rb_obj_info_dump(VALUE obj);
+void  ruby_debug_breakpoint(void);
+
+// show obj data structure without any side-effect
+#define rp(obj) rb_obj_info_dump((VALUE)obj);
+// same as rp, but add message header
+#define rp_m(msg, obj) do { \
+    fprintf(stderr, "%s", (msg)); \
+    rb_obj_info_dump((VALUE)obj); \
+} while (0)
+
+// `ruby_debug_breakpoint()` does nothing,
+// but breakpoint is set in run.gdb, so `make gdb` can stop here.
+#define bp() ruby_debug_breakpoint()
 
 /* bignum.c */
 extern const char ruby_digitmap[];
@@ -1728,6 +1763,7 @@ VALUE rb_float_plus(VALUE x, VALUE y);
 VALUE rb_int_minus(VALUE x, VALUE y);
 VALUE rb_int_mul(VALUE x, VALUE y);
 VALUE rb_float_mul(VALUE x, VALUE y);
+VALUE rb_float_div(VALUE x, VALUE y);
 VALUE rb_int_idiv(VALUE x, VALUE y);
 VALUE rb_int_modulo(VALUE x, VALUE y);
 VALUE rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode);
@@ -1754,6 +1790,7 @@ VALUE rb_int_odd_p(VALUE num);
 int rb_int_positive_p(VALUE num);
 int rb_int_negative_p(VALUE num);
 VALUE rb_num_pow(VALUE x, VALUE y);
+VALUE rb_float_ceil(VALUE num, int ndigits);
 
 static inline VALUE
 rb_num_compare_with_zero(VALUE num, ID mid)
@@ -2040,6 +2077,7 @@ long rb_reg_search0(VALUE, VALUE, long, int, int);
 VALUE rb_reg_match_p(VALUE re, VALUE str, long pos);
 bool rb_reg_start_with_p(VALUE re, VALUE str);
 void rb_backref_set_string(VALUE string, long pos, long len);
+void rb_match_unbusy(VALUE);
 int rb_match_count(VALUE match);
 int rb_match_nth_defined(int nth, VALUE match);
 VALUE rb_reg_new_ary(VALUE ary, int options);
@@ -2104,6 +2142,23 @@ char *rb_str_to_cstr(VALUE str);
 VALUE rb_str_eql(VALUE str1, VALUE str2);
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 const char *ruby_escaped_char(int c);
+VALUE rb_str_opt_plus(VALUE, VALUE);
+
+/* expect tail call optimization */
+static inline VALUE
+rb_str_eql_internal(const VALUE str1, const VALUE str2)
+{
+    const long len = RSTRING_LEN(str1);
+    const char *ptr1, *ptr2;
+
+    if (len != RSTRING_LEN(str2)) return Qfalse;
+    if (!rb_str_comparable(str1, str2)) return Qfalse;
+    if ((ptr1 = RSTRING_PTR(str1)) == (ptr2 = RSTRING_PTR(str2)))
+        return Qtrue;
+    if (memcmp(ptr1, ptr2, len) == 0)
+        return Qtrue;
+    return Qfalse;
+}
 
 /* symbol.c */
 #ifdef RUBY_ENCODING_H
@@ -2149,7 +2204,6 @@ struct timeval rb_time_timeval(VALUE);
 VALUE rb_obj_is_mutex(VALUE obj);
 VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
 void rb_thread_execute_interrupts(VALUE th);
-void rb_clear_trace_func(void);
 VALUE rb_get_coverages(void);
 int rb_get_coverage_mode(void);
 VALUE rb_default_coverage(int);
