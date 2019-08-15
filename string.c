@@ -5098,7 +5098,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
                 cr = cr2;
 	}
 	plen = end0 - beg0;
-	rp = RSTRING_PTR(repl); rlen = RSTRING_LEN(repl);
+        rlen = RSTRING_LEN(repl);
 	len = RSTRING_LEN(str);
 	if (rlen > plen) {
 	    RESIZE_CAPA(str, len + rlen - plen);
@@ -5107,6 +5107,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	if (rlen != plen) {
 	    memmove(p + beg0 + rlen, p + beg0 + plen, len - beg0 - plen);
 	}
+        rp = RSTRING_PTR(repl);
         memmove(p + beg0, rp, rlen);
 	len += rlen - plen;
 	STR_SET_LEN(str, len);
