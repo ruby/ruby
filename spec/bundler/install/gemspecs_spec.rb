@@ -10,7 +10,7 @@ RSpec.describe "bundle install" do
 
     it "still installs correctly" do
       gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "yaml_spec"
       G
       bundle :install

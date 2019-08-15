@@ -80,24 +80,24 @@ describe :kernel_Rational, shared: true do
       end
 
       it "raises a RangeError if the imaginary part is not 0" do
-        lambda { Rational(Complex(1, 2)) }.should raise_error(RangeError)
+        -> { Rational(Complex(1, 2)) }.should raise_error(RangeError)
       end
     end
 
     it "raises a TypeError if the first argument is nil" do
-      lambda { Rational(nil) }.should raise_error(TypeError)
+      -> { Rational(nil) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if the second argument is nil" do
-      lambda { Rational(1, nil) }.should raise_error(TypeError)
+      -> { Rational(1, nil) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if the first argument is a Symbol" do
-      lambda { Rational(:sym) }.should raise_error(TypeError)
+      -> { Rational(:sym) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if the second argument is a Symbol" do
-      lambda { Rational(1, :sym) }.should raise_error(TypeError)
+      -> { Rational(1, :sym) }.should raise_error(TypeError)
     end
   end
 

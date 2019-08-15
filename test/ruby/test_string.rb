@@ -1779,6 +1779,9 @@ CODE
 
     result = []; "".split(//, 1) {|s| result << s}
     assert_equal([], result)
+
+    result = []; "aaa,bbb,ccc,ddd".split(/,/) {|s| result << s.gsub(/./, "A")}
+    assert_equal(["AAA"]*4, result)
   ensure
     EnvUtil.suppress_warning {$; = fs}
   end
@@ -2007,6 +2010,12 @@ CODE
     r.taint
     a.sub!(/./, r)
     assert_predicate(a, :tainted?)
+
+    bug16105 = '[Bug #16105] heap-use-after-free'
+    a = S("ABCDEFGHIJKLMNOPQRSTUVWXYZ012345678")
+    b = a.dup
+    c = a.slice(1, 100)
+    assert_equal("AABCDEFGHIJKLMNOPQRSTUVWXYZ012345678", b.sub!(c, b), bug16105)
   end
 
   def test_succ
@@ -3173,6 +3182,24 @@ CODE
 
     bar = %w(b a r).join('')
     assert_same(str, -bar, "uminus deduplicates [Feature #13077]")
+  end
+
+  def test_uminus_no_freeze_not_bare
+    str = @cls.new("foo")
+    assert_instance_of(@cls, -str)
+    assert_equal(false, str.frozen?)
+
+    str = @cls.new("foo")
+    str.instance_variable_set(:@iv, 1)
+    assert_instance_of(@cls, -str)
+    assert_equal(false, str.frozen?)
+    assert_equal(1, str.instance_variable_get(:@iv))
+
+    str = @cls.new("foo")
+    str.taint
+    assert_instance_of(@cls, -str)
+    assert_equal(false, str.frozen?)
+    assert_predicate(str, :tainted?)
   end
 
   def test_ord

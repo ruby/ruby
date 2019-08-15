@@ -10,7 +10,7 @@ ruby_version_is ""..."1.9" do
     end
 
     it "raises a TypeError if $_ is not a String" do
-      lambda {
+      -> {
         $_ = 123
         gsub(/./, "!")
       }.should raise_error(TypeError)

@@ -111,5 +111,19 @@ bar:
 eoyml
       assert_equal({"foo"=>{"hello"=>"world"}, "bar"=>{"hello"=>"world"}}, hash)
     end
+
+    def test_key_deduplication
+      unless String.method_defined?(:-@) && (-("a" * 20)).equal?((-("a" * 20)))
+        skip "This Ruby implementation doesn't support string deduplication"
+      end
+
+      hashes = Psych.load(<<-eoyml)
+---
+- unique_identifier: 1
+- unique_identifier: 2
+eoyml
+
+      assert_same hashes[0].keys.first, hashes[1].keys.first
+    end
   end
 end

@@ -31,6 +31,6 @@ describe "The __ENCODING__ pseudo-variable" do
   end
 
   it "raises a SyntaxError if assigned to" do
-    lambda { eval("__ENCODING__ = 1") }.should raise_error(SyntaxError)
+    -> { eval("__ENCODING__ = 1") }.should raise_error(SyntaxError)
   end
 end

@@ -941,9 +941,20 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('CHAR', "@ivar")
 
     assert_equal ["?\\M-H"], scan('CHAR', '?\\M-H')
+
+    assert_equal ["?\\u0041"],
+                 scan('CHAR', "?\\u0041")
+
+    assert_equal ["?\\u{41}"],
+                 scan('CHAR', "?\\u{41}")
+
     err = nil
     assert_equal [], scan('CHAR', '?\\M ') {|*e| err = e}
     assert_equal([:on_parse_error, "Invalid escape character syntax", "?\\M "], err)
+
+    err = nil
+    scan('CHAR', '?\u{41 42}') {|*e| err = e}
+    assert_equal [:on_parse_error, "Multiple codepoints at single character literal", "42"], err
   end
 
   def test_label

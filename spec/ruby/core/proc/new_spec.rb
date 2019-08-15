@@ -71,7 +71,7 @@ describe "Proc.new with an associated block" do
     end
     res = some_method()
 
-    lambda { res.call }.should raise_error(LocalJumpError)
+    -> { res.call }.should raise_error(LocalJumpError)
   end
 
   it "returns from within enclosing method when 'return' is used in the block" do
@@ -169,15 +169,15 @@ end
 
 describe "Proc.new without a block" do
   it "raises an ArgumentError" do
-    lambda { Proc.new }.should raise_error(ArgumentError)
+    -> { Proc.new }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if invoked from within a method with no block" do
-    lambda { ProcSpecs.new_proc_in_method }.should raise_error(ArgumentError)
+    -> { ProcSpecs.new_proc_in_method }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if invoked on a subclass from within a method with no block" do
-    lambda { ProcSpecs.new_proc_subclass_in_method }.should raise_error(ArgumentError)
+    -> { ProcSpecs.new_proc_subclass_in_method }.should raise_error(ArgumentError)
   end
 
   ruby_version_is ""..."2.7" do
@@ -205,11 +205,11 @@ describe "Proc.new without a block" do
 
   ruby_version_is "2.7" do
     it "can be created if invoked from within a method with a block" do
-      lambda { ProcSpecs.new_proc_in_method { "hello" } }.should complain(/Capturing the given block using Proc.new is deprecated/)
+      -> { ProcSpecs.new_proc_in_method { "hello" } }.should complain(/Capturing the given block using Proc.new is deprecated/)
     end
 
     it "can be created if invoked on a subclass from within a method with a block" do
-      lambda { ProcSpecs.new_proc_subclass_in_method { "hello" } }.should complain(/Capturing the given block using Proc.new is deprecated/)
+      -> { ProcSpecs.new_proc_subclass_in_method { "hello" } }.should complain(/Capturing the given block using Proc.new is deprecated/)
     end
 
 

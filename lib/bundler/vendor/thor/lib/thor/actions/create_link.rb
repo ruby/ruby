@@ -1,4 +1,4 @@
-require "bundler/vendor/thor/lib/thor/actions/create_file"
+require_relative "create_file"
 
 class Bundler::Thor
   module Actions

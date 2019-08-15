@@ -28,6 +28,16 @@ class Reline::Config::Test < Reline::TestCase
     assert_equal :audible, @config.instance_variable_get(:@bell_style)
   end
 
+  def test_comment_line
+    @config.read_lines([" #a: error\n"])
+    assert_not_include @config.key_bindings, nil
+  end
+
+  def test_invalid_keystroke
+    @config.read_lines(["a: error\n"])
+    assert_not_include @config.key_bindings, nil
+  end
+
   def test_bind_key
     assert_equal ['input'.bytes, 'abcde'.bytes], @config.bind_key('"input"', '"abcde"')
   end
@@ -43,10 +53,12 @@ class Reline::Config::Test < Reline::TestCase
 
   def test_bind_key_with_ctrl_chars
     assert_equal ['input'.bytes, "\C-h\C-h".bytes], @config.bind_key('"input"', '"\C-h\C-H"')
+    assert_equal ['input'.bytes, "\C-h\C-h".bytes], @config.bind_key('"input"', '"\Control-h\Control-H"')
   end
 
   def test_bind_key_with_meta_chars
     assert_equal ['input'.bytes, "\M-h\M-H".bytes], @config.bind_key('"input"', '"\M-h\M-H"')
+    assert_equal ['input'.bytes, "\M-h\M-H".bytes], @config.bind_key('"input"', '"\Meta-h\Meta-H"')
   end
 
   def test_bind_key_with_octal_number
@@ -151,6 +163,28 @@ class Reline::Config::Test < Reline::TestCase
     LINES
 
     expected = { 'abcd'.bytes => 'ABCD'.bytes, 'ijkl'.bytes => 'IJKL'.bytes }
+    assert_equal expected, @config.key_bindings
+  end
+
+  def test_additional_key_bindings
+    @config.read_lines(<<~'LINES'.lines)
+      "ef": "EF"
+      "gh": "GH"
+    LINES
+
+    expected = { 'ef'.bytes => 'EF'.bytes, 'gh'.bytes => 'GH'.bytes }
+    assert_equal expected, @config.key_bindings
+  end
+
+  def test_additional_key_bindings_with_nesting_and_comment_out
+    @config.read_lines(<<~'LINES'.lines)
+      #"ab": "AB"
+        #"cd": "cd"
+      "ef": "EF"
+        "gh": "GH"
+    LINES
+
+    expected = { 'ef'.bytes => 'EF'.bytes, 'gh'.bytes => 'GH'.bytes }
     assert_equal expected, @config.key_bindings
   end
 end
