@@ -38,7 +38,7 @@ describe "Binding#local_variable_set" do
     bind = binding
     bind.local_variable_set(:number, 10)
 
-    lambda { number }.should raise_error(NameError)
+    -> { number }.should raise_error(NameError)
   end
 
   it 'overwrites an existing local variable defined before a Binding' do
@@ -59,13 +59,13 @@ describe "Binding#local_variable_set" do
 
   it "raises a NameError on global access" do
     bind = binding
-    lambda { bind.local_variable_set(:$0, "") }.should raise_error(NameError)
+    -> { bind.local_variable_set(:$0, "") }.should raise_error(NameError)
   end
 
   it "raises a NameError on special variable access" do
     bind = binding
-    lambda { bind.local_variable_set(:$~, "") }.should raise_error(NameError)
-    lambda { bind.local_variable_set(:$_, "") }.should raise_error(NameError)
+    -> { bind.local_variable_set(:$~, "") }.should raise_error(NameError)
+    -> { bind.local_variable_set(:$_, "") }.should raise_error(NameError)
   end
 
 end

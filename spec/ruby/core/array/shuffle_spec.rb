@@ -43,7 +43,7 @@ describe "Array#shuffle" do
   it "raises a NoMethodError if an object passed for the RNG does not define #rand" do
     obj = BasicObject.new
 
-    lambda { [1, 2].shuffle(random: obj) }.should raise_error(NoMethodError)
+    -> { [1, 2].shuffle(random: obj) }.should raise_error(NoMethodError)
   end
 
   it "accepts a Float for the value returned by #rand" do
@@ -68,7 +68,7 @@ describe "Array#shuffle" do
     random = mock("array_shuffle_random")
     random.should_receive(:rand).and_return(value)
 
-    lambda { [1, 2].shuffle(random: random) }.should raise_error(RangeError)
+    -> { [1, 2].shuffle(random: random) }.should raise_error(RangeError)
   end
 
   it "raises a RangeError if the value is equal to one" do
@@ -77,7 +77,7 @@ describe "Array#shuffle" do
     random = mock("array_shuffle_random")
     random.should_receive(:rand).at_least(1).times.and_return(value)
 
-    lambda { [1, 2].shuffle(random: random) }.should raise_error(RangeError)
+    -> { [1, 2].shuffle(random: random) }.should raise_error(RangeError)
   end
 end
 
@@ -96,7 +96,7 @@ describe "Array#shuffle!" do
   end
 
   it "raises a #{frozen_error_class} on a frozen array" do
-    lambda { ArraySpecs.frozen_array.shuffle! }.should raise_error(frozen_error_class)
-    lambda { ArraySpecs.empty_frozen_array.shuffle! }.should raise_error(frozen_error_class)
+    -> { ArraySpecs.frozen_array.shuffle! }.should raise_error(frozen_error_class)
+    -> { ArraySpecs.empty_frozen_array.shuffle! }.should raise_error(frozen_error_class)
   end
 end

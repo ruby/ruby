@@ -5,7 +5,7 @@
 
 require 'digest'
 require_relative 'downloader'
-require_relative 'colorize'
+require_relative 'lib/colorize'
 
 class ExtLibs
   def initialize

@@ -23,8 +23,8 @@ describe "String#insert with index, other" do
   end
 
   it "raises an IndexError if the index is beyond string" do
-    lambda { "abcd".insert(5, 'X')  }.should raise_error(IndexError)
-    lambda { "abcd".insert(-6, 'X') }.should raise_error(IndexError)
+    -> { "abcd".insert(5, 'X')  }.should raise_error(IndexError)
+    -> { "abcd".insert(-6, 'X') }.should raise_error(IndexError)
   end
 
   it "converts index to an integer using to_int" do
@@ -52,15 +52,15 @@ describe "String#insert with index, other" do
   end
 
   it "raises a TypeError if other can't be converted to string" do
-    lambda { "abcd".insert(-6, Object.new)}.should raise_error(TypeError)
-    lambda { "abcd".insert(-6, [])        }.should raise_error(TypeError)
-    lambda { "abcd".insert(-6, mock('x')) }.should raise_error(TypeError)
+    -> { "abcd".insert(-6, Object.new)}.should raise_error(TypeError)
+    -> { "abcd".insert(-6, [])        }.should raise_error(TypeError)
+    -> { "abcd".insert(-6, mock('x')) }.should raise_error(TypeError)
   end
 
   it "raises a #{frozen_error_class} if self is frozen" do
     str = "abcd".freeze
-    lambda { str.insert(4, '')  }.should raise_error(frozen_error_class)
-    lambda { str.insert(4, 'X') }.should raise_error(frozen_error_class)
+    -> { str.insert(4, '')  }.should raise_error(frozen_error_class)
+    -> { str.insert(4, 'X') }.should raise_error(frozen_error_class)
   end
 
   it "inserts a character into a multibyte encoded string" do
@@ -75,7 +75,7 @@ describe "String#insert with index, other" do
 
   it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
     pat = "ア".encode Encoding::EUC_JP
-    lambda do
+    -> do
       "あれ".insert 0, pat
     end.should raise_error(Encoding::CompatibilityError)
   end

@@ -139,10 +139,20 @@ module Bundler
     end
 
     def inflate(obj)
-      if defined?(Gem::Util)
-        Gem::Util.inflate(obj)
+      require "rubygems/util"
+
+      Gem::Util.inflate(obj)
+    end
+
+    def correct_for_windows_path(path)
+      require "rubygems/util"
+
+      if Gem::Util.respond_to?(:correct_for_windows_path)
+        Gem::Util.correct_for_windows_path(path)
+      elsif path[0].chr == "/" && path[1].chr =~ /[a-z]/i && path[2].chr == ":"
+        path[1..-1]
       else
-        Gem.inflate(obj)
+        path
       end
     end
 
@@ -201,10 +211,6 @@ module Bundler
 
     def marshal_spec_dir
       Gem::MARSHAL_SPEC_DIR
-    end
-
-    def config_map
-      Gem::ConfigMap
     end
 
     def clear_paths
@@ -304,19 +310,6 @@ module Bundler
       end
     end
 
-    # RubyGems-generated binstubs call Kernel#gem
-    def binstubs_call_gem?
-      !provides?(">= 2.5.2")
-    end
-
-    # only 2.5.2+ has all of the stub methods we want to use, and since this
-    # is a performance optimization _only_,
-    # we'll restrict ourselves to the most
-    # recent RG versions instead of all versions that have stubs
-    def stubs_provide_full_functionality?
-      provides?(">= 2.5.2")
-    end
-
     def replace_gem(specs, specs_by_name)
       reverse_rubygems_kernel_mixin
 
@@ -325,7 +318,6 @@ module Bundler
       kernel = (class << ::Kernel; self; end)
       [kernel, ::Kernel].each do |kernel_class|
         redefine_method(kernel_class, :gem) do |dep, *reqs|
-          executables ||= specs.map(&:executables).flatten if ::Bundler.rubygems.binstubs_call_gem?
           if executables && executables.include?(File.basename(caller.first.split(":").first))
             break
           end
@@ -431,13 +423,6 @@ module Bundler
       end
     end
 
-    # Because Bundler has a static view of what specs are available,
-    # we don't #refresh, so stub it out.
-    def replace_refresh
-      gem_class = (class << Gem; self; end)
-      redefine_method(gem_class, :refresh) {}
-    end
-
     # Replace or hook into RubyGems to provide a bundlerized view
     # of the world.
     def replace_entrypoints(specs)
@@ -458,7 +443,6 @@ module Bundler
       replace_gem(specs, specs_by_name)
       stub_rubygems(specs)
       replace_bin_path(specs_by_name)
-      replace_refresh
 
       Gem.clear_paths
     end

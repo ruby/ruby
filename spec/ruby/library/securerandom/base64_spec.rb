@@ -42,7 +42,7 @@ describe "SecureRandom.base64" do
   end
 
   it "raises ArgumentError on negative arguments" do
-    lambda {
+    -> {
       SecureRandom.base64(-1)
     }.should raise_error(ArgumentError)
   end

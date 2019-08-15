@@ -13,7 +13,7 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if argument is given" do
-      lambda { @params[0].default(1) }.should raise_error ArgumentError
+      -> { @params[0].default(1) }.should raise_error ArgumentError
     end
 
     it "returns nil for each of WIN32OLE_PARAM for Shell's 'BrowseForFolder' method" do

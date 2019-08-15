@@ -29,11 +29,11 @@ describe "IO#readline" do
 
   it "raises EOFError on end of stream" do
     IOSpecs.lines.length.times { @io.readline }
-    lambda { @io.readline }.should raise_error(EOFError)
+    -> { @io.readline }.should raise_error(EOFError)
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.readline }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.readline }.should raise_error(IOError)
   end
 
   it "assigns the returned line to $_" do

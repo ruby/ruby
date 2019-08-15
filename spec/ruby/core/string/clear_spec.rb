@@ -31,7 +31,7 @@ describe "String#clear" do
 
   it "raises a #{frozen_error_class} if self is frozen" do
     @s.freeze
-    lambda { @s.clear        }.should raise_error(frozen_error_class)
-    lambda { "".freeze.clear }.should raise_error(frozen_error_class)
+    -> { @s.clear        }.should raise_error(frozen_error_class)
+    -> { "".freeze.clear }.should raise_error(frozen_error_class)
   end
 end

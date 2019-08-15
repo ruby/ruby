@@ -10,6 +10,21 @@ module Kernel
     alias open_uri_original_open open # :nodoc:
   end
 
+  def open(name, *rest, &block) # :nodoc:
+    if (name.respond_to?(:open) && !name.respond_to?(:to_path)) ||
+       (name.respond_to?(:to_str) &&
+        %r{\A[A-Za-z][A-Za-z0-9+\-\.]*://} =~ name &&
+        (uri = URI.parse(name)).respond_to?(:open))
+      warn('calling URI.open via Kernel#open is deprecated, call URI.open directly', uplevel: 1)
+      URI.open(name, *rest, &block)
+    else
+      open_uri_original_open(name, *rest, &block)
+    end
+  end
+  module_function :open
+end
+
+module URI
   # Allows the opening of various resources including URIs.
   #
   # If the first argument responds to the 'open' method, 'open' is called on
@@ -26,7 +41,7 @@ module Kernel
   #
   # We can accept URIs and strings that begin with http://, https:// and
   # ftp://. In these cases, the opened file object is extended by OpenURI::Meta.
-  def open(name, *rest, &block) # :doc:
+  def self.open(name, *rest, &block)
     if name.respond_to?(:open)
       name.open(*rest, &block)
     elsif name.respond_to?(:to_str) &&
@@ -35,15 +50,9 @@ module Kernel
       uri.open(*rest, &block)
     else
       open_uri_original_open(name, *rest, &block)
+      # After Kernel#open override is removed:
+      #super
     end
-  end
-  module_function :open
-end
-
-module URI #:nodoc:
-  # alias for Kernel.open defined in open-uri.
-  def self.open(name, *rest, &block)
-    Kernel.open(name, *rest, &block)
   end
 end
 
@@ -543,17 +552,16 @@ module OpenURI
     # It can be used to guess charset.
     #
     # If charset parameter and block is not given,
-    # nil is returned except text type in HTTP.
-    # In that case, "iso-8859-1" is returned as defined by RFC2616 3.7.1.
+    # nil is returned except text type.
+    # In that case, "utf-8" is returned as defined by RFC6838 4.2.1
     def charset
       type, *parameters = content_type_parse
       if pair = parameters.assoc('charset')
         pair.last.downcase
       elsif block_given?
         yield
-      elsif type && %r{\Atext/} =~ type &&
-            @base_uri && /\Ahttp\z/i =~ @base_uri.scheme
-        "iso-8859-1" # RFC2616 3.7.1
+      elsif type && %r{\Atext/} =~ type
+        "utf-8" # RFC6838 4.2.1
       else
         nil
       end

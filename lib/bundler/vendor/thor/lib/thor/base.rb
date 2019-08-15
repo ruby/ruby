@@ -1,12 +1,12 @@
-require "bundler/vendor/thor/lib/thor/command"
-require "bundler/vendor/thor/lib/thor/core_ext/hash_with_indifferent_access"
-require "bundler/vendor/thor/lib/thor/core_ext/ordered_hash"
-require "bundler/vendor/thor/lib/thor/error"
-require "bundler/vendor/thor/lib/thor/invocation"
-require "bundler/vendor/thor/lib/thor/parser"
-require "bundler/vendor/thor/lib/thor/shell"
-require "bundler/vendor/thor/lib/thor/line_editor"
-require "bundler/vendor/thor/lib/thor/util"
+require_relative "command"
+require_relative "core_ext/hash_with_indifferent_access"
+require_relative "core_ext/ordered_hash"
+require_relative "error"
+require_relative "invocation"
+require_relative "parser"
+require_relative "shell"
+require_relative "line_editor"
+require_relative "util"
 
 class Bundler::Thor
   autoload :Actions,    File.expand_path("actions", __dir__)

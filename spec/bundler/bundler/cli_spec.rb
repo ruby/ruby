@@ -42,7 +42,7 @@ RSpec.describe "bundle executable" do
   context "when ENV['BUNDLE_GEMFILE'] is set to an empty string" do
     it "ignores it" do
       gemfile bundled_app("Gemfile"), <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
       G
 
@@ -55,7 +55,7 @@ RSpec.describe "bundle executable" do
   context "when ENV['RUBYGEMS_GEMDEPS'] is set" do
     it "displays a warning" do
       gemfile bundled_app("Gemfile"), <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
       G
 

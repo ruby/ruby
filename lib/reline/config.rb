@@ -5,6 +5,8 @@ class Reline::Config
 
   DEFAULT_PATH = '~/.inputrc'
 
+  KEYSEQ_PATTERN = /\\(?:C|Control)-[A-Za-z_]|\\(?:M|Meta)-[0-9A-Za-z_]|\\(?:C|Control)-(?:M|Meta)-[A-Za-z_]|\\(?:M|Meta)-(?:C|Control)-[A-Za-z_]|\\e|\\[\\\"\'abdfnrtv]|\\\d{1,3}|\\x\h{1,2}|./
+
   class InvalidInputrc < RuntimeError
     attr_accessor :file, :lineno
   end
@@ -119,27 +121,27 @@ class Reline::Config
     @if_stack = []
 
     lines.each_with_index do |line, no|
-      next if line.start_with?('#')
+      next if line.match(/\A\s*#/)
 
       no += 1
 
-      line = line.chomp.gsub(/^\s*/, '')
-      if line[0, 1] == '$'
+      line = line.chomp.lstrip
+      if line.start_with?('$')
         handle_directive(line[1..-1], file, no)
         next
       end
 
       next if @skip_section
 
-      if line.match(/^set +([^ ]+) +([^ ]+)/i)
+      case line
+      when /^set +([^ ]+) +([^ ]+)/i
         var, value = $1.downcase, $2.downcase
         bind_variable(var, value)
         next
-      end
-
-      if line =~ /\s*(.*)\s*:\s*(.*)\s*$/
+      when /\s*("#{KEYSEQ_PATTERN}+")\s*:\s*(.*)\s*$/o
         key, func_name = $1, $2
         keystroke, func = bind_key(key, func_name)
+        next unless keystroke
         @additional_key_bindings[keystroke] = func
       end
     end
@@ -227,7 +229,7 @@ class Reline::Config
   end
 
   def bind_key(key, func_name)
-    if key =~ /"(.*)"/
+    if key =~ /\A"(.*)"\z/
       keyseq = parse_keyseq($1)
     else
       keyseq = nil
@@ -242,9 +244,9 @@ class Reline::Config
 
   def key_notation_to_code(notation)
     case notation
-    when /\\C-([A-Za-z_])/
+    when /\\(?:C|Control)-([A-Za-z_])/
       (1 + $1.downcase.ord - ?a.ord)
-    when /\\M-([0-9A-Za-z_])/
+    when /\\(?:M|Meta)-([0-9A-Za-z_])/
       modified_key = $1
       case $1
       when /[0-9]/
@@ -254,7 +256,7 @@ class Reline::Config
       when /[a-z]/
         ?\M-a.bytes.first + (modified_key.ord - ?a.ord)
       end
-    when /\\C-M-[A-Za-z_]/, /\\M-C-[A-Za-z_]/
+    when /\\(?:C|Control)-(?:M|Meta)-[A-Za-z_]/, /\\(?:M|Meta)-(?:C|Control)-[A-Za-z_]/
     # 129 M-^A
     when /\\(\d{1,3})/ then $1.to_i(8) # octal
     when /\\x(\h{1,2})/ then $1.to_i(16) # hexadecimal
@@ -275,11 +277,9 @@ class Reline::Config
   end
 
   def parse_keyseq(str)
-    # TODO: Control- and Meta-
     ret = []
-    while str =~ /(\\C-[A-Za-z_]|\\M-[0-9A-Za-z_]|\\C-M-[A-Za-z_]|\\M-C-[A-Za-z_]|\\e|\\\\|\\"|\\'|\\a|\\b|\\d|\\f|\\n|\\r|\\t|\\v|\\\d{1,3}|\\x\h{1,2}|.)/
+    str.scan(KEYSEQ_PATTERN) do
       ret << key_notation_to_code($&)
-      str = $'
     end
     ret
   end

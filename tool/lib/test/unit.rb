@@ -6,7 +6,7 @@ end
 require 'minitest/unit'
 require 'test/unit/assertions'
 require_relative '../envutil'
-require_relative '../../../tool/colorize'
+require_relative '../colorize'
 require 'test/unit/testcase'
 require 'optparse'
 
@@ -856,12 +856,25 @@ module Test
       def setup_options(parser, options)
         super
         parser.separator "globbing options:"
-        parser.on '-b', '--basedir=DIR', 'Base directory of test suites.' do |dir|
+        parser.on '-B', '--base-directory DIR', 'Base directory to glob.' do |dir|
+          raise OptionParser::InvalidArgument, "not a directory: #{dir}" unless File.directory?(dir)
           options[:base_directory] = dir
         end
         parser.on '-x', '--exclude REGEXP', 'Exclude test files on pattern.' do |pattern|
           (options[:reject] ||= []) << pattern
         end
+      end
+
+      def complement_test_name f, orig_f
+        basename = File.basename(f)
+
+        if /\.rb\z/ !~ basename
+          return File.join(File.dirname(f), basename+'.rb')
+        elsif /\Atest_/ !~ basename
+          return File.join(File.dirname(f), 'test_'+basename)
+        end if f.end_with?(basename) # otherwise basename is dirname/
+
+        raise ArgumentError, "file not found: #{orig_f}"
       end
 
       def non_options(files, options)
@@ -871,31 +884,38 @@ module Test
         end
         files.map! {|f|
           f = f.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
-          ((paths if /\A\.\.?(?:\z|\/)/ !~ f) || [nil]).any? do |prefix|
-            if prefix
-              path = f.empty? ? prefix : "#{prefix}/#{f}"
-            else
-              next if f.empty?
-              path = f
-            end
-            if f.end_with?(File::SEPARATOR) or !f.include?(File::SEPARATOR) or File.directory?(path)
-              match = (Dir["#{path}/**/#{@@testfile_prefix}_*.rb"] + Dir["#{path}/**/*_#{@@testfile_suffix}.rb"]).uniq
-            else
-              match = Dir[path]
-            end
-            if !match.empty?
-              if reject
-                match.reject! {|n|
-                  n = n[(prefix.length+1)..-1] if prefix
-                  reject_pat =~ n
-                }
+          orig_f = f
+          while true
+            ret = ((paths if /\A\.\.?(?:\z|\/)/ !~ f) || [nil]).any? do |prefix|
+              if prefix
+                path = f.empty? ? prefix : "#{prefix}/#{f}"
+              else
+                next if f.empty?
+                path = f
               end
-              break match
-            elsif !reject or reject_pat !~ f and File.exist? path
-              break path
+              if f.end_with?(File::SEPARATOR) or !f.include?(File::SEPARATOR) or File.directory?(path)
+                match = (Dir["#{path}/**/#{@@testfile_prefix}_*.rb"] + Dir["#{path}/**/*_#{@@testfile_suffix}.rb"]).uniq
+              else
+                match = Dir[path]
+              end
+              if !match.empty?
+                if reject
+                  match.reject! {|n|
+                    n = n[(prefix.length+1)..-1] if prefix
+                    reject_pat =~ n
+                  }
+                end
+                break match
+              elsif !reject or reject_pat !~ f and File.exist? path
+                break path
+              end
             end
-          end or
-            raise ArgumentError, "file not found: #{f}"
+            if !ret
+              f = complement_test_name(f, orig_f)
+            else
+              break ret
+            end
+          end
         }
         files.flatten!
         super(files, options)
@@ -1065,6 +1085,14 @@ module Test
       include Test::Unit::TimeoutOption
       include Test::Unit::RunCount
 
+      def run(argv)
+        super
+      rescue NoMemoryError
+        system("cat /proc/meminfo") if File.exist?("/proc/meminfo")
+        system("ps x -opid,args,%cpu,%mem,nlwp,rss,vsz,wchan,stat,start,time,etime,blocked,caught,ignored,pending,f") if File.exist?("/bin/ps")
+        raise
+      end
+
       class << self; undef autorun; end
 
       @@stop_auto_run = false
@@ -1104,10 +1132,11 @@ module Test
       def initialize(force_standalone = false, default_dir = nil, argv = ARGV)
         @force_standalone = force_standalone
         @runner = Runner.new do |files, options|
-          options[:base_directory] ||= default_dir
+          base = options[:base_directory] ||= default_dir
           files << default_dir if files.empty? and default_dir
           @to_run = files
           yield self if block_given?
+          $LOAD_PATH.unshift base if base
           files
         end
         Runner.runner = @runner
