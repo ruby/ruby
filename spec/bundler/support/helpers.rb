@@ -302,10 +302,10 @@ module Spec
             spec = Gem::Specification.load(gemspec.to_s)
             spec.bindir = "libexec"
             File.open(root.join("bundler.gemspec").to_s, "w") {|f| f.write spec.to_ruby }
-            Dir.chdir(root) { gem_command! :build, root.join("bundler.gemspec").to_s }
+            Dir.chdir(root) { gem_command! :build, root.join("bundler.gemspec") }
             FileUtils.rm(root.join("bundler.gemspec"))
           else
-            Dir.chdir(root) { gem_command! :build, gemspec.to_s }
+            Dir.chdir(root) { gem_command! :build, gemspec }
           end
           bundler_path = root.join("bundler-#{Bundler::VERSION}.gem")
         elsif g.to_s =~ %r{\A(?:[A-Z]:)?/.*\.gem\z}
