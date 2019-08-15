@@ -44,7 +44,7 @@ describe :rexml_document_add, shared: true do
   end
 
   it "refuses to add second root" do
-    lambda { @doc.send(@method, REXML::Element.new("foo")) }.should raise_error(RuntimeError)
+    -> { @doc.send(@method, REXML::Element.new("foo")) }.should raise_error(RuntimeError)
   end
 end
 

@@ -187,7 +187,7 @@ struct debug_section_definition {
 };
 
 /* Avoid consuming stack as this module may be used from signal handler */
-static char binary_filename[PATH_MAX];
+static char binary_filename[PATH_MAX + 1];
 
 static unsigned long
 uleb128(char **p)
@@ -432,7 +432,7 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    /*basic_block = 1; */
 	    break;
 	case DW_LNS_const_add_pc:
-	    a = ((255 - header.opcode_base) / header.line_range) *
+	    a = ((255UL - header.opcode_base) / header.line_range) *
 		header.minimum_instruction_length;
 	    addr += a;
 	    break;
@@ -2050,6 +2050,7 @@ main_exe_path(void)
 {
 # define PROC_SELF_EXE "/proc/self/exe"
     ssize_t len = readlink(PROC_SELF_EXE, binary_filename, PATH_MAX);
+    if (len < 0) return 0;
     binary_filename[len] = 0;
     return len;
 }

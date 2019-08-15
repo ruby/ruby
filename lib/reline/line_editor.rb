@@ -67,7 +67,7 @@ class Reline::LineEditor
     @old_trap = Signal.trap('SIGINT') {
       scroll_down(@highest_in_all - @first_line_started_from)
       Reline::IOGate.move_cursor_column(0)
-      @old_trap.()
+      @old_trap.call if @old_trap.respond_to?(:call) # can also be string, ex: "DEFAULT"
     }
   end
 
@@ -241,7 +241,7 @@ class Reline::LineEditor
     @byte_pointer = new_byte_pointer
   end
 
-  def rerender # TODO: support physical and logical lines
+  def rerender
     return if @line.nil?
     if @menu_info
       scroll_down(@highest_in_all - @first_line_started_from)
@@ -255,12 +255,15 @@ class Reline::LineEditor
       move_cursor_up(@highest_in_all - 1 - @first_line_started_from)
       @menu_info = nil
     end
+    special_prompt = nil
     if @vi_arg
       prompt = "(arg: #{@vi_arg}) "
       prompt_width = calculate_width(prompt)
+      special_prompt = prompt
     elsif @searching_prompt
       prompt = @searching_prompt
       prompt_width = calculate_width(prompt)
+      special_prompt = prompt
     else
       prompt = @prompt
       prompt_width = calculate_width(prompt, true)
@@ -272,6 +275,7 @@ class Reline::LineEditor
       prompt_list = nil
       if @prompt_proc
         prompt_list = @prompt_proc.(whole_lines)
+        prompt_list[@line_index] = special_prompt if special_prompt
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
@@ -303,6 +307,7 @@ class Reline::LineEditor
       prompt_list = nil
       if @prompt_proc
         prompt_list = @prompt_proc.(new_lines)
+        prompt_list[@line_index] = special_prompt if special_prompt
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
@@ -372,6 +377,7 @@ class Reline::LineEditor
       prompt_list = nil
       if @prompt_proc
         prompt_list = @prompt_proc.(new_buffer)
+        prompt_list[@line_index] = special_prompt if special_prompt
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
@@ -429,6 +435,7 @@ class Reline::LineEditor
       prompt_list = nil
       if @prompt_proc
         prompt_list = @prompt_proc.(whole_lines)
+        prompt_list[@line_index] = special_prompt if special_prompt
         prompt = prompt_list[@line_index]
         prompt_width = calculate_width(prompt, true)
       end
@@ -801,17 +808,25 @@ class Reline::LineEditor
     rest = nil
     break_pointer = nil
     quote = nil
+    closing_quote = nil
+    escaped_quote = nil
     i = 0
     while i < @byte_pointer do
       slice = @line.byteslice(i, @byte_pointer - i)
-      if quote and slice.start_with?(/(?!\\)#{Regexp.escape(quote)}/) # closing "
+      unless slice.valid_encoding?
+        i += 1
+        next
+      end
+      if quote and slice.start_with?(closing_quote)
         quote = nil
         i += 1
-      elsif quote and slice.start_with?(/\\#{Regexp.escape(quote)}/) # escaped \"
+      elsif quote and slice.start_with?(escaped_quote)
         # skip
         i += 2
       elsif slice =~ quote_characters_regexp # find new "
         quote = $&
+        closing_quote = /(?!\\)#{Regexp.escape(quote)}/
+        escaped_quote = /\\#{Regexp.escape(quote)}/
         i += 1
       elsif not quote and slice =~ word_break_regexp
         rest = $'

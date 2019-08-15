@@ -747,7 +747,8 @@ new_array_pattern_tail(struct parser_params *p, VALUE pre_args, VALUE has_rest, 
     NODE *t;
     if (has_rest) {
 	rest_arg = dispatch1(var_field, rest_arg ? rest_arg : Qnil);
-    } else {
+    }
+    else {
 	rest_arg = Qnil;
     }
     t = rb_node_newnode(NODE_ARYPTN, pre_args, rest_arg, post_args, &NULL_LOC);
@@ -865,7 +866,7 @@ static VALUE heredoc_dedent(struct parser_params*,VALUE);
 # define rb_warning3L(l,fmt,a,b,c)   WARNING_CALL(WARNING_ARGS_L(l, fmt, 4), (a), (b), (c))
 # define rb_warning4L(l,fmt,a,b,c,d) WARNING_CALL(WARNING_ARGS_L(l, fmt, 5), (a), (b), (c), (d))
 #ifdef RIPPER
-static ID id_warn, id_warning, id_gets, id_assoc, id_or;
+static ID id_warn, id_warning, id_gets, id_assoc;
 # define WARN_S_L(s,l) STR_NEW(s,l)
 # define WARN_S(s) STR_NEW2(s)
 # define WARN_I(i) INT2NUM(i)
@@ -1386,6 +1387,15 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    /*% %*/
 		    /*% ripper: assign!($1, $3) %*/
 		    }
+                | mlhs '=' mrhs_arg modifier_rescue stmt
+                    {
+                    /*%%%*/
+                        YYLTYPE loc = code_loc_gen(&@4, &@5);
+                        value_expr($3);
+			$$ = node_assign(p, $1, NEW_RESCUE($3, NEW_RESBODY(0, remove_begin($5), 0, &loc), 0, &@$), &@$);
+                    /*% %*/
+                    /*% ripper: massign!($1, rescue_mod!($3, $5)) %*/
+                    }
 		| mlhs '=' mrhs_arg
 		    {
 		    /*%%%*/
@@ -3790,7 +3800,7 @@ p_alt		: p_alt '|' p_expr_basic
 		    /*%%%*/
 			$$ = NEW_NODE(NODE_OR, $1, $3, 0, &@$);
 		    /*% %*/
-		    /*% ripper: binary!($1, STATIC_ID2SYM((id_or)), $3) %*/
+		    /*% ripper: binary!($1, STATIC_ID2SYM(idOr), $3) %*/
 		    }
 		| p_expr_basic
 		;
@@ -4040,7 +4050,7 @@ p_kwrest	: kwrest_mark tIDENTIFIER
 		    }
 		;
 
-p_value	: p_primitive
+p_value 	: p_primitive
 		| p_primitive tDOT2 p_primitive
 		    {
 		    /*%%%*/
@@ -4162,7 +4172,7 @@ p_var_ref	: '^' tIDENTIFIER
 		    }
 		;
 
-p_const	: tCOLON3 cname
+p_const 	: tCOLON3 cname
 		    {
 		    /*%%%*/
 			$$ = NEW_COLON3($2, &@$);
@@ -5099,10 +5109,7 @@ opt_f_block_arg	: ',' f_block_arg
 		    }
 		| none
 		    {
-		    /*%%%*/
-			$$ = 0;
-		    /*% %*/
-		    /*% ripper: Qundef %*/
+			$$ = Qnull;
 		    }
 		;
 
@@ -5814,7 +5821,7 @@ yycompile(VALUE vparser, struct parser_params *p, VALUE fname, int line)
 	p->ruby_sourcefile = "(none)";
     }
     else {
-	p->ruby_sourcefile_string = rb_str_new_frozen(fname);
+	p->ruby_sourcefile_string = rb_fstring(fname);
 	p->ruby_sourcefile = StringValueCStr(fname);
     }
     p->ruby_sourceline = line - 1;
@@ -7306,10 +7313,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 	    dispatch_scan_event(p, tSTRING_CONTENT);
 	}
 	else {
-	    if (str) {
-		rb_str_append(p->delayed, str);
-	    }
-	    else if ((len = p->lex.pcur - p->lex.ptok) > 0) {
+	    if ((len = p->lex.pcur - p->lex.ptok) > 0) {
 		if (!(func & STR_FUNC_REGEXP) && rb_enc_asciicompat(enc)) {
 		    int cr = ENC_CODERANGE_UNKNOWN;
 		    rb_str_coderange_scan_restartable(p->lex.ptok, p->lex.pcur, enc, &cr);
@@ -8428,6 +8432,7 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 	    set_yylval_noname();
 	    return tGVAR;
 	}
+	/* fall through */
       case '0':
 	tokadd(p, '$');
     }
@@ -8845,7 +8850,6 @@ parser_yylex(struct parser_params *p)
 	return '=';
 
       case '<':
-	last_state = p->lex.state;
 	c = nextc(p);
 	if (c == '<' &&
 	    !IS_lex_state(EXPR_DOT | EXPR_CLASS) &&
@@ -9744,10 +9748,16 @@ past_dvar_p(struct parser_params *p, ID id)
 }
 # endif
 
+/* As Ripper#warn does not have arguments for the location, so the
+ * following messages cannot be separated */
 #define WARN_LOCATION(type) do { \
     if (p->warn_location) { \
-	rb_warning0(type" in eval may not return location in binding;" \
-		    " use Binding#source_location instead"); \
+	int line; \
+	VALUE file = rb_source_location(&line); \
+	rb_warn3(type" in eval may not return location in binding;" \
+		 " use Binding#source_location instead\n" \
+		 "%"PRIsWARN":%d: warning: in `%"PRIsWARN"'", \
+		 file, WARN_I(line), rb_id2str(rb_frame_this_func())); \
     } \
 } while (0)
 
@@ -9772,7 +9782,7 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	    if (NIL_P(file))
 		file = rb_str_new(0, 0);
 	    else
-		file = rb_str_dup(rb_fstring(file));
+		file = rb_str_dup(file);
 	    node = NEW_STR(add_mark_object(p, file), loc);
 	}
 	return node;
@@ -9896,6 +9906,7 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
       default:
 	add_mark_object(p, lit = STR_NEW0());
 	node = NEW_NODE(NODE_DSTR, lit, 1, NEW_LIST(node, loc), loc);
+	/* fall through */
       case NODE_DSTR:
 	nd_set_type(node, NODE_DREGX);
 	nd_set_loc(node, loc);
@@ -10931,10 +10942,8 @@ cond0(struct parser_params *p, NODE *node, int method_op, const YYLTYPE *loc)
       case NODE_DOT3:
 	node->nd_beg = range_op(p, node->nd_beg, loc);
 	node->nd_end = range_op(p, node->nd_end, loc);
-	if (nd_type(node) == NODE_DOT2 || nd_type(node) == NODE_DOT3) {
-	    nd_set_type(node, nd_type(node) == NODE_DOT2 ? NODE_FLIP2 : NODE_FLIP3);
-	    parser_warn(p, node, "flip-flop is deprecated");
-	}
+	if (nd_type(node) == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
+	else if (nd_type(node) == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
 	if (!method_op && !e_option_supplied(p)) {
 	    int b = literal_node(node->nd_beg);
 	    int e = literal_node(node->nd_end);
@@ -11238,7 +11247,8 @@ new_array_pattern(struct parser_params *p, NODE *constant, NODE *pre_arg, NODE *
 	NODE *pre_args = NEW_LIST(pre_arg, loc);
 	if (apinfo->pre_args) {
 	    apinfo->pre_args = list_concat(pre_args, apinfo->pre_args);
-	} else {
+	}
+	else {
 	    apinfo->pre_args = pre_args;
 	}
     }
@@ -11262,10 +11272,12 @@ new_array_pattern_tail(struct parser_params *p, NODE *pre_args, int has_rest, ID
     if (has_rest) {
 	if (rest_arg) {
 	    apinfo->rest_arg = assignable(p, rest_arg, 0, loc);
-	} else {
+	}
+	else {
 	    apinfo->rest_arg = NODE_SPECIAL_NO_NAME_REST;
 	}
-    } else {
+    }
+    else {
 	apinfo->rest_arg = NULL;
     }
 
@@ -12482,8 +12494,6 @@ rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr)
 
 #ifdef RIPPER
 #ifdef RIPPER_DEBUG
-extern int rb_is_pointer_to_heap(VALUE);
-
 /* :nodoc: */
 static VALUE
 ripper_validate_object(VALUE self, VALUE x)
@@ -12492,11 +12502,9 @@ ripper_validate_object(VALUE self, VALUE x)
     if (x == Qtrue) return x;
     if (x == Qnil) return x;
     if (x == Qundef)
-        rb_raise(rb_eArgError, "Qundef given");
+	rb_raise(rb_eArgError, "Qundef given");
     if (FIXNUM_P(x)) return x;
     if (SYMBOL_P(x)) return x;
-    if (!rb_is_pointer_to_heap(x))
-        rb_raise(rb_eArgError, "invalid pointer: %p", x);
     switch (BUILTIN_TYPE(x)) {
       case T_STRING:
       case T_OBJECT:
@@ -12505,15 +12513,20 @@ ripper_validate_object(VALUE self, VALUE x)
       case T_FLOAT:
       case T_COMPLEX:
       case T_RATIONAL:
-        return x;
+	break;
       case T_NODE:
-	if (nd_type(x) != NODE_RIPPER) {
-	    rb_raise(rb_eArgError, "NODE given: %p", x);
+	if (nd_type((NODE *)x) != NODE_RIPPER) {
+	    rb_raise(rb_eArgError, "NODE given: %p", (void *)x);
 	}
-	return ((NODE *)x)->nd_rval;
+	x = ((NODE *)x)->nd_rval;
+	break;
       default:
-        rb_raise(rb_eArgError, "wrong type of ruby object: %p (%s)",
-                 x, rb_obj_classname(x));
+	rb_raise(rb_eArgError, "wrong type of ruby object: %p (%s)",
+		 (void *)x, rb_obj_classname(x));
+    }
+    if (!RBASIC_CLASS(x)) {
+	rb_raise(rb_eArgError, "hidden ruby object: %p (%s)",
+		 (void *)x, rb_builtin_type_name(TYPE(x)));
     }
     return x;
 }
@@ -12895,7 +12908,6 @@ Init_ripper(void)
     id_warning = rb_intern_const("warning");
     id_gets = rb_intern_const("gets");
     id_assoc = rb_intern_const("=>");
-    id_or = rb_intern_const("|");
 
     (void)yystpcpy; /* may not used in newer bison */
 
@@ -12926,9 +12938,9 @@ InitVM_ripper(void)
     rb_define_method(Ripper, "debug_output=", rb_parser_set_debug_output, 1);
     rb_define_method(Ripper, "error?", ripper_error_p, 0);
 #ifdef RIPPER_DEBUG
-    rb_define_method(rb_mKernel, "assert_Qundef", ripper_assert_Qundef, 2);
-    rb_define_method(rb_mKernel, "rawVALUE", ripper_value, 1);
-    rb_define_method(rb_mKernel, "validate_object", ripper_validate_object, 1);
+    rb_define_method(Ripper, "assert_Qundef", ripper_assert_Qundef, 2);
+    rb_define_method(Ripper, "rawVALUE", ripper_value, 1);
+    rb_define_method(Ripper, "validate_object", ripper_validate_object, 1);
 #endif
 
     rb_define_singleton_method(Ripper, "dedent_string", parser_dedent_string, 2);

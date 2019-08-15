@@ -113,7 +113,7 @@ module Bundler
       end
       @unlocking ||= @unlock[:ruby] ||= (!@locked_ruby_version ^ !@ruby_version)
 
-      add_current_platform unless Bundler.frozen_bundle?
+      add_platforms unless Bundler.frozen_bundle?
 
       converge_path_sources_to_gemspec_sources
       @path_changes = converge_paths
@@ -167,7 +167,7 @@ module Bundler
     def specs
       @specs ||= begin
         begin
-          specs = resolve.materialize(Bundler.settings[:cache_all_platforms] ? dependencies : requested_dependencies)
+          specs = resolve.materialize(requested_dependencies)
         rescue GemNotFound => e # Handle yanked gem
           gem_name, gem_version = extract_gem_info(e)
           locked_gem = @locked_specs[gem_name].last
@@ -317,7 +317,7 @@ module Bundler
     end
 
     def spec_git_paths
-      sources.git_sources.map {|s| s.path.to_s }
+      sources.git_sources.map {|s| File.realpath(s.path) }
     end
 
     def groups
@@ -518,12 +518,6 @@ module Bundler
       raise InvalidOption, "Unable to remove the platform `#{platform}` since the only platforms are #{@platforms.join ", "}"
     end
 
-    def add_current_platform
-      current_platform = Bundler.local_platform
-      add_platform(current_platform) if Bundler.feature_flag.specific_platform?
-      add_platform(generic(current_platform))
-    end
-
     def find_resolved_spec(current_spec)
       specs.find_by_name_and_platform(current_spec.name, current_spec.platform)
     end
@@ -544,6 +538,20 @@ module Bundler
     end
 
   private
+
+    def add_platforms
+      (@dependencies.flat_map(&:expanded_platforms) + current_platforms).uniq.each do |platform|
+        add_platform(platform)
+      end
+    end
+
+    def current_platforms
+      current_platform = Bundler.local_platform
+      [].tap do |platforms|
+        platforms << current_platform if Bundler.feature_flag.specific_platform?
+        platforms << generic(current_platform)
+      end
+    end
 
     def change_reason
       if unlocking?
@@ -812,9 +820,8 @@ module Bundler
       end
 
       resolve = SpecSet.new(converged)
-      expanded_deps = expand_dependencies(deps, true)
-      @locked_specs_incomplete_for_platform = !resolve.for(expanded_deps, @unlock[:gems], true, true)
-      resolve = resolve.for(expanded_deps, @unlock[:gems], false, false, false)
+      @locked_specs_incomplete_for_platform = !resolve.for(expand_dependencies(deps), @unlock[:gems], true, true)
+      resolve = resolve.for(expand_dependencies(deps, true), @unlock[:gems], false, false, false)
       diff    = nil
 
       # Now, we unlock any sources that do not have anymore gems pinned to it
@@ -885,17 +892,7 @@ module Bundler
       dependencies.each do |dep|
         dep = Dependency.new(dep, ">= 0") unless dep.respond_to?(:name)
         next if !remote && !dep.current_platform?
-        platforms = dep.gem_platforms(sorted_platforms)
-        if platforms.empty? && !Bundler.settings[:disable_platform_warnings]
-          mapped_platforms = dep.platforms.map {|p| Dependency::PLATFORM_MAP[p] }
-          Bundler.ui.warn \
-            "The dependency #{dep} will be unused by any of the platforms Bundler is installing for. " \
-            "Bundler is installing for #{@platforms.join ", "} but the dependency " \
-            "is only for #{mapped_platforms.join ", "}. " \
-            "To add those platforms to the bundle, " \
-            "run `bundle lock --add-platform #{mapped_platforms.join " "}`."
-        end
-        platforms.each do |p|
+        dep.gem_platforms(sorted_platforms).each do |p|
           deps << DepProxy.new(dep, p) if remote || p == generic_local_platform
         end
       end

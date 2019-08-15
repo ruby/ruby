@@ -1,5 +1,5 @@
 #!/usr/bin/ruby
-require_relative 'colorize'
+require_relative 'lib/colorize'
 
 until ARGV.empty?
   case ARGV[0]

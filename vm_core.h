@@ -17,7 +17,11 @@
  *   1: enable local assertions.
  */
 #ifndef VM_CHECK_MODE
-#define VM_CHECK_MODE 0
+
+// respect RUBY_DUBUG: if given n is 0, then use RUBY_DEBUG
+#define N_OR_RUBY_DEBUG(n) (((n) > 0) ? (n) : RUBY_DEBUG)
+
+#define VM_CHECK_MODE N_OR_RUBY_DEBUG(0)
 #endif
 
 /**
@@ -46,7 +50,6 @@
 
 #if VM_CHECK_MODE > 0
 #define VM_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(VM_CHECK_MODE > 0, expr, #expr)
-
 #define VM_UNREACHABLE(func) rb_bug(#func ": unreachable")
 
 #else
@@ -547,6 +550,7 @@ enum ruby_basic_operators {
     BOP_LENGTH,
     BOP_SIZE,
     BOP_EMPTY_P,
+    BOP_NIL_P,
     BOP_SUCC,
     BOP_GT,
     BOP_GE,
@@ -578,6 +582,7 @@ typedef struct rb_at_exit_list {
 struct rb_objspace;
 struct rb_objspace *rb_objspace_alloc(void);
 void rb_objspace_free(struct rb_objspace *);
+void rb_objspace_call_finalizer(struct rb_objspace *);
 
 typedef struct rb_hook_list_struct {
     struct rb_event_hook_struct *hooks;
@@ -1034,6 +1039,7 @@ VALUE rb_iseq_coverage(const rb_iseq_t *iseq);
 RUBY_EXTERN VALUE rb_cISeq;
 RUBY_EXTERN VALUE rb_cRubyVM;
 RUBY_EXTERN VALUE rb_mRubyVMFrozenCore;
+RUBY_EXTERN VALUE rb_block_param_proxy;
 RUBY_SYMBOL_EXPORT_END
 
 #define GetProcPtr(obj, ptr) \
@@ -1912,6 +1918,8 @@ rb_exec_event_hook_script_compiled(rb_execution_context_t *ec, const rb_iseq_t *
                     NIL_P(eval_script) ? (VALUE)iseq :
                     rb_ary_new_from_args(2, eval_script, (VALUE)iseq));
 }
+
+void rb_vm_trap_exit(rb_vm_t *vm);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

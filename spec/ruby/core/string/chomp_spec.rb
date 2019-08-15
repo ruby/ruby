@@ -134,7 +134,7 @@ describe "String#chomp" do
     it "raises a TypeError if #to_str does not return a String" do
       arg = mock("string chomp")
       arg.should_receive(:to_str).and_return(1)
-      lambda { "abc".chomp(arg) }.should raise_error(TypeError)
+      -> { "abc".chomp(arg) }.should raise_error(TypeError)
     end
   end
 
@@ -288,7 +288,7 @@ describe "String#chomp!" do
     it "raises a TypeError if #to_str does not return a String" do
       arg = mock("string chomp")
       arg.should_receive(:to_str).and_return(1)
-      lambda { "abc".chomp!(arg) }.should raise_error(TypeError)
+      -> { "abc".chomp!(arg) }.should raise_error(TypeError)
     end
   end
 
@@ -318,15 +318,15 @@ describe "String#chomp!" do
     a = "string\n\r"
     a.freeze
 
-    lambda { a.chomp! }.should raise_error(frozen_error_class)
+    -> { a.chomp! }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23666]
   it "raises a #{frozen_error_class} on a frozen instance when it would not be modified" do
     a = "string\n\r"
     a.freeze
-    lambda { a.chomp!(nil) }.should raise_error(frozen_error_class)
-    lambda { a.chomp!("x") }.should raise_error(frozen_error_class)
+    -> { a.chomp!(nil) }.should raise_error(frozen_error_class)
+    -> { a.chomp!("x") }.should raise_error(frozen_error_class)
   end
 end
 

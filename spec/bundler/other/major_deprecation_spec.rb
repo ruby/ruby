@@ -6,7 +6,7 @@ RSpec.describe "major deprecations" do
   describe "Bundler" do
     before do
       install_gemfile! <<-G
-        source "file:#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
     end
@@ -196,7 +196,7 @@ RSpec.describe "major deprecations" do
   describe "bundle update" do
     before do
       install_gemfile <<-G
-        source "file:#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
     end
@@ -217,7 +217,7 @@ RSpec.describe "major deprecations" do
   describe "bundle install --binstubs" do
     before do
       install_gemfile <<-G, :binstubs => true
-        source "file:#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
     end
@@ -232,7 +232,7 @@ RSpec.describe "major deprecations" do
   context "bundle install with both gems.rb and Gemfile present" do
     it "should not warn about gems.rb" do
       create_file "gems.rb", <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
@@ -243,7 +243,7 @@ RSpec.describe "major deprecations" do
     it "should print a proper warning, and use gems.rb" do
       create_file "gems.rb"
       install_gemfile! <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
@@ -260,7 +260,7 @@ RSpec.describe "major deprecations" do
       bundle "config set --local path vendor/bundle"
 
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
     end
@@ -302,8 +302,8 @@ RSpec.describe "major deprecations" do
   context "bundle install with multiple sources" do
     before do
       install_gemfile <<-G
-        source "file://localhost#{gem_repo3}"
-        source "file://localhost#{gem_repo1}"
+        source "#{file_uri_for(gem_repo3)}"
+        source "#{file_uri_for(gem_repo1)}"
       G
     end
 
@@ -325,7 +325,7 @@ RSpec.describe "major deprecations" do
     before do
       create_file "gems.rb"
       install_gemfile! <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", :group => :test
       G
 
@@ -427,7 +427,7 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
   context "bundle show" do
     before do
       install_gemfile! <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
     end

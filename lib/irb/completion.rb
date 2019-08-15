@@ -205,7 +205,7 @@ module IRB
         sep = $2
         message = Regexp.quote($3)
 
-        gv = eval("global_variables", bind).collect{|m| m.to_s}
+        gv = eval("global_variables", bind).collect{|m| m.to_s}.append("true", "false", "nil")
         lv = eval("local_variables", bind).collect{|m| m.to_s}
         iv = eval("instance_variables", bind).collect{|m| m.to_s}
         cv = eval("self.class.constants", bind).collect{|m| m.to_s}
@@ -237,7 +237,7 @@ module IRB
           candidates.uniq!
         end
         if doc_namespace
-          "#{rec.name}#{sep}#{candidates.find{ |i| i == message }}"
+          "#{rec.class.name}#{sep}#{candidates.find{ |i| i == message }}"
         else
           select_message(receiver, message, candidates, sep)
         end

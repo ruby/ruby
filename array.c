@@ -10,14 +10,12 @@
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
 **********************************************************************/
-
 #include "ruby/encoding.h"
 #include "ruby/util.h"
 #include "ruby/st.h"
 #include "probes.h"
 #include "id.h"
 #include "debug_counter.h"
-#include "gc.h"
 #include "transient_heap.h"
 #include "internal.h"
 
@@ -35,16 +33,32 @@ VALUE rb_cArray;
 #define ARY_MAX_SIZE (LONG_MAX / (int)sizeof(VALUE))
 #define SMALL_ARRAY_LEN 16
 
-# define ARY_SHARED_P(ary) \
-    (assert(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
-     FL_TEST((ary),ELTS_SHARED)!=0)
-# define ARY_EMBED_P(ary) \
-    (assert(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
-     FL_TEST((ary), RARRAY_EMBED_FLAG)!=0)
+static int
+should_be_T_ARRAY(VALUE ary)
+{
+    return RB_TYPE_P(ary, T_ARRAY);
+}
+
+static int
+should_not_be_shared_and_embedded(VALUE ary)
+{
+    return !FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG);
+}
+
+#define ARY_SHARED_P(ary) \
+  (assert(should_be_T_ARRAY((VALUE)(ary))), \
+   assert(should_not_be_shared_and_embedded((VALUE)ary)), \
+   FL_TEST_RAW((ary),ELTS_SHARED)!=0)
+
+#define ARY_EMBED_P(ary) \
+  (assert(should_be_T_ARRAY((VALUE)(ary))), \
+   assert(should_not_be_shared_and_embedded((VALUE)ary)), \
+   FL_TEST_RAW((ary), RARRAY_EMBED_FLAG) != 0)
 
 #define ARY_HEAP_PTR(a) (assert(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.ptr)
 #define ARY_HEAP_LEN(a) (assert(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.len)
-#define ARY_HEAP_CAPA(a) (assert(!ARY_EMBED_P(a)), assert(!ARY_SHARED_ROOT_P(a)), RARRAY(a)->as.heap.aux.capa)
+#define ARY_HEAP_CAPA(a) (assert(!ARY_EMBED_P(a)), assert(!ARY_SHARED_ROOT_P(a)), \
+                          RARRAY(a)->as.heap.aux.capa)
 
 #define ARY_EMBED_PTR(a) (assert(ARY_EMBED_P(a)), RARRAY(a)->as.ary)
 #define ARY_EMBED_LEN(a) \
@@ -53,13 +67,16 @@ VALUE rb_cArray;
 	 (RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT)))
 #define ARY_HEAP_SIZE(a) (assert(!ARY_EMBED_P(a)), assert(ARY_OWNS_HEAP_P(a)), ARY_CAPA(a) * sizeof(VALUE))
 
-#define ARY_OWNS_HEAP_P(a) (!FL_TEST((a), ELTS_SHARED|RARRAY_EMBED_FLAG))
+#define ARY_OWNS_HEAP_P(a) (assert(should_be_T_ARRAY((VALUE)(a))), \
+                            !FL_TEST_RAW((a), ELTS_SHARED|RARRAY_EMBED_FLAG))
+
 #define FL_SET_EMBED(a) do { \
     assert(!ARY_SHARED_P(a)); \
     FL_SET((a), RARRAY_EMBED_FLAG); \
     RARY_TRANSIENT_UNSET(a); \
     ary_verify(a); \
 } while (0)
+
 #define FL_UNSET_EMBED(ary) FL_UNSET((ary), RARRAY_EMBED_FLAG|RARRAY_EMBED_LEN_MASK)
 #define FL_SET_SHARED(ary) do { \
     assert(!ARY_EMBED_P(ary)); \
@@ -116,21 +133,22 @@ VALUE rb_cArray;
     RARRAY(ary)->as.heap.aux.capa = (n); \
 } while (0)
 
-#define ARY_SHARED(ary) (assert(ARY_SHARED_P(ary)), RARRAY(ary)->as.heap.aux.shared)
+#define ARY_SHARED_ROOT(ary) (assert(ARY_SHARED_P(ary)), RARRAY(ary)->as.heap.aux.shared_root)
 #define ARY_SET_SHARED(ary, value) do { \
     const VALUE _ary_ = (ary); \
     const VALUE _value_ = (value); \
     assert(!ARY_EMBED_P(_ary_)); \
     assert(ARY_SHARED_P(_ary_)); \
     assert(ARY_SHARED_ROOT_P(_value_)); \
-    RB_OBJ_WRITE(_ary_, &RARRAY(_ary_)->as.heap.aux.shared, _value_); \
+    RB_OBJ_WRITE(_ary_, &RARRAY(_ary_)->as.heap.aux.shared_root, _value_); \
 } while (0)
 #define RARRAY_SHARED_ROOT_FLAG FL_USER5
-#define ARY_SHARED_ROOT_P(ary) (FL_TEST((ary), RARRAY_SHARED_ROOT_FLAG))
-#define ARY_SHARED_NUM(ary) \
+#define ARY_SHARED_ROOT_P(ary) (assert(should_be_T_ARRAY((VALUE)(ary))), \
+                                FL_TEST_RAW((ary), RARRAY_SHARED_ROOT_FLAG))
+#define ARY_SHARED_ROOT_REFCNT(ary) \
     (assert(ARY_SHARED_ROOT_P(ary)), RARRAY(ary)->as.heap.aux.capa)
-#define ARY_SHARED_OCCUPIED(ary) (ARY_SHARED_NUM(ary) == 1)
-#define ARY_SET_SHARED_NUM(ary, value) do { \
+#define ARY_SHARED_ROOT_OCCUPIED(ary) (ARY_SHARED_ROOT_REFCNT(ary) == 1)
+#define ARY_SET_SHARED_ROOT_REFCNT(ary, value) do { \
     assert(ARY_SHARED_ROOT_P(ary)); \
     RARRAY(ary)->as.heap.aux.capa = (value); \
 } while (0)
@@ -160,7 +178,7 @@ ary_verify_(VALUE ary, const char *file, int line)
     assert(RB_TYPE_P(ary, T_ARRAY));
 
     if (FL_TEST(ary, ELTS_SHARED)) {
-        VALUE root = RARRAY(ary)->as.heap.aux.shared;
+        VALUE root = RARRAY(ary)->as.heap.aux.shared_root;
         const VALUE *ptr = ARY_HEAP_PTR(ary);
         const VALUE *root_ptr = RARRAY_CONST_PTR_TRANSIENT(root);
         long len = ARY_HEAP_LEN(ary), root_len = RARRAY_LEN(root);
@@ -470,16 +488,16 @@ ary_double_capa(VALUE ary, long min)
 }
 
 static void
-rb_ary_decrement_share(VALUE shared)
+rb_ary_decrement_share(VALUE shared_root)
 {
-    if (shared) {
-	long num = ARY_SHARED_NUM(shared) - 1;
+    if (shared_root) {
+        long num = ARY_SHARED_ROOT_REFCNT(shared_root) - 1;
 	if (num == 0) {
-	    rb_ary_free(shared);
-	    rb_gc_force_recycle(shared);
+            rb_ary_free(shared_root);
+            rb_gc_force_recycle(shared_root);
 	}
 	else if (num > 0) {
-	    ARY_SET_SHARED_NUM(shared, num);
+            ARY_SET_SHARED_ROOT_REFCNT(shared_root, num);
 	}
     }
 }
@@ -487,8 +505,8 @@ rb_ary_decrement_share(VALUE shared)
 static void
 rb_ary_unshare(VALUE ary)
 {
-    VALUE shared = RARRAY(ary)->as.heap.aux.shared;
-    rb_ary_decrement_share(shared);
+    VALUE shared_root = RARRAY(ary)->as.heap.aux.shared_root;
+    rb_ary_decrement_share(shared_root);
     FL_UNSET_SHARED(ary);
 }
 
@@ -501,21 +519,22 @@ rb_ary_unshare_safe(VALUE ary)
 }
 
 static VALUE
-rb_ary_increment_share(VALUE shared)
+rb_ary_increment_share(VALUE shared_root)
 {
-    long num = ARY_SHARED_NUM(shared);
+    long num = ARY_SHARED_ROOT_REFCNT(shared_root);
     if (num >= 0) {
-	ARY_SET_SHARED_NUM(shared, num + 1);
+        ARY_SET_SHARED_ROOT_REFCNT(shared_root, num + 1);
     }
-    return shared;
+    return shared_root;
 }
 
 static void
-rb_ary_set_shared(VALUE ary, VALUE shared)
+rb_ary_set_shared(VALUE ary, VALUE shared_root)
 {
-    rb_ary_increment_share(shared);
+    rb_ary_increment_share(shared_root);
     FL_SET_SHARED(ary);
-    ARY_SET_SHARED(ary, shared);
+    RB_DEBUG_COUNTER_INC(obj_ary_shared_create);
+    ARY_SET_SHARED(ary, shared_root);
 }
 
 static inline void
@@ -531,28 +550,28 @@ rb_ary_modify(VALUE ary)
     rb_ary_modify_check(ary);
     if (ARY_SHARED_P(ary)) {
 	long shared_len, len = RARRAY_LEN(ary);
-	VALUE shared = ARY_SHARED(ary);
+        VALUE shared_root = ARY_SHARED_ROOT(ary);
 
-        ary_verify(shared);
+        ary_verify(shared_root);
 
         if (len <= RARRAY_EMBED_LEN_MAX) {
 	    const VALUE *ptr = ARY_HEAP_PTR(ary);
             FL_UNSET_SHARED(ary);
             FL_SET_EMBED(ary);
 	    MEMCPY((VALUE *)ARY_EMBED_PTR(ary), ptr, VALUE, len);
-            rb_ary_decrement_share(shared);
+            rb_ary_decrement_share(shared_root);
             ARY_SET_EMBED_LEN(ary, len);
         }
-	else if (ARY_SHARED_OCCUPIED(shared) && len > ((shared_len = RARRAY_LEN(shared))>>1)) {
-            long shift = RARRAY_CONST_PTR_TRANSIENT(ary) - RARRAY_CONST_PTR_TRANSIENT(shared);
+        else if (ARY_SHARED_ROOT_OCCUPIED(shared_root) && len > ((shared_len = RARRAY_LEN(shared_root))>>1)) {
+            long shift = RARRAY_CONST_PTR_TRANSIENT(ary) - RARRAY_CONST_PTR_TRANSIENT(shared_root);
 	    FL_UNSET_SHARED(ary);
-            ARY_SET_PTR(ary, RARRAY_CONST_PTR_TRANSIENT(shared));
+            ARY_SET_PTR(ary, RARRAY_CONST_PTR_TRANSIENT(shared_root));
 	    ARY_SET_CAPA(ary, shared_len);
             RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
 		MEMMOVE(ptr, ptr+shift, VALUE, len);
 	    });
-	    FL_SET_EMBED(shared);
-	    rb_ary_decrement_share(shared);
+            FL_SET_EMBED(shared_root);
+            rb_ary_decrement_share(shared_root);
 	}
         else {
             VALUE *ptr = ary_heap_alloc(ary, len);
@@ -579,14 +598,14 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
     }
     if (ARY_SHARED_P(ary)) {
 	if (new_len > RARRAY_EMBED_LEN_MAX) {
-	    VALUE shared = ARY_SHARED(ary);
-	    if (ARY_SHARED_OCCUPIED(shared)) {
-                if (ARY_HEAP_PTR(ary) - RARRAY_CONST_PTR_TRANSIENT(shared) + new_len <= RARRAY_LEN(shared)) {
+            VALUE shared_root = ARY_SHARED_ROOT(ary);
+            if (ARY_SHARED_ROOT_OCCUPIED(shared_root)) {
+                if (ARY_HEAP_PTR(ary) - RARRAY_CONST_PTR_TRANSIENT(shared_root) + new_len <= RARRAY_LEN(shared_root)) {
 		    rb_ary_modify_check(ary);
 
                     ary_verify(ary);
-                    ary_verify(shared);
-                    return shared;
+                    ary_verify(shared_root);
+                    return shared_root;
 		}
 		else {
 		    /* if array is shared, then it is likely it participate in push/shift pattern */
@@ -643,7 +662,7 @@ rb_ary_shared_with_p(VALUE ary1, VALUE ary2)
 {
     if (!ARY_EMBED_P(ary1) && ARY_SHARED_P(ary1) &&
 	!ARY_EMBED_P(ary2) && ARY_SHARED_P(ary2) &&
-	RARRAY(ary1)->as.heap.aux.shared == RARRAY(ary2)->as.heap.aux.shared &&
+        RARRAY(ary1)->as.heap.aux.shared_root == RARRAY(ary2)->as.heap.aux.shared_root &&
 	RARRAY(ary1)->as.heap.len == RARRAY(ary2)->as.heap.len) {
 	return Qtrue;
     }
@@ -776,7 +795,14 @@ rb_ary_free(VALUE ary)
         }
     }
     else {
-	RB_DEBUG_COUNTER_INC(obj_ary_embed);
+        RB_DEBUG_COUNTER_INC(obj_ary_embed);
+    }
+
+    if (ARY_SHARED_P(ary)) {
+        RB_DEBUG_COUNTER_INC(obj_ary_shared);
+    }
+    if (ARY_SHARED_ROOT_P(ary) && ARY_SHARED_ROOT_OCCUPIED(ary)) {
+        RB_DEBUG_COUNTER_INC(obj_ary_shared_root_occupied);
     }
 }
 
@@ -806,7 +832,7 @@ ary_make_shared(VALUE ary)
     ary_verify(ary);
 
     if (ARY_SHARED_P(ary)) {
-	return ARY_SHARED(ary);
+        return ARY_SHARED_ROOT(ary);
     }
     else if (ARY_SHARED_ROOT_P(ary)) {
 	return ary;
@@ -815,7 +841,7 @@ ary_make_shared(VALUE ary)
         rb_ary_transient_heap_evacuate(ary, TRUE);
 	ary_shrink_capa(ary);
 	FL_SET_SHARED_ROOT(ary);
-	ARY_SET_SHARED_NUM(ary, 1);
+        ARY_SET_SHARED_ROOT_REFCNT(ary, 1);
 	return ary;
     }
     else {
@@ -831,13 +857,15 @@ ary_make_shared(VALUE ary)
         ARY_SET_PTR((VALUE)shared, ptr);
         ary_mem_clear((VALUE)shared, len, capa - len);
 	FL_SET_SHARED_ROOT(shared);
-	ARY_SET_SHARED_NUM((VALUE)shared, 1);
+        ARY_SET_SHARED_ROOT_REFCNT((VALUE)shared, 1);
 	FL_SET_SHARED(ary);
+        RB_DEBUG_COUNTER_INC(obj_ary_shared_create);
 	ARY_SET_SHARED(ary, (VALUE)shared);
 	OBJ_FREEZE(shared);
 
         ary_verify((VALUE)shared);
         ary_verify(ary);
+
         return (VALUE)shared;
     }
 }
@@ -1125,7 +1153,7 @@ ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos
     /* the case optional argument is omitted should be handled in
      * callers of this function.  if another arity case is added,
      * this arity check needs to rewrite. */
-    RUBY_ASSERT_WHEN(TRUE, argc == 1);
+    RUBY_ASSERT_ALWAYS(argc == 1);
 
     n = NUM2LONG(argv[0]);
     len = RARRAY_LEN(ary);
@@ -1279,7 +1307,7 @@ rb_ary_shift(VALUE ary)
 	ARY_SET(ary, 0, Qnil);
 	ary_make_shared(ary);
     }
-    else if (ARY_SHARED_OCCUPIED(ARY_SHARED(ary))) {
+    else if (ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary))) {
         RARRAY_PTR_USE_TRANSIENT(ary, ptr, ptr[0] = Qnil);
     }
     ARY_INCREASE_PTR(ary, 1);		/* shift ptr */
@@ -1338,7 +1366,7 @@ rb_ary_behead(VALUE ary, long n)
 
     rb_ary_modify_check(ary);
     if (ARY_SHARED_P(ary)) {
-	if (ARY_SHARED_OCCUPIED(ARY_SHARED(ary))) {
+        if (ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary))) {
 	  setup_occupied_shared:
 	    ary_mem_clear(ary, 0, n);
 	}
@@ -1374,12 +1402,12 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
     }
 
     if (ARY_SHARED_P(ary)) {
-	VALUE shared = ARY_SHARED(ary);
-	capa = RARRAY_LEN(shared);
-	if (ARY_SHARED_OCCUPIED(shared) && capa > new_len) {
+        VALUE shared_root = ARY_SHARED_ROOT(ary);
+        capa = RARRAY_LEN(shared_root);
+        if (ARY_SHARED_ROOT_OCCUPIED(shared_root) && capa > new_len) {
             rb_ary_modify_check(ary);
             head = RARRAY_CONST_PTR_TRANSIENT(ary);
-            sharedp = RARRAY_CONST_PTR_TRANSIENT(shared);
+            sharedp = RARRAY_CONST_PTR_TRANSIENT(shared_root);
 	    goto makeroom_if_need;
 	}
     }
@@ -1410,10 +1438,10 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 	    head = sharedp + argc + room;
 	}
 	ARY_SET_PTR(ary, head - argc);
-	assert(ARY_SHARED_OCCUPIED(ARY_SHARED(ary)));
+        assert(ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary)));
 
         ary_verify(ary);
-	return ARY_SHARED(ary);
+        return ARY_SHARED_ROOT(ary);
     }
     else {
 	/* sliding items */
@@ -2340,7 +2368,9 @@ rb_ary_join(VALUE ary, VALUE sep)
 	len += RSTRING_LEN(tmp);
     }
 
-    result = rb_str_buf_new(len);
+    result = rb_str_new(0, len);
+    rb_str_set_len(result, 0);
+
     if (taint) OBJ_TAINT(result);
     ary_join_0(ary, sep, RARRAY_LEN(ary), result);
 
@@ -2446,8 +2476,8 @@ rb_ary_to_a(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.to_h            -> hash
- *     ary.to_h { block }  -> hash
+ *     ary.to_h                  -> hash
+ *     ary.to_h {|item| block }  -> hash
  *
  *  Returns the result of interpreting <i>ary</i> as an array of
  *  <tt>[key, value]</tt> pairs.
@@ -3784,24 +3814,24 @@ rb_ary_replace(VALUE copy, VALUE orig)
     if (copy == orig) return copy;
 
     if (RARRAY_LEN(orig) <= RARRAY_EMBED_LEN_MAX) {
-        VALUE shared = 0;
+        VALUE shared_root = 0;
 
         if (ARY_OWNS_HEAP_P(copy)) {
             ary_heap_free(copy);
 	}
         else if (ARY_SHARED_P(copy)) {
-            shared = ARY_SHARED(copy);
+            shared_root = ARY_SHARED_ROOT(copy);
             FL_UNSET_SHARED(copy);
         }
         FL_SET_EMBED(copy);
         ary_memcpy(copy, 0, RARRAY_LEN(orig), RARRAY_CONST_PTR_TRANSIENT(orig));
-        if (shared) {
-            rb_ary_decrement_share(shared);
+        if (shared_root) {
+            rb_ary_decrement_share(shared_root);
         }
         ARY_SET_LEN(copy, RARRAY_LEN(orig));
     }
     else {
-        VALUE shared = ary_make_shared(orig);
+        VALUE shared_root = ary_make_shared(orig);
         if (ARY_OWNS_HEAP_P(copy)) {
             ary_heap_free(copy);
         }
@@ -3811,7 +3841,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
         FL_UNSET_EMBED(copy);
         ARY_SET_PTR(copy, ARY_HEAP_PTR(orig));
         ARY_SET_LEN(copy, ARY_HEAP_LEN(orig));
-        rb_ary_set_shared(copy, shared);
+        rb_ary_set_shared(copy, shared_root);
     }
     ary_verify(copy);
     return copy;
@@ -4470,15 +4500,15 @@ ary_recycle_hash(VALUE hash)
  *  Array Difference
  *
  *  Returns a new array that is a copy of the original array, removing all
- *  instances of any item that also appear in +other_ary+. The order is preserved
- *  from the original array.
+ *  occurences of any item that also appear in +other_ary+. The order is
+ *  preserved from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
  *
  *     [ 1, 1, 2, 2, 3, 3, 4, 5 ] - [ 1, 2, 4 ]  #=>  [ 3, 3, 5 ]
  *
  *  Note that while 1 and 2 were only present once in the array argument, and
- *  were present twice in the receiver array, all instances of each Integer are
+ *  were present twice in the receiver array, all occurences of each Integer are
  *  removed in the returned array.
  *
  *  If you need set-like behavior, see the library class Set.
@@ -4516,12 +4546,12 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.difference(other_ary1, other_ary2, ...)   -> ary
+ *     ary.difference(other_ary1, other_ary2, ...)   -> new_ary
  *
  *  Array Difference
  *
  *  Returns a new array that is a copy of the original array, removing all
- *  instances of any item that also appear in +other_ary+. The order is
+ *  occurences of any item that also appear in +other_ary+. The order is
  *  preserved from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
@@ -4529,10 +4559,10 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *     [ 1, 1, 2, 2, 3, 3, 4, 5 ].difference([ 1, 2, 4 ])     #=> [ 3, 3, 5 ]
  *
  *  Note that while 1 and 2 were only present once in the array argument, and
- *  were present twice in the receiver array, all instances of each Integer are
+ *  were present twice in the receiver array, all occurences of each Integer are
  *  removed in the returned array.
  *
- *  Multiple array arguments can be supplied and all instances of any element
+ *  Multiple array arguments can be supplied and all occurences of any element
  *  in those supplied arrays that match the receiver will be removed from the
  *  returned array.
  *

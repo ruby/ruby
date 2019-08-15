@@ -27,7 +27,7 @@ describe "String#casecmp independent of case" do
 
   ruby_version_is ""..."2.5" do
     it "raises a TypeError if other can't be converted to a string" do
-      lambda { "abc".casecmp(mock('abc')) }.should raise_error(TypeError)
+      -> { "abc".casecmp(mock('abc')) }.should raise_error(TypeError)
     end
   end
 
@@ -198,7 +198,7 @@ describe 'String#casecmp? independent of case' do
 
   ruby_version_is "2.4"..."2.5" do
     it "raises a TypeError if other can't be converted to a string" do
-      lambda { "abc".casecmp?(mock('abc')) }.should raise_error(TypeError)
+      -> { "abc".casecmp?(mock('abc')) }.should raise_error(TypeError)
     end
   end
 

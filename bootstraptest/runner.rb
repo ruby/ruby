@@ -171,8 +171,8 @@ End
 end
 
 def erase(e = true)
-  if e and @columns > 0 and !@verbose
-    "\r#{" "*@columns}\r"
+  if e and @columns > 0 and @tty and !@verbose
+    "\e[1K\r"
   else
     ""
   end

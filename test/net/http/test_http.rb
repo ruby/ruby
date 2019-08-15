@@ -469,9 +469,11 @@ module TestNetHTTP_version_1_1_methods
 
   def test_s_post
     url = "http://#{config('host')}:#{config('port')}/?q=a"
-    res = Net::HTTP.post(
+    res = assert_warning(/Content-Type did not set/) do
+      Net::HTTP.post(
               URI.parse(url),
               "a=x")
+    end
     assert_equal "application/x-www-form-urlencoded", res["Content-Type"]
     assert_equal "a=x", res.body
     assert_equal url, res["X-request-uri"]
@@ -542,7 +544,11 @@ module TestNetHTTP_version_1_1_methods
 
       th = Thread.new do
         err = !windows? ? Net::WriteTimeout : Net::ReadTimeout
-        assert_raise(err) { conn.post('/', "a"*50_000_000) }
+        assert_raise(err) do
+          assert_warning(/Content-Type did not set/) do
+            conn.post('/', "a"*50_000_000)
+          end
+        end
       end
       assert th.join(EnvUtil.apply_timeout_scale(10))
     }
@@ -989,7 +995,7 @@ class TestNetHTTPContinue < Test::Unit::TestCase
       raise WEBrick::HTTPStatus::Forbidden
     }
     start {|http|
-      uheader = {'content-length' => '5', 'expect' => '100-continue'}
+      uheader = {'content-type' => 'application/x-www-form-urlencoded', 'content-length' => '5', 'expect' => '100-continue'}
       http.continue_timeout = 1 # allow the server to respond before sending
       http.request_post('/continue', 'data', uheader) {|res|
         assert_equal(res.code, '403')
@@ -1041,7 +1047,8 @@ class TestNetHTTPSwitchingProtocols < Test::Unit::TestCase
     }
     start {|http|
       http.continue_timeout = 0.2
-      http.request_post('/continue', 'body=BODY') {|res|
+      http.request_post('/continue', 'body=BODY',
+                        'content-type' => 'application/x-www-form-urlencoded') {|res|
         assert_equal('BODY', res.read_body)
       }
     }

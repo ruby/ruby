@@ -1027,9 +1027,7 @@ eom
       eval('1 if !//')
     end
     assert_warn('') do
-      verbose_bak, $VERBOSE = $VERBOSE, nil
       eval('1 if !(true..false)')
-      $VERBOSE = verbose_bak
     end
     assert_warning('') do
       eval('1 if !1')
@@ -1195,6 +1193,10 @@ eom
         end
       end
     end
+  end
+
+  def test_return_toplevel_with_argument
+    assert_warn(/argument of top-level return is ignored/) {eval("return 1")}
   end
 
   def test_syntax_error_in_rescue

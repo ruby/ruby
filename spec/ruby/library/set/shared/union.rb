@@ -9,7 +9,7 @@ describe :set_union, shared: true do
   end
 
   it "raises an ArgumentError when passed a non-Enumerable" do
-    lambda { @set.send(@method, 1) }.should raise_error(ArgumentError)
-    lambda { @set.send(@method, Object.new) }.should raise_error(ArgumentError)
+    -> { @set.send(@method, 1) }.should raise_error(ArgumentError)
+    -> { @set.send(@method, Object.new) }.should raise_error(ArgumentError)
   end
 end

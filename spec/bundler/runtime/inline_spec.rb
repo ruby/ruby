@@ -72,7 +72,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY
       gemfile(true) do
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       end
     RUBY
@@ -157,7 +157,7 @@ RSpec.describe "bundler/inline#gemfile" do
   it "installs quietly if necessary when the install option is not set" do
     script <<-RUBY
       gemfile do
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       end
 
@@ -232,7 +232,7 @@ RSpec.describe "bundler/inline#gemfile" do
     in_app_root do
       script <<-RUBY
         gemfile do
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         end
 
@@ -247,7 +247,7 @@ RSpec.describe "bundler/inline#gemfile" do
   it "installs inline gems when frozen is set" do
     script <<-RUBY, :env => { "BUNDLE_FROZEN" => "true" }
       gemfile do
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       end
 
@@ -264,7 +264,7 @@ RSpec.describe "bundler/inline#gemfile" do
     in_app_root do
       script <<-RUBY
         gemfile do
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         end
 
@@ -281,7 +281,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY
       gemfile do
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack" # has the rackup executable
       end
 
@@ -291,12 +291,25 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(out).to eq "1.0.0"
   end
 
+  context "when BUNDLE_PATH is set" do
+    it "installs inline gems to the system path regardless" do
+      script <<-RUBY, :env => { "BUNDLE_PATH" => "./vendor/inline" }
+        gemfile(true) do
+          source "file://#{gem_repo1}"
+          gem "rack"
+        end
+      RUBY
+      expect(last_command).to be_success
+      expect(system_gem_path("gems/rack-1.0.0")).to exist
+    end
+  end
+
   it "skips platform warnings" do
     simulate_platform "ruby"
 
     script <<-RUBY
       gemfile(true) do
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", platform: :jruby
       end
     RUBY
