@@ -161,6 +161,7 @@ PR =
 
 COMMIT_GPG_SIGN = $(shell git -C "$(srcdir)" config commit.gpgsign)
 REMOTE_GITHUB_URL = $(shell git -C "$(srcdir)" config remote.github.url)
+COMMITS_NOTES = commits
 
 .PHONY: fetch-github
 fetch-github:
@@ -175,6 +176,7 @@ define fetch-github
 	$(if $(REMOTE_GITHUB_URL),, \
 	  echo adding $(GITHUB_RUBY_URL) as remote github; \
 	  git -C "$(srcdir)" remote add github $(GITHUB_RUBY_URL); \
+	  git -C "$(srcdir)" config --add remote.github.fetch +refs/notes/$(COMMITS_NOTES):refs/notes/$(COMMITS_NOTES)
 	  $(eval REMOTE_GITHUB_URL := $(GITHUB_RUBY_URL)) \
 	)
 	$(if $(git -C "$(srcdir)" rev-parse "github/pull/$(1)/head" -- 2> /dev/null), \
