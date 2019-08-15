@@ -38,7 +38,7 @@ RSpec.describe Bundler::Definition do
       build_lib "foo", "1.0", :path => lib_path("foo")
 
       install_gemfile <<-G
-        source "file://localhost#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :path => "#{lib_path("foo")}"
       G
 
@@ -57,12 +57,12 @@ RSpec.describe Bundler::Definition do
               rack (= 1.0)
 
         GEM
-          remote: file://localhost#{gem_repo1}/
+          remote: #{file_uri_for(gem_repo1)}/
           specs:
             rack (1.0.0)
 
         PLATFORMS
-          ruby
+          #{lockfile_platforms}
 
         DEPENDENCIES
           foo!
@@ -76,7 +76,7 @@ RSpec.describe Bundler::Definition do
       build_lib "foo", "1.0", :path => lib_path("foo")
 
       install_gemfile <<-G
-        source "file://localhost#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :path => "#{lib_path("foo")}"
       G
 
@@ -88,16 +88,16 @@ RSpec.describe Bundler::Definition do
 
       expect(out).to match(/re-resolving dependencies/)
       lockfile_should_be <<-G
-        GEM
-          remote: file://localhost#{gem_repo1}/
-          specs:
-            rack (1.0.0)
-
         PATH
           remote: #{lib_path("foo")}
           specs:
             foo (1.0)
               rack (= 1.0)
+
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+            rack (1.0.0)
 
         PLATFORMS
           #{lockfile_platforms}
@@ -110,14 +110,14 @@ RSpec.describe Bundler::Definition do
       G
     end
 
-    it "for a path gem with deps and no changes", :bundler => "< 3" do
+    it "for a path gem with deps and no changes" do
       build_lib "foo", "1.0", :path => lib_path("foo") do |s|
         s.add_dependency "rack", "1.0"
         s.add_development_dependency "net-ssh", "1.0"
       end
 
       install_gemfile <<-G
-        source "file://localhost#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :path => "#{lib_path("foo")}"
       G
 
@@ -132,12 +132,12 @@ RSpec.describe Bundler::Definition do
               rack (= 1.0)
 
         GEM
-          remote: file://localhost#{gem_repo1}/
+          remote: #{file_uri_for(gem_repo1)}/
           specs:
             rack (1.0.0)
 
         PLATFORMS
-          ruby
+          #{lockfile_platforms}
 
         DEPENDENCIES
           foo!
@@ -147,37 +147,28 @@ RSpec.describe Bundler::Definition do
       G
     end
 
-    it "for a path gem with deps and no changes", :bundler => "3" do
-      build_lib "foo", "1.0", :path => lib_path("foo") do |s|
-        s.add_dependency "rack", "1.0"
-        s.add_development_dependency "net-ssh", "1.0"
-      end
-
+    it "for a locked gem for another platform" do
       install_gemfile <<-G
-        source "file://localhost#{gem_repo1}"
-        gem "foo", :path => "#{lib_path("foo")}"
+        source "#{file_uri_for(gem_repo1)}"
+        gem "only_java", platform: :jruby
       G
 
+      bundle "lock --add-platform java"
       bundle :check, :env => { "DEBUG" => 1 }
 
       expect(out).to match(/using resolution from the lockfile/)
       lockfile_should_be <<-G
         GEM
-          remote: file://localhost#{gem_repo1}/
+          remote: #{file_uri_for(gem_repo1)}/
           specs:
-            rack (1.0.0)
-
-        PATH
-          remote: #{lib_path("foo")}
-          specs:
-            foo (1.0)
-              rack (= 1.0)
+            only_java (1.1-java)
 
         PLATFORMS
+          java
           #{lockfile_platforms}
 
         DEPENDENCIES
-          foo!
+          only_java
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -186,7 +177,7 @@ RSpec.describe Bundler::Definition do
 
     it "for a rubygems gem" do
       install_gemfile <<-G
-        source "file://localhost#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo"
       G
 
@@ -195,7 +186,7 @@ RSpec.describe Bundler::Definition do
       expect(out).to match(/using resolution from the lockfile/)
       lockfile_should_be <<-G
         GEM
-          remote: file://localhost#{gem_repo1}/
+          remote: #{file_uri_for(gem_repo1)}/
           specs:
             foo (1.0)
 
@@ -216,7 +207,7 @@ RSpec.describe Bundler::Definition do
       context "with lockfile" do
         before do
           install_gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "foo"
           G
         end
@@ -239,13 +230,13 @@ RSpec.describe Bundler::Definition do
       context "eager unlock" do
         let(:source_list) do
           Bundler::SourceList.new.tap do |source_list|
-            source_list.global_rubygems_source = "file://#{gem_repo4}"
+            source_list.global_rubygems_source = file_uri_for(gem_repo4)
           end
         end
 
         before do
           gemfile <<-G
-            source "file://#{gem_repo4}"
+            source "#{file_uri_for(gem_repo4)}"
             gem 'isolated_owner'
 
             gem 'shared_owner_a'
@@ -254,7 +245,7 @@ RSpec.describe Bundler::Definition do
 
           lockfile <<-L
             GEM
-              remote: file://#{gem_repo4}
+              remote: #{file_uri_for(gem_repo4)}
               specs:
                 isolated_dep (2.0.1)
                 isolated_owner (1.0.1)

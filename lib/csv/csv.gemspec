@@ -25,6 +25,7 @@ Gem::Specification.new do |spec|
     "lib/csv.rb",
     "lib/csv/core_ext/array.rb",
     "lib/csv/core_ext/string.rb",
+    "lib/csv/delete_suffix.rb",
     "lib/csv/fields_converter.rb",
     "lib/csv/match_p.rb",
     "lib/csv/parser.rb",

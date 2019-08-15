@@ -11,7 +11,7 @@ describe 'TracePoint#path' do
   it 'equals (eval) inside an eval for :end event' do
     path = nil
     TracePoint.new(:end) { |tp| path = tp.path }.enable do
-      eval("class A; end")
+      eval("module TracePointSpec; end")
       path.should == '(eval)'
     end
   end

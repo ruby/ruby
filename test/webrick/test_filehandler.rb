@@ -307,6 +307,8 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     }
     TestWEBrick.start_httpserver(config, log_tester) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
+      http.read_timeout = EnvUtil.apply_timeout_scale(60)
+      http.write_timeout = EnvUtil.apply_timeout_scale(60)
 
       req = Net::HTTP::Get.new("/webrick.cgi/test")
       http.request(req) do |res|

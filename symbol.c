@@ -19,6 +19,9 @@
 #ifndef SYMBOL_DEBUG
 # define SYMBOL_DEBUG 0
 #endif
+#ifndef CHECK_ID_SERIAL
+# define CHECK_ID_SERIAL SYMBOL_DEBUG
+#endif
 
 #define SYMBOL_PINNED_P(sym) (RSYMBOL(sym)->id&~ID_SCOPE_MASK)
 
@@ -60,12 +63,8 @@ enum id_entry_type {
     ID_ENTRY_SIZE
 };
 
-static struct symbols {
-    rb_id_serial_t last_id;
-    st_table *str_sym;
-    VALUE ids;
-    VALUE dsymbol_fstr_hash;
-} global_symbols = {tNEXT_ID-1};
+rb_symbols_t ruby_global_symbols = {tNEXT_ID-1};
+#define global_symbols ruby_global_symbols
 
 static const struct st_hash_type symhash = {
     rb_str_hash_cmp,
@@ -375,18 +374,39 @@ set_id_entry(rb_id_serial_t num, VALUE str, VALUE sym)
 }
 
 static VALUE
-get_id_entry(rb_id_serial_t num, const enum id_entry_type t)
+get_id_serial_entry(rb_id_serial_t num, ID id, const enum id_entry_type t)
 {
     if (num && num <= global_symbols.last_id) {
 	size_t idx = num / ID_ENTRY_UNIT;
 	VALUE ids = global_symbols.ids;
 	VALUE ary;
 	if (idx < (size_t)RARRAY_LEN(ids) && !NIL_P(ary = rb_ary_entry(ids, (long)idx))) {
-	    VALUE result = rb_ary_entry(ary, (long)(num % ID_ENTRY_UNIT) * ID_ENTRY_SIZE + t);
-	    if (!NIL_P(result)) return result;
+            long pos = (long)(num % ID_ENTRY_UNIT) * ID_ENTRY_SIZE;
+            VALUE result = rb_ary_entry(ary, pos + t);
+            if (NIL_P(result)) return 0;
+#if CHECK_ID_SERIAL
+            if (id) {
+                VALUE sym = result;
+                if (t != ID_ENTRY_SYM)
+                    sym = rb_ary_entry(ary, pos + ID_ENTRY_SYM);
+                if (STATIC_SYM_P(sym)) {
+                    if (STATIC_SYM2ID(sym) != id) return 0;
+                }
+                else {
+                    if (RSYMBOL(sym)->id != id) return 0;
+                }
+            }
+#endif
+            return result;
 	}
     }
     return 0;
+}
+
+static VALUE
+get_id_entry(ID id, const enum id_entry_type t)
+{
+    return get_id_serial_entry(rb_id_to_serial(id), id, t);
 }
 
 static inline ID
@@ -396,7 +416,7 @@ __attribute__((unused))
 rb_id_serial_to_id(rb_id_serial_t num)
 {
     if (is_notop_id((ID)num)) {
-	VALUE sym = get_id_entry(num, ID_ENTRY_SYM);
+        VALUE sym = get_id_serial_entry(num, 0, ID_ENTRY_SYM);
 	return SYM2ID(sym);
     }
     else {
@@ -584,7 +604,7 @@ lookup_str_sym(const VALUE str)
 static VALUE
 lookup_id_str(ID id)
 {
-    return get_id_entry(rb_id_to_serial(id), ID_ENTRY_STR);
+    return get_id_entry(id, ID_ENTRY_STR);
 }
 
 ID
@@ -679,8 +699,8 @@ rb_gc_free_dsymbol(VALUE sym)
  *     str.intern   -> symbol
  *     str.to_sym   -> symbol
  *
- *  Returns the <code>Symbol</code> corresponding to <i>str</i>, creating the
- *  symbol if it did not previously exist. See <code>Symbol#id2name</code>.
+ *  Returns the Symbol corresponding to <i>str</i>, creating the
+ *  symbol if it did not previously exist. See Symbol#id2name.
  *
  *     "Koala".intern         #=> :Koala
  *     s = 'cat'.to_sym       #=> :cat
@@ -763,7 +783,7 @@ VALUE
 rb_id2sym(ID x)
 {
     if (!DYNAMIC_ID_P(x)) return STATIC_ID2SYM(x);
-    return get_id_entry(rb_id_to_serial(x), ID_ENTRY_SYM);
+    return get_id_entry(x, ID_ENTRY_SYM);
 }
 
 

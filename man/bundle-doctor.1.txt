@@ -2,13 +2,13 @@ BUNDLE-DOCTOR(1)					      BUNDLE-DOCTOR(1)
 
 
 
-1mNAME0m
-       1mbundle-doctor 22m- Checks the bundle for common problems
+NAME
+       bundle-doctor - Checks the bundle for common problems
 
-1mSYNOPSIS0m
-       1mbundle doctor 22m[--quiet] [--gemfile=GEMFILE]
+SYNOPSIS
+       bundle doctor [--quiet] [--gemfile=GEMFILE]
 
-1mDESCRIPTION0m
+DESCRIPTION
        Checks  your Gemfile and gem environment for common problems. If issues
        are detected, Bundler  prints  them  and  exits	status	1.  Otherwise,
        Bundler prints a success message and exits status 0.
@@ -27,18 +27,18 @@ BUNDLE-DOCTOR(1)					      BUNDLE-DOCTOR(1)
 
 
 
-1mOPTIONS0m
-       1m--quiet0m
+OPTIONS
+       --quiet
 	      Only output warnings and errors.
 
-       1m--gemfile=<gemfile>0m
+       --gemfile=<gemfile>
 	      The  location  of  the Gemfile(5) which Bundler should use. This
 	      defaults to a Gemfile(5) in the current  working	directory.  In
 	      general, Bundler will assume that the location of the Gemfile(5)
-	      is also the project's root and will try to find 1mGemfile.lock 22mand
-	      1mvendor/cache 22mrelative to this location.
+	      is also the project's root and will try to find Gemfile.lock and
+	      vendor/cache relative to this location.
 
 
 
 
-				 November 2018		      BUNDLE-DOCTOR(1)
+				  March 2019		      BUNDLE-DOCTOR(1)

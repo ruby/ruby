@@ -157,6 +157,13 @@ class TestGemVersion < Gem::TestCase
     assert_equal(1, v("1.8.2.a10") <=> v("1.8.2.a9"))
     assert_equal(0, v("")          <=> v("0"))
 
+    assert_equal(0, v("0.beta.1")  <=> v("0.0.beta.1"))
+    assert_equal(-1, v("0.0.beta")  <=> v("0.0.beta.1"))
+    assert_equal(-1, v("0.0.beta")  <=> v("0.beta.1"))
+
+    assert_equal(-1, v("5.a") <=> v("5.0.0.rc2"))
+    assert_equal(1, v("5.x") <=> v("5.0.0.rc2"))
+
     assert_nil v("1.0") <=> "whatever"
   end
 

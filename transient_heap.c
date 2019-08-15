@@ -155,6 +155,7 @@ rb_transient_heap_dump(void)
 }
 
 #if TRANSIENT_HEAP_CHECK_MODE >= 2
+ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static void transient_heap_ptr_check(struct transient_heap *theap, VALUE obj));
 static void
 transient_heap_ptr_check(struct transient_heap *theap, VALUE obj)
 {
@@ -164,6 +165,7 @@ transient_heap_ptr_check(struct transient_heap *theap, VALUE obj)
     }
 }
 
+ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static int transient_heap_block_verify(struct transient_heap *theap, struct transient_heap_block *block));
 static int
 transient_heap_block_verify(struct transient_heap *theap, struct transient_heap_block *block)
 {
@@ -383,7 +385,7 @@ rb_transient_heap_alloc(VALUE obj, size_t req_size)
 
             /* header is poisoned to prevent buffer overflow, should
              * unpoison first... */
-            unpoison_memory_region(header, sizeof *header, true);
+            asan_unpoison_memory_region(header, sizeof *header, true);
 
             header->size = size;
             header->magic = TRANSIENT_HEAP_ALLOC_MAGIC;
@@ -391,7 +393,7 @@ rb_transient_heap_alloc(VALUE obj, size_t req_size)
             header->obj = obj; /* TODO: can we eliminate it? */
 
             /* header is fixed; shall poison again */
-            poison_memory_region(header, sizeof *header);
+            asan_poison_memory_region(header, sizeof *header);
             ptr = header + 1;
 
             theap->total_objects++; /* statistics */
@@ -406,7 +408,7 @@ rb_transient_heap_alloc(VALUE obj, size_t req_size)
             RB_DEBUG_COUNTER_INC(theap_alloc);
 
             /* ptr is set up; OK to unpoison. */
-            unpoison_memory_region(ptr, size, true);
+            asan_unpoison_memory_region(ptr, size - sizeof *header, true);
             return ptr;
         }
         else {
@@ -521,7 +523,7 @@ void
 rb_transient_heap_mark(VALUE obj, const void *ptr)
 {
     struct transient_alloc_header *header = ptr_to_alloc_header(ptr);
-    unpoison_memory_region(header, sizeof *header, false);
+    asan_unpoison_memory_region(header, sizeof *header, false);
     if (header->magic != TRANSIENT_HEAP_ALLOC_MAGIC) rb_bug("rb_transient_heap_mark: wrong header, %s (%p)", rb_obj_info(obj), ptr);
     if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, "rb_transient_heap_mark: %s (%p)\n", rb_obj_info(obj), ptr);
 
@@ -559,6 +561,7 @@ rb_transient_heap_mark(VALUE obj, const void *ptr)
     }
 }
 
+ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static const void *transient_heap_ptr(VALUE obj, int error));
 static const void *
 transient_heap_ptr(VALUE obj, int error)
 {
@@ -727,7 +730,7 @@ transient_heap_evacuate(void *dmy)
         if (TRANSIENT_HEAP_DEBUG >= 1) fprintf(stderr, "!! transient_heap_evacuate: skip while transient_heap_marking\n");
     }
     else {
-        VALUE gc_disabled = rb_gc_disable();
+        VALUE gc_disabled = rb_gc_disable_no_rest();
         struct transient_heap_block* block;
 
         if (TRANSIENT_HEAP_DEBUG >= 1) {
@@ -777,6 +780,9 @@ clear_marked_index(struct transient_heap_block* block)
 
     while (marked_index != TRANSIENT_HEAP_ALLOC_MARKING_LAST) {
         struct transient_alloc_header *header = alloc_header(block, marked_index);
+        /* header is poisoned to prevent buffer overflow, should
+         * unpoison first... */
+        asan_unpoison_memory_region(header, sizeof *header, false);
         TH_ASSERT(marked_index != TRANSIENT_HEAP_ALLOC_MARKING_FREE);
         if (0) fprintf(stderr, "clear_marked_index - block:%p mark_index:%d\n", (void *)block, marked_index);
 
@@ -793,6 +799,56 @@ blocks_clear_marked_index(struct transient_heap_block* block)
     while (block) {
         clear_marked_index(block);
         block = block->info.next_block;
+    }
+}
+
+static void
+transient_heap_block_update_refs(struct transient_heap* theap, struct transient_heap_block* block)
+{
+    int i=0, n=0;
+
+    while (i<block->info.index) {
+        void *ptr = &block->buff[i];
+        struct transient_alloc_header *header = ptr;
+
+        asan_unpoison_memory_region(header, sizeof *header, false);
+
+        void *poisoned = __asan_region_is_poisoned((void *)header->obj, SIZEOF_VALUE);
+        asan_unpoison_object(header->obj, false);
+
+        header->obj = rb_gc_location(header->obj);
+
+        if (poisoned) {
+            asan_poison_object(header->obj);
+        }
+
+        i += header->size;
+        asan_poison_memory_region(header, sizeof *header);
+        n++;
+    }
+}
+
+static void
+transient_heap_blocks_update_refs(struct transient_heap* theap, struct transient_heap_block *block, const char *type_str)
+{
+    while (block) {
+        transient_heap_block_update_refs(theap, block);
+        block = block->info.next_block;
+    }
+}
+
+void
+rb_transient_heap_update_references(void)
+{
+    struct transient_heap* theap = transient_heap_get();
+    int i;
+
+    transient_heap_blocks_update_refs(theap, theap->using_blocks, "using_blocks");
+    transient_heap_blocks_update_refs(theap, theap->marked_blocks, "marked_blocks");
+
+    for (i=0; i<theap->promoted_objects_index; i++) {
+        VALUE obj = theap->promoted_objects[i];
+        theap->promoted_objects[i] = rb_gc_location(obj);
     }
 }
 

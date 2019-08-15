@@ -2,14 +2,14 @@ BUNDLE-PLATFORM(1)					    BUNDLE-PLATFORM(1)
 
 
 
-1mNAME0m
-       1mbundle-platform 22m- Displays platform compatibility information
+NAME
+       bundle-platform - Displays platform compatibility information
 
-1mSYNOPSIS0m
-       1mbundle platform 22m[--ruby]
+SYNOPSIS
+       bundle platform [--ruby]
 
-1mDESCRIPTION0m
-       1mplatform  22mwill display information from your Gemfile, Gemfile.lock, and
+DESCRIPTION
+       platform  will display information from your Gemfile, Gemfile.lock, and
        Ruby VM about your platform.
 
        For instance, using this Gemfile(5):
@@ -24,7 +24,7 @@ BUNDLE-PLATFORM(1)					    BUNDLE-PLATFORM(1)
 
 
 
-       If you run 1mbundle platform 22mon Ruby 1.9.3, it will display the following
+       If you run bundle platform on Ruby 1.9.3, it will display the following
        output:
 
 
@@ -41,17 +41,17 @@ BUNDLE-PLATFORM(1)					    BUNDLE-PLATFORM(1)
 
 
 
-       1mplatform  22mwill  list  all the platforms in your 1mGemfile.lock 22mas well as
-       the 1mruby 22mdirective if applicable from your Gemfile(5). It will also let
-       you know if the 1mruby 22mdirective requirement has been met. If 1mruby 22mdirec-
+       platform  will  list  all the platforms in your Gemfile.lock as well as
+       the ruby directive if applicable from your Gemfile(5). It will also let
+       you know if the ruby directive requirement has been met. If ruby direc-
        tive doesn't match the running Ruby VM, it will tell you what part does
        not.
 
-1mOPTIONS0m
-       1m--ruby 22mIt  will  display  the  ruby directive information, so you don't
+OPTIONS
+       --ruby It  will	display  the  ruby directive information, so you don't
 	      have to parse it from the Gemfile(5).
 
 
 
 
-				 November 2018		    BUNDLE-PLATFORM(1)
+				  March 2019		    BUNDLE-PLATFORM(1)

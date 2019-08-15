@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 
 describe :array_pack_float_le, shared: true do
   it "encodes a positive Float" do
@@ -14,7 +14,7 @@ describe :array_pack_float_le, shared: true do
   end
 
   it "raises a TypeError if passed a String representation of a floating point number" do
-    lambda { ["13"].pack(pack_format) }.should raise_error(TypeError)
+    -> { ["13"].pack(pack_format) }.should raise_error(TypeError)
   end
 
   it "encodes the number of array elements specified by the count modifier" do
@@ -69,7 +69,7 @@ describe :array_pack_float_be, shared: true do
   end
 
   it "raises a TypeError if passed a String representation of a floating point number" do
-    lambda { ["13"].pack(pack_format) }.should raise_error(TypeError)
+    -> { ["13"].pack(pack_format) }.should raise_error(TypeError)
   end
 
   it "encodes the number of array elements specified by the count modifier" do
@@ -124,7 +124,7 @@ describe :array_pack_double_le, shared: true do
   end
 
   it "raises a TypeError if passed a String representation of a floating point number" do
-    lambda { ["13"].pack(pack_format) }.should raise_error(TypeError)
+    -> { ["13"].pack(pack_format) }.should raise_error(TypeError)
   end
 
   it "encodes the number of array elements specified by the count modifier" do
@@ -183,7 +183,7 @@ describe :array_pack_double_be, shared: true do
   end
 
   it "raises a TypeError if passed a String representation of a floating point number" do
-    lambda { ["13"].pack(pack_format) }.should raise_error(TypeError)
+    -> { ["13"].pack(pack_format) }.should raise_error(TypeError)
   end
 
   it "encodes the number of array elements specified by the count modifier" do

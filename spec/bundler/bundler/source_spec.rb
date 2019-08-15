@@ -56,7 +56,7 @@ RSpec.describe Bundler::Source do
         context "with a different version" do
           let(:locked_gem) { double(:locked_gem, :name => "nokogiri", :version => "< 1.5") }
 
-          context "with color" do
+          context "with color", :no_color_tty do
             before { Bundler.ui = Bundler::UI::Shell.new }
 
             it "should return a string with the spec name and version and locked spec version" do
@@ -65,6 +65,8 @@ RSpec.describe Bundler::Source do
           end
 
           context "without color" do
+            before { Bundler.ui = Bundler::UI::Shell.new("no-color" => true) }
+
             it "should return a string with the spec name and version and locked spec version" do
               expect(subject.version_message(spec)).to eq("nokogiri >= 1.6 (was < 1.5)")
             end
@@ -75,11 +77,19 @@ RSpec.describe Bundler::Source do
           let(:spec) { double(:spec, :name => "nokogiri", :version => "1.6.1", :platform => rb) }
           let(:locked_gem) { double(:locked_gem, :name => "nokogiri", :version => "1.7.0") }
 
-          context "with color" do
+          context "with color", :no_color_tty do
             before { Bundler.ui = Bundler::UI::Shell.new }
 
             it "should return a string with the locked spec version in yellow" do
               expect(subject.version_message(spec)).to eq("nokogiri 1.6.1\e[33m (was 1.7.0)\e[0m")
+            end
+          end
+
+          context "without color" do
+            before { Bundler.ui = Bundler::UI::Shell.new("no-color" => true) }
+
+            it "should return a string with the locked spec version in yellow" do
+              expect(subject.version_message(spec)).to eq("nokogiri 1.6.1 (was 1.7.0)")
             end
           end
         end
@@ -88,11 +98,19 @@ RSpec.describe Bundler::Source do
           let(:spec) { double(:spec, :name => "nokogiri", :version => "1.7.1", :platform => rb) }
           let(:locked_gem) { double(:locked_gem, :name => "nokogiri", :version => "1.7.0") }
 
-          context "with color" do
+          context "with color", :no_color_tty do
             before { Bundler.ui = Bundler::UI::Shell.new }
 
             it "should return a string with the locked spec version in green" do
               expect(subject.version_message(spec)).to eq("nokogiri 1.7.1\e[32m (was 1.7.0)\e[0m")
+            end
+          end
+
+          context "without color" do
+            before { Bundler.ui = Bundler::UI::Shell.new("no-color" => true) }
+
+            it "should return a string with the locked spec version in yellow" do
+              expect(subject.version_message(spec)).to eq("nokogiri 1.7.1 (was 1.7.0)")
             end
           end
         end

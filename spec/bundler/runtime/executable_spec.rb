@@ -3,7 +3,7 @@
 RSpec.describe "Running bin/* commands" do
   before :each do
     install_gemfile! <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
   end
@@ -84,7 +84,7 @@ RSpec.describe "Running bin/* commands" do
     end
 
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "bundler"
     G
 
@@ -112,14 +112,14 @@ RSpec.describe "Running bin/* commands" do
 
   it "remembers that the option was specified", :bundler => "< 3" do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "activesupport"
     G
 
-    bundle! :install, forgotten_command_line_options([:binstubs, :bin] => "bin")
+    bundle! :install, :binstubs => "bin"
 
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "activesupport"
       gem "rack"
     G
@@ -129,26 +129,9 @@ RSpec.describe "Running bin/* commands" do
     expect(bundled_app("bin/rackup")).to exist
   end
 
-  it "rewrites bins on --binstubs (to maintain backwards compatibility)", :bundler => "< 2" do
-    gemfile <<-G
-      source "file://#{gem_repo1}"
-      gem "rack"
-    G
-
-    bundle! :install, forgotten_command_line_options([:binstubs, :bin] => "bin")
-
-    File.open(bundled_app("bin/rackup"), "wb") do |file|
-      file.print "OMG"
-    end
-
-    bundle "install"
-
-    expect(bundled_app("bin/rackup").read).to_not eq("OMG")
-  end
-
   it "rewrites bins on binstubs (to maintain backwards compatibility)" do
     install_gemfile! <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
 
@@ -160,7 +143,7 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "use BUNDLE_GEMFILE gemfile for binstub" do
-    # context with bin/bunlder w/ default Gemfile
+    # context with bin/bundler w/ default Gemfile
     bundle! "binstubs bundler"
 
     # generate other Gemfile with executable gem
@@ -169,7 +152,7 @@ RSpec.describe "Running bin/* commands" do
     end
 
     create_file("OtherGemfile", <<-G)
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem 'bindir'
     G
 

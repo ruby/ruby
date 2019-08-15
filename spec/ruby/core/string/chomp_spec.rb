@@ -134,7 +134,7 @@ describe "String#chomp" do
     it "raises a TypeError if #to_str does not return a String" do
       arg = mock("string chomp")
       arg.should_receive(:to_str).and_return(1)
-      lambda { "abc".chomp(arg) }.should raise_error(TypeError)
+      -> { "abc".chomp(arg) }.should raise_error(TypeError)
     end
   end
 
@@ -288,7 +288,7 @@ describe "String#chomp!" do
     it "raises a TypeError if #to_str does not return a String" do
       arg = mock("string chomp")
       arg.should_receive(:to_str).and_return(1)
-      lambda { "abc".chomp!(arg) }.should raise_error(TypeError)
+      -> { "abc".chomp!(arg) }.should raise_error(TypeError)
     end
   end
 
@@ -318,74 +318,72 @@ describe "String#chomp!" do
     a = "string\n\r"
     a.freeze
 
-    lambda { a.chomp! }.should raise_error(frozen_error_class)
+    -> { a.chomp! }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23666]
   it "raises a #{frozen_error_class} on a frozen instance when it would not be modified" do
     a = "string\n\r"
     a.freeze
-    lambda { a.chomp!(nil) }.should raise_error(frozen_error_class)
-    lambda { a.chomp!("x") }.should raise_error(frozen_error_class)
+    -> { a.chomp!(nil) }.should raise_error(frozen_error_class)
+    -> { a.chomp!("x") }.should raise_error(frozen_error_class)
   end
 end
 
-with_feature :encoding do
-  describe "String#chomp" do
-    before :each do
-      @before_separator = $/
-    end
-
-    after :each do
-      $/ = @before_separator
-    end
-
-    it "does not modify a multi-byte character" do
-      "あれ".chomp.should == "あれ"
-    end
-
-    it "removes the final carriage return, newline from a multibyte String" do
-      "あれ\r\n".chomp.should == "あれ"
-    end
-
-    it "removes the final carriage return, newline from a non-ASCII String" do
-      str = "abc\r\n".encode "utf-32be"
-      str.chomp.should == "abc".encode("utf-32be")
-    end
-
-    it "removes the final carriage return, newline from a non-ASCII String when the record separator is changed" do
-      $/ = "\n".encode("utf-8")
-      str = "abc\r\n".encode "utf-32be"
-      str.chomp.should == "abc".encode("utf-32be")
-    end
+describe "String#chomp" do
+  before :each do
+    @before_separator = $/
   end
 
-  describe "String#chomp!" do
-    before :each do
-      @before_separator = $/
-    end
+  after :each do
+    $/ = @before_separator
+  end
 
-    after :each do
-      $/ = @before_separator
-    end
+  it "does not modify a multi-byte character" do
+    "あれ".chomp.should == "あれ"
+  end
 
-    it "returns nil when the String is not modified" do
-      "あれ".chomp!.should be_nil
-    end
+  it "removes the final carriage return, newline from a multibyte String" do
+    "あれ\r\n".chomp.should == "あれ"
+  end
 
-    it "removes the final carriage return, newline from a multibyte String" do
-      "あれ\r\n".chomp!.should == "あれ"
-    end
+  it "removes the final carriage return, newline from a non-ASCII String" do
+    str = "abc\r\n".encode "utf-32be"
+    str.chomp.should == "abc".encode("utf-32be")
+  end
 
-    it "removes the final carriage return, newline from a non-ASCII String" do
-      str = "abc\r\n".encode "utf-32be"
-      str.chomp!.should == "abc".encode("utf-32be")
-    end
+  it "removes the final carriage return, newline from a non-ASCII String when the record separator is changed" do
+    $/ = "\n".encode("utf-8")
+    str = "abc\r\n".encode "utf-32be"
+    str.chomp.should == "abc".encode("utf-32be")
+  end
+end
 
-    it "removes the final carriage return, newline from a non-ASCII String when the record separator is changed" do
-      $/ = "\n".encode("utf-8")
-      str = "abc\r\n".encode "utf-32be"
-      str.chomp!.should == "abc".encode("utf-32be")
-    end
+describe "String#chomp!" do
+  before :each do
+    @before_separator = $/
+  end
+
+  after :each do
+    $/ = @before_separator
+  end
+
+  it "returns nil when the String is not modified" do
+    "あれ".chomp!.should be_nil
+  end
+
+  it "removes the final carriage return, newline from a multibyte String" do
+    "あれ\r\n".chomp!.should == "あれ"
+  end
+
+  it "removes the final carriage return, newline from a non-ASCII String" do
+    str = "abc\r\n".encode "utf-32be"
+    str.chomp!.should == "abc".encode("utf-32be")
+  end
+
+  it "removes the final carriage return, newline from a non-ASCII String when the record separator is changed" do
+    $/ = "\n".encode("utf-8")
+    str = "abc\r\n".encode "utf-32be"
+    str.chomp!.should == "abc".encode("utf-32be")
   end
 end

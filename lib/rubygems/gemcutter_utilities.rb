@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 require 'rubygems/remote_fetcher'
+require 'rubygems/text'
 
 ##
 # Utility methods for using the RubyGems API.
 
 module Gem::GemcutterUtilities
 
-  # TODO: move to Gem::Command
-  OptionParser.accept Symbol do |value|
-    value.to_sym
-  end
+  ERROR_CODE = 1
+
+  include Gem::Text
 
   attr_writer :host
 
@@ -78,7 +78,7 @@ module Gem::GemcutterUtilities
     self.host = host if host
     unless self.host
       alert_error "You must specify a gem server"
-      terminate_interaction 1 # TODO: question this
+      terminate_interaction(ERROR_CODE)
     end
 
     if allowed_push_host
@@ -94,8 +94,22 @@ module Gem::GemcutterUtilities
     uri = URI.parse "#{self.host}/#{path}"
 
     request_method = Net::HTTP.const_get method.to_s.capitalize
+    response = Gem::RemoteFetcher.fetcher.request(uri, request_method, &block)
+    return response unless mfa_unauthorized?(response)
 
-    Gem::RemoteFetcher.fetcher.request(uri, request_method, &block)
+    Gem::RemoteFetcher.fetcher.request(uri, request_method) do |req|
+      req.add_field "OTP", get_otp
+      block.call(req)
+    end
+  end
+
+  def mfa_unauthorized?(response)
+    response.kind_of?(Net::HTTPUnauthorized) && response.body.start_with?('You have enabled multifactor authentication')
+  end
+
+  def get_otp
+    say 'You have enabled multi-factor authentication. Please enter OTP code.'
+    ask 'Code: '
   end
 
   ##
@@ -123,13 +137,7 @@ module Gem::GemcutterUtilities
     response = rubygems_api_request(:get, "api/v1/api_key",
                                     sign_in_host) do |request|
       request.basic_auth email, password
-    end
-
-    if need_otp? response
-      response = rubygems_api_request(:get, "api/v1/api_key", sign_in_host) do |request|
-        request.basic_auth email, password
-        request.add_field "OTP", options[:otp]
-      end
+      request.add_field "OTP", options[:otp] if options[:otp]
     end
 
     with_response response do |resp|
@@ -147,7 +155,7 @@ module Gem::GemcutterUtilities
       Gem.configuration.api_keys[key]
     else
       alert_error "No such API key. Please add it to your configuration (done automatically on initial `gem push`)."
-      terminate_interaction 1 # TODO: question this
+      terminate_interaction(ERROR_CODE)
     end
   end
 
@@ -164,30 +172,20 @@ module Gem::GemcutterUtilities
       if block_given?
         yield response
       else
-        say response.body
+        say clean_text(response.body)
       end
     else
       message = response.body
       message = "#{error_prefix}: #{message}" if error_prefix
 
-      say message
-      terminate_interaction 1 # TODO: question this
+      say clean_text(message)
+      terminate_interaction(ERROR_CODE)
     end
   end
 
   ##
   # Returns true when the user has enabled multifactor authentication from
-  # +response+ text.
-
-  def need_otp?(response)
-    return unless response.kind_of?(Net::HTTPUnauthorized) &&
-        response.body.start_with?('You have enabled multifactor authentication')
-    return true if options[:otp]
-
-    say 'You have enabled multi-factor authentication. Please enter OTP code.'
-    options[:otp] = ask 'Code: '
-    true
-  end
+  # +response+ text and no otp provided by options.
 
   def set_api_key(host, key)
     if host == Gem::DEFAULT_HOST

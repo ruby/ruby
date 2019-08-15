@@ -687,6 +687,20 @@ EOS
       end
     end
   end
+
+  def test_prohibited_marshal_dump
+    erb = ERB.new("")
+    assert_raise(TypeError) {Marshal.dump(erb)}
+  end
+
+  def test_prohibited_marshal_load
+    erb = ERB.allocate
+    erb.instance_variable_set(:@src, "")
+    erb.instance_variable_set(:@lineno, 1)
+    erb.instance_variable_set(:@_init, true)
+    erb = Marshal.load(Marshal.dump(erb))
+    assert_raise(ArgumentError) {erb.result}
+  end
 end
 
 class TestERBCoreWOStrScan < TestERBCore

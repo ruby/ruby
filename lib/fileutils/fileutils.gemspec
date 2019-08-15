@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.description = "Several file utility methods for copying, moving, removing, etc."
 
   s.require_path = %w{lib}
-  s.files = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "fileutils.gemspec", "lib/fileutils.rb", "lib/fileutils/version.rb"]
+  s.files = ["LICENSE.txt", "README.md", "Rakefile", "fileutils.gemspec", "lib/fileutils.rb", "lib/fileutils/version.rb"]
   s.required_ruby_version = ">= 2.3.0"
 
   s.authors = ["Minero Aoki"]

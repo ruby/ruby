@@ -469,7 +469,8 @@ PROLOG_SCRIPT.default = (load_relative || /\s/ =~ bindir) ?
 # -*- ruby -*-
 _=_\\
 =begin
-#{prolog_script}=end
+#{prolog_script.chomp}
+=end
 EOS
 
 installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name, :stub, :trans)
@@ -827,7 +828,7 @@ def install_default_gem(dir, srcdir)
     spec
   }
   gems.compact.sort_by(&:name).each do |gemspec|
-    old_gemspecs = Dir[File.join(default_spec_dir, "#{gemspec.name}-*.gemspec")]
+    old_gemspecs = Dir[File.join(with_destdir(default_spec_dir), "#{gemspec.name}-*.gemspec")]
     if old_gemspecs.size > 0
       old_gemspecs.each {|spec| FileUtils.rm spec }
     end

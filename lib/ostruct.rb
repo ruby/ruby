@@ -176,10 +176,6 @@ class OpenStruct
   end
   private :modifiable?
 
-  # ::Kernel.warn("do not use OpenStruct#modifiable", uplevel: 1)
-  alias modifiable modifiable? # :nodoc:
-  protected :modifiable
-
   #
   # Used internally to defined properties on the
   # OpenStruct. It does this by using the metaprogramming function
@@ -195,10 +191,6 @@ class OpenStruct
   end
   private :new_ostruct_member!
 
-  # ::Kernel.warn("do not use OpenStruct#new_ostruct_member", uplevel: 1)
-  alias new_ostruct_member new_ostruct_member! # :nodoc:
-  protected :new_ostruct_member
-
   def freeze
     @table.each_key {|key| new_ostruct_member!(key)}
     super
@@ -206,14 +198,14 @@ class OpenStruct
 
   def respond_to_missing?(mid, include_private = false) # :nodoc:
     mname = mid.to_s.chomp("=").to_sym
-    @table&.key?(mname) || super
+    defined?(@table) && @table.key?(mname) || super
   end
 
   def method_missing(mid, *args) # :nodoc:
     len = args.length
     if mname = mid[/.*(?==\z)/m]
       if len != 1
-        raise ArgumentError, "wrong number of arguments (#{len} for 1)", caller(1)
+        raise ArgumentError, "wrong number of arguments (given #{len}, expected 1)", caller(1)
       end
       modifiable?[new_ostruct_member!(mname)] = args[0]
     elsif len == 0 # and /\A[a-z_]\w*\z/ =~ mid #
@@ -221,6 +213,8 @@ class OpenStruct
         new_ostruct_member!(mid) unless frozen?
         @table[mid]
       end
+    elsif @table.key?(mid)
+      raise ArgumentError, "wrong number of arguments (given #{len}, expected 0)"
     else
       begin
         super

@@ -2,14 +2,14 @@ BUNDLE-LIST(1)							BUNDLE-LIST(1)
 
 
 
-1mNAME0m
-       1mbundle-list 22m- List all the gems in the bundle
+NAME
+       bundle-list - List all the gems in the bundle
 
-1mSYNOPSIS0m
-       1mbundle    list    22m[--name-only]    [--paths]    [--without-group=GROUP]
+SYNOPSIS
+       bundle	 list	 [--name-only]	  [--paths]    [--without-group=GROUP]
        [--only-group=GROUP]
 
-1mDESCRIPTION0m
+DESCRIPTION
        Prints a list of all the gems in the bundle including their version.
 
        Example:
@@ -24,20 +24,20 @@ BUNDLE-LIST(1)							BUNDLE-LIST(1)
 
        bundle list --only-group dev --paths
 
-1mOPTIONS0m
-       1m--name-only0m
+OPTIONS
+       --name-only
 	      Print only the name of each gem.
 
-       1m--paths0m
+       --paths
 	      Print the path to each gem in the bundle.
 
-       1m--without-group0m
+       --without-group
 	      Print all gems expect from a group.
 
-       1m--only-group0m
+       --only-group
 	      Print gems from a particular group.
 
 
 
 
-				 November 2018			BUNDLE-LIST(1)
+				  March 2019			BUNDLE-LIST(1)

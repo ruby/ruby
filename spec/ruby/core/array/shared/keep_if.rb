@@ -37,23 +37,23 @@ describe :keep_if, shared: true do
 
     describe "with truthy block" do
       it "keeps elements after any exception" do
-        lambda { @frozen.send(@method) { true } }.should raise_error(Exception)
+        -> { @frozen.send(@method) { true } }.should raise_error(Exception)
         @frozen.should == @origin
       end
 
       it "raises a #{frozen_error_class}" do
-        lambda { @frozen.send(@method) { true } }.should raise_error(frozen_error_class)
+        -> { @frozen.send(@method) { true } }.should raise_error(frozen_error_class)
       end
     end
 
     describe "with falsy block" do
       it "keeps elements after any exception" do
-        lambda { @frozen.send(@method) { false } }.should raise_error(Exception)
+        -> { @frozen.send(@method) { false } }.should raise_error(Exception)
         @frozen.should == @origin
       end
 
       it "raises a #{frozen_error_class}" do
-        lambda { @frozen.send(@method) { false } }.should raise_error(frozen_error_class)
+        -> { @frozen.send(@method) { false } }.should raise_error(frozen_error_class)
       end
     end
   end

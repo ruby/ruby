@@ -6,7 +6,7 @@ describe "Module#public_constant" do
     cls1.const_set :Foo, true
     cls2 = Class.new(cls1)
 
-    lambda do
+    -> do
       cls2.send :public_constant, :Foo
     end.should raise_error(NameError)
   end

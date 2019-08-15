@@ -3,10 +3,13 @@
 
 require "test/unit"
 
-class BreakTest
+class TestEmojiBreaks < Test::Unit::TestCase
+end
+
+class TestEmojiBreaks::BreakTest
   attr_reader :string, :comment, :filename, :line_number, :type, :shortname
 
-  def initialize (filename, line_number, data, comment='')
+  def initialize(filename, line_number, data, comment='')
     @filename = filename
     @line_number = line_number
     @comment = comment.gsub(/\s+/, ' ').strip

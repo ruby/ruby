@@ -25,7 +25,7 @@ Gem::Specification.new do |s|
     s.metadata = {
       "bug_tracker_uri" => "https://bugs.ruby-lang.org/projects/ruby-trunk/issues",
       "homepage_uri" => "https://www.ruby-lang.org",
-      "source_code_uri" => "https://svn.ruby-lang.org/repos/ruby"
+      "source_code_uri" => "https://git.ruby-lang.org/ruby.git/"
     }
   end
 
