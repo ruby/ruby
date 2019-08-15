@@ -1,89 +1,92 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
-require 'rubygems/simple_gem'
 
-class TestGemPackageOld < Gem::TestCase
+unless Gem.java_platform? # jruby can't require the simple_gem file
+  require 'rubygems/simple_gem'
 
-  def setup
-    super
+  class TestGemPackageOld < Gem::TestCase
 
-    File.open 'old_format.gem', 'wb' do |io|
-      io.write SIMPLE_GEM
+    def setup
+      super
+
+      File.open 'old_format.gem', 'wb' do |io|
+        io.write SIMPLE_GEM
+      end
+
+      @package = Gem::Package::Old.new 'old_format.gem'
+      @destination = File.join @tempdir, 'extract'
+
+      FileUtils.mkdir_p @destination
     end
 
-    @package = Gem::Package::Old.new 'old_format.gem'
-    @destination = File.join @tempdir, 'extract'
-
-    FileUtils.mkdir_p @destination
-  end
-
-  def test_contents
-    assert_equal %w[lib/foo.rb lib/test.rb lib/test/wow.rb], @package.contents
-  end
-
-  def test_contents_security_policy
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
-
-    @package.security_policy = Gem::Security::AlmostNoSecurity
-
-    assert_raises Gem::Security::Exception do
-      @package.contents
+    def test_contents
+      assert_equal %w[lib/foo.rb lib/test.rb lib/test/wow.rb], @package.contents
     end
-  end
 
-  def test_extract_files
-    @package.extract_files @destination
+    def test_contents_security_policy
+      skip 'openssl is missing' unless defined?(OpenSSL::SSL)
 
-    extracted = File.join @destination, 'lib/foo.rb'
-    assert_path_exists extracted
+      @package.security_policy = Gem::Security::AlmostNoSecurity
 
-    mask = 0100644 & (~File.umask)
+      assert_raises Gem::Security::Exception do
+        @package.contents
+      end
+    end
 
-    assert_equal mask, File.stat(extracted).mode unless win_platform?
-  end
-
-  def test_extract_files_security_policy
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
-
-    @package.security_policy = Gem::Security::AlmostNoSecurity
-
-    assert_raises Gem::Security::Exception do
+    def test_extract_files
       @package.extract_files @destination
-    end
-  end
 
-  def test_spec
-    assert_equal 'testing', @package.spec.name
-  end
+      extracted = File.join @destination, 'lib/foo.rb'
+      assert_path_exists extracted
 
-  def test_spec_security_policy
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+      mask = 0100644 & (~File.umask)
 
-    @package.security_policy = Gem::Security::AlmostNoSecurity
-
-    assert_raises Gem::Security::Exception do
-      @package.spec
-    end
-  end
-
-  def test_verify
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
-
-    assert @package.verify
-
-    @package.security_policy = Gem::Security::NoSecurity
-
-    assert @package.verify
-
-    @package.security_policy = Gem::Security::AlmostNoSecurity
-
-    e = assert_raises Gem::Security::Exception do
-      @package.verify
+      assert_equal mask, File.stat(extracted).mode unless win_platform?
     end
 
-    assert_equal 'old format gems do not contain signatures ' +
-                 'and cannot be verified',
-                 e.message
-  end
+    def test_extract_files_security_policy
+      skip 'openssl is missing' unless defined?(OpenSSL::SSL)
 
+      @package.security_policy = Gem::Security::AlmostNoSecurity
+
+      assert_raises Gem::Security::Exception do
+        @package.extract_files @destination
+      end
+    end
+
+    def test_spec
+      assert_equal 'testing', @package.spec.name
+    end
+
+    def test_spec_security_policy
+      skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+
+      @package.security_policy = Gem::Security::AlmostNoSecurity
+
+      assert_raises Gem::Security::Exception do
+        @package.spec
+      end
+    end
+
+    def test_verify
+      skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+
+      assert @package.verify
+
+      @package.security_policy = Gem::Security::NoSecurity
+
+      assert @package.verify
+
+      @package.security_policy = Gem::Security::AlmostNoSecurity
+
+      e = assert_raises Gem::Security::Exception do
+        @package.verify
+      end
+
+      assert_equal 'old format gems do not contain signatures ' +
+                   'and cannot be verified',
+                   e.message
+    end
+
+  end
 end

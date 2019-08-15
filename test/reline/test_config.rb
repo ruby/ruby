@@ -17,53 +17,63 @@ class Reline::Config::Test < Reline::TestCase
   def teardown
     Dir.chdir(@pwd)
     FileUtils.rm_rf(@tmpdir)
+    @config.reset
   end
 
   def test_read_lines
-    @config.read_lines(<<~LINES.split(/(?<=\n)/))
+    @config.read_lines(<<~LINES.lines)
       set bell-style on
     LINES
 
     assert_equal :audible, @config.instance_variable_get(:@bell_style)
   end
 
-  def test_bind_key
-    key, func = @config.bind_key('"input"', '"abcde"')
+  def test_comment_line
+    @config.read_lines([" #a: error\n"])
+    assert_not_include @config.key_bindings, nil
+  end
 
-    assert_equal 'input', key
-    assert_equal 'abcde', func
+  def test_invalid_keystroke
+    @config.read_lines(["a: error\n"])
+    assert_not_include @config.key_bindings, nil
+  end
+
+  def test_bind_key
+    assert_equal ['input'.bytes, 'abcde'.bytes], @config.bind_key('"input"', '"abcde"')
   end
 
   def test_bind_key_with_macro
-    key, func = @config.bind_key('"input"', 'abcde')
 
-    assert_equal 'input', key
-    assert_equal :abcde, func
+    assert_equal ['input'.bytes, :abcde], @config.bind_key('"input"', 'abcde')
   end
 
   def test_bind_key_with_escaped_chars
-    assert_equal ['input', "\e \\ \" ' \a \b \d \f \n \r \t \v"], @config.bind_key('"input"', '"\\e \\\\ \\" \\\' \\a \\b \\d \\f \\n \\r \\t \\v"')
+    assert_equal ['input'.bytes, "\e \\ \" ' \a \b \d \f \n \r \t \v".bytes], @config.bind_key('"input"', '"\\e \\\\ \\" \\\' \\a \\b \\d \\f \\n \\r \\t \\v"')
   end
 
   def test_bind_key_with_ctrl_chars
-    assert_equal ['input', "\C-h\C-h"], @config.bind_key('"input"', '"\C-h\C-H"')
+    assert_equal ['input'.bytes, "\C-h\C-h".bytes], @config.bind_key('"input"', '"\C-h\C-H"')
+    assert_equal ['input'.bytes, "\C-h\C-h".bytes], @config.bind_key('"input"', '"\Control-h\Control-H"')
   end
 
   def test_bind_key_with_meta_chars
-    assert_equal ['input', "\M-h\M-H".force_encoding('ASCII-8BIT')], @config.bind_key('"input"', '"\M-h\M-H"')
+    assert_equal ['input'.bytes, "\M-h\M-H".bytes], @config.bind_key('"input"', '"\M-h\M-H"')
+    assert_equal ['input'.bytes, "\M-h\M-H".bytes], @config.bind_key('"input"', '"\Meta-h\Meta-H"')
   end
 
   def test_bind_key_with_octal_number
-    assert_equal ['input', "\1"], @config.bind_key('"input"', '"\1"')
-    assert_equal ['input', "\12"], @config.bind_key('"input"', '"\12"')
-    assert_equal ['input', "\123"], @config.bind_key('"input"', '"\123"')
-    assert_equal ['input', ["\123", '4'].join], @config.bind_key('"input"', '"\1234"')
+    input = %w{i n p u t}.map(&:ord)
+    assert_equal [input, "\1".bytes], @config.bind_key('"input"', '"\1"')
+    assert_equal [input, "\12".bytes], @config.bind_key('"input"', '"\12"')
+    assert_equal [input, "\123".bytes], @config.bind_key('"input"', '"\123"')
+    assert_equal [input, "\123".bytes + '4'.bytes], @config.bind_key('"input"', '"\1234"')
   end
 
   def test_bind_key_with_hexadecimal_number
-    assert_equal ['input', "\x4"], @config.bind_key('"input"', '"\x4"')
-    assert_equal ['input', "\x45"], @config.bind_key('"input"', '"\x45"')
-    assert_equal ['input', ["\x45", '6'].join], @config.bind_key('"input"', '"\x456"')
+    input = %w{i n p u t}.map(&:ord)
+    assert_equal [input, "\x4".bytes], @config.bind_key('"input"', '"\x4"')
+    assert_equal [input, "\x45".bytes], @config.bind_key('"input"', '"\x45"')
+    assert_equal [input, "\x45".bytes + '6'.bytes], @config.bind_key('"input"', '"\x456"')
   end
 
   def test_include
@@ -72,7 +82,7 @@ class Reline::Config::Test < Reline::TestCase
         set bell-style on
       PARTIAL_LINES
     end
-    @config.read_lines(<<~LINES.split(/(?<=\n)/))
+    @config.read_lines(<<~LINES.lines)
       $include included_partial
     LINES
 
@@ -80,7 +90,7 @@ class Reline::Config::Test < Reline::TestCase
   end
 
   def test_if
-    @config.read_lines(<<~LINES.split(/(?<=\n)/))
+    @config.read_lines(<<~LINES.lines)
       $if Ruby
       set bell-style audible
       $else
@@ -92,7 +102,7 @@ class Reline::Config::Test < Reline::TestCase
   end
 
   def test_if_with_false
-    @config.read_lines(<<~LINES.split(/(?<=\n)/))
+    @config.read_lines(<<~LINES.lines)
       $if Python
       set bell-style audible
       $else
@@ -104,15 +114,77 @@ class Reline::Config::Test < Reline::TestCase
   end
 
   def test_if_with_indent
-    @config.read_lines(<<~LINES.split(/(?<=\n)/))
-      set bell-style none
+    %w[Ruby Reline].each do |cond|
+      @config.read_lines(<<~LINES.lines)
+        set bell-style none
+          $if #{cond}
+            set bell-style audible
+          $else
+            set bell-style visible
+          $endif
+      LINES
+
+      assert_equal :audible, @config.instance_variable_get(:@bell_style)
+    end
+  end
+
+  def test_unclosed_if
+    e = assert_raise(Reline::Config::InvalidInputrc) do
+      @config.read_lines(<<~LINES.lines, "INPUTRC")
         $if Ruby
-          set bell-style audible
+      LINES
+    end
+    assert_equal "INPUTRC:1: unclosed if", e.message
+  end
+
+  def test_unmatched_else
+    e = assert_raise(Reline::Config::InvalidInputrc) do
+      @config.read_lines(<<~LINES.lines, "INPUTRC")
         $else
-          set bell-style visible
+      LINES
+    end
+    assert_equal "INPUTRC:1: unmatched else", e.message
+  end
+
+  def test_unmatched_endif
+    e = assert_raise(Reline::Config::InvalidInputrc) do
+      @config.read_lines(<<~LINES.lines, "INPUTRC")
         $endif
+      LINES
+    end
+    assert_equal "INPUTRC:1: unmatched endif", e.message
+  end
+
+  def test_default_key_bindings
+    @config.add_default_key_binding('abcd'.bytes, 'EFGH'.bytes)
+    @config.read_lines(<<~'LINES'.lines)
+      "abcd": "ABCD"
+      "ijkl": "IJKL"
     LINES
 
-    assert_equal :audible, @config.instance_variable_get(:@bell_style)
+    expected = { 'abcd'.bytes => 'ABCD'.bytes, 'ijkl'.bytes => 'IJKL'.bytes }
+    assert_equal expected, @config.key_bindings
+  end
+
+  def test_additional_key_bindings
+    @config.read_lines(<<~'LINES'.lines)
+      "ef": "EF"
+      "gh": "GH"
+    LINES
+
+    expected = { 'ef'.bytes => 'EF'.bytes, 'gh'.bytes => 'GH'.bytes }
+    assert_equal expected, @config.key_bindings
+  end
+
+  def test_additional_key_bindings_with_nesting_and_comment_out
+    @config.read_lines(<<~'LINES'.lines)
+      #"ab": "AB"
+        #"cd": "cd"
+      "ef": "EF"
+        "gh": "GH"
+    LINES
+
+    expected = { 'ef'.bytes => 'EF'.bytes, 'gh'.bytes => 'GH'.bytes }
+    assert_equal expected, @config.key_bindings
   end
 end

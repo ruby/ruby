@@ -2,7 +2,7 @@
 
 module Bundler
   module GemHelpers
-    GENERIC_CACHE = {} # rubocop:disable MutableConstant
+    GENERIC_CACHE = { Gem::Platform::RUBY => Gem::Platform::RUBY } # rubocop:disable MutableConstant
     GENERICS = [
       [Gem::Platform.new("java"), Gem::Platform.new("java")],
       [Gem::Platform.new("mswin32"), Gem::Platform.new("mswin32")],
@@ -14,8 +14,6 @@ module Bundler
     ].freeze
 
     def generic(p)
-      return p if p == Gem::Platform::RUBY
-
       GENERIC_CACHE[p] ||= begin
         _, found = GENERICS.find do |match, _generic|
           p.os == match.os && (!match.cpu || p.cpu == match.cpu)

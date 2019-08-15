@@ -133,8 +133,8 @@ describe :string_each_line, shared: true do
   end
 
   it "raises a TypeError when the separator can't be converted to a string" do
-    lambda { "hello world".send(@method, false) {}     }.should raise_error(TypeError)
-    lambda { "hello world".send(@method, mock('x')) {} }.should raise_error(TypeError)
+    -> { "hello world".send(@method, false) {}     }.should raise_error(TypeError)
+    -> { "hello world".send(@method, mock('x')) {} }.should raise_error(TypeError)
   end
 
   it "accepts a string separator" do
@@ -142,7 +142,7 @@ describe :string_each_line, shared: true do
   end
 
   it "raises a TypeError when the separator is a symbol" do
-    lambda { "hello world".send(@method, :o).to_a }.should raise_error(TypeError)
+    -> { "hello world".send(@method, :o).to_a }.should raise_error(TypeError)
   end
 
   context "when `chomp` keyword argument is passed" do

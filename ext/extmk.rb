@@ -688,8 +688,8 @@ begin
     submakeopts << 'UPDATE_LIBRARIES="$(UPDATE_LIBRARIES)"'
     submakeopts << 'SHOWFLAGS='
     mf.macro "SUBMAKEOPTS", submakeopts
-    mf.macro "NOTE_MESG", %w[$(RUBY) $(top_srcdir)/tool/colorize.rb skip]
-    mf.macro "NOTE_NAME", %w[$(RUBY) $(top_srcdir)/tool/colorize.rb fail]
+    mf.macro "NOTE_MESG", %w[$(RUBY) $(top_srcdir)/tool/lib/colorize.rb skip]
+    mf.macro "NOTE_NAME", %w[$(RUBY) $(top_srcdir)/tool/lib/colorize.rb fail]
     mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |tgt|

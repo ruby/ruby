@@ -1,6 +1,16 @@
 require 'fiddle/import'
 
-module Reline
+class Reline::Windows
+  RAW_KEYSTROKE_CONFIG = {
+    [224, 72] => :ed_prev_history, # ↑
+    [224, 80] => :ed_next_history, # ↓
+    [224, 77] => :ed_next_char,    # →
+    [224, 75] => :ed_prev_char,    # ←
+    [224, 83] => :key_delete,      # Del
+    [224, 71] => :ed_move_to_beg,  # Home
+    [224, 79] => :ed_move_to_end,  # End
+  }.each_key(&:freeze).freeze
+
   class Win32API
     DLL = {}
     TYPEMAP = {"0" => Fiddle::TYPE_VOID, "S" => Fiddle::TYPE_VOIDP, "I" => Fiddle::TYPE_LONG}
@@ -39,7 +49,8 @@ module Reline
     end
   end
 
-  VK_LMENU = 0xA4
+  VK_MENU = 0x12
+  VK_SHIFT = 0x10
   STD_OUTPUT_HANDLE = -11
   @@getwch = Win32API.new('msvcrt', '_getwch', [], 'I')
   @@kbhit = Win32API.new('msvcrt', '_kbhit', [], 'I')
@@ -52,7 +63,7 @@ module Reline
   @@hConsoleHandle = @@GetStdHandle.call(STD_OUTPUT_HANDLE)
   @@buf = []
 
-  def getwch
+  def self.getwch
     while @@kbhit.call == 0
       sleep(0.001)
     end
@@ -69,13 +80,18 @@ module Reline
     result
   end
 
-  def getc
+  def self.getc
     unless @@buf.empty?
       return @@buf.shift
     end
     input = getwch
-    alt = (@@GetKeyState.call(VK_LMENU) & 0x80) != 0
-    if input.size > 1
+    alt = (@@GetKeyState.call(VK_MENU) & 0x80) != 0
+    shift_enter = (@@GetKeyState.call(VK_SHIFT) & 0x80) != 0 && input.first == 0x0D
+    if shift_enter
+      # It's treated as Meta+Enter on Windows
+      @@buf.concat(["\e".ord])
+      @@buf.concat(input)
+    elsif input.size > 1
       @@buf.concat(input)
     else # single byte
       case input[0]
@@ -101,10 +117,14 @@ module Reline
     end
   end
 
+  def self.ungetc(c)
+    @@buf.unshift(c)
+  end
+
   def self.get_screen_size
     csbi = 0.chr * 24
     @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
-    csbi[0, 4].unpack('SS')
+    csbi[0, 4].unpack('SS').reverse
   end
 
   def self.cursor_pos
@@ -112,7 +132,7 @@ module Reline
     @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
     x = csbi[4, 2].unpack('s*').first
     y = csbi[6, 4].unpack('s*').first
-    CursorPos.new(x, y)
+    Reline::CursorPos.new(x, y)
   end
 
   def self.move_cursor_column(val)
@@ -140,12 +160,12 @@ module Reline
     @@GetConsoleScreenBufferInfo.call(@@hConsoleHandle, csbi)
     cursor = csbi[4, 4].unpack('L').first
     written = 0.chr * 4
-    @@FillConsoleOutputCharacter.call(@@hConsoleHandle, 0x20, get_screen_size.first - cursor_pos.x, cursor, written)
+    @@FillConsoleOutputCharacter.call(@@hConsoleHandle, 0x20, get_screen_size.last - cursor_pos.x, cursor, written)
   end
 
   def self.scroll_down(val)
     return if val.zero?
-    scroll_rectangle = [0, val, get_screen_size.last, get_screen_size.first].pack('s4')
+    scroll_rectangle = [0, val, get_screen_size.first, get_screen_size.last].pack('s4')
     destination_origin = 0 # y * 65536 + x
     fill = [' '.ord, 0].pack('SS')
     @@ScrollConsoleScreenBuffer.call(@@hConsoleHandle, scroll_rectangle, nil, destination_origin, fill)
@@ -161,12 +181,12 @@ module Reline
     raise NotImplementedError
   end
 
-  def prep
+  def self.prep
     # do nothing
     nil
   end
 
-  def deprep(otio)
+  def self.deprep(otio)
     # do nothing
   end
 end

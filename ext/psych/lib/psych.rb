@@ -10,11 +10,7 @@ when 'jruby'
     org.jruby.ext.psych.PsychLibrary.new.load(JRuby.runtime, false)
   end
 else
-  begin
-    require "#{RUBY_VERSION[/\d+\.\d+/]}/psych.so"
-  rescue LoadError
-    require 'psych.so'
-  end
+  require 'psych.so'
 end
 require 'psych/nodes'
 require 'psych/streaming'

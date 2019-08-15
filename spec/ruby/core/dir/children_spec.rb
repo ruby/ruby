@@ -43,10 +43,10 @@ ruby_version_is "2.5" do
 
     it "returns children encoded with the filesystem encoding by default" do
       # This spec depends on the locale not being US-ASCII because if it is, the
-      # children that are not ascii_only? will be ASCII-8BIT encoded.
+      # children that are not ascii_only? will be BINARY encoded.
       children = Dir.children(File.join(DirSpecs.mock_dir, 'special')).sort
       encoding = Encoding.find("filesystem")
-      encoding = Encoding::ASCII_8BIT if encoding == Encoding::US_ASCII
+      encoding = Encoding::BINARY if encoding == Encoding::US_ASCII
       platform_is_not :windows do
         children.should include("こんにちは.txt".force_encoding(encoding))
       end
@@ -66,7 +66,7 @@ ruby_version_is "2.5" do
     end
 
     it "raises a SystemCallError if called with a nonexistent directory" do
-      lambda { Dir.children DirSpecs.nonexistent }.should raise_error(SystemCallError)
+      -> { Dir.children DirSpecs.nonexistent }.should raise_error(SystemCallError)
     end
   end
 end
@@ -110,11 +110,11 @@ ruby_version_is "2.6" do
 
     it "returns children encoded with the filesystem encoding by default" do
       # This spec depends on the locale not being US-ASCII because if it is, the
-      # children that are not ascii_only? will be ASCII-8BIT encoded.
+      # children that are not ascii_only? will be BINARY encoded.
       @dir = Dir.new(File.join(DirSpecs.mock_dir, 'special'))
       children = @dir.children.sort
       encoding = Encoding.find("filesystem")
-      encoding = Encoding::ASCII_8BIT if encoding == Encoding::US_ASCII
+      encoding = Encoding::BINARY if encoding == Encoding::US_ASCII
       platform_is_not :windows do
         children.should include("こんにちは.txt".force_encoding(encoding))
       end
