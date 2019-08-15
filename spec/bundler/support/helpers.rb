@@ -314,12 +314,16 @@ module Spec
           "#{gem_repo}/gems/#{g}.gem"
         end
 
-        raise "OMG `#{path}` does not exist!" unless File.exist?(path)
-
-        gem_command! :install, "--no-document --ignore-dependencies '#{path}'"
+        install_gem(path)
 
         bundler_path && bundler_path.rmtree
       end
+    end
+
+    def install_gem(path)
+      raise "OMG `#{path}` does not exist!" unless File.exist?(path)
+
+      gem_command! :install, "--no-document --ignore-dependencies '#{path}'"
     end
 
     def with_gem_path_as(path)
