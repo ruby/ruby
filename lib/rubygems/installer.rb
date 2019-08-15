@@ -811,7 +811,7 @@ TEXT
       # stub & ruby.exe withing same folder.  Portable
       <<-TEXT
 @ECHO OFF
-@"%~dp0ruby.exe" "%~dpn0" %*
+@"%~dp0#{ruby_exe}" "%~dpn0" %*
       TEXT
     elsif bindir.downcase.start_with? rb_topdir.downcase
       # stub within ruby folder, but not standard bin.  Portable
@@ -821,14 +821,14 @@ TEXT
       rel  = to.relative_path_from from
       <<-TEXT
 @ECHO OFF
-@"%~dp0#{rel}/ruby.exe" "%~dpn0" %*
+@"%~dp0#{rel}/#{ruby_exe}" "%~dpn0" %*
       TEXT
     else
       # outside ruby folder, maybe -user-install or bundler.  Portable, but ruby
       # is dependent on PATH
       <<-TEXT
 @ECHO OFF
-@ruby.exe "%~dpn0" %*
+@#{ruby_exe} "%~dpn0" %*
       TEXT
     end
   end
