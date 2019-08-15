@@ -15,7 +15,7 @@ describe :dir_chroot_as_root, shared: true do
   end
 
   it "can be used to change the process' root directory" do
-    lambda { Dir.send(@method, File.dirname(__FILE__)) }.should_not raise_error
+    -> { Dir.send(@method, File.dirname(__FILE__)) }.should_not raise_error
     File.exist?("/#{File.basename(__FILE__)}").should be_true
   end
 
@@ -24,7 +24,7 @@ describe :dir_chroot_as_root, shared: true do
   end
 
   it "raises an Errno::ENOENT exception if the directory doesn't exist" do
-    lambda { Dir.send(@method, 'xgwhwhsjai2222jg') }.should raise_error(Errno::ENOENT)
+    -> { Dir.send(@method, 'xgwhwhsjai2222jg') }.should raise_error(Errno::ENOENT)
   end
 
   it "can be escaped from with ../" do

@@ -2,7 +2,7 @@
 
 RSpec.describe "bundle install with a lockfile present" do
   let(:gf) { <<-G }
-    source "file://#{gem_repo1}"
+    source "#{file_uri_for(gem_repo1)}"
 
     gem "rack", "1.0.0"
   G

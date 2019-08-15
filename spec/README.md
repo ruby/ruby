@@ -30,13 +30,43 @@ In other words: If adding a spec might reveal a bug in
 another implementation, then it is worth adding it.
 Currently, the only module which is MRI-specific is `RubyVM`.
 
+## Changing behavior and versions guards
+
 Version guards (`ruby_version_is`) must be added for new features or features
-which change behavior or are removed. See `spec/ruby/CONTRIBUTING.md` for details.
+which change behavior or are removed. This is necessary for other Ruby implementations
+to still be able to run the specs and contribute new specs.
+
+For example, change:
+```ruby
+describe "Some spec" do
+  it "some example" do
+    # Old behavior for Ruby < 2.7
+  end
+end
+```
+to:
+```ruby
+describe "Some spec" do
+  ruby_version_is ""..."2.7" do
+    it "some example" do
+      # Old behavior for Ruby < 2.7
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "some example" do
+      # New behavior for Ruby >= 2.7
+    end
+  end
+end
+```
+
+See `spec/ruby/CONTRIBUTING.md` for more documentation about guards.
 
 To verify specs are compatible with older Ruby versions:
 ```
 cd spec/ruby
-$RUBY_MANAGER use 2.3.7
+$RUBY_MANAGER use 2.4.6
 ../mspec/bin/mspec -j
 ```
 
@@ -73,8 +103,8 @@ spec/mspec/bin/mspec spec/ruby/language/for_spec.rb
 
 ## ruby/spec and test/
 
-The main difference between a "spec" under spec/ruby and
-a test under test/ is that specs are documenting what they test.
+The main difference between a "spec" under `spec/ruby/` and
+a test under `test/` is that specs are documenting what they test.
 This is extremely valuable when reading these tests, as it
 helps to quickly understand what specific behavior is tested,
 and how a method should behave. Basic English is fine for spec descriptions.
@@ -97,4 +127,4 @@ describe "The for expression" do
 end
 ```
 
-For more details, see spec/ruby/CONTRIBUTING.md.
+For more details, see `spec/ruby/CONTRIBUTING.md`.

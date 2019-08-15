@@ -61,7 +61,7 @@ describe "YAML.load" do
     else
       error = ArgumentError
     end
-    lambda { YAML.load("key1: value\ninvalid_key") }.should raise_error(error)
+    -> { YAML.load("key1: value\ninvalid_key") }.should raise_error(error)
   end
 
   it "accepts symbols" do
@@ -130,7 +130,7 @@ describe "YAML.load" do
 
   it "loads a File but raise an error when used as it is uninitialized" do
     loaded = YAML.load("--- !ruby/object:File {}\n")
-    lambda {
+    -> {
       loaded.read(1)
     }.should raise_error(IOError)
   end

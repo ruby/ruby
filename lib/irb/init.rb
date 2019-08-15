@@ -54,7 +54,7 @@ module IRB # :nodoc:
     @CONF[:VERBOSE] = nil
 
     @CONF[:EVAL_HISTORY] = nil
-    @CONF[:SAVE_HISTORY] = nil
+    @CONF[:SAVE_HISTORY] = 1000
 
     @CONF[:BACK_TRACE_LIMIT] = 16
 
@@ -83,7 +83,7 @@ module IRB # :nodoc:
       :SIMPLE => {
         :PROMPT_I => ">> ",
         :PROMPT_N => ">> ",
-        :PROMPT_S => nil,
+        :PROMPT_S => "%l> ",
         :PROMPT_C => "?> ",
         :RETURN => "=> %s\n"
       },
@@ -105,7 +105,7 @@ module IRB # :nodoc:
     }
 
     @CONF[:PROMPT_MODE] = (STDIN.tty? ? :DEFAULT : :NULL)
-    @CONF[:AUTO_INDENT] = false
+    @CONF[:AUTO_INDENT] = true
 
     @CONF[:CONTEXT_MODE] = 3 # use binding in function on TOPLEVEL_BINDING
     @CONF[:SINGLE_IRB] = false
@@ -164,6 +164,10 @@ module IRB # :nodoc:
         @CONF[:USE_READLINE] = true
       when "--noreadline"
         @CONF[:USE_READLINE] = false
+      when "--reidline"
+        @CONF[:USE_REIDLINE] = true
+      when "--noreidline"
+        @CONF[:USE_REIDLINE] = false
       when "--echo"
         @CONF[:ECHO] = true
       when "--noecho"

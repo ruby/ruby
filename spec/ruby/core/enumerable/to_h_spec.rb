@@ -36,12 +36,12 @@ describe "Enumerable#to_h" do
 
   it "raises TypeError if an element is not an array" do
     enum = EnumerableSpecs::EachDefiner.new(:x)
-    lambda { enum.to_h }.should raise_error(TypeError)
+    -> { enum.to_h }.should raise_error(TypeError)
   end
 
   it "raises ArgumentError if an element is not a [key, value] pair" do
     enum = EnumerableSpecs::EachDefiner.new([:x])
-    lambda { enum.to_h }.should raise_error(ArgumentError)
+    -> { enum.to_h }.should raise_error(ArgumentError)
   end
 
   ruby_version_is "2.6" do

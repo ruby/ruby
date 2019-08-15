@@ -15,7 +15,7 @@ describe "Kernel.proc" do
   end
 
   it "returned the passed Proc if given an existing Proc" do
-    some_lambda = lambda {}
+    some_lambda = -> {}
     some_lambda.lambda?.should be_true
     l = proc(&some_lambda)
     l.should equal(some_lambda)
@@ -59,6 +59,4 @@ describe "Kernel#proc" do
       }.should complain(/Capturing the given block using Proc.new is deprecated/)
     end
   end
-
-  it "needs to be reviewed for spec completeness"
 end

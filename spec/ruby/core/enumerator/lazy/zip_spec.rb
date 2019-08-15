@@ -44,7 +44,7 @@ describe "Enumerator::Lazy#zip" do
   end
 
   it "raises a TypeError if arguments contain non-list object" do
-    lambda { @yieldsmixed.zip [], Object.new, [] }.should raise_error(TypeError)
+    -> { @yieldsmixed.zip [], Object.new, [] }.should raise_error(TypeError)
   end
 
   describe "on a nested Lazy" do

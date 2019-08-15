@@ -11,6 +11,23 @@ describe "Module#autoload?" do
   it "returns nil if no file has been registered for a constant" do
     ModuleSpecs::Autoload.autoload?(:Manualload).should be_nil
   end
+
+  it "returns the name of the file that will be autoloaded if an ancestor defined that autoload" do
+    ModuleSpecs::Autoload::Parent.autoload :AnotherAutoload, "another_autoload.rb"
+    ModuleSpecs::Autoload::Child.autoload?(:AnotherAutoload).should == "another_autoload.rb"
+  end
+
+  ruby_version_is "2.7" do
+    it "returns nil if an ancestor defined that autoload but recursion is disabled" do
+      ModuleSpecs::Autoload::Parent.autoload :InheritedAutoload, "inherited_autoload.rb"
+      ModuleSpecs::Autoload::Child.autoload?(:InheritedAutoload, false).should be_nil
+    end
+
+    it "returns the name of the file that will be loaded if recursion is disabled but the autoload is defined on the classs itself" do
+      ModuleSpecs::Autoload::Child.autoload :ChildAutoload, "child_autoload.rb"
+      ModuleSpecs::Autoload::Child.autoload?(:ChildAutoload, false).should == "child_autoload.rb"
+    end
+  end
 end
 
 describe "Module#autoload" do
@@ -172,7 +189,7 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload.autoload :NotThere, filename
     ModuleSpecs::Autoload.autoload?(:NotThere).should == filename
 
-    lambda {
+    -> {
       require filename
     }.should raise_error(LoadError)
 
@@ -368,13 +385,13 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload.should have_constant(:Fail)
     ModuleSpecs::Autoload.autoload?(:Fail).should == @non_existent
 
-    lambda { ModuleSpecs::Autoload::Fail }.should raise_error(LoadError)
+    -> { ModuleSpecs::Autoload::Fail }.should raise_error(LoadError)
 
     ModuleSpecs::Autoload.should have_constant(:Fail)
     ModuleSpecs::Autoload.const_defined?(:Fail).should == true
     ModuleSpecs::Autoload.autoload?(:Fail).should == @non_existent
 
-    lambda { ModuleSpecs::Autoload::Fail }.should raise_error(LoadError)
+    -> { ModuleSpecs::Autoload::Fail }.should raise_error(LoadError)
   end
 
   it "does not remove the constant from Module#constants if load raises a RuntimeError and keeps it as an autoload" do
@@ -386,14 +403,14 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload.should have_constant(:Raise)
     ModuleSpecs::Autoload.autoload?(:Raise).should == path
 
-    lambda { ModuleSpecs::Autoload::Raise }.should raise_error(RuntimeError)
+    -> { ModuleSpecs::Autoload::Raise }.should raise_error(RuntimeError)
     ScratchPad.recorded.should == [:raise]
 
     ModuleSpecs::Autoload.should have_constant(:Raise)
     ModuleSpecs::Autoload.const_defined?(:Raise).should == true
     ModuleSpecs::Autoload.autoload?(:Raise).should == path
 
-    lambda { ModuleSpecs::Autoload::Raise }.should raise_error(RuntimeError)
+    -> { ModuleSpecs::Autoload::Raise }.should raise_error(RuntimeError)
     ScratchPad.recorded.should == [:raise, :raise]
   end
 
@@ -406,7 +423,7 @@ describe "Module#autoload" do
     ModuleSpecs::Autoload.should have_constant(:O)
     ModuleSpecs::Autoload.autoload?(:O).should == path
 
-    lambda { ModuleSpecs::Autoload::O }.should raise_error(NameError)
+    -> { ModuleSpecs::Autoload::O }.should raise_error(NameError)
 
     ModuleSpecs::Autoload.should have_constant(:O)
     ModuleSpecs::Autoload.const_defined?(:O).should == false
@@ -517,7 +534,7 @@ describe "Module#autoload" do
       end
     end
 
-    it "and fails when finding the undefined autoload constant in the the current scope when declared in current and defined in parent" do
+    it "and fails when finding the undefined autoload constant in the current scope when declared in current and defined in parent" do
       @remove << :DeclaredInCurrentDefinedInParent
       module ModuleSpecs::Autoload
         ScratchPad.record -> {
@@ -642,19 +659,19 @@ describe "Module#autoload" do
   end
 
   it "raises an ArgumentError when an empty filename is given" do
-    lambda { ModuleSpecs.autoload :A, "" }.should raise_error(ArgumentError)
+    -> { ModuleSpecs.autoload :A, "" }.should raise_error(ArgumentError)
   end
 
   it "raises a NameError when the constant name starts with a lower case letter" do
-    lambda { ModuleSpecs.autoload "a", @non_existent }.should raise_error(NameError)
+    -> { ModuleSpecs.autoload "a", @non_existent }.should raise_error(NameError)
   end
 
   it "raises a NameError when the constant name starts with a number" do
-    lambda { ModuleSpecs.autoload "1two", @non_existent }.should raise_error(NameError)
+    -> { ModuleSpecs.autoload "1two", @non_existent }.should raise_error(NameError)
   end
 
   it "raises a NameError when the constant name has a space in it" do
-    lambda { ModuleSpecs.autoload "a name", @non_existent }.should raise_error(NameError)
+    -> { ModuleSpecs.autoload "a name", @non_existent }.should raise_error(NameError)
   end
 
   it "shares the autoload request across dup'ed copies of modules" do
@@ -662,7 +679,7 @@ describe "Module#autoload" do
     @remove << :S
     filename = fixture(__FILE__, "autoload_t.rb")
     mod1 = Module.new { autoload :T, filename }
-    lambda {
+    -> {
       ModuleSpecs::Autoload::S = mod1
     }.should complain(/already initialized constant/)
     mod2 = mod1.dup
@@ -671,7 +688,7 @@ describe "Module#autoload" do
     mod2.autoload?(:T).should == filename
 
     mod1::T.should == :autoload_t
-    lambda { mod2::T }.should raise_error(NameError)
+    -> { mod2::T }.should raise_error(NameError)
   end
 
   it "raises a TypeError if opening a class with a different superclass than the class defined in the autoload file" do
@@ -679,7 +696,7 @@ describe "Module#autoload" do
     class ModuleSpecs::Autoload::ZZ
     end
 
-    lambda do
+    -> do
       class ModuleSpecs::Autoload::Z < ModuleSpecs::Autoload::ZZ
       end
     end.should raise_error(TypeError)
@@ -688,20 +705,20 @@ describe "Module#autoload" do
   it "raises a TypeError if not passed a String or object responding to #to_path for the filename" do
     name = mock("autoload_name.rb")
 
-    lambda { ModuleSpecs::Autoload.autoload :Str, name }.should raise_error(TypeError)
+    -> { ModuleSpecs::Autoload.autoload :Str, name }.should raise_error(TypeError)
   end
 
   it "calls #to_path on non-String filename arguments" do
     name = mock("autoload_name.rb")
     name.should_receive(:to_path).and_return("autoload_name.rb")
 
-    lambda { ModuleSpecs::Autoload.autoload :Str, name }.should_not raise_error
+    -> { ModuleSpecs::Autoload.autoload :Str, name }.should_not raise_error
   end
 
   describe "on a frozen module" do
     it "raises a #{frozen_error_class} before setting the name" do
       frozen_module = Module.new.freeze
-      lambda { frozen_module.autoload :Foo, @non_existent }.should raise_error(frozen_error_class)
+      -> { frozen_module.autoload :Foo, @non_existent }.should raise_error(frozen_error_class)
       frozen_module.should_not have_constant(:Foo)
     end
   end

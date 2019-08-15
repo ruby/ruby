@@ -592,7 +592,7 @@ class OptionParser
     #            +max+ columns.
     # +indent+:: Prefix string indents all summarized lines.
     #
-    def summarize(sdone = [], ldone = [], width = 1, max = width - 1, indent = "")
+    def summarize(sdone = {}, ldone = {}, width = 1, max = width - 1, indent = "")
       sopts, lopts = [], [], nil
       @short.each {|s| sdone.fetch(s) {sopts << s}; sdone[s] = true} if @short
       @long.each {|s| ldone.fetch(s) {lopts << s}; ldone[s] = true} if @long

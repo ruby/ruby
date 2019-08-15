@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require 'rubygems/package/tar_test_case'
-require 'rubygems/simple_gem'
 
 class TestGemPackage < Gem::Package::TarTestCase
 
@@ -24,6 +23,8 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_class_new_old_format
+    skip "jruby can't require the simple_gem file" if Gem.java_platform?
+    require_relative "simple_gem"
     File.open 'old_format.gem', 'wb' do |io|
       io.write SIMPLE_GEM
     end
@@ -417,6 +418,33 @@ class TestGemPackage < Gem::Package::TarTestCase
                  reader.files
 
     assert_equal %w[lib/code.rb], reader.contents
+  end
+
+  def test_raw_spec
+    data_tgz = util_tar_gz { }
+
+    gem = util_tar do |tar|
+      tar.add_file 'data.tar.gz', 0644 do |io|
+        io.write data_tgz.string
+      end
+
+      tar.add_file 'metadata.gz', 0644 do |io|
+        Zlib::GzipWriter.wrap io do |gzio|
+          gzio.write @spec.to_yaml
+        end
+      end
+    end
+
+    gem_path = "#{@destination}/test.gem"
+
+    File.open gem_path, "wb" do |io|
+      io.write gem.string
+    end
+
+    spec, metadata = Gem::Package.raw_spec(gem_path)
+
+    assert_equal @spec, spec
+    assert_match @spec.to_yaml, metadata.force_encoding("UTF-8")
   end
 
   def test_contents
@@ -839,6 +867,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_corrupt
+    skip "jruby strips the null byte and does not think it's corrupt" if Gem.java_platform?
     tf = Tempfile.open 'corrupt' do |io|
       data = Gem::Util.gzip 'a' * 10
       io.write \

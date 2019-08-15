@@ -1033,7 +1033,7 @@ END
     assert_block do
       case {}
       in {}
-        $keys == nil
+        C.keys == nil
       end
     end
 

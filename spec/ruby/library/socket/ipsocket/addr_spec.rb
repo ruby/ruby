@@ -81,7 +81,7 @@ describe 'Socket::IPSocket#addr' do
 
       describe 'using :cats as the argument' do
         it 'raises ArgumentError' do
-          lambda { @server.addr(:cats) }.should raise_error(ArgumentError)
+          -> { @server.addr(:cats) }.should raise_error(ArgumentError)
         end
       end
     end
