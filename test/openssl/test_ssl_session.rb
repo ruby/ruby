@@ -113,6 +113,7 @@ __EOS__
     non_resumable = nil
     start_server { |port|
       server_connect_with_session(port, nil, nil) { |ssl|
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
         non_resumable = ssl.session
       }
     }
@@ -198,7 +199,9 @@ __EOS__
       first_session = nil
       10.times do |i|
         connections = i
-        server_connect_with_session(port, nil, first_session) { |ssl|
+        cctx = OpenSSL::SSL::SSLContext.new
+        cctx.ssl_version = :TLSv1_2
+        server_connect_with_session(port, cctx, first_session) { |ssl|
           ssl.puts("abc"); assert_equal "abc\n", ssl.gets
           first_session ||= ssl.session
 
@@ -257,6 +260,8 @@ __EOS__
 
     connections = nil
     called = {}
+    cctx = OpenSSL::SSL::SSLContext.new
+    cctx.ssl_version = :TLSv1_2
     sctx = nil
     ctx_proc = Proc.new { |ctx|
       sctx = ctx
@@ -292,7 +297,7 @@ __EOS__
     }
     start_server(ctx_proc: ctx_proc) do |port|
       connections = 0
-      sess0 = server_connect_with_session(port, nil, nil) { |ssl|
+      sess0 = server_connect_with_session(port, cctx, nil) { |ssl|
         ssl.puts("abc"); assert_equal "abc\n", ssl.gets
         assert_equal false, ssl.session_reused?
         ssl.session
@@ -307,7 +312,7 @@ __EOS__
 
       # Internal cache hit
       connections = 1
-      server_connect_with_session(port, nil, sess0.dup) { |ssl|
+      server_connect_with_session(port, cctx, sess0.dup) { |ssl|
         ssl.puts("abc"); assert_equal "abc\n", ssl.gets
         assert_equal true, ssl.session_reused?
         ssl.session
@@ -328,7 +333,7 @@ __EOS__
 
       # External cache hit
       connections = 2
-      sess2 = server_connect_with_session(port, nil, sess0.dup) { |ssl|
+      sess2 = server_connect_with_session(port, cctx, sess0.dup) { |ssl|
         ssl.puts("abc"); assert_equal "abc\n", ssl.gets
         if !ssl.session_reused? && openssl?(1, 1, 0) && !openssl?(1, 1, 0, 7)
           # OpenSSL >= 1.1.0, < 1.1.0g
@@ -355,7 +360,7 @@ __EOS__
 
       # Cache miss
       connections = 3
-      sess3 = server_connect_with_session(port, nil, sess0.dup) { |ssl|
+      sess3 = server_connect_with_session(port, cctx, sess0.dup) { |ssl|
         ssl.puts("abc"); assert_equal "abc\n", ssl.gets
         assert_equal false, ssl.session_reused?
         ssl.session

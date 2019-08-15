@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/enumerable_enumeratorized', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/enumerable_enumeratorized'
 
 describe "Enumerable#minmax_by" do
   it "returns an enumerator if no block" do

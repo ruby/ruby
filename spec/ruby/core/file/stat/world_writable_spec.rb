@@ -1,9 +1,9 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../../../shared/file/world_writable', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../../../shared/file/world_writable'
+require_relative 'fixtures/classes'
 
 describe "File::Stat.world_writable?" do
-  it_behaves_like(:file_world_writable, :world_writable?, FileStat)
+  it_behaves_like :file_world_writable, :world_writable?, FileStat
 end
 
 describe "File::Stat#world_writable?" do

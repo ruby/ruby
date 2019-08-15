@@ -60,36 +60,6 @@ module Spec
       end
     end
 
-    MAJOR_DEPRECATION = /^\[DEPRECATED FOR 2\.0\]\s*/
-
-    RSpec::Matchers.define :lack_errors do
-      diffable
-      match do |actual|
-        actual.gsub(/#{MAJOR_DEPRECATION}.+[\n]?/, "") == ""
-      end
-    end
-
-    RSpec::Matchers.define :eq_err do |expected|
-      diffable
-      match do |actual|
-        actual.gsub(/#{MAJOR_DEPRECATION}.+[\n]?/, "") == expected
-      end
-    end
-
-    RSpec::Matchers.define :have_major_deprecation do |expected|
-      diffable
-      match do |actual|
-        deprecations = actual.split(MAJOR_DEPRECATION)
-
-        return !expected.nil? if deprecations.size <= 1
-        return true if expected.nil?
-
-        deprecations.any? do |d|
-          !d.empty? && values_match?(expected, d.strip)
-        end
-      end
-    end
-
     RSpec::Matchers.define :have_dep do |*args|
       dep = Bundler::Dependency.new(*args)
 
@@ -128,6 +98,14 @@ module Spec
       end
     end
 
+    RSpec::Matchers.define :be_well_formed do
+      match(&:empty?)
+
+      failure_message do |actual|
+        actual.join("\n")
+      end
+    end
+
     define_compound_matcher :read_as, [exist] do |file_contents|
       diffable
 
@@ -152,11 +130,10 @@ module Spec
           version_const = name == "bundler" ? "Bundler::VERSION" : Spec::Builders.constantize(name)
           begin
             run! "require '#{name}.rb'; puts #{version_const}", *groups
-          rescue => e
+          rescue StandardError => e
             next "#{name} is not installed:\n#{indent(e)}"
           end
-          last_command.stdout.gsub!(/#{MAJOR_DEPRECATION}.*$/, "")
-          actual_version, actual_platform = last_command.stdout.strip.split(/\s+/, 2)
+          actual_version, actual_platform = out.strip.split(/\s+/, 2)
           unless Gem::Version.new(actual_version) == Gem::Version.new(version)
             next "#{name} was expected to be at version #{version} but was #{actual_version}"
           end
@@ -167,11 +144,10 @@ module Spec
           begin
             source_const = "#{Spec::Builders.constantize(name)}_SOURCE"
             run! "require '#{name}/source'; puts #{source_const}", *groups
-          rescue
+          rescue StandardError
             next "#{name} does not have a source defined:\n#{indent(e)}"
           end
-          last_command.stdout.gsub!(/#{MAJOR_DEPRECATION}.*$/, "")
-          unless last_command.stdout.strip == source
+          unless out.strip == source
             next "Expected #{name} (#{version}) to be installed from `#{source}`, was actually from `#{out}`"
           end
         end.compact
@@ -193,12 +169,12 @@ module Spec
                 puts "WIN"
               end
             R
-          rescue => e
+          rescue StandardError => e
             next "checking for #{name} failed:\n#{e}"
           end
-          next if last_command.stdout == "WIN"
+          next if out == "WIN"
           next "expected #{name} to not be installed, but it was" if version.nil?
-          if Gem::Version.new(last_command.stdout) == Gem::Version.new(version)
+          if Gem::Version.new(out) == Gem::Version.new(version)
             next "expected #{name} (#{version}) not to be installed, but it was"
           end
         end.compact
@@ -236,7 +212,11 @@ module Spec
     end
 
     def lockfile_should_be(expected)
-      expect(bundled_app("Gemfile.lock")).to read_as(strip_whitespace(expected))
+      expect(bundled_app("Gemfile.lock")).to have_lockfile(expected)
+    end
+
+    def gemfile_should_be(expected)
+      expect(bundled_app("Gemfile")).to read_as(strip_whitespace(expected))
     end
   end
 end

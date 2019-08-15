@@ -1,6 +1,6 @@
 # -*- encoding: us-ascii -*-
 
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe "Enumerator::Generator#initialize" do
   before :each do
@@ -18,7 +18,7 @@ describe "Enumerator::Generator#initialize" do
 
   describe "on frozen instance" do
     it "raises a RuntimeError" do
-      lambda {
+      -> {
         @uninitialized.freeze.send(:initialize) {}
       }.should raise_error(RuntimeError)
     end

@@ -1,4 +1,4 @@
-require File.expand_path('../spec_helper', __FILE__)
+require_relative 'spec_helper'
 
 load_extension("exception")
 
@@ -28,13 +28,13 @@ describe "C-API Exception function" do
   describe "rb_exc_raise" do
     it "raises passed exception" do
       runtime_error = RuntimeError.new '42'
-      lambda { @s.rb_exc_raise(runtime_error) }.should raise_error(RuntimeError, '42')
+      -> { @s.rb_exc_raise(runtime_error) }.should raise_error(RuntimeError, '42')
     end
 
     it "raises an exception with an empty backtrace" do
       runtime_error = RuntimeError.new '42'
       runtime_error.set_backtrace []
-      lambda { @s.rb_exc_raise(runtime_error) }.should raise_error(RuntimeError, '42')
+      -> { @s.rb_exc_raise(runtime_error) }.should raise_error(RuntimeError, '42')
     end
   end
 
@@ -52,7 +52,7 @@ describe "C-API Exception function" do
     end
 
     it "raises a TypeError if the object is not nil or an Exception instance" do
-      lambda { @s.rb_set_errinfo("error") }.should raise_error(TypeError)
+      -> { @s.rb_set_errinfo("error") }.should raise_error(TypeError)
     end
   end
 end

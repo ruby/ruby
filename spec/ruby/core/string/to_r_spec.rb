@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "String#to_r" do
   it "returns a Rational object" do
@@ -29,7 +29,7 @@ describe "String#to_r" do
     "a1765, ".to_r.should_not == Rational(1765, 1)
   end
 
-  it "treats leading hypens as minus signs" do
+  it "treats leading hyphen as minus signs" do
     "-20".to_r.should == Rational(-20, 1)
   end
 

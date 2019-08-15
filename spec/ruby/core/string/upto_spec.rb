@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "String#upto" do
   it "passes successive values, starting at self and ending at other_string, to the block" do
@@ -8,7 +8,7 @@ describe "String#upto" do
     a.should == ["*+", "*,", "*-", "*.", "*/", "*0", "*1", "*2", "*3"]
   end
 
-  it "calls the block once even when start eqals stop" do
+  it "calls the block once even when start equals stop" do
     a = []
     "abc".upto("abc") { |s| a << s }
     a.should == ["abc"]
@@ -53,13 +53,13 @@ describe "String#upto" do
   end
 
   it "raises a TypeError if other can't be converted to a string" do
-    lambda { "abc".upto(123) { }      }.should raise_error(TypeError)
-    lambda { "abc".upto(mock('x')){ } }.should raise_error(TypeError)
+    -> { "abc".upto(123) { }      }.should raise_error(TypeError)
+    -> { "abc".upto(mock('x')){ } }.should raise_error(TypeError)
   end
 
 
   it "does not work with symbols" do
-    lambda { "a".upto(:c).to_a }.should raise_error(TypeError)
+    -> { "a".upto(:c).to_a }.should raise_error(TypeError)
   end
 
   it "returns non-alphabetic characters in the ASCII range for single letters" do

@@ -1,6 +1,5 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/classes', __FILE__)
-require 'tempfile'
+require_relative '../../spec_helper'
+require_relative '../../fixtures/classes'
 
 describe :unixserver_new, shared: true do
   platform_is_not :windows do

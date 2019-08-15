@@ -18,6 +18,8 @@ module Bundler
       2.3
       2.4
       2.5
+      2.6
+      2.7
     ].freeze
 
     KNOWN_MAJOR_VERSIONS = KNOWN_MINOR_VERSIONS.map {|v| v.split(".", 2).first }.uniq.freeze
@@ -31,27 +33,34 @@ module Bundler
       mswin64
       rbx
       ruby
+      truffleruby
       x64_mingw
     ].freeze
 
     def ruby?
-      !mswin? && (!defined?(RUBY_ENGINE) || RUBY_ENGINE == "ruby" || RUBY_ENGINE == "rbx" || RUBY_ENGINE == "maglev")
+      return true if Bundler::GemHelpers.generic_local_platform == Gem::Platform::RUBY
+
+      !mswin? && (RUBY_ENGINE == "ruby" || RUBY_ENGINE == "rbx" || RUBY_ENGINE == "maglev" || RUBY_ENGINE == "truffleruby")
     end
 
     def mri?
-      !mswin? && (!defined?(RUBY_ENGINE) || RUBY_ENGINE == "ruby")
+      !mswin? && RUBY_ENGINE == "ruby"
     end
 
     def rbx?
-      ruby? && defined?(RUBY_ENGINE) && RUBY_ENGINE == "rbx"
+      ruby? && RUBY_ENGINE == "rbx"
     end
 
     def jruby?
-      defined?(RUBY_ENGINE) && RUBY_ENGINE == "jruby"
+      RUBY_ENGINE == "jruby"
     end
 
     def maglev?
-      defined?(RUBY_ENGINE) && RUBY_ENGINE == "maglev"
+      RUBY_ENGINE == "maglev"
+    end
+
+    def truffleruby?
+      RUBY_ENGINE == "truffleruby"
     end
 
     def mswin?

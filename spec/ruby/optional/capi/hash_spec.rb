@@ -1,4 +1,5 @@
-require File.expand_path('../spec_helper', __FILE__)
+require_relative 'spec_helper'
+require_relative '../../shared/hash/key_error'
 
 load_extension("hash")
 
@@ -35,7 +36,7 @@ describe "C-API Hash function" do
       obj = mock("rb_hash no to_int")
       obj.should_receive(:hash).and_return(nil)
 
-      lambda { @s.rb_hash(obj) }.should raise_error(TypeError)
+      -> { @s.rb_hash(obj) }.should raise_error(TypeError)
     end
   end
 
@@ -130,11 +131,17 @@ describe "C-API Hash function" do
 
     it "raises a KeyError if the key is not found and default is set" do
       @hsh.default = :d
-      lambda { @s.rb_hash_fetch(@hsh, :c) }.should raise_error(KeyError)
+      -> { @s.rb_hash_fetch(@hsh, :c) }.should raise_error(KeyError)
     end
 
     it "raises a KeyError if the key is not found and no default is set" do
-      lambda { @s.rb_hash_fetch(@hsh, :c) }.should raise_error(KeyError)
+      -> { @s.rb_hash_fetch(@hsh, :c) }.should raise_error(KeyError)
+    end
+
+    context "when key is not found" do
+      it_behaves_like :key_error, -> obj, key {
+        @s.rb_hash_fetch(obj, key)
+      }, { a: 1 }
     end
   end
 
@@ -204,6 +211,11 @@ describe "C-API Hash function" do
 
         @s.rb_hash_lookup2(hash, :chunky, 10).should == 10
       end
+
+      it "returns undefined if that is the default value specified" do
+        hsh = Hash.new(0)
+        @s.rb_hash_lookup2_default_undef(hsh, :chunky).should be_true
+      end
     end
   end
 
@@ -233,13 +245,13 @@ describe "C-API Hash function" do
     end
 
     it "raises a TypeError if the argument does not respond to #to_hash" do
-      lambda { @s.rb_Hash(42) }.should raise_error(TypeError)
+      -> { @s.rb_Hash(42) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if #to_hash does not return a hash" do
       h = BasicObject.new
       def h.to_hash; 42; end
-      lambda { @s.rb_Hash(h) }.should raise_error(TypeError)
+      -> { @s.rb_Hash(h) }.should raise_error(TypeError)
     end
   end
 end

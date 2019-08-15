@@ -1,4 +1,4 @@
-require File.expand_path('../spec_helper', __FILE__)
+require_relative 'spec_helper'
 require "stringio"
 
 load_extension("globals")
@@ -44,7 +44,7 @@ describe "CApiGlobalSpecs" do
   it "rb_define_readonly_variable should define a new readonly global variable" do
     @f.rb_define_readonly_variable("ro_gvar", 15)
     $ro_gvar.should == 15
-    lambda { $ro_gvar = 10 }.should raise_error(NameError)
+    -> { $ro_gvar = 10 }.should raise_error(NameError)
   end
 
   it "rb_define_hooked_variable should define a C hooked global variable" do
@@ -159,7 +159,7 @@ describe "CApiGlobalSpecs" do
     end
 
     after :each do
-      $, = @dollar_comma
+      suppress_warning {$, = @dollar_comma}
     end
 
     it "returns nil by default" do
@@ -167,7 +167,7 @@ describe "CApiGlobalSpecs" do
     end
 
     it "returns the value of $\\" do
-      $, = "foo"
+      suppress_warning {$, = "foo"}
       @f.rb_output_fs.should == "foo"
     end
   end

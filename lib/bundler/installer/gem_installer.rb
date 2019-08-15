@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "shellwords"
+
 module Bundler
   class GemInstaller
     attr_reader :spec, :standalone, :worker, :force, :installer
@@ -21,7 +23,7 @@ module Bundler
       raise
     rescue Errno::ENOSPC
       return false, out_of_space_message
-    rescue => e
+    rescue StandardError => e
       return false, specific_failure_message(e)
     end
 
@@ -44,12 +46,21 @@ module Bundler
     end
 
     def gem_install_message
-      "Make sure that `gem install #{spec.name} -v '#{spec.version}'` succeeds before bundling."
+      source = spec.source
+      return unless source.respond_to?(:remotes)
+
+      if source.remotes.size == 1
+        "Make sure that `gem install #{spec.name} -v '#{spec.version}' --source '#{source.remotes.first}'` succeeds before bundling."
+      else
+        "Make sure that `gem install #{spec.name} -v '#{spec.version}'` succeeds before bundling."
+      end
     end
 
     def spec_settings
       # Fetch the build settings, if there are any
-      Bundler.settings["build.#{spec.name}"]
+      if settings = Bundler.settings["build.#{spec.name}"]
+        Shellwords.shellsplit(settings)
+      end
     end
 
     def install

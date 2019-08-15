@@ -14,7 +14,6 @@ module Bundler
         @version = exemplary_spec.version
         @source = exemplary_spec.source
 
-        @required_by = []
         @activated_platforms = []
         @dependencies = nil
         @specs        = Hash.new do |specs, platform|
@@ -53,10 +52,6 @@ module Bundler
           metadata_dependencies(@specs[platform], platform)
         end
         dependencies.concat(metadata_dependencies).flatten
-      end
-
-      def platforms_for_dependency_named(dependency)
-        __dependencies.select {|_, deps| deps.map(&:name).include? dependency }.keys
       end
 
       def ==(other)
@@ -99,10 +94,10 @@ module Bundler
         return [] if !spec.is_a?(EndpointSpecification) && !spec.is_a?(Gem::Specification)
         dependencies = []
         if !spec.required_ruby_version.nil? && !spec.required_ruby_version.none?
-          dependencies << DepProxy.new(Gem::Dependency.new("ruby\0", spec.required_ruby_version), platform)
+          dependencies << DepProxy.new(Gem::Dependency.new("Ruby\0", spec.required_ruby_version), platform)
         end
         if !spec.required_rubygems_version.nil? && !spec.required_rubygems_version.none?
-          dependencies << DepProxy.new(Gem::Dependency.new("rubygems\0", spec.required_rubygems_version), platform)
+          dependencies << DepProxy.new(Gem::Dependency.new("RubyGems\0", spec.required_rubygems_version), platform)
         end
         dependencies
       end

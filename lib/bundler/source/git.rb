@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require "bundler/vendored_fileutils"
+require_relative "../vendored_fileutils"
 require "uri"
 
 module Bundler
   class Source
     class Git < Path
-      autoload :GitProxy, "bundler/source/git/git_proxy"
+      autoload :GitProxy, File.expand_path("git/git_proxy", __dir__)
 
       attr_reader :uri, :ref, :branch, :options, :submodules
 
@@ -21,6 +21,7 @@ module Bundler
         %w[ref branch tag revision].each {|k| options[k] = options[k].to_s if options[k] }
 
         @uri        = options["uri"] || ""
+        @safe_uri   = URICredentialsFilter.credential_filtered_uri(@uri)
         @branch     = options["branch"]
         @ref        = options["ref"] || options["branch"] || options["tag"] || "master"
         @submodules = options["submodules"]
@@ -77,7 +78,7 @@ module Bundler
                 nil
               end
 
-        "#{uri} (at #{at}#{rev})"
+        "#{@safe_uri} (at #{at}#{rev})"
       end
 
       def name
@@ -117,18 +118,19 @@ module Bundler
       def local_override!(path)
         return false if local?
 
+        original_path = path
         path = Pathname.new(path)
         path = path.expand_path(Bundler.root) unless path.relative?
 
         unless options["branch"] || Bundler.settings[:disable_local_branch_check]
           raise GitError, "Cannot use local override for #{name} at #{path} because " \
-            ":branch is not specified in Gemfile. Specify a branch or use " \
-            "`bundle config --delete` to remove the local override"
+            ":branch is not specified in Gemfile. Specify a branch or run " \
+            "`bundle config unset local.#{override_for(original_path)}` to remove the local override"
         end
 
         unless path.exist?
           raise GitError, "Cannot use local override for #{name} because #{path} " \
-            "does not exist. Check `bundle config --delete` to remove the local override"
+            "does not exist. Run `bundle config unset local.#{override_for(original_path)}` to remove the local override"
         end
 
         set_local!(path)
@@ -259,7 +261,11 @@ module Bundler
       end
 
       def requires_checkout?
-        allow_git_ops? && !local?
+        allow_git_ops? && !local? && !cached_revision_checked_out?
+      end
+
+      def cached_revision_checked_out?
+        cached_revision && cached_revision == revision && install_path.exist?
       end
 
       def base_name
@@ -308,12 +314,10 @@ module Bundler
       # no-op, since we validate when re-serializing the gemspec
       def validate_spec(_spec); end
 
-      if Bundler.rubygems.stubs_provide_full_functionality?
-        def load_gemspec(file)
-          stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
-          stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s.untaint
-          StubSpecification.from_stub(stub)
-        end
+      def load_gemspec(file)
+        stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
+        stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s.untaint
+        StubSpecification.from_stub(stub)
       end
 
       def git_scope
@@ -322,6 +326,10 @@ module Bundler
 
       def extension_cache_slug(_)
         extension_dir_name
+      end
+
+      def override_for(path)
+        Bundler.settings.local_overrides.key(path)
       end
     end
   end

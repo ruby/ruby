@@ -1,10 +1,10 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/code_loading', __FILE__)
-require File.expand_path('../shared/__LINE__', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/code_loading'
+require_relative 'shared/__LINE__'
 
 describe "The __LINE__ pseudo-variable" do
   it "raises a SyntaxError if assigned to" do
-    lambda { eval("__LINE__ = 1") }.should raise_error(SyntaxError)
+    -> { eval("__LINE__ = 1") }.should raise_error(SyntaxError)
   end
 
   before :each do

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 module KernelSpecs::M
   def self.extend_object(o)
@@ -46,20 +46,20 @@ describe "Kernel#extend" do
   end
 
   it "makes the class a kind_of? the argument" do
-    class C
+    c = Class.new do
       extend KernelSpecs::M
     end
-    (C.kind_of? KernelSpecs::M).should == true
+    (c.kind_of? KernelSpecs::M).should == true
   end
 
   it "raises an ArgumentError when no arguments given" do
-    lambda { Object.new.extend }.should raise_error(ArgumentError)
+    -> { Object.new.extend }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError when the argument is not a Module" do
     o = mock('o')
     klass = Class.new
-    lambda { o.extend(klass) }.should raise_error(TypeError)
+    -> { o.extend(klass) }.should raise_error(TypeError)
   end
 
   describe "on frozen instance" do
@@ -69,11 +69,11 @@ describe "Kernel#extend" do
     end
 
     it "raises an ArgumentError when no arguments given" do
-      lambda { @frozen.extend }.should raise_error(ArgumentError)
+      -> { @frozen.extend }.should raise_error(ArgumentError)
     end
 
-    it "raises a RuntimeError" do
-      lambda { @frozen.extend @module }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class}" do
+      -> { @frozen.extend @module }.should raise_error(frozen_error_class)
     end
   end
 end

@@ -1,6 +1,6 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 require 'net/http'
-require File.expand_path('../shared/body', __FILE__)
+require_relative 'shared/body'
 
 describe "Net::HTTPResponse#body" do
   it_behaves_like :net_httpresponse_body, :body

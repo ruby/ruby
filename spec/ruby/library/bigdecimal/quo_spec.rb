@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/quo', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/quo'
 require 'bigdecimal'
 
 describe "BigDecimal#quo" do
@@ -10,4 +10,3 @@ describe "BigDecimal#quo" do
     BigDecimal("NaN").quo(BigDecimal("1")).nan?.should == true
   end
 end
-

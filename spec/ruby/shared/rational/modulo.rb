@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe :rational_modulo, shared: true do
   it "returns the remainder when this value is divided by other" do
@@ -22,21 +22,21 @@ describe :rational_modulo, shared: true do
   end
 
   it "raises ZeroDivisionError on zero denominator" do
-    lambda {
+    -> {
       Rational(3, 5).send(@method, Rational(0, 1))
     }.should raise_error(ZeroDivisionError)
 
-    lambda {
+    -> {
       Rational(0, 1).send(@method, Rational(0, 1))
     }.should raise_error(ZeroDivisionError)
 
-    lambda {
+    -> {
       Rational(3, 5).send(@method, 0)
     }.should raise_error(ZeroDivisionError)
   end
 
   it "raises a ZeroDivisionError when the argument is 0.0" do
-    lambda {
+    -> {
       Rational(3, 5).send(@method, 0.0)
     }.should raise_error(ZeroDivisionError)
   end

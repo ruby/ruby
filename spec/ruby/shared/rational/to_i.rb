@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe :rational_to_i, shared: true do
   it "converts self to an Integer by truncation" do

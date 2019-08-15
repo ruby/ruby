@@ -1,11 +1,11 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/lambda', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/lambda'
 
 # The functionality of lambdas is specified in core/proc
 
 describe "Kernel.lambda" do
-  it_behaves_like(:kernel_lambda, :lambda)
+  it_behaves_like :kernel_lambda, :lambda
 
   it "is a private method" do
     Kernel.should have_private_instance_method(:lambda)
@@ -13,6 +13,21 @@ describe "Kernel.lambda" do
 
   it "creates a lambda-style Proc if given a literal block" do
     l = lambda { 42 }
+    l.lambda?.should be_true
+  end
+
+  it "creates a lambda-style Proc if given a literal block via #send" do
+    l = send(:lambda) { 42 }
+    l.lambda?.should be_true
+  end
+
+  it "creates a lambda-style Proc if given a literal block via #__send__" do
+    l = __send__(:lambda) { 42 }
+    l.lambda?.should be_true
+  end
+
+  it "creates a lambda-style Proc if given a literal block via Kernel.public_send" do
+    l = Kernel.public_send(:lambda) { 42 }
     l.lambda?.should be_true
   end
 
@@ -83,4 +98,3 @@ describe "Kernel.lambda" do
     KernelSpecs::Lambda.new.outer.should == :good
   end
 end
-

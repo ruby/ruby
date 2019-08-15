@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Integer#gcd" do
   it "returns self if equal to the argument" do
@@ -43,16 +43,27 @@ describe "Integer#gcd" do
     bignum.gcd(99).should == 99
   end
 
+  it "doesn't cause an integer overflow" do
+    [2 ** (1.size * 8 - 2), 0x8000000000000000].each do |max|
+      [max - 1, max, max + 1].each do |num|
+        num.gcd(num).should == num
+        (-num).gcd(num).should == num
+        (-num).gcd(-num).should == num
+        num.gcd(-num).should == num
+      end
+    end
+  end
+
   it "raises an ArgumentError if not given an argument" do
-    lambda { 12.gcd }.should raise_error(ArgumentError)
+    -> { 12.gcd }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if given more than one argument" do
-    lambda { 12.gcd(30, 20) }.should raise_error(ArgumentError)
+    -> { 12.gcd(30, 20) }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError unless the argument is an Integer" do
-    lambda { 39.gcd(3.8)   }.should raise_error(TypeError)
-    lambda { 45872.gcd([]) }.should raise_error(TypeError)
+    -> { 39.gcd(3.8)   }.should raise_error(TypeError)
+    -> { 45872.gcd([]) }.should raise_error(TypeError)
   end
 end

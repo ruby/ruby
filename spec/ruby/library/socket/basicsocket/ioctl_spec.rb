@@ -1,5 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require 'socket'
+require_relative '../spec_helper'
 
 describe "Socket::BasicSocket#ioctl" do
   platform_is :linux do

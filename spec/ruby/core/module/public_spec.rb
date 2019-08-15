@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/set_visibility', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/set_visibility'
 
 describe "Module#public" do
   it_behaves_like :set_visibility, :public
@@ -37,7 +37,7 @@ describe "Module#public" do
   end
 
   it "raises a NameError when given an undefined name" do
-    lambda do
+    -> do
       Module.new.send(:public, :undefined)
     end.should raise_error(NameError)
   end

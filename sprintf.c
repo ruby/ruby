@@ -11,8 +11,9 @@
 
 **********************************************************************/
 
-#include "internal.h"
+#include "ruby/encoding.h"
 #include "ruby/re.h"
+#include "internal.h"
 #include "id.h"
 #include <math.h>
 #include <stdarg.h>
@@ -202,7 +203,7 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *  any additional arguments.  Within the format string, any characters
  *  other than format sequences are copied to the result.
  *
- *  The syntax of a format sequence is follows.
+ *  The syntax of a format sequence is as follows.
  *
  *    %[flags][width][.precision]type
  *
@@ -676,6 +677,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	  case '\n':
 	  case '\0':
 	    p--;
+            /* fall through */
 	  case '%':
 	    if (flags != FNONE) {
 		rb_raise(rb_eArgError, "invalid format character - %%");
@@ -1274,7 +1276,7 @@ ruby_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
 static int
 ruby_do_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
 {
-    int ret;
+    ssize_t ret;
     rb_printf_buffer f;
 
     f._flags = __SWR | __SSTR;
@@ -1282,9 +1284,12 @@ ruby_do_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
     f._bf._size = f._w = str ? (n - 1) : 0;
     f.vwrite = BSD__sfvwrite;
     f.vextra = 0;
-    ret = (int)BSD_vfprintf(&f, fmt, ap);
+    ret = BSD_vfprintf(&f, fmt, ap);
     if (str) *f._p = 0;
-    return ret;
+#if SIZEOF_SIZE_T > SIZEOF_INT
+    if (n > INT_MAX) return INT_MAX;
+#endif
+    return (int)ret;
 }
 
 int
@@ -1373,6 +1378,12 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
 # undef LITERAL
 	}
 	value = rb_inspect(value);
+    }
+    else if (SYMBOL_P(value)) {
+	value = rb_sym2str(value);
+	if (sign == ' ' && !rb_str_symname_p(value)) {
+	    value = rb_str_inspect(value);
+	}
     }
     else {
 	value = rb_obj_as_string(value);

@@ -123,7 +123,7 @@ module Bundler
           @required_ruby_version = Gem::Requirement.new(v)
         end
       end
-    rescue => e
+    rescue StandardError => e
       raise GemspecError, "There was an error parsing the metadata for the gem #{name} (#{version}): #{e.class}\n#{e}\nThe metadata was #{data.inspect}"
     end
 

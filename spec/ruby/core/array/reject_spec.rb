@@ -1,17 +1,17 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/enumeratorize', __FILE__)
-require File.expand_path('../shared/delete_if', __FILE__)
-require File.expand_path('../../enumerable/shared/enumeratorized', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/enumeratorize'
+require_relative 'shared/delete_if'
+require_relative '../enumerable/shared/enumeratorized'
 
 describe "Array#reject" do
   it "returns a new array without elements for which block is true" do
     ary = [1, 2, 3, 4, 5]
     ary.reject { true }.should == []
     ary.reject { false }.should == ary
-    ary.reject { false }.object_id.should_not == ary.object_id
+    ary.reject { false }.should_not equal ary
     ary.reject { nil }.should == ary
-    ary.reject { nil }.object_id.should_not == ary.object_id
+    ary.reject { nil }.should_not equal ary
     ary.reject { 5 }.should == []
     ary.reject { |i| i < 3 }.should == [3, 4, 5]
     ary.reject { |i| i % 2 == 0 }.should == [1, 3, 5]
@@ -103,12 +103,38 @@ describe "Array#reject!" do
     ArraySpecs.frozen_array.reject!.should be_an_instance_of(Enumerator)
   end
 
-  it "raises a RuntimeError on a frozen array" do
-    lambda { ArraySpecs.frozen_array.reject! {} }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    -> { ArraySpecs.frozen_array.reject! {} }.should raise_error(frozen_error_class)
   end
 
-  it "raises a RuntimeError on an empty frozen array" do
-    lambda { ArraySpecs.empty_frozen_array.reject! {} }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on an empty frozen array" do
+    -> { ArraySpecs.empty_frozen_array.reject! {} }.should raise_error(frozen_error_class)
+  end
+
+  it "does not truncate the array is the block raises an exception" do
+    a = [1, 2, 3]
+    begin
+      a.reject! { raise StandardError, 'Oops' }
+    rescue
+    end
+
+    a.should == [1, 2, 3]
+  end
+
+  it "only removes elements for which the block returns true, keeping the element which raised an error." do
+    a = [1, 2, 3, 4]
+    begin
+      a.reject! do |x|
+        case x
+        when 2 then true
+        when 3 then raise StandardError, 'Oops'
+        else false
+        end
+      end
+    rescue StandardError
+    end
+
+    a.should == [1, 3, 4]
   end
 
   it_behaves_like :enumeratorize, :reject!

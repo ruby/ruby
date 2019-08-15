@@ -1,5 +1,5 @@
 require 'rexml/document'
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 # According to the MRI documentation (http://www.ruby-doc.org/stdlib/libdoc/rexml/rdoc/index.html),
 # clone's behavior "should be obvious". Apparently "obvious" means cloning

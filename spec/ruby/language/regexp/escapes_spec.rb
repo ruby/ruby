@@ -1,6 +1,6 @@
 # -*- encoding: binary -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "Regexps with escape characters" do
   it "they're supported" do
@@ -48,7 +48,7 @@ describe "Regexps with escape characters" do
     /\x0AA/.match("\nA").to_a.should == ["\nA"]
     /\xAG/.match("\nG").to_a.should == ["\nG"]
     # Non-matches
-    lambda { eval('/\xG/') }.should raise_error(SyntaxError)
+    -> { eval('/\xG/') }.should raise_error(SyntaxError)
 
     # \x{7HHHHHHH} wide hexadecimal char (character code point value)
   end
@@ -67,11 +67,11 @@ describe "Regexps with escape characters" do
     /\cJ/.match("\r").should be_nil
 
     # Parsing precedence
-    /\cJ+/.match("\n\n").to_a.should == ["\n\n"] # Quantifers apply to entire escape sequence
+    /\cJ+/.match("\n\n").to_a.should == ["\n\n"] # Quantifiers apply to entire escape sequence
     /\\cJ/.match("\\cJ").to_a.should == ["\\cJ"]
-    lambda { eval('/[abc\x]/') }.should raise_error(SyntaxError) # \x is treated as a escape sequence even inside a character class
+    -> { eval('/[abc\x]/') }.should raise_error(SyntaxError) # \x is treated as a escape sequence even inside a character class
     # Syntax error
-    lambda { eval('/\c/') }.should raise_error(SyntaxError)
+    -> { eval('/\c/') }.should raise_error(SyntaxError)
 
     # \cx          control char          (character code point value)
     # \C-x         control char          (character code point value)

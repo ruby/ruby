@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'cgi'
 
 describe "CGI#out" do
@@ -46,6 +46,6 @@ describe "CGI#out when passed no block" do
   end
 
   it "raises a LocalJumpError" do
-    lambda { @cgi.out }.should raise_error(LocalJumpError)
+    -> { @cgi.out }.should raise_error(LocalJumpError)
   end
 end

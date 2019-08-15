@@ -1,6 +1,6 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../spec_helper', __FILE__)
-require File.expand_path('../fixtures/server', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'spec_helper'
+require_relative 'fixtures/server'
 
 describe "Net::FTP#delete" do
   before :each do
@@ -24,36 +24,36 @@ describe "Net::FTP#delete" do
 
   it "raises a Net::FTPTempError when the response code is 450" do
     @server.should_receive(:dele).and_respond("450 Requested file action not taken.")
-    lambda { @ftp.delete("test.file") }.should raise_error(Net::FTPTempError)
+    -> { @ftp.delete("test.file") }.should raise_error(Net::FTPTempError)
   end
 
   it "raises a Net::FTPPermError when the response code is 550" do
     @server.should_receive(:dele).and_respond("550 Requested action not taken.")
-    lambda { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPPermError when the response code is 500" do
     @server.should_receive(:dele).and_respond("500 Syntax error, command unrecognized.")
-    lambda { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPPermError when the response code is 501" do
     @server.should_receive(:dele).and_respond("501 Syntax error in parameters or arguments.")
-    lambda { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPPermError when the response code is 502" do
     @server.should_receive(:dele).and_respond("502 Command not implemented.")
-    lambda { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPTempError when the response code is 421" do
     @server.should_receive(:dele).and_respond("421 Service not available, closing control connection.")
-    lambda { @ftp.delete("test.file") }.should raise_error(Net::FTPTempError)
+    -> { @ftp.delete("test.file") }.should raise_error(Net::FTPTempError)
   end
 
   it "raises a Net::FTPPermError when the response code is 530" do
     @server.should_receive(:dele).and_respond("530 Not logged in.")
-    lambda { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
   end
 end

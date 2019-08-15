@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/vendored_thor"
+require_relative "../vendored_thor"
 
 module Bundler
   module UI
@@ -10,9 +10,7 @@ module Bundler
       attr_writer :shell
 
       def initialize(options = {})
-        if options["no-color"] || !$stdout.tty?
-          Thor::Base.shell = Thor::Shell::Basic
-        end
+        Thor::Base.shell = options["no-color"] ? Thor::Shell::Basic : nil
         @shell = Thor::Base.shell.new
         @level = ENV["DEBUG"] ? "debug" : "info"
         @warning_history = []
@@ -35,14 +33,12 @@ module Bundler
         return if @warning_history.include? msg
         @warning_history << msg
 
-        return tell_err(msg, :yellow, newline) if Bundler.feature_flag.error_on_stderr?
-        tell_me(msg, :yellow, newline)
+        tell_err(msg, :yellow, newline)
       end
 
       def error(msg, newline = nil)
         return unless level("error")
-        return tell_err(msg, :red, newline) if Bundler.feature_flag.error_on_stderr?
-        tell_me(msg, :red, newline)
+        tell_err(msg, :red, newline)
       end
 
       def debug(msg, newline = nil)
@@ -109,7 +105,9 @@ module Bundler
       end
 
       def tell_err(message, color = nil, newline = nil)
-        newline = message.to_s !~ /( |\t)\Z/ unless newline
+        return if @shell.send(:stderr).closed?
+
+        newline ||= message.to_s !~ /( |\t)\Z/
         message = word_wrap(message) if newline.is_a?(Hash) && newline[:wrap]
 
         color = nil if color && !$stderr.tty?

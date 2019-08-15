@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "IO#stat" do
   before :each do
@@ -11,7 +11,7 @@ describe "IO#stat" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.stat }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.stat }.should raise_error(IOError)
   end
 
   it "returns a File::Stat object for the stream" do

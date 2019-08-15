@@ -1,5 +1,5 @@
-require File.expand_path('../../../shared/rational/fdiv', __FILE__)
+require_relative '../../shared/rational/fdiv'
 
 describe "Rational#fdiv" do
-  it_behaves_like(:rational_fdiv, :fdiv)
+  it_behaves_like :rational_fdiv, :fdiv
 end

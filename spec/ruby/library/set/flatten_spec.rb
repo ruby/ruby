@@ -1,4 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/set_like'
 require 'set'
 
 describe "Set#flatten" do
@@ -12,7 +13,13 @@ describe "Set#flatten" do
 
   it "raises an ArgumentError when self is recursive" do
     (set = Set[]) << set
-    lambda { set.flatten }.should raise_error(ArgumentError)
+    -> { set.flatten }.should raise_error(ArgumentError)
+  end
+
+  context "when Set contains a Set-like object" do
+    it "returns a copy of self with each included Set-like object flattened" do
+      Set[SetSpecs::SetLike.new([1])].flatten.should == Set[1]
+    end
   end
 end
 
@@ -35,6 +42,12 @@ describe "Set#flatten!" do
 
   it "raises an ArgumentError when self is recursive" do
     (set = Set[]) << set
-    lambda { set.flatten! }.should raise_error(ArgumentError)
+    -> { set.flatten! }.should raise_error(ArgumentError)
+  end
+
+  context "when Set contains a Set-like object" do
+    it "flattens self, including Set-like objects" do
+      Set[SetSpecs::SetLike.new([1])].flatten!.should == Set[1]
+    end
   end
 end

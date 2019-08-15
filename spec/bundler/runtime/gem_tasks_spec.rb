@@ -19,7 +19,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
 
   it "includes the relevant tasks" do
     with_gem_path_as(Spec::Path.base_system_gems.to_s) do
-      sys_exec "#{rake} -T"
+      sys_exec "#{rake} -T", "RUBYOPT" => "-I#{bundler_path}"
     end
 
     expect(err).to eq("")
@@ -36,7 +36,9 @@ RSpec.describe "require 'bundler/gem_tasks'" do
   end
 
   it "adds 'pkg' to rake/clean's CLOBBER" do
-    require "bundler/gem_tasks"
-    expect(CLOBBER).to include("pkg")
+    with_gem_path_as(Spec::Path.base_system_gems.to_s) do
+      sys_exec! %(#{rake} -e 'load "Rakefile"; puts CLOBBER.inspect')
+    end
+    expect(out).to eq '["pkg"]'
   end
 end

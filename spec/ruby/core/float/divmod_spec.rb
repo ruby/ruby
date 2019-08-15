@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Float#divmod" do
   it "returns an [quotient, modulus] from dividing self by other" do
@@ -18,22 +18,22 @@ describe "Float#divmod" do
 
   # Behaviour established as correct in r23953
   it "raises a FloatDomainError if self is NaN" do
-    lambda { nan_value.divmod(1) }.should raise_error(FloatDomainError)
+    -> { nan_value.divmod(1) }.should raise_error(FloatDomainError)
   end
 
   # Behaviour established as correct in r23953
   it "raises a FloatDomainError if other is NaN" do
-    lambda { 1.divmod(nan_value) }.should raise_error(FloatDomainError)
+    -> { 1.divmod(nan_value) }.should raise_error(FloatDomainError)
   end
 
   # Behaviour established as correct in r23953
   it "raises a FloatDomainError if self is Infinity" do
-    lambda { infinity_value.divmod(1) }.should raise_error(FloatDomainError)
+    -> { infinity_value.divmod(1) }.should raise_error(FloatDomainError)
   end
 
   it "raises a ZeroDivisionError if other is zero" do
-    lambda { 1.0.divmod(0)   }.should raise_error(ZeroDivisionError)
-    lambda { 1.0.divmod(0.0) }.should raise_error(ZeroDivisionError)
+    -> { 1.0.divmod(0)   }.should raise_error(ZeroDivisionError)
+    -> { 1.0.divmod(0.0) }.should raise_error(ZeroDivisionError)
   end
 
   # redmine #5276"

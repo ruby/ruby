@@ -1,6 +1,6 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../shared/constants', __FILE__)
-require File.expand_path('../../../../core/file/shared/read', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'shared/constants'
+require_relative '../../../core/file/shared/read'
 
 describe "Digest::SHA384.file" do
 
@@ -34,10 +34,10 @@ describe "Digest::SHA384.file" do
   it_behaves_like :file_read_directory, :file, Digest::SHA384
 
   it "raises a Errno::ENOENT when passed a path that does not exist" do
-    lambda { Digest::SHA384.file("") }.should raise_error(Errno::ENOENT)
+    -> { Digest::SHA384.file("") }.should raise_error(Errno::ENOENT)
   end
 
   it "raises a TypeError when passed nil" do
-    lambda { Digest::SHA384.file(nil) }.should raise_error(TypeError)
+    -> { Digest::SHA384.file(nil) }.should raise_error(TypeError)
   end
 end

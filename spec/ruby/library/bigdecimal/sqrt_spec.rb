@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 require 'bigdecimal'
 
 describe "BigDecimal#sqrt" do
@@ -41,37 +41,37 @@ describe "BigDecimal#sqrt" do
   end
 
   it "raises ArgumentError when no argument is given" do
-    lambda {
+    -> {
       @one.sqrt
     }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if a negative number is given" do
-    lambda {
+    -> {
       @one.sqrt(-1)
     }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if 2 arguments are given" do
-    lambda {
+    -> {
       @one.sqrt(1, 1)
     }.should raise_error(ArgumentError)
   end
 
   it "raises TypeError if nil is given" do
-    lambda {
+    -> {
       @one.sqrt(nil)
     }.should raise_error(TypeError)
   end
 
   it "raises TypeError if a string is given" do
-    lambda {
+    -> {
       @one.sqrt("stuff")
     }.should raise_error(TypeError)
   end
 
   it "raises TypeError if a plain Object is given" do
-    lambda {
+    -> {
       @one.sqrt(Object.new)
     }.should raise_error(TypeError)
   end
@@ -82,23 +82,23 @@ describe "BigDecimal#sqrt" do
   end
 
   it "raises FloatDomainError on negative values" do
-    lambda {
+    -> {
       BigDecimal('-1').sqrt(10)
     }.should raise_error(FloatDomainError)
   end
 
-  it "returns positive infitinity for infinity" do
+  it "returns positive infinity for infinity" do
     @infinity.sqrt(1).should == @infinity
   end
 
   it "raises FloatDomainError for negative infinity" do
-    lambda {
+    -> {
       @infinity_minus.sqrt(1)
     }.should raise_error(FloatDomainError)
   end
 
   it "raises FloatDomainError for NaN" do
-    lambda {
+    -> {
       @nan.sqrt(1)
     }.should raise_error(FloatDomainError)
   end

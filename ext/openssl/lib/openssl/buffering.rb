@@ -316,20 +316,15 @@ module OpenSSL::Buffering
     @wbuffer << s
     @wbuffer.force_encoding(Encoding::BINARY)
     @sync ||= false
-    if @sync or @wbuffer.size > BLOCK_SIZE or idx = @wbuffer.rindex($/)
-      remain = idx ? idx + $/.size : @wbuffer.length
-      nwritten = 0
-      while remain > 0
-        str = @wbuffer[nwritten,remain]
+    if @sync or @wbuffer.size > BLOCK_SIZE
+      until @wbuffer.empty?
         begin
-          nwrote = syswrite(str)
+          nwrote = syswrite(@wbuffer)
         rescue Errno::EAGAIN
           retry
         end
-        remain -= nwrote
-        nwritten += nwrote
+        @wbuffer[0, nwrote] = ""
       end
-      @wbuffer[0,nwritten] = ""
     end
   end
 
@@ -409,9 +404,7 @@ module OpenSSL::Buffering
     end
     args.each{|arg|
       s << arg.to_s
-      if $/ && /\n\z/ !~ s
-        s << "\n"
-      end
+      s.sub!(/(?<!\n)\z/, "\n")
     }
     do_write(s)
     nil

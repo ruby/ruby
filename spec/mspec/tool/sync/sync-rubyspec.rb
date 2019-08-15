@@ -1,6 +1,6 @@
 IMPLS = {
   truffleruby: {
-    git: "https://github.com/graalvm/truffleruby.git",
+    git: "https://github.com/oracle/truffleruby.git",
     from_commit: "f10ab6988d",
   },
   jruby: {
@@ -13,11 +13,13 @@ IMPLS = {
   mri: {
     git: "https://github.com/ruby/ruby.git",
     master: "trunk",
-    merge_message: "Update to ruby/spec@",
   },
 }
 
 MSPEC = ARGV.delete('--mspec')
+
+CHECK_LAST_MERGE = ENV['CHECK_LAST_MERGE'] != 'false'
+TEST_TRUNK = ENV['TEST_TRUNK'] != 'false'
 
 MSPEC_REPO = File.expand_path("../../..", __FILE__)
 raise MSPEC_REPO if !Dir.exist?(MSPEC_REPO) or !Dir.exist?("#{MSPEC_REPO}/.git")
@@ -64,7 +66,7 @@ class RubyImplementation
   end
 
   def last_merge_message
-    message = @data[:merge_message] || "Merge ruby/spec commit"
+    message = @data[:merge_message] || "Update to ruby/spec@"
     message.gsub!("ruby/spec", "ruby/mspec") if MSPEC
     message
   end
@@ -145,7 +147,7 @@ def rebase_commits(impl)
 
       commit_date = Time.at(Integer(commit_timestamp))
       days_since_last_merge = (NOW-commit_date) / 86400
-      if days_since_last_merge > 60
+      if CHECK_LAST_MERGE and days_since_last_merge > 60
         raise "#{days_since_last_merge.floor} days since last merge, probably wrong commit"
       end
 
@@ -160,43 +162,35 @@ end
 def test_new_specs
   require "yaml"
   Dir.chdir(SOURCE_REPO) do
-    if MSPEC
-      sh "bundle", "exec", "rspec"
+    versions = YAML.load_file(".travis.yml")
+    versions = if versions.include? "matrix"
+      versions["matrix"]["include"].map { |job| job["rvm"] }
     else
-      versions = YAML.load_file(".travis.yml")
-      versions = versions["matrix"]["include"].map { |job| job["rvm"] }
-      versions.delete "ruby-head"
-      min_version, max_version = versions.minmax
-
-      run_rubyspec = -> version {
-        command = "chruby #{version} && ../mspec/bin/mspec -j"
-        sh ENV["SHELL"], "-c", command
-      }
-      run_rubyspec[min_version]
-      run_rubyspec[max_version]
-      run_rubyspec["trunk"]
+      versions["rvm"]
     end
+    versions = versions.grep(/^\d+\./) # Test on MRI
+    min_version, max_version = versions.minmax
+
+    test_command = MSPEC ? "bundle exec rspec" : "../mspec/bin/mspec -j"
+
+    run_test = -> version {
+      command = "chruby #{version} && #{test_command}"
+      sh ENV["SHELL"], "-c", command
+    }
+
+    run_test[min_version]
+    run_test[max_version]
+    run_test["trunk"] if TEST_TRUNK
   end
 end
 
 def verify_commits(impl)
   puts
   Dir.chdir(SOURCE_REPO) do
-    history = `git log master...`
-    history.lines.slice_before(/^commit \h{40}$/).each do |commit, *message|
-      commit = commit.chomp.split.last
-      message = message.join
-      if /\W(#\d+)/ === message
-        puts "Commit #{commit} contains an unqualified issue number: #{$1}"
-        puts "Replace it with #{impl.repo_org}/#{impl.repo_name}#{$1}"
-        sh "git", "rebase", "-i", "#{commit}^"
-      end
-    end
-
     puts "Manually check commit messages:"
     print "Press enter >"
     STDIN.gets
-    sh "git", "log", "master..."
+    system "git", "log", "master..."
   end
 end
 
@@ -204,6 +198,7 @@ def fast_forward_master(impl)
   Dir.chdir(SOURCE_REPO) do
     sh "git", "checkout", "master"
     sh "git", "merge", "--ff-only", "#{impl.name}-rebased"
+    sh "git", "branch", "--delete", "#{impl.name}-rebased"
   end
 end
 

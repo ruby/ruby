@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "File.split" do
   before :each do
@@ -44,17 +44,18 @@ describe "File.split" do
   end
 
   it "raises an ArgumentError when not passed a single argument" do
-    lambda { File.split }.should raise_error(ArgumentError)
-    lambda { File.split('string', 'another string') }.should raise_error(ArgumentError)
+    -> { File.split }.should raise_error(ArgumentError)
+    -> { File.split('string', 'another string') }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError if the argument is not a String type" do
-    lambda { File.split(1) }.should raise_error(TypeError)
+    -> { File.split(1) }.should raise_error(TypeError)
   end
 
   it "coerces the argument with to_str if it is not a String type" do
-    class C; def to_str; "/rubinius/better/than/ruby"; end; end
-    File.split(C.new).should == ["/rubinius/better/than", "ruby"]
+    obj = mock("str")
+    obj.should_receive(:to_str).and_return("/one/two/three")
+    File.split(obj).should == ["/one/two", "three"]
   end
 
   it "accepts an object that has a #to_path method" do

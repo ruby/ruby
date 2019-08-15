@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocMarkupAttributeManager < RDoc::TestCase
 
@@ -36,12 +36,12 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
   end
 
   def crossref(text)
-    crossref_bitmap = @am.attributes.bitmap_for(:_SPECIAL_) |
+    crossref_bitmap = @am.attributes.bitmap_for(:_REGEXP_HANDLING_) |
                       @am.attributes.bitmap_for(:CROSSREF)
 
-    [ @am.changed_attribute_by_name([], [:CROSSREF, :_SPECIAL_]),
-      RDoc::Markup::Special.new(crossref_bitmap, text),
-      @am.changed_attribute_by_name([:CROSSREF, :_SPECIAL_], [])
+    [ @am.changed_attribute_by_name([], [:CROSSREF, :_REGEXP_HANDLING_]),
+      RDoc::Markup::RegexpHandling.new(crossref_bitmap, text),
+      @am.changed_attribute_by_name([:CROSSREF, :_REGEXP_HANDLING_], [])
     ]
   end
 
@@ -58,12 +58,12 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
     assert(tags.has_key?("test"))
   end
 
-  def test_add_special
-    @am.add_special "WikiWord", :WIKIWORD
-    specials = @am.special
+  def test_add_regexp_handling
+    @am.add_regexp_handling "WikiWord", :WIKIWORD
+    regexp_handlings = @am.regexp_handlings
 
-    assert_equal 1, specials.size
-    assert specials.assoc "WikiWord"
+    assert_equal 1, regexp_handlings.size
+    assert regexp_handlings.assoc "WikiWord"
   end
 
   def test_add_word_pair
@@ -340,8 +340,8 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
                  @am.flow(str))
   end
 
-  def test_special
-    @am.add_special(RDoc::CrossReference::CROSSREF_REGEXP, :CROSSREF)
+  def test_regexp_handling
+    @am.add_regexp_handling(RDoc::CrossReference::CROSSREF_REGEXP, :CROSSREF)
 
     #
     # The apostrophes in "cats'" and "dogs'" suppress the flagging of these

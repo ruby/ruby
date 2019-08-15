@@ -1,6 +1,6 @@
 # -*- encoding: us-ascii -*-
 
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe "Enumerator::Lazy#initialize" do
   before :each do
@@ -48,16 +48,16 @@ describe "Enumerator::Lazy#initialize" do
   end
 
   it "sets given size to own size if the given size is a Proc" do
-    @uninitialized.send(:initialize, @receiver, lambda { 200 }) {}.size.should == 200
+    @uninitialized.send(:initialize, @receiver, -> { 200 }) {}.size.should == 200
   end
 
   it "raises an ArgumentError when block is not given" do
-    lambda {  @uninitialized.send :initialize, @receiver }.should raise_error(ArgumentError)
+    -> {  @uninitialized.send :initialize, @receiver }.should raise_error(ArgumentError)
   end
 
   describe "on frozen instance" do
     it "raises a RuntimeError" do
-      lambda {  @uninitialized.freeze.send(:initialize, @receiver) {} }.should raise_error(RuntimeError)
+      -> {  @uninitialized.freeze.send(:initialize, @receiver) {} }.should raise_error(RuntimeError)
     end
   end
 end

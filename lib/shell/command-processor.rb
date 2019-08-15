@@ -12,10 +12,10 @@
 
 require "e2mmap"
 
-require "shell/error"
-require "shell/filter"
-require "shell/system-command"
-require "shell/builtin-command"
+require_relative "error"
+require_relative "filter"
+require_relative "system-command"
+require_relative "builtin-command"
 
 class Shell
   # In order to execute a command on your OS, you need to define it as a
@@ -343,7 +343,7 @@ class Shell
     # %pwd, %cwd -> @pwd
     def notify(*opts)
       Shell.notify(*opts) {|mes|
-        yield mes if iterator?
+        yield mes if block_given?
 
         mes.gsub!("%pwd", "#{@cwd}")
         mes.gsub!("%cwd", "#{@cwd}")
@@ -437,7 +437,7 @@ class Shell
       ali = ali.id2name if ali.kind_of?(Symbol)
       command = command.id2name if command.kind_of?(Symbol)
       begin
-        if iterator?
+        if block_given?
           @alias_map[ali.intern] = proc
 
           eval((d = %Q[def #{ali}(*opts)

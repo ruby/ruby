@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "Regexps with grouping" do
   it "support ()" do
@@ -12,7 +12,7 @@ describe "Regexps with grouping" do
   end
 
   it "raises a SyntaxError when parentheses aren't balanced" do
-   lambda { eval "/(hay(st)ack/" }.should raise_error(SyntaxError)
+   -> { eval "/(hay(st)ack/" }.should raise_error(SyntaxError)
   end
 
   it "supports (?: ) (non-capturing group)" do

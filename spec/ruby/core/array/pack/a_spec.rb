@@ -1,14 +1,16 @@
-# -*- encoding: ascii-8bit -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
-require File.expand_path('../shared/string', __FILE__)
+# -*- encoding: binary -*-
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
+require_relative 'shared/string'
+require_relative 'shared/taint'
 
 describe "Array#pack with format 'A'" do
   it_behaves_like :array_pack_basic, 'A'
   it_behaves_like :array_pack_basic_non_float, 'A'
   it_behaves_like :array_pack_no_platform, 'A'
   it_behaves_like :array_pack_string, 'A'
+  it_behaves_like :array_pack_taint, 'A'
 
   it "adds all the bytes to the output when passed the '*' modifier" do
     ["abc"].pack("A*").should == "abc"
@@ -36,6 +38,7 @@ describe "Array#pack with format 'a'" do
   it_behaves_like :array_pack_basic_non_float, 'a'
   it_behaves_like :array_pack_no_platform, 'a'
   it_behaves_like :array_pack_string, 'a'
+  it_behaves_like :array_pack_taint, 'a'
 
   it "adds all the bytes to the output when passed the '*' modifier" do
     ["abc"].pack("a*").should == "abc"

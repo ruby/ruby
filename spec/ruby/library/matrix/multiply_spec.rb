@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 require 'matrix'
 
 describe "Matrix#*" do
@@ -32,7 +32,7 @@ describe "Matrix#*" do
   end
 
   it "raises a Matrix::ErrDimensionMismatch if the matrices are different sizes" do
-    lambda { @a * Matrix[ [1] ] }.should raise_error(Matrix::ErrDimensionMismatch)
+    -> { @a * Matrix[ [1] ] }.should raise_error(Matrix::ErrDimensionMismatch)
   end
 
   it "returns a zero matrix if (nx0) * (0xn)" do
@@ -52,10 +52,10 @@ describe "Matrix#*" do
   end
 
   it "raises a TypeError if other is of wrong type" do
-    lambda { @a * nil        }.should raise_error(TypeError)
-    lambda { @a * "a"        }.should raise_error(TypeError)
-    lambda { @a * [ [1, 2] ] }.should raise_error(TypeError)
-    lambda { @a * Object.new }.should raise_error(TypeError)
+    -> { @a * nil        }.should raise_error(TypeError)
+    -> { @a * "a"        }.should raise_error(TypeError)
+    -> { @a * [ [1, 2] ] }.should raise_error(TypeError)
+    -> { @a * Object.new }.should raise_error(TypeError)
   end
 
   describe "for a subclass of Matrix" do

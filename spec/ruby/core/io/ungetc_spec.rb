@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "IO#ungetc" do
   before :each do
@@ -29,6 +29,22 @@ describe "IO#ungetc" do
     @io.getc.should == ?Q
     @io.ungetc(99)
     @io.getc.should == ?c
+  end
+
+  it "interprets the codepoint in the external encoding" do
+    @io.set_encoding(Encoding::UTF_8)
+    @io.ungetc(233)
+    c = @io.getc
+    c.encoding.should == Encoding::UTF_8
+    c.should == "é"
+    c.bytes.should == [195, 169]
+
+    @io.set_encoding(Encoding::IBM437)
+    @io.ungetc(130)
+    c = @io.getc
+    c.encoding.should == Encoding::IBM437
+    c.bytes.should == [130]
+    c.encode(Encoding::UTF_8).should == "é"
   end
 
   it "pushes back one character when invoked at the end of the stream" do
@@ -84,7 +100,7 @@ describe "IO#ungetc" do
   it "makes subsequent unbuffered operations to raise IOError" do
     @io.getc
     @io.ungetc(100)
-    lambda { @io.sysread(1) }.should raise_error(IOError)
+    -> { @io.sysread(1) }.should raise_error(IOError)
   end
 
   it "does not affect the stream and returns nil when passed nil" do
@@ -114,6 +130,6 @@ describe "IO#ungetc" do
   it "raises IOError on closed stream" do
     @io.getc
     @io.close
-    lambda { @io.ungetc(100) }.should raise_error(IOError)
+    -> { @io.ungetc(100) }.should raise_error(IOError)
   end
 end

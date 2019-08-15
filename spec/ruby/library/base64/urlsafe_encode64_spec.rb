@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 require 'base64'
 
@@ -13,10 +13,8 @@ describe "Base64#urlsafe_encode64" do
     encoded.should == 'IkJlaW5nIGRpc2ludGVncmF0ZWQgbWFrZXMgbWUgdmUtcnkgYW4tZ3J5ISIgPGh1ZmYsIGh1ZmY-'
   end
 
-  ruby_version_is "2.3" do
-    it "makes padding optional" do
-      Base64.urlsafe_encode64("1", padding: false).should == "MQ"
-      Base64.urlsafe_encode64("1").should == "MQ=="
-    end
+  it "makes padding optional" do
+    Base64.urlsafe_encode64("1", padding: false).should == "MQ"
+    Base64.urlsafe_encode64("1").should == "MQ=="
   end
 end

@@ -33,6 +33,9 @@ end
 Logging::message "=== Checking for system dependent stuff... ===\n"
 have_library("nsl", "t_open")
 have_library("socket", "socket")
+if $mswin || $mingw
+  have_library("ws2_32")
+end
 
 Logging::message "=== Checking for required stuff... ===\n"
 result = pkg_config("openssl") && have_header("openssl/ssl.h")
@@ -111,6 +114,10 @@ engines.each { |name|
   OpenSSL.check_func_or_macro("ENGINE_load_#{name}", "openssl/engine.h")
 }
 
+if ($mswin || $mingw) && have_macro("LIBRESSL_VERSION_NUMBER", "openssl/opensslv.h")
+  $defs.push("-DNOCRYPT")
+end
+
 # added in 1.0.2
 have_func("EC_curve_nist2nid")
 have_func("X509_REVOKED_dup")
@@ -122,8 +129,11 @@ OpenSSL.check_func_or_macro("SSL_get_server_tmp_key", "openssl/ssl.h")
 have_func("SSL_is_server")
 
 # added in 1.1.0
+if !have_struct_member("SSL", "ctx", "openssl/ssl.h") ||
+    try_static_assert("LIBRESSL_VERSION_NUMBER >= 0x2070000fL", "openssl/opensslv.h")
+  $defs.push("-DHAVE_OPAQUE_OPENSSL")
+end
 have_func("CRYPTO_lock") || $defs.push("-DHAVE_OPENSSL_110_THREADING_API")
-have_struct_member("SSL", "ctx", "openssl/ssl.h") || $defs.push("-DHAVE_OPAQUE_OPENSSL")
 have_func("BN_GENCB_new")
 have_func("BN_GENCB_free")
 have_func("BN_GENCB_get_arg")

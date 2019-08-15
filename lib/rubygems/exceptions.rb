@@ -1,8 +1,6 @@
 # frozen_string_literal: true
-# TODO: the documentation in here is terrible.
-#
-# Each exception needs a brief description and the scenarios where it is
-# likely to be raised
+
+require 'rubygems/deprecate'
 
 ##
 # Base exception class for RubyGems.  All exception raised by RubyGems are a
@@ -11,9 +9,12 @@ class Gem::Exception < RuntimeError
 
   ##
   #--
-  # TODO: remove in RubyGems 3, nobody sets this
+  # TODO: remove in RubyGems 4, nobody sets this
 
   attr_accessor :source_exception # :nodoc:
+
+  extend Gem::Deprecate
+  deprecate :source_exception, :none, 2018, 12
 
 end
 
@@ -32,7 +33,7 @@ class Gem::DependencyResolutionError < Gem::DependencyError
 
   attr_reader :conflict
 
-  def initialize conflict
+  def initialize(conflict)
     @conflict = conflict
     a, b = conflicting_dependencies
 
@@ -49,7 +50,18 @@ end
 # Raised when attempting to uninstall a gem that isn't in GEM_HOME.
 
 class Gem::GemNotInHomeException < Gem::Exception
+
   attr_accessor :spec
+
+end
+
+###
+# Raised when removing a gem with the uninstall command fails
+
+class Gem::UninstallError < Gem::Exception
+
+  attr_accessor :spec
+
 end
 
 class Gem::DocumentError < Gem::Exception; end
@@ -66,7 +78,7 @@ class Gem::FilePermissionError < Gem::Exception
 
   attr_reader :directory
 
-  def initialize directory
+  def initialize(directory)
     @directory = directory
 
     super "You don't have write permissions for the #{directory} directory."
@@ -77,7 +89,9 @@ end
 ##
 # Used to raise parsing and loading errors
 class Gem::FormatException < Gem::Exception
+
   attr_accessor :file_path
+
 end
 
 class Gem::GemNotFoundException < Gem::Exception; end
@@ -126,7 +140,7 @@ class Gem::ImpossibleDependenciesError < Gem::Exception
   attr_reader :conflicts
   attr_reader :request
 
-  def initialize request, conflicts
+  def initialize(request, conflicts)
     @request   = request
     @conflicts = conflicts
 
@@ -155,10 +169,12 @@ end
 
 class Gem::InstallError < Gem::Exception; end
 class Gem::RuntimeRequirementNotMetError < Gem::InstallError
+
   attr_accessor :suggestion
   def message
     [suggestion, super].compact.join("\n\t")
   end
+
 end
 
 ##
@@ -238,7 +254,7 @@ class Gem::UnsatisfiableDependencyError < Gem::DependencyError
   # Creates a new UnsatisfiableDependencyError for the unsatisfiable
   # Gem::Resolver::DependencyRequest +dep+
 
-  def initialize dep, platform_mismatch=nil
+  def initialize(dep, platform_mismatch=nil)
     if platform_mismatch and !platform_mismatch.empty?
       plats = platform_mismatch.map { |x| x.platform.to_s }.sort.uniq
       super "Unable to resolve dependency: No match for '#{dep}' on this platform. Found: #{plats.join(', ')}"

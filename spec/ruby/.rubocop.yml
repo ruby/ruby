@@ -10,6 +10,11 @@ AllCops:
 Layout/TrailingWhitespace:
   Enabled: true
 
+Layout/TrailingBlankLines:
+  Enabled: true
+  Exclude:
+    - library/coverage/fixtures/some_class.rb
+
 Lint:
   Enabled: true
 
@@ -32,7 +37,7 @@ Lint/LiteralAsCondition:
 Lint/UnneededRequireStatement:
   Enabled: false
 
-Lint/RescueWithoutErrorClass:
+Lint/UnneededSplatExpansion:
   Enabled: false
 
 Lint/UnifiedInteger:
@@ -50,7 +55,6 @@ Lint/UselessAssignment:
 Lint/UselessComparison:
   Enabled: false
 
-# The cop registers too many false positives to `.should == something`
 Lint/Void:
   Enabled: false
 
@@ -58,6 +62,56 @@ Lint/EmptyExpression:
   Exclude:
     - 'language/**/*.rb'
 
+Lint/EmptyWhen:
+  Exclude:
+    - language/case_spec.rb
+    - optional/capi/spec_helper.rb
+
+Lint/FormatParameterMismatch:
+  Exclude:
+    - 'core/kernel/shared/sprintf.rb'
+    - 'core/string/modulo_spec.rb'
+
+Lint/NestedMethodDefinition:
+  Exclude:
+    - language/def_spec.rb
+    - language/fixtures/def.rb
+
+Lint/UnreachableCode:
+  Exclude:
+    - 'core/enumerator/lazy/fixtures/classes.rb'
+    - 'core/kernel/catch_spec.rb'
+    - 'core/kernel/throw_spec.rb'
+    - 'language/break_spec.rb'
+    - 'language/fixtures/break.rb'
+    - 'language/fixtures/break_lambda_toplevel.rb'
+    - 'language/fixtures/break_lambda_toplevel_block.rb'
+    - 'language/fixtures/break_lambda_toplevel_method.rb'
+    - 'language/fixtures/return.rb'
+    - 'language/next_spec.rb'
+    - 'language/return_spec.rb'
+    - 'optional/capi/kernel_spec.rb'
+    - 'shared/kernel/raise.rb'
+
 Lint/UriRegexp:
   Exclude:
     - 'library/uri/regexp_spec.rb'
+
+Lint/Debugger:
+  Exclude:
+    - 'core/binding/fixtures/irb.rb'
+
+Style/Lambda:
+  Enabled: true
+  EnforcedStyle: literal
+  Exclude:
+    - 'language/lambda_spec.rb'
+    - 'language/proc_spec.rb'
+    - 'core/kernel/lambda_spec.rb'
+
+Style/EmptyLambdaParameter:
+  Enabled: true
+
+Style/StabbyLambdaParentheses:
+  Enabled: true
+  EnforcedStyle: require_no_parentheses

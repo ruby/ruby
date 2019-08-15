@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Method#to_proc" do
   before :each do
@@ -55,6 +55,10 @@ describe "Method#to_proc" do
     x.baz(1,2,3,&m).should == [1,2,3]
   end
 
+  it "returns a proc whose binding has the same receiver as the method" do
+    @meth.receiver.should == @meth.to_proc.binding.receiver
+  end
+
   # #5926
   it "returns a proc that can receive a block" do
     x = Object.new
@@ -85,5 +89,16 @@ describe "Method#to_proc" do
     array = [[1, 2]]
     array.each(&obj)
     ScratchPad.recorded.should == [[1, 2]]
+  end
+
+  it "returns a proc that properly invokes module methods with super" do
+    m1 = Module.new { def foo(ary); ary << :m1; end; }
+    m2 = Module.new { def foo(ary = []); super(ary); ary << :m2; end; }
+    c2 = Class.new do
+      include m1
+      include m2
+    end
+
+    c2.new.method(:foo).to_proc.call.should == %i[m1 m2]
   end
 end

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "IO#each_byte" do
   before :each do
@@ -12,7 +12,7 @@ describe "IO#each_byte" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.each_byte {} }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.each_byte {} }.should raise_error(IOError)
   end
 
   it "yields each byte" do

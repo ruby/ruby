@@ -18,7 +18,7 @@ module Bundler::Molinillo
     # @param [Array<Object>] required_by @see {#required_by}
     def initialize(dependency, required_by = [])
       @dependency = dependency
-      @required_by = required_by
+      @required_by = required_by.uniq
       super()
     end
 
@@ -80,7 +80,7 @@ module Bundler::Molinillo
       @specification_provider = specification_provider
     end
 
-    require 'bundler/vendor/molinillo/lib/molinillo/delegates/specification_provider'
+    require_relative 'delegates/specification_provider'
     include Delegates::SpecificationProvider
 
     # @return [String] An error message that includes requirement trees,
@@ -101,9 +101,14 @@ module Bundler::Molinillo
       printable_requirement = opts.delete(:printable_requirement) { proc { |req| req.to_s } }
       additional_message_for_conflict = opts.delete(:additional_message_for_conflict) { proc {} }
       version_for_spec = opts.delete(:version_for_spec) { proc(&:to_s) }
+      incompatible_version_message_for_conflict = opts.delete(:incompatible_version_message_for_conflict) do
+        proc do |name, _conflict|
+          %(#{solver_name} could not find compatible versions for #{possibility_type} "#{name}":)
+        end
+      end
 
       conflicts.sort.reduce(''.dup) do |o, (name, conflict)|
-        o << %(\n#{solver_name} could not find compatible versions for #{possibility_type} "#{name}":\n)
+        o << "\n" << incompatible_version_message_for_conflict.call(name, conflict) << "\n"
         if conflict.locked_requirement
           o << %(  In snapshot (#{name_for_locking_dependency_source}):\n)
           o << %(    #{printable_requirement.call(conflict.locked_requirement)}\n)

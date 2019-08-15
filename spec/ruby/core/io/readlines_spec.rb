@@ -1,23 +1,23 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/readlines', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/readlines'
 
 describe "IO#readlines" do
   before :each do
     @io = IOSpecs.io_fixture "lines.txt"
-    @orig_exteenc = Encoding.default_external
+    @orig_extenc = Encoding.default_external
     Encoding.default_external = Encoding::UTF_8
   end
 
   after :each do
     @io.close unless @io.closed?
-    Encoding.default_external = @orig_exteenc
+    Encoding.default_external = @orig_extenc
   end
 
   it "raises an IOError if the stream is closed" do
     @io.close
-    lambda { @io.readlines }.should raise_error(IOError)
+    -> { @io.readlines }.should raise_error(IOError)
   end
 
   describe "when passed no arguments" do
@@ -112,7 +112,7 @@ describe "IO#readlines" do
       lines.should == ["hello\n", "line2\n"]
     end
 
-    with_feature :fork do
+    platform_is_not :windows do
       it "gets data from a fork when passed -" do
         lines = IO.readlines("|-")
 
@@ -138,14 +138,14 @@ describe "IO#readlines" do
   end
 
   it "raises an IOError if the stream is opened for append only" do
-    lambda do
-      File.open(@name, fmode("a:utf-8")) { |f| f.readlines }
+    -> do
+      File.open(@name, "a:utf-8") { |f| f.readlines }
     end.should raise_error(IOError)
   end
 
   it "raises an IOError if the stream is opened for write only" do
-    lambda do
-      File.open(@name, fmode("w:utf-8")) { |f| f.readlines }
+    -> do
+      File.open(@name, "w:utf-8") { |f| f.readlines }
     end.should raise_error(IOError)
   end
 end
@@ -201,10 +201,10 @@ describe "IO.readlines" do
     lines.all? { |s| s.encoding == Encoding::UTF_16 }.should be_true
   end
 
-  it "ignores the default internal encoding if the external encoding is ASCII-8BIT" do
-    Encoding.default_external = Encoding::ASCII_8BIT
+  it "ignores the default internal encoding if the external encoding is BINARY" do
+    Encoding.default_external = Encoding::BINARY
     Encoding.default_internal = Encoding::UTF_8
     lines = IO.readlines(@name)
-    lines.all? { |s| s.encoding == Encoding::ASCII_8BIT }.should be_true
+    lines.all? { |s| s.encoding == Encoding::BINARY }.should be_true
   end
 end

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Module#class_variable_defined?" do
   it "returns true if a class variable with the given name is defined in self" do
@@ -42,11 +42,11 @@ describe "Module#class_variable_defined?" do
   it "raises a NameError when the given name is not allowed" do
     c = Class.new
 
-    lambda {
+    -> {
       c.class_variable_defined?(:invalid_name)
     }.should raise_error(NameError)
 
-    lambda {
+    -> {
       c.class_variable_defined?("@invalid_name")
     }.should raise_error(NameError)
   end
@@ -60,12 +60,12 @@ describe "Module#class_variable_defined?" do
   it "raises a TypeError when the given names can't be converted to strings using to_str" do
     c = Class.new { class_variable_set :@@class_var, "test" }
     o = mock('123')
-    lambda {
+    -> {
       c.class_variable_defined?(o)
     }.should raise_error(TypeError)
 
     o.should_receive(:to_str).and_return(123)
-    lambda {
+    -> {
       c.class_variable_defined?(o)
     }.should raise_error(TypeError)
   end

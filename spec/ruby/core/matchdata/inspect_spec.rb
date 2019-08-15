@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "MatchData#inspect" do
   before :each do
@@ -13,5 +13,11 @@ describe "MatchData#inspect" do
     # yeah, hardcoding the inspect output is not ideal, but in this case
     # it makes perfect sense. See JRUBY-4558 for example.
     @match_data.inspect.should == '#<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">'
+  end
+
+  it "returns a human readable representation of named captures" do
+    match_data = "abc def ghi".match(/(?<first>\w+)\s+(?<last>\w+)\s+(\w+)/)
+
+    match_data.inspect.should == '#<MatchData "abc def ghi" first:"abc" last:"def">'
   end
 end

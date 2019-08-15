@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Module#private_constant" do
   it "can only be passed constant names defined in the target (self) module" do
@@ -6,7 +6,7 @@ describe "Module#private_constant" do
     cls1.const_set :Foo, true
     cls2 = Class.new(cls1)
 
-    lambda do
+    -> do
       cls2.send :private_constant, :Foo
     end.should raise_error(NameError)
   end
@@ -16,7 +16,7 @@ describe "Module#private_constant" do
     cls.const_set :Foo, true
     cls.send :private_constant, "Foo"
 
-    lambda { cls::Foo }.should raise_error(NameError)
+    -> { cls::Foo }.should raise_error(NameError)
   end
 
   it "accepts multiple names" do
@@ -26,7 +26,7 @@ describe "Module#private_constant" do
 
     mod.send :private_constant, :Foo, :Bar
 
-    lambda {mod::Foo}.should raise_error(NameError)
-    lambda {mod::Bar}.should raise_error(NameError)
+    -> {mod::Foo}.should raise_error(NameError)
+    -> {mod::Bar}.should raise_error(NameError)
   end
 end

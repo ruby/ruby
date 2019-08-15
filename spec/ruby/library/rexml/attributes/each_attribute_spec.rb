@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'rexml/document'
 
 describe "REXML::Attributes#each_attribute" do
@@ -20,6 +20,3 @@ describe "REXML::Attributes#each_attribute" do
     attributes.last.should == ns_uri
   end
 end
-
-
-

@@ -1,6 +1,6 @@
 #!ruby
 
-require_relative 'vpath'
+require_relative 'lib/vpath'
 
 class Checksum
   def initialize(vpath)
@@ -67,6 +67,6 @@ class Checksum
   def self.update(argv)
     k = new(VPath.new)
     k.source, k.target, *argv = k.def_options.parse(*argv)
-    k.update {|k| yield(k, *argv)}
+    k.update {|_| yield(_, *argv)}
   end
 end

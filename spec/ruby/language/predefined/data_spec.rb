@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "The DATA constant" do
   it "exists when the main script contains __END__" do
@@ -21,6 +21,25 @@ describe "The DATA constant" do
     ap = fixture(__FILE__, "print_data.rb")
     str = ruby_exe(fixture(__FILE__, "data_only.rb"), options: "-r#{ap}")
     str.chomp.should == "data only"
+  end
+
+  it "returns a File object with the right offset" do
+    ruby_exe(fixture(__FILE__, "data_offset.rb")).should == "File\n121\n"
+  end
+
+  it "is set even if there is no data after __END__" do
+    ruby_exe(fixture(__FILE__, "empty_data.rb")).should == "31\n\"\"\n"
+  end
+
+  it "is set even if there is no newline after __END__" do
+    path = tmp("no_newline_data.rb")
+    code = File.binread(fixture(__FILE__, "empty_data.rb"))
+    touch(path, "wb") { |f| f.write code.chomp }
+    begin
+      ruby_exe(path).should == "30\n\"\"\n"
+    ensure
+      rm_r path
+    end
   end
 
   it "rewinds to the head of the main script" do

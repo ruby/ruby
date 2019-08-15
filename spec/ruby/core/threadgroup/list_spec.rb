@@ -1,17 +1,16 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
 
 describe "ThreadGroup#list" do
   it "returns the list of threads in the group" do
-    chan = Channel.new
-    th1 = Thread.new { chan << :go; sleep }
-    chan.receive.should == :go
+    q = Queue.new
+    th1 = Thread.new { q << :go; sleep }
+    q.pop.should == :go
     tg = ThreadGroup.new
     tg.add(th1)
     tg.list.should include(th1)
 
-    th2 = Thread.new { chan << :go; sleep }
-    chan.receive.should == :go
+    th2 = Thread.new { q << :go; sleep }
+    q.pop.should == :go
 
     tg.add(th2)
     (tg.list & [th1, th2]).should include(th1, th2)

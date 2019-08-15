@@ -2,24 +2,45 @@
 
 module Bundler
   class CLI::Add
-    def initialize(options, gem_name)
-      @gem_name = gem_name
+    attr_reader :gems, :options, :version
+
+    def initialize(options, gems)
+      @gems = gems
       @options = options
-      @options[:group] = @options[:group].split(",").map(&:strip) if !@options[:group].nil? && !@options[:group].empty?
+      @options[:group] = options[:group].split(",").map(&:strip) unless options[:group].nil?
+      @version = options[:version].split(",").map(&:strip) unless options[:version].nil?
     end
 
     def run
-      version = @options[:version].nil? ? nil : @options[:version].split(",").map(&:strip)
+      validate_options!
+      inject_dependencies
+      perform_bundle_install unless options["skip-install"]
+    end
 
-      unless version.nil?
-        version.each do |v|
-          raise InvalidOption, "Invalid gem requirement pattern '#{v}'" unless Gem::Requirement::PATTERN =~ v.to_s
-        end
-      end
-      dependency = Bundler::Dependency.new(@gem_name, version, @options)
+  private
 
-      Injector.inject([dependency], :conservative_versioning => @options[:version].nil?) # Perform conservative versioning only when version is not specified
+    def perform_bundle_install
       Installer.install(Bundler.root, Bundler.definition)
+    end
+
+    def inject_dependencies
+      dependencies = gems.map {|g| Bundler::Dependency.new(g, version, options) }
+
+      Injector.inject(dependencies,
+        :conservative_versioning => options[:version].nil?, # Perform conservative versioning only when version is not specified
+        :optimistic => options[:optimistic],
+        :strict => options[:strict])
+    end
+
+    def validate_options!
+      raise InvalidOption, "You can not specify `--strict` and `--optimistic` at the same time." if options[:strict] && options[:optimistic]
+
+      # raise error when no gems are specified
+      raise InvalidOption, "Please specify gems to add." if gems.empty?
+
+      version.to_a.each do |v|
+        raise InvalidOption, "Invalid gem requirement pattern '#{v}'" unless Gem::Requirement::PATTERN =~ v.to_s
+      end
     end
   end
 end

@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'rexml/document'
 
 describe "REXML::Node#find_first_recursive" do

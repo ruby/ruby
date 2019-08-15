@@ -29,6 +29,8 @@ class IMAPResponseParserTest < Test::Unit::TestCase
 EOF
     }.call
     assert_equal [:Haschildren], response.data.attr
+  ensure
+    $SAFE = 0
   end
 
   def test_flag_list_too_many_flags

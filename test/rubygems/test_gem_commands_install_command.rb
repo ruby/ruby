@@ -55,7 +55,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
     a2_pre = specs['a-2.a']
 
     @cmd.handle_options [a2_pre.name, '--version', a2_pre.version.to_s,
-                         "--no-ri", "--no-rdoc"]
+                         "--no-document"]
     assert @cmd.options[:prerelease]
     assert @cmd.options[:version].satisfied_by?(a2_pre.version)
 
@@ -96,6 +96,64 @@ class TestGemCommandsInstallCommand < Gem::TestCase
     assert_match "1 gem installed", @ui.output
   end
 
+  def test_execute_local_dependency_nonexistent
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'foo', 2, 'bar' => '0.5'
+    end
+
+    @cmd.options[:domain] = :local
+
+    FileUtils.mv specs['foo-2'].cache_file, @tempdir
+
+    @cmd.options[:args] = ['foo']
+
+    use_ui @ui do
+      orig_dir = Dir.pwd
+      begin
+        Dir.chdir @tempdir
+        e = assert_raises Gem::MockGemUi::TermError do
+          @cmd.execute
+        end
+        assert_equal 2, e.exit_code
+      ensure
+        Dir.chdir orig_dir
+      end
+    end
+
+    expected = <<-EXPECTED
+ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in any repository
+    EXPECTED
+
+    assert_equal expected, @ui.error
+  end
+
+  def test_execute_local_dependency_nonexistent_ignore_dependencies
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'foo', 2, 'bar' => '0.5'
+    end
+
+    @cmd.options[:domain] = :local
+    @cmd.options[:ignore_dependencies] = true
+
+    FileUtils.mv specs['foo-2'].cache_file, @tempdir
+
+    @cmd.options[:args] = ['foo']
+
+    use_ui @ui do
+      orig_dir = Dir.pwd
+      begin
+        Dir.chdir orig_dir
+        assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+          @cmd.execute
+        end
+      ensure
+        Dir.chdir orig_dir
+      end
+    end
+
+    assert_match "1 gem installed", @ui.output
+  end
+
   def test_execute_local_transitive_prerelease
     specs = spec_fetcher do |fetcher|
       fetcher.download 'a', 2, 'b' => "2.a", 'c' => '3'
@@ -131,6 +189,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
 
   def test_execute_no_user_install
     skip 'skipped on MS Windows (chmod has no effect)' if win_platform?
+    skip 'skipped in root privilege' if Process.uid.zero?
 
     specs = spec_fetcher do |fetcher|
       fetcher.gem 'a', 2
@@ -177,6 +236,25 @@ class TestGemCommandsInstallCommand < Gem::TestCase
     assert_match(/ould not find a valid gem 'no_such_gem'/, @ui.error)
   end
 
+  def test_execute_local_missing_ignore_dependencies
+    spec_fetcher
+
+    @cmd.options[:domain] = :local
+    @cmd.options[:ignore_dependencies] = true
+
+    @cmd.options[:args] = %w[no_such_gem]
+
+    use_ui @ui do
+      e = assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+      assert_equal 2, e.exit_code
+    end
+
+    # HACK no repository was checked
+    assert_match(/ould not find a valid gem 'no_such_gem'/, @ui.error)
+  end
+
   def test_execute_no_gem
     @cmd.options[:args] = %w[]
 
@@ -198,6 +276,38 @@ class TestGemCommandsInstallCommand < Gem::TestCase
     end
 
     assert_match(/ould not find a valid gem 'nonexistent'/, @ui.error)
+  end
+
+  def test_execute_dependency_nonexistent
+    spec_fetcher do |fetcher|
+      fetcher.spec 'foo', 2, 'bar' => '0.5'
+    end
+
+    @cmd.options[:args] = ['foo']
+
+    use_ui @ui do
+      e = assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+
+      assert_equal 2, e.exit_code
+    end
+
+    expected = <<-EXPECTED
+ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in any repository
+    EXPECTED
+
+    assert_equal expected, @ui.error
+  end
+
+  def test_execute_http_proxy
+    use_ui @ui do
+      e = assert_raises ArgumentError, @ui.error do
+        @cmd.handle_options %w[-p=foo.bar.com]
+      end
+
+      assert_match "Invalid uri scheme for =foo.bar.com\nPreface URLs with one of [\"http://\", \"https://\", \"file://\", \"s3://\"]", e.message
+    end
   end
 
   def test_execute_bad_source
@@ -360,6 +470,23 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_equal %w[a-2.a], @cmd.installed_specs.map { |spec| spec.full_name }
   end
 
+  def test_execute_with_version_specified_by_colon
+    spec_fetcher do |fetcher|
+      fetcher.download 'a', 1
+      fetcher.download 'a', 2
+    end
+
+    @cmd.options[:args] = %w[a:1]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-1], @cmd.installed_specs.map { |spec| spec.full_name }
+  end
+
   def test_execute_prerelease_skipped_when_non_pre_available
     spec_fetcher do |fetcher|
       fetcher.gem 'a', '2.pre'
@@ -379,7 +506,6 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_rdoc
-    skip if RUBY_VERSION <= "1.8.7"
     specs = spec_fetcher do |fetcher|
       fetcher.gem 'a', 2
     end
@@ -413,6 +539,42 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_path_exists File.join(a2.doc_dir, 'ri')
     assert_path_exists File.join(a2.doc_dir, 'rdoc')
+  end
+
+  def test_execute_rdoc_with_path
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
+
+    Gem.done_installing(&Gem::RDoc.method(:generation_hook))
+
+    @cmd.options[:document] = %w[rdoc ri]
+    @cmd.options[:domain] = :local
+    @cmd.options[:install_dir] = 'whatever'
+
+    a2 = specs['a-2']
+    FileUtils.mv a2.cache_file, @tempdir
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      # Don't use Dir.chdir with a block, it warnings a lot because
+      # of a downstream Dir.chdir with a block
+      old = Dir.getwd
+
+      begin
+        Dir.chdir @tempdir
+        assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+          @cmd.execute
+        end
+      ensure
+        Dir.chdir old
+      end
+    end
+
+    wait_for_child_process_to_exit
+
+    assert_path_exists 'whatever/doc/a-2', 'documentation not installed'
   end
 
   def test_execute_saves_build_args
@@ -451,7 +613,6 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal args, a2.build_args
   end
-
 
   def test_execute_remote
     spec_fetcher do |fetcher|
@@ -580,10 +741,30 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_empty @cmd.installed_specs
 
-    msg = "ERROR:  Can't use --version w/ multiple gems. Use name:ver instead."
+    msg = "ERROR:  Can't use --version with multiple gems. You can specify multiple gems with" \
+      " version requirements using `gem install 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
 
     assert_empty @ui.output
     assert_equal msg, @ui.error.chomp
+  end
+
+  def test_execute_two_version_specified_by_colon
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+      fetcher.gem 'a', 2
+      fetcher.gem 'b', 1
+      fetcher.gem 'b', 2
+    end
+
+    @cmd.options[:args] = %w[a:1 b:1]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-1 b-1], @cmd.installed_specs.map { |spec| spec.full_name }
   end
 
   def test_execute_conservative
@@ -646,6 +827,23 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.install_gem 'a', '>= 0'
 
     assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+  end
+
+  def test_install_gem_ignore_dependencies_remote_platform_local
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 3
+
+      fetcher.gem 'a', 3 do |s|
+        s.platform = local
+      end
+    end
+
+    @cmd.options[:ignore_dependencies] = true
+
+    @cmd.install_gem 'a', '>= 0'
+
+    assert_equal %W[a-3-#{local}], @cmd.installed_specs.map { |spec| spec.full_name }
   end
 
   def test_install_gem_ignore_dependencies_specific_file
@@ -1035,6 +1233,118 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.handle_options %w[--without test,development]
 
     assert_equal [:test, :development], @cmd.options[:without_groups]
+  end
+
+  def test_explain_platform_local
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2
+
+      fetcher.spec 'a', 2 do |s|
+        s.platform = local
+      end
+    end
+
+    @cmd.options[:explain] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Gems to install:", out.shift
+    assert_equal "  a-2-#{local}", out.shift
+    assert_empty out
+  end
+
+  def test_explain_platform_local_ignore_dependencies
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 3
+
+      fetcher.spec 'a', 3 do |s|
+        s.platform = local
+      end
+    end
+
+    @cmd.options[:ignore_dependencies] = true
+    @cmd.options[:explain] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Gems to install:", out.shift
+    assert_equal "  a-3-#{local}", out.shift
+    assert_empty out
+  end
+
+  def test_explain_platform_ruby
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2
+
+      fetcher.spec 'a', 2 do |s|
+        s.platform = local
+      end
+    end
+
+    # equivalent to --platform=ruby
+    Gem.platforms = [Gem::Platform::RUBY]
+
+    @cmd.options[:explain] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Gems to install:", out.shift
+    assert_equal "  a-2", out.shift
+    assert_empty out
+  end
+
+  def test_explain_platform_ruby_ignore_dependencies
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 3
+
+      fetcher.spec 'a', 3 do |s|
+        s.platform = local
+      end
+    end
+
+    # equivalent to --platform=ruby
+    Gem.platforms = [Gem::Platform::RUBY]
+
+    @cmd.options[:ignore_dependencies] = true
+    @cmd.options[:explain] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Gems to install:", out.shift
+    assert_equal "  a-3", out.shift
+    assert_empty out
   end
 
 end

@@ -1,7 +1,7 @@
-# -*- encoding: ascii-8bit -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
+# -*- encoding: binary -*-
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
 
 describe "String#unpack with format '@'" do
   it_behaves_like :string_unpack_basic, '@'
@@ -24,6 +24,6 @@ describe "String#unpack with format '@'" do
   end
 
   it "raises an ArgumentError if the count exceeds the size of the String" do
-    lambda { "\x01\x02\x03\x04".unpack("C2@5C") }.should raise_error(ArgumentError)
+    -> { "\x01\x02\x03\x04".unpack("C2@5C") }.should raise_error(ArgumentError)
   end
 end

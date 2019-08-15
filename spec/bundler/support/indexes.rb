@@ -66,6 +66,7 @@ module Spec
       search = Bundler::GemVersionPromoter.new(@locked, unlock).tap do |s|
         s.level = opts.first
         s.strict = opts.include?(:strict)
+        s.prerelease_specified = Hash[@deps.map {|d| [d.name, d.requirement.prerelease?] }]
       end
       should_resolve_and_include specs, [@base, search]
     end
@@ -76,7 +77,7 @@ module Spec
         gem "rack-mount", %w[0.4 0.5 0.5.1 0.5.2 0.6]
 
         # --- Pre-release support
-        gem "rubygems\0", ["1.3.2"]
+        gem "RubyGems\0", ["1.3.2"]
 
         # --- Rails
         versions "1.2.3 2.2.3 2.3.5 3.0.0.beta 3.0.0.beta1" do |version|
@@ -399,6 +400,21 @@ module Spec
         end
 
         gem("d", %w[1.0.0 2.0.0])
+      end
+    end
+
+    def optional_prereleases_index
+      build_index do
+        gem("a", %w[1.0.0])
+
+        gem("a", "2.0.0") do
+          dep "b", ">= 2.0.0.pre"
+        end
+
+        gem("b", %w[0.9.0 1.5.0 2.0.0.pre])
+
+        # --- Pre-release support
+        gem "RubyGems\0", ["1.3.2"]
       end
     end
   end

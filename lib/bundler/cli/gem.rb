@@ -11,7 +11,7 @@ module Bundler
   class CLI::Gem
     TEST_FRAMEWORK_VERSIONS = {
       "rspec" => "3.0",
-      "minitest" => "5.0"
+      "minitest" => "5.0",
     }.freeze
 
     attr_reader :options, :gem_name, :thor, :name, :target
@@ -57,7 +57,7 @@ module Bundler
         :ext              => options[:ext],
         :exe              => options[:exe],
         :bundler_version  => bundler_dependency_version,
-        :github_username  => github_username.empty? ? "[USERNAME]" : github_username
+        :github_username  => github_username.empty? ? "[USERNAME]" : github_username,
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -69,7 +69,7 @@ module Bundler
         "Rakefile.tt" => "Rakefile",
         "README.md.tt" => "README.md",
         "bin/console.tt" => "bin/console",
-        "bin/setup.tt" => "bin/setup"
+        "bin/setup.tt" => "bin/setup",
       }
 
       executables = %w[
@@ -105,7 +105,7 @@ module Bundler
       if ask_and_set(:mit, "Do you want to license your code permissively under the MIT license?",
         "This means that any other developer or company will be legally allowed to use your code " \
         "for free as long as they admit you created it. You can read more about the MIT license " \
-        "at http://choosealicense.com/licenses/mit.")
+        "at https://choosealicense.com/licenses/mit.")
         config[:mit] = true
         Bundler.ui.info "MIT License enabled in config"
         templates.merge!("LICENSE.txt.tt" => "LICENSE.txt")
@@ -118,7 +118,7 @@ module Bundler
         "of enforcing it, so be sure that you are prepared to do that. Be sure that your email " \
         "address is specified as a contact in the generated code of conduct so that people know " \
         "who to contact in case of a violation. For suggestions about " \
-        "how to enforce codes of conduct, see http://bit.ly/coc-enforcement.")
+        "how to enforce codes of conduct, see https://bit.ly/coc-enforcement.")
         config[:coc] = true
         Bundler.ui.info "Code of conduct enabled in config"
         templates.merge!("CODE_OF_CONDUCT.md.tt" => "CODE_OF_CONDUCT.md")
@@ -158,6 +158,9 @@ module Bundler
 
       # Open gemspec in editor
       open_editor(options["edit"], target.join("#{name}.gemspec")) if options[:edit]
+
+      Bundler.ui.info "Gem '#{name}' was successfully created. " \
+        "For more information on making a RubyGem visit https://bundler.io/guides/creating_gem.html"
     rescue Errno::EEXIST => e
       raise GenericSystemCallError.new(e, "There was a conflict while creating the new gem.")
     end

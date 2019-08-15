@@ -1,31 +1,56 @@
 # frozen_string_literal: true
 
 require "rubygems/user_interaction"
-require "support/path" unless defined?(Spec::Path)
+require_relative "path"
+require "fileutils"
 
 module Spec
   module Rubygems
-    DEPS = begin
-      deps = {
-        # rack 2.x requires Ruby version >= 2.2.2.
-        # artifice doesn't support rack 2.x now.
-        # TODO: revert to `< 2` once https://github.com/rack/rack/issues/1168 is
-        # addressed
-        "rack" => "1.6.6",
-        # rack-test 0.7.0 dropped 1.8.7 support
-        # https://github.com/rack-test/rack-test/issues/193#issuecomment-314230318
-        "rack-test" => "< 0.7.0",
-        "artifice" => "~> 0.6.0",
-        "compact_index" => "~> 0.11.0",
-        "sinatra" => "~> 1.4.7",
-        # Rake version has to be consistent for tests to pass
-        "rake" => "10.0.2",
-        # 3.0.0 breaks 1.9.2 specs
-        "builder" => "2.1.2",
-      }
+    DEV_DEPS = {
+      "automatiek" => "~> 0.2.0",
+      "rake" => "~> 12.0",
+      "ronn" => "~> 0.7.3",
+      "rspec" => "~> 3.6",
+      "rubocop" => "= 0.74.0",
+      "rubocop-performance" => "= 1.4.0",
+    }.freeze
+
+    DEPS = {
+      # artifice doesn't support rack 2.x now.
+      "rack" => "< 2.0",
+      "rack-test" => "~> 1.1",
+      "artifice" => "~> 0.6.0",
+      "compact_index" => "~> 0.11.0",
+      "sinatra" => "~> 1.4.7",
+      # Rake version has to be consistent for tests to pass
+      "rake" => "12.3.2",
+      "builder" => "~> 3.2",
       # ruby-graphviz is used by the viz tests
-      deps["ruby-graphviz"] = nil if RUBY_VERSION >= "1.9.3"
-      deps
+      "ruby-graphviz" => ">= 0.a",
+    }.freeze
+
+    def self.dev_setup
+      deps = DEV_DEPS
+
+      # JRuby can't build ronn, so we skip that
+      deps.delete("ronn") if RUBY_ENGINE == "jruby"
+
+      install_gems(deps)
+    end
+
+    def self.gem_load(gem_name, bin_container)
+      gem_activate(gem_name)
+      load Gem.bin_path(gem_name, bin_container)
+    end
+
+    def self.gem_activate(gem_name)
+      gem_requirement = DEV_DEPS[gem_name]
+      gem gem_name, gem_requirement
+    end
+
+    def self.gem_require(gem_name)
+      gem_activate(gem_name)
+      require gem_name
     end
 
     def self.setup
@@ -33,17 +58,17 @@ module Spec
 
       ENV["BUNDLE_PATH"] = nil
       ENV["GEM_HOME"] = ENV["GEM_PATH"] = Path.base_system_gems.to_s
-      ENV["PATH"] = [Path.bindir, "#{Path.system_gem_path}/bin", ENV["PATH"]].join(File::PATH_SEPARATOR)
+      ENV["PATH"] = [Path.bindir, Path.system_gem_path.join("bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
 
       manifest = DEPS.to_a.sort_by(&:first).map {|k, v| "#{k} => #{v}\n" }
-      manifest_path = "#{Path.base_system_gems}/manifest.txt"
+      manifest_path = Path.base_system_gems.join("manifest.txt")
       # it's OK if there are extra gems
-      if !File.exist?(manifest_path) || !(manifest - File.readlines(manifest_path)).empty?
+      if !manifest_path.file? || !(manifest - manifest_path.readlines).empty?
         FileUtils.rm_rf(Path.base_system_gems)
         FileUtils.mkdir_p(Path.base_system_gems)
         puts "installing gems for the tests to use..."
         install_gems(DEPS)
-        File.open(manifest_path, "w") {|f| f << manifest.join }
+        manifest_path.open("w") {|f| f << manifest.join }
       end
 
       ENV["HOME"] = Path.home.to_s
@@ -54,11 +79,11 @@ module Spec
 
     def self.install_gems(gems)
       reqs, no_reqs = gems.partition {|_, req| !req.nil? && !req.split(" ").empty? }
-      reqs = reqs.sort_by {|name, _| name == "rack" ? 0 : 1 } # TODO: remove when we drop ruby 1.8.7 support
       no_reqs.map!(&:first)
       reqs.map! {|name, req| "'#{name}:#{req}'" }
       deps = reqs.concat(no_reqs).join(" ")
-      cmd = "#{ENV['BUNDLE_GEM'] || 'gem'} install #{deps} --no-rdoc --no-ri --conservative"
+      gem = Spec::Path.ruby_core? ? ENV["BUNDLE_GEM"] : "#{Gem.ruby} -S gem"
+      cmd = "#{gem} install #{deps} --no-document --conservative"
       puts cmd
       system(cmd) || raise("Installing gems #{deps} for the tests to use failed!")
     end

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'tempfile'
 
 describe "Tempfile#initialize" do
@@ -28,7 +28,7 @@ describe "Tempfile#initialize" do
   end
 
   platform_is_not :windows do
-    it "sets the permisssions on the tempfile to 0600" do
+    it "sets the permissions on the tempfile to 0600" do
       @tempfile.send(:initialize, "basename", tmp(""))
       File.stat(@tempfile.path).mode.should == 0100600
     end
@@ -37,5 +37,10 @@ describe "Tempfile#initialize" do
   it "accepts encoding options" do
     @tempfile.send(:initialize, ['shiftjis', 'yml'], encoding: 'SHIFT_JIS')
     @tempfile.external_encoding.should == Encoding::Shift_JIS
+  end
+
+  it "does not try to modify the arguments" do
+    @tempfile.send(:initialize, ['frozen'.freeze, 'txt'.freeze], encoding: Encoding::IBM437)
+    @tempfile.external_encoding.should == Encoding::IBM437
   end
 end

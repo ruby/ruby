@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Complex#to_f" do
   describe "when the imaginary part is Fixnum 0" do
@@ -29,13 +29,13 @@ describe "Complex#to_f" do
 
   describe "when the imaginary part is non-zero" do
     it "raises RangeError" do
-      lambda { Complex(0, 1).to_f }.should raise_error(RangeError)
+      -> { Complex(0, 1).to_f }.should raise_error(RangeError)
     end
   end
 
   describe "when the imaginary part is Float 0.0" do
     it "raises RangeError" do
-      lambda { Complex(0, 0.0).to_f }.should raise_error(RangeError)
+      -> { Complex(0, 0.0).to_f }.should raise_error(RangeError)
     end
   end
 end

@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :complex_math_sin, shared: true do
   it "returns the sine of the passed argument expressed in radians" do
@@ -25,6 +25,6 @@ describe :complex_math_sin_bang, shared: true do
   end
 
   it "raises a TypeError when passed a Complex number" do
-    lambda { @object.send(:sin!, Complex(4, 5)) }.should raise_error(TypeError)
+    -> { @object.send(:sin!, Complex(4, 5)) }.should raise_error(TypeError)
   end
 end

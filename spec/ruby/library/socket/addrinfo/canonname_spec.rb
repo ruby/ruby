@@ -1,6 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require 'socket'
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "Addrinfo#canonname" do
 
@@ -16,4 +15,13 @@ describe "Addrinfo#canonname" do
       canonname.should == nil
     end
   end
+
+  describe 'when the canonical name is not available' do
+    it 'returns nil' do
+      addr = Addrinfo.new(Socket.sockaddr_in(0, '127.0.0.1'))
+
+      addr.canonname.should be_nil
+    end
+  end
+
 end

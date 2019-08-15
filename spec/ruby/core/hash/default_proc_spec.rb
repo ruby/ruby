@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Hash#default_proc" do
   it "returns the block passed to Hash.new" do
@@ -37,7 +37,7 @@ describe "Hash#default_proc=" do
   end
 
   it "raises an error if passed stuff not convertible to procs" do
-    lambda{{}.default_proc = 42}.should raise_error(TypeError)
+    ->{{}.default_proc = 42}.should raise_error(TypeError)
   end
 
   it "returns the passed Proc" do
@@ -58,23 +58,23 @@ describe "Hash#default_proc=" do
 
   it "accepts a lambda with an arity of 2" do
     h = {}
-    lambda do
-      h.default_proc = lambda {|a,b| }
+    -> do
+      h.default_proc = -> a, b { }
     end.should_not raise_error(TypeError)
   end
 
   it "raises a TypeError if passed a lambda with an arity other than 2" do
     h = {}
-    lambda do
-      h.default_proc = lambda {|a| }
+    -> do
+      h.default_proc = -> a { }
     end.should raise_error(TypeError)
-    lambda do
-      h.default_proc = lambda {|a,b,c| }
+    -> do
+      h.default_proc = -> a, b, c { }
     end.should raise_error(TypeError)
   end
 
-  it "raises a RuntimeError if self is frozen" do
-    lambda { {}.freeze.default_proc = Proc.new {} }.should raise_error(RuntimeError)
-    lambda { {}.freeze.default_proc = nil }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} if self is frozen" do
+    -> { {}.freeze.default_proc = Proc.new {} }.should raise_error(frozen_error_class)
+    -> { {}.freeze.default_proc = nil }.should raise_error(frozen_error_class)
   end
 end

@@ -11,6 +11,7 @@ RSpec.describe Bundler::GemHelper do
   before(:each) do
     global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false"
     bundle "gem #{app_name}"
+    prepare_gemspec(app_gemspec_path)
   end
 
   context "determining gemspec" do
@@ -29,15 +30,6 @@ RSpec.describe Bundler::GemHelper do
     end
 
     context "interpolates the name" do
-      before do
-        # Remove exception that prevents public pushes on older RubyGems versions
-        if Gem::Version.new(Gem::VERSION) < Gem::Version.new("2.0")
-          content = File.read(app_gemspec_path)
-          content.sub!(/raise "RubyGems 2\.0 or newer.*/, "")
-          File.open(app_gemspec_path, "w") {|f| f.write(content) }
-        end
-      end
-
       it "when there is only one gemspec" do
         expect(subject.gemspec.name).to eq(app_name)
       end
@@ -58,7 +50,7 @@ RSpec.describe Bundler::GemHelper do
     end
   end
 
-  context "gem management" do
+  context "gem management", :ruby_repo do
     def mock_confirm_message(message)
       expect(Bundler.ui).to receive(:confirm).with(message)
     end
@@ -72,20 +64,13 @@ RSpec.describe Bundler::GemHelper do
     let(:app_version) { "0.1.0" }
     let(:app_gem_dir) { app_path.join("pkg") }
     let(:app_gem_path) { app_gem_dir.join("#{app_name}-#{app_version}.gem") }
-    let(:app_gemspec_content) { remove_push_guard(File.read(app_gemspec_path)) }
+    let(:app_gemspec_content) { File.read(app_gemspec_path) }
 
     before(:each) do
       content = app_gemspec_content.gsub("TODO: ", "")
       content.sub!(/homepage\s+= ".*"/, 'homepage = ""')
+      content.gsub!(/spec\.metadata.+\n/, "")
       File.open(app_gemspec_path, "w") {|file| file << content }
-    end
-
-    def remove_push_guard(gemspec_content)
-      # Remove exception that prevents public pushes on older RubyGems versions
-      if Gem::Version.new(Gem::VERSION) < Gem::Version.new("2.0")
-        gemspec_content.sub!(/raise "RubyGems 2\.0 or newer.*/, "")
-      end
-      gemspec_content
     end
 
     it "uses a shell UI for output" do
@@ -197,6 +182,7 @@ RSpec.describe Bundler::GemHelper do
           `git init`
           `git config user.email "you@example.com"`
           `git config user.name "name"`
+          `git config commit.gpgsign false`
           `git config push.default simple`
         end
 
@@ -224,23 +210,35 @@ RSpec.describe Bundler::GemHelper do
       end
 
       context "succeeds" do
+        let(:repo) { build_git("foo", :bare => true) }
+
         before do
-          Dir.chdir(gem_repo1) { `git init --bare` }
           Dir.chdir(app_path) do
-            `git remote add origin file://#{gem_repo1}`
-            `git commit -a -m "initial commit"`
+            sys_exec("git remote add origin #{file_uri_for(repo.path)}")
+            sys_exec('git commit -a -m "initial commit"')
           end
         end
 
-        it "on releasing" do
-          mock_build_message app_name, app_version
-          mock_confirm_message "Tagged v#{app_version}."
-          mock_confirm_message "Pushed git commits and tags."
-          expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
+        context "on releasing" do
+          before do
+            mock_build_message app_name, app_version
+            mock_confirm_message "Tagged v#{app_version}."
+            mock_confirm_message "Pushed git commits and tags."
 
-          Dir.chdir(app_path) { sys_exec("git push -u origin master") }
+            Dir.chdir(app_path) { sys_exec("git push -u origin master") }
+          end
 
-          Rake.application["release"].invoke
+          it "calls rubygem_push with proper arguments" do
+            expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
+
+            Rake.application["release"].invoke
+          end
+
+          it "uses Kernel.system" do
+            expect(Kernel).to receive(:system).with("gem", "push", app_gem_path.to_s, "--host", "http://example.org").and_return(true)
+
+            Rake.application["release"].invoke
+          end
         end
 
         it "even if tag already exists" do
@@ -263,7 +261,7 @@ RSpec.describe Bundler::GemHelper do
       before(:each) do
         Rake.application = Rake::Application.new
         subject.install
-        allow(subject).to receive(:sh)
+        allow(subject).to receive(:sh_with_input)
       end
 
       after(:each) do

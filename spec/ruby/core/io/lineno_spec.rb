@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "IO#lineno" do
   before :each do
@@ -11,7 +11,7 @@ describe "IO#lineno" do
   end
 
   it "raises an IOError on a closed stream" do
-    lambda { IOSpecs.closed_io.lineno }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.lineno }.should raise_error(IOError)
   end
 
   it "returns the current line number" do
@@ -37,7 +37,7 @@ describe "IO#lineno=" do
   end
 
   it "raises an IOError on a closed stream" do
-    lambda { IOSpecs.closed_io.lineno = 5 }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.lineno = 5 }.should raise_error(IOError)
   end
 
   it "calls #to_int on a non-numeric argument" do
@@ -57,7 +57,7 @@ describe "IO#lineno=" do
   end
 
   it "raises TypeError on nil argument" do
-    lambda { @io.lineno = nil }.should raise_error(TypeError)
+    -> { @io.lineno = nil }.should raise_error(TypeError)
   end
 
   it "sets the current line number to the given value" do

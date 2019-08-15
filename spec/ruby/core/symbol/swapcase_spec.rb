@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Symbol#swapcase" do
   it "returns a Symbol" do
@@ -18,21 +18,9 @@ describe "Symbol#swapcase" do
     :mIxEd.swapcase.should == :MiXeD
   end
 
-  ruby_version_is ''...'2.4' do
-    it "leaves uppercase Unicode characters as they were" do
-      "\u{00DE}Bc".to_sym.swapcase.should == :"ÞbC"
-    end
-
-    it "leaves lowercase Unicode characters as they were" do
-      "\u{00DF}Bc".to_sym.swapcase.should == :"ßbC"
-    end
-  end
-
-  ruby_version_is '2.4' do
-    it "swaps the case for Unicode characters" do
-      "äÖü".to_sym.swapcase.should == :"ÄöÜ"
-      "aOu".to_sym.swapcase.should == :"AoU"
-    end
+  it "swaps the case for Unicode characters" do
+    "äÖü".to_sym.swapcase.should == :"ÄöÜ"
+    "aOu".to_sym.swapcase.should == :"AoU"
   end
 
   it "leaves non-alphabetic ASCII characters as they were" do

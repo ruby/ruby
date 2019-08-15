@@ -19,36 +19,29 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     @gda.instance_variable_set :@vendor_set, @vendor_set
   end
 
-  def with_engine_version name, version
-    engine               = RUBY_ENGINE if Object.const_defined? :RUBY_ENGINE
-    engine_version_const = "#{Gem.ruby_engine.upcase}_VERSION"
-    engine_version       = Object.const_get engine_version_const
+  def with_engine_version(name, version)
+    engine = RUBY_ENGINE
+    engine_version = RUBY_ENGINE_VERSION
 
-    Object.send :remove_const, :RUBY_ENGINE         if engine
-    Object.send :remove_const, engine_version_const if name == 'ruby' and
-      Object.const_defined? engine_version_const
+    Object.send :remove_const, :RUBY_ENGINE
+    Object.send :remove_const, :RUBY_ENGINE_VERSION
 
-    new_engine_version_const = "#{name.upcase}_VERSION"
-    Object.const_set :RUBY_ENGINE,             name    if name
-    Object.const_set new_engine_version_const, version if version
+    Object.const_set :RUBY_ENGINE, name if name
+    Object.const_set :RUBY_ENGINE_VERSION, version if version
 
     Gem.instance_variable_set :@ruby_version, Gem::Version.new(version)
 
-    yield
+    begin
+      yield
+    ensure
+      Object.send :remove_const, :RUBY_ENGINE if name
+      Object.send :remove_const, :RUBY_ENGINE_VERSION if version
 
-  ensure
-    Object.send :remove_const, :RUBY_ENGINE             if name
-    Object.send :remove_const, new_engine_version_const if version
+      Object.const_set :RUBY_ENGINE, engine
+      Object.const_set :RUBY_ENGINE_VERSION, engine_version
 
-    Object.send :remove_const, engine_version_const     if name == 'ruby' and
-      Object.const_defined? engine_version_const
-
-    Object.const_set :RUBY_ENGINE,         engine         if engine
-    Object.const_set engine_version_const, engine_version unless
-      Object.const_defined? engine_version_const
-
-    Gem.send :remove_instance_variable, :@ruby_version if
-      Gem.instance_variables.include? :@ruby_version
+      Gem.send :remove_instance_variable, :@ruby_version
+    end
   end
 
   def test_gempspec_with_multiple_runtime_deps
@@ -283,6 +276,14 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
       refute_empty set.dependencies
     end
 
+    with_engine_version 'truffleruby', '2.0.0' do
+      set = Gem::RequestSet.new
+      gda = @GDA.new set, 'gem.deps.rb'
+      gda.gem 'a', :platforms => :ruby
+
+      refute_empty set.dependencies
+    end
+
     with_engine_version 'jruby', '1.7.6' do
       set = Gem::RequestSet.new
       gda = @GDA.new set, 'gem.deps.rb'
@@ -310,6 +311,12 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
       assert_empty @set.dependencies
     end
+
+    with_engine_version 'truffleruby', '1.2.3' do
+      @gda.gem 'a', :platforms => :mri
+
+      assert_empty @set.dependencies
+    end
   end
 
   def test_gem_platforms_maglev
@@ -330,6 +337,22 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     end
   ensure
     Gem.win_platform = win_platform
+  end
+
+  def test_gem_platforms_truffleruby
+    with_engine_version 'truffleruby', '1.0.0' do
+      set = Gem::RequestSet.new
+      gda = @GDA.new set, 'gem.deps.rb'
+      gda.gem 'a', :platforms => :truffleruby
+
+      refute_empty set.dependencies
+
+      set = Gem::RequestSet.new
+      gda = @GDA.new set, 'gem.deps.rb'
+      gda.gem 'a', :platforms => :maglev
+
+      assert_empty set.dependencies
+    end
   end
 
   def test_gem_platforms_multiple
@@ -627,11 +650,7 @@ end
       assert_equal [dep('a'), dep('b')], @set.dependencies
       io
     end
-    tf.close! if tf.respond_to? :close!
-  end
-
-  def test_name_typo
-    assert_same @GDA, Gem::RequestSet::GemDepedencyAPI
+    tf.close!
   end
 
   def test_pin_gem_source
@@ -656,20 +675,23 @@ end
   end
 
   def test_platform_mswin
-    util_set_arch 'i686-darwin8.10.1' do
-      @gda.platform :mswin do
-        @gda.gem 'a'
+    if win_platform?
+      util_set_arch 'x86-mswin32-60' do
+        @gda.platform :mswin do
+          @gda.gem 'a'
+        end
+
+        assert_equal [dep('a')], @set.dependencies
+        refute_empty @set.dependencies
       end
+    else
+      util_set_arch 'i686-darwin8.10.1' do
+        @gda.platform :mswin do
+          @gda.gem 'a'
+        end
 
-      assert_empty @set.dependencies
-    end
-
-    util_set_arch 'x86-mswin32-60' do
-      @gda.platform :mswin do
-        @gda.gem 'a'
+        assert_empty @set.dependencies
       end
-
-      refute_empty @set.dependencies
     end
   end
 
@@ -712,26 +734,20 @@ end
   end
 
   def test_platforms
-    util_set_arch 'i686-darwin8.10.1' do
-      @gda.platforms :ruby do
-        @gda.gem 'a'
+    unless win_platform?
+      util_set_arch 'i686-darwin8.10.1' do
+        @gda.platforms :ruby do
+          @gda.gem 'a'
+        end
+
+        assert_equal [dep('a')], @set.dependencies
+
+        @gda.platforms :mswin do
+          @gda.gem 'b'
+        end
+
+        assert_equal [dep('a')], @set.dependencies
       end
-
-      assert_equal [dep('a')], @set.dependencies
-
-      @gda.platforms :mswin do
-        @gda.gem 'b'
-      end
-
-      assert_equal [dep('a')], @set.dependencies
-    end
-
-    util_set_arch 'x86-mswin32-60' do
-      @gda.platforms :mswin do
-        @gda.gem 'c'
-      end
-
-      assert_equal [dep('a'), dep('c')], @set.dependencies
     end
   end
 
@@ -743,6 +759,12 @@ end
     with_engine_version 'jruby', '1.7.6' do
       assert @gda.ruby RUBY_VERSION,
                :engine => 'jruby', :engine_version => '1.7.6'
+
+    end
+
+    with_engine_version 'truffleruby', '1.0.0-rc11' do
+      assert @gda.ruby RUBY_VERSION,
+               :engine => 'truffleruby', :engine_version => '1.0.0-rc11'
 
     end
   end
@@ -808,24 +830,20 @@ end
 
   def test_with_engine_version
     version = RUBY_VERSION
-    engine  = Gem.ruby_engine
-
-    engine_version_const = "#{Gem.ruby_engine.upcase}_VERSION"
-    engine_version       = Object.const_get engine_version_const
+    engine = Gem.ruby_engine
+    engine_version = RUBY_ENGINE_VERSION
 
     with_engine_version 'other', '1.2.3' do
       assert_equal 'other', Gem.ruby_engine
-      assert_equal '1.2.3', OTHER_VERSION
+      assert_equal '1.2.3', RUBY_ENGINE_VERSION
 
-      assert_equal version, RUBY_VERSION if engine
+      assert_equal version, RUBY_VERSION
     end
 
     assert_equal version, RUBY_VERSION
     assert_equal engine,  Gem.ruby_engine
 
-    assert_equal engine_version, Object.const_get(engine_version_const) if
-      engine
+    assert_equal engine_version, RUBY_ENGINE_VERSION if engine
   end
 
-end
-
+end unless Gem.java_platform?

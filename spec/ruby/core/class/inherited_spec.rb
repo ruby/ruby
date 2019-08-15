@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Class.inherited" do
 
@@ -92,11 +92,10 @@ describe "Class.inherited" do
     end
 
     class << top; private :inherited; end
-    lambda { Class.new(top) }.should_not raise_error
+    -> { Class.new(top) }.should_not raise_error
 
     class << top; protected :inherited; end
-    lambda { Class.new(top) }.should_not raise_error
+    -> { Class.new(top) }.should_not raise_error
   end
 
 end
-

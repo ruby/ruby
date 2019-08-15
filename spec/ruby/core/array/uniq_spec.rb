@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#uniq" do
   it "returns an array with no duplicates" do
@@ -188,20 +188,20 @@ describe "Array#uniq!" do
     [ "a", "b", "c" ].uniq!.should == nil
   end
 
-  it "raises a RuntimeError on a frozen array when the array is modified" do
+  it "raises a #{frozen_error_class} on a frozen array when the array is modified" do
     dup_ary = [1, 1, 2]
     dup_ary.freeze
-    lambda { dup_ary.uniq! }.should raise_error(RuntimeError)
+    -> { dup_ary.uniq! }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23666]
-  it "raises a RuntimeError on a frozen array when the array would not be modified" do
-    lambda { ArraySpecs.frozen_array.uniq!}.should raise_error(RuntimeError)
-    lambda { ArraySpecs.empty_frozen_array.uniq!}.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array when the array would not be modified" do
+    -> { ArraySpecs.frozen_array.uniq!}.should raise_error(frozen_error_class)
+    -> { ArraySpecs.empty_frozen_array.uniq!}.should raise_error(frozen_error_class)
   end
 
   it "doesn't yield to the block on a frozen array" do
-    lambda { ArraySpecs.frozen_array.uniq!{ raise RangeError, "shouldn't yield"}}.should raise_error(RuntimeError)
+    -> { ArraySpecs.frozen_array.uniq!{ raise RangeError, "shouldn't yield"}}.should raise_error(frozen_error_class)
   end
 
   it "compares elements based on the value returned from the block" do

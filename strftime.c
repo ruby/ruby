@@ -226,8 +226,8 @@ format_value(VALUE val, int base)
  */
 static VALUE
 rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
-			  rb_encoding *enc, const struct vtm *vtm, VALUE timev,
-			  struct timespec *ts, int gmt, size_t maxsize)
+			  rb_encoding *enc, VALUE time, const struct vtm *vtm,
+			  VALUE timev, struct timespec *ts, int gmt, size_t maxsize)
 {
 	size_t len = RSTRING_LEN(ftime);
 	char *s = RSTRING_PTR(ftime);
@@ -246,6 +246,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 #ifdef MAILHEADER_EXT
 	int sign;
 #endif
+	VALUE zone = Qnil;
 
 	/* various tables, useful in North America */
 	static const char days_l[][10] = {
@@ -317,7 +318,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			len = s - start; \
 			rb_str_set_len(ftime, len); \
 			if (!rb_strftime_with_timespec(ftime, (fmt), rb_strlen_lit(fmt), \
-						       enc, vtm, timev, ts, gmt, maxsize)) \
+						       enc, time, vtm, timev, ts, gmt, maxsize)) \
 				return 0; \
 			s = RSTRING_PTR(ftime); \
 			i = RSTRING_LEN(ftime) - len; \
@@ -619,11 +620,14 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				tp = "UTC";
 				break;
 			}
-			if (vtm->zone == NULL) {
+			if (NIL_P(vtm->zone)) {
 			    i = 0;
 			}
 			else {
-                            tp = vtm->zone;
+			    if (NIL_P(zone)) {
+				zone = rb_time_zone_abbreviation(vtm->zone, time);
+			    }
+			    tp = RSTRING_PTR(zone);
 			    if (enc) {
 				for (i = 0; i < TBUFSIZE && tp[i]; i++) {
 				    if ((unsigned char)tp[i] > 0x7F) {
@@ -822,7 +826,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                                         args[0] = INT2FIX(precision);
                                         args[1] = subsec;
                                         result = rb_str_format(2, args,
-                                                      rb_fstring_cstr("%0*d"));
+                                                      rb_fstring_lit("%0*d"));
                                         (void)strlcpy(s, StringValueCStr(result), endp-s);
                                         s += precision;
                                 }
@@ -912,34 +916,34 @@ strftime_size_limit(size_t format_len)
 }
 
 VALUE
-rb_strftime(const char *format, size_t format_len,
-	    rb_encoding *enc, const struct vtm *vtm, VALUE timev, int gmt)
+rb_strftime(const char *format, size_t format_len, rb_encoding *enc,
+	    VALUE time, const struct vtm *vtm, VALUE timev, int gmt)
 {
 	VALUE result = rb_enc_str_new(0, 0, enc);
 	return rb_strftime_with_timespec(result, format, format_len, enc,
-					 vtm, timev, NULL, gmt,
+					 time, vtm, timev, NULL, gmt,
 					 strftime_size_limit(format_len));
 }
 
 VALUE
-rb_strftime_timespec(const char *format, size_t format_len,
-		     rb_encoding *enc, const struct vtm *vtm, struct timespec *ts, int gmt)
+rb_strftime_timespec(const char *format, size_t format_len, rb_encoding *enc,
+		     VALUE time, const struct vtm *vtm, struct timespec *ts, int gmt)
 {
 	VALUE result = rb_enc_str_new(0, 0, enc);
 	return rb_strftime_with_timespec(result, format, format_len, enc,
-					 vtm, Qnil, ts, gmt,
+					 time, vtm, Qnil, ts, gmt,
 					 strftime_size_limit(format_len));
 }
 
 #if 0
 VALUE
-rb_strftime_limit(const char *format, size_t format_len,
-		  rb_encoding *enc, const struct vtm *vtm, struct timespec *ts,
+rb_strftime_limit(const char *format, size_t format_len, rb_encoding *enc,
+		  VALUE time, const struct vtm *vtm, struct timespec *ts,
 		  int gmt, size_t maxsize)
 {
 	VALUE result = rb_enc_str_new(0, 0, enc);
 	return rb_strftime_with_timespec(result, format, format_len, enc,
-					 vtm, Qnil, ts, gmt, maxsize);
+					 time, vtm, Qnil, ts, gmt, maxsize);
 }
 #endif
 

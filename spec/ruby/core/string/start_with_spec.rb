@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "String#start_with?" do
   it "returns true only if beginning match" do
@@ -28,9 +28,9 @@ describe "String#start_with?" do
 
   it "ignores arguments not convertible to string" do
     "hello".start_with?().should be_false
-    lambda { "hello".start_with?(1) }.should  raise_error(TypeError)
-    lambda { "hello".start_with?(["h"]) }.should  raise_error(TypeError)
-    lambda { "hello".start_with?(1, nil, "h").should }.should raise_error(TypeError)
+    -> { "hello".start_with?(1) }.should raise_error(TypeError)
+    -> { "hello".start_with?(["h"]) }.should raise_error(TypeError)
+    -> { "hello".start_with?(1, nil, "h") }.should raise_error(TypeError)
   end
 
   it "uses only the needed arguments" do
@@ -41,5 +41,36 @@ describe "String#start_with?" do
 
   it "works for multibyte strings" do
     "céréale".start_with?("cér").should be_true
+  end
+
+  ruby_version_is "2.5" do
+    it "supports regexps" do
+      regexp = /[h1]/
+      "hello".start_with?(regexp).should be_true
+      "1337".start_with?(regexp).should be_true
+      "foxes are 1337".start_with?(regexp).should be_false
+      "chunky\n12bacon".start_with?(/12/).should be_false
+    end
+
+    it "supports regexps with ^ and $ modifiers" do
+      regexp1 = /^\d{2}/
+      regexp2 = /\d{2}$/
+      "12test".start_with?(regexp1).should be_true
+      "test12".start_with?(regexp1).should be_false
+      "12test".start_with?(regexp2).should be_false
+      "test12".start_with?(regexp2).should be_false
+    end
+
+    it "sets Regexp.last_match if it returns true" do
+      regexp = /test-(\d+)/
+      "test-1337".start_with?(regexp).should be_true
+      Regexp.last_match.should_not be_nil
+      Regexp.last_match[1].should == "1337"
+      $1.should == "1337"
+
+      "test-asdf".start_with?(regexp).should be_false
+      Regexp.last_match.should be_nil
+      $1.should be_nil
+    end
   end
 end

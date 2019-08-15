@@ -1,9 +1,9 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/civil', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/civil'
 require 'date'
 
 describe "Date#civil" do
-  it_behaves_like(:date_civil, :civil)
+  it_behaves_like :date_civil, :civil
 end
 
 

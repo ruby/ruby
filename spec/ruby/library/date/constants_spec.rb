@@ -1,5 +1,5 @@
 require 'date'
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Date constants" do
 
@@ -34,13 +34,13 @@ describe "Date constants" do
 
   it "freezes MONTHNAMES, DAYNAMES, ABBR_MONTHNAMES, ABBR_DAYSNAMES" do
     [Date::MONTHNAMES, Date::DAYNAMES, Date::ABBR_MONTHNAMES, Date::ABBR_DAYNAMES].each do |ary|
-      lambda {
+      -> {
         ary << "Unknown"
-      }.should raise_error(RuntimeError, /frozen/)
+      }.should raise_error(frozen_error_class, /frozen/)
       ary.compact.each do |name|
-        lambda {
+        -> {
           name << "modified"
-        }.should raise_error(RuntimeError, /frozen/)
+        }.should raise_error(frozen_error_class, /frozen/)
       end
     end
   end

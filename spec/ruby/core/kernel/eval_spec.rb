@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 EvalSpecs::A.new.c
 
@@ -24,7 +24,7 @@ describe "Kernel#eval" do
     EvalSpecs::A::B.name.should == "EvalSpecs::A::B"
   end
 
-  it "evaluates such that consts are scoped to the class of the eval" do
+  it "evaluates such that constants are scoped to the class of the eval" do
     EvalSpecs::A::C.name.should == "EvalSpecs::A::C"
   end
 
@@ -76,12 +76,12 @@ describe "Kernel#eval" do
     x = 1
     bind = proc {}
 
-    lambda { eval("x", bind) }.should raise_error(TypeError)
+    -> { eval("x", bind) }.should raise_error(TypeError)
   end
 
   it "does not make Proc locals visible to evaluated code" do
     bind = proc { inner = 4 }
-    lambda { eval("inner", bind.binding) }.should raise_error(NameError)
+    -> { eval("inner", bind.binding) }.should raise_error(NameError)
   end
 
   # REWRITE ME: This obscures the real behavior of where locals are stored
@@ -134,7 +134,7 @@ describe "Kernel#eval" do
 
   it "includes file and line information in syntax error" do
     expected = 'speccing.rb'
-    lambda {
+    -> {
       eval('if true',TOPLEVEL_BINDING, expected)
     }.should raise_error(SyntaxError) { |e|
       e.message.should =~ /#{expected}:1:.+/
@@ -143,7 +143,7 @@ describe "Kernel#eval" do
 
   it "evaluates string with given filename and negative linenumber" do
     expected_file = 'speccing.rb'
-    lambda {
+    -> {
       eval('if true',TOPLEVEL_BINDING, expected_file, -100)
     }.should raise_error(SyntaxError) { |e|
       e.message.should =~ /#{expected_file}:-100:.+/
@@ -161,11 +161,11 @@ describe "Kernel#eval" do
 
   it "uses the filename of the binding if none is provided" do
     eval("__FILE__").should == "(eval)"
-    eval("__FILE__", binding).should == __FILE__
+    suppress_warning {eval("__FILE__", binding)}.should == __FILE__
     eval("__FILE__", binding, "success").should == "success"
-    eval("eval '__FILE__', binding").should == "(eval)"
-    eval("eval '__FILE__', binding", binding).should == __FILE__
-    eval("eval '__FILE__', binding", binding, 'success').should == 'success'
+    suppress_warning {eval("eval '__FILE__', binding")}.should == "(eval)"
+    suppress_warning {eval("eval '__FILE__', binding", binding)}.should == __FILE__
+    suppress_warning {eval("eval '__FILE__', binding", binding, 'success')}.should == 'success'
   end
 
   # Found via Rubinius bug github:#149
@@ -195,13 +195,13 @@ describe "Kernel#eval" do
   end
 
   it "does not pass the block to the method being eval'ed" do
-    lambda {
+    -> {
       eval('KernelSpecs::EvalTest.call_yield') { "content" }
     }.should raise_error(LocalJumpError)
   end
 
   it "returns from the scope calling #eval when evaluating 'return'" do
-    lambda { eval("return :eval") }.call.should == :eval
+    -> { eval("return :eval") }.call.should == :eval
   end
 
   it "unwinds through a Proc-style closure and returns from a lambda-style closure in the closure chain" do
@@ -212,5 +212,134 @@ describe "Kernel#eval" do
   it "raises a LocalJumpError if there is no lambda-style closure in the chain" do
     code = fixture __FILE__, "eval_return_without_lambda.rb"
     ruby_exe(code).chomp.should == "a,b,c,e,LocalJumpError,f"
+  end
+
+  # See language/magic_comment_spec.rb for more magic comments specs
+  describe "with a magic encoding comment" do
+    it "uses the magic comment encoding for the encoding of literal strings" do
+      code = "# encoding: UTF-8\n'é'.encoding".b
+      code.encoding.should == Encoding::BINARY
+      eval(code).should == Encoding::UTF_8
+    end
+
+    it "uses the magic comment encoding for parsing constants" do
+      code = <<CODE.b
+# encoding: UTF-8
+class EvalSpecs
+  Vπ = 3.14
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should include(:"Vπ")
+      EvalSpecs::Vπ.should == 3.14
+    end
+
+    it "allows an emacs-style magic comment encoding" do
+      code = <<CODE.b
+# -*- encoding: UTF-8 -*-
+class EvalSpecs
+Vπemacs = 3.14
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should include(:"Vπemacs")
+      EvalSpecs::Vπemacs.should == 3.14
+    end
+
+    it "allows spaces before the magic encoding comment" do
+      code = <<CODE.b
+\t  \t  # encoding: UTF-8
+class EvalSpecs
+  Vπspaces = 3.14
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should include(:"Vπspaces")
+      EvalSpecs::Vπspaces.should == 3.14
+    end
+
+    it "allows a shebang line before the magic encoding comment" do
+      code = <<CODE.b
+#!/usr/bin/env ruby
+# encoding: UTF-8
+class EvalSpecs
+  Vπshebang = 3.14
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should include(:"Vπshebang")
+      EvalSpecs::Vπshebang.should == 3.14
+    end
+
+    it "allows a shebang line and some spaces before the magic encoding comment" do
+      code = <<CODE.b
+#!/usr/bin/env ruby
+  # encoding: UTF-8
+class EvalSpecs
+  Vπshebang_spaces = 3.14
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should include(:"Vπshebang_spaces")
+      EvalSpecs::Vπshebang_spaces.should == 3.14
+    end
+
+    it "allows a magic encoding comment and a subsequent frozen_string_literal magic comment" do
+      # Make sure frozen_string_literal is not default true
+      eval("'foo'".b).frozen?.should be_false
+
+      code = <<CODE.b
+# encoding: UTF-8
+# frozen_string_literal: true
+class EvalSpecs
+  Vπstring = "frozen"
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should include(:"Vπstring")
+      EvalSpecs::Vπstring.should == "frozen"
+      EvalSpecs::Vπstring.encoding.should == Encoding::UTF_8
+      EvalSpecs::Vπstring.frozen?.should be_true
+    end
+
+    it "allows a magic encoding comment and a frozen_string_literal magic comment on the same line in emacs style" do
+      code = <<CODE.b
+# -*- encoding: UTF-8; frozen_string_literal: true -*-
+class EvalSpecs
+Vπsame_line = "frozen"
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should include(:"Vπsame_line")
+      EvalSpecs::Vπsame_line.should == "frozen"
+      EvalSpecs::Vπsame_line.encoding.should == Encoding::UTF_8
+      EvalSpecs::Vπsame_line.frozen?.should be_true
+    end
+
+    it "ignores the magic encoding comment if it is after a frozen_string_literal magic comment" do
+      code = <<CODE.b
+# frozen_string_literal: true
+# encoding: UTF-8
+class EvalSpecs
+  Vπfrozen_first = "frozen"
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should_not include(:"Vπfrozen_first")
+      binary_constant = "Vπfrozen_first".b.to_sym
+      EvalSpecs.constants(false).should include(binary_constant)
+      value = EvalSpecs.const_get(binary_constant)
+      value.should == "frozen"
+      value.encoding.should == Encoding::BINARY
+      value.frozen?.should be_true
+    end
   end
 end

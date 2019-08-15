@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Thread#abort_on_exception" do
   before do
@@ -35,7 +35,7 @@ describe :thread_abort_on_exception, shared: true do
       ScratchPad << :before
 
       @thread.abort_on_exception = true if @object
-      lambda do
+      -> do
         ThreadSpecs.state = :run
         # Wait for the main thread to be interrupted
         sleep

@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'stringio'
 require 'zlib'
 
@@ -10,13 +10,12 @@ describe "Zlib::GzipFile#close" do
 
       gzio.closed?.should == true
 
-      lambda { gzio.orig_name }.should \
+      -> { gzio.orig_name }.should \
         raise_error(Zlib::GzipFile::Error, 'closed gzip stream')
-      lambda { gzio.comment }.should \
+      -> { gzio.comment }.should \
         raise_error(Zlib::GzipFile::Error, 'closed gzip stream')
     end
 
     io.string[10..-1].should == ([3] + Array.new(9,0)).pack('C*')
   end
 end
-

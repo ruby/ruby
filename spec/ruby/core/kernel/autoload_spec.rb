@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 # These specs only illustrate the basic autoload cases
 # and where toplevel autoload behaves differently from
@@ -7,7 +7,7 @@ require File.expand_path('../fixtures/classes', __FILE__)
 
 autoload :KSAutoloadA, "autoload_a.rb"
 autoload :KSAutoloadB, fixture(__FILE__, "autoload_b.rb")
-autoload :KSAutoloadC, fixture(__FILE__, "autoload_c.rb")
+autoload :KSAutoloadCallsRequire, "main_autoload_not_exist.rb"
 
 def check_autoload(const)
   autoload? const
@@ -42,10 +42,11 @@ describe "Kernel#autoload" do
     KSAutoloadB.loaded.should == :ksautoload_b
   end
 
-  it "does not call Kernel.require or Kernel.load to load the file" do
-    Kernel.should_not_receive(:require)
-    Kernel.should_not_receive(:load)
-    KSAutoloadC.loaded.should == :ksautoload_c
+  it "calls main.require(path) to load the file" do
+    main = TOPLEVEL_BINDING.eval("self")
+    main.should_receive(:require).with("main_autoload_not_exist.rb")
+    # The constant won't be defined since require is mocked to do nothing
+    -> { KSAutoloadCallsRequire }.should raise_error(NameError)
   end
 
   it "can autoload in instance_eval" do
@@ -56,8 +57,27 @@ describe "Kernel#autoload" do
   end
 
   describe "when Object is frozen" do
-    it "raises a RuntimeError before defining the constant" do
-      ruby_exe(fixture(__FILE__, "autoload_frozen.rb")).should == "RuntimeError - nil"
+    it "raises a #{frozen_error_class} before defining the constant" do
+      ruby_exe(fixture(__FILE__, "autoload_frozen.rb")).should == "#{frozen_error_class} - nil"
+    end
+  end
+
+  describe "when called from included module's method" do
+    before :all do
+      @path = fixture(__FILE__, "autoload_from_included_module.rb")
+      KernelSpecs::AutoloadMethodIncluder.new.setup_autoload(@path)
+    end
+
+    it "setups the autoload on the included module" do
+      KernelSpecs::AutoloadMethod.autoload?(:AutoloadFromIncludedModule).should == @path
+    end
+
+    it "the autoload is reachable from the class too" do
+      KernelSpecs::AutoloadMethodIncluder.autoload?(:AutoloadFromIncludedModule).should == @path
+    end
+
+    it "the autoload relative to the included module works" do
+      KernelSpecs::AutoloadMethod::AutoloadFromIncludedModule.loaded.should == :autoload_from_included_module
     end
   end
 end
@@ -106,6 +126,25 @@ describe "Kernel.autoload" do
     p = mock('path')
     p.should_receive(:to_path).and_return @non_existent
     Kernel.autoload :KSAutoloadAA, p
+  end
+
+  describe "when called from included module's method" do
+    before :all do
+      @path = fixture(__FILE__, "autoload_from_included_module2.rb")
+      KernelSpecs::AutoloadMethodIncluder2.new.setup_autoload(@path)
+    end
+
+    it "setups the autoload on the included module" do
+      KernelSpecs::AutoloadMethod2.autoload?(:AutoloadFromIncludedModule2).should == @path
+    end
+
+    it "the autoload is reachable from the class too" do
+      KernelSpecs::AutoloadMethodIncluder2.autoload?(:AutoloadFromIncludedModule2).should == @path
+    end
+
+    it "the autoload relative to the included module works" do
+      KernelSpecs::AutoloadMethod2::AutoloadFromIncludedModule2.loaded.should == :autoload_from_included_module2
+    end
   end
 end
 

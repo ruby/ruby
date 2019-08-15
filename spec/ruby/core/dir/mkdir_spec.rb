@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Dir.mkdir" do
   before :all do
@@ -51,35 +51,37 @@ describe "Dir.mkdir" do
   end
 
   it "raises a SystemCallError if any of the directories in the path before the last does not exist" do
-    lambda { Dir.mkdir "#{DirSpecs.nonexistent}/subdir" }.should raise_error(SystemCallError)
+    -> { Dir.mkdir "#{DirSpecs.nonexistent}/subdir" }.should raise_error(SystemCallError)
   end
 
   it "raises Errno::EEXIST if the specified directory already exists" do
-    lambda { Dir.mkdir("#{DirSpecs.mock_dir}/dir") }.should raise_error(Errno::EEXIST)
+    -> { Dir.mkdir("#{DirSpecs.mock_dir}/dir") }.should raise_error(Errno::EEXIST)
   end
 
   it "raises Errno::EEXIST if the argument points to the existing file" do
-    lambda { Dir.mkdir("#{DirSpecs.mock_dir}/file_one.ext") }.should raise_error(Errno::EEXIST)
+    -> { Dir.mkdir("#{DirSpecs.mock_dir}/file_one.ext") }.should raise_error(Errno::EEXIST)
   end
 end
 
 # The permissions flag are not supported on Windows as stated in documentation:
 # The permissions may be modified by the value of File.umask, and are ignored on NT.
 platform_is_not :windows do
-  describe "Dir.mkdir" do
-    before :each do
-      @dir = tmp "noperms"
-    end
+  as_user do
+    describe "Dir.mkdir" do
+      before :each do
+        @dir = tmp "noperms"
+      end
 
-    after :each do
-      File.chmod 0777, @dir
-      rm_r @dir
-    end
+      after :each do
+        File.chmod 0777, @dir
+        rm_r @dir
+      end
 
-    it "raises a SystemCallError when lacking adequate permissions in the parent dir" do
-      Dir.mkdir @dir, 0000
+      it "raises a SystemCallError when lacking adequate permissions in the parent dir" do
+        Dir.mkdir @dir, 0000
 
-      lambda { Dir.mkdir "#{@dir}/subdir" }.should raise_error(SystemCallError)
+        -> { Dir.mkdir "#{@dir}/subdir" }.should raise_error(SystemCallError)
+      end
     end
   end
 end

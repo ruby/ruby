@@ -1,5 +1,5 @@
 platform_is_not :windows do
-  require File.expand_path('../../../spec_helper', __FILE__)
+  require_relative '../../spec_helper'
   require 'expect'
 
   describe "IO#expect" do
@@ -37,7 +37,7 @@ platform_is_not :windows do
       @write << "prompt> hello"
       @read.close
 
-      lambda {
+      -> {
         @read.expect("hello")
       }.should raise_error(IOError)
     end

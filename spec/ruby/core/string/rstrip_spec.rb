@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "String#rstrip" do
   it "returns a copy of self with trailing whitespace removed" do
@@ -40,13 +40,13 @@ describe "String#rstrip!" do
     a.should == "hello"
   end
 
-  it "raises a RuntimeError on a frozen instance that is modified" do
-    lambda { "  hello  ".freeze.rstrip! }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
+    -> { "  hello  ".freeze.rstrip! }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23666]
-  it "raises a RuntimeError on a frozen instance that would not be modified" do
-    lambda { "hello".freeze.rstrip! }.should raise_error(RuntimeError)
-    lambda { "".freeze.rstrip!      }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
+    -> { "hello".freeze.rstrip! }.should raise_error(frozen_error_class)
+    -> { "".freeze.rstrip!      }.should raise_error(frozen_error_class)
   end
 end

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/basicobject/method_missing', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/basicobject/method_missing'
 
 describe :method_missing_defined_module, shared: true do
   describe "for a Module with #method_missing defined" do
@@ -24,15 +24,15 @@ end
 describe :method_missing_module, shared: true do
   describe "for a Module" do
     it "raises a NoMethodError when an undefined method is called" do
-      lambda { @object.no_such_method }.should raise_error(NoMethodError)
+      -> { @object.no_such_method }.should raise_error(NoMethodError)
     end
 
     it "raises a NoMethodError when a protected method is called" do
-      lambda { @object.method_protected }.should raise_error(NoMethodError)
+      -> { @object.method_protected }.should raise_error(NoMethodError)
     end
 
     it "raises a NoMethodError when a private method is called" do
-      lambda { @object.method_private }.should raise_error(NoMethodError)
+      -> { @object.method_private }.should raise_error(NoMethodError)
     end
   end
 end
@@ -60,15 +60,15 @@ end
 describe :method_missing_class, shared: true do
   describe "for a Class" do
     it "raises a NoMethodError when an undefined method is called" do
-      lambda { @object.no_such_method }.should raise_error(NoMethodError)
+      -> { @object.no_such_method }.should raise_error(NoMethodError)
     end
 
     it "raises a NoMethodError when a protected method is called" do
-      lambda { @object.method_protected }.should raise_error(NoMethodError)
+      -> { @object.method_protected }.should raise_error(NoMethodError)
     end
 
     it "raises a NoMethodError when a private method is called" do
-      lambda { @object.method_private }.should raise_error(NoMethodError)
+      -> { @object.method_private }.should raise_error(NoMethodError)
     end
   end
 end
@@ -100,26 +100,24 @@ end
 describe :method_missing_instance, shared: true do
   describe "for an instance" do
     it "raises a NoMethodError when an undefined method is called" do
-      lambda { @object.new.no_such_method }.should raise_error(NoMethodError)
+      -> { @object.new.no_such_method }.should raise_error(NoMethodError)
     end
 
     it "raises a NoMethodError when a protected method is called" do
-      lambda { @object.new.method_protected }.should raise_error(NoMethodError)
+      -> { @object.new.method_protected }.should raise_error(NoMethodError)
     end
 
     it "raises a NoMethodError when a private method is called" do
-      lambda { @object.new.method_private }.should raise_error(NoMethodError)
+      -> { @object.new.method_private }.should raise_error(NoMethodError)
     end
 
-    ruby_version_is "2.3" do
-      it 'sets the receiver of the raised NoMethodError' do
-        obj = @object.new
+    it 'sets the receiver of the raised NoMethodError' do
+      obj = @object.new
 
-        begin
-          obj.method_private
-        rescue NoMethodError => error
-          (error.receiver == obj).should == true
-        end
+      begin
+        obj.method_private
+      rescue NoMethodError => error
+        (error.receiver == obj).should == true
       end
     end
   end

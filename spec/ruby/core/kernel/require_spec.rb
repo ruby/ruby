@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/code_loading', __FILE__)
-require File.expand_path('../shared/require', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/code_loading'
+require_relative 'shared/require'
 
 describe "Kernel#require" do
   before :each do
@@ -17,7 +17,6 @@ describe "Kernel#require" do
   end
 
   it_behaves_like :kernel_require_basic, :require, CodeLoadingSpecs::Method.new
-
   it_behaves_like :kernel_require, :require, CodeLoadingSpecs::Method.new
 end
 
@@ -31,6 +30,5 @@ describe "Kernel.require" do
   end
 
   it_behaves_like :kernel_require_basic, :require, Kernel
-
   it_behaves_like :kernel_require, :require, Kernel
 end

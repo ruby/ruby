@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "File.atime" do
   before :each do
@@ -15,7 +15,7 @@ describe "File.atime" do
     File.atime(@file).should be_kind_of(Time)
   end
 
-  platform_is :linux do
+  guard -> { platform_is :linux or (platform_is :windows and ruby_version_is '2.5') } do
     ## NOTE also that some Linux systems disable atime (e.g. via mount params) for better filesystem speed.
     it "returns the last access time for the named file with microseconds" do
       supports_subseconds = Integer(`stat -c%x '#{__FILE__}'`[/\.(\d+)/, 1], 10)
@@ -30,7 +30,7 @@ describe "File.atime" do
   end
 
   it "raises an Errno::ENOENT exception if the file is not found" do
-    lambda { File.atime('a_fake_file') }.should raise_error(Errno::ENOENT)
+    -> { File.atime('a_fake_file') }.should raise_error(Errno::ENOENT)
   end
 
   it "accepts an object that has a #to_path method" do

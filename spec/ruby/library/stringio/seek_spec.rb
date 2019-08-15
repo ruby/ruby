@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "StringIO#seek" do
   before :each do
@@ -33,14 +33,14 @@ describe "StringIO#seek" do
   end
 
   it "raises an Errno::EINVAL error on negative amounts when whence is IO::SEEK_SET" do
-    lambda { @io.seek(-5, IO::SEEK_SET) }.should raise_error(Errno::EINVAL)
+    -> { @io.seek(-5, IO::SEEK_SET) }.should raise_error(Errno::EINVAL)
   end
 
   it "raises an Errno::EINVAL error on incorrect whence argument" do
-    lambda { @io.seek(0, 3) }.should raise_error(Errno::EINVAL)
-    lambda { @io.seek(0, -1) }.should raise_error(Errno::EINVAL)
-    lambda { @io.seek(0, 2**16) }.should raise_error(Errno::EINVAL)
-    lambda { @io.seek(0, -2**16) }.should raise_error(Errno::EINVAL)
+    -> { @io.seek(0, 3) }.should raise_error(Errno::EINVAL)
+    -> { @io.seek(0, -1) }.should raise_error(Errno::EINVAL)
+    -> { @io.seek(0, 2**16) }.should raise_error(Errno::EINVAL)
+    -> { @io.seek(0, -2**16) }.should raise_error(Errno::EINVAL)
   end
 
   it "tries to convert the passed Object to a String using #to_int" do
@@ -51,7 +51,7 @@ describe "StringIO#seek" do
   end
 
   it "raises a TypeError when the passed Object can't be converted to an Integer" do
-    lambda { @io.seek(Object.new) }.should raise_error(TypeError)
+    -> { @io.seek(Object.new) }.should raise_error(TypeError)
   end
 end
 
@@ -62,6 +62,6 @@ describe "StringIO#seek when self is closed" do
   end
 
   it "raises an IOError" do
-    lambda { @io.seek(5) }.should raise_error(IOError)
+    -> { @io.seek(5) }.should raise_error(IOError)
   end
 end

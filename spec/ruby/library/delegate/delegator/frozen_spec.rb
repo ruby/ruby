@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "Delegator when frozen" do
   before :all do
@@ -17,8 +17,8 @@ describe "Delegator when frozen" do
     @delegate.frozen?.should be_true
   end
 
-  it "is not writeable" do
-    lambda{ @delegate[0] += 2 }.should raise_error( RuntimeError )
+  it "is not writable" do
+    ->{ @delegate[0] += 2 }.should raise_error( RuntimeError )
   end
 
   it "creates a frozen clone" do
@@ -30,7 +30,7 @@ describe "Delegator when frozen" do
   end
 
   it "causes mutative calls to raise RuntimeError" do
-    lambda{ @delegate.__setobj__("hola!") }.should raise_error( RuntimeError )
+    ->{ @delegate.__setobj__("hola!") }.should raise_error( RuntimeError )
   end
 
   it "returns false if only the delegated object is frozen" do

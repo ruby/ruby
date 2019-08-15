@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 describe "The interpreter" do
   it "prints an error when given a file with invalid syntax" do

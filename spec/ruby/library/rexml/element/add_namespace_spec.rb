@@ -1,5 +1,5 @@
 require 'rexml/document'
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe "REXML::Element#add_namespace" do
   before :each do
@@ -21,4 +21,3 @@ describe "REXML::Element#add_namespace" do
     @elem.namespace.should == "some_uri"
   end
 end
-

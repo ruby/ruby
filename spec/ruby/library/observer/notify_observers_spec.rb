@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Observer#notify_observers" do
 
@@ -16,7 +16,7 @@ describe "Observer#notify_observers" do
   end
 
   it "verifies observer responds to update" do
-    lambda {
+    -> {
       @observable.add_observer(@observable)
     }.should raise_error(NoMethodError)
   end

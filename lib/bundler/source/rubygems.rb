@@ -6,7 +6,7 @@ require "rubygems/user_interaction"
 module Bundler
   class Source
     class Rubygems < Source
-      autoload :Remote, "bundler/source/rubygems/remote"
+      autoload :Remote, File.expand_path("rubygems/remote", __dir__)
 
       # Use the API when installing less than X gems
       API_REQUEST_LIMIT = 500
@@ -51,7 +51,7 @@ module Bundler
       end
 
       def can_lock?(spec)
-        return super if Bundler.feature_flag.lockfile_uses_separate_rubygems_sources?
+        return super if Bundler.feature_flag.disable_multisource?
         spec.source.is_a?(Rubygems)
       end
 
@@ -106,7 +106,7 @@ module Bundler
           end
         end
 
-        if installed?(spec) && !force
+        if (installed?(spec) || Plugin.installed?(spec.name)) && !force
           print_using_message "Using #{version_message(spec)}"
           return nil # no post-install message
         end
@@ -120,8 +120,14 @@ module Bundler
           uris.uniq!
           Installer.ambiguous_gems << [spec.name, *uris] if uris.length > 1
 
-          s = Bundler.rubygems.spec_from_gem(fetch_gem(spec), Bundler.settings["trust-policy"])
-          spec.__swap__(s)
+          path = fetch_gem(spec)
+          begin
+            s = Bundler.rubygems.spec_from_gem(path, Bundler.settings["trust-policy"])
+            spec.__swap__(s)
+          rescue StandardError
+            Bundler.rm_rf(path)
+            raise
+          end
         end
 
         unless Bundler.settings[:no_install]
@@ -137,6 +143,8 @@ module Bundler
             install_path = rubygems_dir
             bin_path     = Bundler.system_bindir
           end
+
+          Bundler.mkdir_p bin_path, :no_sudo => true unless spec.executables.empty? || Bundler.rubygems.provides?(">= 2.7.5")
 
           installed_spec = nil
           Bundler.rubygems.preserve_paths do
@@ -252,10 +260,8 @@ module Bundler
         end
       end
 
-      def double_check_for(unmet_dependency_names, override_dupes = false, index = specs)
+      def double_check_for(unmet_dependency_names)
         return unless @allow_remote
-        raise ArgumentError, "missing index" unless index
-
         return unless api_fetchers.any?
 
         unmet_dependency_names = unmet_dependency_names.call
@@ -270,7 +276,7 @@ module Bundler
 
         Bundler.ui.debug "Double checking for #{unmet_dependency_names || "all specs (due to the size of the request)"} in #{self}"
 
-        fetch_names(api_fetchers, unmet_dependency_names, index, override_dupes)
+        fetch_names(api_fetchers, unmet_dependency_names, specs, false)
       end
 
       def dependency_names_to_double_check
@@ -338,7 +344,11 @@ module Bundler
       end
 
       def remove_auth(remote)
-        remote.dup.tap {|uri| uri.user = uri.password = nil }.to_s
+        if remote.user || remote.password
+          remote.dup.tap {|uri| uri.user = uri.password = nil }.to_s
+        else
+          remote.to_s
+        end
       end
 
       def installed_specs
@@ -479,7 +489,10 @@ module Bundler
         else
           uri = spec.remote.uri
           Bundler.ui.confirm("Fetching #{version_message(spec)}")
-          Bundler.rubygems.download_gem(spec, uri, download_path)
+          rubygems_local_path = Bundler.rubygems.download_gem(spec, uri, download_path)
+          if rubygems_local_path != local_path
+            FileUtils.mv(rubygems_local_path, local_path)
+          end
           cache_globally(spec, local_path)
         end
       end

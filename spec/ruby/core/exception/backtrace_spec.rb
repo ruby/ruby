@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Exception#backtrace" do
   before :each do
@@ -63,6 +63,21 @@ describe "Exception#backtrace" do
     rescue RuntimeError => e
       e.backtrace.unshift "backtrace first"
       e.backtrace[0].should == "backtrace first"
+    end
+  end
+
+  it "returns the same array after duping" do
+    begin
+      raise
+    rescue RuntimeError => err
+      bt = err.backtrace
+      err.dup.backtrace.should equal(bt)
+
+      new_bt = ['hi']
+      err.set_backtrace new_bt
+
+      err.backtrace.should == new_bt
+      err.dup.backtrace.should equal(new_bt)
     end
   end
 end

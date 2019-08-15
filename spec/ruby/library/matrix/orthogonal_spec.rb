@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'matrix'
 
 describe "Matrix.orthogonal?" do
@@ -18,7 +18,7 @@ describe "Matrix.orthogonal?" do
       Matrix.empty(0, 2),
       Matrix.empty(2, 0),
     ].each do |rectangular_matrix|
-      lambda {
+      -> {
         rectangular_matrix.orthogonal?
       }.should raise_error(Matrix::ErrDimensionMismatch)
     end

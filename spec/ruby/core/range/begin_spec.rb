@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/begin', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/begin'
 
 describe "Range#begin" do
-  it_behaves_like(:range_begin, :begin)
+  it_behaves_like :range_begin, :begin
 end

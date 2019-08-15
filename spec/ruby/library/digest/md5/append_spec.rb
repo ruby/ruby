@@ -1,7 +1,7 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../shared/constants', __FILE__)
-require File.expand_path('../shared/update', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'shared/constants'
+require_relative 'shared/update'
 
 describe "Digest::MD5#<<" do
- it_behaves_like(:md5_update, :<<)
+ it_behaves_like :md5_update, :<<
 end

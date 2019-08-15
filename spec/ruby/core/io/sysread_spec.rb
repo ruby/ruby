@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "IO#sysread on a file" do
   before :each do
@@ -58,13 +58,13 @@ describe "IO#sysread on a file" do
   it "does not raise error if called after IO#read followed by IO#write" do
     @file.read(5)
     @file.write("abcde")
-    lambda { @file.sysread(5) }.should_not raise_error(IOError)
+    -> { @file.sysread(5) }.should_not raise_error(IOError)
   end
 
   it "does not raise error if called after IO#read followed by IO#syswrite" do
     @file.read(5)
     @file.syswrite("abcde")
-    lambda { @file.sysread(5) }.should_not raise_error(IOError)
+    -> { @file.sysread(5) }.should_not raise_error(IOError)
   end
 
   it "reads updated content after the flushed buffered IO#write" do
@@ -77,7 +77,7 @@ describe "IO#sysread on a file" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.sysread(5) }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.sysread(5) }.should raise_error(IOError)
   end
 end
 

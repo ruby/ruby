@@ -13,6 +13,11 @@ module Bundler
         exit 1
       end
 
+      unless File.writable?(Dir.pwd)
+        Bundler.ui.error "Can not create #{gemfile} as the current directory is not writable."
+        exit 1
+      end
+
       if options[:gemspec]
         gemspec = File.expand_path(options[:gemspec])
         unless File.exist?(gemspec)
@@ -36,11 +41,7 @@ module Bundler
   private
 
     def gemfile
-      @gemfile ||= begin
-        Bundler.default_gemfile
-      rescue GemfileNotFound
-        Bundler.feature_flag.init_gems_rb? ? "gems.rb" : "Gemfile"
-      end
+      @gemfile ||= Bundler.settings[:init_gems_rb] ? "gems.rb" : "Gemfile"
     end
   end
 end

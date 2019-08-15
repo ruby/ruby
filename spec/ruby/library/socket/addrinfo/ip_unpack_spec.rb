@@ -1,5 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require 'socket'
+require_relative '../spec_helper'
 
 describe "Addrinfo#ip_unpack" do
   describe "for an ipv4 socket" do
@@ -22,14 +21,14 @@ describe "Addrinfo#ip_unpack" do
     end
   end
 
-  platform_is_not :windows do
+  with_feature :unix_socket do
     describe "for a unix socket" do
       before :each do
         @addrinfo = Addrinfo.unix("/tmp/sock")
       end
 
       it "raises an exception" do
-        lambda { @addrinfo.ip_unpack }.should raise_error(SocketError)
+        -> { @addrinfo.ip_unpack }.should raise_error(SocketError)
       end
     end
   end

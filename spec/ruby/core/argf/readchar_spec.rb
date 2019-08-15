@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/getc', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/getc'
 
 describe "ARGF.getc" do
   it_behaves_like :argf_getc, :readchar
@@ -13,7 +13,7 @@ describe "ARGF.readchar" do
 
   it "raises EOFError when end of stream reached" do
     argf [@file1, @file2] do
-      lambda { while @argf.readchar; end }.should raise_error(EOFError)
+      -> { while @argf.readchar; end }.should raise_error(EOFError)
     end
   end
 end

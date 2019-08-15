@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'uri'
 
 describe "URI.join" do
@@ -21,7 +21,7 @@ describe "URI.join" do
   end
 
   it "raises an error if given no argument" do
-    lambda {
+    -> {
       URI.join
     }.should raise_error(ArgumentError)
   end

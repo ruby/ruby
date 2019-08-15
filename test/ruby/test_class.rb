@@ -242,27 +242,29 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_invalid_next_from_class_definition
-    assert_raise(SyntaxError) { eval("class C; next; end") }
+    assert_syntax_error("class C; next; end", /Invalid next/)
   end
 
   def test_invalid_break_from_class_definition
-    assert_raise(SyntaxError) { eval("class C; break; end") }
+    assert_syntax_error("class C; break; end", /Invalid break/)
   end
 
   def test_invalid_redo_from_class_definition
-    assert_raise(SyntaxError) { eval("class C; redo; end") }
+    assert_syntax_error("class C; redo; end", /Invalid redo/)
   end
 
   def test_invalid_retry_from_class_definition
-    assert_raise(SyntaxError) { eval("class C; retry; end") }
+    assert_syntax_error("class C; retry; end", /Invalid retry/)
   end
 
   def test_invalid_return_from_class_definition
-    assert_raise(SyntaxError) { eval("class C; return; end") }
+    assert_syntax_error("class C; return; end", /Invalid return/)
   end
 
   def test_invalid_yield_from_class_definition
-    assert_raise(LocalJumpError) { eval("class C; yield; end") }
+    assert_raise(LocalJumpError) {
+      EnvUtil.suppress_warning {eval("class C; yield; end")}
+    }
   end
 
   def test_clone
@@ -327,18 +329,22 @@ class TestClass < Test::Unit::TestCase
     end;
   end
 
-  module M
-    C = 1
-
-    def self.m
-      C
-    end
+  class CloneTest
+    def foo; TEST; end
   end
 
-  def test_constant_access_from_method_in_cloned_module # [ruby-core:47834]
-    m = M.dup
-    assert_equal 1, m::C
-    assert_equal 1, m.m
+  CloneTest1 = CloneTest.clone
+  CloneTest2 = CloneTest.clone
+  class CloneTest1
+    TEST = :C1
+  end
+  class CloneTest2
+    TEST = :C2
+  end
+
+  def test_constant_access_from_method_in_cloned_class
+    assert_equal :C1, CloneTest1.new.foo, '[Bug #15877]'
+    assert_equal :C2, CloneTest2.new.foo, '[Bug #15877]'
   end
 
   def test_invalid_superclass
@@ -443,14 +449,14 @@ class TestClass < Test::Unit::TestCase
     obj = Object.new
     c = obj.singleton_class
     obj.freeze
-    assert_raise_with_message(RuntimeError, /frozen object/) {
+    assert_raise_with_message(FrozenError, /frozen object/) {
       c.class_eval {def f; end}
     }
   end
 
   def test_singleton_class_message
     c = Class.new.freeze
-    assert_raise_with_message(RuntimeError, /frozen Class/) {
+    assert_raise_with_message(FrozenError, /frozen Class/) {
       def c.f; end
     }
   end

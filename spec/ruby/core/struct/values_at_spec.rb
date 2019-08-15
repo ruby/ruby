@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Struct#values_at" do
   it "returns an array of values" do
@@ -11,6 +11,6 @@ describe "Struct#values_at" do
 
   it "fails when passed unsupported types" do
     car = StructClasses::Car.new('Ford', 'Ranger')
-    lambda { car.values_at('make') }.should raise_error(TypeError)
+    -> { car.values_at('make') }.should raise_error(TypeError)
   end
 end

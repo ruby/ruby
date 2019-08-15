@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 with_feature :readline do
   describe "Readline::HISTORY.<<" do
@@ -22,7 +22,7 @@ with_feature :readline do
     end
 
     it "raises a TypeError when the passed Object can't be converted to a String" do
-      lambda { Readline::HISTORY << mock("Object") }.should raise_error(TypeError)
+      -> { Readline::HISTORY << mock("Object") }.should raise_error(TypeError)
     end
   end
 end

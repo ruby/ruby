@@ -1,7 +1,6 @@
 # coding: US-ASCII
 # frozen_string_literal: false
-require 'test/unit'
-require 'logger'
+require_relative 'helper'
 require 'tempfile'
 
 class TestLogger < Test::Unit::TestCase
@@ -241,6 +240,29 @@ class TestLogger < Test::Unit::TestCase
     assert_equal("false\n", log.msg)
   end
 
+  def test_add_binary_data_with_binmode_logdev
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      begin
+        tempfile = Tempfile.new("logger")
+        tempfile.close
+        filename = tempfile.path
+        File.unlink(filename)
+
+        logger = Logger.new filename, binmode: true
+        logger.level = Logger::DEBUG
+
+        str = +"\x80"
+        str.force_encoding("ASCII-8BIT")
+
+        logger.add Logger::DEBUG, str
+        assert_equal(2, File.binread(filename).split(/\n/).size)
+      ensure
+        logger.close
+        tempfile.unlink
+      end
+    end
+  end
+
   def test_level_log
     logger = Logger.new(nil)
     logger.progname = "my_progname"
@@ -326,7 +348,7 @@ class TestLogger < Test::Unit::TestCase
     r, w = IO.pipe
     logger = Logger.new(w)
     logger << "msg"
-    read_ready, = IO.select([r], nil, nil, 0.1)
+    IO.select([r], nil, nil, 0.1)
     w.close
     msg = r.read
     r.close
@@ -335,7 +357,7 @@ class TestLogger < Test::Unit::TestCase
     r, w = IO.pipe
     logger = Logger.new(w)
     logger << "msg2\n\n"
-    read_ready, = IO.select([r], nil, nil, 0.1)
+    IO.select([r], nil, nil, 0.1)
     w.close
     msg = r.read
     r.close

@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :complex_math_atan2, shared: true do
   it "returns the arc tangent of the passed arguments" do
@@ -27,8 +27,8 @@ describe :complex_math_atan2_bang, shared: true do
   end
 
   it "raises a TypeError when passed a Complex number" do
-    lambda { @object.send(:atan2!, Complex(4, 5), Complex(4, 5)) }.should raise_error(TypeError)
-    lambda { @object.send(:atan2!, 4, Complex(4, 5)) }.should raise_error(TypeError)
-    lambda { @object.send(:atan2!, Complex(4, 5), 5) }.should raise_error(TypeError)
+    -> { @object.send(:atan2!, Complex(4, 5), Complex(4, 5)) }.should raise_error(TypeError)
+    -> { @object.send(:atan2!, 4, Complex(4, 5)) }.should raise_error(TypeError)
+    -> { @object.send(:atan2!, Complex(4, 5), 5) }.should raise_error(TypeError)
   end
 end

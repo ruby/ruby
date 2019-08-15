@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :range_eql, shared: true do
   it "returns true if other has same begin, end, and exclude_end? values" do

@@ -1,30 +1,16 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require 'socket'
+require_relative '../spec_helper'
 
 describe "Addrinfo#protocol" do
-  describe "for an ipv4 socket" do
-
-    before :each do
-      @addrinfo = Addrinfo.tcp("127.0.0.1", 80)
-    end
-
-    it "returns Socket::IPPROTO_TCP" do
-      @addrinfo.protocol.should == Socket::IPPROTO_TCP
-    end
-
+  it 'returns 0 by default' do
+    Addrinfo.ip('127.0.0.1').protocol.should == 0
   end
 
-  describe "for an ipv6 socket" do
-    before :each do
-      @addrinfo = Addrinfo.tcp("::1", 80)
-    end
-
-    it "returns Socket::IPPROTO_TCP" do
-      @addrinfo.protocol.should == Socket::IPPROTO_TCP
-    end
+  it 'returns a custom protocol when given' do
+    Addrinfo.tcp('127.0.0.1', 80).protocol.should == Socket::IPPROTO_TCP
+    Addrinfo.tcp('::1', 80).protocol.should == Socket::IPPROTO_TCP
   end
 
-  platform_is_not :windows do
+  with_feature :unix_socket do
     describe "for a unix socket" do
       before :each do
         @addrinfo = Addrinfo.unix("/tmp/sock")

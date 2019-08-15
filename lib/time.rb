@@ -2,6 +2,8 @@
 
 require 'date'
 
+# :stopdoc:
+
 # = time.rb
 #
 # When 'time' is required, Time is extended with additional methods for parsing
@@ -18,73 +20,8 @@ require 'date'
 #   8601}[http://www.iso.org/iso/date_and_time_format])
 # * various formats handled by Date._parse
 # * custom formats handled by Date._strptime
-#
-# == Examples
-#
-# All examples assume you have loaded Time with:
-#
-#   require 'time'
-#
-# All of these examples were done using the EST timezone which is GMT-5.
-#
-# === Converting to a String
-#
-#   t = Time.now
-#   t.iso8601  # => "2011-10-05T22:26:12-04:00"
-#   t.rfc2822  # => "Wed, 05 Oct 2011 22:26:12 -0400"
-#   t.httpdate # => "Thu, 06 Oct 2011 02:26:12 GMT"
-#
-# === Time.parse
-#
-# #parse takes a string representation of a Time and attempts to parse it
-# using a heuristic.
-#
-#   Time.parse("2010-10-31") #=> 2010-10-31 00:00:00 -0500
-#
-# Any missing pieces of the date are inferred based on the current date.
-#
-#   # assuming the current date is "2011-10-31"
-#   Time.parse("12:00") #=> 2011-10-31 12:00:00 -0500
-#
-# We can change the date used to infer our missing elements by passing a second
-# object that responds to #mon, #day and #year, such as Date, Time or DateTime.
-# We can also use our own object.
-#
-#   class MyDate
-#     attr_reader :mon, :day, :year
-#
-#     def initialize(mon, day, year)
-#       @mon, @day, @year = mon, day, year
-#     end
-#   end
-#
-#   d  = Date.parse("2010-10-28")
-#   t  = Time.parse("2010-10-29")
-#   dt = DateTime.parse("2010-10-30")
-#   md = MyDate.new(10,31,2010)
-#
-#   Time.parse("12:00", d)  #=> 2010-10-28 12:00:00 -0500
-#   Time.parse("12:00", t)  #=> 2010-10-29 12:00:00 -0500
-#   Time.parse("12:00", dt) #=> 2010-10-30 12:00:00 -0500
-#   Time.parse("12:00", md) #=> 2010-10-31 12:00:00 -0500
-#
-# #parse also accepts an optional block. You can use this block to specify how
-# to handle the year component of the date. This is specifically designed for
-# handling two digit years. For example, if you wanted to treat all two digit
-# years prior to 70 as the year 2000+ you could write this:
-#
-#   Time.parse("01-10-31") {|year| year + (year < 70 ? 2000 : 1900)}
-#   #=> 2001-10-31 00:00:00 -0500
-#   Time.parse("70-10-31") {|year| year + (year < 70 ? 2000 : 1900)}
-#   #=> 1970-10-31 00:00:00 -0500
-#
-# === Time.strptime
-#
-# #strptime works similar to +parse+ except that instead of using a heuristic
-# to detect the format of the input string, you provide a second argument that
-# describes the format of the string. For example:
-#
-#   Time.strptime("2000-10-31", "%Y-%m-%d") #=> 2000-10-31 00:00:00 -0500
+
+# :startdoc:
 
 class Time
   class << Time
@@ -131,12 +68,19 @@ class Time
     #
     # If +zone_offset+ is unable to determine the offset, nil will be
     # returned.
+    #
+    #     require 'time'
+    #
+    #     Time.zone_offset("EST") #=> -18000
+    #
+    # You must require 'time' to use this method.
+    #
     def zone_offset(zone, year=self.now.year)
       off = nil
       zone = zone.upcase
       if /\A([+-])(\d\d)(:?)(\d\d)(?:\3(\d\d))?\z/ =~ zone
         off = ($1 == '-' ? -1 : 1) * (($2.to_i * 60 + $4.to_i) * 60 + $5.to_i)
-      elsif /\A[+-]\d\d\z/ =~ zone
+      elsif zone.match?(/\A[+-]\d\d\z/)
         off = zone.to_i * 3600
       elsif ZoneOffset.include?(zone)
         off = ZoneOffset[zone] * 3600
@@ -168,11 +112,7 @@ class Time
       #   They are not appropriate for specific time zone such as
       #   Europe/London because time zone neutral,
       #   So -00:00 and -0000 are treated as UTC.
-      if /\A(?:-00:00|-0000|-00|UTC|Z|UT)\z/i =~ zone
-        true
-      else
-        false
-      end
+      zone.match?(/\A(?:-00:00|-0000|-00|UTC|Z|UT)\z/i)
     end
     private :zone_utc?
 
@@ -249,8 +189,8 @@ class Time
     end
     private :apply_offset
 
-    def make_time(date, year, mon, day, hour, min, sec, sec_fraction, zone, now)
-      if !year && !mon && !day && !hour && !min && !sec && !sec_fraction
+    def make_time(date, year, yday, mon, day, hour, min, sec, sec_fraction, zone, now)
+      if !year && !yday && !mon && !day && !hour && !min && !sec && !sec_fraction
         raise ArgumentError, "no time information in #{date.inspect}"
       end
 
@@ -260,7 +200,27 @@ class Time
         off = zone_offset(zone, off_year) if zone
       end
 
-      if now
+      if yday
+        unless (1..366) === yday
+          raise ArgumentError, "yday #{yday} out of range"
+        end
+        mon, day = (yday-1).divmod(31)
+        mon += 1
+        day += 1
+        t = make_time(date, year, nil, mon, day, hour, min, sec, sec_fraction, zone, now)
+        diff = yday - t.yday
+        return t if diff.zero?
+        day += diff
+        if day > 28 and day > (mday = month_days(off_year, mon))
+          if (mon += 1) > 12
+            raise ArgumentError, "yday #{yday} out of range"
+          end
+          day -= mday
+        end
+        return make_time(date, year, nil, mon, day, hour, min, sec, sec_fraction, zone, now)
+      end
+
+      if now and now.respond_to?(:getlocal)
         if off
           now = now.getlocal(off) if now.utc_offset != off
         else
@@ -309,16 +269,61 @@ class Time
     private :make_time
 
     #
-    # Parses +date+ using Date._parse and converts it to a Time object.
+    # Takes a string representation of a Time and attempts to parse it
+    # using a heuristic.
     #
-    # If a block is given, the year described in +date+ is converted by the
-    # block.  For example:
+    #     require 'time'
     #
-    #     Time.parse(...) {|y| 0 <= y && y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
+    #     Time.parse("2010-10-31") #=> 2010-10-31 00:00:00 -0500
+    #
+    # Any missing pieces of the date are inferred based on the current date.
+    #
+    #     require 'time'
+    #
+    #     # assuming the current date is "2011-10-31"
+    #     Time.parse("12:00") #=> 2011-10-31 12:00:00 -0500
+    #
+    # We can change the date used to infer our missing elements by passing a second
+    # object that responds to #mon, #day and #year, such as Date, Time or DateTime.
+    # We can also use our own object.
+    #
+    #     require 'time'
+    #
+    #     class MyDate
+    #       attr_reader :mon, :day, :year
+    #
+    #       def initialize(mon, day, year)
+    #         @mon, @day, @year = mon, day, year
+    #       end
+    #     end
+    #
+    #     d  = Date.parse("2010-10-28")
+    #     t  = Time.parse("2010-10-29")
+    #     dt = DateTime.parse("2010-10-30")
+    #     md = MyDate.new(10,31,2010)
+    #
+    #     Time.parse("12:00", d)  #=> 2010-10-28 12:00:00 -0500
+    #     Time.parse("12:00", t)  #=> 2010-10-29 12:00:00 -0500
+    #     Time.parse("12:00", dt) #=> 2010-10-30 12:00:00 -0500
+    #     Time.parse("12:00", md) #=> 2010-10-31 12:00:00 -0500
+    #
+    # If a block is given, the year described in +date+ is converted
+    # by the block.  This is specifically designed for handling two
+    # digit years. For example, if you wanted to treat all two digit
+    # years prior to 70 as the year 2000+ you could write this:
+    #
+    #     require 'time'
+    #
+    #     Time.parse("01-10-31") {|year| year + (year < 70 ? 2000 : 1900)}
+    #     #=> 2001-10-31 00:00:00 -0500
+    #     Time.parse("70-10-31") {|year| year + (year < 70 ? 2000 : 1900)}
+    #     #=> 1970-10-31 00:00:00 -0500
     #
     # If the upper components of the given time are broken or missing, they are
     # supplied with those of +now+.  For the lower components, the minimum
     # values (1 or 0) are assumed if broken or missing.  For example:
+    #
+    #     require 'time'
     #
     #     # Suppose it is "Thu Nov 29 14:33:20 2001" now and
     #     # your time zone is EST which is GMT-5.
@@ -367,11 +372,13 @@ class Time
       d = Date._parse(date, comp)
       year = d[:year]
       year = yield(year) if year && !comp
-      make_time(date, year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
+      make_time(date, year, d[:yday], d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
     end
 
     #
-    # Parses +date+ using Date._strptime and converts it to a Time object.
+    # Works similar to +parse+ except that instead of using a
+    # heuristic to detect the format of the input string, you provide
+    # a second argument that describes the format of the string.
     #
     # If a block is given, the year described in +date+ is converted by the
     # block.  For example:
@@ -400,12 +407,10 @@ class Time
     # %m :: Month of the year (01..12)
     # %M :: Minute of the hour (00..59)
     # %n :: Newline (\n)
-    # %N :: Fractional seconds digits, default is 9 digits (nanosecond)
-    #       %3N :: millisecond (3 digits)
-    #       %6N :: microsecond (6 digits)
-    #       %9N :: nanosecond (9 digits)
+    # %N :: Fractional seconds digits
     # %p :: Meridian indicator ("AM" or "PM")
     # %P :: Meridian indicator ("am" or "pm")
+    # %Q :: Number of milliseconds since 1970-01-01 00:00:00 UTC.
     # %r :: time, 12-hour (same as %I:%M:%S %p)
     # %R :: time, 24-hour (%H:%M)
     # %s :: Number of seconds since 1970-01-01 00:00:00 UTC.
@@ -427,10 +432,17 @@ class Time
     # %z :: Time zone as  hour offset from UTC (e.g. +0900)
     # %Z :: Time zone name
     # %% :: Literal "%" character
-
+    # %+ :: date(1) (%a %b %e %H:%M:%S %Z %Y)
+    #
+    #     require 'time'
+    #
+    #     Time.strptime("2000-10-31", "%Y-%m-%d") #=> 2000-10-31 00:00:00 -0500
+    #
+    # You must require 'time' to use this method.
+    #
     def strptime(date, format, now=self.now)
       d = Date._strptime(date, format)
-      raise ArgumentError, "invalid strptime format - `#{format}'" unless d
+      raise ArgumentError, "invalid date or strptime format - `#{date}' `#{format}'" unless d
       if seconds = d[:seconds]
         if sec_fraction = d[:sec_fraction]
           usec = sec_fraction * 1000000
@@ -445,7 +457,7 @@ class Time
       else
         year = d[:year]
         year = yield(year) if year && block_given?
-        t = make_time(date, year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
+        t = make_time(date, year, d[:yday], d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
       end
       t
     end
@@ -464,6 +476,11 @@ class Time
     # or if the Time class cannot represent specified date.
     #
     # See #rfc2822 for more information on this format.
+    #
+    #     require 'time'
+    #
+    #     Time.rfc2822("Wed, 05 Oct 2011 22:26:12 -0400")
+    #     #=> 2010-10-05 22:26:12 -0400
     #
     # You must require 'time' to use this method.
     #
@@ -518,17 +535,22 @@ class Time
     #
     # See #httpdate for more information on this format.
     #
+    #     require 'time'
+    #
+    #     Time.httpdate("Thu, 06 Oct 2011 02:26:12 GMT")
+    #     #=> 2011-10-06 02:26:12 UTC
+    #
     # You must require 'time' to use this method.
     #
     def httpdate(date)
-      if /\A\s*
+      if date.match?(/\A\s*
           (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\x20
           (\d{2})\x20
           (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\x20
           (\d{4})\x20
           (\d{2}):(\d{2}):(\d{2})\x20
           GMT
-          \s*\z/ix =~ date
+          \s*\z/ix)
         self.rfc2822(date).utc
       elsif /\A\s*
              (?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\x20
@@ -567,6 +589,11 @@ class Time
     #
     # See #xmlschema for more information on this format.
     #
+    #     require 'time'
+    #
+    #     Time.xmlschema("2011-10-05T22:26:12-04:00")
+    #     #=> 2011-10-05 22:26:12-04:00
+    #
     # You must require 'time' to use this method.
     #
     def xmlschema(date)
@@ -575,7 +602,7 @@ class Time
           T
           (\d\d):(\d\d):(\d\d)
           (\.\d+)?
-          (Z|[+-]\d\d:\d\d)?
+          (Z|[+-]\d\d(?::?\d\d)?)?
           \s*\z/ix =~ date
         year = $1.to_i
         mon = $2.to_i
@@ -614,6 +641,11 @@ class Time
   #
   # If +self+ is a UTC time, -0000 is used as zone.
   #
+  #     require 'time'
+  #
+  #     t = Time.now
+  #     t.rfc2822  # => "Wed, 05 Oct 2011 22:26:12 -0400"
+  #
   # You must require 'time' to use this method.
   #
   def rfc2822
@@ -649,6 +681,11 @@ class Time
   #
   # Note that the result is always UTC (GMT).
   #
+  #     require 'time'
+  #
+  #     t = Time.now
+  #     t.httpdate # => "Thu, 06 Oct 2011 02:26:12 GMT"
+  #
   # You must require 'time' to use this method.
   #
   def httpdate
@@ -672,6 +709,11 @@ class Time
   #
   # +fractional_digits+ specifies a number of digits to use for fractional
   # seconds.  Its default value is 0.
+  #
+  #     require 'time'
+  #
+  #     t = Time.now
+  #     t.iso8601  # => "2011-10-05T22:26:12-04:00"
   #
   # You must require 'time' to use this method.
   #

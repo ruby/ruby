@@ -2,14 +2,18 @@
 
 require "stringio"
 
-def capture(*streams)
-  streams.map!(&:to_s)
+def capture(*args)
+  opts = args.pop if args.last.is_a?(Hash)
+  opts ||= {}
+
+  args.map!(&:to_s)
   begin
     result = StringIO.new
-    streams.each {|stream| eval "$#{stream} = result" }
+    result.close if opts[:closed]
+    args.each {|stream| eval "$#{stream} = result" }
     yield
   ensure
-    streams.each {|stream| eval("$#{stream} = #{stream.upcase}") }
+    args.each {|stream| eval("$#{stream} = #{stream.upcase}") }
   end
   result.string
 end

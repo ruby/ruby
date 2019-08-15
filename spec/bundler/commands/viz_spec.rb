@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle viz", :ruby => "1.9.3", :if => Bundler.which("dot") do
+RSpec.describe "bundle viz", :bundler => "< 3", :if => Bundler.which("dot") do
   let(:ruby_graphviz) do
     graphviz_glob = base_system_gems.join("cache/ruby-graphviz*")
     Pathname.glob(graphviz_glob).first
@@ -12,7 +12,7 @@ RSpec.describe "bundle viz", :ruby => "1.9.3", :if => Bundler.which("dot") do
 
   it "graphs gems from the Gemfile" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
       gem "rack-obama"
     G
@@ -46,7 +46,7 @@ RSpec.describe "bundle viz", :ruby => "1.9.3", :if => Bundler.which("dot") do
     end
 
     install_gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "rack", "= 1.3.pre"
       gem "rack-obama"
     G
@@ -87,7 +87,7 @@ RSpec.describe "bundle viz", :ruby => "1.9.3", :if => Bundler.which("dot") do
 
     it "loads the correct ruby-graphviz gem" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "rack-obama"
       G
@@ -116,7 +116,7 @@ RSpec.describe "bundle viz", :ruby => "1.9.3", :if => Bundler.which("dot") do
   context "--without option" do
     it "one group" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "activesupport"
 
         group :rails do
@@ -130,7 +130,7 @@ RSpec.describe "bundle viz", :ruby => "1.9.3", :if => Bundler.which("dot") do
 
     it "two groups" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "activesupport"
 
         group :rack do

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "ObjectSpace._id2ref" do
   it "converts an object id to a reference to the object" do

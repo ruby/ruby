@@ -1,13 +1,24 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "NoMethodError.new" do
   it "allows passing method args" do
-    NoMethodError.new("msg","name","args").args.should == "args"
+    NoMethodError.new("msg", "name", ["args"]).args.should == ["args"]
   end
 
   it "does not require a name" do
     NoMethodError.new("msg").message.should == "msg"
+  end
+
+  ruby_version_is "2.6" do
+    it "accepts a :receiver keyword argument" do
+      receiver = mock("receiver")
+
+      error = NoMethodError.new("msg", :name, receiver: receiver)
+
+      error.receiver.should == receiver
+      error.name.should == :name
+    end
   end
 end
 
@@ -26,7 +37,7 @@ describe "NoMethodError#args" do
       NoMethodErrorSpecs::NoMethodErrorB.new.foo(1,a)
     rescue Exception => e
       e.args.should == [1,a]
-      e.args[1].object_id.should == a.object_id
+      e.args[1].should equal a
     end
   end
 end
@@ -54,6 +65,42 @@ describe "NoMethodError#message" do
     rescue Exception => e
       e.should be_kind_of(NoMethodError)
       e.message.match(/private method/).should_not == nil
+    end
+  end
+
+  it "calls receiver.inspect only when calling Exception#message" do
+    ScratchPad.record []
+    test_class = Class.new do
+      def inspect
+        ScratchPad << :inspect_called
+        "<inspect>"
+      end
+    end
+    instance = test_class.new
+    begin
+      instance.bar
+    rescue Exception => e
+      e.name.should == :bar
+      ScratchPad.recorded.should == []
+      e.message.should =~ /undefined method.+\bbar\b/
+      ScratchPad.recorded.should == [:inspect_called]
+    end
+  end
+
+  it "fallbacks to a simpler representation of the receiver when receiver.inspect raises an exception" do
+    test_class = Class.new do
+      def inspect
+        raise NoMethodErrorSpecs::InstanceException
+      end
+    end
+    instance = test_class.new
+    begin
+      instance.bar
+    rescue Exception => e
+      e.name.should == :bar
+      message = e.message
+      message.should =~ /undefined method.+\bbar\b/
+      message.should include test_class.inspect
     end
   end
 end

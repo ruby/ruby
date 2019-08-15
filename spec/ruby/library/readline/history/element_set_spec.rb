@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 with_feature :readline do
   describe "Readline::HISTORY.[]=" do
@@ -17,7 +17,7 @@ with_feature :readline do
     end
 
     it "raises an IndexError when there is no item at the passed positive index" do
-      lambda { Readline::HISTORY[10] = "test" }.should raise_error(IndexError)
+      -> { Readline::HISTORY[10] = "test" }.should raise_error(IndexError)
     end
 
     it "sets the item at the given index" do
@@ -29,7 +29,7 @@ with_feature :readline do
     end
 
     it "raises an IndexError when there is no item at the passed negative index" do
-      lambda { Readline::HISTORY[10] = "test" }.should raise_error(IndexError)
+      -> { Readline::HISTORY[10] = "test" }.should raise_error(IndexError)
     end
   end
 end

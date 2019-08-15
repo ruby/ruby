@@ -1,4 +1,4 @@
-require File.expand_path('../spec_helper', __FILE__)
+require_relative 'spec_helper'
 
 load_extension("gc")
 
@@ -9,9 +9,9 @@ describe "CApiGCSpecs" do
 
   it "correctly gets the value from a registered address" do
     @f.registered_tagged_address.should == 10
-    @f.registered_tagged_address.object_id.should == @f.registered_tagged_address.object_id
+    @f.registered_tagged_address.should equal(@f.registered_tagged_address)
     @f.registered_reference_address.should == "Globally registered data"
-    @f.registered_reference_address.object_id.should == @f.registered_reference_address.object_id
+    @f.registered_reference_address.should equal(@f.registered_reference_address)
   end
 
   describe "rb_gc_enable" do

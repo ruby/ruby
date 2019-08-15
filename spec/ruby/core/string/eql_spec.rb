@@ -1,8 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/eql', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/eql'
 
 describe "String#eql?" do
-  it_behaves_like(:string_eql_value, :eql?)
+  it_behaves_like :string_eql_value, :eql?
 
   describe "when given a non-String" do
     it "returns false" do

@@ -9,56 +9,6 @@
 
 **********************************************************************/
 
-/*
-This is based on trimmed version of MT19937.  To get the original version,
-contact <http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html>.
-
-The original copyright notice follows.
-
-   A C-program for MT19937, with initialization improved 2002/2/10.
-   Coded by Takuji Nishimura and Makoto Matsumoto.
-   This is a faster version by taking Shawn Cokus's optimization,
-   Matthe Bellew's simplification, Isaku Wada's real version.
-
-   Before using, initialize the state by using init_genrand(mt, seed)
-   or init_by_array(mt, init_key, key_length).
-
-   Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-
-     1. Redistributions of source code must retain the above copyright
-        notice, this list of conditions and the following disclaimer.
-
-     2. Redistributions in binary form must reproduce the above copyright
-        notice, this list of conditions and the following disclaimer in the
-        documentation and/or other materials provided with the distribution.
-
-     3. The names of its contributors may not be used to endorse or promote
-        products derived from this software without specific prior written
-        permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-   Any feedback is very welcome.
-   http://www.math.keio.ac.jp/matumoto/emt.html
-   email: matumoto@math.keio.ac.jp
-*/
-
 #include "internal.h"
 
 #include <limits.h>
@@ -89,113 +39,14 @@ The original copyright notice follows.
 #endif
 #include "ruby_atomic.h"
 
+#ifdef __OpenBSD__
+/* to define OpenBSD for version check */
+#include <sys/param.h>
+#endif
+
 typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
 
-/* Period parameters */
-#define N 624
-#define M 397
-#define MATRIX_A 0x9908b0dfU	/* constant vector a */
-#define UMASK 0x80000000U	/* most significant w-r bits */
-#define LMASK 0x7fffffffU	/* least significant r bits */
-#define MIXBITS(u,v) ( ((u) & UMASK) | ((v) & LMASK) )
-#define TWIST(u,v) ((MIXBITS((u),(v)) >> 1) ^ ((v)&1U ? MATRIX_A : 0U))
-
-enum {MT_MAX_STATE = N};
-
-struct MT {
-    /* assume int is enough to store 32bits */
-    uint32_t state[N]; /* the array for the state vector  */
-    uint32_t *next;
-    int left;
-};
-
-#define genrand_initialized(mt) ((mt)->next != 0)
-#define uninit_genrand(mt) ((mt)->next = 0)
-
-/* initializes state[N] with a seed */
-static void
-init_genrand(struct MT *mt, unsigned int s)
-{
-    int j;
-    mt->state[0] = s & 0xffffffffU;
-    for (j=1; j<N; j++) {
-        mt->state[j] = (1812433253U * (mt->state[j-1] ^ (mt->state[j-1] >> 30)) + j);
-        /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
-        /* In the previous versions, MSBs of the seed affect   */
-        /* only MSBs of the array state[].                     */
-        /* 2002/01/09 modified by Makoto Matsumoto             */
-        mt->state[j] &= 0xffffffff;  /* for >32 bit machines */
-    }
-    mt->left = 1;
-    mt->next = mt->state + N;
-}
-
-/* initialize by an array with array-length */
-/* init_key is the array for initializing keys */
-/* key_length is its length */
-/* slight change for C++, 2004/2/26 */
-static void
-init_by_array(struct MT *mt, const uint32_t init_key[], int key_length)
-{
-    int i, j, k;
-    init_genrand(mt, 19650218U);
-    i=1; j=0;
-    k = (N>key_length ? N : key_length);
-    for (; k; k--) {
-        mt->state[i] = (mt->state[i] ^ ((mt->state[i-1] ^ (mt->state[i-1] >> 30)) * 1664525U))
-          + init_key[j] + j; /* non linear */
-        mt->state[i] &= 0xffffffffU; /* for WORDSIZE > 32 machines */
-        i++; j++;
-        if (i>=N) { mt->state[0] = mt->state[N-1]; i=1; }
-        if (j>=key_length) j=0;
-    }
-    for (k=N-1; k; k--) {
-        mt->state[i] = (mt->state[i] ^ ((mt->state[i-1] ^ (mt->state[i-1] >> 30)) * 1566083941U))
-          - i; /* non linear */
-        mt->state[i] &= 0xffffffffU; /* for WORDSIZE > 32 machines */
-        i++;
-        if (i>=N) { mt->state[0] = mt->state[N-1]; i=1; }
-    }
-
-    mt->state[0] = 0x80000000U; /* MSB is 1; assuring non-zero initial array */
-}
-
-static void
-next_state(struct MT *mt)
-{
-    uint32_t *p = mt->state;
-    int j;
-
-    mt->left = N;
-    mt->next = mt->state;
-
-    for (j=N-M+1; --j; p++)
-        *p = p[M] ^ TWIST(p[0], p[1]);
-
-    for (j=M; --j; p++)
-        *p = p[M-N] ^ TWIST(p[0], p[1]);
-
-    *p = p[M-N] ^ TWIST(p[0], mt->state[0]);
-}
-
-/* generates a random number on [0,0xffffffff]-interval */
-static unsigned int
-genrand_int32(struct MT *mt)
-{
-    /* mt must be initialized */
-    unsigned int y;
-
-    if (--mt->left <= 0) next_state(mt);
-    y = *mt->next++;
-
-    /* Tempering */
-    y ^= (y >> 11);
-    y ^= (y << 7) & 0x9d2c5680;
-    y ^= (y << 15) & 0xefc60000;
-    y ^= (y >> 18);
-
-    return y;
-}
+#include "missing/mt19937.c"
 
 /* generates a random number on [0,1) with 53-bit resolution*/
 static double int_pair_to_real_exclusive(uint32_t a, uint32_t b);
@@ -302,6 +153,7 @@ VALUE rb_cRandom;
 #define id_minus '-'
 #define id_plus  '+'
 static ID id_rand, id_bytes;
+NORETURN(static void domain_error(void));
 
 /* :nodoc: */
 static void
@@ -323,8 +175,8 @@ random_memsize(const void *ptr)
     return sizeof(rb_random_t);
 }
 
-static const rb_data_type_t random_data_type = {
-    "random",
+static const rb_data_type_t random_mt_type = {
+    "random/MT",
     {
 	random_mark,
 	random_free,
@@ -337,7 +189,7 @@ static rb_random_t *
 get_rnd(VALUE obj)
 {
     rb_random_t *ptr;
-    TypedData_Get_Struct(obj, rb_random_t, &random_data_type, ptr);
+    TypedData_Get_Struct(obj, rb_random_t, &random_mt_type, ptr);
     return rand_start(ptr);
 }
 
@@ -347,7 +199,7 @@ try_get_rnd(VALUE obj)
     if (obj == rb_cRandom) {
 	return rand_start(&default_rand);
     }
-    if (!rb_typeddata_is_kind_of(obj, &random_data_type)) return NULL;
+    if (!rb_typeddata_is_kind_of(obj, &random_mt_type)) return NULL;
     return rand_start(DATA_PTR(obj));
 }
 
@@ -356,7 +208,7 @@ static VALUE
 random_alloc(VALUE klass)
 {
     rb_random_t *rnd;
-    VALUE obj = TypedData_Make_Struct(klass, rb_random_t, &random_data_type, rnd);
+    VALUE obj = TypedData_Make_Struct(klass, rb_random_t, &random_mt_type, rnd);
     rnd->seed = INT2FIX(0);
     return obj;
 }
@@ -447,27 +299,73 @@ fill_random_bytes_urandom(void *seed, size_t size)
 			     O_RDONLY, 0);
     struct stat statbuf;
     ssize_t ret = 0;
+    size_t offset = 0;
 
     if (fd < 0) return -1;
     rb_update_max_fd(fd);
     if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
-	ret = read(fd, seed, size);
+	do {
+	    ret = read(fd, ((char*)seed) + offset, size - offset);
+	    if (ret < 0) {
+		close(fd);
+		return -1;
+	    }
+	    offset += (size_t)ret;
+	} while(offset < size);
     }
     close(fd);
-    if (ret < 0 || (size_t)ret < size) return -1;
     return 0;
 }
 #else
 # define fill_random_bytes_urandom(seed, size) -1
 #endif
 
+#if defined HAVE_GETRANDOM
+# include <sys/random.h>
+#elif defined __linux__ && defined __NR_getrandom
+# include <linux/random.h>
+
+# ifndef GRND_NONBLOCK
+#   define GRND_NONBLOCK 0x0001	/* not defined in musl libc */
+# endif
+# define getrandom(ptr, size, flags) \
+    (ssize_t)syscall(__NR_getrandom, (ptr), (size), (flags))
+# define HAVE_GETRANDOM 1
+#endif
+
 #if 0
+#elif defined MAC_OS_X_VERSION_10_7 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
+#include <Security/Security.h>
+
+static int
+fill_random_bytes_syscall(void *seed, size_t size, int unused)
+{
+    int status = SecRandomCopyBytes(kSecRandomDefault, size, seed);
+
+    if (status != errSecSuccess) {
+# if 0
+        CFStringRef s = SecCopyErrorMessageString(status, NULL);
+        const char *m = s ? CFStringGetCStringPtr(s, kCFStringEncodingUTF8) : NULL;
+        fprintf(stderr, "SecRandomCopyBytes failed: %d: %s\n", status,
+                m ? m : "unknown");
+        if (s) CFRelease(s);
+# endif
+        return -1;
+    }
+    return 0;
+}
 #elif defined(HAVE_ARC4RANDOM_BUF)
 static int
 fill_random_bytes_syscall(void *buf, size_t size, int unused)
 {
+#if (defined(__OpenBSD__) && OpenBSD >= 201411) || \
+    (defined(__NetBSD__)  && __NetBSD_Version__ >= 700000000) || \
+    (defined(__FreeBSD__) && __FreeBSD_version >= 1200079)
     arc4random_buf(buf, size);
     return 0;
+#else
+    return -1;
+#endif
 }
 #elif defined(_WIN32)
 static void
@@ -489,12 +387,12 @@ fill_random_bytes_syscall(void *seed, size_t size, int unused)
 	    prov = (HCRYPTPROV)INVALID_HANDLE_VALUE;
 	}
 	old_prov = (HCRYPTPROV)ATOMIC_PTR_CAS(perm_prov, 0, prov);
-	if (LIKELY(!old_prov)) { /* no other threads acquried */
+	if (LIKELY(!old_prov)) { /* no other threads acquired */
 	    if (prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
 		rb_gc_register_mark_object(Data_Wrap_Struct(0, 0, release_crypt, &perm_prov));
 	    }
 	}
-	else {			/* another thread acquried */
+	else {			/* another thread acquired */
 	    if (prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
 		CryptReleaseContext(prov, 0);
 	    }
@@ -505,29 +403,26 @@ fill_random_bytes_syscall(void *seed, size_t size, int unused)
     CryptGenRandom(prov, size, seed);
     return 0;
 }
-#elif defined __linux__ && defined __NR_getrandom
-#include <linux/random.h>
-
-# ifndef GRND_NONBLOCK
-#   define GRND_NONBLOCK 0x0001	/* not defined in musl libc */
-# endif
-
+#elif defined HAVE_GETRANDOM
 static int
 fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
 {
     static rb_atomic_t try_syscall = 1;
     if (try_syscall) {
-	long ret;
+	size_t offset = 0;
 	int flags = 0;
 	if (!need_secure)
 	    flags = GRND_NONBLOCK;
-	errno = 0;
-	ret = syscall(__NR_getrandom, seed, size, flags);
-	if (errno == ENOSYS) {
-	    ATOMIC_SET(try_syscall, 0);
-	    return -1;
-	}
-	if ((size_t)ret == size) return 0;
+	do {
+	    errno = 0;
+            ssize_t ret = getrandom(((char*)seed) + offset, size - offset, flags);
+	    if (ret == -1) {
+		ATOMIC_SET(try_syscall, 0);
+		return -1;
+	    }
+	    offset += (size_t)ret;
+	} while(offset < size);
+	return 0;
     }
     return -1;
 }
@@ -535,27 +430,38 @@ fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
 # define fill_random_bytes_syscall(seed, size, need_secure) -1
 #endif
 
-static int
-fill_random_bytes(void *seed, size_t size, int need_secure)
+int
+ruby_fill_random_bytes(void *seed, size_t size, int need_secure)
 {
     int ret = fill_random_bytes_syscall(seed, size, need_secure);
     if (ret == 0) return ret;
     return fill_random_bytes_urandom(seed, size);
 }
 
+#define fill_random_bytes ruby_fill_random_bytes
+
 static void
 fill_random_seed(uint32_t *seed, size_t cnt)
 {
     static int n = 0;
+#if defined HAVE_CLOCK_GETTIME
+    struct timespec tv;
+#elif defined HAVE_GETTIMEOFDAY
     struct timeval tv;
+#endif
     size_t len = cnt * sizeof(*seed);
 
     memset(seed, 0, len);
 
-    fill_random_bytes(seed, len, TRUE);
+    fill_random_bytes(seed, len, FALSE);
 
+#if defined HAVE_CLOCK_GETTIME
+    clock_gettime(CLOCK_REALTIME, &tv);
+    seed[0] ^= tv.tv_nsec;
+#elif defined HAVE_GETTIMEOFDAY
     gettimeofday(&tv, 0);
     seed[0] ^= tv.tv_usec;
+#endif
     seed[1] ^= (uint32_t)tv.tv_sec;
 #if SIZEOF_TIME_T > SIZEOF_INT
     seed[0] ^= (uint32_t)((time_t)tv.tv_sec >> SIZEOF_INT * CHAR_BIT);
@@ -624,7 +530,7 @@ random_raw_seed(VALUE self, VALUE size)
     long n = NUM2ULONG(size);
     VALUE buf = rb_str_new(0, n);
     if (n == 0) return buf;
-    if (fill_random_bytes(RSTRING_PTR(buf), n, FALSE))
+    if (fill_random_bytes(RSTRING_PTR(buf), n, TRUE))
 	rb_raise(rb_eRuntimeError, "failed to get urandom");
     return buf;
 }
@@ -726,19 +632,17 @@ random_load(VALUE obj, VALUE dump)
     rb_random_t *rnd = get_rnd(obj);
     struct MT *mt = &rnd->mt;
     VALUE state, left = INT2FIX(1), seed = INT2FIX(0);
-    const VALUE *ary;
     unsigned long x;
 
     rb_check_copyable(obj, dump);
     Check_Type(dump, T_ARRAY);
-    ary = RARRAY_CONST_PTR(dump);
     switch (RARRAY_LEN(dump)) {
       case 3:
-	seed = ary[2];
+        seed = RARRAY_AREF(dump, 2);
       case 2:
-	left = ary[1];
+        left = RARRAY_AREF(dump, 1);
       case 1:
-	state = ary[0];
+        state = RARRAY_AREF(dump, 0);
 	break;
       default:
 	rb_raise(rb_eArgError, "wrong dump data");
@@ -1073,7 +977,7 @@ random_ulong_limited_big(VALUE obj, rb_random_t *rnd, VALUE vmax)
 static VALUE genrand_bytes(rb_random_t *rnd, long n);
 
 /*
- * call-seq: prng.bytes(size) -> a_string
+ * call-seq: prng.bytes(size) -> string
  *
  * Returns a random binary string containing +size+ bytes.
  *
@@ -1123,17 +1027,28 @@ rb_random_bytes(VALUE obj, long n)
     return genrand_bytes(rnd, n);
 }
 
+/*
+ * call-seq: Random.bytes(size) -> string
+ *
+ * Returns a random binary string.
+ * The argument +size+ specifies the length of the returned string.
+ */
+static VALUE
+random_s_bytes(VALUE obj, VALUE len)
+{
+    rb_random_t *rnd = rand_start(&default_rand);
+    return genrand_bytes(rnd, NUM2LONG(rb_to_int(len)));
+}
+
 static VALUE
 range_values(VALUE vmax, VALUE *begp, VALUE *endp, int *exclp)
 {
-    VALUE end, r;
+    VALUE end;
 
     if (!rb_range_values(vmax, begp, &end, exclp)) return Qfalse;
     if (endp) *endp = end;
-    if (!rb_respond_to(end, id_minus)) return Qfalse;
-    r = rb_funcallv(end, id_minus, 1, begp);
-    if (NIL_P(r)) return Qfalse;
-    return r;
+    if (NIL_P(end)) return Qnil;
+    return rb_check_funcall_default(end, id_minus, 1, begp, Qfalse);
 }
 
 static VALUE
@@ -1172,7 +1087,6 @@ rand_int(VALUE obj, rb_random_t *rnd, VALUE vmax, int restrictive)
     }
 }
 
-NORETURN(static void domain_error(void));
 static void
 domain_error(void)
 {
@@ -1218,6 +1132,7 @@ rand_range(VALUE obj, rb_random_t* rnd, VALUE range)
 
     if ((v = vmax = range_values(range, &beg, &end, &excl)) == Qfalse)
 	return Qfalse;
+    if (NIL_P(v)) domain_error();
     if (!RB_TYPE_P(vmax, T_FLOAT) && (v = rb_check_to_int(vmax), !NIL_P(v))) {
 	long max;
 	vmax = v;
@@ -1354,6 +1269,16 @@ rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd)
     return rand_range(obj, rnd, vmax);
 }
 
+/*
+ * call-seq:
+ *   prng.random_number      -> float
+ *   prng.random_number(max) -> number
+ *   prng.rand               -> float
+ *   prng.rand(max)          -> number
+ *
+ * Generates formatted random number from raw random bytes.
+ * See Random#rand.
+ */
 static VALUE
 rand_random_number(int argc, VALUE *argv, VALUE obj)
 {
@@ -1502,6 +1427,7 @@ init_seed(struct MT *mt)
 	seed.u32[i] = genrand_int32(mt);
 }
 
+NO_SANITIZE("unsigned-integer-overflow", extern st_index_t rb_hash_start(st_index_t h));
 st_index_t
 rb_hash_start(st_index_t h)
 {
@@ -1554,11 +1480,11 @@ init_randomseed(struct MT *mt)
 
 /* construct Random::DEFAULT bits */
 static VALUE
-Init_Random_default(void)
+Init_Random_default(VALUE klass)
 {
     rb_random_t *r = &default_rand;
     struct MT *mt = &r->mt;
-    VALUE v = TypedData_Wrap_Struct(rb_cRandom, &random_data_type, r);
+    VALUE v = TypedData_Wrap_Struct(klass, &random_mt_type, r);
 
     rb_gc_register_mark_object(v);
     r->seed = init_randomseed(mt);
@@ -1619,20 +1545,25 @@ InitVM_Random(void)
 
     {
 	/* Direct access to Ruby's Pseudorandom number generator (PRNG). */
-	VALUE rand_default = Init_Random_default();
+        VALUE rand_default = Init_Random_default(rb_cRandom);
+	/* The default Pseudorandom number generator.  Used by class
+	 * methods of Random. */
 	rb_define_const(rb_cRandom, "DEFAULT", rand_default);
     }
 
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
+    rb_define_singleton_method(rb_cRandom, "bytes", random_s_bytes, 1);
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
     rb_define_singleton_method(rb_cRandom, "urandom", random_raw_seed, 1);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
 
     {
+	/* Format raw random number as Random does */
 	VALUE m = rb_define_module_under(rb_cRandom, "Formatter");
 	rb_include_module(rb_cRandom, m);
+	rb_extend_object(rb_cRandom, m);
 	rb_define_method(m, "random_number", rand_random_number, -1);
 	rb_define_method(m, "rand", rand_random_number, -1);
     }

@@ -15,7 +15,6 @@ static inline void
 pass_passed_block_handler(rb_execution_context_t *ec)
 {
     VALUE block_handler = rb_vm_frame_block_handler(ec->cfp);
-    vm_block_handler_verify(block_handler);
     vm_passed_block_handler_set(ec, block_handler);
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_PASSED);
 }
@@ -144,10 +143,11 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 
 #define EC_REPUSH_TAG() (void)(_ec->tag = &_tag)
 
-#define PUSH_TAG() EC_PUSH_TAG(GET_EC())
-#define POP_TAG()  EC_POP_TAG()
-
-#if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ >= 6 && __GNUC_MINOR__ <= 8)
+#if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ >= 6 && __GNUC_MINOR__ <= 8) || __clang__
+/* This macro prevents GCC 4.6--4.8 from emitting maybe-uninitialized warnings.
+ * This macro also prevents Clang from dumping core in EC_EXEC_TAG().
+ * (I confirmed Clang 4.0.1 and 5.0.0.)
+ */
 # define VAR_FROM_MEMORY(var) __extension__(*(__typeof__(var) volatile *)&(var))
 # define VAR_INITIALIZED(var) ((var) = VAR_FROM_MEMORY(var))
 # define VAR_NOCLOBBERED(var) volatile var
@@ -156,23 +156,6 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 # define VAR_INITIALIZED(var) ((void)&(var))
 # define VAR_NOCLOBBERED(var) var
 #endif
-
-#if defined(USE_UNALIGNED_MEMBER_ACCESS) && USE_UNALIGNED_MEMBER_ACCESS && \
-    defined(__clang__)
-# define UNALIGNED_MEMBER_ACCESS(expr) __extension__({ \
-    _Pragma("GCC diagnostic push"); \
-    _Pragma("GCC diagnostic ignored \"-Waddress-of-packed-member\""); \
-    typeof(expr) unaligned_member_access_result = (expr); \
-    _Pragma("GCC diagnostic pop"); \
-    unaligned_member_access_result; \
-})
-#else
-# define UNALIGNED_MEMBER_ACCESS(expr) expr
-#endif
-#define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
-
-#undef RB_OBJ_WRITE
-#define RB_OBJ_WRITE(a, slot, b) UNALIGNED_MEMBER_ACCESS(rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
 
 /* clear ec->tag->state, and return the value */
 static inline int
@@ -198,12 +181,7 @@ rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 #define EC_EXEC_TAG() \
     (ruby_setjmp(_tag.buf) ? rb_ec_tag_state(VAR_FROM_MEMORY(_ec)) : (EC_REPUSH_TAG(), 0))
 
-#define EXEC_TAG() \
-  EC_EXEC_TAG()
-
 #define EC_JUMP_TAG(ec, st) rb_ec_tag_jump(ec, st)
-
-#define JUMP_TAG(st) EC_JUMP_TAG(GET_EC(), (st))
 
 #define INTERNAL_EXCEPTION_P(exc) FIXNUM_P(exc)
 
@@ -299,9 +277,7 @@ NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
 NORETURN(void rb_print_inaccessible(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
-#if 0
 NORETURN(void rb_vm_jump_tag_but_local_jump(int));
-#endif
 
 VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);
 rb_cref_t *rb_vm_cref(void);

@@ -71,6 +71,33 @@ Examples:
 All these numbers have the same decimal value, 170.  Like integers and floats
 you may use an underscore for readability.
 
+=== Rational numbers
+
+Numbers suffixed by +r+ are Rational numbers.
+
+  12r         #=> (12/1)
+  12.3r       #=> (123/10)
+
+Rational numbers are exact, whereas Float numbers are inexact.
+
+  0.1r + 0.2r #=> (3/10)
+  0.1 + 0.2   #=> 0.30000000000000004
+
+=== Complex numbers
+
+Numbers suffixed by +i+ are Complex (or imaginary) numbers.
+
+  1i          #=> (0+1i)
+  1i * 1i     #=> (-1+0i)
+
+Also Rational numbers may be imaginary numbers.
+
+  12.3ri      #=> (0+(123/10)*i)
+
++i+ must be placed after +r+, the opposite is not allowed.
+
+  12.3ir      #=> syntax error
+
 == Strings
 
 The most common way of writing strings is using <tt>"</tt>:
@@ -166,7 +193,7 @@ a single codepoint in the script encoding:
   ?\C-\M-a #=> "\x81", same as above
   ?あ      #=> "あ"
 
-=== Here Documents
+=== Here Documents (heredocs)
 
 If you are writing a large block of text you may use a "here document" or
 "heredoc":
@@ -227,6 +254,9 @@ behaves like Kernel#`:
   puts <<-`HEREDOC`
   cat #{__FILE__}
   HEREDOC
+
+When surrounding with quotes, any character but that quote and newline
+(CR and/or LF) can be used as the identifier.
 
 To call a method on a heredoc place it after the opening identifier:
 
@@ -306,6 +336,8 @@ its ending value.
 
   (1..2)  # includes its ending value
   (1...2) # excludes its ending value
+  (1..)   # endless range, representing infinite sequence from 1 to Infinity
+  (..1)   # beginless range, representing infinite sequence from -Infinity to 1
 
 You may create a range of any object.  See the Range documentation for details
 on the methods you need to implement.

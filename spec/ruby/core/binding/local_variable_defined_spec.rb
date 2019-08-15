@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe 'Binding#local_variable_defined?' do
   it 'returns false when a variable is not defined' do
@@ -26,7 +26,7 @@ describe 'Binding#local_variable_defined?' do
 
   it 'returns true when a local variable is defined in a parent scope' do
     foo = 10
-    lambda {
+    -> {
       binding.local_variable_defined?(:foo)
     }.call.should == true
   end

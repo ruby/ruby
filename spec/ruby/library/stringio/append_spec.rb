@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "StringIO#<< when passed [Object]" do
   before :each do
@@ -55,11 +55,11 @@ end
 describe "StringIO#<< when self is not writable" do
   it "raises an IOError" do
     io = StringIO.new("test", "r")
-    lambda { io << "test" }.should raise_error(IOError)
+    -> { io << "test" }.should raise_error(IOError)
 
     io = StringIO.new("test")
     io.close_write
-    lambda { io << "test" }.should raise_error(IOError)
+    -> { io << "test" }.should raise_error(IOError)
   end
 end
 

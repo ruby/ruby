@@ -233,8 +233,9 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_assert_output_lines
     assert_raise(MiniTest::Assertion) {
-      Timeout.timeout(0.1) {
+      Timeout.timeout(0.5) {
         assert_output_lines([]) {
+          Thread.current.report_on_exception = false
           raise "ok"
         }
       }
@@ -380,6 +381,16 @@ class TestFileUtils < Test::Unit::TestCase
     assert_same_file 'tmp/cpr_src/b', 'tmp/cpr_dest/b'
     assert_same_file 'tmp/cpr_src/c', 'tmp/cpr_dest/c'
     assert_directory 'tmp/cpr_dest/d'
+    assert_raise(ArgumentError) do
+      cp_r 'tmp/cpr_src', './tmp/cpr_src'
+    end
+    assert_raise(ArgumentError) do
+      cp_r './tmp/cpr_src', 'tmp/cpr_src'
+    end
+    assert_raise(ArgumentError) do
+      cp_r './tmp/cpr_src', File.expand_path('tmp/cpr_src')
+    end
+
     my_rm_rf 'tmp/cpr_src'
     my_rm_rf 'tmp/cpr_dest'
 
@@ -447,6 +458,45 @@ class TestFileUtils < Test::Unit::TestCase
     cp_r 'tmp/src', 'tmp/dest/', remove_destination: true
     cp_r 'tmp/src', 'tmp/dest/', remove_destination: true
   end if have_symlink?
+
+  def test_cp_lr
+    check_singleton :cp_lr
+
+    cp_lr 'data', 'tmp'
+    TARGETS.each do |fname|
+      assert_same_file fname, "tmp/#{fname}"
+    end
+
+    # a/* -> b/*
+    mkdir 'tmp/cpr_src'
+    mkdir 'tmp/cpr_dest'
+    File.open('tmp/cpr_src/a', 'w') {|f| f.puts 'a' }
+    File.open('tmp/cpr_src/b', 'w') {|f| f.puts 'b' }
+    File.open('tmp/cpr_src/c', 'w') {|f| f.puts 'c' }
+    mkdir 'tmp/cpr_src/d'
+    cp_lr 'tmp/cpr_src/.', 'tmp/cpr_dest'
+    assert_same_file 'tmp/cpr_src/a', 'tmp/cpr_dest/a'
+    assert_same_file 'tmp/cpr_src/b', 'tmp/cpr_dest/b'
+    assert_same_file 'tmp/cpr_src/c', 'tmp/cpr_dest/c'
+    assert_directory 'tmp/cpr_dest/d'
+    my_rm_rf 'tmp/cpr_src'
+    my_rm_rf 'tmp/cpr_dest'
+
+    bug3588 = '[ruby-core:31360]'
+    mkdir 'tmp2'
+    assert_nothing_raised(ArgumentError, bug3588) do
+      cp_lr 'tmp', 'tmp2'
+    end
+    assert_directory 'tmp2/tmp'
+    assert_raise(ArgumentError, bug3588) do
+      cp_lr 'tmp2', 'tmp2/new_tmp2'
+    end
+
+    bug12892 = '[ruby-core:77885] [Bug #12892]'
+    assert_raise(Errno::ENOENT, bug12892) do
+      cp_lr 'non/existent', 'tmp'
+    end
+  end if have_hardlink?
 
   def test_mv
     check_singleton :mv
@@ -700,6 +750,17 @@ class TestFileUtils < Test::Unit::TestCase
     remove_entry_secure 'tmp/tmpdir/c', true
     assert_file_not_exist 'tmp/tmpdir/a'
     assert_file_not_exist 'tmp/tmpdir/c'
+
+    unless root_in_posix?
+      File.chmod(01777, 'tmp/tmpdir')
+      if File.sticky?('tmp/tmpdir')
+        Dir.mkdir 'tmp/tmpdir/d', 0
+        assert_raise(Errno::EACCES) {remove_entry_secure 'tmp/tmpdir/d'}
+        File.chmod 0777, 'tmp/tmpdir/d'
+        Dir.rmdir 'tmp/tmpdir/d'
+      end
+    end
+
     Dir.rmdir 'tmp/tmpdir'
   end
 
@@ -794,13 +855,15 @@ class TestFileUtils < Test::Unit::TestCase
     check_singleton :ln_s
 
     TARGETS.each do |fname|
-      fname = "../#{fname}"
-      lnfname = 'tmp/lnsdest'
-      ln_s fname, lnfname
-      assert FileTest.symlink?(lnfname), 'not symlink'
-      assert_equal fname, File.readlink(lnfname)
-    ensure
-      rm_f lnfname
+      begin
+        fname = "../#{fname}"
+        lnfname = 'tmp/lnsdest'
+        ln_s fname, lnfname
+        assert FileTest.symlink?(lnfname), 'not symlink'
+        assert_equal fname, File.readlink(lnfname)
+      ensure
+        rm_f lnfname
+      end
     end
   end if have_symlink? and !no_broken_symlink?
 
@@ -1571,6 +1634,10 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_cd
     check_singleton :cd
+  end
+
+  def test_cd_result
+    assert_equal 42, cd('.') { 42 }
   end
 
   def test_chdir

@@ -1,4 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/for_scope'
 
 # for name[, name]... in expr [do]
 #   body
@@ -32,14 +33,13 @@ describe "The for expression" do
   end
 
   it "iterates over any object responding to 'each'" do
-    class XYZ
-      def each
-        (0..10).each { |i| yield i }
-      end
+    obj = Object.new
+    def obj.each
+      (0..10).each { |i| yield i }
     end
 
     j = 0
-    for i in XYZ.new
+    for i in obj
       j += i
     end
     j.should == 55
@@ -129,6 +129,11 @@ describe "The for expression" do
     end
 
     a.should == 123
+  end
+
+  it "does not try to access variables outside the method" do
+    ForSpecs::ForInClassMethod.foo.should == [:bar, :baz]
+    ForSpecs::ForInClassMethod::READER.call.should == :same_variable_set_outside
   end
 
   it "returns expr" do

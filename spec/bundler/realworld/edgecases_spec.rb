@@ -19,63 +19,25 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
     RUBY
   end
 
-  # there is no rbx-relative-require gem that will install on 1.9
-  it "ignores extra gems with bad platforms", :ruby => "~> 1.8.7" do
-    gemfile <<-G
-      source "https://rubygems.org"
-      gem "linecache", "0.46"
-    G
-    bundle :lock
-    expect(err).to lack_errors
-    expect(exitstatus).to eq(0) if exitstatus
-  end
-
-  # https://github.com/bundler/bundler/issues/1202
-  it "bundle cache works with rubygems 1.3.7 and pre gems",
-    :ruby => "~> 1.8.7", :rubygems => "~> 1.3.7" do
-    install_gemfile <<-G
-      source "https://rubygems.org"
-      gem "rack",          "1.3.0.beta2"
-      gem "will_paginate", "3.0.pre2"
-    G
-    bundle :cache
-    expect(out).not_to include("Removing outdated .gem files from vendor/cache")
-  end
-
-  # https://github.com/bundler/bundler/issues/1486
-  # this is a hash collision that only manifests on 1.8.7
-  it "finds the correct child versions", :ruby => "~> 1.8.7" do
+  it "resolves dependencies correctly" do
     gemfile <<-G
       source "https://rubygems.org"
 
-      gem 'i18n', '~> 0.6.0'
-      gem 'activesupport', '~> 3.0.5'
-      gem 'activerecord', '~> 3.0.5'
-      gem 'builder', '~> 2.1.2'
-    G
-    bundle :lock
-    expect(lockfile).to include("activemodel (3.0.5)")
-  end
-
-  it "resolves dependencies correctly", :ruby => "1.9.3" do
-    gemfile <<-G
-      source "https://rubygems.org"
-
-      gem 'rails', '~> 3.0'
+      gem 'rails', '~> 5.0'
       gem 'capybara', '~> 2.2.0'
       gem 'rack-cache', '1.2.0' # last version that works on Ruby 1.9
     G
     bundle! :lock
-    expect(lockfile).to include(rubygems_version("rails", "~> 3.0"))
+    expect(lockfile).to include(rubygems_version("rails", "~> 5.0"))
     expect(lockfile).to include("capybara (2.2.1)")
   end
 
-  it "installs the latest version of gxapi_rails", :ruby => "1.9.3" do
+  it "installs the latest version of gxapi_rails" do
     gemfile <<-G
       source "https://rubygems.org"
 
       gem "sass-rails"
-      gem "rails", "~> 3"
+      gem "rails", "~> 5"
       gem "gxapi_rails", "< 0.1.0" # 0.1.0 was released way after the test was written
       gem 'rack-cache', '1.2.0' # last version that works on Ruby 1.9
     G
@@ -97,7 +59,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
     expect(lockfile).to include(rubygems_version("activesupport", "~> 3.0"))
   end
 
-  it "is able to update a top-level dependency when there is a conflict on a shared transitive child", :ruby => "2.1" do
+  it "is able to update a top-level dependency when there is a conflict on a shared transitive child" do
     # from https://github.com/bundler/bundler/issues/5031
 
     gemfile <<-G
@@ -188,7 +150,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
             activemodel (= 4.2.7.1)
             activerecord (= 4.2.7.1)
             activesupport (= 4.2.7.1)
-            bundler (>= 1.3.0, < 2.0)
+            bundler (>= 1.3.0, < 3.0)
             railties (= 4.2.7.1)
             sprockets-rails
           rails-deprecated_sanitizer (1.0.3)
@@ -239,9 +201,10 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
       gem 'rack', '1.0.1'
     G
 
-    bundle! :install, forgotten_command_line_options(:path => "vendor/bundle")
+    bundle "config set --local path vendor/bundle"
+    bundle! :install
     expect(err).not_to include("Could not find rake")
-    expect(err).to lack_errors
+    expect(err).to be_empty
   end
 
   it "checks out git repos when the lockfile is corrupted" do
@@ -368,7 +331,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
     L
 
     bundle! :lock
-    expect(last_command.stderr).to lack_errors
+    expect(err).to be_empty
   end
 
   it "outputs a helpful error message when gems have invalid gemspecs" do
@@ -376,7 +339,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
       source 'https://rubygems.org'
       gem "resque-scheduler", "2.2.0"
     G
-    expect(out).to include("You have one or more invalid gemspecs that need to be fixed.")
-    expect(out).to include("resque-scheduler 2.2.0 has an invalid gemspec")
+    expect(err).to include("You have one or more invalid gemspecs that need to be fixed.")
+    expect(err).to include("resque-scheduler 2.2.0 has an invalid gemspec")
   end
 end

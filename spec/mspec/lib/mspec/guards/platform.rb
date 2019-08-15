@@ -18,20 +18,20 @@ class PlatformGuard < SpecGuard
     implementation? :ruby
   end
 
-  HOST_OS = begin
+  PLATFORM = if RUBY_ENGINE == "jruby"
     require 'rbconfig'
-    RbConfig::CONFIG['host_os'] || RUBY_PLATFORM
-  rescue LoadError
+    "#{RbConfig::CONFIG['host_cpu']}-#{RbConfig::CONFIG['host_os']}"
+  else
     RUBY_PLATFORM
-  end.downcase
+  end
 
   def self.os?(*oses)
     oses.any? do |os|
       raise ":java is not a valid OS" if os == :java
       if os == :windows
-        HOST_OS =~ /(mswin|mingw)/
+        PLATFORM =~ /(mswin|mingw)/
       else
-        HOST_OS.include?(os.to_s)
+        PLATFORM.include?(os.to_s)
       end
     end
   end
@@ -40,8 +40,21 @@ class PlatformGuard < SpecGuard
     os?(:windows)
   end
 
+  WORD_SIZE = 1.size * 8
+
+  POINTER_SIZE = begin
+    require 'rbconfig/sizeof'
+    RbConfig::SIZEOF["void*"] * 8
+  rescue LoadError
+    WORD_SIZE
+  end
+
   def self.wordsize?(size)
-    size == 8 * 1.size
+    size == WORD_SIZE
+  end
+
+  def self.pointer_size?(size)
+    size == POINTER_SIZE
   end
 
   def initialize(*args)
@@ -61,6 +74,8 @@ class PlatformGuard < SpecGuard
         match &&= PlatformGuard.os?(*value)
       when :wordsize
         match &&= PlatformGuard.wordsize? value
+      when :pointer_size
+        match &&= PlatformGuard.pointer_size? value
       end
     end
     match

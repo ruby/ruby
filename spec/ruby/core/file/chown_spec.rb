@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "File.chown" do
   before :each do
@@ -66,7 +66,7 @@ describe "File.chown" do
 
   platform_is_not :windows do
     it "raises an error for a non existent path" do
-      lambda {
+      -> {
         File.chown(nil, nil, "#{@fname}_not_existing")
       }.should raise_error(Errno::ENOENT)
     end
@@ -91,17 +91,17 @@ describe "File#chown" do
   as_superuser do
     platform_is :windows do
       it "does not modify the owner id of the file" do
-        File.chown 0, nil, @fname
-        File.stat(@fname).uid.should == 0
-        File.chown 501, nil, @fname
-        File.stat(@fname).uid.should == 0
+        @file.chown 0, nil
+        @file.stat.uid.should == 0
+        @file.chown 501, nil
+        @file.stat.uid.should == 0
       end
 
       it "does not modify the group id of the file" do
-        File.chown nil, 0, @fname
-        File.stat(@fname).gid.should == 0
-        File.chown nil, 501, @fname
-        File.stat(@fname).gid.should == 0
+        @file.chown nil, 0
+        @file.stat.gid.should == 0
+        @file.chown nil, 501
+        @file.stat.gid.should == 0
       end
     end
 
@@ -141,12 +141,4 @@ describe "File#chown" do
   it "returns 0" do
     @file.chown(nil, nil).should == 0
   end
-end
-
-describe "File.chown" do
-  it "needs to be reviewed for spec completeness"
-end
-
-describe "File#chown" do
-  it "needs to be reviewed for spec completeness"
 end

@@ -208,6 +208,9 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert(nil != u.merge!("../baz"))
     assert_equal('http://foo/baz', u.to_s)
 
+    url = URI.parse('http://a/b//c') + 'd//e'
+    assert_equal('http://a/b//d//e', url.to_s)
+
     u0 = URI.parse('mailto:foo@example.com')
     u1 = URI.parse('mailto:foo@example.com#bar')
     assert_equal(uri_to_ary(u0 + '#bar'), uri_to_ary(u1), "[ruby-dev:23628]")
@@ -264,6 +267,9 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('../b', url.to_s)
     url = URI.parse('http://hoge/b').route_to('http://hoge/b:c')
     assert_equal('./b:c', url.to_s)
+
+    url = URI.parse('http://hoge/b//c').route_to('http://hoge/b/c')
+    assert_equal('../c', url.to_s)
 
     url = URI.parse('file:///a/b/').route_to('file:///a/b/')
     assert_equal('', url.to_s)
@@ -768,6 +774,24 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal 'http://example', uri.to_s
   end
 
+  def test_hierarchical
+    hierarchical = URI.parse('http://a.b.c/example')
+    opaque = URI.parse('mailto:mduerst@ifi.unizh.ch')
+
+    assert hierarchical.hierarchical?
+    refute opaque.hierarchical?
+  end
+
+  def test_absolute
+    abs_uri = URI.parse('http://a.b.c/')
+    not_abs = URI.parse('a.b.c')
+
+    refute not_abs.absolute?
+
+    assert abs_uri.absolute
+    assert abs_uri.absolute?
+  end
+
   def test_ipv6
     assert_equal("[::1]", URI("http://[::1]/bar/baz").host)
     assert_equal("::1", URI("http://[::1]/bar/baz").hostname)
@@ -874,7 +898,7 @@ class URI::TestGeneric < Test::Unit::TestCase
       assert_nil(URI("http://www.example.org/").find_proxy(env))
     }
     with_proxy_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'.example.org') {|env|
-      assert_nil(URI("http://example.org/").find_proxy(env))
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://example.org/").find_proxy(env))
       assert_nil(URI("http://www.example.org/").find_proxy(env))
     }
   end
@@ -916,7 +940,13 @@ class URI::TestGeneric < Test::Unit::TestCase
       ['example.com', nil, 80, 'example.com:80', false],
       ['example.com', nil, 80, 'example.org,example.com:80,example.net', false],
       ['foo.example.com', nil, 80, 'example.com', false],
+      ['foo.example.com', nil, 80, '.example.com', false],
+      ['example.com', nil, 80, '.example.com', true],
+      ['xample.com', nil, 80, '.example.com', true],
+      ['fooexample.com', nil, 80, '.example.com', true],
       ['foo.example.com', nil, 80, 'example.com:80', false],
+      ['foo.eXample.com', nil, 80, 'example.com:80', false],
+      ['foo.example.com', nil, 80, 'eXample.com:80', false],
       ['foo.example.com', nil, 80, 'example.com:443', true],
       ['127.0.0.1', '127.0.0.1', 80, '10.224.0.0/22', true],
       ['10.224.1.1', '10.224.1.1', 80, '10.224.1.1', false],

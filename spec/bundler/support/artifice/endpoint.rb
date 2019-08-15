@@ -59,7 +59,7 @@ class Endpoint < Sinatra::Base
             :platform     => spec.platform.to_s,
             :dependencies => spec.dependencies.select {|dep| dep.type == :runtime }.map do |dep|
               [dep.name, dep.requirement.requirements.map {|a| a.join(" ") }.join(", ")]
-            end
+            end,
           }
         end.compact
       end
@@ -68,7 +68,7 @@ class Endpoint < Sinatra::Base
     def load_spec(name, version, platform, gem_repo)
       full_name = "#{name}-#{version}"
       full_name += "-#{platform}" if platform != "ruby"
-      Marshal.load(Gem.inflate(File.open(gem_repo.join("quick/Marshal.4.8/#{full_name}.gemspec.rz")).read))
+      Marshal.load(Bundler.rubygems.inflate(File.open(gem_repo.join("quick/Marshal.4.8/#{full_name}.gemspec.rz")).read))
     end
   end
 

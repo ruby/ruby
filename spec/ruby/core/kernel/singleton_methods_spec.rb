@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/reflection', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/reflection'
+require_relative 'fixtures/classes'
 
 describe :kernel_singleton_methods, shared: true do
   it "returns an empty Array for an object with no singleton methods" do
@@ -35,6 +35,19 @@ describe :kernel_singleton_methods_modules, shared: true do
 
   it "does not return any included methods for a class including a module" do
     ReflectSpecs::D.singleton_methods(*@object).should include(:ds_pro, :ds_pub)
+  end
+
+  it "for a module does not return methods in a module prepended to Module itself" do
+    require_relative 'fixtures/singleton_methods'
+    mod = SingletonMethodsSpecs::SelfExtending
+    mod.method(:mspec_test_kernel_singleton_methods).owner.should == SingletonMethodsSpecs::Prepended
+
+    ancestors = mod.singleton_class.ancestors
+    ancestors[0...2].should == [ mod.singleton_class, mod ]
+    ancestors.should include(SingletonMethodsSpecs::Prepended)
+
+    # Do not search prepended modules of `Module`, as that's a non-singleton class
+    mod.singleton_methods.should == []
   end
 end
 
@@ -145,7 +158,6 @@ describe "Kernel#singleton_methods" do
     it_behaves_like :kernel_singleton_methods_supers, nil, true
     it_behaves_like :kernel_singleton_methods_modules, nil, true
     it_behaves_like :kernel_singleton_methods_private_supers, nil, true
-
   end
 
   describe "when passed false" do

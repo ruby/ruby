@@ -49,18 +49,51 @@ class Ripper
     State = Struct.new(:to_int, :to_s) do
       alias to_i to_int
       def initialize(i) super(i, Ripper.lex_state_name(i)).freeze end
-      def inspect; "#<#{self.class}: #{self}>" end
+      # def inspect; "#<#{self.class}: #{self}>" end
+      alias inspect to_s
       def pretty_print(q) q.text(to_s) end
       def ==(i) super or to_int == i end
       def &(i) self.class.new(to_int & i) end
-      def |(i) self.class.new(to_int & i) end
+      def |(i) self.class.new(to_int | i) end
+      def allbits?(i) to_int.allbits?(i) end
+      def anybits?(i) to_int.anybits?(i) end
+      def nobits?(i) to_int.nobits?(i) end
     end
 
-    Elem = Struct.new(:pos, :event, :tok, :state) do
-      def initialize(pos, event, tok, state)
-        super(pos, event, tok, State.new(state))
+    Elem = Struct.new(:pos, :event, :tok, :state, :message) do
+      def initialize(pos, event, tok, state, message = nil)
+        super(pos, event, tok, State.new(state), message)
+      end
+
+      def inspect
+        "#<#{self.class}: #{event}@#{pos[0]}:#{pos[1]}:#{state}: #{tok.inspect}#{": " if message}#{message}>"
+      end
+
+      def pretty_print(q)
+        q.group(2, "#<#{self.class}:", ">") {
+          q.breakable
+          q.text("#{event}@#{pos[0]}:#{pos[1]}")
+          q.breakable
+          q.text(state)
+          q.breakable
+          q.text("token: ")
+          tok.pretty_print(q)
+          if message
+            q.breakable
+            q.text("message: ")
+            q.text(message)
+          end
+        }
+      end
+
+      def to_a
+        a = super
+        a.pop unless a.last
+        a
       end
     end
+
+    attr_reader :errors
 
     def tokenize
       parse().sort_by(&:pos).map(&:tok)
@@ -70,7 +103,23 @@ class Ripper
       parse().sort_by(&:pos).map(&:to_a)
     end
 
+    # parse the code and returns elements including errors.
+    def scan
+      result = (parse() + errors + @stack.flatten).uniq.sort_by {|e| [*e.pos, (e.message ? -1 : 0)]}
+      result.each_with_index do |e, i|
+        if e.event == :on_parse_error and e.tok.empty? and (pre = result[i-1]) and
+          pre.pos[0] == e.pos[0] and (pre.pos[1] + pre.tok.size) == e.pos[1]
+          e.tok = pre.tok
+          e.pos[1] = pre.pos[1]
+          result[i-1] = e
+          result[i] = pre
+        end
+      end
+      result
+    end
+
     def parse
+      @errors = []
       @buf = []
       @stack = []
       super
@@ -79,6 +128,12 @@ class Ripper
     end
 
     private
+
+    unless SCANNER_EVENT_TABLE.key?(:ignored_sp)
+      SCANNER_EVENT_TABLE[:ignored_sp] = 1
+      SCANNER_EVENTS << :ignored_sp
+      EVENTS << :ignored_sp
+    end
 
     def on_heredoc_dedent(v, w)
       ignored_sp = []
@@ -106,7 +161,7 @@ class Ripper
     def on_heredoc_beg(tok)
       @stack.push @buf
       buf = []
-      @buf << buf
+      @buf.push buf
       @buf = buf
       @buf.push Elem.new([lineno(), column()], __callee__, tok, state())
     end
@@ -119,6 +174,12 @@ class Ripper
     def _push_token(tok)
       @buf.push Elem.new([lineno(), column()], __callee__, tok, state())
     end
+
+    def on_error(mesg)
+      @errors.push Elem.new([lineno(), column()], __callee__, token(), state(), mesg)
+    end
+    alias on_parse_error on_error
+    alias compile_error on_error
 
     (SCANNER_EVENTS.map {|event|:"on_#{event}"} - private_instance_methods(false)).each do |event|
       alias_method event, :_push_token
@@ -183,7 +244,7 @@ class Ripper
       if m = /[^\w\s$()\[\]{}?*+\.]/.match(pattern)
         raise CompileError, "invalid char in pattern: #{m[0].inspect}"
       end
-      buf = ''
+      buf = +''
       pattern.scan(/(?:\w+|\$\(|[()\[\]\{\}?*+\.]+)/) do |tok|
         case tok
         when /\w/
@@ -204,14 +265,14 @@ class Ripper
     end
 
     def map_tokens(tokens)
-      tokens.map {|pos,type,str| map_token(type.to_s.sub(/\Aon_/,'')) }.join
+      tokens.map {|pos,type,str| map_token(type.to_s.delete_prefix('on_')) }.join
     end
 
     MAP = {}
     seed = ('a'..'z').to_a + ('A'..'Z').to_a + ('0'..'9').to_a
     SCANNER_EVENT_TABLE.each do |ev, |
       raise CompileError, "[RIPPER FATAL] too many system token" if seed.empty?
-      MAP[ev.to_s.sub(/\Aon_/,'')] = seed.shift
+      MAP[ev.to_s.delete_prefix('on_')] = seed.shift
     end
 
     def map_token(tok)

@@ -2,10 +2,10 @@
 
 require "erb"
 require "rubygems/dependency_installer"
-require "bundler/worker"
-require "bundler/installer/parallel_installer"
-require "bundler/installer/standalone"
-require "bundler/installer/gem_installer"
+require_relative "worker"
+require_relative "installer/parallel_installer"
+require_relative "installer/standalone"
+require_relative "installer/gem_installer"
 
 module Bundler
   class Installer
@@ -21,8 +21,9 @@ module Bundler
     # For more information see the #run method on this class.
     def self.install(root, definition, options = {})
       installer = new(root, definition)
-      Plugin.hook("before-install-all", definition.dependencies)
+      Plugin.hook(Plugin::Events::GEM_BEFORE_INSTALL_ALL, definition.dependencies)
       installer.run(options)
+      Plugin.hook(Plugin::Events::GEM_AFTER_INSTALL_ALL, definition.dependencies)
       installer
     end
 
@@ -70,7 +71,7 @@ module Bundler
       create_bundle_path
 
       ProcessLock.lock do
-        if Bundler.frozen?
+        if Bundler.frozen_bundle?
           @definition.ensure_equivalent_gemfile_and_lockfile(options[:deployment])
         end
 
@@ -90,7 +91,7 @@ module Bundler
         end
         install(options)
 
-        lock unless Bundler.frozen?
+        lock unless Bundler.frozen_bundle?
         Standalone.new(options[:standalone], @definition).generate if options[:standalone]
       end
     end
@@ -135,7 +136,11 @@ module Bundler
         end
 
         File.open(binstub_path, "w", 0o777 & ~File.umask) do |f|
-          f.puts ERB.new(template, nil, "-").result(binding)
+          if RUBY_VERSION >= "2.6"
+            f.puts ERB.new(template, :trim_mode => "-").result(binding)
+          else
+            f.puts ERB.new(template, nil, "-").result(binding)
+          end
         end
       end
 
@@ -171,7 +176,11 @@ module Bundler
         executable_path = Pathname(spec.full_gem_path).join(spec.bindir, executable).relative_path_from(bin_path)
         executable_path = executable_path
         File.open "#{bin_path}/#{executable}", "w", 0o755 do |f|
-          f.puts ERB.new(template, nil, "-").result(binding)
+          if RUBY_VERSION >= "2.6"
+            f.puts ERB.new(template, :trim_mode => "-").result(binding)
+          else
+            f.puts ERB.new(template, nil, "-").result(binding)
+          end
         end
       end
     end
@@ -184,14 +193,36 @@ module Bundler
     # installation is SO MUCH FASTER. so we let people opt in.
     def install(options)
       force = options["force"]
-      jobs = options.delete(:jobs) do
-        if can_install_in_parallel?
-          [Bundler.settings[:jobs].to_i - 1, 1].max
-        else
-          1
-        end
-      end
+      jobs = installation_parallelization(options)
       install_in_parallel jobs, options[:standalone], force
+    end
+
+    def installation_parallelization(options)
+      if jobs = options.delete(:jobs)
+        return jobs
+      end
+
+      return 1 unless can_install_in_parallel?
+
+      auto_config_jobs = Bundler.feature_flag.auto_config_jobs?
+      if jobs = Bundler.settings[:jobs]
+        if auto_config_jobs
+          jobs
+        else
+          [jobs.pred, 1].max
+        end
+      elsif auto_config_jobs
+        processor_count
+      else
+        1
+      end
+    end
+
+    def processor_count
+      require "etc"
+      Etc.nprocessors
+    rescue StandardError
+      1
     end
 
     def load_plugins
@@ -244,14 +275,7 @@ module Bundler
     end
 
     def can_install_in_parallel?
-      if Bundler.rubygems.provides?(">= 2.1.0")
-        true
-      else
-        Bundler.ui.warn "RubyGems #{Gem::VERSION} is not threadsafe, so your "\
-          "gems will be installed one at a time. Upgrade to RubyGems 2.1.0 " \
-          "or higher to enable parallel gem installation."
-        false
-      end
+      true
     end
 
     def install_in_parallel(size, standalone, force = false)
@@ -272,7 +296,7 @@ module Bundler
 
     # returns whether or not a re-resolve was needed
     def resolve_if_needed(options)
-      if !@definition.unlocking? && !options["force"] && !Bundler.settings[:inline] && Bundler.default_lockfile.file?
+      if !@definition.unlocking? && !options["force"] && !options["all-platforms"] && !Bundler.settings[:inline] && Bundler.default_lockfile.file?
         return false if @definition.nothing_changed? && !@definition.missing_specs?
       end
 

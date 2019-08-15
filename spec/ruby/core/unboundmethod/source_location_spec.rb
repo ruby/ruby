@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "UnboundMethod#source_location" do
   before :each do
@@ -9,7 +9,7 @@ describe "UnboundMethod#source_location" do
   it "sets the first value to the path of the file in which the method was defined" do
     file = @method.source_location.first
     file.should be_an_instance_of(String)
-    file.should == File.dirname(__FILE__) + '/fixtures/classes.rb'
+    file.should == File.realpath('../fixtures/classes.rb', __FILE__)
   end
 
   it "sets the last value to a Fixnum representing the line on which the method was defined" do

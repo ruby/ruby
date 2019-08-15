@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "NilClass#to_c" do
   it "returns Complex(0, 0)" do

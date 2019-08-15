@@ -184,8 +184,10 @@ ossl_sslctx_set_minmax_proto_version(VALUE self, VALUE min_v, VALUE max_v)
 
 	for (i = 0; i < numberof(options_map); i++) {
 	    sum |= options_map[i].opts;
-	    if (min && min > options_map[i].ver || max && max < options_map[i].ver)
+            if ((min && min > options_map[i].ver) ||
+                (max && max < options_map[i].ver)) {
 		opts |= options_map[i].opts;
+            }
 	}
 	SSL_CTX_clear_options(ctx, sum);
 	SSL_CTX_set_options(ctx, opts);
@@ -377,7 +379,6 @@ ossl_call_session_get_cb(VALUE ary)
     return rb_funcallv(cb, id_call, 1, &ary);
 }
 
-/* this method is currently only called for servers (in OpenSSL <= 0.9.8e) */
 static SSL_SESSION *
 #if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
 ossl_sslctx_session_get_cb(SSL *ssl, const unsigned char *buf, int len, int *copy)
@@ -1035,10 +1036,6 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     }
 
     GetSSLCTX(self, ctx);
-    if(!ctx){
-        ossl_raise(eSSLError, "SSL_CTX is not initialized.");
-        return Qnil;
-    }
     if (!SSL_CTX_set_cipher_list(ctx, StringValueCStr(str))) {
         ossl_raise(eSSLError, "SSL_CTX_set_cipher_list");
     }
@@ -1874,6 +1871,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 			rb_eof_error();
 		    }
 		}
+                /* fall through */
 	    default:
 		ossl_raise(eSSLError, "SSL_read");
 	    }

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "StringIO#ungetc when passed [char]" do
   before :each do
@@ -39,7 +39,7 @@ describe "StringIO#ungetc when passed [char]" do
   end
 
   it "raises a TypeError when the passed length can't be converted to an Integer or String" do
-    lambda { @io.ungetc(Object.new) }.should raise_error(TypeError)
+    -> { @io.ungetc(Object.new) }.should raise_error(TypeError)
   end
 end
 
@@ -47,12 +47,12 @@ describe "StringIO#ungetc when self is not readable" do
   it "raises an IOError" do
     io = StringIO.new("test", "w")
     io.pos = 1
-    lambda { io.ungetc(?A) }.should raise_error(IOError)
+    -> { io.ungetc(?A) }.should raise_error(IOError)
 
     io = StringIO.new("test")
     io.pos = 1
     io.close_read
-    lambda { io.ungetc(?A) }.should raise_error(IOError)
+    -> { io.ungetc(?A) }.should raise_error(IOError)
   end
 end
 

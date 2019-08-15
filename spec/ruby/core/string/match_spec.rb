@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe :string_match_escaped_literal, shared: true do
   not_supported_on :opal do
@@ -19,8 +19,8 @@ describe "String#=~" do
   end
 
   it "raises a TypeError if a obj is a string" do
-    lambda { "some string" =~ "another string" }.should raise_error(TypeError)
-    lambda { "a" =~ StringSpecs::MyString.new("b")          }.should raise_error(TypeError)
+    -> { "some string" =~ "another string" }.should raise_error(TypeError)
+    -> { "a" =~ StringSpecs::MyString.new("b")          }.should raise_error(TypeError)
   end
 
   it "invokes obj.=~ with self if obj is neither a string nor regexp" do
@@ -43,10 +43,8 @@ describe "String#=~" do
     $~.should == nil
   end
 
-  with_feature :encoding do
-    it "returns the character index of a found match" do
-      ("こにちわ" =~ /に/).should == 1
-    end
+  it "returns the character index of a found match" do
+    ("こにちわ" =~ /に/).should == 1
   end
 
 end
@@ -64,10 +62,8 @@ describe "String#match" do
         "01234".match(/(.).(.)/, 1).captures.should == ["1", "3"]
       end
 
-      with_feature :encoding do
-        it "uses the start as a character offset" do
-          "零一二三四".match(/(.).(.)/, 1).captures.should == ["一", "三"]
-        end
+      it "uses the start as a character offset" do
+        "零一二三四".match(/(.).(.)/, 1).captures.should == ["一", "三"]
       end
     end
 
@@ -76,10 +72,8 @@ describe "String#match" do
         "01234".match(/(.).(.)/, -4).captures.should == ["1", "3"]
       end
 
-      with_feature :encoding do
-        it "uses the start as a character offset" do
-          "零一二三四".match(/(.).(.)/, -4).captures.should == ["一", "三"]
-        end
+      it "uses the start as a character offset" do
+        "零一二三四".match(/(.).(.)/, -4).captures.should == ["一", "三"]
       end
     end
   end
@@ -113,9 +107,9 @@ describe "String#match" do
   end
 
   it "raises a TypeError if pattern is not a regexp or a string" do
-    lambda { 'hello'.match(10)   }.should raise_error(TypeError)
+    -> { 'hello'.match(10)   }.should raise_error(TypeError)
     not_supported_on :opal do
-      lambda { 'hello'.match(:ell) }.should raise_error(TypeError)
+      -> { 'hello'.match(:ell) }.should raise_error(TypeError)
     end
   end
 
@@ -149,27 +143,25 @@ describe "String#match" do
   end
 end
 
-ruby_version_is "2.4" do
-  describe "String#match?" do
-    before :each do
-      # Resetting Regexp.last_match
-      /DONTMATCH/.match ''
-    end
+describe "String#match?" do
+  before :each do
+    # Resetting Regexp.last_match
+    /DONTMATCH/.match ''
+  end
 
-    context "when matches the given regex" do
-      it "returns true but does not set Regexp.last_match" do
-        'string'.match?(/string/i).should be_true
-        Regexp.last_match.should be_nil
-      end
+  context "when matches the given regex" do
+    it "returns true but does not set Regexp.last_match" do
+      'string'.match?(/string/i).should be_true
+      Regexp.last_match.should be_nil
     end
+  end
 
-    it "returns false when does not match the given regex" do
-      'string'.match?(/STRING/).should be_false
-    end
+  it "returns false when does not match the given regex" do
+    'string'.match?(/STRING/).should be_false
+  end
 
-    it "takes matching position as the 2nd argument" do
-      'string'.match?(/str/i, 0).should be_true
-      'string'.match?(/str/i, 1).should be_false
-    end
+  it "takes matching position as the 2nd argument" do
+    'string'.match?(/str/i, 0).should be_true
+    'string'.match?(/str/i, 1).should be_false
   end
 end

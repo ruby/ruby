@@ -8,7 +8,8 @@ rescue LoadError
 end
 
 module Bundler
-  if defined? Bundler::Deprecate
+  # If Bundler::Deprecate is an autoload constant, we need to define it
+  if defined?(Bundler::Deprecate) && !autoload?(:Deprecate)
     # nothing to do!
   elsif defined? ::Deprecate
     Deprecate = ::Deprecate

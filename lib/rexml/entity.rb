@@ -1,7 +1,7 @@
 # frozen_string_literal: false
-require 'rexml/child'
-require 'rexml/source'
-require 'rexml/xmltokens'
+require_relative 'child'
+require_relative 'source'
+require_relative 'xmltokens'
 
 module REXML
   class Entity < Child
@@ -90,7 +90,7 @@ module REXML
     # object itself is valid.)
     #
     # out::
-    #   An object implementing <TT>&lt;&lt;<TT> to which the entity will be
+    #   An object implementing <TT>&lt;&lt;</TT> to which the entity will be
     #   output
     # indent::
     #   *DEPRECATED* and ignored

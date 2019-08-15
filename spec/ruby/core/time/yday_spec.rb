@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Time#yday" do
   it "returns an integer representing the day of the year, 1..366" do

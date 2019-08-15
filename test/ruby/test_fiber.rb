@@ -70,10 +70,12 @@ class TestFiber < Test::Unit::TestCase
     assert_raise(ArgumentError){
       Fiber.new # Fiber without block
     }
-    assert_raise(FiberError){
-      f = Fiber.new{}
-      Thread.new{f.resume}.join # Fiber yielding across thread
-    }
+    f = Fiber.new{}
+    Thread.new{
+      assert_raise(FiberError){ # Fiber yielding across thread
+        f.resume
+      }
+    }.join
     assert_raise(FiberError){
       f = Fiber.new{}
       f.resume
@@ -107,6 +109,15 @@ class TestFiber < Test::Unit::TestCase
       }
       fib.resume
     }
+    assert_raise(FiberError){
+      fib = Fiber.new{}
+      fib.raise "raise in unborn fiber"
+    }
+    assert_raise(FiberError){
+      fib = Fiber.new{}
+      fib.resume
+      fib.raise "raise in dead fiber"
+    }
   end
 
   def test_return
@@ -123,6 +134,38 @@ class TestFiber < Test::Unit::TestCase
         throw :a
       end.resume
     }
+  end
+
+  def test_raise
+    assert_raise(ZeroDivisionError){
+      Fiber.new do
+        1/0
+      end.resume
+    }
+    assert_raise(RuntimeError){
+      fib = Fiber.new{ Fiber.yield }
+      fib.resume
+      fib.raise "raise and propagate"
+    }
+    assert_nothing_raised{
+      fib = Fiber.new do
+        begin
+          Fiber.yield
+        rescue
+        end
+      end
+      fib.resume
+      fib.raise "rescue in fiber"
+    }
+    fib = Fiber.new do
+      begin
+        Fiber.yield
+      rescue
+        Fiber.yield :ok
+      end
+    end
+    fib.resume
+    assert_equal(:ok, fib.raise)
   end
 
   def test_transfer
@@ -199,11 +242,11 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_resume_root_fiber
-    assert_raise(FiberError) do
-      Thread.new do
+    Thread.new do
+      assert_raise(FiberError) do
         Fiber.current.resume
-      end.join
-    end
+      end
+    end.join
   end
 
   def test_gc_root_fiber
@@ -258,16 +301,27 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_fork_from_fiber
-    begin
-      pid = Process.fork{}
-    rescue NotImplementedError
-      return
-    else
-      Process.wait(pid)
-    end
+    skip 'fork not supported' unless Process.respond_to?(:fork)
+    pid = nil
     bug5700 = '[ruby-core:41456]'
     assert_nothing_raised(bug5700) do
-      Fiber.new{ pid = fork {} }.resume
+      Fiber.new do
+        pid = fork do
+          xpid = nil
+          Fiber.new {
+            xpid = fork do
+              # enough to trigger GC on old root fiber
+              10000.times do
+                Fiber.new {}.transfer
+                Fiber.new { Fiber.yield }
+              end
+              exit!(0)
+            end
+          }.transfer
+          _, status = Process.waitpid2(xpid)
+          exit!(status.success?)
+        end
+      end.resume
     end
     pid, status = Process.waitpid2(pid)
     assert_equal(0, status.exitstatus, bug5700)
@@ -294,8 +348,10 @@ class TestFiber < Test::Unit::TestCase
     env = {}
     env['RUBY_FIBER_VM_STACK_SIZE'] = vm_stack_size.to_s if vm_stack_size
     env['RUBY_FIBER_MACHINE_STACK_SIZE'] = machine_stack_size.to_s if machine_stack_size
-    out, _ = Dir.mktmpdir("test_fiber") {|tmpdir|
-      EnvUtil.invoke_ruby([env, '-e', script], '', true, true, chdir: tmpdir, timeout: 30)
+    out = Dir.mktmpdir("test_fiber") {|tmpdir|
+      out, err, status = EnvUtil.invoke_ruby([env, '-e', script], '', true, true, chdir: tmpdir, timeout: 30)
+      assert(!status.signaled?, FailDesc[status, nil, err])
+      out
     }
     use_length ? out.length : out
   end
@@ -376,5 +432,23 @@ class TestFiber < Test::Unit::TestCase
     assert_match(/terminated/, f.to_s)
     assert_match(/resumed/, Fiber.current.to_s)
   end
-end
 
+  def test_create_fiber_in_new_thread
+    ret = Thread.new{
+      Thread.new{
+        Fiber.new{Fiber.yield :ok}.resume
+      }.value
+    }.value
+    assert_equal :ok, ret, '[Bug #14642]'
+  end
+
+  def test_machine_stack_gc
+    assert_normal_exit <<-RUBY, '[Bug #14561]', timeout: 10
+      enum = Enumerator.new { |y| y << 1 }
+      thread = Thread.new { enum.peek }
+      thread.join
+      sleep 5     # pause until thread cache wait time runs out. Native thread exits.
+      GC.start
+    RUBY
+  end
+end

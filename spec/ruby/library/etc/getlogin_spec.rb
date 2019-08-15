@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'etc'
 
 describe "Etc.getlogin" do
@@ -18,7 +18,12 @@ describe "Etc.getlogin" do
         else
           # Etc.getlogin returns the same result of logname(2)
           # if it returns non NULL
-          Etc.getlogin.should == `id -un`.chomp
+          if system("which logname", out: File::NULL, err: File::NULL)
+            Etc.getlogin.should == `logname`.chomp
+          else
+            # fallback to `id` command since `logname` is not available
+            Etc.getlogin.should == `id -un`.chomp
+          end
         end
       else
         # Etc.getlogin may return nil if the login name is not set

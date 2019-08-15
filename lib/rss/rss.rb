@@ -63,15 +63,11 @@ end
 
 
 require "English"
-require "rss/utils"
-require "rss/converter"
-require "rss/xml-stylesheet"
+require_relative "utils"
+require_relative "converter"
+require_relative "xml-stylesheet"
 
 module RSS
-
-  # The current version of RSS
-  VERSION = "0.2.7"
-
   # The URI of the RSS 1.0 specification
   URI = "http://purl.org/rss/1.0/"
 
@@ -596,11 +592,10 @@ EOC
 
       def #{accessor_name}=(*args)
         receiver = self.class.name
-        warn("Warning:\#{caller.first.sub(/:in `.*'\z/, '')}: " \
-             "Don't use `\#{receiver}\##{accessor_name} = XXX'/" \
+        warn("Don't use `\#{receiver}\##{accessor_name} = XXX'/" \
              "`\#{receiver}\#set_#{accessor_name}(XXX)'. " \
              "Those APIs are not sense of Ruby. " \
-             "Use `\#{receiver}\##{plural_name} << XXX' instead of them.")
+             "Use `\#{receiver}\##{plural_name} << XXX' instead of them.", uplevel: 1)
         if args.size == 1
           @#{accessor_name}.push(args[0])
         else

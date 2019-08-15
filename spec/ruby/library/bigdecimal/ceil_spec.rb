@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'bigdecimal'
 
 describe "BigDecimal#ceil" do
@@ -48,9 +48,9 @@ describe "BigDecimal#ceil" do
   end
 
   it "raise exception, if self is special value" do
-    lambda { @infinity.ceil }.should raise_error(FloatDomainError)
-    lambda { @infinity_neg.ceil }.should raise_error(FloatDomainError)
-    lambda { @nan.ceil }.should raise_error(FloatDomainError)
+    -> { @infinity.ceil }.should raise_error(FloatDomainError)
+    -> { @infinity_neg.ceil }.should raise_error(FloatDomainError)
+    -> { @nan.ceil }.should raise_error(FloatDomainError)
   end
 
   it "returns n digits right of the decimal point if given n > 0" do

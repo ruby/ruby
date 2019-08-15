@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Time#localtime" do
   it "converts self to local time, modifying the receiver" do
@@ -32,7 +32,7 @@ describe "Time#localtime" do
     it "raises a RuntimeError if the time has a different time zone" do
       time = Time.gm(2007, 1, 9, 12, 0, 0)
       time.freeze
-      lambda { time.localtime }.should raise_error(RuntimeError)
+      -> { time.localtime }.should raise_error(RuntimeError)
     end
   end
 
@@ -90,6 +90,19 @@ describe "Time#localtime" do
 
       t.utc_offset.should == -18000
     end
+
+    it "does nothing if already in a local time zone" do
+      time = with_timezone("America/New_York") do
+        Time.new(2005, 2, 27, 22, 50, 0)
+      end
+      zone = time.zone
+
+      with_timezone("Europe/Amsterdam") do
+        time.localtime
+      end
+
+      time.zone.should == zone
+    end
   end
 
   describe "with an argument that responds to #to_str" do
@@ -105,23 +118,23 @@ describe "Time#localtime" do
 
   it "raises ArgumentError if the String argument is not of the form (+|-)HH:MM" do
     t = Time.now
-    lambda { t.localtime("3600") }.should raise_error(ArgumentError)
+    -> { t.localtime("3600") }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the String argument is not in an ASCII-compatible encoding" do
     t = Time.now
-    lambda { t.localtime("-01:00".encode("UTF-16LE")) }.should raise_error(ArgumentError)
+    -> { t.localtime("-01:00".encode("UTF-16LE")) }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the argument represents a value less than or equal to -86400 seconds" do
     t = Time.new
     t.localtime(-86400 + 1).utc_offset.should == (-86400 + 1)
-    lambda { t.localtime(-86400) }.should raise_error(ArgumentError)
+    -> { t.localtime(-86400) }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if the argument represents a value greater than or equal to 86400 seconds" do
     t = Time.new
     t.localtime(86400 - 1).utc_offset.should == (86400 - 1)
-    lambda { t.localtime(86400) }.should raise_error(ArgumentError)
+    -> { t.localtime(86400) }.should raise_error(ArgumentError)
   end
 end

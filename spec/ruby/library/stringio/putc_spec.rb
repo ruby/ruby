@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "StringIO#putc when passed [String]" do
   before :each do
@@ -64,7 +64,7 @@ describe "StringIO#putc when passed [Object]" do
   end
 
   it "raises a TypeError when the passed argument can't be coerced to Integer" do
-    lambda { @io.putc(Object.new) }.should raise_error(TypeError)
+    -> { @io.putc(Object.new) }.should raise_error(TypeError)
   end
 end
 
@@ -79,10 +79,10 @@ end
 describe "StringIO#putc when self is not writable" do
   it "raises an IOError" do
     io = StringIO.new("test", "r")
-    lambda { io.putc(?a) }.should raise_error(IOError)
+    -> { io.putc(?a) }.should raise_error(IOError)
 
     io = StringIO.new("test")
     io.close_write
-    lambda { io.putc("t") }.should raise_error(IOError)
+    -> { io.putc("t") }.should raise_error(IOError)
   end
 end

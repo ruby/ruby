@@ -3,7 +3,7 @@
 
 require 'rubygems/test_case'
 
-unless defined?(OpenSSL::SSL) then
+unless defined?(OpenSSL::SSL)
   warn 'Skipping Gem::Security::Policy tests.  openssl not found.'
 end
 
@@ -293,7 +293,7 @@ class TestGemSecurityPolicy < Gem::TestCase
 
   def test_subject
     assert_equal 'email:nobody@example', @no.subject(PUBLIC_CERT)
-    assert_equal '/C=JP/O=JIN.GR.JP/OU=RRR/CN=CA', @no.subject(CA_CERT)
+    assert_equal '/C=JP/ST=Tokyo/O=RubyGemsTest/CN=CA', @no.subject(CA_CERT)
   end
 
   def test_verify
@@ -450,7 +450,7 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     @spec.cert_chain = [PUBLIC_CERT.to_s]
 
-    metadata_gz = Gem.gzip @spec.to_yaml
+    metadata_gz = Gem::Util.gzip @spec.to_yaml
 
     package = Gem::Package.new 'nonexistent.gem'
     package.checksums[Gem::Security::DIGEST_NAME] = {}
@@ -473,7 +473,7 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     @spec.cert_chain = [PUBLIC_CERT.to_s]
 
-    metadata_gz = Gem.gzip @spec.to_yaml
+    metadata_gz = Gem::Util.gzip @spec.to_yaml
 
     package = Gem::Package.new 'nonexistent.gem'
     package.checksums[Gem::Security::DIGEST_NAME] = {}
@@ -502,7 +502,7 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     @spec.cert_chain = [PUBLIC_CERT.to_s]
 
-    metadata_gz = Gem.gzip @spec.to_yaml
+    metadata_gz = Gem::Util.gzip @spec.to_yaml
 
     package = Gem::Package.new 'nonexistent.gem'
     package.checksums[Gem::Security::DIGEST_NAME] = {}
@@ -518,17 +518,17 @@ class TestGemSecurityPolicy < Gem::TestCase
     end
   end
 
-  def digest data
+  def digest(data)
     digester = @digest.new
     digester << data
     digester
   end
 
-  def sign data, key = PRIVATE_KEY
+  def sign(data, key = PRIVATE_KEY)
     key.sign @digest.new, data.digest
   end
 
-  def dummy_signatures key = PRIVATE_KEY
+  def dummy_signatures(key = PRIVATE_KEY)
     data = digest 'hello'
 
     digests    = { Gem::Security::DIGEST_NAME => { 0 => data } }
@@ -538,4 +538,3 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
 end if defined?(OpenSSL::SSL)
-

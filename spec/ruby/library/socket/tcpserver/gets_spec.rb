@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "TCPServer#gets" do
   before :each do
@@ -11,6 +11,6 @@ describe "TCPServer#gets" do
   end
 
   it "raises Errno::ENOTCONN on gets" do
-    lambda { @server.gets }.should raise_error(Errno::ENOTCONN)
+    -> { @server.gets }.should raise_error(Errno::ENOTCONN)
   end
 end

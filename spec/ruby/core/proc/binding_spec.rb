@@ -1,8 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Proc#binding" do
   it "returns a Binding instance" do
-    [Proc.new{}, lambda {}, proc {}].each { |p|
+    [Proc.new{}, -> {}, proc {}].each { |p|
       p.binding.should be_kind_of(Binding)
     }
   end
@@ -10,7 +10,7 @@ describe "Proc#binding" do
   it "returns the binding associated with self" do
     obj = mock('binding')
     def obj.test_binding(some, params)
-      lambda {}
+      -> {}
     end
 
     lambdas_binding = obj.test_binding(1, 2).binding

@@ -1,28 +1,28 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Process.exec" do
   it "raises Errno::ENOENT for an empty string" do
-    lambda { Process.exec "" }.should raise_error(Errno::ENOENT)
+    -> { Process.exec "" }.should raise_error(Errno::ENOENT)
   end
 
   it "raises Errno::ENOENT for a command which does not exist" do
-    lambda { Process.exec "bogus-noent-script.sh" }.should raise_error(Errno::ENOENT)
+    -> { Process.exec "bogus-noent-script.sh" }.should raise_error(Errno::ENOENT)
   end
 
   it "raises an ArgumentError if the command includes a null byte" do
-    lambda { Process.exec "\000" }.should raise_error(ArgumentError)
+    -> { Process.exec "\000" }.should raise_error(ArgumentError)
   end
 
   unless File.executable?(__FILE__) # Some FS (e.g. vboxfs) locate all files executable
     platform_is_not :windows do
       it "raises Errno::EACCES when the file does not have execute permissions" do
-        lambda { Process.exec __FILE__ }.should raise_error(Errno::EACCES)
+        -> { Process.exec __FILE__ }.should raise_error(Errno::EACCES)
       end
     end
 
     platform_is :windows do
       it "raises Errno::EACCES or Errno::ENOEXEC when the file is not an executable file" do
-        lambda { Process.exec __FILE__ }.should raise_error(SystemCallError) { |e|
+        -> { Process.exec __FILE__ }.should raise_error(SystemCallError) { |e|
           [Errno::EACCES, Errno::ENOEXEC].should include(e.class)
         }
       end
@@ -31,13 +31,13 @@ describe "Process.exec" do
 
   platform_is_not :openbsd do
     it "raises Errno::EACCES when passed a directory" do
-      lambda { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EACCES)
+      -> { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EACCES)
     end
   end
 
   platform_is :openbsd do
     it "raises Errno::EISDIR when passed a directory" do
-      lambda { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EISDIR)
+      -> { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EISDIR)
     end
   end
 
@@ -179,9 +179,9 @@ describe "Process.exec" do
     end
 
     it "raises an ArgumentError if the Array does not have exactly two elements" do
-      lambda { Process.exec([]) }.should raise_error(ArgumentError)
-      lambda { Process.exec([:a]) }.should raise_error(ArgumentError)
-      lambda { Process.exec([:a, :b, :c]) }.should raise_error(ArgumentError)
+      -> { Process.exec([]) }.should raise_error(ArgumentError)
+      -> { Process.exec([:a]) }.should raise_error(ArgumentError)
+      -> { Process.exec([:a, :b, :c]) }.should raise_error(ArgumentError)
     end
   end
 

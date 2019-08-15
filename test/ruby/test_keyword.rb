@@ -506,7 +506,10 @@ class TestKeywordArguments < Test::Unit::TestCase
   def test_splat_hash
     m = Object.new
     def m.f() :ok; end
+    def m.f1(a) a; end
     def m.f2(a = nil) a; end
+    def m.f3(**a) a; end
+    def m.f4(*a) a; end
     o = {a: 1}
     assert_raise_with_message(ArgumentError, /unknown keyword: a/) {
       m.f(**o)
@@ -515,11 +518,26 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(:ok, m.f(**o), '[ruby-core:68124] [Bug #10856]')
     a = []
     assert_equal(:ok, m.f(*a, **o), '[ruby-core:83638] [Bug #10856]')
+    assert_equal(:OK, m.f1(*a, :OK, **o), '[ruby-core:91825] [Bug #10856]')
+    assert_equal({}, m.f1(*a, o), '[ruby-core:91825] [Bug #10856]')
 
     o = {a: 42}
-    assert_equal({a: 42}, m.f2(**o), '[ruby-core:82280] [Bug #13791]')
+    assert_warning(/splat keyword/, 'splat to mandatory') do
+      assert_equal({a: 42}, m.f1(**o))
+    end
+    assert_warning(/splat keyword/) do
+      assert_equal({a: 42}, m.f2(**o), '[ruby-core:82280] [Bug #13791]')
+    end
+    assert_warning('', 'splat to kwrest') do
+      assert_equal({a: 42}, m.f3(**o))
+    end
+    assert_warning('', 'splat to rest') do
+      assert_equal([{a: 42}], m.f4(**o))
+    end
 
-    assert_equal({a: 42}, m.f2("a".to_sym => 42), '[ruby-core:82291] [Bug #13793]')
+    assert_warning('') do
+      assert_equal({a: 42}, m.f2("a".to_sym => 42), '[ruby-core:82291] [Bug #13793]')
+    end
 
     o = {}
     a = [:ok]
@@ -547,7 +565,8 @@ class TestKeywordArguments < Test::Unit::TestCase
 
   def test_dynamic_symbol_keyword
     bug10266 = '[ruby-dev:48564] [Bug #10266]'
-    assert_separately(['-', bug10266], <<-'end;') #    do
+    assert_separately(['-', bug10266], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
       bug = ARGV.shift
       "hoge".to_sym
       assert_nothing_raised(bug) {eval("def a(hoge:); end")}
@@ -676,5 +695,62 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /required keywords: x, y\)/) do
       obj.t(42)
     end
+  end
+
+  def many_kwargs(a0: '', a1: '', a2: '', a3: '', a4: '', a5: '', a6: '', a7: '',
+                  b0: '', b1: '', b2: '', b3: '', b4: '', b5: '', b6: '', b7: '',
+                  c0: '', c1: '', c2: '', c3: '', c4: '', c5: '', c6: '', c7: '',
+                  d0: '', d1: '', d2: '', d3: '', d4: '', d5: '', d6: '', d7: '',
+                  e0: '')
+    [a0, a1, a2, a3, a4, a5, a6, a7,
+     b0, b1, b2, b3, b4, b5, b6, b7,
+     c0, c1, c2, c3, c4, c5, c6, c7,
+     d0, d1, d2, d3, d4, d5, d6, d7,
+     e0]
+  end
+
+  def test_many_kwargs
+    i = 0
+    assert_equal(:ok, many_kwargs(a0: :ok)[i], "#{i}: a0"); i+=1
+    assert_equal(:ok, many_kwargs(a1: :ok)[i], "#{i}: a1"); i+=1
+    assert_equal(:ok, many_kwargs(a2: :ok)[i], "#{i}: a2"); i+=1
+    assert_equal(:ok, many_kwargs(a3: :ok)[i], "#{i}: a3"); i+=1
+    assert_equal(:ok, many_kwargs(a4: :ok)[i], "#{i}: a4"); i+=1
+    assert_equal(:ok, many_kwargs(a5: :ok)[i], "#{i}: a5"); i+=1
+    assert_equal(:ok, many_kwargs(a6: :ok)[i], "#{i}: a6"); i+=1
+    assert_equal(:ok, many_kwargs(a7: :ok)[i], "#{i}: a7"); i+=1
+
+    assert_equal(:ok, many_kwargs(b0: :ok)[i], "#{i}: b0"); i+=1
+    assert_equal(:ok, many_kwargs(b1: :ok)[i], "#{i}: b1"); i+=1
+    assert_equal(:ok, many_kwargs(b2: :ok)[i], "#{i}: b2"); i+=1
+    assert_equal(:ok, many_kwargs(b3: :ok)[i], "#{i}: b3"); i+=1
+    assert_equal(:ok, many_kwargs(b4: :ok)[i], "#{i}: b4"); i+=1
+    assert_equal(:ok, many_kwargs(b5: :ok)[i], "#{i}: b5"); i+=1
+    assert_equal(:ok, many_kwargs(b6: :ok)[i], "#{i}: b6"); i+=1
+    assert_equal(:ok, many_kwargs(b7: :ok)[i], "#{i}: b7"); i+=1
+
+    assert_equal(:ok, many_kwargs(c0: :ok)[i], "#{i}: c0"); i+=1
+    assert_equal(:ok, many_kwargs(c1: :ok)[i], "#{i}: c1"); i+=1
+    assert_equal(:ok, many_kwargs(c2: :ok)[i], "#{i}: c2"); i+=1
+    assert_equal(:ok, many_kwargs(c3: :ok)[i], "#{i}: c3"); i+=1
+    assert_equal(:ok, many_kwargs(c4: :ok)[i], "#{i}: c4"); i+=1
+    assert_equal(:ok, many_kwargs(c5: :ok)[i], "#{i}: c5"); i+=1
+    assert_equal(:ok, many_kwargs(c6: :ok)[i], "#{i}: c6"); i+=1
+    assert_equal(:ok, many_kwargs(c7: :ok)[i], "#{i}: c7"); i+=1
+
+    assert_equal(:ok, many_kwargs(d0: :ok)[i], "#{i}: d0"); i+=1
+    assert_equal(:ok, many_kwargs(d1: :ok)[i], "#{i}: d1"); i+=1
+    assert_equal(:ok, many_kwargs(d2: :ok)[i], "#{i}: d2"); i+=1
+    assert_equal(:ok, many_kwargs(d3: :ok)[i], "#{i}: d3"); i+=1
+    assert_equal(:ok, many_kwargs(d4: :ok)[i], "#{i}: d4"); i+=1
+    assert_equal(:ok, many_kwargs(d5: :ok)[i], "#{i}: d5"); i+=1
+    assert_equal(:ok, many_kwargs(d6: :ok)[i], "#{i}: d6"); i+=1
+    assert_equal(:ok, many_kwargs(d7: :ok)[i], "#{i}: d7"); i+=1
+
+    assert_equal(:ok, many_kwargs(e0: :ok)[i], "#{i}: e0"); i+=1
+  end
+
+  def test_splat_empty_hash_with_block_passing
+    assert_valid_syntax("bug15087(**{}, &nil)")
   end
 end

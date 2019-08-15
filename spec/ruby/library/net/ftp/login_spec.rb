@@ -1,6 +1,6 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../spec_helper', __FILE__)
-require File.expand_path('../fixtures/server', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'spec_helper'
+require_relative 'fixtures/server'
 
 describe "Net::FTP#login" do
   before :each do
@@ -32,7 +32,7 @@ describe "Net::FTP#login" do
     it "raises a Net::FTPReplyError when the server requests an account" do
       @server.should_receive(:user).and_respond("331 User name okay, need password.")
       @server.should_receive(:pass).and_respond("332 Need account for login.")
-      lambda { @ftp.login }.should raise_error(Net::FTPReplyError)
+      -> { @ftp.login }.should raise_error(Net::FTPReplyError)
     end
   end
 
@@ -44,13 +44,13 @@ describe "Net::FTP#login" do
 
     it "raises a Net::FTPReplyError when the server requests a password, but none was given" do
       @server.should_receive(:user).and_respond("331 User name okay, need password.")
-      lambda { @ftp.login("rubyspec") }.should raise_error(Net::FTPReplyError)
+      -> { @ftp.login("rubyspec") }.should raise_error(Net::FTPReplyError)
     end
 
     it "raises a Net::FTPReplyError when the server requests an account, but none was given" do
       @server.should_receive(:user).and_respond("331 User name okay, need password.")
       @server.should_receive(:pass).and_respond("332 Need account for login.")
-      lambda { @ftp.login("rubyspec") }.should raise_error(Net::FTPReplyError)
+      -> { @ftp.login("rubyspec") }.should raise_error(Net::FTPReplyError)
     end
   end
 
@@ -69,7 +69,7 @@ describe "Net::FTP#login" do
     it "raises a Net::FTPReplyError when the server requests an account" do
       @server.should_receive(:user).and_respond("331 User name okay, need password.")
       @server.should_receive(:pass).and_respond("332 Need account for login.")
-      lambda { @ftp.login("rubyspec", "rocks") }.should raise_error(Net::FTPReplyError)
+      -> { @ftp.login("rubyspec", "rocks") }.should raise_error(Net::FTPReplyError)
     end
   end
 
@@ -96,27 +96,27 @@ describe "Net::FTP#login" do
   describe "when the USER command fails" do
     it "raises a Net::FTPPermError when the response code is 500" do
       @server.should_receive(:user).and_respond("500 Syntax error, command unrecognized.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 501" do
       @server.should_receive(:user).and_respond("501 Syntax error in parameters or arguments.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 502" do
       @server.should_receive(:user).and_respond("502 Command not implemented.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
     end
 
     it "raises a Net::FTPTempError when the response code is 421" do
       @server.should_receive(:user).and_respond("421 Service not available, closing control connection.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPTempError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPTempError)
     end
 
     it "raises a Net::FTPPermError when the response code is 530" do
       @server.should_receive(:user).and_respond("530 Not logged in.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
     end
   end
 
@@ -127,32 +127,32 @@ describe "Net::FTP#login" do
 
     it "does not raise an Error when the response code is 202" do
       @server.should_receive(:pass).and_respond("202 Command not implemented, superfluous at this site.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should_not raise_error
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should_not raise_error
     end
 
     it "raises a Net::FTPPermError when the response code is 500" do
       @server.should_receive(:pass).and_respond("500 Syntax error, command unrecognized.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 501" do
       @server.should_receive(:pass).and_respond("501 Syntax error in parameters or arguments.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 502" do
       @server.should_receive(:pass).and_respond("502 Command not implemented.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
     end
 
     it "raises a Net::FTPTempError when the response code is 421" do
       @server.should_receive(:pass).and_respond("421 Service not available, closing control connection.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPTempError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPTempError)
     end
 
     it "raises a Net::FTPPermError when the response code is 530" do
       @server.should_receive(:pass).and_respond("530 Not logged in.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
     end
   end
 
@@ -164,32 +164,32 @@ describe "Net::FTP#login" do
 
     it "does not raise an Error when the response code is 202" do
       @server.should_receive(:acct).and_respond("202 Command not implemented, superfluous at this site.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should_not raise_error
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should_not raise_error
     end
 
     it "raises a Net::FTPPermError when the response code is 500" do
       @server.should_receive(:acct).and_respond("500 Syntax error, command unrecognized.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 501" do
       @server.should_receive(:acct).and_respond("501 Syntax error in parameters or arguments.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 502" do
       @server.should_receive(:acct).and_respond("502 Command not implemented.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
     end
 
     it "raises a Net::FTPTempError when the response code is 421" do
       @server.should_receive(:acct).and_respond("421 Service not available, closing control connection.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPTempError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPTempError)
     end
 
     it "raises a Net::FTPPermError when the response code is 530" do
       @server.should_receive(:acct).and_respond("530 Not logged in.")
-      lambda { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.login("rubyspec", "rocks", "account") }.should raise_error(Net::FTPPermError)
     end
   end
 end

@@ -13,6 +13,9 @@
 #include "addr2line.h"
 #include "vm_core.h"
 #include "iseq.h"
+#ifdef HAVE_UCONTEXT_H
+#include <ucontext.h>
+#endif
 
 /* see vm_insnhelper.h for the values */
 #ifndef VMDEBUG
@@ -141,7 +144,8 @@ void
 rb_vmdebug_stack_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
 #if 0
-    VALUE *sp = cfp->sp, *ep = cfp->ep;
+    VALUE *sp = cfp->sp;
+    const VALUE *ep = cfp->ep;
     VALUE *p, *st, *t;
 
     fprintf(stderr, "-- stack frame ------------\n");
@@ -150,7 +154,7 @@ rb_vmdebug_stack_dump_raw(const rb_execution_context_t *ec, const rb_control_fra
 
 	t = (VALUE *)*p;
 	if (ec->vm_stack <= t && t < sp) {
-	    fprintf(stderr, " (= %ld)", (long)((VALUE *)GC_GUARDED_PTR_REF(t) - ec->vm_stack));
+	    fprintf(stderr, " (= %ld)", (long)((VALUE *)GC_GUARDED_PTR_REF((VALUE)t) - ec->vm_stack));
 	}
 
 	if (p == ep)
@@ -406,6 +410,14 @@ rb_vmdebug_thread_dump_state(VALUE self)
     return Qnil;
 }
 
+#if defined __APPLE__
+# if __DARWIN_UNIX03
+#   define MCTX_SS_REG(reg) __ss.__##reg
+# else
+#   define MCTX_SS_REG(reg) ss.reg
+# endif
+#endif
+
 #if defined(HAVE_BACKTRACE)
 # ifdef HAVE_LIBUNWIND
 #  undef backtrace
@@ -448,23 +460,23 @@ darwin_sigtramp:
 	 */
 	unw_get_reg(&cursor, UNW_X86_64_RBX, &ip);
 	uctx = (ucontext_t *)ip;
-	unw_set_reg(&cursor, UNW_X86_64_RAX, uctx->uc_mcontext->__ss.__rax);
-	unw_set_reg(&cursor, UNW_X86_64_RBX, uctx->uc_mcontext->__ss.__rbx);
-	unw_set_reg(&cursor, UNW_X86_64_RCX, uctx->uc_mcontext->__ss.__rcx);
-	unw_set_reg(&cursor, UNW_X86_64_RDX, uctx->uc_mcontext->__ss.__rdx);
-	unw_set_reg(&cursor, UNW_X86_64_RDI, uctx->uc_mcontext->__ss.__rdi);
-	unw_set_reg(&cursor, UNW_X86_64_RSI, uctx->uc_mcontext->__ss.__rsi);
-	unw_set_reg(&cursor, UNW_X86_64_RBP, uctx->uc_mcontext->__ss.__rbp);
-	unw_set_reg(&cursor, UNW_X86_64_RSP, 8+(uctx->uc_mcontext->__ss.__rsp));
-	unw_set_reg(&cursor, UNW_X86_64_R8,  uctx->uc_mcontext->__ss.__r8);
-	unw_set_reg(&cursor, UNW_X86_64_R9,  uctx->uc_mcontext->__ss.__r9);
-	unw_set_reg(&cursor, UNW_X86_64_R10, uctx->uc_mcontext->__ss.__r10);
-	unw_set_reg(&cursor, UNW_X86_64_R11, uctx->uc_mcontext->__ss.__r11);
-	unw_set_reg(&cursor, UNW_X86_64_R12, uctx->uc_mcontext->__ss.__r12);
-	unw_set_reg(&cursor, UNW_X86_64_R13, uctx->uc_mcontext->__ss.__r13);
-	unw_set_reg(&cursor, UNW_X86_64_R14, uctx->uc_mcontext->__ss.__r14);
-	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->__ss.__r15);
-	ip = uctx->uc_mcontext->__ss.__rip;
+	unw_set_reg(&cursor, UNW_X86_64_RAX, uctx->uc_mcontext->MCTX_SS_REG(rax));
+	unw_set_reg(&cursor, UNW_X86_64_RBX, uctx->uc_mcontext->MCTX_SS_REG(rbx));
+	unw_set_reg(&cursor, UNW_X86_64_RCX, uctx->uc_mcontext->MCTX_SS_REG(rcx));
+	unw_set_reg(&cursor, UNW_X86_64_RDX, uctx->uc_mcontext->MCTX_SS_REG(rdx));
+	unw_set_reg(&cursor, UNW_X86_64_RDI, uctx->uc_mcontext->MCTX_SS_REG(rdi));
+	unw_set_reg(&cursor, UNW_X86_64_RSI, uctx->uc_mcontext->MCTX_SS_REG(rsi));
+	unw_set_reg(&cursor, UNW_X86_64_RBP, uctx->uc_mcontext->MCTX_SS_REG(rbp));
+	unw_set_reg(&cursor, UNW_X86_64_RSP, 8+(uctx->uc_mcontext->MCTX_SS_REG(rsp)));
+	unw_set_reg(&cursor, UNW_X86_64_R8,  uctx->uc_mcontext->MCTX_SS_REG(r8));
+	unw_set_reg(&cursor, UNW_X86_64_R9,  uctx->uc_mcontext->MCTX_SS_REG(r9));
+	unw_set_reg(&cursor, UNW_X86_64_R10, uctx->uc_mcontext->MCTX_SS_REG(r10));
+	unw_set_reg(&cursor, UNW_X86_64_R11, uctx->uc_mcontext->MCTX_SS_REG(r11));
+	unw_set_reg(&cursor, UNW_X86_64_R12, uctx->uc_mcontext->MCTX_SS_REG(r12));
+	unw_set_reg(&cursor, UNW_X86_64_R13, uctx->uc_mcontext->MCTX_SS_REG(r13));
+	unw_set_reg(&cursor, UNW_X86_64_R14, uctx->uc_mcontext->MCTX_SS_REG(r14));
+	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->MCTX_SS_REG(r15));
+	ip = uctx->uc_mcontext->MCTX_SS_REG(rip);
 
 	/* There are 4 cases for SEGV:
 	 * (1) called invalid address
@@ -497,7 +509,7 @@ darwin_sigtramp:
 	    /* if segv is caused by invalid call or signal received in syscall */
 	    /* the frame is invalid; skip */
 	    trace[n++] = (void *)ip;
-	    ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
+	    ip = *(unw_word_t*)uctx->uc_mcontext->MCTX_SS_REG(rsp);
 	}
 	trace[n++] = (void *)ip;
 	unw_set_reg(&cursor, UNW_REG_IP, ip);
@@ -637,14 +649,6 @@ dump_thread(void *arg)
 		    frame.AddrFrame.Offset = context.Rbp;
 		    frame.AddrStack.Mode = AddrModeFlat;
 		    frame.AddrStack.Offset = context.Rsp;
-#elif defined(_M_IA64) || defined(__ia64__)
-		    mac = IMAGE_FILE_MACHINE_IA64;
-		    frame.AddrPC.Mode = AddrModeFlat;
-		    frame.AddrPC.Offset = context.StIIP;
-		    frame.AddrBStore.Mode = AddrModeFlat;
-		    frame.AddrBStore.Offset = context.RsBSP;
-		    frame.AddrStack.Mode = AddrModeFlat;
-		    frame.AddrStack.Offset = context.IntSp;
 #else	/* i386 */
 		    mac = IMAGE_FILE_MACHINE_I386;
 		    frame.AddrPC.Mode = AddrModeFlat;
@@ -701,7 +705,7 @@ rb_print_backtrace(void)
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];
     int n = (int)backtrace(trace, MAX_NATIVE_TRACE);
-#if defined(USE_ELF) && defined(HAVE_DLADDR) && !defined(__sparc)
+#if (defined(USE_ELF) || defined(HAVE_MACH_O_LOADER_H)) && defined(HAVE_DLADDR) && !defined(__sparc)
     rb_dump_backtrace_with_lines(n, trace);
 #else
     char **syms = backtrace_symbols(trace, n);
@@ -722,91 +726,7 @@ rb_print_backtrace(void)
 }
 
 #ifdef HAVE_LIBPROCSTAT
-#include <sys/user.h>
-#include <sys/sysctl.h>
-#include <sys/param.h>
-#include <libprocstat.h>
-# ifndef KVME_TYPE_MGTDEVICE
-# define KVME_TYPE_MGTDEVICE     8
-# endif
-void
-procstat_vm(struct procstat *procstat, struct kinfo_proc *kipp)
-{
-	struct kinfo_vmentry *freep, *kve;
-	int ptrwidth;
-	unsigned int i, cnt;
-	const char *str;
-#ifdef __x86_64__
-	ptrwidth = 14;
-#else
-	ptrwidth = 2*sizeof(void *) + 2;
-#endif
-	fprintf(stderr, "%*s %*s %3s %4s %4s %3s %3s %4s %-2s %-s\n",
-		ptrwidth, "START", ptrwidth, "END", "PRT", "RES",
-		"PRES", "REF", "SHD", "FL", "TP", "PATH");
-
-#ifdef HAVE_PROCSTAT_GETVMMAP
-	freep = procstat_getvmmap(procstat, kipp, &cnt);
-#else
-	freep = kinfo_getvmmap(kipp->ki_pid, &cnt);
-#endif
-	if (freep == NULL)
-		return;
-	for (i = 0; i < cnt; i++) {
-		kve = &freep[i];
-		fprintf(stderr, "%#*jx ", ptrwidth, (uintmax_t)kve->kve_start);
-		fprintf(stderr, "%#*jx ", ptrwidth, (uintmax_t)kve->kve_end);
-		fprintf(stderr, "%s", kve->kve_protection & KVME_PROT_READ ? "r" : "-");
-		fprintf(stderr, "%s", kve->kve_protection & KVME_PROT_WRITE ? "w" : "-");
-		fprintf(stderr, "%s ", kve->kve_protection & KVME_PROT_EXEC ? "x" : "-");
-		fprintf(stderr, "%4d ", kve->kve_resident);
-		fprintf(stderr, "%4d ", kve->kve_private_resident);
-		fprintf(stderr, "%3d ", kve->kve_ref_count);
-		fprintf(stderr, "%3d ", kve->kve_shadow_count);
-		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_COW ? "C" : "-");
-		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_NEEDS_COPY ? "N" :
-		    "-");
-		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_SUPER ? "S" : "-");
-		fprintf(stderr, "%-1s ", kve->kve_flags & KVME_FLAG_GROWS_UP ? "U" :
-		    kve->kve_flags & KVME_FLAG_GROWS_DOWN ? "D" : "-");
-		switch (kve->kve_type) {
-		case KVME_TYPE_NONE:
-			str = "--";
-			break;
-		case KVME_TYPE_DEFAULT:
-			str = "df";
-			break;
-		case KVME_TYPE_VNODE:
-			str = "vn";
-			break;
-		case KVME_TYPE_SWAP:
-			str = "sw";
-			break;
-		case KVME_TYPE_DEVICE:
-			str = "dv";
-			break;
-		case KVME_TYPE_PHYS:
-			str = "ph";
-			break;
-		case KVME_TYPE_DEAD:
-			str = "dd";
-			break;
-		case KVME_TYPE_SG:
-			str = "sg";
-			break;
-		case KVME_TYPE_MGTDEVICE:
-			str = "md";
-			break;
-		case KVME_TYPE_UNKNOWN:
-		default:
-			str = "??";
-			break;
-		}
-		fprintf(stderr, "%-2s ", str);
-		fprintf(stderr, "%-s\n", kve->kve_path);
-	}
-	free(freep);
-}
+#include "missing/procstat_vm.c"
 #endif
 
 #if defined __linux__
@@ -827,9 +747,9 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
     char buf[64];
 
 #ifdef __LP64__
-    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%016zx", reg_name, reg);
+    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%016" PRIxSIZE, reg_name, reg);
 #else
-    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%08zx", reg_name, reg);
+    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%08" PRIxSIZE, reg_name, reg);
 #endif
     if (col_count + ret > max_col) {
 	fputs("\n", stderr);
@@ -842,7 +762,7 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
 # ifdef __linux__
 #   define dump_machine_register(reg) (col_count = print_machine_register(mctx->gregs[REG_##reg], #reg, col_count, 80))
 # elif defined __APPLE__
-#   define dump_machine_register(reg) (col_count = print_machine_register(mctx->__ss.__##reg, #reg, col_count, 80))
+#   define dump_machine_register(reg) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), #reg, col_count, 80))
 # endif
 
 static void
@@ -1083,7 +1003,7 @@ rb_vmdebug_stack_dump_all_threads(void)
 	ruby_fill_thread_id_string(th->thread_id, buf);
 	fprintf(stderr, "th: %p, native_id: %s\n", th, buf);
 #else
-	fprintf(stderr, "th: %p, native_id: %p\n", th, (void *)th->thread_id);
+        fprintf(stderr, "th: %p, native_id: %p\n", (void *)th, (void *)(uintptr_t)th->thread_id);
 #endif
 	rb_vmdebug_stack_dump_raw(th->ec, th->ec->cfp);
     }

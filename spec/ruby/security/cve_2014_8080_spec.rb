@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 require 'rexml/document'
 
@@ -24,9 +24,9 @@ describe "REXML::Document.new" do
       </x>
 XML
 
-    lambda { REXML::Document.new(xml).doctype.entities['x9'].value }.should raise_error(REXML::ParseException) { |e|
-      e.message.should =~ /entity expansion has grown too large/
-    }
+    -> {
+      REXML::Document.new(xml).doctype.entities['x9'].value
+    }.should raise_error(REXML::ParseException, /entity expansion has grown too large/)
   end
 
 end

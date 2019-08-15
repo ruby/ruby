@@ -1,15 +1,15 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/send', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/send'
 
 # Why so many fixed arg tests?  JRuby and I assume other Ruby impls have
 # separate call paths for simple fixed arity methods.  Testing up to five
 # will verify special and generic arity code paths for all impls.
 #
 # Method naming conventions:
-# M - Manditory Args
+# M - Mandatory Args
 # O - Optional Arg
 # R - Rest Arg
-# Q - Post Manditory Args
+# Q - Post Mandatory Args
 
 specs = LangSendSpecs
 
@@ -20,7 +20,7 @@ describe "Invoking a method" do
     end
 
     it "raises ArgumentError if the method has a positive arity" do
-      lambda {
+      -> {
         specs.fooM1
       }.should raise_error(ArgumentError)
     end
@@ -36,7 +36,7 @@ describe "Invoking a method" do
     end
 
     it "raises ArgumentError if the methods arity doesn't match" do
-      lambda {
+      -> {
         specs.fooM1(1,2)
       }.should raise_error(ArgumentError)
     end
@@ -52,7 +52,7 @@ describe "Invoking a method" do
     end
 
     it "raises ArgumentError if extra arguments are passed" do
-      lambda {
+      -> {
         specs.fooM0O1(2,3)
       }.should raise_error(ArgumentError)
     end
@@ -64,13 +64,13 @@ describe "Invoking a method" do
     end
 
     it "raises an ArgumentError if there are no values for the mandatory args" do
-      lambda {
+      -> {
         specs.fooM1O1
       }.should raise_error(ArgumentError)
     end
 
     it "raises an ArgumentError if too many values are passed" do
-      lambda {
+      -> {
         specs.fooM1O1(1,2,3)
       }.should raise_error(ArgumentError)
     end
@@ -107,7 +107,7 @@ describe "Invoking a method" do
   end
 
   it "raises a SyntaxError with both a literal block and an object as block" do
-    lambda {
+    -> {
       eval "specs.oneb(10, &l){ 42 }"
     }.should raise_error(SyntaxError)
   end
@@ -195,12 +195,20 @@ describe "Invoking a method" do
     end
 
     it "raises NameError if invoked as a vcall" do
-      lambda { no_such_method }.should raise_error NameError
+      -> { no_such_method }.should raise_error NameError
+    end
+
+    it "should omit the method_missing call from the backtrace for NameError" do
+      -> { no_such_method }.should raise_error { |e| e.backtrace.first.should_not include("method_missing") }
     end
 
     it "raises NoMethodError if invoked as an unambiguous method call" do
-      lambda { no_such_method() }.should raise_error NoMethodError
-      lambda { no_such_method(1,2,3) }.should raise_error NoMethodError
+      -> { no_such_method() }.should raise_error NoMethodError
+      -> { no_such_method(1,2,3) }.should raise_error NoMethodError
+    end
+
+    it "should omit the method_missing call from the backtrace for NoMethodError" do
+      -> { no_such_method() }.should raise_error { |e| e.backtrace.first.should_not include("method_missing") }
     end
   end
 
@@ -252,8 +260,8 @@ end
 describe "Invoking a private getter method" do
   it "does not permit self as a receiver" do
     receiver = LangSendSpecs::PrivateGetter.new
-    lambda { receiver.call_self_foo }.should raise_error(NoMethodError)
-    lambda { receiver.call_self_foo_or_equals(6) }.should raise_error(NoMethodError)
+    -> { receiver.call_self_foo }.should raise_error(NoMethodError)
+    -> { receiver.call_self_foo_or_equals(6) }.should raise_error(NoMethodError)
   end
 end
 
@@ -401,6 +409,29 @@ describe "Invoking a method" do
     specs.rest_len(*a,*d,6,*b).should == 7
     specs.rest_len(*a,*a,*a).should == 9
     specs.rest_len(0,*a,4,*5,6,7,*c,-1).should == 11
+  end
+
+  it "expands the Array elements from the splat after executing the arguments and block if no other arguments follow the splat" do
+    def self.m(*args, &block)
+      [args, block]
+    end
+
+    args = [1, nil]
+    m(*args, &args.pop).should == [[1], nil]
+
+    args = [1, nil]
+    order = []
+    m(*(order << :args; args), &(order << :block; args.pop)).should == [[1], nil]
+    order.should == [:args, :block]
+  end
+
+  it "evaluates the splatted arguments before the block if there are other arguments after the splat" do
+    def self.m(*args, &block)
+      [args, block]
+    end
+
+    args = [1, nil]
+    m(*args, 2, &args.pop).should == [[1, nil, 2], nil]
   end
 
   it "expands an array to arguments grouped in parentheses" do

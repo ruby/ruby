@@ -1,14 +1,14 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 require 'matrix'
 
 describe "Matrix.[]" do
 
   it "requires arrays as parameters" do
-    lambda { Matrix[5] }.should raise_error(TypeError)
-    lambda { Matrix[nil] }.should raise_error(TypeError)
-    lambda { Matrix[1..2] }.should raise_error(TypeError)
-    lambda { Matrix[[1, 2], 3] }.should raise_error(TypeError)
+    -> { Matrix[5] }.should raise_error(TypeError)
+    -> { Matrix[nil] }.should raise_error(TypeError)
+    -> { Matrix[1..2] }.should raise_error(TypeError)
+    -> { Matrix[[1, 2], 3] }.should raise_error(TypeError)
   end
 
   it "creates an empty Matrix with no arguments" do
@@ -18,9 +18,9 @@ describe "Matrix.[]" do
   end
 
   it "raises for non-rectangular matrices" do
-    lambda{ Matrix[ [0], [0,1] ] }.should \
+    ->{ Matrix[ [0], [0,1] ] }.should \
       raise_error(Matrix::ErrDimensionMismatch)
-    lambda{ Matrix[ [0,1], [0,1,2], [0,1] ]}.should \
+    ->{ Matrix[ [0,1], [0,1,2], [0,1] ]}.should \
       raise_error(Matrix::ErrDimensionMismatch)
   end
 

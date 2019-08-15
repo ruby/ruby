@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'zlib'
 
 describe "Zlib::Inflate#<<" do
@@ -41,7 +41,7 @@ describe "Zlib::Inflate#<<" do
   it "properly handles incomplete data" do
     # add bytes, one by one
     @foo_deflated[0, 5].each_byte { |d| @z << d.chr}
-    lambda { @z.finish }.should raise_error(Zlib::BufError)
+    -> { @z.finish }.should raise_error(Zlib::BufError)
   end
 
   it "properly handles excessive data, byte-by-byte" do

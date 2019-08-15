@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#zip" do
   it "returns an array of arrays containing corresponding elements of each array" do
@@ -42,7 +42,7 @@ describe "Array#zip" do
     [1, 2].zip(10.upto(Float::INFINITY)).should == [[1, 10], [2, 11]]
   end
 
-  it "fills nil when the given enumereator is shorter than self" do
+  it "fills nil when the given enumerator is shorter than self" do
     obj = Object.new
     def obj.each
       yield 10

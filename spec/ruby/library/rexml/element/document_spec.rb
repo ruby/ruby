@@ -1,5 +1,5 @@
 require 'rexml/document'
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe "REXML::Element#document" do
 
@@ -14,5 +14,3 @@ describe "REXML::Element#document" do
     REXML::Element.new("standalone").document.should be_nil
   end
 end
-
-

@@ -545,6 +545,24 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set.new(1..10), set)
   end
 
+  def test_filter!
+    set = Set.new(1..10)
+    ret = set.filter! { |i| i <= 10 }
+    assert_equal(nil, ret)
+    assert_equal(Set.new(1..10), set)
+
+    set = Set.new(1..10)
+    ret = set.filter! { |i| i % 3 != 0 }
+    assert_same(set, ret)
+    assert_equal(Set[1,2,4,5,7,8,10], set)
+
+    set = Set.new(1..10)
+    enum = set.filter!
+    assert_equal(set.size, enum.size)
+    assert_equal(nil, enum.each { |i| i <= 10 })
+    assert_equal(Set.new(1..10), set)
+  end
+
   def test_merge
     set = Set[1,2,3]
 
@@ -693,7 +711,7 @@ class TC_Set < Test::Unit::TestCase
     set << 4
     assert_same orig, set.freeze
     assert_equal true, set.frozen?
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       set << 5
     }
     assert_equal 4, set.size
@@ -716,7 +734,7 @@ class TC_Set < Test::Unit::TestCase
     set2 = set1.clone
 
     assert_predicate set2, :frozen?
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       set2.add 5
     }
   end
@@ -849,7 +867,7 @@ class TC_SortedSet < Test::Unit::TestCase
     set << 4
     assert_same orig, set.freeze
     assert_equal true, set.frozen?
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       set << 5
     }
     assert_equal 4, set.size
@@ -877,7 +895,7 @@ class TC_SortedSet < Test::Unit::TestCase
     set2 = set1.clone
 
     assert_predicate set2, :frozen?
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       set2.add 5
     }
   end

@@ -1,5 +1,5 @@
 require 'mathn'
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :mathn_math_rsqrt, shared: true do
   it "returns the square root for Rational numbers" do
@@ -14,8 +14,8 @@ describe :mathn_math_rsqrt, shared: true do
   end
 
   it "raises an Math::DomainError if the argument is a negative number" do
-    lambda { @object.send(:rsqrt, -1) }.should raise_error(Math::DomainError)
-    lambda { @object.send(:rsqrt, -4.0) }.should raise_error(Math::DomainError)
-    lambda { @object.send(:rsqrt, -16/64) }.should raise_error(Math::DomainError)
+    -> { @object.send(:rsqrt, -1) }.should raise_error(Math::DomainError)
+    -> { @object.send(:rsqrt, -4.0) }.should raise_error(Math::DomainError)
+    -> { @object.send(:rsqrt, -16/64) }.should raise_error(Math::DomainError)
   end
 end

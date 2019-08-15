@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Kernel.catch" do
   before :each do
@@ -31,11 +31,11 @@ describe "Kernel.catch" do
   end
 
   it "raises an ArgumentError if a Symbol is thrown for a String catch value" do
-    lambda { catch("exit") { throw :exit } }.should raise_error(ArgumentError)
+    -> { catch("exit") { throw :exit } }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if a String with different identity is thrown" do
-    lambda { catch("exit") { throw "exit" } }.should raise_error(ArgumentError)
+    -> { catch("exit") { throw "exit" } }.should raise_error(ArgumentError)
   end
 
   it "catches a Symbol when thrown a matching Symbol" do
@@ -116,7 +116,7 @@ describe "Kernel.catch" do
   end
 
   it "raises LocalJumpError if no block is given" do
-    lambda { catch :blah }.should raise_error(LocalJumpError)
+    -> { catch :blah }.should raise_error(LocalJumpError)
   end
 end
 

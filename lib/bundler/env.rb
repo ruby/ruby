@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "bundler/rubygems_integration"
-require "bundler/source/git/git_proxy"
+require_relative "rubygems_integration"
+require_relative "source/git/git_proxy"
 
 module Bundler
   class Env
@@ -61,23 +61,17 @@ module Bundler
     end
 
     def self.read_file(filename)
-      File.read(filename.to_s).strip
+      Bundler.read_file(filename.to_s).strip
     rescue Errno::ENOENT
       "<No #{filename} found>"
-    rescue => e
+    rescue RuntimeError => e
       "#{e.class}: #{e.message}"
     end
 
     def self.ruby_version
-      str = String.new("#{RUBY_VERSION}")
-      if RUBY_VERSION < "1.9"
-        str << " (#{RUBY_RELEASE_DATE}"
-        str << " patchlevel #{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
-        str << ") [#{RUBY_PLATFORM}]"
-      else
-        str << "p#{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
-        str << " (#{RUBY_RELEASE_DATE} revision #{RUBY_REVISION}) [#{RUBY_PLATFORM}]"
-      end
+      str = String.new(RUBY_VERSION)
+      str << "p#{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
+      str << " (#{RUBY_RELEASE_DATE} revision #{RUBY_REVISION}) [#{RUBY_PLATFORM}]"
     end
 
     def self.git_version
@@ -88,7 +82,7 @@ module Bundler
 
     def self.version_of(script)
       return "not installed" unless Bundler.which(script)
-      `#{script} --version`
+      `#{script} --version`.chomp
     end
 
     def self.chruby_version
@@ -106,15 +100,18 @@ module Bundler
       out << ["  Full Path", Gem.ruby]
       out << ["  Config Dir", Pathname.new(Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE).dirname]
       out << ["RubyGems", Gem::VERSION]
-      out << ["  Gem Home", ENV.fetch("GEM_HOME") { Gem.dir }]
-      out << ["  Gem Path", ENV.fetch("GEM_PATH") { Gem.path.join(File::PATH_SEPARATOR) }]
+      out << ["  Gem Home", Gem.dir]
+      out << ["  Gem Path", Gem.path.join(File::PATH_SEPARATOR)]
+      out << ["  User Home", Gem.user_home]
       out << ["  User Path", Gem.user_dir]
       out << ["  Bin Dir", Gem.bindir]
-      out << ["OpenSSL"] if defined?(OpenSSL)
-      out << ["  Compiled", OpenSSL::OPENSSL_VERSION] if defined?(OpenSSL::OPENSSL_VERSION)
-      out << ["  Loaded", OpenSSL::OPENSSL_LIBRARY_VERSION] if defined?(OpenSSL::OPENSSL_LIBRARY_VERSION)
-      out << ["  Cert File", OpenSSL::X509::DEFAULT_CERT_FILE] if defined?(OpenSSL::X509::DEFAULT_CERT_FILE)
-      out << ["  Cert Dir", OpenSSL::X509::DEFAULT_CERT_DIR] if defined?(OpenSSL::X509::DEFAULT_CERT_DIR)
+      if defined?(OpenSSL)
+        out << ["OpenSSL"]
+        out << ["  Compiled", OpenSSL::OPENSSL_VERSION] if defined?(OpenSSL::OPENSSL_VERSION)
+        out << ["  Loaded", OpenSSL::OPENSSL_LIBRARY_VERSION] if defined?(OpenSSL::OPENSSL_LIBRARY_VERSION)
+        out << ["  Cert File", OpenSSL::X509::DEFAULT_CERT_FILE] if defined?(OpenSSL::X509::DEFAULT_CERT_FILE)
+        out << ["  Cert Dir", OpenSSL::X509::DEFAULT_CERT_DIR] if defined?(OpenSSL::X509::DEFAULT_CERT_DIR)
+      end
       out << ["Tools"]
       out << ["  Git", git_version]
       out << ["  RVM", ENV.fetch("rvm_version") { version_of("rvm") }]

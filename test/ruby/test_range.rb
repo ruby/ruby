@@ -3,6 +3,7 @@ require 'test/unit'
 require 'delegate'
 require 'timeout'
 require 'bigdecimal'
+require 'rbconfig/sizeof'
 
 class TestRange < Test::Unit::TestCase
   def test_new
@@ -11,6 +12,9 @@ class TestRange < Test::Unit::TestCase
     assert_equal((0...2), Range.new(0, 2, true))
 
     assert_raise(ArgumentError) { (1.."3") }
+
+    assert_equal((0..nil), Range.new(0, nil, false))
+    assert_equal((0...nil), Range.new(0, nil, true))
 
     obj = Object.new
     def obj.<=>(other)
@@ -22,7 +26,7 @@ class TestRange < Test::Unit::TestCase
   def test_frozen_initialize
     r = Range.allocate
     r.freeze
-    assert_raise(RuntimeError){r.__send__(:initialize, 1, 2)}
+    assert_raise(FrozenError){r.__send__(:initialize, 1, 2)}
   end
 
   def test_range_string
@@ -31,14 +35,17 @@ class TestRange < Test::Unit::TestCase
     assert_equal(["a"], ("a" .. "a").to_a)
     assert_equal(["a"], ("a" ... "b").to_a)
     assert_equal(["a", "b"], ("a" .. "b").to_a)
+    assert_equal([*"a".."z", "aa"], ("a"..).take(27))
   end
 
   def test_range_numeric_string
     assert_equal(["6", "7", "8"], ("6".."8").to_a, "[ruby-talk:343187]")
     assert_equal(["6", "7"], ("6"..."8").to_a)
     assert_equal(["9", "10"], ("9".."10").to_a)
+    assert_equal(["9", "10"], ("9"..).take(2))
     assert_equal(["09", "10"], ("09".."10").to_a, "[ruby-dev:39361]")
     assert_equal(["9", "10"], (SimpleDelegator.new("9").."10").to_a)
+    assert_equal(["9", "10"], (SimpleDelegator.new("9")..).take(2))
     assert_equal(["9", "10"], ("9"..SimpleDelegator.new("10")).to_a)
   end
 
@@ -73,22 +80,29 @@ class TestRange < Test::Unit::TestCase
     assert_equal(1, (1..2).min)
     assert_equal(nil, (2..1).min)
     assert_equal(1, (1...2).min)
+    assert_equal(1, (1..).min)
 
     assert_equal(1.0, (1.0..2.0).min)
     assert_equal(nil, (2.0..1.0).min)
     assert_equal(1, (1.0...2.0).min)
+    assert_equal(1, (1.0..).min)
 
     assert_equal(0, (0..0).min)
     assert_equal(nil, (0...0).min)
 
     assert_equal([0,1,2], (0..10).min(3))
     assert_equal([0,1], (0..1).min(3))
+    assert_equal([0,1,2], (0..).min(3))
+
+    assert_raise(RangeError) { (0..).min {|a, b| a <=> b } }
   end
 
   def test_max
     assert_equal(2, (1..2).max)
     assert_equal(nil, (2..1).max)
     assert_equal(1, (1...2).max)
+    assert_raise(RangeError) { (1..).max }
+    assert_raise(RangeError) { (1...).max }
 
     assert_equal(2.0, (1.0..2.0).max)
     assert_equal(nil, (2.0..1.0).max)
@@ -103,6 +117,29 @@ class TestRange < Test::Unit::TestCase
 
     assert_equal([10,9,8], (0..10).max(3))
     assert_equal([9,8,7], (0...10).max(3))
+    assert_raise(RangeError) { (1..).max(3) }
+    assert_raise(RangeError) { (1...).max(3) }
+  end
+
+  def test_minmax
+    assert_equal([1, 2], (1..2).minmax)
+    assert_equal([nil, nil], (2..1).minmax)
+    assert_equal([1, 1], (1...2).minmax)
+    assert_raise(RangeError) { (1..).minmax }
+    assert_raise(RangeError) { (1...).minmax }
+
+    assert_equal([1.0, 2.0], (1.0..2.0).minmax)
+    assert_equal([nil, nil], (2.0..1.0).minmax)
+    assert_raise(TypeError) { (1.0...2.0).minmax }
+    assert_raise(TypeError) { (1...1.5).minmax }
+    assert_raise(TypeError) { (1.5...2).minmax }
+
+    assert_equal([-0x80000002, -0x80000002], ((-0x80000002)...(-0x80000001)).minmax)
+
+    assert_equal([0, 0], (0..0).minmax)
+    assert_equal([nil, nil], (0...0).minmax)
+
+    assert_equal([2, 1], (1..2).minmax{|a, b| b <=> a})
   end
 
   def test_initialize_twice
@@ -123,9 +160,10 @@ class TestRange < Test::Unit::TestCase
     assert_equal(r, Marshal.load(Marshal.dump(r)))
     r = 1...2
     assert_equal(r, Marshal.load(Marshal.dump(r)))
-    s = Marshal.dump(r)
-    s.sub!(/endi./n, 'end0')
-    assert_raise(ArgumentError) {Marshal.load(s)}
+    r = (1..)
+    assert_equal(r, Marshal.load(Marshal.dump(r)))
+    r = (1...)
+    assert_equal(r, Marshal.load(Marshal.dump(r)))
   end
 
   def test_bad_value
@@ -135,6 +173,8 @@ class TestRange < Test::Unit::TestCase
   def test_exclude_end
     assert_not_predicate(0..1, :exclude_end?)
     assert_predicate(0...1, :exclude_end?)
+    assert_not_predicate(0.., :exclude_end?)
+    assert_predicate(0..., :exclude_end?)
   end
 
   def test_eq
@@ -145,8 +185,17 @@ class TestRange < Test::Unit::TestCase
     assert_not_equal(r, (1..2))
     assert_not_equal(r, (0..2))
     assert_not_equal(r, (0...1))
+    assert_not_equal(r, (0..nil))
     subclass = Class.new(Range)
     assert_equal(r, subclass.new(0,1))
+
+    r = (0..nil)
+    assert_equal(r, r)
+    assert_equal(r, (0..nil))
+    assert_not_equal(r, 0)
+    assert_not_equal(r, (0...nil))
+    subclass = Class.new(Range)
+    assert_equal(r, subclass.new(0,nil))
   end
 
   def test_eql
@@ -159,12 +208,23 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator(r, :eql?, 0...1)
     subclass = Class.new(Range)
     assert_operator(r, :eql?, subclass.new(0,1))
+
+    r = (0..nil)
+    assert_operator(r, :eql?, r)
+    assert_operator(r, :eql?, 0..nil)
+    assert_not_operator(r, :eql?, 0)
+    assert_not_operator(r, :eql?, 0...nil)
+    subclass = Class.new(Range)
+    assert_operator(r, :eql?, subclass.new(0,nil))
   end
 
   def test_hash
     assert_kind_of(Integer, (0..1).hash)
     assert_equal((0..1).hash, (0..1).hash)
     assert_not_equal((0..1).hash, (0...1).hash)
+    assert_equal((0..nil).hash, (0..nil).hash)
+    assert_not_equal((0..nil).hash, (0...nil).hash)
+    assert_kind_of(String, (0..1).hash.to_s)
   end
 
   def test_step
@@ -173,14 +233,34 @@ class TestRange < Test::Unit::TestCase
     assert_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], a)
 
     a = []
+    (0..).step {|x| a << x; break if a.size == 10 }
+    assert_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], a)
+
+    a = []
     (0..10).step(2) {|x| a << x }
     assert_equal([0, 2, 4, 6, 8, 10], a)
 
-    assert_raise(ArgumentError) { (0..10).step(-1) { } }
+    a = []
+    (0..).step(2) {|x| a << x; break if a.size == 10 }
+    assert_equal([0, 2, 4, 6, 8, 10, 12, 14, 16, 18], a)
+
+    assert_kind_of(Enumerator::ArithmeticSequence, (0..10).step)
+    assert_kind_of(Enumerator::ArithmeticSequence, (0..10).step(2))
+    assert_kind_of(Enumerator::ArithmeticSequence, (0..10).step(0.5))
+    assert_kind_of(Enumerator::ArithmeticSequence, (10..0).step(-1))
+    assert_kind_of(Enumerator::ArithmeticSequence, (..10).step(2))
+    assert_kind_of(Enumerator::ArithmeticSequence, (1..).step(2))
+
     assert_raise(ArgumentError) { (0..10).step(0) { } }
+    assert_raise(ArgumentError) { (0..).step(-1) { } }
+    assert_raise(ArgumentError) { (0..).step(0) { } }
 
     a = []
     ("a" .. "z").step(2) {|x| a << x }
+    assert_equal(%w(a c e g i k m o q s u w y), a)
+
+    a = []
+    ("a" .. ).step(2) {|x| a << x; break if a.size == 13 }
     assert_equal(%w(a c e g i k m o q s u w y), a)
 
     a = []
@@ -188,16 +268,40 @@ class TestRange < Test::Unit::TestCase
     assert_equal(["a"], a)
 
     a = []
+    (:a .. :z).step(2) {|x| a << x }
+    assert_equal(%i(a c e g i k m o q s u w y), a)
+
+    a = []
+    (:a .. ).step(2) {|x| a << x; break if a.size == 13 }
+    assert_equal(%i(a c e g i k m o q s u w y), a)
+
+    a = []
+    (:a .. :z).step(2**32) {|x| a << x }
+    assert_equal([:a], a)
+
+    a = []
     (2**32-1 .. 2**32+1).step(2) {|x| a << x }
     assert_equal([4294967295, 4294967297], a)
     zero = (2**32).coerce(0).first
     assert_raise(ArgumentError) { (2**32-1 .. 2**32+1).step(zero) { } }
+    a = []
+    (2**32-1 .. ).step(2) {|x| a << x; break if a.size == 2 }
+    assert_equal([4294967295, 4294967297], a)
+
+    max = RbConfig::LIMITS["FIXNUM_MAX"]
+    a = []
+    (max..).step {|x| a << x; break if a.size == 2 }
+    assert_equal([max, max+1], a)
+    a = []
+    (max..).step(max) {|x| a << x; break if a.size == 4 }
+    assert_equal([max, 2*max, 3*max, 4*max], a)
 
     o1 = Object.new
     o2 = Object.new
     def o1.<=>(x); -1; end
     def o2.<=>(x); 0; end
     assert_raise(TypeError) { (o1..o2).step(1) { } }
+    assert_raise(TypeError) { (o1..).step(1) { } }
 
     class << o1; self; end.class_eval do
       define_method(:succ) { o2 }
@@ -217,12 +321,43 @@ class TestRange < Test::Unit::TestCase
     assert_equal([0, 0.5, 1.0, 1.5, 2.0], a)
 
     a = []
+    (0..).step(0.5) {|x| a << x; break if a.size == 5 }
+    assert_equal([0, 0.5, 1.0, 1.5, 2.0], a)
+
+    a = []
     (0x40000000..0x40000002).step(0.5) {|x| a << x }
     assert_equal([1073741824, 1073741824.5, 1073741825.0, 1073741825.5, 1073741826], a)
 
     o = Object.new
     def o.to_int() 1 end
     assert_nothing_raised("[ruby-dev:34558]") { (0..2).step(o) {|x| } }
+
+    o = Object.new
+    class << o
+      def to_str() "a" end
+      def <=>(other) to_str <=> other end
+    end
+
+    a = []
+    (o.."c").step(1) {|x| a << x}
+    assert_equal(["a", "b", "c"], a)
+    a = []
+    (o..).step(1) {|x| a << x; break if a.size >= 3}
+    assert_equal(["a", "b", "c"], a)
+  end
+
+  def test_step_bug15537
+    assert_equal([10.0, 9.0, 8.0, 7.0], (10 ..).step(-1.0).take(4))
+    assert_equal([10.0, 9.0, 8.0, 7.0], (10.0 ..).step(-1).take(4))
+  end
+
+  def test_percent_step
+    aseq = (1..10) % 2
+    assert_equal(Enumerator::ArithmeticSequence, aseq.class)
+    assert_equal(1, aseq.begin)
+    assert_equal(10, aseq.end)
+    assert_equal(2, aseq.step)
+    assert_equal([1, 3, 5, 7, 9], aseq.to_a)
   end
 
   def test_step_ruby_core_35753
@@ -238,6 +373,10 @@ class TestRange < Test::Unit::TestCase
     a = []
     (0..10).each {|x| a << x }
     assert_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], a)
+
+    a = []
+    (0..).each {|x| a << x; break if a.size == 10 }
+    assert_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], a)
 
     o1 = Object.new
     o2 = Object.new
@@ -279,12 +418,28 @@ class TestRange < Test::Unit::TestCase
     a = []
     r2.each {|x| a << x }
     assert_equal([], a)
+
+    o = Object.new
+    class << o
+      def to_str() "a" end
+      def <=>(other) to_str <=> other end
+    end
+
+    a = []
+    (o.."c").each {|x| a << x}
+    assert_equal(["a", "b", "c"], a)
+    a = []
+    (o..).each {|x| a << x; break if a.size >= 3}
+    assert_equal(["a", "b", "c"], a)
   end
 
   def test_begin_end
     assert_equal(0, (0..1).begin)
     assert_equal(1, (0..1).end)
     assert_equal(1, (0...1).end)
+    assert_equal(0, (0..nil).begin)
+    assert_equal(nil, (0..nil).end)
+    assert_equal(nil, (0...nil).end)
   end
 
   def test_first_last
@@ -303,11 +458,46 @@ class TestRange < Test::Unit::TestCase
     assert_equal("a", ("a"..."c").first)
     assert_equal("c", ("a"..."c").last)
     assert_equal(0, (2...0).last)
+
+    assert_equal([0, 1, 2], (0..nil).first(3))
+    assert_equal(0, (0..nil).first)
+    assert_equal("a", ("a"..nil).first)
+    assert_raise(RangeError) { (0..nil).last }
+    assert_raise(RangeError) { (0..nil).last(3) }
+    assert_raise(RangeError) { (nil..0).first }
+    assert_raise(RangeError) { (nil..0).first(3) }
+
+    assert_equal([0, 1, 2], (0..10).first(3.0))
+    assert_equal([8, 9, 10], (0..10).last(3.0))
+    assert_raise(TypeError) { (0..10).first("3") }
+    assert_raise(TypeError) { (0..10).last("3") }
+    class << (o = Object.new)
+      def to_int; 3; end
+    end
+    assert_equal([0, 1, 2], (0..10).first(o))
+    assert_equal([8, 9, 10], (0..10).last(o))
+
+    assert_raise(ArgumentError) { (0..10).first(-1) }
+    assert_raise(ArgumentError) { (0..10).last(-1) }
+  end
+
+  def test_last_with_redefine_each
+    assert_in_out_err([], <<-'end;', ['true'], [])
+      class Range
+        remove_method :each
+        def each(&b)
+          [1, 2, 3, 4, 5].each(&b)
+        end
+      end
+      puts [3, 4, 5] == (1..10).last(3)
+    end;
   end
 
   def test_to_s
     assert_equal("0..1", (0..1).to_s)
     assert_equal("0...1", (0...1).to_s)
+    assert_equal("0..", (0..nil).to_s)
+    assert_equal("0...", (0...nil).to_s)
 
     bug11767 = '[ruby-core:71811] [Bug #11767]'
     assert_predicate(("0".taint.."1").to_s, :tainted?, bug11767)
@@ -318,6 +508,12 @@ class TestRange < Test::Unit::TestCase
   def test_inspect
     assert_equal("0..1", (0..1).inspect)
     assert_equal("0...1", (0...1).inspect)
+    assert_equal("0..", (0..nil).inspect)
+    assert_equal("0...", (0...nil).inspect)
+    assert_equal("..1", (nil..1).inspect)
+    assert_equal("...1", (nil...1).inspect)
+    assert_equal("nil..nil", (nil..nil).inspect)
+    assert_equal("nil...nil", (nil...nil).inspect)
 
     bug11767 = '[ruby-core:71811] [Bug #11767]'
     assert_predicate(("0".taint.."1").inspect, :tainted?, bug11767)
@@ -328,6 +524,16 @@ class TestRange < Test::Unit::TestCase
   def test_eqq
     assert_operator(0..10, :===, 5)
     assert_not_operator(0..10, :===, 11)
+    assert_operator(5..nil, :===, 11)
+    assert_not_operator(5..nil, :===, 0)
+  end
+
+  def test_eqq_string
+    assert_operator('A'..'Z', :===, 'ANA')
+    assert_not_operator('A'..'Z', :===, 'ana')
+    assert_operator('A'.., :===, 'ANA')
+    assert_operator(..'Z', :===, 'ANA')
+    assert_operator(nil..nil, :===, 'ANA')
   end
 
   def test_eqq_time
@@ -335,6 +541,8 @@ class TestRange < Test::Unit::TestCase
     t = Time.now
     assert_nothing_raised(TypeError, bug11113) {
       assert_operator(t..(t+10), :===, t+5)
+      assert_operator(t.., :===, t+5)
+      assert_not_operator(t.., :===, t-5)
     }
   end
 
@@ -362,13 +570,27 @@ class TestRange < Test::Unit::TestCase
     assert_operator(c.new(0)..c.new(10), :===, c.new(5), bug12003)
   end
 
+  def test_eqq_non_iteratable
+    k = Class.new do
+      include Comparable
+      attr_reader :i
+      def initialize(i) @i = i; end
+      def <=>(o); i <=> o.i; end
+    end
+    assert_operator(k.new(0)..k.new(2), :===, k.new(1))
+  end
+
   def test_include
     assert_include("a".."z", "c")
     assert_not_include("a".."z", "5")
     assert_include("a"..."z", "y")
     assert_not_include("a"..."z", "z")
     assert_not_include("a".."z", "cc")
+    assert_include("a".., "c")
+    assert_not_include("a".., "5")
     assert_include(0...10, 5)
+    assert_include(5..., 10)
+    assert_not_include(5..., 0)
   end
 
   def test_cover
@@ -377,6 +599,60 @@ class TestRange < Test::Unit::TestCase
     assert_operator("a"..."z", :cover?, "y")
     assert_not_operator("a"..."z", :cover?, "z")
     assert_operator("a".."z", :cover?, "cc")
+    assert_not_operator(5..., :cover?, 0)
+    assert_not_operator(5..., :cover?, "a")
+    assert_operator(5.., :cover?, 10)
+
+    assert_operator(2..5, :cover?, 2..5)
+    assert_operator(2...6, :cover?, 2...6)
+    assert_operator(2...6, :cover?, 2..5)
+    assert_operator(2..5, :cover?, 2...6)
+    assert_operator(2..5, :cover?, 2..4)
+    assert_operator(2..5, :cover?, 2...4)
+    assert_operator(2..5, :cover?, 2...5)
+    assert_operator(2..5, :cover?, 3..5)
+    assert_operator(2..5, :cover?, 3..4)
+    assert_operator(2..5, :cover?, 3...6)
+    assert_operator(2...6, :cover?, 2...5)
+    assert_operator(2...6, :cover?, 2..5)
+    assert_operator(2..6, :cover?, 2...6)
+    assert_operator(2.., :cover?, 2..)
+    assert_operator(2.., :cover?, 3..)
+    assert_operator(1.., :cover?, 1..10)
+    assert_operator(..2, :cover?, ..2)
+    assert_operator(..2, :cover?, ..1)
+    assert_operator(..2, :cover?, 0..1)
+    assert_operator(2.0..5.0, :cover?, 2..3)
+    assert_operator(2..5, :cover?, 2.0..3.0)
+    assert_operator(2..5, :cover?, 2.0...3.0)
+    assert_operator(2..5, :cover?, 2.0...5.0)
+    assert_operator(2.0..5.0, :cover?, 2.0...3.0)
+    assert_operator(2.0..5.0, :cover?, 2.0...5.0)
+    assert_operator('aa'..'zz', :cover?, 'aa'...'bb')
+
+    assert_not_operator(2..5, :cover?, 1..5)
+    assert_not_operator(2...6, :cover?, 1..5)
+    assert_not_operator(2..5, :cover?, 1...6)
+    assert_not_operator(1..3, :cover?, 1...6)
+    assert_not_operator(2..5, :cover?, 2..6)
+    assert_not_operator(2...6, :cover?, 2..6)
+    assert_not_operator(2...6, :cover?, 2...7)
+    assert_not_operator(2..3, :cover?, 1..4)
+    assert_not_operator(1..2, :cover?, 1.0..3.0)
+    assert_not_operator(1.0..2.9, :cover?, 1.0..3.0)
+    assert_not_operator(1..2, :cover?, 4..3)
+    assert_not_operator(2..1, :cover?, 1..2)
+    assert_not_operator(1...2, :cover?, 1...3)
+    assert_not_operator(2.., :cover?, 1..)
+    assert_not_operator(2.., :cover?, 1..10)
+    assert_not_operator(2.., :cover?, ..10)
+    assert_not_operator(1..10, :cover?, 1..)
+    assert_not_operator(1..10, :cover?, ..1)
+    assert_not_operator(1..5, :cover?, 3..2)
+    assert_not_operator(1..10, :cover?, 3...2)
+    assert_not_operator(1..10, :cover?, 3...3)
+    assert_not_operator('aa'..'zz', :cover?, 'aa'...'zzz')
+    assert_not_operator(1..10, :cover?, 1...10.1)
   end
 
   def test_beg_len
@@ -454,6 +730,13 @@ class TestRange < Test::Unit::TestCase
     assert_equal 6, (1...6.3).size
     assert_equal 5, (1.1...6).size
     assert_equal 42, (1..42).each.size
+    assert_nil ("a"..."z").size
+
+    assert_equal Float::INFINITY, (1...).size
+    assert_equal Float::INFINITY, (1.0...).size
+    assert_equal Float::INFINITY, (...1).size
+    assert_equal Float::INFINITY, (...1.0).size
+    assert_nil ("a"...).size
   end
 
   def test_bsearch_typechecks_return_values
@@ -495,6 +778,9 @@ class TestRange < Test::Unit::TestCase
 
     ary = [0, 100, 100, 100, 200]
     assert_equal(1, (0...ary.size).bsearch {|i| ary[i] >= 100 })
+
+    assert_equal(1_000_001, (0...).bsearch {|i| i > 1_000_000 })
+    assert_equal( -999_999, (...0).bsearch {|i| i > -1_000_000 })
   end
 
   def test_bsearch_for_float
@@ -546,6 +832,9 @@ class TestRange < Test::Unit::TestCase
 
     assert_in_delta(1.0, (0.0..inf).bsearch {|x| Math.log(x) >= 0 })
     assert_in_delta(7.0, (0.0..10).bsearch {|x| 7.0 - x })
+
+    assert_equal( 1_000_000.0.next_float, (0.0..).bsearch {|x| x > 1_000_000 })
+    assert_equal(-1_000_000.0.next_float, (..0.0).bsearch {|x| x > -1_000_000 })
   end
 
   def check_bsearch_values(range, search, a)
@@ -647,6 +936,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| ary[i - bignum] >= 100 })
     assert_equal(bignum + 0, (bignum...bignum+ary.size).bsearch {|i| true })
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| false })
+    assert_equal(bignum * 2 + 1, (bignum...).bsearch {|i| i > bignum * 2 })
+    assert_equal(-bignum * 2 + 1, (...-bignum).bsearch {|i| i > -bignum * 2 })
 
     assert_raise(TypeError) { ("a".."z").bsearch {} }
   end
@@ -657,5 +948,15 @@ class TestRange < Test::Unit::TestCase
       super {|y| b.call(y) {|z| assert(false)}}
     end
     (a.."c").each {|x, &b| assert_nil(b)}
+  end
+
+  def test_to_a
+    assert_equal([1,2,3,4,5], (1..5).to_a)
+    assert_equal([1,2,3,4], (1...5).to_a)
+    assert_raise(RangeError) { (1..).to_a }
+  end
+
+  def test_beginless_range_iteration
+    assert_raise(TypeError) { (..1).each { } }
   end
 end

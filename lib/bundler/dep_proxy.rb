@@ -10,11 +10,11 @@ module Bundler
     end
 
     def hash
-      @hash ||= dep.hash
+      @hash ||= [dep, __platform].hash
     end
 
     def ==(other)
-      return if other.nil?
+      return false if other.class != self.class
       dep == other.dep && __platform == other.__platform
     end
 

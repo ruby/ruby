@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes.rb', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :symbol_slice, shared: true do
   describe "with an Integer index" do
@@ -74,21 +74,21 @@ describe :symbol_slice, shared: true do
 
     describe "and a nil length" do
       it "raises a TypeError" do
-        lambda { :symbol.send(@method, 1,nil) }.should raise_error(TypeError)
+        -> { :symbol.send(@method, 1,nil) }.should raise_error(TypeError)
       end
     end
 
     describe "and a length that cannot be converted into an Integer" do
       it "raises a TypeError when given an Array" do
-        lambda { :symbol.send(@method, 1,Array.new) }.should raise_error(TypeError)
+        -> { :symbol.send(@method, 1,Array.new) }.should raise_error(TypeError)
       end
 
       it "raises a TypeError when given an Hash" do
-        lambda { :symbol.send(@method, 1,Hash.new) }.should raise_error(TypeError)
+        -> { :symbol.send(@method, 1,Hash.new) }.should raise_error(TypeError)
       end
 
       it "raises a TypeError when given an Object" do
-        lambda { :symbol.send(@method, 1,Object.new) }.should raise_error(TypeError)
+        -> { :symbol.send(@method, 1,Object.new) }.should raise_error(TypeError)
       end
     end
   end
@@ -101,21 +101,21 @@ describe :symbol_slice, shared: true do
 
   describe "with a nil index" do
     it "raises a TypeError" do
-      lambda { :symbol.send(@method, nil) }.should raise_error(TypeError)
+      -> { :symbol.send(@method, nil) }.should raise_error(TypeError)
     end
   end
 
   describe "with an index that cannot be converted into an Integer" do
     it "raises a TypeError when given an Array" do
-      lambda { :symbol.send(@method, Array.new) }.should raise_error(TypeError)
+      -> { :symbol.send(@method, Array.new) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError when given an Hash" do
-      lambda { :symbol.send(@method, Hash.new) }.should raise_error(TypeError)
+      -> { :symbol.send(@method, Hash.new) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError when given an Object" do
-      lambda { :symbol.send(@method, Object.new) }.should raise_error(TypeError)
+      -> { :symbol.send(@method, Object.new) }.should raise_error(TypeError)
     end
   end
 
@@ -229,20 +229,20 @@ describe :symbol_slice, shared: true do
 
       describe "and an index that cannot be converted to an Integer" do
         it "raises a TypeError when given an Hash" do
-          lambda { :symbol.send(@method, /(sy)(mb)(ol)/, Hash.new) }.should raise_error(TypeError)
+          -> { :symbol.send(@method, /(sy)(mb)(ol)/, Hash.new) }.should raise_error(TypeError)
         end
 
         it "raises a TypeError when given an Array" do
-          lambda { :symbol.send(@method, /(sy)(mb)(ol)/, Array.new) }.should raise_error(TypeError)
+          -> { :symbol.send(@method, /(sy)(mb)(ol)/, Array.new) }.should raise_error(TypeError)
         end
 
         it "raises a TypeError when given an Object" do
-          lambda { :symbol.send(@method, /(sy)(mb)(ol)/, Object.new) }.should raise_error(TypeError)
+          -> { :symbol.send(@method, /(sy)(mb)(ol)/, Object.new) }.should raise_error(TypeError)
         end
       end
 
       it "raises a TypeError if the index is nil" do
-        lambda { :symbol.send(@method, /(sy)(mb)(ol)/, nil) }.should raise_error(TypeError)
+        -> { :symbol.send(@method, /(sy)(mb)(ol)/, nil) }.should raise_error(TypeError)
       end
 
       it "sets $~ to the MatchData if there is a match" do

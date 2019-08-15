@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Kernel#trust" do
   it "returns self" do
@@ -13,9 +13,9 @@ describe "Kernel#trust" do
     o.untrusted?.should == false
   end
 
-  it "raises RuntimeError on an untrusted, frozen object" do
+  it "raises #{frozen_error_class} on an untrusted, frozen object" do
     o = Object.new.untrust.freeze
-    lambda { o.trust }.should raise_error(RuntimeError)
+    -> { o.trust }.should raise_error(frozen_error_class)
   end
 
   it "does not raise an error on a trusted, frozen object" do

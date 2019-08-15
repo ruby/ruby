@@ -1,7 +1,12 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require 'socket'
+require_relative '../spec_helper'
 
 describe "Addrinfo#pfamily" do
+  it 'returns PF_UNSPEC as the default socket family' do
+    sockaddr = Socket.pack_sockaddr_in(80, 'localhost')
+
+    Addrinfo.new(sockaddr).pfamily.should == Socket::PF_UNSPEC
+  end
+
   describe "for an ipv4 socket" do
 
     before :each do
@@ -24,7 +29,7 @@ describe "Addrinfo#pfamily" do
     end
   end
 
-  platform_is_not :windows do
+  with_feature :unix_socket do
     describe "for a unix socket" do
       before :each do
         @addrinfo = Addrinfo.unix("/tmp/sock")

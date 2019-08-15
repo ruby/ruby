@@ -2,11 +2,11 @@
 
 module Bundler
   class Source
-    autoload :Gemspec,  "bundler/source/gemspec"
-    autoload :Git,      "bundler/source/git"
-    autoload :Metadata, "bundler/source/metadata"
-    autoload :Path,     "bundler/source/path"
-    autoload :Rubygems, "bundler/source/rubygems"
+    autoload :Gemspec,  File.expand_path("source/gemspec", __dir__)
+    autoload :Git,      File.expand_path("source/git", __dir__)
+    autoload :Metadata, File.expand_path("source/metadata", __dir__)
+    autoload :Path,     File.expand_path("source/path", __dir__)
+    autoload :Rubygems, File.expand_path("source/rubygems", __dir__)
 
     attr_accessor :dependency_names
 
@@ -54,6 +54,15 @@ module Bundler
       instance_of?(Bundler::Source::Path)
     end
 
+    def extension_cache_path(spec)
+      return unless Bundler.feature_flag.global_gem_cache?
+      return unless source_slug = extension_cache_slug(spec)
+      Bundler.user_cache.join(
+        "extensions", Gem::Platform.local.to_s, Bundler.ruby_scope,
+        source_slug, spec.full_name
+      )
+    end
+
   private
 
     def version_color(spec_version, locked_spec_version)
@@ -76,15 +85,6 @@ module Bundler
       else
         Bundler.ui.info message
       end
-    end
-
-    def extension_cache_path(spec)
-      return unless Bundler.feature_flag.global_gem_cache?
-      return unless source_slug = extension_cache_slug(spec)
-      Bundler.user_cache.join(
-        "extensions", Gem::Platform.local.to_s, Bundler.ruby_scope,
-        source_slug, spec.full_name
-      )
     end
 
     def extension_cache_slug(_)

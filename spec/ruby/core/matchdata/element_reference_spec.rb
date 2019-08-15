@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "MatchData#[]" do
   it "acts as normal array indexing [index]" do
@@ -71,12 +71,12 @@ describe "MatchData#[Symbol]" do
 
   it "raises an IndexError if there is no named match corresponding to the Symbol" do
     md = 'haystack'.match(/(?<t>t(?<a>ack))/)
-    lambda { md[:baz] }.should raise_error(IndexError, /baz/)
+    -> { md[:baz] }.should raise_error(IndexError, /baz/)
   end
 
   it "raises an IndexError if there is no named match corresponding to the String" do
     md = 'haystack'.match(/(?<t>t(?<a>ack))/)
-    lambda { md['baz'] }.should raise_error(IndexError, /baz/)
+    -> { md['baz'] }.should raise_error(IndexError, /baz/)
   end
 
   it "returns matches in the String's encoding" do

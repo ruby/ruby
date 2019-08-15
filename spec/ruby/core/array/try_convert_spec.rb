@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array.try_convert" do
   it "returns the argument if it's an Array" do
@@ -39,12 +39,12 @@ describe "Array.try_convert" do
   it "sends #to_ary to the argument and raises TypeError if it's not a kind of Array" do
     obj = mock("to_ary")
     obj.should_receive(:to_ary).and_return(Object.new)
-    lambda { Array.try_convert obj }.should raise_error(TypeError)
+    -> { Array.try_convert obj }.should raise_error(TypeError)
   end
 
   it "does not rescue exceptions raised by #to_ary" do
     obj = mock("to_ary")
     obj.should_receive(:to_ary).and_raise(RuntimeError)
-    lambda { Array.try_convert obj }.should raise_error(RuntimeError)
+    -> { Array.try_convert obj }.should raise_error(RuntimeError)
   end
 end

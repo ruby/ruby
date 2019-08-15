@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Module#<=>" do
   it "returns -1 if self is a subclass of or includes the given module" do
@@ -16,7 +16,7 @@ describe "Module#<=>" do
     (ModuleSpecs::Super  <=> ModuleSpecs::Super).should == 0
   end
 
-  it "returns +1 if self is a superclas of or included by the given module" do
+  it "returns +1 if self is a superclass of or included by the given module" do
     (ModuleSpecs::Parent <=> ModuleSpecs::Child).should == +1
     (ModuleSpecs::Basic  <=> ModuleSpecs::Child).should == +1
     (ModuleSpecs::Super  <=> ModuleSpecs::Child).should == +1

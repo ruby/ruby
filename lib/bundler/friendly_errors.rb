@@ -1,8 +1,7 @@
-# encoding: utf-8
 # frozen_string_literal: true
 
 require "cgi"
-require "bundler/vendored_thor"
+require_relative "vendored_thor"
 
 module Bundler
   module FriendlyErrors
@@ -45,6 +44,8 @@ module Bundler
           "Alternatively, you can increase the amount of memory the JVM is able to use by running Bundler with jruby -J-Xmx1024m -S bundle (JRuby defaults to 500MB)."
       else request_issue_report_for(error)
       end
+    rescue StandardError
+      raise error
     end
 
     def exit_status(error)
@@ -122,7 +123,7 @@ module Bundler
     yield
   rescue SignalException
     raise
-  rescue Exception => e
+  rescue Exception => e # rubocop:disable Lint/RescueException
     FriendlyErrors.log_error(e)
     exit FriendlyErrors.exit_status(e)
   end

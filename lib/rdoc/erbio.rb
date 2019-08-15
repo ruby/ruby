@@ -9,7 +9,7 @@ require 'erb'
 #
 #   erbio = RDoc::ERBIO.new '<%= "hello world" %>', nil, nil
 #
-#   open 'hello.txt', 'w' do |io|
+#   File.open 'hello.txt', 'w' do |io|
 #     erbio.result binding
 #   end
 #
@@ -21,7 +21,11 @@ class RDoc::ERBIO < ERB
   # Defaults +eoutvar+ to 'io', otherwise is identical to ERB's initialize
 
   def initialize str, safe_level = nil, trim_mode = nil, eoutvar = 'io'
-    super
+    if RUBY_VERSION >= '2.6'
+      super(str, trim_mode: trim_mode, eoutvar: eoutvar)
+    else
+      super
+    end
   end
 
   ##

@@ -115,7 +115,7 @@ require "cgi/util"
 #     James Edward Gray II
 #   }.gsub(/^  /, '')
 #
-#   message = ERB.new(template, 0, "%<>")
+#   message = ERB.new(template, trim_mode: "%<>")
 #
 #   # Set up template data.
 #   to = "Community Spokesman <spokesman@ruby_community.org>"
@@ -263,7 +263,7 @@ class ERB
 
   # Returns revision information for the erb.rb module.
   def self.version
-    "erb.rb [2.1.0 #{ERB::Revision.split[1]}]"
+    "erb.rb [2.2.0 #{ERB::Revision.split[1]}]"
   end
 end
 
@@ -291,7 +291,7 @@ class ERB
   # <i>Generates</i>:
   #
   #   #coding:UTF-8
-  #   _erbout=+''; _erbout.<< -"Got "; _erbout.<<(( obj ).to_s); _erbout.<< -"!\n"; _erbout
+  #   _erbout=+''; _erbout.<< "Got ".freeze; _erbout.<<(( obj ).to_s); _erbout.<< "!\n".freeze; _erbout
   #
   # By default the output is sent to the print method.  For example:
   #
@@ -302,7 +302,7 @@ class ERB
   # <i>Generates</i>:
   #
   #   #coding:UTF-8
-  #   print "Got "; print(( obj ).to_s); print "!\n"
+  #   print "Got ".freeze; print(( obj ).to_s); print "!\n".freeze
   #
   # == Evaluation
   #
@@ -515,10 +515,6 @@ class ERB
       end
       Scanner.register_scanner(SimpleScanner, nil, false)
 
-      # Deprecated. Kept for backward compatibility.
-      SimpleScanner2 = SimpleScanner # :nodoc:
-      deprecate_constant :SimpleScanner2
-
       class ExplicitScanner < Scanner # :nodoc:
         def scan
           stag_reg = /(.*?)(^[ \t]*<%-|<%-|#{stags.join('|')}|\z)/m
@@ -576,17 +572,8 @@ class ERB
       end
     end
 
-    def content_dump(s) # :nodoc:
-      n = s.count("\n")
-      if n > 0
-        s.dump << "\n" * n
-      else
-        s.dump
-      end
-    end
-
     def add_put_cmd(out, content)
-      out.push("#{@put_cmd}(-#{content_dump(content)})")
+      out.push("#{@put_cmd} #{content.dump}.freeze#{"\n" * content.count("\n")}")
     end
 
     def add_insert_cmd(out, content)
@@ -668,7 +655,7 @@ class ERB
       when '<%='
         add_insert_cmd(out, content)
       when '<%#'
-        # out.push("# #{content_dump(content)}")
+        # commented out
       end
     end
 
@@ -678,9 +665,13 @@ class ERB
         return [false, '>']
       when 2
         return [false, '<>']
-      when 0
+      when 0, nil
         return [false, nil]
       when String
+        unless mode.match?(/\A(%|-|>|<>){1,2}\z/)
+          warn_invalid_trim_mode(mode, uplevel: 5)
+        end
+
         perc = mode.include?('%')
         if mode.include?('-')
           return [perc, '-']
@@ -692,6 +683,7 @@ class ERB
           [perc, nil]
         end
       else
+        warn_invalid_trim_mode(mode, uplevel: 5)
         return [false, nil]
       end
     end
@@ -743,6 +735,10 @@ class ERB
       end
       return enc, frozen
     end
+
+    def warn_invalid_trim_mode(mode, uplevel:)
+      warn "Invalid ERB trim mode: #{mode.inspect} (trim_mode: nil, 0, 1, 2, or String composed of '%' and/or '-', '>', '<>')", uplevel: uplevel + 1
+    end
   end
 end
 
@@ -790,11 +786,11 @@ class ERB
   #    def build
   #      b = binding
   #      # create and run templates, filling member data variables
-  #      ERB.new(<<-'END_PRODUCT'.gsub(/^\s+/, ""), 0, "", "@product").result b
+  #      ERB.new(<<-'END_PRODUCT'.gsub(/^\s+/, ""), trim_mode: "", eoutvar: "@product").result b
   #        <%= PRODUCT[:name] %>
   #        <%= PRODUCT[:desc] %>
   #      END_PRODUCT
-  #      ERB.new(<<-'END_PRICE'.gsub(/^\s+/, ""), 0, "", "@price").result b
+  #      ERB.new(<<-'END_PRICE'.gsub(/^\s+/, ""), trim_mode: "", eoutvar: "@price").result b
   #        <%= PRODUCT[:name] %> -- <%= PRODUCT[:cost] %>
   #        <%= PRODUCT[:desc] %>
   #      END_PRICE
@@ -815,14 +811,34 @@ class ERB
   #  Chicken Fried Steak -- 9.95
   #  A well messages pattie, breaded and fried.
   #
-  def initialize(str, safe_level=nil, trim_mode=nil, eoutvar='_erbout')
+  def initialize(str, safe_level=NOT_GIVEN, legacy_trim_mode=NOT_GIVEN, legacy_eoutvar=NOT_GIVEN, trim_mode: nil, eoutvar: '_erbout')
+    # Complex initializer for $SAFE deprecation at [Feature #14256]. Use keyword arguments to pass trim_mode or eoutvar.
+    if safe_level != NOT_GIVEN
+      warn 'Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.', uplevel: 1 if $VERBOSE || !ZERO_SAFE_LEVELS.include?(safe_level)
+    else
+      safe_level = nil
+    end
+    if legacy_trim_mode != NOT_GIVEN
+      warn 'Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.', uplevel: 1 if $VERBOSE
+      trim_mode = legacy_trim_mode
+    end
+    if legacy_eoutvar != NOT_GIVEN
+      warn 'Passing eoutvar with the 4th argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, eoutvar: ...) instead.', uplevel: 1 if $VERBOSE
+      eoutvar = legacy_eoutvar
+    end
+
     @safe_level = safe_level
     compiler = make_compiler(trim_mode)
     set_eoutvar(compiler, eoutvar)
     @src, @encoding, @frozen_string = *compiler.compile(str)
     @filename = nil
     @lineno = 0
+    @_init = self.class.singleton_class
   end
+  NOT_GIVEN = Object.new
+  private_constant :NOT_GIVEN
+  ZERO_SAFE_LEVELS = [0, nil]
+  private_constant :ZERO_SAFE_LEVELS
 
   ##
   # Creates a new compiler for ERB.  See ERB::Compiler.new for details
@@ -876,11 +892,17 @@ class ERB
   # code evaluation.
   #
   def result(b=new_toplevel)
+    unless @_init.equal?(self.class.singleton_class)
+      raise ArgumentError, "not initialized"
+    end
     if @safe_level
-      proc {
+      proc do
+        prev_safe_level = $SAFE
         $SAFE = @safe_level
         eval(@src, b, (@filename || '(erb)'), @lineno)
-      }.call
+      ensure
+        $SAFE = prev_safe_level
+      end.call
     else
       eval(@src, b, (@filename || '(erb)'), @lineno)
     end
@@ -889,7 +911,7 @@ class ERB
   # Render a template on a new toplevel binding with local variables specified
   # by a Hash object.
   def result_with_hash(hash)
-    b = new_toplevel
+    b = new_toplevel(hash.keys)
     hash.each_pair do |key, value|
       b.local_variable_set(key, value)
     end
@@ -900,8 +922,15 @@ class ERB
   # Returns a new binding each time *near* TOPLEVEL_BINDING for runs that do
   # not specify a binding.
 
-  def new_toplevel
-    TOPLEVEL_BINDING.dup
+  def new_toplevel(vars = nil)
+    b = TOPLEVEL_BINDING
+    if vars
+      vars = vars.select {|v| b.local_variable_defined?(v)}
+      unless vars.empty?
+        return b.eval("tap {|;#{vars.join(',')}| break binding}")
+      end
+    end
+    b.dup
   end
   private :new_toplevel
 

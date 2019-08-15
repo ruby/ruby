@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Module#module_function" do
   it "is a private method" do
@@ -12,11 +12,11 @@ describe "Module#module_function" do
     end
 
     it "raises a TypeError if calling after rebinded to Class" do
-      lambda {
+      -> {
         Module.instance_method(:module_function).bind(Class.new).call
       }.should raise_error(TypeError)
 
-      lambda {
+      -> {
         Module.instance_method(:module_function).bind(Class.new).call :foo
       }.should raise_error(TypeError)
     end
@@ -87,7 +87,7 @@ describe "Module#module_function with specific method names" do
     o.respond_to?(:test).should == false
     m.should have_private_instance_method(:test)
     o.send(:test).should == "hello"
-    lambda { o.test }.should raise_error(NoMethodError)
+    -> { o.test }.should raise_error(NoMethodError)
   end
 
   it "makes the new Module methods public" do
@@ -116,10 +116,10 @@ describe "Module#module_function with specific method names" do
   it "raises a TypeError when the given names can't be converted to string using to_str" do
     o = mock('123')
 
-    lambda { Module.new { module_function(o) } }.should raise_error(TypeError)
+    -> { Module.new { module_function(o) } }.should raise_error(TypeError)
 
     o.should_receive(:to_str).and_return(123)
-    lambda { Module.new { module_function(o) } }.should raise_error(TypeError)
+    -> { Module.new { module_function(o) } }.should raise_error(TypeError)
   end
 
   it "can make accessible private methods" do # JRUBY-4214

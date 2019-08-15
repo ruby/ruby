@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'csv'
 require 'tempfile'
 
@@ -26,7 +26,7 @@ describe "CSV.generate" do
       csv.add_row [1, 2, 3]
       csv << [4, 5, 6]
     end
-    csv_str.object_id.should == str.object_id
+    csv_str.should equal str
     str.should == "1,2,3\n4,5,6\n"
   end
 end

@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/common', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/common'
 
 describe "Logger#unknown" do
   before :each do
@@ -29,7 +29,7 @@ describe "Logger#unknown" do
   end
 
   it "receives empty messages" do
-    lambda { @logger.unknown("") }.should_not raise_error
+    -> { @logger.unknown("") }.should_not raise_error
     @log_file.rewind
     LoggerSpecs.strip_date(@log_file.readlines.first).should ==  "ANY -- : \n"
   end

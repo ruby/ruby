@@ -1,5 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require fixture __FILE__, 'spec_helper'
+require_relative '../../spec_helper'
 require 'coverage'
 
 describe 'Coverage.result' do
@@ -16,7 +15,7 @@ describe 'Coverage.result' do
   it 'gives the covered files as a hash with arrays of count or nil' do
     Coverage.start
     require @class_file.chomp('.rb')
-    result = CoverageSpecs.filtered_result
+    result = Coverage.result
 
     result.should == {
       @class_file => [
@@ -27,7 +26,7 @@ describe 'Coverage.result' do
 
   it 'no requires/loads should give empty hash' do
     Coverage.start
-    result = CoverageSpecs.filtered_result
+    result = Coverage.result
 
     result.should == {}
   end
@@ -43,11 +42,11 @@ describe 'Coverage.result' do
   it 'second run should give same result' do
     Coverage.start
     load @class_file
-    result1 = CoverageSpecs.filtered_result
+    result1 = Coverage.result
 
     Coverage.start
     load @class_file
-    result2 = CoverageSpecs.filtered_result
+    result2 = Coverage.result
 
     result2.should == result1
   end
@@ -58,7 +57,7 @@ describe 'Coverage.result' do
     Coverage.result
 
     Coverage.start
-    result = CoverageSpecs.filtered_result
+    result = Coverage.result
 
     result.should == {}
   end
@@ -66,13 +65,13 @@ describe 'Coverage.result' do
   it 'second Coverage.start does nothing' do
     Coverage.start
     require @config_file.chomp('.rb')
-    result = CoverageSpecs.filtered_result
+    result = Coverage.result
 
     result.should == { @config_file => [1, 1, 1] }
   end
 
   it 'does not include the file starting coverage since it is not tracked' do
     require @config_file.chomp('.rb')
-    CoverageSpecs.filtered_result.should_not include(@config_file)
+    Coverage.result.should_not include(@config_file)
   end
 end

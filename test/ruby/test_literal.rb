@@ -45,6 +45,7 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal "A", ?A
     assert_instance_of String, ?\n
     assert_equal "\n", ?\n
+    assert_equal " ", ?\s
     assert_equal " ", ?\   # space
     assert_equal '', ''
     assert_equal 'string', 'string'
@@ -177,17 +178,34 @@ class TestRubyLiteral < Test::Unit::TestCase
     end
   end
 
+  def test_frozen_string_in_array_literal
+    list = eval("# frozen-string-literal: true\n""['foo', 'bar']")
+    assert_equal 2, list.length
+    list.each { |str| assert_predicate str, :frozen? }
+  end
+
   if defined?(RubyVM::InstructionSequence.compile_option) and
     RubyVM::InstructionSequence.compile_option.key?(:debug_frozen_string_literal)
     def test_debug_frozen_string
-      src = 'n = 1; "foo#{n ? "-#{n}" : ""}"'; f = "test.rb"; n = 1
+      src = 'n = 1; _="foo#{n ? "-#{n}" : ""}"'; f = "test.rb"; n = 1
       opt = {frozen_string_literal: true, debug_frozen_string_literal: true}
       str = RubyVM::InstructionSequence.compile(src, f, f, n, opt).eval
       assert_equal("foo-1", str)
       assert_predicate(str, :frozen?)
-      assert_raise_with_message(RuntimeError, /created at #{Regexp.quote(f)}:#{n}/) {
+      assert_raise_with_message(FrozenError, /created at #{Regexp.quote(f)}:#{n}/) {
         str << "x"
       }
+    end
+
+    def test_debug_frozen_string_in_array_literal
+      src = '["foo"]'; f = "test.rb"; n = 1
+      opt = {frozen_string_literal: true, debug_frozen_string_literal: true}
+      ary = RubyVM::InstructionSequence.compile(src, f, f, n, opt).eval
+      assert_equal("foo", ary.first)
+      assert_predicate(ary.first, :frozen?)
+      assert_raise_with_message(FrozenError, /created at #{Regexp.quote(f)}:#{n}/) {
+        ary.first << "x"
+      } unless ENV['RUBY_ISEQ_DUMP_DEBUG']
     end
   end
 
@@ -264,6 +282,24 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal 2, h.size
     assert_equal h, h
     assert_equal "literal", h["string"]
+  end
+
+  def test_hash_literal_frozen
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      def frozen_hash_literal_arg
+        {0=>1,1=>4,2=>17}
+      end
+
+      ObjectSpace.each_object(Hash) do |a|
+        if a.class == Hash and !a.default_proc and a.size == 3 &&
+           a[0] == 1 && a[1] == 4 && a[2] == 17
+          # should not be found.
+          raise
+        end
+      end
+      assert_not_include frozen_hash_literal_arg, 3
+    end;
   end
 
   def test_big_array_and_hash_literal
@@ -516,15 +552,12 @@ class TestRubyLiteral < Test::Unit::TestCase
       }
     }
     bug2407 = '[ruby-dev:39798]'
-    head.each {|h|
-      if /^0/ =~ h
-        begin
-          eval("#{h}_")
-        rescue SyntaxError => e
-          assert_match(/numeric literal without digits\Z/, e.message, bug2407)
-        end
+    head.grep_v(/^0/) do |s|
+      head.grep(/^0/) do |h|
+        h = "#{s}#{h}_"
+        assert_syntax_error(h, /numeric literal without digits\Z/, "#{bug2407}: #{h.inspect}")
       end
-    }
+    end
   end
 
   def test_float

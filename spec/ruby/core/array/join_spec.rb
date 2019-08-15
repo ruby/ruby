@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/join', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/join'
 
 describe "Array#join" do
   it_behaves_like :array_join_with_string_separator,  :join
@@ -24,11 +24,11 @@ describe "Array#join" do
 
   it "raises a TypeError if the separator cannot be coerced to a String by calling #to_str" do
     obj = mock("not a string")
-    lambda { [1, 2].join(obj) }.should raise_error(TypeError)
+    -> { [1, 2].join(obj) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed false as the separator" do
-    lambda { [1, 2].join(false) }.should raise_error(TypeError)
+    -> { [1, 2].join(false) }.should raise_error(TypeError)
   end
 end
 
@@ -38,11 +38,13 @@ describe "Array#join with $," do
   end
 
   after :each do
-    $, = @before_separator
+    suppress_warning {$, = @before_separator}
   end
 
   it "separates elements with default separator when the passed separator is nil" do
-    $, = "_"
-    [1, 2, 3].join(nil).should == '1_2_3'
+    suppress_warning {
+      $, = "_"
+      [1, 2, 3].join(nil).should == '1_2_3'
+    }
   end
 end

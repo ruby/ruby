@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "String#inspect" do
   it "taints the result if self is tainted" do
@@ -487,6 +487,14 @@ describe "String#inspect" do
         [0376.chr('utf-8'), '"þ"'],
         [0377.chr('utf-8'), '"ÿ"']
       ].should be_computed_by(:inspect)
+    end
+  end
+
+  describe "when the string's encoding is different than the result's encoding" do
+    describe "and the string's encoding is ASCII-compatible but the characters are non-ASCII" do
+      it "returns a string with the non-ASCII characters replaced by \\x notation" do
+        "\u{3042}".encode("EUC-JP").inspect.should == '"\\x{A4A2}"'
+      end
     end
   end
 end

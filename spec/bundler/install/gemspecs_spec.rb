@@ -10,11 +10,11 @@ RSpec.describe "bundle install" do
 
     it "still installs correctly" do
       gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "yaml_spec"
       G
       bundle :install
-      expect(err).to lack_errors
+      expect(err).to be_empty
     end
 
     it "still installs correctly when using path" do
@@ -23,7 +23,7 @@ RSpec.describe "bundle install" do
       install_gemfile <<-G
         gem 'yaml_spec', :path => "#{lib_path("yaml_spec-1.0")}"
       G
-      expect(err).to lack_errors
+      expect(err).to be_empty
     end
   end
 
@@ -44,6 +44,48 @@ RSpec.describe "bundle install" do
     end
     bundle :install, :artifice => "endpoint_marshal_fail" # force gemspec load
     expect(the_bundle).to include_gems "activesupport 2.3.2"
+  end
+
+  it "does not hang when gemspec has incompatible encoding" do
+    create_file("foo.gemspec", <<-G)
+      Gem::Specification.new do |gem|
+        gem.name = "pry-byebug"
+        gem.version = "3.4.2"
+        gem.author = "David Rodríguez"
+        gem.summary = "Good stuff"
+      end
+    G
+
+    install_gemfile <<-G, :env => { "LANG" => "C" }
+      gemspec
+    G
+
+    expect(out).to include("Bundle complete!")
+  end
+
+  it "reads gemspecs respecting their encoding" do
+    create_file "version.rb", <<-RUBY
+      module Persistent💎
+        VERSION = "0.0.1"
+      end
+    RUBY
+
+    create_file "persistent-dmnd.gemspec", <<-G
+      require_relative "version"
+
+      Gem::Specification.new do |gem|
+        gem.name = "persistent-dmnd"
+        gem.version = Persistent💎::VERSION
+        gem.author = "Ivo Anjo"
+        gem.summary = "Unscratchable stuff"
+      end
+    G
+
+    install_gemfile <<-G
+      gemspec
+    G
+
+    expect(out).to include("Bundle complete!")
   end
 
   context "when ruby version is specified in gemspec and gemfile" do
@@ -84,8 +126,8 @@ RSpec.describe "bundle install" do
         gemspec
       G
 
-      expect(out).to include("Ruby patchlevel")
-      expect(out).to include("but your Gemfile specified")
+      expect(err).to include("Ruby patchlevel")
+      expect(err).to include("but your Gemfile specified")
       expect(exitstatus).to eq(18) if exitstatus
     end
 
@@ -101,8 +143,8 @@ RSpec.describe "bundle install" do
         gemspec
       G
 
-      expect(out).to include("Ruby version")
-      expect(out).to include("but your Gemfile specified")
+      expect(err).to include("Ruby version")
+      expect(err).to include("but your Gemfile specified")
       expect(exitstatus).to eq(18) if exitstatus
     end
   end

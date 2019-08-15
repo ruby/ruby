@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/month', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/month'
 
 describe "Time#mon" do
-  it_behaves_like(:time_month, :mon)
+  it_behaves_like :time_month, :mon
 end

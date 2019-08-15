@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'pathname'
 
 describe "Pathname.new" do
@@ -7,7 +7,7 @@ describe "Pathname.new" do
   end
 
   it "raises an ArgumentError when called with \0" do
-    lambda { Pathname.new("\0")}.should raise_error(ArgumentError)
+    -> { Pathname.new("\0")}.should raise_error(ArgumentError)
   end
 
   it "is tainted if path is tainted" do
@@ -16,10 +16,10 @@ describe "Pathname.new" do
   end
 
   it "raises a TypeError if not passed a String type" do
-    lambda { Pathname.new(nil)   }.should raise_error(TypeError)
-    lambda { Pathname.new(0)     }.should raise_error(TypeError)
-    lambda { Pathname.new(true)  }.should raise_error(TypeError)
-    lambda { Pathname.new(false) }.should raise_error(TypeError)
+    -> { Pathname.new(nil)   }.should raise_error(TypeError)
+    -> { Pathname.new(0)     }.should raise_error(TypeError)
+    -> { Pathname.new(true)  }.should raise_error(TypeError)
+    -> { Pathname.new(false) }.should raise_error(TypeError)
   end
 
   it "initializes with an object with to_path" do

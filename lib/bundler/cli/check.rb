@@ -26,7 +26,7 @@ module Bundler
         not_installed.each {|s| Bundler.ui.error " * #{s.name} (#{s.version})" }
         Bundler.ui.warn "Install missing gems with `bundle install`"
         exit 1
-      elsif !Bundler.default_lockfile.file? && Bundler.frozen?
+      elsif !Bundler.default_lockfile.file? && Bundler.frozen_bundle?
         Bundler.ui.error "This bundle has been frozen, but there is no #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} present"
         exit 1
       else

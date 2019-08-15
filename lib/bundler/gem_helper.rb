@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
-require "bundler/vendored_thor" unless defined?(Thor)
-require "bundler"
+require_relative "vendored_thor" unless defined?(Thor)
+require_relative "../bundler"
+require "shellwords"
 
 module Bundler
   class GemHelper
@@ -74,7 +75,8 @@ module Bundler
 
     def build_gem
       file_name = nil
-      sh("gem build -V '#{spec_path}'") do
+      gem = ENV["BUNDLE_GEM"] ? ENV["BUNDLE_GEM"] : "gem"
+      sh(%W[#{gem} build -V #{spec_path}]) do
         file_name = File.basename(built_gem_path)
         SharedHelpers.filesystem_access(File.join(base, "pkg")) {|p| FileUtils.mkdir_p(p) }
         FileUtils.mv(built_gem_path, "pkg")
@@ -85,21 +87,26 @@ module Bundler
 
     def install_gem(built_gem_path = nil, local = false)
       built_gem_path ||= build_gem
-      out, _ = sh_with_code("gem install '#{built_gem_path}'#{" --local" if local}")
-      raise "Couldn't install gem, run `gem install #{built_gem_path}' for more detailed output" unless out[/Successfully installed/]
+      gem = ENV["BUNDLE_GEM"] ? ENV["BUNDLE_GEM"] : "gem"
+      cmd = %W[#{gem} install #{built_gem_path}]
+      cmd << "--local" if local
+      out, status = sh_with_status(cmd)
+      unless status.success? && out[/Successfully installed/]
+        raise "Couldn't install gem, run `gem install #{built_gem_path}' for more detailed output"
+      end
       Bundler.ui.confirm "#{name} (#{version}) installed."
     end
 
   protected
 
     def rubygem_push(path)
-      gem_command = "gem push '#{path}'"
-      gem_command += " --key #{gem_key}" if gem_key
-      gem_command += " --host #{allowed_push_host}" if allowed_push_host
+      gem_command = %W[gem push #{path}]
+      gem_command << "--key" << gem_key if gem_key
+      gem_command << "--host" << allowed_push_host if allowed_push_host
       unless allowed_push_host || Bundler.user_home.join(".gem/credentials").file?
         raise "Your rubygems.org credentials aren't set. Run `gem push` to set them."
       end
-      sh(gem_command)
+      sh_with_input(gem_command)
       Bundler.ui.confirm "Pushed #{name} #{version} to #{gem_push_host}"
     end
 
@@ -127,12 +134,14 @@ module Bundler
 
     def perform_git_push(options = "")
       cmd = "git push #{options}"
-      out, code = sh_with_code(cmd)
-      raise "Couldn't git push. `#{cmd}' failed with the following output:\n\n#{out}\n" unless code == 0
+      out, status = sh_with_status(cmd)
+      return if status.success?
+      cmd = cmd.shelljoin if cmd.respond_to?(:shelljoin)
+      raise "Couldn't git push. `#{cmd}' failed with the following output:\n\n#{out}\n"
     end
 
     def already_tagged?
-      return false unless sh("git tag").split(/\n/).include?(version_tag)
+      return false unless sh(%w[git tag]).split(/\n/).include?(version_tag)
       Bundler.ui.confirm "Tag #{version_tag} has already been created."
       true
     end
@@ -142,20 +151,20 @@ module Bundler
     end
 
     def clean?
-      sh_with_code("git diff --exit-code")[1] == 0
+      sh_with_status(%w[git diff --exit-code])[1].success?
     end
 
     def committed?
-      sh_with_code("git diff-index --quiet --cached HEAD")[1] == 0
+      sh_with_status(%w[git diff-index --quiet --cached HEAD])[1].success?
     end
 
     def tag_version
-      sh "git tag -m \"Version #{version}\" #{version_tag}"
+      sh %W[git tag -m Version\ #{version} #{version_tag}]
       Bundler.ui.confirm "Tagged #{version_tag}."
       yield if block_given?
-    rescue
+    rescue RuntimeError
       Bundler.ui.error "Untagging #{version_tag} due to error."
-      sh_with_code "git tag -d #{version_tag}"
+      sh_with_status %W[git tag -d #{version_tag}]
       raise
     end
 
@@ -171,22 +180,28 @@ module Bundler
       gemspec.name
     end
 
+    def sh_with_input(cmd)
+      Bundler.ui.debug(cmd)
+      SharedHelpers.chdir(base) do
+        abort unless Kernel.system(*cmd)
+      end
+    end
+
     def sh(cmd, &block)
-      out, code = sh_with_code(cmd, &block)
-      unless code.zero?
+      out, status = sh_with_status(cmd, &block)
+      unless status.success?
+        cmd = cmd.shelljoin if cmd.respond_to?(:shelljoin)
         raise(out.empty? ? "Running `#{cmd}` failed. Run this command directly for more detailed output." : out)
       end
       out
     end
 
-    def sh_with_code(cmd, &block)
-      cmd += " 2>&1"
-      outbuf = String.new
+    def sh_with_status(cmd, &block)
       Bundler.ui.debug(cmd)
       SharedHelpers.chdir(base) do
-        outbuf = `#{cmd}`
-        status = $?.exitstatus
-        block.call(outbuf) if status.zero? && block
+        outbuf = IO.popen(cmd, :err => [:child, :out], &:read)
+        status = $?
+        block.call(outbuf) if status.success? && block
         [outbuf, status]
       end
     end

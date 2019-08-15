@@ -1,6 +1,7 @@
 /*
  *  (c) 1995 Microsoft Corporation. All rights reserved.
- *  Developed by ActiveWare Internet Corp., http://www.ActiveWare.com
+ *  Developed by ActiveWare Internet Corp., now known as
+ *  ActiveState Tool Corp., http://www.ActiveState.com
  *
  *  Other modifications Copyright (c) 1997, 1998 by Gurusamy Sarathy
  *  <gsar@umich.edu> and Jan Dubois <jan.dubois@ibm.net>
@@ -3996,11 +3997,11 @@ Init_win32ole(void)
     message_filter.RetryRejectedCall = mf_RetryRejectedCall;
     message_filter.MessagePending = mf_MessagePending;
 
-    enc2cp_hash = TypedData_Wrap_Struct(rb_cData, &win32ole_hash_datatype, 0);
+    enc2cp_hash = TypedData_Wrap_Struct(0, &win32ole_hash_datatype, 0);
     RTYPEDDATA_DATA(enc2cp_hash) = st_init_numtable();
     rb_gc_register_mark_object(enc2cp_hash);
 
-    com_hash = TypedData_Wrap_Struct(rb_cData, &win32ole_hash_datatype, 0);
+    com_hash = TypedData_Wrap_Struct(0, &win32ole_hash_datatype, 0);
     RTYPEDDATA_DATA(com_hash) = st_init_numtable();
     rb_gc_register_mark_object(com_hash);
 

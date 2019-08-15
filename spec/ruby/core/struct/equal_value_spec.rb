@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/equal_value', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/equal_value'
 
 describe "Struct#==" do
-  it_behaves_like(:struct_equal_value, :==)
+  it_behaves_like :struct_equal_value, :==
 end

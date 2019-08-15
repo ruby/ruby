@@ -65,7 +65,7 @@ module Spec
     end
 
     def local_ruby_engine
-      ENV["BUNDLER_SPEC_RUBY_ENGINE"] || (defined?(RUBY_ENGINE) ? RUBY_ENGINE : "ruby")
+      ENV["BUNDLER_SPEC_RUBY_ENGINE"] || RUBY_ENGINE
     end
 
     def local_engine_version
@@ -79,7 +79,7 @@ module Spec
       when "jruby"
         JRUBY_VERSION
       else
-        raise BundlerError, "That RUBY_ENGINE is not recognized"
+        RUBY_ENGINE_VERSION
       end
     end
 
@@ -100,13 +100,12 @@ module Spec
       9999
     end
 
-    def lockfile_platforms(*platforms)
-      platforms = local_platforms if platforms.empty?
-      platforms.map(&:to_s).sort.join("\n  ")
+    def lockfile_platforms
+      local_platforms.map(&:to_s).sort.join("\n  ")
     end
 
     def local_platforms
-      if Bundler::VERSION.split(".").first.to_i > 1
+      if Bundler.feature_flag.specific_platform?
         [local, specific_local_platform]
       else
         [local]

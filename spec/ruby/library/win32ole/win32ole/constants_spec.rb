@@ -1,7 +1,5 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
-
 platform_is :windows do
-  require 'win32ole'
+  require_relative '../fixtures/classes'
 
   describe "WIN32OLE class" do
     it "defines constant CP_ACP" do

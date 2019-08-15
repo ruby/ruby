@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 describe "The -e command line option" do
   it "evaluates the given string" do
@@ -25,7 +25,7 @@ describe "The -e command line option" do
 
   describe "with -n and a Fixnum range" do
     before :each do
-      @script = "-ne 'print if %s' #{fixture(__FILE__, "conditional_range.txt")}"
+      @script = "-W0 -ne 'print if %s' #{fixture(__FILE__, "conditional_range.txt")}"
     end
 
     it "mimics an awk conditional by comparing an inclusive-end range with $." do

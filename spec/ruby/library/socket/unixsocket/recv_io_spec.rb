@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "UNIXSocket#recv_io" do
 
@@ -38,7 +38,50 @@ describe "UNIXSocket#recv_io" do
       @socket = @server.accept
       @io = @socket.recv_io(File)
 
-      @io.should be_kind_of(File)
+      @io.should be_an_instance_of(File)
+    end
+  end
+end
+
+with_feature :unix_socket do
+  describe 'UNIXSocket#recv_io' do
+    before do
+      @file = File.open('/dev/null', 'w')
+      @client, @server = UNIXSocket.socketpair
+    end
+
+    after do
+      @client.close
+      @server.close
+      @io.close if @io
+      @file.close
+    end
+
+    describe 'without a custom class' do
+      it 'returns an IO' do
+        @client.send_io(@file)
+
+        @io = @server.recv_io
+        @io.should be_an_instance_of(IO)
+      end
+    end
+
+    describe 'with a custom class' do
+      it 'returns an instance of the custom class' do
+        @client.send_io(@file)
+
+        @io = @server.recv_io(File)
+        @io.should be_an_instance_of(File)
+      end
+    end
+
+    describe 'with a custom mode' do
+      it 'opens the IO using the given mode' do
+        @client.send_io(@file)
+
+        @io = @server.recv_io(File, File::WRONLY)
+        @io.should be_an_instance_of(File)
+      end
     end
   end
 end

@@ -1,8 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../kernel/shared/sprintf', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../kernel/shared/sprintf'
 
 describe "File#printf" do
-  it_behaves_like :kernel_sprintf, -> (format, *args) {
+  it_behaves_like :kernel_sprintf, -> format, *args {
     begin
       @filename = tmp("printf.txt")
 

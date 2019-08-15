@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 # The common logarithm, having base 10
 describe "Math.log10" do
@@ -15,14 +15,12 @@ describe "Math.log10" do
     Math.log10(10e15).should be_close(16.0, TOLERANCE)
   end
 
-  conflicts_with :Complex do
-    it "raises an Errno::EDOM if the argument is less than 0" do
-      lambda { Math.log10(-1e-15) }.should raise_error( Errno::EDOM)
-    end
+  it "raises an Math::DomainError if the argument is less than 0" do
+    -> { Math.log10(-1e-15) }.should raise_error(Math::DomainError)
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    lambda { Math.log10("test") }.should raise_error(TypeError)
+    -> { Math.log10("test") }.should raise_error(TypeError)
   end
 
   it "returns NaN given NaN" do
@@ -30,7 +28,7 @@ describe "Math.log10" do
   end
 
   it "raises a TypeError if the argument is nil" do
-    lambda { Math.log10(nil) }.should raise_error(TypeError)
+    -> { Math.log10(nil) }.should raise_error(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

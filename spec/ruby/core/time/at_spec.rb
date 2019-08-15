@@ -1,4 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Time.at" do
   describe "passed Numeric" do
@@ -34,7 +35,7 @@ describe "Time.at" do
     describe "passed BigDecimal" do
       it "doesn't round input value" do
         require 'bigdecimal'
-        Time.at(BigDecimal.new('1.1')).to_f.should == 1.1
+        Time.at(BigDecimal('1.1')).to_f.should == 1.1
       end
     end
   end
@@ -48,7 +49,7 @@ describe "Time.at" do
     it "creates a dup time object with the value given by time" do
       t1 = Time.new
       t2 = Time.at(t1)
-      t1.object_id.should_not == t2.object_id
+      t1.should_not equal t2
     end
 
     it "returns a UTC time if the argument is UTC" do
@@ -70,11 +71,11 @@ describe "Time.at" do
 
   describe "passed non-Time, non-Numeric" do
     it "raises a TypeError with a String argument" do
-      lambda { Time.at("0") }.should raise_error(TypeError)
+      -> { Time.at("0") }.should raise_error(TypeError)
     end
 
     it "raises a TypeError with a nil argument" do
-      lambda { Time.at(nil) }.should raise_error(TypeError)
+      -> { Time.at(nil) }.should raise_error(TypeError)
     end
 
     describe "with an argument that responds to #to_int" do
@@ -126,20 +127,128 @@ describe "Time.at" do
 
   describe "passed [Integer, nil]" do
     it "raises a TypeError" do
-      lambda { Time.at(0, nil) }.should raise_error(TypeError)
+      -> { Time.at(0, nil) }.should raise_error(TypeError)
     end
   end
 
   describe "passed [Integer, String]" do
     it "raises a TypeError" do
-      lambda { Time.at(0, "0") }.should raise_error(TypeError)
+      -> { Time.at(0, "0") }.should raise_error(TypeError)
     end
   end
 
   describe "passed [Time, Integer]" do
     # #8173
     it "raises a TypeError" do
-      lambda { Time.at(Time.now, 500000) }.should raise_error(TypeError)
+      -> { Time.at(Time.now, 500000) }.should raise_error(TypeError)
+    end
+  end
+
+  ruby_version_is "2.5" do
+    describe "passed [Time, Numeric, format]" do
+      context ":nanosecond format" do
+        it "traits second argument as nanoseconds" do
+          Time.at(0, 123456789, :nanosecond).nsec.should == 123456789
+        end
+      end
+
+      context ":nsec format" do
+        it "traits second argument as nanoseconds" do
+          Time.at(0, 123456789, :nsec).nsec.should == 123456789
+        end
+      end
+
+      context ":microsecond format" do
+        it "traits second argument as microseconds" do
+          Time.at(0, 123456, :microsecond).nsec.should == 123456000
+        end
+      end
+
+      context ":usec format" do
+        it "traits second argument as microseconds" do
+          Time.at(0, 123456, :usec).nsec.should == 123456000
+        end
+      end
+
+      context ":millisecond format" do
+        it "traits second argument as milliseconds" do
+          Time.at(0, 123, :millisecond).nsec.should == 123000000
+        end
+      end
+
+      context "not supported format" do
+        it "raises ArgumentError" do
+          -> { Time.at(0, 123456, 2) }.should raise_error(ArgumentError)
+          -> { Time.at(0, 123456, nil) }.should raise_error(ArgumentError)
+          -> { Time.at(0, 123456, :invalid) }.should raise_error(ArgumentError)
+        end
+
+        it "does not try to convert format to Symbol with #to_sym" do
+          format = "usec"
+          format.should_not_receive(:to_sym)
+          -> { Time.at(0, 123456, format) }.should raise_error(ArgumentError)
+        end
+      end
+
+      it "supports Float second argument" do
+        Time.at(0, 123456789.500, :nanosecond).nsec.should == 123456789
+        Time.at(0, 123456789.500, :nsec).nsec.should == 123456789
+        Time.at(0, 123456.500, :microsecond).nsec.should == 123456500
+        Time.at(0, 123456.500, :usec).nsec.should == 123456500
+        Time.at(0, 123.500, :millisecond).nsec.should == 123500000
+      end
+    end
+  end
+
+  ruby_version_is "2.6" do
+    describe ":in keyword argument" do
+      before do
+        @epoch_time = Time.now.to_i
+      end
+
+      it "could be UTC offset as a String in '+HH:MM or '-HH:MM' format" do
+        time = Time.at(@epoch_time, in: "+05:00")
+
+        time.utc_offset.should == 5*60*60
+        time.zone.should == nil
+        time.to_i.should == @epoch_time
+
+        time = Time.at(@epoch_time, in: "-09:00")
+
+        time.utc_offset.should == -9*60*60
+        time.zone.should == nil
+        time.to_i.should == @epoch_time
+      end
+
+      it "could be UTC offset as a number of seconds" do
+        time = Time.at(@epoch_time, in: 5*60*60)
+
+        time.utc_offset.should == 5*60*60
+        time.zone.should == nil
+        time.to_i.should == @epoch_time
+
+        time = Time.at(@epoch_time, in: -9*60*60)
+
+        time.utc_offset.should == -9*60*60
+        time.zone.should == nil
+        time.to_i.should == @epoch_time
+      end
+
+      it "could be a timezone object" do
+        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo", offset: (5*3600+30*60))
+        time = Time.at(@epoch_time, in: zone)
+
+        time.utc_offset.should == 5*3600+30*60
+        time.zone.should == zone
+        time.to_i.should == @epoch_time
+
+        zone = TimeSpecs::TimezoneWithName.new(name: "PST", offset: (-9*60*60))
+        time = Time.at(@epoch_time, in: zone)
+
+        time.utc_offset.should == -9*60*60
+        time.zone.should == zone
+        time.to_i.should == @epoch_time
+      end
     end
   end
 end

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Kernel#tap" do
   it "always yields self and returns self" do
@@ -8,6 +8,6 @@ describe "Kernel#tap" do
   end
 
   it "raises a LocalJumpError when no block given" do
-    lambda { 3.tap }.should raise_error(LocalJumpError)
+    -> { 3.tap }.should raise_error(LocalJumpError)
   end
 end

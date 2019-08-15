@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require "stringio"
 
 describe "StringIO#gets when passed [separator]" do
@@ -229,19 +229,17 @@ end
 describe "StringIO#gets when in write-only mode" do
   it "raises an IOError" do
     io = StringIO.new("xyz", "w")
-    lambda { io.gets }.should raise_error(IOError)
+    -> { io.gets }.should raise_error(IOError)
 
     io = StringIO.new("xyz")
     io.close_read
-    lambda { io.gets }.should raise_error(IOError)
+    -> { io.gets }.should raise_error(IOError)
   end
 end
 
-ruby_version_is "2.4" do
-  describe "StringIO#gets when passed [chomp]" do
-    it "returns the data read without a trailing newline character" do
-      io = StringIO.new("this>is>an>example\n")
-      io.gets(chomp: true).should == "this>is>an>example"
-    end
+describe "StringIO#gets when passed [chomp]" do
+  it "returns the data read without a trailing newline character" do
+    io = StringIO.new("this>is>an>example\n")
+    io.gets(chomp: true).should == "this>is>an>example"
   end
 end

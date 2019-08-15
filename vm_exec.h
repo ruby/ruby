@@ -17,7 +17,7 @@ typedef unsigned long lindex_t;
 typedef VALUE GENTRY;
 typedef rb_iseq_t *ISEQ;
 
-#ifdef __GCC__
+#ifdef __GNUC__
 /* TODO: machine dependent prefetch instruction */
 #define PREFETCH(pc)
 #else
@@ -36,7 +36,7 @@ typedef rb_iseq_t *ISEQ;
 #endif
 
 #define DEBUG_END_INSN() \
-  rb_vmdebug_debug_print_post(th, GET_CFP() SC_REGS());
+  rb_vmdebug_debug_print_post(ec, GET_CFP() SC_REGS());
 
 #else
 
@@ -66,13 +66,16 @@ error !
 
 #define NEXT_INSN() return reg_cfp;
 
+#define START_OF_ORIGINAL_INSN(x) /* ignore */
+#define DISPATCH_ORIGINAL_INSN(x) return LABEL(x)(ec, reg_cfp);
+
 /************************************************/
 #elif OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 /* threaded code with gcc */
 
 #define LABEL(x)  INSN_LABEL_##x
 #define ELABEL(x) INSN_ELABEL_##x
-#define LABEL_PTR(x) &&LABEL(x)
+#define LABEL_PTR(x) RB_GNUC_EXTENSION(&&LABEL(x))
 
 #define INSN_ENTRY_SIG(insn) \
   if (0) fprintf(stderr, "exec: %s@(%d, %d)@%s:%d\n", #insn, \
@@ -95,9 +98,7 @@ error !
 #else
 #define DISPATCH_ARCH_DEPEND_WAY(addr) \
 				/* do nothing */
-
 #endif
-
 
 /**********************************/
 #if OPT_DIRECT_THREADED_CODE
@@ -105,7 +106,7 @@ error !
 /* for GCC 3.4.x */
 #define TC_DISPATCH(insn) \
   INSN_DISPATCH_SIG(insn); \
-  goto *(void const *)GET_CURRENT_INSN(); \
+  RB_GNUC_EXTENSION_BLOCK(goto *(void const *)GET_CURRENT_INSN()); \
   ;
 
 #else
@@ -114,7 +115,7 @@ error !
 #define TC_DISPATCH(insn)  \
   DISPATCH_ARCH_DEPEND_WAY(insns_address_table[GET_CURRENT_INSN()]); \
   INSN_DISPATCH_SIG(insn); \
-  goto *insns_address_table[GET_CURRENT_INSN()]; \
+  RB_GNUC_EXTENSION_BLOCK(goto *insns_address_table[GET_CURRENT_INSN()]); \
   rb_bug("tc error");
 
 
@@ -134,6 +135,9 @@ error !
 
 #define NEXT_INSN() TC_DISPATCH(__NEXT_INSN__)
 
+#define START_OF_ORIGINAL_INSN(x) start_of_##x:
+#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
+
 /************************************************/
 #else /* no threaded code */
 /* most common method */
@@ -144,7 +148,6 @@ case BIN(insn):
 #define END_INSN(insn)                        \
   DEBUG_END_INSN();                           \
   break;
-
 
 #define INSN_DISPATCH()         \
   while (1) {			\
@@ -159,10 +162,19 @@ default:                        \
 
 #define NEXT_INSN() goto first
 
+#define START_OF_ORIGINAL_INSN(x) start_of_##x:
+#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
+
 #endif
 
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
 
+#ifdef MJIT_HEADER
+#define THROW_EXCEPTION(exc) do { \
+    ec->errinfo = (VALUE)(exc); \
+    EC_JUMP_TAG(ec, ec->tag->state); \
+} while (0)
+#else
 #if OPT_CALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
     ec->errinfo = (VALUE)(exc); \
@@ -170,6 +182,7 @@ default:                        \
 } while (0)
 #else
 #define THROW_EXCEPTION(exc) return (VALUE)(exc)
+#endif
 #endif
 
 #define SCREG(r) (reg_##r)
@@ -182,5 +195,8 @@ default:                        \
 #else
 #define CHECK_VM_STACK_OVERFLOW_FOR_INSN(cfp, margin)
 #endif
+
+#define INSN_LABEL2(insn, name) INSN_LABEL_ ## insn ## _ ## name
+#define INSN_LABEL(x) INSN_LABEL2(NAME_OF_CURRENT_INSN, x)
 
 #endif /* RUBY_VM_EXEC_H */

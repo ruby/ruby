@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "String.try_convert" do
   it "returns the argument if it's a String" do
@@ -39,12 +39,12 @@ describe "String.try_convert" do
   it "sends #to_str to the argument and raises TypeError if it's not a kind of String" do
     obj = mock("to_str")
     obj.should_receive(:to_str).and_return(Object.new)
-    lambda { String.try_convert obj }.should raise_error(TypeError)
+    -> { String.try_convert obj }.should raise_error(TypeError)
   end
 
   it "does not rescue exceptions raised by #to_str" do
     obj = mock("to_str")
     obj.should_receive(:to_str).and_raise(RuntimeError)
-    lambda { String.try_convert obj }.should raise_error(RuntimeError)
+    -> { String.try_convert obj }.should raise_error(RuntimeError)
   end
 end

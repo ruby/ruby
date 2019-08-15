@@ -1,7 +1,7 @@
 # -*- encoding: us-ascii -*-
 
-require File.expand_path('../../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../../../../spec_helper'
+require_relative '../fixtures/classes'
 
 describe :enumerator_lazy_collect, shared: true do
   before :each do
@@ -52,5 +52,11 @@ describe :enumerator_lazy_collect, shared: true do
         ScratchPad.recorded.should == [:before_yield]
       end
     end
+  end
+
+  it "works with an infinite enumerable" do
+    s = 0..Float::INFINITY
+    s.lazy.send(@method) { |n| n }.first(100).should ==
+      s.first(100).send(@method) { |n| n }.to_a
   end
 end

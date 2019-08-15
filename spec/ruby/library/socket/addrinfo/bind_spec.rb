@@ -1,6 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require 'socket'
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "Addrinfo#bind" do
 

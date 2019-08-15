@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Numeric#div" do
   before :each do
@@ -15,8 +15,8 @@ describe "Numeric#div" do
   end
 
   it "raises ZeroDivisionError for 0" do
-    lambda { @obj.div(0) }.should raise_error(ZeroDivisionError)
-    lambda { @obj.div(0.0) }.should raise_error(ZeroDivisionError)
-    lambda { @obj.div(Complex(0,0)) }.should raise_error(ZeroDivisionError)
+    -> { @obj.div(0) }.should raise_error(ZeroDivisionError)
+    -> { @obj.div(0.0) }.should raise_error(ZeroDivisionError)
+    -> { @obj.div(Complex(0,0)) }.should raise_error(ZeroDivisionError)
   end
 end

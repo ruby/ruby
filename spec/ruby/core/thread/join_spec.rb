@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Thread#join" do
   it "returns the thread when it is finished" do
@@ -19,28 +19,28 @@ describe "Thread#join" do
     t.join(0).should equal(t)
     t.join(0.0).should equal(t)
     t.join(nil).should equal(t)
-    lambda { t.join(:foo) }.should raise_error TypeError
-    lambda { t.join("bar") }.should raise_error TypeError
+    -> { t.join(:foo) }.should raise_error TypeError
+    -> { t.join("bar") }.should raise_error TypeError
   end
 
   it "returns nil if it is not finished when given a timeout" do
-    c = Channel.new
-    t = Thread.new { c.receive }
+    q = Queue.new
+    t = Thread.new { q.pop }
     begin
       t.join(0).should == nil
     ensure
-      c << true
+      q << true
     end
     t.join.should == t
   end
 
   it "accepts a floating point timeout length" do
-    c = Channel.new
-    t = Thread.new { c.receive }
+    q = Queue.new
+    t = Thread.new { q.pop }
     begin
       t.join(0.01).should == nil
     ensure
-      c << true
+      q << true
     end
     t.join.should == t
   end
@@ -50,7 +50,7 @@ describe "Thread#join" do
       Thread.current.report_on_exception = false
       raise NotImplementedError.new("Just kidding")
     }
-    lambda { t.join }.should raise_error(NotImplementedError)
+    -> { t.join }.should raise_error(NotImplementedError)
   end
 
   it "returns the dead thread" do
@@ -60,6 +60,6 @@ describe "Thread#join" do
 
   it "raises any uncaught exception encountered in ensure block" do
     t = ThreadSpecs.dying_thread_ensures { raise NotImplementedError.new("Just kidding") }
-    lambda { t.join }.should raise_error(NotImplementedError)
+    -> { t.join }.should raise_error(NotImplementedError)
   end
 end

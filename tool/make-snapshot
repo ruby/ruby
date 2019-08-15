@@ -6,8 +6,9 @@ require 'digest/sha2'
 require 'fileutils'
 require 'shellwords'
 require 'tmpdir'
-require File.expand_path("../vcs", __FILE__)
-require File.expand_path("../colorize", __FILE__)
+require 'pathname'
+require File.expand_path("../lib/vcs", __FILE__)
+require File.expand_path("../lib/colorize", __FILE__)
 STDOUT.sync = true
 
 $srcdir ||= nil
@@ -17,6 +18,7 @@ $keep_temp ||= nil
 $patch_file ||= nil
 $packages ||= nil
 $digests ||= nil
+$s3 ||= nil
 $tooldir = File.expand_path("..", __FILE__)
 $unicode_version = nil if ($unicode_version ||= nil) == ""
 $colorize = Colorize.new
@@ -32,8 +34,15 @@ options:
   -patch_file=PATCH     apply PATCH file after export
   -packages=PKG[,...]   make PKG packages (#{PACKAGES.keys.join(", ")})
   -digests=ALG[,...]    show ALG digests (#{DIGESTS.join(", ")})
+  -unicode_version=VER  Unicode version to generate encodings
+  -svn[=URL]            make snapshot from SVN repository
+                        (#{SVNURL})
+  -git[=URL]            make snapshot from GIT repository
+                        (#{GITURL})
+  -s3=PATH              s3 bucket path(default=tmp)
+  -help, --help         show this message
 version:
-  trunk, stable, branches/*, tags/*, X.Y, X.Y.Z, X.Y.Z-pL
+  master, trunk, stable, branches/*, tags/*, X.Y, X.Y.Z, X.Y.Z-pL
 each versions may be followed by optional @revision.
 USAGE
 end
@@ -54,9 +63,15 @@ if gzip = ENV.delete("GZIP")
   PACKAGES["gzip"].concat(gzip.shellsplit)
 end
 
+if mflags = ENV["GNUMAKEFLAGS"] and /\A-(\S*)j\d*/ =~ mflags
+  mflags = mflags.gsub(/(\A|\s)(-\S*)j\d*/, '\1\2')
+  mflags.strip!
+  ENV["GNUMAKEFLAGS"] = (mflags unless mflags.empty?)
+end
 ENV["LC_ALL"] = ENV["LANG"] = "C"
-SVNURL = URI.parse("http://svn.ruby-lang.org/repos/ruby/")
-GITURL = URI.parse("git://github.com/ruby/ruby.git")
+SVNURL = URI.parse("https://svn.ruby-lang.org/repos/ruby/")
+# https git clone is disabled at git.ruby-lang.org/ruby.git.
+GITURL = URI.parse("https://github.com/ruby/ruby.git")
 RUBY_VERSION_PATTERN = /^\#define\s+RUBY_VERSION\s+"([\d.]+)"/
 
 ENV["VPATH"] ||= "include/ruby"
@@ -116,7 +131,7 @@ path = ENV["PATH"].split(File::PATH_SEPARATOR)
 end
 
 %w[BASERUBY RUBY MINIRUBY].each do |var|
-  `#{ENV[var]} --disable-gem -e1 2>&1`
+  %x[#{ENV[var]} --disable-gem -e1 2>&1]
   if $?.success?
     ENV[var] += ' --disable-gem'
   end
@@ -129,7 +144,7 @@ end
 unless destdir = ARGV.shift
   abort usage
 end
-revisions = ARGV.empty? ? ["trunk"] : ARGV
+revisions = ARGV.empty? ? [nil] : ARGV
 unless tmp = $exported
   FileUtils.mkpath(destdir)
   destdir = File.expand_path(destdir)
@@ -141,14 +156,59 @@ unless tmp = $exported
   } unless $keep_temp
 end
 
+def tar_create(tarball, dir)
+  require 'rubygems'
+  require 'rubygems/package'
+  require 'rubygems/package/tar_writer'
+  header = Gem::Package::TarHeader
+  dir_type = "5"
+  uname = gname = "ruby"
+  File.open(tarball, "wb") do |f|
+    w = Gem::Package::TarWriter.new(f)
+    Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH) do |path|
+      next if File.basename(path) == "."
+      s = File.stat(path)
+      mode = 0644
+      case
+      when s.file?
+        type = nil
+        size = s.size
+        mode |= 0111 if s.executable?
+      when s.directory?
+        path += "/"
+        type = dir_type
+        size = 0
+        mode |= 0111
+      else
+        next
+      end
+      name, prefix = w.split_name(path)
+      h = header.new(name: name, prefix: prefix, typeflag: type,
+                     mode: mode, size: size, mtime: s.mtime,
+                     uname: uname, gname: gname)
+      f.write(h)
+      if size > 0
+        IO.copy_stream(path, f)
+        f.write("\0" * (-size % 512))
+      end
+    end
+  end
+  true
+rescue => e
+  warn e.message
+  false
+end
+
 def package(vcs, rev, destdir, tmp = nil)
   patchlevel = false
   prerelease = false
-  if revision = rev[/@(\d+)\z/, 1]
+  if rev and revision = rev[/@(\d+)\z/, 1]
     rev = $`
   end
   case rev
-  when /\Atrunk\z/
+  when nil
+    url = nil
+  when /\A(?:master|trunk)\z/
     url = vcs.trunk
   when /\Abranches\//
     url = vcs.branch($')
@@ -177,7 +237,10 @@ def package(vcs, rev, destdir, tmp = nil)
     warn "#{$0}: unknown version - #{rev}"
     return
   end
-  revision ||= vcs.get_revisions(url)[1]
+  if !revision and revision = vcs.get_revisions(url)
+    url ||= vcs.branch(revision[3])
+    revision = revision[0]
+  end
   version = nil
   unless revision
     url = vcs.trunk
@@ -186,7 +249,7 @@ def package(vcs, rev, destdir, tmp = nil)
       warn "#{$0}: #{rev} not found"
       return
     end
-    revision = vcs.get_revisions(url)[1]
+    revision = vcs.get_revisions(url)[0]
   end
   v = nil
   if $exported
@@ -229,33 +292,35 @@ def package(vcs, rev, destdir, tmp = nil)
     v = v[0]
   end
 
-  unless File.exist?("#{v}/ChangeLog")
-    # get last revision from previous ChangeLog archive
-    last_ChangeLog = Dir["#{v}/doc/ChangeLog-*"].grep(/-(\d+)\z/) {|n| [$1.to_i, n]}.max[1]
-    open(last_ChangeLog) do |f|
-      f.readline
-      unless /\Ar(\d+) / =~ f.readline
-        abort "#{File.basename $0}: Cannot find revision from '#{last_ChangeLog}'"
-      end
-      vcs.export_changelog(url, $1.to_i, revision.to_i, "#{v}/ChangeLog")
+  open("#{v}/revision.h", "wb") {|f|
+    short = vcs.short_revision(revision)
+    f.puts "#define RUBY_REVISION #{short.inspect}"
+    unless short == revision
+      f.puts "#define RUBY_FULL_REVISION #{revision.inspect}"
     end
-  end
-
-  open("#{v}/revision.h", "wb") {|f| f.puts "#define RUBY_REVISION #{revision}"}
+  }
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
+  version ||=
+    begin
+      include_ruby_versionhdr = IO.read("#{v}/include/ruby/version.h")
+      api_major_version = include_ruby_versionhdr[/^\#define\s+RUBY_API_VERSION_MAJOR\s+([\d.]+)/, 1]
+      api_minor_version = include_ruby_versionhdr[/^\#define\s+RUBY_API_VERSION_MINOR\s+([\d.]+)/, 1]
+      version_teeny = versionhdr[/^\#define\s+RUBY_VERSION_TEENY\s+(\d+)/, 1]
+      [api_major_version, api_minor_version, version_teeny].join('.')
+    end
   version or return
   if patchlevel
     unless tag.empty?
       versionhdr ||= IO.read("#{v}/version.h")
       patchlevel = versionhdr[/^\#define\s+RUBY_PATCHLEVEL\s+(\d+)/, 1]
-      tag = (patchlevel ? "p#{patchlevel}" : "r#{revision}")
+      tag = (patchlevel ? "p#{patchlevel}" : vcs.revision_name(revision))
     end
   elsif prerelease
     versionhdr ||= IO.read("#{v}/version.h")
     versionhdr.sub!(/^\#define\s+RUBY_PATCHLEVEL_STR\s+"\K.+?(?=")/, tag)
     IO.write("#{v}/version.h", versionhdr)
   else
-    tag ||= "r#{revision}"
+    tag ||= vcs.revision_name(revision)
   end
   unless v == $exported
     if $archname
@@ -284,6 +349,10 @@ def package(vcs, rev, destdir, tmp = nil)
   end
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
+    unless File.exist?("ChangeLog")
+      vcs.export_changelog(url, nil, revision, "ChangeLog")
+    end
+
     File.open(clean.add("cross.rb"), "w") do |f|
       f.puts "Object.__send__(:remove_const, :CROSS_COMPILING) if defined?(CROSS_COMPILING)"
       f.puts "CROSS_COMPILING=true"
@@ -321,7 +390,8 @@ def package(vcs, rev, destdir, tmp = nil)
       File.open("#{defaults}/ruby.rb", "w") {}
       miniruby = ENV['MINIRUBY'] + " -I. -I#{extout} -rcross"
       baseruby = ENV["BASERUBY"]
-      mk = IO.read("Makefile.in").gsub(/^@.*\n/, '')
+      mk = (IO.read("template/Makefile.in") rescue IO.read("Makefile.in")).
+             gsub(/^@.*\n/, '')
       vars = {
         "EXTOUT"=>extout,
         "PATH_SEPARATOR"=>File::PATH_SEPARATOR,
@@ -330,34 +400,35 @@ def package(vcs, rev, destdir, tmp = nil)
         "BASERUBY"=>baseruby,
         "PWD"=>Dir.pwd,
         "ruby_version"=>version,
+        "MAJOR"=>api_major_version,
+        "MINOR"=>api_minor_version,
+        "TEENY"=>version_teeny,
       }
       status.scan(/^s([%,])@([A-Za-z_][A-Za-z_0-9]*)@\1(.*?)\1g$/) do
         vars[$2] ||= $3
       end
+      vars.delete("UNICODE_FILES") # for stable branches
       vars["UNICODE_VERSION"] = $unicode_version if $unicode_version
       args = vars.dup
       mk.gsub!(/@([A-Za-z_]\w*)@/) {args.delete($1); vars[$1] || ENV[$1]}
       mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "")
       mk << <<-'APPEND'
 
-prereq: clean-cache $(CLEAN_CACHE)
+prepare-package: touch-unicode-files
+prepare-package: prereq update-download clean-cache $(CLEAN_CACHE)
 clean-cache $(CLEAN_CACHE): after-update
-touch-unicode-files: _touch-unicode-files
-update-download:: touch-unicode-files
 update-download:: update-gems
 after-update:: extract-gems
 extract-gems: update-gems
 update-gems:
-_touch-unicode-files:
-	$(MAKEDIRS) $(UNICODE_SRC_DATA_DIR)
-	touch $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time $(UNICODE_DATA_HEADERS)
+$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time:
+touch-unicode-files:
       APPEND
       open(clean.add("Makefile"), "w") do |f|
-        f.puts "prereq: update-download"
         f.puts mk
       end
       ENV["CACHE_SAVE"] = "no"
-      system(ENV["MAKE"] || ENV["make"] || "make", "prereq", *args.map {|arg| arg.join("=")})
+      system(ENV["MAKE"] || ENV["make"] || "make", "prepare-package", *args.map {|arg| arg.join("=")})
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
       print "prerequisites"
     else
@@ -403,7 +474,7 @@ _touch-unicode-files:
       else
         tarball = "#{$archname||v}.tar"
         print "creating tarball... #{tarball}"
-        if system("tar", "cf", tarball, v)
+        if tar_create(tarball, v)
           puts $colorize.pass(" done")
         else
           puts $colorize.fail(" failed")
@@ -455,10 +526,15 @@ revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
     next
   end
   str = open(name, "rb") {|f| f.read}
+  if $s3
+    %x[aws s3 cp #{name} s3://ftp.r-l.o/pub/#{$s3}/#{Pathname(name).basename}]
+    FileUtils.rm_f name
+    name = "https://s3.amazonaws.com/ftp.r-l.o/pub/#{$s3}/#{Pathname(name).basename}"
+  end
   puts "* #{$colorize.pass(name)}"
-  puts "  SIZE:   #{str.bytesize} bytes"
+  puts "      SIZE:   #{str.bytesize} bytes"
   $digests.each do |alg|
-    printf "  %-8s%s\n", "#{alg}:", Digest.const_get(alg).hexdigest(str)
+    printf "      %-8s%s\n", "#{alg}:", Digest.const_get(alg).hexdigest(str)
   end
 end
 

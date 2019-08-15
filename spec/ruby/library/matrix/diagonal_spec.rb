@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 require 'matrix'
 
 describe "Matrix.diagonal" do
@@ -64,7 +64,7 @@ describe "Matrix.diagonal?" do
       Matrix.empty(0, 2),
       Matrix.empty(2, 0),
     ].each do |rectangular_matrix|
-      lambda {
+      -> {
         rectangular_matrix.diagonal?
       }.should raise_error(Matrix::ErrDimensionMismatch)
     end

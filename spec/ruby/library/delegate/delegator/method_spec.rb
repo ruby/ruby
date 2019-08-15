@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "Delegator#method" do
   before :each do
@@ -14,7 +14,7 @@ describe "Delegator#method" do
   end
 
   it "raises a NameError for protected methods of the delegate object" do
-    lambda {
+    -> {
       -> {
         @delegate.method(:prot)
       }.should complain(/delegator does not forward private method #prot/)
@@ -22,7 +22,7 @@ describe "Delegator#method" do
   end
 
   it "raises a NameError for a private methods of the delegate object" do
-    lambda {
+    -> {
       -> {
         @delegate.method(:priv)
       }.should complain(/delegator does not forward private method #priv/)
@@ -48,7 +48,7 @@ describe "Delegator#method" do
   end
 
   it "raises a NameError for an invalid method name" do
-    lambda {
+    -> {
       @delegate.method(:invalid_and_silly_method_name)
     }.should raise_error(NameError)
   end
@@ -62,7 +62,7 @@ describe "Delegator#method" do
   it "raises a NameError if method is no longer valid because object has changed" do
     m = @delegate.method(:pub)
     @delegate.__setobj__([1,2,3])
-    lambda {
+    -> {
       m.call
     }.should raise_error(NameError)
   end

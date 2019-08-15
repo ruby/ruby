@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "File.umask" do
   before :each do
@@ -30,18 +30,6 @@ describe "File.umask" do
     end
   end
 
-  it "always succeeds with any integer values" do
-    vals = [-2**30, -2**16, -2**8, -2,
-      -1.5, -1, 0.5, 0, 1, 2, 7.77777, 16, 32, 64, 2**8, 2**16, 2**30]
-    vals.each { |v|
-      lambda { File.umask(v) }.should_not raise_error
-    }
-  end
-
-  it "raises ArgumentError when more than one argument is provided" do
-    lambda { File.umask(022, 022) }.should raise_error(ArgumentError)
-  end
-
   platform_is :windows do
     it "returns the current umask value for this process (basic)" do
       File.umask.should == 0
@@ -56,5 +44,14 @@ describe "File.umask" do
       File.umask(0006)
       File.umask.should == 0
     end
+  end
+
+  it "raises RangeError with too large values" do
+    -> { File.umask(2**64) }.should raise_error(RangeError)
+    -> { File.umask(-2**63 - 1) }.should raise_error(RangeError)
+  end
+
+  it "raises ArgumentError when more than one argument is provided" do
+    -> { File.umask(022, 022) }.should raise_error(ArgumentError)
   end
 end

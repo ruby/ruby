@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe "File::Stat#birthtime" do
   before :each do
@@ -21,7 +21,7 @@ describe "File::Stat#birthtime" do
   platform_is :linux, :openbsd do
     it "raises an NotImplementedError" do
       st = File.stat(@file)
-      lambda { st.birthtime }.should raise_error(NotImplementedError)
+      -> { st.birthtime }.should raise_error(NotImplementedError)
     end
   end
 end

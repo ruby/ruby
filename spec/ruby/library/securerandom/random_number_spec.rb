@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 require 'securerandom'
 
@@ -31,34 +31,32 @@ describe "SecureRandom.random_number" do
     end
   end
 
-  ruby_version_is "2.3" do
-    it "generates a random value in given (integer) range limits" do
-      64.times do
-        num = SecureRandom.random_number 11...13
-        num.should be_kind_of(Integer)
-        (11 <= num).should == true
-        (num < 13).should == true
-      end
+  it "generates a random value in given (integer) range limits" do
+    64.times do
+      num = SecureRandom.random_number 11...13
+      num.should be_kind_of(Integer)
+      (11 <= num).should == true
+      (num < 13).should == true
     end
+  end
 
-    it "generates a random value in given big (integer) range limits" do
-      lower = 12345678901234567890
-      upper = 12345678901234567890 + 5
-      32.times do
-        num = SecureRandom.random_number lower..upper
-        num.should be_kind_of(Integer)
-        (lower <= num).should == true
-        (num <= upper).should == true
-      end
+  it "generates a random value in given big (integer) range limits" do
+    lower = 12345678901234567890
+    upper = 12345678901234567890 + 5
+    32.times do
+      num = SecureRandom.random_number lower..upper
+      num.should be_kind_of(Integer)
+      (lower <= num).should == true
+      (num <= upper).should == true
     end
+  end
 
-    it "generates a random value in given (float) range limits" do
-      64.times do
-        num = SecureRandom.random_number 0.6..0.9
-        num.should be_kind_of(Float)
-        (0.6 <= num).should == true
-        (num <= 0.9).should == true
-      end
+  it "generates a random value in given (float) range limits" do
+    64.times do
+      num = SecureRandom.random_number 0.6..0.9
+      num.should be_kind_of(Float)
+      (0.6 <= num).should == true
+      (num <= 0.9).should == true
     end
   end
 
@@ -88,7 +86,7 @@ describe "SecureRandom.random_number" do
   end
 
   it "raises ArgumentError if the argument is non-numeric" do
-    lambda {
+    -> {
       SecureRandom.random_number(Object.new)
     }.should raise_error(ArgumentError)
   end

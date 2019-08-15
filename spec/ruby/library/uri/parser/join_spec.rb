@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../shared/join', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../shared/join'
 require 'uri'
 
 describe "URI::Parser#join" do

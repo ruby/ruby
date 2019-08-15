@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/open', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/open'
 
 describe "File.new" do
   before :each do
@@ -38,13 +38,13 @@ describe "File.new" do
   end
 
   it "creates the file and returns writable descriptor when called with 'w' mode and r-o permissions" do
-    # it should be possible to write to such a file via returned descriptior,
+    # it should be possible to write to such a file via returned descriptor,
     # even though the file permissions are r-r-r.
 
     rm_r @file
     begin
       f = File.new(@file, "w", 0444)
-      lambda { f.puts("test") }.should_not raise_error(IOError)
+      -> { f.puts("test") }.should_not raise_error(IOError)
     ensure
       f.close
     end
@@ -85,7 +85,7 @@ describe "File.new" do
   end
 
   it "raises an Errorno::EEXIST if the file exists when create a new file with File::CREAT|File::EXCL" do
-    lambda { @fh = File.new(@file, File::CREAT|File::EXCL) }.should raise_error(Errno::EEXIST)
+    -> { @fh = File.new(@file, File::CREAT|File::EXCL) }.should raise_error(Errno::EEXIST)
   end
 
   it "creates a new file when use File::WRONLY|File::APPEND mode" do
@@ -134,22 +134,22 @@ describe "File.new" do
   end
 
   it "raises a TypeError if the first parameter can't be coerced to a string" do
-    lambda { File.new(true) }.should raise_error(TypeError)
-    lambda { File.new(false) }.should raise_error(TypeError)
+    -> { File.new(true) }.should raise_error(TypeError)
+    -> { File.new(false) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the first parameter is nil" do
-    lambda { File.new(nil) }.should raise_error(TypeError)
+    -> { File.new(nil) }.should raise_error(TypeError)
   end
 
   it "raises an Errno::EBADF if the first parameter is an invalid file descriptor" do
-    lambda { File.new(-1) }.should raise_error(Errno::EBADF)
+    -> { File.new(-1) }.should raise_error(Errno::EBADF)
   end
 
   platform_is_not :windows do
     it "can't alter mode or permissions when opening a file" do
       @fh = File.new(@file)
-      lambda {
+      -> {
         f = File.new(@fh.fileno, @flags)
         f.autoclose = false
       }.should raise_error(Errno::EINVAL)

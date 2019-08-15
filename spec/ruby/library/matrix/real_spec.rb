@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 require 'matrix'
 
 describe "Matrix#real?" do
@@ -16,7 +16,8 @@ describe "Matrix#real?" do
     Matrix[ [Complex(1,1), 2], [3, 4] ].real?.should be_false
   end
 
-  conflicts_with :CMath do
+  # Guard against the Mathn library
+  guard -> { !defined?(Math.rsqrt) } do
     it "returns false if one element is a Complex whose imaginary part is 0" do
       Matrix[ [Complex(1,0), 2], [3, 4] ].real?.should be_false
     end

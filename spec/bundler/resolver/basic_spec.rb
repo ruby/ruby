@@ -35,11 +35,18 @@ RSpec.describe "Resolving" do
     should_resolve_as %w[berkshelf-2.0.7 chef-10.26 chef_app-1.0.0 json-1.7.7]
   end
 
-  it "prefers expicitly requested dependencies when resolving an index which would otherwise be ambiguous" do
+  it "prefers explicitly requested dependencies when resolving an index which would otherwise be ambiguous" do
     @index = an_ambiguous_index
     dep "a"
     dep "b"
     should_resolve_as %w[a-1.0.0 b-2.0.0 c-1.0.0 d-1.0.0]
+  end
+
+  it "prefers non-prerelease resolutions in sort order" do
+    @index = optional_prereleases_index
+    dep "a"
+    dep "b"
+    should_resolve_as %w[a-1.0.0 b-1.5.0]
   end
 
   it "resolves a index with root level conflict on child" do
@@ -71,6 +78,25 @@ RSpec.describe "Resolving" do
   it "selects a pre-release for sub-dependencies if it's the only option" do
     dep "need-pre"
     should_resolve_as %w[need-pre-1.0.0 activesupport-3.0.0.beta1]
+  end
+
+  it "selects a pre-release if it's specified in the Gemfile" do
+    dep "activesupport", "= 3.0.0.beta"
+    dep "actionpack"
+
+    should_resolve_as %w[activesupport-3.0.0.beta actionpack-3.0.0.beta rack-1.1 rack-mount-0.6]
+  end
+
+  it "prefers non-pre-releases when doing conservative updates" do
+    @index = build_index do
+      gem "mail", "2.7.0"
+      gem "mail", "2.7.1.rc1"
+      gem "RubyGems\0", Gem::VERSION
+    end
+    dep "mail"
+    @locked = locked ["mail", "2.7.0"]
+    @base = locked
+    should_conservative_resolve_and_include [:patch], [], ["mail-2.7.0"]
   end
 
   it "raises an exception if a child dependency is not resolved" do
@@ -143,10 +169,10 @@ Bundler could not find compatible versions for gem "a":
         s.required_ruby_version = "~> 2.0.0"
       end
 
-      gem "ruby\0", "1.8.7"
+      gem "Ruby\0", "1.8.7"
     end
     dep "foo"
-    dep "ruby\0", "1.8.7"
+    dep "Ruby\0", "1.8.7"
 
     deps = []
     @deps.each do |d|
@@ -200,7 +226,7 @@ Bundler could not find compatible versions for gem "a":
       # dependencies and since the dependency of the selected foo gem changes, the latest matching
       # dependency of "bar", "~> 2.1" -- bar-2.1.1 -- is selected. This is not a bug and follows
       # the long-standing documented Conservative Updating behavior of bundle install.
-      # http://bundler.io/v1.12/man/bundle-install.1.html#CONSERVATIVE-UPDATING
+      # https://bundler.io/v1.12/man/bundle-install.1.html#CONSERVATIVE-UPDATING
       should_conservative_resolve_and_include :patch, ["foo"], %w[foo-1.4.5 bar-2.1.1]
     end
 

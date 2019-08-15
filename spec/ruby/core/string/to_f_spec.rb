@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 # src.scan(/[+-]?[\d_]+\.[\d_]+(e[+-]?[\d_]+)?\b|[+-]?[\d_]+e[+-]?[\d_]+\b/i)
 
@@ -12,6 +12,7 @@ describe "String#to_f" do
 
    ".5".to_f.should == 0.5
    ".5e1".to_f.should == 5.0
+   "5.".to_f.should == 5.0
    "5e".to_f.should == 5.0
    "5E".to_f.should == 5.0
   end

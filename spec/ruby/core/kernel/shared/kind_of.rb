@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :kernel_kind_of, shared: true do
   before :each do
@@ -31,14 +31,25 @@ describe :kernel_kind_of, shared: true do
     @o.send(@method, KernelSpecs::MyExtensionModule).should == true
   end
 
-  it "returns false if given a Module not included in object's class nor ancestors" do
+  it "returns true if given a Module that object has been prepended with" do
+    @o.send(@method, KernelSpecs::MyPrependedModule).should == true
+  end
+
+  it "returns false if given a Module not included nor prepended in object's class nor ancestors" do
     @o.send(@method, KernelSpecs::SomeOtherModule).should == false
   end
 
   it "raises a TypeError if given an object that is not a Class nor a Module" do
-    lambda { @o.send(@method, 1) }.should raise_error(TypeError)
-    lambda { @o.send(@method, 'KindaClass') }.should raise_error(TypeError)
-    lambda { @o.send(@method, :KindaClass) }.should raise_error(TypeError)
-    lambda { @o.send(@method, Object.new) }.should raise_error(TypeError)
+    -> { @o.send(@method, 1) }.should raise_error(TypeError)
+    -> { @o.send(@method, 'KindaClass') }.should raise_error(TypeError)
+    -> { @o.send(@method, :KindaClass) }.should raise_error(TypeError)
+    -> { @o.send(@method, Object.new) }.should raise_error(TypeError)
+  end
+
+  it "does not take into account `class` method overriding" do
+    def @o.class; Integer; end
+
+    @o.send(@method, Integer).should == false
+    @o.send(@method, KernelSpecs::KindaClass).should == true
   end
 end

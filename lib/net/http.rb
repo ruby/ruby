@@ -22,9 +22,9 @@
 
 require_relative 'protocol'
 require 'uri'
+autoload :OpenSSL, 'openssl'
 
 module Net   #:nodoc:
-  autoload :OpenSSL, 'openssl'
 
   # :stopdoc:
   class HTTPBadResponse < StandardError; end
@@ -35,7 +35,7 @@ module Net   #:nodoc:
   #
   # Net::HTTP provides a rich library which can be used to build HTTP
   # user-agents.  For more details about HTTP see
-  # [RFC2616](http://www.ietf.org/rfc/rfc2616.txt)
+  # [RFC2616](http://www.ietf.org/rfc/rfc2616.txt).
   #
   # Net::HTTP is designed to work closely with URI.  URI::HTTP#host,
   # URI::HTTP#port and URI::HTTP#request_uri are designed to work with
@@ -87,7 +87,7 @@ module Net   #:nodoc:
   #
   # == How to use Net::HTTP
   #
-  # The following example code can be used as the basis of a HTTP user-agent
+  # The following example code can be used as the basis of an HTTP user-agent
   # which can perform a variety of request types using persistent
   # connections.
   #
@@ -104,13 +104,12 @@ module Net   #:nodoc:
   # open for multiple requests in the block if the server indicates it
   # supports persistent connections.
   #
+  # If you wish to re-use a connection across multiple HTTP requests without
+  # automatically closing it you can use ::new and then call #start and
+  # #finish manually.
+  #
   # The request types Net::HTTP supports are listed below in the section "HTTP
   # Request Classes".
-  #
-  # If you wish to re-use a connection across multiple HTTP requests without
-  # automatically closing it you can use ::new instead of ::start.  #request
-  # will automatically open a connection to the server if one is not currently
-  # open.  You can manually close the connection with #finish.
   #
   # For all the Net::HTTP request objects and shortcut request methods you may
   # supply either a String for the request path or a URI from which Net::HTTP
@@ -170,7 +169,7 @@ module Net   #:nodoc:
   # === POST
   #
   # A POST can be made using the Net::HTTP::Post request class.  This example
-  # creates a urlencoded POST body:
+  # creates a URL encoded POST body:
   #
   #   uri = URI('http://www.example.com/todo.cgi')
   #   req = Net::HTTP::Post.new(uri)
@@ -187,13 +186,10 @@ module Net   #:nodoc:
   #     res.value
   #   end
   #
-  # At this time Net::HTTP does not support multipart/form-data.  To send
-  # multipart/form-data use Net::HTTPRequest#body= and
-  # Net::HTTPRequest#content_type=:
+  # To send multipart/form-data use Net::HTTPHeader#set_form:
   #
   #   req = Net::HTTP::Post.new(uri)
-  #   req.body = multipart_data
-  #   req.content_type = 'multipart/form-data'
+  #   req.set_form([['upload', File.open('foo.bar')]], 'multipart/form-data')
   #
   # Other requests that can contain a body such as PUT can be created in the
   # same way using the corresponding request class (Net::HTTP::Put).
@@ -222,7 +218,7 @@ module Net   #:nodoc:
   # === Basic Authentication
   #
   # Basic authentication is performed according to
-  # [RFC2617](http://www.ietf.org/rfc/rfc2617.txt)
+  # [RFC2617](http://www.ietf.org/rfc/rfc2617.txt).
   #
   #   uri = URI('http://example.com/index.html?key=value')
   #
@@ -266,7 +262,7 @@ module Net   #:nodoc:
   #   end
   #
   # Or if you simply want to make a GET request, you may pass in an URI
-  # object that has a HTTPS URL. Net::HTTP automatically turn on TLS
+  # object that has an HTTPS URL. Net::HTTP automatically turns on TLS
   # verification if the URI object has a 'https' URI scheme.
   #
   #   uri = URI('https://example.com/')
@@ -576,7 +572,7 @@ module Net   #:nodoc:
     #
     # _opt_ sets following values by its accessor.
     # The keys are ca_file, ca_path, cert, cert_store, ciphers,
-    # close_on_empty_response, key, open_timeout, read_timeout, ssl_timeout,
+    # close_on_empty_response, key, open_timeout, read_timeout, write_timeout, ssl_timeout,
     # ssl_version, use_ssl, verify_callback, verify_depth and verify_mode.
     # If you set :use_ssl as true, you can use https and default value of
     # verify_mode is set as OpenSSL::SSL::VERIFY_PEER.
@@ -674,6 +670,7 @@ module Net   #:nodoc:
       @started = false
       @open_timeout = 60
       @read_timeout = 60
+      @write_timeout = 60
       @continue_timeout = nil
       @max_retries = 1
       @debug_output = nil
@@ -708,7 +705,7 @@ module Net   #:nodoc:
     #   http.start { .... }
     #
     def set_debug_output(output)
-      warn 'Net::HTTP#set_debug_output called after HTTP started' if started?
+      warn 'Net::HTTP#set_debug_output called after HTTP started', uplevel: 1 if started?
       @debug_output = output
     end
 
@@ -742,6 +739,13 @@ module Net   #:nodoc:
     # it raises a Net::ReadTimeout exception. The default value is 60 seconds.
     attr_reader :read_timeout
 
+    # Number of seconds to wait for one block to be written (via one write(2)
+    # call). Any number may be used, including Floats for fractional
+    # seconds. If the HTTP object cannot write data in this many seconds,
+    # it raises a Net::WriteTimeout exception. The default value is 60 seconds.
+    # Net::WriteTimeout is not raised on Windows.
+    attr_reader :write_timeout
+
     # Maximum number of times to retry an idempotent request in case of
     # Net::ReadTimeout, IOError, EOFError, Errno::ECONNRESET,
     # Errno::ECONNABORTED, Errno::EPIPE, OpenSSL::SSL::SSLError,
@@ -762,6 +766,12 @@ module Net   #:nodoc:
     def read_timeout=(sec)
       @socket.read_timeout = sec if @socket
       @read_timeout = sec
+    end
+
+    # Setter for the write_timeout attribute.
+    def write_timeout=(sec)
+      @socket.write_timeout = sec if @socket
+      @write_timeout = sec
     end
 
     # Seconds to wait for 100 Continue response. If the HTTP object does not
@@ -945,6 +955,7 @@ module Net   #:nodoc:
       if use_ssl?
         if proxy?
           plain_sock = BufferedIO.new(s, read_timeout: @read_timeout,
+                                      write_timeout: @write_timeout,
                                       continue_timeout: @continue_timeout,
                                       debug_output: @debug_output)
           buf = "CONNECT #{@address}:#{@port} HTTP/#{HTTPVersion}\r\n"
@@ -969,6 +980,10 @@ module Net   #:nodoc:
         end
         @ssl_context = OpenSSL::SSL::SSLContext.new
         @ssl_context.set_params(ssl_parameters)
+        @ssl_context.session_cache_mode =
+          OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
+          OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
+        @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
         D "starting SSL for #{conn_address}:#{conn_port}..."
         s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
         s.sync_close = true
@@ -976,16 +991,16 @@ module Net   #:nodoc:
         s.hostname = @address if s.respond_to? :hostname=
         if @ssl_session and
            Process.clock_gettime(Process::CLOCK_REALTIME) < @ssl_session.time.to_f + @ssl_session.timeout
-          s.session = @ssl_session if @ssl_session
+          s.session = @ssl_session
         end
         ssl_socket_connect(s, @open_timeout)
         if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
           s.post_connection_check(@address)
         end
-        @ssl_session = s.session
-        D "SSL established"
+        D "SSL established, protocol: #{s.ssl_version}, cipher: #{s.cipher[0]}"
       end
       @socket = BufferedIO.new(s, read_timeout: @read_timeout,
+                               write_timeout: @write_timeout,
                                continue_timeout: @continue_timeout,
                                debug_output: @debug_output)
       on_connect
@@ -1505,7 +1520,7 @@ module Net   #:nodoc:
       rescue Net::OpenTimeout
         raise
       rescue Net::ReadTimeout, IOError, EOFError,
-             Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE,
+             Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE, Errno::ETIMEDOUT,
              # avoid a dependency on OpenSSL
              defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : IOError,
              Timeout::Error => exception

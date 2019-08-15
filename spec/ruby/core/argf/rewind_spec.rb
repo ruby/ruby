@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "ARGF.rewind" do
   before :each do
@@ -33,7 +33,7 @@ describe "ARGF.rewind" do
   it "raises an ArgumentError when end of stream reached" do
     argf [@file1_name, @file2_name] do
       @argf.read
-      lambda { @argf.rewind }.should raise_error(ArgumentError)
+      -> { @argf.rewind }.should raise_error(ArgumentError)
     end
   end
 end

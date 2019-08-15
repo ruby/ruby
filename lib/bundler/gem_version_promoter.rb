@@ -7,6 +7,8 @@ module Bundler
   # available dependency versions as found in its index, before returning it to
   # to the resolution engine to select the best version.
   class GemVersionPromoter
+    DEBUG = ENV["DEBUG_RESOLVER"]
+
     attr_reader :level, :locked_specs, :unlock_gems
 
     # By default, strict is false, meaning every available version of a gem
@@ -21,6 +23,8 @@ module Bundler
     # that report a version of a gem not existing for versions that indeed do
     # existing in the referenced source.
     attr_accessor :strict
+
+    attr_accessor :prerelease_specified
 
     # Given a list of locked_specs and a list of gems to unlock creates a
     # GemVersionPromoter instance.
@@ -37,6 +41,7 @@ module Bundler
       @locked_specs = locked_specs
       @unlock_gems = unlock_gems
       @sort_versions = {}
+      @prerelease_specified = {}
     end
 
     # @param value [Symbol] One of three Symbols: :major, :minor or :patch.
@@ -61,7 +66,7 @@ module Bundler
     # @return [SpecGroup] A new instance of the SpecGroup Array sorted and
     #    possibly filtered.
     def sort_versions(dep, spec_groups)
-      before_result = "before sort_versions: #{debug_format_result(dep, spec_groups).inspect}" if ENV["DEBUG_RESOLVER"]
+      before_result = "before sort_versions: #{debug_format_result(dep, spec_groups).inspect}" if DEBUG
 
       @sort_versions[dep] ||= begin
         gem_name = dep.name
@@ -75,9 +80,9 @@ module Bundler
         else
           sort_dep_specs(spec_groups, locked_spec)
         end.tap do |specs|
-          if ENV["DEBUG_RESOLVER"]
-            STDERR.puts before_result
-            STDERR.puts " after sort_versions: #{debug_format_result(dep, specs).inspect}"
+          if DEBUG
+            warn before_result
+            warn " after sort_versions: #{debug_format_result(dep, specs).inspect}"
           end
         end
       end
@@ -104,7 +109,7 @@ module Bundler
           must_match = minor? ? [0] : [0, 1]
 
           matches = must_match.map {|idx| gsv.segments[idx] == lsv.segments[idx] }
-          (matches.uniq == [true]) ? (gsv >= lsv) : false
+          matches.uniq == [true] ? (gsv >= lsv) : false
         else
           true
         end
@@ -121,6 +126,15 @@ module Bundler
       result = spec_groups.sort do |a, b|
         @a_ver = a.version
         @b_ver = b.version
+
+        unless @prerelease_specified[@gem_name]
+          a_pre = @a_ver.prerelease?
+          b_pre = @b_ver.prerelease?
+
+          next -1 if a_pre && !b_pre
+          next  1 if b_pre && !a_pre
+        end
+
         if major?
           @a_ver <=> @b_ver
         elsif either_version_older_than_locked

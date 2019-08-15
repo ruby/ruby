@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :complex_math_acos, shared: true do
   it "returns the arccosine of the passed argument" do
@@ -28,14 +28,14 @@ describe :complex_math_acos_bang, shared: true do
   end
 
   it "raises a TypeError when passed a Complex number" do
-    lambda { @object.send(:acos!, Complex(4, 5)) }.should raise_error(TypeError)
+    -> { @object.send(:acos!, Complex(4, 5)) }.should raise_error(TypeError)
   end
 
   it "raises an Errno::EDOM for numbers greater than 1.0" do
-    lambda { @object.send(:acos!, 1.0001) }.should raise_error(Errno::EDOM)
+    -> { @object.send(:acos!, 1.0001) }.should raise_error(Errno::EDOM)
   end
 
   it "raises an Errno::EDOM for numbers less than -1.0" do
-    lambda { @object.send(:acos!, -1.0001) }.should raise_error(Errno::EDOM)
+    -> { @object.send(:acos!, -1.0001) }.should raise_error(Errno::EDOM)
   end
 end

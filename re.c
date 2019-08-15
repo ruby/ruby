@@ -9,9 +9,10 @@
 
 **********************************************************************/
 
-#include "internal.h"
+#include "ruby/encoding.h"
 #include "ruby/re.h"
 #include "ruby/util.h"
+#include "internal.h"
 #include "regint.h"
 #include "encindex.h"
 #include <ctype.h>
@@ -94,7 +95,7 @@ rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n
 {
     const unsigned char *y;
 
-    if (y = memmem(ys, n, xs, m))
+    if ((y = memmem(ys, n, xs, m)) != NULL)
 	return y - ys;
     else
 	return -1;
@@ -105,13 +106,7 @@ rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n
 {
     const unsigned char *x = xs, *xe = xs + m;
     const unsigned char *y = ys, *ye = ys + n;
-#ifndef VALUE_MAX
-# if SIZEOF_VALUE == 8
-#  define VALUE_MAX 0xFFFFFFFFFFFFFFFFULL
-# elif SIZEOF_VALUE == 4
-#  define VALUE_MAX 0xFFFFFFFFUL
-# endif
-#endif
+#define VALUE_MAX ((VALUE)~(VALUE)0)
     VALUE hx, hy, mask = VALUE_MAX >> ((SIZEOF_VALUE - m) * CHAR_BIT);
 
     if (m > SIZEOF_VALUE)
@@ -356,7 +351,7 @@ rb_reg_check(VALUE re)
 
 static void
 rb_reg_expr_str(VALUE str, const char *s, long len,
-	rb_encoding *enc, rb_encoding *resenc)
+		rb_encoding *enc, rb_encoding *resenc, int term)
 {
     const char *p, *pend;
     int cr = ENC_CODERANGE_UNKNOWN;
@@ -377,7 +372,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len,
 		    break;
 		}
 	    }
-	    else if (c != '/' && rb_enc_isprint(c, enc)) {
+	    else if (c != term && rb_enc_isprint(c, enc)) {
 		p += clen;
 	    }
 	    else {
@@ -404,11 +399,6 @@ rb_reg_expr_str(VALUE str, const char *s, long len,
 		p += n;
 		continue;
 	    }
-	    else if (c == '/') {
-		char c = '\\';
-		rb_str_buf_cat(str, &c, 1);
-		rb_str_buf_cat(str, p, clen);
-	    }
 	    else if (c == -1) {
 		clen = rb_enc_precise_mbclen(p, pend, enc);
 		if (!MBCLEN_CHARFOUND_P(clen)) {
@@ -424,6 +414,11 @@ rb_reg_expr_str(VALUE str, const char *s, long len,
 		    clen = MBCLEN_CHARFOUND_LEN(clen);
 		    rb_str_buf_cat(str, p, clen);
 		}
+	    }
+	    else if (c == term) {
+		char c = '\\';
+		rb_str_buf_cat(str, &c, 1);
+		rb_str_buf_cat(str, p, clen);
 	    }
 	    else if (rb_enc_isprint(c, enc)) {
 		rb_str_buf_cat(str, p, clen);
@@ -457,7 +452,7 @@ rb_reg_desc(const char *s, long len, VALUE re)
     else {
 	rb_enc_associate(str, rb_usascii_encoding());
     }
-    rb_reg_expr_str(str, s, len, enc, resenc);
+    rb_reg_expr_str(str, s, len, enc, resenc, '/');
     rb_str_buf_cat2(str, "/");
     if (re) {
 	char opts[4];
@@ -518,6 +513,7 @@ rb_reg_inspect(VALUE re)
     return rb_reg_desc(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), re);
 }
 
+static VALUE rb_reg_str_with_term(VALUE re, int term);
 
 /*
  *  call-seq:
@@ -525,11 +521,11 @@ rb_reg_inspect(VALUE re)
  *
  *  Returns a string containing the regular expression and its options (using the
  *  <code>(?opts:source)</code> notation. This string can be fed back in to
- *  <code>Regexp::new</code> to a regular expression with the same semantics as
- *  the original. (However, <code>Regexp#==</code> may not return true when
- *  comparing the two, as the source of the regular expression itself may
- *  differ, as the example shows).  <code>Regexp#inspect</code> produces a
- *  generally more readable version of <i>rxp</i>.
+ *  Regexp::new to a regular expression with the same semantics as the
+ *  original. (However, <code>Regexp#==</code> may not return true
+ *  when comparing the two, as the source of the regular expression
+ *  itself may differ, as the example shows).  Regexp#inspect produces
+ *  a generally more readable version of <i>rxp</i>.
  *
  *      r1 = /ab+c/ix           #=> /ab+c/ix
  *      s1 = r1.to_s            #=> "(?ix-m:ab+c)"
@@ -541,6 +537,12 @@ rb_reg_inspect(VALUE re)
 
 static VALUE
 rb_reg_to_s(VALUE re)
+{
+    return rb_reg_str_with_term(re, '/');
+}
+
+static VALUE
+rb_reg_str_with_term(VALUE re, int term)
 {
     int options, opt;
     const int embeddable = ONIG_OPTION_MULTILINE|ONIG_OPTION_IGNORECASE|ONIG_OPTION_EXTEND;
@@ -620,7 +622,7 @@ rb_reg_to_s(VALUE re)
 
     rb_str_buf_cat2(str, ":");
     if (rb_enc_asciicompat(enc)) {
-	rb_reg_expr_str(str, (char*)ptr, len, enc, NULL);
+	rb_reg_expr_str(str, (char*)ptr, len, enc, NULL, term);
 	rb_str_buf_cat2(str, ")");
     }
     else {
@@ -640,7 +642,7 @@ rb_reg_to_s(VALUE re)
 	memcpy(paren, s, n);
 	rb_str_resize(str, RSTRING_LEN(str) - n);
 
-	rb_reg_expr_str(str, (char*)ptr, len, enc, NULL);
+	rb_reg_expr_str(str, (char*)ptr, len, enc, NULL, term);
 	rb_str_buf_cat(str, paren, n);
     }
     rb_enc_copy(str, re);
@@ -648,6 +650,8 @@ rb_reg_to_s(VALUE re)
     OBJ_INFECT(str, re);
     return str;
 }
+
+NORETURN(static void rb_reg_raise(const char *s, long len, const char *err, VALUE re));
 
 static void
 rb_reg_raise(const char *s, long len, const char *err, VALUE re)
@@ -667,12 +671,14 @@ rb_enc_reg_error_desc(const char *s, long len, rb_encoding *enc, int options, co
 
     rb_enc_associate(desc, enc);
     rb_str_buf_cat2(desc, ": /");
-    rb_reg_expr_str(desc, s, len, enc, resenc);
+    rb_reg_expr_str(desc, s, len, enc, resenc, '/');
     opts[0] = '/';
     option_to_str(opts + 1, options);
     rb_str_buf_cat2(desc, opts);
     return rb_exc_new3(rb_eRegexpError, desc);
 }
+
+NORETURN(static void rb_enc_reg_raise(const char *s, long len, rb_encoding *enc, int options, const char *err));
 
 static void
 rb_enc_reg_raise(const char *s, long len, rb_encoding *enc, int options, const char *err)
@@ -686,6 +692,8 @@ rb_reg_error_desc(VALUE str, int options, const char *err)
     return rb_enc_reg_error_desc(RSTRING_PTR(str), RSTRING_LEN(str),
 				 rb_enc_get(str), options, err);
 }
+
+NORETURN(static void rb_reg_raise_str(VALUE str, int options, const char *err));
 
 static void
 rb_reg_raise_str(VALUE str, int options, const char *err)
@@ -718,11 +726,11 @@ rb_reg_casefold_p(VALUE re)
  *  call-seq:
  *     rxp.options   -> integer
  *
- *  Returns the set of bits corresponding to the options used when creating this
- *  Regexp (see <code>Regexp::new</code> for details. Note that additional bits
- *  may be set in the returned options: these are used internally by the regular
- *  expression code. These extra bits are ignored if the options are passed to
- *  <code>Regexp::new</code>.
+ *  Returns the set of bits corresponding to the options used when
+ *  creating this Regexp (see Regexp::new for details. Note that
+ *  additional bits may be set in the returned options: these are used
+ *  internally by the regular expression code. These extra bits are
+ *  ignored if the options are passed to Regexp::new.
  *
  *     Regexp::IGNORECASE                  #=> 1
  *     Regexp::EXTENDED                    #=> 2
@@ -876,13 +884,50 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
 /*
  *  Document-class: MatchData
  *
- *  <code>MatchData</code> is the type of the special variable <code>$~</code>,
- *  and is the type of the object returned by <code>Regexp#match</code> and
- *  <code>Regexp.last_match</code>. It encapsulates all the results of a pattern
- *  match, results normally accessed through the special variables
- *  <code>$&</code>, <code>$'</code>, <code>$`</code>, <code>$1</code>,
- *  <code>$2</code>, and so on.
+ *  MatchData encapsulates the result of matching a Regexp against
+ *  string. It is returned by Regexp#match and String#match, and also
+ *  stored in a global variable returned by Regexp.last_match.
  *
+ *  Usage:
+ *
+ *      url = 'https://docs.ruby-lang.org/en/2.5.0/MatchData.html'
+ *      m = url.match(/(\d\.?)+/)   # => #<MatchData "2.5.0" 1:"0">
+ *      m.string                    # => "https://docs.ruby-lang.org/en/2.5.0/MatchData.html"
+ *      m.regexp                    # => /(\d\.?)+/
+ *      # entire matched substring:
+ *      m[0]                        # => "2.5.0"
+ *
+ *      # Working with unnamed captures
+ *      m = url.match(%r{([^/]+)/([^/]+)\.html$})
+ *      m.captures                  # => ["2.5.0", "MatchData"]
+ *      m[1]                        # => "2.5.0"
+ *      m.values_at(1, 2)           # => ["2.5.0", "MatchData"]
+ *
+ *      # Working with named captures
+ *      m = url.match(%r{(?<version>[^/]+)/(?<module>[^/]+)\.html$})
+ *      m.captures                  # => ["2.5.0", "MatchData"]
+ *      m.named_captures            # => {"version"=>"2.5.0", "module"=>"MatchData"}
+ *      m[:version]                 # => "2.5.0"
+ *      m.values_at(:version, :module)
+ *                                  # => ["2.5.0", "MatchData"]
+ *      # Numerical indexes are working, too
+ *      m[1]                        # => "2.5.0"
+ *      m.values_at(1, 2)           # => ["2.5.0", "MatchData"]
+ *
+ *  == Global variables equivalence
+ *
+ *  Parts of last MatchData (returned by Regexp.last_match) are also
+ *  aliased as global variables:
+ *
+ *  * <code>$~</code> is Regexp.last_match;
+ *  * <code>$&</code> is Regexp.last_match<code>[0]</code>;
+ *  * <code>$1</code>, <code>$2</code>, and so on are
+ *    Regexp.last_match<code>[i]</code> (captures by number);
+ *  * <code>$`</code> is Regexp.last_match<code>.pre_match</code>;
+ *  * <code>$'</code> is Regexp.last_match<code>.post_match</code>;
+ *  * <code>$+</code> is Regexp.last_match<code>[-1]</code> (the last capture).
+ *
+ *  See also "Special global variables" section in Regexp documentation.
  */
 
 VALUE rb_cMatch;
@@ -938,7 +983,7 @@ update_char_offset(VALUE match)
     rb_encoding *enc;
     pair_t *pairs;
 
-    if (rm->char_offset_updated)
+    if (rm->char_offset_num_allocated)
         return;
 
     regs = &rm->regs;
@@ -955,7 +1000,6 @@ update_char_offset(VALUE match)
             rm->char_offset[i].beg = BEG(i);
             rm->char_offset[i].end = END(i);
         }
-        rm->char_offset_updated = 1;
         return;
     }
 
@@ -994,8 +1038,6 @@ update_char_offset(VALUE match)
         found = bsearch(&key, pairs, num_pos, sizeof(pair_t), pair_byte_cmp);
         rm->char_offset[i].end = found->char_pos;
     }
-
-    rm->char_offset_updated = 1;
 }
 
 static void
@@ -1021,17 +1063,13 @@ match_init_copy(VALUE obj, VALUE orig)
     if (rb_reg_region_copy(&rm->regs, RMATCH_REGS(orig)))
 	rb_memerror();
 
-    if (!RMATCH(orig)->rmatch->char_offset_updated) {
-        rm->char_offset_updated = 0;
-    }
-    else {
+    if (RMATCH(orig)->rmatch->char_offset_num_allocated) {
         if (rm->char_offset_num_allocated < rm->regs.num_regs) {
             REALLOC_N(rm->char_offset, struct rmatch_offset, rm->regs.num_regs);
             rm->char_offset_num_allocated = rm->regs.num_regs;
         }
         MEMCPY(rm->char_offset, RMATCH(orig)->rmatch->char_offset,
                struct rmatch_offset, rm->regs.num_regs);
-        rm->char_offset_updated = 1;
 	RB_GC_GUARD(orig);
     }
 
@@ -1254,6 +1292,12 @@ rb_match_busy(VALUE match)
     FL_SET(match, MATCH_BUSY);
 }
 
+void
+rb_match_unbusy(VALUE match)
+{
+    FL_UNSET(match, MATCH_BUSY);
+}
+
 int
 rb_match_count(VALUE match)
 {
@@ -1292,7 +1336,6 @@ match_set_string(VALUE m, VALUE string, long pos, long len)
     onig_region_resize(&rmatch->regs, 1);
     rmatch->regs.beg[0] = pos;
     rmatch->regs.end[0] = pos + len;
-    rmatch->char_offset_updated = 0;
     OBJ_INFECT(match, string);
 }
 
@@ -1325,14 +1368,14 @@ rb_backref_set_string(VALUE string, long pos, long len)
  *      r.fixed_encoding?                               #=> true
  *      r.encoding                                      #=> #<Encoding:UTF-8>
  *      r =~ "\u{6666} a"                               #=> 2
- *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> ArgumentError
+ *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> Encoding::CompatibilityError
  *      r =~ "abc".force_encoding("euc-jp")             #=> 0
  *
  *      r = /\u{6666}/
  *      r.fixed_encoding?                               #=> true
  *      r.encoding                                      #=> #<Encoding:UTF-8>
  *      r =~ "\u{6666} a"                               #=> 0
- *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> ArgumentError
+ *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> Encoding::CompatibilityError
  *      r =~ "abc".force_encoding("euc-jp")             #=> nil
  */
 
@@ -1349,6 +1392,7 @@ static VALUE
 rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
         rb_encoding **fixed_enc, onig_errmsg_buffer err);
 
+NORETURN(static void reg_enc_error(VALUE re, VALUE str));
 
 static void
 reg_enc_error(VALUE re, VALUE str)
@@ -1566,7 +1610,6 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
     }
 
     RMATCH(match)->regexp = re;
-    RMATCH(match)->rmatch->char_offset_updated = 0;
     rb_backref_set(match);
 
     OBJ_INFECT(match, re);
@@ -1649,7 +1692,6 @@ rb_reg_start_with_p(VALUE re, VALUE str)
     OBJ_INFECT(match, str);
 
     RMATCH(match)->regexp = re;
-    RMATCH(match)->rmatch->char_offset_updated = 0;
     rb_backref_set(match);
 
     OBJ_INFECT(match, re);
@@ -1962,12 +2004,12 @@ match_ary_aref(VALUE match, VALUE idx, VALUE result)
  *     mtch[range]           -> array
  *     mtch[name]            -> str or nil
  *
- *  Match Reference -- <code>MatchData</code> acts as an array, and may be
- *  accessed using the normal array indexing techniques.  <code>mtch[0]</code>
- *  is equivalent to the special variable <code>$&</code>, and returns the
- *  entire matched string.  <code>mtch[1]</code>, <code>mtch[2]</code>, and so
- *  on return the values of the matched backreferences (portions of the
- *  pattern between parentheses).
+ *  Match Reference -- MatchData acts as an array, and may be accessed
+ *  using the normal array indexing techniques.  <code>mtch[0]</code>
+ *  is equivalent to the special variable <code>$&</code>, and returns
+ *  the entire matched string.  <code>mtch[1]</code>,
+ *  <code>mtch[2]</code>, and so on return the values of the matched
+ *  backreferences (portions of the pattern between parentheses).
  *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m          #=> #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
@@ -2028,7 +2070,7 @@ match_aref(int argc, VALUE *argv, VALUE match)
 /*
  *  call-seq:
  *
- *     mtch.values_at([index]*)   -> array
+ *     mtch.values_at(index, ...)   -> array
  *
  *  Uses each <i>index</i> to access the matching values, returning an array of
  *  the corresponding matches.
@@ -2380,7 +2422,8 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
 {
     const char *p = *pp;
     int chmaxlen = rb_enc_mbmaxlen(enc);
-    char *chbuf = ALLOCA_N(char, chmaxlen);
+    unsigned char *area = ALLOCA_N(unsigned char, chmaxlen);
+    char *chbuf = (char *)area;
     int chlen = 0;
     int byte;
     int l;
@@ -2392,14 +2435,14 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
         return -1;
     }
 
-    chbuf[chlen++] = byte;
+    area[chlen++] = byte;
     while (chlen < chmaxlen &&
            MBCLEN_NEEDMORE_P(rb_enc_precise_mbclen(chbuf, chbuf+chlen, enc))) {
         byte = read_escaped_byte(&p, end, err);
         if (byte == -1) {
             return -1;
         }
-        chbuf[chlen++] = byte;
+        area[chlen++] = byte;
     }
 
     l = rb_enc_precise_mbclen(chbuf, chbuf+chlen, enc);
@@ -2407,7 +2450,7 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
         errcpy(err, "invalid multibyte escape");
         return -1;
     }
-    if (1 < chlen || (chbuf[0] & 0x80)) {
+    if (1 < chlen || (area[0] & 0x80)) {
         rb_str_buf_cat(buf, chbuf, chlen);
 
         if (*encp == 0)
@@ -2419,7 +2462,7 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
     }
     else {
         char escbuf[5];
-        snprintf(escbuf, sizeof(escbuf), "\\x%02X", chbuf[0]&0xff);
+        snprintf(escbuf, sizeof(escbuf), "\\x%02X", area[0]&0xff);
         rb_str_buf_cat(buf, escbuf, 4);
     }
     *pp = p;
@@ -2529,17 +2572,19 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
         VALUE buf, rb_encoding **encp, int *has_property,
         onig_errmsg_buffer err)
 {
-    char c;
+    unsigned char c;
     char smallbuf[2];
 
     while (p < end) {
         int chlen = rb_enc_precise_mbclen(p, end, enc);
         if (!MBCLEN_CHARFOUND_P(chlen)) {
+          invalid_multibyte:
             errcpy(err, "invalid multibyte character");
             return -1;
         }
         chlen = MBCLEN_CHARFOUND_LEN(chlen);
         if (1 < chlen || (*p & 0x80)) {
+          multibyte:
             rb_str_buf_cat(buf, p, chlen);
             p += chlen;
             if (*encp == 0)
@@ -2556,6 +2601,16 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
             if (p == end) {
                 errcpy(err, "too short escape sequence");
                 return -1;
+            }
+            chlen = rb_enc_precise_mbclen(p, end, enc);
+            if (!MBCLEN_CHARFOUND_P(chlen)) {
+                goto invalid_multibyte;
+            }
+            if ((chlen = MBCLEN_CHARFOUND_LEN(chlen)) > 1) {
+		/* include the previous backslash */
+                --p;
+                ++chlen;
+                goto multibyte;
             }
             switch (c = *p++) {
               case '1': case '2': case '3':
@@ -2580,8 +2635,9 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
                 p = p-2;
 		if (enc == rb_usascii_encoding()) {
 		    const char *pbeg = p;
-		    c = read_escaped_byte(&p, end, err);
-		    if (c == (char)-1) return -1;
+                    int byte = read_escaped_byte(&p, end, err);
+                    if (byte == -1) return -1;
+                    c = byte;
 		    rb_str_buf_cat(buf, pbeg, p-pbeg);
 		}
 		else {
@@ -2630,7 +2686,7 @@ escape_asis:
             break;
 
           default:
-            rb_str_buf_cat(buf, &c, 1);
+            rb_str_buf_cat(buf, (char *)&c, 1);
             break;
         }
     }
@@ -2889,7 +2945,7 @@ rb_reg_init_str_enc(VALUE re, VALUE s, rb_encoding *enc, int options)
     return re;
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_reg_new_ary(VALUE ary, int opt)
 {
     return rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
@@ -3063,8 +3119,11 @@ reg_operand(VALUE s, int check)
     if (SYMBOL_P(s)) {
 	return rb_sym2str(s);
     }
+    else if (RB_TYPE_P(s, T_STRING)) {
+        return s;
+    }
     else {
-	return (check ? rb_str_to_str : rb_check_string_type)(s);
+        return check ? rb_str_to_str(s) : rb_check_string_type(s);
     }
 }
 
@@ -3223,11 +3282,11 @@ rb_reg_match2(VALUE re)
  *     rxp.match(str)       -> matchdata or nil
  *     rxp.match(str,pos)   -> matchdata or nil
  *
- *  Returns a <code>MatchData</code> object describing the match, or
- *  <code>nil</code> if there was no match. This is equivalent to retrieving the
- *  value of the special variable <code>$~</code> following a normal match.
- *  If the second parameter is present, it specifies the position in the string
- *  to begin the search.
+ *  Returns a MatchData object describing the match, or
+ *  <code>nil</code> if there was no match. This is equivalent to
+ *  retrieving the value of the special variable <code>$~</code>
+ *  following a normal match.  If the second parameter is present, it
+ *  specifies the position in the string to begin the search.
  *
  *     /(.)(.)(.)/.match("abc")[2]   #=> "b"
  *     /(.)(.)/.match("abc", 1)[2]   #=> "c"
@@ -3354,7 +3413,7 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
 /*
  * Document-method: compile
  *
- * Alias for <code>Regexp.new</code>
+ * Alias for Regexp.new
  */
 
 /*
@@ -3525,8 +3584,8 @@ rb_reg_quote(VALUE str)
  *     Regexp.quote(str)    -> string
  *
  *  Escapes any characters that would have special meaning in a regular
- *  expression. Returns a new escaped string, or self if no characters are
- *  escaped.  For any string,
+ *  expression. Returns a new escaped string with the same or compatible
+ *  encoding. For any string,
  *  <code>Regexp.new(Regexp.escape(<i>str</i>))=~<i>str</i></code> will be true.
  *
  *     Regexp.escape('\*?{}.')   #=> \\\*\?\{\}\.
@@ -3637,7 +3696,7 @@ rb_reg_s_union(VALUE self, VALUE args0)
                 else {
                     has_asciionly = 1;
                 }
-		v = rb_reg_to_s(v);
+		v = rb_reg_str_with_term(v, -1);
 	    }
 	    else {
                 rb_encoding *enc;
@@ -3699,11 +3758,12 @@ rb_reg_s_union(VALUE self, VALUE args0)
  *     Regexp.union(pat1, pat2, ...)            -> new_regexp
  *     Regexp.union(pats_ary)                   -> new_regexp
  *
- *  Return a <code>Regexp</code> object that is the union of the given
- *  <em>pattern</em>s, i.e., will match any of its parts. The <em>pattern</em>s
- *  can be Regexp objects, in which case their options will be preserved, or
- *  Strings. If no patterns are given, returns <code>/(?!)/</code>.
- *  The behavior is unspecified if any given <em>pattern</em> contains capture.
+ *  Return a Regexp object that is the union of the given
+ *  <em>pattern</em>s, i.e., will match any of its parts. The
+ *  <em>pattern</em>s can be Regexp objects, in which case their
+ *  options will be preserved, or Strings. If no patterns are given,
+ *  returns <code>/(?!)/</code>.  The behavior is unspecified if any
+ *  given <em>pattern</em> contains capture.
  *
  *     Regexp.union                         #=> /(?!)/
  *     Regexp.union("penzance")             #=> /penzance/
@@ -3934,13 +3994,11 @@ match_setter(VALUE val)
 static VALUE
 rb_reg_s_last_match(int argc, VALUE *argv)
 {
-    VALUE nth;
-
-    if (argc > 0 && rb_scan_args(argc, argv, "01", &nth) == 1) {
+    if (rb_check_arity(argc, 0, 1) == 1) {
         VALUE match = rb_backref_get();
         int n;
         if (NIL_P(match)) return Qnil;
-        n = match_backref_number(match, nth);
+        n = match_backref_number(match, argv[0]);
 	return rb_reg_nth_match(n, match);
     }
     return match_getter();
@@ -3967,9 +4025,9 @@ re_warn(const char *s)
 /*
  *  Document-class: Regexp
  *
- *  A <code>Regexp</code> holds a regular expression, used to match a pattern
- *  against strings. Regexps are created using the <code>/.../</code> and
- *  <code>%r{...}</code> literals, and by the <code>Regexp::new</code>
+ *  A Regexp holds a regular expression, used to match a pattern
+ *  against strings. Regexps are created using the <code>/.../</code>
+ *  and <code>%r{...}</code> literals, and by the Regexp::new
  *  constructor.
  *
  *  :include: doc/regexp.rdoc

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/union', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/union'
 require 'set'
 
 describe "Set#union" do

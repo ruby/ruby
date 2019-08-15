@@ -140,17 +140,17 @@ class Net::HTTPResponse
   #
 
   def response   #:nodoc:
-    warn "#{caller(1, 1)[0]}: warning: Net::HTTPResponse#response is obsolete" if $VERBOSE
+    warn "Net::HTTPResponse#response is obsolete", uplevel: 1 if $VERBOSE
     self
   end
 
   def header   #:nodoc:
-    warn "#{caller(1, 1)[0]}: warning: Net::HTTPResponse#header is obsolete" if $VERBOSE
+    warn "Net::HTTPResponse#header is obsolete", uplevel: 1 if $VERBOSE
     self
   end
 
   def read_header   #:nodoc:
-    warn "#{caller(1, 1)[0]}: warning: Net::HTTPResponse#read_header is obsolete" if $VERBOSE
+    warn "Net::HTTPResponse#read_header is obsolete", uplevel: 1 if $VERBOSE
     self
   end
 
@@ -380,6 +380,7 @@ class Net::HTTPResponse
       end
       block = proc do |compressed_chunk|
         @inflate.inflate(compressed_chunk) do |chunk|
+          compressed_chunk.clear
           dest << chunk
         end
       end

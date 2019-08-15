@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Kernel#respond_to?" do
   before :each do
@@ -25,7 +25,7 @@ describe "Kernel#respond_to?" do
   end
 
   it "throws a type error if argument can't be coerced into a Symbol" do
-    lambda { @a.respond_to?(Object.new) }.should raise_error(TypeError)
+    -> { @a.respond_to?(Object.new) }.should raise_error(TypeError)
   end
 
   it "returns false if obj responds to the given protected method" do
@@ -61,7 +61,7 @@ describe "Kernel#respond_to?" do
   it "does not change method visibility when finding private method" do
     KernelSpecs::VisibilityChange.respond_to?(:new, false).should == false
     KernelSpecs::VisibilityChange.respond_to?(:new, true).should == true
-    lambda { KernelSpecs::VisibilityChange.new }.should raise_error(NoMethodError)
+    -> { KernelSpecs::VisibilityChange.new }.should raise_error(NoMethodError)
   end
 
   it "indicates if an object responds to a particular message" do

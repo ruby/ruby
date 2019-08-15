@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 require 'matrix'
 
 describe "Matrix.build" do
@@ -24,19 +24,19 @@ describe "Matrix.build" do
 
   it "returns an Enumerator is no block is given" do
     enum = Matrix.build(2, 1)
-    enum.should  be_an_instance_of(Enumerator)
+    enum.should be_an_instance_of(Enumerator)
     enum.each{1}.should == Matrix[[1], [1]]
   end
 
   it "requires integers as parameters" do
-    lambda { Matrix.build("1", "2"){1} }.should raise_error(TypeError)
-    lambda { Matrix.build(nil, nil){1} }.should raise_error(TypeError)
-    lambda { Matrix.build(1..2){1} }.should raise_error(TypeError)
+    -> { Matrix.build("1", "2"){1} }.should raise_error(TypeError)
+    -> { Matrix.build(nil, nil){1} }.should raise_error(TypeError)
+    -> { Matrix.build(1..2){1} }.should raise_error(TypeError)
   end
 
   it "requires non-negative integers" do
-    lambda { Matrix.build(-1, 1){1} }.should raise_error(ArgumentError)
-    lambda { Matrix.build(+1,-1){1} }.should raise_error(ArgumentError)
+    -> { Matrix.build(-1, 1){1} }.should raise_error(ArgumentError)
+    -> { Matrix.build(+1,-1){1} }.should raise_error(ArgumentError)
   end
 
   it "returns empty Matrix if one argument is zero" do

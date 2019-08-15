@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # ipaddr.rb - A class to manipulate an IP address
 #
@@ -103,13 +103,13 @@ class IPAddr
 
   # Creates a new ipaddr containing the given network byte ordered
   # string form of an IP address.
-  def IPAddr::new_ntoh(addr)
-    return IPAddr.new(IPAddr::ntop(addr))
+  def self.new_ntoh(addr)
+    return new(ntop(addr))
   end
 
   # Convert a network byte ordered string form of an IP address into
   # human readable form.
-  def IPAddr::ntop(addr)
+  def self.ntop(addr)
     case addr.size
     when 4
       s = addr.unpack('C4').join('.')
@@ -310,7 +310,7 @@ class IPAddr
 
   # Returns true if the ipaddr is an IPv4-compatible IPv6 address.
   def ipv4_compat?
-    warn "#{caller(1, 1)[0]}: warning: IPAddr\##{__callee__} is obsolete" if $VERBOSE
+    warn "IPAddr\##{__callee__} is obsolete", uplevel: 1 if $VERBOSE
     _ipv4_compat?
   end
 
@@ -336,7 +336,7 @@ class IPAddr
   # Returns a new ipaddr built by converting the native IPv4 address
   # into an IPv4-compatible IPv6 address.
   def ipv4_compat
-    warn "#{caller(1, 1)[0]}: warning: IPAddr\##{__callee__} is obsolete" if $VERBOSE
+    warn "IPAddr\##{__callee__} is obsolete", uplevel: 1 if $VERBOSE
     if !ipv4?
       raise InvalidAddressError, "not an IPv4 address"
     end
@@ -594,6 +594,8 @@ class IPAddr
     else
       @mask_addr = (@family == Socket::AF_INET) ? IN4MASK : IN6MASK
     end
+  rescue InvalidAddressError => e
+    raise e.class, "#{e.message}: #{addr}"
   end
 
   def coerce_other(other)

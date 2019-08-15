@@ -323,7 +323,9 @@ onig_region_init(OnigRegion* region)
   region->allocated    = 0;
   region->beg          = (OnigPosition* )0;
   region->end          = (OnigPosition* )0;
+#ifdef USE_CAPTURE_HISTORY
   region->history_root = (OnigCaptureTreeNode* )0;
+#endif
 }
 
 extern OnigRegion*
@@ -1461,9 +1463,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 # define CASE(x) L_##x: sbegin = s; OPCODE_EXEC_HOOK;
 # define DEFAULT L_DEFAULT:
 # define NEXT sprev = sbegin; JUMP
-# define JUMP goto *oplabels[*p++]
+# define JUMP RB_GNUC_EXTENSION_BLOCK(goto *oplabels[*p++])
 
-  static const void *oplabels[] = {
+  RB_GNUC_EXTENSION static const void *oplabels[] = {
     &&L_OP_FINISH,               /* matching process terminator (no more alternative) */
     &&L_OP_END,                  /* pattern code terminator (success end) */
 
@@ -4617,4 +4619,3 @@ onig_copy_encoding(OnigEncodingType *to, OnigEncoding from)
 {
   *to = *from;
 }
-

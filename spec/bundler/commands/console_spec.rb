@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle console", :bundler => "< 2" do
+RSpec.describe "bundle console", :bundler => "< 3" do
   before :each do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
       gem "activesupport", :group => :test
       gem "rack_middleware", :group => :development
@@ -28,10 +28,10 @@ RSpec.describe "bundle console", :bundler => "< 2" do
 
   it "starts another REPL if configured as such" do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "pry"
     G
-    bundle "config console pry"
+    bundle "config set console pry"
 
     bundle "console" do |input, _, _|
       input.puts("__method__")
@@ -41,7 +41,7 @@ RSpec.describe "bundle console", :bundler => "< 2" do
   end
 
   it "falls back to IRB if the other REPL isn't available" do
-    bundle "config console pry"
+    bundle "config set console pry"
     # make sure pry isn't there
 
     bundle "console" do |input, _, _|
@@ -87,14 +87,14 @@ RSpec.describe "bundle console", :bundler => "< 2" do
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
       gem "activesupport", :group => :test
       gem "rack_middleware", :group => :development
       gem "foo"
     G
 
-    bundle "config auto_install 1"
+    bundle "config set auto_install 1"
     bundle :console do |input, _, _|
       input.puts("puts 'hello'")
       input.puts("exit")

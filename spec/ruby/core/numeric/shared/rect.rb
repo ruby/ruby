@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe :numeric_rect, shared: true do
   before :each do
@@ -42,7 +42,7 @@ describe :numeric_rect, shared: true do
 
   it "raises an ArgumentError if given any arguments" do
    @numbers.each do |number|
-     lambda { number.send(@method, number) }.should raise_error(ArgumentError)
+     -> { number.send(@method, number) }.should raise_error(ArgumentError)
    end
   end
 end

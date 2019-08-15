@@ -1360,6 +1360,7 @@ OSSL_ASN1_IMPL_FACTORY_METHOD(EndOfContent)
 void
 Init_ossl_asn1(void)
 {
+#undef rb_intern
     VALUE ary;
     int i;
 
@@ -1665,12 +1666,12 @@ Init_ossl_asn1(void)
      * == Primitive sub-classes and their mapping to Ruby classes
      * * OpenSSL::ASN1::EndOfContent    <=> _value_ is always +nil+
      * * OpenSSL::ASN1::Boolean         <=> _value_ is +true+ or +false+
-     * * OpenSSL::ASN1::Integer         <=> _value_ is an Integer
+     * * OpenSSL::ASN1::Integer         <=> _value_ is an OpenSSL::BN
      * * OpenSSL::ASN1::BitString       <=> _value_ is a String
      * * OpenSSL::ASN1::OctetString     <=> _value_ is a String
      * * OpenSSL::ASN1::Null            <=> _value_ is always +nil+
      * * OpenSSL::ASN1::Object          <=> _value_ is a String
-     * * OpenSSL::ASN1::Enumerated      <=> _value_ is an Integer
+     * * OpenSSL::ASN1::Enumerated      <=> _value_ is an OpenSSL::BN
      * * OpenSSL::ASN1::UTF8String      <=> _value_ is a String
      * * OpenSSL::ASN1::NumericString   <=> _value_ is a String
      * * OpenSSL::ASN1::PrintableString <=> _value_ is a String
@@ -1823,6 +1824,7 @@ do{\
     rb_define_method(cASN1EndOfContent, "to_der", ossl_asn1eoc_to_der, 0);
 
     class_tag_map = rb_hash_new();
+    rb_global_variable(&class_tag_map);
     rb_hash_aset(class_tag_map, cASN1EndOfContent, INT2NUM(V_ASN1_EOC));
     rb_hash_aset(class_tag_map, cASN1Boolean, INT2NUM(V_ASN1_BOOLEAN));
     rb_hash_aset(class_tag_map, cASN1Integer, INT2NUM(V_ASN1_INTEGER));
@@ -1846,7 +1848,6 @@ do{\
     rb_hash_aset(class_tag_map, cASN1GeneralString, INT2NUM(V_ASN1_GENERALSTRING));
     rb_hash_aset(class_tag_map, cASN1UniversalString, INT2NUM(V_ASN1_UNIVERSALSTRING));
     rb_hash_aset(class_tag_map, cASN1BMPString, INT2NUM(V_ASN1_BMPSTRING));
-    rb_global_variable(&class_tag_map);
 
     id_each = rb_intern_const("each");
 }

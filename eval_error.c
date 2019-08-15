@@ -3,6 +3,10 @@
  * included by eval.c
  */
 
+#define write_warn(str, x) \
+    (NIL_P(str) ? warn_print(x) : (void)rb_str_cat_cstr(str, x))
+#define write_warn2(str, x, l) \
+    (NIL_P(str) ? warn_print2(x, l) : (void)rb_str_cat(str, x, l))
 #ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
 #define warn_print(x) RB_GNUC_EXTENSION_BLOCK(	\
     (__builtin_constant_p(x)) ? 		\
@@ -12,17 +16,20 @@
 #else
 #define warn_print(x) rb_write_error(x)
 #endif
+
 #define warn_print2(x,l) rb_write_error2((x),(l))
+
+#define write_warn_str(str,x) NIL_P(str) ? rb_write_error_str(x) : (void)rb_str_concat((str), (x))
 #define warn_print_str(x) rb_write_error_str(x)
 
 static VALUE error_pos_str(void);
 
 static void
-error_pos(void)
+error_pos(const VALUE str)
 {
-    VALUE str = error_pos_str();
-    if (!NIL_P(str)) {
-	warn_print_str(str);
+    VALUE pos = error_pos_str();
+    if (!NIL_P(pos)) {
+	write_warn_str(str, pos);
     }
 }
 
@@ -73,11 +80,56 @@ error_print(rb_execution_context_t *ec)
 }
 
 static void
-print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, int colored)
+write_warnq(VALUE out, VALUE str, const char *ptr, long len)
 {
-    static const char underline[] = "\033[4;1m";
-    static const char bold[] = "\033[1m";
-    static const char reset[] = "\033[m";
+    if (NIL_P(out)) {
+        const char *beg = ptr;
+        const long olen = len;
+        for (; len > 0; --len, ++ptr) {
+            unsigned char c = *ptr;
+            switch (c) {
+              case '\n': case '\t': continue;
+            }
+            if (rb_iscntrl(c)) {
+                char buf[5];
+                const char *cc = 0;
+                if (ptr > beg) rb_write_error2(beg, ptr - beg);
+                beg = ptr + 1;
+                cc = ruby_escaped_char(c);
+                if (cc) {
+                    rb_write_error2(cc, strlen(cc));
+                }
+                else {
+                    rb_write_error2(buf, snprintf(buf, sizeof(buf), "\\x%02X", c));
+                }
+            }
+            else if (c == '\\') {
+                rb_write_error2(beg, ptr - beg + 1);
+                beg = ptr;
+            }
+        }
+        if (ptr > beg) {
+            if (beg == RSTRING_PTR(str) && olen == RSTRING_LEN(str))
+                rb_write_error_str(str);
+            else
+                rb_write_error2(beg, ptr - beg);
+        }
+    }
+    else {
+        rb_str_cat(out, ptr, len);
+    }
+}
+
+#define CSI_BEGIN "\033["
+#define CSI_SGR "m"
+
+static const char underline[] = CSI_BEGIN"1;4"CSI_SGR;
+static const char bold[] = CSI_BEGIN"1"CSI_SGR;
+static const char reset[] = CSI_BEGIN""CSI_SGR;
+
+static void
+print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VALUE str, int highlight)
+{
     const char *einfo = "";
     long elen = 0;
     VALUE mesg;
@@ -85,14 +137,12 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, int colo
     if (emesg != Qundef) {
 	if (NIL_P(errat) || RARRAY_LEN(errat) == 0 ||
 	    NIL_P(mesg = RARRAY_AREF(errat, 0))) {
-	    error_pos();
+	    error_pos(str);
 	}
 	else {
-	    warn_print_str(mesg);
-	    warn_print(": ");
+	    write_warn_str(str, mesg);
+	    write_warn(str, ": ");
 	}
-
-        if (colored) warn_print(bold);
 
 	if (!NIL_P(emesg)) {
 	    einfo = RSTRING_PTR(emesg);
@@ -101,55 +151,91 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, int colo
     }
 
     if (eclass == rb_eRuntimeError && elen == 0) {
-        if (colored) warn_print(underline);
-	warn_print("unhandled exception\n");
+	if (highlight) write_warn(str, underline);
+	write_warn(str, "unhandled exception");
+	if (highlight) write_warn(str, reset);
+	write_warn2(str, "\n", 1);
     }
     else {
 	VALUE epath;
 
 	epath = rb_class_name(eclass);
 	if (elen == 0) {
-            if (colored) warn_print(underline);
-	    warn_print_str(epath);
-	    warn_print("\n");
+	    if (highlight) write_warn(str, underline);
+	    write_warn_str(str, epath);
+	    if (highlight) write_warn(str, reset);
+	    write_warn(str, "\n");
 	}
 	else {
+            /* emesg is a String instance */
 	    const char *tail = 0;
-	    long len = elen;
 
+            if (highlight) write_warn(str, bold);
 	    if (RSTRING_PTR(epath)[0] == '#')
 		epath = 0;
 	    if ((tail = memchr(einfo, '\n', elen)) != 0) {
-		len = tail - einfo;
+                write_warnq(str, emesg, einfo, tail - einfo);
 		tail++;		/* skip newline */
 	    }
-	    warn_print_str(tail ? rb_str_subseq(emesg, 0, len) : emesg);
+	    else {
+                write_warnq(str, emesg, einfo, elen);
+	    }
 	    if (epath) {
-		warn_print(" (");
-                if (colored) warn_print(underline);
-                warn_print_str(epath);
-                if (colored) warn_print(reset);
-                if (colored) warn_print(bold);
-		warn_print(")\n");
+		write_warn(str, " (");
+		if (highlight) write_warn(str, underline);
+                write_warn_str(str, epath);
+		if (highlight) {
+		    write_warn(str, reset);
+		    write_warn(str, bold);
+		}
+		write_warn2(str, ")", 1);
+		if (highlight) write_warn(str, reset);
+		write_warn2(str, "\n", 1);
 	    }
-	    if (tail) {
-		warn_print_str(rb_str_subseq(emesg, tail - einfo, elen - len - 1));
+	    if (tail && einfo+elen > tail) {
+		if (!highlight) {
+                    write_warnq(str, emesg, tail, einfo+elen-tail);
+		    if (einfo[elen-1] != '\n') write_warn2(str, "\n", 1);
+		}
+		else {
+		    elen -= tail - einfo;
+		    einfo = tail;
+		    while (elen > 0) {
+			tail = memchr(einfo, '\n', elen);
+			if (!tail || tail > einfo) {
+			    write_warn(str, bold);
+                            write_warnq(str, emesg, einfo, tail ? tail-einfo : elen);
+			    write_warn(str, reset);
+			    if (!tail) {
+				write_warn2(str, "\n", 1);
+				break;
+			    }
+			}
+			elen -= tail - einfo;
+			einfo = tail;
+			do ++tail; while (tail < einfo+elen && *tail == '\n');
+                        write_warnq(str, emesg, einfo, tail-einfo);
+			elen -= tail - einfo;
+			einfo = tail;
+		    }
+		}
 	    }
-	    if (tail ? einfo[elen-1] != '\n' : !epath) warn_print2("\n", 1);
+	    else if (!epath) {
+		write_warn2(str, "\n", 1);
+	    }
 	}
     }
-    if (colored) warn_print(reset);
 }
 
 static void
-print_backtrace(const VALUE eclass, const VALUE errat, int reverse)
+print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reverse)
 {
     if (!NIL_P(errat)) {
 	long i;
 	long len = RARRAY_LEN(errat);
         int skip = eclass == rb_eSysStackError;
 	const int threshold = 1000000000;
-	int width = ((int)log10((double)(len > threshold ?
+        int width = (len <= 1) ? INT_MIN : ((int)log10((double)(len > threshold ?
 					 ((len - 1) / threshold) :
 					 len - 1)) +
 		     (len < threshold ? 0 : 9) + 1);
@@ -161,12 +247,12 @@ print_backtrace(const VALUE eclass, const VALUE errat, int reverse)
 	for (i = 1; i < len; i++) {
 	    VALUE line = RARRAY_AREF(errat, reverse ? len - i : i);
 	    if (RB_TYPE_P(line, T_STRING)) {
-		VALUE str = rb_str_new_cstr("\t");
-		if (reverse) rb_str_catf(str, "%*ld: ", width, len - i);
-		warn_print_str(rb_str_catf(str, "from %"PRIsVALUE"\n", line));
+		VALUE bt = rb_str_new_cstr("\t");
+		if (reverse) rb_str_catf(bt, "%*ld: ", width, len - i);
+		write_warn_str(str, rb_str_catf(bt, "from %"PRIsVALUE"\n", line));
 	    }
 	    if (skip && i == TRACE_HEAD && len > TRACE_MAX) {
-		warn_print_str(rb_sprintf("\t ... %ld levels...\n",
+		write_warn_str(str, rb_sprintf("\t ... %ld levels...\n",
 					  len - TRACE_HEAD - TRACE_TAIL));
 		i = len - TRACE_TAIL;
 	    }
@@ -174,12 +260,94 @@ print_backtrace(const VALUE eclass, const VALUE errat, int reverse)
     }
 }
 
+VALUE rb_get_message(VALUE exc);
+
+static int
+shown_cause_p(VALUE cause, VALUE *shown_causes)
+{
+    VALUE shown = *shown_causes;
+    if (!shown) {
+        *shown_causes = shown = rb_obj_hide(rb_ident_hash_new());
+    }
+    if (rb_hash_has_key(shown, cause)) return TRUE;
+    rb_hash_aset(shown, cause, Qtrue);
+    return FALSE;
+}
+
+static void
+show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse, VALUE *shown_causes)
+{
+    VALUE cause = rb_attr_get(errinfo, id_cause);
+    if (!NIL_P(cause) && rb_obj_is_kind_of(cause, rb_eException) &&
+        !shown_cause_p(cause, shown_causes)) {
+        volatile VALUE eclass = CLASS_OF(cause);
+        VALUE errat = rb_get_backtrace(cause);
+        VALUE emesg = rb_get_message(cause);
+        if (reverse) {
+            show_cause(cause, str, highlight, reverse, shown_causes);
+            print_backtrace(eclass, errat, str, TRUE);
+            print_errinfo(eclass, errat, emesg, str, highlight!=0);
+        }
+        else {
+            print_errinfo(eclass, errat, emesg, str, highlight!=0);
+            print_backtrace(eclass, errat, str, FALSE);
+            show_cause(cause, str, highlight, reverse, shown_causes);
+        }
+    }
+}
+
+void
+rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse)
+{
+    volatile VALUE eclass;
+    VALUE shown_causes = 0;
+
+    if (NIL_P(errinfo))
+	return;
+
+    if (errat == Qundef) {
+	errat = Qnil;
+    }
+    eclass = CLASS_OF(errinfo);
+    if (NIL_P(reverse) || NIL_P(highlight)) {
+	VALUE tty = (VALUE)rb_stderr_tty_p();
+	if (NIL_P(reverse)) reverse = tty;
+	if (NIL_P(highlight)) highlight = tty;
+    }
+    if (reverse) {
+	static const char traceback[] = "Traceback "
+	    "(most recent call last):\n";
+	const int bold_part = rb_strlen_lit("Traceback");
+	char buff[sizeof(traceback)+sizeof(bold)+sizeof(reset)-2], *p = buff;
+	const char *msg = traceback;
+	long len = sizeof(traceback) - 1;
+	if (highlight) {
+#define APPEND(s, l) (memcpy(p, s, l), p += (l))
+	    APPEND(bold, sizeof(bold)-1);
+	    APPEND(traceback, bold_part);
+	    APPEND(reset, sizeof(reset)-1);
+	    APPEND(traceback + bold_part, sizeof(traceback)-bold_part-1);
+#undef APPEND
+	    len = p - (msg = buff);
+	}
+	write_warn2(str, msg, len);
+        show_cause(errinfo, str, highlight, reverse, &shown_causes);
+	print_backtrace(eclass, errat, str, TRUE);
+	print_errinfo(eclass, errat, emesg, str, highlight!=0);
+    }
+    else {
+	print_errinfo(eclass, errat, emesg, str, highlight!=0);
+	print_backtrace(eclass, errat, str, FALSE);
+        show_cause(errinfo, str, highlight, reverse, &shown_causes);
+    }
+}
+
 void
 rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
 {
+    volatile uint8_t raised_flag = ec->raised_flag;
     volatile VALUE errat = Qundef;
-    volatile int raised_flag = ec->raised_flag;
-    volatile VALUE eclass = Qundef, emesg = Qundef;
+    volatile VALUE emesg = Qundef;
 
     if (NIL_P(errinfo))
 	return;
@@ -189,35 +357,19 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
     if (EC_EXEC_TAG() == TAG_NONE) {
 	errat = rb_get_backtrace(errinfo);
     }
-    else if (errat == Qundef) {
-	errat = Qnil;
+    if (emesg == Qundef) {
+	emesg = Qnil;
+	emesg = rb_get_message(errinfo);
     }
-    else if (eclass == Qundef || emesg != Qundef) {
-	goto error;
-    }
-    if ((eclass = CLASS_OF(errinfo)) != Qundef) {
-	VALUE e = rb_check_funcall(errinfo, rb_intern("message"), 0, 0);
-	if (e != Qundef) {
-	    if (!RB_TYPE_P(e, T_STRING)) e = rb_check_string_type(e);
-	    emesg = e;
-	}
-    }
-    if (rb_stderr_tty_p()) {
-	warn_print("\033[1mTraceback \033[m(most recent call last):\n");
-	print_backtrace(eclass, errat, TRUE);
-	print_errinfo(eclass, errat, emesg, TRUE);
-    }
-    else {
-	print_errinfo(eclass, errat, emesg, FALSE);
-	print_backtrace(eclass, errat, FALSE);
-    }
-  error:
+
+    rb_error_write(errinfo, emesg, errat, Qnil, Qnil, Qnil);
+
     EC_POP_TAG();
     ec->errinfo = errinfo;
     rb_ec_raised_set(ec, raised_flag);
 }
 
-#define undef_mesg_for(v, k) rb_fstring_cstr("undefined"v" method `%1$s' for "k" `%2$s'")
+#define undef_mesg_for(v, k) rb_fstring_lit("undefined"v" method `%1$s' for "k" `%2$s'")
 #define undef_mesg(v) ( \
 	is_mod ? \
 	undef_mesg_for(v, "module") : \
@@ -245,7 +397,7 @@ rb_print_undef_str(VALUE klass, VALUE name)
     rb_name_err_raise_str(undef_mesg(""), klass, name);
 }
 
-#define inaccessible_mesg_for(v, k) rb_fstring_cstr("method `%1$s' for "k" `%2$s' is "v)
+#define inaccessible_mesg_for(v, k) rb_fstring_lit("method `%1$s' for "k" `%2$s' is "v)
 #define inaccessible_mesg(v) ( \
 	is_mod ? \
 	inaccessible_mesg_for(v, "module") : \
@@ -277,10 +429,9 @@ sysexit_status(VALUE err)
     rb_bug("Unknown longjmp status %d", status)
 
 static int
-error_handle(int ex)
+error_handle(rb_execution_context_t *ec, int ex)
 {
     int status = EXIT_FAILURE;
-    rb_execution_context_t *ec = GET_EC();
 
     if (rb_ec_set_raised(ec))
 	return EXIT_FAILURE;
@@ -290,28 +441,28 @@ error_handle(int ex)
 	break;
 
       case TAG_RETURN:
-	error_pos();
+	error_pos(Qnil);
 	warn_print("unexpected return\n");
 	break;
       case TAG_NEXT:
-	error_pos();
+	error_pos(Qnil);
 	warn_print("unexpected next\n");
 	break;
       case TAG_BREAK:
-	error_pos();
+	error_pos(Qnil);
 	warn_print("unexpected break\n");
 	break;
       case TAG_REDO:
-	error_pos();
+	error_pos(Qnil);
 	warn_print("unexpected redo\n");
 	break;
       case TAG_RETRY:
-	error_pos();
+	error_pos(Qnil);
 	warn_print("retry outside of rescue clause\n");
 	break;
       case TAG_THROW:
 	/* TODO: fix me */
-	error_pos();
+	error_pos(Qnil);
 	warn_print("unexpected throw\n");
 	break;
       case TAG_RAISE: {

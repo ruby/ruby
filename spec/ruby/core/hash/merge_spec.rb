@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/iteration', __FILE__)
-require File.expand_path('../shared/update', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/iteration'
+require_relative 'shared/update'
 
 describe "Hash#merge" do
   it "returns a new hash by combining self with the contents of other" do
@@ -28,7 +28,7 @@ describe "Hash#merge" do
     r = h1.merge(h2) { |k,x,y| "#{k}:#{x+2*y}" }
     r.should == { a: "a:-2", b: "b:9", c: -3, d: 5 }
 
-    lambda {
+    -> {
       h1.merge(h2) { |k, x, y| raise(IndexError) }
     }.should raise_error(IndexError)
 
@@ -63,15 +63,40 @@ describe "Hash#merge" do
     merge_pairs.should == each_pairs
   end
 
+  it "preserves the order of merged elements" do
+    h1 = { 1 => 2, 3 => 4, 5 => 6 }
+    h2 = { 1 => 7 }
+    merge_pairs = []
+    h1.merge(h2).each_pair { |k, v| merge_pairs << [k, v] }
+    merge_pairs.should == [[1,7], [3, 4], [5, 6]]
+  end
+
+  it "preserves the order of merged elements for large hashes" do
+    h1 = {}
+    h2 = {}
+    merge_pairs = []
+    expected_pairs = []
+    (1..100).each { |x| h1[x] = x; h2[101 - x] = x; expected_pairs << [x, 101 - x] }
+    h1.merge(h2).each_pair { |k, v| merge_pairs << [k, v] }
+    merge_pairs.should == expected_pairs
+  end
+
+  ruby_version_is "2.6" do
+    it "accepts multiple hashes" do
+      result = { a: 1 }.merge({ b: 2 }, { c: 3 }, { d: 4 })
+      result.should == { a: 1, b: 2, c: 3, d: 4 }
+    end
+
+    it "accepts zero arguments and returns a copy of self" do
+      hash = { a: 1 }
+      merged = hash.merge
+
+      merged.should eql(hash)
+      merged.should_not equal(hash)
+    end
+  end
 end
 
 describe "Hash#merge!" do
-  it_behaves_like(:hash_update, :merge!)
-
-  it "does not raise an exception if changing the value of an existing key during iteration" do
-      hash = {1 => 2, 3 => 4, 5 => 6}
-      hash2 = {1 => :foo, 3 => :bar}
-      hash.each { hash.merge!(hash2) }
-      hash.should == {1 => :foo, 3 => :bar, 5 => 6}
-  end
+  it_behaves_like :hash_update, :merge!
 end

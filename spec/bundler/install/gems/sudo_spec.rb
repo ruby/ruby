@@ -3,16 +3,23 @@
 RSpec.describe "when using sudo", :sudo => true do
   describe "and BUNDLE_PATH is writable" do
     context "but BUNDLE_PATH/build_info is not writable" do
+      let(:subdir) do
+        system_gem_path("cache")
+      end
+
       before do
-        bundle! "config path.system true"
-        subdir = system_gem_path("cache")
+        bundle! "config set path.system true"
         subdir.mkpath
         sudo "chmod u-w #{subdir}"
       end
 
+      after do
+        sudo "chmod u+w #{subdir}"
+      end
+
       it "installs" do
         install_gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         G
 
@@ -25,13 +32,13 @@ RSpec.describe "when using sudo", :sudo => true do
 
   describe "and GEM_HOME is owned by root" do
     before :each do
-      bundle! "config path.system true"
+      bundle! "config set path.system true"
       chown_system_gems_to_root
     end
 
     it "installs" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", '1.0'
         gem "thin"
       G
@@ -43,7 +50,7 @@ RSpec.describe "when using sudo", :sudo => true do
 
     it "installs rake and a gem dependent on rake in the same session" do
       gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rake"
           gem "another_implicit_rake_dep"
       G
@@ -58,12 +65,12 @@ RSpec.describe "when using sudo", :sudo => true do
 
       ENV["BUNDLE_PATH"] = bundle_path.to_s
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", '1.0'
       G
 
-      expect(bundle_path.join("gems/rack-1.0.0")).to exist
-      expect(bundle_path.join("gems/rack-1.0.0").stat.uid).to eq(0)
+      expect(bundle_path.join(Bundler.ruby_scope, "gems/rack-1.0.0")).to exist
+      expect(bundle_path.join(Bundler.ruby_scope, "gems/rack-1.0.0").stat.uid).to eq(0)
       expect(the_bundle).to include_gems "rack 1.0"
     end
 
@@ -75,18 +82,18 @@ RSpec.describe "when using sudo", :sudo => true do
 
       ENV["BUNDLE_PATH"] = bundle_path.to_s
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", '1.0'
       G
 
-      expect(bundle_path.join("gems/rack-1.0.0")).to exist
-      expect(bundle_path.join("gems/rack-1.0.0").stat.uid).to eq(0)
+      expect(bundle_path.join(Bundler.ruby_scope, "gems/rack-1.0.0")).to exist
+      expect(bundle_path.join(Bundler.ruby_scope, "gems/rack-1.0.0").stat.uid).to eq(0)
       expect(the_bundle).to include_gems "rack 1.0"
     end
 
-    it "installs extensions/ compiled by RubyGems 2.2", :rubygems => "2.2" do
+    it "installs extensions/" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "very_simple_binary"
       G
 
@@ -101,9 +108,13 @@ RSpec.describe "when using sudo", :sudo => true do
       sudo "chmod ugo-w #{default_bundle_path}"
     end
 
+    after do
+      sudo "chmod ugo+w #{default_bundle_path}"
+    end
+
     it "installs" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", '1.0'
       G
 
@@ -118,7 +129,7 @@ RSpec.describe "when using sudo", :sudo => true do
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
       tmpdirs = Dir.glob("#{Dir.tmpdir}/bundler*")
@@ -129,19 +140,21 @@ RSpec.describe "when using sudo", :sudo => true do
 
   describe "and GEM_HOME is not writable" do
     it "installs" do
-      bundle! "config path.system true"
+      bundle! "config set path.system true"
       gem_home = tmp("sudo_gem_home")
       sudo "mkdir -p #{gem_home}"
       sudo "chmod ugo-w #{gem_home}"
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", '1.0'
       G
 
       bundle :install, :env => { "GEM_HOME" => gem_home.to_s, "GEM_PATH" => nil }
       expect(gem_home.join("bin/rackup")).to exist
       expect(the_bundle).to include_gems "rack 1.0", :env => { "GEM_HOME" => gem_home.to_s, "GEM_PATH" => nil }
+
+      sudo "rm -rf #{tmp("sudo_gem_home")}"
     end
   end
 
@@ -149,25 +162,25 @@ RSpec.describe "when using sudo", :sudo => true do
     let(:warning) { "Don't run Bundler as root." }
 
     before do
-      gemfile %(source "file://#{gem_repo1}")
+      gemfile %(source "#{file_uri_for(gem_repo1)}")
     end
 
     it "warns against that" do
       bundle :install, :sudo => true
-      expect(out).to include(warning)
+      expect(err).to include(warning)
     end
 
     context "when ENV['BUNDLE_SILENCE_ROOT_WARNING'] is set" do
       it "skips the warning" do
         bundle :install, :sudo => :preserve_env, :env => { "BUNDLE_SILENCE_ROOT_WARNING" => true }
-        expect(out).to_not include(warning)
+        expect(err).to_not include(warning)
       end
     end
 
     context "when silence_root_warning = false" do
       it "warns against that" do
         bundle :install, :sudo => true, :env => { "BUNDLE_SILENCE_ROOT_WARNING" => "false" }
-        expect(out).to include(warning)
+        expect(err).to include(warning)
       end
     end
   end

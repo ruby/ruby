@@ -45,6 +45,7 @@ class Prelude
     lines = []
     result = [@preludes.size, @vpath.strip(filename), lines, sub]
     @vpath.foreach(filename) do |line|
+      line.force_encoding("ASCII-8BIT") if line.respond_to?(:force_encoding)
       @preludes[filename] ||= result
       comment = ($1 || '' if line.sub!(/(?:^|\s+)\#(?:$|[#\s](.*))/, ''))
       if line.size > LINE_LIMIT
@@ -85,7 +86,8 @@ Prelude.new(output && output[/\w+(?=_prelude.c\b)/] || 'prelude', ARGV, vpath).i
 % preludes = @preludes.values.sort
 % preludes.each {|i, prelude, lines, sub|
 
-static const char prelude_name<%=i%><%=%>[] = "<%=c_esc(prelude_name(*prelude))%>";
+%   name = prelude_name(*prelude)
+static const char prelude_name<%=i%><%=%>[] = "<%=c_esc(name)%>";
 static const struct {
 %   size = beg = 0
 %   lines.each_with_index {|(line, comment), n|
@@ -135,31 +137,39 @@ prelude_prefix_path(VALUE self)
 % end
 
 % unless preludes.empty?
+#define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
+#define PRELUDE_CODE(n) rb_utf8_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(4, 2, 0)
+COMPILER_WARNING_ERROR(-Wmissing-field-initializers)
+#endif
 static void
 prelude_eval(VALUE code, VALUE name, int line)
 {
     static const rb_compile_option_t optimization = {
 	TRUE, /* int inline_const_cache; */
 	TRUE, /* int peephole_optimization; */
-	TRUE, /* int tailcall_optimization; */
+	FALSE,/* int tailcall_optimization; */
 	TRUE, /* int specialized_instruction; */
 	TRUE, /* int operands_unification; */
 	TRUE, /* int instructions_unification; */
 	TRUE, /* int stack_caching; */
-	FALSE, /* int trace_instruction; */
 	TRUE, /* int frozen_string_literal; */
 	FALSE, /* int debug_frozen_string_literal; */
+	FALSE, /* unsigned int coverage_enabled; */
+	0, /* int debug_level; */
     };
 
     rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
-    if (!ast->root) {
+    if (!ast->body.root) {
 	rb_ast_dispose(ast);
 	rb_exc_raise(rb_errinfo());
     }
-    rb_iseq_eval(rb_iseq_new_with_opt(ast->root, name, name, Qnil, INT2FIX(line),
+    rb_iseq_eval(rb_iseq_new_with_opt(&ast->body, name, name, Qnil, INT2FIX(line),
 				      NULL, ISEQ_TYPE_TOP, &optimization));
     rb_ast_dispose(ast);
 }
+COMPILER_WARNING_POP
 % end
 
 % if @have_sublib
@@ -177,8 +187,8 @@ prelude_require(VALUE self, VALUE nth)
 %   @preludes.each_value do |i, prelude, lines, sub|
 %     if sub
       case <%=i%><%=%>:
-	code = rb_usascii_str_new(prelude_code<%=i%><%=%>.L0, sizeof(prelude_code<%=i%><%=%>));
-	name = rb_usascii_str_new(prelude_name<%=i%><%=%>, sizeof(prelude_name<%=i%><%=%>) - 1);
+	code = PRELUDE_CODE(<%=i%><%=%>);
+	name = PRELUDE_NAME(<%=i%><%=%>);
 	break;
 %     end
 %   end
@@ -210,10 +220,7 @@ Init_<%=@init_name%><%=%>(void)
 % end
 % preludes.each do |i, prelude, lines, sub|
 %   next if sub
-    prelude_eval(
-      rb_usascii_str_new(prelude_code<%=i%><%=%>.L0, sizeof(prelude_code<%=i%><%=%>)),
-      rb_usascii_str_new(prelude_name<%=i%><%=%>, sizeof(prelude_name<%=i%><%=%>) - 1),
-      INT2FIX(1));
+    prelude_eval(PRELUDE_CODE(<%=i%><%=%>), PRELUDE_NAME(<%=i%><%=%>), 1);
 % end
 % if @have_sublib
     rb_gc_force_recycle(prelude);

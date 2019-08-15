@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocMarkupPreProcess < RDoc::TestCase
 
@@ -29,7 +29,8 @@ class TestRDocMarkupPreProcess < RDoc::TestCase
   def test_class_post_process
     RDoc::Markup::PreProcess.post_process do end
 
-    assert_equal 1, RDoc::Markup::PreProcess.post_processors.length
+    assert_equal 1, RDoc::Markup::PreProcess.post_processors.length,
+                 proc{RDoc::Markup::PreProcess.post_processors.inspect}
   end
 
   def test_include_file
@@ -72,7 +73,7 @@ contents of a string.
 
   def test_include_file_in_other_directory
     content = nil
-    out, err = capture_io do
+    out, err = capture_output do
       content = @pp.include_file "test.txt", '', nil
     end
 

@@ -40,7 +40,7 @@ module Spec
 
         build_gem "rails", "2.3.2" do |s|
           s.executables = "rails"
-          s.add_dependency "rake",           "10.0.2"
+          s.add_dependency "rake",           "12.3.2"
           s.add_dependency "actionpack",     "2.3.2"
           s.add_dependency "activerecord",   "2.3.2"
           s.add_dependency "actionmailer",   "2.3.2"
@@ -98,6 +98,14 @@ module Spec
         build_gem "platform_specific" do |s|
           s.platform = "x86-mswin32"
           s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 MSWIN'"
+        end
+
+        build_gem "platform_specific" do |s|
+          s.platform = "x86-mingw32"
+        end
+
+        build_gem "platform_specific" do |s|
+          s.platform = "x64-mingw32"
         end
 
         build_gem "platform_specific" do |s|
@@ -182,6 +190,7 @@ module Spec
         end
 
         build_gem "very_simple_binary", &:add_c_extension
+        build_gem "simple_binary", &:add_c_extension
 
         build_gem "bundler", "0.9" do |s|
           s.executables = "bundle"
@@ -201,12 +210,7 @@ module Spec
         # The yard gem iterates over Gem.source_index looking for plugins
         build_gem "yard" do |s|
           s.write "lib/yard.rb", <<-Y
-            if Gem::Version.new(Gem::VERSION) >= Gem::Version.new("1.8.10")
-              specs = Gem::Specification
-            else
-              specs = Gem.source_index.find_name('')
-            end
-            specs.sort_by(&:name).each do |gem|
+            Gem::Specification.sort_by(&:name).each do |gem|
               puts gem.full_name
             end
           Y
@@ -391,7 +395,7 @@ module Spec
       index
     end
 
-    def build_spec(name, version, platform = nil, &block)
+    def build_spec(name, version = "0.0.1", platform = nil, &block)
       Array(version).map do |v|
         Gem::Specification.new do |s|
           s.name     = name
@@ -592,7 +596,7 @@ module Spec
           @spec.rubygems_version = options[:rubygems_version]
           def @spec.mark_version; end
 
-          def @spec.validate; end
+          def @spec.validate(*); end
         end
 
         case options[:gemspec]
@@ -644,7 +648,8 @@ module Spec
           `git add *`
           `git config user.email "lol@wut.com"`
           `git config user.name "lolwut"`
-          `git commit -m 'OMG INITIAL COMMIT'`
+          `git config commit.gpgsign false`
+          `git commit -m "OMG INITIAL COMMIT"`
         end
       end
     end
@@ -684,7 +689,7 @@ module Spec
           elsif tag = options[:tag]
             `git tag #{Shellwords.shellescape(tag)}`
           elsif options[:remote]
-            silently("git remote add origin file://#{options[:remote]}")
+            silently("git remote add origin #{options[:remote]}")
           elsif options[:push]
             silently("git push origin #{options[:push]}")
           end

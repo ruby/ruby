@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/constants', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/constants'
 
 describe "Module#const_set" do
   it "sets the constant specified by a String or Symbol to the given value" do
@@ -41,20 +41,20 @@ describe "Module#const_set" do
   end
 
   it "raises a NameError if the name does not start with a capital letter" do
-    lambda { ConstantSpecs.const_set "name", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "name", 1 }.should raise_error(NameError)
   end
 
   it "raises a NameError if the name starts with a non-alphabetic character" do
-    lambda { ConstantSpecs.const_set "__CONSTX__", 1 }.should raise_error(NameError)
-    lambda { ConstantSpecs.const_set "@Name", 1 }.should raise_error(NameError)
-    lambda { ConstantSpecs.const_set "!Name", 1 }.should raise_error(NameError)
-    lambda { ConstantSpecs.const_set "::Name", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "__CONSTX__", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "@Name", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "!Name", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "::Name", 1 }.should raise_error(NameError)
   end
 
   it "raises a NameError if the name contains non-alphabetic characters except '_'" do
     ConstantSpecs.const_set("CS_CONST404", :const404).should == :const404
-    lambda { ConstantSpecs.const_set "Name=", 1 }.should raise_error(NameError)
-    lambda { ConstantSpecs.const_set "Name?", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "Name=", 1 }.should raise_error(NameError)
+    -> { ConstantSpecs.const_set "Name?", 1 }.should raise_error(NameError)
   end
 
   it "calls #to_str to convert the given name to a String" do
@@ -66,10 +66,57 @@ describe "Module#const_set" do
 
   it "raises a TypeError if conversion to a String by calling #to_str fails" do
     name = mock('123')
-    lambda { ConstantSpecs.const_set name, 1 }.should raise_error(TypeError)
+    -> { ConstantSpecs.const_set name, 1 }.should raise_error(TypeError)
 
     name.should_receive(:to_str).and_return(123)
-    lambda { ConstantSpecs.const_set name, 1 }.should raise_error(TypeError)
+    -> { ConstantSpecs.const_set name, 1 }.should raise_error(TypeError)
+  end
+
+  describe "when overwriting an existing constant" do
+    it "warns if the previous value was a normal value" do
+      mod = Module.new
+      mod.const_set :Foo, 42
+      -> {
+        mod.const_set :Foo, 1
+      }.should complain(/already initialized constant/)
+      mod.const_get(:Foo).should == 1
+    end
+
+    it "does not warn if the previous value was an autoload" do
+      mod = Module.new
+      mod.autoload :Foo, "not-existing"
+      -> {
+        mod.const_set :Foo, 1
+      }.should_not complain
+      mod.const_get(:Foo).should == 1
+    end
+
+    it "does not warn if the previous value was undefined" do
+      path = fixture(__FILE__, "autoload_o.rb")
+      ScratchPad.record []
+      mod = Module.new
+
+      mod.autoload :Foo, path
+      -> { mod::Foo }.should raise_error(NameError)
+
+      mod.should have_constant(:Foo)
+      mod.const_defined?(:Foo).should == false
+      mod.autoload?(:Foo).should == nil
+
+      -> {
+        mod.const_set :Foo, 1
+      }.should_not complain
+      mod.const_get(:Foo).should == 1
+    end
+
+    it "does not warn if the new value is an autoload" do
+      mod = Module.new
+      mod.const_set :Foo, 42
+      -> {
+        mod.autoload :Foo, "not-existing"
+      }.should_not complain
+      mod.const_get(:Foo).should == 42
+    end
   end
 
   describe "on a frozen module" do
@@ -78,8 +125,8 @@ describe "Module#const_set" do
       @name = :Foo
     end
 
-    it "raises a RuntimeError before setting the name" do
-      lambda { @frozen.const_set @name, nil }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} before setting the name" do
+      -> { @frozen.const_set @name, nil }.should raise_error(frozen_error_class)
       @frozen.should_not have_constant(@name)
     end
   end

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/file/sticky', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../shared/file/sticky'
 
 describe "File.sticky?" do
   it_behaves_like :file_sticky, :sticky?, File
@@ -35,7 +35,7 @@ describe "File.sticky?" do
   end
 
   platform_is :bsd do
-    # FreeBSD and NetBSD can't set stiky bit to a normal file
+    # FreeBSD and NetBSD can't set sticky bit to a normal file
     it "cannot set sticky bit to a normal file" do
       filename = tmp("i_exist")
       touch(filename)

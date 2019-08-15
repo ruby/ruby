@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :io_codepoints, shared: true do
   before :each do
@@ -39,7 +39,7 @@ describe :io_codepoints, shared: true do
 
   it "raises an error if reading invalid sequence" do
     @io.pos = 60  # inside of a multibyte sequence
-    lambda { @enum.first }.should raise_error(ArgumentError)
+    -> { @enum.first }.should raise_error(ArgumentError)
   end
 
   it "does not change $_" do
@@ -49,6 +49,6 @@ describe :io_codepoints, shared: true do
   end
 
   it "raises an IOError when self is not readable" do
-    lambda { IOSpecs.closed_io.send(@method).to_a }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.send(@method).to_a }.should raise_error(IOError)
   end
 end

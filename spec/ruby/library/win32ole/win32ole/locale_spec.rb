@@ -1,7 +1,5 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
-
 platform_is :windows do
-  require 'win32ole'
+  require_relative '../fixtures/classes'
 
   describe "WIN32OLE.locale" do
     it "gets locale" do
@@ -21,7 +19,7 @@ platform_is :windows do
 
         WIN32OLE.locale.should == 1041
         WIN32OLE.locale = WIN32OLE::LOCALE_SYSTEM_DEFAULT
-        lambda { WIN32OLE.locale = 111 }.should raise_error WIN32OLERuntimeError
+        -> { WIN32OLE.locale = 111 }.should raise_error WIN32OLERuntimeError
         WIN32OLE.locale.should == WIN32OLE::LOCALE_SYSTEM_DEFAULT
       ensure
         WIN32OLE.locale.should == WIN32OLE::LOCALE_SYSTEM_DEFAULT

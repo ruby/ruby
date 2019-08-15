@@ -34,6 +34,15 @@ extern "C" {
 
 #include "ruby/st.h"
 
+/* On mswin, MJIT header transformation can't be used since cl.exe can't output
+   preprocessed output preserving macros. So this `MJIT_STATIC` is needed
+   to force non-static function to static on MJIT header to avoid symbol conflict. */
+#ifdef MJIT_HEADER
+# define MJIT_STATIC static
+#else
+# define MJIT_STATIC
+#endif
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /*
@@ -179,7 +188,24 @@ VALUE rb_complex_raw(VALUE, VALUE);
 VALUE rb_complex_new(VALUE, VALUE);
 #define rb_complex_new1(x) rb_complex_new((x), INT2FIX(0))
 #define rb_complex_new2(x,y) rb_complex_new((x), (y))
-VALUE rb_complex_polar(VALUE, VALUE);
+VALUE rb_complex_new_polar(VALUE abs, VALUE arg);
+DEPRECATED_BY(rb_complex_new_polar, VALUE rb_complex_polar(VALUE abs, VALUE arg));
+VALUE rb_complex_real(VALUE z);
+VALUE rb_complex_imag(VALUE z);
+VALUE rb_complex_plus(VALUE x, VALUE y);
+VALUE rb_complex_minus(VALUE x, VALUE y);
+VALUE rb_complex_mul(VALUE x, VALUE y);
+VALUE rb_complex_div(VALUE x, VALUE y);
+VALUE rb_complex_uminus(VALUE z);
+VALUE rb_complex_conjugate(VALUE z);
+VALUE rb_complex_abs(VALUE z);
+VALUE rb_complex_arg(VALUE z);
+VALUE rb_complex_pow(VALUE base, VALUE exp);
+VALUE rb_dbl_complex_new(double real, double imag);
+#define rb_complex_add rb_complex_plus
+#define rb_complex_sub rb_complex_minus
+#define rb_complex_nagate rb_complex_uminus
+
 VALUE rb_Complex(VALUE, VALUE);
 #define rb_Complex1(x) rb_Complex((x), INT2FIX(0))
 #define rb_Complex2(x,y) rb_Complex((x), (y))
@@ -203,7 +229,6 @@ VALUE rb_class_protected_instance_methods(int, const VALUE*, VALUE);
 VALUE rb_class_private_instance_methods(int, const VALUE*, VALUE);
 VALUE rb_obj_singleton_methods(int, const VALUE*, VALUE);
 void rb_define_method_id(VALUE, ID, VALUE (*)(ANYARGS), int);
-void rb_frozen_class_p(VALUE);
 void rb_undef(VALUE, ID);
 void rb_define_protected_method(VALUE, const char*, VALUE (*)(ANYARGS), int);
 void rb_define_private_method(VALUE, const char*, VALUE (*)(ANYARGS), int);
@@ -236,6 +261,13 @@ VALUE rb_enumeratorize_with_size(VALUE, VALUE, int, const VALUE *, rb_enumerator
 	    return SIZED_ENUMERATOR(obj, argc, argv, size_fn);		\
     } while (0)
 #define RETURN_ENUMERATOR(obj, argc, argv) RETURN_SIZED_ENUMERATOR(obj, argc, argv, 0)
+typedef struct {
+    VALUE begin;
+    VALUE end;
+    VALUE step;
+    int exclude_end;
+} rb_arithmetic_sequence_components_t;
+int rb_arithmetic_sequence_extract(VALUE, rb_arithmetic_sequence_components_t *);
 /* error.c */
 VALUE rb_exc_new(VALUE, const char*, long);
 VALUE rb_exc_new_cstr(VALUE, const char*);
@@ -246,15 +278,16 @@ PRINTF_ARGS(NORETURN(void rb_loaderror(const char*, ...)), 1, 2);
 PRINTF_ARGS(NORETURN(void rb_loaderror_with_path(VALUE path, const char*, ...)), 2, 3);
 PRINTF_ARGS(NORETURN(void rb_name_error(ID, const char*, ...)), 2, 3);
 PRINTF_ARGS(NORETURN(void rb_name_error_str(VALUE, const char*, ...)), 2, 3);
+PRINTF_ARGS(NORETURN(void rb_frozen_error_raise(VALUE, const char*, ...)), 2, 3);
 NORETURN(void rb_invalid_str(const char*, const char*));
 NORETURN(void rb_error_frozen(const char*));
 NORETURN(void rb_error_frozen_object(VALUE));
-CONSTFUNC(void rb_error_untrusted(VALUE));
+void rb_error_untrusted(VALUE);
 void rb_check_frozen(VALUE);
-CONSTFUNC(void rb_check_trusted(VALUE));
+void rb_check_trusted(VALUE);
 #define rb_check_frozen_internal(obj) do { \
 	VALUE frozen_obj = (obj); \
-	if (OBJ_FROZEN(frozen_obj)) { \
+	if (RB_UNLIKELY(RB_OBJ_FROZEN(frozen_obj))) { \
 	    rb_error_frozen_object(frozen_obj); \
 	} \
     } while (0)
@@ -287,7 +320,7 @@ int rb_sourceline(void);
 const char *rb_sourcefile(void);
 VALUE rb_check_funcall(VALUE, ID, int, const VALUE*);
 
-NORETURN(void rb_error_arity(int, int, int));
+NORETURN(MJIT_STATIC void rb_error_arity(int, int, int));
 static inline int
 rb_check_arity(int argc, int min, int max)
 {
@@ -335,7 +368,15 @@ void rb_fd_set(int, rb_fdset_t *);
 void rb_w32_fd_copy(rb_fdset_t *, const fd_set *, int);
 #define rb_fd_dup(d, s)	rb_w32_fd_dup((d), (s))
 void rb_w32_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src);
-#define rb_fd_select(n, rfds, wfds, efds, timeout)	rb_w32_select((n), (rfds) ? ((rb_fdset_t*)(rfds))->fdset : NULL, (wfds) ? ((rb_fdset_t*)(wfds))->fdset : NULL, (efds) ? ((rb_fdset_t*)(efds))->fdset: NULL, (timeout))
+static inline int
+rb_fd_select(int n, rb_fdset_t *rfds, rb_fdset_t *wfds, rb_fdset_t *efds, struct timeval *timeout)
+{
+    return rb_w32_select(n,
+                         rfds ? rfds->fdset : NULL,
+                         wfds ? wfds->fdset : NULL,
+                         efds ? efds->fdset : NULL,
+                         timeout);
+}
 #define rb_fd_resize(n, f)	((void)(f))
 
 #define rb_fd_ptr(f)	((f)->fdset)
@@ -420,7 +461,6 @@ int rb_mod_method_arity(VALUE, ID);
 int rb_obj_method_arity(VALUE, ID);
 VALUE rb_protect(VALUE (*)(VALUE), VALUE, int*);
 void rb_set_end_proc(void (*)(VALUE), VALUE);
-void rb_exec_end_proc(void);
 void rb_thread_schedule(void);
 void rb_thread_wait_fd(int);
 int rb_thread_fd_writable(int);
@@ -463,19 +503,22 @@ VALUE rb_file_directory_p(VALUE,VALUE);
 VALUE rb_str_encode_ospath(VALUE);
 int rb_is_absolute_path(const char *);
 /* gc.c */
-NORETURN(void rb_memerror(void));
+COLDFUNC NORETURN(void rb_memerror(void));
 PUREFUNC(int rb_during_gc(void));
 void rb_gc_mark_locations(const VALUE*, const VALUE*);
 void rb_mark_tbl(struct st_table*);
+void rb_mark_tbl_no_pin(struct st_table*);
+void rb_gc_update_tbl_refs(st_table *ptr);
 void rb_mark_set(struct st_table*);
 void rb_mark_hash(struct st_table*);
+void rb_update_st_references(struct st_table *ht);
 void rb_gc_mark_maybe(VALUE);
 void rb_gc_mark(VALUE);
+void rb_gc_mark_movable(VALUE);
+VALUE rb_gc_location(VALUE);
 void rb_gc_force_recycle(VALUE);
 void rb_gc(void);
 void rb_gc_copy_finalizer(VALUE,VALUE);
-void rb_gc_finalize_deferred(void);
-void rb_gc_call_finalizer_at_exit(void);
 VALUE rb_gc_enable(void);
 VALUE rb_gc_disable(void);
 VALUE rb_gc_start(void);
@@ -502,13 +545,15 @@ VALUE rb_hash_clear(VALUE);
 VALUE rb_hash_delete_if(VALUE);
 VALUE rb_hash_delete(VALUE,VALUE);
 VALUE rb_hash_set_ifnone(VALUE hash, VALUE ifnone);
+void rb_hash_bulk_insert(long, const VALUE *, VALUE);
 typedef VALUE rb_hash_update_func(VALUE newkey, VALUE oldkey, VALUE value);
 VALUE rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func);
-struct st_table *rb_hash_tbl(VALUE);
+struct st_table *rb_hash_tbl(VALUE, const char *file, int line);
 int rb_path_check(const char*);
 int rb_env_path_tainted(void);
 VALUE rb_env_clear(void);
 VALUE rb_hash_size(VALUE);
+void rb_hash_free(VALUE);
 /* io.c */
 #define rb_defout rb_stdout
 RUBY_EXTERN VALUE rb_fs;
@@ -581,6 +626,7 @@ VALUE rb_obj_trust(VALUE);
 VALUE rb_obj_freeze(VALUE);
 PUREFUNC(VALUE rb_obj_frozen_p(VALUE));
 VALUE rb_obj_id(VALUE);
+VALUE rb_memory_id(VALUE);
 VALUE rb_obj_class(VALUE);
 PUREFUNC(VALUE rb_class_real(VALUE));
 PUREFUNC(VALUE rb_class_inherited_p(VALUE, VALUE));
@@ -671,8 +717,6 @@ VALUE rb_f_kill(int, const VALUE*);
 #define posix_signal ruby_posix_signal
 RETSIGTYPE (*posix_signal(int, RETSIGTYPE (*)(int)))(int);
 #endif
-void rb_trap_exit(void);
-void rb_trap_exec(void);
 const char *ruby_signal_name(int);
 void ruby_default_signal(int);
 /* sprintf.c */
@@ -892,6 +936,7 @@ VALUE rb_time_num_new(VALUE, VALUE);
 struct timeval rb_time_interval(VALUE num);
 struct timeval rb_time_timeval(VALUE time);
 struct timespec rb_time_timespec(VALUE time);
+VALUE rb_time_utc_offset(VALUE time);
 /* variable.c */
 VALUE rb_mod_name(VALUE);
 VALUE rb_class_path(VALUE);
@@ -900,7 +945,6 @@ void rb_set_class_path(VALUE, VALUE, const char*);
 void rb_set_class_path_string(VALUE, VALUE, VALUE);
 VALUE rb_path_to_class(VALUE);
 VALUE rb_path2class(const char*);
-void rb_name_class(VALUE, ID);
 VALUE rb_class_name(VALUE);
 VALUE rb_autoload_load(VALUE, ID);
 VALUE rb_autoload_p(VALUE, ID);
@@ -931,7 +975,9 @@ VALUE rb_const_get_at(VALUE, ID);
 VALUE rb_const_get_from(VALUE, ID);
 void rb_const_set(VALUE, ID, VALUE);
 VALUE rb_const_remove(VALUE, ID);
+#if 0 /* EXPERIMENTAL: remove if no problem */
 NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
+#endif
 VALUE rb_cvar_defined(VALUE, ID);
 void rb_cvar_set(VALUE, ID, VALUE);
 VALUE rb_cvar_get(VALUE, ID);
@@ -942,6 +988,7 @@ VALUE rb_mod_class_variables(int, const VALUE*, VALUE);
 VALUE rb_mod_remove_cvar(VALUE, VALUE);
 
 ID rb_frame_callee(void);
+int rb_frame_method_id_and_class(ID *idp, VALUE *klassp);
 VALUE rb_str_succ(VALUE);
 VALUE rb_time_succ(VALUE);
 VALUE rb_make_backtrace(void);

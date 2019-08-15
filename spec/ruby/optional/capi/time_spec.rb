@@ -1,4 +1,4 @@
-require File.expand_path('../spec_helper', __FILE__)
+require_relative 'spec_helper'
 
 load_extension("time")
 
@@ -96,9 +96,9 @@ describe "CApiTimeSpecs" do
     end
 
     it "throws an argument error for a negative value" do
-      lambda { @s.rb_time_interval(-1232141421) }.should raise_error(ArgumentError)
-      lambda { @s.rb_time_interval(Rational(-3, 2)) }.should raise_error(ArgumentError)
-      lambda { @s.rb_time_interval(-1.5) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_interval(-1232141421) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_interval(Rational(-3, 2)) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_interval(-1.5) }.should raise_error(ArgumentError)
     end
 
   end
@@ -129,13 +129,13 @@ describe "CApiTimeSpecs" do
     end
 
     it "throws an argument error for a negative value" do
-      lambda { @s.rb_time_interval(-1232141421) }.should raise_error(ArgumentError)
-      lambda { @s.rb_time_interval(Rational(-3, 2)) }.should raise_error(ArgumentError)
-      lambda { @s.rb_time_interval(-1.5) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_interval(-1232141421) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_interval(Rational(-3, 2)) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_interval(-1.5) }.should raise_error(ArgumentError)
     end
 
     it "throws an argument error when given a Time instance" do
-      lambda { @s.rb_time_interval(Time.now) }.should raise_error(TypeError)
+      -> { @s.rb_time_interval(Time.now) }.should raise_error(TypeError)
     end
 
   end
@@ -165,7 +165,7 @@ describe "CApiTimeSpecs" do
       usec.should == 500000
     end
 
-    platform_is_not :mingw32 do
+    guard -> { platform_is_not :mingw or ruby_version_is '2.5' } do
       it "creates a timeval for a negative Fixnum" do
         sec, usec = @s.rb_time_timeval(-1232141421)
         sec.should be_kind_of(Integer)
@@ -224,7 +224,7 @@ describe "CApiTimeSpecs" do
       nsec.should == 500000000
     end
 
-    platform_is_not :mingw32 do
+    guard -> { platform_is_not :mingw or ruby_version_is '2.5' } do
       it "creates a timespec for a negative Fixnum" do
         sec, nsec = @s.rb_time_timespec(-1232141421)
         sec.should be_kind_of(Integer)
@@ -258,45 +258,43 @@ describe "CApiTimeSpecs" do
     end
   end
 
-  ruby_version_is "2.3" do
-    describe "rb_time_timespec_new" do
-      it "returns a time object with the given timespec and UTC offset" do
-        @s.rb_time_timespec_new(1447087832, 476451125, 32400).should == Time.at(1447087832, 476451.125).localtime(32400)
+  describe "rb_time_timespec_new" do
+    it "returns a time object with the given timespec and UTC offset" do
+      @s.rb_time_timespec_new(1447087832, 476451125, 32400).should == Time.at(1447087832, 476451.125).localtime(32400)
+    end
+
+    describe "when offset given is within range of -86400 and 86400 (exclusive)" do
+      it "sets time's is_gmt to false" do
+        @s.rb_time_timespec_new(1447087832, 476451125, 0).gmt?.should be_false
       end
 
-      describe "when offset given is within range of -86400 and 86400 (exclusive)" do
-        it "sets time's is_gmt to false" do
-          @s.rb_time_timespec_new(1447087832, 476451125, 0).gmt?.should be_false
-        end
-
-        it "sets time's offset to the offset given" do
-          @s.rb_time_timespec_new(1447087832, 476451125, 86399).gmtoff.should == 86399
-        end
-      end
-
-      it "returns time object in UTC if offset given equals INT_MAX - 1" do
-        @s.rb_time_timespec_new(1447087832, 476451125, 0x7ffffffe).utc?.should be_true
-      end
-
-      it "returns time object in localtime if offset given equals INT_MAX" do
-        @s.rb_time_timespec_new(1447087832, 476451125, 0x7fffffff).should == Time.at(1447087832, 476451.125).localtime
-        t = Time.now
-        @s.rb_time_timespec_new(t.tv_sec, t.tv_nsec, 0x7fffffff).gmtoff.should == t.gmtoff
-      end
-
-      it "raises an ArgumentError if offset passed is not within range of -86400 and 86400 (exclusive)" do
-        lambda { @s.rb_time_timespec_new(1447087832, 476451125, 86400) }.should raise_error(ArgumentError)
-        lambda { @s.rb_time_timespec_new(1447087832, 476451125, -86400) }.should raise_error(ArgumentError)
+      it "sets time's offset to the offset given" do
+        @s.rb_time_timespec_new(1447087832, 476451125, 86399).gmtoff.should == 86399
       end
     end
 
-    describe "rb_timespec_now" do
-      it "fills a struct timespec with the current time" do
-        now = Time.now
-        time = @s.rb_time_from_timespec(now.utc_offset)
-        time.should be_an_instance_of(Time)
-        (time - now).should be_close(0, 10)
-      end
+    it "returns time object in UTC if offset given equals INT_MAX - 1" do
+      @s.rb_time_timespec_new(1447087832, 476451125, 0x7ffffffe).utc?.should be_true
+    end
+
+    it "returns time object in localtime if offset given equals INT_MAX" do
+      @s.rb_time_timespec_new(1447087832, 476451125, 0x7fffffff).should == Time.at(1447087832, 476451.125).localtime
+      t = Time.now
+      @s.rb_time_timespec_new(t.tv_sec, t.tv_nsec, 0x7fffffff).gmtoff.should == t.gmtoff
+    end
+
+    it "raises an ArgumentError if offset passed is not within range of -86400 and 86400 (exclusive)" do
+      -> { @s.rb_time_timespec_new(1447087832, 476451125, 86400) }.should raise_error(ArgumentError)
+      -> { @s.rb_time_timespec_new(1447087832, 476451125, -86400) }.should raise_error(ArgumentError)
+    end
+  end
+
+  describe "rb_timespec_now" do
+    it "fills a struct timespec with the current time" do
+      now = Time.now
+      time = @s.rb_time_from_timespec(now.utc_offset)
+      time.should be_an_instance_of(Time)
+      (time - now).should be_close(0, TIME_TOLERANCE)
     end
   end
 end

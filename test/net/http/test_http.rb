@@ -469,9 +469,11 @@ module TestNetHTTP_version_1_1_methods
 
   def test_s_post
     url = "http://#{config('host')}:#{config('port')}/?q=a"
-    res = Net::HTTP.post(
+    res = assert_warning(/Content-Type did not set/) do
+      Net::HTTP.post(
               URI.parse(url),
               "a=x")
+    end
     assert_equal "application/x-www-form-urlencoded", res["Content-Type"]
     assert_equal "a=x", res.body
     assert_equal url, res["X-request-uri"]
@@ -529,6 +531,32 @@ module TestNetHTTP_version_1_1_methods
     assert_equal data, res.entity
   end
 
+  def test_timeout_during_HTTP_session_write
+    th = nil
+    # listen for connections... but deliberately do not read
+    TCPServer.open('localhost', 0) {|server|
+      port = server.addr[1]
+
+      conn = Net::HTTP.new('localhost', port)
+      conn.write_timeout = EnvUtil.apply_timeout_scale(0.01)
+      conn.read_timeout = EnvUtil.apply_timeout_scale(0.01) if windows?
+      conn.open_timeout = EnvUtil.apply_timeout_scale(0.1)
+
+      th = Thread.new do
+        err = !windows? ? Net::WriteTimeout : Net::ReadTimeout
+        assert_raise(err) do
+          assert_warning(/Content-Type did not set/) do
+            conn.post('/', "a"*50_000_000)
+          end
+        end
+      end
+      assert th.join(EnvUtil.apply_timeout_scale(10))
+    }
+  ensure
+    th&.kill
+    th&.join
+  end
+
   def test_timeout_during_HTTP_session
     bug4246 = "expected the HTTP session to have timed out but have not. c.f. [ruby-core:34203]"
 
@@ -538,15 +566,15 @@ module TestNetHTTP_version_1_1_methods
       port = server.addr[1]
 
       conn = Net::HTTP.new('localhost', port)
-      conn.read_timeout = 0.01
-      conn.open_timeout = 0.1
+      conn.read_timeout = EnvUtil.apply_timeout_scale(0.01)
+      conn.open_timeout = EnvUtil.apply_timeout_scale(0.1)
 
       th = Thread.new do
         assert_raise(Net::ReadTimeout) {
           conn.get('/')
         }
       end
-      assert th.join(10), bug4246
+      assert th.join(EnvUtil.apply_timeout_scale(10)), bug4246
     }
   ensure
     th.kill
@@ -967,7 +995,7 @@ class TestNetHTTPContinue < Test::Unit::TestCase
       raise WEBrick::HTTPStatus::Forbidden
     }
     start {|http|
-      uheader = {'content-length' => '5', 'expect' => '100-continue'}
+      uheader = {'content-type' => 'application/x-www-form-urlencoded', 'content-length' => '5', 'expect' => '100-continue'}
       http.continue_timeout = 1 # allow the server to respond before sending
       http.request_post('/continue', 'data', uheader) {|res|
         assert_equal(res.code, '403')
@@ -1019,7 +1047,8 @@ class TestNetHTTPSwitchingProtocols < Test::Unit::TestCase
     }
     start {|http|
       http.continue_timeout = 0.2
-      http.request_post('/continue', 'body=BODY') {|res|
+      http.request_post('/continue', 'body=BODY',
+                        'content-type' => 'application/x-www-form-urlencoded') {|res|
         assert_equal('BODY', res.read_body)
       }
     }

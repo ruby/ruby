@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/succ', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/succ'
 
 describe "Symbol#next" do
   it_behaves_like :symbol_succ, :next

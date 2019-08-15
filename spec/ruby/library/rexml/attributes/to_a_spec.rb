@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'rexml/document'
 
 describe "REXML::Attributes#to_a" do
@@ -17,4 +17,3 @@ describe "REXML::Attributes#to_a" do
     REXML::Element.new("root").attributes.to_a.should == []
   end
 end
-

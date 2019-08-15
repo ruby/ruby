@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Hash#default" do
   it "returns the default value" do
@@ -30,7 +30,7 @@ describe "Hash#default=" do
   end
 
   it "unsets the default proc" do
-    [99, nil, lambda { 6 }].each do |default|
+    [99, nil, -> { 6 }].each do |default|
       h = Hash.new { 5 }
       h.default_proc.should_not == nil
       h.default = default
@@ -39,8 +39,8 @@ describe "Hash#default=" do
     end
   end
 
-  it "raises a RuntimeError if called on a frozen instance" do
-    lambda { HashSpecs.frozen_hash.default = nil }.should raise_error(RuntimeError)
-    lambda { HashSpecs.empty_frozen_hash.default = nil }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} if called on a frozen instance" do
+    -> { HashSpecs.frozen_hash.default = nil }.should raise_error(frozen_error_class)
+    -> { HashSpecs.empty_frozen_hash.default = nil }.should raise_error(frozen_error_class)
   end
 end

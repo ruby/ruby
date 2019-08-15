@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Range#max" do
   it "returns the maximum value in the range when called with no arguments" do
@@ -14,7 +14,7 @@ describe "Range#max" do
   end
 
   it "raises TypeError when called on an exclusive range and a non Integer value" do
-    lambda { (303.20...908.1111).max }.should raise_error(TypeError)
+    -> { (303.20...908.1111).max }.should raise_error(TypeError)
   end
 
   it "returns nil when the endpoint is less than the start point" do
@@ -43,7 +43,7 @@ describe "Range#max" do
   it "raises TypeError when called on a Time...Time(excluded end point)" do
     time_start = Time.now
     time_end = Time.now + 1.0
-    lambda { (time_start...time_end).max  }.should raise_error(TypeError)
+    -> { (time_start...time_end).max  }.should raise_error(TypeError)
   end
 end
 

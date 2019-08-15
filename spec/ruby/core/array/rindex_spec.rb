@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../../enumerable/shared/enumeratorized', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative '../enumerable/shared/enumeratorized'
 
 # Modifying a collection while the contents are being iterated
 # gives undefined behavior. See

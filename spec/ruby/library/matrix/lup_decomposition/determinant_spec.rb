@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'matrix'
 
 describe "Matrix::LUPDecomposition#determinant" do
@@ -13,7 +13,7 @@ describe "Matrix::LUPDecomposition#determinant" do
       Matrix[[7, 8], [14, 46], [28, 82]],
     ].each do |m|
       lup = m.lup
-      lambda {
+      -> {
         lup.determinant
       }.should raise_error(Matrix::ErrDimensionMismatch)
     end

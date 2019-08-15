@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Integer#downto [stop] when self and stop are Fixnums" do
   it "does not yield when stop is greater than self" do
@@ -27,8 +27,8 @@ describe "Integer#downto [stop] when self and stop are Fixnums" do
   end
 
   it "raises an ArgumentError for invalid endpoints" do
-    lambda {1.downto("A") {|x| p x } }.should raise_error(ArgumentError)
-    lambda {1.downto(nil) {|x| p x } }.should raise_error(ArgumentError)
+    -> {1.downto("A") {|x| p x } }.should raise_error(ArgumentError)
+    -> {1.downto(nil) {|x| p x } }.should raise_error(ArgumentError)
   end
 
   describe "when no block is given" do
@@ -45,9 +45,9 @@ describe "Integer#downto [stop] when self and stop are Fixnums" do
       describe "size" do
         it "raises an ArgumentError for invalid endpoints" do
           enum = 1.downto("A")
-          lambda { enum.size }.should raise_error(ArgumentError)
+          -> { enum.size }.should raise_error(ArgumentError)
           enum = 1.downto(nil)
-          lambda { enum.size }.should raise_error(ArgumentError)
+          -> { enum.size }.should raise_error(ArgumentError)
         end
 
         it "returns self - stop + 1" do

@@ -1,6 +1,6 @@
 # -*- encoding: us-ascii -*-
 
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Enumerator#initialize" do
   before :each do
@@ -48,12 +48,12 @@ describe "Enumerator#initialize" do
   end
 
   it "sets size to the given size if the given size is a Proc" do
-    @uninitialized.send(:initialize, lambda { 200 }) {}.size.should == 200
+    @uninitialized.send(:initialize, -> { 200 }) {}.size.should == 200
   end
 
   describe "on frozen instance" do
     it "raises a RuntimeError" do
-      lambda {
+      -> {
         @uninitialized.freeze.send(:initialize) {}
       }.should raise_error(RuntimeError)
     end

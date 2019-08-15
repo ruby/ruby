@@ -49,7 +49,7 @@ module Bundler
       ([\d.]+) # ruby version
       (?:p(-?\d+))? # optional patchlevel
       (?:\s\((\S+)\s(.+)\))? # optional engine info
-    /xo
+    /xo.freeze
 
     # Returns a RubyVersion from the given string.
     # @param [String] the version string to match.
@@ -74,7 +74,7 @@ module Bundler
       @host ||= [
         RbConfig::CONFIG["host_cpu"],
         RbConfig::CONFIG["host_vendor"],
-        RbConfig::CONFIG["host_os"]
+        RbConfig::CONFIG["host_os"],
       ].join("-")
     end
 
@@ -102,12 +102,7 @@ module Bundler
     end
 
     def self.system
-      ruby_engine = if defined?(RUBY_ENGINE) && !RUBY_ENGINE.nil?
-        RUBY_ENGINE.dup
-      else
-        # not defined in ruby 1.8.7
-        "ruby"
-      end
+      ruby_engine = RUBY_ENGINE.dup
       # :sob: mocking RUBY_VERSION breaks stuff on 1.8.7
       ruby_version = ENV.fetch("BUNDLER_SPEC_RUBY_VERSION") { RUBY_VERSION }.dup
       ruby_engine_version = case ruby_engine
@@ -118,7 +113,7 @@ module Bundler
                             when "jruby"
                               JRUBY_VERSION.dup
                             else
-                              raise BundlerError, "RUBY_ENGINE value #{RUBY_ENGINE} is not recognized"
+                              RUBY_ENGINE_VERSION.dup
       end
       patchlevel = RUBY_PATCHLEVEL.to_s
 

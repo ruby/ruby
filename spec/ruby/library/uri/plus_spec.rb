@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'uri'
 
 #an alias of URI#merge
@@ -31,12 +31,12 @@ describe "URI#+" do
     (URI.parse('http://a/b/c/../../../') + ".").should == URI("http://a/")
   end
 
-  it "doesn't conconicalize the path when adding to the empty string" do
+  it "doesn't canonicalize the path when adding to the empty string" do
     (URI.parse('http://a/b/c/../') + "").should == URI("http://a/b/c/../")
   end
 
   it "raises a URI::BadURIError when adding two relative URIs" do
-    lambda {URI.parse('a/b/c') + "d"}.should raise_error(URI::BadURIError)
+    -> {URI.parse('a/b/c') + "d"}.should raise_error(URI::BadURIError)
   end
 
   #Todo: make more BDD?

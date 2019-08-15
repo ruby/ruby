@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Interrupt" do
   it "is a subclass of SignalException" do
@@ -20,7 +20,7 @@ describe "Interrupt.new" do
   end
 end
 
-describe "rescueing Interrupt" do
+describe "rescuing Interrupt" do
   before do
     @original_sigint_proc = Signal.trap(:INT, :SIG_DFL)
   end

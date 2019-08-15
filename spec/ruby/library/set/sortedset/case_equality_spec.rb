@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../shared/include', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'shared/include'
 require 'set'
 
 ruby_version_is "2.5" do

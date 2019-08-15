@@ -15,7 +15,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       s.add_development_dependency "bar-dev", "=1.0.0"
     end
     install_gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gemspec :path => '#{tmp.join("foo")}'
     G
 
@@ -32,7 +32,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     FileUtils.mv tmp.join("foo", "foo.gemspec"), tmp.join("foo", ".gemspec")
 
     install_gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gemspec :path => '#{tmp.join("foo")}'
     G
 
@@ -51,7 +51,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       s.add_dependency "baz", ">= 1.0", "< 1.1"
     end
     install_gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gemspec :path => '#{tmp.join("foo")}'
     G
 
@@ -62,10 +62,10 @@ RSpec.describe "bundle install from an existing gemspec" do
     build_lib("foo", :path => tmp.join("foo"), :gemspec => false)
 
     install_gemfile(<<-G)
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gemspec :path => '#{tmp.join("foo")}'
     G
-    expect(last_command.bundler_err).to match(/There are no gemspecs at #{tmp.join('foo')}/)
+    expect(err).to match(/There are no gemspecs at #{tmp.join('foo')}/)
   end
 
   it "should raise if there are too many gemspecs available" do
@@ -74,10 +74,10 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     install_gemfile(<<-G)
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gemspec :path => '#{tmp.join("foo")}'
     G
-    expect(last_command.bundler_err).to match(/There are multiple gemspecs at #{tmp.join('foo')}/)
+    expect(err).to match(/There are multiple gemspecs at #{tmp.join('foo')}/)
   end
 
   it "should pick a specific gemspec" do
@@ -88,7 +88,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     install_gemfile(<<-G)
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gemspec :path => '#{tmp.join("foo")}', :name => 'foo'
     G
 
@@ -104,7 +104,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     install_gemfile(<<-G)
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gemspec :path => '#{tmp.join("foo")}', :name => 'foo', :development_group => :dev
     G
 
@@ -115,9 +115,9 @@ RSpec.describe "bundle install from an existing gemspec" do
 
   it "should match a lockfile even if the gemspec defines development dependencies" do
     build_lib("foo", :path => tmp.join("foo")) do |s|
-      s.write("Gemfile", "source 'file://#{gem_repo1}'\ngemspec")
+      s.write("Gemfile", "source '#{file_uri_for(gem_repo1)}'\ngemspec")
       s.add_dependency "actionpack", "=2.3.2"
-      s.add_development_dependency "rake", "=10.0.2"
+      s.add_development_dependency "rake", "=12.3.2"
     end
 
     Dir.chdir(tmp.join("foo")) do
@@ -140,7 +140,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     install_gemfile! <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gemspec :path => '#{tmp.join("foo")}'
     G
 
@@ -159,7 +159,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     install_gemfile! <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gemspec :path => '#{tmp.join("foo")}'
     G
 
@@ -231,7 +231,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     build_gem "foo", "0.0.1", :to_bundle => true
 
     install_gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "deps"
       gemspec :path => '#{tmp.join("foo")}', :name => 'foo'
     G
@@ -239,7 +239,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     expect(the_bundle).to include_gems "foo 1.0.0"
   end
 
-  it "does not break Gem.finish_resolve with conflicts", :rubygems => ">= 2" do
+  it "does not break Gem.finish_resolve with conflicts" do
     build_lib("foo", :path => tmp.join("foo")) do |s|
       s.version = "1.0.0"
       s.add_dependency "bar", "= 1.0.0"
@@ -252,7 +252,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     end
 
     install_gemfile! <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "deps"
       gemspec :path => '#{tmp.join("foo")}', :name => 'foo'
     G
@@ -263,6 +263,20 @@ RSpec.describe "bundle install from an existing gemspec" do
     expect(out).to eq("WIN")
   end
 
+  it "works with only_update_to_newer_versions" do
+    build_lib "omg", "2.0", :path => lib_path("omg")
+
+    install_gemfile <<-G
+      gemspec :path => "#{lib_path("omg")}"
+    G
+
+    build_lib "omg", "1.0", :path => lib_path("omg")
+
+    bundle! :install, :env => { "BUNDLE_BUNDLE_ONLY_UPDATE_TO_NEWER_VERSIONS" => "true" }
+
+    expect(the_bundle).to include_gems "omg 1.0"
+  end
+
   context "in deployment mode" do
     context "when the lockfile was not updated after a change to the gemspec's dependencies" do
       it "reports that installation failed" do
@@ -271,7 +285,7 @@ RSpec.describe "bundle install from an existing gemspec" do
         end
 
         install_gemfile! <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gemspec
         G
 
@@ -283,7 +297,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
         bundle :install, forgotten_command_line_options(:deployment => true)
 
-        expect(out).to include("changed")
+        expect(err).to include("changed")
       end
     end
   end
@@ -304,7 +318,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
     it "should install the child gemspec's deps" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gemspec
       G
 
@@ -317,22 +331,10 @@ RSpec.describe "bundle install from an existing gemspec" do
 
     context "previously bundled for Ruby" do
       let(:platform) { "ruby" }
-      let(:explicit_platform) { false }
 
       before do
         build_lib("foo", :path => tmp.join("foo")) do |s|
           s.add_dependency "rack", "=1.0.0"
-        end
-
-        if explicit_platform
-          create_file(
-            tmp.join("foo", "foo-#{platform}.gemspec"),
-            build_spec("foo", "1.0", platform) do
-              dep "rack", "=1.0.0"
-              @spec.authors = "authors"
-              @spec.summary = "summary"
-            end.first.to_ruby
-          )
         end
 
         gemfile <<-G
@@ -365,7 +367,17 @@ RSpec.describe "bundle install from an existing gemspec" do
 
       context "using JRuby with explicit platform" do
         let(:platform) { "java" }
-        let(:explicit_platform) { true }
+
+        before do
+          create_file(
+            tmp.join("foo", "foo-#{platform}.gemspec"),
+            build_spec("foo", "1.0", platform) do
+              dep "rack", "=1.0.0"
+              @spec.authors = "authors"
+              @spec.summary = "summary"
+            end.first.to_ruby
+          )
+        end
 
         it "should install" do
           simulate_ruby_engine "jruby" do
@@ -426,14 +438,14 @@ RSpec.describe "bundle install from an existing gemspec" do
         %w[ruby jruby].each do |platform|
           simulate_platform(platform) do
             install_gemfile <<-G
-              source "file://#{gem_repo2}"
+              source "#{file_uri_for(gem_repo2)}"
               gemspec
             G
           end
         end
       end
 
-      context "on ruby", :bundler => "< 2" do
+      context "on ruby" do
         before do
           simulate_platform("ruby")
           bundle :install
@@ -450,7 +462,7 @@ RSpec.describe "bundle install from an existing gemspec" do
                     platform_specific
 
               GEM
-                remote: file:#{gem_repo2}/
+                remote: #{file_uri_for(gem_repo2)}/
                 specs:
                   platform_specific (1.0)
                   platform_specific (1.0-java)
@@ -480,7 +492,7 @@ RSpec.describe "bundle install from an existing gemspec" do
                   foo (1.0)
 
               GEM
-                remote: file:#{gem_repo2}/
+                remote: #{file_uri_for(gem_repo2)}/
                 specs:
                   platform_specific (1.0)
                   platform_specific (1.0-java)
@@ -512,113 +524,12 @@ RSpec.describe "bundle install from an existing gemspec" do
                   foo (1.0)
 
               GEM
-                remote: file:#{gem_repo2}/
+                remote: #{file_uri_for(gem_repo2)}/
                 specs:
                   indirect_platform_specific (1.0)
                     platform_specific
                   platform_specific (1.0)
                   platform_specific (1.0-java)
-
-              PLATFORMS
-                java
-                ruby
-
-              DEPENDENCIES
-                foo!
-                indirect_platform_specific
-
-              BUNDLED WITH
-                 #{Bundler::VERSION}
-            L
-          end
-        end
-      end
-
-      context "on ruby", :bundler => "2" do
-        before do
-          simulate_platform("ruby")
-          bundle :install
-        end
-
-        context "as a runtime dependency" do
-          it "keeps java dependencies in the lockfile" do
-            expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 RUBY"
-            expect(lockfile).to eq strip_whitespace(<<-L)
-              GEM
-                remote: file:#{gem_repo2}/
-                specs:
-                  platform_specific (1.0)
-                  platform_specific (1.0-java)
-
-              PATH
-                remote: .
-                specs:
-                  foo (1.0)
-                    platform_specific
-
-              PLATFORMS
-                java
-                ruby
-
-              DEPENDENCIES
-                foo!
-
-              BUNDLED WITH
-                 #{Bundler::VERSION}
-            L
-          end
-        end
-
-        context "as a development dependency" do
-          let(:platform_specific_type) { :development }
-
-          it "keeps java dependencies in the lockfile" do
-            expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 RUBY"
-            expect(lockfile).to eq strip_whitespace(<<-L)
-              GEM
-                remote: file:#{gem_repo2}/
-                specs:
-                  platform_specific (1.0)
-                  platform_specific (1.0-java)
-
-              PATH
-                remote: .
-                specs:
-                  foo (1.0)
-
-              PLATFORMS
-                java
-                ruby
-
-              DEPENDENCIES
-                foo!
-                platform_specific
-
-              BUNDLED WITH
-                 #{Bundler::VERSION}
-            L
-          end
-        end
-
-        context "with an indirect platform-specific development dependency" do
-          let(:platform_specific_type) { :development }
-          let(:dependency) { "indirect_platform_specific" }
-
-          it "keeps java dependencies in the lockfile" do
-            expect(the_bundle).to include_gems "foo 1.0", "indirect_platform_specific 1.0", "platform_specific 1.0 RUBY"
-            expect(lockfile).to eq strip_whitespace(<<-L)
-              GEM
-                remote: file:#{gem_repo2}/
-                specs:
-                  indirect_platform_specific (1.0)
-                    platform_specific
-                  platform_specific (1.0)
-                  platform_specific (1.0-java)
-
-              PATH
-                remote: .
-                specs:
-                  foo (1.0)
 
               PLATFORMS
                 java
@@ -650,7 +561,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       simulate_platform "ruby"
 
       install_gemfile! <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gemspec :path => '#{tmp.join("foo")}', :name => 'foo'
       G
 
@@ -661,7 +572,7 @@ RSpec.describe "bundle install from an existing gemspec" do
       simulate_platform "ruby"
 
       install_gemfile! <<-G, forgotten_command_line_options(:without => "development")
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gemspec :path => '#{tmp.join("foo")}', :name => 'foo'
       G
 

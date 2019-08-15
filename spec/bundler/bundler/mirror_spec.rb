@@ -298,13 +298,13 @@ RSpec.describe Bundler::Settings::TCPSocketProbe do
 
   context "with a listening TCP Server" do
     def with_server_and_mirror
-      server = TCPServer.new("127.0.0.1", 0)
-      mirror = Bundler::Settings::Mirror.new("http://localhost:#{server.addr[1]}", 1)
+      server = TCPServer.new("0.0.0.0", 0)
+      mirror = Bundler::Settings::Mirror.new("http://0.0.0.0:#{server.addr[1]}", 1)
       yield server, mirror
       server.close unless server.closed?
     end
 
-    it "probes the server correctly" do
+    it "probes the server correctly", :ruby_repo do
       with_server_and_mirror do |server, mirror|
         expect(server.closed?).to be_falsey
         expect(probe.replies?(mirror)).to be_truthy

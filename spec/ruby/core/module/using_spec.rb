@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Module#using" do
   it "imports class refinements from module into the current class/module" do
@@ -24,7 +24,7 @@ describe "Module#using" do
       end
     end
 
-    -> () {
+    -> {
       Module.new do
         using refinement
       end
@@ -34,7 +34,7 @@ describe "Module#using" do
   it "accepts module without refinements" do
     mod = Module.new
 
-    -> () {
+    -> {
       Module.new do
         using mod
       end
@@ -44,7 +44,7 @@ describe "Module#using" do
   it "does not accept class" do
     klass = Class.new
 
-    -> () {
+    -> {
       Module.new do
         using klass
       end
@@ -52,7 +52,7 @@ describe "Module#using" do
   end
 
   it "raises TypeError if passed something other than module" do
-    -> () {
+    -> {
       Module.new do
         using "foo"
       end
@@ -93,7 +93,7 @@ describe "Module#using" do
       end
     end
 
-    -> () {
+    -> {
       mod.foo
     }.should raise_error(RuntimeError, /Module#using is not permitted in methods/)
   end

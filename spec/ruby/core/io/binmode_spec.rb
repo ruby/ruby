@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "IO#binmode" do
   before :each do
@@ -17,7 +17,7 @@ describe "IO#binmode" do
   end
 
   it "raises an IOError on closed stream" do
-    lambda { IOSpecs.closed_io.binmode }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.binmode }.should raise_error(IOError)
   end
 
   it "sets external encoding to binary" do

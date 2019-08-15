@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Symbol#==" do
   it "only returns true when the other is exactly the same symbol" do

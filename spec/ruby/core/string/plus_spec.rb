@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/concat', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/concat'
 
 describe "String#+" do
   it "returns a new string containing the given string concatenated to self" do
@@ -18,8 +18,8 @@ describe "String#+" do
   end
 
   it "raises a TypeError when given any object that fails #to_str" do
-    lambda { "" + Object.new }.should raise_error(TypeError)
-    lambda { "" + 65 }.should raise_error(TypeError)
+    -> { "" + Object.new }.should raise_error(TypeError)
+    -> { "" + 65 }.should raise_error(TypeError)
   end
 
   it "doesn't return subclass instances" do

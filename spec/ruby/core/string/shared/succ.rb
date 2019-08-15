@@ -81,8 +81,8 @@ describe :string_succ_bang, shared: true do
     end
   end
 
-  it "raises a RuntimeError if self is frozen" do
-    lambda { "".freeze.send(@method)     }.should raise_error(RuntimeError)
-    lambda { "abcd".freeze.send(@method) }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} if self is frozen" do
+    -> { "".freeze.send(@method)     }.should raise_error(frozen_error_class)
+    -> { "abcd".freeze.send(@method) }.should raise_error(frozen_error_class)
   end
 end

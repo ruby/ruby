@@ -29,7 +29,12 @@ module Bundler
         @hooks = {}
         @load_paths = {}
 
-        load_index(global_index_file, true)
+        begin
+          load_index(global_index_file, true)
+        rescue GenericSystemCallError
+          # no need to fail when on a read-only FS, for example
+          nil
+        end
         load_index(local_index_file) if SharedHelpers.in_bundle?
       end
 
@@ -53,12 +58,15 @@ module Bundler
         raise SourceConflict.new(name, common) unless common.empty?
         sources.each {|k| @sources[k] = name }
 
-        hooks.each {|e| (@hooks[e] ||= []) << name }
+        hooks.each do |event|
+          event_hooks = (@hooks[event] ||= []) << name
+          event_hooks.uniq!
+        end
 
         @plugin_paths[name] = path
         @load_paths[name] = load_paths
         save_index
-      rescue
+      rescue StandardError
         @commands = old_commands
         raise
       end
@@ -95,6 +103,14 @@ module Bundler
         @plugin_paths[name]
       end
 
+      def installed_plugins
+        @plugin_paths.keys
+      end
+
+      def plugin_commands(plugin)
+        @commands.find_all {|_, n| n == plugin }.map(&:first)
+      end
+
       def source?(source)
         @sources.key? source
       end
@@ -123,7 +139,7 @@ module Bundler
 
           data = index_f.read
 
-          require "bundler/yaml_serializer"
+          require_relative "../yaml_serializer"
           index = YAMLSerializer.load(data)
 
           @commands.merge!(index["commands"])
@@ -146,7 +162,7 @@ module Bundler
           "sources"      => @sources,
         }
 
-        require "bundler/yaml_serializer"
+        require_relative "../yaml_serializer"
         SharedHelpers.filesystem_access(index_file) do |index_f|
           FileUtils.mkdir_p(index_f.dirname)
           File.open(index_f, "w") {|f| f.puts YAMLSerializer.dump(index) }

@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle show", :bundler => "< 2" do
+RSpec.describe "bundle show", :bundler => "< 3" do
   context "with a standard Gemfile" do
     before :each do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
     end
@@ -30,29 +30,34 @@ RSpec.describe "bundle show", :bundler => "< 2" do
       expect(out).to eq(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
+    it "prints path if gem exists in bundle (with --paths option)" do
+      bundle "show rails --paths"
+      expect(out).to eq(default_bundle_path("gems", "rails-2.3.2").to_s)
+    end
+
     it "warns if path no longer exists on disk" do
       FileUtils.rm_rf(default_bundle_path("gems", "rails-2.3.2"))
 
       bundle "show rails"
 
-      expect(out).to match(/has been deleted/i).
-        and include(default_bundle_path("gems", "rails-2.3.2").to_s)
+      expect(err).to match(/has been deleted/i)
+      expect(err).to match(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
-    it "prints the path to the running bundler", :ruby_repo do
+    it "prints the path to the running bundler" do
       bundle "show bundler"
       expect(out).to eq(root.to_s)
     end
 
     it "complains if gem not in bundle" do
       bundle "show missing"
-      expect(out).to match(/could not find gem 'missing'/i)
+      expect(err).to match(/could not find gem 'missing'/i)
     end
 
     it "prints path of all gems in bundle sorted by name" do
       bundle "show --paths"
 
-      expect(out).to include(default_bundle_path("gems", "rake-10.0.2").to_s)
+      expect(out).to include(default_bundle_path("gems", "rake-12.3.2").to_s)
       expect(out).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
 
       # Gem names are the last component of their path.
@@ -63,10 +68,23 @@ RSpec.describe "bundle show", :bundler => "< 2" do
     it "prints summary of gems" do
       bundle "show --verbose"
 
-      expect(out).to include("* actionmailer (2.3.2)")
-      expect(out).to include("\tSummary:  This is just a fake gem for testing")
-      expect(out).to include("\tHomepage: No website available.")
-      expect(out).to include("\tStatus:   Up to date")
+      expect(out).to include <<~MSG
+        * actionmailer (2.3.2)
+        \tSummary:  This is just a fake gem for testing
+        \tHomepage: http://example.com
+        \tStatus:   Up to date
+      MSG
+    end
+
+    it "includes bundler in the summary of gems" do
+      bundle "show --verbose"
+
+      expect(out).to include <<~MSG
+        * bundler (#{Bundler::VERSION})
+        \tSummary:  The best way to manage your application's dependencies
+        \tHomepage: https://bundler.io
+        \tStatus:   Up to date
+      MSG
     end
   end
 
@@ -110,7 +128,7 @@ RSpec.describe "bundle show", :bundler => "< 2" do
       expect(out).to include("foo (1.0 #{sha[0..6]})")
     end
 
-    it "handles when a version is a '-' prerelease", :rubygems => "2.1" do
+    it "handles when a version is a '-' prerelease" do
       @git = build_git("foo", "1.0.0-beta.1", :path => lib_path("foo"))
       install_gemfile <<-G
         gem "foo", "1.0.0-beta.1", :git => "#{lib_path("foo")}"
@@ -132,32 +150,45 @@ RSpec.describe "bundle show", :bundler => "< 2" do
 
     it "does not output git errors" do
       bundle :show
-      expect(err).to lack_errors
+      expect(err_without_deprecations).to be_empty
     end
   end
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo"
     G
 
-    bundle "config auto_install 1"
+    bundle "config set auto_install 1"
     bundle :show
     expect(out).to include("Installing foo 1.0")
+  end
+
+  context "with a valid regexp for gem name" do
+    it "presents alternatives", :ruby_repo do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+        gem "rack-obama"
+      G
+
+      bundle "show rac"
+      expect(out).to eq "1 : rack\n2 : rack-obama\n0 : - exit -\n>"
+    end
   end
 
   context "with an invalid regexp for gem name" do
     it "does not find the gem" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
 
       invalid_regexp = "[]"
 
       bundle "show #{invalid_regexp}"
-      expect(out).to include("Could not find gem '#{invalid_regexp}'.")
+      expect(err).to include("Could not find gem '#{invalid_regexp}'.")
     end
   end
 
@@ -169,7 +200,7 @@ RSpec.describe "bundle show", :bundler => "< 2" do
 
     it "doesn't update gems to newer versions" do
       install_gemfile! <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rails"
       G
 
@@ -187,4 +218,8 @@ RSpec.describe "bundle show", :bundler => "< 2" do
       expect(the_bundle).to include_gem("rails 2.3.2")
     end
   end
+end
+
+RSpec.describe "bundle show", :bundler => "3" do
+  pending "shows a friendly error about the command removal"
 end

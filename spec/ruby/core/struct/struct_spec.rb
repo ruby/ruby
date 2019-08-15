@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Struct" do
   it "includes Enumerable" do
@@ -21,7 +21,7 @@ describe "Struct anonymous class instance methods" do
 
   it "reader method should not interfere with undefined methods" do
     car = StructClasses::Car.new('Ford', 'Ranger')
-    lambda { car.something_weird }.should raise_error(NoMethodError)
+    -> { car.something_weird }.should raise_error(NoMethodError)
   end
 
   it "writer method be a synonym for []=" do

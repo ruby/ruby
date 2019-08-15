@@ -14,10 +14,10 @@
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
-extern VALUE ruby_vm_const_missing_count;
-extern rb_serial_t ruby_vm_global_method_state;
-extern rb_serial_t ruby_vm_global_constant_state;
-extern rb_serial_t ruby_vm_class_serial;
+RUBY_EXTERN VALUE ruby_vm_const_missing_count;
+RUBY_EXTERN rb_serial_t ruby_vm_global_method_state;
+RUBY_EXTERN rb_serial_t ruby_vm_global_constant_state;
+RUBY_EXTERN rb_serial_t ruby_vm_class_serial;
 
 RUBY_SYMBOL_EXPORT_END
 
@@ -42,8 +42,6 @@ RUBY_SYMBOL_EXPORT_END
 #define POP()   (DEC_SP(1))
 #define STACK_ADDR_FROM_TOP(n) (GET_SP()-(n))
 
-#define GET_TOS()  (tos)	/* dummy */
-
 /**********************************************************/
 /* deal with registers                                    */
 /**********************************************************/
@@ -57,23 +55,20 @@ RUBY_SYMBOL_EXPORT_END
     VM_REG_CFP = ec->cfp; \
 } while (0)
 
-#define REG_A   reg_a
-#define REG_B   reg_b
-
+#if VM_COLLECT_USAGE_DETAILS
 enum vm_regan_regtype {
     VM_REGAN_PC = 0,
     VM_REGAN_SP = 1,
     VM_REGAN_EP = 2,
     VM_REGAN_CFP = 3,
     VM_REGAN_SELF = 4,
-    VM_REGAN_ISEQ = 5,
+    VM_REGAN_ISEQ = 5
 };
 enum vm_regan_acttype {
     VM_REGAN_ACT_GET = 0,
-    VM_REGAN_ACT_SET = 1,
+    VM_REGAN_ACT_SET = 1
 };
 
-#if VM_COLLECT_USAGE_DETAILS
 #define COLLECT_USAGE_REGISTER_HELPER(a, b, v) \
   (COLLECT_USAGE_REGISTER((VM_REGAN_##a), (VM_REGAN_ACT_##b)), (v))
 #else
@@ -111,11 +106,6 @@ enum vm_regan_acttype {
 
 #define GET_PREV_EP(ep)                ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
 
-#define GET_GLOBAL(entry)       rb_gvar_get((struct rb_global_entry*)(entry))
-#define SET_GLOBAL(entry, val)  rb_gvar_set((struct rb_global_entry*)(entry), (val))
-
-#define GET_CONST_INLINE_CACHE(dst) ((IC) * (GET_PC() + (dst) + 2))
-
 /**********************************************************/
 /* deal with values                                       */
 /**********************************************************/
@@ -126,32 +116,13 @@ enum vm_regan_acttype {
 /* deal with control flow 2: method/iterator              */
 /**********************************************************/
 
-#define CALL_METHOD(calling, ci, cc) do { \
-    VALUE v = (*(cc)->call)(ec, GET_CFP(), (calling), (ci), (cc)); \
-    if (v == Qundef) { \
-	RESTORE_REGS(); \
-	NEXT_INSN(); \
-    } \
-    else { \
-	val = v; \
-    } \
-} while (0)
-
 /* set fastpath when cached method is *NOT* protected
  * because inline method cache does not care about receiver.
  */
 
-#ifndef OPT_CALL_FASTPATH
-#define OPT_CALL_FASTPATH 1
-#endif
-
-#if OPT_CALL_FASTPATH
-#define CI_SET_FASTPATH(cc, func, enabled) do { \
+#define CC_SET_FASTPATH(cc, func, enabled) do { \
     if (LIKELY(enabled)) ((cc)->call = (func)); \
 } while (0)
-#else
-#define CI_SET_FASTPATH(ci, func, enabled) /* do nothing */
-#endif
 
 #define GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
 
@@ -161,30 +132,46 @@ enum vm_regan_acttype {
 
 
 /**********************************************************/
+/* deal with stack canary                                 */
+/**********************************************************/
+
+#if VM_CHECK_MODE > 0
+#define SETUP_CANARY() \
+    VALUE *canary; \
+    if (leaf) { \
+        canary = GET_SP(); \
+        SET_SV(vm_stack_canary); \
+    } \
+    else {\
+        SET_SV(Qfalse); /* cleanup */ \
+    }
+#define CHECK_CANARY() \
+    if (leaf) { \
+        if (*canary == vm_stack_canary) { \
+            *canary = Qfalse; /* cleanup */ \
+        } \
+        else { \
+            vm_canary_is_found_dead(INSN_ATTR(bin), *canary); \
+        } \
+    }
+#else
+#define SETUP_CANARY()          /* void */
+#define CHECK_CANARY()          /* void */
+#endif
+
+/**********************************************************/
 /* others                                                 */
 /**********************************************************/
 
-/* optimize insn */
-#define FIXNUM_2_P(a, b) ((a) & (b) & 1)
-#if USE_FLONUM
-#define FLONUM_2_P(a, b) (((((a)^2) | ((b)^2)) & 3) == 0) /* (FLONUM_P(a) && FLONUM_P(b)) */
-#else
-#define FLONUM_2_P(a, b) 0
-#endif
-#define FLOAT_HEAP_P(x) (!SPECIAL_CONST_P(x) && RBASIC_CLASS(x) == rb_cFloat)
-#define FLOAT_INSTANCE_P(x) (FLONUM_P(x) || FLOAT_HEAP_P(x))
-
-#ifndef USE_IC_FOR_SPECIALIZED_METHOD
-#define USE_IC_FOR_SPECIALIZED_METHOD 1
-#endif
-
-#define CALL_SIMPLE_METHOD(recv_) do { \
-    struct rb_calling_info calling; \
-    calling.block_handler = VM_BLOCK_HANDLER_NONE; \
-    calling.argc = ci->orig_argc; \
-    vm_search_method(ci, cc, calling.recv = (recv_)); \
-    CALL_METHOD(&calling, ci, cc); \
+#ifndef MJIT_HEADER
+#define CALL_SIMPLE_METHOD() do { \
+    rb_snum_t x = leaf ? INSN_ATTR(width) : 0; \
+    rb_snum_t y = attr_width_opt_send_without_block(0, 0); \
+    rb_snum_t z = x - y; \
+    ADD_PC(z); \
+    DISPATCH_ORIGINAL_INSN(opt_send_without_block); \
 } while (0)
+#endif
 
 #define NEXT_CLASS_SERIAL() (++ruby_vm_class_serial)
 #define GET_GLOBAL_METHOD_STATE() (ruby_vm_global_method_state)
@@ -192,13 +179,12 @@ enum vm_regan_acttype {
 #define GET_GLOBAL_CONSTANT_STATE() (ruby_vm_global_constant_state)
 #define INC_GLOBAL_CONSTANT_STATE() (++ruby_vm_global_constant_state)
 
-static VALUE make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
-				      int argc, const VALUE *argv, int priv);
-
 static inline struct vm_throw_data *
-THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, VALUE st)
+THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, int st)
 {
-    return (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, st, 0);
+    struct vm_throw_data *obj = (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, 0, 0);
+    obj->throw_state = st;
+    return obj;
 }
 
 static inline VALUE
@@ -219,7 +205,7 @@ static inline int
 THROW_DATA_STATE(const struct vm_throw_data *obj)
 {
     VM_ASSERT(THROW_DATA_P(obj));
-    return (int)obj->throw_state;
+    return obj->throw_state;
 }
 
 static inline int
@@ -240,7 +226,7 @@ static inline void
 THROW_DATA_STATE_SET(struct vm_throw_data *obj, int st)
 {
     VM_ASSERT(THROW_DATA_P(obj));
-    obj->throw_state = (VALUE)st;
+    obj->throw_state = st;
 }
 
 static inline void
@@ -250,6 +236,18 @@ THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 	THROW_DATA_STATE(obj) == TAG_BREAK) {
 	obj->flags |= THROW_DATA_CONSUMED;
     }
+}
+
+#define IS_ARGS_SPLAT(ci)   ((ci)->flag & VM_CALL_ARGS_SPLAT)
+#define IS_ARGS_KEYWORD(ci) ((ci)->flag & VM_CALL_KWARG)
+
+/* If this returns true, an optimized function returned by `vm_call_iseq_setup_func`
+   can be used as a fastpath. */
+static bool
+vm_call_iseq_optimizable_p(const struct rb_call_info *ci, const struct rb_call_cache *cc)
+{
+    return !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
+        !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED);
 }
 
 #endif /* RUBY_INSNHELPER_H */

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Math.frexp" do
   it "returns the normalized fraction and exponent" do
@@ -9,7 +9,7 @@ describe "Math.frexp" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    lambda { Math.frexp("test") }.should raise_error(TypeError)
+    -> { Math.frexp("test") }.should raise_error(TypeError)
   end
 
   it "returns NaN given NaN" do
@@ -18,7 +18,7 @@ describe "Math.frexp" do
   end
 
   it "raises a TypeError if the argument is nil" do
-    lambda { Math.frexp(nil) }.should raise_error(TypeError)
+    -> { Math.frexp(nil) }.should raise_error(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

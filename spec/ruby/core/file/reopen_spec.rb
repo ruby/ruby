@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "File#reopen" do
   before :each do
@@ -25,7 +25,7 @@ describe "File#reopen" do
     @file.read.should == @content_b
   end
 
-  it "calls #to_path to convern an Object" do
+  it "calls #to_path to convert an Object" do
     @file = File.new(@name_a).reopen(mock_to_path(@name_b), "r")
     @file.read.should == @content_b
   end

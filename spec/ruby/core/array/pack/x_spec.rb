@@ -1,7 +1,7 @@
-# -*- encoding: ascii-8bit -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
+# -*- encoding: binary -*-
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
 
 describe "Array#pack with format 'x'" do
   it_behaves_like :array_pack_basic, 'x'
@@ -55,10 +55,10 @@ describe "Array#pack with format 'X'" do
   end
 
   it "raises an ArgumentError if the output string is empty" do
-    lambda { [1, 2, 3].pack("XC") }.should raise_error(ArgumentError)
+    -> { [1, 2, 3].pack("XC") }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if the count modifier is greater than the bytes in the string" do
-    lambda { [1, 2, 3].pack("C2X3") }.should raise_error(ArgumentError)
+    -> { [1, 2, 3].pack("C2X3") }.should raise_error(ArgumentError)
   end
 end

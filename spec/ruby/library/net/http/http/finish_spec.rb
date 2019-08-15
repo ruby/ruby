@@ -1,6 +1,6 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 require 'net/http'
-require File.expand_path('../fixtures/http_server', __FILE__)
+require_relative 'fixtures/http_server'
 
 describe "Net::HTTP#finish" do
   before :each do
@@ -23,7 +23,7 @@ describe "Net::HTTP#finish" do
 
   describe "when self has not been started yet" do
     it "raises an IOError" do
-      lambda { @http.finish }.should raise_error(IOError)
+      -> { @http.finish }.should raise_error(IOError)
     end
   end
 end

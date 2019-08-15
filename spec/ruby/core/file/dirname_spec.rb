@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "File.dirname" do
   it "returns all the components of filename except the last one" do
@@ -72,10 +72,10 @@ describe "File.dirname" do
   end
 
   it "raises a TypeError if not passed a String type" do
-    lambda { File.dirname(nil)   }.should raise_error(TypeError)
-    lambda { File.dirname(0)     }.should raise_error(TypeError)
-    lambda { File.dirname(true)  }.should raise_error(TypeError)
-    lambda { File.dirname(false) }.should raise_error(TypeError)
+    -> { File.dirname(nil)   }.should raise_error(TypeError)
+    -> { File.dirname(0)     }.should raise_error(TypeError)
+    -> { File.dirname(true)  }.should raise_error(TypeError)
+    -> { File.dirname(false) }.should raise_error(TypeError)
   end
 
   # Windows specific tests

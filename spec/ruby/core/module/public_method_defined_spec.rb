@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Module#public_method_defined?" do
   it "returns true if the named public method is defined by module or its ancestors" do
@@ -32,25 +32,25 @@ describe "Module#public_method_defined?" do
   end
 
   it "raises a TypeError if passed a Fixnum" do
-    lambda do
+    -> do
       ModuleSpecs::CountsMixin.public_method_defined?(1)
     end.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed nil" do
-    lambda do
+    -> do
       ModuleSpecs::CountsMixin.public_method_defined?(nil)
     end.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed false" do
-    lambda do
+    -> do
       ModuleSpecs::CountsMixin.public_method_defined?(false)
     end.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed an object that does not defined #to_str" do
-    lambda do
+    -> do
       ModuleSpecs::CountsMixin.public_method_defined?(mock('x'))
     end.should raise_error(TypeError)
   end
@@ -59,7 +59,7 @@ describe "Module#public_method_defined?" do
     sym = mock('symbol')
     def sym.to_sym() :public_3 end
 
-    lambda do
+    -> do
       ModuleSpecs::CountsMixin.public_method_defined?(sym)
     end.should raise_error(TypeError)
   end

@@ -1,4 +1,4 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 require 'openssl'
 
 describe "OpenSSL::X509::Name.parse" do
@@ -35,13 +35,13 @@ describe "OpenSSL::X509::Name.parse" do
   end
 
   it "raises TypeError if the given string contains no key/value pairs" do
-    lambda do
+    -> do
       OpenSSL::X509::Name.parse("hello")
     end.should raise_error(TypeError)
   end
 
   it "raises OpenSSL::X509::NameError if the given string contains invalid keys" do
-    lambda do
+    -> do
       OpenSSL::X509::Name.parse("hello=goodbye")
     end.should raise_error(OpenSSL::X509::NameError)
   end

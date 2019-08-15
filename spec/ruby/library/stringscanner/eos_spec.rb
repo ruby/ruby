@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/eos.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/eos'
 require 'strscan'
 
 describe "StringScanner#eos?" do
-  it_behaves_like(:strscan_eos, :eos?)
+  it_behaves_like :strscan_eos, :eos?
 end

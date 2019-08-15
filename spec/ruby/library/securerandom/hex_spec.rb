@@ -1,9 +1,9 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 require 'securerandom'
 
 describe "SecureRandom.hex" do
-  it "generates a random hex string of length twice the specified argement" do
+  it "generates a random hex string of length twice the specified argument" do
     (1..64).each do |idx|
       hex = SecureRandom.hex(idx)
       hex.should be_kind_of(String)
@@ -41,7 +41,7 @@ describe "SecureRandom.hex" do
   end
 
   it "raises ArgumentError on negative arguments" do
-    lambda {
+    -> {
       SecureRandom.hex(-1)
     }.should raise_error(ArgumentError)
   end

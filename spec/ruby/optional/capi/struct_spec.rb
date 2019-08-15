@@ -1,4 +1,4 @@
-require File.expand_path('../spec_helper', __FILE__)
+require_relative 'spec_helper'
 
 load_extension("struct")
 
@@ -64,7 +64,7 @@ end
 describe "C-API Struct function" do
   before :each do
     @s = CApiStructSpecs.new
-    @struct = @s.rb_struct_define_under(CApiStructSpecs, "CAPIStruct", "a", "b", "c")
+    @struct = @s.rb_struct_define_under(CApiStructSpecs, "CAPIStructUnder", "a", "b", "c")
   end
 
   describe "rb_struct_define_under" do
@@ -80,11 +80,15 @@ describe "C-API Struct function" do
 
     it "has a value of nil for the member of a newly created instance" do
       # Verify that attributes are on an instance basis
-      CApiStructSpecs::CAPIStruct.new.b.should be_nil
+      CApiStructSpecs::CAPIStructUnder.new.b.should be_nil
+    end
+
+    it "does not create a constant scoped under Struct for the named Struct" do
+      Struct.should_not have_constant(:CAPIStructUnder)
     end
 
     it "creates a constant scoped under the namespace of the given class" do
-      CApiStructSpecs.should have_constant(:CAPIStruct)
+      CApiStructSpecs.should have_constant(:CAPIStructUnder)
     end
 
     it "returns the member names as Symbols" do
@@ -102,11 +106,11 @@ describe "C-API Struct function" do
 
   describe "rb_struct_define" do
     it "raises an ArgumentError if arguments contain duplicate member name" do
-      lambda { @s.rb_struct_define(nil, "a", "b", "a") }.should raise_error(ArgumentError)
+      -> { @s.rb_struct_define(nil, "a", "b", "a") }.should raise_error(ArgumentError)
     end
 
     it "raises a NameError if an invalid constant name is given" do
-      lambda { @s.rb_struct_define("foo", "a", "b", "c") }.should raise_error(NameError)
+      -> { @s.rb_struct_define("foo", "a", "b", "c") }.should raise_error(NameError)
     end
   end
 
@@ -127,12 +131,12 @@ describe "C-API Struct function" do
     end
 
     it "raises a NameError if the struct member does not exist" do
-      lambda { @s.rb_struct_aref(@struct, :d) }.should raise_error(NameError)
+      -> { @s.rb_struct_aref(@struct, :d) }.should raise_error(NameError)
     end
 
     it "raises an IndexError if the given index is out of range" do
-      lambda { @s.rb_struct_aref(@struct, -4) }.should raise_error(IndexError)
-      lambda { @s.rb_struct_aref(@struct, 3) }.should raise_error(IndexError)
+      -> { @s.rb_struct_aref(@struct, -4) }.should raise_error(IndexError)
+      -> { @s.rb_struct_aref(@struct, 3) }.should raise_error(IndexError)
     end
   end
 
@@ -143,7 +147,7 @@ describe "C-API Struct function" do
     end
 
     it "raises a NameError if the struct member does not exist" do
-      lambda { @s.rb_struct_getmember(@struct, :d) }.should raise_error(NameError)
+      -> { @s.rb_struct_getmember(@struct, :d) }.should raise_error(NameError)
     end
   end
 
@@ -176,17 +180,17 @@ describe "C-API Struct function" do
     end
 
     it "raises a NameError if the struct member does not exist" do
-      lambda { @s.rb_struct_aset(@struct, :d, 1) }.should raise_error(NameError)
+      -> { @s.rb_struct_aset(@struct, :d, 1) }.should raise_error(NameError)
     end
 
     it "raises an IndexError if the given index is out of range" do
-      lambda { @s.rb_struct_aset(@struct, -4, 1) }.should raise_error(IndexError)
-      lambda { @s.rb_struct_aset(@struct, 3, 1) }.should raise_error(IndexError)
+      -> { @s.rb_struct_aset(@struct, -4, 1) }.should raise_error(IndexError)
+      -> { @s.rb_struct_aset(@struct, 3, 1) }.should raise_error(IndexError)
     end
 
-    it "raises a RuntimeError if the struct is frozen" do
+    it "raises a #{frozen_error_class} if the struct is frozen" do
       @struct.freeze
-      lambda { @s.rb_struct_aset(@struct, :a, 1) }.should raise_error(RuntimeError)
+      -> { @s.rb_struct_aset(@struct, :a, 1) }.should raise_error(frozen_error_class)
     end
   end
 
@@ -199,11 +203,9 @@ describe "C-API Struct function" do
     end
   end
 
-  ruby_version_is "2.4" do
-    describe "rb_struct_size" do
-      it "returns the number of struct members" do
-        @s.rb_struct_size(@struct).should == 3
-      end
+  describe "rb_struct_size" do
+    it "returns the number of struct members" do
+      @s.rb_struct_size(@struct).should == 3
     end
   end
 end

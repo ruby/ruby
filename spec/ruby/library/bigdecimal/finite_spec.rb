@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'bigdecimal'
 
 describe "BigDecimal#finite?" do
@@ -32,4 +32,3 @@ describe "BigDecimal#finite?" do
     end
   end
 end
-

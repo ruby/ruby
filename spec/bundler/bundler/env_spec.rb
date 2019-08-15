@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "openssl"
 require "bundler/settings"
 
 RSpec.describe Bundler::Env do
@@ -17,13 +18,61 @@ RSpec.describe Bundler::Env do
       expect(out).to include(OpenSSL::OPENSSL_VERSION)
     end
 
+    describe "rubygems paths" do
+      it "prints gem home" do
+        with_clear_paths("GEM_HOME", "/a/b/c") do
+          out = described_class.report
+          expect(out).to include("Gem Home    /a/b/c")
+        end
+      end
+
+      it "prints gem path" do
+        with_clear_paths("GEM_PATH", "/a/b/c:/d/e/f") do
+          out = described_class.report
+          expect(out).to include("Gem Path    /a/b/c:/d/e/f")
+        end
+      end
+
+      it "prints user home" do
+        with_clear_paths("HOME", "/a/b/c") do
+          out = described_class.report
+          expect(out).to include("User Home   /a/b/c")
+        end
+      end
+
+      it "prints user path" do
+        with_clear_paths("HOME", "/a/b/c") do
+          out = described_class.report
+          expect(out).to include("User Path   /a/b/c/.gem")
+        end
+      end
+
+      it "prints bin dir" do
+        with_clear_paths("GEM_HOME", "/a/b/c") do
+          out = described_class.report
+          expect(out).to include("Bin Dir     /a/b/c/bin")
+        end
+      end
+
+    private
+
+      def with_clear_paths(env_var, env_value)
+        old_env_var = ENV[env_var]
+        ENV[env_var] = env_value
+        Gem.clear_paths
+        yield
+      ensure
+        ENV[env_var] = old_env_var
+      end
+    end
+
     context "when there is a Gemfile and a lockfile and print_gemfile is true" do
       before do
         gemfile "gem 'rack', '1.0.0'"
 
         lockfile <<-L
           GEM
-            remote: file:#{gem_repo1}/
+            remote: #{file_uri_for(gem_repo1)}/
             specs:
               rack (1.0.0)
 
@@ -87,7 +136,7 @@ RSpec.describe Bundler::Env do
         create_file "other/Gemfile-other", "gem 'rack'"
         create_file "other/Gemfile", "eval_gemfile 'Gemfile-other'"
         create_file "Gemfile-alt", <<-G
-          source "file:#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           eval_gemfile "other/Gemfile"
         G
         gemfile "eval_gemfile #{File.expand_path("Gemfile-alt").dump}"
@@ -105,7 +154,7 @@ RSpec.describe Bundler::Env do
           ### Gemfile-alt
 
           ```ruby
-          source "file:#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           eval_gemfile "other/Gemfile"
           ```
 
@@ -138,6 +187,14 @@ RSpec.describe Bundler::Env do
 
         expect(described_class.report).to include("Git         1.2.3 (Apple Git-BS)")
       end
+    end
+  end
+
+  describe ".version_of", :ruby_repo do
+    let(:parsed_version) { described_class.send(:version_of, "ruby") }
+
+    it "strips version of new line characters" do
+      expect(parsed_version).to_not include("\n")
     end
   end
 end

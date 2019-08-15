@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#pop" do
   it "removes and returns the last element of the array" do
@@ -38,12 +38,12 @@ describe "Array#pop" do
     a.tainted?.should be_true
   end
 
-  it "raises a RuntimeError on a frozen array" do
-    lambda { ArraySpecs.frozen_array.pop }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    -> { ArraySpecs.frozen_array.pop }.should raise_error(frozen_error_class)
   end
 
-  it "raises a RuntimeError on an empty frozen array" do
-    lambda { ArraySpecs.empty_frozen_array.pop }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on an empty frozen array" do
+    -> { ArraySpecs.empty_frozen_array.pop }.should raise_error(frozen_error_class)
   end
 
   it "keeps untrusted status" do
@@ -105,7 +105,7 @@ describe "Array#pop" do
     end
 
     it "raises an ArgumentError if n is negative" do
-      lambda{ [1, 2, 3].pop(-1) }.should raise_error(ArgumentError)
+      ->{ [1, 2, 3].pop(-1) }.should raise_error(ArgumentError)
     end
 
     it "tries to convert n to an Integer using #to_int" do
@@ -120,12 +120,12 @@ describe "Array#pop" do
     end
 
     it "raises a TypeError when the passed n cannot be coerced to Integer" do
-      lambda{ [1, 2].pop("cat") }.should raise_error(TypeError)
-      lambda{ [1, 2].pop(nil) }.should raise_error(TypeError)
+      ->{ [1, 2].pop("cat") }.should raise_error(TypeError)
+      ->{ [1, 2].pop(nil) }.should raise_error(TypeError)
     end
 
     it "raises an ArgumentError if more arguments are passed" do
-      lambda{ [1, 2].pop(1, 2) }.should raise_error(ArgumentError)
+      ->{ [1, 2].pop(1, 2) }.should raise_error(ArgumentError)
     end
 
     it "does not return subclass instances with Array subclass" do
@@ -152,9 +152,9 @@ describe "Array#pop" do
       ary.pop(0).untrusted?.should be_false
     end
 
-    it "raises a RuntimeError on a frozen array" do
-      lambda { ArraySpecs.frozen_array.pop(2) }.should raise_error(RuntimeError)
-      lambda { ArraySpecs.frozen_array.pop(0) }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} on a frozen array" do
+      -> { ArraySpecs.frozen_array.pop(2) }.should raise_error(frozen_error_class)
+      -> { ArraySpecs.frozen_array.pop(0) }.should raise_error(frozen_error_class)
     end
 
     it "keeps untrusted status" do

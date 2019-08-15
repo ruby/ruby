@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'date'
 
 describe "DateTime#to_date" do
@@ -30,7 +30,7 @@ describe "DateTime#to_date" do
   it "maintains the same julian day regardless of local time or zone" do
     dt = DateTime.new(2012, 12, 24, 12, 23, 00, '+05:00')
 
-    with_timezone("Pactific/Pago_Pago", -11) do
+    with_timezone("Pacific/Pago_Pago", -11) do
       dt.to_date.jd.should == dt.jd
     end
   end

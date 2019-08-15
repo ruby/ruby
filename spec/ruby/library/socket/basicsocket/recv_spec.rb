@@ -1,6 +1,6 @@
 # -*- encoding: binary -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "BasicSocket#recv" do
 
@@ -76,21 +76,84 @@ describe "BasicSocket#recv" do
     ScratchPad.recorded.should == "firstline\377"
   end
 
-  ruby_version_is "2.3" do
-    it "allows an output buffer as third argument" do
-      socket = TCPSocket.new('127.0.0.1', @port)
-      socket.write("data")
+  it "allows an output buffer as third argument" do
+    socket = TCPSocket.new('127.0.0.1', @port)
+    socket.write("data")
 
-      client = @server.accept
-      buf = "foo"
-      begin
-        client.recv(4, 0, buf)
-      ensure
-        client.close
+    client = @server.accept
+    buf = "foo"
+    begin
+      client.recv(4, 0, buf)
+    ensure
+      client.close
+    end
+    buf.should == "data"
+
+    socket.close
+  end
+end
+
+describe 'BasicSocket#recv' do
+  SocketSpecs.each_ip_protocol do |family, ip_address|
+    before do
+      @server = Socket.new(family, :DGRAM)
+      @client = Socket.new(family, :DGRAM)
+    end
+
+    after do
+      @client.close
+      @server.close
+    end
+
+    describe 'using an unbound socket' do
+      it 'blocks the caller' do
+        -> { @server.recv(4) }.should block_caller
       end
-      buf.should == "data"
+    end
 
-      socket.close
+    describe 'using a bound socket' do
+      before do
+        @server.bind(Socket.sockaddr_in(0, ip_address))
+      end
+
+      describe 'without any data available' do
+        it 'blocks the caller' do
+          -> { @server.recv(4) }.should block_caller
+        end
+      end
+
+      describe 'with data available' do
+        before do
+          @client.connect(@server.getsockname)
+        end
+
+        it 'reads the given amount of bytes' do
+          @client.write('hello')
+
+          @server.recv(2).should == 'he'
+        end
+
+        it 'reads the given amount of bytes when it exceeds the data size' do
+          @client.write('he')
+
+          @server.recv(6).should == 'he'
+        end
+
+        it 'blocks the caller when called twice without new data being available' do
+          @client.write('hello')
+
+          @server.recv(2).should == 'he'
+
+          -> { @server.recv(4) }.should block_caller
+        end
+
+        it 'takes a peek at the data when using the MSG_PEEK flag' do
+          @client.write('hello')
+
+          @server.recv(2, Socket::MSG_PEEK).should == 'he'
+          @server.recv(2).should == 'he'
+        end
+      end
     end
   end
 end

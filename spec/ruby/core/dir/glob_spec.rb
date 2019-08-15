@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
-require File.expand_path('../shared/glob', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
+require_relative 'shared/glob'
 
 describe "Dir.glob" do
   it_behaves_like :dir_glob, :glob
@@ -120,6 +120,18 @@ describe "Dir.glob" do
 
   it "handles infinite directory wildcards" do
     Dir.glob('**/**/**').empty?.should == false
+  end
+
+  it "handles simple filename patterns" do
+    Dir.glob('.dotfile').should == ['.dotfile']
+  end
+
+  it "handles simple directory patterns" do
+    Dir.glob('.dotsubdir/').should == ['.dotsubdir/']
+  end
+
+  it "handles simple directory patterns applied to non-directories" do
+    Dir.glob('nondotfile/').should == []
   end
 
   platform_is_not(:windows) do

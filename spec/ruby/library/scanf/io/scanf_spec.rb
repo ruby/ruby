@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../shared/block_scanf.rb', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'shared/block_scanf'
 require 'scanf'
 
 describe "IO#scanf" do
@@ -31,5 +31,5 @@ describe "IO#scanf" do
 end
 
 describe "IO#scanf with block" do
-  it_behaves_like(:scanf_io_block_scanf, :scanf)
+  it_behaves_like :scanf_io_block_scanf, :scanf
 end

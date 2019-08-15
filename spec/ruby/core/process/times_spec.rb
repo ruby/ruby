@@ -1,8 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Process.times" do
-  it "returns a Struct::Tms" do
-    Process.times.should be_kind_of(Struct::Tms)
+  it "returns a Process::Tms" do
+    Process.times.should be_kind_of(Process::Tms)
   end
 
   it "returns current cpu times" do

@@ -18,8 +18,8 @@ describe :bigdecimal_modulo, shared: true do
   end
 
   it "returns self modulo other" do
-    bd6543 = BigDecimal.new("6543.21")
-    bd5667 = BigDecimal.new("5667.19")
+    bd6543 = BigDecimal("6543.21")
+    bd5667 = BigDecimal("5667.19")
     a = BigDecimal("1.0000000000000000000000000000000000000000005")
     b = BigDecimal("1.00000000000000000000000000000000000000000005")
 
@@ -70,6 +70,15 @@ describe :bigdecimal_modulo, shared: true do
     res.kind_of?(BigDecimal).should == true
   end
 
+  describe "with Object" do
+    it "tries to coerce the other operand to self" do
+      bd6543 = BigDecimal("6543.21")
+      object = mock("Object")
+      object.should_receive(:coerce).with(bd6543).and_return([bd6543, 137])
+      bd6543.send(@method, object, *@object).should == BigDecimal("104.21")
+    end
+  end
+
   it "returns NaN if NaN is involved" do
     @nan.send(@method, @nan).nan?.should == true
     @nan.send(@method, @one).nan?.should == true
@@ -99,7 +108,7 @@ describe :bigdecimal_modulo, shared: true do
   end
 
   it "raises TypeError if the argument cannot be coerced to BigDecimal" do
-    lambda {
+    -> {
       @one.send(@method, '2')
     }.should raise_error(TypeError)
   end
@@ -107,10 +116,10 @@ end
 
 describe :bigdecimal_modulo_zerodivisionerror, shared: true do
   it "raises ZeroDivisionError if other is zero" do
-    bd5667 = BigDecimal.new("5667.19")
+    bd5667 = BigDecimal("5667.19")
 
-    lambda { bd5667.send(@method, 0) }.should raise_error(ZeroDivisionError)
-    lambda { bd5667.send(@method, BigDecimal("0")) }.should raise_error(ZeroDivisionError)
-    lambda { @zero.send(@method, @zero) }.should raise_error(ZeroDivisionError)
+    -> { bd5667.send(@method, 0) }.should raise_error(ZeroDivisionError)
+    -> { bd5667.send(@method, BigDecimal("0")) }.should raise_error(ZeroDivisionError)
+    -> { @zero.send(@method, @zero) }.should raise_error(ZeroDivisionError)
   end
 end

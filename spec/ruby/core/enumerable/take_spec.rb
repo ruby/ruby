@@ -1,10 +1,10 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/take', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/take'
 
 describe "Enumerable#take" do
   it "requires an argument" do
-    lambda{ EnumerableSpecs::Numerous.new.take}.should raise_error(ArgumentError)
+    ->{ EnumerableSpecs::Numerous.new.take}.should raise_error(ArgumentError)
   end
 
   describe "when passed an argument" do
