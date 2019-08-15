@@ -239,7 +239,7 @@ RSpec.describe "The library itself" do
 
         expect(err).to be_empty, "bundler should build as a gem without warnings, but\n#{err}"
       ensure
-        FileUtils.rm("bundler-#{Bundler::VERSION}.gem")
+        root.join("bundler-#{Bundler::VERSION}.gem").rmtree
       end
     end
   end
