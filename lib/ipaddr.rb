@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # ipaddr.rb - A class to manipulate an IP address
 #
@@ -103,13 +103,13 @@ class IPAddr
 
   # Creates a new ipaddr containing the given network byte ordered
   # string form of an IP address.
-  def IPAddr::new_ntoh(addr)
-    return IPAddr.new(IPAddr::ntop(addr))
+  def self.new_ntoh(addr)
+    return new(ntop(addr))
   end
 
   # Convert a network byte ordered string form of an IP address into
   # human readable form.
-  def IPAddr::ntop(addr)
+  def self.ntop(addr)
     case addr.size
     when 4
       s = addr.unpack('C4').join('.')
@@ -259,6 +259,50 @@ class IPAddr
     return @family == Socket::AF_INET6
   end
 
+  # Returns true if the ipaddr is a loopback address.
+  def loopback?
+    case @family
+    when Socket::AF_INET
+      @addr & 0xff000000 == 0x7f000000
+    when Socket::AF_INET6
+      @addr == 1
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
+  # Returns true if the ipaddr is a private address.  IPv4 addresses
+  # in 10.0.0.0/8, 172.16.0.0/12 and 192.168.0.0/16 as defined in RFC
+  # 1918 and IPv6 Unique Local Addresses in fc00::/7 as defined in RFC
+  # 4193 are considered private.
+  def private?
+    case @family
+    when Socket::AF_INET
+      @addr & 0xff000000 == 0x0a000000 ||    # 10.0.0.0/8
+        @addr & 0xfff00000 == 0xac100000 ||  # 172.16.0.0/12
+        @addr & 0xffff0000 == 0xc0a80000     # 192.168.0.0/16
+    when Socket::AF_INET6
+      @addr & 0xfe00_0000_0000_0000_0000_0000_0000_0000 == 0xfc00_0000_0000_0000_0000_0000_0000_0000
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
+  # Returns true if the ipaddr is a link-local address.  IPv4
+  # addresses in 169.254.0.0/16 reserved by RFC 3927 and Link-Local
+  # IPv6 Unicast Addresses in fe80::/10 reserved by RFC 4291 are
+  # considered link-local.
+  def link_local?
+    case @family
+    when Socket::AF_INET
+      @addr & 0xffff0000 == 0xa9fe0000 # 169.254.0.0/16
+    when Socket::AF_INET6
+      @addr & 0xffc0_0000_0000_0000_0000_0000_0000_0000 == 0xfe80_0000_0000_0000_0000_0000_0000_0000
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
   # Returns true if the ipaddr is an IPv4-mapped IPv6 address.
   def ipv4_mapped?
     return ipv6? && (@addr >> 32) == 0xffff
@@ -266,12 +310,19 @@ class IPAddr
 
   # Returns true if the ipaddr is an IPv4-compatible IPv6 address.
   def ipv4_compat?
+    warn "IPAddr\##{__callee__} is obsolete", uplevel: 1 if $VERBOSE
+    _ipv4_compat?
+  end
+
+  def _ipv4_compat?
     if !ipv6? || (@addr >> 32) != 0
       return false
     end
     a = (@addr & IN4MASK)
     return a != 0 && a != 1
   end
+
+  private :_ipv4_compat?
 
   # Returns a new ipaddr built by converting the native IPv4 address
   # into an IPv4-mapped IPv6 address.
@@ -285,6 +336,7 @@ class IPAddr
   # Returns a new ipaddr built by converting the native IPv4 address
   # into an IPv4-compatible IPv6 address.
   def ipv4_compat
+    warn "IPAddr\##{__callee__} is obsolete", uplevel: 1 if $VERBOSE
     if !ipv4?
       raise InvalidAddressError, "not an IPv4 address"
     end
@@ -295,7 +347,7 @@ class IPAddr
   # native IPv4 address.  If the IP address is not an IPv4-mapped or
   # IPv4-compatible IPv6 address, returns self.
   def native
-    if !ipv4_mapped? && !ipv4_compat?
+    if !ipv4_mapped? && !_ipv4_compat?
       return self
     end
     return self.clone.set(@addr & IN4MASK, Socket::AF_INET)
@@ -371,6 +423,35 @@ class IPAddr
     return clone.set(begin_addr, @family)..clone.set(end_addr, @family)
   end
 
+  # Returns the prefix length in bits for the ipaddr.
+  def prefix
+    case @family
+    when Socket::AF_INET
+      n = IN4MASK ^ @mask_addr
+      i = 32
+    when Socket::AF_INET6
+      n = IN6MASK ^ @mask_addr
+      i = 128
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+    while n.positive?
+      n >>= 1
+      i -= 1
+    end
+    i
+  end
+
+  # Sets the prefix length in bits
+  def prefix=(prefix)
+    case prefix
+    when Integer
+      mask!(prefix)
+    else
+      raise InvalidPrefixError, "prefix must be an integer"
+    end
+  end
+
   # Returns a string containing a human-readable representation of the
   # ipaddr. ("#<IPAddr: family:address/mask>")
   def inspect
@@ -413,7 +494,8 @@ class IPAddr
 
   # Set current netmask to given mask.
   def mask!(mask)
-    if mask.kind_of?(String)
+    case mask
+    when String
       if mask =~ /\A\d+\z/
         prefixlen = mask.to_i
       else
@@ -422,6 +504,10 @@ class IPAddr
           raise InvalidPrefixError, "address family is not same"
         end
         @mask_addr = m.to_i
+        n = @mask_addr ^ m.instance_variable_get(:@mask_addr)
+        unless ((n + 1) & n).zero?
+          raise InvalidPrefixError, "invalid mask #{mask}"
+        end
         @addr &= @mask_addr
         return self
       end
@@ -508,6 +594,8 @@ class IPAddr
     else
       @mask_addr = (@family == Socket::AF_INET) ? IN4MASK : IN6MASK
     end
+  rescue InvalidAddressError => e
+    raise e.class, "#{e.message}: #{addr}"
   end
 
   def coerce_other(other)

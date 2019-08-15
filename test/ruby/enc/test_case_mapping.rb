@@ -162,6 +162,64 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_upcase_properties     'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ', 'αβγδεζηθικλμνξοπρστυφχψω'
   end
 
+  # This test checks against problems when changing the order of mapping results
+  # in some of the entries of the unfolding table (related to
+  # https://bugs.ruby-lang.org/issues/12990).
+  def test_reorder_unfold
+    # GREEK SMALL LETTER IOTA
+    assert_equal 0, "\u03B9" =~ /\u0345/i
+    assert_equal 0, "\u0345" =~ /\u03B9/i
+    assert_equal 0, "\u03B9" =~ /\u0399/i
+    assert_equal 0, "\u0399" =~ /\u03B9/i
+    assert_equal 0, "\u03B9" =~ /\u1fbe/i
+    assert_equal 0, "\u1fbe" =~ /\u03B9/i
+
+    # GREEK SMALL LETTER MU
+    assert_equal 0, "\u03BC" =~ /\u00B5/i
+    assert_equal 0, "\u00B5" =~ /\u03BC/i
+    assert_equal 0, "\u03BC" =~ /\u039C/i
+    assert_equal 0, "\u039C" =~ /\u03BC/i
+
+    # CYRILLIC SMALL LETTER MONOGRAPH UK
+    assert_equal 0, "\uA64B" =~ /\u1c88/i
+    assert_equal 0, "\u1c88" =~ /\uA64B/i
+    assert_equal 0, "\uA64B" =~ /\ua64A/i
+    assert_equal 0, "\ua64A" =~ /\uA64B/i
+  end
+
+  def test_georgian_canary
+    message = "Reexamine implementation of Georgian in String#capitalize"
+    assert_equal false, "\u1CBB".match?(/\p{assigned}/), message
+    assert_equal false, "\u1CBC".match?(/\p{assigned}/), message
+  end
+
+  def test_georgian_unassigned
+    message = "Unassigned codepoints should not be converted"
+    assert_equal "\u1CBB", "\u1CBB".capitalize, message
+    assert_equal "\u1CBC", "\u1CBC".capitalize, message
+  end
+
+  def test_georgian_capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u1C90\u1C91\u1C92".capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u1C90\u1C91\u10D2".capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u1C90\u10D1\u1C92".capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u1C90\u10D1\u10D2".capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u10D0\u1C91\u1C92".capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u10D0\u1C91\u10D2".capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u10D0\u10D1\u1C92".capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u10D0\u10D1\u10D2".capitalize
+  end
+
+  def test_shift_jis_downcase_ascii
+    s = ("A".."Z").map {|c| "\x89#{c}"}.join("").force_encoding("Shift_JIS")
+    assert_equal s, s.downcase(:ascii)
+  end
+
+  def test_shift_jis_upcase_ascii
+    s = ("a".."z").map {|c| "\x89#{c}"}.join("").force_encoding("Shift_JIS")
+    assert_equal s, s.upcase(:ascii)
+  end
+
   def no_longer_a_test_buffer_allocations
     assert_equal 'TURKISH*ı'*10, ('I'*10).downcase(:turkic)
     assert_equal 'TURKISH*ı'*100, ('I'*100).downcase(:turkic)

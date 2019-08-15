@@ -21,7 +21,9 @@ assert_finish 10, %q{
   end
 }, '[ruby-core:22158]'
 
-assert_normal_exit(<<'End', '[ruby-dev:37934]')
+# temporarily stop this test to enable explicit failure when
+# timer thread couldn't be created (r61706 and r61717).
+assert_normal_exit(<<'End', '[ruby-dev:37934]') if false
   main = Thread.current
   Thread.new { sleep 0.01 until main.stop?; Thread.kill main }
   Process.setrlimit(:NPROC, 1) if defined?(Process::RLIMIT_NPROC)

@@ -51,7 +51,7 @@ module WEBrick
       @level = level || INFO
       case log_file
       when String
-        @log = open(log_file, "a+")
+        @log = File.open(log_file, "a+")
         @log.sync = true
         @opened = true
       when NilClass
@@ -118,10 +118,10 @@ module WEBrick
     # * Otherwise it will return +arg+.inspect.
     def format(arg)
       if arg.is_a?(Exception)
-        "#{arg.class}: #{arg.message}\n\t" <<
+        "#{arg.class}: #{AccessLog.escape(arg.message)}\n\t" <<
         arg.backtrace.join("\n\t") << "\n"
       elsif arg.respond_to?(:to_str)
-        arg.to_str
+        AccessLog.escape(arg.to_str)
       else
         arg.inspect
       end

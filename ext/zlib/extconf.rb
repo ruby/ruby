@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # extconf.rb
 #
@@ -27,17 +27,43 @@ else
     ]
     $INCFLAGS << " -I$(ZSRC)"
     if $mswin or $mingw
-      $libs = append_library($libs, "zdll")
       dll = "zlib1.dll"
       $extso << dll
+      $cleanfiles << "$(topdir)/#{dll}" << "$(ZIMPLIB)"
+      zmk = "\t$(MAKE) -f $(ZMKFILE) TOP=$(ZSRC)"
+      if $nmake
+        zmkfile = "$(ZSRC)/win32/Makefile.msc"
+        m = "#{zsrc}/win32/Makefile.msc"
+      else
+        zmkfile = "$(ZSRC)/win32/Makefile.gcc"
+        m = "#{zsrc}/win32/Makefile.gcc"
+        zmk += " PREFIX="
+        zmk << CONFIG['CC'][/(.*-)gcc([^\/]*)\z/, 1]
+        zmk << " CC=$(CC)" if $2
+      end
+      m = File.read(m)
+      zimplib = m[/^IMPLIB[ \t]*=[ \t]*(\S+)/, 1]
+      $LOCAL_LIBS << " " << zimplib
+      unless $nmake or /^TOP[ \t]/ =~ m
+        m.gsub!(/win32\/zlib\.def/, '$(TOP)/\&')
+        m.gsub!(/^(\t.*[ \t])(\S+\.rc)/, '\1-I$(<D) $<')
+        m = "TOP = .\n""VPATH=$(TOP)\n" + m
+        zmkfile = File.basename(zmkfile)
+        File.rename(zmkfile, zmkfile+".orig") if File.exist?(zmkfile)
+        File.write(zmkfile, m)
+      end
       addconf.push(
-        "ZIMPLIB = zdll.lib\n",
+        "ZMKFILE = #{zmkfile}\n",
+        "ZIMPLIB = #{zimplib}\n",
         "$(TARGET_SO): $(ZIMPLIB)\n",
         "$(ZIMPLIB):\n",
-        "\t$(MAKE) -f $(ZSRC)/win32/Makefile.#{$nmake ? 'msc' : 'gcc'} TOP=$(ZSRC) $@\n",
+        "#{zmk} $@\n",
         "install-so: $(topdir)/#{dll}",
         "$(topdir)/#{dll}: $(ZIMPLIB)\n",
         "\t$(Q) $(COPY) #{dll} $(@D)\n",
+        "clean: clean-zsrc\n",
+        "clean-zsrc:\n",
+        "#{zmk} clean\n",
       )
     end
     Logging.message "using zlib in #{zsrc}\n"

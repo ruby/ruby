@@ -3,8 +3,7 @@
 # Note: Rinda::Ring API is unstable.
 #
 require 'drb/drb'
-require 'rinda/rinda'
-require 'thread'
+require_relative 'rinda'
 require 'ipaddr'
 
 module Rinda
@@ -135,7 +134,6 @@ module Rinda
 
       socket = Socket.new(addrinfo.pfamily, addrinfo.socktype,
                           addrinfo.protocol)
-      @sockets << socket
 
       if addrinfo.ipv4_multicast? or addrinfo.ipv6_multicast? then
         if Socket.const_defined?(:SO_REUSEPORT) then
@@ -166,6 +164,11 @@ module Rinda
       end
 
       socket
+    rescue
+      socket = socket.close if socket
+      raise
+    ensure
+      @sockets << socket if socket
     end
 
     ##

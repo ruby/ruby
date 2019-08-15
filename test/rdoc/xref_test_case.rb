@@ -1,7 +1,7 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ENV['RDOC_TEST'] = 'yes'
 
-require 'rdoc'
+require 'minitest_helper'
 require File.expand_path '../xref_data', __FILE__
 
 class XrefTestCase < RDoc::TestCase
@@ -31,9 +31,10 @@ class XrefTestCase < RDoc::TestCase
     @rdoc.options = @options
     @rdoc.generator = generator
 
-    @c1    = @xref_data.find_module_named 'C1'
-    @c1_m  = @c1.method_list.last  # C1#m
-    @c1__m = @c1.method_list.first # C1::m
+    @c1       = @xref_data.find_module_named 'C1'
+    @c1__m    = @c1.find_class_method_named 'm' # C1::m
+    @c1_m     = @c1.find_instance_method_named 'm'  # C1#m
+    @c1_plus  = @c1.find_instance_method_named '+'
 
     @c2    = @xref_data.find_module_named 'C2'
     @c2_a  = @c2.method_list.last
@@ -51,6 +52,18 @@ class XrefTestCase < RDoc::TestCase
     @c5_c1 = @xref_data.find_module_named 'C5::C1'
     @c3_h1 = @xref_data.find_module_named 'C3::H1'
     @c3_h2 = @xref_data.find_module_named 'C3::H2'
+    @c6    = @xref_data.find_module_named 'C6'
+    @c7    = @xref_data.find_module_named 'C7'
+    @c8    = @xref_data.find_module_named 'C8'
+    @c8_s1 = @xref_data.find_module_named 'C8::S1'
+
+    @c9         = @xref_data.find_module_named 'C9'
+    @c9_a       = @xref_data.find_module_named 'C9::A'
+    @c9_a_i_foo = @c9_a.method_list.first
+    @c9_a_c_bar = @c9_a.method_list.last
+    @c9_b       = @xref_data.find_module_named 'C9::B'
+    @c9_b_c_foo = @c9_b.method_list.first
+    @c9_b_i_bar = @c9_b.method_list.last
 
     @m1    = @xref_data.find_module_named 'M1'
     @m1_m  = @m1.method_list.first

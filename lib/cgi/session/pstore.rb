@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # cgi/session/pstore.rb - persistent storage of marshalled session data
 #
@@ -10,7 +10,7 @@
 # persistent of session data on top of the pstore library.  See
 # cgi/session.rb for more details on session storage managers.
 
-require 'cgi/session'
+require_relative '../session'
 require 'pstore'
 
 class CGI

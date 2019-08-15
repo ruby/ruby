@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # $Id$
 #
@@ -25,6 +25,7 @@ class Ripper
       @__lexer = Lexer.new(src, filename, lineno)
       @__line = nil
       @__col = nil
+      @__state = nil
     end
 
     # The file name of the input.
@@ -46,13 +47,20 @@ class Ripper
       @__col
     end
 
+    # The scanner's state of the current token.
+    # This value is the bitwise OR of zero or more of the +Ripper::EXPR_*+ constants.
+    def state
+      @__state
+    end
+
     # Starts the parser.
     # +init+ is a data accumulator and is passed to the next event handler (as
     # of Enumerable#inject).
     def parse(init = nil)
       data = init
-      @__lexer.lex.each do |pos, event, tok|
+      @__lexer.lex.each do |pos, event, tok, state|
         @__line, @__col = *pos
+        @__state = state
         data = if respond_to?(event, true)
                then __send__(event, tok, data)
                else on_default(event, tok, data)

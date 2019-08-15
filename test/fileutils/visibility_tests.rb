@@ -1,15 +1,15 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'fileutils'
 
-class TestFileUtils < Test::Unit::TestCase
+class TestFileUtilsInc < Test::Unit::TestCase
 end
 
 ##
 # These tests are reused in the FileUtils::Verbose, FileUtils::NoWrite and
 # FileUtils::DryRun tests
 
-module TestFileUtils::Visibility
+module TestFileUtilsInc::Visibility
 
   FileUtils::METHODS.each do |m|
     define_method "test_singleton_visibility_#{m}" do

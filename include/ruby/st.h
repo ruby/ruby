@@ -61,12 +61,9 @@ typedef char st_check_for_sizeof_st_index_t[SIZEOF_VOIDP == (int)sizeof(st_index
 struct st_hash_type {
     int (*compare)(ANYARGS /*st_data_t, st_data_t*/); /* st_compare_func* */
     st_index_t (*hash)(ANYARGS /*st_data_t*/);        /* st_hash_func* */
-    /* The following is an optional func for stronger hash.  When we
-       have many different keys with the same hash we can switch to
-       use it to prevent a denial attack with usage of hash table
-       collisions. */
-    st_index_t (*strong_hash)(ANYARGS /*st_data_t*/);
 };
+
+#define ST_INDEX_BITS (SIZEOF_ST_INDEX_T * CHAR_BIT)
 
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR) && defined(HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P)
 # define ST_DATA_COMPATIBLE_P(type) \
@@ -82,12 +79,8 @@ struct st_table_entry; /* defined in st.c */
 struct st_table {
     /* Cached features of the table -- see st.c for more details.  */
     unsigned char entry_power, bin_power, size_ind;
-    /* True when we are rebuilding the table.  */
-    unsigned char inside_rebuild_p;
     /* How many times the table was rebuilt.  */
     unsigned int rebuilds_num;
-    /* Currently used hash function.  */
-    st_index_t (*curr_hash)(ANYARGS /*st_data_t*/);
     const struct st_hash_type *type;
     /* Number of entries currently in the table.  */
     st_index_t num_entries;
@@ -103,7 +96,7 @@ struct st_table {
 
 #define st_is_member(table,key) st_lookup((table),(key),(st_data_t *)0)
 
-enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK};
+enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK, ST_REPLACE};
 
 st_table *st_init_table(const struct st_hash_type *);
 st_table *st_init_table_with_size(const struct st_hash_type *, st_index_t);
@@ -125,6 +118,7 @@ typedef int st_update_callback_func(st_data_t *key, st_data_t *value, st_data_t 
  * results of hash() are same and compare() returns 0, otherwise the
  * behavior is undefined */
 int st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data_t arg);
+int st_foreach_with_replace(st_table *tab, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg);
 int st_foreach(st_table *, int (*)(ANYARGS), st_data_t);
 int st_foreach_check(st_table *, int (*)(ANYARGS), st_data_t, st_data_t);
 st_index_t st_keys(st_table *table, st_data_t *keys, st_index_t size);
@@ -149,6 +143,8 @@ CONSTFUNC(st_index_t st_hash_uint(st_index_t h, st_index_t i));
 CONSTFUNC(st_index_t st_hash_end(st_index_t h));
 CONSTFUNC(st_index_t st_hash_start(st_index_t h));
 #define st_hash_start(h) ((st_index_t)(h))
+
+void rb_hash_bulk_insert_into_st_table(long, const VALUE *, VALUE);
 
 RUBY_SYMBOL_EXPORT_END
 

@@ -61,4 +61,3 @@ class TestGemResolverLockSet < Gem::TestCase
   end
 
 end
-

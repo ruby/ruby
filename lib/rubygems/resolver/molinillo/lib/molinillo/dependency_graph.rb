@@ -98,18 +98,27 @@ module Gem::Resolver::Molinillo
       "#{self.class}:#{vertices.values.inspect}"
     end
 
+    # @param [Hash] options options for dot output.
     # @return [String] Returns a dot format representation of the graph
-    def to_dot
+    def to_dot(options = {})
+      edge_label = options.delete(:edge_label)
+      raise ArgumentError, "Unknown options: #{options.keys}" unless options.empty?
+
       dot_vertices = []
       dot_edges = []
       vertices.each do |n, v|
         dot_vertices << "  #{n} [label=\"{#{n}|#{v.payload}}\"]"
         v.outgoing_edges.each do |e|
-          dot_edges << "  #{e.origin.name} -> #{e.destination.name} [label=\"#{e.requirement}\"]"
+          label = edge_label ? edge_label.call(e) : e.requirement
+          dot_edges << "  #{e.origin.name} -> #{e.destination.name} [label=#{label.to_s.dump}]"
         end
       end
+
+      dot_vertices.uniq!
       dot_vertices.sort!
+      dot_edges.uniq!
       dot_edges.sort!
+
       dot = dot_vertices.unshift('digraph G {').push('') + dot_edges.push('}')
       dot.join("\n")
     end
@@ -119,10 +128,12 @@ module Gem::Resolver::Molinillo
     #   {Vertex#successors}
     def ==(other)
       return false unless other
+      return true if equal?(other)
       vertices.each do |name, vertex|
         other_vertex = other.vertex_named(name)
         return false unless other_vertex
-        return false unless other_vertex.successors.map(&:name).to_set == vertex.successors.map(&:name).to_set
+        return false unless vertex.payload == other_vertex.payload
+        return false unless other_vertex.successors.to_set == vertex.successors.to_set
       end
     end
 
@@ -134,6 +145,7 @@ module Gem::Resolver::Molinillo
     def add_child_vertex(name, payload, parent_names, requirement)
       root = !parent_names.delete(nil) { true }
       vertex = add_vertex(name, payload, root)
+      vertex.explicit_requirements << requirement if root
       parent_names.each do |parent_name|
         parent_node = vertex_named(parent_name)
         add_edge(parent_node, vertex, requirement)
@@ -152,7 +164,7 @@ module Gem::Resolver::Molinillo
     # Detaches the {#vertex_named} `name` {Vertex} from the graph, recursively
     # removing any non-root vertices that were orphaned in the process
     # @param [String] name
-    # @return [void]
+    # @return [Array<Vertex>] the vertices which have been detached
     def detach_vertex_named(name)
       log.detach_vertex_named(self, name)
     end

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # configure option:
 #   --with-dbm-type=COMMA-SEPARATED-NDBM-TYPES
 #
@@ -7,6 +7,7 @@
 #   db          Berkeley DB (libdb)
 #   db2         Berkeley DB (libdb2)
 #   db1         Berkeley DB (libdb1)
+#   db6         Berkeley DB (libdb6)
 #   db5         Berkeley DB (libdb5)
 #   db4         Berkeley DB (libdb4)
 #   db3         Berkeley DB (libdb3)
@@ -23,7 +24,7 @@ dir_config("dbm")
 if dblib = with_config("dbm-type", nil)
   dblib = dblib.split(/[ ,]+/)
 else
-  dblib = %w(libc db db2 db1 db5 db4 db3 gdbm_compat gdbm qdbm)
+  dblib = %w(libc db db2 db1 db6 db5 db4 db3 gdbm_compat gdbm qdbm)
 end
 
 headers = {
@@ -34,6 +35,7 @@ headers = {
   "db3" => ["db3/db.h", "db3.h", "db.h"],
   "db4" => ["db4/db.h", "db4.h", "db.h"],
   "db5" => ["db5/db.h", "db5.h", "db.h"],
+  "db6" => ["db6/db.h", "db6.h", "db.h"],
   "gdbm_compat" => ["gdbm-ndbm.h", "gdbm/ndbm.h", "ndbm.h"], # GDBM since 1.8.1
   "gdbm" => ["gdbm-ndbm.h", "gdbm/ndbm.h", "ndbm.h"], # GDBM until 1.8.0
   "qdbm" => ["qdbm/relic.h", "relic.h"],
@@ -131,7 +133,7 @@ def headers.db_check2(db, hdr)
   hsearch = nil
 
   case db
-  when /^db[2-5]?$/
+  when /^db[2-6]?$/
     hsearch = "-DDB_DBM_HSEARCH"
   when "gdbm_compat"
     have_library("gdbm") or return false

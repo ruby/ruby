@@ -79,13 +79,16 @@ read_digits(const char *s, VALUE *n, size_t width)
 {
     size_t l;
 
-    l = strspn(s, "0123456789");
+    if (!width)
+        return 0;
+
+    l = 0;
+    while (ISDIGIT(s[l])) {
+        if (++l == width) break;
+    }
 
     if (l == 0)
 	return 0;
-
-    if (width < l)
-	l = width;
 
     if ((4 * l * sizeof(char)) <= (sizeof(long)*CHAR_BIT)) {
 	const char *os = s;
@@ -113,26 +116,26 @@ read_digits(const char *s, VALUE *n, size_t width)
     }
 }
 
-#define set_hash(k,v) rb_hash_aset(hash, ID2SYM(rb_intern(k)), v)
-#define ref_hash(k) rb_hash_aref(hash, ID2SYM(rb_intern(k)))
-#define del_hash(k) rb_hash_delete(hash, ID2SYM(rb_intern(k)))
+#define set_hash(k,v) rb_hash_aset(hash, ID2SYM(rb_intern(k"")), v)
+#define ref_hash(k) rb_hash_aref(hash, ID2SYM(rb_intern(k"")))
+#define del_hash(k) rb_hash_delete(hash, ID2SYM(rb_intern(k"")))
 
 #define fail() \
-{ \
+do { \
     set_hash("_fail", Qtrue); \
     return 0; \
-}
+} while (0)
 
 #define fail_p() (!NIL_P(ref_hash("_fail")))
 
 #define READ_DIGITS(n,w) \
-{ \
+do { \
     size_t l; \
     l = read_digits(&str[si], &n, w); \
     if (l == 0) \
 	fail();	\
     si += l; \
-}
+} while (0)
 
 #define READ_DIGITS_MAX(n) READ_DIGITS(n, LONG_MAX)
 
@@ -147,14 +150,14 @@ valid_range_p(VALUE v, int a, int b)
 }
 
 #define recur(fmt) \
-{ \
+do { \
     size_t l; \
     l = date__strptime_internal(&str[si], slen - si, \
 				fmt, sizeof fmt - 1, hash); \
     if (fail_p()) \
 	return 0; \
     si += l; \
-}
+} while (0)
 
 VALUE date_zone_to_diff(VALUE);
 
@@ -237,9 +240,9 @@ date__strptime_internal(const char *str, size_t slen,
 		    VALUE n;
 
 		    if (NUM_PATTERN_P())
-			READ_DIGITS(n, 2)
+			READ_DIGITS(n, 2);
 		    else
-			READ_DIGITS_MAX(n)
+			READ_DIGITS_MAX(n);
 		    set_hash("_cent", n);
 		    goto matched;
 		}
@@ -278,9 +281,9 @@ date__strptime_internal(const char *str, size_t slen,
 		    VALUE n;
 
 		    if (NUM_PATTERN_P())
-			READ_DIGITS(n, 4)
+			READ_DIGITS(n, 4);
 		    else
-			READ_DIGITS_MAX(n)
+			READ_DIGITS_MAX(n);
 		    set_hash("cwyear", n);
 		    goto matched;
 		}
@@ -358,9 +361,9 @@ date__strptime_internal(const char *str, size_t slen,
 		    }
 		    osi = si;
 		    if (NUM_PATTERN_P())
-			READ_DIGITS(n, c == 'L' ? 3 : 9)
+			READ_DIGITS(n, c == 'L' ? 3 : 9);
 		    else
-			READ_DIGITS_MAX(n)
+			READ_DIGITS_MAX(n);
 		    if (sign == -1)
 			n = f_negate(n);
 		    set_hash("sec_fraction",
@@ -426,9 +429,7 @@ date__strptime_internal(const char *str, size_t slen,
 		    if (sign == -1)
 			n = f_negate(n);
 		    set_hash("seconds",
-			     rb_rational_new2(n,
-					      f_expt(INT2FIX(10),
-						     INT2FIX(3))));
+			     rb_rational_new2(n, INT2FIX(1000)));
 		    goto matched;
 		}
 
@@ -529,24 +530,24 @@ date__strptime_internal(const char *str, size_t slen,
 		goto matched;
 
 	      case 'Y':
-		  {
-		      VALUE n;
-		      int sign = 1;
+		{
+		    VALUE n;
+		    int sign = 1;
 
-		      if (issign(str[si])) {
-			  if (str[si] == '-')
-			      sign = -1;
-			  si++;
-		      }
-		      if (NUM_PATTERN_P())
-			  READ_DIGITS(n, 4)
-		      else
-			  READ_DIGITS_MAX(n)
+		    if (issign(str[si])) {
+			if (str[si] == '-')
+			    sign = -1;
+			si++;
+		    }
+		    if (NUM_PATTERN_P())
+			READ_DIGITS(n, 4);
+		    else
+			READ_DIGITS_MAX(n);
 		    if (sign == -1)
 			n = f_negate(n);
-		      set_hash("year", n);
-		      goto matched;
-		  }
+		    set_hash("year", n);
+		    goto matched;
+		}
 
 	      case 'y':
 		{
@@ -668,7 +669,7 @@ date__strptime(const char *str, size_t slen,
     if (fail_p())
 	return Qnil;
 
-    cent = ref_hash("_cent");
+    cent = del_hash("_cent");
     if (!NIL_P(cent)) {
 	VALUE year;
 
@@ -678,10 +679,9 @@ date__strptime(const char *str, size_t slen,
 	year = ref_hash("year");
 	if (!NIL_P(year))
 	    set_hash("year", f_add(year, f_mul(cent, INT2FIX(100))));
-	del_hash("_cent");
     }
 
-    merid = ref_hash("_merid");
+    merid = del_hash("_merid");
     if (!NIL_P(merid)) {
 	VALUE hour;
 
@@ -690,7 +690,6 @@ date__strptime(const char *str, size_t slen,
 	    hour = f_mod(hour, INT2FIX(12));
 	    set_hash("hour", f_add(hour, merid));
 	}
-	del_hash("_merid");
     }
 
     return hash;

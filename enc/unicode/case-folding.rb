@@ -16,15 +16,20 @@ class CaseFolding
     module_function
 
     def hex_seq(v)
-      v.map {|i| "0x%04x" % i}.join(", ")
+      v.map { |i| "0x%04x" % i }.join(", ")
     end
 
     def print_table_1(dest, type, mapping_data, data)
       for k, v in data = data.sort
         sk = (Array === k and k.length > 1) ? "{#{hex_seq(k)}}" : ("0x%04x" % k)
-        ck = cv = ''
-        ck = ' /* ' + Array(k).pack("U*") + ' */' if @debug
-        cv = ' /* ' + Array(v).map{|c|[c].pack("U*")}.join(", ") + ' */' if @debug
+        if type=='CaseUnfold_11' and v.length>1
+          # reorder CaseUnfold_11 entries to avoid special treatment for U+03B9/U+03BC/U+A64B
+          item = mapping_data.map("%04X" % k[0])
+          upper = item.upper if item
+          v = v.sort_by { |i| ("%04X"%i) == upper ? 0 : 1 }
+        end
+        ck = @debug ? ' /* ' + Array(k).pack("U*") + ' */' : ''
+        cv = @debug ? ' /* ' + Array(v).map{|c|[c].pack("U*")}.join(", ") + ' */' : ''
         dest.print("  {#{sk}#{ck}, {#{v.length}#{mapping_data.flags(k, type, v)}, {#{hex_seq(v)}#{cv}}}},\n")
       end
       data
@@ -249,13 +254,16 @@ class CaseMapping
     end
   end
 
+  def map (from)
+    @mappings[from]
+  end
+
   def flags(from, type, to)
     # types: CaseFold_11, CaseUnfold_11, CaseUnfold_12, CaseUnfold_13
     flags = ""
     from = Array(from).map {|i| "%04X" % i}.join(" ")
     to   = Array(to).map {|i| "%04X" % i}.join(" ")
-    item = @mappings[from]
-    specials_index = nil
+    item = map(from)
     specials = []
     case type
     when 'CaseFold_11'
@@ -296,15 +304,11 @@ class CaseMapping
         when item.upper  then  flags += '|U'
         when item.lower  then  flags += '|D'
         else
-          unless from=='03B9' or from=='03BC' or from=='A64B'
-            # cf. code==0x03B9||code==0x03BC||code==0xA64B in enc/unicode.c,
-            # towards the end of function onigenc_unicode_case_map
-            raise "Unpredicted case 0 in enc/unicode/case_folding.rb. Please contact https://bugs.ruby-lang.org/."
-          end
+          raise "Unpredicted case 0 in enc/unicode/case_folding.rb. Please contact https://bugs.ruby-lang.org/."
         end
         unless item.upper == item.title
           if item.code == item.title
-            raise "Unpredicted case 1 in enc/unicode/case_folding.rb. Please contact https://bugs.ruby-lang.org/."
+            flags += '|IT'   # was unpredicted case 1
           elsif item.title==to[1]
             flags += '|ST'
           else
@@ -326,7 +330,7 @@ class CaseMapping
   end
 
   def specials_output
-    "OnigCodePoint CaseMappingSpecials[] = {\n" +
+    "static const OnigCodePoint CaseMappingSpecials[] = {\n" +
     @specials.map do |sps|
       '   ' + sps.map do |sp|
         chars = sp.split(/ /)
@@ -405,8 +409,8 @@ if $0 == __FILE__
     s = f.string
   end
   if dest
-    open(dest, "wb") do |f|
-      f.print(s)
+    open(dest, "wb") do |file|
+      file.print(s)
     end
   else
     STDOUT.print(s)

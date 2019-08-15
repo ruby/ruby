@@ -1,11 +1,8 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
-# Collection of methods for writing parsers against RDoc::RubyLex and
-# RDoc::RubyToken
+# Collection of methods for writing parsers
 
 module RDoc::Parser::RubyTools
-
-  include RDoc::RubyToken
 
   ##
   # Adds a token listener +obj+, but you should probably use token_listener
@@ -22,36 +19,23 @@ module RDoc::Parser::RubyTools
     tk = nil
 
     if @tokens.empty? then
-      tk = @scanner.token
-      @read.push @scanner.get_readed
-      puts "get_tk1 => #{tk.inspect}" if $TOKEN_DEBUG
+      if @scanner_point >= @scanner.size
+        return nil
+      else
+        tk = @scanner[@scanner_point]
+        @scanner_point += 1
+        @read.push tk[:text]
+      end
     else
       @read.push @unget_read.shift
       tk = @tokens.shift
-      puts "get_tk2 => #{tk.inspect}" if $TOKEN_DEBUG
     end
 
-    tk = nil if TkEND_OF_SCRIPT === tk
-
-    if TkSYMBEG === tk then
-      set_token_position tk.line_no, tk.char_no
-
-      case tk1 = get_tk
-      when TkId, TkOp, TkSTRING, TkDSTRING, TkSTAR, TkAMPER then
-        if tk1.respond_to?(:name) then
-          tk = Token(TkSYMBOL).set_text(":" + tk1.name)
-        else
-          tk = Token(TkSYMBOL).set_text(":" + tk1.text)
-        end
-
-        # remove the identifier we just read to replace it with a symbol
-        @token_listeners.each do |obj|
-          obj.pop_token
-        end if @token_listeners
-      else
-        tk = tk1
-      end
+    if tk == nil || :on___end__ == tk[:kind]
+      tk = nil
     end
+
+    return nil unless tk
 
     # inform any listeners of our shiny new token
     @token_listeners.each do |obj|
@@ -122,19 +106,34 @@ module RDoc::Parser::RubyTools
     @tokens     = []
     @unget_read = []
     @nest = 0
+    @scanner_point = 0
   end
 
   ##
-  # Skips whitespace tokens including newlines if +skip_nl+ is true
+  # Skips whitespace tokens including newlines
 
-  def skip_tkspace(skip_nl = true) # HACK dup
+  def skip_tkspace
     tokens = []
 
-    while TkSPACE === (tk = get_tk) or (skip_nl and TkNL === tk) do
-      tokens.push tk
+    while (tk = get_tk) and (:on_sp == tk[:kind] or :on_nl == tk[:kind] or :on_ignored_nl == tk[:kind]) do
+      tokens.push(tk)
     end
 
-    unget_tk tk
+    unget_tk(tk)
+    tokens
+  end
+
+  ##
+  # Skips whitespace tokens excluding newlines
+
+  def skip_tkspace_without_nl
+    tokens = []
+
+    while (tk = get_tk) and :on_sp == tk[:kind] do
+      tokens.push(tk)
+    end
+
+    unget_tk(tk)
     tokens
   end
 

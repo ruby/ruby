@@ -1,9 +1,16 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #--
 # Methods for generating HTML, parsing CGI-related parameters, and
 # generating HTTP responses.
 #++
 class CGI
+  unless const_defined?(:Util)
+    module Util
+      @@accept_charset = "UTF-8" # :nodoc:
+    end
+    include Util
+    extend Util
+  end
 
   $CGI_ENV = ENV    # for FCGI support
 
@@ -146,7 +153,7 @@ class CGI
   #               "language"   => "ja",
   #               "expires"    => Time.now + 30,
   #               "cookie"     => [cookie1, cookie2],
-  #               "my_header1" => "my_value"
+  #               "my_header1" => "my_value",
   #               "my_header2" => "my_value")
   #
   # This method does not perform charset conversion.
@@ -182,7 +189,7 @@ class CGI
   alias :header :http_header
 
   def _header_for_string(content_type) #:nodoc:
-    buf = ''
+    buf = ''.dup
     if nph?()
       buf << "#{$CGI_ENV['SERVER_PROTOCOL'] || 'HTTP/1.0'} 200 OK#{EOL}"
       buf << "Date: #{CGI.rfc1123_date(Time.now)}#{EOL}"
@@ -198,7 +205,7 @@ class CGI
   private :_header_for_string
 
   def _header_for_hash(options)  #:nodoc:
-    buf = ''
+    buf = ''.dup
     ## add charset to option['type']
     options['type'] ||= 'text/html'
     charset = options.delete('charset')
@@ -260,7 +267,7 @@ class CGI
   def _header_for_modruby(buf)  #:nodoc:
     request = Apache::request
     buf.scan(/([^:]+): (.+)#{EOL}/o) do |name, value|
-      warn sprintf("name:%s value:%s\n", name, value) if $DEBUG
+      $stderr.printf("name:%s value:%s\n", name, value) if $DEBUG
       case name
       when 'Set-Cookie'
         request.headers_out.add(name, value)
@@ -368,14 +375,14 @@ class CGI
 
   # Parse an HTTP query string into a hash of key=>value pairs.
   #
-  #   params = CGI::parse("query_string")
+  #   params = CGI.parse("query_string")
   #     # {"name1" => ["value1", "value2", ...],
   #     #  "name2" => ["value1", "value2", ...], ... }
   #
-  def CGI::parse(query)
+  def self.parse(query)
     params = {}
     query.split(/[&;]/).each do |pairs|
-      key, value = pairs.split('=',2).collect{|v| CGI::unescape(v) }
+      key, value = pairs.split('=',2).collect{|v| CGI.unescape(v) }
 
       next unless key
 
@@ -414,7 +421,7 @@ class CGI
   module QueryExtension
 
     %w[ CONTENT_LENGTH SERVER_PORT ].each do |env|
-      define_method(env.sub(/^HTTP_/, '').downcase) do
+      define_method(env.delete_prefix('HTTP_').downcase) do
         (val = env_table[env]) && Integer(val)
       end
     end
@@ -427,7 +434,7 @@ class CGI
         HTTP_ACCEPT HTTP_ACCEPT_CHARSET HTTP_ACCEPT_ENCODING
         HTTP_ACCEPT_LANGUAGE HTTP_CACHE_CONTROL HTTP_FROM HTTP_HOST
         HTTP_NEGOTIATE HTTP_PRAGMA HTTP_REFERER HTTP_USER_AGENT ].each do |env|
-      define_method(env.sub(/^HTTP_/, '').downcase) do
+      define_method(env.delete_prefix('HTTP_').downcase) do
         env_table[env]
       end
     end
@@ -480,7 +487,7 @@ class CGI
       @files = {}
       boundary_rexp = /--#{Regexp.quote(boundary)}(#{EOL}|--)/
       boundary_size = "#{EOL}--#{boundary}#{EOL}".bytesize
-      buf = ''
+      buf = ''.dup
       bufsize = 10 * 1024
       max_count = MAX_MULTIPART_COUNT
       n = 0
@@ -535,12 +542,12 @@ class CGI
         body.rewind
         ## original filename
         /Content-Disposition:.* filename=(?:"(.*?)"|([^;\r\n]*))/i.match(head)
-        filename = $1 || $2 || ''
+        filename = $1 || $2 || ''.dup
         filename = CGI.unescape(filename) if unescape_filename?()
         body.instance_variable_set(:@original_filename, filename.taint)
         ## content type
         /Content-Type: (.*)/i.match(head)
-        (content_type = $1 || '').chomp!
+        (content_type = $1 || ''.dup).chomp!
         body.instance_variable_set(:@content_type, content_type.taint)
         ## query parameter name
         /Content-Disposition:.* name=(?:"(.*?)"|([^;\r\n]*))/i.match(head)
@@ -589,7 +596,7 @@ class CGI
       else
         begin
           require 'stringio'
-          body = StringIO.new("".force_encoding(Encoding::ASCII_8BIT))
+          body = StringIO.new("".b)
         rescue LoadError
           require 'tempfile'
           body = Tempfile.new('CGI', encoding: Encoding::ASCII_8BIT)
@@ -649,7 +656,7 @@ class CGI
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
       else
         @multipart = false
-        @params = CGI::parse(
+        @params = CGI.parse(
                     case env_table['REQUEST_METHOD']
                     when "GET", "HEAD"
                       if defined?(MOD_RUBY)
@@ -679,7 +686,7 @@ class CGI
         end
       end
 
-      @cookies = CGI::Cookie::parse((env_table['HTTP_COOKIE'] or env_table['COOKIE']))
+      @cookies = CGI::Cookie.parse((env_table['HTTP_COOKIE'] or env_table['COOKIE']))
     end
     private :initialize_query
 
@@ -700,7 +707,7 @@ class CGI
         if value
           return value
         elsif defined? StringIO
-          StringIO.new("".force_encoding(Encoding::ASCII_8BIT))
+          StringIO.new("".b)
         else
           Tempfile.new("CGI",encoding: Encoding::ASCII_8BIT)
         end
@@ -734,7 +741,7 @@ class CGI
   #
   #   CGI.accept_charset = "EUC-JP"
   #
-  @@accept_charset="UTF-8"
+  @@accept_charset="UTF-8" if false # needed for rdoc?
 
   # Return the accept character set for all new CGI instances.
   def self.accept_charset
@@ -855,24 +862,24 @@ class CGI
 
     case @options[:tag_maker]
     when "html3"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html3
       extend HtmlExtension
     when "html4"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html4
       extend HtmlExtension
     when "html4Tr"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html4Tr
       extend HtmlExtension
     when "html4Fr"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html4Tr
       extend Html4Fr
       extend HtmlExtension
     when "html5"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html5
       extend HtmlExtension
     end

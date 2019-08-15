@@ -253,6 +253,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
       server.virtual_host(WEBrick::HTTPServer.new(vhost_config))
 
       Thread.pass while server.status != :Running
+      sleep 1 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # server.status behaves unexpectedly with --jit-wait
       assert_equal(1, started, log.call)
       assert_equal(0, stopped, log.call)
       assert_equal(0, accepted, log.call)
@@ -273,6 +274,38 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
     }
     assert_equal(started, 1)
     assert_equal(stopped, 1)
+  end
+
+  class CustomRequest < ::WEBrick::HTTPRequest; end
+  class CustomResponse < ::WEBrick::HTTPResponse; end
+  class CustomServer < ::WEBrick::HTTPServer
+    def create_request(config)
+      CustomRequest.new(config)
+    end
+
+    def create_response(config)
+      CustomResponse.new(config)
+    end
+  end
+
+  def test_custom_server_request_and_response
+    config = { :ServerName => "localhost" }
+    TestWEBrick.start_server(CustomServer, config){|server, addr, port, log|
+      server.mount_proc("/", lambda {|req, res|
+        assert_kind_of(CustomRequest, req)
+        assert_kind_of(CustomResponse, res)
+        res.body = "via custom response"
+      })
+      Thread.pass while server.status != :Running
+
+      Net::HTTP.start(addr, port) do |http|
+        req = Net::HTTP::Get.new("/")
+        http.request(req){|res|
+          assert_equal("via custom response", res.body)
+        }
+        server.shutdown
+      end
+    }
   end
 
   # This class is needed by test_response_io_with_chunked_set method
@@ -414,5 +447,97 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
       end
     }
     assert_equal(0, requested, "Server responded to #{requested} requests after shutdown")
+  end
+
+  def test_cntrl_in_path
+    log_ary = []
+    access_log_ary = []
+    config = {
+      :Port => 0,
+      :BindAddress => '127.0.0.1',
+      :Logger => WEBrick::Log.new(log_ary, WEBrick::BasicLog::WARN),
+      :AccessLog => [[access_log_ary, '']],
+    }
+    s = WEBrick::HTTPServer.new(config)
+    s.mount('/foo', WEBrick::HTTPServlet::FileHandler, __FILE__)
+    th = Thread.new { s.start }
+    addr = s.listeners[0].addr
+
+    http = Net::HTTP.new(addr[3], addr[1])
+    req = Net::HTTP::Get.new('/notexist%0a/foo')
+    http.request(req) { |res| assert_equal('404', res.code) }
+    exp = %Q(ERROR `/notexist\\n/foo' not found.\n)
+    assert_equal 1, log_ary.size
+    assert_include log_ary[0], exp
+  ensure
+    s&.shutdown
+    th&.join
+  end
+
+  def test_gigantic_request_header
+    log_tester = lambda {|log, access_log|
+      assert_equal 1, log.size
+      assert_include log[0], 'ERROR headers too large'
+    }
+    TestWEBrick.start_httpserver({}, log_tester){|server, addr, port, log|
+      server.mount('/', WEBrick::HTTPServlet::FileHandler, __FILE__)
+      TCPSocket.open(addr, port) do |c|
+        c.write("GET / HTTP/1.0\r\n")
+        junk = -"X-Junk: #{' ' * 1024}\r\n"
+        assert_raise(Errno::ECONNRESET, Errno::EPIPE) do
+          loop { c.write(junk) }
+        end
+      end
+    }
+  end
+
+  def test_eof_in_chunk
+    log_tester = lambda do |log, access_log|
+      assert_equal 1, log.size
+      assert_include log[0], 'ERROR bad chunk data size'
+    end
+    TestWEBrick.start_httpserver({}, log_tester){|server, addr, port, log|
+      server.mount_proc('/', ->(req, res) { res.body = req.body })
+      TCPSocket.open(addr, port) do |c|
+        c.write("POST / HTTP/1.1\r\nHost: example.com\r\n" \
+                "Transfer-Encoding: chunked\r\n\r\n5\r\na")
+        c.shutdown(Socket::SHUT_WR) # trigger EOF in server
+        res = c.read
+        assert_match %r{\AHTTP/1\.1 400 }, res
+      end
+    }
+  end
+
+  def test_big_chunks
+    nr_out = 3
+    buf = 'big' # 3 bytes is bigger than 2!
+    config = { :InputBufferSize => 2 }.freeze
+    total = 0
+    all = ''
+    TestWEBrick.start_httpserver(config){|server, addr, port, log|
+      server.mount_proc('/', ->(req, res) {
+        err = []
+        ret = req.body do |chunk|
+          n = chunk.bytesize
+          n > config[:InputBufferSize] and err << "#{n} > :InputBufferSize"
+          total += n
+          all << chunk
+        end
+        ret.nil? or err << 'req.body should return nil'
+        (buf * nr_out) == all or err << 'input body does not match expected'
+        res.header['connection'] = 'close'
+        res.body = err.join("\n")
+      })
+      TCPSocket.open(addr, port) do |c|
+        c.write("POST / HTTP/1.1\r\nHost: example.com\r\n" \
+                "Transfer-Encoding: chunked\r\n\r\n")
+        chunk = "#{buf.bytesize.to_s(16)}\r\n#{buf}\r\n"
+        nr_out.times { c.write(chunk) }
+        c.write("0\r\n\r\n")
+        head, body = c.read.split("\r\n\r\n")
+        assert_match %r{\AHTTP/1\.1 200 OK}, head
+        assert_nil body
+      end
+    }
   end
 end

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require "test/unit"
 require "etc"
 
@@ -97,12 +97,12 @@ class TestEtc < Test::Unit::TestCase
   end
 
   def test_getgrnam
-    groups = {}
+    groups = Hash.new {[]}
     Etc.group do |s|
-      groups[s.name] ||= s.gid unless /\A\+/ =~ s.name
+      groups[s.name] |= [s.gid] unless /\A\+/ =~ s.name
     end
     groups.each_pair do |n, s|
-      assert_equal(s, Etc.getgrnam(n).gid)
+      assert_include(s, Etc.getgrnam(n).gid)
     end
   end
 

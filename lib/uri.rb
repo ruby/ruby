@@ -1,34 +1,28 @@
 # frozen_string_literal: false
 # URI is a module providing classes to handle Uniform Resource Identifiers
-# (RFC2396[http://tools.ietf.org/html/rfc2396])
+# (RFC2396[http://tools.ietf.org/html/rfc2396]).
 #
 # == Features
 #
-# * Uniform handling of handling URIs
-# * Flexibility to introduce custom URI schemes
+# * Uniform way of handling URIs.
+# * Flexibility to introduce custom URI schemes.
 # * Flexibility to have an alternate URI::Parser (or just different patterns
-#   and regexp's)
+#   and regexp's).
 #
 # == Basic example
 #
 #   require 'uri'
 #
 #   uri = URI("http://foo.com/posts?id=30&limit=5#time=1305298413")
-#   #=> #<URI::HTTP:0x00000000b14880
-#         URL:http://foo.com/posts?id=30&limit=5#time=1305298413>
-#   uri.scheme
-#   #=> "http"
-#   uri.host
-#   #=> "foo.com"
-#   uri.path
-#   #=> "/posts"
-#   uri.query
-#   #=> "id=30&limit=5"
-#   uri.fragment
-#   #=> "time=1305298413"
+#   #=> #<URI::HTTP http://foo.com/posts?id=30&limit=5#time=1305298413>
 #
-#   uri.to_s
-#   #=> "http://foo.com/posts?id=30&limit=5#time=1305298413"
+#   uri.scheme    #=> "http"
+#   uri.host      #=> "foo.com"
+#   uri.path      #=> "/posts"
+#   uri.query     #=> "id=30&limit=5"
+#   uri.fragment  #=> "time=1305298413"
+#
+#   uri.to_s      #=> "http://foo.com/posts?id=30&limit=5#time=1305298413"
 #
 # == Adding custom URIs
 #
@@ -41,18 +35,18 @@
 #   #=> URI::RSYNC
 #
 #   URI.scheme_list
-#   #=> {"FTP"=>URI::FTP, "HTTP"=>URI::HTTP, "HTTPS"=>URI::HTTPS,
-#        "LDAP"=>URI::LDAP, "LDAPS"=>URI::LDAPS, "MAILTO"=>URI::MailTo,
-#        "RSYNC"=>URI::RSYNC}
+#   #=> {"FILE"=>URI::File, "FTP"=>URI::FTP, "HTTP"=>URI::HTTP,
+#   #    "HTTPS"=>URI::HTTPS, "LDAP"=>URI::LDAP, "LDAPS"=>URI::LDAPS,
+#   #    "MAILTO"=>URI::MailTo, "RSYNC"=>URI::RSYNC}
 #
 #   uri = URI("rsync://rsync.foo.com")
-#   #=> #<URI::RSYNC:0x00000000f648c8 URL:rsync://rsync.foo.com>
+#   #=> #<URI::RSYNC rsync://rsync.foo.com>
 #
 # == RFC References
 #
-# A good place to view an RFC spec is http://www.ietf.org/rfc.html
+# A good place to view an RFC spec is http://www.ietf.org/rfc.html.
 #
-# Here is a list of all related RFC's.
+# Here is a list of all related RFC's:
 # - RFC822[http://tools.ietf.org/html/rfc822]
 # - RFC1738[http://tools.ietf.org/html/rfc1738]
 # - RFC2255[http://tools.ietf.org/html/rfc2255]
@@ -65,6 +59,7 @@
 # == Class tree
 #
 # - URI::Generic (in uri/generic.rb)
+#   - URI::File - (in uri/file.rb)
 #   - URI::FTP - (in uri/ftp.rb)
 #   - URI::HTTP - (in uri/http.rb)
 #     - URI::HTTPS - (in uri/https.rb)
@@ -104,6 +99,7 @@ end
 
 require 'uri/common'
 require 'uri/generic'
+require 'uri/file'
 require 'uri/ftp'
 require 'uri/http'
 require 'uri/https'
