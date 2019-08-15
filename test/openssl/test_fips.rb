@@ -10,13 +10,20 @@ class OpenSSL::TestFIPS < OpenSSL::TestCase
   end
 
   def test_fips_mode_get
-    if OpenSSL::OPENSSL_FIPS
-      OpenSSL.fips_mode = true
-      assert OpenSSL.fips_mode == true, ".fips_mode returns true when .fips_mode=true"
+    return unless OpenSSL::OPENSSL_FIPS
+    assert_separately([{ "OSSL_MDEBUG" => nil }, "-ropenssl"], <<~"end;")
+      require #{__FILE__.dump}
 
-      OpenSSL.fips_mode = false
-      assert OpenSSL.fips_mode == false, ".fips_mode returns false when .fips_mode=false"
-    end
+      begin
+        OpenSSL.fips_mode = true
+        assert OpenSSL.fips_mode == true, ".fips_mode returns true when .fips_mode=true"
+
+        OpenSSL.fips_mode = false
+        assert OpenSSL.fips_mode == false, ".fips_mode returns false when .fips_mode=false"
+      rescue OpenSSL::OpenSSLError
+        pend "Could not set FIPS mode (OpenSSL::OpenSSLError: \#$!); skipping"
+      end
+    end;
   end
 end
 

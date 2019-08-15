@@ -197,6 +197,58 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
     assert_equal(false, crl.verify(@dsa512))
   end
 
+  def test_revoked_to_der
+    # revokedCertificates     SEQUENCE OF SEQUENCE  {
+    #      userCertificate         CertificateSerialNumber,
+    #      revocationDate          Time,
+    #      crlEntryExtensions      Extensions OPTIONAL
+    #                               -- if present, version MUST be v2
+    #                           }  OPTIONAL,
+
+    now = Time.utc(2000, 1, 1)
+    rev1 = OpenSSL::X509::Revoked.new
+    rev1.serial = 123
+    rev1.time = now
+    ext = OpenSSL::X509::Extension.new("CRLReason", OpenSSL::ASN1::Enumerated(1))
+    rev1.extensions = [ext]
+    asn1 = OpenSSL::ASN1::Sequence([
+      OpenSSL::ASN1::Integer(123),
+      OpenSSL::ASN1::UTCTime(now),
+      OpenSSL::ASN1::Sequence([ext.to_der])
+    ])
+
+    assert_equal asn1.to_der, rev1.to_der
+  end
+
+  def test_eq
+    now = Time.now
+
+    cacert = issue_cert(@ca, @rsa1024, 1, [], nil, nil)
+    crl1 = issue_crl([], 1, now, now + 3600, [], cacert, @rsa1024, "sha256")
+    rev1 = OpenSSL::X509::Revoked.new.tap { |rev|
+      rev.serial = 1
+      rev.time = now
+    }
+    crl1.add_revoked(rev1)
+    crl2 = OpenSSL::X509::CRL.new(crl1.to_der)
+
+    # CRL
+    assert_equal false, crl1 == 12345
+    assert_equal true, crl1 == crl2
+    rev2 = OpenSSL::X509::Revoked.new.tap { |rev|
+      rev.serial = 2
+      rev.time = now
+    }
+    crl2.add_revoked(rev2)
+    assert_equal false, crl1 == crl2
+
+    # Revoked
+    assert_equal false, rev1 == 12345
+    assert_equal true, rev1 == crl2.revoked[0]
+    assert_equal false, rev1 == crl2.revoked[1]
+    assert_equal true, rev2 == crl2.revoked[1]
+  end
+
   private
 
   def crl_error_returns_false

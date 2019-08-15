@@ -12,21 +12,9 @@ end
 static = !!(defined?($static) && $static)
 $:.unshift(builddir)
 posthook = proc do
-  config = RbConfig::CONFIG
-  mkconfig = RbConfig::MAKEFILE_CONFIG
-  extout = File.expand_path(mkconfig["EXTOUT"], builddir)
-  [
-    ["top_srcdir", $top_srcdir],
-    ["topdir", $topdir],
-  ].each do |var, val|
-    next unless val
-    mkconfig[var] = config[var] = val
-    t = /\A#{Regexp.quote(val)}(?=\/)/
-    $hdrdir.sub!(t) {"$(#{var})"}
-    mkconfig.keys.grep(/dir\z/) do |k|
-      mkconfig[k] = "$(#{var})#$'" if t =~ mkconfig[k]
-    end
-  end
+  RbConfig.fire_update!("top_srcdir", $top_srcdir)
+  RbConfig.fire_update!("topdir", $topdir)
+  $hdrdir.sub!(/\A#{Regexp.quote($top_srcdir)}(?=\/)/, "$(top_srcdir)")
   if $extmk
     $ruby = "$(topdir)/miniruby -I'$(topdir)' -I'$(top_srcdir)/lib' -I'$(extout)/$(arch)' -I'$(extout)/common'"
   else
@@ -55,15 +43,14 @@ prehook = proc do |extmk|
   $extout_prefix = '$(extout)$(target_prefix)/'
   config = RbConfig::CONFIG
   mkconfig = RbConfig::MAKEFILE_CONFIG
-  mkconfig["builddir"] = config["builddir"] = builddir
-  mkconfig["buildlibdir"] = config["buildlibdir"] = builddir
-  mkconfig["top_srcdir"] = $top_srcdir if $top_srcdir
-  mkconfig["extout"] ||= $extout
-  config["top_srcdir"] = File.expand_path($top_srcdir ||= top_srcdir)
-  config["rubyhdrdir"] = join[$top_srcdir, "include"]
-  config["rubyarchhdrdir"] = join[builddir, config["EXTOUT"], "include", config["arch"]]
-  config["extout"] ||= join[$topdir, ".ext"]
-  mkconfig["libdirname"] = "buildlibdir"
+  RbConfig.fire_update!("builddir", builddir)
+  RbConfig.fire_update!("buildlibdir", builddir)
+  RbConfig.fire_update!("libdir", builddir)
+  RbConfig.fire_update!("top_srcdir", $top_srcdir ||= top_srcdir)
+  RbConfig.fire_update!("extout", $extout)
+  RbConfig.fire_update!("rubyhdrdir", "$(top_srcdir)/include")
+  RbConfig.fire_update!("rubyarchhdrdir", "$(extout)/include/$(arch)")
+  RbConfig.fire_update!("libdirname", "buildlibdir")
   trace_var(:$ruby, posthook)
   untrace_var(:$extmk, prehook)
 end

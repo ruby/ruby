@@ -163,6 +163,14 @@ class TestFloat < Test::Unit::TestCase
       assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*268)+".0p-2099"))
       assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*600)+".0p-3427"))
     end
+
+    assert_equal(1.0e10, Float("1.0_"+"00000"*Float::DIG+"e10"))
+
+    z = "0" * (Float::DIG * 4 + 10)
+    all_assertions_foreach("long invalid string", "1.0", "1.0e", "1.0e-", "1.0e+") do |n|
+      assert_raise(ArgumentError, n += z + "A") {Float(n)}
+      assert_raise(ArgumentError, n += z + ".0") {Float(n)}
+    end
   end
 
   def test_divmod
@@ -780,9 +788,15 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError) { Float('0xf.p0') }
     assert_raise(ArgumentError) { Float('0xf.f') }
     assert_raise(ArgumentError) { Float('0xf.fp') }
-    assert_equal(Float::INFINITY, Float('0xf.fp1000000000000000'))
+    begin
+      verbose_bak, $VERBOSE = $VERBOSE, nil
+      assert_equal(Float::INFINITY, Float('0xf.fp1000000000000000'))
+    ensure
+      $VERBOSE = verbose_bak
+    end
     assert_equal(1, suppress_warning {Float("1e10_00")}.infinite?)
     assert_raise(TypeError) { Float(nil) }
+    assert_raise(TypeError) { Float(:test) }
     o = Object.new
     def o.to_f; inf = Float::INFINITY; inf/inf; end
     assert_predicate(Float(o), :nan?)
@@ -791,6 +805,49 @@ class TestFloat < Test::Unit::TestCase
   def test_invalid_str
     bug4310 = '[ruby-core:34820]'
     assert_raise(ArgumentError, bug4310) {under_gc_stress {Float('a'*10000)}}
+  end
+
+  def test_Float_with_invalid_exception
+    assert_raise(ArgumentError) {
+      Float("0", exception: 1)
+    }
+  end
+
+  def test_Float_with_exception_keyword
+    assert_raise(ArgumentError) {
+      Float(".", exception: true)
+    }
+    assert_nothing_raised(ArgumentError) {
+      assert_equal(nil, Float(".", exception: false))
+    }
+    assert_raise(RangeError) {
+      Float(1i, exception: true)
+    }
+    assert_nothing_raised(RangeError) {
+      assert_equal(nil, Float(1i, exception: false))
+    }
+    assert_raise(TypeError) {
+      Float(nil, exception: true)
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Float(nil, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Float(:test, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Float(Object.new, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      o = Object.new
+      def o.to_f; 3.14; end
+      assert_equal(3.14, Float(o, exception: false))
+    }
+    assert_nothing_raised(RuntimeError) {
+      o = Object.new
+      def o.to_f; raise; end
+      assert_equal(nil, Float(o, exception: false))
+    }
   end
 
   def test_num2dbl

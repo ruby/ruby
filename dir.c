@@ -11,7 +11,10 @@
 
 **********************************************************************/
 
+#include "ruby/encoding.h"
+#include "ruby/thread.h"
 #include "internal.h"
+#include "id.h"
 #include "encindex.h"
 
 #include <sys/types.h>
@@ -19,6 +22,10 @@
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifndef O_CLOEXEC
+#  define O_CLOEXEC 0
 #endif
 
 #ifndef USE_OPENDIR_AT
@@ -60,10 +67,6 @@
 #  include "win32/dir.h"
 # endif
 #endif
-#if defined(__native_client__) && defined(NACL_NEWLIB)
-# include "nacl/dirent.h"
-# include "nacl/stat.h"
-#endif
 
 #include <errno.h>
 
@@ -78,6 +81,8 @@ char *strchr(char*,char);
 #include <ctype.h>
 
 #include "ruby/util.h"
+
+#define vm_initialized rb_cThread
 
 /* define system APIs */
 #ifdef _WIN32
@@ -172,7 +177,7 @@ has_nonascii(const char *ptr, size_t len)
 #endif
 
 #ifndef IFTODT
-# define IFTODT(m)	(((m) & S_IFMT) / ((~S_IFMT & S_IFMT-1) + 1))
+# define IFTODT(m)	(((m) & S_IFMT) / ((~S_IFMT & (S_IFMT-1)) + 1))
 #endif
 
 typedef enum {
@@ -471,15 +476,6 @@ static const rb_data_type_t dir_data_type = {
 
 static VALUE dir_close(VALUE);
 
-#define GlobPathValue(str, safe) \
-    /* can contain null bytes as separators */	\
-    (!RB_TYPE_P((str), T_STRING) ?		\
-     (void)FilePathValue(str) :			\
-     (void)(check_safe_glob((str), (safe)),		\
-      check_glob_encoding(str), (str)))
-#define check_safe_glob(str, safe) ((safe) ? rb_check_safe_obj(str) : (void)0)
-#define check_glob_encoding(str) rb_enc_check((str), rb_enc_from_encoding(rb_usascii_encoding()))
-
 static VALUE
 dir_s_alloc(VALUE klass)
 {
@@ -491,6 +487,28 @@ dir_s_alloc(VALUE klass)
     dirp->enc = NULL;
 
     return obj;
+}
+
+static void *
+nogvl_opendir(void *ptr)
+{
+    const char *path = ptr;
+
+    return (void *)opendir(path);
+}
+
+static DIR *
+opendir_without_gvl(const char *path)
+{
+    if (vm_initialized) {
+	union { const void *in; void *out; } u;
+
+	u.in = path;
+
+	return rb_thread_call_without_gvl(nogvl_opendir, u.out, RUBY_UBF_IO, 0);
+    }
+    else
+	return opendir(path);
 }
 
 /*
@@ -528,7 +546,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 	}
     }
 
-    GlobPathValue(dirname, FALSE);
+    FilePathValue(dirname);
     orig = rb_str_dup_frozen(dirname);
     dirname = rb_str_encode_ospath(dirname);
     dirname = rb_str_dup_frozen(dirname);
@@ -539,18 +557,18 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     RB_OBJ_WRITE(dir, &dp->path, Qnil);
     dp->enc = fsenc;
     path = RSTRING_PTR(dirname);
-    dp->dir = opendir(path);
+    dp->dir = opendir_without_gvl(path);
     if (dp->dir == NULL) {
 	int e = errno;
 	if (rb_gc_for_fd(e)) {
-	    dp->dir = opendir(path);
+	    dp->dir = opendir_without_gvl(path);
 	}
 #ifdef HAVE_GETATTRLIST
 	else if (e == EIO) {
 	    u_int32_t attrbuf[1];
 	    struct attrlist al = {ATTR_BIT_MAP_COUNT, 0};
 	    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW) == 0) {
-		dp->dir = opendir(path);
+		dp->dir = opendir_without_gvl(path);
 	    }
 	}
 #endif
@@ -574,11 +592,10 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
  *  The optional <i>encoding</i> keyword argument specifies the encoding of the directory.
  *  If not specified, the filesystem encoding is used.
  *
- *  With no block, <code>open</code> is a synonym for
- *  <code>Dir::new</code>. If a block is present, it is passed
- *  <i>aDir</i> as a parameter. The directory is closed at the end of
- *  the block, and <code>Dir::open</code> returns the value of the
- *  block.
+ *  With no block, <code>open</code> is a synonym for Dir::new. If a
+ *  block is present, it is passed <i>aDir</i> as a parameter. The
+ *  directory is closed at the end of the block, and Dir::open returns
+ *  the value of the block.
  */
 static VALUE
 dir_s_open(int argc, VALUE *argv, VALUE klass)
@@ -593,6 +610,8 @@ dir_s_open(int argc, VALUE *argv, VALUE klass)
 
     return dir;
 }
+
+NORETURN(static void dir_closed(void));
 
 static void
 dir_closed(void)
@@ -638,7 +657,7 @@ dir_inspect(VALUE dir)
 	rb_str_cat2(str, ">");
 	return str;
     }
-    return rb_funcallv(dir, rb_intern("to_s"), 0, 0);
+    return rb_funcallv(dir, idTo_s, 0, 0);
 }
 
 /* Workaround for Solaris 10 that does not have dirfd.
@@ -722,6 +741,8 @@ fundamental_encoding_p(rb_encoding *enc)
 #else
 # define READDIR(dir, enc) readdir((dir))
 #endif
+
+/* safe to use without GVL */
 static int
 to_be_skipped(const struct dirent *dp)
 {
@@ -837,7 +858,6 @@ dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE), VALUE arg, int children_o
 #endif
 	path = rb_external_str_new_with_enc(name, namlen, dirp->enc);
 	(*each)(arg, path);
-	if (dirp->dir == NULL) dir_closed();
     }
     return dir;
 }
@@ -848,8 +868,7 @@ dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE), VALUE arg, int children_o
  *     dir.pos -> integer
  *     dir.tell -> integer
  *
- *  Returns the current position in <em>dir</em>. See also
- *  <code>Dir#seek</code>.
+ *  Returns the current position in <em>dir</em>. See also Dir#seek.
  *
  *     d = Dir.new("testdir")
  *     d.tell   #=> 0
@@ -876,7 +895,7 @@ dir_tell(VALUE dir)
  *     dir.seek( integer ) -> dir
  *
  *  Seeks to a particular location in <em>dir</em>. <i>integer</i>
- *  must be a value returned by <code>Dir#tell</code>.
+ *  must be a value returned by Dir#tell.
  *
  *     d = Dir.new("testdir")   #=> #<Dir:0x401b3c40>
  *     d.read                   #=> "."
@@ -904,8 +923,7 @@ dir_seek(VALUE dir, VALUE pos)
  *  call-seq:
  *     dir.pos = integer  -> integer
  *
- *  Synonym for <code>Dir#seek</code>, but returns the position
- *  parameter.
+ *  Synonym for Dir#seek, but returns the position parameter.
  *
  *     d = Dir.new("testdir")   #=> #<Dir:0x401b3c40>
  *     d.read                   #=> "."
@@ -968,6 +986,14 @@ dir_close(VALUE dir)
     return Qnil;
 }
 
+static void *
+nogvl_chdir(void *ptr)
+{
+    const char *path = ptr;
+
+    return (void *)(VALUE)chdir(path);
+}
+
 static void
 dir_chdir(VALUE path)
 {
@@ -1014,8 +1040,8 @@ chdir_restore(struct chdir_data *args)
  *  Changes the current working directory of the process to the given
  *  string. When called without an argument, changes the directory to
  *  the value of the environment variable <code>HOME</code>, or
- *  <code>LOGDIR</code>. <code>SystemCallError</code> (probably
- *  <code>Errno::ENOENT</code>) if the target directory does not exist.
+ *  <code>LOGDIR</code>. SystemCallError (probably Errno::ENOENT) if
+ *  the target directory does not exist.
  *
  *  If a block is given, it is passed the name of the new current
  *  directory, and the block is executed with that as the current
@@ -1050,9 +1076,8 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
 {
     VALUE path = Qnil;
 
-    if (rb_scan_args(argc, argv, "01", &path) == 1) {
-	FilePathValue(path);
-	path = rb_str_encode_ospath(path);
+    if (rb_check_arity(argc, 0, 1) == 1) {
+        path = rb_str_encode_ospath(rb_get_path(argv[0]));
     }
     else {
 	const char *dist = getenv("HOME");
@@ -1076,7 +1101,13 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
 	args.done = FALSE;
 	return rb_ensure(chdir_yield, (VALUE)&args, chdir_restore, (VALUE)&args);
     }
-    dir_chdir(path);
+    else {
+	char *p = RSTRING_PTR(path);
+	int r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_chdir, p,
+							RUBY_UBF_IO, 0);
+	if (r < 0)
+	    rb_sys_fail_path(path);
+    }
 
     return INT2FIX(0);
 }
@@ -1092,7 +1123,7 @@ rb_dir_getwd_ospath(void)
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
     path_guard = Data_Wrap_Struct((VALUE)0, NULL, RUBY_DEFAULT_FREE, NULL);
-    path = my_getcwd();
+    path = ruby_getcwd();
     DATA_PTR(path_guard) = path;
 #ifdef __APPLE__
     cwd = rb_str_normalize_ospath(path, strlen(path));
@@ -1188,17 +1219,29 @@ dir_s_chroot(VALUE dir, VALUE path)
 #define dir_s_chroot rb_f_notimplement
 #endif
 
+struct mkdir_arg {
+    const char *path;
+    mode_t mode;
+};
+
+static void *
+nogvl_mkdir(void *ptr)
+{
+    struct mkdir_arg *m = ptr;
+
+    return (void *)(VALUE)mkdir(m->path, m->mode);
+}
+
 /*
  *  call-seq:
  *     Dir.mkdir( string [, integer] ) -> 0
  *
  *  Makes a new directory named by <i>string</i>, with permissions
  *  specified by the optional parameter <i>anInteger</i>. The
- *  permissions may be modified by the value of
- *  <code>File::umask</code>, and are ignored on NT. Raises a
- *  <code>SystemCallError</code> if the directory cannot be created. See
- *  also the discussion of permissions in the class documentation for
- *  <code>File</code>.
+ *  permissions may be modified by the value of File::umask, and are
+ *  ignored on NT. Raises a SystemCallError if the directory cannot be
+ *  created. See also the discussion of permissions in the class
+ *  documentation for File.
  *
  *    Dir.mkdir(File.join(Dir.home, ".foo"), 0700) #=> 0
  *
@@ -1206,21 +1249,32 @@ dir_s_chroot(VALUE dir, VALUE path)
 static VALUE
 dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
 {
+    struct mkdir_arg m;
     VALUE path, vmode;
-    int mode;
+    int r;
 
     if (rb_scan_args(argc, argv, "11", &path, &vmode) == 2) {
-	mode = NUM2INT(vmode);
+	m.mode = NUM2MODET(vmode);
     }
     else {
-	mode = 0777;
+	m.mode = 0777;
     }
 
     path = check_dirname(path);
-    if (mkdir(RSTRING_PTR(path), mode) == -1)
+    m.path = RSTRING_PTR(path);
+    r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_mkdir, &m, RUBY_UBF_IO, 0);
+    if (r < 0)
 	rb_sys_fail_path(path);
 
     return INT2FIX(0);
+}
+
+static void *
+nogvl_rmdir(void *ptr)
+{
+    const char *path = ptr;
+
+    return (void *)(VALUE)rmdir(path);
 }
 
 /*
@@ -1229,14 +1283,19 @@ dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
  *     Dir.rmdir( string ) -> 0
  *     Dir.unlink( string ) -> 0
  *
- *  Deletes the named directory. Raises a subclass of
- *  <code>SystemCallError</code> if the directory isn't empty.
+ *  Deletes the named directory. Raises a subclass of SystemCallError
+ *  if the directory isn't empty.
  */
 static VALUE
 dir_s_rmdir(VALUE obj, VALUE dir)
 {
+    const char *p;
+    int r;
+
     dir = check_dirname(dir);
-    if (rmdir(RSTRING_PTR(dir)) < 0)
+    p = RSTRING_PTR(dir);
+    r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_rmdir, (void *)p, RUBY_UBF_IO, 0);
+    if (r < 0)
 	rb_sys_fail_path(dir);
 
     return INT2FIX(0);
@@ -1300,9 +1359,9 @@ to_be_ignored(int e)
 }
 
 #ifdef _WIN32
-#define STAT(p, s)	rb_w32_ustati64((p), (s))
+#define STAT(p, s)	rb_w32_ustati128((p), (s))
 #undef lstat
-#define lstat(p, s)	rb_w32_ulstati64((p), (s))
+#define lstat(p, s)	rb_w32_ulstati128((p), (s))
 #else
 #define STAT(p, s)	stat((p), (s))
 #endif
@@ -1313,12 +1372,24 @@ typedef struct {
     ruby_glob_errfunc *error;
 } ruby_glob_funcs_t;
 
-/* System call with warning */
-static int
-do_stat(int fd, const char *path, struct stat *pst, int flags, rb_encoding *enc)
+static const char *
+at_subpath(int fd, size_t baselen, const char *path)
 {
 #if USE_OPENDIR_AT
-    int ret = fstatat(fd, path, pst, 0);
+    if (fd != (int)AT_FDCWD && baselen > 0) {
+	path += baselen;
+	if (*path == '/') ++path;
+    }
+#endif
+    return *path ? path : ".";
+}
+
+/* System call with warning */
+static int
+do_stat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
+{
+#if USE_OPENDIR_AT
+    int ret = fstatat(fd, at_subpath(fd, baselen, path), pst, 0);
 #else
     int ret = STAT(path, pst);
 #endif
@@ -1330,10 +1401,10 @@ do_stat(int fd, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 
 #if defined HAVE_LSTAT || defined lstat || USE_OPENDIR_AT
 static int
-do_lstat(int fd, const char *path, struct stat *pst, int flags, rb_encoding *enc)
+do_lstat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
 #if USE_OPENDIR_AT
-    int ret = fstatat(fd, path, pst, AT_SYMLINK_NOFOLLOW);
+    int ret = fstatat(fd, at_subpath(fd, baselen, path), pst, AT_SYMLINK_NOFOLLOW);
 #else
     int ret = lstat(path, pst);
 #endif
@@ -1346,18 +1417,86 @@ do_lstat(int fd, const char *path, struct stat *pst, int flags, rb_encoding *enc
 #define do_lstat do_stat
 #endif
 
-static DIR *
-do_opendir(const int basefd, const char *path, int flags, rb_encoding *enc,
-	   ruby_glob_errfunc *errfunc, VALUE arg, int *status)
+struct opendir_at_arg {
+    int basefd;
+    const char *path;
+};
+
+static void *
+with_gvl_gc_for_fd(void *ptr)
 {
+    int *e = ptr;
+
+    return (void *)(rb_gc_for_fd(*e) ? Qtrue : Qfalse);
+}
+
+static int
+gc_for_fd_with_gvl(int e)
+{
+    if (vm_initialized)
+	return (int)(VALUE)rb_thread_call_with_gvl(with_gvl_gc_for_fd, &e);
+    else
+	return rb_gc_for_fd(e) ? Qtrue : Qfalse;
+}
+
+static void *
+nogvl_opendir_at(void *ptr)
+{
+    const struct opendir_at_arg *oaa = ptr;
+    DIR *dirp;
+
 #if USE_OPENDIR_AT
     const int opendir_flags = (O_RDONLY|O_CLOEXEC|
-#ifdef O_DIRECTORY
+#  ifdef O_DIRECTORY
 			       O_DIRECTORY|
-#endif
+#  endif /* O_DIRECTORY */
 			       0);
-    int fd;
-#endif
+    int fd = openat(oaa->basefd, oaa->path, opendir_flags);
+
+    dirp = fd >= 0 ? fdopendir(fd) : 0;
+    if (!dirp) {
+	int e = errno;
+
+	switch (gc_for_fd_with_gvl(e)) {
+	  default:
+	    if (fd < 0) fd = openat(oaa->basefd, oaa->path, opendir_flags);
+	    if (fd >= 0) dirp = fdopendir(fd);
+	    if (dirp) return dirp;
+
+	    e = errno;
+	    /* fallthrough*/
+	  case 0:
+	    if (fd >= 0) close(fd);
+	    errno = e;
+	}
+    }
+#else  /* !USE_OPENDIR_AT */
+    dirp = opendir(oaa->path);
+    if (!dirp && gc_for_fd_with_gvl(errno))
+	dirp = opendir(oaa->path);
+#endif /* !USE_OPENDIR_AT */
+
+    return dirp;
+}
+
+static DIR *
+opendir_at(int basefd, const char *path)
+{
+    struct opendir_at_arg oaa;
+
+    oaa.basefd = basefd;
+    oaa.path = path;
+
+    if (vm_initialized)
+	return rb_thread_call_without_gvl(nogvl_opendir_at, &oaa, RUBY_UBF_IO, 0);
+    else
+	return nogvl_opendir_at(&oaa);
+}
+
+static DIR *
+do_opendir(const int basefd, size_t baselen, const char *path, int flags, rb_encoding *enc,
+	   ruby_glob_errfunc *errfunc, VALUE arg, int *status)
+{
     DIR *dirp;
 #ifdef _WIN32
     VALUE tmp = 0;
@@ -1367,37 +1506,18 @@ do_opendir(const int basefd, const char *path, int flags, rb_encoding *enc,
 	path = RSTRING_PTR(tmp);
     }
 #endif
-#if USE_OPENDIR_AT
-    fd = openat(basefd, path, 0, opendir_flags);
-    dirp = (fd < 0) ? NULL : fdopendir(fd);
-#else
-    dirp = opendir(path);
-#endif
+    dirp = opendir_at(basefd, at_subpath(basefd, baselen, path));
     if (!dirp) {
 	int e = errno;
-	switch (rb_gc_for_fd(e)) {
-	  default:
-#if USE_OPENDIR_AT
-	    if ((fd >= 0) || (fd = openat(basefd, path, 0, opendir_flags)) >= 0) {
-		dirp = fdopendir(fd);
-	    }
-#else
-	    dirp = opendir(path);
-#endif
-	    if (dirp) break;
-	    e = errno;
-	    /* fallback */
-	  case 0:
-#if USE_OPENDIR_AT
-	    if (fd >= 0) close(fd);
-#endif
-	    *status = 0;
-	    if (to_be_ignored(e)) break;
+
+	*status = 0;
+	if (!to_be_ignored(e)) {
 	    if (errfunc) {
 		*status = (*errfunc)(path, arg, enc, e);
-		break;
 	    }
-	    sys_warning(path, enc);
+	    else {
+		sys_warning(path, enc);
+	    }
 	}
     }
 #ifdef _WIN32
@@ -1408,7 +1528,7 @@ do_opendir(const int basefd, const char *path, int flags, rb_encoding *enc,
 }
 
 /* Globing pattern */
-enum glob_pattern_type { PLAIN, ALPHA, MAGICAL, RECURSIVE, MATCH_ALL, MATCH_DIR };
+enum glob_pattern_type { PLAIN, ALPHA, BRACE, MAGICAL, RECURSIVE, MATCH_ALL, MATCH_DIR };
 
 /* Return nonzero if S has any special globbing chars in it.  */
 static enum glob_pattern_type
@@ -1416,15 +1536,20 @@ has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 {
     const int escape = !(flags & FNM_NOESCAPE);
     int hasalpha = 0;
+    int hasmagical = 0;
 
     register char c;
 
     while (p < pend && (c = *p++) != 0) {
 	switch (c) {
+	  case '{':
+	    return BRACE;
+
 	  case '*':
 	  case '?':
 	  case '[':
-	    return MAGICAL;
+	    hasmagical = 1;
+	    break;
 
 	  case '\\':
 	    if (escape && p++ >= pend)
@@ -1449,7 +1574,7 @@ has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 	p = Next(p-1, pend, enc);
     }
 
-    return hasalpha ? ALPHA : PLAIN;
+    return hasmagical ? MAGICAL : hasalpha ? ALPHA : PLAIN;
 }
 
 /* Find separator in globbing pattern. */
@@ -1467,6 +1592,13 @@ find_dirsep(const char *p, const char *pend, int flags, rb_encoding *enc)
 	    open = 1;
 	    continue;
 	  case ']':
+	    open = 0;
+	    continue;
+
+	  case '{':
+	    open = 1;
+	    continue;
+	  case '}':
 	    open = 0;
 	    continue;
 
@@ -1875,6 +2007,81 @@ dirent_match(const char *pat, rb_encoding *enc, const char *name, const struct d
     return 0;
 }
 
+struct push_glob_args {
+    int fd;
+    const char *path;
+    size_t baselen;
+    size_t namelen;
+    int dirsep; /* '/' should be placed before appending child entry's name to 'path'. */
+    rb_pathtype_t pathtype; /* type of 'path' */
+    int flags;
+    const ruby_glob_funcs_t *funcs;
+    VALUE arg;
+};
+
+struct dirent_brace_args {
+    const char *name;
+    const struct dirent *dp;
+    int flags;
+};
+
+static int
+dirent_match_brace(const char *pattern, VALUE val, void *enc)
+{
+    struct dirent_brace_args *arg = (struct dirent_brace_args *)val;
+
+    return dirent_match(pattern, enc, arg->name, arg->dp, arg->flags);
+}
+
+/* join paths from pattern list of glob_make_pattern() */
+static char*
+join_path_from_pattern(struct glob_pattern **beg)
+{
+    struct glob_pattern *p;
+    char *path = NULL;
+    size_t path_len = 0;
+
+    for (p = *beg; p; p = p->next) {
+	const char *str;
+	switch (p->type) {
+	  case RECURSIVE:
+	    str = "**";
+	    break;
+	  case MATCH_DIR:
+	    /* append last slash */
+	    str = "";
+	    break;
+	  default:
+	    str = p->str;
+	    if (!str) continue;
+	}
+	if (!path) {
+	    path_len = strlen(str);
+	    path = GLOB_ALLOC_N(char, path_len + 1);
+	    memcpy(path, str, path_len);
+	    path[path_len] = '\0';
+        }
+        else {
+	    size_t len = strlen(str);
+	    char *tmp;
+	    tmp = GLOB_REALLOC(path, path_len + len + 2);
+	    if (tmp) {
+		path = tmp;
+		path[path_len++] = '/';
+		memcpy(path + path_len, str, len);
+		path_len += len;
+		path[path_len] = '\0';
+	    }
+	}
+    }
+    return path;
+}
+
+static int push_caller(const char *path, VALUE val, void *enc);
+
+static int ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg,
+			     rb_encoding *enc, VALUE var);
+
 static int
 glob_helper(
     int fd,
@@ -1893,12 +2100,9 @@ glob_helper(
     struct stat st;
     int status = 0;
     struct glob_pattern **cur, **new_beg, **new_end;
-    int plain = 0, magical = 0, recursive = 0, match_all = 0, match_dir = 0;
+    int plain = 0, brace = 0, magical = 0, recursive = 0, match_all = 0, match_dir = 0;
     int escape = !(flags & FNM_NOESCAPE);
     size_t pathlen = baselen + namelen;
-    const char *base = path;
-
-    if (fd != AT_FDCWD && *(base += baselen) == '/') base++;
 
     for (cur = beg; cur < end; ++cur) {
 	struct glob_pattern *p = *cur;
@@ -1917,6 +2121,11 @@ glob_helper(
 	    magical = 1;
 #endif
 	    break;
+	  case BRACE:
+	    if (!recursive) {
+		brace = 1;
+	    }
+	    break;
 	  case MAGICAL:
 	    magical = 2;
 	    break;
@@ -1931,9 +2140,27 @@ glob_helper(
 	}
     }
 
-    if (*base) {
+    if (brace) {
+	struct push_glob_args args;
+	char* brace_path = join_path_from_pattern(beg);
+	if (!brace_path) return -1;
+	args.fd = fd;
+	args.path = path;
+	args.baselen = baselen;
+	args.namelen = namelen;
+	args.dirsep = dirsep;
+	args.pathtype = pathtype;
+	args.flags = flags;
+	args.funcs = funcs;
+	args.arg = arg;
+	status = ruby_brace_expand(brace_path, flags, push_caller, (VALUE)&args, enc, Qfalse);
+	GLOB_FREE(brace_path);
+	return status;
+    }
+
+    if (*path) {
 	if (match_all && pathtype == path_unknown) {
-	    if (do_lstat(fd, base, &st, flags, enc) == 0) {
+	    if (do_lstat(fd, baselen, path, &st, flags, enc) == 0) {
 		pathtype = IFTODT(st.st_mode);
 	    }
 	    else {
@@ -1941,7 +2168,7 @@ glob_helper(
 	    }
 	}
 	if (match_dir && (pathtype == path_unknown || pathtype == path_symlink)) {
-	    if (do_stat(fd, base, &st, flags, enc) == 0) {
+	    if (do_stat(fd, baselen, path, &st, flags, enc) == 0) {
 		pathtype = IFTODT(st.st_mode);
 	    }
 	    else {
@@ -1954,10 +2181,11 @@ glob_helper(
 	    if (status) return status;
 	}
 	if (match_dir && pathtype == path_directory) {
-	    const char *subpath = path + baselen + (baselen && path[baselen] == '/');
-	    char *tmp = join_path(subpath, namelen, dirsep, "", 0);
+	    int seplen = (baselen && path[baselen] == '/');
+	    const char *subpath = path + baselen + seplen;
+	    char *tmp = join_path(subpath, namelen - seplen, dirsep, "", 0);
 	    if (!tmp) return -1;
-	    status = glob_call_func(funcs->match, tmp + (baselen ? dirsep : 0), arg, enc);
+	    status = glob_call_func(funcs->match, tmp, arg, enc);
 	    GLOB_FREE(tmp);
 	    if (status) return status;
 	}
@@ -1976,14 +2204,14 @@ glob_helper(
 	if (cur + 1 == end && (*cur)->type <= ALPHA) {
 	    plainname = join_path(path, pathlen, dirsep, (*cur)->str, strlen((*cur)->str));
 	    if (!plainname) return -1;
-	    dirp = do_opendir(fd, plainname, flags, enc, funcs->error, arg, &status);
+	    dirp = do_opendir(fd, basename, plainname, flags, enc, funcs->error, arg, &status);
 	    GLOB_FREE(plainname);
 	}
 	else
 # else
 	    ;
 # endif
-	dirp = do_opendir(fd, *base ? base : ".", flags, enc, funcs->error, arg, &status);
+	dirp = do_opendir(fd, baselen, path, flags, enc, funcs->error, arg, &status);
 	if (dirp == NULL) {
 # if FNM_SYSCASE || NORMALIZE_UTF8PATH
 	    if ((magical < 2) && !recursive && (errno == EACCES)) {
@@ -1993,7 +2221,7 @@ glob_helper(
 # endif
 	    return status;
 	}
-	IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp, *base ? base : "."));
+	IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp, *path ? path : "."));
 
 # if NORMALIZE_UTF8PATH
 	if (!(norm_p || magical || recursive)) {
@@ -2052,7 +2280,7 @@ glob_helper(
 	    if (recursive && dotfile < ((flags & FNM_DOTMATCH) ? 2 : 1) &&
 		new_pathtype == path_unknown) {
 		/* RECURSIVE never match dot files unless FNM_DOTMATCH is set */
-		if (do_lstat(fd, buf, &st, flags, enc) == 0)
+		if (do_lstat(fd, baselen, buf, &st, flags, enc) == 0)
 		    new_pathtype = IFTODT(st.st_mode);
 		else
 		    new_pathtype = path_noent;
@@ -2067,6 +2295,7 @@ glob_helper(
 
 	    for (cur = beg; cur < end; ++cur) {
 		struct glob_pattern *p = *cur;
+		struct dirent_brace_args args;
 		if (p->type == RECURSIVE) {
 		    if (new_pathtype == path_directory || /* not symlink but real directory */
 			new_pathtype == path_exist) {
@@ -2076,6 +2305,14 @@ glob_helper(
 		    p = p->next; /* 0 times recursion */
 		}
 		switch (p->type) {
+		  case BRACE:
+		    args.name = name;
+		    args.dp = dp;
+		    args.flags = flags;
+		    if (ruby_brace_expand(p->str, flags, dirent_match_brace,
+					  (VALUE)&args, enc, Qfalse) > 0)
+			*new_end++ = p->next;
+		    break;
 		  case ALPHA:
 # if USE_NAME_ON_FS == USE_NAME_ON_FS_BY_FNMATCH
 		    if (plainname) {
@@ -2151,8 +2388,8 @@ glob_helper(
 		}
 #if USE_NAME_ON_FS == USE_NAME_ON_FS_REAL_BASENAME
 		if ((*cur)->type == ALPHA) {
-		    long base = pathlen + (dirsep != 0);
-		    buf = replace_real_basename(buf, base, enc, IF_NORMALIZE_UTF8PATH(1)+0,
+		    buf = replace_real_basename(buf, pathlen + (dirsep != 0), enc,
+						IF_NORMALIZE_UTF8PATH(1)+0,
 						flags, &new_pathtype);
 		    if (!buf) break;
 		}
@@ -2174,6 +2411,42 @@ glob_helper(
 }
 
 static int
+push_caller(const char *path, VALUE val, void *enc)
+{
+    struct push_glob_args *arg = (struct push_glob_args *)val;
+    struct glob_pattern *list;
+    int status;
+
+    list = glob_make_pattern(path, path + strlen(path), arg->flags, enc);
+    if (!list) {
+	return -1;
+    }
+    status = glob_helper(arg->fd, arg->path, arg->baselen, arg->namelen, arg->dirsep,
+			 arg->pathtype, &list, &list + 1, arg->flags, arg->funcs,
+			 arg->arg, enc);
+    glob_free_pattern(list);
+    return status;
+}
+
+static int ruby_glob0(const char *path, int fd, const char *base, int flags,
+                      const ruby_glob_funcs_t *funcs, VALUE arg, rb_encoding *enc);
+
+struct push_glob0_args {
+    int fd;
+    const char *base;
+    int flags;
+    const ruby_glob_funcs_t *funcs;
+    VALUE arg;
+};
+
+static int
+push_glob0_caller(const char *path, VALUE val, void *enc)
+{
+    struct push_glob0_args *arg = (struct push_glob0_args *)val;
+    return ruby_glob0(path, arg->fd, arg->base, arg->flags, arg->funcs, arg->arg, enc);
+}
+
+static int
 ruby_glob0(const char *path, int fd, const char *base, int flags,
 	   const ruby_glob_funcs_t *funcs, VALUE arg,
 	   rb_encoding *enc)
@@ -2185,6 +2458,17 @@ ruby_glob0(const char *path, int fd, const char *base, int flags,
     int status, dirsep = FALSE;
 
     start = root = path;
+
+    if (*root == '{') {
+        struct push_glob0_args args;
+        args.fd = fd;
+        args.base = base;
+        args.flags = flags;
+        args.funcs = funcs;
+        args.arg = arg;
+        return ruby_brace_expand(path, flags, push_glob0_caller, (VALUE)&args, enc, Qfalse);
+    }
+
     flags |= FNM_SYSCASE;
 #if defined DOSISH
     root = rb_enc_path_skip_prefix(root, root + strlen(root), enc);
@@ -2365,25 +2649,11 @@ ruby_brace_glob(const char *str, int flags, ruby_glob_func *func, VALUE arg)
     return ruby_brace_glob_with_enc(str, flags, func, arg, rb_ascii8bit_encoding());
 }
 
-struct push_glob_args {
-    struct glob_args glob;
-    int flags;
-    int fd;
-};
-
-static int
-push_caller(const char *path, VALUE val, void *enc)
-{
-    struct push_glob_args *arg = (struct push_glob_args *)val;
-
-    return ruby_glob0(path, arg->fd, arg->glob.base, arg->flags, &rb_glob_funcs,
-		      (VALUE)&arg->glob, enc);
-}
-
 static int
 push_glob(VALUE ary, VALUE str, VALUE base, int flags)
 {
-    struct push_glob_args args;
+    struct glob_args args;
+    int fd;
     rb_encoding *enc = rb_enc_get(str);
 
 #if defined _WIN32 || defined __APPLE__
@@ -2394,54 +2664,68 @@ push_glob(VALUE ary, VALUE str, VALUE base, int flags)
     if (rb_enc_to_index(enc) == ENCINDEX_US_ASCII)
 	enc = rb_ascii8bit_encoding();
     flags |= GLOB_VERBOSE;
-    args.glob.func = push_pattern;
-    args.glob.value = ary;
-    args.glob.enc = enc;
-    args.glob.base = 0;
-    args.flags = flags;
-    args.fd = AT_FDCWD;
+    args.func = push_pattern;
+    args.value = ary;
+    args.enc = enc;
+    args.base = 0;
+    fd = AT_FDCWD;
     if (!NIL_P(base)) {
 	if (!RB_TYPE_P(base, T_STRING) || !rb_enc_check(str, base)) {
 	    struct dir_data *dirp = DATA_PTR(base);
 	    if (!dirp->dir) dir_closed();
 #ifdef HAVE_DIRFD
-	    if ((args.fd = dirfd(dirp->dir)) == -1)
+	    if ((fd = dirfd(dirp->dir)) == -1)
 		rb_sys_fail_path(dir_inspect(base));
 #endif
 	    base = dirp->path;
 	}
-	args.glob.base = RSTRING_PTR(base);
+	args.base = RSTRING_PTR(base);
     }
 #if defined _WIN32 || defined __APPLE__
     enc = rb_utf8_encoding();
 #endif
 
-    return ruby_brace_expand(RSTRING_PTR(str), flags,
-			     push_caller, (VALUE)&args, enc, str);
+    return ruby_glob0(RSTRING_PTR(str), fd, args.base, flags, &rb_glob_funcs,
+		      (VALUE)&args, enc);
 }
 
 static VALUE
 rb_push_glob(VALUE str, VALUE base, int flags) /* '\0' is delimiter */
 {
     long offset = 0;
+    long len;
     VALUE ary;
+    int warned = FALSE;
 
-    GlobPathValue(str, TRUE);
+    /* can contain null bytes as separators */
+    if (!RB_TYPE_P((str), T_STRING)) {
+	FilePathValue(str);
+    }
+    else {
+	rb_check_safe_obj(str);
+	rb_enc_check(str, rb_enc_from_encoding(rb_usascii_encoding()));
+    }
     ary = rb_ary_new();
 
-    while (offset < RSTRING_LEN(str)) {
-	char *p, *pend;
+    while (offset < (len = RSTRING_LEN(str))) {
 	int status;
-	p = RSTRING_PTR(str) + offset;
-	status = push_glob(ary, rb_enc_str_new(p, strlen(p), rb_enc_get(str)),
+        long rest = len - offset;
+        const char *pbeg = RSTRING_PTR(str), *p = pbeg + offset;
+        const char *pend = memchr(p, '\0', rest);
+        if (pend) {
+            if (!warned) {
+                rb_warn("use glob patterns list instead of nul-separated patterns");
+                warned = TRUE;
+            }
+            rest = ++pend - p;
+            offset = pend - pbeg;
+        }
+        else {
+            offset = len;
+        }
+	status = push_glob(ary, rb_str_subseq(str, p-pbeg, rest),
 			   base, flags);
 	if (status) GLOB_JUMP_TAG(status);
-	if (offset >= RSTRING_LEN(str)) break;
-	p += strlen(p) + 1;
-	pend = RSTRING_PTR(str) + RSTRING_LEN(str);
-	while (p < pend && !*p)
-	    p++;
-	offset = p - RSTRING_PTR(str);
     }
 
     return ary;
@@ -2456,7 +2740,7 @@ dir_globs(long argc, const VALUE *argv, VALUE base, int flags)
     for (i = 0; i < argc; ++i) {
 	int status;
 	VALUE str = argv[i];
-	GlobPathValue(str, TRUE);
+	FilePathValue(str);
 	status = push_glob(ary, str, base, flags);
 	if (status) GLOB_JUMP_TAG(status);
     }
@@ -2481,7 +2765,7 @@ dir_glob_options(VALUE opt, VALUE *base, int *flags)
     }
 #endif
     else {
-	GlobPathValue(args[0], TRUE);
+	FilePathValue(args[0]);
 	if (!RSTRING_LEN(args[0])) args[0] = Qnil;
 	*base = args[0];
     }
@@ -2533,7 +2817,7 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
  *
  *  <code>*</code>::
  *    Matches any file. Can be restricted by other values in the glob.
- *    Equivalent to <code>/ .* /x</code> in regexp.
+ *    Equivalent to <code>/ .* /mx</code> in regexp.
  *
  *    <code>*</code>::     Matches all files
  *    <code>c*</code>::    Matches all files beginning with <code>c</code>
@@ -2578,6 +2862,7 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
  *     Dir.glob("*.{rb,h}")                #=> ["main.rb", "config.h"]
  *     Dir.glob("*")                       #=> ["config.h", "main.rb"]
  *     Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "..", "config.h", "main.rb"]
+ *     Dir.glob(["*.rb", "*.h"])           #=> ["main.rb", "config.h"]
  *
  *     rbfiles = File.join("**", "*.rb")
  *     Dir.glob(rbfiles)                   #=> ["main.rb",
@@ -2684,8 +2969,8 @@ dir_collect(VALUE dir)
  *     Dir.entries( dirname, encoding: enc ) -> array
  *
  *  Returns an array containing all of the filenames in the given
- *  directory. Will raise a <code>SystemCallError</code> if the named
- *  directory doesn't exist.
+ *  directory. Will raise a SystemCallError if the named directory
+ *  doesn't exist.
  *
  *  The optional <i>encoding</i> keyword argument specifies the encoding of the
  *  directory. If not specified, the filesystem encoding is used.
@@ -2740,6 +3025,44 @@ dir_s_each_child(int argc, VALUE *argv, VALUE io)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     dir.each_child {| filename | block }  -> nil
+ *     dir.each_child                        -> an_enumerator
+ *
+ *  Calls the block once for each entry except for "." and ".." in
+ *  this directory, passing the filename of each entry as a parameter
+ *  to the block.
+ *
+ *  If no block is given, an enumerator is returned instead.
+ *
+ *     d = Dir.new("testdir")
+ *     d.each_child  {|x| puts "Got #{x}" }
+ *
+ *  <em>produces:</em>
+ *
+ *     Got config.h
+ *     Got main.rb
+ *
+ */
+static VALUE
+dir_each_child_m(VALUE dir)
+{
+    RETURN_ENUMERATOR(dir, 0, 0);
+    return dir_each_entry(dir, dir_yield, Qnil, TRUE);
+}
+
+/*
+ *  call-seq:
+ *     dir.children  -> array
+ *
+ *  Returns an array containing all of the filenames except for "."
+ *  and ".." in this directory.
+ *
+ *     d = Dir.new("testdir")
+ *     d.children   #=> ["config.h", "main.rb"]
+ *
+ */
 static VALUE
 dir_collect_children(VALUE dir)
 {
@@ -2754,8 +3077,8 @@ dir_collect_children(VALUE dir)
  *     Dir.children( dirname, encoding: enc ) -> array
  *
  *  Returns an array containing all of the filenames except for "."
- *  and ".." in the given directory. Will raise a
- *  <code>SystemCallError</code> if the named directory doesn't exist.
+ *  and ".." in the given directory. Will raise a SystemCallError if
+ *  the named directory doesn't exist.
  *
  *  The optional <i>encoding</i> keyword argument specifies the encoding of the
  *  directory. If not specified, the filesystem encoding is used.
@@ -2982,6 +3305,38 @@ rb_dir_exists_p(VALUE obj, VALUE fname)
     return rb_file_directory_p(obj, fname);
 }
 
+static void *
+nogvl_dir_empty_p(void *ptr)
+{
+    const char *path = ptr;
+    DIR *dir = opendir(path);
+    struct dirent *dp;
+    VALUE result = Qtrue;
+
+    if (!dir) {
+	int e = errno;
+	switch (gc_for_fd_with_gvl(e)) {
+	  default:
+	    dir = opendir(path);
+	    if (dir) break;
+	    e = errno;
+	    /* fall through */
+	  case 0:
+	    if (e == ENOTDIR) return (void *)Qfalse;
+	    errno = e; /* for rb_sys_fail_path */
+	    return (void *)Qundef;
+	}
+    }
+    while ((dp = READDIR(dir, NULL)) != NULL) {
+	if (!to_be_skipped(dp)) {
+	    result = Qfalse;
+	    break;
+	}
+    }
+    closedir(dir);
+    return (void *)result;
+}
+
 /*
  * call-seq:
  *   Dir.empty?(path_name)  ->  true or false
@@ -2992,13 +3347,11 @@ rb_dir_exists_p(VALUE obj, VALUE fname)
 static VALUE
 rb_dir_s_empty_p(VALUE obj, VALUE dirname)
 {
-    DIR *dir;
-    struct dirent *dp;
-    VALUE result = Qtrue, orig;
+    VALUE result, orig;
     const char *path;
     enum {false_on_notdir = 1};
 
-    GlobPathValue(dirname, FALSE);
+    FilePathValue(dirname);
     orig = rb_str_dup_frozen(dirname);
     dirname = rb_str_encode_ospath(dirname);
     dirname = rb_str_dup_frozen(dirname);
@@ -3023,36 +3376,18 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
     }
 #endif
 
-    dir = opendir(path);
-    if (!dir) {
-	int e = errno;
-	switch (rb_gc_for_fd(e)) {
-	  default:
-	    dir = opendir(path);
-	    if (dir) break;
-	    e = errno;
-	    /* fall through */
-	  case 0:
-	    if (false_on_notdir && e == ENOTDIR) return Qfalse;
-	    rb_syserr_fail_path(e, orig);
-	}
+    result = (VALUE)rb_thread_call_without_gvl(nogvl_dir_empty_p, (void *)path,
+					    RUBY_UBF_IO, 0);
+    if (result == Qundef) {
+	rb_sys_fail_path(orig);
     }
-    errno = 0;
-    while ((dp = READDIR(dir, NULL)) != NULL) {
-	if (!to_be_skipped(dp)) {
-	    result = Qfalse;
-	    break;
-	}
-    }
-    closedir(dir);
     return result;
 }
 
 /*
- *  Objects of class <code>Dir</code> are directory streams representing
- *  directories in the underlying file system. They provide a variety of
- *  ways to list directories and their contents. See also
- *  <code>File</code>.
+ *  Objects of class Dir are directory streams representing
+ *  directories in the underlying file system. They provide a variety
+ *  of ways to list directories and their contents. See also File.
  *
  *  The directory used in these examples contains the two regular files
  *  (<code>config.h</code> and <code>main.rb</code>), the parent
@@ -3080,6 +3415,8 @@ Init_Dir(void)
     rb_define_method(rb_cDir,"inspect", dir_inspect, 0);
     rb_define_method(rb_cDir,"read", dir_read, 0);
     rb_define_method(rb_cDir,"each", dir_each, 0);
+    rb_define_method(rb_cDir,"each_child", dir_each_child_m, 0);
+    rb_define_method(rb_cDir,"children", dir_collect_children, 0);
     rb_define_method(rb_cDir,"rewind", dir_rewind, 0);
     rb_define_method(rb_cDir,"tell", dir_tell, 0);
     rb_define_method(rb_cDir,"seek", dir_seek, 1);

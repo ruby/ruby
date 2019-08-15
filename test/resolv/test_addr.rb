@@ -27,4 +27,15 @@ class TestResolvAddr < Test::Unit::TestCase
       end
     end
   end
+
+  def test_hosts_by_command
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        hosts = Resolv::Hosts.new("|echo error")
+        assert_raise(Errno::ENOENT, Errno::EINVAL) do
+          hosts.each_name("") {}
+        end
+      end
+    end
+  end
 end

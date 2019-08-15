@@ -53,6 +53,7 @@ class TestIONonblock < Test::Unit::TestCase
 
   def test_nonblock
     IO.pipe {|r, w|
+      w.nonblock = false
       assert_equal(false, w.nonblock?)
       w.nonblock do
         assert_equal(true, w.nonblock?)
@@ -67,5 +68,6 @@ class TestIONonblock < Test::Unit::TestCase
       end
       assert_equal(false, w.nonblock?)
     }
+  rescue NotImplementedError
   end
 end if IO.method_defined?(:nonblock)

@@ -60,6 +60,13 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     end
   end
 
+  def test_generate
+    key = OpenSSL::PKey::RSA.generate(512, 17)
+    assert_equal 512, key.n.num_bits
+    assert_equal 17, key.e
+    assert_not_nil key.d
+  end
+
   def test_new_break
     assert_nil(OpenSSL::PKey::RSA.new(1024) { break })
     assert_raise(RuntimeError) do
@@ -110,6 +117,39 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     rsa = OpenSSL::PKey::RSA.new
     assert_raise(OpenSSL::PKey::PKeyError, "[Bug #12783]") {
       rsa.verify("SHA1", "a", "b")
+    }
+  end
+
+  def test_sign_verify_pss
+    key = Fixtures.pkey("rsa1024")
+    data = "Sign me!"
+    invalid_data = "Sign me?"
+
+    signature = key.sign_pss("SHA256", data, salt_length: 20, mgf1_hash: "SHA1")
+    assert_equal 128, signature.bytesize
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
+    assert_equal false,
+      key.verify_pss("SHA256", signature, invalid_data, salt_length: 20, mgf1_hash: "SHA1")
+
+    signature = key.sign_pss("SHA256", data, salt_length: :digest, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: 32, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
+    assert_equal false,
+      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA1")
+
+    signature = key.sign_pss("SHA256", data, salt_length: :max, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: 94, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
+
+    assert_raise(OpenSSL::PKey::RSAError) {
+      key.sign_pss("SHA256", data, salt_length: 95, mgf1_hash: "SHA1")
     }
   end
 
@@ -256,7 +296,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
   end
 
   def test_dup
-    key = OpenSSL::PKey::RSA.generate(256, 17)
+    key = Fixtures.pkey("rsa1024")
     key2 = key.dup
     assert_equal key.params, key2.params
     key2.set_key(key2.n, 3, key2.d)

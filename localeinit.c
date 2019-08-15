@@ -9,6 +9,7 @@
 
 **********************************************************************/
 
+#include "ruby/encoding.h"
 #include "internal.h"
 #include "encindex.h"
 #ifdef __CYGWIN__

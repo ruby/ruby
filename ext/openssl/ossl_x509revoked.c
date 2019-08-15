@@ -249,6 +249,26 @@ ossl_x509revoked_add_extension(VALUE self, VALUE ext)
     return ext;
 }
 
+static VALUE
+ossl_x509revoked_to_der(VALUE self)
+{
+    X509_REVOKED *rev;
+    VALUE str;
+    int len;
+    unsigned char *p;
+
+    GetX509Rev(self, rev);
+    len = i2d_X509_REVOKED(rev, NULL);
+    if (len <= 0)
+	ossl_raise(eX509RevError, "i2d_X509_REVOKED");
+    str = rb_str_new(NULL, len);
+    p = (unsigned char *)RSTRING_PTR(str);
+    if (i2d_X509_REVOKED(rev, &p) <= 0)
+	ossl_raise(eX509RevError, "i2d_X509_REVOKED");
+    ossl_str_adjust(str, p);
+    return str;
+}
+
 /*
  * INIT
  */
@@ -276,4 +296,5 @@ Init_ossl_x509revoked(void)
     rb_define_method(cX509Rev, "extensions", ossl_x509revoked_get_extensions, 0);
     rb_define_method(cX509Rev, "extensions=", ossl_x509revoked_set_extensions, 1);
     rb_define_method(cX509Rev, "add_extension", ossl_x509revoked_add_extension, 1);
+    rb_define_method(cX509Rev, "to_der", ossl_x509revoked_to_der, 0);
 }

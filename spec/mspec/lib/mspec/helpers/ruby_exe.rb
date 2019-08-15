@@ -2,11 +2,12 @@ require 'mspec/guards/platform'
 require 'mspec/helpers/tmp'
 
 # The ruby_exe helper provides a wrapper for invoking the
-# same Ruby interpreter with the same falgs as the one running
+# same Ruby interpreter with the same flags as the one running
 # the specs and getting the output from running the code.
+#
 # If +code+ is a file that exists, it will be run.
-# Otherwise, +code+ should be Ruby code that will be run with
-# the -e command line option. For example:
+# Otherwise, +code+ will be written to a temporary file and be run.
+# For example:
 #
 #   ruby_exe('path/to/some/file.rb')
 #
@@ -14,24 +15,16 @@ require 'mspec/helpers/tmp'
 #
 #   `#{RUBY_EXE} 'path/to/some/file.rb'`
 #
-# while
-#
-#   ruby_exe('puts "hello, world."')
-#
-# will be executed as
-#
-#   `#{RUBY_EXE} -e 'puts "hello, world."'`
-#
 # The ruby_exe helper also accepts an options hash with three
 # keys: :options, :args and :env. For example:
 #
 #   ruby_exe('file.rb', :options => "-w",
-#                       :args => "> file.txt",
+#                       :args => "arg1 arg2",
 #                       :env => { :FOO => "bar" })
 #
 # will be executed as
 #
-#   `#{RUBY_EXE} -w #{'file.rb'} > file.txt`
+#   `#{RUBY_EXE} -w file.rb arg1 arg2`
 #
 # with access to ENV["FOO"] with value "bar".
 #
@@ -49,33 +42,11 @@ require 'mspec/helpers/tmp'
 # The RUBY_EXE constant is setup by mspec automatically
 # and is used by ruby_exe and ruby_cmd. The mspec runner script
 # will set ENV['RUBY_EXE'] to the name of the executable used
-# to invoke the mspec-run script. The value of RUBY_EXE will be
-# constructed as follows:
-#
-#   1. the value of ENV['RUBY_EXE']
-#   2. an explicit value based on RUBY_ENGINE
-#   3. cwd/(RUBY_ENGINE + $(EXEEXT) || $(exeext) || '')
-#   4. $(bindir)/$(RUBY_INSTALL_NAME)
+# to invoke the mspec-run script.
 #
 # The value will only be used if the file exists and is executable.
-# The flags will then be appended to the resulting value.
-#
-# These 4 ways correspond to the following scenarios:
-#
-#   1. Using the MSpec runner scripts, the name of the
-#      executable is explicitly passed by ENV['RUBY_EXE']
-#      so there is no ambiguity.
-#
-#  Otherwise, if using RSpec (or something else)
-#
-#   2. Running the specs while developing an alternative
-#      Ruby implementation. This explicitly names the
-#      executable in the development directory based on
-#      the value of RUBY_ENGINE.
-#   3. Running the specs within the source directory for
-#      some implementation. (E.g. a local build directory.)
-#   4. Running the specs against some installed Ruby
-#      implementation.
+# The flags will then be appended to the resulting value, such that
+# the RUBY_EXE constant contains both the executable and the flags.
 #
 # Additionally, the flags passed to mspec
 # (with -T on the command line or in the config with set :flags)
@@ -101,12 +72,12 @@ def ruby_exe_options(option)
     end
   when :name
     require 'rbconfig'
-    bin = RUBY_ENGINE + (RbConfig::CONFIG['EXEEXT'] || RbConfig::CONFIG['exeext'] || '')
+    bin = RUBY_ENGINE + (RbConfig::CONFIG['EXEEXT'] || '')
     File.join(".", bin)
   when :install_name
     require 'rbconfig'
     bin = RbConfig::CONFIG["RUBY_INSTALL_NAME"] || RbConfig::CONFIG["ruby_install_name"]
-    bin << (RbConfig::CONFIG['EXEEXT'] || RbConfig::CONFIG['exeext'] || '')
+    bin << (RbConfig::CONFIG['EXEEXT'] || '')
     File.join(RbConfig::CONFIG['bindir'], bin)
   end
 end
@@ -127,6 +98,10 @@ def resolve_ruby_exe
     end
   end
   raise Exception, "Unable to find a suitable ruby executable."
+end
+
+unless Object.const_defined?(:RUBY_EXE) and RUBY_EXE
+  RUBY_EXE = resolve_ruby_exe
 end
 
 def ruby_exe(code = :not_given, opts = {})
@@ -179,8 +154,4 @@ def ruby_cmd(code, opts = {})
   end
 
   [RUBY_EXE, opts[:options], body, opts[:args]].compact.join(' ')
-end
-
-unless Object.const_defined?(:RUBY_EXE) and RUBY_EXE
-  RUBY_EXE = resolve_ruby_exe
 end

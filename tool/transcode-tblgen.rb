@@ -63,7 +63,7 @@ class ArrayCode
   end
 
   def insert_at_last(num, str)
-    newnum = self.length + num
+    # newnum = self.length + num
     @content << str
     @len += num
   end
@@ -145,7 +145,7 @@ class ActionMap
                 else
                   b = $1.to_i(16)
                   e = $2.to_i(16)
-                  b.upto(e) {|c| set[c] = true }
+                  b.upto(e) {|_| set[_] = true }
                 end
               }
               i = nil
@@ -235,7 +235,7 @@ class ActionMap
     all_rects = []
 
     rects1.each {|rect|
-      min, max, action = rect
+      _, _, action = rect
       rect[2] = actions.length
       actions << action
       all_rects << rect
@@ -244,7 +244,7 @@ class ActionMap
     boundary = actions.length
 
     rects2.each {|rect|
-      min, max, action = rect
+      _, _, action = rect
       rect[2] = actions.length
       actions << action
       all_rects << rect
@@ -273,7 +273,7 @@ class ActionMap
     singleton_rects = []
     region_rects = []
     rects.each {|rect|
-      min, max, action = rect
+      min, max, = rect
       if min == max
         singleton_rects << rect
       else
@@ -293,14 +293,14 @@ class ActionMap
     if region_rects.empty? ? s_rect[0].length == prefix.length : region_rects[0][0].empty?
       h = TMPHASH
       while (s_rect = @singleton_rects.last) && s_rect[0].start_with?(prefix)
-        min, max, action = @singleton_rects.pop
+        min, _, action = @singleton_rects.pop
         raise ArgumentError, "ambiguous pattern: #{prefix}" if min.length != prefix.length
         h[action] = true
       end
-      region_rects.each {|min, max, action|
+      for min, _, action in region_rects
         raise ArgumentError, "ambiguous pattern: #{prefix}" if !min.empty?
         h[action] = true
-      }
+      end
       tree = Action.new(block.call(prefix, h.keys))
       h.clear
     else
@@ -906,7 +906,7 @@ end
 
 def transcode_generate_node(am, name_hint=nil)
   STDERR.puts "converter for #{name_hint}" if VERBOSE_MODE
-  name = am.gennode(TRANSCODE_GENERATED_BYTES_CODE, TRANSCODE_GENERATED_WORDS_CODE, name_hint)
+  am.gennode(TRANSCODE_GENERATED_BYTES_CODE, TRANSCODE_GENERATED_WORDS_CODE, name_hint)
   ''
 end
 
@@ -1078,7 +1078,11 @@ if __FILE__ == $0
   end
 
   libs1 = $".dup
-  erb = ERB.new(src, nil, '%')
+  if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
+    erb = ERB.new(src, trim_mode: '%')
+  else
+    erb = ERB.new(src, nil, '%')
+  end
   erb.filename = arg
   erb_result = erb.result(binding)
   libs2 = $".dup

@@ -37,13 +37,14 @@ extern const rb_data_type_t ossl_evp_pkey_type;
 
 struct ossl_generate_cb_arg {
     int yield;
-    int stop;
+    int interrupted;
     int state;
 };
 int ossl_generate_cb_2(int p, int n, BN_GENCB *cb);
 void ossl_generate_cb_stop(void *ptr);
 
 VALUE ossl_pkey_new(EVP_PKEY *);
+void ossl_pkey_check_public_key(const EVP_PKEY *);
 EVP_PKEY *GetPKeyPtr(VALUE);
 EVP_PKEY *DupPKeyPtr(VALUE);
 EVP_PKEY *GetPrivPKeyPtr(VALUE);
@@ -132,9 +133,9 @@ static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2, VALU
 	BIGNUM *bn3 = NULL, *orig_bn3 = NIL_P(v3) ? NULL : GetBNPtr(v3);\
 									\
 	Get##_type(self, obj);						\
-	if (orig_bn1 && !(bn1 = BN_dup(orig_bn1)) ||			\
-	    orig_bn2 && !(bn2 = BN_dup(orig_bn2)) ||			\
-	    orig_bn3 && !(bn3 = BN_dup(orig_bn3))) {			\
+        if ((orig_bn1 && !(bn1 = BN_dup(orig_bn1))) ||			\
+            (orig_bn2 && !(bn2 = BN_dup(orig_bn2))) ||			\
+            (orig_bn3 && !(bn3 = BN_dup(orig_bn3)))) {			\
 		BN_clear_free(bn1);					\
 		BN_clear_free(bn2);					\
 		BN_clear_free(bn3);					\
@@ -162,8 +163,8 @@ static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2) \
 	BIGNUM *bn2 = NULL, *orig_bn2 = NIL_P(v2) ? NULL : GetBNPtr(v2);\
 									\
 	Get##_type(self, obj);						\
-	if (orig_bn1 && !(bn1 = BN_dup(orig_bn1)) ||			\
-	    orig_bn2 && !(bn2 = BN_dup(orig_bn2))) {			\
+        if ((orig_bn1 && !(bn1 = BN_dup(orig_bn1))) ||			\
+            (orig_bn2 && !(bn2 = BN_dup(orig_bn2)))) {			\
 		BN_clear_free(bn1);					\
 		BN_clear_free(bn2);					\
 		ossl_raise(eBNError, NULL);				\

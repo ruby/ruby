@@ -87,13 +87,22 @@ module Psych
       assert_equal 0, @parser.mark.line
       @parser.parse "---\n- hello\n- world"
       line_calls = @handler.marks.map(&:line).zip(@handler.calls.map(&:first))
-      assert_equal [[0, :start_stream],
+      assert_equal [
+                    [0, :event_location],
+                    [0, :start_stream],
+                    [0, :event_location],
                     [0, :start_document],
+                    [1, :event_location],
                     [1, :start_sequence],
+                    [2, :event_location],
                     [2, :scalar],
+                    [3, :event_location],
                     [3, :scalar],
+                    [3, :event_location],
                     [3, :end_sequence],
+                    [3, :event_location],
                     [3, :end_document],
+                    [3, :event_location],
                     [3, :end_stream]], line_calls
 
       assert_equal 3, @parser.mark.line
@@ -103,13 +112,22 @@ module Psych
       assert_equal 0, @parser.mark.column
       @parser.parse "---\n- hello\n- world"
       col_calls = @handler.marks.map(&:column).zip(@handler.calls.map(&:first))
-      assert_equal [[0, :start_stream],
+      assert_equal [
+                    [0, :event_location],
+                    [0, :start_stream],
+                    [3, :event_location],
                     [3, :start_document],
+                    [1, :event_location],
                     [1, :start_sequence],
+                    [0, :event_location],
                     [0, :scalar],
+                    [0, :event_location],
                     [0, :scalar],
+                    [0, :event_location],
                     [0, :end_sequence],
+                    [0, :event_location],
                     [0, :end_document],
+                    [0, :event_location],
                     [0, :end_stream]], col_calls
 
       assert_equal 0, @parser.mark.column
@@ -119,13 +137,22 @@ module Psych
       assert_equal 0, @parser.mark.index
       @parser.parse "---\n- hello\n- world"
       idx_calls = @handler.marks.map(&:index).zip(@handler.calls.map(&:first))
-      assert_equal [[0, :start_stream],
+      assert_equal [
+                    [0, :event_location],
+                    [0, :start_stream],
+                    [3, :event_location],
                     [3, :start_document],
+                    [5, :event_location],
                     [5, :start_sequence],
+                    [12, :event_location],
                     [12, :scalar],
+                    [19, :event_location],
                     [19, :scalar],
+                    [19, :event_location],
                     [19, :end_sequence],
+                    [19, :event_location],
                     [19, :end_document],
+                    [19, :event_location],
                     [19, :end_stream]], idx_calls
 
       assert_equal 19, @parser.mark.index
@@ -137,7 +164,7 @@ module Psych
       # BOM + text
       yml = "\uFEFF#{tadpole}".encode('UTF-16LE')
       @parser.parse yml
-      assert_equal tadpole, @parser.handler.calls[2][1].first
+      assert_equal tadpole, @parser.handler.calls.find { |method, args| method == :scalar }[1].first
     end
 
     def test_external_encoding
@@ -145,7 +172,7 @@ module Psych
 
       @parser.external_encoding = Psych::Parser::UTF16LE
       @parser.parse tadpole.encode 'UTF-16LE'
-      assert_equal tadpole, @parser.handler.calls[2][1].first
+      assert_equal tadpole, @parser.handler.calls.find { |method, args| method == :scalar }[1].first
     end
 
     def test_bogus_io
@@ -322,6 +349,31 @@ module Psych
     def test_start_document_tag
       @parser.parse("%TAG !yaml! tag:yaml.org,2002\n---\n!yaml!str \"foo\"\n")
       assert_called :start_document, [[], [['!yaml!', 'tag:yaml.org,2002']], false]
+    end
+
+    def test_event_location
+      @parser.parse "foo:\n" \
+                    "  barbaz: [1, 2]"
+
+      events = @handler.calls.each_slice(2).map do |location, event|
+        [event[0], location[1]]
+      end
+
+      assert_equal [
+                     [:start_stream, [0, 0, 0, 0]],
+                     [:start_document, [0, 0, 0, 0]],
+                     [:start_mapping, [0, 0, 0, 0]],
+                     [:scalar, [0, 0, 0, 3]],
+                     [:start_mapping, [1, 2, 1, 2]],
+                     [:scalar, [1, 2, 1, 8]],
+                     [:start_sequence, [1, 10, 1, 11]],
+                     [:scalar, [1, 11, 1, 12]],
+                     [:scalar, [1, 14, 1, 15]],
+                     [:end_sequence, [1, 15, 1, 16]],
+                     [:end_mapping, [2, 0, 2, 0]],
+                     [:end_mapping, [2, 0, 2, 0]],
+                     [:end_document, [2, 0, 2, 0]],
+                     [:end_stream, [2, 0, 2, 0]]], events
     end
 
     def assert_called call, with = nil, parser = @parser

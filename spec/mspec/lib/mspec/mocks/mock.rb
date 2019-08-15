@@ -1,4 +1,5 @@
 require 'mspec/expectations/expectations'
+require 'mspec/helpers/warning'
 
 module Mock
   def self.reset
@@ -53,14 +54,21 @@ module Mock
     key = replaced_key obj, sym
     sym = sym.to_sym
 
+    if type == :stub and mocks.key?(key)
+      # Defining a stub and there is already a mock, ignore the stub
+      return
+    end
+
     if (sym == :respond_to? or mock_respond_to?(obj, sym, true)) and !replaced?(key.first)
       meta.__send__ :alias_method, key.first, sym
     end
 
-    meta.class_eval {
-      define_method(sym) do |*args, &block|
-        Mock.verify_call self, sym, *args, &block
-      end
+    suppress_warning {
+      meta.class_eval {
+        define_method(sym) do |*args, &block|
+          Mock.verify_call self, sym, *args, &block
+        end
+      }
     }
 
     proxy = MockProxy.new type
@@ -68,6 +76,11 @@ module Mock
     if proxy.mock?
       MSpec.expectation
       MSpec.actions :expectation, MSpec.current.state
+    end
+
+    if proxy.mock? and stubs.key?(key)
+      # Defining a mock and there is already a stub, remove the stub
+      stubs.delete key
     end
 
     if proxy.stub?
@@ -82,6 +95,10 @@ module Mock
 
   def self.name_or_inspect(obj)
     obj.instance_variable_get(:@name) || obj.inspect
+  end
+
+  def self.inspect_args(args)
+    "(#{Array(args).map(&:inspect).join(', ')})"
   end
 
   def self.verify_count
@@ -103,7 +120,7 @@ module Mock
         end
         unless pass
           SpecExpectation.fail_with(
-            "Mock '#{name_or_inspect obj}' expected to receive '#{key.last}' " + \
+            "Mock '#{name_or_inspect obj}' expected to receive #{key.last}#{inspect_args proxy.arguments} " + \
             "#{qualifier.to_s.sub('_', ' ')} #{count} times",
             "but received it #{proxy.calls} times")
         end
@@ -117,7 +134,7 @@ module Mock
 
     key = replaced_key obj, sym
     [mocks, stubs].each do |proxies|
-      proxies[key].each do |proxy|
+      proxies.fetch(key, []).each do |proxy|
         pass = case proxy.arguments
         when :any_args
           true
@@ -160,10 +177,10 @@ module Mock
     end
 
     if sym.to_sym == :respond_to?
-      mock_respond_to? obj, compare
+      mock_respond_to? obj, *args
     else
       SpecExpectation.fail_with("Mock '#{name_or_inspect obj}': method #{sym}\n",
-                            "called with unexpected arguments (#{Array(compare).join(' ')})")
+                            "called with unexpected arguments #{inspect_args compare}")
     end
   end
 
@@ -179,7 +196,9 @@ module Mock
       meta = obj.singleton_class
 
       if mock_respond_to? obj, replaced, true
-        meta.__send__ :alias_method, sym, replaced
+        suppress_warning do
+          meta.__send__ :alias_method, sym, replaced
+        end
         meta.__send__ :remove_method, replaced
       else
         meta.__send__ :remove_method, sym

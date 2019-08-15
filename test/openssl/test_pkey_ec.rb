@@ -120,14 +120,9 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     asn1 = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Integer(1),
       OpenSSL::ASN1::OctetString(p256.private_key.to_s(2)),
-      OpenSSL::ASN1::ASN1Data.new(
-        [OpenSSL::ASN1::ObjectId("prime256v1")],
-        0, :CONTEXT_SPECIFIC
-      ),
-      OpenSSL::ASN1::ASN1Data.new(
-        [OpenSSL::ASN1::BitString(p256.public_key.to_bn.to_s(2))],
-        1, :CONTEXT_SPECIFIC
-      )
+      OpenSSL::ASN1::ObjectId("prime256v1", 0, :EXPLICIT),
+      OpenSSL::ASN1::BitString(p256.public_key.to_octet_string(:uncompressed),
+                               1, :EXPLICIT)
     ])
     key = OpenSSL::PKey::EC.new(asn1.to_der)
     assert_predicate key, :private?
@@ -181,7 +176,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
         OpenSSL::ASN1::ObjectId("prime256v1")
       ]),
       OpenSSL::ASN1::BitString(
-        p256.public_key.to_bn.to_s(2)
+        p256.public_key.to_octet_string(:uncompressed)
       )
     ])
     key = OpenSSL::PKey::EC.new(asn1.to_der)
@@ -224,7 +219,8 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal :uncompressed, group4.point_conversion_form
     assert_equal group1, group4
     assert_equal group1.curve_name, group4.curve_name
-    assert_equal group1.generator.to_bn, group4.generator.to_bn
+    assert_equal group1.generator.to_octet_string(:uncompressed),
+      group4.generator.to_octet_string(:uncompressed)
     assert_equal group1.order, group4.order
     assert_equal group1.cofactor, group4.cofactor
     assert_equal group1.seed, group4.seed
@@ -239,34 +235,57 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     point2 = OpenSSL::PKey::EC::Point.new(group, point.to_bn)
     assert_equal point, point2
     assert_equal point.to_bn, point2.to_bn
+    assert_equal point.to_octet_string(:uncompressed),
+      point2.to_octet_string(:uncompressed)
+
+    point3 = OpenSSL::PKey::EC::Point.new(group,
+                                          point.to_octet_string(:uncompressed))
+    assert_equal point, point3
+    assert_equal point.to_bn, point3.to_bn
+    assert_equal point.to_octet_string(:uncompressed),
+      point3.to_octet_string(:uncompressed)
+
     point2.invert!
-    assert_not_equal point.to_bn, point2.to_bn
+    point3.invert!
+    assert_not_equal point.to_octet_string(:uncompressed),
+      point2.to_octet_string(:uncompressed)
+    assert_equal point2.to_octet_string(:uncompressed),
+      point3.to_octet_string(:uncompressed)
 
     begin
       group = OpenSSL::PKey::EC::Group.new(:GFp, 17, 2, 2)
       group.point_conversion_form = :uncompressed
-      generator = OpenSSL::PKey::EC::Point.new(group, 0x040501.to_bn)
+      generator = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 05 01 }))
       group.set_generator(generator, 19, 1)
-      point = OpenSSL::PKey::EC::Point.new(group, 0x040603.to_bn)
+      point = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 06 03 }))
     rescue OpenSSL::PKey::EC::Group::Error
       pend "Patched OpenSSL rejected curve" if /unsupported field/ =~ $!.message
       raise
     end
 
+    assert_equal 0x040603.to_bn, point.to_bn
     assert_equal 0x040603.to_bn, point.to_bn(:uncompressed)
     assert_equal 0x0306.to_bn, point.to_bn(:compressed)
     assert_equal 0x070603.to_bn, point.to_bn(:hybrid)
 
-    assert_equal 0x040603.to_bn, point.to_bn
+    group2 = group.dup; group2.point_conversion_form = :compressed
+    point2 = OpenSSL::PKey::EC::Point.new(group2, B(%w{ 04 06 03 }))
+    assert_equal 0x0306.to_bn, point2.to_bn
+
+    assert_equal B(%w{ 04 06 03 }), point.to_octet_string(:uncompressed)
+    assert_equal B(%w{ 03 06 }), point.to_octet_string(:compressed)
+    assert_equal B(%w{ 07 06 03 }), point.to_octet_string(:hybrid)
+
     assert_equal true, point.on_curve?
     point.invert! # 8.5
-    assert_equal 0x04060E.to_bn, point.to_bn
+    assert_equal B(%w{ 04 06 0E }), point.to_octet_string(:uncompressed)
     assert_equal true, point.on_curve?
 
     assert_equal false, point.infinity?
     point.set_to_infinity!
     assert_equal true, point.infinity?
     assert_equal 0.to_bn, point.to_bn
+    assert_equal B(%w{ 00 }), point.to_octet_string(:uncompressed)
     assert_equal true, point.on_curve?
   end
 
@@ -276,25 +295,31 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       # generator is (5, 1)
       group = OpenSSL::PKey::EC::Group.new(:GFp, 17, 2, 2)
       group.point_conversion_form = :uncompressed
-      gen = OpenSSL::PKey::EC::Point.new(group, OpenSSL::BN.new("040501", 16))
+      gen = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 05 01 }))
       group.set_generator(gen, 19, 1)
 
       # 3 * (6, 3) = (16, 13)
-      point_a = OpenSSL::PKey::EC::Point.new(group, OpenSSL::BN.new("040603", 16))
+      point_a = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 06 03 }))
       result_a1 = point_a.mul(3)
-      assert_equal("04100D", result_a1.to_bn.to_s(16))
+      assert_equal B(%w{ 04 10 0D }), result_a1.to_octet_string(:uncompressed)
       # 3 * (6, 3) + 3 * (5, 1) = (7, 6)
       result_a2 = point_a.mul(3, 3)
-      assert_equal("040706", result_a2.to_bn.to_s(16))
+      assert_equal B(%w{ 04 07 06 }), result_a2.to_octet_string(:uncompressed)
       # 3 * point_a = 3 * (6, 3) = (16, 13)
       result_b1 = point_a.mul([3], [])
-      assert_equal("04100D", result_b1.to_bn.to_s(16))
+      assert_equal B(%w{ 04 10 0D }), result_b1.to_octet_string(:uncompressed)
       # 3 * point_a + 2 * point_a = 3 * (6, 3) + 2 * (6, 3) = (7, 11)
-      result_b1 = point_a.mul([3, 2], [point_a])
-      assert_equal("04070B", result_b1.to_bn.to_s(16))
+      begin
+        result_b1 = point_a.mul([3, 2], [point_a])
+      rescue OpenSSL::PKey::EC::Point::Error
+        # LibreSSL doesn't support multiple entries in first argument
+        raise if $!.message !~ /called a function you should not call/
+      else
+        assert_equal B(%w{ 04 07 0B }), result_b1.to_octet_string(:uncompressed)
+      end
       # 3 * point_a + 5 * point_a.group.generator = 3 * (6, 3) + 5 * (5, 1) = (13, 10)
       result_b1 = point_a.mul([3], [], 5)
-      assert_equal("040D0A", result_b1.to_bn.to_s(16))
+      assert_equal B(%w{ 04 0D 0A }), result_b1.to_octet_string(:uncompressed)
     rescue OpenSSL::PKey::EC::Group::Error
       # CentOS patches OpenSSL to reject curves defined over Fp where p < 256 bits
       raise if $!.message !~ /unsupported field/
@@ -315,6 +340,10 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
 # test Group: asn1_flag, point_conversion
 
   private
+
+  def B(ary)
+    [Array(ary).join].pack("H*")
+  end
 
   def assert_same_ec(expected, key)
     check_component(expected, key, [:group, :public_key, :private_key])

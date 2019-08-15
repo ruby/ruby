@@ -15,17 +15,17 @@ describe MSpecCI, "#options" do
 
   it "enables the chdir option" do
     @options.should_receive(:chdir)
-    @script.options
+    @script.options []
   end
 
   it "enables the prefix option" do
     @options.should_receive(:prefix)
-    @script.options
+    @script.options []
   end
 
   it "enables the config option" do
     @options.should_receive(:configure)
-    @script.options
+    @script.options []
   end
 
   it "provides a custom action (block) to the config option" do
@@ -35,52 +35,52 @@ describe MSpecCI, "#options" do
 
   it "enables the dry run option" do
     @options.should_receive(:pretend)
-    @script.options
+    @script.options []
   end
 
   it "enables the unguarded option" do
     @options.should_receive(:unguarded)
-    @script.options
+    @script.options []
   end
 
   it "enables the interrupt single specs option" do
     @options.should_receive(:interrupt)
-    @script.options
+    @script.options []
   end
 
   it "enables the formatter options" do
     @options.should_receive(:formatters)
-    @script.options
+    @script.options []
   end
 
   it "enables the verbose option" do
     @options.should_receive(:verbose)
-    @script.options
+    @script.options []
   end
 
   it "enables the action options" do
     @options.should_receive(:actions)
-    @script.options
+    @script.options []
   end
 
   it "enables the action filter options" do
     @options.should_receive(:action_filters)
-    @script.options
+    @script.options []
   end
 
   it "enables the version option" do
     @options.should_receive(:version)
-    @script.options
+    @script.options []
   end
 
   it "enables the help option" do
     @options.should_receive(:help)
-    @script.options
+    @script.options []
   end
 
   it "calls #custom_options" do
     @script.should_receive(:custom_options).with(@options)
-    @script.options
+    @script.options []
   end
 end
 
@@ -99,7 +99,7 @@ describe MSpecCI, "#run" do
     @script.stub(:exit)
     @script.stub(:config).and_return(@config)
     @script.stub(:files).and_return(["one", "two"])
-    @script.options
+    @script.options []
   end
 
   it "registers the tags patterns" do

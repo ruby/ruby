@@ -11,8 +11,9 @@
 
 **********************************************************************/
 
-#include "internal.h"
+#include "ruby/encoding.h"
 #include "ruby/re.h"
+#include "internal.h"
 #include "id.h"
 #include <math.h>
 #include <stdarg.h>
@@ -202,7 +203,7 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *  any additional arguments.  Within the format string, any characters
  *  other than format sequences are copied to the result.
  *
- *  The syntax of a format sequence is follows.
+ *  The syntax of a format sequence is as follows.
  *
  *    %[flags][width][.precision]type
  *
@@ -633,7 +634,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    }
 		    nextvalue = rb_hash_default_value(hash, sym);
 		    if (NIL_P(nextvalue)) {
-			rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
+			rb_key_err_raise(rb_enc_sprintf(enc, "key%.*s not found", len, start), hash, sym);
 		    }
 		}
 		if (term == '}') goto format_s;
@@ -676,6 +677,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	  case '\n':
 	  case '\0':
 	    p--;
+            /* fall through */
 	  case '%':
 	    if (flags != FNONE) {
 		rb_raise(rb_eArgError, "invalid format character - %%");
@@ -1261,22 +1263,33 @@ ruby_ultoa(unsigned long val, char *endp, int base, int flags)
     return BSD__ultoa(val, endp, base, octzero, xdigs);
 }
 
+static int ruby_do_vsnprintf(char *str, size_t n, const char *fmt, va_list ap);
+
 int
 ruby_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
 {
-    int ret;
+    if (str && (ssize_t)n < 1)
+	return (EOF);
+    return ruby_do_vsnprintf(str, n, fmt, ap);
+}
+
+static int
+ruby_do_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
+{
+    ssize_t ret;
     rb_printf_buffer f;
 
-    if ((int)n < 1)
-	return (EOF);
     f._flags = __SWR | __SSTR;
     f._bf._base = f._p = (unsigned char *)str;
-    f._bf._size = f._w = n - 1;
+    f._bf._size = f._w = str ? (n - 1) : 0;
     f.vwrite = BSD__sfvwrite;
     f.vextra = 0;
-    ret = (int)BSD_vfprintf(&f, fmt, ap);
-    *f._p = 0;
-    return ret;
+    ret = BSD_vfprintf(&f, fmt, ap);
+    if (str) *f._p = 0;
+#if SIZEOF_SIZE_T > SIZEOF_INT
+    if (n > INT_MAX) return INT_MAX;
+#endif
+    return (int)ret;
 }
 
 int
@@ -1285,11 +1298,11 @@ ruby_snprintf(char *str, size_t n, char const *fmt, ...)
     int ret;
     va_list ap;
 
-    if ((int)n < 1)
+    if (str && (ssize_t)n < 1)
 	return (EOF);
 
     va_start(ap, fmt);
-    ret = ruby_vsnprintf(str, n, fmt, ap);
+    ret = ruby_do_vsnprintf(str, n, fmt, ap);
     va_end(ap);
     return ret;
 }
@@ -1365,6 +1378,12 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
 # undef LITERAL
 	}
 	value = rb_inspect(value);
+    }
+    else if (SYMBOL_P(value)) {
+	value = rb_sym2str(value);
+	if (sign == ' ' && !rb_str_symname_p(value)) {
+	    value = rb_str_inspect(value);
+	}
     }
     else {
 	value = rb_obj_as_string(value);

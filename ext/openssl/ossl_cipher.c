@@ -317,6 +317,8 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
 	salt = (unsigned char *)RSTRING_PTR(vsalt);
     }
     iter = NIL_P(viter) ? 2048 : NUM2INT(viter);
+    if (iter <= 0)
+	rb_raise(rb_eArgError, "iterations must be a positive integer");
     digest = NIL_P(vdigest) ? EVP_md5() : ossl_evp_get_digestbyname(vdigest);
     GetCipher(self, ctx);
     EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), digest, salt,
@@ -508,7 +510,7 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
     StringValue(iv);
     GetCipher(self, ctx);
 
-    if (EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER)
+    if (EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER)
 	iv_len = (int)(VALUE)EVP_CIPHER_CTX_get_app_data(ctx);
     if (!iv_len)
 	iv_len = EVP_CIPHER_CTX_iv_length(ctx);
@@ -535,7 +537,7 @@ ossl_cipher_is_authenticated(VALUE self)
 
     GetCipher(self, ctx);
 
-    return (EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER) ? Qtrue : Qfalse;
+    return (EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER) ? Qtrue : Qfalse;
 }
 
 /*
@@ -569,6 +571,8 @@ ossl_cipher_set_auth_data(VALUE self, VALUE data)
     in_len = RSTRING_LEN(data);
 
     GetCipher(self, ctx);
+    if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER))
+	ossl_raise(eCipherError, "AEAD not supported by this cipher");
 
     if (!ossl_cipher_update_long(ctx, NULL, &out_len, in, in_len))
         ossl_raise(eCipherError, "couldn't set additional authenticated data");
@@ -606,7 +610,7 @@ ossl_cipher_get_auth_tag(int argc, VALUE *argv, VALUE self)
 
     GetCipher(self, ctx);
 
-    if (!(EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER))
+    if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER))
 	ossl_raise(eCipherError, "authentication tag not supported by this cipher");
 
     ret = rb_str_new(NULL, tag_len);
@@ -641,7 +645,7 @@ ossl_cipher_set_auth_tag(VALUE self, VALUE vtag)
     tag_len = RSTRING_LENINT(vtag);
 
     GetCipher(self, ctx);
-    if (!(EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER))
+    if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER))
 	ossl_raise(eCipherError, "authentication tag not supported by this cipher");
 
     if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tag_len, tag))
@@ -668,7 +672,7 @@ ossl_cipher_set_auth_tag_len(VALUE self, VALUE vlen)
     EVP_CIPHER_CTX *ctx;
 
     GetCipher(self, ctx);
-    if (!(EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER))
+    if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER))
 	ossl_raise(eCipherError, "AEAD not supported by this cipher");
 
     if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tag_len, NULL))
@@ -695,7 +699,7 @@ ossl_cipher_set_iv_length(VALUE self, VALUE iv_length)
     EVP_CIPHER_CTX *ctx;
 
     GetCipher(self, ctx);
-    if (!(EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER))
+    if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER))
 	ossl_raise(eCipherError, "cipher does not support AEAD");
 
     if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, len, NULL))
@@ -786,7 +790,7 @@ ossl_cipher_iv_length(VALUE self)
     int len = 0;
 
     GetCipher(self, ctx);
-    if (EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER)
+    if (EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER)
 	len = (int)(VALUE)EVP_CIPHER_CTX_get_app_data(ctx);
     if (!len)
 	len = EVP_CIPHER_CTX_iv_length(ctx);

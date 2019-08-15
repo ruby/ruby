@@ -1,5 +1,4 @@
 require 'mspec/runner/formatters/spinner'
-require 'yaml'
 
 class MultiFormatter < SpinnerFormatter
   def initialize(out=nil)
@@ -10,19 +9,24 @@ class MultiFormatter < SpinnerFormatter
   end
 
   def aggregate_results(files)
+    require 'yaml'
+
     @timer.finish
     @exceptions = []
 
     files.each do |file|
-      d = File.open(file, "r") { |f| YAML.load f }
+      contents = File.read(file)
+      d = YAML.load(contents)
       File.delete file
 
-      @exceptions += Array(d['exceptions'])
-      @tally.files!        d['files']
-      @tally.examples!     d['examples']
-      @tally.expectations! d['expectations']
-      @tally.errors!       d['errors']
-      @tally.failures!     d['failures']
+      if d # The file might be empty if the child process died
+        @exceptions += Array(d['exceptions'])
+        @tally.files!        d['files']
+        @tally.examples!     d['examples']
+        @tally.expectations! d['expectations']
+        @tally.errors!       d['errors']
+        @tally.failures!     d['failures']
+      end
     end
   end
 

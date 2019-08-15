@@ -44,6 +44,9 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     s2 = cipher.update(pt) << cipher.final
 
     assert_equal s1, s2
+
+    cipher2 = OpenSSL::Cipher.new("DES-EDE3-CBC").encrypt
+    assert_raise(ArgumentError) { cipher2.pkcs5_keyivgen(pass, salt, -1, "MD5") }
   end
 
   def test_info
@@ -293,6 +296,13 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
 
     assert_equal ct1, ct2
     assert_equal tag1, tag2
+  end
+
+  def test_non_aead_cipher_set_auth_data
+    assert_raise(OpenSSL::Cipher::CipherError) {
+      cipher = OpenSSL::Cipher.new("aes-128-cfb").encrypt
+      cipher.auth_data = "123"
+    }
   end
 
   private

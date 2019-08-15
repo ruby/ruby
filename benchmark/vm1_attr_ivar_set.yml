@@ -1,0 +1,14 @@
+prelude: |
+  class C
+    attr_accessor :a, :b
+    def initialize
+      @a = nil
+      @b = nil
+    end
+  end
+  obj = C.new
+benchmark:
+  vm1_attr_ivar_set: |
+    obj.a = 1
+    obj.b = 2
+loop_count: 30000000

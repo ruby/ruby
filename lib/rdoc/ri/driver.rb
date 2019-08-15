@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'abbrev'
 require 'optparse'
 
@@ -47,13 +47,24 @@ class RDoc::RI::Driver
 
   class NotFoundError < Error
 
+    def initialize(klass, suggestions = nil) # :nodoc:
+      @klass = klass
+      @suggestions = suggestions
+    end
+
     ##
     # Name that wasn't found
 
-    alias name message
+    def name
+      @klass
+    end
 
     def message # :nodoc:
-      "Nothing known about #{super}"
+      str = "Nothing known about #{@klass}"
+      if @suggestions and !@suggestions.empty?
+        str += "\nDid you mean?  #{@suggestions.join("\n               ")}"
+      end
+      str
     end
   end
 
@@ -99,7 +110,7 @@ class RDoc::RI::Driver
   def self.dump data_path
     require 'pp'
 
-    open data_path, 'rb' do |io|
+    File.open data_path, 'rb' do |io|
       pp Marshal.load(io.read)
     end
   end
@@ -414,6 +425,7 @@ or the PAGER environment variable.
     @server      = options[:server]
     @use_stdout  = options[:use_stdout]
     @show_all    = options[:show_all]
+    @width       = options[:width]
 
     # pager process for jruby
     @jruby_pager_process = nil
@@ -784,7 +796,9 @@ or the PAGER environment variable.
 
   def display document
     page do |io|
-      text = document.accept formatter(io)
+      f = formatter(io)
+      f.width = @width if @width and f.respond_to?(:width)
+      text = document.accept f
 
       io.write text
     end
@@ -917,13 +931,38 @@ or the PAGER environment variable.
     display out
   end
 
+  def check_did_you_mean # :nodoc:
+    if defined? DidYouMean::SpellChecker
+      true
+    else
+      begin
+        require 'did_you_mean'
+        if defined? DidYouMean::SpellChecker
+          true
+        else
+          false
+        end
+      rescue LoadError
+        false
+      end
+    end
+  end
+
   ##
   # Expands abbreviated klass +klass+ into a fully-qualified class.  "Zl::Da"
   # will be expanded to Zlib::DataError.
 
   def expand_class klass
-    ary = classes.keys.grep(Regexp.new("\\A#{klass.gsub(/(?=::|\z)/, '[^:]*')}\\z"))
-    raise NotFoundError, klass if ary.length != 1 && ary.first != klass
+    class_names = classes.keys
+    ary = class_names.grep(Regexp.new("\\A#{klass.gsub(/(?=::|\z)/, '[^:]*')}\\z"))
+    if ary.length != 1 && ary.first != klass
+      if check_did_you_mean
+        suggestions = DidYouMean::SpellChecker.new(dictionary: class_names).correct(klass)
+        raise NotFoundError.new(klass, suggestions)
+      else
+        raise NotFoundError, klass
+      end
+    end
     ary.first
   end
 
@@ -1235,7 +1274,21 @@ or the PAGER environment variable.
   def lookup_method name
     found = load_methods_matching name
 
-    raise NotFoundError, name if found.empty?
+    if found.empty?
+      if check_did_you_mean
+        methods = []
+        _, _, method_name = parse_name name
+        find_methods name do |store, klass, ancestor, types, method|
+          methods.push(*store.class_methods[klass]) if [:class, :both].include? types
+          methods.push(*store.instance_methods[klass]) if [:instance, :both].include? types
+        end
+        methods = methods.uniq
+        suggestions = DidYouMean::SpellChecker.new(dictionary: methods).correct(method_name)
+        raise NotFoundError.new(name, suggestions)
+      else
+        raise NotFoundError, name
+      end
+    end
 
     filter_methods found, name
   end
@@ -1390,7 +1443,13 @@ or the PAGER environment variable.
 
     render_method_arguments out, method.arglists
     render_method_superclass out, method
-    render_method_comment out, method
+    if method.is_alias_for
+      al = method.is_alias_for
+      alias_for = store.load_method al.parent_name, "#{al.name_prefix}#{al.name}"
+      render_method_comment out, method, alias_for
+    else
+      render_method_comment out, method
+    end
   end
 
   def render_method_arguments out, arglists # :nodoc:
@@ -1402,10 +1461,22 @@ or the PAGER environment variable.
     out << RDoc::Markup::Rule.new(1)
   end
 
-  def render_method_comment out, method # :nodoc:
-    out << RDoc::Markup::BlankLine.new
-    out << method.comment
-    out << RDoc::Markup::BlankLine.new
+  def render_method_comment out, method, alias_for = nil# :nodoc:
+    if alias_for
+      unless method.comment.nil? or method.comment.empty?
+        out << RDoc::Markup::BlankLine.new
+        out << method.comment
+      end
+      out << RDoc::Markup::BlankLine.new
+      out << RDoc::Markup::Paragraph.new("(This method is an alias for #{alias_for.full_name}.)")
+      out << RDoc::Markup::BlankLine.new
+      out << alias_for.comment
+      out << RDoc::Markup::BlankLine.new
+    else
+      out << RDoc::Markup::BlankLine.new
+      out << method.comment
+      out << RDoc::Markup::BlankLine.new
+    end
   end
 
   def render_method_superclass out, method # :nodoc:
