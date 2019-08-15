@@ -225,16 +225,8 @@ RSpec.describe "The library itself" do
   end
 
   it "can still be built" do
-    with_root_gemspec do |gemspec|
-      Dir.chdir(root) { gem_command! :build, gemspec }
-    end
-
-    bundler_path = root.join("bundler-#{Bundler::VERSION}.gem")
-
-    begin
+    with_built_bundler do |_gem_path|
       expect(err).to be_empty, "bundler should build as a gem without warnings, but\n#{err}"
-    ensure
-      bundler_path.rmtree
     end
   end
 
