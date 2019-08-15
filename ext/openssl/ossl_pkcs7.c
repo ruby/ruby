@@ -803,9 +803,9 @@ ossl_pkcs7_decrypt(int argc, VALUE *argv, VALUE self)
     BIO *out;
     VALUE str;
 
-    rb_scan_args(argc, argv, "21", &pkey, &cert, &flags);
+    rb_scan_args(argc, argv, "12", &pkey, &cert, &flags);
     key = GetPrivPKeyPtr(pkey); /* NO NEED TO DUP */
-    x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
+    x509 = NIL_P(cert) ? NULL : GetX509CertPtr(cert); /* NO NEED TO DUP */
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     GetPKCS7(self, p7);
     if(!(out = BIO_new(BIO_s_mem())))

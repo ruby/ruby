@@ -10,10 +10,9 @@
 # support them, so we define some constants to use later.
 #++
 
+# TODO remove at RubyGems 4
 module Gem
   RubyGemsVersion = VERSION
-
-  # TODO remove at RubyGems 3
 
   RbConfigPriorities = %w[
     MAJOR
@@ -22,12 +21,12 @@ module Gem
     EXEEXT RUBY_SO_NAME arch bindir datadir libdir ruby_install_name
     ruby_version rubylibprefix sitedir sitelibdir vendordir vendorlibdir
     rubylibdir
-  ]
+  ].freeze
 
   unless defined?(ConfigMap)
     ##
     # Configuration settings from ::RbConfig
-    ConfigMap = Hash.new do |cm, key| # TODO remove at RubyGems 3
+    ConfigMap = Hash.new do |cm, key|
       cm[key] = RbConfig::CONFIG[key.to_s]
     end
   else
@@ -36,5 +35,4 @@ module Gem
     end
   end
 
-  RubyGemsPackageVersion = VERSION
 end

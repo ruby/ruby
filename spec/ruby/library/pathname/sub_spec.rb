@@ -13,4 +13,3 @@ describe "Pathname#sub" do
   end
 
 end
-

@@ -51,6 +51,14 @@ describe "StringIO#puts when passed an Array" do
     @io.puts([obj])
     @io.string.should == "to_s\n"
   end
+
+  it "returns general object info if :to_s does not return a string" do
+    object = mock('hola')
+    object.should_receive(:to_s).and_return(false)
+
+    @io.puts(object).should == nil
+    @io.string.should == object.inspect.split(" ")[0] + ">\n"
+  end
 end
 
 describe "StringIO#puts when passed 1 or more objects" do
@@ -140,11 +148,11 @@ end
 describe "StringIO#puts when self is not writable" do
   it "raises an IOError" do
     io = StringIO.new("test", "r")
-    lambda { io.puts }.should raise_error(IOError)
+    -> { io.puts }.should raise_error(IOError)
 
     io = StringIO.new("test")
     io.close_write
-    lambda { io.puts }.should raise_error(IOError)
+    -> { io.puts }.should raise_error(IOError)
   end
 end
 

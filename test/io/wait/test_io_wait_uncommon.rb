@@ -12,7 +12,7 @@ class TestIOWaitUncommon < Test::Unit::TestCase
       skip "/dev/tty: #{e.message} (#{e.class})"
     end
     assert_include [ nil, tty ], tty.wait_readable(0)
-    assert_equal tty, tty.wait_writable(0), 'portability test'
+    assert_equal tty, tty.wait_writable(1), 'portability test'
   ensure
     tty&.close
   end
@@ -59,7 +59,13 @@ class TestIOWaitUncommon < Test::Unit::TestCase
   end
 
   def test_wait_readable_random
-    check_dev 'random'
+    File.open('/dev/random') do |fp|
+      assert_nothing_raised do
+        fp.wait_readable(0)
+      end
+    end
+  rescue SystemCallError => e
+    skip "/dev/random could not be opened #{e.message} (#{e.class})"
   end
 
   def test_wait_readable_zero

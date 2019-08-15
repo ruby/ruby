@@ -16,6 +16,23 @@
 # * /dev/urandom
 # * Win32
 #
+# SecureRandom is extended by the Random::Formatter module which
+# defines the following methods:
+#
+# * alphanumeric
+# * base64
+# * choose
+# * gen_random
+# * hex
+# * rand
+# * random_bytes
+# * random_number
+# * urlsafe_base64
+# * uuid
+#
+# These methods are usable as class methods of SecureRandom such as
+# `SecureRandom.hex`.
+#
 # === Examples
 #
 # Generate random hexadecimal strings:
@@ -36,6 +53,11 @@
 #
 #   SecureRandom.random_bytes(10) #=> "\016\t{\370g\310pbr\301"
 #   SecureRandom.random_bytes(10) #=> "\323U\030TO\234\357\020\a\337"
+#
+# Generate alphanumeric strings:
+#
+#   SecureRandom.alphanumeric(10) #=> "S8baxMJnPl"
+#   SecureRandom.alphanumeric(10) #=> "aOxAg8BAJe"
 #
 # Generate UUIDs:
 #
@@ -63,6 +85,7 @@ module SecureRandom
             class << self
               remove_method :gen_random
               alias gen_random gen_random_openssl
+              public :gen_random
             end
           end
           return gen_random(n)
@@ -72,6 +95,7 @@ module SecureRandom
           class << self
             remove_method :gen_random
             alias gen_random gen_random_urandom
+            public :gen_random
           end
         end
         return gen_random(n)

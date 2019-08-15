@@ -1,3 +1,5 @@
+require_relative '../spec_helper'
+
 describe "The -x command line option" do
   it "runs code after the first /\#!.*ruby.*/-ish line in target file" do
     embedded_ruby = fixture __FILE__, "bin/embedded_ruby.txt"
@@ -16,6 +18,4 @@ describe "The -x command line option" do
     result = ruby_exe(embedded_ruby)
     result.should == "success\n"
   end
-
-  it "needs to be reviewed for spec completeness"
 end

@@ -2,9 +2,10 @@ class Object
   # This helper is defined here rather than in MSpec because
   # it is only used in #pack specs.
   def pack_format(count=nil, repeat=nil)
-    format = "#{instance_variable_get(:@method)}#{count}"
+    format = instance_variable_get(:@method)
+    format += count.to_s unless format == 'P' || format == 'p'
     format *= repeat if repeat
-    format
+    format.dup # because it may then become tainted
   end
 end
 
@@ -13,15 +14,11 @@ module ArraySpecs
   SampleCount = 1000
 
   def self.frozen_array
-    frozen_array = [1,2,3]
-    frozen_array.freeze
-    frozen_array
+    [1,2,3].freeze
   end
 
   def self.empty_frozen_array
-    frozen_array = []
-    frozen_array.freeze
-    frozen_array
+    [].freeze
   end
 
   def self.recursive_array
@@ -84,7 +81,7 @@ module ArraySpecs
     end
   end
 
-  class ArrayConvertable
+  class ArrayConvertible
     attr_accessor :called
     def initialize(*values, &block)
       @values = values;
@@ -429,7 +426,7 @@ module ArraySpecs
  "assert_no_queries",
  "test_change_column_quotes_column_names",
  "assert_match",
- "test_keeping_default_and_notnull_constaint_on_change",
+ "test_keeping_default_and_notnull_constraint_on_change",
  "methods",
  "connection_allow_concurrency_setup",
  "connection_allow_concurrency_teardown",
@@ -479,7 +476,7 @@ module ArraySpecs
  "test_create_table_without_id",
  "test_finds_migrations",
  "test_finds_pending_migrations",
- "test_keeping_default_and_notnull_constaint_on_change",
+ "test_keeping_default_and_notnull_constraint_on_change",
  "test_migrator",
  "test_migrator_db_has_no_schema_migrations_table",
  "test_migrator_double_down",

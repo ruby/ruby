@@ -1,23 +1,27 @@
-LEGAL NOTICE INFORMATION
-------------------------
+# -*- rdoc -*-
+
+= LEGAL NOTICE INFORMATION
+--------------------------
 
 All the files in this distribution are covered under either the Ruby's
 license (see the file COPYING) or public-domain except some files
 mentioned below.
 
-ccan/build_assert/build_assert.h
-ccan/check_type/check_type.h
-ccan/container_of/container_of.h
-ccan/str/str.h
+ccan/build_assert/build_assert.h::
+ccan/check_type/check_type.h::
+ccan/container_of/container_of.h::
+ccan/str/str.h::
 
   These files are licensed under the CC0.
 
+  >>>
     https://creativecommons.org/choose/zero/
 
-ccan/list/list.h
+ccan/list/list.h::
 
   This file is licensed under the MIT License.
 
+  >>>
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
     in the Software without restriction, including without limitation the rights
@@ -36,124 +40,124 @@ ccan/list/list.h
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
     THE SOFTWARE.
 
-include/ruby/onigmo.h:
-include/ruby/oniguruma.h:
-regcomp.c:
-regenc.[ch]:
-regerror.c:
-regexec.c:
-regint.h:
-regparse.[ch]:
-enc/ascii.c
-enc/big5.c
-enc/cp949.c
-enc/emacs_mule.c
-enc/encdb.c
-enc/euc_jp.c
-enc/euc_kr.c
-enc/euc_tw.c
-enc/gb18030.c
-enc/gb2312.c
-enc/gbk.c
-enc/iso_8859_1.c
-enc/iso_8859_10.c
-enc/iso_8859_11.c
-enc/iso_8859_13.c
-enc/iso_8859_14.c
-enc/iso_8859_15.c
-enc/iso_8859_16.c
-enc/iso_8859_2.c
-enc/iso_8859_3.c
-enc/iso_8859_4.c
-enc/iso_8859_5.c
-enc/iso_8859_6.c
-enc/iso_8859_7.c
-enc/iso_8859_8.c
-enc/iso_8859_9.c
-enc/koi8_r.c
-enc/koi8_u.c
-enc/shift_jis.c
-enc/unicode.c
-enc/us_ascii.c
-enc/utf_16be.c
-enc/utf_16le.c
-enc/utf_32be.c
-enc/utf_32le.c
-enc/utf_8.c
-enc/windows_1251.c
+include/ruby/onigmo.h::
+include/ruby/oniguruma.h::
+regcomp.c::
+regenc.c::
+regenc.h::
+regerror.c::
+regexec.c::
+regint.h::
+regparse.c::
+regparse.h::
+enc/ascii.c::
+enc/big5.c::
+enc/cp949.c::
+enc/emacs_mule.c::
+enc/encdb.c::
+enc/euc_jp.c::
+enc/euc_kr.c::
+enc/euc_tw.c::
+enc/gb18030.c::
+enc/gb2312.c::
+enc/gbk.c::
+enc/iso_8859_1.c::
+enc/iso_8859_10.c::
+enc/iso_8859_11.c::
+enc/iso_8859_13.c::
+enc/iso_8859_14.c::
+enc/iso_8859_15.c::
+enc/iso_8859_16.c::
+enc/iso_8859_2.c::
+enc/iso_8859_3.c::
+enc/iso_8859_4.c::
+enc/iso_8859_5.c::
+enc/iso_8859_6.c::
+enc/iso_8859_7.c::
+enc/iso_8859_8.c::
+enc/iso_8859_9.c::
+enc/koi8_r.c::
+enc/koi8_u.c::
+enc/shift_jis.c::
+enc/unicode.c::
+enc/us_ascii.c::
+enc/utf_16be.c::
+enc/utf_16le.c::
+enc/utf_32be.c::
+enc/utf_32le.c::
+enc/utf_8.c::
+enc/windows_1251.c::
 
-Onigmo (Oniguruma-mod) LICENSE
-------------------------------
+  Onigmo (Oniguruma-mod) LICENSE
 
-/*-
- * Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2014  K.Takata  <kentkt AT csc DOT jp>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
+  >>>
+    Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>  
+    Copyright (c) 2011-2014  K.Takata  <kentkt AT csc DOT jp>  
+    All rights reserved.
 
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
 
-Oniguruma LICENSE
------------------
+    THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+    OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+    SUCH DAMAGE.
 
-/*-
- * Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
+  Oniguruma LICENSE
 
-https://github.com/k-takata/Onigmo/
-https://github.com/kkos/oniguruma
-https://svnweb.freebsd.org/ports/head/devel/oniguruma/
+  >>>
+    Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>  
+    All rights reserved.
 
-   When this software is partly used or it is distributed with Ruby,
-   this of Ruby follows the license of Ruby.
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
 
-enc/trans/GB/GB12345%UCS.src:
-enc/trans/GB/UCS%GB12345.src:
-enc/trans/GB/GB2312%UCS.src:
-enc/trans/GB/UCS%GB2312.src:
+    THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+    OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+    SUCH DAMAGE.
 
+  * https://github.com/k-takata/Onigmo/
+  * https://github.com/kkos/oniguruma
+  * https://svnweb.freebsd.org/ports/head/devel/oniguruma/
+
+    When this software is partly used or it is distributed with Ruby,
+    this of Ruby follows the license of Ruby.
+
+enc/trans/GB/GB12345%UCS.src::
+enc/trans/GB/UCS%GB12345.src::
+enc/trans/GB/GB2312%UCS.src::
+enc/trans/GB/UCS%GB2312.src::
+
+  These files have this explanatory texts.
+
+  >>>
     This mapping data was created from files provided by Unicode, Inc.
     (The Unicode Consortium). The files were used to create a product supporting
     Unicode, as explicitly permitted in the files' copyright notices.
@@ -161,56 +165,67 @@ enc/trans/GB/UCS%GB2312.src:
     files for any particular purpose, and has ceased to publish the files many
     years ago.
 
-enc/trans/JIS/JISX0201-KANA%UCS.src:
-enc/trans/JIS/JISX0208@1990%UCS.src:
-enc/trans/JIS/JISX0212%UCS.src:
-enc/trans/JIS/UCS%JISX0201-KANA.src:
-enc/trans/JIS/UCS%JISX0208@1990.src:
-enc/trans/JIS/UCS%JISX0212.src:
+enc/trans/JIS/JISX0201-KANA%UCS.src::
+enc/trans/JIS/JISX0208\@1990%UCS.src::
+enc/trans/JIS/JISX0212%UCS.src::
+enc/trans/JIS/UCS%JISX0201-KANA.src::
+enc/trans/JIS/UCS%JISX0208@1990.src::
+enc/trans/JIS/UCS%JISX0212.src::
 
+  These files are copyrighted as the following.
+
+  >>>
     © 2015 Unicode®, Inc.
+
     For terms of use, see http://www.unicode.org/terms_of_use.html
 
-enc/trans/JIS/JISX0213-1%UCS@BMP.src:
-enc/trans/JIS/JISX0213-1%UCS@SIP.src:
-enc/trans/JIS/JISX0213-2%UCS@BMP.src:
-enc/trans/JIS/JISX0213-2%UCS@SIP.src:
+enc/trans/JIS/JISX0213-1%UCS@BMP.src::
+enc/trans/JIS/JISX0213-1%UCS@SIP.src::
+enc/trans/JIS/JISX0213-2%UCS@BMP.src::
+enc/trans/JIS/JISX0213-2%UCS@SIP.src::
 
- 	Copyright (C) 2001 earthian@tama.or.jp, All Rights Reserved.
- 	Copyright (C) 2001 I'O, All Rights Reserved.
- 	Copyright (C) 2006 Project X0213, All Rights Reserved.
- 	You can use, modify, distribute this table freely.
+  These files are copyrighted as the following.
 
-enc/trans/JIS/UCS@BMP%JISX0213-1.src:
-enc/trans/JIS/UCS@BMP%JISX0213-2.src:
-enc/trans/JIS/UCS@SIP%JISX0213-1.src:
-enc/trans/JIS/UCS@SIP%JISX0213-2.src:
+  >>>
+    Copyright (C) 2001 earthian@tama.or.jp, All Rights Reserved.  
+    Copyright (C) 2001 I'O, All Rights Reserved.  
+    Copyright (C) 2006 Project X0213, All Rights Reserved.  
+    You can use, modify, distribute this table freely.
 
- 	Copyright (C) 2001 earthian@tama.or.jp, All Rights Reserved.
- 	Copyright (C) 2001 I'O, All Rights Reserved.
- 	You can use, modify, distribute this table freely.
+enc/trans/JIS/UCS@BMP%JISX0213-1.src::
+enc/trans/JIS/UCS@BMP%JISX0213-2.src::
+enc/trans/JIS/UCS@SIP%JISX0213-1.src::
+enc/trans/JIS/UCS@SIP%JISX0213-2.src::
 
-configure:
+  These files are copyrighted as the following.
+
+  >>>
+    Copyright (C) 2001 earthian@tama.or.jp, All Rights Reserved.  
+    Copyright (C) 2001 I'O, All Rights Reserved.  
+    You can use, modify, distribute this table freely.
+
+configure::
 
   This file is free software.
 
-    Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
+  >>>
+    Copyright (C) 1992-1996, 1998-2012 Free Software Foundation, Inc.
 
     This configure script is free software; the Free Software Foundation
     gives unlimited permission to copy, distribute and modify it.
 
-tool/config.guess:
-tool/config.sub:
+tool/config.guess::
+tool/config.sub::
 
   As long as you distribute these files with the file configure, they
   are covered under the Ruby's license.
 
-      Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999
-      Free Software Foundation, Inc.
+  >>>
+    Copyright 1992-2018 Free Software Foundation, Inc.
 
     This file is free software; you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    the Free Software Foundation; either version 3 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful, but
@@ -219,53 +234,55 @@ tool/config.sub:
     General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+    along with this program; if not, see <https://www.gnu.org/licenses/>.
 
     As a special exception to the GNU General Public License, if you
     distribute this file as part of a program that contains a
     configuration script generated by Autoconf, you may include it under
-    the same distribution terms that you use for the rest of that program.
+    the same distribution terms that you use for the rest of that
+    program.  This Exception is an additional permission under section 7
+    of the GNU General Public License, version 3 ("GPLv3").
 
-parse.c:
+parse.c::
 
   This file is licensed under the GPL, but is incorporated into Ruby and
   redistributed under the terms of the Ruby license, as permitted by the
   exception to the GPL below.
 
-     Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
-     Free Software Foundation, Inc.
+  >>>
+    Copyright (C) 1984, 1989-1990, 2000-2015, 2018 Free Software Foundation, Inc.
 
-     This program is free software; you can redistribute it and/or modify
-     it under the terms of the GNU General Public License as published by
-     the Free Software Foundation; either version 2, or (at your option)
-     any later version.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-     This program is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     GNU General Public License for more details.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-     You should have received a copy of the GNU General Public License
-     along with this program; if not, write to the Free Software
-     Foundation, Inc., 51 Franklin Street, Fifth Floor,
-     Boston, MA 02110-1301, USA.  */
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-  /* As a special exception, you may create a larger work that contains
-     part or all of the Bison parser skeleton and distribute that work
-     under terms of your choice, so long as that work isn't itself a
-     parser generator using the skeleton or a modified version thereof
-     as a parser skeleton.  Alternatively, if you modify or redistribute
-     the parser skeleton itself, you may (at your option) remove this
-     special exception, which will cause the skeleton and the resulting
-     Bison output files to be licensed under the GNU General Public
-     License without this special exception.
+    As a special exception, you may create a larger work that contains
+    part or all of the Bison parser skeleton and distribute that work
+    under terms of your choice, so long as that work isn't itself a
+    parser generator using the skeleton or a modified version thereof
+    as a parser skeleton.  Alternatively, if you modify or redistribute
+    the parser skeleton itself, you may (at your option) remove this
+    special exception, which will cause the skeleton and the resulting
+    Bison output files to be licensed under the GNU General Public
+    License without this special exception.
 
-     This special exception was added by the Free Software Foundation in
-     version 2.2 of Bison.  */
+    This special exception was added by the Free Software Foundation in
+    version 2.2 of Bison.
 
-util.c (partly):
+missing/dtoa.c::
 
+  This file is under these licenses.
+
+  >>>
     Copyright (c) 1991, 2000, 2001 by Lucent Technologies.
 
     Permission to use, copy, modify, and distribute this software for any
@@ -279,48 +296,49 @@ util.c (partly):
     REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
     OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
 
-win32/win32.[ch]:
+  >>>
+    Copyright (c) 2004-2008 David Schultz <das@FreeBSD.ORG>  
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+    OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+    SUCH DAMAGE.
+
+win32/win32.{c,h}::
 
   You can apply the Artistic License to these files. (or GPL,
   alternatively)
 
+  >>>
     Copyright (c) 1993, Intergraph Corporation
 
     You may distribute under the terms of either the GNU General Public
     License or the Artistic License, as specified in the perl README file.
 
-util.c (partly):
-
-   Copyright (c) 2004-2008 David Schultz <das@FreeBSD.ORG>
-   All rights reserved.
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-   1. Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-   2. Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
-
-   THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
-   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-   ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
-   FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-   DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-   OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-   HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-   OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-   SUCH DAMAGE.
-
-random.c
+missing/mt19937.c::
 
   This file is under the new-style BSD license.
 
+  >>>
     A C-program for MT19937, with initialization improved 2002/2/10.
-    Coded by Takuji Nishimura and Makoto Matsumoto.
+    Coded by Takuji Nishimura and Makoto Matsumoto.  
     This is a faster version by taking Shawn Cokus's optimization,
     Matthe Bellew's simplification, Isaku Wada's real version.
 
@@ -334,16 +352,16 @@ random.c
     modification, are permitted provided that the following conditions
     are met:
 
-      1. Redistributions of source code must retain the above copyright
-	 notice, this list of conditions and the following disclaimer.
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
 
-      2. Redistributions in binary form must reproduce the above copyright
-	 notice, this list of conditions and the following disclaimer in the
-	 documentation and/or other materials provided with the distribution.
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
 
-      3. The names of its contributors may not be used to endorse or promote
-	 products derived from this software without specific prior written
-	 permission.
+    3. The names of its contributors may not be used to endorse or promote
+       products derived from this software without specific prior written
+       permission.
 
     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
     "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -364,11 +382,12 @@ random.c
 
   The Wayback Machine url: http://web.archive.org/web/19990429082237/http://www.math.keio.ac.jp/matumoto/emt.html
 
-vm_dump.c:procstat_vm
+missing/procstat_vm.c::
 
   This file is under the new-style BSD license.
 
-    Copyright (c) 2007 Robert N. M. Watson
+  >>>
+    Copyright (c) 2007 Robert N. M. Watson  
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -394,13 +413,14 @@ vm_dump.c:procstat_vm
 
     $FreeBSD: head/usr.bin/procstat/procstat_vm.c 261780 2014-02-11 21:57:37Z jhb $
 
-vsnprintf.c:
+vsnprintf.c::
 
   This file is under the old-style BSD license.  Note that the
   paragraph 3 below is now null and void.
 
-    Copyright (c) 1990, 1993
-         The Regents of the University of California.  All rights reserved.
+  >>>
+    Copyright (c) 1990, 1993  
+    The Regents of the University of California.  All rights reserved.
 
     This code is derived from software contributed to Berkeley by
     Chris Torek.
@@ -434,38 +454,40 @@ vsnprintf.c:
     From ftp://ftp.cs.berkeley.edu/pub/4bsd/README.Impt.License.Change
     paragraph 3 above is now null and void.
 
-st.c:
-strftime.c:
-include/ruby/st.h:
-missing/acosh.c:
-missing/alloca.c:
-missing/dup2.c:
-missing/erf.c:
-missing/finite.c:
-missing/hypot.c:
-missing/isinf.c:
-missing/isnan.c:
-missing/lgamma_r.c:
-missing/memcmp.c:
-missing/memmove.c:
-missing/strchr.c:
-missing/strerror.c:
-missing/strstr.c:
-missing/tgamma.c:
-ext/date/date_strftime.c:
-ext/digest/sha1/sha1.[ch]:
-ext/sdbm/_sdbm.c:
-ext/sdbm/sdbm.h:
+st.c::
+strftime.c::
+include/ruby/st.h::
+missing/acosh.c::
+missing/alloca.c::
+missing/dup2.c::
+missing/erf.c::
+missing/finite.c::
+missing/hypot.c::
+missing/isinf.c::
+missing/isnan.c::
+missing/lgamma_r.c::
+missing/memcmp.c::
+missing/memmove.c::
+missing/strchr.c::
+missing/strerror.c::
+missing/strstr.c::
+missing/tgamma.c::
+ext/date/date_strftime.c::
+ext/digest/sha1/sha1.c::
+ext/digest/sha1/sha1.h::
+ext/sdbm/_sdbm.c::
+ext/sdbm/sdbm.h::
 
   These files are all under public domain.
 
-missing/crypt.c:
+missing/crypt.c::
 
   This file is under the old-style BSD license.  Note that the
   paragraph 3 below is now null and void.
 
-    Copyright (c) 1989, 1993
-    	The Regents of the University of California.  All rights reserved.
+  >>>
+    Copyright (c) 1989, 1993  
+    The Regents of the University of California.  All rights reserved.
 
     This code is derived from software contributed to Berkeley by
     Tom Truscott.
@@ -494,15 +516,16 @@ missing/crypt.c:
     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
 
-missing/setproctitle.c
+missing/setproctitle.c::
 
   This file is under the old-style BSD license.  Note that the
   paragraph 3 below is now null and void.
 
-    Copyright 2003 Damien Miller
-    Copyright (c) 1983, 1995-1997 Eric P. Allman
-    Copyright (c) 1988, 1993
-    	The Regents of the University of California.  All rights reserved.
+  >>>
+    Copyright 2003 Damien Miller  
+    Copyright (c) 1983, 1995-1997 Eric P. Allman  
+    Copyright (c) 1988, 1993  
+    The Regents of the University of California.  All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions
@@ -528,11 +551,12 @@ missing/setproctitle.c
     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
 
-missing/strlcat.c
-missing/strlcpy.c
+missing/strlcat.c::
+missing/strlcpy.c::
 
   These files are under an ISC-style license.
 
+  >>>
     Copyright (c) 1998, 2015 Todd C. Miller <Todd.Miller@courtesan.com>
 
     Permission to use, copy, modify, and distribute this software for any
@@ -547,22 +571,25 @@ missing/strlcpy.c
     ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-missing/langinfo.c
+missing/langinfo.c::
 
   This file is from http://www.cl.cam.ac.uk/~mgk25/ucs/langinfo.c.
   Ruby uses a modified version. The file contains the following
   author/copyright notice:
 
-  Markus.Kuhn@cl.cam.ac.uk -- 2002-03-11
-  Permission to use, copy, modify, and distribute this software
-  for any purpose and without fee is hereby granted. The author
-  disclaims all warranties with regard to this software.
+  >>>
+    Markus.Kuhn@cl.cam.ac.uk -- 2002-03-11  
+    Permission to use, copy, modify, and distribute this software
+    for any purpose and without fee is hereby granted. The author
+    disclaims all warranties with regard to this software.
 
-ext/digest/md5/md5.[ch]:
+ext/digest/md5/md5.c::
+ext/digest/md5/md5.h::
 
   These files are under the following license.  Ruby uses modified
   versions of them.
 
+  >>>
     Copyright (C) 1999, 2000 Aladdin Enterprises.  All rights reserved.
 
     This software is provided 'as-is', without any express or implied
@@ -584,22 +611,26 @@ ext/digest/md5/md5.[ch]:
     L. Peter Deutsch
     ghost@aladdin.com
 
-ext/digest/rmd160/rmd160.[ch]:
+ext/digest/rmd160/rmd160.c::
+ext/digest/rmd160/rmd160.h::
 
   These files have the following copyright information, and by the
   author we are allowed to use it under the new-style BSD license.
 
-    AUTHOR:   Antoon Bosselaers, ESAT-COSIC
+  >>>
+    AUTHOR::  Antoon Bosselaers, ESAT-COSIC
               (Arranged for libc by Todd C. Miller)
-    DATE:     1 March 1996
+    DATE::    1 March 1996
 
     Copyright (c) Katholieke Universiteit Leuven
     1996, All Rights Reserved
 
-ext/digest/sha2/sha2.[ch]:
+ext/digest/sha2/sha2.c::
+ext/digest/sha2/sha2.h::
 
   These files are under the new-style BSD license.
 
+  >>>
     Copyright 2000 Aaron D. Gifford.  All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -626,95 +657,108 @@ ext/digest/sha2/sha2.[ch]:
     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
 
-ext/json/generator/generator.c:
+ext/json/generator/generator.c::
 
+  The file contains the following copyright notice.
+
+  >>>
     Copyright 2001-2004 Unicode, Inc.
 
-    Disclaimer
+    Disclaimer::
 
-    This source code is provided as is by Unicode, Inc. No claims are
-    made as to fitness for any particular purpose. No warranties of any
-    kind are expressed or implied. The recipient agrees to determine
-    applicability of information provided. If this file has been
-    purchased on magnetic or optical media from Unicode, Inc., the
-    sole remedy for any claim will be exchange of defective media
-    within 90 days of receipt.
+      This source code is provided as is by Unicode, Inc. No claims are
+      made as to fitness for any particular purpose. No warranties of any
+      kind are expressed or implied. The recipient agrees to determine
+      applicability of information provided. If this file has been
+      purchased on magnetic or optical media from Unicode, Inc., the
+      sole remedy for any claim will be exchange of defective media
+      within 90 days of receipt.
 
-    Limitations on Rights to Redistribute This Code
+    Limitations on Rights to Redistribute This Code::
 
-    Unicode, Inc. hereby grants the right to freely use the information
-    supplied in this file in the creation of products supporting the
-    Unicode Standard, and to make copies of this file in any form
-    for internal or external distribution as long as this notice
-    remains attached.
+      Unicode, Inc. hereby grants the right to freely use the information
+      supplied in this file in the creation of products supporting the
+      Unicode Standard, and to make copies of this file in any form
+      for internal or external distribution as long as this notice
+      remains attached.
 
-ext/nkf/nkf-utf8/config.h:
-ext/nkf/nkf-utf8/nkf.c:
-ext/nkf/nkf-utf8/utf8tbl.c:
+ext/nkf/nkf-utf8/config.h::
+ext/nkf/nkf-utf8/nkf.c::
+ext/nkf/nkf-utf8/utf8tbl.c::
 
   These files are under the following license.  So to speak, it is
   copyrighted semi-public-domain software.
 
+  >>>
     Copyright (C) 1987, Fujitsu LTD. (Itaru ICHIKAWA)
-       Everyone is permitted to do anything on this program
-       including copying, modifying, improving,
-       as long as you don't try to pretend that you wrote it.
-       i.e., the above copyright notice has to appear in all copies.
-       Binary distribution requires original version messages.
-       You don't have to ask before copying, redistribution or publishing.
-       THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
 
-ext/psych:
-test/psych:
+    Everyone is permitted to do anything on this program
+    including copying, modifying, improving,
+    as long as you don't try to pretend that you wrote it.
+    i.e., the above copyright notice has to appear in all copies.
+    Binary distribution requires original version messages.
+    You don't have to ask before copying, redistribution or publishing.
+    THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
 
-  Copyright 2009 Aaron Patterson, et al.
+ext/psych::
+test/psych::
 
-  Permission is hereby granted, free of charge, to any person obtaining a copy of
-  this software and associated documentation files (the 'Software'), to deal in
-  the Software without restriction, including without limitation the rights to
-  use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-  of the Software, and to permit persons to whom the Software is furnished to do
-  so, subject to the following conditions:
+  The files under these directories are under the following license, except for
+  ext/psych/yaml.
 
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
+  >>>
+    Copyright 2009 Aaron Patterson, et al.
 
-  THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.
+    Permission is hereby granted, free of charge, to any person obtaining a copy of
+    this software and associated documentation files (the 'Software'), to deal in
+    the Software without restriction, including without limitation the rights to
+    use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+    of the Software, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
 
-ext/psych/yaml:
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
 
-  Copyright (c) 2006 Kirill Simonov
+    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 
-  Permission is hereby granted, free of charge, to any person obtaining a copy of
-  this software and associated documentation files (the "Software"), to deal in
-  the Software without restriction, including without limitation the rights to
-  use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-  of the Software, and to permit persons to whom the Software is furnished to do
-  so, subject to the following conditions:
+ext/psych/yaml::
 
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
+  The files under this directory are under the following license.
 
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.
+  >>>
+    Copyright (c) 2006 Kirill Simonov
 
-ext/socket/addrinfo.h:
-ext/socket/getaddrinfo.c:
-ext/socket/getnameinfo.c:
+    Permission is hereby granted, free of charge, to any person obtaining a copy of
+    this software and associated documentation files (the "Software"), to deal in
+    the Software without restriction, including without limitation the rights to
+    use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+    of the Software, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+ext/socket/addrinfo.h::
+ext/socket/getaddrinfo.c::
+ext/socket/getnameinfo.c::
 
   These files are under the new-style BSD license.
 
+  >>>
     Copyright (C) 1995, 1996, 1997, 1998, and 1999 WIDE Project.
     All rights reserved.
 
@@ -742,11 +786,12 @@ ext/socket/getnameinfo.c:
     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
 
-ext/win32ole/win32ole.c:
+ext/win32ole/win32ole.c::
 
   You can apply the Artistic License to this file. (or GPL,
   alternatively)
 
+  >>>
     (c) 1995 Microsoft Corporation. All rights reserved.
     Developed by ActiveWare Internet Corp., http://www.ActiveWare.com
 
@@ -759,15 +804,19 @@ ext/win32ole/win32ole.c:
 
   The Wayback Machine url: http://web.archive.org/web/19970607104352/http://www.activeware.com:80/
 
-lib/rdoc/generator/template/darkfish/css/fonts.css:
+lib/rdoc/generator/template/darkfish/css/fonts.css::
 
   This file is licensed under the SIL Open Font License.
 
+  >>>
     http://scripts.sil.org/OFL
 
-spec/mspec:
-spec/ruby:
+spec/mspec::
+spec/ruby::
 
+  The files under these directories are under the following license.
+
+  >>>
     Copyright (c) 2008 Engine Yard, Inc. All rights reserved.
 
     Permission is hereby granted, free of charge, to any person
@@ -791,60 +840,96 @@ spec/ruby:
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
     OTHER DEALINGS IN THE SOFTWARE.
 
-lib/rubygems.rb:
-lib/rubygems:
-test/rubygems:
+lib/rubygems.rb::
+lib/rubygems::
+test/rubygems::
 
-  RubyGems is copyrighted free software by Chad Fowler, Rich Kilmer, Jim
-  Weirich and others.  You can redistribute it and/or modify it under
-  either the terms of the MIT license (see the file MIT.txt), or the
-  conditions below:
+  RubyGems is under the following license.
 
-  1. You may make and give away verbatim copies of the source form of the
-     software without restriction, provided that you duplicate all of the
-     original copyright notices and associated disclaimers.
+  >>>
+    RubyGems is copyrighted free software by Chad Fowler, Rich Kilmer, Jim
+    Weirich and others.  You can redistribute it and/or modify it under
+    either the terms of the MIT license (see the file MIT.txt), or the
+    conditions below:
 
-  2. You may modify your copy of the software in any way, provided that
-     you do at least ONE of the following:
+    1. You may make and give away verbatim copies of the source form of the
+       software without restriction, provided that you duplicate all of the
+       original copyright notices and associated disclaimers.
 
-     a. place your modifications in the Public Domain or otherwise
-        make them Freely Available, such as by posting said
-        modifications to Usenet or an equivalent medium, or by allowing
-        the author to include your modifications in the software.
+    2. You may modify your copy of the software in any way, provided that
+       you do at least ONE of the following:
 
-     b. use the modified software only within your corporation or
-        organization.
+       a. place your modifications in the Public Domain or otherwise
+          make them Freely Available, such as by posting said
+          modifications to Usenet or an equivalent medium, or by allowing
+          the author to include your modifications in the software.
 
-     c. give non-standard executables non-standard names, with
-        instructions on where to get the original software distribution.
+       b. use the modified software only within your corporation or
+          organization.
 
-     d. make other distribution arrangements with the author.
+       c. give non-standard executables non-standard names, with
+          instructions on where to get the original software distribution.
 
-  3. You may distribute the software in object code or executable
-     form, provided that you do at least ONE of the following:
+       d. make other distribution arrangements with the author.
 
-     a. distribute the executables and library files of the software,
-        together with instructions (in the manual page or equivalent)
-        on where to get the original distribution.
+    3. You may distribute the software in object code or executable
+       form, provided that you do at least ONE of the following:
 
-     b. accompany the distribution with the machine-readable source of
-        the software.
+       a. distribute the executables and library files of the software,
+          together with instructions (in the manual page or equivalent)
+          on where to get the original distribution.
 
-     c. give non-standard executables non-standard names, with
-        instructions on where to get the original software distribution.
+       b. accompany the distribution with the machine-readable source of
+          the software.
 
-     d . make other distribution arrangements with the author.
+       c. give non-standard executables non-standard names, with
+          instructions on where to get the original software distribution.
 
-  4. You may modify and include the part of the software into any other
-     software (possibly commercial).
+       d. make other distribution arrangements with the author.
 
-  5. The scripts and library files supplied as input to or produced as
-     output from the software do not automatically fall under the
-     copyright of the software, but belong to whomever generated them,
-     and may be sold commercially, and may be aggregated with this
-     software.
+    4. You may modify and include the part of the software into any other
+       software (possibly commercial).
 
-  6. THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR
-     IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-     WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-     PURPOSE.
+    5. The scripts and library files supplied as input to or produced as
+       output from the software do not automatically fall under the
+       copyright of the software, but belong to whomever generated them,
+       and may be sold commercially, and may be aggregated with this
+       software.
+
+    6. THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR
+       IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+       WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+       PURPOSE.
+
+lib/bundler::
+lib/bundler.rb::
+lib/bundler.gemspec::
+spec/bundler::
+man/bundle-*,gemfile.*::
+
+  Bundler is under the following license.
+
+  >>>
+    Portions copyright (c) 2010 Andre Arko  
+    Portions copyright (c) 2009 Engine Yard  
+
+    MIT License::
+
+      Permission is hereby granted, free of charge, to any person obtaining
+      a copy of this software and associated documentation files (the
+      "Software"), to deal in the Software without restriction, including
+      without limitation the rights to use, copy, modify, merge, publish,
+      distribute, sublicense, and/or sell copies of the Software, and to
+      permit persons to whom the Software is furnished to do so, subject to
+      the following conditions:
+
+      The above copyright notice and this permission notice shall be
+      included in all copies or substantial portions of the Software.
+
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+      MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+      LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+      OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+      WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

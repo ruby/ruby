@@ -161,6 +161,7 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
       if ssock.respond_to?(:nonblock?)
         assert_not_predicate(ssock, :nonblock?)
         assert_not_predicate(csock, :nonblock?)
+        csock.nonblock = ssock.nonblock = false
 
         # Linux may use MSG_DONTWAIT to avoid setting O_NONBLOCK
         if RUBY_PLATFORM.match?(/linux/) && Socket.const_defined?(:MSG_DONTWAIT)

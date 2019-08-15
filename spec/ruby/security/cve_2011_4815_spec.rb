@@ -22,15 +22,12 @@ describe "Float#hash" do
   it_behaves_like :resists_cve_2011_4815, '3.14'
 end
 
-# https://bugs.ruby-lang.org/issues/14420
-guard_not -> { platform_is :windows and PlatformGuard.implementation?(:ruby) } do
-  describe "Rational#hash" do
-    it_behaves_like :resists_cve_2011_4815, 'Rational(1, 2)'
-  end
+describe "Rational#hash" do
+  it_behaves_like :resists_cve_2011_4815, 'Rational(1, 2)'
+end
 
-  describe "Complex#hash" do
-    it_behaves_like :resists_cve_2011_4815, 'Complex(1, 2)'
-  end
+describe "Complex#hash" do
+  it_behaves_like :resists_cve_2011_4815, 'Complex(1, 2)'
 end
 
 describe "String#hash" do
@@ -38,9 +35,7 @@ describe "String#hash" do
 end
 
 describe "Symbol#hash" do
-  ruby_bug "#13376", "2.3.0"..."2.3.4" do
-    it_behaves_like :resists_cve_2011_4815, ':a'
-  end
+  it_behaves_like :resists_cve_2011_4815, ':a'
 end
 
 describe "Array#hash" do

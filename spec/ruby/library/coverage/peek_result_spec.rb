@@ -1,5 +1,4 @@
 require_relative '../../spec_helper'
-require fixture __FILE__, 'spec_helper'
 require 'coverage'
 
 describe 'Coverage.peek_result' do

@@ -335,7 +335,7 @@ class FTPTest < Test::Unit::TestCase
       sleep(0.1)
       sock.print("331 Please specify the password.\r\n")
       commands.push(sock.gets)
-      sleep(0.3)
+      sleep(2.0) # Net::ReadTimeout
       sock.print("230 Login successful.\r\n")
       commands.push(sock.gets)
       sleep(0.1)
@@ -344,7 +344,7 @@ class FTPTest < Test::Unit::TestCase
     begin
       begin
         ftp = Net::FTP.new
-        ftp.read_timeout = 0.2
+        ftp.read_timeout = 0.4
         ftp.connect(SERVER_ADDR, server.port)
         assert_raise(Net::ReadTimeout) do
           ftp.login
@@ -377,7 +377,7 @@ class FTPTest < Test::Unit::TestCase
     begin
       begin
         ftp = Net::FTP.new
-        ftp.read_timeout = 0.2
+        ftp.read_timeout = 1.0
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
@@ -386,7 +386,7 @@ class FTPTest < Test::Unit::TestCase
         assert_equal(nil, commands.shift)
       ensure
         ftp.close
-        assert_equal(0.2, ftp.read_timeout)
+        assert_equal(1.0, ftp.read_timeout)
       end
     ensure
       server.close
@@ -530,6 +530,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("553 Requested action not taken.\r\n")
       commands.push(sock.gets)
       sock.print("200 Switching to Binary mode.\r\n")
+      [host, port]
     }
     begin
       begin
@@ -662,7 +663,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
       binary_data.scan(/.{1,1024}/nm) do |s|
-        sleep(0.1)
+        sleep(0.2)
         conn.print(s)
       end
       conn.shutdown(Socket::SHUT_WR)
@@ -673,7 +674,7 @@ class FTPTest < Test::Unit::TestCase
     begin
       begin
         ftp = Net::FTP.new
-        ftp.read_timeout = 0.2
+        ftp.read_timeout = 1.0
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
@@ -711,6 +712,7 @@ class FTPTest < Test::Unit::TestCase
       host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("550 Requested action not taken.\r\n")
+      [host, port]
     }
     begin
       begin
@@ -937,6 +939,7 @@ class FTPTest < Test::Unit::TestCase
       host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("452 Requested file action aborted.\r\n")
+      [host, port]
     }
     begin
       begin
@@ -1755,6 +1758,7 @@ EOF
       server = TCPServer.new(SERVER_ADDR, 0)
       port = server.addr[1]
       commands = []
+      session_reused_for_data_connection = nil
       binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
       @thread = Thread.start do
         sock = server.accept
@@ -1793,6 +1797,7 @@ EOF
             conn = OpenSSL::SSL::SSLSocket.new(conn, ctx)
             conn.sync_close = true
             conn.accept
+            session_reused_for_data_connection = conn.session_reused?
             binary_data.scan(/.{1,1024}/nm) do |s|
               conn.print(s)
             end
@@ -1823,6 +1828,11 @@ EOF
         assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
+        # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
+        # See https://github.com/openssl/openssl/pull/5967 for details.
+        if OpenSSL::OPENSSL_LIBRARY_VERSION !~ /OpenSSL 1.1.0h/
+          assert_equal(true, session_reused_for_data_connection)
+        end
       ensure
         ftp.close
       end
@@ -1832,6 +1842,7 @@ EOF
       server = TCPServer.new(SERVER_ADDR, 0)
       port = server.addr[1]
       commands = []
+      session_reused_for_data_connection = nil
       binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
       @thread = Thread.start do
         sock = server.accept
@@ -1869,6 +1880,7 @@ EOF
             conn = OpenSSL::SSL::SSLSocket.new(conn, ctx)
             conn.sync_close = true
             conn.accept
+            session_reused_for_data_connection = conn.session_reused?
             binary_data.scan(/.{1,1024}/nm) do |s|
               conn.print(s)
             end
@@ -1900,6 +1912,10 @@ EOF
         assert_match(/\A(PASV|EPSV)\r\n/, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
+        # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
+        if OpenSSL::OPENSSL_LIBRARY_VERSION !~ /OpenSSL 1.1.0h/
+          assert_equal(true, session_reused_for_data_connection)
+        end
       ensure
         ftp.close
       end
@@ -2158,7 +2174,7 @@ EOF
           begin
             ftp = Net::FTP.new
             ftp.resume = resume
-            ftp.read_timeout = RubyVM::MJIT.enabled? ? 1 : 0.2 # use large timeout for --jit-wait
+            ftp.read_timeout = RubyVM::MJIT.enabled? ? 5 : 0.2 # use large timeout for --jit-wait
             ftp.connect(SERVER_ADDR, server.port)
             ftp.login
             assert_match(/\AUSER /, commands.shift)

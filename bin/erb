@@ -114,9 +114,9 @@ class ERB
   -d               set $DEBUG to true
   -r library       load a library
   -E ex[:in]       set default external/internal encodings
-  -U               set default encoding to UTF-8.
+  -U               set default encoding to UTF-8
   -T trim_mode     specify trim_mode (0..2, -)
-  -P               ignore lines which start with "%"
+  -P               disable ruby code evaluation for lines beginning with %
   var=value        set variable
 EOU
         exit 1

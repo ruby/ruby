@@ -22,7 +22,7 @@ describe "File.pipe?" do
   platform_is_not :windows do
     it "returns true if the file is a pipe" do
       filename = tmp("i_am_a_pipe")
-      system "mkfifo #{filename}"
+      File.mkfifo(filename)
 
       File.pipe?(filename).should == true
 

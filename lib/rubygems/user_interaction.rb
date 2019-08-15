@@ -7,12 +7,15 @@
 
 require 'rubygems/util'
 require 'rubygems/deprecate'
+require 'rubygems/text'
 
 ##
 # Module that defines the default UserInteraction.  Any class including this
 # module will have access to the +ui+ method that returns the default UI.
 
 module Gem::DefaultUserInteraction
+
+  include Gem::Text
 
   ##
   # The default UI is a class variable of the singleton class for this
@@ -95,7 +98,7 @@ module Gem::UserInteraction
   ##
   # Displays an alert +statement+.  Asks a +question+ if given.
 
-  def alert statement, question = nil
+  def alert(statement, question = nil)
     ui.alert statement, question
   end
 
@@ -103,7 +106,7 @@ module Gem::UserInteraction
   # Displays an error +statement+ to the error output location.  Asks a
   # +question+ if given.
 
-  def alert_error statement, question = nil
+  def alert_error(statement, question = nil)
     ui.alert_error statement, question
   end
 
@@ -111,49 +114,49 @@ module Gem::UserInteraction
   # Displays a warning +statement+ to the warning output location.  Asks a
   # +question+ if given.
 
-  def alert_warning statement, question = nil
+  def alert_warning(statement, question = nil)
     ui.alert_warning statement, question
   end
 
   ##
   # Asks a +question+ and returns the answer.
 
-  def ask question
+  def ask(question)
     ui.ask question
   end
 
   ##
   # Asks for a password with a +prompt+
 
-  def ask_for_password prompt
+  def ask_for_password(prompt)
     ui.ask_for_password prompt
   end
 
   ##
   # Asks a yes or no +question+.  Returns true for yes, false for no.
 
-  def ask_yes_no question, default = nil
+  def ask_yes_no(question, default = nil)
     ui.ask_yes_no question, default
   end
 
   ##
   # Asks the user to answer +question+ with an answer from the given +list+.
 
-  def choose_from_list question, list
+  def choose_from_list(question, list)
     ui.choose_from_list question, list
   end
 
   ##
   # Displays the given +statement+ on the standard output (or equivalent).
 
-  def say statement = ''
+  def say(statement = '')
     ui.say statement
   end
 
   ##
   # Terminates the RubyGems process with the given +exit_code+
 
-  def terminate_interaction exit_code = 0
+  def terminate_interaction(exit_code = 0)
     ui.terminate_interaction exit_code
   end
 
@@ -161,8 +164,8 @@ module Gem::UserInteraction
   # Calls +say+ with +msg+ or the results of the block if really_verbose
   # is true.
 
-  def verbose msg = nil
-    say(msg || yield) if Gem.configuration.really_verbose
+  def verbose(msg = nil)
+    say(clean_text(msg || yield)) if Gem.configuration.really_verbose
   end
 end
 
@@ -212,7 +215,7 @@ class Gem::StreamUI
   # Prints a formatted backtrace to the errors stream if backtraces are
   # enabled.
 
-  def backtrace exception
+  def backtrace(exception)
     return unless Gem.configuration.backtrace
 
     @errs.puts "\t#{exception.backtrace.join "\n\t"}"
@@ -227,7 +230,7 @@ class Gem::StreamUI
     @outs.puts question
 
     list.each_with_index do |item, index|
-      @outs.puts " #{index+1}. #{item}"
+      @outs.puts " #{index + 1}. #{item}"
     end
 
     @outs.print "> "
@@ -247,8 +250,8 @@ class Gem::StreamUI
   # default.
 
   def ask_yes_no(question, default=nil)
-    unless tty? then
-      if default.nil? then
+    unless tty?
+      if default.nil?
         raise Gem::OperationNotSupportedError,
               "Not connected to a tty and no default specified"
       else
@@ -418,6 +421,7 @@ class Gem::StreamUI
 
     def done
     end
+
   end
 
   ##
@@ -506,17 +510,17 @@ class Gem::StreamUI
     def done
       @out.puts @terminal_message
     end
+
   end
 
   ##
   # Return a download reporter object chosen from the current verbosity
 
   def download_reporter(*args)
-    case Gem.configuration.verbose
-    when nil, false
+    if [nil, false].include?(Gem.configuration.verbose) || !@outs.tty?
       SilentDownloadReporter.new(@outs, *args)
     else
-      VerboseDownloadReporter.new(@outs, *args)
+      ThreadedDownloadReporter.new(@outs, *args)
     end
   end
 
@@ -550,12 +554,15 @@ class Gem::StreamUI
 
     def done
     end
+
   end
 
   ##
-  # A progress reporter that prints out messages about the current progress.
+  # A progress reporter that behaves nicely with threaded downloading.
 
-  class VerboseDownloadReporter
+  class ThreadedDownloadReporter
+
+    MUTEX = Mutex.new
 
     ##
     # The current file name being displayed
@@ -563,73 +570,49 @@ class Gem::StreamUI
     attr_reader :file_name
 
     ##
-    # The total bytes in the file
-
-    attr_reader :total_bytes
-
-    ##
-    # The current progress (0 to 100)
-
-    attr_reader :progress
-
-    ##
-    # Creates a new verbose download reporter that will display on
+    # Creates a new threaded download reporter that will display on
     # +out_stream+.  The other arguments are ignored.
 
     def initialize(out_stream, *args)
+      @file_name = nil
       @out = out_stream
-      @progress = 0
     end
 
     ##
-    # Tells the download reporter that the +file_name+ is being fetched and
-    # contains +total_bytes+.
+    # Tells the download reporter that the +file_name+ is being fetched.
+    # The other arguments are ignored.
 
-    def fetch(file_name, total_bytes)
-      @file_name = file_name
-      @total_bytes = total_bytes.to_i
-      @units = @total_bytes.zero? ? 'B' : '%'
-
-      update_display(false)
+    def fetch(file_name, *args)
+      if @file_name.nil?
+        @file_name = file_name
+        locked_puts "Fetching #{@file_name}"
+      end
     end
 
     ##
-    # Updates the verbose download reporter for the given number of +bytes+.
+    # Updates the threaded download reporter for the given number of +bytes+.
 
     def update(bytes)
-      new_progress = if @units == 'B' then
-                       bytes
-                     else
-                       ((bytes.to_f * 100) / total_bytes.to_f).ceil
-                     end
-
-      return if new_progress == @progress
-
-      @progress = new_progress
-      update_display
+      # Do nothing.
     end
 
     ##
     # Indicates the download is complete.
 
     def done
-      @progress = 100 if @units == '%'
-      update_display(true, true)
+      # Do nothing.
     end
 
     private
 
-    def update_display(show_progress = true, new_line = false) # :nodoc:
-      return unless @out.tty?
-
-      if show_progress then
-        @out.print "\rFetching: %s (%3d%s)" % [@file_name, @progress, @units]
-      else
-        @out.print "Fetching: %s" % @file_name
+    def locked_puts(message)
+      MUTEX.synchronize do
+        @out.puts message
       end
-      @out.puts if new_line
     end
+
   end
+
 end
 
 ##
@@ -645,6 +628,7 @@ class Gem::ConsoleUI < Gem::StreamUI
   def initialize
     super STDIN, STDOUT, STDERR, true
   end
+
 end
 
 ##
@@ -677,4 +661,5 @@ class Gem::SilentUI < Gem::StreamUI
   def progress_reporter(*args) # :nodoc:
     SilentProgressReporter.new(@outs, *args)
   end
+
 end

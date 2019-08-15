@@ -1,4 +1,5 @@
-require_relative '../../../spec_helper'
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 require_relative 'shared/new'
 
 describe "UNIXSocket.open" do
@@ -18,7 +19,7 @@ describe "UNIXSocket.open" do
     end
 
     it "opens a unix socket on the specified file and yields it to the block" do
-      UNIXSocket.send(@method, @path) do |client|
+      UNIXSocket.open(@path) do |client|
         client.addr[0].should == "AF_UNIX"
         client.closed?.should == false
       end

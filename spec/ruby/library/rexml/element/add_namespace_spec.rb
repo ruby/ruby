@@ -21,4 +21,3 @@ describe "REXML::Element#add_namespace" do
     @elem.namespace.should == "some_uri"
   end
 end
-

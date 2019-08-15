@@ -339,6 +339,12 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
     struct iomsg_arg arg;
     struct iovec vec[2];
     char buf[1];
+    unsigned int gc_reason = 0;
+    enum {
+        GC_REASON_EMSGSIZE = 0x1,
+        GC_REASON_TRUNCATE = 0x2,
+        GC_REASON_ENOMEM = 0x4
+    };
 
     int fd;
 #if FD_PASSING_BY_MSG_CONTROL
@@ -354,6 +360,7 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
     if (argc <= 1)
 	mode = Qnil;
 
+retry:
     GetOpenFile(sock, fptr);
 
     arg.msg.msg_name = NULL;
@@ -381,12 +388,31 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 
     arg.fd = fptr->fd;
     while ((int)BLOCKING_REGION_FD(recvmsg_blocking, &arg) == -1) {
+        int e = errno;
+        if (e == EMSGSIZE && !(gc_reason & GC_REASON_EMSGSIZE)) {
+            /* FreeBSD gets here when we're out of FDs */
+            gc_reason |= GC_REASON_EMSGSIZE;
+            rb_gc_for_fd(EMFILE);
+            goto retry;
+        }
+        else if (e == ENOMEM && !(gc_reason & GC_REASON_ENOMEM)) {
+            /* ENOMEM is documented in recvmsg manpages */
+            gc_reason |= GC_REASON_ENOMEM;
+            rb_gc_for_fd(e);
+            goto retry;
+        }
 	if (!rb_io_wait_readable(arg.fd))
-	    rsock_sys_fail_path("recvmsg(2)", fptr->pathv);
+	    rsock_syserr_fail_path(e, "recvmsg(2)", fptr->pathv);
     }
 
 #if FD_PASSING_BY_MSG_CONTROL
     if (arg.msg.msg_controllen < (socklen_t)sizeof(struct cmsghdr)) {
+        /* FreeBSD and Linux both get here when we're out of FDs */
+        if (!(gc_reason & GC_REASON_TRUNCATE)) {
+            gc_reason |= GC_REASON_TRUNCATE;
+            rb_gc_for_fd(EMFILE);
+            goto retry;
+        }
 	rb_raise(rb_eSocket,
 		 "file descriptor was not passed (msg_controllen=%d smaller than sizeof(struct cmsghdr)=%d)",
 		 (int)arg.msg.msg_controllen, (int)sizeof(struct cmsghdr));

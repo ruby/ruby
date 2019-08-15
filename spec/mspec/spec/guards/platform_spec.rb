@@ -197,7 +197,7 @@ end
 
 describe PlatformGuard, ".os?" do
   before :each do
-    stub_const 'PlatformGuard::HOST_OS', 'solarce'
+    stub_const 'PlatformGuard::PLATFORM', 'solarce'
   end
 
   it "returns false when arg does not match the platform" do
@@ -217,23 +217,33 @@ describe PlatformGuard, ".os?" do
   end
 
   it "returns true when arg is :windows and the platform contains 'mswin'" do
-    stub_const 'PlatformGuard::HOST_OS', 'mswin32'
+    stub_const 'PlatformGuard::PLATFORM', 'mswin32'
     PlatformGuard.os?(:windows).should == true
   end
 
   it "returns true when arg is :windows and the platform contains 'mingw'" do
-    stub_const 'PlatformGuard::HOST_OS', 'i386-mingw32'
+    stub_const 'PlatformGuard::PLATFORM', 'i386-mingw32'
     PlatformGuard.os?(:windows).should == true
   end
 
   it "returns false when arg is not :windows and RbConfig::CONFIG['host_os'] contains 'mswin'" do
-    stub_const 'PlatformGuard::HOST_OS', 'i386-mswin32'
+    stub_const 'PlatformGuard::PLATFORM', 'i386-mswin32'
     PlatformGuard.os?(:linux).should == false
   end
 
   it "returns false when arg is not :windows and RbConfig::CONFIG['host_os'] contains 'mingw'" do
-    stub_const 'PlatformGuard::HOST_OS', 'i386-mingw32'
+    stub_const 'PlatformGuard::PLATFORM', 'i386-mingw32'
     PlatformGuard.os?(:linux).should == false
+  end
+end
+
+describe PlatformGuard, ".os?" do
+  it "returns true if called with the current OS or architecture" do
+    os = RbConfig::CONFIG["host_os"].sub("-gnu", "")
+    arch = RbConfig::CONFIG["host_arch"]
+    PlatformGuard.os?(os).should == true
+    PlatformGuard.os?(arch).should == true
+    PlatformGuard.os?("#{arch}-#{os}").should == true
   end
 end
 
@@ -263,19 +273,19 @@ describe PlatformGuard, ".os? on JRuby" do
   end
 
   it "returns true when arg is :windows and RUBY_PLATFORM contains 'java' and os?(:windows) is true" do
-    stub_const 'PlatformGuard::HOST_OS', 'mswin32'
+    stub_const 'PlatformGuard::PLATFORM', 'mswin32'
     PlatformGuard.os?(:windows).should == true
   end
 
   it "returns true when RUBY_PLATFORM contains 'java' and os?(argument) is true" do
-    stub_const 'PlatformGuard::HOST_OS', 'amiga'
+    stub_const 'PlatformGuard::PLATFORM', 'amiga'
     PlatformGuard.os?(:amiga).should == true
   end
 end
 
 describe PlatformGuard, ".os?" do
   before :each do
-    stub_const 'PlatformGuard::HOST_OS', 'unreal'
+    stub_const 'PlatformGuard::PLATFORM', 'unreal'
   end
 
   it "returns true if argument matches RbConfig::CONFIG['host_os']" do
@@ -295,34 +305,34 @@ describe PlatformGuard, ".os?" do
   end
 
   it "returns true when arg is :windows and RbConfig::CONFIG['host_os'] contains 'mswin'" do
-    stub_const 'PlatformGuard::HOST_OS', 'i386-mswin32'
+    stub_const 'PlatformGuard::PLATFORM', 'i386-mswin32'
     PlatformGuard.os?(:windows).should == true
   end
 
   it "returns true when arg is :windows and RbConfig::CONFIG['host_os'] contains 'mingw'" do
-    stub_const 'PlatformGuard::HOST_OS', 'i386-mingw32'
+    stub_const 'PlatformGuard::PLATFORM', 'i386-mingw32'
     PlatformGuard.os?(:windows).should == true
   end
 
   it "returns false when arg is not :windows and RbConfig::CONFIG['host_os'] contains 'mswin'" do
-    stub_const 'PlatformGuard::HOST_OS', 'i386-mingw32'
+    stub_const 'PlatformGuard::PLATFORM', 'i386-mingw32'
     PlatformGuard.os?(:linux).should == false
   end
 
   it "returns false when arg is not :windows and RbConfig::CONFIG['host_os'] contains 'mingw'" do
-    stub_const 'PlatformGuard::HOST_OS', 'i386-mingw32'
+    stub_const 'PlatformGuard::PLATFORM', 'i386-mingw32'
     PlatformGuard.os?(:linux).should == false
   end
 end
 
 describe PlatformGuard, ".windows?" do
   it "returns true on windows" do
-    stub_const 'PlatformGuard::HOST_OS', 'i386-mingw32'
+    stub_const 'PlatformGuard::PLATFORM', 'i386-mingw32'
     PlatformGuard.windows?.should == true
   end
 
   it "returns false on non-windows" do
-    stub_const 'PlatformGuard::HOST_OS', 'i586-linux'
+    stub_const 'PlatformGuard::PLATFORM', 'i586-linux'
     PlatformGuard.windows?.should == false
   end
 end

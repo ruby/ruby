@@ -212,6 +212,13 @@ module TestStruct
     assert_raise(ArgumentError) { o.select(1) }
   end
 
+  def test_filter
+    klass = @Struct.new(:a, :b, :c, :d, :e, :f)
+    o = klass.new(1, 2, 3, 4, 5, 6)
+    assert_equal([1, 3, 5], o.filter {|v| v % 2 != 0 })
+    assert_raise(ArgumentError) { o.filter(1) }
+  end
+
   def test_big_struct
     klass1 = @Struct.new(*('a'..'z').map(&:to_sym))
     o = klass1.new
@@ -268,6 +275,7 @@ module TestStruct
     klass = @Struct.new(:a)
     o = klass.new(1)
     assert_kind_of(Integer, o.hash)
+    assert_kind_of(String, o.hash.to_s)
   end
 
   def test_eql
@@ -353,6 +361,13 @@ module TestStruct
     klass = @Struct.new(:a, :b, :c, :d, :e, :f)
     o = klass.new(1, 2, 3, 4, 5, 6)
     assert_equal({a:1, b:2, c:3, d:4, e:5, f:6}, o.to_h)
+  end
+
+  def test_to_h_block
+    klass = @Struct.new(:a, :b, :c, :d, :e, :f)
+    o = klass.new(1, 2, 3, 4, 5, 6)
+    assert_equal({"a" => 1, "b" => 4, "c" => 9, "d" => 16, "e" => 25, "f" => 36},
+                 o.to_h {|k, v| [k.to_s, v*v]})
   end
 
   def test_question_mark_in_member

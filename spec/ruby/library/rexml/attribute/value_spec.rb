@@ -12,4 +12,3 @@ describe "REXML::Attribute#value" do
     attr_empty.value.should == ""
   end
 end
-

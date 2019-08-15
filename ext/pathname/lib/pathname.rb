@@ -193,8 +193,7 @@ class Pathname
     begin
       stat1 = self.lstat
       stat2 = self.parent.lstat
-      stat1.dev == stat2.dev && stat1.ino == stat2.ino ||
-        stat1.dev != stat2.dev
+      stat1.dev != stat2.dev || stat1.ino == stat2.ino
     rescue Errno::ENOENT
       false
     end
@@ -504,6 +503,7 @@ class Pathname
   # ArgumentError is raised when it cannot find a relative path.
   #
   def relative_path_from(base_directory)
+    base_directory = Pathname.new(base_directory) unless base_directory.is_a? Pathname
     dest_directory = self.cleanpath.to_s
     base_directory = base_directory.cleanpath.to_s
     dest_prefix = dest_directory

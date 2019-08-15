@@ -98,19 +98,22 @@ class TestObjSpace < Test::Unit::TestCase
     res = ObjectSpace.count_imemo_objects
     assert_not_empty(res)
     assert_not_nil(res[:imemo_cref])
+    assert_not_empty res.inspect
+
     arg = {}
     res = ObjectSpace.count_imemo_objects(arg)
     assert_not_empty(res)
   end
 
   def test_memsize_of_iseq
-    iseqw = RubyVM::InstructionSequence.compile('def a; a = :b; end')
+    iseqw = RubyVM::InstructionSequence.compile('def a; a = :b; a; end')
     base_obj_size = ObjectSpace.memsize_of(Object.new)
     assert_operator(ObjectSpace.memsize_of(iseqw), :>, base_obj_size)
   end
 
   def test_reachable_objects_from
-    assert_separately %w[--disable-gem -robjspace], "#{<<-"begin;"}\n#{<<-'end;'}"
+    opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
+    assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
     begin;
       assert_equal(nil, ObjectSpace.reachable_objects_from(nil))
       assert_equal([Array, 'a', 'b', 'c'], ObjectSpace.reachable_objects_from(['a', 'b', 'c']))
@@ -232,8 +235,8 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_dump_flags
     info = ObjectSpace.dump("foo".freeze)
-    assert_match /"wb_protected":true, "old":true/, info
-    assert_match /"fstring":true/, info
+    assert_match(/"wb_protected":true, "old":true/, info)
+    assert_match(/"fstring":true/, info)
     JSON.parse(info) if defined?(JSON)
   end
 
@@ -265,10 +268,10 @@ class TestObjSpace < Test::Unit::TestCase
 
   def assert_dump_object(info, line)
     loc = caller_locations(1, 1)[0]
-    assert_match /"type":"STRING"/, info
-    assert_match /"embedded":true, "bytesize":11, "value":"hello world", "encoding":"UTF-8"/, info
-    assert_match /"file":"#{Regexp.escape __FILE__}", "line":#{line}/, info
-    assert_match /"method":"#{loc.base_label}"/, info
+    assert_match(/"type":"STRING"/, info)
+    assert_match(/"embedded":true, "bytesize":11, "value":"hello world", "encoding":"UTF-8"/, info)
+    assert_match(/"file":"#{Regexp.escape __FILE__}", "line":#{line}/, info)
+    assert_match(/"method":"#{loc.base_label}"/, info)
     JSON.parse(info) if defined?(JSON)
   end
 
@@ -283,8 +286,8 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_dump_dynamic_symbol
     dump = ObjectSpace.dump(("foobar%x" % rand(0x10000)).to_sym)
-    assert_match /"type":"SYMBOL"/, dump
-    assert_match /"value":"foobar\h+"/, dump
+    assert_match(/"type":"SYMBOL"/, dump)
+    assert_match(/"value":"foobar\h+"/, dump)
   end
 
   def test_dump_includes_imemo_type
@@ -318,10 +321,67 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def test_dump_addresses_match_dump_all_addresses
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          obj = Object.new
+          puts ObjectSpace.dump(obj)
+          ObjectSpace.dump_all(output: $stdout)
+        end
+
+        dump_my_heap_please
+      end;
+      needle = JSON.parse(output.first)
+      addr = needle['address']
+      found  = output.drop(1).find { |l| JSON.parse(l)['address'] == addr }
+      assert found, "object #{addr} should be findable in full heap dump"
+    end
+  end
+
+  def test_dump_class_addresses_match_dump_all_addresses
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          obj = Object.new
+          puts ObjectSpace.dump(obj)
+          ObjectSpace.dump_all(output: $stdout)
+        end
+
+        dump_my_heap_please
+      end;
+      needle = JSON.parse(output.first)
+      addr = needle['class']
+      found  = output.drop(1).find { |l| JSON.parse(l)['address'] == addr }
+      assert found, "object #{addr} should be findable in full heap dump"
+    end
+  end
+
+  def test_dump_reference_addresses_match_dump_all_addresses
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          obj = Object.new
+          obj2 = Object.new
+          obj2.instance_variable_set(:@ref, obj)
+          puts ObjectSpace.dump(obj)
+          ObjectSpace.dump_all(output: $stdout)
+        end
+
+        dump_my_heap_please
+      end;
+      needle = JSON.parse(output.first)
+      addr = needle['address']
+      found  = output.drop(1).find { |l| (JSON.parse(l)['references'] || []).include? addr }
+      assert found, "object #{addr} should be findable in full heap dump"
+    end
+  end
+
   def test_dump_all
     entry = /"bytesize":11, "value":"TEST STRING", "encoding":"UTF-8", "file":"-", "line":4, "method":"dump_my_heap_please", "generation":/
+    opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
 
-    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}#{<<-'end;'}") do |output, error|
+    assert_in_out_err(opts, "#{<<-"begin;"}#{<<-'end;'}") do |output, error|
       begin;
         def dump_my_heap_please
           ObjectSpace.trace_object_allocations_start
@@ -340,16 +400,16 @@ class TestObjSpace < Test::Unit::TestCase
         def dump_my_heap_please
           ObjectSpace.trace_object_allocations_start
           GC.start
-          str = "TEST STRING".force_encoding("UTF-8")
+          (str = "TEST STRING").force_encoding("UTF-8")
           ObjectSpace.dump_all().path
         end
 
         puts dump_my_heap_please
       end;
-      skip if /is not supported/ =~ error
-      skip error unless output
-      assert_match(entry, File.readlines(output).grep(/TEST STRING/).join("\n"))
+      assert_nil(error)
+      dump = File.readlines(output)
       File.unlink(output)
+      assert_match(entry, dump.grep(/TEST STRING/).join("\n"))
     end
 
     if defined?(JSON)
@@ -372,8 +432,8 @@ class TestObjSpace < Test::Unit::TestCase
       puts ObjectSpace.dump(File.allocate)
     RUBY
       assert_nil error
-      assert_match /"type":"FILE"/, output
-      assert_not_match /"fd":/, output
+      assert_match(/"type":"FILE"/, output)
+      assert_not_match(/"fd":/, output)
     end
   end
 

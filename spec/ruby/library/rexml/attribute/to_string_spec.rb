@@ -12,4 +12,3 @@ describe "REXML::Attribute#to_string" do
     attr_ns.to_string.should == "xmlns:ns='http://uri'"
   end
 end
-

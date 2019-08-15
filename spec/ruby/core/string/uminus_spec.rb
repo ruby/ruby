@@ -5,7 +5,7 @@ describe 'String#-@' do
     input  = 'foo'.freeze
     output = -input
 
-    output.equal?(input).should == true
+    output.should equal(input)
     output.frozen?.should == true
   end
 
@@ -14,6 +14,7 @@ describe 'String#-@' do
     output = -input
 
     output.frozen?.should == true
+    output.should_not equal(input)
     output.should == 'foo'
   end
 
@@ -30,15 +31,44 @@ describe 'String#-@' do
       (-"unfrozen string").should equal(-"unfrozen string")
       (-"unfrozen string").should_not equal(-"another unfrozen string")
     end
+  end
 
-    it "is an identity function if the string is frozen" do
+  ruby_version_is "2.5"..."2.6" do
+    it "does not deduplicate already frozen strings" do
       dynamic = %w(this string is frozen).join(' ').freeze
 
-      (-dynamic).should equal(dynamic)
-
       dynamic.should_not equal("this string is frozen".freeze)
+
       (-dynamic).should_not equal("this string is frozen".freeze)
       (-dynamic).should_not equal(-"this string is frozen".freeze)
+      (-dynamic).should == "this string is frozen"
+    end
+
+    it "does not deduplicate tainted strings" do
+      dynamic = %w(this string is frozen).join(' ')
+      dynamic.taint
+      (-dynamic).should_not equal("this string is frozen".freeze)
+      (-dynamic).should_not equal(-"this string is frozen".freeze)
+      (-dynamic).should == "this string is frozen"
+    end
+
+    it "does not deduplicate strings with additional instance variables" do
+      dynamic = %w(this string is frozen).join(' ')
+      dynamic.instance_variable_set(:@foo, :bar)
+      (-dynamic).should_not equal("this string is frozen".freeze)
+      (-dynamic).should_not equal(-"this string is frozen".freeze)
+      (-dynamic).should == "this string is frozen"
+    end
+  end
+
+  ruby_version_is "2.6" do
+    it "deduplicates frozen strings" do
+      dynamic = %w(this string is frozen).join(' ').freeze
+
+      dynamic.should_not equal("this string is frozen".freeze)
+
+      (-dynamic).should equal("this string is frozen".freeze)
+      (-dynamic).should equal(-"this string is frozen".freeze)
     end
   end
 end

@@ -534,8 +534,9 @@ class OptionParser
 
     def initialize(pattern = nil, conv = nil,
                    short = nil, long = nil, arg = nil,
-                   desc = ([] if short or long), block = Proc.new)
+                   desc = ([] if short or long), block = nil, &_block)
       raise if Array === pattern
+      block ||= _block
       @pattern, @conv, @short, @long, @arg, @desc, @block =
         pattern, conv, short, long, arg, desc, block
     end
@@ -591,7 +592,7 @@ class OptionParser
     #            +max+ columns.
     # +indent+:: Prefix string indents all summarized lines.
     #
-    def summarize(sdone = [], ldone = [], width = 1, max = width - 1, indent = "")
+    def summarize(sdone = {}, ldone = {}, width = 1, max = width - 1, indent = "")
       sopts, lopts = [], [], nil
       @short.each {|s| sdone.fetch(s) {sopts << s}; sdone[s] = true} if @short
       @long.each {|s| ldone.fetch(s) {lopts << s}; ldone[s] = true} if @long
@@ -654,7 +655,7 @@ class OptionParser
       return if sopts.empty? and lopts.empty? # completely hidden
 
       (sopts+lopts).each do |opt|
-        # "(-x -c -r)-l[left justify]" \
+        # "(-x -c -r)-l[left justify]"
         if /^--\[no-\](.+)$/ =~ opt
           o = $1
           yield("--#{o}", desc.join(""))
@@ -1351,6 +1352,8 @@ XXX
   # [Description:]
   #   Description string for the option.
   #     "Run verbosely"
+  #   If you give multiple description strings, each string will be printed
+  #   line by line.
   #
   # [Handler:]
   #   Handler for the parsed argument value. Either give a block or pass a
@@ -1592,7 +1595,7 @@ XXX
               begin
                 sw, = complete(:short, opt)
                 # short option matched.
-                val = arg.sub(/\A-/, '')
+                val = arg.delete_prefix('-')
                 has_arg = true
               rescue InvalidOption
                 # if no short options match, try completion with long
@@ -1803,13 +1806,26 @@ XXX
   # is not present. Returns whether successfully loaded.
   #
   # +filename+ defaults to basename of the program without suffix in a
-  # directory ~/.options.
+  # directory ~/.options, then the basename with '.options' suffix
+  # under XDG and Haiku standard places.
   #
   def load(filename = nil)
-    begin
-      filename ||= File.expand_path(File.basename($0, '.*'), '~/.options')
-    rescue
-      return false
+    unless filename
+      basename = File.basename($0, '.*')
+      return true if load(File.expand_path(basename, '~/.options')) rescue nil
+      basename << ".options"
+      return [
+        # XDG
+        ENV['XDG_CONFIG_HOME'],
+        '~/.config',
+        *ENV['XDG_CONFIG_DIRS']&.split(File::PATH_SEPARATOR),
+
+        # Haiku
+        '~/config/settings',
+      ].any? {|dir|
+        next if !dir or dir.empty?
+        load(File.expand_path(basename, dir)) rescue nil
+      }
     end
     begin
       parse(*IO.readlines(filename).each {|s| s.chomp!})

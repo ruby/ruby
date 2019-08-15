@@ -36,6 +36,13 @@ describe "Array literals" do
     [1, *nil, 3].should == [1, 3]
     [*nil, *nil, *nil].should == []
   end
+
+  it "evaluates each argument exactly once" do
+    se = ArraySpec::SideEffect.new
+    se.array_result(true)
+    se.array_result(false)
+    se.call_count.should == 4
+  end
 end
 
 describe "Bareword array literal" do
