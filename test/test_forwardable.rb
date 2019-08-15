@@ -107,6 +107,18 @@ class TestForwardable < Test::Unit::TestCase
     end
   end
 
+  def test_def_instance_delegators_send_id
+    %i[def_delegators def_instance_delegators].each do |m|
+      cls = forwardable_class do
+        attr_reader :receiver
+        __send__ m, :@receiver, :__send__, :__id__
+      end
+
+      assert_not_equal cls.new.__id__, cls.new.receiver.__id__
+      assert_not_equal cls.new.__send__(:__id__), cls.new.receiver.__send__(:__id__)
+    end
+  end
+
   def test_instance_delegate
     %i[delegate instance_delegate].each do |m|
       cls = forwardable_class do
@@ -212,6 +224,18 @@ class TestForwardable < Test::Unit::TestCase
 
       assert_same RETURNED1, obj.delegated1
       assert_same RETURNED2, obj.delegated2
+    end
+  end
+
+  def test_obj_single_delegators_send_id
+    %i[def_delegators def_single_delegators].each do |m|
+      obj = single_forwardable_object do
+        singleton_class.attr_reader :receiver
+        __send__ m, :@receiver, :__send__, :__id__
+      end
+
+      assert_not_equal obj.__id__, obj.receiver.__id__
+      assert_not_equal obj.__send__(:__id__), obj.receiver.__send__(:__id__)
     end
   end
 
