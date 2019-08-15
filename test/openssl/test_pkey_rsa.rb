@@ -60,6 +60,13 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     end
   end
 
+  def test_generate
+    key = OpenSSL::PKey::RSA.generate(512, 17)
+    assert_equal 512, key.n.num_bits
+    assert_equal 17, key.e
+    assert_not_nil key.d
+  end
+
   def test_new_break
     assert_nil(OpenSSL::PKey::RSA.new(1024) { break })
     assert_raise(RuntimeError) do
@@ -289,7 +296,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
   end
 
   def test_dup
-    key = OpenSSL::PKey::RSA.generate(256, 17)
+    key = Fixtures.pkey("rsa1024")
     key2 = key.dup
     assert_equal key.params, key2.params
     key2.set_key(key2.n, 3, key2.d)

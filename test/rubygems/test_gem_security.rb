@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/security'
-require 'rubygems/fix_openssl_warnings' if RUBY_VERSION < "1.9"
 
-unless defined?(OpenSSL::SSL) then
+unless defined?(OpenSSL::SSL)
   warn 'Skipping Gem::Security tests.  openssl not found.'
+end
+
+if Gem.java_platform?
+  warn 'Skipping Gem::Security tests on jruby.'
 end
 
 class TestGemSecurity < Gem::TestCase
@@ -281,7 +284,7 @@ class TestGemSecurity < Gem::TestCase
 
     assert_path_exists path
 
-    key_from_file =  OpenSSL::PKey::RSA.new File.read(path), passphrase
+    key_from_file = OpenSSL::PKey::RSA.new File.read(path), passphrase
 
     assert_equal key.to_pem, key_from_file.to_pem
   end
@@ -308,5 +311,4 @@ class TestGemSecurity < Gem::TestCase
     assert_equal key.to_pem, key_from_file.to_pem
   end
 
-end if defined?(OpenSSL::SSL)
-
+end if defined?(OpenSSL::SSL) && !Gem.java_platform?

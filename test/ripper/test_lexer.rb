@@ -2,7 +2,6 @@
 begin
   require 'ripper'
   require 'test/unit'
-  ripper_test = true
   module TestRipper; end
 rescue LoadError
 end
@@ -89,5 +88,54 @@ class TestRipper::Lexer < Test::Unit::TestCase
       on_heredoc_end
     ]
     assert_equal expect, Ripper.lex(src).map {|e| e[1]}
+  end
+
+  def test_slice
+    assert_equal "string\#{nil}\n",
+      Ripper.slice(%(<<HERE\nstring\#{nil}\nHERE), "heredoc_beg .*? nl $(.*?) heredoc_end", 1)
+  end
+
+  def state(name)
+    Ripper::Lexer::State.new(Ripper.const_get(name))
+  end
+
+  def test_state_after_ivar
+    assert_equal [[1,0],:on_ivar,"@a",state(:EXPR_END)], Ripper.lex("@a").last
+    assert_equal [[1,1],:on_ivar,"@a",state(:EXPR_ENDFN)], Ripper.lex(":@a").last
+    assert_equal [[1,0],:on_ivar,"@1",state(:EXPR_END)], Ripper.lex("@1").last
+    assert_equal [[1,1],:on_ivar,"@1",state(:EXPR_ENDFN)], Ripper.lex(":@1").last
+  end
+
+  def test_state_after_cvar
+    assert_equal [[1,0],:on_cvar,"@@a",state(:EXPR_END)], Ripper.lex("@@a").last
+    assert_equal [[1,1],:on_cvar,"@@a",state(:EXPR_ENDFN)], Ripper.lex(":@@a").last
+    assert_equal [[1,0],:on_cvar,"@@1",state(:EXPR_END)], Ripper.lex("@@1").last
+    assert_equal [[1,1],:on_cvar,"@@1",state(:EXPR_ENDFN)], Ripper.lex(":@@1").last
+  end
+
+  def test_token_aftr_error_heredoc
+    code = "<<A.upcase\n"
+    result = Ripper::Lexer.new(code).scan
+    message = proc {result.pretty_inspect}
+    expected = [
+      [[1, 0], :on_heredoc_beg, "<<A", state(:EXPR_BEG)],
+      [[1, 2], :compile_error, "A", state(:EXPR_BEG), "can't find string \"A\" anywhere before EOF"],
+      [[1, 3], :on_period, ".", state(:EXPR_DOT)],
+      [[1, 4], :on_ident, "upcase", state(:EXPR_ARG)],
+      [[1, 10], :on_nl, "\n", state(:EXPR_BEG)],
+    ]
+    pos = 0
+    expected.each_with_index do |ex, i|
+      s = result[i]
+      assert_equal ex, s.to_a, message
+      if pos > s.pos[1]
+        assert_equal pos, s.pos[1] + s.tok.bytesize, message
+      else
+        assert_equal pos, s.pos[1], message
+        pos += s.tok.bytesize
+      end
+    end
+    assert_equal pos, code.bytesize
+    assert_equal expected.size, result.size
   end
 end

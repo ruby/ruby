@@ -1,5 +1,5 @@
-require "#{File.dirname(__FILE__)}/../../../spec_helper"
-require "#{File.dirname(__FILE__)}/../fixtures/file_types"
+require_relative '../../../spec_helper'
+require_relative '../fixtures/file_types'
 
 describe "File::Stat#ftype" do
   before :all do
@@ -55,10 +55,6 @@ describe "File::Stat#ftype" do
       end
     end
 
-    # This will silently not execute the block if no socket
-    # can be found. However, if you are running X, there is
-    # a good chance that if nothing else, at least the X
-    # Server socket exists.
     it "returns 'socket' when the file is a socket" do
       FileSpecs.socket do |socket|
         File.lstat(socket).ftype.should == 'socket'

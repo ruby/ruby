@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require 'rdoc/test_case'
+require 'minitest_helper'
+require 'timeout'
 
 class TestRDocText < RDoc::TestCase
 
@@ -12,6 +13,7 @@ class TestRDocText < RDoc::TestCase
     @options = RDoc::Options.new
 
     @top_level = @store.add_file 'file.rb'
+    @language = nil
   end
 
   def test_self_encode_fallback
@@ -136,6 +138,8 @@ we don't worry too much.
 The comments associated with
     EXPECTED
 
+    @language = :ruby
+
     assert_equal expected, normalize_comment(text)
   end
 
@@ -154,6 +158,8 @@ we don't worry too much.
 The comments associated with
     EXPECTED
 
+    @language = :c
+
     assert_equal expected, normalize_comment(text)
   end
 
@@ -171,6 +177,8 @@ we don't worry too much.
 
 The comments associated with
     EXPECTED
+
+    @language = :c
 
     assert_equal expected, normalize_comment(text)
   end
@@ -199,6 +207,8 @@ The comments associated with
   end
 
   def test_parse_empty_newline
+    @language = :ruby
+
     assert_equal RDoc::Markup::Document.new, parse("#\n")
   end
 
@@ -258,8 +268,7 @@ paragraph will be cut off some point after the one-hundredth character.
     TEXT
 
     expected = <<-EXPECTED
-<p>This is one-hundred characters or more of text in a single paragraph.  This
-paragraph will be cut off …
+<p>This is one-hundred characters or more of text in a single paragraph.  This paragraph will be cut off …
     EXPECTED
 
     assert_equal expected, snippet(text)
@@ -364,6 +373,32 @@ paragraph will be cut off …
     text = <<-TEXT
 /*
  * Document-method: Zlib::GzipFile#mtime=
+ *
+ * A comment
+ */
+    TEXT
+
+    expected = <<-EXPECTED
+
+   A comment
+    EXPECTED
+
+    assert_equal expected, strip_stars(text)
+  end
+
+  def test_strip_stars_document_method_special
+    text = <<-TEXT
+/*
+ * Document-method: Zlib::GzipFile#mtime=
+ * Document-method: []
+ * Document-method: `
+ * Document-method: |
+ * Document-method: &
+ * Document-method: <=>
+ * Document-method: =~
+ * Document-method: +
+ * Document-method: -
+ * Document-method: +@
  *
  * A comment
  */
@@ -522,7 +557,7 @@ The comments associated with
   end
 
   def test_to_html_tt_tag_mismatch
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       assert_equal '<tt>hi', to_html('<tt>hi')
     end
 

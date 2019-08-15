@@ -130,16 +130,16 @@ end
 
 describe "Matrix#find_index with two arguments" do
   it "raises an ArgumentError for an unrecognized last argument" do
-    lambda {
+    -> {
       @m.find_index(1, "all"){}
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @m.find_index(1, nil){}
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @m.find_index(1, :left){}
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @m.find_index(:diagonal, 1){}
     }.should raise_error(ArgumentError)
   end

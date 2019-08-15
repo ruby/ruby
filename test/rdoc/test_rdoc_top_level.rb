@@ -160,7 +160,7 @@ class TestRDocTopLevel < XrefTestCase
   end
 
   def test_last_modified
-    assert_equal nil, @top_level.last_modified
+    assert_nil @top_level.last_modified
     stat = Object.new
     def stat.mtime() 0 end
     @top_level.file_stat = stat

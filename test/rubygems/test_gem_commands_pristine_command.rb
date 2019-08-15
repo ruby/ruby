@@ -54,7 +54,10 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_all
-    a = util_spec 'a' do |s| s.executables = %w[foo] end
+    a = util_spec 'a' do |s|
+      s.executables = %w[foo]
+    end
+
     write_file File.join(@tempdir, 'bin', 'foo') do |fp|
       fp.puts "#!/usr/bin/ruby"
     end
@@ -116,7 +119,9 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_extensions_explicit
-    a = util_spec 'a' do |s| s.extensions << 'ext/a/extconf.rb' end
+    a = util_spec 'a' do |s|
+      s.extensions << 'ext/a/extconf.rb'
+    end
 
     ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
     write_file ext_path do |io|
@@ -152,7 +157,9 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_no_extension
-    a = util_spec 'a' do |s| s.extensions << 'ext/a/extconf.rb' end
+    a = util_spec 'a' do |s|
+      s.extensions << 'ext/a/extconf.rb'
+    end
 
     ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
     write_file ext_path do |io|
@@ -178,7 +185,9 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_with_extension_with_build_args
-    a = util_spec 'a' do |s| s.extensions << 'ext/a/extconf.rb' end
+    a = util_spec 'a' do |s|
+      s.extensions << 'ext/a/extconf.rb'
+    end
 
     ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
     write_file ext_path do |io|
@@ -250,6 +259,31 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_equal "Restoring gems to pristine condition...", out.shift
     assert_equal "Skipped #{a.full_name}, it was given through options", out.shift
     assert_equal "Restored #{b.full_name}", out.shift
+    assert_empty out, out.inspect
+  end
+
+  def test_skip_many_gems
+    a = util_spec 'a'
+    b = util_spec 'b'
+    c = util_spec 'c'
+
+    install_gem a
+    install_gem b
+    install_gem c
+
+    @cmd.options[:args] = %w[a b c]
+    @cmd.options[:skip] = ['a', 'c']
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Restoring gems to pristine condition...", out.shift
+    assert_equal "Skipped #{a.full_name}, it was given through options", out.shift
+    assert_equal "Restored #{b.full_name}", out.shift
+    assert_equal "Skipped #{c.full_name}, it was given through options", out.shift
     assert_empty out, out.inspect
   end
 
@@ -408,6 +442,39 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     refute File.exist? gem_lib
   end
 
+  def test_execute_bindir
+    a = util_spec 'a' do |s|
+      s.name = "test_gem"
+      s.executables = %w[foo]
+      s.files = %w[bin/foo]
+    end
+
+    write_file File.join(@tempdir, 'bin', 'foo') do |fp|
+      fp.puts "#!/usr/bin/ruby"
+    end
+
+    write_file File.join(@tempdir, 'test_bin', 'foo') do |fp|
+      fp.puts "#!/usr/bin/ruby"
+    end
+
+    install_gem a
+
+    gem_exec = File.join @gemhome, 'bin', 'foo'
+    gem_bindir = File.join @tempdir, 'test_bin', 'foo'
+
+    FileUtils.rm gem_exec
+    FileUtils.rm gem_bindir
+
+    @cmd.handle_options ["--all", "--only-executables", "--bindir", "#{gem_bindir}"]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    refute File.exist? gem_exec
+    assert File.exist? gem_bindir
+  end
+
   def test_execute_unknown_gem_at_remote_source
     install_specs util_spec 'a'
 
@@ -437,36 +504,57 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_equal([
-                   "Restoring gems to pristine condition...",
-                   "Skipped default-2.0.0.0, it is a default gem",
-                 ],
-                 @ui.output.split("\n"))
+    assert_equal(
+      [
+        "Restoring gems to pristine condition...",
+        "Skipped default-2.0.0.0, it is a default gem",
+      ],
+      @ui.output.split("\n")
+    )
     assert_empty(@ui.error)
   end
 
-  def test_execute_bundled_gem_on_old_rubies
-    util_set_RUBY_VERSION '1.9.3', 551
-
-    spec = util_spec 'bigdecimal', '1.1.0' do |s|
-      s.summary = "This bigdecimal is bundled with Ruby"
-    end
-    install_specs spec
-
-    @cmd.options[:args] = %w[bigdecimal]
-
-    use_ui @ui do
-      @cmd.execute
+  def test_execute_multi_platform
+    a = util_spec 'a' do |s|
+      s.extensions << 'ext/a/extconf.rb'
     end
 
-    assert_equal([
-      "Restoring gems to pristine condition...",
-      "Skipped bigdecimal-1.1.0, it is bundled with old Ruby"
-    ], @ui.output.split("\n"))
+    b = util_spec 'b' do |s|
+      s.extensions << 'ext/a/extconf.rb'
+      s.platform = Gem::Platform.new("java")
+    end
 
-    assert_empty @ui.error
-  ensure
-    util_restore_RUBY_VERSION
+    ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
+    write_file ext_path do |io|
+      io.write <<-'RUBY'
+      File.open "Makefile", "w" do |f|
+        f.puts "clean:\n\techo cleaned\n"
+        f.puts "all:\n\techo built\n"
+        f.puts "install:\n\techo installed\n"
+      end
+      RUBY
+    end
+
+    install_gem a
+    install_gem b
+
+    @cmd.options[:extensions]     = true
+    @cmd.options[:extensions_set] = true
+    @cmd.options[:args] = []
+
+    util_set_arch "x86_64-darwin" do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal 'Restoring gems to pristine condition...', out.shift
+    assert_equal 'Building native extensions. This could take a while...',
+                 out.shift
+    assert_equal "Restored #{a.full_name}", out.shift
+    assert_empty out, out.inspect
   end
 
   def test_handle_options
@@ -488,4 +576,3 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
 end
-

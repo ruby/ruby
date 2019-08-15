@@ -16,31 +16,53 @@
 # * /dev/urandom
 # * Win32
 #
+# SecureRandom is extended by the Random::Formatter module which
+# defines the following methods:
+#
+# * alphanumeric
+# * base64
+# * choose
+# * gen_random
+# * hex
+# * rand
+# * random_bytes
+# * random_number
+# * urlsafe_base64
+# * uuid
+#
+# These methods are usable as class methods of SecureRandom such as
+# `SecureRandom.hex`.
+#
 # === Examples
 #
 # Generate random hexadecimal strings:
 #
 #   require 'securerandom'
 #
-#   p SecureRandom.hex(10) #=> "52750b30ffbc7de3b362"
-#   p SecureRandom.hex(10) #=> "92b15d6c8dc4beb5f559"
-#   p SecureRandom.hex(13) #=> "39b290146bea6ce975c37cfc23"
+#   SecureRandom.hex(10) #=> "52750b30ffbc7de3b362"
+#   SecureRandom.hex(10) #=> "92b15d6c8dc4beb5f559"
+#   SecureRandom.hex(13) #=> "39b290146bea6ce975c37cfc23"
 #
 # Generate random base64 strings:
 #
-#   p SecureRandom.base64(10) #=> "EcmTPZwWRAozdA=="
-#   p SecureRandom.base64(10) #=> "KO1nIU+p9DKxGg=="
-#   p SecureRandom.base64(12) #=> "7kJSM/MzBJI+75j8"
+#   SecureRandom.base64(10) #=> "EcmTPZwWRAozdA=="
+#   SecureRandom.base64(10) #=> "KO1nIU+p9DKxGg=="
+#   SecureRandom.base64(12) #=> "7kJSM/MzBJI+75j8"
 #
 # Generate random binary strings:
 #
-#   p SecureRandom.random_bytes(10) #=> "\016\t{\370g\310pbr\301"
-#   p SecureRandom.random_bytes(10) #=> "\323U\030TO\234\357\020\a\337"
+#   SecureRandom.random_bytes(10) #=> "\016\t{\370g\310pbr\301"
+#   SecureRandom.random_bytes(10) #=> "\323U\030TO\234\357\020\a\337"
+#
+# Generate alphanumeric strings:
+#
+#   SecureRandom.alphanumeric(10) #=> "S8baxMJnPl"
+#   SecureRandom.alphanumeric(10) #=> "aOxAg8BAJe"
 #
 # Generate UUIDs:
 #
-#   p SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
-#   p SecureRandom.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
+#   SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
+#   SecureRandom.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
 #
 
 module SecureRandom
@@ -63,6 +85,7 @@ module SecureRandom
             class << self
               remove_method :gen_random
               alias gen_random gen_random_openssl
+              public :gen_random
             end
           end
           return gen_random(n)
@@ -72,6 +95,7 @@ module SecureRandom
           class << self
             remove_method :gen_random
             alias gen_random gen_random_urandom
+            public :gen_random
           end
         end
         return gen_random(n)
@@ -119,8 +143,10 @@ module Random::Formatter
   #
   # The result may contain any byte: "\x00" - "\xff".
   #
-  #   p SecureRandom.random_bytes #=> "\xD8\\\xE0\xF4\r\xB2\xFC*WM\xFF\x83\x18\xF45\xB6"
-  #   p SecureRandom.random_bytes #=> "m\xDC\xFC/\a\x00Uf\xB2\xB2P\xBD\xFF6S\x97"
+  #   require 'securerandom'
+  #
+  #   SecureRandom.random_bytes #=> "\xD8\\\xE0\xF4\r\xB2\xFC*WM\xFF\x83\x18\xF45\xB6"
+  #   SecureRandom.random_bytes #=> "m\xDC\xFC/\a\x00Uf\xB2\xB2P\xBD\xFF6S\x97"
   #
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.
@@ -139,8 +165,10 @@ module Random::Formatter
   #
   # The result may contain 0-9 and a-f.
   #
-  #   p SecureRandom.hex #=> "eb693ec8252cd630102fd0d0fb7c3485"
-  #   p SecureRandom.hex #=> "91dc3bfb4de5b11d029d376634589b61"
+  #   require 'securerandom'
+  #
+  #   SecureRandom.hex #=> "eb693ec8252cd630102fd0d0fb7c3485"
+  #   SecureRandom.hex #=> "91dc3bfb4de5b11d029d376634589b61"
   #
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.
@@ -158,8 +186,10 @@ module Random::Formatter
   #
   # The result may contain A-Z, a-z, 0-9, "+", "/" and "=".
   #
-  #   p SecureRandom.base64 #=> "/2BuBuLf3+WfSKyQbRcc/A=="
-  #   p SecureRandom.base64 #=> "6BbW0pxO0YENxn38HMUbcQ=="
+  #   require 'securerandom'
+  #
+  #   SecureRandom.base64 #=> "/2BuBuLf3+WfSKyQbRcc/A=="
+  #   SecureRandom.base64 #=> "6BbW0pxO0YENxn38HMUbcQ=="
   #
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.
@@ -185,11 +215,13 @@ module Random::Formatter
   # The result may contain A-Z, a-z, 0-9, "-" and "_".
   # "=" is also used if _padding_ is true.
   #
-  #   p SecureRandom.urlsafe_base64 #=> "b4GOKm4pOYU_-BOXcrUGDg"
-  #   p SecureRandom.urlsafe_base64 #=> "UZLdOkzop70Ddx-IJR0ABg"
+  #   require 'securerandom'
   #
-  #   p SecureRandom.urlsafe_base64(nil, true) #=> "i0XQ-7gglIsHGV2_BNPrdQ=="
-  #   p SecureRandom.urlsafe_base64(nil, true) #=> "-M8rLhr7JEpJlqFGUMmOxg=="
+  #   SecureRandom.urlsafe_base64 #=> "b4GOKm4pOYU_-BOXcrUGDg"
+  #   SecureRandom.urlsafe_base64 #=> "UZLdOkzop70Ddx-IJR0ABg"
+  #
+  #   SecureRandom.urlsafe_base64(nil, true) #=> "i0XQ-7gglIsHGV2_BNPrdQ=="
+  #   SecureRandom.urlsafe_base64(nil, true) #=> "-M8rLhr7JEpJlqFGUMmOxg=="
   #
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.
@@ -204,9 +236,11 @@ module Random::Formatter
 
   # SecureRandom.uuid generates a random v4 UUID (Universally Unique IDentifier).
   #
-  #   p SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
-  #   p SecureRandom.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
-  #   p SecureRandom.uuid #=> "62936e70-1815-439b-bf89-8492855a7e6b"
+  #   require 'securerandom'
+  #
+  #   SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
+  #   SecureRandom.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
+  #   SecureRandom.uuid #=> "62936e70-1815-439b-bf89-8492855a7e6b"
   #
   # The version 4 UUID is purely random (except the version).
   # It doesn't contain meaningful information such as MAC addresses, timestamps, etc.
@@ -236,8 +270,10 @@ module Random::Formatter
   #
   # The result may contain whatever characters are in the source array.
   #
-  #   p SecureRandom.choose([*'l'..'r'], 16) #=> "lmrqpoonmmlqlron"
-  #   p SecureRandom.choose([*'0'..'9'], 5) #=> "27309"
+  #   require 'securerandom'
+  #
+  #   SecureRandom.choose([*'l'..'r'], 16) #=> "lmrqpoonmmlqlron"
+  #   SecureRandom.choose([*'0'..'9'], 5)  #=> "27309"
   #
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.
@@ -281,8 +317,10 @@ module Random::Formatter
   #
   # The result may contain A-Z, a-z and 0-9.
   #
-  #   p SecureRandom.alphanumeric #=> "2BuBuLf3WfSKyQbR"
-  #   p SecureRandom.alphanumeric(10) #=> "i6K93NdqiH"
+  #   require 'securerandom'
+  #
+  #   SecureRandom.alphanumeric     #=> "2BuBuLf3WfSKyQbR"
+  #   SecureRandom.alphanumeric(10) #=> "i6K93NdqiH"
   #
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.

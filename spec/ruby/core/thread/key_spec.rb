@@ -17,8 +17,8 @@ describe "Thread#key?" do
   end
 
   it "raises exceptions on the wrong type of keys" do
-    lambda { Thread.current.key? nil }.should raise_error(TypeError)
-    lambda { Thread.current.key? 5 }.should raise_error(TypeError)
+    -> { Thread.current.key? nil }.should raise_error(TypeError)
+    -> { Thread.current.key? 5 }.should raise_error(TypeError)
   end
 
   it "is not shared across fibers" do

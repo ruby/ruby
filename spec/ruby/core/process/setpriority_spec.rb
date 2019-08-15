@@ -29,13 +29,32 @@ describe "Process.setpriority" do
     end
 
     as_superuser do
-      it "sets the scheduling priority for a specified user" do
-        p = Process.getpriority(Process::PRIO_USER, 0)
-        Process.setpriority(Process::PRIO_USER, 0, p + 1).should == 0
-        Process.getpriority(Process::PRIO_USER, 0).should == (p + 1)
-        Process.setpriority(Process::PRIO_USER, 0, p).should == 0
+      guard -> {
+        prio = Process.getpriority(Process::PRIO_USER, 0)
+        # The nice value is a value in the range -20 to 19.
+        # This test tries to change the nice value to +-1, so it cannot run if prio == -20 || prio == 19.
+        if -20 < prio && prio < 19
+          begin
+            # Check if we can lower the nice value or not.
+            #
+            # We are not always able to do it even as a root.
+            # Docker container is not always able to do it depending upon the configuration,
+            # which cannot know from the container itself.
+            Process.setpriority(Process::PRIO_USER, 0, prio - 1)
+            Process.setpriority(Process::PRIO_USER, 0, prio)
+            true
+          rescue Errno::EACCES
+            false
+          end
+        end
+      } do
+        it "sets the scheduling priority for a specified user" do
+          prio = Process.getpriority(Process::PRIO_USER, 0)
+          Process.setpriority(Process::PRIO_USER, 0, prio + 1).should == 0
+          Process.getpriority(Process::PRIO_USER, 0).should == (prio + 1)
+          Process.setpriority(Process::PRIO_USER, 0, prio).should == 0
+        end
       end
     end
   end
-
 end

@@ -50,15 +50,9 @@ install:
 
     results = results.join "\n"
 
-    if RUBY_VERSION > '2.0' then
-      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" clean$%,   results
-      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}"$%,         results
-      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
-    else
-      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}" clean$%,   results
-      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}"$%,         results
-      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
-    end
+    assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" clean$%,   results
+    assert_match %r%"DESTDIR=#{ENV['DESTDIR']}"$%,         results
+    assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
 
     if /nmake/ !~ results
       assert_match %r%^clean: destination$%,   results
@@ -87,15 +81,9 @@ install:
 
     results = results.join "\n"
 
-    if RUBY_VERSION > '2.0' then
-      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" clean$%,   results
-      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}"$%,         results
-      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
-    else
-      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}" clean$%,   results
-      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}"$%,         results
-      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
-    end
+    assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" clean$%,   results
+    assert_match %r%"DESTDIR=#{ENV['DESTDIR']}"$%,         results
+    assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
   end
 
   def test_build_extensions
@@ -134,11 +122,6 @@ install:
   end
 
   def test_build_extensions_with_gemhome_with_space
-    # Details: https://github.com/rubygems/rubygems/issues/977#issuecomment-171544940
-    if win_platform? && RUBY_VERSION <= '2.0'
-      skip 'gemhome with spaces does not work with Ruby 1.9.x on Windows'
-    end
-
     new_gemhome = File.join @tempdir, 'gem home'
     File.rename(@gemhome, new_gemhome)
     @gemhome = new_gemhome
@@ -151,6 +134,7 @@ install:
 
   def test_build_extensions_install_ext_only
     class << Gem
+
       alias orig_install_extension_in_lib install_extension_in_lib
 
       remove_method :install_extension_in_lib
@@ -158,6 +142,7 @@ install:
       def Gem.install_extension_in_lib
         false
       end
+
     end
 
     @spec.extensions << 'ext/extconf.rb'
@@ -194,9 +179,11 @@ install:
     refute_path_exists File.join @spec.gem_dir, 'lib', 'a', 'b.rb'
   ensure
     class << Gem
+
       remove_method :install_extension_in_lib
 
       alias install_extension_in_lib orig_install_extension_in_lib
+
     end
   end
 
@@ -227,6 +214,8 @@ install:
   end
 
   def test_build_extensions_extconf_bad
+    cwd = Dir.pwd
+
     @spec.extensions << 'extconf.rb'
 
     FileUtils.mkdir_p @spec.gem_dir
@@ -257,6 +246,8 @@ install:
 
     assert_match %r%#{Regexp.escape Gem.ruby}: No such file%,
                  File.read(gem_make_out)
+
+    assert_equal cwd, Dir.pwd
   end
 
   def test_build_extensions_unsupported
@@ -338,4 +329,4 @@ install:
     assert_equal %w[--with-foo-dir=/nonexistent], builder.build_args
   end
 
-end
+end unless Gem.java_platform?

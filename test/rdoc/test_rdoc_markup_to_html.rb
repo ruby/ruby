@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
@@ -395,7 +395,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
     @to.accept_paragraph para("hello\n", "world\n")
 
-    assert_equal "\n<p>hello world</p>\n", @to.res.join
+    assert_equal "\n<p>hello world </p>\n", @to.res.join
   end
 
   def test_accept_heading_output_decoration
@@ -727,18 +727,18 @@ EXPECTED
     assert_equal '<img src="https://example.com/image.png" />', @to.gen_url('https://example.com/image.png', 'ignored')
   end
 
-  def test_handle_special_HYPERLINK_link
-    special = RDoc::Markup::Special.new 0, 'link:README.txt'
+  def test_handle_regexp_HYPERLINK_link
+    target = RDoc::Markup::RegexpHandling.new 0, 'link:README.txt'
 
-    link = @to.handle_special_HYPERLINK special
+    link = @to.handle_regexp_HYPERLINK target
 
     assert_equal '<a href="README.txt">README.txt</a>', link
   end
 
-  def test_handle_special_HYPERLINK_irc
-    special = RDoc::Markup::Special.new 0, 'irc://irc.freenode.net/#ruby-lang'
+  def test_handle_regexp_HYPERLINK_irc
+    target = RDoc::Markup::RegexpHandling.new 0, 'irc://irc.freenode.net/#ruby-lang'
 
-    link = @to.handle_special_HYPERLINK special
+    link = @to.handle_regexp_HYPERLINK target
 
     assert_equal '<a href="irc://irc.freenode.net/#ruby-lang">irc.freenode.net/#ruby-lang</a>', link
   end

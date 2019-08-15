@@ -1,7 +1,7 @@
 # frozen_string_literal: false
-require "rexml/parseexception"
-require "rexml/formatters/pretty"
-require "rexml/formatters/default"
+require_relative "parseexception"
+require_relative "formatters/pretty"
+require_relative "formatters/default"
 
 module REXML
   # Represents a node in the tree.  Nodes are never encountered except as

@@ -14,14 +14,14 @@ describe "The __ENCODING__ pseudo-variable" do
 
   it "is the evaluated strings's one inside an eval" do
     eval("__ENCODING__".force_encoding("US-ASCII")).should == Encoding::US_ASCII
-    eval("__ENCODING__".force_encoding("ASCII-8BIT")).should == Encoding::ASCII_8BIT
+    eval("__ENCODING__".force_encoding("BINARY")).should == Encoding::BINARY
   end
 
   it "is the encoding specified by a magic comment inside an eval" do
-    code = "# encoding: ASCII-8BIT\n__ENCODING__".force_encoding("US-ASCII")
-    eval(code).should == Encoding::ASCII_8BIT
+    code = "# encoding: BINARY\n__ENCODING__".force_encoding("US-ASCII")
+    eval(code).should == Encoding::BINARY
 
-    code = "# encoding: us-ascii\n__ENCODING__".force_encoding("ASCII-8BIT")
+    code = "# encoding: us-ascii\n__ENCODING__".force_encoding("BINARY")
     eval(code).should == Encoding::US_ASCII
   end
 
@@ -31,6 +31,6 @@ describe "The __ENCODING__ pseudo-variable" do
   end
 
   it "raises a SyntaxError if assigned to" do
-    lambda { eval("__ENCODING__ = 1") }.should raise_error(SyntaxError)
+    -> { eval("__ENCODING__ = 1") }.should raise_error(SyntaxError)
   end
 end

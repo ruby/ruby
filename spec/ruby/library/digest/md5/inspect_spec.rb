@@ -9,4 +9,3 @@ describe "Digest::MD5#inspect" do
   end
 
 end
-

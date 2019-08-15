@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocTomDoc < RDoc::TestCase
 
@@ -301,6 +301,44 @@ Returns another thing
     assert_equal expected, @TD.parse(text)
   end
 
+  def test_parse_returns_with_raises
+    text = <<-TEXT
+Do some stuff
+
+Returns a thing
+Raises ArgumentError when stuff
+Raises StandardError when stuff
+    TEXT
+    expected =
+      doc(
+        para('Do some stuff'),
+        blank_line,
+        head(3, 'Returns'),
+        blank_line,
+        para('Returns a thing'),
+        para('Raises ArgumentError when stuff'),
+        para('Raises StandardError when stuff'))
+
+    assert_equal expected, @TD.parse(text)
+  end
+
+  def test_parse_raises_without_returns
+    text = <<-TEXT
+Do some stuff
+
+Raises ArgumentError when stuff
+    TEXT
+    expected =
+      doc(
+        para('Do some stuff'),
+        blank_line,
+        head(3, 'Returns'),
+        blank_line,
+        para('Raises ArgumentError when stuff'))
+
+    assert_equal expected, @TD.parse(text)
+  end
+
   def test_parse_returns_multiline
     text = <<-TEXT
 Do some stuff
@@ -316,6 +354,27 @@ Returns a thing
         head(3, 'Returns'),
         blank_line,
         para('Returns a thing', ' ', 'that is multiline'))
+
+    assert_equal expected, @TD.parse(text)
+  end
+
+  def test_parse_returns_multiline_and_raises
+    text = <<-TEXT
+Do some stuff
+
+Returns a thing
+  that is multiline
+Raises ArgumentError
+    TEXT
+
+    expected =
+      doc(
+        para('Do some stuff'),
+        blank_line,
+        head(3, 'Returns'),
+        blank_line,
+        para('Returns a thing', ' ', 'that is multiline'),
+        para('Raises ArgumentError'))
 
     assert_equal expected, @TD.parse(text)
   end
@@ -518,4 +577,3 @@ Returns a thing
   end
 
 end
-

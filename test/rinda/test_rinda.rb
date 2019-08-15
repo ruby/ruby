@@ -17,14 +17,34 @@ class MockClock
     def keeper_thread
       nil
     end
+
+    def stop_keeper
+      if @keeper
+        @keeper.kill
+        @keeper.join
+        @keeper = nil
+      end
+    end
   end
 
   def initialize
     @now = 2
     @reso = 1
+    @ts = nil
+    @inf = 2**31 - 1
+  end
+
+  def start_keeper
+    @now = 2
+    @reso = 1
+    @ts&.stop_keeper
     @ts = MyTS.new
     @ts.write([2, :now])
     @inf = 2**31 - 1
+  end
+
+  def stop_keeper
+    @ts.stop_keeper
   end
 
   def now
@@ -100,6 +120,14 @@ class TupleSpace
 end
 
 module TupleSpaceTestModule
+  def setup
+    MockClock.instance.start_keeper
+  end
+
+  def teardown
+    MockClock.instance.stop_keeper
+  end
+
   def sleep(n)
     if Thread.current == Thread.main
       Time.forward(n)
@@ -446,6 +474,7 @@ class TupleSpaceTest < Test::Unit::TestCase
   include TupleSpaceTestModule
 
   def setup
+    super
     ThreadGroup.new.add(Thread.current)
     @ts = Rinda::TupleSpace.new(1)
   end
@@ -457,6 +486,7 @@ class TupleSpaceTest < Test::Unit::TestCase
         th.join
       end
     }
+    super
   end
 end
 
@@ -464,6 +494,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   include TupleSpaceTestModule
 
   def setup
+    super
     ThreadGroup.new.add(Thread.current)
     @ts_base = Rinda::TupleSpace.new(1)
     @ts = Rinda::TupleSpaceProxy.new(@ts_base)
@@ -478,6 +509,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
       end
     }
     @server.stop_service
+    super
   end
 
   def test_remote_array_and_hash
@@ -493,6 +525,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
 
   def test_take_bug_8215
+    skip "this test randomly fails on mswin" if /mswin/ =~ RUBY_PLATFORM
     service = DRb.start_service("druby://localhost:0", @ts_base)
 
     uri = service.uri
@@ -569,6 +602,8 @@ module RingIPv6
       return # IPv6 address for multicast not available
     rescue Errno::ENETDOWN
       return # Network is down
+    rescue Errno::EHOSTUNREACH
+      return # Unreachable for some reason
     end
     begin
       yield v6mc
@@ -585,8 +620,10 @@ class TestRingServer < Test::Unit::TestCase
 
     @ts = Rinda::TupleSpace.new
     @rs = Rinda::RingServer.new(@ts, [], @port)
+    @server = DRb.start_service("druby://localhost:0")
   end
   def teardown
+    @rs.shutdown
     # implementation-dependent
     @ts.instance_eval{
       if th = @keeper
@@ -594,7 +631,7 @@ class TestRingServer < Test::Unit::TestCase
         th.join
       end
     }
-    @rs.shutdown
+    @server.stop_service
   end
 
   def test_do_reply
@@ -620,6 +657,7 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_do_reply_local
+    skip 'timeout-based test becomes unstable with --jit-wait' if RubyVM::MJIT.enabled?
     with_timeout(10) {_test_do_reply_local}
   end
 
@@ -761,7 +799,10 @@ class TestRingServer < Test::Unit::TestCase
       mth.raise(Timeout::Error)
     end
     tl0 << th
+    yield
   rescue Timeout::Error => e
+    $stderr.puts "TestRingServer#with_timeout: timeout in #{n}s:"
+    $stderr.puts caller
     if tl
       bt = e.backtrace
       tl.each do |t|

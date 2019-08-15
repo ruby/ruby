@@ -1,7 +1,13 @@
 # -*- Autoconf -*-
 AC_DEFUN([_COLORIZE_RESULT_PREPARE], [
     msg_checking= msg_result_yes= msg_result_no= msg_result_other= msg_reset=
-    AS_IF([test "x${CONFIGURE_TTY}" = xyes -o -t 1], [
+    AS_CASE(["x${CONFIGURE_TTY}"],
+      [xyes|xalways],[configure_tty=1],
+      [xno|xnever],  [configure_tty=0],
+                     [AS_IF([test -t 1],
+                       [configure_tty=1],
+                       [configure_tty=0])])
+    AS_IF([test $configure_tty -eq 1], [
 	msg_begin="`tput smso 2>/dev/null`"
 	AS_CASE(["$msg_begin"], ['@<:@'*m],
 	    [msg_begin="`echo "$msg_begin" | sed ['s/[0-9]*m$//']`"
@@ -21,7 +27,7 @@ AC_DEFUN([_COLORIZE_RESULT_PREPARE], [
     AS_REQUIRE_SHELL_FN([colorize_result],
 	[AS_FUNCTION_DESCRIBE([colorize_result], [MSG], [Colorize result])],
         [AS_CASE(["$[]1"],
-            [yes], [AS_ECHO(["${msg_result_yes}$[]1${msg_reset}]")],
-            [no], [AS_ECHO(["${msg_result_no}$[]1${msg_reset}]")],
-            [AS_ECHO(["${msg_result_other}$[]1${msg_reset}]")])])
+            [yes], [_AS_ECHO([${msg_result_yes}$[]1${msg_reset}])],
+            [no], [_AS_ECHO([${msg_result_no}$[]1${msg_reset}])],
+            [_AS_ECHO([${msg_result_other}$[]1${msg_reset}])])])
 ])dnl

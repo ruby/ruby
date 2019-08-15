@@ -184,8 +184,10 @@ ossl_sslctx_set_minmax_proto_version(VALUE self, VALUE min_v, VALUE max_v)
 
 	for (i = 0; i < numberof(options_map); i++) {
 	    sum |= options_map[i].opts;
-	    if (min && min > options_map[i].ver || max && max < options_map[i].ver)
+            if ((min && min > options_map[i].ver) ||
+                (max && max < options_map[i].ver)) {
 		opts |= options_map[i].opts;
+            }
 	}
 	SSL_CTX_clear_options(ctx, sum);
 	SSL_CTX_set_options(ctx, opts);
@@ -1869,6 +1871,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 			rb_eof_error();
 		    }
 		}
+                /* fall through */
 	    default:
 		ossl_raise(eSSLError, "SSL_read");
 	    }

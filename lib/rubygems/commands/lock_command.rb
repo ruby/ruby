@@ -59,7 +59,7 @@ lock it down to the exact version.
   end
 
   def complain(message)
-    if options[:strict] then
+    if options[:strict]
       raise Gem::Exception, message
     else
       say "# #{message}"
@@ -78,7 +78,7 @@ lock it down to the exact version.
 
       spec = Gem::Specification.load spec_path(full_name)
 
-      if spec.nil? then
+      if spec.nil?
         complain "Could not find gem #{full_name}, try using the full name"
         next
       end
@@ -90,7 +90,7 @@ lock it down to the exact version.
         next if locked[dep.name]
         candidates = dep.matching_specs
 
-        if candidates.empty? then
+        if candidates.empty?
           complain "Unable to satisfy '#{dep}' from currently installed gems"
         else
           pending << candidates.last.full_name
@@ -100,12 +100,11 @@ lock it down to the exact version.
   end
 
   def spec_path(gem_full_name)
-    gemspecs = Gem.path.map { |path|
+    gemspecs = Gem.path.map do |path|
       File.join path, "specifications", "#{gem_full_name}.gemspec"
-    }
+    end
 
     gemspecs.find { |path| File.exist? path }
   end
 
 end
-

@@ -11,7 +11,7 @@ describe "Float#*" do
   end
 
   it "raises a TypeError when given a non-Numeric" do
-    lambda { 13.0 * "10"    }.should raise_error(TypeError)
-    lambda { 13.0 * :symbol }.should raise_error(TypeError)
+    -> { 13.0 * "10"    }.should raise_error(TypeError)
+    -> { 13.0 * :symbol }.should raise_error(TypeError)
   end
 end

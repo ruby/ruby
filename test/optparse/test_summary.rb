@@ -48,6 +48,8 @@ class TestOptionParser::SummaryTest < TestOptionParser
   def test_ver
     o = OptionParser.new("foo bar")
     o.program_name = "foo"
+    assert_warning('') {assert_nil(o.version)}
+    assert_warning('') {assert_nil(o.release)}
     o.version = [0, 1]
     assert_equal "foo 0.1", o.ver
     o.release = "rel"

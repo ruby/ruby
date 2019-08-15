@@ -35,4 +35,3 @@ describe "Digest::MD5#==" do
   end
 
 end
-

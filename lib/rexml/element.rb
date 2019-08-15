@@ -1,10 +1,10 @@
 # frozen_string_literal: false
-require "rexml/parent"
-require "rexml/namespace"
-require "rexml/attribute"
-require "rexml/cdata"
-require "rexml/xpath"
-require "rexml/parseexception"
+require_relative "parent"
+require_relative "namespace"
+require_relative "attribute"
+require_relative "cdata"
+require_relative "xpath"
+require_relative "parseexception"
 
 module REXML
   # An implementation note about namespaces:
@@ -713,7 +713,7 @@ module REXML
       Kernel.warn("#{self.class.name}.write is deprecated.  See REXML::Formatters", uplevel: 1)
       formatter = if indent > -1
           if transitive
-            require "rexml/formatters/transitive"
+            require_relative "formatters/transitive"
             REXML::Formatters::Transitive.new( indent, ie_hack )
           else
             REXML::Formatters::Pretty.new( indent, ie_hack )
@@ -1033,6 +1033,7 @@ module REXML
     #    p attr.expanded_name+" => "+attr.value
     #  }
     def each_attribute # :yields: attribute
+      return to_enum(__method__) unless block_given?
       each_value do |val|
         if val.kind_of? Attribute
           yield val
@@ -1048,6 +1049,7 @@ module REXML
     #  doc = Document.new '<a x="1" y="2"/>'
     #  doc.root.attributes.each {|name, value| p name+" => "+value }
     def each
+      return to_enum(__method__) unless block_given?
       each_attribute do |attr|
         yield [attr.expanded_name, attr.value]
       end
@@ -1130,16 +1132,18 @@ module REXML
         old_attr[value.prefix] = value
       elsif old_attr.prefix != value.prefix
         # Check for conflicting namespaces
-        raise ParseException.new(
-          "Namespace conflict in adding attribute \"#{value.name}\": "+
-          "Prefix \"#{old_attr.prefix}\" = "+
-          "\"#{@element.namespace(old_attr.prefix)}\" and prefix "+
-          "\"#{value.prefix}\" = \"#{@element.namespace(value.prefix)}\"") if
-          value.prefix != "xmlns" and old_attr.prefix != "xmlns" and
-          @element.namespace( old_attr.prefix ) ==
-            @element.namespace( value.prefix )
-          store value.name, { old_attr.prefix   => old_attr,
-            value.prefix                => value }
+        if value.prefix != "xmlns" and old_attr.prefix != "xmlns"
+          old_namespace = old_attr.namespace
+          new_namespace = value.namespace
+          if old_namespace == new_namespace
+            raise ParseException.new(
+                    "Namespace conflict in adding attribute \"#{value.name}\": "+
+                    "Prefix \"#{old_attr.prefix}\" = \"#{old_namespace}\" and "+
+                    "prefix \"#{value.prefix}\" = \"#{new_namespace}\"")
+          end
+        end
+        store value.name, {old_attr.prefix => old_attr,
+                           value.prefix    => value}
       else
         store value.name, value
       end

@@ -665,9 +665,13 @@ class ERB
         return [false, '>']
       when 2
         return [false, '<>']
-      when 0
+      when 0, nil
         return [false, nil]
       when String
+        unless mode.match?(/\A(%|-|>|<>){1,2}\z/)
+          warn_invalid_trim_mode(mode, uplevel: 5)
+        end
+
         perc = mode.include?('%')
         if mode.include?('-')
           return [perc, '-']
@@ -679,6 +683,7 @@ class ERB
           [perc, nil]
         end
       else
+        warn_invalid_trim_mode(mode, uplevel: 5)
         return [false, nil]
       end
     end
@@ -729,6 +734,10 @@ class ERB
         end
       end
       return enc, frozen
+    end
+
+    def warn_invalid_trim_mode(mode, uplevel:)
+      warn "Invalid ERB trim mode: #{mode.inspect} (trim_mode: nil, 0, 1, 2, or String composed of '%' and/or '-', '>', '<>')", uplevel: uplevel + 1
     end
   end
 end
@@ -803,9 +812,9 @@ class ERB
   #  A well messages pattie, breaded and fried.
   #
   def initialize(str, safe_level=NOT_GIVEN, legacy_trim_mode=NOT_GIVEN, legacy_eoutvar=NOT_GIVEN, trim_mode: nil, eoutvar: '_erbout')
-    # Complex initializer for $SAFE deprecation at Feature #14256, which should be removed at Ruby 2.7.
+    # Complex initializer for $SAFE deprecation at [Feature #14256]. Use keyword arguments to pass trim_mode or eoutvar.
     if safe_level != NOT_GIVEN
-      warn 'Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.', uplevel: 1 if $VERBOSE
+      warn 'Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.', uplevel: 1 if $VERBOSE || !ZERO_SAFE_LEVELS.include?(safe_level)
     else
       safe_level = nil
     end
@@ -824,9 +833,12 @@ class ERB
     @src, @encoding, @frozen_string = *compiler.compile(str)
     @filename = nil
     @lineno = 0
+    @_init = self.class.singleton_class
   end
   NOT_GIVEN = Object.new
   private_constant :NOT_GIVEN
+  ZERO_SAFE_LEVELS = [0, nil]
+  private_constant :ZERO_SAFE_LEVELS
 
   ##
   # Creates a new compiler for ERB.  See ERB::Compiler.new for details
@@ -880,6 +892,9 @@ class ERB
   # code evaluation.
   #
   def result(b=new_toplevel)
+    unless @_init.equal?(self.class.singleton_class)
+      raise ArgumentError, "not initialized"
+    end
     if @safe_level
       proc do
         prev_safe_level = $SAFE

@@ -35,8 +35,8 @@ class TestArgf < Test::Unit::TestCase
     open("#{@tmpdir}/#{basename}-#{@tmp_count}", "w")
   end
 
-  def make_tempfile
-    t = make_tempfile0("argf-qux")
+  def make_tempfile(basename = "argf-qux")
+    t = make_tempfile0(basename)
     t.puts "foo"
     t.puts "bar"
     t.puts "baz"
@@ -253,6 +253,26 @@ class TestArgf < Test::Unit::TestCase
     argf = ARGF.class.new(name)
     argf.inplace_mode = '/\\:'
     assert_warning(/#{base}/) {argf.gets}
+  end
+
+  def test_inplace_nonascii
+    ext = Encoding.default_external or
+      skip "no default external encoding"
+    t = nil
+    ["\u{3042}", "\u{e9}"].any? do |n|
+      t = make_tempfile(n.encode(ext))
+    rescue Encoding::UndefinedConversionError
+    end
+    t or skip "no name to test"
+    assert_in_out_err(["-i.bak", "-", t.path],
+                      "#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      puts ARGF.gets.chomp + '.new'
+      puts ARGF.gets.chomp + '.new'
+      puts ARGF.gets.chomp + '.new'
+    };
+    assert_equal("foo.new\n""bar.new\n""baz.new\n", File.read(t.path))
+    assert_equal("foo\n""bar\n""baz\n", File.read(t.path + ".bak"))
   end
 
   def test_inplace_no_backup

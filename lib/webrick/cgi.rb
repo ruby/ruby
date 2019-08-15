@@ -8,9 +8,9 @@
 #
 # $Id$
 
-require "webrick/httprequest"
-require "webrick/httpresponse"
-require "webrick/config"
+require_relative "httprequest"
+require_relative "httpresponse"
+require_relative "config"
 require "stringio"
 
 module WEBrick
@@ -263,6 +263,10 @@ module WEBrick
 
       def <<(data)
         @out_port << data
+      end
+
+      def write(data)
+        @out_port.write(data)
       end
 
       def cert

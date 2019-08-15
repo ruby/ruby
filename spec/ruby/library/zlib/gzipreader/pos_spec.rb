@@ -24,4 +24,3 @@ describe "GzipReader#pos" do
   end
 
 end
-

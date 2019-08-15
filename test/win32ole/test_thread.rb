@@ -6,7 +6,7 @@ end
 require 'test/unit'
 
 if defined?(WIN32OLE)
-  class TestThread < Test::Unit::TestCase
+  class TestWIN32OLE_THREAD < Test::Unit::TestCase
     #
     # test for Bug #2618(ruby-core:27634)
     #

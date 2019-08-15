@@ -3,7 +3,7 @@ require 'test/unit'
 require '-test-/exception'
 
 module Bug
-  class TestException < Test::Unit::TestCase
+  class Test_ExceptionER < Test::Unit::TestCase
     def test_enc_raise
       feature5650 = '[ruby-core:41160]'
       Encoding.list.each do |enc|

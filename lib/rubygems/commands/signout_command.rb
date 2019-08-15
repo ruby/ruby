@@ -19,9 +19,9 @@ class Gem::Commands::SignoutCommand < Gem::Command
   def execute
     credentials_path = Gem.configuration.credentials_path
 
-    if !File.exist?(credentials_path) then
+    if !File.exist?(credentials_path)
       alert_error 'You are not currently signed in.'
-    elsif !File.writable?(credentials_path) then
+    elsif !File.writable?(credentials_path)
       alert_error "File '#{Gem.configuration.credentials_path}' is read-only."\
                   ' Please make sure it is writable.'
     else

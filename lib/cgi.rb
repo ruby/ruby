@@ -253,7 +253,7 @@
 #           end
 #         end +
 #         cgi.pre do
-#           CGI::escapeHTML(
+#           CGI.escapeHTML(
 #             "params: #{cgi.params.inspect}\n" +
 #             "cookies: #{cgi.cookies.inspect}\n" +
 #             ENV.collect do |key, value|

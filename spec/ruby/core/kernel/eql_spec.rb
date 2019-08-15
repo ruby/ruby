@@ -8,4 +8,3 @@ describe "Kernel#eql?" do
 
   it_behaves_like :object_equal, :eql?
 end
-

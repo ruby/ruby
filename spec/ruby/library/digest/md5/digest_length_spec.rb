@@ -9,4 +9,3 @@ describe "Digest::MD5#digest_length" do
   end
 
 end
-

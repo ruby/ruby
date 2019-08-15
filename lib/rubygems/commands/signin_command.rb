@@ -3,6 +3,7 @@ require 'rubygems/command'
 require 'rubygems/gemcutter_utilities'
 
 class Gem::Commands::SigninCommand < Gem::Command
+
   include Gem::GemcutterUtilities
 
   def initialize
@@ -10,9 +11,10 @@ class Gem::Commands::SigninCommand < Gem::Command
           'It defaults to https://rubygems.org'
 
     add_option('--host HOST', 'Push to another gemcutter-compatible host') do |value, options|
-       options[:host] = value
+      options[:host] = value
     end
 
+    add_otp_option
   end
 
   def description # :nodoc:

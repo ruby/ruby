@@ -73,6 +73,12 @@ module Fiddle
     end
 
     def test_nogvl_poll
+      # XXX hack to quiet down CI errors on EINTR from r64353
+      # [ruby-core:88360] [Misc #14937]
+      # Making pipes (and sockets) non-blocking by default would allow
+      # us to get rid of POSIX timers / timer pthread
+      # https://bugs.ruby-lang.org/issues/14968
+      IO.pipe { |r,w| IO.select([r], [w]) }
       begin
         poll = @libc['poll']
       rescue Fiddle::DLError
@@ -86,15 +92,26 @@ module Fiddle
       n1 = f.call(nil, 0, msec)
       n2 = th.value
       t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC, :millisecond)
-      assert_in_delta(msec, t1 - t0, 100, 'slept correct amount of time')
-      assert_equal(0, n1, 'poll(2) called correctly main-thread')
-      assert_equal(0, n2, 'poll(2) called correctly in sub-thread')
+      assert_in_delta(msec, t1 - t0, 180, 'slept amount of time')
+      assert_equal(0, n1, perror("poll(2) in main-thread"))
+      assert_equal(0, n2, perror("poll(2) in sub-thread"))
     end
 
     def test_no_memory_leak
       prep = 'r = Fiddle::Function.new(Fiddle.dlopen(nil)["rb_obj_tainted"], [Fiddle::TYPE_UINTPTR_T], Fiddle::TYPE_UINTPTR_T); a = "a"'
       code = 'begin r.call(a); rescue TypeError; end'
       assert_no_memory_leak(%w[-W0 -rfiddle], "#{prep}\n1000.times{#{code}}", "10_000.times {#{code}}", limit: 1.2)
+    end
+
+    private
+
+    def perror(m)
+      proc do
+        if e = Fiddle.last_error
+          m = "#{m}: #{SystemCallError.new(e).message}"
+        end
+        m
+      end
     end
   end
 end if defined?(Fiddle)

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/installer'
-require 'rubygems/deprecate'
 
 class Gem::Installer
 
@@ -59,6 +58,7 @@ class Gem::Installer
   # Available through requiring rubygems/installer_test_case
 
   attr_writer :wrappers
+
 end
 
 ##
@@ -66,58 +66,11 @@ end
 
 class Gem::InstallerTestCase < Gem::TestCase
 
-  ##
-  # Creates the following instance variables:
-  #
-  # @spec::
-  #   a spec named 'a', intended for regular installs
-  # @user_spec::
-  #   a spec named 'b', intended for user installs
-  #
-  # @gem::
-  #   the path to a built gem from @spec
-  # @user_spec::
-  #   the path to a built gem from @user_spec
-  #
-  # @installer::
-  #   a Gem::Installer for the @spec that installs into @gemhome
-  # @user_installer::
-  #   a Gem::Installer for the @user_spec that installs into Gem.user_dir
-
   def setup
     super
 
-    @spec = quick_gem 'a' do |spec|
-      util_make_exec spec
-    end
-
-    @user_spec = quick_gem 'b' do |spec|
-      util_make_exec spec
-    end
-
-    util_build_gem @spec
-    util_build_gem @user_spec
-
-    @gem = @spec.cache_file
-    @user_gem = @user_spec.cache_file
-
-    @installer      = util_installer @spec, @gemhome
-    @user_installer = util_installer @user_spec, Gem.user_dir, :user
-
     Gem::Installer.path_warning = false
   end
-
-  def util_gem_bindir spec = @spec # :nodoc:
-    spec.bin_dir
-  end
-
-  def util_gem_dir spec = @spec # :nodoc:
-    spec.gem_dir
-  end
-
-  extend Gem::Deprecate
-  deprecate :util_gem_bindir, "@spec.bin_dir", 2016, 10
-  deprecate :util_gem_dir, "@spec.gem_dir", 2016, 10
 
   ##
   # The path where installed executables live
@@ -132,9 +85,9 @@ class Gem::InstallerTestCase < Gem::TestCase
   # The executable is also written to the bin dir in @tmpdir and the installed
   # gem directory for +spec+.
 
-  def util_make_exec(spec = @spec, shebang = "#!/usr/bin/ruby")
+  def util_make_exec(spec = @spec, shebang = "#!/usr/bin/ruby", bindir = "bin")
     spec.executables = %w[executable]
-    spec.files << 'bin/executable'
+    spec.bindir = bindir
 
     exec_path = spec.bin_file "executable"
     write_file exec_path do |io|
@@ -148,6 +101,83 @@ class Gem::InstallerTestCase < Gem::TestCase
   end
 
   ##
+  # Creates the following instance variables:
+  #
+  # @spec::
+  #   a spec named 'a', intended for regular installs
+  #
+  # @gem::
+  #   the path to a built gem from @spec
+  #
+  # And returns a Gem::Installer for the @spec that installs into @gemhome
+
+  def setup_base_installer
+    @gem = setup_base_gem
+    util_installer @spec, @gemhome
+  end
+
+  ##
+  # Creates the following instance variables:
+  #
+  # @spec::
+  #   a spec named 'a', intended for regular installs
+  #
+  # And returns a gem built for the @spec
+
+  def setup_base_gem
+    @spec = setup_base_spec
+    util_build_gem @spec
+    @spec.cache_file
+  end
+
+  ##
+  # Sets up a generic specification for testing the rubygems installer
+  #
+  # And returns it
+
+  def setup_base_spec
+    quick_gem 'a' do |spec|
+      util_make_exec spec
+    end
+  end
+
+  ##
+  # Creates the following instance variables:
+  #
+  # @spec::
+  #   a spec named 'a', intended for regular installs
+  # @user_spec::
+  #   a spec named 'b', intended for user installs
+  #
+  # @gem::
+  #   the path to a built gem from @spec
+  # @user_gem::
+  #   the path to a built gem from @user_spec
+  #
+  # And returns a Gem::Installer for the @user_spec that installs into Gem.user_dir
+
+  def setup_base_user_installer
+    @user_spec = quick_gem 'b' do |spec|
+      util_make_exec spec
+    end
+
+    util_build_gem @user_spec
+
+    @user_gem = @user_spec.cache_file
+
+    util_installer @user_spec, Gem.user_dir, :user
+  end
+
+  ##
+  # Sets up the base @gem, builds it and returns an installer for it.
+  #
+  def util_setup_installer
+    @gem = setup_base_gem
+
+    util_setup_gem
+  end
+
+  ##
   # Builds the @spec gem and returns an installer for it.  The built gem
   # includes:
   #
@@ -155,7 +185,7 @@ class Gem::InstallerTestCase < Gem::TestCase
   #   lib/code.rb
   #   ext/a/mkrf_conf.rb
 
-  def util_setup_gem(ui = @ui) # HACK fix use_ui to make this automatic
+  def util_setup_gem(ui = @ui)
     @spec.files << File.join('lib', 'code.rb')
     @spec.extensions << File.join('ext', 'a', 'mkrf_conf.rb')
 
@@ -163,10 +193,15 @@ class Gem::InstallerTestCase < Gem::TestCase
       FileUtils.mkdir_p 'bin'
       FileUtils.mkdir_p 'lib'
       FileUtils.mkdir_p File.join('ext', 'a')
+
       File.open File.join('bin', 'executable'), 'w' do |f|
         f.puts "raise 'ran executable'"
       end
-      File.open File.join('lib', 'code.rb'), 'w' do |f| f.puts '1' end
+
+      File.open File.join('lib', 'code.rb'), 'w' do |f|
+        f.puts '1'
+      end
+
       File.open File.join('ext', 'a', 'mkrf_conf.rb'), 'w' do |f|
         f << <<-EOF
           File.open 'Rakefile', 'w' do |rf| rf.puts "task :default" end
@@ -182,7 +217,7 @@ class Gem::InstallerTestCase < Gem::TestCase
       end
     end
 
-    @installer = Gem::Installer.at @gem
+    Gem::Installer.at @gem
   end
 
   ##
@@ -196,4 +231,3 @@ class Gem::InstallerTestCase < Gem::TestCase
   end
 
 end
-

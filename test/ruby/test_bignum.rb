@@ -10,7 +10,6 @@ class TestBignum < Test::Unit::TestCase
   FIXNUM_MAX = RbConfig::LIMITS['FIXNUM_MAX']
 
   BIGNUM_MIN = FIXNUM_MAX + 1
-  b = BIGNUM_MIN
 
   f = BIGNUM_MIN
   n = 0
@@ -612,17 +611,17 @@ class TestBignum < Test::Unit::TestCase
       return # GMP doesn't support interrupt during an operation.
     end
     time = Time.now
-    start_flag = false
     end_flag = false
     num = (65536 ** 65536)
+    q = Queue.new
     thread = Thread.new do
-      start_flag = true
       assert_raise(RuntimeError) {
+        q << true
         num.to_s
         end_flag = true
       }
     end
-    sleep 0.001 until start_flag
+    q.pop # sync
     thread.raise
     thread.join
     time = Time.now - time

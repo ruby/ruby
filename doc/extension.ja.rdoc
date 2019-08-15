@@ -301,6 +301,14 @@ rb_str_set_len(VALUE str, long len) ::
   lenバイトまでの内容は保存される．lenはstrの容量を越えてい
   てはならない．
 
+rb_str_modify(VALUE str) ::
+
+  Rubyの文字列の変更する準備をする．strが変更可能でなければ例
+  外が発生する．strのバッファが共有されている場合は，新しいバッ
+  ファを割り当てて共有されていない状態にする．RSTRING_PTRを使っ
+  て中身を変更したり，rb_str_set_lenを呼んだりする前には，
+  必ずこの関数を呼ばなけれならない．
+
 ==== 配列に対する関数
 
 rb_ary_new() ::
@@ -1325,8 +1333,13 @@ void rb_define_hooked_variable(const char *name, VALUE *var, VALUE (*getter)(), 
 
 void rb_global_variable(VALUE *var) ::
 
-  GCのため，Rubyプログラムからはアクセスされないが, Rubyオブ
-  ジェクトを含む大域変数をマークする．
+  マークする必要のあるRubyオブジェクトを含む大域変数を，GC
+  によって解放されないように保護する．
+
+void rb_gc_register_mark_object(VALUE object) ::
+
+  マークする必要のあるRubyオブジェクトを，GCによって解放さ
+  れないように登録する．
 
 === 定数
 

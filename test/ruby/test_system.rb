@@ -181,19 +181,22 @@ class TestSystem < Test::Unit::TestCase
     assert_raise_with_message(RuntimeError, /\ACommand failed with exit /) do
       system("'#{ruby}' -e abort", exception: true)
     end
+  end
 
+  def test_system_exception_nonascii
     Dir.mktmpdir("ruby_script_tmp") do |tmpdir|
       name = "\u{30c6 30b9 30c8}"
       tmpfilename = "#{tmpdir}/#{name}.cmd"
       message = /#{name}\.cmd/
-      e = assert_raise_with_message(Errno::ENOENT, message) do
+      assert_raise_with_message(Errno::ENOENT, message) do
         system(tmpfilename, exception: true)
       end
       open(tmpfilename, "w") {|f|
+        f.print "@" if /mingw|mswin/ =~ RUBY_PLATFORM
         f.puts "exit 127"
         f.chmod(0755)
       }
-      e = assert_raise_with_message(RuntimeError, message) do
+      assert_raise_with_message(RuntimeError, message) do
         system(tmpfilename, exception: true)
       end
     end

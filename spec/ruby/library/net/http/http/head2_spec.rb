@@ -6,4 +6,3 @@ require_relative 'shared/request_head'
 describe "Net::HTTP#head2" do
   it_behaves_like :net_ftp_request_head, :head2
 end
-

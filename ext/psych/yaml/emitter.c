@@ -24,7 +24,7 @@
  */
 
 #define PUT_BREAK(emitter)                                                      \
-    (FLUSH(emitter) ?                                                             \
+    (FLUSH(emitter) ?                                                            \
       ((emitter->line_break == YAML_CR_BREAK ?                                \
              (*(emitter->buffer.pointer++) = (yaml_char_t) '\r') :              \
           emitter->line_break == YAML_LN_BREAK ?                                \
@@ -1002,7 +1002,7 @@ yaml_emitter_emit_node(yaml_emitter_t *emitter, yaml_event_t *event,
  */
 
 static int
-yaml_emitter_emit_alias(yaml_emitter_t *emitter, yaml_event_t *event)
+yaml_emitter_emit_alias(yaml_emitter_t *emitter, SHIM(yaml_event_t *event))
 {
     if (!yaml_emitter_process_anchor(emitter))
         return 0;
@@ -1087,7 +1087,7 @@ yaml_emitter_emit_mapping_start(yaml_emitter_t *emitter, yaml_event_t *event)
  */
 
 static int
-yaml_emitter_check_empty_document(yaml_emitter_t *emitter)
+yaml_emitter_check_empty_document(SHIM(yaml_emitter_t *emitter))
 {
     return 0;
 }
@@ -1234,7 +1234,7 @@ yaml_emitter_select_scalar_style(yaml_emitter_t *emitter, yaml_event_t *event)
 }
 
 /*
- * Write an achor.
+ * Write an anchor.
  */
 
 static int
@@ -1946,10 +1946,6 @@ yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
 
     emitter->whitespace = 0;
     emitter->indention = 0;
-    if (emitter->root_context)
-    {
-        emitter->open_ended = 1;
-    }
 
     return 1;
 }
@@ -2326,4 +2322,3 @@ yaml_emitter_write_folded_scalar(yaml_emitter_t *emitter,
 
     return 1;
 }
-

@@ -47,7 +47,7 @@ require 'tmpdir'
 #
 #   file = Tempfile.new('foo')
 #   begin
-#      ...do something with file...
+#      # ...do something with file...
 #   ensure
 #      file.close
 #      file.unlink   # deletes the temp file
@@ -79,9 +79,6 @@ require 'tmpdir'
 # same Tempfile object from multiple threads then you should protect it with a
 # mutex.
 class Tempfile < DelegateClass(File)
-  # call-seq:
-  #    new(basename = "", [tmpdir = Dir.tmpdir], [options])
-  #
   # Creates a temporary file with permissions 0600 (= only readable and
   # writable by the owner) and opens it with mode "w+".
   #
@@ -114,10 +111,13 @@ class Tempfile < DelegateClass(File)
   # +File.open+. This is mostly useful for specifying encoding
   # options, e.g.:
   #
-  #   Tempfile.new('hello', '/home/aisaka', :encoding => 'ascii-8bit')
+  #   Tempfile.new('hello', '/home/aisaka', encoding: 'ascii-8bit')
   #
   #   # You can also omit the 'tmpdir' parameter:
-  #   Tempfile.new('hello', :encoding => 'ascii-8bit')
+  #   Tempfile.new('hello', encoding: 'ascii-8bit')
+  #
+  # Note: +mode+ keyword argument, as accepted by Tempfile, can only be
+  # numeric, combination of the modes defined in File::Constants.
   #
   # === Exceptions
   #
@@ -174,7 +174,7 @@ class Tempfile < DelegateClass(File)
   #
   #   file = Tempfile.new('foo')
   #   begin
-  #      ...do something with file...
+  #      # ...do something with file...
   #   ensure
   #      file.close
   #      file.unlink   # deletes the temp file
@@ -195,7 +195,7 @@ class Tempfile < DelegateClass(File)
   #   file = Tempfile.new('foo')
   #   file.unlink   # On Windows this silently fails.
   #   begin
-  #      ... do something with file ...
+  #      # ... do something with file ...
   #   ensure
   #      file.close!   # Closes the file handle. If the file wasn't unlinked
   #                    # because #unlink failed, then this method will attempt
@@ -234,14 +234,14 @@ class Tempfile < DelegateClass(File)
 
   # :stopdoc:
   def inspect
-    if closed?
+    if @tmpfile.closed?
       "#<#{self.class}:#{path} (closed)>"
     else
       "#<#{self.class}:#{path}>"
     end
   end
 
-  class Remover
+  class Remover # :nodoc:
     def initialize(tmpfile)
       @pid = Process.pid
       @tmpfile = tmpfile
@@ -277,13 +277,13 @@ class Tempfile < DelegateClass(File)
     # In any case, all arguments (<code>*args</code>) will be passed to Tempfile.new.
     #
     #   Tempfile.open('foo', '/home/temp') do |f|
-    #      ... do something with f ...
+    #      # ... do something with f ...
     #   end
     #
     #   # Equivalent:
     #   f = Tempfile.open('foo', '/home/temp')
     #   begin
-    #      ... do something with f ...
+    #      # ... do something with f ...
     #   ensure
     #      f.close
     #   end
@@ -321,7 +321,7 @@ end
 # <code>**options</code>) will be treated as Tempfile.new.
 #
 #   Tempfile.create('foo', '/home/temp') do |f|
-#      ... do something with f ...
+#      # ... do something with f ...
 #   end
 #
 def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
