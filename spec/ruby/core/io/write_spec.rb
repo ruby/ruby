@@ -21,7 +21,7 @@ describe "IO#write on a file" do
   end
 
   it "does not check if the file is writable if writing zero bytes" do
-    lambda { @readonly_file.write("") }.should_not raise_error
+    -> { @readonly_file.write("") }.should_not raise_error
   end
 
   it "returns a length of 0 when writing a blank string" do
@@ -59,7 +59,7 @@ describe "IO#write on a file" do
     # pack "\xFEhi" to avoid utf-8 conflict
     xFEhi = ([254].pack('C*') + 'hi').force_encoding('utf-8')
     File.open(@filename, "w", encoding: Encoding::US_ASCII) do |file|
-      lambda { file.write(xFEhi) }.should raise_error(Encoding::InvalidByteSequenceError)
+      -> { file.write(xFEhi) }.should raise_error(Encoding::InvalidByteSequenceError)
     end
   end
 

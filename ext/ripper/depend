@@ -51,6 +51,7 @@ ripper.E: ripper.c
 ripper.o: $(RUBY_EXTCONF_H)
 ripper.o: $(arch_hdrdir)/ruby/config.h
 ripper.o: $(hdrdir)/ruby.h
+ripper.o: $(hdrdir)/ruby/assert.h
 ripper.o: $(hdrdir)/ruby/backward.h
 ripper.o: $(hdrdir)/ruby/defines.h
 ripper.o: $(hdrdir)/ruby/encoding.h

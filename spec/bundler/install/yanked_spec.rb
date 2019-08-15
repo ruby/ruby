@@ -10,7 +10,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
   it "throws an error when the original gem version is yanked" do
     lockfile <<-L
        GEM
-         remote: file://#{gem_repo4}
+         remote: #{file_uri_for(gem_repo4)}
          specs:
            foo (10.0.0)
 
@@ -23,17 +23,19 @@ RSpec.context "when installing a bundle that includes yanked gems" do
     L
 
     install_gemfile <<-G
-        source "file://#{gem_repo4}"
-        gem "foo", "10.0.0"
+      source "#{file_uri_for(gem_repo4)}"
+      gem "foo", "10.0.0"
     G
 
     expect(err).to include("Your bundle is locked to foo (10.0.0)")
   end
 
   it "throws the original error when only the Gemfile specifies a gem version that doesn't exist" do
+    bundle "config set force_ruby_platform true"
+
     install_gemfile <<-G
-        source "file://#{gem_repo4}"
-        gem "foo", "10.0.0"
+      source "#{file_uri_for(gem_repo4)}"
+      gem "foo", "10.0.0"
     G
 
     expect(err).not_to include("Your bundle is locked to foo (10.0.0)")
@@ -44,21 +46,21 @@ end
 RSpec.context "when using gem before installing" do
   it "does not suggest the author has yanked the gem" do
     gemfile <<-G
-        source "file://#{gem_repo1}"
-        gem "rack", "0.9.1"
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack", "0.9.1"
     G
 
     lockfile <<-L
-       GEM
-         remote: file://#{gem_repo1}
-         specs:
-           rack (0.9.1)
+      GEM
+        remote: #{file_uri_for(gem_repo1)}
+        specs:
+          rack (0.9.1)
 
-       PLATFORMS
-         ruby
+      PLATFORMS
+        ruby
 
-       DEPENDENCIES
-         rack (= 0.9.1)
+      DEPENDENCIES
+        rack (= 0.9.1)
     L
 
     bundle :list

@@ -53,13 +53,13 @@ describe "Socket#connect_nonblock" do
 
   platform_is_not :freebsd, :solaris, :aix do
     it "raises Errno::EINPROGRESS when the connect would block" do
-      lambda do
+      -> do
         @socket.connect_nonblock(@addr)
       end.should raise_error(Errno::EINPROGRESS)
     end
 
     it "raises Errno::EINPROGRESS with IO::WaitWritable mixed in when the connect would block" do
-      lambda do
+      -> do
         @socket.connect_nonblock(@addr)
       end.should raise_error(IO::WaitWritable)
     end
@@ -95,7 +95,7 @@ describe 'Socket#connect_nonblock' do
       end
 
       it 'raises TypeError when passed an Integer' do
-        lambda { @client.connect_nonblock(666) }.should raise_error(TypeError)
+        -> { @client.connect_nonblock(666) }.should raise_error(TypeError)
       end
     end
 
@@ -116,7 +116,7 @@ describe 'Socket#connect_nonblock' do
           @server.listen(1)
           @client.connect(@server.connect_address).should == 0
 
-          lambda {
+          -> {
             @client.connect_nonblock(@server.connect_address)
 
             # A second call needed if non-blocking sockets become default
@@ -139,7 +139,7 @@ describe 'Socket#connect_nonblock' do
         it 'raises IO:EINPROGRESSWaitWritable when the connection would block' do
           @server.bind(@sockaddr)
 
-          lambda {
+          -> {
             @client.connect_nonblock(@server.connect_address)
           }.should raise_error(IO::EINPROGRESSWaitWritable)
         end

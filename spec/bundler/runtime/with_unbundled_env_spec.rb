@@ -54,6 +54,9 @@ RSpec.describe "Bundler.with_env helpers" do
     end
 
     it "removes variables that bundler added", :ruby_repo do
+      # Simulate bundler has not yet been loaded
+      ENV.replace(ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) })
+
       original = ruby!('puts ENV.to_a.map {|e| e.join("=") }.sort.join("\n")')
       code = 'puts Bundler.original_env.to_a.map {|e| e.join("=") }.sort.join("\n")'
       bundle_exec_ruby! code.dump
@@ -76,11 +79,12 @@ RSpec.describe "Bundler.with_env helpers" do
       expect(last_command.stdboth).not_to include("-rbundler/setup")
     end
 
-    it "should clean up RUBYLIB", :ruby_repo do
+    it "should restore RUBYLIB", :ruby_repo do
       code = "print #{modified_env}['RUBYLIB']"
       ENV["RUBYLIB"] = root.join("lib").to_s + File::PATH_SEPARATOR + "/foo"
+      ENV["BUNDLER_ORIG_RUBYLIB"] = root.join("lib").to_s + File::PATH_SEPARATOR + "/foo-original"
       bundle_exec_ruby! code.dump
-      expect(last_command.stdboth).to include("/foo")
+      expect(last_command.stdboth).to include("/foo-original")
     end
 
     it "should restore the original MANPATH" do
@@ -214,6 +218,8 @@ RSpec.describe "Bundler.with_env helpers" do
     end
 
     it "runs exec inside with_original_env" do
+      skip "Fork not implemented" if Gem.win_platform?
+
       lib = File.expand_path("../../lib", __dir__)
       system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib} -rbundler -e '#{code}'")
       expect($?.exitstatus).to eq(0)
@@ -234,6 +240,8 @@ RSpec.describe "Bundler.with_env helpers" do
     end
 
     it "runs exec inside with_clean_env" do
+      skip "Fork not implemented" if Gem.win_platform?
+
       lib = File.expand_path("../../lib", __dir__)
       system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib} -rbundler -e '#{code}'")
       expect($?.exitstatus).to eq(1)
@@ -254,6 +262,8 @@ RSpec.describe "Bundler.with_env helpers" do
     end
 
     it "runs exec inside with_clean_env" do
+      skip "Fork not implemented" if Gem.win_platform?
+
       lib = File.expand_path("../../lib", __dir__)
       system({ "BUNDLE_FOO" => "bar" }, "ruby -I#{lib} -rbundler -e '#{code}'")
       expect($?.exitstatus).to eq(1)

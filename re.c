@@ -1292,6 +1292,12 @@ rb_match_busy(VALUE match)
     FL_SET(match, MATCH_BUSY);
 }
 
+void
+rb_match_unbusy(VALUE match)
+{
+    FL_UNSET(match, MATCH_BUSY);
+}
+
 int
 rb_match_count(VALUE match)
 {
@@ -3578,8 +3584,8 @@ rb_reg_quote(VALUE str)
  *     Regexp.quote(str)    -> string
  *
  *  Escapes any characters that would have special meaning in a regular
- *  expression. Returns a new escaped string, or self if no characters are
- *  escaped.  For any string,
+ *  expression. Returns a new escaped string with the same or compatible
+ *  encoding. For any string,
  *  <code>Regexp.new(Regexp.escape(<i>str</i>))=~<i>str</i></code> will be true.
  *
  *     Regexp.escape('\*?{}.')   #=> \\\*\?\{\}\.

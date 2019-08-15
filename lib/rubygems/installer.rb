@@ -65,6 +65,11 @@ class Gem::Installer
 
   attr_reader :options
 
+  ##
+  # The gem package instance.
+
+  attr_reader :package
+
   @path_warning = false
 
   @install_lock = Mutex.new
@@ -352,7 +357,7 @@ class Gem::Installer
   def run_pre_install_hooks # :nodoc:
     Gem.pre_install_hooks.each do |hook|
       if hook.call(self) == false
-        location = " at #{$1}" if hook.inspect =~ /@(.*:\d+)/
+        location = " at #{$1}" if hook.inspect =~ / (.*:\d+)/
 
         message = "pre-install hook#{location} failed for #{spec.full_name}"
         raise Gem::InstallError, message
@@ -365,7 +370,7 @@ class Gem::Installer
       if hook.call(self) == false
         FileUtils.rm_rf gem_dir
 
-        location = " at #{$1}" if hook.inspect =~ /@(.*:\d+)/
+        location = " at #{$1}" if hook.inspect =~ / (.*:\d+)/
 
         message = "post-build hook#{location} failed for #{spec.full_name}"
         raise Gem::InstallError, message
@@ -443,7 +448,7 @@ class Gem::Installer
   #
 
   def default_spec_file
-    File.join Gem::Specification.default_specifications_dir, "#{spec.full_name}.gemspec"
+    File.join Gem.default_specifications_dir, "#{spec.full_name}.gemspec"
   end
 
   ##
