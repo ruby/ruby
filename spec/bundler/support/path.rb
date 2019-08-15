@@ -18,7 +18,7 @@ module Spec
     end
 
     def gem_bin
-      @gem_bin ||= ruby_core? ? ENV["BUNDLE_GEM"] : "#{Gem.ruby} -S gem"
+      @gem_bin ||= ruby_core? ? ENV["BUNDLE_GEM"] : "#{Gem.ruby} -S gem --backtrace"
     end
 
     def spec_dir
