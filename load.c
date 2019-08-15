@@ -568,7 +568,25 @@ rb_provide(const char *feature)
 
 NORETURN(static void load_failed(VALUE));
 
-static int
+static inline void
+load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
+{
+    const rb_iseq_t *iseq = rb_iseq_load_iseq(fname);
+
+    if (!iseq) {
+        rb_ast_t *ast;
+        VALUE parser = rb_parser_new();
+        rb_parser_set_context(parser, NULL, FALSE);
+        ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
+        iseq = rb_iseq_new_top(&ast->body, rb_fstring_lit("<top (required)>"),
+                               fname, rb_realpath_internal(Qnil, fname, 1), NULL);
+        rb_ast_dispose(ast);
+    }
+    rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
+    rb_iseq_eval(iseq);
+}
+
+static inline enum ruby_tag_type
 rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
 {
     enum ruby_tag_type state;
@@ -579,7 +597,7 @@ rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
     rb_thread_t *volatile th0 = th;
 #endif
 
-    th->ec->errinfo = Qnil; /* ensure */
+    ec->errinfo = Qnil; /* ensure */
 
     if (!wrap) {
 	th->top_wrapper = 0;
@@ -591,25 +609,10 @@ rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
 	rb_extend_object(th->top_self, th->top_wrapper);
     }
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
     if (state == TAG_NONE) {
-	rb_ast_t *ast;
-	const rb_iseq_t *iseq;
-
-	if ((iseq = rb_iseq_load_iseq(fname)) != NULL) {
-	    /* OK */
-	}
-	else {
-	    VALUE parser = rb_parser_new();
-	    rb_parser_set_context(parser, NULL, FALSE);
-	    ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
-	    iseq = rb_iseq_new_top(&ast->body, rb_fstring_lit("<top (required)>"),
-			    fname, rb_realpath_internal(Qnil, fname, 1), NULL);
-	    rb_ast_dispose(ast);
-	}
-        rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
-        rb_iseq_eval(iseq);
+        load_iseq_eval(ec, fname);
     }
     EC_POP_TAG();
 
@@ -619,61 +622,47 @@ rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
 #endif
     th->top_self = self;
     th->top_wrapper = wrapper;
-
-    if (state) {
-	/* usually state == TAG_RAISE only, except for
-	 * rb_iseq_load_iseq case */
-	VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
-	if (NIL_P(exc)) return state;
-	th->ec->errinfo = exc;
-	return TAG_RAISE;
-    }
-
-    if (!NIL_P(th->ec->errinfo)) {
-	/* exception during load */
-	return TAG_RAISE;
-    }
     return state;
+}
+
+static inline void
+raise_load_if_failed(rb_execution_context_t *ec, enum ruby_tag_type state)
+{
+    if (state) {
+        rb_vm_jump_tag_but_local_jump(state);
+    }
+
+    if (!NIL_P(ec->errinfo)) {
+        rb_exc_raise(ec->errinfo);
+    }
 }
 
 static void
 rb_load_internal(VALUE fname, int wrap)
 {
     rb_execution_context_t *ec = GET_EC();
-    int state = rb_load_internal0(ec, fname, wrap);
-    if (state) {
-	if (state == TAG_RAISE) rb_exc_raise(ec->errinfo);
-	EC_JUMP_TAG(ec, state);
-    }
-}
-
-static VALUE
-file_to_load(VALUE fname)
-{
-    VALUE tmp = rb_find_file(FilePathValue(fname));
-    if (!tmp) load_failed(fname);
-    return tmp;
+    raise_load_if_failed(ec, rb_load_internal0(ec, fname, wrap));
 }
 
 void
 rb_load(VALUE fname, int wrap)
 {
-    rb_load_internal(file_to_load(fname), wrap);
+    VALUE tmp = rb_find_file(FilePathValue(fname));
+    if (!tmp) load_failed(fname);
+    rb_load_internal(tmp, wrap);
 }
 
 void
 rb_load_protect(VALUE fname, int wrap, int *pstate)
 {
     enum ruby_tag_type state;
-    volatile VALUE path = 0;
 
     EC_PUSH_TAG(GET_EC());
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	path = file_to_load(fname);
+        rb_load(fname, wrap);
     }
     EC_POP_TAG();
 
-    if (state == TAG_NONE) state = rb_load_internal0(GET_EC(), path, wrap);
     if (state != TAG_NONE) *pstate = state;
 }
 
@@ -985,11 +974,13 @@ rb_resolve_feature_path(VALUE klass, VALUE fname)
  * <0: not found (LoadError)
  * >1: exception
  */
-int
-rb_require_internal(VALUE fname, int safe)
+static int
+require_internal(rb_execution_context_t *ec, VALUE fname, int safe, int exception)
 {
     volatile int result = -1;
-    rb_execution_context_t *ec = GET_EC();
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    volatile VALUE wrapper = th->top_wrapper;
+    volatile VALUE self = th->top_self;
     volatile VALUE errinfo = ec->errinfo;
     enum ruby_tag_type state;
     struct {
@@ -1004,6 +995,8 @@ rb_require_internal(VALUE fname, int safe)
 
     EC_PUSH_TAG(ec);
     saved.safe = rb_safe_level();
+    ec->errinfo = Qnil; /* ensure */
+    th->top_wrapper = 0;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	long handle;
 	int found;
@@ -1015,7 +1008,7 @@ rb_require_internal(VALUE fname, int safe)
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, RSTRING_PTR(fname));
 
 	if (found) {
-	    if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
+            if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
 		result = 0;
 	    }
 	    else if (!*ftptr) {
@@ -1025,7 +1018,7 @@ rb_require_internal(VALUE fname, int safe)
 	    else {
 		switch (found) {
 		  case 'r':
-		    state = rb_load_internal0(ec, path, 0);
+                    load_iseq_eval(ec, path);
 		    break;
 
 		  case 's':
@@ -1034,21 +1027,36 @@ rb_require_internal(VALUE fname, int safe)
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}
-		if (!state) {
-		    rb_provide_feature(path);
-		    result = TAG_RETURN;
-		}
+                rb_provide_feature(path);
+                result = TAG_RETURN;
 	    }
 	}
     }
     EC_POP_TAG();
-    load_unlock(ftptr, !state);
+    th = rb_ec_thread_ptr(ec);
+    th->top_self = self;
+    th->top_wrapper = wrapper;
+    if (ftptr) load_unlock(RSTRING_PTR(path), !state);
 
     rb_set_safe_level_force(saved.safe);
     if (state) {
+        if (exception) {
+            /* usually state == TAG_RAISE only, except for
+             * rb_iseq_load_iseq in load_iseq_eval case */
+            VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
+            if (!NIL_P(exc)) ec->errinfo = exc;
+            return TAG_RAISE;
+        }
+        else if (state == TAG_RETURN) {
+            return TAG_RAISE;
+        }
 	RB_GC_GUARD(fname);
 	/* never TAG_RETURN */
 	return state;
+    }
+    if (!NIL_P(ec->errinfo)) {
+        if (!exception) return TAG_RAISE;
+        rb_exc_raise(ec->errinfo);
     }
 
     ec->errinfo = errinfo;
@@ -1059,11 +1067,19 @@ rb_require_internal(VALUE fname, int safe)
 }
 
 int
+rb_require_internal(VALUE fname, int safe)
+{
+    rb_execution_context_t *ec = GET_EC();
+    return require_internal(ec, fname, safe, 1);
+}
+
+int
 ruby_require_internal(const char *fname, unsigned int len)
 {
     struct RString fake;
     VALUE str = rb_setup_fake_str(&fake, fname, len, 0);
-    int result = rb_require_internal(str, 0);
+    rb_execution_context_t *ec = GET_EC();
+    int result = require_internal(ec, str, 0, 0);
     rb_set_errinfo(Qnil);
     return result == TAG_RETURN ? 1 : result ? -1 : 0;
 }
@@ -1071,11 +1087,11 @@ ruby_require_internal(const char *fname, unsigned int len)
 VALUE
 rb_require_safe(VALUE fname, int safe)
 {
-    int result = rb_require_internal(fname, safe);
+    rb_execution_context_t *ec = GET_EC();
+    int result = require_internal(ec, fname, safe, 1);
 
     if (result > TAG_RETURN) {
-	if (result == TAG_RAISE) rb_exc_raise(rb_errinfo());
-	EC_JUMP_TAG(GET_EC(), result);
+        EC_JUMP_TAG(ec, result);
     }
     if (result < 0) {
 	load_failed(fname);

@@ -40,7 +40,7 @@ typedef struct iseq_link_element {
 	ISEQ_ELEMENT_LABEL,
 	ISEQ_ELEMENT_INSN,
 	ISEQ_ELEMENT_ADJUST,
-	ISEQ_ELEMENT_TRACE
+        ISEQ_ELEMENT_TRACE,
     } type;
     struct iseq_link_element *next;
     struct iseq_link_element *prev;
@@ -3255,6 +3255,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		  case idLength: SP_INSN(length); return COMPILE_OK;
 		  case idSize:	 SP_INSN(size);	  return COMPILE_OK;
 		  case idEmptyP: SP_INSN(empty_p);return COMPILE_OK;
+                  case idNilP:   SP_INSN(nil_p);  return COMPILE_OK;
 		  case idSucc:	 SP_INSN(succ);	  return COMPILE_OK;
 		  case idNot:	 SP_INSN(not);	  return COMPILE_OK;
 		}
@@ -3868,7 +3869,7 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_roo
 
 enum compile_array_type_t {
     COMPILE_ARRAY_TYPE_ARRAY,
-    COMPILE_ARRAY_TYPE_HASH
+    COMPILE_ARRAY_TYPE_HASH,
 };
 
 static inline int
@@ -4403,18 +4404,21 @@ compile_const_prefix(rb_iseq_t *iseq, const NODE *const node,
     switch (nd_type(node)) {
       case NODE_CONST:
 	debugi("compile_const_prefix - colon", node->nd_vid);
-	ADD_INSN1(body, nd_line(node), getconstant, ID2SYM(node->nd_vid));
+        ADD_INSN1(body, nd_line(node), putobject, Qtrue);
+        ADD_INSN1(body, nd_line(node), getconstant, ID2SYM(node->nd_vid));
 	break;
       case NODE_COLON3:
 	debugi("compile_const_prefix - colon3", node->nd_mid);
 	ADD_INSN(body, nd_line(node), pop);
 	ADD_INSN1(body, nd_line(node), putobject, rb_cObject);
-	ADD_INSN1(body, nd_line(node), getconstant, ID2SYM(node->nd_mid));
+        ADD_INSN1(body, nd_line(node), putobject, Qtrue);
+        ADD_INSN1(body, nd_line(node), getconstant, ID2SYM(node->nd_mid));
 	break;
       case NODE_COLON2:
 	CHECK(compile_const_prefix(iseq, node->nd_head, pref, body));
 	debugi("compile_const_prefix - colon2", node->nd_mid);
-	ADD_INSN1(body, nd_line(node), getconstant, ID2SYM(node->nd_mid));
+        ADD_INSN1(body, nd_line(node), putobject, Qfalse);
+        ADD_INSN1(body, nd_line(node), getconstant, ID2SYM(node->nd_mid));
 	break;
       default:
 	CHECK(COMPILE(pref, "const colon2 prefix", node));
@@ -7153,7 +7157,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    ADD_INSNL(ret, line, branchunless, lassign); /* cref */
 	}
 	ADD_INSN(ret, line, dup); /* cref cref */
-	ADD_INSN1(ret, line, getconstant, ID2SYM(mid)); /* cref obj */
+        ADD_INSN1(ret, line, putobject, Qtrue);
+        ADD_INSN1(ret, line, getconstant, ID2SYM(mid)); /* cref obj */
 
 	if (node->nd_aid == idOROP || node->nd_aid == idANDOP) {
 	    lfin = NEW_LABEL(line);
@@ -7499,13 +7504,15 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    int ic_index = body->is_size++;
 
             ADD_INSN2(ret, line, opt_getinlinecache, lend, INT2FIX(ic_index));
-	    ADD_INSN1(ret, line, getconstant, ID2SYM(node->nd_vid));
+            ADD_INSN1(ret, line, putobject, Qtrue);
+            ADD_INSN1(ret, line, getconstant, ID2SYM(node->nd_vid));
             ADD_INSN1(ret, line, opt_setinlinecache, INT2FIX(ic_index));
 	    ADD_LABEL(ret, lend);
 	}
 	else {
 	    ADD_INSN(ret, line, putnil);
-	    ADD_INSN1(ret, line, getconstant, ID2SYM(node->nd_vid));
+            ADD_INSN1(ret, line, putobject, Qtrue);
+            ADD_INSN1(ret, line, getconstant, ID2SYM(node->nd_vid));
 	}
 
 	if (popped) {
@@ -7892,7 +7899,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	}
 
 	ADD_INSN1(ret, line, putobject, rb_cObject);
-	ADD_INSN1(ret, line, getconstant, ID2SYM(node->nd_mid));
+        ADD_INSN1(ret, line, putobject, Qtrue);
+        ADD_INSN1(ret, line, getconstant, ID2SYM(node->nd_mid));
 
 	if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
             ADD_INSN1(ret, line, opt_setinlinecache, INT2FIX(ic_index));
@@ -9851,7 +9859,9 @@ static const size_t ibf_object_header_align =
 enum ibf_object_class_index {
     IBF_OBJECT_CLASS_OBJECT,
     IBF_OBJECT_CLASS_ARRAY,
-    IBF_OBJECT_CLASS_STANDARD_ERROR
+    IBF_OBJECT_CLASS_STANDARD_ERROR,
+    IBF_OBJECT_CLASS_NO_MATCHING_PATTERN_ERROR,
+    IBF_OBJECT_CLASS_TYPE_ERROR,
 };
 
 struct ibf_object_string {
@@ -9889,7 +9899,7 @@ struct ibf_object_bignum {
 };
 
 enum ibf_object_data_type {
-    IBF_OBJECT_DATA_ENCODING
+    IBF_OBJECT_DATA_ENCODING,
 };
 
 struct ibf_object_complex_rational {
@@ -9946,6 +9956,12 @@ ibf_dump_object_class(struct ibf_dump *dump, VALUE obj)
     else if (obj == rb_eStandardError) {
 	cindex = IBF_OBJECT_CLASS_STANDARD_ERROR;
     }
+    else if (obj == rb_eNoMatchingPatternError) {
+        cindex = IBF_OBJECT_CLASS_NO_MATCHING_PATTERN_ERROR;
+    }
+    else if (obj == rb_eTypeError) {
+        cindex = IBF_OBJECT_CLASS_TYPE_ERROR;
+    }
     else {
 	rb_obj_info_dump(obj);
 	rb_p(obj);
@@ -9967,6 +9983,10 @@ ibf_load_object_class(const struct ibf_load *load, const struct ibf_object_heade
 	return rb_cArray;
       case IBF_OBJECT_CLASS_STANDARD_ERROR:
 	return rb_eStandardError;
+      case IBF_OBJECT_CLASS_NO_MATCHING_PATTERN_ERROR:
+        return rb_eNoMatchingPatternError;
+      case IBF_OBJECT_CLASS_TYPE_ERROR:
+        return rb_eTypeError;
     }
 
     rb_raise(rb_eArgError, "ibf_load_object_class: unknown class (%d)", (int)cindex);

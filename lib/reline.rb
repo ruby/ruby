@@ -14,7 +14,7 @@ module Reline
   FILENAME_COMPLETION_PROC = nil
   USERNAME_COMPLETION_PROC = nil
 
-  if RUBY_PLATFORM =~ /mswin|mingw/
+  if RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/
     IS_WINDOWS = true
   else
     IS_WINDOWS = false

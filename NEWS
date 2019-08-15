@@ -299,7 +299,7 @@ JIT::
 
   * Details of our dialect: https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/C99
 
-* Upstream repository is changed from Subversion to Git.
+* Ruby's upstream repository is changed from Subversion to Git.
 
   * https://git.ruby-lang.org/ruby.git
 

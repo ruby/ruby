@@ -1788,8 +1788,10 @@ You may need to `gem install -g` to install missing gems
 
     EXPECTED
 
-    assert_output nil, expected do
-      Gem.use_gemdeps
+    Gem::Deprecate.skip_during do
+      assert_output nil, expected do
+        Gem.use_gemdeps
+      end
     end
   ensure
     ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps

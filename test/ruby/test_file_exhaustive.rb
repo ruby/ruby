@@ -198,6 +198,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       end
       assert_equal(false, File.open(o) {|f| f.path}.tainted?)
       class << o; self; end.class_eval do
+        remove_method(:to_path)
         define_method(:to_path) { file.dup.taint }
       end
       assert_equal(true, File.open(o) {|f| f.path}.tainted?)
