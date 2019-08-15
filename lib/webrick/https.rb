@@ -9,7 +9,8 @@
 #
 # $IPR: https.rb,v 1.15 2003/07/22 19:20:42 gotoyuzo Exp $
 
-require 'webrick/ssl'
+require_relative 'ssl'
+require_relative 'httpserver'
 
 module WEBrick
   module Config
@@ -80,6 +81,70 @@ module WEBrick
         meta["SSL_CIPHER_ALGKEYSIZE"] = @cipher[3].to_s
       end
       meta
+    end
+
+    # :startdoc:
+  end
+
+  ##
+  #--
+  # Fake WEBrick::HTTPRequest for lookup_server
+
+  class SNIRequest
+
+    ##
+    # The SNI hostname
+
+    attr_reader :host
+
+    ##
+    # The socket address of the server
+
+    attr_reader :addr
+
+    ##
+    # The port this request is for
+
+    attr_reader :port
+
+    ##
+    # Creates a new SNIRequest.
+
+    def initialize(sslsocket, hostname)
+      @host = hostname
+      @addr = sslsocket.addr
+      @port = @addr[1]
+    end
+  end
+
+
+  ##
+  #--
+  # Adds SSL functionality to WEBrick::HTTPServer
+
+  class HTTPServer < ::WEBrick::GenericServer
+    ##
+    # ServerNameIndication callback
+
+    def ssl_servername_callback(sslsocket, hostname = nil)
+      req = SNIRequest.new(sslsocket, hostname)
+      server = lookup_server(req)
+      server ? server.ssl_context : nil
+    end
+
+    # :stopdoc:
+
+    ##
+    # Check whether +server+ is also SSL server.
+    # Also +server+'s SSL context will be created.
+
+    alias orig_virtual_host virtual_host
+
+    def virtual_host(server)
+      if @config[:SSLEnable] && !server.ssl_context
+        raise ArgumentError, "virtual host must set SSLEnable to true"
+      end
+      orig_virtual_host(server)
     end
 
     # :startdoc:

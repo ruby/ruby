@@ -1,6 +1,10 @@
-override MFLAGS := $(filter-out -j%,$(MFLAGS))
-override MAKEFLAGS := $(filter-out -j%,$(MAKEFLAGS))
 include Makefile
+
+ifeq ($(HAVE_BASERUBY),yes)
+override REVISION_FORCE := PHONY
+endif
+
+include $(srcdir)/defs/universal.mk
 -include uncommon.mk
 include $(srcdir)/defs/gmake.mk
 

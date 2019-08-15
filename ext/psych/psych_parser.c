@@ -1,7 +1,6 @@
 #include <psych.h>
 
 VALUE cPsychParser;
-VALUE ePsychSyntaxError;
 
 static ID id_read;
 static ID id_path;
@@ -16,6 +15,7 @@ static ID id_start_sequence;
 static ID id_end_sequence;
 static ID id_start_mapping;
 static ID id_end_mapping;
+static ID id_event_location;
 
 #define PSYCH_TRANSCODE(_str, _yaml_enc, _internal_enc) \
   do { \
@@ -80,9 +80,12 @@ static VALUE allocate(VALUE klass)
 static VALUE make_exception(yaml_parser_t * parser, VALUE path)
 {
     size_t line, column;
+    VALUE ePsychSyntaxError;
 
     line = parser->context_mark.line + 1;
     column = parser->context_mark.column + 1;
+
+    ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
 
     return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
 	    path,
@@ -93,7 +96,6 @@ static VALUE make_exception(yaml_parser_t * parser, VALUE path)
 	    parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
 }
 
-#ifdef HAVE_RUBY_ENCODING_H
 static VALUE transcode_string(VALUE src, int * parser_encoding)
 {
     int utf8    = rb_utf8_encindex();
@@ -171,8 +173,6 @@ static VALUE transcode_io(VALUE src, int * parser_encoding)
     return src;
 }
 
-#endif
-
 static VALUE protected_start_stream(VALUE pointer)
 {
     VALUE *args = (VALUE *)pointer;
@@ -235,6 +235,12 @@ static VALUE protected_end_stream(VALUE handler)
     return rb_funcall(handler, id_end_stream, 0);
 }
 
+static VALUE protected_event_location(VALUE pointer)
+{
+    VALUE *args = (VALUE *)pointer;
+    return rb_funcall3(args[0], id_event_location, 4, args + 1);
+}
+
 /*
  * call-seq:
  *    parser.parse(yaml)
@@ -253,10 +259,8 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     int tainted = 0;
     int state = 0;
     int parser_encoding = YAML_ANY_ENCODING;
-#ifdef HAVE_RUBY_ENCODING_H
     int encoding = rb_utf8_encindex();
     rb_encoding * internal_enc = rb_default_internal_encoding();
-#endif
     VALUE handler = rb_iv_get(self, "@handler");
 
     if (rb_scan_args(argc, argv, "11", &yaml, &path) == 1) {
@@ -274,18 +278,14 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     if (OBJ_TAINTED(yaml)) tainted = 1;
 
     if (rb_respond_to(yaml, id_read)) {
-#ifdef HAVE_RUBY_ENCODING_H
 	yaml = transcode_io(yaml, &parser_encoding);
 	yaml_parser_set_encoding(parser, parser_encoding);
-#endif
 	yaml_parser_set_input(parser, io_reader, (void *)yaml);
 	if (RTEST(rb_obj_is_kind_of(yaml, rb_cIO))) tainted = 1;
     } else {
 	StringValue(yaml);
-#ifdef HAVE_RUBY_ENCODING_H
 	yaml = transcode_string(yaml, &parser_encoding);
 	yaml_parser_set_encoding(parser, parser_encoding);
-#endif
 	yaml_parser_set_input_string(
 		parser,
 		(const unsigned char *)RSTRING_PTR(yaml),
@@ -294,6 +294,9 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     }
 
     while(!done) {
+	VALUE event_args[5];
+	VALUE start_line, start_column, end_line, end_column;
+
 	if(!yaml_parser_parse(parser, &event)) {
 	    VALUE exception;
 
@@ -303,6 +306,18 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 
 	    rb_exc_raise(exception);
 	}
+
+	start_line = INT2NUM((long)event.start_mark.line);
+	start_column = INT2NUM((long)event.start_mark.column);
+	end_line = INT2NUM((long)event.end_mark.line);
+	end_column = INT2NUM((long)event.end_mark.column);
+
+	event_args[0] = handler;
+	event_args[1] = start_line;
+	event_args[2] = start_column;
+	event_args[3] = end_line;
+	event_args[4] = end_column;
+	rb_protect(protected_event_location, (VALUE)event_args, &state);
 
 	switch(event.type) {
 	    case YAML_STREAM_START_EVENT:
@@ -338,17 +353,13 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 			if(start->handle) {
 			    handle = rb_str_new2((const char *)start->handle);
 			    if (tainted) OBJ_TAINT(handle);
-#ifdef HAVE_RUBY_ENCODING_H
 			    PSYCH_TRANSCODE(handle, encoding, internal_enc);
-#endif
 			}
 
 			if(start->prefix) {
 			    prefix = rb_str_new2((const char *)start->prefix);
 			    if (tainted) OBJ_TAINT(prefix);
-#ifdef HAVE_RUBY_ENCODING_H
 			    PSYCH_TRANSCODE(prefix, encoding, internal_enc);
-#endif
 			}
 
 			rb_ary_push(tag_directives, rb_ary_new3((long)2, handle, prefix));
@@ -377,9 +388,7 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		if(event.data.alias.anchor) {
 		    alias = rb_str_new2((const char *)event.data.alias.anchor);
 		    if (tainted) OBJ_TAINT(alias);
-#ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(alias, encoding, internal_enc);
-#endif
 		}
 
 		args[0] = handler;
@@ -399,24 +408,18 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		    );
 		if (tainted) OBJ_TAINT(val);
 
-#ifdef HAVE_RUBY_ENCODING_H
 		PSYCH_TRANSCODE(val, encoding, internal_enc);
-#endif
 
 		if(event.data.scalar.anchor) {
 		    anchor = rb_str_new2((const char *)event.data.scalar.anchor);
 		    if (tainted) OBJ_TAINT(anchor);
-#ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
-#endif
 		}
 
 		if(event.data.scalar.tag) {
 		    tag = rb_str_new2((const char *)event.data.scalar.tag);
 		    if (tainted) OBJ_TAINT(tag);
-#ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
-#endif
 		}
 
 		plain_implicit =
@@ -446,18 +449,14 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		if(event.data.sequence_start.anchor) {
 		    anchor = rb_str_new2((const char *)event.data.sequence_start.anchor);
 		    if (tainted) OBJ_TAINT(anchor);
-#ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
-#endif
 		}
 
 		tag = Qnil;
 		if(event.data.sequence_start.tag) {
 		    tag = rb_str_new2((const char *)event.data.sequence_start.tag);
 		    if (tainted) OBJ_TAINT(tag);
-#ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
-#endif
 		}
 
 		implicit =
@@ -486,17 +485,13 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		if(event.data.mapping_start.anchor) {
 		    anchor = rb_str_new2((const char *)event.data.mapping_start.anchor);
 		    if (tainted) OBJ_TAINT(anchor);
-#ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
-#endif
 		}
 
 		if(event.data.mapping_start.tag) {
 		    tag = rb_str_new2((const char *)event.data.mapping_start.tag);
 		    if (tainted) OBJ_TAINT(tag);
-#ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
-#endif
 		}
 
 		implicit =
@@ -555,6 +550,7 @@ static VALUE mark(VALUE self)
 
 void Init_psych_parser(void)
 {
+#undef rb_intern
 #if 0
     mPsych = rb_define_module("Psych");
 #endif
@@ -575,23 +571,23 @@ void Init_psych_parser(void)
     rb_define_const(cPsychParser, "UTF16BE", INT2NUM(YAML_UTF16BE_ENCODING));
 
     rb_require("psych/syntax_error");
-    ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
 
     rb_define_method(cPsychParser, "parse", parse, -1);
     rb_define_method(cPsychParser, "mark", mark, 0);
 
-    id_read           = rb_intern("read");
-    id_path           = rb_intern("path");
-    id_empty          = rb_intern("empty");
-    id_start_stream   = rb_intern("start_stream");
-    id_end_stream     = rb_intern("end_stream");
-    id_start_document = rb_intern("start_document");
-    id_end_document   = rb_intern("end_document");
-    id_alias          = rb_intern("alias");
-    id_scalar         = rb_intern("scalar");
-    id_start_sequence = rb_intern("start_sequence");
-    id_end_sequence   = rb_intern("end_sequence");
-    id_start_mapping  = rb_intern("start_mapping");
-    id_end_mapping    = rb_intern("end_mapping");
+    id_read            = rb_intern("read");
+    id_path            = rb_intern("path");
+    id_empty           = rb_intern("empty");
+    id_start_stream    = rb_intern("start_stream");
+    id_end_stream      = rb_intern("end_stream");
+    id_start_document  = rb_intern("start_document");
+    id_end_document    = rb_intern("end_document");
+    id_alias           = rb_intern("alias");
+    id_scalar          = rb_intern("scalar");
+    id_start_sequence  = rb_intern("start_sequence");
+    id_end_sequence    = rb_intern("end_sequence");
+    id_start_mapping   = rb_intern("start_mapping");
+    id_end_mapping     = rb_intern("end_mapping");
+    id_event_location  = rb_intern("event_location");
 }
 /* vim: set noet sws=4 sw=4: */

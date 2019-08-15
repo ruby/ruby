@@ -22,6 +22,15 @@ static struct code_page_table {
 
 #define IS_DIR_SEPARATOR_P(c) (c == L'\\' || c == L'/')
 #define IS_DIR_UNC_P(c) (IS_DIR_SEPARATOR_P(c[0]) && IS_DIR_SEPARATOR_P(c[1]))
+static int
+IS_ABSOLUTE_PATH_P(const WCHAR *path, size_t len)
+{
+    if (len < 2) return FALSE;
+    if (ISALPHA(path[0]))
+        return len > 2 && path[1] == L':' && IS_DIR_SEPARATOR_P(path[2]);
+    else
+        return IS_DIR_UNC_P(path);
+}
 
 /* MultiByteToWideChar() doesn't work with code page 51932 */
 #define INVALID_CODE_PAGE 51932
@@ -42,71 +51,6 @@ replace_wchar(wchar_t *s, int find, int replace)
 	    *s = replace;
 	s++;
     }
-}
-
-/*
-  Return user's home directory using environment variables combinations.
-  Memory allocated by this function should be manually freed afterwards.
-
-  Try:
-  HOME, HOMEDRIVE + HOMEPATH and USERPROFILE environment variables
-  TODO: Special Folders - Profile and Personal
-*/
-static wchar_t *
-home_dir(void)
-{
-    wchar_t *buffer = NULL;
-    size_t buffer_len = 0, len = 0;
-    enum {
-	HOME_NONE, ENV_HOME, ENV_DRIVEPATH, ENV_USERPROFILE
-    } home_type = HOME_NONE;
-
-    /*
-      GetEnvironmentVariableW when used with NULL will return the required
-      buffer size and its terminating character.
-      http://msdn.microsoft.com/en-us/library/windows/desktop/ms683188(v=vs.85).aspx
-    */
-
-    if ((len = GetEnvironmentVariableW(L"HOME", NULL, 0)) != 0) {
-	buffer_len = len;
-	home_type = ENV_HOME;
-    }
-    else if ((len = GetEnvironmentVariableW(L"HOMEDRIVE", NULL, 0)) != 0) {
-	buffer_len = len;
-	if ((len = GetEnvironmentVariableW(L"HOMEPATH", NULL, 0)) != 0) {
-	    buffer_len += len;
-	    home_type = ENV_DRIVEPATH;
-	}
-    }
-    else if ((len = GetEnvironmentVariableW(L"USERPROFILE", NULL, 0)) != 0) {
-	buffer_len = len;
-	home_type = ENV_USERPROFILE;
-    }
-
-    if (!home_type) return NULL;
-
-    /* allocate buffer */
-    buffer = ALLOC_N(wchar_t, buffer_len);
-
-    switch (home_type) {
-      case ENV_HOME:
-	GetEnvironmentVariableW(L"HOME", buffer, buffer_len);
-	break;
-      case ENV_DRIVEPATH:
-	len = GetEnvironmentVariableW(L"HOMEDRIVE", buffer, buffer_len);
-	GetEnvironmentVariableW(L"HOMEPATH", buffer + len, buffer_len - len);
-	break;
-      case ENV_USERPROFILE:
-	GetEnvironmentVariableW(L"USERPROFILE", buffer, buffer_len);
-	break;
-      default:
-	break;
-    }
-
-    /* sanitize backslashes with forwardslashes */
-    replace_wchar(buffer, L'\\', L'/');
-
-    return buffer;
 }
 
 /* Remove trailing invalid ':$DATA' of the path. */
@@ -245,6 +189,20 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, size_t buffer_size)
 	pos--;
     }
 
+    if ((pos >= *wfullpath + 2) &&
+        (*wfullpath)[0] == L'\\' && (*wfullpath)[1] == L'\\') {
+        /* UNC path: no short file name, and needs Network Share
+         * Management functions instead of FindFirstFile. */
+        if (pos == *wfullpath + 2) {
+            /* //host only */
+            return size;
+        }
+        if (!wmemchr(*wfullpath + 2, L'\\', pos - *wfullpath - 2)) {
+            /* //host/share only */
+            return size;
+        }
+    }
+
     find_handle = FindFirstFileW(*wfullpath, &find_data);
     if (find_handle != INVALID_HANDLE_VALUE) {
 	size_t trail_pos = pos - *wfullpath + IS_DIR_SEPARATOR_P(*pos);
@@ -302,12 +260,24 @@ append_wstr(VALUE dst, const WCHAR *ws, ssize_t len, UINT cp, rb_encoding *enc)
 }
 
 VALUE
+rb_default_home_dir(VALUE result)
+{
+    WCHAR *dir = rb_w32_home_dir();
+    if (!dir) {
+	rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
+    }
+    append_wstr(result, dir, -1,
+		       rb_w32_filecp(), rb_filesystem_encoding());
+    xfree(dir);
+    return result;
+}
+
+VALUE
 rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_name, VALUE result)
 {
     size_t size = 0, whome_len = 0;
     size_t buffer_len = 0;
     long wpath_len = 0, wdir_len = 0;
-    char *fullpath = NULL;
     wchar_t *wfullpath = NULL, *wpath = NULL, *wpath_pos = NULL;
     wchar_t *wdir = NULL, *wdir_pos = NULL;
     wchar_t *whome = NULL, *buffer = NULL, *buffer_pos = NULL;
@@ -360,14 +330,14 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	/* tainted if expanding '~' */
 	tainted = 1;
 
-	whome = home_dir();
+	whome = rb_w32_home_dir();
 	if (whome == NULL) {
 	    free(wpath);
 	    rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
 	}
 	whome_len = wcslen(whome);
 
-	if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
+	if (!IS_ABSOLUTE_PATH_P(whome, whome_len)) {
 	    free(wpath);
 	    xfree(whome);
 	    rb_raise(rb_eArgError, "non-absolute home");
@@ -441,7 +411,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    /* tainted if expanding '~' */
 	    tainted = 1;
 
-	    whome = home_dir();
+	    whome = rb_w32_home_dir();
 	    if (whome == NULL) {
 		free(wpath);
 		free(wdir);
@@ -449,7 +419,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    }
 	    whome_len = wcslen(whome);
 
-	    if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
+	    if (!IS_ABSOLUTE_PATH_P(whome, whome_len)) {
 		free(wpath);
 		free(wdir);
 		xfree(whome);
@@ -575,7 +545,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     buffer_pos[0] = L'\0';
 
     /* tainted if path is relative */
-    if (!tainted && PathIsRelativeW(buffer) && !(buffer_len >= 2 && IS_DIR_UNC_P(buffer)))
+    if (!tainted && !IS_ABSOLUTE_PATH_P(buffer, buffer_len))
 	tainted = 1;
 
     /* FIXME: Make this more robust */
@@ -639,9 +609,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     if (wfullpath != wfullpath_buffer)
 	xfree(wfullpath);
-
-    if (fullpath)
-	xfree(fullpath);
 
     rb_enc_associate(result, path_encoding);
     return result;

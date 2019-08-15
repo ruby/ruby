@@ -5783,7 +5783,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* disasm.c : fix ID to String method
 
-	* compile.c : NODE_SUPER, NODE_ZSUPER check 'poped'
+	* compile.c : NODE_SUPER, NODE_ZSUPER check 'popped'
 	and NODE_RETURN check outer type
 	and NODE_DREGX_ONCE supported (temporarily)
 

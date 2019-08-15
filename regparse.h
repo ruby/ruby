@@ -1,11 +1,11 @@
-#ifndef ONIGURUMA_REGPARSE_H
-#define ONIGURUMA_REGPARSE_H
+#ifndef ONIGMO_REGPARSE_H
+#define ONIGMO_REGPARSE_H
 /**********************************************************************
   regparse.h -  Onigmo (Oniguruma-mod) (regular expression library)
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011       K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2016  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -95,6 +95,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define ENCLOSE_OPTION           (1<<1)
 #define ENCLOSE_STOP_BACKTRACK   (1<<2)
 #define ENCLOSE_CONDITION        (1<<3)
+#define ENCLOSE_ABSENT           (1<<4)
 
 #define NODE_STR_MARGIN         16
 #define NODE_STR_BUF_SIZE       24  /* sizeof(CClassNode) - sizeof(int)*4 */
@@ -185,7 +186,7 @@ typedef struct {
   int target_empty_info;
   struct _Node* head_exact;
   struct _Node* next_head_exact;
-  int is_refered;     /* include called node. don't eliminate even if {0} */
+  int is_referred;     /* include called node. don't eliminate even if {0} */
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
   int comb_exp_check_num;  /* 1,2,3...: check,  0: no check  */
 #endif
@@ -317,9 +318,12 @@ typedef struct {
   int curr_max_regnum;
   int has_recursion;
 #endif
+  unsigned int parse_depth;
   int warnings_flag;
+#ifdef RUBY
   const char* sourcefile;
   int sourceline;
+#endif
 } ScanEnv;
 
 
@@ -332,36 +336,35 @@ typedef struct {
   int new_val;
 } GroupNumRemap;
 
-extern int    onig_renumber_name_table P_((regex_t* reg, GroupNumRemap* map));
+extern int    onig_renumber_name_table(regex_t* reg, GroupNumRemap* map);
 #endif
 
-extern int    onig_strncmp P_((const UChar* s1, const UChar* s2, int n));
-extern void   onig_strcpy P_((UChar* dest, const UChar* src, const UChar* end));
-extern void   onig_scan_env_set_error_string P_((ScanEnv* env, int ecode, UChar* arg, UChar* arg_end));
-extern int    onig_scan_unsigned_number P_((UChar** src, const UChar* end, OnigEncoding enc));
-extern void   onig_reduce_nested_quantifier P_((Node* pnode, Node* cnode));
-extern void   onig_node_conv_to_str_node P_((Node* node, int raw));
-extern int    onig_node_str_cat P_((Node* node, const UChar* s, const UChar* end));
-extern int    onig_node_str_set P_((Node* node, const UChar* s, const UChar* end));
-extern void   onig_node_free P_((Node* node));
-extern Node*  onig_node_new_enclose P_((int type));
-extern Node*  onig_node_new_anchor P_((int type));
-extern Node*  onig_node_new_str P_((const UChar* s, const UChar* end));
-extern Node*  onig_node_new_list P_((Node* left, Node* right));
-extern Node*  onig_node_list_add P_((Node* list, Node* x));
-extern Node*  onig_node_new_alt P_((Node* left, Node* right));
-extern void   onig_node_str_clear P_((Node* node));
-extern int    onig_free_node_list P_((void));
-extern int    onig_names_free P_((regex_t* reg));
-extern int    onig_parse_make_tree P_((Node** root, const UChar* pattern, const UChar* end, regex_t* reg, ScanEnv* env));
-extern int    onig_free_shared_cclass_table P_((void));
+extern int    onig_strncmp(const UChar* s1, const UChar* s2, int n);
+extern void   onig_strcpy(UChar* dest, const UChar* src, const UChar* end);
+extern void   onig_scan_env_set_error_string(ScanEnv* env, int ecode, UChar* arg, UChar* arg_end);
+extern int    onig_scan_unsigned_number(UChar** src, const UChar* end, OnigEncoding enc);
+extern void   onig_reduce_nested_quantifier(Node* pnode, Node* cnode);
+extern void   onig_node_conv_to_str_node(Node* node, int raw);
+extern int    onig_node_str_cat(Node* node, const UChar* s, const UChar* end);
+extern int    onig_node_str_set(Node* node, const UChar* s, const UChar* end);
+extern void   onig_node_free(Node* node);
+extern Node*  onig_node_new_enclose(int type);
+extern Node*  onig_node_new_anchor(int type);
+extern Node*  onig_node_new_str(const UChar* s, const UChar* end);
+extern Node*  onig_node_new_list(Node* left, Node* right);
+extern Node*  onig_node_list_add(Node* list, Node* x);
+extern Node*  onig_node_new_alt(Node* left, Node* right);
+extern void   onig_node_str_clear(Node* node);
+extern int    onig_names_free(regex_t* reg);
+extern int    onig_parse_make_tree(Node** root, const UChar* pattern, const UChar* end, regex_t* reg, ScanEnv* env);
+extern int    onig_free_shared_cclass_table(void);
 
 #ifdef ONIG_DEBUG
-#ifdef USE_NAMED_GROUP
+# ifdef USE_NAMED_GROUP
 extern int onig_print_names(FILE*, regex_t*);
-#endif
+# endif
 #endif
 
 RUBY_SYMBOL_EXPORT_END
 
-#endif /* ONIGURUMA_REGPARSE_H */
+#endif /* ONIGMO_REGPARSE_H */

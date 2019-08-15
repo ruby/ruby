@@ -3,10 +3,6 @@ require 'rubygems/test_case'
 
 class TestGemResolverConflict < Gem::TestCase
 
-  def test_self_compatibility
-    assert_same Gem::Resolver::Conflict, Gem::Resolver::DependencyConflict
-  end
-
   def test_explanation
     root  =
       dependency_request dep('net-ssh', '>= 2.0.13'), 'rye', '0.9.8'
@@ -15,7 +11,7 @@ class TestGemResolverConflict < Gem::TestCase
 
     dep = Gem::Resolver::DependencyRequest.new dep('net-ssh', '>= 2.0.13'), nil
 
-    spec = quick_spec 'net-ssh', '2.2.2'
+    spec = util_spec 'net-ssh', '2.2.2'
     active =
       Gem::Resolver::ActivationRequest.new spec, dep
 
@@ -85,4 +81,3 @@ class TestGemResolverConflict < Gem::TestCase
   end
 
 end
-

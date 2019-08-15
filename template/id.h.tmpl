@@ -57,6 +57,11 @@ enum ruby_id_types {
 % end
 #define RUBY_TOKEN(t) RUBY_TOKEN_##t
 
+#define RUBY_TOKEN2ID_TYPE(tok, type) ((tok<<RUBY_ID_SCOPE_SHIFT)|type|RUBY_ID_STATIC_SYM)
+% types.each do |type|
+#define TOKEN2<%=type%>ID(tok) RUBY_TOKEN2ID_TYPE(tok, RUBY_ID_<%=type%>)
+% end
+
 enum ruby_method_ids {
 % ids[:token_op].uniq {|_, op| op}.each do |id, op, token|
     id<%=id%> = <%=token ? "RUBY_TOKEN(#{token})" : "'#{op}'"%>,
@@ -66,16 +71,23 @@ enum ruby_method_ids {
     id<%=token%>,
 % end
     tPRESERVED_ID_END,
-% ids.values_at(*types).flatten.each do |token|
-    t<%=token%>,
-% end
-    tNEXT_ID,
+% prev = 'tPRESERVED_ID_END'
 % types.each do |type|
-%   types = ids[type] or next
-%   types.empty? and next
-#define TOKEN2<%=type%>ID(n) id##n = ((t##n<<ID_SCOPE_SHIFT)|ID_<%=type%>|ID_STATIC_SYM)
-%   types.each do |token|
-    TOKEN2<%=type%>ID(<%=token%>),
+%   tokens = ids[type]
+    tTOKEN_<%=type%>_BEGIN = <%=prev%>-1,
+%   tokens.each do |token|
+    t<%=token%>,
+%   end
+%   prev = "tTOKEN_#{type}_END"
+    <%=prev%>,
+% end
+    tNEXT_ID = <%=prev%>,
+% types.each do |type|
+%   tokens = ids[type]
+#define DEFINE_<%=type%>ID_FROM_TOKEN(n) id##n = TOKEN2<%=type%>ID(t##n)
+%   tokens or next
+%   tokens.each do |token|
+    DEFINE_<%=type%>ID_FROM_TOKEN(<%=token%>),
 %   end
 % end
     tLAST_OP_ID = tPRESERVED_ID_END-1,

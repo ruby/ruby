@@ -45,4 +45,12 @@ class URI::TestParser < Test::Unit::TestCase
       URI.parse(1)
     end
   end
+
+  def test_unescape
+    p1 = URI::Parser.new
+    assert_equal("\xe3\x83\x90", p1.unescape("\xe3\x83\x90"))
+    assert_equal("\xe3\x83\x90", p1.unescape('%e3%83%90'))
+    assert_equal("\u3042", p1.unescape('%e3%81%82'.force_encoding(Encoding::US_ASCII)))
+    assert_equal("\xe3\x83\x90\xe3\x83\x90", p1.unescape("\xe3\x83\x90%e3%83%90"))
+  end
 end

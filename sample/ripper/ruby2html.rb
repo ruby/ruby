@@ -73,7 +73,11 @@ class ERB
 end
 
 def ruby2html(f, encoding, css, print_line_number)
-  erb = ERB.new(TEMPLATE, nil, '>')
+  if RUBY_VERSION >= '2.6'
+    erb = ERB.new(TEMPLATE, trim_mode: '>')
+  else
+    erb = ERB.new(TEMPLATE, nil, '>')
+  end
   erb.filename = __FILE__
   erb.lineno = TEMPLATE_LINE
   erb.result(binding())

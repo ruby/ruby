@@ -77,7 +77,7 @@ class Addrinfo
       sock
     end
   end
-  private :connect_internal
+  protected :connect_internal
 
   # :call-seq:
   #   addrinfo.connect_from([local_addr_args], [opts]) {|socket| ... }
@@ -158,7 +158,7 @@ class Addrinfo
   #
   def connect_to(*args, timeout: nil, &block)
     remote_addrinfo = family_addrinfo(*args)
-    remote_addrinfo.send(:connect_internal, self, timeout, &block)
+    remote_addrinfo.connect_internal(self, timeout, &block)
   end
 
   # creates a socket bound to self.
@@ -313,9 +313,9 @@ class BasicSocket < IO
   # but the non-blocking flag is set before the system call
   # and it doesn't retry the system call.
   #
-  # By specifying `exception: false`, the _opts_ hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that sendmsg_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # return the symbol +:wait_writable+ instead.
   def sendmsg_nonblock(mesg, flags = 0, dest_sockaddr = nil, *controls,
                        exception: true)
     __sendmsg_nonblock(mesg, flags, dest_sockaddr, controls, exception)
@@ -336,6 +336,7 @@ class BasicSocket < IO
   # === Parameters
   # * +maxlen+ - the number of bytes to receive from the socket
   # * +flags+ - zero or more of the +MSG_+ options
+  # * +buf+ - destination String buffer
   # * +options+ - keyword hash, supporting `exception: false`
   #
   # === Example
@@ -361,9 +362,9 @@ class BasicSocket < IO
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying recv_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
-  # that recv_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
+  # that recv_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * Socket#recvfrom
@@ -435,12 +436,25 @@ class BasicSocket < IO
   # but non-blocking flag is set before the system call
   # and it doesn't retry the system call.
   #
-  # By specifying `exception: false`, the _opts_ hash allows you to indicate
-  # that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
+  # that recvmsg_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol +:wait_readable+ instead.
   def recvmsg_nonblock(dlen = nil, flags = 0, clen = nil,
                        scm_rights: false, exception: true)
     __recvmsg_nonblock(dlen, flags, clen, scm_rights, exception)
+  end
+
+  # Linux-specific optimizations to avoid fcntl for IO#read_nonblock
+  # and IO#write_nonblock using MSG_DONTWAIT
+  # Do other platforms support MSG_DONTWAIT reliably?
+  if RUBY_PLATFORM =~ /linux/ && Socket.const_defined?(:MSG_DONTWAIT)
+    def read_nonblock(len, str = nil, exception: true) # :nodoc:
+      __read_nonblock(len, str, exception)
+    end
+
+    def write_nonblock(buf, exception: true) # :nodoc:
+      __write_nonblock(buf, exception)
+    end
   end
 end
 
@@ -512,9 +526,9 @@ class Socket < BasicSocket
   # So IO::WaitReadable can be used to rescue the exceptions for retrying
   # recvfrom_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
-  # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead.
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
+  # that recvfrom_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * Socket#recvfrom
@@ -569,9 +583,9 @@ class Socket < BasicSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead.
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * Socket#accept
@@ -675,10 +689,10 @@ class Socket < BasicSocket
         end
       }
     rescue Errno::EADDRINUSE
-      sockets.each {|s| s.close }
+      sockets.each(&:close)
       retry
     rescue Exception
-      sockets.each {|s| s.close }
+      sockets.each(&:close)
       raise
     end
     sockets
@@ -695,7 +709,7 @@ class Socket < BasicSocket
         s.listen(Socket::SOMAXCONN)
       }
     rescue Exception
-      sockets.each {|s| s.close }
+      sockets.each(&:close)
       raise
     end
     sockets
@@ -758,7 +772,7 @@ class Socket < BasicSocket
           raise last_error
         end
       rescue Exception
-        sockets.each {|s| s.close }
+        sockets.each(&:close)
         raise
       end
     end
@@ -766,7 +780,7 @@ class Socket < BasicSocket
       begin
         yield sockets
       ensure
-        sockets.each {|s| s.close }
+        sockets.each(&:close)
       end
     else
       sockets
@@ -897,6 +911,7 @@ class Socket < BasicSocket
         ip_list << ai
       end
     }
+    ip_list.uniq!(&:to_sockaddr)
 
     if port == 0
       sockets = ip_sockets_port0(ip_list, false)
@@ -927,7 +942,7 @@ class Socket < BasicSocket
       begin
         yield sockets
       ensure
-        sockets.each {|s| s.close } if sockets
+        sockets.each(&:close) if sockets
       end
     else
       sockets
@@ -1188,9 +1203,9 @@ class Socket < BasicSocket
   # it is extended by IO::WaitWritable.
   # So IO::WaitWritable can be used to rescue the exceptions for retrying connect_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that connect_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # return the symbol +:wait_writable+ instead.
   #
   # === See
   #  # Socket#connect
@@ -1246,9 +1261,9 @@ class UDPSocket < IPSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
-  # that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
+  # that recvfrom_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * Socket#recvfrom
@@ -1287,9 +1302,9 @@ class TCPServer < TCPSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead.
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * TCPServer#accept
@@ -1328,9 +1343,9 @@ class UNIXServer < UNIXSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead.
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * UNIXServer#accept

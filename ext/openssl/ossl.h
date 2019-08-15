@@ -12,37 +12,12 @@
 
 #include RUBY_EXTCONF_H
 
-#if 0
-  mOSSL = rb_define_module("OpenSSL");
-  mX509 = rb_define_module_under(mOSSL, "X509");
-#endif
-
-/*
-* OpenSSL has defined RFILE and Ruby has defined RFILE - so undef it!
-*/
-#if defined(RFILE) /*&& !defined(OSSL_DEBUG)*/
-#  undef RFILE
-#endif
+#include <assert.h>
 #include <ruby.h>
+#include <errno.h>
 #include <ruby/io.h>
 #include <ruby/thread.h>
-
 #include <openssl/opensslv.h>
-
-#ifdef HAVE_ASSERT_H
-#  include <assert.h>
-#else
-#  define assert(condition)
-#endif
-
-#if defined(_WIN32) && !defined(LIBRESSL_VERSION_NUMBER)
-#  include <openssl/e_os2.h>
-#  if !defined(OPENSSL_SYS_WIN32)
-#    define OPENSSL_SYS_WIN32 1
-#  endif
-#  include <winsock2.h>
-#endif
-#include <errno.h>
 #include <openssl/err.h>
 #include <openssl/asn1.h>
 #include <openssl/x509v3.h>
@@ -52,16 +27,18 @@
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include <openssl/conf.h>
-#include <openssl/conf_api.h>
-#if !defined(_WIN32)
-#  include <openssl/crypto.h>
-#endif
+#include <openssl/crypto.h>
 #if !defined(OPENSSL_NO_ENGINE)
 #  include <openssl/engine.h>
 #endif
 #if !defined(OPENSSL_NO_OCSP)
 #  include <openssl/ocsp.h>
 #endif
+#include <openssl/bn.h>
+#include <openssl/rsa.h>
+#include <openssl/dsa.h>
+#include <openssl/evp.h>
+#include <openssl/dh.h>
 
 /*
  * Common Module
@@ -83,29 +60,29 @@ extern VALUE eOSSLError;
   }\
 } while (0)
 
-#define OSSL_Check_Instance(obj, klass) do {\
-  if (!rb_obj_is_instance_of((obj), (klass))) {\
-    ossl_raise(rb_eTypeError, "wrong argument (%"PRIsVALUE")! (Expected instance of %"PRIsVALUE")",\
-               rb_obj_class(obj), (klass));\
-  }\
-} while (0)
-
-#define OSSL_Check_Same_Class(obj1, obj2) do {\
-  if (!rb_obj_is_instance_of((obj1), rb_obj_class(obj2))) {\
-    ossl_raise(rb_eTypeError, "wrong argument type");\
-  }\
-} while (0)
+/*
+ * Type conversions
+ */
+#if !defined(NUM2UINT64T) /* in case Ruby starts to provide */
+#  if SIZEOF_LONG == 8
+#    define NUM2UINT64T(x) ((uint64_t)NUM2ULONG(x))
+#  elif defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
+#    define NUM2UINT64T(x) ((uint64_t)NUM2ULL(x))
+#  else
+#    error "unknown platform; no 64-bit width integer"
+#  endif
+#endif
 
 /*
  * Data Conversion
  */
-STACK_OF(X509) *ossl_x509_ary2sk0(VALUE);
 STACK_OF(X509) *ossl_x509_ary2sk(VALUE);
 STACK_OF(X509) *ossl_protect_x509_ary2sk(VALUE,int*);
 VALUE ossl_x509_sk2ary(const STACK_OF(X509) *certs);
 VALUE ossl_x509crl_sk2ary(const STACK_OF(X509_CRL) *crl);
 VALUE ossl_x509name_sk2ary(const STACK_OF(X509_NAME) *names);
 VALUE ossl_buf2str(char *buf, int len);
+VALUE ossl_str_new(const char *, long, int *);
 #define ossl_str_adjust(str, p) \
 do{\
     long len = RSTRING_LEN(str);\
@@ -142,24 +119,13 @@ int ossl_pem_passwd_cb(char *, int, int, void *);
 /*
  * ERRor messages
  */
-#define OSSL_ErrMsg() ERR_reason_error_string(ERR_get_error())
 NORETURN(void ossl_raise(VALUE, const char *, ...));
-VALUE ossl_exc_new(VALUE, const char *, ...);
 /* Clear OpenSSL error queue. If dOSSL is set, rb_warn() them. */
 void ossl_clear_error(void);
 
 /*
- * Verify callback
- */
-extern int ossl_store_ctx_ex_verify_cb_idx;
-extern int ossl_store_ex_verify_cb_idx;
-
-int ossl_verify_cb_call(VALUE, int, X509_STORE_CTX *);
-
-/*
  * String to DER String
  */
-extern ID ossl_s_to_der;
 VALUE ossl_to_der(VALUE);
 VALUE ossl_to_der_if_possible(VALUE);
 
@@ -177,20 +143,9 @@ extern VALUE dOSSL;
   } \
 } while (0)
 
-#define OSSL_Warning(fmt, ...) do { \
-  OSSL_Debug((fmt), ##__VA_ARGS__); \
-  rb_warning((fmt), ##__VA_ARGS__); \
-} while (0)
-
-#define OSSL_Warn(fmt, ...) do { \
-  OSSL_Debug((fmt), ##__VA_ARGS__); \
-  rb_warn((fmt), ##__VA_ARGS__); \
-} while (0)
 #else
 void ossl_debug(const char *, ...);
 #define OSSL_Debug ossl_debug
-#define OSSL_Warning rb_warning
-#define OSSL_Warn rb_warn
 #endif
 
 /*
@@ -209,13 +164,13 @@ void ossl_debug(const char *, ...);
 #include "ossl_ocsp.h"
 #include "ossl_pkcs12.h"
 #include "ossl_pkcs7.h"
-#include "ossl_pkcs5.h"
 #include "ossl_pkey.h"
 #include "ossl_rand.h"
 #include "ossl_ssl.h"
 #include "ossl_version.h"
 #include "ossl_x509.h"
 #include "ossl_engine.h"
+#include "ossl_kdf.h"
 
 void Init_openssl(void);
 

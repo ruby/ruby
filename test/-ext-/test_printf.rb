@@ -24,6 +24,8 @@ class Test_SPrintf < Test::Unit::TestCase
     assert_equal('["\n"]', Bug::Printf.q("\n"))
     assert_equal('[aaa]', Bug::Printf.q('aaa'))
     assert_equal('[a a]', Bug::Printf.q('a a'))
+    assert_equal('[]', Bug::Printf.q(''))
+    assert_equal('[""]', Bug::Printf.q(:''))
   end
 
   def test_encoding
@@ -183,5 +185,9 @@ class Test_SPrintf < Test::Unit::TestCase
     assert_equal("a", Bug::Printf.("s", "a", prec: 3)[0])
     assert_equal("  a", Bug::Printf.("s", "a", width: 3, prec: 3)[0])
     assert_equal("a  ", Bug::Printf.("s", "a", minus: true, width: 3, prec: 3)[0])
+  end
+
+  def test_snprintf_count
+    assert_equal(3, Bug::Printf.sncount("foo"))
   end
 end

@@ -1,13 +1,13 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'net/smtp'
 require 'stringio'
 require 'test/unit'
 
 module Net
   class TestSMTP < Test::Unit::TestCase
-    CA_FILE = File.expand_path("../imap/cacert.pem", __dir__)
-    SERVER_KEY = File.expand_path("../imap/server.key", __dir__)
-    SERVER_CERT = File.expand_path("../imap/server.crt", __dir__)
+    CA_FILE = File.expand_path("../fixtures/cacert.pem", __dir__)
+    SERVER_KEY = File.expand_path("../fixtures/server.key", __dir__)
+    SERVER_CERT = File.expand_path("../fixtures/server.crt", __dir__)
 
     class FakeSocket
       attr_reader :write_io
@@ -135,6 +135,8 @@ module Net
         sock.close if sock
         servers.each(&:close)
       end
+    rescue LoadError
+      # skip (require openssl)
     end
 
     def test_tls_connect_timeout
@@ -151,9 +153,34 @@ module Net
           smtp.start do
           end
         end
+      rescue LoadError
+        # skip (require openssl)
       ensure
         sock.close if sock
         servers.each(&:close)
+      end
+    end
+
+    def test_eof_error_backtrace
+      bug13018 = '[ruby-core:78550] [Bug #13018]'
+      servers = Socket.tcp_server_sockets("localhost", 0)
+      begin
+        sock = nil
+        t = Thread.start do
+          sock = accept(servers)
+          sock.close
+        end
+        smtp = Net::SMTP.new("localhost", servers[0].local_address.ip_port)
+        e = assert_raise(EOFError, bug13018) do
+          smtp.start do
+          end
+        end
+        assert_equal(EOFError, e.class, bug13018)
+        assert(e.backtrace.grep(%r"\bnet/smtp\.rb:").size > 0, bug13018)
+      ensure
+        sock.close if sock
+        servers.each(&:close)
+        t.join
       end
     end
 
@@ -163,7 +190,7 @@ module Net
       loop do
         readable, = IO.select(servers.map(&:to_io))
         readable.each do |r|
-          sock, addr = r.accept_nonblock(exception: false)
+          sock, = r.accept_nonblock(exception: false)
           next if sock == :wait_readable
           return sock
         end

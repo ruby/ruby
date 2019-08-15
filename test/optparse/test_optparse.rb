@@ -9,7 +9,7 @@ class TestOptionParser < Test::Unit::TestCase
   end
 
   class DummyOutput < String
-    alias write <<
+    alias write concat
   end
   def assert_no_error(*args)
     $stderr, stderr = DummyOutput.new, $stderr

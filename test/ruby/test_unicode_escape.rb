@@ -256,16 +256,17 @@ EOS
      assert_raise(SyntaxError) { eval %q("\ughij") }       # bad hex digits
      assert_raise(SyntaxError) { eval %q("\u{ghij}") }     # bad hex digits
 
-     assert_raise(SyntaxError) { eval %q("\u{123 456 }")}  # extra space
-     assert_raise(SyntaxError) { eval %q("\u{ 123 456}")}  # extra space
-     assert_raise(SyntaxError) { eval %q("\u{123  456}")}  # extra space
+     assert_raise_with_message(SyntaxError, /invalid/) {
+       eval %q("\u{123.}")  # bad char
+     }
 
-# The utf-8 encoding object currently does not object to codepoints
-# in the surrogate blocks, so these do not raise an error.
-#     assert_raise(SyntaxError) { "\uD800" }       # surrogate block
-#     assert_raise(SyntaxError) { "\uDCBA" }       # surrogate block
-#     assert_raise(SyntaxError) { "\uDFFF" }       # surrogate block
-#     assert_raise(SyntaxError) { "\uD847\uDD9A" } # surrogate pair
+     # assert_raise(SyntaxError) { eval %q("\u{123 456 }")}  # extra space
+     # assert_raise(SyntaxError) { eval %q("\u{ 123 456}")}  # extra space
+     # assert_raise(SyntaxError) { eval %q("\u{123  456}")}  # extra space
 
+     assert_raise(SyntaxError) { eval %q("\uD800") }       # surrogate block
+     assert_raise(SyntaxError) { eval %q("\uDCBA") }       # surrogate block
+     assert_raise(SyntaxError) { eval %q("\uDFFF") }       # surrogate block
+     assert_raise(SyntaxError) { eval %q("\uD847\uDD9A") } # surrogate pair
   end
 end

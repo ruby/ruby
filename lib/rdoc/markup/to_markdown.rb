@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # :markup: markdown
 
 ##
@@ -19,8 +19,8 @@ class RDoc::Markup::ToMarkdown < RDoc::Markup::ToRdoc
     @headings[5] = ['##### ',  '']
     @headings[6] = ['###### ', '']
 
-    add_special_RDOCLINK
-    add_special_TIDYLINK
+    add_regexp_handling_RDOCLINK
+    add_regexp_handling_TIDYLINK
 
     @hard_break = "  \n"
   end
@@ -37,7 +37,7 @@ class RDoc::Markup::ToMarkdown < RDoc::Markup::ToRdoc
   ##
   # Adds a newline to the output
 
-  def handle_special_HARD_BREAK special
+  def handle_regexp_HARD_BREAK target
     "  \n"
   end
 
@@ -131,7 +131,7 @@ class RDoc::Markup::ToMarkdown < RDoc::Markup::ToRdoc
       @res << part
     end
 
-    @res << "\n" unless @res =~ /\n\z/
+    @res << "\n"
   end
 
   ##
@@ -166,8 +166,8 @@ class RDoc::Markup::ToMarkdown < RDoc::Markup::ToRdoc
   ##
   # Converts the RDoc markup tidylink into a Markdown.style link.
 
-  def handle_special_TIDYLINK special
-    text = special.text
+  def handle_regexp_TIDYLINK target
+    text = target.text
 
     return text unless text =~ /\{(.*?)\}\[(.*?)\]/ or text =~ /(\S+)\[(.*?)\]/
 
@@ -184,8 +184,8 @@ class RDoc::Markup::ToMarkdown < RDoc::Markup::ToRdoc
   ##
   # Converts the rdoc-...: links into a Markdown.style links.
 
-  def handle_special_RDOCLINK special
-    handle_rdoc_link special.text
+  def handle_regexp_RDOCLINK target
+    handle_rdoc_link target.text
   end
 
 end

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Outputs RDoc markup with hot backspace action!  You will probably need a
 # pager to use this output format.
@@ -41,7 +41,7 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   end
 
   ##
-  # Turns on or off special handling for +convert_string+
+  # Turns on or off regexp handling for +convert_string+
 
   def annotate tag
     case tag
@@ -54,9 +54,9 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   end
 
   ##
-  # Calls convert_string on the result of convert_special
+  # Calls convert_string on the result of convert_regexp_handling
 
-  def convert_special special
+  def convert_regexp_handling target
     convert_string super
   end
 

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # dummyparser.rb
 #
@@ -24,6 +24,16 @@ class Node
     end
     list
   end
+
+  class Sym < self
+    def initialize(name)
+      @name = name
+    end
+
+    def to_s
+      ":#{@name}"
+    end
+  end
 end
 
 class NodeList
@@ -35,6 +45,11 @@ class NodeList
 
   def push(item)
     @list.push item
+    self
+  end
+
+  def concat(item)
+    @list.concat item
     self
   end
 
@@ -148,6 +163,10 @@ class DummyParser < Ripper
     "*#{var}"
   end
 
+  def on_kwrest_param(var)
+    "**#{var}"
+  end
+
   def on_blockarg(var)
     "&#{var}"
   end
@@ -186,7 +205,7 @@ class DummyParser < Ripper
   end
 
   def on_word_new
-    ""
+    "".dup
   end
 
   def on_word_add(word, w)
@@ -207,6 +226,50 @@ class DummyParser < Ripper
 
   def on_qwords_add(words, word)
     words.push word
+  end
+
+  def on_symbols_new
+    NodeList.new
+  end
+
+  def on_symbols_add(symbols, symbol)
+    symbols.push Node::Sym.new(symbol)
+  end
+
+  def on_qsymbols_new
+    NodeList.new
+  end
+
+  def on_qsymbols_add(symbols, symbol)
+    symbols.push Node::Sym.new(symbol)
+  end
+
+  def on_mlhs_new
+    NodeList.new
+  end
+
+  def on_mlhs_paren(list)
+    Node.new(:mlhs, list)
+  end
+
+  def on_mlhs_add(list, node)
+    list.push node
+  end
+
+  def on_mlhs_add_block(list, blk)
+    if blk
+      list.push('&' + blk.to_s)
+    else
+      list
+    end
+  end
+
+  def on_mlhs_add_star(list, arg)
+    list.push('*' + arg.to_s)
+  end
+
+  def on_mlhs_add_post(list, post)
+    list.concat(post.list)
   end
 
   def on_rescue(exc, *rest)

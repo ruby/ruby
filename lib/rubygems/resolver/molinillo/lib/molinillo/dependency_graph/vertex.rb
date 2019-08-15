@@ -10,7 +10,7 @@ module Gem::Resolver::Molinillo
       # @return [Object] the payload the vertex holds
       attr_accessor :payload
 
-      # @return [Arrary<Object>] the explicit requirements that required
+      # @return [Array<Object>] the explicit requirements that required
       #   this vertex
       attr_reader :explicit_requirements
 
@@ -81,6 +81,7 @@ module Gem::Resolver::Molinillo
       # @return [Boolean] whether the two vertices are equal, determined
       #   by a recursive traversal of each {Vertex#successors}
       def ==(other)
+        return true if equal?(other)
         shallow_eql?(other) &&
           successors.to_set == other.successors.to_set
       end
@@ -89,6 +90,7 @@ module Gem::Resolver::Molinillo
       # @return [Boolean] whether the two vertices are equal, determined
       #   solely by {#name} and {#payload} equality
       def shallow_eql?(other)
+        return true if equal?(other)
         other &&
           name == other.name &&
           payload == other.payload

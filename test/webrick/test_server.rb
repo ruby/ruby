@@ -65,6 +65,7 @@ class TestWEBrickServer < Test::Unit::TestCase
     }
     TestWEBrick.start_server(Echo, config){|server, addr, port, log|
       true while server.status != :Running
+      sleep 1 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # server.status behaves unexpectedly with --jit-wait
       assert_equal(1, started, log.call)
       assert_equal(0, stopped, log.call)
       assert_equal(0, accepted, log.call)
