@@ -93,36 +93,22 @@ require "forwardable"
 require "English"
 require "date"
 require "stringio"
-require_relative "csv/table"
+
+require_relative "csv/fields_converter"
+require_relative "csv/match_p"
+require_relative "csv/parser"
 require_relative "csv/row"
+require_relative "csv/table"
+require_relative "csv/writer"
 
-# This provides String#match? and Regexp#match? for Ruby 2.3.
-unless String.method_defined?(:match?)
-  class CSV
-    module MatchP
-      refine String do
-        def match?(pattern)
-          self =~ pattern
-        end
-      end
-
-      refine Regexp do
-        def match?(string)
-          self =~ string
-        end
-      end
-    end
-  end
-
-  using CSV::MatchP
-end
+using CSV::MatchP if CSV.const_defined?(:MatchP)
 
 #
 # This class provides a complete interface to CSV files and data.  It offers
 # tools to enable you to read and write to and from Strings or IO objects, as
 # needed.
 #
-# The most generic interface of a class is:
+# The most generic interface of the library is:
 #
 #    csv = CSV.new(string_or_io, **options)
 #
@@ -204,18 +190,18 @@ end
 #   # Headers are part of data
 #   data = CSV.parse(<<~ROWS, headers: true)
 #     Name,Department,Salary
-#     Bob,Engeneering,1000
+#     Bob,Engineering,1000
 #     Jane,Sales,2000
 #     John,Management,5000
 #   ROWS
 #
 #   data.class      #=> CSV::Table
-#   data.first      #=> #<CSV::Row "Name":"Bob" "Department":"Engeneering" "Salary":"1000">
-#   data.first.to_h #=> {"Name"=>"Bob", "Department"=>"Engeneering", "Salary"=>"1000"}
+#   data.first      #=> #<CSV::Row "Name":"Bob" "Department":"Engineering" "Salary":"1000">
+#   data.first.to_h #=> {"Name"=>"Bob", "Department"=>"Engineering", "Salary"=>"1000"}
 #
 #   # Headers provided by developer
-#   data = CSV.parse('Bob,Engeneering,1000', headers: %i[name department salary])
-#   data.first      #=> #<CSV::Row name:"Bob" department:"Engeneering" salary:"1000">
+#   data = CSV.parse('Bob,Engineering,1000', headers: %i[name department salary])
+#   data.first      #=> #<CSV::Row name:"Bob" department:"Engineering" salary:"1000">
 #
 # === Typed data reading
 #
@@ -411,6 +397,7 @@ class CSV
   # <b><tt>:force_quotes</tt></b>::       +false+
   # <b><tt>:skip_lines</tt></b>::         +nil+
   # <b><tt>:liberal_parsing</tt></b>::    +false+
+  # <b><tt>:quote_empty</tt></b>::        +true+
   #
   DEFAULT_OPTIONS = {
     col_sep:            ",",
@@ -426,6 +413,7 @@ class CSV
     force_quotes:       false,
     skip_lines:         nil,
     liberal_parsing:    false,
+    quote_empty:        true,
   }.freeze
 
   #
@@ -516,9 +504,9 @@ class CSV
   # <tt>encoding: "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file
   # but transcode it to UTF-8 before CSV parses it.
   #
-  def self.foreach(path, **options, &block)
-    return to_enum(__method__, path, options) unless block_given?
-    open(path, options) do |csv|
+  def self.foreach(path, mode="r", **options, &block)
+    return to_enum(__method__, path, mode, options) unless block_given?
+    open(path, mode, options) do |csv|
       csv.each(&block)
     end
   end
@@ -548,7 +536,7 @@ class CSV
       str.seek(0, IO::SEEK_END)
     else
       encoding = options[:encoding]
-      str      = String.new
+      str = +""
       str.force_encoding(encoding) if encoding
     end
     csv = new(str, options) # wrap
@@ -571,11 +559,11 @@ class CSV
   #
   def self.generate_line(row, **options)
     options = {row_sep: $INPUT_RECORD_SEPARATOR}.merge(options)
-    str = String.new
+    str = +""
     if options[:encoding]
       str.force_encoding(options[:encoding])
-    elsif field = row.find { |f| not f.nil? }
-      str.force_encoding(String(field).encoding)
+    elsif field = row.find {|f| f.is_a?(String)}
+      str.force_encoding(field.encoding)
     end
     (new(str, options) << row).string
   end
@@ -896,81 +884,146 @@ class CSV
   # <b><tt>:empty_value</tt></b>::        When set an object, any values of a
   #                                       blank string field is replaced by
   #                                       the set object.
+  # <b><tt>:quote_empty</tt></b>::        When set to a +true+ value, CSV will
+  #                                       quote empty values with double quotes.
+  #                                       When +false+, CSV will emit an
+  #                                       empty string for an empty field value.
+  # <b><tt>:write_converters</tt></b>::   Converts values on each line with the
+  #                                       specified <tt>Proc</tt> object(s),
+  #                                       which receive a <tt>String</tt> value
+  #                                       and return a <tt>String</tt> or +nil+
+  #                                       value.
+  #                                       When an array is specified, each
+  #                                       converter will be applied in order.
+  # <b><tt>:write_nil_value</tt></b>::    When a <tt>String</tt> value, +nil+
+  #                                       value(s) on each line will be replaced
+  #                                       with the specified value.
+  # <b><tt>:write_empty_value</tt></b>::  When a <tt>String</tt> or +nil+ value,
+  #                                       empty value(s) on each line will be
+  #                                       replaced with the specified value.
+  # <b><tt>:strip</tt></b>::              When set to a +true+ value, CSV will
+  #                                       strip "\t\r\n\f\v" around the values.
+  #                                       If you specify a string instead of
+  #                                       +true+, CSV will strip string. The
+  #                                       length of string must be 1.
   #
   # See CSV::DEFAULT_OPTIONS for the default settings.
   #
   # Options cannot be overridden in the instance methods for performance reasons,
   # so be sure to set what you want here.
   #
-  def initialize(data, col_sep: ",", row_sep: :auto, quote_char: '"', field_size_limit:   nil,
-                 converters: nil, unconverted_fields: nil, headers: false, return_headers: false,
-                 write_headers: nil, header_converters: nil, skip_blanks: false, force_quotes: false,
-                 skip_lines: nil, liberal_parsing: false, internal_encoding: nil, external_encoding: nil, encoding: nil,
+  def initialize(data,
+                 col_sep: ",",
+                 row_sep: :auto,
+                 quote_char: '"',
+                 field_size_limit: nil,
+                 converters: nil,
+                 unconverted_fields: nil,
+                 headers: false,
+                 return_headers: false,
+                 write_headers: nil,
+                 header_converters: nil,
+                 skip_blanks: false,
+                 force_quotes: false,
+                 skip_lines: nil,
+                 liberal_parsing: false,
+                 internal_encoding: nil,
+                 external_encoding: nil,
+                 encoding: nil,
                  nil_value: nil,
-                 empty_value: "")
+                 empty_value: "",
+                 quote_empty: true,
+                 write_converters: nil,
+                 write_nil_value: nil,
+                 write_empty_value: "",
+                 strip: false)
     raise ArgumentError.new("Cannot parse nil as CSV") if data.nil?
 
     # create the IO object we will read from
     @io = data.is_a?(String) ? StringIO.new(data) : data
     @encoding = determine_encoding(encoding, internal_encoding)
-    #
-    # prepare for building safe regular expressions in the target encoding,
-    # if we can transcode the needed characters
-    #
-    @re_esc   = "\\".encode(@encoding).freeze rescue ""
-    @re_chars = /#{%"[-\\]\\[\\.^$?*+{}()|# \r\n\t\f\v]".encode(@encoding)}/
-    @unconverted_fields = unconverted_fields
 
-    # Stores header row settings and loads header converters, if needed.
-    @use_headers    = headers
-    @return_headers = return_headers
-    @write_headers  = write_headers
+    @base_fields_converter_options = {
+      nil_value: nil_value,
+      empty_value: empty_value,
+    }
+    @write_fields_converter_options = {
+      nil_value: write_nil_value,
+      empty_value: write_empty_value,
+    }
+    @initial_converters = converters
+    @initial_header_converters = header_converters
+    @initial_write_converters = write_converters
 
-    # headers must be delayed until shift(), in case they need a row of content
-    @headers = nil
+    @parser_options = {
+      column_separator: col_sep,
+      row_separator: row_sep,
+      quote_character: quote_char,
+      field_size_limit: field_size_limit,
+      unconverted_fields: unconverted_fields,
+      headers: headers,
+      return_headers: return_headers,
+      skip_blanks: skip_blanks,
+      skip_lines: skip_lines,
+      liberal_parsing: liberal_parsing,
+      encoding: @encoding,
+      nil_value: nil_value,
+      empty_value: empty_value,
+      strip: strip,
+    }
+    @parser = nil
+    @parser_enumerator = nil
+    @eof_error = nil
 
-    @nil_value = nil_value
-    @empty_value = empty_value
-    @empty_value_is_empty_string = (empty_value == "")
+    @writer_options = {
+      encoding: @encoding,
+      force_encoding: (not encoding.nil?),
+      force_quotes: force_quotes,
+      headers: headers,
+      write_headers: write_headers,
+      column_separator: col_sep,
+      row_separator: row_sep,
+      quote_character: quote_char,
+      quote_empty: quote_empty,
+    }
 
-    init_separators(col_sep, row_sep, quote_char, force_quotes)
-    init_parsers(skip_blanks, field_size_limit, liberal_parsing)
-    init_converters(converters, :@converters, :convert)
-    init_converters(header_converters, :@header_converters, :header_convert)
-    init_comments(skip_lines)
-
-    @force_encoding = !!encoding
-
-    # track our own lineno since IO gets confused about line-ends is CSV fields
-    @lineno = 0
-
-    # make sure headers have been assigned
-    if header_row? and [Array, String].include? @use_headers.class and @write_headers
-      parse_headers  # won't read data for Array or String
-      self << @headers
-    end
+    @writer = nil
+    writer if @writer_options[:write_headers]
   end
 
   #
   # The encoded <tt>:col_sep</tt> used in parsing and writing.  See CSV::new
   # for details.
   #
-  attr_reader :col_sep
+  def col_sep
+    parser.column_separator
+  end
+
   #
   # The encoded <tt>:row_sep</tt> used in parsing and writing.  See CSV::new
   # for details.
   #
-  attr_reader :row_sep
+  def row_sep
+    parser.row_separator
+  end
+
   #
   # The encoded <tt>:quote_char</tt> used in parsing and writing.  See CSV::new
   # for details.
   #
-  attr_reader :quote_char
+  def quote_char
+    parser.quote_character
+  end
+
   # The limit for field size, if any.  See CSV::new for details.
-  attr_reader :field_size_limit
+  def field_size_limit
+    parser.field_size_limit
+  end
 
   # The regex marking a line as a comment. See CSV::new for details
-  attr_reader :skip_lines
+  def skip_lines
+    parser.skip_lines
+  end
 
   #
   # Returns the current list of converters in effect.  See CSV::new for details.
@@ -978,7 +1031,7 @@ class CSV
   # as is.
   #
   def converters
-    @converters.map do |converter|
+    parser_fields_converter.map do |converter|
       name = Converters.rassoc(converter)
       name ? name.first : converter
     end
@@ -987,42 +1040,68 @@ class CSV
   # Returns +true+ if unconverted_fields() to parsed results.  See CSV::new
   # for details.
   #
-  def unconverted_fields?() @unconverted_fields end
+  def unconverted_fields?
+    parser.unconverted_fields?
+  end
+
   #
   # Returns +nil+ if headers will not be used, +true+ if they will but have not
   # yet been read, or the actual headers after they have been read.  See
   # CSV::new for details.
   #
   def headers
-    @headers || true if @use_headers
+    if @writer
+      @writer.headers
+    else
+      parsed_headers = parser.headers
+      return parsed_headers if parsed_headers
+      raw_headers = @parser_options[:headers]
+      raw_headers = nil if raw_headers == false
+      raw_headers
+    end
   end
   #
   # Returns +true+ if headers will be returned as a row of results.
   # See CSV::new for details.
   #
-  def return_headers?()     @return_headers     end
+  def return_headers?
+    parser.return_headers?
+  end
+
   # Returns +true+ if headers are written in output. See CSV::new for details.
-  def write_headers?()      @write_headers      end
+  def write_headers?
+    @writer_options[:write_headers]
+  end
+
   #
   # Returns the current list of converters in effect for headers.  See CSV::new
   # for details.  Built-in converters will be returned by name, while others
   # will be returned as is.
   #
   def header_converters
-    @header_converters.map do |converter|
+    header_fields_converter.map do |converter|
       name = HeaderConverters.rassoc(converter)
       name ? name.first : converter
     end
   end
+
   #
   # Returns +true+ blank lines are skipped by the parser. See CSV::new
   # for details.
   #
-  def skip_blanks?()        @skip_blanks        end
+  def skip_blanks?
+    parser.skip_blanks?
+  end
+
   # Returns +true+ if all output fields are quoted. See CSV::new for details.
-  def force_quotes?()       @force_quotes       end
+  def force_quotes?
+    @writer_options[:force_quotes]
+  end
+
   # Returns +true+ if illegal input is handled. See CSV::new for details.
-  def liberal_parsing?()    @liberal_parsing    end
+  def liberal_parsing?
+    parser.liberal_parsing?
+  end
 
   #
   # The Encoding CSV is parsing or writing in.  This will be the Encoding you
@@ -1031,26 +1110,90 @@ class CSV
   attr_reader :encoding
 
   #
-  # The line number of the last row read from this file.  Fields with nested
+  # The line number of the last row read from this file. Fields with nested
   # line-end characters will not affect this count.
   #
-  attr_reader :lineno, :line
+  def lineno
+    if @writer
+      @writer.lineno
+    else
+      parser.lineno
+    end
+  end
+
+  #
+  # The last row read from this file.
+  #
+  def line
+    parser.line
+  end
 
   ### IO and StringIO Delegation ###
 
   extend Forwardable
-  def_delegators :@io, :binmode, :binmode?, :close, :close_read, :close_write,
-                       :closed?, :eof, :eof?, :external_encoding, :fcntl,
-                       :fileno, :flock, :flush, :fsync, :internal_encoding,
-                       :ioctl, :isatty, :path, :pid, :pos, :pos=, :reopen,
-                       :seek, :stat, :string, :sync, :sync=, :tell, :to_i,
-                       :to_io, :truncate, :tty?
+  def_delegators :@io, :binmode, :close, :close_read, :close_write,
+                       :closed?, :external_encoding, :fcntl,
+                       :fileno, :flush, :fsync, :internal_encoding,
+                       :isatty, :pid, :pos, :pos=, :reopen,
+                       :seek, :string, :sync, :sync=, :tell,
+                       :truncate, :tty?
+
+  def binmode?
+    if @io.respond_to?(:binmode?)
+      @io.binmode?
+    else
+      false
+    end
+  end
+
+  def flock(*args)
+    raise NotImplementedError unless @io.respond_to?(:flock)
+    @io.flock(*args)
+  end
+
+  def ioctl(*args)
+    raise NotImplementedError unless @io.respond_to?(:ioctl)
+    @io.ioctl(*args)
+  end
+
+  def path
+    @io.path if @io.respond_to?(:path)
+  end
+
+  def stat(*args)
+    raise NotImplementedError unless @io.respond_to?(:stat)
+    @io.stat(*args)
+  end
+
+  def to_i
+    raise NotImplementedError unless @io.respond_to?(:to_i)
+    @io.to_i
+  end
+
+  def to_io
+    @io.respond_to?(:to_io) ? @io.to_io : @io
+  end
+
+  def eof?
+    return false if @eof_error
+    begin
+      parser_enumerator.peek
+      false
+    rescue MalformedCSVError => error
+      @eof_error = error
+      false
+    rescue StopIteration
+      true
+    end
+  end
+  alias_method :eof, :eof?
 
   # Rewinds the underlying IO object and resets CSV's lineno() counter.
   def rewind
-    @headers = nil
-    @lineno  = 0
-
+    @parser = nil
+    @parser_enumerator = nil
+    @eof_error = nil
+    @writer.rewind if @writer
     @io.rewind
   end
 
@@ -1064,34 +1207,8 @@ class CSV
   # The data source must be open for writing.
   #
   def <<(row)
-    # make sure headers have been assigned
-    if header_row? and [Array, String].include? @use_headers.class and !@write_headers
-      parse_headers  # won't read data for Array or String
-    end
-
-    # handle CSV::Row objects and Hashes
-    row = case row
-          when self.class::Row then row.fields
-          when Hash            then @headers.map { |header| row[header] }
-          else                      row
-          end
-
-    @headers =  row if header_row?
-    @lineno  += 1
-
-    output = row.map(&@quote).join(@col_sep) + @row_sep  # quote and separate
-    if @io.is_a?(StringIO)             and
-       output.encoding != (encoding = raw_encoding)
-      if @force_encoding
-        output = output.encode(encoding)
-      elsif (compatible_encoding = Encoding.compatible?(@io.string, output))
-        @io.set_encoding(compatible_encoding)
-        @io.seek(0, IO::SEEK_END)
-      end
-    end
-    @io << output
-
-    self  # for chaining
+    writer << row
+    self
   end
   alias_method :add_row, :<<
   alias_method :puts,    :<<
@@ -1112,7 +1229,7 @@ class CSV
   # converted field or the field itself.
   #
   def convert(name = nil, &converter)
-    add_converter(:@converters, self.class::Converters, name, &converter)
+    parser_fields_converter.add_converter(name, &converter)
   end
 
   #
@@ -1127,10 +1244,7 @@ class CSV
   # effect.
   #
   def header_convert(name = nil, &converter)
-    add_converter( :@header_converters,
-                   self.class::HeaderConverters,
-                   name,
-                   &converter )
+    header_fields_converter.add_converter(name, &converter)
   end
 
   include Enumerable
@@ -1142,14 +1256,8 @@ class CSV
   #
   # The data source must be open for reading.
   #
-  def each
-    if block_given?
-      while row = shift
-        yield row
-      end
-    else
-      to_enum
-    end
+  def each(&block)
+    parser_enumerator.each(&block)
   end
 
   #
@@ -1159,8 +1267,8 @@ class CSV
   #
   def read
     rows = to_a
-    if @use_headers
-      Table.new(rows)
+    if parser.use_headers?
+      Table.new(rows, headers: parser.headers)
     else
       rows
     end
@@ -1169,7 +1277,7 @@ class CSV
 
   # Returns +true+ if the next row read will be a header row.
   def header_row?
-    @use_headers and @headers.nil?
+    parser.header_row?
   end
 
   #
@@ -1180,171 +1288,14 @@ class CSV
   # The data source must be open for reading.
   #
   def shift
-    #########################################################################
-    ### This method is purposefully kept a bit long as simple conditional ###
-    ### checks are faster than numerous (expensive) method calls.         ###
-    #########################################################################
-
-    # handle headers not based on document content
-    if header_row? and @return_headers and
-       [Array, String].include? @use_headers.class
-      if @unconverted_fields
-        return add_unconverted_fields(parse_headers, Array.new)
-      else
-        return parse_headers
-      end
+    if @eof_error
+      eof_error, @eof_error = @eof_error, nil
+      raise eof_error
     end
-
-    #
-    # it can take multiple calls to <tt>@io.gets()</tt> to get a full line,
-    # because of \r and/or \n characters embedded in quoted fields
-    #
-    in_extended_col = false
-    csv             = Array.new
-
-    loop do
-      # add another read to the line
-      unless parse = @io.gets(@row_sep)
-        return nil
-      end
-
-      if in_extended_col
-        @line.concat(parse)
-      else
-        @line = parse.clone
-      end
-
-      begin
-        parse.sub!(@parsers[:line_end], "")
-      rescue ArgumentError
-        unless parse.valid_encoding?
-          message = "Invalid byte sequence in #{parse.encoding}"
-          raise MalformedCSVError.new(message, lineno + 1)
-        end
-        raise
-      end
-
-      if csv.empty?
-        #
-        # I believe a blank line should be an <tt>Array.new</tt>, not Ruby 1.8
-        # CSV's <tt>[nil]</tt>
-        #
-        if parse.empty?
-          @lineno += 1
-          if @skip_blanks
-            next
-          elsif @unconverted_fields
-            return add_unconverted_fields(Array.new, Array.new)
-          elsif @use_headers
-            return self.class::Row.new(@headers, Array.new)
-          else
-            return Array.new
-          end
-        end
-      end
-
-      next if @skip_lines and @skip_lines.match parse
-
-      parts =  parse.split(@col_sep_split_separator, -1)
-      if parts.empty?
-        if in_extended_col
-          csv[-1] << @col_sep   # will be replaced with a @row_sep after the parts.each loop
-        else
-          csv << nil
-        end
-      end
-
-      # This loop is the hot path of csv parsing. Some things may be non-dry
-      # for a reason. Make sure to benchmark when refactoring.
-      parts.each do |part|
-        if in_extended_col
-          # If we are continuing a previous column
-          if part.end_with?(@quote_char) && part.count(@quote_char) % 2 != 0
-            # extended column ends
-            csv.last << part[0..-2]
-            if csv.last.match?(@parsers[:stray_quote])
-              raise MalformedCSVError.new("Missing or stray quote",
-                                          lineno + 1)
-            end
-            csv.last.gsub!(@double_quote_char, @quote_char)
-            in_extended_col = false
-          else
-            csv.last << part << @col_sep
-          end
-        elsif part.start_with?(@quote_char)
-          # If we are starting a new quoted column
-          if part.count(@quote_char) % 2 != 0
-            # start an extended column
-            csv << (part[1..-1] << @col_sep)
-            in_extended_col =  true
-          elsif part.end_with?(@quote_char)
-            # regular quoted column
-            csv << part[1..-2]
-            if csv.last.match?(@parsers[:stray_quote])
-              raise MalformedCSVError.new("Missing or stray quote",
-                                          lineno + 1)
-            end
-            csv.last.gsub!(@double_quote_char, @quote_char)
-          elsif @liberal_parsing
-            csv << part
-          else
-            raise MalformedCSVError.new("Missing or stray quote",
-                                        lineno + 1)
-          end
-        elsif part.match?(@parsers[:quote_or_nl])
-          # Unquoted field with bad characters.
-          if part.match?(@parsers[:nl_or_lf])
-            message = "Unquoted fields do not allow \\r or \\n"
-            raise MalformedCSVError.new(message, lineno + 1)
-          else
-            if @liberal_parsing
-              csv << part
-            else
-              raise MalformedCSVError.new("Illegal quoting", lineno + 1)
-            end
-          end
-        else
-          # Regular ole unquoted field.
-          csv << (part.empty? ? nil : part)
-        end
-      end
-
-      # Replace tacked on @col_sep with @row_sep if we are still in an extended
-      # column.
-      csv[-1][-1] = @row_sep if in_extended_col
-
-      if in_extended_col
-        # if we're at eof?(), a quoted field wasn't closed...
-        if @io.eof?
-          raise MalformedCSVError.new("Unclosed quoted field",
-                                      lineno + 1)
-        elsif @field_size_limit and csv.last.size >= @field_size_limit
-          raise MalformedCSVError.new("Field size exceeded",
-                                      lineno + 1)
-        end
-        # otherwise, we need to loop and pull some more data to complete the row
-      else
-        @lineno += 1
-
-        # save fields unconverted fields, if needed...
-        unconverted = csv.dup if @unconverted_fields
-
-        if @use_headers
-          # parse out header rows and handle CSV::Row conversions...
-          csv = parse_headers(csv)
-        else
-          # convert fields, if needed...
-          csv = convert_fields(csv)
-        end
-
-        # inject unconverted fields and accessor, if requested...
-        if @unconverted_fields and not csv.respond_to? :unconverted_fields
-          add_unconverted_fields(csv, unconverted)
-        end
-
-        # return the results
-        break csv
-      end
+    begin
+      parser_enumerator.next
+    rescue StopIteration
+      nil
     end
   end
   alias_method :gets,     :shift
@@ -1355,7 +1306,7 @@ class CSV
   # ASCII compatible String.
   #
   def inspect
-    str = ["<#", self.class.to_s, " io_type:"]
+    str = ["#<", self.class.to_s, " io_type:"]
     # show type of wrapped IO
     if    @io == $stdout then str << "$stdout"
     elsif @io == $stdin  then str << "$stdin"
@@ -1369,15 +1320,18 @@ class CSV
     # show encoding
     str << " encoding:" << @encoding.name
     # show other attributes
-    %w[ lineno     col_sep     row_sep
-        quote_char skip_blanks liberal_parsing ].each do |attr_name|
-      if a = instance_variable_get("@#{attr_name}")
+    ["lineno", "col_sep", "row_sep", "quote_char"].each do |attr_name|
+      if a = __send__(attr_name)
         str << " " << attr_name << ":" << a.inspect
       end
     end
-    if @use_headers
-      str << " headers:" << headers.inspect
+    ["skip_blanks", "liberal_parsing"].each do |attr_name|
+      if a = __send__("#{attr_name}?")
+        str << " " << attr_name << ":" << a.inspect
+      end
     end
+    _headers = headers
+    str << " headers:" << _headers.inspect if _headers
     str << ">"
     begin
       str.join('')
@@ -1393,7 +1347,7 @@ class CSV
 
   def determine_encoding(encoding, internal_encoding)
     # honor the IO encoding if we can, otherwise default to ASCII-8BIT
-    io_encoding = raw_encoding(nil)
+    io_encoding = raw_encoding
     return io_encoding if io_encoding
 
     return Encoding.find(internal_encoding) if internal_encoding
@@ -1406,216 +1360,17 @@ class CSV
     Encoding.default_internal || Encoding.default_external
   end
 
-  #
-  # Stores the indicated separators for later use.
-  #
-  # If auto-discovery was requested for <tt>@row_sep</tt>, this method will read
-  # ahead in the <tt>@io</tt> and try to find one.  +ARGF+, +STDIN+, +STDOUT+,
-  # +STDERR+ and any stream open for output only with a default
-  # <tt>@row_sep</tt> of <tt>$INPUT_RECORD_SEPARATOR</tt> (<tt>$/</tt>).
-  #
-  # This method also establishes the quoting rules used for CSV output.
-  #
-  def init_separators(col_sep, row_sep, quote_char, force_quotes)
-    # store the selected separators
-    @col_sep    = col_sep.to_s.encode(@encoding)
-    if @col_sep == " "
-      @col_sep_split_separator = Regexp.new(/#{Regexp.escape(@col_sep)}/)
-    else
-      @col_sep_split_separator = @col_sep
+  def normalize_converters(converters)
+    converters ||= []
+    unless converters.is_a?(Array)
+      converters = [converters]
     end
-    @row_sep    = row_sep # encode after resolving :auto
-    @quote_char = quote_char.to_s.encode(@encoding)
-    @double_quote_char = @quote_char * 2
-
-    if @quote_char.length != 1
-      raise ArgumentError, ":quote_char has to be a single character String"
-    end
-
-    #
-    # automatically discover row separator when requested
-    # (not fully encoding safe)
-    #
-    if @row_sep == :auto
-      if [ARGF, STDIN, STDOUT, STDERR].include?(@io) or
-         (defined?(Zlib) and @io.class == Zlib::GzipWriter)
-        @row_sep = $INPUT_RECORD_SEPARATOR
-      else
-        begin
-          #
-          # remember where we were (pos() will raise an exception if @io is pipe
-          # or not opened for reading)
-          #
-          saved_pos = @io.pos
-          while @row_sep == :auto
-            #
-            # if we run out of data, it's probably a single line
-            # (ensure will set default value)
-            #
-            break unless sample = @io.gets(nil, 1024)
-
-            cr = encode_str("\r")
-            lf = encode_str("\n")
-            # extend sample if we're unsure of the line ending
-            if sample.end_with?(cr)
-              sample << (@io.gets(nil, 1) || "")
-            end
-
-            # try to find a standard separator
-            sample.each_char.each_cons(2) do |char, next_char|
-              case char
-              when cr
-                if next_char == lf
-                  @row_sep = encode_str("\r\n")
-                else
-                  @row_sep = cr
-                end
-                break
-              when lf
-                @row_sep = lf
-                break
-              end
-            end
-          end
-
-          # tricky seek() clone to work around GzipReader's lack of seek()
-          @io.rewind
-          # reset back to the remembered position
-          while saved_pos > 1024  # avoid loading a lot of data into memory
-            @io.read(1024)
-            saved_pos -= 1024
-          end
-          @io.read(saved_pos) if saved_pos.nonzero?
-        rescue IOError         # not opened for reading
-          # do nothing:  ensure will set default
-        rescue NoMethodError   # Zlib::GzipWriter doesn't have some IO methods
-          # do nothing:  ensure will set default
-        rescue SystemCallError # pipe
-          # do nothing:  ensure will set default
-        ensure
-          #
-          # set default if we failed to detect
-          # (stream not opened for reading, a pipe, or a single line of data)
-          #
-          @row_sep = $INPUT_RECORD_SEPARATOR if @row_sep == :auto
-        end
-      end
-    end
-    @row_sep = @row_sep.to_s.encode(@encoding)
-
-    # establish quoting rules
-    @force_quotes = force_quotes
-    do_quote = lambda do |field|
-      field = String(field)
-      encoded_quote = @quote_char.encode(field.encoding)
-      encoded_quote + field.gsub(encoded_quote, encoded_quote * 2) + encoded_quote
-    end
-    quotable_chars = encode_str("\r\n", @col_sep, @quote_char)
-    @quote         = if @force_quotes
-      do_quote
-    else
-      lambda do |field|
-        if field.nil?  # represent +nil+ fields as empty unquoted fields
-          ""
-        else
-          field = String(field)  # Stringify fields
-          # represent empty fields as empty quoted fields
-          if field.empty? or
-             field.count(quotable_chars).nonzero?
-            do_quote.call(field)
-          else
-            field  # unquoted field
-          end
-        end
-      end
-    end
-  end
-
-  # Pre-compiles parsers and stores them by name for access during reads.
-  def init_parsers(skip_blanks, field_size_limit, liberal_parsing)
-    # store the parser behaviors
-    @skip_blanks      = skip_blanks
-    @field_size_limit = field_size_limit
-    @liberal_parsing  = liberal_parsing
-
-    # prebuild Regexps for faster parsing
-    esc_row_sep = escape_re(@row_sep)
-    esc_quote   = escape_re(@quote_char)
-    @parsers = {
-      # for detecting parse errors
-      quote_or_nl:    encode_re("[", esc_quote, "\r\n]"),
-      nl_or_lf:       encode_re("[\r\n]"),
-      stray_quote:    encode_re( "[^", esc_quote, "]", esc_quote,
-                                 "[^", esc_quote, "]" ),
-      # safer than chomp!()
-      line_end:       encode_re(esc_row_sep, "\\z"),
-      # illegal unquoted characters
-      return_newline: encode_str("\r\n")
-    }
-  end
-
-  #
-  # Loads any converters requested during construction.
-  #
-  # If +field_name+ is set <tt>:converters</tt> (the default) field converters
-  # are set.  When +field_name+ is <tt>:header_converters</tt> header converters
-  # are added instead.
-  #
-  # The <tt>:unconverted_fields</tt> option is also activated for
-  # <tt>:converters</tt> calls, if requested.
-  #
-  def init_converters(converters, ivar_name, convert_method)
-    converters = case converters
-                 when nil then []
-                 when Array then converters
-                 else [converters]
-                 end
-    instance_variable_set(ivar_name, [])
-    convert = method(convert_method)
-
-    # load converters
-    converters.each do |converter|
-      if converter.is_a? Proc  # custom code block
-        convert.call(&converter)
-      else                     # by name
-        convert.call(converter)
-      end
-    end
-  end
-
-  # Stores the pattern of comments to skip from the provided options.
-  #
-  # The pattern must respond to +.match+, else ArgumentError is raised.
-  # Strings are converted to a Regexp.
-  #
-  # See also CSV.new
-  def init_comments(skip_lines)
-    @skip_lines = skip_lines
-    @skip_lines = Regexp.new(Regexp.escape(@skip_lines)) if @skip_lines.is_a? String
-    if @skip_lines and not @skip_lines.respond_to?(:match)
-      raise ArgumentError, ":skip_lines has to respond to matches"
-    end
-  end
-  #
-  # The actual work method for adding converters, used by both CSV.convert() and
-  # CSV.header_convert().
-  #
-  # This method requires the +var_name+ of the instance variable to place the
-  # converters in, the +const+ Hash to lookup named converters in, and the
-  # normal parameters of the CSV.convert() and CSV.header_convert() methods.
-  #
-  def add_converter(var_name, const, name = nil, &converter)
-    if name.nil?  # custom converter
-      instance_variable_get(var_name) << converter
-    else          # named converter
-      combo = const[name]
-      case combo
-      when Array  # combo converter
-        combo.each do |converter_name|
-          add_converter(var_name, const, converter_name)
-        end
-      else        # individual named converter
-        instance_variable_get(var_name) << combo
+    converters.collect do |converter|
+      case converter
+      when Proc # custom code block
+        [nil, converter]
+      else # by name
+        [converter, nil]
       end
     end
   end
@@ -1629,131 +1384,87 @@ class CSV
   #
   def convert_fields(fields, headers = false)
     if headers
-      converters = @header_converters
+      header_fields_converter.convert(fields, nil, 0)
     else
-      converters = @converters
-      if !@use_headers and
-          converters.empty? and
-          @nil_value.nil? and
-          @empty_value_is_empty_string
-        return fields
-      end
-    end
-
-    fields.map.with_index do |field, index|
-      if field.nil?
-        field = @nil_value
-      elsif field.empty?
-        field = @empty_value unless @empty_value_is_empty_string
-      end
-      converters.each do |converter|
-        break if headers && field.nil?
-        field = if converter.arity == 1  # straight field converter
-          converter[field]
-        else                             # FieldInfo converter
-          header = @use_headers && !headers ? @headers[index] : nil
-          converter[field, FieldInfo.new(index, lineno, header)]
-        end
-        break unless field.is_a? String  # short-circuit pipeline for speed
-      end
-      field  # final state of each field, converted or original
+      parser_fields_converter.convert(fields, @headers, lineno)
     end
   end
 
   #
-  # This method is used to turn a finished +row+ into a CSV::Row.  Header rows
-  # are also dealt with here, either by returning a CSV::Row with identical
-  # headers and fields (save that the fields do not go through the converters)
-  # or by reading past them to return a field row. Headers are also saved in
-  # <tt>@headers</tt> for use in future rows.
+  # Returns the encoding of the internal IO object.
   #
-  # When +nil+, +row+ is assumed to be a header row not based on an actual row
-  # of the stream.
-  #
-  def parse_headers(row = nil)
-    if @headers.nil?                # header row
-      @headers = case @use_headers  # save headers
-                 # Array of headers
-                 when Array then @use_headers
-                 # CSV header String
-                 when String
-                   self.class.parse_line( @use_headers,
-                                          col_sep:    @col_sep,
-                                          row_sep:    @row_sep,
-                                          quote_char: @quote_char )
-                 # first row is headers
-                 else            row
-                 end
-
-      # prepare converted and unconverted copies
-      row      = @headers                       if row.nil?
-      @headers = convert_fields(@headers, true)
-      @headers.each { |h| h.freeze if h.is_a? String }
-
-      if @return_headers                                     # return headers
-        return self.class::Row.new(@headers, row, true)
-      elsif not [Array, String].include? @use_headers.class  # skip to field row
-        return shift
-      end
-    end
-
-    self.class::Row.new(@headers, convert_fields(row))  # field row
-  end
-
-  #
-  # This method injects an instance variable <tt>unconverted_fields</tt> into
-  # +row+ and an accessor method for +row+ called unconverted_fields().  The
-  # variable is set to the contents of +fields+.
-  #
-  def add_unconverted_fields(row, fields)
-    class << row
-      attr_reader :unconverted_fields
-    end
-    row.instance_variable_set(:@unconverted_fields, fields)
-    row
-  end
-
-  #
-  # This method is an encoding safe version of Regexp::escape().  It will escape
-  # any characters that would change the meaning of a regular expression in the
-  # encoding of +str+.  Regular expression characters that cannot be transcoded
-  # to the target encoding will be skipped and no escaping will be performed if
-  # a backslash cannot be transcoded.
-  #
-  def escape_re(str)
-    str.gsub(@re_chars) {|c| @re_esc + c}
-  end
-
-  #
-  # Builds a regular expression in <tt>@encoding</tt>.  All +chunks+ will be
-  # transcoded to that encoding.
-  #
-  def encode_re(*chunks)
-    Regexp.new(encode_str(*chunks))
-  end
-
-  #
-  # Builds a String in <tt>@encoding</tt>.  All +chunks+ will be transcoded to
-  # that encoding.
-  #
-  def encode_str(*chunks)
-    chunks.map { |chunk| chunk.encode(@encoding.name) }.join('')
-  end
-
-  #
-  # Returns the encoding of the internal IO object or the +default+ if the
-  # encoding cannot be determined.
-  #
-  def raw_encoding(default = Encoding::ASCII_8BIT)
+  def raw_encoding
     if @io.respond_to? :internal_encoding
       @io.internal_encoding || @io.external_encoding
-    elsif @io.is_a? StringIO
-      @io.string.encoding
     elsif @io.respond_to? :encoding
       @io.encoding
     else
-      default
+      nil
     end
+  end
+
+  def parser_fields_converter
+    @parser_fields_converter ||= build_parser_fields_converter
+  end
+
+  def build_parser_fields_converter
+    specific_options = {
+      builtin_converters: Converters,
+    }
+    options = @base_fields_converter_options.merge(specific_options)
+    build_fields_converter(@initial_converters, options)
+  end
+
+  def header_fields_converter
+    @header_fields_converter ||= build_header_fields_converter
+  end
+
+  def build_header_fields_converter
+    specific_options = {
+      builtin_converters: HeaderConverters,
+      accept_nil: true,
+    }
+    options = @base_fields_converter_options.merge(specific_options)
+    build_fields_converter(@initial_header_converters, options)
+  end
+
+  def writer_fields_converter
+    @writer_fields_converter ||= build_writer_fields_converter
+  end
+
+  def build_writer_fields_converter
+    build_fields_converter(@initial_write_converters,
+                           @write_fields_converter_options)
+  end
+
+  def build_fields_converter(initial_converters, options)
+    fields_converter = FieldsConverter.new(options)
+    normalize_converters(initial_converters).each do |name, converter|
+      fields_converter.add_converter(name, &converter)
+    end
+    fields_converter
+  end
+
+  def parser
+    @parser ||= Parser.new(@io, parser_options)
+  end
+
+  def parser_options
+    @parser_options.merge(header_fields_converter: header_fields_converter,
+                          fields_converter: parser_fields_converter)
+  end
+
+  def parser_enumerator
+    @parser_enumerator ||= parser.parse
+  end
+
+  def writer
+    @writer ||= Writer.new(@io, writer_options)
+  end
+
+  def writer_options
+    @writer_options.merge(header_fields_converter: header_fields_converter,
+                          fields_converter: writer_fields_converter)
   end
 end
 

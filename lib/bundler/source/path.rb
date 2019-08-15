@@ -3,7 +3,7 @@
 module Bundler
   class Source
     class Path < Source
-      autoload :Installer, "bundler/source/path/installer"
+      autoload :Installer, File.expand_path("path/installer", __dir__)
 
       attr_reader :path, :options, :root_path, :original_path
       attr_writer :name
@@ -191,10 +191,10 @@ module Bundler
         else
           message = String.new("The path `#{expanded_path}` ")
           message << if File.exist?(expanded_path)
-                       "is not a directory."
-                     else
-                       "does not exist."
-                     end
+            "is not a directory."
+          else
+            "does not exist."
+          end
           raise PathError, message
         end
 

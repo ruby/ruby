@@ -2,6 +2,7 @@
 require 'rubygems/command'
 
 class Gem::Commands::WhichCommand < Gem::Command
+
   def initialize
     super 'which', 'Find the location of a library file you can require',
           :search_gems_first => false, :show_all => false
@@ -52,13 +53,11 @@ requiring to see why it does not behave as you expect.
         end
       end
 
-      # TODO: this is totally redundant and stupid
       paths = find_paths arg, dirs
 
       if paths.empty?
         alert_error "Can't find Ruby library file or shared library #{arg}"
-
-        found &&= false
+        found = false
       else
         say paths
       end

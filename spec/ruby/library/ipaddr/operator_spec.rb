@@ -2,14 +2,11 @@ require_relative '../../spec_helper'
 require 'ipaddr'
 
 describe "IPAddr Operator" do
-  IN6MASK32  = "ffff:ffff::"
-  IN6MASK128 = "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"
-
   before do
     @in6_addr_any = IPAddr.new()
     @a = IPAddr.new("3ffe:505:2::/48")
     @b = IPAddr.new("0:0:0:1::")
-    @c = IPAddr.new(IN6MASK32)
+    @c = IPAddr.new("ffff:ffff::")
   end
 
   it "bitwises or" do
@@ -48,7 +45,7 @@ describe "IPAddr Operator" do
 
   it "inverts" do
     a = ~@in6_addr_any
-    a.to_s.should == IN6MASK128
+    a.to_s.should == "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"
     @in6_addr_any.to_s.should == "::"
   end
 
@@ -57,11 +54,9 @@ describe "IPAddr Operator" do
     @a.should_not == IPAddr.new("3ffe:505:3::")
   end
 
-  ruby_version_is '2.4' do
-    # https://bugs.ruby-lang.org/issues/12799
-    it "tests for equality correctly if object cannot be converted to IPAddr" do
-      IPAddr.new("1.1.1.1").should_not == "sometext"
-    end
+  # https://bugs.ruby-lang.org/issues/12799
+  it "tests for equality correctly if object cannot be converted to IPAddr" do
+    IPAddr.new("1.1.1.1").should_not == "sometext"
   end
 
   it "sets a mask" do

@@ -512,7 +512,7 @@ path_atime(VALUE self)
     return rb_funcall(rb_cFile, id_atime, 1, get_strpath(self));
 }
 
-#if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) || defined(_WIN32)
+#if defined(HAVE_RB_FILE_S_BIRTHTIME)
 /*
  * call-seq:
  *   pathname.birthtime	-> time
@@ -528,6 +528,7 @@ path_birthtime(VALUE self)
     return rb_funcall(rb_cFile, id_birthtime, 1, get_strpath(self));
 }
 #else
+/* check at compilation time for `respond_to?` */
 # define path_birthtime rb_f_notimplement
 #endif
 
@@ -1091,10 +1092,10 @@ s_glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
 static VALUE
 path_s_glob(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE args[2];
+    VALUE args[3];
     int n;
 
-    n = rb_scan_args(argc, argv, "11", &args[0], &args[1]);
+    n = rb_scan_args(argc, argv, "12", &args[0], &args[1], &args[2]);
     if (rb_block_given_p()) {
         return rb_block_call(rb_cDir, id_glob, n, args, s_glob_i, klass);
     }

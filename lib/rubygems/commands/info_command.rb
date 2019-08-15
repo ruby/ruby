@@ -4,6 +4,7 @@ require 'rubygems/command'
 require 'rubygems/commands/query_command'
 
 class Gem::Commands::InfoCommand < Gem::Commands::QueryCommand
+
   def initialize
     super "info", "Show information for the given gem"
 
@@ -30,4 +31,5 @@ class Gem::Commands::InfoCommand < Gem::Commands::QueryCommand
   def defaults_str
     "--local"
   end
+
 end

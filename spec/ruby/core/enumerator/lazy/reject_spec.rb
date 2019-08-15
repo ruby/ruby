@@ -33,6 +33,18 @@ describe "Enumerator::Lazy#reject" do
     end
   end
 
+  it "lets exceptions raised in the block go through" do
+    lazy = 10.times.lazy.map do |i|
+      raise "foo"
+    end
+
+    lazy = lazy.reject(&:nil?)
+
+    -> {
+      lazy.first
+    }.should raise_error(RuntimeError, "foo")
+  end
+
   it "calls the block with a gathered array when yield with multiple arguments" do
     yields = []
     @yieldsmixed.reject { |v| yields << v }.force
@@ -40,7 +52,7 @@ describe "Enumerator::Lazy#reject" do
   end
 
   it "raises an ArgumentError when not given a block" do
-    lambda { @yieldsmixed.reject }.should raise_error(ArgumentError)
+    -> { @yieldsmixed.reject }.should raise_error(ArgumentError)
   end
 
   describe "on a nested Lazy" do
@@ -56,5 +68,11 @@ describe "Enumerator::Lazy#reject" do
         ScratchPad.recorded.should == [:before_yield]
       end
     end
+  end
+
+  it "works with an infinite enumerable" do
+    s = 0..Float::INFINITY
+    s.lazy.reject { |n| false }.first(100).should ==
+      s.first(100).reject { |n| false }
   end
 end

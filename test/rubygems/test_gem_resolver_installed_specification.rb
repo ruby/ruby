@@ -45,5 +45,4 @@ class TestGemResolverInstalledSpecification < Gem::TestCase
     assert b_spec.installable_platform?
   end
 
-
 end

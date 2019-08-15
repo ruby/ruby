@@ -647,51 +647,6 @@ size_t pthread_get_stacksize_np(pthread_t);
 #define STACKADDR_AVAILABLE 1
 #elif defined __HAIKU__
 #define STACKADDR_AVAILABLE 1
-#elif defined __ia64 && defined _HPUX_SOURCE
-#include <sys/dyntune.h>
-
-#define STACKADDR_AVAILABLE 1
-
-/*
- * Do not lower the thread's stack to PTHREAD_STACK_MIN,
- * otherwise one would receive a 'sendsig: useracc failed.'
- * and a coredump.
- */
-#undef PTHREAD_STACK_MIN
-
-#define HAVE_PTHREAD_ATTR_GET_NP 1
-#undef HAVE_PTHREAD_ATTR_GETSTACK
-
-/*
- * As the PTHREAD_STACK_MIN is undefined and
- * no one touches the default stacksize,
- * it is just fine to use the default.
- */
-#define pthread_attr_get_np(thid, attr) 0
-
-/*
- * Using value of sp is very rough... To make it more real,
- * addr would need to be aligned to vps_pagesize.
- * The vps_pagesize is 'Default user page size (kBytes)'
- * and could be retrieved by gettune().
- */
-static int
-hpux_attr_getstackaddr(const pthread_attr_t *attr, void **addr)
-{
-    static uint64_t pagesize;
-    size_t size;
-
-    if (!pagesize) {
-	if (gettune("vps_pagesize", &pagesize)) {
-	    pagesize = 16;
-	}
-	pagesize *= 1024;
-    }
-    pthread_attr_getstacksize(attr, &size);
-    *addr = (void *)((size_t)((char *)_Asm_get_sp() - size) & ~(pagesize - 1));
-    return 0;
-}
-#define pthread_attr_getstackaddr(attr, addr) hpux_attr_getstackaddr(attr, addr)
 #endif
 
 #ifndef MAINSTACKADDR_AVAILABLE
@@ -791,9 +746,6 @@ static struct {
     rb_nativethread_id_t id;
     size_t stack_maxsize;
     VALUE *stack_start;
-#ifdef __ia64
-    VALUE *register_stack_start;
-#endif
 } native_main_thread;
 
 #ifdef STACK_END_ADDRESS
@@ -879,19 +831,10 @@ reserve_stack(volatile char *limit, size_t size)
  * You must call this function before any heap allocation by Ruby implementation.
  * Or GC will break living objects */
 void
-ruby_init_stack(volatile VALUE *addr
-#ifdef __ia64
-    , void *bsp
-#endif
-    )
+ruby_init_stack(volatile VALUE *addr)
 {
     native_main_thread.id = pthread_self();
-#ifdef __ia64
-    if (!native_main_thread.register_stack_start ||
-        (VALUE*)bsp < native_main_thread.register_stack_start) {
-        native_main_thread.register_stack_start = (VALUE*)bsp;
-    }
-#endif
+
 #if MAINSTACKADDR_AVAILABLE
     if (native_main_thread.stack_maxsize) return;
     {
@@ -995,11 +938,7 @@ native_thread_init_stack(rb_thread_t *th)
 	rb_raise(rb_eNotImpError, "ruby engine can initialize only in the main thread");
 #endif
     }
-#ifdef __ia64
-    th->ec->machine.register_stack_start = native_main_thread.register_stack_start;
-    th->ec->machine.stack_maxsize /= 2;
-    th->ec->machine.register_stack_maxsize = th->ec->machine.stack_maxsize;
-#endif
+
     return 0;
 }
 
@@ -1027,9 +966,9 @@ thread_start_func_1(void *th_ptr)
 	native_thread_init(th);
 	/* run */
 #if defined USE_NATIVE_THREAD_INIT
-	thread_start_func_2(th, th->ec->machine.stack_start, rb_ia64_bsp());
+        thread_start_func_2(th, th->ec->machine.stack_start);
 #else
-	thread_start_func_2(th, &stack_start, rb_ia64_bsp());
+        thread_start_func_2(th, &stack_start);
 #endif
     }
 #if USE_THREAD_CACHE
@@ -1157,14 +1096,10 @@ native_thread_create(rb_thread_t *th)
     }
     else {
 	pthread_attr_t attr;
-	const size_t stack_size = th->vm->default_params.thread_machine_stack_size;
+        const size_t stack_size = th->vm->default_params.thread_machine_stack_size + th->vm->default_params.thread_vm_stack_size;
 	const size_t space = space_size(stack_size);
 
         th->ec->machine.stack_maxsize = stack_size - space;
-#ifdef __ia64
-        th->ec->machine.stack_maxsize /= 2;
-        th->ec->machine.register_stack_maxsize = th->ec->machine.stack_maxsize;
-#endif
 
 	CHECK_ERR(pthread_attr_init(&attr));
 
@@ -1542,6 +1477,11 @@ rb_thread_wakeup_timer_thread(int sig)
             if (ec) {
                 RUBY_VM_SET_TRAP_INTERRUPT(ec);
                 ubf_timer_arm(current);
+
+                /* some ubfs can interrupt single-threaded process directly */
+                if (vm->ubf_async_safe && mth->unblock.func) {
+                    (mth->unblock.func)(mth->unblock.arg);
+                }
             }
         }
     }
@@ -1769,8 +1709,18 @@ ubf_timer_disarm(void)
       case RTIMER_DISARM: return; /* likely */
       case RTIMER_ARMING: return; /* ubf_timer_arm will disarm itself */
       case RTIMER_ARMED:
-        if (timer_settime(timer_posix.timerid, 0, &zero, 0))
-            rb_bug_errno("timer_settime (disarm)", errno);
+        if (timer_settime(timer_posix.timerid, 0, &zero, 0)) {
+            int err = errno;
+
+            if (err == EINVAL) {
+                prev = ATOMIC_CAS(timer_posix.state, RTIMER_DISARM, RTIMER_DISARM);
+
+                /* main thread may have killed the timer */
+                if (prev == RTIMER_DEAD) return;
+
+                rb_bug_errno("timer_settime (disarm)", err);
+            }
+        }
         return;
       case RTIMER_DEAD: return; /* stay dead */
       default:
@@ -1787,17 +1737,38 @@ ubf_timer_destroy(void)
 {
 #if UBF_TIMER == UBF_TIMER_POSIX
     if (timer_posix.owner == getpid()) {
-        /* prevent signal handler from arming: */
-        ATOMIC_SET(timer_posix.state, RTIMER_DEAD);
+        rb_atomic_t expect = RTIMER_DISARM;
+        size_t i, max = 10000000;
 
-        if (timer_settime(timer_posix.timerid, 0, &zero, 0))
-            rb_bug_errno("timer_settime (destroy)", errno);
+        /* prevent signal handler from arming: */
+        for (i = 0; i < max; i++) {
+            switch (ATOMIC_CAS(timer_posix.state, expect, RTIMER_DEAD)) {
+              case RTIMER_DISARM:
+                if (expect == RTIMER_DISARM) goto done;
+                expect = RTIMER_DISARM;
+                break;
+              case RTIMER_ARMING:
+                native_thread_yield(); /* let another thread finish arming */
+                expect = RTIMER_ARMED;
+                break;
+              case RTIMER_ARMED:
+                if (expect == RTIMER_ARMED) {
+                    if (timer_settime(timer_posix.timerid, 0, &zero, 0))
+                        rb_bug_errno("timer_settime (destroy)", errno);
+                    goto done;
+                }
+                expect = RTIMER_ARMED;
+                break;
+              case RTIMER_DEAD:
+                rb_bug("RTIMER_DEAD unexpected");
+            }
+        }
+        rb_bug("timed out waiting for timer to arm");
+done:
         if (timer_delete(timer_posix.timerid) < 0)
             rb_sys_fail("timer_delete");
 
-        if (ATOMIC_EXCHANGE(timer_posix.state, RTIMER_DEAD) != RTIMER_DEAD) {
-            rb_bug("YOU KNOW I'M NOT DEAD\n");
-        }
+        VM_ASSERT(ATOMIC_EXCHANGE(timer_posix.state, RTIMER_DEAD) == RTIMER_DEAD);
     }
 #elif UBF_TIMER == UBF_TIMER_PTHREAD
     int err;
@@ -2151,21 +2122,29 @@ timer_pthread_fn(void *p)
     pthread_t main_thread_id = vm->main_thread->thread_id;
     struct pollfd pfd;
     int timeout = -1;
+    int ccp;
 
     pfd.fd = timer_pthread.low[0];
     pfd.events = POLLIN;
 
     while (system_working > 0) {
         (void)poll(&pfd, 1, timeout);
-        (void)consume_communication_pipe(pfd.fd);
+        ccp = consume_communication_pipe(pfd.fd);
 
-        if (system_working > 0 && ATOMIC_CAS(timer_pthread.armed, 1, 1)) {
-            pthread_kill(main_thread_id, SIGVTALRM);
+        if (system_working > 0) {
+            if (ATOMIC_CAS(timer_pthread.armed, 1, 1)) {
+                pthread_kill(main_thread_id, SIGVTALRM);
 
-            if (rb_signal_buff_size() || !ubf_threads_empty()) {
-                timeout = TIME_QUANTUM_MSEC;
+                if (rb_signal_buff_size() || !ubf_threads_empty()) {
+                    timeout = TIME_QUANTUM_MSEC;
+                }
+                else {
+                    ATOMIC_SET(timer_pthread.armed, 0);
+                    timeout = -1;
+                }
             }
-            else {
+            else if (ccp) {
+                pthread_kill(main_thread_id, SIGVTALRM);
                 ATOMIC_SET(timer_pthread.armed, 0);
                 timeout = -1;
             }
@@ -2175,4 +2154,23 @@ timer_pthread_fn(void *p)
     return 0;
 }
 #endif /* UBF_TIMER_PTHREAD */
+
+static VALUE
+ubf_caller(const void *ignore)
+{
+    rb_thread_sleep_forever();
+
+    return Qfalse;
+}
+
+/*
+ * Called if and only if one thread is running, and
+ * the unblock function is NOT async-signal-safe
+ * This assumes USE_THREAD_CACHE is true for performance reasons
+ */
+static VALUE
+rb_thread_start_unblock_thread(void)
+{
+    return rb_thread_create(ubf_caller, 0);
+}
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

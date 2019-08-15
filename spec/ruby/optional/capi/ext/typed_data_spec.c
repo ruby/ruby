@@ -7,7 +7,6 @@
 extern "C" {
 #endif
 
-#if defined(HAVE_RTYPEDDATA) && defined(HAVE_TYPEDDATA_WRAP_STRUCT)
 struct sample_typed_wrapped_struct_parent {
     int foo;
 };
@@ -44,7 +43,11 @@ void sample_typed_wrapped_struct_mark(void* st) {
 }
 
 size_t sample_typed_wrapped_struct_memsize(const void* st) {
-  return sizeof(struct sample_typed_wrapped_struct);
+  if (st == NULL) {
+    return 0;
+  } else {
+    return ((struct sample_typed_wrapped_struct *)st)->foo;
+  }
 }
 
 static const rb_data_type_t sample_typed_wrapped_struct_data_type = {
@@ -143,16 +146,11 @@ VALUE sws_typed_change_struct(VALUE self, VALUE obj, VALUE new_val) {
   RTYPEDDATA(obj)->data = new_struct;
   return Qnil;
 }
-#endif
 
 void Init_typed_data_spec(void) {
-  VALUE cls;
-  cls = rb_define_class("CApiAllocTypedSpecs", rb_cObject);
-
-#if defined(HAVE_RTYPEDDATA) && defined(HAVE_TYPEDDATA_WRAP_STRUCT)
+  VALUE cls = rb_define_class("CApiAllocTypedSpecs", rb_cObject);
   rb_define_alloc_func(cls, sdaf_alloc_typed_func);
   rb_define_method(cls, "typed_wrapped_data", sdaf_typed_get_struct, 0);
-
   cls = rb_define_class("CApiWrappedTypedStructSpecs", rb_cObject);
   rb_define_method(cls, "typed_wrap_struct", sws_typed_wrap_struct, 1);
   rb_define_method(cls, "typed_get_struct", sws_typed_get_struct, 1);
@@ -161,7 +159,6 @@ void Init_typed_data_spec(void) {
   rb_define_method(cls, "typed_get_struct_rdata", sws_typed_get_struct_rdata, 1);
   rb_define_method(cls, "typed_get_struct_data_ptr", sws_typed_get_struct_data_ptr, 1);
   rb_define_method(cls, "typed_change_struct", sws_typed_change_struct, 2);
-#endif
 }
 
 #ifdef __cplusplus

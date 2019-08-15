@@ -5,6 +5,7 @@ require 'rubygems/gemcutter_utilities'
 require 'rubygems/package'
 
 class Gem::Commands::PushCommand < Gem::Command
+
   include Gem::LocalRemoteOptions
   include Gem::GemcutterUtilities
 
@@ -15,6 +16,8 @@ https://rubygems.org) and adds it to the index.
 
 The gem can be removed from the index and deleted from the server using the yank
 command.  For further discussion see the help for the yank command.
+
+The push command will use ~/.gem/credentials to authenticate to a server, but you can use the RubyGems environment variable GEM_HOST_API_KEY to set the api key to authenticate.
     EOF
   end
 
@@ -116,22 +119,18 @@ You can upgrade or downgrade to the latest release version with:
 
     response = send_push_request(name, args)
 
-    if need_otp? response
-      response = send_push_request(name, args, true)
-    end
-
     with_response response
   end
 
   private
 
-  def send_push_request(name, args, use_otp = false)
+  def send_push_request(name, args)
     rubygems_api_request(*args) do |request|
       request.body = Gem.read_binary name
       request.add_field "Content-Length", request.body.size
       request.add_field "Content-Type",   "application/octet-stream"
       request.add_field "Authorization",  api_key
-      request.add_field "OTP", options[:otp] if use_otp
+      request.add_field "OTP", options[:otp] if options[:otp]
     end
   end
 
@@ -143,4 +142,5 @@ You can upgrade or downgrade to the latest release version with:
       gem_metadata["allowed_push_host"]
     ]
   end
+
 end

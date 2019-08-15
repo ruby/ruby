@@ -81,8 +81,8 @@ module Bundler
           sort_dep_specs(spec_groups, locked_spec)
         end.tap do |specs|
           if DEBUG
-            STDERR.puts before_result
-            STDERR.puts " after sort_versions: #{debug_format_result(dep, specs).inspect}"
+            warn before_result
+            warn " after sort_versions: #{debug_format_result(dep, specs).inspect}"
           end
         end
       end
@@ -109,7 +109,7 @@ module Bundler
           must_match = minor? ? [0] : [0, 1]
 
           matches = must_match.map {|idx| gsv.segments[idx] == lsv.segments[idx] }
-          (matches.uniq == [true]) ? (gsv >= lsv) : false
+          matches.uniq == [true] ? (gsv >= lsv) : false
         else
           true
         end

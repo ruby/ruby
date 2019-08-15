@@ -6,6 +6,7 @@
 # use it.
 
 class Gem::Request::HTTPPool # :nodoc:
+
   attr_reader :cert_files, :proxy_uri
 
   def initialize(http_args, cert_files, proxy_uri)

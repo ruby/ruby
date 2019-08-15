@@ -278,9 +278,9 @@ parse.c::
     This special exception was added by the Free Software Foundation in
     version 2.2 of Bison.
 
-util.c (partly)::
+missing/dtoa.c::
 
-  This file contains the source code under these licenses.
+  This file is under these licenses.
 
   >>>
     Copyright (c) 1991, 2000, 2001 by Lucent Technologies.
@@ -332,9 +332,9 @@ win32/win32.{c,h}::
     You may distribute under the terms of either the GNU General Public
     License or the Artistic License, as specified in the perl README file.
 
-random.c::
+missing/mt19937.c::
 
-  This file contains the source code under the new-style BSD license.
+  This file is under the new-style BSD license.
 
   >>>
     A C-program for MT19937, with initialization improved 2002/2/10.
@@ -382,9 +382,9 @@ random.c::
 
   The Wayback Machine url: http://web.archive.org/web/19990429082237/http://www.math.keio.ac.jp/matumoto/emt.html
 
-vm_dump.c:procstat_vm::
+missing/procstat_vm.c::
 
-  This file contains the source code under the new-style BSD license.
+  This file is under the new-style BSD license.
 
   >>>
     Copyright (c) 2007 Robert N. M. Watson  

@@ -278,7 +278,7 @@ module RSS
             vars = super
             if @maker.feed_version == "0.91"
               vars << "title" unless title {|t| t.have_required_values?}
-              vars << "link" unless link {|l| l.have_required_values?}
+              vars << "link" unless link
             end
             vars
           end

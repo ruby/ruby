@@ -138,7 +138,6 @@ class Gem::SpecFetcher
     return [tuples, errors]
   end
 
-
   ##
   # Return all gem name tuples who's names match +obj+
 
@@ -156,7 +155,6 @@ class Gem::SpecFetcher
 
     tuples
   end
-
 
   ##
   # Find and fetch specs that match +dependency+.
@@ -189,7 +187,7 @@ class Gem::SpecFetcher
     max             = gem_name.size / 2
     names           = available_specs(type).first.values.flatten(1)
 
-    matches = names.map { |n|
+    matches = names.map do |n|
       next unless n.match_platform?
 
       distance = levenshtein_distance gem_name, n.name.downcase.tr('_-', '')
@@ -199,7 +197,7 @@ class Gem::SpecFetcher
       return [n.name] if distance == 0
 
       [n.name, distance]
-    }.compact
+    end.compact
 
     matches = if matches.empty? && type != :prerelease
                 suggest_gems_from_name gem_name, :prerelease

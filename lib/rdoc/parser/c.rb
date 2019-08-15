@@ -3,15 +3,15 @@ require 'tsort'
 
 ##
 # RDoc::Parser::C attempts to parse C extension files.  It looks for
-# the standard patterns that you find in extensions: <tt>rb_define_class,
-# rb_define_method</tt> and so on.  It tries to find the corresponding
+# the standard patterns that you find in extensions: +rb_define_class+,
+# +rb_define_method+ and so on.  It tries to find the corresponding
 # C source for the methods and extract comments, but if we fail
 # we don't worry too much.
 #
 # The comments associated with a Ruby method are extracted from the C
 # comment block associated with the routine that _implements_ that
 # method, that is to say the method whose name is given in the
-# <tt>rb_define_method</tt> call. For example, you might write:
+# +rb_define_method+ call. For example, you might write:
 #
 #   /*
 #    * Returns a new array that is a one-dimensional flattening of this
@@ -24,8 +24,7 @@ require 'tsort'
 #    *    a.flatten                 #=> [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 #    */
 #    static VALUE
-#    rb_ary_flatten(ary)
-#        VALUE ary;
+#    rb_ary_flatten(VALUE ary)
 #    {
 #        ary = rb_obj_dup(ary);
 #        rb_ary_flatten_bang(ary);
@@ -35,16 +34,16 @@ require 'tsort'
 #    ...
 #
 #    void
-#    Init_Array()
+#    Init_Array(void)
 #    {
 #      ...
 #      rb_define_method(rb_cArray, "flatten", rb_ary_flatten, 0);
 #
-# Here RDoc will determine from the rb_define_method line that there's a
+# Here RDoc will determine from the +rb_define_method+ line that there's a
 # method called "flatten" in class Array, and will look for the implementation
-# in the method rb_ary_flatten. It will then use the comment from that
+# in the method +rb_ary_flatten+. It will then use the comment from that
 # method in the HTML output. This method must be in the same source file
-# as the rb_define_method.
+# as the +rb_define_method+.
 #
 # The comment blocks may include special directives:
 #
@@ -70,15 +69,15 @@ require 'tsort'
 # [Document-variable: +name+]
 #   Documentation for the named +rb_define_variable+
 #
-# [Document-method: +method_name+]
+# [Document-method\: +method_name+]
 #   Documentation for the named method.  Use this when the method name is
 #   unambiguous.
 #
-# [Document-method: <tt>ClassName::method_name<tt>]
+# [Document-method\: <tt>ClassName::method_name</tt>]
 #   Documentation for a singleton method in the given class.  Use this when
 #   the method name alone is ambiguous.
 #
-# [Document-method: <tt>ClassName#method_name<tt>]
+# [Document-method\: <tt>ClassName#method_name</tt>]
 #   Documentation for a instance method in the given class.  Use this when the
 #   method name alone is ambiguous.
 #
@@ -447,7 +446,7 @@ class RDoc::Parser::C < RDoc::Parser
       next unless cls = @classes[c]
       m = @known_classes[m] || m
 
-      comment = RDoc::Comment.new '', @top_level
+      comment = RDoc::Comment.new '', @top_level, :c
       incl = cls.add_include RDoc::Include.new(m, comment)
       incl.record_location @top_level
     end
@@ -565,7 +564,7 @@ class RDoc::Parser::C < RDoc::Parser
                                    \s*"#{Regexp.escape new_name}"\s*,
                                    \s*"#{Regexp.escape old_name}"\s*\);%xm
 
-    RDoc::Comment.new($1 || '', @top_level)
+    RDoc::Comment.new($1 || '', @top_level, :c)
   end
 
   ##
@@ -604,7 +603,7 @@ class RDoc::Parser::C < RDoc::Parser
                 ''
               end
 
-    RDoc::Comment.new comment, @top_level
+    RDoc::Comment.new comment, @top_level, :c
   end
 
   ##
@@ -644,7 +643,7 @@ class RDoc::Parser::C < RDoc::Parser
 
     case type
     when :func_def
-      comment = RDoc::Comment.new args[0], @top_level
+      comment = RDoc::Comment.new args[0], @top_level, :c
       body = args[1]
       offset, = args[2]
 
@@ -674,7 +673,7 @@ class RDoc::Parser::C < RDoc::Parser
 
       body
     when :macro_def
-      comment = RDoc::Comment.new args[0], @top_level
+      comment = RDoc::Comment.new args[0], @top_level, :c
       body = args[1]
       offset, = args[2]
 
@@ -781,7 +780,7 @@ class RDoc::Parser::C < RDoc::Parser
       comment = ''
     end
 
-    comment = RDoc::Comment.new comment, @top_level
+    comment = RDoc::Comment.new comment, @top_level, :c
     comment.normalize
 
     look_for_directives_in class_mod, comment
@@ -826,7 +825,7 @@ class RDoc::Parser::C < RDoc::Parser
       table[const_name] ||
       ''
 
-    RDoc::Comment.new comment, @top_level
+    RDoc::Comment.new comment, @top_level, :c
   end
 
   ##
@@ -857,7 +856,7 @@ class RDoc::Parser::C < RDoc::Parser
 
     return unless comment
 
-    RDoc::Comment.new comment, @top_level
+    RDoc::Comment.new comment, @top_level, :c
   end
 
   ##
@@ -953,7 +952,7 @@ class RDoc::Parser::C < RDoc::Parser
   # can override the C value of the comment to give a friendly definition.
   #
   #   /* 300: The perfect score in bowling */
-  #   rb_define_const(cFoo, "PERFECT", INT2FIX(300);
+  #   rb_define_const(cFoo, "PERFECT", INT2FIX(300));
   #
   # Will override <tt>INT2FIX(300)</tt> with the value +300+ in the output
   # RDoc.  Values may include quotes and escaped colons (\:).
@@ -991,7 +990,7 @@ class RDoc::Parser::C < RDoc::Parser
 
         new_comment = "#{$1}#{new_comment.lstrip}"
 
-        new_comment = RDoc::Comment.new new_comment, @top_level
+        new_comment = RDoc::Comment.new new_comment, @top_level, :c
 
         con = RDoc::Constant.new const_name, new_definition, new_comment
       else
@@ -1266,4 +1265,3 @@ class RDoc::Parser::C < RDoc::Parser
   end
 
 end
-

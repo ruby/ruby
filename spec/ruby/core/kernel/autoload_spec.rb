@@ -57,7 +57,7 @@ describe "Kernel#autoload" do
   end
 
   describe "when Object is frozen" do
-    it "raises a FrozenError before defining the constant" do
+    it "raises a #{frozen_error_class} before defining the constant" do
       ruby_exe(fixture(__FILE__, "autoload_frozen.rb")).should == "#{frozen_error_class} - nil"
     end
   end
@@ -72,7 +72,7 @@ describe "Kernel#autoload" do
       KernelSpecs::AutoloadMethod.autoload?(:AutoloadFromIncludedModule).should == @path
     end
 
-    it "the autoload is reacheable from the class too" do
+    it "the autoload is reachable from the class too" do
       KernelSpecs::AutoloadMethodIncluder.autoload?(:AutoloadFromIncludedModule).should == @path
     end
 
@@ -138,7 +138,7 @@ describe "Kernel.autoload" do
       KernelSpecs::AutoloadMethod2.autoload?(:AutoloadFromIncludedModule2).should == @path
     end
 
-    it "the autoload is reacheable from the class too" do
+    it "the autoload is reachable from the class too" do
       KernelSpecs::AutoloadMethodIncluder2.autoload?(:AutoloadFromIncludedModule2).should == @path
     end
 

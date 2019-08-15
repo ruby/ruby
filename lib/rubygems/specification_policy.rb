@@ -1,7 +1,11 @@
 require 'delegate'
 require 'uri'
+require 'rubygems/user_interaction'
 
 class Gem::SpecificationPolicy < SimpleDelegator
+
+  include Gem::UserInteraction
+
   VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/.freeze # :nodoc:
 
   SPECIAL_CHARACTERS = /\A[#{Regexp.escape('.-_')}]+/.freeze # :nodoc:
@@ -300,7 +304,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   end
 
   def validate_licenses
-    licenses.each { |license|
+    licenses.each do |license|
       if license.length > 64
         error "each license must be 64 characters or less"
       end
@@ -314,7 +318,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
         message += "Did you mean #{suggestions.map { |s| "'#{s}'"}.join(', ')}?\n" unless suggestions.nil?
         warning(message)
       end
-    }
+    end
 
     warning <<-warning if licenses.empty?
 licenses is empty, but is recommended.  Use a license identifier from
@@ -404,4 +408,5 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   def help_text # :nodoc:
     "See http://guides.rubygems.org/specification-reference/ for help"
   end
+
 end

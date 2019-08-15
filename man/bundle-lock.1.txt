@@ -2,92 +2,92 @@ BUNDLE-LOCK(1)							BUNDLE-LOCK(1)
 
 
 
-1mNAME0m
-       1mbundle-lock 22m- Creates / Updates a lockfile without installing
+NAME
+       bundle-lock - Creates / Updates a lockfile without installing
 
-1mSYNOPSIS0m
-       1mbundle    lock   22m[--update]   [--local]   [--print]   [--lockfile=PATH]
+SYNOPSIS
+       bundle	 lock	[--update]   [--local]	 [--print]   [--lockfile=PATH]
        [--full-index] [--add-platform] [--remove-platform] [--patch] [--minor]
        [--major] [--strict] [--conservative]
 
-1mDESCRIPTION0m
+DESCRIPTION
        Lock the gems specified in Gemfile.
 
-1mOPTIONS0m
-       1m--update=<*gems>0m
+OPTIONS
+       --update=<*gems>
 	      Ignores  the  existing  lockfile. Resolve then updates lockfile.
-	      Taking a list of gems or updating all gems if no list is given.
+	      Taking a list of gems or updating all gems if no list is	given.
 
-       1m--local0m
-	      Do not attempt to connect to 1mrubygems.org22m. Instead, Bundler will
-	      use  the	gems  already  present	in  Rubygems' cache or in 1mven-0m
-	      1mdor/cache22m. Note that  if  a	appropriate  platform-specific	gem
-	      exists on 1mrubygems.org 22mit will not be found.
+       --local
+	      Do not attempt to connect to rubygems.org. Instead, Bundler will
+	      use the gems already present  in	Rubygems'  cache  or  in  ven-
+	      dor/cache.  Note	that  if  a  appropriate platform-specific gem
+	      exists on rubygems.org it will not be found.
 
-       1m--print0m
-	      Prints  the  lockfile  to  STDOUT instead of writing to the file
+       --print
+	      Prints the lockfile to STDOUT instead of	writing  to  the  file
 	      system.
 
-       1m--lockfile=<path>0m
+       --lockfile=<path>
 	      The path where the lockfile should be written to.
 
-       1m--full-index0m
+       --full-index
 	      Fall back to using the single-file index of all gems.
 
-       1m--add-platform0m
-	      Add a new platform to the lockfile, re-resolving for  the  addi-
+       --add-platform
+	      Add  a  new platform to the lockfile, re-resolving for the addi-
 	      tion of that platform.
 
-       1m--remove-platform0m
+       --remove-platform
 	      Remove a platform from the lockfile.
 
-       1m--patch0m
+       --patch
 	      If updating, prefer updating only to next patch version.
 
-       1m--minor0m
+       --minor
 	      If updating, prefer updating only to next minor version.
 
-       1m--major0m
+       --major
 	      If updating, prefer updating to next major version (default).
 
-       1m--strict0m
-	      If  updating,  do  not  allow  any gem to be updated past latest
+       --strict
+	      If updating, do not allow any gem  to  be  updated  past	latest
 	      --patch | --minor | --major.
 
-       1m--conservative0m
+       --conservative
 	      If updating, use bundle install conservative update behavior and
 	      do not allow shared dependencies to be updated.
 
-1mUPDATING ALL GEMS0m
-       If  you	run  1mbundle  lock  22mwith  1m--update 22moption without list of gems,
-       bundler will ignore any	previously  installed  gems  and  resolve  all
-       dependencies  again  based on the latest versions of all gems available
+UPDATING ALL GEMS
+       If you run bundle lock with  --update  option  without  list  of  gems,
+       bundler	will  ignore  any  previously  installed  gems and resolve all
+       dependencies again based on the latest versions of all  gems  available
        in the sources.
 
-1mUPDATING A LIST OF GEMS0m
+UPDATING A LIST OF GEMS
        Sometimes, you want to update a single gem in the Gemfile(5), and leave
-       the  rest  of the gems that you specified locked to the versions in the
-       1mGemfile.lock22m.
+       the rest of the gems that you specified locked to the versions  in  the
+       Gemfile.lock.
 
-       For instance, you  only	want  to  update  1mnokogiri22m,  run  1mbundle  lock0m
-       1m--update nokogiri22m.
+       For  instance,  you  only  want	to  update  nokogiri,  run bundle lock
+       --update nokogiri.
 
-       Bundler will update 1mnokogiri 22mand any of its dependencies, but leave the
-       rest of the gems that you specified locked to the versions in the  1mGem-0m
-       1mfile.lock22m.
+       Bundler will update nokogiri and any of its dependencies, but leave the
+       rest  of the gems that you specified locked to the versions in the Gem-
+       file.lock.
 
-1mSUPPORTING OTHER PLATFORMS0m
-       If  you want your bundle to support platforms other than the one you're
-       running locally, you can run 1mbundle lock --add-platform PLATFORM 22mto add
-       PLATFORM  to the lockfile, force bundler to re-resolve and consider the
-       new platform when picking gems, all without needing to have  a  machine
+SUPPORTING OTHER PLATFORMS
+       If you want your bundle to support platforms other than the one	you're
+       running locally, you can run bundle lock --add-platform PLATFORM to add
+       PLATFORM to the lockfile, force bundler to re-resolve and consider  the
+       new  platform  when picking gems, all without needing to have a machine
        that matches PLATFORM handy to install those platform-specific gems on.
 
-       For a full explanation of gem platforms, see 1mgem help platform22m.
+       For a full explanation of gem platforms, see gem help platform.
 
-1mPATCH LEVEL OPTIONS0m
-       See bundle update(1) 4mbundle-update.1.html24m for details.
+PATCH LEVEL OPTIONS
+       See bundle update(1) bundle-update.1.html for details.
 
 
 
-				 November 2018			BUNDLE-LOCK(1)
+				  March 2019			BUNDLE-LOCK(1)

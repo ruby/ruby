@@ -14,18 +14,9 @@ describe "Symbol#capitalize" do
     :"£1.20".capitalize.should == :"£1.20"
   end
 
-  ruby_version_is ''...'2.4' do
-    it "leaves the first character alone if it is not an alphabetical ASCII character" do
-      "\u{00DE}c".to_sym.capitalize.should == :"Þc"
-      "\u{00DF}C".to_sym.capitalize.should == :"ßc"
-    end
-  end
-
-  ruby_version_is '2.4' do
-    it "capitalizes the first character if it is Unicode" do
-      :"äöü".capitalize.should == :"Äöü"
-      :"aou".capitalize.should == :"Aou"
-    end
+  it "capitalizes the first character if it is Unicode" do
+    :"äöü".capitalize.should == :"Äöü"
+    :"aou".capitalize.should == :"Aou"
   end
 
   it "converts subsequent uppercase ASCII characters to their lowercase equivalents" do
@@ -38,12 +29,6 @@ describe "Symbol#capitalize" do
 
   it "works with both upper- and lowercase ASCII characters in the same Symbol" do
     :mIxEd.capitalize.should == :Mixed
-  end
-
-  ruby_version_is ''...'2.4' do
-    it "leaves uppercase Unicode characters as they were" do
-      "a\u{00DE}c".to_sym.capitalize.should == :"AÞc"
-    end
   end
 
   it "leaves lowercase Unicode characters (except in first position) as they were" do

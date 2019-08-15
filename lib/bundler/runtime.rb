@@ -34,14 +34,7 @@ module Bundler
         spec.load_paths.reject {|path| $LOAD_PATH.include?(path) }
       end.reverse.flatten
 
-      # See Gem::Specification#add_self_to_load_path (since RubyGems 1.8)
-      if insert_index = Bundler.rubygems.load_path_insert_index
-        # Gem directories must come after -I and ENV['RUBYLIB']
-        $LOAD_PATH.insert(insert_index, *load_paths)
-      else
-        # We are probably testing in core, -I and RUBYLIB don't apply
-        $LOAD_PATH.unshift(*load_paths)
-      end
+      Bundler.rubygems.add_to_load_path(load_paths)
 
       setup_manpath
 
@@ -163,7 +156,7 @@ module Bundler
       gem_dirs             = Dir["#{Gem.dir}/gems/*"]
       gem_files            = Dir["#{Gem.dir}/cache/*.gem"]
       gemspec_files        = Dir["#{Gem.dir}/specifications/*.gemspec"]
-      extension_dirs       = Dir["#{Gem.dir}/extensions/*/*/*"]
+      extension_dirs       = Dir["#{Gem.dir}/extensions/*/*/*"] + Dir["#{Gem.dir}/bundler/gems/extensions/*/*/*"]
       spec_gem_paths       = []
       # need to keep git sources around
       spec_git_paths       = @definition.spec_git_paths

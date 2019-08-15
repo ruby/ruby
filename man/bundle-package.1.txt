@@ -2,36 +2,36 @@ BUNDLE-PACKAGE(1)					     BUNDLE-PACKAGE(1)
 
 
 
-1mNAME0m
-       1mbundle-package 22m- Package your needed 1m.gem 22mfiles into your application
+NAME
+       bundle-package - Package your needed .gem files into your application
 
-1mSYNOPSIS0m
-       1mbundle package0m
+SYNOPSIS
+       bundle package
 
-1mDESCRIPTION0m
-       Copy  all of the 1m.gem 22mfiles needed to run the application into the 1mven-0m
-       1mdor/cache   22mdirectory.   In   the	future,   when	 running    [bundle
+DESCRIPTION
+       Copy  all of the .gem files needed to run the application into the ven-
+       dor/cache   directory.	In   the   future,   when   running    [bundle
        install(1)][bundle-install], use the gems in the cache in preference to
-       the ones on 1mrubygems.org22m.
+       the ones on rubygems.org.
 
-1mGIT AND PATH GEMS0m
-       Since Bundler 1.2, the 1mbundle package 22mcommand can also package 1m:git 22mand
-       1m:path	22mdependencies  besides  .gem	files.	This needs to be explicitly
-       enabled via the 1m--all 22moption. Once	used,  the  1m--all  22moption	will  be
+GIT AND PATH GEMS
+       Since Bundler 1.2, the bundle package command can also package :git and
+       :path  dependencies  besides  .gem  files.  This needs to be explicitly
+       enabled via the --all option. Once  used,  the  --all  option  will  be
        remembered.
 
-1mSUPPORT FOR MULTIPLE PLATFORMS0m
+SUPPORT FOR MULTIPLE PLATFORMS
        When  using  gems that have different packages for different platforms,
        Bundler 1.8 and newer support caching of gems for other platforms where
-       the  Gemfile  has  been resolved (i.e. present in the lockfile) in 1mven-0m
-       1mdor/cache22m. This needs to be enabled  via  the  1m--all-platforms  22moption.
+       the  Gemfile  has  been resolved (i.e. present in the lockfile) in ven-
+       dor/cache. This needs to be enabled  via  the  --all-platforms  option.
        This setting will be remembered in your local bundler configuration.
 
-1mREMOTE FETCHING0m
-       By  default, if you run 1mbundle install(1)22m](bundle-install.1.html) after
-       running bundle package(1)  4mbundle-package.1.html24m,  bundler	will  still
-       connect to 1mrubygems.org 22mto check whether a platform-specific gem exists
-       for any of the gems in 1mvendor/cache22m.
+REMOTE FETCHING
+       By  default, if you run bundle install(1)](bundle-install.1.html) after
+       running bundle package(1)  bundle-package.1.html,  bundler  will  still
+       connect to rubygems.org to check whether a platform-specific gem exists
+       for any of the gems in vendor/cache.
 
        For instance, consider this Gemfile(5):
 
@@ -43,37 +43,37 @@ BUNDLE-PACKAGE(1)					     BUNDLE-PACKAGE(1)
 
 
 
-       If you run 1mbundle package 22munder C Ruby, bundler will retrieve the  ver-
-       sion  of  1mnokogiri  22mfor the 1m"ruby" 22mplatform. If you deploy to JRuby and
-       run 1mbundle install22m, bundler is forced to check to see whether a  1m"java"0m
-       platformed 1mnokogiri 22mexists.
+       If you run bundle package under C Ruby, bundler will retrieve the  ver-
+       sion  of  nokogiri  for the "ruby" platform. If you deploy to JRuby and
+       run bundle install, bundler is forced to check to see whether a	"java"
+       platformed nokogiri exists.
 
-       Even  though  the  1mnokogiri  22mgem  for  the Ruby platform is 4mtechnically0m
+       Even  though  the  nokogiri  gem  for  the Ruby platform is technically
        acceptable on JRuby, it has a C extension that does not run  on	JRuby.
-       As a result, bundler will, by default, still connect to 1mrubygems.org 22mto
+       As a result, bundler will, by default, still connect to rubygems.org to
        check whether it has a version of one of your  gems  more  specific  to
        your platform.
 
-       This  problem  is  also	not  limited to the 1m"java" 22mplatform. A similar
+       This  problem  is  also	not  limited to the "java" platform. A similar
        (common) problem can happen when developing on Windows and deploying to
        Linux, or even when developing on OSX and deploying to Linux.
 
-       If  you know for sure that the gems packaged in 1mvendor/cache 22mare appro-
-       priate for the platform you are on, you can run 1mbundle install  --local0m
-       to  skip  checking  for more appropriate gems, and use the ones in 1mven-0m
-       1mdor/cache22m.
+       If  you know for sure that the gems packaged in vendor/cache are appro-
+       priate for the platform you are on, you can run bundle install  --local
+       to  skip  checking  for more appropriate gems, and use the ones in ven-
+       dor/cache.
 
        One way to be sure that you have the right platformed versions  of  all
-       your gems is to run 1mbundle package 22mon an identical machine and check in
-       the gems. For instance, you can run  1mbundle  package  22mon  an  identical
-       staging	box during your staging process, and check in the 1mvendor/cache0m
+       your gems is to run bundle package on an identical machine and check in
+       the gems. For instance, you can run  bundle  package  on  an  identical
+       staging	box during your staging process, and check in the vendor/cache
        before deploying to production.
 
-       By default, bundle package(1) 4mbundle-package.1.html24m  fetches  and  also
+       By default, bundle package(1) bundle-package.1.html  fetches  and  also
        installs  the gems to the default location. To package the dependencies
-       to 1mvendor/cache 22mwithout installing them to the local install  location,
-       you can run 1mbundle package --no-install22m.
+       to vendor/cache without installing them to the local install  location,
+       you can run bundle package --no-install.
 
 
 
-				 November 2018		     BUNDLE-PACKAGE(1)
+				  March 2019		     BUNDLE-PACKAGE(1)

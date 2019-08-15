@@ -188,6 +188,7 @@ type2sym(enum ruby_value_type i)
 	CASE_TYPE(T_IMEMO);
 	CASE_TYPE(T_NODE);
 	CASE_TYPE(T_ICLASS);
+        CASE_TYPE(T_MOVED);
 	CASE_TYPE(T_ZOMBIE);
 #undef CASE_TYPE
       default: rb_bug("type2sym: unknown type (%d)", i);
@@ -377,7 +378,9 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_UNLESS);
 		COUNT_NODE(NODE_CASE);
 		COUNT_NODE(NODE_CASE2);
+                COUNT_NODE(NODE_CASE3);
 		COUNT_NODE(NODE_WHEN);
+                COUNT_NODE(NODE_IN);
 		COUNT_NODE(NODE_WHILE);
 		COUNT_NODE(NODE_UNTIL);
 		COUNT_NODE(NODE_ITER);
@@ -471,6 +474,9 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_DSYM);
 		COUNT_NODE(NODE_ATTRASGN);
 		COUNT_NODE(NODE_LAMBDA);
+                COUNT_NODE(NODE_METHREF);
+                COUNT_NODE(NODE_ARYPTN);
+                COUNT_NODE(NODE_HSHPTN);
 #undef COUNT_NODE
 	      case NODE_LAST: break;
 	    }
@@ -617,7 +623,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
     VALUE hash = setup_hash(argc, argv);
 
     if (imemo_type_ids[0] == 0) {
-	imemo_type_ids[0] = rb_intern("imemo_none");
+        imemo_type_ids[0] = rb_intern("imemo_env");
 	imemo_type_ids[1] = rb_intern("imemo_cref");
 	imemo_type_ids[2] = rb_intern("imemo_svar");
 	imemo_type_ids[3] = rb_intern("imemo_throw_data");
@@ -626,7 +632,8 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
 	imemo_type_ids[6] = rb_intern("imemo_ment");
 	imemo_type_ids[7] = rb_intern("imemo_iseq");
 	imemo_type_ids[8] = rb_intern("imemo_tmpbuf");
-	imemo_type_ids[9] = rb_intern("imemo_parser_strterm");
+        imemo_type_ids[9] = rb_intern("imemo_ast");
+        imemo_type_ids[10] = rb_intern("imemo_parser_strterm");
     }
 
     rb_objspace_each_objects(count_imemo_objects_i, (void *)hash);

@@ -80,24 +80,64 @@ describe :kernel_Rational, shared: true do
       end
 
       it "raises a RangeError if the imaginary part is not 0" do
-        lambda { Rational(Complex(1, 2)) }.should raise_error(RangeError)
+        -> { Rational(Complex(1, 2)) }.should raise_error(RangeError)
       end
     end
 
     it "raises a TypeError if the first argument is nil" do
-      lambda { Rational(nil) }.should raise_error(TypeError)
+      -> { Rational(nil) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if the second argument is nil" do
-      lambda { Rational(1, nil) }.should raise_error(TypeError)
+      -> { Rational(1, nil) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if the first argument is a Symbol" do
-      lambda { Rational(:sym) }.should raise_error(TypeError)
+      -> { Rational(:sym) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if the second argument is a Symbol" do
-      lambda { Rational(1, :sym) }.should raise_error(TypeError)
+      -> { Rational(1, :sym) }.should raise_error(TypeError)
+    end
+  end
+
+  ruby_version_is "2.6" do
+    describe "when passed exception: false" do
+      describe "and [non-Numeric]" do
+        it "swallows an error" do
+          Rational(:sym, exception: false).should == nil
+          Rational("abc", exception: false).should == nil
+        end
+      end
+
+      describe "and [non-Numeric, Numeric]" do
+        it "swallows an error" do
+          Rational(:sym, 1, exception: false).should == nil
+          Rational("abc", 1, exception: false).should == nil
+        end
+      end
+
+      describe "and [anything, non-Numeric]" do
+        it "swallows an error" do
+          Rational(:sym, :sym, exception: false).should == nil
+          Rational("abc", :sym, exception: false).should == nil
+        end
+      end
+
+      describe "and non-Numeric String arguments" do
+        it "swallows an error" do
+          Rational("a", "b", exception: false).should == nil
+          Rational("a", 0, exception: false).should == nil
+          Rational(0, "b", exception: false).should == nil
+        end
+      end
+
+      describe "and nil arguments" do
+        it "swallows an error" do
+          Rational(nil, exception: false).should == nil
+          Rational(nil, nil, exception: false).should == nil
+        end
+      end
     end
   end
 end

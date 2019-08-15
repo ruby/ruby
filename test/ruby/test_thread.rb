@@ -882,15 +882,15 @@ class TestThread < Test::Unit::TestCase
         begin
           begin
             Thread.pass until done
-          rescue => e
+          rescue
             q.push :ng1
           end
           begin
             Thread.handle_interrupt(Object => :immediate){} if Thread.pending_interrupt?
-          rescue RuntimeError => e
+          rescue RuntimeError
             q.push :ok
           end
-        rescue => e
+        rescue
           q.push :ng2
         ensure
           q.push :ng3
@@ -967,7 +967,12 @@ _eom
       pid = cpid
       t0 = Time.now.to_f
       Process.kill(:SIGINT, pid)
-      Timeout.timeout(10) { Process.wait(pid) }
+      begin
+        Timeout.timeout(10) { Process.wait(pid) }
+      rescue Timeout::Error
+        EnvUtil.terminate(pid)
+        raise
+      end
       t1 = Time.now.to_f
       [$?, t1 - t0, err_p.read]
     end
@@ -1184,12 +1189,10 @@ q.pop
     bug8433 = '[ruby-core:55102] [Bug #8433]'
 
     mutex = Thread::Mutex.new
-    flag = false
     mutex.lock
 
     th = Thread.new do
       mutex.synchronize do
-        flag = true
         sleep
       end
     end
@@ -1242,22 +1245,37 @@ q.pop
   def test_fork_while_parent_locked
     skip 'needs fork' unless Process.respond_to?(:fork)
     m = Thread::Mutex.new
-    failures = 0
-    run = true
-    thrs = 50.times.map do
-      Thread.new do
-        while run
-          pid = fork { m.synchronize {} }
-          m.synchronize {}
-          _, st = Process.waitpid2(pid)
-          m.synchronize { failures += 1 } unless st.success?
-        end
+    nr = 1
+    thrs = []
+    m.synchronize do
+      thrs = nr.times.map { Thread.new { m.synchronize {} } }
+      thrs.each { Thread.pass }
+      pid = fork do
+        m.locked? or exit!(2)
+        thrs = nr.times.map { Thread.new { m.synchronize {} } }
+        m.unlock
+        thrs.each { |t| t.join(1) == t or exit!(1) }
+        exit!(0)
       end
+      _, st = Process.waitpid2(pid)
+      assert_predicate st, :success?, '[ruby-core:90312] [Bug #15383]'
     end
-    sleep 0.5
-    run = false
-    thrs.each(&:join)
-    assert_equal 0, failures, '[ruby-core:90312] [Bug #15383]'
+    thrs.each { |t| assert_same t, t.join(1) }
+  end
+
+  def test_fork_while_mutex_locked_by_forker
+    skip 'needs fork' unless Process.respond_to?(:fork)
+    m = Mutex.new
+    m.synchronize do
+      pid = fork do
+        exit!(2) unless m.locked?
+        m.unlock rescue exit!(3)
+        m.synchronize {} rescue exit!(4)
+        exit!(0)
+      end
+      _, st = Timeout.timeout(30) { Process.waitpid2(pid) }
+      assert_predicate st, :success?, '[ruby-core:90595] [Bug #15430]'
+    end
   end
 
   def test_subclass_no_initialize

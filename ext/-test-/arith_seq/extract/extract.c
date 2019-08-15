@@ -5,7 +5,7 @@ arith_seq_s_extract(VALUE mod, VALUE obj)
 {
   rb_arithmetic_sequence_components_t x;
   VALUE ret;
-  int f, r;
+  int r;
 
   r = rb_arithmetic_sequence_extract(obj, &x);
 

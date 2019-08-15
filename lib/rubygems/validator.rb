@@ -19,36 +19,13 @@ class Gem::Validator
     require 'find'
   end
 
-  ##
-  # Given a gem file's contents, validates against its own MD5 checksum
-  # gem_data:: [String] Contents of the gem file
-
-  def verify_gem(gem_data)
-    # TODO remove me? The code here only validate an MD5SUM that was
-    # in some old formatted gems, but hasn't been for a long time.
-  end
-
-  ##
-  # Given the path to a gem file, validates against its own MD5 checksum
-  #
-  # gem_path:: [String] Path to gem file
-
-  def verify_gem_file(gem_path)
-    File.open gem_path, Gem.binary_mode do |file|
-      gem_data = file.read
-      verify_gem gem_data
-    end
-  rescue Errno::ENOENT, Errno::EINVAL
-    raise Gem::VerificationError, "missing gem file #{gem_path}"
-  end
-
   private
 
   def find_files_for_gem(gem_directory)
     installed_files = []
 
     Find.find gem_directory do |file_name|
-      fn = file_name[gem_directory.size..file_name.size-1].sub(/^\//, "")
+      fn = file_name[gem_directory.size..file_name.size - 1].sub(/^\//, "")
       installed_files << fn unless
         fn =~ /CVS/ || fn.empty? || File.directory?(file_name)
     end
@@ -105,24 +82,26 @@ class Gem::Validator
       end
 
       begin
-        verify_gem_file(gem_path)
+        unless File.readable?(gem_path)
+          raise Gem::VerificationError, "missing gem file #{gem_path}"
+        end
 
         good, gone, unreadable = nil, nil, nil, nil
 
         File.open gem_path, Gem.binary_mode do |file|
           package = Gem::Package.new gem_path
 
-          good, gone = package.contents.partition { |file_name|
+          good, gone = package.contents.partition do |file_name|
             File.exist? File.join(gem_directory, file_name)
-          }
+          end
 
           gone.sort.each do |path|
             errors[gem_name][path] = "Missing file"
           end
 
-          good, unreadable = good.partition { |file_name|
+          good, unreadable = good.partition do |file_name|
             File.readable? File.join(gem_directory, file_name)
-          }
+          end
 
           unreadable.sort.each do |path|
             errors[gem_name][path] = "Unreadable file"
@@ -162,4 +141,5 @@ class Gem::Validator
 
     errors
   end
+
 end

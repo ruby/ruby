@@ -1,6 +1,13 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/clocks'
 
 describe "Process.clock_gettime" do
+  ProcessSpecs.clock_constants.each do |name, value|
+    it "can be called with Process::#{name}" do
+      Process.clock_gettime(value).should be_an_instance_of(Float)
+    end
+  end
+
   describe 'time units' do
     it 'handles a fixed set of time units' do
       [:nanosecond, :microsecond, :millisecond, :second].each do |unit|
@@ -13,7 +20,7 @@ describe "Process.clock_gettime" do
     end
 
     it 'raises an ArgumentError for an invalid time unit' do
-      lambda { Process.clock_gettime(Process::CLOCK_MONOTONIC, :bad) }.should raise_error(ArgumentError)
+      -> { Process.clock_gettime(Process::CLOCK_MONOTONIC, :bad) }.should raise_error(ArgumentError)
     end
 
     it 'defaults to :float_second' do
@@ -21,7 +28,8 @@ describe "Process.clock_gettime" do
       t2 = Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_second)
 
       t1.should be_an_instance_of(Float)
-      t2.should be_close(t1, 2.0)  # 2.0 is chosen arbitrarily to allow for time skew without admitting failure cases, which would be off by an order of magnitude.
+      t2.should be_an_instance_of(Float)
+      t2.should be_close(t1, TIME_TOLERANCE)
     end
 
     it 'uses the default time unit (:float_second) when passed nil' do
@@ -29,7 +37,8 @@ describe "Process.clock_gettime" do
       t2 = Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_second)
 
       t1.should be_an_instance_of(Float)
-      t2.should be_close(t1, 2.0) # 2.0 is chosen arbitrarily to allow for time skew without admitting failure cases, which would be off by an order of magnitude.
+      t2.should be_an_instance_of(Float)
+      t2.should be_close(t1, TIME_TOLERANCE)
     end
   end
 end

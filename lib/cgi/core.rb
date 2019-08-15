@@ -375,14 +375,14 @@ class CGI
 
   # Parse an HTTP query string into a hash of key=>value pairs.
   #
-  #   params = CGI::parse("query_string")
+  #   params = CGI.parse("query_string")
   #     # {"name1" => ["value1", "value2", ...],
   #     #  "name2" => ["value1", "value2", ...], ... }
   #
-  def CGI::parse(query)
+  def self.parse(query)
     params = {}
     query.split(/[&;]/).each do |pairs|
-      key, value = pairs.split('=',2).collect{|v| CGI::unescape(v) }
+      key, value = pairs.split('=',2).collect{|v| CGI.unescape(v) }
 
       next unless key
 
@@ -656,7 +656,7 @@ class CGI
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
       else
         @multipart = false
-        @params = CGI::parse(
+        @params = CGI.parse(
                     case env_table['REQUEST_METHOD']
                     when "GET", "HEAD"
                       if defined?(MOD_RUBY)
@@ -686,7 +686,7 @@ class CGI
         end
       end
 
-      @cookies = CGI::Cookie::parse((env_table['HTTP_COOKIE'] or env_table['COOKIE']))
+      @cookies = CGI::Cookie.parse((env_table['HTTP_COOKIE'] or env_table['COOKIE']))
     end
     private :initialize_query
 

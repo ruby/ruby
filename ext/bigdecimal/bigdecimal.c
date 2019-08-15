@@ -2560,6 +2560,10 @@ BigDecimal_clone(VALUE self)
   return self;
 }
 
+#ifdef HAVE_RB_OPTS_EXCEPTION_P
+int rb_opts_exception_p(VALUE opts, int default_value);
+#define opts_exception_p(opts) rb_opts_exception_p((opts), 1)
+#else
 static int
 opts_exception_p(VALUE opts)
 {
@@ -2568,9 +2572,17 @@ opts_exception_p(VALUE opts)
     if (!kwds[0]) {
         kwds[0] = rb_intern_const("exception");
     }
-    rb_get_kwargs(opts, kwds, 0, 1, &exception);
+    if (!rb_get_kwargs(opts, kwds, 0, 1, &exception)) return 1;
+    switch (exception) {
+      case Qtrue: case Qfalse:
+        break;
+      default:
+        rb_raise(rb_eArgError, "true or false is expected as exception: %+"PRIsVALUE,
+                 exception);
+    }
     return exception != Qfalse;
 }
+#endif
 
 static Real *
 BigDecimal_new(int argc, VALUE *argv)
@@ -2668,7 +2680,7 @@ BigDecimal_new(int argc, VALUE *argv)
 }
 
 /* call-seq:
- *   BigDecimal(initial, digits)
+ *   BigDecimal(initial, digits, exception: true)
  *
  * Create a new BigDecimal object.
  *
@@ -2682,8 +2694,13 @@ BigDecimal_new(int argc, VALUE *argv)
  *          the number of significant digits is determined from the initial
  *          value.
  *
- * The actual number of significant digits used in computation is usually
- * larger than the specified number.
+ *          The actual number of significant digits used in computation is
+ *          usually larger than the specified number.
+ *
+ * exception:: Whether an exception should be raised on invalid arguments.
+ *             +true+ by default, if passed +false+, just returns +nil+
+ *             for invalid.
+ *
  *
  * ==== Exceptions
  *
@@ -3955,9 +3972,6 @@ VP_EXPORT size_t
 VpInit(BDIGIT BaseVal)
 {
     /* Setup +/- Inf  NaN -0 */
-    VpGetDoubleNaN();
-    VpGetDoublePosInf();
-    VpGetDoubleNegInf();
     VpGetDoubleNegZero();
 
     /* Allocates Vp constants. */
@@ -4271,7 +4285,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
             while (ISSPACE(szVal[j])) ++j;
 
             /* Invalid character */
-            if (szVal[j]) {
+            if (szVal[j] && strict_p) {
                 goto invalid_value;
             }
         }

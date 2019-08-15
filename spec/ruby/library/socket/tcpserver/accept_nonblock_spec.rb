@@ -13,12 +13,12 @@ describe "Socket::TCPServer.accept_nonblock" do
 
   it "accepts non blocking connections" do
     @server.listen(5)
-    lambda {
+    -> {
       @server.accept_nonblock
     }.should raise_error(IO::WaitReadable)
 
     c = TCPSocket.new("127.0.0.1", @port)
-    sleep 0.1
+    IO.select([@server])
     s = @server.accept_nonblock
 
     port, address = Socket.unpack_sockaddr_in(s.getsockname)
@@ -33,12 +33,12 @@ describe "Socket::TCPServer.accept_nonblock" do
 
   it "raises an IOError if the socket is closed" do
     @server.close
-    lambda { @server.accept }.should raise_error(IOError)
+    -> { @server.accept }.should raise_error(IOError)
   end
 
   describe 'without a connected client' do
     it 'raises error' do
-      lambda { @server.accept_nonblock }.should raise_error(IO::WaitReadable)
+      -> { @server.accept_nonblock }.should raise_error(IO::WaitReadable)
     end
 
     it 'returns :wait_readable in exceptionless mode' do
@@ -59,7 +59,7 @@ describe 'TCPServer#accept_nonblock' do
 
     describe 'without a connected client' do
       it 'raises IO::WaitReadable' do
-        lambda { @server.accept_nonblock }.should raise_error(IO::WaitReadable)
+        -> { @server.accept_nonblock }.should raise_error(IO::WaitReadable)
       end
     end
 
@@ -75,6 +75,7 @@ describe 'TCPServer#accept_nonblock' do
         end
 
         it 'returns a TCPSocket' do
+          IO.select([@server])
           @socket = @server.accept_nonblock
           @socket.should be_an_instance_of(TCPSocket)
         end

@@ -24,7 +24,7 @@ class TestERB < Test::Unit::TestCase
     assert_match(/\Atest filename:1\b/, e.backtrace[0])
   end
 
-  # [deprecated] This will be removed at Ruby 2.7
+  # [deprecated] This will be removed later
   def test_without_filename_with_safe_level
     erb = EnvUtil.suppress_warning do
       ERB.new("<% raise ::TestERB::MyError %>", 1)
@@ -35,7 +35,7 @@ class TestERB < Test::Unit::TestCase
     assert_match(/\A\(erb\):1\b/, e.backtrace[0])
   end
 
-  # [deprecated] This will be removed at Ruby 2.7
+  # [deprecated] This will be removed later
   def test_with_filename_and_safe_level
     erb = EnvUtil.suppress_warning do
       ERB.new("<% raise ::TestERB::MyError %>", 1)
@@ -98,7 +98,7 @@ class TestERBCore < Test::Unit::TestCase
   end
 
   def test_core
-    # [deprecated] Fix initializer at Ruby 2.7
+    # [deprecated] Fix initializer later
     EnvUtil.suppress_warning do
       _test_core(nil)
       _test_core(0)
@@ -661,10 +661,16 @@ EOS
     end
   end
 
-  # These interfaces will be removed at Ruby 2.7.
+  # [deprecated] These interfaces will be removed later
   def test_deprecated_interface_warnings
-    [nil, 0, 1, 2].each do |safe|
+    [nil, 0].each do |safe|
       assert_warning(/2nd argument of ERB.new is deprecated/) do
+        ERB.new('', safe)
+      end
+    end
+
+    [1, 2].each do |safe|
+      assert_warn(/2nd argument of ERB.new is deprecated/) do
         ERB.new('', safe)
       end
     end
@@ -680,6 +686,20 @@ EOS
         ERB.new('', nil, nil, eoutvar)
       end
     end
+  end
+
+  def test_prohibited_marshal_dump
+    erb = ERB.new("")
+    assert_raise(TypeError) {Marshal.dump(erb)}
+  end
+
+  def test_prohibited_marshal_load
+    erb = ERB.allocate
+    erb.instance_variable_set(:@src, "")
+    erb.instance_variable_set(:@lineno, 1)
+    erb.instance_variable_set(:@_init, true)
+    erb = Marshal.load(Marshal.dump(erb))
+    assert_raise(ArgumentError) {erb.result}
   end
 end
 

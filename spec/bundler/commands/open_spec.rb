@@ -3,7 +3,7 @@
 RSpec.describe "bundle open" do
   before :each do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rails"
     G
   end
@@ -30,7 +30,7 @@ RSpec.describe "bundle open" do
 
   it "complains if gem not in bundle" do
     bundle "open missing", :env => { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }
-    expect(out).to match(/could not find gem 'missing'/i)
+    expect(err).to match(/could not find gem 'missing'/i)
   end
 
   it "does not blow up if the gem to open does not have a Gemfile" do
@@ -38,7 +38,7 @@ RSpec.describe "bundle open" do
     ref = git.ref_for("master", 11)
 
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem 'foo', :git => "#{lib_path("foo-1.0")}"
     G
 
@@ -48,7 +48,7 @@ RSpec.describe "bundle open" do
 
   it "suggests alternatives for similar-sounding gems" do
     bundle "open Rails", :env => { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }
-    expect(out).to match(/did you mean rails\?/i)
+    expect(err).to match(/did you mean rails\?/i)
   end
 
   it "opens the gem with short words" do
@@ -75,12 +75,12 @@ RSpec.describe "bundle open" do
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rails"
       gem "foo"
     G
 
-    bundle "config auto_install 1"
+    bundle "config set auto_install 1"
     bundle "open rails", :env => { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }
     expect(out).to include("Installing foo 1.0")
   end

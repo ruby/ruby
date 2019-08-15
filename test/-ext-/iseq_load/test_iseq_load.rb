@@ -17,7 +17,7 @@ class TestIseqLoad < Test::Unit::TestCase
   end
 
   def test_stressful_roundtrip
-    assert_separately(%w[-r-test-/iseq_load], "#{<<~"begin;"}\n#{<<~'end;;'}", timeout: 30)
+    assert_separately(%w[-r-test-/iseq_load], "#{<<~"begin;"}\n#{<<~'end;;'}", timeout: 120)
     begin;
       ISeq = RubyVM::InstructionSequence
       def assert_iseq_roundtrip(src, line=caller_locations(1,1)[0].lineno+1)
@@ -92,7 +92,9 @@ class TestIseqLoad < Test::Unit::TestCase
     begin;
       3.times { 3.times { next; @next_broke = true } }
     end;
-    a = ISeq.compile(src, __FILE__, __FILE__, line).to_a
+    a = EnvUtil.suppress_warning {
+      ISeq.compile(src, __FILE__, __FILE__, line)
+    }.to_a
     iseq = ISeq.iseq_load(a)
     iseq.eval
     assert_equal false, @next_broke

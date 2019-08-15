@@ -17,7 +17,7 @@ class Gem::Commands::OpenCommand < Gem::Command
     end
     add_option('-v', '--version VERSION', String,
                "Opens specific gem version") do |version|
-      options[:version]  = version
+      options[:version] = version
     end
   end
 
@@ -84,4 +84,5 @@ class Gem::Commands::OpenCommand < Gem::Command
 
     say "Unable to find gem '#{name}'"
   end
+
 end

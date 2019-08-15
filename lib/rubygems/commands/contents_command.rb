@@ -14,7 +14,7 @@ class Gem::Commands::ContentsCommand < Gem::Command
 
     add_version_option
 
-    add_option(      '--all',
+    add_option('--all',
                "Contents for all gems") do |all, options|
       options[:all] = all
     end
@@ -29,12 +29,12 @@ class Gem::Commands::ContentsCommand < Gem::Command
       options[:lib_only] = lib_only
     end
 
-    add_option(      '--[no-]prefix',
+    add_option('--[no-]prefix',
                "Don't include installed path prefix") do |prefix, options|
       options[:prefix] = prefix
     end
 
-    add_option(      '--[no-]show-install-dir',
+    add_option('--[no-]show-install-dir',
                'Show only the gem install dir') do |show, options|
       options[:show_install_dir] = show
     end

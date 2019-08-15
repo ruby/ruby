@@ -42,8 +42,10 @@ p Foo::Bar
     require 'tmpdir'
     Dir.mktmpdir('autoload') {|tmpdir|
       tmpfile = tmpdir + '/foo.rb'
+      tmpfile2 = tmpdir + '/bar.rb'
       a = Module.new do
         autoload :X, tmpfile
+        autoload :Y, tmpfile2
       end
       b = Module.new do
         include a
@@ -52,6 +54,14 @@ p Foo::Bar
       assert_equal(true, b.const_defined?(:X))
       assert_equal(tmpfile, a.autoload?(:X), bug4565)
       assert_equal(tmpfile, b.autoload?(:X), bug4565)
+      assert_equal(tmpfile, a.autoload?(:X, false))
+      assert_equal(tmpfile, a.autoload?(:X, nil))
+      assert_nil(b.autoload?(:X, false))
+      assert_nil(b.autoload?(:X, nil))
+      assert_equal(true, a.const_defined?("Y"))
+      assert_equal(true, b.const_defined?("Y"))
+      assert_equal(tmpfile2, a.autoload?("Y"))
+      assert_equal(tmpfile2, b.autoload?("Y"))
     }
   end
 
@@ -294,7 +304,7 @@ p Foo::Bar
         begin
           thrs = []
           3.times do
-            thrs << Thread.new { AutoloadTest; nil }
+            thrs << Thread.new { AutoloadTest && nil }
             thrs << Thread.new { fork { AutoloadTest } }
           end
           thrs.each(&:join)
@@ -336,7 +346,7 @@ p Foo::Bar
   end
 
   def test_no_leak
-    assert_no_memory_leak([], '', <<~'end;', 'many autoloads', timeout: 30)
+    assert_no_memory_leak([], '', <<~'end;', 'many autoloads', timeout: 60)
       200000.times do |i|
         m = Module.new
         m.instance_eval do

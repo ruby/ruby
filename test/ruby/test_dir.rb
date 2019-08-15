@@ -191,6 +191,28 @@ class TestDir < Test::Unit::TestCase
     end
   end
 
+  def test_glob_recursive_directory
+    Dir.chdir(@root) do
+      ['d', 'e'].each do |path|
+        FileUtils.mkdir_p("c/#{path}/a/b/c")
+        FileUtils.touch("c/#{path}/a/a.file")
+        FileUtils.touch("c/#{path}/a/b/b.file")
+        FileUtils.touch("c/#{path}/a/b/c/c.file")
+      end
+      bug15540 = '[ruby-core:91110] [Bug #15540]'
+      assert_equal(["c/d/a/", "c/d/a/b/", "c/d/a/b/c/", "c/e/a/", "c/e/a/b/", "c/e/a/b/c/"],
+                   Dir.glob('c/{d,e}/a/**/'), bug15540)
+    end
+  end
+
+  def test_glob_starts_with_brace
+    Dir.chdir(@root) do
+      bug15649 = '[ruby-core:91728] [Bug #15649]'
+      assert_equal(["#{@root}/a", "#{@root}/b"],
+                   Dir.glob("{#{@root}/a,#{@root}/b}"), bug15649)
+    end
+  end
+
   if Process.const_defined?(:RLIMIT_NOFILE)
     def test_glob_too_may_open_files
       assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", chdir: @root)
@@ -443,8 +465,11 @@ class TestDir < Test::Unit::TestCase
     begin;
       Process.setrlimit(Process::RLIMIT_NOFILE, 50)
       begin
-        tap {tap {tap {(0..100).map {open(IO::NULL)}}}}
+        fs = []
+        tap {tap {tap {(0..100).each {fs << open(IO::NULL)}}}}
       rescue Errno::EMFILE
+      ensure
+        fs.clear
       end
       list = Dir.glob("*").sort
       assert_not_empty(list)

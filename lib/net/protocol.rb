@@ -286,7 +286,7 @@ module Net # :nodoc:
               # next string
             end
           elsif len < 0
-            str = str[len, -len]
+            str = str.byteslice(len, -len)
           else # len > 0
             need_retry = false
             # next string

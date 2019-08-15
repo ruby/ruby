@@ -329,4 +329,18 @@ class TestBacktrace < Test::Unit::TestCase
     bar
     end;
   end
+
+  def test_caller_to_enum
+    err = ["-:3:in `foo': unhandled exception", "\tfrom -:in `each'"]
+    assert_in_out_err([], <<-"end;", [], err, "[ruby-core:91911]")
+      def foo
+        return to_enum(__method__) unless block_given?
+        raise
+        yield 1
+      end
+
+      enum = foo
+      enum.next
+    end;
+  end
 end

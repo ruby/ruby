@@ -2,90 +2,90 @@ BUNDLE-GEM(1)							 BUNDLE-GEM(1)
 
 
 
-1mNAME0m
-       1mbundle-gem 22m- Generate a project skeleton for creating a rubygem
+NAME
+       bundle-gem - Generate a project skeleton for creating a rubygem
 
-1mSYNOPSIS0m
-       1mbundle gem 4m22mGEM_NAME24m 4mOPTIONS0m
+SYNOPSIS
+       bundle gem GEM_NAME OPTIONS
 
-1mDESCRIPTION0m
-       Generates a directory named 1mGEM_NAME 22mwith a 1mRakefile22m, 1mGEM_NAME.gemspec22m,
+DESCRIPTION
+       Generates a directory named GEM_NAME with a Rakefile, GEM_NAME.gemspec,
        and other supporting files and directories that can be used to  develop
        a rubygem with that name.
 
-       Run  1mrake -T 22min the resulting project for a list of Rake tasks that can
+       Run  rake -T in the resulting project for a list of Rake tasks that can
        be used to test and publish the gem to rubygems.org.
 
        The generated project skeleton  can  be	customized  with  OPTIONS,  as
        explained  below.  Note	that  these  options can also be specified via
        Bundler's global configuration file using the following names:
 
-       o   1mgem.coc0m
+       o   gem.coc
 
-       o   1mgem.mit0m
+       o   gem.mit
 
-       o   1mgem.test0m
+       o   gem.test
 
 
 
-1mOPTIONS0m
-       1m--exe 22mor 1m-b 22mor 1m--bin0m
+OPTIONS
+       --exe or -b or --bin
 	      Specify that Bundler  should  create  a  binary  executable  (as
-	      1mexe/GEM_NAME22m) in the generated rubygem project. This binary will
-	      also be added to the 1mGEM_NAME.gemspec 22mmanifest. This behavior is
+	      exe/GEM_NAME) in the generated rubygem project. This binary will
+	      also be added to the GEM_NAME.gemspec manifest. This behavior is
 	      disabled by default.
 
-       1m--no-exe0m
-	      Do  not create a binary (overrides 1m--exe 22mspecified in the global
+       --no-exe
+	      Do  not create a binary (overrides --exe specified in the global
 	      config).
 
-       1m--coc	22mAdd a 1mCODE_OF_CONDUCT.md 22mfile  to  the	root  of  the  generated
+       --coc  Add a CODE_OF_CONDUCT.md file  to  the  root  of	the  generated
 	      project.	If  this  option is unspecified, an interactive prompt
 	      will be displayed and the answer	will  be  saved  in  Bundler's
-	      global config for future 1mbundle gem 22muse.
+	      global config for future bundle gem use.
 
-       1m--no-coc0m
-	      Do not create a 1mCODE_OF_CONDUCT.md 22m(overrides 1m--coc 22mspecified in
+       --no-coc
+	      Do not create a CODE_OF_CONDUCT.md (overrides --coc specified in
 	      the global config).
 
-       1m--ext	22mAdd boilerplate for C extension code to the	generated  project.
+       --ext  Add boilerplate for C extension code to the  generated  project.
 	      This behavior is disabled by default.
 
-       1m--no-ext0m
-	      Do  not  add  C extension code (overrides 1m--ext 22mspecified in the
+       --no-ext
+	      Do  not  add  C extension code (overrides --ext specified in the
 	      global config).
 
-       1m--mit	22mAdd an MIT license to a 1mLICENSE.txt 22mfile in the root of the gen-
+       --mit  Add an MIT license to a LICENSE.txt file in the root of the gen-
 	      erated project. Your name from the global git config is used for
 	      the copyright statement.	If  this  option  is  unspecified,  an
 	      interactive  prompt  will  be  displayed	and the answer will be
-	      saved in Bundler's global config for future 1mbundle gem 22muse.
+	      saved in Bundler's global config for future bundle gem use.
 
-       1m--no-mit0m
-	      Do not create a 1mLICENSE.txt 22m(overrides 1m--mit  22mspecified  in  the
+       --no-mit
+	      Do not create a LICENSE.txt (overrides --mit  specified  in  the
 	      global config).
 
-       1m-t22m, 1m--test=minitest22m, 1m--test=rspec0m
+       -t, --test=minitest, --test=rspec
 	      Specify the test framework that Bundler should use when generat-
-	      ing the project. Acceptable values are 1mminitest 22mand	1mrspec22m.  The
-	      1mGEM_NAME.gemspec  22mwill  be  configured  and a skeleton test/spec
+	      ing the project. Acceptable values are minitest and  rspec.  The
+	      GEM_NAME.gemspec	will  be  configured  and a skeleton test/spec
 	      directory will be created based on this option. If  this	option
 	      is  unspecified, an interactive prompt will be displayed and the
-	      answer will be saved in Bundler's global config for future  1mbun-0m
-	      1mdle  gem  22muse.  If  no  option is specified, the default testing
+	      answer will be saved in Bundler's global config for future  bun-
+	      dle  gem	use.  If  no  option is specified, the default testing
 	      framework is RSpec.
 
-       1m-e22m, 1m--edit[=EDITOR]0m
+       -e, --edit[=EDITOR]
 	      Open the resulting GEM_NAME.gemspec in EDITOR,  or  the  default
-	      editor  if  not specified. The default is 1m$BUNDLER_EDITOR22m, 1m$VIS-0m
-	      1mUAL22m, or 1m$EDITOR22m.
+	      editor   if  not	specified.  The  default  is  $BUNDLER_EDITOR,
+	      $VISUAL, or $EDITOR.
 
-1mSEE ALSO0m
-       o   bundle config(1) 4mbundle-config.1.html0m
-
-
+SEE ALSO
+       o   bundle config(1) bundle-config.1.html
 
 
 
 
-				 November 2018			 BUNDLE-GEM(1)
+
+
+				  March 2019			 BUNDLE-GEM(1)

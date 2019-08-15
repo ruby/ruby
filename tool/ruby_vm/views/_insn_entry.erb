@@ -1,4 +1,4 @@
-%# -*- mode:c; style:ruby; coding: utf-8; indent-tabs-mode: nil -*-
+%# -*- C -*-
 %# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
 %#
 %# This file is a part of  the programming language Ruby.  Permission is hereby
@@ -6,32 +6,36 @@
 %# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 %# details.
 %;
+% body = render_c_expr(insn.expr).gsub(/^#/, '#   ')
 
 /* insn <%= insn.pretty_name %> */
 INSN_ENTRY(<%= insn.name %>)
 {
-%#  NAME_OF_CURRENT_INSN is used in vm_exec.h
-#   define NAME_OF_CURRENT_INSN <%= insn.name %>
-#   define INSN_ATTR(x) <%= insn.call_attribute(' ## x ## ') %>
-    bool leaf;
-    MAYBE_UNUSED(VALUE *) canary;
-% unless insn.declarations.empty?
-    <%= insn.declarations.join(";\n    ") %>;
-
-% end
+    /* ###  Declare that we have just entered into an instruction. ### */
     START_OF_ORIGINAL_INSN(<%= insn.name %>);
+    DEBUG_ENTER_INSN(<%=cstr insn.name %>);
+
+    /* ###  Declare and assign variables. ### */
 % insn.preamble.each do |konst|
 <%= render_c_expr konst -%>
 % end
+%
 % insn.opes.each_with_index do |ope, i|
-    <%= ope[:name] %> = (<%= ope[:type] %>)GET_OPERAND(<%= i + 1 %>);
+    <%= ope[:decl] %> = (<%= ope[:type] %>)GET_OPERAND(<%= i + 1 %>);
+% end
+#   define INSN_ATTR(x) <%= insn.call_attribute(' ## x ## ') %>
+    bool leaf = INSN_ATTR(leaf);
+% insn.pops.reverse_each.with_index.reverse_each do |pop, i|
+    <%= pop[:decl] %> = <%= insn.cast_from_VALUE pop, "TOPN(#{i})"%>;
 % end
 %
-% insn.pops.reverse_each.with_index.reverse_each do |pop, i|
-    <%= pop[:name] %> = <%= insn.cast_from_VALUE pop, "TOPN(#{i})"%>;
+% insn.rets.each do |ret|
+%   next if insn.has_ope?(ret) or insn.has_pop?(ret)
+    <%= ret[:decl] %>;
 % end
-    DEBUG_ENTER_INSN(INSN_ATTR(name));
-    if (! (leaf = INSN_ATTR(leaf))) ADD_PC(INSN_ATTR(width));
+
+    /* ### Instruction preambles. ### */
+    if (! leaf) ADD_PC(INSN_ATTR(width));
 % if insn.handles_sp?
     POPN(INSN_ATTR(popn));
 % end
@@ -40,7 +44,16 @@ INSN_ENTRY(<%= insn.name %>)
 % insn.opes.each_with_index do |ope, i|
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), <%= i %>, <%= ope[:name] %>);
 % end
-<%= render_c_expr insn.expr -%>
+% unless body.empty?
+
+    /* ### Here we do the instruction body. ### */
+%#  NAME_OF_CURRENT_INSN is used in vm_exec.h
+#   define NAME_OF_CURRENT_INSN <%= insn.name %>
+<%= body -%>
+#   undef NAME_OF_CURRENT_INSN
+% end
+
+    /* ### Instruction trailers. ### */
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
 <%= insn.handle_canary "CHECK_CANARY()" -%>
 % if insn.handles_sp?
@@ -54,7 +67,8 @@ INSN_ENTRY(<%= insn.name %>)
 %   end
 % end
     if (leaf) ADD_PC(INSN_ATTR(width));
-    END_INSN(<%= insn.name %>);
 #   undef INSN_ATTR
-#   undef NAME_OF_CURRENT_INSN
+
+    /* ### Leave the instruction. ### */
+    END_INSN(<%= insn.name %>);
 }

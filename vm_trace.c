@@ -198,9 +198,6 @@ clean_hooks(const rb_execution_context_t *ec, rb_hook_list_t *list)
     }
     else {
         /* local events */
-        if (list->events == 0) {
-            ruby_xfree(list);
-        }
     }
 }
 
@@ -270,13 +267,6 @@ int
 rb_remove_event_hook_with_data(rb_event_hook_func_t func, VALUE data)
 {
     return remove_event_hook(GET_EC(), NULL, func, data);
-}
-
-void
-rb_clear_trace_func(void)
-{
-    rb_execution_context_t *ec = GET_EC();
-    rb_threadptr_remove_event_hook(ec, MATCH_ANY_FILTER_TH, 0, Qundef);
 }
 
 void
@@ -418,7 +408,7 @@ VALUE
 rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 {
     volatile int raised;
-    VALUE result = Qnil;
+    volatile VALUE result = Qnil;
     rb_execution_context_t *const ec = GET_EC();
     rb_vm_t *const vm = rb_ec_vm_ptr(ec);
     enum ruby_tag_type state;
@@ -1058,7 +1048,8 @@ tracepoint_attr_path(VALUE tpval)
 }
 
 /*
- * Return the parameters of the method or block that the current hook belongs to
+ * Return the parameters definition of the method or block that the
+ * current hook belongs to. Format is the same as for Method#parameters
  */
 static VALUE
 tracepoint_attr_parameters(VALUE tpval)
@@ -1205,7 +1196,7 @@ rb_tracepoint_enable(VALUE tpval)
     tp = tpptr(tpval);
 
     if (tp->local_target_set != Qfalse) {
-        rb_raise(rb_eArgError, "can't nest-enable a targetting TracePoint");
+        rb_raise(rb_eArgError, "can't nest-enable a targeting TracePoint");
     }
 
     if (tp->target_th) {
@@ -1243,7 +1234,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     unsigned int line = 0;
 
     if (tp->tracing > 0) {
-        rb_raise(rb_eArgError, "can't nest-enable a targetting TracePoint");
+        rb_raise(rb_eArgError, "can't nest-enable a targeting TracePoint");
     }
 
     if (!NIL_P(target_line)) {
@@ -1327,6 +1318,7 @@ rb_tracepoint_disable(VALUE tpval)
         }
     }
     tp->tracing = 0;
+    tp->target_th = NULL;
     return Qundef;
 }
 
@@ -1360,48 +1352,25 @@ rb_hook_list_remove_tracepoint(rb_hook_list_t *list, VALUE tpval)
     list->events = events;
 }
 
-/*
- * call-seq:
- *	trace.enable		-> true or false
- *	trace.enable { block }	-> obj
- *
- * Activates the trace
- *
- * Return true if trace was enabled.
- * Return false if trace was disabled.
- *
- *	trace.enabled?  #=> false
- *	trace.enable    #=> false (previous state)
- *                      #   trace is enabled
- *	trace.enabled?  #=> true
- *	trace.enable    #=> true (previous state)
- *                      #   trace is still enabled
- *
- * If a block is given, the trace will only be enabled within the scope of the
- * block.
- *
- *	trace.enabled?
- *	#=> false
- *
- *	trace.enable do
- *	    trace.enabled?
- *	    # only enabled for this block
- *	end
- *
- *	trace.enabled?
- *	#=> false
- *
- * Note: You cannot access event hooks within the block.
- *
- *	trace.enable { p tp.lineno }
- *	#=> RuntimeError: access from outside
- *
+/* :nodoc:
+ * Docs for the TracePointe#enable are in prelude.rb
  */
 static VALUE
-tracepoint_enable_m(VALUE tpval, VALUE target, VALUE target_line)
+tracepoint_enable_m(VALUE tpval, VALUE target, VALUE target_line, VALUE target_thread)
 {
     rb_tp_t *tp = tpptr(tpval);
     int previous_tracing = tp->tracing;
+
+    /* check target_thread */
+    if (RTEST(target_thread)) {
+        if (tp->target_th) {
+            rb_raise(rb_eArgError, "can not override target_thread filter");
+        }
+        tp->target_th = rb_thread_ptr(target_thread);
+    }
+    else {
+        tp->target_th = NULL;
+    }
 
     if (NIL_P(target)) {
         if (!NIL_P(target_line)) {
@@ -1466,7 +1435,7 @@ tracepoint_disable_m(VALUE tpval)
 
     if (rb_block_given_p()) {
         if (tp->local_target_set != Qfalse) {
-            rb_raise(rb_eArgError, "can't disable a targetting TracePoint in a block");
+            rb_raise(rb_eArgError, "can't disable a targeting TracePoint in a block");
         }
 
         rb_tracepoint_disable(tpval);
@@ -1780,6 +1749,7 @@ Init_vm_trace(void)
      * +:thread_begin+:: event hook at thread beginning
      * +:thread_end+:: event hook at thread ending
      * +:fiber_switch+:: event hook at fiber switch
+     * +:script_compiled+:: new Ruby code compiled (with +eval+, +load+ or +require+)
      *
      */
     rb_cTracePoint = rb_define_class("TracePoint", rb_cObject);
@@ -1801,7 +1771,7 @@ Init_vm_trace(void)
      */
     rb_define_singleton_method(rb_cTracePoint, "trace", tracepoint_trace_s, -1);
 
-    rb_define_method(rb_cTracePoint, "__enable", tracepoint_enable_m, 2);
+    rb_define_method(rb_cTracePoint, "__enable", tracepoint_enable_m, 3);
     rb_define_method(rb_cTracePoint, "disable", tracepoint_disable_m, 0);
     rb_define_method(rb_cTracePoint, "enabled?", rb_tracepoint_enabled_p, 0);
 

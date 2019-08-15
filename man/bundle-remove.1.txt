@@ -2,21 +2,21 @@ BUNDLE-REMOVE(1)					      BUNDLE-REMOVE(1)
 
 
 
-1mNAME0m
-       1mbundle-remove 22m- Removes gems from the Gemfile
+NAME
+       bundle-remove - Removes gems from the Gemfile
 
-1mSYNOPSIS0m
-       1mbundle remove [GEM [GEM ...]] [--install]0m
+SYNOPSIS
+       bundle remove [GEM [GEM ...]] [--install]
 
-1mDESCRIPTION0m
+DESCRIPTION
        Removes the given gems from the Gemfile while ensuring that the result-
        ing Gemfile is still valid. If a gem cannot be removed,	a  warning  is
        printed.  If  a	gem  is  already absent from the Gemfile, and error is
        raised.
 
-1mOPTIONS0m
-       1m--install0m
-	      Runs 1mbundle install 22mafter the given gems have been removed  from
+OPTIONS
+       --install
+	      Runs bundle install after the given gems have been removed  from
 	      the  Gemfile,  which  ensures  that  both  the  lockfile and the
 	      installed gems on disk are also  updated	to  remove  the  given
 	      gem(s).
@@ -31,4 +31,4 @@ BUNDLE-REMOVE(1)					      BUNDLE-REMOVE(1)
 
 
 
-				 November 2018		      BUNDLE-REMOVE(1)
+				  March 2019		      BUNDLE-REMOVE(1)

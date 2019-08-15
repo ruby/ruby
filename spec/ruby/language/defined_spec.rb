@@ -30,12 +30,12 @@ describe "The defined? keyword for literals" do
     end
 
     it "returns nil if one element is not defined" do
-      ret = defined?([NonExistantConstant, Array])
+      ret = defined?([NonExistentConstant, Array])
       ret.should == nil
     end
 
     it "returns nil if all elements are not defined" do
-      ret = defined?([NonExistantConstant, AnotherNonExistantConstant])
+      ret = defined?([NonExistentConstant, AnotherNonExistentConstant])
       ret.should == nil
     end
 
@@ -763,10 +763,8 @@ describe "The defined? keyword for a scoped constant" do
   end
 
   ruby_version_is "2.5" do
-    ruby_bug "#14407", "2.5.0"..."2.5.1" do
-      it "returns nil when a constant is defined on top-level but not on the class" do
-        defined?(DefinedSpecs::Basic::String).should be_nil
-      end
+    it "returns nil when a constant is defined on top-level but not on the class" do
+      defined?(DefinedSpecs::Basic::String).should be_nil
     end
   end
 

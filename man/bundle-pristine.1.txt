@@ -2,43 +2,43 @@ BUNDLE-PRISTINE(1)					    BUNDLE-PRISTINE(1)
 
 
 
-1mNAME0m
-       1mbundle-pristine 22m- Restores installed gems to their pristine condition
+NAME
+       bundle-pristine - Restores installed gems to their pristine condition
 
-1mSYNOPSIS0m
-       1mbundle pristine0m
+SYNOPSIS
+       bundle pristine
 
-1mDESCRIPTION0m
-       1mpristine  22mrestores	the  installed gems in the bundle to their pristine
+DESCRIPTION
+       pristine  restores  the	installed gems in the bundle to their pristine
        condition using the local gem cache from  RubyGems.  For  git  gems,  a
        forced checkout will be performed.
 
-       For  further  explanation,  1mbundle  pristine  22mignores unpacked files on
-       disk. In other words, this command utilizes the local 1m.gem 22mcache or the
+       For  further  explanation,  bundle  pristine  ignores unpacked files on
+       disk. In other words, this command utilizes the local .gem cache or the
        gem's git repository as if one were installing from scratch.
 
        Note:  the  Bundler  gem  cannot be restored to its original state with
-       1mpristine22m. One also cannot use 1mbundle pristine 22mon  gems  with  a  'path'
+       pristine. One also cannot use bundle pristine on  gems  with  a	'path'
        option  in  the	Gemfile,  because  bundler has no original copy it can
        restore from.
 
-       When is it practical to use 1mbundle pristine22m?
+       When is it practical to use bundle pristine?
 
-       It comes in handy when a developer is debugging a gem. 1mbundle	pristine0m
+       It comes in handy when a developer is debugging a gem. bundle  pristine
        is a great way to get rid of experimental changes to a gem that one may
        not want.
 
-       Why use 1mbundle pristine 22mover 1mgem pristine --all22m?
+       Why use bundle pristine over gem pristine --all?
 
-       Both commands are very similar. For context: 1mbundle  pristine22m,  without
-       arguments,  cleans  all gems from the lockfile. Meanwhile, 1mgem pristine0m
-       1m--all 22mcleans all installed gems for that Ruby version.
+       Both commands are very similar. For context: bundle  pristine,  without
+       arguments,  cleans  all gems from the lockfile. Meanwhile, gem pristine
+       --all cleans all installed gems for that Ruby version.
 
        If a developer forgets which gems in their project they might have been
-       debugging,  the Rubygems 1mgem pristine [GEMNAME] 22mcommand may be inconve-
-       nient. One can avoid waiting for 1mgem pristine --all22m,  and  instead	run
-       1mbundle pristine22m.
+       debugging,  the Rubygems gem pristine [GEMNAME] command may be inconve-
+       nient. One can avoid waiting for gem pristine --all,  and  instead  run
+       bundle pristine.
 
 
 
-				 November 2018		    BUNDLE-PRISTINE(1)
+				  March 2019		    BUNDLE-PRISTINE(1)

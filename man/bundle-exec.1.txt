@@ -2,53 +2,53 @@ BUNDLE-EXEC(1)							BUNDLE-EXEC(1)
 
 
 
-1mNAME0m
-       1mbundle-exec 22m- Execute a command in the context of the bundle
+NAME
+       bundle-exec - Execute a command in the context of the bundle
 
-1mSYNOPSIS0m
-       1mbundle exec 22m[--keep-file-descriptors] 4mcommand0m
+SYNOPSIS
+       bundle exec [--keep-file-descriptors] command
 
-1mDESCRIPTION0m
+DESCRIPTION
        This  command  executes	the  command, making all gems specified in the
-       [1mGemfile(5)22m][Gemfile(5)] available to 1mrequire 22min Ruby programs.
+       [Gemfile(5)][Gemfile(5)] available to require in Ruby programs.
 
-       Essentially, if you  would  normally  have  run	something  like  1mrspec0m
-       1mspec/my_spec.rb22m,  and  you	want to use the gems specified in the [1mGem-0m
-       1mfile(5)22m][Gemfile(5)]  and  installed   via	 bundle   install(1)   4mbun-0m
-       4mdle-install.1.html24m, you should run 1mbundle exec rspec spec/my_spec.rb22m.
+       Essentially, if you  would  normally  have  run	something  like  rspec
+       spec/my_spec.rb,  and  you  want to use the gems specified in the [Gem-
+       file(5)][Gemfile(5)]  and  installed   via   bundle   install(1)   bun-
+       dle-install.1.html, you should run bundle exec rspec spec/my_spec.rb.
 
-       Note  that 1mbundle exec 22mdoes not require that an executable is available
-       on your shell's 1m$PATH22m.
+       Note  that bundle exec does not require that an executable is available
+       on your shell's $PATH.
 
-1mOPTIONS0m
-       1m--keep-file-descriptors0m
+OPTIONS
+       --keep-file-descriptors
 	      Exec in Ruby 2.0 began discarding non-standard file descriptors.
 	      When  this flag is passed, exec will revert to the 1.9 behaviour
 	      of passing all file descriptors to the new process.
 
-1mBUNDLE INSTALL --BINSTUBS0m
-       If  you	use  the   1m--binstubs   22mflag   in	 bundle   install(1)   4mbun-0m
-       4mdle-install.1.html24m,  Bundler  will	automatically  create  a  directory
-       (which defaults to 1mapp_root/bin22m)  containing  all  of  the	executables
+BUNDLE INSTALL --BINSTUBS
+       If  you	use  the   --binstubs	flag   in   bundle   install(1)   bun-
+       dle-install.1.html,  Bundler  will  automatically  create  a  directory
+       (which defaults to app_root/bin)  containing  all  of  the  executables
        available from gems in the bundle.
 
-       After  using 1m--binstubs22m, 1mbin/rspec spec/my_spec.rb 22mis identical to 1mbun-0m
-       1mdle exec rspec spec/my_spec.rb22m.
+       After  using --binstubs, bin/rspec spec/my_spec.rb is identical to bun-
+       dle exec rspec spec/my_spec.rb.
 
-1mENVIRONMENT MODIFICATIONS0m
-       1mbundle exec 22mmakes a number of changes to the  shell  environment,  then
+ENVIRONMENT MODIFICATIONS
+       bundle exec makes a number of changes to the  shell  environment,  then
        executes the command you specify in full.
 
-       o   make  sure  that  it's  still  possible to shell out to 1mbundle 22mfrom
-	   inside a command invoked by 1mbundle exec 22m(using 1m$BUNDLE_BIN_PATH22m)
+       o   make  sure  that  it's  still  possible to shell out to bundle from
+	   inside a command invoked by bundle exec (using $BUNDLE_BIN_PATH)
 
-       o   put	the  directory	containing  executables  (like	1mrails22m,  1mrspec22m,
-	   1mrackup22m) for your bundle on 1m$PATH0m
+       o   put	the  directory	containing  executables  (like	rails,	rspec,
+	   rackup) for your bundle on $PATH
 
        o   make  sure  that if bundler is invoked in the subshell, it uses the
-	   same 1mGemfile 22m(by setting 1mBUNDLE_GEMFILE22m)
+	   same Gemfile (by setting BUNDLE_GEMFILE)
 
-       o   add 1m-rbundler/setup 22mto 1m$RUBYOPT22m, which makes sure	that  Ruby  pro-
+       o   add -rbundler/setup to $RUBYOPT, which makes sure  that  Ruby  pro-
 	   grams invoked in the subshell can see the gems in the bundle
 
 
@@ -57,40 +57,40 @@ BUNDLE-EXEC(1)							BUNDLE-EXEC(1)
 
        o   disallow loading additional gems not in the bundle
 
-       o   modify  the 1mgem 22mmethod to be a no-op if a gem matching the require-
-	   ments is in the bundle, and to raise a 1mGem::LoadError 22mif it's not
+       o   modify  the gem method to be a no-op if a gem matching the require-
+	   ments is in the bundle, and to raise a Gem::LoadError if it's not
 
-       o   Define 1mGem.refresh 22mto be a no-op, since the source index is  always
+       o   Define Gem.refresh to be a no-op, since the source index is	always
 	   frozen  when  using	bundler,  and  to prevent gems from the system
 	   leaking into the environment
 
-       o   Override 1mGem.bin_path 22mto use the gems in the bundle, making  system
+       o   Override Gem.bin_path to use the gems in the bundle, making	system
 	   executables work
 
        o   Add all gems in the bundle into Gem.loaded_specs
 
 
 
-       Finally, 1mbundle exec 22malso implicitly modifies 1mGemfile.lock 22mif the lock-
+       Finally, bundle exec also implicitly modifies Gemfile.lock if the lock-
        file and the Gemfile do not match. Bundler needs the Gemfile to	deter-
-       mine  things  such as a gem's groups, 1mautorequire22m, and platforms, etc.,
+       mine  things  such as a gem's groups, autorequire, and platforms, etc.,
        and that information isn't stored in  the  lockfile.  The  Gemfile  and
-       lockfile must be synced in order to 1mbundle exec 22msuccessfully, so 1mbundle0m
-       1mexec 22mupdates the lockfile beforehand.
+       lockfile must be synced in order to bundle exec successfully, so bundle
+       exec updates the lockfile beforehand.
 
-   1mLoading0m
-       By default, when attempting to 1mbundle exec 22mto a file with a  ruby  she-
-       bang,  Bundler will 1mKernel.load 22mthat file instead of using 1mKernel.exec22m.
+   Loading
+       By default, when attempting to bundle exec to a file with a  ruby  she-
+       bang,  Bundler will Kernel.load that file instead of using Kernel.exec.
        For the vast majority of cases, this is a performance improvement. In a
        rare  few  cases,  this	could  cause some subtle side-effects (such as
-       dependence on the exact contents of 1m$0 22mor 1m__FILE__22m) and  the  optimiza-
-       tion can be disabled by enabling the 1mdisable_exec_load 22msetting.
+       dependence on the exact contents of $0 or __FILE__) and	the  optimiza-
+       tion can be disabled by enabling the disable_exec_load setting.
 
-   1mShelling out0m
-       Any  Ruby  code that opens a subshell (like 1msystem22m, backticks, or 1m%x{}22m)
+   Shelling out
+       Any  Ruby  code that opens a subshell (like system, backticks, or %x{})
        will automatically use the current Bundler environment. If you need  to
        shell  out  to  a Ruby command that is not part of your current bundle,
-       use the 1mwith_clean_env 22mmethod  with  a  block.  Any  subshells  created
+       use the with_clean_env method  with  a  block.  Any  subshells  created
        inside  the  block will be given the environment present before Bundler
        was activated. For example, Homebrew commands run Ruby, but don't  work
        inside a bundle:
@@ -103,10 +103,10 @@ BUNDLE-EXEC(1)							BUNDLE-EXEC(1)
 
 
 
-       Using  1mwith_clean_env	22mis  also  necessary if you are shelling out to a
+       Using  with_clean_env  is  also	necessary if you are shelling out to a
        different bundle. Any Bundler commands run in a subshell  will  inherit
        the  current  Gemfile, so commands that need to run in the context of a
-       different bundle also need to use 1mwith_clean_env22m.
+       different bundle also need to use with_clean_env.
 
 
 
@@ -118,7 +118,7 @@ BUNDLE-EXEC(1)							BUNDLE-EXEC(1)
 
 
 
-       Bundler provides convenience helpers that wrap  1msystem  22mand  1mexec22m,  and
+       Bundler provides convenience helpers that wrap  system  and  exec,  and
        they can be used like this:
 
 
@@ -128,24 +128,24 @@ BUNDLE-EXEC(1)							BUNDLE-EXEC(1)
 
 
 
-1mRUBYGEMS PLUGINS0m
+RUBYGEMS PLUGINS
        At  present,  the  Rubygems  plugin  system  requires  all  files named
-       1mrubygems_plugin.rb 22mon the load path of 4many24m installed gem when any  Ruby
-       code requires 1mrubygems.rb22m. This includes executables installed into the
-       system, like 1mrails22m, 1mrackup22m, and 1mrspec22m.
+       rubygems_plugin.rb on the load path of any installed gem when any  Ruby
+       code requires rubygems.rb. This includes executables installed into the
+       system, like rails, rackup, and rspec.
 
        Since Rubygems plugins can contain arbitrary Ruby code,	they  commonly
        end up activating themselves or their dependencies.
 
-       For  instance,  the 1mgemcutter 0.5 22mgem depended on 1mjson_pure22m. If you had
-       that version of gemcutter installed (even if you 4malso24m had a newer  ver-
-       sion  without  this problem), Rubygems would activate 1mgemcutter 0.5 22mand
-       1mjson_pure <latest>22m.
+       For  instance,  the gemcutter 0.5 gem depended on json_pure. If you had
+       that version of gemcutter installed (even if you also had a newer  ver-
+       sion  without  this problem), Rubygems would activate gemcutter 0.5 and
+       json_pure <latest>.
 
-       If your Gemfile(5) also contained 1mjson_pure 22m(or a gem with a dependency
-       on  1mjson_pure22m),  the  latest version on your system might conflict with
-       the version in your Gemfile(5), or the snapshot version	in  your  1mGem-0m
-       1mfile.lock22m.
+       If your Gemfile(5) also contained json_pure (or a gem with a dependency
+       on  json_pure),	the  latest version on your system might conflict with
+       the version in your Gemfile(5), or the snapshot version	in  your  Gem-
+       file.lock.
 
        If this happens, bundler will say:
 
@@ -158,7 +158,7 @@ BUNDLE-EXEC(1)							BUNDLE-EXEC(1)
 
        In  this  situation, you almost certainly want to remove the underlying
        gem with the problematic gem plugin. In general, the authors  of  these
-       plugins	(in this case, the 1mgemcutter 22mgem) have released newer versions
+       plugins	(in this case, the gemcutter gem) have released newer versions
        that are more careful in their plugins.
 
        You can find a list of all the gems containing gem plugins by running
@@ -170,9 +170,9 @@ BUNDLE-EXEC(1)							BUNDLE-EXEC(1)
 
 
        At the very least, you should remove all but the newest version of each
-       gem  plugin, and also remove all gem plugins that you aren't using (1mgem0m
-       1muninstall gem_name22m).
+       gem  plugin, and also remove all gem plugins that you aren't using (gem
+       uninstall gem_name).
 
 
 
-				 November 2018			BUNDLE-EXEC(1)
+				  March 2019			BUNDLE-EXEC(1)

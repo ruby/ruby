@@ -9,10 +9,8 @@
 **********************************************************************/
 
 #if defined(__clang__)
-#pragma clang diagnostic ignored "-Wpedantic"
+#pragma clang diagnostic ignored "-Wgnu-empty-initializer"
 #pragma clang diagnostic ignored "-Wgcc-compat"
-#elif defined(__GNUC__)
-#pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 
 #include "ruby/config.h"
@@ -66,8 +64,8 @@ void *alloca();
 #endif
 
 #ifdef HAVE_MACH_O_LOADER_H
+# include <crt_externs.h>
 # include <mach-o/fat.h>
-# include <mach-o/ldsyms.h>
 # include <mach-o/loader.h>
 # include <mach-o/nlist.h>
 # include <mach-o/stab.h>
@@ -189,7 +187,7 @@ struct debug_section_definition {
 };
 
 /* Avoid consuming stack as this module may be used from signal handler */
-static char binary_filename[PATH_MAX];
+static char binary_filename[PATH_MAX + 1];
 
 static unsigned long
 uleb128(char **p)
@@ -434,7 +432,7 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    /*basic_block = 1; */
 	    break;
 	case DW_LNS_const_add_pc:
-	    a = ((255 - header.opcode_base) / header.line_range) *
+	    a = ((255UL - header.opcode_base) / header.line_range) *
 		header.minimum_instruction_length;
 	    addr += a;
 	    break;
@@ -788,7 +786,7 @@ typedef struct {
     char *pend;
     char *q0;
     char *q;
-    int format; /* 4 or 8 */;
+    int format; // 4 or 8
     uint8_t address_size;
     int level;
     char *abbrev_table[ABBREV_TABLE_SIZE];
@@ -1094,7 +1092,7 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_uint_value(v, uleb128(&reader->p));
         break;
       case DW_FORM_indirect:
-        /* TODO: read the refered value */
+        /* TODO: read the referred value */
         set_uint_value(v, uleb128(&reader->p));
         break;
       case DW_FORM_sec_offset:
@@ -1897,6 +1895,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         p = file;
     }
     else if (header->magic == FAT_CIGAM) {
+        struct LP(mach_header) *mhp = _NSGetMachExecuteHeader();
         struct fat_header *fat = (struct fat_header *)file;
         char *q = file + sizeof(*fat);
         uint32_t nfat_arch = __builtin_bswap32(fat->nfat_arch);
@@ -1906,9 +1905,9 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
             cpu_type_t cputype = __builtin_bswap32(arch->cputype);
             cpu_subtype_t cpusubtype = __builtin_bswap32(arch->cpusubtype);
             uint32_t offset = __builtin_bswap32(arch->offset);
-            /* fprintf(stderr,"%d: fat %d %x/%x %x/%x\n",__LINE__, i, _mh_execute_header.cputype,_mh_execute_header.cpusubtype, cputype,cpusubtype); */
-            if (_mh_execute_header.cputype == cputype &&
-                    (_mh_execute_header.cpusubtype & ~CPU_SUBTYPE_MASK) == cpusubtype) {
+            /* fprintf(stderr,"%d: fat %d %x/%x %x/%x\n",__LINE__, i, mhp->cputype,mhp->cpusubtype, cputype,cpusubtype); */
+            if (mhp->cputype == cputype &&
+                    (cpu_subtype_t)(mhp->cpusubtype & ~CPU_SUBTYPE_MASK) == cpusubtype) {
                 p = file + offset;
                 file = p;
                 header = (struct LP(mach_header) *)p;
@@ -1981,9 +1980,9 @@ found_mach_header:
             {
                 struct symtab_command *cmd = (struct symtab_command *)lcmd;
                 struct LP(nlist) *nl = (struct LP(nlist) *)(file + cmd->symoff);
-                char *strtab = file + cmd->stroff, *sname;
+                char *strtab = file + cmd->stroff, *sname = 0;
                 uint32_t j;
-                uintptr_t saddr;
+                uintptr_t saddr = 0;
                 /* kprintf("[%2d]: %x/symtab %p\n", i, cmd->cmd, p); */
                 for (j = 0; j < cmd->nsyms; j++) {
                     uintptr_t symsize, d;
@@ -2051,6 +2050,7 @@ main_exe_path(void)
 {
 # define PROC_SELF_EXE "/proc/self/exe"
     ssize_t len = readlink(PROC_SELF_EXE, binary_filename, PATH_MAX);
+    if (len < 0) return 0;
     binary_filename[len] = 0;
     return len;
 }

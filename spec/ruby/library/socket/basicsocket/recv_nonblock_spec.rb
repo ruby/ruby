@@ -16,14 +16,14 @@ describe "Socket::BasicSocket#recv_nonblock" do
     platform_is_not :windows do
       describe 'using an unbound socket' do
         it 'raises an exception extending IO::WaitReadable' do
-          lambda { @s1.recv_nonblock(1) }.should raise_error(IO::WaitReadable)
+          -> { @s1.recv_nonblock(1) }.should raise_error(IO::WaitReadable)
         end
       end
     end
 
     it "raises an exception extending IO::WaitReadable if there's no data available" do
       @s1.bind(Socket.pack_sockaddr_in(0, ip_address))
-      lambda {
+      -> {
         @s1.recv_nonblock(5)
       }.should raise_error(IO::WaitReadable) { |e|
         platform_is_not :windows do
@@ -33,6 +33,11 @@ describe "Socket::BasicSocket#recv_nonblock" do
           e.should be_kind_of(Errno::EWOULDBLOCK)
         end
       }
+    end
+
+    it "returns :wait_readable with exception: false" do
+      @s1.bind(Socket.pack_sockaddr_in(0, ip_address))
+      @s1.recv_nonblock(5, exception: false).should == :wait_readable
     end
 
     it "receives data after it's ready" do
@@ -57,7 +62,7 @@ describe "Socket::BasicSocket#recv_nonblock" do
       @s2.send("a", 0, @s1.getsockname)
       IO.select([@s1], nil, nil, 2)
       @s1.recv_nonblock(1).should == "a"
-      lambda {
+      -> {
         @s1.recv_nonblock(5)
       }.should raise_error(IO::WaitReadable)
     end

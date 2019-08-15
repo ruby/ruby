@@ -525,8 +525,6 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Removed "ubygems.rb" file from stdlib. It's needless since Ruby 1.9.
 
-=== C API updates
-
 === Supported platform changes
 
 * Drop support of NaCl platform

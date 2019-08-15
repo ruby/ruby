@@ -130,25 +130,39 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  private def parse(src)
+    EnvUtil.suppress_warning {
+      RubyVM::AbstractSyntaxTree.parse(src)
+    }
+  end
+
   def test_allocate
     assert_raise(TypeError) {RubyVM::AbstractSyntaxTree::Node.allocate}
   end
 
+  def test_parse_argument_error
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(0)}
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(nil)}
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(false)}
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(true)}
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree.parse(:foo)}
+  end
+
   def test_column_with_long_heredoc_identifier
     term = "A"*257
-    ast = RubyVM::AbstractSyntaxTree.parse("<<-#{term}\n""ddddddd\n#{term}\n")
+    ast = parse("<<-#{term}\n""ddddddd\n#{term}\n")
     node = ast.children[2]
     assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
   end
 
   def test_column_of_heredoc
-    node = RubyVM::AbstractSyntaxTree.parse("<<-SRC\nddddddd\nSRC\n").children[2]
+    node = parse("<<-SRC\nddddddd\nSRC\n").children[2]
     assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
     assert_equal(6, node.last_column)
 
-    node = RubyVM::AbstractSyntaxTree.parse("<<SRC\nddddddd\nSRC\n").children[2]
+    node = parse("<<SRC\nddddddd\nSRC\n").children[2]
     assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
     assert_equal(5, node.last_column)
@@ -197,9 +211,9 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_scope_local_variables
-    node = RubyVM::AbstractSyntaxTree.parse("x = 0")
+    node = RubyVM::AbstractSyntaxTree.parse("_x = 0")
     lv, _, body = *node.children
-    assert_equal([:x], lv)
+    assert_equal([:_x], lv)
     assert_equal(:LASGN, body.type)
   end
 
@@ -248,5 +262,50 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:VCALL, recv.type)
     assert_equal(:b, mid)
     assert_equal(:SCOPE, defn.type)
+  end
+
+  def test_methref
+    node = RubyVM::AbstractSyntaxTree.parse("obj.:foo")
+    _, _, body = *node.children
+    assert_equal(:METHREF, body.type)
+    recv, mid = body.children
+    assert_equal(:VCALL, recv.type)
+    assert_equal(:foo, mid)
+  end
+
+  def test_dstr
+    node = parse('"foo#{1}bar"')
+    _, _, body = *node.children
+    assert_equal(:DSTR, body.type)
+    head, body = body.children
+    assert_equal("foo", head)
+    assert_equal(:EVSTR, body.type)
+    body, = body.children
+    assert_equal(:LIT, body.type)
+    assert_equal([1], body.children)
+  end
+
+  def test_while
+    node = RubyVM::AbstractSyntaxTree.parse('1 while qux')
+    _, _, body = *node.children
+    assert_equal(:WHILE, body.type)
+    type1 = body.children[2]
+    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end while qux')
+    _, _, body = *node.children
+    assert_equal(:WHILE, body.type)
+    type2 = body.children[2]
+    assert_not_equal(type1, type2)
+  end
+
+  def test_until
+    node = RubyVM::AbstractSyntaxTree.parse('1 until qux')
+    _, _, body = *node.children
+    assert_equal(:UNTIL, body.type)
+    type1 = body.children[2]
+    node = RubyVM::AbstractSyntaxTree.parse('begin 1 end until qux')
+    _, _, body = *node.children
+    assert_equal(:UNTIL, body.type)
+    type2 = body.children[2]
+    assert_not_equal(type1, type2)
   end
 end

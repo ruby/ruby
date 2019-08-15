@@ -10,7 +10,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   if File.exist?(bundler_gemspec)
     BUNDLER_VERS = File.read(bundler_gemspec).match(/VERSION = "(#{Gem::Version::VERSION_PATTERN})"/)[1]
   else
-    BUNDLER_VERS = "1.16.2".freeze
+    BUNDLER_VERS = "2.0.1".freeze
   end
 
   def setup
@@ -23,21 +23,41 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     FileUtils.mkdir_p 'bin'
     FileUtils.mkdir_p 'lib/rubygems/ssl_certs/rubygems.org'
 
-    File.open 'bin/gem',                   'w' do |io| io.puts '# gem'          end
-    File.open 'lib/rubygems.rb',           'w' do |io| io.puts '# rubygems.rb'  end
-    File.open 'lib/rubygems/test_case.rb', 'w' do |io| io.puts '# test_case.rb' end
-    File.open 'lib/rubygems/ssl_certs/rubygems.org/foo.pem', 'w' do |io| io.puts 'PEM'       end
+    File.open 'bin/gem',                   'w' do
+      |io| io.puts '# gem'
+    end
+
+    File.open 'lib/rubygems.rb',           'w' do |io|
+      io.puts '# rubygems.rb'
+    end
+
+    File.open 'lib/rubygems/test_case.rb', 'w' do |io|
+      io.puts '# test_case.rb'
+    end
+
+    File.open 'lib/rubygems/ssl_certs/rubygems.org/foo.pem', 'w' do |io|
+      io.puts 'PEM'
+    end
 
     FileUtils.mkdir_p 'bundler/exe'
     FileUtils.mkdir_p 'bundler/lib/bundler'
 
-    File.open 'bundler/exe/bundle',        'w' do |io| io.puts '# bundle'       end
-    File.open 'bundler/lib/bundler.rb',    'w' do |io| io.puts '# bundler.rb'   end
-    File.open 'bundler/lib/bundler/b.rb',  'w' do |io| io.puts '# b.rb'         end
+    File.open 'bundler/exe/bundle',        'w' do |io|
+      io.puts '# bundle'
+    end
+
+    File.open 'bundler/lib/bundler.rb',    'w' do |io|
+      io.puts '# bundler.rb'
+    end
+
+    File.open 'bundler/lib/bundler/b.rb',  'w' do |io|
+      io.puts '# b.rb'
+    end
 
     FileUtils.mkdir_p 'default/gems'
 
     gemspec = Gem::Specification.new
+    gemspec.author = "Us"
     gemspec.name = "bundler"
     gemspec.version = BUNDLER_VERS
     gemspec.bindir = "exe"
@@ -47,7 +67,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       io.puts gemspec.to_ruby
     end
 
-    open(File.join(Gem::Specification.default_specifications_dir, "bundler-1.15.4.gemspec"), 'w') do |io|
+    open(File.join(Gem.default_specifications_dir, "bundler-1.15.4.gemspec"), 'w') do |io|
       gemspec.version = "1.15.4"
       io.puts gemspec.to_ruby
     end
@@ -113,24 +133,19 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     @cmd.options[:env_shebang] = true
     @cmd.execute
 
-    default_gem_bin_path = File.join @install_dir, 'bin', 'gem'
-    if Gem::USE_BUNDLER_FOR_GEMDEPS
-      default_bundle_bin_path = File.join @install_dir, 'bin', 'bundle'
-    end
-
+    gem_exec = sprintf Gem.default_exec_format, 'gem'
+    default_gem_bin_path = File.join @install_dir, 'bin', gem_exec
+    bundle_exec = sprintf Gem.default_exec_format, 'bundle'
+    default_bundle_bin_path = File.join @install_dir, 'bin', bundle_exec
     ruby_exec = sprintf Gem.default_exec_format, 'ruby'
 
     if Gem.win_platform?
       assert_match %r%\A#!\s*#{ruby_exec}%, File.read(default_gem_bin_path)
-      if Gem::USE_BUNDLER_FOR_GEMDEPS
-        assert_match %r%\A#!\s*#{ruby_exec}%, File.read(default_bundle_bin_path)
-      end
+      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(default_bundle_bin_path)
       assert_match %r%\A#!\s*#{ruby_exec}%, File.read(gem_bin_path)
     else
       assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(default_gem_bin_path)
-      if Gem::USE_BUNDLER_FOR_GEMDEPS
-        assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(default_bundle_bin_path)
-      end
+      assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(default_bundle_bin_path)
       assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(gem_bin_path)
     end
   end
@@ -154,29 +169,30 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       assert_path_exists File.join(dir, 'rubygems.rb')
       assert_path_exists File.join(dir, 'rubygems/ssl_certs/rubygems.org/foo.pem')
 
-      if Gem::USE_BUNDLER_FOR_GEMDEPS
-        assert_path_exists File.join(dir, 'bundler.rb')
-        assert_path_exists File.join(dir, 'bundler/b.rb')
-      end
+      assert_path_exists File.join(dir, 'bundler.rb')
+      assert_path_exists File.join(dir, 'bundler/b.rb')
     end
   end
 
   def test_install_default_bundler_gem
     @cmd.extend FileUtils
 
-    @cmd.install_default_bundler_gem
+    bin_dir = File.join(@gemhome, 'bin')
+    @cmd.install_default_bundler_gem bin_dir
 
-    if Gem.win_platform?
-      bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
-      default_spec_path = File.join(Gem::Specification.default_specifications_dir, "#{bundler_spec.full_name}.gemspec")
-      spec = Gem::Specification.load(default_spec_path)
+    bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
+    default_spec_path = File.join(Gem.default_specifications_dir, "#{bundler_spec.full_name}.gemspec")
+    spec = Gem::Specification.load(default_spec_path)
 
-      spec.executables.each do |e|
-        assert_path_exists File.join(spec.bin_dir, "#{e}.bat")
+    spec.executables.each do |e|
+      if Gem.win_platform?
+        assert_path_exists File.join(bin_dir, "#{e}.bat")
       end
+
+      assert_path_exists File.join bin_dir, Gem.default_exec_format % e
     end
 
-    default_dir = Gem::Specification.default_specifications_dir
+    default_dir = Gem.default_specifications_dir
 
     # expect to remove other versions of bundler gemspecs on default specification directory.
     refute_path_exists File.join(default_dir, "bundler-1.15.4.gemspec")
@@ -198,7 +214,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     # expect to not remove bundler-* direcotyr.
     assert_path_exists 'default/gems/bundler-audit-1.0.0'
-  end if Gem::USE_BUNDLER_FOR_GEMDEPS
+  end
 
   def test_remove_old_lib_files
     lib                   = File.join @install_dir, 'lib'
@@ -218,20 +234,35 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     FileUtils.mkdir_p lib_rubygems_defaults
     FileUtils.mkdir_p lib_bundler
 
-    File.open securerandom_rb,    'w' do |io| io.puts '# securerandom.rb'     end
+    File.open securerandom_rb,    'w' do |io|
+      io.puts '# securerandom.rb'
+    end
 
-    File.open old_builder_rb,     'w' do |io| io.puts '# builder.rb'          end
-    File.open old_format_rb,      'w' do |io| io.puts '# format.rb'           end
-    File.open old_bundler_c_rb,   'w' do |io| io.puts '# c.rb'                end
+    File.open old_builder_rb,     'w' do |io|
+      io.puts '# builder.rb'
+    end
 
-    File.open engine_defaults_rb, 'w' do |io| io.puts '# jruby.rb'            end
-    File.open os_defaults_rb,     'w' do |io| io.puts '# operating_system.rb' end
+    File.open old_format_rb,      'w' do |io|
+      io.puts '# format.rb'
+    end
+
+    File.open old_bundler_c_rb,   'w' do |io|
+      io.puts '# c.rb'
+    end
+
+    File.open engine_defaults_rb, 'w' do |io|
+      io.puts '# jruby.rb'
+    end
+
+    File.open os_defaults_rb,     'w' do |io|
+      io.puts '# operating_system.rb'
+    end
 
     @cmd.remove_old_lib_files lib
 
     refute_path_exists old_builder_rb
     refute_path_exists old_format_rb
-    refute_path_exists old_bundler_c_rb if Gem::USE_BUNDLER_FOR_GEMDEPS
+    refute_path_exists old_bundler_c_rb
 
     assert_path_exists securerandom_rb
     assert_path_exists engine_defaults_rb
@@ -292,4 +323,4 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     @ui.outs.set_encoding @default_external if @default_external
   end
 
-end
+end unless Gem.java_platform?

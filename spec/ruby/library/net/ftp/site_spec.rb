@@ -28,26 +28,26 @@ describe "Net::FTP#site" do
 
   it "does not raise an error when the response code is 202" do
     @server.should_receive(:site).and_respond("202 Command not implemented, superfluous at this site.")
-    lambda { @ftp.site("param") }.should_not raise_error
+    -> { @ftp.site("param") }.should_not raise_error
   end
 
   it "raises a Net::FTPPermError when the response code is 500" do
     @server.should_receive(:site).and_respond("500 Syntax error, command unrecognized.")
-    lambda { @ftp.site("param") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.site("param") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPPermError when the response code is 501" do
     @server.should_receive(:site).and_respond("501 Syntax error in parameters or arguments.")
-    lambda { @ftp.site("param") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.site("param") }.should raise_error(Net::FTPPermError)
   end
 
   it "raises a Net::FTPTempError when the response code is 421" do
     @server.should_receive(:site).and_respond("421 Service not available, closing control connection.")
-    lambda { @ftp.site("param") }.should raise_error(Net::FTPTempError)
+    -> { @ftp.site("param") }.should raise_error(Net::FTPTempError)
   end
 
   it "raises a Net::FTPPermError when the response code is 530" do
     @server.should_receive(:site).and_respond("530 Requested action not taken.")
-    lambda { @ftp.site("param") }.should raise_error(Net::FTPPermError)
+    -> { @ftp.site("param") }.should raise_error(Net::FTPPermError)
   end
 end

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-bigdecimal_version = '1.4.0.pre.20181214a'
+bigdecimal_version = '1.4.2'
 
 Gem::Specification.new do |s|
   s.name          = "bigdecimal"
@@ -24,6 +24,7 @@ Gem::Specification.new do |s|
     ext/bigdecimal/extconf.rb
     ext/bigdecimal/util/extconf.rb
     ext/bigdecimal/util/util.c
+    lib/bigdecimal.rb
     lib/bigdecimal/jacobian.rb
     lib/bigdecimal/ludcmp.rb
     lib/bigdecimal/math.rb
@@ -34,7 +35,7 @@ Gem::Specification.new do |s|
     sample/pi.rb
   ]
 
-  s.required_ruby_version = Gem::Requirement.new(">= 2.3.0".freeze)
+  s.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
 
   s.add_development_dependency "rake", "~> 10.0"
   s.add_development_dependency "rake-compiler", ">= 0.9"

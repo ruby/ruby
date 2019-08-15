@@ -901,13 +901,19 @@ rb_struct_to_a(VALUE s)
 
 /*
  *  call-seq:
- *     struct.to_h     -> hash
+ *     struct.to_h                        -> hash
+ *     struct.to_h {|name, value| block } -> hash
  *
  *  Returns a Hash containing the names and values for the struct's members.
+ *
+ *  If a block is given, the results of the block on each pair of the receiver
+ *  will be used as pairs.
  *
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *     joe.to_h[:address]   #=> "123 Maple, Anytown NC"
+ *     joe.to_h{|name, value| [name.upcase, value.to_s.upcase]}[:ADDRESS]
+ *                          #=> "123 MAPLE, ANYTOWN NC"
  */
 
 static VALUE
@@ -1196,7 +1202,7 @@ rb_struct_hash(VALUE s)
 	h = rb_hash_uint(h, NUM2LONG(n));
     }
     h = rb_hash_end(h);
-    return INT2FIX(h);
+    return ST2FIX(h);
 }
 
 static VALUE
@@ -1339,6 +1345,8 @@ InitVM_Struct(void)
 
     rb_define_method(rb_cStruct, "members", rb_struct_members_m, 0);
     rb_define_method(rb_cStruct, "dig", rb_struct_dig, -1);
+
+    rb_define_method(rb_cStruct, "deconstruct", rb_struct_to_a, 0);
 }
 
 #undef rb_intern

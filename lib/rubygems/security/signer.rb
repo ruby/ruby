@@ -72,7 +72,7 @@ class Gem::Security::Signer
     @options = DEFAULT_OPTIONS.merge(options)
 
     unless @key
-      default_key  = File.join Gem.default_key_path
+      default_key = File.join Gem.default_key_path
       @key = default_key if File.exist? default_key
     end
 
@@ -85,7 +85,6 @@ class Gem::Security::Signer
     @digest_name      = Gem::Security::DIGEST_NAME
 
     if @key && !@key.is_a?(OpenSSL::PKey::RSA)
-      @passphrase ||= ask_for_password("Enter PEM pass phrase:")
       @key = OpenSSL::PKey::RSA.new(File.read(@key), @passphrase)
     end
 
@@ -144,6 +143,8 @@ class Gem::Security::Signer
     raise Gem::Security::Exception, 'no certs provided' if @cert_chain.empty?
 
     if @cert_chain.length == 1 and @cert_chain.last.not_after < Time.now
+      alert("Your certificate has expired, trying to re-sign it...")
+
       re_sign_key(
         expiration_length: (Gem::Security::ONE_DAY * options[:expiration_length_days])
       )

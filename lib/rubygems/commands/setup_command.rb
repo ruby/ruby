@@ -6,6 +6,7 @@ require 'rubygems/command'
 # RubyGems checkout or tarball.
 
 class Gem::Commands::SetupCommand < Gem::Command
+
   HISTORY_HEADER = /^===\s*[\d.a-zA-Z]+\s*\/\s*\d{4}-\d{2}-\d{2}\s*$/.freeze
   VERSION_MATCHER = /^===\s*([\d.a-zA-Z]+)\s*\/\s*\d{4}-\d{2}-\d{2}\s*$/.freeze
 
@@ -164,7 +165,7 @@ By default, this RubyGems will install gem as:
 
     remove_old_lib_files lib_dir
 
-    install_default_bundler_gem
+    install_default_bundler_gem bin_dir
 
     if mode = options[:dir_mode]
       @mkdirs.uniq!
@@ -233,21 +234,19 @@ By default, this RubyGems will install gem as:
     end
   end
 
-
   def install_executables(bin_dir)
     @bin_file_names = []
 
     prog_mode = options[:prog_mode] || 0755
 
     executables = { 'gem' => 'bin' }
-    executables['bundler'] = 'bundler/exe' if Gem::USE_BUNDLER_FOR_GEMDEPS
     executables.each do |tool, path|
       say "Installing #{tool} executable" if @verbose
 
       Dir.chdir path do
         bin_files = Dir['*']
 
-        bin_files -= %w[update_rubygems bundler bundle_ruby]
+        bin_files -= %w[update_rubygems]
 
         bin_files.each do |bin_file|
           bin_file_formatted = if options[:format_executable]
@@ -312,7 +311,7 @@ By default, this RubyGems will install gem as:
     dest_file = File.join dest_dir, file
     dest_dir = File.dirname dest_file
     unless File.directory? dest_dir
-      mkdir_p dest_dir, :mode => 0700
+      mkdir_p dest_dir, :mode => 0755
     end
 
     install file, dest_file, :mode => options[:data_mode] || 0644
@@ -320,7 +319,7 @@ By default, this RubyGems will install gem as:
 
   def install_lib(lib_dir)
     libs = { 'RubyGems' => 'lib' }
-    libs['Bundler'] = 'bundler/lib' if Gem::USE_BUNDLER_FOR_GEMDEPS
+    libs['Bundler'] = 'bundler/lib'
     libs.each do |tool, path|
       say "Installing #{tool}" if @verbose
 
@@ -382,12 +381,10 @@ By default, this RubyGems will install gem as:
     return false
   end
 
-  def install_default_bundler_gem
-    return unless Gem::USE_BUNDLER_FOR_GEMDEPS
-
-    specs_dir = Gem::Specification.default_specifications_dir
+  def install_default_bundler_gem(bin_dir)
+    specs_dir = Gem.default_specifications_dir
     specs_dir = File.join(options[:destdir], specs_dir) unless Gem.win_platform?
-    mkdir_p specs_dir, :mode => 0700
+    mkdir_p specs_dir, :mode => 0755
 
     # Workaround for non-git environment.
     gemspec = File.open('bundler/bundler.gemspec', 'rb'){|f| f.read.gsub(/`git ls-files -z`/, "''") }
@@ -422,17 +419,20 @@ By default, this RubyGems will install gem as:
 
     bundler_bin_dir = bundler_spec.bin_dir
     bundler_bin_dir = File.join(options[:destdir], bundler_bin_dir) unless Gem.win_platform?
-    mkdir_p bundler_bin_dir, :mode => 0700
+    mkdir_p bundler_bin_dir, :mode => 0755
     bundler_spec.executables.each do |e|
       cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_bin_dir, e)
     end
 
-    if Gem.win_platform?
-      require 'rubygems/installer'
+    require 'rubygems/installer'
 
-      installer = Gem::Installer.for_spec bundler_spec
-      bundler_spec.executables.each do |e|
-        installer.generate_windows_script e, bundler_spec.bin_dir
+    Dir.chdir("bundler") do
+      built_gem = Gem::Package.build(bundler_spec)
+      begin
+        installer = Gem::Installer.at(built_gem, env_shebang: options[:env_shebang], format_executable: options[:format_executable], install_as_default: true, bin_dir: bin_dir, wrappers: true)
+        installer.install
+      ensure
+        FileUtils.rm_f built_gem
       end
     end
 
@@ -446,8 +446,8 @@ By default, this RubyGems will install gem as:
       lib_dir, bin_dir = generate_default_dirs(install_destdir)
     end
 
-    mkdir_p lib_dir, :mode => 0700
-    mkdir_p bin_dir, :mode => 0700
+    mkdir_p lib_dir, :mode => 0755
+    mkdir_p bin_dir, :mode => 0755
 
     return lib_dir, bin_dir
   end
@@ -546,7 +546,7 @@ abort "#{deprecation_message}"
 
   def remove_old_lib_files(lib_dir)
     lib_dirs = { File.join(lib_dir, 'rubygems') => 'lib/rubygems' }
-    lib_dirs[File.join(lib_dir, 'bundler')] = 'bundler/lib/bundler' if Gem::USE_BUNDLER_FOR_GEMDEPS
+    lib_dirs[File.join(lib_dir, 'bundler')] = 'bundler/lib/bundler'
     lib_dirs.each do |old_lib_dir, new_lib_dir|
       lib_files = rb_files_in(new_lib_dir)
       lib_files.concat(template_files_in(new_lib_dir)) if new_lib_dir =~ /bundler/

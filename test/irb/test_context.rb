@@ -52,9 +52,15 @@ module TestIRB
       }
       assert_equal('foo', e.message)
       assert_same(e, @context.evaluate('$!', 1, exception: e))
+      e = assert_raise(SyntaxError) {
+        @context.evaluate("1,2,3", 1, exception: e)
+      }
+      assert_match(/\A\(irb\):1:/, e.message)
+      assert_not_match(/rescue _\.class/, e.message)
     end
 
     def test_eval_input
+      verbose, $VERBOSE = $VERBOSE, nil
       input = TestInputMethod.new([
         "raise 'Foo'\n",
         "_\n",
@@ -62,7 +68,7 @@ module TestIRB
         "_\n",
       ])
       irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
-      out, err = capture_io do
+      out, err = capture_output do
         irb.eval_input
       end
       assert_empty err
@@ -71,6 +77,12 @@ module TestIRB
                            :*, /0$/,
                            :*, /0$/,
                            /\s*/], out)
+    ensure
+      $VERBOSE = verbose
+    end
+
+    def test_default_config
+      assert_equal(true, @context.use_colorize?)
     end
   end
 end

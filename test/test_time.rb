@@ -503,6 +503,29 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(0, t.hour)
     assert_equal(0, t.min)
     assert_equal(0, t.sec)
+    t = Time.strptime("2018-091", "%Y-%j")
+    assert_equal(2018, t.year)
+    assert_equal(4, t.mon)
+    assert_equal(1, t.day)
+  end
+
+  def test_strptime_p
+    t = Time.strptime("3am", "%I%p")
+    assert_equal(3, t.hour)
+    t = Time.strptime("3pm", "%I%p")
+    assert_equal(15, t.hour)
+    t = Time.strptime("3a.m.", "%I%p")
+    assert_equal(3, t.hour)
+    t = Time.strptime("3p.m.", "%I%p")
+    assert_equal(15, t.hour)
+    t = Time.strptime("3AM", "%I%p")
+    assert_equal(3, t.hour)
+    t = Time.strptime("3PM", "%I%p")
+    assert_equal(15, t.hour)
+    t = Time.strptime("3A.M.", "%I%p")
+    assert_equal(3, t.hour)
+    t = Time.strptime("3P.M.", "%I%p")
+    assert_equal(15, t.hour)
   end
 
   def test_nsec

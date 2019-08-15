@@ -113,6 +113,11 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([[1,2,3],[4,5,6],[7,8,9],[10]], (1..10).each_slice(3).to_a)
   end
 
+  def test_each_slice_size
+    assert_equal(4, (1..10).each_slice(3).size)
+    assert_equal(Float::INFINITY, 1.step.each_slice(3).size)
+  end
+
   def test_cons
     a = [[1,2,3], [2,3,4], [3,4,5], [4,5,6], [5,6,7], [6,7,8], [7,8,9], [8,9,10]]
     assert_equal(a, (1..10).each_cons(3).to_a)
@@ -407,6 +412,12 @@ class TestEnumerator < Test::Unit::TestCase
     e = (0..10).each_cons(2)
     assert_equal("#<Enumerator: 0..10:each_cons(2)>", e.inspect)
 
+    e = (0..10).each_with_object({})
+    assert_equal("#<Enumerator: 0..10:each_with_object({})>", e.inspect)
+
+    e = (0..10).each_with_object(a: 1)
+    assert_equal("#<Enumerator: 0..10:each_with_object(a: 1)>", e.inspect)
+
     e = Enumerator.new {|y| y.yield; 10 }
     assert_match(/\A#<Enumerator: .*:each>/, e.inspect)
 
@@ -487,6 +498,21 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([1, 2, 3], y.yield(2, 3))
 
     assert_raise(LocalJumpError) { Enumerator::Yielder.new }
+
+    # to_proc (explicit)
+    a = []
+    y = Enumerator::Yielder.new {|x| a << x }
+    b = y.to_proc
+    assert_kind_of(Proc, b)
+    assert_equal([1], b.call(1))
+    assert_equal([1], a)
+
+    # to_proc (implicit)
+    e = Enumerator.new { |y|
+      assert_kind_of(Enumerator::Yielder, y)
+      [1, 2, 3].each(&y)
+    }
+    assert_equal([1, 2, 3], e.to_a)
   end
 
   def test_size
@@ -521,7 +547,7 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_size_for_enum_created_from_enumerable
     %i[find_all reject map flat_map partition group_by sort_by min_by max_by
-      minmax_by each_with_index reverse_each each_entry].each do |method|
+      minmax_by each_with_index reverse_each each_entry filter_map].each do |method|
       assert_equal nil, @obj.send(method).size
       assert_equal 42, @sized.send(method).size
     end

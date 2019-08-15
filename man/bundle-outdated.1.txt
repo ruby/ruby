@@ -2,80 +2,80 @@ BUNDLE-OUTDATED(1)					    BUNDLE-OUTDATED(1)
 
 
 
-1mNAME0m
-       1mbundle-outdated 22m- List installed gems with newer versions available
+NAME
+       bundle-outdated - List installed gems with newer versions available
 
-1mSYNOPSIS0m
-       1mbundle   outdated   22m[GEM]	[--local]   [--pre]  [--source]  [--strict]
+SYNOPSIS
+       bundle	outdated   [GEM]   [--local]   [--pre]	[--source]  [--strict]
        [--parseable	|     --porcelain]     [--group=GROUP]	    [--groups]
        [--update-strict]  [--patch|--minor|--major]  [--filter-major]  [--fil-
        ter-minor] [--filter-patch] [--only-explicit]
 
-1mDESCRIPTION0m
+DESCRIPTION
        Outdated lists the names and versions of gems that have a newer version
        available  in  the given source. Calling outdated with [GEM [GEM]] will
        only check for newer versions of the given gems.  Prerelease  gems  are
        ignored by default. If your gems are up to date, Bundler will exit with
        a status of 0. Otherwise, it will exit 1.
 
-1mOPTIONS0m
-       1m--local0m
+OPTIONS
+       --local
 	      Do not attempt to fetch gems remotely  and  use  the  gem  cache
 	      instead.
 
-       1m--pre	22mCheck for newer pre-release gems.
+       --pre  Check for newer pre-release gems.
 
-       1m--source0m
+       --source
 	      Check against a specific source.
 
-       1m--strict0m
+       --strict
 	      Only list newer versions allowed by your Gemfile requirements.
 
-       1m--parseable22m, 1m--porcelain0m
+       --parseable, --porcelain
 	      Use minimal formatting for more parseable output.
 
-       1m--group0m
+       --group
 	      List gems from a specific group.
 
-       1m--groups0m
+       --groups
 	      List gems organized by groups.
 
-       1m--update-strict0m
+       --update-strict
 	      Strict  conservative  resolution,  do  not  allow  any gem to be
 	      updated past latest --patch | --minor| --major.
 
-       1m--minor0m
+       --minor
 	      Prefer updating only to next minor version.
 
-       1m--major0m
+       --major
 	      Prefer updating to next major version (default).
 
-       1m--patch0m
+       --patch
 	      Prefer updating only to next patch version.
 
-       1m--filter-major0m
+       --filter-major
 	      Only list major newer versions.
 
-       1m--filter-minor0m
+       --filter-minor
 	      Only list minor newer versions.
 
-       1m--filter-patch0m
+       --filter-patch
 	      Only list patch newer versions.
 
-       1m--only-explicit0m
+       --only-explicit
 	      Only list gems specified in your Gemfile,  not  their  dependen-
 	      cies.
 
-1mPATCH LEVEL OPTIONS0m
-       See bundle update(1) 4mbundle-update.1.html24m for details.
+PATCH LEVEL OPTIONS
+       See bundle update(1) bundle-update.1.html for details.
 
-       One  difference	between  the  patch level options in 1mbundle update 22mand
-       here is the 1m--strict 22moption. 1m--strict 22mwas already an option on outdated
-       before the patch level options were added. 1m--strict 22mwasn't altered, and
-       the 1m--update-strict 22moption on 1moutdated 22mreflects what 1m--strict  22mdoes  on
-       1mbundle update22m.
+       One  difference	between  the  patch level options in bundle update and
+       here is the --strict option. --strict was already an option on outdated
+       before the patch level options were added. --strict wasn't altered, and
+       the --update-strict option on outdated reflects what --strict  does  on
+       bundle update.
 
-1mFILTERING OUTPUT0m
+FILTERING OUTPUT
        The  3  filtering  options  do  not  affect the resolution of versions,
        merely what versions are shown in the output.
 
@@ -89,7 +89,7 @@ BUNDLE-OUTDATED(1)					    BUNDLE-OUTDATED(1)
 
 
 
-       1m--filter-major 22mwould only show:
+       --filter-major would only show:
 
 
 
@@ -97,7 +97,7 @@ BUNDLE-OUTDATED(1)					    BUNDLE-OUTDATED(1)
 
 
 
-       1m--filter-minor 22mwould only show:
+       --filter-minor would only show:
 
 
 
@@ -105,7 +105,7 @@ BUNDLE-OUTDATED(1)					    BUNDLE-OUTDATED(1)
 
 
 
-       1m--filter-patch 22mwould only show:
+       --filter-patch would only show:
 
 
 
@@ -113,7 +113,7 @@ BUNDLE-OUTDATED(1)					    BUNDLE-OUTDATED(1)
 
 
 
-       Filter options can be combined. 1m--filter-minor 22mand 1m--filter-patch 22mwould
+       Filter options can be combined. --filter-minor and --filter-patch would
        show:
 
 
@@ -123,9 +123,9 @@ BUNDLE-OUTDATED(1)					    BUNDLE-OUTDATED(1)
 
 
 
-       Combining  all three 1mfilter 22moptions would be the same result as provid-
+       Combining  all three filter options would be the same result as provid-
        ing none of them.
 
 
 
-				 November 2018		    BUNDLE-OUTDATED(1)
+				  March 2019		    BUNDLE-OUTDATED(1)

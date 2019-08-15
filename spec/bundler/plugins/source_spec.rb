@@ -16,8 +16,8 @@ RSpec.describe "bundler source plugin" do
 
     it "installs bundler-source-* gem when no handler for source is present" do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
-        source "file://#{lib_path("gitp")}", :type => :psource do
+        source "#{file_uri_for(gem_repo2)}"
+        source "#{file_uri_for(lib_path("gitp"))}", :type => :psource do
         end
       G
 
@@ -37,8 +37,8 @@ RSpec.describe "bundler source plugin" do
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
-        source "file://#{lib_path("gitp")}", :type => :psource do
+        source "#{file_uri_for(gem_repo2)}"
+        source "#{file_uri_for(lib_path("gitp"))}", :type => :psource do
         end
       G
 
@@ -61,11 +61,11 @@ RSpec.describe "bundler source plugin" do
       context "explicit presence in gemfile" do
         before do
           install_gemfile <<-G
-            source "file://#{gem_repo2}"
+            source "#{file_uri_for(gem_repo2)}"
 
             plugin "another-psource"
 
-            source "file://#{lib_path("gitp")}", :type => :psource do
+            source "#{file_uri_for(lib_path("gitp"))}", :type => :psource do
             end
           G
         end
@@ -86,11 +86,11 @@ RSpec.describe "bundler source plugin" do
       context "explicit default source" do
         before do
           install_gemfile <<-G
-            source "file://#{gem_repo2}"
+            source "#{file_uri_for(gem_repo2)}"
 
             plugin "bundler-source-psource"
 
-            source "file://#{lib_path("gitp")}", :type => :psource do
+            source "#{file_uri_for(lib_path("gitp"))}", :type => :psource do
             end
           G
         end
