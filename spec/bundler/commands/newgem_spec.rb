@@ -217,9 +217,7 @@ RSpec.describe "bundle gem" do
     prepare_gemspec(bundled_app("newgem", "newgem.gemspec"))
 
     Dir.chdir(bundled_app("newgem")) do
-      gems = ["rake-12.3.2", :bundler]
-      # for Ruby core repository, Ruby 2.6+ has bundler as standard library.
-      gems.delete(:bundler) if ruby_core?
+      gems = ["rake-12.3.2"]
       system_gems gems, :path => :bundle_path
       bundle! "exec rake build"
     end
