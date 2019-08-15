@@ -232,7 +232,7 @@ RSpec.describe "The library itself" do
           spec.bindir = "libexec"
           File.open(root.join("bundler.gemspec").to_s, "w") {|f| f.write spec.to_ruby }
           gem_command! :build, root.join("bundler.gemspec")
-          FileUtils.rm(root.join("bundler.gemspec").to_s)
+          FileUtils.rm(root.join("bundler.gemspec"))
         else
           gem_command! :build, gemspec
         end
