@@ -12,6 +12,7 @@ describe "String#to_f" do
 
    ".5".to_f.should == 0.5
    ".5e1".to_f.should == 5.0
+   "5.".to_f.should == 5.0
    "5e".to_f.should == 5.0
    "5E".to_f.should == 5.0
   end

@@ -9,25 +9,25 @@ describe "Process.kill" do
   end
 
   it "raises an ArgumentError for unknown signals" do
-    lambda { Process.kill("FOO", @pid) }.should raise_error(ArgumentError)
+    -> { Process.kill("FOO", @pid) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if passed a lowercase signal name" do
-    lambda { Process.kill("term", @pid) }.should raise_error(ArgumentError)
+    -> { Process.kill("term", @pid) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if signal is not a Fixnum or String" do
     signal = mock("process kill signal")
     signal.should_not_receive(:to_int)
 
-    lambda { Process.kill(signal, @pid) }.should raise_error(ArgumentError)
+    -> { Process.kill(signal, @pid) }.should raise_error(ArgumentError)
   end
 
   it "raises Errno::ESRCH if the process does not exist" do
     pid = Process.spawn(*ruby_exe, "-e", "sleep 10")
     Process.kill("SIGKILL", pid)
     Process.wait(pid)
-    lambda {
+    -> {
       Process.kill("SIGKILL", pid)
     }.should raise_error(Errno::ESRCH)
   end

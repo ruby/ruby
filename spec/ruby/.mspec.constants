@@ -28,7 +28,6 @@ CSAutoloadC
 CSAutoloadD
 CSV
 ChainedNextTest
-Channel
 ChildClass
 ClassIdUnderAutoload
 ClassSpecDefineClass
@@ -78,7 +77,7 @@ Find
 Forwardable
 GetoptLong
 HMACConstants
-HashStringsASCII8BIT
+HashStringsBinary
 HashStringsUSASCII
 HashStringsUTF8
 IPAddr
@@ -88,7 +87,6 @@ IncludeSpecsClass
 IncludeSpecsMiddle
 IncludeSpecsTop
 IncludesMath
-InvalidTostrTest
 JSON
 KSAutoloadA
 KSAutoloadB
@@ -177,6 +175,7 @@ StringRefinement
 StringScanner
 StringSubclass
 StructClasses
+Syck
 Syslog
 TCPServer
 TCPSocket
@@ -205,7 +204,6 @@ UserObject
 UserPreviouslyDefinedWithInitializedIvar
 UserRegexp
 UserString
-ValidTostrTest
 Vector
 WEBrick
 WIN32OLE

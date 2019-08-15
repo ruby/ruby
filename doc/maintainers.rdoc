@@ -88,21 +88,15 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/prettyprint.rb]
   Tanaka Akira (akr)
-[lib/profile.rb]
-  _unmaintained_
-[lib/profiler.rb]
-  _unmaintained_
 [lib/pstore.rb]
   _unmaintained_
-[lib/racc/*]
-  Aaron Patterson (tenderlove)
 [lib/resolv-replace.rb]
   Tanaka Akira (akr)
 [lib/resolv.rb]
   Tanaka Akira (akr)
 [lib/rinda/*]
   Masatoshi SEKI (seki)
-[lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*]
+[lib/rubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
 [lib/set.rb]
@@ -151,15 +145,13 @@ Zachary Scott (zzak)
 [ext/io/wait]
   Nobuyuki Nakada (nobu)
 [ext/nkf]
-  NARUSE, Yui (narse)
+  NARUSE, Yui (naruse)
 [ext/objspace]
   _unmaintained_
 [ext/pathname]
   Tanaka Akira (akr)
 [ext/pty]
   _unmaintained_
-[ext/racc]
-  Aaron Patterson (tenderlove)
 [ext/readline]
   TAKAO Kouji (kouji)
 [ext/ripper]
@@ -194,38 +186,58 @@ Zachary Scott (zzak)
   https://github.com/ruby/fileutils
 [lib/forwardable.rb]
   Keiju ISHITSUKA (keiju)
+  https://github.com/ruby/forwardable
 [lib/ipaddr.rb]
   Akinori MUSHA (knu)
+  https://github.com/ruby/ipaddr
 [lib/irb.rb, lib/irb/*]
   Keiju ISHITSUKA (keiju)
+  https://github.com/ruby/irb
 [lib/logger.rb]
   Naotoshi Seo (sonots)
+  https://github.com/ruby/logger
 [lib/matrix.rb]
   Marc-Andre Lafortune (marcandre)
+  https://github.com/ruby/matrix
 [lib/mutex_m.rb]
   Keiju ISHITSUKA (keiju)
+  https://github.com/ruby/mutex_m
 [lib/ostruct.rb]
   Marc-Andre Lafortune (marcandre)
+  https://github.com/ruby/ostruct
 [lib/prime.rb]
   Yuki Sonoda (yugui)
+  https://github.com/ruby/prime
+[lib/racc.rb, lib/racc/*]
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
+  https://github.com/ruby/racc
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/rdoc
+[lib/reline.rb, lib/reline/*]
+  aycabta
+  https://github.com/ruby/reline
 [lib/rexml/*]
   Kouhei Sutou (kou)
+  https://github.com/ruby/rexml
 [lib/rss.rb, lib/rss/*]
   Kouhei Sutou (kou)
+  https://github.com/ruby/rss
 [lib/scanf.rb]
   David A. Black (dblack)
   https://github.com/ruby/scanf
 [lib/shell.rb, lib/shell/*]
   Keiju ISHITSUKA (keiju)
+  https://github.com/ruby/shell
 [lib/sync.rb]
   Keiju ISHITSUKA (keiju)
+  https://github.com/ruby/sync
 [lib/thwait.rb]
   Keiju ISHITSUKA (keiju)
+  https://github.com/ruby/thwait
 [lib/tracer.rb]
   Keiju ISHITSUKA (keiju)
+  https://github.com/ruby/tracer
 [lib/webrick.rb, lib/webrick/*]
   Eric Wong (normalperson)
   https://bugs.ruby-lang.org/
@@ -263,8 +275,11 @@ Zachary Scott (zzak)
   Kazuki Yamaguchi (rhe)
   https://github.com/ruby/openssl
 [ext/psych]
-  Aaron Patterson (tenderlove), Hiroshi SHIBATA(hsbt)
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/psych
+[ext/racc]
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
+  https://github.com/ruby/racc
 [ext/sdbm]
   Yukihiro Matsumoto (matz)
   https://github.com/ruby/sdbm
@@ -272,7 +287,7 @@ Zachary Scott (zzak)
   Nobuyuki Nakada (nobu)
   https://github.com/ruby/stringio
 [ext/strscan]
-  _unmaintained_
+  Kouhei Sutou (kou)
   https://github.com/ruby/strscan
 [ext/zlib]
   NARUSE, Yui (naruse)

@@ -13,7 +13,7 @@ describe "Net::HTTPHeader#content_length" do
 
   it "raises a Net::HTTPHeaderSyntaxError when the 'Content-Length' header entry has an invalid format" do
     @headers["Content-Length"] = "invalid"
-    lambda { @headers.content_length }.should raise_error(Net::HTTPHeaderSyntaxError)
+    -> { @headers.content_length }.should raise_error(Net::HTTPHeaderSyntaxError)
   end
 
   it "returns the value of the 'Content-Length' header entry as an Integer" do

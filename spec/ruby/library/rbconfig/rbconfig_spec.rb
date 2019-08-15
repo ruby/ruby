@@ -9,8 +9,8 @@ describe 'RbConfig::CONFIG' do
     end
   end
 
-  # On MinGW, RbConfig points to installed dir, and these tests fail when testing this from build dir on AppVeyor.
-  platform_is_not :mingw do
+  # These directories have no meanings before the installation.
+  guard -> { RbConfig::TOPDIR } do
     it "['rubylibdir'] returns the directory containing Ruby standard libraries" do
       rubylibdir = RbConfig::CONFIG['rubylibdir']
       File.directory?(rubylibdir).should == true
@@ -21,6 +21,16 @@ describe 'RbConfig::CONFIG' do
       archdir = RbConfig::CONFIG['archdir']
       File.directory?(archdir).should == true
       File.exist?("#{archdir}/etc.#{RbConfig::CONFIG['DLEXT']}").should == true
+    end
+  end
+end
+
+describe "RbConfig::TOPDIR" do
+  it "either returns nil (if not installed) or the prefix" do
+    if RbConfig::TOPDIR
+      RbConfig::TOPDIR.should == RbConfig::CONFIG["prefix"]
+    else
+      RbConfig::TOPDIR.should == nil
     end
   end
 end

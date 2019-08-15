@@ -27,12 +27,12 @@ struct dump_config {
     VALUE type;
     FILE *stream;
     VALUE string;
-    int roots;
     const char *root_category;
     VALUE cur_obj;
     VALUE cur_obj_klass;
     size_t cur_obj_references;
-    int full_heap;
+    unsigned int roots: 1;
+    unsigned int full_heap: 1;
 };
 
 PRINTF_ARGS(static void dump_append(struct dump_config *, const char *, ...), 2, 3);
@@ -273,7 +273,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 
       case T_HASH:
 	dump_append(dc, ", \"size\":%"PRIuSIZE, (size_t)RHASH_SIZE(obj));
-	if (FL_TEST(obj, HASH_PROC_DEFAULT))
+        if (FL_TEST(obj, RHASH_PROC_DEFAULT))
             dump_append(dc, ", \"default\":\"%#"PRIxVALUE"\"", RHASH_IFNONE(obj));
 	break;
 
@@ -368,7 +368,7 @@ root_obj_i(const char *category, VALUE obj, void *data)
         dump_append(dc, ", \"%#"PRIxVALUE"\"", obj);
 
     dc->root_category = category;
-    dc->roots++;
+    dc->roots = 1;
 }
 
 static VALUE

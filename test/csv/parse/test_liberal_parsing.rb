@@ -22,8 +22,7 @@ class TestCSVParseLiberalParsing < Test::Unit::TestCase
     error = assert_raise(CSV::MalformedCSVError) do
       CSV.parse_line(input)
     end
-    assert_equal("Do not allow except col_sep_split_separator " +
-                 "after quoted fields in line 1.",
+    assert_equal("Any value after quoted field isn't allowed in line 1.",
                  error.message)
     assert_equal(['"quoted" field'],
                  CSV.parse_line(input, liberal_parsing: true))
@@ -75,8 +74,7 @@ class TestCSVParseLiberalParsing < Test::Unit::TestCase
     error = assert_raise(CSV::MalformedCSVError) do
       CSV.parse(data)
     end
-    assert_equal("Do not allow except col_sep_split_separator " +
-                 "after quoted fields in line 1.",
+    assert_equal("Any value after quoted field isn't allowed in line 1.",
                  error.message)
     assert_equal([
                    [["a", %Q{""b""}]],
@@ -89,5 +87,74 @@ class TestCSVParseLiberalParsing < Test::Unit::TestCase
                                double_quote_outside_quote: true,
                              }),
                  ])
+  end
+
+  class TestBackslashQuote < Test::Unit::TestCase
+    extend ::DifferentOFS
+
+    def test_double_quote_outside_quote
+      data = %Q{a,""b""}
+      assert_equal([
+                     [["a", %Q{""b""}]],
+                     [["a", %Q{"b"}]],
+                   ],
+                   [
+                     CSV.parse(data,
+                               liberal_parsing: {
+                                 backslash_quote: true
+                               }),
+                     CSV.parse(data,
+                               liberal_parsing: {
+                                 backslash_quote: true,
+                                 double_quote_outside_quote: true
+                               }),
+                   ])
+    end
+
+    def test_unquoted_value
+      data = %q{\"\"a\"\"}
+      assert_equal([
+                     [[%q{\"\"a\"\"}]],
+                     [[%q{""a""}]],
+                   ],
+                   [
+                     CSV.parse(data, liberal_parsing: true),
+                     CSV.parse(data,
+                               liberal_parsing: {
+                                 backslash_quote: true
+                               }),
+                   ])
+    end
+
+    def test_unquoted_value_multiple_characters_col_sep
+      data = %q{a<\\"b<=>x}
+      assert_equal([[%Q{a<"b}, "x"]],
+                   CSV.parse(data,
+                             col_sep: "<=>",
+                             liberal_parsing: {
+                               backslash_quote: true
+                             }))
+    end
+
+    def test_quoted_value
+      data = %q{"\"\"a\"\""}
+      assert_equal([
+                     [[%q{"\"\"a\"\""}]],
+                     [[%q{""a""}]],
+                     [[%q{""a""}]],
+                   ],
+                   [
+                     CSV.parse(data, liberal_parsing: true),
+                     CSV.parse(data,
+                               liberal_parsing: {
+                                 backslash_quote: true
+                               }),
+                     CSV.parse(data,
+                               liberal_parsing: {
+                                 backslash_quote: true,
+                                 double_quote_outside_quote: true
+                               }),
+                   ])
+    end
   end
 end

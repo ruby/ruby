@@ -344,8 +344,8 @@ class Gem::Version
     return unless Gem::Version === other
     return 0 if @version == other._version || canonical_segments == other.canonical_segments
 
-    lhsegments = _segments
-    rhsegments = other._segments
+    lhsegments = canonical_segments
+    rhsegments = other.canonical_segments
 
     lhsize = lhsegments.size
     rhsize = rhsegments.size

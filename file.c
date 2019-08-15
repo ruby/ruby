@@ -20,6 +20,14 @@
 #include <wchar.h>
 #endif
 #ifdef __APPLE__
+# if !(defined(__has_feature) && defined(__has_attribute))
+/* Maybe a bug in SDK of Xcode 10.2.1 */
+/* In this condition, <os/availability.h> does not define
+ * API_AVAILABLE and similar, but __API_AVAILABLE and similar which
+ * are defined in <Availability.h> */
+#   define API_AVAILABLE(...)
+#   define API_DEPRECATED(...)
+# endif
 #include <CoreFoundation/CFString.h>
 #endif
 
@@ -115,6 +123,12 @@ int flock(int, int);
 #define rename(f, t)	rb_w32_urename((f), (t))
 #undef symlink
 #define symlink(s, l)	rb_w32_usymlink((s), (l))
+
+#ifdef HAVE_REALPATH
+/* Don't use native realpath(3) on Windows, as the check for
+   absolute paths does not work for drive letters. */
+#undef HAVE_REALPATH
+#endif
 #else
 #define STAT(p, s)	stat((p), (s))
 #endif
@@ -130,6 +144,16 @@ int flock(int, int);
 /* utime may fail if time is out-of-range for the FS [ruby-dev:38277] */
 #if defined DOSISH || defined __CYGWIN__
 #  define UTIME_EINVAL
+#endif
+
+/* Solaris 10 realpath(3) doesn't support File.realpath */
+#if defined HAVE_REALPATH && defined __sun && defined __SVR4
+#undef HAVE_REALPATH
+#endif
+
+#ifdef HAVE_REALPATH
+#include <limits.h>
+#include <stdlib.h>
 #endif
 
 VALUE rb_cFile;
@@ -431,8 +455,8 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
  *  For instance, the pathname becomes void when the file has been
  *  moved or deleted.
  *
- *  This method raises <code>IOError</code> for a <i>file</i> created using
- *  <code>File::Constants::TMPFILE</code> because they don't have a pathname.
+ *  This method raises IOError for a <i>file</i> created using
+ *  File::Constants::TMPFILE because they don't have a pathname.
  *
  *     File.new("testfile").path               #=> "testfile"
  *     File.new("/tmp/../tmp/xxx", "w").path   #=> "/tmp/../tmp/xxx"
@@ -451,7 +475,7 @@ rb_file_path(VALUE obj)
         rb_raise(rb_eIOError, "File is unnamed (TMPFILE?)");
     }
 
-    return rb_obj_taint(rb_str_dup(fptr->pathv));
+    return rb_str_dup(fptr->pathv);
 }
 
 static size_t
@@ -912,7 +936,7 @@ typedef struct stat statx_data;
  *     stat.atime   -> time
  *
  *  Returns the last access time for this file as an object of class
- *  <code>Time</code>.
+ *  Time.
  *
  *     File.stat("testfile").atime   #=> Wed Dec 31 18:00:00 CST 1969
  *
@@ -1198,12 +1222,24 @@ rb_statx(VALUE file, struct statx *stx, unsigned int mask)
 
 # define statx_has_birthtime(st) ((st)->stx_mask & STATX_BTIME)
 
+NORETURN(static void statx_notimplement(const char *field_name));
+
+/* rb_notimplement() shows "function is unimplemented on this machine".
+   It is not applicable to statx which behavior depends on the filesystem. */
+static void
+statx_notimplement(const char *field_name)
+{
+    rb_raise(rb_eNotImpError,
+             "%s is unimplemented on this filesystem",
+             field_name);
+}
+
 static VALUE
 statx_birthtime(const struct statx *stx, VALUE fname)
 {
     if (!statx_has_birthtime(stx)) {
         /* birthtime is not supported on the filesystem */
-        rb_syserr_fail_path(ENOSYS, fname);
+        statx_notimplement("birthtime");
     }
     return rb_time_nano_new(stx->stx_btime.tv_sec, stx->stx_btime.tv_nsec);
 }
@@ -1248,8 +1284,7 @@ rb_stat(VALUE file, struct stat *st)
  *  call-seq:
  *     File.stat(file_name)   ->  stat
  *
- *  Returns a <code>File::Stat</code> object for the named file (see
- *  <code>File::Stat</code>).
+ *  Returns a File::Stat object for the named file (see File::Stat).
  *
  *     File.stat("testfile").mtime   #=> Tue Apr 08 12:58:04 CDT 2003
  *
@@ -1273,7 +1308,7 @@ rb_file_s_stat(VALUE klass, VALUE fname)
  *     ios.stat    -> stat
  *
  *  Returns status information for <em>ios</em> as an object of type
- *  <code>File::Stat</code>.
+ *  File::Stat.
  *
  *     f = File.new("testfile")
  *     s = f.stat
@@ -1321,8 +1356,8 @@ lstat_without_gvl(const char *path, struct stat *st)
  *  call-seq:
  *     File.lstat(file_name)   -> stat
  *
- *  Same as <code>File::stat</code>, but does not follow the last symbolic
- *  link. Instead, reports on the link itself.
+ *  Same as File::stat, but does not follow the last symbolic link.
+ *  Instead, reports on the link itself.
  *
  *     File.symlink("testfile", "link2test")   #=> 0
  *     File.stat("testfile").size              #=> 66
@@ -1352,8 +1387,8 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
  *  call-seq:
  *     file.lstat   ->  stat
  *
- *  Same as <code>IO#stat</code>, but does not follow the last symbolic
- *  link. Instead, reports on the link itself.
+ *  Same as IO#stat, but does not follow the last symbolic link.
+ *  Instead, reports on the link itself.
  *
  *     File.symlink("testfile", "link2test")   #=> 0
  *     File.stat("testfile").size              #=> 66
@@ -1533,10 +1568,10 @@ rb_access(VALUE fname, int mode)
 /*
  * Document-class: FileTest
  *
- *  <code>FileTest</code> implements file test operations similar to
- *  those used in <code>File::Stat</code>. It exists as a standalone
- *  module, and its methods are also insinuated into the <code>File</code>
- *  class. (Note that this is not done by inclusion: the interpreter cheats).
+ *  FileTest implements file test operations similar to those used in
+ *  File::Stat. It exists as a standalone module, and its methods are
+ *  also insinuated into the File class. (Note that this is not done
+ *  by inclusion: the interpreter cheats).
  *
  */
 
@@ -1896,6 +1931,10 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file is executable by the effective
  * user and group id of this process. See eaccess(3).
+ *
+ * Windows does not support execute permissions separately from read
+ * permissions. On Windows, a file is only considered executable if it ends in
+ * .bat, .cmd, .com, or .exe.
  */
 
 static VALUE
@@ -1911,6 +1950,10 @@ rb_file_executable_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file is executable by the real
  * user and group id of this process. See access(3).
+ *
+ * Windows does not support execute permissions separately from read
+ * permissions. On Windows, a file is only considered executable if it ends in
+ * .bat, .cmd, .com, or .exe.
  */
 
 static VALUE
@@ -2266,8 +2309,8 @@ rb_file_s_atime(VALUE klass, VALUE fname)
  *  call-seq:
  *     file.atime    -> time
  *
- *  Returns the last access time (a <code>Time</code> object)
- *  for <i>file</i>, or epoch if <i>file</i> has not been accessed.
+ *  Returns the last access time (a Time object) for <i>file</i>, or
+ *  epoch if <i>file</i> has not been accessed.
  *
  *     File.new("testfile").atime   #=> Wed Dec 31 18:00:00 CST 1969
  *
@@ -2512,7 +2555,7 @@ rb_file_s_chmod(int argc, VALUE *argv)
  *  Changes permission bits on <i>file</i> to the bit pattern
  *  represented by <i>mode_int</i>. Actual effects are platform
  *  dependent; on Unix systems, see <code>chmod(2)</code> for details.
- *  Follows symbolic links. Also see <code>File#lchmod</code>.
+ *  Follows symbolic links. Also see File#lchmod.
  *
  *     f = File.new("out", "w");
  *     f.chmod(0644)   #=> 0
@@ -2560,9 +2603,9 @@ lchmod_internal(const char *path, void *mode)
  *  call-seq:
  *     File.lchmod(mode_int, file_name, ...)  -> integer
  *
- *  Equivalent to <code>File::chmod</code>, but does not follow symbolic
- *  links (so it will change the permissions associated with the link,
- *  not the file referenced by the link). Often not available.
+ *  Equivalent to File::chmod, but does not follow symbolic links (so
+ *  it will change the permissions associated with the link, not the
+ *  file referenced by the link). Often not available.
  *
  */
 
@@ -2646,7 +2689,7 @@ rb_file_s_chown(int argc, VALUE *argv)
  *  change the owner of a file. The current owner of a file may change
  *  the file's group to any group to which the owner belongs. A
  *  <code>nil</code> or -1 owner or group id is ignored. Follows
- *  symbolic links. See also <code>File#lchown</code>.
+ *  symbolic links. See also File#lchown.
  *
  *     File.new("testfile").chown(502, 1000)
  *
@@ -2690,7 +2733,7 @@ lchown_internal(const char *path, void *arg)
  *  call-seq:
  *     File.lchown(owner_int, group_int, file_name,..) -> integer
  *
- *  Equivalent to <code>File::chown</code>, but does not follow symbolic
+ *  Equivalent to File::chown, but does not follow symbolic
  *  links (so it will change the owner associated with the link, not the
  *  file referenced by the link). Often not available. Returns number
  *  of files in the argument list.
@@ -2942,7 +2985,7 @@ syserr_fail2_in(const char *func, int e, VALUE s1, VALUE s2)
  *
  *  Creates a new name for an existing file using a hard link. Will not
  *  overwrite <i>new_name</i> if it already exists (raising a subclass
- *  of <code>SystemCallError</code>). Not available on all platforms.
+ *  of SystemCallError). Not available on all platforms.
  *
  *     File.link("testfile", ".testfile")   #=> 0
  *     IO.readlines(".testfile")[0]         #=> "This is line one\n"
@@ -2971,7 +3014,7 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
  *     File.symlink(old_name, new_name)   -> 0
  *
  *  Creates a symbolic link called <i>new_name</i> for the existing file
- *  <i>old_name</i>. Raises a <code>NotImplemented</code> exception on
+ *  <i>old_name</i>. Raises a NotImplemented exception on
  *  platforms that do not support symbolic links.
  *
  *     File.symlink("testfile", "link2test")   #=> 0
@@ -3091,9 +3134,9 @@ unlink_internal(const char *path, void *arg)
  *  <code>unlink(2)</code> system call, the type of
  *  exception raised depends on its error type (see
  *  https://linux.die.net/man/2/unlink) and has the form of
- *  e.g. <code>Errno::ENOENT</code>.
+ *  e.g. Errno::ENOENT.
  *
- *  See also <code>Dir::rmdir</code>.
+ *  See also Dir::rmdir.
  */
 
 static VALUE
@@ -3119,8 +3162,8 @@ no_gvl_rename(void *ptr)
  *  call-seq:
  *     File.rename(old_name, new_name)   -> 0
  *
- *  Renames the given file to the new name. Raises a
- *  <code>SystemCallError</code> if the file cannot be renamed.
+ *  Renames the given file to the new name. Raises a SystemCallError
+ *  if the file cannot be renamed.
  *
  *     File.rename("afile", "afile.bak")   #=> 0
  */
@@ -3178,15 +3221,16 @@ rb_file_s_umask(int argc, VALUE *argv)
 {
     mode_t omask = 0;
 
-    if (argc == 0) {
+    switch (argc) {
+      case 0:
 	omask = umask(0);
 	umask(omask);
-    }
-    else if (argc == 1) {
+        break;
+      case 1:
 	omask = umask(NUM2MODET(argv[0]));
-    }
-    else {
-	rb_check_arity(argc, 0, 1);
+        break;
+      default:
+        rb_error_arity(argc, 0, 1);
     }
     return MODET2NUM(omask);
 }
@@ -4173,7 +4217,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
 }
 
 static VALUE
-rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
+rb_check_realpath_emulate(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
 {
     long prefixlen;
     VALUE resolved;
@@ -4261,10 +4305,81 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
 	}
     }
 
-    OBJ_INFECT(resolved, unresolved_path);
+    rb_obj_taint(resolved);
     RB_GC_GUARD(unresolved_path);
     RB_GC_GUARD(curdir);
     return resolved;
+}
+
+static VALUE rb_file_join(VALUE ary);
+
+static VALUE
+rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
+{
+#ifdef HAVE_REALPATH
+    VALUE unresolved_path;
+    rb_encoding *origenc;
+    char *resolved_ptr = NULL;
+    VALUE resolved;
+    struct stat st;
+
+    if (mode == RB_REALPATH_DIR) {
+        return rb_check_realpath_emulate(basedir, path, mode);
+    }
+
+    unresolved_path = rb_str_dup_frozen(path);
+    origenc = rb_enc_get(unresolved_path);
+    if (*RSTRING_PTR(unresolved_path) != '/' && !NIL_P(basedir)) {
+        unresolved_path = rb_file_join(rb_assoc_new(basedir, unresolved_path));
+    }
+    unresolved_path = TO_OSPATH(unresolved_path);
+
+    if((resolved_ptr = realpath(RSTRING_PTR(unresolved_path), NULL)) == NULL) {
+        /* glibc realpath(3) does not allow /path/to/file.rb/../other_file.rb,
+           returning ENOTDIR in that case.
+           glibc realpath(3) can also return ENOENT for paths that exist,
+           such as /dev/fd/5.
+           Fallback to the emulated approach in either of those cases. */
+        if (errno == ENOTDIR ||
+            (errno == ENOENT && rb_file_exist_p(0, unresolved_path))) {
+            return rb_check_realpath_emulate(basedir, path, mode);
+
+        }
+        if (mode == RB_REALPATH_CHECK) {
+            return Qnil;
+        }
+        rb_sys_fail_path(unresolved_path);
+    }
+    resolved = ospath_new(resolved_ptr, strlen(resolved_ptr), rb_filesystem_encoding());
+    free(resolved_ptr);
+
+    if (rb_stat(resolved, &st) < 0) {
+        if (mode == RB_REALPATH_CHECK) {
+            return Qnil;
+        }
+        rb_sys_fail_path(unresolved_path);
+    }
+
+    if (origenc != rb_enc_get(resolved)) {
+        if (!rb_enc_str_asciionly_p(resolved)) {
+            resolved = rb_str_conv_enc(resolved, NULL, origenc);
+        }
+        rb_enc_associate(resolved, origenc);
+    }
+
+    if(rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
+        rb_enc_associate(resolved, rb_filesystem_encoding());
+        if(rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
+            rb_enc_associate(resolved, rb_ascii8bit_encoding());
+        }
+    }
+
+    rb_obj_taint(resolved);
+    RB_GC_GUARD(unresolved_path);
+    return resolved;
+#else
+    return rb_check_realpath_emulate(basedir, path, mode);
+#endif /* HAVE_REALPATH */
 }
 
 VALUE
@@ -4429,12 +4544,11 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
  *
  *  Returns the last component of the filename given in
  *  <i>file_name</i> (after first stripping trailing separators),
- *  which can be formed using both <code>File::SEPARATOR</code> and
- *  <code>File::ALT_SEPARATOR</code> as the separator when
- *  <code>File::ALT_SEPARATOR</code> is not <code>nil</code>. If
- *  <i>suffix</i> is given and present at the end of <i>file_name</i>,
- *  it is removed. If <i>suffix</i> is ".*", any extension will be
- *  removed.
+ *  which can be formed using both File::SEPARATOR and
+ *  File::ALT_SEPARATOR as the separator when File::ALT_SEPARATOR is
+ *  not <code>nil</code>. If <i>suffix</i> is given and present at the
+ *  end of <i>file_name</i>, it is removed. If <i>suffix</i> is ".*",
+ *  any extension will be removed.
  *
  *     File.basename("/home/gumby/work/ruby.rb")          #=> "ruby.rb"
  *     File.basename("/home/gumby/work/ruby.rb", ".rb")   #=> "ruby"
@@ -4492,9 +4606,9 @@ rb_file_s_basename(int argc, VALUE *argv)
  *
  *  Returns all components of the filename given in <i>file_name</i>
  *  except the last one (after first stripping trailing separators).
- *  The filename can be formed using both <code>File::SEPARATOR</code>
- *  and <code>File::ALT_SEPARATOR</code> as the separator when
- *  <code>File::ALT_SEPARATOR</code> is not <code>nil</code>.
+ *  The filename can be formed using both File::SEPARATOR and
+ *  File::ALT_SEPARATOR as the separator when File::ALT_SEPARATOR is
+ *  not <code>nil</code>.
  *
  *     File.dirname("/home/gumby/work/ruby.rb")   #=> "/home/gumby/work"
  */
@@ -4676,8 +4790,8 @@ rb_file_s_path(VALUE klass, VALUE fname)
  *     File.split(file_name)   -> array
  *
  *  Splits the given string into a directory and a file component and
- *  returns them in a two-element array. See also
- *  <code>File::dirname</code> and <code>File::basename</code>.
+ *  returns them in a two-element array. See also File::dirname and
+ *  File::basename.
  *
  *     File.split("/home/gumby/.profile")   #=> ["/home/gumby", ".profile"]
  */
@@ -4688,8 +4802,6 @@ rb_file_s_split(VALUE klass, VALUE path)
     FilePathStringValue(path);		/* get rid of converting twice */
     return rb_assoc_new(rb_file_dirname(path), rb_file_s_basename(1,&path));
 }
-
-static VALUE rb_file_join(VALUE ary);
 
 static VALUE
 file_inspect_join(VALUE ary, VALUE arg, int recur)
@@ -4957,9 +5069,9 @@ rb_thread_flock(void *data)
  *
  *  Locks or unlocks a file according to <i>locking_constant</i> (a
  *  logical <em>or</em> of the values in the table below).
- *  Returns <code>false</code> if <code>File::LOCK_NB</code> is
- *  specified and the operation would otherwise have blocked. Not
- *  available on all platforms.
+ *  Returns <code>false</code> if File::LOCK_NB is specified and the
+ *  operation would otherwise have blocked. Not available on all
+ *  platforms.
  *
  *  Locking constants (in class File):
  *
@@ -5260,15 +5372,13 @@ rb_f_test(int argc, VALUE *argv)
 /*
  *  Document-class: File::Stat
  *
- *  Objects of class <code>File::Stat</code> encapsulate common status
- *  information for <code>File</code> objects. The information is
- *  recorded at the moment the <code>File::Stat</code> object is
- *  created; changes made to the file after that point will not be
- *  reflected. <code>File::Stat</code> objects are returned by
- *  <code>IO#stat</code>, <code>File::stat</code>,
- *  <code>File#lstat</code>, and <code>File::lstat</code>. Many of these
+ *  Objects of class File::Stat encapsulate common status information
+ *  for File objects. The information is recorded at the moment the
+ *  File::Stat object is created; changes made to the file after that
+ *  point will not be reflected. File::Stat objects are returned by
+ *  IO#stat, File::stat, File#lstat, and File::lstat. Many of these
  *  methods return platform-specific values, and not all values are
- *  meaningful on all systems. See also <code>Kernel#test</code>.
+ *  meaningful on all systems. See also Kernel#test.
  */
 
 static VALUE
@@ -5389,10 +5499,9 @@ rb_stat_p(VALUE obj)
  *
  *  Returns <code>true</code> if <i>stat</i> is a symbolic link,
  *  <code>false</code> if it isn't or if the operating system doesn't
- *  support this feature. As <code>File::stat</code> automatically
- *  follows symbolic links, <code>symlink?</code> will always be
- *  <code>false</code> for an object returned by
- *  <code>File::stat</code>.
+ *  support this feature. As File::stat automatically follows symbolic
+ *  links, #symlink? will always be <code>false</code> for an object
+ *  returned by File::stat.
  *
  *     File.symlink("testfile", "alink")   #=> 0
  *     File.stat("alink").symlink?         #=> false
@@ -6283,11 +6392,10 @@ const char ruby_null_device[] =
     ;
 
 /*
- *  A <code>File</code> is an abstraction of any file object accessible
- *  by the program and is closely associated with class <code>IO</code>.
- *  <code>File</code> includes the methods of module
- *  <code>FileTest</code> as class methods, allowing you to write (for
- *  example) <code>File.exist?("foo")</code>.
+ *  A File is an abstraction of any file object accessible by the
+ *  program and is closely associated with class IO.  File includes
+ *  the methods of module FileTest as class methods, allowing you to
+ *  write (for example) <code>File.exist?("foo")</code>.
  *
  *  In the description of File methods,
  *  <em>permission bits</em> are a platform-specific

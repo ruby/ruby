@@ -10,13 +10,14 @@ class TestJIT < Test::Unit::TestCase
   include JITSupport
 
   IGNORABLE_PATTERNS = [
+    /\AJIT recompile: .+\n\z/,
+    /\AJIT inline: .+\n\z/,
     /\ASuccessful MJIT finish\n\z/,
   ]
 
   # trace_* insns are not compiled for now...
   TEST_PENDING_INSNS = RubyVM::INSTRUCTION_NAMES.select { |n| n.start_with?('trace_') }.map(&:to_sym) + [
     # not supported yet
-    :getblockparamproxy,
     :defineclass,
     :opt_call_c_function,
 
@@ -42,7 +43,7 @@ class TestJIT < Test::Unit::TestCase
     if $VERBOSE && !defined?(@@at_exit_hooked)
       at_exit do
         unless TestJIT.untested_insns.empty?
-          warn "untested insns are found!: #{TestJIT.untested_insns.join(' ')}"
+          warn "you may want to add tests for following insns, when you have a chance: #{TestJIT.untested_insns.join(' ')}"
         end
       end
       @@at_exit_hooked = true
@@ -92,7 +93,18 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_getblockparamproxy
-    skip "support this in mjit_compile"
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '4', success_count: 3, insns: %i[getblockparamproxy])
+    begin;
+      def bar(&b)
+        b.call
+      end
+
+      def foo(&b)
+        bar(&b) * bar(&b)
+      end
+
+      print foo { 2 }
+    end;
   end
 
   def test_compile_insn_getspecial
@@ -183,14 +195,34 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('2', result_inspect: '2', insns: %i[putobject])
   end
 
-  def test_compile_insn_putspecialobject_putiseq
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hellohello', success_count: 2, insns: %i[putspecialobject putiseq])
+  def test_compile_insn_definemethod_definesmethod
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'helloworld', success_count: 3, insns: %i[definemethod definesmethod])
     begin;
-      print 2.times.map {
+      print 1.times.map {
         def method_definition
           'hello'
         end
-        method_definition
+
+        def self.smethod_definition
+          'world'
+        end
+
+        method_definition + smethod_definition
+      }.join
+    end;
+  end
+
+  def test_compile_insn_putspecialobject
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'a', success_count: 2, insns: %i[putspecialobject])
+    begin;
+      print 1.times.map {
+        def a
+          'a'
+        end
+
+        alias :b :a
+
+        b
       }.join
     end;
   end
@@ -330,6 +362,13 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"foo"', insns: %i[opt_str_freeze])
     begin;
       'foo'.freeze
+    end;
+  end
+
+  def test_compile_insn_opt_nil_p
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'false', insns: %i[opt_nil_p])
+    begin;
+      nil.nil?.nil?
     end;
   end
 
@@ -509,7 +548,7 @@ class TestJIT < Test::Unit::TestCase
     end;
 
     # send call -> optimized call (send JIT) -> optimized call
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '122', success_count: 1, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '122', success_count: 2, min_calls: 2)
     begin;
       obj = Object.new
       def obj.[](h)
@@ -684,7 +723,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_inlined_undefined_ivar
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "bbb", success_count: 2, min_calls: 3)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "bbb", success_count: 3, min_calls: 3)
     begin;
       class Foo
         def initialize
@@ -698,9 +737,11 @@ class TestJIT < Test::Unit::TestCase
         end
       end
 
+      verbose, $VERBOSE = $VERBOSE, false # suppress "instance variable @b not initialized"
       print(Foo.new.bar)
       print(Foo.new.bar)
       print(Foo.new.bar)
+      $VERBOSE = verbose
     end;
   end
 
@@ -729,10 +770,8 @@ class TestJIT < Test::Unit::TestCase
       p(a.undefined)
 
       # redefinition
-      class A
-        def test
-          3
-        end
+      def a.test
+        3
       end
 
       print(2 * a.test)
@@ -820,6 +859,35 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_frame_omitted_inlining
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true\ntrue\ntrue\n", success_count: 1, min_calls: 2)
+    begin;
+      class Numeric
+        remove_method :zero?
+        def zero?
+          self == 0
+        end
+      end
+
+      3.times do
+        p 0.zero?
+      end
+    end;
+  end
+
+  def test_block_handler_with_possible_frame_omitted_inlining
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "70.0\n70.0\n70.0\n", success_count: 2, min_calls: 2)
+    begin;
+      def multiply(a, b)
+        a *= b
+      end
+
+      3.times do
+        p multiply(7.0, 10.0)
+      end
+    end;
+  end
+
   def test_program_counter_with_regexpmatch
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aa", success_count: 1)
     begin;
@@ -899,26 +967,31 @@ class TestJIT < Test::Unit::TestCase
   private
 
   # The shortest way to test one proc
-  def assert_compile_once(script, result_inspect:, insns: [])
+  def assert_compile_once(script, result_inspect:, insns: [], uplevel: 1)
     if script.match?(/\A\n.+\n\z/m)
       script = script.gsub(/^/, '  ')
     else
       script = " #{script} "
     end
-    assert_eval_with_jit("p proc {#{script}}.call", stdout: "#{result_inspect}\n", success_count: 1, insns: insns, uplevel: 2)
+    assert_eval_with_jit("p proc {#{script}}.call", stdout: "#{result_inspect}\n", success_count: 1, insns: insns, uplevel: uplevel + 1)
   end
 
   # Shorthand for normal test cases
-  def assert_eval_with_jit(script, stdout: nil, success_count:, min_calls: 1, insns: [], uplevel: 3)
+  def assert_eval_with_jit(script, stdout: nil, success_count:, min_calls: 1, insns: [], uplevel: 1)
     out, err = eval_with_jit(script, verbose: 1, min_calls: min_calls)
     actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
+    # Add --jit-verbose=2 logs for cl.exe because compiler's error message is suppressed
+    # for cl.exe with --jit-verbose=1. See `start_process` in mjit_worker.c.
+    if RUBY_PLATFORM.match?(/mswin/) && success_count != actual
+      out2, err2 = eval_with_jit(script, verbose: 2, min_calls: min_calls)
+    end
 
     # Make sure that the script has insns expected to be tested
     used_insns = method_insns(script)
     insns.each do |insn|
       unless used_insns.include?(insn)
         $stderr.puts
-        warn "'#{insn}' insn is not included in the script. Actual insns are: #{used_insns.join(' ')}\n", uplevel: uplevel
+        warn "'#{insn}' insn is not included in the script. Actual insns are: #{used_insns.join(' ')}\n", uplevel: uplevel+2
       end
       TestJIT.untested_insns.delete(insn)
     end
@@ -926,7 +999,9 @@ class TestJIT < Test::Unit::TestCase
     assert_equal(
       success_count, actual,
       "Expected #{success_count} times of JIT success, but succeeded #{actual} times.\n\n"\
-      "script:\n#{code_block(script)}\nstderr:\n#{code_block(err)}",
+      "script:\n#{code_block(script)}\nstderr:\n#{code_block(err)}#{(
+        "\nstdout(verbose=2 retry):\n#{code_block(out2)}\nstderr(verbose=2 retry):\n#{code_block(err2)}" if out2 || err2
+      )}",
     )
     if stdout
       assert_equal(stdout, out, "Expected stdout #{out.inspect} to match #{stdout.inspect} with script:\n#{code_block(script)}")
@@ -945,8 +1020,10 @@ class TestJIT < Test::Unit::TestCase
     insns = []
     RubyVM::InstructionSequence.compile(script).to_a.last.each do |(insn, *args)|
       case insn
-      when :putiseq, :send
+      when :send
         insns += collect_insns(args.last)
+      when :definemethod, :definesmethod
+        insns += collect_insns(args[1])
       when :defineclass
         insns += collect_insns(args[1])
       end
@@ -961,7 +1038,7 @@ class TestJIT < Test::Unit::TestCase
     insns = iseq_array.last.select { |x| x.is_a?(Array) }.map(&:first)
     iseq_array.last.each do |(insn, *args)|
       case insn
-      when :putiseq, :send
+      when :definemethod, :definesmethod, :send
         insns += collect_insns(args.last)
       end
     end

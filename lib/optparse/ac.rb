@@ -13,6 +13,8 @@ class OptionParser::AC < OptionParser
     end
   end
 
+  ARG_CONV = proc {|val| val.nil? ? true : val}
+
   def _ac_arg_enable(prefix, name, help_string, block)
     _check_ac_args(name, block)
 
@@ -20,8 +22,9 @@ class OptionParser::AC < OptionParser
     ldesc = ["--#{prefix}-#{name}"]
     desc = [help_string]
     q = name.downcase
-    enable = Switch::NoArgument.new(nil, proc {true}, sdesc, ldesc, nil, desc, block)
-    disable = Switch::NoArgument.new(nil, proc {false}, sdesc, ldesc, nil, desc, block)
+    ac_block = proc {|val| block.call(ARG_CONV.call(val))}
+    enable = Switch::PlacedArgument.new(nil, ARG_CONV, sdesc, ldesc, nil, desc, ac_block)
+    disable = Switch::NoArgument.new(nil, proc {false}, sdesc, ldesc, nil, desc, ac_block)
     top.append(enable, [], ["enable-" + q], disable, ['disable-' + q])
     enable
   end

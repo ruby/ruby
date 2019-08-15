@@ -33,6 +33,7 @@ data you will need to change them immediately and yank your gem.
 
     add_version_option("remove")
     add_platform_option("remove")
+    add_otp_option
 
     add_option('--host HOST',
                'Yank from another gemcutter-compatible host',
@@ -62,7 +63,10 @@ data you will need to change them immediately and yank your gem.
 
   def yank_gem(version, platform)
     say "Yanking gem from #{self.host}..."
-    yank_api_request(:delete, version, platform, "api/v1/gems/yank")
+    args = [:delete, version, platform, "api/v1/gems/yank"]
+    response = yank_api_request(*args)
+
+    say response.body
   end
 
   private
@@ -71,6 +75,7 @@ data you will need to change them immediately and yank your gem.
     name = get_one_gem_name
     response = rubygems_api_request(method, api, host) do |request|
       request.add_field("Authorization", api_key)
+      request.add_field("OTP", options[:otp]) if options[:otp]
 
       data = {
         'gem_name' => name,
@@ -80,7 +85,7 @@ data you will need to change them immediately and yank your gem.
 
       request.set_form_data data
     end
-    say response.body
+    response
   end
 
   def get_version_from_requirements(requirements)

@@ -1171,7 +1171,7 @@ dln_strerror(void)
 }
 #endif
 
-#if defined(_AIX) && ! defined(_IA64)
+#if defined(_AIX)
 static void
 aix_loaderror(const char *pathname)
 {
@@ -1400,7 +1400,7 @@ dln_load(const char *file)
     }
 #endif /* hpux */
 
-#if defined(_AIX) && ! defined(_IA64)
+#if defined(_AIX)
 #define DLN_DEFINED
     {
 	void (*init_fct)();

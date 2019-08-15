@@ -58,6 +58,50 @@ class TestGemCommandsYankCommand < Gem::TestCase
     assert_equal [yank_uri], @fetcher.paths
   end
 
+  def test_execute_with_otp_success
+    response_fail = 'You have enabled multifactor authentication but your request doesn\'t have the correct OTP code. Please check it and retry.'
+    yank_uri = 'http://example/api/v1/gems/yank'
+    @fetcher.data[yank_uri] = [
+      [response_fail, 401, 'Unauthorized'],
+      ['Successfully yanked', 200, 'OK']
+    ]
+
+    @cmd.options[:args]           = %w[a]
+    @cmd.options[:added_platform] = true
+    @cmd.options[:version]        = req('= 1.0')
+
+    @otp_ui = Gem::MockGemUi.new "111111\n"
+    use_ui @otp_ui do
+      @cmd.execute
+    end
+
+    assert_match 'You have enabled multi-factor authentication. Please enter OTP code.', @otp_ui.output
+    assert_match 'Code: ', @otp_ui.output
+    assert_match %r%Yanking gem from http://example%, @otp_ui.output
+    assert_match %r%Successfully yanked%,      @otp_ui.output
+    assert_equal '111111', @fetcher.last_request['OTP']
+  end
+
+  def test_execute_with_otp_failure
+    response = 'You have enabled multifactor authentication but your request doesn\'t have the correct OTP code. Please check it and retry.'
+    yank_uri = 'http://example/api/v1/gems/yank'
+    @fetcher.data[yank_uri] = [response, 401, 'Unauthorized']
+
+    @cmd.options[:args]           = %w[a]
+    @cmd.options[:added_platform] = true
+    @cmd.options[:version]        = req('= 1.0')
+
+    @otp_ui = Gem::MockGemUi.new "111111\n"
+    use_ui @otp_ui do
+      @cmd.execute
+    end
+
+    assert_match 'You have enabled multi-factor authentication. Please enter OTP code.', @otp_ui.output
+    assert_match response, @otp_ui.output
+    assert_match 'Code: ', @otp_ui.output
+    assert_equal '111111', @fetcher.last_request['OTP']
+  end
+
   def test_execute_key
     yank_uri = 'http://example/api/v1/gems/yank'
     @fetcher.data[yank_uri] = ['Successfully yanked', 200, 'OK']

@@ -525,6 +525,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
 
   def test_take_bug_8215
+    skip "this test randomly fails on mswin" if /mswin/ =~ RUBY_PLATFORM
     service = DRb.start_service("druby://localhost:0", @ts_base)
 
     uri = service.uri
@@ -622,6 +623,7 @@ class TestRingServer < Test::Unit::TestCase
     @server = DRb.start_service("druby://localhost:0")
   end
   def teardown
+    @rs.shutdown
     # implementation-dependent
     @ts.instance_eval{
       if th = @keeper
@@ -629,7 +631,6 @@ class TestRingServer < Test::Unit::TestCase
         th.join
       end
     }
-    @rs.shutdown
     @server.stop_service
   end
 
@@ -800,6 +801,8 @@ class TestRingServer < Test::Unit::TestCase
     tl0 << th
     yield
   rescue Timeout::Error => e
+    $stderr.puts "TestRingServer#with_timeout: timeout in #{n}s:"
+    $stderr.puts caller
     if tl
       bt = e.backtrace
       tl.each do |t|

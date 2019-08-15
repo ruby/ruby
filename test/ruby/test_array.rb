@@ -42,6 +42,8 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 2, 3], x[1..3])
     assert_equal([1, 2, 3], x[1,3])
     assert_equal([3, 4, 5], x[3..])
+    assert_equal([0, 1, 2], x[..2])
+    assert_equal([0, 1], x[...2])
 
     x[0, 2] = 10
     assert_equal([10, 2, 3, 4, 5], x)
@@ -263,10 +265,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[],  @cls[1] - @cls[1])
     assert_equal(@cls[1], @cls[1, 2, 3, 4, 5] - @cls[2, 3, 4, 5])
     assert_equal(@cls[1, 1, 1, 1], @cls[1, 2, 1, 3, 1, 4, 1, 5] - @cls[2, 3, 4, 5])
-    a = @cls[]
-    1000.times { a << 1 }
-    assert_equal(1000, a.length)
-    assert_equal(@cls[1] * 1000, a - @cls[2])
     assert_equal(@cls[1, 1],  @cls[1, 2, 1] - @cls[2])
     assert_equal(@cls[1, 2, 3], @cls[1, 2, 3] - @cls[4, 5, 6])
   end
@@ -375,8 +373,12 @@ class TestArray < Test::Unit::TestCase
 
     assert_equal(@cls[10, 11, 12], a[9..11])
     assert_equal(@cls[98, 99, 100], a[97..])
+    assert_equal(@cls[1, 2, 3], a[..2])
+    assert_equal(@cls[1, 2], a[...2])
     assert_equal(@cls[10, 11, 12], a[-91..-89])
     assert_equal(@cls[98, 99, 100], a[-3..])
+    assert_equal(@cls[1, 2, 3], a[..-98])
+    assert_equal(@cls[1, 2], a[...-98])
 
     assert_nil(a[10, -3])
     assert_equal [], a[10..7]
@@ -461,6 +463,14 @@ class TestArray < Test::Unit::TestCase
     a = @cls[*(0..99).to_a]
     assert_equal(nil, a[10..] = nil)
     assert_equal(@cls[*(0..9).to_a] + @cls[nil], a)
+
+    a = @cls[*(0..99).to_a]
+    assert_equal(nil, a[..10] = nil)
+    assert_equal(@cls[nil] + @cls[*(11..99).to_a], a)
+
+    a = @cls[*(0..99).to_a]
+    assert_equal(nil, a[...10] = nil)
+    assert_equal(@cls[nil] + @cls[*(10..99).to_a], a)
 
     a = @cls[1, 2, 3]
     a[1, 0] = a
@@ -1424,6 +1434,16 @@ class TestArray < Test::Unit::TestCase
     assert_nil(a.rindex([1,2]))
 
     assert_equal(3, a.rindex(99) {|x| x == [1,2,3] })
+
+    bug15951 = "[Bug #15951]"
+    o2 = Object.new
+    def o2.==(other)
+      other.replace([]) if Array === other
+      false
+    end
+    a = Array.new(10)
+    a.fill(o2)
+    assert_nil(a.rindex(a), bug15951)
   end
 
   def test_shift
@@ -1586,13 +1606,21 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_sort_with_replace
-    xary = (1..100).to_a
-    100.times do
-      ary = (1..100).to_a
-      ary.sort! {|a,b| ary.replace(xary); a <=> b}
-      GC.start
-      assert_equal(xary, ary, '[ruby-dev:34732]')
-    end
+    bug = '[ruby-core:34732]'
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    bug = "#{bug}"
+    begin;
+      xary = (1..100).to_a
+      100.times do
+        ary = (1..100).to_a
+        ary.sort! {|a,b| ary.replace(xary); a <=> b}
+        GC.start
+        assert_equal(xary, ary, '[ruby-dev:34732]')
+      end
+      assert_nothing_raised(SystemStackError, bug) do
+        assert_equal(:ok, Array.new(100_000, nil).permutation {break :ok})
+      end
+    end;
   end
 
   def test_sort_bang_with_freeze
@@ -1758,6 +1786,25 @@ class TestArray < Test::Unit::TestCase
       def coerce(x) [x, 1] end
     end
     assert_same(obj, [obj, 1.0].max)
+  end
+
+  def test_minmax
+    assert_equal([1, 3], [1, 2, 3, 1, 2].minmax)
+    assert_equal([3, 1], [1, 2, 3, 1, 2].minmax {|a,b| b <=> a })
+    cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
+    assert_equal([[3, 2], [1, 3]], [1, 2, 3, 1, 2].each_with_index.minmax(&cond))
+    ary = %w(albatross dog horse)
+    assert_equal(["albatross", "horse"], ary.minmax)
+    assert_equal(["dog", "albatross"], ary.minmax {|a,b| a.length <=> b.length })
+    assert_equal([1, 3], [3,2,1].minmax)
+
+    class << (obj = Object.new)
+      def <=>(x) 1 <=> x end
+      def coerce(x) [x, 1] end
+    end
+    ary = [obj, 1.0].minmax
+    assert_same(obj, ary[0])
+    assert_equal(obj, ary[1])
   end
 
   def test_uniq
@@ -1932,6 +1979,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls['dog', 'cat'], a.unshift('dog'))
     assert_equal(@cls[nil, 'dog', 'cat'], a.unshift(nil))
     assert_equal(@cls[@cls[1,2], nil, 'dog', 'cat'], a.unshift(@cls[1, 2]))
+  end
+
+  def test_unshift_frozen
+    bug15952 = '[Bug #15952]'
+    assert_raise(FrozenError, bug15952) do
+      a = [1] * 100
+      b = a[4..-1]
+      a.replace([1])
+      b.freeze
+      b.unshift("a")
+    end
   end
 
   def test_OR # '|'
