@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/kind_of', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/kind_of'
 
 describe "Kernel#is_a?" do
-  it_behaves_like(:kernel_kind_of , :is_a?)
+  it_behaves_like :kernel_kind_of , :is_a?
 end

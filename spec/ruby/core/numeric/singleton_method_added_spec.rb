@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Numeric#singleton_method_added" do
   before :all do
@@ -18,22 +18,22 @@ describe "Numeric#singleton_method_added" do
   end
 
   it "raises a TypeError when trying to define a singleton method on a Numeric" do
-    lambda do
+    -> do
       a = NumericSpecs::Subclass.new
       def a.test; end
     end.should raise_error(TypeError)
 
-    lambda do
+    -> do
       a = 1
       def a.test; end
     end.should raise_error(TypeError)
 
-    lambda do
+    -> do
       a = 1.5
       def a.test; end
     end.should raise_error(TypeError)
 
-    lambda do
+    -> do
       a = bignum_value
       def a.test; end
     end.should raise_error(TypeError)

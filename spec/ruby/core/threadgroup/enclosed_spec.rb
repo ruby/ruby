@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "ThreadGroup#enclosed?" do
   it "returns false when a ThreadGroup has not been enclosed (default state)" do

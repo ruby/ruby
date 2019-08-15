@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/collect', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/collect'
 
 describe "Matrix#collect" do
-  it_behaves_like(:collect, :collect)
+  it_behaves_like :collect, :collect
 end

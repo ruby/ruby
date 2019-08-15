@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Comparable#==" do
   a = b = nil
@@ -48,16 +48,8 @@ describe "Comparable#==" do
       a.should_receive(:<=>).once.and_return("abc")
     end
 
-    ruby_version_is ""..."2.3" do
-      it "returns false" do
-        (a == b).should be_false
-      end
-    end
-
-    ruby_version_is "2.3" do
-      it "raises an ArgumentError" do
-        lambda { (a == b) }.should raise_error(ArgumentError)
-      end
+    it "raises an ArgumentError" do
+      -> { (a == b) }.should raise_error(ArgumentError)
     end
   end
 
@@ -67,17 +59,8 @@ describe "Comparable#==" do
         a.should_receive(:<=>).once.and_raise(StandardError)
       end
 
-      ruby_version_is ""..."2.3" do
-        # Behaviour confirmed by MRI test suite
-        it "returns false" do
-          (a == b).should be_false
-        end
-      end
-
-      ruby_version_is "2.3" do
-        it "lets it go through" do
-          lambda { (a == b) }.should raise_error(StandardError)
-        end
+      it "lets it go through" do
+        -> { (a == b) }.should raise_error(StandardError)
       end
     end
 
@@ -87,22 +70,14 @@ describe "Comparable#==" do
         a.should_receive(:<=>).once.and_raise(TypeError)
       end
 
-      ruby_version_is ""..."2.3" do
-        it "returns false" do
-          (a == b).should be_false
-        end
-      end
-
-      ruby_version_is "2.3" do
-        it "lets it go through" do
-          lambda { (a == b) }.should raise_error(TypeError)
-        end
+      it "lets it go through" do
+        -> { (a == b) }.should raise_error(TypeError)
       end
     end
 
     it "lets it go through if it is not a StandardError" do
       a.should_receive(:<=>).once.and_raise(Exception)
-      lambda { (a == b) }.should raise_error(Exception)
+      -> { (a == b) }.should raise_error(Exception)
     end
   end
 

@@ -1,9 +1,9 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/power', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/power'
 require 'bigdecimal'
 
 describe "BigDecimal#**" do
-  it_behaves_like(:bigdecimal_power, :**)
+  it_behaves_like :bigdecimal_power, :**
 end
 
 describe "BigDecimal#exponent" do

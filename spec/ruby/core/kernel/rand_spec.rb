@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Kernel.rand" do
   it "is a private method" do
@@ -131,6 +131,12 @@ describe "Kernel.rand" do
 
   it "returns the range start/end when Integer range is 0" do
     rand(42..42).should eql(42)
+  end
+
+  it "supports custom object types" do
+    rand(KernelSpecs::CustomRangeInteger.new(1)..KernelSpecs::CustomRangeInteger.new(42)).should be_an_instance_of(KernelSpecs::CustomRangeInteger)
+    rand(KernelSpecs::CustomRangeFloat.new(1.0)..KernelSpecs::CustomRangeFloat.new(42.0)).should be_an_instance_of(KernelSpecs::CustomRangeFloat)
+    rand(Time.now..Time.now).should be_an_instance_of(Time)
   end
 end
 

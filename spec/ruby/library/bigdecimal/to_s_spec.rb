@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'bigdecimal'
 
 describe "BigDecimal#to_s" do
@@ -15,12 +15,18 @@ describe "BigDecimal#to_s" do
     @bigneg.to_s.kind_of?(String).should == true
   end
 
-  it "the default format looks like 0.xxxxEnn" do
-    @bigdec.to_s.should =~ /^0\.[0-9]*E[0-9]*$/i
+  it "the default format looks like 0.xxxxenn" do
+    @bigdec.to_s.should =~ /^0\.[0-9]*e[0-9]*$/
+  end
+
+  it "does not add an exponent for zero values" do
+    BigDecimal("0").to_s.should == "0.0"
+    BigDecimal("+0").to_s.should == "0.0"
+    BigDecimal("-0").to_s.should == "-0.0"
   end
 
   it "takes an optional argument" do
-    lambda {@bigdec.to_s("F")}.should_not raise_error()
+    -> {@bigdec.to_s("F")}.should_not raise_error()
   end
 
   it "starts with + if + is supplied and value is positive" do
@@ -34,11 +40,11 @@ describe "BigDecimal#to_s" do
     @bigdec.to_s(3).should =~ re
 
     str1 = '-123.45678 90123 45678 9'
-    BigDecimal.new("-123.45678901234567890").to_s('5F').should ==  str1
+    BigDecimal("-123.45678901234567890").to_s('5F').should ==  str1
     # trailing zeroes removed
-    BigDecimal.new("1.00000000000").to_s('1F').should == "1.0"
+    BigDecimal("1.00000000000").to_s('1F').should == "1.0"
     # 0 is treated as no spaces
-    BigDecimal.new("1.2345").to_s('0F').should == "1.2345"
+    BigDecimal("1.2345").to_s('0F').should == "1.2345"
   end
 
   it "can return a leading space for values > 0" do
@@ -47,15 +53,15 @@ describe "BigDecimal#to_s" do
   end
 
   it "removes trailing spaces in floating point notation" do
-    BigDecimal.new('-123.45678901234567890').to_s('F').should == "-123.4567890123456789"
-    BigDecimal.new('1.2500').to_s('F').should == "1.25"
-    BigDecimal.new('0000.00000').to_s('F').should == "0.0"
-    BigDecimal.new('-00.000010000').to_s('F').should == "-0.00001"
-    BigDecimal.new("5.00000E-2").to_s("F").should == "0.05"
+    BigDecimal('-123.45678901234567890').to_s('F').should == "-123.4567890123456789"
+    BigDecimal('1.2500').to_s('F').should == "1.25"
+    BigDecimal('0000.00000').to_s('F').should == "0.0"
+    BigDecimal('-00.000010000').to_s('F').should == "-0.00001"
+    BigDecimal("5.00000E-2").to_s("F").should == "0.05"
 
-    BigDecimal.new("500000").to_s("F").should == "500000.0"
-    BigDecimal.new("5E2").to_s("F").should == "500.0"
-    BigDecimal.new("-5E100").to_s("F").should == "-5" + "0" * 100 + ".0"
+    BigDecimal("500000").to_s("F").should == "500000.0"
+    BigDecimal("5E2").to_s("F").should == "500.0"
+    BigDecimal("-5E100").to_s("F").should == "-5" + "0" * 100 + ".0"
   end
 
   it "can use engineering notation" do
@@ -63,11 +69,12 @@ describe "BigDecimal#to_s" do
   end
 
   it "can use conventional floating point notation" do
-    @bigdec.to_s("F").should == @bigdec_str
-    @bigneg.to_s("F").should == @bigneg_str
-    str2 = "+123.45678901 23456789"
-    BigDecimal.new('123.45678901234567890').to_s('+8F').should == str2
+    %w[f F].each do |format_char|
+      @bigdec.to_s(format_char).should == @bigdec_str
+      @bigneg.to_s(format_char).should == @bigneg_str
+      str2 = "+123.45678901 23456789"
+      BigDecimal('123.45678901234567890').to_s("+8#{format_char}").should == str2
+    end
   end
 
 end
-

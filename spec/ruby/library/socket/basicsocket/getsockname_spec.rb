@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "Socket::BasicSocket#getsockname" do
   after :each do
@@ -7,7 +7,7 @@ describe "Socket::BasicSocket#getsockname" do
     @socket.close
   end
 
-  it "returns the sockaddr associacted with the socket" do
+  it "returns the sockaddr associated with the socket" do
     @socket = TCPServer.new("127.0.0.1", 0)
     sockaddr = Socket.unpack_sockaddr_in(@socket.getsockname)
     sockaddr.should == [@socket.addr[1], "127.0.0.1"]
@@ -20,7 +20,7 @@ describe "Socket::BasicSocket#getsockname" do
     sockaddr[0].should == @socket.addr[1]
   end
 
-  it "returns empty sockaddr for unbinded sockets" do
+  it 'returns a default socket address for a disconnected socket' do
     @socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
     sockaddr = Socket.unpack_sockaddr_in(@socket.getsockname)
     sockaddr.should == [0, "0.0.0.0"]

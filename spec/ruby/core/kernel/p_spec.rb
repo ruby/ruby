@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Kernel#p" do
   before :all do
@@ -7,7 +7,9 @@ describe "Kernel#p" do
   end
 
   after :each do
-    $/, $\, $, = @rs_f, @rs_b, @rs_c
+    suppress_warning {
+      $/, $\, $, = @rs_f, @rs_b, @rs_c
+    }
   end
 
   it "is a private method" do
@@ -40,32 +42,34 @@ describe "Kernel#p" do
     o = mock("Inspector Gadget")
     o.should_receive(:inspect).any_number_of_times.and_return "Next time, Gadget, NEXT TIME!"
 
-    lambda { p(o) }.should output("Next time, Gadget, NEXT TIME!\n")
-    lambda { p(*[o]) }.should output("Next time, Gadget, NEXT TIME!\n")
-    lambda { p(*[o, o]) }.should output("Next time, Gadget, NEXT TIME!\nNext time, Gadget, NEXT TIME!\n")
-    lambda { p([o])}.should output("[#{o.inspect}]\n")
+    -> { p(o) }.should output("Next time, Gadget, NEXT TIME!\n")
+    -> { p(*[o]) }.should output("Next time, Gadget, NEXT TIME!\n")
+    -> { p(*[o, o]) }.should output("Next time, Gadget, NEXT TIME!\nNext time, Gadget, NEXT TIME!\n")
+    -> { p([o])}.should output("[#{o.inspect}]\n")
   end
 
   it "is not affected by setting $\\, $/ or $," do
     o = mock("Inspector Gadget")
     o.should_receive(:inspect).any_number_of_times.and_return "Next time, Gadget, NEXT TIME!"
 
-    $, = " *helicopter sound*\n"
-    lambda { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
+    suppress_warning {
+      $, = " *helicopter sound*\n"
+    }
+    -> { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
 
     $\ = " *helicopter sound*\n"
-    lambda { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
+    -> { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
 
     $/ = " *helicopter sound*\n"
-    lambda { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
+    -> { p(o) }.should output_to_fd("Next time, Gadget, NEXT TIME!\n")
   end
 
   it "prints nothing if no argument is given" do
-    lambda { p }.should output("")
+    -> { p }.should output("")
   end
 
   it "prints nothing if called splatting an empty Array" do
-    lambda { p(*[]) }.should output("")
+    -> { p(*[]) }.should output("")
   end
 
 =begin Not sure how to spec this, but wanted to note the behavior here

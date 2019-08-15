@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Hash#shift" do
   it "removes a pair from hash and return it" do
@@ -58,7 +58,22 @@ describe "Hash#shift" do
   end
 
   it "raises a #{frozen_error_class} if called on a frozen instance" do
-    lambda { HashSpecs.frozen_hash.shift  }.should raise_error(frozen_error_class)
-    lambda { HashSpecs.empty_frozen_hash.shift }.should raise_error(frozen_error_class)
+    -> { HashSpecs.frozen_hash.shift  }.should raise_error(frozen_error_class)
+    -> { HashSpecs.empty_frozen_hash.shift }.should raise_error(frozen_error_class)
+  end
+
+  it "works when the hash is at capacity" do
+    # We try a wide range of sizes in hopes that this will cover all implementations' base Hash size.
+    results = []
+    1.upto(100) do |n|
+      h = {}
+      n.times do |i|
+        h[i] = i
+      end
+      h.shift
+      results << h.size
+    end
+
+    results.should == 0.upto(99).to_a
   end
 end

@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "Socket::Option.bool" do
   it "creates a new Socket::Option" do
@@ -18,8 +18,10 @@ describe "Socket::Option#bool" do
     Socket::Option.bool(:INET, :SOCKET, :KEEPALIVE, false).bool.should == false
   end
 
-  it "raises TypeError if option has not good size" do
-    so = Socket::Option.new(:UNSPEC, :SOCKET, :SO_LINGER, [0, 0].pack('i*'))
-    lambda { so.bool }.should raise_error(TypeError)
+  platform_is_not :windows do
+    it 'raises TypeError when called on a non boolean option' do
+      opt = Socket::Option.linger(1, 4)
+      -> { opt.bool }.should raise_error(TypeError)
+    end
   end
 end

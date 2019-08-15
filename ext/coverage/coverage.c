@@ -45,13 +45,16 @@ rb_coverage_start(int argc, VALUE *argv, VALUE klass)
 	    mode |= COVERAGE_TARGET_BRANCHES;
 	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("methods")))))
 	    mode |= COVERAGE_TARGET_METHODS;
-	if (mode == 0) {
-	    rb_raise(rb_eRuntimeError, "no measuring target is specified");
-	}
+        if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("oneshot_lines"))))) {
+            if (mode & COVERAGE_TARGET_LINES)
+                rb_raise(rb_eRuntimeError, "cannot enable lines and oneshot_lines simultaneously");
+            mode |= COVERAGE_TARGET_LINES;
+            mode |= COVERAGE_TARGET_ONESHOT_LINES;
+        }
     }
 
     if (mode & COVERAGE_TARGET_METHODS) {
-	me2counter = rb_hash_new_compare_by_id();
+        me2counter = rb_ident_hash_new();
     }
     else {
 	me2counter = Qnil;
@@ -179,9 +182,10 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
 
 	if (current_mode & COVERAGE_TARGET_LINES) {
 	    VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
+            const char *kw = (current_mode & COVERAGE_TARGET_ONESHOT_LINES) ? "oneshot_lines" : "lines";
 	    lines = rb_ary_dup(lines);
 	    rb_ary_freeze(lines);
-	    rb_hash_aset(h, ID2SYM(rb_intern("lines")), lines);
+            rb_hash_aset(h, ID2SYM(rb_intern(kw)), lines);
 	}
 
 	if (current_mode & COVERAGE_TARGET_BRANCHES) {
@@ -205,6 +209,7 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
  *     Coverage.peek_result  => hash
  *
  * Returns a hash that contains filename as key and coverage array as value.
+ * This is the same as `Coverage.result(stop: false, clear: false)`.
  *
  *   {
  *     "file.rb" => [1, 2, nil],
@@ -229,21 +234,53 @@ rb_coverage_peek_result(VALUE klass)
     return ncoverages;
 }
 
+
+static int
+clear_me2counter_i(VALUE key, VALUE value, VALUE unused)
+{
+    rb_hash_aset(me2counter, key, INT2FIX(0));
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
- *     Coverage.result  => hash
+ *     Coverage.result(stop: true, clear: true)  => hash
  *
- * Returns a hash that contains filename as key and coverage array as value
- * and disables coverage measurement.
+ * Returns a hash that contains filename as key and coverage array as value.
+ * If +clear+ is true, it clears the counters to zero.
+ * If +stop+ is true, it disables coverage measurement.
  */
 static VALUE
-rb_coverage_result(VALUE klass)
+rb_coverage_result(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE ncoverages = rb_coverage_peek_result(klass);
-    rb_reset_coverages();
-    me2counter = Qnil;
+    VALUE ncoverages;
+    VALUE opt;
+    int stop = 1, clear = 1;
+
+    rb_scan_args(argc, argv, "01", &opt);
+
+    if (argc == 1) {
+        opt = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
+        stop = RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("stop"))));
+        clear = RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("clear"))));
+    }
+
+    ncoverages = rb_coverage_peek_result(klass);
+    if (stop && !clear) {
+        rb_warn("stop implies clear");
+        clear = 1;
+    }
+    if (clear) {
+        rb_clear_coverages();
+        if (!NIL_P(me2counter)) rb_hash_foreach(me2counter, clear_me2counter_i, Qnil);
+    }
+    if (stop) {
+        rb_reset_coverages();
+        me2counter = Qnil;
+    }
     return ncoverages;
 }
+
 
 /*
  *  call-seq:
@@ -297,7 +334,7 @@ Init_coverage(void)
 {
     VALUE rb_mCoverage = rb_define_module("Coverage");
     rb_define_module_function(rb_mCoverage, "start", rb_coverage_start, -1);
-    rb_define_module_function(rb_mCoverage, "result", rb_coverage_result, 0);
+    rb_define_module_function(rb_mCoverage, "result", rb_coverage_result, -1);
     rb_define_module_function(rb_mCoverage, "peek_result", rb_coverage_peek_result, 0);
     rb_define_module_function(rb_mCoverage, "running?", rb_coverage_running, 0);
     rb_global_variable(&me2counter);

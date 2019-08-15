@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Hash#delete" do
   it "removes the entry and returns the deleted value" do
@@ -38,7 +38,7 @@ describe "Hash#delete" do
   end
 
   it "raises a #{frozen_error_class} if called on a frozen instance" do
-    lambda { HashSpecs.frozen_hash.delete("foo")  }.should raise_error(frozen_error_class)
-    lambda { HashSpecs.empty_frozen_hash.delete("foo") }.should raise_error(frozen_error_class)
+    -> { HashSpecs.frozen_hash.delete("foo")  }.should raise_error(frozen_error_class)
+    -> { HashSpecs.empty_frozen_hash.delete("foo") }.should raise_error(frozen_error_class)
   end
 end

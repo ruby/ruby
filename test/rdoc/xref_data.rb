@@ -20,6 +20,8 @@ class C1
   def m foo
   end
 
+  def +
+  end
 end
 
 class C2
@@ -92,6 +94,25 @@ class C7
 
   CONST = :const
   CONST_NODOC = :const_nodoc # :nodoc:
+end
+
+class C8
+  class << self
+    class S1
+    end
+  end
+end
+
+class C9
+  class A
+    def foo() end
+    def self.bar() end
+  end
+
+  class B < A
+    def self.foo() end
+    def bar() end
+  end
 end
 
 module M1

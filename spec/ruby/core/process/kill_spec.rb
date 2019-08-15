@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Process.kill" do
   ProcessSpecs.use_system_ruby(self)
@@ -9,27 +9,31 @@ describe "Process.kill" do
   end
 
   it "raises an ArgumentError for unknown signals" do
-    lambda { Process.kill("FOO", @pid) }.should raise_error(ArgumentError)
+    -> { Process.kill("FOO", @pid) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if passed a lowercase signal name" do
-    lambda { Process.kill("term", @pid) }.should raise_error(ArgumentError)
+    -> { Process.kill("term", @pid) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if signal is not a Fixnum or String" do
     signal = mock("process kill signal")
     signal.should_not_receive(:to_int)
 
-    lambda { Process.kill(signal, @pid) }.should raise_error(ArgumentError)
+    -> { Process.kill(signal, @pid) }.should raise_error(ArgumentError)
   end
 
   it "raises Errno::ESRCH if the process does not exist" do
     pid = Process.spawn(*ruby_exe, "-e", "sleep 10")
     Process.kill("SIGKILL", pid)
     Process.wait(pid)
-    lambda {
+    -> {
       Process.kill("SIGKILL", pid)
     }.should raise_error(Errno::ESRCH)
+  end
+
+  it "checks for existence and permissions to signal a process, but does not actually signal it, when using signal 0" do
+    Process.kill(0, @pid).should == 1
   end
 end
 
@@ -65,7 +69,7 @@ platform_is_not :windows do
       @sp.result.should == "signaled"
     end
 
-    it "acceps an Integer as a signal value" do
+    it "accepts an Integer as a signal value" do
       Process.kill(15, @sp.pid)
       @sp.result.should == "signaled"
     end

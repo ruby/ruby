@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Integer#to_r" do
   it "returns a Rational object" do
@@ -20,7 +20,7 @@ describe "Integer#to_r" do
   end
 
   it "raises an ArgumentError if given any arguments" do
-    lambda { 287.to_r(2) }.should raise_error(ArgumentError)
-    lambda { 9102826.to_r(309, [], 71) }.should raise_error(ArgumentError)
+    -> { 287.to_r(2) }.should raise_error(ArgumentError)
+    -> { 9102826.to_r(309, [], 71) }.should raise_error(ArgumentError)
   end
 end

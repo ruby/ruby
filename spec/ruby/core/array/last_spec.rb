@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#last" do
   it "returns the last element" do
@@ -28,7 +28,7 @@ describe "Array#last" do
   end
 
   it "raises an ArgumentError when count is negative" do
-    lambda { [1, 2].last(-1) }.should raise_error(ArgumentError)
+    -> { [1, 2].last(-1) }.should raise_error(ArgumentError)
   end
 
   it "returns the entire array when count > length" do
@@ -53,18 +53,18 @@ describe "Array#last" do
     array.last.should equal(array)
   end
 
-  it "tries to convert the passed argument to an Integer usinig #to_int" do
+  it "tries to convert the passed argument to an Integer using #to_int" do
     obj = mock('to_int')
     obj.should_receive(:to_int).and_return(2)
     [1, 2, 3, 4, 5].last(obj).should == [4, 5]
   end
 
   it "raises a TypeError if the passed argument is not numeric" do
-    lambda { [1,2].last(nil) }.should raise_error(TypeError)
-    lambda { [1,2].last("a") }.should raise_error(TypeError)
+    -> { [1,2].last(nil) }.should raise_error(TypeError)
+    -> { [1,2].last("a") }.should raise_error(TypeError)
 
     obj = mock("nonnumeric")
-    lambda { [1,2].last(obj) }.should raise_error(TypeError)
+    -> { [1,2].last(obj) }.should raise_error(TypeError)
   end
 
   it "does not return subclass instance on Array subclasses" do

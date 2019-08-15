@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Exception#set_backtrace" do
   it "accepts an Array of Strings" do
@@ -36,21 +36,21 @@ describe "Exception#set_backtrace" do
 
   it "raises a TypeError when passed a Symbol" do
     err = RuntimeError.new
-    lambda { err.set_backtrace :unhappy }.should raise_error(TypeError)
+    -> { err.set_backtrace :unhappy }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when the Array contains a Symbol" do
     err = RuntimeError.new
-    lambda { err.set_backtrace ["String", :unhappy] }.should raise_error(TypeError)
+    -> { err.set_backtrace ["String", :unhappy] }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when the array contains nil" do
     err = Exception.new
-    lambda { err.set_backtrace ["String", nil] }.should raise_error(TypeError)
+    -> { err.set_backtrace ["String", nil] }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when the argument is a nested array" do
     err = Exception.new
-    lambda { err.set_backtrace ["String", ["String"]] }.should raise_error(TypeError)
+    -> { err.set_backtrace ["String", ["String"]] }.should raise_error(TypeError)
   end
 end

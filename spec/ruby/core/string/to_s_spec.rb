@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
-require File.expand_path('../shared/to_s.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/to_s'
 
 describe "String#to_s" do
-  it_behaves_like(:string_to_s, :to_s)
+  it_behaves_like :string_to_s, :to_s
 end

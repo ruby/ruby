@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Math.atan2" do
   it "returns a float" do
@@ -14,15 +14,15 @@ describe "Math.atan2" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    lambda { Math.atan2(1.0, "test")    }.should raise_error(TypeError)
-    lambda { Math.atan2("test", 0.0)    }.should raise_error(TypeError)
-    lambda { Math.atan2("test", "this") }.should raise_error(TypeError)
+    -> { Math.atan2(1.0, "test")    }.should raise_error(TypeError)
+    -> { Math.atan2("test", 0.0)    }.should raise_error(TypeError)
+    -> { Math.atan2("test", "this") }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the argument is nil" do
-    lambda { Math.atan2(nil, 1.0)  }.should raise_error(TypeError)
-    lambda { Math.atan2(-1.0, nil) }.should raise_error(TypeError)
-    lambda { Math.atan2(nil, nil)  }.should raise_error(TypeError)
+    -> { Math.atan2(nil, 1.0)  }.should raise_error(TypeError)
+    -> { Math.atan2(-1.0, nil) }.should raise_error(TypeError)
+    -> { Math.atan2(nil, nil)  }.should raise_error(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

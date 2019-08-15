@@ -1,11 +1,11 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'ipaddr'
 
 describe "IPAddr#new" do
   it "initializes IPAddr" do
-    lambda{ IPAddr.new("3FFE:505:ffff::/48") }.should_not raise_error
-    lambda{ IPAddr.new("0:0:0:1::")          }.should_not raise_error
-    lambda{ IPAddr.new("2001:200:300::/48")  }.should_not raise_error
+    ->{ IPAddr.new("3FFE:505:ffff::/48") }.should_not raise_error
+    ->{ IPAddr.new("0:0:0:1::")          }.should_not raise_error
+    ->{ IPAddr.new("2001:200:300::/48")  }.should_not raise_error
   end
 
   it "initializes IPAddr ipv6 address with short notation" do
@@ -85,7 +85,7 @@ describe "IPAddr#new" do
       ["::ffff:192.168.1.2/120", Socket::AF_INET],
       ["[192.168.1.2]/120"],
     ].each { |args|
-      lambda{
+      ->{
         IPAddr.new(*args)
       }.should raise_error(ArgumentError)
     }

@@ -1,8 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-
-describe "File#initialize" do
-  it "needs to be reviewed for spec completeness"
-end
+require_relative '../../spec_helper'
 
 describe "File#initialize" do
   after :each do

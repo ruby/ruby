@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/enumerable_enumeratorized', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/enumerable_enumeratorized'
 
 describe "Enumerable#sort_by" do
   it "returns an array of elements ordered by the result of block" do
@@ -30,6 +30,13 @@ describe "Enumerable#sort_by" do
   it "returns an array of elements when a block is supplied and #map returns an enumerable" do
     b = EnumerableSpecs::MapReturnsEnumerable.new
     b.sort_by{ |x| -x }.should == [3, 2, 1]
+  end
+
+  it "calls #each to iterate over the elements to be sorted" do
+    b = EnumerableSpecs::Numerous.new( 1, 2, 3 )
+    b.should_receive(:each).once.and_yield(1).and_yield(2).and_yield(3)
+    b.should_not_receive :map
+    b.sort_by { |x| -x }.should == [3, 2, 1]
   end
 
   it_behaves_like :enumerable_enumeratorized_with_origin_size, :sort_by

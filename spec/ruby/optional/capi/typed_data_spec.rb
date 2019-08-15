@@ -1,4 +1,5 @@
-require File.expand_path('../spec_helper', __FILE__)
+require_relative 'spec_helper'
+require 'objspace'
 
 load_extension("typed_data")
 
@@ -6,6 +7,14 @@ describe "CApiAllocTypedSpecs (a class with an alloc func defined)" do
   it "calls the alloc func" do
     @s = CApiAllocTypedSpecs.new
     @s.typed_wrapped_data.should == 42 # not defined in initialize
+  end
+
+  it "uses the specified memsize function for ObjectSpace.memsize" do
+    @s = CApiAllocTypedSpecs.new
+    # The defined memsize function for the type should return 42 as
+    # the size, and this should be added to the size of the object as
+    # known by Ruby.
+    ObjectSpace.memsize_of(@s).should > 42
   end
 end
 
@@ -21,17 +30,12 @@ describe "CApiWrappedTypedStruct" do
 
   it "throws an exception for a wrong type" do
     a = @s.typed_wrap_struct(1024)
-    lambda { @s.typed_get_struct_other(a) }.should raise_error(TypeError)
+    -> { @s.typed_get_struct_other(a) }.should raise_error(TypeError)
   end
 
   it "unwraps data for a parent type" do
     a = @s.typed_wrap_struct(1024)
     @s.typed_get_struct_parent(a).should == 1024
-  end
-
-  it "allows for using NULL as the klass for Data_Wrap_Struct" do
-    a = @s.typed_wrap_struct_null(1024)
-    @s.typed_get_struct(a).should == 1024
   end
 
   describe "RTYPEDATA" do

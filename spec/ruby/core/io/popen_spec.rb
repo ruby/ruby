@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "IO.popen" do
   before :each do
@@ -22,7 +22,7 @@ describe "IO.popen" do
 
   it "raises IOError when writing a read-only pipe" do
     @io = IO.popen(ruby_cmd('puts "foo"'), "r")
-    lambda { @io.write('bar') }.should raise_error(IOError)
+    -> { @io.write('bar') }.should raise_error(IOError)
     @io.read.should == "foo\n"
   end
 end
@@ -55,7 +55,7 @@ describe "IO.popen" do
 
   it "raises IOError when reading a write-only pipe" do
     @io = IO.popen(ruby_cmd('IO.copy_stream(STDIN,STDOUT)'), "w")
-    lambda { @io.read }.should raise_error(IOError)
+    -> { @io.read }.should raise_error(IOError)
   end
 
   it "reads and writes a read/write pipe" do
@@ -136,7 +136,7 @@ describe "IO.popen" do
     end
   end
 
-  with_feature :fork do
+  platform_is_not :windows do
     it "starts returns a forked process if the command is -" do
       io = IO.popen("-")
 
@@ -153,22 +153,20 @@ describe "IO.popen" do
     end
   end
 
-  with_feature :encoding do
-    it "has the given external encoding" do
-      @io = IO.popen(ruby_cmd('exit'), external_encoding: Encoding::EUC_JP)
-      @io.external_encoding.should == Encoding::EUC_JP
-    end
+  it "has the given external encoding" do
+    @io = IO.popen(ruby_cmd('exit'), external_encoding: Encoding::EUC_JP)
+    @io.external_encoding.should == Encoding::EUC_JP
+  end
 
-    it "has the given internal encoding" do
-      @io = IO.popen(ruby_cmd('exit'), internal_encoding: Encoding::EUC_JP)
-      @io.internal_encoding.should == Encoding::EUC_JP
-    end
+  it "has the given internal encoding" do
+    @io = IO.popen(ruby_cmd('exit'), internal_encoding: Encoding::EUC_JP)
+    @io.internal_encoding.should == Encoding::EUC_JP
+  end
 
-    it "sets the internal encoding to nil if it's the same as the external encoding" do
-      @io = IO.popen(ruby_cmd('exit'), external_encoding: Encoding::EUC_JP,
-                            internal_encoding: Encoding::EUC_JP)
-      @io.internal_encoding.should be_nil
-    end
+  it "sets the internal encoding to nil if it's the same as the external encoding" do
+    @io = IO.popen(ruby_cmd('exit'), external_encoding: Encoding::EUC_JP,
+                          internal_encoding: Encoding::EUC_JP)
+    @io.internal_encoding.should be_nil
   end
 
   context "with a leading ENV Hash" do

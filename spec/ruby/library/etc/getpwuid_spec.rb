@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'etc'
 
 platform_is :windows do
@@ -27,7 +27,7 @@ platform_is_not :windows do
     end
 
     it "only accepts integers as argument" do
-      lambda {
+      -> {
         Etc.getpwuid("foo")
         Etc.getpwuid(nil)
       }.should raise_error(TypeError)

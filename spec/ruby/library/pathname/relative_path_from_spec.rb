@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'pathname'
 
 describe "Pathname#relative_path_from" do
@@ -7,11 +7,11 @@ describe "Pathname#relative_path_from" do
   end
 
   it "raises an error when the two paths do not share a common prefix" do
-    lambda { relative_path_str('/usr', 'foo') }.should raise_error(ArgumentError)
+    -> { relative_path_str('/usr', 'foo') }.should raise_error(ArgumentError)
   end
 
   it "raises an error when the base directory has .." do
-    lambda { relative_path_str('a', '..') }.should raise_error(ArgumentError)
+    -> { relative_path_str('a', '..') }.should raise_error(ArgumentError)
   end
 
   it "returns a path relative from root" do

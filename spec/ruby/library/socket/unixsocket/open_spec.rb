@@ -1,5 +1,6 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../shared/new', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/new'
 
 describe "UNIXSocket.open" do
   it_behaves_like :unixsocket_new, :open
@@ -18,7 +19,7 @@ describe "UNIXSocket.open" do
     end
 
     it "opens a unix socket on the specified file and yields it to the block" do
-      UNIXSocket.send(@method, @path) do |client|
+      UNIXSocket.open(@path) do |client|
         client.addr[0].should == "AF_UNIX"
         client.closed?.should == false
       end

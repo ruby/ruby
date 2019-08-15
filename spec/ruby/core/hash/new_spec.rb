@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Hash.new" do
   it "creates an empty Hash if passed no arguments" do
@@ -26,11 +26,11 @@ describe "Hash.new" do
   end
 
   it "raises an ArgumentError if more than one argument is passed" do
-    lambda { Hash.new(5,6) }.should raise_error(ArgumentError)
+    -> { Hash.new(5,6) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if passed both default argument and default block" do
-    lambda { Hash.new(5) { 0 }   }.should raise_error(ArgumentError)
-    lambda { Hash.new(nil) { 0 } }.should raise_error(ArgumentError)
+    -> { Hash.new(5) { 0 }   }.should raise_error(ArgumentError)
+    -> { Hash.new(nil) { 0 } }.should raise_error(ArgumentError)
   end
 end

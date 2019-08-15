@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/gets', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/gets'
 
 describe "ARGF.readline" do
   it_behaves_like :argf_gets, :readline
@@ -17,7 +17,7 @@ describe "ARGF.readline" do
 
   it "raises an EOFError when reaching end of files" do
     argf [@file1, @file2] do
-      lambda { while @argf.readline; end }.should raise_error(EOFError)
+      -> { while @argf.readline; end }.should raise_error(EOFError)
     end
   end
 end

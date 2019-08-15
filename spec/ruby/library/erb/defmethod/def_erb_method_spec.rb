@@ -1,5 +1,6 @@
 require 'erb'
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "ERB::DefMethod.def_erb_method" do
 
@@ -50,7 +51,7 @@ END
     MY_INPUT4_FOR_ERB = input
     class MyClass4ForErb
       extend ERB::DefMethod
-      erb = ERB.new(MY_INPUT4_FOR_ERB, nil, '<>')
+      erb = ERBSpecs.new_erb(MY_INPUT4_FOR_ERB, trim_mode: '<>')
       def_erb_method('render()', erb)
       def initialize(items)
         @items = items

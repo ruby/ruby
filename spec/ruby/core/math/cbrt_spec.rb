@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Math.cbrt" do
   it "returns a float" do
@@ -14,11 +14,11 @@ describe "Math.cbrt" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    lambda { Math.cbrt("foobar") }.should raise_error(TypeError)
+    -> { Math.cbrt("foobar") }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the argument is nil" do
-    lambda { Math.cbrt(nil) }.should raise_error(TypeError)
+    -> { Math.cbrt(nil) }.should raise_error(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

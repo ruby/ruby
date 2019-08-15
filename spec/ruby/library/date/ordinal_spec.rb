@@ -1,8 +1,7 @@
 require 'date'
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/ordinal', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/ordinal'
 
 describe "Date.ordinal" do
   it_behaves_like :date_ordinal, :ordinal
 end
-

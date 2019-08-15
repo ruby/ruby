@@ -4,6 +4,7 @@
 *.a
 *.bak
 *.bc
+*.bundle
 *.dSYM
 *.dmyh
 *.dylib
@@ -15,10 +16,13 @@
 *.obj
 *.old
 *.orig
+*.pch
 *.pdb
 *.rej
 *.s
 *.sav
+*.sl
+*.so
 *.swp
 *.yarb
 *~
@@ -32,6 +36,7 @@
 .pc
 .ppack
 .svn
+.time
 Makefile
 cygruby*.def
 extconf.h
@@ -40,6 +45,7 @@ y.tab.c
 *.gcda
 *.gcno
 *.gcov
+*.vscode
 lcov*.info
 
 # /
@@ -50,7 +56,9 @@ lcov*.info
 /*.pc
 /*.rc
 /*_prelude.c
+/build*/
 /COPYING.LIB
+/ChangeLog
 /Doxyfile
 /GNUmakefile
 /README.atheos
@@ -60,6 +68,7 @@ lcov*.info
 /archive
 /autom4te*.cache
 /automake
+/benchmark/benchmark-driver
 /beos
 /bmlog-*
 /breakpoints.gdb
@@ -125,6 +134,11 @@ lcov*.info
 /web
 /yasmdata.rb
 
+# /bin/
+
+/bin/*.exe
+/bin/*.dll
+
 # /benchmark/
 /benchmark/bm_require.data
 /benchmark/bmx_*.rb
@@ -137,16 +151,18 @@ lcov*.info
 /enc/jis/props.h
 /enc/unicode/data
 
+# /coroutine/
+!/coroutine/**/*.s
+
 # /enc/trans/
 /enc/trans/*.c
 /enc/trans/*.def
 /enc/trans/*.exp
 /enc/trans/*.lib
-/enc/trans/.time
 
 # /exe/
+/exe/goruby
 /exe/ruby
-/exe/.time
 
 # /ext/
 /ext/extinit.c
@@ -185,6 +201,10 @@ lcov*.info
 /gems/src
 /gems/*-*
 
+# /lib/
+/lib/ruby/[1-9]*.*
+/lib/ruby/vendor_ruby
+
 # /spec/bundler
 /.rspec_status
 
@@ -194,4 +214,8 @@ lcov*.info
 
 # /win32/
 /win32/*.ico
-/win32/.time
+
+# MJIT
+/rb_mjit_header.h
+/mjit_config.h
+/include/ruby-*/*/rb_mjit_min_header-*.h

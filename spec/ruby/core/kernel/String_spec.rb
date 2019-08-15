@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe :kernel_String, shared: true do
   it "converts nil to a String" do
@@ -32,7 +32,7 @@ describe :kernel_String, shared: true do
       undef_method :to_s
     end
 
-    lambda { @object.send(@method, obj) }.should raise_error(TypeError)
+    -> { @object.send(@method, obj) }.should raise_error(TypeError)
   end
 
   # #5158
@@ -44,7 +44,7 @@ describe :kernel_String, shared: true do
       end
     end
 
-    lambda { @object.send(@method, obj) }.should raise_error(TypeError)
+    -> { @object.send(@method, obj) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if #to_s is not defined, even though #respond_to?(:to_s) returns true" do
@@ -57,7 +57,7 @@ describe :kernel_String, shared: true do
       end
     end
 
-    lambda { @object.send(@method, obj) }.should raise_error(TypeError)
+    -> { @object.send(@method, obj) }.should raise_error(TypeError)
   end
 
   it "calls #to_s if #respond_to?(:to_s) returns true" do
@@ -74,7 +74,7 @@ describe :kernel_String, shared: true do
 
   it "raises a TypeError if #to_s does not return a String" do
     (obj = mock('123')).should_receive(:to_s).and_return(123)
-    lambda { @object.send(@method, obj) }.should raise_error(TypeError)
+    -> { @object.send(@method, obj) }.should raise_error(TypeError)
   end
 
   it "returns the same object if it is already a String" do

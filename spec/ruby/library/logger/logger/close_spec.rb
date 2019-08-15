@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/common', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/common'
 
 describe "Logger#close" do
   before :each do
@@ -15,6 +15,6 @@ describe "Logger#close" do
 
   it "closes the logging device" do
     @logger.close
-    lambda { @logger.add(nil, "Foo") }.should complain(/\Alog writing failed\./)
+    -> { @logger.add(nil, "Foo") }.should complain(/\Alog writing failed\./)
   end
 end

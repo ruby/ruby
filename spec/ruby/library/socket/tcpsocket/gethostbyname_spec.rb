@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 # TODO: verify these for windows
 describe "TCPSocket#gethostbyname" do
@@ -47,5 +47,65 @@ describe "TCPSocket#gethostbyname" do
 
   it "returns any aliases to the address as second value" do
     @host_info[1].should be_kind_of(Array)
+  end
+end
+
+describe 'TCPSocket#gethostbyname' do
+  it 'returns an Array' do
+    TCPSocket.gethostbyname('127.0.0.1').should be_an_instance_of(Array)
+  end
+
+  describe 'using a hostname' do
+    describe 'the returned Array' do
+      before do
+        @array = TCPSocket.gethostbyname('127.0.0.1')
+      end
+
+      it 'includes the canonical name as the 1st value' do
+        @array[0].should == '127.0.0.1'
+      end
+
+      it 'includes an array of alternative hostnames as the 2nd value' do
+        @array[1].should be_an_instance_of(Array)
+      end
+
+      it 'includes the address family as the 3rd value' do
+        @array[2].should be_kind_of(Integer)
+      end
+
+      it 'includes the IP addresses as all the remaining values' do
+        ips = %w{::1 127.0.0.1}
+
+        ips.include?(@array[3]).should == true
+
+        # Not all machines might have both IPv4 and IPv6 set up, so this value is
+        # optional.
+        ips.include?(@array[4]).should == true if @array[4]
+      end
+    end
+  end
+
+  SocketSpecs.each_ip_protocol do |family, ip_address|
+    describe 'the returned Array' do
+      before do
+        @array = TCPSocket.gethostbyname(ip_address)
+      end
+
+      it 'includes the IP address as the 1st value' do
+        @array[0].should == ip_address
+      end
+
+      it 'includes an empty list of aliases as the 2nd value' do
+        @array[1].should == []
+      end
+
+      it 'includes the address family as the 3rd value' do
+        @array[2].should == family
+      end
+
+      it 'includes the IP address as the 4th value' do
+        @array[3].should == ip_address
+      end
+    end
   end
 end

@@ -1,7 +1,7 @@
 # encoding: utf-8
 
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Dir.entries" do
   before :all do
@@ -42,10 +42,10 @@ describe "Dir.entries" do
 
   it "returns entries encoded with the filesystem encoding by default" do
     # This spec depends on the locale not being US-ASCII because if it is, the
-    # entries that are not ascii_only? will be ASCII-8BIT encoded.
+    # entries that are not ascii_only? will be BINARY encoded.
     entries = Dir.entries(File.join(DirSpecs.mock_dir, 'special')).sort
     encoding = Encoding.find("filesystem")
-    encoding = Encoding::ASCII_8BIT if encoding == Encoding::US_ASCII
+    encoding = Encoding::BINARY if encoding == Encoding::US_ASCII
     platform_is_not :windows do
       entries.should include("こんにちは.txt".force_encoding(encoding))
     end
@@ -64,7 +64,7 @@ describe "Dir.entries" do
     entries.first.encoding.should equal(Encoding::EUC_KR)
   end
 
-  it "raises a SystemCallError if called with a nonexistent diretory" do
-    lambda { Dir.entries DirSpecs.nonexistent }.should raise_error(SystemCallError)
+  it "raises a SystemCallError if called with a nonexistent directory" do
+    -> { Dir.entries DirSpecs.nonexistent }.should raise_error(SystemCallError)
   end
 end

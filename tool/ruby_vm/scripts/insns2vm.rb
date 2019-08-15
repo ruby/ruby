@@ -1,5 +1,5 @@
 #! /your/favourite/path/to/ruby
-# -*- mode: ruby; coding: utf-8; indent-tabs-mode: nil; ruby-indent-level: 2 -*-
+# -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-
 #
@@ -15,7 +15,7 @@ require_relative '../controllers/application_controller.rb'
 
 module RubyVM::Insns2VM
   def self.router argv
-    options = { destdir: Dir.getwd }
+    options = { destdir: nil }
     targets = generate_parser(options).parse argv
     return targets.map do |i|
       next ApplicationController.new.generate i, options[:destdir]
@@ -80,7 +80,7 @@ module RubyVM::Insns2VM
         THIS IS THE ONLY OPTION THAT WORKS today.  Change destination
         directory from the current working directory to the given path.
       begin
-        raise "directory was not found in '#{dir}'" unless Dir.eixst?(dir)
+        raise "directory was not found in '#{dir}'" unless Dir.exist?(dir)
         options[:destdir] = dir
       end
 

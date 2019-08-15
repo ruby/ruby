@@ -1,5 +1,5 @@
 require 'date'
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Date#-" do
 
@@ -22,9 +22,9 @@ describe "Date#-" do
   end
 
   it "raises an error for non Numeric arguments" do
-    lambda { Date.civil(2007,2,27) - :hello }.should raise_error(TypeError)
-    lambda { Date.civil(2007,2,27) - "hello" }.should raise_error(TypeError)
-    lambda { Date.civil(2007,2,27) - Object.new }.should raise_error(TypeError)
+    -> { Date.civil(2007,2,27) - :hello }.should raise_error(TypeError)
+    -> { Date.civil(2007,2,27) - "hello" }.should raise_error(TypeError)
+    -> { Date.civil(2007,2,27) - Object.new }.should raise_error(TypeError)
   end
 
 end

@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/conjugate', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/conjugate'
 
 describe "Matrix#conjugate" do
-  it_behaves_like(:matrix_conjugate, :conjugate)
+  it_behaves_like :matrix_conjugate, :conjugate
 end

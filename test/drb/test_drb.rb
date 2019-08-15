@@ -7,28 +7,13 @@ class TestDRbCore < Test::Unit::TestCase
   include DRbCore
 
   def setup
+    super
     setup_service 'ut_drb.rb'
-    super
-  end
-
-  def teardown
-    super
-    DRbService.finish
   end
 end
 
-class TestDRbYield < Test::Unit::TestCase
+module DRbYield
   include DRbBase
-
-  def setup
-    setup_service 'ut_drb.rb'
-    super
-  end
-
-  def teardown
-    super
-    DRbService.finish
-  end
 
   def test_01_one
     @there.echo_yield_1([]) {|one|
@@ -129,7 +114,23 @@ class TestDRbYield < Test::Unit::TestCase
   end
 end
 
-class TestDRbRubyYield < TestDRbYield
+class TestDRbYield < Test::Unit::TestCase
+  include DRbYield
+
+  def setup
+    super
+    setup_service 'ut_drb.rb'
+  end
+end
+
+class TestDRbRubyYield < Test::Unit::TestCase
+  include DRbYield
+
+  def setup
+    @there = self
+    super
+  end
+
   def echo_yield(*arg)
     yield(*arg)
   end
@@ -153,15 +154,11 @@ class TestDRbRubyYield < TestDRbYield
     end
   end
 
-  def setup
-    @there = self
-  end
-
-  def teardown
-  end
 end
 
-class TestDRbRuby18Yield < TestDRbRubyYield
+class TestDRbRuby18Yield < Test::Unit::TestCase
+  include DRbYield
+
   class YieldTest18
     def echo_yield(*arg, &proc)
       proc.call(*arg)
@@ -188,6 +185,7 @@ class TestDRbRuby18Yield < TestDRbRubyYield
 
   def setup
     @there = YieldTest18.new
+    super
   end
 end
 
@@ -195,13 +193,8 @@ class TestDRbAry < Test::Unit::TestCase
   include DRbAry
 
   def setup
+    super
     setup_service 'ut_array.rb'
-    super
-  end
-
-  def teardown
-    super
-    DRbService.finish
   end
 end
 
@@ -209,8 +202,8 @@ class TestDRbMServer < Test::Unit::TestCase
   include DRbBase
 
   def setup
-    setup_service 'ut_drb.rb'
     super
+    setup_service 'ut_drb.rb'
     @server = (1..3).collect do |n|
       DRb::DRbServer.new("druby://localhost:0", Onecky.new(n.to_s))
     end
@@ -221,7 +214,6 @@ class TestDRbMServer < Test::Unit::TestCase
       s.stop_service
     end
     super
-    DRbService.finish
   end
 
   def test_01
@@ -229,14 +221,11 @@ class TestDRbMServer < Test::Unit::TestCase
   end
 end
 
-class TestDRbSafe1 < TestDRbAry
+class TestDRbSafe1 < Test::Unit::TestCase
+  include DRbAry
   def setup
-    setup_service 'ut_safe1.rb'
-  end
-
-  def teardown
     super
-    DRbService.finish
+    setup_service 'ut_safe1.rb'
   end
 end
 
@@ -244,13 +233,8 @@ class TestDRbLarge < Test::Unit::TestCase
   include DRbBase
 
   def setup
+    super
     setup_service 'ut_large.rb'
-    super
-  end
-
-  def teardown
-    super
-    DRbService.finish
   end
 
   def test_01_large_ary
@@ -333,13 +317,8 @@ class TestBug4409 < Test::Unit::TestCase
   include DRbBase
 
   def setup
+    super
     setup_service 'ut_eq.rb'
-    super
-  end
-
-  def teardown
-    super
-    DRbService.finish
   end
 
   def test_bug4409

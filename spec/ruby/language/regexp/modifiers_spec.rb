@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../fixtures/classes'
 
-describe "Regexps with modifers" do
+describe "Regexps with modifiers" do
   it "supports /i (case-insensitive)" do
     /foo/i.match("FOO").to_a.should == ["FOO"]
   end
@@ -36,14 +36,12 @@ describe "Regexps with modifers" do
     /foo/imox.match("foo").to_a.should == ["foo"]
     /foo/imoximox.match("foo").to_a.should == ["foo"]
 
-    lambda { eval('/foo/a') }.should raise_error(SyntaxError)
+    -> { eval('/foo/a') }.should raise_error(SyntaxError)
   end
 
-  ruby_version_is "2.4" do
-    it "supports (?~) (absent operator)" do
-      Regexp.new("(?~foo)").match("hello").to_a.should == ["hello"]
-      "foo".scan(Regexp.new("(?~foo)")).should == ["fo","o",""]
-    end
+  it "supports (?~) (absent operator)" do
+    Regexp.new("(?~foo)").match("hello").to_a.should == ["hello"]
+    "foo".scan(Regexp.new("(?~foo)")).should == ["fo","o",""]
   end
 
   it "supports (?imx-imx) (inline modifiers)" do
@@ -78,7 +76,7 @@ describe "Regexps with modifers" do
     /(?i-i)foo/.match("FOO").should be_nil
     /(?ii)foo/.match("FOO").to_a.should == ["FOO"]
     /(?-)foo/.match("foo").to_a.should == ["foo"]
-    lambda { eval('/(?o)/') }.should raise_error(SyntaxError)
+    -> { eval('/(?o)/') }.should raise_error(SyntaxError)
   end
 
   it "supports (?imx-imx:expr) (scoped inline modifiers)" do
@@ -98,7 +96,7 @@ describe "Regexps with modifers" do
     /(?i-i:foo)/.match("FOO").should be_nil
     /(?ii:foo)/.match("FOO").to_a.should == ["FOO"]
     /(?-:)foo/.match("foo").to_a.should == ["foo"]
-    lambda { eval('/(?o:)/') }.should raise_error(SyntaxError)
+    -> { eval('/(?o:)/') }.should raise_error(SyntaxError)
   end
 
   it "supports . with /m" do

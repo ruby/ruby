@@ -1,11 +1,11 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 describe "Processing RUBYOPT" do
-  before (:each) do
+  before :each do
     @rubyopt, ENV["RUBYOPT"] = ENV["RUBYOPT"], nil
   end
 
-  after (:each) do
+  after :each do
     ENV["RUBYOPT"] = @rubyopt
   end
 
@@ -22,14 +22,16 @@ describe "Processing RUBYOPT" do
     result.should =~ /value of \$DEBUG is true/
   end
 
-  it "prints the version number for '-v'" do
-    ENV["RUBYOPT"] = '-v'
-    ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION
-  end
+  guard -> { not CROSS_COMPILING } do
+    it "prints the version number for '-v'" do
+      ENV["RUBYOPT"] = '-v'
+      ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION
+    end
 
-  it "ignores whitespace around the option" do
-    ENV["RUBYOPT"] = ' -v '
-    ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION
+    it "ignores whitespace around the option" do
+      ENV["RUBYOPT"] = ' -v '
+      ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION
+    end
   end
 
   it "sets $VERBOSE to true for '-w'" do

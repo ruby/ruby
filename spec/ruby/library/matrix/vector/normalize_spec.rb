@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'matrix'
 
 describe "Vector#normalize" do
@@ -8,10 +8,10 @@ describe "Vector#normalize" do
   end
 
   it "raises an error for zero vectors" do
-    lambda {
+    -> {
       Vector[].normalize
     }.should raise_error(Vector::ZeroVectorError)
-    lambda {
+    -> {
       Vector[0, 0, 0].normalize
     }.should raise_error(Vector::ZeroVectorError)
   end

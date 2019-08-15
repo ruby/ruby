@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 require 'matrix'
 
 describe "Matrix#empty?" do
@@ -15,7 +15,7 @@ describe "Matrix#empty?" do
   end
 
   it "doesn't accept any parameter" do
-    lambda{
+    ->{
       Matrix[ [1, 2] ].empty?(42)
     }.should raise_error(ArgumentError)
   end
@@ -38,23 +38,23 @@ describe "Matrix.empty" do
   end
 
   it "does not accept more than two parameters" do
-    lambda{
+    ->{
       Matrix.empty(1, 2, 3)
     }.should raise_error(ArgumentError)
   end
 
   it "raises an error if both dimensions are > 0" do
-    lambda{
+    ->{
       Matrix.empty(1, 2)
     }.should raise_error(ArgumentError)
   end
 
   it "raises an error if any dimension is < 0" do
-    lambda{
+    ->{
       Matrix.empty(-2, 0)
     }.should raise_error(ArgumentError)
 
-    lambda{
+    ->{
       Matrix.empty(0, -2)
     }.should raise_error(ArgumentError)
   end

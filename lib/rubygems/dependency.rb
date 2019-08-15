@@ -2,6 +2,7 @@
 ##
 # The Dependency class holds a Gem name and a Gem::Requirement.
 
+require "rubygems/bundler_version_finder"
 require "rubygems/requirement"
 
 class Gem::Dependency
@@ -18,7 +19,7 @@ class Gem::Dependency
   TYPES = [
     :development,
     :runtime,
-  ]
+  ].freeze
 
   ##
   # Dependency name or regular expression.
@@ -35,7 +36,7 @@ class Gem::Dependency
   # argument can optionally be the dependency type, which defaults to
   # <tt>:runtime</tt>.
 
-  def initialize name, *requirements
+  def initialize(name, *requirements)
     case name
     when String then # ok
     when Regexp then
@@ -75,7 +76,7 @@ class Gem::Dependency
   end
 
   def inspect # :nodoc:
-    if prerelease? then
+    if prerelease?
       "<%s type=%p name=%p requirements=%p prerelease=ok>" %
         [self.class, self.type, self.name, requirement.to_s]
     else
@@ -99,7 +100,7 @@ class Gem::Dependency
     @requirement.none?
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 1, 'Gem::Dependency.new(', ')' do
       q.pp name
       q.text ','
@@ -151,7 +152,7 @@ class Gem::Dependency
   end
 
   def to_s # :nodoc:
-    if type != :runtime then
+    if type != :runtime
       "#{name} (#{requirement}, #{type})"
     else
       "#{name} (#{requirement})"
@@ -169,7 +170,7 @@ class Gem::Dependency
     @type == :runtime || !@type
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     Gem::Dependency === other &&
       self.name        == other.name &&
       self.type        == other.type &&
@@ -179,7 +180,7 @@ class Gem::Dependency
   ##
   # Dependencies are ordered by name.
 
-  def <=> other
+  def <=>(other)
     self.name <=> other.name
   end
 
@@ -189,7 +190,7 @@ class Gem::Dependency
   # other has only an equal version requirement that satisfies this
   # dependency.
 
-  def =~ other
+  def =~(other)
     unless Gem::Dependency === other
       return unless other.respond_to?(:name) && other.respond_to?(:version)
       other = Gem::Dependency.new other.name, other.version
@@ -221,7 +222,7 @@ class Gem::Dependency
   # NOTE:  Unlike #matches_spec? this method does not return true when the
   # version is a prerelease version unless this is a prerelease dependency.
 
-  def match? obj, version=nil, allow_prerelease=false
+  def match?(obj, version=nil, allow_prerelease=false)
     if !version
       name = obj.name
       version = obj.version
@@ -248,7 +249,7 @@ class Gem::Dependency
   # returns true when +spec+ is a prerelease version even if this dependency
   # is not a prerelease dependency.
 
-  def matches_spec? spec
+  def matches_spec?(spec)
     return false unless name === spec.name
     return true  if requirement.none?
 
@@ -258,8 +259,8 @@ class Gem::Dependency
   ##
   # Merges the requirements of +other+ into this dependency
 
-  def merge other
-    unless name == other.name then
+  def merge(other)
+    unless name == other.name
       raise ArgumentError,
             "#{self} and #{other} have different names"
     end
@@ -274,18 +275,18 @@ class Gem::Dependency
     self.class.new name, self_req.as_list.concat(other_req.as_list)
   end
 
-  def matching_specs platform_only = false
+  def matching_specs(platform_only = false)
     env_req = Gem.env_requirement(name)
-    matches = Gem::Specification.stubs_for(name).find_all { |spec|
+    matches = Gem::Specification.stubs_for(name).find_all do |spec|
       requirement.satisfied_by?(spec.version) && env_req.satisfied_by?(spec.version)
-    }.map(&:to_spec)
+    end.map(&:to_spec)
 
     Gem::BundlerVersionFinder.filter!(matches) if name == "bundler".freeze
 
     if platform_only
-      matches.reject! { |spec|
+      matches.reject! do |spec|
         spec.nil? || !Gem::Platform.match(spec.platform)
-      }
+      end
     end
 
     matches
@@ -303,7 +304,7 @@ class Gem::Dependency
 
     # TODO: check Gem.activated_spec[self.name] in case matches falls outside
 
-    if matches.empty? then
+    if matches.empty?
       specs = Gem::Specification.stubs_for name
 
       if specs.empty?
@@ -332,4 +333,5 @@ class Gem::Dependency
 
     matches.first
   end
+
 end

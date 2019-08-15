@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'getoptlong'
 
 describe "GetoptLong#terminate" do
@@ -19,7 +19,7 @@ describe "GetoptLong#terminate" do
     end
   end
 
-  it "returns self when option processsing is terminated" do
+  it "returns self when option processing is terminated" do
     @opts.terminate.should == @opts
   end
 

@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../../enumerable/shared/enumeratorized', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative '../enumerable/shared/enumeratorized'
 
 describe "Array#sort_by!" do
   it "sorts array in place by passing each element to the given block" do
@@ -24,11 +24,11 @@ describe "Array#sort_by!" do
   end
 
   it "raises a #{frozen_error_class} on a frozen array" do
-    lambda { ArraySpecs.frozen_array.sort_by! {}}.should raise_error(frozen_error_class)
+    -> { ArraySpecs.frozen_array.sort_by! {}}.should raise_error(frozen_error_class)
   end
 
   it "raises a #{frozen_error_class} on an empty frozen array" do
-    lambda { ArraySpecs.empty_frozen_array.sort_by! {}}.should raise_error(frozen_error_class)
+    -> { ArraySpecs.empty_frozen_array.sort_by! {}}.should raise_error(frozen_error_class)
   end
 
   it "returns the specified value when it would break in the given block" do

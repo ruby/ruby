@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "File.chown" do
   before :each do
@@ -66,7 +66,7 @@ describe "File.chown" do
 
   platform_is_not :windows do
     it "raises an error for a non existent path" do
-      lambda {
+      -> {
         File.chown(nil, nil, "#{@fname}_not_existing")
       }.should raise_error(Errno::ENOENT)
     end
@@ -141,12 +141,4 @@ describe "File#chown" do
   it "returns 0" do
     @file.chown(nil, nil).should == 0
   end
-end
-
-describe "File.chown" do
-  it "needs to be reviewed for spec completeness"
-end
-
-describe "File#chown" do
-  it "needs to be reviewed for spec completeness"
 end

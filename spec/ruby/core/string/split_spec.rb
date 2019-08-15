@@ -1,21 +1,19 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "String#split with String" do
-  with_feature :encoding do
-    it "throws an ArgumentError if the pattern is not a valid string" do
-      str = 'проверка'
-      broken_str = 'проверка'
-      broken_str.force_encoding('binary')
-      broken_str.chop!
-      broken_str.force_encoding('utf-8')
-      lambda { str.split(broken_str) }.should raise_error(ArgumentError)
-    end
+  it "throws an ArgumentError if the pattern is not a valid string" do
+    str = 'проверка'
+    broken_str = 'проверка'
+    broken_str.force_encoding('binary')
+    broken_str.chop!
+    broken_str.force_encoding('utf-8')
+    -> { str.split(broken_str) }.should raise_error(ArgumentError)
+  end
 
-    it "splits on multibyte characters" do
-      "ありがりがとう".split("が").should == ["あり", "り", "とう"]
-    end
+  it "splits on multibyte characters" do
+    "ありがりがとう".split("が").should == ["あり", "り", "とう"]
   end
 
   it "returns an array of substrings based on splitting on the given string" do
@@ -65,25 +63,26 @@ describe "String#split with String" do
   end
 
   it "defaults to $; when string isn't given or nil" do
-    begin
+    suppress_warning do
       old_fs = $;
+      begin
+        [",", ":", "", "XY", nil].each do |fs|
+          $; = fs
 
-      [",", ":", "", "XY", nil].each do |fs|
-        $; = fs
+          ["x,y,z,,,", "1:2:", "aXYbXYcXY", ""].each do |str|
+            expected = str.split(fs || " ")
 
-        ["x,y,z,,,", "1:2:", "aXYbXYcXY", ""].each do |str|
-          expected = str.split(fs || " ")
+            str.split(nil).should == expected
+            str.split.should == expected
 
-          str.split(nil).should == expected
-          str.split.should == expected
-
-          str.split(nil, -1).should == str.split(fs || " ", -1)
-          str.split(nil, 0).should == str.split(fs || " ", 0)
-          str.split(nil, 2).should == str.split(fs || " ", 2)
+            str.split(nil, -1).should == str.split(fs || " ", -1)
+            str.split(nil, 0).should == str.split(fs || " ", 0)
+            str.split(nil, 2).should == str.split(fs || " ", 2)
+          end
         end
+      ensure
+        $; = old_fs
       end
-    ensure
-      $; = old_fs
     end
   end
 
@@ -238,25 +237,26 @@ describe "String#split with Regexp" do
   end
 
   it "defaults to $; when regexp isn't given or nil" do
-    begin
+    suppress_warning do
       old_fs = $;
+      begin
+        [/,/, /:/, //, /XY/, /./].each do |fs|
+          $; = fs
 
-      [/,/, /:/, //, /XY/, /./].each do |fs|
-        $; = fs
+          ["x,y,z,,,", "1:2:", "aXYbXYcXY", ""].each do |str|
+            expected = str.split(fs)
 
-        ["x,y,z,,,", "1:2:", "aXYbXYcXY", ""].each do |str|
-          expected = str.split(fs)
+            str.split(nil).should == expected
+            str.split.should == expected
 
-          str.split(nil).should == expected
-          str.split.should == expected
-
-          str.split(nil, -1).should == str.split(fs, -1)
-          str.split(nil, 0).should == str.split(fs, 0)
-          str.split(nil, 2).should == str.split(fs, 2)
+            str.split(nil, -1).should == str.split(fs, -1)
+            str.split(nil, 0).should == str.split(fs, 0)
+            str.split(nil, 2).should == str.split(fs, 2)
+          end
         end
+      ensure
+        $; = old_fs
       end
-    ensure
-      $; = old_fs
     end
   end
 
@@ -316,8 +316,8 @@ describe "String#split with Regexp" do
   end
 
   it "returns a type error if limit can't be converted to an integer" do
-    lambda {"1.2.3.4".split(".", "three")}.should raise_error(TypeError)
-    lambda {"1.2.3.4".split(".", nil)    }.should raise_error(TypeError)
+    -> {"1.2.3.4".split(".", "three")}.should raise_error(TypeError)
+    -> {"1.2.3.4".split(".", nil)    }.should raise_error(TypeError)
   end
 
   it "doesn't set $~" do
@@ -400,6 +400,30 @@ describe "String#split with Regexp" do
     broken_str.force_encoding('binary')
     broken_str.chop!
     broken_str.force_encoding('utf-8')
-    lambda{ broken_str.split(/\r\n|\r|\n/) }.should raise_error(ArgumentError)
+    ->{ broken_str.split(/\r\n|\r|\n/) }.should raise_error(ArgumentError)
+  end
+
+  ruby_version_is "2.6" do
+    it "yields each split substrings if a block is given" do
+      a = []
+      returned_object = "chunky bacon".split(" ") { |str| a << str.capitalize }
+
+      returned_object.should == "chunky bacon"
+      a.should == ["Chunky", "Bacon"]
+    end
+
+    describe "for a String subclass" do
+      it "yields instances of the same subclass" do
+        a = []
+        StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
+        first, last = a
+
+        first.should be_an_instance_of(StringSpecs::MyString)
+        first.should == "a"
+
+        last.should be_an_instance_of(StringSpecs::MyString)
+        last.should == "b"
+      end
+    end
   end
 end

@@ -1,5 +1,5 @@
 require 'zlib'
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe "Zlib::Deflate.deflate" do
   it "deflates some data" do
@@ -25,7 +25,7 @@ describe "Zlib::Deflate.deflate" do
     random_generator = Random.new(0)
     deflated         = ''
 
-    Zlib.deflate(random_generator.bytes(20000)) do |chunk|
+    Zlib::Deflate.deflate(random_generator.bytes(20000)) do |chunk|
       deflated << chunk
     end
 

@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/common', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/common'
 
 describe "Logger#new" do
 
@@ -15,7 +15,7 @@ describe "Logger#new" do
 
    it "creates a new logger object" do
      l = Logger.new(STDERR)
-     lambda { l.add(Logger::WARN, "Foo") }.should output_to_fd(/Foo/, STDERR)
+     -> { l.add(Logger::WARN, "Foo") }.should output_to_fd(/Foo/, STDERR)
    end
 
    it "receives a logging device as first argument" do
@@ -28,16 +28,16 @@ describe "Logger#new" do
    end
 
   it "receives a frequency rotation as second argument" do
-     lambda { Logger.new(@log_file, "daily") }.should_not raise_error
-     lambda { Logger.new(@log_file, "weekly") }.should_not raise_error
-     lambda { Logger.new(@log_file, "monthly") }.should_not raise_error
+     -> { Logger.new(@log_file, "daily") }.should_not raise_error
+     -> { Logger.new(@log_file, "weekly") }.should_not raise_error
+     -> { Logger.new(@log_file, "monthly") }.should_not raise_error
   end
 
   it "also receives a number of log files to keep as second argument" do
-    lambda { Logger.new(@log_file, 1).close }.should_not raise_error
+    -> { Logger.new(@log_file, 1).close }.should_not raise_error
   end
 
-  it "receivs a maximum logfile size as third argument" do
+  it "receives a maximum logfile size as third argument" do
     # This should create 2 small log files, logfile_test and logfile_test.0
     # in /tmp, each one with a different message.
     path = tmp("logfile_test.log")
@@ -61,60 +61,58 @@ describe "Logger#new" do
     rm_r path, "#{path}.0"
   end
 
-  ruby_version_is "2.4" do
-    it "receives level symbol as keyword argument" do
-      logger = Logger.new(STDERR, level: :info)
-      logger.level.should == Logger::INFO
-    end
+  it "receives level symbol as keyword argument" do
+    logger = Logger.new(STDERR, level: :info)
+    logger.level.should == Logger::INFO
+  end
 
-    it "receives level as keyword argument" do
-      logger = Logger.new(STDERR, level: Logger::INFO)
-      logger.level.should == Logger::INFO
-    end
+  it "receives level as keyword argument" do
+    logger = Logger.new(STDERR, level: Logger::INFO)
+    logger.level.should == Logger::INFO
+  end
 
-    it "receives progname as keyword argument" do
-      progname = "progname"
+  it "receives progname as keyword argument" do
+    progname = "progname"
 
-      logger = Logger.new(STDERR, progname: progname)
-      logger.progname.should == progname
-    end
+    logger = Logger.new(STDERR, progname: progname)
+    logger.progname.should == progname
+  end
 
-    it "receives datetime_format as keyword argument" do
-      datetime_format = "%H:%M:%S"
+  it "receives datetime_format as keyword argument" do
+    datetime_format = "%H:%M:%S"
 
-      logger = Logger.new(STDERR, datetime_format: datetime_format)
-      logger.datetime_format.should == datetime_format
-    end
+    logger = Logger.new(STDERR, datetime_format: datetime_format)
+    logger.datetime_format.should == datetime_format
+  end
 
-    it "receives formatter as keyword argument" do
-      formatter = Class.new do
-        def call(_severity, _time, _progname, _msg); end
-      end.new
+  it "receives formatter as keyword argument" do
+    formatter = Class.new do
+      def call(_severity, _time, _progname, _msg); end
+    end.new
 
-      logger = Logger.new(STDERR, formatter: formatter)
-      logger.formatter.should == formatter
-    end
+    logger = Logger.new(STDERR, formatter: formatter)
+    logger.formatter.should == formatter
+  end
 
-    it "receives shift_period_suffix " do
-      shift_period_suffix = "%Y-%m-%d"
-      path                = tmp("shift_period_suffix_test.log")
-      now                 = Time.now
-      tomorrow            = Time.at(now.to_i + 60 * 60 * 24)
-      logger              = Logger.new(path, 'daily', shift_period_suffix: shift_period_suffix)
+  it "receives shift_period_suffix " do
+    shift_period_suffix = "%Y-%m-%d"
+    path                = tmp("shift_period_suffix_test.log")
+    now                 = Time.now
+    tomorrow            = Time.at(now.to_i + 60 * 60 * 24)
+    logger              = Logger.new(path, 'daily', shift_period_suffix: shift_period_suffix)
 
-      logger.add Logger::INFO, 'message'
+    logger.add Logger::INFO, 'message'
 
-      Time.stub!(:now).and_return(tomorrow)
-      logger.add Logger::INFO, 'second message'
+    Time.stub!(:now).and_return(tomorrow)
+    logger.add Logger::INFO, 'second message'
 
-      shifted_path = "#{path}.#{now.strftime(shift_period_suffix)}"
+    shifted_path = "#{path}.#{now.strftime(shift_period_suffix)}"
 
-      File.exist?(shifted_path).should == true
+    File.exist?(shifted_path).should == true
 
-      logger.close
+    logger.close
 
-      rm_r path, shifted_path
-    end
+    rm_r path, shifted_path
   end
 
 end

@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :complex_math_acosh, shared: true do
   it "returns the principle value of the inverse hyperbolic cosine of the argument" do
@@ -26,12 +26,12 @@ describe :complex_math_acosh_bang, shared: true do
   end
 
   it "raises Errno::EDOM for numbers less than 1.0" do
-    lambda { @object.send(:acosh!, 1.0 - TOLERANCE) }.should raise_error(Errno::EDOM)
-    lambda { @object.send(:acosh!, 0) }.should raise_error(Errno::EDOM)
-    lambda { @object.send(:acosh!, -1.0) }.should raise_error(Errno::EDOM)
+    -> { @object.send(:acosh!, 1.0 - TOLERANCE) }.should raise_error(Errno::EDOM)
+    -> { @object.send(:acosh!, 0) }.should raise_error(Errno::EDOM)
+    -> { @object.send(:acosh!, -1.0) }.should raise_error(Errno::EDOM)
   end
 
   it "raises a TypeError when passed a Complex number" do
-    lambda { @object.send(:acosh!, Complex(4, 5)) }.should raise_error(TypeError)
+    -> { @object.send(:acosh!, Complex(4, 5)) }.should raise_error(TypeError)
   end
 end

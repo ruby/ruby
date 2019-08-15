@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 ruby_version_is ''...'2.5' do
   require 'mathn'
@@ -15,7 +15,7 @@ ruby_version_is ''...'2.5' do
     end
 
     it "raises a ZeroDivisionError when is called on zero" do
-      lambda { 0.prime_division }.should raise_error(ZeroDivisionError)
+      -> { 0.prime_division }.should raise_error(ZeroDivisionError)
     end
   end
 end

@@ -28,7 +28,8 @@ class TestSignal < Test::Unit::TestCase
   def test_signal_process_group
     bug4362 = '[ruby-dev:43169]'
     assert_nothing_raised(bug4362) do
-      pid = Process.spawn(EnvUtil.rubybin, '-e', 'sleep 10', :pgroup => true)
+      cmd = [ EnvUtil.rubybin, '--disable=gems' '-e', 'sleep 10' ]
+      pid = Process.spawn(*cmd, :pgroup => true)
       Process.kill(:"-TERM", pid)
       Process.waitpid(pid)
       assert_equal(true, $?.signaled?)
@@ -44,7 +45,7 @@ class TestSignal < Test::Unit::TestCase
       sig = "INT"
       term = :KILL
     end
-    IO.popen([EnvUtil.rubybin, '-e', <<-"End"], 'r+') do |io|
+    IO.popen([EnvUtil.rubybin, '--disable=gems', '-e', <<-"End"], 'r+') do |io|
         Signal.trap(:#{sig}, "EXIT")
         STDOUT.syswrite("a")
         Thread.start { sleep(2) }
@@ -83,10 +84,12 @@ class TestSignal < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { SignalException.new("\u{30eb 30d3 30fc}") }
     Signal.list.each do |signm, signo|
       next if signm == "EXIT"
-      assert_equal(SignalException.new(signm).signo, signo)
-      assert_equal(SignalException.new(signm.to_sym).signo, signo)
-      assert_equal(SignalException.new(signo).signo, signo)
+      assert_equal(signo, SignalException.new(signm).signo, signm)
+      assert_equal(signo, SignalException.new(signm.to_sym).signo, signm)
+      assert_equal(signo, SignalException.new(signo).signo, signo)
     end
+    e = assert_raise(ArgumentError) {SignalException.new("-SIGEXIT")}
+    assert_not_match(/SIG-SIG/, e.message)
   end
 
   def test_interrupt
@@ -164,6 +167,8 @@ class TestSignal < Test::Unit::TestCase
       assert_raise(ArgumentError) { Signal.trap("XXXXXXXXXX", "SIG_DFL") }
 
       assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Signal.trap("\u{30eb 30d3 30fc}", "SIG_DFL") }
+
+      assert_raise(ArgumentError) { Signal.trap("EXIT\0") {} }
     ensure
       Signal.trap(:INT, oldtrap) if oldtrap
     end
@@ -228,20 +233,20 @@ class TestSignal < Test::Unit::TestCase
   end
 
   def test_signame_delivered
-    10.times do
-      IO.popen([EnvUtil.rubybin, "-e", <<EOS, :err => File::NULL]) do |child|
-        Signal.trap("INT") do |signo|
-          signame = Signal.signame(signo)
-          Marshal.dump(signame, STDOUT)
-          STDOUT.flush
-          exit 0
-        end
-        Process.kill("INT", $$)
-        sleep 1  # wait signal deliver
-EOS
+    args = [EnvUtil.rubybin, "--disable=gems", "-e", <<"", :err => File::NULL]
+      Signal.trap("INT") do |signo|
+        signame = Signal.signame(signo)
+        Marshal.dump(signame, STDOUT)
+        STDOUT.flush
+        exit 0
+      end
+      Process.kill("INT", $$)
+      sleep 1  # wait signal deliver
 
+    10.times do
+      IO.popen(args) do |child|
         signame = Marshal.load(child)
-        assert_equal(signame, "INT")
+        assert_equal("INT", signame)
       end
     end
   end if Process.respond_to?(:kill)
@@ -321,4 +326,67 @@ EOS
       end
     end;
   end
+
+  def test_sigchld_ignore
+    skip 'no SIGCHLD' unless Signal.list['CHLD']
+    old = trap(:CHLD, 'IGNORE')
+    cmd = [ EnvUtil.rubybin, '--disable=gems', '-e' ]
+    assert(system(*cmd, 'exit!(0)'), 'no ECHILD')
+    IO.pipe do |r, w|
+      pid = spawn(*cmd, "STDIN.read", in: r)
+      nb = Process.wait(pid, Process::WNOHANG)
+      th = Thread.new(Thread.current) do |parent|
+        Thread.pass until parent.stop? # wait for parent to Process.wait
+        w.close
+      end
+      assert_raise(Errno::ECHILD) { Process.wait(pid) }
+      th.join
+      assert_nil nb
+    end
+
+    IO.pipe do |r, w|
+      pids = 3.times.map { spawn(*cmd, 'exit!', out: w) }
+      w.close
+      zombies = pids.dup
+      assert_nil r.read(1), 'children dead'
+
+      Timeout.timeout(10) do
+        zombies.delete_if do |pid|
+          begin
+            Process.kill(0, pid)
+            false
+          rescue Errno::ESRCH
+            true
+          end
+        end while zombies[0]
+      end
+      assert_predicate zombies, :empty?, 'zombies leftover'
+
+      pids.each do |pid|
+        assert_raise(Errno::ECHILD) { Process.waitpid(pid) }
+      end
+    end
+  ensure
+    trap(:CHLD, old) if Signal.list['CHLD']
+  end
+
+  def test_sigwait_fd_unused
+    t = EnvUtil.apply_timeout_scale(0.1)
+    assert_separately([], <<-End)
+      tgt = $$
+      trap(:TERM) { exit(0) }
+      e = "Process.daemon; sleep #{t * 2}; Process.kill(:TERM,\#{tgt})"
+      term = [ '#{EnvUtil.rubybin}', '--disable=gems', '-e', e ]
+      t2 = Thread.new { sleep } # grab sigwait_fd
+      Thread.pass until t2.stop?
+      Thread.new do
+        sleep #{t}
+        t2.kill
+        t2.join
+      end
+      Process.spawn(*term)
+      # last thread remaining, ensure it can react to SIGTERM
+      loop { sleep }
+    End
+  end if Process.respond_to?(:kill) && Process.respond_to?(:daemon)
 end

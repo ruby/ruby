@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 describe 'Optional variable assignments' do
   describe 'using ||=' do
@@ -181,10 +181,82 @@ describe 'Optional variable assignments' do
         @a.b.should == 20
       end
     end
+
+    describe 'using a #[]' do
+      before do
+        @a = {}
+        klass = Class.new do
+          def [](k)
+            @hash ||= {}
+            @hash[k]
+          end
+
+          def []=(k, v)
+            @hash ||= {}
+            @hash[k] = v
+            7
+          end
+        end
+        @b = klass.new
+      end
+
+      it 'leaves new variable unassigned' do
+        @a[:k] &&= 10
+
+        @a.key?(:k).should == false
+      end
+
+      it 'leaves false' do
+        @a[:k] = false
+        @a[:k] &&= 10
+
+        @a[:k].should == false
+      end
+
+      it 'leaves nil' do
+        @a[:k] = nil
+        @a[:k] &&= 10
+
+        @a[:k].should == nil
+      end
+
+      it 'does not evaluate the right side when not needed' do
+        @a[:k] = nil
+        @a[:k] &&= raise('should not be executed')
+        @a[:k].should == nil
+      end
+
+      it 'does re-assign a variable with a truthy value' do
+        @a[:k] = 10
+        @a[:k] &&= 20
+
+        @a[:k].should == 20
+      end
+
+      it 'does re-assign a variable with a truthy value when using an inline rescue' do
+        @a[:k] = 10
+        @a[:k] &&= 20 rescue 30
+
+        @a[:k].should == 20
+      end
+
+      it 'returns the assigned value, not the result of the []= method with ||=' do
+        (@b[:k] ||= 12).should == 12
+      end
+
+      it 'returns the assigned value, not the result of the []= method with +=' do
+        @b[:k] = 17
+        (@b[:k] += 12).should == 29
+      end
+    end
   end
 
-  describe 'using compunded constants' do
-    before do
+  describe 'using compounded constants' do
+    before :each do
+      Object.send(:remove_const, :A) if defined? Object::A
+    end
+
+    after :each do
       Object.send(:remove_const, :A) if defined? Object::A
     end
 
@@ -208,7 +280,7 @@ describe 'Optional variable assignments' do
     end
 
     it 'with &&= assignments will fail with non-existent constants' do
-      lambda { Object::A &&= 10 }.should raise_error(NameError)
+      -> { Object::A &&= 10 }.should raise_error(NameError)
     end
 
     it 'with operator assignments' do
@@ -220,7 +292,7 @@ describe 'Optional variable assignments' do
     end
 
     it 'with operator assignments will fail with non-existent constants' do
-      lambda { Object::A += 10 }.should raise_error(NameError)
+      -> { Object::A += 10 }.should raise_error(NameError)
     end
   end
 end

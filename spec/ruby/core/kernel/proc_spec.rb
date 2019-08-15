@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/lambda', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/lambda'
 
 # The functionality of Proc objects is specified in core/proc
 
@@ -15,14 +15,14 @@ describe "Kernel.proc" do
   end
 
   it "returned the passed Proc if given an existing Proc" do
-    some_lambda = lambda {}
+    some_lambda = -> {}
     some_lambda.lambda?.should be_true
     l = proc(&some_lambda)
     l.should equal(some_lambda)
     l.lambda?.should be_true
   end
 
-  it_behaves_like(:kernel_lambda, :proc)
+  it_behaves_like :kernel_lambda, :proc
 
   it "returns from the creation site of the proc, not just the proc itself" do
     @reached_end_of_method = nil
@@ -36,15 +36,27 @@ describe "Kernel.proc" do
 end
 
 describe "Kernel#proc" do
-  it "uses the implicit block from an enclosing method" do
-    def some_method
-      proc
+  ruby_version_is ""..."2.7" do
+    it "uses the implicit block from an enclosing method" do
+      def some_method
+        proc
+      end
+
+      prc = some_method { "hello" }
+
+      prc.call.should == "hello"
     end
-
-    prc = some_method { "hello" }
-
-    prc.call.should == "hello"
   end
 
-  it "needs to be reviewed for spec completeness"
+  ruby_version_is "2.7" do
+    it "can be created when called with no block" do
+      def some_method
+        proc
+      end
+
+      -> {
+        some_method { "hello" }
+      }.should complain(/Capturing the given block using Proc.new is deprecated/)
+    end
+  end
 end

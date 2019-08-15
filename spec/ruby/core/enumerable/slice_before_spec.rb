@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/enumerable_enumeratorized', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/enumerable_enumeratorized'
 
 describe "Enumerable#slice_before" do
   before :each do
@@ -40,39 +40,16 @@ describe "Enumerable#slice_before" do
       end
     end
 
-    ruby_version_is ""..."2.3" do
-      describe "and an argument" do
-        it "calls the block with a copy of that argument" do
-          arg = [:foo]
-          first = nil
-          e = @enum.slice_before(arg) do |i, init|
-            init.should == arg
-            init.should_not equal(arg)
-            first = init
-            i == 6 || i == 2
-          end
-          e.should be_an_instance_of(Enumerator)
-          e.to_a.should == [[7], [6, 5, 4, 3], [2, 1]]
-          e = @enum.slice_before(arg) do |i, init|
-            init.should_not equal(first)
-          end
-          e.to_a
-        end
-      end
-    end
-
-    ruby_version_is "2.3" do
-      it "does not accept arguments" do
-        lambda {
-          @enum.slice_before(1) {}
-        }.should raise_error(ArgumentError)
-      end
+    it "does not accept arguments" do
+      -> {
+        @enum.slice_before(1) {}
+      }.should raise_error(ArgumentError)
     end
   end
 
   it "raises an ArgumentError when given an incorrect number of arguments" do
-    lambda { @enum.slice_before("one", "two") }.should raise_error(ArgumentError)
-    lambda { @enum.slice_before }.should raise_error(ArgumentError)
+    -> { @enum.slice_before("one", "two") }.should raise_error(ArgumentError)
+    -> { @enum.slice_before }.should raise_error(ArgumentError)
   end
 
   describe "when an iterator method yields more than one value" do

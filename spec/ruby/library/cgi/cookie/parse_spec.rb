@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'cgi'
 
 describe "CGI::Cookie.parse" do
@@ -10,25 +10,12 @@ describe "CGI::Cookie.parse" do
     CGI::Cookie.parse("first cookie=one&two;second cookie=three&four").should == expected
   end
 
-  ruby_version_is ""..."2.4" do
-    it "uses , for cookie separators" do
-      expected = {
-        "first cookie" => ["one", "two"],
-        "second cookie" => ["three", "four"],
-        "third_cookie" => ["five", "six"]
-      }
-      CGI::Cookie.parse("first cookie=one&two;second cookie=three&four,third_cookie=five&six").should == expected
-    end
-  end
-
-  ruby_version_is "2.4" do
-    it "does not use , for cookie separators" do
-      expected = {
-        "first cookie" => ["one", "two"],
-        "second cookie" => ["three", "four,third_cookie=five", "six"]
-      }
-      CGI::Cookie.parse("first cookie=one&two;second cookie=three&four,third_cookie=five&six").should == expected
-    end
+  it "does not use , for cookie separators" do
+    expected = {
+      "first cookie" => ["one", "two"],
+      "second cookie" => ["three", "four,third_cookie=five", "six"]
+    }
+    CGI::Cookie.parse("first cookie=one&two;second cookie=three&four,third_cookie=five&six").should == expected
   end
 
   it "unescapes the Cookie values" do

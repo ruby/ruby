@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 platform_is_not :windows do
   describe :process_daemon_keep_stdio_open_false, shared: true do
@@ -86,10 +86,6 @@ platform_is_not :windows do
       @daemon.invoke("stay_in_dir", [true]).should == @invoke_dir
     end
 
-    it "does not change to the root directory if the first argument is non-false" do
-      @daemon.invoke("stay_in_dir", [:yes]).should == @invoke_dir
-    end
-
     describe "when the second argument is not given" do
       it_behaves_like :process_daemon_keep_stdio_open_false, nil, [false]
     end
@@ -105,17 +101,13 @@ platform_is_not :windows do
     describe "when the second argument is true" do
       it_behaves_like :process_daemon_keep_stdio_open_true, nil, [false, true]
     end
-
-    describe "when the second argument is non-false" do
-      it_behaves_like :process_daemon_keep_stdio_open_true, nil, [false, :yes]
-    end
   end
 end
 
 platform_is :windows do
   describe "Process.daemon" do
     it "raises a NotImplementedError" do
-      lambda {
+      -> {
         Process.daemon
       }.should raise_error(NotImplementedError)
     end

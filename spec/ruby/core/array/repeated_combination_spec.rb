@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Array#repeated_combination" do
   before :each do
@@ -68,7 +68,7 @@ describe "Array#repeated_combination" do
           [].repeated_combination(0).size.should == 1
         end
 
-        it "returns the binomial coeficient between combination_size and array size + combination_size -1" do
+        it "returns the binomial coefficient between combination_size and array size + combination_size -1" do
           @array.repeated_combination(5).size.should == 21
           @array.repeated_combination(4).size.should == 15
           @array.repeated_combination(3).size.should == 10

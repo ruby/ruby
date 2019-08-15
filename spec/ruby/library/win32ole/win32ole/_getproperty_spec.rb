@@ -1,19 +1,14 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
-
 platform_is :windows do
-  require 'win32ole'
+  require_relative '../fixtures/classes'
 
   describe "WIN32OLE#_getproperty" do
     before :each do
-      @ie = WIN32OLESpecs.new_ole('InternetExplorer.Application')
+      @dict = WIN32OLESpecs.new_ole('Scripting.Dictionary')
     end
 
-    after :each do
-      @ie.Quit
-    end
-
-    it "gets name" do
-      @ie._getproperty(0, [], []).should =~ /explorer/i
+    it "gets value" do
+      @dict.add('key', 'value')
+      @dict._getproperty(0, ['key'], [WIN32OLE::VARIANT::VT_BSTR]).should == 'value'
     end
   end
 end

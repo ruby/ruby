@@ -18,7 +18,7 @@ module Fiddle
     }
 
     PACK_MAP = {
-      TYPE_VOIDP => ((SIZEOF_VOIDP == SIZEOF_LONG_LONG) ? "q" : "l!"),
+      TYPE_VOIDP => "l!",
       TYPE_CHAR  => "c",
       TYPE_SHORT => "s!",
       TYPE_INT   => "i!",
@@ -48,6 +48,7 @@ module Fiddle
       ALIGN_MAP[TYPE_LONG_LONG] = ALIGN_MAP[-TYPE_LONG_LONG] = ALIGN_LONG_LONG
       PACK_MAP[TYPE_LONG_LONG] = PACK_MAP[-TYPE_LONG_LONG] = "q"
       SIZE_MAP[TYPE_LONG_LONG] = SIZE_MAP[-TYPE_LONG_LONG] = SIZEOF_LONG_LONG
+      PACK_MAP[TYPE_VOIDP] = "q" if SIZEOF_LONG_LONG == SIZEOF_VOIDP
     end
 
     def align(addr, align)
@@ -80,10 +81,13 @@ module Fiddle
       case SIZEOF_VOIDP
       when SIZEOF_LONG
         ary.pack(@template)
-      when SIZEOF_LONG_LONG
-        ary.pack(@template)
       else
-        raise(RuntimeError, "sizeof(void*)?")
+        if defined?(TYPE_LONG_LONG) and
+          SIZEOF_VOIDP == SIZEOF_LONG_LONG
+          ary.pack(@template)
+        else
+          raise(RuntimeError, "sizeof(void*)?")
+        end
       end
     end
 
@@ -91,10 +95,13 @@ module Fiddle
       case SIZEOF_VOIDP
       when SIZEOF_LONG
         ary.join().unpack(@template)
-      when SIZEOF_LONG_LONG
-        ary.join().unpack(@template)
       else
-        raise(RuntimeError, "sizeof(void*)?")
+        if defined?(TYPE_LONG_LONG) and
+          SIZEOF_VOIDP == SIZEOF_LONG_LONG
+          ary.join().unpack(@template)
+        else
+          raise(RuntimeError, "sizeof(void*)?")
+        end
       end
     end
 

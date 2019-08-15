@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/gets_ascii', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/gets_ascii'
 
 describe "IO#gets" do
   it_behaves_like :io_gets_ascii, :gets
@@ -30,7 +30,7 @@ describe "IO#gets" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.gets }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.gets }.should raise_error(IOError)
   end
 
   describe "with no separator" do
@@ -139,11 +139,9 @@ describe "IO#gets" do
     end
   end
 
-  ruby_version_is "2.4" do
-    describe "when passed chomp" do
-      it "returns the first line without a trailing newline character" do
-        @io.gets(chomp: true).should == IOSpecs.lines_without_newline_characters[0]
-      end
+  describe "when passed chomp" do
+    it "returns the first line without a trailing newline character" do
+      @io.gets(chomp: true).should == IOSpecs.lines_without_newline_characters[0]
     end
   end
 end
@@ -158,11 +156,11 @@ describe "IO#gets" do
   end
 
   it "raises an IOError if the stream is opened for append only" do
-    lambda { File.open(@name, fmode("a:utf-8")) { |f| f.gets } }.should raise_error(IOError)
+    -> { File.open(@name, "a:utf-8") { |f| f.gets } }.should raise_error(IOError)
   end
 
   it "raises an IOError if the stream is opened for writing only" do
-    lambda { File.open(@name, fmode("w:utf-8")) { |f| f.gets } }.should raise_error(IOError)
+    -> { File.open(@name, "w:utf-8") { |f| f.gets } }.should raise_error(IOError)
   end
 end
 
@@ -170,7 +168,7 @@ describe "IO#gets" do
   before :each do
     @name = tmp("io_gets")
     touch(@name) { |f| f.write "one\n\ntwo\n\nthree\nfour\n" }
-    @io = new_io @name, fmode("r:utf-8")
+    @io = new_io @name, "r:utf-8"
   end
 
   after :each do
@@ -234,7 +232,7 @@ describe "IO#gets" do
     # create data "朝日" + "\xE3\x81" * 100 to avoid utf-8 conflicts
     data = "朝日" + ([227,129].pack('C*') * 100).force_encoding('utf-8')
     touch(@name) { |f| f.write data }
-    @io = new_io @name, fmode("r:utf-8")
+    @io = new_io @name, "r:utf-8"
   end
 
   after :each do
@@ -297,25 +295,25 @@ describe "IO#gets" do
   end
 
   it "overwrites the default external encoding with the IO object's own external encoding" do
-    Encoding.default_external = Encoding::ASCII_8BIT
+    Encoding.default_external = Encoding::BINARY
     Encoding.default_internal = Encoding::UTF_8
     @io = new_io @name, 'r'
     @io.set_encoding Encoding::IBM866
     @io.gets.encoding.should == Encoding::UTF_8
   end
 
-  it "ignores the internal encoding if the default external encoding is ASCII-8BIT" do
-    Encoding.default_external = Encoding::ASCII_8BIT
+  it "ignores the internal encoding if the default external encoding is BINARY" do
+    Encoding.default_external = Encoding::BINARY
     Encoding.default_internal = Encoding::UTF_8
     @io = new_io @name, 'r'
-    @io.gets.encoding.should == Encoding::ASCII_8BIT
+    @io.gets.encoding.should == Encoding::BINARY
   end
 
-  it "transcodes to internal encoding if the IO object's external encoding is ASCII-8BIT" do
-    Encoding.default_external = Encoding::ASCII_8BIT
+  it "transcodes to internal encoding if the IO object's external encoding is BINARY" do
+    Encoding.default_external = Encoding::BINARY
     Encoding.default_internal = Encoding::UTF_8
     @io = new_io @name, 'r'
-    @io.set_encoding Encoding::ASCII_8BIT, Encoding::UTF_8
+    @io.set_encoding Encoding::BINARY, Encoding::UTF_8
     @io.gets.encoding.should == Encoding::UTF_8
   end
 end

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "SystemExit#initialize" do
   it "accepts a status" do
@@ -24,4 +24,3 @@ describe "SystemExit#initialize" do
     s.status.should == 0
   end
 end
-

@@ -19,7 +19,7 @@ class Net::HTTPRedirection < Net::HTTPResponse           # 3xx
 end
 class Net::HTTPClientError < Net::HTTPResponse           # 4xx
   HAS_BODY = true
-  EXCEPTION_TYPE = Net::HTTPServerException   # for backward compatibility
+  EXCEPTION_TYPE = Net::HTTPClientException   # for backward compatibility
 end
 class Net::HTTPServerError < Net::HTTPResponse           # 5xx
   HAS_BODY = true

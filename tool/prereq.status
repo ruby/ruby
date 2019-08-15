@@ -2,6 +2,7 @@ s,@EXTOUT@,tmp,g
 s,@ruby_version@,0.0.0,g
 s,@NULLCMD@,:,g
 s,@ARCH_FLAG@,,g
+s,@ASMEXT@,S,g
 s,@BASERUBY@,ruby,g
 s,@BOOTSTRAPRUBY@,$(BASERUBY),g
 s,@CC@,false,g
@@ -12,6 +13,7 @@ s,@CP@,cp,g
 s,@CPPFLAGS@,,g
 s,@CXXFLAGS@,,g
 s,@DLDFLAGS@,,g
+s,@DTRACE_EXT@,dmyh,g
 s,@EXEEXT@,,g
 s,@HAVE_BASERUBY@,yes,g
 s,@IFCHANGE@,tool/ifchange,g
@@ -30,7 +32,6 @@ s,@RMDIR@,rmdir,g
 s,@RMDIRS@,$(RMDIR) -p,g
 s,@RUBY@,$(BASERUBY),g
 s,@RUNRUBY@,$(MINIRUBY),g
-s,@UNICODE_FILES@,,g
 s,@arch@,noarch,g
 s,@bindir@,,g
 s,@configure_args@,,g

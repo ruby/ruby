@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Kernel.binding" do
   it "returns a binding for the caller" do
@@ -35,7 +35,7 @@ describe "Kernel#binding" do
   end
 
   it "raises a NameError on undefined variable" do
-    lambda { eval("a_fake_variable", @b1) }.should raise_error(NameError)
+    -> { eval("a_fake_variable", @b1) }.should raise_error(NameError)
   end
 
   it "uses the closure's self as self in the binding" do

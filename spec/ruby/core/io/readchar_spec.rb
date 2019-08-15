@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "IO#readchar" do
   before :each do
@@ -21,11 +21,11 @@ describe "IO#readchar" do
 
   it "raises an EOFError when invoked at the end of the stream" do
     @io.read
-    lambda { @io.readchar }.should raise_error(EOFError)
+    -> { @io.readchar }.should raise_error(EOFError)
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.readchar }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.readchar }.should raise_error(IOError)
   end
 end
 
@@ -39,6 +39,6 @@ describe "IO#readchar" do
   end
 
   it "raises EOFError on empty stream" do
-    lambda { @io.readchar }.should raise_error(EOFError)
+    -> { @io.readchar }.should raise_error(EOFError)
   end
 end

@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/pos', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/pos'
 
 describe "IO#sysseek" do
   it_behaves_like :io_set_pos, :seek
@@ -23,7 +23,7 @@ describe "IO#sysseek" do
 
   it "raises an error when called after buffered reads" do
     @io.readline
-    lambda { @io.sysseek(-5, IO::SEEK_CUR) }.should raise_error(IOError)
+    -> { @io.sysseek(-5, IO::SEEK_CUR) }.should raise_error(IOError)
   end
 
   it "moves the read position relative to the start with SEEK_SET" do
@@ -36,7 +36,7 @@ describe "IO#sysseek" do
 
     # this is the safest way of checking the EOF when
     # sys-* methods are invoked
-    lambda { @io.sysread(1) }.should raise_error(EOFError)
+    -> { @io.sysread(1) }.should raise_error(EOFError)
 
     @io.sysseek(-25, IO::SEEK_END)
     @io.sysread(7).should == "cinco.\n"

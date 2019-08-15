@@ -1,8 +1,9 @@
-# -*- encoding: ascii-8bit -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
-require File.expand_path('../shared/unicode', __FILE__)
+# -*- encoding: binary -*-
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
+require_relative 'shared/unicode'
+require_relative 'shared/taint'
 
 describe "Array#pack with format 'U'" do
   it_behaves_like :array_pack_basic, 'U'
@@ -15,6 +16,7 @@ describe "Array#pack with format 'u'" do
   it_behaves_like :array_pack_basic, 'u'
   it_behaves_like :array_pack_basic_non_float, 'u'
   it_behaves_like :array_pack_arguments, 'u'
+  it_behaves_like :array_pack_taint, 'u'
 
   it "encodes an empty string as an empty string" do
     [""].pack("u").should == ""
@@ -110,16 +112,16 @@ describe "Array#pack with format 'u'" do
 
   it "raises a TypeError if #to_str does not return a String" do
     obj = mock("pack m non-string")
-    lambda { [obj].pack("u") }.should raise_error(TypeError)
+    -> { [obj].pack("u") }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed nil" do
-    lambda { [nil].pack("u") }.should raise_error(TypeError)
+    -> { [nil].pack("u") }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed an Integer" do
-    lambda { [0].pack("u") }.should raise_error(TypeError)
-    lambda { [bignum_value].pack("u") }.should raise_error(TypeError)
+    -> { [0].pack("u") }.should raise_error(TypeError)
+    -> { [bignum_value].pack("u") }.should raise_error(TypeError)
   end
 
   it "sets the output string to US-ASCII encoding" do

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "String#strip" do
   it "returns a new string with leading and trailing whitespace removed" do
@@ -49,12 +49,12 @@ describe "String#strip!" do
   end
 
   it "raises a #{frozen_error_class} on a frozen instance that is modified" do
-    lambda { "  hello  ".freeze.strip! }.should raise_error(frozen_error_class)
+    -> { "  hello  ".freeze.strip! }.should raise_error(frozen_error_class)
   end
 
   # see #1552
   it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
-    lambda {"hello".freeze.strip! }.should raise_error(frozen_error_class)
-    lambda {"".freeze.strip!      }.should raise_error(frozen_error_class)
+    -> {"hello".freeze.strip! }.should raise_error(frozen_error_class)
+    -> {"".freeze.strip!      }.should raise_error(frozen_error_class)
   end
 end

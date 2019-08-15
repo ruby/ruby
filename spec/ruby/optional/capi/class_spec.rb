@@ -1,5 +1,5 @@
-require File.expand_path('../spec_helper', __FILE__)
-require File.expand_path('../fixtures/class', __FILE__)
+require_relative 'spec_helper'
+require_relative 'fixtures/class'
 
 load_extension("class")
 compile_extension("class_under_autoload")
@@ -18,19 +18,19 @@ describe :rb_path_to_class, shared: true do
   end
 
   it "raises an ArgumentError if a constant in the path does not exist" do
-    lambda { @s.send(@method, "CApiClassSpecs::NotDefined::B") }.should raise_error(ArgumentError)
+    -> { @s.send(@method, "CApiClassSpecs::NotDefined::B") }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if the final constant does not exist" do
-    lambda { @s.send(@method, "CApiClassSpecs::NotDefined") }.should raise_error(ArgumentError)
+    -> { @s.send(@method, "CApiClassSpecs::NotDefined") }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError if the constant is not a class or module" do
-    lambda { @s.send(@method, "CApiClassSpecs::A::C") }.should raise_error(TypeError)
+    -> { @s.send(@method, "CApiClassSpecs::A::C") }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError even if a constant in the path exists on toplevel" do
-    lambda { @s.send(@method, "CApiClassSpecs::Object") }.should raise_error(ArgumentError)
+    -> { @s.send(@method, "CApiClassSpecs::Object") }.should raise_error(ArgumentError)
   end
 end
 
@@ -56,7 +56,7 @@ describe "C-API Class function" do
     it "includes a module into a class" do
       c = Class.new
       o = c.new
-      lambda { o.included? }.should raise_error(NameError)
+      -> { o.included? }.should raise_error(NameError)
       @s.rb_include_module(c, CApiClassSpecs::M)
       o.included?.should be_true
     end
@@ -70,12 +70,12 @@ describe "C-API Class function" do
     it "defines an attr_reader when passed true, false" do
       @s.rb_define_attr(CApiClassSpecs::Attr, :foo, true, false)
       @a.foo.should == 1
-      lambda { @a.foo = 5 }.should raise_error(NameError)
+      -> { @a.foo = 5 }.should raise_error(NameError)
     end
 
     it "defines an attr_writer when passed false, true" do
       @s.rb_define_attr(CApiClassSpecs::Attr, :bar, false, true)
-      lambda { @a.bar }.should raise_error(NameError)
+      -> { @a.bar }.should raise_error(NameError)
       @a.bar = 5
       @a.instance_variable_get(:@bar).should == 5
     end
@@ -95,11 +95,27 @@ describe "C-API Class function" do
       obj.call_super_method.should == :super_method
     end
 
+    it "calls the method in the superclass with the correct self" do
+      @s.define_call_super_method CApiClassSpecs::SubSelf, "call_super_method"
+      obj = CApiClassSpecs::SubSelf.new
+      obj.call_super_method.should equal obj
+    end
+
     it "calls the method in the superclass through two native levels" do
       @s.define_call_super_method CApiClassSpecs::Sub, "call_super_method"
       @s.define_call_super_method CApiClassSpecs::SubSub, "call_super_method"
       obj = CApiClassSpecs::SubSub.new
       obj.call_super_method.should == :super_method
+    end
+  end
+
+  describe "rb_define_method" do
+    it "defines a method taking variable arguments as a C array if the argument count is -1" do
+      @s.rb_method_varargs_1(1, 3, 7, 4).should == [1, 3, 7, 4]
+    end
+
+    it "defines a method taking variable arguments as a Ruby array if the argument count is -2" do
+      @s.rb_method_varargs_2(1, 3, 7, 4).should == [1, 3, 7, 4]
     end
   end
 
@@ -171,7 +187,7 @@ describe "C-API Class function" do
     end
 
     it "raises a NameError if the class variable is not defined" do
-      lambda {
+      -> {
         @s.rb_cv_get(CApiClassSpecs::CVars, "@@no_cvar")
       }.should raise_error(NameError, /class variable @@no_cvar/)
     end
@@ -210,23 +226,21 @@ describe "C-API Class function" do
     end
 
     it "raises a TypeError when given a non class object to superclass" do
-      lambda {
+      -> {
         @s.rb_define_class("ClassSpecDefineClass3", Module.new)
       }.should raise_error(TypeError)
     end
 
     it "raises a TypeError when given a mismatched class to superclass" do
-      lambda {
+      -> {
         @s.rb_define_class("ClassSpecDefineClass", Object)
       }.should raise_error(TypeError)
     end
 
-    ruby_version_is "2.4" do
-      it "raises a ArgumentError when given NULL as superclass" do
-        lambda {
-          @s.rb_define_class("ClassSpecDefineClass4", nil)
-        }.should raise_error(ArgumentError)
-      end
+    it "raises a ArgumentError when given NULL as superclass" do
+      -> {
+        @s.rb_define_class("ClassSpecDefineClass4", nil)
+      }.should raise_error(ArgumentError)
     end
   end
 
@@ -251,40 +265,26 @@ describe "C-API Class function" do
     end
 
     it "raises a TypeError when given a non class object to superclass" do
-      lambda { @s.rb_define_class_under(CApiClassSpecs,
+      -> { @s.rb_define_class_under(CApiClassSpecs,
                                         "ClassUnder5",
                                         Module.new)
       }.should raise_error(TypeError)
     end
 
-    ruby_version_is "2.3" do
-      it "raises a TypeError when given a mismatched class to superclass" do
-        CApiClassSpecs::ClassUnder6 = Class.new(CApiClassSpecs::Super)
-        lambda { @s.rb_define_class_under(CApiClassSpecs,
-                                          "ClassUnder6",
-                                          Class.new)
-        }.should raise_error(TypeError)
-      end
-    end
-
-    ruby_version_is ""..."2.3" do
-      it "raises a NameError when given a mismatched class to superclass" do
-        CApiClassSpecs::ClassUnder6 = Class.new(CApiClassSpecs::Super)
-        lambda { @s.rb_define_class_under(CApiClassSpecs,
-                                          "ClassUnder6",
-                                          Class.new)
-        }.should raise_error(NameError)
-      end
+    it "raises a TypeError when given a mismatched class to superclass" do
+      CApiClassSpecs::ClassUnder6 = Class.new(CApiClassSpecs::Super)
+      -> { @s.rb_define_class_under(CApiClassSpecs,
+                                        "ClassUnder6",
+                                        Class.new)
+      }.should raise_error(TypeError)
     end
 
     it "defines a class for an existing Autoload" do
       ClassUnderAutoload.name.should == "ClassUnderAutoload"
     end
 
-    ruby_version_is "2.3" do
-      it "raises a TypeError if class is defined and its superclass mismatches the given one" do
-        lambda { @s.rb_define_class_under(CApiClassSpecs, "Sub", Object) }.should raise_error(TypeError)
-      end
+    it "raises a TypeError if class is defined and its superclass mismatches the given one" do
+      -> { @s.rb_define_class_under(CApiClassSpecs, "Sub", Object) }.should raise_error(TypeError)
     end
   end
 
@@ -310,10 +310,8 @@ describe "C-API Class function" do
       ClassIdUnderAutoload.name.should == "ClassIdUnderAutoload"
     end
 
-    ruby_version_is "2.3" do
-      it "raises a TypeError if class is defined and its superclass mismatches the given one" do
-        lambda { @s.rb_define_class_id_under(CApiClassSpecs, :Sub, Object) }.should raise_error(TypeError)
-      end
+    it "raises a TypeError if class is defined and its superclass mismatches the given one" do
+      -> { @s.rb_define_class_id_under(CApiClassSpecs, :Sub, Object) }.should raise_error(TypeError)
     end
   end
 
@@ -333,7 +331,7 @@ describe "C-API Class function" do
     end
 
     it "raises a NameError if the class variable is not defined" do
-      lambda {
+      -> {
         @s.rb_cvar_get(CApiClassSpecs::CVars, "@@no_cvar")
       }.should raise_error(NameError, /class variable @@no_cvar/)
     end
@@ -346,12 +344,12 @@ describe "C-API Class function" do
     end
 
     it "raises a TypeError if passed Class as the superclass" do
-      lambda { @s.rb_class_new(Class) }.should raise_error(TypeError)
+      -> { @s.rb_class_new(Class) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if passed a singleton class as the superclass" do
       metaclass = Object.new.singleton_class
-      lambda { @s.rb_class_new(metaclass) }.should raise_error(TypeError)
+      -> { @s.rb_class_new(metaclass) }.should raise_error(TypeError)
     end
   end
 

@@ -1,0 +1,6 @@
+prelude: |
+  obj = Object.new
+benchmark:
+  vm1_not: |
+    !obj
+loop_count: 30000000

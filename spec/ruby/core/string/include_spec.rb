@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "String#include? with String" do
   it "returns true if self contains other_str" do
@@ -21,14 +21,14 @@ describe "String#include? with String" do
   end
 
   it "raises a TypeError if other can't be converted to string" do
-    lambda { "hello".include?([])       }.should raise_error(TypeError)
-    lambda { "hello".include?('h'.ord)  }.should raise_error(TypeError)
-    lambda { "hello".include?(mock('x')) }.should raise_error(TypeError)
+    -> { "hello".include?([])       }.should raise_error(TypeError)
+    -> { "hello".include?('h'.ord)  }.should raise_error(TypeError)
+    -> { "hello".include?(mock('x')) }.should raise_error(TypeError)
   end
 
   it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
     pat = "ア".encode Encoding::EUC_JP
-    lambda do
+    -> do
       "あれ".include?(pat)
     end.should raise_error(Encoding::CompatibilityError)
   end

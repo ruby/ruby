@@ -77,6 +77,8 @@ static ID id_special_prefixes;
 #endif
 #ifndef HAVE_RL_USERNAME_COMPLETION_FUNCTION
 # define rl_username_completion_function username_completion_function
+#else
+char *rl_username_completion_function(const char *, int);
 #endif
 #ifndef HAVE_RL_COMPLETION_MATCHES
 # define rl_completion_matches completion_matches
@@ -688,6 +690,7 @@ readline_s_insert_text(VALUE self, VALUE str)
 #endif
 
 #if defined(HAVE_RL_DELETE_TEXT)
+int rl_delete_text(int, int);
 static const char *
 str_subpos(const char *ptr, const char *end, long beg, long *sublen, rb_encoding *enc)
 {
@@ -820,7 +823,7 @@ readline_s_redisplay(VALUE self)
  *
  * When working with auto-complete there are some strategies that work well.
  * To get some ideas you can take a look at the
- * completion.rb[http://svn.ruby-lang.org/repos/ruby/trunk/lib/irb/completion.rb]
+ * completion.rb[https://git.ruby-lang.org/ruby.git/tree/lib/irb/completion.rb]
  * file for irb.
  *
  * The common strategy is to take a list of possible completions and filter it
@@ -1146,6 +1149,7 @@ readline_s_get_screen_size(VALUE self)
 #endif
 
 #ifdef HAVE_RL_VI_EDITING_MODE
+int rl_vi_editing_mode(int, int);
 /*
  * call-seq:
  *   Readline.vi_editing_mode -> nil
@@ -1184,6 +1188,7 @@ readline_s_vi_editing_mode_p(VALUE self)
 #endif
 
 #ifdef HAVE_RL_EMACS_EDITING_MODE
+int rl_emacs_editing_mode(int, int);
 /*
  * call-seq:
  *   Readline.emacs_editing_mode -> nil
@@ -1301,6 +1306,35 @@ readline_s_get_completion_append_character(VALUE self)
 }
 #else
 #define readline_s_get_completion_append_character rb_f_notimplement
+#endif
+
+#ifdef HAVE_RL_COMPLETION_QUOTE_CHARACTER
+/*
+ * call-seq:
+ *   Readline.completion_quote_character -> char
+ *
+ * When called during a completion (e.g. from within your completion_proc),
+ * it will return a string containing the character used to quote the
+ * argument being completed, or nil if the argument is unquoted.
+ *
+ * When called at other times, it will always return nil.
+ *
+ * Note that Readline.completer_quote_characters must be set,
+ * or this method will always return nil.
+ */
+static VALUE
+readline_s_get_completion_quote_character(VALUE self)
+{
+    char buf[1];
+
+    if (rl_completion_quote_character == '\0')
+        return Qnil;
+
+    buf[0] = (char) rl_completion_quote_character;
+    return rb_locale_str_new(buf, 1);
+}
+#else
+#define readline_s_get_completion_quote_character rb_f_notimplement
 #endif
 
 #ifdef HAVE_RL_BASIC_WORD_BREAK_CHARACTERS
@@ -1639,6 +1673,7 @@ readline_s_get_filename_quote_characters(VALUE self, VALUE str)
 #endif
 
 #ifdef HAVE_RL_REFRESH_LINE
+int rl_refresh_line(int, int);
 /*
  * call-seq:
  *   Readline.refresh_line -> nil
@@ -1756,7 +1791,7 @@ rb_remove_history(int index)
 #else
     rb_notimplement();
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 #endif
 }
 
@@ -1884,6 +1919,10 @@ username_completion_proc_call(VALUE self, VALUE str)
     return result;
 }
 
+#ifdef HAVE_RL_CLEAR_SIGNALS
+int rl_clear_signals(void);
+#endif
+
 #undef rb_intern
 void
 Init_readline(void)
@@ -1958,6 +1997,8 @@ Init_readline(void)
                                readline_s_set_completion_append_character, 1);
     rb_define_singleton_method(mReadline, "completion_append_character",
                                readline_s_get_completion_append_character, 0);
+    rb_define_singleton_method(mReadline, "completion_quote_character",
+                               readline_s_get_completion_quote_character, 0);
     rb_define_singleton_method(mReadline, "basic_word_break_characters=",
                                readline_s_set_basic_word_break_characters, 1);
     rb_define_singleton_method(mReadline, "basic_word_break_characters",
@@ -1996,8 +2037,8 @@ Init_readline(void)
                                readline_s_get_special_prefixes, 0);
 
 #if USE_INSERT_IGNORE_ESCAPE
-    CONST_ID(id_orig_prompt, "orig_prompt");
-    CONST_ID(id_last_prompt, "last_prompt");
+    id_orig_prompt = rb_intern("orig_prompt");
+    id_last_prompt = rb_intern("last_prompt");
 #endif
 
     history = rb_obj_alloc(rb_cObject);

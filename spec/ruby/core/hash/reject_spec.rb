@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/iteration', __FILE__)
-require File.expand_path('../../enumerable/shared/enumeratorized', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/iteration'
+require_relative '../enumerable/shared/enumeratorized'
 
 describe "Hash#reject" do
   it "returns a new hash removing keys for which the block yields true" do
@@ -49,8 +49,8 @@ describe "Hash#reject" do
     reject_pairs.should == reject_bang_pairs
   end
 
-  it_behaves_like(:hash_iteration_no_block, :reject)
-  it_behaves_like(:enumeratorized_with_origin_size, :reject, { 1 => 2, 3 => 4, 5 => 6 })
+  it_behaves_like :hash_iteration_no_block, :reject
+  it_behaves_like :enumeratorized_with_origin_size, :reject, { 1 => 2, 3 => 4, 5 => 6 }
 end
 
 describe "Hash#reject!" do
@@ -88,13 +88,13 @@ describe "Hash#reject!" do
   end
 
   it "raises a #{frozen_error_class} if called on a frozen instance that is modified" do
-    lambda { HashSpecs.empty_frozen_hash.reject! { true } }.should raise_error(frozen_error_class)
+    -> { HashSpecs.empty_frozen_hash.reject! { true } }.should raise_error(frozen_error_class)
   end
 
   it "raises a #{frozen_error_class} if called on a frozen instance that would not be modified" do
-    lambda { HashSpecs.frozen_hash.reject! { false } }.should raise_error(frozen_error_class)
+    -> { HashSpecs.frozen_hash.reject! { false } }.should raise_error(frozen_error_class)
   end
 
-  it_behaves_like(:hash_iteration_no_block, :reject!)
-  it_behaves_like(:enumeratorized_with_origin_size, :reject!, { 1 => 2, 3 => 4, 5 => 6 })
+  it_behaves_like :hash_iteration_no_block, :reject!
+  it_behaves_like :enumeratorized_with_origin_size, :reject!, { 1 => 2, 3 => 4, 5 => 6 }
 end

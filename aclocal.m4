@@ -1,6 +1,6 @@
-# generated automatically by aclocal 1.15.1 -*- Autoconf -*-
+# generated automatically by aclocal 1.16.1 -*- Autoconf -*-
 
-# Copyright (C) 1996-2017 Free Software Foundation, Inc.
+# Copyright (C) 1996-2018 Free Software Foundation, Inc.
 
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
@@ -13,7 +13,6 @@
 
 m4_ifndef([AC_CONFIG_MACRO_DIRS], [m4_defun([_AM_CONFIG_MACRO_DIRS], [])m4_defun([AC_CONFIG_MACRO_DIRS], [_AM_CONFIG_MACRO_DIRS($@)])])
 m4_include([tool/m4/_colorize_result_prepare.m4])
-m4_include([tool/m4/ac_checking.m4])
 m4_include([tool/m4/ac_msg_result.m4])
 m4_include([tool/m4/colorize_result.m4])
 m4_include([tool/m4/ruby_append_option.m4])
@@ -35,8 +34,8 @@ m4_include([tool/m4/ruby_dtrace_postprocess.m4])
 m4_include([tool/m4/ruby_func_attribute.m4])
 m4_include([tool/m4/ruby_mingw32.m4])
 m4_include([tool/m4/ruby_prepend_option.m4])
-m4_include([tool/m4/ruby_prepend_options.m4])
 m4_include([tool/m4/ruby_prog_gnu_ld.m4])
+m4_include([tool/m4/ruby_replace_funcs.m4])
 m4_include([tool/m4/ruby_replace_type.m4])
 m4_include([tool/m4/ruby_rm_recursive.m4])
 m4_include([tool/m4/ruby_setjmp_type.m4])

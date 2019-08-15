@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Process.detach" do
   platform_is_not :windows do
@@ -23,7 +23,7 @@ describe "Process.detach" do
       it "reaps the child process's status automatically" do
         pid = Process.fork { Process.exit! }
         Process.detach(pid).join
-        lambda { Process.waitpid(pid) }.should raise_error(Errno::ECHILD)
+        -> { Process.waitpid(pid) }.should raise_error(Errno::ECHILD)
       end
     end
 

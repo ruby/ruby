@@ -1,11 +1,12 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'bigdecimal'
 
 describe "BigDecimal#remainder" do
 
   before :each do
     @zero = BigDecimal("0")
-    @one = BigDecimal("0")
+    @one = BigDecimal("1")
+    @three = BigDecimal("3")
     @mixed = BigDecimal("1.23456789")
     @pos_int = BigDecimal("2E5555")
     @neg_int = BigDecimal("-2E5555")
@@ -71,12 +72,19 @@ describe "BigDecimal#remainder" do
   end
 
   it "coerces arguments to BigDecimal if possible" do
-    @one.remainder(2).should == @one
+    @three.remainder(2).should == @one
   end
 
+  describe "with Object" do
+    it "tries to coerce the other operand to self" do
+      object = mock("Object")
+      object.should_receive(:coerce).with(@three).and_return([@three, 2])
+      @three.remainder(object).should == @one
+    end
+  end
 
   it "raises TypeError if the argument cannot be coerced to BigDecimal" do
-    lambda {
+    -> {
       @one.remainder('2')
     }.should raise_error(TypeError)
   end

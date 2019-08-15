@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require 'net/http'
+require_relative '../http'
 
 if $0 == __FILE__
   require 'open-uri'

@@ -20,8 +20,9 @@ MAKE = $(MAKE) -f $(MAKEFILE)
 MAKEFILE = Makefile
 !endif
 CPU = PROCESSOR_LEVEL
-CC = cl -nologo
+CC = $(CC) -nologo
 CPP = $(CC) -EP
+AS = $(AS) -nologo
 
 all: -prologue- -generic- -epilogue-
 i386-mswin32: -prologue- -i386- -epilogue-
@@ -30,7 +31,6 @@ i586-mswin32: -prologue- -i586- -epilogue-
 i686-mswin32: -prologue- -i686- -epilogue-
 alpha-mswin32: -prologue- -alpha- -epilogue-
 x64-mswin64: -prologue- -x64- -epilogue-
-ia64-mswin64: -prologue- -ia64- -epilogue-
 
 -prologue-: -basic-vars-
 -generic-: -osname-
@@ -60,6 +60,9 @@ USE_RUBYGEMS = $(USE_RUBYGEMS)
 !if defined(ENABLE_DEBUG_ENV)
 ENABLE_DEBUG_ENV = $(ENABLE_DEBUG_ENV)
 !endif
+!if defined(MJIT_SUPPORT)
+MJIT_SUPPORT = $(MJIT_SUPPORT)
+!endif
 
 # TOOLS
 <<
@@ -72,7 +75,7 @@ ENABLE_DEBUG_ENV = $(ENABLE_DEBUG_ENV)
 $(BANG)if "$$(BASERUBY)" == ""
 BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1
 HAVE_BASERUBY = no
-$(BANG)elseif [$$(BASERUBY) -eexit 2> nul] == 0
+$(BANG)elseif [($$(BASERUBY) -eexit) > nul 2> nul] == 0
 HAVE_BASERUBY = yes
 $(BANG)else
 HAVE_BASERUBY = no
@@ -141,19 +144,11 @@ verconf.mk: nul
 #define STRINGIZE(x) STRINGIZE0(x)
 #include "version.h"
 for %%I in (RUBY_RELEASE_DATE) do set ruby_release_date=%%~I
-for %%I in (RUBY_VERSION) do set ruby_version=%%~I
-for /f "delims=. tokens=1-3" %%I in (RUBY_VERSION) do (
-    set major=%%I
-    set minor=%%J
-    set teeny=%%K
-)
 #undef RUBY_RELEASE_DATE
-#undef RUBY_PROGRAM_VERSION
 echo RUBY_RELEASE_DATE = %ruby_release_date:""=%
-echo RUBY_PROGRAM_VERSION = %ruby_version:""=%
-echo MAJOR = %major%
-echo MINOR = %minor%
-echo TEENY = %teeny%
+echo MAJOR = RUBY_VERSION_MAJOR
+echo MINOR = RUBY_VERSION_MINOR
+echo TEENY = RUBY_VERSION_TEENY
 #if defined RUBY_PATCHLEVEL && RUBY_PATCHLEVEL < 0
 echo RUBY_DEVEL = yes
 #endif
@@ -182,8 +177,6 @@ RUBY_SO_NAME = $(RUBY_SO_NAME)
 	@$(CPP) <<conftest.c 2>nul | findstr = >>$(MAKEFILE)
 #if defined _M_X64
 MACHINE = x64
-#elif defined _M_IA64
-MACHINE = ia64
 #else
 MACHINE = x86
 #endif
@@ -196,8 +189,6 @@ MACHINE = x86
 	@echo MACHINE = alpha>>$(MAKEFILE)
 -x64-: -osname64-
 	@echo MACHINE = x64>>$(MAKEFILE)
--ia64-: -osname64-
-	@echo MACHINE = ia64>>$(MAKEFILE)
 -ix86-: -osname32-
 	@echo MACHINE = x86>>$(MAKEFILE)
 
@@ -234,7 +225,11 @@ MACHINE = x86
 # XLDFLAGS =
 # RFLAGS = -r
 # EXTLIBS =
-CC = cl -nologo
+CC = $(CC)
+AS = $(AS)
+<<
+	@(for %I in (cl.exe) do @set MJIT_CC=%~$$PATH:I) && (call echo MJIT_CC = "%MJIT_CC:\=/%" -nologo>>$(MAKEFILE))
+	@type << >>$(MAKEFILE)
 
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<

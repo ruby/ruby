@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'matrix'
 
 describe "Vector#inner_product" do
@@ -11,7 +11,7 @@ describe "Vector#inner_product" do
   end
 
   it "raises an error for mismatched vectors" do
-    lambda {
+    -> {
       Vector[1, 2, 3].inner_product(Vector[0, -4])
     }.should raise_error(Vector::ErrDimensionMismatch)
   end

@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/complex/numeric/arg', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/arg'
 
 describe "Numeric#arg" do
-  it_behaves_like(:numeric_arg, :arg)
+  it_behaves_like :numeric_arg, :arg
 end

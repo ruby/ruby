@@ -42,8 +42,10 @@ p Foo::Bar
     require 'tmpdir'
     Dir.mktmpdir('autoload') {|tmpdir|
       tmpfile = tmpdir + '/foo.rb'
+      tmpfile2 = tmpdir + '/bar.rb'
       a = Module.new do
         autoload :X, tmpfile
+        autoload :Y, tmpfile2
       end
       b = Module.new do
         include a
@@ -52,6 +54,14 @@ p Foo::Bar
       assert_equal(true, b.const_defined?(:X))
       assert_equal(tmpfile, a.autoload?(:X), bug4565)
       assert_equal(tmpfile, b.autoload?(:X), bug4565)
+      assert_equal(tmpfile, a.autoload?(:X, false))
+      assert_equal(tmpfile, a.autoload?(:X, nil))
+      assert_nil(b.autoload?(:X, false))
+      assert_nil(b.autoload?(:X, nil))
+      assert_equal(true, a.const_defined?("Y"))
+      assert_equal(true, b.const_defined?("Y"))
+      assert_equal(tmpfile2, a.autoload?("Y"))
+      assert_equal(tmpfile2, b.autoload?("Y"))
     }
   end
 
@@ -243,6 +253,108 @@ p Foo::Bar
   def test_bug_13526
     script = File.join(__dir__, 'bug-13526.rb')
     assert_ruby_status([script], '', '[ruby-core:81016] [Bug #13526]')
+  end
+
+  def test_autoload_private_constant
+    Dir.mktmpdir('autoload') do |tmpdir|
+      File.write(tmpdir+"/zzz.rb", "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        class AutoloadTest
+          ZZZ = :ZZZ
+          private_constant :ZZZ
+        end
+      end;
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-'end;'}")
+      bug = '[ruby-core:85516] [Bug #14469]'
+      begin;
+        class AutoloadTest
+          autoload :ZZZ, "zzz.rb"
+        end
+        assert_raise(NameError, bug) {AutoloadTest::ZZZ}
+      end;
+    end
+  end
+
+  def test_autoload_deprecate_constant
+    Dir.mktmpdir('autoload') do |tmpdir|
+      File.write(tmpdir+"/zzz.rb", "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        class AutoloadTest
+          ZZZ = :ZZZ
+          deprecate_constant :ZZZ
+        end
+      end;
+      assert_separately(%W[-I #{tmpdir}], "#{<<-"begin;"}\n#{<<-'end;'}")
+      bug = '[ruby-core:85516] [Bug #14469]'
+      begin;
+        class AutoloadTest
+          autoload :ZZZ, "zzz.rb"
+        end
+        assert_warning(/ZZZ is deprecated/, bug) {AutoloadTest::ZZZ}
+      end;
+    end
+  end
+
+  def test_autoload_fork
+    EnvUtil.default_warning do
+      Tempfile.create(['autoload', '.rb']) {|file|
+        file.puts 'sleep 0.3; class AutoloadTest; end'
+        file.close
+        add_autoload(file.path)
+        begin
+          thrs = []
+          3.times do
+            thrs << Thread.new { AutoloadTest && nil }
+            thrs << Thread.new { fork { AutoloadTest } }
+          end
+          thrs.each(&:join)
+          thrs.each do |th|
+            pid = th.value or next
+            _, status = Process.waitpid2(pid)
+            assert_predicate status, :success?
+          end
+        ensure
+          remove_autoload_constant
+          assert_nil $!, '[ruby-core:86410] [Bug #14634]'
+        end
+      }
+    end
+  end if Process.respond_to?(:fork)
+
+  def test_autoload_same_file
+    Dir.mktmpdir('autoload') do |tmpdir|
+      File.write("#{tmpdir}/b.rb", "#{<<~'begin;'}\n#{<<~'end;'}")
+      begin;
+        module Foo; end
+        module Bar; end
+      end;
+      3.times do # timing-dependent, needs a few times to hit [Bug #14742]
+        assert_separately(%W[-I #{tmpdir}], "#{<<-'begin;'}\n#{<<-'end;'}")
+        begin;
+          autoload :Foo, 'b'
+          autoload :Bar, 'b'
+          t1 = Thread.new do Foo end
+          t2 = Thread.new do Bar end
+          t1.join
+          t2.join
+          bug = '[ruby-core:86935] [Bug #14742]'
+          assert_instance_of Module, t1.value, bug
+          assert_instance_of Module, t2.value, bug
+        end;
+      end
+    end
+  end
+
+  def test_no_leak
+    assert_no_memory_leak([], '', <<~'end;', 'many autoloads', timeout: 60)
+      200000.times do |i|
+        m = Module.new
+        m.instance_eval do
+          autoload :Foo, 'x'
+          autoload :Bar, i.to_s
+        end
+      end
+    end;
   end
 
   def add_autoload(path)

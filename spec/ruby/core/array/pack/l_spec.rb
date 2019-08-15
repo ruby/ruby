@@ -1,8 +1,8 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
-require File.expand_path('../shared/numeric_basic', __FILE__)
-require File.expand_path('../shared/integer', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
+require_relative 'shared/numeric_basic'
+require_relative 'shared/integer'
 
 describe "Array#pack with format 'L'" do
   it_behaves_like :array_pack_basic, 'L'
@@ -29,7 +29,7 @@ describe "Array#pack with format 'L'" do
     it_behaves_like :array_pack_32bit_be, 'L>'
   end
 
-  guard -> { platform_is wordsize: 32 or platform_is :mingw32 } do
+  platform_is wordsize: 32 do
     describe "with modifier '<' and '_'" do
       it_behaves_like :array_pack_32bit_le, 'L<_'
       it_behaves_like :array_pack_32bit_le, 'L_<'
@@ -51,7 +51,7 @@ describe "Array#pack with format 'L'" do
     end
   end
 
-  guard -> { platform_is wordsize: 64 and platform_is_not :mingw32 } do
+  platform_is wordsize: 64 do
     describe "with modifier '<' and '_'" do
       it_behaves_like :array_pack_64bit_le, 'L<_'
       it_behaves_like :array_pack_64bit_le, 'L_<'
@@ -83,7 +83,7 @@ describe "Array#pack with format 'l'" do
     it_behaves_like :array_pack_32bit_be, 'l>'
   end
 
-  guard -> { platform_is wordsize: 32 or platform_is :mingw32 } do
+  platform_is wordsize: 32 do
     describe "with modifier '<' and '_'" do
       it_behaves_like :array_pack_32bit_le, 'l<_'
       it_behaves_like :array_pack_32bit_le, 'l_<'
@@ -105,7 +105,7 @@ describe "Array#pack with format 'l'" do
     end
   end
 
-  guard -> { platform_is wordsize: 64 and platform_is_not :mingw32 } do
+  platform_is wordsize: 64 do
     describe "with modifier '<' and '_'" do
       it_behaves_like :array_pack_64bit_le, 'l<_'
       it_behaves_like :array_pack_64bit_le, 'l_<'
@@ -137,7 +137,7 @@ little_endian do
     it_behaves_like :array_pack_32bit_le, 'l'
   end
 
-  guard -> { platform_is wordsize: 32 or platform_is :mingw32 } do
+  platform_is wordsize: 32 do
     describe "Array#pack with format 'L' with modifier '_'" do
       it_behaves_like :array_pack_32bit_le, 'L_'
     end
@@ -155,7 +155,7 @@ little_endian do
     end
   end
 
-  guard -> { platform_is wordsize: 64 and platform_is_not :mingw32 } do
+  platform_is wordsize: 64 do
     describe "Array#pack with format 'L' with modifier '_'" do
       it_behaves_like :array_pack_64bit_le, 'L_'
     end
@@ -183,7 +183,7 @@ big_endian do
     it_behaves_like :array_pack_32bit_be, 'l'
   end
 
-  guard -> { platform_is wordsize: 32 or platform_is :mingw32 } do
+  platform_is wordsize: 32 do
     describe "Array#pack with format 'L' with modifier '_'" do
       it_behaves_like :array_pack_32bit_be, 'L_'
     end
@@ -201,7 +201,7 @@ big_endian do
     end
   end
 
-  guard -> { platform_is wordsize: 64 and platform_is_not :mingw32 } do
+  platform_is wordsize: 64 do
     describe "Array#pack with format 'L' with modifier '_'" do
       it_behaves_like :array_pack_64bit_be, 'L_'
     end

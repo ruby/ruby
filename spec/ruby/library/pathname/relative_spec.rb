@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'pathname'
 
 describe "Pathname#relative?" do
@@ -20,4 +20,3 @@ describe "Pathname#relative?" do
   end
 
 end
-

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#at" do
   it "returns the (n+1)'th element for the passed index n" do
@@ -47,10 +47,10 @@ describe "Array#at" do
   end
 
   it "raises a TypeError when the passed argument can't be coerced to Integer" do
-    lambda { [].at("cat") }.should raise_error(TypeError)
+    -> { [].at("cat") }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError when 2 or more arguments are passed" do
-    lambda { [:a, :b].at(0,1) }.should raise_error(ArgumentError)
+    -> { [:a, :b].at(0,1) }.should raise_error(ArgumentError)
   end
 end

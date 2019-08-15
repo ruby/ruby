@@ -1,5 +1,5 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../../fixtures/encoded_strings', __FILE__)
+require_relative '../fixtures/classes'
+require_relative '../fixtures/encoded_strings'
 
 describe :array_join_with_default_separator, shared: true do
   before :each do
@@ -19,8 +19,10 @@ describe :array_join_with_default_separator, shared: true do
   end
 
   it "returns a string formed by concatenating each String element separated by $," do
-    $, = " | "
-    ["1", "2", "3"].send(@method).should == "1 | 2 | 3"
+    suppress_warning {
+      $, = " | "
+      ["1", "2", "3"].send(@method).should == "1 | 2 | 3"
+    }
   end
 
   it "attempts coercion via #to_str first" do
@@ -47,13 +49,13 @@ describe :array_join_with_default_separator, shared: true do
   it "raises a NoMethodError if an element does not respond to #to_str, #to_ary, or #to_s" do
     obj = mock('o')
     class << obj; undef :to_s; end
-    lambda { [1, obj].send(@method) }.should raise_error(NoMethodError)
+    -> { [1, obj].send(@method) }.should raise_error(NoMethodError)
   end
 
   it "raises an ArgumentError when the Array is recursive" do
-    lambda { ArraySpecs.recursive_array.send(@method) }.should raise_error(ArgumentError)
-    lambda { ArraySpecs.head_recursive_array.send(@method) }.should raise_error(ArgumentError)
-    lambda { ArraySpecs.empty_recursive_array.send(@method) }.should raise_error(ArgumentError)
+    -> { ArraySpecs.recursive_array.send(@method) }.should raise_error(ArgumentError)
+    -> { ArraySpecs.head_recursive_array.send(@method) }.should raise_error(ArgumentError)
+    -> { ArraySpecs.empty_recursive_array.send(@method) }.should raise_error(ArgumentError)
   end
 
   it "taints the result if the Array is tainted and non-empty" do
@@ -87,8 +89,8 @@ describe :array_join_with_default_separator, shared: true do
   it "uses the first encoding when other strings are compatible" do
     ary1 = ArraySpecs.array_with_7bit_utf8_and_usascii_strings
     ary2 = ArraySpecs.array_with_usascii_and_7bit_utf8_strings
-    ary3 = ArraySpecs.array_with_utf8_and_7bit_ascii8bit_strings
-    ary4 = ArraySpecs.array_with_usascii_and_7bit_ascii8bit_strings
+    ary3 = ArraySpecs.array_with_utf8_and_7bit_binary_strings
+    ary4 = ArraySpecs.array_with_usascii_and_7bit_binary_strings
 
     ary1.send(@method).encoding.should == Encoding::UTF_8
     ary2.send(@method).encoding.should == Encoding::US_ASCII
@@ -105,9 +107,9 @@ describe :array_join_with_default_separator, shared: true do
   end
 
   it "fails for arrays with incompatibly-encoded strings" do
-    ary_utf8_bad_ascii8bit = ArraySpecs.array_with_utf8_and_ascii8bit_strings
+    ary_utf8_bad_binary = ArraySpecs.array_with_utf8_and_binary_strings
 
-    lambda { ary_utf8_bad_ascii8bit.send(@method) }.should raise_error(EncodingError)
+    -> { ary_utf8_bad_binary.send(@method) }.should raise_error(EncodingError)
   end
 end
 

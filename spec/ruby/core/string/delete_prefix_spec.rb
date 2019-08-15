@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 ruby_version_is '2.5' do
   describe "String#delete_prefix" do
@@ -73,9 +73,9 @@ ruby_version_is '2.5' do
     end
 
     it "raises a #{frozen_error_class} when self is frozen" do
-      lambda { 'hello'.freeze.delete_prefix!('hell') }.should raise_error(frozen_error_class)
-      lambda { 'hello'.freeze.delete_prefix!('') }.should raise_error(frozen_error_class)
-      lambda { ''.freeze.delete_prefix!('') }.should raise_error(frozen_error_class)
+      -> { 'hello'.freeze.delete_prefix!('hell') }.should raise_error(frozen_error_class)
+      -> { 'hello'.freeze.delete_prefix!('') }.should raise_error(frozen_error_class)
+      -> { ''.freeze.delete_prefix!('') }.should raise_error(frozen_error_class)
     end
   end
 end

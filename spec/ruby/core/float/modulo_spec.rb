@@ -1,10 +1,10 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/modulo', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/modulo'
 
 describe "Float#%" do
-  it_behaves_like(:float_modulo, :%)
+  it_behaves_like :float_modulo, :%
 end
 
 describe "Float#modulo" do
-  it_behaves_like(:float_modulo, :modulo)
+  it_behaves_like :float_modulo, :modulo
 end

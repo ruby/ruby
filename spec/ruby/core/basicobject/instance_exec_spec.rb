@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "BasicObject#instance_exec" do
   it "is a public instance method" do
@@ -17,7 +17,7 @@ describe "BasicObject#instance_exec" do
   end
 
   it "raises a LocalJumpError unless given a block" do
-    lambda { "hola".instance_exec }.should raise_error(LocalJumpError)
+    -> { "hola".instance_exec }.should raise_error(LocalJumpError)
   end
 
   it "has an arity of -1" do
@@ -25,7 +25,7 @@ describe "BasicObject#instance_exec" do
   end
 
   it "accepts arguments with a block" do
-    lambda { "hola".instance_exec(4, 5) { |a,b| a + b } }.should_not raise_error
+    -> { "hola".instance_exec(4, 5) { |a,b| a + b } }.should_not raise_error
   end
 
   it "doesn't pass self to the block as an argument" do
@@ -44,7 +44,7 @@ describe "BasicObject#instance_exec" do
       end
     end
     f.foo.should == 1
-    lambda { Object.new.foo }.should raise_error(NoMethodError)
+    -> { Object.new.foo }.should raise_error(NoMethodError)
   end
 
   # TODO: This should probably be replaced with a "should behave like" that uses
@@ -76,10 +76,10 @@ describe "BasicObject#instance_exec" do
   end
 
   it "raises a TypeError when defining methods on an immediate" do
-    lambda do
+    -> do
       1.instance_exec { def foo; end }
     end.should raise_error(TypeError)
-    lambda do
+    -> do
       :foo.instance_exec { def foo; end }
     end.should raise_error(TypeError)
   end
@@ -97,10 +97,10 @@ quarantine! do # Not clean, leaves cvars lying around to break other specs
 end
 
   it "raises a TypeError when defining methods on numerics" do
-    lambda do
+    -> do
       (1.0).instance_exec { def foo; end }
     end.should raise_error(TypeError)
-    lambda do
+    -> do
       (1 << 64).instance_exec { def foo; end }
     end.should raise_error(TypeError)
   end

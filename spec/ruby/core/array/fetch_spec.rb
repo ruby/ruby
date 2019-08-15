@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#fetch" do
   it "returns the element at the passed index" do
@@ -12,9 +12,9 @@ describe "Array#fetch" do
   end
 
   it "raises an IndexError if there is no element at index" do
-    lambda { [1, 2, 3].fetch(3) }.should raise_error(IndexError)
-    lambda { [1, 2, 3].fetch(-4) }.should raise_error(IndexError)
-    lambda { [].fetch(0) }.should raise_error(IndexError)
+    -> { [1, 2, 3].fetch(3) }.should raise_error(IndexError)
+    -> { [1, 2, 3].fetch(-4) }.should raise_error(IndexError)
+    -> { [].fetch(0) }.should raise_error(IndexError)
   end
 
   it "returns default if there is no element at index if passed a default value" do
@@ -37,7 +37,7 @@ describe "Array#fetch" do
   end
 
   it "gives precedence to the default block over the default argument" do
-    lambda {
+    -> {
       @result = [1, 2, 3].fetch(9, :foo) { |i| i * i }
     }.should complain(/block supersedes default value argument/)
     @result.should == 81
@@ -50,6 +50,6 @@ describe "Array#fetch" do
   end
 
   it "raises a TypeError when the passed argument can't be coerced to Integer" do
-    lambda { [].fetch("cat") }.should raise_error(TypeError)
+    -> { [].fetch("cat") }.should raise_error(TypeError)
   end
 end

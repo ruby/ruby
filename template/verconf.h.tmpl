@@ -4,7 +4,7 @@
 % C = rbconfig::MAKEFILE_CONFIG.dup
 % def C.[](name) str = super and (str unless str.empty?); end
 #define RUBY_BASE_NAME			"${RUBY_BASE_NAME}"
-#define RUBY_VERSION_NAME		RUBY_BASE_NAME"-"RUBY_LIB_VERSION
+#define RUBY_VERSION_NAME		"${RUBY_VERSION_NAME}"
 % if C["RUBY_LIB_VERSION_STYLE"]
 #define RUBY_LIB_VERSION_STYLE		${RUBY_LIB_VERSION_STYLE}
 % elsif !C["RUBY_LIB_VERSION"]

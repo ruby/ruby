@@ -1,14 +1,18 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Process.wait2" do
   before :all do
     # HACK: this kludge is temporarily necessary because some
     # misbehaving spec somewhere else does not clear processes
+    # Note: background processes are unavoidable with MJIT,
+    # but we shouldn't reap them from Ruby-space
     begin
       Process.wait(-1, Process::WNOHANG)
       $stderr.puts "Leaked process before wait2 specs! Waiting for it"
       leaked = Process.waitall
-      $stderr.puts "leaked before wait2 specs: #{leaked}"
+      $stderr.puts "leaked before wait2 specs: #{leaked}" unless leaked.empty?
+      # Ruby-space should not see PIDs used by mjit
+      leaked.should be_empty
     rescue Errno::ECHILD # No child processes
     rescue NotImplementedError
     end
@@ -26,7 +30,7 @@ describe "Process.wait2" do
   end
 
   it "raises a StandardError if no child processes exist" do
-    lambda { Process.wait2 }.should raise_error(Errno::ECHILD)
-    lambda { Process.wait2 }.should raise_error(StandardError)
+    -> { Process.wait2 }.should raise_error(Errno::ECHILD)
+    -> { Process.wait2 }.should raise_error(StandardError)
   end
 end

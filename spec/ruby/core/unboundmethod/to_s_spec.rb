@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/to_s', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/to_s'
 
 describe "UnboundMethod#to_s" do
-  it_behaves_like(:unboundmethod_to_s, :to_s)
+  it_behaves_like :unboundmethod_to_s, :to_s
 end

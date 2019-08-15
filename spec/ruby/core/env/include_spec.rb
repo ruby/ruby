@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/include.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/include'
 
 describe "ENV.include?" do
-  it_behaves_like(:env_include, :include?)
+  it_behaves_like :env_include, :include?
 end

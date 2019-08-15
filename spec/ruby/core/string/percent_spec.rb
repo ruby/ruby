@@ -1,14 +1,13 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../kernel/shared/sprintf', __FILE__)
-require File.expand_path('../../kernel/shared/sprintf_encoding', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../kernel/shared/sprintf'
+require_relative '../kernel/shared/sprintf_encoding'
 
 describe "String#%" do
-  it_behaves_like :kernel_sprintf, -> (format, *args) {
+  it_behaves_like :kernel_sprintf, -> format, *args {
     format % args
   }
 
-  it_behaves_like :kernel_sprintf_encoding, -> (format, *args) {
+  it_behaves_like :kernel_sprintf_encoding, -> format, *args {
     format % args
   }
 end
-

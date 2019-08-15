@@ -68,6 +68,7 @@ module KernelSpecs
   module SomeOtherModule; end
   module AncestorModule; end
   module MyModule; end
+  module MyPrependedModule; end
   module MyExtensionModule; end
 
   class AncestorClass < String
@@ -80,6 +81,8 @@ module KernelSpecs
 
   class KindaClass < AncestorClass
     include MyModule
+    prepend MyPrependedModule
+
     def initialize
       self.extend MyExtensionModule
     end
@@ -325,7 +328,7 @@ module KernelSpecs
     def inner
       b = mp { return :good }
 
-      pr = lambda { |x| x.call }
+      pr = -> x { x.call }
 
       pr.call(b)
 
@@ -378,6 +381,63 @@ module KernelSpecs
       [3, 4]
     end
   end
+
+  module AutoloadMethod
+    def setup_autoload(file)
+      autoload :AutoloadFromIncludedModule, file
+    end
+  end
+
+  class AutoloadMethodIncluder
+    include AutoloadMethod
+  end
+
+  module AutoloadMethod2
+    def setup_autoload(file)
+      Kernel.autoload :AutoloadFromIncludedModule2, file
+    end
+  end
+
+  class AutoloadMethodIncluder2
+    include AutoloadMethod2
+  end
+
+  class WarnInNestedCall
+    def f4(s = "", n)
+      f3(s, n)
+    end
+
+    def f3(s, n)
+      f2(s, n)
+    end
+
+    def f2(s, n)
+      f1(s, n)
+    end
+
+    def f1(s, n)
+      warn(s, uplevel: n)
+    end
+
+    def warn_call_lineno; method(:f1).source_location[1] + 1; end
+    def f1_call_lineno; method(:f2).source_location[1] + 1; end
+    def f2_call_lineno; method(:f3).source_location[1] + 1; end
+    def f3_call_lineno; method(:f4).source_location[1] + 1; end
+  end
+
+  CustomRangeInteger = Struct.new(:value) do
+    def to_int; value; end
+    def <=>(other); to_int <=> other.to_int; end
+    def -(other); self.class.new(to_int - other.to_int); end
+    def +(other); self.class.new(to_int + other.to_int); end
+  end
+
+  CustomRangeFloat = Struct.new(:value) do
+    def to_f; value; end
+    def <=>(other); to_f <=> other.to_f; end
+    def -(other); to_f - other.to_f; end
+    def +(other); self.class.new(to_f + other.to_f); end
+  end
 end
 
 class EvalSpecs
@@ -406,14 +466,5 @@ class EvalSpecs
     f = __FILE__
     eval "true", binding, "(eval)", 1
     return f
-  end
-end
-
-# for Kernel#sleep to have Channel in it's specs
-# TODO: switch directly to queue for both Kernel#sleep and Thread specs?
-unless defined? Channel
-  require 'thread'
-  class Channel < Queue
-    alias receive shift
   end
 end

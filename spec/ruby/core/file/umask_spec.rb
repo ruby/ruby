@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "File.umask" do
   before :each do
@@ -52,6 +52,6 @@ describe "File.umask" do
   end
 
   it "raises ArgumentError when more than one argument is provided" do
-    lambda { File.umask(022, 022) }.should raise_error(ArgumentError)
+    -> { File.umask(022, 022) }.should raise_error(ArgumentError)
   end
 end

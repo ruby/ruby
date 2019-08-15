@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "String#to_i" do
   it "returns 0 for strings with leading underscores" do
@@ -126,9 +126,9 @@ describe "String#to_i" do
   end
 
   it "raises an ArgumentError for illegal bases (1, < 0 or > 36)" do
-    lambda { "".to_i(1)  }.should raise_error(ArgumentError)
-    lambda { "".to_i(-1) }.should raise_error(ArgumentError)
-    lambda { "".to_i(37) }.should raise_error(ArgumentError)
+    -> { "".to_i(1)  }.should raise_error(ArgumentError)
+    -> { "".to_i(-1) }.should raise_error(ArgumentError)
+    -> { "".to_i(37) }.should raise_error(ArgumentError)
   end
 
   it "returns a Fixnum for long strings with trailing spaces" do

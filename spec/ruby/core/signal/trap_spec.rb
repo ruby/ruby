@@ -1,11 +1,10 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 platform_is_not :windows do
   describe "Signal.trap" do
     before :each do
       ScratchPad.clear
-
-      @proc = lambda { ScratchPad.record :proc_trap }
+      @proc = -> {}
       @saved_trap = Signal.trap(:HUP, @proc)
     end
 
@@ -48,49 +47,34 @@ platform_is_not :windows do
       ScratchPad.recorded.should be_true
     end
 
+    it "registers an handler doing nothing with :IGNORE" do
+      Signal.trap :HUP, :IGNORE
+      Process.kill(:HUP, Process.pid).should == 1
+    end
+
     it "ignores the signal when passed nil" do
       Signal.trap :HUP, nil
       Signal.trap(:HUP, @saved_trap).should be_nil
     end
 
-    it "accepts 'DEFAULT' as a symbol in place of a proc" do
+    it "accepts :DEFAULT in place of a proc" do
       Signal.trap :HUP, :DEFAULT
-      Signal.trap(:HUP, :DEFAULT).should == "DEFAULT"
+      Signal.trap(:HUP, @saved_trap).should == "DEFAULT"
     end
 
-    it "accepts 'SIG_DFL' as a symbol in place of a proc" do
+    it "accepts :SIG_DFL in place of a proc" do
       Signal.trap :HUP, :SIG_DFL
-      Signal.trap(:HUP, :SIG_DFL).should == "DEFAULT"
+      Signal.trap(:HUP, @saved_trap).should == "DEFAULT"
     end
 
-    it "accepts 'SIG_IGN' as a symbol in place of a proc" do
+    it "accepts :SIG_IGN in place of a proc" do
       Signal.trap :HUP, :SIG_IGN
-      Signal.trap(:HUP, :SIG_IGN).should == "IGNORE"
+      Signal.trap(:HUP, @saved_trap).should == "IGNORE"
     end
 
-    it "accepts 'IGNORE' as a symbol in place of a proc" do
+    it "accepts :IGNORE in place of a proc" do
       Signal.trap :HUP, :IGNORE
-      Signal.trap(:HUP, :IGNORE).should == "IGNORE"
-    end
-
-    it "accepts long names as Strings" do
-      Signal.trap "SIGHUP", @proc
-      Signal.trap("SIGHUP", @saved_trap).should equal(@proc)
-    end
-
-    it "acceps short names as Strings" do
-      Signal.trap "HUP", @proc
-      Signal.trap("HUP", @saved_trap).should equal(@proc)
-    end
-
-    it "accepts long names as Symbols" do
-      Signal.trap :SIGHUP, @proc
-      Signal.trap(:SIGHUP, @saved_trap).should equal(@proc)
-    end
-
-    it "accepts short names as Symbols" do
-      Signal.trap :HUP, @proc
-      Signal.trap(:HUP, @saved_trap).should equal(@proc)
+      Signal.trap(:HUP, @saved_trap).should == "IGNORE"
     end
 
     it "accepts 'SIG_DFL' in place of a proc" do
@@ -105,12 +89,75 @@ platform_is_not :windows do
 
     it "accepts 'SIG_IGN' in place of a proc" do
       Signal.trap :HUP, "SIG_IGN"
-      Signal.trap(:HUP, "SIG_IGN").should == "IGNORE"
+      Signal.trap(:HUP, @saved_trap).should == "IGNORE"
     end
 
     it "accepts 'IGNORE' in place of a proc" do
       Signal.trap :HUP, "IGNORE"
-      Signal.trap(:HUP, "IGNORE").should == "IGNORE"
+      Signal.trap(:HUP, @saved_trap).should == "IGNORE"
+    end
+
+    it "accepts long names as Strings" do
+      Signal.trap "SIGHUP", @proc
+      Signal.trap("SIGHUP", @saved_trap).should equal(@proc)
+    end
+
+    it "accepts short names as Strings" do
+      Signal.trap "HUP", @proc
+      Signal.trap("HUP", @saved_trap).should equal(@proc)
+    end
+
+    it "accepts long names as Symbols" do
+      Signal.trap :SIGHUP, @proc
+      Signal.trap(:SIGHUP, @saved_trap).should equal(@proc)
+    end
+
+    it "accepts short names as Symbols" do
+      Signal.trap :HUP, @proc
+      Signal.trap(:HUP, @saved_trap).should equal(@proc)
+    end
+  end
+
+  describe "Signal.trap" do
+    # See man 2 signal
+    %w[KILL STOP].each do |signal|
+      it "raises ArgumentError or Errno::EINVAL for SIG#{signal}" do
+        -> {
+          trap(signal, -> {})
+        }.should raise_error(StandardError) { |e|
+          [ArgumentError, Errno::EINVAL].should include(e.class)
+          e.message.should =~ /Invalid argument|Signal already used by VM or OS/
+        }
+      end
+    end
+
+    it "allows to register a handler for all known signals, except reserved signals for which it raises ArgumentError" do
+      out = ruby_exe(fixture(__FILE__, "trap_all.rb"), args: "2>&1")
+      out.should == "OK\n"
+      $?.exitstatus.should == 0
+    end
+
+    it "returns 'DEFAULT' for the initial SIGINT handler" do
+      ruby_exe('print trap(:INT) { abort }').should == 'DEFAULT'
+    end
+
+    it "returns SYSTEM_DEFAULT if passed DEFAULT and no handler was ever set" do
+      Signal.trap("PROF", "DEFAULT").should == "SYSTEM_DEFAULT"
+    end
+
+    it "accepts 'SYSTEM_DEFAULT' and uses the OS handler for SIGPIPE" do
+      code = <<-RUBY
+        p Signal.trap('PIPE', 'SYSTEM_DEFAULT')
+        r, w = IO.pipe
+        r.close
+        loop { w.write("a"*1024) }
+      RUBY
+      out = ruby_exe(code)
+      status = $?
+      out.should == "nil\n"
+      status.signaled?.should == true
+      status.termsig.should be_kind_of(Integer)
+      Signal.signame(status.termsig).should == "PIPE"
     end
   end
 end

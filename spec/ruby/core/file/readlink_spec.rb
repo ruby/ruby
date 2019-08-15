@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "File.readlink" do
   # symlink/readlink are not supported on Windows
@@ -26,12 +26,12 @@ describe "File.readlink" do
 
       it "raises an Errno::ENOENT if there is no such file" do
         # TODO: missing_file
-        lambda { File.readlink("/this/surely/doesnt/exist") }.should raise_error(Errno::ENOENT)
+        -> { File.readlink("/this/surely/doesnt/exist") }.should raise_error(Errno::ENOENT)
       end
 
       it "raises an Errno::EINVAL if called with a normal file" do
         touch @file
-        lambda { File.readlink(@file) }.should raise_error(Errno::EINVAL)
+        -> { File.readlink(@file) }.should raise_error(Errno::EINVAL)
       end
     end
 

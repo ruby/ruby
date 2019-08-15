@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/day', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/day'
 
 describe "Time#day" do
-  it_behaves_like(:time_day, :day)
+  it_behaves_like :time_day, :day
 end

@@ -15,6 +15,10 @@ module BlockSpecs
     def r(a)
       yield(*a)
     end
+
+    def k(*a)
+      yield(*a, b: true)
+    end
   end
 
   # TODO: rewrite all specs that use Yield to use Yielder

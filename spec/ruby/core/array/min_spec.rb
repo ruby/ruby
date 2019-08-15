@@ -1,10 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Array#min" do
-  ruby_version_is "2.4" do
-    it "is defined on Array" do
-      [1].method(:max).owner.should equal Array
-    end
+  it "is defined on Array" do
+    [1].method(:max).owner.should equal Array
   end
 
   it "returns nil with no values" do
@@ -70,16 +68,16 @@ describe "Array#min" do
   end
 
   it "raises a NoMethodError for elements without #<=>" do
-    lambda do
+    -> do
       [BasicObject.new, BasicObject.new].min
     end.should raise_error(NoMethodError)
   end
 
   it "raises an ArgumentError for incomparable elements" do
-    lambda do
+    -> do
       [11,"22"].min
     end.should raise_error(ArgumentError)
-    lambda do
+    -> do
       [11,12,22,33].min{|a, b| nil}
     end.should raise_error(ArgumentError)
   end

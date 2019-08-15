@@ -1,30 +1,15 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require 'socket'
+require_relative '../spec_helper'
 
 describe "Addrinfo#socktype" do
-  describe "for an ipv4 socket" do
-
-    before :each do
-      @addrinfo = Addrinfo.tcp("127.0.0.1", 80)
-    end
-
-    it "returns Socket::SOCK_STREAM" do
-      @addrinfo.socktype.should == Socket::SOCK_STREAM
-    end
-
+  it 'returns 0 by default' do
+    Addrinfo.ip('127.0.0.1').socktype.should == 0
   end
 
-  describe "for an ipv6 socket" do
-    before :each do
-      @addrinfo = Addrinfo.tcp("::1", 80)
-    end
-
-    it "returns Socket::SOCK_STREAM" do
-      @addrinfo.socktype.should == Socket::SOCK_STREAM
-    end
+  it 'returns the socket type when given' do
+    Addrinfo.tcp('127.0.0.1', 80).socktype.should == Socket::SOCK_STREAM
   end
 
-  platform_is_not :windows do
+  with_feature :unix_socket do
     describe "for a unix socket" do
       before :each do
         @addrinfo = Addrinfo.unix("/tmp/sock")

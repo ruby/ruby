@@ -17,7 +17,7 @@ typedef unsigned long lindex_t;
 typedef VALUE GENTRY;
 typedef rb_iseq_t *ISEQ;
 
-#ifdef __GCC__
+#ifdef __GNUC__
 /* TODO: machine dependent prefetch instruction */
 #define PREFETCH(pc)
 #else
@@ -36,7 +36,7 @@ typedef rb_iseq_t *ISEQ;
 #endif
 
 #define DEBUG_END_INSN() \
-  rb_vmdebug_debug_print_post(th, GET_CFP() SC_REGS());
+  rb_vmdebug_debug_print_post(ec, GET_CFP() SC_REGS());
 
 #else
 
@@ -169,6 +169,12 @@ default:                        \
 
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
 
+#ifdef MJIT_HEADER
+#define THROW_EXCEPTION(exc) do { \
+    ec->errinfo = (VALUE)(exc); \
+    EC_JUMP_TAG(ec, ec->tag->state); \
+} while (0)
+#else
 #if OPT_CALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
     ec->errinfo = (VALUE)(exc); \
@@ -176,6 +182,7 @@ default:                        \
 } while (0)
 #else
 #define THROW_EXCEPTION(exc) return (VALUE)(exc)
+#endif
 #endif
 
 #define SCREG(r) (reg_##r)

@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :hash_store, shared: true do
   it "associates the key with the value and return the value" do
@@ -87,7 +87,7 @@ describe :hash_store, shared: true do
   end
 
   it "raises a #{frozen_error_class} if called on a frozen instance" do
-    lambda { HashSpecs.frozen_hash.send(@method, 1, 2) }.should raise_error(frozen_error_class)
+    -> { HashSpecs.frozen_hash.send(@method, 1, 2) }.should raise_error(frozen_error_class)
   end
 
   it "does not raise an exception if changing the value of an existing key during iteration" do

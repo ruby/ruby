@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/arithmetic_exception_in_coerce', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/arithmetic_exception_in_coerce'
 
 describe "Float#*" do
   it_behaves_like :float_arithmetic_exception_in_coerce, :*
@@ -11,7 +11,7 @@ describe "Float#*" do
   end
 
   it "raises a TypeError when given a non-Numeric" do
-    lambda { 13.0 * "10"    }.should raise_error(TypeError)
-    lambda { 13.0 * :symbol }.should raise_error(TypeError)
+    -> { 13.0 * "10"    }.should raise_error(TypeError)
+    -> { 13.0 * :symbol }.should raise_error(TypeError)
   end
 end

@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :complex_math_asin, shared: true do
   it "returns the arcsine of the argument" do
@@ -34,14 +34,14 @@ describe :complex_math_asin_bang, shared: true do
   end
 
   it "raises an Errno::EDOM if the argument is greater than 1.0" do
-    lambda { @object.send(:asin!, 1.0001) }.should raise_error( Errno::EDOM)
+    -> { @object.send(:asin!, 1.0001) }.should raise_error( Errno::EDOM)
   end
 
   it "raises an Errno::EDOM if the argument is less than -1.0" do
-    lambda { @object.send(:asin!, -1.0001) }.should raise_error( Errno::EDOM)
+    -> { @object.send(:asin!, -1.0001) }.should raise_error( Errno::EDOM)
   end
 
   it "raises a TypeError when passed a Complex number" do
-    lambda { @object.send(:asin!, Complex(4, 5)) }.should raise_error(TypeError)
+    -> { @object.send(:asin!, Complex(4, 5)) }.should raise_error(TypeError)
   end
 end

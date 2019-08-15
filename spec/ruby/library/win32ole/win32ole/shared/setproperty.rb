@@ -1,25 +1,23 @@
-require File.expand_path('../../../fixtures/classes', __FILE__)
-
 platform_is :windows do
-  require 'win32ole'
+  require_relative '../../fixtures/classes'
 
   describe :win32ole_setproperty, shared: true do
     before :each do
-      @ie = WIN32OLESpecs.new_ole('InternetExplorer.Application')
-    end
-
-    after :each do
-      @ie.Quit
+      @dict = WIN32OLESpecs.new_ole('Scripting.Dictionary')
     end
 
     it "raises ArgumentError if no argument is given" do
-      lambda { @ie.send(@method) }.should raise_error ArgumentError
+      -> { @dict.send(@method) }.should raise_error ArgumentError
     end
 
-    it "sets height to 500 and returns nil" do
-      height = 500
-      result = @ie.send(@method, 'Height', height)
+    it "sets key to newkey and returns nil" do
+      oldkey = 'oldkey'
+      newkey = 'newkey'
+      @dict.add(oldkey, 'value')
+      result = @dict.send(@method, 'Key', oldkey, newkey)
       result.should == nil
+      @dict[oldkey].should == nil
+      @dict[newkey].should == 'value'
     end
   end
 end

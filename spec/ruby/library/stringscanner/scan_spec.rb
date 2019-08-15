@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'strscan'
 
 describe "StringScanner#scan" do
@@ -19,6 +19,22 @@ describe "StringScanner#scan" do
     @s.scan(/^\s/).should == " "
   end
 
+  it "treats ^ as matching from the beginning of the current position when it's not the first character in the regexp" do
+    @s.scan(/\w+/).should == "This"
+    @s.scan(/( is not|^ is a)/).should == " is a"
+  end
+
+  it "treats \\A as matching from the beginning of the current position" do
+    @s.scan(/\w+/).should == "This"
+    @s.scan(/\A\d/).should be_nil
+    @s.scan(/\A\s/).should == " "
+  end
+
+  it "treats \\A as matching from the beginning of the current position when it's not the first character in the regexp" do
+    @s.scan(/\w+/).should == "This"
+    @s.scan(/( is not|\A is a)/).should == " is a"
+  end
+
   it "returns nil if there's no match" do
     @s.scan(/\d/).should == nil
   end
@@ -35,9 +51,9 @@ describe "StringScanner#scan" do
   end
 
   it "raises a TypeError if pattern isn't a Regexp" do
-    lambda { @s.scan("aoeu")    }.should raise_error(TypeError)
-    lambda { @s.scan(5)         }.should raise_error(TypeError)
-    lambda { @s.scan(:test)     }.should raise_error(TypeError)
-    lambda { @s.scan(mock('x')) }.should raise_error(TypeError)
+    -> { @s.scan("aoeu")    }.should raise_error(TypeError)
+    -> { @s.scan(5)         }.should raise_error(TypeError)
+    -> { @s.scan(:test)     }.should raise_error(TypeError)
+    -> { @s.scan(mock('x')) }.should raise_error(TypeError)
   end
 end

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "StringIO#print" do
   before :each do
@@ -91,10 +91,10 @@ end
 describe "StringIO#print when self is not writable" do
   it "raises an IOError" do
     io = StringIO.new("test", "r")
-    lambda { io.print("test") }.should raise_error(IOError)
+    -> { io.print("test") }.should raise_error(IOError)
 
     io = StringIO.new("test")
     io.close_write
-    lambda { io.print("test") }.should raise_error(IOError)
+    -> { io.print("test") }.should raise_error(IOError)
   end
 end

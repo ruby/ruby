@@ -1,0 +1,10 @@
+prelude: |
+  str1 = [*"a".."m",*"N".."Z",*"0".."9"].join("")
+  str10 = str1 * 10
+  str100 = str10 * 10
+  str1000 = str100 * 10
+benchmark:
+  capitalize-1: str1.capitalize
+  capitalize-10: str10.capitalize
+  capitalize-100: str100.capitalize
+  capitalize-1000: str1000.capitalize

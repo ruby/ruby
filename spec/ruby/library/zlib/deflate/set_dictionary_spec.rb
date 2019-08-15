@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'zlib'
 
 describe "Zlib::Deflate#set_dictionary" do
@@ -12,4 +12,3 @@ describe "Zlib::Deflate#set_dictionary" do
                         2, 0, 21, 134, 3, 248].pack('C*')
   end
 end
-

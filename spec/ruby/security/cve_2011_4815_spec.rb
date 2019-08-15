@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 describe :resists_cve_2011_4815, shared: true do
   it "resists CVE-2011-4815 by having different hash codes in different processes" do
@@ -22,14 +22,20 @@ describe "Float#hash" do
   it_behaves_like :resists_cve_2011_4815, '3.14'
 end
 
+describe "Rational#hash" do
+  it_behaves_like :resists_cve_2011_4815, 'Rational(1, 2)'
+end
+
+describe "Complex#hash" do
+  it_behaves_like :resists_cve_2011_4815, 'Complex(1, 2)'
+end
+
 describe "String#hash" do
   it_behaves_like :resists_cve_2011_4815, '"abc"'
 end
 
 describe "Symbol#hash" do
-  ruby_bug "#13376", "2.3.0"..."2.3.4" do
-    it_behaves_like :resists_cve_2011_4815, ':a'
-  end
+  it_behaves_like :resists_cve_2011_4815, ':a'
 end
 
 describe "Array#hash" do

@@ -1,6 +1,6 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../../../shared/file/executable_real', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../../../shared/file/executable_real'
+require_relative 'fixtures/classes'
 
 describe "File::Stat#executable_real?" do
   it_behaves_like :file_executable_real, :executable_real?, FileStat

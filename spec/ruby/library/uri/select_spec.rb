@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'uri'
 
 describe "URI#select" do
@@ -16,15 +16,15 @@ describe "URI#select" do
 
   it "raises an ArgumentError if a component is requested that isn't valid under the given scheme" do
     [
-      lambda {URI("mailto:spam@mailinator.com").select(:path)},
-      lambda {URI("http://blog.blag.web").select(:typecode)},
+      -> {URI("mailto:spam@mailinator.com").select(:path)},
+      -> {URI("http://blog.blag.web").select(:typecode)},
     ].each do |select_lambda|
       select_lambda.should raise_error(ArgumentError)
     end
   end
 
   it "raises an ArgumentError if given strings rather than symbols" do
-    lambda {
+    -> {
       URI("http://host:8080/path/").select("scheme","host","port",'path')
     }.should raise_error(ArgumentError)
   end

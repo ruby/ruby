@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'strscan'
 
 describe "StringScanner#unscan" do
@@ -22,7 +22,7 @@ describe "StringScanner#unscan" do
   end
 
   it "raises a ScanError when the previous match had failed" do
-    lambda { @s.unscan }.should raise_error(ScanError)
-    lambda { @s.scan(/\d/); @s.unscan }.should raise_error(ScanError)
+    -> { @s.unscan }.should raise_error(ScanError)
+    -> { @s.scan(/\d/); @s.unscan }.should raise_error(ScanError)
   end
 end

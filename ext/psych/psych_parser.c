@@ -1,7 +1,6 @@
 #include <psych.h>
 
 VALUE cPsychParser;
-VALUE ePsychSyntaxError;
 
 static ID id_read;
 static ID id_path;
@@ -81,9 +80,12 @@ static VALUE allocate(VALUE klass)
 static VALUE make_exception(yaml_parser_t * parser, VALUE path)
 {
     size_t line, column;
+    VALUE ePsychSyntaxError;
 
     line = parser->context_mark.line + 1;
     column = parser->context_mark.column + 1;
+
+    ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
 
     return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
 	    path,
@@ -548,6 +550,7 @@ static VALUE mark(VALUE self)
 
 void Init_psych_parser(void)
 {
+#undef rb_intern
 #if 0
     mPsych = rb_define_module("Psych");
 #endif
@@ -568,7 +571,6 @@ void Init_psych_parser(void)
     rb_define_const(cPsychParser, "UTF16BE", INT2NUM(YAML_UTF16BE_ENCODING));
 
     rb_require("psych/syntax_error");
-    ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
 
     rb_define_method(cPsychParser, "parse", parse, -1);
     rb_define_method(cPsychParser, "mark", mark, 0);

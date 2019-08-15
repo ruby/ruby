@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Kernel#untrusted?" do
   it "returns the untrusted status of an object" do
@@ -23,6 +23,6 @@ describe "Kernel#untrusted?" do
 
   it "has effect on immediate values" do
     d = 1
-    lambda { d.untrust }.should_not raise_error(RuntimeError)
+    -> { d.untrust }.should_not raise_error(RuntimeError)
   end
 end

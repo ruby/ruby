@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "TCPServer.new" do
   after :each do
@@ -10,7 +10,7 @@ describe "TCPServer.new" do
     @server = TCPServer.new('127.0.0.1', 0)
     addr = @server.addr
     addr[0].should == 'AF_INET'
-    addr[1].should be_kind_of(Fixnum)
+    addr[1].should be_kind_of(Integer)
     # on some platforms (Mac), MRI
     # returns comma at the end.
     addr[2].should =~ /^#{SocketSpecs.hostname}\b/
@@ -20,12 +20,12 @@ describe "TCPServer.new" do
   it "binds to localhost and a port with either IPv4 or IPv6" do
     @server = TCPServer.new(SocketSpecs.hostname, 0)
     addr = @server.addr
-    addr[1].should be_kind_of(Fixnum)
+    addr[1].should be_kind_of(Integer)
     if addr[0] == 'AF_INET'
       addr[2].should =~ /^#{SocketSpecs.hostname}\b/
       addr[3].should == '127.0.0.1'
     else
-      addr[2].should =~ /^#{SocketSpecs.hostnamev6}\b/
+      addr[2].should =~ /^#{SocketSpecs.hostname('::1')}\b/
       addr[3].should == '::1'
     end
   end
@@ -34,7 +34,7 @@ describe "TCPServer.new" do
     @server = TCPServer.new('', 0)
     addr = @server.addr
     addr[0].should == 'AF_INET'
-    addr[1].should be_kind_of(Fixnum)
+    addr[1].should be_kind_of(Integer)
     addr[2].should == '0.0.0.0'
     addr[3].should == '0.0.0.0'
   end
@@ -43,27 +43,27 @@ describe "TCPServer.new" do
     @server = TCPServer.new('', 0)
     addr = @server.addr
     addr[0].should == 'AF_INET'
-    addr[1].should be_kind_of(Fixnum)
+    addr[1].should be_kind_of(Integer)
     addr[2].should == '0.0.0.0'
     addr[3].should == '0.0.0.0'
   end
 
   it "coerces port to string, then determines port from that number or service name" do
-    lambda { TCPServer.new(SocketSpecs.hostname, Object.new) }.should raise_error(TypeError)
+    -> { TCPServer.new(SocketSpecs.hostname, Object.new) }.should raise_error(TypeError)
 
     port = Object.new
     port.should_receive(:to_str).and_return("0")
 
     @server = TCPServer.new(SocketSpecs.hostname, port)
     addr = @server.addr
-    addr[1].should be_kind_of(Fixnum)
+    addr[1].should be_kind_of(Integer)
 
     # TODO: This should also accept strings like 'https', but I don't know how to
     # pick such a service port that will be able to reliably bind...
   end
 
   it "raises Errno::EADDRNOTAVAIL when the address is unknown" do
-    lambda { TCPServer.new("1.2.3.4", 0) }.should raise_error(Errno::EADDRNOTAVAIL)
+    -> { TCPServer.new("1.2.3.4", 0) }.should raise_error(Errno::EADDRNOTAVAIL)
   end
 
   # There is no way to make this fail-proof on all machines, because
@@ -71,7 +71,7 @@ describe "TCPServer.new" do
   # traditionally invalidly named ones.
   quarantine! do
     it "raises a SocketError when the host is unknown" do
-      lambda {
+      -> {
         TCPServer.new("--notavalidname", 0)
       }.should raise_error(SocketError)
     end
@@ -79,7 +79,7 @@ describe "TCPServer.new" do
 
   it "raises Errno::EADDRINUSE when address is already in use" do
     @server = TCPServer.new('127.0.0.1', 0)
-    lambda {
+    -> {
       @server = TCPServer.new('127.0.0.1', @server.addr[1])
     }.should raise_error(Errno::EADDRINUSE)
   end

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Enumerator#inspect" do
   describe "shows a representation of the Enumerator" do

@@ -1,6 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "TCPServer#accept" do
   before :each do
@@ -61,6 +60,40 @@ describe "TCPServer#accept" do
 
   it "raises an IOError if the socket is closed" do
     @server.close
-    lambda { @server.accept }.should raise_error(IOError)
+    -> { @server.accept }.should raise_error(IOError)
+  end
+end
+
+describe 'TCPServer#accept' do
+  SocketSpecs.each_ip_protocol do |family, ip_address|
+    before do
+      @server = TCPServer.new(ip_address, 0)
+    end
+
+    after do
+      @server.close
+    end
+
+    describe 'without a connected client' do
+      it 'blocks the caller' do
+        -> { @server.accept }.should block_caller
+      end
+    end
+
+    describe 'with a connected client' do
+      before do
+        @client = TCPSocket.new(ip_address, @server.connect_address.ip_port)
+      end
+
+      after do
+        @socket.close if @socket
+        @client.close
+      end
+
+      it 'returns a TCPSocket' do
+        @socket = @server.accept
+        @socket.should be_an_instance_of(TCPSocket)
+      end
+    end
   end
 end

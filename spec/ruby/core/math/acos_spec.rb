@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 # arccosine : (-1.0, 1.0) --> (0, PI)
 describe "Math.acos" do
@@ -20,18 +20,16 @@ describe "Math.acos" do
     Math.acos(0.75).should be_close(0.722734247813416, TOLERANCE)
   end
 
-  conflicts_with :Complex do
-    it "raises an Errno::EDOM if the argument is greater than 1.0" do
-      lambda { Math.acos(1.0001) }.should raise_error(Errno::EDOM)
-    end
+  it "raises an Math::DomainError if the argument is greater than 1.0" do
+    -> { Math.acos(1.0001) }.should raise_error(Math::DomainError)
+  end
 
-    it "raises an Errno::EDOM if the argument is less than -1.0" do
-      lambda { Math.acos(-1.0001) }.should raise_error(Errno::EDOM)
-    end
+  it "raises an Math::DomainError if the argument is less than -1.0" do
+    -> { Math.acos(-1.0001) }.should raise_error(Math::DomainError)
   end
 
   it "raises a TypeError if the string argument cannot be coerced with Float()" do
-    lambda { Math.acos("test") }.should raise_error(TypeError)
+    -> { Math.acos("test") }.should raise_error(TypeError)
   end
 
   it "returns NaN given NaN" do
@@ -39,11 +37,11 @@ describe "Math.acos" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    lambda { Math.acos(MathSpecs::UserClass.new) }.should raise_error(TypeError)
+    -> { Math.acos(MathSpecs::UserClass.new) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the argument is nil" do
-    lambda { Math.acos(nil) }.should raise_error(TypeError)
+    -> { Math.acos(nil) }.should raise_error(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

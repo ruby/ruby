@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocMarkupAttributes < RDoc::TestCase
 
@@ -19,10 +19,10 @@ class TestRDocMarkupAttributes < RDoc::TestCase
     @as.bitmap_for 'two'
     @as.bitmap_for 'three'
 
-    assert_equal 'none',          @as.as_string(0)
-    assert_equal '_SPECIAL_',     @as.as_string(1)
-    assert_equal 'two',           @as.as_string(2)
-    assert_equal '_SPECIAL_,two', @as.as_string(3)
+    assert_equal 'none',                  @as.as_string(0)
+    assert_equal '_REGEXP_HANDLING_',     @as.as_string(1)
+    assert_equal 'two',                   @as.as_string(2)
+    assert_equal '_REGEXP_HANDLING_,two', @as.as_string(3)
   end
 
   def test_each_name_of

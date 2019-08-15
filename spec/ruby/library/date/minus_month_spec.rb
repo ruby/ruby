@@ -1,5 +1,5 @@
 require 'date'
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Date#<<" do
 
@@ -13,13 +13,11 @@ describe "Date#<<" do
     d.should == Date.civil(2008, 2, 29)
   end
 
-  ruby_version_is "2.3" do
-    it "raises an error on non numeric parameters" do
-      lambda { Date.civil(2007,2,27) << :hello }.should raise_error(TypeError)
-      lambda { Date.civil(2007,2,27) << "hello" }.should raise_error(TypeError)
-      lambda { Date.civil(2007,2,27) << Date.new }.should raise_error(TypeError)
-      lambda { Date.civil(2007,2,27) << Object.new }.should raise_error(TypeError)
-    end
+  it "raises an error on non numeric parameters" do
+    -> { Date.civil(2007,2,27) << :hello }.should raise_error(TypeError)
+    -> { Date.civil(2007,2,27) << "hello" }.should raise_error(TypeError)
+    -> { Date.civil(2007,2,27) << Date.new }.should raise_error(TypeError)
+    -> { Date.civil(2007,2,27) << Object.new }.should raise_error(TypeError)
   end
 
 end

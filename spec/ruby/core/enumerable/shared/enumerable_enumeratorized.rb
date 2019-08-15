@@ -1,4 +1,4 @@
-require File.expand_path('../enumeratorized', __FILE__)
+require_relative 'enumeratorized'
 
 describe :enumerable_enumeratorized_with_unknown_size, shared: true do
   describe "Enumerable with size" do

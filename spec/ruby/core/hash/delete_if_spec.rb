@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/iteration', __FILE__)
-require File.expand_path('../../enumerable/shared/enumeratorized', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/iteration'
+require_relative '../enumerable/shared/enumeratorized'
 
 describe "Hash#delete_if" do
   it "yields two arguments: key and value" do
@@ -35,10 +35,10 @@ describe "Hash#delete_if" do
   end
 
   it "raises a #{frozen_error_class} if called on a frozen instance" do
-    lambda { HashSpecs.frozen_hash.delete_if { false } }.should raise_error(frozen_error_class)
-    lambda { HashSpecs.empty_frozen_hash.delete_if { true } }.should raise_error(frozen_error_class)
+    -> { HashSpecs.frozen_hash.delete_if { false } }.should raise_error(frozen_error_class)
+    -> { HashSpecs.empty_frozen_hash.delete_if { true } }.should raise_error(frozen_error_class)
   end
 
-  it_behaves_like(:hash_iteration_no_block, :delete_if)
-  it_behaves_like(:enumeratorized_with_origin_size, :delete_if, { 1 => 2, 3 => 4, 5 => 6 })
+  it_behaves_like :hash_iteration_no_block, :delete_if
+  it_behaves_like :enumeratorized_with_origin_size, :delete_if, { 1 => 2, 3 => 4, 5 => 6 }
 end

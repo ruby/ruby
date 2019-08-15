@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'csv'
 
 describe "CSV.parse" do
@@ -85,11 +85,9 @@ describe "CSV.parse" do
     }.should raise_error(CSV::MalformedCSVError)
   end
 
-  ruby_version_is '2.4' do
-    it "handles illegal input with the liberal_parsing option" do
-      illegal_input = '"Johnson, Dwayne",Dwayne "The Rock" Johnson'
-      result = CSV.parse(illegal_input, liberal_parsing: true)
-      result.should == [["Johnson, Dwayne", 'Dwayne "The Rock" Johnson']]
-    end
+  it "handles illegal input with the liberal_parsing option" do
+    illegal_input = '"Johnson, Dwayne",Dwayne "The Rock" Johnson'
+    result = CSV.parse(illegal_input, liberal_parsing: true)
+    result.should == [["Johnson, Dwayne", 'Dwayne "The Rock" Johnson']]
   end
 end

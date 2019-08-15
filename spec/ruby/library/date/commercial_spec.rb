@@ -1,10 +1,10 @@
 require 'date'
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/commercial', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/commercial'
 
 describe "Date#commercial" do
 
-  it_behaves_like(:date_commercial, :commercial)
+  it_behaves_like :date_commercial, :commercial
 
 end
 
@@ -15,4 +15,3 @@ end
 #  17  18  19  20  21  22  23
 #  24  25  26  27  28  29  30
 #  31
-

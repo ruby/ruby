@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#transpose" do
   it "assumes an array of arrays and returns the result of transposing rows and columns" do
@@ -32,7 +32,7 @@ describe "Array#transpose" do
   end
 
   it "raises a TypeError if the passed Argument does not respond to #to_ary" do
-    lambda { [Object.new, [:a, :b]].transpose }.should raise_error(TypeError)
+    -> { [Object.new, [:a, :b]].transpose }.should raise_error(TypeError)
   end
 
   it "does not call to_ary on array subclass elements" do
@@ -41,7 +41,7 @@ describe "Array#transpose" do
   end
 
   it "raises an IndexError if the arrays are not of the same length" do
-    lambda { [[1, 2], [:a]].transpose }.should raise_error(IndexError)
+    -> { [[1, 2], [:a]].transpose }.should raise_error(IndexError)
   end
 
   it "does not return subclass instance on Array subclasses" do

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Integer#lcm" do
   it "returns self if equal to the argument" do
@@ -44,15 +44,15 @@ describe "Integer#lcm" do
   end
 
   it "raises an ArgumentError if not given an argument" do
-    lambda { 12.lcm }.should raise_error(ArgumentError)
+    -> { 12.lcm }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if given more than one argument" do
-    lambda { 12.lcm(30, 20) }.should raise_error(ArgumentError)
+    -> { 12.lcm(30, 20) }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError unless the argument is an Integer" do
-    lambda { 39.lcm(3.8)   }.should raise_error(TypeError)
-    lambda { 45872.lcm([]) }.should raise_error(TypeError)
+    -> { 39.lcm(3.8)   }.should raise_error(TypeError)
+    -> { 45872.lcm([]) }.should raise_error(TypeError)
   end
 end

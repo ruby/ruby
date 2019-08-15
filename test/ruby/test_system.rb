@@ -165,18 +165,40 @@ class TestSystem < Test::Unit::TestCase
     ruby = EnvUtil.rubybin
     assert_nothing_raised do
       system('feature_14235', exception: false)
-      system("'#{ruby}' -e 'exit 1'", exception: false)
+    end
+    assert_nothing_raised do
+      system(ruby, "-e", "abort", exception: false)
+    end
+    assert_nothing_raised do
+      system("'#{ruby}' -e abort", exception: false)
     end
     assert_raise(Errno::ENOENT) do
       system('feature_14235', exception: true)
     end
-    assert_raise(RuntimeError) do
-      system("'#{ruby}' -e 'exit 1'", exception: true)
+    assert_raise_with_message(RuntimeError, /\ACommand failed with exit /) do
+      system(ruby, "-e", "abort", exception: true)
     end
-    begin
-      system("'#{ruby}' -e 'exit 1'", exception: true)
-    rescue RuntimeError => e
-      assert_equal true, e.message.include?('status (1)')
+    assert_raise_with_message(RuntimeError, /\ACommand failed with exit /) do
+      system("'#{ruby}' -e abort", exception: true)
+    end
+  end
+
+  def test_system_exception_nonascii
+    Dir.mktmpdir("ruby_script_tmp") do |tmpdir|
+      name = "\u{30c6 30b9 30c8}"
+      tmpfilename = "#{tmpdir}/#{name}.cmd"
+      message = /#{name}\.cmd/
+      assert_raise_with_message(Errno::ENOENT, message) do
+        system(tmpfilename, exception: true)
+      end
+      open(tmpfilename, "w") {|f|
+        f.print "@" if /mingw|mswin/ =~ RUBY_PLATFORM
+        f.puts "exit 127"
+        f.chmod(0755)
+      }
+      assert_raise_with_message(RuntimeError, message) do
+        system(tmpfilename, exception: true)
+      end
     end
   end
 end

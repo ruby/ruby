@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/now', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/now'
 
 describe "Time.now" do
-  it_behaves_like(:time_now, :now)
+  it_behaves_like :time_now, :now
 end

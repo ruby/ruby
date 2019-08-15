@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/set_visibility', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/set_visibility'
 
 describe "Module#private" do
   it_behaves_like :set_visibility, :private
@@ -17,7 +17,7 @@ describe "Module#private" do
       private :foo
     end
 
-    lambda { obj.foo }.should raise_error(NoMethodError)
+    -> { obj.foo }.should raise_error(NoMethodError)
   end
 
   it "makes a public Object instance method private in a new module" do
@@ -47,8 +47,47 @@ describe "Module#private" do
   end
 
   it "raises a NameError when given an undefined name" do
-    lambda do
+    -> do
       Module.new.send(:private, :undefined)
     end.should raise_error(NameError)
+  end
+
+  it "only makes the method private in the class it is called on" do
+    base = Class.new do
+      def wrapped
+        1
+      end
+    end
+
+    klass = Class.new(base) do
+      def wrapped
+        super + 1
+      end
+      private :wrapped
+    end
+
+    base.new.wrapped.should == 1
+    -> do
+      klass.new.wrapped
+    end.should raise_error(NameError)
+  end
+
+  it "continues to allow a prepended module method to call super" do
+    wrapper = Module.new do
+      def wrapped
+        super + 1
+      end
+    end
+
+    klass = Class.new do
+      prepend wrapper
+
+      def wrapped
+        1
+      end
+      private :wrapped
+    end
+
+    klass.new.wrapped.should == 2
   end
 end

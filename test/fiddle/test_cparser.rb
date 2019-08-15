@@ -127,10 +127,13 @@ module Fiddle
         'short', 'unsigned short',
         'int', 'unsigned int',
         'long', 'unsigned long',
+        defined?(TYPE_LONG_LONG) && \
+        [
         'long long', 'unsigned long long',
+        ],
         'float', 'double',
         'const char*', 'void*',
-      ]
+      ].flatten.compact
       func, ret, args = parse_signature("void func(#{types.join(',')})")
       assert_equal 'func', func
       assert_equal TYPE_VOID, ret
@@ -139,10 +142,13 @@ module Fiddle
         TYPE_SHORT, -TYPE_SHORT,
         TYPE_INT, -TYPE_INT,
         TYPE_LONG, -TYPE_LONG,
+        defined?(TYPE_LONG_LONG) && \
+        [
         TYPE_LONG_LONG, -TYPE_LONG_LONG,
+        ],
         TYPE_FLOAT, TYPE_DOUBLE,
         TYPE_VOIDP, TYPE_VOIDP,
-      ], args
+      ].flatten.compact, args
     end
 
     def test_signature_single_variable

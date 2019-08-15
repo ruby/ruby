@@ -2,6 +2,7 @@
 
 require 'test/unit'
 require 'open3'
+require_relative 'lib/jit_support'
 
 class TestOpen3 < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
@@ -54,9 +55,9 @@ class TestOpen3 < Test::Unit::TestCase
     i.close
     assert_equal("baz", o.read)
   ensure
-    i.close if !i.closed?
-    o.close if !o.closed?
-    e.close if !e.closed?
+    i.close
+    o.close
+    e.close
     t.join
   end
 
@@ -76,7 +77,7 @@ class TestOpen3 < Test::Unit::TestCase
   end
 
   def test_env
-    result = Open3.popen3({'A' => 'B', 'C' => 'D'}, RUBY, '-e' 'p ENV["A"]') do |i, out, err, thr|
+    Open3.popen3({'A' => 'B', 'C' => 'D'}, RUBY, '-e' 'p ENV["A"]') do |i, out, err, thr|
       output = out.read
       assert_equal("\"B\"\n", output)
     end
@@ -103,8 +104,8 @@ class TestOpen3 < Test::Unit::TestCase
     r, w = IO.pipe
     yield r, w
   ensure
-    r.close if !r.closed?
-    w.close if !w.closed?
+    r.close
+    w.close
   end
 
   def with_reopen(io, arg)
@@ -113,7 +114,7 @@ class TestOpen3 < Test::Unit::TestCase
     yield old
   ensure
     io.reopen(old)
-    old.close if old && !old.closed?
+    old.close
   end
 
   def test_popen2
@@ -126,7 +127,7 @@ class TestOpen3 < Test::Unit::TestCase
           i.close
           STDERR.reopen(old)
           assert_equal("zo", o.read)
-          assert_equal("ze", r.read)
+          assert_equal("ze", JITSupport.remove_mjit_logs(r.read))
         }
       }
     }
@@ -315,4 +316,10 @@ class TestOpen3 < Test::Unit::TestCase
     }
   end
 
+  def test_integer_and_symbol_key
+    command = [RUBY, '-e', 'puts "test_integer_and_symbol_key"']
+    out, status = Open3.capture2(*command, :chdir => '.', 2 => IO::NULL)
+    assert_equal("test_integer_and_symbol_key\n", out)
+    assert_predicate(status, :success?)
+  end
 end

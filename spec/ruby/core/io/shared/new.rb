@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 # This group of specs may ONLY contain specs that do successfully create
 # an IO instance from the file descriptor returned by #new_fd helper.
@@ -115,14 +115,14 @@ describe :io_new, shared: true do
   end
 
   it "ignores the :encoding option when the :external_encoding option is present" do
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, 'w', {external_encoding: 'utf-8', encoding: 'iso-8859-1:iso-8859-1'})
     }.should complain(/Ignoring encoding parameter/)
     @io.external_encoding.to_s.should == 'UTF-8'
   end
 
   it "ignores the :encoding option when the :internal_encoding option is present" do
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, 'w', {internal_encoding: 'ibm866', encoding: 'iso-8859-1:iso-8859-1'})
     }.should complain(/Ignoring encoding parameter/)
     @io.internal_encoding.to_s.should == 'IBM866'
@@ -168,13 +168,13 @@ describe :io_new, shared: true do
 
   it "sets external encoding to binary with binmode in mode string" do
     @io = IO.send(@method, @fd, 'wb')
-    @io.external_encoding.to_s.should == 'ASCII-8BIT'
+    @io.external_encoding.should == Encoding::BINARY
   end
 
   # #5917
   it "sets external encoding to binary with :binmode option" do
     @io = IO.send(@method, @fd, 'w', {binmode: true})
-    @io.external_encoding.to_s.should == 'ASCII-8BIT'
+    @io.external_encoding.should == Encoding::BINARY
   end
 
   it "does not use binary encoding when mode encoding is specified" do
@@ -282,96 +282,96 @@ describe :io_new_errors, shared: true do
   end
 
   it "raises an Errno::EBADF if the file descriptor is not valid" do
-    lambda { IO.send(@method, -1, "w") }.should raise_error(Errno::EBADF)
+    -> { IO.send(@method, -1, "w") }.should raise_error(Errno::EBADF)
   end
 
   it "raises an IOError if passed a closed stream" do
-    lambda { IO.send(@method, IOSpecs.closed_io.fileno, 'w') }.should raise_error(IOError)
+    -> { IO.send(@method, IOSpecs.closed_io.fileno, 'w') }.should raise_error(IOError)
   end
 
   platform_is_not :windows do
     it "raises an Errno::EINVAL if the new mode is not compatible with the descriptor's current mode" do
-      lambda { IO.send(@method, @fd, "r") }.should raise_error(Errno::EINVAL)
+      -> { IO.send(@method, @fd, "r") }.should raise_error(Errno::EINVAL)
     end
   end
 
   it "raises ArgumentError if passed an empty mode string" do
-    lambda { IO.send(@method, @fd, "") }.should raise_error(ArgumentError)
+    -> { IO.send(@method, @fd, "") }.should raise_error(ArgumentError)
   end
 
   it "raises an error if passed modes two ways" do
-    lambda {
+    -> {
       IO.send(@method, @fd, "w", mode: "w")
     }.should raise_error(ArgumentError)
   end
 
   it "raises an error if passed encodings two ways" do
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, 'w:ISO-8859-1', {encoding: 'ISO-8859-1'})
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, 'w:ISO-8859-1', {external_encoding: 'ISO-8859-1'})
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, 'w:ISO-8859-1:UTF-8', {internal_encoding: 'ISO-8859-1'})
     }.should raise_error(ArgumentError)
   end
 
   it "raises an error if passed matching binary/text mode two ways" do
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, "wb", binmode: true)
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, "wt", textmode: true)
     }.should raise_error(ArgumentError)
 
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, "wb", textmode: false)
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, "wt", binmode: false)
     }.should raise_error(ArgumentError)
   end
 
   it "raises an error if passed conflicting binary/text mode two ways" do
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, "wb", binmode: false)
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, "wt", textmode: false)
     }.should raise_error(ArgumentError)
 
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, "wb", textmode: true)
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, "wt", binmode: true)
     }.should raise_error(ArgumentError)
   end
 
   it "raises an error when trying to set both binmode and textmode" do
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, "w", textmode: true, binmode: true)
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, File::Constants::WRONLY, textmode: true, binmode: true)
     }.should raise_error(ArgumentError)
   end
 
   it "raises ArgumentError if not passed a hash or nil for options" do
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, 'w', false)
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, false, false)
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, nil, false)
     }.should raise_error(ArgumentError)
   end
 
   it "raises TypeError if passed a hash for mode and nil for options" do
-    lambda {
+    -> {
       @io = IO.send(@method, @fd, {mode: 'w'}, nil)
     }.should raise_error(TypeError)
   end

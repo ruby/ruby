@@ -1,9 +1,9 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/method', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/method'
+require_relative 'fixtures/classes'
 
 describe "Kernel#method" do
-  it_behaves_like(:kernel_method, :method)
+  it_behaves_like :kernel_method, :method
 
   before :each do
     @obj = KernelSpecs::A.new

@@ -1,5 +1,5 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe 'Thread::Backtrace::Location#path' do
   context 'outside a main script' do
@@ -56,7 +56,7 @@ describe 'Thread::Backtrace::Location#path' do
     end
 
     context 'when the script is outside of the working directory' do
-      before do
+      before :each do
         @parent_dir = tmp('path_outside_pwd')
         @sub_dir    = File.join(@parent_dir, 'sub')
         @script     = File.join(@parent_dir, 'main.rb')
@@ -67,9 +67,7 @@ describe 'Thread::Backtrace::Location#path' do
         cp(source, @script)
       end
 
-      after do
-        rm_r(@script)
-        rm_r(@sub_dir)
+      after :each do
         rm_r(@parent_dir)
       end
 

@@ -6,21 +6,21 @@
 class RDoc::Markup::Attributes
 
   ##
-  # The special attribute type.  See RDoc::Markup#add_special
+  # The regexp handling attribute type. See RDoc::Markup#add_regexp_handling
 
-  attr_reader :special
+  attr_reader :regexp_handling
 
   ##
   # Creates a new attributes set.
 
   def initialize
-    @special = 1
+    @regexp_handling = 1
 
     @name_to_bitmap = [
-      [:_SPECIAL_, @special],
+      [:_REGEXP_HANDLING_, @regexp_handling],
     ]
 
-    @next_bitmap = @special << 1
+    @next_bitmap = @regexp_handling << 1
   end
 
   ##
@@ -61,7 +61,7 @@ class RDoc::Markup::Attributes
     return enum_for __method__, bitmap unless block_given?
 
     @name_to_bitmap.each do |name, bit|
-      next if bit == @special
+      next if bit == @regexp_handling
 
       yield name.to_s if (bitmap & bit) != 0
     end

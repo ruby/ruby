@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "IO.sysopen" do
   before :each do
@@ -33,7 +33,7 @@ describe "IO.sysopen" do
   end
 
   it "accepts a mode as second argument" do
-    lambda { @fd = IO.sysopen(@filename, "w") }.should_not raise_error
+    -> { @fd = IO.sysopen(@filename, "w") }.should_not raise_error
     @fd.should_not equal(0)
   end
 

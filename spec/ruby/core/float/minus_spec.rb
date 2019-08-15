@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/arithmetic_exception_in_coerce', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/arithmetic_exception_in_coerce'
 
 describe "Float#-" do
   it_behaves_like :float_arithmetic_exception_in_coerce, :-

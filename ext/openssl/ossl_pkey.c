@@ -20,6 +20,21 @@ static ID id_private_q;
 /*
  * callback for generating keys
  */
+static VALUE
+call_check_ints0(VALUE arg)
+{
+    rb_thread_check_ints();
+    return Qnil;
+}
+
+static void *
+call_check_ints(void *arg)
+{
+    int state;
+    rb_protect(call_check_ints0, Qnil, &state);
+    return (void *)(VALUE)state;
+}
+
 int
 ossl_generate_cb_2(int p, int n, BN_GENCB *cb)
 {
@@ -38,11 +53,18 @@ ossl_generate_cb_2(int p, int n, BN_GENCB *cb)
 	*/
 	rb_protect(rb_yield, ary, &state);
 	if (state) {
-	    arg->stop = 1;
 	    arg->state = state;
+	    return 0;
 	}
     }
-    if (arg->stop) return 0;
+    if (arg->interrupted) {
+	arg->interrupted = 0;
+	state = (int)(VALUE)rb_thread_call_with_gvl(call_check_ints, NULL);
+	if (state) {
+	    arg->state = state;
+	    return 0;
+	}
+    }
     return 1;
 }
 
@@ -50,7 +72,7 @@ void
 ossl_generate_cb_stop(void *ptr)
 {
     struct ossl_generate_cb_arg *arg = (struct ossl_generate_cb_arg *)ptr;
-    arg->stop = 1;
+    arg->interrupted = 1;
 }
 
 static void
@@ -389,6 +411,7 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
 void
 Init_ossl_pkey(void)
 {
+#undef rb_intern
 #if 0
     mOSSL = rb_define_module("OpenSSL");
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);

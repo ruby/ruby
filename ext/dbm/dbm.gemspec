@@ -2,7 +2,6 @@
 Gem::Specification.new do |s|
   s.name = "dbm"
   s.version = '1.0.0'
-  s.date = '2017-02-08'
   s.summary = "Provides a wrapper for the UNIX-style Database Manager Library"
   s.description = "Provides a wrapper for the UNIX-style Database Manager Library"
 

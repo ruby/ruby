@@ -87,7 +87,7 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_bom_32le
-    assert_bom(["\xFF\xFE\0", "\0"], __method__)
+    assert_bom(["\xFF", "\xFE\0\0"], __method__)
   end
 
   def test_truncate_wbuf
@@ -298,9 +298,17 @@ class TestFile < Test::Unit::TestCase
       assert_predicate(File.realpath(base, dir), :tainted?)
       base.untaint
       dir.untaint
-      assert_not_predicate(File.realpath(base, dir), :tainted?)
+      assert_predicate(File.realpath(base, dir), :tainted?)
       assert_predicate(Dir.chdir(dir) {File.realpath(base)}, :tainted?)
     }
+  end
+
+  def test_realpath_special_symlink
+    IO.pipe do |r, w|
+      if File.pipe?(path = "/dev/fd/#{r.fileno}")
+        assert_file.identical?(File.realpath(path), path)
+      end
+    end
   end
 
   def test_realdirpath
@@ -496,6 +504,8 @@ class TestFile < Test::Unit::TestCase
         io = File.open(tmpdir, File::RDWR | File::TMPFILE)
       rescue Errno::EINVAL
         skip 'O_TMPFILE not supported (EINVAL)'
+      rescue Errno::EISDIR
+        skip 'O_TMPFILE not supported (EISDIR)'
       rescue Errno::EOPNOTSUPP
         skip 'O_TMPFILE not supported (EOPNOTSUPP)'
       end

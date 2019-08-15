@@ -1,8 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/peek.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/peek'
 require 'strscan'
 
 describe "StringScanner#peek" do
-  it_behaves_like(:strscan_peek, :peek)
+  it_behaves_like :strscan_peek, :peek
 end
-

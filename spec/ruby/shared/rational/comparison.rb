@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/rational', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/rational'
 
 describe :rational_cmp_rat, shared: true do
   it "returns 1 when self is greater than the passed argument" do

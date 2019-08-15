@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'bigdecimal'
 
 describe "BigDecimal#split" do
@@ -84,5 +84,3 @@ describe "BigDecimal#split" do
   end
 
 end
-
-

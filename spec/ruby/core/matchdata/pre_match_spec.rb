@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "MatchData#pre_match" do
   it "returns the string before the match, equiv. special var $`" do
@@ -22,15 +22,13 @@ describe "MatchData#pre_match" do
     $`.untrusted?.should be_true
   end
 
-  with_feature :encoding do
-    it "sets the encoding to the encoding of the source String" do
-      str = "abc".force_encoding Encoding::EUC_JP
-      str.match(/b/).pre_match.encoding.should equal(Encoding::EUC_JP)
-    end
+  it "sets the encoding to the encoding of the source String" do
+    str = "abc".force_encoding Encoding::EUC_JP
+    str.match(/b/).pre_match.encoding.should equal(Encoding::EUC_JP)
+  end
 
-    it "sets an empty result to the encoding of the source String" do
-      str = "abc".force_encoding Encoding::ISO_8859_1
-      str.match(/a/).pre_match.encoding.should equal(Encoding::ISO_8859_1)
-    end
+  it "sets an empty result to the encoding of the source String" do
+    str = "abc".force_encoding Encoding::ISO_8859_1
+    str.match(/a/).pre_match.encoding.should equal(Encoding::ISO_8859_1)
   end
 end

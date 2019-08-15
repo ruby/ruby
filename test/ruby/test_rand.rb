@@ -347,10 +347,15 @@ END
   end
 
   def assert_random_bytes(r)
+    srand(0)
     assert_equal("", r.bytes(0))
-    assert_equal("\xAC".force_encoding("ASCII-8BIT"), r.bytes(1))
-    assert_equal("/\xAA\xC4\x97u\xA6\x16\xB7\xC0\xCC".force_encoding("ASCII-8BIT"),
-                 r.bytes(10))
+    assert_equal("", Random.bytes(0))
+    x = "\xAC".force_encoding("ASCII-8BIT")
+    assert_equal(x, r.bytes(1))
+    assert_equal(x, Random.bytes(1))
+    x = "/\xAA\xC4\x97u\xA6\x16\xB7\xC0\xCC".force_encoding("ASCII-8BIT")
+    assert_equal(x, r.bytes(10))
+    assert_equal(x, Random.bytes(10))
   end
 
   def test_random_range
@@ -394,6 +399,7 @@ END
 
     assert_raise(Errno::EDOM, Errno::ERANGE) { r.rand(1.0 / 0.0) }
     assert_raise(Errno::EDOM, Errno::ERANGE) { r.rand(0.0 / 0.0) }
+    assert_raise(Errno::EDOM) {r.rand(1..)}
 
     r = Random.new(0)
     assert_in_delta(1.5488135039273248, r.rand(1.0...2.0), 0.0001, '[ruby-core:24655]')

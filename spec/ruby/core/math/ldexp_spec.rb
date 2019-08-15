@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Math.ldexp" do
   it "returns a float" do
@@ -15,7 +15,7 @@ describe "Math.ldexp" do
   end
 
   it "raises a TypeError if the first argument cannot be coerced with Float()" do
-    lambda { Math.ldexp("test", 2) }.should raise_error(TypeError)
+    -> { Math.ldexp("test", 2) }.should raise_error(TypeError)
   end
 
   it "returns NaN given NaN" do
@@ -23,19 +23,19 @@ describe "Math.ldexp" do
   end
 
   it "raises RangeError if NaN is given as the second arg" do
-    lambda { Math.ldexp(0, nan_value) }.should raise_error(RangeError)
+    -> { Math.ldexp(0, nan_value) }.should raise_error(RangeError)
   end
 
   it "raises a TypeError if the second argument cannot be coerced with Integer()" do
-    lambda { Math.ldexp(3.2, "this") }.should raise_error(TypeError)
+    -> { Math.ldexp(3.2, "this") }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the first argument is nil" do
-    lambda { Math.ldexp(nil, 2) }.should raise_error(TypeError)
+    -> { Math.ldexp(nil, 2) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the second argument is nil" do
-    lambda { Math.ldexp(3.1, nil) }.should raise_error(TypeError)
+    -> { Math.ldexp(3.1, nil) }.should raise_error(TypeError)
   end
 
   it "accepts any first argument that can be coerced with Float()" do

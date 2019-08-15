@@ -1,8 +1,8 @@
-# -*- encoding: ascii-8bit -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
-require File.expand_path('../shared/numeric_basic', __FILE__)
+# -*- encoding: binary -*-
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
+require_relative 'shared/numeric_basic'
 
 describe "Array#pack with format 'w'" do
   it_behaves_like :array_pack_basic, 'w'
@@ -33,10 +33,10 @@ describe "Array#pack with format 'w'" do
   end
 
   it "raises an ArgumentError when passed a negative value" do
-    lambda { [-1].pack("w") }.should raise_error(ArgumentError)
+    -> { [-1].pack("w") }.should raise_error(ArgumentError)
   end
 
-  it "returns an ASCII-8BIT string" do
-    [1].pack('w').encoding.should == Encoding::ASCII_8BIT
+  it "returns a binary string" do
+    [1].pack('w').encoding.should == Encoding::BINARY
   end
 end

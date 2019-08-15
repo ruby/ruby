@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/array', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/array'
 
 describe "Array literals" do
   it "[] should return a new array populated with the given elements" do
@@ -35,6 +35,13 @@ describe "Array literals" do
     [1, 2, *nil].should == [1, 2]
     [1, *nil, 3].should == [1, 3]
     [*nil, *nil, *nil].should == []
+  end
+
+  it "evaluates each argument exactly once" do
+    se = ArraySpec::SideEffect.new
+    se.array_result(true)
+    se.array_result(false)
+    se.call_count.should == 4
   end
 end
 

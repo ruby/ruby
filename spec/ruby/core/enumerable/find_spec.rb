@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/find', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/find'
 
 describe "Enumerable#find" do
-  it_behaves_like(:enumerable_find , :find)
+  it_behaves_like :enumerable_find , :find
 end

@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'rexml/document'
 
 describe "REXML::Attribute#to_string" do
@@ -12,4 +12,3 @@ describe "REXML::Attribute#to_string" do
     attr_ns.to_string.should == "xmlns:ns='http://uri'"
   end
 end
-

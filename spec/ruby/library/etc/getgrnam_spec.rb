@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'etc'
 
 platform_is :windows do
@@ -21,7 +21,7 @@ platform_is_not :windows do
     end
 
     it "only accepts strings as argument" do
-      lambda {
+      -> {
         Etc.getgrnam(123)
         Etc.getgrnam(nil)
       }.should raise_error(TypeError)

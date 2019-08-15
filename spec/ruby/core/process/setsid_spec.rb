@@ -1,37 +1,16 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Process.setsid" do
-  with_feature :fork do
+  platform_is_not :windows do
     it "establishes this process as a new session and process group leader" do
-      read, write = IO.pipe
-      read2, write2 = IO.pipe
-      pid = Process.fork {
-        begin
-          read.close
-          write2.close
-          pgid = Process.setsid
-          write << pgid
-          write.close
-          read2.gets
-        rescue Exception => e
-          write << e << e.backtrace
-        end
-        Process.exit!
-      }
-      write.close
-      read2.close
-      pgid_child = Integer(read.gets)
-      read.close
-      platform_is_not :aix, :openbsd do
-        # AIX does not allow Process.getsid(pid)
-        # if pid is in a different session.
-        pgid = Process.getsid(pid)
-        pgid_child.should == pgid
-      end
-      write2.close
-      Process.wait pid
+      sid = Process.getsid
 
-      pgid_child.should_not == Process.getsid
+      out = ruby_exe("p Process.getsid; p Process.setsid; p Process.getsid").lines
+      out[0].should == "#{sid}\n"
+      out[1].should == out[2]
+      out[2].should_not == "#{sid}\n"
+
+      sid.should == Process.getsid
     end
   end
 end

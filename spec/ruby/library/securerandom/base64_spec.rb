@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 require 'securerandom'
 
@@ -42,7 +42,7 @@ describe "SecureRandom.base64" do
   end
 
   it "raises ArgumentError on negative arguments" do
-    lambda {
+    -> {
       SecureRandom.base64(-1)
     }.should raise_error(ArgumentError)
   end

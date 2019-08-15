@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/pos', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/pos'
 
 describe "IO#seek" do
   it_behaves_like :io_set_pos, :seek
@@ -17,7 +17,7 @@ describe "IO#seek" do
   end
 
   it "moves the read position relative to the current position with SEEK_CUR" do
-    lambda { @io.seek(-1) }.should raise_error(Errno::EINVAL)
+    -> { @io.seek(-1) }.should raise_error(Errno::EINVAL)
     @io.seek(10, IO::SEEK_CUR)
     @io.readline.should == "igne une.\n"
     @io.seek(-5, IO::SEEK_CUR)

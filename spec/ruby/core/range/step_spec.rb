@@ -1,14 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Range#step" do
   before :each do
     ScratchPad.record []
-  end
-
-  it "returns an enumerator when no block is given" do
-    enum = (1..10).step(4)
-    enum.should be_an_instance_of(Enumerator)
-    enum.to_a.should eql([1, 5, 9])
   end
 
   it "returns self" do
@@ -18,7 +12,7 @@ describe "Range#step" do
 
   it "raises TypeError if step" do
     obj = mock("mock")
-    lambda { (1..10).step(obj) { } }.should raise_error(TypeError)
+    -> { (1..10).step(obj) { } }.should raise_error(TypeError)
   end
 
   it "calls #to_int to coerce step to an Integer" do
@@ -32,14 +26,14 @@ describe "Range#step" do
   it "raises a TypeError if step does not respond to #to_int" do
     obj = mock("Range#step non-integer")
 
-    lambda { (1..2).step(obj) { } }.should raise_error(TypeError)
+    -> { (1..2).step(obj) { } }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if #to_int does not return an Integer" do
     obj = mock("Range#step non-integer")
     obj.should_receive(:to_int).and_return("1")
 
-    lambda { (1..2).step(obj) { } }.should raise_error(TypeError)
+    -> { (1..2).step(obj) { } }.should raise_error(TypeError)
   end
 
   it "coerces the argument to integer by invoking to_int" do
@@ -53,19 +47,19 @@ describe "Range#step" do
     obj = mock("Range#step non-comparable")
     obj.should_receive(:<=>).with(obj).and_return(1)
 
-    lambda { (obj..obj).step { |x| x } }.should raise_error(TypeError)
+    -> { (obj..obj).step { |x| x } }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError if step is 0" do
-    lambda { (-1..1).step(0) { |x| x } }.should raise_error(ArgumentError)
+    -> { (-1..1).step(0) { |x| x } }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if step is 0.0" do
-    lambda { (-1..1).step(0.0) { |x| x } }.should raise_error(ArgumentError)
+    -> { (-1..1).step(0.0) { |x| x } }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if step is negative" do
-    lambda { (-1..1).step(-2) { |x| x } }.should raise_error(ArgumentError)
+    -> { (-1..1).step(-2) { |x| x } }.should raise_error(ArgumentError)
   end
 
   describe "with inclusive end" do
@@ -107,6 +101,15 @@ describe "Range#step" do
         (1.0..12.7).step(1.3) { |x| ScratchPad << x }
         ScratchPad.recorded.should eql([1.0, 2.8, 4.6, 6.4, 1.0, 2.3, 3.6,
                                        4.9, 6.2, 7.5, 8.8, 10.1, 11.4, 12.7])
+      end
+
+      it "handles infinite values at either end" do
+        (-Float::INFINITY..0.0).step(2) { |x| ScratchPad << x; break if ScratchPad.recorded.size == 3 }
+        ScratchPad.recorded.should eql([-Float::INFINITY, -Float::INFINITY, -Float::INFINITY])
+
+        ScratchPad.record []
+        (0.0..Float::INFINITY).step(2) { |x| ScratchPad << x; break if ScratchPad.recorded.size == 3 }
+        ScratchPad.recorded.should eql([0.0, 2.0, 4.0])
       end
     end
 
@@ -156,7 +159,7 @@ describe "Range#step" do
       end
 
       it "raises a TypeError when passed a Float step" do
-        lambda { ("A".."G").step(2.0) { } }.should raise_error(TypeError)
+        -> { ("A".."G").step(2.0) { } }.should raise_error(TypeError)
       end
 
       it "calls #succ on begin and each element returned by #succ" do
@@ -209,6 +212,15 @@ describe "Range#step" do
         (1.0...55.6).step(18.2) { |x| ScratchPad << x }
         ScratchPad.recorded.should eql([1.0, 2.8, 4.6, 1.0, 19.2, 37.4])
       end
+
+      it "handles infinite values at either end" do
+        (-Float::INFINITY...0.0).step(2) { |x| ScratchPad << x; break if ScratchPad.recorded.size == 3 }
+        ScratchPad.recorded.should eql([-Float::INFINITY, -Float::INFINITY, -Float::INFINITY])
+
+        ScratchPad.record []
+        (0.0...Float::INFINITY).step(2) { |x| ScratchPad << x; break if ScratchPad.recorded.size == 3 }
+        ScratchPad.recorded.should eql([0.0, 2.0, 4.0])
+      end
     end
 
     describe "and Integer, Float values" do
@@ -257,7 +269,7 @@ describe "Range#step" do
       end
 
       it "raises a TypeError when passed a Float step" do
-        lambda { ("A"..."G").step(2.0) { } }.should raise_error(TypeError)
+        -> { ("A"..."G").step(2.0) { } }.should raise_error(TypeError)
       end
     end
   end
@@ -268,7 +280,7 @@ describe "Range#step" do
         it "raises a TypeError if step does not respond to #to_int" do
           obj = mock("Range#step non-integer")
           enum = (1..2).step(obj)
-          lambda { enum.size }.should raise_error(TypeError)
+          -> { enum.size }.should raise_error(TypeError)
         end
 
         it "raises a TypeError if #to_int does not return an Integer" do
@@ -276,22 +288,31 @@ describe "Range#step" do
           obj.should_receive(:to_int).and_return("1")
           enum = (1..2).step(obj)
 
-          lambda { enum.size }.should raise_error(TypeError)
+          -> { enum.size }.should raise_error(TypeError)
         end
 
-        it "raises an ArgumentError if step is 0" do
-          enum = (-1..1).step(0)
-          lambda { enum.size }.should raise_error(ArgumentError)
+        ruby_version_is ""..."2.6" do
+          it "raises an ArgumentError if step is 0" do
+            enum = (-1..1).step(0)
+            -> { enum.size }.should raise_error(ArgumentError)
+          end
+
+          it "raises an ArgumentError if step is 0.0" do
+            enum = (-1..1).step(0.0)
+            -> { enum.size }.should raise_error(ArgumentError)
+          end
+
+          it "raises an ArgumentError if step is negative" do
+            enum = (-1..1).step(-2)
+            -> {  enum.size }.should raise_error(ArgumentError)
+          end
         end
 
-        it "raises an ArgumentError if step is 0.0" do
-          enum = (-1..1).step(0.0)
-          lambda { enum.size }.should raise_error(ArgumentError)
-        end
-
-        it "raises an ArgumentError if step is negative" do
-          enum = (-1..1).step(-2)
-          lambda {  enum.size }.should raise_error(ArgumentError)
+        ruby_version_is "2.6" do
+          it "returns Float::INFINITY for zero step" do
+            (-1..1).step(0).size.should == Float::INFINITY
+            (-1..1).step(0.0).size.should == Float::INFINITY
+          end
         end
 
         it "returns the ceil of range size divided by the number of steps" do
@@ -305,6 +326,13 @@ describe "Range#step" do
           (1...10).step(2).size.should == 5
           (1...10).step(1).size.should == 9
           (-5...5).step(2).size.should == 5
+        end
+
+        ruby_version_is "2.6" do
+          it "returns the ceil of range size divided by the number of steps even if step is negative" do
+            (-1..1).step(-1).size.should == 0
+            (1..-1).step(-1).size.should == 3
+          end
         end
 
         it "returns the correct number of steps when one of the arguments is a float" do
@@ -338,8 +366,30 @@ describe "Range#step" do
           obj = mock("Range#step non-comparable")
           obj.should_receive(:<=>).with(obj).and_return(1)
           enum = (obj..obj).step
-          lambda { enum.size }.should_not raise_error
+          -> { enum.size }.should_not raise_error
           enum.size.should == nil
+        end
+      end
+
+      describe "type" do
+        ruby_version_is ""..."2.6" do
+          it "returns an instance of Enumerator" do
+            (1..10).step.class.should == Enumerator
+          end
+        end
+
+        ruby_version_is "2.6" do
+          context "when both begin and end are numerics" do
+            it "returns an instance of Enumerator::ArithmeticSequence" do
+              (1..10).step.class.should == Enumerator::ArithmeticSequence
+            end
+          end
+
+          context "when begin and end are not numerics" do
+            it "returns an instance of Enumerator" do
+              ("a".."z").step.class.should == Enumerator
+            end
+          end
         end
       end
     end

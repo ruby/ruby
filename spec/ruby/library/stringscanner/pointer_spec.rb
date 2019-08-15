@@ -1,11 +1,11 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/pos.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/pos'
 require 'strscan'
 
 describe "StringScanner#pointer" do
-  it_behaves_like(:strscan_pos, :pointer)
+  it_behaves_like :strscan_pos, :pointer
 end
 
 describe "StringScanner#pointer=" do
-  it_behaves_like(:strscan_pos_set, :pointer=)
+  it_behaves_like :strscan_pos_set, :pointer=
 end

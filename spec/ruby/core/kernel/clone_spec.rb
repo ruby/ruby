@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/dup_clone', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/dup_clone'
 
 describe "Kernel#clone" do
   it_behaves_like :kernel_dup_clone, :clone
@@ -37,14 +37,12 @@ describe "Kernel#clone" do
     o3.frozen?.should == true
   end
 
-  ruby_version_is '2.4' do
-    it 'takes an option to copy freeze state or not' do
-      @obj.clone(freeze: true).frozen?.should == false
-      @obj.clone(freeze: false).frozen?.should == false
-      @obj.freeze
-      @obj.clone(freeze: true).frozen?.should == true
-      @obj.clone(freeze: false).frozen?.should == false
-    end
+  it 'takes an option to copy freeze state or not' do
+    @obj.clone(freeze: true).frozen?.should == false
+    @obj.clone(freeze: false).frozen?.should == false
+    @obj.freeze
+    @obj.clone(freeze: true).frozen?.should == true
+    @obj.clone(freeze: false).frozen?.should == false
   end
 
   it "copies instance variables" do

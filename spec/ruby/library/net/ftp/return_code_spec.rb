@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'spec_helper'
 
 describe "Net::FTP#return_code" do
   before :each do
@@ -7,7 +7,7 @@ describe "Net::FTP#return_code" do
   end
 
   it "outputs a warning and returns a newline" do
-    lambda do
+    -> do
       @ftp.return_code.should == "\n"
     end.should complain(/warning: Net::FTP#return_code is obsolete and do nothing/)
   end
@@ -19,6 +19,6 @@ describe "Net::FTP#return_code=" do
   end
 
   it "outputs a warning" do
-    lambda { @ftp.return_code = 123 }.should complain(/warning: Net::FTP#return_code= is obsolete and do nothing/)
+    -> { @ftp.return_code = 123 }.should complain(/warning: Net::FTP#return_code= is obsolete and do nothing/)
   end
 end

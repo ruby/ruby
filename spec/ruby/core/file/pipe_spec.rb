@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/file/pipe', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../shared/file/pipe'
 
 describe "File.pipe?" do
   it_behaves_like :file_pipe, :pipe?, File
@@ -22,7 +22,7 @@ describe "File.pipe?" do
   platform_is_not :windows do
     it "returns true if the file is a pipe" do
       filename = tmp("i_am_a_pipe")
-      system "mkfifo #{filename}"
+      File.mkfifo(filename)
 
       File.pipe?(filename).should == true
 

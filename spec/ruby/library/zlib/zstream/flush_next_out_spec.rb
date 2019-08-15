@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'zlib'
 
 describe "Zlib::ZStream#flush_next_out" do
@@ -12,5 +12,3 @@ describe "Zlib::ZStream#flush_next_out" do
     zs.flush_next_out.should == ''
   end
 end
-
-

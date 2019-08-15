@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe :kernel_method, shared: true do
   it "returns a method object for a valid method" do
@@ -23,14 +23,14 @@ describe :kernel_method, shared: true do
 
   it "raises a NameError for an invalid method name" do
     class KernelSpecs::Foo; def bar; 'done'; end; end
-    lambda {
+    -> {
       KernelSpecs::Foo.new.send(@method, :invalid_and_silly_method_name)
     }.should raise_error(NameError)
   end
 
   it "raises a NameError for an invalid singleton method name" do
     class KernelSpecs::Foo; def self.bar; 'done'; end; end
-    lambda { KernelSpecs::Foo.send(@method, :baz) }.should raise_error(NameError)
+    -> { KernelSpecs::Foo.send(@method, :baz) }.should raise_error(NameError)
   end
 
   it "changes the method called for super on a target aliased method" do

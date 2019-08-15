@@ -18,7 +18,11 @@ unless ARGV.size == 2
   abort "Usage: #{$0} data_directory emoji_data_directory"
 end
 
-$unicode_version = File.basename(ARGV[0])[/\A[.\d]+\z/]
+pat = /(?:\A|\/)([.\d]+)\z/
+$versions = {
+  :Unicode => ARGV[0][pat, 1],
+  :Emoji => ARGV[1][pat, 1],
+}
 
 POSIX_NAMES = %w[NEWLINE Alpha Blank Cntrl Digit Graph Lower Print XPosixPunct Space Upper XDigit Word Alnum ASCII Punct]
 
@@ -229,7 +233,6 @@ def parse_GraphemeBreakProperty(data)
 end
 
 def parse_block(data)
-  current = nil
   cps = []
   blocks = []
   data_foreach('Blocks.txt') do |line|
@@ -308,18 +311,30 @@ end
 def data_foreach(name, &block)
   fn = get_file(name)
   warn "Reading #{name}"
-  pat = /^# #{File.basename(name).sub(/\./, '-([\\d.]+)\\.')}/
+  if /^emoji-/ =~ name
+    sep = ""
+    pat = /^# #{Regexp.quote(File.basename(name))}.*^# Version: ([\d.]+)/m
+    type = :Emoji
+  else
+    sep = "\n"
+    pat = /^# #{File.basename(name).sub(/\./, '-([\\d.]+)\\.')}/
+    type = :Unicode
+  end
   File.open(fn, 'rb') do |f|
-    line = f.gets
-    unless /^emoji-/ =~ name
-      unless pat =~ line
-        raise ArgumentError, "#{name}: no Unicode version"
-      end
-      if !$unicode_version
-        $unicode_version = $1
-      elsif $unicode_version != $1
-        raise ArgumentError, "#{name}: Unicode version mismatch: #$1"
-      end
+    line = f.gets(sep)
+    unless version = line[pat, 1]
+      raise ArgumentError, <<-ERROR
+#{name}: no #{type} version
+#{line.gsub(/^/, '> ')}
+      ERROR
+    end
+    if !(v = $versions[type])
+      $versions[type] = version
+    elsif v != version
+      raise ArgumentError, <<-ERROR
+#{name}: #{type} version mismatch: #{version} to #{v}
+#{line.gsub(/^/, '> ')}
+      ERROR
     end
     f.each(&block)
   end
@@ -449,9 +464,11 @@ struct uniname2ctype_struct {
 };
 #define uniname2ctype_offset(str) offsetof(struct uniname2ctype_pool_t, uniname2ctype_pool_##str)
 
-#if !(/*ANSI*/+0)
-static const struct uniname2ctype_struct *uniname2ctype_p(const char *, unsigned int);
+static const struct uniname2ctype_struct *uniname2ctype_p(
+#if !(/*ANSI*/+0) /* if ANSI, old style not to conflict with generated prototype */
+    const char *, unsigned int
 #endif
+);
 %}
 struct uniname2ctype_struct;
 %%
@@ -509,17 +526,20 @@ uniname2ctype(const UChar *name, unsigned int len)
   return -1;
 }
 __HEREDOC
-versions = $unicode_version.scan(/\d+/)
-print("#if defined ONIG_UNICODE_VERSION_STRING && !( \\\n")
-%w[MAJOR MINOR TEENY].zip(versions) do |n, v|
-  print("      ONIG_UNICODE_VERSION_#{n} == #{v} && \\\n")
-end
-print("      1)\n")
-print("# error ONIG_UNICODE_VERSION_STRING mismatch\n")
-print("#endif\n")
-print("#define ONIG_UNICODE_VERSION_STRING #{$unicode_version.dump}\n")
-%w[MAJOR MINOR TEENY].zip(versions) do |n, v|
-  print("#define ONIG_UNICODE_VERSION_#{n} #{v}\n")
+$versions.each do |type, ver|
+  name = type == :Unicode ? "ONIG_UNICODE_VERSION" : "ONIG_UNICODE_EMOJI_VERSION"
+  versions = ver.scan(/\d+/)
+  print("#if defined #{name}_STRING && !( \\\n")
+  versions.zip(%w[MAJOR MINOR TEENY]) do |v, n|
+    print("      #{name}_#{n} == #{v} && \\\n")
+  end
+  print("      1)\n")
+  print("# error #{name}_STRING mismatch\n")
+  print("#endif\n")
+  print("#define #{name}_STRING #{ver.dump}\n")
+  versions.zip(%w[MAJOR MINOR TEENY]) do |v, n|
+    print("#define #{name}_#{n} #{v}\n")
+  end
 end
 
 output.restore
@@ -536,6 +556,7 @@ if header
     IO.popen([*NAME2CTYPE, out: tmp], "w") {|f| output.show(f, *syms)}
   end while syms.pop
   fds.each(&:close)
+  ff = nil
   IO.popen(%W[diff -DUSE_UNICODE_AGE_PROPERTIES #{fds[1].path} #{fds[0].path}], "r") {|age|
     IO.popen(%W[diff -DUSE_UNICODE_PROPERTIES #{fds[2].path} -], "r", in: age) {|f|
       ansi = false
@@ -546,7 +567,7 @@ if header
         line.sub!(/\/\*ANSI\*\//, '1') if ansi
         line.gsub!(/\(int\)\((?:long|size_t)\)&\(\(struct uniname2ctype_pool_t \*\)0\)->uniname2ctype_pool_(str\d+),\s+/,
                    'uniname2ctype_offset(\1), ')
-        if (/^(uniname2ctype_hash) /=~line)..(/^\}/=~line)
+        if ff = (!ff ? /^(uniname2ctype_hash) /=~line : /^\}/!~line) # no line can match both, exclusive flip-flop
           line.sub!(/^( *(?:register\s+)?(.*\S)\s+hval\s*=\s*)(?=len;)/, '\1(\2)')
         end
         puts line

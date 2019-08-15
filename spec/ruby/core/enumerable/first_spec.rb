@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/take', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/take'
 
 describe "Enumerable#first" do
   it "returns the first element" do
@@ -19,7 +19,7 @@ describe "Enumerable#first" do
 
   it "raises a RangeError when passed a Bignum" do
     enum = EnumerableSpecs::Empty.new
-    lambda { enum.first(bignum_value) }.should raise_error(RangeError)
+    -> { enum.first(bignum_value) }.should raise_error(RangeError)
   end
 
   describe "when passed an argument" do

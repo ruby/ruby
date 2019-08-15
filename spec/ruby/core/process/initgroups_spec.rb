@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Process.initgroups" do
   platform_is_not :windows do
@@ -14,7 +14,7 @@ describe "Process.initgroups" do
           Process.groups.sort.should == augmented_groups.sort
           Process.groups = groups
         else
-          lambda { Process.initgroups(name, gid) }.should raise_error(Errno::EPERM)
+          -> { Process.initgroups(name, gid) }.should raise_error(Errno::EPERM)
         end
       end
     end

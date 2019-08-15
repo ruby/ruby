@@ -1,5 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require 'socket'
+require_relative '../spec_helper'
 
 describe "Addrinfo#ipv6_loopback?" do
   describe "for an ipv4 socket" do
@@ -8,7 +7,7 @@ describe "Addrinfo#ipv6_loopback?" do
       @other    = Addrinfo.tcp("0.0.0.0", 80)
     end
 
-    it "returns true for the loopback address" do
+    it "returns false for the loopback address" do
       @loopback.ipv6_loopback?.should be_false
     end
 
@@ -23,7 +22,7 @@ describe "Addrinfo#ipv6_loopback?" do
       @other    = Addrinfo.tcp("::", 80)
     end
 
-    it "returns false for the loopback address" do
+    it "returns true for the loopback address" do
       @loopback.ipv6_loopback?.should be_true
     end
 
@@ -32,7 +31,7 @@ describe "Addrinfo#ipv6_loopback?" do
     end
   end
 
-  platform_is_not :windows do
+  with_feature :unix_socket do
     describe "for a unix socket" do
       before :each do
         @addrinfo = Addrinfo.unix("/tmp/sock")

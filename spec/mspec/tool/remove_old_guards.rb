@@ -1,4 +1,6 @@
-# Remove old version guards in ruby/spec
+# Removes old version guards in ruby/spec.
+# Run it from the ruby/spec repository root.
+# The argument is the new minimum supported version.
 
 def dedent(line)
   if line.start_with?("  ")
@@ -8,9 +10,13 @@ def dedent(line)
   end
 end
 
+def each_spec_file(&block)
+  Dir["*/**/*.rb"].each(&block)
+end
+
 def remove_guards(guard, keep)
-  Dir["*/**/*.rb"].each do |file|
-    contents = File.read(file)
+  each_spec_file do |file|
+    contents = File.binread(file)
     if contents =~ guard
       puts file
       lines = contents.lines.to_a
@@ -31,11 +37,29 @@ def remove_guards(guard, keep)
           lines[first..last] = []
         end
       end
-      File.write file, lines.join
+      File.binwrite file, lines.join
     end
   end
 end
 
-version = (ARGV[0] || "2.2")
+def search(regexp)
+  each_spec_file do |file|
+    contents = File.binread(file)
+    if contents =~ regexp
+      puts file
+      contents.each_line do |line|
+        if line =~ regexp
+          puts line
+        end
+      end
+    end
+  end
+end
+
+version = Regexp.escape(ARGV.fetch(0))
 remove_guards(/ruby_version_is ["']#{version}["'] do/, true)
 remove_guards(/ruby_version_is ["'][0-9.]*["']...["']#{version}["'] do/, false)
+remove_guards(/ruby_bug "#\d+", ["'][0-9.]*["']...["']#{version}["'] do/, true)
+
+search(/["']#{version}["']/)
+search(/^\s*#.+#{version}/)

@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../shared/new', __FILE__)
+require_relative '../spec_helper'
+require_relative 'shared/new'
 
 describe "UNIXSocket.new" do
   it_behaves_like :unixsocket_new, :new

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "BasicObject#initialize" do
   it "is a private instance method" do
@@ -6,7 +6,7 @@ describe "BasicObject#initialize" do
   end
 
   it "does not accept arguments" do
-    lambda {
+    -> {
       BasicObject.new("This", "makes it easier", "to call super", "from other constructors")
     }.should raise_error(ArgumentError)
   end

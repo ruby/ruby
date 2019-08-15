@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe IO, "#print" do
   before :each do
@@ -48,7 +48,6 @@ describe IO, "#print" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.print("stuff") }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.print("stuff") }.should raise_error(IOError)
   end
 end
-

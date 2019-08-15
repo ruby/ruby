@@ -115,8 +115,6 @@ module Fiddle
           return SIZEOF_INT
         when TYPE_LONG
           return SIZEOF_LONG
-        when TYPE_LONG_LONG
-          return SIZEOF_LONG_LONG
         when TYPE_FLOAT
           return SIZEOF_FLOAT
         when TYPE_DOUBLE
@@ -124,7 +122,12 @@ module Fiddle
         when TYPE_VOIDP
           return SIZEOF_VOIDP
         else
-          raise(DLError, "unknown type: #{ty}")
+          if defined?(TYPE_LONG_LONG) and
+            ty == TYPE_LONG_LONG
+            return SIZEOF_LONG_LONG
+          else
+            raise(DLError, "unknown type: #{ty}")
+          end
         end
       when Class
         if( ty.instance_methods().include?(:to_ptr) )
@@ -154,7 +157,8 @@ module Fiddle
     # :stopdoc:
     CALL_TYPE_TO_ABI = Hash.new { |h, k|
       raise RuntimeError, "unsupported call type: #{k}"
-    }.merge({ :stdcall => (Function::STDCALL rescue Function::DEFAULT),
+    }.merge({ :stdcall => Function.const_defined?(:STDCALL) ? Function::STDCALL :
+                          Function::DEFAULT,
               :cdecl   => Function::DEFAULT,
               nil      => Function::DEFAULT
             }).freeze

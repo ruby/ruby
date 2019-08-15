@@ -426,6 +426,7 @@ math_exp(VALUE unused_obj, VALUE x)
 #endif
 
 static double math_log1(VALUE x);
+FUNC_MINIMIZED(static VALUE math_log(int, const VALUE *, VALUE));
 
 /*
  *  call-seq:
@@ -450,6 +451,12 @@ static double math_log1(VALUE x);
 
 static VALUE
 math_log(int argc, const VALUE *argv, VALUE unused_obj)
+{
+    return rb_math_log(argc, argv);
+}
+
+VALUE
+rb_math_log(int argc, const VALUE *argv)
 {
     VALUE x, base;
     double d;
@@ -682,7 +689,14 @@ rb_math_sqrt(VALUE x)
 static VALUE
 math_cbrt(VALUE unused_obj, VALUE x)
 {
-    return DBL2NUM(cbrt(Get_Double(x)));
+    double f = Get_Double(x);
+    double r = cbrt(f);
+#if defined __GLIBC__
+    if (isfinite(r)) {
+	r = (2.0 * r + (f / r / r)) / 3.0;
+    }
+#endif
+    return DBL2NUM(r);
 }
 
 /*
@@ -923,13 +937,6 @@ exp1(cos)
 exp1(cosh)
 exp1(exp)
 exp2(hypot)
-
-VALUE
-rb_math_log(int argc, const VALUE *argv)
-{
-    return math_log(argc, argv, 0);
-}
-
 exp1(sin)
 exp1(sinh)
 #if 0

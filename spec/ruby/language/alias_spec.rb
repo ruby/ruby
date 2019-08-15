@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 class AliasObject
   attr :foo
@@ -38,14 +38,14 @@ describe "The alias keyword" do
     @obj.a.should == 5
   end
 
-  it "works with a doubule quoted symbol on the left-hand side" do
+  it "works with a double quoted symbol on the left-hand side" do
     @meta.class_eval do
       alias :"a" value
     end
     @obj.a.should == 5
   end
 
-  it "works with an interoplated symbol on the left-hand side" do
+  it "works with an interpolated symbol on the left-hand side" do
     @meta.class_eval do
       alias :"#{'a'}" value
     end
@@ -66,14 +66,14 @@ describe "The alias keyword" do
     @obj.a.should == 5
   end
 
-  it "works with a doubule quoted symbol on the right-hand side" do
+  it "works with a double quoted symbol on the right-hand side" do
     @meta.class_eval do
       alias a :"value"
     end
     @obj.a.should == 5
   end
 
-  it "works with an interoplated symbol on the right-hand side" do
+  it "works with an interpolated symbol on the right-hand side" do
     @meta.class_eval do
       alias a :"#{'value'}"
     end
@@ -122,7 +122,7 @@ describe "The alias keyword" do
     end
 
     @obj.__value.should == 5
-    lambda { AliasObject.new.__value }.should raise_error(NoMethodError)
+    -> { AliasObject.new.__value }.should raise_error(NoMethodError)
   end
 
   it "operates on the class/module metaclass when used in instance_eval" do
@@ -131,7 +131,7 @@ describe "The alias keyword" do
     end
 
     AliasObject.__klass_method.should == 7
-    lambda { Object.__klass_method }.should raise_error(NoMethodError)
+    -> { Object.__klass_method }.should raise_error(NoMethodError)
   end
 
   it "operates on the class/module metaclass when used in instance_exec" do
@@ -140,7 +140,7 @@ describe "The alias keyword" do
     end
 
     AliasObject.__klass_method2.should == 7
-    lambda { Object.__klass_method2 }.should raise_error(NoMethodError)
+    -> { Object.__klass_method2 }.should raise_error(NoMethodError)
   end
 
   it "operates on methods defined via attr, attr_reader, and attr_accessor" do
@@ -204,7 +204,7 @@ describe "The alias keyword" do
   end
 
   it "operates on methods with splat arguments defined in a superclass using text block for class eval" do
-    class Sub < AliasObject;end
+    subclass = Class.new(AliasObject)
     AliasObject.class_eval <<-code
       def test(*args)
         4
@@ -215,17 +215,17 @@ describe "The alias keyword" do
       alias test_without_check test
       alias test test_with_check
     code
-    Sub.new.test("testing").should == 4
+    subclass.new.test("testing").should == 4
   end
 
   it "is not allowed against Fixnum or String instances" do
-    lambda do
+    -> do
       1.instance_eval do
         alias :foo :to_s
       end
     end.should raise_error(TypeError)
 
-    lambda do
+    -> do
       :blah.instance_eval do
         alias :foo :to_s
       end
@@ -238,9 +238,21 @@ describe "The alias keyword" do
   end
 
   it "raises a NameError when passed a missing name" do
-    lambda { @meta.class_eval { alias undef_method not_exist } }.should raise_error(NameError) { |e|
+    -> { @meta.class_eval { alias undef_method not_exist } }.should raise_error(NameError) { |e|
       # a NameError and not a NoMethodError
       e.class.should == NameError
     }
+  end
+end
+
+describe "The alias keyword" do
+  it "can create a new global variable, synonym of the original" do
+    code = '$a = 1; alias $b $a; p [$a, $b]; $b = 2; p [$a, $b]'
+    ruby_exe(code).should == "[1, 1]\n[2, 2]\n"
+  end
+
+  it "can override an existing global variable and make them synonyms" do
+    code = '$a = 1; $b = 2; alias $b $a; p [$a, $b]; $b = 3; p [$a, $b]'
+    ruby_exe(code).should == "[1, 1]\n[3, 3]\n"
   end
 end

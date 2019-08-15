@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Module#remove_class_variable" do
   it "removes class variable" do
@@ -23,19 +23,19 @@ describe "Module#remove_class_variable" do
 
   it "raises a NameError when removing class variable declared in included module" do
     c = ModuleSpecs::RemoveClassVariable.new { include ModuleSpecs::MVars.dup }
-    lambda { c.send(:remove_class_variable, :@@mvar) }.should raise_error(NameError)
+    -> { c.send(:remove_class_variable, :@@mvar) }.should raise_error(NameError)
   end
 
   it "raises a NameError when passed a symbol with one leading @" do
-    lambda { ModuleSpecs::MVars.send(:remove_class_variable, :@mvar) }.should raise_error(NameError)
+    -> { ModuleSpecs::MVars.send(:remove_class_variable, :@mvar) }.should raise_error(NameError)
   end
 
   it "raises a NameError when passed a symbol with no leading @" do
-    lambda { ModuleSpecs::MVars.send(:remove_class_variable, :mvar)  }.should raise_error(NameError)
+    -> { ModuleSpecs::MVars.send(:remove_class_variable, :mvar)  }.should raise_error(NameError)
   end
 
   it "raises a NameError when an uninitialized class variable is given" do
-    lambda { ModuleSpecs::MVars.send(:remove_class_variable, :@@nonexisting_class_variable) }.should raise_error(NameError)
+    -> { ModuleSpecs::MVars.send(:remove_class_variable, :@@nonexisting_class_variable) }.should raise_error(NameError)
   end
 
   it "is public" do

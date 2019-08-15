@@ -1,55 +1,164 @@
 ---
+version: '{build}'
 shallow_clone: true
 platform:
   - x64
+branches:
+  except:
+    - trunk # mirrored from trunk. avoid doubly building on it
 environment:
   ruby_version: "24-%Platform%"
   zlib_version: "1.2.11"
   matrix:
-    - vs: "120"
-install:
-  - chcp
-  - SET BITS=%Platform:x86=32%
-  - SET BITS=%BITS:x=%
-  - SET OPENSSL_DIR=c:\OpenSSL-Win%BITS%
-  - CALL SET vcvars=%%^VS%VS%COMNTOOLS^%%..\..\VC\vcvarsall.bat
-  - SET vcvars
-  - '"%vcvars%" %Platform:x64=amd64%'
-  - SET ruby_path=C:\Ruby%ruby_version:-x86=%
-  - SET PATH=\usr\local\bin;%ruby_path%\bin;%PATH%;C:\msys64\mingw64\bin;C:\msys64\usr\bin
-  - ruby --version
-  - 'cl'
-  - SET
-  - echo> Makefile srcdir=.
-  - echo>> Makefile MSC_VER=0
-  - echo>> Makefile RT=none
-  - echo>> Makefile RT_VER=0
-  - echo>> Makefile BUILTIN_ENCOBJS=nul
-  - type win32\Makefile.sub >> Makefile
-  - nmake %mflags% touch-unicode-files
-  - nmake %mflags% up incs UNICODE_FILES=.
-  - del Makefile
-  - mkdir \usr\local\bin
-  - mkdir \usr\local\include
-  - mkdir \usr\local\lib
-  - appveyor DownloadFile https://zlib.net/zlib%zlib_version:.=%.zip
-  - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib%zlib_version:.=%.zip
-  - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
-  - mkdir %Platform%-mswin_%vs%
-  - ps: Get-ChildItem "win32" -Recurse | foreach {$_.Attributes = 'Readonly'}
-  - ps: Get-Item $env:Platform"-mswin_"$env:vs | foreach {$_.Attributes = 'Normal'}
-build_script:
-  - cd %APPVEYOR_BUILD_FOLDER%
-  - cd %Platform%-mswin_%vs%
-  - ..\win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=%OPENSSL_DIR:\=/%
-  - nmake -l
-  - nmake install-nodoc
-  - \usr\bin\ruby -v -e "p :locale => Encoding.find('locale'), :filesystem => Encoding.find('filesystem')"
-test_script:
-  - set /a JOBS=%NUMBER_OF_PROCESSORS%
-  - nmake -l "TESTOPTS=-v -q" btest
-  - nmake -l "TESTOPTS=-v -q" test-basic
-  - nmake -l "TESTOPTS=-q -j%JOBS%" test-all
-  - nmake -l test-spec
-matrix:
-  fast_finish: true
+    # to reduce time for finishing all jobs, run the slowest msys2 build first.
+    - build: msys2
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    - build: vs
+      vs: 120
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
+    - build: vs
+      vs: 140
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+  RELINE_TEST_ENCODING: "Windows-31J"
+  GEMS_FOR_TEST: "timezone tzinfo"
+  UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
+for:
+-
+  matrix:
+    only:
+      - build: vs
+  install:
+    - ver
+    - chcp
+    - SET BITS=%Platform:x86=32%
+    - SET BITS=%BITS:x=%
+    - SET OPENSSL_DIR=c:\OpenSSL-Win%BITS%
+    - CALL SET vcvars=%%^VS%VS%COMNTOOLS^%%..\..\VC\vcvarsall.bat
+    - SET vcvars
+    - '"%vcvars%" %Platform:x64=amd64%'
+    - SET ruby_path=C:\Ruby%ruby_version:-x86=%
+    - SET PATH=\usr\local\bin;%ruby_path%\bin;%PATH%;C:\msys64\mingw64\bin;C:\msys64\usr\bin
+    - ruby --version
+    - 'cl'
+    - echo> Makefile srcdir=.
+    - echo>> Makefile MSC_VER=0
+    - echo>> Makefile RT=none
+    - echo>> Makefile RT_VER=0
+    - echo>> Makefile BUILTIN_ENCOBJS=nul
+    - type win32\Makefile.sub >> Makefile
+    - nmake %mflags% touch-unicode-files
+    - nmake %mflags% %UPDATE_UNICODE% up incs
+    - del Makefile
+    - mkdir \usr\local\bin
+    - mkdir \usr\local\include
+    - mkdir \usr\local\lib
+    - curl -fsSL -o zlib%zlib_version:.=%.zip --retry 10 https://zlib.net/zlib%zlib_version:.=%.zip
+    - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib%zlib_version:.=%.zip
+    - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
+    - attrib +r /s /d
+    - mkdir %Platform%-mswin_%vs%
+  build_script:
+    - cd %APPVEYOR_BUILD_FOLDER%
+    - cd %Platform%-mswin_%vs%
+    - ..\win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=%OPENSSL_DIR:\=/%
+    - nmake -l
+    - nmake install-nodoc
+    - \usr\bin\ruby -v -e "p :locale => Encoding.find('locale'), :filesystem => Encoding.find('filesystem')"
+    - if not "%GEMS_FOR_TEST%" == "" \usr\bin\gem install --no-document %GEMS_FOR_TEST%
+  test_script:
+    - set /a JOBS=%NUMBER_OF_PROCESSORS%
+    - nmake -l "TESTOPTS=-v -q" btest
+    - nmake -l "TESTOPTS=-v -q" test-basic
+    - nmake -l "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor -j%JOBS% --exclude readline --exclude win32ole --exclude test_bignum --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca" test-all
+    # separately execute tests without -j which may crash worker with -j.
+    - nmake -l "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor" test-all TESTS="../test/win32ole ../test/ruby/test_bignum.rb ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb"
+    - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
+-
+  matrix:
+    only:
+      - build: msys2
+  install:
+    - ver
+    - chcp
+    - set /a JOBS=%NUMBER_OF_PROCESSORS%
+    - set MSYS_NO_PATHCONV=1
+    - SET MSYSTEM=%Platform:x86=32%
+    - SET MSYSTEM=%MSYSTEM:x=MINGW%
+    - SET MSYS2_ARCH=%Platform:x86=i686%
+    - SET MSYS2_ARCH=%MSYS2_ARCH:x64=x86_64%
+    - set MSYSTEM_PREFIX=/mingw64
+    - set MINGW_CHOST=%MSYS2_ARCH%-w64-mingw32
+    - SET ruby_path=C:\Ruby%ruby_version:-x86=%
+    - cd ..
+    - mkdir build
+    - mkdir install
+    - SET PATH=%ruby_path%\bin;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%PATH%
+    - ruby --version
+  build_script:
+    - pacman -S --noconfirm --needed --noprogressbar --nodeps mingw-w64-x86_64-toolchain
+    - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-gdbm mingw-w64-x86_64-gettext mingw-w64-x86_64-gmp mingw-w64-x86_64-libffi mingw-w64-x86_64-libyaml mingw-w64-x86_64-openssl mingw-w64-x86_64-ragel mingw-w64-x86_64-readline mingw-w64-x86_64-zlib
+    - cd %APPVEYOR_BUILD_FOLDER%
+    - set CFLAGS=-march=%MSYS2_ARCH:_=-% -mtune=generic -O3 -pipe
+    - set CXXFLAGS=%CFLAGS%
+    - set CPPFLAGS=-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048
+    - set LDFLAGS=-pipe
+    - sh -c "autoreconf -fi"
+    - cd ..\build
+    - sh ../ruby/configure --disable-install-doc --prefix=/. --build=%MINGW_CHOST% --host=%MINGW_CHOST% --target=%MINGW_CHOST%
+    - mingw32-make %mflags% touch-unicode-files
+    - mingw32-make -j%JOBS% %UPDATE_UNICODE% up incs
+    - mingw32-make -j%JOBS% V=1
+    - mingw32-make DESTDIR=../install install-nodoc
+    - if not "%GEMS_FOR_TEST%" == "" ..\install\bin\gem install --no-document %GEMS_FOR_TEST%
+  test_script:
+    - mingw32-make test
+    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor -j %JOBS% --exclude win32ole --exclude test_open-uri"
+    # separately execute tests without -j which may crash worker with -j.
+    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor" TESTS="../ruby/test/win32ole ../ruby/test/open-uri/test_open-uri.rb"
+    - mingw32-make test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
+notifications:
+  # Using "Webhook" with templated body to skip notification on Pull Request
+  - provider: Webhook
+    method: POST
+    url:
+      secure: iMINHMS0nZabaDsxN9omRDsekxzVvAAzEq5ev7lN6vb+gUETT+rbDKLGxBxBpEpxlnPlLdzroIJ+DTKlwfJA8VkGawTn9EXNsucH0OkSf2M= # AppVeyor CI
+    body: >-
+      {{^isPullRequest}}
+        {
+          "attachments": [
+            {
+              "title": "Build {{projectName}} {{buildVersion}} {{status}}",
+              "title_link": "{{buildUrl}}",
+              "fallback": "AppVeyor Build {{projectName}} {{buildVersion}} {{status}}",
+              "text": "Commit <{{commitUrl}}|{{commitId}}> by {{commitAuthor}} on {{commitDate}}: _{{commitMessage}}_",
+              "color": "{{#passed}}#44ee44{{/passed}}{{#failed}}#ee4444{{/failed}}"
+            }
+          ],
+          "channel": "#alerts"
+        }
+      {{/isPullRequest}}
+    on_build_success: false
+    on_build_failure: true
+    on_build_status_changed: true
+  - provider: Webhook
+    method: POST
+    url:
+      secure: iMINHMS0nZabaDsxN9omRDsekxzVvAAzEq5ev7lN6vb+gUETT+rbDKLGxBxBpEpxlnPlLdzroIJ+DTKlwfJA8VkGawTn9EXNsucH0OkSf2M= # AppVeyor CI
+    body: >-
+      {{^isPullRequest}}
+        {
+          "attachments": [
+            {
+              "title": "Build {{projectName}} {{buildVersion}} {{status}}",
+              "title_link": "{{buildUrl}}",
+              "fallback": "AppVeyor Build {{projectName}} {{buildVersion}} {{status}}",
+              "text": "Commit <{{commitUrl}}|{{commitId}}> by {{commitAuthor}} on {{commitDate}}: _{{commitMessage}}_",
+              "color": "{{#passed}}#44ee44{{/passed}}{{#failed}}#ee4444{{/failed}}"
+            }
+          ],
+          "channel": "#commits"
+        }
+      {{/isPullRequest}}
+    on_build_success: false
+    on_build_failure: true
+    on_build_status_changed: true

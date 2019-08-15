@@ -1,34 +1,37 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe 'TracePoint#disable' do
-  def test; end
   it 'returns true if trace was enabled' do
     called = false
-    trace = TracePoint.new(:call) do |tp|
+    trace = TracePoint.new(:line) do |tp|
       called = true
     end
 
     trace.enable
-    trace.disable.should be_true
+    begin
+      line_event = true
+    ensure
+      ret = trace.disable
+      ret.should == true
+    end
+    called.should == true
 
     # Check the TracePoint is disabled
     called = false
-    test
+    line_event = true
     called.should == false
   end
 
   it 'returns false if trace was disabled' do
-    event_name, method_name = nil
-    trace = TracePoint.new(:call) do |tp|
-      event_name = tp.event
-      method_name = tp.method_id
+    called = false
+    trace = TracePoint.new(:line) do |tp|
+      called = true
     end
 
-    trace.disable.should be_false
-    event_name, method_name = nil
-    test
-    method_name.equal?(:test).should be_false
-    event_name.should equal(nil)
+    line_event = true
+    trace.disable.should == false
+    line_event = true
+    called.should == false
   end
 
   it 'is disabled within a block & is enabled outside the block' do
@@ -37,37 +40,34 @@ describe 'TracePoint#disable' do
     trace.enable
     begin
       trace.disable { enabled = trace.enabled? }
-      enabled.should be_false
-      trace.enabled?.should be_true
+      enabled.should == false
+      trace.enabled?.should == true
     ensure
       trace.disable
     end
   end
 
-  it 'is disabled within a block & also returns false when its called with a block' do
+  it 'returns the return value of the block' do
     trace = TracePoint.new(:line) {}
     trace.enable
     begin
-      trace.disable { trace.enabled? }.should == false
-      trace.enabled?.should equal(true)
+      trace.disable { 42 }.should == 42
+      trace.enabled?.should == true
     ensure
       trace.disable
     end
   end
 
-  ruby_bug "#14057", "2.0"..."2.5" do
-    it 'can accept param within a block but it should not yield arguments' do
-      event_name = nil
-      trace = TracePoint.new(:line) {}
-      trace.enable
-      begin
-        trace.disable do |*args|
-          args.should == []
-        end
-        trace.enabled?.should be_true
-      ensure
-        trace.disable
+  it 'can accept param within a block but it should not yield arguments' do
+    trace = TracePoint.new(:line) {}
+    trace.enable
+    begin
+      trace.disable do |*args|
+        args.should == []
       end
+      trace.enabled?.should == true
+    ensure
+      trace.disable
     end
   end
 end

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#reverse" do
   it "returns a new array with the elements in reverse order" do
@@ -37,6 +37,6 @@ describe "Array#reverse!" do
   end
 
   it "raises a #{frozen_error_class} on a frozen array" do
-    lambda { ArraySpecs.frozen_array.reverse! }.should raise_error(frozen_error_class)
+    -> { ArraySpecs.frozen_array.reverse! }.should raise_error(frozen_error_class)
   end
 end

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "ARGF.seek" do
   before :each do
@@ -57,7 +57,7 @@ describe "ARGF.seek" do
 
   it "takes at least one argument (offset)" do
     argf [@file1_name] do
-      lambda { @argf.seek }.should raise_error(ArgumentError)
+      -> { @argf.seek }.should raise_error(ArgumentError)
     end
   end
 end

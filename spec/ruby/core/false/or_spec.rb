@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "FalseClass#|" do
   it "returns false if other is nil or false, otherwise true" do

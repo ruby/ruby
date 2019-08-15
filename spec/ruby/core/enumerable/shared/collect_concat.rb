@@ -1,4 +1,4 @@
-require File.expand_path('../enumerable_enumeratorized', __FILE__)
+require_relative 'enumerable_enumeratorized'
 
 describe :enumerable_collect_concat, shared: true do
   it "yields elements to the block and flattens one level" do
@@ -41,7 +41,7 @@ describe :enumerable_collect_concat, shared: true do
     obj = mock("to_ary defined")
     obj.should_receive(:to_ary).and_return("array")
 
-    lambda { [1, obj, 3].send(@method) { |i| i } }.should raise_error(TypeError)
+    -> { [1, obj, 3].send(@method) { |i| i } }.should raise_error(TypeError)
   end
 
   it "returns an enumerator when no block given" do

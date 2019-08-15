@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :complex_math_sqrt, shared: true do
   it "returns the square root for positive numbers" do
@@ -24,11 +24,11 @@ describe :complex_math_sqrt_bang, shared: true do
   end
 
   it "raises Errno::EDOM when the passed argument is negative" do
-    lambda { @object.send(:sqrt!, -4) }.should raise_error(Errno::EDOM)
-    lambda { @object.send(:sqrt!, -19.36) }.should raise_error(Errno::EDOM)
+    -> { @object.send(:sqrt!, -4) }.should raise_error(Errno::EDOM)
+    -> { @object.send(:sqrt!, -19.36) }.should raise_error(Errno::EDOM)
   end
 
   it "raises a TypeError when passed a Complex number" do
-    lambda { @object.send(:sqrt!, Complex(4, 5)) }.should raise_error(TypeError)
+    -> { @object.send(:sqrt!, Complex(4, 5)) }.should raise_error(TypeError)
   end
 end

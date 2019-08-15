@@ -1,9 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Method#hash" do
-  it "needs to be reviewed for spec completeness"
-
   it "returns the same value for user methods that are eql?" do
     obj = MethodSpecs::Methods.new
     obj.method(:foo).hash.should == obj.method(:bar).hash

@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 describe "A Symbol literal" do
   it "is a ':' followed by any number of valid characters" do
@@ -38,7 +38,7 @@ describe "A Symbol literal" do
 
   it 'inherits the encoding of the magic comment and can have a binary encoding' do
     ruby_exe(fixture(__FILE__, "binary_symbol.rb"))
-      .should == "[105, 108, 95, 195, 169, 116, 97, 105, 116]\nASCII-8BIT\n"
+      .should == "[105, 108, 95, 195, 169, 116, 97, 105, 116]\n#{Encoding::BINARY.name}\n"
   end
 
   it "may contain '::' in the string" do

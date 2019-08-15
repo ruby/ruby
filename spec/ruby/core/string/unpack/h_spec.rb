@@ -1,11 +1,13 @@
-# -*- encoding: ascii-8bit -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
+# -*- encoding: binary -*-
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
+require_relative 'shared/taint'
 
 describe "String#unpack with format 'H'" do
   it_behaves_like :string_unpack_basic, 'H'
   it_behaves_like :string_unpack_no_platform, 'H'
+  it_behaves_like :string_unpack_taint, 'H'
 
   it "decodes one nibble from each byte for each format character starting with the most significant bit" do
     [ ["\x8f",     "H",  ["8"]],
@@ -61,11 +63,16 @@ describe "String#unpack with format 'H'" do
   it "ignores spaces between directives" do
     "\x01\x10".unpack("H H").should == ["0", "1"]
   end
+
+  it "should make strings with US_ASCII encoding" do
+    "\x01".unpack("H")[0].encoding.should == Encoding::US_ASCII
+  end
 end
 
 describe "String#unpack with format 'h'" do
   it_behaves_like :string_unpack_basic, 'h'
   it_behaves_like :string_unpack_no_platform, 'h'
+  it_behaves_like :string_unpack_taint, 'h'
 
   it "decodes one nibble from each byte for each format character starting with the least significant bit" do
     [ ["\x8f",     "h",  ["f"]],
@@ -120,5 +127,9 @@ describe "String#unpack with format 'h'" do
 
   it "ignores spaces between directives" do
     "\x01\x10".unpack("h h").should == ["1", "0"]
+  end
+
+  it "should make strings with US_ASCII encoding" do
+    "\x01".unpack("h")[0].encoding.should == Encoding::US_ASCII
   end
 end

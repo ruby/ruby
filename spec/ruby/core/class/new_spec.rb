@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Class.new with a block given" do
   it "yields the new class as self in the block" do
@@ -70,7 +70,7 @@ describe "Class.new" do
   it "raises a TypeError if passed a metaclass" do
     obj = mock("Class.new metaclass")
     meta = obj.singleton_class
-    lambda { Class.new meta }.should raise_error(TypeError)
+    -> { Class.new meta }.should raise_error(TypeError)
   end
 
   it "creates a class without a name" do
@@ -96,11 +96,11 @@ describe "Class.new" do
 
   it "raises a TypeError when given a non-Class" do
     error_msg = /superclass must be a Class/
-    lambda { Class.new("")         }.should raise_error(TypeError, error_msg)
-    lambda { Class.new(1)          }.should raise_error(TypeError, error_msg)
-    lambda { Class.new(:symbol)    }.should raise_error(TypeError, error_msg)
-    lambda { Class.new(mock('o'))  }.should raise_error(TypeError, error_msg)
-    lambda { Class.new(Module.new) }.should raise_error(TypeError, error_msg)
+    -> { Class.new("")         }.should raise_error(TypeError, error_msg)
+    -> { Class.new(1)          }.should raise_error(TypeError, error_msg)
+    -> { Class.new(:symbol)    }.should raise_error(TypeError, error_msg)
+    -> { Class.new(mock('o'))  }.should raise_error(TypeError, error_msg)
+    -> { Class.new(Module.new) }.should raise_error(TypeError, error_msg)
   end
 end
 

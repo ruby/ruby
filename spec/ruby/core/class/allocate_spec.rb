@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Class#allocate" do
   it "returns an instance of self" do
@@ -14,7 +14,7 @@ describe "Class#allocate" do
 
   it "throws an exception when calling a method on a new instance" do
     klass = Class.allocate
-    lambda do
+    -> do
       klass.new
     end.should raise_error(Exception)
   end
@@ -34,7 +34,7 @@ describe "Class#allocate" do
   end
 
   it "raises TypeError for #superclass" do
-    lambda do
+    -> do
       Class.allocate.superclass
     end.should raise_error(TypeError)
   end

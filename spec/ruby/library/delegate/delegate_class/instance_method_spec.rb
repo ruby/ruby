@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "DelegateClass.instance_method" do
   before :all do
@@ -20,7 +20,7 @@ describe "DelegateClass.instance_method" do
   end
 
   it "raises a NameError for a private instance methods of the delegated class" do
-    lambda {
+    -> {
       @klass.instance_method(:priv)
     }.should raise_error(NameError)
   end
@@ -44,7 +44,7 @@ describe "DelegateClass.instance_method" do
   end
 
   it "raises a NameError for an invalid method name" do
-    lambda {
+    -> {
       @klass.instance_method(:invalid_and_silly_method_name)
     }.should raise_error(NameError)
   end

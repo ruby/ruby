@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Enumerator#first" do
   it "returns arrays correctly when calling #first (2376)" do

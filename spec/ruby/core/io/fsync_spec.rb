@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "IO#fsync" do
   before :each do
@@ -12,7 +12,7 @@ describe "IO#fsync" do
   end
 
   it "raises an IOError on closed stream" do
-    lambda { IOSpecs.closed_io.fsync }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.fsync }.should raise_error(IOError)
   end
 
   it "writes the buffered data to permanent storage" do

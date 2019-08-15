@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/refine', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/refine'
 
 describe "Module#refine" do
   it "runs its block in an anonymous module" do
@@ -59,7 +59,7 @@ describe "Module#refine" do
   end
 
   it "raises ArgumentError if not passed an argument" do
-    lambda do
+    -> do
       Module.new do
         refine {}
       end
@@ -67,42 +67,28 @@ describe "Module#refine" do
   end
 
   it "raises TypeError if not passed a class" do
-    lambda do
+    -> do
       Module.new do
         refine("foo") {}
       end
     end.should raise_error(TypeError)
   end
 
-  ruby_version_is "" ... "2.4" do
-    it "raises TypeError if passed a module" do
-      lambda do
-        Module.new do
-          refine(Enumerable) {}
+  it "accepts a module as argument" do
+    inner_self = nil
+    Module.new do
+      refine(Enumerable) do
+        def blah
         end
-      end.should raise_error(TypeError)
-    end
-  end
-
-  quarantine! do # https://bugs.ruby-lang.org/issues/14070
-    ruby_version_is "2.4" do
-      it "accepts a module as argument" do
-        inner_self = nil
-        Module.new do
-          refine(Enumerable) do
-            def blah
-            end
-            inner_self = self
-          end
-        end
-
-        inner_self.public_instance_methods.should include(:blah)
+        inner_self = self
       end
     end
+
+    inner_self.public_instance_methods.should include(:blah)
   end
 
   it "raises ArgumentError if not given a block" do
-    lambda do
+    -> do
       Module.new do
         refine String
       end
@@ -123,7 +109,7 @@ describe "Module#refine" do
   it "doesn't apply refinements outside the refine block" do
     Module.new do
       refine(String) {def foo; "foo"; end}
-      -> () {
+      -> {
         "hello".foo
       }.should raise_error(NoMethodError)
     end
@@ -134,7 +120,7 @@ describe "Module#refine" do
       refine(String) {def foo; 'foo'; end}
     end
 
-    lambda {"hello".foo}.should raise_error(NoMethodError)
+    -> {"hello".foo}.should raise_error(NoMethodError)
   end
 
   # When defining multiple refinements in the same module,
@@ -191,7 +177,7 @@ describe "Module#refine" do
 
     result = nil
 
-    -> () {
+    -> {
       Module.new do
         using refinery_integer
         using refinery_array
@@ -321,8 +307,58 @@ describe "Module#refine" do
   end
 
   context "for methods accessed indirectly" do
-    ruby_version_is "" ... "2.4" do
-      it "is not honored by Kernel#send" do
+    it "is honored by Kernel#send" do
+      refinement = Module.new do
+        refine ModuleSpecs::ClassWithFoo do
+          def foo; "foo from refinement"; end
+        end
+      end
+
+      result = nil
+      Module.new do
+        using refinement
+        result = ModuleSpecs::ClassWithFoo.new.send :foo
+      end
+
+      result.should == "foo from refinement"
+    end
+
+    it "is honored by BasicObject#__send__" do
+      refinement = Module.new do
+        refine ModuleSpecs::ClassWithFoo do
+          def foo; "foo from refinement"; end
+        end
+      end
+
+      result = nil
+      Module.new do
+        using refinement
+        result = ModuleSpecs::ClassWithFoo.new.__send__ :foo
+      end
+
+      result.should == "foo from refinement"
+    end
+
+    it "is honored by Symbol#to_proc" do
+      refinement = Module.new do
+        refine Integer do
+          def to_s
+            "(#{super})"
+          end
+        end
+      end
+
+      result = nil
+      Module.new do
+        using refinement
+        result = [1, 2, 3].map(&:to_s)
+      end
+
+      result.should == ["(1)", "(2)", "(3)"]
+    end
+
+    ruby_version_is "" ... "2.6" do
+      it "is not honored by Kernel#public_send" do
         refinement = Module.new do
           refine ModuleSpecs::ClassWithFoo do
             def foo; "foo from refinement"; end
@@ -332,49 +368,15 @@ describe "Module#refine" do
         result = nil
         Module.new do
           using refinement
-          result = ModuleSpecs::ClassWithFoo.new.send :foo
+          result = ModuleSpecs::ClassWithFoo.new.public_send :foo
         end
 
         result.should == "foo"
-      end
-
-      it "is not honored by BasicObject#__send__" do
-        refinement = Module.new do
-          refine ModuleSpecs::ClassWithFoo do
-            def foo; "foo from refinement"; end
-          end
-        end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = ModuleSpecs::ClassWithFoo.new.__send__ :foo
-        end
-
-        result.should == "foo"
-      end
-
-      it "is not honored by Symbol#to_proc" do
-        refinement = Module.new do
-          refine Integer do
-            def to_s
-              "(#{super})"
-            end
-          end
-        end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = [1, 2, 3].map(&:to_s)
-        end
-
-        result.should == ["1", "2", "3"]
       end
     end
 
-    ruby_version_is "2.4" do
-      it "is honored by Kernel#send" do
+    ruby_version_is "2.6" do
+      it "is honored by Kernel#public_send" do
         refinement = Module.new do
           refine ModuleSpecs::ClassWithFoo do
             def foo; "foo from refinement"; end
@@ -384,44 +386,10 @@ describe "Module#refine" do
         result = nil
         Module.new do
           using refinement
-          result = ModuleSpecs::ClassWithFoo.new.send :foo
+          result = ModuleSpecs::ClassWithFoo.new.public_send :foo
         end
 
         result.should == "foo from refinement"
-      end
-
-      it "is honored by BasicObject#__send__" do
-        refinement = Module.new do
-          refine ModuleSpecs::ClassWithFoo do
-            def foo; "foo from refinement"; end
-          end
-        end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = ModuleSpecs::ClassWithFoo.new.__send__ :foo
-        end
-
-        result.should == "foo from refinement"
-      end
-
-      it "is honored by Symbol#to_proc" do
-        refinement = Module.new do
-          refine Integer do
-            def to_s
-              "(#{super})"
-            end
-          end
-        end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = [1, 2, 3].map(&:to_s)
-        end
-
-        result.should == ["(1)", "(2)", "(3)"]
       end
     end
 
@@ -490,37 +458,155 @@ describe "Module#refine" do
       result.should == "hello from refinement"
     end
 
-    it "is not honored by Kernel#method" do
-      klass = Class.new
-      refinement = Module.new do
-        refine klass do
-          def foo; end
+    ruby_version_is "" ... "2.7" do
+      it "is not honored by Kernel#method" do
+        klass = Class.new
+        refinement = Module.new do
+          refine klass do
+            def foo; end
+          end
         end
-      end
 
-      -> {
-        Module.new do
-          using refinement
-          klass.new.method(:foo)
-        end
-      }.should raise_error(NameError, /undefined method `foo'/)
+        -> {
+          Module.new do
+            using refinement
+            klass.new.method(:foo)
+          end
+        }.should raise_error(NameError, /undefined method `foo'/)
+      end
     end
 
-    it "is not honored by Kernel#respond_to?" do
-      klass = Class.new
-      refinement = Module.new do
-        refine klass do
-          def foo; end
+    ruby_version_is "2.7" do
+      it "is honored by Kernel#method" do
+        klass = Class.new
+        refinement = Module.new do
+          refine klass do
+            def foo; end
+          end
         end
-      end
 
-      result = nil
-      Module.new do
-        using refinement
-        result = klass.new.respond_to?(:foo)
-      end
+        result = nil
+        Module.new do
+          using refinement
+          result = klass.new.method(:foo).class
+        end
 
-      result.should == false
+        result.should == Method
+      end
+    end
+
+    ruby_version_is "" ... "2.7" do
+      it "is not honored by Kernel#instance_method" do
+        klass = Class.new
+        refinement = Module.new do
+          refine klass do
+            def foo; end
+          end
+        end
+
+        -> {
+          Module.new do
+            using refinement
+            klass.instance_method(:foo)
+          end
+        }.should raise_error(NameError, /undefined method `foo'/)
+      end
+    end
+
+    ruby_version_is "2.7" do
+      it "is honored by Kernel#method" do
+        klass = Class.new
+        refinement = Module.new do
+          refine klass do
+            def foo; end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = klass.instance_method(:foo).class
+        end
+
+        result.should == UnboundMethod
+      end
+    end
+
+    ruby_version_is "" ... "2.6" do
+      it "is not honored by Kernel#respond_to?" do
+        klass = Class.new
+        refinement = Module.new do
+          refine klass do
+            def foo; end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = klass.new.respond_to?(:foo)
+        end
+
+        result.should == false
+      end
+    end
+
+    ruby_version_is "2.6" do
+      it "is honored by Kernel#respond_to?" do
+        klass = Class.new
+        refinement = Module.new do
+          refine klass do
+            def foo; end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = klass.new.respond_to?(:foo)
+        end
+
+        result.should == true
+      end
+    end
+
+    ruby_version_is ""..."2.6" do
+      it "is not honored by &" do
+        refinement = Module.new do
+          refine String do
+            def to_proc(*args)
+              -> * { 'foo' }
+            end
+          end
+        end
+
+        -> do
+          Module.new do
+            using refinement
+            ["hola"].map(&"upcase")
+          end
+        end.should raise_error(TypeError, /wrong argument type String \(expected Proc\)/)
+      end
+    end
+
+    ruby_version_is "2.6" do
+      it "is honored by &" do
+        refinement = Module.new do
+          refine String do
+            def to_proc(*args)
+              -> * { 'foo' }
+            end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = ["hola"].map(&"upcase")
+        end
+
+        result.should == ['foo']
+      end
     end
   end
 
@@ -594,6 +680,30 @@ describe "Module#refine" do
     end
   end
 
+  it 'and alias aliases a method within a refinement module, but not outside it' do
+    Module.new do
+      using Module.new {
+        refine Array do
+          alias :orig_count :count
+        end
+      }
+      [1,2].orig_count.should == 2
+    end
+    -> { [1,2].orig_count }.should raise_error(NoMethodError)
+  end
+
+  it 'and alias_method aliases a method within a refinement module, but not outside it' do
+    Module.new do
+      using Module.new {
+        refine Array do
+          alias_method :orig_count, :count
+        end
+      }
+      [1,2].orig_count.should == 2
+    end
+    -> { [1,2].orig_count }.should raise_error(NoMethodError)
+  end
+
   # Refinements are inherited by module inclusion.
   # That is, using activates all refinements in the ancestors of the specified module.
   # Refinements in a descendant have priority over refinements in an ancestor.
@@ -653,5 +763,20 @@ describe "Module#refine" do
 
       result.should == "hello from refinement"
     end
+  end
+
+  it 'does not list methods defined only in refinement' do
+    refine_object = Module.new do
+      refine Object do
+        def refinement_only_method
+        end
+      end
+    end
+    spec = self
+    klass = Class.new { instance_methods.should_not spec.send(:include, :refinement_only_method) }
+    instance = klass.new
+    instance.methods.should_not include :refinement_only_method
+    instance.respond_to?(:refinement_only_method).should == false
+    -> { instance.method :refinement_only_method }.should raise_error(NameError)
   end
 end

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "IO#close_on_exec=" do
   before :each do
@@ -11,17 +11,7 @@ describe "IO#close_on_exec=" do
     rm_r @name
   end
 
-  guard -> { platform_is :windows and ruby_version_is ""..."2.3" } do
-    it "returns false from #respond_to?" do
-      @io.respond_to?(:close_on_exec=).should be_false
-    end
-
-    it "raises a NotImplementedError when called" do
-      lambda { @io.close_on_exec = true }.should raise_error(NotImplementedError)
-    end
-  end
-
-  guard -> { platform_is_not :windows or ruby_version_is "2.3" } do
+  guard -> { platform_is_not :windows } do
     it "sets the close-on-exec flag if true" do
       @io.close_on_exec = true
       @io.close_on_exec?.should == true
@@ -52,7 +42,7 @@ describe "IO#close_on_exec=" do
 
     it "raises IOError if called on a closed IO" do
       @io.close
-      lambda { @io.close_on_exec = true }.should raise_error(IOError)
+      -> { @io.close_on_exec = true }.should raise_error(IOError)
     end
 
     it "returns nil" do
@@ -72,17 +62,7 @@ describe "IO#close_on_exec?" do
     rm_r @name
   end
 
-  guard -> { platform_is :windows and ruby_version_is ""..."2.3" } do
-    it "returns false from #respond_to?" do
-      @io.respond_to?(:close_on_exec?).should be_false
-    end
-
-    it "raises a NotImplementedError when called" do
-      lambda { @io.close_on_exec? }.should raise_error(NotImplementedError)
-    end
-  end
-
-  guard -> { platform_is_not :windows or ruby_version_is "2.3" } do
+  guard -> { platform_is_not :windows } do
     it "returns true by default" do
       @io.close_on_exec?.should == true
     end
@@ -94,7 +74,7 @@ describe "IO#close_on_exec?" do
 
     it "raises IOError if called on a closed IO" do
       @io.close
-      lambda { @io.close_on_exec? }.should raise_error(IOError)
+      -> { @io.close_on_exec? }.should raise_error(IOError)
     end
   end
 end

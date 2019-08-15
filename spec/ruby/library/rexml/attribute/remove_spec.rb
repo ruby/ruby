@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'rexml/document'
 
 describe "REXML::Attribute#remove" do
@@ -15,6 +15,6 @@ describe "REXML::Attribute#remove" do
   end
 
   it "does not anything if element has no parent" do
-    lambda {@attr.remove}.should_not raise_error(Exception)
+    -> {@attr.remove}.should_not raise_error(Exception)
   end
 end

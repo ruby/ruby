@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require 'socket'
-require 'drb/drb'
+require_relative 'drb'
 require 'tmpdir'
 
 raise(LoadError, "UNIXServer is required") unless defined?(UNIXServer)
@@ -95,6 +95,7 @@ module DRb
     public
     def close
       return unless @socket
+      shutdown # DRbProtocol#shutdown
       path = @socket.path if @server_mode
       @socket.close
       File.unlink(path) if @server_mode

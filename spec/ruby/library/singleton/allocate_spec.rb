@@ -1,8 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Singleton.allocate" do
   it "is a private method" do
-    lambda { SingletonSpecs::MyClass.allocate }.should raise_error(NoMethodError)
+    -> { SingletonSpecs::MyClass.allocate }.should raise_error(NoMethodError)
   end
 end

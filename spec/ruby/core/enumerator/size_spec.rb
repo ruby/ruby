@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Enumerator#size" do
   it "returns same value if set size is an Integer" do
@@ -11,7 +11,7 @@ describe "Enumerator#size" do
 
   it "returns returning value from size.call if set size is a Proc" do
     base_size = 100
-    enum = Enumerator.new(lambda { base_size + 1 }) {}
+    enum = Enumerator.new(-> { base_size + 1 }) {}
     base_size = 200
     enum.size.should == 201
     base_size = 300

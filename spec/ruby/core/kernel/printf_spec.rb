@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/sprintf', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/sprintf'
 require "stringio"
 
 describe "Kernel#printf" do
@@ -36,7 +36,7 @@ describe "Kernel.printf" do
 
   describe "formatting" do
     context "io is specified" do
-      it_behaves_like :kernel_sprintf, -> (format, *args) {
+      it_behaves_like :kernel_sprintf, -> format, *args {
         io = StringIO.new
         printf(io, format, *args)
         io.string
@@ -44,7 +44,7 @@ describe "Kernel.printf" do
     end
 
     context "io is not specified" do
-      it_behaves_like :kernel_sprintf, -> (format, *args) {
+      it_behaves_like :kernel_sprintf, -> format, *args {
         stdout = $stdout
 
         begin
@@ -58,4 +58,3 @@ describe "Kernel.printf" do
     end
   end
 end
-

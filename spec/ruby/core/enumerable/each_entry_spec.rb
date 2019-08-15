@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/enumerable_enumeratorized', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/enumerable_enumeratorized'
 
 describe "Enumerable#each_entry" do
   before :each do
@@ -27,8 +27,8 @@ describe "Enumerable#each_entry" do
   end
 
   it "raises an ArgumentError when extra arguments" do
-    lambda { @enum.each_entry("one").to_a   }.should raise_error(ArgumentError)
-    lambda { @enum.each_entry("one"){}.to_a }.should raise_error(ArgumentError)
+    -> { @enum.each_entry("one").to_a   }.should raise_error(ArgumentError)
+    -> { @enum.each_entry("one"){}.to_a }.should raise_error(ArgumentError)
   end
 
   it "passes extra arguments to #each" do

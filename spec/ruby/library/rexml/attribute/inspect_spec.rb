@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'rexml/document'
 
 describe "REXML::Attribute#inspect" do
@@ -13,8 +13,7 @@ describe "REXML::Attribute#inspect" do
   end
 
   it "does not escape text" do
-    a = REXML::Attribute.new("&&", "<>")
-    a.inspect.should == "&&='<>'"
+    a = REXML::Attribute.new("name", "<>")
+    a.inspect.should == "name='<>'"
   end
 end
-

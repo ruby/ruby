@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/file/size', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../shared/file/size'
 
 describe "File.size?" do
   it_behaves_like :file_size,                     :size?, File
@@ -81,7 +81,7 @@ describe "File#size" do
 
   it "raises an IOError on a closed file" do
     @file.close
-    lambda { @file.size }.should raise_error(IOError)
+    -> { @file.size }.should raise_error(IOError)
   end
 
   platform_is_not :windows do

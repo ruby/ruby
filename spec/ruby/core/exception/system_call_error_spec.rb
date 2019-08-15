@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "SystemCallError" do
   before :each do
@@ -21,7 +21,7 @@ end
 
 describe "SystemCallError.new" do
   it "requires at least one argument" do
-    lambda { SystemCallError.new }.should raise_error(ArgumentError)
+    -> { SystemCallError.new }.should raise_error(ArgumentError)
   end
 
   it "accepts single Fixnum argument as errno" do

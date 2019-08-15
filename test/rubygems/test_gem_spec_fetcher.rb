@@ -328,4 +328,3 @@ class TestGemSpecFetcher < Gem::TestCase
   end
 
 end
-

@@ -172,6 +172,8 @@ class TestMonitor < Test::Unit::TestCase
       assert @monitor.mon_locked?
       assert @monitor.mon_owned?
     end
+  ensure
+    th.join
   end
 
   def test_cond
@@ -268,5 +270,27 @@ class TestMonitor < Test::Unit::TestCase
 #       assert_equal("bar", d)
 #     end
 #     cumber_thread.kill
+  end
+
+  def test_wait_interruption
+    queue = Queue.new
+    cond = @monitor.new_cond
+    @monitor.define_singleton_method(:mon_enter_for_cond) do |*args|
+      queue.deq
+      super(*args)
+    end
+    th = Thread.start {
+      @monitor.synchronize do
+        begin
+          cond.wait(0.1)
+        rescue Interrupt
+          @monitor.instance_variable_get(:@mon_owner)
+        end
+      end
+    }
+    sleep(0.1)
+    th.raise(Interrupt)
+    queue.enq(nil)
+    assert_equal th, th.value
   end
 end

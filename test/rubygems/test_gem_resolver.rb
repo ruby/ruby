@@ -23,7 +23,7 @@ class TestGemResolver < Gem::TestCase
     StaticSet.new(specs)
   end
 
-  def assert_resolves_to expected, resolver
+  def assert_resolves_to(expected, resolver)
     actual = resolver.resolve
 
     exp = expected.sort_by { |s| s.full_name }
@@ -34,10 +34,6 @@ class TestGemResolver < Gem::TestCase
     assert_equal exp, act, msg
   rescue Gem::DependencyResolutionError => e
     flunk e.message
-  end
-
-  def test_self_compatibility
-    assert_same Gem::Resolver, Gem::DependencyResolver
   end
 
   def test_self_compose_sets_best_set
@@ -75,7 +71,7 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_self_compose_sets_nil
-    index_set  = @DR::IndexSet.new
+    index_set = @DR::IndexSet.new
 
     composed = @DR.compose_sets index_set, nil
 
@@ -89,7 +85,7 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_self_compose_sets_single
-    index_set  = @DR::IndexSet.new
+    index_set = @DR::IndexSet.new
 
     composed = @DR.compose_sets index_set
 
@@ -101,7 +97,7 @@ class TestGemResolver < Gem::TestCase
 
     r1 = Gem::Resolver::DependencyRequest.new dep('a', '= 1'), nil
 
-    act = Gem::Resolver::ActivationRequest.new a1, r1, false
+    act = Gem::Resolver::ActivationRequest.new a1, r1
 
     res = Gem::Resolver.new [a1]
 
@@ -122,7 +118,7 @@ class TestGemResolver < Gem::TestCase
 
     r1 = Gem::Resolver::DependencyRequest.new dep('a', '= 1'), nil
 
-    act = Gem::Resolver::ActivationRequest.new spec, r1, false
+    act = Gem::Resolver::ActivationRequest.new spec, r1
 
     res = Gem::Resolver.new [act]
     res.development = true
@@ -141,7 +137,7 @@ class TestGemResolver < Gem::TestCase
 
     r1 = Gem::Resolver::DependencyRequest.new dep('a', '= 1'), nil
 
-    act = Gem::Resolver::ActivationRequest.new a1, r1, false
+    act = Gem::Resolver::ActivationRequest.new a1, r1
 
     res = Gem::Resolver.new [a1]
     res.ignore_dependencies = true
@@ -155,16 +151,31 @@ class TestGemResolver < Gem::TestCase
 
   def test_resolve_conservative
     a1_spec = util_spec 'a', 1
+
     a2_spec = util_spec 'a', 2 do |s|
       s.add_dependency 'b', 2
       s.add_dependency 'c'
     end
+
     b1_spec = util_spec 'b', 1
     b2_spec = util_spec 'b', 2
-    c1_spec = util_spec 'c', 1 do |s| s.add_dependency 'd', 2 end
-    c2_spec = util_spec 'c', 2 do |s| s.add_dependency 'd', 2 end
-    d1_spec = util_spec 'd', 1 do |s| s.add_dependency 'e' end
-    d2_spec = util_spec 'd', 2 do |s| s.add_dependency 'e' end
+
+    c1_spec = util_spec 'c', 1 do |s|
+      s.add_dependency 'd', 2
+    end
+
+    c2_spec = util_spec 'c', 2 do |s|
+      s.add_dependency 'd', 2
+    end
+
+    d1_spec = util_spec 'd', 1 do |s|
+      s.add_dependency 'e'
+    end
+
+    d2_spec = util_spec 'd', 2 do |s|
+      s.add_dependency 'e'
+    end
+
     e1_spec = util_spec 'e', 1
     e2_spec = util_spec 'e', 2
 
@@ -181,7 +192,7 @@ class TestGemResolver < Gem::TestCase
 
     # With the following gems already installed:
     # a-1, b-1, c-1, e-1
-    res.skip_gems = {'a'=>[a1_spec], 'b'=>[b1_spec], 'c'=>[c1_spec], 'e'=>[e1_spec]}
+    res.skip_gems = {'a' => [a1_spec], 'b' => [b1_spec], 'c' => [c1_spec], 'e' => [e1_spec]}
 
     # Make sure the following gems end up getting used/installed/upgraded:
     # a-2 (upgraded)
@@ -193,8 +204,14 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_resolve_development
-    a_spec = util_spec 'a', 1 do |s| s.add_development_dependency 'b' end
-    b_spec = util_spec 'b', 1 do |s| s.add_development_dependency 'c' end
+    a_spec = util_spec 'a', 1 do |s|
+      s.add_development_dependency 'b'
+    end
+
+    b_spec = util_spec 'b', 1 do
+      |s| s.add_development_dependency 'c'
+    end
+
     c_spec = util_spec 'c', 1
 
     a_dep = make_dep 'a', '= 1'
@@ -216,10 +233,16 @@ class TestGemResolver < Gem::TestCase
       s.add_runtime_dependency 'd'
     end
 
-    b_spec = util_spec 'b', 1 do |s| s.add_development_dependency 'c' end
+    b_spec = util_spec 'b', 1 do |s|
+      s.add_development_dependency 'c'
+    end
+
     c_spec = util_spec 'c', 1
 
-    d_spec = util_spec 'd', 1 do |s| s.add_development_dependency 'e' end
+    d_spec = util_spec 'd', 1 do |s|
+      s.add_development_dependency 'e'
+    end
+
     e_spec = util_spec 'e', 1
 
     a_dep = make_dep 'a', '= 1'
@@ -303,9 +326,15 @@ class TestGemResolver < Gem::TestCase
     a2_p1   = a3_p2 = nil
 
     spec_fetcher do |fetcher|
-              fetcher.spec 'a', 2
-      a2_p1 = fetcher.spec 'a', 2 do |s| s.platform = Gem::Platform.local end
-      a3_p2 = fetcher.spec 'a', 3 do |s| s.platform = unknown end
+      fetcher.spec 'a', 2
+
+      a2_p1 = fetcher.spec 'a', 2 do |s|
+        s.platform = Gem::Platform.local
+      end
+
+      a3_p2 = fetcher.spec 'a', 3 do |s|
+        s.platform = unknown
+      end
     end
 
     v2 = v(2)
@@ -647,7 +676,6 @@ class TestGemResolver < Gem::TestCase
   # activesupport 2.3.5, 2.3.4
   # Activemerchant needs activesupport >= 2.3.2. When you require activemerchant, it will activate the latest version that meets that requirement which is 2.3.5. Actionmailer on the other hand needs activesupport = 2.3.4. When rubygems tries to activate activesupport 2.3.4, it will raise an error.
 
-
   def test_simple_activesupport_problem
     sup1  = util_spec "activesupport", "2.3.4"
     sup2  = util_spec "activesupport", "2.3.5"
@@ -666,12 +694,12 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_second_level_backout
-    b1 = new_spec "b", "1", { "c" => ">= 1" }, "lib/b.rb"
-    b2 = new_spec "b", "2", { "c" => ">= 2" }, "lib/b.rb"
-    c1 = new_spec "c", "1"
-    c2 = new_spec "c", "2"
-    d1 = new_spec "d", "1", { "c" => "< 2" },  "lib/d.rb"
-    d2 = new_spec "d", "2", { "c" => "< 2" },  "lib/d.rb"
+    b1 = util_spec "b", "1", { "c" => ">= 1" }, "lib/b.rb"
+    b2 = util_spec "b", "2", { "c" => ">= 2" }, "lib/b.rb"
+    c1 = util_spec "c", "1"
+    c2 = util_spec "c", "2"
+    d1 = util_spec "d", "1", { "c" => "< 2" },  "lib/d.rb"
+    d2 = util_spec "d", "2", { "c" => "< 2" },  "lib/d.rb"
 
     s = set(b1, b2, c1, c2, d1, d2)
 
@@ -688,11 +716,11 @@ class TestGemResolver < Gem::TestCase
     sourceB = Gem::Source.new 'http://example.com/b'
     sourceC = Gem::Source.new 'http://example.com/c'
 
-    spec_A_1 = new_spec 'some-dep', '0.0.1'
-    spec_A_2 = new_spec 'some-dep', '1.0.0'
-    spec_B_1 = new_spec 'some-dep', '0.0.1'
-    spec_B_2 = new_spec 'some-dep', '0.0.2'
-    spec_C_1 = new_spec 'some-dep', '0.1.0'
+    spec_A_1 = util_spec 'some-dep', '0.0.1'
+    spec_A_2 = util_spec 'some-dep', '1.0.0'
+    spec_B_1 = util_spec 'some-dep', '0.0.1'
+    spec_B_2 = util_spec 'some-dep', '0.0.2'
+    spec_C_1 = util_spec 'some-dep', '0.1.0'
 
     set = StaticSet.new [
       Gem::Resolver::SpecSpecification.new(nil, spec_B_1, sourceB),
@@ -713,8 +741,14 @@ class TestGemResolver < Gem::TestCase
     r = Gem::Resolver.new nil, nil
 
     a1    = util_spec 'a', 1
-    a1_p1 = util_spec 'a', 1 do |s| s.platform = Gem::Platform.local end
-    a1_p2 = util_spec 'a', 1 do |s| s.platform = 'unknown'           end
+
+    a1_p1 = util_spec 'a', 1 do |s|
+      s.platform = Gem::Platform.local
+    end
+
+    a1_p2 = util_spec 'a', 1 do |s|
+      s.platform = 'unknown'
+    end
 
     selected = r.select_local_platforms [a1, a1_p1, a1_p2]
 
@@ -723,8 +757,14 @@ class TestGemResolver < Gem::TestCase
 
   def test_search_for_local_platform_partial_string_match
     a1    = util_spec 'a', 1
-    a1_p1 = util_spec 'a', 1 do |s| s.platform = Gem::Platform.local.os end
-    a1_p2 = util_spec 'a', 1 do |s| s.platform = 'unknown'              end
+
+    a1_p1 = util_spec 'a', 1 do |s|
+      s.platform = Gem::Platform.local.os
+    end
+
+    a1_p2 = util_spec 'a', 1 do |s|
+      s.platform = 'unknown'
+    end
 
     s = set(a1_p1, a1_p2, a1)
     d = [make_dep('a')]

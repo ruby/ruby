@@ -1,14 +1,16 @@
-# -*- encoding: ascii-8bit -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
-require File.expand_path('../shared/string', __FILE__)
+# -*- encoding: binary -*-
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
+require_relative 'shared/string'
+require_relative 'shared/taint'
 
 describe "String#unpack with format 'A'" do
   it_behaves_like :string_unpack_basic, 'A'
   it_behaves_like :string_unpack_no_platform, 'A'
   it_behaves_like :string_unpack_string, 'A'
   it_behaves_like :string_unpack_Aa, 'A'
+  it_behaves_like :string_unpack_taint, 'A'
 
   it "removes trailing space and NULL bytes from the decoded string" do
     [ ["a\x00 b \x00",  ["a\x00 b", ""]],
@@ -30,7 +32,7 @@ describe "String#unpack with format 'A'" do
 
   it "decodes into raw (ascii) string values" do
     str = "str".force_encoding('UTF-8').unpack("A*")[0]
-    str.encoding.name.should == 'ASCII-8BIT'
+    str.encoding.should == Encoding::BINARY
   end
 
 end
@@ -40,6 +42,7 @@ describe "String#unpack with format 'a'" do
   it_behaves_like :string_unpack_no_platform, 'a'
   it_behaves_like :string_unpack_string, 'a'
   it_behaves_like :string_unpack_Aa, 'a'
+  it_behaves_like :string_unpack_taint, 'a'
 
   it "does not remove trailing whitespace or NULL bytes from the decoded string" do
     [ ["a\x00 b \x00",  ["a\x00 b \x00"]],
@@ -57,7 +60,7 @@ describe "String#unpack with format 'a'" do
 
   it "decodes into raw (ascii) string values" do
     str = "".unpack("a*")[0]
-    str.encoding.name.should == 'ASCII-8BIT'
+    str.encoding.should == Encoding::BINARY
   end
 
 end

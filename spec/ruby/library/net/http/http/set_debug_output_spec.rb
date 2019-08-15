@@ -1,7 +1,7 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 require 'net/http'
 require "stringio"
-require File.expand_path('../fixtures/http_server', __FILE__)
+require_relative 'fixtures/http_server'
 
 describe "Net::HTTP#set_debug_output when passed io" do
   before :each do
@@ -28,6 +28,6 @@ describe "Net::HTTP#set_debug_output when passed io" do
 
   it "outputs a warning when the connection has already been started" do
     @http.start
-    lambda { @http.set_debug_output(StringIO.new) }.should complain(/Net::HTTP#set_debug_output called after HTTP started/)
+    -> { @http.set_debug_output(StringIO.new) }.should complain(/Net::HTTP#set_debug_output called after HTTP started/)
   end
 end

@@ -1,8 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/file/world_writable', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../shared/file/world_writable'
 
 describe "File.world_writable?" do
-  it_behaves_like(:file_world_writable, :world_writable?, File)
+  it_behaves_like :file_world_writable, :world_writable?, File
 
   it "returns nil if the file does not exist" do
     file = rand.to_s + $$.to_s
