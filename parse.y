@@ -1387,6 +1387,15 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    /*% %*/
 		    /*% ripper: assign!($1, $3) %*/
 		    }
+                | mlhs '=' mrhs_arg modifier_rescue stmt
+                    {
+                    /*%%%*/
+                        YYLTYPE loc = code_loc_gen(&@4, &@5);
+                        value_expr($3);
+			$$ = node_assign(p, $1, NEW_RESCUE($3, NEW_RESBODY(0, remove_begin($5), 0, &loc), 0, &@$), &@$);
+                    /*% %*/
+                    /*% ripper: massign!($1, rescue_mod!($3, $5)) %*/
+                    }
 		| mlhs '=' mrhs_arg
 		    {
 		    /*%%%*/

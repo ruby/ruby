@@ -1056,6 +1056,7 @@ int rb_singleton_class_internal_p(VALUE sklass);
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
 #define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
 
+#define RCLASS_CLONED     FL_USER6
 #define RICLASS_IS_ORIGIN FL_USER5
 
 static inline void
@@ -1386,6 +1387,22 @@ rb_ary_entry_internal(VALUE ary, long offset)
     }
     return ptr[offset];
 }
+
+/* MRI debug support */
+void rb_obj_info_dump(VALUE obj);
+void  ruby_debug_breakpoint(void);
+
+// show obj data structure without any side-effect
+#define rp(obj) rb_obj_info_dump((VALUE)obj);
+// same as rp, but add message header
+#define rp_m(msg, obj) do { \
+    fprintf(stderr, "%s", (msg)); \
+    rb_obj_info_dump((VALUE)obj); \
+} while (0)
+
+// `ruby_debug_breakpoint()` does nothing,
+// but breakpoint is set in run.gdb, so `make gdb` can stop here.
+#define bp() ruby_debug_breakpoint()
 
 /* bignum.c */
 extern const char ruby_digitmap[];
@@ -1746,6 +1763,7 @@ VALUE rb_float_plus(VALUE x, VALUE y);
 VALUE rb_int_minus(VALUE x, VALUE y);
 VALUE rb_int_mul(VALUE x, VALUE y);
 VALUE rb_float_mul(VALUE x, VALUE y);
+VALUE rb_float_div(VALUE x, VALUE y);
 VALUE rb_int_idiv(VALUE x, VALUE y);
 VALUE rb_int_modulo(VALUE x, VALUE y);
 VALUE rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode);
@@ -2186,7 +2204,6 @@ struct timeval rb_time_timeval(VALUE);
 VALUE rb_obj_is_mutex(VALUE obj);
 VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
 void rb_thread_execute_interrupts(VALUE th);
-void rb_clear_trace_func(void);
 VALUE rb_get_coverages(void);
 int rb_get_coverage_mode(void);
 VALUE rb_default_coverage(int);

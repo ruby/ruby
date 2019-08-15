@@ -100,56 +100,6 @@ module Test
       end
 
       # :call-seq:
-      #   assert_raise_with_message(exception, expected, msg = nil, &block)
-      #
-      #Tests if the given block raises an exception with the expected
-      #message.
-      #
-      #    assert_raise_with_message(RuntimeError, "foo") do
-      #      nil #Fails, no Exceptions are raised
-      #    end
-      #
-      #    assert_raise_with_message(RuntimeError, "foo") do
-      #      raise ArgumentError, "foo" #Fails, different Exception is raised
-      #    end
-      #
-      #    assert_raise_with_message(RuntimeError, "foo") do
-      #      raise "bar" #Fails, RuntimeError is raised but the message differs
-      #    end
-      #
-      #    assert_raise_with_message(RuntimeError, "foo") do
-      #      raise "foo" #Raises RuntimeError with the message, so assertion succeeds
-      #    end
-      def assert_raise_with_message(exception, expected, msg = nil, &block)
-        case expected
-        when String
-          assert = :assert_equal
-        when Regexp
-          assert = :assert_match
-        else
-          raise TypeError, "Expected #{expected.inspect} to be a kind of String or Regexp, not #{expected.class}"
-        end
-
-        ex = m = nil
-        EnvUtil.with_default_internal(expected.encoding) do
-          ex = assert_raise(exception, msg || proc {"Exception(#{exception}) with message matches to #{expected.inspect}"}) do
-            yield
-          end
-          m = ex.message
-        end
-        msg = message(msg, "") {"Expected Exception(#{exception}) was raised, but the message doesn't match"}
-
-        if assert == :assert_equal
-          assert_equal(expected, m, msg)
-        else
-          msg = message(msg) { "Expected #{mu_pp expected} to match #{mu_pp m}" }
-          assert expected =~ m, msg
-          block.binding.eval("proc{|_|$~=_}").call($~)
-        end
-        ex
-      end
-
-      # :call-seq:
       #   assert_nothing_raised( *args, &block )
       #
       #If any exceptions are given as arguments, the assertion will
@@ -520,22 +470,6 @@ EOT
         end
         out, _, status = EnvUtil.invoke_ruby(child_env + %W'-W0', testsrc, true, :merge_to_stdout, **opt)
         assert !status.signaled?, FailDesc[status, message, out]
-      end
-
-      def assert_warning(pat, msg = nil)
-        result = nil
-        stderr = EnvUtil.with_default_internal(pat.encoding) {
-          EnvUtil.verbose_warning {
-            result = yield
-          }
-        }
-        msg = message(msg) {diff pat, stderr}
-        assert(pat === stderr, msg)
-        result
-      end
-
-      def assert_warn(*args)
-        assert_warning(*args) {$VERBOSE = false; yield}
       end
 
       def assert_no_warning(pat, msg = nil)

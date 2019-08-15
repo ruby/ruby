@@ -32,6 +32,8 @@ cache:
 
 env:
   global:
+    # Reset timestamps early, before updating Homebrew etc.
+    - _=$(touch NEWS && find . -type f -exec touch -r NEWS {} +)
     - CONFIGURE_TTY=no
     - CCACHE_COMPILERCHECK=none
     - CCACHE_NOCOMPRESS=1
@@ -49,6 +51,7 @@ env:
     - UPDATE_UNICODE="UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
     - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
+    - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
 
 .org.ruby-lang.ci.matrix-definitions:
 
@@ -89,9 +92,9 @@ env:
     #       - ubuntu-toolchain-r-test
     before_install:
       - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-      - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - |-
-        tool/travis_retry.sh sudo -E apt-get -yq --no-install-suggests --no-install-recommends $travis_apt_get_options install \
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           gcc-8 \
           libffi-dev \
           libgdbm-dev \
@@ -116,9 +119,9 @@ env:
         config:
           retries: true
     before_install:
-      - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - |-
-        tool/travis_retry.sh sudo -E apt-get -yq --no-install-suggests --no-install-recommends $travis_apt_get_options install \
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           clang-8 \
           llvm-8-tools \
           libffi-dev \
@@ -275,9 +278,9 @@ env:
     #       - ubuntu-toolchain-r-test
     before_install:
       - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-      - tool/travis_retry.sh bash -c "sudo rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && sudo apt-get update -yq"
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
       - |-
-        tool/travis_retry.sh sudo -E apt-get -yq --no-install-suggests --no-install-recommends $travis_apt_get_options install \
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
           gcc-8-multilib \
           libffi-dev:i386 \
           libffi6:i386 \
@@ -357,12 +360,7 @@ env:
     <<: *osx-clang
     env:
       - CONFIG_FLAG=--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib
-      # Adding `-v` because we're not sure which test could hang forever: https://travis-ci.org/ruby/ruby/jobs/564804923
-      - TEST_ALL_OPTS="-v --timeout-scale=2.0 --tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
-      # Disabling -j3 because it seems to cause a hang on building Ruby: https://travis-ci.org/ruby/ruby/jobs/471021727
-      - JOBS=
-      # Reset timestamps early, before updating Homebrew etc.
-      - _=$(touch NEWS && find . -type f -exec touch -r NEWS {} +)
+      - TEST_ALL_OPTS="--timeout-scale=2.0 --excludes=\$(TESTSDIR)/excludes/_travis/osx"
 
   - &dependency
     name: Check dependencies in makefiles
@@ -496,10 +494,10 @@ before_script:
   - echo "raise 'do not load ~/.irbrc in test'" > ~/.irbrc
 
 script:
-  - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
-  - $SETARCH make -s test-all -o exts TESTOPTS="${TEST_ALL_OPTS=$TESTOPTS}" RUBYOPT="-w"
+  - $SETARCH make -s test -o showflags TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
+  - travis_wait 50 $SETARCH make -s test-all -o exts TESTOPTS="${TESTOPTS} ${TEST_ALL_OPTS}" RUBYOPT="-w"
   - $SETARCH make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
-  - $SETARCH make -s leaked-globals
+  - $SETARCH make -s -o showflags leaked-globals
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:

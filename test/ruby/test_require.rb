@@ -260,8 +260,8 @@ class TestRequire < Test::Unit::TestCase
       e = assert_raise_with_message(SyntaxError, /unexpected/) {
         yield req
       }
-      assert_not_nil(bt = e.backtrace)
-      assert_not_empty(bt.find_all {|b| b.start_with? __FILE__})
+      assert_not_nil(bt = e.backtrace, "no backtrace")
+      assert_not_empty(bt.find_all {|b| b.start_with? __FILE__}, proc {bt.inspect})
     end
   end
 
@@ -382,6 +382,19 @@ class TestRequire < Test::Unit::TestCase
 
       assert_raise(ArgumentError) { at_exit }
     }
+  end
+
+  def test_require_in_wrapped_load
+    Dir.mktmpdir do |tmp|
+      File.write("#{tmp}/1.rb", "require_relative '2'\n")
+      File.write("#{tmp}/2.rb", "class Foo\n""end\n")
+      assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+      path = ""#{tmp.dump}"/1.rb"
+      begin;
+        load path, true
+        assert_instance_of(Class, Foo)
+      end;
+    end
   end
 
   def test_load_scope

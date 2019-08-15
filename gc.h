@@ -59,7 +59,7 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 
 #define RUBY_MARK_NO_PIN_UNLESS_NULL(ptr) do { \
     VALUE markobj = (ptr); \
-    if (RTEST(markobj)) {rb_gc_mark_no_pin(markobj);} \
+    if (RTEST(markobj)) {rb_gc_mark_movable(markobj);} \
 } while (0)
 #define RUBY_MARK_UNLESS_NULL(ptr) do { \
     VALUE markobj = (ptr); \
@@ -100,7 +100,6 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 
 const char *rb_obj_info(VALUE obj);
 const char *rb_raw_obj_info(char *buff, const int buff_size, VALUE obj);
-void rb_obj_info_dump(VALUE obj);
 
 VALUE rb_gc_disable_no_rest(void);
 

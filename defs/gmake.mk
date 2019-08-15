@@ -149,8 +149,7 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 	+$(Q) \
 	{ \
 	  $(CHDIR) "$(srcdir)"; \
-	  sed -f tool/prereq.status defs/gmake.mk template/Makefile.in; \
-	  sed 's/{[.;]*$$([a-zA-Z0-9_]*)}//g' common.mk; \
+	  exec sed -f tool/prereq.status defs/gmake.mk template/Makefile.in common.mk; \
 	} | \
 	$(MAKE) $(mflags) Q=$(Q) ECHO=$(ECHO) srcdir="$(srcdir)" srcs_vpath="" CHDIR="$(CHDIR)" \
 		BOOTSTRAPRUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BASERUBY)" BASERUBY="$(BASERUBY)" \
@@ -162,6 +161,7 @@ PR =
 
 COMMIT_GPG_SIGN = $(shell git -C "$(srcdir)" config commit.gpgsign)
 REMOTE_GITHUB_URL = $(shell git -C "$(srcdir)" config remote.github.url)
+COMMITS_NOTES = commits
 
 .PHONY: fetch-github
 fetch-github:
@@ -176,22 +176,39 @@ define fetch-github
 	$(if $(REMOTE_GITHUB_URL),, \
 	  echo adding $(GITHUB_RUBY_URL) as remote github; \
 	  git -C "$(srcdir)" remote add github $(GITHUB_RUBY_URL); \
+	  git -C "$(srcdir)" config --add remote.github.fetch +refs/notes/$(COMMITS_NOTES):refs/notes/$(COMMITS_NOTES)
 	  $(eval REMOTE_GITHUB_URL := $(GITHUB_RUBY_URL)) \
 	)
-	git -C "$(srcdir)" fetch -f github "pull/$(1)/head:gh-$(1)"
+	$(if $(git -C "$(srcdir)" rev-parse "github/pull/$(1)/head" -- 2> /dev/null), \
+	    git -C "$(srcdir)" branch -f "gh-$(1)" "github/pull/$(1)/head", \
+	    git -C "$(srcdir)" fetch -f github "pull/$(1)/head:gh-$(1)" \
+	)
 endef
 
 .PHONY: checkout-github
 checkout-github: fetch-github
 	git -C "$(srcdir)" checkout "gh-$(PR)"
 
+.PHONY: update-github
+update-github: fetch-github
+	$(eval PULL_REQUEST_API := https://api.github.com/repos/ruby/ruby/pulls/$(PR))
+	$(eval PULL_REQUEST_FORK_BRANCH := $(shell \
+	  curl -s $(if $(GITHUB_TOKEN),-H "Authorization: bearer $(GITHUB_TOKEN)") $(PULL_REQUEST_API) | \
+	  $(BASERUBY) -rjson -e 'JSON.parse(STDIN.read)["head"].tap { |h| print "#{h["repo"]["full_name"]} #{h["ref"]}" }' \
+	))
+	$(eval FORK_REPO := $(shell echo $(PULL_REQUEST_FORK_BRANCH) | cut -d' ' -f1))
+	$(eval PR_BRANCH := $(shell echo $(PULL_REQUEST_FORK_BRANCH) | cut -d' ' -f2))
+
+	$(eval GITHUB_UPDATE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(PR)-XXXXXX"))
+	git -C "$(srcdir)" worktree add $(notdir $(GITHUB_UPDATE_WORKTREE)) "gh-$(PR)"
+	git -C "$(GITHUB_UPDATE_WORKTREE)" merge master --no-edit
+	@$(BASERUBY) -e 'print "Are you sure to push this to PR=$(PR)? [Y/n]: "; exit(gets.chomp == "n" ? 1 : 0)'
+	git -C "$(GITHUB_UPDATE_WORKTREE)" remote add fork-$(PR) git@github.com:$(FORK_REPO).git
+	git -C "$(GITHUB_UPDATE_WORKTREE)" push fork-$(PR) gh-$(PR):$(PR_BRANCH)
+
 .PHONY: pull-github
 pull-github: fetch-github
 	$(call pull-github,$(PR))
-
-.PHONY: merge-github
-merge-github: pull-github
-	$(call merge-github,$(PR))
 
 define pull-github
 	$(eval GITHUB_MERGE_BASE := $(shell git -C "$(srcdir)" log -1 --format=format:%H))
@@ -199,19 +216,11 @@ define pull-github
 	$(eval GITHUB_MERGE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(1)-XXXXXX"))
 	git -C "$(srcdir)" worktree add $(notdir $(GITHUB_MERGE_WORKTREE)) "gh-$(1)"
 	git -C "$(GITHUB_MERGE_WORKTREE)" rebase $(GITHUB_MERGE_BRANCH)
-	git -C "$(GITHUB_MERGE_WORKTREE)" filter-branch -f \
-	  --msg-filter 'cat && echo && echo "Closes: $(GITHUB_RUBY_URL)/pull/$(1)"' \
-	  -- "$(GITHUB_MERGE_BASE)..@"
 	$(eval COMMIT_GPG_SIGN := $(COMMIT_GPG_SIGN))
 	$(if $(filter true,$(COMMIT_GPG_SIGN)), \
 	  git -C "$(GITHUB_MERGE_WORKTREE)" rebase --exec "git commit --amend --no-edit -S" "$(GITHUB_MERGE_BASE)"; \
 	)
-endef
-
-define merge-github
-	git -C "$(srcdir)" worktree remove $(notdir $(GITHUB_MERGE_WORKTREE))
-	git -C "$(srcdir)" merge --ff-only "gh-$(1)"
-	git -C "$(srcdir)" branch -D "gh-$(1)"
+	git -C "$(GITHUB_MERGE_WORKTREE)" rebase --exec "git notes add --message 'Merged: $(GITHUB_RUBY_URL)/pull/$(1)'" "$(GITHUB_MERGE_BASE)"
 endef
 
 .PHONY: fetch-github-%
@@ -226,14 +235,10 @@ checkout-github-%: fetch-github-%
 pr-% pull-github-%: fetch-github-%
 	$(call pull-github,$*)
 
-.PHONY: merge-github-%
-merge-github-%: pull-github-%
-	$(call merge-github,$*)
-
 HELP_EXTRA_TASKS = \
 	"  checkout-github:     checkout GitHub Pull Request [PR=1234]" \
 	"  pull-github:         rebase GitHub Pull Request to new worktree [PR=1234]" \
-	"  merge-github:        merge GitHub Pull Request to current HEAD [PR=1234]" \
+	"  update-github:       merge master branch and push it to Pull Request [PR=1234]" \
 	""
 
 ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
@@ -292,6 +297,9 @@ rdoc\:%: PHONY
 test_%.rb test/%: programs PHONY
 	+$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) -- $(patsubst test/%,%,$@)
 
+spec/bundler/%: PHONY
+	+$(Q)$(exec) $(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec --require spec_helper $(RSPECOPTS) $@
+
 spec/%: programs exts PHONY
 	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
 
@@ -320,5 +328,6 @@ update-deps:
 	git -C $(deps_dir) diff --no-ext-diff --ignore-submodules --exit-code || \
 	    git -C $(deps_dir) commit --all --message='Update dependencies'
 	git --git-dir=$(GIT_DIR) worktree remove $(deps_dir)
+	$(RMDIR) $(dir $(deps_dir))
 	git --git-dir=$(GIT_DIR) merge --no-edit --ff-only $(update_deps)
 	git --git-dir=$(GIT_DIR) branch --delete $(update_deps)

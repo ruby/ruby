@@ -1487,7 +1487,6 @@ rb_vm_make_jump_tag_but_local_jump(int state, VALUE val)
     return make_localjump_error(mesg, val, state);
 }
 
-#if 0
 void
 rb_vm_jump_tag_but_local_jump(int state)
 {
@@ -1495,7 +1494,6 @@ rb_vm_jump_tag_but_local_jump(int state)
     if (!NIL_P(exc)) rb_exc_raise(exc);
     EC_JUMP_TAG(GET_EC(), state);
 }
-#endif
 
 static rb_control_frame_t *
 next_not_local_frame(rb_control_frame_t *cfp)
@@ -2483,14 +2481,14 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 	while (cfp != limit_cfp) {
 	    const VALUE *ep = cfp->ep;
 	    VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
-            rb_gc_mark_no_pin(cfp->self);
-            rb_gc_mark_no_pin((VALUE)cfp->iseq);
-            rb_gc_mark_no_pin((VALUE)cfp->block_code);
+            rb_gc_mark_movable(cfp->self);
+            rb_gc_mark_movable((VALUE)cfp->iseq);
+            rb_gc_mark_movable((VALUE)cfp->block_code);
 
 	    if (!VM_ENV_LOCAL_P(ep)) {
 		const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
 		if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
-                    rb_gc_mark_no_pin(prev_ep[VM_ENV_DATA_INDEX_ENV]);
+                    rb_gc_mark_movable(prev_ep[VM_ENV_DATA_INDEX_ENV]);
 		}
 	    }
 
