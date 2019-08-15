@@ -429,10 +429,9 @@ sysexit_status(VALUE err)
     rb_bug("Unknown longjmp status %d", status)
 
 static int
-error_handle(int ex)
+error_handle(rb_execution_context_t *ec, int ex)
 {
     int status = EXIT_FAILURE;
-    rb_execution_context_t *ec = GET_EC();
 
     if (rb_ec_set_raised(ec))
 	return EXIT_FAILURE;

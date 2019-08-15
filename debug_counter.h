@@ -217,13 +217,17 @@ RB_DEBUG_COUNTER(obj_ary_shared)
 RB_DEBUG_COUNTER(obj_ary_shared_root_occupied)
 
 RB_DEBUG_COUNTER(obj_hash_empty)
-RB_DEBUG_COUNTER(obj_hash_1_4)
+RB_DEBUG_COUNTER(obj_hash_1)
+RB_DEBUG_COUNTER(obj_hash_2)
+RB_DEBUG_COUNTER(obj_hash_3)
+RB_DEBUG_COUNTER(obj_hash_4)
 RB_DEBUG_COUNTER(obj_hash_5_8)
 RB_DEBUG_COUNTER(obj_hash_g8)
+
+RB_DEBUG_COUNTER(obj_hash_null)
 RB_DEBUG_COUNTER(obj_hash_ar)
 RB_DEBUG_COUNTER(obj_hash_st)
 RB_DEBUG_COUNTER(obj_hash_transient)
-
 RB_DEBUG_COUNTER(obj_hash_force_convert)
 
 RB_DEBUG_COUNTER(obj_struct_embed)
@@ -261,6 +265,11 @@ RB_DEBUG_COUNTER(obj_imemo_parser_strterm)
 RB_DEBUG_COUNTER(obj_iclass_ptr)
 RB_DEBUG_COUNTER(obj_class_ptr)
 RB_DEBUG_COUNTER(obj_module_ptr)
+
+/* ar_table */
+RB_DEBUG_COUNTER(artable_hint_hit)
+RB_DEBUG_COUNTER(artable_hint_miss)
+RB_DEBUG_COUNTER(artable_hint_notfound)
 
 /* heap function counts
  *
@@ -341,6 +350,7 @@ rb_debug_counter_add(enum rb_debug_counter_type type, int add, int cond)
 }
 
 VALUE rb_debug_counter_reset(void);
+VALUE rb_debug_counter_show(void);
 
 #define RB_DEBUG_COUNTER_INC(type)                rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, 1)
 #define RB_DEBUG_COUNTER_INC_UNLESS(type, cond) (!rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, !(cond)))

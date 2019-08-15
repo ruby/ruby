@@ -1687,7 +1687,7 @@ rb_true(VALUE obj)
  */
 
 
-static VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_false(VALUE obj)
 {
     return Qfalse;
@@ -4160,7 +4160,7 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
  *      DELEGATE = [:puts, :p]
  *
  *      def method_missing(name, *args, &block)
- *        super unless DELEGATE.include? name
+ *        return super unless DELEGATE.include? name
  *        ::Kernel.send(name, *args, &block)
  *      end
  *

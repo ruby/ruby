@@ -1,4 +1,4 @@
-require "bundler/vendor/thor/lib/thor/shell/basic"
+require_relative "basic"
 
 class Bundler::Thor
   module Shell

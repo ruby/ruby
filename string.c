@@ -1952,6 +1952,37 @@ rb_str_plus(VALUE str1, VALUE str2)
     return str3;
 }
 
+/* A variant of rb_str_plus that does not raise but return Qundef instead. */
+MJIT_FUNC_EXPORTED VALUE
+rb_str_opt_plus(VALUE str1, VALUE str2)
+{
+    assert(RBASIC_CLASS(str1) == rb_cString);
+    assert(RBASIC_CLASS(str2) == rb_cString);
+    long len1, len2;
+    MAYBE_UNUSED(char) *ptr1, *ptr2;
+    RSTRING_GETMEM(str1, ptr1, len1);
+    RSTRING_GETMEM(str2, ptr2, len2);
+    int enc1 = rb_enc_get_index(str1);
+    int enc2 = rb_enc_get_index(str2);
+
+    if (enc1 < 0) {
+        return Qundef;
+    }
+    else if (enc2 < 0) {
+        return Qundef;
+    }
+    else if (enc1 != enc2) {
+        return Qundef;
+    }
+    else if (len1 > LONG_MAX - len2) {
+        return Qundef;
+    }
+    else {
+        return rb_str_plus(str1, str2);
+    }
+
+}
+
 /*
  *  call-seq:
  *     str * integer   -> new_str
@@ -3258,22 +3289,6 @@ rb_str_cmp(VALUE str1, VALUE str2)
     return -1;
 }
 
-/* expect tail call optimization */
-static VALUE
-str_eql(const VALUE str1, const VALUE str2)
-{
-    const long len = RSTRING_LEN(str1);
-    const char *ptr1, *ptr2;
-
-    if (len != RSTRING_LEN(str2)) return Qfalse;
-    if (!rb_str_comparable(str1, str2)) return Qfalse;
-    if ((ptr1 = RSTRING_PTR(str1)) == (ptr2 = RSTRING_PTR(str2)))
-	return Qtrue;
-    if (memcmp(ptr1, ptr2, len) == 0)
-	return Qtrue;
-    return Qfalse;
-}
-
 /*
  *  call-seq:
  *     str == obj    -> true or false
@@ -3297,7 +3312,7 @@ rb_str_equal(VALUE str1, VALUE str2)
 	}
 	return rb_equal(str2, str1);
     }
-    return str_eql(str1, str2);
+    return rb_str_eql_internal(str1, str2);
 }
 
 /*
@@ -3312,7 +3327,7 @@ rb_str_eql(VALUE str1, VALUE str2)
 {
     if (str1 == str2) return Qtrue;
     if (!RB_TYPE_P(str2, T_STRING)) return Qfalse;
-    return str_eql(str1, str2);
+    return rb_str_eql_internal(str1, str2);
 }
 
 /*
@@ -3402,8 +3417,8 @@ str_casecmp(VALUE str1, VALUE str2)
     if (single_byte_optimizable(str1) && single_byte_optimizable(str2)) {
 	while (p1 < p1end && p2 < p2end) {
 	    if (*p1 != *p2) {
-		unsigned int c1 = TOUPPER(*p1 & 0xff);
-		unsigned int c2 = TOUPPER(*p2 & 0xff);
+                unsigned int c1 = TOLOWER(*p1 & 0xff);
+                unsigned int c2 = TOLOWER(*p2 & 0xff);
                 if (c1 != c2)
                     return INT2FIX(c1 < c2 ? -1 : 1);
 	    }
@@ -3417,8 +3432,8 @@ str_casecmp(VALUE str1, VALUE str2)
             int l2, c2 = rb_enc_ascget(p2, p2end, &l2, enc);
 
             if (0 <= c1 && 0 <= c2) {
-                c1 = TOUPPER(c1);
-                c2 = TOUPPER(c2);
+                c1 = TOLOWER(c1);
+                c2 = TOLOWER(c2);
                 if (c1 != c2)
                     return INT2FIX(c1 < c2 ? -1 : 1);
             }
@@ -5083,7 +5098,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
                 cr = cr2;
 	}
 	plen = end0 - beg0;
-	rp = RSTRING_PTR(repl); rlen = RSTRING_LEN(repl);
+        rlen = RSTRING_LEN(repl);
 	len = RSTRING_LEN(str);
 	if (rlen > plen) {
 	    RESIZE_CAPA(str, len + rlen - plen);
@@ -5092,6 +5107,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	if (rlen != plen) {
 	    memmove(p + beg0 + rlen, p + beg0 + plen, len - beg0 - plen);
 	}
+        rp = RSTRING_PTR(repl);
         memmove(p + beg0, rp, rlen);
 	len += rlen - plen;
 	STR_SET_LEN(str, len);
@@ -5114,27 +5130,31 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *  Returns a copy of +str+ with the _first_ occurrence of +pattern+
  *  replaced by the second argument. The +pattern+ is typically a Regexp; if
  *  given as a String, any regular expression metacharacters it contains will
- *  be interpreted literally, e.g. <code>'\\\d'</code> will match a backslash
+ *  be interpreted literally, e.g. <code>\d</code> will match a backslash
  *  followed by 'd', instead of a digit.
  *
  *  If +replacement+ is a String it will be substituted for the matched text.
  *  It may contain back-references to the pattern's capture groups of the form
- *  <code>"\\d"</code>, where <i>d</i> is a group number, or
- *  <code>"\\k<n>"</code>, where <i>n</i> is a group name. If it is a
- *  double-quoted string, both back-references must be preceded by an
- *  additional backslash. However, within +replacement+ the special match
- *  variables, such as <code>$&</code>, will not refer to the current match.
- *  If +replacement+ is a String that looks like a pattern's capture group but
- *  is actually not a pattern capture group e.g. <code>"\\'"</code>, then it
- *  will have to be preceded by two backslashes like so <code>"\\\\'"</code>.
+ *  <code>\d</code>, where <i>d</i> is a group number, or
+ *  <code>\k<n></code>, where <i>n</i> is a group name.
+ *  Similarly, <code>\&</code>, <code>\'</code>, <code>\`</code>, and
+ *  <code>\+</code> correspond to special variables, <code>$&</code>,
+ *  <code>$'</code>, <code>$`</code>, and <code>$+</code>, respectively.
+ *  (See rdoc-ref:regexp.rdoc for details.)
+ *  <code>\0</code> is the same as <code>\&</code>.
+ *  <code>\\\\</code> is interpreted as an escape, i.e., a single backslash.
+ *  Note that, within +replacement+ the special match variables, such as
+ *  <code>$&</code>, will not refer to the current match.
  *
  *  If the second argument is a Hash, and the matched text is one of its keys,
  *  the corresponding value is the replacement string.
  *
  *  In the block form, the current match string is passed in as a parameter,
  *  and variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
- *  <code>$&</code>, and <code>$'</code> will be set appropriately. The value
- *  returned by the block will be substituted for the match on each call.
+ *  <code>$&</code>, and <code>$'</code> will be set appropriately.
+ *  (See rdoc-ref:regexp.rdoc for details.)
+ *  The value returned by the block will be substituted for the match on each
+ *  call.
  *
  *  The result inherits any tainting in the original string or any supplied
  *  replacement string.
@@ -5145,6 +5165,19 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *     "hello".sub(/(?<foo>[aeiou])/, '*\k<foo>*')  #=> "h*e*llo"
  *     'Is SHELL your preferred shell?'.sub(/[[:upper:]]{2,}/, ENV)
  *      #=> "Is /bin/bash your preferred shell?"
+ *
+ *  Note that a string literal consumes backslashes.
+ *  (See rdoc-ref:syntax/literals.rdoc for details about string literals.)
+ *  Back-references are typically preceded by an additional backslash.
+ *  For example, if you want to write a back-reference <code>\&</code> in
+ *  +replacement+ with a double-quoted string literal, you need to write:
+ *  <code>"..\\\\&.."</code>.
+ *  If you want to write a non-back-reference string <code>\&</code> in
+ *  +replacement+, you need first to escape the backslash to prevent
+ *  this method from interpreting it as a back-reference, and then you
+ *  need to escape the backslashes again to prevent a string literal from
+ *  consuming them: <code>"..\\\\\\\\&.."</code>.
+ *  You may want to use the block form to avoid a lot of backslashes.
  */
 
 static VALUE
@@ -5317,24 +5350,31 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *  <i>pattern</i> substituted for the second argument. The <i>pattern</i> is
  *  typically a Regexp; if given as a String, any
  *  regular expression metacharacters it contains will be interpreted
- *  literally, e.g. <code>'\\\d'</code> will match a backslash followed by 'd',
+ *  literally, e.g. <code>\d</code> will match a backslash followed by 'd',
  *  instead of a digit.
  *
- *  If <i>replacement</i> is a String it will be substituted for
- *  the matched text. It may contain back-references to the pattern's capture
- *  groups of the form <code>\\\d</code>, where <i>d</i> is a group number, or
- *  <code>\\\k<n></code>, where <i>n</i> is a group name. If it is a
- *  double-quoted string, both back-references must be preceded by an
- *  additional backslash. However, within <i>replacement</i> the special match
- *  variables, such as <code>$&</code>, will not refer to the current match.
+ *  If +replacement+ is a String it will be substituted for the matched text.
+ *  It may contain back-references to the pattern's capture groups of the form
+ *  <code>\d</code>, where <i>d</i> is a group number, or
+ *  <code>\k<n></code>, where <i>n</i> is a group name.
+ *  Similarly, <code>\&</code>, <code>\'</code>, <code>\`</code>, and
+ *  <code>\+</code> correspond to special variables, <code>$&</code>,
+ *  <code>$'</code>, <code>$`</code>, and <code>$+</code>, respectively.
+ *  (See rdoc-ref:regexp.rdoc for details.)
+ *  <code>\0</code> is the same as <code>\&</code>.
+ *  <code>\\\\</code> is interpreted as an escape, i.e., a single backslash.
+ *  Note that, within +replacement+ the special match variables, such as
+ *  <code>$&</code>, will not refer to the current match.
  *
  *  If the second argument is a Hash, and the matched text is one
  *  of its keys, the corresponding value is the replacement string.
  *
  *  In the block form, the current match string is passed in as a parameter,
  *  and variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
- *  <code>$&</code>, and <code>$'</code> will be set appropriately. The value
- *  returned by the block will be substituted for the match on each call.
+ *  <code>$&</code>, and <code>$'</code> will be set appropriately.
+ *  (See rdoc-ref:regexp.rdoc for details.)
+ *  The value returned by the block will be substituted for the match on each
+ *  call.
  *
  *  The result inherits any tainting in the original string or any supplied
  *  replacement string.
@@ -5347,6 +5387,19 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *     "hello".gsub(/./) {|s| s.ord.to_s + ' '}      #=> "104 101 108 108 111 "
  *     "hello".gsub(/(?<foo>[aeiou])/, '{\k<foo>}')  #=> "h{e}ll{o}"
  *     'hello'.gsub(/[eo]/, 'e' => 3, 'o' => '*')    #=> "h3ll*"
+ *
+ *  Note that a string literal consumes backslashes.
+ *  (See rdoc-ref:syntax/literals.rdoc for details on string literals.)
+ *  Back-references are typically preceded by an additional backslash.
+ *  For example, if you want to write a back-reference <code>\&</code> in
+ *  +replacement+ with a double-quoted string literal, you need to write:
+ *  <code>"..\\\\&.."</code>.
+ *  If you want to write a non-back-reference string <code>\&</code> in
+ *  +replacement+, you need first to escape the backslash to prevent
+ *  this method from interpreting it as a back-reference, and then you
+ *  need to escape the backslashes again to prevent a string literal from
+ *  consuming them: <code>"..\\\\\\\\&.."</code>.
+ *  You may want to use the block form to avoid a lot of backslashes.
  */
 
 static VALUE

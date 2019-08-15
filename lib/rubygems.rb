@@ -565,8 +565,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   #++
   #--
   #
-  # FIXME move to pathsupport
-  #
   #++
 
   def self.find_home
@@ -645,14 +643,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # <tt>https://rubygems.org</tt>.
 
   def self.host
-    # TODO: move to utils
     @host ||= Gem::DEFAULT_HOST
   end
 
   ## Set the default RubyGems API host.
 
   def self.host=(host)
-    # TODO: move to utils
     @host = host
   end
 
@@ -1399,14 +1395,12 @@ begin
 rescue LoadError
 end
 
-if defined?(RUBY_ENGINE)
-  begin
-    ##
-    # Defaults the Ruby implementation wants to provide for RubyGems
+begin
+  ##
+  # Defaults the Ruby implementation wants to provide for RubyGems
 
-    require "rubygems/defaults/#{RUBY_ENGINE}"
-  rescue LoadError
-  end
+  require "rubygems/defaults/#{RUBY_ENGINE}"
+rescue LoadError
 end
 
 ##

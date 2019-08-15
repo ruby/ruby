@@ -127,7 +127,7 @@ class VCS
     @@dirs << [dir, self, pred]
   end
 
-  def self.detect(path, options = {}, argv = ::ARGV)
+  def self.detect(path = '.', options = {}, argv = ::ARGV)
     uplevel_limit = options.fetch(:uplevel_limit, 0)
     curr = path
     begin
@@ -569,7 +569,7 @@ class VCS
       end
       range = [from, (to || 'HEAD')].join('^..')
       cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
-               %W"#{COMMAND} log --format=medium --no-notes --date=iso-local --topo-order #{range}", "rb") do |r|
+               %W"#{COMMAND} log --format=medium --notes=commits --date=iso-local --topo-order #{range}", "rb") do |r|
         format_changelog(r, path)
       end
     end
@@ -578,9 +578,7 @@ class VCS
       IO.copy_stream(r, path)
     end
 
-    def commit(opts = {})
-      args = [COMMAND, "push"]
-      args << "-n" if dryrun
+    def upstream
       (branch = cmd_read(%W"#{COMMAND} symbolic-ref --short HEAD")).chomp!
       (upstream = cmd_read(%W"#{COMMAND} branch --list --format=%(upstream) #{branch}")).chomp!
       while ref = upstream[%r"\Arefs/heads/(.*)", 1]
@@ -589,12 +587,24 @@ class VCS
       unless %r"\Arefs/remotes/([^/]+)/(.*)" =~ upstream
         raise "Upstream not found"
       end
-      args << $1 << "HEAD:#$2"
+      [$1, $2]
+    end
+
+    def commit(opts = {})
+      args = [COMMAND, "push"]
+      args << "-n" if dryrun
+      remote, branch = upstream
+      args << remote
+      branches = %W[refs/notes/commits:refs/notes/commits HEAD:#{branch}]
       if dryrun?
-        STDERR.puts(args.inspect)
+        branches.each do |b|
+          STDERR.puts((args + [b]).inspect)
+        end
         return true
       end
-      system(*args) or return false
+      branches.each do |b|
+        system(*(args + [b])) or return false
+      end
       true
     end
   end

@@ -241,7 +241,7 @@ class Reline::LineEditor
     @byte_pointer = new_byte_pointer
   end
 
-  def rerender # TODO: support physical and logical lines
+  def rerender
     return if @line.nil?
     if @menu_info
       scroll_down(@highest_in_all - @first_line_started_from)
@@ -824,7 +824,7 @@ class Reline::LineEditor
         # skip
         i += 2
       elsif slice =~ quote_characters_regexp # find new "
-        quote = $~
+        quote = $&
         closing_quote = /(?!\\)#{Regexp.escape(quote)}/
         escaped_quote = /\\#{Regexp.escape(quote)}/
         i += 1
