@@ -9,13 +9,13 @@
 $install_name ||= nil
 $so_name ||= nil
 $unicode_version ||= nil
+$unicode_emoji_version ||= nil
 arch = $arch or raise "missing -arch"
 version = $version or raise "missing -version"
 
 srcdir = File.expand_path('../..', __FILE__)
 $:.unshift(".")
 
-require "fileutils"
 mkconfig = File.basename($0)
 
 fast = {'prefix'=>true, 'ruby_install_name'=>true, 'INSTALL'=>true, 'EXEEXT'=>true}
@@ -132,10 +132,10 @@ File.foreach "config.status" do |line|
     else
       v_others << v
     end
-    case name
-    when "RUBY_PROGRAM_VERSION"
-      version = val[/\A"(.*)"\z/, 1]
-    end
+    #case name
+    #when "RUBY_PROGRAM_VERSION"
+    #  version = val[/\A"(.*)"\z/, 1]
+    #end
   end
 #  break if /^CEOF/
 end
@@ -163,6 +163,7 @@ end
 prefix = vars.expand(vars["prefix"] ||= "")
 rubyarchdir = vars.expand(vars["rubyarchdir"] ||= "")
 relative_archdir = rubyarchdir.rindex(prefix, 0) ? rubyarchdir[prefix.size..-1] : rubyarchdir
+
 puts %[\
 # encoding: ascii-8bit
 # frozen-string-literal: false
@@ -200,6 +201,12 @@ IO.foreach(File.join(srcdir, "version.h")) do |l|
     break if versions.size == 4
     next
   end
+  m = /^\s*#\s*define\s+RUBY_VERSION_(\w+)\s+(-?\d+)/.match(l)
+  if m
+    versions[m[1]] = m[2]
+    break if versions.size == 4
+    next
+  end
   m = /^\s*#\s*define\s+RUBY_VERSION\s+\W?([.\d]+)/.match(l)
   if m
     versions['MAJOR'], versions['MINOR'], versions['TEENY'] = m[1].split('.')
@@ -207,8 +214,18 @@ IO.foreach(File.join(srcdir, "version.h")) do |l|
     next
   end
 end
+if versions.size != 4
+  IO.foreach(File.join(srcdir, "include/ruby/version.h")) do |l|
+    m = /^\s*#\s*define\s+RUBY_API_VERSION_(\w+)\s+(-?\d+)/.match(l)
+    if m
+      versions[m[1]] ||= m[2]
+      break if versions.size == 4
+      next
+    end
+  end
+end
 %w[MAJOR MINOR TEENY PATCHLEVEL].each do |v|
-  print "  CONFIG[#{v.dump}] = #{versions[v].dump}\n"
+  print "  CONFIG[#{v.dump}] = #{(versions[v]||vars[v]).dump}\n"
 end
 
 dest = drive ? %r'= "(?!\$[\(\{])(?i:[a-z]:)' : %r'= "(?!\$[\(\{])'
@@ -246,6 +263,9 @@ print(*v_fast)
 print(*v_others)
 print <<EOS if $unicode_version
   CONFIG["UNICODE_VERSION"] = #{$unicode_version.dump}
+EOS
+print <<EOS if $unicode_emoji_version
+  CONFIG["UNICODE_EMOJI_VERSION"] = #{$unicode_emoji_version.dump}
 EOS
 print <<EOS if /darwin/ =~ arch
   CONFIG["SDKROOT"] = ENV["SDKROOT"] || "" # don't run xcrun everytime, usually useless.
@@ -327,7 +347,7 @@ print <<EOS
   #
   # returns updated keys list, or +nil+ if nothing changed.
   def RbConfig.fire_update!(key, val, mkconf = MAKEFILE_CONFIG, conf = CONFIG)
-    return if (old = mkconf[key]) == val
+    return if mkconf[key] == val
     mkconf[key] = val
     keys = [key]
     deps = []

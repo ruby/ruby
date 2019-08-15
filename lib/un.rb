@@ -47,7 +47,7 @@ def setup(options = "", *long_options)
     end
     long_options.each do |s|
       opt_name, arg_name = s.split(/(?=[\s=])/, 2)
-      opt_name.sub!(/\A--/, '')
+      opt_name.delete_prefix!('--')
       s = "--#{opt_name.gsub(/([A-Z]+|[a-z])([A-Z])/, '\1-\2').downcase}#{arg_name}"
       puts "#{opt_name}=>#{s}" if $DEBUG
       opt_name = opt_name.intern
@@ -313,6 +313,8 @@ end
 #   --do-not-reverse-lookup     disable reverse lookup
 #   --request-timeout=SECOND    request timeout in seconds
 #   --http-version=VERSION      HTTP version
+#   --server-name=NAME          name of the server host
+#   --server-software=NAME      name and version of the server
 #   --ssl-certificate=CERT      The SSL certificate file for the server
 #   --ssl-private-key=KEY       The SSL private key file for the server certificate
 #   -v                          verbose

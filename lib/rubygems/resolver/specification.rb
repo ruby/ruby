@@ -111,4 +111,5 @@ class Gem::Resolver::Specification
   def local? # :nodoc:
     false
   end
+
 end

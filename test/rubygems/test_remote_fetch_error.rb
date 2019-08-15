@@ -17,4 +17,5 @@ class TestRemoteFetchError < Gem::TestCase
     error = Gem::RemoteFetcher::FetchError.new('There was an error fetching', 'https://gemsource.org')
     assert_equal error.to_s, 'There was an error fetching (https://gemsource.org)'
   end
+
 end

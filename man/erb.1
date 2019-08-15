@@ -1,5 +1,5 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd November 15, 2012
+.Dd December 16, 2018
 .Dt ERB \&1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
@@ -45,9 +45,8 @@ You can omit the one for internal encodings, then the value
 .Pf ( Li "Encoding.default_internal" ) will be nil.
 .Pp
 .It Fl P
-Evaluates lines starting with
-.Li "%"
-as Ruby code and removes the tailing EOLs.
+Disables ruby code evaluation for lines beginning with
+.Li "%" .
 .Pp
 .It Fl S Ar level
 Specifies the safe level in which eRuby script will run.

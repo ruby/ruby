@@ -53,6 +53,7 @@ class Gem::Package
   class Error < Gem::Exception; end
 
   class FormatError < Error
+
     attr_reader :path
 
     def initialize(message, source = nil)
@@ -68,10 +69,12 @@ class Gem::Package
   end
 
   class PathError < Error
+
     def initialize(destination, destination_dir)
       super "installing into parent path %s of %s is not allowed" %
               [destination, destination_dir]
     end
+
   end
 
   class NonSeekableIO < Error; end
@@ -82,7 +85,6 @@ class Gem::Package
   # Raised when a tar file is corrupt
 
   class TarInvalidError < Error; end
-
 
   attr_accessor :build_time # :nodoc:
 
@@ -119,8 +121,8 @@ class Gem::Package
   # Permission for other files
   attr_accessor :data_mode
 
-  def self.build(spec, skip_validation = false, strict_validation = false)
-    gem_file = spec.file_name
+  def self.build(spec, skip_validation = false, strict_validation = false, file_name = nil)
+    gem_file = file_name || spec.file_name
 
     package = new gem_file
     package.spec = spec
@@ -152,6 +154,32 @@ class Gem::Package
     return super unless gem.start.include? 'MD5SUM ='
 
     Gem::Package::Old.new gem
+  end
+
+  ##
+  # Extracts the Gem::Specification and raw metadata from the .gem file at
+  # +path+.
+  #--
+
+  def self.raw_spec(path, security_policy = nil)
+    format = new(path, security_policy)
+    spec = format.spec
+
+    metadata = nil
+
+    File.open path, Gem.binary_mode do |io|
+      tar = Gem::Package::TarReader.new io
+      tar.each_entry do |entry|
+        case entry.full_name
+        when 'metadata' then
+          metadata = entry.read
+        when 'metadata.gz' then
+          metadata = Gem::Util.gunzip entry.read
+        end
+      end
+    end
+
+    return spec, metadata
   end
 
   ##
@@ -223,8 +251,13 @@ class Gem::Package
       stat = File.lstat file
 
       if stat.symlink?
-        relative_dir = File.dirname(file).sub("#{Dir.pwd}/", '')
-        target_path = File.join(relative_dir, File.readlink(file))
+        target_path = File.readlink(file)
+
+        unless target_path.start_with? '.'
+          relative_dir = File.dirname(file).sub("#{Dir.pwd}/", '')
+          target_path = File.join(relative_dir, target_path)
+        end
+
         tar.add_symlink file, target_path, stat.mode
       end
 
@@ -258,7 +291,6 @@ class Gem::Package
     raise ArgumentError, "skip_validation = true and strict_validation = true are incompatible" if skip_validation && strict_validation
 
     Gem.load_yaml
-    require 'rubygems/security'
 
     @spec.mark_version
     @spec.validate true, strict_validation unless skip_validation
@@ -281,7 +313,7 @@ class Gem::Package
   Successfully built RubyGem
   Name: #{@spec.name}
   Version: #{@spec.version}
-  File: #{File.basename @spec.cache_file}
+  File: #{File.basename @gem.path}
 EOM
   ensure
     @signer = nil
@@ -352,7 +384,7 @@ EOM
   def extract_files(destination_dir, pattern = "*")
     verify unless @spec
 
-    FileUtils.mkdir_p destination_dir, :mode => dir_mode && 0700
+    FileUtils.mkdir_p destination_dir, :mode => dir_mode && 0755
 
     @gem.with_read_io do |io|
       reader = Gem::Package::TarReader.new io
@@ -389,7 +421,7 @@ EOM
         FileUtils.rm_rf destination
 
         mkdir_options = {}
-        mkdir_options[:mode] = dir_mode ? 0700 : (entry.header.mode if entry.directory?)
+        mkdir_options[:mode] = dir_mode ? 0755 : (entry.header.mode if entry.directory?)
         mkdir =
           if entry.directory?
             destination
@@ -450,6 +482,16 @@ EOM
 
     raise Gem::Package::PathError.new(destination, destination_dir) unless
       destination.start_with? destination_dir + '/'
+
+    begin
+      real_destination = File.expand_path(File.realpath(destination))
+    rescue
+      # it's fine if the destination doesn't exist, because rm -rf'ing it can't cause any damage
+      nil
+    else
+      raise Gem::Package::PathError.new(real_destination, destination_dir) unless
+        real_destination.start_with? destination_dir + '/'
+    end
 
     destination.untaint
     destination

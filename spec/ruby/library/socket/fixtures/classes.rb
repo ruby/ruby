@@ -34,9 +34,9 @@ module SocketSpecs
 
   def self.socket_path
     path = tmp("unix.sock", false)
-    # Check for too long unix socket path (max 108 bytes including \0 => 107)
+    # Check for too long unix socket path (max 104 bytes on macOS)
     # Note that Linux accepts not null-terminated paths but the man page advises against it.
-    if path.bytesize > 107
+    if path.bytesize > 104
       path = "/tmp/unix_server_spec.socket"
     end
     rm_socket(path)
@@ -71,25 +71,12 @@ module SocketSpecs
     end
   end
 
-  def self.loop_with_timeout(timeout = 5)
-    require 'timeout'
-    time = Time.now
+  def self.loop_with_timeout(timeout = TIME_TOLERANCE)
+    start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-    loop do
-      if Time.now - time >= timeout
-        raise TimeoutError, "Did not succeed within #{timeout} seconds"
-      end
-
-      sleep 0.01 # necessary on OSX; don't know why
-      yield
-    end
-  end
-
-  def self.wait_until_success(timeout = 5)
-    loop_with_timeout(timeout) do
-      begin
-        return yield
-      rescue
+    while yield == :retry
+      if Process.clock_gettime(Process::CLOCK_MONOTONIC) - start >= timeout
+        raise RuntimeError, "Did not succeed within #{timeout} seconds"
       end
     end
   end
@@ -143,6 +130,35 @@ module SocketSpecs
 
     def log(message)
       @logger.puts message if @logger
+    end
+  end
+
+  # We need to find a free port for Socket.tcp_server_loop and Socket.udp_server_loop,
+  # and the only reliable way to do that is to pass 0 as the port, but then we need to
+  # find out which one was chosen and the API doesn't let us find what it is. So we
+  # intercept one of the public API methods called by these methods.
+  class ServerLoopPortFinder < Socket
+    def self.tcp_server_sockets(*args)
+      super(*args) { |sockets|
+        @port = sockets.first.local_address.ip_port
+        yield(sockets)
+      }
+    end
+
+    def self.udp_server_sockets(*args, &block)
+      super(*args) { |sockets|
+        @port = sockets.first.local_address.ip_port
+        yield(sockets)
+      }
+    end
+
+    def self.cleanup
+      @port = nil
+    end
+
+    def self.port
+      sleep 0.001 until @port
+      @port
     end
   end
 end

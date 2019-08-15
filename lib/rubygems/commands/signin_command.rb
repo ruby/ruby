@@ -3,6 +3,7 @@ require 'rubygems/command'
 require 'rubygems/gemcutter_utilities'
 
 class Gem::Commands::SigninCommand < Gem::Command
+
   include Gem::GemcutterUtilities
 
   def initialize
@@ -12,6 +13,8 @@ class Gem::Commands::SigninCommand < Gem::Command
     add_option('--host HOST', 'Push to another gemcutter-compatible host') do |value, options|
       options[:host] = value
     end
+
+    add_otp_option
   end
 
   def description # :nodoc:

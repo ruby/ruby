@@ -49,7 +49,7 @@ describe "Comparable#==" do
     end
 
     it "raises an ArgumentError" do
-      lambda { (a == b) }.should raise_error(ArgumentError)
+      -> { (a == b) }.should raise_error(ArgumentError)
     end
   end
 
@@ -60,7 +60,7 @@ describe "Comparable#==" do
       end
 
       it "lets it go through" do
-        lambda { (a == b) }.should raise_error(StandardError)
+        -> { (a == b) }.should raise_error(StandardError)
       end
     end
 
@@ -71,13 +71,13 @@ describe "Comparable#==" do
       end
 
       it "lets it go through" do
-        lambda { (a == b) }.should raise_error(TypeError)
+        -> { (a == b) }.should raise_error(TypeError)
       end
     end
 
     it "lets it go through if it is not a StandardError" do
       a.should_receive(:<=>).once.and_raise(Exception)
-      lambda { (a == b) }.should raise_error(Exception)
+      -> { (a == b) }.should raise_error(Exception)
     end
   end
 

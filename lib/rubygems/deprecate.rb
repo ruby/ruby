@@ -48,21 +48,21 @@ module Gem::Deprecate
   # year/month that it is planned to go away.
 
   def deprecate(name, repl, year, month)
-    class_eval {
+    class_eval do
       old = "_deprecated_#{name}"
       alias_method old, name
       define_method name do |*args, &block|
         klass = self.kind_of? Module
         target = klass ? "#{self}." : "#{self.class}#"
         msg = [ "NOTE: #{target}#{name} is deprecated",
-          repl == :none ? " with no replacement" : "; use #{repl} instead",
-          ". It will be removed on or after %4d-%02d-01." % [year, month],
-          "\n#{target}#{name} called from #{Gem.location_of_caller.join(":")}",
+                repl == :none ? " with no replacement" : "; use #{repl} instead",
+                ". It will be removed on or after %4d-%02d-01." % [year, month],
+                "\n#{target}#{name} called from #{Gem.location_of_caller.join(":")}",
         ]
         warn "#{msg.join}." unless Gem::Deprecate.skip
         send old, *args, &block
       end
-    }
+    end
   end
 
   module_function :deprecate, :skip_during

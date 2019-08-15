@@ -2572,6 +2572,7 @@ bigdivrem1(void *ptr)
     return 0;
 }
 
+/* async-signal-safe */
 static void
 rb_big_stop(void *ptr)
 {
@@ -2636,7 +2637,7 @@ bigdivrem_restoring(BDIGIT *zds, size_t zn, BDIGIT *yds, size_t yn)
     if (bds.zn > 10000 || bds.yn > 10000) {
       retry:
 	bds.stop = Qfalse;
-	rb_thread_call_without_gvl(bigdivrem1, &bds, rb_big_stop, &bds);
+        rb_nogvl(bigdivrem1, &bds, rb_big_stop, &bds, RB_NOGVL_UBF_ASYNC_SAFE);
 
 	if (bds.stop == Qtrue) {
 	    /* execute trap handler, but exception was not raised. */
@@ -5499,8 +5500,8 @@ rb_big_le(VALUE x, VALUE y)
  *     big == obj  -> true or false
  *
  *  Returns <code>true</code> only if <i>obj</i> has the same value
- *  as <i>big</i>. Contrast this with <code>Integer#eql?</code>, which
- *  requires <i>obj</i> to be a <code>Integer</code>.
+ *  as <i>big</i>. Contrast this with Integer#eql?, which requires
+ *  <i>obj</i> to be a Integer.
  *
  *     68719476736 == 68719476736.0   #=> true
  */
@@ -6081,7 +6082,7 @@ rb_big_div(VALUE x, VALUE y)
 VALUE
 rb_big_idiv(VALUE x, VALUE y)
 {
-    return rb_big_divide(x, y, rb_intern("div"));
+    return rb_big_divide(x, y, idDiv);
 }
 
 VALUE
@@ -6125,7 +6126,7 @@ rb_big_divmod(VALUE x, VALUE y)
 	y = rb_int2big(FIX2LONG(y));
     }
     else if (!RB_BIGNUM_TYPE_P(y)) {
-	return rb_num_coerce_bin(x, y, rb_intern("divmod"));
+        return rb_num_coerce_bin(x, y, idDivmod);
     }
     bigdivmod(x, y, &div, &mod);
 
@@ -6213,7 +6214,7 @@ rb_big_fdiv_double(VALUE x, VALUE y)
 	    return big_fdiv_float(x, y);
     }
     else {
-	return NUM2DBL(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
+        return NUM2DBL(rb_num_coerce_bin(x, y, idFdiv));
     }
     v = rb_flo_div_flo(DBL2NUM(dx), DBL2NUM(dy));
     return NUM2DBL(v);
@@ -6237,7 +6238,7 @@ rb_big_pow(VALUE x, VALUE y)
     if (RB_FLOAT_TYPE_P(y)) {
 	d = RFLOAT_VALUE(y);
 	if ((BIGNUM_NEGATIVE_P(x) && !BIGZEROP(x))) {
-            return rb_dbl_complex_polar_pi(pow(-rb_big2dbl(x), d), d);
+            return rb_dbl_complex_new_polar_pi(pow(-rb_big2dbl(x), d), d);
 	}
     }
     else if (RB_BIGNUM_TYPE_P(y)) {

@@ -17,7 +17,7 @@ describe 'BasicSocket#recvmsg_nonblock' do
       platform_is_not :windows do
         describe 'using an unbound socket' do
           it 'raises an exception extending IO::WaitReadable' do
-            lambda { @server.recvmsg_nonblock }.should raise_error(IO::WaitReadable)
+            -> { @server.recvmsg_nonblock }.should raise_error(IO::WaitReadable)
           end
         end
       end
@@ -29,7 +29,11 @@ describe 'BasicSocket#recvmsg_nonblock' do
 
         describe 'without any data available' do
           it 'raises an exception extending IO::WaitReadable' do
-            lambda { @server.recvmsg_nonblock }.should raise_error(IO::WaitReadable)
+            -> { @server.recvmsg_nonblock }.should raise_error(IO::WaitReadable)
+          end
+
+          it 'returns :wait_readable with exception: false' do
+            @server.recvmsg_nonblock(exception: false).should == :wait_readable
           end
         end
 
@@ -128,7 +132,7 @@ describe 'BasicSocket#recvmsg_nonblock' do
 
         describe 'without any data available' do
           it 'raises IO::WaitReadable' do
-            lambda {
+            -> {
               socket, _ = @server.accept
               begin
                 socket.recvmsg_nonblock
@@ -178,7 +182,7 @@ describe 'BasicSocket#recvmsg_nonblock' do
               end
 
               it 'raises when receiving the ip_address message' do
-                lambda { @addr.ip_address }.should raise_error(SocketError)
+                -> { @addr.ip_address }.should raise_error(SocketError)
               end
 
               it 'uses the correct address family' do
@@ -194,7 +198,7 @@ describe 'BasicSocket#recvmsg_nonblock' do
               end
 
               it 'raises when receiving the ip_port message' do
-                lambda { @addr.ip_port }.should raise_error(SocketError)
+                -> { @addr.ip_port }.should raise_error(SocketError)
               end
             end
           end

@@ -1,5 +1,5 @@
 #! /your/favourite/path/to/ruby
-# -*- mode: ruby; coding: utf-8; indent-tabs-mode: nil; ruby-indent-level: 2 -*-
+# -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-
 #
@@ -49,8 +49,8 @@ class RubyVM::Dumper
   end
 
   def replace_pragma_line str, lineno
-    if str == "#pragma RubyVM reset source\n" then
-      return "#line #{lineno + 2} #{@file}\n"
+    if /#(\s*)pragma RubyVM reset source\n/ =~ str then
+      return "##{$1}line #{lineno + 2} #{@file}\n"
     else
       return str
     end

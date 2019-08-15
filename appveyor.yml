@@ -3,6 +3,9 @@ version: '{build}'
 shallow_clone: true
 platform:
   - x64
+branches:
+  except:
+    - trunk # mirrored from trunk. avoid doubly building on it
 environment:
   ruby_version: "24-%Platform%"
   zlib_version: "1.2.11"
@@ -16,36 +19,9 @@ environment:
     - build: vs
       vs: 140
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-notifications:
-  - provider: Webhook
-    url:
-      secure: iMINHMS0nZabaDsxN9omRDsekxzVvAAzEq5ev7lN6vZ6r9zNhl3/F/7POIVyahAwVFpRDeQT/iUugpAGWmOt3eGL/lZIdqiJFZ9DjPSkP68= # #alerts
-    method: POST
-    # "icon_url" is the url used by `provider: Slack`
-    body: >-
-      {{^isPullRequest}}
-        {
-          "attachments": [
-            {
-              "title": "Build {{projectName}} {{buildVersion}} {{status}}",
-              "fallback": "AppVeyor Build {{projectName}} {{buildVersion}} {{status}}",
-              "title_link": "{{buildUrl}}",
-              "text": "Commit <{{commitUrl}}|{{commitId}}> by {{commitAuthor}} on {{commitDate}}: _{{commitMessage}}_",
-              {{#passed}}
-                "color": "#44ee44"
-              {{/passed}}
-              {{#failed}}
-                "color": "#ee4444"
-              {{/failed}}
-            }
-          ],
-          "icon_url": "https://slack-files2.s3-us-west-2.amazonaws.com/bot_icons/2018-02-10/314363543719_48.png",
-          "username": "AppVeyor CI"
-        }
-      {{/isPullRequest}}
-    on_build_success: false
-    on_build_failure: true
-    on_build_status_changed: true
+  RELINE_TEST_ENCODING: "Windows-31J"
+  GEMS_FOR_TEST: "timezone tzinfo"
+  UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
 for:
 -
   matrix:
@@ -71,17 +47,16 @@ for:
     - echo>> Makefile BUILTIN_ENCOBJS=nul
     - type win32\Makefile.sub >> Makefile
     - nmake %mflags% touch-unicode-files
-    - nmake %mflags% up incs UNICODE_FILES=.
+    - nmake %mflags% %UPDATE_UNICODE% up incs
     - del Makefile
     - mkdir \usr\local\bin
     - mkdir \usr\local\include
     - mkdir \usr\local\lib
-    - appveyor DownloadFile https://zlib.net/zlib%zlib_version:.=%.zip
+    - curl -fsSL -o zlib%zlib_version:.=%.zip --retry 10 https://zlib.net/zlib%zlib_version:.=%.zip
     - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib%zlib_version:.=%.zip
     - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
+    - attrib +r /s /d
     - mkdir %Platform%-mswin_%vs%
-    - ps: Get-ChildItem "win32" -Recurse | foreach {$_.Attributes = 'Readonly'}
-    - ps: Get-Item $env:Platform"-mswin_"$env:vs | foreach {$_.Attributes = 'Normal'}
   build_script:
     - cd %APPVEYOR_BUILD_FOLDER%
     - cd %Platform%-mswin_%vs%
@@ -89,13 +64,14 @@ for:
     - nmake -l
     - nmake install-nodoc
     - \usr\bin\ruby -v -e "p :locale => Encoding.find('locale'), :filesystem => Encoding.find('filesystem')"
+    - if not "%GEMS_FOR_TEST%" == "" \usr\bin\gem install --no-document %GEMS_FOR_TEST%
   test_script:
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
     - nmake -l "TESTOPTS=-v -q" btest
     - nmake -l "TESTOPTS=-v -q" test-basic
-    - nmake -l "TESTOPTS=-q --subprocess-timeout-scale=3.0 --excludes=../test/excludes/_appveyor -j%JOBS% --exclude win32ole --exclude test_bignum --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca" test-all
+    - nmake -l "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor -j%JOBS% --exclude readline --exclude win32ole --exclude test_bignum --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca" test-all
     # separately execute tests without -j which may crash worker with -j.
-    - nmake -l "TESTOPTS=-v --subprocess-timeout-scale=3.0 --excludes=../test/excludes/_appveyor" test-all TESTS="../test/win32ole ../test/ruby/test_bignum.rb ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb"
+    - nmake -l "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor" test-all TESTS="../test/win32ole ../test/ruby/test_bignum.rb ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb"
     - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
 -
   matrix:
@@ -119,10 +95,8 @@ for:
     - SET PATH=%ruby_path%\bin;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%PATH%
     - ruby --version
   build_script:
-    # always update database
-    - pacman -Sy
-    - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-toolchain
-    - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-gdbm mingw-w64-x86_64-gmp mingw-w64-x86_64-libffi mingw-w64-x86_64-ncurses mingw-w64-x86_64-readline mingw-w64-x86_64-zlib
+    - pacman -S --noconfirm --needed --noprogressbar --nodeps mingw-w64-x86_64-toolchain
+    - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-gdbm mingw-w64-x86_64-gettext mingw-w64-x86_64-gmp mingw-w64-x86_64-libffi mingw-w64-x86_64-libyaml mingw-w64-x86_64-openssl mingw-w64-x86_64-ragel mingw-w64-x86_64-readline mingw-w64-x86_64-zlib
     - cd %APPVEYOR_BUILD_FOLDER%
     - set CFLAGS=-march=%MSYS2_ARCH:_=-% -mtune=generic -O3 -pipe
     - set CXXFLAGS=%CFLAGS%
@@ -131,12 +105,60 @@ for:
     - sh -c "autoreconf -fi"
     - cd ..\build
     - sh ../ruby/configure --disable-install-doc --prefix=/. --build=%MINGW_CHOST% --host=%MINGW_CHOST% --target=%MINGW_CHOST%
-    - mingw32-make -j%JOBS% up
-    - mingw32-make -j%JOBS%
+    - mingw32-make %mflags% touch-unicode-files
+    - mingw32-make -j%JOBS% %UPDATE_UNICODE% up incs
+    - mingw32-make -j%JOBS% V=1
     - mingw32-make DESTDIR=../install install-nodoc
+    - if not "%GEMS_FOR_TEST%" == "" ..\install\bin\gem install --no-document %GEMS_FOR_TEST%
   test_script:
     - mingw32-make test
-    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor -j %JOBS% --exclude win32ole --exclude test_open-uri"
+    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor -j %JOBS% --exclude win32ole --exclude test_open-uri"
     # separately execute tests without -j which may crash worker with -j.
-    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor" TESTS="../ruby/test/win32ole ../ruby/test/open-uri/test_open-uri.rb"
+    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor" TESTS="../ruby/test/win32ole ../ruby/test/open-uri/test_open-uri.rb"
     - mingw32-make test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
+notifications:
+  # Using "Webhook" with templated body to skip notification on Pull Request
+  - provider: Webhook
+    method: POST
+    url:
+      secure: iMINHMS0nZabaDsxN9omRDsekxzVvAAzEq5ev7lN6vb+gUETT+rbDKLGxBxBpEpxlnPlLdzroIJ+DTKlwfJA8VkGawTn9EXNsucH0OkSf2M= # AppVeyor CI
+    body: >-
+      {{^isPullRequest}}
+        {
+          "attachments": [
+            {
+              "title": "Build {{projectName}} {{buildVersion}} {{status}}",
+              "title_link": "{{buildUrl}}",
+              "fallback": "AppVeyor Build {{projectName}} {{buildVersion}} {{status}}",
+              "text": "Commit <{{commitUrl}}|{{commitId}}> by {{commitAuthor}} on {{commitDate}}: _{{commitMessage}}_",
+              "color": "{{#passed}}#44ee44{{/passed}}{{#failed}}#ee4444{{/failed}}"
+            }
+          ],
+          "channel": "#alerts"
+        }
+      {{/isPullRequest}}
+    on_build_success: false
+    on_build_failure: true
+    on_build_status_changed: true
+  - provider: Webhook
+    method: POST
+    url:
+      secure: iMINHMS0nZabaDsxN9omRDsekxzVvAAzEq5ev7lN6vb+gUETT+rbDKLGxBxBpEpxlnPlLdzroIJ+DTKlwfJA8VkGawTn9EXNsucH0OkSf2M= # AppVeyor CI
+    body: >-
+      {{^isPullRequest}}
+        {
+          "attachments": [
+            {
+              "title": "Build {{projectName}} {{buildVersion}} {{status}}",
+              "title_link": "{{buildUrl}}",
+              "fallback": "AppVeyor Build {{projectName}} {{buildVersion}} {{status}}",
+              "text": "Commit <{{commitUrl}}|{{commitId}}> by {{commitAuthor}} on {{commitDate}}: _{{commitMessage}}_",
+              "color": "{{#passed}}#44ee44{{/passed}}{{#failed}}#ee4444{{/failed}}"
+            }
+          ],
+          "channel": "#commits"
+        }
+      {{/isPullRequest}}
+    on_build_success: false
+    on_build_failure: true
+    on_build_status_changed: true

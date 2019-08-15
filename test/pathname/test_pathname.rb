@@ -789,10 +789,20 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_birthtime
-    assert_kind_of(Time, Pathname(__FILE__).birthtime)
-  rescue NotImplementedError
-    assert_raise(NotImplementedError) do
-      File.birthtime(__FILE__)
+    # Check under a (probably) local filesystem.
+    # Remote filesystems often may not support birthtime.
+    with_tmpchdir('rubytest-pathname') do |dir|
+      open("a", "w") {}
+      assert_kind_of(Time, Pathname("a").birthtime)
+    rescue Errno::EPERM
+      # Docker prohibits statx syscall by the default.
+      skip("statx(2) is prohibited by seccomp")
+    rescue Errno::ENOSYS
+      skip("statx(2) is not supported on this filesystem")
+    rescue NotImplementedError
+      # assert_raise(NotImplementedError) do
+      #   File.birthtime("a")
+      # end
     end
   end
 
@@ -1241,6 +1251,17 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_s_glob_3args
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("f", "w") {|f| f.write "abc" }
+      Dir.chdir("/") {
+        assert_equal(
+          [Pathname("."), Pathname(".."), Pathname("f")],
+          Pathname.glob("*", File::FNM_DOTMATCH, base: dir).sort)
+      }
+    }
+  end
+
   def test_s_getwd
     wd = Pathname.getwd
     assert_kind_of(Pathname, wd)
@@ -1428,5 +1449,20 @@ class TestPathname < Test::Unit::TestCase
       bar = Pathname.new("b\u{e4}r".encode("ISO-8859-1"))
       assert_instance_of(Pathname, foo.relative_path_from(bar))
     end;
+  end
+
+  def test_relative_path_from_mock
+    assert_equal(
+      Pathname.new("../bar"),
+      Pathname.new("/foo/bar").relative_path_from(Pathname.new("/foo/baz")))
+    assert_equal(
+      Pathname.new("../bar"),
+      Pathname.new("/foo/bar").relative_path_from("/foo/baz"))
+    obj = Object.new
+    def obj.cleanpath() Pathname.new("/foo/baz") end
+    def obj.is_a?(m) m == Pathname end
+    assert_equal(
+      Pathname.new("../bar"),
+      Pathname.new("/foo/bar").relative_path_from(obj))
   end
 end

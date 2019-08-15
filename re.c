@@ -521,11 +521,11 @@ static VALUE rb_reg_str_with_term(VALUE re, int term);
  *
  *  Returns a string containing the regular expression and its options (using the
  *  <code>(?opts:source)</code> notation. This string can be fed back in to
- *  <code>Regexp::new</code> to a regular expression with the same semantics as
- *  the original. (However, <code>Regexp#==</code> may not return true when
- *  comparing the two, as the source of the regular expression itself may
- *  differ, as the example shows).  <code>Regexp#inspect</code> produces a
- *  generally more readable version of <i>rxp</i>.
+ *  Regexp::new to a regular expression with the same semantics as the
+ *  original. (However, <code>Regexp#==</code> may not return true
+ *  when comparing the two, as the source of the regular expression
+ *  itself may differ, as the example shows).  Regexp#inspect produces
+ *  a generally more readable version of <i>rxp</i>.
  *
  *      r1 = /ab+c/ix           #=> /ab+c/ix
  *      s1 = r1.to_s            #=> "(?ix-m:ab+c)"
@@ -726,11 +726,11 @@ rb_reg_casefold_p(VALUE re)
  *  call-seq:
  *     rxp.options   -> integer
  *
- *  Returns the set of bits corresponding to the options used when creating this
- *  Regexp (see <code>Regexp::new</code> for details. Note that additional bits
- *  may be set in the returned options: these are used internally by the regular
- *  expression code. These extra bits are ignored if the options are passed to
- *  <code>Regexp::new</code>.
+ *  Returns the set of bits corresponding to the options used when
+ *  creating this Regexp (see Regexp::new for details. Note that
+ *  additional bits may be set in the returned options: these are used
+ *  internally by the regular expression code. These extra bits are
+ *  ignored if the options are passed to Regexp::new.
  *
  *     Regexp::IGNORECASE                  #=> 1
  *     Regexp::EXTENDED                    #=> 2
@@ -884,13 +884,50 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
 /*
  *  Document-class: MatchData
  *
- *  <code>MatchData</code> is the type of the special variable <code>$~</code>,
- *  and is the type of the object returned by <code>Regexp#match</code> and
- *  <code>Regexp.last_match</code>. It encapsulates all the results of a pattern
- *  match, results normally accessed through the special variables
- *  <code>$&</code>, <code>$'</code>, <code>$`</code>, <code>$1</code>,
- *  <code>$2</code>, and so on.
+ *  MatchData encapsulates the result of matching a Regexp against
+ *  string. It is returned by Regexp#match and String#match, and also
+ *  stored in a global variable returned by Regexp.last_match.
  *
+ *  Usage:
+ *
+ *      url = 'https://docs.ruby-lang.org/en/2.5.0/MatchData.html'
+ *      m = url.match(/(\d\.?)+/)   # => #<MatchData "2.5.0" 1:"0">
+ *      m.string                    # => "https://docs.ruby-lang.org/en/2.5.0/MatchData.html"
+ *      m.regexp                    # => /(\d\.?)+/
+ *      # entire matched substring:
+ *      m[0]                        # => "2.5.0"
+ *
+ *      # Working with unnamed captures
+ *      m = url.match(%r{([^/]+)/([^/]+)\.html$})
+ *      m.captures                  # => ["2.5.0", "MatchData"]
+ *      m[1]                        # => "2.5.0"
+ *      m.values_at(1, 2)           # => ["2.5.0", "MatchData"]
+ *
+ *      # Working with named captures
+ *      m = url.match(%r{(?<version>[^/]+)/(?<module>[^/]+)\.html$})
+ *      m.captures                  # => ["2.5.0", "MatchData"]
+ *      m.named_captures            # => {"version"=>"2.5.0", "module"=>"MatchData"}
+ *      m[:version]                 # => "2.5.0"
+ *      m.values_at(:version, :module)
+ *                                  # => ["2.5.0", "MatchData"]
+ *      # Numerical indexes are working, too
+ *      m[1]                        # => "2.5.0"
+ *      m.values_at(1, 2)           # => ["2.5.0", "MatchData"]
+ *
+ *  == Global variables equivalence
+ *
+ *  Parts of last MatchData (returned by Regexp.last_match) are also
+ *  aliased as global variables:
+ *
+ *  * <code>$~</code> is Regexp.last_match;
+ *  * <code>$&</code> is Regexp.last_match<code>[0]</code>;
+ *  * <code>$1</code>, <code>$2</code>, and so on are
+ *    Regexp.last_match<code>[i]</code> (captures by number);
+ *  * <code>$`</code> is Regexp.last_match<code>.pre_match</code>;
+ *  * <code>$'</code> is Regexp.last_match<code>.post_match</code>;
+ *  * <code>$+</code> is Regexp.last_match<code>[-1]</code> (the last capture).
+ *
+ *  See also "Special global variables" section in Regexp documentation.
  */
 
 VALUE rb_cMatch;
@@ -946,7 +983,7 @@ update_char_offset(VALUE match)
     rb_encoding *enc;
     pair_t *pairs;
 
-    if (rm->char_offset_updated)
+    if (rm->char_offset_num_allocated)
         return;
 
     regs = &rm->regs;
@@ -963,7 +1000,6 @@ update_char_offset(VALUE match)
             rm->char_offset[i].beg = BEG(i);
             rm->char_offset[i].end = END(i);
         }
-        rm->char_offset_updated = 1;
         return;
     }
 
@@ -1002,8 +1038,6 @@ update_char_offset(VALUE match)
         found = bsearch(&key, pairs, num_pos, sizeof(pair_t), pair_byte_cmp);
         rm->char_offset[i].end = found->char_pos;
     }
-
-    rm->char_offset_updated = 1;
 }
 
 static void
@@ -1029,17 +1063,13 @@ match_init_copy(VALUE obj, VALUE orig)
     if (rb_reg_region_copy(&rm->regs, RMATCH_REGS(orig)))
 	rb_memerror();
 
-    if (!RMATCH(orig)->rmatch->char_offset_updated) {
-        rm->char_offset_updated = 0;
-    }
-    else {
+    if (RMATCH(orig)->rmatch->char_offset_num_allocated) {
         if (rm->char_offset_num_allocated < rm->regs.num_regs) {
             REALLOC_N(rm->char_offset, struct rmatch_offset, rm->regs.num_regs);
             rm->char_offset_num_allocated = rm->regs.num_regs;
         }
         MEMCPY(rm->char_offset, RMATCH(orig)->rmatch->char_offset,
                struct rmatch_offset, rm->regs.num_regs);
-        rm->char_offset_updated = 1;
 	RB_GC_GUARD(orig);
     }
 
@@ -1262,6 +1292,12 @@ rb_match_busy(VALUE match)
     FL_SET(match, MATCH_BUSY);
 }
 
+void
+rb_match_unbusy(VALUE match)
+{
+    FL_UNSET(match, MATCH_BUSY);
+}
+
 int
 rb_match_count(VALUE match)
 {
@@ -1300,7 +1336,6 @@ match_set_string(VALUE m, VALUE string, long pos, long len)
     onig_region_resize(&rmatch->regs, 1);
     rmatch->regs.beg[0] = pos;
     rmatch->regs.end[0] = pos + len;
-    rmatch->char_offset_updated = 0;
     OBJ_INFECT(match, string);
 }
 
@@ -1575,7 +1610,6 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
     }
 
     RMATCH(match)->regexp = re;
-    RMATCH(match)->rmatch->char_offset_updated = 0;
     rb_backref_set(match);
 
     OBJ_INFECT(match, re);
@@ -1658,7 +1692,6 @@ rb_reg_start_with_p(VALUE re, VALUE str)
     OBJ_INFECT(match, str);
 
     RMATCH(match)->regexp = re;
-    RMATCH(match)->rmatch->char_offset_updated = 0;
     rb_backref_set(match);
 
     OBJ_INFECT(match, re);
@@ -1971,12 +2004,12 @@ match_ary_aref(VALUE match, VALUE idx, VALUE result)
  *     mtch[range]           -> array
  *     mtch[name]            -> str or nil
  *
- *  Match Reference -- <code>MatchData</code> acts as an array, and may be
- *  accessed using the normal array indexing techniques.  <code>mtch[0]</code>
- *  is equivalent to the special variable <code>$&</code>, and returns the
- *  entire matched string.  <code>mtch[1]</code>, <code>mtch[2]</code>, and so
- *  on return the values of the matched backreferences (portions of the
- *  pattern between parentheses).
+ *  Match Reference -- MatchData acts as an array, and may be accessed
+ *  using the normal array indexing techniques.  <code>mtch[0]</code>
+ *  is equivalent to the special variable <code>$&</code>, and returns
+ *  the entire matched string.  <code>mtch[1]</code>,
+ *  <code>mtch[2]</code>, and so on return the values of the matched
+ *  backreferences (portions of the pattern between parentheses).
  *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m          #=> #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
@@ -3249,11 +3282,11 @@ rb_reg_match2(VALUE re)
  *     rxp.match(str)       -> matchdata or nil
  *     rxp.match(str,pos)   -> matchdata or nil
  *
- *  Returns a <code>MatchData</code> object describing the match, or
- *  <code>nil</code> if there was no match. This is equivalent to retrieving the
- *  value of the special variable <code>$~</code> following a normal match.
- *  If the second parameter is present, it specifies the position in the string
- *  to begin the search.
+ *  Returns a MatchData object describing the match, or
+ *  <code>nil</code> if there was no match. This is equivalent to
+ *  retrieving the value of the special variable <code>$~</code>
+ *  following a normal match.  If the second parameter is present, it
+ *  specifies the position in the string to begin the search.
  *
  *     /(.)(.)(.)/.match("abc")[2]   #=> "b"
  *     /(.)(.)/.match("abc", 1)[2]   #=> "c"
@@ -3380,7 +3413,7 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
 /*
  * Document-method: compile
  *
- * Alias for <code>Regexp.new</code>
+ * Alias for Regexp.new
  */
 
 /*
@@ -3551,8 +3584,8 @@ rb_reg_quote(VALUE str)
  *     Regexp.quote(str)    -> string
  *
  *  Escapes any characters that would have special meaning in a regular
- *  expression. Returns a new escaped string, or self if no characters are
- *  escaped.  For any string,
+ *  expression. Returns a new escaped string with the same or compatible
+ *  encoding. For any string,
  *  <code>Regexp.new(Regexp.escape(<i>str</i>))=~<i>str</i></code> will be true.
  *
  *     Regexp.escape('\*?{}.')   #=> \\\*\?\{\}\.
@@ -3725,11 +3758,12 @@ rb_reg_s_union(VALUE self, VALUE args0)
  *     Regexp.union(pat1, pat2, ...)            -> new_regexp
  *     Regexp.union(pats_ary)                   -> new_regexp
  *
- *  Return a <code>Regexp</code> object that is the union of the given
- *  <em>pattern</em>s, i.e., will match any of its parts. The <em>pattern</em>s
- *  can be Regexp objects, in which case their options will be preserved, or
- *  Strings. If no patterns are given, returns <code>/(?!)/</code>.
- *  The behavior is unspecified if any given <em>pattern</em> contains capture.
+ *  Return a Regexp object that is the union of the given
+ *  <em>pattern</em>s, i.e., will match any of its parts. The
+ *  <em>pattern</em>s can be Regexp objects, in which case their
+ *  options will be preserved, or Strings. If no patterns are given,
+ *  returns <code>/(?!)/</code>.  The behavior is unspecified if any
+ *  given <em>pattern</em> contains capture.
  *
  *     Regexp.union                         #=> /(?!)/
  *     Regexp.union("penzance")             #=> /penzance/
@@ -3960,13 +3994,11 @@ match_setter(VALUE val)
 static VALUE
 rb_reg_s_last_match(int argc, VALUE *argv)
 {
-    VALUE nth;
-
-    if (argc > 0 && rb_scan_args(argc, argv, "01", &nth) == 1) {
+    if (rb_check_arity(argc, 0, 1) == 1) {
         VALUE match = rb_backref_get();
         int n;
         if (NIL_P(match)) return Qnil;
-        n = match_backref_number(match, nth);
+        n = match_backref_number(match, argv[0]);
 	return rb_reg_nth_match(n, match);
     }
     return match_getter();
@@ -3993,9 +4025,9 @@ re_warn(const char *s)
 /*
  *  Document-class: Regexp
  *
- *  A <code>Regexp</code> holds a regular expression, used to match a pattern
- *  against strings. Regexps are created using the <code>/.../</code> and
- *  <code>%r{...}</code> literals, and by the <code>Regexp::new</code>
+ *  A Regexp holds a regular expression, used to match a pattern
+ *  against strings. Regexps are created using the <code>/.../</code>
+ *  and <code>%r{...}</code> literals, and by the Regexp::new
  *  constructor.
  *
  *  :include: doc/regexp.rdoc

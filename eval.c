@@ -25,6 +25,10 @@
 #endif
 
 NORETURN(void rb_raise_jump(VALUE, VALUE));
+void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
+
+static int rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex);
+static int rb_ec_exec_node(rb_execution_context_t *ec, void *n);
 
 VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
@@ -109,17 +113,18 @@ ruby_init(void)
 void *
 ruby_options(int argc, char **argv)
 {
+    rb_execution_context_t *ec = GET_EC();
     enum ruby_tag_type state;
     void *volatile iseq = 0;
 
     ruby_init_stack((void *)&iseq);
-    EC_PUSH_TAG(GET_EC());
+    EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(GET_THREAD(), iseq = ruby_process_options(argc, argv));
     }
     else {
-	rb_clear_trace_func();
-	state = error_handle(state);
+        rb_ec_clear_current_thread_trace_func(ec);
+        state = error_handle(ec, state);
 	iseq = (void *)INT2FIX(state);
     }
     EC_POP_TAG();
@@ -127,23 +132,23 @@ ruby_options(int argc, char **argv)
 }
 
 static void
-ruby_finalize_0(void)
+rb_ec_teardown(rb_execution_context_t *ec)
 {
-    EC_PUSH_TAG(GET_EC());
+    EC_PUSH_TAG(ec);
     if (EC_EXEC_TAG() == TAG_NONE) {
-	rb_trap_exit();
+        rb_vm_trap_exit(rb_ec_vm_ptr(ec));
     }
     EC_POP_TAG();
-    rb_exec_end_proc();
-    rb_clear_trace_func();
+    rb_ec_exec_end_proc(ec);
+    rb_ec_clear_current_thread_trace_func(ec);
 }
 
 static void
-ruby_finalize_1(void)
+rb_ec_finalize(rb_execution_context_t *ec)
 {
     ruby_sig_finalize();
-    GET_EC()->errinfo = Qnil;
-    rb_gc_call_finalizer_at_exit();
+    ec->errinfo = Qnil;
+    rb_objspace_call_finalizer(rb_ec_vm_ptr(ec)->objspace);
 }
 
 /** Runs the VM finalization processes.
@@ -156,8 +161,9 @@ ruby_finalize_1(void)
 void
 ruby_finalize(void)
 {
-    ruby_finalize_0();
-    ruby_finalize_1();
+    rb_execution_context_t *ec = GET_EC();
+    rb_ec_teardown(ec);
+    rb_ec_finalize(ec);
 }
 
 /** Destructs the VM.
@@ -173,31 +179,38 @@ ruby_finalize(void)
 int
 ruby_cleanup(volatile int ex)
 {
+    return rb_ec_cleanup(GET_EC(), ex);
+}
+
+static int
+rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
+{
     int state;
-    volatile VALUE errs[2];
-    rb_thread_t *th = GET_THREAD();
+    volatile VALUE errs[2] = { Qundef, Qundef };
     int nerr;
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
     volatile int sysex = EXIT_SUCCESS;
     volatile int step = 0;
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(th->ec); });
+        SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(ec); });
 
       step_0: step++;
-	errs[1] = th->ec->errinfo;
+        errs[1] = ec->errinfo;
+        if (THROW_DATA_P(ec->errinfo)) ec->errinfo = Qnil;
 	rb_set_safe_level_force(0);
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
-	SAVE_ROOT_JMPBUF(th, ruby_finalize_0());
+        SAVE_ROOT_JMPBUF(th, rb_ec_teardown(ec));
 
       step_1: step++;
 	/* protect from Thread#raise */
 	th->status = THREAD_KILLED;
 
-	errs[0] = th->ec->errinfo;
+        errs[0] = ec->errinfo;
 	SAVE_ROOT_JMPBUF(th, rb_thread_terminate_all());
     }
     else {
@@ -207,8 +220,8 @@ ruby_cleanup(volatile int ex)
 	}
 	if (ex == 0) ex = state;
     }
-    th->ec->errinfo = errs[1];
-    sysex = error_handle(ex);
+    ec->errinfo = errs[1];
+    sysex = error_handle(ec, ex);
 
     state = 0;
     for (nerr = 0; nerr < numberof(errs); ++nerr) {
@@ -216,7 +229,7 @@ ruby_cleanup(volatile int ex)
 
 	if (!RTEST(err)) continue;
 
-	/* th->ec->errinfo contains a NODE while break'ing */
+        /* ec->errinfo contains a NODE while break'ing */
 	if (THROW_DATA_P(err)) continue;
 
 	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
@@ -233,31 +246,30 @@ ruby_cleanup(volatile int ex)
 	}
     }
 
-    mjit_finish(); /* We still need ISeqs here. */
+    mjit_finish(true); // We still need ISeqs here.
 
-    ruby_finalize_1();
+    rb_ec_finalize(ec);
 
     /* unlock again if finalizer took mutexes. */
-    rb_threadptr_unlock_all_locking_mutexes(GET_THREAD());
+    rb_threadptr_unlock_all_locking_mutexes(th);
     EC_POP_TAG();
     rb_thread_stop_timer_thread();
-    ruby_vm_destruct(GET_VM());
+    ruby_vm_destruct(th->vm);
     if (state) ruby_default_signal(state);
 
     return sysex;
 }
 
 static int
-ruby_exec_internal(void *n)
+rb_ec_exec_node(rb_execution_context_t *ec, void *n)
 {
     volatile int state;
     rb_iseq_t *iseq = (rb_iseq_t *)n;
-    rb_thread_t * volatile th = GET_THREAD();
-
     if (!n) return 0;
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        rb_thread_t *const th = rb_ec_thread_ptr(ec);
 	SAVE_ROOT_JMPBUF(th, {
 	    rb_iseq_eval_main(iseq);
 	});
@@ -309,12 +321,14 @@ ruby_executable_node(void *n, int *status)
 int
 ruby_run_node(void *n)
 {
+    rb_execution_context_t *ec = GET_EC();
     int status;
     if (!ruby_executable_node(n, &status)) {
-	ruby_cleanup(0);
+        rb_ec_cleanup(ec, 0);
 	return status;
     }
-    return ruby_cleanup(ruby_exec_node(n));
+    ruby_init_stack((void *)&status);
+    return rb_ec_cleanup(ec, rb_ec_exec_node(ec, n));
 }
 
 /*! Runs the given compiled source */
@@ -322,7 +336,7 @@ int
 ruby_exec_node(void *n)
 {
     ruby_init_stack((void *)&n);
-    return ruby_exec_internal(n);
+    return rb_ec_exec_node(GET_EC(), n);
 }
 
 /*
@@ -453,7 +467,7 @@ rb_class_modify_check(VALUE klass)
 		goto noclass;
 	    }
 	}
-	rb_error_frozen(desc);
+        rb_frozen_error_raise(klass, "can't modify frozen %s: %"PRIsVALUE, desc, klass);
     }
 }
 
@@ -491,6 +505,7 @@ static inline VALUE
 exc_setup_message(const rb_execution_context_t *ec, VALUE mesg, VALUE *cause)
 {
     int nocause = 0;
+    int nocircular = 0;
 
     if (NIL_P(mesg)) {
 	mesg = ec->errinfo;
@@ -500,14 +515,31 @@ exc_setup_message(const rb_execution_context_t *ec, VALUE mesg, VALUE *cause)
     if (NIL_P(mesg)) {
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
 	nocause = 0;
+        nocircular = 1;
     }
     if (*cause == Qundef) {
 	if (nocause) {
 	    *cause = Qnil;
+            nocircular = 1;
 	}
 	else if (!rb_ivar_defined(mesg, id_cause)) {
 	    *cause = get_ec_errinfo(ec);
 	}
+        else {
+            nocircular = 1;
+        }
+    }
+    else if (!NIL_P(*cause) && !rb_obj_is_kind_of(*cause, rb_eException)) {
+        rb_raise(rb_eTypeError, "exception object expected");
+    }
+
+    if (!nocircular && !NIL_P(*cause) && *cause != Qundef && *cause != mesg) {
+        VALUE c = *cause;
+        while (!NIL_P(c = rb_attr_get(c, id_cause))) {
+            if (c == mesg) {
+                rb_raise(rb_eArgError, "circular causes");
+            }
+        }
     }
     return mesg;
 }
@@ -688,28 +720,33 @@ extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
 /*
  *  call-seq:
  *     raise
- *     raise(string)
- *     raise(exception [, string [, array]])
+ *     raise(string, cause: $!)
+ *     raise(exception [, string [, array]], cause: $!)
  *     fail
- *     fail(string)
- *     fail(exception [, string [, array]])
+ *     fail(string, cause: $!)
+ *     fail(exception [, string [, array]], cause: $!)
  *
  *  With no arguments, raises the exception in <code>$!</code> or raises
- *  a <code>RuntimeError</code> if <code>$!</code> is +nil+.
- *  With a single +String+ argument, raises a
- *  +RuntimeError+ with the string as a message. Otherwise,
- *  the first parameter should be the name of an +Exception+
- *  class (or an object that returns an +Exception+ object when sent
- *  an +exception+ message). The optional second parameter sets the
- *  message associated with the exception, and the third parameter is an
- *  array of callback information. Exceptions are caught by the
- *  +rescue+ clause of <code>begin...end</code> blocks.
+ *  a RuntimeError if <code>$!</code> is +nil+.  With a single +String+
+ *  argument, raises a +RuntimeError+ with the string as a message. Otherwise,
+ *  the first parameter should be an +Exception+ class (or another
+ *  object that returns an +Exception+ object when sent an +exception+
+ *  message).  The optional second parameter sets the message associated with
+ *  the exception (accessible via Exception#message), and the third parameter
+ *  is an array of callback information (accessible via Exception#backtrace).
+ *  The +cause+ of the generated exception (accessible via Exception#cause)
+ *  is automatically set to the "current" exception (<code>$!</code>), if any.
+ *  An alternative value, either an +Exception+ object or +nil+, can be
+ *  specified via the +:cause+ argument.
+ *
+ *  Exceptions are caught by the +rescue+ clause of
+ *  <code>begin...end</code> blocks.
  *
  *     raise "Failed to create socket"
  *     raise ArgumentError, "No parameters", caller
  */
 
-static VALUE
+VALUE
 rb_f_raise(int argc, VALUE *argv)
 {
     VALUE err;
@@ -766,8 +803,7 @@ make_exception(int argc, const VALUE *argv, int isstr)
 	}
 	break;
       default:
-	rb_check_arity(argc, 0, 3);
-	break;
+        rb_error_arity(argc, 0, 3);
     }
     if (argc > 0) {
 	if (!rb_obj_is_kind_of(mesg, rb_eException))
@@ -1176,11 +1212,11 @@ rb_frame_last_func(void)
  *     append_features(mod)   -> mod
  *
  *  When this module is included in another, Ruby calls
- *  <code>append_features</code> in this module, passing it the
- *  receiving module in _mod_. Ruby's default implementation is
- *  to add the constants, methods, and module variables of this module
- *  to _mod_ if this module has not already been added to
- *  _mod_ or one of its ancestors. See also <code>Module#include</code>.
+ *  #append_features in this module, passing it the receiving module
+ *  in _mod_. Ruby's default implementation is to add the constants,
+ *  methods, and module variables of this module to _mod_ if this
+ *  module has not already been added to _mod_ or one of its
+ *  ancestors. See also Module#include.
  */
 
 static VALUE
@@ -1198,7 +1234,7 @@ rb_mod_append_features(VALUE module, VALUE include)
  *  call-seq:
  *     include(module, ...)    -> self
  *
- *  Invokes <code>Module.append_features</code> on each parameter in reverse order.
+ *  Invokes Module.append_features on each parameter in reverse order.
  */
 
 static VALUE
@@ -1225,11 +1261,11 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
  *     prepend_features(mod)   -> mod
  *
  *  When this module is prepended in another, Ruby calls
- *  <code>prepend_features</code> in this module, passing it the
- *  receiving module in _mod_. Ruby's default implementation is
- *  to overlay the constants, methods, and module variables of this module
- *  to _mod_ if this module has not already been added to
- *  _mod_ or one of its ancestors. See also <code>Module#prepend</code>.
+ *  #prepend_features in this module, passing it the receiving module
+ *  in _mod_. Ruby's default implementation is to overlay the
+ *  constants, methods, and module variables of this module to _mod_
+ *  if this module has not already been added to _mod_ or one of its
+ *  ancestors. See also Module#prepend.
  */
 
 static VALUE
@@ -1247,7 +1283,7 @@ rb_mod_prepend_features(VALUE module, VALUE prepend)
  *  call-seq:
  *     prepend(module, ...)    -> self
  *
- *  Invokes <code>Module.prepend_features</code> on each parameter in reverse order.
+ *  Invokes Module.prepend_features on each parameter in reverse order.
  */
 
 static VALUE
@@ -1333,7 +1369,7 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
     FL_SET(module, RMODULE_IS_OVERLAID);
     superclass = refinement_superclass(superclass);
     c = iclass = rb_include_class_new(module, superclass);
-    RCLASS_REFINED_CLASS(c) = klass;
+    RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
 
     RCLASS_M_TBL(OBJ_WB_UNPROTECT(c)) =
       RCLASS_M_TBL(OBJ_WB_UNPROTECT(module)); /* TODO: check unprotecting */
@@ -1342,8 +1378,8 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
     while (module && module != klass) {
 	FL_SET(module, RMODULE_IS_OVERLAID);
 	c = RCLASS_SET_SUPER(c, rb_include_class_new(module, RCLASS_SUPER(c)));
-	RCLASS_REFINED_CLASS(c) = klass;
-	module = RCLASS_SUPER(module);
+        RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
+        module = RCLASS_SUPER(module);
     }
     rb_hash_aset(CREF_REFINEMENTS(cref), klass, iclass);
 }
@@ -1428,12 +1464,12 @@ add_activated_refinement(VALUE activated_refinements,
     FL_SET(refinement, RMODULE_IS_OVERLAID);
     superclass = refinement_superclass(superclass);
     c = iclass = rb_include_class_new(refinement, superclass);
-    RCLASS_REFINED_CLASS(c) = klass;
+    RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
     refinement = RCLASS_SUPER(refinement);
     while (refinement && refinement != klass) {
 	FL_SET(refinement, RMODULE_IS_OVERLAID);
 	c = RCLASS_SET_SUPER(c, rb_include_class_new(refinement, RCLASS_SUPER(c)));
-	RCLASS_REFINED_CLASS(c) = klass;
+        RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
 	refinement = RCLASS_SUPER(refinement);
     }
     rb_hash_aset(activated_refinements, klass, iclass);
@@ -1622,7 +1658,7 @@ rb_extend_object(VALUE obj, VALUE module)
  *
  *  Extends the specified object by adding this module's constants and
  *  methods (which are added as singleton methods). This is the callback
- *  method used by <code>Object#extend</code>.
+ *  method used by Object#extend.
  *
  *     module Picky
  *       def Picky.extend_object(o)
@@ -1698,9 +1734,9 @@ rb_obj_extend(int argc, VALUE *argv, VALUE obj)
  *  call-seq:
  *     include(module, ...)   -> self
  *
- *  Invokes <code>Module.append_features</code>
- *  on each parameter in turn. Effectively adds the methods and constants
- *  in each module to the receiver.
+ *  Invokes Module.append_features on each parameter in turn.
+ *  Effectively adds the methods and constants in each module to the
+ *  receiver.
  */
 
 static VALUE
@@ -1720,7 +1756,7 @@ top_include(int argc, VALUE *argv, VALUE self)
  *     using(module)    -> self
  *
  *  Import class refinements from <i>module</i> into the scope where
- *  <code>using</code> is called.
+ *  #using is called.
  */
 
 static VALUE

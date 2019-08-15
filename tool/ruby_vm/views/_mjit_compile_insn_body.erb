@@ -1,4 +1,4 @@
-% # -*- mode:c; style:ruby; coding: utf-8; indent-tabs-mode: nil -*-
+% # -*- C -*-
 % # Copyright (c) 2018 Takashi Kokubun.  All rights reserved.
 % #
 % # This file is a part of  the programming language Ruby.  Permission is hereby
@@ -28,6 +28,12 @@
 %         #{indent}return val;
 %         #endif
 %       RESTORE_REGS
+%     end
+%     expr.gsub!(/^(?<indent>\s*)NEXT_INSN\(\);\n/) do
+%       indent = Regexp.last_match[:indent]
+%       <<-end.gsub(/^ +/, '')
+%         #{indent}UNREACHABLE_RETURN(Qundef);
+%       end
 %     end
 %   end
 % end
@@ -70,10 +76,14 @@
 %   when /\A\s+CALL_SIMPLE_METHOD\(\);\s+\z/
 %     # For `opt_xxx`'s fallbacks.
         if (status->local_stack_p) {
-            fprintf(f, "            reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1);
+            fprintf(f, "            reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);
         }
         fprintf(f, "            reg_cfp->pc = original_body_iseq + %d;\n", pos);
+        fprintf(f, "            RB_DEBUG_COUNTER_INC(mjit_cancel_opt_insn);\n");
         fprintf(f, "            goto cancel;\n");
+%   when /\A(?<prefix>.+\b)INSN_LABEL\((?<name>[^)]+)\)(?<suffix>.+)\z/m
+%     prefix, name, suffix = Regexp.last_match[:prefix], Regexp.last_match[:name], Regexp.last_match[:suffix]
+        fprintf(f, "    <%= prefix.gsub(/\t/, ' ' * 8) %>INSN_LABEL(<%= name %>_%d)<%= suffix.sub(/\n/, '\n') %>", pos);
 %   else
 %     if insn.handles_sp?
 %       # If insn.handles_sp? is true, cfp->sp might be changed inside insns (like vm_caller_setup_arg_block)

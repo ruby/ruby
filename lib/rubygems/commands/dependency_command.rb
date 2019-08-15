@@ -80,9 +80,9 @@ use with other commands.
   end
 
   def gem_dependency(pattern, version, prerelease) # :nodoc:
-    dependency = Gem::Deprecate.skip_during {
+    dependency = Gem::Deprecate.skip_during do
       Gem::Dependency.new pattern, version
-    }
+    end
 
     dependency.prerelease = prerelease
 
@@ -208,11 +208,12 @@ use with other commands.
   def name_pattern(args)
     args << '' if args.empty?
 
-    if args.length == 1 and args.first =~ /\A\/(.*)\/(i)?\z/m
+    if args.length == 1 and args.first =~ /\A(.*)(i)?\z/m
       flags = $2 ? Regexp::IGNORECASE : nil
       Regexp.new $1, flags
     else
       /\A#{Regexp.union(*args)}/
     end
   end
+
 end

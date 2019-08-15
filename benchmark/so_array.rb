@@ -1,5 +1,5 @@
 #!/usr/bin/ruby
-# -*- mode: ruby -*-
+# -*- Ruby -*-
 # $Id: ary-ruby.code,v 1.4 2004/11/13 07:41:27 bfulgham Exp $
 # http://www.bagley.org/~doug/shootout/
 # with help from Paul Brannan and Mark Hubbart

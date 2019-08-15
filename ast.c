@@ -22,9 +22,16 @@ node_gc_mark(void *ptr)
     rb_gc_mark((VALUE)data->ast);
 }
 
+static size_t
+node_memsize(const void *ptr)
+{
+    struct ASTNodeData *data = (struct ASTNodeData *)ptr;
+    return rb_ast_memsize(data->ast);
+}
+
 static const rb_data_type_t rb_node_type = {
     "AST/node",
-    {node_gc_mark, RUBY_TYPED_DEFAULT_FREE, 0,},
+    {node_gc_mark, RUBY_TYPED_DEFAULT_FREE, node_memsize,},
     0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
 };
@@ -77,13 +84,13 @@ ast_parse_done(rb_ast_t *ast)
  *  call-seq:
  *     RubyVM::AbstractSyntaxTree.parse(string) -> RubyVM::AbstractSyntaxTree::Node
  *
- *  Parses the given string into an abstract syntax tree,
+ *  Parses the given _string_ into an abstract syntax tree,
  *  returning the root node of that tree.
  *
- *  SyntaxError is raised if the given string is invalid syntax.
+ *  SyntaxError is raised if the given _string_ is invalid syntax.
  *
  *    RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
- *    # => #<RubyVM::AbstractSyntaxTree::Node(NODE_SCOPE(0) 1:0, 1:9): >
+ *    # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-1:9>
  */
 static VALUE
 rb_ast_s_parse(VALUE module, VALUE str)
@@ -96,7 +103,7 @@ rb_ast_parse_str(VALUE str)
 {
     rb_ast_t *ast = 0;
 
-    str = rb_check_string_type(str);
+    StringValue(str);
     ast = rb_parser_compile_string_path(ast_parse_new(), Qnil, str, 1);
     return ast_parse_done(ast);
 }
@@ -105,14 +112,14 @@ rb_ast_parse_str(VALUE str)
  *  call-seq:
  *     RubyVM::AbstractSyntaxTree.parse_file(pathname) -> RubyVM::AbstractSyntaxTree::Node
  *
- *   Reads the file from <code>pathname</code>, then parses it like ::parse,
+ *   Reads the file from _pathname_, then parses it like ::parse,
  *   returning the root node of the abstract syntax tree.
  *
- *   SyntaxError is raised if <code>pathname</code>'s contents are not
+ *   SyntaxError is raised if _pathname_'s contents are not
  *   valid Ruby syntax.
  *
  *     RubyVM::AbstractSyntaxTree.parse_file("my-app/app.rb")
- *     # => #<RubyVM::AbstractSyntaxTree::Node(NODE_SCOPE(0) 1:0, 31:3): >
+ *     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-31:3>
  */
 static VALUE
 rb_ast_s_parse_file(VALUE module, VALUE path)
@@ -205,17 +212,17 @@ script_lines(VALUE path)
  *     RubyVM::AbstractSyntaxTree.of(proc)   -> RubyVM::AbstractSyntaxTree::Node
  *     RubyVM::AbstractSyntaxTree.of(method) -> RubyVM::AbstractSyntaxTree::Node
  *
- *   Returns AST nodes of the given proc or method.
+ *   Returns AST nodes of the given _proc_ or _method_.
  *
  *     RubyVM::AbstractSyntaxTree.of(proc {1 + 2})
- *     # => #<RubyVM::AbstractSyntaxTree::Node(NODE_SCOPE(0) 1:35, 1:42): >
+ *     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:35-1:42>
  *
  *     def hello
  *       puts "hello, world"
  *     end
  *
  *     RubyVM::AbstractSyntaxTree.of(method(:hello))
- *     # => #<RubyVM::AbstractSyntaxTree::Node(NODE_SCOPE(0) 1:0, 3:3): >
+ *     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-3:3>
  */
 static VALUE
 rb_ast_s_of(VALUE module, VALUE body)
@@ -262,21 +269,21 @@ rb_ast_node_alloc(VALUE klass)
 }
 
 static const char*
-node_type_to_str(NODE *node)
+node_type_to_str(const NODE *node)
 {
-    return ruby_node_name(nd_type(node));
+    return (ruby_node_name(nd_type(node)) + rb_strlen_lit("NODE_"));
 }
 
 /*
  *  call-seq:
- *     node.type -> string
+ *     node.type -> symbol
  *
- *  Returns the type of this node as a string.
+ *  Returns the type of this node as a symbol.
  *
  *    root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
- *    root.type # => "NODE_SCOPE"
+ *    root.type # => :SCOPE
  *    call = root.children[2]
- *    call.type # => "NODE_OPCALL"
+ *    call.type # => :OPCALL
  */
 static VALUE
 rb_ast_node_type(VALUE self)
@@ -284,7 +291,7 @@ rb_ast_node_type(VALUE self)
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
 
-    return rb_fstring_cstr(node_type_to_str(data->node));
+    return rb_sym_intern_ascii_cstr(node_type_to_str(data->node));
 }
 
 #define NEW_CHILD(ast, node) node ? ast_new_internal(ast, node) : Qnil
@@ -364,13 +371,18 @@ node_children(rb_ast_t *ast, NODE *node)
         return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
       case NODE_CASE2:
         return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
+      case NODE_CASE3:
+        return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
       case NODE_WHEN:
+        return rb_ary_new_from_node_args(ast, 3, node->nd_head, node->nd_body, node->nd_next);
+      case NODE_IN:
         return rb_ary_new_from_node_args(ast, 3, node->nd_head, node->nd_body, node->nd_next);
       case NODE_WHILE:
         goto loop;
       case NODE_UNTIL:
       loop:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_cond, node->nd_body);
+        return rb_ary_push(rb_ary_new_from_node_args(ast, 2, node->nd_cond, node->nd_body),
+                           (node->nd_state ? Qtrue : Qfalse));
       case NODE_ITER:
       case NODE_FOR:
         return rb_ary_new_from_node_args(ast, 2, node->nd_iter, node->nd_body);
@@ -415,7 +427,11 @@ node_children(rb_ast_t *ast, NODE *node)
         if (NODE_NAMED_REST_P(node->nd_args)) {
             return rb_ary_new_from_node_args(ast, 3, node->nd_value, node->nd_head, node->nd_args);
         }
-        return rb_ary_new_from_node_args(ast, 2, node->nd_value, node->nd_head);
+        else {
+            return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_value),
+                                        NEW_CHILD(ast, node->nd_head),
+                                        ID2SYM(rb_intern("NODE_SPECIAL_NO_NAME_REST")));
+        }
       case NODE_LASGN:
         goto asgn;
       case NODE_DASGN:
@@ -427,7 +443,7 @@ node_children(rb_ast_t *ast, NODE *node)
       case NODE_CVASGN:
       asgn:
         if (NODE_REQUIRED_KEYWORD_P(node)) {
-            return rb_ary_new_from_args(1, var_name(node->nd_vid));
+            return rb_ary_new_from_args(2, var_name(node->nd_vid), ID2SYM(rb_intern("NODE_SPECIAL_REQUIRED_KEYWORD")));
         }
         return rb_ary_new_from_args(2, var_name(node->nd_vid), NEW_CHILD(ast, node->nd_value));
       case NODE_GASGN:
@@ -468,6 +484,9 @@ node_children(rb_ast_t *ast, NODE *node)
                                     NEW_CHILD(ast, node->nd_args));
       case NODE_VCALL:
         return rb_ary_new_from_args(1, ID2SYM(node->nd_mid));
+      case NODE_METHREF:
+        return rb_ary_new_from_args(2, NEW_CHILD(ast, node->nd_recv),
+                                    ID2SYM(node->nd_mid));
       case NODE_SUPER:
         return rb_ary_new_from_node_args(ast, 1, node->nd_args);
       case NODE_ZSUPER:
@@ -525,7 +544,9 @@ node_children(rb_ast_t *ast, NODE *node)
         goto dlit;
       case NODE_DSYM:
       dlit:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_next->nd_head, node->nd_next->nd_next);
+        return rb_ary_new_from_args(3, node->nd_lit,
+                                    NEW_CHILD(ast, node->nd_next->nd_head),
+                                    NEW_CHILD(ast, node->nd_next->nd_next));
       case NODE_EVSTR:
         return rb_ary_new_from_node_args(ast, 1, node->nd_body);
       case NODE_ARGSCAT:
@@ -591,7 +612,8 @@ node_children(rb_ast_t *ast, NODE *node)
         if (NODE_NAMED_REST_P(node->nd_1st)) {
             return rb_ary_new_from_node_args(ast, 2, node->nd_1st, node->nd_2nd);
         }
-        return rb_ary_new_from_node_args(ast, 1, node->nd_2nd);
+        return rb_ary_new_from_args(2, ID2SYM(rb_intern("NODE_SPECIAL_NO_NAME_REST")),
+                                    NEW_CHILD(ast, node->nd_2nd));
       case NODE_ARGS:
         {
             struct rb_args_info *ainfo = node->nd_ainfo;
@@ -616,6 +638,24 @@ node_children(rb_ast_t *ast, NODE *node)
                 rb_ary_push(locals, var_name(tbl[i]));
             }
             return rb_ary_new_from_args(3, locals, NEW_CHILD(ast, node->nd_args), NEW_CHILD(ast, node->nd_body));
+        }
+      case NODE_ARYPTN:
+        {
+            struct rb_ary_pattern_info *apinfo = node->nd_apinfo;
+            VALUE rest = NODE_NAMED_REST_P(apinfo->rest_arg) ? NEW_CHILD(ast, apinfo->rest_arg) :
+                                                               ID2SYM(rb_intern("NODE_SPECIAL_NO_NAME_REST"));
+            return rb_ary_new_from_args(4,
+                                        NEW_CHILD(ast, node->nd_pconst),
+                                        NEW_CHILD(ast, apinfo->pre_args),
+                                        rest,
+                                        NEW_CHILD(ast, apinfo->post_args));
+        }
+      case NODE_HSHPTN:
+        {
+            return rb_ary_new_from_args(3,
+                                        NEW_CHILD(ast, node->nd_pconst),
+                                        NEW_CHILD(ast, node->nd_pkwargs),
+                                        NEW_CHILD(ast, node->nd_pkwrestarg));
         }
       case NODE_ARGS_AUX:
       case NODE_LAST:
@@ -721,9 +761,10 @@ rb_ast_node_inspect(VALUE self)
     str = rb_str_new2("#<");
 
     rb_str_append(str, cname);
-    rb_str_cat2(str, "(");
-    rb_str_catf(str, "%s(%d) %d:%d, %d:%d", node_type_to_str(data->node), nd_type(data->node), nd_first_lineno(data->node), nd_first_column(data->node), nd_last_lineno(data->node), nd_last_column(data->node));
-    rb_str_cat2(str, "): >");
+    rb_str_catf(str, ":%s@%d:%d-%d:%d>",
+                node_type_to_str(data->node),
+                nd_first_lineno(data->node), nd_first_column(data->node),
+                nd_last_lineno(data->node), nd_last_column(data->node));
 
     return str;
 }

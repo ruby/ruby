@@ -5,7 +5,9 @@ class Gem::Request::ConnectionPools # :nodoc:
   @client = Net::HTTP
 
   class << self
+
     attr_accessor :client
+
   end
 
   def initialize(proxy_uri, cert_files)
@@ -40,7 +42,7 @@ class Gem::Request::ConnectionPools # :nodoc:
   def get_no_proxy_from_env
     env_no_proxy = ENV['no_proxy'] || ENV['NO_PROXY']
 
-    return [] if env_no_proxy.nil?  or env_no_proxy.empty?
+    return [] if env_no_proxy.nil? or env_no_proxy.empty?
 
     env_no_proxy.split(/\s*,\s*/)
   end
@@ -74,9 +76,7 @@ class Gem::Request::ConnectionPools # :nodoc:
   end
 
   def net_http_args(uri, proxy_uri)
-    # URI::Generic#hostname was added in ruby 1.9.3, use it if exists, otherwise
-    # don't support IPv6 literals and use host.
-    hostname = uri.respond_to?(:hostname) ? uri.hostname : uri.host
+    hostname = uri.hostname
     net_http_args = [hostname, uri.port]
 
     no_proxy = get_no_proxy_from_env

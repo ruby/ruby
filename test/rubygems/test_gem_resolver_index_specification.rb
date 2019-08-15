@@ -55,7 +55,9 @@ class TestGemResolverIndexSpecification < Gem::TestCase
   def test_spec
     specs = spec_fetcher do |fetcher|
       fetcher.spec 'a', 2
-      fetcher.spec 'a', 2 do |s| s.platform = Gem::Platform.local end
+      fetcher.spec 'a', 2 do |s|
+        s.platform = Gem::Platform.local
+      end
     end
 
     source = Gem::Source.new @gem_repo
@@ -71,7 +73,10 @@ class TestGemResolverIndexSpecification < Gem::TestCase
   end
 
   def test_spec_local
-    a_2_p = util_spec 'a', 2 do |s| s.platform = Gem::Platform.local end
+    a_2_p = util_spec 'a', 2 do |s|
+      s.platform = Gem::Platform.local
+    end
+
     Gem::Package.build a_2_p
 
     source = Gem::Source::Local.new

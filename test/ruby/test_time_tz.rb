@@ -254,6 +254,66 @@ class TestTimeTZ < Test::Unit::TestCase
     }
   end if has_right_tz
 
+  def test_utc_names
+    assert_predicate(Time.new(2019, 1, 1, 0, 0, 0, "UTC"), :utc?)
+    assert_predicate(Time.new(2019, 1, 1, 0, 0, 0, "utc"), :utc?)
+    assert_predicate(Time.new(2019, 1, 1, 0, 0, 0, "Z"), :utc?)
+  end
+
+  def test_military_names
+    assert_equal( +1*3600, Time.new(2019, 1, 1, 0, 0, 0, "A").gmtoff)
+    assert_equal( +2*3600, Time.new(2019, 1, 1, 0, 0, 0, "B").gmtoff)
+    assert_equal( +3*3600, Time.new(2019, 1, 1, 0, 0, 0, "C").gmtoff)
+    assert_equal( +4*3600, Time.new(2019, 1, 1, 0, 0, 0, "D").gmtoff)
+    assert_equal( +5*3600, Time.new(2019, 1, 1, 0, 0, 0, "E").gmtoff)
+    assert_equal( +6*3600, Time.new(2019, 1, 1, 0, 0, 0, "F").gmtoff)
+    assert_equal( +7*3600, Time.new(2019, 1, 1, 0, 0, 0, "G").gmtoff)
+    assert_equal( +8*3600, Time.new(2019, 1, 1, 0, 0, 0, "H").gmtoff)
+    assert_equal( +9*3600, Time.new(2019, 1, 1, 0, 0, 0, "I").gmtoff)
+    assert_equal(+10*3600, Time.new(2019, 1, 1, 0, 0, 0, "K").gmtoff)
+    assert_equal(+11*3600, Time.new(2019, 1, 1, 0, 0, 0, "L").gmtoff)
+    assert_equal(+12*3600, Time.new(2019, 1, 1, 0, 0, 0, "M").gmtoff)
+    assert_equal( -1*3600, Time.new(2019, 1, 1, 0, 0, 0, "N").gmtoff)
+    assert_equal( -2*3600, Time.new(2019, 1, 1, 0, 0, 0, "O").gmtoff)
+    assert_equal( -3*3600, Time.new(2019, 1, 1, 0, 0, 0, "P").gmtoff)
+    assert_equal( -4*3600, Time.new(2019, 1, 1, 0, 0, 0, "Q").gmtoff)
+    assert_equal( -5*3600, Time.new(2019, 1, 1, 0, 0, 0, "R").gmtoff)
+    assert_equal( -6*3600, Time.new(2019, 1, 1, 0, 0, 0, "S").gmtoff)
+    assert_equal( -7*3600, Time.new(2019, 1, 1, 0, 0, 0, "T").gmtoff)
+    assert_equal( -8*3600, Time.new(2019, 1, 1, 0, 0, 0, "U").gmtoff)
+    assert_equal( -9*3600, Time.new(2019, 1, 1, 0, 0, 0, "V").gmtoff)
+    assert_equal(-10*3600, Time.new(2019, 1, 1, 0, 0, 0, "W").gmtoff)
+    assert_equal(-11*3600, Time.new(2019, 1, 1, 0, 0, 0, "X").gmtoff)
+    assert_equal(-12*3600, Time.new(2019, 1, 1, 0, 0, 0, "Y").gmtoff)
+    assert_equal(       0, Time.new(2019, 1, 1, 0, 0, 0, "Z").gmtoff)
+
+    assert_equal( +1*3600, Time.at(0, in: "A").gmtoff)
+    assert_equal( +2*3600, Time.at(0, in: "B").gmtoff)
+    assert_equal( +3*3600, Time.at(0, in: "C").gmtoff)
+    assert_equal( +4*3600, Time.at(0, in: "D").gmtoff)
+    assert_equal( +5*3600, Time.at(0, in: "E").gmtoff)
+    assert_equal( +6*3600, Time.at(0, in: "F").gmtoff)
+    assert_equal( +7*3600, Time.at(0, in: "G").gmtoff)
+    assert_equal( +8*3600, Time.at(0, in: "H").gmtoff)
+    assert_equal( +9*3600, Time.at(0, in: "I").gmtoff)
+    assert_equal(+10*3600, Time.at(0, in: "K").gmtoff)
+    assert_equal(+11*3600, Time.at(0, in: "L").gmtoff)
+    assert_equal(+12*3600, Time.at(0, in: "M").gmtoff)
+    assert_equal( -1*3600, Time.at(0, in: "N").gmtoff)
+    assert_equal( -2*3600, Time.at(0, in: "O").gmtoff)
+    assert_equal( -3*3600, Time.at(0, in: "P").gmtoff)
+    assert_equal( -4*3600, Time.at(0, in: "Q").gmtoff)
+    assert_equal( -5*3600, Time.at(0, in: "R").gmtoff)
+    assert_equal( -6*3600, Time.at(0, in: "S").gmtoff)
+    assert_equal( -7*3600, Time.at(0, in: "T").gmtoff)
+    assert_equal( -8*3600, Time.at(0, in: "U").gmtoff)
+    assert_equal( -9*3600, Time.at(0, in: "V").gmtoff)
+    assert_equal(-10*3600, Time.at(0, in: "W").gmtoff)
+    assert_equal(-11*3600, Time.at(0, in: "X").gmtoff)
+    assert_equal(-12*3600, Time.at(0, in: "Y").gmtoff)
+    assert_equal(       0, Time.at(0, in: "Z").gmtoff)
+  end
+
   MON2NUM = {
     "Jan" => 1, "Feb" => 2, "Mar" => 3, "Apr" => 4, "May" => 5, "Jun" => 6,
     "Jul" => 7, "Aug" => 8, "Sep" => 9, "Oct" => 10, "Nov" => 11, "Dec" => 12
@@ -484,83 +544,184 @@ Europe/Lisbon  Sun Dec 31 23:59:59 1911 UT = Sun Dec 31 23:23:14 1911 LMT isdst=
 End
 
   class TZ
-    attr_reader :name, :abbr, :offset
+    attr_reader :name
 
-    def initialize(name, abbr, offset)
+    def initialize(name, abbr, offset, abbr2 = nil, offset2 = nil)
       @name = name
       @abbr = abbr
       @offset = offset
+      @abbr2 = abbr2
+      @offset2 = offset2
+    end
+
+    def dst?(t)
+      return false unless @offset2
+      case t when Integer
+        return nil
+      end
+      case t.mon
+      when 4..9
+        true
+      else
+        false
+      end
+    end
+
+    def offset(t)
+      (dst?(t) ? @offset2 : @offset)
     end
 
     def local_to_utc(t)
-      t - @offset
+      t - offset(t)
     end
 
     def utc_to_local(t)
-      t + @offset
+      t + offset(t)
     end
 
     def abbr(t)
-      @abbr
+      dst?(t) ? @abbr2 : @abbr
+    end
+
+    def ==(other)
+      @name == other.name and abbr(0) == other.abbr(0) and offset(0) == other.offset(0)
+    end
+
+    def inspect
+      "#<TZ: #@name #@abbr #@offset>"
     end
   end
 end
 
 module TestTimeTZ::WithTZ
-  def subtest_new(time_class, tz, tzname, abbr, utc_offset)
-    t = time_class.new(2018, 9, 1, 12, 0, 0, tz)
+  def subtest_new(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    abbr, abbr2 = *abbr
+    utc_offset, utc_offset2 = *utc_offset
+    t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
+    utc_offset, abbr = utc_offset2, abbr2 if tz.dst?(t)
     assert_equal([2018, 9, 1, 12, 0, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     h, m = (-utc_offset / 60).divmod(60)
     assert_equal(time_class.utc(2018, 9, 1, 12+h, m, 0).to_i, t.to_i)
   end
 
-  def subtest_getlocal(time_class, tz, tzname, abbr, utc_offset)
-    t = time_class.utc(2018, 9, 1, 12, 0, 0).getlocal(tz)
+  def subtest_now(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.now(in: tzarg)
+    assert_equal(tz, t.zone)
+  end
+
+  def subtest_getlocal(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    abbr, abbr2 = *abbr
+    utc_offset, utc_offset2 = *utc_offset
+    utc = time_class.utc(2018, 9, 1, 12, 0, 0)
+    utc_offset, abbr = utc_offset2, abbr2 if tz.dst?(utc)
+    t = utc.getlocal(tzarg)
     h, m = (utc_offset / 60).divmod(60)
     assert_equal([2018, 9, 1, 12+h, m, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     assert_equal(time_class.utc(2018, 9, 1, 12, 0, 0), t)
   end
 
-  def subtest_strftime(time_class, tz, tzname, abbr, utc_offset)
-    t = time_class.new(2018, 9, 1, 12, 0, 0, tz)
+  def subtest_strftime(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    abbr, abbr2 = *abbr
+    utc_offset, utc_offset2 = *utc_offset
+    t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
+    utc_offset, abbr = utc_offset2, abbr2 if tz.dst?(t)
     h, m = (utc_offset.abs / 60).divmod(60)
     h = -h if utc_offset < 0
     assert_equal("%+.2d%.2d %s" % [h, m, abbr], t.strftime("%z %Z"))
   end
 
-  def subtest_plus(time_class, tz, tzname, abbr, utc_offset)
-    t = time_class.new(2018, 9, 1, 12, 0, 0, tz) + 4000
+  def subtest_plus(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    abbr, abbr2 = *abbr
+    utc_offset, utc_offset2 = *utc_offset
+    t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg) + 4000
+    utc_offset, abbr = utc_offset2, abbr2 if tz.dst?(t)
     assert_equal([2018, 9, 1, 13, 6, 40, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     m, s = (4000-utc_offset).divmod(60)
     h, m = m.divmod(60)
     assert_equal(time_class.utc(2018, 9, 1, 12+h, m, s), t)
   end
 
-  def subtest_marshal(time_class, tz, tzname, abbr, utc_offset)
-    t = time_class.new(2018, 9, 1, 12, 0, 0, tz)
+  def subtest_at(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    abbr, abbr2 = *abbr
+    utc_offset, utc_offset2 = *utc_offset
+    utc = time_class.utc(2018, 9, 1, 12, 0, 0)
+    utc_offset, abbr = utc_offset2, abbr2 if tz.dst?(utc)
+    h, m = (utc_offset / 60).divmod(60)
+    t = time_class.at(utc, in: tzarg)
+    assert_equal([2018, 9, 1, 12+h, m, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
+    assert_equal(utc.to_i, t.to_i)
+    utc = utc.to_i
+    t = time_class.at(utc, in: tzarg)
+    assert_equal([2018, 9, 1, 12+h, m, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
+    assert_equal(utc, t.to_i)
+  end
+
+  def subtest_marshal(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
     t2 = Marshal.load(Marshal.dump(t))
     assert_equal(t, t2)
     assert_equal(t.utc_offset, t2.utc_offset)
     assert_equal(t.utc_offset, (t2+1).utc_offset)
+    assert_instance_of(t.zone.class, t2.zone)
+    assert_equal(t.dst?, t2.dst?)
+  end
+
+  def test_invalid_zone
+    make_timezone("INVALID", "INV", 0)
+  rescue => e
+    assert_kind_of(StandardError, e)
+  else
+    assert false, "ArgumentError expected but nothing was raised."
+  end
+
+  def nametest_marshal_compatibility(time_class, tzname, abbr, utc_offset)
+    data = [
+      "\x04\x08Iu:".b, Marshal.dump(time_class)[3..-1],
+      "\x0d""\xEF\xA7\x1D\x80\x00\x00\x00\x00".b,
+      Marshal.dump({offset: utc_offset, zone: abbr})[3..-1],
+    ].join('')
+    t = Marshal.load(data)
+    assert_equal(utc_offset, t.utc_offset)
+    assert_equal(utc_offset, (t+1).utc_offset)
+    # t.zone may be a mere String or timezone object.
   end
 
   ZONES = {
     "Asia/Tokyo" => ["JST", +9*3600],
-    "America/Los_Angeles" => ["PDT", -7*3600],
+    "America/Los_Angeles" => ["PST", -8*3600, "PDT", -7*3600],
     "Africa/Ndjamena" => ["WAT", +1*3600],
   }
 
-  def make_timezone(tzname, abbr, utc_offset)
+  def make_timezone(tzname, abbr, utc_offset, abbr2 = nil, utc_offset2 = nil)
     self.class::TIME_CLASS.find_timezone(tzname)
+  end
+
+  def subtest_dst?(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2018, 6, 22, 12, 0, 0, tzarg)
+    return unless tz.dst?(t)
+    assert_predicate t, :dst?
+    t = time_class.new(2018, 12, 22, 12, 0, 0, tzarg)
+    assert_not_predicate t, :dst?
   end
 
   instance_methods(false).grep(/\Asub(?=test_)/) do |subtest|
     test = $'
+    ZONES.each_pair do |tzname, (abbr, utc_offset, abbr2, utc_offset2)|
+      define_method("#{test}@#{tzname}") do
+        tz = make_timezone(tzname, abbr, utc_offset, abbr2, utc_offset2)
+        time_class = self.class::TIME_CLASS
+        __send__(subtest, time_class, tz, tz, tzname, [abbr, abbr2], [utc_offset, utc_offset2])
+        __send__(subtest, time_class, tz, tzname, tzname, [abbr, abbr2], [utc_offset, utc_offset2])
+      end
+    end
+  end
+
+  instance_methods(false).grep(/\Aname(?=test_)/) do |subtest|
+    test = $'
     ZONES.each_pair do |tzname, (abbr, utc_offset)|
       define_method("#{test}@#{tzname}") do
-        tz = make_timezone(tzname, abbr, utc_offset)
         time_class = self.class::TIME_CLASS
-        __send__(subtest, time_class, tz, tzname, abbr, utc_offset)
+        __send__(subtest, time_class, tzname, abbr, utc_offset)
       end
     end
   end
@@ -577,7 +738,45 @@ class TestTimeTZ::DummyTZ < Test::Unit::TestCase
     end
   end
 
-  def self.make_timezone(tzname, abbr, utc_offset)
-    TestTimeTZ::TZ.new(tzname, abbr, utc_offset)
+  def self.make_timezone(tzname, abbr, utc_offset, abbr2 = nil, utc_offset2 = nil)
+    TestTimeTZ::TZ.new(tzname, abbr, utc_offset, abbr2, utc_offset2)
+  end
+end
+
+begin
+  require "tzinfo"
+rescue LoadError
+else
+  class TestTimeTZ::GemTZInfo < Test::Unit::TestCase
+    include TestTimeTZ::WithTZ
+
+    class TIME_CLASS < ::Time
+      def self.find_timezone(tzname)
+        TZInfo::Timezone.get(tzname)
+      end
+    end
+
+    def tz
+      @tz ||= TZInfo::Timezone.get(tzname)
+    end
+  end
+end
+
+begin
+  require "timezone"
+rescue LoadError
+else
+  class TestTimeTZ::GemTimezone < Test::Unit::TestCase
+    include TestTimeTZ::WithTZ
+
+    class TIME_CLASS < ::Time
+      def self.find_timezone(name)
+        Timezone.fetch(name)
+      end
+    end
+
+    def tz
+      @tz ||= Timezone[tzname]
+    end
   end
 end

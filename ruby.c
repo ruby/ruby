@@ -129,6 +129,23 @@ enum dump_flag_bits {
 
 typedef struct ruby_cmdline_options ruby_cmdline_options_t;
 
+typedef struct {
+    unsigned int mask;
+    unsigned int set;
+} ruby_features_t;
+
+static inline void
+rb_feature_set_to(ruby_features_t *feat, unsigned int bit_mask, unsigned int bit_set)
+{
+    feat->mask |= bit_mask;
+    feat->set = (feat->set & ~bit_mask) | bit_set;
+}
+
+#define FEATURE_SET_TO(feat, bit_mask, bit_set) \
+    rb_feature_set_to(&(feat), bit_mask, bit_set)
+#define FEATURE_SET(feat, bits) FEATURE_SET_TO(feat, bits, bits)
+#define FEATURE_SET_P(feat, bits) ((feat).set & (bits))
+
 struct ruby_cmdline_options {
     const char *script;
     VALUE script_name;
@@ -140,7 +157,7 @@ struct ruby_cmdline_options {
 	} enc;
     } src, ext, intern;
     VALUE req_list;
-    unsigned int features;
+    ruby_features_t features;
     unsigned int dump;
 #if USE_MJIT
     struct mjit_options mjit;
@@ -185,9 +202,9 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     opt->src.enc.index = src_encoding_index;
     opt->ext.enc.index = -1;
     opt->intern.enc.index = -1;
-    opt->features = DEFAULT_FEATURES;
+    opt->features.set = DEFAULT_FEATURES;
 #ifdef MJIT_FORCE_ENABLE /* to use with: ./configure cppflags="-DMJIT_FORCE_ENABLE" */
-    opt->features |= FEATURE_BIT(jit);
+    opt->features.set |= FEATURE_BIT(jit);
 #endif
     return opt;
 }
@@ -287,8 +304,8 @@ usage(const char *name, int help)
         M("--jit-wait",          "", "Wait until JIT compilation is finished everytime (for testing)"),
         M("--jit-save-temps",    "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
         M("--jit-verbose=num",   "", "Print JIT logs of level num or less to stderr (default: 0)"),
-        M("--jit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 1000)"),
-        M("--jit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 5)"),
+        M("--jit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 100)"),
+        M("--jit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 10000)"),
     };
     int i;
     const int num = numberof(usage_msg) - (help ? 1 : 0);
@@ -817,7 +834,7 @@ static int
 name_match_p(const char *name, const char *str, size_t len)
 {
     if (len == 0) return 0;
-    do {
+    while (1) {
 	while (TOLOWER(*str) == *name) {
 	    if (!--len || !*++str) return 1;
 	    ++name;
@@ -827,8 +844,7 @@ name_match_p(const char *name, const char *str, size_t len)
 	if (*name != '-' && *name != '_') return 0;
 	++name;
 	++str;
-    } while (len > 0);
-    return !*name;
+    }
 }
 
 #define NAME_MATCH_P(name, str, len) \
@@ -852,21 +868,21 @@ static void
 feature_option(const char *str, int len, void *arg, const unsigned int enable)
 {
     static const char list[] = EACH_FEATURES(LITERAL_NAME_ELEMENT, ", ");
-    unsigned int *argp = arg;
+    ruby_features_t *argp = arg;
     unsigned int mask = ~0U;
-#if AMBIGUOUS_FEATURE_NAMES
     unsigned int set = 0U;
+#if AMBIGUOUS_FEATURE_NAMES
     int matched = 0;
-#define SET_FEATURE(bit) \
-    if (NAME_MATCH_P(#bit, str, len)) {set |= mask = FEATURE_BIT(bit); ++matched;}
+# define FEATURE_FOUND ++matched
 #else
-#define SET_FEATURE(bit) \
-    if (NAME_MATCH_P(#bit, str, len)) {mask = FEATURE_BIT(bit); goto found;}
+# define FEATURE_FOUND goto found
 #endif
+#define SET_FEATURE(bit) \
+    if (NAME_MATCH_P(#bit, str, len)) {set |= mask = FEATURE_BIT(bit); FEATURE_FOUND;}
     EACH_FEATURES(SET_FEATURE, ;);
     if (NAME_MATCH_P("all", str, len)) {
       found:
-	*argp = (*argp & ~mask) | (mask & enable);
+        FEATURE_SET_TO(*argp, mask, (mask & enable));
 	return;
     }
 #if AMBIGUOUS_FEATURE_NAMES
@@ -908,7 +924,12 @@ static void
 debug_option(const char *str, int len, void *arg)
 {
     static const char list[] = EACH_DEBUG_FEATURES(LITERAL_NAME_ELEMENT, ", ");
-#define SET_WHEN_DEBUG(bit) SET_WHEN(#bit, DEBUG_BIT(bit), str, len)
+    ruby_features_t *argp = arg;
+#define SET_WHEN_DEBUG(bit) \
+    if (NAME_MATCH_P(#bit, str, len)) { \
+        FEATURE_SET(*argp, DEBUG_BIT(bit)); \
+        return; \
+    }
     EACH_DEBUG_FEATURES(SET_WHEN_DEBUG, ;);
 #ifdef RUBY_DEVEL
     if (ruby_patchlevel < 0 && ruby_env_debug_option(str, len, 0)) return;
@@ -1337,7 +1358,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 	    }
             else if (strncmp("jit", s, 3) == 0) {
 #if USE_MJIT
-                opt->features |= FEATURE_BIT(jit);
+                FEATURE_SET(opt->features, FEATURE_BIT(jit));
                 setup_mjit_options(s + 3, &opt->mjit);
 #else
                 rb_warn("MJIT support is disabled.");
@@ -1367,16 +1388,9 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 
 	  default:
 	    {
-		if (ISPRINT(*s)) {
-                    rb_raise(rb_eRuntimeError,
+                rb_raise(rb_eRuntimeError,
 			"invalid option -%c  (-h will show valid options)",
                         (int)(unsigned char)*s);
-		}
-		else {
-                    rb_raise(rb_eRuntimeError,
-			"invalid option -\\x%02X  (-h will show valid options)",
-                        (int)(unsigned char)*s);
-		}
 	    }
 	    goto switch_end;
 
@@ -1501,7 +1515,7 @@ rb_f_gsub(int argc, VALUE *argv)
  *     chop   -> $_
  *
  *  Equivalent to <code>($_.dup).chop!</code>, except <code>nil</code>
- *  is never returned. See <code>String#chop!</code>.
+ *  is never returned. See String#chop!.
  *  Available only when -p/-n command line option specified.
  *
  */
@@ -1521,7 +1535,7 @@ rb_f_chop(void)
  *     chomp(string)    -> $_
  *
  *  Equivalent to <code>$_ = $_.chomp(<em>string</em>)</code>. See
- *  <code>String#chomp</code>.
+ *  String#chomp.
  *  Available only when -p/-n command line option specified.
  *
  */
@@ -1564,11 +1578,12 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     argc -= i;
     argv += i;
 
-    if ((opt->features & FEATURE_BIT(rubyopt)) &&
+    if ((opt->features.set & FEATURE_BIT(rubyopt)) &&
 	opt->safe_level == 0 && (s = getenv("RUBYOPT"))) {
 	VALUE src_enc_name = opt->src.enc.name;
 	VALUE ext_enc_name = opt->ext.enc.name;
 	VALUE int_enc_name = opt->intern.enc.name;
+        ruby_features_t feat = opt->features;
 
 	opt->src.enc.name = opt->ext.enc.name = opt->intern.enc.name = 0;
 	moreswitches(s, opt, 1);
@@ -1578,13 +1593,14 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    opt->ext.enc.name = ext_enc_name;
 	if (int_enc_name)
 	    opt->intern.enc.name = int_enc_name;
+        FEATURE_SET_TO(opt->features, feat.mask, feat.set & feat.mask);
     }
 
     if (opt->src.enc.name)
 	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
 #if USE_MJIT
-    if (opt->features & FEATURE_BIT(jit)) {
+    if (opt->features.set & FEATURE_BIT(jit)) {
         opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
     }
 #endif
@@ -1696,8 +1712,12 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_obj_freeze(opt->script_name);
     if (IF_UTF8_PATH(uenc != lenc, 1)) {
 	long i;
-	VALUE load_path = GET_VM()->load_path;
+        rb_vm_t *vm = GET_VM();
+        VALUE load_path = vm->load_path;
 	const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
+        int modifiable = FALSE;
+
+        rb_get_expanded_load_path();
 	for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 	    VALUE path = RARRAY_AREF(load_path, i);
 	    int mark = rb_attr_get(path, id_initial_load_path_mark) == path;
@@ -1709,22 +1729,29 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    path = rb_enc_associate(rb_str_dup(path), lenc);
 #endif
 	    if (mark) rb_ivar_set(path, id_initial_load_path_mark, path);
+            if (!modifiable) {
+                rb_ary_modify(load_path);
+                modifiable = TRUE;
+            }
 	    RARRAY_ASET(load_path, i, path);
 	}
+        if (modifiable) {
+            rb_ary_replace(vm->load_path_snapshot, load_path);
+        }
     }
     Init_ext();		/* load statically linked extensions before rubygems */
-    if (opt->features & FEATURE_BIT(gems)) {
+    if (opt->features.set & FEATURE_BIT(gems)) {
 	rb_define_module("Gem");
-	if (opt->features & FEATURE_BIT(did_you_mean)) {
+        if (opt->features.set & FEATURE_BIT(did_you_mean)) {
 	    rb_define_module("DidYouMean");
 	}
     }
     ruby_init_prelude();
-    if ((opt->features ^ DEFAULT_FEATURES) & COMPILATION_FEATURES) {
+    if (opt->features.mask & COMPILATION_FEATURES) {
 	VALUE option = rb_hash_new();
 #define SET_COMPILE_OPTION(h, o, name) \
 	rb_hash_aset((h), ID2SYM(rb_intern_const(#name)),		\
-		     ((o)->features & FEATURE_BIT(name) ? Qtrue : Qfalse));
+                     (FEATURE_SET_P(o->features, FEATURE_BIT(name)) ? Qtrue : Qfalse));
 	SET_COMPILE_OPTION(option, opt, frozen_string_literal);
 	SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
 	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
@@ -1863,6 +1890,18 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
     rb_set_safe_level(opt->safe_level);
 
+    {
+        rb_execution_context_t *ec = GET_EC();
+
+        if (opt->e_script) {
+            /* -e */
+            rb_exec_event_hook_script_compiled(ec, iseq, opt->e_script);
+        }
+        else {
+            /* file */
+            rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
+        }
+    }
     return (VALUE)iseq;
 }
 
@@ -1971,7 +2010,7 @@ load_file_internal(VALUE argp_v)
 	else if (!NIL_P(c)) {
 	    rb_io_ungetbyte(f, c);
 	}
-	else {
+        if (NIL_P(c)) {
 	    argp->f = f = Qnil;
 	}
 	if (!(opt->dump & ~DUMP_BIT(version_v))) {

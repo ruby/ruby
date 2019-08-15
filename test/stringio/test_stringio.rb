@@ -22,13 +22,14 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(ArgumentError) { StringIO.new('', 'rx') }
     assert_raise(ArgumentError) { StringIO.new('', 'rbt') }
     assert_raise(TypeError) { StringIO.new(nil) }
-    assert_raise(TypeError) { StringIO.new('str', nil) }
 
     o = Object.new
     def o.to_str
       nil
     end
     assert_raise(TypeError) { StringIO.new(o) }
+
+    o = Object.new
     def o.to_str
       'str'
     end
@@ -452,6 +453,10 @@ class TestStringIO < Test::Unit::TestCase
     t.ungetbyte("\u{30eb 30d3 30fc}")
     assert_equal(0, t.pos)
     assert_equal("\u{30eb 30d3 30fc}\u7d05\u7389bar\n", s)
+
+    assert_nothing_raised {t.ungetbyte(-1)}
+    assert_nothing_raised {t.ungetbyte(256)}
+    assert_nothing_raised {t.ungetbyte(1<<64)}
   end
 
   def test_ungetc
@@ -777,6 +782,31 @@ class TestStringIO < Test::Unit::TestCase
       s.gets("xxx", limit)
       assert_equal(0x100000, s.pos)
     end;
+  end
+
+  def test_encoding_write
+    s = StringIO.new("", "w:utf-32be")
+    s.print "abc"
+    assert_equal("abc".encode("utf-32be"), s.string)
+  end
+
+  def test_encoding_read
+    s = StringIO.new("abc".encode("utf-32be"), "r:utf-8")
+    assert_equal("\0\0\0a\0\0\0b\0\0\0c", s.read)
+  end
+
+  %w/UTF-8 UTF-16BE UTF-16LE UTF-32BE UTF-32LE/.each do |name|
+    define_method("test_strip_bom:#{name}") do
+      text = "\uFEFF\u0100a"
+      content = text.encode(name)
+      result = StringIO.new(content, mode: 'rb:BOM|UTF-8').read
+      assert_equal(Encoding.find(name), result.encoding, name)
+      assert_equal(content[1..-1].b, result.b, name)
+
+      StringIO.open(content) {|f|
+        assert_equal(Encoding.find(name), f.set_encoding_by_bom)
+      }
+    end
   end
 
   def assert_string(content, encoding, str, mesg = nil)

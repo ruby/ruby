@@ -65,6 +65,11 @@ class Gem::Installer
 
   attr_reader :options
 
+  ##
+  # The gem package instance.
+
+  attr_reader :package
+
   @path_warning = false
 
   @install_lock = Mutex.new
@@ -108,6 +113,7 @@ class Gem::Installer
   end
 
   class FakePackage
+
     attr_accessor :spec
 
     attr_accessor :dir_mode
@@ -125,12 +131,15 @@ class Gem::Installer
         file = File.join destination_dir, file
         next if File.exist? file
         FileUtils.mkdir_p File.dirname(file)
-        File.open file, 'w' do |fp| fp.puts "# #{file}" end
+        File.open file, 'w' do |fp|
+          fp.puts "# #{file}"
+        end
       end
     end
 
     def copy_to(path)
     end
+
   end
 
   ##
@@ -189,7 +198,7 @@ class Gem::Installer
 
     @bin_dir = options[:bin_dir] if options[:bin_dir]
 
-    if options[:user_install] and not options[:unpack]
+    if options[:user_install]
       @gem_home = Gem.user_dir
       @bin_dir = Gem.bindir gem_home unless options[:bin_dir]
       check_that_user_bin_dir_is_in_path
@@ -309,7 +318,7 @@ class Gem::Installer
     FileUtils.rm_rf spec.extension_dir
 
     dir_mode = options[:dir_mode]
-    FileUtils.mkdir_p gem_dir, :mode => dir_mode && 0700
+    FileUtils.mkdir_p gem_dir, :mode => dir_mode && 0755
 
     if @options[:install_as_default]
       extract_bin
@@ -320,8 +329,11 @@ class Gem::Installer
       build_extensions
       write_build_info_file
       run_post_build_hooks
+    end
 
-      generate_bin
+    generate_bin
+
+    unless @options[:install_as_default]
       write_spec
       write_cache_file
     end
@@ -345,7 +357,7 @@ class Gem::Installer
   def run_pre_install_hooks # :nodoc:
     Gem.pre_install_hooks.each do |hook|
       if hook.call(self) == false
-        location = " at #{$1}" if hook.inspect =~ /@(.*:\d+)/
+        location = " at #{$1}" if hook.inspect =~ / (.*:\d+)/
 
         message = "pre-install hook#{location} failed for #{spec.full_name}"
         raise Gem::InstallError, message
@@ -358,7 +370,7 @@ class Gem::Installer
       if hook.call(self) == false
         FileUtils.rm_rf gem_dir
 
-        location = " at #{$1}" if hook.inspect =~ /@(.*:\d+)/
+        location = " at #{$1}" if hook.inspect =~ / (.*:\d+)/
 
         message = "post-build hook#{location} failed for #{spec.full_name}"
         raise Gem::InstallError, message
@@ -421,6 +433,7 @@ class Gem::Installer
     @gem_dir = directory
     extract_files
   end
+  deprecate :unpack, :none, 2020, 04
 
   ##
   # The location of the spec file that is installed.
@@ -435,7 +448,7 @@ class Gem::Installer
   #
 
   def default_spec_file
-    File.join Gem::Specification.default_specifications_dir, "#{spec.full_name}.gemspec"
+    File.join Gem.default_specifications_dir, "#{spec.full_name}.gemspec"
   end
 
   ##
@@ -467,7 +480,7 @@ class Gem::Installer
 
   def generate_windows_script(filename, bindir)
     if Gem.win_platform?
-      script_name = filename + ".bat"
+      script_name = formatted_program_filename(filename) + ".bat"
       script_path = File.join bindir, File.basename(script_name)
       File.open script_path, 'w' do |file|
         file.puts windows_stub_script(bindir, filename)
@@ -481,7 +494,7 @@ class Gem::Installer
     return if spec.executables.nil? or spec.executables.empty?
 
     begin
-      Dir.mkdir @bin_dir, *[options[:dir_mode] && 0700].compact
+      Dir.mkdir @bin_dir, *[options[:dir_mode] && 0755].compact
     rescue SystemCallError
       raise unless File.directory? @bin_dir
     end
@@ -525,7 +538,7 @@ class Gem::Installer
 
     FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
 
-    File.open bin_script_path, 'wb', 0700 do |file|
+    File.open bin_script_path, 'wb', 0755 do |file|
       file.print app_script_text(filename)
       file.chmod(options[:prog_mode] || 0755)
     end
@@ -719,15 +732,31 @@ class Gem::Installer
     end
   end
 
-  def verify_gem_home(unpack = false) # :nodoc:
-    FileUtils.mkdir_p gem_home, :mode => options[:dir_mode] && 0700
-    raise Gem::FilePermissionError, gem_home unless
-      unpack or File.writable?(gem_home)
+  def verify_gem_home # :nodoc:
+    FileUtils.mkdir_p gem_home, :mode => options[:dir_mode] && 0755
+    raise Gem::FilePermissionError, gem_home unless File.writable?(gem_home)
   end
 
-  def verify_spec_name
-    return if spec.name =~ Gem::Specification::VALID_NAME_PATTERN
-    raise Gem::InstallError, "#{spec} has an invalid name"
+  def verify_spec
+    unless spec.name =~ Gem::Specification::VALID_NAME_PATTERN
+      raise Gem::InstallError, "#{spec} has an invalid name"
+    end
+
+    if spec.raw_require_paths.any?{|path| path =~ /\R/ }
+      raise Gem::InstallError, "#{spec} has an invalid require_paths"
+    end
+
+    if spec.extensions.any?{|ext| ext =~ /\R/ }
+      raise Gem::InstallError, "#{spec} has an invalid extensions"
+    end
+
+    unless spec.specification_version.to_s =~ /\A\d+\z/
+      raise Gem::InstallError, "#{spec} has an invalid specification_version"
+    end
+
+    if spec.dependencies.any? {|dep| dep.type =~ /\R/ || dep.name =~ /\R/ }
+      raise Gem::InstallError, "#{spec} has an invalid dependencies"
+    end
   end
 
   ##
@@ -749,11 +778,11 @@ require 'rubygems'
 
 version = "#{Gem::Requirement.default}.a"
 
-if ARGV.first
-  str = ARGV.first
-  str = str.dup.force_encoding("BINARY")
-  if str =~ /\\A_(.*)_\\z/ and Gem::Version.correct?($1)
-    version = $1
+str = ARGV.first
+if str
+  str = str.b[/\\A_(.*)_\\z/, 1]
+  if str and Gem::Version.correct?(str)
+    version = str
     ARGV.shift
   end
 end
@@ -840,7 +869,7 @@ TEXT
   # without the full gem installed.
 
   def extract_bin
-    @package.extract_files gem_dir, "bin/*"
+    @package.extract_files gem_dir, "#{spec.bindir}/*"
   end
 
   ##
@@ -874,11 +903,13 @@ TEXT
   # The dependent check will be skipped if the install is ignoring dependencies.
 
   def pre_install_checks
-    verify_gem_home options[:unpack]
+    verify_gem_home
+
+    # The name and require_paths must be verified first, since it could contain
+    # ruby code that would be eval'ed in #ensure_loadable_spec
+    verify_spec
 
     ensure_loadable_spec
-
-    verify_spec_name
 
     if options[:install_as_default]
       Gem.ensure_default_gem_subdirectories gem_home
@@ -905,7 +936,7 @@ TEXT
     build_info_dir = File.join gem_home, 'build_info'
 
     dir_mode = options[:dir_mode]
-    FileUtils.mkdir_p build_info_dir, :mode => dir_mode && 0700
+    FileUtils.mkdir_p build_info_dir, :mode => dir_mode && 0755
 
     build_info_file = File.join build_info_dir, "#{spec.full_name}.info"
 

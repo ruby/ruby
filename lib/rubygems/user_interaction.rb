@@ -7,12 +7,15 @@
 
 require 'rubygems/util'
 require 'rubygems/deprecate'
+require 'rubygems/text'
 
 ##
 # Module that defines the default UserInteraction.  Any class including this
 # module will have access to the +ui+ method that returns the default UI.
 
 module Gem::DefaultUserInteraction
+
+  include Gem::Text
 
   ##
   # The default UI is a class variable of the singleton class for this
@@ -162,7 +165,7 @@ module Gem::UserInteraction
   # is true.
 
   def verbose(msg = nil)
-    say(msg || yield) if Gem.configuration.really_verbose
+    say(clean_text(msg || yield)) if Gem.configuration.really_verbose
   end
 end
 
@@ -227,7 +230,7 @@ class Gem::StreamUI
     @outs.puts question
 
     list.each_with_index do |item, index|
-      @outs.puts " #{index+1}. #{item}"
+      @outs.puts " #{index + 1}. #{item}"
     end
 
     @outs.print "> "
@@ -418,6 +421,7 @@ class Gem::StreamUI
 
     def done
     end
+
   end
 
   ##
@@ -506,6 +510,7 @@ class Gem::StreamUI
     def done
       @out.puts @terminal_message
     end
+
   end
 
   ##
@@ -549,6 +554,7 @@ class Gem::StreamUI
 
     def done
     end
+
   end
 
   ##
@@ -598,12 +604,15 @@ class Gem::StreamUI
     end
 
     private
+
     def locked_puts(message)
       MUTEX.synchronize do
         @out.puts message
       end
     end
+
   end
+
 end
 
 ##
@@ -619,6 +628,7 @@ class Gem::ConsoleUI < Gem::StreamUI
   def initialize
     super STDIN, STDOUT, STDERR, true
   end
+
 end
 
 ##
@@ -651,4 +661,5 @@ class Gem::SilentUI < Gem::StreamUI
   def progress_reporter(*args) # :nodoc:
     SilentProgressReporter.new(@outs, *args)
   end
+
 end

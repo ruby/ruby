@@ -1,3 +1,4 @@
+# -*- YAML -*-
 # Copyright (C) 2011 Urabe, Shyouhei.  All rights reserved.
 #
 # This file is  a part of the programming language  Ruby.  Permission is hereby
@@ -20,226 +21,301 @@ language: c
 
 dist: xenial
 
-osx_image: xcode10.1
-
-sudo: false
-
 git:
   quiet: true
-
-addons:
-  apt:
-    config:
-      retries: true
-    update: true
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - gcc-8
-      - libffi-dev
-      - libgdbm-dev
-      - libgmp-dev
-      - libjemalloc-dev
-      - libncurses5-dev
-      - libncursesw5-dev
-      - libreadline6-dev
-      - libssl-dev
-      - libyaml-dev
-      - openssl
-      - valgrind
-      - zlib1g-dev
-  homebrew:
-    packages:
-      - gdbm
-      - gmp
-      - libffi
-      - openssl@1.1
-      - zlib
-      - ccache
 
 cache:
   ccache: true
   directories:
-    - "$HOME/config_2nd"
+    - $HOME/config_2nd
+    - $HOME/.downloaded-cache
 
 env:
   global:
-    - "CONFIGURE_TTY=no"
-    - "CCACHE_COMPILERCHECK=none"
-    - "CCACHE_NOCOMPRESS=1"
-    - "CCACHE_MAXSIZE=512Mi"
+    # Reset timestamps early, before updating Homebrew etc.
+    - _=$(touch NEWS && find . -type f -exec touch -r NEWS {} +)
+    - CONFIGURE_TTY=no
+    - CCACHE_COMPILERCHECK=none
+    - CCACHE_NOCOMPRESS=1
+    - CCACHE_MAXSIZE=512Mi
     - >-
       NPROC="`case ${TRAVIS_OS_NAME} in
       osx)   sysctl -n hw.activecpu ;;
       linux) nproc ;;
       esac`"
     # JOBS and SETARCH are overridden when necessary; see below.
-    - "JOBS=-j$((1+${NPROC}))"
-    - "SETARCH="
+    - JOBS=-j$((1+${NPROC}))
+    - SETARCH=
+    - RUBY_PREFIX=/tmp/ruby-prefix
+    - GEMS_FOR_TEST='timezone tzinfo'
+    - UPDATE_UNICODE="UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
+    # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
+    - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
+    - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
 
 .org.ruby-lang.ci.matrix-definitions:
 
   - &cron-only
-    if: (type = cron) AND (branch = trunk) AND (fork = false)
+    if: (type = cron) AND (branch = master) AND (fork = false)
 
   - &make-test-only
     script:
-      - "$SETARCH make -s test TESTOPTS=\"${TESTOPTS=$JOBS -q --tty=no}\""
+      - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
 
-  - &linux
-    os: linux
-    compiler: gcc-8
-
-  - &osx
-    os: osx
+  - &osx-clang
     compiler: clang
     before_install:
+      - gem uninstall ntlm-http plist -x --force
+      # `brew update` on Travis randomly hangs
+      - |-
+        timeout 300 brew update ||
+        timeout 300 brew update ||
+        timeout 300 brew update
+      # Travis homebrew addon is unstable for now. Use `before_install` instead.
+      # https://travis-ci.community/t/osx-homebrew-addons-module-not-as-reliable-as-claimed/4054
+      - |-
+        brew install \
+          ccache \
+          gdbm \
+          gmp \
+          libffi \
+          openssl@1.1 \
+          zlib
       - /usr/local/opt/openssl@1.1/bin/openssl version
+
+  - &gcc-8
+    compiler: gcc-8
+    # # Not using addon to control retries
+    # addons:
+    #   apt:
+    #     sources:
+    #       - ubuntu-toolchain-r-test
+    before_install:
+      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
+      - |-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+          gcc-8 \
+          libffi-dev \
+          libgdbm-dev \
+          libgmp-dev \
+          libjemalloc-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libreadline6-dev \
+          libssl-dev \
+          libyaml-dev \
+          openssl \
+          valgrind \
+          zlib1g-dev
+
+  - &clang-8
+    compiler: clang-8
+    addons:
+      apt:
+        # Not doing this manually unlike other sources, because it has been stable.
+        sources:
+          - llvm-toolchain-xenial-8
+        config:
+          retries: true
+    before_install:
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
+      - |-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+          clang-8 \
+          llvm-8-tools \
+          libffi-dev \
+          libgdbm-dev \
+          libgmp-dev \
+          libjemalloc-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libreadline6-dev \
+          libssl-dev \
+          libyaml-dev \
+          openssl \
+          valgrind \
+          zlib1g-dev
 
   # --------
 
   - &x86_64-linux
     name: x86_64-linux
-    <<: *linux
+    os: linux
+    <<: *gcc-8
 
   - &jemalloc
     name: --with-jemalloc
-    <<: *linux
+    os: linux
+    <<: *gcc-8
     <<: *cron-only
     env:
-      - "CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'"
+      - CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'
+
+  - &assertions
+    name: RUBY_DEBUG=1
+    os: linux
+    <<: *gcc-8
+    #<<: *cron-only
+    <<: *make-test-only
+    env:
+      - GEMS_FOR_TEST=
+      - cppflags='-DRUBY_DEBUG -DVM_CHECK_MODE=1 -DTRANSIENT_HEAP_CHECK_MODE -DRGENGC_CHECK_MODE -DENC_DEBUG'
 
   - &VM_CHECK_MODE
     name: VM_CHECK_MODE=3
-    <<: *linux
+    os: linux
+    <<: *gcc-8
     <<: *cron-only
     <<: *make-test-only
     env:
-      - "cppflags=-DVM_CHECK_MODE=0x0003"
+      - GEMS_FOR_TEST=
+      - cppflags=-DVM_CHECK_MODE=0x0003
 
-  - &FIBER_USE_sjlj
-    name: FIBER_USE_NATIVE=0
-    <<: *linux
+  - &WITH_COROUTINE_UCONTEXT
+    name: COROUTINE=ucontext
+    os: linux
+    <<: *gcc-8
     <<: *cron-only
     env:
-      - "cppflags=-DFIBER_USE_NATIVE=0"
+      - CONFIG_FLAG='--with-coroutine=ucontext'
+
+  - &WITH_COROUTINE_COPY
+    name: COROUTINE=copy
+    os: linux
+    <<: *gcc-8
+    <<: *cron-only
+    env:
+      - CONFIG_FLAG='--with-coroutine=copy'
 
   - &TOKEN_THREADED_CODE
     name: TOKEN_THREADED_CODE
-    <<: *linux
+    os: linux
+    <<: *gcc-8
     <<: *cron-only
     <<: *make-test-only
     env:
-      - "cppflags=-DOPT_THREADED_CODE=1"
+      - GEMS_FOR_TEST=
+      - cppflags=-DOPT_THREADED_CODE=1
 
   - &CALL_THREADED_CODE
     name: CALL_THREADED_CODE
-    <<: *linux
+    os: linux
+    <<: *gcc-8
     <<: *cron-only
     <<: *make-test-only
     env:
-      - "cppflags=-DOPT_THREADED_CODE=2"
+      - GEMS_FOR_TEST=
+      - cppflags=-DOPT_THREADED_CODE=2
 
   - &NO_THREADED_CODE
     name: NO_THREADED_CODE
-    <<: *linux
+    os: linux
+    <<: *gcc-8
     <<: *cron-only
     <<: *make-test-only
     env:
-      - "cppflags=-DOPT_THREADED_CODE=3"
+      - GEMS_FOR_TEST=
+      - cppflags=-DOPT_THREADED_CODE=3
 
   - &ASAN
     name: -fsanitize=address
-    <<: *linux
+    os: linux
+    <<: *clang-8
     #<<: *cron-only
     <<: *make-test-only
-    compiler: clang
     env:
-      - "ASAN_OPTIONS=detect_leaks=0"
-      - "cflags='-march=native -fsanitize=address -fno-omit-frame-pointer'"
-      - "debugflags=-ggdb3"
-      - "optflags='-O1'"
-      - "LD=clang"
-      - "LDFLAGS=-fsanitize=address"
+      - GEMS_FOR_TEST=
+      - ASAN_OPTIONS=detect_leaks=0
+      - cflags='-U_FORTIFY_SOURCE -march=native -fsanitize=address -fno-omit-frame-pointer -fPIC'
+      - debugflags=-ggdb3
+      - optflags=-O1
+      - LD=clang-8
+      - LDFLAGS='-fsanitize=address -fPIC'
+      - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
 
   - &MSAN
     name: -fsanitize=memory
-    <<: *linux
+    os: linux
+    <<: *clang-8
     #<<: *cron-only
     <<: *make-test-only
-    compiler: clang
     env:
-      - "cflags='-fsanitize=memory'"
-      - "LD=clang"
-      - "LDFLAGS=-fsanitize=memory"
+      - GEMS_FOR_TEST=
+      - cflags='-U_FORTIFY_SOURCE -fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer -fPIC'
+      - optflags=-O1
+      - LD=clang-8
+      - LDFLAGS='-fsanitize=memory -fPIC'
+      - CONFIG_FLAG='--with-out-ext=openssl --without-gmp --without-jemalloc --without-valgrind'
 
   - &UBSAN
     name: -fsanitize=undefined
-    <<: *linux
+    os: linux
+    <<: *clang-8
     #<<: *cron-only
     <<: *make-test-only
-    compiler: clang
     env:
-      - "cflags='-fsanitize=undefined,integer,nullability -fno-omit-frame-pointer'"
-      - "cppflags='-DUNALIGNED_WORD_ACCESS=0'"
-      - "debugflags='-ggdb3'"
-      - "optflags='-O1 -march=native'"
-      - "LD=clang"
-      - "LDFLAGS=-fsanitize=undefined,integer,nullability"
+      - GEMS_FOR_TEST=
+      - cflags='-U_FORTIFY_SOURCE -fsanitize=undefined,integer,nullability -fno-sanitize=implicit-integer-sign-change,unsigned-integer-overflow'
+      - cppflags=-DUNALIGNED_WORD_ACCESS=0
+      - debugflags=-ggdb3
+      - optflags='-O1 -march=native'
+      - LD=clang-8
+      - LDFLAGS='-fsanitize=undefined,integer,nullability -fno-sanitize=implicit-integer-sign-change,unsigned-integer-overflow'
 
   - &i686-linux
     name: i686-linux
-    <<: *linux
-    sudo: required
+    os: linux
+    compiler: gcc-8
     env:
-      - "GCC_FLAGS=-m32"
-      - "debugflags='-g0'"
-      - "SETARCH='setarch i686 --verbose --3gb'"
-    addons:
-      apt:
-        config:
-          retries: true
-        update: true
-        sources:
-          - ubuntu-toolchain-r-test
-        packages:
-          - gcc-8-multilib
-          - libffi-dev:i386
-          - libffi6:i386
-          - libgdbm-dev:i386
-          - libgdbm3:i386
-          - libncurses5-dev:i386
-          - libncurses5:i386
-          - libncursesw5-dev:i386
-          - libreadline6-dev:i386
-          - libreadline6:i386
-          - libssl-dev:i386
-          - libssl1.0.0:i386
-          - linux-libc-dev:i386
-          - zlib1g-dev:i386
-          - zlib1g:i386
+      - GCC_FLAGS=-m32
+      - debugflags=-g0
+      - SETARCH='setarch i686 --verbose --3gb'
+    # # Not using addon to control retries
+    # addons:
+    #   apt:
+    #     sources:
+    #       - ubuntu-toolchain-r-test
+    before_install:
+      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
+      - |-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+          gcc-8-multilib \
+          libffi-dev:i386 \
+          libffi6:i386 \
+          libgdbm-dev:i386 \
+          libgdbm3:i386 \
+          libncurses5-dev:i386 \
+          libncurses5:i386 \
+          libncursesw5-dev:i386 \
+          libreadline6-dev:i386 \
+          libreadline6:i386 \
+          libssl-dev:i386 \
+          libssl1.0.0:i386 \
+          linux-libc-dev:i386 \
+          zlib1g-dev:i386 \
+          zlib1g:i386
 
   - &pedanticism
-    name: "-ansi -pedantic"
-    <<: *linux
-    <<: *make-test-only
+    name: -std=c99 -pedantic
+    os: linux
     compiler: clang
+    <<: *make-test-only
     env:
-      - "GCC_FLAGS='-ansi -Werror=pedantic -pedantic-errors -std=iso9899:1990'"
-      - "CONFIG_FLAG="
-      - "JOBS="
-    # construct warnflags (using bashism...)
-    before_install: |
-      warnflags_array=(
+      - GEMS_FOR_TEST=
+      - GCC_FLAGS='-std=c99 -Werror=pedantic -pedantic-errors'
+      - CONFIG_FLAG=
+      - JOBS=
+      - >-
+        warnflags='
         -Wall
         -Wextra
-        -Werror=declaration-after-statement
         -Werror=deprecated-declarations
         -Werror=division-by-zero
         -Werror=extra-tokens
         -Werror=implicit-function-declaration
         -Werror=implicit-int
-        -Werror=long-long
         -Werror=pointer-arith
         -Werror=shorten-64-to-32
         -Werror=write-strings
@@ -252,46 +328,78 @@ env:
         -Wno-tautological-compare
         -Wno-unused-local-typedef
         -Wno-unused-parameter
-        -Wunused-variable
-      )
-      CONFIG_FLAG_ARRAY=(
-        warnflags="${warnflags_array[*]}"
-        LDFLAGS=-Wno-unused-command-line-argument)
+        -Wunused-variable'
+      - LDFLAGS=-Wno-unused-command-line-argument
 
   - &rubyspec
-    name: ruby/spec on Ruby 2.3 # to ensure version guards are correctly added
-    <<: *linux
+    name: Check ruby/spec version guards on Ruby 2.4
+    os: linux
     language: ruby
-    rvm: 2.3.8
-    addons:
-      apt:
-        packages:
+    rvm: 2.4.6
     before_install:
     install:
     before_script: chmod -R u+w spec/ruby
-    # -j randomly hangs. Using -fs to make sure we can know problematic spec on failure.
-    script: ruby -C spec/ruby ../mspec/bin/mspec -fs .
+    # -j randomly hangs.
+    script: ruby -C spec/ruby ../mspec/bin/mspec .
+    after_failure:
+      - echo "ruby/spec failed on Ruby 2.4. This is likely because of a missing ruby_version_is guard, please add it. See spec/README.md."
 
-  - &x86_64-darwin17
-    name: x86_64-darwin17
-    <<: *osx
-    env:
-      - "CONFIG_FLAG='--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
-      - "TEST_ALL_OPTS=\"$JOBS -q --tty=no --excludes=\\$(TESTSDIR)/excludes/_travis/osx\""
-
-  - &universal-darwin17
-    name: uinversal.x86_64h-darwin17
-    <<: *osx
-    <<: *cron-only
+  - &baseruby
+    name: "BASERUBY: Ruby 1.9.3"
+    os: linux
+    <<: *gcc-8
     <<: *make-test-only
+    dist: trusty # xenial no longer has ruby-1.9.3
+    language: ruby
+    rvm: 1.9.3
+
+  - &x86_64-darwin18
+    name: x86_64-darwin18
+    osx_image: xcode11
+    os: osx
+    <<: *osx-clang
     env:
-      - "CONFIG_FLAG='--with-arch=x86_64h,x86_64,i386'"
-      - "TEST_ALL_OPTS=\"$JOBS -q --tty=no --excludes=\\$(TESTSDIR)/excludes/_travis/osx\""
+      - CONFIG_FLAG=--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib
+      - TEST_ALL_OPTS="--timeout-scale=2.0 --excludes=\$(TESTSDIR)/excludes/_travis/osx"
+
+  - &dependency
+    name: Check dependencies in makefiles
+    os: linux
+    language: ruby
+    before_install:
+    install:
+    before_script:
+      - |-
+        ruby -e 'new = []
+          Dir.glob("ext/**/extconf.rb") {|ex|
+            unless File.exist?(dep = File.dirname(ex)+"/depend")
+              puts "Adding "+dep
+              File.copy_stream("template/depend.tmpl", dep)
+              new << dep
+            end
+          }
+          exec("git", "add", *new) unless new.empty?'
+      - git diff --cached
+      - "> config.status"
+      - "> .rbconfig.time"
+      - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
+      - make touch-unicode-files
+      - make -s $JOBS $UPDATE_UNICODE up
+      - make -s $JOBS srcs
+      - rm -f config.status Makefile rbconfig.rb .rbconfig.time
+      - $SETARCH ./configure -C --disable-install-doc --prefix=$RUBY_PREFIX --disable-rubygems 'optflags=-O0' 'debugflags=-save-temps=obj -g'
+      - ruby tool/update-deps --fix
+    script:
+      - git diff --no-ext-diff --ignore-submodules --exit-code
+    after_failure:
+      - echo "Dependencies need to update"
+    env:
+      - CONFIG_FLAG=
 
 matrix:
   include:
     # to reduce time for finishing all jobs, run the slowest osx build first.
-    - <<: *x86_64-darwin17
+    - <<: *x86_64-darwin18
     - <<: *x86_64-linux
     - <<: *i686-linux
     - <<: *jemalloc
@@ -299,73 +407,105 @@ matrix:
     - <<: *ASAN
     - <<: *MSAN
     - <<: *UBSAN
+    - <<: *assertions
     - <<: *VM_CHECK_MODE
-    - <<: *FIBER_USE_sjlj
+    - <<: *WITH_COROUTINE_UCONTEXT
+    - <<: *WITH_COROUTINE_COPY
     - <<: *TOKEN_THREADED_CODE
     - <<: *CALL_THREADED_CODE
     - <<: *NO_THREADED_CODE
+    - <<: *baseruby
     - <<: *rubyspec
+    - <<: *dependency
   allow_failures:
-    - name: uinversal.x86_64h-darwin17
     - name: -fsanitize=address
     - name: -fsanitize=memory
     - name: -fsanitize=undefined
   fast_finish: true
 
 before_script:
-  - "echo JOBS=${JOBS} SETARCH=${SETARCH}"
-  - "$SETARCH uname -a"
-  - "$SETARCH uname -r"
-  - "rm -fr .ext autom4te.cache"
-  - "echo $TERM"
+  - date # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
+  - echo JOBS=${JOBS} SETARCH=${SETARCH}
+  - $SETARCH uname -a
+  - $SETARCH uname -r
+  - rm -fr .ext autom4te.cache
+  - echo $TERM
+  - |-
+    [ -d ~/.downloaded-cache ] ||
+    mkdir ~/.downloaded-cache
+  - ln -s ~/.downloaded-cache
   - "> config.status"
-  - "sed -f tool/prereq.status Makefile.in common.mk > Makefile"
-  - "make update-config_files"
-  - "make touch-unicode-files"
-  - "make -s $JOBS srcs UNICODE_FILES=."
-  - "rm config.status Makefile rbconfig.rb .rbconfig.time"
+  - "> .rbconfig.time"
+  - sed -f tool/prereq.status template/Makefile.in common.mk > Makefile
+  - date; make touch-unicode-files
+  - |-
+    [ ${TRAVIS_OS_NAME} != osx ] ||
+    ls -ltT tool/generic_erb.rb template/unicode_norm_gen.tmpl enc/unicode/data/*/ucd/.unicode-tables.time
+  - date; make -s $JOBS $UPDATE_UNICODE up
+  - date; make -s $JOBS srcs
+  - rm -f config.status Makefile rbconfig.rb .rbconfig.time
   - |-
     if [ -d ~/config_2nd ]; then
       cp -pr ~/config_2nd build
     else
       mkdir build
     fi
-  - "mkdir config_1st config_2nd"
-  - "chmod -R a-w ."
-  - "chmod -R u+w build config_1st config_2nd"
-  - "cd build"
-  - "ccache --show-stats"
+  - mkdir config_1st config_2nd
+  - chmod -R a-w .
+  - chmod -R u+w build config_1st config_2nd
+  - cd build
+  - ccache --show-stats
   - |-
     case "$CC" in
-    gcc*)   the_gcc=(ccache $CC ${GCC_FLAGS[@]} -fno-diagnostics-color) ;;
-    clang*) the_gcc=(ccache $CC ${GCC_FLAGS[@]} -fno-color-diagnostics) ;;
+    gcc*)   CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-diagnostics-color";;
+    clang*) CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-color-diagnostics";;
     esac
   - |-
-    $SETARCH ../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix --with-gcc="${the_gcc[*]}" $CONFIG_FLAG "${CONFIG_FLAG_ARRAY[@]}"
-  - "cp -pr config.cache config.status .ext/include ../config_1st"
-  - "$SETARCH make reconfig"
-  - "cp -pr config.cache config.status .ext/include ../config_2nd"
-  - "(cd .. && exec diff -ru config_1st config_2nd)"
+    [ ! -f config.cache ] ||
+    [ "$CC" = "`sed -n s/^ac_cv_prog_CC=//p config.cache`" ] ||
+    (set -x; exec rm config.cache)
+  - $SETARCH ../configure -C --disable-install-doc --prefix=$RUBY_PREFIX $CONFIG_FLAG
+  - cp -pr config.cache config.status .ext/include ../config_1st
+  - $SETARCH make reconfig
+  - cp -pr config.cache config.status .ext/include ../config_2nd
+  - (cd .. && exec diff -ru config_1st config_2nd)
+  - chmod u+w ..
+  - rm -rf ~/config_2nd
+  - mv ../config_2nd ~
+  - chmod u-w ..
+  - $SETARCH make -s $JOBS
   - |-
-    chmod u+w ..
-    rm -r ~/config_2nd
-    mv ../config_2nd ~
-    chmod u-w ..
-  - "$SETARCH make -s $JOBS && make install"
-  - "ccache --show-stats"
+    date; : # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
+    if ! make install; then
+      if [ "$(uname)" = Darwin ]; then
+        # Debugging "Permission defined" failure on darwin like https://travis-ci.org/ruby/ruby/jobs/508683759
+        set -x
+        date
+        ./miniruby -e 'ARGV.map{[@1,File.stat(@1)]}.sort_by{@2.mtime}.each{p mtime:@2.mtime.to_f, ctime:@2.ctime.to_f, path:@1}' .ext/.timestamp/.RUBYCOMMONDIR*time .ext/common/bigdecimal/*.rb ../ext/bigdecimal/lib/bigdecimal/*.rb . .. .ext .ext/common .ext/common/bigdecimal ext/bigdecimal ../ext ../ext/bigdecimal ../ext/bigdecimal/lib ../ext/bigdecimal/lib/bigdecimal
+        make COPY='cp -f' install
+      else
+        exit 1
+      fi
+    fi
+  - ccache --show-stats
+  - |-
+    [ -z "${GEMS_FOR_TEST}" ] ||
+    $RUBY_PREFIX/bin/gem install --no-document $GEMS_FOR_TEST
+  - echo "raise 'do not load ~/.irbrc in test'" > ~/.irbrc
 
 script:
-  - "$SETARCH make -s test TESTOPTS=\"${TESTOPTS=$JOBS -q --tty=no}\""
-  - "$SETARCH make -s test-all -o exts TESTOPTS=\"${TEST_ALL_OPTS=$TESTOPTS}\""
-  - "$SETARCH make -s test-spec MSPECOPT=-ff" # not using `-j` because sometimes `mspec -j` silently dies
+  - $SETARCH make -s test -o showflags TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
+  - travis_wait 50 $SETARCH make -s test-all -o exts TESTOPTS="${TESTOPTS} ${TEST_ALL_OPTS}" RUBYOPT="-w"
+  - $SETARCH make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
+  - $SETARCH make -s -o showflags leaked-globals
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
   only:
-    - trunk
-    - ruby_2_3
+    - master
     - ruby_2_4
     - ruby_2_5
+    - ruby_2_6
     - /^feature\//
     - /^bug\//
     - /^travis-/
@@ -391,12 +531,3 @@ notifications:
 
   email:
     - ko1c-failure@atdot.net
-
-# Local Variables:
-# mode: YAML
-# coding: utf-8-unix
-# indent-tabs-mode: nil
-# tab-width: 4
-# fill-column: 79
-# default-justification: full
-# End:

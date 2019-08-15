@@ -1,8 +1,4 @@
 # frozen_string_literal: true
-# TODO: the documentation in here is terrible.
-#
-# Each exception needs a brief description and the scenarios where it is
-# likely to be raised
 
 require 'rubygems/deprecate'
 
@@ -19,6 +15,7 @@ class Gem::Exception < RuntimeError
 
   extend Gem::Deprecate
   deprecate :source_exception, :none, 2018, 12
+
 end
 
 class Gem::CommandLineError < Gem::Exception; end
@@ -53,14 +50,18 @@ end
 # Raised when attempting to uninstall a gem that isn't in GEM_HOME.
 
 class Gem::GemNotInHomeException < Gem::Exception
+
   attr_accessor :spec
+
 end
 
 ###
 # Raised when removing a gem with the uninstall command fails
 
 class Gem::UninstallError < Gem::Exception
+
   attr_accessor :spec
+
 end
 
 class Gem::DocumentError < Gem::Exception; end
@@ -88,7 +89,9 @@ end
 ##
 # Used to raise parsing and loading errors
 class Gem::FormatException < Gem::Exception
+
   attr_accessor :file_path
+
 end
 
 class Gem::GemNotFoundException < Gem::Exception; end
@@ -166,10 +169,12 @@ end
 
 class Gem::InstallError < Gem::Exception; end
 class Gem::RuntimeRequirementNotMetError < Gem::InstallError
+
   attr_accessor :suggestion
   def message
     [suggestion, super].compact.join("\n\t")
   end
+
 end
 
 ##

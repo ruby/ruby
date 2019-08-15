@@ -246,19 +246,17 @@ class TestProcess < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       system(RUBY, '-e', 'exit',  'rlimit_bogus'.to_sym => 123)
     end
-    assert_separately([],"#{<<-"begin;"}\n#{<<~'end;'}")
+    assert_separately([],"#{<<~"begin;"}\n#{<<~'end;'}", 'rlimit_cpu'.to_sym => 3600)
     BUG = "[ruby-core:82033] [Bug #13744]"
-    RUBY = "#{RUBY}"
     begin;
-      assert(system("#{RUBY}", "-e",
-                 "exit([3600,3600] == Process.getrlimit(:CPU))",
-             'rlimit_cpu'.to_sym => 3600), BUG)
-      assert_raise(ArgumentError, BUG) do
-        system("#{RUBY}", '-e', 'exit',  :rlimit_bogus => 123)
-      end
+      assert_equal([3600,3600], Process.getrlimit(:CPU), BUG)
     end;
 
-    assert_raise(ArgumentError, /rlimit_cpu/) {
+    assert_raise_with_message(ArgumentError, /bogus/) do
+      system(RUBY, '-e', 'exit', :rlimit_bogus => 123)
+    end
+
+    assert_raise_with_message(ArgumentError, /rlimit_cpu/) {
       system(RUBY, '-e', 'exit', "rlimit_cpu\0".to_sym => 3600)
     }
   end
@@ -343,11 +341,6 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopt_env_path
-    # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1455223
-    # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1450027
-    # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1469867
-    skip 'this randomly fails with MJIT' if RubyVM::MJIT.enabled?
-
     bug8004 = '[ruby-core:53103] [Bug #8004]'
     Dir.mktmpdir do |d|
       open("#{d}/tmp_script.cmd", "w") {|f| f.puts ": ;"; f.chmod(0755)}
@@ -641,7 +634,7 @@ class TestProcess < Test::Unit::TestCase
       rescue NotImplementedError
         return
       end
-      assert(FileTest.pipe?("fifo"), "should be pipe")
+      assert_file.pipe?("fifo")
       t1 = Thread.new {
         system(*ECHO["output to fifo"], :out=>"fifo")
       }
@@ -1405,6 +1398,14 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_argv0_keep_alive
+    assert_in_out_err([], <<~REPRO, ['-'], [], "[Bug #15887]")
+      $0 = "diverge"
+      4.times { GC.start }
+      puts Process.argv0
+    REPRO
+  end
+
   def test_status
     with_tmpchdir do
       s = run_in_child("exit 1")
@@ -1514,6 +1515,9 @@ class TestProcess < Test::Unit::TestCase
 
   def test_sleep
     assert_raise(ArgumentError) { sleep(1, 1) }
+    [-1, -1.0, -1r].each do |sec|
+      assert_raise_with_message(ArgumentError, /not.*negative/) { sleep(sec) }
+    end
   end
 
   def test_getpgid
@@ -1569,7 +1573,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_seteuid_name
-    user = ENV["USER"] or return
+    user = (Etc.getpwuid(Process.euid).name rescue ENV["USER"]) or return
     assert_nothing_raised(TypeError) {Process.euid = user}
   rescue NotImplementedError
   end
@@ -1629,7 +1633,7 @@ class TestProcess < Test::Unit::TestCase
         w.puts
       end
       Process.wait pid
-      assert sig_r.wait_readable(5), 'self-pipe not readable'
+      assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
     end
     if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.
       assert_equal [true], signal_received.uniq, "[ruby-core:19744]"
@@ -1726,7 +1730,7 @@ class TestProcess < Test::Unit::TestCase
 
     with_tmpchdir do
       assert_nothing_raised('[ruby-dev:12261]') do
-        Timeout.timeout(3) do
+        EnvUtil.timeout(3) do
           pid = spawn('yes | ls')
           Process.waitpid pid
         end
@@ -1798,7 +1802,7 @@ class TestProcess < Test::Unit::TestCase
       end
     else # darwin
       def test_daemon_no_threads
-        data = Timeout.timeout(3) do
+        data = EnvUtil.timeout(3) do
           IO.popen("-") do |f|
             break f.readlines.map(&:chomp) if f
             th = Thread.start {sleep 3}
@@ -1873,16 +1877,16 @@ class TestProcess < Test::Unit::TestCase
       if user
         assert_nothing_raised(feature6975) do
           begin
-            system(*TRUECOMMAND, uid: user)
-          rescue Errno::EPERM, NotImplementedError
+            system(*TRUECOMMAND, uid: user, exception: true)
+          rescue Errno::EPERM, Errno::EACCES, NotImplementedError
           end
         end
       end
 
       assert_nothing_raised(feature6975) do
         begin
-          system(*TRUECOMMAND, uid: uid)
-        rescue Errno::EPERM, NotImplementedError
+          system(*TRUECOMMAND, uid: uid, exception: true)
+        rescue Errno::EPERM, Errno::EACCES, NotImplementedError
         end
       end
 
@@ -1890,7 +1894,7 @@ class TestProcess < Test::Unit::TestCase
         begin
           u = IO.popen([RUBY, "-e", "print Process.uid", uid: user||uid], &:read)
           assert_equal(uid.to_s, u, feature6975)
-        rescue Errno::EPERM, NotImplementedError
+        rescue Errno::EPERM, Errno::EACCES, NotImplementedError
         end
       end
     end
@@ -2254,7 +2258,7 @@ EOS
     th = Process.detach(pid)
     assert_equal pid, th.pid
     status = th.value
-    assert status.success?, status.inspect
+    assert_predicate status, :success?
   end if defined?(fork)
 
   def test_kill_at_spawn_failure
@@ -2313,7 +2317,7 @@ EOS
   def test_signals_work_after_exec_fail
     r, w = IO.pipe
     pid = status = nil
-    Timeout.timeout(30) do
+    EnvUtil.timeout(30) do
       pid = fork do
         r.close
         begin
@@ -2347,7 +2351,7 @@ EOS
   def test_threading_works_after_exec_fail
     r, w = IO.pipe
     pid = status = nil
-    Timeout.timeout(90) do
+    EnvUtil.timeout(90) do
       pid = fork do
         r.close
         begin
@@ -2356,7 +2360,6 @@ EOS
           w.syswrite("exec failed\n")
         end
         q = Queue.new
-        run = true
         th1 = Thread.new { i = 0; i += 1 while q.empty?; i }
         th2 = Thread.new { j = 0; j += 1 while q.empty? && Thread.pass.nil?; j }
         sleep 0.5

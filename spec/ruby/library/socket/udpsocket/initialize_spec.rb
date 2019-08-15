@@ -30,7 +30,11 @@ describe 'UDPSocket#initialize' do
     @socket.binmode?.should be_true
   end
 
-  it 'raises Errno::EAFNOSUPPORT when given an invalid address family' do
-    lambda { UDPSocket.new(666) }.should raise_error(Errno::EAFNOSUPPORT)
+  it 'raises Errno::EAFNOSUPPORT or Errno::EPROTONOSUPPORT when given an invalid address family' do
+    -> {
+      UDPSocket.new(666)
+    }.should raise_error(SystemCallError) { |e|
+      [Errno::EAFNOSUPPORT, Errno::EPROTONOSUPPORT].should include(e.class)
+    }
   end
 end

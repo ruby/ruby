@@ -167,6 +167,20 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_coverage_optimized_branch
+    result = {
+      :branches => {
+        [:"&.", 0, 1, 0, 1, 8] => {
+          [:then, 1, 1, 0, 1, 8] => 0,
+          [:else, 2, 1, 0, 1, 8] => 1,
+        },
+      },
+    }
+    assert_coverage(<<~"end;", { branches: true }, result) # Bug #15476
+      nil&.foo
+    end;
+  end
+
   def assert_coverage(code, opt, stdout)
     stdout = [stdout] unless stdout.is_a?(Array)
     stdout = stdout.map {|s| s.to_s }
@@ -345,18 +359,57 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_branch_coverage_for_pattern_matching
+    result = {
+      :branches=> {
+        [:case, 0,  3, 4,  8, 7] => {[:in, 1,  5, 6,  5, 7]=>2, [:in, 2, 7, 6, 7, 7]=>0, [:else, 3,  3, 4,  8, 7]=>1},
+        [:case, 4, 12, 2, 17, 5] => {[:in, 5, 14, 4, 14, 5]=>2,                          [:else, 6, 16, 4, 16, 5]=>1}},
+    }
+    assert_coverage(<<~"end;", { branches: true }, result)
+      def foo(x)
+        begin
+          case x
+          in 0
+            0
+          in 1
+            1
+          end
+        rescue NoMatchingPatternError
+        end
+
+        case x
+        in 0
+          0
+        else
+          1
+        end
+      end
+
+      foo(0)
+      foo(0)
+      foo(2)
+    end;
+  end
+
   def test_branch_coverage_for_safe_method_invocation
     result = {
       :branches=>{
-        [:"&.", 0, 3, 0, 3, 6] => {[:then, 1, 3, 0, 3, 6]=>1, [:else, 2, 3, 0, 3, 6]=>0},
-        [:"&.", 3, 4, 0, 4, 6] => {[:then, 4, 4, 0, 4, 6]=>0, [:else, 5, 4, 0, 4, 6]=>1},
+        [:"&.", 0, 6, 0, 6,  6] => {[:then,  1, 6, 0, 6,  6]=>1, [:else,  2, 6, 0, 6,  6]=>0},
+        [:"&.", 3, 7, 0, 7,  6] => {[:then,  4, 7, 0, 7,  6]=>0, [:else,  5, 7, 0, 7,  6]=>1},
+        [:"&.", 6, 8, 0, 8, 10] => {[:then,  7, 8, 0, 8, 10]=>1, [:else,  8, 8, 0, 8, 10]=>0},
+        [:"&.", 9, 9, 0, 9, 10] => {[:then, 10, 9, 0, 9, 10]=>0, [:else, 11, 9, 0, 9, 10]=>1},
       }
     }
     assert_coverage(<<~"end;", { branches: true }, result)
-      a = 10
+      class Dummy; def foo; end; def foo=(x); end; end
+      a = Dummy.new
       b = nil
-      a&.abs
-      b&.hoo
+      c = Dummy.new
+      d = nil
+      a&.foo
+      b&.foo
+      c&.foo = 1
+      d&.foo = 1
     end;
   end
 
@@ -671,7 +724,7 @@ class TestCoverage < Test::Unit::TestCase
           f.puts "end"
         end
 
-        assert_equal([0, 0, 0, nil, 0, nil, 0], Coverage.line_stub("test.rb"))
+        assert_equal([0, 0, 0, nil, 0, nil, nil], Coverage.line_stub("test.rb"))
       }
     }
   end

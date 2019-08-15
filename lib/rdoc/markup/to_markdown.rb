@@ -131,7 +131,7 @@ class RDoc::Markup::ToMarkdown < RDoc::Markup::ToRdoc
       @res << part
     end
 
-    @res << "\n" unless @res =~ /\n\z/
+    @res << "\n"
   end
 
   ##

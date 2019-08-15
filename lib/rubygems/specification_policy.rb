@@ -1,7 +1,11 @@
 require 'delegate'
 require 'uri'
+require 'rubygems/user_interaction'
 
 class Gem::SpecificationPolicy < SimpleDelegator
+
+  include Gem::UserInteraction
+
   VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/.freeze # :nodoc:
 
   SPECIAL_CHARACTERS = /\A[#{Regexp.escape('.-_')}]+/.freeze # :nodoc:
@@ -150,19 +154,24 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
       if open_ended
         op, dep_version = dep.requirement.requirements.first
 
-        base = dep_version.segments.first 2
+        segments = dep_version.segments
 
-        bugfix = if op == '>'
-                   ", '> #{dep_version}'"
-                 elsif op == '>=' and base != dep_version.segments
-                   ", '>= #{dep_version}'"
-                 end
+        base = segments.first 2
 
-        warning_messages << <<-WARNING
-open-ended dependency on #{dep} is not recommended
-  if #{dep.name} is semantically versioned, use:
-    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}
-        WARNING
+        recommendation = if (op == '>' || op == '>=') && segments == [0]
+                           "  use a bounded requirement, such as '~> x.y'"
+                         else
+                           bugfix = if op == '>'
+                                      ", '> #{dep_version}'"
+                                    elsif op == '>=' and base != segments
+                                      ", '>= #{dep_version}'"
+                                    end
+
+                           "  if #{dep.name} is semantically versioned, use:\n" \
+                           "    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}"
+                         end
+
+        warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"
       end
     end
     if error_messages.any?
@@ -295,7 +304,7 @@ open-ended dependency on #{dep} is not recommended
   end
 
   def validate_licenses
-    licenses.each { |license|
+    licenses.each do |license|
       if license.length > 64
         error "each license must be 64 characters or less"
       end
@@ -309,7 +318,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
         message += "Did you mean #{suggestions.map { |s| "'#{s}'"}.join(', ')}?\n" unless suggestions.nil?
         warning(message)
       end
-    }
+    end
 
     warning <<-warning if licenses.empty?
 licenses is empty, but is recommended.  Use a license identifier from
@@ -399,4 +408,5 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   def help_text # :nodoc:
     "See http://guides.rubygems.org/specification-reference/ for help"
   end
+
 end

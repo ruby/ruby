@@ -9,6 +9,10 @@
 #include "ruby-runner.h"
 #include "ruby/config.h"
 
+#ifdef MAKE_MJIT_BUILD_DIR
+const char MJIT_HEADER[] = BUILDDIR "/" MJIT_MIN_HEADER;
+#else
+
 #define STRINGIZE(expr) STRINGIZE0(expr)
 #define STRINGIZE0(expr) #expr
 
@@ -90,3 +94,5 @@ main(int argc, char **argv)
     perror(rubypath);
     return -1;
 }
+
+#endif  /* MAKE_MJIT_BUILD_DIR */

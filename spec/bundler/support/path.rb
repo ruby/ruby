@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "pathname"
+require "rbconfig"
 
 module Spec
   module Path
@@ -9,7 +10,7 @@ module Spec
     end
 
     def gemspec
-      @gemspec ||= root.join(ruby_core? ? "lib/bundler.gemspec" : "bundler.gemspec")
+      @gemspec ||= root.join(ruby_core? ? "lib/bundler/bundler.gemspec" : "bundler.gemspec")
     end
 
     def bindir
@@ -32,7 +33,7 @@ module Spec
       if Bundler::VERSION.split(".").first.to_i < 3
         system_gem_path(*path)
       else
-        bundled_app(*[".bundle", ENV.fetch("BUNDLER_SPEC_RUBY_ENGINE", Gem.ruby_engine), Gem::ConfigMap[:ruby_version], *path].compact)
+        bundled_app(*[".bundle", ENV.fetch("BUNDLER_SPEC_RUBY_ENGINE", Gem.ruby_engine), RbConfig::CONFIG["ruby_version"], *path].compact)
       end
     end
 
@@ -51,7 +52,7 @@ module Spec
     end
 
     def vendored_gems(path = nil)
-      bundled_app(*["vendor/bundle", Gem.ruby_engine, Gem::ConfigMap[:ruby_version], path].compact)
+      bundled_app(*["vendor/bundle", Gem.ruby_engine, RbConfig::CONFIG["ruby_version"], path].compact)
     end
 
     def cached_gem(path)
@@ -60,6 +61,15 @@ module Spec
 
     def base_system_gems
       tmp.join("gems/base")
+    end
+
+    def file_uri_for(path)
+      protocol = "file://"
+      root = Gem.win_platform? ? "/" : ""
+
+      return protocol + "localhost" + root + path.to_s if RUBY_VERSION < "2.5"
+
+      protocol + root + path.to_s
     end
 
     def gem_repo1(*args)
@@ -90,12 +100,16 @@ module Spec
       tmp("gems/system", *path)
     end
 
+    def system_bundle_bin_path
+      system_gem_path("bin/bundle")
+    end
+
     def lib_path(*args)
       tmp("libs", *args)
     end
 
     def bundler_path
-      Pathname.new(File.expand_path(root.join("lib"), __FILE__))
+      root.join("lib")
     end
 
     def global_plugin_gem(*args)

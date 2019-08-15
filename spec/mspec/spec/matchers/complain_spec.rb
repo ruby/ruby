@@ -49,4 +49,49 @@ describe ComplainMatcher do
     matcher.negative_failure_message.should ==
       ["Expected warning not to match: /ou/", "but got: \"ouch\""]
   end
+
+  context "`verbose` option specified" do
+    before do
+      $VERBOSE, @verbose = nil, $VERBOSE
+    end
+
+    after do
+      $VERBOSE = @verbose
+    end
+
+    it "sets $VERBOSE with specified second optional parameter" do
+      verbose = nil
+      proc = lambda { verbose = $VERBOSE }
+
+      ComplainMatcher.new(nil, verbose: true).matches?(proc)
+      verbose.should == true
+
+      ComplainMatcher.new(nil, verbose: false).matches?(proc)
+      verbose.should == false
+    end
+
+    it "sets $VERBOSE with false by default" do
+      verbose = nil
+      proc = lambda { verbose = $VERBOSE }
+
+      ComplainMatcher.new(nil).matches?(proc)
+      verbose.should == false
+    end
+
+    it "does not have side effect" do
+      proc = lambda { safe_value = $VERBOSE }
+
+      lambda do
+        ComplainMatcher.new(nil, verbose: true).matches?(proc)
+      end.should_not change { $VERBOSE }
+    end
+
+    it "accepts a verbose level as single argument" do
+      verbose = nil
+      proc = lambda { verbose = $VERBOSE }
+
+      ComplainMatcher.new(verbose: true).matches?(proc)
+      verbose.should == true
+    end
+  end
 end

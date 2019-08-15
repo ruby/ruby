@@ -227,6 +227,14 @@ class TestObject < Test::Unit::TestCase
     assert_equal([:foo], o.methods(false), bug8044)
   end
 
+  def test_methods_prepend_singleton
+    c = Class.new(Module) {private def foo; end}
+    k = c.new
+    k.singleton_class
+    c.module_eval {prepend(Module.new)}
+    assert_equal([:foo], k.private_methods(false))
+  end
+
   def test_instance_variable_get
     o = Object.new
     o.instance_eval { @foo = :foo }
@@ -857,6 +865,29 @@ class TestObject < Test::Unit::TestCase
     assert_match(/@\u{3046}=6\b/, x.inspect)
   end
 
+  def test_singleton_methods
+    assert_equal([], Object.new.singleton_methods)
+    assert_equal([], Object.new.singleton_methods(false))
+    c = Class.new
+    def c.foo; end
+    assert_equal([:foo], c.singleton_methods - [:yaml_tag])
+    assert_equal([:foo], c.singleton_methods(false))
+    assert_equal([], c.singleton_class.singleton_methods(false))
+    c.singleton_class.singleton_class
+    assert_equal([], c.singleton_class.singleton_methods(false))
+
+    o = c.new.singleton_class
+    assert_equal([:foo], o.singleton_methods - [:yaml_tag])
+    assert_equal([], o.singleton_methods(false))
+    o.singleton_class
+    assert_equal([:foo], o.singleton_methods - [:yaml_tag])
+    assert_equal([], o.singleton_methods(false))
+
+    c.extend(Module.new{def bar; end})
+    assert_equal([:bar, :foo], c.singleton_methods.sort - [:yaml_tag])
+    assert_equal([:foo], c.singleton_methods(false))
+  end
+
   def test_singleton_class
     x = Object.new
     xs = class << x; self; end
@@ -883,6 +914,7 @@ class TestObject < Test::Unit::TestCase
     ['ArgumentError.new("bug5473")', 'ArgumentError, "bug5473"', '"bug5473"'].each do |code|
       exc = code[/\A[A-Z]\w+/] || 'RuntimeError'
       assert_separately([], <<-SRC)
+      $VERBOSE = nil
       class ::Object
         def method_missing(m, *a, &b)
           raise #{code}
@@ -944,5 +976,14 @@ class TestObject < Test::Unit::TestCase
         GC.start
       end
     EOS
+  end
+
+  def test_matcher
+    assert_warning(/deprecated Object#=~ is called on Object/) do
+      assert_equal(Object.new =~ 42, nil)
+    end
+    assert_warning(/deprecated Object#=~ is called on Array/) do
+      assert_equal([] =~ 42, nil)
+    end
   end
 end

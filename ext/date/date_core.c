@@ -239,11 +239,8 @@ f_negative_p(VALUE x)
 struct SimpleDateData
 {
     unsigned flags;
-    VALUE nth;	/* not always canonicalized */
     int jd;	/* as utc */
-    /* df is zero */
-    /* sf is zero */
-    /* of is zero */
+    VALUE nth;	/* not always canonicalized */
     date_sg_t sg;  /* 2298874..2426355 or -/+oo -- at most 22 bits */
     /* decoded as utc=local */
     int year;	/* truncated */
@@ -262,11 +259,8 @@ struct SimpleDateData
 struct ComplexDateData
 {
     unsigned flags;
-    VALUE nth;	/* not always canonicalized */
     int jd; 	/* as utc */
-    int df;	/* as utc, in secs */
-    VALUE sf;	/* in nano secs */
-    int of;	/* in secs */
+    VALUE nth;	/* not always canonicalized */
     date_sg_t sg;  /* 2298874..2426355 or -/+oo -- at most 22 bits */
     /* decoded as local */
     int year;	/* truncated */
@@ -280,6 +274,9 @@ struct ComplexDateData
     /* packed civil */
     unsigned pc;
 #endif
+    int df;	/* as utc, in secs */
+    int of;	/* in secs */
+    VALUE sf;	/* in nano secs */
 };
 
 union DateData {
@@ -2548,9 +2545,12 @@ date_s__valid_civil_p(int argc, VALUE *argv, VALUE klass)
  *    Date.valid_date?(year, month, mday[, start=Date::ITALY])   ->  bool
  *
  * Returns true if the given calendar date is valid, and false if not.
+ * Valid in this context is whether the arguments passed to this
+ * method would be accepted by ::new.
  *
  *    Date.valid_date?(2001,2,3)	#=> true
  *    Date.valid_date?(2001,2,29)	#=> false
+ *    Date.valid_date?(2001,2,-1)	#=> true
  *
  * See also ::jd and ::civil.
  */
@@ -3695,7 +3695,7 @@ rt_rewrite_frags(VALUE hash)
 {
     VALUE seconds;
 
-    seconds = ref_hash("seconds");
+    seconds = del_hash("seconds");
     if (!NIL_P(seconds)) {
 	VALUE offset, d, h, min, s, fr;
 
@@ -3720,7 +3720,6 @@ rt_rewrite_frags(VALUE hash)
 	set_hash("min", min);
 	set_hash("sec", s);
 	set_hash("sec_fraction", fr);
-	del_hash("seconds");
     }
     return hash;
 }
@@ -4310,16 +4309,6 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
 
     hash = date__parse(vstr, vcomp);
 
-    {
-	VALUE zone = ref_hash("zone");
-
-	if (!NIL_P(zone)) {
-	    rb_enc_copy(zone, vstr);
-	    OBJ_INFECT(zone, vstr);
-	    set_hash("zone", zone);
-	}
-    }
-
     return hash;
 }
 
@@ -4622,6 +4611,10 @@ date_s__jisx0301(VALUE klass, VALUE str)
  * some typical JIS X 0301 formats.
  *
  *    Date.jisx0301('H13.02.03')		#=> #<Date: 2001-02-03 ...>
+ *
+ * For no-era year, legacy format, Heisei is assumed.
+ *
+ *    Date.jisx0301('13.02.03') 		#=> #<Date: 2001-02-03 ...>
  */
 static VALUE
 date_s_jisx0301(int argc, VALUE *argv, VALUE klass)
@@ -6498,7 +6491,7 @@ d_lite_to_s(VALUE self)
 static VALUE
 mk_inspect_raw(union DateData *x, VALUE klass)
 {
-    char flags[5];
+    char flags[6];
 
     flags[0] = (x->flags & COMPLEX_DAT) ? 'C' : 'S';
     flags[1] = (x->flags & HAVE_JD)     ? 'j' : '-';
@@ -6664,7 +6657,9 @@ tmx_m_of(union DateData *x)
 static char *
 tmx_m_zone(union DateData *x)
 {
-    return RSTRING_PTR(m_zone(x));
+    VALUE zone = m_zone(x);
+    /* TODO: fix potential dangling pointer */
+    return RSTRING_PTR(zone);
 }
 
 static const struct tmx_funcs tmx_funcs = {
@@ -7047,9 +7042,13 @@ jisx0301_date_format(char *fmt, size_t size, VALUE jd, VALUE y)
 	    c = 'S';
 	    s = 1925;
 	}
-	else {
+	else if (d < 2458605) {
 	    c = 'H';
 	    s = 1988;
+	}
+	else {
+	    c = 'R';
+	    s = 2018;
 	}
 	snprintf(fmt, size, "%c%02ld" ".%%m.%%d", c, FIX2INT(y) - s);
 	return fmt;
@@ -8157,6 +8156,11 @@ datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
  *
  *    DateTime.jisx0301('H13.02.03T04:05:06+07:00')
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
+ *
+ * For no-era year, legacy format, Heisei is assumed.
+ *
+ *    DateTime.jisx0301('13.02.03T04:05:06+07:00')
+ *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
  */
 static VALUE
 datetime_s_jisx0301(int argc, VALUE *argv, VALUE klass)
@@ -9035,6 +9039,12 @@ mk_ary_of_str(long len, const char *a[])
     return o;
 }
 
+static VALUE
+d_lite_zero(VALUE x)
+{
+    return INT2FIX(0);
+}
+
 void
 Init_date_core(void)
 {
@@ -9259,20 +9269,19 @@ Init_date_core(void)
     rb_define_alloc_func(cDate, d_lite_s_alloc_simple);
 
 #ifndef NDEBUG
-#define de_define_private_method rb_define_private_method
-    de_define_private_method(CLASS_OF(cDate), "_valid_jd?",
+    rb_define_private_method(CLASS_OF(cDate), "_valid_jd?",
 			     date_s__valid_jd_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "_valid_ordinal?",
+    rb_define_private_method(CLASS_OF(cDate), "_valid_ordinal?",
 			     date_s__valid_ordinal_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "_valid_civil?",
+    rb_define_private_method(CLASS_OF(cDate), "_valid_civil?",
 			     date_s__valid_civil_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "_valid_date?",
+    rb_define_private_method(CLASS_OF(cDate), "_valid_date?",
 			     date_s__valid_civil_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "_valid_commercial?",
+    rb_define_private_method(CLASS_OF(cDate), "_valid_commercial?",
 			     date_s__valid_commercial_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "_valid_weeknum?",
+    rb_define_private_method(CLASS_OF(cDate), "_valid_weeknum?",
 			     date_s__valid_weeknum_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "_valid_nth_kday?",
+    rb_define_private_method(CLASS_OF(cDate), "_valid_nth_kday?",
 			     date_s__valid_nth_kday_p, -1);
 #endif
 
@@ -9285,11 +9294,11 @@ Init_date_core(void)
 			       date_s_valid_commercial_p, -1);
 
 #ifndef NDEBUG
-    de_define_private_method(CLASS_OF(cDate), "valid_weeknum?",
+    rb_define_private_method(CLASS_OF(cDate), "valid_weeknum?",
 			     date_s_valid_weeknum_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "valid_nth_kday?",
+    rb_define_private_method(CLASS_OF(cDate), "valid_nth_kday?",
 			     date_s_valid_nth_kday_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "zone_to_diff",
+    rb_define_private_method(CLASS_OF(cDate), "zone_to_diff",
 			     date_s_zone_to_diff, 1);
 #endif
 
@@ -9300,10 +9309,8 @@ Init_date_core(void)
 			       date_s_gregorian_leap_p, 1);
 
 #ifndef NDEBUG
-#define de_define_singleton_method rb_define_singleton_method
-#define de_define_alias rb_define_alias
-    de_define_singleton_method(cDate, "new!", date_s_new_bang, -1);
-    de_define_alias(rb_singleton_class(cDate), "new_l!", "new");
+    rb_define_singleton_method(cDate, "new!", date_s_new_bang, -1);
+    rb_define_alias(rb_singleton_class(cDate), "new_l!", "new");
 #endif
 
     rb_define_singleton_method(cDate, "jd", date_s_jd, -1);
@@ -9312,8 +9319,8 @@ Init_date_core(void)
     rb_define_singleton_method(cDate, "commercial", date_s_commercial, -1);
 
 #ifndef NDEBUG
-    de_define_singleton_method(cDate, "weeknum", date_s_weeknum, -1);
-    de_define_singleton_method(cDate, "nth_kday", date_s_nth_kday, -1);
+    rb_define_singleton_method(cDate, "weeknum", date_s_weeknum, -1);
+    rb_define_singleton_method(cDate, "nth_kday", date_s_nth_kday, -1);
 #endif
 
     rb_define_singleton_method(cDate, "today", date_s_today, -1);
@@ -9340,7 +9347,7 @@ Init_date_core(void)
     rb_define_method(cDate, "initialize_copy", d_lite_initialize_copy, 1);
 
 #ifndef NDEBUG
-    de_define_method(cDate, "fill", d_lite_fill, 0);
+    rb_define_method(cDate, "fill", d_lite_fill, 0);
 #endif
 
     rb_define_method(cDate, "ajd", d_lite_ajd, 0);
@@ -9362,8 +9369,8 @@ Init_date_core(void)
     rb_define_method(cDate, "cwday", d_lite_cwday, 0);
 
 #ifndef NDEBUG
-    de_define_private_method(cDate, "wnum0", d_lite_wnum0, 0);
-    de_define_private_method(cDate, "wnum1", d_lite_wnum1, 0);
+    rb_define_private_method(cDate, "wnum0", d_lite_wnum0, 0);
+    rb_define_private_method(cDate, "wnum1", d_lite_wnum1, 0);
 #endif
 
     rb_define_method(cDate, "wday", d_lite_wday, 0);
@@ -9377,18 +9384,14 @@ Init_date_core(void)
     rb_define_method(cDate, "saturday?", d_lite_saturday_p, 0);
 
 #ifndef NDEBUG
-    de_define_method(cDate, "nth_kday?", d_lite_nth_kday_p, 2);
+    rb_define_method(cDate, "nth_kday?", d_lite_nth_kday_p, 2);
 #endif
 
-    rb_define_private_method(cDate, "hour", d_lite_hour, 0);
-    rb_define_private_method(cDate, "min", d_lite_min, 0);
-    rb_define_private_method(cDate, "minute", d_lite_min, 0);
-    rb_define_private_method(cDate, "sec", d_lite_sec, 0);
-    rb_define_private_method(cDate, "second", d_lite_sec, 0);
-    rb_define_private_method(cDate, "sec_fraction", d_lite_sec_fraction, 0);
-    rb_define_private_method(cDate, "second_fraction", d_lite_sec_fraction, 0);
-    rb_define_private_method(cDate, "offset", d_lite_offset, 0);
-    rb_define_private_method(cDate, "zone", d_lite_zone, 0);
+    rb_define_private_method(cDate, "hour", d_lite_zero, 0);
+    rb_define_private_method(cDate, "min", d_lite_zero, 0);
+    rb_define_private_method(cDate, "minute", d_lite_zero, 0);
+    rb_define_private_method(cDate, "sec", d_lite_zero, 0);
+    rb_define_private_method(cDate, "second", d_lite_zero, 0);
 
     rb_define_method(cDate, "julian?", d_lite_julian_p, 0);
     rb_define_method(cDate, "gregorian?", d_lite_gregorian_p, 0);
@@ -9400,8 +9403,6 @@ Init_date_core(void)
     rb_define_method(cDate, "england", d_lite_england, 0);
     rb_define_method(cDate, "julian", d_lite_julian, 0);
     rb_define_method(cDate, "gregorian", d_lite_gregorian, 0);
-
-    rb_define_private_method(cDate, "new_offset", d_lite_new_offset, -1);
 
     rb_define_method(cDate, "+", d_lite_plus, 1);
     rb_define_method(cDate, "-", d_lite_minus, 1);
@@ -9430,7 +9431,7 @@ Init_date_core(void)
 
     rb_define_method(cDate, "to_s", d_lite_to_s, 0);
 #ifndef NDEBUG
-    de_define_method(cDate, "inspect_raw", d_lite_inspect_raw, 0);
+    rb_define_method(cDate, "inspect_raw", d_lite_inspect_raw, 0);
 #endif
     rb_define_method(cDate, "inspect", d_lite_inspect, 0);
 
@@ -9447,7 +9448,7 @@ Init_date_core(void)
     rb_define_method(cDate, "jisx0301", d_lite_jisx0301, 0);
 
 #ifndef NDEBUG
-    de_define_method(cDate, "marshal_dump_old", d_lite_marshal_dump_old, 0);
+    rb_define_method(cDate, "marshal_dump_old", d_lite_marshal_dump_old, 0);
 #endif
     rb_define_method(cDate, "marshal_dump", d_lite_marshal_dump, 0);
     rb_define_method(cDate, "marshal_load", d_lite_marshal_load, 1);
@@ -9604,9 +9605,9 @@ Init_date_core(void)
 			       datetime_s_commercial, -1);
 
 #ifndef NDEBUG
-    de_define_singleton_method(cDateTime, "weeknum",
+    rb_define_singleton_method(cDateTime, "weeknum",
 			       datetime_s_weeknum, -1);
-    de_define_singleton_method(cDateTime, "nth_kday",
+    rb_define_singleton_method(cDateTime, "nth_kday",
 			       datetime_s_nth_kday, -1);
 #endif
 
@@ -9634,19 +9635,16 @@ Init_date_core(void)
     rb_define_singleton_method(cDateTime, "jisx0301",
 			       datetime_s_jisx0301, -1);
 
-#define f_public(m,s) rb_funcall(m, rb_intern("public"), 1,\
-				 ID2SYM(rb_intern(s)))
-
-    f_public(cDateTime, "hour");
-    f_public(cDateTime, "min");
-    f_public(cDateTime, "minute");
-    f_public(cDateTime, "sec");
-    f_public(cDateTime, "second");
-    f_public(cDateTime, "sec_fraction");
-    f_public(cDateTime, "second_fraction");
-    f_public(cDateTime, "offset");
-    f_public(cDateTime, "zone");
-    f_public(cDateTime, "new_offset");
+    rb_define_method(cDateTime, "hour", d_lite_hour, 0);
+    rb_define_method(cDateTime, "min", d_lite_min, 0);
+    rb_define_method(cDateTime, "minute", d_lite_min, 0);
+    rb_define_method(cDateTime, "sec", d_lite_sec, 0);
+    rb_define_method(cDateTime, "second", d_lite_sec, 0);
+    rb_define_method(cDateTime, "sec_fraction", d_lite_sec_fraction, 0);
+    rb_define_method(cDateTime, "second_fraction", d_lite_sec_fraction, 0);
+    rb_define_method(cDateTime, "offset", d_lite_offset, 0);
+    rb_define_method(cDateTime, "zone", d_lite_zone, 0);
+    rb_define_method(cDateTime, "new_offset", d_lite_new_offset, -1);
 
     rb_define_method(cDateTime, "to_s", dt_lite_to_s, 0);
 
@@ -9674,15 +9672,15 @@ Init_date_core(void)
 #ifndef NDEBUG
     /* tests */
 
-    de_define_singleton_method(cDate, "test_civil", date_s_test_civil, 0);
-    de_define_singleton_method(cDate, "test_ordinal", date_s_test_ordinal, 0);
-    de_define_singleton_method(cDate, "test_commercial",
+    rb_define_singleton_method(cDate, "test_civil", date_s_test_civil, 0);
+    rb_define_singleton_method(cDate, "test_ordinal", date_s_test_ordinal, 0);
+    rb_define_singleton_method(cDate, "test_commercial",
 			       date_s_test_commercial, 0);
-    de_define_singleton_method(cDate, "test_weeknum", date_s_test_weeknum, 0);
-    de_define_singleton_method(cDate, "test_nth_kday", date_s_test_nth_kday, 0);
-    de_define_singleton_method(cDate, "test_unit_conv",
+    rb_define_singleton_method(cDate, "test_weeknum", date_s_test_weeknum, 0);
+    rb_define_singleton_method(cDate, "test_nth_kday", date_s_test_nth_kday, 0);
+    rb_define_singleton_method(cDate, "test_unit_conv",
 			       date_s_test_unit_conv, 0);
-    de_define_singleton_method(cDate, "test_all", date_s_test_all, 0);
+    rb_define_singleton_method(cDate, "test_all", date_s_test_all, 0);
 #endif
 }
 

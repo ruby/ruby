@@ -247,7 +247,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     int masterfd = -1, slavefd = -1;
     char *slavedevice;
 
-#if defined(__sun) || (defined(__FreeBSD__) && __FreeBSD_version < 902000)
+#if defined(__sun) || defined(__OpenBSD__) || (defined(__FreeBSD__) && __FreeBSD_version < 902000)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
     /* FreeBSD 9.2 or later supports O_CLOEXEC
      * http://www.freebsd.org/cgi/query-pr.cgi?pr=162374 */

@@ -10,7 +10,7 @@ bundle(1) -- Ruby Dependency Management
 Bundler manages an `application's dependencies` through its entire life
 across many machines systematically and repeatably.
 
-See [the bundler website](http://bundler.io) for information on getting
+See [the bundler website](https://bundler.io) for information on getting
 started, and Gemfile(5) for more information on the `Gemfile` format.
 
 ## OPTIONS
@@ -73,7 +73,7 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle open(1)`](bundle-open.1.html):
   Open an installed gem in the editor
 
-* [`bundle lock(1)`](bundle-lock.1.hmtl):
+* [`bundle lock(1)`](bundle-lock.1.html):
   Generate a lockfile for your dependencies
 
 * [`bundle viz(1)`](bundle-viz.1.html):
@@ -93,6 +93,9 @@ We divide `bundle` subcommands into primary commands and utilities:
 
 * [`bundle doctor(1)`](bundle-doctor.1.html):
   Display warnings about common problems
+
+* [`bundle remove(1)`](bundle-remove.1.html):
+  Removes gems from the Gemfile
 
 ## PLUGINS
 

@@ -104,6 +104,8 @@ extensions will be restored.
               end.flatten
             end
 
+    specs = specs.select{|spec| RUBY_ENGINE == spec.platform || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }
+
     if specs.to_a.empty?
       raise Gem::Exception,
             "Failed to find gems #{options[:args]} #{options[:version]}"
@@ -127,11 +129,6 @@ extensions will be restored.
           say "Skipped #{spec.full_name}, it was given through options"
           next
         end
-      end
-
-      if spec.bundled_gem_in_old_ruby?
-        say "Skipped #{spec.full_name}, it is bundled with old Ruby"
-        next
       end
 
       unless spec.extensions.empty? or options[:extensions] or options[:only_executables]
@@ -188,4 +185,5 @@ extensions will be restored.
       say "Restored #{spec.full_name}"
     end
   end
+
 end

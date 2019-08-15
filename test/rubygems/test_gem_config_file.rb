@@ -157,14 +157,20 @@ class TestGemConfigFile < Gem::TestCase
     File.open conf3, 'w' do |fp|
       fp.puts ':verbose: :loud'
     end
-
-    ENV['GEMRC'] = conf1 + ':' + conf2 + ';' + conf3
+    ps = File::PATH_SEPARATOR
+    ENV['GEMRC'] = conf1 + ps + conf2 + ps + conf3
 
     util_config_file
 
     assert_equal true, @cfg.backtrace
     assert_equal :loud, @cfg.verbose
     assert_equal 2048, @cfg.bulk_threshold
+  end
+
+  def test_set_config_file_name_from_environment_variable
+    ENV['GEMRC'] = "/tmp/.gemrc"
+    cfg = Gem::ConfigFile.new([])
+    assert_equal cfg.config_file_name, "/tmp/.gemrc"
   end
 
   def test_api_keys
@@ -489,4 +495,5 @@ if you believe they were disclosed to a third party.
     util_config_file
     assert_equal(true, @cfg.disable_default_gem_server)
   end
+
 end

@@ -13,6 +13,13 @@ require 'rubygems/remote_fetcher'
 #   @fetcher.data['http://gems.example.com/yaml'] = source_index.to_yaml
 #   Gem::RemoteFetcher.fetcher = @fetcher
 #
+#   use nested array if multiple response is needed
+#
+#   @fetcher.data['http://gems.example.com/sequence'] = [['Success', 200, 'OK'], ['Failed', 401, 'Unauthorized']]
+#
+#   @fetcher.fetch_path('http://gems.example.com/sequence') # => ['Success', 200, 'OK']
+#   @fetcher.fetch_path('http://gems.example.com/sequence') # => ['Failed', 401, 'Unauthorized']
+#
 #   # invoke RubyGems code
 #
 #   paths = @fetcher.paths
@@ -32,7 +39,7 @@ class Gem::FakeFetcher
     @paths = []
   end
 
-  def find_data(path)
+  def find_data(path, nargs = 3)
     return File.read path.path if URI === path and 'file' == path.scheme
 
     if URI === path and "URI::#{path.scheme.upcase}" != path.class.name
@@ -48,7 +55,10 @@ class Gem::FakeFetcher
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
     end
 
-    @data[path]
+    data = @data[path]
+
+    data.flatten! and return data.shift(nargs) if data.respond_to?(:flatten!)
+    data
   end
 
   def fetch_path(path, mtime = nil, head = false)
@@ -60,7 +70,6 @@ class Gem::FakeFetcher
       if path.to_s =~ /gz$/ and not data.nil? and not data.empty?
         data = Gem::Util.gunzip data
       end
-
       data
     end
   end
@@ -87,7 +96,7 @@ class Gem::FakeFetcher
 
   def request(uri, request_class, last_modified = nil)
     data = find_data(uri)
-    body, code, msg = data
+    body, code, msg = (data.respond_to?(:call) ? data.call : data)
 
     @last_request = request_class.new uri.request_uri
     yield @last_request if block_given?
@@ -232,21 +241,22 @@ class Gem::TestCase::SpecFetcherSetup
 
   def execute_operations # :nodoc:
     @operations.each do |operation, *arguments|
+      block = arguments.pop
       case operation
       when :gem then
-        spec, gem = @test.util_gem(*arguments, &arguments.pop)
+        spec, gem = @test.util_gem(*arguments, &block)
 
         write_spec spec
 
         @gems[spec] = gem
         @installed << spec
       when :download then
-        spec, gem = @test.util_gem(*arguments, &arguments.pop)
+        spec, gem = @test.util_gem(*arguments, &block)
 
         @gems[spec] = gem
         @downloaded << spec
       when :spec then
-        spec = @test.util_spec(*arguments, &arguments.pop)
+        spec = @test.util_spec(*arguments, &block)
 
         write_spec spec
 
@@ -366,4 +376,5 @@ class TempIO < Tempfile
     flush
     Gem.read_binary path
   end
+
 end
