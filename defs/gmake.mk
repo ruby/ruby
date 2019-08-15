@@ -190,10 +190,7 @@ checkout-github: fetch-github
 .PHONY: update-github
 update-github: checkout-github
 	$(eval PULL_REQUEST_API := https://api.github.com/repos/ruby/ruby/pulls/$(PR))
-	$(if $(GITHUB_TOKEN), \
-	  $(eval PULL_REQUEST := $(shell curl -s -H "Authorization: bearer $$GITHUB_TOKEN" $(PULL_REQUEST_API))), \
-	  $(eval PULL_REQUEST := $(shell curl -s $(PULL_REQUEST_API))) \
-	)
+	$(eval PULL_REQUEST := $(shell curl -s $(if $(GITHUB_TOKEN),-H "Authorization: bearer $(GITHUB_TOKEN)") $(PULL_REQUEST_API)))
 	$(eval FORK_REPO := $(shell $(BASERUBY) -rjson -e 'print JSON.parse(ARGV[0]).dig("head", "repo", "full_name")' '$(PULL_REQUEST)'))
 	$(eval PR_BRANCH := $(shell $(BASERUBY) -rjson -e 'print JSON.parse(ARGV[0]).dig("head", "ref")' '$(PULL_REQUEST)'))
 	git merge master --no-edit
