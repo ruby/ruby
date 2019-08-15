@@ -7,7 +7,7 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if no argument is given" do
-      lambda { @dict.send(@method) }.should raise_error ArgumentError
+      -> { @dict.send(@method) }.should raise_error ArgumentError
     end
 
     it "sets key to newkey and returns nil" do

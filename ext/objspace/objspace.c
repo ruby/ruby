@@ -188,6 +188,7 @@ type2sym(enum ruby_value_type i)
 	CASE_TYPE(T_IMEMO);
 	CASE_TYPE(T_NODE);
 	CASE_TYPE(T_ICLASS);
+        CASE_TYPE(T_MOVED);
 	CASE_TYPE(T_ZOMBIE);
 #undef CASE_TYPE
       default: rb_bug("type2sym: unknown type (%d)", i);
@@ -377,7 +378,9 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_UNLESS);
 		COUNT_NODE(NODE_CASE);
 		COUNT_NODE(NODE_CASE2);
+                COUNT_NODE(NODE_CASE3);
 		COUNT_NODE(NODE_WHEN);
+                COUNT_NODE(NODE_IN);
 		COUNT_NODE(NODE_WHILE);
 		COUNT_NODE(NODE_UNTIL);
 		COUNT_NODE(NODE_ITER);
@@ -472,6 +475,8 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_ATTRASGN);
 		COUNT_NODE(NODE_LAMBDA);
                 COUNT_NODE(NODE_METHREF);
+                COUNT_NODE(NODE_ARYPTN);
+                COUNT_NODE(NODE_HSHPTN);
 #undef COUNT_NODE
 	      case NODE_LAST: break;
 	    }

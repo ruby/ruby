@@ -1,9 +1,15 @@
 # -*- encoding: binary -*-
 describe :string_codepoints, shared: true do
+  it "returns self" do
+    s = "foo"
+    result = s.send(@method) {}
+    result.should equal s
+  end
+
   it "raises an ArgumentError when self has an invalid encoding and a method is called on the returned Enumerator" do
     s = "\xDF".force_encoding(Encoding::UTF_8)
     s.valid_encoding?.should be_false
-    lambda { s.send(@method).to_a }.should raise_error(ArgumentError)
+    -> { s.send(@method).to_a }.should raise_error(ArgumentError)
   end
 
   it "yields each codepoint to the block if one is given" do
@@ -17,16 +23,16 @@ describe :string_codepoints, shared: true do
   it "raises an ArgumentError if self's encoding is invalid and a block is given" do
     s = "\xDF".force_encoding(Encoding::UTF_8)
     s.valid_encoding?.should be_false
-    lambda { s.send(@method) { } }.should raise_error(ArgumentError)
+    -> { s.send(@method) { } }.should raise_error(ArgumentError)
   end
 
-  it "returns codepoints as Fixnums" do
+  it "yields codepoints as Fixnums" do
     "glark\u{20}".send(@method).to_a.each do |codepoint|
       codepoint.should be_an_instance_of(Fixnum)
     end
   end
 
-  it "returns one codepoint for each character" do
+  it "yields one codepoint for each character" do
     s = "\u{9876}\u{28}\u{1987}"
     s.send(@method).to_a.size.should == s.chars.to_a.size
   end
@@ -37,7 +43,7 @@ describe :string_codepoints, shared: true do
     s.send(@method).to_a.should == [38937]
   end
 
-  it "returns the codepoint corresponding to the character's position in the String's encoding" do
+  it "yields the codepoints corresponding to the character's position in the String's encoding" do
     "\u{787}".send(@method).to_a.should == [1927]
   end
 

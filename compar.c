@@ -95,7 +95,7 @@ cmpint(VALUE x, VALUE y)
  *     obj > other    -> true or false
  *
  *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns 1.
+ *  method, returning true if it returns a value greater than 0.
  */
 
 static VALUE
@@ -110,7 +110,7 @@ cmp_gt(VALUE x, VALUE y)
  *     obj >= other    -> true or false
  *
  *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns 0 or 1.
+ *  method, returning true if it returns a value greater than or equal to 0.
  */
 
 static VALUE
@@ -125,7 +125,7 @@ cmp_ge(VALUE x, VALUE y)
  *     obj < other    -> true or false
  *
  *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns -1.
+ *  method, returning true if it returns a value less than 0.
  */
 
 static VALUE
@@ -140,7 +140,7 @@ cmp_lt(VALUE x, VALUE y)
  *     obj <= other    -> true or false
  *
  *  Compares two objects based on the receiver's <code><=></code>
- *  method, returning true if it returns -1 or 0.
+ *  method, returning true if it returns a value less than or equal to 0.
  */
 
 static VALUE
@@ -207,16 +207,17 @@ cmp_clamp(VALUE x, VALUE min, VALUE max)
 }
 
 /*
- *  The <code>Comparable</code> mixin is used by classes whose objects
- *  may be ordered. The class must define the <code><=></code> operator,
- *  which compares the receiver against another object, returning -1, 0,
- *  or +1 depending on whether the receiver is less than, equal to, or
- *  greater than the other object. If the other object is not comparable
- *  then the <code><=></code> operator should return nil.
- *  <code>Comparable</code> uses
- *  <code><=></code> to implement the conventional comparison operators
- *  (<code><</code>, <code><=</code>, <code>==</code>, <code>>=</code>,
- *  and <code>></code>) and the method <code>between?</code>.
+ *  The Comparable mixin is used by classes whose objects may be
+ *  ordered. The class must define the <code><=></code> operator,
+ *  which compares the receiver against another object, returning
+ *  a value less than 0, 0, or a value greater than 0, depending on
+ *  whether the receiver is less than, equal to,
+ *  or greater than the other object. If the other object is not
+ *  comparable then the <code><=></code> operator should return +nil+.
+ *  Comparable uses <code><=></code> to implement the conventional
+ *  comparison operators (<code><</code>, <code><=</code>,
+ *  <code>==</code>, <code>>=</code>, and <code>></code>) and the
+ *  method <code>between?</code>.
  *
  *     class SizeMatters
  *       include Comparable

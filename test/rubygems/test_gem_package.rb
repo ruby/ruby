@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require 'rubygems/package/tar_test_case'
-require 'rubygems/simple_gem'
 
 class TestGemPackage < Gem::Package::TarTestCase
 
@@ -24,6 +23,8 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_class_new_old_format
+    skip "jruby can't require the simple_gem file" if Gem.java_platform?
+    require_relative "simple_gem"
     File.open 'old_format.gem', 'wb' do |io|
       io.write SIMPLE_GEM
     end
@@ -114,7 +115,6 @@ class TestGemPackage < Gem::Package::TarTestCase
     spec.files = ['lib/code.rb']
     spec.date = Time.at 0
     spec.rubygems_version = Gem::Version.new '0'
-
 
     package = Gem::Package.new spec.file_name
 
@@ -420,6 +420,33 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal %w[lib/code.rb], reader.contents
   end
 
+  def test_raw_spec
+    data_tgz = util_tar_gz { }
+
+    gem = util_tar do |tar|
+      tar.add_file 'data.tar.gz', 0644 do |io|
+        io.write data_tgz.string
+      end
+
+      tar.add_file 'metadata.gz', 0644 do |io|
+        Zlib::GzipWriter.wrap io do |gzio|
+          gzio.write @spec.to_yaml
+        end
+      end
+    end
+
+    gem_path = "#{@destination}/test.gem"
+
+    File.open gem_path, "wb" do |io|
+      io.write gem.string
+    end
+
+    spec, metadata = Gem::Package.raw_spec(gem_path)
+
+    assert_equal @spec, spec
+    assert_match @spec.to_yaml, metadata.force_encoding("UTF-8")
+  end
+
   def test_contents
     package = Gem::Package.new @gem
 
@@ -536,6 +563,40 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     if Gem::Package::PathError === e
       assert_equal("installing into parent path lib/link/outside.txt of " +
+                  "#{destination_subdir} is not allowed", e.message)
+    elsif win_platform?
+      skip "symlink - must be admin with no UAC on Windows"
+    else
+      raise e
+    end
+  end
+
+  def test_extract_symlink_parent_doesnt_delete_user_dir
+    package = Gem::Package.new @gem
+
+    # Extract into a subdirectory of @destination; if this test fails it writes
+    # a file outside destination_subdir, but we want the file to remain inside
+    # @destination so it will be cleaned up.
+    destination_subdir = File.join @destination, 'subdir'
+    FileUtils.mkdir_p destination_subdir
+
+    destination_user_dir = File.join @destination, 'user'
+    destination_user_subdir = File.join destination_user_dir, 'dir'
+    FileUtils.mkdir_p destination_user_subdir
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_symlink 'link', destination_user_dir, 16877
+      tar.add_symlink 'link/dir', '.', 16877
+    end
+
+    e = assert_raises(Gem::Package::PathError, Errno::EACCES) do
+      package.extract_tar_gz tgz_io, destination_subdir
+    end
+
+    assert_path_exists destination_user_subdir
+
+    if Gem::Package::PathError === e
+      assert_equal("installing into parent path #{destination_user_subdir} of " +
                   "#{destination_subdir} is not allowed", e.message)
     elsif win_platform?
       skip "symlink - must be admin with no UAC on Windows"
@@ -806,6 +867,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_corrupt
+    skip "jruby strips the null byte and does not think it's corrupt" if Gem.java_platform?
     tf = Tempfile.open 'corrupt' do |io|
       data = Gem::Util.gzip 'a' * 10
       io.write \

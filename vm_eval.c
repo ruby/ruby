@@ -65,7 +65,7 @@ vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *ca
 {
     VALUE val;
     const rb_callable_method_entry_t *me = cc->me;
-    const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
+    const rb_method_cfunc_t *cfunc = UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
     int len = cfunc->argc;
     VALUE recv = calling->recv;
     int argc = calling->argc;
@@ -83,7 +83,7 @@ vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *ca
 
 	if (len >= 0) rb_check_arity(argc, len, len);
 
-	val = (*cfunc->invoker)(cfunc->func, recv, argc, argv);
+        val = (*cfunc->invoker)(recv, argc, argv, cfunc->func);
 
 	CHECK_CFP_CONSISTENCY("vm_call0_cfunc_with_frame");
 	rb_vm_pop_frame(ec);
@@ -383,6 +383,13 @@ check_funcall_missing(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mi
 	VALUE argbuf, *new_args = ALLOCV_N(VALUE, argbuf, argc+1);
 
 	new_args[0] = ID2SYM(mid);
+        #ifdef __GLIBC__
+        if (!argv) {
+            static const VALUE buf = Qfalse;
+            VM_ASSERT(argc == 0);
+            argv = &buf;
+        }
+        #endif
 	MEMCPY(new_args+1, argv, VALUE, argc);
 	ec->method_missing_reason = MISSING_NOENTRY;
 	args.ec = ec;
@@ -484,6 +491,7 @@ rb_type_str(enum ruby_value_type type)
       case type_case(T_NODE);
       case type_case(T_ICLASS);
       case type_case(T_ZOMBIE);
+      case type_case(T_MOVED);
       case T_MASK: break;
     }
 #undef type_case
@@ -733,6 +741,13 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
 
     nargv = ALLOCV_N(VALUE, work, argc + 1);
     nargv[0] = ID2SYM(id);
+    #ifdef __GLIBC__
+    if (!argv) {
+        static const VALUE buf = Qfalse;
+        VM_ASSERT(argc == 0);
+        argv = &buf;
+    }
+    #endif
     MEMCPY(nargv + 1, argv, VALUE, argc);
     ++argc;
     argv = nargv;
@@ -935,6 +950,8 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
  *  +send+ clashes with an existing method in _obj_.
  *  When the method is identified by a string, the string is converted
  *  to a symbol.
+ *
+ *  BasicObject implements +__send__+, Kernel implements +send+.
  *
  *     class Klass
  *       def hello(*args)
@@ -1267,6 +1284,7 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
     }
 
     if (fname != Qundef) {
+        if (!NIL_P(fname)) fname = rb_fstring(fname);
 	realpath = fname;
     }
     else if (bind) {
@@ -1276,7 +1294,7 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
 	rb_parser_warn_location(parser, TRUE);
     }
     else {
-	fname = rb_usascii_str_new_cstr("(eval)");
+        fname = rb_fstring_lit("(eval)");
     }
 
     rb_parser_set_context(parser, base_block, FALSE);
@@ -1322,7 +1340,7 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
 
     /* TODO: what the code checking? */
     if (!cref && block.as.captured.code.val) {
-	rb_cref_t *orig_cref = rb_vm_get_cref(vm_block_ep(&block));
+        rb_cref_t *orig_cref = vm_get_cref(vm_block_ep(&block));
 	cref = vm_cref_dup(orig_cref);
     }
     vm_set_eval_stack(ec, iseq, cref, &block);
@@ -1357,10 +1375,10 @@ eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
  *     eval(string [, binding [, filename [,lineno]]])  -> obj
  *
  *  Evaluates the Ruby expression(s) in <em>string</em>. If
- *  <em>binding</em> is given, which must be a <code>Binding</code>
- *  object, the evaluation is performed in its context. If the
- *  optional <em>filename</em> and <em>lineno</em> parameters are
- *  present, they will be used when reporting syntax errors.
+ *  <em>binding</em> is given, which must be a Binding object, the
+ *  evaluation is performed in its context. If the optional
+ *  <em>filename</em> and <em>lineno</em> parameters are present, they
+ *  will be used when reporting syntax errors.
  *
  *     def get_binding(str)
  *       return binding
@@ -1850,7 +1868,7 @@ uncaught_throw_to_s(VALUE exc)
  *  is no +catch+ block for the _tag_. The optional second
  *  parameter supplies a return value for the +catch+ block,
  *  which otherwise defaults to +nil+. For examples, see
- *  <code>Kernel::catch</code>.
+ *  Kernel::catch.
  */
 
 static VALUE
@@ -2013,7 +2031,7 @@ rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
 static void
 local_var_list_init(struct local_var_list *vars)
 {
-    vars->tbl = rb_hash_new_compare_by_id();
+    vars->tbl = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(vars->tbl);
 }
 

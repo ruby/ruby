@@ -31,7 +31,7 @@ RSpec.describe "bundle install" do
 
       update_git "foo", "4.0", :path => lib_path("foo"), :gemspec => true
 
-      bundle! :update, :all => bundle_update_requires_all?
+      bundle! :update, :all => true
       expect(out).to include("Using foo 2.0 (was 1.0) from #{lib_path("foo")} (at master~2@#{rev2})")
       expect(the_bundle).to include_gems "foo 2.0", :source => "git@#{lib_path("foo")}"
     end
@@ -40,12 +40,12 @@ RSpec.describe "bundle install" do
       revision = build_git("foo").ref_for("HEAD")
 
       gemfile <<-G
-        gem "foo", :git => "file://#{lib_path("foo-1.0")}", :group => :development
+        gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}", :group => :development
       G
 
       lockfile <<-L
         GIT
-          remote: file://#{lib_path("foo-1.0")}
+          remote: #{file_uri_for(lib_path("foo-1.0"))}
           revision: #{revision}
           specs:
             foo (1.0)

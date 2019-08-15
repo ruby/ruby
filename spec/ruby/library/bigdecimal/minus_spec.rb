@@ -55,4 +55,12 @@ describe "BigDecimal#-" do
     (@one_minus - @infinity).should == @infinity_minus
   end
 
+  describe "with Object" do
+    it "tries to coerce the other operand to self" do
+      object = mock("Object")
+      object.should_receive(:coerce).with(@one).and_return([@one, BigDecimal("42")])
+      (@one - object).should == BigDecimal("-41")
+    end
+  end
+
 end

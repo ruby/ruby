@@ -384,7 +384,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     expected = [
       [Gem::NameTuple.new('a', v(2), Gem::Platform::RUBY),
-        Gem::Source.new(@gem_repo)],
+       Gem::Source.new(@gem_repo)],
     ]
 
     assert_equal expected, @cmd.fetch_remote_gems(specs['a-1'])
@@ -412,7 +412,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     expected = [
       [Gem::NameTuple.new('a', v(2), Gem::Platform::RUBY),
-        Gem::Source.new(@gem_repo)],
+       Gem::Source.new(@gem_repo)],
     ]
 
     assert_equal expected, @cmd.fetch_remote_gems(specs['a-1'])
@@ -429,9 +429,9 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     expected = [
       [Gem::NameTuple.new('a', v(2), Gem::Platform::RUBY),
-        Gem::Source.new(@gem_repo)],
+       Gem::Source.new(@gem_repo)],
       [Gem::NameTuple.new('a', v('3.a'), Gem::Platform::RUBY),
-        Gem::Source.new(@gem_repo)],
+       Gem::Source.new(@gem_repo)],
     ]
 
     assert_equal expected, @cmd.fetch_remote_gems(specs['a-1'])
@@ -504,22 +504,9 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     assert_equal '--prefix',           arguments.shift
     assert_equal Gem.prefix,           arguments.shift
-    assert_equal '--no-rdoc',          arguments.shift
-    assert_equal '--no-ri',            arguments.shift
+    assert_equal '--no-document',      arguments.shift
     assert_equal '--previous-version', arguments.shift
     assert_equal Gem::VERSION,         arguments.shift
-    assert_empty arguments
-  end
-
-  def test_update_rubygems_arguments_1_8_x
-    @cmd.options[:system] = '1.8.26'
-
-    arguments = @cmd.update_rubygems_arguments
-
-    assert_equal '--prefix',           arguments.shift
-    assert_equal Gem.prefix,           arguments.shift
-    assert_equal '--no-rdoc',          arguments.shift
-    assert_equal '--no-ri',            arguments.shift
     assert_empty arguments
   end
 
@@ -528,6 +515,61 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
       fetcher.download 'a', 2
       fetcher.spec 'a', 1
     end
+
+    @cmd.options[:explain] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Gems to update:", out.shift
+    assert_equal "  a-2", out.shift
+    assert_empty out
+  end
+
+  def test_explain_platform_local
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.download 'a', 2
+
+      fetcher.download 'a', 2 do |s|
+        s.platform = local
+      end
+
+      fetcher.spec 'a', 1
+    end
+
+    @cmd.options[:explain] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Gems to update:", out.shift
+    assert_equal "  a-2-#{local}", out.shift
+    assert_empty out
+  end
+
+  def test_explain_platform_ruby
+    local = Gem::Platform.local
+    spec_fetcher do |fetcher|
+      fetcher.download 'a', 2
+
+      fetcher.download 'a', 2 do |s|
+        s.platform = local
+      end
+
+      fetcher.spec 'a', 1
+    end
+
+    # equivalent to --platform=ruby
+    Gem.platforms = [Gem::Platform::RUBY]
 
     @cmd.options[:explain] = true
     @cmd.options[:args] = %w[a]
