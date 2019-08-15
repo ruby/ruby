@@ -12,7 +12,7 @@ describe "File.mtime" do
 
   it "returns the modification Time of the file" do
     File.mtime(@filename).should be_kind_of(Time)
-    File.mtime(@filename).should be_close(@mtime, 60.0)
+    File.mtime(@filename).should be_close(@mtime, TIME_TOLERANCE)
   end
 
   guard -> { platform_is :linux or (platform_is :windows and ruby_version_is '2.5') } do
@@ -29,7 +29,7 @@ describe "File.mtime" do
   end
 
   it "raises an Errno::ENOENT exception if the file is not found" do
-    lambda { File.mtime('bogus') }.should raise_error(Errno::ENOENT)
+    -> { File.mtime('bogus') }.should raise_error(Errno::ENOENT)
   end
 end
 

@@ -18,7 +18,7 @@ describe :uri_join, shared: true do
   end
 
   it "raises an error if given no argument" do
-    lambda {
+    -> {
       @object.join
     }.should raise_error(ArgumentError)
   end

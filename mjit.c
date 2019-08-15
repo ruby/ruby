@@ -99,15 +99,42 @@ mjit_gc_start_hook(void)
 // Send a signal to workers to continue iseq compilations.  It is
 // called at the end of GC.
 void
-mjit_gc_finish_hook(void)
+mjit_gc_exit_hook(void)
 {
     if (!mjit_enabled)
         return;
-    CRITICAL_SECTION_START(4, "mjit_gc_finish_hook");
+    CRITICAL_SECTION_START(4, "mjit_gc_exit_hook");
     in_gc = false;
     verbose(4, "Sending wakeup signal to workers after GC");
     rb_native_cond_broadcast(&mjit_gc_wakeup);
-    CRITICAL_SECTION_FINISH(4, "mjit_gc_finish_hook");
+    CRITICAL_SECTION_FINISH(4, "mjit_gc_exit_hook");
+}
+
+// Deal with ISeq movement from compactor
+void
+mjit_update_references(const rb_iseq_t *iseq)
+{
+    if (!mjit_enabled)
+        return;
+
+    CRITICAL_SECTION_START(4, "mjit_update_references");
+    if (iseq->body->jit_unit) {
+        iseq->body->jit_unit->iseq = (rb_iseq_t *)rb_gc_location((VALUE)iseq->body->jit_unit->iseq);
+        // We need to invalidate JIT-ed code for the ISeq because it embeds pointer addresses.
+        // To efficiently do that, we use the same thing as TracePoint and thus everything is cancelled for now.
+        mjit_call_p = false; // TODO: instead of cancelling all, invalidate only this one and recompile it with some threshold.
+    }
+
+    // Units in stale_units (list of over-speculated and invalidated code) are not referenced from
+    // `iseq->body->jit_unit` anymore (because new one replaces that). So we need to check them too.
+    // TODO: we should be able to reduce the number of units checked here.
+    struct rb_mjit_unit *unit = NULL;
+    list_for_each(&stale_units.head, unit, unode) {
+        if (unit->iseq == iseq) {
+            unit->iseq = (rb_iseq_t *)rb_gc_location((VALUE)unit->iseq);
+        }
+    }
+    CRITICAL_SECTION_FINISH(4, "mjit_update_references");
 }
 
 // Iseqs can be garbage collected.  This function should call when it
@@ -117,6 +144,7 @@ mjit_free_iseq(const rb_iseq_t *iseq)
 {
     if (!mjit_enabled)
         return;
+
     CRITICAL_SECTION_START(4, "mjit_free_iseq");
     if (mjit_copy_job.iseq == iseq) {
         mjit_copy_job.iseq = NULL;
@@ -125,6 +153,15 @@ mjit_free_iseq(const rb_iseq_t *iseq)
         // jit_unit is not freed here because it may be referred by multiple
         // lists of units. `get_from_list` and `mjit_finish` do the job.
         iseq->body->jit_unit->iseq = NULL;
+    }
+    // Units in stale_units (list of over-speculated and invalidated code) are not referenced from
+    // `iseq->body->jit_unit` anymore (because new one replaces that). So we need to check them too.
+    // TODO: we should be able to reduce the number of units checked here.
+    struct rb_mjit_unit *unit = NULL;
+    list_for_each(&stale_units.head, unit, unode) {
+        if (unit->iseq == iseq) {
+            unit->iseq = NULL;
+        }
     }
     CRITICAL_SECTION_FINISH(4, "mjit_free_iseq");
 }
@@ -140,7 +177,21 @@ free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
     list_for_each_safe(&list->head, unit, next, unode) {
         list_del(&unit->unode);
         if (!close_handle_p) unit->handle = NULL; /* Skip dlclose in free_unit() */
-        free_unit(unit);
+
+        if (list == &stale_units) { // `free_unit(unit)` crashes after GC.compact on `stale_units`
+            /*
+             * TODO: REVERT THIS BRANCH
+             * Debug the crash on stale_units w/ GC.compact and just use `free_unit(unit)`!!
+             */
+            if (unit->handle && dlclose(unit->handle)) {
+                mjit_warning("failed to close handle for u%d: %s", unit->id, dlerror());
+            }
+            clean_object_files(unit);
+            free(unit);
+        }
+        else {
+            free_unit(unit);
+        }
     }
     list->length = 0;
 }
@@ -223,7 +274,7 @@ create_unit(const rb_iseq_t *iseq)
         return;
 
     unit->id = current_unit_num++;
-    unit->iseq = iseq;
+    unit->iseq = (rb_iseq_t *)iseq;
     iseq->body->jit_unit = unit;
 }
 
@@ -279,6 +330,7 @@ unload_units(void)
     for (cont = first_cont; cont != NULL; cont = cont->next) {
         mark_ec_units(cont->ec);
     }
+    // TODO: check slale_units and unload unused ones! (note that the unit is not associated to ISeq anymore)
 
     // Remove 1/10 units more to decrease unloading calls.
     // TODO: Calculate max total_calls in unit_queue and don't unload units
@@ -352,16 +404,16 @@ mjit_wait(struct rb_iseq_constant_body *body)
     while (body->jit_func == (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC) {
         tries++;
         if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS || pch_status == PCH_FAILED) {
-            CRITICAL_SECTION_START(3, "in mjit_wait_call to set jit_func");
+            CRITICAL_SECTION_START(3, "in rb_mjit_wait_call to set jit_func");
             body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // JIT worker seems dead. Give up.
-            CRITICAL_SECTION_FINISH(3, "in mjit_wait_call to set jit_func");
+            CRITICAL_SECTION_FINISH(3, "in rb_mjit_wait_call to set jit_func");
             mjit_warning("timed out to wait for JIT finish");
             break;
         }
 
-        CRITICAL_SECTION_START(3, "in mjit_wait_call for a client wakeup");
+        CRITICAL_SECTION_START(3, "in rb_mjit_wait_call for a client wakeup");
         rb_native_cond_broadcast(&mjit_worker_wakeup);
-        CRITICAL_SECTION_FINISH(3, "in mjit_wait_call for a client wakeup");
+        CRITICAL_SECTION_FINISH(3, "in rb_mjit_wait_call for a client wakeup");
         rb_thread_wait_for(tv);
     }
 }
@@ -369,7 +421,7 @@ mjit_wait(struct rb_iseq_constant_body *body)
 // Wait for JIT compilation finish for --jit-wait, and call the function pointer
 // if the compiled result is not NOT_COMPILED_JIT_ISEQ_FUNC.
 VALUE
-mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
+rb_mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
 {
     mjit_wait(body);
     if ((uintptr_t)body->jit_func <= (uintptr_t)LAST_JIT_ISEQ_FUNC) {
@@ -417,7 +469,7 @@ init_header_filename(void)
     // Root path of the running ruby process. Equal to RbConfig::TOPDIR.
     VALUE basedir_val;
 #endif
-    const char *basedir = NULL;
+    const char *basedir = "";
     size_t baselen = 0;
     char *p;
 #ifdef _WIN32

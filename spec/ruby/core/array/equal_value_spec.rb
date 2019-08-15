@@ -44,8 +44,8 @@ describe "Array#==" do
     [obj].should == [5]
   end
 
-  # As per bug #1720
-  it "returns false for [NaN] == [NaN]" do
-    [nan_value].should_not == [nan_value]
+  # See https://bugs.ruby-lang.org/issues/1720
+  it "returns true for [NaN] == [NaN] because Array#== first checks with #equal? and NaN.equal?(NaN) is true" do
+    [Float::NAN].should == [Float::NAN]
   end
 end

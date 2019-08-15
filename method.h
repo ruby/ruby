@@ -40,9 +40,9 @@ typedef struct rb_scope_visi_struct {
 /*! CREF (Class REFerence) */
 typedef struct rb_cref_struct {
     VALUE flags;
-    const VALUE refinements;
-    const VALUE klass;
-    struct rb_cref_struct * const next;
+    VALUE refinements;
+    VALUE klass;
+    struct rb_cref_struct * next;
     const rb_scope_visibility_t scope_visi;
 } rb_cref_t;
 
@@ -50,10 +50,10 @@ typedef struct rb_cref_struct {
 
 typedef struct rb_method_entry_struct {
     VALUE flags;
-    const VALUE defined_class;
+    VALUE defined_class;
     struct rb_method_definition_struct * const def;
     ID called_id;
-    const VALUE owner;
+    VALUE owner;
 } rb_method_entry_t;
 
 typedef struct rb_callable_method_entry_struct { /* same fields with rb_method_entry_t */
@@ -115,7 +115,8 @@ typedef enum {
     END_OF_ENUMERATION(VM_METHOD_TYPE)
 } rb_method_type_t;
 #define VM_METHOD_TYPE_MINIMUM_BITS 4
-/* TODO: STATIC_ASSERT for VM_METHOD_TYPE_MINIMUM_BITS */
+STATIC_ASSERT(VM_METHOD_TYPE_MINIMUM_BITS,
+              VM_METHOD_TYPE_REFINED <= (1<<VM_METHOD_TYPE_MINIMUM_BITS));
 
 #ifndef rb_iseq_t
 typedef struct rb_iseq_struct rb_iseq_t;
@@ -123,8 +124,8 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #endif
 
 typedef struct rb_method_iseq_struct {
-    const rb_iseq_t * const iseqptr; /*!< iseq pointer, should be separated from iseqval */
-    rb_cref_t * const cref;          /*!< class reference, should be marked */
+    rb_iseq_t * iseqptr; /*!< iseq pointer, should be separated from iseqval */
+    rb_cref_t * cref;          /*!< class reference, should be marked */
 } rb_method_iseq_t; /* check rb_add_method_iseq() when modify the fields */
 
 typedef struct rb_method_cfunc_struct {
@@ -135,20 +136,20 @@ typedef struct rb_method_cfunc_struct {
 
 typedef struct rb_method_attr_struct {
     ID id;
-    const VALUE location; /* should be marked */
+    VALUE location; /* should be marked */
 } rb_method_attr_t;
 
 typedef struct rb_method_alias_struct {
-    const struct rb_method_entry_struct * const original_me; /* original_me->klass is original owner */
+    struct rb_method_entry_struct * original_me; /* original_me->klass is original owner */
 } rb_method_alias_t;
 
 typedef struct rb_method_refined_struct {
-    const struct rb_method_entry_struct * const orig_me;
-    const VALUE owner;
+    struct rb_method_entry_struct * orig_me;
+    VALUE owner;
 } rb_method_refined_t;
 
 typedef struct rb_method_bmethod_struct {
-    const VALUE proc; /* should be marked */
+    VALUE proc; /* should be marked */
     struct rb_hook_list_struct *hooks;
 } rb_method_bmethod_t;
 
@@ -159,7 +160,7 @@ enum method_optimized_type {
     OPTIMIZED_METHOD_TYPE__MAX
 };
 
-PACKED_STRUCT_UNALIGNED(struct rb_method_definition_struct {
+struct rb_method_definition_struct {
     BITFIELD(rb_method_type_t, type, VM_METHOD_TYPE_MINIMUM_BITS);
     int alias_count : 28;
     int complemented_count : 28;
@@ -176,9 +177,10 @@ PACKED_STRUCT_UNALIGNED(struct rb_method_definition_struct {
     } body;
 
     ID original_id;
-});
+};
 
 typedef struct rb_method_definition_struct rb_method_definition_t;
+STATIC_ASSERT(sizeof_method_def, offsetof(rb_method_definition_t, body)==8);
 
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 #define UNDEFINED_REFINED_METHOD_P(def) \

@@ -13,15 +13,15 @@ RSpec.describe "bundle lock" do
 
   before :each do
     gemfile <<-G
-      source "file://localhost#{repo}"
+      source "#{file_uri_for(repo)}"
       gem "rails"
       gem "with_license"
       gem "foo"
     G
 
-    @lockfile = strip_lockfile(normalize_uri_file(<<-L))
+    @lockfile = strip_lockfile(<<-L)
       GEM
-        remote: file://localhost#{repo}/
+        remote: #{file_uri_for(repo)}/
         specs:
           actionmailer (2.3.2)
             activesupport (= 2.3.2)
@@ -91,12 +91,12 @@ RSpec.describe "bundle lock" do
 
   it "works with --gemfile flag" do
     create_file "CustomGemfile", <<-G
-      source "file://localhost#{repo}"
+      source "#{file_uri_for(repo)}"
       gem "foo"
     G
-    lockfile = strip_lockfile(normalize_uri_file(<<-L))
+    lockfile = strip_lockfile(<<-L)
       GEM
-        remote: file://localhost#{repo}/
+        remote: #{file_uri_for(repo)}/
         specs:
           foo (1.0)
 
@@ -151,7 +151,7 @@ RSpec.describe "bundle lock" do
 
   it "can lock without downloading gems" do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
 
       gem "thin"
       gem "rack_middleware", :group => "test"
@@ -182,7 +182,7 @@ RSpec.describe "bundle lock" do
 
       # establish a lockfile set to 1.4.3
       install_gemfile <<-G
-        source "file://#{gem_repo4}"
+        source "#{file_uri_for(gem_repo4)}"
         gem 'foo', '1.4.3'
         gem 'bar', '2.0.3'
         gem 'qux', '1.0.0'
@@ -191,7 +191,7 @@ RSpec.describe "bundle lock" do
       # remove 1.4.3 requirement and bar altogether
       # to setup update specs below
       gemfile <<-G
-        source "file://#{gem_repo4}"
+        source "#{file_uri_for(gem_repo4)}"
         gem 'foo'
         gem 'qux'
       G
@@ -242,7 +242,7 @@ RSpec.describe "bundle lock" do
 
   it "errors when removing all platforms" do
     bundle "lock --remove-platform #{local_platforms.join(" ")}"
-    expect(last_command.bundler_err).to include("Removing all platforms from the bundle is not allowed")
+    expect(err).to include("Removing all platforms from the bundle is not allowed")
   end
 
   # from https://github.com/bundler/bundler/issues/4896
@@ -276,7 +276,7 @@ RSpec.describe "bundle lock" do
     end
 
     gemfile <<-G
-      source "file://localhost#{gem_repo4}"
+      source "#{file_uri_for(gem_repo4)}"
 
       gem "mixlib-shellout"
       gem "gssapi"
@@ -284,9 +284,9 @@ RSpec.describe "bundle lock" do
 
     simulate_platform(mingw) { bundle! :lock }
 
-    expect(the_bundle.lockfile).to read_as(normalize_uri_file(strip_whitespace(<<-G)))
+    lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo4}/
+        remote: #{file_uri_for(gem_repo4)}/
         specs:
           ffi (1.9.14-x86-mingw32)
           gssapi (1.2.0)
@@ -309,9 +309,9 @@ RSpec.describe "bundle lock" do
 
     simulate_platform(rb) { bundle! :lock }
 
-    expect(the_bundle.lockfile).to read_as(normalize_uri_file(strip_whitespace(<<-G)))
+    lockfile_should_be <<-G
       GEM
-        remote: file://localhost#{gem_repo4}/
+        remote: #{file_uri_for(gem_repo4)}/
         specs:
           ffi (1.9.14)
           ffi (1.9.14-x86-mingw32)

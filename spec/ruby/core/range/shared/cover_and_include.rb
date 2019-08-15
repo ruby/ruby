@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 require_relative '../../../spec_helper'
 
 describe :range_cover_and_include, shared: true do
@@ -29,8 +29,8 @@ describe :range_cover_and_include, shared: true do
   end
 
   it "raises an ArgumentError without exactly one argument" do
-    lambda{ (1..2).send(@method) }.should raise_error(ArgumentError)
-    lambda{ (1..2).send(@method, 1, 2) }.should raise_error(ArgumentError)
+    ->{ (1..2).send(@method) }.should raise_error(ArgumentError)
+    ->{ (1..2).send(@method, 1, 2) }.should raise_error(ArgumentError)
   end
 
   it "returns true if argument is equal to the first value of the range" do

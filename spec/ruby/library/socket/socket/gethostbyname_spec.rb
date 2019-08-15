@@ -2,15 +2,15 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-describe "Socket#gethostbyname" do
+describe "Socket.gethostbyname" do
   it "returns broadcast address info for '<broadcast>'" do
     addr = Socket.gethostbyname('<broadcast>');
-    addr.should == ["255.255.255.255", [], 2, "\377\377\377\377"]
+    addr.should == ["255.255.255.255", [], 2, "\xFF\xFF\xFF\xFF"]
   end
 
   it "returns broadcast address info for '<any>'" do
     addr = Socket.gethostbyname('<any>');
-    addr.should == ["0.0.0.0", [], 2, "\000\000\000\000"]
+    addr.should == ["0.0.0.0", [], 2, "\x00\x00\x00\x00"]
   end
 end
 

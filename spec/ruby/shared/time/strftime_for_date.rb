@@ -264,12 +264,10 @@ describe :strftime_date, shared: true do
     @new_date[2001,3,22].strftime("%-m/%-d/%-y").should == "3/22/1"
   end
 
-  with_feature :encoding do
-    it "passes the format string's encoding to the result string" do
-      result = @new_date[2010,3,8].strftime("%d. März %Y")
+  it "passes the format string's encoding to the result string" do
+    result = @new_date[2010,3,8].strftime("%d. März %Y")
 
-      result.encoding.should == Encoding::UTF_8
-      result.should == "08. März 2010"
-    end
+    result.encoding.should == Encoding::UTF_8
+    result.should == "08. März 2010"
   end
 end

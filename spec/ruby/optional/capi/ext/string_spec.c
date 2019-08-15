@@ -176,6 +176,10 @@ VALUE string_spec_rb_str_encode(VALUE self, VALUE str, VALUE enc, VALUE flags, V
   return rb_str_encode(str, enc, FIX2INT(flags), opts);
 }
 
+VALUE string_spec_rb_str_export_to_enc(VALUE self, VALUE str, VALUE enc) {
+  return rb_str_export_to_enc(str, rb_to_encoding(enc));
+}
+
 VALUE string_spec_rb_str_new_cstr(VALUE self, VALUE str) {
   if(NIL_P(str)) {
     return rb_str_new_cstr("");
@@ -435,6 +439,7 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_new_offset", string_spec_rb_str_new_offset, 3);
   rb_define_method(cls, "rb_str_new2", string_spec_rb_str_new2, 1);
   rb_define_method(cls, "rb_str_encode", string_spec_rb_str_encode, 4);
+  rb_define_method(cls, "rb_str_export_to_enc", string_spec_rb_str_export_to_enc, 2);
   rb_define_method(cls, "rb_str_new_cstr", string_spec_rb_str_new_cstr, 1);
   rb_define_method(cls, "rb_external_str_new", string_spec_rb_external_str_new, 1);
   rb_define_method(cls, "rb_external_str_new_cstr", string_spec_rb_external_str_new_cstr, 1);

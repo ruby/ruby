@@ -1345,6 +1345,8 @@ InitVM_Struct(void)
 
     rb_define_method(rb_cStruct, "members", rb_struct_members_m, 0);
     rb_define_method(rb_cStruct, "dig", rb_struct_dig, -1);
+
+    rb_define_method(rb_cStruct, "deconstruct", rb_struct_to_a, 0);
 }
 
 #undef rb_intern
