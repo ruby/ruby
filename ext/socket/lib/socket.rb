@@ -71,13 +71,13 @@ class Addrinfo
       begin
         yield sock
       ensure
-        sock.close if !sock.closed?
+        sock.close
       end
     else
       sock
     end
   end
-  private :connect_internal
+  protected :connect_internal
 
   # :call-seq:
   #   addrinfo.connect_from([local_addr_args], [opts]) {|socket| ... }
@@ -110,10 +110,8 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect_from(*args, &block)
-    opts = Hash === args.last ? args.pop : {}
-    local_addr_args = args
-    connect_internal(family_addrinfo(*local_addr_args), opts[:timeout], &block)
+  def connect_from(*args, timeout: nil, &block)
+    connect_internal(family_addrinfo(*args), timeout, &block)
   end
 
   # :call-seq:
@@ -135,8 +133,8 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect(opts={}, &block)
-    connect_internal(nil, opts[:timeout], &block)
+  def connect(timeout: nil, &block)
+    connect_internal(nil, timeout, &block)
   end
 
   # :call-seq:
@@ -158,11 +156,9 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect_to(*args, &block)
-    opts = Hash === args.last ? args.pop : {}
-    remote_addr_args = args
-    remote_addrinfo = family_addrinfo(*remote_addr_args)
-    remote_addrinfo.send(:connect_internal, self, opts[:timeout], &block)
+  def connect_to(*args, timeout: nil, &block)
+    remote_addrinfo = family_addrinfo(*args)
+    remote_addrinfo.connect_internal(self, timeout, &block)
   end
 
   # creates a socket bound to self.
@@ -189,7 +185,7 @@ class Addrinfo
       begin
         yield sock
       ensure
-        sock.close if !sock.closed?
+        sock.close
       end
     else
       sock
@@ -212,7 +208,7 @@ class Addrinfo
       begin
         yield sock
       ensure
-        sock.close if !sock.closed?
+        sock.close
       end
     else
       sock
@@ -317,9 +313,9 @@ class BasicSocket < IO
   # but the non-blocking flag is set before the system call
   # and it doesn't retry the system call.
   #
-  # By specifying `exception: false`, the _opts_ hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that sendmsg_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # return the symbol +:wait_writable+ instead.
   def sendmsg_nonblock(mesg, flags = 0, dest_sockaddr = nil, *controls,
                        exception: true)
     __sendmsg_nonblock(mesg, flags, dest_sockaddr, controls, exception)
@@ -340,6 +336,7 @@ class BasicSocket < IO
   # === Parameters
   # * +maxlen+ - the number of bytes to receive from the socket
   # * +flags+ - zero or more of the +MSG_+ options
+  # * +buf+ - destination String buffer
   # * +options+ - keyword hash, supporting `exception: false`
   #
   # === Example
@@ -365,9 +362,9 @@ class BasicSocket < IO
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying recv_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
-  # that recv_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
+  # that recv_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * Socket#recvfrom
@@ -439,12 +436,25 @@ class BasicSocket < IO
   # but non-blocking flag is set before the system call
   # and it doesn't retry the system call.
   #
-  # By specifying `exception: false`, the _opts_ hash allows you to indicate
-  # that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
+  # that recvmsg_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol +:wait_readable+ instead.
   def recvmsg_nonblock(dlen = nil, flags = 0, clen = nil,
                        scm_rights: false, exception: true)
     __recvmsg_nonblock(dlen, flags, clen, scm_rights, exception)
+  end
+
+  # Linux-specific optimizations to avoid fcntl for IO#read_nonblock
+  # and IO#write_nonblock using MSG_DONTWAIT
+  # Do other platforms support MSG_DONTWAIT reliably?
+  if RUBY_PLATFORM =~ /linux/ && Socket.const_defined?(:MSG_DONTWAIT)
+    def read_nonblock(len, str = nil, exception: true) # :nodoc:
+      __read_nonblock(len, str, exception)
+    end
+
+    def write_nonblock(buf, exception: true) # :nodoc:
+      __write_nonblock(buf, exception)
+    end
   end
 end
 
@@ -516,9 +526,9 @@ class Socket < BasicSocket
   # So IO::WaitReadable can be used to rescue the exceptions for retrying
   # recvfrom_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
-  # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead.
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
+  # that recvfrom_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * Socket#recvfrom
@@ -573,9 +583,9 @@ class Socket < BasicSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead.
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * Socket#accept
@@ -609,14 +619,9 @@ class Socket < BasicSocket
   #     puts sock.read
   #   }
   #
-  def self.tcp(host, port, *rest) # :yield: socket
-    opts = Hash === rest.last ? rest.pop : {}
-    raise ArgumentError, "wrong number of arguments (#{rest.length} for 2)" if 2 < rest.length
-    local_host, local_port = rest
+  def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil) # :yield: socket
     last_error = nil
     ret = nil
-
-    connect_timeout = opts[:connect_timeout]
 
     local_addr_list = nil
     if local_host != nil || local_port != nil
@@ -626,14 +631,14 @@ class Socket < BasicSocket
     Addrinfo.foreach(host, port, nil, :STREAM) {|ai|
       if local_addr_list
         local_addr = local_addr_list.find {|local_ai| local_ai.afamily == ai.afamily }
-        next if !local_addr
+        next unless local_addr
       else
         local_addr = nil
       end
       begin
         sock = local_addr ?
-          ai.connect_from(local_addr, :timeout => connect_timeout) :
-          ai.connect(:timeout => connect_timeout)
+          ai.connect_from(local_addr, timeout: connect_timeout) :
+          ai.connect(timeout: connect_timeout)
       rescue SystemCallError
         last_error = $!
         next
@@ -641,7 +646,7 @@ class Socket < BasicSocket
       ret = sock
       break
     }
-    if !ret
+    unless ret
       if last_error
         raise last_error
       else
@@ -652,7 +657,7 @@ class Socket < BasicSocket
       begin
         yield ret
       ensure
-        ret.close if !ret.closed?
+        ret.close
       end
     else
       ret
@@ -676,7 +681,7 @@ class Socket < BasicSocket
         if reuseaddr
           s.setsockopt(:SOCKET, :REUSEADDR, 1)
         end
-        if !port
+        unless port
           s.bind(ai)
           port = s.local_address.ip_port
         else
@@ -684,10 +689,10 @@ class Socket < BasicSocket
         end
       }
     rescue Errno::EADDRINUSE
-      sockets.each {|s| s.close }
+      sockets.each(&:close)
       retry
     rescue Exception
-      sockets.each {|s| s.close }
+      sockets.each(&:close)
       raise
     end
     sockets
@@ -704,7 +709,7 @@ class Socket < BasicSocket
         s.listen(Socket::SOMAXCONN)
       }
     rescue Exception
-      sockets.each {|s| s.close }
+      sockets.each(&:close)
       raise
     end
     sockets
@@ -767,7 +772,7 @@ class Socket < BasicSocket
           raise last_error
         end
       rescue Exception
-        sockets.each {|s| s.close }
+        sockets.each(&:close)
         raise
       end
     end
@@ -775,7 +780,7 @@ class Socket < BasicSocket
       begin
         yield sockets
       ensure
-        sockets.each {|s| s.close if !s.closed? }
+        sockets.each(&:close)
       end
     else
       sockets
@@ -894,18 +899,19 @@ class Socket < BasicSocket
     Addrinfo.foreach(host, port, nil, :DGRAM, nil, Socket::AI_PASSIVE) {|ai|
       if ai.ipv4? && ai.ip_address == "0.0.0.0"
         local_addrs.each {|a|
-          next if !a.ipv4?
+          next unless a.ipv4?
           ip_list << Addrinfo.new(a.to_sockaddr, :INET, :DGRAM, 0);
         }
       elsif ai.ipv6? && ai.ip_address == "::" && !ipv6_recvpktinfo
         local_addrs.each {|a|
-          next if !a.ipv6?
+          next unless a.ipv6?
           ip_list << Addrinfo.new(a.to_sockaddr, :INET6, :DGRAM, 0);
         }
       else
         ip_list << ai
       end
     }
+    ip_list.uniq!(&:to_sockaddr)
 
     if port == 0
       sockets = ip_sockets_port0(ip_list, false)
@@ -936,7 +942,7 @@ class Socket < BasicSocket
       begin
         yield sockets
       ensure
-        sockets.each {|s| s.close if !s.closed? } if sockets
+        sockets.each(&:close) if sockets
       end
     else
       sockets
@@ -1073,7 +1079,7 @@ class Socket < BasicSocket
       begin
         yield sock
       ensure
-        sock.close if !sock.closed?
+        sock.close
       end
     else
       sock
@@ -1097,7 +1103,7 @@ class Socket < BasicSocket
   #   }
   #
   def self.unix_server_socket(path)
-    if !unix_socket_abstract_name?(path)
+    unless unix_socket_abstract_name?(path)
       begin
         st = File.lstat(path)
       rescue Errno::ENOENT
@@ -1111,8 +1117,8 @@ class Socket < BasicSocket
       begin
         yield s
       ensure
-        s.close if !s.closed?
-        if !unix_socket_abstract_name?(path)
+        s.close
+        unless unix_socket_abstract_name?(path)
           File.unlink path
         end
       end
@@ -1197,9 +1203,9 @@ class Socket < BasicSocket
   # it is extended by IO::WaitWritable.
   # So IO::WaitWritable can be used to rescue the exceptions for retrying connect_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that connect_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # return the symbol +:wait_writable+ instead.
   #
   # === See
   #  # Socket#connect
@@ -1215,7 +1221,6 @@ class UDPSocket < IPSocket
   #
   # Receives up to _maxlen_ bytes from +udpsocket+ using recvfrom(2) after
   # O_NONBLOCK is set for the underlying file descriptor.
-  # If _maxlen_ is omitted, its default value is 65536.
   # _flags_ is zero or more of the +MSG_+ options.
   # The first element of the results, _mesg_, is the data received.
   # The second element, _sender_inet_addr_, is an array to represent the sender address.
@@ -1256,9 +1261,9 @@ class UDPSocket < IPSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
-  # that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead.
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
+  # that recvfrom_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * Socket#recvfrom
@@ -1297,9 +1302,9 @@ class TCPServer < TCPSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead.
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * TCPServer#accept
@@ -1338,9 +1343,9 @@ class UNIXServer < UNIXSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead.
+  # return the symbol +:wait_readable+ instead.
   #
   # === See
   # * UNIXServer#accept

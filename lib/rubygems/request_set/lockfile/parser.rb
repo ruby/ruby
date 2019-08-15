@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 class Gem::RequestSet::Lockfile::Parser
+
   ###
   # Parses lockfiles
 
-  def initialize tokenizer, set, platforms, filename = nil
+  def initialize(tokenizer, set, platforms, filename = nil)
     @tokens    = tokenizer
     @filename  = filename
     @set       = set
@@ -41,10 +42,10 @@ class Gem::RequestSet::Lockfile::Parser
   ##
   # Gets the next token for a Lockfile
 
-  def get expected_types = nil, expected_value = nil # :nodoc:
+  def get(expected_types = nil, expected_value = nil) # :nodoc:
     token = @tokens.shift
 
-    if expected_types and not Array(expected_types).include? token.type then
+    if expected_types and not Array(expected_types).include? token.type
       unget token
 
       message = "unexpected token [#{token.type.inspect}, #{token.value.inspect}], " +
@@ -53,7 +54,7 @@ class Gem::RequestSet::Lockfile::Parser
       raise Gem::RequestSet::Lockfile::ParseError.new message, token.column, token.line, @filename
     end
 
-    if expected_value and expected_value != token.value then
+    if expected_value and expected_value != token.value
       unget token
 
       message = "unexpected token [#{token.type.inspect}, #{token.value.inspect}], " +
@@ -93,7 +94,7 @@ class Gem::RequestSet::Lockfile::Parser
 
         get :r_paren
 
-        if peek[0] == :bang then
+        if peek[0] == :bang
           requirements.clear
           requirements << pinned_requirement(token.value)
 
@@ -144,7 +145,7 @@ class Gem::RequestSet::Lockfile::Parser
         type = token.type
         data = token.value
 
-        if type == :text and column == 4 then
+        if type == :text and column == 4
           version, platform = data.split '-', 2
 
           platform =
@@ -183,7 +184,7 @@ class Gem::RequestSet::Lockfile::Parser
 
     type = peek.type
     value = peek.value
-    if type == :entry and %w[branch ref tag].include? value then
+    if type == :entry and %w[branch ref tag].include? value
       get
       get :text
 
@@ -214,7 +215,7 @@ class Gem::RequestSet::Lockfile::Parser
         type = token.type
         data = token.value
 
-        if type == :text and column == 4 then
+        if type == :text and column == 4
           last_spec = set.add_git_spec name, data, repository, revision, true
         else
           dependency = parse_dependency name, data
@@ -261,7 +262,7 @@ class Gem::RequestSet::Lockfile::Parser
         type = token.type
         data = token.value
 
-        if type == :text and column == 4 then
+        if type == :text and column == 4
           last_spec = set.add_vendor_gem name, directory
         else
           dependency = parse_dependency name, data
@@ -294,7 +295,7 @@ class Gem::RequestSet::Lockfile::Parser
   # Parses the requirements following the dependency +name+ and the +op+ for
   # the first token of the requirements and returns a Gem::Dependency object.
 
-  def parse_dependency name, op # :nodoc:
+  def parse_dependency(name, op) # :nodoc:
     return Gem::Dependency.new name, op unless peek[0] == :text
 
     version = get(:text).value
@@ -314,7 +315,7 @@ class Gem::RequestSet::Lockfile::Parser
 
   private
 
-  def skip type # :nodoc:
+  def skip(type) # :nodoc:
     @tokens.skip type
   end
 
@@ -325,30 +326,20 @@ class Gem::RequestSet::Lockfile::Parser
     @tokens.peek
   end
 
-  if [].respond_to? :flat_map
-    def pinned_requirement name # :nodoc:
-      requirement = Gem::Dependency.new name
-      specification = @set.sets.flat_map { |set|
-        set.find_all(requirement)
-      }.compact.first
+  def pinned_requirement(name) # :nodoc:
+    requirement = Gem::Dependency.new name
+    specification = @set.sets.flat_map do |set|
+      set.find_all(requirement)
+    end.compact.first
 
-      specification && specification.version
-    end
-  else # FIXME: remove when 1.8 is dropped
-    def pinned_requirement name # :nodoc:
-      requirement = Gem::Dependency.new name
-      specification = @set.sets.map { |set|
-        set.find_all(requirement)
-      }.flatten(1).compact.first
-
-      specification && specification.version
-    end
+    specification && specification.version
   end
 
   ##
   # Ungets the last token retrieved by #get
 
-  def unget token # :nodoc:
+  def unget(token) # :nodoc:
     @tokens.unshift token
   end
+
 end

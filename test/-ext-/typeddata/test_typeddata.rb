@@ -17,4 +17,13 @@ class Test_TypedData < Test::Unit::TestCase
     obj = eval("class C\u{1f5ff}; self; end").new
     assert_raise_with_message(TypeError, /C\u{1f5ff}/) {Bug::TypedData.check(obj)}
   end
+
+  def test_deferred_free
+    assert_ruby_status([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    require "-test-/typeddata"
+    begin;
+      n = 1 << 20
+      Bug::TypedData.make(n)
+    end;
+  end
 end

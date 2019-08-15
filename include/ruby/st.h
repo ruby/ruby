@@ -1,6 +1,8 @@
-/* This is a public domain general purpose hash table package written by Peter Moore @ UCB. */
+/* This is a public domain general purpose hash table package
+   originally written by Peter Moore @ UCB.
 
-/* @(#) st.h 5.1 89/12/14 */
+   The hash table data strutures were redesigned and the package was
+   rewritten by Vladimir Makarov <vmakarov@redhat.com>.  */
 
 #ifndef RUBY_ST_H
 #define RUBY_ST_H 1
@@ -46,6 +48,10 @@ typedef unsigned LONG_LONG st_data_t;
 typedef struct st_table st_table;
 
 typedef st_data_t st_index_t;
+
+/* Maximal value of unsigned integer type st_index_t.  */
+#define MAX_ST_INDEX_VAL (~(st_index_t) 0)
+
 typedef int st_compare_func(st_data_t, st_data_t);
 typedef st_index_t st_hash_func(st_data_t);
 
@@ -57,7 +63,7 @@ struct st_hash_type {
     st_index_t (*hash)(ANYARGS /*st_data_t*/);        /* st_hash_func* */
 };
 
-#define ST_INDEX_BITS (sizeof(st_index_t) * CHAR_BIT)
+#define ST_INDEX_BITS (SIZEOF_ST_INDEX_T * CHAR_BIT)
 
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR) && defined(HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P)
 # define ST_DATA_COMPATIBLE_P(type) \
@@ -66,38 +72,31 @@ struct st_hash_type {
 # define ST_DATA_COMPATIBLE_P(type) 0
 #endif
 
+typedef struct st_table_entry st_table_entry;
+
+struct st_table_entry; /* defined in st.c */
+
 struct st_table {
+    /* Cached features of the table -- see st.c for more details.  */
+    unsigned char entry_power, bin_power, size_ind;
+    /* How many times the table was rebuilt.  */
+    unsigned int rebuilds_num;
     const struct st_hash_type *type;
-    st_index_t num_bins;
-    unsigned int entries_packed : 1;
-#ifdef __GNUC__
-    /*
-     * C spec says,
-     *   A bit-field shall have a type that is a qualified or unqualified
-     *   version of _Bool, signed int, unsigned int, or some other
-     *   implementation-defined type. It is implementation-defined whether
-     *   atomic types are permitted.
-     * In short, long and long long bit-field are implementation-defined
-     * feature. Therefore we want to suppress a warning explicitly.
-     */
-    __extension__
-#endif
-    st_index_t num_entries : ST_INDEX_BITS - 1;
-    union {
-	struct {
-	    struct st_table_entry **bins;
-	    void *private_list_head[2];
-	} big;
-	struct {
-	    struct st_packed_entry *entries;
-	    st_index_t real_entries;
-	} packed;
-    } as;
+    /* Number of entries currently in the table.  */
+    st_index_t num_entries;
+    /* Array of bins used for access by keys.  */
+    st_index_t *bins;
+    /* Start and bound index of entries in array entries.
+       entries_starts and entries_bound are in interval
+       [0,allocated_entries].  */
+    st_index_t entries_start, entries_bound;
+    /* Array of size 2^entry_power.  */
+    st_table_entry *entries;
 };
 
 #define st_is_member(table,key) st_lookup((table),(key),(st_data_t *)0)
 
-enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK};
+enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK, ST_REPLACE};
 
 st_table *st_init_table(const struct st_hash_type *);
 st_table *st_init_table_with_size(const struct st_hash_type *, st_index_t);
@@ -119,9 +118,9 @@ typedef int st_update_callback_func(st_data_t *key, st_data_t *value, st_data_t 
  * results of hash() are same and compare() returns 0, otherwise the
  * behavior is undefined */
 int st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data_t arg);
+int st_foreach_with_replace(st_table *tab, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg);
 int st_foreach(st_table *, int (*)(ANYARGS), st_data_t);
 int st_foreach_check(st_table *, int (*)(ANYARGS), st_data_t, st_data_t);
-int st_reverse_foreach(st_table *, int (*)(ANYARGS), st_data_t);
 st_index_t st_keys(st_table *table, st_data_t *keys, st_index_t size);
 st_index_t st_keys_check(st_table *table, st_data_t *keys, st_index_t size, st_data_t never);
 st_index_t st_values(st_table *table, st_data_t *values, st_index_t size);
@@ -144,6 +143,8 @@ CONSTFUNC(st_index_t st_hash_uint(st_index_t h, st_index_t i));
 CONSTFUNC(st_index_t st_hash_end(st_index_t h));
 CONSTFUNC(st_index_t st_hash_start(st_index_t h));
 #define st_hash_start(h) ((st_index_t)(h))
+
+void rb_hash_bulk_insert_into_st_table(long, const VALUE *, VALUE);
 
 RUBY_SYMBOL_EXPORT_END
 

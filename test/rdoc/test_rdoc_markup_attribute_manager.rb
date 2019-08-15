@@ -1,5 +1,5 @@
-# frozen_string_literal: false
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require 'minitest_helper'
 
 class TestRDocMarkupAttributeManager < RDoc::TestCase
 
@@ -36,12 +36,12 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
   end
 
   def crossref(text)
-    crossref_bitmap = @am.attributes.bitmap_for(:_SPECIAL_) |
+    crossref_bitmap = @am.attributes.bitmap_for(:_REGEXP_HANDLING_) |
                       @am.attributes.bitmap_for(:CROSSREF)
 
-    [ @am.changed_attribute_by_name([], [:CROSSREF, :_SPECIAL_]),
-      RDoc::Markup::Special.new(crossref_bitmap, text),
-      @am.changed_attribute_by_name([:CROSSREF, :_SPECIAL_], [])
+    [ @am.changed_attribute_by_name([], [:CROSSREF, :_REGEXP_HANDLING_]),
+      RDoc::Markup::RegexpHandling.new(crossref_bitmap, text),
+      @am.changed_attribute_by_name([:CROSSREF, :_REGEXP_HANDLING_], [])
     ]
   end
 
@@ -58,12 +58,12 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
     assert(tags.has_key?("test"))
   end
 
-  def test_add_special
-    @am.add_special "WikiWord", :WIKIWORD
-    specials = @am.special
+  def test_add_regexp_handling
+    @am.add_regexp_handling "WikiWord", :WIKIWORD
+    regexp_handlings = @am.regexp_handlings
 
-    assert_equal 1, specials.size
-    assert specials.assoc "WikiWord"
+    assert_equal 1, regexp_handlings.size
+    assert regexp_handlings.assoc "WikiWord"
   end
 
   def test_add_word_pair
@@ -171,21 +171,21 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
   end
 
   def test_convert_attrs
-    str = '+foo+'
+    str = '+foo+'.dup
     attrs = RDoc::Markup::AttrSpan.new str.length
 
     @am.convert_attrs str, attrs
 
     assert_equal "\000foo\000", str
 
-    str = '+:foo:+'
+    str = '+:foo:+'.dup
     attrs = RDoc::Markup::AttrSpan.new str.length
 
     @am.convert_attrs str, attrs
 
     assert_equal "\000:foo:\000", str
 
-    str = '+x-y+'
+    str = '+x-y+'.dup
     attrs = RDoc::Markup::AttrSpan.new str.length
 
     @am.convert_attrs str, attrs
@@ -299,17 +299,17 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
     def @am.str()     @str       end
     def @am.str=(str) @str = str end
 
-    @am.str = '<code>foo</code>'
+    @am.str = '<code>foo</code>'.dup
     @am.mask_protected_sequences
 
     assert_equal "<code>foo</code>",       @am.str
 
-    @am.str = '<code>foo\\</code>'
+    @am.str = '<code>foo\\</code>'.dup
     @am.mask_protected_sequences
 
     assert_equal "<code>foo<\x04/code>", @am.str, 'escaped close'
 
-    @am.str = '<code>foo\\\\</code>'
+    @am.str = '<code>foo\\\\</code>'.dup
     @am.mask_protected_sequences
 
     assert_equal "<code>foo\\</code>",     @am.str, 'escaped backslash'
@@ -332,8 +332,16 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
                   @am.flow("\\_cat_<i>dog</i>"))
   end
 
-  def test_special
-    @am.add_special(RDoc::CrossReference::CROSSREF_REGEXP, :CROSSREF)
+  def test_lost_tag_for_the_second_time
+    str = "cat <tt>dog</tt>"
+    assert_equal(["cat ", @tt_on, "dog", @tt_off],
+                 @am.flow(str))
+    assert_equal(["cat ", @tt_on, "dog", @tt_off],
+                 @am.flow(str))
+  end
+
+  def test_regexp_handling
+    @am.add_regexp_handling(RDoc::CrossReference::CROSSREF_REGEXP, :CROSSREF)
 
     #
     # The apostrophes in "cats'" and "dogs'" suppress the flagging of these

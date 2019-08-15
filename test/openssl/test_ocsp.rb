@@ -1,13 +1,11 @@
 # frozen_string_literal: false
 require_relative "utils"
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL)
 
 class OpenSSL::TestOCSP < OpenSSL::TestCase
   def setup
-    now = Time.at(Time.now.to_i) # suppress usec
-    dgst = OpenSSL::Digest::SHA1.new
-
+    super
     # @ca_cert
     #   |
     # @cert
@@ -15,37 +13,37 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     # @cert2   @ocsp_cert
 
     ca_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCA")
-    @ca_key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+    @ca_key = Fixtures.pkey("rsa1024")
     ca_exts = [
       ["basicConstraints", "CA:TRUE", true],
       ["keyUsage", "cRLSign,keyCertSign", true],
     ]
     @ca_cert = OpenSSL::TestUtils.issue_cert(
-       ca_subj, @ca_key, 1, now, now+3600, ca_exts, nil, nil, dgst)
+      ca_subj, @ca_key, 1, ca_exts, nil, nil)
 
     cert_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCA2")
-    @cert_key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+    @cert_key = Fixtures.pkey("rsa1024")
     cert_exts = [
       ["basicConstraints", "CA:TRUE", true],
       ["keyUsage", "cRLSign,keyCertSign", true],
     ]
     @cert = OpenSSL::TestUtils.issue_cert(
-       cert_subj, @cert_key, 5, now, now+3600, cert_exts, @ca_cert, @ca_key, dgst)
+      cert_subj, @cert_key, 5, cert_exts, @ca_cert, @ca_key)
 
     cert2_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCert")
-    @cert2_key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+    @cert2_key = Fixtures.pkey("rsa1024")
     cert2_exts = [
     ]
     @cert2 = OpenSSL::TestUtils.issue_cert(
-       cert2_subj, @cert2_key, 10, now, now+3600, cert2_exts, @cert, @cert_key, dgst)
+      cert2_subj, @cert2_key, 10, cert2_exts, @cert, @cert_key)
 
     ocsp_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCAOCSP")
-    @ocsp_key = OpenSSL::TestUtils::TEST_KEY_RSA2048
+    @ocsp_key = Fixtures.pkey("rsa2048")
     ocsp_exts = [
       ["extendedKeyUsage", "OCSPSigning", true],
     ]
     @ocsp_cert = OpenSSL::TestUtils.issue_cert(
-       ocsp_subj, @ocsp_key, 100, now, now+3600, ocsp_exts, @cert, @cert_key, "SHA256")
+       ocsp_subj, @ocsp_key, 100, ocsp_exts, @cert, @cert_key)
   end
 
   def test_new_certificate_id
@@ -124,14 +122,29 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
 
     assert_equal true, req.verify([@cert], store, OpenSSL::OCSP::NOINTERN)
     ret = req.verify([@cert], store)
-    if ret || OpenSSL::OPENSSL_VERSION =~ /OpenSSL/ && OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10002000
+    if ret || openssl?(1, 0, 2)
       assert_equal true, ret
     else
       # RT2560; OCSP_request_verify() does not find signer cert from 'certs' when
       # OCSP_NOINTERN is not specified.
-      # fixed by OpenSSL 1.0.1j, 1.0.2 and LibreSSL 2.4.2
+      # fixed by OpenSSL 1.0.1j, 1.0.2
       pend "RT2560: ocsp_req_find_signer"
     end
+
+    # not signed
+    req = OpenSSL::OCSP::Request.new.add_certid(cid)
+    assert_equal false, req.verify([], store)
+  end
+
+  def test_request_is_signed
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert)
+    req = OpenSSL::OCSP::Request.new
+    req.add_certid(cid)
+    assert_equal false, req.signed?
+    assert_equal false, OpenSSL::OCSP::Request.new(req.to_der).signed?
+    req.sign(@cert, @cert_key, [])
+    assert_equal true, req.signed?
+    assert_equal true, OpenSSL::OCSP::Request.new(req.to_der).signed?
   end
 
   def test_request_nonce
@@ -249,11 +262,6 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     bres.add_status(cid2, OpenSSL::OCSP::V_CERTSTATUS_REVOKED, OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, -400, -300, nil, [])
     bres.add_status(cid2, OpenSSL::OCSP::V_CERTSTATUS_GOOD, nil, nil, Time.now + 100, nil, nil)
 
-    if bres.responses[2].check_validity # thisUpdate is in future; must fail
-      # LibreSSL bug; skip for now
-      pend "OCSP_check_validity() is broken"
-    end
-
     single1 = bres.responses[0]
     assert_equal false, single1.check_validity
     assert_equal false, single1.check_validity(30)
@@ -262,6 +270,8 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal true, single2.check_validity
     assert_equal true, single2.check_validity(0, 500)
     assert_equal false, single2.check_validity(0, 200)
+    single3 = bres.responses[2]
+    assert_equal false, single3.check_validity
   end
 
   def test_response

@@ -19,10 +19,6 @@
 	ossl_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
     } \
 } while (0)
-#define SafeGetHMAC(obj, ctx) do { \
-    OSSL_Check_Kind((obj), cHMAC); \
-    GetHMAC((obj), (ctx)); \
-} while (0)
 
 /*
  * Classes
@@ -110,7 +106,7 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
     StringValue(key);
     GetHMAC(self, ctx);
     HMAC_Init_ex(ctx, RSTRING_PTR(key), RSTRING_LENINT(key),
-		 GetDigestPtr(digest), NULL);
+		 ossl_evp_get_digestbyname(digest), NULL);
 
     return self;
 }
@@ -124,7 +120,7 @@ ossl_hmac_copy(VALUE self, VALUE other)
     if (self == other) return self;
 
     GetHMAC(self, ctx1);
-    SafeGetHMAC(other, ctx2);
+    GetHMAC(other, ctx2);
 
     if (!HMAC_CTX_copy(ctx1, ctx2))
 	ossl_raise(eHMACError, "HMAC_CTX_copy");
@@ -135,7 +131,7 @@ ossl_hmac_copy(VALUE self, VALUE other)
  *  call-seq:
  *     hmac.update(string) -> self
  *
- * Returns +self+ updated with the message to be authenticated.
+ * Returns _hmac_ updated with the message to be authenticated.
  * Can be called repeatedly with chunks of the message.
  *
  * === Example
@@ -234,7 +230,7 @@ ossl_hmac_hexdigest(VALUE self)
  *  call-seq:
  *     hmac.reset -> self
  *
- * Returns +self+ as it was when it was first initialized, with all processed
+ * Returns _hmac_ as it was when it was first initialized, with all processed
  * data cleared from it.
  *
  * === Example
@@ -264,16 +260,16 @@ ossl_hmac_reset(VALUE self)
  *  call-seq:
  *     HMAC.digest(digest, key, data) -> aString
  *
- * Returns the authentication code as a binary string. The +digest+ parameter
- * must be an instance of OpenSSL::Digest.
+ * Returns the authentication code as a binary string. The _digest_ parameter
+ * specifies the digest algorithm to use. This may be a String representing
+ * the algorithm name or an instance of OpenSSL::Digest.
  *
  * === Example
  *
  *	key = 'key'
  * 	data = 'The quick brown fox jumps over the lazy dog'
- * 	digest = OpenSSL::Digest.new('sha1')
  *
- * 	hmac = OpenSSL::HMAC.digest(digest, key, data)
+ * 	hmac = OpenSSL::HMAC.digest('sha1', key, data)
  * 	#=> "\xDE|\x9B\x85\xB8\xB7\x8A\xA6\xBC\x8Az6\xF7\n\x90p\x1C\x9D\xB4\xD9"
  *
  */
@@ -285,8 +281,9 @@ ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 
     StringValue(key);
     StringValue(data);
-    buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LENINT(key),
-	       (unsigned char *)RSTRING_PTR(data), RSTRING_LEN(data), NULL, &buf_len);
+    buf = HMAC(ossl_evp_get_digestbyname(digest), RSTRING_PTR(key),
+	       RSTRING_LENINT(key), (unsigned char *)RSTRING_PTR(data),
+	       RSTRING_LEN(data), NULL, &buf_len);
 
     return rb_str_new((const char *)buf, buf_len);
 }
@@ -295,16 +292,16 @@ ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
  *  call-seq:
  *     HMAC.hexdigest(digest, key, data) -> aString
  *
- * Returns the authentication code as a hex-encoded string. The +digest+
- * parameter must be an instance of OpenSSL::Digest.
+ * Returns the authentication code as a hex-encoded string. The _digest_
+ * parameter specifies the digest algorithm to use. This may be a String
+ * representing the algorithm name or an instance of OpenSSL::Digest.
  *
  * === Example
  *
  *	key = 'key'
  * 	data = 'The quick brown fox jumps over the lazy dog'
- * 	digest = OpenSSL::Digest.new('sha1')
  *
- * 	hmac = OpenSSL::HMAC.hexdigest(digest, key, data)
+ * 	hmac = OpenSSL::HMAC.hexdigest('sha1', key, data)
  * 	#=> "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9"
  *
  */
@@ -318,9 +315,9 @@ ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
     StringValue(key);
     StringValue(data);
 
-    if (!HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LENINT(key),
-	      (unsigned char *)RSTRING_PTR(data), RSTRING_LEN(data),
-	      buf, &buf_len))
+    if (!HMAC(ossl_evp_get_digestbyname(digest), RSTRING_PTR(key),
+	      RSTRING_LENINT(key), (unsigned char *)RSTRING_PTR(data),
+	      RSTRING_LEN(data), buf, &buf_len))
 	ossl_raise(eHMACError, "HMAC");
 
     ret = rb_str_new(NULL, buf_len * 2);
@@ -377,7 +374,7 @@ Init_ossl_hmac(void)
     rb_define_singleton_method(cHMAC, "hexdigest", ossl_hmac_s_hexdigest, 3);
 
     rb_define_method(cHMAC, "initialize", ossl_hmac_initialize, 2);
-    rb_define_copy_func(cHMAC, ossl_hmac_copy);
+    rb_define_method(cHMAC, "initialize_copy", ossl_hmac_copy, 1);
 
     rb_define_method(cHMAC, "reset", ossl_hmac_reset, 0);
     rb_define_method(cHMAC, "update", ossl_hmac_update, 1);

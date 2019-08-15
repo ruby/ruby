@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'optparse'
 require 'pathname'
 
@@ -164,7 +164,7 @@ class RDoc::Options
   ##
   # Files matching this pattern will be excluded
 
-  attr_accessor :exclude
+  attr_writer :exclude
 
   ##
   # The list of files to be processed
@@ -344,7 +344,10 @@ class RDoc::Options
 
   def init_ivars # :nodoc:
     @dry_run = false
-    @exclude = []
+    @exclude = %w[
+      ~\z \.orig\z \.rej\z \.bak\z
+      \.gemspec\z
+    ]
     @files = nil
     @force_output = false
     @force_update = true
@@ -494,6 +497,20 @@ class RDoc::Options
   end
 
   ##
+  # Create a regexp for #exclude
+
+  def exclude
+    if @exclude.nil? or Regexp === @exclude then
+      # done, #finish is being re-run
+      @exclude
+    elsif @exclude.empty? then
+      nil
+    else
+      Regexp.new(@exclude.join("|"))
+    end
+  end
+
+  ##
   # Completes any unfinished option setup business such as filtering for
   # existent files, creating a regexp for #exclude and setting a default
   # #template.
@@ -505,13 +522,7 @@ class RDoc::Options
     root = @root.to_s
     @rdoc_include << root unless @rdoc_include.include?(root)
 
-    if @exclude.nil? or Regexp === @exclude then
-      # done, #finish is being re-run
-    elsif @exclude.empty? then
-      @exclude = nil
-    else
-      @exclude = Regexp.new(@exclude.join("|"))
-    end
+    @exclude = self.exclude
 
     finish_page_dir
 
@@ -624,16 +635,16 @@ Usage: #{opt.program_name} [options] [names...]
       end
 
       parsers.sort.each do |parser, regexp|
-        opt.banner << "  - #{parser}: #{regexp.join ', '}\n"
+        opt.banner += "  - #{parser}: #{regexp.join ', '}\n"
       end
-      opt.banner << "  - TomDoc:  Only in ruby files\n"
+      opt.banner += "  - TomDoc:  Only in ruby files\n"
 
-      opt.banner << "\n  The following options are deprecated:\n\n"
+      opt.banner += "\n  The following options are deprecated:\n\n"
 
       name_length = DEPRECATED.keys.sort_by { |k| k.length }.last.length
 
       DEPRECATED.sort_by { |k,| k }.each do |name, reason|
-        opt.banner << "    %*1$2$s  %3$s\n" % [-name_length, name, reason]
+        opt.banner += "    %*1$2$s  %3$s\n" % [-name_length, name, reason]
       end
 
       opt.accept Template do |template|
@@ -1087,7 +1098,7 @@ Usage: #{opt.program_name} [options] [names...]
 
     unless quiet then
       deprecated.each do |opt|
-        $stderr.puts 'option ' << opt << ' is deprecated: ' << DEPRECATED[opt]
+        $stderr.puts 'option ' + opt + ' is deprecated: ' + DEPRECATED[opt]
       end
     end
 
@@ -1187,19 +1198,6 @@ Usage: #{opt.program_name} [options] [names...]
     end
   end
 
-  ##
-  # This is compatibility code for syck
-
-  def to_yaml opts = {} # :nodoc:
-    return super if YAML.const_defined?(:ENGINE) and not YAML::ENGINE.syck?
-
-    YAML.quick_emit self, opts do |out|
-      out.map taguri, to_yaml_style do |map|
-        encode_with map
-      end
-    end
-  end
-
   # Sets the minimum visibility of a documented method.
   #
   # Accepts +:public+, +:protected+, +:private+, +:nodoc+, or +:all+.
@@ -1230,7 +1228,7 @@ Usage: #{opt.program_name} [options] [names...]
   def write_options
     RDoc.load_yaml
 
-    open '.rdoc_options', 'w' do |io|
+    File.open '.rdoc_options', 'w' do |io|
       io.set_encoding Encoding::UTF_8
 
       YAML.dump self, io

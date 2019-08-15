@@ -1,8 +1,11 @@
 # frozen_string_literal: false
 require_relative 'utils'
 
+if defined?(OpenSSL)
+
 class OpenSSL::TestConfig < OpenSSL::TestCase
   def setup
+    super
     file = Tempfile.open("openssl.cnf")
     file << <<__EOD__
 HOME = .
@@ -170,7 +173,7 @@ __EOC__
 
   def test_value
     # suppress deprecation warnings
-    OpenSSL::TestUtils.silent do
+    EnvUtil.suppress_warning do
       assert_equal('CA_default', @it.value('ca', 'default_ca'))
       assert_equal(nil, @it.value('ca', 'no such key'))
       assert_equal(nil, @it.value('no such section', 'no such key'))
@@ -183,7 +186,7 @@ __EOC__
   end
 
   def test_value_ENV
-    OpenSSL::TestUtils.silent do
+    EnvUtil.suppress_warning do
       key = ENV.keys.first
       assert_not_nil(key) # make sure we have at least one ENV var.
       assert_equal(ENV[key], @it.value('ENV', key))
@@ -198,7 +201,7 @@ __EOC__
   end
 
   def test_section
-    OpenSSL::TestUtils.silent do
+    EnvUtil.suppress_warning do
       assert_equal({'HOME' => '.'}, @it.section('default'))
       assert_equal({'dir' => './demoCA', 'certs' => './certs'}, @it.section('CA_default'))
       assert_equal({}, @it.section('no_such_section'))
@@ -296,4 +299,6 @@ __EOC__
     @it['newsection'] = {'a' => 'b'}
     assert_not_equal(@it.sections.sort, c.sections.sort)
   end
-end if defined?(OpenSSL::TestUtils)
+end
+
+end

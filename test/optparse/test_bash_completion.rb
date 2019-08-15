@@ -40,4 +40,9 @@ class TestOptionParser::BashCompletion < Test::Unit::TestCase
   def test_long_for_option_complete
     assert_equal(%w[hello help], @opt.candidate("--for=h"))
   end
+
+  def test_case_sensitive
+    @opt.define("-Z") {}
+    assert_equal(%w[-z], @opt.candidate("-z"))
+  end
 end

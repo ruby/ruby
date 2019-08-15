@@ -1,16 +1,10 @@
 # frozen_string_literal: false
 require 'test/unit'
-require "-test-/symbol"
+require_relative 'noninterned_name'
 
 module Test_Symbol
   class TestInadvertent < Test::Unit::TestCase
-    def noninterned_name(prefix = "")
-      prefix += "_#{Thread.current.object_id.to_s(36).tr('-', '_')}"
-      begin
-        name = "#{prefix}_#{rand(0x1000).to_s(16)}_#{Time.now.usec}"
-      end while Bug::Symbol.find(name)
-      name
-    end
+    include NonInterned
 
     def setup
       @obj = Object.new
@@ -26,21 +20,13 @@ module Test_Symbol
 
     def assert_not_interned_error(obj, meth, name, msg = nil, &block)
       e = assert_raise(NameError, msg) {obj.__send__(meth, name, &block)}
-      if Symbol === name
-        assert_not_pinneddown(name, msg)
-      else
-        assert_not_interned(name, msg)
-      end
+      assert_not_pinneddown(name, msg)
       e
     end
 
     def assert_not_interned_false(obj, meth, name, msg = nil)
       assert_not_send([obj, meth, name], msg)
-      if Symbol === name
-        assert_not_pinneddown(name, msg)
-      else
-        assert_not_interned(name, msg)
-      end
+      assert_not_pinneddown(name, msg)
     end
 
     Feature5072 = '[ruby-core:38367]'
@@ -362,15 +348,9 @@ module Test_Symbol
     end
 
     def test_gc_attrset
-      assert_separately(['-r-test-/symbol', '-', '[ruby-core:62226] [Bug #9787]'], <<-'end;') #    begin
-      bug = ARGV.shift
-      def noninterned_name(prefix = "")
-        prefix += "_#{Thread.current.object_id.to_s(36).tr('-', '_')}"
-        begin
-          name = "#{prefix}_#{rand(0x1000).to_s(16)}_#{Time.now.usec}"
-        end while Bug::Symbol.find(name) or Bug::Symbol.find(name + "=")
-        name
-      end
+      assert_separately(['-r-test-/symbol', '-r-ext-/symbol/noninterned_name', '-'], "#{<<-'begin;'}\n#{<<-"end;"}")
+      bug = '[ruby-core:62226] [Bug #9787]'
+      include Test_Symbol::NonInterned
       names = Array.new(1000) {noninterned_name("gc")}
       names.each {|n| n.to_sym}
       GC.start(immediate_sweep: false)
@@ -378,6 +358,7 @@ module Test_Symbol
         eval(":#{n}=")
         assert_nothing_raised(TypeError, bug) {eval("proc{self.#{n} = nil}")}
       end
+      begin;
       end;
     end
 
@@ -499,6 +480,15 @@ module Test_Symbol
       foo = -> (**options) {}
       assert_no_immortal_symbol_created("kwarg just rest") do |name|
         foo.call(name.to_sym => 42)
+      end
+    end
+
+    def test_iv_get
+      obj = Object.new
+      assert_warning(/not initialized/) do
+        assert_no_immortal_symbol_created("rb_iv_get") do |name|
+          Bug::Symbol.iv_get(obj, name)
+        end
       end
     end
   end

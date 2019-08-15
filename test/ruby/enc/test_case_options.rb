@@ -3,21 +3,21 @@
 require "test/unit"
 
 class TestCaseOptions < Test::Unit::TestCase
-  def assert_raise_functional_operations (arg, *options)
+  def assert_raise_functional_operations(arg, *options)
     assert_raise(ArgumentError) { arg.upcase(*options) }
     assert_raise(ArgumentError) { arg.downcase(*options) }
     assert_raise(ArgumentError) { arg.capitalize(*options) }
     assert_raise(ArgumentError) { arg.swapcase(*options) }
   end
 
-  def assert_raise_bang_operations (arg, *options)
+  def assert_raise_bang_operations(arg, *options)
     assert_raise(ArgumentError) { arg.upcase!(*options) }
     assert_raise(ArgumentError) { arg.downcase!(*options) }
     assert_raise(ArgumentError) { arg.capitalize!(*options) }
     assert_raise(ArgumentError) { arg.swapcase!(*options) }
   end
 
-  def assert_raise_both_types (*options)
+  def assert_raise_both_types(*options)
     assert_raise_functional_operations 'a', *options
     assert_raise_bang_operations 'a', *options
     assert_raise_functional_operations :a, *options
@@ -35,21 +35,21 @@ class TestCaseOptions < Test::Unit::TestCase
     assert_raise_both_types :lithuanian, :ascii
   end
 
-  def assert_okay_functional_operations (arg, *options)
+  def assert_okay_functional_operations(arg, *options)
     assert_nothing_raised { arg.upcase(*options) }
     assert_nothing_raised { arg.downcase(*options) }
     assert_nothing_raised { arg.capitalize(*options) }
     assert_nothing_raised { arg.swapcase(*options) }
   end
 
-  def assert_okay_bang_operations (arg, *options)
+  def assert_okay_bang_operations(arg, *options)
     assert_nothing_raised { arg.upcase!(*options) }
     assert_nothing_raised { arg.downcase!(*options) }
     assert_nothing_raised { arg.capitalize!(*options) }
     assert_nothing_raised { arg.swapcase!(*options) }
   end
 
-  def assert_okay_both_types (*options)
+  def assert_okay_both_types(*options)
     assert_okay_functional_operations 'a', *options
     assert_okay_bang_operations 'a', *options
     assert_okay_functional_operations :a, *options

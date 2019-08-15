@@ -1,10 +1,14 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'net/smtp'
 require 'stringio'
 require 'test/unit'
 
 module Net
   class TestSMTP < Test::Unit::TestCase
+    CA_FILE = File.expand_path("../fixtures/cacert.pem", __dir__)
+    SERVER_KEY = File.expand_path("../fixtures/server.key", __dir__)
+    SERVER_CERT = File.expand_path("../fixtures/server.crt", __dir__)
+
     class FakeSocket
       attr_reader :write_io
 
@@ -96,6 +100,100 @@ module Net
 
       assert_raise(ArgumentError) do
         smtp.rcptto("foo\r\nbar")
+      end
+    end
+
+    def test_tls_connect
+      servers = Socket.tcp_server_sockets("localhost", 0)
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ca_file = CA_FILE
+      ctx.key = File.open(SERVER_KEY) { |f|
+        OpenSSL::PKey::RSA.new(f)
+      }
+      ctx.cert = File.open(SERVER_CERT) { |f|
+        OpenSSL::X509::Certificate.new(f)
+      }
+      begin
+        sock = nil
+        Thread.start do
+          s = accept(servers)
+          sock = OpenSSL::SSL::SSLSocket.new(s, ctx)
+          sock.sync_close = true
+          sock.accept
+          sock.write("220 localhost Service ready\r\n")
+          sock.gets
+          sock.write("250 localhost\r\n")
+          sock.gets
+          sock.write("221 localhost Service closing transmission channel\r\n")
+        end
+        smtp = Net::SMTP.new("localhost", servers[0].local_address.ip_port)
+        smtp.enable_tls
+        smtp.open_timeout = 1
+        smtp.start do
+        end
+      ensure
+        sock.close if sock
+        servers.each(&:close)
+      end
+    rescue LoadError
+      # skip (require openssl)
+    end
+
+    def test_tls_connect_timeout
+      servers = Socket.tcp_server_sockets("localhost", 0)
+      begin
+        sock = nil
+        Thread.start do
+          sock = accept(servers)
+        end
+        smtp = Net::SMTP.new("localhost", servers[0].local_address.ip_port)
+        smtp.enable_tls
+        smtp.open_timeout = 0.1
+        assert_raise(Net::OpenTimeout) do
+          smtp.start do
+          end
+        end
+      rescue LoadError
+        # skip (require openssl)
+      ensure
+        sock.close if sock
+        servers.each(&:close)
+      end
+    end
+
+    def test_eof_error_backtrace
+      bug13018 = '[ruby-core:78550] [Bug #13018]'
+      servers = Socket.tcp_server_sockets("localhost", 0)
+      begin
+        sock = nil
+        t = Thread.start do
+          sock = accept(servers)
+          sock.close
+        end
+        smtp = Net::SMTP.new("localhost", servers[0].local_address.ip_port)
+        e = assert_raise(EOFError, bug13018) do
+          smtp.start do
+          end
+        end
+        assert_equal(EOFError, e.class, bug13018)
+        assert(e.backtrace.grep(%r"\bnet/smtp\.rb:").size > 0, bug13018)
+      ensure
+        sock.close if sock
+        servers.each(&:close)
+        t.join
+      end
+    end
+
+    private
+
+    def accept(servers)
+      loop do
+        readable, = IO.select(servers.map(&:to_io))
+        readable.each do |r|
+          sock, = r.accept_nonblock(exception: false)
+          next if sock == :wait_readable
+          return sock
+        end
       end
     end
   end

@@ -158,10 +158,10 @@ bsock_close_write(VALUE sock)
  * * +optval+ is the value of the option, it is passed to the underlying
  *   setsockopt() as a pointer to a certain number of bytes. How this is
  *   done depends on the type:
- *   - Fixnum: value is assigned to an int, and a pointer to the int is
+ *   - Integer: value is assigned to an int, and a pointer to the int is
  *     passed, with length of sizeof(int).
  *   - true or false: 1 or 0 (respectively) is assigned to an int, and the
- *     int is passed as for a Fixnum. Note that +false+ must be passed,
+ *     int is passed as for an Integer. Note that +false+ must be passed,
  *     not +nil+.
  *   - String: the string's data and length is passed to the socket.
  * * +socketoption+ is an instance of Socket::Option
@@ -314,6 +314,18 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     level = rsock_level_arg(family, lev);
     option = rsock_optname_arg(family, level, optname);
     len = 256;
+#ifdef _AIX
+    switch (option) {
+      case SO_DEBUG:
+      case SO_REUSEADDR:
+      case SO_KEEPALIVE:
+      case SO_DONTROUTE:
+      case SO_BROADCAST:
+      case SO_OOBINLINE:
+        /* AIX doesn't set len for boolean options */
+        len = sizeof(int);
+    }
+#endif
     buf = ALLOCA_N(char,len);
 
     rb_io_check_closed(fptr);
@@ -530,8 +542,9 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
     struct rsock_send_arg arg;
     VALUE flags, to;
     rb_io_t *fptr;
-    int n;
+    ssize_t n;
     rb_blocking_function_t *func;
+    const char *funcname;
 
     rb_scan_args(argc, argv, "21", &arg.mesg, &flags, &to);
 
@@ -542,21 +555,23 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
 	arg.to = (struct sockaddr *)RSTRING_PTR(to);
 	arg.tolen = RSTRING_SOCKLEN(to);
 	func = rsock_sendto_blocking;
+	funcname = "sendto(2)";
     }
     else {
 	func = rsock_send_blocking;
+	funcname = "send(2)";
     }
     GetOpenFile(sock, fptr);
     arg.fd = fptr->fd;
     arg.flags = NUM2INT(flags);
     while (rsock_maybe_fd_writable(arg.fd),
-	   (n = (int)BLOCKING_REGION_FD(func, &arg)) < 0) {
+	   (n = (ssize_t)BLOCKING_REGION_FD(func, &arg)) < 0) {
 	if (rb_io_wait_writable(arg.fd)) {
 	    continue;
 	}
-	rb_sys_fail("send(2)");
+	rb_sys_fail(funcname);
     }
-    return INT2FIX(n);
+    return SSIZET2NUM(n);
 }
 
 /*
@@ -721,6 +736,13 @@ rsock_init_basicsocket(void)
     /* for ext/socket/lib/socket.rb use only: */
     rb_define_private_method(rb_cBasicSocket,
 			     "__recv_nonblock", bsock_recv_nonblock, 4);
+
+#if MSG_DONTWAIT_RELIABLE
+    rb_define_private_method(rb_cBasicSocket,
+			     "__read_nonblock", rsock_read_nonblock, 3);
+    rb_define_private_method(rb_cBasicSocket,
+			     "__write_nonblock", rsock_write_nonblock, 2);
+#endif
 
     /* in ancdata.c */
     rb_define_private_method(rb_cBasicSocket, "__sendmsg",

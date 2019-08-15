@@ -49,7 +49,7 @@ static VALUE ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 		if ((ctx = SSL_get1_session(ssl)) == NULL)
 			ossl_raise(eSSLSession, "no session available");
 	} else {
-		BIO *in = ossl_obj2bio(arg1);
+		BIO *in = ossl_obj2bio(&arg1);
 
 		ctx = PEM_read_bio_SSL_SESSION(in, NULL, NULL, NULL);
 
@@ -80,7 +80,7 @@ ossl_ssl_session_initialize_copy(VALUE self, VALUE other)
 
     rb_check_frozen(self);
     sess = RTYPEDDATA_DATA(self); /* XXX */
-    SafeGetSSLSession(other, sess_other);
+    GetSSLSession(other, sess_other);
 
     sess_new = ASN1_dup((i2d_of_void *)i2d_SSL_SESSION, (d2i_of_void *)d2i_SSL_SESSION,
 			(char *)sess_other);
@@ -93,43 +93,36 @@ ossl_ssl_session_initialize_copy(VALUE self, VALUE other)
     return self;
 }
 
-#if HAVE_SSL_SESSION_CMP == 0
-int SSL_SESSION_cmp(const SSL_SESSION *a,const SSL_SESSION *b)
+static int
+ossl_SSL_SESSION_cmp(const SSL_SESSION *a, const SSL_SESSION *b)
 {
     unsigned int a_len;
     const unsigned char *a_sid = SSL_SESSION_get_id(a, &a_len);
     unsigned int b_len;
     const unsigned char *b_sid = SSL_SESSION_get_id(b, &b_len);
 
-#if !defined(HAVE_OPAQUE_OPENSSL) /* missing SSL_SESSION_get_ssl_version() ? */
-    if (a->ssl_version != b->ssl_version)
+    if (SSL_SESSION_get_protocol_version(a) != SSL_SESSION_get_protocol_version(b))
 	return 1;
-#endif
     if (a_len != b_len)
 	return 1;
 
-#if defined(_WIN32)
-    return memcmp(a_sid, b_sid, a_len);
-#else
     return CRYPTO_memcmp(a_sid, b_sid, a_len);
-#endif
 }
-#endif
 
 /*
  * call-seq:
  *   session1 == session2 -> boolean
  *
- * Returns true if the two Session is the same, false if not.
+ * Returns +true+ if the two Session is the same, +false+ if not.
  */
 static VALUE ossl_ssl_session_eq(VALUE val1, VALUE val2)
 {
 	SSL_SESSION *ctx1, *ctx2;
 
 	GetSSLSession(val1, ctx1);
-	SafeGetSSLSession(val2, ctx2);
+	GetSSLSession(val2, ctx2);
 
-	switch (SSL_SESSION_cmp(ctx1, ctx2)) {
+	switch (ossl_SSL_SESSION_cmp(ctx1, ctx2)) {
 	case 0:		return Qtrue;
 	default:	return Qfalse;
 	}
@@ -141,19 +134,18 @@ static VALUE ossl_ssl_session_eq(VALUE val1, VALUE val2)
  *
  * Returns the time at which the session was established.
  */
-static VALUE ossl_ssl_session_get_time(VALUE self)
+static VALUE
+ossl_ssl_session_get_time(VALUE self)
 {
-	SSL_SESSION *ctx;
-	time_t t;
+    SSL_SESSION *ctx;
+    long t;
 
-	GetSSLSession(self, ctx);
+    GetSSLSession(self, ctx);
+    t = SSL_SESSION_get_time(ctx);
+    if (t == 0)
+	return Qnil;
 
-	t = SSL_SESSION_get_time(ctx);
-
-	if (t == 0)
-		return Qnil;
-
-	return rb_funcall(rb_cTime, rb_intern("at"), 1, TIMET2NUM(t));
+    return rb_funcall(rb_cTime, rb_intern("at"), 1, LONG2NUM(t));
 }
 
 /*
@@ -164,16 +156,16 @@ static VALUE ossl_ssl_session_get_time(VALUE self)
  * established time.
  *
  */
-static VALUE ossl_ssl_session_get_timeout(VALUE self)
+static VALUE
+ossl_ssl_session_get_timeout(VALUE self)
 {
-	SSL_SESSION *ctx;
-	time_t t;
+    SSL_SESSION *ctx;
+    long t;
 
-	GetSSLSession(self, ctx);
+    GetSSLSession(self, ctx);
+    t = SSL_SESSION_get_timeout(ctx);
 
-	t = SSL_SESSION_get_timeout(ctx);
-
-	return TIMET2NUM(t);
+    return LONG2NUM(t);
 }
 
 /*
@@ -270,9 +262,6 @@ static VALUE ossl_ssl_session_to_pem(VALUE self)
 {
 	SSL_SESSION *ctx;
 	BIO *out;
-	BUF_MEM *buf;
-	VALUE str;
-	int i;
 
 	GetSSLSession(self, ctx);
 
@@ -280,16 +269,13 @@ static VALUE ossl_ssl_session_to_pem(VALUE self)
 		ossl_raise(eSSLSession, "BIO_s_mem()");
 	}
 
-	if (!(i=PEM_write_bio_SSL_SESSION(out, ctx))) {
+	if (!PEM_write_bio_SSL_SESSION(out, ctx)) {
 		BIO_free(out);
 		ossl_raise(eSSLSession, "SSL_SESSION_print()");
 	}
 
-	BIO_get_mem_ptr(out, &buf);
-	str = rb_str_new(buf->data, buf->length);
-	BIO_free(out);
 
-	return str;
+	return ossl_membio2str(out);
 }
 
 
@@ -303,8 +289,6 @@ static VALUE ossl_ssl_session_to_text(VALUE self)
 {
 	SSL_SESSION *ctx;
 	BIO *out;
-	BUF_MEM *buf;
-	VALUE str;
 
 	GetSSLSession(self, ctx);
 
@@ -317,11 +301,7 @@ static VALUE ossl_ssl_session_to_text(VALUE self)
 		ossl_raise(eSSLSession, "SSL_SESSION_print()");
 	}
 
-	BIO_get_mem_ptr(out, &buf);
-	str = rb_str_new(buf->data, buf->length);
-	BIO_free(out);
-
-	return str;
+	return ossl_membio2str(out);
 }
 
 
@@ -337,7 +317,7 @@ void Init_ossl_ssl_session(void)
 
 	rb_define_alloc_func(cSSLSession, ossl_ssl_session_alloc);
 	rb_define_method(cSSLSession, "initialize", ossl_ssl_session_initialize, 1);
-	rb_define_copy_func(cSSLSession, ossl_ssl_session_initialize_copy);
+	rb_define_method(cSSLSession, "initialize_copy", ossl_ssl_session_initialize_copy, 1);
 
 	rb_define_method(cSSLSession, "==", ossl_ssl_session_eq, 1);
 

@@ -9,6 +9,8 @@
 #ifndef  RUBY_BIG_DECIMAL_H
 #define  RUBY_BIG_DECIMAL_H 1
 
+#define RUBY_NO_OLD_COMPATIBILITY
+
 #include "ruby/ruby.h"
 #include <float.h>
 
@@ -90,6 +92,62 @@ llabs(LONG_LONG const x)
 }
 #endif
 
+#ifndef HAVE_FINITE
+static int
+finite(double)
+{
+    return !isnan(n) && !isinf(n);
+}
+#endif
+
+#ifndef isfinite
+# ifndef HAVE_ISFINITE
+#  define HAVE_ISFINITE 1
+#  define isfinite(x) finite(x)
+# endif
+#endif
+
+#ifndef FIX_CONST_VALUE_PTR
+# if defined(__fcc__) || defined(__fcc_version) || \
+    defined(__FCC__) || defined(__FCC_VERSION)
+/* workaround for old version of Fujitsu C Compiler (fcc) */
+#  define FIX_CONST_VALUE_PTR(x) ((const VALUE *)(x))
+# else
+#  define FIX_CONST_VALUE_PTR(x) (x)
+# endif
+#endif
+
+#ifndef HAVE_RB_ARRAY_CONST_PTR
+static inline const VALUE *
+rb_array_const_ptr(VALUE a)
+{
+    return FIX_CONST_VALUE_PTR((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ?
+	RARRAY(a)->as.ary : RARRAY(a)->as.heap.ptr);
+}
+#endif
+
+#ifndef RARRAY_CONST_PTR
+# define RARRAY_CONST_PTR(a) rb_array_const_ptr(a)
+#endif
+
+#ifndef RARRAY_AREF
+# define RARRAY_AREF(a, i) (RARRAY_CONST_PTR(a)[i])
+#endif
+
+#ifndef HAVE_RB_SYM2STR
+static inline VALUE
+rb_sym2str(VALUE sym)
+{
+    return rb_id2str(SYM2ID(sym));
+}
+#endif
+
+#ifndef ST2FIX
+# undef RB_ST2FIX
+# define RB_ST2FIX(h) LONG2FIX((long)(h))
+# define ST2FIX(h) RB_ST2FIX(h)
+#endif
+
 #ifdef vabs
 # undef vabs
 #endif
@@ -169,7 +227,9 @@ extern VALUE rb_cBigDecimal;
 #define VP_SIGN_POSITIVE_INFINITE  3 /* Positive infinite number */
 #define VP_SIGN_NEGATIVE_INFINITE -3 /* Negative infinite number */
 
-#ifdef __GNUC__
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+#define	FLEXIBLE_ARRAY_SIZE /* */
+#elif defined(__GNUC__) && !defined(__STRICT_ANSI__)
 #define	FLEXIBLE_ARRAY_SIZE 0
 #else
 #define	FLEXIBLE_ARRAY_SIZE 1
@@ -182,11 +242,11 @@ extern VALUE rb_cBigDecimal;
 typedef struct {
     VALUE  obj;     /* Back pointer(VALUE) for Ruby object.     */
     size_t MaxPrec; /* Maximum precision size                   */
-                    /* This is the actual size of pfrac[]       */
+                    /* This is the actual size of frac[]        */
                     /*(frac[0] to frac[MaxPrec] are available). */
     size_t Prec;    /* Current precision size.                  */
-                    /* This indicates how much the.             */
-                    /* the array frac[] is actually used.       */
+                    /* This indicates how much the              */
+                    /* array frac[] is actually used.           */
     SIGNED_VALUE exponent; /* Exponent part.                    */
     short  sign;    /* Attributes of the value.                 */
                     /*
@@ -248,7 +308,7 @@ VP_EXPORT size_t VpInit(BDIGIT BaseVal);
 VP_EXPORT void *VpMemAlloc(size_t mb);
 VP_EXPORT void *VpMemRealloc(void *ptr, size_t mb);
 VP_EXPORT void VpFree(Real *pv);
-VP_EXPORT Real *VpAlloc(size_t mx, const char *szVal);
+VP_EXPORT Real *VpAlloc(size_t mx, const char *szVal, int strict_p, int exc);
 VP_EXPORT size_t VpAsgn(Real *c, Real *a, int isw);
 VP_EXPORT size_t VpAddSub(Real *c,Real *a,Real *b,int operation);
 VP_EXPORT size_t VpMult(Real *c,Real *a,Real *b);

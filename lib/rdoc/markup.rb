@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # RDoc::Markup parses plain text documents and attempts to decompose them into
 # their constituent parts.  Some of these parts are high-level: paragraphs,
@@ -65,17 +65,16 @@
 #   puts h.convert(input_string)
 #
 # You can extend the RDoc::Markup parser to recognize new markup
-# sequences, and to add special processing for text that matches a
-# regular expression.  Here we make WikiWords significant to the parser,
-# and also make the sequences {word} and \<no>text...</no> signify
+# sequences, and to add regexp handling. Here we make WikiWords significant to
+# the parser, and also make the sequences {word} and \<no>text...</no> signify
 # strike-through text.  We then subclass the HTML output class to deal
 # with these:
 #
 #   require 'rdoc'
 #
 #   class WikiHtml < RDoc::Markup::ToHtml
-#     def handle_special_WIKIWORD(special)
-#       "<font color=red>" + special.text + "</font>"
+#     def handle_regexp_WIKIWORD(target)
+#       "<font color=red>" + target.text + "</font>"
 #     end
 #   end
 #
@@ -83,7 +82,7 @@
 #   markup.add_word_pair("{", "}", :STRIKE)
 #   markup.add_html("no", :STRIKE)
 #
-#   markup.add_special(/\b([A-Z][a-z]+[A-Z]\w+)/, :WIKIWORD)
+#   markup.add_regexp_handling(/\b([A-Z][a-z]+[A-Z]\w+)/, :WIKIWORD)
 #
 #   wh = WikiHtml.new RDoc::Options.new, markup
 #   wh.add_tag(:STRIKE, "<strike>", "</strike>")
@@ -377,7 +376,7 @@
 #
 # Example links:
 #
-#   https://github.com/rdoc/rdoc
+#   https://github.com/ruby/rdoc
 #   mailto:user@example.com
 #   {RDoc Documentation}[http://rdoc.rubyforge.org]
 #   {RDoc Markup}[rdoc-ref:RDoc::Markup]
@@ -764,7 +763,7 @@ Ruby #{RUBY_VERSION}-p#{RUBY_PATCHLEVEL} #{RUBY_RELEASE_DATE}
 
 Please file a bug report with the above information at:
 
-https://github.com/rdoc/rdoc/issues
+https://github.com/ruby/rdoc/issues
 
     EOF
     raise
@@ -800,13 +799,12 @@ https://github.com/rdoc/rdoc/issues
   # Add to other inline sequences.  For example, we could add WikiWords using
   # something like:
   #
-  #    parser.add_special(/\b([A-Z][a-z]+[A-Z]\w+)/, :WIKIWORD)
+  #    parser.add_regexp_handling(/\b([A-Z][a-z]+[A-Z]\w+)/, :WIKIWORD)
   #
-  # Each wiki word will be presented to the output formatter via the
-  # accept_special method.
+  # Each wiki word will be presented to the output formatter.
 
-  def add_special(pattern, name)
-    @attribute_manager.add_special(pattern, name)
+  def add_regexp_handling(pattern, name)
+    @attribute_manager.add_regexp_handling(pattern, name)
   end
 
   ##
@@ -832,7 +830,7 @@ https://github.com/rdoc/rdoc/issues
   autoload :AttrSpan,              'rdoc/markup/attr_span'
   autoload :Attributes,            'rdoc/markup/attributes'
   autoload :AttributeManager,      'rdoc/markup/attribute_manager'
-  autoload :Special,               'rdoc/markup/special'
+  autoload :RegexpHandling,        'rdoc/markup/regexp_handling'
 
   # RDoc::Markup AST
   autoload :BlankLine,             'rdoc/markup/blank_line'

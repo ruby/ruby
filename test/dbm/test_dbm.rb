@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'tmpdir'
 
@@ -47,6 +47,8 @@ if defined? DBM
     end
 
     def test_delete_rdonly
+      skip("skipped because root can read anything") if Process.uid == 0
+
       if /^CYGWIN_9/ !~ SYSTEM
         assert_raise(DBMError) {
           @dbm_rdonly.delete("foo")
@@ -405,7 +407,7 @@ if defined? DBM
       assert_equal('foo', @dbm.delete(key) {|k| k.replace 'called block'; :blockval})
       assert_equal(0, @dbm.size)
 
-      key = 'no called block'
+      key = 'no called block'.dup
       assert_equal(:blockval, @dbm.delete(key) {|k| k.replace 'called block'; :blockval})
       assert_equal(0, @dbm.size)
     end
@@ -623,9 +625,10 @@ if defined? DBM
     end
 
     def test_freeze
+      expected_error = defined?(FrozenError) ? FrozenError : RuntimeError
       DBM.open("#{@tmproot}/a") {|d|
         d.freeze
-        assert_raise(RuntimeError) { d["k"] = "v" }
+        assert_raise(expected_error) { d["k"] = "v" }
       }
     end
   end

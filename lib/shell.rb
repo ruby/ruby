@@ -17,6 +17,7 @@ require "forwardable"
 require "shell/error"
 require "shell/command-processor"
 require "shell/process-controller"
+require "shell/version"
 
 # Shell implements an idiomatic Ruby interface for common UNIX shell commands.
 #
@@ -99,11 +100,14 @@ class Shell
   @debug_display_process_id = false
   @debug_display_thread_id = true
   @debug_output_mutex = Thread::Mutex.new
+  @default_system_path = nil
+  @default_record_separator = nil
 
   class << Shell
     extend Forwardable
 
-    attr_accessor :cascade, :debug, :verbose
+    attr_accessor :cascade, :verbose
+    attr_reader :debug
 
     alias debug? debug
     alias verbose? verbose
@@ -208,7 +212,8 @@ class Shell
   # Returns the umask
   attr_accessor :umask
   attr_accessor :record_separator
-  attr_accessor :verbose, :debug
+  attr_accessor :verbose
+  attr_reader :debug
 
   def debug=(val)
     @debug = val
@@ -258,7 +263,7 @@ class Shell
   def chdir(path = nil, verbose = @verbose)
     check_point
 
-    if iterator?
+    if block_given?
       notify("chdir(with block) #{path}") if verbose
       cwd_old = @cwd
       begin
@@ -292,7 +297,7 @@ class Shell
   def pushdir(path = nil, verbose = @verbose)
     check_point
 
-    if iterator?
+    if block_given?
       notify("pushdir(with block) #{path}") if verbose
       pushdir(path, nil)
       begin
@@ -441,7 +446,7 @@ class Shell
       _head = true
       STDERR.print opts.collect{|mes|
         mes = mes.dup
-        yield mes if iterator?
+        yield mes if block_given?
         if _head
           _head = false
           prefix + mes

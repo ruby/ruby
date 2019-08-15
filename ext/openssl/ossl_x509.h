@@ -41,7 +41,6 @@ extern VALUE cX509Cert;
 extern VALUE eX509CertError;
 
 VALUE ossl_x509_new(X509 *);
-VALUE ossl_x509_new_from_file(VALUE);
 X509 *GetX509CertPtr(VALUE);
 X509 *DupX509CertPtr(VALUE);
 void Init_ossl_x509cert(void);
@@ -54,7 +53,6 @@ extern VALUE eX509CRLError;
 
 VALUE ossl_x509crl_new(X509_CRL *);
 X509_CRL *GetX509CRLPtr(VALUE);
-X509_CRL *DupX509CRLPtr(VALUE);
 void Init_ossl_x509crl(void);
 
 /*
@@ -84,9 +82,7 @@ void Init_ossl_x509name(void);
 extern VALUE cX509Req;
 extern VALUE eX509ReqError;
 
-VALUE ossl_x509req_new(X509_REQ *);
 X509_REQ *GetX509ReqPtr(VALUE);
-X509_REQ *DupX509ReqPtr(VALUE);
 void Init_ossl_x509req(void);
 
 /*
@@ -106,14 +102,14 @@ extern VALUE cX509Store;
 extern VALUE cX509StoreContext;
 extern VALUE eX509StoreError;
 
-VALUE ossl_x509store_new(X509_STORE *);
 X509_STORE *GetX509StorePtr(VALUE);
-X509_STORE *DupX509StorePtr(VALUE);
-
-VALUE ossl_x509stctx_new(X509_STORE_CTX *);
-VALUE ossl_x509stctx_clear_ptr(VALUE);
-X509_STORE_CTX *GetX509StCtxtPtr(VALUE);
 
 void Init_ossl_x509store(void);
+
+/*
+ * Calls the verify callback Proc (the first parameter) with given pre-verify
+ * result and the X509_STORE_CTX.
+ */
+int ossl_verify_cb_call(VALUE, int, X509_STORE_CTX *);
 
 #endif /* _OSSL_X509_H_ */

@@ -50,8 +50,9 @@ class TestCall < Test::Unit::TestCase
 
     o = nil
     assert_nil(o&.x)
-    assert_nothing_raised(NoMethodError) {o&.x = 6}
-    assert_nothing_raised(NoMethodError) {o&.x *= 7}
+    assert_nothing_raised(NoMethodError) {o&.x = raise}
+    assert_nothing_raised(NoMethodError) {o&.x *= raise}
+    assert_nothing_raised(NoMethodError) {o&.x *= raise; nil}
   end
 
   def test_safe_call_evaluate_arguments_only_method_call_is_made

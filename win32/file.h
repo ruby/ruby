@@ -43,5 +43,6 @@ int fchmod(int fd, int mode);
 #define HAVE_FCHMOD 0
 
 UINT rb_w32_filecp(void);
+WCHAR *rb_w32_home_dir(void);
 
 #endif	/* RUBY_WIN32_FILE_H */

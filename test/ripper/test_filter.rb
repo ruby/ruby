@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 begin
   require 'ripper'
   require 'test/unit'
@@ -15,6 +15,7 @@ class TestRipper::Filter < Test::Unit::TestCase
         data[:filename] = filename rescue nil
         data[:lineno] = lineno
         data[:column] = column
+        data[:state] = state
         data[:token] = token
       end
       data
@@ -73,6 +74,16 @@ class TestRipper::Filter < Test::Unit::TestCase
     filter.parse(data)
     assert_equal(0, data[:column])
     assert_equal(last_columns, filter.column)
+  end
+
+  def test_filter_state
+    data = {}
+    src = File.read(filename)
+    filter = Filter.new(src)
+    assert_equal(nil, filter.state)
+    filter.parse(data)
+    assert_not_nil(data[:state])
+    assert_not_nil(filter.state)
   end
 
   def test_filter_token

@@ -1,38 +1,31 @@
 # frozen_string_literal: false
 require_relative 'utils'
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL)
 
 class OpenSSL::TestPKCS7 < OpenSSL::TestCase
   def setup
-    @rsa1024 = OpenSSL::TestUtils::TEST_KEY_RSA1024
-    @rsa2048 = OpenSSL::TestUtils::TEST_KEY_RSA2048
+    super
+    @rsa1024 = Fixtures.pkey("rsa1024")
+    @rsa2048 = Fixtures.pkey("rsa2048")
     ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
     ee1 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE1")
     ee2 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE2")
 
-    now = Time.now
     ca_exts = [
       ["basicConstraints","CA:TRUE",true],
       ["keyUsage","keyCertSign, cRLSign",true],
       ["subjectKeyIdentifier","hash",false],
       ["authorityKeyIdentifier","keyid:always",false],
     ]
-    @ca_cert = issue_cert(ca, @rsa2048, 1, now, now+3600, ca_exts,
-                           nil, nil, OpenSSL::Digest::SHA1.new)
+    @ca_cert = issue_cert(ca, @rsa2048, 1, ca_exts, nil, nil)
     ee_exts = [
       ["keyUsage","Non Repudiation, Digital Signature, Key Encipherment",true],
       ["authorityKeyIdentifier","keyid:always",false],
       ["extendedKeyUsage","clientAuth, emailProtection, codeSigning",false],
     ]
-    @ee1_cert = issue_cert(ee1, @rsa1024, 2, now, now+1800, ee_exts,
-                           @ca_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
-    @ee2_cert = issue_cert(ee2, @rsa1024, 3, now, now+1800, ee_exts,
-                           @ca_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
-  end
-
-  def issue_cert(*args)
-    OpenSSL::TestUtils.issue_cert(*args)
+    @ee1_cert = issue_cert(ee1, @rsa1024, 2, ee_exts, @ca_cert, @rsa2048)
+    @ee2_cert = issue_cert(ee2, @rsa1024, 3, ee_exts, @ca_cert, @rsa2048)
   end
 
   def test_signed
@@ -54,7 +47,7 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
     assert_equal(@ee1_cert.serial, signers[0].serial)
     assert_equal(@ee1_cert.issuer.to_s, signers[0].issuer.to_s)
 
-    # Normaly OpenSSL tries to translate the supplied content into canonical
+    # Normally OpenSSL tries to translate the supplied content into canonical
     # MIME format (e.g. a newline character is converted into CR+LF).
     # If the content is a binary, PKCS7::BINARY flag should be used.
 
@@ -140,6 +133,8 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
     assert_equal(@ca_cert.subject.to_s, recip[1].issuer.to_s)
     assert_equal(3, recip[1].serial)
     assert_equal(data, p7.decrypt(@rsa1024, @ee2_cert))
+
+    assert_equal(data, p7.decrypt(@rsa1024))
   end
 
   def test_graceful_parsing_failure #[ruby-core:43250]

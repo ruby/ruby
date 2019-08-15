@@ -94,7 +94,7 @@ with all sufficient information, see the ChangeLog file.
       required caller size.
     * Kernel#to_enum and enum_for accept a block for lazy size evaluation.
   * incompatible changes:
-    * system() and exec() closes non-standard file descriptors
+    * system() and exec() close non-standard file descriptors
       (The default of :close_others option is changed to true by default.)
     * respond_to? against a protected method now returns false unless
       the second argument is true.
@@ -497,7 +497,7 @@ with all sufficient information, see the ChangeLog file.
     * Dir.mktmpdir uses FileUtils.remove_entry instead of
       FileUtils.remove_entry_secure.  This means that applications should not
       change the permission of the created temporary directory to make
-      accessible from other users.
+      writable from other users.
 
 * yaml
   * Syck has been removed.  YAML now completely depends on libyaml being
@@ -528,4 +528,3 @@ with all sufficient information, see the ChangeLog file.
 * NUM2SHORT() and NUM2USHORT() added. They are similar to NUM2INT, but short.
 
 * rb_newobj_of() and NEWOBJ_OF() added. They create a new object of a given class.
-

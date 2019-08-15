@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # RDoc uses generators to turn parsed source code in the form of an
 # RDoc::CodeObject tree into some form of output.  RDoc comes with the HTML
@@ -49,4 +49,3 @@ module RDoc::Generator
   autoload :POT,       'rdoc/generator/pot'
 
 end
-

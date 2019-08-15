@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Outputs RDoc markup with hot backspace action!  You will probably need a
 # pager to use this output format.
@@ -41,7 +41,7 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   end
 
   ##
-  # Turns on or off special handling for +convert_string+
+  # Turns on or off regexp handling for +convert_string+
 
   def annotate tag
     case tag
@@ -54,9 +54,9 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   end
 
   ##
-  # Calls convert_string on the result of convert_special
+  # Calls convert_string on the result of convert_regexp_handling
 
-  def convert_special special
+  def convert_regexp_handling target
     convert_string super
   end
 
@@ -64,7 +64,6 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   # Adds bold or underline mixed with backspaces
 
   def convert_string string
-    return string unless string.respond_to? :chars # your ruby is lame
     return string unless @in_b or @in_em
     chars = if @in_b then
               string.chars.map do |char| "#{char}\b#{char}" end
@@ -76,4 +75,3 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   end
 
 end
-
