@@ -268,11 +268,11 @@ RSpec.describe "The library itself" do
         lib/bundler/templates/gems.rb
       ]
       lib_tracked_files = ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb` : `git ls-files -z -- lib`
-      lib_tracked_files = lib_tracked_files.split("\x0").grep(/\.rb$/) - exclusions
-      lib_tracked_files.reject! {|f| f.start_with?("lib/bundler/vendor") }
-      lib_tracked_files.map! {|f| f.chomp(".rb") }
+      files_to_require = lib_tracked_files.split("\x0").grep(/\.rb$/) - exclusions
+      files_to_require.reject! {|f| f.start_with?("lib/bundler/vendor") }
+      files_to_require.map! {|f| f.chomp(".rb") }
       sys_exec!("ruby -w -Ilib") do |input, _, _|
-        lib_tracked_files.each do |f|
+        files_to_require.each do |f|
           input.puts "require '#{f.sub(%r{\Alib/}, "")}'"
         end
       end
