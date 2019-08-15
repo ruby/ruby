@@ -9,7 +9,7 @@
 #
 # $IPR: httpstatus.rb,v 1.11 2003/03/24 20:18:55 gotoyuzo Exp $
 
-require 'webrick/accesslog'
+require_relative 'accesslog'
 
 module WEBrick
 
@@ -23,10 +23,6 @@ module WEBrick
     ##
     # Root of the HTTP status class hierarchy
     class Status < StandardError
-      def initialize(*args) # :nodoc:
-        args[0] = AccessLog.escape(args[0]) unless args.empty?
-        super(*args)
-      end
       class << self
         attr_reader :code, :reason_phrase # :nodoc:
       end

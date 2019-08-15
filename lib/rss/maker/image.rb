@@ -1,7 +1,7 @@
 # frozen_string_literal: false
-require 'rss/image'
-require 'rss/maker/1.0'
-require 'rss/maker/dublincore'
+require_relative '../image'
+require_relative '1.0'
+require_relative 'dublincore'
 
 module RSS
   module Maker

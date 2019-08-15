@@ -264,6 +264,7 @@ module TestDigest
         assert_nothing_raised {
           t = Thread.start {
             sleep 0.1
+            Thread.current.report_on_exception = false
             Digest::Foo.new
           }
           Digest(:Foo).new

@@ -5,7 +5,7 @@ static VALUE
 enc_raise(VALUE exc, VALUE encoding, VALUE mesg)
 {
     rb_enc_raise(rb_to_encoding(encoding), exc, "%s", StringValueCStr(mesg));
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 void

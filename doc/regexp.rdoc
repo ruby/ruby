@@ -63,9 +63,10 @@ The following are <i>metacharacters</i> <tt>(</tt>, <tt>)</tt>,
 <tt>[</tt>, <tt>]</tt>, <tt>{</tt>, <tt>}</tt>, <tt>.</tt>, <tt>?</tt>,
 <tt>+</tt>, <tt>*</tt>. They have a specific meaning when appearing in a
 pattern. To match them literally they must be backslash-escaped. To match
-a backslash literally backslash-escape that: <tt>\\\\\\</tt>.
+a backslash literally, backslash-escape it: <tt>\\\\</tt>.
 
     /1 \+ 2 = 3\?/.match('Does 1 + 2 = 3?') #=> #<MatchData "1 + 2 = 3?">
+    /a\\\\b/.match('a\\\\b')                    #=> #<MatchData "a\\b">
 
 Patterns behave like double-quoted strings so can contain the same
 backslash escapes.
@@ -227,7 +228,7 @@ Capture groups can be referred to by name when defined with the
 constructs.
 
     /\$(?<dollars>\d+)\.(?<cents>\d+)/.match("$3.67")
-        => #<MatchData "$3.67" dollars:"3" cents:"67">
+        #=> #<MatchData "$3.67" dollars:"3" cents:"67">
     /\$(?<dollars>\d+)\.(?<cents>\d+)/.match("$3.67")[:dollars] #=> "3"
 
 Named groups can be backreferenced with <tt>\k<</tt><i>name</i><tt>></tt>,
@@ -237,7 +238,15 @@ where _name_ is the group name.
         #=> #<MatchData "ototo" vowel:"o">
 
 *Note*: A regexp can't use named backreferences and numbered
-backreferences simultaneously.
+backreferences simultaneously. Also, if a named capture is used in a
+regexp, then parentheses used for grouping which would otherwise result
+in a unnamed capture are treated as non-capturing.
+
+    /(\w)(\w)/.match("ab").captures # => ["a", "b"]
+    /(\w)(\w)/.match("ab").named_captures # => {}
+
+    /(?<c>\w)(\w)/.match("ab").captures # => ["a"]
+    /(?<c>\w)(\w)/.match("ab").named_captures # => {"c"=>"a"}
 
 When named capture groups are used with a literal regexp on the left-hand
 side of an expression and the <tt>=~</tt> operator, the captured text is
@@ -540,10 +549,15 @@ options which control how the pattern can match.
 subexpression level with the
 <tt>(?</tt><i>on</i><tt>-</tt><i>off</i><tt>)</tt> construct, which
 enables options <i>on</i>, and disables options <i>off</i> for the
-expression enclosed by the parentheses.
+expression enclosed by the parentheses:
 
-    /a(?i:b)c/.match('aBc') #=> #<MatchData "aBc">
-    /a(?i:b)c/.match('abc') #=> #<MatchData "abc">
+    /a(?i:b)c/.match('aBc')   #=> #<MatchData "aBc">
+    /a(?-i:b)c/i.match('ABC') #=> nil
+
+Additionally, these options can also be toggled for the remainder of the
+pattern:
+
+    /a(?i)bc/.match('abC') #=> #<MatchData "abC">
 
 Options may also be used with <tt>Regexp.new</tt>:
 
@@ -607,9 +621,9 @@ regexp's encoding can be explicitly fixed by supplying
 <tt>Regexp.new</tt>:
 
     r = Regexp.new("a".force_encoding("iso-8859-1"),Regexp::FIXEDENCODING)
-    r =~"a\u3042"
-       #=> Encoding::CompatibilityError: incompatible encoding regexp match
-            (ISO-8859-1 regexp with UTF-8 string)
+    r =~ "a\u3042"
+       # raises Encoding::CompatibilityError: incompatible encoding regexp match
+       #         (ISO-8859-1 regexp with UTF-8 string)
 
 == Special global variables
 

@@ -21,6 +21,9 @@
 #
 # fx is f.values(x).
 #
+
+require 'bigdecimal'
+
 module Jacobian
   module_function
 

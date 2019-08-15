@@ -314,6 +314,18 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     level = rsock_level_arg(family, lev);
     option = rsock_optname_arg(family, level, optname);
     len = 256;
+#ifdef _AIX
+    switch (option) {
+      case SO_DEBUG:
+      case SO_REUSEADDR:
+      case SO_KEEPALIVE:
+      case SO_DONTROUTE:
+      case SO_BROADCAST:
+      case SO_OOBINLINE:
+        /* AIX doesn't set len for boolean options */
+        len = sizeof(int);
+    }
+#endif
     buf = ALLOCA_N(char,len);
 
     rb_io_check_closed(fptr);
@@ -724,6 +736,13 @@ rsock_init_basicsocket(void)
     /* for ext/socket/lib/socket.rb use only: */
     rb_define_private_method(rb_cBasicSocket,
 			     "__recv_nonblock", bsock_recv_nonblock, 4);
+
+#if MSG_DONTWAIT_RELIABLE
+    rb_define_private_method(rb_cBasicSocket,
+			     "__read_nonblock", rsock_read_nonblock, 3);
+    rb_define_private_method(rb_cBasicSocket,
+			     "__write_nonblock", rsock_write_nonblock, 2);
+#endif
 
     /* in ancdata.c */
     rb_define_private_method(rb_cBasicSocket, "__sendmsg",

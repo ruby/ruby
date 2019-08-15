@@ -10,8 +10,8 @@
 #
 #
 
-require "irb/cmd/load"
-require "irb/ext/loader"
+require_relative "../cmd/load"
+require_relative "loader"
 
 class Object
   alias __original__load__IRB_use_loader__ load
@@ -20,10 +20,12 @@ end
 
 module IRB
   module ExtendCommandBundle
+    remove_method :irb_load if method_defined?(:irb_load)
     # Loads the given file similarly to Kernel#load, see IrbLoader#irb_load
     def irb_load(*opts, &b)
       ExtendCommand::Load.execute(irb_context, *opts, &b)
     end
+    remove_method :irb_require if method_defined?(:irb_require)
     # Loads the given file similarly to Kernel#require
     def irb_require(*opts, &b)
       ExtendCommand::Require.execute(irb_context, *opts, &b)
@@ -44,6 +46,7 @@ module IRB
 
     alias use_loader? use_loader
 
+    remove_method :use_loader= if method_defined?(:use_loader=)
     # Sets IRB.conf[:USE_LOADER]
     #
     # See #use_loader for more information.

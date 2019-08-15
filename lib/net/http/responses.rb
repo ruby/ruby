@@ -1,5 +1,6 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # :stopdoc:
+# https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
 class Net::HTTPUnknownResponse < Net::HTTPResponse
   HAS_BODY = true
   EXCEPTION_TYPE = Net::HTTPError
@@ -18,7 +19,7 @@ class Net::HTTPRedirection < Net::HTTPResponse           # 3xx
 end
 class Net::HTTPClientError < Net::HTTPResponse           # 4xx
   HAS_BODY = true
-  EXCEPTION_TYPE = Net::HTTPServerException   # for backward compatibility
+  EXCEPTION_TYPE = Net::HTTPClientException   # for backward compatibility
 end
 class Net::HTTPServerError < Net::HTTPResponse           # 5xx
   HAS_BODY = true
@@ -31,7 +32,12 @@ end
 class Net::HTTPSwitchProtocol < Net::HTTPInformation     # 101
   HAS_BODY = false
 end
-# 102 - RFC 2518; removed in RFC 4918
+class Net::HTTPProcessing < Net::HTTPInformation         # 102
+  HAS_BODY = false
+end
+class Net::HTTPEarlyHints < Net::HTTPInformation         # 103 - RFC 8297
+  HAS_BODY = false
+end
 
 class Net::HTTPOK < Net::HTTPSuccess                            # 200
   HAS_BODY = true
@@ -57,7 +63,9 @@ end
 class Net::HTTPMultiStatus < Net::HTTPSuccess                   # 207 - RFC 4918
   HAS_BODY = true
 end
-# 208 Already Reported - RFC 5842; experimental
+class Net::HTTPAlreadyReported < Net::HTTPSuccess               # 208 - RFC 5842
+  HAS_BODY = true
+end
 class Net::HTTPIMUsed < Net::HTTPSuccess                        # 226 - RFC 3229
   HAS_BODY = true
 end
@@ -114,9 +122,10 @@ end
 class Net::HTTPProxyAuthenticationRequired < Net::HTTPClientError   # 407
   HAS_BODY = true
 end
-class Net::HTTPRequestTimeOut < Net::HTTPClientError                # 408
+class Net::HTTPRequestTimeout < Net::HTTPClientError                # 408
   HAS_BODY = true
 end
+Net::HTTPRequestTimeOut = Net::HTTPRequestTimeout
 class Net::HTTPConflict < Net::HTTPClientError                      # 409
   HAS_BODY = true
 end
@@ -129,24 +138,30 @@ end
 class Net::HTTPPreconditionFailed < Net::HTTPClientError            # 412
   HAS_BODY = true
 end
-class Net::HTTPRequestEntityTooLarge < Net::HTTPClientError         # 413
+class Net::HTTPPayloadTooLarge < Net::HTTPClientError               # 413
   HAS_BODY = true
 end
-class Net::HTTPRequestURITooLong < Net::HTTPClientError             # 414
+Net::HTTPRequestEntityTooLarge = Net::HTTPPayloadTooLarge
+class Net::HTTPURITooLong < Net::HTTPClientError                    # 414
   HAS_BODY = true
 end
+Net::HTTPRequestURITooLong = Net::HTTPURITooLong
 Net::HTTPRequestURITooLarge = Net::HTTPRequestURITooLong
 class Net::HTTPUnsupportedMediaType < Net::HTTPClientError          # 415
   HAS_BODY = true
 end
-class Net::HTTPRequestedRangeNotSatisfiable < Net::HTTPClientError  # 416
+class Net::HTTPRangeNotSatisfiable < Net::HTTPClientError           # 416
   HAS_BODY = true
 end
+Net::HTTPRequestedRangeNotSatisfiable = Net::HTTPRangeNotSatisfiable
 class Net::HTTPExpectationFailed < Net::HTTPClientError             # 417
   HAS_BODY = true
 end
 # 418 I'm a teapot - RFC 2324; a joke RFC
 # 420 Enhance Your Calm - Twitter
+class Net::HTTPMisdirectedRequest < Net::HTTPClientError            # 421 - RFC 7540
+  HAS_BODY = true
+end
 class Net::HTTPUnprocessableEntity < Net::HTTPClientError           # 422 - RFC 4918
   HAS_BODY = true
 end
@@ -169,7 +184,7 @@ end
 class Net::HTTPRequestHeaderFieldsTooLarge < Net::HTTPClientError   # 431 - RFC 6585
   HAS_BODY = true
 end
-class Net::HTTPUnavailableForLegalReasons < Net::HTTPClientError    # 451
+class Net::HTTPUnavailableForLegalReasons < Net::HTTPClientError    # 451 - RFC 7725
   HAS_BODY = true
 end
 # 444 No Response - Nginx
@@ -189,19 +204,26 @@ end
 class Net::HTTPServiceUnavailable < Net::HTTPServerError            # 503
   HAS_BODY = true
 end
-class Net::HTTPGatewayTimeOut < Net::HTTPServerError                # 504
+class Net::HTTPGatewayTimeout < Net::HTTPServerError                # 504
   HAS_BODY = true
 end
+Net::HTTPGatewayTimeOut = Net::HTTPGatewayTimeout
 class Net::HTTPVersionNotSupported < Net::HTTPServerError           # 505
   HAS_BODY = true
 end
-# 506 Variant Also Negotiates - RFC 2295; experimental
+class Net::HTTPVariantAlsoNegotiates < Net::HTTPServerError         # 506
+  HAS_BODY = true
+end
 class Net::HTTPInsufficientStorage < Net::HTTPServerError           # 507 - RFC 4918
   HAS_BODY = true
 end
-# 508 Loop Detected - RFC 5842; experimental
+class Net::HTTPLoopDetected < Net::HTTPServerError                  # 508 - RFC 5842
+  HAS_BODY = true
+end
 # 509 Bandwidth Limit Exceeded - Apache bw/limited extension
-# 510 Not Extended - RFC 2774; experimental
+class Net::HTTPNotExtended < Net::HTTPServerError                   # 510 - RFC 2774
+  HAS_BODY = true
+end
 class Net::HTTPNetworkAuthenticationRequired < Net::HTTPServerError # 511 - RFC 6585
   HAS_BODY = true
 end
@@ -217,6 +239,8 @@ class Net::HTTPResponse
   CODE_TO_OBJ = {
     '100' => Net::HTTPContinue,
     '101' => Net::HTTPSwitchProtocol,
+    '102' => Net::HTTPProcessing,
+    '103' => Net::HTTPEarlyHints,
 
     '200' => Net::HTTPOK,
     '201' => Net::HTTPCreated,
@@ -226,6 +250,7 @@ class Net::HTTPResponse
     '205' => Net::HTTPResetContent,
     '206' => Net::HTTPPartialContent,
     '207' => Net::HTTPMultiStatus,
+    '208' => Net::HTTPAlreadyReported,
     '226' => Net::HTTPIMUsed,
 
     '300' => Net::HTTPMultipleChoices,
@@ -245,16 +270,17 @@ class Net::HTTPResponse
     '405' => Net::HTTPMethodNotAllowed,
     '406' => Net::HTTPNotAcceptable,
     '407' => Net::HTTPProxyAuthenticationRequired,
-    '408' => Net::HTTPRequestTimeOut,
+    '408' => Net::HTTPRequestTimeout,
     '409' => Net::HTTPConflict,
     '410' => Net::HTTPGone,
     '411' => Net::HTTPLengthRequired,
     '412' => Net::HTTPPreconditionFailed,
-    '413' => Net::HTTPRequestEntityTooLarge,
-    '414' => Net::HTTPRequestURITooLong,
+    '413' => Net::HTTPPayloadTooLarge,
+    '414' => Net::HTTPURITooLong,
     '415' => Net::HTTPUnsupportedMediaType,
-    '416' => Net::HTTPRequestedRangeNotSatisfiable,
+    '416' => Net::HTTPRangeNotSatisfiable,
     '417' => Net::HTTPExpectationFailed,
+    '421' => Net::HTTPMisdirectedRequest,
     '422' => Net::HTTPUnprocessableEntity,
     '423' => Net::HTTPLocked,
     '424' => Net::HTTPFailedDependency,
@@ -262,17 +288,20 @@ class Net::HTTPResponse
     '428' => Net::HTTPPreconditionRequired,
     '429' => Net::HTTPTooManyRequests,
     '431' => Net::HTTPRequestHeaderFieldsTooLarge,
+    '451' => Net::HTTPUnavailableForLegalReasons,
 
     '500' => Net::HTTPInternalServerError,
     '501' => Net::HTTPNotImplemented,
     '502' => Net::HTTPBadGateway,
     '503' => Net::HTTPServiceUnavailable,
-    '504' => Net::HTTPGatewayTimeOut,
+    '504' => Net::HTTPGatewayTimeout,
     '505' => Net::HTTPVersionNotSupported,
+    '506' => Net::HTTPVariantAlsoNegotiates,
     '507' => Net::HTTPInsufficientStorage,
+    '508' => Net::HTTPLoopDetected,
+    '510' => Net::HTTPNotExtended,
     '511' => Net::HTTPNetworkAuthenticationRequired,
   }
 end
 
 # :startdoc:
-

@@ -89,11 +89,13 @@ static int convert_UTF32_to_UTF8(char *buf, UTF32 ch)
 
 static VALUE mJSON, mExt, cParser, eParserError, eNestingError;
 static VALUE CNaN, CInfinity, CMinusInfinity;
+static VALUE cBigDecimal = Qundef;
 
 static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
           i_chr, i_max_nesting, i_allow_nan, i_symbolize_names,
-          i_object_class, i_array_class, i_key_p, i_deep_const_get, i_match,
-          i_match_string, i_aset, i_aref, i_leftshift;
+          i_object_class, i_array_class, i_decimal_class, i_key_p,
+          i_deep_const_get, i_match, i_match_string, i_aset, i_aref,
+          i_leftshift, i_new, i_BigDecimal;
 
 %%{
     machine JSON_common;
@@ -338,6 +340,19 @@ static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *res
              )  (^[0-9Ee.\-]? @exit );
 }%%
 
+static int is_bigdecimal_class(VALUE obj)
+{
+  if (cBigDecimal == Qundef) {
+    if (rb_const_defined(rb_cObject, i_BigDecimal)) {
+      cBigDecimal = rb_const_get_at(rb_cObject, i_BigDecimal);
+    }
+    else {
+      return 0;
+    }
+  }
+  return obj == cBigDecimal;
+}
+
 static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result)
 {
     int cs = EVIL;
@@ -351,7 +366,17 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
         fbuffer_clear(json->fbuffer);
         fbuffer_append(json->fbuffer, json->memo, len);
         fbuffer_append_char(json->fbuffer, '\0');
-        *result = rb_float_new(rb_cstr_to_dbl(FBUFFER_PTR(json->fbuffer), 1));
+        if (NIL_P(json->decimal_class)) {
+          *result = rb_float_new(rb_cstr_to_dbl(FBUFFER_PTR(json->fbuffer), 1));
+        } else {
+          VALUE text;
+          text = rb_str_new2(FBUFFER_PTR(json->fbuffer));
+          if (is_bigdecimal_class(json->decimal_class)) {
+            *result = rb_funcall(Qnil, i_BigDecimal, 1, text);
+          } else {
+            *result = rb_funcall(json->decimal_class, i_new, 1, text);
+          }
+        }
         return p + 1;
     } else {
         return NULL;
@@ -547,7 +572,9 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
     if (json->symbolize_names && json->parsing_name) {
       *result = rb_str_intern(*result);
     } else {
-      rb_str_resize(*result, RSTRING_LEN(*result));
+          if (RB_TYPE_P(*result, T_STRING)) {
+              rb_str_resize(*result, RSTRING_LEN(*result));
+          }
     }
     if (cs >= JSON_string_first_final) {
         return p + 1;
@@ -684,6 +711,12 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
             } else {
                 json->array_class = Qnil;
             }
+            tmp = ID2SYM(i_decimal_class);
+            if (option_given_p(opts, tmp)) {
+                json->decimal_class = rb_hash_aref(opts, tmp);
+            } else {
+                json->decimal_class = Qnil;
+            }
             tmp = ID2SYM(i_match_string);
             if (option_given_p(opts, tmp)) {
                 VALUE match_string = rb_hash_aref(opts, tmp);
@@ -701,6 +734,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
         json->create_id = rb_funcall(mJSON, i_create_id, 0);
         json->object_class = Qnil;
         json->array_class = Qnil;
+        json->decimal_class = Qnil;
     }
     source = convert_encoding(StringValue(source));
     StringValue(source);
@@ -760,6 +794,7 @@ static void JSON_mark(void *ptr)
     rb_gc_mark_maybe(json->create_id);
     rb_gc_mark_maybe(json->object_class);
     rb_gc_mark_maybe(json->array_class);
+    rb_gc_mark_maybe(json->decimal_class);
     rb_gc_mark_maybe(json->match_string);
 }
 
@@ -809,6 +844,7 @@ static VALUE cParser_source(VALUE self)
 
 void Init_parser(void)
 {
+#undef rb_intern
     rb_require("json/common");
     mJSON = rb_define_module("JSON");
     mExt = rb_define_module_under(mJSON, "Ext");
@@ -834,6 +870,7 @@ void Init_parser(void)
     i_symbolize_names = rb_intern("symbolize_names");
     i_object_class = rb_intern("object_class");
     i_array_class = rb_intern("array_class");
+    i_decimal_class = rb_intern("decimal_class");
     i_match = rb_intern("match");
     i_match_string = rb_intern("match_string");
     i_key_p = rb_intern("key?");
@@ -841,6 +878,8 @@ void Init_parser(void)
     i_aset = rb_intern("[]=");
     i_aref = rb_intern("[]");
     i_leftshift = rb_intern("<<");
+    i_new = rb_intern("new");
+    i_BigDecimal = rb_intern("BigDecimal");
 }
 
 /*

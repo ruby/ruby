@@ -87,4 +87,3 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
   end
 
 end
-

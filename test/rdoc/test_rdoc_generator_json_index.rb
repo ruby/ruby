@@ -1,14 +1,14 @@
 # coding: US-ASCII
-# frozen_string_literal: false
+# frozen_string_literal: true
 
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocGeneratorJsonIndex < RDoc::TestCase
 
   def setup
     super
 
-    @tmpdir = File.join Dir.tmpdir, "test_rdoc_generator_darkfish_#{$$}"
+    @tmpdir = Dir.mktmpdir "test_rdoc_generator_darkfish_#{$$}_"
     FileUtils.mkdir_p @tmpdir
 
     @options = RDoc::Options.new
@@ -95,6 +95,19 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     assert_file 'js/navigation.js'
     assert_file 'js/search_index.js'
 
+    srcdir = File.expand_path('lib/rdoc', @pwd)
+    if !File.directory? srcdir
+      # for Ruby core repository
+      srcdir = File.expand_path("../../../lib/rdoc", __FILE__)
+    end
+
+    orig_file = Pathname(File.join srcdir, 'generator/template/json_index/js/navigation.js')
+    generated_file = Pathname(File.join @tmpdir, 'js/navigation.js')
+
+    # This is dirty hack on JRuby for MiniTest 4
+    assert orig_file.mtime.inspect == generated_file.mtime.inspect,
+      '.js files should be the same timestamp of original'
+
     json = File.read 'js/search_index.js'
 
     json =~ /\Avar search_data = /
@@ -135,6 +148,20 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     }
 
     assert_equal expected, index
+  end
+
+  def test_generate_search_index_with_reproducible_builds
+    backup_epoch = ENV['SOURCE_DATE_EPOCH']
+    ruby_birthday = Time.parse 'Wed, 24 Feb 1993 21:00:00 +0900'
+    ENV['SOURCE_DATE_EPOCH'] = ruby_birthday.to_i.to_s
+
+    @g.generate
+
+    assert_file 'js/search_index.js'
+    generated_search_index = Pathname(File.join @tmpdir, 'js/search_index.js')
+    assert_equal ruby_birthday, generated_search_index.mtime
+
+    ENV['SOURCE_DATE_EPOCH'] = backup_epoch
   end
 
   def test_generate_gzipped
@@ -199,7 +226,7 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
 
   def test_generate_utf_8
     text = "5\xB0"
-    text.force_encoding Encoding::ISO_8859_1
+    text = RDoc::Encoding.change_encoding text, Encoding::ISO_8859_1
     @klass.add_comment comment(text), @top_level
 
     @g.generate
@@ -215,7 +242,7 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
 
     klass_record = @klass.search_record[2..-1]
     klass_record[-1] = "<p>5\xc2\xb0\n"
-    klass_record.last.force_encoding Encoding::UTF_8
+    klass_record[-1] = RDoc::Encoding.change_encoding klass_record[-1], Encoding::UTF_8
 
     info = [
       klass_record,

@@ -29,14 +29,18 @@ done
 url="$1"
 dir="$2"
 shift 2
+[ x"$branch" = x ] && unset branch || :
 if [ -d "$dir" ]; then
+    if [ x"$(git -C "$dir" describe --tags)" = x"$branch" ]; then
+        exit 0 # already up-to-date
+    fi
     echo updating `expr "/$dir/" : '.*/\([^/][^/]*\)/'` ...
     [ $quiet ] || set -x
     $CHDIR "$dir"
-    git fetch "$@"
-    exec git checkout ${branch:+"$branch"} "$@"
+    ${branch+git} ${branch+fetch} ${branch+"$@"}
+    exec git ${branch+checkout} "${branch-pull}" "$@"
 else
     echo retrieving `expr "/$dir/" : '.*/\([^/][^/]*\)/'` ...
     [ $quiet ] || set -x
-    exec git clone "$url" "$dir" "$@"
+    exec git clone ${branch+--branch} ${branch+"$branch"} "$url" "$dir" "$@"
 fi
