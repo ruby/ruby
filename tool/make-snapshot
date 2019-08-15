@@ -7,8 +7,8 @@ require 'fileutils'
 require 'shellwords'
 require 'tmpdir'
 require 'pathname'
-require File.expand_path("../vcs", __FILE__)
-require File.expand_path("../colorize", __FILE__)
+require File.expand_path("../lib/vcs", __FILE__)
+require File.expand_path("../lib/colorize", __FILE__)
 STDOUT.sync = true
 
 $srcdir ||= nil

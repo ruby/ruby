@@ -64,7 +64,6 @@ Gem::Specification.new do |spec|
     "lib/rexml/security.rb",
     "lib/rexml/source.rb",
     "lib/rexml/streamlistener.rb",
-    "lib/rexml/syncenumerator.rb",
     "lib/rexml/text.rb",
     "lib/rexml/undefinednamespaceexception.rb",
     "lib/rexml/validation/relaxng.rb",

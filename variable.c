@@ -187,12 +187,6 @@ rb_search_class_path(VALUE klass)
 }
 
 static VALUE
-save_temporary_path(VALUE obj, VALUE name)
-{
-    return rb_ivar_set(obj, tmp_classpath, make_temporary_path(obj, name));
-}
-
-static VALUE
 build_const_pathname(VALUE head, VALUE tail)
 {
     VALUE path = rb_str_dup(head);
@@ -219,7 +213,7 @@ rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
     }
     else {
 	int permanent;
-        str = rb_tmp_class_path(under, &permanent, save_temporary_path);
+        str = rb_tmp_class_path(under, &permanent, make_temporary_path);
         str = build_const_pathname(str, name);
 	if (!permanent) {
 	    pathid = tmp_classpath;
@@ -231,23 +225,9 @@ rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
 void
 rb_set_class_path(VALUE klass, VALUE under, const char *name)
 {
-    VALUE str;
-    ID pathid = classpath;
-
-    if (under == rb_cObject) {
-	str = rb_str_new2(name);
-    }
-    else {
-	int permanent;
-	str = rb_str_dup(rb_tmp_class_path(under, &permanent, save_temporary_path));
-	rb_str_cat2(str, "::");
-	rb_str_cat2(str, name);
-	if (!permanent) {
-	    pathid = tmp_classpath;
-	}
-    }
+    VALUE str = rb_str_new2(name);
     OBJ_FREEZE(str);
-    rb_ivar_set(klass, pathid, str);
+    rb_set_class_path_string(klass, under, str);
 }
 
 VALUE
@@ -1340,16 +1320,15 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
     return val;
 }
 
-VALUE
-rb_ivar_set(VALUE obj, ID id, VALUE val)
+static void
+ivar_set(VALUE obj, ID id, VALUE val)
 {
     RB_DEBUG_COUNTER_INC(ivar_set_base);
 
-    rb_check_frozen(obj);
-
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        return obj_ivar_set(obj, id, val);
+        obj_ivar_set(obj, id, val);
+        break;
       case T_CLASS:
       case T_MODULE:
         if (!RCLASS_IV_TBL(obj)) RCLASS_IV_TBL(obj) = st_init_numtable();
@@ -1359,7 +1338,23 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
         generic_ivar_set(obj, id, val);
         break;
     }
+}
+
+VALUE
+rb_ivar_set(VALUE obj, ID id, VALUE val)
+{
+    rb_check_frozen(obj);
+    ivar_set(obj, id, val);
     return val;
+}
+
+void
+rb_ivar_set_internal(VALUE obj, ID id, VALUE val)
+{
+    // should be internal instance variable name (no @ prefix)
+    VM_ASSERT(!rb_is_instance_id(id));
+
+    ivar_set(obj, id, val);
 }
 
 VALUE
@@ -1881,7 +1876,7 @@ autoload_i_mark(void *ptr)
 {
     struct autoload_data_i *p = ptr;
 
-    rb_gc_mark_no_pin(p->feature);
+    rb_gc_mark_movable(p->feature);
 
     /* allow GC to free us if no modules refer to this via autoload_const.ad */
     if (list_empty(&p->constants)) {
@@ -1927,9 +1922,9 @@ autoload_c_mark(void *ptr)
 {
     struct autoload_const *ac = ptr;
 
-    rb_gc_mark_no_pin(ac->mod);
-    rb_gc_mark_no_pin(ac->ad);
-    rb_gc_mark_no_pin(ac->value);
+    rb_gc_mark_movable(ac->mod);
+    rb_gc_mark_movable(ac->ad);
+    rb_gc_mark_movable(ac->value);
 }
 
 static void
@@ -2020,7 +2015,7 @@ rb_autoload_str(VALUE mod, ID id, VALUE file)
     }
     file = rb_fstring(file);
     if (!autoload_featuremap) {
-        autoload_featuremap = rb_hash_new_compare_by_id();
+        autoload_featuremap = rb_ident_hash_new();
         rb_obj_hide(autoload_featuremap);
         rb_gc_register_mark_object(autoload_featuremap);
     }

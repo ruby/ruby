@@ -5,7 +5,7 @@ require_relative "vendored_thor"
 
 module Bundler
   module FriendlyErrors
-    module_function # rubocop:disable Layout/AccessModifierIndentation
+  module_function
 
     def log_error(error)
       case error

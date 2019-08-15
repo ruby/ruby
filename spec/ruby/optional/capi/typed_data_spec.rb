@@ -30,7 +30,7 @@ describe "CApiWrappedTypedStruct" do
 
   it "throws an exception for a wrong type" do
     a = @s.typed_wrap_struct(1024)
-    lambda { @s.typed_get_struct_other(a) }.should raise_error(TypeError)
+    -> { @s.typed_get_struct_other(a) }.should raise_error(TypeError)
   end
 
   it "unwraps data for a parent type" do

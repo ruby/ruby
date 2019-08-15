@@ -158,7 +158,6 @@ module Spec
     def forgotten_command_line_options(options)
       remembered = Bundler::VERSION.split(".", 2).first == "2"
       options = options.map do |k, v|
-        k = Array(k)[remembered ? 0 : -1]
         v = '""' if v && v.to_s.empty?
         [k, v]
       end
@@ -279,7 +278,7 @@ module Spec
       if contents.nil?
         File.open("Gemfile.lock", "r", &:read)
       else
-        create_file("Gemfile.lock", normalize_uri_file(contents), *args)
+        create_file("Gemfile.lock", contents, *args)
       end
     end
 
@@ -287,15 +286,6 @@ module Spec
       # Trim the leading spaces
       spaces = str[/\A\s+/, 0] || ""
       str.gsub(/^#{spaces}/, "")
-    end
-
-    def normalize_uri_file(str)
-      # URI::File of Ruby 2.6 normalize localhost variable with file protocol.
-      if defined?(URI::File)
-        str.gsub(%r{file:\/\/localhost}, "file://")
-      else
-        str
-      end
     end
 
     def install_gemfile(*args)
@@ -546,6 +536,22 @@ module Spec
       yield
     ensure
       Dir[pattern].each(&chmod[0o755, 0o644])
+    end
+
+    # Simulate replacing TODOs with real values
+    def prepare_gemspec(pathname)
+      process_file(pathname) do |line|
+        case line
+        when /spec\.metadata\["(?:allowed_push_host|homepage_uri|source_code_uri|changelog_uri)"\]/, /spec\.homepage/
+          line.gsub(/\=.*$/, "= 'http://example.org'")
+        when /spec\.summary/
+          line.gsub(/\=.*$/, "= %q{A short summary of my new gem.}")
+        when /spec\.description/
+          line.gsub(/\=.*$/, "= %q{A longer description of my new gem.}")
+        else
+          line
+        end
+      end
     end
 
     def process_file(pathname)

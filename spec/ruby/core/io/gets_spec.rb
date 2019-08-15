@@ -30,7 +30,7 @@ describe "IO#gets" do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.gets }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.gets }.should raise_error(IOError)
   end
 
   describe "with no separator" do
@@ -156,11 +156,11 @@ describe "IO#gets" do
   end
 
   it "raises an IOError if the stream is opened for append only" do
-    lambda { File.open(@name, "a:utf-8") { |f| f.gets } }.should raise_error(IOError)
+    -> { File.open(@name, "a:utf-8") { |f| f.gets } }.should raise_error(IOError)
   end
 
   it "raises an IOError if the stream is opened for writing only" do
-    lambda { File.open(@name, "w:utf-8") { |f| f.gets } }.should raise_error(IOError)
+    -> { File.open(@name, "w:utf-8") { |f| f.gets } }.should raise_error(IOError)
   end
 end
 
