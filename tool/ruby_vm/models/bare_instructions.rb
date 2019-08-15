@@ -1,5 +1,5 @@
 #! /your/favourite/path/to/ruby
-# -*- mode: ruby; coding: utf-8; indent-tabs-mode: nil; ruby-indent-level: 2 -*-
+# -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-
 #
@@ -129,6 +129,14 @@ class RubyVM::BareInstructions
 
   def inspect
     sprintf "#<%s %s@%s:%d>", self.class.name, @name, @loc[0], @loc[1]
+  end
+
+  def has_ope? var
+    return @opes.any? {|i| i[:name] == var[:name] }
+  end
+
+  def has_pop? var
+    return @pops.any? {|i| i[:name] == var[:name] }
   end
 
   private

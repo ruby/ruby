@@ -4,14 +4,16 @@ require 'rubygems/test_case'
 class TestGemResolverSpecification < Gem::TestCase
 
   class TestSpec < Gem::Resolver::Specification
+
     attr_writer :source
     attr_reader :spec
 
-    def initialize spec
+    def initialize(spec)
       super()
 
       @spec = spec
     end
+
   end
 
   def test_install
@@ -62,4 +64,3 @@ class TestGemResolverSpecification < Gem::TestCase
   end
 
 end
-

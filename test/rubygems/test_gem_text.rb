@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require "rubygems/text"
 
 class TestGemText < Gem::TestCase
+
   include Gem::Text
 
   def test_format_text
@@ -89,4 +90,9 @@ Without the wrapping, the text might not look good in the RSS feed.
     s = "ab" * 500_001
     assert_equal "Truncating desc to 1,000,000 characters:\n#{s[0, 1_000_000]}", truncate_text(s, "desc", 1_000_000)
   end
+
+  def test_clean_text
+    assert_equal ".]2;nyan.", clean_text("\e]2;nyan\a")
+  end
+
 end

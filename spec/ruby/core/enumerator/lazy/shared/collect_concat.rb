@@ -46,7 +46,7 @@ describe :enumerator_lazy_collect_concat, shared: true do
   end
 
   it "raises an ArgumentError when not given a block" do
-    lambda { @yieldsmixed.send(@method) }.should raise_error(ArgumentError)
+    -> { @yieldsmixed.send(@method) }.should raise_error(ArgumentError)
   end
 
   describe "on a nested Lazy" do
@@ -68,5 +68,11 @@ describe :enumerator_lazy_collect_concat, shared: true do
         (0..Float::INFINITY).lazy.map {|n| n * 10 }.send(@method) { |n| n.to_s.each_char.lazy }.first(6).should == %w[0 1 0 2 0 3]
       end
     end
+  end
+
+  it "works with an infinite enumerable" do
+    s = 0..Float::INFINITY
+    s.lazy.send(@method) { |n| [-n, +n] }.first(200).should ==
+      s.first(100).send(@method) { |n| [-n, +n] }.to_a
   end
 end

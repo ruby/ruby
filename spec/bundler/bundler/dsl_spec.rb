@@ -25,10 +25,16 @@ RSpec.describe Bundler::Dsl do
       expect { subject.git_source(:example) }.to raise_error(Bundler::InvalidOption)
     end
 
-    context "default hosts (git, gist)", :bundler => "< 3" do
-      it "converts :github to :git" do
+    context "default hosts", :bundler => "2" do
+      it "converts :github to URI using https" do
         subject.gem("sparks", :github => "indirect/sparks")
-        github_uri = "git://github.com/indirect/sparks.git"
+        github_uri = "https://github.com/indirect/sparks.git"
+        expect(subject.dependencies.first.source.uri).to eq(github_uri)
+      end
+
+      it "converts :github shortcut to URI using https" do
+        subject.gem("sparks", :github => "rails")
+        github_uri = "https://github.com/rails/rails.git"
         expect(subject.dependencies.first.source.uri).to eq(github_uri)
       end
 
@@ -41,12 +47,6 @@ RSpec.describe Bundler::Dsl do
       it "converts :gist to :git" do
         subject.gem("not-really-a-gem", :gist => "2859988")
         github_uri = "https://gist.github.com/2859988.git"
-        expect(subject.dependencies.first.source.uri).to eq(github_uri)
-      end
-
-      it "converts 'rails' to 'rails/rails'" do
-        subject.gem("rails", :github => "rails")
-        github_uri = "git://github.com/rails/rails.git"
         expect(subject.dependencies.first.source.uri).to eq(github_uri)
       end
 
@@ -98,8 +98,8 @@ RSpec.describe Bundler::Dsl do
   end
 
   describe "#gem" do
-    [:ruby, :ruby_18, :ruby_19, :ruby_20, :ruby_21, :ruby_22, :ruby_23, :ruby_24, :ruby_25, :mri, :mri_18, :mri_19,
-     :mri_20, :mri_21, :mri_22, :mri_23, :mri_24, :mri_25, :jruby, :rbx, :truffleruby].each do |platform|
+    [:ruby, :ruby_18, :ruby_19, :ruby_20, :ruby_21, :ruby_22, :ruby_23, :ruby_24, :ruby_25, :ruby_26, :mri, :mri_18, :mri_19,
+     :mri_20, :mri_21, :mri_22, :mri_23, :mri_24, :mri_25, :mri_26, :jruby, :rbx, :truffleruby].each do |platform|
       it "allows #{platform} as a valid platform" do
         subject.gem("foo", :platform => platform)
       end
@@ -237,7 +237,20 @@ RSpec.describe Bundler::Dsl do
         end
 
         subject.dependencies.each do |d|
-          expect(d.source.uri).to eq("git://github.com/spree/spree.git")
+          expect(d.source.uri).to eq("https://github.com/spree/spree.git")
+        end
+      end
+    end
+
+    describe "#github", :bundler => "2" do
+      it "from github" do
+        spree_gems = %w[spree_core spree_api spree_backend]
+        subject.github "spree" do
+          spree_gems.each {|spree_gem| subject.send :gem, spree_gem }
+        end
+
+        subject.dependencies.each do |d|
+          expect(d.source.uri).to eq("https://github.com/spree/spree.git")
         end
       end
     end
@@ -258,15 +271,15 @@ RSpec.describe Bundler::Dsl do
     it "will raise a Bundler::GemfileError" do
       gemfile "gem 'foo', :path => /unquoted/string/syntax/error"
       expect { Bundler::Dsl.evaluate(bundled_app("Gemfile"), nil, true) }.
-        to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`:( compile error -)? unknown regexp options - trg. Bundler cannot continue./)
+        to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`:( compile error -)? unknown regexp options - trg.+ Bundler cannot continue./)
     end
   end
 
   describe "Runtime errors", :unless => Bundler.current_ruby.on_18? do
     it "will raise a Bundler::GemfileError" do
-      gemfile "s = 'foo'.freeze; s.strip!"
+      gemfile "raise RuntimeError, 'foo'"
       expect { Bundler::Dsl.evaluate(bundled_app("Gemfile"), nil, true) }.
-        to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`: can't modify frozen String. Bundler cannot continue./i)
+        to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`: foo. Bundler cannot continue./i)
     end
   end
 

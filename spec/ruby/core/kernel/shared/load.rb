@@ -30,9 +30,8 @@ describe :kernel_load, shared: true do
   it "loads a file that recursively requires itself" do
     path = File.expand_path "recursive_require_fixture.rb", CODE_LOADING_DIR
     -> {
-      $VERBOSE = true
       @object.load(path).should be_true
-    }.should complain(/circular require considered harmful/)
+    }.should complain(/circular require considered harmful/, verbose: true)
     ScratchPad.recorded.should == [:loaded, :loaded]
   end
 
@@ -82,7 +81,7 @@ describe :kernel_load, shared: true do
 
   it "raises a LoadError if passed a non-extensioned path that does not exist but a .rb extensioned path does exist" do
     path = File.expand_path "load_ext_fixture", CODE_LOADING_DIR
-    lambda { @object.load(path) }.should raise_error(LoadError)
+    -> { @object.load(path) }.should raise_error(LoadError)
   end
 
   describe "when passed true for 'wrap'" do
@@ -116,7 +115,7 @@ describe :kernel_load, shared: true do
       end
 
       it "does not pollute the receiver" do
-        lambda { @object.send(:top_level_method) }.should raise_error(NameError)
+        -> { @object.send(:top_level_method) }.should raise_error(NameError)
       end
     end
   end

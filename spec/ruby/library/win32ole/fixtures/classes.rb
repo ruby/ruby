@@ -1,7 +1,8 @@
 require 'win32ole'
 
 module WIN32OLESpecs
-  MSXML_AVAILABLE = !!WIN32OLE_TYPELIB.typelibs.find { |t| t.name.start_with?('Microsoft XML') }
+  MSXML_AVAILABLE = WIN32OLE_TYPELIB.typelibs.any? { |t| t.name.start_with?('Microsoft XML') }
+  SYSTEM_MONITOR_CONTROL_AVAILABLE = WIN32OLE_TYPELIB.typelibs.any? { |t| t.name.start_with?('System Monitor Control') }
 
   def self.new_ole(name)
     tries = 0

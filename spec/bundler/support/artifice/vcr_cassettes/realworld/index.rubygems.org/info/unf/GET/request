@@ -1,7 +1,0 @@
-> GET /info/unf
-> accept-encoding: gzip
-> accept: */*
-> user-agent: bundler/1.15.0.pre.2 rubygems/2.6.11 ruby/2.4.1 (x86_64-apple-darwin16.5.0) command/lock options/spec_run,plugins,trampoline_disable 7edfb7e0938d0c35
-> connection: keep-alive
-> keep-alive: 30
-> host: index.rubygems.org

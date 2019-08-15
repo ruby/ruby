@@ -4,7 +4,8 @@ module JITSupport
   JIT_TIMEOUT = 600 # 10min for each...
   JIT_SUCCESS_PREFIX = 'JIT success \(\d+\.\dms\)'
   UNSUPPORTED_COMPILERS = [
-    'icc',
+    %r[\Aicc\b],
+    %r[\A/opt/developerstudio\d+\.\d+/bin/cc\z],
   ]
 
   module_function
@@ -30,6 +31,10 @@ module JITSupport
     args << '--jit-save-temps' if save_temps
     args << '-e' << script
     base_env = { 'MJIT_SEARCH_BUILD_DIR' => 'true' } # workaround to skip requiring `make install` for `make test-all`
+    if preloadenv = RbConfig::CONFIG['PRELOADENV'] and !preloadenv.empty?
+      so = "mjit_build_dir.#{RbConfig::CONFIG['SOEXT']}"
+      base_env[preloadenv] = File.realpath(so) rescue nil
+    end
     args.unshift(env ? base_env.merge!(env) : base_env)
     EnvUtil.invoke_ruby(args,
       '', true, true, timeout: timeout,
@@ -38,7 +43,9 @@ module JITSupport
 
   def supported?
     return @supported if defined?(@supported)
-    @supported = !UNSUPPORTED_COMPILERS.include?(RbConfig::CONFIG['CC'])
+    @supported = UNSUPPORTED_COMPILERS.all? do |regexp|
+      !regexp.match?(RbConfig::CONFIG['CC'])
+    end
   end
 
   def remove_mjit_logs(stderr)
@@ -50,7 +57,7 @@ module JITSupport
   end
 
   def code_block(code)
-    "```\n#{code}\n```\n\n"
+    %Q["""\n#{code}\n"""\n\n]
   end
 
   # We're retrying cc1 not found error on gcc, which should be solved in the future but ignored for now.

@@ -5,6 +5,7 @@
 # to the rest of RubyGems.
 #
 class Gem::PathSupport
+
   ##
   # The default system path for managing Gems.
   attr_reader :home
@@ -25,7 +26,7 @@ class Gem::PathSupport
   def initialize(env)
     @home = env["GEM_HOME"] || Gem.default_dir
 
-    if File::ALT_SEPARATOR then
+    if File::ALT_SEPARATOR
       @home = @home.gsub(File::ALT_SEPARATOR, File::SEPARATOR)
     end
 
@@ -43,7 +44,7 @@ class Gem::PathSupport
   ##
   # Split the Gem search path (as reported by Gem.path).
 
-  def split_gem_path gpaths, home
+  def split_gem_path(gpaths, home)
     # FIX: it should be [home, *path], not [*path, home]
 
     gem_path = []
@@ -56,7 +57,7 @@ class Gem::PathSupport
         gem_path += default_path
       end
 
-      if File::ALT_SEPARATOR then
+      if File::ALT_SEPARATOR
         gem_path.map! do |this_path|
           this_path.gsub File::ALT_SEPARATOR, File::SEPARATOR
         end
@@ -87,4 +88,5 @@ class Gem::PathSupport
       path
     end
   end
+
 end

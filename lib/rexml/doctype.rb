@@ -108,13 +108,19 @@ module REXML
     #   Ignored
     def write( output, indent=0, transitive=false, ie_hack=false )
       f = REXML::Formatters::Default.new
+      c = context
+      if c and c[:prologue_quote] == :apostrophe
+        quote = "'"
+      else
+        quote = "\""
+      end
       indent( output, indent )
       output << START
       output << ' '
       output << @name
-      output << " #@external_id" if @external_id
-      output << " #{@long_name.inspect}" if @long_name
-      output << " #{@uri.inspect}" if @uri
+      output << " #{@external_id}" if @external_id
+      output << " #{quote}#{@long_name}#{quote}" if @long_name
+      output << " #{quote}#{@uri}#{quote}" if @uri
       unless @children.empty?
         output << ' ['
         @children.each { |child|
@@ -127,7 +133,11 @@ module REXML
     end
 
     def context
-      @parent.context
+      if @parent
+        @parent.context
+      else
+        nil
+      end
     end
 
     def entity( name )
@@ -249,9 +259,16 @@ module REXML
     end
 
     def to_s
+      c = nil
+      c = parent.context if parent
+      if c and c[:prologue_quote] == :apostrophe
+        quote = "'"
+      else
+        quote = "\""
+      end
       notation = "<!NOTATION #{@name} #{@middle}"
-      notation << " #{@public.inspect}" if @public
-      notation << " #{@system.inspect}" if @system
+      notation << " #{quote}#{@public}#{quote}" if @public
+      notation << " #{quote}#{@system}#{quote}" if @system
       notation << ">"
       notation
     end

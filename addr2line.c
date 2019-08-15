@@ -9,9 +9,8 @@
 **********************************************************************/
 
 #if defined(__clang__)
-#pragma clang diagnostic ignored "-Wpedantic"
-#elif defined(__GNUC__)
-#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma clang diagnostic ignored "-Wgnu-empty-initializer"
+#pragma clang diagnostic ignored "-Wgcc-compat"
 #endif
 
 #include "ruby/config.h"
@@ -65,7 +64,11 @@ void *alloca();
 #endif
 
 #ifdef HAVE_MACH_O_LOADER_H
+# include <crt_externs.h>
+# include <mach-o/fat.h>
 # include <mach-o/loader.h>
+# include <mach-o/nlist.h>
+# include <mach-o/stab.h>
 #endif
 
 #ifdef USE_ELF
@@ -184,7 +187,7 @@ struct debug_section_definition {
 };
 
 /* Avoid consuming stack as this module may be used from signal handler */
-static char binary_filename[PATH_MAX];
+static char binary_filename[PATH_MAX + 1];
 
 static unsigned long
 uleb128(char **p)
@@ -429,7 +432,7 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    /*basic_block = 1; */
 	    break;
 	case DW_LNS_const_add_pc:
-	    a = ((255 - header.opcode_base) / header.line_range) *
+	    a = ((255UL - header.opcode_base) / header.line_range) *
 		header.minimum_instruction_length;
 	    addr += a;
 	    break;
@@ -783,7 +786,7 @@ typedef struct {
     char *pend;
     char *q0;
     char *q;
-    int format; /* 4 or 8 */;
+    int format; // 4 or 8
     uint8_t address_size;
     int level;
     char *abbrev_table[ABBREV_TABLE_SIZE];
@@ -1089,7 +1092,7 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_uint_value(v, uleb128(&reader->p));
         break;
       case DW_FORM_indirect:
-        /* TODO: read the refered value */
+        /* TODO: read the referred value */
         set_uint_value(v, uleb128(&reader->p));
         break;
       case DW_FORM_sec_offset:
@@ -1819,11 +1822,16 @@ static uintptr_t
 fill_lines(int num_traces, void **traces, int check_debuglink,
         obj_info_t **objp, line_info_t *lines, int offset)
 {
+# ifdef __LP64__
+#  define LP(x) x##_64
+# else
+#  define LP(x) x
+# endif
     int fd;
     off_t filesize;
-    char *file, *p;
+    char *file, *p = NULL;
     obj_info_t *obj = *objp;
-    struct mach_header_64 *header;
+    struct LP(mach_header) *header;
     uintptr_t dladdr_fbase = 0;
 
     {
@@ -1834,6 +1842,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         size_t basesize = size - (base - binary_filename);
         s += size;
         max -= size;
+        p = s;
         size = strlcpy(s, ".dSYM/Contents/Resources/DWARF/", max);
         if (size == 0) goto fail;
         s += size;
@@ -1841,12 +1850,17 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         if (max <= basesize) goto fail;
         memcpy(s, base, basesize);
         s[basesize] = 0;
+
+        fd = open(binary_filename, O_RDONLY);
+        if (fd < 0) {
+            *p = 0; /* binary_filename becomes original file name */
+            fd = open(binary_filename, O_RDONLY);
+            if (fd < 0) {
+                goto fail;
+            }
+        }
     }
 
-    fd = open(binary_filename, O_RDONLY);
-    if (fd < 0) {
-        goto fail;
-    }
     filesize = lseek(fd, 0, SEEK_END);
     if (filesize < 0) {
         int e = errno;
@@ -1875,19 +1889,57 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     obj->mapped = file;
     obj->mapped_size = (size_t)filesize;
 
-    header = (struct mach_header_64 *)file;
-    if (header->magic != MH_MAGIC_64) {
-        /* TODO: universal binaries */
-        kprintf("'%s' is not a 64-bit Mach-O file!\n",binary_filename);
+    header = (struct LP(mach_header) *)file;
+    if (header->magic == LP(MH_MAGIC)) {
+        /* non universal binary */
+        p = file;
+    }
+    else if (header->magic == FAT_CIGAM) {
+        struct LP(mach_header) *mhp = _NSGetMachExecuteHeader();
+        struct fat_header *fat = (struct fat_header *)file;
+        char *q = file + sizeof(*fat);
+        uint32_t nfat_arch = __builtin_bswap32(fat->nfat_arch);
+        /* fprintf(stderr,"%d: fat:%s %d\n",__LINE__, binary_filename,nfat_arch); */
+        for (uint32_t i = 0; i < nfat_arch; i++) {
+            struct fat_arch *arch = (struct fat_arch *)q;
+            cpu_type_t cputype = __builtin_bswap32(arch->cputype);
+            cpu_subtype_t cpusubtype = __builtin_bswap32(arch->cpusubtype);
+            uint32_t offset = __builtin_bswap32(arch->offset);
+            /* fprintf(stderr,"%d: fat %d %x/%x %x/%x\n",__LINE__, i, mhp->cputype,mhp->cpusubtype, cputype,cpusubtype); */
+            if (mhp->cputype == cputype &&
+                    (cpu_subtype_t)(mhp->cpusubtype & ~CPU_SUBTYPE_MASK) == cpusubtype) {
+                p = file + offset;
+                file = p;
+                header = (struct LP(mach_header) *)p;
+                if (header->magic == LP(MH_MAGIC)) {
+                    goto found_mach_header;
+                }
+                break;
+            }
+            q += sizeof(*arch);
+        }
+        kprintf("'%s' is not a Mach-O universal binary file!\n",binary_filename);
         close(fd);
         goto fail;
     }
+    else {
+        kprintf("'%s' is not a "
+# ifdef __LP64__
+                "64"
+# else
+                "32"
+# endif
+                "-bit Mach-O file!\n",binary_filename);
+        close(fd);
+        goto fail;
+    }
+found_mach_header:
+    p += sizeof(*header);
 
-    p = file + sizeof(struct mach_header_64);
     for (uint32_t i = 0; i < (uint32_t)header->ncmds; i++) {
         struct load_command *lcmd = (struct load_command *)p;
         switch (lcmd->cmd) {
-          case LC_SEGMENT_64:
+          case LP(LC_SEGMENT):
             {
                 static const char *debug_section_names[] = {
                     "__debug_abbrev",
@@ -1896,15 +1948,15 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
                     "__debug_ranges",
                     "__debug_str"
                 };
-                struct segment_command_64 *scmd = (struct segment_command_64 *)lcmd;
+                struct LP(segment_command) *scmd = (struct LP(segment_command) *)lcmd;
                 if (strcmp(scmd->segname, "__TEXT") == 0) {
                     obj->vmaddr = scmd->vmaddr;
                 }
                 else if (strcmp(scmd->segname, "__DWARF") == 0) {
-                    p += sizeof(struct segment_command_64);
+                    p += sizeof(struct LP(segment_command));
                     for (uint64_t i = 0; i < scmd->nsects; i++) {
-                        struct section_64 *sect = (struct section_64 *)p;
-                        p += sizeof(struct section_64);
+                        struct LP(section) *sect = (struct LP(section) *)p;
+                        p += sizeof(struct LP(section));
                         for (int j=0; j < DWARF_SECTION_COUNT; j++) {
                             struct dwarf_section *s = obj_dwarf_section_at(obj, j);
 
@@ -1924,23 +1976,39 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
             }
             break;
 
-#if 0
           case LC_SYMTAB:
             {
-                struct symtab_command *c = (struct symtab_command *)lcmd;
-                struct nlist_64 *nl = (struct nlist *)(file + c->symoff);
-                char *strtab = file + c->stroff;
+                struct symtab_command *cmd = (struct symtab_command *)lcmd;
+                struct LP(nlist) *nl = (struct LP(nlist) *)(file + cmd->symoff);
+                char *strtab = file + cmd->stroff, *sname = 0;
                 uint32_t j;
-                kprintf("[%2d]: %x/symtab %lx\n", i, c->cmd, p);
-                for (j = 0; j < c->nsyms; j++) {
-                    struct nlist_64 *e = &nl[j];
-                    if (!(e->n_type & N_STAB)) continue;
-                    /* if (e->n_type != N_FUN) continue; */
-                    kprintf("[%2d][%4d]: %02x/%x/%x: %s %lx\n", i, j,
-                            e->n_type,e->n_sect,e->n_desc,strtab+e->n_un.n_strx,e->n_value);
+                uintptr_t saddr = 0;
+                /* kprintf("[%2d]: %x/symtab %p\n", i, cmd->cmd, p); */
+                for (j = 0; j < cmd->nsyms; j++) {
+                    uintptr_t symsize, d;
+                    struct LP(nlist) *e = &nl[j];
+                        /* kprintf("[%2d][%4d]: %02x/%x/%x: %s %llx\n", i, j, e->n_type,e->n_sect,e->n_desc,strtab+e->n_un.n_strx,e->n_value); */
+                    if (e->n_type != N_FUN) continue;
+                    if (e->n_sect) {
+                        saddr = (uintptr_t)e->n_value + obj->base_addr - obj->vmaddr;
+                        sname = strtab + e->n_un.n_strx;
+                        /* kprintf("[%2d][%4d]: %02x/%x/%x: %s %llx\n", i, j, e->n_type,e->n_sect,e->n_desc,strtab+e->n_un.n_strx,e->n_value); */
+                        continue;
+                    }
+                    for (int k = offset; k < num_traces; k++) {
+                        d = (uintptr_t)traces[k] - saddr;
+                        symsize = e->n_value;
+                        /* kprintf("%lx %lx %lx\n",saddr,symsize,traces[k]); */
+                        if (lines[k].line > 0 || d > (uintptr_t)symsize)
+                            continue;
+                        /* fill symbol name and addr from .symtab */
+                        if (!lines[k].sname) lines[k].sname = sname;
+                        lines[k].saddr = saddr;
+                        lines[k].path  = obj->path;
+                        lines[k].base_addr = obj->base_addr;
+                    }
                 }
             }
-#endif
         }
         p += lcmd->cmdsize;
     }
@@ -1982,6 +2050,7 @@ main_exe_path(void)
 {
 # define PROC_SELF_EXE "/proc/self/exe"
     ssize_t len = readlink(PROC_SELF_EXE, binary_filename, PATH_MAX);
+    if (len < 0) return 0;
     binary_filename[len] = 0;
     return len;
 }
@@ -2101,6 +2170,8 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
 	    path = info.dli_fname;
 	    obj->path = path;
 	    lines[i].path = path;
+            lines[i].sname = info.dli_sname;
+            lines[i].saddr = (uintptr_t)info.dli_saddr;
 	    strlcpy(binary_filename, path, PATH_MAX);
 	    if (fill_lines(num_traces, traces, 1, &obj, lines, i) == (uintptr_t)-1)
 		break;

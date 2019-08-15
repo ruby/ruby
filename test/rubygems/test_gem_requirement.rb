@@ -20,6 +20,12 @@ class TestGemRequirement < Gem::TestCase
     refute_requirement_equal "= 1.2", "= 1.3"
     refute_requirement_equal "= 1.3", "= 1.2"
 
+    refute_requirement_equal "~> 1.3", "~> 1.3.0"
+    refute_requirement_equal "~> 1.3.0", "~> 1.3"
+
+    assert_requirement_equal ["> 2", "~> 1.3"], ["> 2.0", "~> 1.3"]
+    assert_requirement_equal ["> 2.0", "~> 1.3"], ["> 2", "~> 1.3"]
+
     refute_equal Object.new, req("= 1.2")
     refute_equal req("= 1.2"), Object.new
   end
@@ -29,7 +35,6 @@ class TestGemRequirement < Gem::TestCase
     assert_requirement_equal "= 2", ["2"]
     assert_requirement_equal "= 2", v(2)
     assert_requirement_equal "2.0", "2"
-    assert_requirement_equal ["= 2", ">= 2"], [">= 2", "= 2"]
   end
 
   def test_create
@@ -260,6 +265,12 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "3.0.rc2",     "< 3.0.1"
 
     assert_satisfied_by "3.0.rc2",     "> 0"
+
+    assert_satisfied_by "5.0.0.rc2",   "~> 5.a"
+    refute_satisfied_by "5.0.0.rc2",   "~> 5.x"
+
+    assert_satisfied_by "5.0.0",       "~> 5.a"
+    assert_satisfied_by "5.0.0",       "~> 5.x"
   end
 
   def test_illformed_requirements
@@ -387,27 +398,28 @@ class TestGemRequirement < Gem::TestCase
   # Assert that two requirements are equal. Handles Gem::Requirements,
   # strings, arrays, numbers, and versions.
 
-  def assert_requirement_equal expected, actual
+  def assert_requirement_equal(expected, actual)
     assert_equal req(expected), req(actual)
   end
 
   # Assert that +version+ satisfies +requirement+.
 
-  def assert_satisfied_by version, requirement
+  def assert_satisfied_by(version, requirement)
     assert req(requirement).satisfied_by?(v(version)),
       "#{requirement} is satisfied by #{version}"
   end
 
   # Refute the assumption that two requirements are equal.
 
-  def refute_requirement_equal unexpected, actual
+  def refute_requirement_equal(unexpected, actual)
     refute_equal req(unexpected), req(actual)
   end
 
   # Refute the assumption that +version+ satisfies +requirement+.
 
-  def refute_satisfied_by version, requirement
+  def refute_satisfied_by(version, requirement)
     refute req(requirement).satisfied_by?(v(version)),
       "#{requirement} is not satisfied by #{version}"
   end
+
 end

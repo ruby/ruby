@@ -1,6 +1,5 @@
 prelude: |
   #!/usr/bin/ruby
-  # -*- mode: ruby -*-
 
   wc_input_base = <<EOS
   Subject:      Re: Who was Izchak Miller?

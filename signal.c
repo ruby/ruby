@@ -197,8 +197,8 @@ static const struct signals {
 #endif
 };
 
-static const char signame_prefix[3] = "SIG";
-static const int signame_prefix_len = (int)sizeof(signame_prefix);
+static const char signame_prefix[] = "SIG";
+static const int signame_prefix_len = 3;
 
 static int
 signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
@@ -236,7 +236,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
 	negative = 0;
     }
     if (len >= prefix + signame_prefix_len) {
-	if (memcmp(nm + prefix, signame_prefix, sizeof(signame_prefix)) == 0)
+        if (memcmp(nm + prefix, signame_prefix, signame_prefix_len) == 0)
 	    prefix += signame_prefix_len;
     }
     if (len <= (long)prefix) {
@@ -391,7 +391,7 @@ interrupt_init(int argc, VALUE *argv, VALUE self)
     VALUE args[2];
 
     args[0] = INT2FIX(SIGINT);
-    rb_scan_args(argc, argv, "01", &args[1]);
+    args[1] = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
     return rb_call_super(2, args);
 }
 
@@ -419,12 +419,13 @@ static void signal_enque(int sig);
  *     Process.kill(signal, pid, ...)    -> integer
  *
  *  Sends the given signal to the specified process id(s) if _pid_ is positive.
- *  If _pid_ is zero _signal_ is sent to all processes whose group ID is equal
- *  to the group ID of the process. _signal_ may be an integer signal number or
+ *  If _pid_ is zero, _signal_ is sent to all processes whose group ID is equal
+ *  to the group ID of the process. If _pid_ is negative, results are dependent
+ *  on the operating system. _signal_ may be an integer signal number or
  *  a POSIX signal name (either with or without a +SIG+ prefix). If _signal_ is
  *  negative (or starts with a minus sign), kills process groups instead of
  *  processes. Not all signals are available on all platforms.
- *  The keys and values of +Signal.list+ are known signal names and numbers,
+ *  The keys and values of Signal.list are known signal names and numbers,
  *  respectively.
  *
  *     pid = fork do
@@ -439,15 +440,14 @@ static void signal_enque(int sig);
  *
  *     Ouch!
  *
- *  If _signal_ is an integer but wrong for signal,
- *  <code>Errno::EINVAL</code> or +RangeError+ will be raised.
- *  Otherwise unless _signal_ is a +String+ or a +Symbol+, and a known
- *  signal name, +ArgumentError+ will be raised.
+ *  If _signal_ is an integer but wrong for signal, Errno::EINVAL or
+ *  RangeError will be raised.  Otherwise unless _signal_ is a String
+ *  or a Symbol, and a known signal name, ArgumentError will be
+ *  raised.
  *
- *  Also, <code>Errno::ESRCH</code> or +RangeError+ for invalid _pid_,
- *  <code>Errno::EPERM</code> when failed because of no privilege,
- *  will be raised.  In these cases, signals may have been sent to
- *  preceding processes.
+ *  Also, Errno::ESRCH or RangeError for invalid _pid_, Errno::EPERM
+ *  when failed because of no privilege, will be raised.  In these
+ *  cases, signals may have been sent to preceding processes.
  */
 
 VALUE
@@ -1091,9 +1091,8 @@ signal_exec(VALUE cmd, int safe, int sig)
 }
 
 void
-rb_trap_exit(void)
+rb_vm_trap_exit(rb_vm_t *vm)
 {
-    rb_vm_t *vm = GET_VM();
     VALUE trap_exit = vm->trap_list.cmd[0];
 
     if (trap_exit) {

@@ -126,4 +126,3 @@ class Gem::PackageTask < Rake::PackageTask
   end
 
 end
-

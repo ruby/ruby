@@ -176,7 +176,7 @@ are not available).
 Note that on `bundle install`, bundler downloads and evaluates all gems, in order to
 create a single canonical list of all of the required gems and their dependencies.
 This means that you cannot list different versions of the same gems in different
-groups. For more details, see [Understanding Bundler](http://bundler.io/rationale.html).
+groups. For more details, see [Understanding Bundler](https://bundler.io/rationale.html).
 
 ### PLATFORMS
 
@@ -216,13 +216,13 @@ used on platforms with Ruby 2.3, use:
 The full list of platforms and supported versions includes:
 
   * `ruby`:
-    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5
+    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
   * `mri`:
-    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5
+    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
   * `mingw`:
-    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5
+    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
   * `x64_mingw`:
-    2.0, 2.1, 2.2, 2.3, 2.4, 2.5
+    2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
 
 As with groups, you can specify one or more platforms:
 
@@ -310,14 +310,13 @@ Git repositories support a number of additional options.
 
   * `branch`, `tag`, and `ref`:
     You `MUST` only specify at most one of these options. The default
-    is `:branch => "master"`
-  * For example:
+    is `:branch => "master"`.  For example:
 
-      git "https://github.com/rails/rails.git", :branch => "5-0-stable" do
+      gem "rails", :git => "https://github.com/rails/rails.git", :branch => "5-0-stable"
 
-      git "https://github.com/rails/rails.git", :tag => "v5.0.0" do
+      gem "rails", :git => "https://github.com/rails/rails.git", :tag => "v5.0.0"
 
-      git "https://github.com/rails/rails.git", :ref => "4aded" do
+      gem "rails", :git => "https://github.com/rails/rails.git", :ref => "4aded"
 
   * `submodules`:
     For reference, a [git submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules)

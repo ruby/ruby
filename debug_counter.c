@@ -21,7 +21,9 @@ static const char *const debug_counter_names[] = {
 #undef RB_DEBUG_COUNTER
 };
 
+MJIT_SYMBOL_EXPORT_BEGIN
 size_t rb_debug_counter[numberof(debug_counter_names)];
+MJIT_SYMBOL_EXPORT_END
 
 void
 rb_debug_counter_show_results(const char *msg)
@@ -39,6 +41,32 @@ rb_debug_counter_show_results(const char *msg)
 		    rb_debug_counter[i]);
 	}
     }
+}
+
+VALUE
+rb_debug_counter_show(void)
+{
+    rb_debug_counter_show_results("method call");
+    return Qnil;
+}
+
+VALUE
+rb_debug_counter_reset(void)
+{
+    for (int i = 0; i < RB_DEBUG_COUNTER_MAX; i++) {
+        switch (i) {
+          case RB_DEBUG_COUNTER_mjit_length_unit_queue:
+          case RB_DEBUG_COUNTER_mjit_length_active_units:
+          case RB_DEBUG_COUNTER_mjit_length_compact_units:
+          case RB_DEBUG_COUNTER_mjit_length_stale_units:
+            // These counters may be decreased and should not be reset.
+            break;
+          default:
+            rb_debug_counter[i] = 0;
+            break;
+        }
+    }
+    return Qnil;
 }
 
 __attribute__((destructor))

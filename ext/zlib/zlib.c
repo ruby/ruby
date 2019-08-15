@@ -1011,6 +1011,7 @@ zstream_run_func(void *ptr)
 
 /*
  * There is no safe way to interrupt z->run->func().
+ * async-signal-safe
  */
 static void
 zstream_unblock_func(void *ptr)
@@ -1053,8 +1054,9 @@ zstream_run(struct zstream *z, Bytef *src, long len, int flush)
     }
 
 loop:
-    err = (int)(VALUE)rb_thread_call_without_gvl(zstream_run_func, (void *)&args,
-						 zstream_unblock_func, (void *)&args);
+    err = (int)(VALUE)rb_nogvl(zstream_run_func, (void *)&args,
+                               zstream_unblock_func, (void *)&args,
+                               RB_NOGVL_UBF_ASYNC_SAFE);
 
     if (flush != Z_FINISH && err == Z_BUF_ERROR
 	    && z->stream.avail_out > 0) {
@@ -2364,7 +2366,6 @@ gzfile_write_raw(struct gzfile *gz)
 	str = zstream_detach_buffer(&gz->z);
 	OBJ_TAINT(str);  /* for safe */
 	rb_funcall(gz->io, id_write, 1, str);
-	rb_str_resize(str, 0);
 	if ((gz->z.flags & GZFILE_FLAG_SYNC)
 	    && rb_respond_to(gz->io, id_flush))
 	    rb_funcall(gz->io, id_flush, 0);

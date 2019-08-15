@@ -246,9 +246,12 @@ class TestISeq < Test::Unit::TestCase
       end
     end
     assert_equal([m1, e1.message], [m2, e2.message], feature11951)
-    e1, e2 = e1.message.lines
-    assert_send([e1, :start_with?, __FILE__])
-    assert_send([e2, :start_with?, __FILE__])
+    message = e1.message.each_line
+    message.with_index(1) do |line, i|
+      next if /^ / =~ line
+      assert_send([line, :start_with?, __FILE__],
+                  proc {message.map {|l, j| (i == j ? ">" : " ") + l}.join("")})
+    end
   end
 
   def test_compile_file_error
@@ -256,7 +259,7 @@ class TestISeq < Test::Unit::TestCase
       f.puts "end"
       f.close
       path = f.path
-      assert_in_out_err(%W[- #{path}], "#{<<-"begin;"}\n#{<<-"end;"}", /keyword_end/, [], success: true)
+      assert_in_out_err(%W[- #{path}], "#{<<-"begin;"}\n#{<<-"end;"}", /unexpected `end'/, [], success: true)
       begin;
         path = ARGV[0]
         begin
@@ -280,14 +283,18 @@ class TestISeq < Test::Unit::TestCase
 
   def test_inspect
     %W[foo \u{30d1 30b9}].each do |name|
-      assert_match /@#{name}/, ISeq.compile("", name).inspect, name
+      assert_match(/@#{name}/, ISeq.compile("", name).inspect, name)
       m = ISeq.compile("class TestISeq::Inspect; def #{name}; end; instance_method(:#{name}); end").eval
-      assert_match /:#{name}@/, ISeq.of(m).inspect, name
+      assert_match(/:#{name}@/, ISeq.of(m).inspect, name)
     end
   end
 
+  def strip_lineno(source)
+    source.gsub(/^.*?: /, "")
+  end
+
   def sample_iseq
-    ISeq.compile <<-EOS.gsub(/^.*?: /, "")
+    ISeq.compile(strip_lineno(<<-EOS))
      1: class C
      2:   def foo
      3:     begin
@@ -380,7 +387,7 @@ class TestISeq < Test::Unit::TestCase
       type = ary[9]
       name = ary[5]
       line = ary[13].first
-      case ary[9]
+      case type
       when :method
         assert_equal "foo", name
         assert_equal 3, line
@@ -426,6 +433,16 @@ class TestISeq < Test::Unit::TestCase
     assert_iseq_to_binary("@x ||= (1..2)")
   end
 
+  def test_to_binary_pattern_matching
+    code = "case foo in []; end"
+    iseq = compile(code)
+    assert_include(iseq.disasm, "TypeError")
+    assert_include(iseq.disasm, "NoMatchingPatternError")
+    EnvUtil.suppress_warning do
+      assert_iseq_to_binary(code, "[Feature #14912]")
+    end
+  end
+
   def test_to_binary_line_info
     assert_iseq_to_binary("#{<<~"begin;"}\n#{<<~'end;'}", '[Bug #14660]').eval
     begin;
@@ -439,17 +456,96 @@ class TestISeq < Test::Unit::TestCase
     end;
   end
 
-  def test_to_binary_tracepoint
-    filename = "#{File.basename(__FILE__)}_#{__LINE__}"
-    iseq = RubyVM::InstructionSequence.compile("x = 1\n y = 2", filename)
+  def collect_from_binary_tracepoint_lines(tracepoint_type, filename)
+    iseq = RubyVM::InstructionSequence.compile(strip_lineno(<<-RUBY), filename)
+      class A
+        class B
+          2.times {
+            def self.foo
+              _a = 'good day'
+              raise
+            rescue
+              'dear reader'
+            end
+          }
+        end
+        B.foo
+      end
+    RUBY
+
     iseq_bin = iseq.to_binary
-    ary = []
-    TracePoint.new(:line){|tp|
+    iseq = ISeq.load_from_binary(iseq_bin)
+    lines = []
+    TracePoint.new(tracepoint_type){|tp|
       next unless tp.path == filename
-      ary << [tp.path, tp.lineno]
+      lines << tp.lineno
     }.enable{
-      ISeq.load_from_binary(iseq_bin).eval
+      EnvUtil.suppress_warning {iseq.eval}
     }
-    assert_equal [[filename, 1], [filename, 2]], ary, '[Bug #14702]'
+
+    lines
+  end
+
+  def test_to_binary_line_tracepoint
+    filename = "#{File.basename(__FILE__)}_#{__LINE__}"
+    lines = collect_from_binary_tracepoint_lines(:line, filename)
+
+    assert_equal [1, 2, 3, 4, 4, 12, 5, 6, 8], lines, '[Bug #14702]'
+  end
+
+  def test_to_binary_class_tracepoint
+    filename = "#{File.basename(__FILE__)}_#{__LINE__}"
+    lines = collect_from_binary_tracepoint_lines(:class, filename)
+
+    assert_equal [1, 2], lines, '[Bug #14702]'
+  end
+
+  def test_to_binary_end_tracepoint
+    filename = "#{File.basename(__FILE__)}_#{__LINE__}"
+    lines = collect_from_binary_tracepoint_lines(:end, filename)
+
+    assert_equal [11, 13], lines, '[Bug #14702]'
+  end
+
+  def test_to_binary_return_tracepoint
+    filename = "#{File.basename(__FILE__)}_#{__LINE__}"
+    lines = collect_from_binary_tracepoint_lines(:return, filename)
+
+    assert_equal [9], lines, '[Bug #14702]'
+  end
+
+  def test_to_binary_b_call_tracepoint
+    filename = "#{File.basename(__FILE__)}_#{__LINE__}"
+    lines = collect_from_binary_tracepoint_lines(:b_call, filename)
+
+    assert_equal [3, 3], lines, '[Bug #14702]'
+  end
+
+  def test_to_binary_b_return_tracepoint
+    filename = "#{File.basename(__FILE__)}_#{__LINE__}"
+    lines = collect_from_binary_tracepoint_lines(:b_return, filename)
+
+    assert_equal [10, 10], lines, '[Bug #14702]'
+  end
+
+  def test_iseq_of
+    [proc{},
+     method(:test_iseq_of),
+     RubyVM::InstructionSequence.compile("p 1", __FILE__)].each{|src|
+      iseq = RubyVM::InstructionSequence.of(src)
+      assert_equal __FILE__, iseq.path
+    }
+  end
+
+  def test_iseq_of_twice_for_same_code
+    [proc{},
+     method(:test_iseq_of_twice_for_same_code),
+     RubyVM::InstructionSequence.compile("p 1")].each{|src|
+      iseq1 = RubyVM::InstructionSequence.of(src)
+      iseq2 = RubyVM::InstructionSequence.of(src)
+
+      # ISeq objects should be same for same src
+      assert_equal iseq1.object_id, iseq2.object_id
+    }
   end
 end

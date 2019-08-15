@@ -89,6 +89,16 @@ extern "C" {
 #define RB_UNLIKELY(x) (x)
 #endif /* __GNUC__ >= 3 */
 
+/*
+  cold attribute for code layout improvements
+  RUBY_FUNC_ATTRIBUTE not used because MSVC does not like nested func macros
+ */
+#if defined(__clang__) || GCC_VERSION_SINCE(4, 3, 0)
+#define COLDFUNC __attribute__((cold))
+#else
+#define COLDFUNC
+#endif
+
 #ifdef __GNUC__
 #if defined __MINGW_PRINTF_FORMAT
 #define PRINTF_ARGS(decl, string_index, first_to_check) \
@@ -391,10 +401,6 @@ ruby_xrealloc2_with_location(void *ptr, size_t s1, size_t s2, const char *file, 
 #if defined(__sparc)
 void rb_sparc_flush_register_windows(void);
 #  define FLUSH_REGISTER_WINDOWS rb_sparc_flush_register_windows()
-#elif defined(__ia64)
-void *rb_ia64_bsp(void);
-void rb_ia64_flushrs(void);
-#  define FLUSH_REGISTER_WINDOWS rb_ia64_flushrs()
 #else
 #  define FLUSH_REGISTER_WINDOWS ((void)0)
 #endif

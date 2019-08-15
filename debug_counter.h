@@ -23,8 +23,8 @@
  *                                  (2) called from C (rb_funcall).
  * * mc_global_state_miss: inline mc miss by global_state miss.
  * * mc_class_serial_miss:            ... by mc_class_serial_miss
- * * mc_cme_complement: cme complement counts.
- * * mc_cme_complement_hit: cme cache hit counts.
+ * * mc_cme_complement: callable_method_entry complement counts.
+ * * mc_cme_complement_hit: callable_method_entry cache hit counts.
  * * mc_search_super: search_method() call counts.
  */
 RB_DEBUG_COUNTER(mc_inline_hit)
@@ -36,6 +36,28 @@ RB_DEBUG_COUNTER(mc_class_serial_miss)
 RB_DEBUG_COUNTER(mc_cme_complement)
 RB_DEBUG_COUNTER(mc_cme_complement_hit)
 RB_DEBUG_COUNTER(mc_search_super)
+
+/*
+ * call cache fastpath usage
+ */
+RB_DEBUG_COUNTER(ccf_general)
+RB_DEBUG_COUNTER(ccf_iseq_setup)
+RB_DEBUG_COUNTER(ccf_iseq_setup_0start)
+RB_DEBUG_COUNTER(ccf_iseq_setup_tailcall_0start)
+RB_DEBUG_COUNTER(ccf_iseq_fix) /* several functions created with tool/mk_call_iseq_optimized.rb */
+RB_DEBUG_COUNTER(ccf_iseq_opt) /* has_opt == TRUE (has optional parameters), but other flags are FALSE */
+RB_DEBUG_COUNTER(ccf_iseq_kw1) /* vm_call_iseq_setup_kwparm_kwarg() */
+RB_DEBUG_COUNTER(ccf_iseq_kw2) /* vm_call_iseq_setup_kwparm_nokwarg() */
+RB_DEBUG_COUNTER(ccf_cfunc)
+RB_DEBUG_COUNTER(ccf_ivar) /* attr_reader */
+RB_DEBUG_COUNTER(ccf_attrset) /* attr_writer */
+RB_DEBUG_COUNTER(ccf_method_missing)
+RB_DEBUG_COUNTER(ccf_zsuper)
+RB_DEBUG_COUNTER(ccf_bmethod)
+RB_DEBUG_COUNTER(ccf_opt_send)
+RB_DEBUG_COUNTER(ccf_opt_call)
+RB_DEBUG_COUNTER(ccf_opt_block_call)
+RB_DEBUG_COUNTER(ccf_super_method)
 
 /*
  * control frame push counts.
@@ -121,6 +143,11 @@ RB_DEBUG_COUNTER(gc_major_shady)
 RB_DEBUG_COUNTER(gc_major_force)
 RB_DEBUG_COUNTER(gc_major_oldmalloc)
 
+RB_DEBUG_COUNTER(gc_isptr_trial)
+RB_DEBUG_COUNTER(gc_isptr_range)
+RB_DEBUG_COUNTER(gc_isptr_align)
+RB_DEBUG_COUNTER(gc_isptr_maybe)
+
 /* object allocation counts:
  *
  * * obj_newobj: newobj counts
@@ -147,9 +174,12 @@ RB_DEBUG_COUNTER(gc_major_oldmalloc)
  *   * str_nofree:        nofree
  *   * str_fstr:          fstr
  *   * hash_empty: hash is empty
- *   * hash_under4:     has under 4 entries
- *   * hash_ge4:        has n entries (4<=n<8)
- *   * hash_ge8:        has n entries (8<=n)
+ *   * hash_1_4:       has 1 to 4 entries
+ *   * hash_5_8:       has 5 to 8 entries
+ *   * hash_g8:        has n entries (n>8)
+ *   * match_under4:    has under 4 oniguruma regions allocated
+ *   * match_ge4:       has n regions allocated (4<=n<8)
+ *   * match_ge8:       has n regions allocated (8<=n)
  *   * data_empty: T_DATA but no memory free.
  *   * data_xfree:        free'ed by xfree().
  *   * data_imm_free:     free'ed immediately.
@@ -176,15 +206,28 @@ RB_DEBUG_COUNTER(obj_str_fstr)
 RB_DEBUG_COUNTER(obj_ary_embed)
 RB_DEBUG_COUNTER(obj_ary_transient)
 RB_DEBUG_COUNTER(obj_ary_ptr)
+/*
+  ary_shared_create: shared ary by Array#dup and so on.
+  ary_shared: finished in shard.
+  ary_shared_root_occupied: shared_root but has only 1 refcnt.
+    The number (ary_shared - ary_shared_root_occupied) is meaningful.
+ */
+RB_DEBUG_COUNTER(obj_ary_shared_create)
+RB_DEBUG_COUNTER(obj_ary_shared)
+RB_DEBUG_COUNTER(obj_ary_shared_root_occupied)
 
 RB_DEBUG_COUNTER(obj_hash_empty)
-RB_DEBUG_COUNTER(obj_hash_under4)
-RB_DEBUG_COUNTER(obj_hash_ge4)
-RB_DEBUG_COUNTER(obj_hash_ge8)
-RB_DEBUG_COUNTER(obj_hash_array)
+RB_DEBUG_COUNTER(obj_hash_1)
+RB_DEBUG_COUNTER(obj_hash_2)
+RB_DEBUG_COUNTER(obj_hash_3)
+RB_DEBUG_COUNTER(obj_hash_4)
+RB_DEBUG_COUNTER(obj_hash_5_8)
+RB_DEBUG_COUNTER(obj_hash_g8)
+
+RB_DEBUG_COUNTER(obj_hash_null)
+RB_DEBUG_COUNTER(obj_hash_ar)
 RB_DEBUG_COUNTER(obj_hash_st)
 RB_DEBUG_COUNTER(obj_hash_transient)
-
 RB_DEBUG_COUNTER(obj_hash_force_convert)
 
 RB_DEBUG_COUNTER(obj_struct_embed)
@@ -198,6 +241,9 @@ RB_DEBUG_COUNTER(obj_data_xfree)
 RB_DEBUG_COUNTER(obj_data_imm_free)
 RB_DEBUG_COUNTER(obj_data_zombie)
 
+RB_DEBUG_COUNTER(obj_match_under4)
+RB_DEBUG_COUNTER(obj_match_ge4)
+RB_DEBUG_COUNTER(obj_match_ge8)
 RB_DEBUG_COUNTER(obj_match_ptr)
 RB_DEBUG_COUNTER(obj_file_ptr)
 RB_DEBUG_COUNTER(obj_bignum_ptr)
@@ -220,6 +266,11 @@ RB_DEBUG_COUNTER(obj_iclass_ptr)
 RB_DEBUG_COUNTER(obj_class_ptr)
 RB_DEBUG_COUNTER(obj_module_ptr)
 
+/* ar_table */
+RB_DEBUG_COUNTER(artable_hint_hit)
+RB_DEBUG_COUNTER(artable_hint_miss)
+RB_DEBUG_COUNTER(artable_hint_notfound)
+
 /* heap function counts
  *
  * * heap_xmalloc/realloc/xfree: call counts
@@ -232,6 +283,36 @@ RB_DEBUG_COUNTER(heap_xfree)
 RB_DEBUG_COUNTER(theap_alloc)
 RB_DEBUG_COUNTER(theap_alloc_fail)
 RB_DEBUG_COUNTER(theap_evacuate)
+
+/* mjit_exec() counts */
+RB_DEBUG_COUNTER(mjit_exec)
+RB_DEBUG_COUNTER(mjit_exec_not_added)
+RB_DEBUG_COUNTER(mjit_exec_not_added_add_iseq)
+RB_DEBUG_COUNTER(mjit_exec_not_ready)
+RB_DEBUG_COUNTER(mjit_exec_not_compiled)
+RB_DEBUG_COUNTER(mjit_exec_call_func)
+
+/* MJIT <-> VM frame push counts */
+RB_DEBUG_COUNTER(mjit_frame_VM2VM)
+RB_DEBUG_COUNTER(mjit_frame_VM2JT)
+RB_DEBUG_COUNTER(mjit_frame_JT2JT)
+RB_DEBUG_COUNTER(mjit_frame_JT2VM)
+
+/* MJIT cancel counters */
+RB_DEBUG_COUNTER(mjit_cancel)
+RB_DEBUG_COUNTER(mjit_cancel_ivar_inline)
+RB_DEBUG_COUNTER(mjit_cancel_send_inline)
+RB_DEBUG_COUNTER(mjit_cancel_opt_insn) /* CALL_SIMPLE_METHOD */
+RB_DEBUG_COUNTER(mjit_cancel_invalidate_all)
+
+/* rb_mjit_unit_list length */
+RB_DEBUG_COUNTER(mjit_length_unit_queue)
+RB_DEBUG_COUNTER(mjit_length_active_units)
+RB_DEBUG_COUNTER(mjit_length_compact_units)
+RB_DEBUG_COUNTER(mjit_length_stale_units)
+
+/* Other MJIT counters */
+RB_DEBUG_COUNTER(mjit_compile_failures)
 
 /* load (not implemented yet) */
 /*
@@ -267,6 +348,9 @@ rb_debug_counter_add(enum rb_debug_counter_type type, int add, int cond)
     }
     return cond;
 }
+
+VALUE rb_debug_counter_reset(void);
+VALUE rb_debug_counter_show(void);
 
 #define RB_DEBUG_COUNTER_INC(type)                rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, 1)
 #define RB_DEBUG_COUNTER_INC_UNLESS(type, cond) (!rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, !(cond)))

@@ -113,13 +113,14 @@ module WEBrick
       @chunked = false
       @filename = nil
       @sent_size = 0
+      @bodytempfile = nil
     end
 
     ##
     # The response's HTTP status line
 
     def status_line
-      "HTTP/#@http_version #@status #@reason_phrase #{CRLF}"
+      "HTTP/#@http_version #@status #@reason_phrase".rstrip << CRLF
     end
 
     ##
@@ -253,8 +254,11 @@ module WEBrick
       elsif %r{^multipart/byteranges} =~ @header['content-type']
         @header.delete('content-length')
       elsif @header['content-length'].nil?
-        unless @body.is_a?(IO)
-          @header['content-length'] = @body ? @body.bytesize : 0
+        if @body.respond_to? :readpartial
+        elsif @body.respond_to? :call
+          make_body_tempfile
+        else
+          @header['content-length'] = (@body ? @body.bytesize : 0).to_s
         end
       end
 
@@ -277,10 +281,37 @@ module WEBrick
       # Location is a single absoluteURI.
       if location = @header['location']
         if @request_uri
-          @header['location'] = @request_uri.merge(location)
+          @header['location'] = @request_uri.merge(location).to_s
         end
       end
     end
+
+    def make_body_tempfile # :nodoc:
+      return if @bodytempfile
+      bodytempfile = Tempfile.create("webrick")
+      if @body.nil?
+        # nothing
+      elsif @body.respond_to? :readpartial
+        IO.copy_stream(@body, bodytempfile)
+        @body.close
+      elsif @body.respond_to? :call
+        @body.call(bodytempfile)
+      else
+        bodytempfile.write @body
+      end
+      bodytempfile.rewind
+      @body = @bodytempfile = bodytempfile
+      @header['content-length'] = bodytempfile.stat.size.to_s
+    end
+
+    def remove_body_tempfile # :nodoc:
+      if @bodytempfile
+        @bodytempfile.close
+        File.unlink @bodytempfile.path
+        @bodytempfile = nil
+      end
+    end
+
 
     ##
     # Sends the headers on +socket+
@@ -445,6 +476,7 @@ module WEBrick
       ensure
         @body.close
       end
+      remove_body_tempfile
     end
 
     def send_body_string(socket)
@@ -477,7 +509,12 @@ module WEBrick
         socket.write("0#{CRLF}#{CRLF}")
       else
         size = @header['content-length'].to_i
-        @body.call(socket)
+        if @bodytempfile
+          @bodytempfile.rewind
+          IO.copy_stream(@bodytempfile, socket)
+        else
+          @body.call(socket)
+        end
         @sent_size = size
       end
     end

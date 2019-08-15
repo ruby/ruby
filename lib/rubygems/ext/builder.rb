@@ -6,6 +6,7 @@
 #++
 
 require 'rubygems/user_interaction'
+require "open3"
 
 class Gem::Ext::Builder
 
@@ -27,14 +28,14 @@ class Gem::Ext::Builder
   end
 
   def self.make(dest_path, results)
-    unless File.exist? 'Makefile' then
+    unless File.exist? 'Makefile'
       raise Gem::InstallError, 'Makefile not found'
     end
 
     # try to find make program from Ruby configure arguments first
     RbConfig::CONFIG['configure_args'] =~ /with-make-prog\=(\w+)/
     make_program = ENV['MAKE'] || ENV['make'] || $1
-    unless make_program then
+    unless make_program
       make_program = (/mswin/ =~ RUBY_PLATFORM) ? 'nmake' : 'make'
     end
 
@@ -55,11 +56,6 @@ class Gem::Ext::Builder
     end
   end
 
-  def self.redirector
-    warn "#{caller[0]}: Use IO.popen(..., err: [:child, :out])"
-    '2>&1'
-  end
-
   def self.run(command, results, command_name = nil)
     verbose = Gem.configuration.really_verbose
 
@@ -67,12 +63,16 @@ class Gem::Ext::Builder
       rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], nil
       if verbose
         puts("current directory: #{Dir.pwd}")
-        puts(command)
-        system(command)
+        p(command)
+      end
+      results << "current directory: #{Dir.pwd}"
+      results << (command.respond_to?(:shelljoin) ? command.shelljoin : command)
+
+      output, status = Open3.capture2e(*command)
+      if verbose
+        puts output
       else
-        results << "current directory: #{Dir.pwd}"
-        results << (command.respond_to?(:shelljoin) ? command.shelljoin : command)
-        results << IO.popen(command, "r", err: [:child, :out], &:read)
+        results << output
       end
     rescue => error
       raise Gem::InstallError, "#{command_name || class_name} failed#{error.message}"
@@ -80,14 +80,18 @@ class Gem::Ext::Builder
       ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
     end
 
-    unless $?.success? then
+    unless status.success?
       results << "Building has failed. See above output for more information on the failure." if verbose
+    end
 
+    yield(status, results) if block_given?
+
+    unless status.success?
       exit_reason =
-        if $?.exited? then
-          ", exit code #{$?.exitstatus}"
-        elsif $?.signaled? then
-          ", uncaught signal #{$?.termsig}"
+        if status.exited?
+          ", exit code #{status.exitstatus}"
+        elsif status.signaled?
+          ", uncaught signal #{status.termsig}"
         end
 
       raise Gem::InstallError, "#{command_name || class_name} failed#{exit_reason}"
@@ -99,18 +103,18 @@ class Gem::Ext::Builder
   # have build arguments, saved, set +build_args+ which is an ARGV-style
   # array.
 
-  def initialize spec, build_args = spec.build_args
+  def initialize(spec, build_args = spec.build_args)
     @spec       = spec
     @build_args = build_args
     @gem_dir    = spec.full_gem_path
 
-    @ran_rake   = nil
+    @ran_rake   = false
   end
 
   ##
   # Chooses the extension builder class for +extension+
 
-  def builder_for extension # :nodoc:
+  def builder_for(extension) # :nodoc:
     case extension
     when /extconf/ then
       Gem::Ext::ExtConfBuilder
@@ -122,17 +126,14 @@ class Gem::Ext::Builder
     when /CMakeLists.txt/ then
       Gem::Ext::CmakeBuilder
     else
-      extension_dir = File.join @gem_dir, File.dirname(extension)
-
-      message = "No builder for extension '#{extension}'"
-      build_error extension_dir, message
+      build_error("No builder for extension '#{extension}'")
     end
   end
 
   ##
-  # Logs the build +output+ in +build_dir+, then raises Gem::Ext::BuildError.
+  # Logs the build +output+, then raises Gem::Ext::BuildError.
 
-  def build_error build_dir, output, backtrace = nil # :nodoc:
+  def build_error(output, backtrace = nil) # :nodoc:
     gem_make_out = write_gem_make_out output
 
     message = <<-EOF
@@ -147,27 +148,14 @@ EOF
     raise Gem::Ext::BuildError, message, backtrace
   end
 
-  def build_extension extension, dest_path # :nodoc:
+  def build_extension(extension, dest_path) # :nodoc:
     results = []
 
-    # FIXME: Determine if this line is necessary and, if so, why.
-    # Notes:
-    # 1. As far as I can tell, this method is only called by +build_extensions+.
-    # 2. The existence of this line implies +extension+ is, or previously was,
-    #    sometimes +false+ or +nil+.
-    # 3. #1 and #2 combined suggests, but does not confirm, that
-    #    +@specs.extensions+ sometimes contained +false+ or +nil+ values.
-    # 4. Nothing seems to explicitly handle +extension+ being empty,
-    #    which makes me wonder both what it should do and what it does.
-    #
-    # - @duckinator
-    extension ||= '' # I wish I knew why this line existed
+    builder = builder_for(extension)
 
     extension_dir =
       File.expand_path File.join(@gem_dir, File.dirname(extension))
     lib_dir = File.join @spec.full_gem_path, @spec.raw_require_paths.first
-
-    builder = builder_for extension
 
     begin
       FileUtils.mkdir_p dest_path
@@ -192,7 +180,7 @@ EOF
       write_gem_make_out results.join "\n"
     rescue => e
       results << e.message
-      build_error extension_dir, results.join("\n"), $@
+      build_error(results.join("\n"), $@)
     end
   end
 
@@ -214,9 +202,6 @@ EOF
 
     FileUtils.rm_f @spec.gem_build_complete_path
 
-    # FIXME: action at a distance: @ran_rake modified deep in build_extension(). - @duckinator
-    @ran_rake = false # only run rake once
-
     @spec.extensions.each do |extension|
       break if @ran_rake
 
@@ -229,12 +214,14 @@ EOF
   ##
   # Writes +output+ to gem_make.out in the extension install directory.
 
-  def write_gem_make_out output # :nodoc:
+  def write_gem_make_out(output) # :nodoc:
     destination = File.join @spec.extension_dir, 'gem_make.out'
 
     FileUtils.mkdir_p @spec.extension_dir
 
-    File.open destination, 'wb' do |io| io.puts output end
+    File.open destination, 'wb' do |io|
+      io.puts output
+    end
 
     destination
   end

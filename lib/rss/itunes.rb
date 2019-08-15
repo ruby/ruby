@@ -277,33 +277,45 @@ module RSS
         def parse(duration, do_validate=true)
           if do_validate and /\A(?:
                                   \d?\d:[0-5]\d:[0-5]\d|
-                                  [0-5]?\d:[0-5]\d
+                                  [0-5]?\d:[0-5]\d|
+                                  \d+
                                 )\z/x !~ duration
             raise ArgumentError,
-                    "must be one of HH:MM:SS, H:MM:SS, MM::SS, M:SS: " +
+                    "must be one of HH:MM:SS, H:MM:SS, MM:SS, M:SS, S+: " +
                     duration.inspect
           end
 
-          components = duration.split(':')
-          components[3..-1] = nil if components.size > 3
+          if duration.include?(':')
+            components = duration.split(':')
+            components[3..-1] = nil if components.size > 3
 
-          components.unshift("00") until components.size == 3
-
-          components.collect do |component|
-            component.to_i
+            components.unshift("00") until components.size == 3
+            components.collect do |component|
+              component.to_i
+            end
+          else
+            seconds_to_components(duration.to_i)
           end
         end
 
-        def construct(hour, minute, second)
-          components = [minute, second]
+        def construct(hours, minutes, seconds)
+          components = [minutes, seconds]
           if components.include?(nil)
             nil
           else
-            components.unshift(hour) if hour and hour > 0
+            components.unshift(hours) if hours and hours > 0
             components.collect do |component|
               "%02d" % component
-            end.join(":")
+            end.join(':')
           end
+        end
+
+        private
+        def seconds_to_components(total_seconds)
+          hours = total_seconds / (60 * 60)
+          minutes = (total_seconds / 60) % 60
+          seconds = total_seconds % 60
+          [hours, minutes, seconds]
         end
       end
 

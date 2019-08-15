@@ -901,13 +901,19 @@ rb_struct_to_a(VALUE s)
 
 /*
  *  call-seq:
- *     struct.to_h     -> hash
+ *     struct.to_h                        -> hash
+ *     struct.to_h {|name, value| block } -> hash
  *
  *  Returns a Hash containing the names and values for the struct's members.
+ *
+ *  If a block is given, the results of the block on each pair of the receiver
+ *  will be used as pairs.
  *
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *     joe.to_h[:address]   #=> "123 Maple, Anytown NC"
+ *     joe.to_h{|name, value| [name.upcase, value.to_s.upcase]}[:ADDRESS]
+ *                          #=> "123 MAPLE, ANYTOWN NC"
  */
 
 static VALUE
@@ -1100,6 +1106,8 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
  *  call-seq:
  *     struct.select {|obj| block }  -> array
  *     struct.select                 -> enumerator
+ *     struct.filter {|obj| block }  -> array
+ *     struct.filter                 -> enumerator
  *
  *  Yields each member value from the struct to the block and returns an Array
  *  containing the member values from the +struct+ for which the given block
@@ -1108,6 +1116,8 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
  *     Lots = Struct.new(:a, :b, :c, :d, :e, :f)
  *     l = Lots.new(11, 22, 33, 44, 55, 66)
  *     l.select {|v| v.even? }   #=> [22, 44, 66]
+ *
+ *  Struct#filter is an alias for Struct#select.
  */
 
 static VALUE
@@ -1131,15 +1141,12 @@ rb_struct_select(int argc, VALUE *argv, VALUE s)
 static VALUE
 recursive_equal(VALUE s, VALUE s2, int recur)
 {
-    const VALUE *ptr, *ptr2;
     long i, len;
 
     if (recur) return Qtrue; /* Subtle! */
-    ptr = RSTRUCT_CONST_PTR(s);
-    ptr2 = RSTRUCT_CONST_PTR(s2);
     len = RSTRUCT_LEN(s);
     for (i=0; i<len; i++) {
-	if (!rb_equal(ptr[i], ptr2[i])) return Qfalse;
+        if (!rb_equal(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
     }
     return Qtrue;
 }
@@ -1187,31 +1194,26 @@ rb_struct_hash(VALUE s)
     long i, len;
     st_index_t h;
     VALUE n;
-    const VALUE *ptr;
 
     h = rb_hash_start(rb_hash(rb_obj_class(s)));
-    ptr = RSTRUCT_CONST_PTR(s);
     len = RSTRUCT_LEN(s);
     for (i = 0; i < len; i++) {
-	n = rb_hash(ptr[i]);
+        n = rb_hash(RSTRUCT_GET(s, i));
 	h = rb_hash_uint(h, NUM2LONG(n));
     }
     h = rb_hash_end(h);
-    return INT2FIX(h);
+    return ST2FIX(h);
 }
 
 static VALUE
 recursive_eql(VALUE s, VALUE s2, int recur)
 {
-    const VALUE *ptr, *ptr2;
     long i, len;
 
     if (recur) return Qtrue; /* Subtle! */
-    ptr = RSTRUCT_CONST_PTR(s);
-    ptr2 = RSTRUCT_CONST_PTR(s2);
     len = RSTRUCT_LEN(s);
     for (i=0; i<len; i++) {
-	if (!rb_eql(ptr[i], ptr2[i])) return Qfalse;
+        if (!rb_eql(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
     }
     return Qtrue;
 }
@@ -1343,6 +1345,8 @@ InitVM_Struct(void)
 
     rb_define_method(rb_cStruct, "members", rb_struct_members_m, 0);
     rb_define_method(rb_cStruct, "dig", rb_struct_dig, -1);
+
+    rb_define_method(rb_cStruct, "deconstruct", rb_struct_to_a, 0);
 }
 
 #undef rb_intern

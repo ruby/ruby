@@ -18,12 +18,27 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ruby/csv"
   spec.license       = "BSD-2-Clause"
 
-  spec.files         = ["lib/csv.rb", "lib/csv/table.rb", "lib/csv/core_ext/string.rb", "lib/csv/core_ext/array.rb", "lib/csv/row.rb", "lib/csv/version.rb"]
-  spec.files         += ["README.md", "LICENSE.txt", "news.md"]
+  spec.files         = [
+    "LICENSE.txt",
+    "NEWS.md",
+    "README.md",
+    "lib/csv.rb",
+    "lib/csv/core_ext/array.rb",
+    "lib/csv/core_ext/string.rb",
+    "lib/csv/delete_suffix.rb",
+    "lib/csv/fields_converter.rb",
+    "lib/csv/match_p.rb",
+    "lib/csv/parser.rb",
+    "lib/csv/row.rb",
+    "lib/csv/table.rb",
+    "lib/csv/version.rb",
+    "lib/csv/writer.rb",
+  ]
   spec.require_paths = ["lib"]
   spec.required_ruby_version = ">= 2.3.0"
 
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake"
-  spec.add_development_dependency "benchmark-ips"
+  spec.add_development_dependency "benchmark_driver"
+  spec.add_development_dependency "simplecov"
 end
