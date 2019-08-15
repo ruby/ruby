@@ -18,7 +18,7 @@ require "socket"
 require "monitor"
 require "digest/md5"
 require "strscan"
-require 'net/protocol'
+require_relative 'protocol'
 begin
   require "openssl"
 rescue LoadError
@@ -1530,6 +1530,7 @@ module Net
       end
       @sock = SSLSocket.new(@sock, context)
       @sock.sync_close = true
+      @sock.hostname = @host if @sock.respond_to? :hostname=
       ssl_socket_connect(@sock, @open_timeout)
       if context.verify_mode != VERIFY_NONE
         @sock.post_connection_check(@host)

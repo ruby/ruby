@@ -156,8 +156,12 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_HASH
     printf "%sT_HASH%s: ", $color_type, $color_end,
-    if ((struct RHash *)($arg0))->ntbl
-      printf "len=%ld ", ((struct RHash *)($arg0))->ntbl->num_entries
+    if (((struct RHash *)($arg0))->basic->flags & RHASH_ST_TABLE_FLAG)
+      printf "st len=%ld ", ((struct RHash *)($arg0))->as.st->num_entries
+    else
+      printf "li len=%ld bound=%ld ", \
+        ((((struct RHash *)($arg0))->basic->flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT), \
+        ((((struct RHash *)($arg0))->basic->flags & RHASH_AR_TABLE_BOUND_MASK) >> RHASH_AR_TABLE_BOUND_SHIFT)
     end
     print (struct RHash *)($arg0)
   else
@@ -1069,9 +1073,9 @@ define print_id
   else
     set $serial = (rb_id_serial_t)$id
   end
-  if $serial && $serial <= global_symbols.last_id
+  if $serial && $serial <= ruby_global_symbols.last_id
     set $idx = $serial / ID_ENTRY_UNIT
-    set $ids = (struct RArray *)global_symbols.ids
+    set $ids = (struct RArray *)ruby_global_symbols.ids
     set $flags = $ids->basic.flags
     if ($flags & RUBY_FL_USER1)
       set $idsptr = $ids->as.ary

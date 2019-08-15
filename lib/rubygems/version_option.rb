@@ -17,7 +17,7 @@ module Gem::VersionOption
 
   def add_platform_option(task = command, *wrap)
     OptionParser.accept Gem::Platform do |value|
-      if value == Gem::Platform::RUBY then
+      if value == Gem::Platform::RUBY
         value
       else
         Gem::Platform.new value
@@ -27,7 +27,7 @@ module Gem::VersionOption
     add_option('--platform PLATFORM', Gem::Platform,
                "Specify the platform of gem to #{task}", *wrap) do
                  |value, options|
-      unless options[:added_platform] then
+      unless options[:added_platform]
         Gem.platforms = [Gem::Platform::RUBY]
         options[:added_platform] = true
       end
@@ -74,4 +74,3 @@ module Gem::VersionOption
   end
 
 end
-

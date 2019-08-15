@@ -69,7 +69,7 @@ describe 'Socket.getnameinfo' do
     end
 
     it 'raises SocketError or TypeError when using an invalid String' do
-      lambda { Socket.getnameinfo('cats') }.should raise_error(Exception) { |e|
+      -> { Socket.getnameinfo('cats') }.should raise_error(Exception) { |e|
         [SocketError, TypeError].should include(e.class)
       }
     end
@@ -102,16 +102,7 @@ describe 'Socket.getnameinfo' do
       end
 
       it 'raises ArgumentError when using an invalid Array' do
-        lambda { Socket.getnameinfo([family_name]) }.should raise_error(ArgumentError)
-      end
-
-      describe 'without custom flags' do
-        it 'returns an Array containing the hostname and service name' do
-          array = Socket.getnameinfo(@addr)
-          array.should be_an_instance_of(Array)
-          array[0].should include(@hostname)
-          array[1].should == 'ftp'
-        end
+        -> { Socket.getnameinfo([family_name]) }.should raise_error(ArgumentError)
       end
 
       platform_is_not :windows do

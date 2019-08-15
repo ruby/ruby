@@ -35,7 +35,7 @@ describe 'Socket#listen' do
       end
 
       it 'raises Errno::EOPNOTSUPP' do
-        lambda { @server.listen(1) }.should raise_error(Errno::EOPNOTSUPP)
+        -> { @server.listen(1) }.should raise_error(Errno::EOPNOTSUPP)
       end
     end
 
@@ -56,8 +56,8 @@ describe 'Socket#listen' do
         @server.listen(1).should == 0
       end
 
-      it "raises when the given argument can't be coerced to a Fixnum" do
-        lambda { @server.listen('cats') }.should raise_error(TypeError)
+      it "raises when the given argument can't be coerced to an Integer" do
+        -> { @server.listen('cats') }.should raise_error(TypeError)
       end
     end
   end

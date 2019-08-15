@@ -4,7 +4,7 @@
         Copyright (c) 2000 Masatoshi SEKI
 =end
 
-require 'drb/drb'
+require_relative 'drb'
 require 'monitor'
 
 module DRb
@@ -61,8 +61,7 @@ module DRb
     private
     def invoke_thread
       Thread.new do
-        while true
-          name = @queue.pop
+        while name = @queue.pop
           invoke_service_command(name, @@command[name])
         end
       end

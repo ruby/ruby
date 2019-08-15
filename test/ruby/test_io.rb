@@ -113,6 +113,65 @@ class TestIO < Test::Unit::TestCase
     ].each{|thr| thr.join}
   end
 
+  def test_binmode_pipe
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      EnvUtil.with_default_external(Encoding::UTF_8) do
+        begin
+          reader0, writer0 = IO.pipe
+          reader0.binmode
+          writer0.binmode
+
+          reader1, writer1 = IO.pipe
+
+          reader2, writer2 = IO.pipe(binmode: true)
+          assert_predicate writer0, :binmode?
+          assert_predicate writer2, :binmode?
+          assert_equal writer0.binmode?, writer2.binmode?
+          assert_equal writer0.external_encoding, writer2.external_encoding
+          assert_equal writer0.internal_encoding, writer2.internal_encoding
+          assert_predicate reader0, :binmode?
+          assert_predicate reader2, :binmode?
+          assert_equal reader0.binmode?, reader2.binmode?
+          assert_equal reader0.external_encoding, reader2.external_encoding
+          assert_equal reader0.internal_encoding, reader2.internal_encoding
+
+          reader3, writer3 = IO.pipe("UTF-8:UTF-8", binmode: true)
+          assert_predicate writer3, :binmode?
+          assert_equal writer1.external_encoding, writer3.external_encoding
+          assert_equal writer1.internal_encoding, writer3.internal_encoding
+          assert_predicate reader3, :binmode?
+          assert_equal reader1.external_encoding, reader3.external_encoding
+          assert_equal reader1.internal_encoding, reader3.internal_encoding
+
+          reader4, writer4 = IO.pipe("UTF-8:UTF-8", binmode: true)
+          assert_predicate writer4, :binmode?
+          assert_equal writer1.external_encoding, writer4.external_encoding
+          assert_equal writer1.internal_encoding, writer4.internal_encoding
+          assert_predicate reader4, :binmode?
+          assert_equal reader1.external_encoding, reader4.external_encoding
+          assert_equal reader1.internal_encoding, reader4.internal_encoding
+
+          reader5, writer5 = IO.pipe("UTF-8", "UTF-8", binmode: true)
+          assert_predicate writer5, :binmode?
+          assert_equal writer1.external_encoding, writer5.external_encoding
+          assert_equal writer1.internal_encoding, writer5.internal_encoding
+          assert_predicate reader5, :binmode?
+          assert_equal reader1.external_encoding, reader5.external_encoding
+          assert_equal reader1.internal_encoding, reader5.internal_encoding
+        ensure
+          [
+            reader0, writer0,
+            reader1, writer1,
+            reader2, writer2,
+            reader3, writer3,
+            reader4, writer4,
+            reader5, writer5,
+          ].compact.map(&:close)
+        end
+      end
+    end
+  end
+
   def test_pipe_block
     x = nil
     ret = IO.pipe {|r, w|
@@ -233,6 +292,19 @@ class TestIO < Test::Unit::TestCase
       assert_nil r.gets
       r.close
     end)
+
+    (0..3).each do |i|
+      pipe(proc do |w|
+        w.write("a" * ((4096 << i) - 4), "\r\n" "a\r\n")
+        w.close
+      end,
+      proc do |r|
+        r.gets
+        assert_equal "a", r.gets(chomp: true)
+        assert_nil r.gets
+        r.close
+      end)
+    end
   end
 
   def test_gets_chomp_rs_nil
@@ -548,18 +620,14 @@ class TestIO < Test::Unit::TestCase
 
   if have_nonblock?
     def test_copy_stream_no_busy_wait
-      # JIT has busy wait on GC. It's hard to test this with JIT.
-      skip "MJIT has busy wait on GC. We can't test this with JIT." if RubyVM::MJIT.enabled?
+      skip "MJIT has busy wait on GC. This sometimes fails with --jit." if RubyVM::MJIT.enabled?
       skip "multiple threads already active" if Thread.list.size > 1
 
       msg = 'r58534 [ruby-core:80969] [Backport #13533]'
       IO.pipe do |r,w|
         r.nonblock = true
-        assert_cpu_usage_low(msg) do
-          th = Thread.new { IO.copy_stream(r, IO::NULL) }
-          sleep 0.1
-          w.close
-          th.join
+        assert_cpu_usage_low(msg, stop: ->{w.close}) do
+          IO.copy_stream(r, IO::NULL)
         end
       end
     end
@@ -1500,7 +1568,14 @@ class TestIO < Test::Unit::TestCase
     }
   end if have_nonblock?
 
+  def test_read_nonblock_invalid_exception
+    with_pipe {|r, w|
+      assert_raise(ArgumentError) {r.read_nonblock(4096, exception: 1)}
+    }
+  end if have_nonblock?
+
   def test_read_nonblock_no_exceptions
+    skip '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if RubyVM::MJIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
     with_pipe {|r, w|
       assert_equal :wait_readable, r.read_nonblock(4096, exception: false)
       w.puts "HI!"
@@ -1532,6 +1607,12 @@ class TestIO < Test::Unit::TestCase
       rescue Errno::EWOULDBLOCK
         assert_kind_of(IO::WaitWritable, $!)
       end
+    }
+  end if have_nonblock?
+
+  def test_write_nonblock_invalid_exception
+    with_pipe {|r, w|
+      assert_raise(ArgumentError) {w.write_nonblock(4096, exception: 1)}
     }
   end if have_nonblock?
 
@@ -1695,23 +1776,25 @@ class TestIO < Test::Unit::TestCase
           f.gets; assert_equal(3, $.)
         end
       SRC
-
-      pipe(proc do |w|
-        w.puts "foo"
-        w.puts "bar"
-        w.puts "baz"
-        w.close
-      end, proc do |r|
-        r.gets; assert_equal(1, $.)
-        r.gets; assert_equal(2, $.)
-        r.lineno = 1000; assert_equal(2, $.)
-        r.gets; assert_equal(1001, $.)
-        r.gets; assert_equal(1001, $.)
-      end)
     }
   end
 
-  def test_readline
+  def test_set_lineno_gets
+    pipe(proc do |w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+    end, proc do |r|
+      r.gets; assert_equal(1, $.)
+      r.gets; assert_equal(2, $.)
+      r.lineno = 1000; assert_equal(2, $.)
+      r.gets; assert_equal(1001, $.)
+      r.gets; assert_equal(1001, $.)
+    end)
+  end
+
+  def test_set_lineno_readline
     pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
@@ -2147,11 +2230,9 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_autoclose_true_closed_by_finalizer
-    if RubyVM::MJIT.enabled?
-      # This is skipped but this test passes with AOT mode.
-      # At least it should not be a JIT compiler's bug.
-      skip "MJIT worker does IO which is unexpected for this test"
-    end
+    # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1465760
+    # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1469765
+    skip 'this randomly fails with MJIT' if RubyVM::MJIT.enabled?
 
     feature2250 = '[ruby-core:26222]'
     pre = 'ft2250'
@@ -2219,6 +2300,9 @@ class TestIO < Test::Unit::TestCase
     end
     assert_raise(Errno::ENOENT, Errno::EINVAL) do
       Class.new(IO).binread("|#{EnvUtil.rubybin} -e puts")
+    end
+    assert_raise(Errno::ESPIPE) do
+      IO.read("|echo foo", 1, 1)
     end
   end
 
@@ -2469,7 +2553,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_print_separators
-    $, = ':'
+    EnvUtil.suppress_warning {$, = ':'}
     $\ = "\n"
     pipe(proc do |w|
       w.print('a')
@@ -3258,17 +3342,12 @@ __END__
 
       assert_equal 100, buf.bytesize
 
-      begin
+      msg = /can't modify string; temporarily locked/
+      assert_raise_with_message(RuntimeError, msg) do
         buf.replace("")
-      rescue RuntimeError => e
-        assert_match(/can't modify string; temporarily locked/, e.message)
-        Thread.pass
-      end until buf.empty?
-
-      assert_empty(buf, bug6099)
+      end
       assert_predicate(th, :alive?)
       w.write(data)
-      Thread.pass while th.alive?
       th.join
     end
     assert_equal(data, buf, bug6099)
@@ -3369,7 +3448,7 @@ __END__
       }
 
       IO.select(tempfiles)
-    }, bug8080, timeout: 50
+    }, bug8080, timeout: 100
   end if defined?(Process::RLIMIT_NOFILE)
 
   def test_read_32bit_boundary
@@ -3782,14 +3861,6 @@ __END__
             th = Thread.new { r.read(1) }
             w.write(dot)
 
-            # XXX not sure why this is needed on Linux, otherwise
-            # the "good" reader thread doesn't always join properly
-            # because the reader never sees the first write
-            if RUBY_PLATFORM =~ /linux/
-              # assert_equal can fail if this is another char...
-              w.write(dot)
-            end
-
             assert_same th, th.join(15), '"good" reader timeout'
             assert_equal(dot, th.value)
           end
@@ -3808,9 +3879,6 @@ __END__
           end
           Thread.pass until th.stop?
 
-          # XXX not sure why, this reduces Linux CI failures
-          assert_nil th.join(0.001)
-
           r.close
           assert_same th, th.join(30), '"bad" reader timeout'
           assert_match(/stream closed/, th.value.message)
@@ -3823,7 +3891,6 @@ __END__
   end
 
   def test_select_leak
-    skip 'MJIT uses too much memory' if RubyVM::MJIT.enabled?
     # avoid malloc arena explosion from glibc and jemalloc:
     env = {
       'MALLOC_ARENA_MAX' => '1',

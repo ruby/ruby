@@ -15,6 +15,26 @@ module Psych
     def setup
       super
       @wups = Wups.new
+
+      @orig_verbose, $VERBOSE = $VERBOSE, nil
+    end
+
+    def teardown
+      $VERBOSE = @orig_verbose
+    end
+
+    def make_ex msg = 'oh no!'
+      begin
+        raise msg
+      rescue ::Exception => e
+        e
+      end
+    end
+
+    def test_backtrace
+      err     = make_ex
+      new_err = Psych.load(Psych.dump(err))
+      assert_equal err.backtrace, new_err.backtrace
     end
 
     def test_naming_exception

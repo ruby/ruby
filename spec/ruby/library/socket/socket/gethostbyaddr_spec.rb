@@ -48,7 +48,7 @@ describe 'Socket.gethostbyaddr' do
     end
 
     describe 'with an explicit address family' do
-      it 'returns an Array when using a Fixnum as the address family' do
+      it 'returns an Array when using an Integer as the address family' do
         Socket.gethostbyaddr(@addr, Socket::AF_INET).should be_an_instance_of(Array)
       end
 
@@ -57,7 +57,7 @@ describe 'Socket.gethostbyaddr' do
       end
 
       it 'raises SocketError when the address is not supported by the family' do
-        lambda { Socket.gethostbyaddr(@addr, :INET6) }.should raise_error(SocketError)
+        -> { Socket.gethostbyaddr(@addr, :INET6) }.should raise_error(SocketError)
       end
     end
   end
@@ -105,7 +105,7 @@ describe 'Socket.gethostbyaddr' do
       end
 
       describe 'with an explicit address family' do
-        it 'returns an Array when using a Fixnum as the address family' do
+        it 'returns an Array when using an Integer as the address family' do
           Socket.gethostbyaddr(@addr, Socket::AF_INET6).should be_an_instance_of(Array)
         end
 
@@ -115,7 +115,7 @@ describe 'Socket.gethostbyaddr' do
 
         platform_is_not :windows do
           it 'raises SocketError when the address is not supported by the family' do
-            lambda { Socket.gethostbyaddr(@addr, :INET) }.should raise_error(SocketError)
+            -> { Socket.gethostbyaddr(@addr, :INET) }.should raise_error(SocketError)
           end
         end
       end

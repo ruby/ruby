@@ -20,22 +20,24 @@ describe "Proc as a block pass argument" do
   end
 end
 
-describe "Proc as an implicit block pass argument" do
-  def revivify
-    Proc.new
-  end
+ruby_version_is ""..."2.7" do
+  describe "Proc as an implicit block pass argument" do
+    def revivify
+      Proc.new
+    end
 
-  it "remains the same object if re-vivified by the target method" do
-    p = Proc.new {}
-    p2 = revivify(&p)
-    p.should equal p2
-    p.should == p2
-  end
+    it "remains the same object if re-vivified by the target method" do
+      p = Proc.new {}
+      p2 = revivify(&p)
+      p.should equal p2
+      p.should == p2
+    end
 
-  it "remains the same object if reconstructed with Proc.new" do
-    p = Proc.new {}
-    p2 = Proc.new(&p)
-    p.should equal p2
-    p.should == p2
+    it "remains the same object if reconstructed with Proc.new" do
+      p = Proc.new {}
+      p2 = Proc.new(&p)
+      p.should equal p2
+      p.should == p2
+    end
   end
 end

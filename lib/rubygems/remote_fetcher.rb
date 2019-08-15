@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 require 'rubygems'
 require 'rubygems/request'
+require 'rubygems/request/connection_pools'
+require 'rubygems/s3_uri_signer'
 require 'rubygems/uri_formatter'
 require 'rubygems/user_interaction'
-require 'rubygems/request/connection_pools'
 require 'resolv'
+require 'rubygems/deprecate'
 
 ##
 # RemoteFetcher handles the details of fetching gems and gem information from
@@ -13,6 +15,7 @@ require 'resolv'
 class Gem::RemoteFetcher
 
   include Gem::UserInteraction
+  extend Gem::Deprecate
 
   ##
   # A FetchError exception wraps up the various possible IO and HTTP failures
@@ -71,13 +74,10 @@ class Gem::RemoteFetcher
   #        HTTP_PROXY_PASS)
   # * <tt>:no_proxy</tt>: ignore environment variables and _don't_ use a proxy
   #
-  # +dns+: An object to use for DNS resolution of the API endpoint.
-  #        By default, use Resolv::DNS.
-  #
   # +headers+: A set of additional HTTP headers to be sent to the server when
   #            fetching the gem.
 
-  def initialize(proxy=nil, dns=Resolv::DNS.new, headers={})
+  def initialize(proxy=nil, dns=nil, headers={})
     require 'net/http'
     require 'stringio'
     require 'time'
@@ -90,32 +90,7 @@ class Gem::RemoteFetcher
     @pool_lock = Mutex.new
     @cert_files = Gem::Request.get_cert_files
 
-    @dns = dns
     @headers = headers
-  end
-
-  ##
-  # Given a source at +uri+, calculate what hostname to actually
-  # connect to query the data for it.
-
-  def api_endpoint(uri)
-    host = uri.host
-
-    begin
-      res = @dns.getresource "_rubygems._tcp.#{host}",
-                             Resolv::DNS::Resource::IN::SRV
-    rescue Resolv::ResolvError => e
-      verbose "Getting SRV record failed: #{e}"
-      uri
-    else
-      target = res.target.to_s.strip
-
-      if URI("http://" + target).host.end_with?(".#{host}")
-        return URI.parse "#{uri.scheme}://#{target}#{uri.path}"
-      end
-
-      uri
-    end
   end
 
   ##
@@ -125,7 +100,7 @@ class Gem::RemoteFetcher
   # Should probably be integrated with #download below, but that will be a
   # larger, more encompassing effort. -erikh
 
-  def download_to_cache dependency
+  def download_to_cache(dependency)
     found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency dependency
 
     return if found.empty?
@@ -142,9 +117,9 @@ class Gem::RemoteFetcher
 
   def download(spec, source_uri, install_dir = Gem.dir)
     cache_dir =
-      if Dir.pwd == install_dir then # see fetch_command
+      if Dir.pwd == install_dir  # see fetch_command
         install_dir
-      elsif File.writable? install_dir then
+      elsif File.writable? install_dir
         File.join install_dir, "cache"
       else
         File.join Gem.user_dir, "cache"
@@ -177,7 +152,7 @@ class Gem::RemoteFetcher
     # REFACTOR: be sure to clean up fake fetcher when you do this... cleaner
     case scheme
     when 'http', 'https', 's3' then
-      unless File.exist? local_gem_path then
+      unless File.exist? local_gem_path
         begin
           verbose "Downloading gem #{gem_file_name}"
 
@@ -201,7 +176,7 @@ class Gem::RemoteFetcher
         path = source_uri.path
         path = File.dirname(path) if File.extname(path) == '.gem'
 
-        remote_gem_path = correct_for_windows_path(File.join(path, 'gems', gem_file_name))
+        remote_gem_path = Gem::Util.correct_for_windows_path(File.join(path, 'gems', gem_file_name))
 
         FileUtils.cp(remote_gem_path, local_gem_path)
       rescue Errno::EACCES
@@ -211,7 +186,7 @@ class Gem::RemoteFetcher
       verbose "Using local gem #{local_gem_path}"
     when nil then # TODO test for local overriding cache
       source_path = if Gem.win_platform? && source_uri.scheme &&
-                       !source_uri.path.include?(':') then
+                       !source_uri.path.include?(':')
                       "#{source_uri.scheme}:#{source_uri.path}"
                     else
                       source_uri.path
@@ -237,14 +212,14 @@ class Gem::RemoteFetcher
   ##
   # File Fetcher. Dispatched by +fetch_path+. Use it instead.
 
-  def fetch_file uri, *_
-    Gem.read_binary correct_for_windows_path uri.path
+  def fetch_file(uri, *_)
+    Gem.read_binary Gem::Util.correct_for_windows_path uri.path
   end
 
   ##
   # HTTP Fetcher. Dispatched by +fetch_path+. Use it instead.
 
-  def fetch_http uri, last_modified = nil, head = false, depth = 0
+  def fetch_http(uri, last_modified = nil, head = false, depth = 0)
     fetch_type = head ? Net::HTTP::Head : Net::HTTP::Get
     response   = request uri, fetch_type, last_modified do |req|
       headers.each { |k,v| req.add_field(k,v) }
@@ -302,7 +277,8 @@ class Gem::RemoteFetcher
     raise
   rescue Timeout::Error
     raise UnknownHostError.new('timed out', uri.to_s)
-  rescue IOError, SocketError, SystemCallError => e
+  rescue IOError, SocketError, SystemCallError,
+         *(OpenSSL::SSL::SSLError if defined?(OpenSSL)) => e
     if e.message =~ /getaddrinfo/
       raise UnknownHostError.new('no such name', uri.to_s)
     else
@@ -311,15 +287,24 @@ class Gem::RemoteFetcher
   end
 
   def fetch_s3(uri, mtime = nil, head = false)
-    public_uri = sign_s3_url(uri)
+    begin
+      public_uri = s3_uri_signer(uri).sign
+    rescue Gem::S3URISigner::ConfigurationError, Gem::S3URISigner::InstanceProfileError => e
+      raise FetchError.new(e.message, "s3://#{uri.host}")
+    end
     fetch_https public_uri, mtime, head
+  end
+
+  # we have our own signing code here to avoid a dependency on the aws-sdk gem
+  def s3_uri_signer(uri)
+    Gem::S3URISigner.new(uri)
   end
 
   ##
   # Downloads +uri+ to +path+ if necessary. If no path is given, it just
   # passes the data.
 
-  def cache_update_path uri, path = nil, update = true
+  def cache_update_path(uri, path = nil, update = true)
     mtime = path && File.stat(path).mtime rescue nil
 
     data = fetch_path(uri, mtime)
@@ -338,19 +323,13 @@ class Gem::RemoteFetcher
   ##
   # Returns the size of +uri+ in bytes.
 
-  def fetch_size(uri) # TODO: phase this out
+  def fetch_size(uri)
     response = fetch_path(uri, nil, true)
 
     response['content-length'].to_i
   end
 
-  def correct_for_windows_path(path)
-    if path[0].chr == '/' && path[1].chr =~ /[a-z]/i && path[2].chr == ':'
-      path[1..-1]
-    else
-      path
-    end
-  end
+  deprecate :fetch_size, :none, 2019, 12
 
   ##
   # Performs a Net::HTTP request of type +request_class+ on +uri+ returning
@@ -376,57 +355,16 @@ class Gem::RemoteFetcher
     @pools.each_value {|pool| pool.close_all}
   end
 
-  protected
-
-  # we have our own signing code here to avoid a dependency on the aws-sdk gem
-  # fortunately, a simple GET request isn't too complex to sign properly
-  def sign_s3_url(uri, expiration = nil)
-    require 'base64'
-    require 'openssl'
-
-    id, secret = s3_source_auth uri
-
-    expiration ||= s3_expiration
-    canonical_path = "/#{uri.host}#{uri.path}"
-    payload = "GET\n\n\n#{expiration}\n#{canonical_path}"
-    digest = OpenSSL::HMAC.digest('sha1', secret, payload)
-    # URI.escape is deprecated, and there isn't yet a replacement that does quite what we want
-    signature = Base64.encode64(digest).gsub("\n", '').gsub(/[\+\/=]/) { |c| BASE64_URI_TRANSLATE[c] }
-    URI.parse("https://#{uri.host}.s3.amazonaws.com#{uri.path}?AWSAccessKeyId=#{id}&Expires=#{expiration}&Signature=#{signature}")
-  end
-
-  def s3_expiration
-    (Time.now + 3600).to_i # one hour from now
-  end
-
-  BASE64_URI_TRANSLATE = { '+' => '%2B', '/' => '%2F', '=' => '%3D' }.freeze
-
   private
 
-  def proxy_for proxy, uri
+  def proxy_for(proxy, uri)
     Gem::Request.proxy_uri(proxy || Gem::Request.get_proxy_from_env(uri.scheme))
   end
 
-  def pools_for proxy
+  def pools_for(proxy)
     @pool_lock.synchronize do
       @pools[proxy] ||= Gem::Request::ConnectionPools.new proxy, @cert_files
     end
   end
 
-  def s3_source_auth(uri)
-    return [uri.user, uri.password] if uri.user && uri.password
-
-    s3_source = Gem.configuration[:s3_source] || Gem.configuration['s3_source']
-    host = uri.host
-    raise FetchError.new("no s3_source key exists in .gemrc", "s3://#{host}") unless s3_source
-
-    auth = s3_source[host] || s3_source[host.to_sym]
-    raise FetchError.new("no key for host #{host} in s3_source in .gemrc", "s3://#{host}") unless auth
-
-    id = auth[:id] || auth['id']
-    secret = auth[:secret] || auth['secret']
-    raise FetchError.new("s3_source for #{host} missing id or secret", "s3://#{host}") unless id and secret
-
-    [id, secret]
-  end
 end

@@ -14,8 +14,7 @@ class TestRDocStore < XrefTestCase
 
     @top_level = @s.add_file 'file.rb'
 
-    @page = @s.add_file 'README.txt'
-    @page.parser = RDoc::Parser::Simple
+    @page = @s.add_file 'README.txt', parser: RDoc::Parser::Simple
     @page.comment = RDoc::Comment.new 'This is a page', @page
 
     @klass = @top_level.add_class RDoc::NormalClass, 'Object'
@@ -146,7 +145,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_add_file_relative
-    top_level = @store.add_file 'path/file.rb', 'file.rb'
+    top_level = @store.add_file 'path/file.rb', relative_name: 'file.rb'
 
     assert_kind_of RDoc::TopLevel, top_level
     assert_equal @store, top_level.store
@@ -310,8 +309,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_find_text_page
-    page = @store.add_file 'PAGE.txt'
-    page.parser = RDoc::Parser::Simple
+    page = @store.add_file 'PAGE.txt', parser: RDoc::Parser::Simple
 
     assert_nil @store.find_text_page 'no such page'
 
@@ -601,8 +599,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_page
-    page = @store.add_file 'PAGE.txt'
-    page.parser = RDoc::Parser::Simple
+    page = @store.add_file 'PAGE.txt', parser: RDoc::Parser::Simple
 
     assert_nil @store.page 'no such page'
 

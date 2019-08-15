@@ -5,8 +5,13 @@
 
 require 'digest'
 require_relative 'downloader'
+require_relative 'lib/colorize'
 
 class ExtLibs
+  def initialize
+    @colorize = Colorize.new
+  end
+
   def cache_file(url, cache_dir)
     Downloader.cache_file(url, nil, :cache_dir => cache_dir)
   end
@@ -23,16 +28,12 @@ class ExtLibs
         $stdout.flush
       end
       hd = Digest(name.upcase).file(cache).hexdigest
-      if hd == sum
-        if $VERBOSE
-          $stdout.puts " OK"
-          $stdout.flush
-        end
-      else
-        if $VERBOSE
-          $stdout.puts " NG"
-          $stdout.flush
-        end
+      if $VERBOSE
+        $stdout.print " "
+        $stdout.puts hd == sum ? @colorize.pass("OK") : @colorize.fail("NG")
+        $stdout.flush
+      end
+      unless hd == sum
         raise "checksum mismatch: #{cache}, #{name}:#{hd}, expected #{sum}"
       end
     end

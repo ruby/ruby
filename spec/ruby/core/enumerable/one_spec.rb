@@ -15,26 +15,26 @@ describe "Enumerable#one?" do
   end
 
   it "raises an ArgumentError when more than 1 argument is provided" do
-    lambda { @enum.one?(1, 2, 3) }.should raise_error(ArgumentError)
-    lambda { [].one?(1, 2, 3) }.should raise_error(ArgumentError)
-    lambda { {}.one?(1, 2, 3) }.should raise_error(ArgumentError)
+    -> { @enum.one?(1, 2, 3) }.should raise_error(ArgumentError)
+    -> { [].one?(1, 2, 3) }.should raise_error(ArgumentError)
+    -> { {}.one?(1, 2, 3) }.should raise_error(ArgumentError)
   end
 
   ruby_version_is ""..."2.5" do
     it "raises an ArgumentError when any arguments provided" do
-      lambda { @enum.one?(Proc.new {}) }.should raise_error(ArgumentError)
-      lambda { @enum.one?(nil) }.should raise_error(ArgumentError)
-      lambda { @empty.one?(1) }.should raise_error(ArgumentError)
-      lambda { @enum.one?(1) {} }.should raise_error(ArgumentError)
+      -> { @enum.one?(Proc.new {}) }.should raise_error(ArgumentError)
+      -> { @enum.one?(nil) }.should raise_error(ArgumentError)
+      -> { @empty.one?(1) }.should raise_error(ArgumentError)
+      -> { @enum.one?(1) {} }.should raise_error(ArgumentError)
     end
   end
 
   it "does not hide exceptions out of #each" do
-    lambda {
+    -> {
       EnumerableSpecs::ThrowingEach.new.one?
     }.should raise_error(RuntimeError)
 
-    lambda {
+    -> {
       EnumerableSpecs::ThrowingEach.new.one? { false }
     }.should raise_error(RuntimeError)
   end
@@ -72,13 +72,12 @@ describe "Enumerable#one?" do
     end
 
     it "does not hide exceptions out of the block" do
-      lambda {
+      -> {
         @enum.one? { raise "from block" }
       }.should raise_error(RuntimeError)
     end
 
     it "gathers initial args as elements when each yields multiple" do
-      # This spec doesn't spec what it says it does
       multi = EnumerableSpecs::YieldsMulti.new
       yielded = []
       multi.one? { |e| yielded << e; false }.should == false
@@ -118,7 +117,7 @@ describe "Enumerable#one?" do
       end
 
       it "does not hide exceptions out of #each" do
-        lambda {
+        -> {
           EnumerableSpecs::ThrowingEach.new.one?(Integer)
         }.should raise_error(RuntimeError)
       end
@@ -154,7 +153,7 @@ describe "Enumerable#one?" do
 
       it "does not hide exceptions out of pattern#===" do
         pattern = EnumerableSpecs::Pattern.new { raise "from pattern" }
-        lambda {
+        -> {
           @enum.one?(pattern)
         }.should raise_error(RuntimeError)
       end

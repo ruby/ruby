@@ -36,6 +36,8 @@ if "%1" == "--enable-debug-env" goto :enable-debug-env
 if "%1" == "--disable-debug-env" goto :disable-debug-env
 if "%1" == "--enable-rubygems" goto :enable-rubygems
 if "%1" == "--disable-rubygems" goto :disable-rubygems
+if "%1" == "--enable-mjit-support" goto :enable-mjit-support
+if "%1" == "--disable-mjit-support" goto :disable-mjit-support
 if "%1" == "--extout" goto :extout
 if "%1" == "--path" goto :path
 if "%1" == "--with-baseruby" goto :baseruby
@@ -99,8 +101,7 @@ goto :loop ;
 :target
   echo>> ~tmp~.mak 	"%~2" \
   echo>>confargs.tmp --target=%2 \
-  if "%~2" == "x64-mswin64" goto target2
-  if NOT "%~2" == "ia64-mswin64" goto target3
+  if NOT "%~2" == "x64-mswin64" goto target3
 :target2
   echo>> ~tmp~.mak 	"TARGET_OS=mswin64" \
 :target3
@@ -149,6 +150,16 @@ goto :loop ;
 goto :loop ;
 :disable-rubygems
   echo>> ~tmp~.mak 	"USE_RUBYGEMS=no" \
+  echo>>confargs.tmp %1 \
+  shift
+goto :loop ;
+:enable-mjit-support
+  echo>> ~tmp~.mak 	"MJIT_SUPPORT=yes" \
+  echo>>confargs.tmp %1 \
+  shift
+goto :loop ;
+:disable-mjit-support
+  echo>> ~tmp~.mak 	"MJIT_SUPPORT=no" \
   echo>>confargs.tmp %1 \
   shift
 goto :loop ;

@@ -1,5 +1,5 @@
 #! /your/favourite/path/to/ruby
-# -*- mode: ruby; coding: utf-8; indent-tabs-mode: nil; ruby-indent-level: 2 -*-
+# -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-
 #
@@ -18,7 +18,7 @@ require_relative '../loaders/vm_opts_h'
 class ApplicationController
   def generate i, destdir
     path = Pathname.new i
-    dst = Pathname.new(destdir).join(i)
+    dst = destdir ? Pathname.new(destdir).join(i) : Pathname.new(i)
     dumper = RubyVM::Dumper.new dst
     return [path, dumper]
   end

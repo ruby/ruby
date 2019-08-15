@@ -7,11 +7,11 @@ class Gem::Source::Vendor < Gem::Source::Installed
   ##
   # Creates a new Vendor source for a gem that was unpacked at +path+.
 
-  def initialize path
+  def initialize(path)
     @uri = path
   end
 
-  def <=> other
+  def <=>(other)
     case other
     when Gem::Source::Lock then
       -1
@@ -25,4 +25,3 @@ class Gem::Source::Vendor < Gem::Source::Installed
   end
 
 end
-

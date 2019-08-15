@@ -164,4 +164,3 @@ class TestGemVersionOption < Gem::TestCase
   end
 
 end
-

@@ -119,7 +119,6 @@ static char *w32_getenv(const char *name, UINT cp);
 
 int rb_w32_reparse_symlink_p(const WCHAR *path);
 
-static struct ChildRecord *CreateChild(const WCHAR *, const WCHAR *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE, DWORD);
 static int has_redirection(const char *, UINT);
 int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
 static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
@@ -1196,33 +1195,27 @@ child_result(struct ChildRecord *child, int mode)
 }
 
 /* License: Ruby's */
-static struct ChildRecord *
-CreateChild(const WCHAR *cmd, const WCHAR *prog, SECURITY_ATTRIBUTES *psa,
-	    HANDLE hInput, HANDLE hOutput, HANDLE hError, DWORD dwCreationFlags)
+static int
+CreateChild(struct ChildRecord *child, const WCHAR *cmd, const WCHAR *prog, HANDLE hInput, HANDLE hOutput, HANDLE hError, DWORD dwCreationFlags)
 {
     BOOL fRet;
     STARTUPINFOW aStartupInfo;
     PROCESS_INFORMATION aProcessInformation;
     SECURITY_ATTRIBUTES sa;
-    struct ChildRecord *child;
 
     if (!cmd && !prog) {
 	errno = EFAULT;
-	return NULL;
+        return FALSE;
     }
 
-    child = FindFreeChildSlot();
     if (!child) {
-	errno = EAGAIN;
-	return NULL;
+        errno = EAGAIN;
+        return FALSE;
     }
 
-    if (!psa) {
-	sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
-	sa.lpSecurityDescriptor = NULL;
-	sa.bInheritHandle       = TRUE;
-	psa = &sa;
-    }
+    sa.nLength              = sizeof(SECURITY_ATTRIBUTES);
+    sa.lpSecurityDescriptor = NULL;
+    sa.bInheritHandle       = TRUE;
 
     memset(&aStartupInfo, 0, sizeof(aStartupInfo));
     memset(&aProcessInformation, 0, sizeof(aProcessInformation));
@@ -1252,19 +1245,19 @@ CreateChild(const WCHAR *cmd, const WCHAR *prog, SECURITY_ATTRIBUTES *psa,
     if (lstrlenW(cmd) > 32767) {
 	child->pid = 0;		/* release the slot */
 	errno = E2BIG;
-	return NULL;
+        return FALSE;
     }
 
     RUBY_CRITICAL {
-	fRet = CreateProcessW(prog, (WCHAR *)cmd, psa, psa,
-			      psa->bInheritHandle, dwCreationFlags, NULL, NULL,
+        fRet = CreateProcessW(prog, (WCHAR *)cmd, &sa, &sa,
+                              sa.bInheritHandle, dwCreationFlags, NULL, NULL,
 			      &aStartupInfo, &aProcessInformation);
 	errno = map_errno(GetLastError());
     }
 
     if (!fRet) {
 	child->pid = 0;		/* release the slot */
-	return NULL;
+        return FALSE;
     }
 
     CloseHandle(aProcessInformation.hThread);
@@ -1272,7 +1265,7 @@ CreateChild(const WCHAR *cmd, const WCHAR *prog, SECURITY_ATTRIBUTES *psa,
     child->hProcess = aProcessInformation.hProcess;
     child->pid = (rb_pid_t)aProcessInformation.dwProcessId;
 
-    return child;
+    return TRUE;
 }
 
 /* License: Ruby's */
@@ -1297,6 +1290,46 @@ is_batch(const char *cmd)
 #define wstr_to_filecp(str, plen) wstr_to_mbstr(filecp(), str, -1, plen)
 #define utf8_to_wstr(str, plen) mbstr_to_wstr(CP_UTF8, str, -1, plen)
 #define wstr_to_utf8(str, plen) wstr_to_mbstr(CP_UTF8, str, -1, plen)
+
+/* License: Ruby's */
+MJIT_FUNC_EXPORTED HANDLE
+rb_w32_start_process(const char *abspath, char *const *argv, int out_fd)
+{
+    /* NOTE: This function is used by MJIT worker, so it can be used parallelly with
+       Ruby's main thread. So functions touching things shared with main thread can't
+       be used, like `ALLOCV` that may trigger GC or `FindFreeChildSlot` that finds
+       a slot from shared memory without atomic locks. */
+    struct ChildRecord child;
+    char *cmd;
+    size_t len;
+    WCHAR *wcmd = NULL, *wprog = NULL;
+    HANDLE outHandle = NULL;
+
+    if (out_fd) {
+        outHandle = (HANDLE)rb_w32_get_osfhandle(out_fd);
+    }
+
+    len = join_argv(NULL, argv, FALSE, filecp(), 1);
+    cmd = alloca(sizeof(char) * len);
+    join_argv(cmd, argv, FALSE, filecp(), 1);
+
+    if (!(wcmd = mbstr_to_wstr(filecp(), cmd, -1, NULL))) {
+        errno = E2BIG;
+        return NULL;
+    }
+    if (!(wprog = mbstr_to_wstr(filecp(), abspath, -1, NULL))) {
+        errno = E2BIG;
+        return NULL;
+    }
+
+    if (!CreateChild(&child, wcmd, wprog, NULL, outHandle, outHandle, 0)) {
+        return NULL;
+    }
+
+    free(wcmd);
+    free(wprog);
+    return child.hProcess;
+}
 
 /* License: Artistic or GPL */
 static rb_pid_t
@@ -1414,7 +1447,10 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
     if (v) ALLOCV_END(v);
 
     if (!e) {
-	ret = child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, NULL, 0), mode);
+        struct ChildRecord *child = FindFreeChildSlot();
+        if (CreateChild(child, wcmd, wshell, NULL, NULL, NULL, 0)) {
+            ret = child_result(child, mode);
+        }
     }
     free(wshell);
     free(wcmd);
@@ -1499,7 +1535,10 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
     if (!e && prog && !(wprog = mbstr_to_wstr(cp, prog, -1, NULL))) e = E2BIG;
 
     if (!e) {
-	ret = child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, NULL, flags), mode);
+        struct ChildRecord *child = FindFreeChildSlot();
+        if (CreateChild(child, wcmd, wprog, NULL, NULL, NULL, flags)) {
+            ret = child_result(child, mode);
+        }
     }
     free(wprog);
     free(wcmd);
@@ -2112,6 +2151,7 @@ rb_w32_wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen, long *plen)
 WCHAR *
 rb_w32_mbstr_to_wstr(UINT cp, const char *str, int clen, long *plen)
 {
+    /* This is used by MJIT worker. Do not trigger GC or call Ruby method here. */
     WCHAR *ptr;
     int len = MultiByteToWideChar(cp, 0, str, clen, NULL, 0);
     if (!(ptr = malloc(sizeof(WCHAR) * len))) return 0;
@@ -2443,6 +2483,7 @@ EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 #endif
 static inline ioinfo* _pioinfo(int);
 
+
 #define IOINFO_ARRAY_ELTS	(1 << IOINFO_L2E)
 #define _osfhnd(i)  (_pioinfo(i)->osfhnd)
 #define _osfile(i)  (_pioinfo(i)->osfile)
@@ -2517,7 +2558,7 @@ set_pioinfo_extra(void)
 #else
     __pioinfo = *(ioinfo***)(p);
 #endif
-#else
+#endif
     int fd;
 
     fd = _open("NUL", O_RDONLY);
@@ -2532,7 +2573,6 @@ set_pioinfo_extra(void)
 	/* not found, maybe something wrong... */
 	pioinfo_extra = 0;
     }
-#endif
 }
 #else
 #define pioinfo_extra 0
@@ -4389,11 +4429,11 @@ fcntl(int fd, int cmd, ...)
 
 /* License: Ruby's */
 int
-rb_w32_set_nonblock(int fd)
+rb_w32_set_nonblock2(int fd, int nonblock)
 {
     SOCKET sock = TO_SOCKET(fd);
     if (is_socket(sock)) {
-	return setfl(sock, O_NONBLOCK);
+	return setfl(sock, nonblock ? O_NONBLOCK : 0);
     }
     else if (is_pipe(sock)) {
 	DWORD state;
@@ -4401,7 +4441,12 @@ rb_w32_set_nonblock(int fd)
 	    errno = map_errno(GetLastError());
 	    return -1;
 	}
-	state |= PIPE_NOWAIT;
+        if (nonblock) {
+            state |= PIPE_NOWAIT;
+        }
+        else {
+            state &= ~PIPE_NOWAIT;
+        }
 	if (!SetNamedPipeHandleState((HANDLE)sock, &state, NULL, NULL)) {
 	    errno = map_errno(GetLastError());
 	    return -1;
@@ -4412,6 +4457,12 @@ rb_w32_set_nonblock(int fd)
 	errno = EBADF;
 	return -1;
     }
+}
+
+int
+rb_w32_set_nonblock(int fd)
+{
+    return rb_w32_set_nonblock2(fd, TRUE);
 }
 
 #ifndef WNOHANG
@@ -5792,6 +5843,17 @@ int
 rb_w32_lstati128(const char *path, struct stati128 *st)
 {
     return w32_stati128(path, st, filecp(), TRUE);
+}
+
+off_t
+rb_w32_lseek(int fd, off_t ofs, int whence)
+{
+    SOCKET sock = TO_SOCKET(fd);
+    if (is_socket(sock) || is_pipe(sock)) {
+        errno = ESPIPE;
+        return -1;
+    }
+    return _lseeki64(fd, ofs, whence);
 }
 
 /* License: Ruby's */

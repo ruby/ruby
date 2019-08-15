@@ -31,7 +31,7 @@ describe :kernel_sprintf, shared: true do
     end
 
     it "raises TypeError exception if cannot convert to Integer" do
-      -> () {
+      -> {
         format("%b", Object.new)
       }.should raise_error(TypeError)
     end
@@ -120,7 +120,7 @@ describe :kernel_sprintf, shared: true do
     end
 
     it "raises TypeError exception if cannot convert to Float" do
-      -> () {
+      -> {
         format("%f", Object.new)
       }.should raise_error(TypeError)
     end
@@ -296,13 +296,13 @@ describe :kernel_sprintf, shared: true do
       end
 
       it "raises ArgumentError if argument is a string of several characters" do
-        -> () {
+        -> {
           format("%c", "abc")
         }.should raise_error(ArgumentError)
       end
 
       it "raises ArgumentError if argument is an empty string" do
-        -> () {
+        -> {
           format("%c", "")
         }.should raise_error(ArgumentError)
       end
@@ -338,7 +338,7 @@ describe :kernel_sprintf, shared: true do
           "abc"
         end
 
-        -> () {
+        -> {
           format("%s", obj)
         }.should raise_error(NoMethodError)
       end
@@ -461,7 +461,7 @@ describe :kernel_sprintf, shared: true do
       end
 
       it "raises exception if argument number is bigger than actual arguments list" do
-        -> () {
+        -> {
           format("%4$d", 1, 2, 3)
         }.should raise_error(ArgumentError)
       end
@@ -472,7 +472,7 @@ describe :kernel_sprintf, shared: true do
       end
 
       it "raises ArgumentError exception when absolute and relative argument numbers are mixed" do
-        -> () {
+        -> {
           format("%1$d %d", 1, 2)
         }.should raise_error(ArgumentError)
       end
@@ -722,7 +722,7 @@ describe :kernel_sprintf, shared: true do
       end
 
       it "raises ArgumentError when is mixed with width" do
-        -> () {
+        -> {
           format("%*10d", 10, 112)
         }.should raise_error(ArgumentError)
       end
@@ -821,7 +821,7 @@ describe :kernel_sprintf, shared: true do
       end
 
       it "cannot be mixed with unnamed style" do
-        -> () {
+        -> {
           format("%d %<foo>d", 1, foo: "123")
         }.should raise_error(ArgumentError)
       end
@@ -841,13 +841,13 @@ describe :kernel_sprintf, shared: true do
       end
 
       it "cannot be mixed with unnamed style" do
-        -> () {
+        -> {
           format("%d %{foo}", 1, foo: "123")
         }.should raise_error(ArgumentError)
       end
 
       it "raises KeyError when there is no matching key" do
-        -> () {
+        -> {
           format("%{foo}", {})
         }.should raise_error(KeyError)
       end
@@ -870,7 +870,7 @@ describe :kernel_sprintf, shared: true do
       @base_method = @method
     end
 
-    it_behaves_like :key_error, -> (obj, key) {
+    it_behaves_like :key_error, -> obj, key {
       @base_method.call("%<#{key}>s", obj)
     }, { foooo: 1 }
   end

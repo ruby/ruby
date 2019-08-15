@@ -15,12 +15,18 @@ describe "BigDecimal#to_s" do
     @bigneg.to_s.kind_of?(String).should == true
   end
 
-  it "the default format looks like 0.xxxxEnn" do
-    @bigdec.to_s.should =~ /^0\.[0-9]*E[0-9]*$/i
+  it "the default format looks like 0.xxxxenn" do
+    @bigdec.to_s.should =~ /^0\.[0-9]*e[0-9]*$/
+  end
+
+  it "does not add an exponent for zero values" do
+    BigDecimal("0").to_s.should == "0.0"
+    BigDecimal("+0").to_s.should == "0.0"
+    BigDecimal("-0").to_s.should == "-0.0"
   end
 
   it "takes an optional argument" do
-    lambda {@bigdec.to_s("F")}.should_not raise_error()
+    -> {@bigdec.to_s("F")}.should_not raise_error()
   end
 
   it "starts with + if + is supplied and value is positive" do
@@ -63,10 +69,12 @@ describe "BigDecimal#to_s" do
   end
 
   it "can use conventional floating point notation" do
-    @bigdec.to_s("F").should == @bigdec_str
-    @bigneg.to_s("F").should == @bigneg_str
-    str2 = "+123.45678901 23456789"
-    BigDecimal('123.45678901234567890').to_s('+8F').should == str2
+    %w[f F].each do |format_char|
+      @bigdec.to_s(format_char).should == @bigdec_str
+      @bigneg.to_s(format_char).should == @bigneg_str
+      str2 = "+123.45678901 23456789"
+      BigDecimal('123.45678901234567890').to_s("+8#{format_char}").should == str2
+    end
   end
 
 end

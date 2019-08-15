@@ -7,6 +7,7 @@ require "rubygems/command_manager"
 require File.expand_path('../rubygems_plugin', __FILE__)
 
 class TestGemCommandsHelpCommand < Gem::TestCase
+
   # previously this was calc'd in setup, but 1.8.7 had
   # intermittent failures, but no issues with above require
   PLUGIN = File.expand_path('../rubygems_plugin.rb', __FILE__)
@@ -48,7 +49,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
         assert_match(/\s+#{cmd}\s+\S+/, out)
       end
 
-      if defined?(OpenSSL::SSL) then
+      if defined?(OpenSSL::SSL)
         assert_empty err
 
         refute_match 'No command found for ', out
@@ -64,7 +65,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
     end
   end
 
-  def util_gem *args
+  def util_gem(*args)
     @cmd.options[:args] = args
 
     use_ui @ui do
@@ -75,4 +76,5 @@ class TestGemCommandsHelpCommand < Gem::TestCase
 
     yield @ui.output, @ui.error
   end
+
 end

@@ -8,7 +8,7 @@ require_relative '../lib/jit_support'
 
 class TestRubyOptions < Test::Unit::TestCase
   NO_JIT_DESCRIPTION =
-    if RubyVM::MJIT.enabled?
+    if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
       RUBY_DESCRIPTION.sub(/\+JIT /, '')
     else
       RUBY_DESCRIPTION
@@ -117,7 +117,7 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_verbose
     assert_in_out_err(["-vve", ""]) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      if RubyVM::MJIT.enabled? && !mjit_force_enabled?
+      if RubyVM::MJIT.enabled? && !mjit_force_enabled? # checking -DMJIT_FORCE_ENABLE
         assert_equal(NO_JIT_DESCRIPTION, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
@@ -180,13 +180,15 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_version
     assert_in_out_err(%w(--version)) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      if RubyVM::MJIT.enabled?
+      if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
         assert_equal(EnvUtil.invoke_ruby(['-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
       end
       assert_equal([], e)
     end
+
+    return if RbConfig::CONFIG["MJIT_SUPPORT"] == 'no'
 
     [
       %w(--version --jit --disable=jit),
@@ -208,7 +210,7 @@ class TestRubyOptions < Test::Unit::TestCase
       ].each do |args|
         assert_in_out_err(args) do |r, e|
           assert_match(VERSION_PATTERN_WITH_JIT, r[0])
-          if RubyVM::MJIT.enabled?
+          if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
             assert_equal(RUBY_DESCRIPTION, r[0])
           else
             assert_equal(EnvUtil.invoke_ruby(['--jit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
@@ -251,7 +253,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_autosplit
-    assert_in_out_err(%w(-an -F: -e) + ["p $F"], "foo:bar:baz\nqux:quux:quuux\n",
+    assert_in_out_err(%w(-W0 -an -F: -e) + ["p $F"], "foo:bar:baz\nqux:quux:quuux\n",
                       ['["foo", "bar", "baz\n"]', '["qux", "quux", "quuux\n"]'], [])
   end
 
@@ -308,7 +310,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
     assert_in_out_err(%W(-\r -e) + [""], "", [], [])
 
-    assert_in_out_err(%W(-\rx), "", [], /invalid option -\\x0D  \(-h will show valid options\) \(RuntimeError\)/)
+    assert_in_out_err(%W(-\rx), "", [], /invalid option -\\r  \(-h will show valid options\) \(RuntimeError\)/)
 
     assert_in_out_err(%W(-\x01), "", [], /invalid option -\\x01  \(-h will show valid options\) \(RuntimeError\)/)
 
@@ -403,6 +405,9 @@ class TestRubyOptions < Test::Unit::TestCase
                       %w[4], [], bug4118)
 
     assert_ruby_status(%w[], "#! ruby -- /", '[ruby-core:82267] [Bug #13786]')
+
+    assert_ruby_status(%w[], "#!")
+    assert_in_out_err(%w[-c], "#!", ["Syntax OK"])
   end
 
   def test_flag_in_shebang
@@ -486,14 +491,18 @@ class TestRubyOptions < Test::Unit::TestCase
           ["begin", "ensure ; end"],
           ["  case nil", "when true; end"],
           ["case nil; when true", "end"],
+          ["if false;", "end", "if true\nelse ", "end"],
+          ["else", " end", "_ = if true\n"],
         ].each do
-          |b, e = 'end'|
-          src = ["#{b}\n", " #{e}\n"]
+          |b, e = 'end', pre = nil, post = nil|
+          src = ["#{pre}#{b}\n", " #{e}\n#{post}"]
           k = b[/\A\s*(\S+)/, 1]
           e = e[/\A\s*(\S+)/, 1]
+          n = 2
+          n += pre.count("\n") if pre
 
-          a.for("no directives with #{b}") do
-            err = ["#{t.path}:2: warning: mismatched indentations at '#{e}' with '#{k}' at 1"]
+          a.for("no directives with #{src}") do
+            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n-1}"]
             t.rewind
             t.truncate(0)
             t.puts src
@@ -502,7 +511,7 @@ class TestRubyOptions < Test::Unit::TestCase
             assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err)
           end
 
-          a.for("false directive with #{b}") do
+          a.for("false directive with #{src}") do
             t.rewind
             t.truncate(0)
             t.puts "# -*- warn-indent: false -*-"
@@ -511,8 +520,8 @@ class TestRubyOptions < Test::Unit::TestCase
             assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
           end
 
-          a.for("false and true directives with #{b}") do
-            err = ["#{t.path}:4: warning: mismatched indentations at '#{e}' with '#{k}' at 3"]
+          a.for("false and true directives with #{src}") do
+            err = ["#{t.path}:#{n+2}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n+1}"]
             t.rewind
             t.truncate(0)
             t.puts "# -*- warn-indent: false -*-"
@@ -522,7 +531,7 @@ class TestRubyOptions < Test::Unit::TestCase
             assert_in_out_err(["-w", t.path], "", [], err, '[ruby-core:25442]')
           end
 
-          a.for("false directives after #{b}") do
+          a.for("false directives after #{src}") do
             t.rewind
             t.truncate(0)
             t.puts "# -*- warn-indent: true -*-"
@@ -533,8 +542,8 @@ class TestRubyOptions < Test::Unit::TestCase
             assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
           end
 
-          a.for("BOM with #{b}") do
-            err = ["#{t.path}:2: warning: mismatched indentations at '#{e}' with '#{k}' at 1"]
+          a.for("BOM with #{src}") do
+            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n-1}"]
             t.rewind
             t.truncate(0)
             t.print "\u{feff}"
@@ -628,7 +637,7 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_match(/hello world/, ps)
       assert_operator now, :<, stop
       Process.kill :KILL, pid
-      Timeout.timeout(5) { Process.wait(pid) }
+      EnvUtil.timeout(5) { Process.wait(pid) }
     end
   end
 
@@ -664,11 +673,8 @@ class TestRubyOptions < Test::Unit::TestCase
 
   module SEGVTest
     opts = {}
-    if /mswin|mingw/ =~ RUBY_PLATFORM
-      additional = /[\s\w\.\']*/
-    else
+    unless /mswin|mingw/ =~ RUBY_PLATFORM
       opts[:rlimit_core] = 0
-      additional = nil
     end
     ExecOptions = opts.freeze
 
@@ -683,36 +689,31 @@ class TestRubyOptions < Test::Unit::TestCase
         (?:--\s(?:.+\n)*\n)?
         --\sControl\sframe\sinformation\s-+\n
         (?:c:.*\n)*
+        \n
       )x,
       %r(
         (?:
         --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
-        -e:1:in\s\`<main>\'\n
+        (?:-e:1:in\s\`(?:block\sin\s)?<main>\'\n)*
         -e:1:in\s\`kill\'\n
+        \n
         )?
+      )x,
+      %r(
+        (?:--\sMachine(?:.+\n)*\n)?
       )x,
       %r(
         (?:
           --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
-          (?:(?:.*\s)?\[0x\h+\]\n)*\n
+          (?:(?:.*\s)?\[0x\h+\].*\n|.*:\d+\n)*\n
         )?
       )x,
-      :*,
       %r(
-        \[NOTE\]\n
-        You\smay\shave\sencountered\sa\sbug\sin\sthe\sRuby\sinterpreter\sor\sextension\slibraries.\n
-        Bug\sreports\sare\swelcome.\n
-        (?:.*\n)?
-        For\sdetails:\shttps:\/\/.*\.ruby-lang\.org/.*\n
-        \n
-        (?:
-          \[IMPORTANT\]\n
-          (?:.+\n)+
-          \n
+        (?:--\sOther\sruntime\sinformation\s-+\n
+          (?:.*\n)*
         )?
       )x,
     ]
-    ExpectedStderrList << additional if additional
   end
 
   def assert_segv(args, message=nil)
@@ -777,20 +778,6 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(["-w", "-"], "eval('a=1')", [], [], feature7730)
   end
 
-  def test_shadowing_variable
-    bug4130 = '[ruby-dev:42718]'
-    assert_in_out_err(["-we", "def foo\n""  a=1\n""  1.times do |a| end\n""  a\n""end"],
-                      "", [], ["-e:3: warning: shadowing outer local variable - a"], bug4130)
-    assert_in_out_err(["-we", "def foo\n""  a=1\n""  1.times do |a| end\n""end"],
-                      "", [],
-                      ["-e:3: warning: shadowing outer local variable - a",
-                       "-e:2: warning: assigned but unused variable - a",
-                      ], bug4130)
-    feature6693 = '[ruby-core:46160]'
-    assert_in_out_err(["-we", "def foo\n""  _a=1\n""  1.times do |_a| end\n""end"],
-                      "", [], [], feature6693)
-  end
-
   def test_script_from_stdin
     begin
       require 'pty'
@@ -808,7 +795,7 @@ class TestRubyOptions < Test::Unit::TestCase
           pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
           w.close
           assert_nothing_raised('[ruby-dev:37798]') do
-            result = Timeout.timeout(3) {r.read}
+            result = EnvUtil.timeout(3) {r.read}
           end
           Process.wait pid
         }
@@ -985,8 +972,10 @@ class TestRubyOptions < Test::Unit::TestCase
       [["disable", "false"], ["enable", "true"]].each do |opt, exp|
         %W[frozen_string_literal frozen-string-literal].each do |arg|
           key = "#{opt}=#{arg}"
+          negopt = exp == "true" ? "disable" : "enable"
+          env = {"RUBYOPT"=>"--#{negopt}=#{arg}"}
           a.for(key) do
-            assert_in_out_err(["--disable=gems", "--#{key}"], 'p("foo".frozen?)', [exp])
+            assert_in_out_err([env, "--disable=gems", "--#{key}"], 'p("foo".frozen?)', [exp])
           end
         end
       end
@@ -1003,7 +992,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_frozen_string_literal_debug
     with_debug_pat = /created at/
-    wo_debug_pat = /can\'t modify frozen String \(FrozenError\)\n\z/
+    wo_debug_pat = /can\'t modify frozen String: "\w+" \(FrozenError\)\n\z/
     frozen = [
       ["--enable-frozen-string-literal", true],
       ["--disable-frozen-string-literal", false],

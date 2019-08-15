@@ -16,7 +16,7 @@ with_feature :unix_socket do
 
     describe 'without a client' do
       it 'blocks the calling thread' do
-        lambda { @server.sysaccept }.should block_caller
+        -> { @server.sysaccept }.should block_caller
       end
     end
 
@@ -31,9 +31,9 @@ with_feature :unix_socket do
       end
 
       describe 'without any data' do
-        it 'returns a Fixnum' do
+        it 'returns an Integer' do
           @fd = @server.sysaccept
-          @fd.should be_an_instance_of(Fixnum)
+          @fd.should be_kind_of(Integer)
         end
       end
 
@@ -42,9 +42,9 @@ with_feature :unix_socket do
           @client.write('hello')
         end
 
-        it 'returns a Fixnum' do
+        it 'returns an Integer' do
           @fd = @server.sysaccept
-          @fd.should be_an_instance_of(Fixnum)
+          @fd.should be_kind_of(Integer)
         end
       end
     end

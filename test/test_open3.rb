@@ -77,7 +77,7 @@ class TestOpen3 < Test::Unit::TestCase
   end
 
   def test_env
-    result = Open3.popen3({'A' => 'B', 'C' => 'D'}, RUBY, '-e' 'p ENV["A"]') do |i, out, err, thr|
+    Open3.popen3({'A' => 'B', 'C' => 'D'}, RUBY, '-e' 'p ENV["A"]') do |i, out, err, thr|
       output = out.read
       assert_equal("\"B\"\n", output)
     end
@@ -316,4 +316,10 @@ class TestOpen3 < Test::Unit::TestCase
     }
   end
 
+  def test_integer_and_symbol_key
+    command = [RUBY, '-e', 'puts "test_integer_and_symbol_key"']
+    out, status = Open3.capture2(*command, :chdir => '.', 2 => IO::NULL)
+    assert_equal("test_integer_and_symbol_key\n", out)
+    assert_predicate(status, :success?)
+  end
 end

@@ -1,10 +1,16 @@
 require 'delegate'
 require 'uri'
+require 'rubygems/user_interaction'
 
 class Gem::SpecificationPolicy < SimpleDelegator
-  VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/ # :nodoc:
 
-  VALID_URI_PATTERN = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z}  # :nodoc:
+  include Gem::UserInteraction
+
+  VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/.freeze # :nodoc:
+
+  SPECIAL_CHARACTERS = /\A[#{Regexp.escape('.-_')}]+/.freeze # :nodoc:
+
+  VALID_URI_PATTERN = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z}.freeze  # :nodoc:
 
   METADATA_LINK_KEYS = %w[
     bug_tracker_uri
@@ -14,7 +20,7 @@ class Gem::SpecificationPolicy < SimpleDelegator
     mailing_list_uri
     source_code_uri
     wiki_uri
-  ] # :nodoc:
+  ].freeze # :nodoc:
 
   def initialize(specification)
     @warnings = 0
@@ -86,29 +92,29 @@ class Gem::SpecificationPolicy < SimpleDelegator
   # Implementation for Specification#validate_metadata
 
   def validate_metadata
-    unless Hash === metadata then
+    unless Hash === metadata
       error 'metadata must be a hash'
     end
 
     metadata.each do |key, value|
-      if !key.kind_of?(String) then
+      if !key.kind_of?(String)
         error "metadata keys must be a String"
       end
 
-      if key.size > 128 then
+      if key.size > 128
         error "metadata key too large (#{key.size} > 128)"
       end
 
-      if !value.kind_of?(String) then
+      if !value.kind_of?(String)
         error "metadata values must be a String"
       end
 
-      if value.size > 1024 then
+      if value.size > 1024
         error "metadata value too large (#{value.size} > 1024)"
       end
 
-      if METADATA_LINK_KEYS.include? key then
-        if value !~ VALID_URI_PATTERN then
+      if METADATA_LINK_KEYS.include? key
+        if value !~ VALID_URI_PATTERN
           error "metadata['#{key}'] has invalid link: #{value.inspect}"
         end
       end
@@ -125,7 +131,7 @@ class Gem::SpecificationPolicy < SimpleDelegator
     error_messages = []
     warning_messages = []
     dependencies.each do |dep|
-      if prev = seen[dep.type][dep.name] then
+      if prev = seen[dep.type][dep.name]
         error_messages << <<-MESSAGE
 duplicate dependency on #{dep}, (#{prev.requirement}) use:
     add_#{dep.type}_dependency '#{dep.name}', '#{dep.requirement}', '#{prev.requirement}'
@@ -145,28 +151,33 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
         not version.prerelease? and (op == '>' or op == '>=')
       end
 
-      if open_ended then
+      if open_ended
         op, dep_version = dep.requirement.requirements.first
 
-        base = dep_version.segments.first 2
+        segments = dep_version.segments
 
-        bugfix = if op == '>' then
-                   ", '> #{dep_version}'"
-                 elsif op == '>=' and base != dep_version.segments then
-                   ", '>= #{dep_version}'"
-                 end
+        base = segments.first 2
 
-        warning_messages << <<-WARNING
-open-ended dependency on #{dep} is not recommended
-  if #{dep.name} is semantically versioned, use:
-    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}
-        WARNING
+        recommendation = if (op == '>' || op == '>=') && segments == [0]
+                           "  use a bounded requirement, such as '~> x.y'"
+                         else
+                           bugfix = if op == '>'
+                                      ", '> #{dep_version}'"
+                                    elsif op == '>=' and base != segments
+                                      ", '>= #{dep_version}'"
+                                    end
+
+                           "  if #{dep.name} is semantically versioned, use:\n" \
+                           "    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}"
+                         end
+
+        warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"
       end
     end
-    if error_messages.any? then
+    if error_messages.any?
       error error_messages.join
     end
-    if warning_messages.any? then
+    if warning_messages.any?
       warning_messages.each { |warning_message| warning warning_message }
     end
   end
@@ -212,19 +223,21 @@ open-ended dependency on #{dep} is not recommended
 
   def validate_required_attributes
     Gem::Specification.required_attributes.each do |symbol|
-      unless send symbol then
+      unless send symbol
         error "missing value for attribute #{symbol}"
       end
     end
   end
 
   def validate_name
-    if !name.is_a?(String) then
+    if !name.is_a?(String)
       error "invalid value for attribute name: \"#{name.inspect}\" must be a string"
-    elsif name !~ /[a-zA-Z]/ then
+    elsif name !~ /[a-zA-Z]/
       error "invalid value for attribute name: #{name.dump} must include at least one letter"
-    elsif name !~ VALID_NAME_PATTERN then
+    elsif name !~ VALID_NAME_PATTERN
       error "invalid value for attribute name: #{name.dump} can only include letters, numbers, dashes, and underscores"
+    elsif name =~ SPECIAL_CHARACTERS
+      error "invalid value for attribute name: #{name.dump} can not begin with a period, dash, or underscore"
     end
   end
 
@@ -238,7 +251,7 @@ open-ended dependency on #{dep} is not recommended
     return unless packaging
     non_files = files.reject {|x| File.file?(x) || File.symlink?(x)}
 
-    unless non_files.empty? then
+    unless non_files.empty?
       error "[\"#{non_files.join "\", \""}\"] are not files"
     end
   end
@@ -257,9 +270,9 @@ open-ended dependency on #{dep} is not recommended
 
   def validate_platform
     case platform
-      when Gem::Platform, Gem::Platform::RUBY then # ok
-      else
-        error "invalid platform #{platform.inspect}, see Gem::Platform"
+    when Gem::Platform, Gem::Platform::RUBY  # ok
+    else
+      error "invalid platform #{platform.inspect}, see Gem::Platform"
     end
   end
 
@@ -272,13 +285,13 @@ open-ended dependency on #{dep} is not recommended
   def validate_array_attribute(field)
     val = self.send(field)
     klass = case field
-              when :dependencies then
-                Gem::Dependency
-              else
-                String
+            when :dependencies then
+              Gem::Dependency
+            else
+              String
             end
 
-    unless Array === val and val.all? {|x| x.kind_of?(klass)} then
+    unless Array === val and val.all? {|x| x.kind_of?(klass)}
       raise(Gem::InvalidSpecificationException,
             "#{field} must be an Array of #{klass}")
     end
@@ -291,12 +304,12 @@ open-ended dependency on #{dep} is not recommended
   end
 
   def validate_licenses
-    licenses.each { |license|
-      if license.length > 64 then
+    licenses.each do |license|
+      if license.length > 64
         error "each license must be 64 characters or less"
       end
 
-      if !Gem::Licenses.match?(license) then
+      if !Gem::Licenses.match?(license)
         suggestions = Gem::Licenses.suggestions(license)
         message = <<-warning
 license value '#{license}' is invalid.  Use a license identifier from
@@ -305,7 +318,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
         message += "Did you mean #{suggestions.map { |s| "'#{s}'"}.join(', ')}?\n" unless suggestions.nil?
         warning(message)
       end
-    }
+    end
 
     warning <<-warning if licenses.empty?
 licenses is empty, but is recommended.  Use a license identifier from
@@ -314,23 +327,23 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   end
 
   LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, '')
-  LAZY_PATTERN = /FI XME|TO DO/x
-  HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i
+  LAZY_PATTERN = /FI XME|TO DO/x.freeze
+  HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i.freeze
 
   def validate_lazy_metadata
-    unless authors.grep(LAZY_PATTERN).empty? then
+    unless authors.grep(LAZY_PATTERN).empty?
       error "#{LAZY} is not an author"
     end
 
-    unless Array(email).grep(LAZY_PATTERN).empty? then
+    unless Array(email).grep(LAZY_PATTERN).empty?
       error "#{LAZY} is not an email"
     end
 
-    if description =~ LAZY_PATTERN then
+    if description =~ LAZY_PATTERN
       error "#{LAZY} is not a description"
     end
 
-    if summary =~ LAZY_PATTERN then
+    if summary =~ LAZY_PATTERN
       error "#{LAZY} is not a summary"
     end
 
@@ -352,7 +365,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
       validate_attribute_present(attribute)
     end
 
-    if description == summary then
+    if description == summary
       warning "description and summary are identical"
     end
 
@@ -380,13 +393,13 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
     warning "#{executable_path} is missing #! line"
   end
 
-  def warning statement # :nodoc:
+  def warning(statement) # :nodoc:
     @warnings += 1
 
     alert_warning statement
   end
 
-  def error statement # :nodoc:
+  def error(statement) # :nodoc:
     raise Gem::InvalidSpecificationException, statement
   ensure
     alert_warning help_text
@@ -395,4 +408,5 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   def help_text # :nodoc:
     "See http://guides.rubygems.org/specification-reference/ for help"
   end
+
 end

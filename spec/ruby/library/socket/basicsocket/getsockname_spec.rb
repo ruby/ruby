@@ -7,7 +7,7 @@ describe "Socket::BasicSocket#getsockname" do
     @socket.close
   end
 
-  it "returns the sockaddr associacted with the socket" do
+  it "returns the sockaddr associated with the socket" do
     @socket = TCPServer.new("127.0.0.1", 0)
     sockaddr = Socket.unpack_sockaddr_in(@socket.getsockname)
     sockaddr.should == [@socket.addr[1], "127.0.0.1"]

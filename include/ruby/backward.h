@@ -36,21 +36,28 @@ DECLARE_DEPRECATED_FEATURE(2.2, rb_frame_pop);
 
 /* eval.c */
 NORETURN(ERRORFUNC(("internal function"), void rb_frozen_class_p(VALUE)));
+DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_exec_end_proc);
 
 /* error.c */
 DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_compile_error);
 DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_compile_error_with_enc);
 DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_compile_error_append);
 
+/* gc.c */
+DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_gc_call_finalizer_at_exit);
+
+/* signal.c */
+DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_trap_exit);
+
 /* struct.c */
 DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_struct_ptr);
+
+/* thread.c */
+DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_clear_trace_func);
 
 /* variable.c */
 DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_generic_ivar_table);
 NORETURN(ERRORFUNC(("internal function"), VALUE rb_mod_const_missing(VALUE, VALUE)));
-
-/* vm.c */
-DEPRECATED(int rb_frame_method_id_and_class(ID *idp, VALUE *klassp));
 
 /* from version.c */
 #ifndef RUBY_SHOW_COPYRIGHT_TO_DIE

@@ -3,10 +3,6 @@ class TestLastThread < Test::Unit::TestCase
 
   # [Bug #11237]
   def test_last_thread
-    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
-      skip 'spurious wakeup unavoidable with MJIT'
-    end
-
     assert_separately([], <<-"end;") #do
       require '-test-/gvl/call_without_gvl'
 

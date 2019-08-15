@@ -16,12 +16,12 @@ describe "UNIXSocket#peeraddr" do
       SocketSpecs.rm_socket @path
     end
 
-    it "returns the address familly and path of the server end of the connection" do
+    it "returns the address family and path of the server end of the connection" do
       @client.peeraddr.should == ["AF_UNIX", @path]
     end
 
     it "raises an error in server sockets" do
-      lambda {
+      -> {
         @server.peeraddr
       }.should raise_error(Errno::ENOTCONN)
     end

@@ -48,4 +48,3 @@ class TestGemCommandsGenerateIndexCommand < Gem::TestCase
   end
 
 end if ''.respond_to? :to_xs
-

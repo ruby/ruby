@@ -3,13 +3,14 @@ require 'psych/versions'
 case RUBY_ENGINE
 when 'jruby'
   require 'psych_jars'
-  org.jruby.ext.psych.PsychLibrary.new.load(JRuby.runtime, false)
-else
-  begin
-    require "#{RUBY_VERSION[/\d+\.\d+/]}/psych.so"
-  rescue LoadError
-    require 'psych.so'
+  if JRuby::Util.respond_to?(:load_ext)
+    JRuby::Util.load_ext('org.jruby.ext.psych.PsychLibrary')
+  else
+    require 'java'; require 'jruby'
+    org.jruby.ext.psych.PsychLibrary.new.load(JRuby.runtime, false)
   end
+else
+  require 'psych.so'
 end
 require 'psych/nodes'
 require 'psych/streaming'
@@ -31,7 +32,7 @@ require 'psych/class_loader'
 # = Overview
 #
 # Psych is a YAML parser and emitter.
-# Psych leverages libyaml [Home page: http://pyyaml.org/wiki/LibYAML]
+# Psych leverages libyaml [Home page: https://pyyaml.org/wiki/LibYAML]
 # or [HG repo: https://bitbucket.org/xi/libyaml] for its YAML parsing
 # and emitting capabilities. In addition to wrapping libyaml, Psych also
 # knows how to serialize and de-serialize most Ruby objects to and from
@@ -265,6 +266,7 @@ module Psych
   #
   def self.load yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: false, symbolize_names: false
     if legacy_filename != NOT_GIVEN
+      warn_with_uplevel 'Passing filename with the 2nd argument of Psych.load is deprecated. Use keyword argument like Psych.load(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
       filename = legacy_filename
     end
 
@@ -288,10 +290,10 @@ module Psych
   # * Hash
   #
   # Recursive data structures are not allowed by default.  Arbitrary classes
-  # can be allowed by adding those classes to the +whitelist_classes+ keyword argument.  They are
+  # can be allowed by adding those classes to the +permitted_classes+ keyword argument.  They are
   # additive.  For example, to allow Date deserialization:
   #
-  #   Psych.safe_load(yaml, whitelist_classes: [Date])
+  #   Psych.safe_load(yaml, permitted_classes: [Date])
   #
   # Now the Date class can be loaded in addition to the classes listed above.
   #
@@ -305,7 +307,7 @@ module Psych
   #   Psych.safe_load yaml, aliases: true # => loads the aliases
   #
   # A Psych::DisallowedClass exception will be raised if the yaml contains a
-  # class that isn't in the whitelist.
+  # class that isn't in the +permitted_classes+ list.
   #
   # A Psych::BadAlias exception will be raised if the yaml contains aliases
   # but the +aliases+ keyword argument is set to false.
@@ -319,28 +321,32 @@ module Psych
   #   Psych.safe_load("---\n foo: bar")                         # => {"foo"=>"bar"}
   #   Psych.safe_load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
   #
-  def self.safe_load yaml, legacy_whitelist_classes = NOT_GIVEN, legacy_whitelist_symbols = NOT_GIVEN, legacy_aliases = NOT_GIVEN, legacy_filename = NOT_GIVEN, whitelist_classes: [], whitelist_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false
-    if legacy_whitelist_classes != NOT_GIVEN
-      whitelist_classes = legacy_whitelist_classes
+  def self.safe_load yaml, legacy_permitted_classes = NOT_GIVEN, legacy_permitted_symbols = NOT_GIVEN, legacy_aliases = NOT_GIVEN, legacy_filename = NOT_GIVEN, permitted_classes: [], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false
+    if legacy_permitted_classes != NOT_GIVEN
+      warn_with_uplevel 'Passing permitted_classes with the 2nd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, permitted_classes: ...) instead.', uplevel: 1 if $VERBOSE
+      permitted_classes = legacy_permitted_classes
     end
 
-    if legacy_whitelist_symbols != NOT_GIVEN
-      whitelist_symbols = legacy_whitelist_symbols
+    if legacy_permitted_symbols != NOT_GIVEN
+      warn_with_uplevel 'Passing permitted_symbols with the 3rd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, permitted_symbols: ...) instead.', uplevel: 1 if $VERBOSE
+      permitted_symbols = legacy_permitted_symbols
     end
 
     if legacy_aliases != NOT_GIVEN
+      warn_with_uplevel 'Passing aliases with the 4th argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, aliases: ...) instead.', uplevel: 1 if $VERBOSE
       aliases = legacy_aliases
     end
 
     if legacy_filename != NOT_GIVEN
+      warn_with_uplevel 'Passing filename with the 5th argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
       filename = legacy_filename
     end
 
     result = parse(yaml, filename: filename)
     return fallback unless result
 
-    class_loader = ClassLoader::Restricted.new(whitelist_classes.map(&:to_s),
-                                               whitelist_symbols.map(&:to_s))
+    class_loader = ClassLoader::Restricted.new(permitted_classes.map(&:to_s),
+                                               permitted_symbols.map(&:to_s))
     scanner      = ScalarScanner.new class_loader
     visitor = if aliases
                 Visitors::ToRuby.new scanner, class_loader
@@ -373,6 +379,7 @@ module Psych
   # See Psych::Nodes for more information about YAML AST.
   def self.parse yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: NOT_GIVEN
     if legacy_filename != NOT_GIVEN
+      warn_with_uplevel 'Passing filename with the 2nd argument of Psych.parse is deprecated. Use keyword argument like Psych.parse(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
       filename = legacy_filename
     end
 
@@ -381,6 +388,7 @@ module Psych
     end
 
     if fallback != NOT_GIVEN
+      warn_with_uplevel 'Passing the `fallback` keyword argument of Psych.parse is deprecated.', uplevel: 1 if $VERBOSE
       fallback
     else
       false
@@ -435,6 +443,7 @@ module Psych
   # See Psych::Nodes for more information about YAML AST.
   def self.parse_stream yaml, legacy_filename = NOT_GIVEN, filename: nil, &block
     if legacy_filename != NOT_GIVEN
+      warn_with_uplevel 'Passing filename with the 2nd argument of Psych.parse_stream is deprecated. Use keyword argument like Psych.parse_stream(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
       filename = legacy_filename
     end
 
@@ -540,6 +549,7 @@ module Psych
   #
   def self.load_stream yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: []
     if legacy_filename != NOT_GIVEN
+      warn_with_uplevel 'Passing filename with the 2nd argument of Psych.load_stream is deprecated. Use keyword argument like Psych.load_stream(yaml, filename: ...) instead.', uplevel: 1 if $VERBOSE
       filename = legacy_filename
     end
 
@@ -602,6 +612,21 @@ module Psych
     result
   end
   private_class_method :symbolize_names!
+
+  # Workaround for emulating `warn '...', uplevel: 1` in Ruby 2.4 or lower.
+  def self.warn_with_uplevel(message, uplevel: 1)
+    at = parse_caller(caller[uplevel]).join(':')
+    warn "#{at}: #{message}"
+  end
+
+  def self.parse_caller(at)
+    if /^(.+?):(\d+)(?::in `.*')?/ =~ at
+      file = $1
+      line = $2.to_i
+      [file, line]
+    end
+  end
+  private_class_method :warn_with_uplevel, :parse_caller
 
   class << self
     attr_accessor :load_tags

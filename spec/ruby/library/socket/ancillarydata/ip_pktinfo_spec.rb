@@ -71,7 +71,7 @@ with_feature :ancillary_data, :pktinfo do
         end
 
         it 'stores the ifindex at index 1' do
-          @info[1].should be_an_instance_of(Fixnum)
+          @info[1].should be_kind_of(Integer)
         end
 
         it 'stores an Addrinfo at index 2' do
@@ -89,12 +89,12 @@ with_feature :ancillary_data, :pktinfo do
         end
 
         it 'is not the same object as the input Addrinfo' do
-          @addr.should_not == @source
+          @addr.should_not equal @source
         end
       end
 
       describe 'the ifindex' do
-        it 'is a Fixnum' do
+        it 'is an Integer' do
           @data.ip_pktinfo[1].should == 4
         end
       end
@@ -109,7 +109,7 @@ with_feature :ancillary_data, :pktinfo do
         end
 
         it 'is not the same object as the input Addrinfo' do
-          @addr.should_not == @dest
+          @addr.should_not equal @dest
         end
       end
     end

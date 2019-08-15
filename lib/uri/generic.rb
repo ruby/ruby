@@ -9,7 +9,7 @@
 # See URI for general documentation
 #
 
-require 'uri/common'
+require_relative 'common'
 autoload :IPSocket, 'socket'
 autoload :IPAddr, 'ipaddr'
 

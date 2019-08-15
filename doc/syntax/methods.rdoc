@@ -283,6 +283,25 @@ This will raise a SyntaxError:
     a + b + c
   end
 
+Default argument values can refer to arguments that have already been
+evaluated as local variables, and argument values are always evaluated
+left to right. So this is allowed:
+
+  def add_values(a = 1, b = a)
+    a + b
+  end
+  add_values
+  # => 2
+
+But this will raise a +NameError+ (unless there is a method named
++b+ defined):
+
+  def add_values(a = b, b = 1)
+    a + b
+  end
+  add_values
+  # NameError (undefined local variable or method `b' for main:Object)
+
 === Array Decomposition
 
 You can decompose (unpack or extract values from) an Array using extra
@@ -398,6 +417,17 @@ When calling a method with keyword arguments the arguments may appear in any
 order.  If an unknown keyword argument is sent by the caller an ArgumentError
 is raised.
 
+To require a specific keyword argument, do not include a default value
+for the keyword argument:
+
+  def add_values(first:, second:)
+    first + second
+  end
+  add_values
+  # ArgumentError (missing keywords: first, second)
+  add_values(first: 1, second: 2)
+  # => 3
+
 When mixing keyword arguments and positional arguments, all positional
 arguments must appear before any keyword arguments.
 
@@ -424,15 +454,6 @@ in this section:
     yield self
   end
 
-There is also a performance benefit to using yield over a calling a block
-parameter.  When a block argument is assigned to a variable a Proc object is
-created which holds the block.  When using yield this Proc object is not
-created.
-
-If you only need to use the block sometimes you can use Proc.new to create a
-proc from the block that was passed to your method.  See Proc.new for further
-details.
-
 == Exception Handling
 
 Methods have an implied exception handling block so you do not need to use
@@ -452,6 +473,28 @@ May be written as:
     # code that may raise an exception
   rescue
     # handle exception
+  end
+
+Similarly, if you wish to always run code even if an exception is raised,
+you can use +ensure+ without +begin+ and +end+:
+
+  def my_method
+    # code that may raise an exception
+  ensure
+    # code that runs even if previous code raised an exception
+  end
+
+You can also combine +rescue+ with +ensure+ and/or +else+, without
++begin+ and +end+:
+
+  def my_method
+    # code that may raise an exception
+  rescue
+    # handle exception
+  else
+    # only run if no exception raised above
+  ensure
+    # code that runs even if previous code raised an exception
   end
 
 If you wish to rescue an exception for only part of your method, use +begin+ and

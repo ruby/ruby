@@ -6,6 +6,12 @@ require 'rubygems/package'
 
 class TestGemCommandsBuildCommand < Gem::TestCase
 
+  CERT_FILE = cert_path 'public3072'
+  SIGNING_KEY = key_path 'private3072'
+
+  EXPIRED_CERT_FILE = cert_path 'expired'
+  PRIVATE_KEY_FILE  = key_path 'private'
+
   def setup
     super
 
@@ -16,7 +22,6 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     end
 
     @gem = util_spec 'some_gem' do |s|
-      s.rubyforge_project = 'example'
       s.license = 'AGPL-3.0'
       s.files = ['README.md']
     end
@@ -31,11 +36,39 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert @cmd.options[:strict]
   end
 
+  def test_options_filename
+    gemspec_file = File.join(@tempdir, @gem.spec_name)
+
+    File.open gemspec_file, 'w' do |gs|
+      gs.write @gem.to_ruby
+    end
+
+    @cmd.options[:args] = [gemspec_file]
+    @cmd.options[:output] = "test.gem"
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    file = File.join(@tempdir, File::SEPARATOR, "test.gem")
+    assert File.exist?(file)
+
+    output = @ui.output.split "\n"
+    assert_equal "  Successfully built RubyGem", output.shift
+    assert_equal "  Name: some_gem", output.shift
+    assert_equal "  Version: 2", output.shift
+    assert_equal "  File: test.gem", output.shift
+    assert_equal [], output
+  end
+
   def test_handle_options_defaults
     @cmd.handle_options []
 
     refute @cmd.options[:force]
     refute @cmd.options[:strict]
+    assert_nil @cmd.options[:output]
   end
 
   def test_execute
@@ -48,6 +81,32 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     @cmd.options[:args] = [gemspec_file]
 
     util_test_build_gem @gem
+  end
+
+  def test_execute_bad_name
+    [".", "-", "_"].each do |special_char|
+      gem = util_spec 'some_gem_with_bad_name' do |s|
+        s.name = "#{special_char}bad_gem_name"
+        s.license = 'AGPL-3.0'
+        s.files = ['README.md']
+      end
+
+      gemspec_file = File.join(@tempdir, gem.spec_name)
+
+      File.open gemspec_file, 'w' do |gs|
+        gs.write gem.to_ruby
+      end
+
+      @cmd.options[:args] = [gemspec_file]
+
+      use_ui @ui do
+        Dir.chdir @tempdir do
+          assert_raises Gem::InvalidSpecificationException do
+            @cmd.execute
+          end
+        end
+      end
+    end
   end
 
   def test_execute_strict_without_warnings
@@ -65,7 +124,6 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
   def test_execute_strict_with_warnings
     bad_gem = util_spec 'some_bad_gem' do |s|
-      s.rubyforge_project = 'example'
       s.files = ['README.md']
     end
 
@@ -149,6 +207,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
       gs.write @gem.to_ruby
     end
 
+    @cmd.options[:build_path] = gemspec_dir
     @cmd.options[:args] = [gemspec_file]
 
     use_ui @ui do
@@ -221,11 +280,8 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     util_test_build_gem @gem
   end
 
-  CERT_FILE = cert_path 'public3072'
-  SIGNING_KEY = key_path 'private3072'
-
   def test_build_signed_gem
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+    skip 'openssl is missing' unless defined?(OpenSSL::SSL) && !java_platform?
 
     trust_dir = Gem::Security.trust_dir
 
@@ -249,6 +305,91 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     gem = Gem::Package.new(File.join(@tempdir, spec.file_name),
                            Gem::Security::HighSecurity)
     assert gem.verify
+  end
+
+  def test_build_signed_gem_with_cert_expiration_length_days
+    skip 'openssl is missing' unless defined?(OpenSSL::SSL) && !java_platform?
+
+    gem_path = File.join Gem.user_home, ".gem"
+    Dir.mkdir gem_path
+
+    Gem::Security.trust_dir
+
+    tmp_expired_cert_file = File.join gem_path, "gem-public_cert.pem"
+    File.write(tmp_expired_cert_file, File.read(EXPIRED_CERT_FILE))
+
+    tmp_private_key_file = File.join gem_path, "gem-private_key.pem"
+    File.write(tmp_private_key_file, File.read(PRIVATE_KEY_FILE))
+
+    spec = util_spec 'some_gem' do |s|
+      s.signing_key = tmp_private_key_file
+      s.cert_chain  = [tmp_expired_cert_file]
+    end
+
+    gemspec_file = File.join(@tempdir, spec.spec_name)
+
+    File.open gemspec_file, 'w' do |gs|
+      gs.write spec.to_ruby
+    end
+
+    @cmd.options[:args] = [gemspec_file]
+
+    Gem.configuration.cert_expiration_length_days = 28
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    re_signed_cert = OpenSSL::X509::Certificate.new(File.read(tmp_expired_cert_file))
+    cert_days_to_expire = (re_signed_cert.not_after - re_signed_cert.not_before).to_i / (24 * 60 * 60)
+
+    gem_file = File.join @tempdir, File.basename(spec.cache_file)
+
+    assert File.exist?(gem_file)
+    assert_equal(28, cert_days_to_expire)
+  end
+
+  def test_build_auto_resign_cert
+    skip 'openssl is missing' unless defined?(OpenSSL::SSL) && !java_platform?
+
+    gem_path = File.join Gem.user_home, ".gem"
+    Dir.mkdir gem_path
+
+    Gem::Security.trust_dir
+
+    tmp_expired_cert_file = File.join gem_path, "gem-public_cert.pem"
+    File.write(tmp_expired_cert_file, File.read(EXPIRED_CERT_FILE))
+
+    tmp_private_key_file = File.join gem_path, "gem-private_key.pem"
+    File.write(tmp_private_key_file, File.read(PRIVATE_KEY_FILE))
+
+    spec = util_spec 'some_gem' do |s|
+      s.signing_key = tmp_private_key_file
+      s.cert_chain  = [tmp_expired_cert_file]
+    end
+
+    gemspec_file = File.join(@tempdir, spec.spec_name)
+
+    File.open gemspec_file, 'w' do |gs|
+      gs.write spec.to_ruby
+    end
+
+    @cmd.options[:args] = [gemspec_file]
+
+    Gem.configuration.cert_expiration_length_days = 28
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    output = @ui.output.split "\n"
+    assert_equal "INFO:  Your certificate has expired, trying to re-sign it...", output.shift
+    assert_equal "INFO:  Your cert: #{tmp_expired_cert_file } has been auto re-signed with the key: #{tmp_private_key_file}", output.shift
+    assert_match(/INFO:  Your expired cert will be located at: .+\Wgem-public_cert\.pem\.expired\.[0-9]+/, output.shift)
   end
 
 end

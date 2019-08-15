@@ -77,19 +77,19 @@ describe "Module#remove_method" do
   end
 
   it "raises a NameError when attempting to remove method further up the inheritance tree" do
-    lambda {
-      class Third < ModuleSpecs::Second
+    Class.new(ModuleSpecs::Second) do
+      -> {
         remove_method :method_to_remove
-      end
-    }.should raise_error(NameError)
+      }.should raise_error(NameError)
+    end
   end
 
   it "raises a NameError when attempting to remove a missing method" do
-    lambda {
-      class Third < ModuleSpecs::Second
+    Class.new(ModuleSpecs::Second) do
+      -> {
         remove_method :blah
-      end
-    }.should raise_error(NameError)
+      }.should raise_error(NameError)
+    end
   end
 
   describe "on frozen instance" do
@@ -98,15 +98,15 @@ describe "Module#remove_method" do
     end
 
     it "raises a #{frozen_error_class} when passed a name" do
-      lambda { @frozen.send :remove_method, :method_to_remove }.should raise_error(frozen_error_class)
+      -> { @frozen.send :remove_method, :method_to_remove }.should raise_error(frozen_error_class)
     end
 
     it "raises a #{frozen_error_class} when passed a missing name" do
-      lambda { @frozen.send :remove_method, :not_exist }.should raise_error(frozen_error_class)
+      -> { @frozen.send :remove_method, :not_exist }.should raise_error(frozen_error_class)
     end
 
     it "raises a TypeError when passed a not name" do
-      lambda { @frozen.send :remove_method, Object.new }.should raise_error(TypeError)
+      -> { @frozen.send :remove_method, Object.new }.should raise_error(TypeError)
     end
 
     it "does not raise exceptions when no arguments given" do

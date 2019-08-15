@@ -14,7 +14,7 @@
 #include "vm_core.h"
 #include "iseq.h"
 #ifdef HAVE_UCONTEXT_H
-#include "ucontext.h"
+#include <ucontext.h>
 #endif
 
 /* see vm_insnhelper.h for the values */
@@ -649,14 +649,6 @@ dump_thread(void *arg)
 		    frame.AddrFrame.Offset = context.Rbp;
 		    frame.AddrStack.Mode = AddrModeFlat;
 		    frame.AddrStack.Offset = context.Rsp;
-#elif defined(_M_IA64) || defined(__ia64__)
-		    mac = IMAGE_FILE_MACHINE_IA64;
-		    frame.AddrPC.Mode = AddrModeFlat;
-		    frame.AddrPC.Offset = context.StIIP;
-		    frame.AddrBStore.Mode = AddrModeFlat;
-		    frame.AddrBStore.Offset = context.RsBSP;
-		    frame.AddrStack.Mode = AddrModeFlat;
-		    frame.AddrStack.Offset = context.IntSp;
 #else	/* i386 */
 		    mac = IMAGE_FILE_MACHINE_I386;
 		    frame.AddrPC.Mode = AddrModeFlat;
@@ -713,7 +705,7 @@ rb_print_backtrace(void)
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];
     int n = (int)backtrace(trace, MAX_NATIVE_TRACE);
-#if defined(USE_ELF) && defined(HAVE_DLADDR) && !defined(__sparc)
+#if (defined(USE_ELF) || defined(HAVE_MACH_O_LOADER_H)) && defined(HAVE_DLADDR) && !defined(__sparc)
     rb_dump_backtrace_with_lines(n, trace);
 #else
     char **syms = backtrace_symbols(trace, n);
@@ -734,91 +726,7 @@ rb_print_backtrace(void)
 }
 
 #ifdef HAVE_LIBPROCSTAT
-#include <sys/user.h>
-#include <sys/sysctl.h>
-#include <sys/param.h>
-#include <libprocstat.h>
-# ifndef KVME_TYPE_MGTDEVICE
-# define KVME_TYPE_MGTDEVICE     8
-# endif
-void
-procstat_vm(struct procstat *procstat, struct kinfo_proc *kipp)
-{
-	struct kinfo_vmentry *freep, *kve;
-	int ptrwidth;
-	unsigned int i, cnt;
-	const char *str;
-#ifdef __x86_64__
-	ptrwidth = 14;
-#else
-	ptrwidth = 2*sizeof(void *) + 2;
-#endif
-	fprintf(stderr, "%*s %*s %3s %4s %4s %3s %3s %4s %-2s %-s\n",
-		ptrwidth, "START", ptrwidth, "END", "PRT", "RES",
-		"PRES", "REF", "SHD", "FL", "TP", "PATH");
-
-#ifdef HAVE_PROCSTAT_GETVMMAP
-	freep = procstat_getvmmap(procstat, kipp, &cnt);
-#else
-	freep = kinfo_getvmmap(kipp->ki_pid, &cnt);
-#endif
-	if (freep == NULL)
-		return;
-	for (i = 0; i < cnt; i++) {
-		kve = &freep[i];
-		fprintf(stderr, "%#*jx ", ptrwidth, (uintmax_t)kve->kve_start);
-		fprintf(stderr, "%#*jx ", ptrwidth, (uintmax_t)kve->kve_end);
-		fprintf(stderr, "%s", kve->kve_protection & KVME_PROT_READ ? "r" : "-");
-		fprintf(stderr, "%s", kve->kve_protection & KVME_PROT_WRITE ? "w" : "-");
-		fprintf(stderr, "%s ", kve->kve_protection & KVME_PROT_EXEC ? "x" : "-");
-		fprintf(stderr, "%4d ", kve->kve_resident);
-		fprintf(stderr, "%4d ", kve->kve_private_resident);
-		fprintf(stderr, "%3d ", kve->kve_ref_count);
-		fprintf(stderr, "%3d ", kve->kve_shadow_count);
-		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_COW ? "C" : "-");
-		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_NEEDS_COPY ? "N" :
-		    "-");
-		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_SUPER ? "S" : "-");
-		fprintf(stderr, "%-1s ", kve->kve_flags & KVME_FLAG_GROWS_UP ? "U" :
-		    kve->kve_flags & KVME_FLAG_GROWS_DOWN ? "D" : "-");
-		switch (kve->kve_type) {
-		case KVME_TYPE_NONE:
-			str = "--";
-			break;
-		case KVME_TYPE_DEFAULT:
-			str = "df";
-			break;
-		case KVME_TYPE_VNODE:
-			str = "vn";
-			break;
-		case KVME_TYPE_SWAP:
-			str = "sw";
-			break;
-		case KVME_TYPE_DEVICE:
-			str = "dv";
-			break;
-		case KVME_TYPE_PHYS:
-			str = "ph";
-			break;
-		case KVME_TYPE_DEAD:
-			str = "dd";
-			break;
-		case KVME_TYPE_SG:
-			str = "sg";
-			break;
-		case KVME_TYPE_MGTDEVICE:
-			str = "md";
-			break;
-		case KVME_TYPE_UNKNOWN:
-		default:
-			str = "??";
-			break;
-		}
-		fprintf(stderr, "%-2s ", str);
-		fprintf(stderr, "%-s\n", kve->kve_path);
-	}
-	free(freep);
-}
+#include "missing/procstat_vm.c"
 #endif
 
 #if defined __linux__
@@ -1095,7 +1003,7 @@ rb_vmdebug_stack_dump_all_threads(void)
 	ruby_fill_thread_id_string(th->thread_id, buf);
 	fprintf(stderr, "th: %p, native_id: %s\n", th, buf);
 #else
-	fprintf(stderr, "th: %p, native_id: %p\n", (void *)th, (void *)th->thread_id);
+        fprintf(stderr, "th: %p, native_id: %p\n", (void *)th, (void *)(uintptr_t)th->thread_id);
 #endif
 	rb_vmdebug_stack_dump_raw(th->ec, th->ec->cfp);
     }

@@ -266,10 +266,10 @@ describe :array_slice, shared: true do
     a.send(@method, 1..0).should == []
     a.send(@method, 1...0).should == []
 
-    lambda { a.send(@method, "a" .. "b") }.should raise_error(TypeError)
-    lambda { a.send(@method, "a" ... "b") }.should raise_error(TypeError)
-    lambda { a.send(@method, from .. "b") }.should raise_error(TypeError)
-    lambda { a.send(@method, from ... "b") }.should raise_error(TypeError)
+    -> { a.send(@method, "a" .. "b") }.should raise_error(TypeError)
+    -> { a.send(@method, "a" ... "b") }.should raise_error(TypeError)
+    -> { a.send(@method, from .. "b") }.should raise_error(TypeError)
+    -> { a.send(@method, from ... "b") }.should raise_error(TypeError)
   end
 
   it "returns the same elements as [m..n] and [m...n] with Range subclasses" do
@@ -441,19 +441,19 @@ describe :array_slice, shared: true do
     array = [1, 2, 3, 4, 5, 6]
     obj = mock('large value')
     obj.should_receive(:to_int).and_return(0x8000_0000_0000_0000_0000)
-    lambda { array.send(@method, obj) }.should raise_error(RangeError)
+    -> { array.send(@method, obj) }.should raise_error(RangeError)
 
     obj = 8e19
-    lambda { array.send(@method, obj) }.should raise_error(RangeError)
+    -> { array.send(@method, obj) }.should raise_error(RangeError)
   end
 
   it "raises a RangeError when the length is out of range of Fixnum" do
     array = [1, 2, 3, 4, 5, 6]
     obj = mock('large value')
     obj.should_receive(:to_int).and_return(0x8000_0000_0000_0000_0000)
-    lambda { array.send(@method, 1, obj) }.should raise_error(RangeError)
+    -> { array.send(@method, 1, obj) }.should raise_error(RangeError)
 
     obj = 8e19
-    lambda { array.send(@method, 1, obj) }.should raise_error(RangeError)
+    -> { array.send(@method, 1, obj) }.should raise_error(RangeError)
   end
 end

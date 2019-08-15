@@ -27,7 +27,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
     end
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class === other and
       @set          == other.set and
       @name         == other.name and
@@ -46,7 +46,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
     Gem::Platform.match @platform
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[APISpecification', ']' do
       q.breakable
       q.text "name: #{name}"
@@ -88,4 +88,3 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   end
 
 end
-

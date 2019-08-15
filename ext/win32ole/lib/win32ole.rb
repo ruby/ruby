@@ -19,7 +19,7 @@ if defined?(WIN32OLE)
     #  #=> Did you mean?  Add
     #
     def methods(*args)
-      super + ole_methods_safely.map(&:name)
+      super + ole_methods_safely.map(&:name).map(&:to_sym)
     end
 
     private

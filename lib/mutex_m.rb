@@ -25,10 +25,14 @@
 #   obj.extend Mutex_m
 #
 # Or mixin Mutex_m into your module to your class inherit Mutex instance
-# methods.
+# methods --- remember to call super() in your class initialize method.
 #
 #   class Foo
 #     include Mutex_m
+#     def initialize
+#       # ...
+#       super()
+#     end
 #     # ...
 #   end
 #   obj = Foo.new

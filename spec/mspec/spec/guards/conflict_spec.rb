@@ -3,6 +3,7 @@ require 'mspec/guards'
 
 describe Object, "#conflicts_with" do
   before :each do
+    hide_deprecation_warnings
     ScratchPad.clear
   end
 
@@ -33,6 +34,7 @@ end
 
 describe Object, "#conflicts_with" do
   before :each do
+    hide_deprecation_warnings
     @guard = ConflictsGuard.new
     ConflictsGuard.stub(:new).and_return(@guard)
   end

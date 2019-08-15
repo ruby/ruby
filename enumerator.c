@@ -12,6 +12,7 @@
 
 ************************************************/
 
+#include "ruby/ruby.h"
 #include "internal.h"
 #include "id.h"
 
@@ -110,7 +111,7 @@ static VALUE rb_cLazy;
 static ID id_rewind, id_new, id_to_enum;
 static ID id_next, id_result, id_receiver, id_arguments, id_memo, id_method, id_force;
 static ID id_begin, id_end, id_step, id_exclude_end;
-static VALUE sym_each, sym_cycle;
+static VALUE sym_each, sym_cycle, sym_yield;
 
 #define id_call idCall
 #define id_each idEach
@@ -161,7 +162,14 @@ struct proc_entry {
 static VALUE generator_allocate(VALUE klass);
 static VALUE generator_init(VALUE obj, VALUE proc);
 
-static VALUE rb_cArithSeq;
+static VALUE rb_cEnumChain;
+
+struct enum_chain {
+    VALUE enums;
+    long pos;
+};
+
+VALUE rb_cArithSeq;
 
 /*
  * Enumerator
@@ -170,15 +178,30 @@ static void
 enumerator_mark(void *p)
 {
     struct enumerator *ptr = p;
-    rb_gc_mark(ptr->obj);
-    rb_gc_mark(ptr->args);
-    rb_gc_mark(ptr->fib);
-    rb_gc_mark(ptr->dst);
-    rb_gc_mark(ptr->lookahead);
-    rb_gc_mark(ptr->feedvalue);
-    rb_gc_mark(ptr->stop_exc);
-    rb_gc_mark(ptr->size);
-    rb_gc_mark(ptr->procs);
+    rb_gc_mark_movable(ptr->obj);
+    rb_gc_mark_movable(ptr->args);
+    rb_gc_mark_movable(ptr->fib);
+    rb_gc_mark_movable(ptr->dst);
+    rb_gc_mark_movable(ptr->lookahead);
+    rb_gc_mark_movable(ptr->feedvalue);
+    rb_gc_mark_movable(ptr->stop_exc);
+    rb_gc_mark_movable(ptr->size);
+    rb_gc_mark_movable(ptr->procs);
+}
+
+static void
+enumerator_compact(void *p)
+{
+    struct enumerator *ptr = p;
+    ptr->obj = rb_gc_location(ptr->obj);
+    ptr->args = rb_gc_location(ptr->args);
+    ptr->fib = rb_gc_location(ptr->fib);
+    ptr->dst = rb_gc_location(ptr->dst);
+    ptr->lookahead = rb_gc_location(ptr->lookahead);
+    ptr->feedvalue = rb_gc_location(ptr->feedvalue);
+    ptr->stop_exc = rb_gc_location(ptr->stop_exc);
+    ptr->size = rb_gc_location(ptr->size);
+    ptr->procs = rb_gc_location(ptr->procs);
 }
 
 #define enumerator_free RUBY_TYPED_DEFAULT_FREE
@@ -195,6 +218,7 @@ static const rb_data_type_t enumerator_data_type = {
 	enumerator_mark,
 	enumerator_free,
 	enumerator_memsize,
+        enumerator_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -215,8 +239,16 @@ static void
 proc_entry_mark(void *p)
 {
     struct proc_entry *ptr = p;
-    rb_gc_mark(ptr->proc);
-    rb_gc_mark(ptr->memo);
+    rb_gc_mark_movable(ptr->proc);
+    rb_gc_mark_movable(ptr->memo);
+}
+
+static void
+proc_entry_compact(void *p)
+{
+    struct proc_entry *ptr = p;
+    ptr->proc = rb_gc_location(ptr->proc);
+    ptr->memo = rb_gc_location(ptr->memo);
 }
 
 #define proc_entry_free RUBY_TYPED_DEFAULT_FREE
@@ -233,6 +265,7 @@ static const rb_data_type_t proc_entry_data_type = {
 	proc_entry_mark,
 	proc_entry_free,
 	proc_entry_memsize,
+        proc_entry_compact,
     },
 };
 
@@ -550,6 +583,8 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
 	    args = rb_ary_new4(argc, argv);
 	}
 	e->args = args;
+        e->size = Qnil;
+        e->size_fn = 0;
     }
     if (!rb_block_given_p()) return obj;
     return enumerator_block_call(obj, 0, obj);
@@ -594,12 +629,9 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
 {
     VALUE memo;
 
-    rb_scan_args(argc, argv, "01", &memo);
+    rb_check_arity(argc, 0, 1);
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_enum_size);
-    if (NIL_P(memo))
-	memo = INT2FIX(0);
-    else
-	memo = rb_to_int(memo);
+    memo = (!argc || NIL_P(memo = argv[0])) ? INT2FIX(0) : rb_to_int(memo);
     return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)MEMO_NEW(memo, 0, 0));
 }
 
@@ -1098,7 +1130,7 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
 
 	    rb_str_buf_cat2(str, "(");
 
-	    if (RB_TYPE_P(argv[argc-1], T_HASH)) {
+            if (RB_TYPE_P(argv[argc-1], T_HASH) && !RHASH_EMPTY_P(argv[argc-1])) {
 		int all_key = TRUE;
 		rb_hash_foreach(argv[argc-1], key_symbol_p, (VALUE)&all_key);
 		if (all_key) kwds = argv[--argc];
@@ -1190,7 +1222,14 @@ static void
 yielder_mark(void *p)
 {
     struct yielder *ptr = p;
-    rb_gc_mark(ptr->proc);
+    rb_gc_mark_movable(ptr->proc);
+}
+
+static void
+yielder_compact(void *p)
+{
+    struct yielder *ptr = p;
+    ptr->proc = rb_gc_location(ptr->proc);
 }
 
 #define yielder_free RUBY_TYPED_DEFAULT_FREE
@@ -1207,6 +1246,7 @@ static const rb_data_type_t yielder_data_type = {
 	yielder_mark,
 	yielder_free,
 	yielder_memsize,
+        yielder_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -1281,6 +1321,26 @@ yielder_yield_push(VALUE obj, VALUE arg)
     return obj;
 }
 
+/*
+ * Returns a Proc object that takes an argument and yields it.
+ *
+ * This method is implemented so that a Yielder object can be directly
+ * passed to another method as a block argument.
+ *
+ *   enum = Enumerator.new { |y|
+ *     Dir.glob("*.rb") { |file|
+ *       File.open(file) { |f| f.each_line(&y) }
+ *     }
+ *   }
+ */
+static VALUE
+yielder_to_proc(VALUE obj)
+{
+    VALUE method = rb_obj_method(obj, sym_yield);
+
+    return rb_funcall(method, idTo_proc, 0);
+}
+
 static VALUE
 yielder_yield_i(RB_BLOCK_CALL_FUNC_ARGLIST(obj, memo))
 {
@@ -1300,8 +1360,16 @@ static void
 generator_mark(void *p)
 {
     struct generator *ptr = p;
-    rb_gc_mark(ptr->proc);
-    rb_gc_mark(ptr->obj);
+    rb_gc_mark_movable(ptr->proc);
+    rb_gc_mark_movable(ptr->obj);
+}
+
+static void
+generator_compact(void *p)
+{
+    struct generator *ptr = p;
+    ptr->proc = rb_gc_location(ptr->proc);
+    ptr->obj = rb_gc_location(ptr->obj);
 }
 
 #define generator_free RUBY_TYPED_DEFAULT_FREE
@@ -1318,6 +1386,7 @@ static const rb_data_type_t generator_data_type = {
 	generator_mark,
 	generator_free,
 	generator_memsize,
+        generator_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -1567,32 +1636,74 @@ lazy_generator_init(VALUE enumerator, VALUE procs)
 }
 
 /*
+ * Document-class: Enumerator::Lazy
+ *
+ * Enumerator::Lazy is a special type of Enumerator, that allows constructing
+ * chains of operations without evaluating them immediately, and evaluating
+ * values on as-needed basis. In order to do so it redefines most of Enumerable
+ * methods so that they just construct another lazy enumerator.
+ *
+ * Enumerator::Lazy can be constructed from any Enumerable with the
+ * Enumerable#lazy method.
+ *
+ *    lazy = (1..Float::INFINITY).lazy.select(&:odd?).drop(10).take_while { |i| i < 30 }
+ *    # => #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: 1..Infinity>:select>:drop(10)>:take_while>
+ *
+ * The real enumeration is performed when any non-redefined Enumerable method
+ * is called, like Enumerable#first or Enumerable#to_a (the latter is aliased
+ * as #force for more semantic code):
+ *
+ *    lazy.first(2)
+ *    #=> [21, 23]
+ *
+ *    lazy.force
+ *    #=> [21, 23, 25, 27, 29]
+ *
+ * Note that most Enumerable methods that could be called with or without
+ * a block, on Enumerator::Lazy will always require a block:
+ *
+ *    [1, 2, 3].map       #=> #<Enumerator: [1, 2, 3]:map>
+ *    [1, 2, 3].lazy.map  # ArgumentError: tried to call lazy map without a block
+ *
+ * This class allows idiomatic calculations on long or infinite sequences, as well
+ * as chaining of calculations without constructing intermediate arrays.
+ *
+ * Example for working with a slowly calculated sequence:
+ *
+ *    require 'open-uri'
+ *
+ *    # This will fetch all URLs before selecting
+ *    # necessary data
+ *    URLS.map { |u| JSON.parse(open(u).read) }.
+ *      select { |data| data.key?('stats') }.
+ *      first(5)
+ *
+ *    # This will fetch URLs one-by-one, only till
+ *    # there is enough data to satisfy the condition
+ *    URLS.lazy.map { |u| JSON.parse(open(u).read) }.
+ *      select { |data| data.key?('stats') }.
+ *      first(5)
+ *
+ */
+
+/*
  * call-seq:
  *   Lazy.new(obj, size=nil) { |yielder, *values| ... }
  *
  * Creates a new Lazy enumerator. When the enumerator is actually enumerated
  * (e.g. by calling #force), +obj+ will be enumerated and each value passed
  * to the given block. The block can yield values back using +yielder+.
- * For example, to create a method +filter_map+ in both lazy and
- * non-lazy fashions:
+ * For example, to create a "filter+map" enumerator:
  *
- *   module Enumerable
- *     def filter_map(&block)
- *       map(&block).compact
+ *   def filter_map(sequence)
+ *     Lazy.new(sequence) do |yielder, *values|
+ *       result = yield *values
+ *       yielder << result if result
  *     end
  *   end
  *
- *   class Enumerator::Lazy
- *     def filter_map
- *       Lazy.new(self) do |yielder, *values|
- *         result = yield *values
- *         yielder << result if result
- *       end
- *     end
- *   end
- *
- *   (1..Float::INFINITY).lazy.filter_map{|i| i*i if i.even?}.first(5)
- *       # => [4, 16, 36, 64, 100]
+ *   filter_map(1..Float::INFINITY) {|i| i*i if i.even?}.first(5)
+ *   #=> [4, 16, 36, 64, 100]
  */
 static VALUE
 lazy_initialize(int argc, VALUE *argv, VALUE self)
@@ -1697,11 +1808,9 @@ lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
  * call-seq:
  *   e.lazy -> lazy_enumerator
  *
- * Returns a lazy enumerator, whose methods map/collect,
- * flat_map/collect_concat, select/find_all, reject, grep, grep_v, zip, take,
- * take_while, drop, and drop_while enumerate values only on an
- * as-needed basis.  However, if a block is given to zip, values
- * are enumerated immediately.
+ * Returns an Enumerator::Lazy, which redefines most Enumerable
+ * methods to postpone enumeration and enumerate values only on an
+ * as-needed basis.
  *
  * === Example
  *
@@ -1747,11 +1856,11 @@ lazy_to_enum_i(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator
  *   lzy.to_enum(method = :each, *args) {|*args| block} -> lazy_enum
  *   lzy.enum_for(method = :each, *args){|*args| block} -> lazy_enum
  *
- * Similar to Kernel#to_enum, except it returns a lazy enumerator.
+ * Similar to Object#to_enum, except it returns a lazy enumerator.
  * This makes it easy to define Enumerable methods that will
  * naturally remain lazy if called from a lazy enumerator.
  *
- * For example, continuing from the example in Kernel#to_enum:
+ * For example, continuing from the example in Object#to_enum:
  *
  *   # See Kernel#to_enum for the definition of repeat
  *   r = 1..Float::INFINITY
@@ -1818,6 +1927,19 @@ lazy_map_size(VALUE entry, VALUE receiver)
 static const lazyenum_funcs lazy_map_funcs = {
     lazy_map_proc, lazy_map_size,
 };
+
+/*
+ *  call-seq:
+ *     lazy.collect { |obj| block } -> lazy_enumerator
+ *     lazy.map     { |obj| block } -> lazy_enumerator
+ *
+ *  Like Enumerable#map, but chains operation to be lazy-evaluated.
+ *
+ *     (1..Float::INFINITY).lazy.map {|i| i**2 }
+ *     #=> #<Enumerator::Lazy: #<Enumerator::Lazy: 1..Infinity>:map>
+ *     (1..Float::INFINITY).lazy.map {|i| i**2 }.first(3)
+ *     #=> [1, 4, 9]
+ */
 
 static VALUE
 lazy_map(VALUE obj)
@@ -1895,9 +2017,9 @@ lazy_flat_map_proc(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
  *  A value <i>x</i> returned by <i>block</i> is decomposed if either of
  *  the following conditions is true:
  *
- *    a) <i>x</i> responds to both each and force, which means that
- *       <i>x</i> is a lazy enumerator.
- *    b) <i>x</i> is an array or responds to to_ary.
+ *  * a) <i>x</i> responds to both each and force, which means that
+ *    <i>x</i> is a lazy enumerator.
+ *  * b) <i>x</i> is an array or responds to to_ary.
  *
  *  Otherwise, <i>x</i> is contained as-is in the return value.
  *
@@ -1928,6 +2050,14 @@ static const lazyenum_funcs lazy_select_funcs = {
     lazy_select_proc, 0,
 };
 
+/*
+ *  call-seq:
+ *     lazy.find_all { |obj| block } -> lazy_enumerator
+ *     lazy.select   { |obj| block } -> lazy_enumerator
+ *     lazy.filter   { |obj| block } -> lazy_enumerator
+ *
+ *  Like Enumerable#select, but chains operation to be lazy-evaluated.
+ */
 static VALUE
 lazy_select(VALUE obj)
 {
@@ -1936,6 +2066,39 @@ lazy_select(VALUE obj)
     }
 
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_select_funcs);
+}
+
+static struct MEMO *
+lazy_filter_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+{
+    VALUE value = lazyenum_yield_values(proc_entry, result);
+    if (!RTEST(value)) return 0;
+    LAZY_MEMO_SET_VALUE(result, value);
+    LAZY_MEMO_RESET_PACKED(result);
+    return result;
+}
+
+static const lazyenum_funcs lazy_filter_map_funcs = {
+    lazy_filter_map_proc, 0,
+};
+
+/*
+ *  call-seq:
+ *     lazy.filter_map { |obj| block } -> lazy_enumerator
+ *
+ *  Like Enumerable#filter_map, but chains operation to be lazy-evaluated.
+ *
+ *     (1..).lazy.filter_map { |i| i * 2 if i.even? }.first(5) #=> [4, 8, 12, 16, 20]
+ */
+
+static VALUE
+lazy_filter_map(VALUE obj)
+{
+    if (!rb_block_given_p()) {
+        rb_raise(rb_eArgError, "tried to call lazy filter_map without a block");
+    }
+
+    return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_filter_map_funcs);
 }
 
 static struct MEMO *
@@ -1949,6 +2112,13 @@ lazy_reject_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_i
 static const lazyenum_funcs lazy_reject_funcs = {
     lazy_reject_proc, 0,
 };
+
+/*
+ *  call-seq:
+ *     lazy.reject { |obj| block } -> lazy_enumerator
+ *
+ *  Like Enumerable#reject, but chains operation to be lazy-evaluated.
+ */
 
 static VALUE
 lazy_reject(VALUE obj)
@@ -1991,6 +2161,14 @@ static const lazyenum_funcs lazy_grep_funcs = {
     lazy_grep_proc, 0,
 };
 
+/*
+ *  call-seq:
+ *     lazy.grep(pattern)                  -> lazy_enumerator
+ *     lazy.grep(pattern) { |obj| block }  -> lazy_enumerator
+ *
+ *  Like Enumerable#grep, but chains operation to be lazy-evaluated.
+ */
+
 static VALUE
 lazy_grep(VALUE obj, VALUE pattern)
 {
@@ -2029,6 +2207,14 @@ static const lazyenum_funcs lazy_grep_v_iter_funcs = {
 static const lazyenum_funcs lazy_grep_v_funcs = {
     lazy_grep_v_proc, 0,
 };
+
+/*
+ *  call-seq:
+ *     lazy.grep_v(pattern)                  -> lazy_enumerator
+ *     lazy.grep_v(pattern) { |obj| block }  -> lazy_enumerator
+ *
+ *  Like Enumerable#grep_v, but chains operation to be lazy-evaluated.
+ */
 
 static VALUE
 lazy_grep_v(VALUE obj, VALUE pattern)
@@ -2102,6 +2288,14 @@ lazy_zip_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, zip_args))
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     lazy.zip(arg, ...)                  -> lazy_enumerator
+ *     lazy.zip(arg, ...) { |arr| block }  -> nil
+ *
+ *  Like Enumerable#zip, but chains operation to be lazy-evaluated.
+ *  However, if a block is given to zip, values are enumerated immediately.
+ */
 static VALUE
 lazy_zip(int argc, VALUE *argv, VALUE obj)
 {
@@ -2170,6 +2364,13 @@ static const lazyenum_funcs lazy_take_funcs = {
     lazy_take_proc, lazy_take_size,
 };
 
+/*
+ *  call-seq:
+ *     lazy.take(n)               -> lazy_enumerator
+ *
+ *  Like Enumerable#take, but chains operation to be lazy-evaluated.
+ */
+
 static VALUE
 lazy_take(VALUE obj, VALUE n)
 {
@@ -2204,6 +2405,13 @@ lazy_take_while_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long me
 static const lazyenum_funcs lazy_take_while_funcs = {
     lazy_take_while_proc, 0,
 };
+
+/*
+ *  call-seq:
+ *     lazy.take_while { |obj| block } -> lazy_enumerator
+ *
+ *  Like Enumerable#take_while, but chains operation to be lazy-evaluated.
+ */
 
 static VALUE
 lazy_take_while(VALUE obj)
@@ -2252,6 +2460,13 @@ static const lazyenum_funcs lazy_drop_funcs = {
     lazy_drop_proc, lazy_drop_size,
 };
 
+/*
+ *  call-seq:
+ *     lazy.drop(n)               -> lazy_enumerator
+ *
+ *  Like Enumerable#drop, but chains operation to be lazy-evaluated.
+ */
+
 static VALUE
 lazy_drop(VALUE obj, VALUE n)
 {
@@ -2288,6 +2503,13 @@ lazy_drop_while_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long me
 static const lazyenum_funcs lazy_drop_while_funcs = {
     lazy_drop_while_proc, 0,
 };
+
+/*
+ *  call-seq:
+ *     lazy.drop_while { |obj| block }  -> lazy_enumerator
+ *
+ *  Like Enumerable#drop_while, but chains operation to be lazy-evaluated.
+ */
 
 static VALUE
 lazy_drop_while(VALUE obj)
@@ -2336,6 +2558,14 @@ static const lazyenum_funcs lazy_uniq_funcs = {
     lazy_uniq_proc, 0,
 };
 
+/*
+ *  call-seq:
+ *     lazy.uniq                -> lazy_enumerator
+ *     lazy.uniq { |item| ... } -> lazy_enumerator
+ *
+ *  Like Enumerable#uniq, but chains operation to be lazy-evaluated.
+ */
+
 static VALUE
 lazy_uniq(VALUE obj)
 {
@@ -2344,11 +2574,73 @@ lazy_uniq(VALUE obj)
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, funcs);
 }
 
+#if 0 /* for RDoc */
+
+/*
+ *  call-seq:
+ *     lazy.chunk { |elt| ... }                       -> lazy_enumerator
+ *
+ *  Like Enumerable#chunk, but chains operation to be lazy-evaluated.
+ */
+static VALUE lazy_chunk(VALUE self)
+{
+}
+
+/*
+ *  call-seq:
+ *     lazy.chunk_while {|elt_before, elt_after| bool } -> lazy_enumerator
+ *
+ *  Like Enumerable#chunk_while, but chains operation to be lazy-evaluated.
+ */
+static VALUE lazy_chunk_while(VALUE self)
+{
+}
+
+/*
+ *  call-seq:
+ *     lazy.slice_after(pattern)       -> lazy_enumerator
+ *     lazy.slice_after { |elt| bool } -> lazy_enumerator
+ *
+ *  Like Enumerable#slice_after, but chains operation to be lazy-evaluated.
+ */
+static VALUE lazy_slice_after(VALUE self)
+{
+}
+
+/*
+ *  call-seq:
+ *     lazy.slice_before(pattern)       -> lazy_enumerator
+ *     lazy.slice_before { |elt| bool } -> lazy_enumerator
+ *
+ *  Like Enumerable#slice_before, but chains operation to be lazy-evaluated.
+ */
+static VALUE lazy_slice_before(VALUE self)
+{
+}
+
+/*
+ *  call-seq:
+ *     lazy.slice_when {|elt_before, elt_after| bool } -> lazy_enumerator
+ *
+ *  Like Enumerable#slice_when, but chains operation to be lazy-evaluated.
+ */
+static VALUE lazy_slice_when(VALUE self)
+{
+}
+# endif
+
 static VALUE
 lazy_super(int argc, VALUE *argv, VALUE lazy)
 {
     return enumerable_lazy(rb_call_super(argc, argv));
 }
+
+/*
+ *  call-seq:
+ *     enum.lazy -> lazy_enumerator
+ *
+ *  Returns self.
+ */
 
 static VALUE
 lazy_lazy(VALUE obj)
@@ -2410,11 +2702,305 @@ stop_result(VALUE self)
 }
 
 /*
+ * Document-class: Enumerator::Chain
+ *
+ * Enumerator::Chain is a subclass of Enumerator, which represents a
+ * chain of enumerables that works as a single enumerator.
+ *
+ * This type of objects can be created by Enumerable#chain and
+ * Enumerator#+.
+ */
+
+static void
+enum_chain_mark(void *p)
+{
+    struct enum_chain *ptr = p;
+    rb_gc_mark_movable(ptr->enums);
+}
+
+static void
+enum_chain_compact(void *p)
+{
+    struct enum_chain *ptr = p;
+    ptr->enums = rb_gc_location(ptr->enums);
+}
+
+#define enum_chain_free RUBY_TYPED_DEFAULT_FREE
+
+static size_t
+enum_chain_memsize(const void *p)
+{
+    return sizeof(struct enum_chain);
+}
+
+static const rb_data_type_t enum_chain_data_type = {
+    "chain",
+    {
+        enum_chain_mark,
+        enum_chain_free,
+        enum_chain_memsize,
+        enum_chain_compact,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static struct enum_chain *
+enum_chain_ptr(VALUE obj)
+{
+    struct enum_chain *ptr;
+
+    TypedData_Get_Struct(obj, struct enum_chain, &enum_chain_data_type, ptr);
+    if (!ptr || ptr->enums == Qundef) {
+        rb_raise(rb_eArgError, "uninitialized chain");
+    }
+    return ptr;
+}
+
+/* :nodoc: */
+static VALUE
+enum_chain_allocate(VALUE klass)
+{
+    struct enum_chain *ptr;
+    VALUE obj;
+
+    obj = TypedData_Make_Struct(klass, struct enum_chain, &enum_chain_data_type, ptr);
+    ptr->enums = Qundef;
+    ptr->pos = -1;
+
+    return obj;
+}
+
+/*
+ * call-seq:
+ *   Enumerator::Chain.new(*enums) -> enum
+ *
+ * Generates a new enumerator object that iterates over the elements
+ * of given enumerable objects in sequence.
+ *
+ *   e = Enumerator::Chain.new(1..3, [4, 5])
+ *   e.to_a #=> [1, 2, 3, 4, 5]
+ *   e.size #=> 5
+ */
+static VALUE
+enum_chain_initialize(VALUE obj, VALUE enums)
+{
+    struct enum_chain *ptr;
+
+    rb_check_frozen(obj);
+    TypedData_Get_Struct(obj, struct enum_chain, &enum_chain_data_type, ptr);
+
+    if (!ptr) rb_raise(rb_eArgError, "unallocated chain");
+
+    ptr->enums = rb_obj_freeze(enums);
+    ptr->pos = -1;
+
+    return obj;
+}
+
+/* :nodoc: */
+static VALUE
+enum_chain_init_copy(VALUE obj, VALUE orig)
+{
+    struct enum_chain *ptr0, *ptr1;
+
+    if (!OBJ_INIT_COPY(obj, orig)) return obj;
+    ptr0 = enum_chain_ptr(orig);
+
+    TypedData_Get_Struct(obj, struct enum_chain, &enum_chain_data_type, ptr1);
+
+    if (!ptr1) rb_raise(rb_eArgError, "unallocated chain");
+
+    ptr1->enums = ptr0->enums;
+    ptr1->pos = ptr0->pos;
+
+    return obj;
+}
+
+static VALUE
+enum_chain_total_size(VALUE enums)
+{
+    VALUE total = INT2FIX(0);
+    long i;
+
+    for (i = 0; i < RARRAY_LEN(enums); i++) {
+        VALUE size = enum_size(RARRAY_AREF(enums, i));
+
+        if (NIL_P(size) || (RB_TYPE_P(size, T_FLOAT) && isinf(NUM2DBL(size)))) {
+            return size;
+        }
+        if (!RB_INTEGER_TYPE_P(size)) {
+            return Qnil;
+        }
+
+        total = rb_funcall(total, '+', 1, size);
+    }
+
+    return total;
+}
+
+/*
+ * call-seq:
+ *   obj.size -> int, Float::INFINITY or nil
+ *
+ * Returns the total size of the enumerator chain calculated by
+ * summing up the size of each enumerable in the chain.  If any of the
+ * enumerables reports its size as nil or Float::INFINITY, that value
+ * is returned as the total size.
+ */
+static VALUE
+enum_chain_size(VALUE obj)
+{
+    return enum_chain_total_size(enum_chain_ptr(obj)->enums);
+}
+
+static VALUE
+enum_chain_enum_size(VALUE obj, VALUE args, VALUE eobj)
+{
+    return enum_chain_size(obj);
+}
+
+static VALUE
+enum_chain_yield_block(VALUE arg, VALUE block, int argc, VALUE *argv)
+{
+    return rb_funcallv(block, id_call, argc, argv);
+}
+
+static VALUE
+enum_chain_enum_no_size(VALUE obj, VALUE args, VALUE eobj)
+{
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *   obj.each(*args) { |...| ... } -> obj
+ *   obj.each(*args) -> enumerator
+ *
+ * Iterates over the elements of the first enumerable by calling the
+ * "each" method on it with the given arguments, then proceeds to the
+ * following enumerables in sequence until all of the enumerables are
+ * exhausted.
+ *
+ * If no block is given, returns an enumerator.
+ */
+static VALUE
+enum_chain_each(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE enums, block;
+    struct enum_chain *objptr;
+    long i;
+
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, argc > 0 ? enum_chain_enum_no_size : enum_chain_enum_size);
+
+    objptr = enum_chain_ptr(obj);
+    enums = objptr->enums;
+    block = rb_block_proc();
+
+
+    for (i = 0; i < RARRAY_LEN(enums); i++) {
+        objptr->pos = i;
+        rb_block_call(RARRAY_AREF(enums, i), id_each, argc, argv, enum_chain_yield_block, block);
+    }
+
+    return obj;
+}
+
+/*
+ * call-seq:
+ *   obj.rewind -> obj
+ *
+ * Rewinds the enumerator chain by calling the "rewind" method on each
+ * enumerable in reverse order.  Each call is performed only if the
+ * enumerable responds to the method.
+ */
+static VALUE
+enum_chain_rewind(VALUE obj)
+{
+    struct enum_chain *objptr = enum_chain_ptr(obj);
+    VALUE enums = objptr->enums;
+    long i;
+
+    for (i = objptr->pos; 0 <= i && i < RARRAY_LEN(enums); objptr->pos = --i) {
+        rb_check_funcall(RARRAY_AREF(enums, i), id_rewind, 0, 0);
+    }
+
+    return obj;
+}
+
+static VALUE
+inspect_enum_chain(VALUE obj, VALUE dummy, int recur)
+{
+    VALUE klass = rb_obj_class(obj);
+    struct enum_chain *ptr;
+
+    TypedData_Get_Struct(obj, struct enum_chain, &enum_chain_data_type, ptr);
+
+    if (!ptr || ptr->enums == Qundef) {
+        return rb_sprintf("#<%"PRIsVALUE": uninitialized>", rb_class_path(klass));
+    }
+
+    if (recur) {
+        return rb_sprintf("#<%"PRIsVALUE": ...>", rb_class_path(klass));
+    }
+
+    return rb_sprintf("#<%"PRIsVALUE": %+"PRIsVALUE">", rb_class_path(klass), ptr->enums);
+}
+
+/*
+ * call-seq:
+ *   obj.inspect -> string
+ *
+ * Returns a printable version of the enumerator chain.
+ */
+static VALUE
+enum_chain_inspect(VALUE obj)
+{
+    return rb_exec_recursive(inspect_enum_chain, obj, 0);
+}
+
+/*
+ * call-seq:
+ *   e.chain(*enums) -> enumerator
+ *
+ * Returns an enumerator object generated from this enumerator and
+ * given enumerables.
+ *
+ *   e = (1..3).chain([4, 5])
+ *   e.to_a #=> [1, 2, 3, 4, 5]
+ */
+static VALUE
+enum_chain(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE enums = rb_ary_new_from_values(1, &obj);
+    rb_ary_cat(enums, argv, argc);
+
+    return enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
+}
+
+/*
+ * call-seq:
+ *   e + enum -> enumerator
+ *
+ * Returns an enumerator object generated from this enumerator and a
+ * given enumerable.
+ *
+ *   e = (1..3).each + [4, 5]
+ *   e.to_a #=> [1, 2, 3, 4, 5]
+ */
+static VALUE
+enumerator_plus(VALUE obj, VALUE eobj)
+{
+    VALUE enums = rb_ary_new_from_args(2, obj, eobj);
+
+    return enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
+}
+
+/*
  * Document-class: Enumerator::ArithmeticSequence
  *
  * Enumerator::ArithmeticSequence is a subclass of Enumerator,
  * that is a representation of sequences of numbers with common difference.
- * The instances of this class can be generated by Range#step and Numeric#step
+ * Instances of this class can be generated by the Range#step and Numeric#step
  * methods.
  */
 
@@ -2433,7 +3019,7 @@ rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
 }
 
 /*
- * call-seq: aseq.begin -> num
+ * call-seq: aseq.begin -> num or nil
  *
  * Returns the number that defines the first element of this arithmetic
  * sequence.
@@ -2484,6 +3070,27 @@ arith_seq_exclude_end_p(VALUE self)
     return RTEST(arith_seq_exclude_end(self));
 }
 
+int
+rb_arithmetic_sequence_extract(VALUE obj, rb_arithmetic_sequence_components_t *component)
+{
+    if (rb_obj_is_kind_of(obj, rb_cArithSeq)) {
+        component->begin = arith_seq_begin(obj);
+        component->end   = arith_seq_end(obj);
+        component->step  = arith_seq_step(obj);
+        component->exclude_end = arith_seq_exclude_end_p(obj);
+        return 1;
+    }
+    else if (rb_obj_is_kind_of(obj, rb_cRange)) {
+        component->begin = RANGE_BEG(obj);
+        component->end   = RANGE_END(obj);
+        component->step  = INT2FIX(1);
+        component->exclude_end = RTEST(RANGE_EXCL(obj));
+        return 1;
+    }
+
+    return 0;
+}
+
 /*
  * call-seq:
  *   aseq.first -> num or nil
@@ -2495,27 +3102,135 @@ arith_seq_exclude_end_p(VALUE self)
 static VALUE
 arith_seq_first(int argc, VALUE *argv, VALUE self)
 {
-    VALUE b, e, s, len_1;
+    VALUE b, e, s, ary;
+    long n;
+    int x;
+
+    rb_check_arity(argc, 0, 1);
 
     b = arith_seq_begin(self);
     e = arith_seq_end(self);
     s = arith_seq_step(self);
-
-    if (!NIL_P(e)) {
-        len_1 = rb_int_idiv(rb_int_minus(e, b), s);
-        if (rb_num_negative_int_p(len_1)) {
-            if (argc == 0) {
+    if (argc == 0) {
+        if (NIL_P(b)) {
+            return Qnil;
+        }
+        if (!NIL_P(e)) {
+            VALUE zero = INT2FIX(0);
+            int r = rb_cmpint(rb_num_coerce_cmp(s, zero, idCmp), s, zero);
+            if (r > 0 && RTEST(rb_funcall(b, '>', 1, e))) {
                 return Qnil;
             }
-            return rb_ary_new_capa(0);
+            if (r < 0 && RTEST(rb_funcall(b, '<', 1, e))) {
+                return Qnil;
+            }
         }
-    }
-
-    if (argc == 0) {
         return b;
     }
 
-    /* TODO: optimization */
+    // TODO: the following code should be extracted as arith_seq_take
+
+    n = NUM2LONG(argv[0]);
+    if (n < 0) {
+        rb_raise(rb_eArgError, "attempt to take negative size");
+    }
+    if (n == 0) {
+        return rb_ary_new_capa(0);
+    }
+
+    x = arith_seq_exclude_end_p(self);
+
+    if (FIXNUM_P(b) && NIL_P(e) && FIXNUM_P(s)) {
+        long i = FIX2LONG(b), unit = FIX2LONG(s);
+        ary = rb_ary_new_capa(n);
+        while (n > 0 && FIXABLE(i)) {
+            rb_ary_push(ary, LONG2FIX(i));
+            i += unit;  // FIXABLE + FIXABLE never overflow;
+            --n;
+        }
+        if (n > 0) {
+            b = LONG2NUM(i);
+            while (n > 0) {
+                rb_ary_push(ary, b);
+                b = rb_big_plus(b, s);
+                --n;
+            }
+        }
+        return ary;
+    }
+    else if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(s)) {
+        long i = FIX2LONG(b);
+        long end = FIX2LONG(e);
+        long unit = FIX2LONG(s);
+        long len;
+
+        if (unit >= 0) {
+            if (!x) end += 1;
+
+            len = end - i;
+            if (len < 0) len = 0;
+            ary = rb_ary_new_capa((n < len) ? n : len);
+            while (n > 0 && i < end) {
+                rb_ary_push(ary, LONG2FIX(i));
+                if (i + unit < i) break;
+                i += unit;
+                --n;
+            }
+        }
+        else {
+            if (!x) end -= 1;
+
+            len = i - end;
+            if (len < 0) len = 0;
+            ary = rb_ary_new_capa((n < len) ? n : len);
+            while (n > 0 && i > end) {
+                rb_ary_push(ary, LONG2FIX(i));
+                if (i + unit > i) break;
+                i += unit;
+                --n;
+            }
+        }
+        return ary;
+    }
+    else if (RB_FLOAT_TYPE_P(b) || RB_FLOAT_TYPE_P(e) || RB_FLOAT_TYPE_P(s)) {
+        /* generate values like ruby_float_step */
+
+        double unit = NUM2DBL(s);
+        double beg = NUM2DBL(b);
+        double end = NIL_P(e) ? (unit < 0 ? -1 : 1)*HUGE_VAL : NUM2DBL(e);
+        double len = ruby_float_step_size(beg, end, unit, x);
+        long i;
+
+        if (n > len)
+            n = (long)len;
+
+        if (isinf(unit)) {
+            if (len > 0) {
+                ary = rb_ary_new_capa(1);
+                rb_ary_push(ary, DBL2NUM(beg));
+            }
+            else {
+                ary = rb_ary_new_capa(0);
+            }
+        }
+        else if (unit == 0) {
+            VALUE val = DBL2NUM(beg);
+            ary = rb_ary_new_capa(n);
+            for (i = 0; i < len; ++i) {
+                rb_ary_push(ary, val);
+            }
+        }
+        else {
+            ary = rb_ary_new_capa(n);
+            for (i = 0; i < n; ++i) {
+                double d = i*unit+beg;
+                if (unit >= 0 ? end < d : d < end) d = end;
+                rb_ary_push(ary, DBL2NUM(d));
+            }
+        }
+
+        return ary;
+    }
 
     return rb_call_super(argc, argv);
 }
@@ -2713,8 +3428,10 @@ arith_seq_hash(VALUE self)
     hash = rb_hash_uint(hash, NUM2LONG(v));
     hash = rb_hash_end(hash);
 
-    return LONG2FIX(hash);
+    return ST2FIX(hash);
 }
+
+#define NUM_GE(x, y) RTEST(rb_num_coerce_relop((x), (y), idGE))
 
 struct arith_seq_gen {
     VALUE current;
@@ -2769,13 +3486,13 @@ arith_seq_each(VALUE self)
     }
 
     if (rb_num_negative_int_p(s)) {
-        while (RTEST(rb_int_ge(c, last))) {
+        while (NUM_GE(c, last)) {
             rb_yield(c);
             c = rb_int_plus(c, s);
         }
     }
     else {
-        while (RTEST(rb_int_ge(last, c))) {
+        while (NUM_GE(last, c)) {
             rb_yield(c);
             c = rb_int_plus(c, s);
         }
@@ -2788,14 +3505,15 @@ static double
 arith_seq_float_step_size(double beg, double end, double step, int excl)
 {
     double const epsilon = DBL_EPSILON;
-    double n = (end - beg) / step;
-    double err = (fabs(beg) + fabs(end) + fabs(end - beg)) / fabs(step) * epsilon;
+    double n, err;
 
-    if (isinf(step)) {
-        return step > 0 ? beg <= end : beg >= end;
-    }
     if (step == 0) {
         return HUGE_VAL;
+    }
+    n = (end - beg) / step;
+    err = (fabs(beg) + fabs(end) + fabs(end - beg)) / fabs(step) * epsilon;
+    if (isinf(step)) {
+        return step > 0 ? beg <= end : beg >= end;
     }
     if (err > 0.5) err = 0.5;
     if (excl) {
@@ -2904,6 +3622,8 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
     rb_define_method(rb_cEnumerator, "inspect", enumerator_inspect, 0);
     rb_define_method(rb_cEnumerator, "size", enumerator_size, 0);
+    rb_define_method(rb_cEnumerator, "+", enumerator_plus, 1);
+    rb_define_method(rb_mEnumerable, "chain", enum_chain, -1);
 
     /* Lazy */
     rb_cLazy = rb_define_class_under(rb_cEnumerator, "Lazy", rb_cEnumerator);
@@ -2918,6 +3638,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "select", lazy_select, 0);
     rb_define_method(rb_cLazy, "find_all", lazy_select, 0);
     rb_define_method(rb_cLazy, "filter", lazy_select, 0);
+    rb_define_method(rb_cLazy, "filter_map", lazy_filter_map, 0);
     rb_define_method(rb_cLazy, "reject", lazy_reject, 0);
     rb_define_method(rb_cLazy, "grep", lazy_grep, 1);
     rb_define_method(rb_cLazy, "grep_v", lazy_grep_v, 1);
@@ -2936,6 +3657,11 @@ InitVM_Enumerator(void)
 
 #if 0 /* for RDoc */
     rb_define_method(rb_cLazy, "to_a", lazy_to_a, 0);
+    rb_define_method(rb_cLazy, "chunk", lazy_chunk, 0);
+    rb_define_method(rb_cLazy, "chunk_while", lazy_chunk_while, 0);
+    rb_define_method(rb_cLazy, "slice_after", lazy_slice_after, 0);
+    rb_define_method(rb_cLazy, "slice_before", lazy_slice_before, 0);
+    rb_define_method(rb_cLazy, "slice_when", lazy_slice_when, 0);
 #endif
     rb_define_alias(rb_cLazy, "force", "to_a");
 
@@ -2956,6 +3682,17 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cYielder, "initialize", yielder_initialize, 0);
     rb_define_method(rb_cYielder, "yield", yielder_yield, -2);
     rb_define_method(rb_cYielder, "<<", yielder_yield_push, 1);
+    rb_define_method(rb_cYielder, "to_proc", yielder_to_proc, 0);
+
+    /* Chain */
+    rb_cEnumChain = rb_define_class_under(rb_cEnumerator, "Chain", rb_cEnumerator);
+    rb_define_alloc_func(rb_cEnumChain, enum_chain_allocate);
+    rb_define_method(rb_cEnumChain, "initialize", enum_chain_initialize, -2);
+    rb_define_method(rb_cEnumChain, "initialize_copy", enum_chain_init_copy, 1);
+    rb_define_method(rb_cEnumChain, "each", enum_chain_each, -1);
+    rb_define_method(rb_cEnumChain, "size", enum_chain_size, 0);
+    rb_define_method(rb_cEnumChain, "rewind", enum_chain_rewind, 0);
+    rb_define_method(rb_cEnumChain, "inspect", enum_chain_inspect, 0);
 
     /* ArithmeticSequence */
     rb_cArithSeq = rb_define_class_under(rb_cEnumerator, "ArithmeticSequence", rb_cEnumerator);
@@ -2998,6 +3735,7 @@ Init_Enumerator(void)
     id_exclude_end = rb_intern("exclude_end");
     sym_each = ID2SYM(id_each);
     sym_cycle = ID2SYM(rb_intern("cycle"));
+    sym_yield = ID2SYM(rb_intern("yield"));
 
     InitVM(Enumerator);
 }

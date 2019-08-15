@@ -159,7 +159,7 @@ describe "The return keyword" do
     end
 
     it "executes the ensure clause when begin/ensure are inside a lambda" do
-      lambda do
+      -> do
         begin
           return
         ensure
@@ -176,15 +176,15 @@ describe "The return keyword" do
     end
 
     it "causes lambda to return nil if invoked without any arguments" do
-      lambda { return; 456 }.call.should be_nil
+      -> { return; 456 }.call.should be_nil
     end
 
     it "causes lambda to return nil if invoked with an empty expression" do
-      lambda { return (); 456 }.call.should be_nil
+      -> { return (); 456 }.call.should be_nil
     end
 
     it "causes lambda to return the value passed to return" do
-      lambda { return 123; 456 }.call.should == 123
+      -> { return 123; 456 }.call.should == 123
     end
 
     it "causes the method that lexically encloses the block to return" do
@@ -362,7 +362,7 @@ describe "The return keyword" do
           END_OF_CODE
         end
 
-        ruby_bug "#14061", "2.4"..."2.6" do
+        ruby_bug "#14061", "2.4"..."2.5" do
           it "fires ensure block before returning while loads file" do
             File.write(@filename, <<-END_OF_CODE)
               ScratchPad << "before begin"
@@ -413,7 +413,7 @@ describe "The return keyword" do
         ruby_version_is ""..."2.5" do
           it "is allowed" do
             File.write(@filename, <<-END_OF_CODE)
-              class A
+              class ReturnSpecs::A
                 ScratchPad << "before return"
                 return
 
@@ -429,7 +429,7 @@ describe "The return keyword" do
         ruby_version_is "2.5" do
           it "raises a SyntaxError" do
             File.write(@filename, <<-END_OF_CODE)
-              class A
+              class ReturnSpecs::A
                 ScratchPad << "before return"
                 return
 
@@ -439,6 +439,21 @@ describe "The return keyword" do
 
             -> { load @filename }.should raise_error(SyntaxError)
           end
+        end
+      end
+
+      describe "within a block within a class" do
+        it "is allowed" do
+          File.write(@filename, <<-END_OF_CODE)
+            class ReturnSpecs::A
+              ScratchPad << "before return"
+              1.times { return }
+              ScratchPad << "after return"
+            end
+          END_OF_CODE
+
+          load @filename
+          ScratchPad.recorded.should == ["before return"]
         end
       end
 
@@ -469,13 +484,26 @@ describe "The return keyword" do
       end
 
       describe "return with argument" do
-        # https://bugs.ruby-lang.org/issues/14062
-        it "does not affect exit status" do
-          ruby_exe(<<-END_OF_CODE).should == ""
-            return 10
-          END_OF_CODE
+        ruby_version_is ""..."2.7" do
+          it "does not affect exit status" do
+            ruby_exe(<<-END_OF_CODE).should == ""
+              return 10
+            END_OF_CODE
 
-          $?.exitstatus.should == 0
+            $?.exitstatus.should == 0
+          end
+        end
+
+        ruby_version_is "2.7" do
+          it "warns but does not affect exit status" do
+            ruby_exe(<<-END_OF_CODE).should == "-e: warning: argument of top-level return is ignored\n"
+              $stderr.reopen($stdout)
+              system(ENV['RUBY_EXE'], '-e', 'return 10')
+              exit($?.exitstatus)
+            END_OF_CODE
+
+            $?.exitstatus.should == 0
+          end
         end
       end
     end

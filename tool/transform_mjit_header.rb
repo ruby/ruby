@@ -27,6 +27,7 @@ module MJITHeader
   # These macros are relied on this script's transformation
   PREFIXED_MACROS = [
     'ALWAYS_INLINE',
+    'inline',
   ]
 
   # For MinGW's ras.h. Those macros have its name in its definition and can't be preprocessed multiple times.
@@ -52,6 +53,8 @@ module MJITHeader
     'vm_opt_gt',
     'vm_opt_ge',
     'vm_opt_ltlt',
+    'vm_opt_and',
+    'vm_opt_or',
     'vm_opt_aref',
     'vm_opt_aset',
     'vm_opt_aref_with',
@@ -145,8 +148,10 @@ module MJITHeader
   end
 
   def self.write(code, out)
-    FileUtils.mkdir_p(File.dirname(out))
-    File.binwrite("#{out}.new", code)
+    # create with strict permission, then will install proper
+    # permission
+    FileUtils.mkdir_p(File.dirname(out), mode: 0700)
+    File.binwrite("#{out}.new", code, perm: 0600)
     FileUtils.mv("#{out}.new", out)
   end
 
@@ -179,10 +184,17 @@ module MJITHeader
   end
 
   def self.with_code(code)
-    Tempfile.open(['', '.c'], mode: File::BINARY) do |f|
+    # for `system_header` pragma which can't be in the main file.
+    Tempfile.open(['', '.h'], mode: File::BINARY) do |f|
       f.puts code
       f.close
-      return yield(f.path)
+      Tempfile.open(['', '.c'], mode: File::BINARY) do |c|
+        c.puts <<SRC
+#include "#{f.path}"
+SRC
+        c.close
+        return yield(c.path)
+      end
     end
   end
   private_class_method :with_code
@@ -218,6 +230,11 @@ if MJITHeader.windows? # transformation is broken with Windows headers for now
 end
 
 macro, code = MJITHeader.separate_macro_and_code(code) # note: this does not work on MinGW
+code = <<header + code
+#ifdef __GNUC__
+# pragma GCC system_header
+#endif
+header
 code_to_check = "#{code}#{macro}" # macro should not affect code again
 
 if MJITHeader.conflicting_types?(code_to_check, cc, cflags)
