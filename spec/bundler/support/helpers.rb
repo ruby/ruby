@@ -322,8 +322,6 @@ module Spec
       end
     end
 
-    alias_method :install_gem, :install_gems
-
     def with_gem_path_as(path)
       backup = ENV.to_hash
       ENV["GEM_HOME"] = path.to_s
