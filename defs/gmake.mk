@@ -190,7 +190,7 @@ checkout-github: fetch-github
 	git -C "$(srcdir)" checkout "gh-$(PR)"
 
 .PHONY: update-github
-update-github: checkout-github
+update-github: fetch-github
 	$(eval PULL_REQUEST_API := https://api.github.com/repos/ruby/ruby/pulls/$(PR))
 	$(eval PULL_REQUEST_FORK_BRANCH := $(shell \
 	  curl -s $(if $(GITHUB_TOKEN),-H "Authorization: bearer $(GITHUB_TOKEN)") $(PULL_REQUEST_API) | \
@@ -198,10 +198,13 @@ update-github: checkout-github
 	))
 	$(eval FORK_REPO := $(shell echo $(PULL_REQUEST_FORK_BRANCH) | cut -d' ' -f1))
 	$(eval PR_BRANCH := $(shell echo $(PULL_REQUEST_FORK_BRANCH) | cut -d' ' -f2))
-	git merge master --no-edit
-	git remote get-url fork-$(PR) || git remote add fork-$(PR) git@github.com:$(FORK_REPO).git
-	git push fork-$(PR) gh-$(PR):$(PR_BRANCH)
-	git remote rm fork-$(PR)
+
+	$(eval GITHUB_UPDATE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(PR)-XXXXXX"))
+	git -C "$(srcdir)" worktree add $(notdir $(GITHUB_UPDATE_WORKTREE)) "gh-$(PR)"
+	git -C "$(GITHUB_UPDATE_WORKTREE)" merge master --no-edit
+	@$(BASERUBY) -e 'print "Are you sure to push this to PR=$(PR)? [Y/n]: "; exit(gets.chomp == "n" ? 1 : 0)'
+	git -C "$(GITHUB_UPDATE_WORKTREE)" remote add fork-$(PR) git@github.com:$(FORK_REPO).git
+	git -C "$(GITHUB_UPDATE_WORKTREE)" push fork-$(PR) gh-$(PR):$(PR_BRANCH)
 
 .PHONY: pull-github
 pull-github: fetch-github
