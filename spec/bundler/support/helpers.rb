@@ -201,7 +201,7 @@ module Spec
     end
 
     def gem_command(command, args = "", options = {})
-      if command == :exec && !options[:no_quote]
+      if command == :exec
         args = args.gsub(/(?=")/, "\\")
         args = %("#{args}")
       end
