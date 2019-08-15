@@ -52,7 +52,6 @@ class TestNumeric < Test::Unit::TestCase
     end.new
     assert_equal(-1, -a)
 
-    bug7688 = '[ruby-core:51389] [Bug #7688]'
     a = Class.new(Numeric) do
       def coerce(x); raise StandardError, "my error"; end
     end.new
@@ -260,17 +259,25 @@ class TestNumeric < Test::Unit::TestCase
     assert_raise(ArgumentError) { 1.step(10, 1, 0) { } }
     assert_raise(ArgumentError) { 1.step(10, 1, 0).size }
     assert_raise(ArgumentError) { 1.step(10, 0) { } }
-    assert_raise(ArgumentError) { 1.step(10, 0).size }
     assert_raise(ArgumentError) { 1.step(10, "1") { } }
     assert_raise(ArgumentError) { 1.step(10, "1").size }
     assert_raise(TypeError) { 1.step(10, nil) { } }
-    assert_raise(TypeError) { 1.step(10, nil).size }
+    assert_nothing_raised { 1.step(10, 0).size }
+    assert_nothing_raised { 1.step(10, nil).size }
     assert_nothing_raised { 1.step(by: 0, to: nil) }
     assert_nothing_raised { 1.step(by: 0, to: nil).size }
     assert_nothing_raised { 1.step(by: 0) }
     assert_nothing_raised { 1.step(by: 0).size }
     assert_nothing_raised { 1.step(by: nil) }
     assert_nothing_raised { 1.step(by: nil).size }
+
+    assert_kind_of(Enumerator::ArithmeticSequence, 1.step(10))
+    assert_kind_of(Enumerator::ArithmeticSequence, 1.step(10, 2))
+    assert_kind_of(Enumerator::ArithmeticSequence, 1.step(10, by: 2))
+    assert_kind_of(Enumerator::ArithmeticSequence, 1.step(by: 2))
+    assert_kind_of(Enumerator::ArithmeticSequence, 1.step(by: 2, to: nil))
+    assert_kind_of(Enumerator::ArithmeticSequence, 1.step(by: 2, to: 10))
+    assert_kind_of(Enumerator::ArithmeticSequence, 1.step(by: -1))
 
     bug9811 = '[ruby-dev:48177] [Bug #9811]'
     assert_raise(ArgumentError, bug9811) { 1.step(10, foo: nil) {} }
@@ -329,6 +336,20 @@ class TestNumeric < Test::Unit::TestCase
     assert_step [bignum]*4, [bignum, by: 0.0], inf: true
     assert_step [bignum]*4, [bignum, by: 0, to: bignum+1], inf: true
     assert_step [bignum]*4, [bignum, by: 0, to: 0], inf: true
+  end
+
+  def test_step_bug15537
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10.0, 1, -2]
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10.0, to: 1, by: -2]
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10.0, 1, -2]
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10, to: 1.0, by: -2]
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10, 1.0, -2]
+
+    assert_step [10.0, 9.0, 8.0, 7.0], [10, by: -1.0], inf: true
+    assert_step [10.0, 9.0, 8.0, 7.0], [10, by: -1.0, to: nil], inf: true
+    assert_step [10.0, 9.0, 8.0, 7.0], [10, nil, -1.0], inf: true
+    assert_step [10.0, 9.0, 8.0, 7.0], [10.0, by: -1], inf: true
+    assert_step [10.0, 9.0, 8.0, 7.0], [10.0, nil, -1], inf: true
   end
 
   def test_num2long

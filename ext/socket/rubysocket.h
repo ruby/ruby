@@ -26,7 +26,13 @@
 #  if defined(_MSC_VER)
 #    undef HAVE_TYPE_STRUCT_SOCKADDR_DL
 #  endif
+/*
+ * FIXME: failures if we make nonblocking the default
+ * [ruby-core:89973] [ruby-core:89976] [ruby-core:89977] [Bug #14968]
+ */
+#  define RSOCK_NONBLOCK_DEFAULT (0)
 #else
+#  define RSOCK_NONBLOCK_DEFAULT (0)
 #  include <sys/socket.h>
 #  include <netinet/in.h>
 #  ifdef HAVE_NETINET_IN_SYSTM_H
@@ -408,7 +414,7 @@ NORETURN(void rsock_sys_fail_raddrinfo_or_sockaddr(const char *, VALUE addr, VAL
  * all cases.  For some syscalls (e.g. accept/accept4), blocking on the
  * syscall instead of relying on select/poll allows the kernel to use
  * "wake-one" behavior and avoid the thundering herd problem.
- * This is likely safe on all other *nix-like systems, so this whitelist
+ * This is likely safe on all other *nix-like systems, so this safe list
  * can be expanded by interested parties.
  */
 #if defined(__linux__)
@@ -432,6 +438,8 @@ static inline void rsock_maybe_wait_fd(int fd) { }
 
 VALUE rsock_read_nonblock(VALUE sock, VALUE length, VALUE buf, VALUE ex);
 VALUE rsock_write_nonblock(VALUE sock, VALUE buf, VALUE ex);
+
+void rsock_make_fd_nonblock(int fd);
 
 #if !defined HAVE_INET_NTOP && ! defined _WIN32
 const char *inet_ntop(int, const void *, char *, size_t);

@@ -21,14 +21,13 @@ class TestGemRequestSetLockfile < Gem::TestCase
     @set.instance_variable_set :@vendor_set, @vendor_set
 
     @gem_deps_file = 'gem.deps.rb'
-
   end
 
   def lockfile
     Gem::RequestSet::Lockfile.build @set, @gem_deps_file
   end
 
-  def write_lockfile lockfile
+  def write_lockfile(lockfile)
     @lock_file = File.expand_path "#{@gem_deps_file}.lock"
 
     File.open @lock_file, 'w' do |io|
@@ -467,4 +466,5 @@ DEPENDENCIES
 
     assert_equal 'hello', File.read(gem_deps_lock_file)
   end
+
 end

@@ -315,6 +315,9 @@ static const struct st_features features[] = {
 #define RESERVED_HASH_VAL (~(st_hash_t) 0)
 #define RESERVED_HASH_SUBSTITUTION_VAL ((st_hash_t) 0)
 
+const st_hash_t st_reserved_hash_val = RESERVED_HASH_VAL;
+const st_hash_t st_reserved_hash_substitution_val = RESERVED_HASH_SUBSTITUTION_VAL;
+
 /* Return hash value of KEY for table TAB.  */
 static inline st_hash_t
 do_hash(st_data_t key, st_table *tab)
@@ -1196,7 +1199,7 @@ st_insert(st_table *tab, st_data_t key, st_data_t value)
 
 /* Insert (KEY, VALUE, HASH) into table TAB.  The table should not have
    entry with KEY before the insertion.  */
-static inline void
+void
 st_add_direct_with_hash(st_table *tab,
 			st_data_t key, st_data_t value, st_hash_t hash)
 {
@@ -1545,7 +1548,7 @@ st_update(st_table *tab, st_data_t key,
    different for ST_CHECK and when the current element is removed
    during traversing.  */
 static inline int
-st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
+st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg,
 		   int check_p)
 {
     st_index_t bin;
@@ -1569,6 +1572,15 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
 	rebuilds_num = tab->rebuilds_num;
 	hash = curr_entry_ptr->hash;
 	retval = (*func)(key, curr_entry_ptr->record, arg, 0);
+
+        if (retval == ST_REPLACE && replace) {
+            st_data_t value;
+            value = curr_entry_ptr->record;
+            retval = (*replace)(&key, &value, arg, TRUE);
+            curr_entry_ptr->key = key;
+            curr_entry_ptr->record = value;
+        }
+
 	if (rebuilds_num != tab->rebuilds_num) {
 	retry:
 	    entries = tab->entries;
@@ -1597,6 +1609,8 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
 	    curr_entry_ptr = &entries[i];
 	}
 	switch (retval) {
+            case ST_REPLACE:
+                break;
 	  case ST_CONTINUE:
 	      break;
 	  case ST_CHECK:
@@ -1645,9 +1659,15 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
 }
 
 int
+st_foreach_with_replace(st_table *tab, int (*func)(ANYARGS), st_update_callback_func *replace, st_data_t arg)
+{
+    return st_general_foreach(tab, func, replace, arg, TRUE);
+}
+
+int
 st_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg)
 {
-    return st_general_foreach(tab, func, arg, FALSE);
+    return st_general_foreach(tab, func, NULL, arg, FALSE);
 }
 
 /* See comments for function st_delete_safe.  */
@@ -1655,7 +1675,7 @@ int
 st_foreach_check(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
                  st_data_t never ATTRIBUTE_UNUSED)
 {
-    return st_general_foreach(tab, func, arg, TRUE);
+    return st_general_foreach(tab, func, NULL, arg, TRUE);
 }
 
 /* Set up array KEYS by at most SIZE keys of head table TAB entries.
@@ -1766,6 +1786,10 @@ st_values_check(st_table *tab, st_data_t *values, st_index_t size,
 #define C1 BIG_CONSTANT(0x87c37b91,0x114253d5);
 #define C2 BIG_CONSTANT(0x4cf5ad43,0x2745937f);
 #endif
+NO_SANITIZE("unsigned-integer-overflow", static inline st_index_t murmur_step(st_index_t h, st_index_t k));
+NO_SANITIZE("unsigned-integer-overflow", static inline st_index_t murmur_finish(st_index_t h));
+NO_SANITIZE("unsigned-integer-overflow", extern st_index_t st_hash(const void *ptr, size_t len, st_index_t h));
+
 static inline st_index_t
 murmur_step(st_index_t h, st_index_t k)
 {
@@ -1969,6 +1993,7 @@ st_hash_uint32(st_index_t h, uint32_t i)
     return murmur_step(h, i);
 }
 
+NO_SANITIZE("unsigned-integer-overflow", extern st_index_t st_hash_uint(st_index_t h, st_index_t i));
 st_index_t
 st_hash_uint(st_index_t h, st_index_t i)
 {
@@ -2006,18 +2031,18 @@ strhash(st_data_t arg)
 int
 st_locale_insensitive_strcasecmp(const char *s1, const char *s2)
 {
-    unsigned int c1, c2;
+    char c1, c2;
 
     while (1) {
-        c1 = (unsigned char)*s1++;
-        c2 = (unsigned char)*s2++;
+        c1 = *s1++;
+        c2 = *s2++;
         if (c1 == '\0' || c2 == '\0') {
             if (c1 != '\0') return 1;
             if (c2 != '\0') return -1;
             return 0;
         }
-        if ((unsigned int)(c1 - 'A') <= ('Z' - 'A')) c1 += 'a' - 'A';
-        if ((unsigned int)(c2 - 'A') <= ('Z' - 'A')) c2 += 'a' - 'A';
+        if (('A' <= c1) && (c1 <= 'Z')) c1 += 'a' - 'A';
+        if (('A' <= c2) && (c2 <= 'Z')) c2 += 'a' - 'A';
         if (c1 != c2) {
             if (c1 > c2)
                 return 1;
@@ -2030,18 +2055,19 @@ st_locale_insensitive_strcasecmp(const char *s1, const char *s2)
 int
 st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n)
 {
-    unsigned int c1, c2;
+    char c1, c2;
+    size_t i;
 
-    while (n--) {
-        c1 = (unsigned char)*s1++;
-        c2 = (unsigned char)*s2++;
+    for (i = 0; i < n; i++) {
+        c1 = *s1++;
+        c2 = *s2++;
         if (c1 == '\0' || c2 == '\0') {
             if (c1 != '\0') return 1;
             if (c2 != '\0') return -1;
             return 0;
         }
-        if ((unsigned int)(c1 - 'A') <= ('Z' - 'A')) c1 += 'a' - 'A';
-        if ((unsigned int)(c2 - 'A') <= ('Z' - 'A')) c2 += 'a' - 'A';
+        if (('A' <= c1) && (c1 <= 'Z')) c1 += 'a' - 'A';
+        if (('A' <= c2) && (c2 <= 'Z')) c2 += 'a' - 'A';
         if (c1 != c2) {
             if (c1 > c2)
                 return 1;
@@ -2052,7 +2078,7 @@ st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n)
     return 0;
 }
 
-PUREFUNC(static st_index_t strcasehash(st_data_t));
+NO_SANITIZE("unsigned-integer-overflow", PUREFUNC(static st_index_t strcasehash(st_data_t)));
 static st_index_t
 strcasehash(st_data_t arg)
 {
@@ -2178,13 +2204,13 @@ st_rehash_indexed(st_table *tab)
         ind = hash_bin(p->hash, tab);
         for(;;) {
             st_index_t bin = get_bin(bins, size_ind, ind);
-            st_table_entry *q = &tab->entries[bin - ENTRY_BASE];
             if (EMPTY_OR_DELETED_BIN_P(bin)) {
                 /* ok, new room */
                 set_bin(bins, size_ind, ind, i + ENTRY_BASE);
                 break;
             }
             else {
+                st_table_entry *q = &tab->entries[bin - ENTRY_BASE];
 		DO_PTR_EQUAL_CHECK(tab, q, p->hash, p->key, eq_p, rebuilt_p);
 		if (EXPECT(rebuilt_p, 0))
 		    return TRUE;
@@ -2281,24 +2307,16 @@ st_insert_generic(st_table *tab, long argc, const VALUE *argv, VALUE hash)
     st_rehash(tab);
 }
 
-/* Mimics ruby's { foo => bar } syntax. This function is placed here
-   because it touches table internals and write barriers at once. */
+/* Mimics ruby's { foo => bar } syntax. This function is subpart
+   of rb_hash_bulk_insert. */
 void
-rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
+rb_hash_bulk_insert_into_st_table(long argc, const VALUE *argv, VALUE hash)
 {
-    st_index_t n;
-    st_table *tab = RHASH(hash)->ntbl;
+    st_index_t n, size = argc / 2;
+    st_table *tab = RHASH_ST_TABLE(hash);
 
-    st_assert(argc % 2 == 0);
-    if (! argc)
-        return;
-    if (! tab) {
-        VALUE tmp = rb_hash_new_with_size(argc / 2);
-        RBASIC_CLEAR_CLASS(tmp);
-        RHASH(hash)->ntbl = tab = RHASH(tmp)->ntbl;
-        RHASH(tmp)->ntbl = NULL;
-    }
-    n = tab->num_entries + argc / 2;
+    tab = RHASH_TBL_RAW(hash);
+    n = tab->entries_bound + size;
     st_expand_table(tab, n);
     if (UNLIKELY(tab->num_entries))
         st_insert_generic(tab, argc, argv, hash);

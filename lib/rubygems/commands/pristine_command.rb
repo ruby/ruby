@@ -46,6 +46,12 @@ class Gem::Commands::PristineCommand < Gem::Command
       options[:env_shebang] = value
     end
 
+    add_option('-n', '--bindir DIR',
+               'Directory where executables are',
+               'located') do |value, options|
+      options[:bin_dir] = File.expand_path(value)
+    end
+
     add_version_option('restore to', 'pristine condition')
   end
 
@@ -82,13 +88,13 @@ extensions will be restored.
   end
 
   def execute
-    specs = if options[:all] then
+    specs = if options[:all]
               Gem::Specification.map
 
             # `--extensions` must be explicitly given to pristine only gems
             # with extensions.
             elsif options[:extensions_set] and
-                  options[:extensions] and options[:args].empty? then
+                  options[:extensions] and options[:args].empty?
               Gem::Specification.select do |spec|
                 spec.extensions and not spec.extensions.empty?
               end
@@ -98,7 +104,9 @@ extensions will be restored.
               end.flatten
             end
 
-    if specs.to_a.empty? then
+    specs = specs.select{|spec| RUBY_ENGINE == spec.platform || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }
+
+    if specs.to_a.empty?
       raise Gem::Exception,
             "Failed to find gems #{options[:args]} #{options[:version]}"
     end
@@ -123,19 +131,14 @@ extensions will be restored.
         end
       end
 
-      if spec.bundled_gem_in_old_ruby?
-        say "Skipped #{spec.full_name}, it is bundled with old Ruby"
-        next
-      end
-
-      unless spec.extensions.empty? or options[:extensions] or options[:only_executables] then
+      unless spec.extensions.empty? or options[:extensions] or options[:only_executables]
         say "Skipped #{spec.full_name}, it needs to compile an extension"
         next
       end
 
       gem = spec.cache_file
 
-      unless File.exist? gem or options[:only_executables] then
+      unless File.exist? gem or options[:only_executables]
         require 'rubygems/remote_fetcher'
 
         say "Cached gem for #{spec.full_name} not found, attempting to fetch..."
@@ -153,12 +156,14 @@ extensions will be restored.
       end
 
       env_shebang =
-        if options.include? :env_shebang then
+        if options.include? :env_shebang
           options[:env_shebang]
         else
           install_defaults = Gem::ConfigFile::PLATFORM_DEFAULTS['install']
           install_defaults.to_s['--env-shebang']
         end
+
+      bin_dir = options[:bin_dir] if options[:bin_dir]
 
       installer_options = {
         :wrappers => true,
@@ -166,9 +171,10 @@ extensions will be restored.
         :install_dir => spec.base_dir,
         :env_shebang => env_shebang,
         :build_args => spec.build_args,
+        :bin_dir => bin_dir
       }
 
-      if options[:only_executables] then
+      if options[:only_executables]
         installer = Gem::Installer.for_spec(spec, installer_options)
         installer.generate_bin
       else
@@ -179,4 +185,5 @@ extensions will be restored.
       say "Restored #{spec.full_name}"
     end
   end
+
 end

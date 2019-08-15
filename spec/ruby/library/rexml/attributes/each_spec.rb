@@ -21,5 +21,3 @@ describe "REXML::Attributes#each" do
     attributes.last.should == ["xmlns:ns", "http://some_uri"]
   end
 end
-
-

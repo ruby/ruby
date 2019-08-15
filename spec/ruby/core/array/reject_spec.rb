@@ -104,11 +104,37 @@ describe "Array#reject!" do
   end
 
   it "raises a #{frozen_error_class} on a frozen array" do
-    lambda { ArraySpecs.frozen_array.reject! {} }.should raise_error(frozen_error_class)
+    -> { ArraySpecs.frozen_array.reject! {} }.should raise_error(frozen_error_class)
   end
 
   it "raises a #{frozen_error_class} on an empty frozen array" do
-    lambda { ArraySpecs.empty_frozen_array.reject! {} }.should raise_error(frozen_error_class)
+    -> { ArraySpecs.empty_frozen_array.reject! {} }.should raise_error(frozen_error_class)
+  end
+
+  it "does not truncate the array is the block raises an exception" do
+    a = [1, 2, 3]
+    begin
+      a.reject! { raise StandardError, 'Oops' }
+    rescue
+    end
+
+    a.should == [1, 2, 3]
+  end
+
+  it "only removes elements for which the block returns true, keeping the element which raised an error." do
+    a = [1, 2, 3, 4]
+    begin
+      a.reject! do |x|
+        case x
+        when 2 then true
+        when 3 then raise StandardError, 'Oops'
+        else false
+        end
+      end
+    rescue StandardError
+    end
+
+    a.should == [1, 3, 4]
   end
 
   it_behaves_like :enumeratorize, :reject!

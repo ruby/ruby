@@ -8,7 +8,7 @@ describe "Matrix::EigenvalueDecomposition#eigenvalues" do
     [ Complex(1, -1), Complex(1, 1)]
   end
 
-  it "returns an array of real eigenvalues for a symetric matrix" do
+  it "returns an array of real eigenvalues for a symmetric matrix" do
     Matrix[[1, 2],
            [2, 1]].eigensystem.eigenvalues.sort.map!{|x| x.round(10)}.should ==
     [ -1, 3 ]

@@ -1,12 +1,14 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
+require 'irb'
 require 'irb/workspace'
+require 'irb/color'
 
 module TestIRB
   class TestWorkSpace < Test::Unit::TestCase
     def test_code_around_binding
-      Tempfile.create do |f|
+      Tempfile.create('irb') do |f|
         code = <<~RUBY
           # 1
           # 2
@@ -18,7 +20,7 @@ module TestIRB
         f.close
 
         workspace = eval(code, binding, f.path)
-        assert_equal(<<~EOS, workspace.code_around_binding)
+        assert_equal(<<~EOS, without_term { workspace.code_around_binding })
 
           From: #{f.path} @ line 3 :
 
@@ -36,7 +38,7 @@ module TestIRB
       skip 'chmod cannot make file unreadable on windows' if windows?
       skip 'skipped in root privilege' if Process.uid == 0
 
-      Tempfile.create do |f|
+      Tempfile.create('irb') do |f|
         code = "IRB::WorkSpace.new(binding)\n"
         f.print(code)
         f.close
@@ -50,12 +52,12 @@ module TestIRB
 
     def test_code_around_binding_with_script_lines__
       with_script_lines do |script_lines|
-        Tempfile.create do |f|
+        Tempfile.create('irb') do |f|
           code = "IRB::WorkSpace.new(binding)\n"
           script_lines[f.path] = code.split(/^/)
 
           workspace = eval(code, binding, f.path)
-          assert_equal(<<~EOS, workspace.code_around_binding)
+          assert_equal(<<~EOS, without_term { workspace.code_around_binding })
 
             From: #{f.path} @ line 1 :
 
@@ -89,6 +91,14 @@ module TestIRB
         remove_const :SCRIPT_LINES__
         const_set(:SCRIPT_LINES__, script_lines) if script_lines
       end
+    end
+
+    def without_term
+      env = ENV.to_h.dup
+      ENV.delete('TERM')
+      yield
+    ensure
+      ENV.replace(env)
     end
   end
 end

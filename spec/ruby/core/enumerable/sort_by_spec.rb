@@ -32,5 +32,12 @@ describe "Enumerable#sort_by" do
     b.sort_by{ |x| -x }.should == [3, 2, 1]
   end
 
+  it "calls #each to iterate over the elements to be sorted" do
+    b = EnumerableSpecs::Numerous.new( 1, 2, 3 )
+    b.should_receive(:each).once.and_yield(1).and_yield(2).and_yield(3)
+    b.should_not_receive :map
+    b.sort_by { |x| -x }.should == [3, 2, 1]
+  end
+
   it_behaves_like :enumerable_enumeratorized_with_origin_size, :sort_by
 end

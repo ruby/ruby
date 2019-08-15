@@ -36,18 +36,6 @@ class TestGemSource < Gem::TestCase
     assert_equal repository, source.uri
   end
 
-  def test_api_uri
-    assert_equal @source.api_uri, @source.uri
-  end
-
-  def test_api_uri_resolved_from_remote_fetcher
-    uri = URI.parse "http://gem.example/foo"
-    @fetcher.api_endpoints[uri] = URI.parse "http://api.blah"
-
-    src = Gem::Source.new uri
-    assert_equal URI.parse("http://api.blah"), src.api_uri
-  end
-
   def test_cache_dir_escapes_windows_paths
     uri = URI.parse("file:///C:/WINDOWS/Temp/gem_repo")
     root = Gem.spec_cache_dir
@@ -211,16 +199,16 @@ class TestGemSource < Gem::TestCase
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
 
-    assert_equal( 0, remote.   <=>(remote),    'remote    <=> remote')
+    assert_equal(0, remote.   <=>(remote),    'remote    <=> remote')
 
     assert_equal(-1, remote.   <=>(specific),  'remote    <=> specific')
-    assert_equal( 1, specific. <=>(remote),    'specific  <=> remote')
+    assert_equal(1, specific. <=>(remote),    'specific  <=> remote')
 
     assert_equal(-1, remote.   <=>(local),     'remote    <=> local')
-    assert_equal( 1, local.    <=>(remote),    'local     <=> remote')
+    assert_equal(1, local.    <=>(remote),    'local     <=> remote')
 
     assert_equal(-1, remote.   <=>(installed), 'remote    <=> installed')
-    assert_equal( 1, installed.<=>(remote),    'installed <=> remote')
+    assert_equal(1, installed.<=>(remote),    'installed <=> remote')
 
     no_uri = @source.dup
     no_uri.instance_variable_set :@uri, nil
@@ -232,9 +220,9 @@ class TestGemSource < Gem::TestCase
     sourceA = Gem::Source.new "http://example.com/a"
     sourceB = Gem::Source.new "http://example.com/b"
 
-    assert_equal( 0, sourceA. <=>(sourceA), 'sourceA <=> sourceA')
-    assert_equal( 1, sourceA. <=>(sourceB), 'sourceA <=> sourceB')
-    assert_equal( 1, sourceB. <=>(sourceA), 'sourceB <=> sourceA')
+    assert_equal(0, sourceA. <=>(sourceA), 'sourceA <=> sourceA')
+    assert_equal(1, sourceA. <=>(sourceB), 'sourceA <=> sourceB')
+    assert_equal(1, sourceB. <=>(sourceA), 'sourceB <=> sourceA')
   end
 
   def test_update_cache_eh
@@ -248,4 +236,3 @@ class TestGemSource < Gem::TestCase
   end
 
 end
-

@@ -33,4 +33,3 @@ describe :float_comparison_exception_in_coerce, shared: true do
     end
   end
 end
-

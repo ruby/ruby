@@ -120,4 +120,5 @@ class TestKernel < Gem::TestCase
       assert $:.any? { |p| %r{bundler-1/lib} =~ p }
     end
   end
+
 end

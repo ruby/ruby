@@ -283,7 +283,7 @@ folemethod_initialize(VALUE self, VALUE oletype, VALUE method)
 }
 
 /*
- *  call-seq
+ *  call-seq:
  *     WIN32OLE_METHOD#name
  *
  *  Returns the name of the method.

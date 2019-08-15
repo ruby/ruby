@@ -54,7 +54,7 @@ class Gem::SpecFetcher
   # If you need to retrieve specifications from a different +source+, you can
   # send it as an argument.
 
-  def initialize sources = nil
+  def initialize(sources = nil)
     @sources = sources || Gem.sources
 
     @update_cache =
@@ -138,7 +138,6 @@ class Gem::SpecFetcher
     return [tuples, errors]
   end
 
-
   ##
   # Return all gem name tuples who's names match +obj+
 
@@ -156,7 +155,6 @@ class Gem::SpecFetcher
 
     tuples
   end
-
 
   ##
   # Find and fetch specs that match +dependency+.
@@ -189,7 +187,7 @@ class Gem::SpecFetcher
     max             = gem_name.size / 2
     names           = available_specs(type).first.values.flatten(1)
 
-    matches = names.map { |n|
+    matches = names.map do |n|
       next unless n.match_platform?
 
       distance = levenshtein_distance gem_name, n.name.downcase.tr('_-', '')
@@ -199,13 +197,13 @@ class Gem::SpecFetcher
       return [n.name] if distance == 0
 
       [n.name, distance]
-    }.compact
+    end.compact
 
     matches = if matches.empty? && type != :prerelease
-      suggest_gems_from_name gem_name, :prerelease
-    else
-      matches.uniq.sort_by { |name, dist| dist }
-    end
+                suggest_gems_from_name gem_name, :prerelease
+              else
+                matches.uniq.sort_by { |name, dist| dist }
+              end
 
     matches.first(5).map { |name, dist| name }
   end
@@ -271,4 +269,3 @@ class Gem::SpecFetcher
   end
 
 end
-

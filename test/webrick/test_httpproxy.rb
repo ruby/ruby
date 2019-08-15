@@ -64,6 +64,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
 
       req = Net::HTTP::Post.new("/")
       req.body = "post-data"
+      req.content_type = "application/x-www-form-urlencoded"
       http.request(req){|res|
         assert_equal("1.1 localhost.localdomain:#{port}", res["via"], log.call)
         assert_equal("POST / post-data", res.body, log.call)
@@ -108,6 +109,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
       assert_equal(2, request_handler_called, log.call)
 
       req = Net::HTTP::Post.new("/")
+      req.content_type = "application/x-www-form-urlencoded"
       req.body = "post-data"
       http.request(req){|res|
         assert_nil(res["via"], log.call)
@@ -213,6 +215,45 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     end
   end
 
+  def test_http10_proxy_chunked
+    # Testing HTTP/1.0 client request and HTTP/1.1 chunked response
+    # from origin server.
+    #                    +------+
+    #                    V      |
+    #  client -------> proxy ---+
+    #           GET          GET
+    #           HTTP/1.0     HTTP/1.1
+    #           non-chunked  chunked
+    #
+    proxy_handler_called = request_handler_called = 0
+    config = {
+      :ServerName => "localhost.localdomain",
+      :ProxyContentHandler => Proc.new{|req, res| proxy_handler_called += 1 },
+      :RequestCallback => Proc.new{|req, res| request_handler_called += 1 }
+    }
+    log_tester = lambda {|log, access_log|
+      log.reject! {|str|
+        %r{WARN  chunked is set for an HTTP/1\.0 request\. \(ignored\)} =~ str
+      }
+      assert_equal([], log)
+    }
+    TestWEBrick.start_httpproxy(config, log_tester){|server, addr, port, log|
+      body = nil
+      server.mount_proc("/"){|req, res|
+        body = "#{req.request_method} #{req.path} #{req.body}"
+        res.chunked = true
+        res.body = -> (socket) { body.each_char {|c| socket.write c } }
+      }
+
+      # Don't use Net::HTTP because it uses HTTP/1.1.
+      TCPSocket.open(addr, port) {|s|
+        s.write "GET / HTTP/1.0\r\nHost: localhost.localdomain\r\n\r\n"
+        response = s.read
+        assert_equal(body, response[/.*\z/])
+      }
+    }
+  end
+
   def make_certificate(key, cn)
     subject = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=#{cn}")
     exts = [
@@ -228,7 +269,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     cert.not_after = Time.now + 3600
     ef = OpenSSL::X509::ExtensionFactory.new(cert, cert)
     exts.each {|args| cert.add_extension(ef.create_extension(*args)) }
-    cert.sign(key, "sha1")
+    cert.sign(key, "sha256")
     return cert
   end if defined?(OpenSSL::SSL)
 
@@ -336,6 +377,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
 
         req = Net::HTTP::Post.new("/")
         req.body = "post-data"
+        req.content_type = "application/x-www-form-urlencoded"
         http.request(req){|res|
           via = res["via"].split(/,\s+/)
           assert(via.include?("1.1 localhost.localdomain:#{up_port}"), up_log.call + log.call)
@@ -380,6 +422,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
 
             req2 = Net::HTTP::Post.new("/")
             req2.body = "post-data"
+            req2.content_type = "application/x-www-form-urlencoded"
             http.request(req2){|res|
               assert_equal("SSL POST / post-data", res.body, up_log.call + log.call + s_log.call)
             }

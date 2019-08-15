@@ -90,17 +90,6 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
     assert_equal '', @ui.error
   end
 
-  def test_execute_packageversion
-    @cmd.send :handle_options, %w[packageversion]
-
-    use_ui @ui do
-      @cmd.execute
-    end
-
-    assert_equal "#{Gem::RubyGemsPackageVersion}\n", @ui.output
-    assert_equal '', @ui.error
-  end
-
   def test_execute_remotesources
     orig_sources = Gem.sources.dup
     Gem.sources.replace %w[http://gems.example.com]
@@ -152,4 +141,5 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
     assert_equal "#{Gem.platforms.join File::PATH_SEPARATOR}\n", @ui.output
     assert_equal '', @ui.error
   end
+
 end

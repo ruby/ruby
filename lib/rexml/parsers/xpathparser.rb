@@ -1,6 +1,6 @@
 # frozen_string_literal: false
-require 'rexml/namespace'
-require 'rexml/xmltokens'
+require_relative '../namespace'
+require_relative '../xmltokens'
 
 module REXML
   module Parsers

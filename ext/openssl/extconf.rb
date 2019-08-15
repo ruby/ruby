@@ -114,6 +114,10 @@ engines.each { |name|
   OpenSSL.check_func_or_macro("ENGINE_load_#{name}", "openssl/engine.h")
 }
 
+if ($mswin || $mingw) && have_macro("LIBRESSL_VERSION_NUMBER", "openssl/opensslv.h")
+  $defs.push("-DNOCRYPT")
+end
+
 # added in 1.0.2
 have_func("EC_curve_nist2nid")
 have_func("X509_REVOKED_dup")

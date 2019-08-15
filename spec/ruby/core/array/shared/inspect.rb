@@ -55,7 +55,7 @@ describe :array_inspect, shared: true do
     obj.should_receive(:inspect).and_return(obj)
     obj.should_receive(:to_s).and_raise(Exception)
 
-    lambda { [obj].send(@method) }.should raise_error(Exception)
+    -> { [obj].send(@method) }.should raise_error(Exception)
   end
 
   it "represents a recursive element with '[...]'" do

@@ -3,6 +3,7 @@ require 'rubygems/test_case'
 require 'rubygems/ext'
 
 class TestGemExtRakeBuilder < Gem::TestCase
+
   def setup
     super
 
@@ -26,7 +27,7 @@ class TestGemExtRakeBuilder < Gem::TestCase
 
       refute_match %r%^rake failed:%, output
       assert_match %r%^#{Regexp.escape @@ruby} mkrf_conf\.rb%, output
-      assert_match %r%^#{Regexp.escape rake} RUBYARCHDIR=#{Regexp.escape @dest_path} RUBYLIBDIR=#{Regexp.escape @dest_path}%, output
+      assert_match %r%^#{Regexp.escape rake} RUBYARCHDIR\\=#{Regexp.escape @dest_path} RUBYLIBDIR\\=#{Regexp.escape @dest_path}%, output
     end
   end
 
@@ -47,7 +48,22 @@ class TestGemExtRakeBuilder < Gem::TestCase
 
       refute_match %r%^rake failed:%, output
       assert_match %r%^#{Regexp.escape @@ruby} mkrf_conf\.rb%, output
-      assert_match %r%^#{Regexp.escape rake} RUBYARCHDIR=#{Regexp.escape @dest_path} RUBYLIBDIR=#{Regexp.escape @dest_path}%, output
+      assert_match %r%^#{Regexp.escape rake} RUBYARCHDIR\\=#{Regexp.escape @dest_path} RUBYLIBDIR\\=#{Regexp.escape @dest_path}%, output
+    end
+  end
+
+  def test_class_build_no_mkrf_passes_args
+    output = []
+
+    build_rake_in do |rake|
+      Dir.chdir @ext do
+        Gem::Ext::RakeBuilder.build "ext/Rakefile", @dest_path, output, ["test1", "test2"]
+      end
+
+      output = output.join "\n"
+
+      refute_match %r%^rake failed:%, output
+      assert_match %r%^#{Regexp.escape rake} RUBYARCHDIR\\=#{Regexp.escape @dest_path} RUBYLIBDIR\\=#{Regexp.escape @dest_path} test1 test2%, output
     end
   end
 
@@ -75,4 +91,5 @@ class TestGemExtRakeBuilder < Gem::TestCase
       EO_MKRF
     end
   end
+
 end

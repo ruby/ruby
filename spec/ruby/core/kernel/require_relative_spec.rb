@@ -2,8 +2,6 @@ require_relative '../../spec_helper'
 require_relative '../../fixtures/code_loading'
 
 describe "Kernel#require_relative with a relative path" do
-  it "needs to be reviewed for spec completeness"
-
   before :each do
     CodeLoadingSpecs.spec_setup
     @dir = "../../fixtures/code"
@@ -88,18 +86,18 @@ describe "Kernel#require_relative with a relative path" do
   end
 
   it "raises a LoadError if the file does not exist" do
-    lambda { require_relative("#{@dir}/nonexistent.rb") }.should raise_error(LoadError)
+    -> { require_relative("#{@dir}/nonexistent.rb") }.should raise_error(LoadError)
     ScratchPad.recorded.should == []
   end
 
   it "raises a LoadError if basepath does not exist" do
-    lambda { eval("require_relative('#{@dir}/nonexistent.rb')") }.should raise_error(LoadError)
+    -> { eval("require_relative('#{@dir}/nonexistent.rb')") }.should raise_error(LoadError)
   end
 
   it "stores the missing path in a LoadError object" do
     path = "#{@dir}/nonexistent.rb"
 
-    lambda {
+    -> {
       require_relative(path)
     }.should(raise_error(LoadError) { |e|
       e.path.should == File.expand_path(path, @abs_dir)
@@ -114,9 +112,9 @@ describe "Kernel#require_relative with a relative path" do
   end
 
   it "raises a TypeError if argument does not respond to #to_str" do
-    lambda { require_relative(nil) }.should raise_error(TypeError)
-    lambda { require_relative(42) }.should raise_error(TypeError)
-    lambda {
+    -> { require_relative(nil) }.should raise_error(TypeError)
+    -> { require_relative(42) }.should raise_error(TypeError)
+    -> {
       require_relative([@path,@path])
     }.should raise_error(TypeError)
   end
@@ -124,13 +122,13 @@ describe "Kernel#require_relative with a relative path" do
   it "raises a TypeError if passed an object that has #to_s but not #to_str" do
     name = mock("load_fixture.rb mock")
     name.stub!(:to_s).and_return(@path)
-    lambda { require_relative(name) }.should raise_error(TypeError)
+    -> { require_relative(name) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if #to_str does not return a String" do
     name = mock("#to_str returns nil")
     name.should_receive(:to_str).at_least(1).times.and_return(nil)
-    lambda { require_relative(name) }.should raise_error(TypeError)
+    -> { require_relative(name) }.should raise_error(TypeError)
   end
 
   it "calls #to_path on non-String objects" do
@@ -199,9 +197,49 @@ describe "Kernel#require_relative with a relative path" do
       $LOADED_FEATURES.should include(@abs_path)
     end
 
+    platform_is_not :windows do
+      describe "with symlinks" do
+        before :each do
+          @symlink_to_code_dir = tmp("codesymlink")
+          File.symlink(CODE_LOADING_DIR, @symlink_to_code_dir)
+          @symlink_basename = File.basename(@symlink_to_code_dir)
+          @requiring_file = tmp("requiring")
+        end
+
+        after :each do
+          rm_r @symlink_to_code_dir, @requiring_file
+        end
+
+        it "does not canonicalize the path and stores a path with symlinks" do
+          symlink_path = "#{@symlink_basename}/load_fixture.rb"
+          absolute_path = "#{tmp("")}#{symlink_path}"
+          canonical_path = "#{CODE_LOADING_DIR}/load_fixture.rb"
+          touch(@requiring_file) { |f|
+            f.puts "require_relative #{symlink_path.inspect}"
+          }
+          load(@requiring_file)
+          ScratchPad.recorded.should == [:loaded]
+
+          features = $LOADED_FEATURES.select { |path| path.end_with?('load_fixture.rb') }
+          features.should include(absolute_path)
+          features.should_not include(canonical_path)
+        end
+
+        it "stores the same path that __FILE__ returns in the required file" do
+          symlink_path = "#{@symlink_basename}/load_fixture_and__FILE__.rb"
+          touch(@requiring_file) { |f|
+            f.puts "require_relative #{symlink_path.inspect}"
+          }
+          load(@requiring_file)
+          loaded_feature = $LOADED_FEATURES.last
+          ScratchPad.recorded.should == [loaded_feature]
+        end
+      end
+    end
+
     it "does not store the path if the load fails" do
       saved_loaded_features = $LOADED_FEATURES.dup
-      lambda { require_relative("#{@dir}/raise_fixture.rb") }.should raise_error(RuntimeError)
+      -> { require_relative("#{@dir}/raise_fixture.rb") }.should raise_error(RuntimeError)
       $LOADED_FEATURES.should == saved_loaded_features
     end
 
@@ -227,8 +265,6 @@ describe "Kernel#require_relative with a relative path" do
 end
 
 describe "Kernel#require_relative with an absolute path" do
-  it "needs to be reviewed for spec completeness"
-
   before :each do
     CodeLoadingSpecs.spec_setup
     @dir = File.expand_path "../../fixtures/code", File.dirname(__FILE__)
@@ -252,18 +288,18 @@ describe "Kernel#require_relative with an absolute path" do
   end
 
   it "raises a LoadError if the file does not exist" do
-    lambda { require_relative("#{@dir}/nonexistent.rb") }.should raise_error(LoadError)
+    -> { require_relative("#{@dir}/nonexistent.rb") }.should raise_error(LoadError)
     ScratchPad.recorded.should == []
   end
 
   it "raises a LoadError if basepath does not exist" do
-    lambda { eval("require_relative('#{@dir}/nonexistent.rb')") }.should raise_error(LoadError)
+    -> { eval("require_relative('#{@dir}/nonexistent.rb')") }.should raise_error(LoadError)
   end
 
   it "stores the missing path in a LoadError object" do
     path = "#{@dir}/nonexistent.rb"
 
-    lambda {
+    -> {
       require_relative(path)
     }.should(raise_error(LoadError) { |e|
       e.path.should == File.expand_path(path, @abs_dir)
@@ -278,9 +314,9 @@ describe "Kernel#require_relative with an absolute path" do
   end
 
   it "raises a TypeError if argument does not respond to #to_str" do
-    lambda { require_relative(nil) }.should raise_error(TypeError)
-    lambda { require_relative(42) }.should raise_error(TypeError)
-    lambda {
+    -> { require_relative(nil) }.should raise_error(TypeError)
+    -> { require_relative(42) }.should raise_error(TypeError)
+    -> {
       require_relative([@path,@path])
     }.should raise_error(TypeError)
   end
@@ -288,13 +324,13 @@ describe "Kernel#require_relative with an absolute path" do
   it "raises a TypeError if passed an object that has #to_s but not #to_str" do
     name = mock("load_fixture.rb mock")
     name.stub!(:to_s).and_return(@path)
-    lambda { require_relative(name) }.should raise_error(TypeError)
+    -> { require_relative(name) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if #to_str does not return a String" do
     name = mock("#to_str returns nil")
     name.should_receive(:to_str).at_least(1).times.and_return(nil)
-    lambda { require_relative(name) }.should raise_error(TypeError)
+    -> { require_relative(name) }.should raise_error(TypeError)
   end
 
   it "calls #to_path on non-String objects" do
@@ -365,7 +401,7 @@ describe "Kernel#require_relative with an absolute path" do
 
     it "does not store the path if the load fails" do
       saved_loaded_features = $LOADED_FEATURES.dup
-      lambda { require_relative("#{@dir}/raise_fixture.rb") }.should raise_error(RuntimeError)
+      -> { require_relative("#{@dir}/raise_fixture.rb") }.should raise_error(RuntimeError)
       $LOADED_FEATURES.should == saved_loaded_features
     end
 

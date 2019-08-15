@@ -21,15 +21,4 @@ describe "Enumerator::Yielder#<<" do
     y = Enumerator::Yielder.new {|x| x + 1}
     (y << 1).should equal(y)
   end
-
-  it "requires multiple arguments" do
-    Enumerator::Yielder.instance_method(:<<).arity.should < 0
-  end
-
-  it "yields with passed arguments" do
-    yields = []
-    y = Enumerator::Yielder.new {|*args| yields << args }
-    y.<<(1, 2)
-    yields.should == [[1, 2]]
-  end
 end

@@ -2,8 +2,8 @@
 require "forwardable"
 require "open-uri"
 
-require "rss/rss"
-require "rss/xml"
+require_relative "rss"
+require_relative "xml"
 
 module RSS
 

@@ -17,7 +17,7 @@ typedef unsigned long lindex_t;
 typedef VALUE GENTRY;
 typedef rb_iseq_t *ISEQ;
 
-#ifdef __GCC__
+#ifdef __GNUC__
 /* TODO: machine dependent prefetch instruction */
 #define PREFETCH(pc)
 #else
@@ -36,7 +36,7 @@ typedef rb_iseq_t *ISEQ;
 #endif
 
 #define DEBUG_END_INSN() \
-  rb_vmdebug_debug_print_post(th, GET_CFP() SC_REGS());
+  rb_vmdebug_debug_print_post(ec, GET_CFP() SC_REGS());
 
 #else
 

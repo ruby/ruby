@@ -50,7 +50,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_self_dump
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       RDoc::RI::Driver.dump @store1.cache_path
     end
 
@@ -260,7 +260,7 @@ class TestRDocRIDriver < RDoc::TestCase
         para('alias comment'),
         blank_line,
         blank_line,
-        para('(this method is alias for Qux#original)'),
+        para('(This method is an alias for Qux#original.)'),
         blank_line,
         para('original comment'),
         blank_line,
@@ -381,7 +381,7 @@ class TestRDocRIDriver < RDoc::TestCase
     doc = @RM::Document.new
     doc << @RM::IndentedParagraph.new(0, 'new, parse, foo, bar, baz')
 
-    out, = capture_io do
+    out, = capture_output do
       driver.display doc
     end
 
@@ -550,7 +550,7 @@ class TestRDocRIDriver < RDoc::TestCase
     doc = @RM::Document.new(
             @RM::Paragraph.new('hi'))
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display doc
     end
 
@@ -560,7 +560,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_class
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_class 'Foo::Bar'
     end
 
@@ -584,7 +584,7 @@ class TestRDocRIDriver < RDoc::TestCase
 
     @driver.show_all = true
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_class 'Foo::Bar'
     end
 
@@ -606,7 +606,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_class_ambiguous
     util_multi_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_class 'Ambiguous'
     end
 
@@ -616,7 +616,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_class_multi_no_doc
     util_multi_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_class 'Foo::Baz'
     end
 
@@ -630,7 +630,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_class_superclass
     util_multi_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_class 'Bar'
     end
 
@@ -640,7 +640,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_class_module
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_class 'Inc'
     end
 
@@ -648,7 +648,7 @@ class TestRDocRIDriver < RDoc::TestCase
   end
 
   def test_display_class_page
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_class 'ruby:README'
     end
 
@@ -658,7 +658,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_method
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_method 'Foo::Bar#blah'
     end
 
@@ -670,7 +670,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_method_attribute
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_method 'Foo::Bar#attr'
     end
 
@@ -681,7 +681,7 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_method_inherited
     util_multi_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_method 'Bar#inherit'
     end
 
@@ -692,17 +692,32 @@ class TestRDocRIDriver < RDoc::TestCase
   def test_display_method_overridden
     util_multi_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_method 'Bar#override'
     end
 
     refute_match %r%must not be displayed%, out
   end
 
+  def test_display_name
+    util_store
+
+    out, = capture_output do
+      assert_equal true, @driver.display_name('home:README.rdoc')
+    end
+
+    expected = <<-EXPECTED
+= README
+This is a README
+    EXPECTED
+
+    assert_equal expected, out
+  end
+
   def test_display_name_not_found_class
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       assert_equal false, @driver.display_name('Foo::B')
     end
 
@@ -719,7 +734,7 @@ Foo::Baz
   def test_display_name_not_found_method
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       assert_equal false, @driver.display_name('Foo::Bar#b')
     end
 
@@ -744,7 +759,7 @@ Foo::Bar#bother
   def test_display_method_params
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_method 'Foo::Bar#bother'
     end
 
@@ -754,7 +769,7 @@ Foo::Bar#bother
   def test_display_page
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page 'home:README.rdoc'
     end
 
@@ -764,7 +779,7 @@ Foo::Bar#bother
   def test_display_page_add_extension
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page 'home:README'
     end
 
@@ -783,7 +798,7 @@ Foo::Bar#bother
 
     @store1.save_page other
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page 'home:README'
     end
 
@@ -804,7 +819,7 @@ Foo::Bar#bother
 
     @store1.save_page other
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page 'home:README.EXT'
     end
 
@@ -823,7 +838,7 @@ Foo::Bar#bother
 
     @store1.save_page other
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page 'home:globals'
     end
 
@@ -833,11 +848,11 @@ Foo::Bar#bother
   def test_display_page_missing
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page 'home:missing'
     end
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page_list @store1
     end
 
@@ -857,7 +872,7 @@ Foo::Bar#bother
 
     @store1.save_page other
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.display_page_list @store1
     end
 
@@ -1096,7 +1111,7 @@ Foo::Bar#bother
   def test_list_known_classes
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.list_known_classes
     end
 
@@ -1106,7 +1121,7 @@ Foo::Bar#bother
   def test_list_known_classes_name
     util_store
 
-    out, = capture_io do
+    out, = capture_output do
       @driver.list_known_classes %w[F I]
     end
 

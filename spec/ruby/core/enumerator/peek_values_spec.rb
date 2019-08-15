@@ -52,6 +52,6 @@ describe "Enumerator#peek_values" do
 
   it "raises StopIteration if called on a finished enumerator" do
     7.times { @e.next }
-    lambda { @e.peek_values }.should raise_error(StopIteration)
+    -> { @e.peek_values }.should raise_error(StopIteration)
   end
 end

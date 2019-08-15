@@ -75,7 +75,7 @@ Specific fields in the specification can be extracted in YAML format:
     specs = []
     gem = options[:args].shift
 
-    unless gem then
+    unless gem
       raise Gem::CommandLineError,
             "Please specify a gem name or file on the command line"
     end
@@ -105,29 +105,29 @@ Specific fields in the specification can be extracted in YAML format:
     raise Gem::CommandLineError, "--ruby and FIELD are mutually exclusive" if
       field and options[:format] == :ruby
 
-    if local? then
-      if File.exist? gem then
+    if local?
+      if File.exist? gem
         specs << Gem::Package.new(gem).spec rescue nil
       end
 
-      if specs.empty? then
+      if specs.empty?
         specs.push(*dep.matching_specs)
       end
     end
 
-    if remote? then
+    if remote?
       dep.prerelease = options[:prerelease]
       found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency dep
 
       specs.push(*found.map { |spec,| spec })
     end
 
-    if specs.empty? then
+    if specs.empty?
       alert_error "No gem matching '#{dep}' found"
       terminate_interaction 1
     end
 
-    unless options[:all] then
+    unless options[:all]
       specs = [specs.max_by { |s| s.version }]
     end
 
@@ -143,4 +143,5 @@ Specific fields in the specification can be extracted in YAML format:
       say "\n"
     end
   end
+
 end

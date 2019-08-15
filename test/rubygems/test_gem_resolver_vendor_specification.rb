@@ -81,4 +81,3 @@ class TestGemResolverVendorSpecification < Gem::TestCase
   end
 
 end
-

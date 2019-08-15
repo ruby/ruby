@@ -518,6 +518,8 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(:ok, m.f(**o), '[ruby-core:68124] [Bug #10856]')
     a = []
     assert_equal(:ok, m.f(*a, **o), '[ruby-core:83638] [Bug #10856]')
+    assert_equal(:OK, m.f1(*a, :OK, **o), '[ruby-core:91825] [Bug #10856]')
+    assert_equal({}, m.f1(*a, o), '[ruby-core:91825] [Bug #10856]')
 
     o = {a: 42}
     assert_warning(/splat keyword/, 'splat to mandatory') do
@@ -563,7 +565,8 @@ class TestKeywordArguments < Test::Unit::TestCase
 
   def test_dynamic_symbol_keyword
     bug10266 = '[ruby-dev:48564] [Bug #10266]'
-    assert_separately(['-', bug10266], <<-'end;') #    do
+    assert_separately(['-', bug10266], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
       bug = ARGV.shift
       "hoge".to_sym
       assert_nothing_raised(bug) {eval("def a(hoge:); end")}
@@ -745,5 +748,9 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(:ok, many_kwargs(d7: :ok)[i], "#{i}: d7"); i+=1
 
     assert_equal(:ok, many_kwargs(e0: :ok)[i], "#{i}: e0"); i+=1
+  end
+
+  def test_splat_empty_hash_with_block_passing
+    assert_valid_syntax("bug15087(**{}, &nil)")
   end
 end

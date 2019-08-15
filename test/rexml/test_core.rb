@@ -1,4 +1,4 @@
-# coding: binary
+# -*- coding: utf-8 -*-
 # frozen_string_literal: false
 
 require_relative "rexml_test_utils"
@@ -114,6 +114,54 @@ module REXMLTests
         name2='test2'
         name3='test3'
         name4='test4'/>).join(' '), e.to_s
+    end
+
+    def test_attribute_namespace_conflict
+      # https://www.w3.org/TR/xml-names/#uniqAttrs
+      message = <<-MESSAGE
+Duplicate attribute "a"
+Line: 4
+Position: 140
+Last 80 unconsumed characters:
+      MESSAGE
+      assert_raise_with_message(REXML::ParseException, message) do
+        Document.new(<<-XML)
+<!-- http://www.w3.org is bound to n1 and n2 -->
+<x xmlns:n1="http://www.w3.org"
+   xmlns:n2="http://www.w3.org" >
+  <bad a="1"     a="2" />
+  <bad n1:a="1"  n2:a="2" />
+</x>
+        XML
+      end
+    end
+
+    def test_attribute_default_namespace
+      # https://www.w3.org/TR/xml-names/#uniqAttrs
+      document = Document.new(<<-XML)
+<!-- http://www.w3.org is bound to n1 and is the default -->
+<x xmlns:n1="http://www.w3.org"
+   xmlns="http://www.w3.org" >
+  <good a="1"     b="2" />
+  <good a="1"     n1:a="2" />
+</x>
+      XML
+      attributes = document.root.elements.collect do |element|
+        element.attributes.each_attribute.collect do |attribute|
+          [attribute.prefix, attribute.namespace, attribute.name]
+        end
+      end
+      assert_equal([
+                     [
+                       ["", "", "a"],
+                       ["", "", "b"],
+                     ],
+                     [
+                       ["", "", "a"],
+                       ["n1", "http://www.w3.org", "a"],
+                     ],
+                   ],
+                   attributes)
     end
 
     def test_cdata
@@ -1274,14 +1322,15 @@ EOL
 
     def test_ticket_21
       src = "<foo bar=value/>"
-      assert_raise( ParseException, "invalid XML should be caught" ) {
+      exception = assert_raise(ParseException) do
         Document.new(src)
-      }
-      begin
-        Document.new(src)
-      rescue
-        assert_match( /missing attribute quote/, $!.message )
       end
+      assert_equal(<<-DETAIL, exception.to_s)
+Missing attribute value start quote: <bar>
+Line: 1
+Position: 16
+Last 80 unconsumed characters:
+      DETAIL
     end
 
     def test_ticket_63

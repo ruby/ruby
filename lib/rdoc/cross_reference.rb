@@ -19,12 +19,12 @@ class RDoc::CrossReference
   #
   # See CLASS_REGEXP_STR
 
-  METHOD_REGEXP_STR = '([a-z]\w*[!?=]?|%|===|\[\]=?|<<|>>)(?:\([\w.+*/=<>-]*\))?'
+  METHOD_REGEXP_STR = '([a-z]\w*[!?=]?|%|===|\[\]=?|<<|>>|-|\+|\*)(?:\([\w.+*/=<>-]*\))?'
 
   ##
   # Regular expressions matching text that should potentially have
-  # cross-reference links generated are passed to add_special.  Note that
-  # these expressions are meant to pick up text for which cross-references
+  # cross-reference links generated are passed to add_regexp_handling. Note
+  # that these expressions are meant to pick up text for which cross-references
   # have been suppressed, since the suppression characters are removed by the
   # code that is triggered.
 
@@ -127,23 +127,41 @@ class RDoc::CrossReference
 
     if /#{CLASS_REGEXP_STR}([.#]|::)#{METHOD_REGEXP_STR}/o =~ name then
       type = $2
-      type = '' if type == '.'  # will find either #method or ::method
-      method = "#{type}#{$3}"
+      if '.' == type # will find either #method or ::method
+        method = $3
+      else
+        method = "#{type}#{$3}"
+      end
       container = @context.find_symbol_module($1)
     elsif /^([.#]|::)#{METHOD_REGEXP_STR}/o =~ name then
       type = $1
-      type = '' if type == '.'
-      method = "#{type}#{$2}"
+      if '.' == type
+        method = $2
+      else
+        method = "#{type}#{$2}"
+      end
       container = @context
     else
+      type = nil
       container = nil
     end
 
     if container then
-      ref = container.find_local_symbol method
-
-      unless ref || RDoc::TopLevel === container then
-        ref = container.find_ancestor_local_symbol method
+      unless RDoc::TopLevel === container then
+        if '.' == type then
+          if 'new' == method then # AnyClassName.new will be class method
+            ref = container.find_local_symbol method
+            ref = container.find_ancestor_local_symbol method unless ref
+          else
+            ref = container.find_local_symbol "::#{method}"
+            ref = container.find_ancestor_local_symbol "::#{method}" unless ref
+            ref = container.find_local_symbol "##{method}" unless ref
+            ref = container.find_ancestor_local_symbol "##{method}" unless ref
+          end
+        else
+          ref = container.find_local_symbol method
+          ref = container.find_ancestor_local_symbol method unless ref
+        end
       end
     end
 

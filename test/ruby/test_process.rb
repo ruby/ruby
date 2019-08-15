@@ -246,24 +246,22 @@ class TestProcess < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       system(RUBY, '-e', 'exit',  'rlimit_bogus'.to_sym => 123)
     end
-    assert_separately([],"#{<<-"begin;"}\n#{<<~'end;'}")
+    assert_separately([],"#{<<~"begin;"}\n#{<<~'end;'}", 'rlimit_cpu'.to_sym => 3600)
     BUG = "[ruby-core:82033] [Bug #13744]"
-    RUBY = "#{RUBY}"
     begin;
-      assert(system("#{RUBY}", "-e",
-                 "exit([3600,3600] == Process.getrlimit(:CPU))",
-             'rlimit_cpu'.to_sym => 3600), BUG)
-      assert_raise(ArgumentError, BUG) do
-        system("#{RUBY}", '-e', 'exit',  :rlimit_bogus => 123)
-      end
+      assert_equal([3600,3600], Process.getrlimit(:CPU), BUG)
     end;
 
-    assert_raise(ArgumentError, /rlimit_cpu/) {
+    assert_raise_with_message(ArgumentError, /bogus/) do
+      system(RUBY, '-e', 'exit', :rlimit_bogus => 123)
+    end
+
+    assert_raise_with_message(ArgumentError, /rlimit_cpu/) {
       system(RUBY, '-e', 'exit', "rlimit_cpu\0".to_sym => 3600)
     }
   end
 
-  MANDATORY_ENVS = %w[RUBYLIB]
+  MANDATORY_ENVS = %w[RUBYLIB MJIT_SEARCH_BUILD_DIR]
   case RbConfig::CONFIG['target_os']
   when /linux/
     MANDATORY_ENVS << 'LD_PRELOAD'
@@ -273,6 +271,9 @@ class TestProcess < Test::Unit::TestCase
     MANDATORY_ENVS.concat(ENV.keys.grep(/\A__CF_/))
   end
   if e = RbConfig::CONFIG['LIBPATHENV']
+    MANDATORY_ENVS << e
+  end
+  if e = RbConfig::CONFIG['PRELOADENV'] and !e.empty?
     MANDATORY_ENVS << e
   end
   PREENVARG = ['-e', "%w[#{MANDATORY_ENVS.join(' ')}].each{|e|ENV.delete(e)}"]
@@ -633,7 +634,7 @@ class TestProcess < Test::Unit::TestCase
       rescue NotImplementedError
         return
       end
-      assert(FileTest.pipe?("fifo"), "should be pipe")
+      assert_file.pipe?("fifo")
       t1 = Thread.new {
         system(*ECHO["output to fifo"], :out=>"fifo")
       }
@@ -762,6 +763,15 @@ class TestProcess < Test::Unit::TestCase
           Process.wait pid
         end
       }
+
+      # ensure standard FDs we redirect to are blocking for compatibility
+      with_pipes(3) do |pipes|
+        src = 'p [STDIN,STDOUT,STDERR].map(&:nonblock?)'
+        rdr = { 0 => pipes[0][0], 1 => pipes[1][1], 2 => pipes[2][1] }
+        pid = spawn(RUBY, '-rio/nonblock', '-e', src, rdr)
+        assert_equal("[false, false, false]\n", pipes[1][0].gets)
+        Process.wait pid
+      end
     end
   end
 
@@ -1008,6 +1018,15 @@ class TestProcess < Test::Unit::TestCase
 
     }
   end
+
+  def test_close_others_default_false
+    IO.pipe do |r,w|
+      w.close_on_exec = false
+      src = "IO.new(#{w.fileno}).puts(:hi)"
+      assert_equal true, system(*%W(#{RUBY} --disable=gems -e #{src}))
+      assert_equal "hi\n", r.gets
+    end
+  end unless windows? # passing non-stdio fds is not supported on Windows
 
   def test_execopts_redirect_self
     begin
@@ -1379,6 +1398,14 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_argv0_keep_alive
+    assert_in_out_err([], <<~REPRO, ['-'], [], "[Bug #15887]")
+      $0 = "diverge"
+      4.times { GC.start }
+      puts Process.argv0
+    REPRO
+  end
+
   def test_status
     with_tmpchdir do
       s = run_in_child("exit 1")
@@ -1456,7 +1483,9 @@ class TestProcess < Test::Unit::TestCase
   def test_wait_exception
     bug11340 = '[ruby-dev:49176] [Bug #11340]'
     t0 = t1 = nil
-    IO.popen([RUBY, '-e', 'puts;STDOUT.flush;Thread.start{gets;exit};sleep(3)'], 'r+') do |f|
+    sec = 3
+    code = "puts;STDOUT.flush;Thread.start{gets;exit};sleep(#{sec})"
+    IO.popen([RUBY, '-e', code], 'r+') do |f|
       pid = f.pid
       f.gets
       t0 = Time.now
@@ -1470,10 +1499,11 @@ class TestProcess < Test::Unit::TestCase
         th.kill.join
       end
       t1 = Time.now
+      diff = t1 - t0
+      assert_operator(diff, :<, sec,
+                  ->{"#{bug11340}: #{diff} seconds to interrupt Process.wait"})
       f.puts
     end
-    assert_operator(t1 - t0, :<, 3,
-                    ->{"#{bug11340}: #{t1-t0} seconds to interrupt Process.wait"})
   end
 
   def test_abort
@@ -1485,6 +1515,9 @@ class TestProcess < Test::Unit::TestCase
 
   def test_sleep
     assert_raise(ArgumentError) { sleep(1, 1) }
+    [-1, -1.0, -1r].each do |sec|
+      assert_raise_with_message(ArgumentError, /not.*negative/) { sleep(sec) }
+    end
   end
 
   def test_getpgid
@@ -1540,7 +1573,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_seteuid_name
-    user = ENV["USER"] or return
+    user = (Etc.getpwuid(Process.euid).name rescue ENV["USER"]) or return
     assert_nothing_raised(TypeError) {Process.euid = user}
   rescue NotImplementedError
   end
@@ -1585,22 +1618,28 @@ class TestProcess < Test::Unit::TestCase
       skip "this fails on FreeBSD and OpenBSD on multithreaded environment"
     end
     signal_received = []
-    Signal.trap(:CHLD)  { signal_received << true }
-    pid = nil
-    IO.pipe do |r, w|
-      pid = fork { r.read(1); exit }
-      Thread.start {
-        Thread.current.report_on_exception = false
-        raise
-      }
-      w.puts
+    IO.pipe do |sig_r, sig_w|
+      Signal.trap(:CHLD) do
+        signal_received << true
+        sig_w.write('?')
+      end
+      pid = nil
+      IO.pipe do |r, w|
+        pid = fork { r.read(1); exit }
+        Thread.start {
+          Thread.current.report_on_exception = false
+          raise
+        }
+        w.puts
+      end
+      Process.wait pid
+      assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
     end
-    Process.wait pid
-    10.times do
-      break unless signal_received.empty?
-      sleep 0.01
+    if RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.
+      assert_equal [true], signal_received.uniq, "[ruby-core:19744]"
+    else
+      assert_equal [true], signal_received, "[ruby-core:19744]"
     end
-    assert_equal [true], signal_received, " [ruby-core:19744]"
   rescue NotImplementedError, ArgumentError
   ensure
     begin
@@ -1691,7 +1730,7 @@ class TestProcess < Test::Unit::TestCase
 
     with_tmpchdir do
       assert_nothing_raised('[ruby-dev:12261]') do
-        Timeout.timeout(3) do
+        EnvUtil.timeout(3) do
           pid = spawn('yes | ls')
           Process.waitpid pid
         end
@@ -1758,12 +1797,12 @@ class TestProcess < Test::Unit::TestCase
           puts Dir.entries("/proc/self/task") - %W[. ..]
         end
         bug4920 = '[ruby-dev:43873]'
-        assert_equal(2, data.size, bug4920)
+        assert_include(1..2, data.size, bug4920)
         assert_not_include(data.map(&:to_i), pid)
       end
     else # darwin
       def test_daemon_no_threads
-        data = Timeout.timeout(3) do
+        data = EnvUtil.timeout(3) do
           IO.popen("-") do |f|
             break f.readlines.map(&:chomp) if f
             th = Thread.start {sleep 3}
@@ -1838,16 +1877,16 @@ class TestProcess < Test::Unit::TestCase
       if user
         assert_nothing_raised(feature6975) do
           begin
-            system(*TRUECOMMAND, uid: user)
-          rescue Errno::EPERM, NotImplementedError
+            system(*TRUECOMMAND, uid: user, exception: true)
+          rescue Errno::EPERM, Errno::EACCES, NotImplementedError
           end
         end
       end
 
       assert_nothing_raised(feature6975) do
         begin
-          system(*TRUECOMMAND, uid: uid)
-        rescue Errno::EPERM, NotImplementedError
+          system(*TRUECOMMAND, uid: uid, exception: true)
+        rescue Errno::EPERM, Errno::EACCES, NotImplementedError
         end
       end
 
@@ -1855,7 +1894,7 @@ class TestProcess < Test::Unit::TestCase
         begin
           u = IO.popen([RUBY, "-e", "print Process.uid", uid: user||uid], &:read)
           assert_equal(uid.to_s, u, feature6975)
-        rescue Errno::EPERM, NotImplementedError
+        rescue Errno::EPERM, Errno::EACCES, NotImplementedError
         end
       end
     end
@@ -2046,7 +2085,11 @@ EOS
 
   def test_clock_gettime_GETTIMEOFDAY_BASED_CLOCK_REALTIME
     n = :GETTIMEOFDAY_BASED_CLOCK_REALTIME
-    t = Process.clock_gettime(n)
+    begin
+      t = Process.clock_gettime(n)
+    rescue Errno::EINVAL
+      return
+    end
     assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
   end
 
@@ -2124,7 +2167,11 @@ EOS
 
   def test_clock_getres_GETTIMEOFDAY_BASED_CLOCK_REALTIME
     n = :GETTIMEOFDAY_BASED_CLOCK_REALTIME
-    t = Process.clock_getres(n)
+    begin
+      t = Process.clock_getres(n)
+    rescue Errno::EINVAL
+      return
+    end
     assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
     assert_equal(1000, Process.clock_getres(n, :nanosecond))
   end
@@ -2190,7 +2237,7 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
-    assert_separately(["-", RUBY], <<-INPUT, timeout: 80)
+    assert_separately(%W(--disable=gems - #{RUBY}), <<-INPUT, timeout: 100)
       ruby = ARGV.shift
       GC.start # reduce garbage
       GC.disable # avoid triggering CoW after forks
@@ -2198,7 +2245,7 @@ EOS
       parent = $$
       100.times do |i|
         pid = fork {Process.kill(:QUIT, parent)}
-        IO.popen(ruby, 'r+'){}
+        IO.popen([ruby, -'--disable=gems'], -'r+'){}
         Process.wait(pid)
         $stdout.puts
         $stdout.flush
@@ -2211,7 +2258,7 @@ EOS
     th = Process.detach(pid)
     assert_equal pid, th.pid
     status = th.value
-    assert status.success?, status.inspect
+    assert_predicate status, :success?
   end if defined?(fork)
 
   def test_kill_at_spawn_failure
@@ -2270,7 +2317,7 @@ EOS
   def test_signals_work_after_exec_fail
     r, w = IO.pipe
     pid = status = nil
-    Timeout.timeout(30) do
+    EnvUtil.timeout(30) do
       pid = fork do
         r.close
         begin
@@ -2304,7 +2351,7 @@ EOS
   def test_threading_works_after_exec_fail
     r, w = IO.pipe
     pid = status = nil
-    Timeout.timeout(90) do
+    EnvUtil.timeout(90) do
       pid = fork do
         r.close
         begin
@@ -2313,7 +2360,6 @@ EOS
           w.syswrite("exec failed\n")
         end
         q = Queue.new
-        run = true
         th1 = Thread.new { i = 0; i += 1 while q.empty?; i }
         th2 = Thread.new { j = 0; j += 1 while q.empty? && Thread.pass.nil?; j }
         sleep 0.5
