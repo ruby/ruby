@@ -2,14 +2,15 @@
 require 'rubygems/request_set/lockfile/parser'
 
 class Gem::RequestSet::Lockfile::Tokenizer
+
   Token = Struct.new :type, :value, :column, :line
   EOF   = Token.new :EOF
 
-  def self.from_file file
+  def self.from_file(file)
     new File.read(file), file
   end
 
-  def initialize input, filename = nil, line = 0, pos = 0
+  def initialize(input, filename = nil, line = 0, pos = 0)
     @line     = line
     @line_pos = pos
     @tokens   = []
@@ -17,7 +18,7 @@ class Gem::RequestSet::Lockfile::Tokenizer
     tokenize input
   end
 
-  def make_parser set, platforms
+  def make_parser(set, platforms)
     Gem::RequestSet::Lockfile::Parser.new self, set, platforms, @filename
   end
 
@@ -25,7 +26,7 @@ class Gem::RequestSet::Lockfile::Tokenizer
     @tokens.map { |token| [token.type, token.value, token.column, token.line] }
   end
 
-  def skip type
+  def skip(type)
     @tokens.shift while not @tokens.empty? and peek.type == type
   end
 
@@ -33,7 +34,7 @@ class Gem::RequestSet::Lockfile::Tokenizer
   # Calculates the column (by byte) and the line of the current token based on
   # +byte_offset+.
 
-  def token_pos byte_offset # :nodoc:
+  def token_pos(byte_offset) # :nodoc:
     [byte_offset - @line_pos, @line]
   end
 
@@ -41,7 +42,7 @@ class Gem::RequestSet::Lockfile::Tokenizer
     @tokens.empty?
   end
 
-  def unshift token
+  def unshift(token)
     @tokens.unshift token
   end
 
@@ -56,7 +57,7 @@ class Gem::RequestSet::Lockfile::Tokenizer
 
   private
 
-  def tokenize input
+  def tokenize(input)
     require 'strscan'
     s = StringScanner.new input
 
@@ -65,7 +66,7 @@ class Gem::RequestSet::Lockfile::Tokenizer
 
       pos = s.pos if leading_whitespace = s.scan(/ +/)
 
-      if s.scan(/[<|=>]{7}/) then
+      if s.scan(/[<|=>]{7}/)
         message = "your #{@filename} contains merge conflict markers"
         column, line = token_pos pos
 
@@ -80,7 +81,7 @@ class Gem::RequestSet::Lockfile::Tokenizer
           @line += 1
           token
         when s.scan(/[A-Z]+/) then
-          if leading_whitespace then
+          if leading_whitespace
             text = s.matched
             text += s.scan(/[^\s)]*/).to_s # in case of no match
             Token.new(:text, text, *token_pos(pos))
@@ -109,4 +110,5 @@ class Gem::RequestSet::Lockfile::Tokenizer
 
     @tokens
   end
+
 end

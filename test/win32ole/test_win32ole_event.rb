@@ -5,8 +5,7 @@ rescue LoadError
 end
 require 'test/unit'
 
-def ado_installed?
-  installed = false
+ado_installed =
   if defined?(WIN32OLE)
     db = nil
     begin
@@ -15,25 +14,19 @@ def ado_installed?
       db.open
       db.close
       db = nil
-      installed = true
+      true
     rescue
     end
   end
-  installed
-end
 
-def swbemsink_available?
-  available = false
+swbemsink_available =
   if defined?(WIN32OLE)
-    wmi = nil
     begin
-      wmi = WIN32OLE.new('WbemScripting.SWbemSink')
-      available = true
+      WIN32OLE.new('WbemScripting.SWbemSink')
+      true
     rescue
     end
   end
-  available
-end
 
 if defined?(WIN32OLE_EVENT)
   class TestWIN32OLE_EVENT < Test::Unit::TestCase
@@ -50,12 +43,8 @@ if defined?(WIN32OLE_EVENT)
     end
   end
 
-  class TestWIN32OLE_EVENT_SWbemSink < Test::Unit::TestCase
-    unless swbemsink_available?
-      def test_dummy_for_skip_message
-        skip "'WbemScripting.SWbemSink' is not available"
-      end
-    else
+  if swbemsink_available
+    class TestWIN32OLE_EVENT_SWbemSink < Test::Unit::TestCase
       def setup
         @wmi = WIN32OLE.connect('winmgmts://localhost/root/cimv2')
         @sws = WIN32OLE.new('WbemScripting.SWbemSink')
@@ -63,10 +52,26 @@ if defined?(WIN32OLE_EVENT)
         @sql = "SELECT * FROM __InstanceModificationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_LocalTime'"
       end
 
-      def message_loop
+      def message_loop(watch_ivar = nil)
+        if watch_ivar
+          orig_ivar = instance_variable_get(watch_ivar)
+        end
+
         2.times do
           WIN32OLE_EVENT.message_loop
           sleep 1
+        end
+
+        if watch_ivar
+          # wait until event is proceeded
+          tries = 0
+          while tries < 5 && instance_variable_get(watch_ivar) == orig_ivar
+            seconds = 2 ** tries # sleep at most 31s in total
+            $stderr.puts "test_win32ole_event.rb: retrying and sleeping #{seconds}s until #{watch_ivar} is changed from #{orig_ivar.inspect}..."
+            WIN32OLE_EVENT.message_loop
+            sleep(seconds)
+            tries += 1
+          end
         end
       end
 
@@ -101,14 +106,17 @@ if defined?(WIN32OLE_EVENT)
           message_loop
           GC.start
         end
-        assert_match(/OnObjectReady/, @event)
+
+        # @event randomly becomes "OnCompleted" here. Try to wait until it matches.
+        # https://ci.appveyor.com/project/ruby/ruby/builds/19963142/job/8gaxepksa0i3b998
+        assert_match_with_retries(/OnObjectReady/, :@event)
       end
 
       def test_on_event
         exec_notification_query_async
         ev = WIN32OLE_EVENT.new(@sws, 'ISWbemSinkEvents')
         ev.on_event {|*args| default_handler(*args)}
-        message_loop
+        message_loop(:@event)
         assert_match(/OnObjectReady/, @event)
       end
 
@@ -118,7 +126,7 @@ if defined?(WIN32OLE_EVENT)
         ev.on_event(:OnObjectReady) {|*args|
           handler1
         }
-        message_loop
+        message_loop(:@event1)
         assert_equal("handler1", @event1)
       end
 
@@ -131,15 +139,25 @@ if defined?(WIN32OLE_EVENT)
         end
         raise
       end
+
+      def assert_match_with_retries(regexp, ivarname)
+        ivar = instance_variable_get(ivarname)
+
+        tries = 0
+        while tries < 6 && !ivar.match(regexp)
+          $stderr.puts "test_win32ole_event.rb: retrying until #{ivarname} (#{ivar}) matches #{regexp} (tries: #{tries})..."
+          sleep(2 ** tries) # sleep at most 63s in total
+          ivar = instance_variable_get(ivarname)
+          tries += 1
+        end
+
+        assert_match(regexp, ivar)
+      end
     end
   end
 
-  class TestWIN32OLE_EVENT_ADO < Test::Unit::TestCase
-    unless ado_installed?
-      def test_dummy_for_skip_message
-        skip "ActiveX Data Object Library not found"
-      end
-    else
+  if ado_installed
+    class TestWIN32OLE_EVENT_ADO < Test::Unit::TestCase
       CONNSTR="Driver={Microsoft Text Driver (*.txt; *.csv)};DefaultDir=.;"
       module ADO
       end
@@ -389,12 +407,14 @@ if defined?(WIN32OLE_EVENT)
           $SAFE=1
           str = 'ConnectionEvents'
           str.taint
-          ev = WIN32OLE_EVENT.new(@db, str)
+          WIN32OLE_EVENT.new(@db, str)
         }
         exc = assert_raise(SecurityError) {
           th.join
         }
         assert_match(/insecure event creation - `ConnectionEvents'/, exc.message)
+      ensure
+        $SAFE = 0
       end
     end
   end

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # A file included at generation time.  Objects of this class are created by
 # RDoc::RD for an extension-less include.

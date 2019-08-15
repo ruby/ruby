@@ -1,6 +1,8 @@
 # frozen_string_literal: false
 require 'test/unit'
 
+if defined?(OpenSSL)
+
 module OpenSSL::TestEOF
   def test_eof_0
     open_file("") {|f|
@@ -126,4 +128,6 @@ module OpenSSL::TestEOF
       }
     end
   end
+end
+
 end

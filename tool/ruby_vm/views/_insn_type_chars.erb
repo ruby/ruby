@@ -1,0 +1,13 @@
+%# -*- C -*-
+%# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+%
+enum ruby_insn_type_chars {
+% RubyVM::Typemap.each_value do |(c, t)|
+    <%= t %> = '<%= c %>',
+% end
+};

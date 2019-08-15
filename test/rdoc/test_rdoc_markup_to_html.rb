@@ -1,5 +1,5 @@
-# frozen_string_literal: false
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require 'minitest_helper'
 
 class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
@@ -395,7 +395,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
     @to.accept_paragraph para("hello\n", "world\n")
 
-    assert_equal "\n<p>hello world</p>\n", @to.res.join
+    assert_equal "\n<p>hello world </p>\n", @to.res.join
   end
 
   def test_accept_heading_output_decoration
@@ -451,6 +451,22 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal expected, @to.res.join
   end
 
+  def test_accept_verbatim_nl_after_backslash
+    verb = @RM::Verbatim.new("a = 1 if first_flag_var and \\\n", "  this_is_flag_var\n")
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-EXPECTED
+
+<pre class="ruby"><span class="ruby-identifier">a</span> = <span class="ruby-value">1</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">first_flag_var</span> <span class="ruby-keyword">and</span> \\
+  <span class="ruby-identifier">this_is_flag_var</span>
+</pre>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
   def test_accept_verbatim_pipe
     @options.pipe = true
 
@@ -469,6 +485,106 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal expected, @to.res.join
   end
 
+  def test_accept_verbatim_escape_in_string
+    code = <<-'RUBY'
+def foo
+  [
+    '\\',
+    '\'',
+    "'",
+    "\'\"\`",
+    "\#",
+    "\#{}",
+    "#",
+    "#{}",
+    /'"/,
+    /\'\"/,
+    /\//,
+    /\\/,
+    /\#/,
+    /\#{}/,
+    /#/,
+    /#{}/
+  ]
+end
+def bar
+end
+    RUBY
+    verb = @RM::Verbatim.new(*code.split(/(?<=\n)/))
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-'EXPECTED'
+
+<pre class="ruby"><span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">foo</span>
+  [
+    <span class="ruby-string">&#39;\\&#39;</span>,
+    <span class="ruby-string">&#39;\&#39;&#39;</span>,
+    <span class="ruby-string">&quot;&#39;&quot;</span>,
+    <span class="ruby-string">&quot;\&#39;\&quot;\`&quot;</span>,
+    <span class="ruby-string">&quot;\#&quot;</span>,
+    <span class="ruby-string">&quot;\#{}&quot;</span>,
+    <span class="ruby-string">&quot;#&quot;</span>,
+    <span class="ruby-node">&quot;#{}&quot;</span>,
+    <span class="ruby-regexp">/&#39;&quot;/</span>,
+    <span class="ruby-regexp">/\&#39;\&quot;/</span>,
+    <span class="ruby-regexp">/\//</span>,
+    <span class="ruby-regexp">/\\/</span>,
+    <span class="ruby-regexp">/\#/</span>,
+    <span class="ruby-regexp">/\#{}/</span>,
+    <span class="ruby-regexp">/#/</span>,
+    <span class="ruby-regexp">/#{}/</span>
+  ]
+<span class="ruby-keyword">end</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">bar</span>
+<span class="ruby-keyword">end</span>
+</pre>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
+  def test_accept_verbatim_escape_in_backtick
+    code = <<-'RUBY'
+def foo
+  [
+    `\\`,
+    `\'\"\``,
+    `\#`,
+    `\#{}`,
+    `#`,
+    `#{}`
+  ]
+end
+def bar
+end
+    RUBY
+    verb = @RM::Verbatim.new(*code.split(/(?<=\n)/))
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-'EXPECTED'
+
+<pre class="ruby"><span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">foo</span>
+  [
+    <span class="ruby-string">`\\`</span>,
+    <span class="ruby-string">`\&#39;\&quot;\``</span>,
+    <span class="ruby-string">`\#`</span>,
+    <span class="ruby-string">`\#{}`</span>,
+    <span class="ruby-string">`#`</span>,
+    <span class="ruby-node">`#{}`</span>
+  ]
+<span class="ruby-keyword">end</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">bar</span>
+<span class="ruby-keyword">end</span>
+</pre>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
   def test_accept_verbatim_ruby
     verb = @RM::Verbatim.new("1 + 1\n")
     verb.format = :ruby
@@ -481,6 +597,36 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 <pre class="ruby"><span class="ruby-value">1</span> <span class="ruby-operator">+</span> <span class="ruby-value">1</span>
 </pre>
     EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
+  def test_accept_verbatim_redefinable_operators
+    functions = %w[| ^ & <=> == === =~ > >= < <= << >> + - * / % ** ~ +@ -@ [] []= ` !  != !~].map { |redefinable_op|
+      ["def #{redefinable_op}\n", "end\n"]
+    }.flatten
+
+    verb = @RM::Verbatim.new(*functions)
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-EXPECTED
+
+<pre class="ruby">
+    EXPECTED
+    expected = expected.rstrip
+
+    %w[| ^ &amp; &lt;=&gt; == === =~ &gt; &gt;= &lt; &lt;= &lt;&lt; &gt;&gt; + - * / % ** ~ +@ -@ [] []= ` !  != !~].each do |html_escaped_op|
+      expected += <<-EXPECTED
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">#{html_escaped_op}</span>
+<span class="ruby-keyword">end</span>
+      EXPECTED
+    end
+
+    expected += <<-EXPECTED
+</pre>
+EXPECTED
 
     assert_equal expected, @to.res.join
   end
@@ -581,18 +727,18 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal '<img src="https://example.com/image.png" />', @to.gen_url('https://example.com/image.png', 'ignored')
   end
 
-  def test_handle_special_HYPERLINK_link
-    special = RDoc::Markup::Special.new 0, 'link:README.txt'
+  def test_handle_regexp_HYPERLINK_link
+    target = RDoc::Markup::RegexpHandling.new 0, 'link:README.txt'
 
-    link = @to.handle_special_HYPERLINK special
+    link = @to.handle_regexp_HYPERLINK target
 
     assert_equal '<a href="README.txt">README.txt</a>', link
   end
 
-  def test_handle_special_HYPERLINK_irc
-    special = RDoc::Markup::Special.new 0, 'irc://irc.freenode.net/#ruby-lang'
+  def test_handle_regexp_HYPERLINK_irc
+    target = RDoc::Markup::RegexpHandling.new 0, 'irc://irc.freenode.net/#ruby-lang'
 
-    link = @to.handle_special_HYPERLINK special
+    link = @to.handle_regexp_HYPERLINK target
 
     assert_equal '<a href="irc://irc.freenode.net/#ruby-lang">irc.freenode.net/#ruby-lang</a>', link
   end

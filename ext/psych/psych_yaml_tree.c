@@ -9,7 +9,7 @@ VALUE cPsychVisitorsYamlTree;
  */
 static VALUE private_iv_get(VALUE self, VALUE target, VALUE prop)
 {
-    return rb_attr_get(target, rb_intern(StringValuePtr(prop)));
+    return rb_attr_get(target, rb_intern(StringValueCStr(prop)));
 }
 
 void Init_psych_yaml_tree(void)

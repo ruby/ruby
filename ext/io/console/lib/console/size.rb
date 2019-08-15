@@ -10,7 +10,7 @@ end
 begin
   require 'io/console'
 rescue LoadError
-  class IO
+  class << IO
     alias console_size default_console_size
   end
 else

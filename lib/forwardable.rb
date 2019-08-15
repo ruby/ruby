@@ -57,10 +57,9 @@
 #
 # == Another example
 #
-# We want to rely on what has come before obviously, but with delegation we can
-# take just the methods we need and even rename them as appropriate.  In many
-# cases this is preferable to inheritance, which gives us the entire old
-# interface, even if much of it isn't needed.
+# You could use Forwardable as an alternative to inheritance, when you don't want
+# to inherit all methods from the superclass. For instance, here is how you might
+# add a range of +Array+ instance methods to a new class +Queue+:
 #
 #   class Queue
 #     extend Forwardable
@@ -113,7 +112,8 @@ module Forwardable
   require 'forwardable/impl'
 
   # Version of +forwardable.rb+
-  FORWARDABLE_VERSION = "1.2.0"
+  VERSION = "1.2.0"
+  FORWARDABLE_VERSION = VERSION
 
   @debug = nil
   class << self
@@ -122,7 +122,8 @@ module Forwardable
   end
 
   # Takes a hash as its argument.  The key is a symbol or an array of
-  # symbols.  These symbols correspond to method names.  The value is
+  # symbols.  These symbols correspond to method names, instance variable
+  # names, or constant names (see def_delegator).  The value is
   # the accessor to which the methods will be delegated.
   #
   # :call-seq:
@@ -160,9 +161,12 @@ module Forwardable
 
   # Define +method+ as delegator instance method with an optional
   # alias name +ali+. Method calls to +ali+ will be delegated to
-  # +accessor.method+.
+  # +accessor.method+.  +accessor+ should be a method name, instance
+  # variable name, or constant name.  Use the full path to the
+  # constant if providing the constant name.
   #
   #   class MyQueue
+  #     CONST = 1
   #     extend Forwardable
   #     attr_reader :queue
   #     def initialize
@@ -170,12 +174,14 @@ module Forwardable
   #     end
   #
   #     def_delegator :@queue, :push, :mypush
+  #     def_delegator 'MyQueue::CONST', :to_i
   #   end
   #
   #   q = MyQueue.new
   #   q.mypush 42
   #   q.queue    #=> [42]
   #   q.push 23  #=> NoMethodError
+  #   q.to_i     #=> 1
   #
   def def_instance_delegator(accessor, method, ali = method)
     gen = Forwardable._delegator_method(self, accessor, method, ali)
@@ -206,7 +212,7 @@ module Forwardable
       method_call = "#{<<-"begin;"}\n#{<<-"end;".chomp}"
         begin;
           unless defined? _.#{method}
-            ::Kernel.warn "\#{caller_locations(1)[0]}: "#{mesg.dump}"\#{_.class}"'##{method}'
+            ::Kernel.warn #{mesg.dump}"\#{_.class}"'##{method}', uplevel: 1
             _#{method_call}
           else
             _.#{method}(*args, &block)
@@ -221,7 +227,7 @@ module Forwardable
           #{pre}
           begin
             #{accessor}
-          end#{method_call}#{FILTER_EXCEPTION}
+          end#{method_call}
         end
       end
     end;

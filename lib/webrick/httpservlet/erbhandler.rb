@@ -9,7 +9,7 @@
 #
 # $IPR: erbhandler.rb,v 1.25 2003/02/24 19:25:31 gotoyuzo Exp $
 
-require 'webrick/httpservlet/abstract.rb'
+require_relative 'abstract'
 
 require 'erb'
 
@@ -53,7 +53,7 @@ module WEBrick
           raise HTTPStatus::Forbidden, "ERBHandler cannot work."
         end
         begin
-          data = open(@script_filename){|io| io.read }
+          data = File.open(@script_filename, &:read)
           res.body = evaluate(ERB.new(data), req, res)
           res['content-type'] ||=
             HTTPUtils::mime_type(@script_filename, @config[:MimeTypes])

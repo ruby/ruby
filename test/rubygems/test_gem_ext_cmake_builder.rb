@@ -10,7 +10,9 @@ class TestGemExtCmakeBuilder < Gem::TestCase
     # Details: https://github.com/rubygems/rubygems/issues/1270#issuecomment-177368340
     skip "CmakeBuilder doesn't work on Windows." if Gem.win_platform?
 
-    `cmake #{Gem::Ext::Builder.redirector}`
+    skip "CmakeBuilder doesn't work on JRuby." if Gem.java_platform? && ENV["CI"]
+
+    system('cmake', out: IO::NULL, err: [:child, :out])
 
     skip 'cmake not present' unless $?.success?
 
@@ -25,6 +27,7 @@ class TestGemExtCmakeBuilder < Gem::TestCase
     File.open File.join(@ext, 'CMakeLists.txt'), 'w' do |cmakelists|
       cmakelists.write <<-eo_cmake
 cmake_minimum_required(VERSION 2.6)
+project(self_build NONE)
 install (FILES test.txt DESTINATION bin)
       eo_cmake
     end
@@ -34,7 +37,7 @@ install (FILES test.txt DESTINATION bin)
     output = []
 
     Dir.chdir @ext do
-      Gem::Ext::CmakeBuilder.build nil, nil, @dest_path, output
+      Gem::Ext::CmakeBuilder.build nil, @dest_path, output
     end
 
     output = output.join "\n"
@@ -52,7 +55,7 @@ install (FILES test.txt DESTINATION bin)
 
     error = assert_raises Gem::InstallError do
       Dir.chdir @ext do
-        Gem::Ext::CmakeBuilder.build nil, nil, @dest_path, output
+        Gem::Ext::CmakeBuilder.build nil, @dest_path, output
       end
     end
 
@@ -75,7 +78,7 @@ install (FILES test.txt DESTINATION bin)
     output = []
 
     Dir.chdir @ext do
-      Gem::Ext::CmakeBuilder.build nil, nil, @dest_path, output
+      Gem::Ext::CmakeBuilder.build nil, @dest_path, output
     end
 
     output = output.join "\n"

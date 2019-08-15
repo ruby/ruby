@@ -47,7 +47,7 @@ require 'tmpdir'
 #
 #   file = Tempfile.new('foo')
 #   begin
-#      ...do something with file...
+#      # ...do something with file...
 #   ensure
 #      file.close
 #      file.unlink   # deletes the temp file
@@ -79,9 +79,6 @@ require 'tmpdir'
 # same Tempfile object from multiple threads then you should protect it with a
 # mutex.
 class Tempfile < DelegateClass(File)
-  # call-seq:
-  #    new(basename = "", [tmpdir = Dir.tmpdir], [options])
-  #
   # Creates a temporary file with permissions 0600 (= only readable and
   # writable by the owner) and opens it with mode "w+".
   #
@@ -114,17 +111,20 @@ class Tempfile < DelegateClass(File)
   # +File.open+. This is mostly useful for specifying encoding
   # options, e.g.:
   #
-  #   Tempfile.new('hello', '/home/aisaka', :encoding => 'ascii-8bit')
+  #   Tempfile.new('hello', '/home/aisaka', encoding: 'ascii-8bit')
   #
   #   # You can also omit the 'tmpdir' parameter:
-  #   Tempfile.new('hello', :encoding => 'ascii-8bit')
+  #   Tempfile.new('hello', encoding: 'ascii-8bit')
+  #
+  # Note: +mode+ keyword argument, as accepted by Tempfile, can only be
+  # numeric, combination of the modes defined in File::Constants.
   #
   # === Exceptions
   #
   # If Tempfile.new cannot find a unique filename within a limited
   # number of tries, then it will raise an exception.
   def initialize(basename="", tmpdir=nil, mode: 0, **options)
-    warn "Tempfile.new doesn't call the given block." if block_given?
+    warn "Tempfile.new doesn't call the given block.", uplevel: 1 if block_given?
 
     @unlinked = false
     @mode = mode|File::RDWR|File::CREAT|File::EXCL
@@ -174,7 +174,7 @@ class Tempfile < DelegateClass(File)
   #
   #   file = Tempfile.new('foo')
   #   begin
-  #      ...do something with file...
+  #      # ...do something with file...
   #   ensure
   #      file.close
   #      file.unlink   # deletes the temp file
@@ -195,7 +195,7 @@ class Tempfile < DelegateClass(File)
   #   file = Tempfile.new('foo')
   #   file.unlink   # On Windows this silently fails.
   #   begin
-  #      ... do something with file ...
+  #      # ... do something with file ...
   #   ensure
   #      file.close!   # Closes the file handle. If the file wasn't unlinked
   #                    # because #unlink failed, then this method will attempt
@@ -234,14 +234,14 @@ class Tempfile < DelegateClass(File)
 
   # :stopdoc:
   def inspect
-    if closed?
+    if @tmpfile.closed?
       "#<#{self.class}:#{path} (closed)>"
     else
       "#<#{self.class}:#{path}>"
     end
   end
 
-  class Remover
+  class Remover # :nodoc:
     def initialize(tmpfile)
       @pid = Process.pid
       @tmpfile = tmpfile
@@ -250,7 +250,7 @@ class Tempfile < DelegateClass(File)
     def call(*args)
       return if @pid != Process.pid
 
-      warn "removing #{@tmpfile.path}..." if $DEBUG
+      $stderr.puts "removing #{@tmpfile.path}..." if $DEBUG
 
       @tmpfile.close
       begin
@@ -258,7 +258,7 @@ class Tempfile < DelegateClass(File)
       rescue Errno::ENOENT
       end
 
-      warn "done" if $DEBUG
+      $stderr.puts "done" if $DEBUG
     end
   end
 
@@ -274,16 +274,16 @@ class Tempfile < DelegateClass(File)
     # object will be automatically closed after the block terminates.
     # The call returns the value of the block.
     #
-    # In any case, all arguments (+*args+) will be passed to Tempfile.new.
+    # In any case, all arguments (<code>*args</code>) will be passed to Tempfile.new.
     #
     #   Tempfile.open('foo', '/home/temp') do |f|
-    #      ... do something with f ...
+    #      # ... do something with f ...
     #   end
     #
     #   # Equivalent:
     #   f = Tempfile.open('foo', '/home/temp')
     #   begin
-    #      ... do something with f ...
+    #      # ... do something with f ...
     #   ensure
     #      f.close
     #   end
@@ -317,10 +317,11 @@ end
 # the temporary file is removed after the block terminates.
 # The call returns the value of the block.
 #
-# In any case, all arguments (+*args+) will be treated as Tempfile.new.
+# In any case, all arguments (+basename+, +tmpdir+, +mode+, and
+# <code>**options</code>) will be treated as Tempfile.new.
 #
 #   Tempfile.create('foo', '/home/temp') do |f|
-#      ... do something with f ...
+#      # ... do something with f ...
 #   end
 #
 def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
@@ -334,8 +335,18 @@ def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
     begin
       yield tmpfile
     ensure
-      tmpfile.close
-      File.unlink tmpfile
+      unless tmpfile.closed?
+        if File.identical?(tmpfile, tmpfile.path)
+          unlinked = File.unlink tmpfile.path rescue nil
+        end
+        tmpfile.close
+      end
+      unless unlinked
+        begin
+          File.unlink tmpfile.path
+        rescue Errno::ENOENT
+        end
+      end
     end
   else
     tmpfile

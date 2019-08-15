@@ -222,7 +222,6 @@ def extmake(target, basedir = 'ext', maybestatic = true)
       rescue SystemExit
 	# ignore
       rescue => error
-        lineno = error.backtrace_locations[0].lineno
         ok = false
       ensure
 	rm_f "conftest*"
@@ -238,18 +237,16 @@ def extmake(target, basedir = 'ext', maybestatic = true)
 
       return true if !error and target.start_with?("-")
 
-      if parent
-        message = "Failed to configure #{target}. It will not be installed."
-      else
-        message = "Skipped to configure #{target}. Its parent is not configured."
+      message = nil
+      if error
+        loc = error.backtrace_locations[0]
+        message = "#{loc.absolute_path}:#{loc.lineno}: #{error.message}"
+        if Logging.log_opened?
+          Logging::message("#{message}\n\t#{error.backtrace.join("\n\t")}\n")
+        end
       end
-      if Logging.log_opened?
-        Logging::message(error.to_s) if error
-        Logging::message(message)
-      end
-      message = error.message if error
 
-      return parent ? [conf, lineno||0, message] : true
+      return [parent, message]
     end
     args = $mflags
     unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
@@ -414,12 +411,15 @@ elsif sep = config_string('BUILD_FILE_SEPARATOR')
 else
   $ruby = '$(topdir)/miniruby' + EXEEXT
 end
-$ruby << " -I'$(topdir)'"
+$ruby = [$ruby]
+$ruby << "-I'$(topdir)'"
 unless CROSS_COMPILING
-  $ruby << " -I'$(top_srcdir)/lib'"
-  $ruby << " -I'$(extout)/$(arch)' -I'$(extout)/common'" if $extout
+  $ruby << "-I'$(top_srcdir)/lib'"
+  $ruby << "-I'$(extout)/$(arch)'" << "-I'$(extout)/common'" if $extout
   ENV["RUBYLIB"] = "-"
 end
+topruby = $ruby
+$ruby = topruby.join(' ')
 $mflags << "ruby=#$ruby"
 
 MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtime(f)}
@@ -476,6 +476,7 @@ default_exclude_exts =
   else
     %w'*win32*'
   end
+mandatory_exts = {}
 withes, withouts = [["--with", nil], ["--without", default_exclude_exts]].collect {|w, d|
   if !(w = %w[-extensions -ext].collect {|o|arg_config(w+o)}).any?
     d ? proc {|c1| d.any?(&c1)} : proc {true}
@@ -483,23 +484,29 @@ withes, withouts = [["--with", nil], ["--without", default_exclude_exts]].collec
     proc {true}
   else
     w = w.collect {|o| o.split(/,/)}.flatten
-    w.collect! {|o| o == '+' ? d : o}.flatten! if d
+    w.collect! {|o| o == '+' ? d : o}.flatten!
     proc {|c1| w.any?(&c1)}
   end
 }
 cond = proc {|ext, *|
-  cond1 = proc {|n| File.fnmatch(n, ext)}
-  withes.call(cond1) and !withouts.call(cond1)
+  withes.call(proc {|n|
+                !n or (mandatory_exts[ext] = true if File.fnmatch(n, ext))
+              }) and
+    !withouts.call(proc {|n| File.fnmatch(n, ext)})
 }
 ($extension || %w[*]).each do |e|
   e = e.sub(/\A(?:\.\/)+/, '')
-  exts |= Dir.glob("#{ext_prefix}/#{e}/**/extconf.rb").collect {|d|
+  incl, excl = Dir.glob("#{ext_prefix}/#{e}/**/extconf.rb").collect {|d|
     d = File.dirname(d)
     d.slice!(0, ext_prefix.length + 1)
     d
-  }.find_all {|ext|
+  }.partition {|ext|
     with_config(ext, &cond)
-  }.sort
+  }
+  incl.sort!
+  excl.sort!.collect! {|d| d+"/"}
+  nil while incl.reject! {|d| excl << d+"/" if excl.any? {|x| d.start_with?(x)}}
+  exts |= incl
   if $LIBRUBYARG_SHARED.empty? and CONFIG["EXTSTATIC"] == "static"
     exts.delete_if {|d| File.fnmatch?("-*", d)}
   end
@@ -560,7 +567,7 @@ exts.each do |d|
   if !$nodynamic or $static
     result = extmake(d, ext_prefix, !@gemname) or abort
     extso |= $extso
-    fails << result unless result == true
+    fails << [d, result] unless result == true
   end
 end
 
@@ -658,6 +665,8 @@ begin
       puts
     end
 
+    mf.macro "ruby", topruby
+    mf.macro "RUBY", ["$(ruby)"]
     mf.macro "extensions", exts
     mf.macro "EXTOBJS", $extlist.empty? ? ["dmyext.#{$OBJEXT}"] : ["ext/extinit.#{$OBJEXT}", *$extobjs]
     mf.macro "EXTLIBS", $extlibs
@@ -679,6 +688,8 @@ begin
     submakeopts << 'UPDATE_LIBRARIES="$(UPDATE_LIBRARIES)"'
     submakeopts << 'SHOWFLAGS='
     mf.macro "SUBMAKEOPTS", submakeopts
+    mf.macro "NOTE_MESG", %w[$(RUBY) $(top_srcdir)/tool/lib/colorize.rb skip]
+    mf.macro "NOTE_NAME", %w[$(RUBY) $(top_srcdir)/tool/lib/colorize.rb fail]
     mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |tgt|
@@ -711,7 +722,16 @@ begin
     end
     targets.each do |tgt|
       exts.each do |d|
-        mf.puts "#{d[0..-2]}#{tgt}:\n\t$(Q)#{submake} $(MFLAGS) V=$(V) $(@F)"
+        d = d[0..-2]
+        t = "#{d}#{tgt}"
+        if  /^(dist|real)?clean$/ =~ tgt
+          deps = exts.select {|e|e.start_with?(d)}.map {|e|"#{e[0..-2]}#{tgt}"} - [t]
+          pd = ' ' + deps.join(' ') unless deps.empty?
+        else
+          pext = File.dirname(d)
+          pd = " #{pext}/#{tgt}" if exts.include?("#{pext}/.")
+        end
+        mf.puts "#{t}:#{pd}\n\t$(Q)#{submake} $(MFLAGS) V=$(V) $(@F)"
       end
     end
     mf.puts "\n""extso:\n"
@@ -719,18 +739,30 @@ begin
 
     mf.puts "\n""note:\n"
     unless fails.empty?
-      mf.puts %Q<\t@echo "*** Following extensions failed to configure:">
-      fails.each do |d, n, err|
-        d = "#{d}:#{n}:"
-        if err
-          err.scan(/.+/) do |ee|
-            mf.puts %Q<\t@echo "#{d} #{ee.gsub(/["`$^]/, '\\\\\\&')}">
+      abandon = false
+      mf.puts "note: note-body\n"
+      mf.puts "note-body:: note-header\n"
+      mf.puts "note-header:\n"
+      mf.puts %Q<\t@$(NOTE_MESG) "*** Following extensions are not compiled:">
+      mf.puts "note-body:: note-header\n"
+      fails.each do |ext, (parent, err)|
+        abandon ||= mandatory_exts[ext]
+        mf.puts %Q<\t@$(NOTE_NAME) "#{ext}:">
+        if parent
+          mf.puts %Q<\t@echo "\tCould not be configured. It will not be installed.">
+          err and err.scan(/.+/) do |ee|
+            mf.puts %Q<\t@echo "\t#{ee.gsub(/["`$^]/, '\\\\\\&')}">
           end
+          mf.puts %Q<\t@echo "\tCheck #{ext_prefix}/#{ext}/mkmf.log for more details.">
         else
-          mf.puts %Q<\t@echo "#{d}">
+          mf.puts %Q<\t@echo "\tSkipped because its parent was not configured.">
         end
       end
-      mf.puts %Q<\t@echo "*** Fix the problems, then remove these directories and try again if you want.">
+      mf.puts "note:\n"
+      mf.puts %Q<\t@$(NOTE_MESG) "*** Fix the problems, then remove these directories and try again if you want.">
+      if abandon
+        mf.puts "\t""@exit 1"
+      end
     end
   end
 end
