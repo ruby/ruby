@@ -205,7 +205,7 @@ module Spec
         args = args.gsub(/(?=")/, "\\")
         args = %("#{args}")
       end
-      gem = ENV["BUNDLE_GEM"] || "#{Gem.ruby} -rrubygems -S gem --backtrace"
+      gem = ENV["BUNDLE_GEM"] || "#{Gem.ruby} -S gem --backtrace"
       sys_exec("#{gem} #{command} #{args}")
     end
     bang :gem_command
