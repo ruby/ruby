@@ -17,6 +17,10 @@ module Spec
       @bindir ||= root.join(ruby_core? ? "libexec" : "exe")
     end
 
+    def gem_bin
+      @gem_bin ||= ruby_core? ? ENV["BUNDLE_GEM"] : "#{Gem.ruby} -S gem"
+    end
+
     def spec_dir
       @spec_dir ||= root.join(ruby_core? ? "spec/bundler" : "spec")
     end
