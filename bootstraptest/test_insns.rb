@@ -202,6 +202,7 @@ tests = [
   },
 
   [ 'opt_str_freeze', %q{ 'true'.freeze }, ],
+  [ 'opt_nil_p',      %q{ nil.nil? }, ],
   [ 'opt_str_uminus', %q{ -'true' }, ],
   [ 'opt_str_freeze', <<-'},', ], # {
     class String

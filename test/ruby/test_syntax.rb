@@ -93,6 +93,13 @@ class TestSyntax < Test::Unit::TestCase
     assert_valid_syntax("tap (proc do end)", __FILE__, bug9726)
   end
 
+  def test_methodref_literal
+    assert_separately [], <<-EOS
+      eval 'nil.:|;1'
+      1000.times{eval 'nil.:|;1'}
+    EOS
+  end
+
   def test_normal_argument
     assert_valid_syntax('def foo(x) end')
     assert_syntax_error('def foo(X) end', /constant/)
@@ -1020,9 +1027,7 @@ eom
       eval('1 if !//')
     end
     assert_warn('') do
-      verbose_bak, $VERBOSE = $VERBOSE, nil
       eval('1 if !(true..false)')
-      $VERBOSE = verbose_bak
     end
     assert_warning('') do
       eval('1 if !1')
@@ -1188,6 +1193,10 @@ eom
         end
       end
     end
+  end
+
+  def test_return_toplevel_with_argument
+    assert_warn(/argument of top-level return is ignored/) {eval("return 1")}
   end
 
   def test_syntax_error_in_rescue
@@ -1385,6 +1394,15 @@ eom
     assert_equal("121", eval('x = 12 |> pow(2) |> to_s 11'))
     assert_equal(12, x)
     assert_equal([2, 4, 6], eval("1.. |> take 3\n|> map do @1 * 2 end"))
+    assert_syntax_error('a|>-b', /unexpected '-'/)
+  end
+
+  def test_value_expr_in_condition
+    mesg = /void value expression/
+    assert_syntax_error("tap {a = (true ? next : break)}", mesg)
+    assert_valid_syntax("tap {a = (true ? true : break)}")
+    assert_valid_syntax("tap {a = (break if false)}")
+    assert_valid_syntax("tap {a = (break unless true)}")
   end
 
   private

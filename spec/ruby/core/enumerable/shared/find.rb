@@ -29,23 +29,23 @@ describe :enumerable_find, shared: true do
   end
 
   it "returns the value of the ifnone proc if the block is false" do
-    fail_proc = lambda { "cheeseburgers" }
+    fail_proc = -> { "cheeseburgers" }
     @numerous.send(@method, fail_proc) {|e| false }.should == "cheeseburgers"
   end
 
   it "doesn't call the ifnone proc if an element is found" do
-    fail_proc = lambda { raise "This shouldn't have been called" }
+    fail_proc = -> { raise "This shouldn't have been called" }
     @numerous.send(@method, fail_proc) {|e| e == @elements.first }.should == 2
   end
 
   it "calls the ifnone proc only once when the block is false" do
     times = 0
-    fail_proc = lambda { times += 1; raise if times > 1; "cheeseburgers" }
+    fail_proc = -> { times += 1; raise if times > 1; "cheeseburgers" }
     @numerous.send(@method, fail_proc) {|e| false }.should == "cheeseburgers"
   end
 
   it "calls the ifnone proc when there are no elements" do
-    fail_proc = lambda { "yay" }
+    fail_proc = -> { "yay" }
     @empty.send(@method, fail_proc) {|e| true}.should == "yay"
   end
 
@@ -64,7 +64,7 @@ describe :enumerable_find, shared: true do
 
   it "passes the ifnone proc to the enumerator" do
     times = 0
-    fail_proc = lambda { times += 1; raise if times > 1; "cheeseburgers" }
+    fail_proc = -> { times += 1; raise if times > 1; "cheeseburgers" }
     @numerous.send(@method, fail_proc).each {|e| false }.should == "cheeseburgers"
   end
 

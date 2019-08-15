@@ -1129,7 +1129,7 @@ dependencies: []
     Gem::Specification.class_variable_set(:@@stubs, nil)
 
     dir_standard_specs = File.join Gem.dir, 'specifications'
-    dir_default_specs = Gem::BasicSpecification.default_specifications_dir
+    dir_default_specs = Gem.default_specifications_dir
 
     # Create gemspecs in three locations used in stubs
     loaded_spec = Gem::Specification.new 'a', '3'
@@ -1149,7 +1149,7 @@ dependencies: []
     Gem::Specification.class_variable_set(:@@stubs, nil)
 
     dir_standard_specs = File.join Gem.dir, 'specifications'
-    dir_default_specs = Gem::BasicSpecification.default_specifications_dir
+    dir_default_specs = Gem.default_specifications_dir
 
     # Create gemspecs in three locations used in stubs
     loaded_spec = Gem::Specification.new 'a', '3'
@@ -2052,7 +2052,7 @@ dependencies: []
 
   def test_base_dir_default
     default_dir =
-      File.join Gem::Specification.default_specifications_dir, @a1.spec_name
+      File.join Gem.default_specifications_dir, @a1.spec_name
 
     @a1.instance_variable_set :@loaded_from, default_dir
 
@@ -2428,12 +2428,10 @@ Gem::Specification.new do |s|
 
   if s.respond_to? :specification_version then
     s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
+  end
 
-    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<b>.freeze, [\"= 1\"])
-    else
-      s.add_dependency(%q<b>.freeze, [\"= 1\"])
-    end
+  if s.respond_to? :add_runtime_dependency then
+    s.add_runtime_dependency(%q<b>.freeze, [\"= 1\"])
   else
     s.add_dependency(%q<b>.freeze, [\"= 1\"])
   end
@@ -2478,12 +2476,10 @@ Gem::Specification.new do |s|
 
   if s.respond_to? :specification_version then
     s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
+  end
 
-    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<b>.freeze, [\"= 1\"])
-    else
-      s.add_dependency(%q<b>.freeze, [\"= 1\"])
-    end
+  if s.respond_to? :add_runtime_dependency then
+    s.add_runtime_dependency(%q<b>.freeze, [\"= 1\"])
   else
     s.add_dependency(%q<b>.freeze, [\"= 1\"])
   end
@@ -2539,16 +2535,12 @@ Gem::Specification.new do |s|
 
   if s.respond_to? :specification_version then
     s.specification_version = 4
+  end
 
-    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<rake>.freeze, [\"> 0.4\"])
-      s.add_runtime_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\"])
-      s.add_runtime_dependency(%q<pqa>.freeze, [\"> 0.4\", \"<= 0.6\"])
-    else
-      s.add_dependency(%q<rake>.freeze, [\"> 0.4\"])
-      s.add_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\"])
-      s.add_dependency(%q<pqa>.freeze, [\"> 0.4\", \"<= 0.6\"])
-    end
+  if s.respond_to? :add_runtime_dependency then
+    s.add_runtime_dependency(%q<rake>.freeze, [\"> 0.4\"])
+    s.add_runtime_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\"])
+    s.add_runtime_dependency(%q<pqa>.freeze, [\"> 0.4\", \"<= 0.6\"])
   else
     s.add_dependency(%q<rake>.freeze, [\"> 0.4\"])
     s.add_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\"])

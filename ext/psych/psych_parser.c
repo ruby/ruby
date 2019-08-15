@@ -80,11 +80,12 @@ static VALUE allocate(VALUE klass)
 static VALUE make_exception(yaml_parser_t * parser, VALUE path)
 {
     size_t line, column;
+    VALUE ePsychSyntaxError;
 
     line = parser->context_mark.line + 1;
     column = parser->context_mark.column + 1;
 
-    VALUE ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
+    ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
 
     return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
 	    path,

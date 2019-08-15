@@ -28,22 +28,22 @@ describe "IO#initialize" do
   end
 
   it "raises a TypeError when passed an IO" do
-    lambda { @io.send :initialize, STDOUT, 'w' }.should raise_error(TypeError)
+    -> { @io.send :initialize, STDOUT, 'w' }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed nil" do
-    lambda { @io.send :initialize, nil, 'w' }.should raise_error(TypeError)
+    -> { @io.send :initialize, nil, 'w' }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed a String" do
-    lambda { @io.send :initialize, "4", 'w' }.should raise_error(TypeError)
+    -> { @io.send :initialize, "4", 'w' }.should raise_error(TypeError)
   end
 
   it "raises IOError on closed stream" do
-    lambda { @io.send :initialize, IOSpecs.closed_io.fileno }.should raise_error(IOError)
+    -> { @io.send :initialize, IOSpecs.closed_io.fileno }.should raise_error(IOError)
   end
 
   it "raises an Errno::EBADF when given an invalid file descriptor" do
-    lambda { @io.send :initialize, -1, 'w' }.should raise_error(Errno::EBADF)
+    -> { @io.send :initialize, -1, 'w' }.should raise_error(Errno::EBADF)
   end
 end

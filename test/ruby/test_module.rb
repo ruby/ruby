@@ -565,6 +565,24 @@ class TestModule < Test::Unit::TestCase
     assert_equal("TestModule::User",   User.name)
   end
 
+  def test_accidental_singleton_naming_with_module
+    o = Object.new
+    assert_nil(o.singleton_class.name)
+    class << o
+      module Hi; end
+    end
+    assert_nil(o.singleton_class.name)
+  end
+
+  def test_accidental_singleton_naming_with_class
+    o = Object.new
+    assert_nil(o.singleton_class.name)
+    class << o
+      class Hi; end
+    end
+    assert_nil(o.singleton_class.name)
+  end
+
   def test_classpath
     m = Module.new
     n = Module.new
@@ -703,6 +721,32 @@ class TestModule < Test::Unit::TestCase
     assert_equal(true, o.respond_to?(:foo=))
     assert_equal(true, o.respond_to?(:bar))
     assert_equal(false, o.respond_to?(:bar=))
+  end
+
+  def test_attr_public_at_toplevel
+    s = Object.new
+    TOPLEVEL_BINDING.eval(<<-END).call(s.singleton_class)
+      proc do |c|
+        c.send(:attr_accessor, :x)
+        c.send(:attr, :y)
+        c.send(:attr_reader, :z)
+        c.send(:attr_writer, :w)
+      end
+    END
+    assert_nil s.x
+    s.x = 1
+    assert_equal 1, s.x
+
+    assert_nil s.y
+    s.instance_variable_set(:@y, 2)
+    assert_equal 2, s.y
+
+    assert_nil s.z
+    s.instance_variable_set(:@z, 3)
+    assert_equal 3, s.z
+
+    s.w = 4
+    assert_equal 4, s.instance_variable_get(:@w)
   end
 
   def test_const_get_evaled
@@ -2313,7 +2357,7 @@ class TestModule < Test::Unit::TestCase
 
       A.prepend InspectIsShallow
 
-      expect = "#<Method: A(ShallowInspect)#inspect(shallow_inspect)>"
+      expect = "#<Method: A(ShallowInspect)#inspect(shallow_inspect) -:7>"
       assert_equal expect, A.new.method(:inspect).inspect, "#{bug_10282}"
     RUBY
   end
@@ -2373,6 +2417,56 @@ class TestModule < Test::Unit::TestCase
       extend M2
       assert_equal 'Object#bar', foo
     }
+  end
+
+  ConstLocation = [__FILE__, __LINE__]
+
+  def test_const_source_location
+    assert_equal(ConstLocation, self.class.const_source_location(:ConstLocation))
+    assert_equal(ConstLocation, self.class.const_source_location("ConstLocation"))
+    assert_equal(ConstLocation, Object.const_source_location("#{self.class.name}::ConstLocation"))
+    assert_raise(TypeError) {
+      self.class.const_source_location(nil)
+    }
+    assert_raise_with_message(NameError, /wrong constant name/) {
+      self.class.const_source_location("xxx")
+    }
+    assert_raise_with_message(TypeError, %r'does not refer to class/module') {
+      self.class.const_source_location("ConstLocation::FILE")
+    }
+  end
+
+  module CloneTestM_simple
+    C = 1
+    def self.m; C; end
+  end
+
+  module CloneTestM0
+    def foo; TEST; end
+  end
+
+  CloneTestM1 = CloneTestM0.clone
+  CloneTestM2 = CloneTestM0.clone
+  module CloneTestM1
+    TEST = :M1
+  end
+  module CloneTestM2
+    TEST = :M2
+  end
+  class CloneTestC1
+    include CloneTestM1
+  end
+  class CloneTestC2
+    include CloneTestM2
+  end
+
+  def test_constant_access_from_method_in_cloned_module
+    m = CloneTestM_simple.dup
+    assert_equal 1, m::C, '[ruby-core:47834]'
+    assert_equal 1, m.m, '[ruby-core:47834]'
+
+    assert_equal :M1, CloneTestC1.new.foo, '[Bug #15877]'
+    assert_equal :M2, CloneTestC2.new.foo, '[Bug #15877]'
   end
 
   private

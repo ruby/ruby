@@ -67,7 +67,7 @@ class TestOpenURISSL
 
   def setup_validation(srv, dr)
     cacert_filename = "#{dr}/cacert.pem"
-    open(cacert_filename, "w") {|f| f << CA_CERT }
+    URI.open(cacert_filename, "w") {|f| f << CA_CERT }
     srv.mount_proc("/data", lambda { |req, res| res.body = "ddd" } )
     cacert_filename
   end
@@ -75,7 +75,7 @@ class TestOpenURISSL
   def test_validation_success
     with_https {|srv, dr, url|
       cacert_filename = setup_validation(srv, dr)
-      open("#{url}/data", :ssl_ca_cert => cacert_filename) {|f|
+      URI.open("#{url}/data", :ssl_ca_cert => cacert_filename) {|f|
         assert_equal("200", f.status[0])
         assert_equal("ddd", f.read)
       }
@@ -85,7 +85,7 @@ class TestOpenURISSL
   def test_validation_noverify
     with_https {|srv, dr, url|
       setup_validation(srv, dr)
-      open("#{url}/data", :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE) {|f|
+      URI.open("#{url}/data", :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE) {|f|
         assert_equal("200", f.status[0])
         assert_equal("ddd", f.read)
       }
@@ -103,7 +103,7 @@ class TestOpenURISSL
     end
     with_https(log_tester) {|srv, dr, url, server_thread, server_log|
       setup_validation(srv, dr)
-      assert_raise(OpenSSL::SSL::SSLError) { open("#{url}/data") {} }
+      assert_raise(OpenSSL::SSL::SSLError) { URI.open("#{url}/data") {} }
     }
   end
 
@@ -149,7 +149,7 @@ class TestOpenURISSL
     }
     with_https_proxy(proxy_log_tester) {|srv, dr, url_, cacert_filename, cacert_directory, proxy_host, proxy_port|
       url = url_
-      open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_filename) {|f|
+      URI.open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_filename) {|f|
         assert_equal("200", f.status[0])
         assert_equal("proxy", f.read)
       }
@@ -165,7 +165,7 @@ class TestOpenURISSL
     }
     with_https_proxy(proxy_log_tester) {|srv, dr, url_, cacert_filename, cacert_directory, proxy_host, proxy_port|
       url = url_
-      open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_directory) {|f|
+      URI.open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_directory) {|f|
         assert_equal("200", f.status[0])
         assert_equal("proxy", f.read)
       }

@@ -54,7 +54,7 @@ class Ripper
       def pretty_print(q) q.text(to_s) end
       def ==(i) super or to_int == i end
       def &(i) self.class.new(to_int & i) end
-      def |(i) self.class.new(to_int & i) end
+      def |(i) self.class.new(to_int | i) end
       def allbits?(i) to_int.allbits?(i) end
       def anybits?(i) to_int.anybits?(i) end
       def nobits?(i) to_int.nobits?(i) end
@@ -73,6 +73,8 @@ class Ripper
         q.group(2, "#<#{self.class}:", ">") {
           q.breakable
           q.text("#{event}@#{pos[0]}:#{pos[1]}")
+          q.breakable
+          q.text(state)
           q.breakable
           q.text("token: ")
           tok.pretty_print(q)
@@ -159,7 +161,7 @@ class Ripper
     def on_heredoc_beg(tok)
       @stack.push @buf
       buf = []
-      @buf << buf
+      @buf.push buf
       @buf = buf
       @buf.push Elem.new([lineno(), column()], __callee__, tok, state())
     end

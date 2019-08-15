@@ -16,7 +16,7 @@ describe 'TCPServer#listen' do
     end
 
     it "raises when the given argument can't be coerced to an Integer" do
-      lambda { @server.listen('cats') }.should raise_error(TypeError)
+      -> { @server.listen('cats') }.should raise_error(TypeError)
     end
   end
 end

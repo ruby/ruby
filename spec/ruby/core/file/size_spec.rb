@@ -81,7 +81,7 @@ describe "File#size" do
 
   it "raises an IOError on a closed file" do
     @file.close
-    lambda { @file.size }.should raise_error(IOError)
+    -> { @file.size }.should raise_error(IOError)
   end
 
   platform_is_not :windows do

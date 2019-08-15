@@ -27,7 +27,7 @@ module IRB
       IRB.conf[:SAVE_HISTORY]
     end
 
-    remove_method :save_history= if respond_to?(:save_history=)
+    remove_method :save_history= if method_defined?(:save_history=)
     # Sets <code>IRB.conf[:SAVE_HISTORY]</code> to the given +val+ and calls
     # #init_save_history with this context.
     #
@@ -73,7 +73,15 @@ module IRB
       history_file = IRB.rc_file("_history") unless history_file
       if File.exist?(history_file)
         open(history_file) do |f|
-          f.each {|l| history << l.chomp}
+          f.each { |l|
+            l = l.chomp
+            if history.last&.end_with?("\\")
+              history.last.delete_suffix!("\\")
+              history.last << "\n" << l
+            else
+              history << l
+            end
+          }
         end
       end
     end
@@ -93,12 +101,14 @@ module IRB
             File.chmod(0600, history_file)
           end
         rescue Errno::ENOENT
+        rescue Errno::EPERM
+          return
         rescue
           raise
         end
 
         open(history_file, 'w', 0600 ) do |f|
-          hist = history.to_a
+          hist = history.map{ |l| l.split("\n").join("\\\n") }
           f.puts(hist[-num..-1] || hist)
         end
       end

@@ -45,7 +45,7 @@ class TestUnicodeNormalize
 
   begin
     @@tests ||= read_tests
-  rescue Errno::ENOENT => e
+  rescue Errno::ENOENT
     @@tests ||= []
   end
 

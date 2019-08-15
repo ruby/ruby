@@ -15,10 +15,10 @@ describe "File::Stat#inspect" do
     st = File.stat(@file)
     expected = "#<File::Stat dev=0x#{st.dev.to_s(16)}, ino=#{st.ino}, mode=#{sprintf("%07o", st.mode)}, nlink=#{st.nlink}"
     expected << ", uid=#{st.uid}, gid=#{st.gid}, rdev=0x#{st.rdev.to_s(16)}, size=#{st.size}, blksize=#{st.blksize.inspect}"
-    expected << ", blocks=#{st.blocks.inspect}, atime=#{st.atime}, mtime=#{st.mtime}, ctime=#{st.ctime}"
+    expected << ", blocks=#{st.blocks.inspect}, atime=#{st.atime.inspect}, mtime=#{st.mtime.inspect}, ctime=#{st.ctime.inspect}"
     platform_is :netbsd, :freebsd, :darwin do
       # Windows has File.birthtime but it's not here since already shown by ctime.
-      expected << ", birthtime=#{st.birthtime}"
+      expected << ", birthtime=#{st.birthtime.inspect}"
     end
     expected << ">"
     st.inspect.should == expected

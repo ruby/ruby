@@ -7,7 +7,7 @@ require 'optparse'
 
 # this file run with BASERUBY, which may be older than 1.9, so no
 # require_relative
-require File.expand_path('../vcs', __FILE__)
+require File.expand_path('../lib/vcs', __FILE__)
 
 Program = $0
 
@@ -69,18 +69,15 @@ vcs = nil
           e = '..'
           limit = @limit
           name = branch.sub(/\A(.{#{limit-e.size}}).{#{e.size+1},}/o) {$1+e}
-          "#define RUBY_BRANCH_NAME #{name.dump}"
+          name = name.dump.sub(/\\#/, '#')
+          "#define RUBY_BRANCH_NAME #{name}"
         end,
         if title
-          "#define RUBY_LAST_COMMIT_TITLE #{title.dump}"
+          title = title.dump.sub(/\\#/, '#')
+          "#define RUBY_LAST_COMMIT_TITLE #{title}"
         end,
         if modified
-          modified.utc.strftime(<<TIME)
-#if defined(RUBY_PATCHLEVEL) && (RUBY_PATCHLEVEL == -1)
-#undef RUBY_RELEASE_DATE
-#define RUBY_RELEASE_DATE "%FT%TZ"
-#endif
-TIME
+          modified.utc.strftime('#define RUBY_RELEASE_DATETIME "%FT%TZ"')
         end,
       ].compact
     }
