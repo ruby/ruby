@@ -30,16 +30,14 @@ all specs are cleaning up temporary files:
   end
 end
 
-class Object
-  def tmp(name, uniquify=true)
-    Dir.mkdir SPEC_TEMP_DIR unless Dir.exist? SPEC_TEMP_DIR
+def tmp(name, uniquify=true)
+  Dir.mkdir SPEC_TEMP_DIR unless Dir.exist? SPEC_TEMP_DIR
 
-    if uniquify and !name.empty?
-      slash = name.rindex "/"
-      index = slash ? slash + 1 : 0
-      name.insert index, "#{SPEC_TEMP_UNIQUIFIER.succ!}-"
-    end
-
-    File.join SPEC_TEMP_DIR, name
+  if uniquify and !name.empty?
+    slash = name.rindex "/"
+    index = slash ? slash + 1 : 0
+    name.insert index, "#{SPEC_TEMP_UNIQUIFIER.succ!}-"
   end
+
+  File.join SPEC_TEMP_DIR, name
 end

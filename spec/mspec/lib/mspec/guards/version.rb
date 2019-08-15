@@ -32,8 +32,6 @@ class VersionGuard < SpecGuard
   end
 end
 
-class Object
-  def ruby_version_is(*args, &block)
-    VersionGuard.new(*args).run_if(:ruby_version_is, &block)
-  end
+def ruby_version_is(*args, &block)
+  VersionGuard.new(*args).run_if(:ruby_version_is, &block)
 end

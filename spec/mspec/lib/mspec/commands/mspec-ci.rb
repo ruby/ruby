@@ -22,7 +22,6 @@ class MSpecCI < MSpecScript
     options.chdir
     options.prefix
     options.configure { |f| load f }
-    options.name
     options.pretend
     options.interrupt
 

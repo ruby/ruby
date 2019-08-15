@@ -67,13 +67,13 @@ Marshal::MINOR_VERSION constants.  It is used to ensure compatibility.
     options[:build_modern] = true
 
     if not File.exist?(options[:directory]) or
-       not File.directory?(options[:directory]) then
-      alert_error "unknown directory name #{directory}."
+       not File.directory?(options[:directory])
+      alert_error "unknown directory name #{options[:directory]}."
       terminate_interaction 1
     else
       indexer = Gem::Indexer.new options.delete(:directory), options
 
-      if options[:update] then
+      if options[:update]
         indexer.update_index
       else
         indexer.generate_index
@@ -82,4 +82,3 @@ Marshal::MINOR_VERSION constants.  It is used to ensure compatibility.
   end
 
 end
-

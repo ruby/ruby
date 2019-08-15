@@ -23,8 +23,6 @@ class BugGuard < VersionGuard
   end
 end
 
-class Object
-  def ruby_bug(bug, version, &block)
-    BugGuard.new(bug, version).run_unless(:ruby_bug, &block)
-  end
+def ruby_bug(bug, version, &block)
+  BugGuard.new(bug, version).run_unless(:ruby_bug, &block)
 end

@@ -68,6 +68,13 @@ describe Object, "#ruby_version_is" do
     ScratchPad.recorded.should_not == :yield
   end
 
+  it "returns what #match? returns when no block is given" do
+    @guard.stub(:match?).and_return(true)
+    ruby_version_is('x.x.x').should == true
+    @guard.stub(:match?).and_return(false)
+    ruby_version_is('x.x.x').should == false
+  end
+
   it "sets the name of the guard to :ruby_version_is" do
     ruby_version_is("") { }
     @guard.name.should == :ruby_version_is

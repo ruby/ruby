@@ -6,6 +6,8 @@ Pathname.glob("**/*.gcda").sort.each do |gcda|
   if gcda.fnmatch("ext/*")
     cwd, gcda = gcda.split.map {|s| s.to_s }
     objdir = "."
+  elsif gcda.fnmatch("rubyspec_temp/*")
+    next
   else
     cwd, objdir, gcda = ".", gcda.dirname.to_s, gcda.to_s
   end

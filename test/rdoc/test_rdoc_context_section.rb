@@ -1,5 +1,5 @@
-# frozen_string_literal: false
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require 'minitest_helper'
 
 class TestRDocContextSection < RDoc::TestCase
 
@@ -11,7 +11,7 @@ class TestRDocContextSection < RDoc::TestCase
     @klass = @top_level.add_class RDoc::NormalClass, 'Object'
 
     @S = RDoc::Context::Section
-    @s = @S.new @klass, 'section', comment('# comment', @top_level)
+    @s = @S.new @klass, 'section', comment('# comment', @top_level, :ruby)
   end
 
   def test_add_comment
@@ -144,7 +144,7 @@ class TestRDocContextSection < RDoc::TestCase
   end
 
   def test_sequence
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       assert_match(/\ASEC\d{5}\Z/, @s.sequence)
     end
 

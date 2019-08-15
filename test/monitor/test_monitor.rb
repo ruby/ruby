@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require "monitor"
-require "thread"
 
 require "test/unit"
 
@@ -146,6 +145,37 @@ class TestMonitor < Test::Unit::TestCase
     assert_join_threads([th, th2])
   end
 
+  def test_mon_locked_and_owned
+    queue1 = Queue.new
+    queue2 = Queue.new
+    th = Thread.start {
+      @monitor.enter
+      queue1.enq(nil)
+      queue2.deq
+      @monitor.exit
+      queue1.enq(nil)
+    }
+    queue1.deq
+    assert(@monitor.mon_locked?)
+    assert(!@monitor.mon_owned?)
+
+    queue2.enq(nil)
+    queue1.deq
+    assert(!@monitor.mon_locked?)
+
+    @monitor.enter
+    assert @monitor.mon_locked?
+    assert @monitor.mon_owned?
+    @monitor.exit
+
+    @monitor.synchronize do
+      assert @monitor.mon_locked?
+      assert @monitor.mon_owned?
+    end
+  ensure
+    th.join
+  end
+
   def test_cond
     cond = @monitor.new_cond
 
@@ -240,5 +270,27 @@ class TestMonitor < Test::Unit::TestCase
 #       assert_equal("bar", d)
 #     end
 #     cumber_thread.kill
+  end
+
+  def test_wait_interruption
+    queue = Queue.new
+    cond = @monitor.new_cond
+    @monitor.define_singleton_method(:mon_enter_for_cond) do |*args|
+      queue.deq
+      super(*args)
+    end
+    th = Thread.start {
+      @monitor.synchronize do
+        begin
+          cond.wait(0.1)
+        rescue Interrupt
+          @monitor.instance_variable_get(:@mon_owner)
+        end
+      end
+    }
+    sleep(0.1)
+    th.raise(Interrupt)
+    queue.enq(nil)
+    assert_equal th, th.value
   end
 end

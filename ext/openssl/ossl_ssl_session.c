@@ -49,7 +49,7 @@ static VALUE ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 		if ((ctx = SSL_get1_session(ssl)) == NULL)
 			ossl_raise(eSSLSession, "no session available");
 	} else {
-		BIO *in = ossl_obj2bio(arg1);
+		BIO *in = ossl_obj2bio(&arg1);
 
 		ctx = PEM_read_bio_SSL_SESSION(in, NULL, NULL, NULL);
 
@@ -80,7 +80,7 @@ ossl_ssl_session_initialize_copy(VALUE self, VALUE other)
 
     rb_check_frozen(self);
     sess = RTYPEDDATA_DATA(self); /* XXX */
-    SafeGetSSLSession(other, sess_other);
+    GetSSLSession(other, sess_other);
 
     sess_new = ASN1_dup((i2d_of_void *)i2d_SSL_SESSION, (d2i_of_void *)d2i_SSL_SESSION,
 			(char *)sess_other);
@@ -93,8 +93,8 @@ ossl_ssl_session_initialize_copy(VALUE self, VALUE other)
     return self;
 }
 
-#if !defined(HAVE_SSL_SESSION_CMP)
-int ossl_SSL_SESSION_cmp(const SSL_SESSION *a, const SSL_SESSION *b)
+static int
+ossl_SSL_SESSION_cmp(const SSL_SESSION *a, const SSL_SESSION *b)
 {
     unsigned int a_len;
     const unsigned char *a_sid = SSL_SESSION_get_id(a, &a_len);
@@ -108,23 +108,21 @@ int ossl_SSL_SESSION_cmp(const SSL_SESSION *a, const SSL_SESSION *b)
 
     return CRYPTO_memcmp(a_sid, b_sid, a_len);
 }
-#define SSL_SESSION_cmp(a, b) ossl_SSL_SESSION_cmp(a, b)
-#endif
 
 /*
  * call-seq:
  *   session1 == session2 -> boolean
  *
- * Returns true if the two Session is the same, false if not.
+ * Returns +true+ if the two Session is the same, +false+ if not.
  */
 static VALUE ossl_ssl_session_eq(VALUE val1, VALUE val2)
 {
 	SSL_SESSION *ctx1, *ctx2;
 
 	GetSSLSession(val1, ctx1);
-	SafeGetSSLSession(val2, ctx2);
+	GetSSLSession(val2, ctx2);
 
-	switch (SSL_SESSION_cmp(ctx1, ctx2)) {
+	switch (ossl_SSL_SESSION_cmp(ctx1, ctx2)) {
 	case 0:		return Qtrue;
 	default:	return Qfalse;
 	}
@@ -319,7 +317,7 @@ void Init_ossl_ssl_session(void)
 
 	rb_define_alloc_func(cSSLSession, ossl_ssl_session_alloc);
 	rb_define_method(cSSLSession, "initialize", ossl_ssl_session_initialize, 1);
-	rb_define_copy_func(cSSLSession, ossl_ssl_session_initialize_copy);
+	rb_define_method(cSSLSession, "initialize_copy", ossl_ssl_session_initialize_copy, 1);
 
 	rb_define_method(cSSLSession, "==", ossl_ssl_session_eq, 1);
 

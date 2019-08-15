@@ -507,30 +507,6 @@ describe "The --prefix STR option" do
   end
 end
 
-describe "The -n, --name RUBY_NAME option" do
-  before :each do
-    @verbose, $VERBOSE = $VERBOSE, nil
-    @options, @config = new_option
-  end
-
-  after :each do
-    $VERBOSE = @verbose
-  end
-
-  it "is enabled with #name" do
-    @options.should_receive(:on).with("-n", "--name", "RUBY_NAME",
-        an_instance_of(String))
-    @options.name
-  end
-
-  it "sets RUBY_NAME when invoked" do
-    Object.should_receive(:const_set).with(:RUBY_NAME, "name").twice
-    @options.name
-    @options.parse ["-n", "name"]
-    @options.parse ["--name", "name"]
-  end
-end
-
 describe "The -t, --target TARGET option" do
   before :each do
     @options, @config = new_option

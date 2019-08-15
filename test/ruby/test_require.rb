@@ -112,6 +112,8 @@ class TestRequire < Test::Unit::TestCase
       proc do |require_path|
         $SAFE = 1
         require(require_path)
+      ensure
+        $SAFE = 0
       end
     end
 
@@ -160,13 +162,19 @@ class TestRequire < Test::Unit::TestCase
       require(require_path)
       $".pop
       File.chmod(0777, File.dirname(require_path))
-      ospath = (require_path.encode('filesystem') rescue
-                require_path.encode(self.class.ospath_encoding(require_path)))
-      assert_warn(/Insecure world writable dir/) do
-        assert_raise_with_message(SecurityError, "loading from unsafe path #{ospath}") do
+      require_path.encode('filesystem') rescue
+        require_path.encode(self.class.ospath_encoding(require_path))
+      e = nil
+      stderr = EnvUtil.verbose_warning do
+        e = assert_raise(SecurityError) do
           SECURITY_WARNING.call(require_path)
         end
       end
+      assert_include(e.message, "loading from unsafe path")
+      assert_include(stderr, "Insecure world writable dir")
+      require_path = require_path.encode(self.class.ospath_encoding(require_path))
+      assert_include(e.message, require_path)
+      assert_include(stderr, File.dirname(require_path))
     }
   end
 
@@ -216,13 +224,20 @@ class TestRequire < Test::Unit::TestCase
   end
 
   def test_require_with_unc
-    ruby = File.expand_path(EnvUtil.rubybin).sub(/\A(\w):/, '//127.0.0.1/\1$/')
-    skip "local drive #$1: is not shared" unless File.exist?(ruby)
-    pid = nil
-    assert_nothing_raised {pid = spawn(ruby, "-rabbrev", "-e0")}
-    ret, status = Process.wait2(pid)
-    assert_equal(pid, ret)
-    assert_predicate(status, :success?)
+    Tempfile.create(["test_ruby_test_require", ".rb"]) {|t|
+      t.puts "puts __FILE__"
+      t.close
+
+      path = File.expand_path(t.path).sub(/\A(\w):/, '//127.0.0.1/\1$')
+      skip "local drive #$1: is not shared" unless File.exist?(path)
+      args = ['--disable-gems', "-I#{File.dirname(path)}"]
+      assert_in_out_err(args, "#{<<~"END;"}", [path], [])
+      begin
+        require '#{File.basename(path)}'
+      rescue Errno::EPERM
+      end
+      END;
+    }
   end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_require_twice
@@ -241,12 +256,12 @@ class TestRequire < Test::Unit::TestCase
   def assert_syntax_error_backtrace
     Dir.mktmpdir do |tmp|
       req = File.join(tmp, "test.rb")
-      File.write(req, "'\n")
-      e = assert_raise_with_message(SyntaxError, /unterminated/) {
+      File.write(req, ",\n")
+      e = assert_raise_with_message(SyntaxError, /unexpected/) {
         yield req
       }
-      assert_not_nil(bt = e.backtrace)
-      assert_not_empty(bt.find_all {|b| b.start_with? __FILE__})
+      assert_not_nil(bt = e.backtrace, "no backtrace")
+      assert_not_empty(bt.find_all {|b| b.start_with? __FILE__}, proc {bt.inspect})
     end
   end
 
@@ -369,6 +384,19 @@ class TestRequire < Test::Unit::TestCase
     }
   end
 
+  def test_require_in_wrapped_load
+    Dir.mktmpdir do |tmp|
+      File.write("#{tmp}/1.rb", "require_relative '2'\n")
+      File.write("#{tmp}/2.rb", "class Foo\n""end\n")
+      assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+      path = ""#{tmp.dump}"/1.rb"
+      begin;
+        load path, true
+        assert_instance_of(Class, Foo)
+      end;
+    end
+  end
+
   def test_load_scope
     bug1982 = '[ruby-core:25039] [Bug #1982]'
     Tempfile.create(["test_ruby_test_require", ".rb"]) {|t|
@@ -421,13 +449,6 @@ class TestRequire < Test::Unit::TestCase
         abs_dir = "#{ abs_dir }"
         $: << abs_dir.taint
         assert_nothing_raised {require "#{ file }"}
-      INPUT
-
-      assert_separately([], <<-INPUT)
-        abs_dir = "#{ abs_dir }"
-        $: << abs_dir.taint
-        $SAFE = 1
-        assert_raise(SecurityError) {require "#{ file }"}
       INPUT
 
       assert_separately([], <<-INPUT)
@@ -873,6 +894,40 @@ class TestRequire < Test::Unit::TestCase
           load path
         end
       end;
+    end
+  end
+
+  def test_symlink_load_path
+    Dir.mktmpdir {|tmp|
+      Dir.mkdir(File.join(tmp, "real"))
+      begin
+        File.symlink "real", File.join(tmp, "symlink")
+      rescue NotImplementedError, Errno::EACCES
+        skip "File.symlink is not implemented"
+      end
+      File.write(File.join(tmp, "real/a.rb"), "print __FILE__")
+      result = IO.popen([EnvUtil.rubybin, "-I#{tmp}/symlink", "-e", "require 'a.rb'"], &:read)
+      assert_operator(result, :end_with?, "/real/a.rb")
+    }
+  end
+
+  if defined?($LOAD_PATH.resolve_feature_path)
+    def test_resolve_feature_path
+      paths, loaded = $:.dup, $".dup
+      Dir.mktmpdir do |tmp|
+        Tempfile.create(%w[feature .rb], tmp) do |file|
+          file.close
+          path = File.realpath(file.path)
+          dir, base = File.split(path)
+          $:.unshift(dir)
+          assert_equal([:rb, path], $LOAD_PATH.resolve_feature_path(base))
+          $".push(path)
+          assert_equal([:rb, path], $LOAD_PATH.resolve_feature_path(base))
+        end
+      end
+    ensure
+      $:.replace(paths)
+      $".replace(loaded)
     end
   end
 end

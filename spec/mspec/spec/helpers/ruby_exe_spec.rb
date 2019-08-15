@@ -4,27 +4,20 @@ require 'mspec/helpers'
 require 'rbconfig'
 
 class RubyExeSpecs
+  public :ruby_exe_options
+  public :resolve_ruby_exe
+  public :ruby_cmd
+  public :ruby_exe
 end
 
 describe "#ruby_exe_options" do
-  before :all do
-    @verbose = $VERBOSE
-    $VERBOSE = nil
-
-    @ruby_name = Object.const_get :RUBY_NAME
-    @ruby_exe_env = ENV['RUBY_EXE']
-
-    @script = RubyExeSpecs.new
-  end
-
-  after :all do
-    Object.const_set :RUBY_NAME, @ruby_name
-    ENV['RUBY_EXE'] = @ruby_exe_env
-    $VERBOSE = @verbose
-  end
-
   before :each do
+    @ruby_exe_env = ENV['RUBY_EXE']
     @script = RubyExeSpecs.new
+  end
+
+  after :each do
+    ENV['RUBY_EXE'] = @ruby_exe_env
   end
 
   it "returns ENV['RUBY_EXE'] when passed :env" do
@@ -32,33 +25,33 @@ describe "#ruby_exe_options" do
     @script.ruby_exe_options(:env).should == "kowabunga"
   end
 
-  it "returns 'bin/jruby' when passed :engine and RUBY_NAME is 'jruby'" do
-    Object.const_set :RUBY_NAME, 'jruby'
+  it "returns 'bin/jruby' when passed :engine and RUBY_ENGINE is 'jruby'" do
+    stub_const "RUBY_ENGINE", 'jruby'
     @script.ruby_exe_options(:engine).should == 'bin/jruby'
   end
 
-  it "returns 'bin/rbx' when passed :engine, RUBY_NAME is 'rbx'" do
-    Object.const_set :RUBY_NAME, 'rbx'
+  it "returns 'bin/rbx' when passed :engine, RUBY_ENGINE is 'rbx'" do
+    stub_const "RUBY_ENGINE", 'rbx'
     @script.ruby_exe_options(:engine).should == 'bin/rbx'
   end
 
-  it "returns 'ir' when passed :engine and RUBY_NAME is 'ironruby'" do
-    Object.const_set :RUBY_NAME, 'ironruby'
+  it "returns 'ir' when passed :engine and RUBY_ENGINE is 'ironruby'" do
+    stub_const "RUBY_ENGINE", 'ironruby'
     @script.ruby_exe_options(:engine).should == 'ir'
   end
 
-  it "returns 'maglev-ruby' when passed :engine and RUBY_NAME is 'maglev'" do
-    Object.const_set :RUBY_NAME, 'maglev'
+  it "returns 'maglev-ruby' when passed :engine and RUBY_ENGINE is 'maglev'" do
+    stub_const "RUBY_ENGINE", 'maglev'
     @script.ruby_exe_options(:engine).should == 'maglev-ruby'
   end
 
-  it "returns 'topaz' when passed :engine and RUBY_NAME is 'topaz'" do
-    Object.const_set :RUBY_NAME, 'topaz'
+  it "returns 'topaz' when passed :engine and RUBY_ENGINE is 'topaz'" do
+    stub_const "RUBY_ENGINE", 'topaz'
     @script.ruby_exe_options(:engine).should == 'topaz'
   end
 
-  it "returns RUBY_NAME + $(EXEEXT) when passed :name" do
-    bin = RUBY_NAME + (RbConfig::CONFIG['EXEEXT'] || RbConfig::CONFIG['exeext'] || '')
+  it "returns RUBY_ENGINE + $(EXEEXT) when passed :name" do
+    bin = RUBY_ENGINE + (RbConfig::CONFIG['EXEEXT'] || RbConfig::CONFIG['exeext'] || '')
     name = File.join ".", bin
     @script.ruby_exe_options(:name).should == name
   end
@@ -71,19 +64,9 @@ describe "#ruby_exe_options" do
 end
 
 describe "#resolve_ruby_exe" do
-  before :all do
-    @verbose = $VERBOSE
-    $VERBOSE = nil
-
-    @name = "ruby_spec_exe"
-  end
-
   before :each do
+    @name = "ruby_spec_exe"
     @script = RubyExeSpecs.new
-  end
-
-  after :all do
-    $VERBOSE = @verbose
   end
 
   it "returns the value returned by #ruby_exe_options if it exists and is executable" do
@@ -122,22 +105,13 @@ describe "#resolve_ruby_exe" do
 end
 
 describe Object, "#ruby_cmd" do
-  before :all do
-    @verbose = $VERBOSE
-    $VERBOSE = nil
-
-    @ruby_exe = Object.const_get :RUBY_EXE
-    Object.const_set :RUBY_EXE, 'ruby_spec_exe -w -Q'
+  before :each do
+    stub_const 'RUBY_EXE', 'ruby_spec_exe -w -Q'
 
     @file = "some/ruby/file.rb"
     @code = %(some "real" 'ruby' code)
 
     @script = RubyExeSpecs.new
-  end
-
-  after :all do
-    Object.const_set :RUBY_EXE, @ruby_exe
-    $VERBOSE = @verbose
   end
 
   it "returns a command that runs the given file if it is a file that exists" do
@@ -164,12 +138,15 @@ describe Object, "#ruby_cmd" do
 end
 
 describe Object, "#ruby_exe" do
-  before :all do
+  before :each do
+    stub_const 'RUBY_EXE', 'ruby_spec_exe -w -Q'
+
     @script = RubyExeSpecs.new
+    @script.stub(:`)
   end
 
-  before :each do
-    @script.stub(:`)
+  it "returns an Array containing the interpreter executable and flags when given no arguments" do
+    @script.ruby_exe.should == ['ruby_spec_exe', '-w', '-Q']
   end
 
   it "executes (using `) the result of calling #ruby_cmd with the given arguments" do

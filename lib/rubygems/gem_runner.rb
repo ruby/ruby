@@ -8,6 +8,7 @@
 require 'rubygems'
 require 'rubygems/command_manager'
 require 'rubygems/config_file'
+require 'rubygems/deprecate'
 
 ##
 # Load additional plugins from $LOAD_PATH
@@ -26,7 +27,10 @@ Gem.load_env_plugins rescue nil
 class Gem::GemRunner
 
   def initialize(options={})
-    # TODO: nuke these options
+    if !options.empty? && !Gem::Deprecate.skip
+      Kernel.warn "NOTE: passing options to Gem::GemRunner.new is deprecated with no replacement. It will be removed on or after 2016-10-01."
+    end
+
     @command_manager_class = options[:command_manager] || Gem::CommandManager
     @config_file_class = options[:config_file] || Gem::ConfigFile
   end
@@ -34,7 +38,7 @@ class Gem::GemRunner
   ##
   # Run the gem command with the following arguments.
 
-  def run args
+  def run(args)
     build_args = extract_build_args args
 
     do_configuration args
@@ -59,7 +63,7 @@ class Gem::GemRunner
   # Separates the build arguments (those following <code>--</code>) from the
   # other arguments in the list.
 
-  def extract_build_args args # :nodoc:
+  def extract_build_args(args) # :nodoc:
     return [] unless offset = args.index('--')
 
     build_args = args.slice!(offset...args.length)

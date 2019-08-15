@@ -3,6 +3,13 @@ require 'mspec/runner/exception'
 require 'mspec/runner/tag'
 
 module MSpec
+end
+
+class MSpecEnv
+  include MSpec
+end
+
+module MSpec
 
   @exit    = nil
   @abort   = nil
@@ -43,6 +50,7 @@ module MSpec
 
   def self.process
     STDOUT.puts RUBY_DESCRIPTION
+    STDOUT.flush
 
     actions :start
     files
@@ -51,13 +59,20 @@ module MSpec
 
   def self.each_file(&block)
     if ENV["MSPEC_MULTI"]
-      STDOUT.print "."
-      STDOUT.flush
-      while (file = STDIN.gets.chomp) != "QUIT"
+      while file = STDIN.gets
+        file = file.chomp
+        return if file == "QUIT"
         yield file
-        STDOUT.print "."
-        STDOUT.flush
+        begin
+          STDOUT.print "."
+          STDOUT.flush
+        rescue Errno::EPIPE
+          # The parent died
+          exit 1
+        end
       end
+      # The parent closed the connection without QUIT
+      abort "the parent did not send QUIT"
     else
       return unless files = retrieve(:files)
       shuffle files if randomize?
@@ -76,8 +91,7 @@ module MSpec
   end
 
   def self.setup_env
-    @env = Object.new
-    @env.extend MSpec
+    @env = MSpecEnv.new
   end
 
   def self.actions(action, *args)
@@ -388,4 +402,7 @@ module MSpec
     file = tags_file
     File.delete file if File.exist? file
   end
+
+  # Initialize @env
+  setup_env
 end

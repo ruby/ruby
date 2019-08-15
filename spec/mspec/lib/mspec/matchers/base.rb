@@ -1,3 +1,15 @@
+module MSpecMatchers
+end
+
+class MSpecEnv
+  include MSpecMatchers
+end
+
+# Expectations are sometimes used in a module body
+class Module
+  include MSpecMatchers
+end
+
 class SpecPositiveOperatorMatcher
   def initialize(actual)
     @actual = actual

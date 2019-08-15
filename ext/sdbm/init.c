@@ -71,6 +71,8 @@ struct dbmdata {
     DBM *di_dbm;
 };
 
+NORETURN(static void closed_sdbm(void));
+
 static void
 closed_sdbm(void)
 {
@@ -79,7 +81,6 @@ closed_sdbm(void)
 
 #define GetDBM(obj, dbmp) do {\
     TypedData_Get_Struct((obj), struct dbmdata, &sdbm_type, (dbmp));\
-    if ((dbmp) == 0) closed_sdbm();\
     if ((dbmp)->di_dbm == 0) closed_sdbm();\
 } while (0)
 
@@ -100,12 +101,10 @@ free_sdbm(void *ptr)
 static size_t
 memsize_dbm(const void *ptr)
 {
-    size_t size = 0;
     const struct dbmdata *dbmp = ptr;
-    if (dbmp) {
-	size += sizeof(*dbmp);
-	if (dbmp->di_dbm) size += sizeof(DBM);
-    }
+    size_t size = sizeof(*dbmp);
+    if (dbmp->di_dbm)
+	size += sizeof(DBM);
     return size;
 }
 
@@ -148,8 +147,6 @@ fsdbm_closed(VALUE obj)
     struct dbmdata *dbmp;
 
     TypedData_Get_Struct(obj, struct dbmdata, &sdbm_type, dbmp);
-    if (dbmp == 0)
-	return Qtrue;
     if (dbmp->di_dbm == 0)
 	return Qtrue;
 
@@ -159,7 +156,9 @@ fsdbm_closed(VALUE obj)
 static VALUE
 fsdbm_alloc(VALUE klass)
 {
-    return TypedData_Wrap_Struct(klass, &sdbm_type, 0);
+    struct dbmdata *dbmp;
+
+    return TypedData_Make_Struct(klass, struct dbmdata, &sdbm_type, dbmp);
 }
 /*
  * call-seq:
@@ -184,6 +183,7 @@ fsdbm_initialize(int argc, VALUE *argv, VALUE obj)
     struct dbmdata *dbmp;
     int mode;
 
+    TypedData_Get_Struct(obj, struct dbmdata, &sdbm_type, dbmp);
     if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
 	mode = 0666;		/* default value */
     }
@@ -208,8 +208,8 @@ fsdbm_initialize(int argc, VALUE *argv, VALUE obj)
 	rb_sys_fail_str(file);
     }
 
-    dbmp = ALLOC(struct dbmdata);
-    DATA_PTR(obj) = dbmp;
+    if (dbmp->di_dbm)
+	sdbm_close(dbmp->di_dbm);
     dbmp->di_dbm = dbm;
     dbmp->di_size = -1;
 

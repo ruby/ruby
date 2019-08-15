@@ -14,12 +14,12 @@ describe BugGuard, "#match? when #implementation? is 'ruby'" do
   before :each do
     hide_deprecation_warnings
     stub_const "VersionGuard::FULL_RUBY_VERSION", SpecVersion.new('1.8.6')
-    @ruby_name = Object.const_get :RUBY_NAME
-    Object.const_set :RUBY_NAME, 'ruby'
+    @ruby_engine = Object.const_get :RUBY_ENGINE
+    Object.const_set :RUBY_ENGINE, 'ruby'
   end
 
   after :each do
-    Object.const_set :RUBY_NAME, @ruby_name
+    Object.const_set :RUBY_ENGINE, @ruby_engine
   end
 
   it "returns false when version argument is less than RUBY_VERSION" do
@@ -76,15 +76,15 @@ describe BugGuard, "#match? when #implementation? is not 'ruby'" do
   before :each do
     hide_deprecation_warnings
     @ruby_version = Object.const_get :RUBY_VERSION
-    @ruby_name = Object.const_get :RUBY_NAME
+    @ruby_engine = Object.const_get :RUBY_ENGINE
 
     Object.const_set :RUBY_VERSION, '1.8.6'
-    Object.const_set :RUBY_NAME, 'jruby'
+    Object.const_set :RUBY_ENGINE, 'jruby'
   end
 
   after :each do
     Object.const_set :RUBY_VERSION, @ruby_version
-    Object.const_set :RUBY_NAME, @ruby_name
+    Object.const_set :RUBY_ENGINE, @ruby_engine
   end
 
   it "returns false when version argument is less than RUBY_VERSION" do

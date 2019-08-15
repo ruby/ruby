@@ -1,4 +1,4 @@
-/* C code produced by gperf version 3.0.4 */
+/* ANSI-C code produced by gperf version 3.1 */
 /* Command-line: gperf -C -P -p -j1 -i 1 -g -o -t -N rb_reserved_word -k'1,3,$' defs/keywords  */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
@@ -25,15 +25,16 @@
       && ('w' == 119) && ('x' == 120) && ('y' == 121) && ('z' == 122) \
       && ('{' == 123) && ('|' == 124) && ('}' == 125) && ('~' == 126))
 /* The character set is not based on ISO-646.  */
-error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gnu-gperf@gnu.org>."
+#error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gperf@gnu.org>."
 #endif
 
+#define gperf_offsetof(s, n) (short)offsetof(struct s##_t, s##_str##n)
 #line 1 "defs/keywords"
 
-struct kwtable {int name, id[2], state;};
+struct kwtable {short name, id[2], state;};
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 #ifndef RIPPER
-static const struct kwtable *reserved_word(const char *, unsigned int);
+static const struct kwtable *reserved_word(/*const char *, unsigned int*/);
 #define rb_reserved_word(str, len) reserved_word(str, len)
 #line 9 "defs/keywords"
 struct kwtable;
@@ -45,15 +46,15 @@ struct kwtable;
 #define MAX_HASH_VALUE 50
 /* maximum key range = 43, duplicates = 0 */
 
-#if (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || defined(__cplusplus) || defined(__GNUC_STDC_INLINE__)
-inline
-#elif defined(__GNUC__)
+#ifdef __GNUC__
 __inline
+#else
+#ifdef __cplusplus
+inline
+#endif
 #endif
 static unsigned int
-hash (str, len)
-     register const char *str;
-     register unsigned int len;
+hash (register const char *str, register size_t len)
 {
   static const unsigned char asso_values[] =
     {
@@ -84,7 +85,7 @@ hash (str, len)
       51, 51, 51, 51, 51, 51, 51, 51, 51, 51,
       51, 51, 51, 51, 51, 51
     };
-  register int hval = len;
+  register unsigned int hval = (unsigned int)len;
 
   switch (hval)
     {
@@ -96,7 +97,7 @@ hash (str, len)
         hval += asso_values[(unsigned char)str[0]];
         break;
     }
-  return hval + asso_values[(unsigned char)str[len - 1]];
+  return (unsigned int)hval + asso_values[(unsigned char)str[len - 1]];
 }
 
 struct stringpool_t
@@ -188,110 +189,102 @@ static const struct stringpool_t stringpool_contents =
     "while"
   };
 #define stringpool ((const char *) &stringpool_contents)
-#ifdef __GNUC__
-__inline
-#if defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__
-__attribute__ ((__gnu_inline__))
-#endif
-#endif
 const struct kwtable *
-rb_reserved_word (str, len)
-     register const char *str;
-     register unsigned int len;
+rb_reserved_word (register const char *str, register size_t len)
 {
   static const struct kwtable wordlist[] =
     {
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #line 19 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str8), {keyword_break, keyword_break}, EXPR_MID},
+      {gperf_offsetof(stringpool, 8), {keyword_break, keyword_break}, EXPR_MID},
 #line 25 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str9), {keyword_else, keyword_else}, EXPR_BEG},
+      {gperf_offsetof(stringpool, 9), {keyword_else, keyword_else}, EXPR_BEG},
 #line 35 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str10), {keyword_nil, keyword_nil}, EXPR_END},
+      {gperf_offsetof(stringpool, 10), {keyword_nil, keyword_nil}, EXPR_END},
 #line 28 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str11), {keyword_ensure, keyword_ensure}, EXPR_BEG},
+      {gperf_offsetof(stringpool, 11), {keyword_ensure, keyword_ensure}, EXPR_BEG},
 #line 27 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str12), {keyword_end, keyword_end}, EXPR_END},
+      {gperf_offsetof(stringpool, 12), {keyword_end, keyword_end}, EXPR_END},
 #line 44 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str13), {keyword_then, keyword_then}, EXPR_BEG},
+      {gperf_offsetof(stringpool, 13), {keyword_then, keyword_then}, EXPR_BEG},
 #line 36 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str14), {keyword_not, keyword_not}, EXPR_ARG},
+      {gperf_offsetof(stringpool, 14), {keyword_not, keyword_not}, EXPR_ARG},
 #line 29 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str15), {keyword_false, keyword_false}, EXPR_END},
+      {gperf_offsetof(stringpool, 15), {keyword_false, keyword_false}, EXPR_END},
 #line 42 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str16), {keyword_self, keyword_self}, EXPR_END},
+      {gperf_offsetof(stringpool, 16), {keyword_self, keyword_self}, EXPR_END},
 #line 26 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str17), {keyword_elsif, keyword_elsif}, EXPR_VALUE},
+      {gperf_offsetof(stringpool, 17), {keyword_elsif, keyword_elsif}, EXPR_VALUE},
 #line 39 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str18), {keyword_rescue, modifier_rescue}, EXPR_MID},
+      {gperf_offsetof(stringpool, 18), {keyword_rescue, modifier_rescue}, EXPR_MID},
 #line 45 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str19), {keyword_true, keyword_true}, EXPR_END},
+      {gperf_offsetof(stringpool, 19), {keyword_true, keyword_true}, EXPR_END},
 #line 48 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str20), {keyword_until, modifier_until}, EXPR_VALUE},
+      {gperf_offsetof(stringpool, 20), {keyword_until, modifier_until}, EXPR_VALUE},
 #line 47 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str21), {keyword_unless, modifier_unless}, EXPR_VALUE},
+      {gperf_offsetof(stringpool, 21), {keyword_unless, modifier_unless}, EXPR_VALUE},
 #line 41 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str22), {keyword_return, keyword_return}, EXPR_MID},
+      {gperf_offsetof(stringpool, 22), {keyword_return, keyword_return}, EXPR_MID},
 #line 22 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str23), {keyword_def, keyword_def}, EXPR_FNAME},
+      {gperf_offsetof(stringpool, 23), {keyword_def, keyword_def}, EXPR_FNAME},
 #line 17 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str24), {keyword_and, keyword_and}, EXPR_VALUE},
+      {gperf_offsetof(stringpool, 24), {keyword_and, keyword_and}, EXPR_VALUE},
 #line 24 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str25), {keyword_do, keyword_do}, EXPR_BEG},
+      {gperf_offsetof(stringpool, 25), {keyword_do, keyword_do}, EXPR_BEG},
 #line 51 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str26), {keyword_yield, keyword_yield}, EXPR_ARG},
+      {gperf_offsetof(stringpool, 26), {keyword_yield, keyword_yield}, EXPR_ARG},
 #line 30 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str27), {keyword_for, keyword_for}, EXPR_VALUE},
+      {gperf_offsetof(stringpool, 27), {keyword_for, keyword_for}, EXPR_VALUE},
 #line 46 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str28), {keyword_undef, keyword_undef}, EXPR_FNAME|EXPR_FITEM},
+      {gperf_offsetof(stringpool, 28), {keyword_undef, keyword_undef}, EXPR_FNAME|EXPR_FITEM},
 #line 37 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str29), {keyword_or, keyword_or}, EXPR_VALUE},
+      {gperf_offsetof(stringpool, 29), {keyword_or, keyword_or}, EXPR_VALUE},
 #line 32 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str30), {keyword_in, keyword_in}, EXPR_VALUE},
+      {gperf_offsetof(stringpool, 30), {keyword_in, keyword_in}, EXPR_VALUE},
 #line 49 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str31), {keyword_when, keyword_when}, EXPR_VALUE},
+      {gperf_offsetof(stringpool, 31), {keyword_when, keyword_when}, EXPR_VALUE},
 #line 40 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str32), {keyword_retry, keyword_retry}, EXPR_END},
+      {gperf_offsetof(stringpool, 32), {keyword_retry, keyword_retry}, EXPR_END},
 #line 31 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str33), {keyword_if, modifier_if}, EXPR_VALUE},
+      {gperf_offsetof(stringpool, 33), {keyword_if, modifier_if}, EXPR_VALUE},
 #line 20 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str34), {keyword_case, keyword_case}, EXPR_VALUE},
+      {gperf_offsetof(stringpool, 34), {keyword_case, keyword_case}, EXPR_VALUE},
 #line 38 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str35), {keyword_redo, keyword_redo}, EXPR_END},
+      {gperf_offsetof(stringpool, 35), {keyword_redo, keyword_redo}, EXPR_END},
 #line 34 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str36), {keyword_next, keyword_next}, EXPR_MID},
+      {gperf_offsetof(stringpool, 36), {keyword_next, keyword_next}, EXPR_MID},
 #line 43 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str37), {keyword_super, keyword_super}, EXPR_ARG},
+      {gperf_offsetof(stringpool, 37), {keyword_super, keyword_super}, EXPR_ARG},
 #line 33 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str38), {keyword_module, keyword_module}, EXPR_VALUE},
+      {gperf_offsetof(stringpool, 38), {keyword_module, keyword_module}, EXPR_VALUE},
 #line 18 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str39), {keyword_begin, keyword_begin}, EXPR_BEG},
+      {gperf_offsetof(stringpool, 39), {keyword_begin, keyword_begin}, EXPR_BEG},
 #line 12 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str40), {keyword__LINE__, keyword__LINE__}, EXPR_END},
+      {gperf_offsetof(stringpool, 40), {keyword__LINE__, keyword__LINE__}, EXPR_END},
 #line 13 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str41), {keyword__FILE__, keyword__FILE__}, EXPR_END},
+      {gperf_offsetof(stringpool, 41), {keyword__FILE__, keyword__FILE__}, EXPR_END},
 #line 11 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str42), {keyword__ENCODING__, keyword__ENCODING__}, EXPR_END},
+      {gperf_offsetof(stringpool, 42), {keyword__ENCODING__, keyword__ENCODING__}, EXPR_END},
 #line 15 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str43), {keyword_END, keyword_END}, EXPR_END},
+      {gperf_offsetof(stringpool, 43), {keyword_END, keyword_END}, EXPR_END},
 #line 16 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str44), {keyword_alias, keyword_alias}, EXPR_FNAME|EXPR_FITEM},
+      {gperf_offsetof(stringpool, 44), {keyword_alias, keyword_alias}, EXPR_FNAME|EXPR_FITEM},
 #line 14 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str45), {keyword_BEGIN, keyword_BEGIN}, EXPR_END},
+      {gperf_offsetof(stringpool, 45), {keyword_BEGIN, keyword_BEGIN}, EXPR_END},
 #line 23 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str46), {keyword_defined, keyword_defined}, EXPR_ARG},
+      {gperf_offsetof(stringpool, 46), {keyword_defined, keyword_defined}, EXPR_ARG},
 #line 21 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str47), {keyword_class, keyword_class}, EXPR_CLASS},
+      {gperf_offsetof(stringpool, 47), {keyword_class, keyword_class}, EXPR_CLASS},
       {-1}, {-1},
 #line 50 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str50), {keyword_while, modifier_while}, EXPR_VALUE}
+      {gperf_offsetof(stringpool, 50), {keyword_while, modifier_while}, EXPR_VALUE}
     };
 
   if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
     {
-      register int key = hash (str, len);
+      register unsigned int key = hash (str, len);
 
-      if (key <= MAX_HASH_VALUE && key >= 0)
+      if (key <= MAX_HASH_VALUE)
         {
           register int o = wordlist[key].name;
           if (o >= 0)

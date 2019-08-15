@@ -1,6 +1,5 @@
 require 'mspec/runner/mspec'
 require 'mspec/runner/actions/tally'
-require 'mspec/utils/ruby_name'
 
 class SpecGuard
   def self.report
@@ -77,14 +76,22 @@ class SpecGuard
 
   def run_if(name, &block)
     @name = name
-    yield if yield?(false)
+    if block
+      yield if yield?(false)
+    else
+      yield?(false)
+    end
   ensure
     unregister
   end
 
   def run_unless(name, &block)
     @name = name
-    yield if yield?(true)
+    if block
+      yield if yield?(true)
+    else
+      yield?(true)
+    end
   ensure
     unregister
   end
@@ -115,4 +122,20 @@ class SpecGuard
   def match?
     raise "must be implemented by the subclass"
   end
+end
+
+# Combined guards
+
+def guard(condition, &block)
+  raise "condition must be a Proc" unless condition.is_a?(Proc)
+  raise LocalJumpError, "no block given" unless block
+  return yield if MSpec.mode? :unguarded or MSpec.mode? :verify or MSpec.mode? :report
+  yield if condition.call
+end
+
+def guard_not(condition, &block)
+  raise "condition must be a Proc" unless condition.is_a?(Proc)
+  raise LocalJumpError, "no block given" unless block
+  return yield if MSpec.mode? :unguarded or MSpec.mode? :verify or MSpec.mode? :report
+  yield unless condition.call
 end

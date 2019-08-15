@@ -13,8 +13,8 @@ class BeNilMatcher
   end
 end
 
-class Object
-  def be_nil
+module MSpecMatchers
+  private def be_nil
     BeNilMatcher.new
   end
 end

@@ -39,9 +39,8 @@ class MatchYAMLMatcher
   end
 end
 
-class Object
-  def match_yaml(expected)
+module MSpecMatchers
+  private def match_yaml(expected)
     MatchYAMLMatcher.new(expected)
   end
 end
-

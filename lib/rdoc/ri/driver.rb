@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'abbrev'
 require 'optparse'
 
@@ -47,13 +47,24 @@ class RDoc::RI::Driver
 
   class NotFoundError < Error
 
+    def initialize(klass, suggestions = nil) # :nodoc:
+      @klass = klass
+      @suggestions = suggestions
+    end
+
     ##
     # Name that wasn't found
 
-    alias name message
+    def name
+      @klass
+    end
 
     def message # :nodoc:
-      "Nothing known about #{super}"
+      str = "Nothing known about #{@klass}"
+      if @suggestions and !@suggestions.empty?
+        str += "\nDid you mean?  #{@suggestions.join("\n               ")}"
+      end
+      str
     end
   end
 
@@ -80,7 +91,6 @@ class RDoc::RI::Driver
     options[:interactive] = false
     options[:profile]     = false
     options[:show_all]    = false
-    options[:use_cache]   = true
     options[:use_stdout]  = !$stdout.tty?
     options[:width]       = 72
 
@@ -100,7 +110,7 @@ class RDoc::RI::Driver
   def self.dump data_path
     require 'pp'
 
-    open data_path, 'rb' do |io|
+    File.open data_path, 'rb' do |io|
       pp Marshal.load(io.read)
     end
   end
@@ -122,7 +132,7 @@ class RDoc::RI::Driver
       opt.summary_indent = ' ' * 4
 
       opt.banner = <<-EOT
-Usage: #{opt.program_name} [options] [names...]
+Usage: #{opt.program_name} [options] [name ...]
 
 Where name can be:
 
@@ -132,8 +142,8 @@ Where name can be:
 
   gem_name: | gem_name:README | gem_name:History
 
-All class names may be abbreviated to their minimum unambiguous form. If a name
-is ambiguous, all valid options will be listed.
+All class names may be abbreviated to their minimum unambiguous form.
+If a name is ambiguous, all valid options will be listed.
 
 A '.' matches either class or instance methods, while #method
 matches only instance and ::method matches only class methods.
@@ -151,23 +161,23 @@ For example:
     #{opt.program_name} zip
     #{opt.program_name} rdoc:README
 
-Note that shell quoting or escaping may be required for method names containing
-punctuation:
+Note that shell quoting or escaping may be required for method names
+containing punctuation:
 
     #{opt.program_name} 'Array.[]'
     #{opt.program_name} compact\\!
 
-To see the default directories ri will search, run:
+To see the default directories #{opt.program_name} will search, run:
 
     #{opt.program_name} --list-doc-dirs
 
-Specifying the --system, --site, --home, --gems or --doc-dir options will
-limit ri to searching only the specified directories.
+Specifying the --system, --site, --home, --gems, or --doc-dir options
+will limit ri to searching only the specified directories.
 
-ri options may be set in the 'RI' environment variable.
+ri options may be set in the RI environment variable.
 
-The ri pager can be set with the 'RI_PAGER' environment variable or the
-'PAGER' environment variable.
+The ri pager can be set with the RI_PAGER environment variable
+or the PAGER environment variable.
       EOT
 
       opt.separator nil
@@ -199,15 +209,15 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
       opt.separator nil
 
       opt.on("--[no-]pager",
-             "Send output directly to stdout,",
-             "rather than to a pager.") do |use_pager|
+             "Send output to a pager,",
+             "rather than directly to stdout.") do |use_pager|
         options[:use_stdout] = !use_pager
       end
 
       opt.separator nil
 
       opt.on("-T",
-             "Synonym for --no-pager") do
+             "Synonym for --no-pager.") do
         options[:use_stdout] = true
       end
 
@@ -220,7 +230,7 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
 
       opt.separator nil
 
-      opt.on("--server [PORT]", Integer,
+      opt.on("--server[=PORT]", Integer,
              "Run RDoc server on the given port.",
              "The default port is 8214.") do |port|
         options[:server] = port || 8214
@@ -235,11 +245,27 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
       formatters -= %w[html label test] # remove useless output formats
 
       opt.on("--format=NAME", "-f",
-             "Uses the selected formatter. The default",
+             "Use the selected formatter.  The default",
              "formatter is bs for paged output and ansi",
-             "otherwise. Valid formatters are:",
-             formatters.join(' '), formatters) do |value|
+             "otherwise.  Valid formatters are:",
+             "#{formatters.join(', ')}.", formatters) do |value|
         options[:formatter] = RDoc::Markup.const_get "To#{value.capitalize}"
+      end
+
+      opt.separator nil
+
+      opt.on("--help", "-h",
+             "Show help and exit.") do
+        puts opts
+        exit
+      end
+
+      opt.separator nil
+
+      opt.on("--version", "-v",
+             "Output version information and exit.") do
+        puts "#{opts.program_name} #{opts.version}"
+        exit
       end
 
       opt.separator nil
@@ -273,7 +299,7 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
              "Do not include documentation from",
              "the Ruby standard library, site_lib,",
              "installed gems, or ~/.rdoc.",
-             "Use with --doc-dir") do
+             "Use with --doc-dir.") do
         options[:use_system] = false
         options[:use_site] = false
         options[:use_gems] = false
@@ -283,8 +309,8 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
       opt.separator nil
 
       opt.on("--[no-]system",
-             "Include documentation from Ruby's standard",
-             "library.  Defaults to true.") do |value|
+             "Include documentation from Ruby's",
+             "standard library.  Defaults to true.") do |value|
         options[:use_system] = value
       end
 
@@ -318,14 +344,14 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
       opt.separator nil
 
       opt.on("--[no-]profile",
-             "Run with the ruby profiler") do |value|
+             "Run with the ruby profiler.") do |value|
         options[:profile] = value
       end
 
       opt.separator nil
 
       opt.on("--dump=CACHE", File,
-             "Dumps data from an ri cache or data file") do |value|
+             "Dump data from an ri cache or data file.") do |value|
         options[:dump_path] = value
       end
     end
@@ -399,6 +425,7 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
     @server      = options[:server]
     @use_stdout  = options[:use_stdout]
     @show_all    = options[:show_all]
+    @width       = options[:width]
 
     # pager process for jruby
     @jruby_pager_process = nil
@@ -769,7 +796,9 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
 
   def display document
     page do |io|
-      text = document.accept formatter(io)
+      f = formatter(io)
+      f.width = @width if @width and f.respond_to?(:width)
+      text = document.accept f
 
       io.write text
     end
@@ -902,13 +931,38 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
     display out
   end
 
+  def check_did_you_mean # :nodoc:
+    if defined? DidYouMean::SpellChecker
+      true
+    else
+      begin
+        require 'did_you_mean'
+        if defined? DidYouMean::SpellChecker
+          true
+        else
+          false
+        end
+      rescue LoadError
+        false
+      end
+    end
+  end
+
   ##
   # Expands abbreviated klass +klass+ into a fully-qualified class.  "Zl::Da"
   # will be expanded to Zlib::DataError.
 
   def expand_class klass
-    ary = classes.keys.grep(Regexp.new("\\A#{klass.gsub(/(?=::|\z)/, '[^:]*')}\\z"))
-    raise NotFoundError, klass if ary.length != 1 && ary.first != klass
+    class_names = classes.keys
+    ary = class_names.grep(Regexp.new("\\A#{klass.gsub(/(?=::|\z)/, '[^:]*')}\\z"))
+    if ary.length != 1 && ary.first != klass
+      if check_did_you_mean
+        suggestions = DidYouMean::SpellChecker.new(dictionary: class_names).correct(klass)
+        raise NotFoundError.new(klass, suggestions)
+      else
+        raise NotFoundError, klass
+      end
+    end
     ary.first
   end
 
@@ -1220,7 +1274,21 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
   def lookup_method name
     found = load_methods_matching name
 
-    raise NotFoundError, name if found.empty?
+    if found.empty?
+      if check_did_you_mean
+        methods = []
+        _, _, method_name = parse_name name
+        find_methods name do |store, klass, ancestor, types, method|
+          methods.push(*store.class_methods[klass]) if [:class, :both].include? types
+          methods.push(*store.instance_methods[klass]) if [:instance, :both].include? types
+        end
+        methods = methods.uniq
+        suggestions = DidYouMean::SpellChecker.new(dictionary: methods).correct(method_name)
+        raise NotFoundError.new(name, suggestions)
+      else
+        raise NotFoundError, name
+      end
+    end
 
     filter_methods found, name
   end
@@ -1375,7 +1443,13 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
 
     render_method_arguments out, method.arglists
     render_method_superclass out, method
-    render_method_comment out, method
+    if method.is_alias_for
+      al = method.is_alias_for
+      alias_for = store.load_method al.parent_name, "#{al.name_prefix}#{al.name}"
+      render_method_comment out, method, alias_for
+    else
+      render_method_comment out, method
+    end
   end
 
   def render_method_arguments out, arglists # :nodoc:
@@ -1387,10 +1461,22 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
     out << RDoc::Markup::Rule.new(1)
   end
 
-  def render_method_comment out, method # :nodoc:
-    out << RDoc::Markup::BlankLine.new
-    out << method.comment
-    out << RDoc::Markup::BlankLine.new
+  def render_method_comment out, method, alias_for = nil# :nodoc:
+    if alias_for
+      unless method.comment.nil? or method.comment.empty?
+        out << RDoc::Markup::BlankLine.new
+        out << method.comment
+      end
+      out << RDoc::Markup::BlankLine.new
+      out << RDoc::Markup::Paragraph.new("(This method is an alias for #{alias_for.full_name}.)")
+      out << RDoc::Markup::BlankLine.new
+      out << alias_for.comment
+      out << RDoc::Markup::BlankLine.new
+    else
+      out << RDoc::Markup::BlankLine.new
+      out << method.comment
+      out << RDoc::Markup::BlankLine.new
+    end
   end
 
   def render_method_superclass out, method # :nodoc:

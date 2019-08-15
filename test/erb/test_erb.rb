@@ -2,6 +2,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'erb'
+require 'stringio'
 
 class TestERB < Test::Unit::TestCase
   class MyError < RuntimeError ; end
@@ -23,16 +24,22 @@ class TestERB < Test::Unit::TestCase
     assert_match(/\Atest filename:1\b/, e.backtrace[0])
   end
 
+  # [deprecated] This will be removed later
   def test_without_filename_with_safe_level
-    erb = ERB.new("<% raise ::TestERB::MyError %>", 1)
+    erb = EnvUtil.suppress_warning do
+      ERB.new("<% raise ::TestERB::MyError %>", 1)
+    end
     e = assert_raise(MyError) {
       erb.result
     }
     assert_match(/\A\(erb\):1\b/, e.backtrace[0])
   end
 
+  # [deprecated] This will be removed later
   def test_with_filename_and_safe_level
-    erb = ERB.new("<% raise ::TestERB::MyError %>", 1)
+    erb = EnvUtil.suppress_warning do
+      ERB.new("<% raise ::TestERB::MyError %>", 1)
+    end
     erb.filename = "test filename"
     e = assert_raise(MyError) {
       erb.result
@@ -86,10 +93,17 @@ class TestERBCore < Test::Unit::TestCase
     @erb = ERB
   end
 
+  def test_version
+    assert_equal(String, @erb.version.class)
+  end
+
   def test_core
-    _test_core(nil)
-    _test_core(0)
-    _test_core(1)
+    # [deprecated] Fix initializer later
+    EnvUtil.suppress_warning do
+      _test_core(nil)
+      _test_core(0)
+      _test_core(1)
+    end
   end
 
   def _test_core(safe)
@@ -198,27 +212,62 @@ EOS
   end
 
   def test_trim_line1_with_carriage_return
-    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", nil, '>')
+    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", trim_mode: '>')
     assert_equal("line\r\n" * 3, erb.result)
 
-    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", nil, '%>')
+    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", trim_mode: '%>')
     assert_equal("line\r\n" * 3, erb.result)
   end
 
   def test_trim_line2_with_carriage_return
-    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", nil, '<>')
+    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", trim_mode: '<>')
     assert_equal("line\r\n" * 3, erb.result)
 
-    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", nil, '%<>')
+    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", trim_mode: '%<>')
     assert_equal("line\r\n" * 3, erb.result)
   end
 
   def test_explicit_trim_line_with_carriage_return
-    erb = @erb.new("<%- 3.times do -%>\r\nline\r\n<%- end -%>\r\n", nil, '-')
+    erb = @erb.new("<%- 3.times do -%>\r\nline\r\n<%- end -%>\r\n", trim_mode: '-')
     assert_equal("line\r\n" * 3, erb.result)
 
-    erb = @erb.new("<%- 3.times do -%>\r\nline\r\n<%- end -%>\r\n", nil, '%-')
+    erb = @erb.new("<%- 3.times do -%>\r\nline\r\n<%- end -%>\r\n", trim_mode: '%-')
     assert_equal("line\r\n" * 3, erb.result)
+  end
+
+  def test_invalid_trim_mode
+    assert_warning(/#{__FILE__}:#{__LINE__ + 1}/) do
+      @erb.new("", trim_mode: 'abc-def')
+    end
+
+    assert_warning(/Invalid ERB trim mode/) do
+      @erb.new("", trim_mode: 'abc-def')
+    end
+
+    assert_warning(/Invalid ERB trim mode/) do
+      @erb.new("", trim_mode: '%<')
+    end
+
+    assert_warning(/Invalid ERB trim mode/) do
+      @erb.new("", trim_mode: '%<>-')
+    end
+
+    assert_warning(/Invalid ERB trim mode/) do
+      @erb.new("", trim_mode: 3)
+    end
+  end
+
+  def test_run
+    out = StringIO.new
+    orig, $stdout = $stdout, out
+
+    num = 3
+    @erb.new('<%= num * 3 %>').run(binding)
+
+    $stdout = orig
+    out.rewind
+    assert_equal('9', out.read)
+    return unless num               # to remove warning
   end
 
   class Foo; end
@@ -241,26 +290,26 @@ EOS
 %n = 1
 <%= n%>
 EOS
-    assert_equal("1\n", ERB.new(src, nil, '%').result(binding))
+    assert_equal("1\n", ERB.new(src, trim_mode: '%').result(binding))
 
     src = <<EOS
 <%
 %>
 EOS
     ans = "\n"
-    assert_equal(ans, ERB.new(src, nil, '%').result(binding))
+    assert_equal(ans, ERB.new(src, trim_mode: '%').result(binding))
 
     src = "<%\n%>"
     # ans = "\n"
     ans = ""
-    assert_equal(ans, ERB.new(src, nil, '%').result(binding))
+    assert_equal(ans, ERB.new(src, trim_mode: '%').result(binding))
 
     src = <<EOS
 <%
 n = 1
 %><%= n%>
 EOS
-    assert_equal("1\n", ERB.new(src, nil, '%').result(binding))
+    assert_equal("1\n", ERB.new(src, trim_mode: '%').result(binding))
 
     src = <<EOS
 %n = 1
@@ -276,7 +325,7 @@ EOS
 % %%><%1
 %%
 EOS
-    assert_equal(ans, ERB.new(src, nil, '%').result(binding))
+    assert_equal(ans, ERB.new(src, trim_mode: '%').result(binding))
   end
 
   def test_def_erb_method
@@ -320,6 +369,12 @@ EOS
     assert_match(/\Atest fname:1\b/, e.backtrace[0])
   end
 
+  def test_def_module
+    klass = Class.new
+    klass.include ERB.new('<%= val %>').def_module('render(val)')
+    assert_equal('1', klass.new.render(1))
+  end
+
   def test_escape
     src = <<EOS
 1.<%% : <%="<%%"%>
@@ -354,7 +409,7 @@ foo
 %% print 'foo'
 
 EOS
-    assert_equal(ans, ERB.new(src, nil, '%').result)
+    assert_equal(ans, ERB.new(src, trim_mode: '%').result)
   end
 
   def test_keep_lineno
@@ -365,7 +420,7 @@ Hello,\s
 % raise("lineno")
 EOS
 
-    erb = ERB.new(src, nil, '%')
+    erb = ERB.new(src, trim_mode: '%')
     e = assert_raise(RuntimeError) {
       erb.result
     }
@@ -383,7 +438,7 @@ EOS
 %>Hello,\s
 World%>
 EOS
-    assert_equal(ans, ERB.new(src, nil, '>').result)
+    assert_equal(ans, ERB.new(src, trim_mode: '>').result)
 
     ans = <<EOS
 %>
@@ -391,7 +446,7 @@ Hello,\s
 
 World%>
 EOS
-    assert_equal(ans, ERB.new(src, nil, '<>').result)
+    assert_equal(ans, ERB.new(src, trim_mode: '<>').result)
 
     ans = <<EOS
 %>
@@ -416,13 +471,13 @@ EOS
     }
     assert_match(/\A\(erb\):5\b/, e.backtrace[0].to_s)
 
-    erb = ERB.new(src, nil, '>')
+    erb = ERB.new(src, trim_mode: '>')
     e = assert_raise(RuntimeError) {
       erb.result
     }
     assert_match(/\A\(erb\):5\b/, e.backtrace[0].to_s)
 
-    erb = ERB.new(src, nil, '<>')
+    erb = ERB.new(src, trim_mode: '<>')
     e = assert_raise(RuntimeError) {
       erb.result
     }
@@ -436,13 +491,13 @@ EOS
 <% raise("lineno") %>
 EOS
 
-    erb = ERB.new(src, nil, '-')
+    erb = ERB.new(src, trim_mode: '-')
     e = assert_raise(RuntimeError) {
       erb.result
     }
     assert_match(/\A\(erb\):5\b/, e.backtrace[0].to_s)
 
-    erb = ERB.new(src, nil, '%-')
+    erb = ERB.new(src, trim_mode: '%-')
     e = assert_raise(RuntimeError) {
       erb.result
     }
@@ -478,8 +533,8 @@ NotSkip  NotSkip
    * WORLD
 KeepNewLine \s
 EOS
-   assert_equal(ans, ERB.new(src, nil, '-').result)
-   assert_equal(ans, ERB.new(src, nil, '-%').result)
+   assert_equal(ans, ERB.new(src, trim_mode: '-').result)
+   assert_equal(ans, ERB.new(src, trim_mode: '-%').result)
   end
 
   def test_url_encode
@@ -495,7 +550,7 @@ EOS
   end
 
   def test_percent_after_etag
-    assert_equal("1%", @erb.new("<%= 1 %>%", nil, "%").result)
+    assert_equal("1%", @erb.new("<%= 1 %>%", trim_mode: "%").result)
   end
 
   def test_token_extension
@@ -587,12 +642,64 @@ EOS
     erb = @erb.new("<%= foo %>")
     erb.result_with_hash(foo: "1")
     assert_equal(false, TOPLEVEL_BINDING.local_variable_defined?(:foo))
+    TOPLEVEL_BINDING.eval 'template2 = "two"'
+    erb = @erb.new("<%= template2 %>")
+    erb.result_with_hash(template2: "TWO")
+    assert_equal "two", TOPLEVEL_BINDING.local_variable_get("template2")
   end
 
   # This depends on the behavior that #local_variable_set raises TypeError by invalid key.
   def test_result_with_hash_with_invalid_keys_raises_type_error
     erb = @erb.new("<%= 1 %>")
     assert_raise(TypeError) { erb.result_with_hash({ 1 => "1" }) }
+  end
+
+  # Bug#14243
+  def test_half_working_comment_backward_compatibility
+    assert_nothing_raised do
+      @erb.new("<% # comment %>\n").result
+    end
+  end
+
+  # [deprecated] These interfaces will be removed later
+  def test_deprecated_interface_warnings
+    [nil, 0].each do |safe|
+      assert_warning(/2nd argument of ERB.new is deprecated/) do
+        ERB.new('', safe)
+      end
+    end
+
+    [1, 2].each do |safe|
+      assert_warn(/2nd argument of ERB.new is deprecated/) do
+        ERB.new('', safe)
+      end
+    end
+
+    [nil, '', '%', '%<>'].each do |trim|
+      assert_warning(/3rd argument of ERB.new is deprecated/) do
+        ERB.new('', nil, trim)
+      end
+    end
+
+    [nil, '_erbout', '_hamlout'].each do |eoutvar|
+      assert_warning(/4th argument of ERB.new is deprecated/) do
+        ERB.new('', nil, nil, eoutvar)
+      end
+    end
+  end
+
+  def test_prohibited_marshal_dump
+    erb = ERB.new("")
+    assert_raise(TypeError) {Marshal.dump(erb)}
+  end
+
+  def test_prohibited_marshal_load
+    erb = ERB.allocate
+    erb.instance_variable_set(:@src, "")
+    erb.instance_variable_set(:@lineno, 1)
+    erb.instance_variable_set(:@_init, true)
+    erb = Marshal.load(Marshal.dump(erb))
+    assert_raise(ArgumentError) {erb.result}
   end
 end
 

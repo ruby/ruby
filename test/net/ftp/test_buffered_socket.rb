@@ -33,6 +33,12 @@ class BufferedSocketTest < Test::Unit::TestCase
     assert_equal("bar", sock.gets)
   end
 
+  def test_read_nil
+    sock = create_buffered_socket("foo\nbar")
+    assert_equal("foo\nbar", sock.read)
+    assert_equal("", sock.read)
+  end
+
   private
 
   def create_buffered_socket(s)

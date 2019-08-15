@@ -200,13 +200,6 @@ class MSpecOptions
        "Load FILE containing configuration options", &block)
   end
 
-  def name
-    on("-n", "--name", "RUBY_NAME",
-       "Set the value of RUBY_NAME (used to determine the implementation)") do |n|
-      Object.const_set :RUBY_NAME, n
-    end
-  end
-
   def targets
     on("-t", "--target", "TARGET",
        "Implementation to run the specs, where TARGET is:") do |t|
@@ -391,7 +384,7 @@ class MSpecOptions
   def repeat
     on("-R", "--repeat", "NUMBER",
        "Repeatedly run an example NUMBER times") do |o|
-      MSpec.repeat = o.to_i
+      MSpec.repeat = Integer(o)
     end
   end
 
@@ -403,7 +396,7 @@ class MSpecOptions
       end
       def obj.load
         file = MSpec.retrieve :file
-        print "\n#{file.ljust(@width)}"
+        STDERR.print "\n#{file.ljust(@width)}"
       end
       MSpec.register :start, obj
       MSpec.register :load, obj
@@ -414,7 +407,7 @@ class MSpecOptions
       obj = Object.new
       obj.instance_variable_set :@marker, o
       def obj.load
-        print @marker
+        STDERR.print @marker
       end
       MSpec.register :load, obj
     end
@@ -469,7 +462,6 @@ class MSpecOptions
     # Generated with:
     # puts File.read(__FILE__).scan(/def (\w+).*\n\s*on\(/)
     configure {}
-    name
     targets
     formatters
     filters

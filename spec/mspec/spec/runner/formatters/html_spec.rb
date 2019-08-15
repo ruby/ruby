@@ -1,5 +1,4 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
-require 'mspec/utils/ruby_name'
 require 'mspec/guards/guard'
 require 'mspec/runner/formatters/html'
 require 'mspec/runner/mspec'
@@ -32,14 +31,14 @@ describe HtmlFormatter, "#start" do
 
   it "prints the HTML head" do
     @formatter.start
-    ruby_name = RUBY_NAME
-    ruby_name.should =~ /^#{ruby_name}/
+    ruby_engine = RUBY_ENGINE
+    ruby_engine.should =~ /^#{ruby_engine}/
     @out.should ==
 %[<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
     "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
-<title>Spec Output For #{ruby_name} (#{RUBY_VERSION})</title>
+<title>Spec Output For #{ruby_engine} (#{RUBY_VERSION})</title>
 <style type="text/css">
 ul {
   list-style: none;

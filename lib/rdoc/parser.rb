@@ -1,5 +1,5 @@
 # -*- coding: us-ascii -*-
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 ##
 # A parser is simple a class that subclasses RDoc::Parser and implements #scan
@@ -88,31 +88,6 @@ class RDoc::Parser
   end
 
   ##
-  # Processes common directives for CodeObjects for the C and Ruby parsers.
-  #
-  # Applies +directive+'s +value+ to +code_object+, if appropriate
-
-  def self.process_directive code_object, directive, value
-    warn "RDoc::Parser::process_directive is deprecated and wil be removed in RDoc 4.  Use RDoc::Markup::PreProcess#handle_directive instead" if $-w
-
-    case directive
-    when 'nodoc' then
-      code_object.document_self = nil # notify nodoc
-      code_object.document_children = value.downcase != 'all'
-    when 'doc' then
-      code_object.document_self = true
-      code_object.force_documentation = true
-    when 'yield', 'yields' then
-      # remove parameter &block
-      code_object.params.sub!(/,?\s*&\w+/, '') if code_object.params
-
-      code_object.block_params = value
-    when 'arg', 'args' then
-      code_object.params = value
-    end
-  end
-
-  ##
   # Checks if +file+ is a zip file in disguise.  Signatures from
   # http://www.garykessler.net/library/file_sigs.html
 
@@ -164,7 +139,7 @@ class RDoc::Parser
   # Returns the file type from the modeline in +file_name+
 
   def self.check_modeline file_name
-    line = open file_name do |io|
+    line = File.open file_name do |io|
       io.gets
     end
 

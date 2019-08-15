@@ -19,8 +19,8 @@ class BeAnInstanceOfMatcher
   end
 end
 
-class Object
-  def be_an_instance_of(expected)
+module MSpecMatchers
+  private def be_an_instance_of(expected)
     BeAnInstanceOfMatcher.new(expected)
   end
 end

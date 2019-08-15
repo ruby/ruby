@@ -9,10 +9,9 @@
 #
 # $IPR: server.rb,v 1.62 2003/07/22 19:20:43 gotoyuzo Exp $
 
-require 'thread'
 require 'socket'
-require 'webrick/config'
-require 'webrick/log'
+require_relative 'config'
+require_relative 'log'
 
 module WEBrick
 
@@ -104,7 +103,7 @@ module WEBrick
       @shutdown_pipe = nil
       unless @config[:DoNotListen]
         if @config[:Listen]
-          warn(":Listen option is deprecated; use GenericServer#listen")
+          warn(":Listen option is deprecated; use GenericServer#listen", uplevel: 1)
         end
         listen(@config[:BindAddress], @config[:Port])
         if @config[:Port] == 0
@@ -158,17 +157,17 @@ module WEBrick
       server_type.start{
         @logger.info \
           "#{self.class}#start: pid=#{$$} port=#{@config[:Port]}"
+        @status = :Running
         call_callback(:StartCallback)
 
         shutdown_pipe = @shutdown_pipe
 
         thgroup = ThreadGroup.new
-        @status = :Running
         begin
           while @status == :Running
             begin
               sp = shutdown_pipe[0]
-              if svrs = IO.select([sp, *@listeners], nil, nil, 2.0)
+              if svrs = IO.select([sp, *@listeners])
                 if svrs[0].include? sp
                   # swallow shutdown pipe
                   buf = String.new
@@ -252,18 +251,26 @@ module WEBrick
     # the client socket.
 
     def accept_client(svr)
-      sock = nil
-      begin
-        sock = svr.accept
-        sock.sync = true
-        Utils::set_non_blocking(sock)
-      rescue Errno::ECONNRESET, Errno::ECONNABORTED,
-             Errno::EPROTO, Errno::EINVAL
-      rescue StandardError => ex
-        msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
-        @logger.error msg
+      case sock = svr.to_io.accept_nonblock(exception: false)
+      when :wait_readable
+        nil
+      else
+        if svr.respond_to?(:start_immediately)
+          sock = OpenSSL::SSL::SSLSocket.new(sock, ssl_context)
+          sock.sync_close = true
+          # we cannot do OpenSSL::SSL::SSLSocket#accept here because
+          # a slow client can prevent us from accepting connections
+          # from other clients
+        end
+        sock
       end
-      return sock
+    rescue Errno::ECONNRESET, Errno::ECONNABORTED,
+           Errno::EPROTO, Errno::EINVAL
+      nil
+    rescue StandardError => ex
+      msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
+      @logger.error msg
+      nil
     end
 
     ##
@@ -285,6 +292,16 @@ module WEBrick
           rescue SocketError
             @logger.debug "accept: <address unknown>"
             raise
+          end
+          if sock.respond_to?(:sync_close=) && @config[:SSLStartImmediately]
+            WEBrick::Utils.timeout(@config[:RequestTimeout]) do
+              begin
+                sock.accept # OpenSSL::SSL::SSLSocket#accept
+              rescue Errno::ECONNRESET, Errno::ECONNABORTED,
+                     Errno::EPROTO, Errno::EINVAL
+                Thread.exit
+              end
+            end
           end
           call_callback(:AcceptCallback, sock)
           block ? block.call(sock) : run(sock)

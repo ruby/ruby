@@ -30,8 +30,8 @@ class BeComputedByMatcher
   end
 end
 
-class Object
-  def be_computed_by(sym, *args)
+module MSpecMatchers
+  private def be_computed_by(sym, *args)
     BeComputedByMatcher.new(sym, *args)
   end
 end

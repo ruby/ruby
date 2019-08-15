@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require_relative '../http'
+
 if $0 == __FILE__
   require 'open-uri'
   IO.foreach(__FILE__) do |line|
@@ -22,6 +24,7 @@ Net::HTTP::STATUS_CODES = {
   100 => 'Continue',
   101 => 'Switching Protocols',
   102 => 'Processing',
+  103 => 'Early Hints',
   200 => 'OK',
   201 => 'Created',
   202 => 'Accepted',

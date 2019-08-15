@@ -4,12 +4,7 @@ require 'rbconfig'
 
 describe SpecGuard, ".ruby_version" do
   before :each do
-    @ruby_version = Object.const_get :RUBY_VERSION
-    Object.const_set :RUBY_VERSION, "8.2.3"
-  end
-
-  after :each do
-    Object.const_set :RUBY_VERSION, @ruby_version
+    stub_const "RUBY_VERSION", "8.2.3"
   end
 
   it "returns the full version for :full" do
@@ -176,5 +171,251 @@ SomeClass#action returns true
 SomeClass#reverse returns false
 
 ]
+  end
+end
+
+describe SpecGuard, ".run_if" do
+  before :each do
+    @guard = SpecGuard.new
+    ScratchPad.clear
+  end
+
+  it "yields if match? returns true" do
+    @guard.stub(:match?).and_return(true)
+    @guard.run_if(:name) { ScratchPad.record :yield }
+    ScratchPad.recorded.should == :yield
+  end
+
+  it "does not yield if match? returns false" do
+    @guard.stub(:match?).and_return(false)
+    @guard.run_if(:name) { fail }
+  end
+
+  it "returns the result of the block if match? is true" do
+    @guard.stub(:match?).and_return(true)
+    @guard.run_if(:name) { 42 }.should == 42
+  end
+
+  it "returns nil if given a block and match? is false" do
+    @guard.stub(:match?).and_return(false)
+    @guard.run_if(:name) { 42 }.should == nil
+  end
+
+  it "returns what #match? returns when no block is given" do
+    @guard.stub(:match?).and_return(true)
+    @guard.run_if(:name).should == true
+    @guard.stub(:match?).and_return(false)
+    @guard.run_if(:name).should == false
+  end
+end
+
+describe SpecGuard, ".run_unless" do
+  before :each do
+    @guard = SpecGuard.new
+    ScratchPad.clear
+  end
+
+  it "yields if match? returns false" do
+    @guard.stub(:match?).and_return(false)
+    @guard.run_unless(:name) { ScratchPad.record :yield }
+    ScratchPad.recorded.should == :yield
+  end
+
+  it "does not yield if match? returns true" do
+    @guard.stub(:match?).and_return(true)
+    @guard.run_unless(:name) { fail }
+  end
+
+  it "returns the result of the block if match? is false" do
+    @guard.stub(:match?).and_return(false)
+    @guard.run_unless(:name) { 42 }.should == 42
+  end
+
+  it "returns nil if given a block and match? is true" do
+    @guard.stub(:match?).and_return(true)
+    @guard.run_unless(:name) { 42 }.should == nil
+  end
+
+  it "returns the opposite of what #match? returns when no block is given" do
+    @guard.stub(:match?).and_return(true)
+    @guard.run_unless(:name).should == false
+    @guard.stub(:match?).and_return(false)
+    @guard.run_unless(:name).should == true
+  end
+end
+
+describe Object, "#guard" do
+  before :each do
+    ScratchPad.clear
+  end
+
+  after :each do
+    MSpec.clear_modes
+  end
+
+  it "allows to combine guards" do
+    guard1 = VersionGuard.new 'x.x.x'
+    VersionGuard.stub(:new).and_return(guard1)
+    guard2 = PlatformGuard.new :dummy
+    PlatformGuard.stub(:new).and_return(guard2)
+
+    guard1.stub(:match?).and_return(true)
+    guard2.stub(:match?).and_return(true)
+    guard -> { ruby_version_is "2.4" and platform_is :linux } do
+      ScratchPad.record :yield
+    end
+    ScratchPad.recorded.should == :yield
+
+    guard1.stub(:match?).and_return(false)
+    guard2.stub(:match?).and_return(true)
+    guard -> { ruby_version_is "2.4" and platform_is :linux } do
+      fail
+    end
+
+    guard1.stub(:match?).and_return(true)
+    guard2.stub(:match?).and_return(false)
+    guard -> { ruby_version_is "2.4" and platform_is :linux } do
+      fail
+    end
+
+    guard1.stub(:match?).and_return(false)
+    guard2.stub(:match?).and_return(false)
+    guard -> { ruby_version_is "2.4" and platform_is :linux } do
+      fail
+    end
+  end
+
+  it "yields when the Proc returns true" do
+    guard -> { true } do
+      ScratchPad.record :yield
+    end
+    ScratchPad.recorded.should == :yield
+  end
+
+  it "does not yield when the Proc returns false" do
+    guard -> { false } do
+      fail
+    end
+  end
+
+  it "yields if MSpec.mode?(:unguarded) is true" do
+    MSpec.register_mode :unguarded
+
+    guard -> { false } do
+      ScratchPad.record :yield1
+    end
+    ScratchPad.recorded.should == :yield1
+
+    guard -> { true } do
+      ScratchPad.record :yield2
+    end
+    ScratchPad.recorded.should == :yield2
+  end
+
+  it "yields if MSpec.mode?(:verify) is true" do
+    MSpec.register_mode :verify
+
+    guard -> { false } do
+      ScratchPad.record :yield1
+    end
+    ScratchPad.recorded.should == :yield1
+
+    guard -> { true } do
+      ScratchPad.record :yield2
+    end
+    ScratchPad.recorded.should == :yield2
+  end
+
+  it "yields if MSpec.mode?(:report) is true" do
+    MSpec.register_mode :report
+
+    guard -> { false } do
+      ScratchPad.record :yield1
+    end
+    ScratchPad.recorded.should == :yield1
+
+    guard -> { true } do
+      ScratchPad.record :yield2
+    end
+    ScratchPad.recorded.should == :yield2
+  end
+
+  it "raises an error if no Proc is given" do
+    -> { guard :foo }.should raise_error(RuntimeError)
+  end
+
+  it "requires a block" do
+    -> {
+      guard(-> { true })
+    }.should raise_error(LocalJumpError)
+    -> {
+      guard(-> { false })
+    }.should raise_error(LocalJumpError)
+  end
+end
+
+describe Object, "#guard_not" do
+  before :each do
+    ScratchPad.clear
+  end
+
+  it "allows to combine guards" do
+    guard1 = VersionGuard.new 'x.x.x'
+    VersionGuard.stub(:new).and_return(guard1)
+    guard2 = PlatformGuard.new :dummy
+    PlatformGuard.stub(:new).and_return(guard2)
+
+    guard1.stub(:match?).and_return(true)
+    guard2.stub(:match?).and_return(true)
+    guard_not -> { ruby_version_is "2.4" and platform_is :linux } do
+      fail
+    end
+
+    guard1.stub(:match?).and_return(false)
+    guard2.stub(:match?).and_return(true)
+    guard_not -> { ruby_version_is "2.4" and platform_is :linux } do
+      ScratchPad.record :yield1
+    end
+    ScratchPad.recorded.should == :yield1
+
+    guard1.stub(:match?).and_return(true)
+    guard2.stub(:match?).and_return(false)
+    guard_not -> { ruby_version_is "2.4" and platform_is :linux } do
+      ScratchPad.record :yield2
+    end
+    ScratchPad.recorded.should == :yield2
+
+    guard1.stub(:match?).and_return(false)
+    guard2.stub(:match?).and_return(false)
+    guard_not -> { ruby_version_is "2.4" and platform_is :linux } do
+      ScratchPad.record :yield3
+    end
+    ScratchPad.recorded.should == :yield3
+  end
+
+  it "yields when the Proc returns false" do
+    guard_not -> { false } do
+      ScratchPad.record :yield
+    end
+    ScratchPad.recorded.should == :yield
+  end
+
+  it "does not yield when the Proc returns true" do
+    guard_not -> { true } do
+      fail
+    end
+  end
+
+  it "raises an error if no Proc is given" do
+    -> { guard_not :foo }.should raise_error(RuntimeError)
+  end
+
+  it "requires a block" do
+    -> {
+      guard_not(-> { true })
+    }.should raise_error(LocalJumpError)
+    -> {
+      guard_not(-> { false })
+    }.should raise_error(LocalJumpError)
   end
 end

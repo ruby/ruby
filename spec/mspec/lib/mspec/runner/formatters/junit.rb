@@ -1,5 +1,4 @@
 require 'mspec/expectations/expectations'
-require 'mspec/utils/ruby_name'
 require 'mspec/runner/formatters/yaml'
 
 class JUnitFormatter < YamlFormatter
@@ -39,7 +38,7 @@ class JUnitFormatter < YamlFormatter
           errors="#{errors}"
           failures="#{failures}"
           time="#{time}"
-          name="Spec Output For #{::RUBY_NAME} (#{::RUBY_VERSION})">
+          name="Spec Output For #{::RUBY_ENGINE} (#{::RUBY_VERSION})">
     XML
     @tests.each do |h|
       description = encode_for_xml h[:test].description

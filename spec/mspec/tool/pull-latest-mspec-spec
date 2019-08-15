@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Assumes all commits have been synchronized to https://github.com/ruby/spec
+# See spec/mspec/tool/sync/sync-rubyspec.rb
+
+rm -rf spec/mspec
+git clone --depth 1 https://github.com/ruby/mspec.git spec/mspec
+commit=$(git -C spec/mspec log -n 1 --format='%h')
+rm -rf spec/mspec/.git
+rm -f spec/mspec/.travis.yml
+git add spec/mspec
+git commit -m "Update to ruby/mspec@${commit}"
+
+rm -rf spec/ruby
+git clone --depth 1 https://github.com/ruby/spec.git spec/ruby
+commit=$(git -C spec/ruby log -n 1 --format='%h')
+rm -rf spec/ruby/.git
+git add spec/ruby
+git commit -m "Update to ruby/spec@${commit}"

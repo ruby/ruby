@@ -15,7 +15,7 @@ class HtmlFormatter < DottedFormatter
     "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
-<title>Spec Output For #{RUBY_NAME} (#{RUBY_VERSION})</title>
+<title>Spec Output For #{RUBY_ENGINE} (#{RUBY_VERSION})</title>
 <style type="text/css">
 ul {
   list-style: none;

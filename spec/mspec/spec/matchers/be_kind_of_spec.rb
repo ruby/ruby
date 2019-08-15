@@ -4,8 +4,8 @@ require 'mspec/matchers'
 
 describe BeKindOfMatcher do
   it "matches when actual is a kind_of? expected" do
-    BeKindOfMatcher.new(Integer).matches?(1).should == true
-    BeKindOfMatcher.new(Fixnum).matches?(2).should == true
+    BeKindOfMatcher.new(Numeric).matches?(1).should == true
+    BeKindOfMatcher.new(Integer).matches?(2).should == true
     BeKindOfMatcher.new(Regexp).matches?(/m/).should == true
   end
 
