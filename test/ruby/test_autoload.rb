@@ -54,6 +54,10 @@ p Foo::Bar
       assert_equal(true, b.const_defined?(:X))
       assert_equal(tmpfile, a.autoload?(:X), bug4565)
       assert_equal(tmpfile, b.autoload?(:X), bug4565)
+      assert_equal(tmpfile, a.autoload?(:X, false))
+      assert_equal(tmpfile, a.autoload?(:X, nil))
+      assert_nil(b.autoload?(:X, false))
+      assert_nil(b.autoload?(:X, nil))
       assert_equal(true, a.const_defined?("Y"))
       assert_equal(true, b.const_defined?("Y"))
       assert_equal(tmpfile2, a.autoload?("Y"))
@@ -300,7 +304,7 @@ p Foo::Bar
         begin
           thrs = []
           3.times do
-            thrs << Thread.new { AutoloadTest; nil }
+            thrs << Thread.new { AutoloadTest && nil }
             thrs << Thread.new { fork { AutoloadTest } }
           end
           thrs.each(&:join)

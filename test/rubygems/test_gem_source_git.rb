@@ -236,11 +236,6 @@ class TestGemSourceGit < Gem::TestCase
         system @git, 'add', 'b.gemspec'
         system @git, 'commit', '--quiet', '-m', 'add b/b.gemspec'
       end
-
-      FileUtils.touch 'c.gemspec'
-
-      system @git, 'add', 'c.gemspec'
-      system @git, 'commit', '--quiet', '-m', 'add c.gemspec'
     end
 
     specs = nil

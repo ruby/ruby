@@ -8,7 +8,7 @@ RSpec.describe "bundle install" do
       end
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
     end
@@ -89,7 +89,7 @@ RSpec.describe "bundle install" do
       end
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
     end
@@ -113,71 +113,36 @@ RSpec.describe "bundle install" do
           expect(the_bundle).to include_gems "rack 1.0.0"
         end
 
-        context "with global_path_appends_ruby_scope set", :bundler => "3" do
-          it "installs gems to ." do
-            set_bundle_path(type, ".")
-            bundle! "config set --global disable_shared_gems true"
+        it "installs gems to ." do
+          set_bundle_path(type, ".")
+          bundle! "config set --global disable_shared_gems true"
 
-            bundle! :install
+          bundle! :install
 
-            paths_to_exist = %w[cache/rack-1.0.0.gem gems/rack-1.0.0 specifications/rack-1.0.0.gemspec].map {|path| bundled_app(Bundler.ruby_scope, path) }
-            expect(paths_to_exist).to all exist
-            expect(the_bundle).to include_gems "rack 1.0.0"
-          end
-
-          it "installs gems to the path" do
-            set_bundle_path(type, bundled_app("vendor").to_s)
-
-            bundle! :install
-
-            expect(bundled_app("vendor", Bundler.ruby_scope, "gems/rack-1.0.0")).to be_directory
-            expect(the_bundle).to include_gems "rack 1.0.0"
-          end
-
-          it "installs gems to the path relative to root when relative" do
-            set_bundle_path(type, "vendor")
-
-            FileUtils.mkdir_p bundled_app("lol")
-            Dir.chdir(bundled_app("lol")) do
-              bundle! :install
-            end
-
-            expect(bundled_app("vendor", Bundler.ruby_scope, "gems/rack-1.0.0")).to be_directory
-            expect(the_bundle).to include_gems "rack 1.0.0"
-          end
+          paths_to_exist = %w[cache/rack-1.0.0.gem gems/rack-1.0.0 specifications/rack-1.0.0.gemspec].map {|path| bundled_app(Bundler.ruby_scope, path) }
+          expect(paths_to_exist).to all exist
+          expect(the_bundle).to include_gems "rack 1.0.0"
         end
 
-        context "with global_path_appends_ruby_scope unset", :bundler => "< 3" do
-          it "installs gems to ." do
-            set_bundle_path(type, ".")
-            bundle! "config set --global disable_shared_gems true"
+        it "installs gems to the path" do
+          set_bundle_path(type, bundled_app("vendor").to_s)
 
+          bundle! :install
+
+          expect(bundled_app("vendor", Bundler.ruby_scope, "gems/rack-1.0.0")).to be_directory
+          expect(the_bundle).to include_gems "rack 1.0.0"
+        end
+
+        it "installs gems to the path relative to root when relative" do
+          set_bundle_path(type, "vendor")
+
+          FileUtils.mkdir_p bundled_app("lol")
+          Dir.chdir(bundled_app("lol")) do
             bundle! :install
-
-            expect([bundled_app("cache/rack-1.0.0.gem"), bundled_app("gems/rack-1.0.0"), bundled_app("specifications/rack-1.0.0.gemspec")]).to all exist
-            expect(the_bundle).to include_gems "rack 1.0.0"
           end
 
-          it "installs gems to BUNDLE_PATH with #{type}" do
-            set_bundle_path(type, bundled_app("vendor").to_s)
-
-            bundle :install
-
-            expect(bundled_app("vendor/gems/rack-1.0.0")).to be_directory
-            expect(the_bundle).to include_gems "rack 1.0.0"
-          end
-
-          it "installs gems to BUNDLE_PATH relative to root when relative" do
-            set_bundle_path(type, "vendor")
-
-            FileUtils.mkdir_p bundled_app("lol")
-            Dir.chdir(bundled_app("lol")) do
-              bundle :install
-            end
-
-            expect(bundled_app("vendor/gems/rack-1.0.0")).to be_directory
-            expect(the_bundle).to include_gems "rack 1.0.0"
-          end
+          expect(bundled_app("vendor", Bundler.ruby_scope, "gems/rack-1.0.0")).to be_directory
+          expect(the_bundle).to include_gems "rack 1.0.0"
         end
       end
     end
@@ -213,7 +178,7 @@ RSpec.describe "bundle install" do
       end
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "very_simple_binary"
       G
 
@@ -226,7 +191,7 @@ RSpec.describe "bundle install" do
       vendored_gems("extensions").rmtree
 
       run "require 'very_simple_binary_c'"
-      expect(last_command.stderr).to include("Bundler::GemNotFound")
+      expect(err).to include("Bundler::GemNotFound")
 
       bundle :install, forgotten_command_line_options(:path => "./vendor/bundle")
 
@@ -245,7 +210,7 @@ RSpec.describe "bundle install" do
 
     it "reports the file exists" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 

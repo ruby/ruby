@@ -74,7 +74,7 @@ RSpec.describe Bundler::SharedHelpers do
     end
 
     context ".bundle is global .bundle" do
-      let(:global_rubygems_dir) { Pathname.new("#{bundled_app}") }
+      let(:global_rubygems_dir) { Pathname.new(bundled_app) }
 
       before do
         Dir.mkdir ".bundle"
@@ -223,6 +223,14 @@ RSpec.describe Bundler::SharedHelpers do
       ENV["BUNDLE_GEMFILE"] = "Gemfile"
     end
 
+    let(:setup_path) do
+      if ruby_core?
+        File.expand_path("../../../lib/bundler/setup", __dir__)
+      else
+        File.expand_path("../../lib/bundler/setup", __dir__)
+      end
+    end
+
     shared_examples_for "ENV['PATH'] gets set correctly" do
       before { Dir.mkdir ".bundle" }
 
@@ -236,7 +244,7 @@ RSpec.describe Bundler::SharedHelpers do
     shared_examples_for "ENV['RUBYOPT'] gets set correctly" do
       it "ensures -rbundler/setup is at the beginning of ENV['RUBYOPT']" do
         subject.set_bundle_environment
-        expect(ENV["RUBYOPT"].split(" ")).to start_with("-rbundler/setup")
+        expect(ENV["RUBYOPT"].split(" ")).to start_with("-r#{setup_path}")
       end
     end
 
@@ -255,6 +263,7 @@ RSpec.describe Bundler::SharedHelpers do
     end
 
     it "calls the appropriate set methods" do
+      expect(subject).to receive(:set_bundle_variables)
       expect(subject).to receive(:set_path)
       expect(subject).to receive(:set_rubyopt)
       expect(subject).to receive(:set_rubylib)
@@ -393,8 +402,10 @@ RSpec.describe Bundler::SharedHelpers do
 
       it "sets BUNDLE_BIN_PATH to the bundle executable file" do
         subject.set_bundle_environment
-        bundle_exe = ruby_core? ? "../../../../exe/bundle" : "../../../exe/bundle"
-        expect(ENV["BUNDLE_BIN_PATH"]).to eq(File.expand_path(bundle_exe, __FILE__))
+        bundle_exe = ruby_core? ? "../../../../bin/bundle" : "../../../exe/bundle"
+        bin_path = ENV["BUNDLE_BIN_PATH"]
+        expect(bin_path).to eq(File.expand_path(bundle_exe, __FILE__))
+        expect(File.exist?(bin_path)).to be true
       end
     end
 

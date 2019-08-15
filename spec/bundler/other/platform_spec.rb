@@ -3,14 +3,12 @@
 RSpec.describe "bundle platform" do
   context "without flags" do
     let(:bundle_platform_platforms_string) do
-      platforms = [rb]
-      platforms.unshift(specific_local_platform) if Bundler.feature_flag.bundler_3_mode?
-      platforms.map {|pl| "* #{pl}" }.join("\n")
+      local_platforms.reverse.map {|pl| "* #{pl}" }.join("\n")
     end
 
     it "returns all the output" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
 
         #{ruby_version_correct}
 
@@ -33,7 +31,7 @@ G
 
     it "returns all the output including the patchlevel" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
 
         #{ruby_version_correct_patchlevel}
 
@@ -56,7 +54,7 @@ G
 
     it "doesn't print ruby version requirement if it isn't specified" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
 
         gem "foo"
       G
@@ -74,7 +72,7 @@ G
 
     it "doesn't match the ruby version requirement" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
 
         #{ruby_version_incorrect}
 
@@ -99,7 +97,7 @@ G
   context "--ruby" do
     it "returns ruby version when explicit" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         ruby "1.9.3", :engine => 'ruby', :engine_version => '1.9.3'
 
         gem "foo"
@@ -112,7 +110,7 @@ G
 
     it "defaults to MRI" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         ruby "1.9.3"
 
         gem "foo"
@@ -125,7 +123,7 @@ G
 
     it "handles jruby" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         ruby "1.8.7", :engine => 'jruby', :engine_version => '1.6.5'
 
         gem "foo"
@@ -138,7 +136,7 @@ G
 
     it "handles rbx" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         ruby "1.8.7", :engine => 'rbx', :engine_version => '1.2.4'
 
         gem "foo"
@@ -151,7 +149,7 @@ G
 
     it "handles truffleruby" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         ruby "2.5.1", :engine => 'truffleruby', :engine_version => '1.0.0-rc6'
 
         gem "foo"
@@ -164,7 +162,7 @@ G
 
     it "raises an error if engine is used but engine version is not" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         ruby "1.8.7", :engine => 'rbx'
 
         gem "foo"
@@ -177,7 +175,7 @@ G
 
     it "raises an error if engine_version is used but engine is not" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         ruby "1.8.7", :engine_version => '1.2.4'
 
         gem "foo"
@@ -190,7 +188,7 @@ G
 
     it "raises an error if engine version doesn't match ruby version for MRI" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         ruby "1.8.7", :engine => 'ruby', :engine_version => '1.2.4'
 
         gem "foo"
@@ -203,7 +201,7 @@ G
 
     it "should print if no ruby version is specified" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
 
         gem "foo"
       G
@@ -294,7 +292,7 @@ G
   context "bundle install" do
     it "installs fine when the ruby version matches" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
 
         #{ruby_version_correct}
@@ -306,7 +304,7 @@ G
     it "installs fine with any engine" do
       simulate_ruby_engine "jruby" do
         install_gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
 
           #{ruby_version_correct_engineless}
@@ -318,7 +316,7 @@ G
 
     it "installs fine when the patchlevel matches" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
 
         #{ruby_version_correct_patchlevel}
@@ -329,7 +327,7 @@ G
 
     it "doesn't install when the ruby version doesn't match" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
 
         #{ruby_version_incorrect}
@@ -341,7 +339,7 @@ G
 
     it "doesn't install when engine doesn't match" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
 
         #{engine_incorrect}
@@ -354,7 +352,7 @@ G
     it "doesn't install when engine version doesn't match" do
       simulate_ruby_engine "jruby" do
         install_gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
 
           #{engine_version_incorrect}
@@ -367,7 +365,7 @@ G
 
     it "doesn't install when patchlevel doesn't match" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
 
         #{patchlevel_incorrect}
@@ -381,12 +379,12 @@ G
   context "bundle check" do
     it "checks fine when the ruby version matches" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
 
         #{ruby_version_correct}
@@ -400,12 +398,12 @@ G
     it "checks fine with any engine" do
       simulate_ruby_engine "jruby" do
         install_gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         G
 
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
 
           #{ruby_version_correct_engineless}
@@ -419,12 +417,12 @@ G
 
     it "fails when ruby version doesn't match" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
 
         #{ruby_version_incorrect}
@@ -436,12 +434,12 @@ G
 
     it "fails when engine doesn't match" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
 
         #{engine_incorrect}
@@ -454,12 +452,12 @@ G
     it "fails when engine version doesn't match" do
       simulate_ruby_engine "ruby" do
         install_gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         G
 
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
 
           #{engine_version_incorrect}
@@ -472,12 +470,12 @@ G
 
     it "fails when patchlevel doesn't match" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
 
         #{patchlevel_incorrect}
@@ -493,7 +491,7 @@ G
       build_repo2
 
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "activesupport"
         gem "rack-obama"
       G
@@ -501,7 +499,7 @@ G
 
     it "updates successfully when the ruby version matches" do
       gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "activesupport"
         gem "rack-obama"
 
@@ -518,7 +516,7 @@ G
     it "updates fine with any engine" do
       simulate_ruby_engine "jruby" do
         gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "activesupport"
           gem "rack-obama"
 
@@ -535,7 +533,7 @@ G
 
     it "fails when ruby version doesn't match" do
       gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "activesupport"
         gem "rack-obama"
 
@@ -551,7 +549,7 @@ G
 
     it "fails when ruby engine doesn't match" do
       gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "activesupport"
         gem "rack-obama"
 
@@ -568,7 +566,7 @@ G
     it "fails when ruby engine version doesn't match" do
       simulate_ruby_engine "jruby" do
         gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "activesupport"
           gem "rack-obama"
 
@@ -585,7 +583,7 @@ G
 
     it "fails when patchlevel doesn't match" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
 
         #{patchlevel_incorrect}
@@ -602,14 +600,14 @@ G
   context "bundle info" do
     before do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
     end
 
     it "prints path if ruby version is correct" do
       install_gemfile! <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
 
         #{ruby_version_correct}
@@ -622,7 +620,7 @@ G
     it "prints path if ruby version is correct for any engine" do
       simulate_ruby_engine "jruby" do
         install_gemfile! <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rails"
 
           #{ruby_version_correct_engineless}
@@ -635,7 +633,7 @@ G
 
     it "fails if ruby version doesn't match", :bundler => "< 3" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
 
         #{ruby_version_incorrect}
@@ -647,7 +645,7 @@ G
 
     it "fails if engine doesn't match", :bundler => "< 3" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
 
         #{engine_incorrect}
@@ -660,7 +658,7 @@ G
     it "fails if engine version doesn't match", :bundler => "< 3" do
       simulate_ruby_engine "jruby" do
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rails"
 
           #{engine_version_incorrect}
@@ -673,7 +671,7 @@ G
 
     it "fails when patchlevel doesn't match", :bundler => "< 3" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
 
         #{patchlevel_incorrect}
@@ -690,7 +688,7 @@ G
   context "bundle cache" do
     before do
       install_gemfile <<-G
-        source "file:#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
       G
     end
@@ -709,7 +707,7 @@ G
     it "copies the .gem file to vendor/cache when ruby version matches for any engine" do
       simulate_ruby_engine "jruby" do
         install_gemfile! <<-G
-          source "file:#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem 'rack'
 
           #{ruby_version_correct_engineless}
@@ -757,7 +755,7 @@ G
 
     it "fails when patchlevel doesn't match" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
 
         #{patchlevel_incorrect}
@@ -771,7 +769,7 @@ G
   context "bundle pack" do
     before do
       install_gemfile! <<-G
-        source "file:#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
       G
     end
@@ -790,7 +788,7 @@ G
     it "copies the .gem file to vendor/cache when ruby version matches any engine" do
       simulate_ruby_engine "jruby" do
         install_gemfile! <<-G
-          source "file:#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem 'rack'
 
           #{ruby_version_correct_engineless}
@@ -838,7 +836,7 @@ G
 
     it "fails when patchlevel doesn't match" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
 
         #{patchlevel_incorrect}
@@ -917,7 +915,7 @@ G
 
     it "fails when patchlevel doesn't match" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
 
         #{patchlevel_incorrect}
@@ -931,7 +929,7 @@ G
   context "bundle console", :bundler => "< 3" do
     before do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "activesupport", :group => :test
         gem "rack_middleware", :group => :development
@@ -940,7 +938,7 @@ G
 
     it "starts IRB with the default group loaded when ruby version matches" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "activesupport", :group => :test
         gem "rack_middleware", :group => :development
@@ -958,7 +956,7 @@ G
     it "starts IRB with the default group loaded when ruby version matches any engine" do
       simulate_ruby_engine "jruby" do
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
           gem "activesupport", :group => :test
           gem "rack_middleware", :group => :development
@@ -976,7 +974,7 @@ G
 
     it "fails when ruby version doesn't match" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "activesupport", :group => :test
         gem "rack_middleware", :group => :development
@@ -990,7 +988,7 @@ G
 
     it "fails when engine doesn't match" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "activesupport", :group => :test
         gem "rack_middleware", :group => :development
@@ -1005,7 +1003,7 @@ G
     it "fails when engine version doesn't match" do
       simulate_ruby_engine "jruby" do
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
           gem "activesupport", :group => :test
           gem "rack_middleware", :group => :development
@@ -1020,7 +1018,7 @@ G
 
     it "fails when patchlevel doesn't match" do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "activesupport", :group => :test
         gem "rack_middleware", :group => :development
@@ -1036,7 +1034,7 @@ G
   context "Bundler.setup" do
     before do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "yard"
         gem "rack", :group => :test
       G
@@ -1046,7 +1044,7 @@ G
 
     it "makes a Gemfile.lock if setup succeeds" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "yard"
         gem "rack"
 
@@ -1062,7 +1060,7 @@ G
     it "makes a Gemfile.lock if setup succeeds for any engine" do
       simulate_ruby_engine "jruby" do
         install_gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "yard"
           gem "rack"
 
@@ -1078,7 +1076,7 @@ G
 
     it "fails when ruby version doesn't match" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "yard"
         gem "rack"
 
@@ -1098,7 +1096,7 @@ G
 
     it "fails when engine doesn't match" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "yard"
         gem "rack"
 
@@ -1119,7 +1117,7 @@ G
     it "fails when engine version doesn't match" do
       simulate_ruby_engine "jruby" do
         install_gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "yard"
           gem "rack"
 
@@ -1140,7 +1138,7 @@ G
 
     it "fails when patchlevel doesn't match" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "yard"
         gem "rack"
 
@@ -1166,7 +1164,7 @@ G
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "activesupport", "2.3.5"
         gem "foo", :git => "#{lib_path("foo")}"
       G
@@ -1179,7 +1177,7 @@ G
       end
 
       gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "activesupport", "2.3.5"
         gem "foo", :git => "#{lib_path("foo")}"
 
@@ -1200,7 +1198,7 @@ G
         end
 
         gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "activesupport", "2.3.5"
           gem "foo", :git => "#{lib_path("foo")}"
 
@@ -1220,7 +1218,7 @@ G
       end
 
       gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "activesupport", "2.3.5"
         gem "foo", :git => "#{lib_path("foo")}"
 
@@ -1238,7 +1236,7 @@ G
       end
 
       gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "activesupport", "2.3.5"
         gem "foo", :git => "#{lib_path("foo")}"
 
@@ -1257,7 +1255,7 @@ G
         end
 
         gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "activesupport", "2.3.5"
           gem "foo", :git => "#{lib_path("foo")}"
 
@@ -1277,7 +1275,7 @@ G
         end
 
         gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "activesupport", "2.3.5"
           gem "foo", :git => "#{lib_path("foo")}"
 
@@ -1297,7 +1295,7 @@ G
         end
 
         gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "activesupport", "2.3.5"
           gem "foo", :git => "#{lib_path("foo")}"
 

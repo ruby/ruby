@@ -1871,6 +1871,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 			rb_eof_error();
 		    }
 		}
+                /* fall through */
 	    default:
 		ossl_raise(eSSLError, "SSL_read");
 	    }

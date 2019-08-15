@@ -40,7 +40,7 @@ describe "Enumerator::Lazy#drop_while" do
   end
 
   it "raises an ArgumentError when not given a block" do
-    lambda { @yieldsmixed.drop_while }.should raise_error(ArgumentError)
+    -> { @yieldsmixed.drop_while }.should raise_error(ArgumentError)
   end
 
   describe "on a nested Lazy" do
