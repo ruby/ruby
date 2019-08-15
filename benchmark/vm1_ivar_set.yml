@@ -1,0 +1,5 @@
+benchmark:
+  vm1_ivar_set: |
+    @a = 1
+    @b = 2
+loop_count: 30000000

@@ -12,9 +12,9 @@
 
 **********************************************************************/
 
+#include "ruby/io.h"
 #include "internal.h"
 #include "ruby/debug.h"
-#include "ruby/io.h"
 #include "gc.h"
 #include "node.h"
 #include "vm_core.h"
@@ -27,12 +27,12 @@ struct dump_config {
     VALUE type;
     FILE *stream;
     VALUE string;
-    int roots;
     const char *root_category;
     VALUE cur_obj;
     VALUE cur_obj_klass;
     size_t cur_obj_references;
-    int full_heap;
+    unsigned int roots: 1;
+    unsigned int full_heap: 1;
 };
 
 PRINTF_ARGS(static void dump_append(struct dump_config *, const char *, ...), 2, 3);
@@ -105,7 +105,7 @@ static inline const char *
 obj_type(VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
-#define CASE_TYPE(type) case T_##type: return #type; break
+#define CASE_TYPE(type) case T_##type: return #type
 	CASE_TYPE(NONE);
 	CASE_TYPE(NIL);
 	CASE_TYPE(OBJECT);
@@ -172,9 +172,9 @@ reachable_object_i(VALUE ref, void *data)
 	return;
 
     if (dc->cur_obj_references == 0)
-	dump_append(dc, ", \"references\":[\"%p\"", (void *)ref);
+        dump_append(dc, ", \"references\":[\"%#"PRIxVALUE"\"", ref);
     else
-	dump_append(dc, ", \"%p\"", (void *)ref);
+        dump_append(dc, ", \"%#"PRIxVALUE"\"", ref);
 
     dc->cur_obj_references++;
 }
@@ -196,17 +196,20 @@ static const char *
 imemo_name(int imemo)
 {
     switch(imemo) {
-#define TYPE_STR(t) case(imemo_##t): return #t; break;
-	TYPE_STR(env)
-	TYPE_STR(cref)
-	TYPE_STR(svar)
-	TYPE_STR(throw_data)
-	TYPE_STR(ifunc)
-	TYPE_STR(memo)
-	TYPE_STR(ment)
-	TYPE_STR(iseq)
-	default:
-	    return "unknown";
+#define TYPE_STR(t) case(imemo_##t): return #t
+	TYPE_STR(env);
+	TYPE_STR(cref);
+	TYPE_STR(svar);
+	TYPE_STR(throw_data);
+	TYPE_STR(ifunc);
+	TYPE_STR(memo);
+	TYPE_STR(ment);
+	TYPE_STR(iseq);
+	TYPE_STR(tmpbuf);
+	TYPE_STR(ast);
+	TYPE_STR(parser_strterm);
+      default:
+	return "unknown";
 #undef TYPE_STR
     }
 }
@@ -232,21 +235,17 @@ dump_object(VALUE obj, struct dump_config *dc)
     if (dc->cur_obj == dc->string)
 	return;
 
-    dump_append(dc, "{\"address\":\"%p\", \"type\":\"%s\"", (void *)obj, obj_type(obj));
+    dump_append(dc, "{\"address\":\"%#"PRIxVALUE"\", \"type\":\"%s\"", obj, obj_type(obj));
 
     if (dc->cur_obj_klass)
-	dump_append(dc, ", \"class\":\"%p\"", (void *)dc->cur_obj_klass);
+        dump_append(dc, ", \"class\":\"%#"PRIxVALUE"\"", dc->cur_obj_klass);
     if (rb_obj_frozen_p(obj))
 	dump_append(dc, ", \"frozen\":true");
 
     switch (BUILTIN_TYPE(obj)) {
       case T_NONE:
-	  dump_append(dc, "}\n");
-	  return;
-
-      case T_NODE:
-	dump_append(dc, ", \"node_type\":\"%s\"", ruby_node_name(nd_type(obj)));
-	break;
+	dump_append(dc, "}\n");
+	return;
 
       case T_IMEMO:
 	dump_append(dc, ", \"imemo_type\":\"%s\"", imemo_name(imemo_type(obj)));
@@ -274,8 +273,8 @@ dump_object(VALUE obj, struct dump_config *dc)
 
       case T_HASH:
 	dump_append(dc, ", \"size\":%"PRIuSIZE, (size_t)RHASH_SIZE(obj));
-	if (FL_TEST(obj, HASH_PROC_DEFAULT))
-	    dump_append(dc, ", \"default\":\"%p\"", (void *)RHASH_IFNONE(obj));
+        if (FL_TEST(obj, RHASH_PROC_DEFAULT))
+            dump_append(dc, ", \"default\":\"%#"PRIxVALUE"\"", RHASH_IFNONE(obj));
 	break;
 
       case T_ARRAY:
@@ -364,12 +363,12 @@ root_obj_i(const char *category, VALUE obj, void *data)
     if (dc->root_category != NULL && category != dc->root_category)
 	dump_append(dc, "]}\n");
     if (dc->root_category == NULL || category != dc->root_category)
-	dump_append(dc, "{\"type\":\"ROOT\", \"root\":\"%s\", \"references\":[\"%p\"", category, (void *)obj);
+        dump_append(dc, "{\"type\":\"ROOT\", \"root\":\"%s\", \"references\":[\"%#"PRIxVALUE"\"", category, obj);
     else
-	dump_append(dc, ", \"%p\"", (void *)obj);
+        dump_append(dc, ", \"%#"PRIxVALUE"\"", obj);
 
     dc->root_category = category;
-    dc->roots++;
+    dc->roots = 1;
 }
 
 static VALUE
@@ -499,6 +498,7 @@ objspace_dump_all(int argc, VALUE *argv, VALUE os)
 void
 Init_objspace_dump(VALUE rb_mObjSpace)
 {
+#undef rb_intern
 #if 0
     rb_mObjSpace = rb_define_module("ObjectSpace"); /* let rdoc know */
 #endif

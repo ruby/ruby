@@ -264,7 +264,6 @@ class CaseMapping
     from = Array(from).map {|i| "%04X" % i}.join(" ")
     to   = Array(to).map {|i| "%04X" % i}.join(" ")
     item = map(from)
-    specials_index = nil
     specials = []
     case type
     when 'CaseFold_11'
@@ -309,7 +308,7 @@ class CaseMapping
         end
         unless item.upper == item.title
           if item.code == item.title
-            raise "Unpredicted case 1 in enc/unicode/case_folding.rb. Please contact https://bugs.ruby-lang.org/."
+            flags += '|IT'   # was unpredicted case 1
           elsif item.title==to[1]
             flags += '|ST'
           else
@@ -410,8 +409,8 @@ if $0 == __FILE__
     s = f.string
   end
   if dest
-    open(dest, "wb") do |f|
-      f.print(s)
+    open(dest, "wb") do |file|
+      file.print(s)
     end
   else
     STDOUT.print(s)

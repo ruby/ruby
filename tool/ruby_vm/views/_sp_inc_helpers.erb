@@ -1,0 +1,37 @@
+%# -*- C -*-
+%# Copyright (c) 2018 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+%;
+#line <%= __LINE__ + 1 %> <%=cstr __FILE__ %>
+
+static rb_snum_t
+sp_inc_of_sendish(const struct rb_call_info *ci)
+{
+    /* Send-ish instructions will:
+     *
+     * 1. Pop block argument, if any.
+     * 2. Pop ordinal arguments.
+     * 3. Pop receiver.
+     * 4. Push return value.
+     */
+    const int argb = (ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0;
+    const int argc = ci->orig_argc;
+    const int recv = 1;
+    const int retn = 1;
+
+    /*         1.     2.     3.     4. */
+    return 0 - argb - argc - recv + retn;
+}
+
+static rb_snum_t
+sp_inc_of_invokeblock(const struct rb_call_info *ci)
+{
+    /* sp_inc of invokeblock is almost identical to that of sendish
+     * instructions, except that it does not pop receiver. */
+    return sp_inc_of_sendish(ci) + 1;
+}
+#pragma RubyVM reset source

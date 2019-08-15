@@ -23,10 +23,6 @@
 	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
     } \
 } while (0)
-#define SafeGetX509Store(obj, st) do { \
-    OSSL_Check_Kind((obj), cX509Store); \
-    GetX509Store((obj), (st)); \
-} while (0)
 
 #define NewX509StCtx(klass) \
     TypedData_Wrap_Struct((klass), &ossl_x509stctx_type, 0)
@@ -41,10 +37,6 @@
     if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "STORE_CTX is out of scope!"); \
     } \
-} while (0)
-#define SafeGetX509StCtx(obj, storep) do { \
-    OSSL_Check_Kind((obj), cX509StoreContext); \
-    GetX509Store((obj), (ctx)); \
 } while (0)
 
 /*
@@ -130,34 +122,12 @@ static const rb_data_type_t ossl_x509store_type = {
 /*
  * Public functions
  */
-VALUE
-ossl_x509store_new(X509_STORE *store)
-{
-    VALUE obj;
-
-    obj = NewX509Store(cX509Store);
-    SetX509Store(obj, store);
-
-    return obj;
-}
-
 X509_STORE *
 GetX509StorePtr(VALUE obj)
 {
     X509_STORE *store;
 
-    SafeGetX509Store(obj, store);
-
-    return store;
-}
-
-X509_STORE *
-DupX509StorePtr(VALUE obj)
-{
-    X509_STORE *store;
-
-    SafeGetX509Store(obj, store);
-    X509_STORE_up_ref(store);
+    GetX509Store(obj, store);
 
     return store;
 }
@@ -242,9 +212,9 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   store.flags = flag
+ *   store.flags = flags
  *
- * Sets +flag+ to the Store. +flag+ consists of zero or more of the constants
+ * Sets _flags_ to the Store. _flags_ consists of zero or more of the constants
  * defined in with name V_FLAG_* or'ed together.
  */
 static VALUE
@@ -263,7 +233,7 @@ ossl_x509store_set_flags(VALUE self, VALUE flags)
  * call-seq:
  *   store.purpose = purpose
  *
- * Sets the store's purpose to +purpose+. If specified, the verifications on
+ * Sets the store's purpose to _purpose_. If specified, the verifications on
  * the store will check every untrusted certificate's extensions are consistent
  * with the purpose. The purpose is specified by constants:
  *
@@ -322,8 +292,9 @@ ossl_x509store_set_time(VALUE self, VALUE time)
  * call-seq:
  *   store.add_file(file) -> self
  *
- * Adds the certificates in +file+ to the certificate store.  The +file+ can
- * contain multiple PEM-encoded certificates.
+ * Adds the certificates in _file_ to the certificate store. _file_ is the path
+ * to the file, and the file contains one or more certificates in PEM format
+ * concatenated together.
  */
 static VALUE
 ossl_x509store_add_file(VALUE self, VALUE file)
@@ -342,6 +313,15 @@ ossl_x509store_add_file(VALUE self, VALUE file)
     if(X509_LOOKUP_load_file(lookup, path, X509_FILETYPE_PEM) != 1){
         ossl_raise(eX509StoreError, NULL);
     }
+#if OPENSSL_VERSION_NUMBER < 0x10101000 || defined(LIBRESSL_VERSION_NUMBER)
+    /*
+     * X509_load_cert_crl_file() which is called from X509_LOOKUP_load_file()
+     * did not check the return value of X509_STORE_add_{cert,crl}(), leaking
+     * "cert already in hash table" errors on the error queue, if duplicate
+     * certificates are found. This will be fixed by OpenSSL 1.1.1.
+     */
+    ossl_clear_error();
+#endif
 
     return self;
 }
@@ -350,7 +330,7 @@ ossl_x509store_add_file(VALUE self, VALUE file)
  * call-seq:
  *   store.add_path(path) -> self
  *
- * Adds +path+ as the hash dir to be looked up by the store.
+ * Adds _path_ as the hash dir to be looked up by the store.
  */
 static VALUE
 ossl_x509store_add_path(VALUE self, VALUE dir)
@@ -377,7 +357,7 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
  * call-seq:
  *   store.set_default_paths
  *
- * Configures +store+ to look up CA certificates from the system default
+ * Configures _store_ to look up CA certificates from the system default
  * certificate store as needed basis. The location of the store can usually be
  * determined by:
  *
@@ -401,7 +381,7 @@ ossl_x509store_set_default_paths(VALUE self)
  * call-seq:
  *   store.add_cert(cert)
  *
- * Adds the OpenSSL::X509::Certificate +cert+ to the certificate store.
+ * Adds the OpenSSL::X509::Certificate _cert_ to the certificate store.
  */
 static VALUE
 ossl_x509store_add_cert(VALUE self, VALUE arg)
@@ -422,7 +402,7 @@ ossl_x509store_add_cert(VALUE self, VALUE arg)
  * call-seq:
  *   store.add_crl(crl) -> self
  *
- * Adds the OpenSSL::X509::CRL +crl+ to the store.
+ * Adds the OpenSSL::X509::CRL _crl_ to the store.
  */
 static VALUE
 ossl_x509store_add_crl(VALUE self, VALUE arg)
@@ -447,15 +427,15 @@ static VALUE ossl_x509stctx_get_chain(VALUE);
  * call-seq:
  *   store.verify(cert, chain = nil) -> true | false
  *
- * Performs a certificate verification on the OpenSSL::X509::Certificate +cert+.
+ * Performs a certificate verification on the OpenSSL::X509::Certificate _cert_.
  *
- * +chain+ can be an array of OpenSSL::X509::Certificate that is used to
+ * _chain_ can be an array of OpenSSL::X509::Certificate that is used to
  * construct the certificate chain.
  *
  * If a block is given, it overrides the callback set by #verify_callback=.
  *
  * After finishing the verification, the error information can be retrieved by
- * #error, #error_string, and the resuting complete certificate chain can be
+ * #error, #error_string, and the resulting complete certificate chain can be
  * retrieved by #chain.
  */
 static VALUE
@@ -552,7 +532,7 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "12", &store, &cert, &chain);
     GetX509StCtx(self, ctx);
-    SafeGetX509Store(store, x509st);
+    GetX509Store(store, x509st);
     if(!NIL_P(cert)) x509 = DupX509CertPtr(cert); /* NEED TO DUP */
     if(!NIL_P(chain)) x509s = ossl_x509_ary2sk(chain);
     if(X509_STORE_CTX_init(ctx, x509st, x509, x509s) != 1){
@@ -791,6 +771,7 @@ ossl_x509stctx_set_time(VALUE self, VALUE time)
 void
 Init_ossl_x509store(void)
 {
+#undef rb_intern
 #if 0
     mOSSL = rb_define_module("OpenSSL");
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);

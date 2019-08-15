@@ -1,0 +1,19 @@
+require_relative '../../spec_helper'
+require_relative 'shared/to_i'
+require_relative 'shared/integer_rounding'
+
+describe "Integer#floor" do
+  it_behaves_like :integer_to_i, :floor
+  it_behaves_like :integer_rounding_positive_precision, :floor
+
+  context "precision argument specified as part of the floor method is negative" do
+    it "returns the largest integer less than self with at least precision.abs trailing zeros" do
+      1832.floor(-1).should eql(1830)
+      1832.floor(-2).should eql(1800)
+      1832.floor(-3).should eql(1000)
+      -1832.floor(-1).should eql(-1840)
+      -1832.floor(-2).should eql(-1900)
+      -1832.floor(-3).should eql(-2000)
+    end
+  end
+end

@@ -4,7 +4,7 @@
 
 #include "ossl.h"
 
-#if !defined(OPENSSL_NO_EC) && (OPENSSL_VERSION_NUMBER >= 0x0090802fL)
+#if !defined(OPENSSL_NO_EC)
 
 #define EXPORT_PEM 0
 #define EXPORT_DER 1
@@ -23,19 +23,11 @@ static const rb_data_type_t ossl_ec_point_type;
     GetPKeyEC(obj, _pkey); \
     (key) = EVP_PKEY_get0_EC_KEY(_pkey); \
 } while (0)
-#define SafeGetEC(obj, key) do { \
-    OSSL_Check_Kind(obj, cEC); \
-    GetEC(obj, key); \
-} while (0)
 
 #define GetECGroup(obj, group) do { \
     TypedData_Get_Struct(obj, EC_GROUP, &ossl_ec_group_type, group); \
     if ((group) == NULL) \
 	ossl_raise(eEC_GROUP, "EC_GROUP is not initialized"); \
-} while (0)
-#define SafeGetECGroup(obj, group) do { \
-    OSSL_Check_Kind((obj), cEC_GROUP); \
-    GetECGroup(obj, group); \
 } while (0)
 
 #define GetECPoint(obj, point) do { \
@@ -43,13 +35,9 @@ static const rb_data_type_t ossl_ec_point_type;
     if ((point) == NULL) \
 	ossl_raise(eEC_POINT, "EC_POINT is not initialized"); \
 } while (0)
-#define SafeGetECPoint(obj, point) do { \
-    OSSL_Check_Kind((obj), cEC_POINT); \
-    GetECPoint(obj, point); \
-} while(0)
 #define GetECPointGroup(obj, group) do { \
     VALUE _group = rb_attr_get(obj, id_i_group); \
-    SafeGetECGroup(_group, group); \
+    GetECGroup(_group, group); \
 } while (0)
 
 VALUE cEC;
@@ -128,7 +116,7 @@ ec_key_new_from_group(VALUE arg)
     if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
 	EC_GROUP *group;
 
-	SafeGetECGroup(arg, group);
+	GetECGroup(arg, group);
 	if (!(ec = EC_KEY_new()))
 	    ossl_raise(eECError, NULL);
 
@@ -208,7 +196,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     } else if (rb_obj_is_kind_of(arg, cEC)) {
 	EC_KEY *other_ec = NULL;
 
-	SafeGetEC(arg, other_ec);
+	GetEC(arg, other_ec);
 	if (!(ec = EC_KEY_dup(other_ec)))
 	    ossl_raise(eECError, NULL);
     } else if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
@@ -217,7 +205,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 	BIO *in;
 
 	pass = ossl_pem_passwd_value(pass);
-	in = ossl_obj2bio(arg);
+	in = ossl_obj2bio(&arg);
 
 	ec = PEM_read_bio_ECPrivateKey(in, NULL, ossl_pem_passwd_cb, (void *)pass);
 	if (!ec) {
@@ -257,7 +245,7 @@ ossl_ec_key_initialize_copy(VALUE self, VALUE other)
     GetPKey(self, pkey);
     if (EVP_PKEY_base_id(pkey) != EVP_PKEY_NONE)
 	ossl_raise(eECError, "EC already initialized");
-    SafeGetEC(other, ec);
+    GetEC(other, ec);
 
     ec_new = EC_KEY_dup(ec);
     if (!ec_new)
@@ -275,7 +263,7 @@ ossl_ec_key_initialize_copy(VALUE self, VALUE other)
  *   key.group   => group
  *
  * Returns the EC::Group that the key is associated with. Modifying the returned
- * group does not affect +key+.
+ * group does not affect _key_.
  */
 static VALUE
 ossl_ec_key_get_group(VALUE self)
@@ -296,7 +284,7 @@ ossl_ec_key_get_group(VALUE self)
  *   key.group = group
  *
  * Sets the EC::Group for the key. The group structure is internally copied so
- * modifition to +group+ after assigning to a key has no effect on the key.
+ * modification to _group_ after assigning to a key has no effect on the key.
  */
 static VALUE
 ossl_ec_key_set_group(VALUE self, VALUE group_v)
@@ -305,7 +293,7 @@ ossl_ec_key_set_group(VALUE self, VALUE group_v)
     EC_GROUP *group;
 
     GetEC(self, ec);
-    SafeGetECGroup(group_v, group);
+    GetECGroup(group_v, group);
 
     if (EC_KEY_set_group(ec, group) != 1)
         ossl_raise(eECError, "EC_KEY_set_group");
@@ -390,7 +378,7 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
 
     GetEC(self, ec);
     if (!NIL_P(public_key))
-        SafeGetECPoint(public_key, point);
+        GetECPoint(public_key, point);
 
     switch (EC_KEY_set_public_key(ec, point)) {
     case 1:
@@ -458,7 +446,7 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
         private = 1;
 
     if (!NIL_P(ciph)) {
-	cipher = GetCipherPtr(ciph);
+	cipher = ossl_evp_get_cipherbyname(ciph);
 	pass = ossl_pem_passwd_value(pass);
     }
 
@@ -502,8 +490,8 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
  *     key.export([cipher, pass_phrase]) => String
  *     key.to_pem([cipher, pass_phrase]) => String
  *
- * Outputs the EC key in PEM encoding.  If +cipher+ and +pass_phrase+ are given
- * they will be used to encrypt the key.  +cipher+ must be an OpenSSL::Cipher
+ * Outputs the EC key in PEM encoding.  If _cipher_ and _pass_phrase_ are given
+ * they will be used to encrypt the key.  _cipher_ must be an OpenSSL::Cipher
  * instance. Note that encryption will only be effective for a private key,
  * public keys will always be encoded in plain text.
  */
@@ -608,7 +596,7 @@ static VALUE ossl_ec_key_dh_compute_key(VALUE self, VALUE pubkey)
     VALUE str;
 
     GetEC(self, ec);
-    SafeGetECPoint(pubkey, point);
+    GetECPoint(pubkey, point);
 
 /* BUG: need a way to figure out the maximum string size */
     buf_len = 1024;
@@ -724,7 +712,7 @@ ec_group_new(const EC_GROUP *group)
  *
  * Creates a new EC::Group object.
  *
- * +ec_method+ is a symbol that represents an EC_METHOD. Currently the following
+ * _ec_method_ is a symbol that represents an EC_METHOD. Currently the following
  * are supported:
  *
  * * :GFp_simple
@@ -771,11 +759,11 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
         } else if (rb_obj_is_kind_of(arg1, cEC_GROUP)) {
             const EC_GROUP *arg1_group;
 
-            SafeGetECGroup(arg1, arg1_group);
+            GetECGroup(arg1, arg1_group);
             if ((group = EC_GROUP_dup(arg1_group)) == NULL)
                 ossl_raise(eEC_GROUP, "EC_GROUP_dup");
         } else {
-            BIO *in = ossl_obj2bio(arg1);
+            BIO *in = ossl_obj2bio(&arg1);
 
             group = PEM_read_bio_ECPKParameters(in, NULL, NULL, NULL);
             if (!group) {
@@ -847,7 +835,7 @@ ossl_ec_group_initialize_copy(VALUE self, VALUE other)
     TypedData_Get_Struct(self, EC_GROUP, &ossl_ec_group_type, group_new);
     if (group_new)
 	ossl_raise(eEC_GROUP, "EC::Group already initialized");
-    SafeGetECGroup(other, group);
+    GetECGroup(other, group);
 
     group_new = EC_GROUP_dup(group);
     if (!group_new)
@@ -862,15 +850,15 @@ ossl_ec_group_initialize_copy(VALUE self, VALUE other)
  *   group1.eql?(group2)   => true | false
  *   group1 == group2   => true | false
  *
- * Returns true if the two groups use the same curve and have the same
- * parameters, false otherwise.
+ * Returns +true+ if the two groups use the same curve and have the same
+ * parameters, +false+ otherwise.
  */
 static VALUE ossl_ec_group_eql(VALUE a, VALUE b)
 {
     EC_GROUP *group1 = NULL, *group2 = NULL;
 
     GetECGroup(a, group1);
-    SafeGetECGroup(b, group2);
+    GetECGroup(b, group2);
 
     if (EC_GROUP_cmp(group1, group2, ossl_bn_ctx) == 1)
        return Qfalse;
@@ -903,8 +891,8 @@ static VALUE ossl_ec_group_get_generator(VALUE self)
  * call-seq:
  *   group.set_generator(generator, order, cofactor)   => self
  *
- * Sets the curve parameters. +generator+ must be an instance of EC::Point that
- * is on the curve. +order+ and +cofactor+ are integers.
+ * Sets the curve parameters. _generator_ must be an instance of EC::Point that
+ * is on the curve. _order_ and _cofactor_ are integers.
  *
  * See the OpenSSL documentation for EC_GROUP_set_generator()
  */
@@ -915,7 +903,7 @@ static VALUE ossl_ec_group_set_generator(VALUE self, VALUE generator, VALUE orde
     const BIGNUM *o, *co;
 
     GetECGroup(self, group);
-    SafeGetECPoint(generator, point);
+    GetECPoint(generator, point);
     o = GetBNPtr(order);
     co = GetBNPtr(cofactor);
 
@@ -1127,14 +1115,14 @@ parse_point_conversion_form_symbol(VALUE sym)
  *
  * Sets the form how EC::Point data is encoded as ASN.1 as defined in X9.62.
  *
- * +format+ can be one of these:
+ * _format_ can be one of these:
  *
- * :compressed::
+ * +:compressed+::
  *   Encoded as z||x, where z is an octet indicating which solution of the
  *   equation y is. z will be 0x02 or 0x03.
- * :uncompressed::
+ * +:uncompressed+::
  *   Encoded as z||x||y, where z is an octet 0x04.
- * :hybrid::
+ * +:hybrid+::
  *   Encodes as z||x||y, where z is an octet indicating which solution of the
  *   equation y is. z will be 0x06 or 0x07.
  *
@@ -1331,76 +1319,61 @@ ec_point_new(const EC_POINT *point, const EC_GROUP *group)
     return obj;
 }
 
+static VALUE ossl_ec_point_initialize_copy(VALUE, VALUE);
 /*
  * call-seq:
  *   OpenSSL::PKey::EC::Point.new(point)
- *   OpenSSL::PKey::EC::Point.new(group)
- *   OpenSSL::PKey::EC::Point.new(group, bn)
+ *   OpenSSL::PKey::EC::Point.new(group [, encoded_point])
  *
- * See the OpenSSL documentation for EC_POINT_*
+ * Creates a new instance of OpenSSL::PKey::EC::Point. If the only argument is
+ * an instance of EC::Point, a copy is returned. Otherwise, creates a point
+ * that belongs to _group_.
+ *
+ * _encoded_point_ is the octet string representation of the point. This
+ * must be either a String or an OpenSSL::BN.
  */
 static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
 {
     EC_POINT *point;
-    VALUE arg1, arg2;
-    VALUE group_v = Qnil;
-    const EC_GROUP *group = NULL;
+    VALUE group_v, arg2;
+    const EC_GROUP *group;
 
     TypedData_Get_Struct(self, EC_POINT, &ossl_ec_point_type, point);
     if (point)
-        ossl_raise(eEC_POINT, "EC_POINT already initialized");
+	rb_raise(eEC_POINT, "EC_POINT already initialized");
 
-    switch (rb_scan_args(argc, argv, "11", &arg1, &arg2)) {
-    case 1:
-        if (rb_obj_is_kind_of(arg1, cEC_POINT)) {
-            const EC_POINT *arg_point;
-
-	    group_v = rb_attr_get(arg1, id_i_group);
-	    SafeGetECGroup(group_v, group);
-	    SafeGetECPoint(arg1, arg_point);
-
-            point = EC_POINT_dup(arg_point, group);
-        } else if (rb_obj_is_kind_of(arg1, cEC_GROUP)) {
-            group_v = arg1;
-            SafeGetECGroup(group_v, group);
-
-            point = EC_POINT_new(group);
-        } else {
-            ossl_raise(eEC_POINT, "wrong argument type: must be OpenSSL::PKey::EC::Point or OpenSSL::Pkey::EC::Group");
-        }
-
-        break;
-     case 2:
-        if (!rb_obj_is_kind_of(arg1, cEC_GROUP))
-            ossl_raise(rb_eArgError, "1st argument must be OpenSSL::PKey::EC::Group");
-        group_v = arg1;
-        SafeGetECGroup(group_v, group);
-
-        if (rb_obj_is_kind_of(arg2, cBN)) {
-            const BIGNUM *bn = GetBNPtr(arg2);
-
-            point = EC_POINT_bn2point(group, bn, NULL, ossl_bn_ctx);
-        } else {
-            BIO *in = ossl_obj2bio(arg1);
-
-/* BUG: finish me */
-
-            BIO_free(in);
-
-            if (point == NULL) {
-                ossl_raise(eEC_POINT, "unknown type for 2nd arg");
-            }
-        }
-        break;
-    default:
-        ossl_raise(rb_eArgError, "wrong number of arguments");
+    rb_scan_args(argc, argv, "11", &group_v, &arg2);
+    if (rb_obj_is_kind_of(group_v, cEC_POINT)) {
+	if (argc != 1)
+	    rb_raise(rb_eArgError, "invalid second argument");
+	return ossl_ec_point_initialize_copy(self, group_v);
     }
 
-    if (point == NULL)
-        ossl_raise(eEC_POINT, NULL);
-
-    if (NIL_P(group_v))
-        ossl_raise(rb_eRuntimeError, "missing group (internal error)");
+    GetECGroup(group_v, group);
+    if (argc == 1) {
+	point = EC_POINT_new(group);
+	if (!point)
+	    ossl_raise(eEC_POINT, "EC_POINT_new");
+    }
+    else {
+	if (rb_obj_is_kind_of(arg2, cBN)) {
+	    point = EC_POINT_bn2point(group, GetBNPtr(arg2), NULL, ossl_bn_ctx);
+	    if (!point)
+		ossl_raise(eEC_POINT, "EC_POINT_bn2point");
+	}
+	else {
+	    StringValue(arg2);
+	    point = EC_POINT_new(group);
+	    if (!point)
+		ossl_raise(eEC_POINT, "EC_POINT_new");
+	    if (!EC_POINT_oct2point(group, point,
+				    (unsigned char *)RSTRING_PTR(arg2),
+				    RSTRING_LEN(arg2), ossl_bn_ctx)) {
+		EC_POINT_free(point);
+		ossl_raise(eEC_POINT, "EC_POINT_oct2point");
+	    }
+	}
+    }
 
     RTYPEDDATA_DATA(self) = point;
     rb_ivar_set(self, id_i_group, group_v);
@@ -1418,10 +1391,10 @@ ossl_ec_point_initialize_copy(VALUE self, VALUE other)
     TypedData_Get_Struct(self, EC_POINT, &ossl_ec_point_type, point_new);
     if (point_new)
 	ossl_raise(eEC_POINT, "EC::Point already initialized");
-    SafeGetECPoint(other, point);
+    GetECPoint(other, point);
 
     group_v = rb_obj_dup(rb_attr_get(other, id_i_group));
-    SafeGetECGroup(group_v, group);
+    GetECGroup(group_v, group);
 
     point_new = EC_POINT_dup(point, group);
     if (!point_new)
@@ -1448,8 +1421,8 @@ static VALUE ossl_ec_point_eql(VALUE a, VALUE b)
         return Qfalse;
 
     GetECPoint(a, point1);
-    SafeGetECPoint(b, point2);
-    SafeGetECGroup(group_v1, group);
+    GetECPoint(b, point2);
+    GetECGroup(group_v1, group);
 
     if (EC_POINT_cmp(group, point1, point2, ossl_bn_ctx) == 1)
         return Qfalse;
@@ -1555,38 +1528,38 @@ static VALUE ossl_ec_point_set_to_infinity(VALUE self)
 
 /*
  * call-seq:
- *   point.to_bn(conversion_form = nil) => OpenSSL::BN
+ *    point.to_octet_string(conversion_form) -> String
  *
- * Convert the EC point into an octet string and store in an OpenSSL::BN. If
- * +conversion_form+ is given, the point data is converted using the specified
- * form. If not given, the default form set in the EC::Group object is used.
+ * Returns the octet string representation of the elliptic curve point.
  *
- * See also EC::Point#point_conversion_form=.
+ * _conversion_form_ specifies how the point is converted. Possible values are:
+ *
+ * - +:compressed+
+ * - +:uncompressed+
+ * - +:hybrid+
  */
 static VALUE
-ossl_ec_point_to_bn(int argc, VALUE *argv, VALUE self)
+ossl_ec_point_to_octet_string(VALUE self, VALUE conversion_form)
 {
     EC_POINT *point;
-    VALUE form_obj, bn_obj;
     const EC_GROUP *group;
     point_conversion_form_t form;
-    BIGNUM *bn;
+    VALUE str;
+    size_t len;
 
     GetECPoint(self, point);
     GetECPointGroup(self, group);
-    rb_scan_args(argc, argv, "01", &form_obj);
-    if (NIL_P(form_obj))
-	form = EC_GROUP_get_point_conversion_form(group);
-    else
-	form = parse_point_conversion_form_symbol(form_obj);
+    form = parse_point_conversion_form_symbol(conversion_form);
 
-    bn_obj = rb_obj_alloc(cBN);
-    bn = GetBNPtr(bn_obj);
-
-    if (EC_POINT_point2bn(group, point, form, bn, ossl_bn_ctx) == NULL)
-        ossl_raise(eEC_POINT, "EC_POINT_point2bn");
-
-    return bn_obj;
+    len = EC_POINT_point2oct(group, point, form, NULL, 0, ossl_bn_ctx);
+    if (!len)
+	ossl_raise(eEC_POINT, "EC_POINT_point2oct");
+    str = rb_str_new(NULL, (long)len);
+    if (!EC_POINT_point2oct(group, point, form,
+			    (unsigned char *)RSTRING_PTR(str), len,
+			    ossl_bn_ctx))
+	ossl_raise(eEC_POINT, "EC_POINT_point2oct");
+    return str;
 }
 
 /*
@@ -1597,12 +1570,12 @@ ossl_ec_point_to_bn(int argc, VALUE *argv, VALUE self)
  * Performs elliptic curve point multiplication.
  *
  * The first form calculates <tt>bn1 * point + bn2 * G</tt>, where +G+ is the
- * generator of the group of +point+. +bn2+ may be ommitted, and in that case,
+ * generator of the group of _point_. _bn2_ may be omitted, and in that case,
  * the result is just <tt>bn1 * point</tt>.
  *
  * The second form calculates <tt>bns[0] * point + bns[1] * points[0] + ...
- * + bns[-1] * points[-1] + bn2 * G</tt>. +bn2+ may be ommitted. +bns+ must be
- * an array of OpenSSL::BN. +points+ must be an array of
+ * + bns[-1] * points[-1] + bn2 * G</tt>. _bn2_ may be omitted. _bns_ must be
+ * an array of OpenSSL::BN. _points_ must be an array of
  * OpenSSL::PKey::EC::Point. Please note that <tt>points[0]</tt> is not
  * multiplied by <tt>bns[0]</tt>, but <tt>bns[1]</tt>.
  */
@@ -1615,7 +1588,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
     const BIGNUM *bn_g = NULL;
 
     GetECPoint(self, point_self);
-    SafeGetECGroup(group_v, group);
+    GetECGroup(group_v, group);
 
     result = rb_obj_alloc(cEC_POINT);
     ossl_ec_point_initialize(1, &group_v, result);
@@ -1656,7 +1629,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 	points = ALLOCV_N(const EC_POINT *, tmp_p, num);
 	points[0] = point_self; /* self */
 	for (i = 0; i < num - 1; i++)
-	    SafeGetECPoint(RARRAY_AREF(arg2, i), points[i + 1]);
+	    GetECPoint(RARRAY_AREF(arg2, i), points[i + 1]);
 
 	if (!NIL_P(arg3))
 	    bn_g = GetBNPtr(arg3);
@@ -1676,6 +1649,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 
 void Init_ossl_ec(void)
 {
+#undef rb_intern
 #if 0
     mPKey = rb_define_module_under(mOSSL, "PKey");
     cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
@@ -1726,7 +1700,7 @@ void Init_ossl_ec(void)
 
     rb_define_singleton_method(cEC, "generate", ossl_ec_key_s_generate, 1);
     rb_define_method(cEC, "initialize", ossl_ec_key_initialize, -1);
-    rb_define_copy_func(cEC, ossl_ec_key_initialize_copy);
+    rb_define_method(cEC, "initialize_copy", ossl_ec_key_initialize_copy, 1);
 /* copy/dup/cmp */
 
     rb_define_method(cEC, "group", ossl_ec_key_get_group, 0);
@@ -1763,7 +1737,7 @@ void Init_ossl_ec(void)
 
     rb_define_alloc_func(cEC_GROUP, ossl_ec_group_alloc);
     rb_define_method(cEC_GROUP, "initialize", ossl_ec_group_initialize, -1);
-    rb_define_copy_func(cEC_GROUP, ossl_ec_group_initialize_copy);
+    rb_define_method(cEC_GROUP, "initialize_copy", ossl_ec_group_initialize_copy, 1);
     rb_define_method(cEC_GROUP, "eql?", ossl_ec_group_eql, 1);
     rb_define_alias(cEC_GROUP, "==", "eql?");
 /* copy/dup/cmp */
@@ -1799,7 +1773,7 @@ void Init_ossl_ec(void)
 
     rb_define_alloc_func(cEC_POINT, ossl_ec_point_alloc);
     rb_define_method(cEC_POINT, "initialize", ossl_ec_point_initialize, -1);
-    rb_define_copy_func(cEC_POINT, ossl_ec_point_initialize_copy);
+    rb_define_method(cEC_POINT, "initialize_copy", ossl_ec_point_initialize_copy, 1);
     rb_attr(cEC_POINT, rb_intern("group"), 1, 0, 0);
     rb_define_method(cEC_POINT, "eql?", ossl_ec_point_eql, 1);
     rb_define_alias(cEC_POINT, "==", "eql?");
@@ -1811,7 +1785,7 @@ void Init_ossl_ec(void)
     rb_define_method(cEC_POINT, "set_to_infinity!", ossl_ec_point_set_to_infinity, 0);
 /* all the other methods */
 
-    rb_define_method(cEC_POINT, "to_bn", ossl_ec_point_to_bn, -1);
+    rb_define_method(cEC_POINT, "to_octet_string", ossl_ec_point_to_octet_string, 1);
     rb_define_method(cEC_POINT, "mul", ossl_ec_point_mul, -1);
 
     id_i_group = rb_intern("@group");

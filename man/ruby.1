@@ -1,5 +1,5 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd October 31, 2015
+.Dd April 14, 2018
 .Dt RUBY \&1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
@@ -137,16 +137,18 @@ to see how they are being developed and used.
 .El
 .Pp
 .Sh OPTIONS
-Ruby interpreter accepts following command-line options (switches).
+The Ruby interpreter accepts the following command-line options (switches).
 They are quite similar to those of
 .Xr perl 1 .
 .Bl -tag -width "1234567890123" -compact
 .Pp
 .It Fl -copyright
-Prints the copyright notice.
+Prints the copyright notice, and quits immediately without running any
+script.
 .Pp
 .It Fl -version
-Prints the version of Ruby interpreter.
+Prints the version of the Ruby interpreter, and quits immediately without
+running any script.
 .Pp
 .It Fl 0 Ns Op Ar octal
 (The digit
@@ -216,6 +218,18 @@ on machines that don't support it, in the following manner:
 # This line makes the next one a comment in Ruby \e
   exec /usr/local/bin/ruby -S $0 $*
 .Ed
+.Pp
+On some systems
+.Li "$0"
+does not always contain the full pathname, so you need the
+.Fl S
+switch to tell Ruby to search for the script if necessary (to handle embedded
+spaces and such).  A better construct than
+.Li "$*"
+would be
+.Li ${1+"$@"} ,
+but it does not work if the script is being interpreted by
+.Xr csh 1 .
 .Pp
 .It Fl T Ns Op Ar level=1
 Turns on taint checks at the specified level (default 1).
@@ -342,18 +356,6 @@ and set the corresponding variable in the script.  For example:
 print "true\en" if $xyz
 .Ed
 .Pp
-On some systems
-.Li "$0"
-does not always contain the full pathname, so you need the
-.Fl S
-switch to tell Ruby to search for the script if necessary (to handle embedded
-spaces and such).  A better construct than
-.Li "$*"
-would be
-.Li ${1+"$@"} ,
-but it does not work if the script is being interpreted by
-.Xr csh 1 .
-.Pp
 .It Fl v
 Enables verbose mode.  Ruby will print its version at the beginning
 and set the variable
@@ -457,8 +459,9 @@ Enables verbose mode without printing version message at the
 beginning.  It sets the
 .Li "$VERBOSE"
 variable to true.
-If this switch is given, and no other switches are present, Ruby quits
-after printing its version.
+If this switch is given, and no script arguments (script file or
+.Fl e
+options) are present, Ruby quits immediately.
 .El
 .Pp
 .Sh ENVIRONMENT

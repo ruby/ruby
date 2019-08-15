@@ -7,11 +7,17 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
   def setup
     super
 
-    spec_fetcher
-
     @cmd = Gem::Commands::SourcesCommand.new
 
     @new_repo = "http://beta-gems.example.com"
+
+    @old_https_proxy_config = Gem.configuration[:http_proxy]
+  end
+
+  def teardown
+    Gem.configuration[:http_proxy] = @old_https_proxy_config
+
+    super
   end
 
   def test_initialize_proxy
@@ -40,9 +46,9 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
       fetcher.spec 'a', 1
     end
 
-    specs = Gem::Specification.map { |spec|
+    specs = Gem::Specification.map do |spec|
       [spec.name, spec.version, spec.original_platform]
-    }
+    end
 
     specs_dump_gz = StringIO.new
     Zlib::GzipWriter.wrap specs_dump_gz do |io|
@@ -69,6 +75,8 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
   end
 
   def test_execute_add_nonexistent_source
+    spec_fetcher
+
     uri = "http://beta-gems.example.com/specs.#{@marshal_version}.gz"
     @fetcher.data[uri] = proc do
       raise Gem::RemoteFetcher::FetchError.new('it died', uri)
@@ -92,6 +100,8 @@ Error fetching http://beta-gems.example.com:
   end
 
   def test_execute_add_redundant_source
+    spec_fetcher
+
     @cmd.handle_options %W[--add #{@gem_repo}]
 
     use_ui @ui do
@@ -108,6 +118,60 @@ source #{@gem_repo} already present in the cache
     assert_equal '', @ui.error
   end
 
+  def test_execute_add_redundant_source_trailing_slash
+    spec_fetcher
+
+    # Remove pre-existing gem source (w/ slash)
+    repo_with_slash = "http://gems.example.com/"
+    @cmd.handle_options %W[--remove #{repo_with_slash}]
+    use_ui @ui do
+      @cmd.execute
+    end
+    source = Gem::Source.new repo_with_slash
+    assert_equal false, Gem.sources.include?(source)
+
+    expected = <<-EOF
+#{repo_with_slash} removed from sources
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+
+    # Re-add pre-existing gem source (w/o slash)
+    repo_without_slash = "http://gems.example.com"
+    @cmd.handle_options %W[--add #{repo_without_slash}]
+    use_ui @ui do
+      @cmd.execute
+    end
+    source = Gem::Source.new repo_without_slash
+    assert_equal true, Gem.sources.include?(source)
+
+    expected = <<-EOF
+http://gems.example.com/ removed from sources
+http://gems.example.com added to sources
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+
+    # Re-add original gem source (w/ slash)
+    @cmd.handle_options %W[--add #{repo_with_slash}]
+    use_ui @ui do
+      @cmd.execute
+    end
+    source = Gem::Source.new repo_with_slash
+    assert_equal true, Gem.sources.include?(source)
+
+    expected = <<-EOF
+http://gems.example.com/ removed from sources
+http://gems.example.com added to sources
+source http://gems.example.com/ already present in the cache
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
   def test_execute_add_http_rubygems_org
     http_rubygems_org = 'http://rubygems.org'
 
@@ -115,9 +179,9 @@ source #{@gem_repo} already present in the cache
       fetcher.spec 'a', 1
     end
 
-    specs = Gem::Specification.map { |spec|
+    specs = Gem::Specification.map do |spec|
       [spec.name, spec.version, spec.original_platform]
-    }
+    end
 
     specs_dump_gz = StringIO.new
     Zlib::GzipWriter.wrap specs_dump_gz do |io|
@@ -214,6 +278,8 @@ beta-gems.example.com is not a URI
   end
 
   def test_execute_remove_no_network
+    spec_fetcher
+
     @cmd.handle_options %W[--remove #{@gem_repo}]
 
     @fetcher.data["#{@gem_repo}Marshal.#{Gem.marshal_version}"] = proc do
@@ -246,4 +312,3 @@ beta-gems.example.com is not a URI
   end
 
 end
-

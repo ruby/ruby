@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Outputs RDoc markup with vibrant ANSI color!
 

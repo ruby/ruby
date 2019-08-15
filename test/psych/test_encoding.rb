@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 require_relative 'helper'
 
@@ -101,6 +101,18 @@ module Psych
         t.close
 
         File.open(t.path, 'rb', :encoding => 'UTF-8') do |f|
+          assert_equal "こんにちは！", Psych.load(f)
+        end
+      }
+    end
+
+    def test_io_utf8_read_as_binary
+      Tempfile.create(['utf8', 'yml']) {|t|
+        t.binmode
+        t.write '--- こんにちは！'.encode('UTF-8')
+        t.close
+
+        File.open(t.path, 'rb', :encoding => 'ascii-8bit') do |f|
           assert_equal "こんにちは！", Psych.load(f)
         end
       }

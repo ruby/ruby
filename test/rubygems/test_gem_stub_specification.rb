@@ -3,6 +3,7 @@ require "rubygems/test_case"
 require "rubygems/stub_specification"
 
 class TestStubSpecification < Gem::TestCase
+
   SPECIFICATIONS = File.expand_path(File.join("..", "specifications"), __FILE__)
   FOO = File.join SPECIFICATIONS, "foo-0.0.1-x86-mswin32.gemspec"
   BAR = File.join SPECIFICATIONS, "bar-0.0.2.gemspec"
@@ -66,12 +67,13 @@ class TestStubSpecification < Gem::TestCase
   end
 
   def test_contains_requirable_file_eh_extension
+    skip "I guess making the stub match the running platform should work" if Gem.java_platform?
     stub_with_extension do |stub|
       _, err = capture_io do
         refute stub.contains_requirable_file? 'nonexistent'
       end
 
-      expected = "Ignoring stub_e-2 because its extensions are not built.  " +
+      expected = "Ignoring stub_e-2 because its extensions are not built. " +
                  "Try: gem pristine stub_e --version 2\n"
 
       assert_equal expected, err
@@ -95,6 +97,12 @@ class TestStubSpecification < Gem::TestCase
     assert_equal File.join(stub.full_gem_path, 'lib'), stub.lib_dirs_glob
   end
 
+  def test_lib_dirs_glob_with_extension
+    stub = stub_with_extension
+
+    assert_equal File.join(stub.full_gem_path, 'lib'), stub.lib_dirs_glob
+  end
+
   def test_matches_for_glob
     stub = stub_without_extension
     code_rb = File.join stub.gem_dir, 'lib', 'code.rb'
@@ -104,14 +112,26 @@ class TestStubSpecification < Gem::TestCase
     assert_equal code_rb, stub.matches_for_glob('code*').first
   end
 
+  def test_matches_for_glob_with_bundler_inline
+    stub = stub_with_extension
+    code_rb = File.join stub.gem_dir, 'lib', 'code.rb'
+    FileUtils.mkdir_p File.dirname code_rb
+    FileUtils.touch code_rb
+
+    stub.stub(:raw_require_paths, nil) do
+      assert_equal code_rb, stub.matches_for_glob('code*').first
+    end
+  end
+
   def test_missing_extensions_eh
+    skip "I guess making the stub match the running platform should work" if Gem.java_platform?
     stub = stub_with_extension do |s|
       extconf_rb = File.join s.gem_dir, s.extensions.first
       FileUtils.mkdir_p File.dirname extconf_rb
 
-      open extconf_rb, 'w' do |f|
+      File.open extconf_rb, 'w' do |f|
         f.write <<-'RUBY'
-        open 'Makefile', 'w' do |f|
+        File.open 'Makefile', 'w' do |f|
           f.puts "clean:\n\techo clean"
           f.puts "default:\n\techo built"
           f.puts "install:\n\techo installed"
@@ -131,7 +151,7 @@ class TestStubSpecification < Gem::TestCase
     spec = new_default_spec 'default', 1
     spec.extensions << 'extconf.rb'
 
-    open spec.loaded_from, 'w' do |io|
+    File.open spec.loaded_from, 'w' do |io|
       io.write spec.to_ruby_for_cache
     end
 
@@ -180,7 +200,7 @@ class TestStubSpecification < Gem::TestCase
 
   def stub_with_version
     spec = File.join @gemhome, 'specifications', 'stub_e-2.gemspec'
-    open spec, 'w' do |io|
+    File.open spec, 'w' do |io|
       io.write <<-STUB
 # -*- encoding: utf-8 -*-
 # stub: stub_v 2 ruby lib
@@ -203,7 +223,7 @@ end
 
   def stub_without_version
     spec = File.join @gemhome, 'specifications', 'stub-2.gemspec'
-    open spec, 'w' do |io|
+    File.open spec, 'w' do |io|
       io.write <<-STUB
 # -*- encoding: utf-8 -*-
 # stub: stub_v ruby lib
@@ -222,12 +242,11 @@ end
 
       return stub
     end
-
   end
 
   def stub_with_extension
     spec = File.join @gemhome, 'specifications', 'stub_e-2.gemspec'
-    open spec, 'w' do |io|
+    File.open spec, 'w' do |io|
       io.write <<-STUB
 # -*- encoding: utf-8 -*-
 # stub: stub_e 2 ruby lib
@@ -253,7 +272,7 @@ end
 
   def stub_without_extension
     spec = File.join @gemhome, 'specifications', 'stub-2.gemspec'
-    open spec, 'w' do |io|
+    File.open spec, 'w' do |io|
       io.write <<-STUB
 # -*- encoding: utf-8 -*-
 # stub: stub 2 ruby lib
@@ -275,4 +294,3 @@ end
   end
 
 end
-

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rdoc/rubygems_hook'
 
@@ -131,8 +131,10 @@ class TestRDocRubygemsHook < Gem::TestCase
   end
 
   def test_generate_default_gem
-    @a.loaded_from =
-      File.join Gem::Specification.default_specifications_dir, 'a.gemspec'
+    Gem::Deprecate.skip_during do
+      @a.loaded_from =
+        File.join Gem::Specification.default_specifications_dir, 'a.gemspec'
+    end
 
     @hook.generate
 
@@ -200,6 +202,8 @@ class TestRDocRubygemsHook < Gem::TestCase
 
   def test_remove_unwritable
     skip 'chmod not supported' if Gem.win_platform?
+    skip "assumes that euid is not root" if Process.euid == 0
+
     FileUtils.mkdir_p @a.base_dir
     FileUtils.chmod 0, @a.base_dir
 
@@ -228,6 +232,8 @@ class TestRDocRubygemsHook < Gem::TestCase
 
   def test_setup_unwritable
     skip 'chmod not supported' if Gem.win_platform?
+    skip "assumes that euid is not root" if Process.euid == 0
+
     FileUtils.mkdir_p @a.doc_dir
     FileUtils.chmod 0, @a.doc_dir
 

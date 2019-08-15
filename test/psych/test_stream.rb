@@ -1,8 +1,24 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'helper'
 
 module Psych
   class TestStream < TestCase
+    [
+      [Psych::Nodes::Alias, :alias?],
+      [Psych::Nodes::Document, :document?],
+      [Psych::Nodes::Mapping, :mapping?],
+      [Psych::Nodes::Scalar, :scalar?],
+      [Psych::Nodes::Sequence, :sequence?],
+      [Psych::Nodes::Stream, :stream?],
+    ].each do |klass, block|
+      define_method :"test_predicate_#{block}" do
+        rb = Psych.parse_stream("---\n- foo: bar\n- &a !!str Anchored\n- *a")
+        nodes = rb.grep(klass)
+        assert_operator nodes.length, :>, 0
+        assert_equal nodes, rb.find_all(&block)
+      end
+    end
+
     def test_parse_partial
       rb = Psych.parse("--- foo\n...\n--- `").to_ruby
       assert_equal 'foo', rb

@@ -1,5 +1,5 @@
 # coding: UTF-8
-# frozen_string_literal: false
+# frozen_string_literal: true
 # :markup: markdown
 
 ##
@@ -183,14 +183,26 @@ class RDoc::Markdown::Literals
       return nil
     end
 
-    def get_byte
-      if @pos >= @string_size
-        return nil
-      end
+    if "".respond_to? :ord
+      def get_byte
+        if @pos >= @string_size
+          return nil
+        end
 
-      s = @string[@pos].ord
-      @pos += 1
-      s
+        s = @string[@pos].ord
+        @pos += 1
+        s
+      end
+    else
+      def get_byte
+        if @pos >= @string_size
+          return nil
+        end
+
+        s = @string[@pos]
+        @pos += 1
+        s
+      end
     end
 
     def parse(rule=nil)

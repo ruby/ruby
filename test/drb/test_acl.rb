@@ -66,9 +66,9 @@ class ACLEntryTest < Test::Unit::TestCase
     assert_not_operator(a, :match, @hosts['localhost'])
     assert_operator(a, :match, @hosts['yum'])
 
-    a = ACL::ACLEntry.new('192.168.0.1/255.255.0.255')
+    a = ACL::ACLEntry.new('192.168.1.0/255.255.255.0')
     assert_not_operator(a, :match, @hosts['localhost'])
-    assert_not_operator(a, :match, @hosts['yum'])
+    assert_operator(a, :match, @hosts['yum'])
     assert_operator(a, :match, @hosts['x68k'])
 
     a = ACL::ACLEntry.new('192.168.1.0/24')
@@ -81,10 +81,17 @@ class ACLEntryTest < Test::Unit::TestCase
     assert_not_operator(a, :match, @hosts['yum'])
     assert_not_operator(a, :match, @hosts['x68k'])
 
-    a = ACL::ACLEntry.new('127.0.0.1/255.0.0.255')
+    a = ACL::ACLEntry.new('127.0.0.0/255.0.0.0')
     assert_operator(a, :match, @hosts['localhost'])
     assert_not_operator(a, :match, @hosts['yum'])
     assert_not_operator(a, :match, @hosts['x68k'])
+
+    assert_raise(IPAddr::InvalidPrefixError) {
+      ACL::ACLEntry.new('192.168.0.0/33')
+    }
+    assert_raise(IPAddr::InvalidPrefixError) {
+      ACL::ACLEntry.new('192.168.0.0/255.255.0.255')
+    }
   end
 
   def test_name
@@ -136,10 +143,12 @@ class ACLListTest < Test::Unit::TestCase
   end
 
   def test_1
-    a = build(%w(192.0.0.1/255.0.0.255 yum.*.jp))
-    assert_operator(a, :match, @hosts['yum'])
+    a = build(%w(192.168.1.0/255.255.255.252 yum.*.jp))
     assert_operator(a, :match, @hosts['x68k'])
-    assert_not_operator(a, :match, @hosts['lc630'])
+    assert_operator(a, :match, @hosts['lc630'])
+    assert_operator(a, :match, @hosts['lib30'])
+    assert_not_operator(a, :match, @hosts['ns00'])
+    assert_operator(a, :match, @hosts['yum'])
   end
 
   def test_2

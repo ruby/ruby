@@ -1,0 +1,34 @@
+---
+version: "{build}"
+clone_depth: 100
+init:
+  # To avoid duplicated executables in PATH, see https://github.com/ruby/spec/pull/468
+  - set PATH=C:\Ruby%ruby_version%\bin;C:\Program Files\7-Zip;C:\Program Files\AppVeyor\BuildAgent;C:\Program Files\Git\cmd;C:\Windows\system32;C:\Program Files;C:\Windows
+  # Loads trunk build and updates MSYS2 / MinGW to most recent gcc compiler
+  - ps: |
+      if ($env:ruby_version -eq '_trunk') {
+        $trunk_uri = 'https://ci.appveyor.com/api/projects/MSP-Greg/ruby-loco/artifacts/ruby_trunk.7z'
+        (New-Object Net.WebClient).DownloadFile($trunk_uri, 'C:\ruby_trunk.7z')
+        7z.exe x C:\ruby_trunk.7z -oC:\Ruby_trunk
+      }
+
+environment:
+  matrix:
+    - ruby_version: 24-x64
+    - ruby_version: 25-x64
+    - ruby_version: _trunk # So the folder name is ruby_trunk
+install:
+  - git clone https://github.com/ruby/mspec.git ../mspec
+build: off
+test_script:
+  - SET CHECK_LEAKS=true
+  - ../mspec/bin/mspec -rdevkit -ff
+on_finish:
+  - ruby -v
+matrix:
+  allow_failures:
+    - ruby_version: _trunk
+branches:
+  only:
+    - master
+    - /^try/

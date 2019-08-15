@@ -66,9 +66,9 @@ require 'ripper/sexp'
 #
 # == License
 #
-#   Ruby License.
+# Ruby License.
 #
-#                                                 Minero Aoki
-#                                         aamine@loveruby.net
-#                                       http://i.loveruby.net
+# - Minero Aoki
+# - aamine@loveruby.net
+# - http://i.loveruby.net
 class Ripper; end
