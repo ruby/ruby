@@ -20,13 +20,13 @@ describe "Struct#dig" do
 
   it "raises a TypeError if any intermediate step does not respond to #dig" do
     instance = @klass.new(1)
-    lambda {
+    -> {
       instance.dig(:a, 3)
     }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError if no arguments provided" do
-    lambda { @instance.dig }.should raise_error(ArgumentError)
+    -> { @instance.dig }.should raise_error(ArgumentError)
   end
 
   it "calls #dig on any intermediate step with the rest of the sequence as arguments" do

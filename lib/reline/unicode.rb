@@ -188,6 +188,107 @@ class Reline::Unicode
     [byte_size, width]
   end
 
+  def self.ed_transpose_words(line, byte_pointer)
+    right_word_start = nil
+    size = get_next_mbchar_size(line, byte_pointer)
+    mbchar = line.byteslice(byte_pointer, size)
+    if size.zero?
+      # ' aaa bbb [cursor]'
+      byte_size = 0
+      while 0 < (byte_pointer + byte_size)
+        size = get_prev_mbchar_size(line, byte_pointer + byte_size)
+        mbchar = line.byteslice(byte_pointer + byte_size - size, size)
+        break if mbchar.encode(Encoding::UTF_8) =~ /\p{Word}/
+        byte_size -= size
+      end
+      while 0 < (byte_pointer + byte_size)
+        size = get_prev_mbchar_size(line, byte_pointer + byte_size)
+        mbchar = line.byteslice(byte_pointer + byte_size - size, size)
+        break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
+        byte_size -= size
+      end
+      right_word_start = byte_pointer + byte_size
+      byte_size = 0
+      while line.bytesize > (byte_pointer + byte_size)
+        size = get_next_mbchar_size(line, byte_pointer + byte_size)
+        mbchar = line.byteslice(byte_pointer + byte_size, size)
+        break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
+        byte_size += size
+      end
+      after_start = byte_pointer + byte_size
+    elsif mbchar.encode(Encoding::UTF_8) =~ /\p{Word}/
+      # ' aaa bb[cursor]b'
+      byte_size = 0
+      while 0 < (byte_pointer + byte_size)
+        size = get_prev_mbchar_size(line, byte_pointer + byte_size)
+        mbchar = line.byteslice(byte_pointer + byte_size - size, size)
+        break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
+        byte_size -= size
+      end
+      right_word_start = byte_pointer + byte_size
+      byte_size = 0
+      while line.bytesize > (byte_pointer + byte_size)
+        size = get_next_mbchar_size(line, byte_pointer + byte_size)
+        mbchar = line.byteslice(byte_pointer + byte_size, size)
+        break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
+        byte_size += size
+      end
+      after_start = byte_pointer + byte_size
+    else
+      byte_size = 0
+      while (line.bytesize - 1) > (byte_pointer + byte_size)
+        size = get_next_mbchar_size(line, byte_pointer + byte_size)
+        mbchar = line.byteslice(byte_pointer + byte_size, size)
+        break if mbchar.encode(Encoding::UTF_8) =~ /\p{Word}/
+        byte_size += size
+      end
+      if (byte_pointer + byte_size) == (line.bytesize - 1)
+        # ' aaa bbb [cursor] '
+        after_start = line.bytesize
+        while 0 < (byte_pointer + byte_size)
+          size = get_prev_mbchar_size(line, byte_pointer + byte_size)
+          mbchar = line.byteslice(byte_pointer + byte_size - size, size)
+          break if mbchar.encode(Encoding::UTF_8) =~ /\p{Word}/
+          byte_size -= size
+        end
+        while 0 < (byte_pointer + byte_size)
+          size = get_prev_mbchar_size(line, byte_pointer + byte_size)
+          mbchar = line.byteslice(byte_pointer + byte_size - size, size)
+          break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
+          byte_size -= size
+        end
+        right_word_start = byte_pointer + byte_size
+      else
+        # ' aaa [cursor] bbb '
+        right_word_start = byte_pointer + byte_size
+        while line.bytesize > (byte_pointer + byte_size)
+          size = get_next_mbchar_size(line, byte_pointer + byte_size)
+          mbchar = line.byteslice(byte_pointer + byte_size, size)
+          break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
+          byte_size += size
+        end
+        after_start = byte_pointer + byte_size
+      end
+    end
+    byte_size = right_word_start - byte_pointer
+    while 0 < (byte_pointer + byte_size)
+      size = get_prev_mbchar_size(line, byte_pointer + byte_size)
+      mbchar = line.byteslice(byte_pointer + byte_size - size, size)
+      break if mbchar.encode(Encoding::UTF_8) =~ /\p{Word}/
+      byte_size -= size
+    end
+    middle_start = byte_pointer + byte_size
+    byte_size = middle_start - byte_pointer
+    while 0 < (byte_pointer + byte_size)
+      size = get_prev_mbchar_size(line, byte_pointer + byte_size)
+      mbchar = line.byteslice(byte_pointer + byte_size - size, size)
+      break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
+      byte_size -= size
+    end
+    left_word_start = byte_pointer + byte_size
+    [left_word_start, middle_start, right_word_start, after_start]
+  end
+
   def self.vi_big_forward_word(line, byte_pointer)
     width = 0
     byte_size = 0
@@ -407,7 +508,7 @@ class Reline::Unicode
     [byte_size, width]
   end
 
-  def self.ed_move_to_begin(line)
+  def self.vi_first_print(line)
     width = 0
     byte_size = 0
     while (line.bytesize - 1) > byte_size

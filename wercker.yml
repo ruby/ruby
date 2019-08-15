@@ -27,7 +27,7 @@ mjit-test1:
         name: install mjit-debug-on-fail
         code: |
           cat <<'EOS' > /usr/local/bin/mjit-debug-on-fail
-          #!/bin/bash
+          #!/bin/bash -x
           if ! "$@"; then
             git clone --depth=1 git@github.com:ruby/mjit-debug
             cd mjit-debug
@@ -36,6 +36,8 @@ mjit-test1:
             mkdir "$debug_dir"
             cp /tmp/_ruby_mjit*.c "$debug_dir"
 
+            git config --global user.email "ruby@app.wercker.com"
+            git config --global user.name "Wercker ruby/ruby"
             git add "$debug_dir"
             git commit -m "Debug ${debug_dir}: ${WERCKER_BUILD_URL}"
             git push origin master
@@ -59,7 +61,7 @@ mjit-test1:
         code: /usr/bin/sudo -H -u test -- make test-spec RUN_OPTS="--disable-gems --jit --jit-warnings"
     - script:
         name: make test-all (JIT)
-        code: /usr/local/bin/mjit-debug-on-fail /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-verbose=1 --jit-save-temps --jit-warnings" TESTOPTS="-v --color=never --job-status=normal --longest 10 --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/jit"
+        code: /usr/local/bin/mjit-debug-on-fail /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-verbose=1 --jit-save-temps --jit-warnings" TESTOPTS="-v --color=never --job-status=normal --longest 10 --timeout-scale=3.0 --excludes=test/excludes/_wercker/jit"
 
     # --jit-wait (test, test-spec)
     - script:
@@ -98,7 +100,7 @@ mjit-test2:
     # --jit-wait (test-all)
     - script:
         name: make test-all (JIT wait)
-        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTOPTS="-v --test-order=random --color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/jit-wait"
+        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTOPTS="-v --test-order=random --color=never --job-status=normal --timeout-scale=3.0 --excludes=test/excludes/_wercker/jit-wait"
 
   after-steps:
     - wantedly/pretty-slack-notify:

@@ -9,12 +9,12 @@ describe "String#valid_encoding?" do
   it "returns true if self is valid in the current encoding and other encodings" do
     str = "\x77"
     str.force_encoding('utf-8').valid_encoding?.should be_true
-    str.force_encoding('ascii-8bit').valid_encoding?.should be_true
+    str.force_encoding('binary').valid_encoding?.should be_true
   end
 
   it "returns true for all encodings self is valid in" do
     str = "\u{6754}"
-    str.force_encoding('ASCII-8BIT').valid_encoding?.should be_true
+    str.force_encoding('BINARY').valid_encoding?.should be_true
     str.force_encoding('UTF-8').valid_encoding?.should be_true
     str.force_encoding('US-ASCII').valid_encoding?.should be_false
     str.force_encoding('Big5').valid_encoding?.should be_false

@@ -173,7 +173,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal(10000, Time.at(0.00001).nsec)
     assert_equal(3000, Time.at(0.000003).nsec)
     assert_equal(200, Time.at(0.0000002r).nsec)
-    assert_equal(199, Time.at(0.0000002).nsec)
+    assert_in_delta(200, Time.at(0.0000002).nsec, 1, "should be within FP error")
     assert_equal(10, Time.at(0.00000001).nsec)
     assert_equal(1, Time.at(0.000000001).nsec)
 
@@ -373,6 +373,16 @@ class TestTime < Test::Unit::TestCase
       assert_equal('UTC', t1.zone)
       assert_equal('UTC', t2.zone)
     end
+  end
+
+  def test_marshal_distant_past
+    assert_marshal_roundtrip(Time.utc(1890, 1, 1))
+    assert_marshal_roundtrip(Time.utc(-4.5e9, 1, 1))
+  end
+
+  def test_marshal_distant_future
+    assert_marshal_roundtrip(Time.utc(30000, 1, 1))
+    assert_marshal_roundtrip(Time.utc(5.67e9, 4, 8))
   end
 
   def test_at3

@@ -7,7 +7,7 @@ require 'optparse'
 
 # this file run with BASERUBY, which may be older than 1.9, so no
 # require_relative
-require File.expand_path('../vcs', __FILE__)
+require File.expand_path('../lib/vcs', __FILE__)
 
 Program = $0
 
@@ -19,6 +19,7 @@ def self.output=(output)
   @output = output
 end
 @suppress_not_found = false
+@limit = 20
 
 format = '%Y-%m-%dT%H:%M:%S%z'
 srcdir = nil
@@ -39,6 +40,9 @@ parser = OptionParser.new {|opts|
     self.output = :modified
     format = fmt if fmt
   end
+  opts.on("--limit=NUM", "limit branch name length (#@limit)", Integer) do |n|
+    @limit = n
+  end
   opts.on("-q", "--suppress_not_found") do
     @suppress_not_found = true
   end
@@ -54,17 +58,26 @@ vcs = nil
     }
   when :revision_h
     Proc.new {|last, changed, modified, branch, title|
+      short = vcs.short_revision(last)
+      if /[^\x00-\x7f]/ =~ title and title.respond_to?(:force_encoding)
+        title = title.dup.force_encoding("US-ASCII")
+      end
       [
-        "#define RUBY_REVISION #{vcs.short_revision(last).dump}",
-        "#define RUBY_FULL_REVISION #{last.dump}",
+        "#define RUBY_REVISION #{short.inspect}",
+        ("#define RUBY_FULL_REVISION #{last.inspect}" unless short == last),
         if branch
           e = '..'
-          limit = 16
+          limit = @limit
           name = branch.sub(/\A(.{#{limit-e.size}}).{#{e.size+1},}/o) {$1+e}
-          "#define RUBY_BRANCH_NAME #{name.dump}"
+          name = name.dump.sub(/\\#/, '#')
+          "#define RUBY_BRANCH_NAME #{name}"
         end,
         if title
-          "#define RUBY_LAST_COMMIT_TITLE #{title.dump}"
+          title = title.dump.sub(/\\#/, '#')
+          "#define RUBY_LAST_COMMIT_TITLE #{title}"
+        end,
+        if modified
+          modified.utc.strftime('#define RUBY_RELEASE_DATETIME "%FT%TZ"')
         end,
       ].compact
     }

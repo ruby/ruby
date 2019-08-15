@@ -35,7 +35,7 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     #  16 ^P
     :ed_prev_history,
     #  17 ^Q
-    :ed_ignore,
+    :ed_quoted_insert,
     #  18 ^R
     :ed_search_prev_history,
     #  19 ^S
@@ -489,7 +489,7 @@ class Reline::KeyActor::Emacs < Reline::KeyActor::Base
     # 243 M-s
     :ed_unassigned,
     # 244 M-t
-    :ed_unassigned,
+    :ed_transpose_words,
     # 245 M-u
     :em_upper_case,
     # 246 M-v

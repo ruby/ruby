@@ -381,6 +381,16 @@ class TestFileUtils < Test::Unit::TestCase
     assert_same_file 'tmp/cpr_src/b', 'tmp/cpr_dest/b'
     assert_same_file 'tmp/cpr_src/c', 'tmp/cpr_dest/c'
     assert_directory 'tmp/cpr_dest/d'
+    assert_raise(ArgumentError) do
+      cp_r 'tmp/cpr_src', './tmp/cpr_src'
+    end
+    assert_raise(ArgumentError) do
+      cp_r './tmp/cpr_src', 'tmp/cpr_src'
+    end
+    assert_raise(ArgumentError) do
+      cp_r './tmp/cpr_src', File.expand_path('tmp/cpr_src')
+    end
+
     my_rm_rf 'tmp/cpr_src'
     my_rm_rf 'tmp/cpr_dest'
 

@@ -8,7 +8,7 @@
 #
 
 require "readline"
-require "rdoc"
+autoload :RDoc, "rdoc"
 
 module IRB
   module InputCompletor # :nodoc:
@@ -205,7 +205,7 @@ module IRB
         sep = $2
         message = Regexp.quote($3)
 
-        gv = eval("global_variables", bind).collect{|m| m.to_s}
+        gv = eval("global_variables", bind).collect{|m| m.to_s}.append("true", "false", "nil")
         lv = eval("local_variables", bind).collect{|m| m.to_s}
         iv = eval("instance_variables", bind).collect{|m| m.to_s}
         cv = eval("self.class.constants", bind).collect{|m| m.to_s}
@@ -267,8 +267,8 @@ module IRB
       end
     end
 
-    RDocRIDriver = RDoc::RI::Driver.new
     PerfectMatchedProc = ->(matched) {
+      RDocRIDriver ||= RDoc::RI::Driver.new
       if matched =~ /\A(?:::)?RubyVM/ and not ENV['RUBY_YES_I_AM_NOT_A_NORMAL_USER']
         File.open(File.join(__dir__, 'ruby_logo.aa')) do |f|
           RDocRIDriver.page do |io|

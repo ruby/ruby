@@ -24,8 +24,8 @@ describe "Encoding.default_internal" do
   end
 
   it "returns the default internal encoding" do
-    Encoding.default_internal = Encoding::ASCII_8BIT
-    Encoding.default_internal.should == Encoding::ASCII_8BIT
+    Encoding.default_internal = Encoding::BINARY
+    Encoding.default_internal.should == Encoding::BINARY
   end
 end
 
@@ -60,11 +60,11 @@ describe "Encoding.default_internal=" do
     obj = mock('string')
     obj.should_receive(:to_str).at_least(1).times.and_return(1)
 
-    lambda { Encoding.default_internal = obj }.should raise_error(TypeError)
+    -> { Encoding.default_internal = obj }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed an object not providing #to_str" do
-    lambda { Encoding.default_internal = mock("encoding") }.should raise_error(TypeError)
+    -> { Encoding.default_internal = mock("encoding") }.should raise_error(TypeError)
   end
 
   it "accepts an argument of nil to unset the default internal encoding" do

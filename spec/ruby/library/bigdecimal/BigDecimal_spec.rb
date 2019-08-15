@@ -51,16 +51,16 @@ describe "Kernel#BigDecimal" do
 
   ruby_version_is "2.6" do
     it "does not ignores trailing garbage" do
-      lambda { BigDecimal("123E45ruby") }.should raise_error(ArgumentError)
-      lambda { BigDecimal("123x45") }.should raise_error(ArgumentError)
-      lambda { BigDecimal("123.4%E5") }.should raise_error(ArgumentError)
-      lambda { BigDecimal("1E2E3E4E5E") }.should raise_error(ArgumentError)
+      -> { BigDecimal("123E45ruby") }.should raise_error(ArgumentError)
+      -> { BigDecimal("123x45") }.should raise_error(ArgumentError)
+      -> { BigDecimal("123.4%E5") }.should raise_error(ArgumentError)
+      -> { BigDecimal("1E2E3E4E5E") }.should raise_error(ArgumentError)
     end
   end
 
   it "raises ArgumentError for invalid strings" do
-    lambda { BigDecimal("ruby") }.should raise_error(ArgumentError)
-    lambda { BigDecimal("  \t\n \r-\t\t\tInfinity   \n") }.should raise_error(ArgumentError)
+    -> { BigDecimal("ruby") }.should raise_error(ArgumentError)
+    -> { BigDecimal("  \t\n \r-\t\t\tInfinity   \n") }.should raise_error(ArgumentError)
   end
 
   it "allows omitting the integer part" do
@@ -82,8 +82,8 @@ describe "Kernel#BigDecimal" do
       reference = BigDecimal("12345.67E89")
 
       BigDecimal("12_345.67E89").should == reference
-      lambda { BigDecimal("1_2_3_4_5_._6____7_E89") }.should raise_error(ArgumentError)
-      lambda { BigDecimal("12345_.67E_8__9_") }.should raise_error(ArgumentError)
+      -> { BigDecimal("1_2_3_4_5_._6____7_E89") }.should raise_error(ArgumentError)
+      -> { BigDecimal("12345_.67E_8__9_") }.should raise_error(ArgumentError)
     end
   end
 
@@ -150,8 +150,13 @@ describe "Kernel#BigDecimal" do
     BigDecimal("-12345.6E-1").should == -reference
   end
 
-  it 'raises ArgumentError when Float is used without precision' do
-    lambda { BigDecimal(1.0) }.should raise_error(ArgumentError)
+  it "raises ArgumentError when Float is used without precision" do
+    -> { BigDecimal(1.0) }.should raise_error(ArgumentError)
+  end
+
+  it "returns appropriate BigDecimal zero for signed zero" do
+    BigDecimal(-0.0, Float::DIG).sign.should == -1
+    BigDecimal(0.0, Float::DIG).sign.should == 1
   end
 
 end

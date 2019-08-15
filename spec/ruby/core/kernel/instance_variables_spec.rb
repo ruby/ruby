@@ -9,7 +9,7 @@ describe "Kernel#instance_variables" do
 
     it "returns the correct array if an instance variable is added" do
       a = 0
-      lambda{ a.instance_variable_set("@test", 1) }.should raise_error(RuntimeError)
+      ->{ a.instance_variable_set("@test", 1) }.should raise_error(RuntimeError)
     end
   end
 

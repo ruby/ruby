@@ -1,6 +1,8 @@
 require 'timeout'
 
 class Reline::GeneralIO
+  RAW_KEYSTROKE_CONFIG = {}.freeze
+
   @@buf = []
 
   def self.input=(val)

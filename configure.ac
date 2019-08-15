@@ -964,7 +964,7 @@ main()
 		AS_IF([test "$target_cpu" = x64], [
 		    ac_cv_func___builtin_setjmp=yes
 		    ac_cv_func_round=no
-		    rb_cv_fiber_coroutine=yes
+		    rb_cv_coroutine=yes
 		])
 		ac_cv_func_tgamma=no
 		rb_cv_negative_time_t=yes
@@ -1687,24 +1687,6 @@ AS_IF([test "x$ALLOCA" = "x"], [
 ])
 AC_FUNC_MEMCMP
 
-# http://sources.redhat.com/ml/libc-hacker/2005-08/msg00008.html
-# Debian GNU/Linux Etch's libc6.1 2.3.6.ds1-13etch5 has this problem.
-# Debian GNU/Linux Lenny's libc6.1 2.7-10 has no problem.
-AC_CACHE_CHECK(for broken erfc of glibc-2.3.6 on IA64, rb_cv_broken_glibc_ia64_erfc,
-  [AC_TRY_RUN([
-#include <math.h>
-int
-main()
-{
-   erfc(10000.0);
-   return 0;
-}
-],
-	rb_cv_broken_glibc_ia64_erfc=no,
-	rb_cv_broken_glibc_ia64_erfc=yes,
-	rb_cv_broken_glibc_ia64_erfc=no)])
-AS_CASE([$rb_cv_broken_glibc_ia64_erfc],[yes],[ac_cv_func_erf=no])
-
 AS_CASE(["$target_os"],[freebsd*],[
 	 AC_DEFINE(BROKEN_CLOSE)
 	 AC_REPLACE_FUNCS(close)
@@ -1845,6 +1827,7 @@ AC_CHECK_FUNCS(pwrite)
 AC_CHECK_FUNCS(qsort_r)
 AC_CHECK_FUNCS(qsort_s)
 AC_CHECK_FUNCS(readlink)
+AC_CHECK_FUNCS(realpath)
 AC_CHECK_FUNCS(round)
 AC_CHECK_FUNCS(sched_getaffinity)
 AC_CHECK_FUNCS(seekdir)
@@ -2217,21 +2200,6 @@ AS_IF([test x"$ac_cv_func_dirfd" = xno], [
 ])])
 ])
 
-AS_IF([test x"$target_cpu" = xia64], [
-    AC_LIBOBJ([ia64])
-    AC_CACHE_CHECK(for __libc_ia64_register_backing_store_base,
-                   rb_cv___libc_ia64_register_backing_store_base,
-    [rb_cv___libc_ia64_register_backing_store_base=no
-    AC_TRY_LINK(
-      [extern unsigned long __libc_ia64_register_backing_store_base;],
-      [unsigned long p = __libc_ia64_register_backing_store_base;
-       printf("%ld\n", p);],
-      [rb_cv___libc_ia64_register_backing_store_base=yes])])
-    AS_IF([test $rb_cv___libc_ia64_register_backing_store_base = yes], [
-      AC_DEFINE(HAVE___LIBC_IA64_REGISTER_BACKING_STORE_BASE)
-    ])
-])
-
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
     [AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([], [(-1==(-1>>1))])],
 	rb_cv_rshift_sign=yes,
@@ -2283,42 +2251,67 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $dir)
 ])
 
-AC_ARG_ENABLE(fiber-coroutine,
-    AS_HELP_STRING([--disable-fiber-coroutine], [disable native coroutine implementation for fiber]),
-    [rb_cv_fiber_coroutine=$enableval])
-AS_CASE(["$rb_cv_fiber_coroutine"], [yes|''], [
+AC_ARG_WITH(coroutine,
+    AS_HELP_STRING([--with-coroutine=IMPLEMENTATION], [specify the coroutine implementation to use]),
+    [rb_cv_coroutine=$withval])
+AS_CASE([$rb_cv_coroutine], [yes|''], [
     AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
     AS_CASE(["$target_cpu-$target_os"],
-	[x*64-darwin*], [
-	    rb_cv_fiber_coroutine=amd64
-	],
-	[x*64-linux], [
-	    AS_CASE(["$ac_cv_sizeof_voidp"],
-	        [8], [ rb_cv_fiber_coroutine=amd64 ],
-	        [4], [ rb_cv_fiber_coroutine=x86 ],
-		[*], [ rb_cv_fiber_coroutine= ]
-	    )
-	],
-	[*86-linux], [
-	    rb_cv_fiber_coroutine=x86
-	],
-	[x64-mingw32], [
-	    rb_cv_fiber_coroutine=win64
-	],
-	[powerpc64le-linux], [
-	    rb_cv_fiber_coroutine=ppc64le
-	],
-	[*], [
-	    rb_cv_fiber_coroutine=
-	]
+        [x*64-darwin*], [
+            rb_cv_coroutine=amd64
+        ],
+        [x*64-linux*], [
+            AS_CASE(["$ac_cv_sizeof_voidp"],
+                [8], [ rb_cv_coroutine=amd64 ],
+                [4], [ rb_cv_coroutine=x86 ],
+                [*], [ rb_cv_coroutine= ]
+            )
+        ],
+        [*86-linux*], [
+            rb_cv_coroutine=x86
+        ],
+        [x64-mingw32], [
+            rb_cv_coroutine=win64
+        ],
+        [*86-mingw32], [
+            rb_cv_coroutine=win32
+        ],
+        [armv7*-linux*], [
+            rb_cv_coroutine=ucontext
+        ],
+        [aarch64-linux*], [
+            rb_cv_coroutine=arm64
+        ],
+        [powerpc64le-linux*], [
+            rb_cv_coroutine=ppc64le
+        ],
+        [x86_64-openbsd*], [
+            rb_cv_coroutine=amd64
+        ],
+        [i386-openbsd*], [
+            rb_cv_coroutine=x86
+        ],
+        [*-openbsd*], [
+            rb_cv_coroutine=copy
+        ],
+        [*], [
+            rb_cv_coroutine=ucontext
+        ]
     )
-    AC_MSG_RESULT(${rb_cv_fiber_coroutine:-no})
+    AC_MSG_RESULT(${rb_cv_coroutine})
 ])
-AS_IF([test "${rb_cv_fiber_coroutine:-no}" != no], [
-    COROUTINE_H=coroutine/$rb_cv_fiber_coroutine/Context.h
-    AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
-    AC_SUBST(X_FIBER_COROUTINE_H, [$COROUTINE_H])
-])
+COROUTINE_H=coroutine/$rb_cv_coroutine/Context.h
+AS_CASE([$rb_cv_coroutine],
+    [copy|ucontext], [
+        COROUTINE_SRC=coroutine/$rb_cv_coroutine/Context.c
+    ],
+    [*], [
+        COROUTINE_SRC=coroutine/$rb_cv_coroutine/Context.'$(ASMEXT)'
+    ],
+)
+AC_DEFINE_UNQUOTED(COROUTINE_H, ["$COROUTINE_H"])
+AC_SUBST(X_COROUTINE_H, [$COROUTINE_H])
+AC_SUBST(X_COROUTINE_SRC, [$COROUTINE_SRC])
 
 AS_IF([test x"$enable_pthread" = xyes], [
     for pthread_lib in thr pthread pthreads c c_r root; do
@@ -3915,7 +3908,7 @@ AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s
 AS_IF([test x"$firstmf" != x], [
     AC_CONFIG_FILES($firstmf:$firsttmpl, [], [firstmf="$firstmf" firsttmpl="$firsttmpl"])
 ])
-AC_CONFIG_FILES(Makefile, [
+AC_CONFIG_FILES(Makefile:template/Makefile.in, [
     tmpmk=confmk$$.tmp
     {
 	AS_IF([test ${VCS+set}], [
@@ -3993,12 +3986,13 @@ AS_IF([test "$silent" = yes], [], [
 AS_IF([${FOLD+:} false], [], [
 AS_IF([test "`echo abcdefg hijklmno | fold -s -w10 | sed 1d`" = hijklmno], [FOLD="fold"], [FOLD=])
 ])
+fold_width=`expr $COLUMNS - 30 2>/dev/null` || fold_width=50
 AS_REQUIRE_SHELL_FN([config_summary],
     [AS_FUNCTION_DESCRIBE([config_summary], [NAME, VAL], [configuration summary])],
     [AS_IF([test -z "$2"], [], [
 	AS_ECHO_N(["   * $1:                     "]) | dd bs=1 count=26 2>/dev/null
 	AS_IF([test "$FOLD"], [
-	    echo "$2" | fold -s -w50 |
+	    echo "$2" | fold -s -w$fold_width |
 	    sed '1!s/^/                          /;$!s/$/\\/'
 	], [echo "$2"])
     ])]
@@ -4022,6 +4016,7 @@ config_summary "vendor path"         "$vendordir"
 config_summary "target OS"           "$target_os"
 config_summary "compiler"            "$CC"
 config_summary "with pthread"        "$enable_pthread"
+config_summary "with coroutine"      "$rb_cv_coroutine"
 config_summary "enable shared libs"  "$ENABLE_SHARED"
 config_summary "dynamic library ext" "$DLEXT"
 config_summary "CFLAGS"              "$cflags"

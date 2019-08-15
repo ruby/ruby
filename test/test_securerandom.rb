@@ -140,6 +140,11 @@ end
   def test_uuid
     uuid = @it.uuid
     assert_equal(36, uuid.size)
+
+    # Check time_hi_and_version and clock_seq_hi_res bits (RFC 4122 4.4)
+    assert_equal('4', uuid[14])
+    assert_include(%w'8 9 a b', uuid[19])
+
     assert_match(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/, uuid)
   end
 
