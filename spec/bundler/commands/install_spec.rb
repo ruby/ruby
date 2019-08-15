@@ -330,7 +330,7 @@ RSpec.describe "bundle install with gem sources" do
         G
 
         expect(err).to include("Your Gemfile lists the gem rack (>= 0) more than once.")
-        expect(err).to include("Remove any duplicate entries and specify the gem only once (per group).")
+        expect(err).to include("Remove any duplicate entries and specify the gem only once.")
         expect(err).to include("While it's not a problem now, it could cause errors if you change the version of one of them later.")
       end
 
@@ -342,7 +342,7 @@ RSpec.describe "bundle install with gem sources" do
         G
 
         expect(err).to include("Your Gemfile lists the gem rack (= 1.0) more than once.")
-        expect(err).to include("Remove any duplicate entries and specify the gem only once (per group).")
+        expect(err).to include("Remove any duplicate entries and specify the gem only once.")
         expect(err).to include("While it's not a problem now, it could cause errors if you change the version of one of them later.")
       end
     end
