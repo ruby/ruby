@@ -104,11 +104,11 @@ describe "Array#reject!" do
   end
 
   it "raises a #{frozen_error_class} on a frozen array" do
-    lambda { ArraySpecs.frozen_array.reject! {} }.should raise_error(frozen_error_class)
+    -> { ArraySpecs.frozen_array.reject! {} }.should raise_error(frozen_error_class)
   end
 
   it "raises a #{frozen_error_class} on an empty frozen array" do
-    lambda { ArraySpecs.empty_frozen_array.reject! {} }.should raise_error(frozen_error_class)
+    -> { ArraySpecs.empty_frozen_array.reject! {} }.should raise_error(frozen_error_class)
   end
 
   it "does not truncate the array is the block raises an exception" do

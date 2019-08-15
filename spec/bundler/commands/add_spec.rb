@@ -11,8 +11,10 @@ RSpec.describe "bundle add" do
       build_gem "dog", "1.1.3.pre"
     end
 
+    build_git "foo", "2.0"
+
     install_gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "weakling", "~> 0.0.1"
     G
   end
@@ -21,7 +23,7 @@ RSpec.describe "bundle add" do
     it "shows error" do
       bundle "add"
 
-      expect(last_command.bundler_err).to include("Please specify gems to add")
+      expect(err).to include("Please specify gems to add")
     end
   end
 
@@ -82,9 +84,31 @@ RSpec.describe "bundle add" do
 
   describe "with --source" do
     it "adds dependency with specified source" do
-      bundle "add 'foo' --source='file://#{gem_repo2}'"
+      bundle "add 'foo' --source='#{file_uri_for(gem_repo2)}'"
 
-      expect(bundled_app("Gemfile").read).to match(%r{gem "foo", "~> 2.0", :source => "file:\/\/#{gem_repo2}"})
+      expect(bundled_app("Gemfile").read).to match(/gem "foo", "~> 2.0", :source => "#{file_uri_for(gem_repo2)}"/)
+      expect(the_bundle).to include_gems "foo 2.0"
+    end
+  end
+
+  describe "with --git" do
+    it "adds dependency with specified github source" do
+      bundle "add foo --git=#{lib_path("foo-2.0")}"
+
+      expect(bundled_app("Gemfile").read).to match(/gem "foo", "~> 2.0", :git => "#{lib_path("foo-2.0")}"/)
+      expect(the_bundle).to include_gems "foo 2.0"
+    end
+  end
+
+  describe "with --git and --branch" do
+    before do
+      update_git "foo", "2.0", :branch => "test"
+    end
+
+    it "adds dependency with specified github source and branch" do
+      bundle "add foo --git=#{lib_path("foo-2.0")} --branch=test"
+
+      expect(bundled_app("Gemfile").read).to match(/gem "foo", "~> 2.0", :git => "#{lib_path("foo-2.0")}", :branch => "test"/)
       expect(the_bundle).to include_gems "foo 2.0"
     end
   end
@@ -99,8 +123,8 @@ RSpec.describe "bundle add" do
   end
 
   it "using combination of short form options works like long form" do
-    bundle "add 'foo' -s='file://#{gem_repo2}' -g='development' -v='~>1.0'"
-    expect(bundled_app("Gemfile").read).to include %(gem "foo", "~> 1.0", :group => :development, :source => "file://#{gem_repo2}")
+    bundle "add 'foo' -s='#{file_uri_for(gem_repo2)}' -g='development' -v='~>1.0'"
+    expect(bundled_app("Gemfile").read).to include %(gem "foo", "~> 1.0", :group => :development, :source => "#{file_uri_for(gem_repo2)}")
     expect(the_bundle).to include_gems "foo 1.1"
   end
 
@@ -110,10 +134,11 @@ RSpec.describe "bundle add" do
   end
 
   it "shows error message when gem cannot be found" do
+    bundle "config set force_ruby_platform true"
     bundle "add 'werk_it'"
     expect(err).to match("Could not find gem 'werk_it' in")
 
-    bundle "add 'werk_it' -s='file://#{gem_repo2}'"
+    bundle "add 'werk_it' -s='#{file_uri_for(gem_repo2)}'"
     expect(err).to match("Could not find gem 'werk_it' in rubygems repository")
   end
 
@@ -176,7 +201,7 @@ RSpec.describe "bundle add" do
   describe "when a gem is added which is already specified in Gemfile with version" do
     it "shows an error when added with different version requirement" do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rack", "1.0"
       G
 
@@ -188,7 +213,7 @@ RSpec.describe "bundle add" do
 
     it "shows error when added without version requirements" do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rack", "1.0"
       G
 
@@ -203,7 +228,7 @@ RSpec.describe "bundle add" do
   describe "when a gem is added which is already specified in Gemfile without version" do
     it "shows an error when added with different version requirement" do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rack"
       G
 

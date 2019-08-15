@@ -73,7 +73,7 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle open(1)`](bundle-open.1.html):
   Open an installed gem in the editor
 
-* [`bundle lock(1)`](bundle-lock.1.hmtl):
+* [`bundle lock(1)`](bundle-lock.1.html):
   Generate a lockfile for your dependencies
 
 * [`bundle viz(1)`](bundle-viz.1.html):

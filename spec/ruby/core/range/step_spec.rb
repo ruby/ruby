@@ -12,7 +12,7 @@ describe "Range#step" do
 
   it "raises TypeError if step" do
     obj = mock("mock")
-    lambda { (1..10).step(obj) { } }.should raise_error(TypeError)
+    -> { (1..10).step(obj) { } }.should raise_error(TypeError)
   end
 
   it "calls #to_int to coerce step to an Integer" do
@@ -26,14 +26,14 @@ describe "Range#step" do
   it "raises a TypeError if step does not respond to #to_int" do
     obj = mock("Range#step non-integer")
 
-    lambda { (1..2).step(obj) { } }.should raise_error(TypeError)
+    -> { (1..2).step(obj) { } }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if #to_int does not return an Integer" do
     obj = mock("Range#step non-integer")
     obj.should_receive(:to_int).and_return("1")
 
-    lambda { (1..2).step(obj) { } }.should raise_error(TypeError)
+    -> { (1..2).step(obj) { } }.should raise_error(TypeError)
   end
 
   it "coerces the argument to integer by invoking to_int" do
@@ -47,19 +47,19 @@ describe "Range#step" do
     obj = mock("Range#step non-comparable")
     obj.should_receive(:<=>).with(obj).and_return(1)
 
-    lambda { (obj..obj).step { |x| x } }.should raise_error(TypeError)
+    -> { (obj..obj).step { |x| x } }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError if step is 0" do
-    lambda { (-1..1).step(0) { |x| x } }.should raise_error(ArgumentError)
+    -> { (-1..1).step(0) { |x| x } }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if step is 0.0" do
-    lambda { (-1..1).step(0.0) { |x| x } }.should raise_error(ArgumentError)
+    -> { (-1..1).step(0.0) { |x| x } }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if step is negative" do
-    lambda { (-1..1).step(-2) { |x| x } }.should raise_error(ArgumentError)
+    -> { (-1..1).step(-2) { |x| x } }.should raise_error(ArgumentError)
   end
 
   describe "with inclusive end" do
@@ -159,7 +159,7 @@ describe "Range#step" do
       end
 
       it "raises a TypeError when passed a Float step" do
-        lambda { ("A".."G").step(2.0) { } }.should raise_error(TypeError)
+        -> { ("A".."G").step(2.0) { } }.should raise_error(TypeError)
       end
 
       it "calls #succ on begin and each element returned by #succ" do
@@ -269,7 +269,7 @@ describe "Range#step" do
       end
 
       it "raises a TypeError when passed a Float step" do
-        lambda { ("A"..."G").step(2.0) { } }.should raise_error(TypeError)
+        -> { ("A"..."G").step(2.0) { } }.should raise_error(TypeError)
       end
     end
   end
@@ -280,7 +280,7 @@ describe "Range#step" do
         it "raises a TypeError if step does not respond to #to_int" do
           obj = mock("Range#step non-integer")
           enum = (1..2).step(obj)
-          lambda { enum.size }.should raise_error(TypeError)
+          -> { enum.size }.should raise_error(TypeError)
         end
 
         it "raises a TypeError if #to_int does not return an Integer" do
@@ -288,23 +288,23 @@ describe "Range#step" do
           obj.should_receive(:to_int).and_return("1")
           enum = (1..2).step(obj)
 
-          lambda { enum.size }.should raise_error(TypeError)
+          -> { enum.size }.should raise_error(TypeError)
         end
 
         ruby_version_is ""..."2.6" do
           it "raises an ArgumentError if step is 0" do
             enum = (-1..1).step(0)
-            lambda { enum.size }.should raise_error(ArgumentError)
+            -> { enum.size }.should raise_error(ArgumentError)
           end
 
           it "raises an ArgumentError if step is 0.0" do
             enum = (-1..1).step(0.0)
-            lambda { enum.size }.should raise_error(ArgumentError)
+            -> { enum.size }.should raise_error(ArgumentError)
           end
 
           it "raises an ArgumentError if step is negative" do
             enum = (-1..1).step(-2)
-            lambda {  enum.size }.should raise_error(ArgumentError)
+            -> {  enum.size }.should raise_error(ArgumentError)
           end
         end
 
@@ -366,7 +366,7 @@ describe "Range#step" do
           obj = mock("Range#step non-comparable")
           obj.should_receive(:<=>).with(obj).and_return(1)
           enum = (obj..obj).step
-          lambda { enum.size }.should_not raise_error
+          -> { enum.size }.should_not raise_error
           enum.size.should == nil
         end
       end

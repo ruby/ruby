@@ -6,6 +6,14 @@ class RequirementChecker < Proc
 
     new do |required|
       !Gem::Requirement.new(required).satisfied_by?(provided)
+    end.tap do |checker|
+      checker.provided = provided
     end
+  end
+
+  attr_accessor :provided
+
+  def inspect
+    "\"!= #{provided}\""
   end
 end

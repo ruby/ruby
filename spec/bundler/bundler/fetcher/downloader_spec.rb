@@ -82,6 +82,15 @@ RSpec.describe Bundler::Fetcher::Downloader do
         expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::Fetcher::AuthenticationRequiredError,
           /Authentication is required for www.uri-to-fetch.com/)
       end
+
+      context "when the there are credentials provided in the request" do
+        let(:uri) { URI("http://user:password@www.uri-to-fetch.com") }
+
+        it "should raise a Bundler::Fetcher::BadAuthenticationError that doesn't contain the password" do
+          expect { subject.fetch(uri, options, counter) }.
+            to raise_error(Bundler::Fetcher::BadAuthenticationError, /Bad username or password for www.uri-to-fetch.com/)
+        end
+      end
     end
 
     context "when the request response is a Net::HTTPNotFound" do

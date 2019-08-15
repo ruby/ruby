@@ -30,7 +30,7 @@ describe "ENV.shift" do
     @external = Encoding.default_external
     @internal = Encoding.default_internal
 
-    Encoding.default_external = Encoding::ASCII_8BIT
+    Encoding.default_external = Encoding::BINARY
   end
 
   after :each do

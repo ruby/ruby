@@ -25,60 +25,17 @@ RSpec.describe Bundler::Dsl do
       expect { subject.git_source(:example) }.to raise_error(Bundler::InvalidOption)
     end
 
-    context "github_https feature flag" do
-      it "is true when github.https is true" do
-        bundle "config set github.https true"
-        expect(Bundler.feature_flag.github_https?).to eq true
-      end
-    end
-
-    shared_examples_for "the github DSL" do |protocol|
-      context "when full repo is used" do
-        let(:repo) { "indirect/sparks" }
-
-        it "converts :github to URI using #{protocol}" do
-          subject.gem("sparks", :github => repo)
-          github_uri = "#{protocol}://github.com/#{repo}.git"
-          expect(subject.dependencies.first.source.uri).to eq(github_uri)
-        end
+    context "default hosts", :bundler => "2" do
+      it "converts :github to URI using https" do
+        subject.gem("sparks", :github => "indirect/sparks")
+        github_uri = "https://github.com/indirect/sparks.git"
+        expect(subject.dependencies.first.source.uri).to eq(github_uri)
       end
 
-      context "when shortcut repo is used" do
-        let(:repo) { "rails" }
-
-        it "converts :github to URI using #{protocol}" do
-          subject.gem("sparks", :github => repo)
-          github_uri = "#{protocol}://github.com/#{repo}/#{repo}.git"
-          expect(subject.dependencies.first.source.uri).to eq(github_uri)
-        end
-      end
-    end
-
-    context "default hosts (git, gist)" do
-      context "when github.https config is true" do
-        before { bundle "config set github.https true" }
-
-        it_behaves_like "the github DSL", "https"
-      end
-
-      context "when github.https config is false", :bundler => "2" do
-        before { bundle "config set github.https false" }
-
-        it_behaves_like "the github DSL", "git"
-      end
-
-      context "when github.https config is false", :bundler => "3" do
-        before { bundle "config set github.https false" }
-
-        pending "should show a proper message about the removed setting"
-      end
-
-      context "by default", :bundler => "2" do
-        it_behaves_like "the github DSL", "https"
-      end
-
-      context "by default", :bundler => "3" do
-        it_behaves_like "the github DSL", "https"
+      it "converts :github shortcut to URI using https" do
+        subject.gem("sparks", :github => "rails")
+        github_uri = "https://github.com/rails/rails.git"
+        expect(subject.dependencies.first.source.uri).to eq(github_uri)
       end
 
       it "converts numeric :gist to :git" do
@@ -106,7 +63,7 @@ RSpec.describe Bundler::Dsl do
       end
     end
 
-    context "default git sources", :bundler => "4" do
+    context "default git sources", :bundler => "3" do
       it "has none" do
         expect(subject.instance_variable_get(:@git_sources)).to eq({})
       end
@@ -141,8 +98,8 @@ RSpec.describe Bundler::Dsl do
   end
 
   describe "#gem" do
-    [:ruby, :ruby_18, :ruby_19, :ruby_20, :ruby_21, :ruby_22, :ruby_23, :ruby_24, :ruby_25, :mri, :mri_18, :mri_19,
-     :mri_20, :mri_21, :mri_22, :mri_23, :mri_24, :mri_25, :jruby, :rbx, :truffleruby].each do |platform|
+    [:ruby, :ruby_18, :ruby_19, :ruby_20, :ruby_21, :ruby_22, :ruby_23, :ruby_24, :ruby_25, :ruby_26, :mri, :mri_18, :mri_19,
+     :mri_20, :mri_21, :mri_22, :mri_23, :mri_24, :mri_25, :mri_26, :jruby, :rbx, :truffleruby].each do |platform|
       it "allows #{platform} as a valid platform" do
         subject.gem("foo", :platform => platform)
       end
@@ -285,7 +242,7 @@ RSpec.describe Bundler::Dsl do
       end
     end
 
-    describe "#github", :bundler => "3" do
+    describe "#github", :bundler => "2" do
       it "from github" do
         spree_gems = %w[spree_core spree_api spree_backend]
         subject.github "spree" do
@@ -299,19 +256,6 @@ RSpec.describe Bundler::Dsl do
     end
 
     describe "#github", :bundler => "3" do
-      it "from github" do
-        spree_gems = %w[spree_core spree_api spree_backend]
-        subject.github "spree" do
-          spree_gems.each {|spree_gem| subject.send :gem, spree_gem }
-        end
-
-        subject.dependencies.each do |d|
-          expect(d.source.uri).to eq("https://github.com/spree/spree.git")
-        end
-      end
-    end
-
-    describe "#github", :bundler => "4" do
       it "from github" do
         expect do
           spree_gems = %w[spree_core spree_api spree_backend]
@@ -327,15 +271,15 @@ RSpec.describe Bundler::Dsl do
     it "will raise a Bundler::GemfileError" do
       gemfile "gem 'foo', :path => /unquoted/string/syntax/error"
       expect { Bundler::Dsl.evaluate(bundled_app("Gemfile"), nil, true) }.
-        to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`:( compile error -)? unknown regexp options - trg. Bundler cannot continue./)
+        to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`:( compile error -)? unknown regexp options - trg.+ Bundler cannot continue./)
     end
   end
 
   describe "Runtime errors", :unless => Bundler.current_ruby.on_18? do
     it "will raise a Bundler::GemfileError" do
-      gemfile "s = 'foo'.freeze; s.strip!"
+      gemfile "raise RuntimeError, 'foo'"
       expect { Bundler::Dsl.evaluate(bundled_app("Gemfile"), nil, true) }.
-        to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`: can't modify frozen String. Bundler cannot continue./i)
+        to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`: foo. Bundler cannot continue./i)
     end
   end
 

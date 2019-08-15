@@ -188,7 +188,7 @@ variables from the implementor spec: `@method` and `@object`, which the implemen
 
 Here's an example of a snippet of a shared spec and two specs which integrates it:
 
-``` ruby
+```ruby
 # core/hash/shared/key.rb
 describe :hash_key_p, shared: true do
   it "returns true if the key's matching value was false" do
@@ -216,7 +216,7 @@ Sometimes, shared specs require more context from the implementor class than a s
 this by passing a lambda as the method, which will have the scope of the implementor.  Here's an example of
 how this is used currently:
 
-``` ruby
+```ruby
 describe :kernel_sprintf, shared: true do
   it "raises TypeError exception if cannot convert to Integer" do
     -> { @method.call("%b", Object.new) }.should raise_error(TypeError)

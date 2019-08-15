@@ -157,23 +157,6 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 # define VAR_NOCLOBBERED(var) var
 #endif
 
-#if defined(USE_UNALIGNED_MEMBER_ACCESS) && USE_UNALIGNED_MEMBER_ACCESS && \
-    defined(__clang__)
-# define UNALIGNED_MEMBER_ACCESS(expr) __extension__({ \
-    COMPILER_WARNING_PUSH; \
-    COMPILER_WARNING_IGNORED(-Waddress-of-packed-member); \
-    typeof(expr) unaligned_member_access_result = (expr); \
-    COMPILER_WARNING_POP; \
-    unaligned_member_access_result; \
-})
-#else
-# define UNALIGNED_MEMBER_ACCESS(expr) expr
-#endif
-#define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
-
-#undef RB_OBJ_WRITE
-#define RB_OBJ_WRITE(a, slot, b) UNALIGNED_MEMBER_ACCESS(rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
-
 /* clear ec->tag->state, and return the value */
 static inline int
 rb_ec_tag_state(const rb_execution_context_t *ec)
@@ -294,9 +277,7 @@ NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
 NORETURN(void rb_print_inaccessible(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
-#if 0
 NORETURN(void rb_vm_jump_tag_but_local_jump(int));
-#endif
 
 VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);
 rb_cref_t *rb_vm_cref(void);

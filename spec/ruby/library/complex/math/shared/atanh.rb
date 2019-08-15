@@ -25,6 +25,6 @@ end
 
 describe :complex_math_atanh_no_complex, shared: true do
   it "raises a TypeError when passed a Complex number" do
-    lambda { @object.send(:atanh!, Complex(4, 5)) }.should raise_error(TypeError)
+    -> { @object.send(:atanh!, Complex(4, 5)) }.should raise_error(TypeError)
   end
 end

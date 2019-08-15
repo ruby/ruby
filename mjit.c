@@ -99,15 +99,15 @@ mjit_gc_start_hook(void)
 // Send a signal to workers to continue iseq compilations.  It is
 // called at the end of GC.
 void
-mjit_gc_finish_hook(void)
+mjit_gc_exit_hook(void)
 {
     if (!mjit_enabled)
         return;
-    CRITICAL_SECTION_START(4, "mjit_gc_finish_hook");
+    CRITICAL_SECTION_START(4, "mjit_gc_exit_hook");
     in_gc = false;
     verbose(4, "Sending wakeup signal to workers after GC");
     rb_native_cond_broadcast(&mjit_gc_wakeup);
-    CRITICAL_SECTION_FINISH(4, "mjit_gc_finish_hook");
+    CRITICAL_SECTION_FINISH(4, "mjit_gc_exit_hook");
 }
 
 // Deal with ISeq movement from compactor
@@ -119,7 +119,7 @@ mjit_update_references(const rb_iseq_t *iseq)
 
     CRITICAL_SECTION_START(4, "mjit_update_references");
     if (iseq->body->jit_unit) {
-        iseq->body->jit_unit->iseq = (rb_iseq_t *)rb_gc_new_location((VALUE)iseq->body->jit_unit->iseq);
+        iseq->body->jit_unit->iseq = (rb_iseq_t *)rb_gc_location((VALUE)iseq->body->jit_unit->iseq);
         // We need to invalidate JIT-ed code for the ISeq because it embeds pointer addresses.
         // To efficiently do that, we use the same thing as TracePoint and thus everything is cancelled for now.
         mjit_call_p = false; // TODO: instead of cancelling all, invalidate only this one and recompile it with some threshold.
@@ -131,7 +131,7 @@ mjit_update_references(const rb_iseq_t *iseq)
     struct rb_mjit_unit *unit = NULL;
     list_for_each(&stale_units.head, unit, unode) {
         if (unit->iseq == iseq) {
-            unit->iseq = (rb_iseq_t *)rb_gc_new_location((VALUE)unit->iseq);
+            unit->iseq = (rb_iseq_t *)rb_gc_location((VALUE)unit->iseq);
         }
     }
     CRITICAL_SECTION_FINISH(4, "mjit_update_references");
