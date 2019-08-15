@@ -71,14 +71,15 @@ RSpec.configure do |config|
   config.filter_run_excluding :ruby => RequirementChecker.against(RUBY_VERSION)
   config.filter_run_excluding :rubygems => RequirementChecker.against(Gem::VERSION)
   config.filter_run_excluding :git => RequirementChecker.against(git_version)
-  config.filter_run_excluding :rubygems_master => (ENV["RGV"] != "master")
   config.filter_run_excluding :bundler => RequirementChecker.against(Bundler::VERSION.split(".")[0])
   config.filter_run_excluding :ruby_repo => !(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"]).nil?
+  config.filter_run_excluding :no_color_tty => Gem.win_platform? || !!ENV["GITHUB_ACTION"]
+  config.filter_run_excluding :github_action_linux => !!ENV["GITHUB_ACTION"] && (ENV["RUNNER_OS"] == "Linux")
 
   config.filter_run_when_matching :focus unless ENV["CI"]
 
   original_wd  = Dir.pwd
-  original_env = ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) }
+  original_env = ENV.to_hash
 
   config.expect_with :rspec do |c|
     c.syntax = :expect
@@ -99,13 +100,15 @@ RSpec.configure do |config|
 
   config.before :suite do
     Spec::Rubygems.setup
-    ENV["RUBYOPT"] = original_env["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.spec_dir}/support/hax.rb"
-    ENV["BUNDLE_SPEC_RUN"] = original_env["BUNDLE_SPEC_RUN"] = "true"
+    ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.spec_dir}/support/hax.rb"
+    ENV["BUNDLE_SPEC_RUN"] = "true"
+    ENV["BUNDLE_USER_CONFIG"] = ENV["BUNDLE_USER_CACHE"] = ENV["BUNDLE_USER_PLUGIN"] = nil
+    ENV["GEMRC"] = nil
 
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
 
-    original_env = ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) }
+    original_env = ENV.to_hash
 
     if ENV["BUNDLE_RUBY"]
       FileUtils.cp_r Spec::Path.bindir, File.join(Spec::Path.root, "lib", "exe")

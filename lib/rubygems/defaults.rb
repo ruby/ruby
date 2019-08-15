@@ -71,6 +71,13 @@ module Gem
   end
 
   ##
+  # Path to specification files of default gems.
+
+  def self.default_specifications_dir
+    File.join(Gem.default_dir, "specifications", "default")
+  end
+
+  ##
   # Path for gems in the user's home directory
 
   def self.user_dir
@@ -122,15 +129,8 @@ module Gem
     end
   end
 
-  ##
-  # A wrapper around RUBY_ENGINE const that may not be defined
-
   def self.ruby_engine
-    if defined? RUBY_ENGINE
-      RUBY_ENGINE
-    else
-      'ruby'
-    end
+    RUBY_ENGINE
   end
 
   ##

@@ -49,7 +49,7 @@ end
 RSpec.describe "Gem::SourceIndex#refresh!" do
   before do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "rack"
     G
   end

@@ -40,12 +40,12 @@ RSpec.describe "bundle install" do
       revision = build_git("foo").ref_for("HEAD")
 
       gemfile <<-G
-        gem "foo", :git => "file://#{lib_path("foo-1.0")}", :group => :development
+        gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}", :group => :development
       G
 
       lockfile <<-L
         GIT
-          remote: file://#{lib_path("foo-1.0")}
+          remote: #{file_uri_for(lib_path("foo-1.0"))}
           revision: #{revision}
           specs:
             foo (1.0)

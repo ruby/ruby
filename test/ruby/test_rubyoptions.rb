@@ -4,7 +4,7 @@ require 'test/unit'
 require 'timeout'
 require 'tmpdir'
 require 'tempfile'
-require_relative '../../tool/lib/jit_support'
+require_relative '../lib/jit_support'
 
 class TestRubyOptions < Test::Unit::TestCase
   NO_JIT_DESCRIPTION =
@@ -491,14 +491,18 @@ class TestRubyOptions < Test::Unit::TestCase
           ["begin", "ensure ; end"],
           ["  case nil", "when true; end"],
           ["case nil; when true", "end"],
+          ["if false;", "end", "if true\nelse ", "end"],
+          ["else", " end", "_ = if true\n"],
         ].each do
-          |b, e = 'end'|
-          src = ["#{b}\n", " #{e}\n"]
+          |b, e = 'end', pre = nil, post = nil|
+          src = ["#{pre}#{b}\n", " #{e}\n#{post}"]
           k = b[/\A\s*(\S+)/, 1]
           e = e[/\A\s*(\S+)/, 1]
+          n = 2
+          n += pre.count("\n") if pre
 
-          a.for("no directives with #{b}") do
-            err = ["#{t.path}:2: warning: mismatched indentations at '#{e}' with '#{k}' at 1"]
+          a.for("no directives with #{src}") do
+            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n-1}"]
             t.rewind
             t.truncate(0)
             t.puts src
@@ -507,7 +511,7 @@ class TestRubyOptions < Test::Unit::TestCase
             assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err)
           end
 
-          a.for("false directive with #{b}") do
+          a.for("false directive with #{src}") do
             t.rewind
             t.truncate(0)
             t.puts "# -*- warn-indent: false -*-"
@@ -516,8 +520,8 @@ class TestRubyOptions < Test::Unit::TestCase
             assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
           end
 
-          a.for("false and true directives with #{b}") do
-            err = ["#{t.path}:4: warning: mismatched indentations at '#{e}' with '#{k}' at 3"]
+          a.for("false and true directives with #{src}") do
+            err = ["#{t.path}:#{n+2}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n+1}"]
             t.rewind
             t.truncate(0)
             t.puts "# -*- warn-indent: false -*-"
@@ -527,7 +531,7 @@ class TestRubyOptions < Test::Unit::TestCase
             assert_in_out_err(["-w", t.path], "", [], err, '[ruby-core:25442]')
           end
 
-          a.for("false directives after #{b}") do
+          a.for("false directives after #{src}") do
             t.rewind
             t.truncate(0)
             t.puts "# -*- warn-indent: true -*-"
@@ -538,8 +542,8 @@ class TestRubyOptions < Test::Unit::TestCase
             assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
           end
 
-          a.for("BOM with #{b}") do
-            err = ["#{t.path}:2: warning: mismatched indentations at '#{e}' with '#{k}' at 1"]
+          a.for("BOM with #{src}") do
+            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n-1}"]
             t.rewind
             t.truncate(0)
             t.print "\u{feff}"

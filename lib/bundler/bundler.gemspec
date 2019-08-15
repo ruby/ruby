@@ -32,14 +32,7 @@ Gem::Specification.new do |s|
   end
 
   s.required_ruby_version     = ">= 2.3.0"
-  s.required_rubygems_version = ">= 2.5.0"
-
-  s.add_development_dependency "automatiek", "~> 0.1.0"
-  s.add_development_dependency "rake",       "~> 12.0"
-  s.add_development_dependency "ronn",       "~> 0.7.3"
-  s.add_development_dependency "rspec",      "~> 3.6"
-  s.add_development_dependency "rubocop",    "= 0.68.1"
-  s.add_development_dependency "rubocop-performance", "~> 1.1"
+  s.required_rubygems_version = ">= 2.5.2"
 
   # s.files = Dir.glob("{lib,exe}/**/*", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
 
