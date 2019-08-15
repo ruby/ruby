@@ -153,7 +153,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
             ref.sections.any? { |section| label == section.title } then
         path << "##{label}"
       else
-        path << "#label-#{label}"
+        path << "##{ref.aref}-label-#{label}"
       end if label
 
       "<a href=\"#{path}\">#{text}</a>"

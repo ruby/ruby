@@ -137,13 +137,22 @@ enum vm_regan_acttype {
 
 #if VM_CHECK_MODE > 0
 #define SETUP_CANARY() \
+    VALUE *canary; \
     if (leaf) { \
         canary = GET_SP(); \
         SET_SV(vm_stack_canary); \
+    } \
+    else {\
+        SET_SV(Qfalse); /* cleanup */ \
     }
 #define CHECK_CANARY() \
-    if (leaf && (*canary != vm_stack_canary)) { \
-        vm_canary_is_found_dead(INSN_ATTR(bin), *canary); \
+    if (leaf) { \
+        if (*canary == vm_stack_canary) { \
+            *canary = Qfalse; /* cleanup */ \
+        } \
+        else { \
+            vm_canary_is_found_dead(INSN_ATTR(bin), *canary); \
+        } \
     }
 #else
 #define SETUP_CANARY()          /* void */
@@ -171,9 +180,11 @@ enum vm_regan_acttype {
 #define INC_GLOBAL_CONSTANT_STATE() (++ruby_vm_global_constant_state)
 
 static inline struct vm_throw_data *
-THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, VALUE st)
+THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, int st)
 {
-    return (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, st, 0);
+    struct vm_throw_data *obj = (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, 0, 0);
+    obj->throw_state = st;
+    return obj;
 }
 
 static inline VALUE
@@ -194,7 +205,7 @@ static inline int
 THROW_DATA_STATE(const struct vm_throw_data *obj)
 {
     VM_ASSERT(THROW_DATA_P(obj));
-    return (int)obj->throw_state;
+    return obj->throw_state;
 }
 
 static inline int
@@ -215,7 +226,7 @@ static inline void
 THROW_DATA_STATE_SET(struct vm_throw_data *obj, int st)
 {
     VM_ASSERT(THROW_DATA_P(obj));
-    obj->throw_state = (VALUE)st;
+    obj->throw_state = st;
 }
 
 static inline void
@@ -229,5 +240,14 @@ THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 
 #define IS_ARGS_SPLAT(ci)   ((ci)->flag & VM_CALL_ARGS_SPLAT)
 #define IS_ARGS_KEYWORD(ci) ((ci)->flag & VM_CALL_KWARG)
+
+/* If this returns true, an optimized function returned by `vm_call_iseq_setup_func`
+   can be used as a fastpath. */
+static bool
+vm_call_iseq_optimizable_p(const struct rb_call_info *ci, const struct rb_call_cache *cc)
+{
+    return !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
+        !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED);
+}
 
 #endif /* RUBY_INSNHELPER_H */

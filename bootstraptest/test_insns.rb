@@ -202,6 +202,7 @@ tests = [
   },
 
   [ 'opt_str_freeze', %q{ 'true'.freeze }, ],
+  [ 'opt_nil_p',      %q{ nil.nil? }, ],
   [ 'opt_str_uminus', %q{ -'true' }, ],
   [ 'opt_str_freeze', <<-'},', ], # {
     class String
@@ -418,5 +419,5 @@ tests.compact.each {|(insn, expr, *a)| assert_equal 'true', expr, insn, *a }
 # with trace
 tests.compact.each {|(insn, expr, *a)|
   progn = "set_trace_func(proc{})\n" + expr
-  assert_equal 'true', progn, insn, *a
+  assert_equal 'true', progn, 'trace_' + insn, *a
 }

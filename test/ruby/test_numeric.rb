@@ -52,7 +52,6 @@ class TestNumeric < Test::Unit::TestCase
     end.new
     assert_equal(-1, -a)
 
-    bug7688 = '[ruby-core:51389] [Bug #7688]'
     a = Class.new(Numeric) do
       def coerce(x); raise StandardError, "my error"; end
     end.new
@@ -337,6 +336,20 @@ class TestNumeric < Test::Unit::TestCase
     assert_step [bignum]*4, [bignum, by: 0.0], inf: true
     assert_step [bignum]*4, [bignum, by: 0, to: bignum+1], inf: true
     assert_step [bignum]*4, [bignum, by: 0, to: 0], inf: true
+  end
+
+  def test_step_bug15537
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10.0, 1, -2]
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10.0, to: 1, by: -2]
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10.0, 1, -2]
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10, to: 1.0, by: -2]
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10, 1.0, -2]
+
+    assert_step [10.0, 9.0, 8.0, 7.0], [10, by: -1.0], inf: true
+    assert_step [10.0, 9.0, 8.0, 7.0], [10, by: -1.0, to: nil], inf: true
+    assert_step [10.0, 9.0, 8.0, 7.0], [10, nil, -1.0], inf: true
+    assert_step [10.0, 9.0, 8.0, 7.0], [10.0, by: -1], inf: true
+    assert_step [10.0, 9.0, 8.0, 7.0], [10.0, nil, -1], inf: true
   end
 
   def test_num2long

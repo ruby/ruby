@@ -80,19 +80,17 @@ describe :thread_exit, shared: true do
     ScratchPad.recorded.should == nil
   end
 
-  with_feature :fiber do
-    it "kills the entire thread when a fiber is active" do
-      t = Thread.new do
-        Fiber.new do
-          sleep
-        end.resume
-        ScratchPad.record :fiber_resumed
-      end
-      Thread.pass while t.status and t.status != "sleep"
-      t.send(@method)
-      t.join
-      ScratchPad.recorded.should == nil
+  it "kills the entire thread when a fiber is active" do
+    t = Thread.new do
+      Fiber.new do
+        sleep
+      end.resume
+      ScratchPad.record :fiber_resumed
     end
+    Thread.pass while t.status and t.status != "sleep"
+    t.send(@method)
+    t.join
+    ScratchPad.recorded.should == nil
   end
 
   # This spec is a mess. It fails randomly, it hangs on MRI, it needs to be removed
@@ -118,7 +116,7 @@ describe :thread_exit, shared: true do
 
     it "propagates inner exception to Thread.join if there is an outer ensure clause" do
       thread = ThreadSpecs.dying_thread_with_outer_ensure(@method) { }
-      lambda { thread.join }.should raise_error(RuntimeError, "In dying thread")
+      -> { thread.join }.should raise_error(RuntimeError, "In dying thread")
     end
 
     it "runs all outer ensure clauses even if inner ensure clause raises exception" do

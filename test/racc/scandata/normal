@@ -1,0 +1,4 @@
+{
+    # comment
+    result = "string".match(/regexp/)[0]
+}

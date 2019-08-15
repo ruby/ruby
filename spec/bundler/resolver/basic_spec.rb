@@ -35,7 +35,7 @@ RSpec.describe "Resolving" do
     should_resolve_as %w[berkshelf-2.0.7 chef-10.26 chef_app-1.0.0 json-1.7.7]
   end
 
-  it "prefers expicitly requested dependencies when resolving an index which would otherwise be ambiguous" do
+  it "prefers explicitly requested dependencies when resolving an index which would otherwise be ambiguous" do
     @index = an_ambiguous_index
     dep "a"
     dep "b"
@@ -169,10 +169,10 @@ Bundler could not find compatible versions for gem "a":
         s.required_ruby_version = "~> 2.0.0"
       end
 
-      gem "ruby\0", "1.8.7"
+      gem "Ruby\0", "1.8.7"
     end
     dep "foo"
-    dep "ruby\0", "1.8.7"
+    dep "Ruby\0", "1.8.7"
 
     deps = []
     @deps.each do |d|
@@ -226,7 +226,7 @@ Bundler could not find compatible versions for gem "a":
       # dependencies and since the dependency of the selected foo gem changes, the latest matching
       # dependency of "bar", "~> 2.1" -- bar-2.1.1 -- is selected. This is not a bug and follows
       # the long-standing documented Conservative Updating behavior of bundle install.
-      # http://bundler.io/v1.12/man/bundle-install.1.html#CONSERVATIVE-UPDATING
+      # https://bundler.io/v1.12/man/bundle-install.1.html#CONSERVATIVE-UPDATING
       should_conservative_resolve_and_include :patch, ["foo"], %w[foo-1.4.5 bar-2.1.1]
     end
 

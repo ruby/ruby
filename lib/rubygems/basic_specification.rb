@@ -35,7 +35,14 @@ class Gem::BasicSpecification
   end
 
   def self.default_specifications_dir
-    File.join(Gem.default_dir, "specifications", "default")
+    Gem.default_specifications_dir
+  end
+
+  class << self
+
+    extend Gem::Deprecate
+    deprecate :default_specifications_dir, "Gem.default_specifications_dir", 2020, 02
+
   end
 
   ##
@@ -71,8 +78,11 @@ class Gem::BasicSpecification
     elsif missing_extensions?
       @ignored = true
 
-      warn "Ignoring #{full_name} because its extensions are not built. " +
-        "Try: gem pristine #{name} --version #{version}"
+      if RUBY_ENGINE == platform || Gem::Platform.local === platform
+        warn "Ignoring #{full_name} because its extensions are not built. " +
+          "Try: gem pristine #{name} --version #{version}"
+      end
+
       return false
     end
 
@@ -81,7 +91,7 @@ class Gem::BasicSpecification
 
   def default_gem?
     loaded_from &&
-      File.dirname(loaded_from) == self.class.default_specifications_dir
+      File.dirname(loaded_from) == Gem.default_specifications_dir
   end
 
   ##
@@ -329,4 +339,5 @@ class Gem::BasicSpecification
       false
     end
   end
+
 end

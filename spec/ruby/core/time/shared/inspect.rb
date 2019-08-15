@@ -15,9 +15,7 @@ describe :inspect, shared: true do
     Time.new(2000, 1, 1, 20, 15, 01, 3600).send(@method).should == "2000-01-01 20:15:01 +0100"
   end
 
-  with_feature :encoding do
-    it "returns a US-ASCII encoded string" do
-      Time.now.send(@method).encoding.should equal(Encoding::US_ASCII)
-    end
+  it "returns a US-ASCII encoded string" do
+    Time.now.send(@method).encoding.should equal(Encoding::US_ASCII)
   end
 end

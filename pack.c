@@ -186,7 +186,7 @@ VALUE_to_float(VALUE obj)
  *  exclamation mark (``<code>!</code>'') to use the underlying
  *  platform's native size for the specified type; otherwise, they use a
  *  platform-independent size. Spaces are ignored in the template
- *  string. See also <code>String#unpack</code>.
+ *  string. See also String#unpack.
  *
  *     a = [ "a", "b", "c" ]
  *     n = [ 65, 66, 67 ]
@@ -286,8 +286,10 @@ VALUE_to_float(VALUE obj)
  *   u            | String  | UU-encoded string
  *   M            | String  | quoted printable, MIME encoding (see also RFC2045)
  *                |         | (text mode but input must use LF and output LF)
- *   m            | String  | base64 encoded string (see RFC 2045, count is width)
+ *   m            | String  | base64 encoded string (see RFC 2045)
  *                |         | (if count is 0, no line feed are added, see RFC 4648)
+ *                |         | (count specifies input bytes between each LF,
+ *                |         | rounded down to nearest multiple of 3)
  *   P            | String  | pointer to a structure (fixed-length string)
  *   p            | String  | pointer to a null-terminated string
  *
@@ -1805,7 +1807,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
  *  exclamation mark (``<code>!</code>'') to use the underlying
  *  platform's native size for the specified type; otherwise, it uses a
  *  platform-independent consistent size. Spaces are ignored in the
- *  format string. See also <code>String#unpack1</code>,  <code>Array#pack</code>.
+ *  format string. See also String#unpack1,  Array#pack.
  *
  *     "abc \0\0abc \0\0".unpack('A6Z6')   #=> ["abc", "abc "]
  *     "abc \0\0".unpack('a3a3')           #=> ["abc", " \000\000"]
@@ -1922,7 +1924,21 @@ pack_unpack(VALUE str, VALUE fmt)
  *
  *  Decodes <i>str</i> (which may contain binary data) according to the
  *  format string, returning the first value extracted.
- *  See also <code>String#unpack</code>, <code>Array#pack</code>.
+ *  See also String#unpack, Array#pack.
+ *
+ *  Contrast with String#unpack:
+ *
+ *     "abc \0\0abc \0\0".unpack('A6Z6')   #=> ["abc", "abc "]
+ *     "abc \0\0abc \0\0".unpack1('A6Z6')  #=> "abc"
+ *
+ *  In that case data would be lost but often it's the case that the array
+ *  only holds one value, especially when unpacking binary data. For instance:
+ *
+ *  "\xff\x00\x00\x00".unpack("l")         #=>  [255]
+ *  "\xff\x00\x00\x00".unpack1("l")        #=>  255
+ *
+ *  Thus unpack1 is convenient, makes clear the intention and signals
+ *  the expected return value to those reading the code.
  */
 
 static VALUE

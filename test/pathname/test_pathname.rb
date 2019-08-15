@@ -789,10 +789,20 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_birthtime
-    assert_kind_of(Time, Pathname(__FILE__).birthtime)
-  rescue NotImplementedError
-    assert_raise(NotImplementedError) do
-      File.birthtime(__FILE__)
+    # Check under a (probably) local filesystem.
+    # Remote filesystems often may not support birthtime.
+    with_tmpchdir('rubytest-pathname') do |dir|
+      open("a", "w") {}
+      assert_kind_of(Time, Pathname("a").birthtime)
+    rescue Errno::EPERM
+      # Docker prohibits statx syscall by the default.
+      skip("statx(2) is prohibited by seccomp")
+    rescue Errno::ENOSYS
+      skip("statx(2) is not supported on this filesystem")
+    rescue NotImplementedError
+      # assert_raise(NotImplementedError) do
+      #   File.birthtime("a")
+      # end
     end
   end
 
@@ -1238,6 +1248,17 @@ class TestPathname < Test::Unit::TestCase
       Pathname.glob("*") {|path| a << path }
       a.sort!
       assert_equal([Pathname("d"), Pathname("f")], a)
+    }
+  end
+
+  def test_s_glob_3args
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("f", "w") {|f| f.write "abc" }
+      Dir.chdir("/") {
+        assert_equal(
+          [Pathname("."), Pathname(".."), Pathname("f")],
+          Pathname.glob("*", File::FNM_DOTMATCH, base: dir).sort)
+      }
     }
   end
 

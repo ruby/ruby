@@ -19,7 +19,7 @@ class CSV
     # The optional +headers+ parameter can be set to Array of headers.
     # If headers aren't set, headers are fetched from CSV::Row objects.
     # Otherwise, headers() method will return headers being set in
-    # headers arugument.
+    # headers argument.
     #
     # A CSV::Table object supports the following Array methods through
     # delegation:
@@ -133,10 +133,15 @@ class CSV
 
     #
     # Returns the headers for the first row of this table (assumed to match all
-    # other rows).  An empty Array is returned for empty tables.
+    # other rows). The headers Array passed to CSV::Table.new is returned for
+    # empty tables.
     #
     def headers
-      @headers.dup
+      if @table.empty?
+        @headers.dup
+      else
+        @table.first.headers
+      end
     end
 
     #

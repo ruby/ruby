@@ -36,7 +36,7 @@ enum arg_setup_type {
 static inline void
 arg_rest_dup(struct args_info *args)
 {
-    if(!args->rest_dupped) {
+    if (!args->rest_dupped) {
         args->rest = rb_ary_dup(args->rest);
         args->rest_dupped = TRUE;
     }
@@ -525,6 +525,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     VALUE * const orig_sp = ec->cfp->sp;
     unsigned int i;
 
+    vm_check_canary(ec, orig_sp);
     /*
      * Extend SP for GC.
      *
@@ -782,6 +783,7 @@ vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calli
     VALUE *argv = cfp->sp - argc;
     VALUE ary = argv[argc-1];
 
+    vm_check_canary(GET_EC(), cfp->sp);
     cfp->sp--;
 
     if (!NIL_P(ary)) {
@@ -900,8 +902,8 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
 		if (NIL_P(func)) {
 		    /* TODO: limit cached funcs */
                     VALUE callback_arg = rb_ary_tmp_new(2);
-                    RARRAY_ASET(callback_arg, 0, block_code);
-                    RARRAY_ASET(callback_arg, 1, ref);
+                    rb_ary_push(callback_arg, block_code);
+                    rb_ary_push(callback_arg, ref);
                     OBJ_FREEZE_RAW(callback_arg);
                     func = rb_func_proc_new(refine_sym_proc_call, callback_arg);
 		    rb_hash_aset(ref, block_code, func);

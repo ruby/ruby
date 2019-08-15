@@ -1,14 +1,9 @@
-#!/usr/bin/env ruby -w
-# encoding: UTF-8
+# -*- coding: utf-8 -*-
 # frozen_string_literal: false
 
-# tc_table.rb
-#
-# Created by James Edward Gray II on 2005-10-31.
+require_relative "helper"
 
-require_relative "base"
-
-class TestCSV::Table < TestCSV
+class TestCSVTable < Test::Unit::TestCase
   extend DifferentOFS
 
   def setup
@@ -21,7 +16,7 @@ class TestCSV::Table < TestCSV
     @header_table = CSV::Table.new(
       [CSV::Row.new(%w{A B C}, %w{A B C}, true)] + @rows
     )
-
+    
     @header_only_table = CSV::Table.new([], headers: %w{A B C})
   end
 
@@ -67,6 +62,13 @@ class TestCSV::Table < TestCSV
 
   def test_headers_only
     assert_equal(%w[A B C], @header_only_table.headers)
+  end
+
+  def test_headers_modified_by_row
+    table = CSV::Table.new([], headers: ["A", "B"])
+    table << ["a", "b"]
+    table.first << {"C" => "c"}
+    assert_equal(["A", "B", "C"], table.headers)
   end
 
   def test_index

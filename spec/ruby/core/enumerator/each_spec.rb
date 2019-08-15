@@ -49,7 +49,7 @@ describe "Enumerator#each" do
 
   it "raises a NoMethodError if the object doesn't respond to #each" do
     enum = Object.new.to_enum
-    lambda do
+    -> do
       enum.each { |e| e }
     end.should raise_error(NoMethodError)
   end

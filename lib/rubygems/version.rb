@@ -150,6 +150,7 @@
 # a zero to give a sensible result.
 
 class Gem::Version
+
   autoload :Requirement, 'rubygems/requirement'
 
   include Comparable
@@ -343,8 +344,8 @@ class Gem::Version
     return unless Gem::Version === other
     return 0 if @version == other._version || canonical_segments == other.canonical_segments
 
-    lhsegments = _segments
-    rhsegments = other._segments
+    lhsegments = canonical_segments
+    rhsegments = other.canonical_segments
 
     lhsize = lhsegments.size
     rhsize = rhsegments.size
@@ -395,4 +396,5 @@ class Gem::Version
     numeric_segments = string_segments.slice!(0, string_start || string_segments.size)
     return numeric_segments, string_segments
   end
+
 end

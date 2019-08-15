@@ -38,7 +38,8 @@ do_loop(void *p)
     struct loop_ctl *ctl = p;
 
     /* tell the waiting process they can interrupt us, now */
-    write(ctl->notify_fd, "", 1);
+    ssize_t err = write(ctl->notify_fd, "", 1);
+    if (err == -1) rb_bug("write error");
 
     while (!ctl->stop) {
         struct timeval tv = { 0, 10000 };

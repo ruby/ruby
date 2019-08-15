@@ -20,7 +20,7 @@
 #ifndef ENC_DEBUG
 #define ENC_DEBUG 0
 #endif
-#define ENC_ASSERT (!ENC_DEBUG)?(void)0:assert
+#define ENC_ASSERT(expr) RUBY_ASSERT_WHEN(ENC_DEBUG, expr)
 #define MUST_STRING(str) (ENC_ASSERT(RB_TYPE_P(str, T_STRING)), str)
 
 #undef rb_ascii8bit_encindex
@@ -65,8 +65,6 @@ static struct {
 #define ENC_TO_ENCINDEX(enc) (int)((enc)->ruby_encoding_index & ENC_INDEX_MASK)
 #define ENC_DUMMY_P(enc) ((enc)->ruby_encoding_index & ENC_DUMMY_FLAG)
 #define ENC_SET_DUMMY(enc) ((enc)->ruby_encoding_index |= ENC_DUMMY_FLAG)
-
-void rb_enc_init(void);
 
 #define ENCODING_COUNT ENCINDEX_BUILTIN_MAX
 #define UNSPECIFIED_ENCODING INT_MAX
@@ -268,8 +266,7 @@ enc_table_expand(int newsize)
 
     if (enc_table.size >= newsize) return newsize;
     newsize = (newsize + 7) / 8 * 8;
-    ent = realloc(enc_table.list, sizeof(*enc_table.list) * newsize);
-    if (!ent) return -1;
+    ent = xrealloc(enc_table.list, sizeof(*enc_table.list) * newsize);
     memset(ent + enc_table.size, 0, sizeof(*ent)*(newsize - enc_table.size));
     enc_table.list = ent;
     enc_table.size = newsize;
@@ -443,6 +440,9 @@ enc_replicate_with_index(const char *name, rb_encoding *origenc, int idx)
 	set_base_encoding(idx, origenc);
 	set_encoding_const(name, rb_enc_from_index(idx));
     }
+    else {
+        rb_raise(rb_eArgError, "failed to replicate encoding");
+    }
     return idx;
 }
 
@@ -555,9 +555,6 @@ rb_enc_alias(const char *alias, const char *orig)
     int idx;
 
     enc_check_duplication(alias);
-    if (!enc_table.list) {
-	rb_enc_init();
-    }
     if ((idx = rb_enc_find_index(orig)) < 0) {
 	return -1;
     }
@@ -611,10 +608,7 @@ rb_enc_init(void)
 rb_encoding *
 rb_enc_from_index(int index)
 {
-    if (!enc_table.list) {
-	rb_enc_init();
-    }
-    if (index < 0 || enc_table.count <= (index &= ENC_INDEX_MASK)) {
+    if (UNLIKELY(index < 0 || enc_table.count <= (index &= ENC_INDEX_MASK))) {
 	return 0;
     }
     return enc_table.list[index].enc;
@@ -1322,9 +1316,6 @@ enc_m_loader(VALUE klass, VALUE str)
 rb_encoding *
 rb_ascii8bit_encoding(void)
 {
-    if (!enc_table.list) {
-	rb_enc_init();
-    }
     return enc_table.list[ENCINDEX_ASCII].enc;
 }
 
@@ -1337,9 +1328,6 @@ rb_ascii8bit_encindex(void)
 rb_encoding *
 rb_utf8_encoding(void)
 {
-    if (!enc_table.list) {
-	rb_enc_init();
-    }
     return enc_table.list[ENCINDEX_UTF_8].enc;
 }
 
@@ -1352,9 +1340,6 @@ rb_utf8_encindex(void)
 rb_encoding *
 rb_usascii_encoding(void)
 {
-    if (!enc_table.list) {
-	rb_enc_init();
-    }
     return enc_table.list[ENCINDEX_US_ASCII].enc;
 }
 
@@ -1563,7 +1548,7 @@ rb_enc_default_internal(void)
  * Additionally String#encode and String#encode! use the default internal
  * encoding if no encoding is given.
  *
- * The locale encoding (__ENCODING__), not default_internal, is used as the
+ * The script encoding (__ENCODING__), not default_internal, is used as the
  * encoding of created strings.
  *
  * Encoding::default_internal is initialized by the source file's
@@ -1756,11 +1741,11 @@ rb_enc_aliases(VALUE klass)
  *   "some string".encode "ISO-8859-1"
  *   #=> "some string"
  *
- * <code>Encoding::ASCII_8BIT</code> is a special encoding that is usually
- * used for a byte string, not a character string. But as the name insists,
- * its characters in the range of ASCII are considered as ASCII characters.
- * This is useful when you use ASCII-8BIT characters with other ASCII
- * compatible characters.
+ * Encoding::ASCII_8BIT is a special encoding that is usually used for
+ * a byte string, not a character string. But as the name insists, its
+ * characters in the range of ASCII are considered as ASCII
+ * characters.  This is useful when you use ASCII-8BIT characters with
+ * other ASCII compatible characters.
  *
  * == Changing an encoding
  *
@@ -1798,11 +1783,12 @@ rb_enc_aliases(VALUE klass)
  * All Ruby script code has an associated Encoding which any String literal
  * created in the source code will be associated to.
  *
- * The default script encoding is <code>Encoding::UTF-8</code> after v2.0, but it can
- * be changed by a magic comment on the first line of the source code file (or
- * second line, if there is a shebang line on the first). The comment must
- * contain the word <code>coding</code> or <code>encoding</code>, followed
- * by a colon, space and the Encoding name or alias:
+ * The default script encoding is Encoding::UTF_8 after v2.0, but it
+ * can be changed by a magic comment on the first line of the source
+ * code file (or second line, if there is a shebang line on the
+ * first). The comment must contain the word <code>coding</code> or
+ * <code>encoding</code>, followed by a colon, space and the Encoding
+ * name or alias:
  *
  *   # encoding: UTF-8
  *
@@ -1929,6 +1915,12 @@ rb_enc_aliases(VALUE klass)
  *   "R\u00E9sum\u00E9"
  *
  */
+
+void
+Init_encodings(void)
+{
+    rb_enc_init();
+}
 
 void
 Init_Encoding(void)

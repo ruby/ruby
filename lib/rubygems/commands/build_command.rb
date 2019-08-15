@@ -18,6 +18,10 @@ class Gem::Commands::BuildCommand < Gem::Command
     add_option '-o', '--output FILE', 'output gem with the given filename' do |value, options|
       options[:output] = value
     end
+
+    add_option '-C PATH', '', 'Run as if gem build was started in <PATH> instead of the current working directory.' do |value, options|
+      options[:build_path] = value
+    end
   end
 
   def arguments # :nodoc:
@@ -60,23 +64,35 @@ Gems can be saved to a specified filename with the output option:
     end
 
     if File.exist? gemspec
-      Dir.chdir(File.dirname(gemspec)) do
-        spec = Gem::Specification.load File.basename(gemspec)
+      spec = Gem::Specification.load(gemspec)
 
-        if spec
-          Gem::Package.build(
-            spec,
-            options[:force],
-            options[:strict],
-            options[:output]
-          )
-        else
-          alert_error "Error loading gemspec. Aborting."
-          terminate_interaction 1
+      if options[:build_path]
+        Dir.chdir(File.dirname(gemspec)) do
+          spec = Gem::Specification.load File.basename(gemspec)
+          build_package(spec)
         end
+      else
+        build_package(spec)
       end
+
     else
       alert_error "Gemspec file not found: #{gemspec}"
+      terminate_interaction 1
+    end
+  end
+
+  private
+
+  def build_package(spec)
+    if spec
+      Gem::Package.build(
+        spec,
+        options[:force],
+        options[:strict],
+        options[:output]
+      )
+    else
+      alert_error "Error loading gemspec. Aborting."
       terminate_interaction 1
     end
   end

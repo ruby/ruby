@@ -99,7 +99,7 @@ If no gems are named all gems in GEM_HOME are cleaned.
     @full = Gem::DependencyList.from_specs
 
     deplist = Gem::DependencyList.new
-    @gems_to_cleanup.each do |spec| deplist.add spec end
+    @gems_to_cleanup.each { |spec| deplist.add spec }
 
     deps = deplist.strongly_connected_components.flatten
 
@@ -121,19 +121,19 @@ If no gems are named all gems in GEM_HOME are cleaned.
   end
 
   def get_gems_to_cleanup
-    gems_to_cleanup = @candidate_gems.select { |spec|
+    gems_to_cleanup = @candidate_gems.select do |spec|
       @primary_gems[spec.name].version != spec.version
-    }
+    end
 
-    default_gems, gems_to_cleanup = gems_to_cleanup.partition { |spec|
+    default_gems, gems_to_cleanup = gems_to_cleanup.partition do |spec|
       spec.default_gem?
-    }
+    end
 
     uninstall_from = options[:user_install] ? Gem.user_dir : @original_home
 
-    gems_to_cleanup = gems_to_cleanup.select { |spec|
+    gems_to_cleanup = gems_to_cleanup.select do |spec|
       spec.base_dir == uninstall_from
-    }
+    end
 
     @default_gems += default_gems
     @default_gems.uniq!

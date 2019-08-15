@@ -22,7 +22,7 @@ describe "Net::FTP#quit" do
     @ftp.last_response.should == "221 OK, bye\n"
   end
 
-  it "does not close the socket automagically" do
+  it "does not close the socket automatically" do
     @ftp.quit
     @ftp.closed?.should be_false
   end

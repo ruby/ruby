@@ -11,6 +11,8 @@ IMAGE_HEIGHT = 256
 NSUBSAMPLES = 2
 NAO_SAMPLES = 8
 
+srand(0)
+
 class Vec
   def initialize(x, y, z)
     @x = x
@@ -280,14 +282,14 @@ end
 
 alias printf_orig printf
 def printf *args
+  # $fp.printf(*args)
 end
 
-srand(0)
-
 # File.open("ao.ppm", "w") do |fp|
+  # $fp = fp
   printf("P6\n")
   printf("%d %d\n", IMAGE_WIDTH, IMAGE_HEIGHT)
-  printf("255\n", IMAGE_WIDTH, IMAGE_HEIGHT)
+  printf("255\n")
   Scene.new.render(IMAGE_WIDTH, IMAGE_HEIGHT, NSUBSAMPLES)
 # end
 

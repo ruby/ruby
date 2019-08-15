@@ -173,7 +173,9 @@ class TestGemResolverInstallerSet < Gem::TestCase
   def test_load_spec
     specs = spec_fetcher do |fetcher|
       fetcher.spec 'a', 2
-      fetcher.spec 'a', 2 do |s| s.platform = Gem::Platform.local end
+      fetcher.spec 'a', 2 do |s|
+        s.platform = Gem::Platform.local
+      end
     end
 
     source = Gem::Source.new @gem_repo

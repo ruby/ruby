@@ -26,6 +26,9 @@ VALUE kernel_spec_rb_block_proc(VALUE self) {
   return rb_block_proc();
 }
 
+VALUE kernel_spec_rb_block_lambda(VALUE self) {
+  return rb_block_lambda();
+}
 
 VALUE block_call_inject(VALUE yield_value, VALUE data2) {
   /* yield_value yields the first block argument */
@@ -165,6 +168,18 @@ static VALUE kernel_spec_rb_protect_yield(VALUE self, VALUE obj, VALUE ary) {
   int status = 0;
   VALUE res = rb_protect(rb_yield, obj, &status);
   rb_ary_store(ary, 0, INT2NUM(23));
+  rb_ary_store(ary, 1, res);
+  if (status) {
+    rb_jump_tag(status);
+  }
+  return res;
+}
+
+static VALUE kernel_spec_rb_eval_string_protect(VALUE self, VALUE str, VALUE ary) {
+  int status = 0;
+  VALUE res = rb_eval_string_protect(RSTRING_PTR(str), &status);
+  rb_ary_store(ary, 0, INT2NUM(23));
+  rb_ary_store(ary, 1, res);
   if (status) {
     rb_jump_tag(status);
   }
@@ -286,6 +301,7 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_block_call_multi_arg", kernel_spec_rb_block_call_multi_arg, 1);
   rb_define_method(cls, "rb_block_call_no_func", kernel_spec_rb_block_call_no_func, 1);
   rb_define_method(cls, "rb_block_proc", kernel_spec_rb_block_proc, 0);
+  rb_define_method(cls, "rb_block_lambda", kernel_spec_rb_block_lambda, 0);
   rb_define_method(cls, "rb_frame_this_func_test", kernel_spec_rb_frame_this_func, 0);
   rb_define_method(cls, "rb_frame_this_func_test_again", kernel_spec_rb_frame_this_func, 0);
   rb_define_method(cls, "rb_ensure", kernel_spec_rb_ensure, 4);
@@ -296,6 +312,7 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_rescue", kernel_spec_rb_rescue, 4);
   rb_define_method(cls, "rb_rescue2", kernel_spec_rb_rescue2, -1);
   rb_define_method(cls, "rb_protect_yield", kernel_spec_rb_protect_yield, 2);
+  rb_define_method(cls, "rb_eval_string_protect", kernel_spec_rb_eval_string_protect, 2);
   rb_define_method(cls, "rb_catch", kernel_spec_rb_catch, 2);
   rb_define_method(cls, "rb_catch_obj", kernel_spec_rb_catch_obj, 2);
   rb_define_method(cls, "rb_sys_fail", kernel_spec_rb_sys_fail, 1);

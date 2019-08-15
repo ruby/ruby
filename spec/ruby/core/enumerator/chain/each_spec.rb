@@ -3,7 +3,7 @@ require_relative '../../enumerable/fixtures/classes'
 
 ruby_version_is "2.6" do
   describe "Enumerator::Chain#each" do
-    it "calls each on its consistuents as needed" do
+    it "calls each on its constituents as needed" do
       a = EnumerableSpecs::EachCounter.new(:a, :b)
       b = EnumerableSpecs::EachCounter.new(:c, :d)
 

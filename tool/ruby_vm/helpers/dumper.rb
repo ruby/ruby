@@ -49,8 +49,8 @@ class RubyVM::Dumper
   end
 
   def replace_pragma_line str, lineno
-    if str == "#pragma RubyVM reset source\n" then
-      return "#line #{lineno + 2} #{@file}\n"
+    if /#(\s*)pragma RubyVM reset source\n/ =~ str then
+      return "##{$1}line #{lineno + 2} #{@file}\n"
     else
       return str
     end

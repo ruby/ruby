@@ -87,6 +87,9 @@ write_warnq(VALUE out, VALUE str, const char *ptr, long len)
         const long olen = len;
         for (; len > 0; --len, ++ptr) {
             unsigned char c = *ptr;
+            switch (c) {
+              case '\n': case '\t': continue;
+            }
             if (rb_iscntrl(c)) {
                 char buf[5];
                 const char *cc = 0;
@@ -141,8 +144,6 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    write_warn(str, ": ");
 	}
 
-	if (highlight) write_warn(str, bold);
-
 	if (!NIL_P(emesg)) {
 	    einfo = RSTRING_PTR(emesg);
             elen = RSTRING_LEN(emesg);
@@ -166,9 +167,10 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    write_warn(str, "\n");
 	}
 	else {
+            /* emesg is a String instance */
 	    const char *tail = 0;
 
-	    if (emesg == Qundef && highlight) write_warn(str, bold);
+            if (highlight) write_warn(str, bold);
 	    if (RSTRING_PTR(epath)[0] == '#')
 		epath = 0;
 	    if ((tail = memchr(einfo, '\n', elen)) != 0) {
@@ -427,10 +429,9 @@ sysexit_status(VALUE err)
     rb_bug("Unknown longjmp status %d", status)
 
 static int
-error_handle(int ex)
+error_handle(rb_execution_context_t *ec, int ex)
 {
     int status = EXIT_FAILURE;
-    rb_execution_context_t *ec = GET_EC();
 
     if (rb_ec_set_raised(ec))
 	return EXIT_FAILURE;
