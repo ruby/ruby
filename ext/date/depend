@@ -2,6 +2,7 @@
 date_core.o: $(RUBY_EXTCONF_H)
 date_core.o: $(arch_hdrdir)/ruby/config.h
 date_core.o: $(hdrdir)/ruby.h
+date_core.o: $(hdrdir)/ruby/assert.h
 date_core.o: $(hdrdir)/ruby/backward.h
 date_core.o: $(hdrdir)/ruby/defines.h
 date_core.o: $(hdrdir)/ruby/encoding.h
@@ -18,6 +19,7 @@ date_core.o: date_tmx.h
 date_parse.o: $(RUBY_EXTCONF_H)
 date_parse.o: $(arch_hdrdir)/ruby/config.h
 date_parse.o: $(hdrdir)/ruby.h
+date_parse.o: $(hdrdir)/ruby/assert.h
 date_parse.o: $(hdrdir)/ruby/backward.h
 date_parse.o: $(hdrdir)/ruby/defines.h
 date_parse.o: $(hdrdir)/ruby/encoding.h
@@ -35,6 +37,7 @@ date_parse.o: zonetab.h
 date_parse.o: zonetab.list
 date_strftime.o: $(RUBY_EXTCONF_H)
 date_strftime.o: $(arch_hdrdir)/ruby/config.h
+date_strftime.o: $(hdrdir)/ruby/assert.h
 date_strftime.o: $(hdrdir)/ruby/backward.h
 date_strftime.o: $(hdrdir)/ruby/defines.h
 date_strftime.o: $(hdrdir)/ruby/intern.h
@@ -47,6 +50,7 @@ date_strftime.o: date_tmx.h
 date_strptime.o: $(RUBY_EXTCONF_H)
 date_strptime.o: $(arch_hdrdir)/ruby/config.h
 date_strptime.o: $(hdrdir)/ruby.h
+date_strptime.o: $(hdrdir)/ruby/assert.h
 date_strptime.o: $(hdrdir)/ruby/backward.h
 date_strptime.o: $(hdrdir)/ruby/defines.h
 date_strptime.o: $(hdrdir)/ruby/encoding.h

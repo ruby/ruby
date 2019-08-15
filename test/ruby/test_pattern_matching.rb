@@ -2,9 +2,7 @@
 require 'test/unit'
 
 verbose, $VERBOSE = $VERBOSE, nil # suppress "warning: Pattern matching is experimental, and the behavior may change in future versions of Ruby!"
-eval "#{<<~"begin;"}\n#{<<~'end;'}".gsub(/^.*# fix indent\n/, ''), binding, __FILE__, __LINE__+2
-begin;
-end # fix indent
+eval "\n#{<<~'END_of_GUARD'}", binding, __FILE__, __LINE__
 class TestPatternMatching < Test::Unit::TestCase
   class C
     class << self
@@ -193,12 +191,36 @@ class TestPatternMatching < Test::Unit::TestCase
   end
 
   def test_var_pattern
+    # NODE_DASGN_CURR
     assert_block do
       case [0, 1]
       in a, a
         a == 1
       end
     end
+
+    # NODE_DASGN
+    b = 0
+    assert_block do
+      case [0, 1]
+      in b, b
+        b == 1
+      end
+    end
+
+    # NODE_LASGN
+    case [0, 1]
+    in c, c
+      assert_equal(1, c)
+    else
+      flunk
+    end
+
+    assert_syntax_error(%q{
+      case 0
+      in ^a
+      end
+    }, /no such local variable/)
   end
 
   def test_literal_value_pattern
@@ -547,6 +569,20 @@ END
     end
 
     assert_block do
+      case [0]
+      in [0,]
+        true
+      end
+    end
+
+    assert_block do
+      case [0, 1]
+      in [0,]
+        true
+      end
+    end
+
+    assert_block do
       case []
       in [0, *a]
       else
@@ -624,6 +660,21 @@ END
       case [0, 1]
       in [0, *a]
         a == [1]
+      end
+    end
+
+    assert_block do
+      case [0]
+      in [0, *, 1]
+      else
+        true
+      end
+    end
+
+    assert_block do
+      case [0, 1]
+      in [0, *, 1]
+        true
       end
     end
   end
@@ -982,7 +1033,7 @@ END
     assert_block do
       case {}
       in {}
-        $keys == nil
+        C.keys == nil
       end
     end
 
@@ -1092,6 +1143,5 @@ END
     end
   end
 end
-begin # fix indent
-end;
+END_of_GUARD
 $VERBOSE = verbose

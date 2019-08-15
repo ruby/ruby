@@ -2,11 +2,11 @@
 
 module Bundler
   class Source
-    autoload :Gemspec,  "bundler/source/gemspec"
-    autoload :Git,      "bundler/source/git"
-    autoload :Metadata, "bundler/source/metadata"
-    autoload :Path,     "bundler/source/path"
-    autoload :Rubygems, "bundler/source/rubygems"
+    autoload :Gemspec,  File.expand_path("source/gemspec", __dir__)
+    autoload :Git,      File.expand_path("source/git", __dir__)
+    autoload :Metadata, File.expand_path("source/metadata", __dir__)
+    autoload :Path,     File.expand_path("source/path", __dir__)
+    autoload :Rubygems, File.expand_path("source/rubygems", __dir__)
 
     attr_accessor :dependency_names
 

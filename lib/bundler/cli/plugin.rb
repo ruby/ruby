@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/vendored_thor"
+require_relative "../vendored_thor"
 module Bundler
   class CLI::Plugin < Thor
     desc "install PLUGINS", "Install the plugin from the source"

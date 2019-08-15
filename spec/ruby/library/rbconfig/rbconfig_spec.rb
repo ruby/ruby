@@ -24,3 +24,13 @@ describe 'RbConfig::CONFIG' do
     end
   end
 end
+
+describe "RbConfig::TOPDIR" do
+  it "either returns nil (if not installed) or the prefix" do
+    if RbConfig::TOPDIR
+      RbConfig::TOPDIR.should == RbConfig::CONFIG["prefix"]
+    else
+      RbConfig::TOPDIR.should == nil
+    end
+  end
+end

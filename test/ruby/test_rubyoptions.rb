@@ -253,7 +253,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_autosplit
-    assert_in_out_err(%w(-an -F: -e) + ["p $F"], "foo:bar:baz\nqux:quux:quuux\n",
+    assert_in_out_err(%w(-W0 -an -F: -e) + ["p $F"], "foo:bar:baz\nqux:quux:quuux\n",
                       ['["foo", "bar", "baz\n"]', '["qux", "quux", "quuux\n"]'], [])
   end
 
@@ -491,14 +491,18 @@ class TestRubyOptions < Test::Unit::TestCase
           ["begin", "ensure ; end"],
           ["  case nil", "when true; end"],
           ["case nil; when true", "end"],
+          ["if false;", "end", "if true\nelse ", "end"],
+          ["else", " end", "_ = if true\n"],
         ].each do
-          |b, e = 'end'|
-          src = ["#{b}\n", " #{e}\n"]
+          |b, e = 'end', pre = nil, post = nil|
+          src = ["#{pre}#{b}\n", " #{e}\n#{post}"]
           k = b[/\A\s*(\S+)/, 1]
           e = e[/\A\s*(\S+)/, 1]
+          n = 2
+          n += pre.count("\n") if pre
 
-          a.for("no directives with #{b}") do
-            err = ["#{t.path}:2: warning: mismatched indentations at '#{e}' with '#{k}' at 1"]
+          a.for("no directives with #{src}") do
+            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n-1}"]
             t.rewind
             t.truncate(0)
             t.puts src
@@ -507,7 +511,7 @@ class TestRubyOptions < Test::Unit::TestCase
             assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err)
           end
 
-          a.for("false directive with #{b}") do
+          a.for("false directive with #{src}") do
             t.rewind
             t.truncate(0)
             t.puts "# -*- warn-indent: false -*-"
@@ -516,8 +520,8 @@ class TestRubyOptions < Test::Unit::TestCase
             assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
           end
 
-          a.for("false and true directives with #{b}") do
-            err = ["#{t.path}:4: warning: mismatched indentations at '#{e}' with '#{k}' at 3"]
+          a.for("false and true directives with #{src}") do
+            err = ["#{t.path}:#{n+2}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n+1}"]
             t.rewind
             t.truncate(0)
             t.puts "# -*- warn-indent: false -*-"
@@ -527,7 +531,7 @@ class TestRubyOptions < Test::Unit::TestCase
             assert_in_out_err(["-w", t.path], "", [], err, '[ruby-core:25442]')
           end
 
-          a.for("false directives after #{b}") do
+          a.for("false directives after #{src}") do
             t.rewind
             t.truncate(0)
             t.puts "# -*- warn-indent: true -*-"
@@ -538,8 +542,8 @@ class TestRubyOptions < Test::Unit::TestCase
             assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
           end
 
-          a.for("BOM with #{b}") do
-            err = ["#{t.path}:2: warning: mismatched indentations at '#{e}' with '#{k}' at 1"]
+          a.for("BOM with #{src}") do
+            err = ["#{t.path}:#{n}: warning: mismatched indentations at '#{e}' with '#{k}' at #{n-1}"]
             t.rewind
             t.truncate(0)
             t.print "\u{feff}"
@@ -633,7 +637,7 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_match(/hello world/, ps)
       assert_operator now, :<, stop
       Process.kill :KILL, pid
-      Timeout.timeout(5) { Process.wait(pid) }
+      EnvUtil.timeout(5) { Process.wait(pid) }
     end
   end
 
@@ -791,7 +795,7 @@ class TestRubyOptions < Test::Unit::TestCase
           pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
           w.close
           assert_nothing_raised('[ruby-dev:37798]') do
-            result = Timeout.timeout(3) {r.read}
+            result = EnvUtil.timeout(3) {r.read}
           end
           Process.wait pid
         }
@@ -988,7 +992,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_frozen_string_literal_debug
     with_debug_pat = /created at/
-    wo_debug_pat = /can\'t modify frozen String \(FrozenError\)\n\z/
+    wo_debug_pat = /can\'t modify frozen String: "\w+" \(FrozenError\)\n\z/
     frozen = [
       ["--enable-frozen-string-literal", true],
       ["--disable-frozen-string-literal", false],

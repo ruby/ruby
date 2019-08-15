@@ -7,8 +7,8 @@ require 'fileutils'
 require 'shellwords'
 require 'tmpdir'
 require 'pathname'
-require File.expand_path("../vcs", __FILE__)
-require File.expand_path("../colorize", __FILE__)
+require File.expand_path("../lib/vcs", __FILE__)
+require File.expand_path("../lib/colorize", __FILE__)
 STDOUT.sync = true
 
 $srcdir ||= nil
@@ -42,7 +42,7 @@ options:
   -s3=PATH              s3 bucket path(default=tmp)
   -help, --help         show this message
 version:
-  trunk, stable, branches/*, tags/*, X.Y, X.Y.Z, X.Y.Z-pL
+  master, trunk, stable, branches/*, tags/*, X.Y, X.Y.Z, X.Y.Z-pL
 each versions may be followed by optional @revision.
 USAGE
 end
@@ -70,7 +70,8 @@ if mflags = ENV["GNUMAKEFLAGS"] and /\A-(\S*)j\d*/ =~ mflags
 end
 ENV["LC_ALL"] = ENV["LANG"] = "C"
 SVNURL = URI.parse("https://svn.ruby-lang.org/repos/ruby/")
-GITURL = URI.parse("https://git.ruby-lang.org/ruby.git")
+# https git clone is disabled at git.ruby-lang.org/ruby.git.
+GITURL = URI.parse("https://github.com/ruby/ruby.git")
 RUBY_VERSION_PATTERN = /^\#define\s+RUBY_VERSION\s+"([\d.]+)"/
 
 ENV["VPATH"] ||= "include/ruby"
@@ -143,7 +144,7 @@ end
 unless destdir = ARGV.shift
   abort usage
 end
-revisions = ARGV.empty? ? ["trunk"] : ARGV
+revisions = ARGV.empty? ? [nil] : ARGV
 unless tmp = $exported
   FileUtils.mkpath(destdir)
   destdir = File.expand_path(destdir)
@@ -201,11 +202,13 @@ end
 def package(vcs, rev, destdir, tmp = nil)
   patchlevel = false
   prerelease = false
-  if revision = rev[/@(\d+)\z/, 1]
+  if rev and revision = rev[/@(\d+)\z/, 1]
     rev = $`
   end
   case rev
-  when /\Atrunk\z/
+  when nil
+    url = nil
+  when /\A(?:master|trunk)\z/
     url = vcs.trunk
   when /\Abranches\//
     url = vcs.branch($')
@@ -234,7 +237,10 @@ def package(vcs, rev, destdir, tmp = nil)
     warn "#{$0}: unknown version - #{rev}"
     return
   end
-  revision ||= vcs.get_revisions(url)[1]
+  if !revision and revision = vcs.get_revisions(url)
+    url ||= vcs.branch(revision[3])
+    revision = revision[0]
+  end
   version = nil
   unless revision
     url = vcs.trunk
@@ -243,7 +249,7 @@ def package(vcs, rev, destdir, tmp = nil)
       warn "#{$0}: #{rev} not found"
       return
     end
-    revision = vcs.get_revisions(url)[1]
+    revision = vcs.get_revisions(url)[0]
   end
   v = nil
   if $exported
@@ -286,7 +292,13 @@ def package(vcs, rev, destdir, tmp = nil)
     v = v[0]
   end
 
-  open("#{v}/revision.h", "wb") {|f| f.puts "#define RUBY_REVISION #{revision}"}
+  open("#{v}/revision.h", "wb") {|f|
+    short = vcs.short_revision(revision)
+    f.puts "#define RUBY_REVISION #{short.inspect}"
+    unless short == revision
+      f.puts "#define RUBY_FULL_REVISION #{revision.inspect}"
+    end
+  }
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
   version ||=
     begin
@@ -301,14 +313,14 @@ def package(vcs, rev, destdir, tmp = nil)
     unless tag.empty?
       versionhdr ||= IO.read("#{v}/version.h")
       patchlevel = versionhdr[/^\#define\s+RUBY_PATCHLEVEL\s+(\d+)/, 1]
-      tag = (patchlevel ? "p#{patchlevel}" : "r#{revision}")
+      tag = (patchlevel ? "p#{patchlevel}" : vcs.revision_name(revision))
     end
   elsif prerelease
     versionhdr ||= IO.read("#{v}/version.h")
     versionhdr.sub!(/^\#define\s+RUBY_PATCHLEVEL_STR\s+"\K.+?(?=")/, tag)
     IO.write("#{v}/version.h", versionhdr)
   else
-    tag ||= "r#{revision}"
+    tag ||= vcs.revision_name(revision)
   end
   unless v == $exported
     if $archname
@@ -338,15 +350,7 @@ def package(vcs, rev, destdir, tmp = nil)
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
     unless File.exist?("ChangeLog")
-      # get last revision from previous ChangeLog archive
-      last_ChangeLog = Dir["doc/ChangeLog-*"].grep(/-(\d+)\z/) {|n| [$1.to_i, n]}.max[1]
-      open(last_ChangeLog) do |f|
-        f.readline
-        unless /\Ar(\d+) / =~ f.readline
-          abort "#{File.basename $0}: Cannot find revision from '#{last_ChangeLog}'"
-        end
-        vcs.export_changelog(url, $1.to_i, revision.to_i, "ChangeLog")
-      end
+      vcs.export_changelog(url, nil, revision, "ChangeLog")
     end
 
     File.open(clean.add("cross.rb"), "w") do |f|
@@ -386,7 +390,8 @@ def package(vcs, rev, destdir, tmp = nil)
       File.open("#{defaults}/ruby.rb", "w") {}
       miniruby = ENV['MINIRUBY'] + " -I. -I#{extout} -rcross"
       baseruby = ENV["BASERUBY"]
-      mk = IO.read("Makefile.in").gsub(/^@.*\n/, '')
+      mk = (IO.read("template/Makefile.in") rescue IO.read("Makefile.in")).
+             gsub(/^@.*\n/, '')
       vars = {
         "EXTOUT"=>extout,
         "PATH_SEPARATOR"=>File::PATH_SEPARATOR,
@@ -409,13 +414,15 @@ def package(vcs, rev, destdir, tmp = nil)
       mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "")
       mk << <<-'APPEND'
 
+prepare-package: touch-unicode-files
 prepare-package: prereq update-download clean-cache $(CLEAN_CACHE)
 clean-cache $(CLEAN_CACHE): after-update
 update-download:: update-gems
 after-update:: extract-gems
 extract-gems: update-gems
 update-gems:
-$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: update-unicode
+$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time:
+touch-unicode-files:
       APPEND
       open(clean.add("Makefile"), "w") do |f|
         f.puts mk

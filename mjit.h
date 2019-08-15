@@ -72,7 +72,7 @@ RUBY_EXTERN struct mjit_options mjit_opts;
 RUBY_EXTERN bool mjit_call_p;
 
 extern void rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq);
-extern VALUE mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body);
+extern VALUE rb_mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body);
 extern struct rb_mjit_compile_info* rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body);
 extern void rb_mjit_recompile_iseq(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
@@ -82,8 +82,9 @@ extern void mjit_init(struct mjit_options *opts);
 extern void mjit_postponed_job_register_start_hook(void);
 extern void mjit_postponed_job_register_finish_hook(void);
 extern void mjit_gc_start_hook(void);
-extern void mjit_gc_finish_hook(void);
+extern void mjit_gc_exit_hook(void);
 extern void mjit_free_iseq(const rb_iseq_t *iseq);
+extern void mjit_update_references(const rb_iseq_t *iseq);
 extern void mjit_mark(void);
 extern struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec);
 extern void mjit_cont_free(struct mjit_cont *cont);
@@ -134,7 +135,7 @@ mjit_exec(rb_execution_context_t *ec)
                 RB_DEBUG_COUNTER_INC(mjit_exec_not_added_add_iseq);
                 rb_mjit_add_iseq_to_process(iseq);
                 if (UNLIKELY(mjit_opts.wait)) {
-                    return mjit_wait_call(ec, body);
+                    return rb_mjit_wait_call(ec, body);
                 }
             }
             return Qundef;
@@ -166,7 +167,7 @@ static inline void mjit_cont_free(struct mjit_cont *cont){}
 static inline void mjit_postponed_job_register_start_hook(void){}
 static inline void mjit_postponed_job_register_finish_hook(void){}
 static inline void mjit_gc_start_hook(void){}
-static inline void mjit_gc_finish_hook(void){}
+static inline void mjit_gc_exit_hook(void){}
 static inline void mjit_free_iseq(const rb_iseq_t *iseq){}
 static inline void mjit_mark(void){}
 static inline void mjit_add_class_serial(rb_serial_t class_serial){}

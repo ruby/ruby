@@ -12,6 +12,8 @@
 #include "ruby/ruby.h"
 #include "vm_core.h"
 
+#define NODE_BUF_DEFAULT_LEN 16
+
 #define A(str) rb_str_cat2(buf, (str))
 #define AR(str) rb_str_concat(buf, (str))
 
@@ -92,7 +94,7 @@ add_id(VALUE buf, ID id)
 	    A(":"); AR(str);
 	}
 	else {
-	    A("(internal variable)");
+            rb_str_catf(buf, "(internal variable: 0x%"PRIsVALUE")", id);
 	}
     }
 }
@@ -218,7 +220,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("in clause");
         ANN("format: in [nd_head]; [nd_body]; (in or else) [nd_next]");
         ANN("example: case x; in 1; foo; in 2; bar; else baz; end");
-        F_NODE(nd_head, "in value");
+        F_NODE(nd_head, "in pattern");
         F_NODE(nd_body, "in body");
         LAST_NODE;
         F_NODE(nd_next, "next in clause");
@@ -1010,7 +1012,14 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	F_INT(nd_ainfo->post_args_num, "count of mandatory post-arguments");
 	F_NODE(nd_ainfo->post_init, "initialization of post-arguments");
 	F_ID(nd_ainfo->first_post_arg, "first post argument");
-	F_ID(nd_ainfo->rest_arg, "rest argument");
+        F_CUSTOM1(nd_ainfo->rest_arg, "rest argument") {
+            if (node->nd_ainfo->rest_arg == NODE_SPECIAL_EXCESSIVE_COMMA) {
+                A("1 (excessed comma)");
+            }
+            else {
+                A_ID(node->nd_ainfo->rest_arg);
+            }
+        }
 	F_ID(nd_ainfo->block_arg, "block argument");
 	F_NODE(nd_ainfo->opt_args, "optional arguments");
 	F_NODE(nd_ainfo->kw_args, "keyword arguments");
@@ -1040,7 +1049,12 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: [nd_pconst]([pre_args], ..., *[rest_arg], [post_args], ...)");
         F_NODE(nd_pconst, "constant");
         F_NODE(nd_apinfo->pre_args, "pre arguments");
-        F_NODE(nd_apinfo->rest_arg, "rest argument");
+        if (NODE_NAMED_REST_P(node->nd_apinfo->rest_arg)) {
+            F_NODE(nd_apinfo->rest_arg, "rest argument");
+        }
+        else {
+            F_MSG(nd_apinfo->rest_arg, "rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
+        }
         LAST_NODE;
         F_NODE(nd_apinfo->post_args, "post arguments");
         return;
@@ -1110,9 +1124,9 @@ struct node_buffer_struct {
 static node_buffer_t *
 rb_node_buffer_new(void)
 {
-    node_buffer_t *nb = xmalloc(sizeof(node_buffer_t) + offsetof(node_buffer_elem_t, buf) + 16 * sizeof(NODE));
+    node_buffer_t *nb = xmalloc(sizeof(node_buffer_t) + offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE));
     nb->idx = 0;
-    nb->len = 16;
+    nb->len = NODE_BUF_DEFAULT_LEN;
     nb->head = nb->last = (node_buffer_elem_t*) &nb[1];
     nb->head->next = NULL;
     nb->mark_ary = rb_ary_tmp_new(0);
@@ -1179,6 +1193,23 @@ rb_ast_free(rb_ast_t *ast)
 	rb_node_buffer_free(ast->node_buffer);
 	ast->node_buffer = 0;
     }
+}
+
+size_t
+rb_ast_memsize(const rb_ast_t *ast)
+{
+    size_t size = 0;
+    node_buffer_t *nb = ast->node_buffer;
+
+    if (nb) {
+        size += sizeof(node_buffer_t) + offsetof(node_buffer_elem_t, buf) + NODE_BUF_DEFAULT_LEN * sizeof(NODE);
+        node_buffer_elem_t *nbe = nb->head;
+        while (nbe != nb->last) {
+            nbe = nbe->next;
+            size += offsetof(node_buffer_elem_t, buf) + nb->len * sizeof(NODE);
+        }
+    }
+    return size;
 }
 
 void

@@ -12,7 +12,7 @@ describe "Method#parameters" do
     def one_splat_two_req(*a,b,c); end
     def one_splat_one_req_with_block(*a,b,&blk); end
 
-    def one_opt_with_stabby(a=->(b){true}); end
+    def one_opt_with_stabby(a=-> b { true }); end
 
     def one_unnamed_splat(*); end
 
@@ -243,17 +243,19 @@ describe "Method#parameters" do
   end
 
   it "returns [[:rest]] for core methods with variable-length argument lists" do
-    m = "foo"
+    # delete! takes rest args
+    "foo".method(:delete!).parameters.should == [[:rest]]
+  end
 
-    # match takes rest args
-    m.method(:match).parameters.should == [[:rest]]
-
-    # [] takes 1 to 3 args
-    m.method(:[]).parameters.should == [[:rest]]
+  it "returns [[:rest]] or [[:opt]] for core methods with optional arguments" do
+    # pop takes 1 optional argument
+    [
+      [[:rest]],
+      [[:opt]]
+    ].should include([].method(:pop).parameters)
   end
 
   it "returns [[:req]] for each parameter for core methods with fixed-length argument lists" do
-    m = "foo"
-    m.method(:+).parameters.should == [[:req]]
+    "foo".method(:+).parameters.should == [[:req]]
   end
 end
