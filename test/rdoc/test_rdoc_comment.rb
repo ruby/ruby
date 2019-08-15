@@ -294,7 +294,7 @@ lines, one line per element. Lines are assumed to be separated by _sep_.
     c = RDoc::Comment.new nil, @top_level
     c.document = @RM::Document.new
 
-    e = assert_raises RDoc::Error do
+    e = assert_raise RDoc::Error do
       c.text = 'other'
     end
 
