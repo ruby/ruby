@@ -4,7 +4,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "scanf"
   spec.version       = "1.0.0"
-  spec.date          = '2017-12-11'
   spec.authors       = ["David Alan Black"]
   spec.email         = ['dblack@superlink.net']
 

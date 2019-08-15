@@ -1,3 +1,5 @@
+set startup-with-shell off
+
 define hook-run
   set $color_type = 0
   set $color_highlite = 0
@@ -154,8 +156,12 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_HASH
     printf "%sT_HASH%s: ", $color_type, $color_end,
-    if ((struct RHash *)($arg0))->ntbl
-      printf "len=%ld ", ((struct RHash *)($arg0))->ntbl->num_entries
+    if (((struct RHash *)($arg0))->basic->flags & RHASH_ST_TABLE_FLAG)
+      printf "st len=%ld ", ((struct RHash *)($arg0))->as.st->num_entries
+    else
+      printf "li len=%ld bound=%ld ", \
+        ((((struct RHash *)($arg0))->basic->flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT), \
+        ((((struct RHash *)($arg0))->basic->flags & RHASH_AR_TABLE_BOUND_MASK) >> RHASH_AR_TABLE_BOUND_SHIFT)
     end
     print (struct RHash *)($arg0)
   else
@@ -698,12 +704,6 @@ define nd_cval
   rp ($arg0).u3.value
 end
 
-
-define nd_cnt
-  printf "%su3.cnt%s: ", $color_highlite, $color_end
-  p ($arg0).u3.cnt
-end
-
 define nd_tbl
   printf "%su1.tbl%s: ", $color_highlite, $color_end
   p ($arg0).u1.tbl
@@ -742,12 +742,6 @@ define nd_lit
   rp ($arg0).u1.value
 end
 
-
-define nd_frml
-  printf "%su1.node%s: ", $color_highlite, $color_end
-  rp ($arg0).u1.node
-end
-
 define nd_rest
   printf "%su2.argc%s: ", $color_highlite, $color_end
   p ($arg0).u2.argc
@@ -774,12 +768,6 @@ define nd_args
   rp ($arg0).u3.node
 end
 
-
-define nd_noex
-  printf "%su1.id%s: ", $color_highlite, $color_end
-  p ($arg0).u1.id
-end
-
 define nd_defn
   printf "%su3.node%s: ", $color_highlite, $color_end
   rp ($arg0).u3.node
@@ -794,17 +782,6 @@ end
 define nd_new
   printf "%su2.id%s: ", $color_highlite, $color_end
   p ($arg0).u2.id
-end
-
-
-define nd_cfnc
-  printf "%su1.cfunc%s: ", $color_highlite, $color_end
-  p ($arg0).u1.cfunc
-end
-
-define nd_argc
-  printf "%su2.argc%s: ", $color_highlite, $color_end
-  p ($arg0).u2.argc
 end
 
 
@@ -1096,9 +1073,9 @@ define print_id
   else
     set $serial = (rb_id_serial_t)$id
   end
-  if $serial && $serial <= global_symbols.last_id
+  if $serial && $serial <= ruby_global_symbols.last_id
     set $idx = $serial / ID_ENTRY_UNIT
-    set $ids = (struct RArray *)global_symbols.ids
+    set $ids = (struct RArray *)ruby_global_symbols.ids
     set $flags = $ids->basic.flags
     if ($flags & RUBY_FL_USER1)
       set $idsptr = $ids->as.ary
@@ -1335,4 +1312,35 @@ define dump_node
   printf "%s", (char *)(($flags & RUBY_FL_USER1) ? \
                         ((struct RString*)$str)->as.heap.ptr : \
                         ((struct RString*)$str)->as.ary)
+end
+
+define print_flags
+  printf "RUBY_FL_WB_PROTECTED: %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_WB_PROTECTED ? "1" : "0"
+  printf "RUBY_FL_PROMOTED0   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED0 ? "1" : "0"
+  printf "RUBY_FL_PROMOTED1   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED1 ? "1" : "0"
+  printf "RUBY_FL_FINALIZE    : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_FINALIZE ? "1" : "0"
+  printf "RUBY_FL_TAINT       : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_TAINT ? "1" : "0"
+  printf "RUBY_FL_UNTRUSTED   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_UNTRUSTED ? "1" : "0"
+  printf "RUBY_FL_EXIVAR      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_EXIVAR ? "1" : "0"
+  printf "RUBY_FL_FREEZE      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_FREEZE ? "1" : "0"
+
+  printf "RUBY_FL_USER0       : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER0 ? "1" : "0"
+  printf "RUBY_FL_USER1       : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER1 ? "1" : "0"
+  printf "RUBY_FL_USER2       : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER2 ? "1" : "0"
+  printf "RUBY_FL_USER3       : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER3 ? "1" : "0"
+  printf "RUBY_FL_USER4       : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER4 ? "1" : "0"
+  printf "RUBY_FL_USER5       : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER5 ? "1" : "0"
+  printf "RUBY_FL_USER6       : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER6 ? "1" : "0"
+  printf "RUBY_FL_USER7       : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER7 ? "1" : "0"
+  printf "RUBY_FL_USER8       : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER8 ? "1" : "0"
+  printf "RUBY_FL_USER9       : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER9 ? "1" : "0"
+  printf "RUBY_FL_USER10      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER10 ? "1" : "0"
+  printf "RUBY_FL_USER11      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER11 ? "1" : "0"
+  printf "RUBY_FL_USER12      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER12 ? "1" : "0"
+  printf "RUBY_FL_USER13      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER13 ? "1" : "0"
+  printf "RUBY_FL_USER14      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER14 ? "1" : "0"
+  printf "RUBY_FL_USER15      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER15 ? "1" : "0"
+  printf "RUBY_FL_USER16      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER16 ? "1" : "0"
+  printf "RUBY_FL_USER17      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER17 ? "1" : "0"
+  printf "RUBY_FL_USER18      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_USER18 ? "1" : "0"
 end

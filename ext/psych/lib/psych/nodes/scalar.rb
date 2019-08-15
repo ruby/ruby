@@ -63,6 +63,8 @@ module Psych
         @quoted = quoted
         @style  = style
       end
+
+      def scalar?; true; end
     end
   end
 end

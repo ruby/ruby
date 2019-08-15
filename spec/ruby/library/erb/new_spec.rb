@@ -31,8 +31,16 @@ END
 
   it "compiles eRuby script into ruby code when trim mode is 0 or not specified" do
     expected = "<ul>\n\n\n\n<li>1</li>\n\n\n\n<li>2</li>\n\n\n\n<li>3</li>\n\n\n</ul>\n"
-    [0, '', nil].each do |trim_mode|
+    [0, nil].each do |trim_mode|
       ERBSpecs.new_erb(@eruby_str, trim_mode: trim_mode).result.should == expected
+    end
+  end
+
+  ruby_version_is "2.6" do
+    it "warns invalid trim_mode" do
+      -> do
+        ERBSpecs.new_erb(@eruby_str, trim_mode: '')
+      end.should complain(/Invalid ERB trim mode/)
     end
   end
 
@@ -75,7 +83,7 @@ END
 </p>
 END
 
-    lambda {
+    -> {
       ERBSpecs.new_erb(input, trim_mode: '-').result
     }.should raise_error(SyntaxError)
   end
@@ -135,6 +143,6 @@ END
 
   it "forget local variables defined previous one" do
     ERB.new(@eruby_str).result
-    lambda{ ERB.new("<%= list %>").result }.should raise_error(NameError)
+    ->{ ERB.new("<%= list %>").result }.should raise_error(NameError)
   end
 end

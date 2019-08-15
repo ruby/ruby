@@ -1,5 +1,4 @@
-require_relative '../../../spec_helper'
-require 'socket'
+require_relative '../spec_helper'
 
 describe "Socket::BasicSocket#ioctl" do
   platform_is :linux do

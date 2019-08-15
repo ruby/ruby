@@ -52,4 +52,3 @@ describe "BigDecimal#to_f" do
     @zero_neg.to_f.to_s.should == "-0.0"
   end
 end
-

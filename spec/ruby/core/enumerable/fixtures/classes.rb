@@ -118,7 +118,7 @@ module EnumerableSpecs
     end
   end
 
-  class ArrayConvertable
+  class ArrayConvertible
     attr_accessor :called
     def initialize(*values)
       @values = values
@@ -135,7 +135,7 @@ module EnumerableSpecs
     end
   end
 
-  class EnumConvertable
+  class EnumConvertible
     attr_accessor :called
     attr_accessor :sym
     def initialize(delegate)
@@ -326,6 +326,20 @@ module EnumerableSpecs
 
     def map(&block)
       EnumerableMapping.new(self, block)
+    end
+  end
+
+  class Pattern
+    attr_reader :yielded
+
+    def initialize(&block)
+      @block = block
+      @yielded = []
+    end
+
+    def ===(*args)
+      @yielded << args
+      @block.call(*args)
     end
   end
 end # EnumerableSpecs utility classes

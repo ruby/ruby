@@ -175,16 +175,17 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
 {
     int ret;
     static int cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
+    static const int default_flags = SOCK_CLOEXEC|RSOCK_NONBLOCK_DEFAULT;
 
     if (cloexec_state > 0) { /* common path, if SOCK_CLOEXEC is defined */
-        ret = socketpair(domain, type|SOCK_CLOEXEC, protocol, sv);
+        ret = socketpair(domain, type|default_flags, protocol, sv);
         if (ret == 0 && (sv[0] <= 2 || sv[1] <= 2)) {
             goto fix_cloexec; /* highly unlikely */
         }
         goto update_max_fd;
     }
     else if (cloexec_state < 0) { /* usually runs once only for detection */
-        ret = socketpair(domain, type|SOCK_CLOEXEC, protocol, sv);
+        ret = socketpair(domain, type|default_flags, protocol, sv);
         if (ret == 0) {
             cloexec_state = rsock_detect_cloexec(sv[0]);
             if ((cloexec_state == 0) || (sv[0] <= 2 || sv[1] <= 2))
@@ -213,6 +214,10 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
 fix_cloexec:
     rb_maygvl_fd_fix_cloexec(sv[0]);
     rb_maygvl_fd_fix_cloexec(sv[1]);
+    if (RSOCK_NONBLOCK_DEFAULT) {
+        rsock_make_fd_nonblock(sv[0]);
+        rsock_make_fd_nonblock(sv[1]);
+    }
 
 update_max_fd:
     rb_update_max_fd(sv[0]);
@@ -231,6 +236,10 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
 
     rb_fd_fix_cloexec(sv[0]);
     rb_fd_fix_cloexec(sv[1]);
+    if (RSOCK_NONBLOCK_DEFAULT) {
+        rsock_make_fd_nonblock(sv[0]);
+        rsock_make_fd_nonblock(sv[1]);
+    }
     return ret;
 }
 #endif /* !SOCK_CLOEXEC */
@@ -1381,7 +1390,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     errno = saved_errno;
     rsock_raise_socket_error("getnameinfo", error);
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 /*

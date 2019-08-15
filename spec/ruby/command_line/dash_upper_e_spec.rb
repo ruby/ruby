@@ -1,3 +1,5 @@
+require_relative '../spec_helper'
+
 describe "ruby -E" do
   it "sets the external encoding with '-E external'" do
     result = ruby_exe("print Encoding.default_external", options: '-E euc-jp')

@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/set_like'
 require 'set'
 
 describe "Set#==" do
@@ -22,5 +23,11 @@ describe "Set#==" do
     set1 = Set[Set["a", "b"], Set["c", "d"], Set["e", "f"]]
     set2 = Set[Set["c", "d"], Set["a", "b"], Set["e", "f"]]
     set1.should == set2
+  end
+
+  context "when comparing to a Set-like object" do
+    it "returns true when a Set and a Set-like object contain the same elements" do
+      Set[1, 2, 3].should == SetSpecs::SetLike.new([1, 2, 3])
+    end
   end
 end

@@ -1,10 +1,11 @@
+# frozen_string_literal: true
 # coding: utf-8
 lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "ipaddr"
-  spec.version       = "1.2.0"
+  spec.version       = "1.2.2"
   spec.authors       = ["Akinori MUSHA", "Hajimu UMEMOTO"]
   spec.email         = ["knu@idaemons.org", "ume@mahoroba.org"]
 
@@ -14,6 +15,7 @@ IPAddr provides a set of methods to manipulate an IP address.
 Both IPv4 and IPv6 are supported.
   DESCRIPTION
   spec.homepage      = "https://github.com/ruby/ipaddr"
+  spec.license       = "BSD-2-Clause"
 
   spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "ipaddr.gemspec", "lib/ipaddr.rb"]
   spec.bindir        = "exe"

@@ -68,8 +68,17 @@ class CApiClassSpecs
 
   class SubSub < Sub
     def call_super_method
-      :subclass_method
+      :subsubclass_method
     end
+  end
+
+  class SuperSelf
+    def call_super_method
+      self
+    end
+  end
+
+  class SubSelf < SuperSelf
   end
 
   class A

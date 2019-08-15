@@ -105,7 +105,7 @@ module Psych
     #   - first element
     #   - *ponies
     #
-    # &ponies is the achor, *ponies is the alias.  In this case, alias is
+    # &ponies is the anchor, *ponies is the alias.  In this case, alias is
     # called with "ponies".
     def alias anchor
     end

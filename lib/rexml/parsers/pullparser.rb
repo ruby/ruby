@@ -1,9 +1,9 @@
 # frozen_string_literal: false
 require 'forwardable'
 
-require 'rexml/parseexception'
-require 'rexml/parsers/baseparser'
-require 'rexml/xmltokens'
+require_relative '../parseexception'
+require_relative 'baseparser'
+require_relative '../xmltokens'
 
 module REXML
   module Parsers

@@ -36,4 +36,31 @@ describe "C-API Enumerator function" do
       enumerator.each {}
     end
   end
+
+  describe "rb_enumeratorize_with_size" do
+
+    it "enumerates the given object" do
+      enumerator = @s.rb_enumeratorize_with_size(@enumerable, :each)
+      enumerated = []
+      enumerator.each { |i| enumerated << i }
+      enumerated.should == @enumerable
+    end
+
+    it "uses the given method for enumeration" do
+      enumerator = @s.rb_enumeratorize_with_size(@enumerable, :awesome_each)
+      @enumerable.should_receive(:awesome_each)
+      enumerator.each {}
+    end
+
+    it "passes the given arguments to the enumeration method" do
+      enumerator = @s.rb_enumeratorize_with_size(@enumerable, :each, :arg1, :arg2)
+      @enumerable.should_receive(:each).with(:arg1, :arg2)
+      enumerator.each {}
+    end
+
+    it "uses the size function to report the size" do
+      enumerator = @s.rb_enumeratorize_with_size(@enumerable, :each, :arg1, :arg2)
+      enumerator.size.should == 7
+    end
+  end
 end

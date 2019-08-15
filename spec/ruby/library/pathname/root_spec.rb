@@ -24,4 +24,3 @@ describe "Pathname#root?" do
   end
 
 end
-

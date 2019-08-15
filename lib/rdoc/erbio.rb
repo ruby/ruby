@@ -9,7 +9,7 @@ require 'erb'
 #
 #   erbio = RDoc::ERBIO.new '<%= "hello world" %>', nil, nil
 #
-#   open 'hello.txt', 'w' do |io|
+#   File.open 'hello.txt', 'w' do |io|
 #     erbio.result binding
 #   end
 #

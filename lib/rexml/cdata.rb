@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require "rexml/text"
+require_relative "text"
 
 module REXML
   class CData < Text

@@ -1,5 +1,5 @@
-require "#{File.dirname(__FILE__)}/../../spec_helper"
-require "#{File.dirname(__FILE__)}/fixtures/file_types"
+require_relative '../../spec_helper'
+require_relative 'fixtures/file_types'
 
 describe "File.ftype" do
   before :all do
@@ -7,12 +7,12 @@ describe "File.ftype" do
   end
 
   it "raises ArgumentError if not given exactly one filename" do
-    lambda { File.ftype }.should raise_error(ArgumentError)
-    lambda { File.ftype('blah', 'bleh') }.should raise_error(ArgumentError)
+    -> { File.ftype }.should raise_error(ArgumentError)
+    -> { File.ftype('blah', 'bleh') }.should raise_error(ArgumentError)
   end
 
   it "raises Errno::ENOENT if the file is not valid" do
-    l = lambda { File.ftype("/#{$$}#{Time.now.to_f}") }
+    l = -> { File.ftype("/#{$$}#{Time.now.to_f}") }
     l.should raise_error(Errno::ENOENT)
   end
 

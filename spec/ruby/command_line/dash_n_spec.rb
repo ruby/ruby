@@ -1,3 +1,5 @@
+require_relative '../spec_helper'
+
 describe "The -n command line option" do
   before :each do
     @names  = fixture __FILE__, "names.txt"

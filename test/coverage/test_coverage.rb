@@ -127,15 +127,6 @@ class TestCoverage < Test::Unit::TestCase
     }
   end
 
-  def test_nonpositive_linenumber
-    bug12517 = '[ruby-core:76141] [Bug #12517]'
-    assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ['{"<compiled>"=>[nil]}'], [], bug12517)
-      Coverage.start
-      RubyVM::InstructionSequence.compile(":ok", nil, "<compiled>", 0)
-      p Coverage.result
-    end;
-  end
-
   def test_eval
     bug13305 = '[ruby-core:80079] [Bug #13305]'
 
@@ -176,6 +167,20 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_coverage_optimized_branch
+    result = {
+      :branches => {
+        [:"&.", 0, 1, 0, 1, 8] => {
+          [:then, 1, 1, 0, 1, 8] => 0,
+          [:else, 2, 1, 0, 1, 8] => 1,
+        },
+      },
+    }
+    assert_coverage(<<~"end;", { branches: true }, result) # Bug #15476
+      nil&.foo
+    end;
+  end
+
   def assert_coverage(code, opt, stdout)
     stdout = [stdout] unless stdout.is_a?(Array)
     stdout = stdout.map {|s| s.to_s }
@@ -203,7 +208,7 @@ class TestCoverage < Test::Unit::TestCase
 
   def test_line_coverage_for_multiple_lines
     result = {
-      :lines => [1, nil, nil, nil, nil, nil, 1, nil, 1, nil, nil, nil, nil, nil, 1, nil, 1, 1, 1, nil, nil, nil, nil, nil, 1]
+      :lines => [nil, 1, nil, nil, nil, 1, nil, nil, nil, 1, nil, 1, nil, nil, nil, nil, 1, 1, nil, 1, nil, nil, nil, nil, 1]
     }
     assert_coverage(<<~"end;", { lines: true }, result) # Bug #14191
       FOO = [
@@ -354,18 +359,57 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_branch_coverage_for_pattern_matching
+    result = {
+      :branches=> {
+        [:case, 0,  3, 4,  8, 7] => {[:in, 1,  5, 6,  5, 7]=>2, [:in, 2, 7, 6, 7, 7]=>0, [:else, 3,  3, 4,  8, 7]=>1},
+        [:case, 4, 12, 2, 17, 5] => {[:in, 5, 14, 4, 14, 5]=>2,                          [:else, 6, 16, 4, 16, 5]=>1}},
+    }
+    assert_coverage(<<~"end;", { branches: true }, result)
+      def foo(x)
+        begin
+          case x
+          in 0
+            0
+          in 1
+            1
+          end
+        rescue NoMatchingPatternError
+        end
+
+        case x
+        in 0
+          0
+        else
+          1
+        end
+      end
+
+      foo(0)
+      foo(0)
+      foo(2)
+    end;
+  end
+
   def test_branch_coverage_for_safe_method_invocation
     result = {
       :branches=>{
-        [:"&.", 0, 3, 0, 3, 6] => {[:then, 1, 3, 0, 3, 6]=>1, [:else, 2, 3, 0, 3, 6]=>0},
-        [:"&.", 3, 4, 0, 4, 6] => {[:then, 4, 4, 0, 4, 6]=>0, [:else, 5, 4, 0, 4, 6]=>1},
+        [:"&.", 0, 6, 0, 6,  6] => {[:then,  1, 6, 0, 6,  6]=>1, [:else,  2, 6, 0, 6,  6]=>0},
+        [:"&.", 3, 7, 0, 7,  6] => {[:then,  4, 7, 0, 7,  6]=>0, [:else,  5, 7, 0, 7,  6]=>1},
+        [:"&.", 6, 8, 0, 8, 10] => {[:then,  7, 8, 0, 8, 10]=>1, [:else,  8, 8, 0, 8, 10]=>0},
+        [:"&.", 9, 9, 0, 9, 10] => {[:then, 10, 9, 0, 9, 10]=>0, [:else, 11, 9, 0, 9, 10]=>1},
       }
     }
     assert_coverage(<<~"end;", { branches: true }, result)
-      a = 10
+      class Dummy; def foo; end; def foo=(x); end; end
+      a = Dummy.new
       b = nil
-      a&.abs
-      b&.hoo
+      c = Dummy.new
+      d = nil
+      a&.foo
+      b&.foo
+      c&.foo = 1
+      d&.foo = 1
     end;
   end
 
@@ -491,5 +535,197 @@ class TestCoverage < Test::Unit::TestCase
       }
     }
     assert_coverage(code, { methods: true }, result)
+  end
+
+  def test_oneshot_line_coverage
+    result = {
+      :oneshot_lines => [2, 6, 10, 12, 17, 18, 25, 20]
+    }
+    assert_coverage(<<~"end;", { oneshot_lines: true }, result)
+      FOO = [
+        { foo: 'bar' }, # 2
+        { bar: 'baz' }
+      ]
+
+      'some string'.split # 6
+                   .map(&:length)
+
+      some =
+        'value' # 10
+
+      Struct.new( # 12
+        :foo,
+        :bar
+      ).new
+
+      class Test # 17
+        def foo(bar) # 18
+          {
+            foo: bar # 20
+          }
+        end
+      end
+
+      Test.new.foo(Object.new) # 25
+    end;
+  end
+
+  def test_clear_with_lines
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts "def foo(x)"
+          f.puts "  if x > 0"
+          f.puts "    :pos"
+          f.puts "  else"
+          f.puts "    :non_pos"
+          f.puts "  end"
+          f.puts "end"
+        end
+
+        exp = [
+          "{:lines=>[1, 0, 0, nil, 0, nil, nil]}",
+          "{:lines=>[0, 1, 1, nil, 0, nil, nil]}",
+          "{:lines=>[0, 1, 0, nil, 1, nil, nil]}",
+        ]
+        assert_in_out_err(%w[-rcoverage], <<-"end;", exp, [])
+          Coverage.start(lines: true)
+          tmp = Dir.pwd
+          f = tmp + "/test.rb"
+          require f
+          p Coverage.result(stop: false, clear: true)[f]
+          foo(1)
+          p Coverage.result(stop: false, clear: true)[f]
+          foo(-1)
+          p Coverage.result[f]
+        end;
+      }
+    }
+  end
+
+  def test_clear_with_branches
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts "def foo(x)"
+          f.puts "  if x > 0"
+          f.puts "    :pos"
+          f.puts "  else"
+          f.puts "    :non_pos"
+          f.puts "  end"
+          f.puts "end"
+        end
+
+        exp = [
+          "{:branches=>{[:if, 0, 2, 2, 6, 5]=>{[:then, 1, 3, 4, 3, 8]=>0, [:else, 2, 5, 4, 5, 12]=>0}}}",
+          "{:branches=>{[:if, 0, 2, 2, 6, 5]=>{[:then, 1, 3, 4, 3, 8]=>1, [:else, 2, 5, 4, 5, 12]=>0}}}",
+          "{:branches=>{[:if, 0, 2, 2, 6, 5]=>{[:then, 1, 3, 4, 3, 8]=>0, [:else, 2, 5, 4, 5, 12]=>1}}}",
+          "{:branches=>{[:if, 0, 2, 2, 6, 5]=>{[:then, 1, 3, 4, 3, 8]=>0, [:else, 2, 5, 4, 5, 12]=>1}}}",
+        ]
+        assert_in_out_err(%w[-rcoverage], <<-"end;", exp, [])
+          Coverage.start(branches: true)
+          tmp = Dir.pwd
+          f = tmp + "/test.rb"
+          require f
+          p Coverage.result(stop: false, clear: true)[f]
+          foo(1)
+          p Coverage.result(stop: false, clear: true)[f]
+          foo(-1)
+          p Coverage.result(stop: false, clear: true)[f]
+          foo(-1)
+          p Coverage.result(stop: false, clear: true)[f]
+        end;
+      }
+    }
+  end
+
+  def test_clear_with_methods
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts "def foo(x)"
+          f.puts "  if x > 0"
+          f.puts "    :pos"
+          f.puts "  else"
+          f.puts "    :non_pos"
+          f.puts "  end"
+          f.puts "end"
+        end
+
+        exp = [
+          "{:methods=>{[Object, :foo, 1, 0, 7, 3]=>0}}",
+          "{:methods=>{[Object, :foo, 1, 0, 7, 3]=>1}}",
+          "{:methods=>{[Object, :foo, 1, 0, 7, 3]=>1}}",
+          "{:methods=>{[Object, :foo, 1, 0, 7, 3]=>1}}"
+        ]
+        assert_in_out_err(%w[-rcoverage], <<-"end;", exp, [])
+          Coverage.start(methods: true)
+          tmp = Dir.pwd
+          f = tmp + "/test.rb"
+          require f
+          p Coverage.result(stop: false, clear: true)[f]
+          foo(1)
+          p Coverage.result(stop: false, clear: true)[f]
+          foo(-1)
+          p Coverage.result(stop: false, clear: true)[f]
+          foo(-1)
+          p Coverage.result(stop: false, clear: true)[f]
+        end;
+      }
+    }
+  end
+
+  def test_clear_with_oneshot_lines
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts "def foo(x)"
+          f.puts "  if x > 0"
+          f.puts "    :pos"
+          f.puts "  else"
+          f.puts "    :non_pos"
+          f.puts "  end"
+          f.puts "end"
+        end
+
+        exp = [
+          "{:oneshot_lines=>[1]}",
+          "{:oneshot_lines=>[2, 3]}",
+          "{:oneshot_lines=>[5]}",
+          "{:oneshot_lines=>[]}",
+        ]
+        assert_in_out_err(%w[-rcoverage], <<-"end;", exp, [])
+          Coverage.start(oneshot_lines: true)
+          tmp = Dir.pwd
+          f = tmp + "/test.rb"
+          require f
+          p Coverage.result(stop: false, clear: true)[f]
+          foo(1)
+          p Coverage.result(stop: false, clear: true)[f]
+          foo(-1)
+          p Coverage.result(stop: false, clear: true)[f]
+          foo(-1)
+          p Coverage.result(stop: false, clear: true)[f]
+        end;
+      }
+    }
+  end
+
+  def test_line_stub
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts "def foo(x)"
+          f.puts "  if x > 0"
+          f.puts "    :pos"
+          f.puts "  else"
+          f.puts "    :non_pos"
+          f.puts "  end"
+          f.puts "end"
+        end
+
+        assert_equal([0, 0, 0, nil, 0, nil, nil], Coverage.line_stub("test.rb"))
+      }
+    }
   end
 end

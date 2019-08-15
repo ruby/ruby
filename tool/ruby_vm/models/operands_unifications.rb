@@ -1,5 +1,5 @@
 #! /your/favourite/path/to/ruby
-# -*- mode: ruby; coding: utf-8; indent-tabs-mode: nil; ruby-indent-level: 2 -*-
+# -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-
 #
@@ -31,7 +31,8 @@ class RubyVM::OperandsUnifications < RubyVM::BareInstructions
     @preamble        = parts[:preamble]
     @spec            = parts[:spec]
     super json.merge(:template => template)
-    parts[:vars].each do |v|
+    @konsts = parts[:vars]
+    @konsts.each do |v|
       @variables[v[:name]] ||= v
     end
   end
@@ -61,6 +62,10 @@ class RubyVM::OperandsUnifications < RubyVM::BareInstructions
       exprs.map! {|i| "(#{i})" }
       return exprs.join ' && '
     end
+  end
+
+  def has_ope? var
+    super or @konsts.any? {|i| i[:name] == var[:name] }
   end
 
   private
@@ -101,7 +106,7 @@ class RubyVM::OperandsUnifications < RubyVM::BareInstructions
           vars << k
           src << {
             location: location,
-            expr: "    #{k[:name]} = #{j};"
+            expr: "    const #{k[:decl]} = #{j};"
           }
         end
       end

@@ -14,8 +14,7 @@ class TestRDocStore < XrefTestCase
 
     @top_level = @s.add_file 'file.rb'
 
-    @page = @s.add_file 'README.txt'
-    @page.parser = RDoc::Parser::Simple
+    @page = @s.add_file 'README.txt', parser: RDoc::Parser::Simple
     @page.comment = RDoc::Comment.new 'This is a page', @page
 
     @klass = @top_level.add_class RDoc::NormalClass, 'Object'
@@ -146,7 +145,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_add_file_relative
-    top_level = @store.add_file 'path/file.rb', 'file.rb'
+    top_level = @store.add_file 'path/file.rb', relative_name: 'file.rb'
 
     assert_kind_of RDoc::TopLevel, top_level
     assert_equal @store, top_level.store
@@ -162,7 +161,7 @@ class TestRDocStore < XrefTestCase
 
   def test_all_classes_and_modules
     expected = %w[
-      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 C6 C7
+      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 C6 C7 C8 C8::S1 C9 C9::A C9::B
       Child
       M1 M1::M2
       Parent
@@ -213,7 +212,7 @@ class TestRDocStore < XrefTestCase
 
   def test_classes
     expected = %w[
-      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 C6 C7
+      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 C6 C7 C8 C8::S1 C9 C9::A C9::B
       Child
       Parent
     ]
@@ -222,7 +221,8 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_complete
-    @c2.add_module_alias @c2_c3, 'A1', @top_level
+    a1 = RDoc::Constant.new 'A1', '', ''
+    @c2.add_module_alias @c2_c3, @c2_c3.name, a1, @top_level
 
     @store.complete :public
 
@@ -309,8 +309,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_find_text_page
-    page = @store.add_file 'PAGE.txt'
-    page.parser = RDoc::Parser::Simple
+    page = @store.add_file 'PAGE.txt', parser: RDoc::Parser::Simple
 
     assert_nil @store.find_text_page 'no such page'
 
@@ -407,7 +406,7 @@ class TestRDocStore < XrefTestCase
 
     Dir.mkdir @tmpdir
 
-    open File.join(@tmpdir, 'cache.ri'), 'wb' do |io|
+    File.open File.join(@tmpdir, 'cache.ri'), 'wb' do |io|
       Marshal.dump cache, io
     end
 
@@ -441,7 +440,7 @@ class TestRDocStore < XrefTestCase
 
     Dir.mkdir @tmpdir
 
-    open File.join(@tmpdir, 'cache.ri'), 'wb' do |io|
+    File.open File.join(@tmpdir, 'cache.ri'), 'wb' do |io|
       Marshal.dump cache, io
     end
 
@@ -490,7 +489,7 @@ class TestRDocStore < XrefTestCase
 
     Dir.mkdir @tmpdir
 
-    open File.join(@tmpdir, 'cache.ri'), 'wb' do |io|
+    File.open File.join(@tmpdir, 'cache.ri'), 'wb' do |io|
       Marshal.dump cache, io
     end
 
@@ -524,6 +523,15 @@ class TestRDocStore < XrefTestCase
     assert_includes @s.classes_hash, 'Object'
   end
 
+  def test_load_single_class
+    @s.save_class @c8_s1
+    @s.classes_hash.clear
+
+    assert_equal @c8_s1, @s.load_class('C8::S1')
+
+    assert_includes @s.classes_hash, 'C8::S1'
+  end
+
   def test_load_method
     @s.save_method @klass, @meth_bang
 
@@ -538,7 +546,7 @@ class TestRDocStore < XrefTestCase
 
     file = @s.method_file @klass.full_name, @meth.full_name
 
-    open file, 'wb' do |io|
+    File.open file, 'wb' do |io|
       io.write "\x04\bU:\x14RDoc::AnyMethod[\x0Fi\x00I" +
                "\"\vmethod\x06:\x06EF\"\x11Klass#method0:\vpublic" +
                "o:\eRDoc::Markup::Document\x06:\v@parts[\x06" +
@@ -563,7 +571,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_main
-    assert_equal nil, @s.main
+    assert_nil @s.main
 
     @s.main = 'README.txt'
 
@@ -591,8 +599,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_page
-    page = @store.add_file 'PAGE.txt'
-    page.parser = RDoc::Parser::Simple
+    page = @store.add_file 'PAGE.txt', parser: RDoc::Parser::Simple
 
     assert_nil @store.page 'no such page'
 
@@ -633,7 +640,7 @@ class TestRDocStore < XrefTestCase
 
     expected[:ancestors]['Object'] = %w[BasicObject]
 
-    open File.join(@tmpdir, 'cache.ri'), 'rb' do |io|
+    File.open File.join(@tmpdir, 'cache.ri'), 'rb' do |io|
       cache = Marshal.load io.read
 
       assert_equal expected, cache
@@ -701,7 +708,7 @@ class TestRDocStore < XrefTestCase
 
     expected[:ancestors]['Object'] = %w[BasicObject]
 
-    open File.join(@tmpdir, 'cache.ri'), 'rb' do |io|
+    File.open File.join(@tmpdir, 'cache.ri'), 'rb' do |io|
       cache = Marshal.load io.read
 
       assert_equal expected, cache
@@ -981,7 +988,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_title
-    assert_equal nil, @s.title
+    assert_nil @s.title
 
     @s.title = 'rdoc'
 

@@ -208,16 +208,16 @@ class TestGemSourceGit < Gem::TestCase
     installed = Gem::Source::Installed.new
     vendor    = Gem::Source::Vendor.new 'vendor/foo'
 
-    assert_equal( 0, git.      <=>(git),       'git    <=> git')
+    assert_equal(0, git.      <=>(git),       'git    <=> git')
 
-    assert_equal( 1, git.      <=>(remote),    'git    <=> remote')
+    assert_equal(1, git.      <=>(remote),    'git    <=> remote')
     assert_equal(-1, remote.   <=>(git),       'remote <=> git')
 
-    assert_equal( 1, git.      <=>(installed), 'git       <=> installed')
+    assert_equal(1, git.      <=>(installed), 'git       <=> installed')
     assert_equal(-1, installed.<=>(git),       'installed <=> git')
 
     assert_equal(-1, git.      <=>(vendor),    'git       <=> vendor')
-    assert_equal( 1, vendor.   <=>(git),       'vendor    <=> git')
+    assert_equal(1, vendor.   <=>(git),       'vendor    <=> git')
   end
 
   def test_specs
@@ -236,11 +236,6 @@ class TestGemSourceGit < Gem::TestCase
         system @git, 'add', 'b.gemspec'
         system @git, 'commit', '--quiet', '-m', 'add b/b.gemspec'
       end
-
-      FileUtils.touch 'c.gemspec'
-
-      system @git, 'add', 'c.gemspec'
-      system @git, 'commit', '--quiet', '-m', 'add c.gemspec'
     end
 
     specs = nil
@@ -306,4 +301,3 @@ class TestGemSourceGit < Gem::TestCase
   end
 
 end
-

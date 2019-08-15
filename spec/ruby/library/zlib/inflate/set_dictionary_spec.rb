@@ -18,4 +18,3 @@ describe "Zlib::Inflate#set_dictionary" do
     i.finish.should == 'abcdefghij'
   end
 end
-

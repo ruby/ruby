@@ -75,13 +75,46 @@ module Net # :nodoc:
   # ReadTimeout, a subclass of Timeout::Error, is raised if a chunk of the
   # response cannot be read within the read_timeout.
 
-  class ReadTimeout            < Timeout::Error; end
+  class ReadTimeout < Timeout::Error
+    def initialize(io = nil)
+      @io = io
+    end
+    attr_reader :io
+
+    def message
+      msg = super
+      if @io
+        msg = "#{msg} with #{@io.inspect}"
+      end
+      msg
+    end
+  end
+
+  ##
+  # WriteTimeout, a subclass of Timeout::Error, is raised if a chunk of the
+  # response cannot be written within the write_timeout.  Not raised on Windows.
+
+  class WriteTimeout < Timeout::Error
+    def initialize(io = nil)
+      @io = io
+    end
+    attr_reader :io
+
+    def message
+      msg = super
+      if @io
+        msg = "#{msg} with #{@io.inspect}"
+      end
+      msg
+    end
+  end
 
 
   class BufferedIO   #:nodoc: internal use only
-    def initialize(io, read_timeout: 60, continue_timeout: nil, debug_output: nil)
+    def initialize(io, read_timeout: 60, write_timeout: 60, continue_timeout: nil, debug_output: nil)
       @io = io
       @read_timeout = read_timeout
+      @write_timeout = write_timeout
       @continue_timeout = continue_timeout
       @debug_output = debug_output
       @rbuf = ''.b
@@ -89,6 +122,7 @@ module Net # :nodoc:
 
     attr_reader :io
     attr_accessor :read_timeout
+    attr_accessor :write_timeout
     attr_accessor :continue_timeout
     attr_accessor :debug_output
 
@@ -180,12 +214,12 @@ module Net # :nodoc:
         rv.clear
         return
       when :wait_readable
-        @io.to_io.wait_readable(@read_timeout) or raise Net::ReadTimeout
+        (io = @io.to_io).wait_readable(@read_timeout) or raise Net::ReadTimeout.new(io)
         # continue looping
       when :wait_writable
         # OpenSSL::Buffering#read_nonblock may fail with IO::WaitWritable.
         # http://www.openssl.org/support/faq.html#PROG10
-        @io.to_io.wait_writable(@read_timeout) or raise Net::ReadTimeout
+        (io = @io.to_io).wait_writable(@read_timeout) or raise Net::ReadTimeout.new(io)
         # continue looping
       when nil
         raise EOFError, 'end of file reached'
@@ -237,9 +271,32 @@ module Net # :nodoc:
 
     def write0(*strs)
       @debug_output << strs.map(&:dump).join if @debug_output
-      len = @io.write(*strs)
-      @written_bytes += len
-      len
+      orig_written_bytes = @written_bytes
+      strs.each_with_index do |str, i|
+        need_retry = true
+        case len = @io.write_nonblock(str, exception: false)
+        when Integer
+          @written_bytes += len
+          len -= str.bytesize
+          if len == 0
+            if strs.size == i+1
+              return @written_bytes - orig_written_bytes
+            else
+              need_retry = false
+              # next string
+            end
+          elsif len < 0
+            str = str.byteslice(len, -len)
+          else # len > 0
+            need_retry = false
+            # next string
+          end
+          # continue looping
+        when :wait_writable
+          (io = @io.to_io).wait_writable(@write_timeout) or raise Net::WriteTimeout.new(io)
+          # continue looping
+        end while need_retry
+      end
     end
 
     #
@@ -280,7 +337,7 @@ module Net # :nodoc:
       read_bytes = 0
       while (line = readuntil("\r\n")) != ".\r\n"
         read_bytes += line.size
-        yield line.sub(/\A\./, '')
+        yield line.delete_prefix('.')
       end
       LOG_on()
       LOG "read message (#{read_bytes} bytes)"

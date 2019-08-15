@@ -16,6 +16,21 @@ describe "Kernel.lambda" do
     l.lambda?.should be_true
   end
 
+  it "creates a lambda-style Proc if given a literal block via #send" do
+    l = send(:lambda) { 42 }
+    l.lambda?.should be_true
+  end
+
+  it "creates a lambda-style Proc if given a literal block via #__send__" do
+    l = __send__(:lambda) { 42 }
+    l.lambda?.should be_true
+  end
+
+  it "creates a lambda-style Proc if given a literal block via Kernel.public_send" do
+    l = Kernel.public_send(:lambda) { 42 }
+    l.lambda?.should be_true
+  end
+
   it "returned the passed Proc if given an existing Proc" do
     some_proc = proc {}
     l = lambda(&some_proc)
@@ -83,4 +98,3 @@ describe "Kernel.lambda" do
     KernelSpecs::Lambda.new.outer.should == :good
   end
 end
-

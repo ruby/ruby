@@ -1,4 +1,4 @@
-require_relative '../../../spec_helper'
+require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 describe "Socket#getservbyname" do
@@ -10,6 +10,14 @@ describe "Socket#getservbyname" do
     Socket.getservbyname('discard', 'tcp').should == 9
   end
 
+  it 'returns the port for service "ftp"' do
+    Socket.getservbyname('ftp').should == 21
+  end
+
+  it 'returns the port for service "ftp" with protocol "tcp"' do
+    Socket.getservbyname('ftp', 'tcp').should == 21
+  end
+
   it "returns the port for service 'domain' with protocol 'udp'" do
     Socket.getservbyname('domain', 'udp').should == 53
   end
@@ -19,6 +27,6 @@ describe "Socket#getservbyname" do
   end
 
   it "raises a SocketError when the service or port is invalid" do
-    lambda { Socket.getservbyname('invalid') }.should raise_error(SocketError)
+    -> { Socket.getservbyname('invalid') }.should raise_error(SocketError)
   end
 end

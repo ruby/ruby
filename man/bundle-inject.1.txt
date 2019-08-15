@@ -1,0 +1,32 @@
+BUNDLE-INJECT(1)					      BUNDLE-INJECT(1)
+
+
+
+NAME
+       bundle-inject - Add named gem(s) with version requirements to Gemfile
+
+SYNOPSIS
+       bundle inject [GEM] [VERSION]
+
+DESCRIPTION
+       Adds  the  named gem(s) with their version requirements to the resolved
+       [Gemfile(5)][Gemfile(5)].
+
+       This command will add the gem to both your [Gemfile(5)][Gemfile(5)] and
+       Gemfile.lock if it isn't listed yet.
+
+       Example:
+
+
+
+	   bundle install
+	   bundle inject 'rack' '> 0'
+
+
+
+       This  will  inject the 'rack' gem with a version greater than 0 in your
+       [Gemfile(5)][Gemfile(5)] and Gemfile.lock
+
+
+
+				  March 2019		      BUNDLE-INJECT(1)

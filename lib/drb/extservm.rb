@@ -4,7 +4,7 @@
         Copyright (c) 2000 Masatoshi SEKI
 =end
 
-require 'drb/drb'
+require_relative 'drb'
 require 'monitor'
 
 module DRb
@@ -37,7 +37,7 @@ module DRb
       synchronize do
         while true
           server = @servers[name]
-          return server if server&.alive?
+          return server if server && server.alive? # server may be `false'
           invoke_service(name)
           @cond.wait
         end
@@ -61,8 +61,7 @@ module DRb
     private
     def invoke_thread
       Thread.new do
-        while true
-          name = @queue.pop
+        while name = @queue.pop
           invoke_service_command(name, @@command[name])
         end
       end

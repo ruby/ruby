@@ -27,6 +27,7 @@ require 'rbconfig'
 # +:backtrace+:: See #backtrace
 # +:sources+:: Sets Gem::sources
 # +:verbose+:: See #verbose
+# +:concurrent_downloads+:: See #concurrent_downloads
 #
 # gemrc files may exist in various locations and are read and merged in
 # the following order:
@@ -43,12 +44,14 @@ class Gem::ConfigFile
   DEFAULT_BULK_THRESHOLD = 1000
   DEFAULT_VERBOSITY = true
   DEFAULT_UPDATE_SOURCES = true
+  DEFAULT_CONCURRENT_DOWNLOADS = 8
+  DEFAULT_CERT_EXPIRATION_LENGTH_DAYS = 365
 
   ##
   # For Ruby packagers to set configuration defaults.  Set in
   # rubygems/defaults/operating_system.rb
 
-  OPERATING_SYSTEM_DEFAULTS = {}
+  OPERATING_SYSTEM_DEFAULTS = Gem.operating_system_defaults
 
   ##
   # For Ruby implementers to set configuration defaults.  Set in
@@ -63,26 +66,7 @@ class Gem::ConfigFile
       require "etc"
       Etc.sysconfdir
     rescue LoadError, NoMethodError
-      begin
-        # TODO: remove after we drop 1.8.7 and 1.9.1
-        require 'Win32API'
-
-        CSIDL_COMMON_APPDATA = 0x0023
-        path = 0.chr * 260
-        if RUBY_VERSION > '1.9' then
-          SHGetFolderPath = Win32API.new 'shell32', 'SHGetFolderPath', 'PLPLP',
-          'L', :stdcall
-          SHGetFolderPath.call nil, CSIDL_COMMON_APPDATA, nil, 1, path
-        else
-          SHGetFolderPath = Win32API.new 'shell32', 'SHGetFolderPath', 'LLLLP',
-          'L'
-          SHGetFolderPath.call 0, CSIDL_COMMON_APPDATA, 0, 1, path
-        end
-
-        path.strip
-      rescue LoadError
-        RbConfig::CONFIG["sysconfdir"] || "/etc"
-      end
+      RbConfig::CONFIG["sysconfdir"] || "/etc"
     end
 
   # :startdoc:
@@ -124,6 +108,11 @@ class Gem::ConfigFile
   attr_accessor :verbose
 
   ##
+  # Number of gem downloads that should be performed concurrently.
+
+  attr_accessor :concurrent_downloads
+
+  ##
   # True if we want to update the SourceInfoCache every time, false otherwise
 
   attr_accessor :update_sources
@@ -146,6 +135,11 @@ class Gem::ConfigFile
   ##
   # sources to look for gems
   attr_accessor :sources
+
+  ##
+  # Expiration length to sign a certificate
+
+  attr_accessor :cert_expiration_length_days
 
   ##
   # Path name of directory or file of openssl client certificate, used for remote https connection with client authentication
@@ -174,53 +168,42 @@ class Gem::ConfigFile
   # TODO: parse options upstream, pass in options directly
 
   def initialize(args)
-    @config_file_name = nil
-    need_config_file_name = false
-
-    arg_list = []
-
-    args.each do |arg|
-      if need_config_file_name then
-        @config_file_name = arg
-        need_config_file_name = false
-      elsif arg =~ /^--config-file=(.*)/ then
-        @config_file_name = $1
-      elsif arg =~ /^--config-file$/ then
-        need_config_file_name = true
-      else
-        arg_list << arg
-      end
-    end
+    set_config_file_name(args)
 
     @backtrace = DEFAULT_BACKTRACE
     @bulk_threshold = DEFAULT_BULK_THRESHOLD
     @verbose = DEFAULT_VERBOSITY
     @update_sources = DEFAULT_UPDATE_SOURCES
+    @concurrent_downloads = DEFAULT_CONCURRENT_DOWNLOADS
+    @cert_expiration_length_days = DEFAULT_CERT_EXPIRATION_LENGTH_DAYS
 
     operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
     platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
     system_config = load_file SYSTEM_WIDE_CONFIG_FILE
     user_config = load_file config_file_name.dup.untaint
-    environment_config = (ENV['GEMRC'] || '').split(/[:;]/).inject({}) do |result, file|
-      result.merge load_file file
-    end
+
+    environment_config = (ENV['GEMRC'] || '')
+      .split(File::PATH_SEPARATOR).inject({}) do |result, file|
+        result.merge load_file file
+      end
 
     @hash = operating_system_config.merge platform_config
-    unless arg_list.index '--norc'
+    unless args.index '--norc'
       @hash = @hash.merge system_config
       @hash = @hash.merge user_config
       @hash = @hash.merge environment_config
     end
 
     # HACK these override command-line args, which is bad
-    @backtrace                  = @hash[:backtrace]                  if @hash.key? :backtrace
-    @bulk_threshold             = @hash[:bulk_threshold]             if @hash.key? :bulk_threshold
-    @home                       = @hash[:gemhome]                    if @hash.key? :gemhome
-    @path                       = @hash[:gempath]                    if @hash.key? :gempath
-    @update_sources             = @hash[:update_sources]             if @hash.key? :update_sources
-    @verbose                    = @hash[:verbose]                    if @hash.key? :verbose
-    @disable_default_gem_server = @hash[:disable_default_gem_server] if @hash.key? :disable_default_gem_server
-    @sources                    = @hash[:sources]                    if @hash.key? :sources
+    @backtrace                   = @hash[:backtrace]                   if @hash.key? :backtrace
+    @bulk_threshold              = @hash[:bulk_threshold]              if @hash.key? :bulk_threshold
+    @home                        = @hash[:gemhome]                     if @hash.key? :gemhome
+    @path                        = @hash[:gempath]                     if @hash.key? :gempath
+    @update_sources              = @hash[:update_sources]              if @hash.key? :update_sources
+    @verbose                     = @hash[:verbose]                     if @hash.key? :verbose
+    @disable_default_gem_server  = @hash[:disable_default_gem_server]  if @hash.key? :disable_default_gem_server
+    @sources                     = @hash[:sources]                     if @hash.key? :sources
+    @cert_expiration_length_days = @hash[:cert_expiration_length_days] if @hash.key? :cert_expiration_length_days
 
     @ssl_verify_mode  = @hash[:ssl_verify_mode]  if @hash.key? :ssl_verify_mode
     @ssl_ca_cert      = @hash[:ssl_ca_cert]      if @hash.key? :ssl_ca_cert
@@ -229,7 +212,7 @@ class Gem::ConfigFile
     @api_keys         = nil
     @rubygems_api_key = nil
 
-    handle_arguments arg_list
+    handle_arguments args
   end
 
   ##
@@ -284,13 +267,13 @@ if you believe they were disclosed to a third party.
   def load_api_keys
     check_credentials_permissions
 
-    @api_keys = if File.exist? credentials_path then
+    @api_keys = if File.exist? credentials_path
                   load_file(credentials_path)
                 else
                   @hash
                 end
 
-    if @api_keys.key? :rubygems_api_key then
+    if @api_keys.key? :rubygems_api_key
       @rubygems_api_key    = @api_keys[:rubygems_api_key]
       @api_keys[:rubygems] = @api_keys.delete :rubygems_api_key unless
         @api_keys.key? :rubygems
@@ -309,7 +292,7 @@ if you believe they were disclosed to a third party.
   ##
   # Sets the RubyGems.org API key to +api_key+
 
-  def rubygems_api_key= api_key
+  def rubygems_api_key=(api_key)
     set_api_key :rubygems_api_key, api_key
 
     @rubygems_api_key = api_key
@@ -318,7 +301,7 @@ if you believe they were disclosed to a third party.
   ##
   # Set a specific host's API key to +api_key+
 
-  def set_api_key host, api_key
+  def set_api_key(host, api_key)
     check_credentials_permissions
 
     config = load_file(credentials_path).merge(host => api_key)
@@ -351,7 +334,7 @@ if you believe they were disclosed to a third party.
     yaml_errors = [ArgumentError]
     yaml_errors << Psych::SyntaxError if defined?(Psych::SyntaxError)
 
-    return {} unless filename and File.exist? filename
+    return {} unless filename && !filename.empty? && File.exist?(filename)
 
     begin
       content = Gem::SafeYAML.load(File.read(filename))
@@ -434,6 +417,9 @@ if you believe they were disclosed to a third party.
     yaml_hash[:update_sources] = @hash.fetch(:update_sources, DEFAULT_UPDATE_SOURCES)
     yaml_hash[:verbose] = @hash.fetch(:verbose, DEFAULT_VERBOSITY)
 
+    yaml_hash[:concurrent_downloads] =
+      @hash.fetch(:concurrent_downloads, DEFAULT_CONCURRENT_DOWNLOADS)
+
     yaml_hash[:ssl_verify_mode] =
       @hash[:ssl_verify_mode] if @hash.key? :ssl_verify_mode
 
@@ -484,4 +470,23 @@ if you believe they were disclosed to a third party.
 
   attr_reader :hash
   protected :hash
+
+  private
+
+  def set_config_file_name(args)
+    @config_file_name = ENV["GEMRC"]
+    need_config_file_name = false
+
+    args.each do |arg|
+      if need_config_file_name
+        @config_file_name = arg
+        need_config_file_name = false
+      elsif arg =~ /^--config-file=(.*)/
+        @config_file_name = $1
+      elsif arg =~ /^--config-file$/
+        need_config_file_name = true
+      end
+    end
+  end
+
 end

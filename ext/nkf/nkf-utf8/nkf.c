@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1987, Fujitsu LTD. (Itaru ICHIKAWA).
- * Copyright (c) 1996-2013, The nkf Project.
+ * Copyright (c) 1996-2018, The nkf Project.
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -20,11 +20,11 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  */
-#define NKF_VERSION "2.1.4"
-#define NKF_RELEASE_DATE "2015-12-12"
+#define NKF_VERSION "2.1.5"
+#define NKF_RELEASE_DATE "2018-12-15"
 #define COPY_RIGHT \
     "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa).\n" \
-    "Copyright (C) 1996-2015, The nkf Project."
+    "Copyright (C) 1996-2018, The nkf Project."
 
 #include "config.h"
 #include "nkf.h"
@@ -1111,18 +1111,26 @@ encode_fallback_java(nkf_char c)
     (*oconv)(0, '\\');
     c &= VALUE_MASK;
     if(!nkf_char_unicode_bmp_p(c)){
-	(*oconv)(0, 'U');
-	(*oconv)(0, '0');
-	(*oconv)(0, '0');
-	(*oconv)(0, bin2hex(c>>20));
-	(*oconv)(0, bin2hex(c>>16));
+        int high = (c >> 10) + NKF_INT32_C(0xD7C0);   /* high surrogate */
+        int low = (c & 0x3FF) + NKF_INT32_C(0xDC00); /* low surrogate */
+	(*oconv)(0, 'u');
+	(*oconv)(0, bin2hex(high>>12));
+	(*oconv)(0, bin2hex(high>> 8));
+	(*oconv)(0, bin2hex(high>> 4));
+	(*oconv)(0, bin2hex(high    ));
+	(*oconv)(0, '\\');
+	(*oconv)(0, 'u');
+	(*oconv)(0, bin2hex(low>>12));
+	(*oconv)(0, bin2hex(low>> 8));
+	(*oconv)(0, bin2hex(low>> 4));
+	(*oconv)(0, bin2hex(low    ));
     }else{
 	(*oconv)(0, 'u');
+	(*oconv)(0, bin2hex(c>>12));
+	(*oconv)(0, bin2hex(c>> 8));
+	(*oconv)(0, bin2hex(c>> 4));
+	(*oconv)(0, bin2hex(c    ));
     }
-    (*oconv)(0, bin2hex(c>>12));
-    (*oconv)(0, bin2hex(c>> 8));
-    (*oconv)(0, bin2hex(c>> 4));
-    (*oconv)(0, bin2hex(c    ));
     return;
 }
 
@@ -1947,12 +1955,17 @@ unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *p2, nkf_c
 	ret = unicode_to_jis_common2(c1, c0, ppp[c2 - 0xE0], sizeof_utf8_to_euc_C2, p2, p1);
     }else return -1;
 #ifdef SHIFTJIS_CP932
-    if (!ret && !cp932inv_f && is_eucg3(*p2)) {
-	nkf_char s2, s1;
-	if (e2s_conv(*p2, *p1, &s2, &s1) == 0) {
-	    s2e_conv(s2, s1, p2, p1);
-	}else{
-	    ret = 1;
+    if (!ret&& is_eucg3(*p2)) {
+	if (cp932inv_f) {
+	    if (encode_fallback) ret = 1;
+	}
+	else {
+	    nkf_char s2, s1;
+	    if (e2s_conv(*p2, *p1, &s2, &s1) == 0) {
+		s2e_conv(s2, s1, p2, p1);
+	    }else{
+		ret = 1;
+	    }
 	}
     }
 #endif

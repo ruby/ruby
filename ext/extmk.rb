@@ -505,7 +505,7 @@ cond = proc {|ext, *|
   }
   incl.sort!
   excl.sort!.collect! {|d| d+"/"}
-  nil while incl.reject! {|d| excl << d+"/" if excl.any? {|e| d.start_with?(e)}}
+  nil while incl.reject! {|d| excl << d+"/" if excl.any? {|x| d.start_with?(x)}}
   exts |= incl
   if $LIBRUBYARG_SHARED.empty? and CONFIG["EXTSTATIC"] == "static"
     exts.delete_if {|d| File.fnmatch?("-*", d)}
@@ -688,8 +688,8 @@ begin
     submakeopts << 'UPDATE_LIBRARIES="$(UPDATE_LIBRARIES)"'
     submakeopts << 'SHOWFLAGS='
     mf.macro "SUBMAKEOPTS", submakeopts
-    mf.macro "NOTE_MESG", %w[$(RUBY) $(top_srcdir)/tool/colorize.rb skip]
-    mf.macro "NOTE_NAME", %w[$(RUBY) $(top_srcdir)/tool/colorize.rb fail]
+    mf.macro "NOTE_MESG", %w[$(RUBY) $(top_srcdir)/tool/lib/colorize.rb skip]
+    mf.macro "NOTE_NAME", %w[$(RUBY) $(top_srcdir)/tool/lib/colorize.rb fail]
     mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |tgt|
@@ -722,7 +722,16 @@ begin
     end
     targets.each do |tgt|
       exts.each do |d|
-        mf.puts "#{d[0..-2]}#{tgt}:\n\t$(Q)#{submake} $(MFLAGS) V=$(V) $(@F)"
+        d = d[0..-2]
+        t = "#{d}#{tgt}"
+        if  /^(dist|real)?clean$/ =~ tgt
+          deps = exts.select {|e|e.start_with?(d)}.map {|e|"#{e[0..-2]}#{tgt}"} - [t]
+          pd = ' ' + deps.join(' ') unless deps.empty?
+        else
+          pext = File.dirname(d)
+          pd = " #{pext}/#{tgt}" if exts.include?("#{pext}/.")
+        end
+        mf.puts "#{t}:#{pd}\n\t$(Q)#{submake} $(MFLAGS) V=$(V) $(@F)"
       end
     end
     mf.puts "\n""extso:\n"

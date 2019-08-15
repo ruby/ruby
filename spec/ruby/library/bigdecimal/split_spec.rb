@@ -84,5 +84,3 @@ describe "BigDecimal#split" do
   end
 
 end
-
-

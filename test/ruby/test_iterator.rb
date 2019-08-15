@@ -12,17 +12,12 @@ class Array
 end
 
 class TestIterator < Test::Unit::TestCase
-  def ttt
-    assert(iterator?)
-  end
-
-  def test_iterator
-    assert(!iterator?)
-
-    ttt{}
-
-    # yield at top level	!! here's not toplevel
-    assert(!defined?(yield))
+  def test_yield_at_toplevel
+    assert_separately([],"#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert(!block_given?)
+      assert(!defined?(yield))
+    end;
   end
 
   def test_array
