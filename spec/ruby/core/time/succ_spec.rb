@@ -21,7 +21,7 @@ describe "Time#succ" do
   end
 
   it "is obsolete" do
-    lambda {
+    -> {
       Time.at(100).succ
     }.should complain(/Time#succ is obsolete/)
   end

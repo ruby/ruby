@@ -16,16 +16,16 @@ describe "String#prepend" do
   end
 
   it "raises a TypeError if the given argument can't be converted to a String" do
-    lambda { "hello ".prepend [] }.should raise_error(TypeError)
-    lambda { 'hello '.prepend mock('x') }.should raise_error(TypeError)
+    -> { "hello ".prepend [] }.should raise_error(TypeError)
+    -> { 'hello '.prepend mock('x') }.should raise_error(TypeError)
   end
 
   it "raises a #{frozen_error_class} when self is frozen" do
     a = "hello"
     a.freeze
 
-    lambda { a.prepend "" }.should raise_error(frozen_error_class)
-    lambda { a.prepend "test" }.should raise_error(frozen_error_class)
+    -> { a.prepend "" }.should raise_error(frozen_error_class)
+    -> { a.prepend "test" }.should raise_error(frozen_error_class)
   end
 
   it "works when given a subclass instance" do

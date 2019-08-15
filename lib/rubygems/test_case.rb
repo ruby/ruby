@@ -232,8 +232,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   undef_method :default_test if instance_methods.include? 'default_test' or
                                 instance_methods.include? :default_test
 
-  @@project_dir = Dir.pwd.untaint unless defined?(@@project_dir)
-
   ##
   # #setup prepares a sandboxed location to install gems.  All installs are
   # directed to a temporary directory.  All install plugins are removed.
@@ -248,6 +246,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     @orig_env = ENV.to_hash
 
     ENV['GEM_VENDOR'] = nil
+    ENV['GEMRC'] = nil
     ENV['SOURCE_DATE_EPOCH'] = nil
 
     @current_dir = Dir.pwd
@@ -308,7 +307,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
 
     Dir.chdir @tempdir
 
-    @orig_ENV_HOME = ENV['HOME']
     ENV['HOME'] = @userhome
     Gem.instance_variable_set :@user_home, nil
     Gem.instance_variable_set :@gemdeps, nil
@@ -319,7 +317,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     FileUtils.mkdir_p @gemhome
     FileUtils.mkdir_p @userhome
 
-    @orig_gem_private_key_passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
     ENV['GEM_PRIVATE_KEY_PASSPHRASE'] = PRIVATE_KEY_PASSPHRASE
 
     @default_dir = File.join @tempdir, 'default'
@@ -675,7 +672,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   # Removes all installed gems from +@gemhome+.
 
   def util_clear_gems
-    FileUtils.rm_rf File.join(@gemhome, "gems") # TODO: use Gem::Dirs
+    FileUtils.rm_rf File.join(@gemhome, "gems")
     FileUtils.mkdir File.join(@gemhome, "gems")
     FileUtils.rm_rf File.join(@gemhome, "specifications")
     FileUtils.mkdir File.join(@gemhome, "specifications")
@@ -807,9 +804,6 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
   # location are returned.
 
   def util_gem(name, version, deps = nil, &block)
-    # TODO: deprecate
-    raise "deps or block, not both" if deps and block
-
     if deps
       block = proc do |s|
         # Since Hash#each is unordered in 1.8, sort
@@ -1215,6 +1209,7 @@ Also, a list:
     # Return the join path, with escaping backticks, dollars, and
     # double-quotes.  Unlike `shellescape`, equal-sign is not escaped.
     private
+
     def escape_path(*path)
       path = File.join(*path)
       if %r'\A[-+:/=@,.\w]+\z' =~ path

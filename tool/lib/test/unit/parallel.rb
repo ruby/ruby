@@ -198,11 +198,5 @@ if $0 == __FILE__
     end
   end
   require 'rubygems'
-  module Gem # :nodoc:
-  end
-  class Gem::TestCase < MiniTest::Unit::TestCase # :nodoc:
-    @@project_dir = File.expand_path('../../../../..', __FILE__)
-  end
-
   Test::Unit::Worker.new.run(ARGV)
 end

@@ -37,6 +37,6 @@ describe "Array#reverse!" do
   end
 
   it "raises a #{frozen_error_class} on a frozen array" do
-    lambda { ArraySpecs.frozen_array.reverse! }.should raise_error(frozen_error_class)
+    -> { ArraySpecs.frozen_array.reverse! }.should raise_error(frozen_error_class)
   end
 end

@@ -24,8 +24,8 @@ describe "Integer#>=" do
     end
 
     it "raises an ArgumentError when given a non-Integer" do
-      lambda { 5 >= "4"       }.should raise_error(ArgumentError)
-      lambda { 5 >= mock('x') }.should raise_error(ArgumentError)
+      -> { 5 >= "4"       }.should raise_error(ArgumentError)
+      -> { 5 >= mock('x') }.should raise_error(ArgumentError)
     end
   end
 
@@ -42,8 +42,8 @@ describe "Integer#>=" do
     end
 
     it "raises an ArgumentError when given a non-Integer" do
-      lambda { @bignum >= "4" }.should raise_error(ArgumentError)
-      lambda { @bignum >= mock('str') }.should raise_error(ArgumentError)
+      -> { @bignum >= "4" }.should raise_error(ArgumentError)
+      -> { @bignum >= mock('str') }.should raise_error(ArgumentError)
     end
   end
 end

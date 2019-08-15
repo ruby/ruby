@@ -30,7 +30,7 @@ describe "Matrix#row" do
   end
 
   it "never yields when out of bounds" do
-    lambda { @m.row(3){ raise } }.should_not raise_error
-    lambda { @m.row(-4){ raise } }.should_not raise_error
+    -> { @m.row(3){ raise } }.should_not raise_error
+    -> { @m.row(-4){ raise } }.should_not raise_error
   end
 end

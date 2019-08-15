@@ -1,7 +1,6 @@
 # coding: US-ASCII
 # frozen_string_literal: false
-require 'test/unit'
-require 'logger'
+require_relative 'helper'
 require 'time'
 
 class TestLogPeriod < Test::Unit::TestCase

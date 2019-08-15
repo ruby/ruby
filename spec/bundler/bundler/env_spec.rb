@@ -72,7 +72,7 @@ RSpec.describe Bundler::Env do
 
         lockfile <<-L
           GEM
-            remote: file:#{gem_repo1}/
+            remote: #{file_uri_for(gem_repo1)}/
             specs:
               rack (1.0.0)
 
@@ -136,7 +136,7 @@ RSpec.describe Bundler::Env do
         create_file "other/Gemfile-other", "gem 'rack'"
         create_file "other/Gemfile", "eval_gemfile 'Gemfile-other'"
         create_file "Gemfile-alt", <<-G
-          source "file:#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           eval_gemfile "other/Gemfile"
         G
         gemfile "eval_gemfile #{File.expand_path("Gemfile-alt").dump}"
@@ -154,7 +154,7 @@ RSpec.describe Bundler::Env do
           ### Gemfile-alt
 
           ```ruby
-          source "file:#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           eval_gemfile "other/Gemfile"
           ```
 

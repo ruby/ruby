@@ -5,13 +5,13 @@ require_relative 'fixtures/classes'
 # passed proc or callable will be called at any particular time.
 describe "ObjectSpace.define_finalizer" do
   it "raises an ArgumentError if the action does not respond to call" do
-    lambda {
+    -> {
       ObjectSpace.define_finalizer("", mock("ObjectSpace.define_finalizer no #call"))
     }.should raise_error(ArgumentError)
   end
 
   it "accepts an object and a proc" do
-    handler = lambda { |obj| obj }
+    handler = -> obj { obj }
     ObjectSpace.define_finalizer("garbage", handler).should == [0, handler]
   end
 
@@ -22,7 +22,7 @@ describe "ObjectSpace.define_finalizer" do
   end
 
   it "raises ArgumentError trying to define a finalizer on a non-reference" do
-    lambda {
+    -> {
       ObjectSpace.define_finalizer(:blah) { 1 }
     }.should raise_error(ArgumentError)
   end

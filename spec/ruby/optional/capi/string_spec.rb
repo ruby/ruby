@@ -327,7 +327,7 @@ describe "C-API String function" do
     end
 
     it "raises a TypeError trying to append non-String-like object" do
-      lambda { @s.rb_str_append("Hello", 32323)}.should raise_error(TypeError)
+      -> { @s.rb_str_append("Hello", 32323)}.should raise_error(TypeError)
     end
 
     it "changes Encoding if a string is appended to an empty string" do
@@ -343,7 +343,7 @@ describe "C-API String function" do
   end
 
   describe "rb_str_times" do
-    it_behaves_like :string_times, :rb_str_times, ->(str, times) { @s.rb_str_times(str, times) }
+    it_behaves_like :string_times, :rb_str_times, -> str, times { @s.rb_str_times(str, times) }
   end
 
   describe "rb_str_buf_cat" do
@@ -414,7 +414,7 @@ describe "C-API String function" do
     end
 
     it "converts a C string to a Fixnum strictly if base is 0" do
-      lambda { @s.rb_cstr2inum("1234a", 0) }.should raise_error(ArgumentError)
+      -> { @s.rb_cstr2inum("1234a", 0) }.should raise_error(ArgumentError)
     end
   end
 
@@ -432,7 +432,7 @@ describe "C-API String function" do
     end
 
     it "converts a C string to a Fixnum strictly" do
-      lambda { @s.rb_cstr_to_inum("1234a", 10, true) }.should raise_error(ArgumentError)
+      -> { @s.rb_cstr_to_inum("1234a", 10, true) }.should raise_error(ArgumentError)
     end
   end
 
@@ -458,8 +458,8 @@ describe "C-API String function" do
     end
 
     it "raises a TypeError if coercion fails" do
-      lambda { @s.rb_str_to_str(0) }.should raise_error(TypeError)
-      lambda { @s.rb_str_to_str(CApiStringSpecs::InvalidTostrTest.new) }.should raise_error(TypeError)
+      -> { @s.rb_str_to_str(0) }.should raise_error(TypeError)
+      -> { @s.rb_str_to_str(CApiStringSpecs::InvalidTostrTest.new) }.should raise_error(TypeError)
     end
   end
 
@@ -549,7 +549,7 @@ describe "C-API String function" do
     it "does not call #to_s on non-String objects" do
       str = mock("fake")
       str.should_not_receive(:to_s)
-      lambda { @s.send(@method, str) }.should raise_error(TypeError)
+      -> { @s.send(@method, str) }.should raise_error(TypeError)
     end
   end
 
@@ -562,7 +562,7 @@ describe "C-API String function" do
       begin
         Thread.new {
           $SAFE = 1
-          lambda {
+          -> {
             @s.SafeStringValue("str".taint)
           }.should raise_error(SecurityError)
         }.join
@@ -951,7 +951,7 @@ end
     end
 
     it "raises a TypeError if #to_str does not return a string" do
-      lambda { @s.rb_String(CApiStringSpecs::InvalidTostrTest.new) }.should raise_error(TypeError)
+      -> { @s.rb_String(CApiStringSpecs::InvalidTostrTest.new) }.should raise_error(TypeError)
     end
 
     it "tries to convert the passed argument to a string by calling #to_s" do
@@ -969,11 +969,11 @@ end
     end
 
     it "raises an error if a string contains a null" do
-      lambda { @s.rb_string_value_cstr("Hello\0 with a null.") }.should raise_error(ArgumentError)
+      -> { @s.rb_string_value_cstr("Hello\0 with a null.") }.should raise_error(ArgumentError)
     end
 
     it "raises an error if a UTF-16 string contains a null" do
-      lambda { @s.rb_string_value_cstr("Hello\0 with a null.".encode('UTF-16BE')) }.should raise_error(ArgumentError)
+      -> { @s.rb_string_value_cstr("Hello\0 with a null.".encode('UTF-16BE')) }.should raise_error(ArgumentError)
     end
 
   end

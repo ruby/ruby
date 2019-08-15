@@ -23,7 +23,7 @@ describe :io_write, shared: true do
   end
 
   it "checks if the file is writable if writing more than zero bytes" do
-    lambda { @readonly_file.send(@method, "abcde") }.should raise_error(IOError)
+    -> { @readonly_file.send(@method, "abcde") }.should raise_error(IOError)
   end
 
   it "returns the number of bytes written" do
@@ -50,7 +50,7 @@ describe :io_write, shared: true do
 
   it "does not warn if called after IO#read" do
     @file.read(5)
-    lambda { @file.send(@method, "fghij") }.should_not complain
+    -> { @file.send(@method, "fghij") }.should_not complain
   end
 
   it "writes to the current position after IO#read" do
@@ -66,7 +66,17 @@ describe :io_write, shared: true do
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.send(@method, "hello") }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.send(@method, "hello") }.should raise_error(IOError)
+  end
+
+  it "does not modify the passed argument" do
+    File.open(@filename, "w") do |f|
+      f.set_encoding(Encoding::IBM437)
+      # A character whose codepoint differs between UTF-8 and IBM437
+      f.write "ƒ".freeze
+    end
+
+    File.binread(@filename).bytes.should == [159]
   end
 
   describe "on a pipe" do

@@ -8,7 +8,7 @@ describe :string_encode, shared: true do
     end
 
     it "transcodes a 7-bit String despite no generic converting being available" do
-      lambda do
+      -> do
         Encoding::Converter.new Encoding::Emacs_Mule, Encoding::BINARY
       end.should raise_error(Encoding::ConverterNotFoundError)
 
@@ -21,7 +21,7 @@ describe :string_encode, shared: true do
     it "raises an Encoding::ConverterNotFoundError when no conversion is possible" do
       Encoding.default_internal = Encoding::Emacs_Mule
       str = [0x80].pack('C').force_encoding Encoding::BINARY
-      lambda { str.send(@method) }.should raise_error(Encoding::ConverterNotFoundError)
+      -> { str.send(@method) }.should raise_error(Encoding::ConverterNotFoundError)
     end
   end
 
@@ -51,7 +51,7 @@ describe :string_encode, shared: true do
     end
 
     it "transcodes a 7-bit String despite no generic converting being available" do
-      lambda do
+      -> do
         Encoding::Converter.new Encoding::Emacs_Mule, Encoding::BINARY
       end.should raise_error(Encoding::ConverterNotFoundError)
 
@@ -61,13 +61,13 @@ describe :string_encode, shared: true do
 
     it "raises an Encoding::ConverterNotFoundError when no conversion is possible" do
       str = [0x80].pack('C').force_encoding Encoding::BINARY
-      lambda do
+      -> do
         str.send(@method, Encoding::Emacs_Mule)
       end.should raise_error(Encoding::ConverterNotFoundError)
     end
 
     it "raises an Encoding::ConverterNotFoundError for an invalid encoding" do
-      lambda do
+      -> do
         "abc".send(@method, "xyz")
       end.should raise_error(Encoding::ConverterNotFoundError)
     end
@@ -96,7 +96,7 @@ describe :string_encode, shared: true do
     it "raises an Encoding::ConverterNotFoundError when no conversion is possible despite 'invalid: :replace, undef: :replace'" do
       Encoding.default_internal = Encoding::Emacs_Mule
       str = [0x80].pack('C').force_encoding Encoding::BINARY
-      lambda do
+      -> do
         str.send(@method, invalid: :replace, undef: :replace)
       end.should raise_error(Encoding::ConverterNotFoundError)
     end
@@ -242,6 +242,6 @@ describe :string_encode, shared: true do
   end
 
   it "raises ArgumentError if the value of the :xml option is not :text or :attr" do
-    lambda { ''.send(@method, "UTF-8", xml: :other) }.should raise_error(ArgumentError)
+    -> { ''.send(@method, "UTF-8", xml: :other) }.should raise_error(ArgumentError)
   end
 end

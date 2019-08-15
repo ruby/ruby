@@ -17,13 +17,4 @@ RSpec.describe "bundle command names" do
     bundle "in"
     expect(err).to eq("Ambiguous command in matches [info, init, inject, install]")
   end
-
-  context "when cache_command_is_package is set" do
-    before { bundle! "config set cache_command_is_package true" }
-
-    it "dispatches `bundle cache` to the package command" do
-      bundle "cache --verbose"
-      expect(out).to start_with "Running `bundle package --verbose`"
-    end
-  end
 end
