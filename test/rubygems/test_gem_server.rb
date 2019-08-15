@@ -358,7 +358,6 @@ class TestGemServer < Gem::TestCase
     assert_match 'z 9', @res.body
   end
 
-
   def test_xss_homepage_fix_289313
     data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
     dir = "#{@gemhome}2"

@@ -33,7 +33,7 @@ describe "Integer#rationalize" do
   end
 
   it "raises ArgumentError when passed more than one argument" do
-    lambda { 1.rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
-    lambda { 1.rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
+    -> { 1.rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
+    -> { 1.rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
   end
 end

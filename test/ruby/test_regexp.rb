@@ -1075,6 +1075,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_no_match(/^\p{age=3.0}$/u, "\u2754")
     assert_no_match(/^\p{age=2.0}$/u, "\u2754")
     assert_no_match(/^\p{age=1.1}$/u, "\u2754")
+
+    assert_no_match(/^\p{age=12.0}$/u, "\u32FF")
+    assert_match(/^\p{age=12.1}$/u, "\u32FF")
   end
 
   MatchData_A = eval("class MatchData_\u{3042} < MatchData; self; end")
@@ -1121,6 +1124,8 @@ class TestRegexp < Test::Unit::TestCase
 
     bug8151 = '[ruby-core:53649]'
     assert_warning(/\A\z/, bug8151) { Regexp.new('(?:[\u{33}])').to_s }
+
+    assert_warning(%r[/.*/\Z]) { Regexp.new("[\n\n]") }
   end
 
   def test_property_warn

@@ -399,8 +399,14 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
 
       let(:bundler_system_ruby_version) { subject }
 
-      before do
-        Bundler::RubyVersion.instance_variable_set("@ruby_version", nil)
+      around do |example|
+        begin
+          old_ruby_version = Bundler::RubyVersion.instance_variable_get("@ruby_version")
+          Bundler::RubyVersion.instance_variable_set("@ruby_version", nil)
+          example.run
+        ensure
+          Bundler::RubyVersion.instance_variable_set("@ruby_version", old_ruby_version)
+        end
       end
 
       it "should return an instance of Bundler::RubyVersion" do
@@ -420,22 +426,12 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
       end
 
       describe "#engine" do
-        context "RUBY_ENGINE is defined" do
-          before { stub_const("RUBY_ENGINE", "jruby") }
-          before { stub_const("JRUBY_VERSION", "2.1.1") }
+        before { stub_const("RUBY_ENGINE", "jruby") }
+        before { stub_const("JRUBY_VERSION", "2.1.1") }
 
-          it "should return a copy of the value of RUBY_ENGINE" do
-            expect(subject.engine).to eq("jruby")
-            expect(subject.engine).to_not be(RUBY_ENGINE)
-          end
-        end
-
-        context "RUBY_ENGINE is not defined" do
-          before { stub_const("RUBY_ENGINE", nil) }
-
-          it "should return the string 'ruby'" do
-            expect(subject.engine).to eq("ruby")
-          end
+        it "should return a copy of the value of RUBY_ENGINE" do
+          expect(subject.engine).to eq("jruby")
+          expect(subject.engine).to_not be(RUBY_ENGINE)
         end
       end
 

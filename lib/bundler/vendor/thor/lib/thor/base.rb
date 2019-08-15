@@ -1,17 +1,17 @@
-require "bundler/vendor/thor/lib/thor/command"
-require "bundler/vendor/thor/lib/thor/core_ext/hash_with_indifferent_access"
-require "bundler/vendor/thor/lib/thor/core_ext/ordered_hash"
-require "bundler/vendor/thor/lib/thor/error"
-require "bundler/vendor/thor/lib/thor/invocation"
-require "bundler/vendor/thor/lib/thor/parser"
-require "bundler/vendor/thor/lib/thor/shell"
-require "bundler/vendor/thor/lib/thor/line_editor"
-require "bundler/vendor/thor/lib/thor/util"
+require_relative "command"
+require_relative "core_ext/hash_with_indifferent_access"
+require_relative "core_ext/ordered_hash"
+require_relative "error"
+require_relative "invocation"
+require_relative "parser"
+require_relative "shell"
+require_relative "line_editor"
+require_relative "util"
 
 class Bundler::Thor
-  autoload :Actions,    "bundler/vendor/thor/lib/thor/actions"
-  autoload :RakeCompat, "bundler/vendor/thor/lib/thor/rake_compat"
-  autoload :Group,      "bundler/vendor/thor/lib/thor/group"
+  autoload :Actions,    File.expand_path("actions", __dir__)
+  autoload :RakeCompat, File.expand_path("rake_compat", __dir__)
+  autoload :Group,      File.expand_path("group", __dir__)
 
   # Shortcuts for help.
   HELP_MAPPINGS       = %w(-h -? --help -D)
@@ -113,7 +113,7 @@ class Bundler::Thor
       end
 
       # Whenever a class inherits from Bundler::Thor or Bundler::Thor::Group, we should track the
-      # class and the file on Bundler::Thor::Base. This is the method responsable for it.
+      # class and the file on Bundler::Thor::Base. This is the method responsible for it.
       #
       def register_klass_file(klass) #:nodoc:
         file = caller[1].match(/(.*):\d+/)[1]
@@ -466,13 +466,13 @@ class Bundler::Thor
         dispatch(nil, given_args.dup, nil, config)
       rescue Bundler::Thor::Error => e
         config[:debug] || ENV["THOR_DEBUG"] == "1" ? (raise e) : config[:shell].error(e.message)
-        exit(1) if exit_on_failure?
+        exit(false) if exit_on_failure?
       rescue Errno::EPIPE
         # This happens if a thor command is piped to something like `head`,
         # which closes the pipe when it's done reading. This will also
         # mean that if the pipe is closed, further unnecessary
         # computation will not occur.
-        exit(0)
+        exit(true)
       end
 
       # Allows to use private methods from parent in child classes as commands.
@@ -493,8 +493,7 @@ class Bundler::Thor
       alias_method :public_task, :public_command
 
       def handle_no_command_error(command, has_namespace = $thor_runner) #:nodoc:
-        raise UndefinedCommandError, "Could not find command #{command.inspect} in #{namespace.inspect} namespace." if has_namespace
-        raise UndefinedCommandError, "Could not find command #{command.inspect}."
+        raise UndefinedCommandError.new(command, all_commands.keys, (namespace if has_namespace))
       end
       alias_method :handle_no_task_error, :handle_no_command_error
 

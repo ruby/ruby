@@ -35,8 +35,8 @@ describe "StringIO#truncate when passed [length]" do
   end
 
   it "raises an Errno::EINVAL when the passed length is negative" do
-    lambda { @io.truncate(-1) }.should raise_error(Errno::EINVAL)
-    lambda { @io.truncate(-10) }.should raise_error(Errno::EINVAL)
+    -> { @io.truncate(-1) }.should raise_error(Errno::EINVAL)
+    -> { @io.truncate(-10) }.should raise_error(Errno::EINVAL)
   end
 
   it "tries to convert the passed length to an Integer using #to_int" do
@@ -54,17 +54,17 @@ describe "StringIO#truncate when passed [length]" do
   end
 
   it "raises a TypeError when the passed length can't be converted to an Integer" do
-    lambda { @io.truncate(Object.new) }.should raise_error(TypeError)
+    -> { @io.truncate(Object.new) }.should raise_error(TypeError)
   end
 end
 
 describe "StringIO#truncate when self is not writable" do
   it "raises an IOError" do
     io = StringIO.new("test", "r")
-    lambda { io.truncate(2) }.should raise_error(IOError)
+    -> { io.truncate(2) }.should raise_error(IOError)
 
     io = StringIO.new("test")
     io.close_write
-    lambda { io.truncate(2) }.should raise_error(IOError)
+    -> { io.truncate(2) }.should raise_error(IOError)
   end
 end

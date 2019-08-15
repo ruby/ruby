@@ -42,7 +42,7 @@ describe :basicobject_send, shared: true do
         'done'
       end
     end
-    lambda { SendSpecs::Foo.new.send(@method, :syegsywhwua) }.should raise_error(NameError)
+    -> { SendSpecs::Foo.new.send(@method, :syegsywhwua) }.should raise_error(NameError)
   end
 
   it "raises a NameError if the corresponding singleton method can't be found" do
@@ -51,12 +51,12 @@ describe :basicobject_send, shared: true do
         'done'
       end
     end
-    lambda { SendSpecs::Foo.send(@method, :baz) }.should raise_error(NameError)
+    -> { SendSpecs::Foo.send(@method, :baz) }.should raise_error(NameError)
   end
 
   it "raises an ArgumentError if no arguments are given" do
     class SendSpecs::Foo; end
-    lambda { SendSpecs::Foo.new.send @method }.should raise_error(ArgumentError)
+    -> { SendSpecs::Foo.new.send @method }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if called with more arguments than available parameters" do
@@ -64,7 +64,7 @@ describe :basicobject_send, shared: true do
       def bar; end
     end
 
-    lambda { SendSpecs::Foo.new.send(@method, :bar, :arg) }.should raise_error(ArgumentError)
+    -> { SendSpecs::Foo.new.send(@method, :bar, :arg) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if called with fewer arguments than required parameters" do
@@ -72,7 +72,7 @@ describe :basicobject_send, shared: true do
       def foo(arg); end
     end
 
-    lambda { SendSpecs::Foo.new.send(@method, :foo) }.should raise_error(ArgumentError)
+    -> { SendSpecs::Foo.new.send(@method, :foo) }.should raise_error(ArgumentError)
   end
 
   it "succeeds if passed an arbitrary number of arguments as a splat parameter" do
@@ -113,5 +113,16 @@ describe :basicobject_send, shared: true do
 
   it "has a negative arity" do
     method(@method).arity.should < 0
+  end
+
+  it "invokes module methods with super correctly" do
+    m1 = Module.new { def foo(ary); ary << :m1; end; }
+    m2 = Module.new { def foo(ary = []); super(ary); ary << :m2; end; }
+    c2 = Class.new do
+      include m1
+      include m2
+    end
+
+    c2.new.send(@method, :foo, *[[]]).should == %i[m1 m2]
   end
 end

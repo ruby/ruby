@@ -120,8 +120,8 @@ describe "CGI::Cookie#initialize when passed Hash" do
   end
 
   it "raises a ArgumentError when the passed Hash has no 'name' entry" do
-    lambda { @cookie.send(:initialize, {}) }.should raise_error(ArgumentError)
-    lambda { @cookie.send(:initialize, "value" => "test") }.should raise_error(ArgumentError)
+    -> { @cookie.send(:initialize, {}) }.should raise_error(ArgumentError)
+    -> { @cookie.send(:initialize, "value" => "test") }.should raise_error(ArgumentError)
   end
 end
 

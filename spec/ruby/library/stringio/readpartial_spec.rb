@@ -12,7 +12,7 @@ describe "StringIO#readpartial" do
 
   it "raises IOError on closed stream" do
     @string.close
-    lambda { @string.readpartial(10) }.should raise_error(IOError)
+    -> { @string.readpartial(10) }.should raise_error(IOError)
   end
 
   it "reads at most the specified number of bytes" do
@@ -55,23 +55,23 @@ describe "StringIO#readpartial" do
 
   it "raises EOFError on EOF" do
     @string.readpartial(18).should == 'Stop, look, listen'
-    lambda { @string.readpartial(10) }.should raise_error(EOFError)
+    -> { @string.readpartial(10) }.should raise_error(EOFError)
   end
 
   it "discards the existing buffer content upon error" do
     buffer = 'hello'
     @string.readpartial(100)
-    lambda { @string.readpartial(1, buffer) }.should raise_error(EOFError)
+    -> { @string.readpartial(1, buffer) }.should raise_error(EOFError)
     buffer.should be_empty
   end
 
   it "raises IOError if the stream is closed" do
     @string.close
-    lambda { @string.readpartial(1) }.should raise_error(IOError)
+    -> { @string.readpartial(1) }.should raise_error(IOError)
   end
 
   it "raises ArgumentError if the negative argument is provided" do
-    lambda { @string.readpartial(-1) }.should raise_error(ArgumentError)
+    -> { @string.readpartial(-1) }.should raise_error(ArgumentError)
   end
 
   it "immediately returns an empty string if the length argument is 0" do

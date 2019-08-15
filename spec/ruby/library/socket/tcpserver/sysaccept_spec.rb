@@ -12,7 +12,7 @@ describe "TCPServer#sysaccept" do
   end
 
   it 'blocks if no connections' do
-    lambda { @server.sysaccept }.should block_caller
+    -> { @server.sysaccept }.should block_caller
   end
 
   it 'returns file descriptor of an accepted connection' do
@@ -41,7 +41,7 @@ describe 'TCPServer#sysaccept' do
 
     describe 'without a connected client' do
       it 'blocks the caller' do
-        lambda { @server.sysaccept }.should block_caller
+        -> { @server.sysaccept }.should block_caller
       end
     end
 

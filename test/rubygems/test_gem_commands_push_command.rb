@@ -250,7 +250,6 @@ class TestGemCommandsPushCommand < Gem::TestCase
       spec.metadata['allowed_push_host'] = "https://privategemserver.example"
     end
 
-
     response = %{ERROR:  "#{@host}" is not allowed by the gemspec, which only allows "https://privategemserver.example"}
 
     assert_raises Gem::MockGemUi::TermError do

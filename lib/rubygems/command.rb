@@ -20,6 +20,10 @@ class Gem::Command
 
   include Gem::UserInteraction
 
+  OptionParser.accept Symbol do |value|
+    value.to_sym
+  end
+
   ##
   # The name of the command.
 
@@ -592,7 +596,6 @@ class Gem::Command
   add_common_option('--norc',
                     'Avoid loading any .gemrc file') do
   end
-
 
   # :stopdoc:
 

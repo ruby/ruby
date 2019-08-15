@@ -169,12 +169,6 @@ class Gem::CommandManager
     when '-v', '--version' then
       say Gem::VERSION
       terminate_interaction 0
-    when '--no-ri', '--no-rdoc' then
-      # This was added to compensate for a deprecation warning not being shown
-      # in Rubygems 2.x.x.
-      # TODO: Remove when Rubygems 3.1 is released.
-      alert_error "Invalid option: #{args.first}. Use --no-document instead."
-      terminate_interaction 1
     when /^-/ then
       alert_error clean_text("Invalid option: #{args.first}. See 'gem --help'.")
       terminate_interaction 1

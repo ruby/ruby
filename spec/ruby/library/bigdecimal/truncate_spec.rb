@@ -74,8 +74,8 @@ describe "BigDecimal#truncate" do
   end
 
   it "returns the same value if self is special value" do
-    lambda { @nan.truncate }.should raise_error(FloatDomainError)
-    lambda { @infinity.truncate }.should raise_error(FloatDomainError)
-    lambda { @infinity_negative.truncate }.should raise_error(FloatDomainError)
+    -> { @nan.truncate }.should raise_error(FloatDomainError)
+    -> { @infinity.truncate }.should raise_error(FloatDomainError)
+    -> { @infinity_negative.truncate }.should raise_error(FloatDomainError)
   end
 end

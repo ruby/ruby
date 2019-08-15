@@ -657,24 +657,22 @@ method_added(VALUE klass, ID mid)
     }
 }
 
-rb_method_entry_t *
+void
 rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_visibility_t visi)
 {
-    rb_method_entry_t *me = rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts);
+    rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts);
 
     if (type != VM_METHOD_TYPE_UNDEF && type != VM_METHOD_TYPE_REFINED) {
 	method_added(klass, mid);
     }
-
-    return me;
 }
 
-void
+MJIT_FUNC_EXPORTED void
 rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *cref, rb_method_visibility_t visi)
 {
     struct { /* should be same fields with rb_method_iseq_struct */
-	const rb_iseq_t *iseqptr;
-	rb_cref_t *cref;
+        const rb_iseq_t *iseqptr;
+        rb_cref_t *cref;
     } iseq_body;
 
     iseq_body.iseqptr = iseq;
@@ -1031,7 +1029,7 @@ rb_remove_method(VALUE klass, const char *name)
  *     remove_method(string)   -> self
  *
  *  Removes the method identified by _symbol_ from the current
- *  class. For an example, see <code>Module.undef_method</code>.
+ *  class. For an example, see Module#undef_method.
  *  String arguments are converted to symbols.
  */
 
@@ -1117,34 +1115,6 @@ rb_method_boundp(VALUE klass, ID id, int ex)
     return 0;
 }
 
-static rb_method_visibility_t
-rb_scope_visibility_get(void)
-{
-    const rb_execution_context_t *ec = GET_EC();
-    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
-
-    if (!vm_env_cref_by_cref(cfp->ep)) {
-	return METHOD_VISI_PUBLIC;
-    }
-    else {
-	return CREF_SCOPE_VISI(rb_vm_cref())->method_visi;
-    }
-}
-
-static int
-rb_scope_module_func_check(void)
-{
-    const rb_execution_context_t *ec = GET_EC();
-    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
-
-    if (!vm_env_cref_by_cref(cfp->ep)) {
-	return FALSE;
-    }
-    else {
-	return CREF_SCOPE_VISI(rb_vm_cref())->module_func;
-    }
-}
-
 static void
 vm_cref_set_visibility(rb_method_visibility_t method_visi, int module_func)
 {
@@ -1165,19 +1135,22 @@ rb_scope_module_func_set(void)
     vm_cref_set_visibility(METHOD_VISI_PRIVATE, TRUE);
 }
 
+const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
 void
 rb_attr(VALUE klass, ID id, int read, int write, int ex)
 {
     ID attriv;
     rb_method_visibility_t visi;
+    const rb_execution_context_t *ec = GET_EC();
+    const rb_cref_t *cref = rb_vm_cref_in_context(klass, klass);
 
-    if (!ex) {
+    if (!ex || !cref) {
 	visi = METHOD_VISI_PUBLIC;
     }
     else {
-	switch (rb_scope_visibility_get()) {
+        switch (vm_scope_visibility_get(ec)) {
 	  case METHOD_VISI_PRIVATE:
-	    if (rb_scope_module_func_check()) {
+            if (vm_scope_module_func_check(ec)) {
 		rb_warning("attribute accessor as module_function");
 	    }
 	    visi = METHOD_VISI_PRIVATE;
