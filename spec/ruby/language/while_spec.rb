@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 # while bool-expr [do]
 #   body
@@ -330,7 +330,7 @@ describe "The while modifier with begin .. end block" do
     a.should == [0, 1, 2, 4]
   end
 
-  it "restarts the current iteration without reevaluting condition with redo" do
+  it "restarts the current iteration without reevaluating condition with redo" do
     a = []
     i = 0
     j = 0

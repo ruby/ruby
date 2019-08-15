@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "IO#close_write" do
   before :each do
@@ -15,36 +15,26 @@ describe "IO#close_write" do
   it "closes the write end of a duplex I/O stream" do
     @io.close_write
 
-    lambda { @io.write "attempt to write" }.should raise_error(IOError)
+    -> { @io.write "attempt to write" }.should raise_error(IOError)
   end
 
-  ruby_version_is ''...'2.3' do
-    it "raises an IOError on subsequent invocations" do
-      @io.close_write
+  it "does nothing on subsequent invocations" do
+    @io.close_write
 
-      lambda { @io.close_write }.should raise_error(IOError)
-    end
-  end
-
-  ruby_version_is '2.3' do
-    it "does nothing on subsequent invocations" do
-      @io.close_write
-
-      @io.close_write.should be_nil
-    end
+    @io.close_write.should be_nil
   end
 
   it "allows subsequent invocation of close" do
     @io.close_write
 
-    lambda { @io.close }.should_not raise_error
+    -> { @io.close }.should_not raise_error
   end
 
   it "raises an IOError if the stream is readable and not duplexed" do
     io = File.open @path, 'w+'
 
     begin
-      lambda { io.close_write }.should raise_error(IOError)
+      -> { io.close_write }.should raise_error(IOError)
     ensure
       io.close unless io.closed?
     end
@@ -66,19 +56,9 @@ describe "IO#close_write" do
     @io.read.should == "12345\n"
   end
 
-  ruby_version_is ''...'2.3' do
-    it "raises IOError on closed stream" do
-      @io.close
+  it "does nothing on closed stream" do
+    @io.close
 
-      lambda { @io.close_write }.should raise_error(IOError)
-    end
-  end
-
-  ruby_version_is '2.3' do
-    it "does nothing on closed stream" do
-      @io.close
-
-      @io.close_write.should be_nil
-    end
+    @io.close_write.should be_nil
   end
 end

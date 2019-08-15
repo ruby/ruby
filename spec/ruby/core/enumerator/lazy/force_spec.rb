@@ -1,7 +1,7 @@
 # -*- encoding: us-ascii -*-
 
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Enumerator::Lazy#force" do
   before :each do
@@ -24,7 +24,13 @@ describe "Enumerator::Lazy#force" do
       (0..Float::INFINITY).lazy.map(&:succ).take(2).force.should == [1, 2]
 
       @eventsmixed.take(1).map(&:succ).force.should == [1]
-      ScratchPad.recorded == [:after_yields]
+      ScratchPad.recorded.should == [:before_yield]
     end
+  end
+
+  it "works with an infinite enumerable" do
+    s = 0..Float::INFINITY
+    s.lazy.take(100).force.should ==
+      s.take(100)
   end
 end

@@ -250,14 +250,12 @@ ossl_x509name_to_s_old(VALUE self)
 {
     X509_NAME *name;
     char *buf;
-    VALUE str;
 
     GetX509Name(self, name);
     buf = X509_NAME_oneline(name, NULL, 0);
-    str = rb_str_new2(buf);
-    OPENSSL_free(buf);
-
-    return str;
+    if (!buf)
+	ossl_raise(eX509NameError, "X509_NAME_oneline");
+    return ossl_buf2str(buf, rb_long2int(strlen(buf)));
 }
 
 static VALUE
@@ -265,12 +263,14 @@ x509name_print(VALUE self, unsigned long iflag)
 {
     X509_NAME *name;
     BIO *out;
+    int ret;
 
     GetX509Name(self, name);
     out = BIO_new(BIO_s_mem());
     if (!out)
 	ossl_raise(eX509NameError, NULL);
-    if (!X509_NAME_print_ex(out, name, 0, iflag)) {
+    ret = X509_NAME_print_ex(out, name, 0, iflag);
+    if (ret < 0 || (iflag == XN_FLAG_COMPAT && ret == 0)) {
 	BIO_free(out);
 	ossl_raise(eX509NameError, "X509_NAME_print_ex");
     }
@@ -400,7 +400,7 @@ ossl_x509name_cmp(VALUE self, VALUE other)
 
     result = ossl_x509name_cmp0(self, other);
     if (result < 0) return INT2FIX(-1);
-    if (result > 1) return INT2FIX(1);
+    if (result > 0) return INT2FIX(1);
 
     return INT2FIX(0);
 }
@@ -502,6 +502,7 @@ ossl_x509name_to_der(VALUE self)
 void
 Init_ossl_x509name(void)
 {
+#undef rb_intern
     VALUE utf8str, ptrstr, ia5str, hash;
 
 #if 0

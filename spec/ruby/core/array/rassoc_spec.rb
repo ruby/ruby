@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#rassoc" do
   it "returns the first contained array whose second element is == object" do
@@ -28,7 +28,7 @@ describe "Array#rassoc" do
     [[1, :foobar], [2, o], [3, mock('foo')]].rassoc(key).should == [2, o]
   end
 
-  it "does not check the last element in each contained but speficically the second" do
+  it "does not check the last element in each contained but specifically the second" do
     key = 'foobar'
     o = mock('foobar')
     def o.==(other); other == 'foobar'; end

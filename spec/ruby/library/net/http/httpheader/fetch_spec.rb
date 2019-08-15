@@ -1,6 +1,6 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 require 'net/http'
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative 'fixtures/classes'
 
 describe "Net::HTTPHeader#fetch" do
   before :each do
@@ -25,7 +25,7 @@ describe "Net::HTTPHeader#fetch" do
     end
 
     it "returns nil when there is no entry for the passed key" do
-      lambda { @headers.fetch("my-header") }.should raise_error(IndexError)
+      -> { @headers.fetch("my-header") }.should raise_error(IndexError)
     end
   end
 

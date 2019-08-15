@@ -1,6 +1,6 @@
 # -*- encoding: binary -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/marshal_data', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/marshal_data'
 
 describe "Marshal.dump" do
   it "dumps nil" do
@@ -63,6 +63,10 @@ describe "Marshal.dump" do
             "\x04\bI:\b\xE2\x86\x92\x06:\x06ET"],
         [Marshal, s.encode("utf-16").to_sym,
             "\x04\bI:\t\xFE\xFF!\x92\x06:\rencoding\"\vUTF-16"],
+        [Marshal, s.encode("utf-16le").to_sym,
+            "\x04\bI:\a\x92!\x06:\rencoding\"\rUTF-16LE"],
+        [Marshal, s.encode("utf-16be").to_sym,
+            "\x04\bI:\a!\x92\x06:\rencoding\"\rUTF-16BE"],
         [Marshal, s.encode("euc-jp").to_sym,
             "\x04\bI:\a\xA2\xAA\x06:\rencoding\"\vEUC-JP"],
         [Marshal, s.encode("sjis").to_sym,
@@ -74,20 +78,6 @@ describe "Marshal.dump" do
       s = "\u2192".force_encoding("binary").to_sym
       Marshal.dump(s).should == "\x04\b:\b\xE2\x86\x92"
     end
-
-  end
-
-  it "dumps an extended_object" do
-    Marshal.dump(Object.new.extend(Meths)).should == "\x04\be:\nMethso:\vObject\x00"
-  end
-
-  it "dumps an object that has had an ivar added and removed as though the ivar never was set" do
-    obj = Object.new
-    initial = Marshal.dump(obj)
-    obj.instance_variable_set(:@ivar, 1)
-    Marshal.dump(obj).should == "\004\bo:\vObject\006:\n@ivari\006"
-    obj.send :remove_instance_variable, :@ivar
-    Marshal.dump(obj).should == initial
   end
 
   describe "with an object responding to #marshal_dump" do
@@ -109,7 +99,7 @@ describe "Marshal.dump" do
     it "raises a TypeError if _dump returns a non-string" do
       m = mock("marshaled")
       m.should_receive(:_dump).and_return(0)
-      lambda { Marshal.dump(m) }.should raise_error(TypeError)
+      -> { Marshal.dump(m) }.should raise_error(TypeError)
     end
 
     it "favors marshal_dump over _dump" do
@@ -134,11 +124,11 @@ describe "Marshal.dump" do
     end
 
     it "raises TypeError with an anonymous Class" do
-      lambda { Marshal.dump(Class.new) }.should raise_error(TypeError)
+      -> { Marshal.dump(Class.new) }.should raise_error(TypeError)
     end
 
     it "raises TypeError with a singleton Class" do
-      lambda { Marshal.dump(class << self; self end) }.should raise_error(TypeError)
+      -> { Marshal.dump(class << self; self end) }.should raise_error(TypeError)
     end
   end
 
@@ -148,7 +138,7 @@ describe "Marshal.dump" do
     end
 
     it "raises TypeError with an anonymous Module" do
-      lambda { Marshal.dump(Module.new) }.should raise_error(TypeError)
+      -> { Marshal.dump(Module.new) }.should raise_error(TypeError)
     end
   end
 
@@ -214,26 +204,24 @@ describe "Marshal.dump" do
       Marshal.dump(str.force_encoding("binary")).should == "\x04\bI\"\x00\x06:\t@foo\"\bbar"
     end
 
-    with_feature :encoding do
-      it "dumps a US-ASCII String" do
-        str = "abc".force_encoding("us-ascii")
-        Marshal.dump(str).should == "\x04\bI\"\babc\x06:\x06EF"
-      end
+    it "dumps a US-ASCII String" do
+      str = "abc".force_encoding("us-ascii")
+      Marshal.dump(str).should == "\x04\bI\"\babc\x06:\x06EF"
+    end
 
-      it "dumps a UTF-8 String" do
-        str = "\x6d\xc3\xb6\x68\x72\x65".force_encoding("utf-8")
-        Marshal.dump(str).should == "\x04\bI\"\vm\xC3\xB6hre\x06:\x06ET"
-      end
+    it "dumps a UTF-8 String" do
+      str = "\x6d\xc3\xb6\x68\x72\x65".force_encoding("utf-8")
+      Marshal.dump(str).should == "\x04\bI\"\vm\xC3\xB6hre\x06:\x06ET"
+    end
 
-      it "dumps a String in another encoding" do
-        str = "\x6d\x00\xf6\x00\x68\x00\x72\x00\x65\x00".force_encoding("utf-16le")
-        result = "\x04\bI\"\x0Fm\x00\xF6\x00h\x00r\x00e\x00\x06:\rencoding\"\rUTF-16LE"
-        Marshal.dump(str).should == result
-      end
+    it "dumps a String in another encoding" do
+      str = "\x6d\x00\xf6\x00\x68\x00\x72\x00\x65\x00".force_encoding("utf-16le")
+      result = "\x04\bI\"\x0Fm\x00\xF6\x00h\x00r\x00e\x00\x06:\rencoding\"\rUTF-16LE"
+      Marshal.dump(str).should == result
+    end
 
-      it "dumps multiple strings using symlinks for the :E (encoding) symbol" do
-        Marshal.dump(["".encode("us-ascii"), "".encode("utf-8")]).should == "\x04\b[\aI\"\x00\x06:\x06EFI\"\x00\x06;\x00T"
-      end
+    it "dumps multiple strings using symlinks for the :E (encoding) symbol" do
+      Marshal.dump(["".encode("us-ascii"), "".encode("utf-8")]).should == "\x04\b[\aI\"\x00\x06:\x06EFI\"\x00\x06;\x00T"
     end
   end
 
@@ -320,7 +308,7 @@ describe "Marshal.dump" do
     end
 
     it "raises a TypeError with hash having default proc" do
-      lambda { Marshal.dump(Hash.new {}) }.should raise_error(TypeError)
+      -> { Marshal.dump(Hash.new {}) }.should raise_error(TypeError)
     end
 
     it "dumps a Hash with instance variables" do
@@ -376,6 +364,13 @@ describe "Marshal.dump" do
       Marshal.dump(obj).should == "\004\bo:\vObject\006:\n@ivari\006"
     end
 
+    it "dumps an Object with a non-US-ASCII instance variable" do
+      obj = Object.new
+      ivar = "@é".force_encoding(Encoding::UTF_8).to_sym
+      obj.instance_variable_set(ivar, 1)
+      Marshal.dump(obj).should == "\x04\bo:\vObject\x06I:\b@\xC3\xA9\x06:\x06ETi\x06"
+    end
+
     it "dumps an Object that has had an instance variable added and removed as though it was never set" do
       obj = Object.new
       obj.instance_variable_set(:@ivar, 1)
@@ -392,7 +387,7 @@ describe "Marshal.dump" do
     it "raises if an Object has a singleton class and singleton methods" do
       obj = Object.new
       def obj.foo; end
-      lambda {
+      -> {
         Marshal.dump(obj)
       }.should raise_error(TypeError, "singleton can't be dumped")
     end
@@ -454,14 +449,13 @@ describe "Marshal.dump" do
         zone = ":\tzoneI\"\bAST\x06:\x06EF" # Last is 'F' (US-ASCII)
         [ "#{base}#{offset}#{zone}", "#{base}#{zone}#{offset}" ].should include(dump)
       end
-
-      it "dumps the zone, but not the offset if zone is UTC" do
-        dump = Marshal.dump(@utc)
-        zone = ":\tzoneI\"\bUTC\x06:\x06EF" # Last is 'F' (US-ASCII)
-        dump.should == "\x04\bIu:\tTime\r#{@utc_dump}\x06#{zone}"
-      end
     end
 
+    it "dumps the zone, but not the offset if zone is UTC" do
+      dump = Marshal.dump(@utc)
+      zone = ":\tzoneI\"\bUTC\x06:\x06EF" # Last is 'F' (US-ASCII)
+      dump.should == "\x04\bIu:\tTime\r#{@utc_dump}\x06#{zone}"
+    end
   end
 
   describe "with an Exception" do
@@ -477,6 +471,24 @@ describe "Marshal.dump" do
       obj = Exception.new("foo")
       obj.set_backtrace(["foo/bar.rb:10"])
       Marshal.dump(obj).should == "\x04\bo:\x0EException\a:\tmesg\"\bfoo:\abt[\x06\"\x12foo/bar.rb:10"
+    end
+
+    it "dumps the cause for the exception" do
+      exc = nil
+      begin
+        raise StandardError, "the cause"
+      rescue StandardError => cause
+        begin
+          raise RuntimeError, "the consequence"
+        rescue RuntimeError => e
+          e.cause.should equal(cause)
+          exc = e
+        end
+      end
+
+      reloaded = Marshal.load(Marshal.dump(exc))
+      reloaded.cause.should be_an_instance_of(StandardError)
+      reloaded.cause.message.should == "the cause"
     end
   end
 
@@ -497,10 +509,10 @@ describe "Marshal.dump" do
 
   it "raises an ArgumentError when the recursion limit is exceeded" do
     h = {'one' => {'two' => {'three' => 0}}}
-    lambda { Marshal.dump(h, 3) }.should raise_error(ArgumentError)
-    lambda { Marshal.dump([h], 4) }.should raise_error(ArgumentError)
-    lambda { Marshal.dump([], 0) }.should raise_error(ArgumentError)
-    lambda { Marshal.dump([[[]]], 1) }.should raise_error(ArgumentError)
+    -> { Marshal.dump(h, 3) }.should raise_error(ArgumentError)
+    -> { Marshal.dump([h], 4) }.should raise_error(ArgumentError)
+    -> { Marshal.dump([], 0) }.should raise_error(ArgumentError)
+    -> { Marshal.dump([[[]]], 1) }.should raise_error(ArgumentError)
   end
 
   it "ignores the recursion limit if the limit is negative" do
@@ -523,37 +535,50 @@ describe "Marshal.dump" do
 
     it "raises an Error when the IO-Object does not respond to #write" do
       obj = mock('test')
-      lambda { Marshal.dump("test", obj) }.should raise_error(TypeError)
+      -> { Marshal.dump("test", obj) }.should raise_error(TypeError)
     end
 
-    with_feature :encoding do
 
-      it "calls binmode when it's defined" do
-        obj = mock('test')
-        obj.should_receive(:write).at_least(1)
-        obj.should_receive(:binmode).at_least(1)
-        Marshal.dump("test", obj)
-      end
+    it "calls binmode when it's defined" do
+      obj = mock('test')
+      obj.should_receive(:write).at_least(1)
+      obj.should_receive(:binmode).at_least(1)
+      Marshal.dump("test", obj)
+    end
 
+
+  end
+
+  describe "when passed a StringIO" do
+
+    it "should raise an error" do
+      require "stringio"
+
+      -> { Marshal.dump(StringIO.new) }.should raise_error(TypeError)
     end
 
   end
 
   it "raises a TypeError if marshalling a Method instance" do
-    lambda { Marshal.dump(Marshal.method(:dump)) }.should raise_error(TypeError)
+    -> { Marshal.dump(Marshal.method(:dump)) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if marshalling a Proc" do
-    lambda { Marshal.dump(proc {}) }.should raise_error(TypeError)
+    -> { Marshal.dump(proc {}) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if dumping a IO/File instance" do
-    lambda { Marshal.dump(STDIN) }.should raise_error(TypeError)
-    lambda { File.open(__FILE__) { |f| Marshal.dump(f) } }.should raise_error(TypeError)
+    -> { Marshal.dump(STDIN) }.should raise_error(TypeError)
+    -> { File.open(__FILE__) { |f| Marshal.dump(f) } }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if dumping a MatchData instance" do
-    lambda { Marshal.dump(/(.)/.match("foo")) }.should raise_error(TypeError)
+    -> { Marshal.dump(/(.)/.match("foo")) }.should raise_error(TypeError)
+  end
+
+  it "raises a TypeError if dumping a Mutex instance" do
+    m = Mutex.new
+    -> { Marshal.dump(m) }.should raise_error(TypeError)
   end
 
   it "returns an untainted string if object is untainted" do

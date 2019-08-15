@@ -1,6 +1,6 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 require 'net/http'
-require File.expand_path('../fixtures/http_server', __FILE__)
+require_relative 'fixtures/http_server'
 
 describe "Net::HTTP.get_print" do
   before :each do
@@ -14,7 +14,7 @@ describe "Net::HTTP.get_print" do
 
   describe "when passed URI" do
     it "it prints the body of the specified uri to $stdout" do
-      lambda do
+      -> do
         Net::HTTP.get_print URI.parse("http://localhost:#{@port}/")
       end.should output(/This is the index page\./)
     end
@@ -22,7 +22,7 @@ describe "Net::HTTP.get_print" do
 
   describe "when passed host, path, port" do
     it "it prints the body of the specified uri to $stdout" do
-      lambda do
+      -> do
         Net::HTTP.get_print 'localhost', "/", @port
       end.should output(/This is the index page\./)
     end

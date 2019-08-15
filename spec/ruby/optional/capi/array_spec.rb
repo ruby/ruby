@@ -1,4 +1,4 @@
-require File.expand_path('../spec_helper', __FILE__)
+require_relative 'spec_helper'
 
 load_extension("array")
 
@@ -8,7 +8,7 @@ describe :rb_ary_new2, shared: true do
   end
 
   it "raises an ArgumentError when the given argument is negative" do
-    lambda { @s.send(@method, -1) }.should raise_error(ArgumentError)
+    -> { @s.send(@method, -1) }.should raise_error(ArgumentError)
   end
 end
 
@@ -83,8 +83,8 @@ describe "C-API Array function" do
       @s.rb_ary_cat([1, 2], 3, 4).should == [1, 2, 3, 4]
     end
 
-    it "raises a RuntimeError if the array is frozen" do
-      lambda { @s.rb_ary_cat([].freeze, 1) }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} if the array is frozen" do
+      -> { @s.rb_ary_cat([].freeze, 1) }.should raise_error(frozen_error_class)
     end
   end
 
@@ -130,8 +130,8 @@ describe "C-API Array function" do
       @s.rb_ary_rotate([1, 2, 3, 4], -3).should == [2, 3, 4, 1]
     end
 
-    it "raises a RuntimeError if the array is frozen" do
-      lambda { @s.rb_ary_rotate([].freeze, 1) }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} if the array is frozen" do
+      -> { @s.rb_ary_rotate([].freeze, 1) }.should raise_error(frozen_error_class)
     end
   end
 
@@ -205,7 +205,7 @@ describe "C-API Array function" do
 
     it "raises an IndexError if the negative index is greater than the length" do
       a = [1, 2, 3]
-      lambda { @s.rb_ary_store(a, -10, 5) }.should raise_error(IndexError)
+      -> { @s.rb_ary_store(a, -10, 5) }.should raise_error(IndexError)
     end
 
     it "enlarges the array as needed" do
@@ -214,9 +214,9 @@ describe "C-API Array function" do
       a.should == [nil, nil, 7]
     end
 
-    it "raises a RuntimeError if the array is frozen" do
+    it "raises a #{frozen_error_class} if the array is frozen" do
       a = [1, 2, 3].freeze
-      lambda { @s.rb_ary_store(a, 1, 5) }.should raise_error(RuntimeError)
+      -> { @s.rb_ary_store(a, 1, 5) }.should raise_error(frozen_error_class)
     end
   end
 

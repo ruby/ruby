@@ -1,6 +1,12 @@
+# frozen_string_literal: true
 require 'ripper'
 
-class RDoc::RipperStateLex
+class RDoc::Parser::RipperStateLex
+  # TODO: Remove this constants after Ruby 2.4 EOL
+  RIPPER_HAS_LEX_STATE = Ripper::Filter.method_defined?(:state)
+
+  Token = Struct.new(:line_no, :char_no, :kind, :text, :state)
+
   EXPR_NONE = 0
   EXPR_BEG = 1
   EXPR_END = 2
@@ -44,7 +50,7 @@ class RDoc::RipperStateLex
         @continue = false
         @lex_state = EXPR_BEG unless (EXPR_LABEL & @lex_state) != 0
       end
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_ignored_nl(tok, data)
@@ -55,7 +61,7 @@ class RDoc::RipperStateLex
         @continue = false
         @lex_state = EXPR_BEG unless (EXPR_LABEL & @lex_state) != 0
       end
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_op(tok, data)
@@ -80,6 +86,15 @@ class RDoc::RipperStateLex
       when '&&', '||', '+=', '-=', '*=', '**=',
            '&=', '|=', '^=', '<<=', '>>=', '||=', '&&='
         @lex_state = EXPR_BEG
+      when '::'
+        case @lex_state
+        when EXPR_ARG, EXPR_CMDARG
+          @lex_state = EXPR_DOT
+        when EXPR_FNAME, EXPR_DOT
+          @lex_state = EXPR_ARG
+        else
+          @lex_state = EXPR_BEG
+        end
       else
         case @lex_state
         when EXPR_FNAME, EXPR_DOT
@@ -88,7 +103,7 @@ class RDoc::RipperStateLex
           @lex_state = EXPR_BEG
         end
       end
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_kw(tok, data)
@@ -101,13 +116,15 @@ class RDoc::RipperStateLex
         @continue = true
         @in_fname = true
       when 'if', 'unless', 'while', 'until'
-        if ((EXPR_END | EXPR_ENDARG | EXPR_ENDFN | EXPR_ARG | EXPR_CMDARG) & @lex_state) != 0 # postfix if
+        if ((EXPR_MID | EXPR_END | EXPR_ENDARG | EXPR_ENDFN | EXPR_ARG | EXPR_CMDARG) & @lex_state) != 0 # postfix if
           @lex_state = EXPR_BEG | EXPR_LABEL
         else
           @lex_state = EXPR_BEG
         end
-      when 'begin'
+      when 'begin', 'case', 'when'
         @lex_state = EXPR_BEG
+      when 'return', 'break'
+        @lex_state = EXPR_MID
       else
         if @lex_state == EXPR_FNAME
           @lex_state = EXPR_END
@@ -115,54 +132,54 @@ class RDoc::RipperStateLex
           @lex_state = EXPR_END
         end
       end
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_tstring_beg(tok, data)
       @lex_state = EXPR_BEG
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_tstring_end(tok, data)
       @lex_state = EXPR_END | EXPR_ENDARG
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_CHAR(tok, data)
       @lex_state = EXPR_END
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_period(tok, data)
       @lex_state = EXPR_DOT
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_int(tok, data)
       @lex_state = EXPR_END | EXPR_ENDARG
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_float(tok, data)
       @lex_state = EXPR_END | EXPR_ENDARG
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_rational(tok, data)
       @lex_state = EXPR_END | EXPR_ENDARG
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_imaginary(tok, data)
       @lex_state = EXPR_END | EXPR_ENDARG
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_symbeg(tok, data)
       @lex_state = EXPR_FNAME
       @continue = true
       @in_fname = true
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     private def on_variables(event, tok, data)
@@ -181,7 +198,7 @@ class RDoc::RipperStateLex
       else
         @lex_state = EXPR_CMDARG
       end
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => event, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, event, tok, @lex_state)
     end
 
     def on_ident(tok, data)
@@ -210,97 +227,110 @@ class RDoc::RipperStateLex
 
     def on_lparen(tok, data)
       @lex_state = EXPR_LABEL | EXPR_BEG
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_rparen(tok, data)
       @lex_state = EXPR_ENDFN
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_lbrace(tok, data)
       @lex_state = EXPR_LABEL | EXPR_BEG
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_rbrace(tok, data)
       @lex_state = EXPR_ENDARG
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_lbracket(tok, data)
       @lex_state = EXPR_LABEL | EXPR_BEG
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_rbracket(tok, data)
       @lex_state = EXPR_ENDARG
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_const(tok, data)
       case @lex_state
       when EXPR_FNAME
         @lex_state = EXPR_ENDFN
-      when EXPR_CLASS
+      when EXPR_CLASS, EXPR_CMDARG, EXPR_MID
         @lex_state = EXPR_ARG
       else
         @lex_state = EXPR_CMDARG
       end
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_sp(tok, data)
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_comma(tok, data)
       @lex_state = EXPR_BEG | EXPR_LABEL if (EXPR_ARG_ANY & @lex_state) != 0
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_comment(tok, data)
       @lex_state = EXPR_BEG unless (EXPR_LABEL & @lex_state) != 0
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
     end
 
     def on_ignored_sp(tok, data)
       @lex_state = EXPR_BEG unless (EXPR_LABEL & @lex_state) != 0
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
+    end
+
+    def on_heredoc_beg(tok, data)
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
+      @lex_state = EXPR_END
+      data
     end
 
     def on_heredoc_end(tok, data)
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => __method__, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, __method__, tok, @lex_state)
       @lex_state = EXPR_BEG
+      data
     end
 
     def on_default(event, tok, data)
       reset
-      @callback.call({ :line_no => lineno, :char_no => column, :kind => event, :text => tok, :state => @lex_state})
+      data << Token.new(lineno, column, event, tok, @lex_state)
+    end
+  end unless RIPPER_HAS_LEX_STATE
+
+  class InnerStateLex < Ripper::Filter
+    def initialize(code)
+      super(code)
     end
 
-    def each(&block)
-      @callback = block
-      parse
+    def on_default(event, tok, data)
+      data << Token.new(lineno, column, event, tok, state)
     end
-  end
+  end if RIPPER_HAS_LEX_STATE
 
   def get_squashed_tk
     if @buf.empty?
-      tk = @inner_lex_enumerator.next
+      tk = @tokens.shift
     else
       tk = @buf.shift
     end
+    return nil if tk.nil?
     case tk[:kind]
     when :on_symbeg then
       tk = get_symbol_tk(tk)
     when :on_tstring_beg then
       tk = get_string_tk(tk)
     when :on_backtick then
-      if (EXPR_FNAME & tk[:state]) != 0
-        @inner_lex.lex_state = EXPR_ARG
+      if (tk[:state] & (EXPR_FNAME | EXPR_ENDFN)) != 0
+        @inner_lex.lex_state = EXPR_ARG unless RIPPER_HAS_LEX_STATE
         tk[:kind] = :on_ident
-        tk[:state] = @inner_lex.lex_state
+        tk[:state] = Ripper::Lexer.const_defined?(:State) ? Ripper::Lexer::State.new(EXPR_ARG) : EXPR_ARG
       else
         tk = get_string_tk(tk)
       end
@@ -310,10 +340,12 @@ class RDoc::RipperStateLex
       tk = get_embdoc_tk(tk)
     when :on_heredoc_beg then
       @heredoc_queue << retrieve_heredoc_info(tk)
-      @inner_lex.lex_state = EXPR_END
+      @inner_lex.lex_state = EXPR_END unless RIPPER_HAS_LEX_STATE
     when :on_nl, :on_ignored_nl, :on_comment, :on_heredoc_end then
-      unless @heredoc_queue.empty?
+      if !@heredoc_queue.empty?
         get_heredoc_tk(*@heredoc_queue.shift)
+      elsif tk[:text].nil? # :on_ignored_nl sometimes gives nil
+        tk[:text] = ''
       end
     when :on_words_beg then
       tk = get_words_tk(tk)
@@ -335,7 +367,7 @@ class RDoc::RipperStateLex
 
   private def get_symbol_tk(tk)
     is_symbol = true
-    symbol_tk = { :line_no => tk[:line_no], :char_no => tk[:char_no], :kind => :on_symbol }
+    symbol_tk = Token.new(tk.line_no, tk.char_no, :on_symbol)
     if ":'" == tk[:text] or ':"' == tk[:text]
       tk1 = get_string_tk(tk)
       symbol_tk[:text] = tk1[:text]
@@ -404,13 +436,7 @@ class RDoc::RipperStateLex
         end
       end
     end
-    {
-      :line_no => tk[:line_no],
-      :char_no => tk[:char_no],
-      :kind => kind,
-      :text => string,
-      :state => state
-    }
+    Token.new(tk.line_no, tk.char_no, kind, string, state)
   end
 
   private def get_regexp_tk(tk)
@@ -428,13 +454,7 @@ class RDoc::RipperStateLex
         string = string + inner_str_tk[:text]
       end
     end
-    {
-      :line_no => tk[:line_no],
-      :char_no => tk[:char_no],
-      :kind => :on_regexp,
-      :text => string,
-      :state => state
-    }
+    Token.new(tk.line_no, tk.char_no, :on_regexp, string, state)
   end
 
   private def get_embdoc_tk(tk)
@@ -443,20 +463,14 @@ class RDoc::RipperStateLex
       string = string + embdoc_tk[:text]
     end
     string = string + embdoc_tk[:text]
-    {
-      :line_no => tk[:line_no],
-      :char_no => tk[:char_no],
-      :kind => :on_embdoc,
-      :text => string,
-      :state => embdoc_tk[:state]
-    }
+    Token.new(tk.line_no, tk.char_no, :on_embdoc, string, embdoc_tk.state)
   end
 
   private def get_heredoc_tk(heredoc_name, indent)
     string = ''
     start_tk = nil
     prev_tk = nil
-    until heredoc_end?(heredoc_name, indent, tk = @inner_lex_enumerator.next) do
+    until heredoc_end?(heredoc_name, indent, tk = @tokens.shift) do
       start_tk = tk unless start_tk
       if (prev_tk.nil? or "\n" == prev_tk[:text][-1]) and 0 != tk[:char_no]
         string = string + (' ' * tk[:char_no])
@@ -467,13 +481,7 @@ class RDoc::RipperStateLex
     start_tk = tk unless start_tk
     prev_tk = tk unless prev_tk
     @buf.unshift tk # closing heredoc
-    heredoc_tk = {
-      :line_no => start_tk[:line_no],
-      :char_no => start_tk[:char_no],
-      :kind => :on_heredoc,
-      :text => string,
-      :state => prev_tk[:state]
-    }
+    heredoc_tk = Token.new(start_tk.line_no, start_tk.char_no, :on_heredoc, string, prev_tk.state)
     @buf.unshift heredoc_tk
   end
 
@@ -486,7 +494,8 @@ class RDoc::RipperStateLex
   private def heredoc_end?(name, indent, tk)
     result = false
     if :on_heredoc_end == tk[:kind] then
-      tk_name = (indent ? tk[:text].gsub(/^ *(.+)\n?$/, '\1') : tk[:text].gsub(/\n\z/, ''))
+      tk_name = tk[:text].chomp
+      tk_name.lstrip! if indent
       if name == tk_name
         result = true
       end
@@ -529,25 +538,23 @@ class RDoc::RipperStateLex
       end
     end
     text = "#{start_token}#{string}#{end_token}"
-    {
-      :line_no => line_no,
-      :char_no => char_no,
-      :kind => :on_dstring,
-      :text => text,
-      :state => state
-    }
+    Token.new(line_no, char_no, :on_dstring, text, state)
   end
 
   private def get_op_tk(tk)
     redefinable_operators = %w[! != !~ % & * ** + +@ - -@ / < << <= <=> == === =~ > >= >> [] []= ^ ` | ~]
-    if redefinable_operators.include?(tk[:text]) and EXPR_ARG == tk[:state] then
-      @inner_lex.lex_state = EXPR_ARG
+    if redefinable_operators.include?(tk[:text]) and tk[:state] == EXPR_ARG then
+      @inner_lex.lex_state = EXPR_ARG unless RIPPER_HAS_LEX_STATE
+      tk[:state] = Ripper::Lexer.const_defined?(:State) ? Ripper::Lexer::State.new(EXPR_ARG) : EXPR_ARG
       tk[:kind] = :on_ident
-      tk[:state] = @inner_lex.lex_state
     elsif tk[:text] =~ /^[-+]$/ then
       tk_ahead = get_squashed_tk
       case tk_ahead[:kind]
       when :on_int, :on_float, :on_rational, :on_imaginary then
+        tk[:text] += tk_ahead[:text]
+        tk[:kind] = tk_ahead[:kind]
+        tk[:state] = tk_ahead[:state]
+      when :on_heredoc_beg, :on_tstring, :on_dstring # frozen/non-frozen string literal
         tk[:text] += tk_ahead[:text]
         tk[:kind] = tk_ahead[:kind]
         tk[:state] = tk_ahead[:state]
@@ -562,11 +569,7 @@ class RDoc::RipperStateLex
     @buf = []
     @heredoc_queue = []
     @inner_lex = InnerStateLex.new(code)
-    @inner_lex_enumerator = Enumerator.new do |y|
-      @inner_lex.each do |tk|
-        y << tk
-      end
-    end
+    @tokens = @inner_lex.parse([])
   end
 
   def self.parse(code)

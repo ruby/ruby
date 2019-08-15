@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/dup_clone', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/dup_clone'
 
 describe "Kernel#dup" do
   it_behaves_like :kernel_dup_clone, :dup
@@ -44,7 +44,7 @@ describe "Kernel#dup" do
   it "does not copy singleton methods" do
     def @obj.special() :the_one end
     dup = @obj.dup
-    lambda { dup.special }.should raise_error(NameError)
+    -> { dup.special }.should raise_error(NameError)
   end
 
   it "does not copy modules included in the singleton class" do
@@ -53,7 +53,7 @@ describe "Kernel#dup" do
     end
 
     dup = @obj.dup
-    lambda { dup.repr }.should raise_error(NameError)
+    -> { dup.repr }.should raise_error(NameError)
   end
 
   it "does not copy constants defined in the singleton class" do
@@ -62,6 +62,6 @@ describe "Kernel#dup" do
     end
 
     dup = @obj.dup
-    lambda { class << dup; CLONE; end }.should raise_error(NameError)
+    -> { class << dup; CLONE; end }.should raise_error(NameError)
   end
 end

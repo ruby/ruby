@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
+require "open3"
+
 module Spec
   module Helpers
     def reset!
       Dir.glob("#{tmp}/{gems/*,*}", File::FNM_DOTMATCH).each do |dir|
-        next if %w(base remote1 gems rubygems . ..).include?(File.basename(dir))
+        next if %w[base remote1 gems rubygems . ..].include?(File.basename(dir))
         if ENV["BUNDLER_SUDO_TESTS"]
           `sudo rm -rf "#{dir}"`
         else
@@ -21,21 +23,43 @@ module Spec
     def self.bang(method)
       define_method("#{method}!") do |*args, &blk|
         send(method, *args, &blk).tap do
-          if exitstatus && exitstatus != 0
-            error = out + "\n" + err
-            error.strip!
+          unless last_command.success?
             raise RuntimeError,
-              "Invoking #{method}!(#{args.map(&:inspect).join(", ")}) failed:\n#{error}",
+              "Invoking #{method}!(#{args.map(&:inspect).join(", ")}) failed:\n#{last_command.stdboth}",
               caller.drop_while {|bt| bt.start_with?(__FILE__) }
           end
         end
       end
     end
 
-    attr_reader :out, :err, :exitstatus
-
     def the_bundle(*args)
       TheBundle.new(*args)
+    end
+
+    def last_command
+      @command_executions.last || raise("There is no last command")
+    end
+
+    def out
+      last_command.stdout
+    end
+
+    def err
+      last_command.stderr
+    end
+
+    MAJOR_DEPRECATION = /^\[DEPRECATED\]\s*/.freeze
+
+    def err_without_deprecations
+      err.gsub(/#{MAJOR_DEPRECATION}.+[\n]?/, "")
+    end
+
+    def deprecations
+      err.split("\n").select {|l| l =~ MAJOR_DEPRECATION }.join("\n").split(MAJOR_DEPRECATION)
+    end
+
+    def exitstatus
+      last_command.exitstatus
     end
 
     def in_app_root(&blk)
@@ -53,8 +77,8 @@ module Spec
     def run(cmd, *args)
       opts = args.last.is_a?(Hash) ? args.pop : {}
       groups = args.map(&:inspect).join(", ")
-      setup = "require 'rubygems' ; require 'bundler' ; Bundler.setup(#{groups})\n"
-      @out = ruby(setup + cmd, opts)
+      setup = "require 'bundler' ; Bundler.setup(#{groups})\n"
+      ruby(setup + cmd, opts)
     end
     bang :run
 
@@ -83,19 +107,29 @@ module Spec
       with_sudo = options.delete(:sudo)
       sudo = with_sudo == :preserve_env ? "sudo -E" : "sudo" if with_sudo
 
-      options["no-color"] = true unless options.key?("no-color") || cmd.to_s =~ /\A(e|ex|exe|exec|conf|confi|config)(\s|\z)/
-
       bundle_bin = options.delete("bundle_bin") || bindir.join("bundle")
 
       if system_bundler = options.delete(:system_bundler)
-        bundle_bin = "-S bundle"
+        bundle_bin = system_bundle_bin_path
       end
 
+      env = options.delete(:env) || {}
+      env["PATH"].gsub!("#{Path.root}/exe", "") if env["PATH"] && system_bundler
+
       requires = options.delete(:requires) || []
-      if artifice = options.delete(:artifice) { "fail" unless RSpec.current_example.metadata[:realworld] }
-        requires << File.expand_path("../artifice/#{artifice}.rb", __FILE__)
-      end
       requires << "support/hax"
+
+      artifice = options.delete(:artifice) do
+        if RSpec.current_example.metadata[:realworld]
+          "vcr"
+        else
+          "fail"
+        end
+      end
+      if artifice
+        requires << File.expand_path("../artifice/#{artifice}", __FILE__)
+      end
+
       requires_str = requires.map {|r| "-r#{r}" }.join(" ")
 
       load_path = []
@@ -103,25 +137,44 @@ module Spec
       load_path << spec
       load_path_str = "-I#{load_path.join(File::PATH_SEPARATOR)}"
 
-      env = (options.delete(:env) || {}).map {|k, v| "#{k}='#{v}'" }.join(" ")
-      env["PATH"].gsub!(Path.bindir, "") if env["PATH"] && system_bundler
       args = options.map do |k, v|
-        v == true ? " --#{k}" : " --#{k} #{v}" if v
+        case v
+        when nil
+          next
+        when true
+          " --#{k}"
+        when false
+          " --no-#{k}"
+        else
+          " --#{k} #{v}"
+        end
       end.join
 
-      cmd = "#{env} #{sudo} #{Gem.ruby} #{load_path_str} #{requires_str} #{bundle_bin} #{cmd}#{args}"
-      sys_exec(cmd) {|i, o, thr| yield i, o, thr if block_given? }
+      cmd = "#{sudo} #{Gem.ruby} #{load_path_str} #{requires_str} #{bundle_bin} #{cmd}#{args}"
+      sys_exec(cmd, env) {|i, o, thr| yield i, o, thr if block_given? }
     end
     bang :bundle
+
+    def forgotten_command_line_options(options)
+      remembered = Bundler::VERSION.split(".", 2).first == "2"
+      options = options.map do |k, v|
+        v = '""' if v && v.to_s.empty?
+        [k, v]
+      end
+      return Hash[options] if remembered
+      options.each do |k, v|
+        if v.nil?
+          bundle! "config unset #{k}"
+        else
+          bundle! "config set --local #{k} #{v}"
+        end
+      end
+      {}
+    end
 
     def bundler(cmd, options = {})
       options["bundle_bin"] = bindir.join("bundler")
       bundle(cmd, options)
-    end
-
-    def bundle_ruby(options = {})
-      options["bundle_bin"] = bindir.join("bundle_ruby")
-      bundle("", options)
     end
 
     def ruby(ruby, options = {})
@@ -157,38 +210,32 @@ module Spec
         args = args.gsub(/(?=")/, "\\")
         args = %("#{args}")
       end
-      gem = ENV['BUNDLE_GEM'] || "#{Gem.ruby} -rrubygems -S gem --backtrace"
+      gem = ENV["BUNDLE_GEM"] || "#{Gem.ruby} -rrubygems -S gem --backtrace"
       sys_exec("#{gem} #{command} #{args}")
     end
     bang :gem_command
 
     def rake
-      if ENV['BUNDLE_RUBY'] && ENV['BUNDLE_GEM']
-        "#{ENV['BUNDLE_RUBY']} #{ENV['GEM_PATH']}/bin/rake"
-      else
-        'rake'
-      end
+      "#{Gem.ruby} -S #{ENV["GEM_PATH"]}/bin/rake"
     end
 
-    def sys_exec(cmd)
-      Open3.popen3(cmd.to_s) do |stdin, stdout, stderr, wait_thr|
+    def sys_exec(cmd, env = {})
+      command_execution = CommandExecution.new(cmd.to_s, Dir.pwd)
+
+      env = env.map {|k, v| [k.to_s, v.to_s] }.to_h # convert env keys and values to string
+
+      Open3.popen3(env, cmd.to_s) do |stdin, stdout, stderr, wait_thr|
         yield stdin, stdout, wait_thr if block_given?
         stdin.close
 
-        @exitstatus = wait_thr && wait_thr.value.exitstatus
-        @out = Thread.new { stdout.read }.value.strip
-        @err = Thread.new { stderr.read }.value.strip
+        command_execution.stdout = Thread.new { stdout.read }.value.strip
+        command_execution.stderr = Thread.new { stderr.read }.value.strip
+        command_execution.exitstatus = wait_thr && wait_thr.value.exitstatus
       end
 
-      (@all_output ||= String.new) << [
-        "$ #{cmd.to_s.strip}",
-        out,
-        err,
-        @exitstatus ? "# $? => #{@exitstatus}" : "",
-        "\n",
-      ].reject(&:empty?).join("\n")
+      (@command_executions ||= []) << command_execution
 
-      @out
+      command_execution.stdout
     end
     bang :sys_exec
 
@@ -216,18 +263,22 @@ module Spec
     end
 
     def gemfile(*args)
-      if args.empty?
+      contents = args.shift
+
+      if contents.nil?
         File.open("Gemfile", "r", &:read)
       else
-        create_file("Gemfile", *args)
+        create_file("Gemfile", contents, *args)
       end
     end
 
     def lockfile(*args)
-      if args.empty?
+      contents = args.shift
+
+      if contents.nil?
         File.open("Gemfile.lock", "r", &:read)
       else
-        create_file("Gemfile.lock", *args)
+        create_file("Gemfile.lock", contents, *args)
       end
     end
 
@@ -257,9 +308,17 @@ module Spec
       gem_repo = options.fetch(:gem_repo) { gem_repo1 }
       gems.each do |g|
         path = if g == :bundler
-          Dir.chdir(root) { gem_command! :build, gemspec.to_s }
+          if ruby_core?
+            spec = Gem::Specification.load(gemspec.to_s)
+            spec.bindir = "libexec"
+            File.open(root.join("bundler.gemspec").to_s, "w") {|f| f.write spec.to_ruby }
+            Dir.chdir(root) { gem_command! :build, root.join("bundler.gemspec").to_s }
+            FileUtils.rm(root.join("bundler.gemspec"))
+          else
+            Dir.chdir(root) { gem_command! :build, gemspec.to_s }
+          end
           bundler_path = root + "bundler-#{Bundler::VERSION}.gem"
-        elsif g.to_s =~ %r{\A/.*\.gem\z}
+        elsif g.to_s =~ %r{\A(?:[A-Z]:)?/.*\.gem\z}
           g
         else
           "#{gem_repo}/gems/#{g}.gem"
@@ -267,7 +326,8 @@ module Spec
 
         raise "OMG `#{path}` does not exist!" unless File.exist?(path)
 
-        gem_command! :install, "--no-rdoc --no-ri --ignore-dependencies '#{path}'"
+        gem_command! :install, "--no-document --ignore-dependencies '#{path}'"
+
         bundler_path && bundler_path.rmtree
       end
     end
@@ -317,16 +377,32 @@ module Spec
     end
 
     def system_gems(*gems)
+      opts = gems.last.is_a?(Hash) ? gems.last : {}
+      path = opts.fetch(:path, system_gem_path)
+      if path == :bundle_path
+        path = ruby!(<<-RUBY)
+          require "bundler"
+          begin
+            puts Bundler.bundle_path
+          rescue Bundler::GemfileNotFound
+            ENV["BUNDLE_GEMFILE"] = "Gemfile"
+            retry
+          end
+
+        RUBY
+      end
       gems = gems.flatten
 
-      FileUtils.rm_rf(system_gem_path)
-      FileUtils.mkdir_p(system_gem_path)
+      unless opts[:keep_path]
+        FileUtils.rm_rf(path)
+        FileUtils.mkdir_p(path)
+      end
 
       Gem.clear_paths
 
       env_backup = ENV.to_hash
-      ENV["GEM_HOME"] = system_gem_path.to_s
-      ENV["GEM_PATH"] = system_gem_path.to_s
+      ENV["GEM_HOME"] = path.to_s
+      ENV["GEM_PATH"] = path.to_s
       ENV["BUNDLER_ORIG_GEM_PATH"] = nil
 
       install_gems(*gems)
@@ -353,7 +429,7 @@ module Spec
       ENV["GEM_PATH"] = system_gem_path.to_s
 
       gems.each do |gem|
-        gem_command :install, "--no-rdoc --no-ri #{gem}"
+        gem_command! :install, "--no-document #{gem}"
       end
       return unless block_given?
       begin
@@ -380,7 +456,7 @@ module Spec
 
     def simulate_new_machine
       system_gems []
-      FileUtils.rm_rf default_bundle_path
+      FileUtils.rm_rf system_gem_path
       FileUtils.rm_rf bundled_app(".bundle")
     end
 
@@ -422,10 +498,18 @@ module Spec
       ENV["BUNDLER_SPEC_VERSION"] = old if block_given?
     end
 
-    def simulate_windows
+    def simulate_rubygems_version(version)
+      old = ENV["BUNDLER_SPEC_RUBYGEMS_VERSION"]
+      ENV["BUNDLER_SPEC_RUBYGEMS_VERSION"] = version.to_s
+      yield if block_given?
+    ensure
+      ENV["BUNDLER_SPEC_RUBYGEMS_VERSION"] = old if block_given?
+    end
+
+    def simulate_windows(platform = mswin)
       old = ENV["BUNDLER_SPEC_WINDOWS"]
       ENV["BUNDLER_SPEC_WINDOWS"] = "true"
-      simulate_platform mswin do
+      simulate_platform platform do
         yield
       end
     ensure
@@ -452,6 +536,22 @@ module Spec
       yield
     ensure
       Dir[pattern].each(&chmod[0o755, 0o644])
+    end
+
+    # Simulate replacing TODOs with real values
+    def prepare_gemspec(pathname)
+      process_file(pathname) do |line|
+        case line
+        when /spec\.metadata\["(?:allowed_push_host|homepage_uri|source_code_uri|changelog_uri)"\]/, /spec\.homepage/
+          line.gsub(/\=.*$/, "= 'http://example.org'")
+        when /spec\.summary/
+          line.gsub(/\=.*$/, "= %q{A short summary of my new gem.}")
+        when /spec\.description/
+          line.gsub(/\=.*$/, "= %q{A longer description of my new gem.}")
+        else
+          line
+        end
+      end
     end
 
     def process_file(pathname)
@@ -485,7 +585,7 @@ module Spec
       tries = 0
       sleep 0.5
       TCPSocket.new(host, port)
-    rescue => e
+    rescue StandardError => e
       raise(e) if tries > (seconds * 2)
       tries += 1
       retry
@@ -495,10 +595,18 @@ module Spec
       port = 21_453
       begin
         port += 1 while TCPSocket.new("127.0.0.1", port)
-      rescue
+      rescue StandardError
         false
       end
       port
+    end
+
+    def bundler_fileutils
+      if RUBY_VERSION >= "2.4"
+        ::Bundler::FileUtils
+      else
+        ::FileUtils
+      end
     end
   end
 end

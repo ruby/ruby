@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../enumerable/shared/enumeratorized', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../enumerable/shared/enumeratorized'
 
 describe "ENV.reject!" do
   it "rejects entries based on key" do
@@ -29,7 +29,7 @@ describe "ENV.reject!" do
     orig = ENV.to_hash
     begin
       ENV.clear
-      lambda { ENV.reject! }.should_not raise_error(LocalJumpError)
+      -> { ENV.reject! }.should_not raise_error(LocalJumpError)
     ensure
       ENV.replace orig
     end
@@ -67,7 +67,7 @@ describe "ENV.reject" do
     orig = ENV.to_hash
     begin
       ENV.clear
-      lambda { ENV.reject }.should_not raise_error(LocalJumpError)
+      -> { ENV.reject }.should_not raise_error(LocalJumpError)
     ensure
       ENV.replace orig
     end

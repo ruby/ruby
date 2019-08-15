@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 module ModuleSpecs
   class Parent
@@ -18,8 +18,15 @@ describe "Module#undef_method" do
     @module = Module.new { def method_to_undef; end }
   end
 
-  it "is a private method" do
-    Module.should have_private_instance_method(:undef_method, false)
+  ruby_version_is ''...'2.5' do
+    it "is a private method" do
+      Module.should have_private_instance_method(:undef_method, false)
+    end
+  end
+  ruby_version_is '2.5' do
+    it "is a public method" do
+      Module.should have_public_instance_method(:undef_method, false)
+    end
   end
 
   it "requires multiple arguments" do
@@ -34,8 +41,8 @@ describe "Module#undef_method" do
     x = klass.new
     klass.send(:undef_method, :method_to_undef, :another_method_to_undef)
 
-    lambda { x.method_to_undef }.should raise_error(NoMethodError)
-    lambda { x.another_method_to_undef }.should raise_error(NoMethodError)
+    -> { x.method_to_undef }.should raise_error(NoMethodError)
+    -> { x.another_method_to_undef }.should raise_error(NoMethodError)
   end
 
   it "does not undef any instance methods when argument not given" do
@@ -50,7 +57,7 @@ describe "Module#undef_method" do
   end
 
   it "raises a NameError when passed a missing name" do
-    lambda { @module.send :undef_method, :not_exist }.should raise_error(NameError) { |e|
+    -> { @module.send :undef_method, :not_exist }.should raise_error(NameError) { |e|
       # a NameError and not a NoMethodError
       e.class.should == NameError
     }
@@ -61,16 +68,16 @@ describe "Module#undef_method" do
       @frozen = @module.dup.freeze
     end
 
-    it "raises a RuntimeError when passed a name" do
-      lambda { @frozen.send :undef_method, :method_to_undef }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} when passed a name" do
+      -> { @frozen.send :undef_method, :method_to_undef }.should raise_error(frozen_error_class)
     end
 
-    it "raises a RuntimeError when passed a missing name" do
-      lambda { @frozen.send :undef_method, :not_exist }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} when passed a missing name" do
+      -> { @frozen.send :undef_method, :not_exist }.should raise_error(frozen_error_class)
     end
 
     it "raises a TypeError when passed a not name" do
-      lambda { @frozen.send :undef_method, Object.new }.should raise_error(TypeError)
+      -> { @frozen.send :undef_method, Object.new }.should raise_error(TypeError)
     end
 
     it "does not raise exceptions when no arguments given" do
@@ -91,7 +98,7 @@ describe "Module#undef_method with symbol" do
 
     klass.send :undef_method, :method_to_undef
 
-    lambda { x.method_to_undef }.should raise_error(NoMethodError)
+    -> { x.method_to_undef }.should raise_error(NoMethodError)
   end
 
   it "removes a method defined in a super class" do
@@ -101,7 +108,7 @@ describe "Module#undef_method with symbol" do
 
     child_class.send :undef_method, :method_to_undef
 
-    lambda { child.method_to_undef }.should raise_error(NoMethodError)
+    -> { child.method_to_undef }.should raise_error(NoMethodError)
   end
 
   it "does not remove a method defined in a super class when removed from a subclass" do
@@ -127,7 +134,7 @@ describe "Module#undef_method with string" do
 
     klass.send :undef_method, 'another_method_to_undef'
 
-    lambda { x.another_method_to_undef }.should raise_error(NoMethodError)
+    -> { x.another_method_to_undef }.should raise_error(NoMethodError)
   end
 
   it "removes a method defined in a super class" do
@@ -137,7 +144,7 @@ describe "Module#undef_method with string" do
 
     child_class.send :undef_method, 'another_method_to_undef'
 
-    lambda { child.another_method_to_undef }.should raise_error(NoMethodError)
+    -> { child.another_method_to_undef }.should raise_error(NoMethodError)
   end
 
   it "does not remove a method defined in a super class when removed from a subclass" do

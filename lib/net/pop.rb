@@ -21,7 +21,7 @@
 # See Net::POP3 for documentation.
 #
 
-require 'net/protocol'
+require_relative 'protocol'
 require 'digest/md5'
 require 'timeout'
 
@@ -467,7 +467,7 @@ module Net
 
     # Provide human-readable stringification of class state.
     def inspect
-      "#<#{self.class} #{@address}:#{@port} open=#{@started}>"
+      +"#<#{self.class} #{@address}:#{@port} open=#{@started}>"
     end
 
     # *WARNING*: This method causes a serious security hole.
@@ -549,6 +549,7 @@ module Net
         context = OpenSSL::SSL::SSLContext.new
         context.set_params(@ssl_params)
         s = OpenSSL::SSL::SSLSocket.new(s, context)
+        s.hostname = @address
         s.sync_close = true
         ssl_socket_connect(s, @open_timeout)
         if context.verify_mode != OpenSSL::SSL::VERIFY_NONE
@@ -758,7 +759,7 @@ module Net
 
     # Provide human-readable stringification of class state.
     def inspect
-      "#<#{self.class} #{@number}#{@deleted ? ' deleted' : ''}>"
+      +"#<#{self.class} #{@number}#{@deleted ? ' deleted' : ''}>"
     end
 
     #
@@ -799,7 +800,7 @@ module Net
     #
     # This method raises a POPError if an error occurs.
     #
-    def pop( dest = '', &block ) # :yield: message_chunk
+    def pop( dest = +'', &block ) # :yield: message_chunk
       if block_given?
         @command.retr(@number, &block)
         nil
@@ -819,7 +820,7 @@ module Net
     # The optional +dest+ argument is obsolete.
     #
     # This method raises a POPError if an error occurs.
-    def top(lines, dest = '')
+    def top(lines, dest = +'')
       @command.top(@number, lines) do |chunk|
         dest << chunk
       end
@@ -831,7 +832,7 @@ module Net
     # The optional +dest+ argument is obsolete.
     #
     # This method raises a POPError if an error occurs.
-    def header(dest = '')
+    def header(dest = +'')
       top(0, dest)
     end
 
@@ -898,7 +899,7 @@ module Net
     attr_reader :socket
 
     def inspect
-      "#<#{self.class} socket=#{@socket}>"
+      +"#<#{self.class} socket=#{@socket}>"
     end
 
     def auth(account, password)

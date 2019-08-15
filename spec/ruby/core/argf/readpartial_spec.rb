@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/read', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/read'
 
 describe "ARGF.readpartial" do
   it_behaves_like :argf_read, :readpartial
@@ -16,7 +16,7 @@ describe "ARGF.readpartial" do
 
   it "raises an ArgumentError if called without a maximum read length" do
     argf [@file1_name] do
-      lambda { @argf.readpartial }.should raise_error(ArgumentError)
+      -> { @argf.readpartial }.should raise_error(ArgumentError)
     end
   end
 
@@ -54,15 +54,13 @@ describe "ARGF.readpartial" do
     end
   end
 
-  ruby_version_is "2.3" do
-    it "raises an EOFError if the exception was raised while reading the last file" do
-      argf [@file1_name, @file2_name] do
-        @argf.readpartial(@file1.size)
-        @argf.readpartial(1)
-        @argf.readpartial(@file2.size)
-        lambda { @argf.readpartial(1) }.should raise_error(EOFError)
-        lambda { @argf.readpartial(1) }.should raise_error(EOFError)
-      end
+  it "raises an EOFError if the exception was raised while reading the last file" do
+    argf [@file1_name, @file2_name] do
+      @argf.readpartial(@file1.size)
+      @argf.readpartial(1)
+      @argf.readpartial(@file2.size)
+      -> { @argf.readpartial(1) }.should raise_error(EOFError)
+      -> { @argf.readpartial(1) }.should raise_error(EOFError)
     end
   end
 

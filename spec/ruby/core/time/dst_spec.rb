@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/isdst', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/isdst'
 
 describe "Time#dst?" do
-  it_behaves_like(:time_isdst, :dst?)
+  it_behaves_like :time_isdst, :dst?
 end

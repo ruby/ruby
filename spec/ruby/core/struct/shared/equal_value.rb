@@ -16,6 +16,13 @@ describe :struct_equal_value, shared: true do
     car.send(@method, different_car).should == false
   end
 
+  it "returns false if other is of a different class" do
+    car = StructClasses::Car.new("Honda", "Accord", "1998")
+    klass = Struct.new(:make, :model, :year)
+    clone = klass.new("Honda", "Accord", "1998")
+    car.send(@method, clone).should == false
+  end
+
   it "handles recursive structures by returning false if a difference can be found" do
     x = StructClasses::Car.new("Honda", "Accord", "1998")
     x[:make] = x

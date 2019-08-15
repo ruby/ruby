@@ -6,8 +6,11 @@ require 'rubygems/command'
 # RubyGems checkout or tarball.
 
 class Gem::Commands::SetupCommand < Gem::Command
-  HISTORY_HEADER = /^===\s*[\d.]+\s*\/\s*\d{4}-\d{2}-\d{2}\s*$/
-  VERSION_MATCHER = /^===\s*([\d.]+)\s*\/\s*\d{4}-\d{2}-\d{2}\s*$/
+
+  HISTORY_HEADER = /^===\s*[\d.a-zA-Z]+\s*\/\s*\d{4}-\d{2}-\d{2}\s*$/.freeze
+  VERSION_MATCHER = /^===\s*([\d.a-zA-Z]+)\s*\/\s*\d{4}-\d{2}-\d{2}\s*$/.freeze
+
+  ENV_PATHS = %w[/usr/bin/env /bin/env].freeze
 
   def initialize
     require 'tmpdir'
@@ -60,7 +63,7 @@ class Gem::Commands::SetupCommand < Gem::Command
 
     add_option '--[no-]rdoc',
                'Generate RDoc documentation for RubyGems' do |value, options|
-      if value then
+      if value
         options[:document] << 'rdoc'
       else
         options[:document].delete 'rdoc'
@@ -71,7 +74,7 @@ class Gem::Commands::SetupCommand < Gem::Command
 
     add_option '--[no-]ri',
                'Generate RI documentation for RubyGems' do |value, options|
-      if value then
+      if value
         options[:document] << 'ri'
       else
         options[:document].delete 'ri'
@@ -82,12 +85,14 @@ class Gem::Commands::SetupCommand < Gem::Command
 
     add_option '--[no-]regenerate-binstubs',
                'Regenerate gem binstubs' do |value, options|
-      if value then
-        options[:regenerate_binstubs] = true
-      else
-        options.delete(:regenerate_binstubs)
-      end
-   end
+      options[:regenerate_binstubs] = value
+    end
+
+    add_option('-E', '--[no-]env-shebang',
+               'Rewrite executables with a shebang',
+               'of /usr/bin/env') do |value, options|
+      options[:env_shebang] = value
+    end
 
     @verbose = nil
   end
@@ -95,7 +100,7 @@ class Gem::Commands::SetupCommand < Gem::Command
   def check_ruby_version
     required_version = Gem::Requirement.new '>= 1.8.7'
 
-    unless required_version.satisfied_by? Gem.ruby_version then
+    unless required_version.satisfied_by? Gem.ruby_version
       alert_error "Expected Ruby version #{required_version}, is #{Gem.ruby_version}"
       terminate_interaction 1
     end
@@ -123,12 +128,19 @@ By default, this RubyGems will install gem as:
     EOF
   end
 
+  module MakeDirs
+    def mkdir_p(path, *opts)
+      super
+      (@mkdirs ||= []) << path
+    end
+  end
+
   def execute
     @verbose = Gem.configuration.really_verbose
 
     install_destdir = options[:destdir]
 
-    unless install_destdir.empty? then
+    unless install_destdir.empty?
       ENV['GEM_HOME'] ||= File.join(install_destdir,
                                     Gem.default_dir.gsub(/^[a-zA-Z]:/, ''))
     end
@@ -136,11 +148,12 @@ By default, this RubyGems will install gem as:
     check_ruby_version
 
     require 'fileutils'
-    if Gem.configuration.really_verbose then
+    if Gem.configuration.really_verbose
       extend FileUtils::Verbose
     else
       extend FileUtils
     end
+    extend MakeDirs
 
     lib_dir, bin_dir = make_destination_dirs install_destdir
 
@@ -152,18 +165,23 @@ By default, this RubyGems will install gem as:
 
     remove_old_lib_files lib_dir
 
-    install_default_bundler_gem
+    install_default_bundler_gem bin_dir
+
+    if mode = options[:dir_mode]
+      @mkdirs.uniq!
+      File.chmod(mode, @mkdirs)
+    end
 
     say "RubyGems #{Gem::VERSION} installed"
 
-    regenerate_binstubs
+    regenerate_binstubs if options[:regenerate_binstubs]
 
     uninstall_old_gemcutter
 
     documentation_success = install_rdoc
 
     say
-    if @verbose then
+    if @verbose
       say "-" * 78
       say
     end
@@ -184,14 +202,14 @@ By default, this RubyGems will install gem as:
     say @bin_file_names.map { |name| "\t#{name}\n" }
     say
 
-    unless @bin_file_names.grep(/#{File::SEPARATOR}gem$/) then
+    unless @bin_file_names.grep(/#{File::SEPARATOR}gem$/)
       say "If `gem` was installed by a previous RubyGems installation, you may need"
       say "to remove it by hand."
       say
     end
 
     if documentation_success
-      if options[:document].include? 'rdoc' then
+      if options[:document].include? 'rdoc'
         say "Rdoc documentation was installed. You may now invoke:"
         say "  gem server"
         say "and then peruse beautifully formatted documentation for your gems"
@@ -202,7 +220,7 @@ By default, this RubyGems will install gem as:
         say
       end
 
-      if options[:document].include? 'ri' then
+      if options[:document].include? 'ri'
         say "Ruby Interactive (ri) documentation was installed. ri is kind of like man "
         say "pages for Ruby libraries. You may access it like this:"
         say "  ri Classname"
@@ -216,22 +234,22 @@ By default, this RubyGems will install gem as:
     end
   end
 
-
   def install_executables(bin_dir)
     @bin_file_names = []
 
+    prog_mode = options[:prog_mode] || 0755
+
     executables = { 'gem' => 'bin' }
-    executables['bundler'] = 'bundler/exe' if Gem::USE_BUNDLER_FOR_GEMDEPS
     executables.each do |tool, path|
       say "Installing #{tool} executable" if @verbose
 
       Dir.chdir path do
         bin_files = Dir['*']
 
-        bin_files -= %w[update_rubygems bundler bundle_ruby]
+        bin_files -= %w[update_rubygems]
 
         bin_files.each do |bin_file|
-          bin_file_formatted = if options[:format_executable] then
+          bin_file_formatted = if options[:format_executable]
                                  Gem.default_exec_format % bin_file
                                else
                                  bin_file
@@ -242,13 +260,13 @@ By default, this RubyGems will install gem as:
 
           begin
             bin = File.readlines bin_file
-            bin[0] = "#!#{Gem.ruby}\n"
+            bin[0] = shebang
 
             File.open bin_tmp_file, 'w' do |fp|
               fp.puts bin.join
             end
 
-            install bin_tmp_file, dest_file, :mode => 0755
+            install bin_tmp_file, dest_file, :mode => prog_mode
             @bin_file_names << dest_file
           ensure
             rm bin_tmp_file
@@ -270,7 +288,7 @@ By default, this RubyGems will install gem as:
   TEXT
             end
 
-            install bin_cmd_file, "#{dest_file}.bat", :mode => 0755
+            install bin_cmd_file, "#{dest_file}.bat", :mode => prog_mode
           ensure
             rm bin_cmd_file
           end
@@ -279,21 +297,35 @@ By default, this RubyGems will install gem as:
     end
   end
 
-  def install_file file, dest_dir
+  def shebang
+    if options[:env_shebang]
+      ruby_name = RbConfig::CONFIG['ruby_install_name']
+      @env_path ||= ENV_PATHS.find {|env_path| File.executable? env_path }
+      "#!#{@env_path} #{ruby_name}\n"
+    else
+      "#!#{Gem.ruby}\n"
+    end
+  end
+
+  def install_file(file, dest_dir)
     dest_file = File.join dest_dir, file
     dest_dir = File.dirname dest_file
-    mkdir_p dest_dir unless File.directory? dest_dir
+    unless File.directory? dest_dir
+      mkdir_p dest_dir, :mode => 0755
+    end
 
-    install file, dest_file, :mode => 0644
+    install file, dest_file, :mode => options[:data_mode] || 0644
   end
 
   def install_lib(lib_dir)
     libs = { 'RubyGems' => 'lib' }
-    libs['Bundler'] = 'bundler/lib' if Gem::USE_BUNDLER_FOR_GEMDEPS
+    libs['Bundler'] = 'bundler/lib'
     libs.each do |tool, path|
       say "Installing #{tool}" if @verbose
 
       lib_files = rb_files_in path
+      lib_files.concat(template_files) if tool == 'Bundler'
+
       pem_files = pem_files_in path
 
       Dir.chdir path do
@@ -321,7 +353,7 @@ By default, this RubyGems will install gem as:
 
     if File.writable? gem_doc_dir and
        (not File.exist? rubygems_doc_dir or
-        File.writable? rubygems_doc_dir) then
+        File.writable? rubygems_doc_dir)
       say "Removing old RubyGems RDoc and ri" if @verbose
       Dir[File.join(Gem.dir, 'doc', 'rubygems-[0-9]*')].each do |dir|
         rm_rf dir
@@ -341,7 +373,7 @@ By default, this RubyGems will install gem as:
       rdoc.generate
 
       return true
-    elsif @verbose then
+    elsif @verbose
       say "Skipping RDoc generation, #{gem_doc_dir} not writable"
       say "Set the GEM_HOME environment variable if you want RDoc generated"
     end
@@ -349,27 +381,62 @@ By default, this RubyGems will install gem as:
     return false
   end
 
-  def install_default_bundler_gem
-    return unless Gem::USE_BUNDLER_FOR_GEMDEPS
+  def install_default_bundler_gem(bin_dir)
+    specs_dir = Gem.default_specifications_dir
+    specs_dir = File.join(options[:destdir], specs_dir) unless Gem.win_platform?
+    mkdir_p specs_dir, :mode => 0755
+
+    # Workaround for non-git environment.
+    gemspec = File.open('bundler/bundler.gemspec', 'rb'){|f| f.read.gsub(/`git ls-files -z`/, "''") }
+    File.open('bundler/bundler.gemspec', 'w'){|f| f.write gemspec }
 
     bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
-    bundler_spec.files = Dir["bundler/{*.md,{lib,exe,man}/**/*}"]
+    bundler_spec.files = Dir.chdir("bundler") { Dir["{*.md,{lib,exe,man}/**/*}"] }
     bundler_spec.executables -= %w[bundler bundle_ruby]
-    Dir.entries(Gem::Specification.default_specifications_dir).
-      select {|gs| gs.start_with?("bundler-") }.
-      each {|gs| File.delete(File.join(Gem::Specification.default_specifications_dir, gs)) }
 
-    default_spec_path = File.join(Gem::Specification.default_specifications_dir, "#{bundler_spec.full_name}.gemspec")
+    # Remove bundler-*.gemspec in default specification directory.
+    Dir.entries(specs_dir).
+      select {|gs| gs.start_with?("bundler-") }.
+      each {|gs| File.delete(File.join(specs_dir, gs)) }
+
+    default_spec_path = File.join(specs_dir, "#{bundler_spec.full_name}.gemspec")
     Gem.write_binary(default_spec_path, bundler_spec.to_ruby)
 
     bundler_spec = Gem::Specification.load(default_spec_path)
 
-    Dir.entries(bundler_spec.gems_dir).
-      select {|default_gem| default_gem.start_with?("bundler-") }.
-      each {|default_gem| rm_r File.join(bundler_spec.gems_dir, default_gem) }
+    # Remove gemspec that was same version of vendored bundler.
+    normal_gemspec = File.join(Gem.default_dir, "specifications", "bundler-#{bundler_spec.version}.gemspec")
+    if File.file? normal_gemspec
+      File.delete normal_gemspec
+    end
 
-    mkdir_p bundler_spec.bin_dir
-    bundler_spec.executables.each {|e| cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_spec.bin_dir, e) }
+    # Remove gem files that were same version of vendored bundler.
+    if File.directory? bundler_spec.gems_dir
+      Dir.entries(bundler_spec.gems_dir).
+        select {|default_gem| File.basename(default_gem) == "bundler-#{bundler_spec.version}" }.
+        each {|default_gem| rm_r File.join(bundler_spec.gems_dir, default_gem) }
+    end
+
+    bundler_bin_dir = bundler_spec.bin_dir
+    bundler_bin_dir = File.join(options[:destdir], bundler_bin_dir) unless Gem.win_platform?
+    mkdir_p bundler_bin_dir, :mode => 0755
+    bundler_spec.executables.each do |e|
+      cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_bin_dir, e)
+    end
+
+    require 'rubygems/installer'
+
+    Dir.chdir("bundler") do
+      built_gem = Gem::Package.build(bundler_spec)
+      begin
+        installer = Gem::Installer.at(built_gem, env_shebang: options[:env_shebang], format_executable: options[:format_executable], install_as_default: true, bin_dir: bin_dir, wrappers: true)
+        installer.install
+      ensure
+        FileUtils.rm_f built_gem
+      end
+    end
+
+    say "Bundler #{bundler_spec.version} installed"
   end
 
   def make_destination_dirs(install_destdir)
@@ -379,8 +446,8 @@ By default, this RubyGems will install gem as:
       lib_dir, bin_dir = generate_default_dirs(install_destdir)
     end
 
-    mkdir_p lib_dir
-    mkdir_p bin_dir
+    mkdir_p lib_dir, :mode => 0755
+    mkdir_p bin_dir, :mode => 0755
 
     return lib_dir, bin_dir
   end
@@ -389,7 +456,7 @@ By default, this RubyGems will install gem as:
     prefix = options[:prefix]
     site_or_vendor = options[:site_or_vendor]
 
-    if prefix.empty? then
+    if prefix.empty?
       lib_dir = RbConfig::CONFIG[site_or_vendor]
       bin_dir = RbConfig::CONFIG['bindir']
     else
@@ -400,16 +467,16 @@ By default, this RubyGems will install gem as:
         # just in case Apple and RubyGems don't get this patched up proper.
         (prefix == RbConfig::CONFIG['libdir'] or
          # this one is important
-         prefix == File.join(RbConfig::CONFIG['libdir'], 'ruby')) then
-         lib_dir = RbConfig::CONFIG[site_or_vendor]
-         bin_dir = RbConfig::CONFIG['bindir']
+         prefix == File.join(RbConfig::CONFIG['libdir'], 'ruby'))
+        lib_dir = RbConfig::CONFIG[site_or_vendor]
+        bin_dir = RbConfig::CONFIG['bindir']
       else
         lib_dir = File.join prefix, 'lib'
         bin_dir = File.join prefix, 'bin'
       end
     end
 
-    unless install_destdir.empty? then
+    unless install_destdir.empty?
       lib_dir = File.join install_destdir, lib_dir.gsub(/^[a-zA-Z]:/, '')
       bin_dir = File.join install_destdir, bin_dir.gsub(/^[a-zA-Z]:/, '')
     end
@@ -417,15 +484,31 @@ By default, this RubyGems will install gem as:
     [lib_dir, bin_dir]
   end
 
-  def pem_files_in dir
+  def pem_files_in(dir)
     Dir.chdir dir do
       Dir[File.join('**', '*pem')]
     end
   end
 
-  def rb_files_in dir
+  def rb_files_in(dir)
     Dir.chdir dir do
       Dir[File.join('**', '*rb')]
+    end
+  end
+
+  # for installation of bundler as default gems
+  def template_files
+    Dir.chdir "bundler/lib" do
+      (Dir[File.join('bundler', 'templates', '**', '{*,.*}')]).
+        select{|f| !File.directory?(f)}
+    end
+  end
+
+  # for cleanup old bundler files
+  def template_files_in(dir)
+    Dir.chdir dir do
+      (Dir[File.join('templates', '**', '{*,.*}')]).
+        select{|f| !File.directory?(f)}
     end
   end
 
@@ -461,13 +544,15 @@ abort "#{deprecation_message}"
     end
   end
 
-  def remove_old_lib_files lib_dir
+  def remove_old_lib_files(lib_dir)
     lib_dirs = { File.join(lib_dir, 'rubygems') => 'lib/rubygems' }
-    lib_dirs[File.join(lib_dir, 'bundler')] = 'bundler/lib/bundler' if Gem::USE_BUNDLER_FOR_GEMDEPS
+    lib_dirs[File.join(lib_dir, 'bundler')] = 'bundler/lib/bundler'
     lib_dirs.each do |old_lib_dir, new_lib_dir|
       lib_files = rb_files_in(new_lib_dir)
+      lib_files.concat(template_files_in(new_lib_dir)) if new_lib_dir =~ /bundler/
 
       old_lib_files = rb_files_in(old_lib_dir)
+      old_lib_files.concat(template_files_in(old_lib_dir)) if old_lib_dir =~ /bundler/
 
       to_remove = old_lib_files - lib_files
 
@@ -490,11 +575,10 @@ abort "#{deprecation_message}"
     release_notes = File.join Dir.pwd, 'History.txt'
 
     release_notes =
-      if File.exist? release_notes then
+      if File.exist? release_notes
         history = File.read release_notes
 
-        history.force_encoding Encoding::UTF_8 if
-          Object.const_defined? :Encoding
+        history.force_encoding Encoding::UTF_8
 
         history = history.sub(/^# coding:.*?(?=^=)/m, '')
 
@@ -532,8 +616,14 @@ abort "#{deprecation_message}"
   def regenerate_binstubs
     require "rubygems/commands/pristine_command"
     say "Regenerating binstubs"
+
+    args = %w[--all --only-executables --silent]
+    if options[:env_shebang]
+      args << "--env-shebang"
+    end
+
     command = Gem::Commands::PristineCommand.new
-    command.invoke(*%w[--all --only-executables --silent])
+    command.invoke(*args)
   end
 
 end

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/file/owned', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../shared/file/owned'
 
 describe "File.owned?" do
   it_behaves_like :file_owned, :owned?, File
@@ -24,9 +24,11 @@ describe "File.owned?" do
   end
 
   platform_is_not :windows do
-    it "returns false when the file is not owned by the user" do
-      system_file = '/etc/passwd'
-      File.owned?(system_file).should == false
+    as_user do
+      it "returns false when the file is not owned by the user" do
+        system_file = '/etc/passwd'
+        File.owned?(system_file).should == false
+      end
     end
   end
 

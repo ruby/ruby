@@ -112,6 +112,8 @@ class TestRequire < Test::Unit::TestCase
       proc do |require_path|
         $SAFE = 1
         require(require_path)
+      ensure
+        $SAFE = 0
       end
     end
 
@@ -160,8 +162,8 @@ class TestRequire < Test::Unit::TestCase
       require(require_path)
       $".pop
       File.chmod(0777, File.dirname(require_path))
-      ospath = (require_path.encode('filesystem') rescue
-                require_path.encode(self.class.ospath_encoding(require_path)))
+      require_path.encode('filesystem') rescue
+        require_path.encode(self.class.ospath_encoding(require_path))
       e = nil
       stderr = EnvUtil.verbose_warning do
         e = assert_raise(SecurityError) do
@@ -254,12 +256,12 @@ class TestRequire < Test::Unit::TestCase
   def assert_syntax_error_backtrace
     Dir.mktmpdir do |tmp|
       req = File.join(tmp, "test.rb")
-      File.write(req, "'\n")
-      e = assert_raise_with_message(SyntaxError, /unterminated/) {
+      File.write(req, ",\n")
+      e = assert_raise_with_message(SyntaxError, /unexpected/) {
         yield req
       }
-      assert_not_nil(bt = e.backtrace)
-      assert_not_empty(bt.find_all {|b| b.start_with? __FILE__})
+      assert_not_nil(bt = e.backtrace, "no backtrace")
+      assert_not_empty(bt.find_all {|b| b.start_with? __FILE__}, proc {bt.inspect})
     end
   end
 
@@ -380,6 +382,19 @@ class TestRequire < Test::Unit::TestCase
 
       assert_raise(ArgumentError) { at_exit }
     }
+  end
+
+  def test_require_in_wrapped_load
+    Dir.mktmpdir do |tmp|
+      File.write("#{tmp}/1.rb", "require_relative '2'\n")
+      File.write("#{tmp}/2.rb", "class Foo\n""end\n")
+      assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+      path = ""#{tmp.dump}"/1.rb"
+      begin;
+        load path, true
+        assert_instance_of(Class, Foo)
+      end;
+    end
   end
 
   def test_load_scope
@@ -894,5 +909,25 @@ class TestRequire < Test::Unit::TestCase
       result = IO.popen([EnvUtil.rubybin, "-I#{tmp}/symlink", "-e", "require 'a.rb'"], &:read)
       assert_operator(result, :end_with?, "/real/a.rb")
     }
+  end
+
+  if defined?($LOAD_PATH.resolve_feature_path)
+    def test_resolve_feature_path
+      paths, loaded = $:.dup, $".dup
+      Dir.mktmpdir do |tmp|
+        Tempfile.create(%w[feature .rb], tmp) do |file|
+          file.close
+          path = File.realpath(file.path)
+          dir, base = File.split(path)
+          $:.unshift(dir)
+          assert_equal([:rb, path], $LOAD_PATH.resolve_feature_path(base))
+          $".push(path)
+          assert_equal([:rb, path], $LOAD_PATH.resolve_feature_path(base))
+        end
+      end
+    ensure
+      $:.replace(paths)
+      $".replace(loaded)
+    end
   end
 end

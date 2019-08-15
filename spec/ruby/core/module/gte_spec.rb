@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Module#>=" do
   it "returns true if self is a superclass of, the same as or included by given module" do
@@ -28,6 +28,6 @@ describe "Module#>=" do
   end
 
   it "raises a TypeError if the argument is not a class/module" do
-    lambda { ModuleSpecs::Parent >= mock('x') }.should raise_error(TypeError)
+    -> { ModuleSpecs::Parent >= mock('x') }.should raise_error(TypeError)
   end
 end

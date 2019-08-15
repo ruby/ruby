@@ -9,10 +9,12 @@
 
 **********************************************************************/
 
+#include "ruby/encoding.h"
 #include "internal.h"
 #include <sys/types.h>
 #include <ctype.h>
 #include <errno.h>
+#include <float.h>
 
 /*
  * It is intentional that the condition for natstr is HAVE_TRUE_LONG_LONG
@@ -41,20 +43,20 @@ static const char endstr[] = "sSiIlLqQjJ";
 #endif
 
 #ifdef DYNAMIC_ENDIAN
- /* for universal binary of NEXTSTEP and MacOS X */
- /* useless since autoconf 2.63? */
- static int
- is_bigendian(void)
- {
-     static int init = 0;
-     static int endian_value;
-     char *p;
+/* for universal binary of NEXTSTEP and MacOS X */
+/* useless since autoconf 2.63? */
+static int
+is_bigendian(void)
+{
+    static int init = 0;
+    static int endian_value;
+    char *p;
 
-     if (init) return endian_value;
-     init = 1;
-     p = (char*)&init;
-     return endian_value = p[0]?0:1;
- }
+    if (init) return endian_value;
+    init = 1;
+    p = (char*)&init;
+    return endian_value = p[0]?0:1;
+}
 # define BIGENDIAN_P() (is_bigendian())
 #elif defined(WORDS_BIGENDIAN)
 # define BIGENDIAN_P() 1
@@ -126,6 +128,47 @@ str_associated(VALUE str)
     return rb_ivar_lookup(str, id_associated, Qfalse);
 }
 
+static void
+unknown_directive(const char *mode, char type, VALUE fmt)
+{
+    VALUE f;
+    char unknown[5];
+
+    if (ISPRINT(type)) {
+        unknown[0] = type;
+        unknown[1] = '\0';
+    }
+    else {
+        snprintf(unknown, sizeof(unknown), "\\x%.2x", type & 0xff);
+    }
+    f = rb_str_quote_unprintable(fmt);
+    if (f != fmt) {
+        fmt = rb_str_subseq(f, 1, RSTRING_LEN(f) - 2);
+    }
+    rb_warning("unknown %s directive '%s' in '%"PRIsVALUE"'",
+               mode, unknown, fmt);
+}
+
+static float
+VALUE_to_float(VALUE obj)
+{
+    VALUE v = rb_to_float(obj);
+    double d = RFLOAT_VALUE(v);
+
+    if (isnan(d)) {
+        return NAN;
+    }
+    else if (d < -FLT_MAX) {
+        return -INFINITY;
+    }
+    else if (d <= FLT_MAX) {
+        return d;
+    }
+    else {
+        return INFINITY;
+    }
+}
+
 /*
  *  call-seq:
  *     arr.pack( aTemplateString ) -> aBinaryString
@@ -143,7 +186,7 @@ str_associated(VALUE str)
  *  exclamation mark (``<code>!</code>'') to use the underlying
  *  platform's native size for the specified type; otherwise, they use a
  *  platform-independent size. Spaces are ignored in the template
- *  string. See also <code>String#unpack</code>.
+ *  string. See also String#unpack.
  *
  *     a = [ "a", "b", "c" ]
  *     n = [ 65, 66, 67 ]
@@ -241,9 +284,12 @@ str_associated(VALUE str)
  *   H            | String  | hex string (high nibble first)
  *   h            | String  | hex string (low nibble first)
  *   u            | String  | UU-encoded string
- *   M            | String  | quoted printable, MIME encoding (see RFC2045)
- *   m            | String  | base64 encoded string (see RFC 2045, count is width)
+ *   M            | String  | quoted printable, MIME encoding (see also RFC2045)
+ *                |         | (text mode but input must use LF and output LF)
+ *   m            | String  | base64 encoded string (see RFC 2045)
  *                |         | (if count is 0, no line feed are added, see RFC 4648)
+ *                |         | (count specifies input bytes between each LF,
+ *                |         | rounded down to nearest multiple of 3)
  *   P            | String  | pointer to a structure (fixed-length string)
  *   p            | String  | pointer to a null-terminated string
  *
@@ -640,7 +686,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 		float f;
 
 		from = NEXTFROM;
-		f = (float)RFLOAT_VALUE(rb_to_float(from));
+                f = VALUE_to_float(from);
 		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
 	    break;
@@ -650,7 +696,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 		FLOAT_CONVWITH(tmp);
 
 		from = NEXTFROM;
-		tmp.f = (float)RFLOAT_VALUE(rb_to_float(from));
+                tmp.f = VALUE_to_float(from);
 		HTOVF(tmp);
 		rb_str_buf_cat(res, tmp.buf, sizeof(float));
 	    }
@@ -681,7 +727,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 	    while (len-- > 0) {
 		FLOAT_CONVWITH(tmp);
 		from = NEXTFROM;
-		tmp.f = (float)RFLOAT_VALUE(rb_to_float(from));
+                tmp.f = VALUE_to_float(from);
 		HTONF(tmp);
 		rb_str_buf_cat(res, tmp.buf, sizeof(float));
 	    }
@@ -749,6 +795,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 	    StringValue(from);
 	    ptr = RSTRING_PTR(from);
 	    plen = RSTRING_LEN(from);
+            OBJ_INFECT(res, from);
 
 	    if (len == 0 && type == 'm') {
 		encodes(res, ptr, plen, type, 0);
@@ -776,6 +823,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 
 	  case 'M':		/* quoted-printable encoded string */
 	    from = rb_obj_as_string(NEXTFROM);
+            OBJ_INFECT(res, from);
 	    if (len <= 1)
 		len = 72;
 	    qpencode(res, from, len);
@@ -801,6 +849,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 		}
 		else {
 		    t = StringValuePtr(from);
+                    OBJ_INFECT(res, from);
 		    rb_obj_taint(from);
 		}
 		if (!associates) {
@@ -834,9 +883,9 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 
                 cp = RSTRING_PTR(buf);
                 while (1 < numbytes) {
-                  *cp |= 0x80;
-                  cp++;
-                  numbytes--;
+                    *cp |= 0x80;
+                    cp++;
+                    numbytes--;
                 }
 
                 rb_str_buf_cat(res, RSTRING_PTR(buf), RSTRING_LEN(buf));
@@ -844,16 +893,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 	    break;
 
 	  default: {
-	    char unknown[5];
-	    if (ISPRINT(type)) {
-		unknown[0] = type;
-		unknown[1] = '\0';
-	    }
-	    else {
-		snprintf(unknown, sizeof(unknown), "\\x%.2x", type & 0xff);
-	    }
-	    rb_warning("unknown pack directive '%s' in '% "PRIsVALUE"'",
-		       unknown, fmt);
+            unknown_directive("pack", type, fmt);
 	    break;
 	  }
 	}
@@ -1000,7 +1040,7 @@ hex2num(char c)
     tmp_len = 0;				\
     if (len > (long)((send-s)/(sz))) {		\
         if (!star) {				\
-	    tmp_len = len-(send-s)/(sz);		\
+	    tmp_len = len-(send-s)/(sz);	\
         }					\
 	len = (send-s)/(sz);			\
     }						\
@@ -1011,10 +1051,11 @@ hex2num(char c)
 	rb_ary_store(ary, RARRAY_LEN(ary)+tmp_len-1, Qnil); \
 } while (0)
 
-/* Workaround for Oracle Solaris Studio 12.4/12.5 C compiler optimization bug
+/* Workaround for Oracle Developer Studio (Oracle Solaris Studio)
+ * 12.4/12.5/12.6 C compiler optimization bug
  * with "-xO4" optimization option.
  */
-#if defined(__SUNPRO_C) && 0x5130 <= __SUNPRO_C && __SUNPRO_C <= 0x5140
+#if defined(__SUNPRO_C) && 0x5130 <= __SUNPRO_C && __SUNPRO_C <= 0x5150
 # define AVOID_CC_BUG volatile
 #else
 # define AVOID_CC_BUG
@@ -1126,7 +1167,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 	else if (ISDIGIT(*p)) {
 	    errno = 0;
 	    len = STRTOUL(p, (char**)&p, 10);
-	    if (errno) {
+	    if (len < 0 || errno) {
 		rb_raise(rb_eRangeError, "pack length too big");
 	    }
 	}
@@ -1183,6 +1224,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    len = (send - s) * 8;
 		bits = 0;
 		bitstr = rb_usascii_str_new(0, len);
+                OBJ_INFECT(bitstr, str);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits >>= 1;
@@ -1204,6 +1246,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    len = (send - s) * 8;
 		bits = 0;
 		bitstr = rb_usascii_str_new(0, len);
+                OBJ_INFECT(bitstr, str);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits <<= 1;
@@ -1225,6 +1268,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    len = (send - s) * 2;
 		bits = 0;
 		bitstr = rb_usascii_str_new(0, len);
+                OBJ_INFECT(bitstr, str);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -1248,6 +1292,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    len = (send - s) * 2;
 		bits = 0;
 		bitstr = rb_usascii_str_new(0, len);
+                OBJ_INFECT(bitstr, str);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -1738,8 +1783,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 	    break;
 
 	  default:
-	    rb_warning("unknown unpack directive '%c' in '%s'",
-		type, RSTRING_PTR(fmt));
+            unknown_directive("unpack", type, fmt);
 	    break;
 	}
     }
@@ -1763,7 +1807,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
  *  exclamation mark (``<code>!</code>'') to use the underlying
  *  platform's native size for the specified type; otherwise, it uses a
  *  platform-independent consistent size. Spaces are ignored in the
- *  format string. See also <code>String#unpack1</code>,  <code>Array#pack</code>.
+ *  format string. See also String#unpack1,  Array#pack.
  *
  *     "abc \0\0abc \0\0".unpack('A6Z6')   #=> ["abc", "abc "]
  *     "abc \0\0".unpack('a3a3')           #=> ["abc", " \000\000"]
@@ -1880,7 +1924,21 @@ pack_unpack(VALUE str, VALUE fmt)
  *
  *  Decodes <i>str</i> (which may contain binary data) according to the
  *  format string, returning the first value extracted.
- *  See also <code>String#unpack</code>, <code>Array#pack</code>.
+ *  See also String#unpack, Array#pack.
+ *
+ *  Contrast with String#unpack:
+ *
+ *     "abc \0\0abc \0\0".unpack('A6Z6')   #=> ["abc", "abc "]
+ *     "abc \0\0abc \0\0".unpack1('A6Z6')  #=> "abc"
+ *
+ *  In that case data would be lost but often it's the case that the array
+ *  only holds one value, especially when unpacking binary data. For instance:
+ *
+ *  "\xff\x00\x00\x00".unpack("l")         #=>  [255]
+ *  "\xff\x00\x00\x00".unpack1("l")        #=>  255
+ *
+ *  Thus unpack1 is convenient, makes clear the intention and signals
+ *  the expected return value to those reading the code.
  */
 
 static VALUE
@@ -1933,7 +1991,7 @@ rb_uv_to_utf8(char buf[6], unsigned long uv)
     }
     rb_raise(rb_eRangeError, "pack(U): value out of range");
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 static const unsigned long utf8_limits[] = {

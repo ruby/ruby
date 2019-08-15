@@ -1,8 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Proc#to_proc" do
   it "returns self" do
-    [Proc.new {}, lambda {}, proc {}].each { |p|
+    [Proc.new {}, -> {}, proc {}].each { |p|
       p.to_proc.should equal(p)
     }
   end

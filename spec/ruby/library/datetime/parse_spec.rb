@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'date'
 
 describe "DateTime.parse" do
@@ -20,7 +20,7 @@ describe "DateTime.parse" do
 
   # Specs using numbers
   it "throws an argument error for a single digit" do
-    lambda{ DateTime.parse("1") }.should raise_error(ArgumentError)
+    ->{ DateTime.parse("1") }.should raise_error(ArgumentError)
   end
 
   it "parses DD as month day number" do
@@ -54,23 +54,23 @@ describe "DateTime.parse" do
     end
 
     it "throws an argument error for invalid month values" do
-      lambda{DateTime.parse("2012-13-08T15:43:59")}.should raise_error(ArgumentError)
+      ->{DateTime.parse("2012-13-08T15:43:59")}.should raise_error(ArgumentError)
     end
 
     it "throws an argument error for invalid day values" do
-      lambda{DateTime.parse("2012-12-32T15:43:59")}.should raise_error(ArgumentError)
+      ->{DateTime.parse("2012-12-32T15:43:59")}.should raise_error(ArgumentError)
     end
 
     it "throws an argument error for invalid hour values" do
-      lambda{DateTime.parse("2012-12-31T25:43:59")}.should raise_error(ArgumentError)
+      ->{DateTime.parse("2012-12-31T25:43:59")}.should raise_error(ArgumentError)
     end
 
     it "throws an argument error for invalid minute values" do
-      lambda{DateTime.parse("2012-12-31T25:43:59")}.should raise_error(ArgumentError)
+      ->{DateTime.parse("2012-12-31T25:43:59")}.should raise_error(ArgumentError)
     end
 
     it "throws an argument error for invalid second values" do
-      lambda{DateTime.parse("2012-11-08T15:43:61")}.should raise_error(ArgumentError)
+      ->{DateTime.parse("2012-11-08T15:43:61")}.should raise_error(ArgumentError)
     end
 
   end

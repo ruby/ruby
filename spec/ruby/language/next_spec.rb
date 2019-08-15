@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/next', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/next'
 
 describe "The next statement from within the block" do
   before :each do
@@ -8,7 +8,7 @@ describe "The next statement from within the block" do
 
   it "ends block execution" do
     a = []
-    lambda {
+    -> {
       a << 1
       next
       a << 2
@@ -17,15 +17,15 @@ describe "The next statement from within the block" do
   end
 
   it "causes block to return nil if invoked without arguments" do
-    lambda { 123; next; 456 }.call.should == nil
+    -> { 123; next; 456 }.call.should == nil
   end
 
   it "causes block to return nil if invoked with an empty expression" do
-    lambda { next (); 456 }.call.should be_nil
+    -> { next (); 456 }.call.should be_nil
   end
 
   it "returns the argument passed" do
-    lambda { 123; next 234; 345 }.call.should == 234
+    -> { 123; next 234; 345 }.call.should == 234
   end
 
   it "returns to the invoking method" do
@@ -102,14 +102,14 @@ describe "The next statement from within the block" do
 
   it "passes the value returned by a method with omitted parenthesis and passed block" do
     obj = NextSpecs::Block.new
-    lambda { next obj.method :value do |x| x end }.call.should == :value
+    -> { next obj.method :value do |x| x end }.call.should == :value
   end
 end
 
 describe "The next statement" do
   describe "in a method" do
     it "is invalid and raises a SyntaxError" do
-      lambda {
+      -> {
         eval("def m; next; end")
       }.should raise_error(SyntaxError)
     end

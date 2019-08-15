@@ -1,5 +1,5 @@
 # -*- coding: us-ascii -*-
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 ##
 # A parser is simple a class that subclasses RDoc::Parser and implements #scan
@@ -139,7 +139,7 @@ class RDoc::Parser
   # Returns the file type from the modeline in +file_name+
 
   def self.check_modeline file_name
-    line = open file_name do |io|
+    line = File.open file_name do |io|
       io.gets
     end
 

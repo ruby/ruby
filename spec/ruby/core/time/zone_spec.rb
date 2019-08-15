@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Time#zone" do
   platform_is_not :windows do
@@ -52,7 +52,7 @@ describe "Time#zone" do
     end
 
     it "doesn't raise errors for a Time with a fixed offset" do
-      lambda {
+      -> {
         Time.new(2001, 1, 1, 0, 0, 0, "+05:00").zone
       }.should_not raise_error
     end

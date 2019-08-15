@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle lock with git gems" do
   before :each do
@@ -30,6 +29,6 @@ RSpec.describe "bundle lock with git gems" do
     run <<-RUBY
       puts Bundler.rubygems.find_name('foo').first.full_gem_path
     RUBY
-    expect(out).to eq(bundle("show foo"))
+    expect(out).to eq(bundle("info foo --path"))
   end
 end

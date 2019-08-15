@@ -1,5 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/push'
 
 describe "Array#<<" do
   it "pushes the object onto the end of the array" do
@@ -29,7 +30,13 @@ describe "Array#<<" do
     a.should == [:foo]
   end
 
-  it "raises a RuntimeError on a frozen array" do
-    lambda { ArraySpecs.frozen_array << 5 }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    -> { ArraySpecs.frozen_array << 5 }.should raise_error(frozen_error_class)
+  end
+end
+
+ruby_version_is "2.5" do
+  describe "Array#append" do
+    it_behaves_like :array_push, :append
   end
 end

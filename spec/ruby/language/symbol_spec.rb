@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 describe "A Symbol literal" do
   it "is a ':' followed by any number of valid characters" do
@@ -34,6 +34,11 @@ describe "A Symbol literal" do
       sym.should be_kind_of(Symbol)
       sym.inspect.should == str
     }
+  end
+
+  it 'inherits the encoding of the magic comment and can have a binary encoding' do
+    ruby_exe(fixture(__FILE__, "binary_symbol.rb"))
+      .should == "[105, 108, 95, 195, 169, 116, 97, 105, 116]\n#{Encoding::BINARY.name}\n"
   end
 
   it "may contain '::' in the string" do
@@ -89,5 +94,13 @@ describe "A Symbol literal" do
 
   it "can be created from list syntax %I{a b c} with interpolation" do
     %I{a b #{"c"}}.should == [:a, :b, :c]
+  end
+
+  it "with invalid bytes raises an EncodingError at parse time" do
+    ScratchPad.record []
+    -> {
+      eval 'ScratchPad << 1; :"\xC3"'
+    }.should raise_error(EncodingError, /invalid/)
+    ScratchPad.recorded.should == []
   end
 end

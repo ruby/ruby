@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Hash#flatten" do
 
@@ -55,7 +55,7 @@ describe "Hash#flatten" do
   end
 
   it "raises a TypeError if given a non-Integer argument" do
-    lambda do
+    -> do
       @h.flatten(Object.new)
     end.should raise_error(TypeError)
   end

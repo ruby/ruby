@@ -1,18 +1,22 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-
-require 'socket'
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 describe 'TCPServer#listen' do
-  before :each do
-    @server = TCPServer.new(SocketSpecs.hostname, 0)
-  end
+  SocketSpecs.each_ip_protocol do |family, ip_address|
+    before do
+      @server = TCPServer.new(ip_address, 0)
+    end
 
-  after :each do
-    @server.close unless @server.closed?
-  end
+    after do
+      @server.close
+    end
 
-  it 'returns 0' do
-    @server.listen(10).should == 0
+    it 'returns 0' do
+      @server.listen(1).should == 0
+    end
+
+    it "raises when the given argument can't be coerced to an Integer" do
+      -> { @server.listen('cats') }.should raise_error(TypeError)
+    end
   end
 end

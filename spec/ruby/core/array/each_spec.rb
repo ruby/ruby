@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/enumeratorize', __FILE__)
-require File.expand_path('../../enumerable/shared/enumeratorized', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/enumeratorize'
+require_relative '../enumerable/shared/enumeratorized'
 
 # Modifying a collection while the contents are being iterated
 # gives undefined behavior. See
@@ -25,6 +25,22 @@ describe "Array#each" do
     b = []
     a.each { |x, y| b << y }
     b.should == [2, nil, 4]
+  end
+
+  it "yields elements added to the end of the array by the block" do
+    a = [2]
+    iterated = []
+    a.each { |x| iterated << x; x.times { a << 0 } }
+
+    iterated.should == [2, 0, 0]
+  end
+
+  it "does not yield elements deleted from the end of the array" do
+    a = [2, 3, 1]
+    iterated = []
+    a.each { |x| iterated << x; a.delete_at(2) if x == 3 }
+
+    iterated.should == [2, 3]
   end
 
   it_behaves_like :enumeratorize, :each

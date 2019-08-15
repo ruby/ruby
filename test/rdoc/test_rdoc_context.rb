@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require File.expand_path '../xref_test_case', __FILE__
 
 class TestRDocContext < XrefTestCase
@@ -14,10 +14,10 @@ class TestRDocContext < XrefTestCase
     assert_empty @context.in_files
     assert_equal 'unknown', @context.name
     assert_equal '', @context.comment
-    assert_equal nil, @context.parent
+    assert_nil   @context.parent
     assert_equal :public, @context.visibility
     assert_equal 1, @context.sections.length
-    assert_equal nil, @context.temporary_section
+    assert_nil   @context.temporary_section
 
     assert_empty @context.classes_hash
     assert_empty @context.modules_hash
@@ -232,7 +232,7 @@ class TestRDocContext < XrefTestCase
     meth2.record_location @store.add_file 'second.rb'
     meth2.comment = comment 'second'
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       @context.add_method meth2
     end
 
@@ -260,7 +260,7 @@ class TestRDocContext < XrefTestCase
     meth2.record_location @store.add_file 'second.rb'
     meth2.comment = comment 'second'
 
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       @context.add_method meth2
     end
 
@@ -280,7 +280,8 @@ class TestRDocContext < XrefTestCase
   def test_add_module_alias
     tl = @store.add_file 'file.rb'
 
-    c3_c4 = @c2.add_module_alias @c2_c3, 'C4', tl
+    c4 = RDoc::Constant.new 'C4', '', ''
+    c3_c4 = @c2.add_module_alias @c2_c3, @c2_c3.name, c4, tl
 
     alias_constant = @c2.constants.first
 
@@ -298,7 +299,8 @@ class TestRDocContext < XrefTestCase
 
     object = top_level.add_class RDoc::NormalClass, 'Object'
 
-    top_level.add_module_alias klass, 'A', top_level
+    a = RDoc::Constant.new 'A', '', ''
+    top_level.add_module_alias klass, klass.name, a, top_level
 
     refute_empty object.constants
 
@@ -512,7 +514,7 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_find_attribute_named
-    assert_equal nil,  @c1.find_attribute_named('none')
+    assert_nil         @c1.find_attribute_named('none')
     assert_equal 'R',  @c1.find_attribute_named('attr').rw
     assert_equal 'R',  @c1.find_attribute_named('attr_reader').rw
     assert_equal 'W',  @c1.find_attribute_named('attr_writer').rw
@@ -520,7 +522,7 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_find_class_method_named
-    assert_equal nil, @c1.find_class_method_named('none')
+    assert_nil @c1.find_class_method_named('none')
 
     m = @c1.find_class_method_named('m')
     assert_instance_of RDoc::AnyMethod, m
@@ -528,23 +530,23 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_find_constant_named
-    assert_equal nil,      @c1.find_constant_named('NONE')
+    assert_nil             @c1.find_constant_named('NONE')
     assert_equal ':const', @c1.find_constant_named('CONST').value
   end
 
   def test_find_enclosing_module_named
-    assert_equal nil, @c2_c3.find_enclosing_module_named('NONE')
+    assert_nil        @c2_c3.find_enclosing_module_named('NONE')
     assert_equal @c1, @c2_c3.find_enclosing_module_named('C1')
     assert_equal @c2, @c2_c3.find_enclosing_module_named('C2')
   end
 
   def test_find_file_named
-    assert_equal nil,        @c1.find_file_named('nonexistent.rb')
+    assert_nil               @c1.find_file_named('nonexistent.rb')
     assert_equal @xref_data, @c1.find_file_named(@file_name)
   end
 
   def test_find_instance_method_named
-    assert_equal nil, @c1.find_instance_method_named('none')
+    assert_nil @c1.find_instance_method_named('none')
 
     m = @c1.find_instance_method_named('m')
     assert_instance_of RDoc::AnyMethod, m
@@ -557,6 +559,14 @@ class TestRDocContext < XrefTestCase
     assert_equal 'R',        @c1.find_local_symbol('attr').rw
     assert_equal @xref_data, @c1.find_local_symbol(@file_name)
     assert_equal @c2_c3,     @c2.find_local_symbol('C3')
+  end
+
+  def test_find_method
+    loaded_c2 = Marshal.load Marshal.dump @c2
+    assert_equal @c2_a, loaded_c2.find_method('a', false)
+    assert_equal @c2_b, loaded_c2.find_method('b', false)
+    assert_equal @c2_a, loaded_c2.find_method('a', nil)
+    assert_equal @c2_b, loaded_c2.find_method('b', nil)
   end
 
   def test_find_method_named
@@ -650,7 +660,7 @@ class TestRDocContext < XrefTestCase
       'instance' => {
         :private   => [],
         :protected => [],
-        :public    => [@c1_m],
+        :public    => [@c1_plus, @c1_m],
       },
       'class' => {
         :private   => [],

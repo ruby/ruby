@@ -1,4 +1,4 @@
-require File.expand_path('../spec_helper', __FILE__)
+require_relative 'spec_helper'
 
 load_extension("bignum")
 
@@ -33,8 +33,8 @@ describe "CApiBignumSpecs" do
     end
 
     it "raises RangeError if passed Bignum overflow long" do
-      lambda { @s.rb_big2long(ensure_bignum(@max_long + 1)) }.should raise_error(RangeError)
-      lambda { @s.rb_big2long(ensure_bignum(@min_long - 1)) }.should raise_error(RangeError)
+      -> { @s.rb_big2long(ensure_bignum(@max_long + 1)) }.should raise_error(RangeError)
+      -> { @s.rb_big2long(ensure_bignum(@min_long - 1)) }.should raise_error(RangeError)
     end
   end
 
@@ -47,8 +47,8 @@ describe "CApiBignumSpecs" do
     end
 
     it "raises RangeError if passed Bignum overflow long" do
-      lambda { @s.rb_big2ll(ensure_bignum(@max_long << 40)) }.should raise_error(RangeError)
-      lambda { @s.rb_big2ll(ensure_bignum(@min_long << 40)) }.should raise_error(RangeError)
+      -> { @s.rb_big2ll(ensure_bignum(@max_long << 40)) }.should raise_error(RangeError)
+      -> { @s.rb_big2ll(ensure_bignum(@min_long << 40)) }.should raise_error(RangeError)
     end
   end
 
@@ -65,8 +65,8 @@ describe "CApiBignumSpecs" do
     end
 
     it "raises RangeError if passed Bignum overflow long" do
-      lambda { @s.rb_big2ulong(ensure_bignum(@max_ulong + 1)) }.should raise_error(RangeError)
-      lambda { @s.rb_big2ulong(ensure_bignum(@min_long - 1)) }.should raise_error(RangeError)
+      -> { @s.rb_big2ulong(ensure_bignum(@max_ulong + 1)) }.should raise_error(RangeError)
+      -> { @s.rb_big2ulong(ensure_bignum(@min_long - 1)) }.should raise_error(RangeError)
     end
   end
 
@@ -94,6 +94,16 @@ describe "CApiBignumSpecs" do
 
     it "converts a Bignum to a string with a different base" do
       @s.rb_big2str(ensure_bignum(2**70), 16).eql?("400000000000000000").should == true
+    end
+  end
+
+  describe "RBIGNUM_SIGN" do
+    it "returns 1 for a positive Bignum" do
+      @s.RBIGNUM_SIGN(bignum_value(1)).should == 1
+    end
+
+    it "returns 0 for a negative Bignum" do
+      @s.RBIGNUM_SIGN(-bignum_value(1)).should == 0
     end
   end
 
@@ -202,13 +212,13 @@ describe "CApiBignumSpecs" do
     it "raises FloatDomainError for Infinity values" do
       inf = 1.0 / 0
 
-      lambda { @s.rb_dbl2big(inf) }.should raise_error(FloatDomainError)
+      -> { @s.rb_dbl2big(inf) }.should raise_error(FloatDomainError)
     end
 
     it "raises FloatDomainError for NaN values" do
       nan = 0.0 / 0
 
-      lambda { @s.rb_dbl2big(nan) }.should raise_error(FloatDomainError)
+      -> { @s.rb_dbl2big(nan) }.should raise_error(FloatDomainError)
     end
   end
 end

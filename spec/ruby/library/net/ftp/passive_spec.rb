@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'spec_helper'
 
 describe "Net::FTP#passive" do
   it "returns true when self is in passive mode" do
@@ -10,16 +10,8 @@ describe "Net::FTP#passive" do
     ftp.passive.should be_true
   end
 
-  ruby_version_is ""..."2.3" do
-    it "is false by default" do
-      ruby_exe(fixture(__FILE__, "passive.rb")).should == "false"
-    end
-  end
-
-  ruby_version_is "2.3" do
-    it "is the value of Net::FTP.default_value by default" do
-      ruby_exe(fixture(__FILE__, "passive.rb")).should == "true"
-    end
+  it "is the value of Net::FTP.default_value by default" do
+    ruby_exe(fixture(__FILE__, "passive.rb")).should == "true"
   end
 end
 

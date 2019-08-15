@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Float#rationalize" do
   it "returns self as a simplified Rational with no argument" do
@@ -29,15 +29,15 @@ describe "Float#rationalize" do
   end
 
   it "raises a FloatDomainError for Infinity" do
-    lambda {infinity_value.rationalize}.should raise_error(FloatDomainError)
+    -> {infinity_value.rationalize}.should raise_error(FloatDomainError)
   end
 
   it "raises a FloatDomainError for NaN" do
-    lambda { nan_value.rationalize }.should raise_error(FloatDomainError)
+    -> { nan_value.rationalize }.should raise_error(FloatDomainError)
   end
 
   it "raises ArgumentError when passed more than one argument" do
-    lambda { 0.3.rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
-    lambda { 0.3.rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
+    -> { 0.3.rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
+    -> { 0.3.rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
   end
 end

@@ -1,6 +1,6 @@
 # -*- encoding: us-ascii -*-
 
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 
 describe :enumerator_lazy_to_enum, shared: true do
   before :each do
@@ -46,5 +46,11 @@ describe :enumerator_lazy_to_enum, shared: true do
       @infinite.method(method).owner.should_not equal(Enumerator::Lazy)
       @infinite.send(method, *args).should be_an_instance_of(Enumerator::Lazy)
     end
+  end
+
+  it "works with an infinite enumerable" do
+    s = 0..Float::INFINITY
+    s.lazy.send(@method, :with_index).first(100).should ==
+      s.first(100).to_enum.send(@method, :with_index).to_a
   end
 end

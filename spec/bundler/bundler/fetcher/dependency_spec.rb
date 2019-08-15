@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe Bundler::Fetcher::Dependency do
   let(:downloader)  { double(:downloader) }
@@ -64,7 +63,7 @@ RSpec.describe Bundler::Fetcher::Dependency do
   end
 
   describe "#specs" do
-    let(:gem_names)            { %w(foo bar) }
+    let(:gem_names)            { %w[foo bar] }
     let(:full_dependency_list) { ["bar"] }
     let(:last_spec_list)       { [["boulder", gem_version1, "ruby", resque]] }
     let(:fail_errors)          { double(:fail_errors) }
@@ -103,7 +102,7 @@ RSpec.describe Bundler::Fetcher::Dependency do
 
     context "when all given gem names are in the full dependency list" do
       let(:gem_names)            { ["foo"] }
-      let(:full_dependency_list) { %w(foo bar) }
+      let(:full_dependency_list) { %w[foo bar] }
       let(:last_spec_list)       { ["boulder"] }
 
       it "should return a hash with the remote_uri and the last spec list" do
@@ -190,7 +189,7 @@ RSpec.describe Bundler::Fetcher::Dependency do
   end
 
   describe "#dependency_specs" do
-    let(:gem_names)                { [%w(foo bar), %w(bundler rubocop)] }
+    let(:gem_names)                { [%w[foo bar], %w[bundler rubocop]] }
     let(:gem_list)                 { double(:gem_list) }
     let(:formatted_specs_and_deps) { double(:formatted_specs_and_deps) }
 
@@ -212,7 +211,7 @@ RSpec.describe Bundler::Fetcher::Dependency do
   end
 
   describe "#unmarshalled_dep_gems" do
-    let(:gem_names)         { [%w(foo bar), %w(bundler rubocop)] }
+    let(:gem_names)         { [%w[foo bar], %w[bundler rubocop]] }
     let(:dep_api_uri)       { double(:dep_api_uri) }
     let(:unmarshalled_gems) { double(:unmarshalled_gems) }
     let(:fetch_response)    { double(:fetch_response, :body => double(:body)) }
@@ -220,7 +219,7 @@ RSpec.describe Bundler::Fetcher::Dependency do
 
     before { allow(subject).to receive(:dependency_api_uri).with(gem_names).and_return(dep_api_uri) }
 
-    it "should fetch dependencies from Rubygems and unmarshal them" do
+    it "should fetch dependencies from RubyGems and unmarshal them" do
       expect(gem_names).to receive(:each_slice).with(rubygems_limit).and_call_original
       expect(downloader).to receive(:fetch).with(dep_api_uri).and_return(fetch_response)
       expect(Bundler).to receive(:load_marshal).with(fetch_response.body).and_return([unmarshalled_gems])
@@ -254,7 +253,7 @@ RSpec.describe Bundler::Fetcher::Dependency do
       spec_list, deps_list = subject.get_formatted_specs_and_deps(gem_list)
       expect(spec_list).to eq([["typhoeus", "1.0.1", "ruby", [["resque", ["req3,req4"]]]],
                                ["grape", "2.0.2", "jruby", [["faraday", ["req1,req2"]]]]])
-      expect(deps_list).to eq(%w(resque faraday))
+      expect(deps_list).to eq(%w[resque faraday])
     end
   end
 
@@ -262,7 +261,7 @@ RSpec.describe Bundler::Fetcher::Dependency do
     let(:uri) { URI("http://gem-api.com") }
 
     context "with gem names" do
-      let(:gem_names) { %w(foo bar bundler rubocop) }
+      let(:gem_names) { %w[foo bar bundler rubocop] }
 
       before { allow(subject).to receive(:fetch_uri).and_return(uri) }
 

@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "parallel", :realworld => true, :sometimes => true do
   it "installs" do
@@ -12,20 +11,13 @@ RSpec.describe "parallel", :realworld => true, :sometimes => true do
 
     bundle :install, :jobs => 4, :env => { "DEBUG" => "1" }
 
-    if Bundler.rubygems.provides?(">= 2.1.0")
-      expect(out).to match(/[1-3]: /)
-    else
-      expect(out).to include("is not threadsafe")
-    end
+    expect(out).to match(/[1-3]: /)
 
-    bundle "show activesupport"
+    bundle "info activesupport --path"
     expect(out).to match(/activesupport/)
 
-    bundle "show faker"
+    bundle "info faker --path"
     expect(out).to match(/faker/)
-
-    bundle "config jobs"
-    expect(out).to match(/: "4"/)
   end
 
   it "updates" do
@@ -42,22 +34,15 @@ RSpec.describe "parallel", :realworld => true, :sometimes => true do
       gem 'i18n', '~> 0.6.0' # Because 0.7+ requires Ruby 1.9.3+
     G
 
-    bundle :update, :jobs => 4, :env => { "DEBUG" => "1" }
+    bundle :update, :jobs => 4, :env => { "DEBUG" => "1" }, :all => true
 
-    if Bundler.rubygems.provides?(">= 2.1.0")
-      expect(out).to match(/[1-3]: /)
-    else
-      expect(out).to include("is not threadsafe")
-    end
+    expect(out).to match(/[1-3]: /)
 
-    bundle "show activesupport"
+    bundle "info activesupport --path"
     expect(out).to match(/activesupport-3\.2\.\d+/)
 
-    bundle "show faker"
+    bundle "info faker --path"
     expect(out).to match(/faker/)
-
-    bundle "config jobs"
-    expect(out).to match(/: "4"/)
   end
 
   it "works with --standalone" do

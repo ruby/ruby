@@ -12,6 +12,7 @@
 
 require "openssl/buffering"
 require "io/nonblock"
+require "ipaddr"
 
 module OpenSSL
   module SSL
@@ -136,6 +137,7 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
       # used.
       def set_params(params={})
         params = DEFAULT_PARAMS.merge(params)
+        self.options = params.delete(:options) # set before min_version/max_version
         params.each{|name, value| self.__send__("#{name}=", value) }
         if self.verify_mode != OpenSSL::SSL::VERIFY_NONE
           unless self.ca_file or self.ca_path or self.cert_store
@@ -201,7 +203,7 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
         if /(?<type>_client|_server)\z/ =~ meth
           meth = $`
           if $VERBOSE
-            warn "#{caller(1)[0]}: method type #{type.inspect} is ignored"
+            warn "#{caller(1, 1)[0]}: method type #{type.inspect} is ignored"
           end
         end
         version = METHODS_MAP[meth.intern] or
@@ -271,11 +273,11 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
             return true if verify_hostname(hostname, san.value)
           when 7 # iPAddress in GeneralName (RFC5280)
             should_verify_common_name = false
-            # follows GENERAL_NAME_print() in x509v3/v3_alt.c
-            if san.value.size == 4
-              return true if san.value.unpack('C*').join('.') == hostname
-            elsif san.value.size == 16
-              return true if san.value.unpack('n*').map { |e| sprintf("%X", e) }.join(':') == hostname
+            if san.value.size == 4 || san.value.size == 16
+              begin
+                return true if san.value == IPAddr.new(hostname).hton
+              rescue IPAddr::InvalidAddressError
+              end
             end
           end
         }

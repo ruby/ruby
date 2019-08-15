@@ -45,12 +45,12 @@ vm_stack_overflow_for_insn(void)
 
 #if !OPT_CALL_THREADED_CODE
 static VALUE
-vm_exec_core(rb_thread_t *th, VALUE initial)
+vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 {
 
 #if OPT_STACK_CACHING
 #if 0
-#elif __GNUC__ && __x86_64__ && !defined(__native_client__)
+#elif __GNUC__ && __x86_64__
     DECL_SC_REG(VALUE, a, "12");
     DECL_SC_REG(VALUE, b, "13");
 #else
@@ -66,11 +66,7 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 
 #elif defined(__GNUC__) && defined(__x86_64__)
     DECL_SC_REG(const VALUE *, pc, "14");
-# if defined(__native_client__)
-    DECL_SC_REG(rb_control_frame_t *, cfp, "13");
-# else
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
-# endif
 #define USE_MACHINE_REGS 1
 
 #elif defined(__GNUC__) && defined(__powerpc64__)
@@ -88,7 +84,7 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #undef  RESTORE_REGS
 #define RESTORE_REGS() \
 { \
-  VM_REG_CFP = th->ec.cfp; \
+  VM_REG_CFP = ec->cfp; \
   reg_pc  = reg_cfp->pc; \
 }
 
@@ -102,11 +98,11 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 #include "vmtc.inc"
-    if (UNLIKELY(th == 0)) {
+    if (UNLIKELY(ec == 0)) {
 	return (VALUE)insns_address_table;
     }
 #endif
-    reg_cfp = th->ec.cfp;
+    reg_cfp = ec->cfp;
     reg_pc = reg_cfp->pc;
 
 #if OPT_STACK_CACHING
@@ -144,26 +140,27 @@ rb_vm_get_insns_address_table(void)
 }
 
 static VALUE
-vm_exec_core(rb_thread_t *th, VALUE initial)
+vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 {
-    register rb_control_frame_t *reg_cfp = th->ec.cfp;
+    register rb_control_frame_t *reg_cfp = ec->cfp;
+    rb_thread_t *th;
 
     while (1) {
-	reg_cfp = ((rb_insn_func_t) (*GET_PC()))(th, reg_cfp);
+	reg_cfp = ((rb_insn_func_t) (*GET_PC()))(ec, reg_cfp);
 
 	if (UNLIKELY(reg_cfp == 0)) {
 	    break;
 	}
     }
 
-    if (th->retval != Qundef) {
+    if ((th = rb_ec_thread_ptr(ec))->retval != Qundef) {
 	VALUE ret = th->retval;
 	th->retval = Qundef;
 	return ret;
     }
     else {
-	VALUE err = th->ec.errinfo;
-	th->ec.errinfo = Qnil;
+	VALUE err = ec->errinfo;
+	ec->errinfo = Qnil;
 	return err;
     }
 }

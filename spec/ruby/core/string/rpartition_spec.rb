@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "String#rpartition with String" do
   it "returns an array of substrings based on splitting on the given string" do
@@ -27,7 +27,7 @@ describe "String#rpartition with String" do
   end
 
   it "raises an error if not convertible to string" do
-    lambda{ "hello".rpartition(5) }.should raise_error(TypeError)
-    lambda{ "hello".rpartition(nil) }.should raise_error(TypeError)
+    ->{ "hello".rpartition(5) }.should raise_error(TypeError)
+    ->{ "hello".rpartition(nil) }.should raise_error(TypeError)
   end
 end

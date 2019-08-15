@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'set'
 
 describe "SortedSet#merge" do
@@ -13,7 +13,7 @@ describe "SortedSet#merge" do
   end
 
   it "raises an ArgumentError when passed a non-Enumerable" do
-    lambda { SortedSet[1, 2].merge(1) }.should raise_error(ArgumentError)
-    lambda { SortedSet[1, 2].merge(Object.new) }.should raise_error(ArgumentError)
+    -> { SortedSet[1, 2].merge(1) }.should raise_error(ArgumentError)
+    -> { SortedSet[1, 2].merge(Object.new) }.should raise_error(ArgumentError)
   end
 end

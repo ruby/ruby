@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'spec_helper'
+require_relative 'fixtures/classes'
 require 'matrix'
 
 describe "Matrix#/" do
@@ -14,13 +14,12 @@ describe "Matrix#/" do
     (@a / @b).should be_close_to_matrix([[2.5, -1.5], [1.5, -0.5]])
   end
 
-  conflicts_with :Prime do
+  # Guard against the Mathn library
+  guard -> { !defined?(Math.rsqrt) } do
     it "returns the result of dividing self by a Fixnum" do
       (@a / 2).should == Matrix[ [0, 1], [1, 2] ]
     end
-  end
 
-  conflicts_with :Prime do
     it "returns the result of dividing self by a Bignum" do
       (@a / bignum_value).should == Matrix[ [0, 0], [0, 0] ]
     end
@@ -31,7 +30,7 @@ describe "Matrix#/" do
   end
 
   it "raises a Matrix::ErrDimensionMismatch if the matrices are different sizes" do
-    lambda { @a / Matrix[ [1] ] }.should raise_error(Matrix::ErrDimensionMismatch)
+    -> { @a / Matrix[ [1] ] }.should raise_error(Matrix::ErrDimensionMismatch)
   end
 
   it "returns an instance of Matrix" do
@@ -47,9 +46,9 @@ describe "Matrix#/" do
   end
 
   it "raises a TypeError if other is of wrong type" do
-    lambda { @a / nil        }.should raise_error(TypeError)
-    lambda { @a / "a"        }.should raise_error(TypeError)
-    lambda { @a / [ [1, 2] ] }.should raise_error(TypeError)
-    lambda { @a / Object.new }.should raise_error(TypeError)
+    -> { @a / nil        }.should raise_error(TypeError)
+    -> { @a / "a"        }.should raise_error(TypeError)
+    -> { @a / [ [1, 2] ] }.should raise_error(TypeError)
+    -> { @a / Object.new }.should raise_error(TypeError)
   end
 end

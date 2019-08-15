@@ -1,4 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/set_like'
 require 'set'
 
 describe "Set#proper_superset?" do
@@ -26,9 +27,15 @@ describe "Set#proper_superset?" do
   end
 
   it "raises an ArgumentError when passed a non-Set" do
-    lambda { Set[].proper_superset?([]) }.should raise_error(ArgumentError)
-    lambda { Set[].proper_superset?(1) }.should raise_error(ArgumentError)
-    lambda { Set[].proper_superset?("test") }.should raise_error(ArgumentError)
-    lambda { Set[].proper_superset?(Object.new) }.should raise_error(ArgumentError)
+    -> { Set[].proper_superset?([]) }.should raise_error(ArgumentError)
+    -> { Set[].proper_superset?(1) }.should raise_error(ArgumentError)
+    -> { Set[].proper_superset?("test") }.should raise_error(ArgumentError)
+    -> { Set[].proper_superset?(Object.new) }.should raise_error(ArgumentError)
+  end
+
+  context "when comparing to a Set-like object" do
+    it "returns true if passed a Set-like object that self is a proper superset of" do
+      Set[1, 2, 3, 4].proper_superset?(SetSpecs::SetLike.new([1, 2, 3])).should be_true
+    end
   end
 end

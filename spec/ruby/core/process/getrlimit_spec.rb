@@ -1,8 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 platform_is :aix do
   # In AIX, if getrlimit(2) is called multiple times with RLIMIT_DATA,
-  # the first call and the subequent calls return slightly different
+  # the first call and the subsequent calls return slightly different
   # values of rlim_cur, even if the process does nothing between
   # the calls.  This behavior causes some of the tests in this spec
   # to fail, so call Process.getrlimit(:DATA) once and discard the result.
@@ -36,33 +36,33 @@ platform_is_not :windows do
         obj = mock("process getrlimit integer")
         obj.should_receive(:to_int).and_return(nil)
 
-        lambda { Process.getrlimit(obj) }.should raise_error(TypeError)
+        -> { Process.getrlimit(obj) }.should raise_error(TypeError)
       end
     end
 
     context "when passed a Symbol" do
-      Process.constants.grep(/\ARLIMIT_/) do |fullname|
-        short = $'
-        it "coerces :#{short} into #{fullname}" do
+      it "coerces the short name into the full RLIMIT_ prefixed name" do
+        Process.constants.grep(/\ARLIMIT_/) do |fullname|
+          short = fullname[/\ARLIMIT_(.+)/, 1]
           Process.getrlimit(short.to_sym).should == Process.getrlimit(Process.const_get(fullname))
         end
       end
 
       it "raises ArgumentError when passed an unknown resource" do
-        lambda { Process.getrlimit(:FOO) }.should raise_error(ArgumentError)
+        -> { Process.getrlimit(:FOO) }.should raise_error(ArgumentError)
       end
     end
 
     context "when passed a String" do
-      Process.constants.grep(/\ARLIMIT_/) do |fullname|
-        short = $'
-        it "coerces '#{short}' into #{fullname}" do
+      it "coerces the short name into the full RLIMIT_ prefixed name" do
+        Process.constants.grep(/\ARLIMIT_/) do |fullname|
+          short = fullname[/\ARLIMIT_(.+)/, 1]
           Process.getrlimit(short).should == Process.getrlimit(Process.const_get(fullname))
         end
       end
 
       it "raises ArgumentError when passed an unknown resource" do
-        lambda { Process.getrlimit("FOO") }.should raise_error(ArgumentError)
+        -> { Process.getrlimit("FOO") }.should raise_error(ArgumentError)
       end
     end
 

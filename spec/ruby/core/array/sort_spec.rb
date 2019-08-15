@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#sort" do
   it "returns a new array sorted based on comparing elements with <=>" do
@@ -66,7 +66,9 @@ describe "Array#sort" do
   it "does not deal with exceptions raised by unimplemented or incorrect #<=>" do
     o = Object.new
 
-    lambda { [o, 1].sort }.should raise_error
+    -> {
+      [o, 1].sort
+    }.should raise_error(ArgumentError)
   end
 
   it "may take a block which is used to determine the order of objects a and b described as -1, 0 or +1" do
@@ -76,7 +78,7 @@ describe "Array#sort" do
   end
 
   it "raises an error when a given block returns nil" do
-    lambda { [1, 2].sort {} }.should raise_error(ArgumentError)
+    -> { [1, 2].sort {} }.should raise_error(ArgumentError)
   end
 
   it "does not call #<=> on contained objects when invoked with a block" do
@@ -132,7 +134,7 @@ describe "Array#sort" do
     a.sort { |n, m|
       ArraySpecs::ComparableWithFixnum.new(n-m)
     }.should == [-4, 1, 2, 5, 7, 10, 12]
-    lambda {
+    -> {
       a.sort { |n, m| (n - m).to_s }
     }.should raise_error(ArgumentError)
   end
@@ -153,7 +155,7 @@ describe "Array#sort" do
 
   it "raises an error if objects can't be compared" do
     a=[ArraySpecs::Uncomparable.new, ArraySpecs::Uncomparable.new]
-    lambda {a.sort}.should raise_error(ArgumentError)
+    -> {a.sort}.should raise_error(ArgumentError)
   end
 
   # From a strange Rubinius bug
@@ -231,8 +233,8 @@ describe "Array#sort!" do
     a.sort!{ -1 }.should be_an_instance_of(Array)
   end
 
-  it "raises a RuntimeError on a frozen array" do
-    lambda { ArraySpecs.frozen_array.sort! }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    -> { ArraySpecs.frozen_array.sort! }.should raise_error(frozen_error_class)
   end
 
   it "returns the specified value when it would break in the given block" do

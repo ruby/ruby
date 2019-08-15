@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 platform_is_not :windows do
   describe "Process.setrlimit" do
@@ -16,7 +16,7 @@ platform_is_not :windows do
         obj = mock("process getrlimit integer")
         obj.should_receive(:to_int).and_return(nil)
 
-        lambda { Process.setrlimit(obj, @limit, @max) }.should raise_error(TypeError)
+        -> { Process.setrlimit(obj, @limit, @max) }.should raise_error(TypeError)
       end
 
       it "calls #to_int to convert the soft limit to an Integer" do
@@ -27,7 +27,7 @@ platform_is_not :windows do
         obj = mock("process getrlimit integer")
         obj.should_receive(:to_int).and_return(nil)
 
-        lambda { Process.setrlimit(@resource, obj, @max) }.should raise_error(TypeError)
+        -> { Process.setrlimit(@resource, obj, @max) }.should raise_error(TypeError)
       end
 
       it "calls #to_int to convert the hard limit to an Integer" do
@@ -38,7 +38,7 @@ platform_is_not :windows do
         obj = mock("process getrlimit integer")
         obj.should_receive(:to_int).and_return(nil)
 
-        lambda { Process.setrlimit(@resource, @limit, obj) }.should raise_error(TypeError)
+        -> { Process.setrlimit(@resource, @limit, obj) }.should raise_error(TypeError)
       end
     end
 
@@ -100,7 +100,7 @@ platform_is_not :windows do
           Process.setrlimit(:RTPRIO, *Process.getrlimit(Process::RLIMIT_RTPRIO)).should be_nil
         end
 
-        if defined?(Process::RLIMIT_RTTIME)
+        guard -> { defined?(Process::RLIMIT_RTTIME) } do
           it "coerces :RTTIME into RLIMIT_RTTIME" do
             Process.setrlimit(:RTTIME, *Process.getrlimit(Process::RLIMIT_RTTIME)).should be_nil
           end
@@ -120,7 +120,7 @@ platform_is_not :windows do
       end
 
       it "raises ArgumentError when passed an unknown resource" do
-        lambda { Process.setrlimit(:FOO, 1, 1) }.should raise_error(ArgumentError)
+        -> { Process.setrlimit(:FOO, 1, 1) }.should raise_error(ArgumentError)
       end
     end
 
@@ -182,7 +182,7 @@ platform_is_not :windows do
           Process.setrlimit("RTPRIO", *Process.getrlimit(Process::RLIMIT_RTPRIO)).should be_nil
         end
 
-        if defined?(Process::RLIMIT_RTTIME)
+        guard -> { defined?(Process::RLIMIT_RTTIME) } do
           it "coerces 'RTTIME' into RLIMIT_RTTIME" do
             Process.setrlimit("RTTIME", *Process.getrlimit(Process::RLIMIT_RTTIME)).should be_nil
           end
@@ -202,7 +202,7 @@ platform_is_not :windows do
       end
 
       it "raises ArgumentError when passed an unknown resource" do
-        lambda { Process.setrlimit("FOO", 1, 1) }.should raise_error(ArgumentError)
+        -> { Process.setrlimit("FOO", 1, 1) }.should raise_error(ArgumentError)
       end
     end
 

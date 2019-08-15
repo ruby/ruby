@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Float#nan?" do
   it "returns true if self is not a valid IEEE floating-point number" do

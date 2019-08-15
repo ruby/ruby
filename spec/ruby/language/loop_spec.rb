@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 describe "The loop expression" do
   it "repeats the given block until a break is called" do
@@ -15,7 +15,7 @@ describe "The loop expression" do
       inner_loop = 123
       break
     end
-    lambda { inner_loop }.should raise_error(NameError)
+    -> { inner_loop }.should raise_error(NameError)
   end
 
   it "returns the value passed to break if interrupted by break" do

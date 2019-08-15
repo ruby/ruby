@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#hash" do
   it "returns the same fixnum for arrays with the same content" do
@@ -13,10 +13,10 @@ describe "Array#hash" do
 
   it "properly handles recursive arrays" do
     empty = ArraySpecs.empty_recursive_array
-    lambda { empty.hash }.should_not raise_error
+    -> { empty.hash }.should_not raise_error
 
     array = ArraySpecs.recursive_array
-    lambda { array.hash }.should_not raise_error
+    -> { array.hash }.should_not raise_error
   end
 
   it "returns the same hash for equal recursive arrays" do

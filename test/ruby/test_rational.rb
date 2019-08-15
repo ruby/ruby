@@ -42,7 +42,9 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_hash
-    assert_kind_of(Integer, Rational(1,2).hash)
+    h = Rational(1,2).hash
+    assert_kind_of(Integer, h)
+    assert_nothing_raised {h.to_s}
 
     h = {}
     h[Rational(0)] = 0
@@ -108,12 +110,45 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(3),Rational('3'))
     assert_equal(Rational(1),Rational('3.0','3.0'))
     assert_equal(Rational(1),Rational('3/3','3/3'))
+    assert_equal(Rational(111, 1), Rational('1.11e+2'))
+    assert_equal(Rational(111, 10), Rational('1.11e+1'))
+    assert_equal(Rational(111, 10), Rational('1.11e1'))
+    assert_equal(Rational(111, 100), Rational('1.11e0'))
+    assert_equal(Rational(111, 1000), Rational('1.11e-1'))
     assert_raise(TypeError){Rational(nil)}
     assert_raise(ArgumentError){Rational('')}
     assert_raise_with_message(ArgumentError, /\u{221a 2668}/) {
       Rational("\u{221a 2668}")
     }
+    assert_warning('') {
+      assert_predicate(Rational('1e-99999999999999999999'), :zero?)
+    }
+
     assert_raise(TypeError){Rational(Object.new)}
+    assert_raise(TypeError){Rational(Object.new, Object.new)}
+    assert_raise(TypeError){Rational(1, Object.new)}
+
+    o = Object.new
+    def o.to_r; 1/42r; end
+    assert_equal(1/42r, Rational(o))
+    assert_equal(1/84r, Rational(o, 2))
+    assert_equal(42, Rational(1, o))
+    assert_equal(1, Rational(o, o))
+
+    o = Object.new
+    def o.to_r; nil; end
+    assert_raise(TypeError) { Rational(o) }
+    assert_raise(TypeError) { Rational(o, 2) }
+    assert_raise(TypeError) { Rational(1, o) }
+    assert_raise(TypeError) { Rational(o, o) }
+
+    o = Object.new
+    def o.to_r; raise; end
+    assert_raise(RuntimeError) { Rational(o) }
+    assert_raise(RuntimeError) { Rational(o, 2) }
+    assert_raise(RuntimeError) { Rational(1, o) }
+    assert_raise(RuntimeError) { Rational(o, o) }
+
     assert_raise(ArgumentError){Rational()}
     assert_raise(ArgumentError){Rational(1,2,3)}
 
@@ -560,7 +595,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal([Rational(2.2),Rational(1)], Rational(1).coerce(2.2))
     assert_equal([Rational(2),Rational(1)], Rational(1).coerce(Rational(2)))
 
-    assert_nothing_raised(TypeError, '[Bug #5020] [ruby-devl:44088]') do
+    assert_nothing_raised(TypeError, '[Bug #5020] [ruby-dev:44088]') do
       Rational(1,2).coerce(Complex(1,1))
     end
   end
@@ -773,6 +808,42 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(ZeroDivisionError) {Rational("1/0")}
   end
 
+  def test_Rational_with_invalid_exception
+    assert_raise(ArgumentError) {
+      Rational("1/1", exception: 1)
+    }
+  end
+
+  def test_Rational_without_exception
+    assert_nothing_raised(ArgumentError) {
+      assert_equal(nil, Rational("5/3x", exception: false))
+    }
+    assert_nothing_raised(ZeroDivisionError) {
+      assert_equal(nil, Rational("1/0", exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(nil, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(Object.new, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(1, nil, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(1, Object.new, exception: false))
+    }
+
+    o = Object.new;
+    def o.to_r; raise; end
+    assert_nothing_raised(RuntimeError) {
+      assert_equal(nil, Rational(o, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(1, o, exception: false))
+    }
+  end
+
   def test_to_i
     assert_equal(1, Rational(3,2).to_i)
     assert_equal(1, Integer(Rational(3,2)))
@@ -781,6 +852,7 @@ class Rational_Test < Test::Unit::TestCase
   def test_to_f
     assert_equal(1.5, Rational(3,2).to_f)
     assert_equal(1.5, Float(Rational(3,2)))
+    assert_equal(1e-23, Rational(1, 10**23).to_f, "Bug #14637")
   end
 
   def test_to_c

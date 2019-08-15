@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :complex_math_tanh, shared: true do
   it "returns the hyperbolic tangent of the argument" do
@@ -27,6 +27,6 @@ describe :complex_math_tanh_bang, shared: true do
   end
 
   it "raises a TypeError when passed a Complex number" do
-    lambda { @object.send(:tanh!, Complex(4, 5)) }.should raise_error(TypeError)
+    -> { @object.send(:tanh!, Complex(4, 5)) }.should raise_error(TypeError)
   end
 end

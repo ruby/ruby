@@ -1,3 +1,3 @@
-require File.expand_path("../recursive_require_fixture.rb", __FILE__)
+require_relative 'recursive_require_fixture'
 
 ScratchPad << :loaded

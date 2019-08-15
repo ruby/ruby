@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require File.expand_path '../xref_test_case', __FILE__
 
 class TestRDocAnyMethod < XrefTestCase
@@ -85,6 +85,33 @@ method(a, b) { |c, d| ... }
     assert_equal expected, @c2_a.markup_code
   end
 
+  def test_markup_code_with_line_numbers
+    position_comment = "# File #{@file_name}, line 1"
+    tokens = [
+      { :line_no => 1, :char_no => 0, :kind => :on_comment, :text => position_comment },
+      { :line_no => 1, :char_no => position_comment.size, :kind => :on_nl, :text => "\n" },
+      { :line_no => 2, :char_no => 0, :kind => :on_const, :text => 'A' },
+      { :line_no => 2, :char_no => 1, :kind => :on_nl, :text => "\n" },
+      { :line_no => 3, :char_no => 0, :kind => :on_const, :text => 'B' }
+    ]
+
+    @c2_a.collect_tokens
+    @c2_a.add_tokens(*tokens)
+
+    assert_equal <<-EXPECTED.chomp, @c2_a.markup_code
+<span class="ruby-comment"># File xref_data.rb, line 1</span>
+<span class="ruby-constant">A</span>
+<span class="ruby-constant">B</span>
+    EXPECTED
+
+    @options.line_numbers = true
+    assert_equal <<-EXPECTED.chomp, @c2_a.markup_code
+  <span class="ruby-comment"># File xref_data.rb</span>
+<span class="line-num">1</span> <span class="ruby-constant">A</span>
+<span class="line-num">2</span> <span class="ruby-constant">B</span>
+    EXPECTED
+  end
+
   def test_markup_code_empty
     assert_equal '', @c2_a.markup_code
   end
@@ -133,7 +160,7 @@ method(a, b) { |c, d| ... }
     assert_equal 'Klass#method', loaded.full_name
     assert_equal 'method',       loaded.name
     assert_equal 'param',        loaded.params
-    assert_equal nil,            loaded.singleton # defaults to nil
+    assert_nil                   loaded.singleton # defaults to nil
     assert_equal :public,        loaded.visibility
     assert_equal cm,             loaded.parent
     assert_equal section,        loaded.section
@@ -151,8 +178,21 @@ method(a, b) { |c, d| ... }
     assert                aliased_method.display?
   end
 
+  def test_marshal_load_aliased_method_with_nil_singleton
+    aliased_method = Marshal.load Marshal.dump(@c2_a)
+
+    aliased_method.store = @store
+    aliased_method.is_alias_for = ["C2", nil, "b"]
+
+    assert_equal 'C2#a',  aliased_method.full_name
+    assert_equal 'C2',    aliased_method.parent_name
+    assert_equal '()',    aliased_method.params
+    assert_equal @c2_b,   aliased_method.is_alias_for, 'is_alias_for'
+    assert                aliased_method.display?
+  end
+
   def test_marshal_load_class_method
-    class_method = Marshal.load Marshal.dump(@c1.method_list.first)
+    class_method = Marshal.load Marshal.dump(@c1.find_class_method_named 'm')
 
     assert_equal 'C1::m', class_method.full_name
     assert_equal 'C1',    class_method.parent_name
@@ -161,7 +201,7 @@ method(a, b) { |c, d| ... }
   end
 
   def test_marshal_load_instance_method
-    instance_method = Marshal.load Marshal.dump(@c1.method_list.last)
+    instance_method = Marshal.load Marshal.dump(@c1.find_instance_method_named 'm')
 
     assert_equal 'C1#m',  instance_method.full_name
     assert_equal 'C1',    instance_method.parent_name
@@ -207,9 +247,9 @@ method(a, b) { |c, d| ... }
     assert_equal 'Klass#method', loaded.full_name
     assert_equal 'method',       loaded.name
     assert_equal 'param',        loaded.params
-    assert_equal nil,            loaded.singleton # defaults to nil
+    assert_nil                   loaded.singleton # defaults to nil
     assert_equal :public,        loaded.visibility
-    assert_equal nil,            loaded.file
+    assert_nil                   loaded.file
     assert_equal cm,             loaded.parent
     assert_equal section,        loaded.section
     assert_nil                   loaded.is_alias_for
@@ -264,7 +304,7 @@ method(a, b) { |c, d| ... }
     assert_equal 'Klass#method', loaded.full_name
     assert_equal 'method',       loaded.name
     assert_equal 'param',        loaded.params
-    assert_equal nil,            loaded.singleton # defaults to nil
+    assert_nil                   loaded.singleton # defaults to nil
     assert_equal :public,        loaded.visibility
     assert_equal cm,             loaded.parent
     assert_equal section,        loaded.section
@@ -467,4 +507,3 @@ method(a, b) { |c, d| ... }
   end
 
 end
-

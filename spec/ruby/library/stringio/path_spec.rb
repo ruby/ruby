@@ -1,8 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "StringIO#path" do
   it "is not defined" do
-    lambda { StringIO.new("path").path }.should raise_error(NoMethodError)
+    -> { StringIO.new("path").path }.should raise_error(NoMethodError)
   end
 end

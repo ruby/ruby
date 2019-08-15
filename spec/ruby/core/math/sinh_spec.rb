@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Math.sinh" do
   it "returns a float" do
@@ -14,7 +14,7 @@ describe "Math.sinh" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    lambda { Math.sinh("test") }.should raise_error(TypeError)
+    -> { Math.sinh("test") }.should raise_error(TypeError)
   end
 
   it "returns NaN given NaN" do
@@ -22,7 +22,7 @@ describe "Math.sinh" do
   end
 
   it "raises a TypeError if the argument is nil" do
-    lambda { Math.sinh(nil) }.should raise_error(TypeError)
+    -> { Math.sinh(nil) }.should raise_error(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

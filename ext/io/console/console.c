@@ -14,12 +14,6 @@
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
-#ifndef RARRAY_CONST_PTR
-# define RARRAY_CONST_PTR(ary) RARRAY_PTR(ary)
-#endif
-#ifndef HAVE_RB_FUNCALLV
-# define rb_funcallv rb_funcall2
-#endif
 
 #if defined HAVE_TERMIOS_H
 # include <termios.h>
@@ -54,6 +48,7 @@ typedef struct sgttyb conmode;
 # endif
 #elif defined _WIN32
 #include <winioctl.h>
+#include <conio.h>
 typedef DWORD conmode;
 
 #define LAST_ERROR rb_w32_map_errno(GetLastError())
@@ -101,10 +96,6 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
     }
     return rb_funcallv(recv, vid, argc, argv);
 }
-#endif
-
-#ifndef HAVE_RB_SYM2STR
-# define rb_sym2str(sym) rb_id2str(SYM2ID(sym))
 #endif
 
 typedef struct {
@@ -307,6 +298,14 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void 
  *
  * will read and return a line without echo back and line editing.
  *
+ * The parameter +min+ specifies the minimum number of bytes that
+ * should be received when a read operation is performed. (default: 1)
+ *
+ * The parameter +time+ specifies the timeout in _seconds_ with a
+ * precision of 1/10 of a second. (default: 0)
+ *
+ * Refer to the manual page of termios for further details.
+ *
  * You must require 'io/console' to use this method.
  */
 static VALUE
@@ -323,6 +322,8 @@ console_raw(int argc, VALUE *argv, VALUE io)
  * Enables raw mode.
  *
  * If the terminal mode needs to be back, use io.raw { ... }.
+ *
+ * See IO#raw for details on the parameters.
  *
  * You must require 'io/console' to use this method.
  */
@@ -385,11 +386,13 @@ console_set_cooked(VALUE io)
     return io;
 }
 
+#ifndef _WIN32
 static VALUE
 getc_call(VALUE io)
 {
     return rb_funcallv(io, id_getc, 0, 0);
 }
+#endif
 
 /*
  * call-seq:
@@ -397,13 +400,57 @@ getc_call(VALUE io)
  *
  * Reads and returns a character in raw mode.
  *
+ * See IO#raw for details on the parameters.
+ *
  * You must require 'io/console' to use this method.
  */
 static VALUE
 console_getch(int argc, VALUE *argv, VALUE io)
 {
     rawmode_arg_t opts, *optp = rawmode_opt(argc, argv, &opts);
+#ifndef _WIN32
     return ttymode(io, getc_call, set_rawmode, optp);
+#else
+    rb_io_t *fptr;
+    VALUE str;
+    wint_t c;
+    int w, len;
+    char buf[8];
+    struct timeval *to = NULL, tv;
+
+    GetOpenFile(io, fptr);
+    if (optp) {
+	if (optp->vtime) {
+	    to = &tv;
+	    tv.tv_sec = optp->vtime / 10;
+	    tv.tv_usec = (optp->vtime % 10) * 100000;
+	}
+	if (optp->vmin != 1) {
+	    rb_warning("min option ignored");
+	}
+    }
+    w = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, to);
+    if (w < 0) rb_eof_error();
+    if (!(w & RB_WAITFD_IN)) return Qnil;
+    c = _getwch();
+    switch (c) {
+      case WEOF:
+	return Qnil;
+      case 0x00:
+      case 0xe0:
+	buf[0] = (char)c;
+	c = _getwch();
+	len = 1;
+	do {
+	    buf[len++] = (unsigned char)c;
+	} while ((c >>= CHAR_BIT) && len < (int)sizeof(buf));
+	return rb_str_new(buf, len);
+      default:
+	len = rb_uv_to_utf8(buf, c);
+	str = rb_utf8_str_new(buf, len);
+	return rb_str_conv_enc(str, NULL, rb_default_external_encoding());
+    }
+#endif
 }
 
 /*

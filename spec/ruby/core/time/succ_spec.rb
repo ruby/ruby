@@ -1,19 +1,39 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Time#succ" do
   it "returns a new time one second later than time" do
-    -> {
+    suppress_warning {
       @result = Time.at(100).succ
-    }.should complain(/Time#succ is obsolete/)
+    }
+
     @result.should == Time.at(101)
   end
 
   it "returns a new instance" do
-    t1 = Time.at(100)
-    t2 = nil
+    time = Time.at(100)
+
+    suppress_warning {
+      @result = time.succ
+    }
+
+    @result.should_not equal time
+  end
+
+  it "is obsolete" do
     -> {
-      t2 = t1.succ
+      Time.at(100).succ
     }.should complain(/Time#succ is obsolete/)
-    t1.object_id.should_not == t2.object_id
+  end
+
+  ruby_version_is "2.6" do
+    context "zone is a timezone object" do
+      it "preserves time zone" do
+        zone = TimeSpecs::Timezone.new(offset: (5*3600+30*60))
+        time = Time.new(2012, 1, 1, 12, 0, 0, zone) - 60*60
+
+        time.zone.should == zone
+      end
+    end
   end
 end

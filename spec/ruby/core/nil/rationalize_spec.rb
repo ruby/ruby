@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "NilClass#rationalize" do
   it "returns 0/1" do
@@ -10,7 +10,7 @@ describe "NilClass#rationalize" do
   end
 
   it "raises ArgumentError when passed more than one argument" do
-    lambda { nil.rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
-    lambda { nil.rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
+    -> { nil.rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
+    -> { nil.rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
   end
 end

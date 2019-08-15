@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Enumerable#sort" do
   it "sorts by the natural order as defined by <=>" do
@@ -14,7 +14,7 @@ describe "Enumerable#sort" do
   end
 
   it "raises a NoMethodError if elements do not define <=>" do
-    lambda do
+    -> do
       EnumerableSpecs::Numerous.new(BasicObject.new, BasicObject.new, BasicObject.new).sort
     end.should raise_error(NoMethodError)
   end
@@ -33,14 +33,14 @@ describe "Enumerable#sort" do
     EnumerableSpecs::Numerous.new.sort { |n, m|
       EnumerableSpecs::ComparableWithFixnum.new(-(n+m) * (n <=> m))
     }.should == [6, 5, 4, 3, 2, 1]
-    lambda {
+    -> {
       EnumerableSpecs::Numerous.new.sort { |n, m| (n <=> m).to_s }
     }.should raise_error(ArgumentError)
   end
 
   it "raises an error if objects can't be compared" do
     a=EnumerableSpecs::Numerous.new(EnumerableSpecs::Uncomparable.new, EnumerableSpecs::Uncomparable.new)
-    lambda {a.sort}.should raise_error(ArgumentError)
+    -> {a.sort}.should raise_error(ArgumentError)
   end
 
   it "gathers whole arrays as elements when each yields multiple" do

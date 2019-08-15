@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/caller', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/caller'
 
 describe 'Kernel#caller' do
   it 'is a private method' do
@@ -33,5 +33,14 @@ describe 'Kernel#caller' do
     line      = __LINE__ - 1
 
     locations[0].should include("#{__FILE__}:#{line}:in")
+  end
+
+  it "returns an Array with the block given to #at_exit at the base of the stack" do
+    path = fixture(__FILE__, "caller_at_exit.rb")
+    lines = ruby_exe(path).lines
+    lines.should == [
+      "#{path}:6:in `foo'\n",
+      "#{path}:2:in `block in <main>'\n"
+    ]
   end
 end

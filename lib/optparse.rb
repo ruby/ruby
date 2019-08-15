@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # optparse.rb - command-line option analysis with the OptionParser class.
 #
@@ -125,6 +125,7 @@
 # For options that require an argument, option specification strings may include an
 # option name in all caps. If an option is used without the required argument,
 # an exception will be raised.
+#
 #   require 'optparse'
 #
 #   options = {}
@@ -137,9 +138,9 @@
 #
 # Used:
 #
-#   bash-3.2$ ruby optparse-test.rb -r
+#   $ ruby optparse-test.rb -r
 #   optparse-test.rb:9:in `<main>': missing argument: -r (OptionParser::MissingArgument)
-#   bash-3.2$ ruby optparse-test.rb -r my-library
+#   $ ruby optparse-test.rb -r my-library
 #   You required my-library!
 #
 # === Type Coercion
@@ -187,13 +188,12 @@
 #   end.parse!
 #
 # Used:
-#   bash-3.2$ ruby optparse-test.rb  -t nonsense
+#
+#   $ ruby optparse-test.rb  -t nonsense
 #   ... invalid argument: -t nonsense (OptionParser::InvalidArgument)
-#   from ... time.rb:5:in `block in <top (required)>'
-#   from optparse-test.rb:31:in `<main>'
-#   bash-3.2$ ruby optparse-test.rb  -t 10-11-12
+#   $ ruby optparse-test.rb  -t 10-11-12
 #   2010-11-12 00:00:00 -0500
-#   bash-3.2$ ruby optparse-test.rb  -t 9:30
+#   $ ruby optparse-test.rb  -t 9:30
 #   2014-08-13 09:30:00 -0400
 #
 # ==== Creating Custom Conversions
@@ -225,13 +225,39 @@
 #
 #   op.parse!
 #
-# output:
-#   bash-3.2$ ruby optparse-test.rb --user 1
+# Used:
+#
+#   $ ruby optparse-test.rb --user 1
 #   #<struct User id=1, name="Sam">
-#   bash-3.2$ ruby optparse-test.rb --user 2
+#   $ ruby optparse-test.rb --user 2
 #   #<struct User id=2, name="Gandalf">
-#   bash-3.2$ ruby optparse-test.rb --user 3
+#   $ ruby optparse-test.rb --user 3
 #   optparse-test.rb:15:in `block in find_user': No User Found for id 3 (RuntimeError)
+#
+# === Store options to a Hash
+#
+# The +into+ option of +order+, +parse+ and so on methods stores command line options into a Hash.
+#
+#   require 'optparse'
+#
+#   params = {}
+#   OptionParser.new do |opts|
+#     opts.on('-a')
+#     opts.on('-b NUM', Integer)
+#     opts.on('-v', '--verbose')
+#   end.parse!(into: params)
+#
+#   p params
+#
+# Used:
+#
+#   $ ruby optparse-test.rb -a
+#   {:a=>true}
+#   $ ruby optparse-test.rb -a -v
+#   {:a=>true, :verbose=>true}
+#   $ ruby optparse-test.rb -a -b 100
+#   {:a=>true, :b=>100}
+#
 # === Complete example
 #
 # The following example is a complete Ruby program.  You can run it and see the
@@ -413,7 +439,7 @@ class OptionParser
       candidates = []
       block.call do |k, *v|
         (if Regexp === k
-           kn = "".freeze
+           kn = ""
            k === key
          else
            kn = defined?(k.id2name) ? k.id2name : k
@@ -508,8 +534,9 @@ class OptionParser
 
     def initialize(pattern = nil, conv = nil,
                    short = nil, long = nil, arg = nil,
-                   desc = ([] if short or long), block = Proc.new)
+                   desc = ([] if short or long), block = nil, &_block)
       raise if Array === pattern
+      block ||= _block
       @pattern, @conv, @short, @long, @arg, @desc, @block =
         pattern, conv, short, long, arg, desc, block
     end
@@ -565,7 +592,7 @@ class OptionParser
     #            +max+ columns.
     # +indent+:: Prefix string indents all summarized lines.
     #
-    def summarize(sdone = [], ldone = [], width = 1, max = width - 1, indent = "")
+    def summarize(sdone = {}, ldone = {}, width = 1, max = width - 1, indent = "")
       sopts, lopts = [], [], nil
       @short.each {|s| sdone.fetch(s) {sopts << s}; sdone[s] = true} if @short
       @long.each {|s| ldone.fetch(s) {lopts << s}; ldone[s] = true} if @long
@@ -577,7 +604,7 @@ class OptionParser
       while s = lopts.shift
         l = left[-1].length + s.length
         l += arg.length if left.size == 1 && arg
-        l < max or sopts.empty? or left << ''
+        l < max or sopts.empty? or left << +''
         left[-1] << (left[-1].empty? ? ' ' * 4 : ', ') << s
       end
 
@@ -628,7 +655,7 @@ class OptionParser
       return if sopts.empty? and lopts.empty? # completely hidden
 
       (sopts+lopts).each do |opt|
-        # "(-x -c -r)-l[left justify]" \
+        # "(-x -c -r)-l[left justify]"
         if /^--\[no-\](.+)$/ =~ opt
           o = $1
           yield("--#{o}", desc.join(""))
@@ -1136,7 +1163,7 @@ XXX
   #
   def banner
     unless @banner
-      @banner = "Usage: #{program_name} [options]"
+      @banner = +"Usage: #{program_name} [options]"
       visit(:add_banner, @banner)
     end
     @banner
@@ -1165,14 +1192,14 @@ XXX
   # Version
   #
   def version
-    @version || (defined?(::Version) && ::Version)
+    (defined?(@version) && @version) || (defined?(::Version) && ::Version)
   end
 
   #
   # Release code
   #
   def release
-    @release || (defined?(::Release) && ::Release) || (defined?(::RELEASE) && ::RELEASE)
+    (defined?(@release) && @release) || (defined?(::Release) && ::Release) || (defined?(::RELEASE) && ::RELEASE)
   end
 
   #
@@ -1180,7 +1207,7 @@ XXX
   #
   def ver
     if v = version
-      str = "#{program_name} #{[v].join('.')}"
+      str = +"#{program_name} #{[v].join('.')}"
       str << " (#{v})" if v = release
       str
     end
@@ -1237,7 +1264,8 @@ XXX
   # +indent+:: Indentation, defaults to @summary_indent.
   #
   def summarize(to = [], width = @summary_width, max = width - 1, indent = @summary_indent, &blk)
-    blk ||= proc {|l| to << (l.index($/, -1) ? l : l + $/)}
+    nl = "\n"
+    blk ||= proc {|l| to << (l.index(nl, -1) ? l : l + nl)}
     visit(:summarize, {}, {}, width, max, indent, &blk)
     to
   end
@@ -1324,6 +1352,8 @@ XXX
   # [Description:]
   #   Description string for the option.
   #     "Run verbosely"
+  #   If you give multiple description strings, each string will be printed
+  #   line by line.
   #
   # [Handler:]
   #   Handler for the parsed argument value. Either give a block or pass a
@@ -1565,7 +1595,7 @@ XXX
               begin
                 sw, = complete(:short, opt)
                 # short option matched.
-                val = arg.sub(/\A-/, '')
+                val = arg.delete_prefix('-')
                 has_arg = true
               rescue InvalidOption
                 # if no short options match, try completion with long
@@ -1776,13 +1806,26 @@ XXX
   # is not present. Returns whether successfully loaded.
   #
   # +filename+ defaults to basename of the program without suffix in a
-  # directory ~/.options.
+  # directory ~/.options, then the basename with '.options' suffix
+  # under XDG and Haiku standard places.
   #
   def load(filename = nil)
-    begin
-      filename ||= File.expand_path(File.basename($0, '.*'), '~/.options')
-    rescue
-      return false
+    unless filename
+      basename = File.basename($0, '.*')
+      return true if load(File.expand_path(basename, '~/.options')) rescue nil
+      basename << ".options"
+      return [
+        # XDG
+        ENV['XDG_CONFIG_HOME'],
+        '~/.config',
+        *ENV['XDG_CONFIG_DIRS']&.split(File::PATH_SEPARATOR),
+
+        # Haiku
+        '~/config/settings',
+      ].any? {|dir|
+        next if !dir or dir.empty?
+        load(File.expand_path(basename, dir)) rescue nil
+      }
     end
     begin
       parse(*IO.readlines(filename).each {|s| s.chomp!})
@@ -1952,7 +1995,7 @@ XXX
   #
   class ParseError < RuntimeError
     # Reason which caused the error.
-    Reason = 'parse error'.freeze
+    Reason = 'parse error'
 
     def initialize(*args)
       @args = args
@@ -2015,42 +2058,42 @@ XXX
   # Raises when ambiguously completable string is encountered.
   #
   class AmbiguousOption < ParseError
-    const_set(:Reason, 'ambiguous option'.freeze)
+    const_set(:Reason, 'ambiguous option')
   end
 
   #
   # Raises when there is an argument for a switch which takes no argument.
   #
   class NeedlessArgument < ParseError
-    const_set(:Reason, 'needless argument'.freeze)
+    const_set(:Reason, 'needless argument')
   end
 
   #
   # Raises when a switch with mandatory argument has no argument.
   #
   class MissingArgument < ParseError
-    const_set(:Reason, 'missing argument'.freeze)
+    const_set(:Reason, 'missing argument')
   end
 
   #
   # Raises when switch is undefined.
   #
   class InvalidOption < ParseError
-    const_set(:Reason, 'invalid option'.freeze)
+    const_set(:Reason, 'invalid option')
   end
 
   #
   # Raises when the given argument does not match required format.
   #
   class InvalidArgument < ParseError
-    const_set(:Reason, 'invalid argument'.freeze)
+    const_set(:Reason, 'invalid argument')
   end
 
   #
   # Raises when the given argument word can't be completed uniquely.
   #
   class AmbiguousArgument < InvalidArgument
-    const_set(:Reason, 'ambiguous argument'.freeze)
+    const_set(:Reason, 'ambiguous argument')
   end
 
   #

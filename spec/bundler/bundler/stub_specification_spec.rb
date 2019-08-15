@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe Bundler::StubSpecification do
   let(:gemspec) do
@@ -14,12 +13,10 @@ RSpec.describe Bundler::StubSpecification do
     described_class.from_stub(gemspec)
   end
 
-  if Bundler.rubygems.provides?(">= 2.1")
-    describe "#from_stub" do
-      it "returns the same stub if already a Bundler::StubSpecification" do
-        stub = described_class.from_stub(with_bundler_stub_spec)
-        expect(stub).to be(with_bundler_stub_spec)
-      end
+  describe "#from_stub" do
+    it "returns the same stub if already a Bundler::StubSpecification" do
+      stub = described_class.from_stub(with_bundler_stub_spec)
+      expect(stub).to be(with_bundler_stub_spec)
     end
   end
 end

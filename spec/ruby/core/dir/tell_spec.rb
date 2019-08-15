@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
-require File.expand_path('../shared/closed', __FILE__)
-require File.expand_path('../shared/pos', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
+require_relative 'shared/closed'
+require_relative 'shared/pos'
 
 describe "Dir#tell" do
   before :all do

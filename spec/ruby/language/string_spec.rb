@@ -1,6 +1,6 @@
 # -*- encoding: binary -*-
 
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 # TODO: rewrite these horrid specs. it "are..." seriously?!
 
@@ -40,6 +40,15 @@ describe "Ruby character strings" do
     "#@ip?".should == 'xxx?'
     "#@ip!".should == 'xxx!'
     "#@ip#@ip".should == 'xxxxxx'
+  end
+
+  it "don't get confused by partial interpolation character sequences" do
+    "#@".should == '#@'
+    "#@ ".should == '#@ '
+    "#@@".should == '#@@'
+    "#@@ ".should == '#@@ '
+    "#$ ".should == '#$ '
+    "#\$".should == '#$'
   end
 
   it "taints the result of interpolation when an interpolated value is tainted" do
@@ -186,11 +195,11 @@ describe "Ruby character strings" do
     # TODO: spec other source encodings
     describe "with ASCII_8BIT source encoding" do
       it "produces an ASCII string when escaping ASCII characters via \\u" do
-        "\u0000".encoding.should == Encoding::ASCII_8BIT
+        "\u0000".encoding.should == Encoding::BINARY
       end
 
       it "produces an ASCII string when escaping ASCII characters via \\u{}" do
-        "\u{0000}".encoding.should == Encoding::ASCII_8BIT
+        "\u{0000}".encoding.should == Encoding::BINARY
       end
 
       it "produces a UTF-8-encoded string when escaping non-ASCII characters via \\u" do
@@ -224,59 +233,55 @@ describe "Ruby String literals" do
     long_string_literals.should == "Beautiful is better than ugly.Explicit is better than implicit."
   end
 
-  ruby_version_is "2.3" do
-    describe "with a magic frozen comment" do
-      it "produce the same object each time" do
-        ruby_exe(fixture(__FILE__, "freeze_magic_comment_one_literal.rb")).chomp.should == "true"
-      end
+  describe "with a magic frozen comment" do
+    it "produce the same object each time" do
+      ruby_exe(fixture(__FILE__, "freeze_magic_comment_one_literal.rb")).chomp.should == "true"
+    end
 
-      it "produce the same object for literals with the same content" do
-        ruby_exe(fixture(__FILE__, "freeze_magic_comment_two_literals.rb")).chomp.should == "true"
-      end
+    it "produce the same object for literals with the same content" do
+      ruby_exe(fixture(__FILE__, "freeze_magic_comment_two_literals.rb")).chomp.should == "true"
+    end
 
-      it "produce the same object for literals with the same content in different files" do
-        ruby_exe(fixture(__FILE__, "freeze_magic_comment_across_files.rb")).chomp.should == "true"
-      end
+    it "produce the same object for literals with the same content in different files" do
+      ruby_exe(fixture(__FILE__, "freeze_magic_comment_across_files.rb")).chomp.should == "true"
+    end
 
-      it "produce different objects for literals with the same content in different files if the other file doesn't have the comment" do
-        ruby_exe(fixture(__FILE__, "freeze_magic_comment_across_files_no_comment.rb")).chomp.should == "true"
-      end
+    it "produce different objects for literals with the same content in different files if the other file doesn't have the comment" do
+      ruby_exe(fixture(__FILE__, "freeze_magic_comment_across_files_no_comment.rb")).chomp.should == "true"
+    end
 
-      it "produce different objects for literals with the same content in different files if they have different encodings" do
-        ruby_exe(fixture(__FILE__, "freeze_magic_comment_across_files_diff_enc.rb")).chomp.should == "true"
-      end
+    it "produce different objects for literals with the same content in different files if they have different encodings" do
+      ruby_exe(fixture(__FILE__, "freeze_magic_comment_across_files_diff_enc.rb")).chomp.should == "true"
     end
   end
 
 end
 
-with_feature :encoding do
-  describe "Ruby String interpolation" do
-    it "creates a String having an Encoding compatible with all components" do
-      a = "\u3042"
-      b = "abc".encode("ascii-8bit")
+describe "Ruby String interpolation" do
+  it "creates a String having an Encoding compatible with all components" do
+    a = "\u3042"
+    b = "abc".encode("binary")
 
-      str = "#{a} x #{b}"
+    str = "#{a} x #{b}"
 
-      str.should == "\xe3\x81\x82\x20\x78\x20\x61\x62\x63".force_encoding("utf-8")
-      str.encoding.should == Encoding::UTF_8
-    end
+    str.should == "\xe3\x81\x82\x20\x78\x20\x61\x62\x63".force_encoding("utf-8")
+    str.encoding.should == Encoding::UTF_8
+  end
 
-    it "creates a String having the Encoding of the components when all are the same Encoding" do
-      a = "abc".force_encoding("euc-jp")
-      b = "def".force_encoding("euc-jp")
-      str = '"#{a} x #{b}"'.force_encoding("euc-jp")
+  it "creates a String having the Encoding of the components when all are the same Encoding" do
+    a = "abc".force_encoding("euc-jp")
+    b = "def".force_encoding("euc-jp")
+    str = '"#{a} x #{b}"'.force_encoding("euc-jp")
 
-      result = eval(str)
-      result.should == "\x61\x62\x63\x20\x78\x20\x64\x65\x66".force_encoding("euc-jp")
-      result.encoding.should == Encoding::EUC_JP
-    end
+    result = eval(str)
+    result.should == "\x61\x62\x63\x20\x78\x20\x64\x65\x66".force_encoding("euc-jp")
+    result.encoding.should == Encoding::EUC_JP
+  end
 
-    it "raises an Encoding::CompatibilityError if the Encodings are not compatible" do
-      a = "\u3042"
-      b = "\xff".force_encoding "ascii-8bit"
+  it "raises an Encoding::CompatibilityError if the Encodings are not compatible" do
+    a = "\u3042"
+    b = "\xff".force_encoding "binary"
 
-      lambda { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
-    end
+    -> { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
   end
 end

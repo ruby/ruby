@@ -1,10 +1,10 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/enumerator/with_index', __FILE__)
-require File.expand_path('../../enumerable/shared/enumeratorized', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../shared/enumerator/with_index'
+require_relative '../enumerable/shared/enumeratorized'
 
 describe "Enumerator#with_index" do
-  it_behaves_like(:enum_with_index, :with_index)
-  it_behaves_like(:enumeratorized_with_origin_size, :with_index, [1,2,3].select)
+  it_behaves_like :enum_with_index, :with_index
+  it_behaves_like :enumeratorized_with_origin_size, :with_index, [1,2,3].select
 
   it "returns a new Enumerator when no block is given" do
     enum1 = [1,2,3].select
@@ -14,13 +14,13 @@ describe "Enumerator#with_index" do
   end
 
   it "accepts an optional argument when given a block" do
-    lambda do
+    -> do
       @enum.with_index(1) { |f| f}
     end.should_not raise_error(ArgumentError)
   end
 
   it "accepts an optional argument when not given a block" do
-    lambda do
+    -> do
       @enum.with_index(1)
     end.should_not raise_error(ArgumentError)
   end
@@ -36,7 +36,7 @@ describe "Enumerator#with_index" do
   end
 
   it "raises a TypeError when the argument cannot be converted to numeric" do
-    lambda do
+    -> do
       @enum.with_index('1') {|*i| i}
     end.should raise_error(TypeError)
   end

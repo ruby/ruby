@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :io_binwrite, shared: true do
   before :each do
@@ -68,7 +68,7 @@ describe :io_binwrite, shared: true do
   end
 
   it "raises an error if readonly mode is specified" do
-    lambda { IO.send(@method, @filename, "abcde", mode: "r") }.should raise_error(IOError)
+    -> { IO.send(@method, @filename, "abcde", mode: "r") }.should raise_error(IOError)
   end
 
   it "truncates if empty :opts provided and offset skipped" do

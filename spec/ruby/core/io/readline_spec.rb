@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "IO#readline" do
   before :each do
@@ -29,17 +29,23 @@ describe "IO#readline" do
 
   it "raises EOFError on end of stream" do
     IOSpecs.lines.length.times { @io.readline }
-    lambda { @io.readline }.should raise_error(EOFError)
+    -> { @io.readline }.should raise_error(EOFError)
   end
 
   it "raises IOError on closed stream" do
-    lambda { IOSpecs.closed_io.readline }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.readline }.should raise_error(IOError)
   end
 
   it "assigns the returned line to $_" do
     IOSpecs.lines.each do |line|
       @io.readline
       $_.should == line
+    end
+  end
+
+  describe "when passed chomp" do
+    it "returns the first line without a trailing newline character" do
+      @io.readline(chomp: true).should == IOSpecs.lines_without_newline_characters[0]
     end
   end
 end

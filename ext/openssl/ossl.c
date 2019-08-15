@@ -398,7 +398,7 @@ ossl_debug_set(VALUE self, VALUE val)
 }
 
 /*
- * call-seq
+ * call-seq:
  *   OpenSSL.fips_mode -> true | false
  */
 static VALUE
@@ -1099,6 +1099,7 @@ static void Init_ossl_locks(void)
 void
 Init_openssl(void)
 {
+#undef rb_intern
     /*
      * Init timezone info
      */
@@ -1109,25 +1110,14 @@ Init_openssl(void)
     /*
      * Init all digests, ciphers
      */
-    /* CRYPTO_malloc_init(); */
-    /* ENGINE_load_builtin_engines(); */
+#if !defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10100000
+    if (!OPENSSL_init_ssl(0, NULL))
+        rb_raise(rb_eRuntimeError, "OPENSSL_init_ssl");
+#else
     OpenSSL_add_ssl_algorithms();
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
     SSL_load_error_strings();
-
-    /*
-     * FIXME:
-     * On unload do:
-     */
-#if 0
-    CONF_modules_unload(1);
-    destroy_ui_method();
-    EVP_cleanup();
-    ENGINE_cleanup();
-    CRYPTO_cleanup_all_ex_data();
-    ERR_remove_state(0);
-    ERR_free_strings();
 #endif
 
     /*
@@ -1149,7 +1139,11 @@ Init_openssl(void)
     /*
      * Version of OpenSSL the ruby OpenSSL extension is running with
      */
+#if !defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10100000
+    rb_define_const(mOSSL, "OPENSSL_LIBRARY_VERSION", rb_str_new2(OpenSSL_version(OPENSSL_VERSION)));
+#else
     rb_define_const(mOSSL, "OPENSSL_LIBRARY_VERSION", rb_str_new2(SSLeay_version(SSLEAY_VERSION)));
+#endif
 
     /*
      * Version number of OpenSSL the ruby OpenSSL extension was built with

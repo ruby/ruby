@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundler/inline#gemfile" do
   def script(code, options = {})
@@ -44,17 +43,14 @@ RSpec.describe "bundler/inline#gemfile" do
     build_lib "eight", "1.0.0" do |s|
       s.write "lib/eight.rb", "puts 'eight'"
     end
-
-    build_lib "four", "1.0.0" do |s|
-      s.write "lib/four.rb", "puts 'four'"
-    end
   end
 
   it "requires the gems" do
     script <<-RUBY
       gemfile do
-        path "#{lib_path}"
-        gem "two"
+        path "#{lib_path}" do
+          gem "two"
+        end
       end
     RUBY
 
@@ -63,8 +59,9 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY
       gemfile do
-        path "#{lib_path}"
-        gem "eleven"
+        path "#{lib_path}" do
+          gem "eleven"
+        end
       end
 
       puts "success"
@@ -75,7 +72,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY
       gemfile(true) do
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       end
     RUBY
@@ -93,7 +90,7 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(out).to include("Installing activesupport")
     err.gsub! %r{.*lib/sinatra/base\.rb:\d+: warning: constant ::Fixnum is deprecated$}, ""
     err.strip!
-    expect(err).to lack_errors
+    expect(err).to be_empty
     expect(exitstatus).to be_zero if exitstatus
   end
 
@@ -115,6 +112,19 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(exitstatus).to be_zero if exitstatus
   end
 
+  it "has an option for quiet installation" do
+    script <<-RUBY, :artifice => "endpoint"
+      require 'bundler'
+
+      gemfile(true, :quiet => true) do
+        source "https://notaserver.com"
+        gem "activesupport", :require => true
+      end
+    RUBY
+
+    expect(out).to be_empty
+  end
+
   it "raises an exception if passed unknown arguments" do
     script <<-RUBY
       gemfile(true, :arglebargle => true) do
@@ -133,8 +143,9 @@ RSpec.describe "bundler/inline#gemfile" do
       require 'bundler'
       options = { :ui => Bundler::UI::Shell.new }
       gemfile(false, options) do
-        path "#{lib_path}"
-        gem "two"
+        path "#{lib_path}" do
+          gem "two"
+        end
       end
       puts "OKAY" if options.key?(:ui)
     RUBY
@@ -146,7 +157,7 @@ RSpec.describe "bundler/inline#gemfile" do
   it "installs quietly if necessary when the install option is not set" do
     script <<-RUBY
       gemfile do
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       end
 
@@ -221,7 +232,7 @@ RSpec.describe "bundler/inline#gemfile" do
     in_app_root do
       script <<-RUBY
         gemfile do
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         end
 
@@ -233,13 +244,27 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(exitstatus).to be_zero if exitstatus
   end
 
+  it "installs inline gems when frozen is set" do
+    script <<-RUBY, :env => { "BUNDLE_FROZEN" => "true" }
+      gemfile do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      end
+
+      puts RACK
+    RUBY
+
+    expect(last_command.stderr).to be_empty
+    expect(exitstatus).to be_zero if exitstatus
+  end
+
   it "installs inline gems when BUNDLE_GEMFILE is set to an empty string" do
     ENV["BUNDLE_GEMFILE"] = ""
 
     in_app_root do
       script <<-RUBY
         gemfile do
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         end
 
@@ -256,13 +281,39 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY
       gemfile do
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack" # has the rackup executable
       end
 
       puts RACK
     RUBY
-    expect(exitstatus).to eq(0) if exitstatus
+    expect(last_command).to be_success
     expect(out).to eq "1.0.0"
+  end
+
+  context "when BUNDLE_PATH is set" do
+    it "installs inline gems to the system path regardless" do
+      script <<-RUBY, :env => { "BUNDLE_PATH" => "./vendor/inline" }
+        gemfile(true) do
+          source "file://#{gem_repo1}"
+          gem "rack"
+        end
+      RUBY
+      expect(last_command).to be_success
+      expect(system_gem_path("gems/rack-1.0.0")).to exist
+    end
+  end
+
+  it "skips platform warnings" do
+    simulate_platform "ruby"
+
+    script <<-RUBY
+      gemfile(true) do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack", platform: :jruby
+      end
+    RUBY
+
+    expect(err).to be_empty
   end
 end

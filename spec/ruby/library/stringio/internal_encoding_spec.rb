@@ -1,5 +1,5 @@
 require 'stringio'
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "StringIO#internal_encoding" do
   it "returns nil" do

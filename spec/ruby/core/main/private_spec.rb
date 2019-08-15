@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "main#private" do
   after :each do
@@ -16,7 +16,7 @@ describe "main#private" do
   end
 
   it "raises a NameError when given an undefined name" do
-    lambda do
+    -> do
       eval "private :main_undefined_method", TOPLEVEL_BINDING
     end.should raise_error(NameError)
   end

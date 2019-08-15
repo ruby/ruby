@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'matrix'
 
 describe "Matrix#permutation?" do
@@ -23,9 +23,9 @@ describe "Matrix#permutation?" do
       Matrix[[0, 0]],
       Matrix.empty(0, 2),
       Matrix.empty(2, 0),
-    ].each do |rectangual_matrix|
-      lambda {
-        rectangual_matrix.permutation?
+    ].each do |rectangular_matrix|
+      -> {
+        rectangular_matrix.permutation?
       }.should raise_error(Matrix::ErrDimensionMismatch)
     end
   end

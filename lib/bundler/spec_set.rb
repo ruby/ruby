@@ -1,15 +1,12 @@
 # frozen_string_literal: true
+
 require "tsort"
-require "forwardable"
 require "set"
 
 module Bundler
   class SpecSet
-    extend Forwardable
-    include TSort, Enumerable
-
-    def_delegators :@specs, :<<, :length, :add, :remove, :size, :empty?
-    def_delegators :sorted, :each
+    include Enumerable
+    include TSort
 
     def initialize(specs)
       @specs = specs
@@ -36,7 +33,10 @@ module Bundler
         elsif check
           return false
         elsif raise_on_missing
-          raise "Unable to find a spec satisfying #{dep} in the set. Perhaps the lockfile is corrupted?"
+          others = lookup[dep.name] if match_current_platform
+          message = "Unable to find a spec satisfying #{dep} in the set. Perhaps the lockfile is corrupted?"
+          message += " Found #{others.join(", ")} that did not match the current platform." if others && !others.empty?
+          raise GemNotFound, message
         end
       end
 
@@ -60,7 +60,6 @@ module Bundler
       @specs << value
       @lookup = nil
       @sorted = nil
-      value
     end
 
     def sort!
@@ -76,7 +75,7 @@ module Bundler
     end
 
     def materialize(deps, missing_specs = nil)
-      materialized = self.for(deps, [], false, true, missing_specs).to_a
+      materialized = self.for(deps, [], false, true, !missing_specs).to_a
       deps = materialized.map(&:name).uniq
       materialized.map! do |s|
         next s unless s.is_a?(LazySpecification)
@@ -109,9 +108,10 @@ module Bundler
 
     def merge(set)
       arr = sorted.dup
-      set.each do |s|
-        next if arr.any? {|s2| s2.name == s.name && s2.version == s.version && s2.platform == s.platform }
-        arr << s
+      set.each do |set_spec|
+        full_name = set_spec.full_name
+        next if arr.any? {|spec| spec.full_name == full_name }
+        arr << set_spec
       end
       SpecSet.new(arr)
     end
@@ -125,6 +125,26 @@ module Bundler
         return [spec]
       end
       what_required(req) << spec
+    end
+
+    def <<(spec)
+      @specs << spec
+    end
+
+    def length
+      @specs.length
+    end
+
+    def size
+      @specs.size
+    end
+
+    def empty?
+      @specs.empty?
+    end
+
+    def each(&b)
+      sorted.each(&b)
     end
 
   private

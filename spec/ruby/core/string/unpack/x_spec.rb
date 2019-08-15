@@ -1,7 +1,7 @@
-# -*- encoding: ascii-8bit -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
+# -*- encoding: binary -*-
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
 
 describe "String#unpack with format 'X'" do
   it_behaves_like :string_unpack_basic, 'X'
@@ -24,11 +24,11 @@ describe "String#unpack with format 'X'" do
   end
 
   it "raises an ArgumentError when passed the '*' modifier if the remaining bytes exceed the bytes from the index to the start of the String" do
-    lambda { "abcd".unpack("CX*C") }.should raise_error(ArgumentError)
+    -> { "abcd".unpack("CX*C") }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if the count exceeds the bytes from current index to the start of the String" do
-    lambda { "\x01\x02\x03\x04".unpack("C3X4C") }.should raise_error(ArgumentError)
+    -> { "\x01\x02\x03\x04".unpack("C3X4C") }.should raise_error(ArgumentError)
   end
 end
 
@@ -57,6 +57,6 @@ describe "String#unpack with format 'x'" do
   end
 
   it "raises an ArgumentError if the count exceeds the size of the String" do
-    lambda { "\x01\x02\x03\x04".unpack("C2x3C") }.should raise_error(ArgumentError)
+    -> { "\x01\x02\x03\x04".unpack("C2x3C") }.should raise_error(ArgumentError)
   end
 end

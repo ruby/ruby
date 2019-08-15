@@ -35,8 +35,8 @@
 #endif
 #include <ctype.h>
 
-#include "internal.h"
 #include "ruby/io.h"
+#include "internal.h"
 #include "ruby/util.h"
 
 #include <signal.h>
@@ -143,7 +143,7 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     dup2(slave,0);
     dup2(slave,1);
     dup2(slave,2);
-    close(slave);
+    if (slave < 0 || slave > 2) (void)!close(slave);
 #if defined(HAVE_SETEUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRESUID)
     if (seteuid(getuid())) ERROR_EXIT("seteuid()");
 #endif
@@ -182,7 +182,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 	argv = &v;
     }
 
-    carg.execarg_obj = rb_execarg_new(argc, argv, 1);
+    carg.execarg_obj = rb_execarg_new(argc, argv, 1, 0);
     carg.eargp = rb_execarg_get(carg.execarg_obj);
     rb_execarg_parent_start(carg.execarg_obj);
 
@@ -224,6 +224,21 @@ no_mesg(char *slavedevice, int nomesg)
 }
 #endif
 
+#if defined(I_PUSH) && !defined(__linux__) && !defined(_AIX)
+static inline int
+ioctl_I_PUSH(int fd, const char *const name)
+{
+    int ret = 0;
+# if defined(I_FIND)
+    ret = ioctl(fd, I_FIND, name);
+# endif
+    if (ret == 0) {
+        ret = ioctl(fd, I_PUSH, name);
+    }
+    return ret;
+}
+#endif
+
 static int
 get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, int fail)
 {
@@ -231,19 +246,13 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     /* Unix98 PTY */
     int masterfd = -1, slavefd = -1;
     char *slavedevice;
-    struct sigaction dfl, old;
 
-    dfl.sa_handler = SIG_DFL;
-    dfl.sa_flags = 0;
-    sigemptyset(&dfl.sa_mask);
-
-#if defined(__sun) || (defined(__FreeBSD__) && __FreeBSD_version < 902000)
+#if defined(__sun) || defined(__OpenBSD__) || (defined(__FreeBSD__) && __FreeBSD_version < 902000)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
     /* FreeBSD 9.2 or later supports O_CLOEXEC
      * http://www.freebsd.org/cgi/query-pr.cgi?pr=162374 */
     if ((masterfd = posix_openpt(O_RDWR|O_NOCTTY)) == -1) goto error;
-    if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
-    if (grantpt(masterfd) == -1) goto grantpt_error;
+    if (rb_grantpt(masterfd) == -1) goto error;
     rb_fd_fix_cloexec(masterfd);
 #else
     {
@@ -257,10 +266,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 	if ((masterfd = posix_openpt(flags)) == -1) goto error;
     }
     rb_fd_fix_cloexec(masterfd);
-    if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
-    if (grantpt(masterfd) == -1) goto grantpt_error;
+    if (rb_grantpt(masterfd) == -1) goto error;
 #endif
-    if (sigaction(SIGCHLD, &old, NULL) == -1) goto error;
     if (unlockpt(masterfd) == -1) goto error;
     if ((slavedevice = ptsname(masterfd)) == NULL) goto error;
     if (no_mesg(slavedevice, nomesg) == -1) goto error;
@@ -268,9 +275,9 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     rb_update_max_fd(slavefd);
 
 #if defined(I_PUSH) && !defined(__linux__) && !defined(_AIX)
-    if (ioctl(slavefd, I_PUSH, "ptem") == -1) goto error;
-    if (ioctl(slavefd, I_PUSH, "ldterm") == -1) goto error;
-    if (ioctl(slavefd, I_PUSH, "ttcompat") == -1) goto error;
+    if (ioctl_I_PUSH(slavefd, "ptem") == -1) goto error;
+    if (ioctl_I_PUSH(slavefd, "ldterm") == -1) goto error;
+    if (ioctl_I_PUSH(slavefd, "ttcompat") == -1) goto error;
 #endif
 
     *master = masterfd;
@@ -278,8 +285,6 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     strlcpy(SlaveName, slavedevice, DEVICELEN);
     return 0;
 
-  grantpt_error:
-    sigaction(SIGCHLD, &old, NULL);
   error:
     if (slavefd != -1) close(slavefd);
     if (masterfd != -1) close(masterfd);
@@ -331,30 +336,26 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 
     extern char *ptsname(int);
     extern int unlockpt(int);
-    extern int grantpt(int);
 
 #if defined(__sun)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
     if((masterfd = open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
-    s = signal(SIGCHLD, SIG_DFL);
-    if(grantpt(masterfd) == -1) goto error;
+    if(rb_grantpt(masterfd) == -1) goto error;
     rb_fd_fix_cloexec(masterfd);
 #else
     if((masterfd = rb_cloexec_open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
     rb_update_max_fd(masterfd);
-    s = signal(SIGCHLD, SIG_DFL);
-    if(grantpt(masterfd) == -1) goto error;
+    if(rb_grantpt(masterfd) == -1) goto error;
 #endif
-    signal(SIGCHLD, s);
     if(unlockpt(masterfd) == -1) goto error;
     if((slavedevice = ptsname(masterfd)) == NULL) goto error;
     if (no_mesg(slavedevice, nomesg) == -1) goto error;
     if((slavefd = rb_cloexec_open(slavedevice, O_RDWR, 0)) == -1) goto error;
     rb_update_max_fd(slavefd);
 #if defined(I_PUSH) && !defined(__linux__) && !defined(_AIX)
-    if(ioctl(slavefd, I_PUSH, "ptem") == -1) goto error;
-    if(ioctl(slavefd, I_PUSH, "ldterm") == -1) goto error;
-    ioctl(slavefd, I_PUSH, "ttcompat");
+    if(ioctl_I_PUSH(slavefd, "ptem") == -1) goto error;
+    if(ioctl_I_PUSH(slavefd, "ldterm") == -1) goto error;
+    ioctl_I_PUSH(slavefd, "ttcompat");
 #endif
     *master = masterfd;
     *slave = slavefd;
@@ -664,7 +665,7 @@ pty_check(int argc, VALUE *argv, VALUE self)
     if (!RTEST(exc)) return rb_last_status_get();
     raise_from_check(cpid, status);
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 static VALUE cPTY;
@@ -679,7 +680,7 @@ static VALUE cPTY;
 /*
  * Document-class: PTY
  *
- * Creates and managed pseudo terminals (PTYs).  See also
+ * Creates and manages pseudo terminals (PTYs).  See also
  * http://en.wikipedia.org/wiki/Pseudo_terminal
  *
  * PTY allows you to allocate new terminals using ::open or ::spawn a new

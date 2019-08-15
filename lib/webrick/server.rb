@@ -10,8 +10,8 @@
 # $IPR: server.rb,v 1.62 2003/07/22 19:20:43 gotoyuzo Exp $
 
 require 'socket'
-require 'webrick/config'
-require 'webrick/log'
+require_relative 'config'
+require_relative 'log'
 
 module WEBrick
 
@@ -103,7 +103,7 @@ module WEBrick
       @shutdown_pipe = nil
       unless @config[:DoNotListen]
         if @config[:Listen]
-          warn(":Listen option is deprecated; use GenericServer#listen")
+          warn(":Listen option is deprecated; use GenericServer#listen", uplevel: 1)
         end
         listen(@config[:BindAddress], @config[:Port])
         if @config[:Port] == 0
@@ -157,12 +157,12 @@ module WEBrick
       server_type.start{
         @logger.info \
           "#{self.class}#start: pid=#{$$} port=#{@config[:Port]}"
+        @status = :Running
         call_callback(:StartCallback)
 
         shutdown_pipe = @shutdown_pipe
 
         thgroup = ThreadGroup.new
-        @status = :Running
         begin
           while @status == :Running
             begin

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#rotate" do
   describe "when passed no argument" do
@@ -27,10 +27,10 @@ describe "Array#rotate" do
     end
 
     it "raises a TypeError if not passed an integer-like argument" do
-      lambda {
+      -> {
         [1, 2].rotate(nil)
       }.should raise_error(TypeError)
-      lambda {
+      -> {
         [1, 2].rotate("4")
       }.should raise_error(TypeError)
     end
@@ -46,7 +46,7 @@ describe "Array#rotate" do
   end
 
   it "does not mutate the receiver" do
-    lambda {
+    -> {
       [].freeze.rotate
       [2].freeze.rotate(2)
       [1,2,3].freeze.rotate(-3)
@@ -94,10 +94,10 @@ describe "Array#rotate!" do
     end
 
     it "raises a TypeError if not passed an integer-like argument" do
-      lambda {
+      -> {
         [1, 2].rotate!(nil)
       }.should raise_error(TypeError)
-      lambda {
+      -> {
         [1, 2].rotate!("4")
       }.should raise_error(TypeError)
     end
@@ -121,9 +121,9 @@ describe "Array#rotate!" do
     a.should == []
   end
 
-  it "raises a RuntimeError on a frozen array" do
-    lambda { [1, 2, 3].freeze.rotate!(0) }.should raise_error(RuntimeError)
-    lambda { [1].freeze.rotate!(42) }.should raise_error(RuntimeError)
-    lambda { [].freeze.rotate! }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    -> { [1, 2, 3].freeze.rotate!(0) }.should raise_error(frozen_error_class)
+    -> { [1].freeze.rotate!(42) }.should raise_error(frozen_error_class)
+    -> { [].freeze.rotate! }.should raise_error(frozen_error_class)
   end
 end

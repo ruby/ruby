@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Integer#rationalize" do
   before :all do
@@ -33,7 +33,7 @@ describe "Integer#rationalize" do
   end
 
   it "raises ArgumentError when passed more than one argument" do
-    lambda { 1.rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
-    lambda { 1.rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
+    -> { 1.rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
+    -> { 1.rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
   end
 end

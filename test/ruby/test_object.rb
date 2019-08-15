@@ -99,12 +99,12 @@ class TestObject < Test::Unit::TestCase
   def test_taint_frozen_obj
     o = Object.new
     o.freeze
-    assert_raise(RuntimeError) { o.taint }
+    assert_raise(FrozenError) { o.taint }
 
     o = Object.new
     o.taint
     o.freeze
-    assert_raise(RuntimeError) { o.untaint }
+    assert_raise(FrozenError) { o.untaint }
   end
 
   def test_freeze_immediate
@@ -123,7 +123,7 @@ class TestObject < Test::Unit::TestCase
       attr_accessor :foo
     }
     obj = klass.new.freeze
-    assert_raise_with_message(RuntimeError, /#{name}/) {
+    assert_raise_with_message(FrozenError, /#{name}/) {
       obj.foo = 1
     }
   end
@@ -225,6 +225,14 @@ class TestObject < Test::Unit::TestCase
     assert_equal([:foo], o.methods(false))
     class << o; prepend Module.new; end
     assert_equal([:foo], o.methods(false), bug8044)
+  end
+
+  def test_methods_prepend_singleton
+    c = Class.new(Module) {private def foo; end}
+    k = c.new
+    k.singleton_class
+    c.module_eval {prepend(Module.new)}
+    assert_equal([:foo], k.private_methods(false))
   end
 
   def test_instance_variable_get
@@ -399,7 +407,7 @@ class TestObject < Test::Unit::TestCase
   def test_remove_method
     c = Class.new
     c.freeze
-    assert_raise(RuntimeError) do
+    assert_raise(FrozenError) do
       c.instance_eval { remove_method(:foo) }
     end
 
@@ -807,7 +815,7 @@ class TestObject < Test::Unit::TestCase
     class<<x;self;end.class_eval {define_method(:to_s) {name}}
     assert_same(name, x.to_s)
     assert_not_predicate(name, :tainted?)
-    assert_raise(RuntimeError) {name.taint}
+    assert_raise(FrozenError) {name.taint}
     assert_equal("X", [x].join(""))
     assert_not_predicate(name, :tainted?)
     assert_not_predicate(eval('"X".freeze'), :tainted?)
@@ -857,6 +865,29 @@ class TestObject < Test::Unit::TestCase
     assert_match(/@\u{3046}=6\b/, x.inspect)
   end
 
+  def test_singleton_methods
+    assert_equal([], Object.new.singleton_methods)
+    assert_equal([], Object.new.singleton_methods(false))
+    c = Class.new
+    def c.foo; end
+    assert_equal([:foo], c.singleton_methods - [:yaml_tag])
+    assert_equal([:foo], c.singleton_methods(false))
+    assert_equal([], c.singleton_class.singleton_methods(false))
+    c.singleton_class.singleton_class
+    assert_equal([], c.singleton_class.singleton_methods(false))
+
+    o = c.new.singleton_class
+    assert_equal([:foo], o.singleton_methods - [:yaml_tag])
+    assert_equal([], o.singleton_methods(false))
+    o.singleton_class
+    assert_equal([:foo], o.singleton_methods - [:yaml_tag])
+    assert_equal([], o.singleton_methods(false))
+
+    c.extend(Module.new{def bar; end})
+    assert_equal([:bar, :foo], c.singleton_methods.sort - [:yaml_tag])
+    assert_equal([:foo], c.singleton_methods(false))
+  end
+
   def test_singleton_class
     x = Object.new
     xs = class << x; self; end
@@ -883,6 +914,7 @@ class TestObject < Test::Unit::TestCase
     ['ArgumentError.new("bug5473")', 'ArgumentError, "bug5473"', '"bug5473"'].each do |code|
       exc = code[/\A[A-Z]\w+/] || 'RuntimeError'
       assert_separately([], <<-SRC)
+      $VERBOSE = nil
       class ::Object
         def method_missing(m, *a, &b)
           raise #{code}
@@ -899,7 +931,7 @@ class TestObject < Test::Unit::TestCase
     b = yield
     assert_nothing_raised("copy") {a.instance_eval {initialize_copy(b)}}
     c = a.dup.freeze
-    assert_raise(RuntimeError, "frozen") {c.instance_eval {initialize_copy(b)}}
+    assert_raise(FrozenError, "frozen") {c.instance_eval {initialize_copy(b)}}
     d = a.dup.trust
     [a, b, c, d]
   end
@@ -944,5 +976,14 @@ class TestObject < Test::Unit::TestCase
         GC.start
       end
     EOS
+  end
+
+  def test_matcher
+    assert_warning(/deprecated Object#=~ is called on Object/) do
+      assert_equal(Object.new =~ 42, nil)
+    end
+    assert_warning(/deprecated Object#=~ is called on Array/) do
+      assert_equal([] =~ 42, nil)
+    end
   end
 end

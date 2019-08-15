@@ -1,16 +1,23 @@
 # frozen_string_literal: true
+
+require "set"
+
 module Bundler
   class SourceList
     attr_reader :path_sources,
       :git_sources,
-      :plugin_sources
+      :plugin_sources,
+      :global_rubygems_source,
+      :metadata_source
 
     def initialize
-      @path_sources       = []
-      @git_sources        = []
-      @plugin_sources     = []
-      @rubygems_aggregate = Source::Rubygems.new
-      @rubygems_sources   = []
+      @path_sources           = []
+      @git_sources            = []
+      @plugin_sources         = []
+      @global_rubygems_source = nil
+      @rubygems_aggregate     = rubygems_aggregate_class.new
+      @rubygems_sources       = []
+      @metadata_source        = Source::Metadata.new
     end
 
     def add_path_source(options = {})
@@ -35,13 +42,25 @@ module Bundler
       add_source_to_list Plugin.source(source).new(options), @plugin_sources
     end
 
+    def global_rubygems_source=(uri)
+      if Bundler.feature_flag.disable_multisource?
+        @global_rubygems_source ||= rubygems_aggregate_class.new("remotes" => uri)
+      end
+      add_rubygems_remote(uri)
+    end
+
     def add_rubygems_remote(uri)
+      return if Bundler.feature_flag.disable_multisource?
       @rubygems_aggregate.add_remote(uri)
       @rubygems_aggregate
     end
 
+    def default_source
+      global_rubygems_source || @rubygems_aggregate
+    end
+
     def rubygems_sources
-      @rubygems_sources + [@rubygems_aggregate]
+      @rubygems_sources + [default_source]
     end
 
     def rubygems_remotes
@@ -49,18 +68,23 @@ module Bundler
     end
 
     def all_sources
-      path_sources + git_sources + plugin_sources + rubygems_sources
+      path_sources + git_sources + plugin_sources + rubygems_sources + [metadata_source]
     end
 
     def get(source)
-      source_list_for(source).find {|s| source == s }
+      source_list_for(source).find {|s| equal_source?(source, s) || equivalent_source?(source, s) }
     end
 
     def lock_sources
       lock_sources = (path_sources + git_sources + plugin_sources).sort_by(&:to_s)
-      lock_sources << combine_rubygems_sources
+      if Bundler.feature_flag.disable_multisource?
+        lock_sources + rubygems_sources.sort_by(&:to_s)
+      else
+        lock_sources << combine_rubygems_sources
+      end
     end
 
+    # Returns true if there are changes
     def replace_sources!(replacement_sources)
       return true if replacement_sources.empty?
 
@@ -70,13 +94,14 @@ module Bundler
         end
       end
 
-      replacement_rubygems =
+      replacement_rubygems = !Bundler.feature_flag.disable_multisource? &&
         replacement_sources.detect {|s| s.is_a?(Source::Rubygems) }
       @rubygems_aggregate = replacement_rubygems if replacement_rubygems
 
-      # Return true if there were changes
-      lock_sources.to_set != replacement_sources.to_set ||
-        rubygems_remotes.to_set != replacement_rubygems.remotes.to_set
+      return true if !equal_sources?(lock_sources, replacement_sources) && !equivalent_sources?(lock_sources, replacement_sources)
+      return true if replacement_rubygems && rubygems_remotes.to_set != replacement_rubygems.remotes.to_set
+
+      false
     end
 
     def cached!
@@ -92,6 +117,10 @@ module Bundler
     end
 
   private
+
+    def rubygems_aggregate_class
+      Source::Rubygems
+    end
 
     def add_source_to_list(source, list)
       list.unshift(source).uniq!
@@ -118,9 +147,37 @@ module Bundler
       if source.uri =~ /^git\:/
         Bundler.ui.warn "The git source `#{source.uri}` uses the `git` protocol, " \
           "which transmits data without encryption. Disable this warning with " \
-          "`bundle config git.allow_insecure true`, or switch to the `https` " \
+          "`bundle config set git.allow_insecure true`, or switch to the `https` " \
           "protocol to keep your data secure."
       end
+    end
+
+    def equal_sources?(lock_sources, replacement_sources)
+      lock_sources.to_set == replacement_sources.to_set
+    end
+
+    def equal_source?(source, other_source)
+      source == other_source
+    end
+
+    def equivalent_source?(source, other_source)
+      return false unless Bundler.settings[:allow_deployment_source_credential_changes] && source.is_a?(Source::Rubygems)
+
+      equivalent_rubygems_sources?([source], [other_source])
+    end
+
+    def equivalent_sources?(lock_sources, replacement_sources)
+      return false unless Bundler.settings[:allow_deployment_source_credential_changes]
+
+      lock_rubygems_sources, lock_other_sources = lock_sources.partition {|s| s.is_a?(Source::Rubygems) }
+      replacement_rubygems_sources, replacement_other_sources = replacement_sources.partition {|s| s.is_a?(Source::Rubygems) }
+
+      equivalent_rubygems_sources?(lock_rubygems_sources, replacement_rubygems_sources) && equal_sources?(lock_other_sources, replacement_other_sources)
+    end
+
+    def equivalent_rubygems_sources?(lock_sources, replacement_sources)
+      actual_remotes = replacement_sources.map(&:remotes).flatten.uniq
+      lock_sources.all? {|s| s.equivalent_remotes?(actual_remotes) }
     end
   end
 end

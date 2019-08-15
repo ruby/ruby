@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'cgi'
 
 ##
@@ -53,18 +53,18 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     @hard_break = "<br>\n"
 
     # external links
-    @markup.add_special(/(?:link:|https?:|mailto:|ftp:|irc:|www\.)\S+\w/,
-                        :HYPERLINK)
+    @markup.add_regexp_handling(/(?:link:|https?:|mailto:|ftp:|irc:|www\.)\S+\w/,
+                                :HYPERLINK)
 
-    add_special_RDOCLINK
-    add_special_TIDYLINK
+    add_regexp_handling_RDOCLINK
+    add_regexp_handling_TIDYLINK
 
     init_tags
   end
 
-  # :section: Special Handling
+  # :section: Regexp Handling
   #
-  # These methods handle special markup added by RDoc::Markup#add_special.
+  # These methods are used by regexp handling markup added by RDoc::Markup#add_regexp_handling.
 
   def handle_RDOCLINK url # :nodoc:
     case url
@@ -91,14 +91,14 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   end
 
   ##
-  # +special+ is a <code><br></code>
+  # +target+ is a <code><br></code>
 
-  def handle_special_HARD_BREAK special
+  def handle_regexp_HARD_BREAK target
     '<br>'
   end
 
   ##
-  # +special+ is a potential link.  The following schemes are handled:
+  # +target+ is a potential link.  The following schemes are handled:
   #
   # <tt>mailto:</tt>::
   #   Inserted as-is.
@@ -109,14 +109,14 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   # <tt>link:</tt>::
   #   Reference to a local file relative to the output directory.
 
-  def handle_special_HYPERLINK(special)
-    url = special.text
+  def handle_regexp_HYPERLINK(target)
+    url = target.text
 
     gen_url url, url
   end
 
   ##
-  # +special+ is an rdoc-schemed link that will be converted into a hyperlink.
+  # +target+ is an rdoc-schemed link that will be converted into a hyperlink.
   #
   # For the +rdoc-ref+ scheme the named reference will be returned without
   # creating a link.
@@ -124,16 +124,16 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   # For the +rdoc-label+ scheme the footnote and label prefixes are stripped
   # when creating a link.  All other contents will be linked verbatim.
 
-  def handle_special_RDOCLINK special
-    handle_RDOCLINK special.text
+  def handle_regexp_RDOCLINK target
+    handle_RDOCLINK target.text
   end
 
   ##
-  # This +special+ is a link where the label is different from the URL
+  # This +target+ is a link where the label is different from the URL
   # <tt>label[url]</tt> or <tt>{long label}[url]</tt>
 
-  def handle_special_TIDYLINK(special)
-    text = special.text
+  def handle_regexp_TIDYLINK(target)
+    text = target.text
 
     return text unless
       text =~ /^\{(.*)\}\[(.*?)\]$/ or text =~ /^(\S+)\[(.*?)\]$/
@@ -186,7 +186,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     @res << "\n<p>"
     text = paragraph.text @hard_break
     text = text.gsub(/\r?\n/, ' ')
-    @res << wrap(to_html(text))
+    @res << to_html(text)
     @res << "</p>\n"
   end
 
@@ -200,7 +200,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
     content = if verbatim.ruby? or parseable? text then
                 begin
-                  tokens = RDoc::RipperStateLex.parse text
+                  tokens = RDoc::Parser::RipperStateLex.parse text
                   klass  = ' class="ruby"'
 
                   result = RDoc::TokenStream.to_html tokens
@@ -312,7 +312,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
   ##
   # Generate a link to +url+ with content +text+.  Handles the special cases
-  # for img: and link: described under handle_special_HYPERLINK
+  # for img: and link: described under handle_regexp_HYPERLINK
 
   def gen_url url, text
     scheme, url, id = parse_url url

@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "thread"
 
 module Bundler
   class Worker
@@ -61,7 +60,7 @@ module Bundler
 
     def apply_func(obj, i)
       @func.call(obj, i)
-    rescue Exception => e
+    rescue Exception => e # rubocop:disable Lint/RescueException
       WrappedException.new(e)
     end
 

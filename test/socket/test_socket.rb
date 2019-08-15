@@ -456,6 +456,34 @@ class TestSocket < Test::Unit::TestCase
     }
   end
 
+  def timestamp_retry_rw(s1, s2, t1, type)
+    IO.pipe do |r,w|
+      # UDP may not be reliable, keep sending until recvmsg returns:
+      th = Thread.new do
+        n = 0
+        begin
+          s2.send("a", 0, s1.local_address)
+          n += 1
+        end while IO.select([r], nil, nil, 0.1).nil?
+        n
+      end
+      assert_equal([[s1],[],[]], IO.select([s1], nil, nil, 30))
+      msg, _, _, stamp = s1.recvmsg
+      assert_equal("a", msg)
+      assert(stamp.cmsg_is?(:SOCKET, type))
+      w.close # stop th
+      n = th.value
+      n > 1 and
+        warn "UDP packet loss for #{type} over loopback, #{n} tries needed"
+      t2 = Time.now.strftime("%Y-%m-%d")
+      pat = Regexp.union([t1, t2].uniq)
+      assert_match(pat, stamp.inspect)
+      t = stamp.timestamp
+      assert_match(pat, t.strftime("%Y-%m-%d"))
+      stamp
+    end
+  end
+
   def test_timestamp
     return if /linux|freebsd|netbsd|openbsd|solaris|darwin/ !~ RUBY_PLATFORM
     return if !defined?(Socket::AncillaryData) || !defined?(Socket::SO_TIMESTAMP)
@@ -464,17 +492,10 @@ class TestSocket < Test::Unit::TestCase
     Addrinfo.udp("127.0.0.1", 0).bind {|s1|
       Addrinfo.udp("127.0.0.1", 0).bind {|s2|
         s1.setsockopt(:SOCKET, :TIMESTAMP, true)
-        s2.send "a", 0, s1.local_address
-        msg, _, _, stamp = s1.recvmsg
-        assert_equal("a", msg)
-        assert(stamp.cmsg_is?(:SOCKET, :TIMESTAMP))
+        stamp = timestamp_retry_rw(s1, s2, t1, :TIMESTAMP)
       }
     }
-    t2 = Time.now.strftime("%Y-%m-%d")
-    pat = Regexp.union([t1, t2].uniq)
-    assert_match(pat, stamp.inspect)
     t = stamp.timestamp
-    assert_match(pat, t.strftime("%Y-%m-%d"))
     pat = /\.#{"%06d" % t.usec}/
     assert_match(pat, stamp.inspect)
   end
@@ -491,17 +512,10 @@ class TestSocket < Test::Unit::TestCase
           # SO_TIMESTAMPNS is available since Linux 2.6.22
           return
         end
-        s2.send "a", 0, s1.local_address
-        msg, _, _, stamp = s1.recvmsg
-        assert_equal("a", msg)
-        assert(stamp.cmsg_is?(:SOCKET, :TIMESTAMPNS))
+        stamp = timestamp_retry_rw(s1, s2, t1, :TIMESTAMPNS)
       }
     }
-    t2 = Time.now.strftime("%Y-%m-%d")
-    pat = Regexp.union([t1, t2].uniq)
-    assert_match(pat, stamp.inspect)
     t = stamp.timestamp
-    assert_match(pat, t.strftime("%Y-%m-%d"))
     pat = /\.#{"%09d" % t.nsec}/
     assert_match(pat, stamp.inspect)
   end
@@ -536,13 +550,15 @@ class TestSocket < Test::Unit::TestCase
     begin sleep(0.1) end until serv_thread.stop?
     sock = TCPSocket.new("localhost", server.addr[1])
     client_thread = Thread.new do
-      sock.readline
+      assert_raise(IOError, bug4390) {
+        sock.readline
+      }
     end
     begin sleep(0.1) end until client_thread.stop?
     Timeout.timeout(1) do
       sock.close
       sock = nil
-      assert_raise(IOError, bug4390) {client_thread.join}
+      client_thread.join
     end
   ensure
     serv_thread.value.close
@@ -720,6 +736,7 @@ class TestSocket < Test::Unit::TestCase
     ret, addr, rflags = s1.recvmsg(10, 0)
     assert_equal "b" * 10, ret
     assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil?
+    addr
   ensure
     s1.close
     s2.close

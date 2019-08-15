@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Hash" do
   it "includes Enumerable" do
@@ -9,6 +9,14 @@ end
 describe "Hash#hash" do
   it "returns a value which doesn't depend on the hash order" do
     { 0=>2, 11=>1 }.hash.should == { 11=>1, 0=>2 }.hash
+  end
+
+  it "returns a value in which element values do not cancel each other out" do
+    { a: 2, b: 2 }.hash.should_not == { a: 7, b: 7 }.hash
+  end
+
+  it "returns a value in which element keys and values do not cancel each other out" do
+    { :a => :a }.hash.should_not == { :b => :b }.hash
   end
 
   it "generates a hash for recursive hash structures" do

@@ -3,27 +3,21 @@ language: ruby
 install:
   - git clone https://github.com/ruby/mspec.git ../mspec
 script:
-  - if [ -n "$RUBOCOP" ]; then gem install rubocop -v 0.49.1 && rubocop; fi
-  - ../mspec/bin/mspec $MSPEC_OPTS
+  - CHECK_LEAKS=true ../mspec/bin/mspec
 matrix:
   include:
-    - os: osx
-      rvm: 2.4.0
-    - os: linux
-      rvm: 2.4.1
-      env: MSPEC_OPTS="-R2 -ff"
-    - os: linux
-      rvm: 2.2.7
-    - os: linux
-      rvm: 2.3.4
-    - os: linux
-      rvm: 2.4.1
-      env: CHECK_LEAKS=true RUBOCOP=true
-    - os: linux
-      rvm: ruby-head
-  allow_failures:
-    - os: linux
-      rvm: ruby-head
+    - name: Running each spec twice
+      rvm: 2.5.5
+      script:
+        - CHECK_LEAKS=true ../mspec/bin/mspec -R2 -ff
+    - rvm: 2.4.6
+    - rvm: 2.5.5
+    - rvm: 2.6.3
+    - name: RuboCop Lint Checks
+      rvm: 2.4.6
+      script:
+        - gem install rubocop:0.61.0
+        - rubocop
 branches:
   only:
     - master

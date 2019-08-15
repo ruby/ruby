@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require "tmpdir"
 
 describe "Dir.mktmpdir when passed no arguments" do
@@ -99,7 +99,7 @@ describe "Dir.mktmpdir when passed [Array]" do
     Dir.rmdir @tmpdir if File.directory? @tmpdir
   end
 
-  it "uses the first element of the passed Array as a prefix and the scond element as a suffix to the tmp-directory" do
+  it "uses the first element of the passed Array as a prefix and the second element as a suffix to the tmp-directory" do
     prefix = "before"
     suffix = "after"
 
@@ -110,8 +110,8 @@ end
 
 describe "Dir.mktmpdir when passed [Object]" do
   it "raises an ArgumentError" do
-    lambda { Dir.mktmpdir(Object.new) }.should raise_error(ArgumentError)
-    lambda { Dir.mktmpdir(:symbol) }.should raise_error(ArgumentError)
-    lambda { Dir.mktmpdir(10) }.should raise_error(ArgumentError)
+    -> { Dir.mktmpdir(Object.new) }.should raise_error(ArgumentError)
+    -> { Dir.mktmpdir(:symbol) }.should raise_error(ArgumentError)
+    -> { Dir.mktmpdir(10) }.should raise_error(ArgumentError)
   end
 end

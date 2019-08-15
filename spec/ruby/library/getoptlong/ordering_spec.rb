@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'getoptlong'
 
 describe "GetoptLong#ordering=" do
@@ -9,7 +9,7 @@ describe "GetoptLong#ordering=" do
       opts.quiet = true
       opts.get
 
-      lambda {
+      -> {
         opts.ordering = GetoptLong::PERMUTE
       }.should raise_error(ArgumentError)
     end
@@ -18,7 +18,7 @@ describe "GetoptLong#ordering=" do
   it "raises an ArgumentError if given an invalid value" do
     opts = GetoptLong.new
 
-    lambda {
+    -> {
       opts.ordering = 12345
     }.should raise_error(ArgumentError)
   end

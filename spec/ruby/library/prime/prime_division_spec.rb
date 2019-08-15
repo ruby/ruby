@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'prime'
 
 describe "Prime.prime_division" do
@@ -20,6 +20,6 @@ describe "Prime.prime_division" do
   end
 
   it "raises ZeroDivisionError for 0" do
-    lambda { Prime.prime_division(0) }.should raise_error(ZeroDivisionError)
+    -> { Prime.prime_division(0) }.should raise_error(ZeroDivisionError)
   end
 end

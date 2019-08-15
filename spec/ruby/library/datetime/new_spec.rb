@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'date'
 
 describe "DateTime.new" do
@@ -42,11 +42,11 @@ describe "DateTime.new" do
     DateTime.new(1, 2, 3, 4, 5, 6, 0.7).offset.should == 0.7
   end
 
-  it "takes the eigth argument as the date of calendar reform" do
+  it "takes the eighth argument as the date of calendar reform" do
     DateTime.new(1, 2, 3, 4, 5, 6, 0.7, Date::ITALY).start().should == Date::ITALY
   end
 
   it "raises an error on invalid arguments" do
-    lambda { new_datetime(minute: 999) }.should raise_error(ArgumentError)
+    -> { new_datetime(minute: 999) }.should raise_error(ArgumentError)
   end
 end

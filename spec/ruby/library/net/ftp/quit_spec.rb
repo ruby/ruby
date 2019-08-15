@@ -1,6 +1,6 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../spec_helper', __FILE__)
-require File.expand_path('../fixtures/server', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'spec_helper'
+require_relative 'fixtures/server'
 
 describe "Net::FTP#quit" do
   before :each do
@@ -22,7 +22,7 @@ describe "Net::FTP#quit" do
     @ftp.last_response.should == "221 OK, bye\n"
   end
 
-  it "does not close the socket automagically" do
+  it "does not close the socket automatically" do
     @ftp.quit
     @ftp.closed?.should be_false
   end

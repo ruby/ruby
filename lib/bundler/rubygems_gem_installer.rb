@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "rubygems/installer"
 
 module Bundler
@@ -17,6 +18,28 @@ module Bundler
       super && validate_bundler_checksum(options[:bundler_expected_checksum])
     end
 
+    def build_extensions
+      extension_cache_path = options[:bundler_extension_cache_path]
+      return super unless extension_cache_path && extension_dir = Bundler.rubygems.spec_extension_dir(spec)
+
+      extension_dir = Pathname.new(extension_dir)
+      build_complete = SharedHelpers.filesystem_access(extension_cache_path.join("gem.build_complete"), :read, &:file?)
+      if build_complete && !options[:force]
+        SharedHelpers.filesystem_access(extension_dir.parent, &:mkpath)
+        SharedHelpers.filesystem_access(extension_cache_path) do
+          FileUtils.cp_r extension_cache_path, spec.extension_dir
+        end
+      else
+        super
+        if extension_dir.directory? # not made for gems without extensions
+          SharedHelpers.filesystem_access(extension_cache_path.parent, &:mkpath)
+          SharedHelpers.filesystem_access(extension_cache_path) do
+            FileUtils.cp_r extension_dir, extension_cache_path
+          end
+        end
+      end
+    end
+
   private
 
     def validate_bundler_checksum(checksum)
@@ -25,7 +48,7 @@ module Bundler
       return true unless source = @package.instance_variable_get(:@gem)
       return true unless source.respond_to?(:with_read_io)
       digest = source.with_read_io do |io|
-        digest = Digest::SHA256.new
+        digest = SharedHelpers.digest(:SHA256).new
         digest << io.read(16_384) until io.eof?
         io.rewind
         send(checksum_type(checksum), digest)
@@ -43,7 +66,7 @@ module Bundler
 
           If you wish to continue installing the downloaded gem, and are certain it does not pose a \
           security issue despite the mismatching checksum, do the following:
-          1. run `bundle config disable_checksum_validation true` to turn off checksum verification
+          1. run `bundle config set disable_checksum_validation true` to turn off checksum verification
           2. run `bundle install`
 
           (More info: The expected SHA256 checksum was #{checksum.inspect}, but the \

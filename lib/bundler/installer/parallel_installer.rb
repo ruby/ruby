@@ -1,6 +1,7 @@
 # frozen_string_literal: true
-require "bundler/worker"
-require "bundler/installer/gem_installer"
+
+require_relative "../worker"
+require_relative "gem_installer"
 
 module Bundler
   class ParallelInstaller
@@ -77,11 +78,6 @@ module Bundler
       new(*args).call
     end
 
-    # Returns max number of threads machine can handle with a min of 1
-    def self.max_threads
-      [Bundler.settings[:jobs].to_i - 1, 1].max
-    end
-
     attr_reader :size
 
     def initialize(installer, all_specs, size, standalone, force)
@@ -91,55 +87,22 @@ module Bundler
       @force = force
       @specs = all_specs.map {|s| SpecInstallation.new(s) }
       @spec_set = all_specs
+      @rake = @specs.find {|s| s.name == "rake" }
     end
 
     def call
-      # Since `autoload` has the potential for threading issues on 1.8.7
-      # TODO:  remove in bundler 2.0
-      require "bundler/gem_remote_fetcher" if RUBY_VERSION < "1.9"
-
       check_for_corrupt_lockfile
-      enqueue_specs
-      process_specs until @specs.all?(&:installed?) || @specs.any?(&:failed?)
+
+      if @size > 1
+        install_with_worker
+      else
+        install_serially
+      end
+
       handle_error if @specs.any?(&:failed?)
       @specs
     ensure
       worker_pool && worker_pool.stop
-    end
-
-    def worker_pool
-      @worker_pool ||= Bundler::Worker.new @size, "Parallel Installer", lambda { |spec_install, worker_num|
-        gem_installer = Bundler::GemInstaller.new(
-          spec_install.spec, @installer, @standalone, worker_num, @force
-        )
-        success, message = gem_installer.install_from_spec
-        if success && !message.nil?
-          spec_install.post_install_message = message
-        elsif !success
-          spec_install.state = :failed
-          spec_install.error = "#{message}\n\n#{require_tree_for_spec(spec_install.spec)}"
-        end
-        spec_install
-      }
-    end
-
-    # Dequeue a spec and save its post-install message and then enqueue the
-    # remaining specs.
-    # Some specs might've had to wait til this spec was installed to be
-    # processed so the call to `enqueue_specs` is important after every
-    # dequeue.
-    def process_specs
-      spec = worker_pool.deq
-      spec.state = :installed unless spec.failed?
-      enqueue_specs
-    end
-
-    def handle_error
-      errors = @specs.select(&:failed?).map(&:error)
-      if exception = errors.find {|e| e.is_a?(Bundler::BundlerError) }
-        raise exception
-      end
-      raise Bundler::InstallError, errors.map(&:to_s).join("\n\n")
     end
 
     def check_for_corrupt_lockfile
@@ -148,7 +111,7 @@ module Bundler
           s,
           s.missing_lockfile_dependencies(@specs.map(&:name)),
         ]
-      end.reject { |a| a.last.empty? }
+      end.reject {|a| a.last.empty? }
       return if missing_dependencies.empty?
 
       warning = []
@@ -165,6 +128,73 @@ module Bundler
       end
 
       Bundler.ui.warn(warning.join("\n"))
+    end
+
+  private
+
+    def install_with_worker
+      enqueue_specs
+      process_specs until finished_installing?
+    end
+
+    def install_serially
+      until finished_installing?
+        raise "failed to find a spec to enqueue while installing serially" unless spec_install = @specs.find(&:ready_to_enqueue?)
+        spec_install.state = :enqueued
+        do_install(spec_install, 0)
+      end
+    end
+
+    def worker_pool
+      @worker_pool ||= Bundler::Worker.new @size, "Parallel Installer", lambda {|spec_install, worker_num|
+        do_install(spec_install, worker_num)
+      }
+    end
+
+    def do_install(spec_install, worker_num)
+      Plugin.hook(Plugin::Events::GEM_BEFORE_INSTALL, spec_install)
+      gem_installer = Bundler::GemInstaller.new(
+        spec_install.spec, @installer, @standalone, worker_num, @force
+      )
+      success, message = begin
+        gem_installer.install_from_spec
+      rescue RuntimeError => e
+        raise e, "#{e}\n\n#{require_tree_for_spec(spec_install.spec)}"
+      end
+      if success
+        spec_install.state = :installed
+        spec_install.post_install_message = message unless message.nil?
+      else
+        spec_install.state = :failed
+        spec_install.error = "#{message}\n\n#{require_tree_for_spec(spec_install.spec)}"
+      end
+      Plugin.hook(Plugin::Events::GEM_AFTER_INSTALL, spec_install)
+      spec_install
+    end
+
+    # Dequeue a spec and save its post-install message and then enqueue the
+    # remaining specs.
+    # Some specs might've had to wait til this spec was installed to be
+    # processed so the call to `enqueue_specs` is important after every
+    # dequeue.
+    def process_specs
+      worker_pool.deq
+      enqueue_specs
+    end
+
+    def finished_installing?
+      @specs.all? do |spec|
+        return true if spec.failed?
+        spec.installed?
+      end
+    end
+
+    def handle_error
+      errors = @specs.select(&:failed?).map(&:error)
+      if exception = errors.find {|e| e.is_a?(Bundler::BundlerError) }
+        raise exception
+      end
+      raise Bundler::InstallError, errors.map(&:to_s).join("\n\n")
     end
 
     def require_tree_for_spec(spec)
@@ -187,6 +217,8 @@ module Bundler
     # are installed.
     def enqueue_specs
       @specs.select(&:ready_to_enqueue?).each do |spec|
+        next if @rake && !@rake.installed? && spec.name != @rake.name
+
         if spec.dependencies_installed? @specs
           spec.state = :enqueued
           worker_pool.enq spec

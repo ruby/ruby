@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 require 'matrix'
 
 describe "Matrix#**" do
@@ -17,8 +17,8 @@ describe "Matrix#**" do
 
     it "raises a ErrDimensionMismatch for non square matrices" do
       m = Matrix[ [1, 1], [1, 2], [2, 3]]
-      lambda { m ** 3 }.should raise_error(Matrix::ErrDimensionMismatch)
-      lambda { m ** 0 }.should raise_error(Matrix::ErrDimensionMismatch)
+      -> { m ** 3 }.should raise_error(Matrix::ErrDimensionMismatch)
+      -> { m ** 0 }.should raise_error(Matrix::ErrDimensionMismatch)
     end
 
     describe "that is <= 0" do
@@ -30,8 +30,8 @@ describe "Matrix#**" do
 
       it "raises a ErrDimensionMismatch for irregular matrices" do
         m = Matrix[ [1, 1], [1, 1] ]
-        lambda { m ** -2 }.should raise_error(Matrix::ErrNotRegular)
-        lambda { m ** 0 }.should raise_error(Matrix::ErrNotRegular)
+        -> { m ** -2 }.should raise_error(Matrix::ErrNotRegular)
+        -> { m ** 0 }.should raise_error(Matrix::ErrNotRegular)
       end
     end
   end

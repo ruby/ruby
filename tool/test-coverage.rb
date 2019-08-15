@@ -1,6 +1,5 @@
 require "coverage"
 
-ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
 Coverage.start(lines: true, branches: true, methods: true)
 
 TEST_COVERAGE_DATA_FILE = "test-coverage.dat"
@@ -41,6 +40,15 @@ def add_count(h, key, count)
 end
 
 def save_coverage_data(res1)
+  res1.each do |_path, cov|
+    if cov[:methods]
+      h = {}
+      cov[:methods].each do |(klass, *key), count|
+        h[[klass.inspect, *key]] = count
+      end
+      cov[:methods].replace h
+    end
+  end
   File.open(TEST_COVERAGE_DATA_FILE, File::RDWR | File::CREAT | File::BINARY) do |f|
     f.flock(File::LOCK_EX)
     s = f.read
@@ -62,13 +70,28 @@ def invoke_simplecov_formatter
   res = Marshal.load(File.binread(TEST_COVERAGE_DATA_FILE))
   simplecov_result = {}
   base_dir = File.dirname(__dir__)
+  cur_dir = Dir.pwd
 
   res.each do |path, cov|
-    next unless path.start_with?(base_dir)
+    next unless path.start_with?(base_dir) || path.start_with?(cur_dir)
     next if path.start_with?(File.join(base_dir, "test"))
     simplecov_result[path] = cov[:lines]
   end
 
+  a, b = base_dir, cur_dir
+  until a == b
+    if a.size > b.size
+      a = File.dirname(a)
+    else
+      b = File.dirname(b)
+    end
+  end
+  root_dir = a
+
+  SimpleCov.configure do
+    root(root_dir)
+    coverage_dir(File.join(cur_dir, "coverage"))
+  end
   res = SimpleCov::Result.new(simplecov_result)
   res.command_name = "Ruby's `make test-all`"
   SimpleCov::Formatter::HTMLFormatter.new.format(res)

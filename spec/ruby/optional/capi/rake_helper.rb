@@ -20,4 +20,3 @@ task default: [output]
 file output => [input] do
   sh build_cmd
 end
-

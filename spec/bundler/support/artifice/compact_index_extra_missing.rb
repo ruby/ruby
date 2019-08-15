@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require File.expand_path("../compact_index_extra", __FILE__)
 
 Artifice.deactivate

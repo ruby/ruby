@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Regexp#casefold?" do
   it "returns the value of the case-insensitive flag" do

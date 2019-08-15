@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'csv'
 
 describe "CSV.parse" do
@@ -77,5 +77,17 @@ describe "CSV.parse" do
   it "parses 'foo;bar\nbaz;quz' into [['foo','bar'],['baz','quz']] with a separator of ;" do
     result = CSV.parse "foo;bar\nbaz;quz", col_sep: ?;
     result.should == [['foo','bar'],['baz','quz']]
+  end
+
+  it "raises CSV::MalformedCSVError exception if input is illegal" do
+    -> {
+      CSV.parse('"quoted" field')
+    }.should raise_error(CSV::MalformedCSVError)
+  end
+
+  it "handles illegal input with the liberal_parsing option" do
+    illegal_input = '"Johnson, Dwayne",Dwayne "The Rock" Johnson'
+    result = CSV.parse(illegal_input, liberal_parsing: true)
+    result.should == [["Johnson, Dwayne", 'Dwayne "The Rock" Johnson']]
   end
 end

@@ -568,7 +568,7 @@ class TestMarshal < Test::Unit::TestCase
     s.instance_variable_set(:@t, 42)
     t = Bug8276.new(s)
     s = Marshal.dump(t)
-    assert_raise(RuntimeError) {Marshal.load(s)}
+    assert_raise(FrozenError) {Marshal.load(s)}
   end
 
   def test_marshal_load_ivar
@@ -770,6 +770,57 @@ class TestMarshal < Test::Unit::TestCase
   def test_marshal_dump_recursion
     assert_raise_with_message(RuntimeError, /same class instance/) do
       Marshal.dump(Bug12974.new)
+    end
+  end
+
+  Bug14314 = Struct.new(:foo, keyword_init: true)
+
+  def test_marshal_keyword_init_struct
+    obj = Bug14314.new(foo: 42)
+    assert_equal obj, Marshal.load(Marshal.dump(obj))
+  end
+
+  class Bug15968
+    attr_accessor :bar, :baz
+
+    def initialize
+      self.bar = Bar.new(self)
+    end
+
+    class Bar
+      attr_accessor :foo
+
+      def initialize(foo)
+        self.foo = foo
+      end
+
+      def marshal_dump
+        if self.foo.baz
+          self.foo.remove_instance_variable(:@baz)
+        else
+          self.foo.baz = :problem
+        end
+        {foo: self.foo}
+      end
+
+      def marshal_load(data)
+        self.foo = data[:foo]
+      end
+    end
+  end
+
+  def test_marshal_dump_adding_instance_variable
+    obj = Bug15968.new
+    assert_raise_with_message(RuntimeError, /instance variable added/) do
+      Marshal.dump(obj)
+    end
+  end
+
+  def test_marshal_dump_removing_instance_variable
+    obj = Bug15968.new
+    obj.baz = :Bug15968
+    assert_raise_with_message(RuntimeError, /instance variable removed/) do
+      Marshal.dump(obj)
     end
   end
 end

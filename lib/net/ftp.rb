@@ -17,7 +17,7 @@
 
 require "socket"
 require "monitor"
-require "net/protocol"
+require_relative "protocol"
 require "time"
 begin
   require "openssl"
@@ -230,6 +230,10 @@ module Net
         if defined?(VerifyCallbackProc)
           @ssl_context.verify_callback = VerifyCallbackProc
         end
+        @ssl_context.session_cache_mode =
+          OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
+          OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
+        @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
         @ssl_session = nil
         if options[:private_data_connection].nil?
           @private_data_connection = true
@@ -310,13 +314,13 @@ module Net
 
     # Obsolete
     def return_code # :nodoc:
-      $stderr.puts("warning: Net::FTP#return_code is obsolete and do nothing")
+      warn("Net::FTP#return_code is obsolete and do nothing", uplevel: 1)
       return "\n"
     end
 
     # Obsolete
     def return_code=(s) # :nodoc:
-      $stderr.puts("warning: Net::FTP#return_code= is obsolete and do nothing")
+      warn("Net::FTP#return_code= is obsolete and do nothing", uplevel: 1)
     end
 
     # Constructs a socket with +host+ and +port+.
@@ -349,7 +353,6 @@ module Net
       if @ssl_context.verify_mode != VERIFY_NONE
         ssl_sock.post_connection_check(@host)
       end
-      @ssl_session = ssl_sock.session
       return ssl_sock
     end
     private :start_tls_session
@@ -748,10 +751,10 @@ module Net
       if localfile
         if @resume
           rest_offset = File.size?(localfile)
-          f = open(localfile, "a")
+          f = File.open(localfile, "a")
         else
           rest_offset = nil
-          f = open(localfile, "w")
+          f = File.open(localfile, "w")
         end
       elsif !block_given?
         result = String.new
@@ -781,7 +784,7 @@ module Net
       f = nil
       result = nil
       if localfile
-        f = open(localfile, "w")
+        f = File.open(localfile, "w")
       elsif !block_given?
         result = String.new
       end
@@ -827,7 +830,7 @@ module Net
       else
         rest_offset = nil
       end
-      f = open(localfile)
+      f = File.open(localfile)
       begin
         f.binmode
         if rest_offset
@@ -846,7 +849,7 @@ module Net
     # passing in the transmitted data one line at a time.
     #
     def puttextfile(localfile, remotefile = File.basename(localfile), &block) # :yield: line
-      f = open(localfile)
+      f = File.open(localfile)
       begin
         storlines("STOR #{remotefile}", f, &block)
       ensure
@@ -1428,7 +1431,7 @@ module Net
           s = super(len, String.new, true)
           return s.empty? ? nil : s
         else
-          result = ""
+          result = String.new
           while s = super(DEFAULT_BLOCKSIZE, String.new, true)
             break if s.empty?
             result << s

@@ -1,14 +1,14 @@
 require 'date'
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Date#-" do
 
-  it "substracts a number of days from a Date" do
+  it "subtracts a number of days from a Date" do
     d = Date.civil(2007, 5 ,2) - 13
     d.should == Date.civil(2007, 4, 19)
   end
 
-  it "substracts a negative number of days from a Date" do
+  it "subtracts a negative number of days from a Date" do
     d = Date.civil(2007, 4, 19).-(-13)
     d.should == Date.civil(2007, 5 ,2)
   end
@@ -22,9 +22,9 @@ describe "Date#-" do
   end
 
   it "raises an error for non Numeric arguments" do
-    lambda { Date.civil(2007,2,27) - :hello }.should raise_error(TypeError)
-    lambda { Date.civil(2007,2,27) - "hello" }.should raise_error(TypeError)
-    lambda { Date.civil(2007,2,27) - Object.new }.should raise_error(TypeError)
+    -> { Date.civil(2007,2,27) - :hello }.should raise_error(TypeError)
+    -> { Date.civil(2007,2,27) - "hello" }.should raise_error(TypeError)
+    -> { Date.civil(2007,2,27) - Object.new }.should raise_error(TypeError)
   end
 
 end

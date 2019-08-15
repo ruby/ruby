@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require "stringio"
 
 describe "StringIO" do
@@ -6,4 +6,3 @@ describe "StringIO" do
     StringIO.should include(Enumerable)
   end
 end
-

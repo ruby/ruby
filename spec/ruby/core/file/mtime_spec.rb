@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "File.mtime" do
   before :each do
@@ -12,10 +12,10 @@ describe "File.mtime" do
 
   it "returns the modification Time of the file" do
     File.mtime(@filename).should be_kind_of(Time)
-    File.mtime(@filename).should be_close(@mtime, 2.0)
+    File.mtime(@filename).should be_close(@mtime, TIME_TOLERANCE)
   end
 
-  platform_is :linux do
+  guard -> { platform_is :linux or (platform_is :windows and ruby_version_is '2.5') } do
     it "returns the modification Time of the file with microseconds" do
       supports_subseconds = Integer(`stat -c%y '#{__FILE__}'`[/\.(\d+)/, 1], 10)
       if supports_subseconds != 0
@@ -29,7 +29,7 @@ describe "File.mtime" do
   end
 
   it "raises an Errno::ENOENT exception if the file is not found" do
-    lambda { File.mtime('bogus') }.should raise_error(Errno::ENOENT)
+    -> { File.mtime('bogus') }.should raise_error(Errno::ENOENT)
   end
 end
 

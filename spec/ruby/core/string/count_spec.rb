@@ -1,6 +1,6 @@
 # -*- encoding: binary -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "String#count" do
   it "counts occurrences of chars from the intersection of the specified sets" do
@@ -23,7 +23,7 @@ describe "String#count" do
   end
 
   it "raises an ArgumentError when given no arguments" do
-    lambda { "hell yeah".count }.should raise_error(ArgumentError)
+    -> { "hell yeah".count }.should raise_error(ArgumentError)
   end
 
   it "negates sets starting with ^" do
@@ -76,8 +76,8 @@ describe "String#count" do
   it "raises if the given sequences are invalid" do
     s = "hel-[()]-lo012^"
 
-    lambda { s.count("h-e") }.should raise_error(ArgumentError)
-    lambda { s.count("^h-e") }.should raise_error(ArgumentError)
+    -> { s.count("h-e") }.should raise_error(ArgumentError)
+    -> { s.count("^h-e") }.should raise_error(ArgumentError)
   end
 
   it 'returns the number of occurrences of a multi-byte character' do
@@ -98,8 +98,8 @@ describe "String#count" do
   end
 
   it "raises a TypeError when a set arg can't be converted to a string" do
-    lambda { "hello world".count(100)       }.should raise_error(TypeError)
-    lambda { "hello world".count([])        }.should raise_error(TypeError)
-    lambda { "hello world".count(mock('x')) }.should raise_error(TypeError)
+    -> { "hello world".count(100)       }.should raise_error(TypeError)
+    -> { "hello world".count([])        }.should raise_error(TypeError)
+    -> { "hello world".count(mock('x')) }.should raise_error(TypeError)
   end
 end

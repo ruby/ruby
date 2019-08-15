@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   class SimilarityDetector
     SimilarityScore = Struct.new(:string, :distance)
@@ -50,7 +51,7 @@ module Bundler
           dm[i][j] = [
             dm[i - 1][j - 1] + (this[j - 1] == that[i - 1] ? 0 : sub),
             dm[i][j - 1] + ins,
-            dm[i - 1][j] + del
+            dm[i - 1][j] + del,
           ].min
         end
       end

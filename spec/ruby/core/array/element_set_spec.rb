@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#[]=" do
   it "sets the value of the element at index" do
@@ -94,8 +94,8 @@ describe "Array#[]=" do
 
   it "checks frozen before attempting to coerce arguments" do
     a = [1,2,3,4].freeze
-    lambda {a[:foo] = 1}.should raise_error(RuntimeError)
-    lambda {a[:foo, :bar] = 1}.should raise_error(RuntimeError)
+    -> {a[:foo] = 1}.should raise_error(frozen_error_class)
+    -> {a[:foo, :bar] = 1}.should raise_error(frozen_error_class)
   end
 
   it "sets elements in the range arguments when passed ranges" do
@@ -195,25 +195,25 @@ describe "Array#[]=" do
 
     a[to .. from] = ["x"]
     a.should == [1, "a", "b", "x", "c", 4]
-    lambda { a["a" .. "b"] = []  }.should raise_error(TypeError)
-    lambda { a[from .. "b"] = [] }.should raise_error(TypeError)
+    -> { a["a" .. "b"] = []  }.should raise_error(TypeError)
+    -> { a[from .. "b"] = [] }.should raise_error(TypeError)
   end
 
   it "raises an IndexError when passed indexes out of bounds" do
     a = [1, 2, 3, 4]
-    lambda { a[-5] = ""      }.should raise_error(IndexError)
-    lambda { a[-5, -1] = ""  }.should raise_error(IndexError)
-    lambda { a[-5, 0] = ""   }.should raise_error(IndexError)
-    lambda { a[-5, 1] = ""   }.should raise_error(IndexError)
-    lambda { a[-5, 2] = ""   }.should raise_error(IndexError)
-    lambda { a[-5, 10] = ""  }.should raise_error(IndexError)
+    -> { a[-5] = ""      }.should raise_error(IndexError)
+    -> { a[-5, -1] = ""  }.should raise_error(IndexError)
+    -> { a[-5, 0] = ""   }.should raise_error(IndexError)
+    -> { a[-5, 1] = ""   }.should raise_error(IndexError)
+    -> { a[-5, 2] = ""   }.should raise_error(IndexError)
+    -> { a[-5, 10] = ""  }.should raise_error(IndexError)
 
-    lambda { a[-5..-5] = ""  }.should raise_error(RangeError)
-    lambda { a[-5...-5] = "" }.should raise_error(RangeError)
-    lambda { a[-5..-4] = ""  }.should raise_error(RangeError)
-    lambda { a[-5...-4] = "" }.should raise_error(RangeError)
-    lambda { a[-5..10] = ""  }.should raise_error(RangeError)
-    lambda { a[-5...10] = "" }.should raise_error(RangeError)
+    -> { a[-5..-5] = ""  }.should raise_error(RangeError)
+    -> { a[-5...-5] = "" }.should raise_error(RangeError)
+    -> { a[-5..-4] = ""  }.should raise_error(RangeError)
+    -> { a[-5...-4] = "" }.should raise_error(RangeError)
+    -> { a[-5..10] = ""  }.should raise_error(RangeError)
+    -> { a[-5...10] = "" }.should raise_error(RangeError)
 
     # ok
     a[0..-9] = [1]
@@ -236,8 +236,8 @@ describe "Array#[]=" do
     ary.should == [5, 6, 7]
   end
 
-  it "raises a RuntimeError on a frozen array" do
-    lambda { ArraySpecs.frozen_array[0, 0] = [] }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    -> { ArraySpecs.frozen_array[0, 0] = [] }.should raise_error(frozen_error_class)
   end
 end
 
@@ -337,12 +337,12 @@ describe "Array#[]= with [index, count]" do
 
   it "raises an IndexError when passed start and negative length" do
     a = [1, 2, 3, 4]
-    lambda { a[-2, -1] = "" }.should raise_error(IndexError)
-    lambda { a[0, -1] = ""  }.should raise_error(IndexError)
-    lambda { a[2, -1] = ""  }.should raise_error(IndexError)
-    lambda { a[4, -1] = ""  }.should raise_error(IndexError)
-    lambda { a[10, -1] = "" }.should raise_error(IndexError)
-    lambda { [1, 2, 3, 4,  5][2, -1] = [7, 8] }.should raise_error(IndexError)
+    -> { a[-2, -1] = "" }.should raise_error(IndexError)
+    -> { a[0, -1] = ""  }.should raise_error(IndexError)
+    -> { a[2, -1] = ""  }.should raise_error(IndexError)
+    -> { a[4, -1] = ""  }.should raise_error(IndexError)
+    -> { a[10, -1] = "" }.should raise_error(IndexError)
+    -> { [1, 2, 3, 4,  5][2, -1] = [7, 8] }.should raise_error(IndexError)
   end
 end
 
@@ -350,11 +350,13 @@ describe "Array#[]= with [m..n]" do
   it "returns non-array value if non-array value assigned" do
     a = [1, 2, 3, 4, 5]
     (a[2..4] = 10).should == 10
+    (a.[]=(2..4, 10)).should == 10
   end
 
   it "returns array if array assigned" do
     a = [1, 2, 3, 4, 5]
     (a[2..4] = [7, 8]).should == [7, 8]
+    (a.[]=(2..4, [7, 8])).should == [7, 8]
   end
 
   it "just sets the section defined by range to nil even if the rhs is nil" do
@@ -394,15 +396,32 @@ describe "Array#[]= with [m..n]" do
     a.should == [1, 2, 3, 8, 4, 5]
   end
 
-  it "accepts Range subclasses" do
-    a = [1, 2, 3, 4]
-    range_incl = ArraySpecs::MyRange.new(1, 2)
-    range_excl = ArraySpecs::MyRange.new(-3, -1, true)
+  describe "Range subclasses" do
+    before :each do
+      @range_incl = ArraySpecs::MyRange.new(1, 2)
+      @range_excl = ArraySpecs::MyRange.new(-3, -1, true)
+    end
 
-    a[range_incl] = ["a", "b"]
-    a.should == [1, "a", "b", 4]
-    a[range_excl] = ["A", "B"]
-    a.should == [1, "A", "B", 4]
+    it "accepts Range subclasses" do
+      a = [1, 2, 3, 4]
+
+      a[@range_incl] = ["a", "b"]
+      a.should == [1, "a", "b", 4]
+      a[@range_excl] = ["A", "B"]
+      a.should == [1, "A", "B", 4]
+    end
+
+    it "returns non-array value if non-array value assigned" do
+      a = [1, 2, 3, 4, 5]
+      (a[@range_incl] = 10).should == 10
+      (a.[]=(@range_incl, 10)).should == 10
+    end
+
+    it "returns array if array assigned" do
+      a = [1, 2, 3, 4, 5]
+      (a[@range_incl] = [7, 8]).should == [7, 8]
+      a.[]=(@range_incl, [7, 8]).should == [7, 8]
+    end
   end
 end
 

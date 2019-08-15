@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Rational#rationalize" do
   it "returns self with no argument" do
@@ -30,7 +30,7 @@ describe "Rational#rationalize" do
   end
 
   it "raises ArgumentError when passed more than one argument" do
-    lambda { Rational(1,1).rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
-    lambda { Rational(1,1).rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
+    -> { Rational(1,1).rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
+    -> { Rational(1,1).rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
   end
 end

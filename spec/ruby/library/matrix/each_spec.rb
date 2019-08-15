@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'matrix'
 
 describe "Matrix#each" do
@@ -31,13 +31,13 @@ describe "Matrix#each with an argument" do
   end
 
   it "raises an ArgumentError for unrecognized argument" do
-    lambda {
+    -> {
       @m.each("all"){}
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @m.each(nil){}
     }.should raise_error(ArgumentError)
-    lambda {
+    -> {
       @m.each(:left){}
     }.should raise_error(ArgumentError)
   end

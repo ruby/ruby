@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/key.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/key'
 
 describe "ENV.index" do
-  it_behaves_like(:env_key, :index)
+  it_behaves_like :env_key, :index
 end

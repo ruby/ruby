@@ -1,5 +1,5 @@
-require File.expand_path('../../../shared/rational/coerce', __FILE__)
+require_relative '../../shared/rational/coerce'
 
 describe "Rational#coerce" do
-  it_behaves_like(:rational_coerce, :coerce)
+  it_behaves_like :rational_coerce, :coerce
 end

@@ -1,7 +1,5 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
-
 platform_is :windows do
-  require 'win32ole'
+  require_relative '../fixtures/classes'
 
   describe "WIN32OLESpecs.new_ole" do
     it "creates a WIN32OLE object from OLE server name" do
@@ -15,11 +13,11 @@ platform_is :windows do
     end
 
     it "raises TypeError if argument cannot be converted to String" do
-      lambda { WIN32OLESpecs.new_ole(42) }.should raise_error( TypeError )
+      -> { WIN32OLESpecs.new_ole(42) }.should raise_error( TypeError )
     end
 
     it "raises WIN32OLERuntimeError if invalid string is given" do
-      lambda { WIN32OLESpecs.new_ole('foo') }.should raise_error( WIN32OLERuntimeError )
+      -> { WIN32OLE.new('foo') }.should raise_error( WIN32OLERuntimeError )
     end
 
   end

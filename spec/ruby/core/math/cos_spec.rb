@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 # cosine : (-Inf, Inf) --> (-1.0, 1.0)
 describe "Math.cos" do
@@ -17,7 +17,7 @@ describe "Math.cos" do
 
 
   it "raises a TypeError unless the argument is Numeric and has #to_f" do
-    lambda { Math.cos("test") }.should raise_error(TypeError)
+    -> { Math.cos("test") }.should raise_error(TypeError)
   end
 
   it "returns NaN given NaN" do
@@ -25,7 +25,7 @@ describe "Math.cos" do
   end
 
   it "raises a TypeError if the argument is nil" do
-    lambda { Math.cos(nil) }.should raise_error(TypeError)
+    -> { Math.cos(nil) }.should raise_error(TypeError)
   end
 
   it "coerces its argument with #to_f" do

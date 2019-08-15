@@ -13,10 +13,13 @@ module Fiddle
         [val].pack("i!").unpack("I!")[0]
       when TYPE_LONG
         [val].pack("l!").unpack("L!")[0]
-      when TYPE_LONG_LONG
-        [val].pack("q").unpack("Q")[0]
       else
-        val
+        if defined?(TYPE_LONG_LONG) and
+          ty.abs == TYPE_LONG_LONG
+          [val].pack("q").unpack("Q")[0]
+        else
+          val
+        end
       end
     end
 
@@ -30,10 +33,13 @@ module Fiddle
         [val].pack("I!").unpack("i!")[0]
       when TYPE_LONG
         [val].pack("L!").unpack("l!")[0]
-      when TYPE_LONG_LONG
-        [val].pack("Q").unpack("q")[0]
       else
-        val
+        if defined?(TYPE_LONG_LONG) and
+          ty.abs == TYPE_LONG_LONG
+          [val].pack("Q").unpack("q")[0]
+        else
+          val
+        end
       end
     end
 
@@ -75,10 +81,13 @@ module Fiddle
           case SIZEOF_VOIDP
           when SIZEOF_LONG
             return [arg].pack("p").unpack("l!")[0]
-          when SIZEOF_LONG_LONG
-            return [arg].pack("p").unpack("q")[0]
           else
-            raise(RuntimeError, "sizeof(void*)?")
+            if defined?(SIZEOF_LONG_LONG) and
+              SIZEOF_VOIDP == SIZEOF_LONG_LONG
+              return [arg].pack("p").unpack("q")[0]
+            else
+              raise(RuntimeError, "sizeof(void*)?")
+            end
           end
         end
       when Float, Integer

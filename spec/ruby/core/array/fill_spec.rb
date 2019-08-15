@@ -1,9 +1,9 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#fill" do
   before :all do
-    @never_passed = lambda do |i|
+    @never_passed = -> i do
       raise ExpectationNotMetError, "the control path should not pass here"
     end
   end
@@ -43,34 +43,34 @@ describe "Array#fill" do
     [nil, nil, nil, nil].fill { |i| i * 2 }.should == [0, 2, 4, 6]
   end
 
-  it "raises a RuntimeError on a frozen array" do
-    lambda { ArraySpecs.frozen_array.fill('x') }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    -> { ArraySpecs.frozen_array.fill('x') }.should raise_error(frozen_error_class)
   end
 
-  it "raises a RuntimeError on an empty frozen array" do
-    lambda { ArraySpecs.empty_frozen_array.fill('x') }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on an empty frozen array" do
+    -> { ArraySpecs.empty_frozen_array.fill('x') }.should raise_error(frozen_error_class)
   end
 
   it "raises an ArgumentError if 4 or more arguments are passed when no block given" do
-    lambda { [].fill('a') }.should_not raise_error(ArgumentError)
+    -> { [].fill('a') }.should_not raise_error(ArgumentError)
 
-    lambda { [].fill('a', 1) }.should_not raise_error(ArgumentError)
+    -> { [].fill('a', 1) }.should_not raise_error(ArgumentError)
 
-    lambda { [].fill('a', 1, 2) }.should_not raise_error(ArgumentError)
-    lambda { [].fill('a', 1, 2, true) }.should raise_error(ArgumentError)
+    -> { [].fill('a', 1, 2) }.should_not raise_error(ArgumentError)
+    -> { [].fill('a', 1, 2, true) }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if no argument passed and no block given" do
-    lambda { [].fill }.should raise_error(ArgumentError)
+    -> { [].fill }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if 3 or more arguments are passed when a block given" do
-    lambda { [].fill() {|i|} }.should_not raise_error(ArgumentError)
+    -> { [].fill() {|i|} }.should_not raise_error(ArgumentError)
 
-    lambda { [].fill(1) {|i|} }.should_not raise_error(ArgumentError)
+    -> { [].fill(1) {|i|} }.should_not raise_error(ArgumentError)
 
-    lambda { [].fill(1, 2) {|i|} }.should_not raise_error(ArgumentError)
-    lambda { [].fill(1, 2, true) {|i|} }.should raise_error(ArgumentError)
+    -> { [].fill(1, 2) {|i|} }.should_not raise_error(ArgumentError)
+    -> { [].fill(1, 2, true) {|i|} }.should raise_error(ArgumentError)
   end
 end
 
@@ -171,23 +171,23 @@ describe "Array#fill with (filler, index, length)" do
 
   # See: http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/17481
   it "does not raise an exception if the given length is negative and its absolute value does not exceed the index" do
-    lambda { [1, 2, 3, 4].fill('a', 3, -1)}.should_not raise_error(ArgumentError)
-    lambda { [1, 2, 3, 4].fill('a', 3, -2)}.should_not raise_error(ArgumentError)
-    lambda { [1, 2, 3, 4].fill('a', 3, -3)}.should_not raise_error(ArgumentError)
+    -> { [1, 2, 3, 4].fill('a', 3, -1)}.should_not raise_error(ArgumentError)
+    -> { [1, 2, 3, 4].fill('a', 3, -2)}.should_not raise_error(ArgumentError)
+    -> { [1, 2, 3, 4].fill('a', 3, -3)}.should_not raise_error(ArgumentError)
 
-    lambda { [1, 2, 3, 4].fill(3, -1, &@never_passed)}.should_not raise_error(ArgumentError)
-    lambda { [1, 2, 3, 4].fill(3, -2, &@never_passed)}.should_not raise_error(ArgumentError)
-    lambda { [1, 2, 3, 4].fill(3, -3, &@never_passed)}.should_not raise_error(ArgumentError)
+    -> { [1, 2, 3, 4].fill(3, -1, &@never_passed)}.should_not raise_error(ArgumentError)
+    -> { [1, 2, 3, 4].fill(3, -2, &@never_passed)}.should_not raise_error(ArgumentError)
+    -> { [1, 2, 3, 4].fill(3, -3, &@never_passed)}.should_not raise_error(ArgumentError)
   end
 
   it "does not raise an exception even if the given length is negative and its absolute value exceeds the index" do
-    lambda { [1, 2, 3, 4].fill('a', 3, -4)}.should_not raise_error(ArgumentError)
-    lambda { [1, 2, 3, 4].fill('a', 3, -5)}.should_not raise_error(ArgumentError)
-    lambda { [1, 2, 3, 4].fill('a', 3, -10000)}.should_not raise_error(ArgumentError)
+    -> { [1, 2, 3, 4].fill('a', 3, -4)}.should_not raise_error(ArgumentError)
+    -> { [1, 2, 3, 4].fill('a', 3, -5)}.should_not raise_error(ArgumentError)
+    -> { [1, 2, 3, 4].fill('a', 3, -10000)}.should_not raise_error(ArgumentError)
 
-    lambda { [1, 2, 3, 4].fill(3, -4, &@never_passed)}.should_not raise_error(ArgumentError)
-    lambda { [1, 2, 3, 4].fill(3, -5, &@never_passed)}.should_not raise_error(ArgumentError)
-    lambda { [1, 2, 3, 4].fill(3, -10000, &@never_passed)}.should_not raise_error(ArgumentError)
+    -> { [1, 2, 3, 4].fill(3, -4, &@never_passed)}.should_not raise_error(ArgumentError)
+    -> { [1, 2, 3, 4].fill(3, -5, &@never_passed)}.should_not raise_error(ArgumentError)
+    -> { [1, 2, 3, 4].fill(3, -10000, &@never_passed)}.should_not raise_error(ArgumentError)
   end
 
   it "tries to convert the second and third arguments to Integers using #to_int" do
@@ -199,17 +199,17 @@ describe "Array#fill with (filler, index, length)" do
   end
 
   it "raises a TypeError if the index is not numeric" do
-    lambda { [].fill 'a', true }.should raise_error(TypeError)
+    -> { [].fill 'a', true }.should raise_error(TypeError)
 
     obj = mock('nonnumeric')
-    lambda { [].fill('a', obj) }.should raise_error(TypeError)
+    -> { [].fill('a', obj) }.should raise_error(TypeError)
   end
 
   not_supported_on :opal do
     it "raises an ArgumentError or RangeError for too-large sizes" do
       arr = [1, 2, 3]
-      lambda { arr.fill(10, 1, fixnum_max) }.should raise_error(ArgumentError)
-      lambda { arr.fill(10, 1, bignum_value) }.should raise_error(RangeError)
+      -> { arr.fill(10, 1, fixnum_max) }.should raise_error(ArgumentError)
+      -> { arr.fill(10, 1, bignum_value) }.should raise_error(RangeError)
     end
   end
 end
@@ -239,7 +239,7 @@ describe "Array#fill with (filler, range)" do
   end
 
   it "raises a TypeError with range and length argument" do
-    lambda { [].fill('x', 0 .. 2, 5) }.should raise_error(TypeError)
+    -> { [].fill('x', 0 .. 2, 5) }.should raise_error(TypeError)
   end
 
   it "replaces elements between the (-m)th to the last and the (n+1)th from the first if given an range m..n where m < 0 and n >= 0" do
@@ -291,13 +291,13 @@ describe "Array#fill with (filler, range)" do
   end
 
   it "raises an exception if some of the given range lies before the first of the array" do
-    lambda { [1, 2, 3].fill('x', -5..-3) }.should raise_error(RangeError)
-    lambda { [1, 2, 3].fill('x', -5...-3) }.should raise_error(RangeError)
-    lambda { [1, 2, 3].fill('x', -5..-4) }.should raise_error(RangeError)
+    -> { [1, 2, 3].fill('x', -5..-3) }.should raise_error(RangeError)
+    -> { [1, 2, 3].fill('x', -5...-3) }.should raise_error(RangeError)
+    -> { [1, 2, 3].fill('x', -5..-4) }.should raise_error(RangeError)
 
-    lambda { [1, 2, 3].fill(-5..-3, &@never_passed) }.should raise_error(RangeError)
-    lambda { [1, 2, 3].fill(-5...-3, &@never_passed) }.should raise_error(RangeError)
-    lambda { [1, 2, 3].fill(-5..-4, &@never_passed) }.should raise_error(RangeError)
+    -> { [1, 2, 3].fill(-5..-3, &@never_passed) }.should raise_error(RangeError)
+    -> { [1, 2, 3].fill(-5...-3, &@never_passed) }.should raise_error(RangeError)
+    -> { [1, 2, 3].fill(-5..-4, &@never_passed) }.should raise_error(RangeError)
   end
 
   it "tries to convert the start and end of the passed range to Integers using #to_int" do
@@ -312,6 +312,6 @@ describe "Array#fill with (filler, range)" do
   it "raises a TypeError if the start or end of the passed range is not numeric" do
     obj = mock('nonnumeric')
     def obj.<=>(rhs); rhs == self ? 0 : nil end
-    lambda { [].fill('a', obj..obj) }.should raise_error(TypeError)
+    -> { [].fill('a', obj..obj) }.should raise_error(TypeError)
   end
 end

@@ -1,6 +1,6 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocMarkupPreProcess < RDoc::TestCase
 
@@ -29,7 +29,8 @@ class TestRDocMarkupPreProcess < RDoc::TestCase
   def test_class_post_process
     RDoc::Markup::PreProcess.post_process do end
 
-    assert_equal 1, RDoc::Markup::PreProcess.post_processors.length
+    assert_equal 1, RDoc::Markup::PreProcess.post_processors.length,
+                 proc{RDoc::Markup::PreProcess.post_processors.inspect}
   end
 
   def test_include_file
@@ -72,7 +73,7 @@ contents of a string.
 
   def test_include_file_in_other_directory
     content = nil
-    out, err = capture_io do
+    out, err = capture_output do
       content = @pp.include_file "test.txt", '', nil
     end
 
@@ -86,8 +87,7 @@ contents of a string.
     text = "# :main: M\n"
     out = @pp.handle text
 
-    assert_same out, text
-    assert_equal "#\n", text
+    assert_equal "#\n", out
   end
 
   def test_handle_comment
@@ -96,8 +96,7 @@ contents of a string.
 
     out = @pp.handle c
 
-    assert_same out, text
-    assert_equal "#\n", text
+    assert_equal "#\n", out
   end
 
   def test_handle_markup
@@ -129,8 +128,7 @@ contents of a string.
 
     out = @pp.handle text, cd
 
-    assert_same out, text
-    assert_equal "# a b c\n", text
+    assert_equal "# a b c\n", out
     assert_equal "# a b c\n", cd.metadata[:stuff]
   end
 
@@ -138,8 +136,7 @@ contents of a string.
     text = "# :x: y\n"
     out = @pp.handle text
 
-    assert_same out, text
-    assert_equal "# :x: y\n", text
+    assert_equal text, out
   end
 
   def test_handle_directive_blankline

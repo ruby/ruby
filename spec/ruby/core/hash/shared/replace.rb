@@ -32,20 +32,20 @@ describe :hash_replace, shared: true do
     hash_a.default(5).should == 10
 
     hash_a = Hash.new { |h, k| k * 5 }
-    hash_b = Hash.new(lambda { raise "Should not invoke lambda" })
+    hash_b = Hash.new(-> { raise "Should not invoke lambda" })
     hash_a.send(@method, hash_b)
     hash_a.default.should == hash_b.default
   end
 
-  it "raises a RuntimeError if called on a frozen instance that would not be modified" do
-    lambda do
+  it "raises a #{frozen_error_class} if called on a frozen instance that would not be modified" do
+    -> do
       HashSpecs.frozen_hash.send(@method, HashSpecs.frozen_hash)
-    end.should raise_error(RuntimeError)
+    end.should raise_error(frozen_error_class)
   end
 
-  it "raises a RuntimeError if called on a frozen instance that is modified" do
-    lambda do
+  it "raises a #{frozen_error_class} if called on a frozen instance that is modified" do
+    -> do
       HashSpecs.frozen_hash.send(@method, HashSpecs.empty_frozen_hash)
-    end.should raise_error(RuntimeError)
+    end.should raise_error(frozen_error_class)
   end
 end

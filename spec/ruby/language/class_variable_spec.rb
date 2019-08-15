@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/class_variables', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/class_variables'
 
 describe "A class variable" do
   after :each do
@@ -70,14 +70,14 @@ describe 'A class variable definition' do
     c = Class.new(b)
     b.class_variable_set(:@@cv, :value)
 
-    lambda { a.class_variable_get(:@@cv) }.should raise_error(NameError)
+    -> { a.class_variable_get(:@@cv) }.should raise_error(NameError)
     b.class_variable_get(:@@cv).should == :value
     c.class_variable_get(:@@cv).should == :value
 
     # updates the same variable
     c.class_variable_set(:@@cv, :next)
 
-    lambda { a.class_variable_get(:@@cv) }.should raise_error(NameError)
+    -> { a.class_variable_get(:@@cv) }.should raise_error(NameError)
     b.class_variable_get(:@@cv).should == :next
     c.class_variable_get(:@@cv).should == :next
   end

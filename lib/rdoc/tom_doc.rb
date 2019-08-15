@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # :markup: tomdoc
 
 # A parser for TomDoc based on TomDoc 1.0.0-rc1 (02adef9b5a)
@@ -180,12 +180,19 @@ class RDoc::TomDoc < RDoc::Markup::Parser
 
       case type
       when :TEXT then
-        @section = 'Returns' if data =~ /\AReturns/
+        @section = 'Returns' if data =~ /\A(Returns|Raises)/
 
         paragraph << data
       when :NEWLINE then
         if :TEXT == peek_token[0] then
-          paragraph << ' '
+          # Lines beginning with 'Raises' in the Returns section should not be
+          # treated as multiline text
+          if 'Returns' == @section and
+            peek_token[1].start_with?('Raises') then
+            break
+          else
+            paragraph << ' '
+          end
         else
           break
         end
@@ -222,7 +229,7 @@ class RDoc::TomDoc < RDoc::Markup::Parser
   # Returns self.
 
   def tokenize text
-    text.sub!(/\A(Public|Internal|Deprecated):\s+/, '')
+    text = text.sub(/\A(Public|Internal|Deprecated):\s+/, '')
 
     setup_scanner text
 
@@ -255,4 +262,3 @@ class RDoc::TomDoc < RDoc::Markup::Parser
   end
 
 end
-

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'tempfile'
 
 describe "Tempfile#open" do
@@ -41,6 +41,22 @@ describe "Tempfile.open" do
     Tempfile.open(["specs", ".tt"]) { |tempfile| @tempfile = tempfile }
     @tempfile.path.should =~ /specs.*\.tt$/
   end
+
+  it "passes the third argument (options) to open" do
+    Tempfile.open("specs", Dir.tmpdir, encoding: "IBM037:IBM037", binmode: true) do |tempfile|
+      @tempfile = tempfile
+      tempfile.external_encoding.should == Encoding.find("IBM037")
+      tempfile.binmode?.should be_true
+    end
+  end
+
+  it "uses a blank string for basename when passed no arguments" do
+    Tempfile.open() do |tempfile|
+      @tempfile = tempfile
+      tempfile.closed?.should be_false
+    end
+    @tempfile.should_not == nil
+  end
 end
 
 describe "Tempfile.open when passed a block" do
@@ -79,4 +95,3 @@ describe "Tempfile.open when passed a block" do
     @tempfile.closed?.should be_true
   end
 end
-

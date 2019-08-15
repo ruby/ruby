@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'uri'
 
 #the testing is light here as this is an alias for URI.parse
@@ -24,6 +24,6 @@ describe "the URI method" do
 
   #apparently this was a concern?  imported from MRI tests
   it "does not add a URI method to Object instances" do
-    lambda {Object.new.URI("http://ruby-lang.org/")}.should raise_error(NoMethodError)
+    -> {Object.new.URI("http://ruby-lang.org/")}.should raise_error(NoMethodError)
   end
 end

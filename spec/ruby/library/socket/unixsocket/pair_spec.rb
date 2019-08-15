@@ -1,6 +1,6 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../../shared/partially_closable_sockets', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
+require_relative '../shared/partially_closable_sockets'
 
 describe "UNIXSocket#pair" do
   platform_is_not :windows do

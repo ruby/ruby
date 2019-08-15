@@ -1,11 +1,12 @@
 # frozen_string_literal: true
+
 require File.expand_path("../compact_index", __FILE__)
 
 Artifice.deactivate
 
 class CompactIndexApiMissing < CompactIndexAPI
   get "/fetch/actual/gem/:id" do
-    $stderr.puts params[:id]
+    warn params[:id]
     if params[:id] == "rack-1.0.gemspec.rz"
       halt 404
     else

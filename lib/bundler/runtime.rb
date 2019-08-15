@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "digest/sha1"
 
 module Bundler
   class Runtime
@@ -11,7 +10,7 @@ module Bundler
     end
 
     def setup(*groups)
-      @definition.ensure_equivalent_gemfile_and_lockfile if Bundler.settings[:frozen]
+      @definition.ensure_equivalent_gemfile_and_lockfile if Bundler.frozen_bundle?
 
       groups.map!(&:to_sym)
 
@@ -35,14 +34,7 @@ module Bundler
         spec.load_paths.reject {|path| $LOAD_PATH.include?(path) }
       end.reverse.flatten
 
-      # See Gem::Specification#add_self_to_load_path (since RubyGems 1.8)
-      if insert_index = Bundler.rubygems.load_path_insert_index
-        # Gem directories must come after -I and ENV['RUBYLIB']
-        $LOAD_PATH.insert(insert_index, *load_paths)
-      else
-        # We are probably testing in core, -I and RUBYLIB don't apply
-        $LOAD_PATH.unshift(*load_paths)
-      end
+      Bundler.rubygems.add_to_load_path(load_paths)
 
       setup_manpath
 
@@ -80,7 +72,7 @@ module Bundler
             required_file = file
             begin
               Kernel.require file
-            rescue => e
+            rescue RuntimeError => e
               raise e if e.is_a?(LoadError) # we handle this a little later
               raise Bundler::GemRequireError.new e,
                 "There was an error while trying to load the gem '#{file}'."
@@ -164,6 +156,7 @@ module Bundler
       gem_dirs             = Dir["#{Gem.dir}/gems/*"]
       gem_files            = Dir["#{Gem.dir}/cache/*.gem"]
       gemspec_files        = Dir["#{Gem.dir}/specifications/*.gemspec"]
+      extension_dirs       = Dir["#{Gem.dir}/extensions/*/*/*"] + Dir["#{Gem.dir}/bundler/gems/extensions/*/*/*"]
       spec_gem_paths       = []
       # need to keep git sources around
       spec_git_paths       = @definition.spec_git_paths
@@ -171,6 +164,7 @@ module Bundler
       spec_gem_executables = []
       spec_cache_paths     = []
       spec_gemspec_paths   = []
+      spec_extension_paths = []
       specs.each do |spec|
         spec_gem_paths << spec.full_gem_path
         # need to check here in case gems are nested like for the rails git repo
@@ -182,6 +176,7 @@ module Bundler
         end
         spec_cache_paths << spec.cache_file
         spec_gemspec_paths << spec.spec_file
+        spec_extension_paths << spec.extension_dir if spec.respond_to?(:extension_dir)
         spec_git_cache_dirs << spec.source.cache_path.to_s if spec.source.is_a?(Bundler::Source::Git)
       end
       spec_gem_paths.uniq!
@@ -193,6 +188,7 @@ module Bundler
       stale_gem_dirs       = gem_dirs - spec_gem_paths
       stale_gem_files      = gem_files - spec_cache_paths
       stale_gemspec_files  = gemspec_files - spec_gemspec_paths
+      stale_extension_dirs = extension_dirs - spec_extension_paths
 
       removed_stale_gem_dirs = stale_gem_dirs.collect {|dir| remove_dir(dir, dry_run) }
       removed_stale_git_dirs = stale_git_dirs.collect {|dir| remove_dir(dir, dry_run) }
@@ -205,8 +201,10 @@ module Bundler
             FileUtils.rm(file) if File.exist?(file)
           end
         end
-        stale_git_cache_dirs.each do |cache_dir|
-          SharedHelpers.filesystem_access(cache_dir) do |dir|
+
+        stale_dirs = stale_git_cache_dirs + stale_extension_dirs
+        stale_dirs.each do |stale_dir|
+          SharedHelpers.filesystem_access(stale_dir) do |dir|
             FileUtils.rm_rf(dir) if File.exist?(dir)
           end
         end
@@ -262,9 +260,6 @@ module Bundler
     end
 
     def setup_manpath
-      # Store original MANPATH for restoration later in with_clean_env()
-      ENV["BUNDLER_ORIG_MANPATH"] = ENV["MANPATH"]
-
       # Add man/ subdirectories from activated bundles to MANPATH for man(1)
       manuals = $LOAD_PATH.map do |path|
         man_subdir = path.sub(/lib$/, "man")
@@ -272,7 +267,7 @@ module Bundler
       end.compact
 
       return if manuals.empty?
-      ENV["MANPATH"] = manuals.concat(
+      Bundler::SharedHelpers.set_env "MANPATH", manuals.concat(
         ENV["MANPATH"].to_s.split(File::PATH_SEPARATOR)
       ).uniq.join(File::PATH_SEPARATOR)
     end

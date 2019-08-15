@@ -83,6 +83,10 @@ static VALUE rb_cGDBM, rb_eGDBMError, rb_eGDBMFatalError;
 
 #define MY_BLOCK_SIZE (2048)
 #define MY_FATAL_FUNC rb_gdbm_fatal
+
+NORETURN(static void rb_gdbm_fatal(const char *msg));
+NORETURN(static void closed_dbm(void));
+
 static void
 rb_gdbm_fatal(const char *msg)
 {
@@ -102,7 +106,6 @@ closed_dbm(void)
 
 #define GetDBM(obj, dbmp) do {\
     TypedData_Get_Struct((obj), struct dbmdata, &dbm_type, (dbmp));\
-    if ((dbmp) == 0) closed_dbm();\
     if ((dbmp)->di_dbm == 0) closed_dbm();\
 } while (0)
 
@@ -115,21 +118,18 @@ static void
 free_dbm(void *ptr)
 {
     struct dbmdata *dbmp = ptr;
-    if (dbmp) {
-        if (dbmp->di_dbm) gdbm_close(dbmp->di_dbm);
-        xfree(dbmp);
-    }
+    if (dbmp->di_dbm)
+	gdbm_close(dbmp->di_dbm);
+    xfree(dbmp);
 }
 
 static size_t
 memsize_dbm(const void *ptr)
 {
-    size_t size = 0;
     const struct dbmdata *dbmp = ptr;
-    if (dbmp) {
-	size += sizeof(*dbmp);
-	if (dbmp->di_dbm) size += DBM_SIZEOF_DBM;
-    }
+    size_t size = sizeof(*dbmp);
+    if (dbmp->di_dbm)
+	size += DBM_SIZEOF_DBM;
     return size;
 }
 
@@ -170,8 +170,6 @@ fgdbm_closed(VALUE obj)
     struct dbmdata *dbmp;
 
     TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);
-    if (dbmp == 0)
-        return Qtrue;
     if (dbmp->di_dbm == 0)
         return Qtrue;
 
@@ -181,7 +179,9 @@ fgdbm_closed(VALUE obj)
 static VALUE
 fgdbm_s_alloc(VALUE klass)
 {
-    return TypedData_Wrap_Struct(klass, &dbm_type, 0);
+    struct dbmdata *dbmp;
+
+    return TypedData_Make_Struct(klass, struct dbmdata, &dbm_type, dbmp);
 }
 
 /*
@@ -215,6 +215,7 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
     struct dbmdata *dbmp;
     int mode, flags = 0;
 
+    TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);
     if (rb_scan_args(argc, argv, "12", &file, &vmode, &vflags) == 1) {
         mode = 0666;            /* default value */
     }
@@ -268,9 +269,8 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
             rb_raise(rb_eGDBMError, "%s", gdbm_strerror(gdbm_errno));
     }
 
-    dbmp = ALLOC(struct dbmdata);
-    free_dbm(DATA_PTR(obj));
-    DATA_PTR(obj) = dbmp;
+    if (dbmp->di_dbm)
+	gdbm_close(dbmp->di_dbm);
     dbmp->di_dbm = dbm;
     dbmp->di_size = -1;
 

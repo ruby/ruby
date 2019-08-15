@@ -297,10 +297,6 @@ static VALUE mSyslog_set_mask(VALUE self, VALUE mask)
  *   Syslog.log(Syslog::LOG_ALERT, "Out of memory")
  *   Syslog.alert("Out of memory")
  *
- * Format strings are as for printf/sprintf, except that in addition %m is
- * replaced with the error message string that would be returned by
- * strerror(errno).
- *
  */
 static VALUE mSyslog_log(int argc, VALUE *argv, VALUE self)
 {
@@ -420,6 +416,7 @@ static VALUE mSyslogMacros_included(VALUE mod, VALUE target)
  */
 void Init_syslog(void)
 {
+#undef rb_intern
     mSyslog = rb_define_module("Syslog");
 
     mSyslogConstants    = rb_define_module_under(mSyslog, "Constants");

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Module#public_constant" do
   it "can only be passed constant names defined in the target (self) module" do
@@ -6,7 +6,7 @@ describe "Module#public_constant" do
     cls1.const_set :Foo, true
     cls2 = Class.new(cls1)
 
-    lambda do
+    -> do
       cls2.send :public_constant, :Foo
     end.should raise_error(NameError)
   end

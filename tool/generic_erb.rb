@@ -5,10 +5,8 @@
 
 require 'erb'
 require 'optparse'
-require 'fileutils'
-$:.unshift(File.dirname(__FILE__))
-require 'vpath'
-require 'colorize'
+require_relative 'lib/vpath'
+require_relative 'lib/colorize'
 
 vpath = VPath.new
 timestamp = nil
@@ -34,7 +32,11 @@ unchanged = color.pass("unchanged")
 updated = color.fail("updated")
 
 result = templates.map do |template|
-  erb = ERB.new(File.read(template), nil, '%-')
+  if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
+    erb = ERB.new(File.read(template), trim_mode: '%-')
+  else
+    erb = ERB.new(File.read(template), nil, '%-')
+  end
   erb.filename = template
   source ? erb.src : proc{erb.result(binding)}.call
 end
@@ -51,7 +53,8 @@ if output
       dir, base = File.split(output)
       timestamp = File.join(dir, ".time." + base)
     end
-    FileUtils.touch(timestamp)
+    File.open(timestamp, 'a') {}
+    File.utime(nil, nil, timestamp)
   end
 else
   print result

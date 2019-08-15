@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/new', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/new'
 
 describe "IO.open" do
   it_behaves_like :io_new, :open
@@ -38,7 +38,7 @@ describe "IO.open" do
   end
 
   it "propagates an exception raised by #close that is not a StandardError" do
-    lambda do
+    -> do
       IO.open(@fd, "w") do |io|
         IOSpecs.io_mock(io, :close) do
           super()
@@ -51,7 +51,7 @@ describe "IO.open" do
   end
 
   it "propagates an exception raised by #close that is a StandardError" do
-    lambda do
+    -> do
       IO.open(@fd, "w") do |io|
         IOSpecs.io_mock(io, :close) do
           super()

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'ipaddr'
 
 describe "IPAddr#ipv4_compat" do
@@ -42,5 +42,3 @@ describe "IPAddr#ipv4_mapped" do
   end
 
 end
-
-

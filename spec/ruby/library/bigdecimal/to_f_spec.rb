@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'bigdecimal'
 
 describe "BigDecimal#to_f" do
@@ -52,4 +52,3 @@ describe "BigDecimal#to_f" do
     @zero_neg.to_f.to_s.should == "-0.0"
   end
 end
-

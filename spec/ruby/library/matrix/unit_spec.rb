@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/identity', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/identity'
 
 describe "Matrix.unit" do
-  it_behaves_like(:matrix_identity, :unit)
+  it_behaves_like :matrix_identity, :unit
 end

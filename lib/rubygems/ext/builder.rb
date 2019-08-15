@@ -6,7 +6,7 @@
 #++
 
 require 'rubygems/user_interaction'
-require 'thread'
+require "open3"
 
 class Gem::Ext::Builder
 
@@ -28,18 +28,18 @@ class Gem::Ext::Builder
   end
 
   def self.make(dest_path, results)
-    unless File.exist? 'Makefile' then
+    unless File.exist? 'Makefile'
       raise Gem::InstallError, 'Makefile not found'
     end
 
     # try to find make program from Ruby configure arguments first
     RbConfig::CONFIG['configure_args'] =~ /with-make-prog\=(\w+)/
     make_program = ENV['MAKE'] || ENV['make'] || $1
-    unless make_program then
+    unless make_program
       make_program = (/mswin/ =~ RUBY_PLATFORM) ? 'nmake' : 'make'
     end
 
-    destdir = '"DESTDIR=%s"' % ENV['DESTDIR'] if RUBY_VERSION > '2.0'
+    destdir = '"DESTDIR=%s"' % ENV['DESTDIR']
 
     ['clean', '', 'install'].each do |target|
       # Pass DESTDIR via command line to override what's in MAKEFLAGS
@@ -56,37 +56,42 @@ class Gem::Ext::Builder
     end
   end
 
-  def self.redirector
-    '2>&1'
-  end
-
   def self.run(command, results, command_name = nil)
     verbose = Gem.configuration.really_verbose
 
     begin
-      # TODO use Process.spawn when ruby 1.8 support is dropped.
       rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], nil
       if verbose
         puts("current directory: #{Dir.pwd}")
-        puts(command)
-        system(command)
-      else
-        results << "current directory: #{Dir.pwd}"
-        results << command
-        results << `#{command} #{redirector}`
+        p(command)
       end
+      results << "current directory: #{Dir.pwd}"
+      results << (command.respond_to?(:shelljoin) ? command.shelljoin : command)
+
+      output, status = Open3.capture2e(*command)
+      if verbose
+        puts output
+      else
+        results << output
+      end
+    rescue => error
+      raise Gem::InstallError, "#{command_name || class_name} failed#{error.message}"
     ensure
       ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
     end
 
-    unless $?.success? then
+    unless status.success?
       results << "Building has failed. See above output for more information on the failure." if verbose
+    end
 
+    yield(status, results) if block_given?
+
+    unless status.success?
       exit_reason =
-        if $?.exited? then
-          ", exit code #{$?.exitstatus}"
-        elsif $?.signaled? then
-          ", uncaught signal #{$?.termsig}"
+        if status.exited?
+          ", exit code #{status.exitstatus}"
+        elsif status.signaled?
+          ", uncaught signal #{status.termsig}"
         end
 
       raise Gem::InstallError, "#{command_name || class_name} failed#{exit_reason}"
@@ -98,18 +103,18 @@ class Gem::Ext::Builder
   # have build arguments, saved, set +build_args+ which is an ARGV-style
   # array.
 
-  def initialize spec, build_args = spec.build_args
+  def initialize(spec, build_args = spec.build_args)
     @spec       = spec
     @build_args = build_args
     @gem_dir    = spec.full_gem_path
 
-    @ran_rake   = nil
+    @ran_rake   = false
   end
 
   ##
   # Chooses the extension builder class for +extension+
 
-  def builder_for extension # :nodoc:
+  def builder_for(extension) # :nodoc:
     case extension
     when /extconf/ then
       Gem::Ext::ExtConfBuilder
@@ -121,17 +126,14 @@ class Gem::Ext::Builder
     when /CMakeLists.txt/ then
       Gem::Ext::CmakeBuilder
     else
-      extension_dir = File.join @gem_dir, File.dirname(extension)
-
-      message = "No builder for extension '#{extension}'"
-      build_error extension_dir, message
+      build_error("No builder for extension '#{extension}'")
     end
   end
 
   ##
-  # Logs the build +output+ in +build_dir+, then raises Gem::Ext::BuildError.
+  # Logs the build +output+, then raises Gem::Ext::BuildError.
 
-  def build_error build_dir, output, backtrace = nil # :nodoc:
+  def build_error(output, backtrace = nil) # :nodoc:
     gem_make_out = write_gem_make_out output
 
     message = <<-EOF
@@ -146,32 +148,39 @@ EOF
     raise Gem::Ext::BuildError, message, backtrace
   end
 
-  def build_extension extension, dest_path # :nodoc:
+  def build_extension(extension, dest_path) # :nodoc:
     results = []
 
-    extension ||= '' # I wish I knew why this line existed
-    extension_dir =
-      File.expand_path File.join @gem_dir, File.dirname(extension)
-    lib_dir = File.join @spec.full_gem_path, @spec.raw_require_paths.first
+    builder = builder_for(extension)
 
-    builder = builder_for extension
+    extension_dir =
+      File.expand_path File.join(@gem_dir, File.dirname(extension))
+    lib_dir = File.join @spec.full_gem_path, @spec.raw_require_paths.first
 
     begin
       FileUtils.mkdir_p dest_path
 
       CHDIR_MUTEX.synchronize do
-        Dir.chdir extension_dir do
-          results = builder.build(extension, @gem_dir, dest_path,
+        pwd = Dir.getwd
+        Dir.chdir extension_dir
+        begin
+          results = builder.build(extension, dest_path,
                                   results, @build_args, lib_dir)
 
           verbose { results.join("\n") }
+        ensure
+          begin
+            Dir.chdir pwd
+          rescue SystemCallError
+            Dir.chdir dest_path
+          end
         end
       end
 
       write_gem_make_out results.join "\n"
     rescue => e
       results << e.message
-      build_error extension_dir, results.join("\n"), $@
+      build_error(results.join("\n"), $@)
     end
   end
 
@@ -193,8 +202,6 @@ EOF
 
     FileUtils.rm_f @spec.gem_build_complete_path
 
-    @ran_rake = false # only run rake once
-
     @spec.extensions.each do |extension|
       break if @ran_rake
 
@@ -207,15 +214,16 @@ EOF
   ##
   # Writes +output+ to gem_make.out in the extension install directory.
 
-  def write_gem_make_out output # :nodoc:
+  def write_gem_make_out(output) # :nodoc:
     destination = File.join @spec.extension_dir, 'gem_make.out'
 
     FileUtils.mkdir_p @spec.extension_dir
 
-    open destination, 'wb' do |io| io.puts output end
+    File.open destination, 'wb' do |io|
+      io.puts output
+    end
 
     destination
   end
 
 end
-

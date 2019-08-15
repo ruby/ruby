@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'weakref'
 
 describe "WeakRef#__send__" do
@@ -27,11 +27,11 @@ describe "WeakRef#__send__" do
 
   it "delegates to protected methods of the weakly-referenced object" do
     wr = WeakRef.new(WeakRefSpecs)
-    lambda { wr.protected_method }.should raise_error(NameError)
+    -> { wr.protected_method }.should raise_error(NameError)
   end
 
   it "does not delegate to private methods of the weakly-referenced object" do
     wr = WeakRef.new(WeakRefSpecs)
-    lambda { wr.private_method }.should raise_error(NameError)
+    -> { wr.private_method }.should raise_error(NameError)
   end
 end

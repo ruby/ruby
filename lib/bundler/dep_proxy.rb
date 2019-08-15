@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   class DepProxy
     attr_reader :__platform, :dep
@@ -9,10 +10,11 @@ module Bundler
     end
 
     def hash
-      @hash ||= dep.hash
+      @hash ||= [dep, __platform].hash
     end
 
     def ==(other)
+      return false if other.class != self.class
       dep == other.dep && __platform == other.__platform
     end
 

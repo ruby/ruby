@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "File.lchmod" do
   platform_is_not :linux, :windows, :openbsd, :solaris, :aix do
@@ -36,7 +36,7 @@ describe "File.lchmod" do
     end
 
     it "raises a NotImplementedError when called" do
-      lambda { File.lchmod 0 }.should raise_error(NotImplementedError)
+      -> { File.lchmod 0 }.should raise_error(NotImplementedError)
     end
   end
 end

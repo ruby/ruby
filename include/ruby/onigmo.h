@@ -39,7 +39,7 @@ extern "C" {
 
 #define ONIGMO_VERSION_MAJOR   6
 #define ONIGMO_VERSION_MINOR   1
-#define ONIGMO_VERSION_TEENY   2
+#define ONIGMO_VERSION_TEENY   3
 
 #ifndef ONIG_EXTERN
 # ifdef RUBY_EXTERN
@@ -434,7 +434,7 @@ int onigenc_str_bytelen_null(OnigEncoding enc, const OnigUChar* p);
 /* PART: regular expression */
 
 /* config parameters */
-#define ONIG_NREGION                          10
+#define ONIG_NREGION                          4
 #define ONIG_MAX_CAPTURE_GROUP_NUM         32767
 #define ONIG_MAX_BACKREF_NUM                1000
 #define ONIG_MAX_REPEAT_NUM               100000
@@ -701,6 +701,7 @@ ONIG_EXTERN const OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIG_IS_CAPTURE_HISTORY_GROUP(r, i) \
   ((i) <= ONIG_MAX_CAPTURE_HISTORY_GROUP && (r)->list && (r)->list[i])
 
+#ifdef USE_CAPTURE_HISTORY
 typedef struct OnigCaptureTreeNodeStruct {
   int group;   /* group number */
   OnigPosition beg;
@@ -709,6 +710,7 @@ typedef struct OnigCaptureTreeNodeStruct {
   int num_childs;
   struct OnigCaptureTreeNodeStruct** childs;
 } OnigCaptureTreeNode;
+#endif
 
 /* match result region type */
 struct re_registers {
@@ -716,8 +718,10 @@ struct re_registers {
   int  num_regs;
   OnigPosition* beg;
   OnigPosition* end;
+#ifdef USE_CAPTURE_HISTORY
   /* extended */
   OnigCaptureTreeNode* history_root;  /* capture history tree root */
+#endif
 };
 
 /* capture tree traverse */
@@ -866,8 +870,10 @@ ONIG_EXTERN
 int onig_number_of_captures(const OnigRegexType *reg);
 ONIG_EXTERN
 int onig_number_of_capture_histories(const OnigRegexType *reg);
+#ifdef USE_CAPTURE_HISTORY
 ONIG_EXTERN
 OnigCaptureTreeNode* onig_get_capture_tree(OnigRegion* region);
+#endif
 ONIG_EXTERN
 int onig_capture_tree_traverse(OnigRegion* region, int at, int(*callback_func)(int,OnigPosition,OnigPosition,int,int,void*), void* arg);
 ONIG_EXTERN

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "BasicObject" do
   it "raises NoMethodError for nonexistent methods after #method_missing is removed" do
@@ -8,7 +8,7 @@ describe "BasicObject" do
   end
 
   it "raises NameError when referencing built-in constants" do
-    lambda { class BasicObjectSpecs::BOSubclass; Kernel; end }.should raise_error(NameError)
+    -> { class BasicObjectSpecs::BOSubclass; Kernel; end }.should raise_error(NameError)
   end
 
   it "does not define built-in constants (according to const_defined?)" do
@@ -19,8 +19,12 @@ describe "BasicObject" do
     BasicObjectSpecs::BOSubclass.kernel_defined?.should be_nil
   end
 
+  it "is included in Object's list of constants" do
+    Object.constants(false).should include(:BasicObject)
+  end
+
   it "includes itself in its list of constants" do
-    BasicObject.constants.should include(:BasicObject)
+    BasicObject.constants(false).should include(:BasicObject)
   end
 end
 
@@ -81,7 +85,7 @@ describe "BasicObject subclass" do
 
   describe "BasicObject references" do
     it "can refer to BasicObject from within itself" do
-      lambda { BasicObject::BasicObject }.should_not raise_error
+      -> { BasicObject::BasicObject }.should_not raise_error
     end
   end
 end

@@ -13,12 +13,14 @@ module Fiddle
 
     def test_syscall_with_tainted_string
       f = Function.new(@libc['system'], [TYPE_VOIDP], TYPE_INT)
-      assert_raise(SecurityError) do
-        Thread.new {
-          $SAFE = 1
+      Thread.new {
+        $SAFE = 1
+        assert_raise(SecurityError) do
           f.call("uname -rs".dup.taint)
-        }.join
-      end
+        end
+      }.join
+    ensure
+      $SAFE = 0
     end
 
     def test_sinf

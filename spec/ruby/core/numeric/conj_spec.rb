@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/complex/numeric/conj', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/conj'
 
 describe "Numeric#conj" do
-  it_behaves_like(:numeric_conj, :conj)
+  it_behaves_like :numeric_conj, :conj
 end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
+
 require "uri"
-require "digest/sha1"
 
 module Bundler
   module Plugin
@@ -37,7 +37,7 @@ module Bundler
       #
       # @!attribute [rw] dependency_names
       #   @return [Array<String>] Names of dependencies that the source should
-      #     try to resolve. It is not necessary to use this list intenally. This
+      #     try to resolve. It is not necessary to use this list internally. This
       #     is present to be compatible with `Definition` and is used by
       #     rubygems source.
       module Source
@@ -271,7 +271,7 @@ module Bundler
         end
 
         def uri_hash
-          Digest::SHA1.hexdigest(uri)
+          SharedHelpers.digest(:SHA1).hexdigest(uri)
         end
 
         # Note: Do not override if you don't know what you are doing.
@@ -293,6 +293,13 @@ module Bundler
         def bundler_plugin_api_source?
           true
         end
+
+        # @private
+        # This API on source might not be stable, and for now we expect plugins
+        # to download all specs in `#specs`, so we implement the method for
+        # compatibility purposes and leave it undocumented (and don't support)
+        # overriding it)
+        def double_check_for(*); end
       end
     end
   end

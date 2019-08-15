@@ -1,9 +1,9 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "File.readlink" do
   # symlink/readlink are not supported on Windows
   platform_is_not :windows do
-    describe "File.readlink with absolute paths" do
+    describe "with absolute paths" do
       before :each do
         @file = tmp('file_readlink.txt')
         @link = tmp('file_readlink.lnk')
@@ -26,16 +26,35 @@ describe "File.readlink" do
 
       it "raises an Errno::ENOENT if there is no such file" do
         # TODO: missing_file
-        lambda { File.readlink("/this/surely/doesnt/exist") }.should raise_error(Errno::ENOENT)
+        -> { File.readlink("/this/surely/doesnt/exist") }.should raise_error(Errno::ENOENT)
       end
 
       it "raises an Errno::EINVAL if called with a normal file" do
         touch @file
-        lambda { File.readlink(@file) }.should raise_error(Errno::EINVAL)
+        -> { File.readlink(@file) }.should raise_error(Errno::EINVAL)
       end
     end
 
-    describe "File.readlink when changing the working directory" do
+    describe "with paths containing unicode characters" do
+      before :each do
+        @file = tmp('tàrget.txt')
+        @link = tmp('lïnk.lnk')
+        File.symlink(@file, @link)
+      end
+
+      after :each do
+        rm_r @file, @link
+      end
+
+      it "returns the name of the file referenced by the given link" do
+        touch @file
+        result = File.readlink(@link)
+        result.encoding.should equal Encoding.find('filesystem')
+        result.should == @file.dup.force_encoding(Encoding.find('filesystem'))
+      end
+    end
+
+    describe "when changing the working directory" do
       before :each do
         @cwd = Dir.pwd
         @tmpdir = tmp("/readlink")

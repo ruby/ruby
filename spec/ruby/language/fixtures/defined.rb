@@ -94,6 +94,11 @@ module DefinedSpecs
       defined? $defined_specs_global_variable_defined
     end
 
+    def global_variable_defined_as_nil
+      $defined_specs_global_variable_defined_as_nil = nil
+      defined? $defined_specs_global_variable_defined_as_nil
+    end
+
     def class_variable_undefined
       defined? @@class_variable_undefined
     end

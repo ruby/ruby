@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "Socket::BasicSocket#getpeername" do
 
@@ -19,8 +19,7 @@ describe "Socket::BasicSocket#getpeername" do
     @client.getpeername.should == server_sockaddr
   end
 
-  # Catch general exceptions to prevent NotImplementedError
-  it "raises an error if socket's not connected" do
-    lambda { @server.getpeername }.should raise_error(Exception)
+  it 'raises Errno::ENOTCONN for a disconnected socket' do
+    -> { @server.getpeername }.should raise_error(Errno::ENOTCONN)
   end
 end

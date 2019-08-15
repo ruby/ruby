@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 # TODO: Fix these
 describe "File.basename" do
@@ -105,10 +105,10 @@ describe "File.basename" do
   end
 
   it "raises a TypeError if the arguments are not String types" do
-    lambda { File.basename(nil)          }.should raise_error(TypeError)
-    lambda { File.basename(1)            }.should raise_error(TypeError)
-    lambda { File.basename("bar.txt", 1) }.should raise_error(TypeError)
-    lambda { File.basename(true)         }.should raise_error(TypeError)
+    -> { File.basename(nil)          }.should raise_error(TypeError)
+    -> { File.basename(1)            }.should raise_error(TypeError)
+    -> { File.basename("bar.txt", 1) }.should raise_error(TypeError)
+    -> { File.basename(true)         }.should raise_error(TypeError)
   end
 
   it "accepts an object that has a #to_path method" do
@@ -116,7 +116,7 @@ describe "File.basename" do
   end
 
   it "raises an ArgumentError if passed more than two arguments" do
-    lambda { File.basename('bar.txt', '.txt', '.txt') }.should raise_error(ArgumentError)
+    -> { File.basename('bar.txt', '.txt', '.txt') }.should raise_error(ArgumentError)
   end
 
   # specific to MS Windows
@@ -153,18 +153,16 @@ describe "File.basename" do
     end
   end
 
-  with_feature :encoding do
 
-    it "returns the extension for a multibyte filename" do
-      File.basename('/path/Офис.m4a').should == "Офис.m4a"
-    end
-
-    it "returns the basename with the same encoding as the original" do
-      basename = File.basename('C:/Users/Scuby Pagrubý'.encode(Encoding::Windows_1250))
-      basename.should == 'Scuby Pagrubý'.encode(Encoding::Windows_1250)
-      basename.encoding.should == Encoding::Windows_1250
-    end
-
+  it "returns the extension for a multibyte filename" do
+    File.basename('/path/Офис.m4a').should == "Офис.m4a"
   end
+
+  it "returns the basename with the same encoding as the original" do
+    basename = File.basename('C:/Users/Scuby Pagrubý'.encode(Encoding::Windows_1250))
+    basename.should == 'Scuby Pagrubý'.encode(Encoding::Windows_1250)
+    basename.encoding.should == Encoding::Windows_1250
+  end
+
 
 end

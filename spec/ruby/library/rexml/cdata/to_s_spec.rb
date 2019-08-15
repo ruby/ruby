@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../shared/to_s', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'shared/to_s'
 require 'rexml/document'
 
 describe "REXML::CData#to_s" do

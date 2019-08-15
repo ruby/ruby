@@ -1,17 +1,16 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle update" do
   let(:config) {}
 
   before do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem 'rack', "< 1.0"
       gem 'thin'
     G
 
-    bundle! "config #{config}" if config
+    bundle! "config set #{config}" if config
 
     bundle! :install
   end
@@ -48,12 +47,12 @@ RSpec.describe "bundle update" do
   context "when listed gem is updated" do
     before do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack'
         gem 'thin'
       G
 
-      bundle! :update
+      bundle! :update, :all => true
     end
 
     it_behaves_like "a post-install message outputter"
@@ -63,12 +62,12 @@ RSpec.describe "bundle update" do
   context "when dependency triggers update" do
     before do
       gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem 'rack-obama'
         gem 'thin'
       G
 
-      bundle! :update
+      bundle! :update, :all => true
     end
 
     it_behaves_like "a post-install message outputter"

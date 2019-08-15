@@ -31,11 +31,11 @@ describe :file_unlink, shared: true do
   end
 
   it "raises a TypeError if not passed a String type" do
-    lambda { File.send(@method, 1) }.should raise_error(TypeError)
+    -> { File.send(@method, 1) }.should raise_error(TypeError)
   end
 
   it "raises an Errno::ENOENT when the given file doesn't exist" do
-    lambda { File.send(@method, 'bogus') }.should raise_error(Errno::ENOENT)
+    -> { File.send(@method, 'bogus') }.should raise_error(Errno::ENOENT)
   end
 
   it "coerces a given parameter into a string if possible" do
@@ -48,16 +48,14 @@ describe :file_unlink, shared: true do
     File.send(@method, mock_to_path(@file1)).should == 1
   end
 
-  ruby_version_is "2.3" do
-    platform_is :windows do
-      it "allows deleting an open file with File::SHARE_DELETE" do
-        path = tmp("share_delete.txt")
-        File.open(path, mode: File::CREAT | File::WRONLY | File::BINARY | File::SHARE_DELETE) do |f|
-          File.exist?(path).should be_true
-          File.send(@method, path)
-        end
-        File.exist?(path).should be_false
+  platform_is :windows do
+    it "allows deleting an open file with File::SHARE_DELETE" do
+      path = tmp("share_delete.txt")
+      File.open(path, mode: File::CREAT | File::WRONLY | File::BINARY | File::SHARE_DELETE) do |f|
+        File.exist?(path).should be_true
+        File.send(@method, path)
       end
+      File.exist?(path).should be_false
     end
   end
 end

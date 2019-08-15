@@ -1,9 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Time#round" do
   before do
     @time = Time.utc(2010, 3, 30, 5, 43, "25.123456789".to_r)
-    @subclass = Class.new(Time).now
   end
 
   it "defaults to rounding to 0 places" do
@@ -19,7 +18,10 @@ describe "Time#round" do
   end
 
   it "returns an instance of Time, even if #round is called on a subclass" do
-    @subclass.round.should be_an_instance_of(Time)
+    subclass = Class.new(Time)
+    instance = subclass.at(0)
+    instance.class.should equal subclass
+    instance.round.should be_an_instance_of(Time)
   end
 
   it "copies own timezone to the returning value" do

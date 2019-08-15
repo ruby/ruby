@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe Bundler::RubygemsIntegration do
-  it "uses the same chdir lock as rubygems", :rubygems => "2.1" do
+  it "uses the same chdir lock as rubygems" do
     expect(Bundler.rubygems.ext_lock).to eq(Gem::Ext::Builder::CHDIR_MONITOR)
   end
 
@@ -16,20 +15,9 @@ RSpec.describe Bundler::RubygemsIntegration do
     end
     subject { Bundler.rubygems.validate(spec) }
 
-    it "skips overly-strict gemspec validation", :rubygems => "< 1.7" do
-      expect(spec).to_not receive(:validate)
-      subject
-    end
-
-    it "validates with packaging mode disabled", :rubygems => "1.7" do
+    it "validates with packaging mode disabled" do
       expect(spec).to receive(:validate).with(false)
       subject
-    end
-
-    it "should set a summary to avoid an overly-strict error", :rubygems => "~> 1.7.0" do
-      spec.summary = nil
-      expect { subject }.not_to raise_error
-      expect(spec.summary).to eq("")
     end
 
     context "with an invalid spec" do
@@ -38,8 +26,7 @@ RSpec.describe Bundler::RubygemsIntegration do
           and_raise(Gem::InvalidSpecificationException.new("TODO is not an author"))
       end
 
-      it "should raise a Gem::InvalidSpecificationException and produce a helpful warning message",
-        :rubygems => "1.7" do
+      it "should raise a Gem::InvalidSpecificationException and produce a helpful warning message" do
         expect { subject }.to raise_error(Gem::InvalidSpecificationException,
           "The gemspec at #{__FILE__} is not valid. "\
           "Please fix this gemspec.\nThe validation error was 'TODO is not an author'\n")
@@ -54,7 +41,7 @@ RSpec.describe Bundler::RubygemsIntegration do
     end
   end
 
-  describe "#download_gem", :rubygems => ">= 2.0" do
+  describe "#download_gem" do
     let(:bundler_retry) { double(Bundler::Retry) }
     let(:retry) { double("Bundler::Retry") }
     let(:uri) {  URI.parse("https://foo.bar") }
@@ -67,7 +54,7 @@ RSpec.describe Bundler::RubygemsIntegration do
     end
     let(:fetcher) { double("gem_remote_fetcher") }
 
-    it "succesfully downloads gem with retries" do
+    it "successfully downloads gem with retries" do
       expect(Bundler.rubygems).to receive(:gem_remote_fetcher).and_return(fetcher)
       expect(fetcher).to receive(:headers=).with("X-Gemfile-Source" => "https://foo.bar")
       expect(Bundler::Retry).to receive(:new).with("download gem from #{uri}/").
@@ -79,7 +66,7 @@ RSpec.describe Bundler::RubygemsIntegration do
     end
   end
 
-  describe "#fetch_all_remote_specs", :rubygems => ">= 2.0" do
+  describe "#fetch_all_remote_specs" do
     let(:uri) { URI("https://example.com") }
     let(:fetcher) { double("gem_remote_fetcher") }
     let(:specs_response) { Marshal.dump(["specs"]) }
@@ -95,7 +82,7 @@ RSpec.describe Bundler::RubygemsIntegration do
         expect(fetcher).to receive(:fetch_path).with(uri + "specs.4.8.gz").and_return(specs_response)
         expect(fetcher).to receive(:fetch_path).with(uri + "prerelease_specs.4.8.gz").and_return(prerelease_specs_response)
         result = Bundler.rubygems.fetch_all_remote_specs(remote_with_mirror)
-        expect(result).to eq(%w(specs prerelease_specs))
+        expect(result).to eq(%w[specs prerelease_specs])
       end
     end
 
@@ -108,7 +95,7 @@ RSpec.describe Bundler::RubygemsIntegration do
         expect(fetcher).to receive(:fetch_path).with(uri + "specs.4.8.gz").and_return(specs_response)
         expect(fetcher).to receive(:fetch_path).with(uri + "prerelease_specs.4.8.gz").and_return(prerelease_specs_response)
         result = Bundler.rubygems.fetch_all_remote_specs(remote_no_mirror)
-        expect(result).to eq(%w(specs prerelease_specs))
+        expect(result).to eq(%w[specs prerelease_specs])
       end
     end
   end

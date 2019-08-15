@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "IO#readbyte" do
   before :each do
@@ -17,10 +17,8 @@ describe "IO#readbyte" do
 
   it "raises EOFError on EOF" do
     @io.seek(999999)
-    lambda do
+    -> do
       @io.readbyte
     end.should raise_error EOFError
   end
-
-  it "needs to be reviewed for spec completeness"
 end

@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'rexml/document'
 
 describe "REXML::Document#new" do
@@ -27,7 +27,7 @@ describe "REXML::Document#new" do
   end
 
   it "raises an error if source is not a Document, String or IO" do
-    lambda {REXML::Document.new(3)}.should raise_error(RuntimeError)
+    -> {REXML::Document.new(3)}.should raise_error(RuntimeError)
   end
 
   it "does not perform XML validation" do

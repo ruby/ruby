@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'rexml/document'
 
 describe "REXML::Attribute#xpath" do
@@ -14,7 +14,6 @@ describe "REXML::Attribute#xpath" do
   end
 
   it "raises an error if attribute has no parent" do
-    lambda { @attr.xpath }.should raise_error(Exception)
+    -> { @attr.xpath }.should raise_error(Exception)
   end
 end
-

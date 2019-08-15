@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Kernel#trace_var" do
   before :each do
@@ -47,7 +47,7 @@ describe "Kernel#trace_var" do
   end
 
   it "raises ArgumentError if no block or proc is provided" do
-    lambda do
+    -> do
       trace_var :$Kernel_trace_var_global
     end.should raise_error(ArgumentError)
   end

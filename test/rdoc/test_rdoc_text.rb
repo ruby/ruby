@@ -1,6 +1,7 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 
-require 'rdoc/test_case'
+require 'minitest_helper'
+require 'timeout'
 
 class TestRDocText < RDoc::TestCase
 
@@ -12,6 +13,7 @@ class TestRDocText < RDoc::TestCase
     @options = RDoc::Options.new
 
     @top_level = @store.add_file 'file.rb'
+    @language = nil
   end
 
   def test_self_encode_fallback
@@ -61,7 +63,7 @@ class TestRDocText < RDoc::TestCase
 
   def test_expand_tabs_encoding
     inn = "hello\ns\tdave"
-    inn.force_encoding Encoding::BINARY
+    inn = RDoc::Encoding.change_encoding inn, Encoding::BINARY
 
     out = expand_tabs inn
 
@@ -95,7 +97,7 @@ The comments associated with
   The comments associated with
     TEXT
 
-    text.force_encoding Encoding::US_ASCII
+    text = RDoc::Encoding.change_encoding text, Encoding::US_ASCII
 
     expected = <<-EXPECTED
 
@@ -136,6 +138,8 @@ we don't worry too much.
 The comments associated with
     EXPECTED
 
+    @language = :ruby
+
     assert_equal expected, normalize_comment(text)
   end
 
@@ -154,6 +158,8 @@ we don't worry too much.
 The comments associated with
     EXPECTED
 
+    @language = :c
+
     assert_equal expected, normalize_comment(text)
   end
 
@@ -171,6 +177,8 @@ we don't worry too much.
 
 The comments associated with
     EXPECTED
+
+    @language = :c
 
     assert_equal expected, normalize_comment(text)
   end
@@ -199,6 +207,8 @@ The comments associated with
   end
 
   def test_parse_empty_newline
+    @language = :ruby
+
     assert_equal RDoc::Markup::Document.new, parse("#\n")
   end
 
@@ -258,8 +268,7 @@ paragraph will be cut off some point after the one-hundredth character.
     TEXT
 
     expected = <<-EXPECTED
-<p>This is one-hundred characters or more of text in a single paragraph.  This
-paragraph will be cut off …
+<p>This is one-hundred characters or more of text in a single paragraph.  This paragraph will be cut off …
     EXPECTED
 
     assert_equal expected, snippet(text)
@@ -303,7 +312,7 @@ paragraph will be cut off …
 # The comments associated with
     TEXT
 
-    text.force_encoding Encoding::CP852
+    text = RDoc::Encoding.change_encoding text, Encoding::CP852
 
     expected = <<-EXPECTED
 
@@ -332,7 +341,7 @@ paragraph will be cut off …
     assert_equal Encoding::UTF_8, ''.encoding, 'Encoding sanity check'
 
     text = " \n"
-    text.force_encoding Encoding::US_ASCII
+    text = RDoc::Encoding.change_encoding text, Encoding::US_ASCII
 
     stripped = strip_newlines text
 
@@ -377,6 +386,32 @@ paragraph will be cut off …
     assert_equal expected, strip_stars(text)
   end
 
+  def test_strip_stars_document_method_special
+    text = <<-TEXT
+/*
+ * Document-method: Zlib::GzipFile#mtime=
+ * Document-method: []
+ * Document-method: `
+ * Document-method: |
+ * Document-method: &
+ * Document-method: <=>
+ * Document-method: =~
+ * Document-method: +
+ * Document-method: -
+ * Document-method: +@
+ *
+ * A comment
+ */
+    TEXT
+
+    expected = <<-EXPECTED
+
+   A comment
+    EXPECTED
+
+    assert_equal expected, strip_stars(text)
+  end
+
   def test_strip_stars_encoding
     text = <<-TEXT
 /*
@@ -386,7 +421,7 @@ paragraph will be cut off …
  */
     TEXT
 
-    text.force_encoding Encoding::CP852
+    text = RDoc::Encoding.change_encoding text, Encoding::CP852
 
     expected = <<-EXPECTED
 
@@ -410,7 +445,7 @@ paragraph will be cut off …
  */
     TEXT
 
-    text.force_encoding Encoding::BINARY
+    text = RDoc::Encoding.change_encoding text, Encoding::BINARY
 
     expected = <<-EXPECTED
 
@@ -522,7 +557,7 @@ The comments associated with
   end
 
   def test_to_html_tt_tag_mismatch
-    _, err = verbose_capture_io do
+    _, err = verbose_capture_output do
       assert_equal '<tt>hi', to_html('<tt>hi')
     end
 

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Array.allocate" do
   it "returns an instance of Array" do
@@ -14,6 +14,6 @@ describe "Array.allocate" do
   end
 
   it "does not accept any arguments" do
-    lambda { Array.allocate(1) }.should raise_error(ArgumentError)
+    -> { Array.allocate(1) }.should raise_error(ArgumentError)
   end
 end

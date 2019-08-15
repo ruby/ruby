@@ -149,7 +149,7 @@ void ossl_X509_REQ_get0_signature(const X509_REQ *, const ASN1_BIT_STRING **, co
 static inline _type *EVP_PKEY_get0_##_type(EVP_PKEY *pkey) { \
 	return pkey->pkey._name; }
 #define IMPL_KEY_ACCESSOR2(_type, _group, a1, a2, _fail_cond) \
-static inline void _type##_get0_##_group(_type *obj, const BIGNUM **a1, const BIGNUM **a2) { \
+static inline void _type##_get0_##_group(const _type *obj, const BIGNUM **a1, const BIGNUM **a2) { \
 	if (a1) *a1 = obj->a1; \
 	if (a2) *a2 = obj->a2; } \
 static inline int _type##_set0_##_group(_type *obj, BIGNUM *a1, BIGNUM *a2) { \
@@ -158,7 +158,7 @@ static inline int _type##_set0_##_group(_type *obj, BIGNUM *a1, BIGNUM *a2) { \
 	BN_clear_free(obj->a2); obj->a2 = a2; \
 	return 1; }
 #define IMPL_KEY_ACCESSOR3(_type, _group, a1, a2, a3, _fail_cond) \
-static inline void _type##_get0_##_group(_type *obj, const BIGNUM **a1, const BIGNUM **a2, const BIGNUM **a3) { \
+static inline void _type##_get0_##_group(const _type *obj, const BIGNUM **a1, const BIGNUM **a2, const BIGNUM **a3) { \
 	if (a1) *a1 = obj->a1; \
 	if (a2) *a2 = obj->a2; \
 	if (a3) *a3 = obj->a3; } \
@@ -185,7 +185,7 @@ IMPL_KEY_ACCESSOR3(DSA, pqg, p, q, g, (p == obj->p || q == obj->q || g == obj->g
 #if !defined(OPENSSL_NO_DH)
 IMPL_PKEY_GETTER(DH, dh)
 IMPL_KEY_ACCESSOR2(DH, key, pub_key, priv_key, (pub_key == obj->pub_key || (obj->priv_key && priv_key == obj->priv_key)))
-IMPL_KEY_ACCESSOR3(DH, pqg, p, q, g, (p == obj->p || obj->q && q == obj->q || g == obj->g))
+IMPL_KEY_ACCESSOR3(DH, pqg, p, q, g, (p == obj->p || (obj->q && q == obj->q) || g == obj->g))
 static inline ENGINE *DH_get0_engine(DH *dh) { return dh->engine; }
 #endif
 
@@ -209,6 +209,10 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
 #  define X509_get0_notAfter(x) X509_get_notAfter(x)
 #  define X509_CRL_get0_lastUpdate(x) X509_CRL_get_lastUpdate(x)
 #  define X509_CRL_get0_nextUpdate(x) X509_CRL_get_nextUpdate(x)
+#  define X509_set1_notBefore(x, t) X509_set_notBefore(x, t)
+#  define X509_set1_notAfter(x, t) X509_set_notAfter(x, t)
+#  define X509_CRL_set1_lastUpdate(x, t) X509_CRL_set_lastUpdate(x, t)
+#  define X509_CRL_set1_nextUpdate(x, t) X509_CRL_set_nextUpdate(x, t)
 #endif
 
 #if !defined(HAVE_SSL_SESSION_GET_PROTOCOL_VERSION)

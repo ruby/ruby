@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "Regexps with back-references" do
   it "saves match data in the $~ pseudo-global variable" do
@@ -7,7 +7,7 @@ describe "Regexps with back-references" do
     $~.to_a.should == ["ll"]
   end
 
-  it "saves captures in numbered $[1-9] variables" do
+  it "saves captures in numbered $[1-N] variables" do
     "1234567890" =~ /(1)(2)(3)(4)(5)(6)(7)(8)(9)(0)/
     $~.to_a.should == ["1234567890", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
     $1.should == "1"
@@ -19,6 +19,7 @@ describe "Regexps with back-references" do
     $7.should == "7"
     $8.should == "8"
     $9.should == "9"
+    $10.should == "0"
   end
 
   it "will not clobber capture variables across threads" do
@@ -44,5 +45,9 @@ describe "Regexps with back-references" do
 
   it "resets nested \<n> backreference before match of outer subexpression" do
     /(a\1?){2}/.match("aaaa").to_a.should == ["aa", "a"]
+  end
+
+  it "can match an optional quote, followed by content, followed by a matching quote, as the whole string" do
+    /^("|)(.*)\1$/.match('x').to_a.should == ["x", "", "x"]
   end
 end

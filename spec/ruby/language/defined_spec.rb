@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/defined', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/defined'
 
 describe "The defined? keyword for literals" do
   it "returns 'self' for self" do
@@ -30,12 +30,12 @@ describe "The defined? keyword for literals" do
     end
 
     it "returns nil if one element is not defined" do
-      ret = defined?([NonExistantConstant, Array])
+      ret = defined?([NonExistentConstant, Array])
       ret.should == nil
     end
 
     it "returns nil if all elements are not defined" do
-      ret = defined?([NonExistantConstant, AnotherNonExistantConstant])
+      ret = defined?([NonExistentConstant, AnotherNonExistentConstant])
       ret.should == nil
     end
 
@@ -505,6 +505,10 @@ describe "The defined? keyword for variables" do
     DefinedSpecs::Basic.new.global_variable_read.should be_nil
   end
 
+  it "returns 'global-variable' for a global variable that has been assigned nil" do
+    DefinedSpecs::Basic.new.global_variable_defined_as_nil.should == "global-variable"
+  end
+
   # MRI appears to special case defined? for $! and $~ in that it returns
   # 'global-variable' even when they are not set (or they are always "set"
   # but the value may be nil). In other words, 'defined?($~)' will return
@@ -543,16 +547,12 @@ describe "The defined? keyword for variables" do
       defined?($+).should be_nil
     end
 
-    it "returns nil for $1-$9" do
+    it "returns nil for any last match global" do
       defined?($1).should be_nil
-      defined?($2).should be_nil
-      defined?($3).should be_nil
       defined?($4).should be_nil
-      defined?($5).should be_nil
-      defined?($6).should be_nil
       defined?($7).should be_nil
-      defined?($8).should be_nil
-      defined?($9).should be_nil
+      defined?($10).should be_nil
+      defined?($200).should be_nil
     end
   end
 
@@ -587,13 +587,10 @@ describe "The defined? keyword for variables" do
     end
 
     it "returns nil for non-captures" do
-      defined?($3).should be_nil
       defined?($4).should be_nil
-      defined?($5).should be_nil
-      defined?($6).should be_nil
       defined?($7).should be_nil
-      defined?($8).should be_nil
-      defined?($9).should be_nil
+      defined?($10).should be_nil
+      defined?($200).should be_nil
     end
   end
 
@@ -622,16 +619,12 @@ describe "The defined? keyword for variables" do
       defined?($+).should be_nil
     end
 
-    it "returns nil for $1-$9" do
+    it "returns nil for any last match global" do
       defined?($1).should be_nil
-      defined?($2).should be_nil
-      defined?($3).should be_nil
       defined?($4).should be_nil
-      defined?($5).should be_nil
-      defined?($6).should be_nil
       defined?($7).should be_nil
-      defined?($8).should be_nil
-      defined?($9).should be_nil
+      defined?($10).should be_nil
+      defined?($200).should be_nil
     end
   end
 
@@ -666,13 +659,10 @@ describe "The defined? keyword for variables" do
     end
 
     it "returns nil for non-captures" do
-      defined?($3).should be_nil
       defined?($4).should be_nil
-      defined?($5).should be_nil
-      defined?($6).should be_nil
       defined?($7).should be_nil
-      defined?($8).should be_nil
-      defined?($9).should be_nil
+      defined?($10).should be_nil
+      defined?($200).should be_nil
     end
   end
   it "returns 'global-variable' for a global variable that has been assigned" do
@@ -725,7 +715,7 @@ describe "The defined? keyword for a top-level constant" do
     defined?(::DefinedSpecs).should == "constant"
   end
 
-  it "retuns nil if the constant is not defined" do
+  it "returns nil if the constant is not defined" do
     defined?(::DefinedSpecsUndefined).should be_nil
   end
 
@@ -750,7 +740,7 @@ describe "The defined? keyword for a scoped constant" do
   end
 
   it "returns nil when an undefined constant is scoped to a defined constant" do
-    defined?(DefinedSpecs::Child::B).should be_nil
+    defined?(DefinedSpecs::Child::Undefined).should be_nil
   end
 
   it "returns nil when a constant is scoped to an undefined constant" do
@@ -766,8 +756,16 @@ describe "The defined? keyword for a scoped constant" do
     defined?(DefinedSpecs::String).should be_nil
   end
 
-  it "returns 'constant' when a constant is defined on top-level but not on the class" do
-    defined?(DefinedSpecs::Basic::String).should == "constant"
+  ruby_version_is ""..."2.5" do
+    it "returns 'constant' when a constant is defined on top-level but not on the class" do
+      defined?(DefinedSpecs::Basic::String).should == 'constant'
+    end
+  end
+
+  ruby_version_is "2.5" do
+    it "returns nil when a constant is defined on top-level but not on the class" do
+      defined?(DefinedSpecs::Basic::String).should be_nil
+    end
   end
 
   it "returns 'constant' if the scoped-scoped constant is defined" do
@@ -785,7 +783,7 @@ describe "The defined? keyword for a top-level scoped constant" do
   end
 
   it "returns nil when an undefined constant is scoped to a defined constant" do
-    defined?(::DefinedSpecs::Child::B).should be_nil
+    defined?(::DefinedSpecs::Child::Undefined).should be_nil
   end
 
   it "returns nil when the undefined constant is scoped to an undefined constant" do

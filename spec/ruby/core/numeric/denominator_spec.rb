@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Numeric#denominator" do
   # The Numeric child classes override this method, so their behaviour is

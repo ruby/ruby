@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/index', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/index'
 
 describe "Array#find_index" do
   it_behaves_like :array_index, :find_index

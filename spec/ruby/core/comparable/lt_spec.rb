@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Comparable#<" do
   it "calls #<=> on self with other and returns true if #<=> returns any Integer less than 0" do
@@ -38,6 +38,6 @@ describe "Comparable#<" do
     b = ComparableSpecs::Weird.new(20)
 
     a.should_receive(:<=>).any_number_of_times.and_return(nil)
-    lambda { (a < b) }.should raise_error(ArgumentError)
+    -> { (a < b) }.should raise_error(ArgumentError)
   end
 end

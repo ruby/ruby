@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "UNIXSocket#peeraddr" do
 
@@ -16,12 +16,14 @@ describe "UNIXSocket#peeraddr" do
       SocketSpecs.rm_socket @path
     end
 
-    it "returns the address familly and path of the server end of the connection" do
+    it "returns the address family and path of the server end of the connection" do
       @client.peeraddr.should == ["AF_UNIX", @path]
     end
 
     it "raises an error in server sockets" do
-      lambda { @server.peeraddr }.should raise_error
+      -> {
+        @server.peeraddr
+      }.should raise_error(Errno::ENOTCONN)
     end
   end
 

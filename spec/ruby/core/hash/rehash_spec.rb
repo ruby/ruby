@@ -1,22 +1,31 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Hash#rehash" do
-  it "reorganizes the hash by recomputing all key hash codes" do
-    k1 = [1]
-    k2 = [2]
-    h = {}
-    h[k1] = 0
-    h[k2] = 1
+  it "reorganizes the Hash by recomputing all key hash codes" do
+    k1 = Object.new
+    k2 = Object.new
+    def k1.hash; 0; end
+    def k2.hash; 1; end
 
-    k1 << 2
+    h = {}
+    h[k1] = :v1
+    h[k2] = :v2
+
+    def k1.hash; 1; end
+
+    # The key should no longer be found as the #hash changed.
+    # Hash values 0 and 1 should not conflict, even with 1-bit stored hash.
     h.key?(k1).should == false
+
     h.keys.include?(k1).should == true
 
     h.rehash.should equal(h)
     h.key?(k1).should == true
-    h[k1].should == 0
+    h[k1].should == :v1
+  end
 
+  it "calls #hash for each key" do
     k1 = mock('k1')
     k2 = mock('k2')
     v1 = mock('v1')
@@ -35,8 +44,23 @@ describe "Hash#rehash" do
     h[k2].should == v2
   end
 
-  it "raises a RuntimeError if called on a frozen instance" do
-    lambda { HashSpecs.frozen_hash.rehash  }.should raise_error(RuntimeError)
-    lambda { HashSpecs.empty_frozen_hash.rehash }.should raise_error(RuntimeError)
+  it "removes duplicate keys" do
+    a = [1,2]
+    b = [1]
+
+    h = {}
+    h[a] = true
+    h[b] = true
+    b << 2
+    h.size.should == 2
+    h.keys.should == [a, b]
+    h.rehash
+    h.size.should == 1
+    h.keys.should == [a]
+  end
+
+  it "raises a #{frozen_error_class} if called on a frozen instance" do
+    -> { HashSpecs.frozen_hash.rehash  }.should raise_error(frozen_error_class)
+    -> { HashSpecs.empty_frozen_hash.rehash }.should raise_error(frozen_error_class)
   end
 end

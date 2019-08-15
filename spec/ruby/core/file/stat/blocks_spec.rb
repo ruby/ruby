@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe "File::Stat#blocks" do
   before :each do
@@ -11,10 +11,10 @@ describe "File::Stat#blocks" do
   end
 
   platform_is_not :windows do
-    it "returns the blocks of a File::Stat object" do
+    it "returns a non-negative integer" do
       st = File.stat(@file)
       st.blocks.is_a?(Integer).should == true
-      st.blocks.should > 0
+      st.blocks.should >= 0
     end
   end
 

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 $DEBUG_RDOC = nil
 
 # :main: README.rdoc
@@ -62,10 +62,7 @@ module RDoc
 
   class Error < RuntimeError; end
 
-  ##
-  # RDoc version you are using
-
-  VERSION = '6.0.0.beta3'
+  require 'rdoc/version'
 
   ##
   # Method visibilities
@@ -125,8 +122,6 @@ module RDoc
 
   autoload :RDoc,           'rdoc/rdoc'
 
-  autoload :TestCase,       'rdoc/test_case'
-
   autoload :CrossReference, 'rdoc/cross_reference'
   autoload :ERBIO,          'rdoc/erbio'
   autoload :ERBPartial,     'rdoc/erb_partial'
@@ -148,12 +143,11 @@ module RDoc
 
   autoload :KNOWN_CLASSES,  'rdoc/known_classes'
 
-  autoload :RipperStateLex, 'rdoc/parser/ripper_state_lex'
   autoload :TokenStream,    'rdoc/token_stream'
 
   autoload :Comment,        'rdoc/comment'
 
-  autoload :I18n,           'rdoc/i18n'
+  require 'rdoc/i18n'
 
   # code objects
   #

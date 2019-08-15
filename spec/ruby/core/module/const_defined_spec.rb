@@ -1,8 +1,8 @@
 # encoding: utf-8
 
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/constants', __FILE__)
-require File.expand_path('../fixtures/constant_unicode', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/constants'
+require_relative 'fixtures/constant_unicode'
 
 describe "Module#const_defined?" do
   it "returns true if the given Symbol names a constant defined in the receiver" do
@@ -12,12 +12,12 @@ describe "Module#const_defined?" do
     ConstantSpecs::ContainerA.const_defined?(:ChildA).should == true
   end
 
-  it "returns true if the constant is defined in the reciever's superclass" do
+  it "returns true if the constant is defined in the receiver's superclass" do
     # CS_CONST4 is defined in the superclass of ChildA
     ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST4).should be_true
   end
 
-  it "returns true if the constant is defined in a mixed-in module of the reciever" do
+  it "returns true if the constant is defined in a mixed-in module of the receiver" do
     # CS_CONST10 is defined in a module included by ChildA
     ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST10).should be_true
   end
@@ -105,19 +105,19 @@ describe "Module#const_defined?" do
   end
 
   it "raises a NameError if the name does not start with a capital letter" do
-    lambda { ConstantSpecs.const_defined? "name" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_defined? "name" }.should raise_error(NameError)
   end
 
   it "raises a NameError if the name starts with '_'" do
-    lambda { ConstantSpecs.const_defined? "__CONSTX__" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_defined? "__CONSTX__" }.should raise_error(NameError)
   end
 
   it "raises a NameError if the name starts with '@'" do
-    lambda { ConstantSpecs.const_defined? "@Name" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_defined? "@Name" }.should raise_error(NameError)
   end
 
   it "raises a NameError if the name starts with '!'" do
-    lambda { ConstantSpecs.const_defined? "!Name" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_defined? "!Name" }.should raise_error(NameError)
   end
 
   it "returns true or false for the nested name" do
@@ -130,15 +130,15 @@ describe "Module#const_defined?" do
 
   it "raises a NameError if the name contains non-alphabetic characters except '_'" do
     ConstantSpecs.const_defined?("CS_CONSTX").should == false
-    lambda { ConstantSpecs.const_defined? "Name=" }.should raise_error(NameError)
-    lambda { ConstantSpecs.const_defined? "Name?" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_defined? "Name=" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_defined? "Name?" }.should raise_error(NameError)
   end
 
   it "raises a TypeError if conversion to a String by calling #to_str fails" do
     name = mock('123')
-    lambda { ConstantSpecs.const_defined? name }.should raise_error(TypeError)
+    -> { ConstantSpecs.const_defined? name }.should raise_error(TypeError)
 
     name.should_receive(:to_str).and_return(123)
-    lambda { ConstantSpecs.const_defined? name }.should raise_error(TypeError)
+    -> { ConstantSpecs.const_defined? name }.should raise_error(TypeError)
   end
 end

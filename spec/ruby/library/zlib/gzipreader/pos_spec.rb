@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'stringio'
 require 'zlib'
 
@@ -24,4 +24,3 @@ describe "GzipReader#pos" do
   end
 
 end
-

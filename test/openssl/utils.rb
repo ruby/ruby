@@ -42,10 +42,8 @@ module OpenSSL::TestUtils
 
     def pkey(name)
       OpenSSL::PKey.read(read_file("pkey", name))
-    end
-
-    def pkey_dh(name)
-      # DH parameters can be read by OpenSSL::PKey.read atm
+    rescue OpenSSL::PKey::PKeyError
+      # TODO: DH parameters can be read by OpenSSL::PKey.read atm
       OpenSSL::PKey::DH.new(read_file("pkey", name))
     end
 
@@ -67,7 +65,7 @@ module OpenSSL::TestUtils
     cert.serial = serial
     cert.subject = dn
     cert.issuer = issuer.subject
-    cert.public_key = key.public_key
+    cert.public_key = key
     now = Time.now
     cert.not_before = not_before || now - 3600
     cert.not_after = not_after || now + 3600
@@ -157,9 +155,9 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
 
   def setup
     super
-    @ca_key  = Fixtures.pkey("rsa2048")
-    @svr_key = Fixtures.pkey("rsa1024")
-    @cli_key = Fixtures.pkey("rsa2048")
+    @ca_key  = Fixtures.pkey("rsa-1")
+    @svr_key = Fixtures.pkey("rsa-2")
+    @cli_key = Fixtures.pkey("rsa-3")
     @ca  = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
     @svr = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
     @cli = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
@@ -200,7 +198,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
       ctx.cert_store = store
       ctx.cert = @svr_cert
       ctx.key = @svr_key
-      ctx.tmp_dh_callback = proc { Fixtures.pkey_dh("dh1024") }
+      ctx.tmp_dh_callback = proc { Fixtures.pkey("dh-1") }
       ctx.verify_mode = verify_mode
       ctx_proc.call(ctx) if ctx_proc
 
@@ -214,6 +212,10 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
       threads = []
       begin
         server_thread = Thread.new do
+          if Thread.method_defined?(:report_on_exception=) # Ruby >= 2.4
+            Thread.current.report_on_exception = false
+          end
+
           begin
             loop do
               begin
@@ -227,6 +229,10 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
               end
 
               th = Thread.new do
+                if Thread.method_defined?(:report_on_exception=)
+                  Thread.current.report_on_exception = false
+                end
+
                 begin
                   server_proc.call(ctx, ssl)
                 ensure
@@ -242,6 +248,10 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
         end
 
         client_thread = Thread.new do
+          if Thread.method_defined?(:report_on_exception=)
+            Thread.current.report_on_exception = false
+          end
+
           begin
             block.call(port)
           ensure
@@ -256,8 +266,9 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
         pend = nil
         threads.each { |th|
           begin
-            th.join(10) or
-              th.raise(RuntimeError, "[start_server] thread did not exit in 10 secs")
+            timeout = EnvUtil.apply_timeout_scale(30)
+            th.join(timeout) or
+              th.raise(RuntimeError, "[start_server] thread did not exit in #{ timeout } secs")
           rescue (defined?(MiniTest::Skip) ? MiniTest::Skip : Test::Unit::PendedError)
             # MiniTest::Skip is for the Ruby tree
             pend = $!

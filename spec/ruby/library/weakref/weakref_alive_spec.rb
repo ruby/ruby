@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "WeakRef#weakref_alive?" do
   it "returns true if the object is reachable" do
@@ -8,7 +8,7 @@ describe "WeakRef#weakref_alive?" do
     ref.weakref_alive?.should == true
   end
 
-  it "returns a falsey value if the object is no longer reachable" do
+  it "returns a falsy value if the object is no longer reachable" do
     ref = WeakRefSpec.make_dead_weakref
     [false, nil].should include(ref.weakref_alive?)
   end

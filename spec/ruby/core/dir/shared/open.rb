@@ -6,7 +6,7 @@ describe :dir_open, shared: true do
   end
 
   it "raises a SystemCallError if the directory does not exist" do
-    lambda do
+    -> do
       Dir.send @method, DirSpecs.nonexistent
     end.should raise_error(SystemCallError)
   end
@@ -21,20 +21,20 @@ describe :dir_open, shared: true do
 
   it "closes the Dir instance when the block exits if given a block" do
     closed_dir = Dir.send(@method, DirSpecs.mock_dir) { |dir| dir }
-    lambda { closed_dir.read }.should raise_error(IOError)
+    -> { closed_dir.read }.should raise_error(IOError)
   end
 
   it "closes the Dir instance when the block exits the block even due to an exception" do
     closed_dir = nil
 
-    lambda do
+    -> do
       Dir.send(@method, DirSpecs.mock_dir) do |dir|
         closed_dir = dir
-        raise
+        raise "dir specs"
       end
-    end.should raise_error
+    end.should raise_error(RuntimeError, "dir specs")
 
-    lambda { closed_dir.read }.should raise_error(IOError)
+    -> { closed_dir.read }.should raise_error(IOError)
   end
 
   it "calls #to_path on non-String arguments" do
@@ -59,5 +59,15 @@ describe :dir_open, shared: true do
   it "ignores the :encoding option if it is nil" do
     dir = Dir.send(@method, DirSpecs.mock_dir, encoding: nil) {|d| d }
     dir.should be_kind_of(Dir)
+  end
+
+  platform_is_not :windows do
+    it 'sets the close-on-exec flag for the directory file descriptor' do
+      Dir.send(@method, DirSpecs.mock_dir) do |dir|
+        io = IO.for_fd(dir.fileno)
+        io.autoclose = false
+        io.close_on_exec?.should == true
+      end
+    end
   end
 end

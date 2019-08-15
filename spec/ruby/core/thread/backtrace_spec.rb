@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Thread#backtrace" do
   it "returns the current backtrace of a thread" do
@@ -23,5 +23,13 @@ describe "Thread#backtrace" do
     t = Thread.new {}
     t.join
     t.backtrace.should == nil
+  end
+
+  it "returns an array (which may be empty) immediately after the thread is created" do
+    t = Thread.new { sleep }
+    backtrace = t.backtrace
+    t.kill
+    t.join
+    backtrace.should be_kind_of(Array)
   end
 end

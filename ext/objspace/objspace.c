@@ -12,9 +12,9 @@
 
 **********************************************************************/
 
+#include <ruby/io.h>
 #include "internal.h"
 #include <ruby/st.h>
-#include <ruby/io.h>
 #include <ruby/re.h>
 #include "node.h"
 #include "gc.h"
@@ -188,6 +188,7 @@ type2sym(enum ruby_value_type i)
 	CASE_TYPE(T_IMEMO);
 	CASE_TYPE(T_NODE);
 	CASE_TYPE(T_ICLASS);
+        CASE_TYPE(T_MOVED);
 	CASE_TYPE(T_ZOMBIE);
 #undef CASE_TYPE
       default: rb_bug("type2sym: unknown type (%d)", i);
@@ -357,7 +358,7 @@ static VALUE
 count_nodes(int argc, VALUE *argv, VALUE os)
 {
     size_t nodes[NODE_LAST+1];
-    size_t i;
+    enum node_type i;
     VALUE hash = setup_hash(argc, argv);
 
     for (i = 0; i <= NODE_LAST; i++) {
@@ -370,17 +371,21 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 	if (nodes[i] != 0) {
 	    VALUE node;
 	    switch (i) {
-#define COUNT_NODE(n) case n: node = ID2SYM(rb_intern(#n)); break;
+#define COUNT_NODE(n) case n: node = ID2SYM(rb_intern(#n)); goto set
 		COUNT_NODE(NODE_SCOPE);
 		COUNT_NODE(NODE_BLOCK);
 		COUNT_NODE(NODE_IF);
+		COUNT_NODE(NODE_UNLESS);
 		COUNT_NODE(NODE_CASE);
+		COUNT_NODE(NODE_CASE2);
+                COUNT_NODE(NODE_CASE3);
 		COUNT_NODE(NODE_WHEN);
-		COUNT_NODE(NODE_OPT_N);
+                COUNT_NODE(NODE_IN);
 		COUNT_NODE(NODE_WHILE);
 		COUNT_NODE(NODE_UNTIL);
 		COUNT_NODE(NODE_ITER);
 		COUNT_NODE(NODE_FOR);
+		COUNT_NODE(NODE_FOR_MASGN);
 		COUNT_NODE(NODE_BREAK);
 		COUNT_NODE(NODE_NEXT);
 		COUNT_NODE(NODE_REDO);
@@ -397,18 +402,18 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_DASGN_CURR);
 		COUNT_NODE(NODE_GASGN);
 		COUNT_NODE(NODE_IASGN);
-		COUNT_NODE(NODE_IASGN2);
 		COUNT_NODE(NODE_CDECL);
 		COUNT_NODE(NODE_CVASGN);
-		COUNT_NODE(NODE_CVDECL);
 		COUNT_NODE(NODE_OP_ASGN1);
 		COUNT_NODE(NODE_OP_ASGN2);
 		COUNT_NODE(NODE_OP_ASGN_AND);
 		COUNT_NODE(NODE_OP_ASGN_OR);
 		COUNT_NODE(NODE_OP_CDECL);
 		COUNT_NODE(NODE_CALL);
+		COUNT_NODE(NODE_OPCALL);
 		COUNT_NODE(NODE_FCALL);
 		COUNT_NODE(NODE_VCALL);
+		COUNT_NODE(NODE_QCALL);
 		COUNT_NODE(NODE_SUPER);
 		COUNT_NODE(NODE_ZSUPER);
 		COUNT_NODE(NODE_ARRAY);
@@ -435,7 +440,7 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_DXSTR);
 		COUNT_NODE(NODE_EVSTR);
 		COUNT_NODE(NODE_DREGX);
-		COUNT_NODE(NODE_DREGX_ONCE);
+		COUNT_NODE(NODE_ONCE);
 		COUNT_NODE(NODE_ARGS);
 		COUNT_NODE(NODE_ARGS_AUX);
 		COUNT_NODE(NODE_OPT_ARG);
@@ -444,8 +449,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_ARGSCAT);
 		COUNT_NODE(NODE_ARGSPUSH);
 		COUNT_NODE(NODE_SPLAT);
-		COUNT_NODE(NODE_TO_ARY);
-		COUNT_NODE(NODE_BLOCK_ARG);
 		COUNT_NODE(NODE_BLOCK_PASS);
 		COUNT_NODE(NODE_DEFN);
 		COUNT_NODE(NODE_DEFS);
@@ -468,15 +471,17 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_ERRINFO);
 		COUNT_NODE(NODE_DEFINED);
 		COUNT_NODE(NODE_POSTEXE);
-		COUNT_NODE(NODE_ALLOCA);
-		COUNT_NODE(NODE_BMETHOD);
 		COUNT_NODE(NODE_DSYM);
 		COUNT_NODE(NODE_ATTRASGN);
-		COUNT_NODE(NODE_PRELUDE);
 		COUNT_NODE(NODE_LAMBDA);
+                COUNT_NODE(NODE_METHREF);
+                COUNT_NODE(NODE_ARYPTN);
+                COUNT_NODE(NODE_HSHPTN);
 #undef COUNT_NODE
-	      default: node = INT2FIX(i);
+	      case NODE_LAST: break;
 	    }
+	    UNREACHABLE;
+	  set:
 	    rb_hash_aset(hash, node, SIZET2NUM(nodes[i]));
 	}
     }
@@ -555,7 +560,7 @@ count_tdata_objects(int argc, VALUE *argv, VALUE self)
     return hash;
 }
 
-static ID imemo_type_ids[imemo_mask+1];
+static ID imemo_type_ids[IMEMO_MASK+1];
 
 static int
 count_imemo_objects_i(void *vstart, void *vend, size_t stride, void *data)
@@ -618,7 +623,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
     VALUE hash = setup_hash(argc, argv);
 
     if (imemo_type_ids[0] == 0) {
-	imemo_type_ids[0] = rb_intern("imemo_none");
+        imemo_type_ids[0] = rb_intern("imemo_env");
 	imemo_type_ids[1] = rb_intern("imemo_cref");
 	imemo_type_ids[2] = rb_intern("imemo_svar");
 	imemo_type_ids[3] = rb_intern("imemo_throw_data");
@@ -626,6 +631,9 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
 	imemo_type_ids[5] = rb_intern("imemo_memo");
 	imemo_type_ids[6] = rb_intern("imemo_ment");
 	imemo_type_ids[7] = rb_intern("imemo_iseq");
+	imemo_type_ids[8] = rb_intern("imemo_tmpbuf");
+        imemo_type_ids[9] = rb_intern("imemo_ast");
+        imemo_type_ids[10] = rb_intern("imemo_parser_strterm");
     }
 
     rb_objspace_each_objects(count_imemo_objects_i, (void *)hash);
@@ -823,7 +831,7 @@ static int
 collect_values_of_values(VALUE category, VALUE category_objects, VALUE categories)
 {
     VALUE ary = rb_ary_new();
-    st_foreach(rb_hash_tbl(category_objects), collect_values, ary);
+    rb_hash_foreach(category_objects, collect_values, ary);
     rb_hash_aset(categories, category, ary);
     return ST_CONTINUE;
 }
@@ -935,6 +943,7 @@ void Init_objspace_dump(VALUE rb_mObjSpace);
 void
 Init_objspace(void)
 {
+#undef rb_intern
     VALUE rb_mObjSpace;
 #if 0
     rb_mObjSpace = rb_define_module("ObjectSpace"); /* let rdoc know */

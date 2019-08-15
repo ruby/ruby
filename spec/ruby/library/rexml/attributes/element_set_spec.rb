@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'rexml/document'
 
 describe "REXML::Attributes#[]=" do
@@ -23,4 +23,3 @@ describe "REXML::Attributes#[]=" do
     @e.attributes.length.should == 0
   end
 end
-

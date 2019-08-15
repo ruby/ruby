@@ -1,6 +1,6 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/class', __FILE__)
-require File.expand_path('../fixtures/metaclass', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/class'
+require_relative 'fixtures/metaclass'
 
 describe "self in a metaclass body (class << obj)" do
   it "is TrueClass for true" do
@@ -16,11 +16,11 @@ describe "self in a metaclass body (class << obj)" do
   end
 
   it "raises a TypeError for numbers" do
-    lambda { class << 1; self; end }.should raise_error(TypeError)
+    -> { class << 1; self; end }.should raise_error(TypeError)
   end
 
   it "raises a TypeError for symbols" do
-    lambda { class << :symbol; self; end }.should raise_error(TypeError)
+    -> { class << :symbol; self; end }.should raise_error(TypeError)
   end
 
   it "is a singleton Class instance" do
@@ -64,11 +64,11 @@ describe "A constant on a metaclass" do
     class << @object
       CONST
     end
-    lambda { CONST }.should raise_error(NameError)
+    -> { CONST }.should raise_error(NameError)
   end
 
   it "cannot be accessed via object::CONST" do
-    lambda do
+    -> do
       @object::CONST
     end.should raise_error(TypeError)
   end
@@ -79,7 +79,7 @@ describe "A constant on a metaclass" do
       CONST = 100
     end
 
-    lambda do
+    -> do
       @object::CONST
     end.should raise_error(NameError)
   end
@@ -96,7 +96,7 @@ describe "A constant on a metaclass" do
   it "is not preserved when the object is duped" do
     @object = @object.dup
 
-    lambda do
+    -> do
       class << @object; CONST; end
     end.should raise_error(NameError)
   end

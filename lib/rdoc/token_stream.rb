@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # A TokenStream is a list of tokens, gathered during the parse of some entity
 # (say a method). Entities populate these streams by being registered with the
@@ -14,6 +14,8 @@ module RDoc::TokenStream
   # with the given class names. Other token types are not wrapped in spans.
 
   def self.to_html token_stream
+    starting_title = false
+
     token_stream.map do |t|
       next unless t
 
@@ -23,12 +25,8 @@ module RDoc::TokenStream
               when :on_ivar    then 'ruby-ivar'
               when :on_cvar    then 'ruby-identifier'
               when :on_gvar    then 'ruby-identifier'
-              when '=' != t[:text] && :on_op then
-                if RDoc::RipperStateLex::EXPR_ARG == t[:state] then
-                                    'ruby-identifier'
-                else
-                                    'ruby-operator'
-                end
+              when '=' != t[:text] && :on_op
+                               then 'ruby-operator'
               when :on_tlambda then 'ruby-operator'
               when :on_ident   then 'ruby-identifier'
               when :on_label   then 'ruby-value'
@@ -53,6 +51,16 @@ module RDoc::TokenStream
       else
         text = t[:text]
       end
+
+      if :on_ident == t[:kind] && starting_title
+        starting_title = false
+        style = 'ruby-identifier ruby-title'
+      end
+
+      if :on_kw == t[:kind] and 'def' == t[:text]
+        starting_title = true
+      end
+
       text = CGI.escapeHTML text
 
       if style then
@@ -99,7 +107,7 @@ module RDoc::TokenStream
   # Returns a string representation of the token stream
 
   def tokens_to_s
-    token_stream.compact.map { |token| token.text }.join ''
+    token_stream.compact.map { |token| token[:text] }.join ''
   end
 
 end

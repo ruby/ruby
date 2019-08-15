@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'prime'
 
 describe "Prime.instance" do
@@ -12,10 +12,10 @@ describe "Prime.instance" do
   end
 
   it "does not complain anything" do
-    lambda { Prime.instance }.should_not complain
+    -> { Prime.instance }.should_not complain
   end
 
   it "raises a ArgumentError when is called with some arguments" do
-    lambda { Prime.instance(1) }.should raise_error(ArgumentError)
+    -> { Prime.instance(1) }.should raise_error(ArgumentError)
   end
 end

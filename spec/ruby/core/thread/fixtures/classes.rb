@@ -1,10 +1,3 @@
-unless defined? Channel
-  require 'thread'
-  class Channel < Queue
-    alias receive shift
-  end
-end
-
 module ThreadSpecs
 
   class SubThread < Thread
@@ -120,7 +113,10 @@ module ThreadSpecs
   end
 
   def self.status_of_thread_with_uncaught_exception
-    t = Thread.new { raise "error" }
+    t = Thread.new {
+      Thread.current.report_on_exception = false
+      raise "error"
+    }
     begin
       t.join
     rescue RuntimeError
@@ -159,6 +155,7 @@ module ThreadSpecs
 
   def self.dying_thread_ensures(kill_method_name=:kill)
     Thread.new do
+      Thread.current.report_on_exception = false
       begin
         Thread.current.send(kill_method_name)
       ensure
@@ -169,6 +166,7 @@ module ThreadSpecs
 
   def self.dying_thread_with_outer_ensure(kill_method_name=:kill)
     Thread.new do
+      Thread.current.report_on_exception = false
       begin
         begin
           Thread.current.send(kill_method_name)
@@ -183,7 +181,7 @@ module ThreadSpecs
 
   def self.join_dying_thread_with_outer_ensure(kill_method_name=:kill)
     t = dying_thread_with_outer_ensure(kill_method_name) { yield }
-    lambda { t.join }.should raise_error(RuntimeError, "In dying thread")
+    -> { t.join }.should raise_error(RuntimeError, "In dying thread")
     return t
   end
 

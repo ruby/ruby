@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Array#take" do
   it "returns the first specified number of elements" do
@@ -22,6 +22,6 @@ describe "Array#take" do
   end
 
   it "raises an ArgumentError when the argument is negative" do
-    lambda{ [1].take(-3) }.should raise_error(ArgumentError)
+    ->{ [1].take(-3) }.should raise_error(ArgumentError)
   end
 end

@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'rexml/document'
 
 describe "REXML::Node#parent?" do
@@ -18,4 +18,3 @@ describe "REXML::Node#parent?" do
     e.parent?.should == false
   end
 end
-

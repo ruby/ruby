@@ -1,7 +1,7 @@
 # -*- encoding: us-ascii -*-
 
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Enumerator::Lazy#drop" do
   before :each do
@@ -48,5 +48,11 @@ describe "Enumerator::Lazy#drop" do
         ScratchPad.recorded.should == [:before_yield]
       end
     end
+  end
+
+  it "works with an infinite enumerable" do
+    s = 0..Float::INFINITY
+    s.lazy.drop(100).first(100).should ==
+      s.first(200).drop(100)
   end
 end

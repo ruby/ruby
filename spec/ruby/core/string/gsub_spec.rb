@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe :string_gsub_named_capture, shared: true do
   it "replaces \\k named backreferences with the regexp's corresponding capture" do
@@ -214,9 +214,9 @@ describe "String#gsub with pattern and replacement" do
   end
 
   it "raises a TypeError when pattern can't be converted to a string" do
-    lambda { "hello".gsub([], "x")            }.should raise_error(TypeError)
-    lambda { "hello".gsub(Object.new, "x")    }.should raise_error(TypeError)
-    lambda { "hello".gsub(nil, "x")           }.should raise_error(TypeError)
+    -> { "hello".gsub([], "x")            }.should raise_error(TypeError)
+    -> { "hello".gsub(Object.new, "x")    }.should raise_error(TypeError)
+    -> { "hello".gsub(nil, "x")           }.should raise_error(TypeError)
   end
 
   it "tries to convert replacement to a string using to_str" do
@@ -227,9 +227,9 @@ describe "String#gsub with pattern and replacement" do
   end
 
   it "raises a TypeError when replacement can't be converted to a string" do
-    lambda { "hello".gsub(/[aeiou]/, [])            }.should raise_error(TypeError)
-    lambda { "hello".gsub(/[aeiou]/, Object.new)    }.should raise_error(TypeError)
-    lambda { "hello".gsub(/[aeiou]/, nil)           }.should raise_error(TypeError)
+    -> { "hello".gsub(/[aeiou]/, [])            }.should raise_error(TypeError)
+    -> { "hello".gsub(/[aeiou]/, Object.new)    }.should raise_error(TypeError)
+    -> { "hello".gsub(/[aeiou]/, nil)           }.should raise_error(TypeError)
   end
 
   it "returns subclass instances when called on a subclass" do
@@ -298,7 +298,7 @@ describe "String#gsub with pattern and Hash" do
 
   it "uses the hash's value set from default_proc for missing keys" do
     hsh = {}
-    hsh.default_proc = lambda { |k,v| 'lamb' }
+    hsh.default_proc = -> k, v { 'lamb' }
     "food!".gsub(/./, hsh).should == "lamblamblamblamblamb"
   end
 
@@ -387,7 +387,7 @@ describe "String#gsub! with pattern and Hash" do
 
   it "uses the hash's value set from default_proc for missing keys" do
     hsh = {}
-    hsh.default_proc = lambda { |k,v| 'lamb' }
+    hsh.default_proc = -> k, v { 'lamb' }
     "food!".gsub!(/./, hsh).should == "lamblamblamblamblamb"
   end
 
@@ -528,16 +528,16 @@ describe "String#gsub with pattern and block" do
     s  = "hello"
     s2 = "#{195.chr}#{192.chr}#{195.chr}"
 
-    s.gsub(/l/) { |bar| 195.chr }.encoding.should == Encoding::ASCII_8BIT
-    s2.gsub("#{192.chr}") { |bar| "hello" }.encoding.should == Encoding::ASCII_8BIT
+    s.gsub(/l/) { |bar| 195.chr }.encoding.should == Encoding::BINARY
+    s2.gsub("#{192.chr}") { |bar| "hello" }.encoding.should == Encoding::BINARY
   end
 
   it "raises an Encoding::CompatibilityError if the encodings are not compatible" do
     s = "hllëllo"
     s2 = "hellö"
 
-    lambda { s.gsub(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should raise_error(Encoding::CompatibilityError)
-    lambda { s2.gsub(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should raise_error(Encoding::CompatibilityError)
+    -> { s.gsub(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should raise_error(Encoding::CompatibilityError)
+    -> { s2.gsub(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should raise_error(Encoding::CompatibilityError)
   end
 
   it "replaces the incompatible part properly even if the encodings are not compatible" do
@@ -549,7 +549,7 @@ describe "String#gsub with pattern and block" do
   not_supported_on :opal do
     it "raises an ArgumentError if encoding is not valid" do
       x92 = [0x92].pack('C').force_encoding('utf-8')
-      lambda { "a#{x92}b".gsub(/[^\x00-\x7f]/u, '') }.should raise_error(ArgumentError)
+      -> { "a#{x92}b".gsub(/[^\x00-\x7f]/u, '') }.should raise_error(ArgumentError)
     end
   end
 end
@@ -603,13 +603,13 @@ describe "String#gsub! with pattern and replacement" do
   end
 
   # See [ruby-core:23666]
-  it "raises a RuntimeError when self is frozen" do
+  it "raises a #{frozen_error_class} when self is frozen" do
     s = "hello"
     s.freeze
 
-    lambda { s.gsub!(/ROAR/, "x")    }.should raise_error(RuntimeError)
-    lambda { s.gsub!(/e/, "e")       }.should raise_error(RuntimeError)
-    lambda { s.gsub!(/[aeiou]/, '*') }.should raise_error(RuntimeError)
+    -> { s.gsub!(/ROAR/, "x")    }.should raise_error(frozen_error_class)
+    -> { s.gsub!(/e/, "e")       }.should raise_error(frozen_error_class)
+    -> { s.gsub!(/[aeiou]/, '*') }.should raise_error(frozen_error_class)
   end
 end
 
@@ -640,29 +640,29 @@ describe "String#gsub! with pattern and block" do
   end
 
   # See [ruby-core:23663]
-  it "raises a RuntimeError when self is frozen" do
+  it "raises a #{frozen_error_class} when self is frozen" do
     s = "hello"
     s.freeze
 
-    lambda { s.gsub!(/ROAR/)    { "x" } }.should raise_error(RuntimeError)
-    lambda { s.gsub!(/e/)       { "e" } }.should raise_error(RuntimeError)
-    lambda { s.gsub!(/[aeiou]/) { '*' } }.should raise_error(RuntimeError)
+    -> { s.gsub!(/ROAR/)    { "x" } }.should raise_error(frozen_error_class)
+    -> { s.gsub!(/e/)       { "e" } }.should raise_error(frozen_error_class)
+    -> { s.gsub!(/[aeiou]/) { '*' } }.should raise_error(frozen_error_class)
   end
 
   it "uses the compatible encoding if they are compatible" do
     s  = "hello"
     s2 = "#{195.chr}#{192.chr}#{195.chr}"
 
-    s.gsub!(/l/) { |bar| 195.chr }.encoding.should == Encoding::ASCII_8BIT
-    s2.gsub!("#{192.chr}") { |bar| "hello" }.encoding.should == Encoding::ASCII_8BIT
+    s.gsub!(/l/) { |bar| 195.chr }.encoding.should == Encoding::BINARY
+    s2.gsub!("#{192.chr}") { |bar| "hello" }.encoding.should == Encoding::BINARY
   end
 
   it "raises an Encoding::CompatibilityError if the encodings are not compatible" do
     s = "hllëllo"
     s2 = "hellö"
 
-    lambda { s.gsub!(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should raise_error(Encoding::CompatibilityError)
-    lambda { s2.gsub!(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should raise_error(Encoding::CompatibilityError)
+    -> { s.gsub!(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should raise_error(Encoding::CompatibilityError)
+    -> { s2.gsub!(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should raise_error(Encoding::CompatibilityError)
   end
 
   it "replaces the incompatible part properly even if the encodings are not compatible" do
@@ -674,7 +674,7 @@ describe "String#gsub! with pattern and block" do
   not_supported_on :opal do
     it "raises an ArgumentError if encoding is not valid" do
       x92 = [0x92].pack('C').force_encoding('utf-8')
-      lambda { "a#{x92}b".gsub!(/[^\x00-\x7f]/u, '') }.should raise_error(ArgumentError)
+      -> { "a#{x92}b".gsub!(/[^\x00-\x7f]/u, '') }.should raise_error(ArgumentError)
     end
   end
 end

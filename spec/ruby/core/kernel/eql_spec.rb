@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/kernel/equal', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../shared/kernel/equal'
 
 describe "Kernel#eql?" do
   it "is a public instance method" do
@@ -8,4 +8,3 @@ describe "Kernel#eql?" do
 
   it_behaves_like :object_equal, :eql?
 end
-

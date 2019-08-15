@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Enumerable#grep" do
   before :each do
@@ -27,6 +27,28 @@ describe "Enumerable#grep" do
   it "can use $~ in the block when used with a Regexp" do
     ary = ["aba", "aba"]
     ary.grep(/a(b)a/) { $1 }.should == ["b", "b"]
+  end
+
+  it "sets $~ in the block" do
+    "z" =~ /z/ # Reset $~
+    ["abc", "def"].grep(/b/) { |e|
+      e.should == "abc"
+      $&.should == "b"
+    }
+
+    # Set by the failed match of "def"
+    $~.should == nil
+  end
+
+  it "sets $~ to the last match when given no block" do
+    "z" =~ /z/ # Reset $~
+    ["abc", "def"].grep(/b/).should == ["abc"]
+
+    # Set by the failed match of "def"
+    $~.should == nil
+
+    ["abc", "def"].grep(/e/)
+    $&.should == "e"
   end
 
   describe "with a block" do

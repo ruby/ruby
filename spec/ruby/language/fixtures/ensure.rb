@@ -8,7 +8,7 @@ module EnsureSpec
 
     def raise_in_method_with_ensure
       @executed << :method
-      raise "An Exception"
+      raise EnsureSpec::Error
     ensure
       @executed << :ensure
     end
@@ -40,6 +40,50 @@ module EnsureSpec
     ensure
       return :ensure
     end
+
+    def explicit_return_in_rescue_and_explicit_return_in_ensure
+      raise
+    rescue
+      return 2
+    ensure
+      return "returned in ensure"
+    end
+
+    def explicit_return_in_rescue_and_implicit_return_in_ensure
+      raise
+    rescue
+      return "returned in rescue"
+    ensure
+      3
+    end
+
+    def raise_and_explicit_return_in_ensure
+      raise
+    ensure
+      return "returned in ensure"
+    end
+
+    def raise_in_rescue_and_explicit_return_in_ensure
+      raise
+    rescue
+      raise
+    ensure
+      return "returned in ensure"
+    end
+
+    def raise_in_rescue_and_raise_in_ensure
+      raise
+    rescue
+      raise "raised in rescue"
+    ensure
+      raise "raised in ensure"
+    end
+
+    def raise_in_method_and_raise_in_ensure
+      raise
+    ensure
+      raise "raised in ensure"
+    end
   end
 end
 
@@ -68,5 +112,10 @@ module EnsureSpec
         return :did_test
       end
     end
+  end
+end
+
+module EnsureSpec
+  class Error < RuntimeError
   end
 end

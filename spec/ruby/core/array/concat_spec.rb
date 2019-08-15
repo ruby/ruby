@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Array#concat" do
   it "returns the array itself" do
@@ -32,13 +32,13 @@ describe "Array#concat" do
     [].concat(obj).should == [5, 6, 7]
   end
 
-  it "raises a RuntimeError when Array is frozen and modification occurs" do
-    lambda { ArraySpecs.frozen_array.concat [1] }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} when Array is frozen and modification occurs" do
+    -> { ArraySpecs.frozen_array.concat [1] }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23666]
-  it "raises a RuntimeError when Array is frozen and no modification occurs" do
-    lambda { ArraySpecs.frozen_array.concat([]) }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} when Array is frozen and no modification occurs" do
+    -> { ArraySpecs.frozen_array.concat([]) }.should raise_error(frozen_error_class)
   end
 
   it "keeps tainted status" do
@@ -110,23 +110,21 @@ describe "Array#concat" do
     ary.concat([5, 6]).should == [4, 5, 6]
   end
 
-  ruby_version_is "2.4" do
-    it "takes multiple arguments" do
-      ary = [1, 2]
-      ary.concat [3, 4]
-      ary.should == [1, 2, 3, 4]
-    end
+  it "takes multiple arguments" do
+    ary = [1, 2]
+    ary.concat [3, 4]
+    ary.should == [1, 2, 3, 4]
+  end
 
-    it "concatenates the initial value when given arguments contain 2 self" do
-      ary = [1, 2]
-      ary.concat ary, ary
-      ary.should == [1, 2, 1, 2, 1, 2]
-    end
+  it "concatenates the initial value when given arguments contain 2 self" do
+    ary = [1, 2]
+    ary.concat ary, ary
+    ary.should == [1, 2, 1, 2, 1, 2]
+  end
 
-    it "returns self when given no arguments" do
-      ary = [1, 2]
-      ary.concat.should equal(ary)
-      ary.should == [1, 2]
-    end
+  it "returns self when given no arguments" do
+    ary = [1, 2]
+    ary.concat.should equal(ary)
+    ary.should == [1, 2]
   end
 end

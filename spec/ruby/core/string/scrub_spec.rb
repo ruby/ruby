@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path("../../../spec_helper", __FILE__)
+require_relative '../../spec_helper'
 
 describe "String#scrub with a default replacement" do
   it "returns self for valid strings" do
@@ -47,14 +47,14 @@ describe "String#scrub with a custom replacement" do
   it "raises ArgumentError for replacements with an invalid encoding" do
     x81 = [0x81].pack('C').force_encoding('utf-8')
     xE4 = [0xE4].pack('C').force_encoding('utf-8')
-    block = lambda { "foo#{x81}".scrub(xE4) }
+    block = -> { "foo#{x81}".scrub(xE4) }
 
     block.should raise_error(ArgumentError)
   end
 
   it "raises TypeError when a non String replacement is given" do
     x81 = [0x81].pack('C').force_encoding('utf-8')
-    block = lambda { "foo#{x81}".scrub(1) }
+    block = -> { "foo#{x81}".scrub(1) }
 
     block.should raise_error(TypeError)
   end

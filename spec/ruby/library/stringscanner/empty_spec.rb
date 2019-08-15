@@ -1,20 +1,18 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/eos.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/eos'
 require 'strscan'
 
 describe "StringScanner#empty?" do
-  it_behaves_like(:strscan_eos, :empty?)
+  it_behaves_like :strscan_eos, :empty?
 
   it "warns in verbose mode that the method is obsolete" do
     s = StringScanner.new("abc")
-    lambda {
-      $VERBOSE = true
+    -> {
       s.empty?
-    }.should complain(/empty?.*obsolete.*eos?/)
+    }.should complain(/empty?.*obsolete.*eos?/, verbose: true)
 
-    lambda {
-      $VERBOSE = false
+    -> {
       s.empty?
-    }.should_not complain
+    }.should_not complain(verbose: false)
   end
 end

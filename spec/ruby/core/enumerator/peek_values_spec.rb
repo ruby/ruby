@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Enumerator#peek_values" do
   before :each do
@@ -52,6 +52,6 @@ describe "Enumerator#peek_values" do
 
   it "raises StopIteration if called on a finished enumerator" do
     7.times { @e.next }
-    lambda { @e.peek_values }.should raise_error(StopIteration)
+    -> { @e.peek_values }.should raise_error(StopIteration)
   end
 end

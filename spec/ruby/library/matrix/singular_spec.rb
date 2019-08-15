@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'matrix'
 
 describe "Matrix#singular?" do
@@ -19,11 +19,11 @@ describe "Matrix#singular?" do
   end
 
   it "raises an error for rectangular matrices" do
-    lambda {
+    -> {
       Matrix[[1], [2], [3]].singular?
     }.should raise_error(Matrix::ErrDimensionMismatch)
 
-    lambda {
+    -> {
       Matrix.empty(3,0).singular?
     }.should raise_error(Matrix::ErrDimensionMismatch)
   end

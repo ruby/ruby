@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 describe "UDPSocket#write" do
   it "raises EMSGSIZE if msg is too long" do
@@ -10,7 +10,7 @@ describe "UDPSocket#write" do
       s2 = UDPSocket.new
       s2.connect(host, s1.addr[1])
 
-      lambda do
+      -> do
         s2.write('1' * 100_000)
       end.should raise_error(Errno::EMSGSIZE)
     ensure

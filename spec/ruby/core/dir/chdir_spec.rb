@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Dir.chdir" do
   before :all do
@@ -88,8 +88,8 @@ describe "Dir.chdir" do
   end
 
   it "raises an Errno::ENOENT if the directory does not exist" do
-    lambda { Dir.chdir DirSpecs.nonexistent }.should raise_error(Errno::ENOENT)
-    lambda { Dir.chdir(DirSpecs.nonexistent) { } }.should raise_error(Errno::ENOENT)
+    -> { Dir.chdir DirSpecs.nonexistent }.should raise_error(Errno::ENOENT)
+    -> { Dir.chdir(DirSpecs.nonexistent) { } }.should raise_error(Errno::ENOENT)
   end
 
   it "raises an Errno::ENOENT if the original directory no longer exists" do
@@ -100,7 +100,7 @@ describe "Dir.chdir" do
     Dir.mkdir dir1
     Dir.mkdir dir2
     begin
-      lambda {
+      -> {
         Dir.chdir dir1 do
           Dir.chdir(dir2) { Dir.unlink dir1 }
         end

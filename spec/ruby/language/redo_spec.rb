@@ -1,9 +1,9 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 describe "The redo statement" do
   it "restarts block execution if used within block" do
     a = []
-    lambda {
+    -> {
       a << 1
       redo if a.size < 2
       a << 2
@@ -58,7 +58,7 @@ describe "The redo statement" do
 
   describe "in a method" do
     it "is invalid and raises a SyntaxError" do
-      lambda {
+      -> {
         eval("def m; redo; end")
       }.should raise_error(SyntaxError)
     end

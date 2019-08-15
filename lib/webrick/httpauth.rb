@@ -9,11 +9,11 @@
 #
 # $IPR: httpauth.rb,v 1.14 2003/07/22 19:20:42 gotoyuzo Exp $
 
-require 'webrick/httpauth/basicauth'
-require 'webrick/httpauth/digestauth'
-require 'webrick/httpauth/htpasswd'
-require 'webrick/httpauth/htdigest'
-require 'webrick/httpauth/htgroup'
+require_relative 'httpauth/basicauth'
+require_relative 'httpauth/digestauth'
+require_relative 'httpauth/htpasswd'
+require_relative 'httpauth/htdigest'
+require_relative 'httpauth/htgroup'
 
 module WEBrick
 

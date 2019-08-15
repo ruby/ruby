@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require File.expand_path '../xref_test_case', __FILE__
 
 class TestRDocConstant < XrefTestCase
@@ -118,7 +118,7 @@ class TestRDocConstant < XrefTestCase
     assert_equal cm,             loaded.parent
     assert_equal section,        loaded.section
 
-    assert loaded.display?
+    assert                       loaded.display?
   end
 
   def test_marshal_load_version_0

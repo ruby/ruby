@@ -1,7 +1,7 @@
 # -*- encoding: us-ascii -*-
 
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Enumerator::Lazy#zip" do
   before :each do
@@ -44,7 +44,7 @@ describe "Enumerator::Lazy#zip" do
   end
 
   it "raises a TypeError if arguments contain non-list object" do
-    lambda { @yieldsmixed.zip [], Object.new, [] }.should raise_error(TypeError)
+    -> { @yieldsmixed.zip [], Object.new, [] }.should raise_error(TypeError)
   end
 
   describe "on a nested Lazy" do
@@ -70,5 +70,17 @@ describe "Enumerator::Lazy#zip" do
         ScratchPad.recorded.should == [:before_yield]
       end
     end
+  end
+
+  it "works with an infinite enumerable and an array" do
+    s = 0..Float::INFINITY
+    s.lazy.zip(0..1000).first(100).should ==
+      s.first(100).zip(0..100)
+  end
+
+  it "works with two infinite enumerables" do
+    s = 0..Float::INFINITY
+    s.lazy.zip(s).first(100).should ==
+      s.first(100).zip(s)
   end
 end

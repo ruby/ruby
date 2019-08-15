@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Enumerable#slice_when" do
   before :each do
@@ -39,7 +39,7 @@ describe "Enumerable#slice_when" do
 
   context "when not given a block" do
     it "raises an ArgumentError" do
-      lambda { @enum.slice_when }.should raise_error(ArgumentError)
+      -> { @enum.slice_when }.should raise_error(ArgumentError)
     end
   end
 

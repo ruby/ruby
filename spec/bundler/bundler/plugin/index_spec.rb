@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe Bundler::Plugin::Index do
   Index = Bundler::Plugin::Index
@@ -85,6 +84,17 @@ RSpec.describe Bundler::Plugin::Index do
     it "is persistent" do
       new_index = Index.new
       expect(new_index.hook_plugins("after-bar")).to eq([plugin_name])
+    end
+
+    it "only registers a gem once for an event" do
+      path = lib_path(plugin_name)
+      index.register_plugin(plugin_name,
+        path.to_s,
+        [path.join("lib").to_s],
+        commands,
+        sources,
+        hooks + hooks)
+      expect(index.hook_plugins("after-bar")).to eq([plugin_name])
     end
 
     context "that are not registered", :focused do
@@ -174,6 +184,14 @@ RSpec.describe Bundler::Plugin::Index do
       end
 
       include_examples "it cleans up"
+    end
+  end
+
+  describe "readonly disk without home" do
+    it "ignores being unable to create temp home dir" do
+      expect_any_instance_of(Bundler::Plugin::Index).to receive(:global_index_file).
+        and_raise(Bundler::GenericSystemCallError.new("foo", "bar"))
+      Bundler::Plugin::Index.new
     end
   end
 end

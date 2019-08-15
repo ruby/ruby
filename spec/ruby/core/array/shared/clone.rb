@@ -7,8 +7,8 @@ describe :array_clone, shared: true do
   it "produces a shallow copy where the references are directly copied" do
     a = [mock('1'), mock('2')]
     b = a.send @method
-    b.first.object_id.should == a.first.object_id
-    b.last.object_id.should == a.last.object_id
+    b.first.should equal a.first
+    b.last.should equal a.last
   end
 
   it "creates a new array containing all elements or the original" do

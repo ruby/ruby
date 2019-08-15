@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "StandardError" do
   it "is a superclass of ArgumentError" do
@@ -46,5 +46,11 @@ describe "StandardError" do
 
   it "is a superclass of ZeroDivisionError" do
     StandardError.should be_ancestor_of(ZeroDivisionError)
+  end
+
+  ruby_version_is '2.5' do
+    it "is a superclass of FrozenError" do
+      StandardError.should be_ancestor_of(FrozenError)
+    end
   end
 end

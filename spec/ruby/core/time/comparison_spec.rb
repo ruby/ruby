@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Time#<=>" do
   it "returns 1 if the first argument is a point in time after the second argument" do
@@ -43,6 +43,16 @@ describe "Time#<=>" do
 
   it "returns -1 if the first argument is a fraction of a microsecond before the second argument" do
     (Time.at(100, 0) <=> Time.at(100, Rational(1,1000))).should == -1
+  end
+
+  it "returns nil when compared to an Integer because Time does not respond to #coerce" do
+    time = Time.at(1)
+    time.respond_to?(:coerce).should == false
+    time.should_receive(:respond_to?).exactly(2).and_return(false)
+    -> {
+      (time <=> 2).should == nil
+      (2 <=> time).should == nil
+    }.should_not complain
   end
 
   describe "given a non-Time argument" do

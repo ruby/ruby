@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'rexml/document'
 
 describe "REXML::Text.read_with_substitution" do
@@ -7,7 +7,6 @@ describe "REXML::Text.read_with_substitution" do
   end
 
   it "accepts an regex for invalid expressions and raises an error if text matches" do
-    lambda {REXML::Text.read_with_substitution("this is illegal", /illegal/)}.should raise_error(Exception)
+    -> {REXML::Text.read_with_substitution("this is illegal", /illegal/)}.should raise_error(Exception)
   end
 end
-

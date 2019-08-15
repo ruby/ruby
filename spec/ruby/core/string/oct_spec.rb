@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 # Note: We can't completely spec this in terms of to_int() because hex()
 # allows the base to be changed by a base specifier in the string.

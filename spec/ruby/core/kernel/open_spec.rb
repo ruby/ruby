@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Kernel#open" do
 
@@ -33,19 +33,22 @@ describe "Kernel#open" do
       @io = open("|date")
       begin
         @io.should be_kind_of(IO)
+        @io.read
       ensure
         @io.close
       end
     end
 
     it "opens an io when called with a block" do
-      @output = open("|date") { |f| f.gets }
+      @output = open("|date") { |f| f.read }
       @output.should_not == ''
     end
 
     it "opens an io for writing" do
-      bytes = open("|cat", "w") { |io| io.write(".") }
-      bytes.should == 1
+      -> do
+        bytes = open("|cat", "w") { |io| io.write(".") }
+        bytes.should == 1
+      end.should output_to_fd(".")
     end
   end
 
@@ -61,13 +64,13 @@ describe "Kernel#open" do
     end
 
     it "opens an io when called with a block" do
-      @output = open("|date /t") { |f| f.gets }
+      @output = open("|date /t") { |f| f.read }
       @output.should_not == ''
     end
   end
 
   it "raises an ArgumentError if not passed one argument" do
-    lambda { open }.should raise_error(ArgumentError)
+    -> { open }.should raise_error(ArgumentError)
   end
 
   describe "when given an object that responds to to_open" do
@@ -126,9 +129,9 @@ describe "Kernel#open" do
 
   it "raises a TypeError if passed a non-String that does not respond to #to_open" do
     obj = mock('non-fileish')
-    lambda { open(obj) }.should raise_error(TypeError)
-    lambda { open(nil) }.should raise_error(TypeError)
-    lambda { open(7)   }.should raise_error(TypeError)
+    -> { open(obj) }.should raise_error(TypeError)
+    -> { open(nil) }.should raise_error(TypeError)
+    -> { open(7)   }.should raise_error(TypeError)
   end
 
   it "accepts nil for mode and permission" do

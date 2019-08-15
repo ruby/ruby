@@ -20,6 +20,18 @@ module IOSpecs
       "Here is line six.\n" ]
   end
 
+  def self.lines_without_newline_characters
+    [ "Voici la ligne une.",
+      "Qui \303\250 la linea due.",
+      "",
+      "",
+      "Aqu\303\255 est\303\241 la l\303\255nea tres.",
+      "Hier ist Zeile vier.",
+      "",
+      "Est\303\241 aqui a linha cinco.",
+      "Here is line six." ]
+  end
+
   def self.lines_limit
     [ "Voici la l",
       "igne une.\n",
@@ -106,10 +118,10 @@ module IOSpecs
 
   # Creates an IO instance for an existing fixture file. The
   # file should obviously not be deleted.
-  def self.io_fixture(name, options_or_mode="r:utf-8")
+  def self.io_fixture(name, mode = "r:utf-8")
     path = fixture __FILE__, name
     name = path if File.exist? path
-    new_io name, options_or_mode
+    new_io(name, mode)
   end
 
   # Returns a closed instance of IO that was opened to reference

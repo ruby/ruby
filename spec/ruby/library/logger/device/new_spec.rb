@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/common', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/common'
 
 describe "Logger::LogDevice#new" do
   before :each do
@@ -40,7 +40,7 @@ describe "Logger::LogDevice#new" do
   end
 
   it "receives options via a hash as second argument" do
-    lambda { Logger::LogDevice.new(STDERR,
+    -> { Logger::LogDevice.new(STDERR,
                                    { shift_age: 8, shift_size: 10
                                    })}.should_not raise_error
   end

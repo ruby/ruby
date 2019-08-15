@@ -428,6 +428,7 @@ class TestPack < Test::Unit::TestCase
     assert_operator(4, :<=, [1].pack("L!").bytesize)
   end
 
+  require 'rbconfig'
   def test_pack_unpack_qQ
     s1 = [578437695752307201, -506097522914230529].pack("q*")
     s2 = [578437695752307201, 17940646550795321087].pack("Q*")
@@ -437,6 +438,7 @@ class TestPack < Test::Unit::TestCase
 
     # Note: q! and Q! should not work on platform which has no long long type.
     # Is there a such platform now?
+    # @shyouhei: Yes. gcc -ansi is one of such platform.
     s1 = [578437695752307201, -506097522914230529].pack("q!*")
     s2 = [578437695752307201, 17940646550795321087].pack("Q!*")
     assert_equal([578437695752307201, -506097522914230529], s2.unpack("q!*"))
@@ -446,7 +448,7 @@ class TestPack < Test::Unit::TestCase
     assert_equal(8, [1].pack("Q").bytesize)
     assert_operator(8, :<=, [1].pack("q!").bytesize)
     assert_operator(8, :<=, [1].pack("Q!").bytesize)
-  end
+  end if RbConfig::CONFIG['HAVE_LONG_LONG']
 
   def test_pack_unpack_jJ
     # Note: we assume that the size of intptr_t and uintptr_t equals to the size
@@ -548,6 +550,9 @@ class TestPack < Test::Unit::TestCase
     assert_equal([1, 2], "\x01\x00\x00\x02".unpack("C@3C"))
     assert_equal([nil], "\x00".unpack("@1C")) # is it OK?
     assert_raise(ArgumentError) { "\x00".unpack("@2C") }
+
+    pos = RbConfig::LIMITS["UINTPTR_MAX"] - 99 # -100
+    assert_raise(RangeError) {"0123456789".unpack("@#{pos}C10")}
   end
 
   def test_pack_unpack_percent
@@ -797,6 +802,13 @@ EXPECTED
     assert_warning(/\A(.* in '\u{3042}'\n)+\z/) {
       [].pack("\u{3042}")
     }
+
+    assert_warning(/\A.* in '.*U'\Z/) {
+      assert_equal "\000", [0].pack("\0U")
+    }
+    assert_warning(/\A.* in '.*U'\Z/) {
+      "\000".unpack("\0U")
+    }
   end
 
   def test_pack_resize
@@ -821,7 +833,7 @@ EXPECTED
   def test_pack_with_buffer
     buf = String.new(capacity: 100)
 
-    assert_raise_with_message(RuntimeError, /frozen/) {
+    assert_raise_with_message(FrozenError, /frozen/) {
       [0xDEAD_BEEF].pack('N', buffer: 'foo'.freeze)
     }
     assert_raise_with_message(TypeError, /must be String/) {
@@ -856,5 +868,21 @@ EXPECTED
     assert_equal 0x3042, "\u{3042 3044 3046}".unpack1("U*")
     assert_equal "hogefuga", "aG9nZWZ1Z2E=".unpack1("m")
     assert_equal "01000001", "A".unpack1("B*")
+  end
+
+  def test_pack_infection
+    tainted_array_string = ["123456"]
+    tainted_array_string.first.taint
+    ['a', 'A', 'Z', 'B', 'b', 'H', 'h', 'u', 'M', 'm', 'P', 'p'].each do |f|
+      assert_predicate(tainted_array_string.pack(f), :tainted?)
+    end
+  end
+
+  def test_unpack_infection
+    tainted_string = "123456"
+    tainted_string.taint
+    ['a', 'A', 'Z', 'B', 'b', 'H', 'h', 'u', 'M', 'm'].each do |f|
+      assert_predicate(tainted_string.unpack(f).first, :tainted?)
+    end
   end
 end

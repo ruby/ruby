@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'date'
 
 describe "Date#gregorian_leap?" do
@@ -13,4 +13,3 @@ describe "Date#gregorian_leap?" do
     Date.gregorian_leap?(2002).should be_false
   end
 end
-

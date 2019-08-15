@@ -8,11 +8,11 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if argument is given" do
-      lambda { @m_file_name.offset_vtbl(1) }.should raise_error ArgumentError
+      -> { @m_file_name.offset_vtbl(1) }.should raise_error ArgumentError
     end
 
     it "returns expected value for Scripting Runtime's 'name' method" do
-      pointer_size = RUBY_PLATFORM =~ /\bx64\b/ ? 64 : 1.size * 8
+      pointer_size = PlatformGuard::POINTER_SIZE
       @m_file_name.offset_vtbl.should == pointer_size
     end
 

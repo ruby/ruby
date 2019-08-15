@@ -1,5 +1,5 @@
 # -*- encoding: binary -*-
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Time#_dump" do
   before :each do
@@ -53,4 +53,3 @@ describe "Time#_dump" do
     t.send(:_dump).should == "\364\001\031\200\313\000\020\004"
   end
 end
-

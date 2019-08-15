@@ -8,7 +8,7 @@
 # See URI for general documentation
 #
 
-require 'uri/generic'
+require_relative 'generic'
 
 module URI
 
@@ -21,10 +21,10 @@ module URI
   # update. See <URL:http://support.microsoft.com/kb/834489>.
   #
   class HTTP < Generic
-    # A Default port of 80 for URI::HTTP
+    # A Default port of 80 for URI::HTTP.
     DEFAULT_PORT = 80
 
-    # An Array of the available components for URI::HTTP
+    # An Array of the available components for URI::HTTP.
     COMPONENT = %i[
       scheme
       userinfo host port
@@ -36,22 +36,22 @@ module URI
     #
     # == Description
     #
-    # Create a new URI::HTTP object from components, with syntax checking.
+    # Creates a new URI::HTTP object from components, with syntax checking.
     #
-    # The components accepted are userinfo, host, port, path, query and
+    # The components accepted are userinfo, host, port, path, query, and
     # fragment.
     #
     # The components should be provided either as an Array, or as a Hash
     # with keys formed by preceding the component names with a colon.
     #
-    # If an Array is used, the components must be passed in the order
-    # [userinfo, host, port, path, query, fragment].
+    # If an Array is used, the components must be passed in the
+    # order <code>[userinfo, host, port, path, query, fragment]</code>.
     #
     # Example:
     #
-    #     newuri = URI::HTTP.build(host: 'www.example.com', path: '/foo/bar')
+    #     uri = URI::HTTP.build(host: 'www.example.com', path: '/foo/bar')
     #
-    #     newuri = URI::HTTP.build([nil, "www.example.com", nil, "/path",
+    #     uri = URI::HTTP.build([nil, "www.example.com", nil, "/path",
     #       "query", 'fragment'])
     #
     # Currently, if passed userinfo components this method generates
@@ -72,8 +72,8 @@ module URI
     #
     # Example:
     #
-    #     newuri = URI::HTTP.build(path: '/foo/bar', query: 'test=true')
-    #     newuri.request_uri # => "/foo/bar?test=true"
+    #     uri = URI::HTTP.build(path: '/foo/bar', query: 'test=true')
+    #     uri.request_uri #  => "/foo/bar?test=true"
     #
     def request_uri
       return unless @path

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 # FIXME: These methods exist only when the -n or -p option is passed to
 # ruby, but we currently don't have a way of specifying that.
@@ -10,7 +10,7 @@ ruby_version_is ""..."1.9" do
     end
 
     it "raises a TypeError if $_ is not a String" do
-      lambda {
+      -> {
         $_ = 123
         gsub(/./, "!")
       }.should raise_error(TypeError)

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Hash#clone" do
   it "copies instance variable but not the objects they refer to" do
@@ -7,7 +7,6 @@ describe "Hash#clone" do
     clone = hash.clone
 
     clone.should == hash
-    clone.object_id.should_not == hash.object_id
+    clone.should_not equal hash
   end
 end
-

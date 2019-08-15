@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 describe "The throw keyword" do
   it "abandons processing" do
@@ -45,7 +45,7 @@ describe "The throw keyword" do
   end
 
   it "does not convert strings to a symbol" do
-    lambda { catch(:exit) { throw "exit" } }.should raise_error(ArgumentError)
+    -> { catch(:exit) { throw "exit" } }.should raise_error(ArgumentError)
   end
 
   it "unwinds stack from within a method" do
@@ -59,22 +59,23 @@ describe "The throw keyword" do
   end
 
   it "unwinds stack from within a lambda" do
-    c = lambda { throw :foo, :msg }
+    c = -> { throw :foo, :msg }
     catch(:foo) { c.call }.should == :msg
   end
 
   it "raises an ArgumentError if outside of scope of a matching catch" do
-    lambda { throw :test, 5 }.should raise_error(ArgumentError)
-    lambda { catch(:different) { throw :test, 5 } }.should raise_error(ArgumentError)
+    -> { throw :test, 5 }.should raise_error(ArgumentError)
+    -> { catch(:different) { throw :test, 5 } }.should raise_error(ArgumentError)
   end
 
-  it "raises an ArgumentError if used to exit a thread" do
-    lambda {
-      catch(:what) do
-        Thread.new {
+  it "raises an UncaughtThrowError if used to exit a thread" do
+    catch(:what) do
+      t = Thread.new {
+        -> {
           throw :what
-        }.join
-      end
-    }.should raise_error(ArgumentError)
+        }.should raise_error(UncaughtThrowError)
+      }
+      t.join
+    end
   end
 end

@@ -1,23 +1,24 @@
 # frozen_string_literal: true
+
 require "pathname"
+require "rbconfig"
 
 module Spec
   module Path
     def root
-      @root ||=
-        Pathname.new(for_ruby_core? ? "../../../.." : "../../..").expand_path(__FILE__)
+      @root ||= Pathname.new(ruby_core? ? "../../../.." : "../../..").expand_path(__FILE__)
     end
 
     def gemspec
-      @gemspec ||= root.join(for_ruby_core? ? "lib/bundler.gemspec" : "bundler.gemspec")
+      @gemspec ||= root.join(ruby_core? ? "lib/bundler/bundler.gemspec" : "bundler.gemspec")
     end
 
     def bindir
-      @bindir ||= root.join(for_ruby_core? ? "bin" : "exe")
+      @bindir ||= root.join(ruby_core? ? "libexec" : "exe")
     end
 
     def spec_dir
-      @spec_dir ||= root.join(for_ruby_core? ? "spec/bundler" : "spec")
+      @spec_dir ||= root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
     def tmp(*path)
@@ -29,7 +30,11 @@ module Spec
     end
 
     def default_bundle_path(*path)
-      system_gem_path(*path)
+      if Bundler::VERSION.split(".").first.to_i < 3
+        system_gem_path(*path)
+      else
+        bundled_app(*[".bundle", ENV.fetch("BUNDLER_SPEC_RUBY_ENGINE", Gem.ruby_engine), RbConfig::CONFIG["ruby_version"], *path].compact)
+      end
     end
 
     def bundled_app(*path)
@@ -47,7 +52,7 @@ module Spec
     end
 
     def vendored_gems(path = nil)
-      bundled_app(*["vendor/bundle", Gem.ruby_engine, Gem::ConfigMap[:ruby_version], path].compact)
+      bundled_app(*["vendor/bundle", Gem.ruby_engine, RbConfig::CONFIG["ruby_version"], path].compact)
     end
 
     def cached_gem(path)
@@ -56,6 +61,15 @@ module Spec
 
     def base_system_gems
       tmp.join("gems/base")
+    end
+
+    def file_uri_for(path)
+      protocol = "file://"
+      root = Gem.win_platform? ? "/" : ""
+
+      return protocol + "localhost" + root + path.to_s if RUBY_VERSION < "2.5"
+
+      protocol + root + path.to_s
     end
 
     def gem_repo1(*args)
@@ -86,12 +100,16 @@ module Spec
       tmp("gems/system", *path)
     end
 
+    def system_bundle_bin_path
+      system_gem_path("bin/bundle")
+    end
+
     def lib_path(*args)
       tmp("libs", *args)
     end
 
     def bundler_path
-      Pathname.new(File.expand_path(root.join("lib"), __FILE__))
+      root.join("lib")
     end
 
     def global_plugin_gem(*args)
@@ -106,15 +124,17 @@ module Spec
       tmp "tmpdir", *args
     end
 
-    extend self
+    def ruby_core?
+      # avoid to wornings
+      @ruby_core ||= nil
 
-    private
-    def for_ruby_core?
-      if @for_ruby_core.nil?
-        @for_ruby_core = true & (ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
+      if @ruby_core.nil?
+        @ruby_core = true & (ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
       else
-        @for_ruby_core
+        @ruby_core
       end
     end
+
+    extend self
   end
 end

@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/eql', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/eql'
 
 describe "Array#==" do
   it_behaves_like :array_eql, :==
@@ -44,8 +44,8 @@ describe "Array#==" do
     [obj].should == [5]
   end
 
-  # As per bug #1720
-  it "returns false for [NaN] == [NaN]" do
-    [nan_value].should_not == [nan_value]
+  # See https://bugs.ruby-lang.org/issues/1720
+  it "returns true for [NaN] == [NaN] because Array#== first checks with #equal? and NaN.equal?(NaN) is true" do
+    [Float::NAN].should == [Float::NAN]
   end
 end

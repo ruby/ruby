@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'uri'
 
 describe "URI::Mailto.build" do
@@ -84,15 +84,9 @@ describe "URI::Mailto.build" do
     end
 
     bad.each do |x|
-      lambda { URI::MailTo.build(x) }.should raise_error(URI::InvalidComponentError)
+      -> { URI::MailTo.build(x) }.should raise_error(URI::InvalidComponentError)
     end
 
     ok.flatten.join("\0").should == ok_all
   end
-end
-
-
-
-describe "URI::MailTo.build" do
-  it "needs to be reviewed for spec completeness"
 end

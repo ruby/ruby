@@ -1,7 +1,8 @@
 # -*- encoding: utf-8 -*-
 
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
+require 'etc'
 
 describe "File.expand_path" do
   before :each do
@@ -18,14 +19,12 @@ describe "File.expand_path" do
     end
   end
 
-  with_feature :encoding do
-    before :each do
-      @external = Encoding.default_external
-    end
+  before :each do
+    @external = Encoding.default_external
+  end
 
-    after :each do
-      Encoding.default_external = @external
-    end
+  after :each do
+    Encoding.default_external = @external
   end
 
   it "converts a pathname to an absolute pathname" do
@@ -56,39 +55,10 @@ describe "File.expand_path" do
     File.expand_path(".", "#{@rootdir}").should == "#{@rootdir}"
   end
 
-  # FIXME: do not use conditionals like this around #it blocks
-  unless not home = ENV['HOME']
-    platform_is_not :windows do
-      it "converts a pathname to an absolute pathname, using ~ (home) as base" do
-        File.expand_path('~').should == home
-        File.expand_path('~', '/tmp/gumby/ddd').should == home
-        File.expand_path('~/a', '/tmp/gumby/ddd').should == File.join(home, 'a')
-      end
-
-      it "does not return a frozen string" do
-        File.expand_path('~').frozen?.should == false
-        File.expand_path('~', '/tmp/gumby/ddd').frozen?.should == false
-        File.expand_path('~/a', '/tmp/gumby/ddd').frozen?.should == false
-      end
-    end
-    platform_is :windows do
-      it "converts a pathname to an absolute pathname, using ~ (home) as base" do
-        File.expand_path('~').should == home.tr("\\", '/')
-        File.expand_path('~', '/tmp/gumby/ddd').should == home.tr("\\", '/')
-        File.expand_path('~/a', '/tmp/gumby/ddd').should == File.join(home.tr("\\", '/'), 'a')
-      end
-
-      it "does not return a frozen string" do
-        File.expand_path('~').frozen?.should == false
-        File.expand_path('~', '/tmp/gumby/ddd').frozen?.should == false
-        File.expand_path('~/a', '/tmp/gumby/ddd').frozen?.should == false
-      end
-    end
-  end
-
   platform_is_not :windows do
     before do
-      @home = ENV['HOME'].chomp('/')
+      @var_home = ENV['HOME'].chomp('/')
+      @db_home = Dir.home(ENV['USER'])
     end
 
     # FIXME: these are insane!
@@ -100,17 +70,17 @@ describe "File.expand_path" do
       File.expand_path("../bin", "x/../tmp").should == File.join(@base, 'bin')
     end
 
-    it "expand_path for commoms unix path  give a full path" do
+    it "expand_path for common unix path gives a full path" do
       File.expand_path('/tmp/').should =='/tmp'
       File.expand_path('/tmp/../../../tmp').should == '/tmp'
       File.expand_path('').should == Dir.pwd
       File.expand_path('./////').should == Dir.pwd
       File.expand_path('.').should == Dir.pwd
       File.expand_path(Dir.pwd).should == Dir.pwd
-      File.expand_path('~/').should == @home
-      File.expand_path('~/..badfilename').should == "#{@home}/..badfilename"
-      File.expand_path('..').should == Dir.pwd.split('/')[0...-1].join("/")
-      File.expand_path('~/a','~/b').should == "#{@home}/a"
+      File.expand_path('~/').should == @var_home
+      File.expand_path('~/..badfilename').should == "#{@var_home}/..badfilename"
+      File.expand_path('~/a','~/b').should == "#{@var_home}/a"
+      File.expand_path('..').should == File.dirname(Dir.pwd)
     end
 
     it "does not replace multiple '/' at the beginning of the path" do
@@ -122,12 +92,15 @@ describe "File.expand_path" do
     end
 
     it "raises an ArgumentError if the path is not valid" do
-      lambda { File.expand_path("~a_not_existing_user") }.should raise_error(ArgumentError)
+      -> { File.expand_path("~a_not_existing_user") }.should raise_error(ArgumentError)
     end
 
     it "expands ~ENV['USER'] to the user's home directory" do
-      File.expand_path("~#{ENV['USER']}").should == @home
-      File.expand_path("~#{ENV['USER']}/a").should == "#{@home}/a"
+      File.expand_path("~#{ENV['USER']}").should == @db_home
+    end
+
+    it "expands ~ENV['USER']/a to a in the user's home directory" do
+      File.expand_path("~#{ENV['USER']}/a").should == "#{@db_home}/a"
     end
 
     it "does not expand ~ENV['USER'] when it's not at the start" do
@@ -135,7 +108,7 @@ describe "File.expand_path" do
     end
 
     it "expands ../foo with ~/dir as base dir to /path/to/user/home/foo" do
-      File.expand_path('../foo', '~/dir').should == "#{@home}/foo"
+      File.expand_path('../foo', '~/dir').should == "#{@var_home}/foo"
     end
   end
 
@@ -144,9 +117,9 @@ describe "File.expand_path" do
   end
 
   it "raises a TypeError if not passed a String type" do
-    lambda { File.expand_path(1)    }.should raise_error(TypeError)
-    lambda { File.expand_path(nil)  }.should raise_error(TypeError)
-    lambda { File.expand_path(true) }.should raise_error(TypeError)
+    -> { File.expand_path(1)    }.should raise_error(TypeError)
+    -> { File.expand_path(nil)  }.should raise_error(TypeError)
+    -> { File.expand_path(true) }.should raise_error(TypeError)
   end
 
   platform_is_not :windows do
@@ -161,34 +134,32 @@ describe "File.expand_path" do
     end
   end
 
-  with_feature :encoding do
-    it "returns a String in the same encoding as the argument" do
-      Encoding.default_external = Encoding::SHIFT_JIS
+  it "returns a String in the same encoding as the argument" do
+    Encoding.default_external = Encoding::SHIFT_JIS
 
-      path = "./a".force_encoding Encoding::CP1251
-      File.expand_path(path).encoding.should equal(Encoding::CP1251)
+    path = "./a".force_encoding Encoding::CP1251
+    File.expand_path(path).encoding.should equal(Encoding::CP1251)
 
-      weird_path = [222, 173, 190, 175].pack('C*')
-      File.expand_path(weird_path).encoding.should equal(Encoding::ASCII_8BIT)
+    weird_path = [222, 173, 190, 175].pack('C*')
+    File.expand_path(weird_path).encoding.should equal(Encoding::BINARY)
+  end
+
+  platform_is_not :windows do
+    it "expands a path when the default external encoding is BINARY" do
+      Encoding.default_external = Encoding::BINARY
+      path_8bit = [222, 173, 190, 175].pack('C*')
+      File.expand_path( path_8bit, @rootdir).should == "#{@rootdir}" + path_8bit
     end
+  end
 
-    platform_is_not :windows do
-      it "expands a path when the default external encoding is ASCII-8BIT" do
-        Encoding.default_external = Encoding::ASCII_8BIT
-        path_8bit = [222, 173, 190, 175].pack('C*')
-        File.expand_path( path_8bit, @rootdir).should == "#{@rootdir}" + path_8bit
-      end
-    end
+  it "expands a path with multi-byte characters" do
+    File.expand_path("Ångström").should == "#{@base}/Ångström"
+  end
 
-    it "expands a path with multi-byte characters" do
-      File.expand_path("Ångström").should == "#{@base}/Ångström"
-    end
-
-    platform_is_not :windows do
-      it "raises an Encoding::CompatibilityError if the external encoding is not compatible" do
-        Encoding.default_external = Encoding::UTF_16BE
-        lambda { File.expand_path("./a") }.should raise_error(Encoding::CompatibilityError)
-      end
+  platform_is_not :windows do
+    it "raises an Encoding::CompatibilityError if the external encoding is not compatible" do
+      Encoding.default_external = Encoding::UTF_16BE
+      -> { File.expand_path("./a") }.should raise_error(Encoding::CompatibilityError)
     end
   end
 
@@ -213,6 +184,32 @@ describe "File.expand_path" do
 end
 
 platform_is_not :windows do
+  describe "File.expand_path when HOME is set" do
+    before :each do
+      @home = ENV["HOME"]
+      ENV["HOME"] = "/rubyspec_home"
+    end
+
+    after :each do
+      ENV["HOME"] = @home
+    end
+
+    it "converts a pathname to an absolute pathname, using ~ (home) as base" do
+      home = "/rubyspec_home"
+      File.expand_path('~').should == home
+      File.expand_path('~', '/tmp/gumby/ddd').should == home
+      File.expand_path('~/a', '/tmp/gumby/ddd').should == File.join(home, 'a')
+    end
+
+    it "does not return a frozen string" do
+      home = "/rubyspec_home"
+      File.expand_path('~').frozen?.should == false
+      File.expand_path('~', '/tmp/gumby/ddd').frozen?.should == false
+      File.expand_path('~/a', '/tmp/gumby/ddd').frozen?.should == false
+    end
+  end
+
+
   describe "File.expand_path when HOME is not set" do
     before :each do
       @home = ENV["HOME"]
@@ -222,21 +219,47 @@ platform_is_not :windows do
       ENV["HOME"] = @home
     end
 
-    ruby_version_is ''...'2.4' do
-      it "raises an ArgumentError when passed '~' if HOME is nil" do
+    guard -> {
+      # We need to check if getlogin(3) returns non-NULL,
+      # as MRI only checks getlogin(3) for expanding '~' if $HOME is not set.
+      user = ENV.delete("USER")
+      begin
+        Etc.getlogin != nil
+      rescue
+        false
+      ensure
+        ENV["USER"] = user
+      end
+    } do
+      it "uses the user database when passed '~' if HOME is nil" do
         ENV.delete "HOME"
-        lambda { File.expand_path("~") }.should raise_error(ArgumentError)
+        File.directory?(File.expand_path("~")).should == true
       end
 
-      it "raises an ArgumentError when passed '~/' if HOME is nil" do
+      it "uses the user database when passed '~/' if HOME is nil" do
         ENV.delete "HOME"
-        lambda { File.expand_path("~/") }.should raise_error(ArgumentError)
+        File.directory?(File.expand_path("~/")).should == true
       end
     end
 
     it "raises an ArgumentError when passed '~' if HOME == ''" do
       ENV["HOME"] = ""
-      lambda { File.expand_path("~") }.should raise_error(ArgumentError)
+      -> { File.expand_path("~") }.should raise_error(ArgumentError)
+    end
+  end
+
+  describe "File.expand_path with a non-absolute HOME" do
+    before :each do
+      @home = ENV["HOME"]
+    end
+
+    after :each do
+      ENV["HOME"] = @home
+    end
+
+    it "raises an ArgumentError" do
+      ENV["HOME"] = "non-absolute"
+      -> { File.expand_path("~") }.should raise_error(ArgumentError, 'non-absolute home')
     end
   end
 end

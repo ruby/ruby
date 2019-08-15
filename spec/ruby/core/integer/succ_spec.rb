@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/next', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/next'
 
 describe "Integer#succ" do
-  it_behaves_like(:integer_next, :succ)
+  it_behaves_like :integer_next, :succ
 end

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "StringIO#close_read" do
   before :each do
@@ -12,7 +12,7 @@ describe "StringIO#close_read" do
 
   it "prevents further reading" do
     @io.close_read
-    lambda { @io.read(1) }.should raise_error(IOError)
+    -> { @io.read(1) }.should raise_error(IOError)
   end
 
   it "allows further writing" do
@@ -22,15 +22,10 @@ describe "StringIO#close_read" do
 
   it "raises an IOError when in write-only mode" do
     io = StringIO.new("example", "w")
-    lambda { io.close_read }.should raise_error(IOError)
+    -> { io.close_read }.should raise_error(IOError)
 
     io = StringIO.new("example")
     io.close_read
-    ruby_version_is ''...'2.3' do
-      lambda { io.close_read }.should raise_error(IOError)
-    end
-    ruby_version_is '2.3' do
-      io.close_read.should == nil
-    end
+    io.close_read.should == nil
   end
 end

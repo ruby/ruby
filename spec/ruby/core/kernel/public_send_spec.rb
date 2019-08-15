@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../../../shared/basicobject/send', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative '../../shared/basicobject/send'
 
 describe "Kernel#public_send" do
   it "invokes the named public method" do
@@ -29,7 +29,7 @@ describe "Kernel#public_send" do
         'done'
       end
     end
-    lambda { KernelSpecs::Foo.new.public_send(:bar)}.should raise_error(NoMethodError)
+    -> { KernelSpecs::Foo.new.public_send(:bar)}.should raise_error(NoMethodError)
   end
 
   it "raises a NoMethodError if the named method is private" do
@@ -39,7 +39,7 @@ describe "Kernel#public_send" do
         'done2'
       end
     end
-    lambda {
+    -> {
       KernelSpecs::Foo.new.public_send(:bar)
     }.should raise_error(NoMethodError)
   end
@@ -70,11 +70,11 @@ describe "Kernel#public_send" do
     end
 
     it "raises a NoMethodError if the method is protected" do
-      lambda { @receiver.call_protected_method }.should raise_error(NoMethodError)
+      -> { @receiver.call_protected_method }.should raise_error(NoMethodError)
     end
 
     it "raises a NoMethodError if the method is private" do
-      lambda { @receiver.call_private_method }.should raise_error(NoMethodError)
+      -> { @receiver.call_private_method }.should raise_error(NoMethodError)
     end
   end
 
@@ -86,7 +86,7 @@ describe "Kernel#public_send" do
       end
       alias :aka :bar
     end
-    lambda {
+    -> {
       KernelSpecs::Foo.new.public_send(:aka)
     }.should raise_error(NoMethodError)
   end
@@ -99,10 +99,10 @@ describe "Kernel#public_send" do
       end
       alias :aka :bar
     end
-    lambda {
+    -> {
       KernelSpecs::Foo.new.public_send(:aka)
     }.should raise_error(NoMethodError)
   end
 
-  it_behaves_like(:basicobject_send, :public_send)
+  it_behaves_like :basicobject_send, :public_send
 end

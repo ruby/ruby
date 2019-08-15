@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 
 describe "StringIO#readline when passed [separator]" do
@@ -7,7 +7,7 @@ describe "StringIO#readline when passed [separator]" do
     @io = StringIO.new("this>is>an>example")
   end
 
-  it "returns the data read till the next occurence of the passed separator" do
+  it "returns the data read till the next occurrence of the passed separator" do
     @io.readline(">").should == "this>"
     @io.readline(">").should == "is>"
     @io.readline(">").should == "an>"
@@ -60,7 +60,7 @@ describe "StringIO#readline when passed no argument" do
     @io = StringIO.new("this is\nan example\nfor StringIO#readline")
   end
 
-  it "returns the data read till the next occurence of $/ or till eof" do
+  it "returns the data read till the next occurrence of $/ or till eof" do
     @io.readline.should == "this is\n"
 
     begin
@@ -106,17 +106,24 @@ describe "StringIO#readline when passed no argument" do
 
   it "raises an IOError if self is at the end" do
     @io.pos = 40
-    lambda { @io.readline }.should raise_error(IOError)
+    -> { @io.readline }.should raise_error(IOError)
   end
 end
 
 describe "StringIO#readline when in write-only mode" do
   it "raises an IOError" do
     io = StringIO.new("xyz", "w")
-    lambda { io.readline }.should raise_error(IOError)
+    -> { io.readline }.should raise_error(IOError)
 
     io = StringIO.new("xyz")
     io.close_read
-    lambda { io.readline }.should raise_error(IOError)
+    -> { io.readline }.should raise_error(IOError)
+  end
+end
+
+describe "StringIO#readline when passed [chomp]" do
+  it "returns the data read without a trailing newline character" do
+    io = StringIO.new("this>is>an>example\n")
+    io.readline(chomp: true).should == "this>is>an>example"
   end
 end

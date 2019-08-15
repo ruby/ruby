@@ -1,8 +1,7 @@
 require 'erb'
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../shared/url_encode', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'shared/url_encode'
 
 describe "ERB::Util.u" do
   it_behaves_like :erb_util_url_encode, :u
 end
-

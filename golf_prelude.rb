@@ -1,6 +1,7 @@
 class Object
   @@golf_hash = {}
 
+  verbose, $VERBOSE = $VERBOSE, nil
   def method_missing m, *a, &b
     t = @@golf_hash[ [m, self.class] ] ||= matching_methods(m)[0]
     if t && b
@@ -12,6 +13,7 @@ class Object
       t ? __send__(t, *a, &b) : super
     end
   end
+  $VERBOSE = verbose
 
   def matching_methods(s = '', m = callable_methods)
     r = /^#{s.to_s.gsub(/./){"(.*?)" + Regexp.escape($&)}}/
@@ -48,6 +50,11 @@ class Object
 
   def h(a = 'H', b = 'w', c = '!')
     puts "#{a}ello, #{b}orld#{c}"
+  end
+
+  def f(m = 100)
+    1.upto(m){|n|puts'FizzBuzz
+'[i=n**4%-15,i+13]||n}
   end
 
   alias say puts

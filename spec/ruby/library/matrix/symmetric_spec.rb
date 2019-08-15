@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'matrix'
 
 describe "Matrix.symmetric?" do
@@ -10,7 +10,7 @@ describe "Matrix.symmetric?" do
     Matrix.empty.symmetric?.should be_true
   end
 
-  it "returns false for an assymetric Matrix" do
+  it "returns false for an asymmetric Matrix" do
     Matrix[[1, 2],[-2, 1]].symmetric?.should be_false
   end
 
@@ -20,9 +20,9 @@ describe "Matrix.symmetric?" do
       Matrix[[0, 0]],
       Matrix.empty(0, 2),
       Matrix.empty(2, 0),
-    ].each do |rectangual_matrix|
-      lambda {
-        rectangual_matrix.symmetric?
+    ].each do |rectangular_matrix|
+      -> {
+        rectangular_matrix.symmetric?
       }.should raise_error(Matrix::ErrDimensionMismatch)
     end
   end

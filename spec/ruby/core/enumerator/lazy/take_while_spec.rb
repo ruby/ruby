@@ -1,7 +1,7 @@
 # -*- encoding: us-ascii -*-
 
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Enumerator::Lazy#take_while" do
   before :each do
@@ -40,7 +40,7 @@ describe "Enumerator::Lazy#take_while" do
   end
 
   it "raises an ArgumentError when not given a block" do
-    lambda { @yieldsmixed.take_while }.should raise_error(ArgumentError)
+    -> { @yieldsmixed.take_while }.should raise_error(ArgumentError)
   end
 
   describe "on a nested Lazy" do

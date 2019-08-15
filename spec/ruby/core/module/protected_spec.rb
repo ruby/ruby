@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/set_visibility', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/set_visibility'
 
 describe "Module#protected" do
   before :each do
@@ -18,7 +18,7 @@ describe "Module#protected" do
       protected :protected_method_1
     end
 
-    lambda { ModuleSpecs::Parent.protected_method_1 }.should raise_error(NoMethodError)
+    -> { ModuleSpecs::Parent.protected_method_1 }.should raise_error(NoMethodError)
   end
 
   it "makes a public Object instance method protected in a new module" do
@@ -48,9 +48,8 @@ describe "Module#protected" do
   end
 
   it "raises a NameError when given an undefined name" do
-    lambda do
+    -> do
       Module.new.send(:protected, :undefined)
     end.should raise_error(NameError)
   end
 end
-

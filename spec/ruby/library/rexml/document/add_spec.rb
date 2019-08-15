@@ -1,5 +1,5 @@
 require 'rexml/document'
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 # This spec defines Document#add and Document#<<
 
@@ -44,14 +44,14 @@ describe :rexml_document_add, shared: true do
   end
 
   it "refuses to add second root" do
-    lambda { @doc.send(@method, REXML::Element.new("foo")) }.should raise_error(RuntimeError)
+    -> { @doc.send(@method, REXML::Element.new("foo")) }.should raise_error(RuntimeError)
   end
 end
 
 describe "REXML::Document#add" do
-  it_behaves_like(:rexml_document_add, :add)
+  it_behaves_like :rexml_document_add, :add
 end
 
 describe "REXML::Document#<<" do
-  it_behaves_like(:rexml_document_add, :<<)
+  it_behaves_like :rexml_document_add, :<<
 end

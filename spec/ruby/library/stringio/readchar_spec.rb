@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'stringio'
-require File.expand_path('../shared/readchar', __FILE__)
+require_relative 'shared/readchar'
 
 describe "StringIO#readchar" do
   it_behaves_like :stringio_readchar, :readchar
@@ -8,10 +8,10 @@ describe "StringIO#readchar" do
   it "reads the next 8-bit byte from self's current position" do
     io = StringIO.new("example")
 
-    io.send(@method).should == ?e
+    io.readchar.should == ?e
 
     io.pos = 4
-    io.send(@method).should == ?p
+    io.readchar.should == ?p
   end
 end
 

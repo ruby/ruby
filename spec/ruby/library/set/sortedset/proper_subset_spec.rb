@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'set'
 
 describe "SortedSet#proper_subset?" do
@@ -25,9 +25,9 @@ describe "SortedSet#proper_subset?" do
   end
 
   it "raises an ArgumentError when passed a non-SortedSet" do
-    lambda { SortedSet[].proper_subset?([]) }.should raise_error(ArgumentError)
-    lambda { SortedSet[].proper_subset?(1) }.should raise_error(ArgumentError)
-    lambda { SortedSet[].proper_subset?("test") }.should raise_error(ArgumentError)
-    lambda { SortedSet[].proper_subset?(Object.new) }.should raise_error(ArgumentError)
+    -> { SortedSet[].proper_subset?([]) }.should raise_error(ArgumentError)
+    -> { SortedSet[].proper_subset?(1) }.should raise_error(ArgumentError)
+    -> { SortedSet[].proper_subset?("test") }.should raise_error(ArgumentError)
+    -> { SortedSet[].proper_subset?(Object.new) }.should raise_error(ArgumentError)
   end
 end

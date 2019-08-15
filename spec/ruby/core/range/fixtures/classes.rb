@@ -40,6 +40,28 @@ module RangeSpecs
     end
   end
 
+  class WithoutSucc
+    include Comparable
+    attr_reader :n
+
+    def initialize(n)
+      @n = n
+    end
+
+    def eql?(other)
+      inspect.eql? other.inspect
+    end
+    alias :== :eql?
+
+    def inspect
+      "WithoutSucc(#{@n})"
+    end
+
+    def <=>(other)
+      @n <=> other.n
+    end
+  end
+
   class Xs < Custom # represent a string of 'x's
     def succ
       Xs.new(@length + 1)
@@ -61,5 +83,8 @@ module RangeSpecs
   end
 
   class MyRange < Range
+  end
+
+  class ComparisonError < RuntimeError
   end
 end

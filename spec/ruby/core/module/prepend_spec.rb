@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Module#prepend" do
   it "is a public method" do
@@ -37,11 +37,11 @@ describe "Module#prepend" do
   end
 
   it "raises a TypeError when the argument is not a Module" do
-    lambda { ModuleSpecs::Basic.prepend(Class.new) }.should raise_error(TypeError)
+    -> { ModuleSpecs::Basic.prepend(Class.new) }.should raise_error(TypeError)
   end
 
   it "does not raise a TypeError when the argument is an instance of a subclass of Module" do
-    lambda { ModuleSpecs::SubclassSpec.prepend(ModuleSpecs::Subclass.new) }.should_not raise_error(TypeError)
+    -> { ModuleSpecs::SubclassSpec.prepend(ModuleSpecs::Subclass.new) }.should_not raise_error(TypeError)
   end
 
   it "imports constants" do
@@ -102,6 +102,18 @@ describe "Module#prepend" do
     m = Module.new { def meth; :m end }
     c = Class.new { def meth; :c end; prepend(m); alias_method :alias, :meth }
     c.new.alias.should == :m
+  end
+
+  it "reports the class for the owner of an aliased method on the class" do
+    m = Module.new
+    c = Class.new { prepend(m); def meth; :c end; alias_method :alias, :meth }
+    c.instance_method(:alias).owner.should == c
+  end
+
+  it "reports the class for the owner of a method aliased from the prepended module" do
+    m = Module.new { def meth; :m end }
+    c = Class.new { prepend(m); alias_method :alias, :meth }
+    c.instance_method(:alias).owner.should == c
   end
 
   it "sees an instance of a prepended class as kind of the prepended module" do
@@ -192,7 +204,7 @@ describe "Module#prepend" do
         super << :class
       end
     end
-    lambda { c.new.chain }.should raise_error(NoMethodError)
+    -> { c.new.chain }.should raise_error(NoMethodError)
   end
 
   it "calls prepended after prepend_features" do
@@ -212,31 +224,19 @@ describe "Module#prepend" do
   end
 
   it "detects cyclic prepends" do
-    lambda {
+    -> {
       module ModuleSpecs::P
         prepend ModuleSpecs::P
       end
     }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.4' do
-    it "accepts no-arguments" do
-      lambda {
-        Module.new do
-          prepend
-        end
-      }.should_not raise_error
-    end
-  end
-
-  ruby_version_is '2.4' do
-    it "doesn't accept no-arguments" do
-      lambda {
-        Module.new do
-          prepend
-        end
-      }.should raise_error(ArgumentError)
-    end
+  it "doesn't accept no-arguments" do
+    -> {
+      Module.new do
+        prepend
+      end
+    }.should raise_error(ArgumentError)
   end
 
   it "returns the class it's included into" do

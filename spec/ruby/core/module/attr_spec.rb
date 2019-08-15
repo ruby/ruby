@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Module#attr" do
   before :each do
@@ -54,7 +54,7 @@ describe "Module#attr" do
     o.attr3 = "test3 updated"
   end
 
-  it "creates a getter and setter for the given attribute name if called with and without writeable is true" do
+  it "creates a getter and setter for the given attribute name if called with and without writable is true" do
     c = Class.new do
       attr :attr, true
       attr :attr
@@ -89,8 +89,8 @@ describe "Module#attr" do
       attr :foo, true
     end
 
-    lambda { c.new.foo }.should raise_error(NoMethodError)
-    lambda { c.new.foo=1 }.should raise_error(NoMethodError)
+    -> { c.new.foo }.should raise_error(NoMethodError)
+    -> { c.new.foo=1 }.should raise_error(NoMethodError)
   end
 
   it "creates a getter but no setter for all given attribute names" do
@@ -120,8 +120,8 @@ describe "Module#attr" do
       attr :foo, :bar
     end
 
-    lambda { c.new.foo }.should raise_error(NoMethodError)
-    lambda { c.new.bar }.should raise_error(NoMethodError)
+    -> { c.new.foo }.should raise_error(NoMethodError)
+    -> { c.new.bar }.should raise_error(NoMethodError)
   end
 
   it "converts non string/symbol/fixnum names to strings using to_str" do
@@ -131,19 +131,25 @@ describe "Module#attr" do
 
   it "raises a TypeError when the given names can't be converted to strings using to_str" do
     o = mock('o')
-    lambda { Class.new { attr o } }.should raise_error(TypeError)
+    -> { Class.new { attr o } }.should raise_error(TypeError)
     (o = mock('123')).should_receive(:to_str).and_return(123)
-    lambda { Class.new { attr o } }.should raise_error(TypeError)
+    -> { Class.new { attr o } }.should raise_error(TypeError)
   end
 
   it "with a boolean argument emits a warning when $VERBOSE is true" do
-    lambda {
-      $VERBOSE = true
+    -> {
       Class.new { attr :foo, true }
-    }.should complain(/boolean argument is obsoleted/)
+    }.should complain(/boolean argument is obsoleted/, verbose: true)
   end
 
-  it "is a private method" do
-    lambda { Class.new.attr(:foo) }.should raise_error(NoMethodError)
+  ruby_version_is ''...'2.5' do
+    it "is a private method" do
+      Module.should have_private_instance_method(:attr, false)
+    end
+  end
+  ruby_version_is '2.5' do
+    it "is a public method" do
+      Module.should have_public_instance_method(:attr, false)
+    end
   end
 end

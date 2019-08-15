@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Time#usec" do
   it "returns 0 for a Time constructed with a whole number of seconds" do
@@ -35,5 +35,9 @@ describe "Time#usec" do
 
   it "returns the microseconds for time created by Time#local" do
     Time.local(1,2,3,4,5,Rational(6.78)).usec.should == 780000
+  end
+
+  it "returns a positive value for dates before the epoch" do
+    Time.utc(1969, 11, 12, 13, 18, 57, 404240).usec.should == 404240
   end
 end

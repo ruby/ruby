@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'rexml/document'
 
 describe "REXML::Attribute#value" do
@@ -12,4 +12,3 @@ describe "REXML::Attribute#value" do
     attr_empty.value.should == ""
   end
 end
-

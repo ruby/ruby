@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "File.truncate" do
   before :each do
@@ -54,29 +54,29 @@ describe "File.truncate" do
     rm_r not_existing_file
 
     begin
-      lambda { File.truncate(not_existing_file, 5) }.should raise_error(Errno::ENOENT)
+      -> { File.truncate(not_existing_file, 5) }.should raise_error(Errno::ENOENT)
     ensure
       rm_r not_existing_file
     end
   end
 
   it "raises an ArgumentError if not passed two arguments" do
-    lambda { File.truncate        }.should raise_error(ArgumentError)
-    lambda { File.truncate(@name) }.should raise_error(ArgumentError)
+    -> { File.truncate        }.should raise_error(ArgumentError)
+    -> { File.truncate(@name) }.should raise_error(ArgumentError)
   end
 
   platform_is_not :netbsd, :openbsd do
     it "raises an Errno::EINVAL if the length argument is not valid" do
-      lambda { File.truncate(@name, -1)  }.should raise_error(Errno::EINVAL) # May fail
+      -> { File.truncate(@name, -1)  }.should raise_error(Errno::EINVAL) # May fail
     end
   end
 
   it "raises a TypeError if not passed a String type for the first argument" do
-    lambda { File.truncate(1, 1) }.should raise_error(TypeError)
+    -> { File.truncate(1, 1) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if not passed an Integer type for the second argument" do
-    lambda { File.truncate(@name, nil) }.should raise_error(TypeError)
+    -> { File.truncate(@name, nil) }.should raise_error(TypeError)
   end
 
   it "accepts an object that has a #to_path method" do
@@ -149,29 +149,29 @@ describe "File#truncate" do
   end
 
   it "raises an ArgumentError if not passed one argument" do
-    lambda { @file.truncate        }.should raise_error(ArgumentError)
-    lambda { @file.truncate(1) }.should_not raise_error(ArgumentError)
+    -> { @file.truncate        }.should raise_error(ArgumentError)
+    -> { @file.truncate(1) }.should_not raise_error(ArgumentError)
   end
 
   platform_is_not :netbsd do
     it "raises an Errno::EINVAL if the length argument is not valid" do
-      lambda { @file.truncate(-1)  }.should raise_error(Errno::EINVAL) # May fail
+      -> { @file.truncate(-1)  }.should raise_error(Errno::EINVAL) # May fail
     end
   end
 
   it "raises an IOError if file is closed" do
     @file.close
     @file.closed?.should == true
-    lambda { @file.truncate(42) }.should raise_error(IOError)
+    -> { @file.truncate(42) }.should raise_error(IOError)
   end
 
   it "raises an IOError if file is not opened for writing" do
     File.open(@name, 'r') do |file|
-      lambda { file.truncate(42) }.should raise_error(IOError)
+      -> { file.truncate(42) }.should raise_error(IOError)
     end
   end
 
   it "raises a TypeError if not passed an Integer type for the for the argument" do
-    lambda { @file.truncate(nil) }.should raise_error(TypeError)
+    -> { @file.truncate(nil) }.should raise_error(TypeError)
   end
 end

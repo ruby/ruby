@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'date'
 
 describe "Date#prev_day" do
@@ -7,8 +7,8 @@ describe "Date#prev_day" do
     d.should == Date.new(2000, 7, 1)
   end
 
-  it "returns three days ago" do
-    d = Date.new(2000, 7, 4).prev_day(3)
-    d.should == Date.new(2000, 7, 1)
+  it "returns three days ago across months" do
+    d = Date.new(2000, 7, 2).prev_day(3)
+    d.should == Date.new(2000, 6, 29)
   end
 end

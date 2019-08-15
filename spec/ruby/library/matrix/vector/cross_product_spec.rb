@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'matrix'
 
 describe "Vector#cross_product" do
@@ -7,7 +7,7 @@ describe "Vector#cross_product" do
   end
 
   it "raises an error unless both vectors have dimension 3" do
-    lambda {
+    -> {
       Vector[1, 2, 3].cross_product(Vector[0, -4])
     }.should raise_error(Vector::ErrDimensionMismatch)
   end

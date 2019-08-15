@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "Resolving platform craziness" do
   describe "with cross-platform gems" do
@@ -11,21 +10,21 @@ RSpec.describe "Resolving platform craziness" do
       dep "nokogiri"
       platforms "ruby", "java"
 
-      should_resolve_as %w(nokogiri-1.4.2 nokogiri-1.4.2-java weakling-0.0.3)
+      should_resolve_as %w[nokogiri-1.4.2 nokogiri-1.4.2-java weakling-0.0.3]
     end
 
     it "doesn't pull gems that don't exist for the current platform" do
       dep "nokogiri"
       platforms "ruby"
 
-      should_resolve_as %w(nokogiri-1.4.2)
+      should_resolve_as %w[nokogiri-1.4.2]
     end
 
     it "doesn't pull gems when the version is available for all requested platforms" do
       dep "nokogiri"
       platforms "mswin32"
 
-      should_resolve_as %w(nokogiri-1.4.2.1-x86-mswin32)
+      should_resolve_as %w[nokogiri-1.4.2.1-x86-mswin32]
     end
   end
 
@@ -43,32 +42,32 @@ RSpec.describe "Resolving platform craziness" do
       # win32 is hardcoded to get CPU x86 in rubygems
       platforms "mswin32"
       dep "thin"
-      should_resolve_as %w(thin-1.2.7-x86-mswin32)
+      should_resolve_as %w[thin-1.2.7-x86-mswin32]
     end
 
     it "finds mingw gems" do
       # mingw is _not_ hardcoded to add CPU x86 in rubygems
       platforms "x86-mingw32"
       dep "thin"
-      should_resolve_as %w(thin-1.2.7-mingw32)
+      should_resolve_as %w[thin-1.2.7-mingw32]
     end
 
     it "finds x64-mingw gems" do
       platforms "x64-mingw32"
       dep "thin"
-      should_resolve_as %w(thin-1.2.7-x64-mingw32)
+      should_resolve_as %w[thin-1.2.7-x64-mingw32]
     end
 
     it "finds universal-mingw gems on x86-mingw" do
       platform "x86-mingw32"
       dep "win32-api"
-      should_resolve_as %w(win32-api-1.5.1-universal-mingw32)
+      should_resolve_as %w[win32-api-1.5.1-universal-mingw32]
     end
 
     it "finds universal-mingw gems on x64-mingw" do
       platform "x64-mingw32"
       dep "win32-api"
-      should_resolve_as %w(win32-api-1.5.1-universal-mingw32)
+      should_resolve_as %w[win32-api-1.5.1-universal-mingw32]
     end
   end
 
@@ -87,7 +86,7 @@ RSpec.describe "Resolving platform craziness" do
           dep "baz", " ~> 1.1.0"
         end
 
-        gem "baz", %w(1.0.0 1.1.0 1.2.0)
+        gem "baz", %w[1.0.0 1.1.0 1.2.0]
       end
     end
 

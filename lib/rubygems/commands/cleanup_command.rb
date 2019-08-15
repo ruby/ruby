@@ -8,11 +8,24 @@ class Gem::Commands::CleanupCommand < Gem::Command
   def initialize
     super 'cleanup',
           'Clean up old versions of installed gems',
-          :force => false, :install_dir => Gem.dir
+          :force => false, :install_dir => Gem.dir,
+          :check_dev => true
 
     add_option('-n', '-d', '--dryrun',
                'Do not uninstall gems') do |value, options|
       options[:dryrun] = true
+    end
+
+    add_option('-D', '--[no-]check-development',
+               'Check development dependencies while uninstalling',
+               '(default: true)') do |value, options|
+      options[:check_dev] = value
+    end
+
+    add_option('--[no-]user-install',
+               'Cleanup in user\'s home directory instead',
+               'of GEM_HOME.') do |value, options|
+      options[:user_install] = value
     end
 
     @candidate_gems  = nil
@@ -49,7 +62,7 @@ If no gems are named all gems in GEM_HOME are cleaned.
   def execute
     say "Cleaning up installed gems..."
 
-    if options[:args].empty? then
+    if options[:args].empty?
       done     = false
       last_set = nil
 
@@ -86,7 +99,7 @@ If no gems are named all gems in GEM_HOME are cleaned.
     @full = Gem::DependencyList.from_specs
 
     deplist = Gem::DependencyList.new
-    @gems_to_cleanup.each do |spec| deplist.add spec end
+    @gems_to_cleanup.each { |spec| deplist.add spec }
 
     deps = deplist.strongly_connected_components.flatten
 
@@ -98,7 +111,7 @@ If no gems are named all gems in GEM_HOME are cleaned.
   end
 
   def get_candidate_gems
-    @candidate_gems = unless options[:args].empty? then
+    @candidate_gems = unless options[:args].empty?
                         options[:args].map do |gem_name|
                           Gem::Specification.find_all_by_name gem_name
                         end.flatten
@@ -108,18 +121,19 @@ If no gems are named all gems in GEM_HOME are cleaned.
   end
 
   def get_gems_to_cleanup
-
-    gems_to_cleanup = @candidate_gems.select { |spec|
+    gems_to_cleanup = @candidate_gems.select do |spec|
       @primary_gems[spec.name].version != spec.version
-    }
+    end
 
-    default_gems, gems_to_cleanup = gems_to_cleanup.partition { |spec|
+    default_gems, gems_to_cleanup = gems_to_cleanup.partition do |spec|
       spec.default_gem?
-    }
+    end
 
-    gems_to_cleanup = gems_to_cleanup.select { |spec|
-      spec.base_dir == @original_home
-    }
+    uninstall_from = options[:user_install] ? Gem.user_dir : @original_home
+
+    gems_to_cleanup = gems_to_cleanup.select do |spec|
+      spec.base_dir == uninstall_from
+    end
 
     @default_gems += default_gems
     @default_gems.uniq!
@@ -131,16 +145,16 @@ If no gems are named all gems in GEM_HOME are cleaned.
 
     Gem::Specification.each do |spec|
       if @primary_gems[spec.name].nil? or
-         @primary_gems[spec.name].version < spec.version then
+         @primary_gems[spec.name].version < spec.version
         @primary_gems[spec.name] = spec
       end
     end
   end
 
-  def uninstall_dep spec
-    return unless @full.ok_to_remove?(spec.full_name)
+  def uninstall_dep(spec)
+    return unless @full.ok_to_remove?(spec.full_name, options[:check_dev])
 
-    if options[:dryrun] then
+    if options[:dryrun]
       say "Dry Run Mode: Would uninstall #{spec.full_name}"
       return
     end

@@ -1,5 +1,5 @@
-# frozen_string_literal: false
-require 'rdoc/test_case'
+# frozen_string_literal: true
+require 'minitest_helper'
 
 class TestRDocTokenStream < RDoc::TestCase
 
@@ -39,5 +39,20 @@ class TestRDocTokenStream < RDoc::TestCase
     assert_equal '', RDoc::TokenStream.to_html([])
   end
 
+  def test_tokens_to_s
+    foo = Class.new do
+      include RDoc::TokenStream
+
+      def initialize
+        @token_stream = [
+          { line_no: 0, char_no: 0, kind: :on_ident,   text: "foo" },
+          { line_no: 0, char_no: 0, kind: :on_sp,      text: " " },
+          { line_no: 0, char_no: 0, kind: :on_tstring, text: "'bar'" },
+        ]
+      end
+    end.new
+
+    assert_equal "foo 'bar'", foo.tokens_to_s
+  end
 end
 

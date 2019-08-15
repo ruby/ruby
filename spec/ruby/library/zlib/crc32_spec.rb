@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'zlib'
 
 describe "Zlib.crc32" do
@@ -24,7 +24,9 @@ describe "Zlib.crc32" do
     Zlib.crc32(test_string, 1).should == 1809313411
     Zlib.crc32(test_string, 2**8).should == 1722745982
     Zlib.crc32(test_string, 2**16).should == 1932511220
-    lambda { Zlib.crc32(test_string, 2**128) }.should raise_error(RangeError)
+    Zlib.crc32("p", ~305419896).should == 4046865307
+    Zlib.crc32("p", -305419897).should == 4046865307
+    -> { Zlib.crc32(test_string, 2**128) }.should raise_error(RangeError)
   end
 
   it "calculates the CRC checksum for string and initial CRC value for Bignums" do

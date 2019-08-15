@@ -1,9 +1,9 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
-require File.expand_path('../shared/new', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
+require_relative 'shared/new'
 
 describe "Exception.exception" do
-  it_behaves_like(:exception_new, :exception)
+  it_behaves_like :exception_new, :exception
 end
 
 describe "Exception" do
@@ -64,6 +64,22 @@ describe "Exception#exception" do
     e2 = e.exception("message")
     e2.should be_an_instance_of(RuntimeError)
     e2.message.should == "message"
+  end
+
+  it "when raised will be rescued as the new exception" do
+    begin
+      begin
+        raised_first = StandardError.new('first')
+        raise raised_first
+      rescue => caught_first
+        raised_second = raised_first.exception('second')
+        raise raised_second
+      end
+    rescue => caught_second
+    end
+
+    raised_first.should == caught_first
+    raised_second.should == caught_second
   end
 
   class CustomArgumentError < StandardError

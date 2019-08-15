@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Class#initialize" do
   it "is private" do
@@ -6,18 +6,18 @@ describe "Class#initialize" do
   end
 
   it "raises a TypeError when called on already initialized classes" do
-    lambda{
+    ->{
       Fixnum.send :initialize
     }.should raise_error(TypeError)
 
-    lambda{
+    ->{
       Object.send :initialize
     }.should raise_error(TypeError)
   end
 
   # See [redmine:2601]
   it "raises a TypeError when called on BasicObject" do
-    lambda{
+    ->{
       BasicObject.send :initialize
     }.should raise_error(TypeError)
   end
@@ -28,7 +28,7 @@ describe "Class#initialize" do
     end
 
     it "raises a TypeError" do
-      lambda{@uninitialized.send(:initialize, Class)}.should raise_error(TypeError)
+      ->{@uninitialized.send(:initialize, Class)}.should raise_error(TypeError)
     end
   end
 end

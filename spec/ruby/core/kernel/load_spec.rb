@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/code_loading', __FILE__)
-require File.expand_path('../shared/load', __FILE__)
-require File.expand_path('../shared/require', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/code_loading'
+require_relative 'shared/load'
+require_relative 'shared/require'
 
 describe "Kernel#load" do
   before :each do

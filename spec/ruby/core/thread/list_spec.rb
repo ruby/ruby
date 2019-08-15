@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Thread.list" do
   it "includes the current and main thread" do
@@ -25,18 +25,31 @@ describe "Thread.list" do
   end
 
   it "includes waiting threads" do
-    c = Channel.new
-    t = Thread.new { c.receive }
+    q = Queue.new
+    t = Thread.new { q.pop }
     begin
       Thread.pass while t.status and t.status != 'sleep'
       Thread.list.should include(t)
     ensure
-      c << nil
+      q << nil
       t.join
     end
   end
-end
 
-describe "Thread.list" do
-  it "needs to be reviewed for spec completeness"
+  it "returns instances of Thread and not null or nil values" do
+    spawner = Thread.new do
+      Array.new(100) do
+        Thread.new {}
+      end
+    end
+
+    while spawner.alive?
+      Thread.list.each { |th|
+        th.should be_kind_of(Thread)
+      }
+    end
+
+    threads = spawner.value
+    threads.each(&:join)
+  end
 end

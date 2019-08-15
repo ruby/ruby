@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 Gem::Specification.new do |s|
   s.name = "date"
-  s.version = '0.0.1'
-  s.date = '2017-02-02'
+  s.version = '2.0.0'
   s.summary = "A subclass of Object includes Comparable module for handling dates."
   s.description = "A subclass of Object includes Comparable module for handling dates."
 
@@ -13,7 +12,7 @@ Gem::Specification.new do |s|
     "ext/date/zonetab.h", "ext/date/zonetab.list"
   ]
   s.extensions = "ext/date/extconf.rb"
-  s.required_ruby_version = ">= 2.5.0dev"
+  s.required_ruby_version = ">= 2.4.0"
 
   s.authors = ["Tadayoshi Funaba"]
   s.email = [nil]

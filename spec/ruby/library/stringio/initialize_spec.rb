@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'stringio'
 
 describe "StringIO#initialize when passed [Object, mode]" do
@@ -110,9 +110,9 @@ describe "StringIO#initialize when passed [Object, mode]" do
     io.closed_write?.should be_false
   end
 
-  it "raises a RuntimeError when passed a frozen String in truncate mode as StringIO backend" do
+  it "raises a #{frozen_error_class} when passed a frozen String in truncate mode as StringIO backend" do
     io = StringIO.allocate
-    lambda { io.send(:initialize, "example".freeze, IO::TRUNC) }.should raise_error(RuntimeError)
+    -> { io.send(:initialize, "example".freeze, IO::TRUNC) }.should raise_error(frozen_error_class)
   end
 
   it "tries to convert the passed mode to a String using #to_str" do
@@ -126,9 +126,9 @@ describe "StringIO#initialize when passed [Object, mode]" do
 
   it "raises an Errno::EACCES error when passed a frozen string with a write-mode" do
     (str = "example").freeze
-    lambda { @io.send(:initialize, str, "r+") }.should raise_error(Errno::EACCES)
-    lambda { @io.send(:initialize, str, "w") }.should raise_error(Errno::EACCES)
-    lambda { @io.send(:initialize, str, "a") }.should raise_error(Errno::EACCES)
+    -> { @io.send(:initialize, str, "r+") }.should raise_error(Errno::EACCES)
+    -> { @io.send(:initialize, str, "w") }.should raise_error(Errno::EACCES)
+    -> { @io.send(:initialize, str, "a") }.should raise_error(Errno::EACCES)
   end
 end
 
@@ -181,5 +181,29 @@ describe "StringIO#initialize when passed no arguments" do
   it "uses an empty String as the StringIO backend" do
     @io.send(:initialize)
     @io.string.should == ""
+  end
+end
+
+describe "StringIO#initialize sets the encoding to" do
+  before :each do
+    @external = Encoding.default_external
+    Encoding.default_external = Encoding::ISO_8859_2
+  end
+
+  after :each do
+    Encoding.default_external = @external
+  end
+
+  it "Encoding.default_external when passed no arguments" do
+    io = StringIO.new
+    io.external_encoding.should == Encoding::ISO_8859_2
+    io.string.encoding.should == Encoding::ISO_8859_2
+  end
+
+  it "the same as the encoding of the String when passed a String" do
+    s = ''.force_encoding(Encoding::EUC_JP)
+    io = StringIO.new(s)
+    io.external_encoding.should == Encoding::EUC_JP
+    io.string.encoding.should == Encoding::EUC_JP
   end
 end

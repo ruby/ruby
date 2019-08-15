@@ -1,17 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/path'
 
 describe "File#path" do
-  before :each do
-    @name = tmp("file_path")
-  end
-
-  after :each do
-    rm_r @name
-  end
-
-  it "returns the pathname used to create file as a string" do
-    File.open(@name,'w') { |file| file.path.should == @name }
-  end
+  it_behaves_like :file_path, :path
 end
 
 describe "File.path" do
@@ -23,7 +14,27 @@ describe "File.path" do
     rm_r @name
   end
 
-  it "returns the full path for the given file" do
-    File.path(@name).should == @name
+  it "returns the string argument without any change" do
+    File.path("abc").should == "abc"
+    File.path("./abc").should == "./abc"
+    File.path("../abc").should == "../abc"
+    File.path("/./a/../bc").should == "/./a/../bc"
+  end
+
+  it "returns path for File argument" do
+    File.open(@name, "w") do |f|
+      File.path(f).should == @name
+    end
+  end
+
+  it "returns path for Pathname argument" do
+    require "pathname"
+    File.path(Pathname.new(@name)).should == @name
+  end
+
+  it "calls #to_path for non-string argument and returns result" do
+    path = mock("path")
+    path.should_receive(:to_path).and_return("abc")
+    File.path(path).should == "abc"
   end
 end

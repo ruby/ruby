@@ -1,4 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Range.new" do
   it "constructs a range using the given start and end" do
@@ -24,11 +25,63 @@ describe "Range.new" do
   end
 
   it "raises an ArgumentError when the given start and end can't be compared by using #<=>" do
-    lambda { Range.new(1, mock('x'))         }.should raise_error(ArgumentError)
-    lambda { Range.new(mock('x'), mock('y')) }.should raise_error(ArgumentError)
+    -> { Range.new(1, mock('x'))         }.should raise_error(ArgumentError)
+    -> { Range.new(mock('x'), mock('y')) }.should raise_error(ArgumentError)
 
     b = mock('x')
     (a = mock('nil')).should_receive(:<=>).with(b).and_return(nil)
-    lambda { Range.new(a, b) }.should raise_error(ArgumentError)
+    -> { Range.new(a, b) }.should raise_error(ArgumentError)
+  end
+
+  ruby_version_is "2.5" do
+    it "does not rescue exception raised in #<=> when compares the given start and end" do
+      b = mock('a')
+      a = mock('b')
+      a.should_receive(:<=>).with(b).and_raise(RangeSpecs::ComparisonError)
+
+      -> { Range.new(a, b) }.should raise_error(RangeSpecs::ComparisonError)
+    end
+  end
+
+  describe "beginless/endless range" do
+    ruby_version_is ""..."2.7" do
+      it "does not allow range without left boundary" do
+        -> { Range.new(nil, 1) }.should raise_error(ArgumentError, /bad value for range/)
+      end
+    end
+
+    ruby_version_is "2.7" do
+      it "allows beginless left boundary" do
+        range = Range.new(nil, 1)
+        range.begin.should == nil
+      end
+
+      it "distinguishes ranges with included and excluded right boundary" do
+        range_exclude = Range.new(nil, 1, true)
+        range_include = Range.new(nil, 1, false)
+
+        range_exclude.should_not == range_include
+      end
+    end
+
+    ruby_version_is ""..."2.6" do
+      it "does not allow range without right boundary" do
+        -> { Range.new(1, nil) }.should raise_error(ArgumentError, /bad value for range/)
+      end
+    end
+
+    ruby_version_is "2.6" do
+      it "allows endless right boundary" do
+        range = Range.new(1, nil)
+        range.end.should == nil
+      end
+
+      it "distinguishes ranges with included and excluded right boundary" do
+        range_exclude = Range.new(1, nil, true)
+        range_include = Range.new(1, nil, false)
+
+        range_exclude.should_not == range_include
+      end
+    end
   end
 end

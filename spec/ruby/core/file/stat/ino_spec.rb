@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe "File::Stat#ino" do
   before :each do
@@ -19,20 +19,10 @@ describe "File::Stat#ino" do
   end
 
   platform_is :windows do
-    ruby_version_is ""..."2.3" do
-      it "returns 0" do
-        st = File.stat(@file)
-        st.ino.should be_kind_of(Integer)
-        st.ino.should == 0
-      end
-    end
-
-    ruby_version_is "2.3" do
-      it "returns BY_HANDLE_FILE_INFORMATION.nFileIndexHigh/Low of a File::Stat object" do
-        st = File.stat(@file)
-        st.ino.should be_kind_of(Integer)
-        st.ino.should > 0
-      end
+    it "returns BY_HANDLE_FILE_INFORMATION.nFileIndexHigh/Low of a File::Stat object" do
+      st = File.stat(@file)
+      st.ino.should be_kind_of(Integer)
+      st.ino.should > 0
     end
   end
 end

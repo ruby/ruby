@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'digest'
 
 describe "Digest.hexencode" do
@@ -22,10 +22,10 @@ describe "Digest.hexencode" do
   end
 
   it "raises a TypeError when passed nil" do
-    lambda { Digest.hexencode(nil) }.should raise_error(TypeError)
+    -> { Digest.hexencode(nil) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed a Fixnum" do
-    lambda { Digest.hexencode(9001) }.should raise_error(TypeError)
+    -> { Digest.hexencode(9001) }.should raise_error(TypeError)
   end
 end

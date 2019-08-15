@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 has_dir_fileno = begin
   dir = Dir.new('.')
@@ -31,7 +31,7 @@ describe "Dir#fileno" do
     end
   else
     it "raises an error when not implemented on the platform" do
-      lambda { @dir.fileno }.should raise_error(NotImplementedError)
+      -> { @dir.fileno }.should raise_error(NotImplementedError)
     end
   end
 end

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "IO#pid" do
   before :each do
@@ -30,6 +30,6 @@ describe "IO#pid" do
 
   it "raises an IOError on closed stream" do
     @io.close
-    lambda { @io.pid }.should raise_error(IOError)
+    -> { @io.pid }.should raise_error(IOError)
   end
 end

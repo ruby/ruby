@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "File.rename" do
   before :each do
@@ -23,15 +23,15 @@ describe "File.rename" do
 
   it "raises an Errno::ENOENT if the source does not exist" do
     rm_r @old
-    lambda { File.rename(@old, @new) }.should raise_error(Errno::ENOENT)
+    -> { File.rename(@old, @new) }.should raise_error(Errno::ENOENT)
   end
 
   it "raises an ArgumentError if not passed two arguments" do
-    lambda { File.rename        }.should raise_error(ArgumentError)
-    lambda { File.rename(@file) }.should raise_error(ArgumentError)
+    -> { File.rename        }.should raise_error(ArgumentError)
+    -> { File.rename(@file) }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError if not passed String types" do
-    lambda { File.rename(1, 2)  }.should raise_error(TypeError)
+    -> { File.rename(1, 2)  }.should raise_error(TypeError)
   end
 end

@@ -3,7 +3,7 @@ root = true
 [*]
 end_of_line = lf
 indent_size = 4
-indent_style = tab
+indent_style = space
 insert_final_newline = true
 tab_width = 8
 trim_trailing_whitespace = true
@@ -13,12 +13,18 @@ end_of_line = crlf
 
 [*.gemspec]
 indent_size = 2
-indent_style = space
 
 [*.rb]
 indent_size = 2
-indent_style = space
 
 [*.yml]
 indent_size = 2
-indent_style = space
+
+[{*[Mm]akefile*,*.mak,*.mk,depend}]
+indent_style = tab
+
+[enc/*]
+indent_size = 2
+
+[reg*.[ch]]
+indent_size = 2

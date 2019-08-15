@@ -1,11 +1,13 @@
-# -*- encoding: ascii-8bit -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
+# -*- encoding: binary -*-
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
+require_relative 'shared/taint'
 
 describe "String#unpack with format 'M'" do
   it_behaves_like :string_unpack_basic, 'M'
   it_behaves_like :string_unpack_no_platform, 'M'
+  it_behaves_like :string_unpack_taint, 'M'
 
   it "decodes an empty string" do
     "".unpack("M").should == [""]
@@ -100,6 +102,7 @@ end
 describe "String#unpack with format 'm'" do
   it_behaves_like :string_unpack_basic, 'm'
   it_behaves_like :string_unpack_no_platform, 'm'
+  it_behaves_like :string_unpack_taint, 'm'
 
   it "decodes an empty string" do
     "".unpack("m").should == [""]

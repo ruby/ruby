@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Hash#delete" do
   it "removes the entry and returns the deleted value" do
@@ -11,13 +11,13 @@ describe "Hash#delete" do
   it "calls supplied block if the key is not found" do
     { a: 1, b: 10, c: 100 }.delete(:d) { 5 }.should == 5
     Hash.new(:default).delete(:d) { 5 }.should == 5
-    Hash.new { :defualt }.delete(:d) { 5 }.should == 5
+    Hash.new { :default }.delete(:d) { 5 }.should == 5
   end
 
   it "returns nil if the key is not found when no block is given" do
     { a: 1, b: 10, c: 100 }.delete(:d).should == nil
     Hash.new(:default).delete(:d).should == nil
-    Hash.new { :defualt }.delete(:d).should == nil
+    Hash.new { :default }.delete(:d).should == nil
   end
 
   # MRI explicitly implements this behavior
@@ -37,8 +37,8 @@ describe "Hash#delete" do
     { key => 5 }.delete(key).should == 5
   end
 
-  it "raises a RuntimeError if called on a frozen instance" do
-    lambda { HashSpecs.frozen_hash.delete("foo")  }.should raise_error(RuntimeError)
-    lambda { HashSpecs.empty_frozen_hash.delete("foo") }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} if called on a frozen instance" do
+    -> { HashSpecs.frozen_hash.delete("foo")  }.should raise_error(frozen_error_class)
+    -> { HashSpecs.empty_frozen_hash.delete("foo") }.should raise_error(frozen_error_class)
   end
 end

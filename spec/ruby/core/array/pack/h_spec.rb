@@ -1,14 +1,16 @@
-# -*- encoding: ascii-8bit -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
-require File.expand_path('../shared/encodings', __FILE__)
+# -*- encoding: binary -*-
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
+require_relative 'shared/encodings'
+require_relative 'shared/taint'
 
 describe "Array#pack with format 'H'" do
   it_behaves_like :array_pack_basic, 'H'
   it_behaves_like :array_pack_basic_non_float, 'H'
   it_behaves_like :array_pack_arguments, 'H'
   it_behaves_like :array_pack_hex, 'H'
+  it_behaves_like :array_pack_taint, 'H'
 
   it "calls #to_str to convert an Object to a String" do
     obj = mock("pack H string")
@@ -95,8 +97,8 @@ describe "Array#pack with format 'H'" do
     ].should be_computed_by(:pack, "H")
   end
 
-  it "returns an ASCII-8BIT string" do
-    ["41"].pack("H").encoding.should == Encoding::ASCII_8BIT
+  it "returns a binary string" do
+    ["41"].pack("H").encoding.should == Encoding::BINARY
   end
 end
 
@@ -105,6 +107,7 @@ describe "Array#pack with format 'h'" do
   it_behaves_like :array_pack_basic_non_float, 'h'
   it_behaves_like :array_pack_arguments, 'h'
   it_behaves_like :array_pack_hex, 'h'
+  it_behaves_like :array_pack_taint, 'h'
 
   it "calls #to_str to convert an Object to a String" do
     obj = mock("pack H string")
@@ -191,7 +194,7 @@ describe "Array#pack with format 'h'" do
     ].should be_computed_by(:pack, "h")
   end
 
-  it "returns an ASCII-8BIT string" do
-    ["41"].pack("h").encoding.should == Encoding::ASCII_8BIT
+  it "returns a binary string" do
+    ["41"].pack("h").encoding.should == Encoding::BINARY
   end
 end

@@ -1,4 +1,4 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 require 'net/http'
 
 describe "Net::HTTPResponse.exception_type" do
@@ -7,7 +7,12 @@ describe "Net::HTTPResponse.exception_type" do
     Net::HTTPInformation.exception_type.should == Net::HTTPError
     Net::HTTPSuccess.exception_type.should == Net::HTTPError
     Net::HTTPRedirection.exception_type.should == Net::HTTPRetriableError
-    Net::HTTPClientError.exception_type.should == Net::HTTPServerException
+    ruby_version_is ""..."2.6" do
+      Net::HTTPClientError.exception_type.should == Net::HTTPServerException
+    end
+    ruby_version_is "2.6" do
+      Net::HTTPClientError.exception_type.should == Net::HTTPClientException
+    end
     Net::HTTPServerError.exception_type.should == Net::HTTPFatalError
   end
 end

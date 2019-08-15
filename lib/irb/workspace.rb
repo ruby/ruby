@@ -49,7 +49,7 @@ EOF
           @binding = BINDING_QUEUE.pop
 
         when 3	# binding in function on TOPLEVEL_BINDING(default)
-          @binding = eval("def irb_binding; private; binding; end; irb_binding",
+          @binding = eval("self.class.send(:remove_method, :irb_binding) if defined?(irb_binding); def irb_binding; private; binding; end; irb_binding",
                           TOPLEVEL_BINDING,
                           __FILE__,
                           __LINE__ - 3)
@@ -71,7 +71,7 @@ EOF
           end
         end
       end
-      eval("_=nil", @binding)
+      @binding.local_variable_set(:_, nil)
     end
 
     # The Binding of this workspace
@@ -83,6 +83,14 @@ EOF
     # Evaluate the given +statements+ within the  context of this workspace.
     def evaluate(context, statements, file = __FILE__, line = __LINE__)
       eval(statements, @binding, file, line)
+    end
+
+    def local_variable_set(name, value)
+      @binding.local_variable_set(name, value)
+    end
+
+    def local_variable_get(name)
+      @binding.local_variable_get(name)
     end
 
     # error message manipulator
@@ -105,6 +113,46 @@ EOF
         bt = bt.sub(/:\s*in `irb_binding'/, '')
       end
       bt
+    end
+
+    def code_around_binding
+      if @binding.respond_to?(:source_location)
+        file, pos = @binding.source_location
+      else
+        file, pos = @binding.eval('[__FILE__, __LINE__]')
+      end
+
+      if defined?(::SCRIPT_LINES__[file]) && lines = ::SCRIPT_LINES__[file]
+        code = ::SCRIPT_LINES__[file].join('')
+      else
+        begin
+          code = File.read(file)
+        rescue SystemCallError
+          return
+        end
+      end
+
+      # NOT using #use_colorize? of IRB.conf[:MAIN_CONTEXT] because this method may be called before IRB::Irb#run
+      use_colorize = IRB.conf.fetch(:USE_COLORIZE, true)
+      if use_colorize
+        lines = Color.colorize_code(code).lines
+      else
+        lines = code.lines
+      end
+      pos -= 1
+
+      start_pos = [pos - 5, 0].max
+      end_pos   = [pos + 5, lines.size - 1].min
+
+      if use_colorize
+        fmt = " %2s #{Color.colorize("%#{end_pos.to_s.length}d", [:BLUE, :BOLD])}: %s"
+      else
+        fmt = " %2s %#{end_pos.to_s.length}d: %s"
+      end
+      body = (start_pos..end_pos).map do |current_pos|
+        sprintf(fmt, pos == current_pos ? '=>' : '', current_pos + 1, lines[current_pos])
+      end.join("")
+      "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}#{Color.clear}\n"
     end
 
     def IRB.delete_caller

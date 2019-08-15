@@ -193,7 +193,7 @@ describe :uri_parse, shared: true do
   end
 
   it "raises errors on malformed URIs" do
-    lambda { @object.parse('http://a_b:80/') }.should raise_error(URI::InvalidURIError)
-    lambda { @object.parse('http://a_b/') }.should raise_error(URI::InvalidURIError)
+    -> { @object.parse('http://a_b:80/') }.should raise_error(URI::InvalidURIError)
+    -> { @object.parse('http://a_b/') }.should raise_error(URI::InvalidURIError)
   end
 end

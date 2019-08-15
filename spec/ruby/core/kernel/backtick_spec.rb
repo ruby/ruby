@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Kernel#`" do
   before :each do
@@ -21,7 +21,7 @@ describe "Kernel#`" do
 
   it "lets the standard error stream pass through to the inherited stderr" do
     cmd = ruby_cmd('STDERR.print "error stream"')
-    lambda {
+    -> {
       `#{cmd}`.should == ""
     }.should output_to_fd("error stream", STDERR)
   end
@@ -32,7 +32,7 @@ describe "Kernel#`" do
   end
 
   it "raises an Errno::ENOENT if the command is not executable" do
-    lambda { `nonexistent_command` }.should raise_error(Errno::ENOENT)
+    -> { `nonexistent_command` }.should raise_error(Errno::ENOENT)
   end
 
   platform_is_not :windows do

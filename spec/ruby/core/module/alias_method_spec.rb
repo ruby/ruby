@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Module#alias_method" do
   before :each do
@@ -28,12 +28,12 @@ describe "Module#alias_method" do
 
   it "retains method visibility" do
     @class.make_alias :private_ichi, :private_one
-    lambda { @object.private_one  }.should raise_error(NameError)
-    lambda { @object.private_ichi }.should raise_error(NameError)
+    -> { @object.private_one  }.should raise_error(NameError)
+    -> { @object.private_ichi }.should raise_error(NameError)
     @class.make_alias :public_ichi, :public_one
     @object.public_ichi.should == @object.public_one
     @class.make_alias :protected_ichi, :protected_one
-    lambda { @object.protected_ichi }.should raise_error(NameError)
+    -> { @object.protected_ichi }.should raise_error(NameError)
   end
 
   it "handles aliasing a stub that changes visibility" do
@@ -43,15 +43,15 @@ describe "Module#alias_method" do
   end
 
   it "fails if origin method not found" do
-    lambda { @class.make_alias :ni, :san }.should raise_error(NameError) { |e|
+    -> { @class.make_alias :ni, :san }.should raise_error(NameError) { |e|
       # a NameError and not a NoMethodError
       e.class.should == NameError
     }
   end
 
-  it "raises RuntimeError if frozen" do
+  it "raises #{frozen_error_class} if frozen" do
     @class.freeze
-    lambda { @class.make_alias :uno, :public_one }.should raise_error(RuntimeError)
+    -> { @class.make_alias :uno, :public_one }.should raise_error(frozen_error_class)
   end
 
   it "converts the names using #to_str" do
@@ -66,11 +66,18 @@ describe "Module#alias_method" do
   end
 
   it "raises a TypeError when the given name can't be converted using to_str" do
-    lambda { @class.make_alias mock('x'), :public_one }.should raise_error(TypeError)
+    -> { @class.make_alias mock('x'), :public_one }.should raise_error(TypeError)
   end
 
-  it "is a private method" do
-    lambda { @class.alias_method :ichi, :public_one }.should raise_error(NoMethodError)
+  ruby_version_is ''...'2.5' do
+    it "is a private method" do
+      -> { @class.alias_method :ichi, :public_one }.should raise_error(NoMethodError)
+    end
+  end
+  ruby_version_is '2.5' do
+    it "is a public method" do
+      Module.should have_public_instance_method(:alias_method, false)
+    end
   end
 
   it "returns self" do
@@ -83,7 +90,7 @@ describe "Module#alias_method" do
 
   it "works on private module methods in a module that has been reopened" do
     ModuleSpecs::ReopeningModule.foo.should == true
-    lambda { ModuleSpecs::ReopeningModule.foo2 }.should_not raise_error(NoMethodError)
+    -> { ModuleSpecs::ReopeningModule.foo2 }.should_not raise_error(NoMethodError)
   end
 
   it "accesses a method defined on Object from Kernel" do

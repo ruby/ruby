@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "String#end_with?" do
   it "returns true only if ends match" do
@@ -32,9 +32,9 @@ describe "String#end_with?" do
 
   it "ignores arguments not convertible to string" do
     "hello".end_with?().should be_false
-    lambda { "hello".end_with?(1) }.should raise_error(TypeError)
-    lambda { "hello".end_with?(["o"]) }.should raise_error(TypeError)
-    lambda { "hello".end_with?(1, nil, "o") }.should raise_error(TypeError)
+    -> { "hello".end_with?(1) }.should raise_error(TypeError)
+    -> { "hello".end_with?(["o"]) }.should raise_error(TypeError)
+    -> { "hello".end_with?(1, nil, "o") }.should raise_error(TypeError)
   end
 
   it "uses only the needed arguments" do
@@ -45,6 +45,13 @@ describe "String#end_with?" do
 
   it "works for multibyte strings" do
     "céréale".end_with?("réale").should be_true
+  end
+
+  it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
+    pat = "ア".encode Encoding::EUC_JP
+    -> do
+      "あれ".end_with?(pat)
+    end.should raise_error(Encoding::CompatibilityError)
   end
 
 end

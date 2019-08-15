@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/update', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/update'
 
 describe "Hash#update" do
-  it_behaves_like(:hash_update, :update)
+  it_behaves_like :hash_update, :update
 end
