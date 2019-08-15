@@ -82,14 +82,14 @@ describe :io_internal_encoding, shared: true do
       @io.internal_encoding.should equal(Encoding::IBM437)
     end
 
-    it "returns nil when Encoding.default_external is ASCII-8BIT and the internal encoding is not set" do
-      Encoding.default_external = Encoding::ASCII_8BIT
+    it "returns nil when Encoding.default_external is BINARY and the internal encoding is not set" do
+      Encoding.default_external = Encoding::BINARY
       @io = new_io @name, @object
       @io.internal_encoding.should be_nil
     end
 
-    it "returns nil when the external encoding is ASCII-8BIT and the internal encoding is not set" do
-      @io = new_io @name, "#{@object}:ascii-8bit"
+    it "returns nil when the external encoding is BINARY and the internal encoding is not set" do
+      @io = new_io @name, "#{@object}:binary"
       @io.internal_encoding.should be_nil
     end
   end

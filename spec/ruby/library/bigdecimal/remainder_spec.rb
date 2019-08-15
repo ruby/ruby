@@ -84,7 +84,7 @@ describe "BigDecimal#remainder" do
   end
 
   it "raises TypeError if the argument cannot be coerced to BigDecimal" do
-    lambda {
+    -> {
       @one.remainder('2')
     }.should raise_error(TypeError)
   end

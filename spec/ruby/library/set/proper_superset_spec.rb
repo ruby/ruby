@@ -27,10 +27,10 @@ describe "Set#proper_superset?" do
   end
 
   it "raises an ArgumentError when passed a non-Set" do
-    lambda { Set[].proper_superset?([]) }.should raise_error(ArgumentError)
-    lambda { Set[].proper_superset?(1) }.should raise_error(ArgumentError)
-    lambda { Set[].proper_superset?("test") }.should raise_error(ArgumentError)
-    lambda { Set[].proper_superset?(Object.new) }.should raise_error(ArgumentError)
+    -> { Set[].proper_superset?([]) }.should raise_error(ArgumentError)
+    -> { Set[].proper_superset?(1) }.should raise_error(ArgumentError)
+    -> { Set[].proper_superset?("test") }.should raise_error(ArgumentError)
+    -> { Set[].proper_superset?(Object.new) }.should raise_error(ArgumentError)
   end
 
   context "when comparing to a Set-like object" do

@@ -1,0 +1,52 @@
+name: ubuntu
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - '*'
+jobs:
+  latest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test_task: [ "test-bundler", "test-bundled-gems" ]
+    steps:
+      - name: Install libraries
+        run: |
+          set -x
+          sudo sed /etc/apt/sources.list -e "s/^# deb-src/deb-src/g" -i
+          sudo apt-get update
+          sudo apt-get install ruby2.5
+          sudo apt-get build-dep ruby2.5
+      # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
+      - name: Checkout ruby/ruby
+        run: git clone --depth=50 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        if: github.event_name == 'push'
+      - name: Checkout a pull request
+        run: git clone --depth=50 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" . && git reset --hard "$GITHUB_REV"
+        env:
+          GITHUB_REV: ${{ github.event.pull_request.head.sha }}
+          GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
+          GITHUB_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        if: github.event_name == 'pull_request'
+      - name: Set ENV
+        run: |
+          export JOBS=-j$((1 + $(nproc --all)))
+      - name: Fixed world writable dirs
+        run: |
+          chmod go-w $HOME
+          sudo chmod -R go-w /usr/share
+      - run: autoconf
+      - name: configure
+        run: ./configure -C --disable-install-doc
+      - run: make $JOBS
+      # TODO: Remove `continue-on-error` once they become stable and also we have a notification for their failure.
+      - name: make test-bundler/test-bundled-gems
+        run: make -s ${{ matrix.test_task }}
+        continue-on-error: true
+      - name: Leaked Globals
+        run: make -s leaked-globals

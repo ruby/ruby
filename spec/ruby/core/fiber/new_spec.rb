@@ -16,7 +16,7 @@ describe "Fiber.new" do
   end
 
   it "raises an ArgumentError if called without a block" do
-    lambda { Fiber.new }.should raise_error(ArgumentError)
+    -> { Fiber.new }.should raise_error(ArgumentError)
   end
 
   it "does not invoke the block" do

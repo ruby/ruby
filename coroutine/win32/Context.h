@@ -10,53 +10,48 @@
 #include <assert.h>
 #include <string.h>
 
-#if __cplusplus
-extern "C" {
-#endif
-
 #define COROUTINE __declspec(noreturn) void __fastcall
+#define COROUTINE_LIMITED_ADDRESS_SPACE
 
 /* This doesn't include thread information block */
 enum {COROUTINE_REGISTERS = 4};
 
-typedef struct
+struct coroutine_context
 {
     void **stack_pointer;
-} coroutine_context;
+};
 
-typedef void(__fastcall * coroutine_start)(coroutine_context *from, coroutine_context *self);
+typedef void(__fastcall * coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
+
+static inline void coroutine_initialize_main(struct coroutine_context * context) {
+    context->stack_pointer = NULL;
+}
 
 static inline void coroutine_initialize(
-    coroutine_context *context,
+    struct coroutine_context *context,
     coroutine_start start,
-    void *stack_pointer,
-    size_t stack_size
+    void *stack,
+    size_t size
 ) {
-    context->stack_pointer = (void**)stack_pointer;
+    assert(start && stack && size >= 1024);
 
-    if (!start) {
-        assert(!context->stack_pointer);
-        /* We are main coroutine for this thread */
-        return;
-    }
+    // Stack grows down. Force 16-byte alignment.
+    char * top = (char*)stack + size;
+    context->stack_pointer = (void**)((uintptr_t)top & ~0xF);
 
     *--context->stack_pointer = (void*)start;
 
     /* Windows Thread Information Block */
     *--context->stack_pointer = 0; /* fs:[0] */
-    *--context->stack_pointer = (void*)stack_pointer; /* fs:[4] */
-    *--context->stack_pointer = (void*)((char *)stack_pointer - stack_size);  /* fs:[8] */
+    *--context->stack_pointer = (void*)top; /* fs:[4] */
+    *--context->stack_pointer = (void*)stack;  /* fs:[8] */
 
     context->stack_pointer -= COROUTINE_REGISTERS;
     memset(context->stack_pointer, 0, sizeof(void*) * COROUTINE_REGISTERS);
 }
 
-coroutine_context * __fastcall coroutine_transfer(coroutine_context * current, coroutine_context * target);
+struct coroutine_context * __fastcall coroutine_transfer(struct coroutine_context * current, struct coroutine_context * target);
 
-static inline void coroutine_destroy(coroutine_context * context)
+static inline void coroutine_destroy(struct coroutine_context * context)
 {
 }
-
-#if __cplusplus
-}
-#endif
