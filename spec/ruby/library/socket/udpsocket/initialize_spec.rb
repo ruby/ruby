@@ -10,7 +10,7 @@ describe 'UDPSocket#initialize' do
     @socket.should be_an_instance_of(UDPSocket)
   end
 
-  it 'initializes a new UDPSocket using a Fixnum' do
+  it 'initializes a new UDPSocket using an Integer' do
     @socket = UDPSocket.new(Socket::AF_INET)
     @socket.should be_an_instance_of(UDPSocket)
   end
@@ -30,7 +30,11 @@ describe 'UDPSocket#initialize' do
     @socket.binmode?.should be_true
   end
 
-  it 'raises Errno::EAFNOSUPPORT when given an invalid address family' do
-    lambda { UDPSocket.new(666) }.should raise_error(Errno::EAFNOSUPPORT)
+  it 'raises Errno::EAFNOSUPPORT or Errno::EPROTONOSUPPORT when given an invalid address family' do
+    -> {
+      UDPSocket.new(666)
+    }.should raise_error(SystemCallError) { |e|
+      [Errno::EAFNOSUPPORT, Errno::EPROTONOSUPPORT].should include(e.class)
+    }
   end
 end

@@ -33,6 +33,62 @@ ruby_version_is "2.5" do
         e.full_message(order: :top,    highlight: false).should =~ /a.rb:1.*b.rb:2/m
         e.full_message(order: :bottom, highlight: false).should =~ /b.rb:2.*a.rb:1/m
       end
+
+      it "shows the caller if the exception has no backtrace" do
+        e = RuntimeError.new("Some runtime error")
+        e.backtrace.should == nil
+        full_message = e.full_message(highlight: false, order: :top)
+        full_message.should include("#{__FILE__}:#{__LINE__-1}:in `")
+        full_message.should include("': Some runtime error (RuntimeError)\n")
+      end
+
+      it "shows the exception class at the end of the first line of the message when the message contains multiple lines" do
+        begin
+          line = __LINE__; raise "first line\nsecond line"
+        rescue => e
+          full_message = e.full_message(highlight: false, order: :top).lines
+          full_message[0].should include("#{__FILE__}:#{line}:in `")
+          full_message[0].should include(": first line (RuntimeError)\n")
+          full_message[1].should == "second line\n"
+        end
+      end
+    end
+
+    ruby_version_is "2.6" do
+      it "contains cause of exception" do
+        begin
+          begin
+            raise 'the cause'
+          rescue
+            raise 'main exception'
+          end
+        rescue => e
+          exception = e
+        end
+
+        exception.full_message.should include "main exception"
+        exception.full_message.should include "the cause"
+      end
+
+      it 'contains all the chain of exceptions' do
+        begin
+          begin
+            begin
+              raise 'origin exception'
+            rescue
+              raise 'intermediate exception'
+            end
+          rescue
+            raise 'last exception'
+          end
+        rescue => e
+          exception = e
+        end
+
+        exception.full_message.should include "last exception"
+        exception.full_message.should include "intermediate exception"
+        exception.full_message.should include "origin exception"
+      end
     end
   end
 end

@@ -1,6 +1,12 @@
 require_relative '../../spec_helper'
 require 'bigdecimal'
 
+describe "BigDecimal" do
+  it "is not defined unless it is required" do
+    ruby_exe('puts Object.const_defined?(:BigDecimal)').should == "false\n"
+  end
+end
+
 describe "Kernel#BigDecimal" do
 
   it "creates a new object of class BigDecimal" do
@@ -34,37 +40,51 @@ describe "Kernel#BigDecimal" do
     BigDecimal("  \t\n \r-Infinity   \n").infinite?.should == -1
   end
 
-  it "ignores trailing garbage" do
-    BigDecimal("123E45ruby").should == BigDecimal("123E45")
-    BigDecimal("123x45").should == BigDecimal("123")
-    BigDecimal("123.4%E5").should == BigDecimal("123.4")
-    BigDecimal("1E2E3E4E5E").should == BigDecimal("100")
-  end
-
-  ruby_version_is ""..."2.4" do
-    it "treats invalid strings as 0.0" do
-      BigDecimal("ruby").should == BigDecimal("0.0")
-      BigDecimal("  \t\n \r-\t\t\tInfinity   \n").should == BigDecimal("0.0")
+  ruby_version_is ""..."2.6" do
+    it "ignores trailing garbage" do
+      BigDecimal("123E45ruby").should == BigDecimal("123E45")
+      BigDecimal("123x45").should == BigDecimal("123")
+      BigDecimal("123.4%E5").should == BigDecimal("123.4")
+      BigDecimal("1E2E3E4E5E").should == BigDecimal("100")
     end
   end
 
-  ruby_version_is "2.4" do
-    it "raises ArgumentError for invalid strings" do
-      lambda { BigDecimal("ruby") }.should raise_error(ArgumentError)
-      lambda { BigDecimal("  \t\n \r-\t\t\tInfinity   \n") }.should raise_error(ArgumentError)
+  ruby_version_is "2.6" do
+    it "does not ignores trailing garbage" do
+      -> { BigDecimal("123E45ruby") }.should raise_error(ArgumentError)
+      -> { BigDecimal("123x45") }.should raise_error(ArgumentError)
+      -> { BigDecimal("123.4%E5") }.should raise_error(ArgumentError)
+      -> { BigDecimal("1E2E3E4E5E") }.should raise_error(ArgumentError)
     end
+  end
+
+  it "raises ArgumentError for invalid strings" do
+    -> { BigDecimal("ruby") }.should raise_error(ArgumentError)
+    -> { BigDecimal("  \t\n \r-\t\t\tInfinity   \n") }.should raise_error(ArgumentError)
   end
 
   it "allows omitting the integer part" do
     BigDecimal(".123").should == BigDecimal("0.123")
   end
 
-  it "allows for underscores in all parts" do
-    reference = BigDecimal("12345.67E89")
+  ruby_version_is ""..."2.6" do
+    it "allows for underscores in all parts" do
+      reference = BigDecimal("12345.67E89")
 
-    BigDecimal("12_345.67E89").should == reference
-    BigDecimal("1_2_3_4_5_._6____7_E89").should == reference
-    BigDecimal("12345_.67E_8__9_").should == reference
+      BigDecimal("12_345.67E89").should == reference
+      BigDecimal("1_2_3_4_5_._6____7_E89").should == reference
+      BigDecimal("12345_.67E_8__9_").should == reference
+    end
+  end
+
+  ruby_version_is "2.6" do
+    it "process underscores as Float()" do
+      reference = BigDecimal("12345.67E89")
+
+      BigDecimal("12_345.67E89").should == reference
+      -> { BigDecimal("1_2_3_4_5_._6____7_E89") }.should raise_error(ArgumentError)
+      -> { BigDecimal("12345_.67E_8__9_") }.should raise_error(ArgumentError)
+    end
   end
 
   it "accepts NaN and [+-]Infinity" do
@@ -78,6 +98,34 @@ describe "Kernel#BigDecimal" do
     neg_inf = BigDecimal("-Infinity")
     neg_inf.finite?.should == false
     neg_inf.should < 0
+  end
+
+  describe "accepts NaN and [+-]Infinity as Float values" do
+    it "works without an explicit precision" do
+      BigDecimal(Float::NAN).nan?.should == true
+
+      pos_inf = BigDecimal(Float::INFINITY)
+      pos_inf.finite?.should == false
+      pos_inf.should > 0
+      pos_inf.should == BigDecimal("+Infinity")
+
+      neg_inf = BigDecimal(-Float::INFINITY)
+      neg_inf.finite?.should == false
+      neg_inf.should < 0
+    end
+
+    it "works with an explicit precision" do
+      BigDecimal(Float::NAN, Float::DIG).nan?.should == true
+
+      pos_inf = BigDecimal(Float::INFINITY, Float::DIG)
+      pos_inf.finite?.should == false
+      pos_inf.should > 0
+      pos_inf.should == BigDecimal("+Infinity")
+
+      neg_inf = BigDecimal(-Float::INFINITY, Float::DIG)
+      neg_inf.finite?.should == false
+      neg_inf.should < 0
+    end
   end
 
   it "allows for [eEdD] as exponent separator" do
@@ -102,8 +150,13 @@ describe "Kernel#BigDecimal" do
     BigDecimal("-12345.6E-1").should == -reference
   end
 
-  it 'raises ArgumentError when Float is used without precision' do
-    lambda { BigDecimal(1.0) }.should raise_error(ArgumentError)
+  it "raises ArgumentError when Float is used without precision" do
+    -> { BigDecimal(1.0) }.should raise_error(ArgumentError)
+  end
+
+  it "returns appropriate BigDecimal zero for signed zero" do
+    BigDecimal(-0.0, Float::DIG).sign.should == -1
+    BigDecimal(0.0, Float::DIG).sign.should == 1
   end
 
 end

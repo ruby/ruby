@@ -39,7 +39,8 @@ make_unique_str(st_table *tbl, const char *str, long len)
 
 	if (st_lookup(tbl, (st_data_t)str, &n)) {
 	    st_insert(tbl, (st_data_t)str, n+1);
-	    st_get_key(tbl, (st_data_t)str, (st_data_t *)&result);
+	    st_get_key(tbl, (st_data_t)str, &n);
+	    result = (char *)n;
 	}
 	else {
 	    result = (char *)ruby_xmalloc(len+1);
@@ -59,8 +60,9 @@ delete_unique_str(st_table *tbl, const char *str)
 
 	st_lookup(tbl, (st_data_t)str, &n);
 	if (n == 1) {
-	    st_delete(tbl, (st_data_t *)&str, 0);
-	    ruby_xfree((char *)str);
+	    n = (st_data_t)str;
+	    st_delete(tbl, &n, 0);
+	    ruby_xfree((char *)n);
 	}
 	else {
 	    st_insert(tbl, (st_data_t)str, n-1);
@@ -82,8 +84,10 @@ newobj_i(VALUE tpval, void *data)
     const char *path_cstr = RTEST(path) ? make_unique_str(arg->str_table, RSTRING_PTR(path), RSTRING_LEN(path)) : 0;
     VALUE class_path = (RTEST(klass) && !OBJ_FROZEN(klass)) ? rb_class_path_cached(klass) : Qnil;
     const char *class_path_cstr = RTEST(class_path) ? make_unique_str(arg->str_table, RSTRING_PTR(class_path), RSTRING_LEN(class_path)) : 0;
+    st_data_t v;
 
-    if (st_lookup(arg->object_table, (st_data_t)obj, (st_data_t *)&info)) {
+    if (st_lookup(arg->object_table, (st_data_t)obj, &v)) {
+	info = (struct allocation_info *)v;
 	if (arg->keep_remains) {
 	    if (info->living) {
 		/* do nothing. there is possibility to keep living if FREEOBJ events while suppressing tracing */
@@ -113,15 +117,19 @@ freeobj_i(VALUE tpval, void *data)
 {
     struct traceobj_arg *arg = (struct traceobj_arg *)data;
     rb_trace_arg_t *tparg = rb_tracearg_from_tracepoint(tpval);
-    VALUE obj = rb_tracearg_object(tparg);
+    st_data_t obj = (st_data_t)rb_tracearg_object(tparg);
+    st_data_t v;
     struct allocation_info *info;
 
-    if (st_lookup(arg->object_table, (st_data_t)obj, (st_data_t *)&info)) {
-	if (arg->keep_remains) {
+    if (arg->keep_remains) {
+	if (st_lookup(arg->object_table, obj, &v)) {
+	    info = (struct allocation_info *)v;
 	    info->living = 0;
 	}
-	else {
-	    st_delete(arg->object_table, (st_data_t *)&obj, (st_data_t *)&info);
+    }
+    else {
+	if (st_delete(arg->object_table, &obj, &v)) {
+	    info = (struct allocation_info *)v;
 	    delete_unique_str(arg->str_table, info->path);
 	    delete_unique_str(arg->str_table, info->class_path);
 	    ruby_xfree(info);
@@ -178,7 +186,9 @@ trace_object_allocations_start(VALUE self)
     else {
 	if (arg->newobj_trace == 0) {
 	    arg->newobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ, newobj_i, arg);
+	    rb_gc_register_mark_object(arg->newobj_trace);
 	    arg->freeobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_FREEOBJ, freeobj_i, arg);
+	    rb_gc_register_mark_object(arg->freeobj_trace);
 	}
 	rb_tracepoint_enable(arg->newobj_trace);
 	rb_tracepoint_enable(arg->freeobj_trace);
@@ -208,8 +218,6 @@ trace_object_allocations_stop(VALUE self)
     if (arg->running == 0) {
 	rb_tracepoint_disable(arg->newobj_trace);
 	rb_tracepoint_disable(arg->freeobj_trace);
-	arg->newobj_trace = 0;
-	arg->freeobj_trace = 0;
     }
 
     return Qnil;
@@ -321,9 +329,9 @@ static struct allocation_info *
 lookup_allocation_info(VALUE obj)
 {
     if (tmp_trace_arg) {
- 	struct allocation_info *info;
-	if (st_lookup(tmp_trace_arg->object_table, obj, (st_data_t *)&info)) {
-	    return info;
+	st_data_t info;
+	if (st_lookup(tmp_trace_arg->object_table, obj, &info)) {
+	    return (struct allocation_info *)info;
 	}
     }
     return NULL;

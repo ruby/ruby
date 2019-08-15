@@ -48,7 +48,7 @@
 
 require 'socket'
 require 'io/wait'
-require 'drb/eq'
+require_relative 'eq'
 
 #
 # == Overview
@@ -953,6 +953,7 @@ module DRb
     # returned by #open or by #accept, then it closes this particular
     # client-server session.
     def close
+      shutdown
       if @socket
         @socket.close
         @socket = nil
@@ -961,14 +962,8 @@ module DRb
     end
 
     def close_shutdown_pipe
-      if @shutdown_pipe_r && !@shutdown_pipe_r.closed?
-        @shutdown_pipe_r.close
-        @shutdown_pipe_r = nil
-      end
-      if @shutdown_pipe_w && !@shutdown_pipe_w.closed?
-        @shutdown_pipe_w.close
-        @shutdown_pipe_w = nil
-      end
+      @shutdown_pipe_w.close
+      @shutdown_pipe_r.close
     end
     private :close_shutdown_pipe
 
@@ -1001,7 +996,7 @@ module DRb
 
     # Graceful shutdown
     def shutdown
-      @shutdown_pipe_w.close if @shutdown_pipe_w && !@shutdown_pipe_w.closed?
+      @shutdown_pipe_w.close
     end
 
     # Check to see if this connection is alive.
@@ -1284,7 +1279,7 @@ module DRb
     @@idconv = DRbIdConv.new
     @@secondary_server = nil
     @@argc_limit = 256
-    @@load_limit = 256 * 102400
+    @@load_limit = 0xffffffff
     @@verbose = false
     @@safe_level = 0
 
@@ -1643,7 +1638,7 @@ module DRb
 
     end
 
-    require 'drb/invokemethod'
+    require_relative 'invokemethod'
     class InvokeMethod
       include InvokeMethod18Mixin
     end
@@ -1871,6 +1866,11 @@ module DRb
   # Removes +server+ from the list of registered servers.
   def remove_server(server)
     @server.delete(server.uri)
+    mutex.synchronize do
+      if @primary_server == server
+        @primary_server = nil
+      end
+    end
   end
   module_function :remove_server
 

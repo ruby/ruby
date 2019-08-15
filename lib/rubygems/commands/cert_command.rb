@@ -14,15 +14,16 @@ class Gem::Commands::CertCommand < Gem::Command
     super 'cert', 'Manage RubyGems certificates and signing settings',
           :add => [], :remove => [], :list => [], :build => [], :sign => []
 
-    OptionParser.accept OpenSSL::X509::Certificate do |certificate|
+    OptionParser.accept OpenSSL::X509::Certificate do |certificate_file|
       begin
-        OpenSSL::X509::Certificate.new File.read certificate
+        certificate = OpenSSL::X509::Certificate.new File.read certificate_file
       rescue Errno::ENOENT
-        raise OptionParser::InvalidArgument, "#{certificate}: does not exist"
+        raise OptionParser::InvalidArgument, "#{certificate_file}: does not exist"
       rescue OpenSSL::X509::CertificateError
         raise OptionParser::InvalidArgument,
-          "#{certificate}: invalid X509 certificate"
+          "#{certificate_file}: invalid X509 certificate"
       end
+      [certificate, certificate_file]
     end
 
     OptionParser.accept OpenSSL::PKey::RSA do |key_file|
@@ -42,7 +43,7 @@ class Gem::Commands::CertCommand < Gem::Command
     end
 
     add_option('-a', '--add CERT', OpenSSL::X509::Certificate,
-               'Add a trusted certificate.') do |cert, options|
+               'Add a trusted certificate.') do |(cert, _), options|
       options[:add] << cert
     end
 
@@ -67,8 +68,9 @@ class Gem::Commands::CertCommand < Gem::Command
     end
 
     add_option('-C', '--certificate CERT', OpenSSL::X509::Certificate,
-               'Signing certificate for --sign') do |cert, options|
+               'Signing certificate for --sign') do |(cert, cert_file), options|
       options[:issuer_cert] = cert
+      options[:issuer_cert_file] = cert_file
     end
 
     add_option('-K', '--private-key KEY', OpenSSL::PKey::RSA,
@@ -87,11 +89,16 @@ class Gem::Commands::CertCommand < Gem::Command
 
     add_option('-d', '--days NUMBER_OF_DAYS',
                'Days before the certificate expires') do |days, options|
-                options[:expiration_length_days] = days.to_i
+      options[:expiration_length_days] = days.to_i
+    end
+
+    add_option('-R', '--re-sign',
+               'Re-signs the certificate from -C with the key from -K') do |resign, options|
+      options[:resign] = resign
     end
   end
 
-  def add_certificate certificate # :nodoc:
+  def add_certificate(certificate) # :nodoc:
     Gem::Security.trust_dir.trust_cert certificate
 
     say "Added '#{certificate.subject}'"
@@ -114,10 +121,18 @@ class Gem::Commands::CertCommand < Gem::Command
       build email
     end
 
+    if options[:resign]
+      re_sign_cert(
+        options[:issuer_cert],
+        options[:issuer_cert_file],
+        options[:key]
+      )
+    end
+
     sign_certificates unless options[:sign].empty?
   end
 
-  def build email
+  def build(email)
     if !valid_email?(email)
       raise Gem::CommandLineError, "Invalid email address #{email}"
     end
@@ -133,16 +148,16 @@ class Gem::Commands::CertCommand < Gem::Command
     end
   end
 
-  def build_cert email, key # :nodoc:
-    expiration_length_days = options[:expiration_length_days]
-    age =
-      if expiration_length_days.nil? || expiration_length_days == 0
-        Gem::Security::ONE_YEAR
-      else
-        Gem::Security::ONE_DAY * expiration_length_days
-      end
+  def build_cert(email, key) # :nodoc:
+    expiration_length_days = options[:expiration_length_days] ||
+      Gem.configuration.cert_expiration_length_days
 
-    cert = Gem::Security.create_cert_email email, key, age
+    cert = Gem::Security.create_cert_email(
+      email,
+      key,
+      (Gem::Security::ONE_DAY * expiration_length_days)
+    )
+
     Gem::Security.write cert, "gem-public_cert.pem"
   end
 
@@ -164,7 +179,7 @@ class Gem::Commands::CertCommand < Gem::Command
     return key, key_path
   end
 
-  def certificates_matching filter
+  def certificates_matching(filter)
     return enum_for __method__, filter unless block_given?
 
     Gem::Security.trusted_certificates.select do |certificate, _|
@@ -216,7 +231,7 @@ For further reading on signing gems see `ri Gem::Security`.
     EOF
   end
 
-  def list_certificates_matching filter # :nodoc:
+  def list_certificates_matching(filter) # :nodoc:
     certificates_matching filter do |certificate, _|
       # this could probably be formatted more gracefully
       say certificate.subject.to_s
@@ -261,14 +276,14 @@ For further reading on signing gems see `ri Gem::Security`.
     load_default_key  unless options[:key]
   end
 
-  def remove_certificates_matching filter # :nodoc:
+  def remove_certificates_matching(filter) # :nodoc:
     certificates_matching filter do |certificate, path|
       FileUtils.rm path
       say "Removed '#{certificate.subject}'"
     end
   end
 
-  def sign cert_file
+  def sign(cert_file)
     cert = File.read cert_file
     cert = OpenSSL::X509::Certificate.new cert
 
@@ -290,13 +305,18 @@ For further reading on signing gems see `ri Gem::Security`.
     end
   end
 
+  def re_sign_cert(cert, cert_path, private_key)
+    Gem::Security::Signer.re_sign_cert(cert, cert_path, private_key) do |expired_cert_path, new_expired_cert_path|
+      alert("Your certificate #{expired_cert_path} has been re-signed")
+      alert("Your expired certificate will be located at: #{new_expired_cert_path}")
+    end
+  end
+
   private
 
-  def valid_email? email
+  def valid_email?(email)
     # It's simple, but is all we need
     email =~ /\A.+@.+\z/
   end
 
-
 end if defined?(OpenSSL::SSL)
-

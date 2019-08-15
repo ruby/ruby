@@ -11,8 +11,8 @@ class Object
     MSpec.describe mod, msg, &block
   end
 
-  private def it(msg, &block)
-    MSpec.current.it msg, &block
+  private def it(desc, &block)
+    MSpec.current.it desc, &block
   end
 
   private def it_should_behave_like(desc)

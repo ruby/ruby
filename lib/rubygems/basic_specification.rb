@@ -35,7 +35,14 @@ class Gem::BasicSpecification
   end
 
   def self.default_specifications_dir
-    File.join(Gem.default_dir, "specifications", "default")
+    Gem.default_specifications_dir
+  end
+
+  class << self
+
+    extend Gem::Deprecate
+    deprecate :default_specifications_dir, "Gem.default_specifications_dir", 2020, 02
+
   end
 
   ##
@@ -65,14 +72,17 @@ class Gem::BasicSpecification
   ##
   # Return true if this spec can require +file+.
 
-  def contains_requirable_file? file
-    if @ignored then
+  def contains_requirable_file?(file)
+    if @ignored
       return false
-    elsif missing_extensions? then
+    elsif missing_extensions?
       @ignored = true
 
-      warn "Ignoring #{full_name} because its extensions are not built. " +
-        "Try: gem pristine #{name} --version #{version}"
+      if RUBY_ENGINE == platform || Gem::Platform.local === platform
+        warn "Ignoring #{full_name} because its extensions are not built. " +
+          "Try: gem pristine #{name} --version #{version}"
+      end
+
       return false
     end
 
@@ -81,7 +91,7 @@ class Gem::BasicSpecification
 
   def default_gem?
     loaded_from &&
-      File.dirname(loaded_from) == self.class.default_specifications_dir
+      File.dirname(loaded_from) == Gem.default_specifications_dir
   end
 
   ##
@@ -124,7 +134,7 @@ class Gem::BasicSpecification
   # default Ruby platform.
 
   def full_name
-    if platform == Gem::Platform::RUBY or platform.nil? then
+    if platform == Gem::Platform::RUBY or platform.nil?
       "#{name}-#{version}".dup.untaint
     else
       "#{name}-#{version}-#{platform}".dup.untaint
@@ -152,7 +162,7 @@ class Gem::BasicSpecification
   # The path to the data directory for this gem.
 
   def datadir
-# TODO: drop the extra ", gem_name" which is uselessly redundant
+    # TODO: drop the extra ", gem_name" which is uselessly redundant
     File.expand_path(File.join(gems_dir, full_name, "data", name)).untaint
   end
 
@@ -160,8 +170,8 @@ class Gem::BasicSpecification
   # Full path of the target library file.
   # If the file is not in this gem, return nil.
 
-  def to_fullpath path
-    if activated? then
+  def to_fullpath(path)
+    if activated?
       @paths_map ||= {}
       @paths_map[path] ||=
       begin
@@ -249,7 +259,7 @@ class Gem::BasicSpecification
   def source_paths
     paths = raw_require_paths.dup
 
-    if have_extensions? then
+    if have_extensions?
       ext_dirs = extensions.map do |extension|
         extension.split(File::SEPARATOR, 2).first
       end.uniq
@@ -263,7 +273,7 @@ class Gem::BasicSpecification
   ##
   # Return all files in this gem that match for +glob+.
 
-  def matches_for_glob glob # TODO: rename?
+  def matches_for_glob(glob) # TODO: rename?
     # TODO: do we need these?? Kill it
     glob = File.join(self.lib_dirs_glob, glob)
 
@@ -276,13 +286,13 @@ class Gem::BasicSpecification
 
   def lib_dirs_glob
     dirs = if self.raw_require_paths
-             if self.raw_require_paths.size > 1 then
+             if self.raw_require_paths.size > 1
                "{#{self.raw_require_paths.join(',')}}"
              else
                self.raw_require_paths.first
              end
            else
-            "lib" # default value for require_paths for bundler/inline
+             "lib" # default value for require_paths for bundler/inline
            end
 
     "#{self.full_gem_path}/#{dirs}".dup.untaint
@@ -316,7 +326,7 @@ class Gem::BasicSpecification
 
   def have_extensions?; !extensions.empty?; end
 
-  def have_file? file, suffixes
+  def have_file?(file, suffixes)
     return true if raw_require_paths.any? do |path|
       base = File.join(gems_dir, full_name, path.untaint, file).untaint
       suffixes.any? { |suf| File.file? base + suf }
@@ -329,4 +339,5 @@ class Gem::BasicSpecification
       false
     end
   end
+
 end

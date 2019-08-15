@@ -21,12 +21,12 @@ describe "Net::HTTPHeader#content_range" do
 
   it "raises a Net::HTTPHeaderSyntaxError when the 'Content-Range' has an invalid format" do
     @headers["Content-Range"] = "invalid"
-    lambda { @headers.content_range }.should raise_error(Net::HTTPHeaderSyntaxError)
+    -> { @headers.content_range }.should raise_error(Net::HTTPHeaderSyntaxError)
 
     @headers["Content-Range"] = "bytes 123-abc"
-    lambda { @headers.content_range }.should raise_error(Net::HTTPHeaderSyntaxError)
+    -> { @headers.content_range }.should raise_error(Net::HTTPHeaderSyntaxError)
 
     @headers["Content-Range"] = "bytes abc-123"
-    lambda { @headers.content_range }.should raise_error(Net::HTTPHeaderSyntaxError)
+    -> { @headers.content_range }.should raise_error(Net::HTTPHeaderSyntaxError)
   end
 end

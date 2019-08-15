@@ -18,7 +18,7 @@ begin
   module Gem
     RDoc = ::RDoc::RubygemsHook
   end
+
+  Gem.done_installing(&Gem::RDoc.method(:generation_hook))
 rescue LoadError
 end
-
-Gem.done_installing(&Gem::RDoc.method(:generation_hook))

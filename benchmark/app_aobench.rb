@@ -1,3 +1,5 @@
+# coding: US-ASCII
+
 # AO render benchmark
 # Original program (C) Syoyo Fujita in Javascript (and other languages)
 #      https://code.google.com/p/aobench/
@@ -8,6 +10,8 @@ IMAGE_WIDTH = 256
 IMAGE_HEIGHT = 256
 NSUBSAMPLES = 2
 NAO_SAMPLES = 8
+
+srand(0)
 
 class Vec
   def initialize(x, y, z)
@@ -278,12 +282,14 @@ end
 
 alias printf_orig printf
 def printf *args
+  # $fp.printf(*args)
 end
 
 # File.open("ao.ppm", "w") do |fp|
+  # $fp = fp
   printf("P6\n")
   printf("%d %d\n", IMAGE_WIDTH, IMAGE_HEIGHT)
-  printf("255\n", IMAGE_WIDTH, IMAGE_HEIGHT)
+  printf("255\n")
   Scene.new.render(IMAGE_WIDTH, IMAGE_HEIGHT, NSUBSAMPLES)
 # end
 

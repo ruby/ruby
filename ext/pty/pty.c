@@ -143,7 +143,7 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     dup2(slave,0);
     dup2(slave,1);
     dup2(slave,2);
-    close(slave);
+    if (slave < 0 || slave > 2) (void)!close(slave);
 #if defined(HAVE_SETEUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRESUID)
     if (seteuid(getuid())) ERROR_EXIT("seteuid()");
 #endif
@@ -233,7 +233,7 @@ ioctl_I_PUSH(int fd, const char *const name)
     ret = ioctl(fd, I_FIND, name);
 # endif
     if (ret == 0) {
-      ret = ioctl(fd, I_PUSH, name);
+        ret = ioctl(fd, I_PUSH, name);
     }
     return ret;
 }
@@ -247,7 +247,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     int masterfd = -1, slavefd = -1;
     char *slavedevice;
 
-#if defined(__sun) || (defined(__FreeBSD__) && __FreeBSD_version < 902000)
+#if defined(__sun) || defined(__OpenBSD__) || (defined(__FreeBSD__) && __FreeBSD_version < 902000)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
     /* FreeBSD 9.2 or later supports O_CLOEXEC
      * http://www.freebsd.org/cgi/query-pr.cgi?pr=162374 */
@@ -680,7 +680,7 @@ static VALUE cPTY;
 /*
  * Document-class: PTY
  *
- * Creates and managed pseudo terminals (PTYs).  See also
+ * Creates and manages pseudo terminals (PTYs).  See also
  * http://en.wikipedia.org/wiki/Pseudo_terminal
  *
  * PTY allows you to allocate new terminals using ::open or ::spawn a new

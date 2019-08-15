@@ -24,7 +24,7 @@ require 'time'
 #   rdoc.document argv
 #
 # Where +argv+ is an array of strings, each corresponding to an argument you'd
-# give rdoc on the command line.  See <tt>rdoc --help<tt> for details.
+# give rdoc on the command line.  See <tt>rdoc --help</tt> for details.
 
 class RDoc::RDoc
 
@@ -355,7 +355,7 @@ option)
         relative_path.relative_path_from @options.page_dir
     end
 
-    top_level = @store.add_file filename, relative_path.to_s
+    top_level = @store.add_file filename, relative_name: relative_path.to_s
 
     parser = RDoc::Parser.for top_level, filename, content, @options, @stats
 

@@ -22,9 +22,9 @@
 
 require_relative 'protocol'
 require 'uri'
+autoload :OpenSSL, 'openssl'
 
 module Net   #:nodoc:
-  autoload :OpenSSL, 'openssl'
 
   # :stopdoc:
   class HTTPBadResponse < StandardError; end
@@ -35,7 +35,7 @@ module Net   #:nodoc:
   #
   # Net::HTTP provides a rich library which can be used to build HTTP
   # user-agents.  For more details about HTTP see
-  # [RFC2616](http://www.ietf.org/rfc/rfc2616.txt)
+  # [RFC2616](http://www.ietf.org/rfc/rfc2616.txt).
   #
   # Net::HTTP is designed to work closely with URI.  URI::HTTP#host,
   # URI::HTTP#port and URI::HTTP#request_uri are designed to work with
@@ -87,7 +87,7 @@ module Net   #:nodoc:
   #
   # == How to use Net::HTTP
   #
-  # The following example code can be used as the basis of a HTTP user-agent
+  # The following example code can be used as the basis of an HTTP user-agent
   # which can perform a variety of request types using persistent
   # connections.
   #
@@ -169,7 +169,7 @@ module Net   #:nodoc:
   # === POST
   #
   # A POST can be made using the Net::HTTP::Post request class.  This example
-  # creates a urlencoded POST body:
+  # creates a URL encoded POST body:
   #
   #   uri = URI('http://www.example.com/todo.cgi')
   #   req = Net::HTTP::Post.new(uri)
@@ -186,13 +186,10 @@ module Net   #:nodoc:
   #     res.value
   #   end
   #
-  # At this time Net::HTTP does not support multipart/form-data.  To send
-  # multipart/form-data use Net::HTTPRequest#body= and
-  # Net::HTTPRequest#content_type=:
+  # To send multipart/form-data use Net::HTTPHeader#set_form:
   #
   #   req = Net::HTTP::Post.new(uri)
-  #   req.body = multipart_data
-  #   req.content_type = 'multipart/form-data'
+  #   req.set_form([['upload', File.open('foo.bar')]], 'multipart/form-data')
   #
   # Other requests that can contain a body such as PUT can be created in the
   # same way using the corresponding request class (Net::HTTP::Put).
@@ -221,7 +218,7 @@ module Net   #:nodoc:
   # === Basic Authentication
   #
   # Basic authentication is performed according to
-  # [RFC2617](http://www.ietf.org/rfc/rfc2617.txt)
+  # [RFC2617](http://www.ietf.org/rfc/rfc2617.txt).
   #
   #   uri = URI('http://example.com/index.html?key=value')
   #
@@ -265,7 +262,7 @@ module Net   #:nodoc:
   #   end
   #
   # Or if you simply want to make a GET request, you may pass in an URI
-  # object that has a HTTPS URL. Net::HTTP automatically turn on TLS
+  # object that has an HTTPS URL. Net::HTTP automatically turns on TLS
   # verification if the URI object has a 'https' URI scheme.
   #
   #   uri = URI('https://example.com/')
@@ -1000,7 +997,7 @@ module Net   #:nodoc:
         if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
           s.post_connection_check(@address)
         end
-        D "SSL established"
+        D "SSL established, protocol: #{s.ssl_version}, cipher: #{s.cipher[0]}"
       end
       @socket = BufferedIO.new(s, read_timeout: @read_timeout,
                                write_timeout: @write_timeout,
@@ -1523,7 +1520,7 @@ module Net   #:nodoc:
       rescue Net::OpenTimeout
         raise
       rescue Net::ReadTimeout, IOError, EOFError,
-             Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE,
+             Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE, Errno::ETIMEDOUT,
              # avoid a dependency on OpenSSL
              defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : IOError,
              Timeout::Error => exception

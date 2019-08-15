@@ -11,8 +11,8 @@
 
 require 'rbconfig'
 require 'tempfile'
-require 'webrick/config'
-require 'webrick/httpservlet/abstract'
+require_relative '../config'
+require_relative 'abstract'
 
 module WEBrick
   module HTTPServlet

@@ -41,10 +41,10 @@ builddir = File.dirname(File.expand_path(__FILE__))
 srcdir = "<%=arg['srcdir']%>"
 top_srcdir = File.realpath(srcdir, builddir)
 fake = File.join(top_srcdir, "tool/fake.rb")
-eval(File.read(fake), nil, fake)
+eval(File.binread(fake), nil, fake)
 ropt = "-r#{__FILE__}"
 ["RUBYOPT"].each do |flag|
   opt = ENV[flag]
-  opt = opt ? ([ropt] | opt.split).join(" ") : ropt
+  opt = opt ? ([ropt] | opt.b.split(/\s+/)).join(" ") : ropt
   ENV[flag] = opt
 end

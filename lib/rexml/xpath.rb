@@ -1,6 +1,6 @@
 # frozen_string_literal: false
-require 'rexml/functions'
-require 'rexml/xpath_parser'
+require_relative 'functions'
+require_relative 'xpath_parser'
 
 module REXML
   # Wrapper class.  Use this class to access the XPath functions.

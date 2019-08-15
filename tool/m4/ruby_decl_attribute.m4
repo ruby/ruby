@@ -29,6 +29,7 @@ ${rbcv_cond+[@%:@define ]attrib[](attrib_params)[ x]}
 ${rbcv_cond+[@%:@endif]})
 $6
 @%:@define mesg ("")
+@%:@define san "address"
     attrib[](attrib_params)[;], [],
     [rbcv="$mac"; break])
 done

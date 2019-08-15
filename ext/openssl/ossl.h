@@ -13,8 +13,8 @@
 #include RUBY_EXTCONF_H
 
 #include <assert.h>
-#include <errno.h>
 #include <ruby.h>
+#include <errno.h>
 #include <ruby/io.h>
 #include <ruby/thread.h>
 #include <openssl/opensslv.h>
@@ -27,7 +27,6 @@
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include <openssl/conf.h>
-#include <openssl/conf_api.h>
 #include <openssl/crypto.h>
 #if !defined(OPENSSL_NO_ENGINE)
 #  include <openssl/engine.h>

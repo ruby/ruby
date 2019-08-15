@@ -1,5 +1,6 @@
 require_relative '../spec_helper'
 
+platform_is_not :aix, :"solaris2.10" do
 describe 'Socket.getifaddrs' do
   before do
     @ifaddrs = Socket.getifaddrs
@@ -24,7 +25,7 @@ describe 'Socket.getifaddrs' do
   describe 'each returned Socket::Ifaddr' do
     it 'has an interface index' do
       @ifaddrs.each do |ifaddr|
-        ifaddr.ifindex.should be_an_instance_of(Fixnum)
+        ifaddr.ifindex.should be_kind_of(Integer)
       end
     end
 
@@ -36,7 +37,7 @@ describe 'Socket.getifaddrs' do
 
     it 'has a set of flags' do
       @ifaddrs.each do |ifaddr|
-        ifaddr.flags.should be_an_instance_of(Fixnum)
+        ifaddr.flags.should be_kind_of(Integer)
       end
     end
   end
@@ -47,62 +48,70 @@ describe 'Socket.getifaddrs' do
     end
 
     it 'is an Addrinfo' do
-      @addrs.each do |addr|
+      @addrs.all? do |addr|
         addr.should be_an_instance_of(Addrinfo)
-      end
+        true
+      end.should be_true
     end
 
     it 'has an address family' do
-      @addrs.each do |addr|
-        addr.afamily.should be_an_instance_of(Fixnum)
+      @addrs.all? do |addr|
+        addr.afamily.should be_kind_of(Integer)
         addr.afamily.should_not == Socket::AF_UNSPEC
-      end
+        true
+      end.should be_true
     end
   end
 
-    platform_is_not :windows do
+  platform_is_not :windows do
     describe 'the Socket::Ifaddr broadcast address' do
       before do
         @addrs = @ifaddrs.map(&:broadaddr).compact
       end
 
       it 'is an Addrinfo' do
-        @addrs.each do |addr|
+        @addrs.all? do |addr|
           addr.should be_an_instance_of(Addrinfo)
-        end
+          true
+        end.should be_true
       end
 
       it 'has an address family' do
-        @addrs.each do |addr|
-          addr.afamily.should be_an_instance_of(Fixnum)
+        @addrs.all? do |addr|
+          addr.afamily.should be_kind_of(Integer)
           addr.afamily.should_not == Socket::AF_UNSPEC
-        end
+          true
+        end.should be_true
       end
     end
 
     describe 'the Socket::Ifaddr netmask address' do
       before do
-        @addrs = @ifaddrs.map(&:netmask).compact
+        @addrs = @ifaddrs.map(&:netmask).compact.select(&:ip?)
       end
 
       it 'is an Addrinfo' do
-        @addrs.each do |addr|
+        @addrs.all? do |addr|
           addr.should be_an_instance_of(Addrinfo)
-        end
+          true
+        end.should be_true
       end
 
       it 'has an address family' do
-        @addrs.each do |addr|
-          addr.afamily.should be_an_instance_of(Fixnum)
+        @addrs.all? do |addr|
+          addr.afamily.should be_kind_of(Integer)
           addr.afamily.should_not == Socket::AF_UNSPEC
-        end
+          true
+        end.should be_true
       end
 
       it 'has an IP address' do
-        @addrs.each do |addr|
+        @addrs.all? do |addr|
           addr.ip_address.should be_an_instance_of(String)
-        end
+          true
+        end.should be_true
       end
     end
   end
+end
 end

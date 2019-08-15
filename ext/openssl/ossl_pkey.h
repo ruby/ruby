@@ -133,9 +133,9 @@ static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2, VALU
 	BIGNUM *bn3 = NULL, *orig_bn3 = NIL_P(v3) ? NULL : GetBNPtr(v3);\
 									\
 	Get##_type(self, obj);						\
-	if (orig_bn1 && !(bn1 = BN_dup(orig_bn1)) ||			\
-	    orig_bn2 && !(bn2 = BN_dup(orig_bn2)) ||			\
-	    orig_bn3 && !(bn3 = BN_dup(orig_bn3))) {			\
+        if ((orig_bn1 && !(bn1 = BN_dup(orig_bn1))) ||			\
+            (orig_bn2 && !(bn2 = BN_dup(orig_bn2))) ||			\
+            (orig_bn3 && !(bn3 = BN_dup(orig_bn3)))) {			\
 		BN_clear_free(bn1);					\
 		BN_clear_free(bn2);					\
 		BN_clear_free(bn3);					\
@@ -163,8 +163,8 @@ static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2) \
 	BIGNUM *bn2 = NULL, *orig_bn2 = NIL_P(v2) ? NULL : GetBNPtr(v2);\
 									\
 	Get##_type(self, obj);						\
-	if (orig_bn1 && !(bn1 = BN_dup(orig_bn1)) ||			\
-	    orig_bn2 && !(bn2 = BN_dup(orig_bn2))) {			\
+        if ((orig_bn1 && !(bn1 = BN_dup(orig_bn1))) ||			\
+            (orig_bn2 && !(bn2 = BN_dup(orig_bn2)))) {			\
 		BN_clear_free(bn1);					\
 		BN_clear_free(bn2);					\
 		ossl_raise(eBNError, NULL);				\

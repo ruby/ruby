@@ -238,6 +238,12 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("with options {:capture=>/\\d+/}", sprintf("with options %p" % options))
   end
 
+  def test_inspect
+    obj = Object.new
+    def obj.inspect; "TEST"; end
+    assert_equal("<TEST>", sprintf("<%p>", obj))
+  end
+
   def test_invalid
     # Star precision before star width:
     assert_raise(ArgumentError, "[ruby-core:11569]") {sprintf("%.**d", 5, 10, 1)}

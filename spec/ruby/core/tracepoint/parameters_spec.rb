@@ -12,7 +12,7 @@ ruby_version_is "2.6" do
     end
 
     it 'returns the parameters of lambda block' do
-      f = lambda {|x, y, z| }
+      f = -> x, y, z { }
       parameters = nil
       TracePoint.new(:b_call) {|tp| parameters = tp.parameters }.enable do
         f.call(1, 2, 3)

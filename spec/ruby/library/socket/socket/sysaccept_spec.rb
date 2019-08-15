@@ -12,10 +12,10 @@ describe 'Socket#sysaccept' do
       @server.close
     end
 
-    platform_is_not :freebsd, :windows, :solaris, :darwin do # hangs
+    platform_is :linux do # hangs on other platforms
       describe 'using an unbound socket'  do
         it 'raises Errno::EINVAL' do
-          lambda { @server.sysaccept }.should raise_error(Errno::EINVAL)
+          -> { @server.sysaccept }.should raise_error(Errno::EINVAL)
         end
       end
 
@@ -25,7 +25,7 @@ describe 'Socket#sysaccept' do
         end
 
         it 'raises Errno::EINVAL' do
-          lambda { @server.sysaccept }.should raise_error(Errno::EINVAL)
+          -> { @server.sysaccept }.should raise_error(Errno::EINVAL)
         end
       end
     end
@@ -59,8 +59,6 @@ describe 'Socket#sysaccept' do
 
           @client.connect(@server_addr)
 
-          thread.join(5)
-
           thread.value.should be_an_instance_of(Array)
         end
       end
@@ -75,10 +73,10 @@ describe 'Socket#sysaccept' do
           @client.close
         end
 
-        it 'returns an Array containing a Fixnum and an Addrinfo' do
+        it 'returns an Array containing an Integer and an Addrinfo' do
           @fd, addrinfo = @server.sysaccept
 
-          @fd.should be_an_instance_of(Fixnum)
+          @fd.should be_kind_of(Integer)
           addrinfo.should be_an_instance_of(Addrinfo)
         end
 

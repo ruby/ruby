@@ -2,7 +2,7 @@ require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 describe 'TCPServer#initialize' do
-  describe 'with a single Fixnum argument' do
+  describe 'with a single Integer argument' do
     before do
       @server = TCPServer.new(0)
     end
@@ -12,7 +12,7 @@ describe 'TCPServer#initialize' do
     end
 
     it 'sets the port to the given argument' do
-      @server.local_address.ip_port.should be_an_instance_of(Fixnum)
+      @server.local_address.ip_port.should be_kind_of(Integer)
       @server.local_address.ip_port.should > 0
     end
 
@@ -38,7 +38,7 @@ describe 'TCPServer#initialize' do
     end
 
     it 'sets the port to the given argument' do
-      @server.local_address.ip_port.should be_an_instance_of(Fixnum)
+      @server.local_address.ip_port.should be_kind_of(Integer)
       @server.local_address.ip_port.should > 0
     end
 
@@ -52,11 +52,11 @@ describe 'TCPServer#initialize' do
 
   describe 'with a single String argument containing a non numeric value' do
     it 'raises SocketError' do
-      lambda { TCPServer.new('cats') }.should raise_error(SocketError)
+      -> { TCPServer.new('cats') }.should raise_error(SocketError)
     end
   end
 
-  describe 'with a String and a Fixnum' do
+  describe 'with a String and an Integer' do
     SocketSpecs.each_ip_protocol do |family, ip_address|
       before do
         @server = TCPServer.new(ip_address, 0)
@@ -67,7 +67,7 @@ describe 'TCPServer#initialize' do
       end
 
       it 'sets the port to the given port argument' do
-        @server.local_address.ip_port.should be_an_instance_of(Fixnum)
+        @server.local_address.ip_port.should be_kind_of(Integer)
         @server.local_address.ip_port.should > 0
       end
 
@@ -90,7 +90,7 @@ describe 'TCPServer#initialize' do
     end
 
     it 'sets the port to the given port argument' do
-      @server.local_address.ip_port.should be_an_instance_of(Fixnum)
+      @server.local_address.ip_port.should be_kind_of(Integer)
       @server.local_address.ip_port.should > 0
     end
 

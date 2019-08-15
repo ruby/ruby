@@ -262,7 +262,7 @@ ossl_dh_initialize_copy(VALUE self, VALUE other)
 	BIGNUM *pub2 = BN_dup(pub);
 	BIGNUM *priv2 = BN_dup(priv);
 
-	if (!pub2 || priv && !priv2) {
+        if (!pub2 || (priv && !priv2)) {
 	    BN_clear_free(pub2);
 	    BN_clear_free(priv2);
 	    ossl_raise(eDHError, "BN_dup");

@@ -21,60 +21,69 @@ describe "Kernel#warn" do
   end
 
   it "does not append line-end if last character is line-end" do
-    lambda {
+    -> {
       $VERBOSE = true
       warn("this is some simple text with line-end\n")
     }.should output(nil, "this is some simple text with line-end\n")
   end
 
   it "calls #write on $stderr if $VERBOSE is true" do
-    lambda {
+    -> {
       $VERBOSE = true
       warn("this is some simple text")
     }.should output(nil, "this is some simple text\n")
   end
 
   it "calls #write on $stderr if $VERBOSE is false" do
-    lambda {
+    -> {
       $VERBOSE = false
       warn("this is some simple text")
     }.should output(nil, "this is some simple text\n")
   end
 
   it "does not call #write on $stderr if $VERBOSE is nil" do
-    lambda {
+    -> {
       $VERBOSE = nil
       warn("this is some simple text")
     }.should output(nil, "")
   end
 
   it "writes each argument on a line when passed multiple arguments" do
-    lambda {
+    -> {
       $VERBOSE = true
       warn("line 1", "line 2")
     }.should output(nil, "line 1\nline 2\n")
   end
 
   it "writes each array element on a line when passes an array" do
-    lambda {
+    -> {
       $VERBOSE = true
       warn(["line 1", "line 2"])
     }.should output(nil, "line 1\nline 2\n")
   end
 
   it "does not write strings when passed no arguments" do
-    lambda {
+    -> {
       $VERBOSE = true
       warn
     }.should output("", "")
   end
 
   it "writes the default record separator and NOT $/ to $stderr after the warning message" do
-    lambda {
+    -> {
       $VERBOSE = true
       $/ = 'rs'
       warn("")
     }.should output(nil, /\n/)
+  end
+
+  it "writes to_s representation if passed a non-string" do
+    obj = mock("obj")
+    obj.should_receive(:to_s).and_return("to_s called")
+    -> {
+      $VERBOSE = true
+      warn(obj)
+    }.should output(nil, "to_s called\n")
   end
 
   ruby_version_is "2.5" do
@@ -92,11 +101,9 @@ describe "Kernel#warn" do
         -> { w.f4("foo", 3) }.should output(nil, %r|core/kernel/fixtures/classes.rb:#{w.f3_call_lineno}: warning: foo|)
       end
 
-      ruby_bug "#14846", "2.5"..."2.6" do
-        it "does not prepend caller information if line number is too big" do
-          w = KernelSpecs::WarnInNestedCall.new
-          -> { w.f4("foo", 100) }.should output(nil, "warning: foo\n")
-        end
+      it "does not prepend caller information if line number is too big" do
+        w = KernelSpecs::WarnInNestedCall.new
+        -> { w.f4("foo", 100) }.should output(nil, "warning: foo\n")
       end
 
       it "prepends even if a message is empty or nil" do
@@ -118,10 +125,8 @@ describe "Kernel#warn" do
         -> { warn "", uplevel: -100 }.should raise_error(ArgumentError)
       end
 
-      ruby_bug "#14846", "2.5"..."2.6" do
-        it "raises ArgumentError if passed -1" do
-          -> { warn "", uplevel: -1 }.should raise_error(ArgumentError)
-        end
+      it "raises ArgumentError if passed -1" do
+        -> { warn "", uplevel: -1 }.should raise_error(ArgumentError)
       end
 
       it "raises TypeError if passed not Integer" do

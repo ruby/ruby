@@ -29,7 +29,7 @@ describe "Matrix#column" do
   end
 
   it "never yields when out of bounds" do
-    lambda { @m.column(3){ raise } }.should_not raise_error
-    lambda { @m.column(-4){ raise } }.should_not raise_error
+    -> { @m.column(3){ raise } }.should_not raise_error
+    -> { @m.column(-4){ raise } }.should_not raise_error
   end
 end
