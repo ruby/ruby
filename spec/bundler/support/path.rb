@@ -25,6 +25,10 @@ module Spec
       @spec_dir ||= root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
+    def tracked_files
+      @tracked_files ||= ruby_core? ? `git ls-files -z -- lib/bundler lib/bundler.rb spec/bundler` : `git ls-files -z`
+    end
+
     def tmp(*path)
       root.join("tmp", *path)
     end
