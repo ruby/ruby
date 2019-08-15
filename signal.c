@@ -1091,9 +1091,8 @@ signal_exec(VALUE cmd, int safe, int sig)
 }
 
 void
-rb_trap_exit(void)
+rb_vm_trap_exit(rb_vm_t *vm)
 {
-    rb_vm_t *vm = GET_VM();
     VALUE trap_exit = vm->trap_list.cmd[0];
 
     if (trap_exit) {

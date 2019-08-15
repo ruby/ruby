@@ -2204,7 +2204,6 @@ struct timeval rb_time_timeval(VALUE);
 VALUE rb_obj_is_mutex(VALUE obj);
 VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
 void rb_thread_execute_interrupts(VALUE th);
-void rb_clear_trace_func(void);
 VALUE rb_get_coverages(void);
 int rb_get_coverage_mode(void);
 VALUE rb_default_coverage(int);

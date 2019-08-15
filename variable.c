@@ -187,12 +187,6 @@ rb_search_class_path(VALUE klass)
 }
 
 static VALUE
-save_temporary_path(VALUE obj, VALUE name)
-{
-    return rb_ivar_set(obj, tmp_classpath, make_temporary_path(obj, name));
-}
-
-static VALUE
 build_const_pathname(VALUE head, VALUE tail)
 {
     VALUE path = rb_str_dup(head);
@@ -219,7 +213,7 @@ rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
     }
     else {
 	int permanent;
-        str = rb_tmp_class_path(under, &permanent, save_temporary_path);
+        str = rb_tmp_class_path(under, &permanent, make_temporary_path);
         str = build_const_pathname(str, name);
 	if (!permanent) {
 	    pathid = tmp_classpath;
@@ -231,23 +225,9 @@ rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
 void
 rb_set_class_path(VALUE klass, VALUE under, const char *name)
 {
-    VALUE str;
-    ID pathid = classpath;
-
-    if (under == rb_cObject) {
-	str = rb_str_new2(name);
-    }
-    else {
-	int permanent;
-	str = rb_str_dup(rb_tmp_class_path(under, &permanent, save_temporary_path));
-	rb_str_cat2(str, "::");
-	rb_str_cat2(str, name);
-	if (!permanent) {
-	    pathid = tmp_classpath;
-	}
-    }
+    VALUE str = rb_str_new2(name);
     OBJ_FREEZE(str);
-    rb_ivar_set(klass, pathid, str);
+    rb_set_class_path_string(klass, under, str);
 }
 
 VALUE

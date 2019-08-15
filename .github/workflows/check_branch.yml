@@ -1,16 +1,15 @@
-# Protected branches:
-#   * master: Synchronized between cgit and GitHub bidirectionally [experimental]
-#   * other branches: Only writable from cgit.
+# We bidirectionally synchronize github.com/ruby/ruby.git's master branch and
+# git.ruby-lang.org/ruby.git's master branch.
+# We can use a pull request's merge button only on the master branch.
 #
-# Bidirectional sync is still WIP, so "write" is not permitted to ruby-commiters
-# team yet. Still under testing.
+# Therefore, we require to pass this "check_branch" on all protected branches
+# to prevent us from accidentally pushing commits to GitHub directly.
 #
-# And this is enabled for "other branches" to prevent us from merging them.
-# See also: https://bugs.ruby-lang.org/issues/16094
-name: check_branch
+# Details: https://bugs.ruby-lang.org/issues/16094
+name: pull_request
 on: [pull_request]
 jobs:
-  master:
+  check_branch:
     runs-on: ubuntu-latest
     steps:
       - name: Check if branch is master
