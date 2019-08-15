@@ -7,7 +7,7 @@ end
 module CGI::Util
   @@accept_charset="UTF-8" unless defined?(@@accept_charset)
   # URL-encode a string.
-  #   url_encoded_string = CGI::escape("'Stop!' said Fred")
+  #   url_encoded_string = CGI.escape("'Stop!' said Fred")
   #      # => "%27Stop%21%27+said+Fred"
   def escape(string)
     str = string.b
@@ -20,7 +20,7 @@ module CGI::Util
   end
 
   # URL-decode a string with encoding(optional).
-  #   string = CGI::unescape("%27Stop%21%27+said+Fred")
+  #   string = CGI.unescape("%27Stop%21%27+said+Fred")
   #      # => "'Stop!' said Fred"
   def unescape(string,encoding=@@accept_charset)
     str = string.b
@@ -45,7 +45,7 @@ module CGI::Util
   }
 
   # Escape special characters in HTML, namely '&\"<>
-  #   CGI::escapeHTML('Usage: foo "bar" <baz>')
+  #   CGI.escapeHTML('Usage: foo "bar" <baz>')
   #      # => "Usage: foo &quot;bar&quot; &lt;baz&gt;"
   def escapeHTML(string)
     enc = string.encoding
@@ -69,7 +69,7 @@ module CGI::Util
   end
 
   # Unescape a string that has been HTML-escaped
-  #   CGI::unescapeHTML("Usage: foo &quot;bar&quot; &lt;baz&gt;")
+  #   CGI.unescapeHTML("Usage: foo &quot;bar&quot; &lt;baz&gt;")
   #      # => "Usage: foo \"bar\" <baz>"
   def unescapeHTML(string)
     enc = string.encoding
@@ -127,10 +127,10 @@ module CGI::Util
     end
   end
 
-  # Synonym for CGI::escapeHTML(str)
+  # Synonym for CGI.escapeHTML(str)
   alias escape_html escapeHTML
 
-  # Synonym for CGI::unescapeHTML(str)
+  # Synonym for CGI.unescapeHTML(str)
   alias unescape_html unescapeHTML
 
   # Escape only the tags of certain HTML elements in +string+.
@@ -141,30 +141,30 @@ module CGI::Util
   # The attribute list of the open tag will also be escaped (for
   # instance, the double-quotes surrounding attribute values).
   #
-  #   print CGI::escapeElement('<BR><A HREF="url"></A>', "A", "IMG")
+  #   print CGI.escapeElement('<BR><A HREF="url"></A>', "A", "IMG")
   #     # "<BR>&lt;A HREF=&quot;url&quot;&gt;&lt;/A&gt"
   #
-  #   print CGI::escapeElement('<BR><A HREF="url"></A>', ["A", "IMG"])
+  #   print CGI.escapeElement('<BR><A HREF="url"></A>', ["A", "IMG"])
   #     # "<BR>&lt;A HREF=&quot;url&quot;&gt;&lt;/A&gt"
   def escapeElement(string, *elements)
     elements = elements[0] if elements[0].kind_of?(Array)
     unless elements.empty?
       string.gsub(/<\/?(?:#{elements.join("|")})(?!\w)(?:.|\n)*?>/i) do
-        CGI::escapeHTML($&)
+        CGI.escapeHTML($&)
       end
     else
       string
     end
   end
 
-  # Undo escaping such as that done by CGI::escapeElement()
+  # Undo escaping such as that done by CGI.escapeElement()
   #
-  #   print CGI::unescapeElement(
-  #           CGI::escapeHTML('<BR><A HREF="url"></A>'), "A", "IMG")
+  #   print CGI.unescapeElement(
+  #           CGI.escapeHTML('<BR><A HREF="url"></A>'), "A", "IMG")
   #     # "&lt;BR&gt;<A HREF="url"></A>"
   #
-  #   print CGI::unescapeElement(
-  #           CGI::escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"])
+  #   print CGI.unescapeElement(
+  #           CGI.escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"])
   #     # "&lt;BR&gt;<A HREF="url"></A>"
   def unescapeElement(string, *elements)
     elements = elements[0] if elements[0].kind_of?(Array)
@@ -177,10 +177,10 @@ module CGI::Util
     end
   end
 
-  # Synonym for CGI::escapeElement(str)
+  # Synonym for CGI.escapeElement(str)
   alias escape_element escapeElement
 
-  # Synonym for CGI::unescapeElement(str)
+  # Synonym for CGI.unescapeElement(str)
   alias unescape_element unescapeElement
 
   # Abbreviated day-of-week names specified by RFC 822
@@ -191,7 +191,7 @@ module CGI::Util
 
   # Format a +Time+ object as a String using the format specified by RFC 1123.
   #
-  #   CGI::rfc1123_date(Time.now)
+  #   CGI.rfc1123_date(Time.now)
   #     # Sat, 01 Jan 2000 00:00:00 GMT
   def rfc1123_date(time)
     t = time.clone.gmtime
@@ -205,13 +205,13 @@ module CGI::Util
   # +string+ is the HTML string to indent.  +shift+ is the indentation
   # unit to use; it defaults to two spaces.
   #
-  #   print CGI::pretty("<HTML><BODY></BODY></HTML>")
+  #   print CGI.pretty("<HTML><BODY></BODY></HTML>")
   #     # <HTML>
   #     #   <BODY>
   #     #   </BODY>
   #     # </HTML>
   #
-  #   print CGI::pretty("<HTML><BODY></BODY></HTML>", "\t")
+  #   print CGI.pretty("<HTML><BODY></BODY></HTML>", "\t")
   #     # <HTML>
   #     #         <BODY>
   #     #         </BODY>

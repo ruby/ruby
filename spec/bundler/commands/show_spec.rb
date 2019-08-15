@@ -4,7 +4,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
   context "with a standard Gemfile" do
     before :each do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
     end
@@ -30,19 +30,9 @@ RSpec.describe "bundle show", :bundler => "< 3" do
       expect(out).to eq(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
-    it "prints deprecation" do
-      bundle "show rails"
-      expect(err).to eq("[DEPRECATED] use `bundle info rails` instead of `bundle show rails`")
-    end
-
     it "prints path if gem exists in bundle (with --paths option)" do
       bundle "show rails --paths"
       expect(out).to eq(default_bundle_path("gems", "rails-2.3.2").to_s)
-    end
-
-    it "prints deprecation when called with a gem and the --paths option" do
-      bundle "show rails --paths"
-      expect(err).to eq("[DEPRECATED] use `bundle info rails --path` instead of `bundle show rails --paths`")
     end
 
     it "warns if path no longer exists on disk" do
@@ -59,10 +49,6 @@ RSpec.describe "bundle show", :bundler => "< 3" do
       expect(out).to eq(root.to_s)
     end
 
-    it "prints deprecation when called with bundler" do
-      bundle "show bundler"
-      expect(err).to eq("[DEPRECATED] use `bundle info bundler` instead of `bundle show bundler`")
-    end
     it "complains if gem not in bundle" do
       bundle "show missing"
       expect(err).to match(/could not find gem 'missing'/i)
@@ -79,19 +65,26 @@ RSpec.describe "bundle show", :bundler => "< 3" do
       expect(gem_list).to eq(gem_list.sort)
     end
 
-    it "prints a deprecation when called with the --paths option" do
-      bundle "show --paths"
-
-      expect(err).to eq("[DEPRECATED] use `bundle list` instead of `bundle show --paths`")
-    end
-
     it "prints summary of gems" do
       bundle "show --verbose"
 
-      expect(out).to include("* actionmailer (2.3.2)")
-      expect(out).to include("\tSummary:  This is just a fake gem for testing")
-      expect(out).to include("\tHomepage: No website available.")
-      expect(out).to include("\tStatus:   Up to date")
+      expect(out).to include <<~MSG
+        * actionmailer (2.3.2)
+        \tSummary:  This is just a fake gem for testing
+        \tHomepage: http://example.com
+        \tStatus:   Up to date
+      MSG
+    end
+
+    it "includes bundler in the summary of gems" do
+      bundle "show --verbose"
+
+      expect(out).to include <<~MSG
+        * bundler (#{Bundler::VERSION})
+        \tSummary:  The best way to manage your application's dependencies
+        \tHomepage: https://bundler.io
+        \tStatus:   Up to date
+      MSG
     end
   end
 
@@ -163,7 +156,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo"
     G
 
@@ -175,7 +168,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
   context "with a valid regexp for gem name" do
     it "presents alternatives", :ruby_repo do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         gem "rack-obama"
       G
@@ -188,7 +181,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
   context "with an invalid regexp for gem name" do
     it "does not find the gem" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rails"
       G
 
@@ -207,7 +200,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
 
     it "doesn't update gems to newer versions" do
       install_gemfile! <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "rails"
       G
 

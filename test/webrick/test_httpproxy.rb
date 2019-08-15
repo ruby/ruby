@@ -215,6 +215,45 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     end
   end
 
+  def test_http10_proxy_chunked
+    # Testing HTTP/1.0 client request and HTTP/1.1 chunked response
+    # from origin server.
+    #                    +------+
+    #                    V      |
+    #  client -------> proxy ---+
+    #           GET          GET
+    #           HTTP/1.0     HTTP/1.1
+    #           non-chunked  chunked
+    #
+    proxy_handler_called = request_handler_called = 0
+    config = {
+      :ServerName => "localhost.localdomain",
+      :ProxyContentHandler => Proc.new{|req, res| proxy_handler_called += 1 },
+      :RequestCallback => Proc.new{|req, res| request_handler_called += 1 }
+    }
+    log_tester = lambda {|log, access_log|
+      log.reject! {|str|
+        %r{WARN  chunked is set for an HTTP/1\.0 request\. \(ignored\)} =~ str
+      }
+      assert_equal([], log)
+    }
+    TestWEBrick.start_httpproxy(config, log_tester){|server, addr, port, log|
+      body = nil
+      server.mount_proc("/"){|req, res|
+        body = "#{req.request_method} #{req.path} #{req.body}"
+        res.chunked = true
+        res.body = -> (socket) { body.each_char {|c| socket.write c } }
+      }
+
+      # Don't use Net::HTTP because it uses HTTP/1.1.
+      TCPSocket.open(addr, port) {|s|
+        s.write "GET / HTTP/1.0\r\nHost: localhost.localdomain\r\n\r\n"
+        response = s.read
+        assert_equal(body, response[/.*\z/])
+      }
+    }
+  end
+
   def make_certificate(key, cn)
     subject = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=#{cn}")
     exts = [

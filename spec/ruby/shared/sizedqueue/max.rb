@@ -27,21 +27,21 @@ describe :sizedqueue_max=, shared: true do
 
   it "raises a TypeError when given a non-numeric value" do
     q = @object.call(5)
-    lambda { q.max = "foo" }.should raise_error(TypeError)
-    lambda { q.max = Object.new }.should raise_error(TypeError)
+    -> { q.max = "foo" }.should raise_error(TypeError)
+    -> { q.max = Object.new }.should raise_error(TypeError)
   end
 
   it "raises an argument error when set to zero" do
     q = @object.call(5)
     q.max.should == 5
-    lambda { q.max = 0 }.should raise_error(ArgumentError)
+    -> { q.max = 0 }.should raise_error(ArgumentError)
     q.max.should == 5
   end
 
   it "raises an argument error when set to a negative number" do
     q = @object.call(5)
     q.max.should == 5
-    lambda { q.max = -1 }.should raise_error(ArgumentError)
+    -> { q.max = -1 }.should raise_error(ArgumentError)
     q.max.should == 5
   end
 end

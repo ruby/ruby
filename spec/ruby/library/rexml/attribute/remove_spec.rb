@@ -15,6 +15,6 @@ describe "REXML::Attribute#remove" do
   end
 
   it "does not anything if element has no parent" do
-    lambda {@attr.remove}.should_not raise_error(Exception)
+    -> {@attr.remove}.should_not raise_error(Exception)
   end
 end

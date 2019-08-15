@@ -22,9 +22,16 @@ node_gc_mark(void *ptr)
     rb_gc_mark((VALUE)data->ast);
 }
 
+static size_t
+node_memsize(const void *ptr)
+{
+    struct ASTNodeData *data = (struct ASTNodeData *)ptr;
+    return rb_ast_memsize(data->ast);
+}
+
 static const rb_data_type_t rb_node_type = {
     "AST/node",
-    {node_gc_mark, RUBY_TYPED_DEFAULT_FREE, 0,},
+    {node_gc_mark, RUBY_TYPED_DEFAULT_FREE, node_memsize,},
     0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
 };
@@ -83,7 +90,7 @@ ast_parse_done(rb_ast_t *ast)
  *  SyntaxError is raised if the given _string_ is invalid syntax.
  *
  *    RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
- *    # => #<RubyVM::AbstractSyntaxTree::Node(NODE_SCOPE(0) 1:0, 1:9): >
+ *    # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-1:9>
  */
 static VALUE
 rb_ast_s_parse(VALUE module, VALUE str)
@@ -112,7 +119,7 @@ rb_ast_parse_str(VALUE str)
  *   valid Ruby syntax.
  *
  *     RubyVM::AbstractSyntaxTree.parse_file("my-app/app.rb")
- *     # => #<RubyVM::AbstractSyntaxTree::Node(NODE_SCOPE(0) 1:0, 31:3): >
+ *     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-31:3>
  */
 static VALUE
 rb_ast_s_parse_file(VALUE module, VALUE path)
@@ -208,14 +215,14 @@ script_lines(VALUE path)
  *   Returns AST nodes of the given _proc_ or _method_.
  *
  *     RubyVM::AbstractSyntaxTree.of(proc {1 + 2})
- *     # => #<RubyVM::AbstractSyntaxTree::Node(NODE_SCOPE(0) 1:35, 1:42): >
+ *     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:35-1:42>
  *
  *     def hello
  *       puts "hello, world"
  *     end
  *
  *     RubyVM::AbstractSyntaxTree.of(method(:hello))
- *     # => #<RubyVM::AbstractSyntaxTree::Node(NODE_SCOPE(0) 1:0, 3:3): >
+ *     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-3:3>
  */
 static VALUE
 rb_ast_s_of(VALUE module, VALUE body)
@@ -374,7 +381,8 @@ node_children(rb_ast_t *ast, NODE *node)
         goto loop;
       case NODE_UNTIL:
       loop:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_cond, node->nd_body);
+        return rb_ary_push(rb_ary_new_from_node_args(ast, 2, node->nd_cond, node->nd_body),
+                           (node->nd_state ? Qtrue : Qfalse));
       case NODE_ITER:
       case NODE_FOR:
         return rb_ary_new_from_node_args(ast, 2, node->nd_iter, node->nd_body);

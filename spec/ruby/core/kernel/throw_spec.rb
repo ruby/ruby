@@ -42,21 +42,21 @@ describe "Kernel.throw" do
   end
 
   it "raises an ArgumentError if there is no catch block for the symbol" do
-    lambda { throw :blah }.should raise_error(ArgumentError)
+    -> { throw :blah }.should raise_error(ArgumentError)
   end
 
   it "raises an UncaughtThrowError if there is no catch block for the symbol" do
-    lambda { throw :blah }.should raise_error(UncaughtThrowError)
+    -> { throw :blah }.should raise_error(UncaughtThrowError)
   end
 
   it "raises ArgumentError if 3 or more arguments provided" do
-    lambda {
+    -> {
       catch :blah do
         throw :blah, :return_value, 2
       end
     }.should raise_error(ArgumentError)
 
-    lambda {
+    -> {
       catch :blah do
         throw :blah, :return_value, 2, 3, 4, 5
       end
@@ -64,7 +64,7 @@ describe "Kernel.throw" do
   end
 
   it "can throw an object" do
-    lambda {
+    -> {
       obj = Object.new
       catch obj do
         throw obj

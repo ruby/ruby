@@ -200,7 +200,7 @@ using CSV::MatchP if CSV.const_defined?(:MatchP)
 #   data.first.to_h #=> {"Name"=>"Bob", "Department"=>"Engineering", "Salary"=>"1000"}
 #
 #   # Headers provided by developer
-#   data = CSV.parse('Bob,Engeneering,1000', headers: %i[name department salary])
+#   data = CSV.parse('Bob,Engineering,1000', headers: %i[name department salary])
 #   data.first      #=> #<CSV::Row name:"Bob" department:"Engineering" salary:"1000">
 #
 # === Typed data reading
@@ -884,11 +884,28 @@ class CSV
   # <b><tt>:empty_value</tt></b>::        When set an object, any values of a
   #                                       blank string field is replaced by
   #                                       the set object.
-  # <b><tt>:quote_empty</tt></b>::        TODO
-  # <b><tt>:write_converters</tt></b>::   TODO
-  # <b><tt>:write_nil_value</tt></b>::    TODO
-  # <b><tt>:write_empty_value</tt></b>::  TODO
-  # <b><tt>:strip</tt></b>::              TODO
+  # <b><tt>:quote_empty</tt></b>::        When set to a +true+ value, CSV will
+  #                                       quote empty values with double quotes.
+  #                                       When +false+, CSV will emit an
+  #                                       empty string for an empty field value.
+  # <b><tt>:write_converters</tt></b>::   Converts values on each line with the
+  #                                       specified <tt>Proc</tt> object(s),
+  #                                       which receive a <tt>String</tt> value
+  #                                       and return a <tt>String</tt> or +nil+
+  #                                       value.
+  #                                       When an array is specified, each
+  #                                       converter will be applied in order.
+  # <b><tt>:write_nil_value</tt></b>::    When a <tt>String</tt> value, +nil+
+  #                                       value(s) on each line will be replaced
+  #                                       with the specified value.
+  # <b><tt>:write_empty_value</tt></b>::  When a <tt>String</tt> or +nil+ value,
+  #                                       empty value(s) on each line will be
+  #                                       replaced with the specified value.
+  # <b><tt>:strip</tt></b>::              When set to a +true+ value, CSV will
+  #                                       strip "\t\r\n\f\v" around the values.
+  #                                       If you specify a string instead of
+  #                                       +true+, CSV will strip string. The
+  #                                       length of string must be 1.
   #
   # See CSV::DEFAULT_OPTIONS for the default settings.
   #
@@ -955,6 +972,8 @@ class CSV
       strip: strip,
     }
     @parser = nil
+    @parser_enumerator = nil
+    @eof_error = nil
 
     @writer_options = {
       encoding: @encoding,
@@ -1156,8 +1175,12 @@ class CSV
   end
 
   def eof?
+    return false if @eof_error
     begin
       parser_enumerator.peek
+      false
+    rescue MalformedCSVError => error
+      @eof_error = error
       false
     rescue StopIteration
       true
@@ -1169,6 +1192,7 @@ class CSV
   def rewind
     @parser = nil
     @parser_enumerator = nil
+    @eof_error = nil
     @writer.rewind if @writer
     @io.rewind
   end
@@ -1264,6 +1288,10 @@ class CSV
   # The data source must be open for reading.
   #
   def shift
+    if @eof_error
+      eof_error, @eof_error = @eof_error, nil
+      raise eof_error
+    end
     begin
       parser_enumerator.next
     rescue StopIteration
@@ -1278,7 +1306,7 @@ class CSV
   # ASCII compatible String.
   #
   def inspect
-    str = ["<#", self.class.to_s, " io_type:"]
+    str = ["#<", self.class.to_s, " io_type:"]
     # show type of wrapped IO
     if    @io == $stdout then str << "$stdout"
     elsif @io == $stdin  then str << "$stdin"

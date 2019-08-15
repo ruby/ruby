@@ -81,8 +81,8 @@ module Bundler
           sort_dep_specs(spec_groups, locked_spec)
         end.tap do |specs|
           if DEBUG
-            STDERR.puts before_result
-            STDERR.puts " after sort_versions: #{debug_format_result(dep, specs).inspect}"
+            warn before_result
+            warn " after sort_versions: #{debug_format_result(dep, specs).inspect}"
           end
         end
       end

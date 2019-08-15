@@ -86,8 +86,8 @@ RSpec.describe "fetching dependencies with a not available mirror", :realworld =
 
       bundle :install, :artifice => nil
 
-      expect(last_command.stdout).to include "Fetching source index from #{mirror}/"
-      expect(last_command.bundler_err).to include <<-EOS.strip
+      expect(out).to include "Fetching source index from #{mirror}/"
+      expect(err).to include <<-EOS.strip
 Retrying fetcher due to error (2/4): Bundler::HTTPError Could not fetch specs from #{mirror}/
 Retrying fetcher due to error (3/4): Bundler::HTTPError Could not fetch specs from #{mirror}/
 Retrying fetcher due to error (4/4): Bundler::HTTPError Could not fetch specs from #{mirror}/

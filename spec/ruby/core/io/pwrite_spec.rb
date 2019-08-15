@@ -31,14 +31,14 @@ ruby_version_is "2.5" do
 
       it "raises IOError when file is not open in write mode" do
         File.open(@fname, "r") do |file|
-          lambda { file.pwrite("foo", 1) }.should raise_error(IOError)
+          -> { file.pwrite("foo", 1) }.should raise_error(IOError)
         end
       end
 
       it "raises IOError when file is closed" do
         file = File.open(@fname, "w+")
         file.close
-        lambda { file.pwrite("foo", 1) }.should raise_error(IOError)
+        -> { file.pwrite("foo", 1) }.should raise_error(IOError)
       end
     end
   end

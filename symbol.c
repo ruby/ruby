@@ -63,7 +63,8 @@ enum id_entry_type {
     ID_ENTRY_SIZE
 };
 
-rb_symbols_t global_symbols = {tNEXT_ID-1};
+rb_symbols_t ruby_global_symbols = {tNEXT_ID-1};
+#define global_symbols ruby_global_symbols
 
 static const struct st_hash_type symhash = {
     rb_str_hash_cmp,

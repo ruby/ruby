@@ -21,7 +21,7 @@ describe :rb_enc_set_index, shared: true do
 
     # This is used because indexes should be considered implementation
     # dependent. So a pair is returned:
-    #   [rb_enc_find_index()->name, rb_enc_get(obj)->name]
+    #   [rb_enc_find_index() -> name, rb_enc_get(obj) -> name]
     result.first.should == result.last
   end
 
@@ -95,7 +95,7 @@ describe "C-API Encoding function" do
   end
 
   describe "rb_ascii8bit_encoding" do
-    it "returns the encoding for Encoding::ASCII_8BIT" do
+    it "returns the encoding for Encoding::BINARY" do
       @s.rb_ascii8bit_encoding.should == "ASCII-8BIT"
     end
   end
@@ -125,16 +125,16 @@ describe "C-API Encoding function" do
   end
 
   describe "rb_enc_get" do
-    it "returns the encoding ossociated with an object" do
-      str = "abc".encode Encoding::ASCII_8BIT
+    it "returns the encoding associated with an object" do
+      str = "abc".encode Encoding::BINARY
       @s.rb_enc_get(str).should == "ASCII-8BIT"
     end
   end
 
   describe "rb_obj_encoding" do
-    it "returns the encoding ossociated with an object" do
-      str = "abc".encode Encoding::ASCII_8BIT
-      @s.rb_obj_encoding(str).should == Encoding::ASCII_8BIT
+    it "returns the encoding associated with an object" do
+      str = "abc".encode Encoding::BINARY
+      @s.rb_obj_encoding(str).should == Encoding::BINARY
     end
   end
 
@@ -174,15 +174,15 @@ describe "C-API Encoding function" do
   end
 
   describe "rb_enc_str_coderange" do
-    describe "when the encoding is ASCII-8BIT" do
+    describe "when the encoding is BINARY" do
       it "returns ENC_CODERANGE_7BIT if there are no high bits set" do
-        result = @s.rb_enc_str_coderange("abc".force_encoding("ascii-8bit"))
+        result = @s.rb_enc_str_coderange("abc".force_encoding("binary"))
         result.should == :coderange_7bit
       end
 
       it "returns ENC_CODERANGE_VALID if there are high bits set" do
         xEE = [0xEE].pack('C').force_encoding('utf-8')
-        result = @s.rb_enc_str_coderange(xEE.force_encoding("ascii-8bit"))
+        result = @s.rb_enc_str_coderange(xEE.force_encoding("binary"))
         result.should == :coderange_valid
       end
     end
@@ -283,7 +283,7 @@ describe "C-API Encoding function" do
 
   describe "rb_enc_compatible" do
     it "returns 0 if the encodings of the Strings are not compatible" do
-      a = [0xff].pack('C').force_encoding "ascii-8bit"
+      a = [0xff].pack('C').force_encoding "binary"
       b = "\u3042".encode("utf-8")
       @s.rb_enc_compatible(a, b).should == 0
     end
@@ -308,7 +308,7 @@ describe "C-API Encoding function" do
     end
 
     it "raises a RuntimeError if the second argument is a Symbol" do
-      lambda { @s.rb_enc_copy(:symbol, @obj) }.should raise_error(RuntimeError)
+      -> { @s.rb_enc_copy(:symbol, @obj) }.should raise_error(RuntimeError)
     end
 
     it "sets the encoding of a Regexp to that of the second argument" do
@@ -348,34 +348,34 @@ describe "C-API Encoding function" do
     end
 
     it "returns the encoding for Encoding.default_external" do
-      Encoding.default_external = "BINARY"
+      Encoding.default_external = "ASCII-8BIT"
       @s.rb_default_external_encoding.should == "ASCII-8BIT"
     end
   end
 
   describe "rb_enc_associate" do
     it "sets the encoding of a String to the encoding" do
-      @s.rb_enc_associate("string", "ASCII-8BIT").encoding.should == Encoding::ASCII_8BIT
+      @s.rb_enc_associate("string", "BINARY").encoding.should == Encoding::BINARY
     end
 
     it "raises a RuntimeError if the argument is Symbol" do
-      lambda { @s.rb_enc_associate(:symbol, "US-ASCII") }.should raise_error(RuntimeError)
+      -> { @s.rb_enc_associate(:symbol, "US-ASCII") }.should raise_error(RuntimeError)
     end
 
     it "sets the encoding of a Regexp to the encoding" do
-      @s.rb_enc_associate(/regexp/, "ASCII-8BIT").encoding.should == Encoding::ASCII_8BIT
+      @s.rb_enc_associate(/regexp/, "BINARY").encoding.should == Encoding::BINARY
     end
 
     it "sets the encoding of a String to a default when the encoding is NULL" do
-      @s.rb_enc_associate("string", nil).encoding.should == Encoding::ASCII_8BIT
+      @s.rb_enc_associate("string", nil).encoding.should == Encoding::BINARY
     end
   end
 
   describe "rb_enc_associate_index" do
     it "sets the encoding of a String to the encoding" do
-      index = @s.rb_enc_find_index("ASCII-8BIT")
+      index = @s.rb_enc_find_index("BINARY")
       enc = @s.rb_enc_associate_index("string", index).encoding
-      enc.should == Encoding::ASCII_8BIT
+      enc.should == Encoding::BINARY
     end
 
     it "sets the encoding of a Regexp to the encoding" do
@@ -386,7 +386,7 @@ describe "C-API Encoding function" do
 
     it "sets the encoding of a Symbol to the encoding" do
       index = @s.rb_enc_find_index("UTF-8")
-      lambda { @s.rb_enc_associate_index(:symbol, index) }.should raise_error(RuntimeError)
+      -> { @s.rb_enc_associate_index(:symbol, index) }.should raise_error(RuntimeError)
     end
   end
 
@@ -440,13 +440,13 @@ describe "C-API Encoding function" do
 
   describe "rb_enc_codepoint_len" do
     it "raises ArgumentError if an empty string is given" do
-      lambda do
+      -> do
         @s.rb_enc_codepoint_len("")
       end.should raise_error(ArgumentError)
     end
 
     it "raises ArgumentError if an invalid byte sequence is given" do
-      lambda do
+      -> do
         @s.rb_enc_codepoint_len([0xa0, 0xa1].pack('CC').force_encoding('utf-8')) # Invalid sequence identifier
       end.should raise_error(ArgumentError)
     end

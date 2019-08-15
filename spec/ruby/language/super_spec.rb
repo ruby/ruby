@@ -83,8 +83,8 @@ describe "The super keyword" do
       end
     end
 
-    lambda {sub_normal.new.foo}.should raise_error(NoMethodError, /super/)
-    lambda {sub_zsuper.new.foo}.should raise_error(NoMethodError, /super/)
+    -> {sub_normal.new.foo}.should raise_error(NoMethodError, /super/)
+    -> {sub_zsuper.new.foo}.should raise_error(NoMethodError, /super/)
   end
 
   it "uses given block even if arguments are passed explicitly" do
@@ -100,6 +100,25 @@ describe "The super keyword" do
     end
 
     c2.new.m(:dump) { :value }.should == :value
+  end
+
+  it "uses block argument given to method when used in a block" do
+    c1 = Class.new do
+      def m
+        yield
+      end
+    end
+    c2 = Class.new(c1) do
+      def m(v)
+        ary = []
+        1.times do
+          ary << super()
+        end
+        ary
+      end
+    end
+
+    c2.new.m(:dump) { :value }.should == [ :value ]
   end
 
   it "calls the superclass method when in a block" do
@@ -150,7 +169,7 @@ describe "The super keyword" do
       end
     end
 
-    lambda { klass.new.a(:a_called) }.should raise_error(RuntimeError)
+    -> { klass.new.a(:a_called) }.should raise_error(RuntimeError)
   end
 
   # Rubinius ticket github#157

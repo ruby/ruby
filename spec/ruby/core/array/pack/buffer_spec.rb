@@ -1,4 +1,4 @@
-# encoding: ascii-8bit
+# encoding: binary
 
 require_relative '../../../spec_helper'
 
@@ -24,7 +24,7 @@ describe "Array#pack with :buffer option" do
   end
 
   it "raises TypeError exception if buffer is not String" do
-    lambda { [65].pack("ccc", buffer: []) }.should raise_error(
+    -> { [65].pack("ccc", buffer: []) }.should raise_error(
       TypeError, "buffer must be String, not Array")
   end
 

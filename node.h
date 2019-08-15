@@ -138,7 +138,8 @@ typedef struct rb_code_location_struct {
     rb_code_position_t end_pos;
 } rb_code_location_t;
 
-static inline rb_code_location_t code_loc_gen(rb_code_location_t *loc1, rb_code_location_t *loc2)
+static inline rb_code_location_t
+code_loc_gen(rb_code_location_t *loc1, rb_code_location_t *loc2)
 {
     rb_code_location_t loc;
     loc.beg_pos = loc1->beg_pos;
@@ -383,6 +384,7 @@ typedef struct RNode {
 #define NODE_REQUIRED_KEYWORD_P(node) ((node)->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD)
 #define NODE_SPECIAL_NO_NAME_REST     ((NODE *)-1)
 #define NODE_NAMED_REST_P(node) ((node) != NODE_SPECIAL_NO_NAME_REST)
+#define NODE_SPECIAL_EXCESSIVE_COMMA   ((ID)1)
 
 VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
 
@@ -404,6 +406,7 @@ rb_ast_t *rb_ast_new(void);
 void rb_ast_mark(rb_ast_t*);
 void rb_ast_dispose(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
+size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_add_mark_object(rb_ast_t*, VALUE);
 NODE *rb_ast_newnode(rb_ast_t*);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);

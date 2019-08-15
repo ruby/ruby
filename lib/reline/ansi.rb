@@ -1,35 +1,75 @@
 class Reline::ANSI
+  RAW_KEYSTROKE_CONFIG = {
+    [27, 91, 65] => :ed_prev_history,     # ↑
+    [27, 91, 66] => :ed_next_history,     # ↓
+    [27, 91, 67] => :ed_next_char,        # →
+    [27, 91, 68] => :ed_prev_char,        # ←
+    [27, 91, 51, 126] => :key_delete,     # Del
+    [27, 91, 49, 126] => :ed_move_to_beg, # Home
+    [27, 91, 52, 126] => :ed_move_to_end, # End
+  }.each_key(&:freeze).freeze
+
+  @@input = STDIN
+  def self.input=(val)
+    @@input = val
+  end
+
+  @@output = STDOUT
+  def self.output=(val)
+    @@output = val
+  end
+
+  @@buf = []
   def self.getc
+    unless @@buf.empty?
+      return @@buf.shift
+    end
     c = nil
     loop do
-      result = select([$stdin], [], [], 0.1)
+      result = select([@@input], [], [], 0.1)
       next if result.nil?
-      c = $stdin.read(1)
+      c = @@input.read(1)
       break
     end
     c&.ord
   end
 
+  def self.ungetc(c)
+    @@buf.unshift(c)
+  end
+
   def self.get_screen_size
-    $stdin.winsize
+    @@input.winsize
+  rescue Errno::ENOTTY
+    [24, 80]
   end
 
   def self.set_screen_size(rows, columns)
-    $stdin.winsize = [rows, columns]
+    @@input.winsize = [rows, columns]
+    self
+  rescue Errno::ENOTTY
     self
   end
 
   def self.cursor_pos
-    res = ''
-    $stdin.raw do |stdin|
-      $stdout << "\e[6n"
-      $stdout.flush
-      while (c = stdin.getc) != 'R'
-        res << c if c
+    begin
+      res = ''
+      @@input.raw do |stdin|
+        @@output << "\e[6n"
+        @@output.flush
+        while (c = stdin.getc) != 'R'
+          res << c if c
+        end
       end
+      m = res.match(/(?<row>\d+);(?<column>\d+)/)
+      column = m[:column].to_i - 1
+      row = m[:row].to_i - 1
+    rescue Errno::ENOTTY
+      buf = @@output.pread(@@output.pos, 0)
+      row = buf.count("\n")
+      column = buf.rindex("\n") ? (buf.size - buf.rindex("\n")) - 1 : 0
     end
-    m = res.match(/(?<row>\d+);(?<column>\d+)/)
-    Reline::CursorPos.new(m[:column].to_i - 1, m[:row].to_i - 1)
+    Reline::CursorPos.new(column, row)
   end
 
   def self.move_cursor_column(x)
@@ -70,7 +110,7 @@ class Reline::ANSI
     int_handle = Signal.trap('INT', 'IGNORE')
     otio = `stty -g`.chomp
     setting = ' -echo -icrnl cbreak'
-    if (`stty -a`.scan(/-parenb\b/).first == '-parenb')
+    if /-parenb\b/ =~ `stty -a`
       setting << ' pass8'
     end
     setting << ' -ixoff'
