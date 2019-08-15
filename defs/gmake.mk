@@ -206,7 +206,8 @@ update-github: fetch-github
 	git -C "$(srcdir)" remote add fork-$(PR) git@github.com:$(FORK_REPO).git
 	git -C "$(GITHUB_UPDATE_WORKTREE)" push fork-$(PR) gh-$(PR):$(PR_BRANCH)
 	git -C "$(srcdir)" remote rm fork-$(PR)
-	git -C "$(srcdir)" worktree remove --force $(GITHUB_UPDATE_WORKTREE)
+	git -C "$(srcdir)" worktree remove $(notdir $(GITHUB_UPDATE_WORKTREE))
+	git -C "$(srcdir)" branch -D gh-$(PR)
 
 .PHONY: pull-github
 pull-github: fetch-github
