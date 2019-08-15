@@ -1925,6 +1925,20 @@ pack_unpack(VALUE str, VALUE fmt)
  *  Decodes <i>str</i> (which may contain binary data) according to the
  *  format string, returning the first value extracted.
  *  See also String#unpack, Array#pack.
+ *
+ *  Contrast with String#unpack:
+ *
+ *     "abc \0\0abc \0\0".unpack('A6Z6')   #=> ["abc", "abc "]
+ *     "abc \0\0abc \0\0".unpack1('A6Z6')  #=> "abc"
+ *
+ *  In that case data would be lost but often it's the case that the array
+ *  only holds one value, especially when unpacking binary data. For instance:
+ *
+ *  "\xff\x00\x00\x00".unpack("l")         #=>  [255]
+ *  "\xff\x00\x00\x00".unpack1("l")        #=>  255
+ *
+ *  Thus unpack1 is convenient, makes clear the intention and signals
+ *  the expected return value to those reading the code.
  */
 
 static VALUE

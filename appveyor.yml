@@ -69,7 +69,7 @@ for:
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
     - nmake -l "TESTOPTS=-v -q" btest
     - nmake -l "TESTOPTS=-v -q" test-basic
-    - nmake -l "TESTOPTS=-q --timeout-scale=3.0 --excludes=../test/excludes/_appveyor -j%JOBS% --exclude readline --exclude win32ole --exclude test_bignum --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca" test-all
+    - nmake -l "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor -j%JOBS% --exclude readline --exclude win32ole --exclude test_bignum --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca" test-all
     # separately execute tests without -j which may crash worker with -j.
     - nmake -l "TESTOPTS=-v --timeout-scale=3.0 --excludes=../test/excludes/_appveyor" test-all TESTS="../test/win32ole ../test/ruby/test_bignum.rb ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb"
     - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
@@ -95,12 +95,8 @@ for:
     - SET PATH=%ruby_path%\bin;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%PATH%
     - ruby --version
   build_script:
-    # always update database
-    - pacman -Sy
-    # 2019-May-31 delete below after next Appveyor msys2 update, also next line's "--nodeps"
-    - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-python3 mingw-w64-x86_64-readline mingw-w64-x86_64-sqlite3
     - pacman -S --noconfirm --needed --noprogressbar --nodeps mingw-w64-x86_64-toolchain
-    - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-gdbm mingw-w64-x86_64-gmp mingw-w64-x86_64-libffi mingw-w64-x86_64-openssl mingw-w64-x86_64-pdcurses mingw-w64-x86_64-readline mingw-w64-x86_64-zlib
+    - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-gdbm mingw-w64-x86_64-gettext mingw-w64-x86_64-gmp mingw-w64-x86_64-libffi mingw-w64-x86_64-libyaml mingw-w64-x86_64-openssl mingw-w64-x86_64-ragel mingw-w64-x86_64-readline mingw-w64-x86_64-zlib
     - cd %APPVEYOR_BUILD_FOLDER%
     - set CFLAGS=-march=%MSYS2_ARCH:_=-% -mtune=generic -O3 -pipe
     - set CXXFLAGS=%CFLAGS%
@@ -111,7 +107,7 @@ for:
     - sh ../ruby/configure --disable-install-doc --prefix=/. --build=%MINGW_CHOST% --host=%MINGW_CHOST% --target=%MINGW_CHOST%
     - mingw32-make %mflags% touch-unicode-files
     - mingw32-make -j%JOBS% %UPDATE_UNICODE% up incs
-    - mingw32-make -j%JOBS%
+    - mingw32-make -j%JOBS% V=1
     - mingw32-make DESTDIR=../install install-nodoc
     - if not "%GEMS_FOR_TEST%" == "" ..\install\bin\gem install --no-document %GEMS_FOR_TEST%
   test_script:

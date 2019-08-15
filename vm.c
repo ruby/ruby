@@ -1383,7 +1383,7 @@ rb_vm_cref_in_context(VALUE self, VALUE cbase)
     const rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
     const rb_cref_t *cref;
-    if (cfp->self != self) return NULL;
+    if (!cfp || cfp->self != self) return NULL;
     if (!vm_env_cref_by_cref(cfp->ep)) return NULL;
     cref = vm_get_cref(cfp->ep);
     if (CREF_CLASS(cref) != cbase) return NULL;
@@ -1487,7 +1487,6 @@ rb_vm_make_jump_tag_but_local_jump(int state, VALUE val)
     return make_localjump_error(mesg, val, state);
 }
 
-#if 0
 void
 rb_vm_jump_tag_but_local_jump(int state)
 {
@@ -1495,7 +1494,6 @@ rb_vm_jump_tag_but_local_jump(int state)
     if (!NIL_P(exc)) rb_exc_raise(exc);
     EC_JUMP_TAG(GET_EC(), state);
 }
-#endif
 
 static rb_control_frame_t *
 next_not_local_frame(rb_control_frame_t *cfp)
@@ -2483,14 +2481,14 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 	while (cfp != limit_cfp) {
 	    const VALUE *ep = cfp->ep;
 	    VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
-            rb_gc_mark_no_pin(cfp->self);
-            rb_gc_mark_no_pin((VALUE)cfp->iseq);
-            rb_gc_mark_no_pin((VALUE)cfp->block_code);
+            rb_gc_mark_movable(cfp->self);
+            rb_gc_mark_movable((VALUE)cfp->iseq);
+            rb_gc_mark_movable((VALUE)cfp->block_code);
 
 	    if (!VM_ENV_LOCAL_P(ep)) {
 		const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
 		if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
-                    rb_gc_mark_no_pin(prev_ep[VM_ENV_DATA_INDEX_ENV]);
+                    rb_gc_mark_movable(prev_ep[VM_ENV_DATA_INDEX_ENV]);
 		}
 	    }
 
@@ -2890,9 +2888,18 @@ nsdr(void)
 }
 
 #if VM_COLLECT_USAGE_DETAILS
+static VALUE usage_analysis_insn_start(VALUE self);
+static VALUE usage_analysis_operand_start(VALUE self);
+static VALUE usage_analysis_register_start(VALUE self);
 static VALUE usage_analysis_insn_stop(VALUE self);
 static VALUE usage_analysis_operand_stop(VALUE self);
 static VALUE usage_analysis_register_stop(VALUE self);
+static VALUE usage_analysis_insn_running(VALUE self);
+static VALUE usage_analysis_operand_running(VALUE self);
+static VALUE usage_analysis_register_running(VALUE self);
+static VALUE usage_analysis_insn_clear(VALUE self);
+static VALUE usage_analysis_operand_clear(VALUE self);
+static VALUE usage_analysis_register_clear(VALUE self);
 #endif
 
 void
@@ -2916,6 +2923,7 @@ Init_VM(void)
     rb_define_singleton_method(rb_cRubyVM, "stat", vm_stat, -1);
 #if USE_DEBUG_COUNTER
     rb_define_singleton_method(rb_cRubyVM, "reset_debug_counters", rb_debug_counter_reset, 0);
+    rb_define_singleton_method(rb_cRubyVM, "show_debug_counters", rb_debug_counter_show, 0);
 #endif
 
     /* FrozenCore (hidden) */
@@ -3112,9 +3120,18 @@ Init_VM(void)
     define_usage_analysis_hash(REGS);
     define_usage_analysis_hash(INSN_BIGRAM);
 
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_INSN_START", usage_analysis_insn_start, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_OPERAND_START", usage_analysis_operand_start, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_REGISTER_START", usage_analysis_register_start, 0);
     rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_INSN_STOP", usage_analysis_insn_stop, 0);
     rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_OPERAND_STOP", usage_analysis_operand_stop, 0);
     rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_REGISTER_STOP", usage_analysis_register_stop, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_INSN_RUNNING", usage_analysis_insn_running, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_OPERAND_RUNNING", usage_analysis_operand_running, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_REGISTER_RUNNING", usage_analysis_register_running, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_INSN_CLEAR", usage_analysis_insn_clear, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_OPERAND_CLEAR", usage_analysis_operand_clear, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_REGISTER_CLEAR", usage_analysis_register_clear, 0);
 #endif
 
     /* ::RubyVM::OPTS, which shows vm build options */
@@ -3454,9 +3471,33 @@ vm_analysis_register(int reg, int isset)
 
 #undef HASH_ASET
 
-static void (*ruby_vm_collect_usage_func_insn)(int insn) = vm_analysis_insn;
-static void (*ruby_vm_collect_usage_func_operand)(int insn, int n, VALUE op) = vm_analysis_operand;
-static void (*ruby_vm_collect_usage_func_register)(int reg, int isset) = vm_analysis_register;
+static void (*ruby_vm_collect_usage_func_insn)(int insn) = NULL;
+static void (*ruby_vm_collect_usage_func_operand)(int insn, int n, VALUE op) = NULL;
+static void (*ruby_vm_collect_usage_func_register)(int reg, int isset) = NULL;
+
+/* :nodoc: */
+static VALUE
+usage_analysis_insn_start(VALUE self)
+{
+    ruby_vm_collect_usage_func_insn = vm_analysis_insn;
+    return Qnil;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_operand_start(VALUE self)
+{
+    ruby_vm_collect_usage_func_operand = vm_analysis_operand;
+    return Qnil;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_register_start(VALUE self)
+{
+    ruby_vm_collect_usage_func_register = vm_analysis_register;
+    return Qnil;
+}
 
 /* :nodoc: */
 static VALUE
@@ -3480,6 +3521,77 @@ usage_analysis_register_stop(VALUE self)
 {
     ruby_vm_collect_usage_func_register = 0;
     return Qnil;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_insn_running(VALUE self)
+{
+  if (ruby_vm_collect_usage_func_insn == 0) return Qfalse;
+  return Qtrue;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_operand_running(VALUE self)
+{
+  if (ruby_vm_collect_usage_func_operand == 0) return Qfalse;
+  return Qtrue;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_register_running(VALUE self)
+{
+  if (ruby_vm_collect_usage_func_register == 0) return Qfalse;
+  return Qtrue;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_insn_clear(VALUE self)
+{
+  ID usage_hash;
+  ID bigram_hash;
+  VALUE uh;
+  VALUE bh;
+
+  CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
+  CONST_ID(bigram_hash, "USAGE_ANALYSIS_INSN_BIGRAM");
+  uh = rb_const_get(rb_cRubyVM, usage_hash);
+  bh = rb_const_get(rb_cRubyVM, bigram_hash);
+  rb_hash_clear(uh);
+  rb_hash_clear(bh);
+
+  return Qtrue;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_operand_clear(VALUE self)
+{
+  ID usage_hash;
+  VALUE uh;
+
+  CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
+  uh = rb_const_get(rb_cRubyVM, usage_hash);
+  rb_hash_clear(uh);
+
+  return Qtrue;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_register_clear(VALUE self)
+{
+  ID usage_hash;
+  VALUE uh;
+
+  CONST_ID(usage_hash, "USAGE_ANALYSIS_REGS");
+  uh = rb_const_get(rb_cRubyVM, usage_hash);
+  rb_hash_clear(uh);
+
+  return Qtrue;
 }
 
 #else

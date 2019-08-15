@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "compatibility_guard"
-
 require "pathname"
 require "rbconfig"
 
@@ -19,7 +17,7 @@ module Bundler
     end
 
     def default_gemfile
-      gemfile = find_gemfile(:order_matters)
+      gemfile = find_gemfile
       raise GemfileNotFound, "Could not locate Gemfile" unless gemfile
       Pathname.new(gemfile).untaint.expand_path
     end
@@ -225,7 +223,7 @@ module Bundler
       raise Bundler::PathError, message
     end
 
-    def find_gemfile(order_matters = false)
+    def find_gemfile
       given = ENV["BUNDLE_GEMFILE"]
       return given if given && !given.empty?
       find_file(*gemfile_names)
@@ -286,11 +284,17 @@ module Bundler
     public :set_env
 
     def set_bundle_variables
+      # bundler exe & lib folders have same root folder, typical gem installation
       exe_file = File.expand_path("../../../exe/bundle", __FILE__)
-      # for Ruby core repository
-      exe_file = File.expand_path("../../../../bin/bundle", __FILE__) unless File.exist?(exe_file)
+
+      # for Ruby core repository testing
+      exe_file = File.expand_path("../../../bin/bundle", __FILE__) unless File.exist?(exe_file)
+
+      # bundler is a default gem, exe path is separate
+      exe_file = Bundler.rubygems.bin_path("bundler", "bundle", VERSION) unless File.exist?(exe_file)
+
       Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", exe_file
-      Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", find_gemfile(:order_matters).to_s
+      Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", find_gemfile.to_s
       Bundler::SharedHelpers.set_env "BUNDLER_VERSION", Bundler::VERSION
     end
 
@@ -305,7 +309,7 @@ module Bundler
       rubyopt = [ENV["RUBYOPT"]].compact
       setup_require = "-r#{File.expand_path("setup", __dir__)}"
       return if !rubyopt.empty? && rubyopt.first =~ /#{setup_require}/
-      rubyopt.unshift %(#{setup_require})
+      rubyopt.unshift setup_require
       Bundler::SharedHelpers.set_env "RUBYOPT", rubyopt.join(" ")
     end
 

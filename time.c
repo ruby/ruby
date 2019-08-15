@@ -35,11 +35,14 @@
 #include "timev.h"
 #include "id.h"
 
-static ID id_divmod, id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
-static ID id_quo, id_div;
+static ID id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
 static ID id_nanosecond, id_microsecond, id_millisecond, id_nsec, id_usec;
 static ID id_local_to_utc, id_utc_to_local, id_find_timezone;
-static ID id_year, id_mon, id_mday, id_hour, id_min, id_sec, id_isdst, id_name;
+static ID id_year, id_mon, id_mday, id_hour, id_min, id_sec, id_isdst;
+#define id_quo idQuo
+#define id_div idDiv
+#define id_divmod idDivmod
+#define id_name idName
 #define UTC_ZONE Qundef
 
 #ifndef TM_IS_TIME
@@ -138,9 +141,8 @@ modv(VALUE x, VALUE y)
 #define neg(x) (subv(INT2FIX(0), (x)))
 
 static VALUE
-quov(VALUE x, VALUE y)
+quor(VALUE x, VALUE y)
 {
-    VALUE ret;
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
         long a, b, c;
         a = FIX2LONG(x);
@@ -152,7 +154,13 @@ quov(VALUE x, VALUE y)
             return LONG2FIX(c);
         }
     }
-    ret = rb_numeric_quo(x, y);
+    return rb_numeric_quo(x, y);
+}
+
+static VALUE
+quov(VALUE x, VALUE y)
+{
+    VALUE ret = quor(x, y);
     if (RB_TYPE_P(ret, T_RATIONAL) &&
         RRATIONAL(ret)->den == INT2FIX(1)) {
         ret = RRATIONAL(ret)->num;
@@ -545,10 +553,16 @@ rb_time_magnify(wideval_t w)
     return wmul(w, WINT2FIXWV(TIME_SCALE));
 }
 
+static VALUE
+rb_time_unmagnify_to_rational(wideval_t w)
+{
+    return quor(w2v(w), INT2FIX(TIME_SCALE));
+}
+
 static wideval_t
 rb_time_unmagnify(wideval_t w)
 {
-    return wquo(w, WINT2FIXWV(TIME_SCALE));
+    return v2w(rb_time_unmagnify_to_rational(w));
 }
 
 static VALUE
@@ -3546,7 +3560,7 @@ time_to_r(VALUE time)
     VALUE v;
 
     GetTimeval(time, tobj);
-    v = w2v(rb_time_unmagnify(tobj->timew));
+    v = rb_time_unmagnify_to_rational(tobj->timew);
     if (!RB_TYPE_P(v, T_RATIONAL)) {
         v = rb_Rational1(v);
     }
@@ -5600,7 +5614,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
     if (abbr != Qundef) {
         goto found;
     }
-    abbr = rb_check_funcall_default(zone, rb_intern("name"), 0, 0, Qnil);
+    abbr = rb_check_funcall_default(zone, idName, 0, 0, Qnil);
   found:
     return rb_obj_as_string(abbr);
 }
@@ -5740,9 +5754,6 @@ Init_Time(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    id_quo = rb_intern("quo");
-    id_div = rb_intern("div");
-    id_divmod = rb_intern("divmod");
     id_submicro = rb_intern("submicro");
     id_nano_num = rb_intern("nano_num");
     id_nano_den = rb_intern("nano_den");
@@ -5762,7 +5773,6 @@ Init_Time(void)
     id_min = rb_intern("min");
     id_sec = rb_intern("sec");
     id_isdst = rb_intern("isdst");
-    id_name = rb_intern("name");
     id_find_timezone = rb_intern("find_timezone");
 
     rb_cTime = rb_define_class("Time", rb_cObject);

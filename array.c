@@ -16,7 +16,6 @@
 #include "probes.h"
 #include "id.h"
 #include "debug_counter.h"
-#include "gc.h"
 #include "transient_heap.h"
 #include "internal.h"
 
@@ -2369,7 +2368,9 @@ rb_ary_join(VALUE ary, VALUE sep)
 	len += RSTRING_LEN(tmp);
     }
 
-    result = rb_str_buf_new(len);
+    result = rb_str_new(0, len);
+    rb_str_set_len(result, 0);
+
     if (taint) OBJ_TAINT(result);
     ary_join_0(ary, sep, RARRAY_LEN(ary), result);
 
@@ -2475,8 +2476,8 @@ rb_ary_to_a(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.to_h            -> hash
- *     ary.to_h { block }  -> hash
+ *     ary.to_h                  -> hash
+ *     ary.to_h {|item| block }  -> hash
  *
  *  Returns the result of interpreting <i>ary</i> as an array of
  *  <tt>[key, value]</tt> pairs.
@@ -4499,15 +4500,15 @@ ary_recycle_hash(VALUE hash)
  *  Array Difference
  *
  *  Returns a new array that is a copy of the original array, removing all
- *  instances of any item that also appear in +other_ary+. The order is preserved
- *  from the original array.
+ *  occurences of any item that also appear in +other_ary+. The order is
+ *  preserved from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
  *
  *     [ 1, 1, 2, 2, 3, 3, 4, 5 ] - [ 1, 2, 4 ]  #=>  [ 3, 3, 5 ]
  *
  *  Note that while 1 and 2 were only present once in the array argument, and
- *  were present twice in the receiver array, all instances of each Integer are
+ *  were present twice in the receiver array, all occurences of each Integer are
  *  removed in the returned array.
  *
  *  If you need set-like behavior, see the library class Set.
@@ -4545,12 +4546,12 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.difference(other_ary1, other_ary2, ...)   -> ary
+ *     ary.difference(other_ary1, other_ary2, ...)   -> new_ary
  *
  *  Array Difference
  *
  *  Returns a new array that is a copy of the original array, removing all
- *  instances of any item that also appear in +other_ary+. The order is
+ *  occurences of any item that also appear in +other_ary+. The order is
  *  preserved from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
@@ -4558,10 +4559,10 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *     [ 1, 1, 2, 2, 3, 3, 4, 5 ].difference([ 1, 2, 4 ])     #=> [ 3, 3, 5 ]
  *
  *  Note that while 1 and 2 were only present once in the array argument, and
- *  were present twice in the receiver array, all instances of each Integer are
+ *  were present twice in the receiver array, all occurences of each Integer are
  *  removed in the returned array.
  *
- *  Multiple array arguments can be supplied and all instances of any element
+ *  Multiple array arguments can be supplied and all occurences of any element
  *  in those supplied arrays that match the receiver will be removed from the
  *  returned array.
  *

@@ -1056,6 +1056,7 @@ int rb_singleton_class_internal_p(VALUE sklass);
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
 #define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
 
+#define RCLASS_CLONED     FL_USER6
 #define RICLASS_IS_ORIGIN FL_USER5
 
 static inline void
@@ -1386,6 +1387,22 @@ rb_ary_entry_internal(VALUE ary, long offset)
     }
     return ptr[offset];
 }
+
+/* MRI debug support */
+void rb_obj_info_dump(VALUE obj);
+void  ruby_debug_breakpoint(void);
+
+// show obj data structure without any side-effect
+#define rp(obj) rb_obj_info_dump((VALUE)obj);
+// same as rp, but add message header
+#define rp_m(msg, obj) do { \
+    fprintf(stderr, "%s", (msg)); \
+    rb_obj_info_dump((VALUE)obj); \
+} while (0)
+
+// `ruby_debug_breakpoint()` does nothing,
+// but breakpoint is set in run.gdb, so `make gdb` can stop here.
+#define bp() ruby_debug_breakpoint()
 
 /* bignum.c */
 extern const char ruby_digitmap[];
@@ -1746,6 +1763,7 @@ VALUE rb_float_plus(VALUE x, VALUE y);
 VALUE rb_int_minus(VALUE x, VALUE y);
 VALUE rb_int_mul(VALUE x, VALUE y);
 VALUE rb_float_mul(VALUE x, VALUE y);
+VALUE rb_float_div(VALUE x, VALUE y);
 VALUE rb_int_idiv(VALUE x, VALUE y);
 VALUE rb_int_modulo(VALUE x, VALUE y);
 VALUE rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode);
@@ -1772,6 +1790,7 @@ VALUE rb_int_odd_p(VALUE num);
 int rb_int_positive_p(VALUE num);
 int rb_int_negative_p(VALUE num);
 VALUE rb_num_pow(VALUE x, VALUE y);
+VALUE rb_float_ceil(VALUE num, int ndigits);
 
 static inline VALUE
 rb_num_compare_with_zero(VALUE num, ID mid)
@@ -2123,6 +2142,23 @@ char *rb_str_to_cstr(VALUE str);
 VALUE rb_str_eql(VALUE str1, VALUE str2);
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 const char *ruby_escaped_char(int c);
+VALUE rb_str_opt_plus(VALUE, VALUE);
+
+/* expect tail call optimization */
+static inline VALUE
+rb_str_eql_internal(const VALUE str1, const VALUE str2)
+{
+    const long len = RSTRING_LEN(str1);
+    const char *ptr1, *ptr2;
+
+    if (len != RSTRING_LEN(str2)) return Qfalse;
+    if (!rb_str_comparable(str1, str2)) return Qfalse;
+    if ((ptr1 = RSTRING_PTR(str1)) == (ptr2 = RSTRING_PTR(str2)))
+        return Qtrue;
+    if (memcmp(ptr1, ptr2, len) == 0)
+        return Qtrue;
+    return Qfalse;
+}
 
 /* symbol.c */
 #ifdef RUBY_ENCODING_H
@@ -2168,7 +2204,6 @@ struct timeval rb_time_timeval(VALUE);
 VALUE rb_obj_is_mutex(VALUE obj);
 VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
 void rb_thread_execute_interrupts(VALUE th);
-void rb_clear_trace_func(void);
 VALUE rb_get_coverages(void);
 int rb_get_coverage_mode(void);
 VALUE rb_default_coverage(int);

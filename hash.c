@@ -19,7 +19,6 @@
 #include "probes.h"
 #include "id.h"
 #include "symbol.h"
-#include "gc.h"
 #include "debug_counter.h"
 #include "transient_heap.h"
 #include "ruby_assert.h"
@@ -33,6 +32,10 @@
 
 #ifndef HASH_DEBUG
 #define HASH_DEBUG 0
+#endif
+
+#if HASH_DEBUG
+#include "gc.h"
 #endif
 
 #define HAS_EXTRA_STATES(hash, klass) ( \
@@ -4767,8 +4770,8 @@ rb_f_getenv(VALUE obj, VALUE name)
  *
  * Retrieves the environment variable +name+.
  *
- * If the given name does not exist and neither +default+ nor a block a
- * provided an KeyError is raised.  If a block is given it is called with
+ * If the given name does not exist and neither +default+ nor a block is
+ * provided, a KeyError is raised.  If a block is given it is called with
  * the missing name to provide a value.  If a default value is given it will
  * be returned when no block is given.
  */

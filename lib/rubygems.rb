@@ -565,8 +565,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   #++
   #--
   #
-  # FIXME move to pathsupport
-  #
   #++
 
   def self.find_home
@@ -1397,14 +1395,12 @@ begin
 rescue LoadError
 end
 
-if defined?(RUBY_ENGINE)
-  begin
-    ##
-    # Defaults the Ruby implementation wants to provide for RubyGems
+begin
+  ##
+  # Defaults the Ruby implementation wants to provide for RubyGems
 
-    require "rubygems/defaults/#{RUBY_ENGINE}"
-  rescue LoadError
-  end
+  require "rubygems/defaults/#{RUBY_ENGINE}"
+rescue LoadError
 end
 
 ##

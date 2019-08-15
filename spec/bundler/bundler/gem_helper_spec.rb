@@ -11,6 +11,7 @@ RSpec.describe Bundler::GemHelper do
   before(:each) do
     global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false"
     bundle "gem #{app_name}"
+    prepare_gemspec(app_gemspec_path)
   end
 
   context "determining gemspec" do
@@ -213,20 +214,31 @@ RSpec.describe Bundler::GemHelper do
 
         before do
           Dir.chdir(app_path) do
-            sys_exec("git remote add origin file://#{repo.path}")
+            sys_exec("git remote add origin #{file_uri_for(repo.path)}")
             sys_exec('git commit -a -m "initial commit"')
           end
         end
 
-        it "on releasing" do
-          mock_build_message app_name, app_version
-          mock_confirm_message "Tagged v#{app_version}."
-          mock_confirm_message "Pushed git commits and tags."
-          expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
+        context "on releasing" do
+          before do
+            mock_build_message app_name, app_version
+            mock_confirm_message "Tagged v#{app_version}."
+            mock_confirm_message "Pushed git commits and tags."
 
-          Dir.chdir(app_path) { sys_exec("git push -u origin master") }
+            Dir.chdir(app_path) { sys_exec("git push -u origin master") }
+          end
 
-          Rake.application["release"].invoke
+          it "calls rubygem_push with proper arguments" do
+            expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
+
+            Rake.application["release"].invoke
+          end
+
+          it "uses Kernel.system" do
+            expect(Kernel).to receive(:system).with("gem", "push", app_gem_path.to_s, "--host", "http://example.org").and_return(true)
+
+            Rake.application["release"].invoke
+          end
         end
 
         it "even if tag already exists" do
@@ -249,7 +261,7 @@ RSpec.describe Bundler::GemHelper do
       before(:each) do
         Rake.application = Rake::Application.new
         subject.install
-        allow(subject).to receive(:sh)
+        allow(subject).to receive(:sh_with_input)
       end
 
       after(:each) do

@@ -3,9 +3,16 @@ require "test/unit/testcase"
 
 require "rexml/document"
 
+# TODO: Split me
 module REXMLTests
   class FunctionsTester < Test::Unit::TestCase
     include REXML
+
+    def setup
+      super
+      REXML::Functions.context = nil
+    end
+
     def test_functions
       # trivial text() test
       # confuse-a-function
@@ -220,6 +227,22 @@ module REXMLTests
       predicate = "string(.)=normalize_space('\nCOMMENT    \n A \n\n ')"
       m = REXML::XPath.match(doc, "//comment()[#{predicate}]")
       assert_equal( [REXML::Comment.new("COMMENT A")], m )
+    end
+
+    def test_string_nil_without_context
+      doc = REXML::Document.new(<<-XML)
+      <?xml version="1.0" encoding="UTF-8"?>
+      <root>
+      <foo bar="baz"/>
+      <foo bar=""/>
+      </root>
+      XML
+
+      assert_equal([doc.root.elements[2]],
+                   REXML::XPath.match(doc,
+                                      "//foo[@bar=$n]",
+                                      nil,
+                                      {"n" => nil}))
     end
 
     def test_unregistered_method

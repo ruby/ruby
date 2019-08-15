@@ -24,38 +24,6 @@ dist: xenial
 git:
   quiet: true
 
-addons:
-  apt:
-    config:
-      retries: true
-    update: true
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - gcc-8
-      - libffi-dev
-      - libgdbm-dev
-      - libgmp-dev
-      - libjemalloc-dev
-      - libncurses5-dev
-      - libncursesw5-dev
-      - libreadline6-dev
-      - libssl-dev
-      - libyaml-dev
-      - openssl
-      - valgrind
-      - zlib1g-dev
-  homebrew:
-    # `update: true` is disabled because `brew update` hangs often
-    # update: true
-    packages:
-      - gdbm
-      - gmp
-      - libffi
-      - openssl@1.1
-      - zlib
-      - ccache
-
 cache:
   ccache: true
   directories:
@@ -64,6 +32,8 @@ cache:
 
 env:
   global:
+    # Reset timestamps early, before updating Homebrew etc.
+    - _=$(touch NEWS && find . -type f -exec touch -r NEWS {} +)
     - CONFIGURE_TTY=no
     - CCACHE_COMPILERCHECK=none
     - CCACHE_NOCOMPRESS=1
@@ -79,6 +49,9 @@ env:
     - RUBY_PREFIX=/tmp/ruby-prefix
     - GEMS_FOR_TEST='timezone tzinfo'
     - UPDATE_UNICODE="UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
+    # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
+    - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
+    - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
 
 .org.ruby-lang.ci.matrix-definitions:
 
@@ -89,58 +62,100 @@ env:
     script:
       - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
 
-  - &linux
-    os: linux
-    compiler: gcc-8
-
-  - &osx
-    os: osx
+  - &osx-clang
     compiler: clang
     before_install:
       - gem uninstall ntlm-http plist -x --force
+      # `brew update` on Travis randomly hangs
+      - |-
+        timeout 300 brew update ||
+        timeout 300 brew update ||
+        timeout 300 brew update
+      # Travis homebrew addon is unstable for now. Use `before_install` instead.
+      # https://travis-ci.community/t/osx-homebrew-addons-module-not-as-reliable-as-claimed/4054
+      - |-
+        brew install \
+          ccache \
+          gdbm \
+          gmp \
+          libffi \
+          openssl@1.1 \
+          zlib
       - /usr/local/opt/openssl@1.1/bin/openssl version
+
+  - &gcc-8
+    compiler: gcc-8
+    # # Not using addon to control retries
+    # addons:
+    #   apt:
+    #     sources:
+    #       - ubuntu-toolchain-r-test
+    before_install:
+      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
+      - |-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+          gcc-8 \
+          libffi-dev \
+          libgdbm-dev \
+          libgmp-dev \
+          libjemalloc-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libreadline6-dev \
+          libssl-dev \
+          libyaml-dev \
+          openssl \
+          valgrind \
+          zlib1g-dev
 
   - &clang-8
     compiler: clang-8
     addons:
       apt:
-        config:
-          retries: true
-        update: true
+        # Not doing this manually unlike other sources, because it has been stable.
         sources:
           - llvm-toolchain-xenial-8
-        packages:
-          - clang-8
-          - llvm-8-tools
-          - libffi-dev
-          - libgdbm-dev
-          - libgmp-dev
-          - libjemalloc-dev
-          - libncurses5-dev
-          - libncursesw5-dev
-          - libreadline6-dev
-          - libssl-dev
-          - libyaml-dev
-          - openssl
-          - valgrind
-          - zlib1g-dev
+        config:
+          retries: true
+    before_install:
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
+      - |-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+          clang-8 \
+          llvm-8-tools \
+          libffi-dev \
+          libgdbm-dev \
+          libgmp-dev \
+          libjemalloc-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libreadline6-dev \
+          libssl-dev \
+          libyaml-dev \
+          openssl \
+          valgrind \
+          zlib1g-dev
 
   # --------
 
   - &x86_64-linux
     name: x86_64-linux
-    <<: *linux
+    os: linux
+    <<: *gcc-8
 
   - &jemalloc
     name: --with-jemalloc
-    <<: *linux
+    os: linux
+    <<: *gcc-8
     <<: *cron-only
     env:
       - CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'
 
   - &assertions
     name: RUBY_DEBUG=1
-    <<: *linux
+    os: linux
+    <<: *gcc-8
     #<<: *cron-only
     <<: *make-test-only
     env:
@@ -149,7 +164,8 @@ env:
 
   - &VM_CHECK_MODE
     name: VM_CHECK_MODE=3
-    <<: *linux
+    os: linux
+    <<: *gcc-8
     <<: *cron-only
     <<: *make-test-only
     env:
@@ -158,21 +174,24 @@ env:
 
   - &WITH_COROUTINE_UCONTEXT
     name: COROUTINE=ucontext
-    <<: *linux
+    os: linux
+    <<: *gcc-8
     <<: *cron-only
     env:
       - CONFIG_FLAG='--with-coroutine=ucontext'
 
   - &WITH_COROUTINE_COPY
     name: COROUTINE=copy
-    <<: *linux
+    os: linux
+    <<: *gcc-8
     <<: *cron-only
     env:
       - CONFIG_FLAG='--with-coroutine=copy'
 
   - &TOKEN_THREADED_CODE
     name: TOKEN_THREADED_CODE
-    <<: *linux
+    os: linux
+    <<: *gcc-8
     <<: *cron-only
     <<: *make-test-only
     env:
@@ -181,7 +200,8 @@ env:
 
   - &CALL_THREADED_CODE
     name: CALL_THREADED_CODE
-    <<: *linux
+    os: linux
+    <<: *gcc-8
     <<: *cron-only
     <<: *make-test-only
     env:
@@ -190,7 +210,8 @@ env:
 
   - &NO_THREADED_CODE
     name: NO_THREADED_CODE
-    <<: *linux
+    os: linux
+    <<: *gcc-8
     <<: *cron-only
     <<: *make-test-only
     env:
@@ -199,10 +220,10 @@ env:
 
   - &ASAN
     name: -fsanitize=address
-    <<: *linux
+    os: linux
+    <<: *clang-8
     #<<: *cron-only
     <<: *make-test-only
-    <<: *clang-8
     env:
       - GEMS_FOR_TEST=
       - ASAN_OPTIONS=detect_leaks=0
@@ -215,10 +236,10 @@ env:
 
   - &MSAN
     name: -fsanitize=memory
-    <<: *linux
+    os: linux
+    <<: *clang-8
     #<<: *cron-only
     <<: *make-test-only
-    <<: *clang-8
     env:
       - GEMS_FOR_TEST=
       - cflags='-U_FORTIFY_SOURCE -fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer -fPIC'
@@ -229,10 +250,10 @@ env:
 
   - &UBSAN
     name: -fsanitize=undefined
-    <<: *linux
+    os: linux
+    <<: *clang-8
     #<<: *cron-only
     <<: *make-test-only
-    <<: *clang-8
     env:
       - GEMS_FOR_TEST=
       - cflags='-U_FORTIFY_SOURCE -fsanitize=undefined,integer,nullability -fno-sanitize=implicit-integer-sign-change,unsigned-integer-overflow'
@@ -244,40 +265,43 @@ env:
 
   - &i686-linux
     name: i686-linux
-    <<: *linux
+    os: linux
+    compiler: gcc-8
     env:
       - GCC_FLAGS=-m32
       - debugflags=-g0
       - SETARCH='setarch i686 --verbose --3gb'
-    addons:
-      apt:
-        config:
-          retries: true
-        update: true
-        sources:
-          - ubuntu-toolchain-r-test
-        packages:
-          - gcc-8-multilib
-          - libffi-dev:i386
-          - libffi6:i386
-          - libgdbm-dev:i386
-          - libgdbm3:i386
-          - libncurses5-dev:i386
-          - libncurses5:i386
-          - libncursesw5-dev:i386
-          - libreadline6-dev:i386
-          - libreadline6:i386
-          - libssl-dev:i386
-          - libssl1.0.0:i386
-          - linux-libc-dev:i386
-          - zlib1g-dev:i386
-          - zlib1g:i386
+    # # Not using addon to control retries
+    # addons:
+    #   apt:
+    #     sources:
+    #       - ubuntu-toolchain-r-test
+    before_install:
+      - tool/travis_retry.sh sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
+      - |-
+        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install \
+          gcc-8-multilib \
+          libffi-dev:i386 \
+          libffi6:i386 \
+          libgdbm-dev:i386 \
+          libgdbm3:i386 \
+          libncurses5-dev:i386 \
+          libncurses5:i386 \
+          libncursesw5-dev:i386 \
+          libreadline6-dev:i386 \
+          libreadline6:i386 \
+          libssl-dev:i386 \
+          libssl1.0.0:i386 \
+          linux-libc-dev:i386 \
+          zlib1g-dev:i386 \
+          zlib1g:i386
 
   - &pedanticism
     name: -std=c99 -pedantic
-    <<: *linux
-    <<: *make-test-only
+    os: linux
     compiler: clang
+    <<: *make-test-only
     env:
       - GEMS_FOR_TEST=
       - GCC_FLAGS='-std=c99 -Werror=pedantic -pedantic-errors'
@@ -304,18 +328,14 @@ env:
         -Wno-tautological-compare
         -Wno-unused-local-typedef
         -Wno-unused-parameter
-        -Wunused-variable
-        '
+        -Wunused-variable'
       - LDFLAGS=-Wno-unused-command-line-argument
 
   - &rubyspec
     name: Check ruby/spec version guards on Ruby 2.4
-    <<: *linux
+    os: linux
     language: ruby
     rvm: 2.4.6
-    addons:
-      apt:
-        packages:
     before_install:
     install:
     before_script: chmod -R u+w spec/ruby
@@ -326,7 +346,8 @@ env:
 
   - &baseruby
     name: "BASERUBY: Ruby 1.9.3"
-    <<: *linux
+    os: linux
+    <<: *gcc-8
     <<: *make-test-only
     dist: trusty # xenial no longer has ruby-1.9.3
     language: ruby
@@ -335,23 +356,16 @@ env:
   - &x86_64-darwin18
     name: x86_64-darwin18
     osx_image: xcode11
-    <<: *osx
+    os: osx
+    <<: *osx-clang
     env:
       - CONFIG_FLAG=--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib
-      # Adding `-v` because we're not sure which test could hang forever: https://travis-ci.org/ruby/ruby/jobs/564804923
-      - TEST_ALL_OPTS="-v --timeout-scale=2.0 --tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
-      # Disabling -j3 because it seems to cause a hang on building Ruby: https://travis-ci.org/ruby/ruby/jobs/471021727
-      - JOBS=
-      # Reset timestamps early, before updating Homebrew etc.
-      - _=$(touch NEWS && find . -type f -exec touch -r NEWS {} +)
+      - TEST_ALL_OPTS="--timeout-scale=2.0 --excludes=\$(TESTSDIR)/excludes/_travis/osx"
 
   - &dependency
     name: Check dependencies in makefiles
-    <<: *linux
+    os: linux
     language: ruby
-    addons:
-      apt:
-        packages:
     before_install:
     install:
     before_script:
@@ -480,10 +494,10 @@ before_script:
   - echo "raise 'do not load ~/.irbrc in test'" > ~/.irbrc
 
 script:
-  - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
-  - $SETARCH make -s test-all -o exts TESTOPTS="${TEST_ALL_OPTS=$TESTOPTS}" RUBYOPT="-w"
+  - $SETARCH make -s test -o showflags TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
+  - travis_wait 50 $SETARCH make -s test-all -o exts TESTOPTS="${TESTOPTS} ${TEST_ALL_OPTS}" RUBYOPT="-w"
   - $SETARCH make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
-  - $SETARCH make -s leaked-globals
+  - $SETARCH make -s -o showflags leaked-globals
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:

@@ -41,7 +41,7 @@ class Gem::BasicSpecification
   class << self
 
     extend Gem::Deprecate
-    deprecate :default_specifications_dir, "Gem::BasicSpecification.default_specifications_dir", 2020, 02
+    deprecate :default_specifications_dir, "Gem.default_specifications_dir", 2020, 02
 
   end
 

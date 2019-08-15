@@ -1387,6 +1387,15 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    /*% %*/
 		    /*% ripper: assign!($1, $3) %*/
 		    }
+                | mlhs '=' mrhs_arg modifier_rescue stmt
+                    {
+                    /*%%%*/
+                        YYLTYPE loc = code_loc_gen(&@4, &@5);
+                        value_expr($3);
+			$$ = node_assign(p, $1, NEW_RESCUE($3, NEW_RESBODY(0, remove_begin($5), 0, &loc), 0, &@$), &@$);
+                    /*% %*/
+                    /*% ripper: massign!($1, rescue_mod!($3, $5)) %*/
+                    }
 		| mlhs '=' mrhs_arg
 		    {
 		    /*%%%*/
@@ -5812,7 +5821,7 @@ yycompile(VALUE vparser, struct parser_params *p, VALUE fname, int line)
 	p->ruby_sourcefile = "(none)";
     }
     else {
-	p->ruby_sourcefile_string = rb_str_new_frozen(fname);
+	p->ruby_sourcefile_string = rb_fstring(fname);
 	p->ruby_sourcefile = StringValueCStr(fname);
     }
     p->ruby_sourceline = line - 1;
@@ -9739,10 +9748,16 @@ past_dvar_p(struct parser_params *p, ID id)
 }
 # endif
 
+/* As Ripper#warn does not have arguments for the location, so the
+ * following messages cannot be separated */
 #define WARN_LOCATION(type) do { \
     if (p->warn_location) { \
-	rb_warning0(type" in eval may not return location in binding;" \
-		    " use Binding#source_location instead"); \
+	int line; \
+	VALUE file = rb_source_location(&line); \
+	rb_warn3(type" in eval may not return location in binding;" \
+		 " use Binding#source_location instead\n" \
+		 "%"PRIsWARN":%d: warning: in `%"PRIsWARN"'", \
+		 file, WARN_I(line), rb_id2str(rb_frame_this_func())); \
     } \
 } while (0)
 
@@ -9767,7 +9782,7 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	    if (NIL_P(file))
 		file = rb_str_new(0, 0);
 	    else
-		file = rb_str_dup(rb_fstring(file));
+		file = rb_str_dup(file);
 	    node = NEW_STR(add_mark_object(p, file), loc);
 	}
 	return node;

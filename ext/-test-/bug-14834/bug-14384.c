@@ -1,6 +1,10 @@
 #include <ruby/ruby.h>
 #include <ruby/debug.h>
 
+#ifndef MAYBE_UNUSED
+# define MAYBE_UNUSED(x) x
+#endif
+
 static NOINLINE(VALUE f(VALUE));
 static NOINLINE(void g(VALUE, void*));
 extern NOINLINE(void Init_bug_14384(void));

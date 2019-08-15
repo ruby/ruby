@@ -46,7 +46,7 @@
 #endif
 
 #ifdef __QNXNTO__
-#include "unix.h"
+#include <unix.h>
 #endif
 
 #include <sys/types.h>
@@ -5864,7 +5864,7 @@ extract_binmode(VALUE opthash, int *fmode)
     }
 }
 
-static void
+void
 rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
         int *oflags_p, int *fmode_p, convconfig_t *convconfig_p)
 {
@@ -6136,12 +6136,9 @@ io_strip_bom(VALUE io)
 		    return ENCINDEX_UTF_32LE;
 		}
 		rb_io_ungetbyte(io, b4);
-		rb_io_ungetbyte(io, b3);
 	    }
-	    else {
-		rb_io_ungetbyte(io, b3);
-		return ENCINDEX_UTF_16LE;
-	    }
+            rb_io_ungetbyte(io, b3);
+            return ENCINDEX_UTF_16LE;
 	}
 	rb_io_ungetbyte(io, b2);
 	break;

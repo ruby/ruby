@@ -19,6 +19,8 @@ class TestRakePackage < Minitest::Test
 
       If you have added or removed files, make sure you run `rake update_manifest` to update the `Manifest.txt` accordingly
     MSG
+
+    FileUtils.rm_f "pkg"
   end
 
 end

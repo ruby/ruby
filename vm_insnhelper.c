@@ -785,8 +785,9 @@ vm_get_const_key_cref(const VALUE *ep)
     const rb_cref_t *key_cref = cref;
 
     while (cref) {
-	if (FL_TEST(CREF_CLASS(cref), FL_SINGLETON)) {
-	    return key_cref;
+        if (FL_TEST(CREF_CLASS(cref), FL_SINGLETON) ||
+            FL_TEST(CREF_CLASS(cref), RCLASS_CLONED)) {
+            return key_cref;
 	}
 	cref = CREF_NEXT(cref);
     }
@@ -889,12 +890,12 @@ vm_get_iclass(rb_control_frame_t *cfp, VALUE klass)
 }
 
 static inline VALUE
-vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, int is_defined)
+vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, int allow_nil, int is_defined)
 {
     void rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id);
     VALUE val;
 
-    if (orig_klass == Qnil) {
+    if (orig_klass == Qnil && allow_nil) {
 	/* in current lexical scope */
         const rb_cref_t *root_cref = vm_get_cref(ec->cfp->ep);
 	const rb_cref_t *cref;
@@ -1506,10 +1507,11 @@ opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 	    return rb_float_equal(recv, obj);
 	}
     }
-    else if (BUILTIN_CLASS_P(recv, rb_cString)) {
-	if (EQ_UNREDEFINED_P(STRING)) {
-	    return rb_str_equal(recv, obj);
-	}
+    else if (BUILTIN_CLASS_P(recv, rb_cString) && EQ_UNREDEFINED_P(STRING)) {
+        if (recv == obj) return Qtrue;
+        if (RB_TYPE_P(obj, T_STRING)) {
+            return rb_str_eql_internal(recv, obj);
+        }
     }
 
   fallback:
@@ -3144,7 +3146,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
       }
       case DEFINED_CONST:
 	klass = v;
-	if (vm_get_ev_const(ec, klass, SYM2ID(obj), 1)) {
+        if (vm_get_ev_const(ec, klass, SYM2ID(obj), 1, 1)) {
 	    expr_type = DEFINED_CONST;
 	}
 	break;
@@ -3721,7 +3723,8 @@ static int
 vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 {
     if (ic->ic_serial == GET_GLOBAL_CONSTANT_STATE()) {
-        return (ic->ic_cref == NULL || ic->ic_cref == vm_get_cref(reg_ep));
+        return (ic->ic_cref == NULL || // no need to check CREF
+                ic->ic_cref == vm_get_cref(reg_ep));
     }
     return FALSE;
 }
@@ -3847,9 +3850,10 @@ vm_opt_plus(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cString &&
 	     RBASIC_CLASS(obj) == rb_cString &&
 	     BASIC_OP_UNREDEFINED_P(BOP_PLUS, STRING_REDEFINED_OP_FLAG)) {
-	return rb_str_plus(recv, obj);
+        return rb_str_opt_plus(recv, obj);
     }
     else if (RBASIC_CLASS(recv) == rb_cArray &&
+             RBASIC_CLASS(obj) == rb_cArray &&
 	     BASIC_OP_UNREDEFINED_P(BOP_PLUS, ARRAY_REDEFINED_OP_FLAG)) {
 	return rb_ary_plus(recv, obj);
     }

@@ -480,6 +480,7 @@ module MiniTest
 
       return captured_stdout.string, captured_stderr.string
     end
+    alias capture_output capture_io
 
     ##
     # Captures $stdout and $stderr into strings, using Tempfile to
