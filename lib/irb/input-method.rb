@@ -240,12 +240,22 @@ module IRB
       @check_termination_proc = block
     end
 
+    def dynamic_prompt(&block)
+      @prompt_proc = block
+    end
+
+    def auto_indent(&block)
+      @auto_indent_proc = block
+    end
+
     # Reads the next line from this input method.
     #
     # See IO#gets for more information.
     def gets
       Reline.input = @stdin
       Reline.output = @stdout
+      Reline.prompt_proc = @prompt_proc
+      Reline.auto_indent_proc = @auto_indent_proc if @auto_indent_proc
       if l = readmultiline(@prompt, false, &@check_termination_proc)
         HISTORY.push(l) if !l.empty?
         @line[@line_no += 1] = l + "\n"

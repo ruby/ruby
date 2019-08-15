@@ -387,7 +387,7 @@ class TestISeq < Test::Unit::TestCase
       type = ary[9]
       name = ary[5]
       line = ary[13].first
-      case ary[9]
+      case type
       when :method
         assert_equal "foo", name
         assert_equal 3, line
@@ -433,6 +433,16 @@ class TestISeq < Test::Unit::TestCase
     assert_iseq_to_binary("@x ||= (1..2)")
   end
 
+  def test_to_binary_pattern_matching
+    code = "case foo in []; end"
+    iseq = compile(code)
+    assert_include(iseq.disasm, "TypeError")
+    assert_include(iseq.disasm, "NoMatchingPatternError")
+    EnvUtil.suppress_warning do
+      assert_iseq_to_binary(code, "[Feature #14912]")
+    end
+  end
+
   def test_to_binary_line_info
     assert_iseq_to_binary("#{<<~"begin;"}\n#{<<~'end;'}", '[Bug #14660]').eval
     begin;
@@ -452,7 +462,7 @@ class TestISeq < Test::Unit::TestCase
         class B
           2.times {
             def self.foo
-              a = 'good day'
+              _a = 'good day'
               raise
             rescue
               'dear reader'
@@ -464,12 +474,13 @@ class TestISeq < Test::Unit::TestCase
     RUBY
 
     iseq_bin = iseq.to_binary
+    iseq = ISeq.load_from_binary(iseq_bin)
     lines = []
     TracePoint.new(tracepoint_type){|tp|
       next unless tp.path == filename
       lines << tp.lineno
     }.enable{
-      ISeq.load_from_binary(iseq_bin).eval
+      EnvUtil.suppress_warning {iseq.eval}
     }
 
     lines

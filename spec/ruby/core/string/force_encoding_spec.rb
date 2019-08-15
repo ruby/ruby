@@ -19,9 +19,9 @@ describe "String#force_encoding" do
       "abc".force_encoding("internal").encoding.should == Encoding::US_ASCII
     end
 
-    it "defaults to ASCII-8BIT if special encoding name is not set" do
+    it "defaults to BINARY if special encoding name is not set" do
       Encoding.default_internal = nil
-      "abc".force_encoding("internal").encoding.should == Encoding::ASCII_8BIT
+      "abc".force_encoding("internal").encoding.should == Encoding::BINARY
     end
   end
 
@@ -40,11 +40,11 @@ describe "String#force_encoding" do
     obj = mock("force_encoding")
     obj.should_receive(:to_str).and_return(1)
 
-    lambda { "abc".force_encoding(obj) }.should raise_error(TypeError)
+    -> { "abc".force_encoding(obj) }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed nil" do
-    lambda { "abc".force_encoding(nil) }.should raise_error(TypeError)
+    -> { "abc".force_encoding(nil) }.should raise_error(TypeError)
   end
 
   it "returns self" do
@@ -66,6 +66,6 @@ describe "String#force_encoding" do
 
   it "raises a #{frozen_error_class} if self is frozen" do
     str = "abcd".freeze
-    lambda { str.force_encoding(str.encoding) }.should raise_error(frozen_error_class)
+    -> { str.force_encoding(str.encoding) }.should raise_error(frozen_error_class)
   end
 end

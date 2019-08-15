@@ -5,6 +5,7 @@ require 'reline/config'
 require 'reline/key_actor'
 require 'reline/key_stroke'
 require 'reline/line_editor'
+require 'reline/history'
 
 module Reline
   Key = Struct.new('Key', :char, :combined_char, :with_meta)
@@ -13,7 +14,7 @@ module Reline
   FILENAME_COMPLETION_PROC = nil
   USERNAME_COMPLETION_PROC = nil
 
-  if RUBY_PLATFORM =~ /mswin|mingw/
+  if RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/
     IS_WINDOWS = true
   else
     IS_WINDOWS = false
@@ -26,66 +27,7 @@ module Reline
   @@line_editor = Reline::LineEditor.new(@@config)
   @@ambiguous_width = nil
 
-  HISTORY = Class.new(Array) {
-    def initialize(config)
-      @config = config
-    end
-
-    def to_s
-      'HISTORY'
-    end
-
-    def delete_at(index)
-      index = check_index(index)
-      super(index)
-    end
-
-    def [](index)
-      index = check_index(index)
-      super(index)
-    end
-
-    def []=(index, val)
-      index = check_index(index)
-      super(index, String.new(val, encoding: Encoding::default_external))
-    end
-
-    def concat(*val)
-      val.each do |v|
-        push(*v)
-      end
-    end
-
-    def push(*val)
-      diff = size + val.size - @config.history_size
-      if diff > 0
-        if diff <= size
-          shift(diff)
-        else
-          diff -= size
-          clear
-          val.shift(diff)
-        end
-      end
-      super(*(val.map{ |v| String.new(v, encoding: Encoding::default_external) }))
-    end
-
-    def <<(val)
-      shift if size + 1 > @config.history_size
-      super(String.new(val, encoding: Encoding::default_external))
-    end
-
-    private def check_index(index)
-      index += size if index < 0
-      raise RangeError.new("index=<#{index}>") if index < -@config.history_size or @config.history_size < index
-      raise IndexError.new("index=<#{index}>") if index < 0 or size <= index
-      index
-    end
-
-    private def set_config(config)
-      @config = config
-    end
-  }.new(@@config)
+  HISTORY = History.new(@@config)
 
   @@completion_append_character = nil
   def self.completion_append_character
@@ -177,6 +119,24 @@ module Reline
     @@output_modifier_proc = p
   end
 
+  @@prompt_proc = nil
+  def self.prompt_proc
+    @@prompt_proc
+  end
+  def self.prompt_proc=(p)
+    raise ArgumentError unless p.is_a?(Proc)
+    @@prompt_proc = p
+  end
+
+  @@auto_indent_proc = nil
+  def self.auto_indent_proc
+    @@auto_indent_proc
+  end
+  def self.auto_indent_proc=(p)
+    raise ArgumentError unless p.is_a?(Proc)
+    @@auto_indent_proc = p
+  end
+
   @@pre_input_hook = nil
   def self.pre_input_hook
     @@pre_input_hook
@@ -190,6 +150,7 @@ module Reline
     @@dig_perfect_match_proc
   end
   def self.dig_perfect_match_proc=(p)
+    raise ArgumentError unless p.is_a?(Proc)
     @@dig_perfect_match_proc = p
   end
 
@@ -304,6 +265,7 @@ module Reline
     if ENV['RELINE_STDERR_TTY']
       $stderr.reopen(ENV['RELINE_STDERR_TTY'], 'w')
       $stderr.sync = true
+      $stderr.puts "Reline is used by #{Process.pid}"
     end
     otio = Reline::IOGate.prep
 
@@ -320,6 +282,8 @@ module Reline
     @@line_editor.output = @@output
     @@line_editor.completion_proc = @@completion_proc
     @@line_editor.output_modifier_proc = @@output_modifier_proc
+    @@line_editor.prompt_proc = @@prompt_proc
+    @@line_editor.auto_indent_proc = @@auto_indent_proc
     @@line_editor.dig_perfect_match_proc = @@dig_perfect_match_proc
     @@line_editor.pre_input_hook = @@pre_input_hook
     @@line_editor.rerender

@@ -138,7 +138,8 @@ typedef struct rb_code_location_struct {
     rb_code_position_t end_pos;
 } rb_code_location_t;
 
-static inline rb_code_location_t code_loc_gen(rb_code_location_t *loc1, rb_code_location_t *loc2)
+static inline rb_code_location_t
+code_loc_gen(rb_code_location_t *loc1, rb_code_location_t *loc2)
 {
     rb_code_location_t loc;
     loc.beg_pos = loc1->beg_pos;
@@ -405,6 +406,7 @@ rb_ast_t *rb_ast_new(void);
 void rb_ast_mark(rb_ast_t*);
 void rb_ast_dispose(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
+size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_add_mark_object(rb_ast_t*, VALUE);
 NODE *rb_ast_newnode(rb_ast_t*);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);

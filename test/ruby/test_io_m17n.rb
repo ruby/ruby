@@ -2084,8 +2084,8 @@ EOT
     define_method("test_strip_bom:#{name}") do
       path = "#{name}-bom.txt"
       with_tmpdir {
-        text = "\uFEFFa"
-        stripped = "a"
+        text = "\uFEFF\u0100a"
+        stripped = "\u0100a"
         content = text.encode(name)
         generate_file(path, content)
         result = File.read(path, mode: 'rb:BOM|UTF-8')
@@ -2097,6 +2097,10 @@ EOT
           assert_equal(Encoding::UTF_8, result.encoding, message)
           assert_equal(stripped, result, message)
         end
+
+        File.open(path, "rb") {|f|
+          assert_equal(Encoding.find(name), f.set_encoding_by_bom)
+        }
       }
     end
   end
@@ -2139,6 +2143,10 @@ EOT
       assert_equal(stripped, result, bug8323)
       result = File.read(path, encoding: 'BOM|UTF-8:UTF-8')
       assert_equal(stripped, result, bug8323)
+
+      File.open(path, "rb") {|f|
+        assert_nil(f.set_encoding_by_bom)
+      }
     }
   end
 

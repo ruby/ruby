@@ -308,18 +308,6 @@ describe "The if expression" do
       6.times(&b)
       ScratchPad.recorded.should == [4, 5, 4, 5]
     end
-
-    ruby_version_is "2.6" do
-      it 'is deprecated' do
-        i = 4
-
-        -> do
-          eval "ScratchPad << 'it works' if (i == 4)..(i == 7)"
-        end.should complain(/flip-flop is deprecated/)
-
-        ScratchPad.recorded.should == ['it works']
-      end
-    end
   end
 end
 

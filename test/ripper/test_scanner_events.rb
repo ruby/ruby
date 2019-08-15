@@ -573,6 +573,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('op', 'obj.:foo')
     assert_equal [],
                  scan('op', %q[`make all`])
+    assert_equal %w[|>],
+                 scan('op', %q[x|>y])
   end
 
   def test_symbeg
@@ -939,9 +941,20 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('CHAR', "@ivar")
 
     assert_equal ["?\\M-H"], scan('CHAR', '?\\M-H')
+
+    assert_equal ["?\\u0041"],
+                 scan('CHAR', "?\\u0041")
+
+    assert_equal ["?\\u{41}"],
+                 scan('CHAR', "?\\u{41}")
+
     err = nil
     assert_equal [], scan('CHAR', '?\\M ') {|*e| err = e}
     assert_equal([:on_parse_error, "Invalid escape character syntax", "?\\M "], err)
+
+    err = nil
+    scan('CHAR', '?\u{41 42}') {|*e| err = e}
+    assert_equal [:on_parse_error, "Multiple codepoints at single character literal", "42"], err
   end
 
   def test_label
@@ -971,10 +984,10 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
 
   def test_invalid_char
     err = nil
-    assert_equal ['a'], scan('ident', "\ea") {|*e| err = e}
-    assert_equal :compile_error, err[0]
-    assert_match /Invalid char/, err[1]
-    assert_equal "\e", err[2]
+    assert_equal(['a'], scan('ident', "\ea") {|*e| err = e})
+    assert_equal(:compile_error, err[0])
+    assert_match(/Invalid char/, err[1])
+    assert_equal("\e", err[2])
   end
 
   def test_invalid_hex_escape

@@ -126,9 +126,9 @@ describe "String#to_i" do
   end
 
   it "raises an ArgumentError for illegal bases (1, < 0 or > 36)" do
-    lambda { "".to_i(1)  }.should raise_error(ArgumentError)
-    lambda { "".to_i(-1) }.should raise_error(ArgumentError)
-    lambda { "".to_i(37) }.should raise_error(ArgumentError)
+    -> { "".to_i(1)  }.should raise_error(ArgumentError)
+    -> { "".to_i(-1) }.should raise_error(ArgumentError)
+    -> { "".to_i(37) }.should raise_error(ArgumentError)
   end
 
   it "returns a Fixnum for long strings with trailing spaces" do

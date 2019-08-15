@@ -87,7 +87,7 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_bom_32le
-    assert_bom(["\xFF\xFE\0", "\0"], __method__)
+    assert_bom(["\xFF", "\xFE\0\0"], __method__)
   end
 
   def test_truncate_wbuf

@@ -7,8 +7,8 @@ require 'fileutils'
 require 'shellwords'
 require 'tmpdir'
 require 'pathname'
-require File.expand_path("../vcs", __FILE__)
-require File.expand_path("../colorize", __FILE__)
+require File.expand_path("../lib/vcs", __FILE__)
+require File.expand_path("../lib/colorize", __FILE__)
 STDOUT.sync = true
 
 $srcdir ||= nil
@@ -42,7 +42,7 @@ options:
   -s3=PATH              s3 bucket path(default=tmp)
   -help, --help         show this message
 version:
-  trunk, stable, branches/*, tags/*, X.Y, X.Y.Z, X.Y.Z-pL
+  master, trunk, stable, branches/*, tags/*, X.Y, X.Y.Z, X.Y.Z-pL
 each versions may be followed by optional @revision.
 USAGE
 end
@@ -70,7 +70,8 @@ if mflags = ENV["GNUMAKEFLAGS"] and /\A-(\S*)j\d*/ =~ mflags
 end
 ENV["LC_ALL"] = ENV["LANG"] = "C"
 SVNURL = URI.parse("https://svn.ruby-lang.org/repos/ruby/")
-GITURL = URI.parse("https://git.ruby-lang.org/ruby.git")
+# https git clone is disabled at git.ruby-lang.org/ruby.git.
+GITURL = URI.parse("https://github.com/ruby/ruby.git")
 RUBY_VERSION_PATTERN = /^\#define\s+RUBY_VERSION\s+"([\d.]+)"/
 
 ENV["VPATH"] ||= "include/ruby"
@@ -207,7 +208,7 @@ def package(vcs, rev, destdir, tmp = nil)
   case rev
   when nil
     url = nil
-  when /\Atrunk\z/
+  when /\A(?:master|trunk)\z/
     url = vcs.trunk
   when /\Abranches\//
     url = vcs.branch($')

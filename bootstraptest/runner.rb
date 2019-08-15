@@ -140,7 +140,7 @@ End
     # dircolors-like style
     colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
     begin
-      File.read(File.join(__dir__, "../test/colors")).scan(/(\w+)=([^:\n]*)/) do |n, c|
+      File.read(File.join(__dir__, "../tool/colors")).scan(/(\w+)=([^:\n]*)/) do |n, c|
         colors[n] ||= c
       end
     rescue
@@ -171,8 +171,8 @@ End
 end
 
 def erase(e = true)
-  if e and @columns > 0 and !@verbose
-    "\r#{" "*@columns}\r"
+  if e and @columns > 0 and @tty and !@verbose
+    "\e[1K\r"
   else
     ""
   end
@@ -208,6 +208,9 @@ def exec_test(pathes)
     $stderr.puts unless @quiet and @tty and @error == error
   end
   $stderr.print(erase) if @quiet
+  @errbuf.each do |msg|
+    $stderr.puts msg
+  end
   if @error == 0
     if @count == 0
       $stderr.puts "No tests, no problem"
@@ -216,9 +219,6 @@ def exec_test(pathes)
     end
     exit true
   else
-    @errbuf.each do |msg|
-      $stderr.puts msg
-    end
     $stderr.puts "#{@failed}FAIL#{@reset} #{@error}/#{@count} tests failed"
     exit false
   end
@@ -244,7 +244,7 @@ def show_progress(message = '')
   else
     $stderr.print "#{@failed}F"
     $stderr.printf(" %.3f", t) if @verbose
-    $stderr.print "#{@reset}"
+    $stderr.print @reset
     $stderr.puts if @verbose
     error faildesc, message
     unless errout.empty?
@@ -261,6 +261,15 @@ rescue Exception => err
   $stderr.print 'E'
   $stderr.puts if @verbose
   error err.message, message
+end
+
+def show_limit(testsrc, opt = '', **argh)
+  result = get_result_string(testsrc, opt, **argh)
+  if @tty and @verbose
+    $stderr.puts ".{#@reset}\n#{erase}#{result}"
+  else
+    @errbuf.push result
+  end
 end
 
 def assert_check(testsrc, message = '', opt = '', **argh)
