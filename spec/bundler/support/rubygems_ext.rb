@@ -81,7 +81,7 @@ module Spec
       no_reqs.map!(&:first)
       reqs.map! {|name, req| "'#{name}:#{req}'" }
       deps = reqs.concat(no_reqs).join(" ")
-      gem = Spec::Path.gem_bin
+      gem = Path.gem_bin
       cmd = "#{gem} install #{deps} --no-document --conservative"
       puts cmd
       system(cmd) || raise("Installing gems #{deps} for the tests to use failed!")
