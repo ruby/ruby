@@ -12,15 +12,16 @@
 #ifndef RUBY_ISEQ_H
 #define RUBY_ISEQ_H 1
 
-#include "ruby/version.h"
-
-#define ISEQ_MAJOR_VERSION RUBY_API_VERSION_MAJOR
-#define ISEQ_MINOR_VERSION RUBY_API_VERSION_MINOR
+RUBY_EXTERN const int ruby_api_version[];
+#define ISEQ_MAJOR_VERSION ((unsigned int)ruby_api_version[0])
+#define ISEQ_MINOR_VERSION ((unsigned int)ruby_api_version[1])
 
 #ifndef rb_iseq_t
 typedef struct rb_iseq_struct rb_iseq_t;
 #define rb_iseq_t rb_iseq_t
 #endif
+
+extern const ID rb_iseq_shared_exc_local_tbl[];
 
 static inline size_t
 rb_call_info_kw_arg_bytes(int keyword_len)
@@ -32,6 +33,9 @@ rb_call_info_kw_arg_bytes(int keyword_len)
 #define ISEQ_COVERAGE_SET(iseq, cov)  RB_OBJ_WRITE(iseq, &iseq->body->variable.coverage, cov)
 #define ISEQ_LINE_COVERAGE(iseq)      RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_LINES)
 #define ISEQ_BRANCH_COVERAGE(iseq)    RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_BRANCHES)
+
+#define ISEQ_PC2BRANCHINDEX(iseq)         iseq->body->variable.pc2branchindex
+#define ISEQ_PC2BRANCHINDEX_SET(iseq, h)  RB_OBJ_WRITE(iseq, &iseq->body->variable.pc2branchindex, h)
 
 #define ISEQ_FLIP_CNT(iseq) (iseq)->body->variable.flip_count
 
@@ -72,12 +76,16 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 			   RUBY_EVENT_CALL  | \
 			   RUBY_EVENT_RETURN| \
 			   RUBY_EVENT_B_CALL| \
-			   RUBY_EVENT_B_RETURN)
+			   RUBY_EVENT_B_RETURN| \
+                           RUBY_EVENT_COVERAGE_LINE| \
+                           RUBY_EVENT_COVERAGE_BRANCH)
 
 #define ISEQ_NOT_LOADED_YET   IMEMO_FL_USER1
 #define ISEQ_USE_COMPILE_DATA IMEMO_FL_USER2
 #define ISEQ_TRANSLATED       IMEMO_FL_USER3
 #define ISEQ_MARKABLE_ISEQ    IMEMO_FL_USER4
+
+#define ISEQ_EXECUTABLE_P(iseq) (FL_TEST_RAW((iseq), ISEQ_NOT_LOADED_YET | ISEQ_USE_COMPILE_DATA) == 0)
 
 struct iseq_compile_data {
     /* GC is needed */
@@ -90,8 +98,6 @@ struct iseq_compile_data {
     struct iseq_label_data *end_label;
     struct iseq_label_data *redo_label;
     const rb_iseq_t *current_block;
-    VALUE ensure_node;
-    VALUE for_iseq;
     struct iseq_compile_data_ensure_node_stack *ensure_node_stack;
     struct iseq_compile_data_storage *storage_head;
     struct iseq_compile_data_storage *storage_current;
@@ -122,8 +128,8 @@ ISEQ_COMPILE_DATA(const rb_iseq_t *iseq)
 static inline void
 ISEQ_COMPILE_DATA_ALLOC(rb_iseq_t *iseq)
 {
-    iseq->flags |= ISEQ_USE_COMPILE_DATA;
     iseq->aux.compile_data = ZALLOC(struct iseq_compile_data);
+    iseq->flags |= ISEQ_USE_COMPILE_DATA;
 }
 
 static inline void
@@ -139,10 +145,15 @@ iseq_imemo_alloc(void)
     return (rb_iseq_t *)rb_imemo_new(imemo_iseq, 0, 0, 0, 0);
 }
 
-VALUE iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
-void ibf_load_iseq_complete(rb_iseq_t *iseq);
-const rb_iseq_t *iseq_ibf_load(VALUE str);
-VALUE iseq_ibf_load_extra_data(VALUE str);
+VALUE rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
+void rb_ibf_load_iseq_complete(rb_iseq_t *iseq);
+const rb_iseq_t *rb_iseq_ibf_load(VALUE str);
+VALUE rb_iseq_ibf_load_extra_data(VALUE str);
+void rb_iseq_init_trace(rb_iseq_t *iseq);
+int rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval, unsigned int target_line);
+int rb_iseq_remove_local_tracepoint_recursively(const rb_iseq_t *iseq, VALUE tpval);
+const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
+
 #if VM_INSN_INFO_TABLE_IMPL == 2
 unsigned int *rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body);
 #endif
@@ -177,6 +188,8 @@ VALUE rb_iseq_base_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_first_lineno(const rb_iseq_t *iseq);
 VALUE rb_iseq_method_name(const rb_iseq_t *iseq);
 void rb_iseq_code_location(const rb_iseq_t *iseq, int *first_lineno, int *first_column, int *last_lineno, int *last_column);
+
+void rb_iseq_remove_coverage_all(void);
 
 /* proc.c */
 const rb_iseq_t *rb_method_iseq(VALUE body);
@@ -223,7 +236,7 @@ struct iseq_catch_table_entry {
      *   CATCH_TYPE_REDO, CATCH_TYPE_NEXT:
      *     NULL.
      */
-    const rb_iseq_t *iseq;
+    rb_iseq_t *iseq;
 
     unsigned int start;
     unsigned int end;

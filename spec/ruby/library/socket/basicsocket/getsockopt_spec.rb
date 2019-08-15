@@ -41,7 +41,7 @@ describe "BasicSocket#getsockopt" do
   end
 
   it "raises a SystemCallError with an invalid socket option" do
-    lambda { @sock.getsockopt Socket::SOL_SOCKET, -1 }.should raise_error(Errno::ENOPROTOOPT)
+    -> { @sock.getsockopt Socket::SOL_SOCKET, -1 }.should raise_error(Errno::ENOPROTOOPT)
   end
 
   it 'returns a Socket::Option using a constant' do
@@ -59,7 +59,7 @@ describe "BasicSocket#getsockopt" do
   it 'returns a Socket::Option for a numeric option' do
     opt = @sock.getsockopt(Socket::IPPROTO_IP, Socket::IP_TTL)
 
-    opt.int.should be_an_instance_of(Fixnum)
+    opt.int.should be_kind_of(Integer)
   end
 
   it 'returns a Socket::Option for a struct option' do
@@ -69,7 +69,7 @@ describe "BasicSocket#getsockopt" do
   end
 
   it 'raises Errno::ENOPROTOOPT when requesting an invalid option' do
-    lambda { @sock.getsockopt(Socket::SOL_SOCKET, -1) }.should raise_error(Errno::ENOPROTOOPT)
+    -> { @sock.getsockopt(Socket::SOL_SOCKET, -1) }.should raise_error(Errno::ENOPROTOOPT)
   end
 
   describe 'using Symbols as arguments' do
@@ -171,7 +171,7 @@ describe "BasicSocket#getsockopt" do
       opt   = @sock.getsockopt(Socket::IPPROTO_IP, Socket::IP_TTL).to_s
       array = opt.unpack('i')
 
-      array[0].should be_an_instance_of(Fixnum)
+      array[0].should be_kind_of(Integer)
       array[0].should > 0
     end
 

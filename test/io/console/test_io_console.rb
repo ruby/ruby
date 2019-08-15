@@ -14,7 +14,7 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def set_winsize_teardown
-    trap(:TTOU, @old_ttou) if @old_ttou
+    trap(:TTOU, @old_ttou) if defined?(@old_ttou) and @old_ttou
   end
 end
 

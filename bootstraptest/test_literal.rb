@@ -223,6 +223,24 @@ assert_equal 'ok', %q{ #  long hash literal (optimized)
   :ok
 }
 
+assert_equal 'ok', %q{ #  Bug #15536
+  eval <<-END
+    {
+      **{
+        a0: nil, a1: nil, a2: nil, a3: nil, a4: nil, a5: nil, a6: nil, a7: nil, a8: nil,
+      },
+      a0: nil, a1: nil, a2: nil, a3: nil, a4: nil, a5: nil, a6: nil, a7: nil, a8: nil,
+      **{
+        c: nil
+      },
+      b0: nil, b1: nil, b2: nil, b3: nil, b4: nil, b5: nil, b6: nil, b7: nil, b8: nil,
+      b9: nil, b10: nil, b11: nil, b12: nil, b13: nil, b14: nil, b15: nil, b16: nil,
+      b17: nil, b18: nil, b19: nil, b20: nil, b21: nil,
+    }
+  END
+  :ok
+}
+
 assert_equal 'ok', %q{
   [print(:ok), exit] # void literal with side-effect
   :dummy

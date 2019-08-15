@@ -18,6 +18,17 @@ describe 'Thread::Backtrace::Location#absolute_path' do
     end
   end
 
+  context "when used in #method_added" do
+    it "returns the user filename that defined the method" do
+      path = fixture(__FILE__, "absolute_path_method_added.rb")
+      load path
+      locations = ScratchPad.recorded
+      locations[0].absolute_path.should == path
+      # Make sure it's from the class body, not from the file top-level
+      locations[0].label.should include 'MethodAddedAbsolutePath'
+    end
+  end
+
   platform_is_not :windows do
     before :each do
       @file = fixture(__FILE__, "absolute_path.rb")

@@ -197,8 +197,8 @@ static const struct signals {
 #endif
 };
 
-static const char signame_prefix[3] = "SIG";
-static const int signame_prefix_len = (int)sizeof(signame_prefix);
+static const char signame_prefix[] = "SIG";
+static const int signame_prefix_len = 3;
 
 static int
 signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
@@ -236,7 +236,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
 	negative = 0;
     }
     if (len >= prefix + signame_prefix_len) {
-	if (memcmp(nm + prefix, signame_prefix, sizeof(signame_prefix)) == 0)
+        if (memcmp(nm + prefix, signame_prefix, signame_prefix_len) == 0)
 	    prefix += signame_prefix_len;
     }
     if (len <= (long)prefix) {
@@ -391,13 +391,21 @@ interrupt_init(int argc, VALUE *argv, VALUE self)
     VALUE args[2];
 
     args[0] = INT2FIX(SIGINT);
-    rb_scan_args(argc, argv, "01", &args[1]);
+    args[1] = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
     return rb_call_super(2, args);
 }
+
+#include "debug_counter.h"
+void rb_malloc_info_show_results(void); /* gc.c */
 
 void
 ruby_default_signal(int sig)
 {
+#if USE_DEBUG_COUNTER
+    rb_debug_counter_show_results("killed by signal.");
+#endif
+    rb_malloc_info_show_results();
+
     signal(sig, SIG_DFL);
     raise(sig);
 }
@@ -411,12 +419,13 @@ static void signal_enque(int sig);
  *     Process.kill(signal, pid, ...)    -> integer
  *
  *  Sends the given signal to the specified process id(s) if _pid_ is positive.
- *  If _pid_ is zero _signal_ is sent to all processes whose group ID is equal
- *  to the group ID of the process. _signal_ may be an integer signal number or
+ *  If _pid_ is zero, _signal_ is sent to all processes whose group ID is equal
+ *  to the group ID of the process. If _pid_ is negative, results are dependent
+ *  on the operating system. _signal_ may be an integer signal number or
  *  a POSIX signal name (either with or without a +SIG+ prefix). If _signal_ is
  *  negative (or starts with a minus sign), kills process groups instead of
  *  processes. Not all signals are available on all platforms.
- *  The keys and values of +Signal.list+ are known signal names and numbers,
+ *  The keys and values of Signal.list are known signal names and numbers,
  *  respectively.
  *
  *     pid = fork do
@@ -431,15 +440,14 @@ static void signal_enque(int sig);
  *
  *     Ouch!
  *
- *  If _signal_ is an integer but wrong for signal,
- *  <code>Errno::EINVAL</code> or +RangeError+ will be raised.
- *  Otherwise unless _signal_ is a +String+ or a +Symbol+, and a known
- *  signal name, +ArgumentError+ will be raised.
+ *  If _signal_ is an integer but wrong for signal, Errno::EINVAL or
+ *  RangeError will be raised.  Otherwise unless _signal_ is a String
+ *  or a Symbol, and a known signal name, ArgumentError will be
+ *  raised.
  *
- *  Also, <code>Errno::ESRCH</code> or +RangeError+ for invalid _pid_,
- *  <code>Errno::EPERM</code> when failed because of no privilege,
- *  will be raised.  In these cases, signals may have been sent to
- *  preceding processes.
+ *  Also, Errno::ESRCH or RangeError for invalid _pid_, Errno::EPERM
+ *  when failed because of no privilege, will be raised.  In these
+ *  cases, signals may have been sent to preceding processes.
  */
 
 VALUE
@@ -621,12 +629,17 @@ ruby_signal(int signum, sighandler_t handler)
       case RUBY_SIGCHLD:
 	if (handler == SIG_IGN) {
 	    ruby_nocldwait = 1;
+# ifdef USE_SIGALTSTACK
 	    if (sigact.sa_flags & SA_SIGINFO) {
 		sigact.sa_sigaction = (ruby_sigaction_t*)sighandler;
 	    }
 	    else {
 		sigact.sa_handler = sighandler;
 	    }
+# else
+	    sigact.sa_handler = handler;
+	    sigact.sa_flags = 0;
+# endif
 	}
 	else {
 	    ruby_nocldwait = 0;
@@ -849,12 +862,17 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
     const greg_t bp = mctx->gregs[REG_EBP];
 #   endif
 # elif defined __APPLE__
-#   if defined(__LP64__)
-    const uintptr_t sp = mctx->__ss.__rsp;
-    const uintptr_t bp = mctx->__ss.__rbp;
+#   if __DARWIN_UNIX03
+#     define MCTX_SS_REG(reg) __ss.__##reg
 #   else
-    const uintptr_t sp = mctx->__ss.__esp;
-    const uintptr_t bp = mctx->__ss.__ebp;
+#     define MCTX_SS_REG(reg) ss.reg
+#   endif
+#   if defined(__LP64__)
+    const uintptr_t sp = mctx->MCTX_SS_REG(rsp);
+    const uintptr_t bp = mctx->MCTX_SS_REG(rbp);
+#   else
+    const uintptr_t sp = mctx->MCTX_SS_REG(esp);
+    const uintptr_t bp = mctx->MCTX_SS_REG(ebp);
 #   endif
 # elif defined __FreeBSD__
 #   if defined(__amd64__)
@@ -881,7 +899,7 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
     /* SP in ucontext is not decremented yet when `push` failed, so
      * the fault page can be the next. */
     if (sp_page == fault_page || sp_page == fault_page + 1 ||
-	sp_page <= fault_page && fault_page <= bp_page) {
+        (sp_page <= fault_page && fault_page <= bp_page)) {
 	rb_execution_context_t *ec = GET_EC();
 	int crit = FALSE;
 	if ((uintptr_t)ec->tag->buf / pagesize <= fault_page + 1) {
@@ -1039,7 +1057,7 @@ sig_do_nothing(int sig)
 }
 #endif
 
-static void
+static int
 signal_exec(VALUE cmd, int safe, int sig)
 {
     rb_execution_context_t *ec = GET_EC();
@@ -1053,7 +1071,7 @@ signal_exec(VALUE cmd, int safe, int sig)
      * 3. rb_signal_exec runs on queued signal
      */
     if (IMMEDIATE_P(cmd))
-	return;
+	return FALSE;
 
     ec->interrupt_mask |= TRAP_INTERRUPT_MASK;
     EC_PUSH_TAG(ec);
@@ -1069,12 +1087,12 @@ signal_exec(VALUE cmd, int safe, int sig)
 	/* XXX: should be replaced with rb_threadptr_pending_interrupt_enque() */
 	EC_JUMP_TAG(ec, state);
     }
+    return TRUE;
 }
 
 void
-rb_trap_exit(void)
+rb_vm_trap_exit(rb_vm_t *vm)
 {
-    rb_vm_t *vm = GET_VM();
     VALUE trap_exit = vm->trap_list.cmd[0];
 
     if (trap_exit) {
@@ -1093,7 +1111,8 @@ ruby_sigchld_handler(rb_vm_t *vm)
     }
 }
 
-void
+/* returns true if a trap handler was run, false otherwise */
+int
 rb_signal_exec(rb_thread_t *th, int sig)
 {
     rb_vm_t *vm = GET_VM();
@@ -1131,8 +1150,9 @@ rb_signal_exec(rb_thread_t *th, int sig)
 	rb_threadptr_signal_exit(th);
     }
     else {
-	signal_exec(cmd, safe, sig);
+	return signal_exec(cmd, safe, sig);
     }
+    return FALSE;
 }
 
 static sighandler_t

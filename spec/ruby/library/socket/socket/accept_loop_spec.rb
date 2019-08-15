@@ -16,8 +16,12 @@ describe 'Socket.accept_loop' do
 
   describe 'using an Array of Sockets' do
     describe 'without any available connections' do
-      it 'blocks the caller' do
-        lambda { Socket.accept_loop([@server]) }.should block_caller
+      # FIXME windows randomly hangs here forever
+      # https://ci.appveyor.com/project/ruby/ruby/builds/20817932/job/dor2ipny7ru4erpa
+      platform_is_not :windows do
+        it 'blocks the caller' do
+          -> { Socket.accept_loop([@server]) }.should block_caller
+        end
       end
     end
 
@@ -49,7 +53,7 @@ describe 'Socket.accept_loop' do
   describe 'using separate Socket arguments' do
     describe 'without any available connections' do
       it 'blocks the caller' do
-        lambda { Socket.accept_loop(@server) }.should block_caller
+        -> { Socket.accept_loop(@server) }.should block_caller
       end
     end
 

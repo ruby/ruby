@@ -2,7 +2,8 @@ require_relative '../../spec_helper'
 
 describe :rational_exponent, shared: true do
   describe "when passed Rational" do
-    conflicts_with :Prime do
+    # Guard against the Mathn library
+    guard -> { !defined?(Math.rsqrt) } do
       it "returns Rational(1) if the exponent is Rational(0)" do
         (Rational(0) ** Rational(0)).should eql(Rational(1))
         (Rational(1) ** Rational(0)).should eql(Rational(1))
@@ -45,7 +46,8 @@ describe :rational_exponent, shared: true do
       (Rational(3, -bignum_value) ** -4).should == Rational(7237005577332262213973186563042994240829374041602535252466099000494570602496, 81)
     end
 
-    conflicts_with :Prime do
+    # Guard against the Mathn library
+    guard -> { !defined?(Math.rsqrt) } do
       it "returns Rational(1, 1) when the passed argument is 0" do
         (Rational(3, 4) ** 0).should eql(Rational(1, 1))
         (Rational(-3, 4) ** 0).should eql(Rational(1, 1))
@@ -64,7 +66,7 @@ describe :rational_exponent, shared: true do
     end
 
     it "raises ZeroDivisionError when self is Rational(0) and the exponent is negative" do
-      lambda { Rational(0) ** -bignum_value }.should raise_error(ZeroDivisionError)
+      -> { Rational(0) ** -bignum_value }.should raise_error(ZeroDivisionError)
     end
 
     it "returns Rational(1) when self is Rational(1)" do
@@ -151,19 +153,19 @@ describe :rational_exponent, shared: true do
 
   it "raises ZeroDivisionError for Rational(0, 1) passed a negative Integer" do
     [-1, -4, -9999].each do |exponent|
-      lambda { Rational(0, 1) ** exponent }.should raise_error(ZeroDivisionError, "divided by 0")
+      -> { Rational(0, 1) ** exponent }.should raise_error(ZeroDivisionError, "divided by 0")
     end
   end
 
   it "raises ZeroDivisionError for Rational(0, 1) passed a negative Rational with denominator 1" do
     [Rational(-1, 1), Rational(-3, 1)].each do |exponent|
-      lambda { Rational(0, 1) ** exponent }.should raise_error(ZeroDivisionError, "divided by 0")
+      -> { Rational(0, 1) ** exponent }.should raise_error(ZeroDivisionError, "divided by 0")
     end
   end
 
   # #7513
   it "raises ZeroDivisionError for Rational(0, 1) passed a negative Rational" do
-    lambda { Rational(0, 1) ** Rational(-3, 2) }.should raise_error(ZeroDivisionError, "divided by 0")
+    -> { Rational(0, 1) ** Rational(-3, 2) }.should raise_error(ZeroDivisionError, "divided by 0")
   end
 
   platform_is_not :solaris do # See https://github.com/ruby/spec/issues/134

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'ipaddr'
 
@@ -121,14 +121,20 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("::192.168.1.2", a.to_s)
     assert_equal("0000:0000:0000:0000:0000:0000:c0a8:0102", a.to_string)
     assert_equal(Socket::AF_INET6, a.family)
-    assert_equal(true, a.ipv4_compat?)
+    assert_warning(/obsolete/) {
+      assert_predicate(a, :ipv4_compat?)
+    }
     b = a.native
     assert_equal("192.168.1.2", b.to_s)
     assert_equal(Socket::AF_INET, b.family)
-    assert_equal(false, b.ipv4_compat?)
+    assert_warning(/obsolete/) {
+      assert_not_predicate(b, :ipv4_compat?)
+    }
 
     a = IPAddr.new("192.168.1.2")
-    b = a.ipv4_compat
+    assert_warning(/obsolete/) {
+      b = a.ipv4_compat
+    }
     assert_equal("::192.168.1.2", b.to_s)
     assert_equal(Socket::AF_INET6, b.family)
   end

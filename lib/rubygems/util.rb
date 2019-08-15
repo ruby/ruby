@@ -28,7 +28,9 @@ module Gem::Util
     zipped = StringIO.new(String.new, 'w')
     zipped.set_encoding Encoding::BINARY
 
-    Zlib::GzipWriter.wrap zipped do |io| io.write data end
+    Zlib::GzipWriter.wrap zipped do |io|
+      io.write data
+    end
 
     zipped.string
   end
@@ -42,35 +44,16 @@ module Gem::Util
   end
 
   ##
-  # This calls IO.popen where it accepts an array for a +command+ (Ruby 1.9+)
-  # and implements an IO.popen-like behavior where it does not accept an array
-  # for a command.
+  # This calls IO.popen and reads the result
 
-  def self.popen *command
+  def self.popen(*command)
     IO.popen command, &:read
-  rescue TypeError # ruby 1.8 only supports string command
-    r, w = IO.pipe
-
-    pid = fork do
-      STDIN.close
-      STDOUT.reopen w
-
-      exec(*command)
-    end
-
-    w.close
-
-    begin
-      return r.read
-    ensure
-      Process.wait pid
-    end
   end
 
   ##
   # Invokes system, but silences all output.
 
-  def self.silent_system *command
+  def self.silent_system(*command)
     opt = {:out => IO::NULL, :err => [:child, :out]}
     if Hash === command.last
       opt.update(command.last)
@@ -78,34 +61,13 @@ module Gem::Util
     else
       cmds = command.dup
     end
-    return system(*(cmds << opt))
-  rescue TypeError
-    require 'thread'
-
-    @silent_mutex ||= Mutex.new
-
-    @silent_mutex.synchronize do
-      begin
-        stdout = STDOUT.dup
-        stderr = STDERR.dup
-
-        STDOUT.reopen IO::NULL, 'w'
-        STDERR.reopen IO::NULL, 'w'
-
-        return system(*command)
-      ensure
-        STDOUT.reopen stdout
-        STDERR.reopen stderr
-        stdout.close
-        stderr.close
-      end
-    end
+    system(*(cmds << opt))
   end
 
   ##
   # Enumerates the parents of +directory+.
 
-  def self.traverse_parents directory, &block
+  def self.traverse_parents(directory, &block)
     return enum_for __method__, directory unless block_given?
 
     here = File.expand_path directory
@@ -115,6 +77,30 @@ module Gem::Util
       new_here = File.expand_path('..', here)
       return if new_here == here # toplevel
       here = new_here
+    end
+  end
+
+  ##
+  # Globs for files matching +pattern+ inside of +directory+,
+  # returning absolute paths to the matching files.
+
+  def self.glob_files_in_dir(glob, base_path)
+    if RUBY_VERSION >= "2.5"
+      Dir.glob(glob, base: base_path).map! {|f| File.expand_path(f, base_path) }
+    else
+      Dir.glob(File.expand_path(glob, base_path))
+    end
+  end
+
+  ##
+  # Corrects +path+ (usually returned by `URI.parse().path` on Windows), that
+  # comes with a leading slash.
+
+  def self.correct_for_windows_path(path)
+    if path[0].chr == '/' && path[1].chr =~ /[a-z]/i && path[2].chr == ':'
+      path[1..-1]
+    else
+      path
     end
   end
 

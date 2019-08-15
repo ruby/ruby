@@ -28,16 +28,16 @@ with_feature :ancillary_data do
   end
 
   describe 'Socket::AncillaryData#int' do
-    it 'returns the data as a Fixnum' do
+    it 'returns the data as an Integer' do
       data = Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, 4)
 
       data.int.should == 4
     end
 
-    it 'raises when the data is not a Fixnum' do
+    it 'raises when the data is not an Integer' do
       data = Socket::AncillaryData.new(:UNIX, :SOCKET, :RIGHTS, 'ugh')
 
-      lambda { data.int }.should raise_error(TypeError)
+      -> { data.int }.should raise_error(TypeError)
     end
   end
 end

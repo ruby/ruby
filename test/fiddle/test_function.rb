@@ -73,10 +73,6 @@ module Fiddle
     end
 
     def test_nogvl_poll
-      if RubyVM::MJIT.enabled?
-        skip 'r64355 make `make test-all RUN_OPTS="--jit-wait"` hang and CI running it times out.'
-      end
-
       # XXX hack to quiet down CI errors on EINTR from r64353
       # [ruby-core:88360] [Misc #14937]
       # Making pipes (and sockets) non-blocking by default would allow
@@ -96,7 +92,7 @@ module Fiddle
       n1 = f.call(nil, 0, msec)
       n2 = th.value
       t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC, :millisecond)
-      assert_in_delta(msec, t1 - t0, 100, 'slept amount of time')
+      assert_in_delta(msec, t1 - t0, 180, 'slept amount of time')
       assert_equal(0, n1, perror("poll(2) in main-thread"))
       assert_equal(0, n2, perror("poll(2) in sub-thread"))
     end

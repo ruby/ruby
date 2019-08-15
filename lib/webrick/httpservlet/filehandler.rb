@@ -11,9 +11,9 @@
 
 require 'time'
 
-require 'webrick/htmlutils'
-require 'webrick/httputils'
-require 'webrick/httpstatus'
+require_relative '../htmlutils'
+require_relative '../httputils'
+require_relative '../httpstatus'
 
 module WEBrick
   module HTTPServlet
@@ -55,7 +55,7 @@ module WEBrick
         else
           mtype = HTTPUtils::mime_type(@local_path, @config[:MimeTypes])
           res['content-type'] = mtype
-          res['content-length'] = st.size
+          res['content-length'] = st.size.to_s
           res['last-modified'] = mtime.httpdate
           res.body = File.open(@local_path, "rb")
         end
@@ -144,7 +144,7 @@ module WEBrick
             raise HTTPStatus::RequestRangeNotSatisfiable if first < 0
             res['content-type'] = mtype
             res['content-range'] = "bytes #{first}-#{last}/#{filesize}"
-            res['content-length'] = last - first + 1
+            res['content-length'] = (last - first + 1).to_s
             res.body = io.dup
           else
             raise HTTPStatus::BadRequest

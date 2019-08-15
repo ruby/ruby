@@ -60,4 +60,8 @@ module RescueSpecs
     ScratchPad << :outside_begin
     :return_val
   end
+
+  def self.raise_standard_error
+    raise StandardError, "an error occurred"
+  end
 end

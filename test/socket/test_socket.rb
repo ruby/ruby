@@ -467,6 +467,7 @@ class TestSocket < Test::Unit::TestCase
         end while IO.select([r], nil, nil, 0.1).nil?
         n
       end
+      assert_equal([[s1],[],[]], IO.select([s1], nil, nil, 30))
       msg, _, _, stamp = s1.recvmsg
       assert_equal("a", msg)
       assert(stamp.cmsg_is?(:SOCKET, type))
@@ -735,6 +736,7 @@ class TestSocket < Test::Unit::TestCase
     ret, addr, rflags = s1.recvmsg(10, 0)
     assert_equal "b" * 10, ret
     assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil?
+    addr
   ensure
     s1.close
     s2.close

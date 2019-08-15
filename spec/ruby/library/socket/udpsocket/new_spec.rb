@@ -11,7 +11,7 @@ describe 'UDPSocket.new' do
     @socket.should be_an_instance_of(UDPSocket)
   end
 
-  it 'using Fixnum argument' do
+  it 'using Integer argument' do
     @socket = UDPSocket.new(Socket::AF_INET)
     @socket.should be_an_instance_of(UDPSocket)
   end
@@ -27,7 +27,7 @@ describe 'UDPSocket.new' do
   end
 
   it 'raises Errno::EAFNOSUPPORT or Errno::EPROTONOSUPPORT if unsupported family passed' do
-    lambda { UDPSocket.new(-1) }.should raise_error(SystemCallError) { |e|
+    -> { UDPSocket.new(-1) }.should raise_error(SystemCallError) { |e|
       [Errno::EAFNOSUPPORT, Errno::EPROTONOSUPPORT].should include(e.class)
     }
   end

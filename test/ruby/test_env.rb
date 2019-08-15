@@ -399,6 +399,8 @@ class TestEnv < Test::Unit::TestCase
 
   def test_to_h
     assert_equal(ENV.to_hash, ENV.to_h)
+    assert_equal(ENV.map {|k, v| ["$#{k}", v.size]}.to_h,
+                 ENV.to_h {|k, v| ["$#{k}", v.size]})
   end
 
   def test_reject
@@ -457,7 +459,7 @@ class TestEnv < Test::Unit::TestCase
   def test_huge_value
     huge_value = "bar" * 40960
     ENV["foo"] = "bar"
-    if /mswin/ =~ RUBY_PLATFORM && windows_version < 7
+    if /mswin/ =~ RUBY_PLATFORM
       assert_raise(Errno::EINVAL) { ENV["foo"] = huge_value }
       assert_equal("bar", ENV["foo"])
     else
@@ -492,6 +494,10 @@ class TestEnv < Test::Unit::TestCase
     ensure
       keys.each {|k| ENV.delete(k)}
     end
+  end
+
+  def test_frozen_env
+    assert_raise(TypeError) { ENV.freeze }
   end
 
   def test_frozen

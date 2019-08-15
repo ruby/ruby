@@ -36,7 +36,7 @@ class TestNotImplement < Test::Unit::TestCase
         proc {`ps -l #{pid}`}
       end
     assert_nothing_raised(Timeout::Error, ps) do
-      Timeout.timeout(EnvUtil.apply_timeout_scale(5)) {
+      EnvUtil.timeout(20) {
         pid = fork {}
         Process.wait pid
         pid = nil

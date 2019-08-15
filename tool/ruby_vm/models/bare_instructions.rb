@@ -1,5 +1,5 @@
 #! /your/favourite/path/to/ruby
-# -*- mode: ruby; coding: utf-8; indent-tabs-mode: nil; ruby-indent-level: 2 -*-
+# -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-
 #
@@ -58,7 +58,9 @@ class RubyVM::BareInstructions
   end
 
   def attributes
-    return @attrs.values
+    return @attrs           \
+      . sort_by {|k, _| k } \
+      . map     {|_, v| v }
   end
 
   def width
@@ -102,11 +104,39 @@ class RubyVM::BareInstructions
   end
 
   def handles_sp?
-    /\b(false|0)\b/ !~ @attrs['handles_sp'].expr.expr
+    /\b(false|0)\b/ !~ @attrs.fetch('handles_sp').expr.expr
+  end
+
+  def always_leaf?
+    @attrs.fetch('leaf').expr.expr == 'true;'
+  end
+
+  def handle_canary stmt
+    # Stack canary is basically a good thing that we want to add, however:
+    #
+    # - When the instruction returns variadic number of return values,
+    #   it is not easy to tell where is the stack top.  We can't but
+    #   skip it.
+    #
+    # - When the instruction body is empty (like putobject), we can
+    #   say for 100% sure that canary is a waste of time.
+    #
+    # So we skip canary for those cases.
+    return '' if @sig[:ret].any? {|i| i == '...' }
+    return '' if @expr.blank?
+    return "    #{stmt};\n"
   end
 
   def inspect
     sprintf "#<%s %s@%s:%d>", self.class.name, @name, @loc[0], @loc[1]
+  end
+
+  def has_ope? var
+    return @opes.any? {|i| i[:name] == var[:name] }
+  end
+
+  def has_pop? var
+    return @pops.any? {|i| i[:name] == var[:name] }
   end
 
   private
@@ -122,6 +152,7 @@ class RubyVM::BareInstructions
   end
 
   def predefine_attributes
+    # Beware: order matters here because some attribute depends another.
     generate_attribute 'const char*', 'name', "insn_name(#{bin})"
     generate_attribute 'enum ruby_vminsn_type', 'bin', bin
     generate_attribute 'rb_num_t', 'open', opes.size
@@ -129,7 +160,24 @@ class RubyVM::BareInstructions
     generate_attribute 'rb_num_t', 'retn', rets.size
     generate_attribute 'rb_num_t', 'width', width
     generate_attribute 'rb_snum_t', 'sp_inc', rets.size - pops.size
-    generate_attribute 'bool', 'handles_sp', false
+    generate_attribute 'bool', 'handles_sp', default_definition_of_handles_sp
+    generate_attribute 'bool', 'leaf', default_definition_of_leaf
+  end
+
+  def default_definition_of_handles_sp
+    # Insn with ISEQ should yield it; can handle sp.
+    return opes.any? {|o| o[:type] == 'ISEQ' }
+  end
+
+  def default_definition_of_leaf
+    # Insn that handles SP can never be a leaf.
+    if not has_attribute? 'handles_sp' then
+      return ! default_definition_of_handles_sp
+    elsif handles_sp? then
+      return "! #{call_attribute 'handles_sp'}"
+    else
+      return true
+    end
   end
 
   def typesplit a

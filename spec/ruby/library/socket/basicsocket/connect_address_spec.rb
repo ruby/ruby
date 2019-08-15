@@ -10,7 +10,7 @@ describe 'Socket#connect_address' do
     it 'raises SocketError' do
       @sock = Socket.new(:INET, :STREAM)
 
-      lambda { @sock.connect_address }.should raise_error(SocketError)
+      -> { @sock.connect_address }.should raise_error(SocketError)
     end
   end
 
@@ -53,61 +53,65 @@ describe 'Socket#connect_address' do
     end
   end
 
-  describe 'using a socket bound to ::' do
-    before do
-      @sock = Socket.new(:INET6, :STREAM)
-      @sock.bind(Socket.sockaddr_in(0, '::'))
-    end
+  guard -> { SocketSpecs.ipv6_available? } do
+    describe 'using a socket bound to ::' do
+      before do
+        @sock = Socket.new(:INET6, :STREAM)
+        @sock.bind(Socket.sockaddr_in(0, '::'))
+      end
 
-    after do
-      @sock.close
-    end
+      after do
+        @sock.close
+      end
 
-    it 'returns an Addrinfo' do
-      @sock.connect_address.should be_an_instance_of(Addrinfo)
-    end
+      it 'returns an Addrinfo' do
+        @sock.connect_address.should be_an_instance_of(Addrinfo)
+      end
 
-    it 'uses ::1 as the IP address' do
-      @sock.connect_address.ip_address.should == '::1'
-    end
+      it 'uses ::1 as the IP address' do
+        @sock.connect_address.ip_address.should == '::1'
+      end
 
-    it 'uses the correct port number' do
-      @sock.connect_address.ip_port.should > 0
-    end
+      it 'uses the correct port number' do
+        @sock.connect_address.ip_port.should > 0
+      end
 
-    it 'uses AF_INET6 as the address family' do
-      @sock.connect_address.afamily.should == Socket::AF_INET6
-    end
+      it 'uses AF_INET6 as the address family' do
+        @sock.connect_address.afamily.should == Socket::AF_INET6
+      end
 
-    it 'uses PF_INET6 as the address family' do
-      @sock.connect_address.pfamily.should == Socket::PF_INET6
-    end
+      it 'uses PF_INET6 as the address family' do
+        @sock.connect_address.pfamily.should == Socket::PF_INET6
+      end
 
-    it 'uses SOCK_STREAM as the socket type' do
-      @sock.connect_address.socktype.should == Socket::SOCK_STREAM
-    end
+      it 'uses SOCK_STREAM as the socket type' do
+        @sock.connect_address.socktype.should == Socket::SOCK_STREAM
+      end
 
-    it 'uses 0 as the protocol' do
-      @sock.connect_address.protocol.should == 0
+      it 'uses 0 as the protocol' do
+        @sock.connect_address.protocol.should == 0
+      end
     end
   end
 
   with_feature :unix_socket do
-    describe 'using an unbound UNIX socket' do
-      before do
-        @path = SocketSpecs.socket_path
-        @server = UNIXServer.new(@path)
-        @client = UNIXSocket.new(@path)
-      end
+    platform_is_not :aix do
+      describe 'using an unbound UNIX socket' do
+        before do
+          @path = SocketSpecs.socket_path
+          @server = UNIXServer.new(@path)
+          @client = UNIXSocket.new(@path)
+        end
 
-      after do
-        @client.close
-        @server.close
-        rm_r(@path)
-      end
+        after do
+          @client.close
+          @server.close
+          rm_r(@path)
+        end
 
-      it 'raises SocketError' do
-        lambda { @client.connect_address }.should raise_error(SocketError)
+        it 'raises SocketError' do
+          -> { @client.connect_address }.should raise_error(SocketError)
+        end
       end
     end
 

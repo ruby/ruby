@@ -41,4 +41,12 @@ class TestDateMarshal < Test::Unit::TestCase
     assert_raise(expected_error){d.marshal_load(a)}
   end
 
+  def test_memsize
+    require 'objspace'
+    t = DateTime.new(2018, 11, 13)
+    size = ObjectSpace.memsize_of(t)
+    t2 = Marshal.load(Marshal.dump(t))
+    assert_equal(t, t2)
+    assert_equal(size, ObjectSpace.memsize_of(t2), "not reallocated but memsize changed")
+  end
 end

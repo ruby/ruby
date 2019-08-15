@@ -17,27 +17,28 @@ class TestIseqLoad < Test::Unit::TestCase
   end
 
   def test_stressful_roundtrip
-    assert_separately(%w[-r-test-/iseq_load], <<-'end;;', timeout: 30)
-  ISeq = RubyVM::InstructionSequence
-  def assert_iseq_roundtrip(src, line=caller_locations(1,1)[0].lineno+1)
-    a = ISeq.compile(src, __FILE__, __FILE__, line).to_a
-    b = ISeq.iseq_load(a).to_a
-    warn diff(a, b) if a != b
-    assert_equal a, b
-    assert_equal a, ISeq.iseq_load(b).to_a
-  end
-  def test_bug8543
-    assert_iseq_roundtrip "#{<<~"begin;"}\n#{<<~'end;'}"
+    assert_separately(%w[-r-test-/iseq_load], "#{<<~"begin;"}\n#{<<~'end;;'}", timeout: 120)
     begin;
-      puts "tralivali"
-      def funct(a, b)
-        a**b
+      ISeq = RubyVM::InstructionSequence
+      def assert_iseq_roundtrip(src, line=caller_locations(1,1)[0].lineno+1)
+        a = ISeq.compile(src, __FILE__, __FILE__, line).to_a
+        b = ISeq.iseq_load(a).to_a
+        assert_equal a, b, proc {diff(a, b)}
+        b = ISeq.iseq_load(b).to_a
+        assert_equal a, b, proc {diff(a, b)}
       end
-      3.times { |i| puts "Hello, world#{funct(2,i)}!" }
-    end;
-  end
-    GC.stress = true
-    test_bug8543
+      def test_bug8543
+        assert_iseq_roundtrip "#{<<~"begin;"}\n#{<<~'end;'}"
+        begin;
+          puts "tralivali"
+          def funct(a, b)
+            a**b
+          end
+          3.times { |i| puts "Hello, world#{funct(2,i)}!" }
+        end;
+      end
+      GC.stress = true
+      test_bug8543
     end;;
   end
 
@@ -80,9 +81,9 @@ class TestIseqLoad < Test::Unit::TestCase
   def assert_iseq_roundtrip(src, line=caller_locations(1,1)[0].lineno+1)
     a = ISeq.compile(src, __FILE__, __FILE__, line).to_a
     b = ISeq.iseq_load(a).to_a
-    warn diff(a, b) if a != b
-    assert_equal a, b
-    assert_equal a, ISeq.iseq_load(b).to_a
+    assert_equal a, b, proc {diff(a, b)}
+    b = ISeq.iseq_load(b).to_a
+    assert_equal a, b, proc {diff(a, b)}
   end
 
   def test_next_in_block_in_block
@@ -91,7 +92,9 @@ class TestIseqLoad < Test::Unit::TestCase
     begin;
       3.times { 3.times { next; @next_broke = true } }
     end;
-    a = ISeq.compile(src, __FILE__, __FILE__, line).to_a
+    a = EnvUtil.suppress_warning {
+      ISeq.compile(src, __FILE__, __FILE__, line)
+    }.to_a
     iseq = ISeq.iseq_load(a)
     iseq.eval
     assert_equal false, @next_broke

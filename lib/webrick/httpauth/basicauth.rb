@@ -8,9 +8,9 @@
 #
 # $IPR: basicauth.rb,v 1.5 2003/02/20 07:15:47 gotoyuzo Exp $
 
-require 'webrick/config'
-require 'webrick/httpstatus'
-require 'webrick/httpauth/authenticator'
+require_relative '../config'
+require_relative '../httpstatus'
+require_relative 'authenticator'
 
 module WEBrick
   module HTTPAuth

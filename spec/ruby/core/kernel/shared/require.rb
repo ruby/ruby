@@ -21,7 +21,7 @@ describe :kernel_require_basic, shared: true do
     it "raises a LoadError if the file does not exist" do
       path = File.expand_path "nonexistent.rb", CODE_LOADING_DIR
       File.exist?(path).should be_false
-      lambda { @object.send(@method, path) }.should raise_error(LoadError)
+      -> { @object.send(@method, path) }.should raise_error(LoadError)
       ScratchPad.recorded.should == []
     end
 
@@ -42,7 +42,7 @@ describe :kernel_require_basic, shared: true do
 
           it "raises a LoadError" do
             File.exist?(@path).should be_true
-            lambda { @object.send(@method, @path) }.should raise_error(LoadError)
+            -> { @object.send(@method, @path) }.should raise_error(LoadError)
           end
         end
       end
@@ -57,19 +57,19 @@ describe :kernel_require_basic, shared: true do
     end
 
     it "raises a TypeError if passed nil" do
-      lambda { @object.send(@method, nil) }.should raise_error(TypeError)
+      -> { @object.send(@method, nil) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if passed a Fixnum" do
-      lambda { @object.send(@method, 42) }.should raise_error(TypeError)
+      -> { @object.send(@method, 42) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if passed an Array" do
-      lambda { @object.send(@method, []) }.should raise_error(TypeError)
+      -> { @object.send(@method, []) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if passed an object that does not provide #to_str" do
-      lambda { @object.send(@method, mock("not a filename")) }.should raise_error(TypeError)
+      -> { @object.send(@method, mock("not a filename")) }.should raise_error(TypeError)
     end
 
     it "raises a TypeError if passed an object that has #to_s but not #to_str" do
@@ -77,14 +77,14 @@ describe :kernel_require_basic, shared: true do
       name.stub!(:to_s).and_return("load_fixture.rb")
       $LOAD_PATH << "."
       Dir.chdir CODE_LOADING_DIR do
-        lambda { @object.send(@method, name) }.should raise_error(TypeError)
+        -> { @object.send(@method, name) }.should raise_error(TypeError)
       end
     end
 
     it "raises a TypeError if #to_str does not return a String" do
       name = mock("#to_str returns nil")
       name.should_receive(:to_str).at_least(1).times.and_return(nil)
-      lambda { @object.send(@method, name) }.should raise_error(TypeError)
+      -> { @object.send(@method, name) }.should raise_error(TypeError)
     end
 
     it "calls #to_path on non-String objects" do
@@ -170,7 +170,7 @@ describe :kernel_require_basic, shared: true do
 
     it "does not resolve a ./ relative path against $LOAD_PATH entries" do
       $LOAD_PATH << CODE_LOADING_DIR
-      lambda do
+      -> do
         @object.send(@method, "./load_fixture.rb")
       end.should raise_error(LoadError)
       ScratchPad.recorded.should == []
@@ -178,7 +178,7 @@ describe :kernel_require_basic, shared: true do
 
     it "does not resolve a ../ relative path against $LOAD_PATH entries" do
       $LOAD_PATH << CODE_LOADING_DIR
-      lambda do
+      -> do
         @object.send(@method, "../code/load_fixture.rb")
       end.should raise_error(LoadError)
       ScratchPad.recorded.should == []
@@ -208,14 +208,14 @@ describe :kernel_require, shared: true do
     # intentional for security reasons.
     it "does not load a bare filename unless the current working directory is in $LOAD_PATH" do
       Dir.chdir CODE_LOADING_DIR do
-        lambda { @object.require("load_fixture.rb") }.should raise_error(LoadError)
+        -> { @object.require("load_fixture.rb") }.should raise_error(LoadError)
         ScratchPad.recorded.should == []
       end
     end
 
     it "does not load a relative path unless the current working directory is in $LOAD_PATH" do
       Dir.chdir File.dirname(CODE_LOADING_DIR) do
-        lambda do
+        -> do
           @object.require("code/load_fixture.rb")
         end.should raise_error(LoadError)
         ScratchPad.recorded.should == []
@@ -225,9 +225,8 @@ describe :kernel_require, shared: true do
     it "loads a file that recursively requires itself" do
       path = File.expand_path "recursive_require_fixture.rb", CODE_LOADING_DIR
       -> {
-        $VERBOSE = true
         @object.require(path).should be_true
-      }.should complain(/circular require considered harmful/)
+      }.should complain(/circular require considered harmful/, verbose: true)
       ScratchPad.recorded.should == [:loaded]
     end
   end
@@ -382,7 +381,7 @@ describe :kernel_require, shared: true do
     it "does not store the path if the load fails" do
       $LOAD_PATH << CODE_LOADING_DIR
       saved_loaded_features = $LOADED_FEATURES.dup
-      lambda { @object.require("raise_fixture.rb") }.should raise_error(RuntimeError)
+      -> { @object.require("raise_fixture.rb") }.should raise_error(RuntimeError)
       $LOADED_FEATURES.should == saved_loaded_features
     end
 
@@ -554,6 +553,15 @@ describe :kernel_require, shared: true do
         required = ruby_exe(code, options: '--disable-gems')
         required.should == "false\n" * provided.size
       end
+
+      it "unicode_normalize is part of core and not $LOADED_FEATURES" do
+        features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
+        features.lines.each { |feature|
+          feature.should_not include("unicode_normalize")
+        }
+
+        -> { @object.require("unicode_normalize") }.should raise_error(LoadError)
+      end
     end
   end
 
@@ -675,7 +683,7 @@ describe :kernel_require, shared: true do
         Thread.current[:wait_for] = t2
         Thread.current[:con_raise] = true
 
-        lambda {
+        -> {
           @object.require(@path)
         }.should raise_error(RuntimeError)
 
@@ -716,7 +724,7 @@ describe :kernel_require, shared: true do
       t1 = Thread.new do
         Thread.current[:con_raise] = true
 
-        lambda {
+        -> {
           @object.require(@path)
         }.should raise_error(RuntimeError)
 
@@ -756,7 +764,7 @@ describe :kernel_require, shared: true do
   it "stores the missing path in a LoadError object" do
     path = "abcd1234"
 
-    lambda {
+    -> {
       @object.send(@method, path)
     }.should raise_error(LoadError) { |e|
       e.path.should == path

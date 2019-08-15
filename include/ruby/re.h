@@ -36,9 +36,8 @@ struct rmatch_offset {
 struct rmatch {
     struct re_registers regs;
 
-    int char_offset_updated;
-    int char_offset_num_allocated;
     struct rmatch_offset *char_offset;
+    int char_offset_num_allocated;
 };
 
 struct RMatch {

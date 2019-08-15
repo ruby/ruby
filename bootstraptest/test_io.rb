@@ -30,11 +30,11 @@ assert_finish 10, %q{
   end
 }, '[ruby-dev:32566]'
 
-assert_finish 2, %q{
+assert_finish 1, %q{
   r, w = IO.pipe
-  Thread.new(Thread.current) { |parent|
+  Thread.new {
     w << "ab"
-    Thread.pass until parent.stop?
+    sleep 0.01
     w << "ab"
   }
   r.gets("abab")

@@ -144,8 +144,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([], inf.to_a)
   end
 
-  def test_to_h
-    obj = Object.new
+  StubToH = Object.new.tap do |obj|
     def obj.each(*args)
       yield(*args)
       yield [:key, :value]
@@ -157,6 +156,12 @@ class TestEnumerable < Test::Unit::TestCase
       yield kvp
     end
     obj.extend Enumerable
+    obj.freeze
+  end
+
+  def test_to_h
+    obj = StubToH
+
     assert_equal({
       :hello => :world,
       :key => :value,
@@ -171,6 +176,27 @@ class TestEnumerable < Test::Unit::TestCase
 
     e = assert_raise(ArgumentError) {
       obj.to_h([1])
+    }
+    assert_equal "element has wrong array length (expected 2, was 1)", e.message
+  end
+
+  def test_to_h_block
+    obj = StubToH
+
+    assert_equal({
+      "hello" => "world",
+      "key" => "value",
+      "other_key" => "other_value",
+      "obtained" => "via_to_ary",
+    }, obj.to_h(:hello, :world) {|k, v| [k.to_s, v.to_s]})
+
+    e = assert_raise(TypeError) {
+      obj.to_h {:not_an_array}
+    }
+    assert_equal "wrong element type Symbol (expected array)", e.message
+
+    e = assert_raise(ArgumentError) {
+      obj.to_h {[1]}
     }
     assert_equal "element has wrong array length (expected 2, was 1)", e.message
   end
@@ -268,6 +294,11 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(h, @obj.each_with_index.group_by(&cond))
   end
 
+  def test_tally
+    h = {1 => 2, 2 => 2, 3 => 1}
+    assert_equal(h, @obj.tally)
+  end
+
   def test_first
     assert_equal(1, @obj.first)
     assert_equal([1, 2, 3], @obj.first(3))
@@ -314,6 +345,21 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(false, @obj.all?(1..2))
   end
 
+  def test_all_with_unused_block
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      [1, 2].all?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      (1..2).all?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      3.times.all?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      {a: 1, b: 2}.all?([:b, 2]) {|x| x == 4 }
+    EOS
+  end
+
   def test_any
     assert_equal(true, @obj.any? {|x| x >= 3 })
     assert_equal(false, @obj.any? {|x| x > 3 })
@@ -327,6 +373,21 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(true, [1, 4.2].any?(Float))
     assert_equal(false, {a: 1, b: 2}.any?(->(kv) { kv == [:foo, 42] }))
     assert_equal(true, {a: 1, b: 2}.any?(->(kv) { kv == [:b, 2] }))
+  end
+
+  def test_any_with_unused_block
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      [1, 23].any?(1) {|x| x == 1 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      (1..2).any?(34) {|x| x == 2 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      3.times.any?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      {a: 1, b: 2}.any?([:b, 2]) {|x| x == 4 }
+    EOS
   end
 
   def test_one
@@ -348,6 +409,21 @@ class TestEnumerable < Test::Unit::TestCase
     assert([ nil, true, 99 ].one?(Integer))
   end
 
+  def test_one_with_unused_block
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      [1, 2].one?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      (1..2).one?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      3.times.one?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      {a: 1, b: 2}.one?([:b, 2]) {|x| x == 4 }
+    EOS
+  end
+
   def test_none
     assert(@obj.none? {|x| x == 4 })
     assert(!(@obj.none? {|x| x == 1 }))
@@ -363,6 +439,21 @@ class TestEnumerable < Test::Unit::TestCase
     assert([nil,false].none?)
     assert(![nil,false,true].none?)
     assert(@empty.none?)
+  end
+
+  def test_none_with_unused_block
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      [1, 2].none?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      (1..2).none?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      3.times.none?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      {a: 1, b: 2}.none?([:b, 2]) {|x| x == 4 }
+    EOS
   end
 
   def test_min
@@ -1028,5 +1119,30 @@ class TestEnumerable < Test::Unit::TestCase
                  olympics.uniq{|k,v| v})
     assert_equal([1, 2, 3, 4, 5, 10], (1..100).uniq{|x| (x**2) % 10 }.first(6))
     assert_equal([1, [1, 2]], Foo.new.to_enum.uniq)
+  end
+
+  def test_transient_heap_sort_by
+    klass = Class.new do
+      include Comparable
+      attr_reader :i
+      def initialize e
+        @i = e
+      end
+      def <=> other
+        GC.start
+        i <=> other.i
+      end
+    end
+    assert_equal [1, 2, 3, 4, 5], (1..5).sort_by{|e| klass.new e}
+  end
+
+  def test_filter_map
+    @obj = (1..8).to_a
+    assert_equal([4, 8, 12, 16], @obj.filter_map { |i| i * 2 if i.even? })
+    assert_equal([2, 4, 6, 8, 10, 12, 14, 16], @obj.filter_map { |i| i * 2 })
+    assert_equal([0, 0, 0, 0, 0, 0, 0, 0], @obj.filter_map { 0 })
+    assert_equal([], @obj.filter_map { false })
+    assert_equal([], @obj.filter_map { nil })
+    assert_instance_of(Enumerator, @obj.filter_map)
   end
 end

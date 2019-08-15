@@ -67,7 +67,7 @@ with_feature :unix_socket do
     describe 'using a UNIX socket constructed using UNIXSocket.for_fd' do
       before do
         @path1 = SocketSpecs.socket_path
-        @path2 = SocketSpecs.socket_path + '2'
+        @path2 = SocketSpecs.socket_path.chop + '2'
         rm_r(@path2)
 
         @client_raw = Socket.new(:UNIX, :DGRAM)
@@ -77,6 +77,7 @@ with_feature :unix_socket do
         @server_raw.bind(Socket.sockaddr_un(@path2))
 
         @socket = UNIXSocket.for_fd(@server_raw.fileno)
+        @socket.autoclose = false
       end
 
       after do

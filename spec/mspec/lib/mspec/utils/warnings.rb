@@ -51,7 +51,7 @@ if RUBY_ENGINE == "ruby" and ruby_version_is("2.4")
     when /hash\/shared\/index\.rb:\d+: warning: Hash#index is deprecated; use Hash#key/
     when /env\/shared\/key\.rb:\d+: warning: ENV\.index is deprecated; use ENV\.key/
     when /exponent(_spec)?\.rb:\d+: warning: in a\*\*b, b may be too big/
-    when /enumerator\/(new|initialize_spec)\.rb:\d+: warning: Enumerator\.new without a block is deprecated/
+    when /enumerator\/(new_spec|initialize_spec)\.rb:\d+: warning: Enumerator\.new without a block is deprecated/
     else
       $stderr.write message
     end

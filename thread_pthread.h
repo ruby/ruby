@@ -47,12 +47,23 @@ typedef struct native_thread_data_struct {
 
 typedef struct rb_global_vm_lock_struct {
     /* fast path */
-    const struct rb_thread_struct *acquired;
-    rb_nativethread_lock_t lock;
+    const struct rb_thread_struct *owner;
+    rb_nativethread_lock_t lock; /* AKA vm->gvl.lock */
 
-    /* slow path */
-    struct list_head waitq;
+    /*
+     * slow path, protected by vm->gvl.lock
+     * - @waitq - FIFO queue of threads waiting for GVL
+     * - @timer - it handles timeslices for @owner.  It is any one thread
+     *   in @waitq, there is no @timer if @waitq is empty, but always
+     *   a @timer if @waitq has entries
+     * - @timer_err tracks timeslice limit, the timeslice only resets
+     *   when pthread_cond_timedwait returns ETIMEDOUT, so frequent
+     *   switching between contended/uncontended GVL won't reset the
+     *   timer.
+     */
+    struct list_head waitq; /* <=> native_thread_data_t.node.ubf */
     const struct rb_thread_struct *timer;
+    int timer_err;
 
     /* yield */
     rb_nativethread_cond_t switch_cond;

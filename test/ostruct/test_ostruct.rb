@@ -141,6 +141,13 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal(h, OpenStruct.new("name" => "John Smith", "age" => 70, pension: 300).to_h)
   end
 
+  def test_to_h_with_block
+    os = OpenStruct.new("country" => "Australia", :capital => "Canberra")
+    assert_equal({"country" => "AUSTRALIA", "capital" => "CANBERRA" },
+                 os.to_h {|name, value| [name.to_s, value.upcase]})
+    assert_equal("Australia", os.country)
+  end
+
   def test_each_pair
     h = {name: "John Smith", age: 70, pension: 300}
     os = OpenStruct.new(h)

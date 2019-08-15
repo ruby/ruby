@@ -13,7 +13,7 @@ describe "REXML::Attribute#inspect" do
   end
 
   it "does not escape text" do
-    a = REXML::Attribute.new("&&", "<>")
-    a.inspect.should == "&&='<>'"
+    a = REXML::Attribute.new("name", "<>")
+    a.inspect.should == "name='<>'"
   end
 end

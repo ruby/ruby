@@ -2,6 +2,7 @@
 require 'rubygems/command'
 
 class Gem::Commands::WhichCommand < Gem::Command
+
   def initialize
     super 'which', 'Find the location of a library file you can require',
           :search_gems_first => false, :show_all => false
@@ -44,21 +45,19 @@ requiring to see why it does not behave as you expect.
 
       spec = Gem::Specification.find_by_path arg
 
-      if spec then
-        if options[:search_gems_first] then
+      if spec
+        if options[:search_gems_first]
           dirs = spec.full_require_paths + $LOAD_PATH
         else
           dirs = $LOAD_PATH + spec.full_require_paths
         end
       end
 
-      # TODO: this is totally redundant and stupid
       paths = find_paths arg, dirs
 
-      if paths.empty? then
+      if paths.empty?
         alert_error "Can't find Ruby library file or shared library #{arg}"
-
-        found &&= false
+        found = false
       else
         say paths
       end
@@ -73,7 +72,7 @@ requiring to see why it does not behave as you expect.
     dirs.each do |dir|
       Gem.suffixes.each do |ext|
         full_path = File.join dir, "#{package_name}#{ext}"
-        if File.exist? full_path and not File.directory? full_path then
+        if File.exist? full_path and not File.directory? full_path
           result << full_path
           return result unless options[:show_all]
         end
@@ -88,4 +87,3 @@ requiring to see why it does not behave as you expect.
   end
 
 end
-
