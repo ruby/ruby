@@ -24,9 +24,9 @@ describe "String#ascii_only?" do
   end
 
   describe "with non-ASCII only characters" do
-    it "returns false if the encoding is ASCII-8BIT" do
+    it "returns false if the encoding is BINARY" do
       chr = 128.chr
-      chr.encoding.should == Encoding::ASCII_8BIT
+      chr.encoding.should == Encoding::BINARY
       chr.ascii_only?.should be_false
     end
 

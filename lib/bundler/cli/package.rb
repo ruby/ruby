@@ -11,7 +11,6 @@ module Bundler
     def run
       Bundler.ui.level = "error" if options[:quiet]
       Bundler.settings.set_command_option_if_given :path, options[:path]
-      Bundler.settings.set_command_option_if_given :cache_all_platforms, options["all-platforms"]
       Bundler.settings.set_command_option_if_given :cache_path, options["cache-path"]
 
       setup_cache_all
@@ -19,23 +18,23 @@ module Bundler
 
       # TODO: move cache contents here now that all bundles are locked
       custom_path = Bundler.settings[:path] if options[:path]
-      Bundler.load.cache(custom_path)
+
+      Bundler.settings.temporary(:cache_all_platforms => options["all-platforms"]) do
+        Bundler.load.cache(custom_path)
+      end
     end
 
   private
 
     def install
-      require "bundler/cli/install"
+      require_relative "install"
       options = self.options.dup
-      if Bundler.settings[:cache_all_platforms]
-        options["local"] = false
-        options["update"] = true
-      end
+      options["local"] = false if Bundler.settings[:cache_all_platforms]
       Bundler::CLI::Install.new(options).run
     end
 
     def setup_cache_all
-      all = options.fetch(:all, Bundler.feature_flag.cache_command_is_package? || nil)
+      all = options.fetch(:all, Bundler.feature_flag.cache_all? || nil)
 
       Bundler.settings.set_command_option_if_given :cache_all, all
 

@@ -39,7 +39,7 @@ describe "String#upcase" do
     end
 
     it "does not allow any other additional option" do
-      lambda { "i".upcase(:turkic, :ascii) }.should raise_error(ArgumentError)
+      -> { "i".upcase(:turkic, :ascii) }.should raise_error(ArgumentError)
     end
   end
 
@@ -53,16 +53,16 @@ describe "String#upcase" do
     end
 
     it "does not allow any other additional option" do
-      lambda { "iß".upcase(:lithuanian, :ascii) }.should raise_error(ArgumentError)
+      -> { "iß".upcase(:lithuanian, :ascii) }.should raise_error(ArgumentError)
     end
   end
 
   it "does not allow the :fold option for upcasing" do
-    lambda { "abc".upcase(:fold) }.should raise_error(ArgumentError)
+    -> { "abc".upcase(:fold) }.should raise_error(ArgumentError)
   end
 
   it "does not allow invalid options" do
-    lambda { "abc".upcase(:invalid_option) }.should raise_error(ArgumentError)
+    -> { "abc".upcase(:invalid_option) }.should raise_error(ArgumentError)
   end
 
   it "taints result when self is tainted" do
@@ -123,7 +123,7 @@ describe "String#upcase!" do
     end
 
     it "does not allow any other additional option" do
-      lambda { a = "i"; a.upcase!(:turkic, :ascii) }.should raise_error(ArgumentError)
+      -> { a = "i"; a.upcase!(:turkic, :ascii) }.should raise_error(ArgumentError)
     end
   end
 
@@ -141,16 +141,16 @@ describe "String#upcase!" do
     end
 
     it "does not allow any other additional option" do
-      lambda { a = "iß"; a.upcase!(:lithuanian, :ascii) }.should raise_error(ArgumentError)
+      -> { a = "iß"; a.upcase!(:lithuanian, :ascii) }.should raise_error(ArgumentError)
     end
   end
 
   it "does not allow the :fold option for upcasing" do
-    lambda { a = "abc"; a.upcase!(:fold) }.should raise_error(ArgumentError)
+    -> { a = "abc"; a.upcase!(:fold) }.should raise_error(ArgumentError)
   end
 
   it "does not allow invalid options" do
-    lambda { a = "abc"; a.upcase!(:invalid_option) }.should raise_error(ArgumentError)
+    -> { a = "abc"; a.upcase!(:invalid_option) }.should raise_error(ArgumentError)
   end
 
   it "returns nil if no modifications were made" do
@@ -160,7 +160,7 @@ describe "String#upcase!" do
   end
 
   it "raises a #{frozen_error_class} when self is frozen" do
-    lambda { "HeLlo".freeze.upcase! }.should raise_error(frozen_error_class)
-    lambda { "HELLO".freeze.upcase! }.should raise_error(frozen_error_class)
+    -> { "HeLlo".freeze.upcase! }.should raise_error(frozen_error_class)
+    -> { "HELLO".freeze.upcase! }.should raise_error(frozen_error_class)
   end
 end

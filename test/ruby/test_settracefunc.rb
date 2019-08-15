@@ -1485,7 +1485,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   def test_throwing_return_with_finish_frame
-    target_th = Thread.current
     evs = []
 
     TracePoint.new(:call, :return){|tp|
@@ -1670,6 +1669,25 @@ class TestSetTraceFunc < Test::Unit::TestCase
     }
     ary.pop # last b_return event is not required.
     ary
+  end
+
+  def test_single_raise_inside_load
+    events = []
+    tmpdir = Dir.mktmpdir
+    path = "#{tmpdir}/hola.rb"
+    File.open(path, "w") { |f| f.write("raise") }
+    tp = TracePoint.new(:raise) {|tp| events << [tp.event] if target_thread?}
+    tp.enable{
+      load path rescue nil
+    }
+    assert_equal [[:raise]], events
+    events.clear
+    tp.enable{
+      require path rescue nil
+    }
+    assert_equal [[:raise]], events
+  ensure
+    FileUtils.rmtree(tmpdir)
   end
 
   def f_raise
@@ -1903,34 +1921,37 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   def test_lineno_in_optimized_insn
-    actual, _, _ = EnvUtil.invoke_ruby [], <<-EOF.gsub(/^.*?: */, ""), true
-      1: class String
-      2:   def -@
-      3:     puts caller_locations(1, 1)[0].lineno
-      4:   end
-      5: end
-      6:
-      7: -""
-    EOF
-    assert_equal "7\n", actual, '[Bug #14809]'
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $loc = nil
+      class String
+        undef -@
+        def -@
+          $loc = caller_locations(1, 1)[0].lineno
+        end
+      end
+
+      assert_predicate(-"", :frozen?)
+      assert_equal(__LINE__-1, $loc, '[Bug #14809]')
+    end;
   end
 
   def method_for_enable_target1
     a = 1
     b = 2
     1.times{|i|
-      x = i
+      _x = i
     }
-    c = a + b
+    _c = a + b
   end
 
   def method_for_enable_target2
     a = 1
     b = 2
     1.times{|i|
-      x = i
+      _x = i
     }
-    c = a + b
+    _c = a + b
   end
 
   def check_with_events *trace_events
@@ -1963,7 +1984,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
       method_for_enable_target2
       method_for_enable_target1
     end
-    assert_equal all_events.find_all{|(ev, m)| trace_events.include? ev}, events
+    assert_equal all_events.find_all{|(ev)| trace_events.include? ev}, events
   end
 
   def test_tracepoint_enable_target
@@ -1976,10 +1997,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_nested_enabled_with_target
     code1 = proc{
-      a = 1
+      _a = 1
     }
     code2 = proc{
-      b = 2
+      _b = 2
     }
 
     ## error
@@ -2105,8 +2126,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  ], events
     events.clear
 
-    # TODO: test for requires
-    return
+    skip "TODO: test for requires"
 
     tp.enable{
       require ''
@@ -2121,12 +2141,12 @@ class TestSetTraceFunc < Test::Unit::TestCase
     TracePoint.new(:line) do |tp|
       events << Thread.current
     end.enable(target_thread: Thread.current) do
-      a = 1
+      _a = 1
       Thread.new{
-        b = 2
-        c = 3
+        _b = 2
+        _c = 3
       }.join
-      d = 4
+      _d = 4
     end
     assert_equal Array.new(3){Thread.current}, events
 
@@ -2140,14 +2160,14 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     th = Thread.new{
       q1 << :ok; q2.pop
-      t1 = 1
-      t2 = 2
+      _t1 = 1
+      _t2 = 2
     }
     q1.pop
     tp.enable(target_thread: th) do
       q2 << 1
-      a = 1
-      b = 2
+      _a = 1
+      _b = 2
       th.join
     end
 
@@ -2164,5 +2184,22 @@ class TestSetTraceFunc < Test::Unit::TestCase
     tp = TracePoint.new(:return) {ok = true}
     tp.enable {obj.example}
     assert ok, "return event should be emitted"
+  end
+
+  def test_disable_local_tracepoint_in_trace
+    assert_normal_exit <<-EOS
+    def foo
+      trace = TracePoint.new(:b_return){|tp|
+        tp.disable
+      }
+      trace.enable(target: method(:bar))
+    end
+    def bar
+      100.times{|i|
+        foo; foo
+      }
+    end
+    bar
+    EOS
   end
 end

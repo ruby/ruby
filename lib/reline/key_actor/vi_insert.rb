@@ -257,262 +257,261 @@ class Reline::KeyActor::ViInsert < Reline::KeyActor::Base
     # 127 ^?
     :vi_delete_prev_char,
     # 128 M-^@
-    :ed_insert,
+    :ed_unassigned,
     # 129 M-^A
-    :ed_insert,
+    :ed_unassigned,
     # 130 M-^B
-    :ed_insert,
+    :ed_unassigned,
     # 131 M-^C
-    :ed_insert,
+    :ed_unassigned,
     # 132 M-^D
-    :ed_insert,
+    :ed_unassigned,
     # 133 M-^E
-    :ed_insert,
+    :ed_unassigned,
     # 134 M-^F
-    :ed_insert,
+    :ed_unassigned,
     # 135 M-^G
-    :ed_insert,
+    :ed_unassigned,
     # 136 M-^H
-    :ed_insert,
+    :ed_unassigned,
     # 137 M-^I
-    :ed_insert,
+    :ed_unassigned,
     # 138 M-^J
-    :ed_insert,
+    :key_newline,
     # 139 M-^K
-    :ed_insert,
+    :ed_unassigned,
     # 140 M-^L
-    :ed_insert,
+    :ed_unassigned,
     # 141 M-^M
-    :ed_insert,
+    :key_newline,
     # 142 M-^N
-    :ed_insert,
+    :ed_unassigned,
     # 143 M-^O
-    :ed_insert,
+    :ed_unassigned,
     # 144 M-^P
-    :ed_insert,
+    :ed_unassigned,
     # 145 M-^Q
-    :ed_insert,
+    :ed_unassigned,
     # 146 M-^R
-    :ed_insert,
+    :ed_unassigned,
     # 147 M-^S
-    :ed_insert,
+    :ed_unassigned,
     # 148 M-^T
-    :ed_insert,
+    :ed_unassigned,
     # 149 M-^U
-    :ed_insert,
+    :ed_unassigned,
     # 150 M-^V
-    :ed_insert,
+    :ed_unassigned,
     # 151 M-^W
-    :ed_insert,
+    :ed_unassigned,
     # 152 M-^X
-    :ed_insert,
+    :ed_unassigned,
     # 153 M-^Y
-    :ed_insert,
+    :ed_unassigned,
     # 154 M-^Z
-    :ed_insert,
+    :ed_unassigned,
     # 155 M-^[
-    :ed_insert,
+    :ed_unassigned,
     # 156 M-^\
-    :ed_insert,
+    :ed_unassigned,
     # 157 M-^]
-    :ed_insert,
+    :ed_unassigned,
     # 158 M-^^
-    :ed_insert,
+    :ed_unassigned,
     # 159 M-^_
-    :ed_insert,
+    :ed_unassigned,
     # 160 M-SPACE
-    :ed_insert,
+    :ed_unassigned,
     # 161 M-!
-    :ed_insert,
+    :ed_unassigned,
     # 162 M-"
-    :ed_insert,
+    :ed_unassigned,
     # 163 M-#
-    :ed_insert,
+    :ed_unassigned,
     # 164 M-$
-    :ed_insert,
+    :ed_unassigned,
     # 165 M-%
-    :ed_insert,
+    :ed_unassigned,
     # 166 M-&
-    :ed_insert,
+    :ed_unassigned,
     # 167 M-'
-    :ed_insert,
+    :ed_unassigned,
     # 168 M-(
-    :ed_insert,
+    :ed_unassigned,
     # 169 M-)
-    :ed_insert,
+    :ed_unassigned,
     # 170 M-*
-    :ed_insert,
+    :ed_unassigned,
     # 171 M-+
-    :ed_insert,
+    :ed_unassigned,
     # 172 M-,
-    :ed_insert,
+    :ed_unassigned,
     # 173 M--
-    :ed_insert,
+    :ed_unassigned,
     # 174 M-.
-    :ed_insert,
+    :ed_unassigned,
     # 175 M-/
-    :ed_insert,
+    :ed_unassigned,
     # 176 M-0
-    :ed_insert,
+    :ed_unassigned,
     # 177 M-1
-    :ed_insert,
+    :ed_unassigned,
     # 178 M-2
-    :ed_insert,
+    :ed_unassigned,
     # 179 M-3
-    :ed_insert,
+    :ed_unassigned,
     # 180 M-4
-    :ed_insert,
+    :ed_unassigned,
     # 181 M-5
-    :ed_insert,
+    :ed_unassigned,
     # 182 M-6
-    :ed_insert,
+    :ed_unassigned,
     # 183 M-7
-    :ed_insert,
+    :ed_unassigned,
     # 184 M-8
-    :ed_insert,
+    :ed_unassigned,
     # 185 M-9
-    :ed_insert,
+    :ed_unassigned,
     # 186 M-:
-    :ed_insert,
+    :ed_unassigned,
     # 187 M-;
-    :ed_insert,
+    :ed_unassigned,
     # 188 M-<
-    :ed_insert,
+    :ed_unassigned,
     # 189 M-=
-    :ed_insert,
+    :ed_unassigned,
     # 190 M->
-    :ed_insert,
+    :ed_unassigned,
     # 191 M-?
-    :ed_insert,
+    :ed_unassigned,
     # 192 M-@
-    :ed_insert,
+    :ed_unassigned,
     # 193 M-A
-    :ed_insert,
+    :ed_unassigned,
     # 194 M-B
-    :ed_insert,
+    :ed_unassigned,
     # 195 M-C
-    :ed_insert,
+    :ed_unassigned,
     # 196 M-D
-    :ed_insert,
+    :ed_unassigned,
     # 197 M-E
-    :ed_insert,
+    :ed_unassigned,
     # 198 M-F
-    :ed_insert,
+    :ed_unassigned,
     # 199 M-G
-    :ed_insert,
+    :ed_unassigned,
     # 200 M-H
-    :ed_insert,
+    :ed_unassigned,
     # 201 M-I
-    :ed_insert,
+    :ed_unassigned,
     # 202 M-J
-    :ed_insert,
+    :ed_unassigned,
     # 203 M-K
-    :ed_insert,
+    :ed_unassigned,
     # 204 M-L
-    :ed_insert,
+    :ed_unassigned,
     # 205 M-M
-    :ed_insert,
+    :ed_unassigned,
     # 206 M-N
-    :ed_insert,
+    :ed_unassigned,
     # 207 M-O
-    :ed_insert,
+    :ed_unassigned,
     # 208 M-P
-    :ed_insert,
+    :ed_unassigned,
     # 209 M-Q
-    :ed_insert,
+    :ed_unassigned,
     # 210 M-R
-    :ed_insert,
+    :ed_unassigned,
     # 211 M-S
-    :ed_insert,
+    :ed_unassigned,
     # 212 M-T
-    :ed_insert,
+    :ed_unassigned,
     # 213 M-U
-    :ed_insert,
+    :ed_unassigned,
     # 214 M-V
-    :ed_insert,
+    :ed_unassigned,
     # 215 M-W
-    :ed_insert,
+    :ed_unassigned,
     # 216 M-X
-    :ed_insert,
+    :ed_unassigned,
     # 217 M-Y
-    :ed_insert,
+    :ed_unassigned,
     # 218 M-Z
-    :ed_insert,
+    :ed_unassigned,
     # 219 M-[
-    :ed_insert,
+    :ed_unassigned,
     # 220 M-\
-    :ed_insert,
+    :ed_unassigned,
     # 221 M-]
-    :ed_insert,
+    :ed_unassigned,
     # 222 M-^
-    :ed_insert,
+    :ed_unassigned,
     # 223 M-_
-    :ed_insert,
-    # 223 M-`
-    :ed_insert,
-    # 224 M-a
-    :ed_insert,
-    # 225 M-b
-    :ed_insert,
-    # 226 M-c
-    :ed_insert,
-    # 227 M-d
-    :ed_insert,
-    # 228 M-e
-    :ed_insert,
-    # 229 M-f
-    :ed_insert,
-    # 230 M-g
-    :ed_insert,
-    # 231 M-h
-    :ed_insert,
-    # 232 M-i
-    :ed_insert,
-    # 233 M-j
-    :ed_insert,
-    # 234 M-k
-    :ed_insert,
-    # 235 M-l
-    :ed_insert,
-    # 236 M-m
-    :ed_insert,
-    # 237 M-n
-    :ed_insert,
-    # 238 M-o
-    :ed_insert,
-    # 239 M-p
-    :ed_insert,
-    # 240 M-q
-    :ed_insert,
-    # 241 M-r
-    :ed_insert,
-    # 242 M-s
-    :ed_insert,
-    # 243 M-t
-    :ed_insert,
-    # 244 M-u
-    :ed_insert,
-    # 245 M-v
-    :ed_insert,
-    # 246 M-w
-    :ed_insert,
-    # 247 M-x
-    :ed_insert,
-    # 248 M-y
-    :ed_insert,
-    # 249 M-z
-    :ed_insert,
-    # 250 M-{
-    :ed_insert,
-    # 251 M-|
-    :ed_insert,
-    # 252 M-}
-    :ed_insert,
-    # 253 M-~
-    :ed_insert,
-    # 254	M-^?
-    :ed_insert
-    # 255
+    :ed_unassigned,
+    # 224 M-`
+    :ed_unassigned,
+    # 225 M-a
+    :ed_unassigned,
+    # 226 M-b
+    :ed_unassigned,
+    # 227 M-c
+    :ed_unassigned,
+    # 228 M-d
+    :ed_unassigned,
+    # 229 M-e
+    :ed_unassigned,
+    # 230 M-f
+    :ed_unassigned,
+    # 231 M-g
+    :ed_unassigned,
+    # 232 M-h
+    :ed_unassigned,
+    # 233 M-i
+    :ed_unassigned,
+    # 234 M-j
+    :ed_unassigned,
+    # 235 M-k
+    :ed_unassigned,
+    # 236 M-l
+    :ed_unassigned,
+    # 237 M-m
+    :ed_unassigned,
+    # 238 M-n
+    :ed_unassigned,
+    # 239 M-o
+    :ed_unassigned,
+    # 240 M-p
+    :ed_unassigned,
+    # 241 M-q
+    :ed_unassigned,
+    # 242 M-r
+    :ed_unassigned,
+    # 243 M-s
+    :ed_unassigned,
+    # 244 M-t
+    :ed_unassigned,
+    # 245 M-u
+    :ed_unassigned,
+    # 246 M-v
+    :ed_unassigned,
+    # 247 M-w
+    :ed_unassigned,
+    # 248 M-x
+    :ed_unassigned,
+    # 249 M-y
+    :ed_unassigned,
+    # 250 M-z
+    :ed_unassigned,
+    # 251 M-{
+    :ed_unassigned,
+    # 252 M-|
+    :ed_unassigned,
+    # 253 M-}
+    :ed_unassigned,
+    # 254 M-~
+    :ed_unassigned,
+    # 255 M-^?
+    :ed_unassigned
     # EOF
   ]
 end

@@ -5,7 +5,7 @@ RSpec.describe "bundle update" do
     build_repo2
 
     install_gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "activesupport"
       gem "rack-obama"
       gem "platform_specific"
@@ -25,7 +25,7 @@ RSpec.describe "bundle update" do
 
     it "doesn't delete the Gemfile.lock file if something goes wrong" do
       gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "activesupport"
         gem "rack-obama"
         exit!
@@ -48,7 +48,7 @@ RSpec.describe "bundle update" do
 
     it "doesn't delete the Gemfile.lock file if something goes wrong" do
       gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "activesupport"
         gem "rack-obama"
         exit!
@@ -61,7 +61,7 @@ RSpec.describe "bundle update" do
   describe "with --gemfile" do
     it "creates lock files based on the Gemfile name" do
       gemfile bundled_app("OmgFile"), <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack", "1.0"
       G
 
@@ -154,7 +154,7 @@ RSpec.describe "bundle update" do
         end
 
         install_gemfile! <<-G
-          source "file:#{gem_repo4}"
+          source "#{file_uri_for(gem_repo4)}"
           gem "slim-rails"
           gem "slim_lint"
         G
@@ -180,7 +180,7 @@ RSpec.describe "bundle update" do
         end
 
         install_gemfile! <<-G
-          source "file:#{gem_repo4}"
+          source "#{file_uri_for(gem_repo4)}"
           gem "a"
           gem "b"
         G
@@ -188,7 +188,7 @@ RSpec.describe "bundle update" do
         expect(the_bundle).to include_gems("a 1.0", "b 2.0")
 
         gemfile <<-G
-          source "file://#{gem_repo4}"
+          source "#{file_uri_for(gem_repo4)}"
           gem "a"
           gem "b", "1.0"
         G
@@ -212,7 +212,7 @@ RSpec.describe "bundle update" do
   describe "with --group option" do
     it "should update only specified group gems" do
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "activesupport", :group => :development
         gem "rack"
       G
@@ -227,7 +227,7 @@ RSpec.describe "bundle update" do
     context "when conservatively updating a group with non-group sub-deps" do
       it "should update only specified group gems" do
         install_gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "activemerchant", :group => :development
           gem "activesupport"
         G
@@ -245,7 +245,7 @@ RSpec.describe "bundle update" do
       before :each do
         build_git "foo", :path => lib_path("activesupport")
         install_gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "activesupport", :group => :development
           gem "foo", :git => "#{lib_path("activesupport")}"
         G
@@ -264,7 +264,7 @@ RSpec.describe "bundle update" do
     context "when bundler itself is a transitive dependency" do
       it "executes without error" do
         install_gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "activesupport", :group => :development
           gem "rack"
         G
@@ -307,7 +307,7 @@ RSpec.describe "bundle update" do
   describe "with --source option" do
     it "should not update gems not included in the source that happen to have the same name", :bundler => "< 3" do
       install_gemfile! <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "activesupport"
       G
       update_repo2 { build_gem "activesupport", "3.0" }
@@ -318,7 +318,7 @@ RSpec.describe "bundle update" do
 
     it "should not update gems not included in the source that happen to have the same name", :bundler => "3" do
       install_gemfile! <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "activesupport"
       G
       update_repo2 { build_gem "activesupport", "3.0" }
@@ -332,7 +332,7 @@ RSpec.describe "bundle update" do
 
       it "should not update gems not included in the source that happen to have the same name" do
         install_gemfile <<-G
-          source "file://#{gem_repo2}"
+          source "#{file_uri_for(gem_repo2)}"
           gem "activesupport"
         G
         update_repo2 { build_gem "activesupport", "3.0" }
@@ -353,7 +353,7 @@ RSpec.describe "bundle update" do
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "harry"
         gem "fred"
       G
@@ -398,7 +398,7 @@ RSpec.describe "bundle update" do
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "harry"
         gem "fred"
       G
@@ -439,7 +439,7 @@ RSpec.describe "bundle update in more complicated situations" do
 
   it "will eagerly unlock dependencies of a specified gem" do
     install_gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
 
       gem "thin"
       gem "rack-obama"
@@ -457,7 +457,7 @@ RSpec.describe "bundle update in more complicated situations" do
 
   it "will warn when some explicitly updated gems are not updated" do
     install_gemfile! <<-G
-      source "file:#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
 
       gem "thin"
       gem "rack-obama"
@@ -473,11 +473,44 @@ RSpec.describe "bundle update in more complicated situations" do
     expect(the_bundle).to include_gems "thin 2.0", "rack 10.0", "rack-obama 1.0"
   end
 
+  it "will not warn when an explicitly updated git gem changes sha but not version" do
+    build_git "foo"
+
+    install_gemfile! <<-G
+      gem "foo", :git => '#{lib_path("foo-1.0")}'
+    G
+
+    update_git "foo" do |s|
+      s.write "lib/foo2.rb", "puts :foo2"
+    end
+
+    bundle! "update foo"
+
+    expect(last_command.stdboth).not_to include "attempted to update"
+  end
+
+  it "will not warn when changing gem sources but not versions" do
+    build_git "rack"
+
+    install_gemfile! <<-G
+      gem "rack", :git => '#{lib_path("rack-1.0")}'
+    G
+
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack"
+    G
+
+    bundle! "update rack"
+
+    expect(last_command.stdboth).not_to include "attempted to update"
+  end
+
   it "will update only from pinned source" do
     install_gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
 
-      source "file://#{gem_repo1}" do
+      source "#{file_uri_for(gem_repo1)}" do
         gem "thin"
       end
     G
@@ -500,13 +533,13 @@ RSpec.describe "bundle update in more complicated situations" do
       end
 
       gemfile <<-G
-        source "file://#{gem_repo4}"
+        source "#{file_uri_for(gem_repo4)}"
         gem "a"
       G
 
       lockfile <<-L
         GEM
-          remote: file://#{gem_repo4}
+          remote: #{file_uri_for(gem_repo4)}
           specs:
             a (0.9-java)
 
@@ -530,6 +563,41 @@ RSpec.describe "bundle update in more complicated situations" do
       expect(the_bundle).to include_gem "a 1.1"
     end
   end
+
+  context "when the dependency is for a different platform" do
+    before do
+      build_repo4 do
+        build_gem("a", "0.9") {|s| s.platform = "java" }
+        build_gem("a", "1.1") {|s| s.platform = "java" }
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "a", platform: :jruby
+      G
+
+      lockfile <<-L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}
+          specs:
+            a (0.9-java)
+
+        PLATFORMS
+          java
+
+        DEPENDENCIES
+          a
+      L
+
+      simulate_platform linux
+    end
+
+    it "is not updated because it is not actually included in the bundle" do
+      bundle! "update a"
+      expect(last_command.stdboth).to include "Bundler attempted to update a but it was not considered because it is for a different platform from the current one"
+      expect(the_bundle).to_not include_gem "a"
+    end
+  end
 end
 
 RSpec.describe "bundle update without a Gemfile.lock" do
@@ -537,7 +605,7 @@ RSpec.describe "bundle update without a Gemfile.lock" do
     build_repo2
 
     gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
 
       gem "rack", "1.0"
     G
@@ -557,7 +625,7 @@ RSpec.describe "bundle update when a gem depends on a newer version of bundler" 
     end
 
     gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "rails", "3.0.1"
     G
   end
@@ -565,13 +633,13 @@ RSpec.describe "bundle update when a gem depends on a newer version of bundler" 
   it "should explain that bundler conflicted", :bundler => "< 3" do
     bundle "update", :all => true
     expect(last_command.stdboth).not_to match(/in snapshot/i)
-    expect(last_command.bundler_err).to match(/current Bundler version/i).
+    expect(err).to match(/current Bundler version/i).
       and match(/perhaps you need to update bundler/i)
   end
 
   it "should warn that the newer version of Bundler would conflict", :bundler => "3" do
     bundle! "update", :all => true
-    expect(last_command.bundler_err).to include("rails (3.0.1) has dependency bundler").
+    expect(err).to include("rails (3.0.1) has dependency bundler").
       and include("so the dependency is being ignored")
     expect(the_bundle).to include_gem "rails 3.0.1"
   end
@@ -582,7 +650,7 @@ RSpec.describe "bundle update" do
     build_repo2
 
     install_gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "activesupport"
     G
 
@@ -607,7 +675,7 @@ RSpec.describe "bundle update" do
       end
 
       install_gemfile! <<-G
-        source "file://#{gem_repo4}"
+        source "#{file_uri_for(gem_repo4)}"
         gem "bar"
         gem "foo"
       G
@@ -634,7 +702,7 @@ RSpec.describe "bundle update" do
 
   it "shows error message when Gemfile.lock is not preset and gem is specified" do
     install_gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "activesupport"
     G
 
@@ -760,7 +828,7 @@ RSpec.describe "bundle update --bundler" do
     end
 
     install_gemfile! <<-G
-      source "file:#{gem_repo4}"
+      source "#{file_uri_for(gem_repo4)}"
       gem "rack"
     G
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
@@ -794,7 +862,7 @@ RSpec.describe "bundle update conservative" do
 
       # establish a lockfile set to 1.4.3
       install_gemfile <<-G
-        source "file://#{gem_repo4}"
+        source "#{file_uri_for(gem_repo4)}"
         gem 'foo', '1.4.3'
         gem 'bar', '2.0.3'
         gem 'qux', '1.0.0'
@@ -803,7 +871,7 @@ RSpec.describe "bundle update conservative" do
       # remove 1.4.3 requirement and bar altogether
       # to setup update specs below
       gemfile <<-G
-        source "file://#{gem_repo4}"
+        source "#{file_uri_for(gem_repo4)}"
         gem 'foo'
         gem 'qux'
       G
@@ -873,7 +941,7 @@ RSpec.describe "bundle update conservative" do
       end
 
       gemfile <<-G
-        source "file://#{gem_repo4}"
+        source "#{file_uri_for(gem_repo4)}"
         gem 'isolated_owner'
 
         gem 'shared_owner_a'
@@ -882,7 +950,7 @@ RSpec.describe "bundle update conservative" do
 
       lockfile <<-L
         GEM
-          remote: file://#{gem_repo4}
+          remote: #{file_uri_for(gem_repo4)}
           specs:
             isolated_dep (2.0.1)
             isolated_owner (1.0.1)
@@ -926,7 +994,7 @@ RSpec.describe "bundle update conservative" do
 
     it "should match bundle install conservative update behavior when not eagerly unlocking" do
       gemfile <<-G
-        source "file://#{gem_repo4}"
+        source "#{file_uri_for(gem_repo4)}"
         gem 'isolated_owner', '1.0.2'
 
         gem 'shared_owner_a', '3.0.2'
@@ -947,7 +1015,7 @@ RSpec.describe "bundle update conservative" do
     it "raises if too many flags are provided" do
       bundle "update --patch --minor", :all => true
 
-      expect(last_command.bundler_err).to eq "Provide only one of the following options: minor, patch"
+      expect(err).to eq "Provide only one of the following options: minor, patch"
     end
   end
 end

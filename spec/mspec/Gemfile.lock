@@ -19,6 +19,3 @@ PLATFORMS
 DEPENDENCIES
   rake (~> 10.0)
   rspec (~> 2.14.1)
-
-BUNDLED WITH
-   1.16.1
