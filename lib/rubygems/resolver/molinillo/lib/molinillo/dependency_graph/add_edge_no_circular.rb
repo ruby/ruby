@@ -23,8 +23,8 @@ module Gem::Resolver::Molinillo
       # (see Action#down)
       def down(graph)
         edge = make_edge(graph)
-        edge.origin.outgoing_edges.delete(edge)
-        edge.destination.incoming_edges.delete(edge)
+        delete_first(edge.origin.outgoing_edges, edge)
+        delete_first(edge.destination.incoming_edges, edge)
       end
 
       # @!group AddEdgeNoCircular
@@ -52,6 +52,13 @@ module Gem::Resolver::Molinillo
         @origin = origin
         @destination = destination
         @requirement = requirement
+      end
+
+      private
+
+      def delete_first(array, item)
+        return unless index = array.index(item)
+        array.delete_at(index)
       end
     end
   end

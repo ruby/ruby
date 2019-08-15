@@ -5,7 +5,7 @@ require '-test-/integer'
 require 'rbconfig/sizeof'
 
 class TestNum2int < Test::Unit::TestCase
-  l = RbConfig::Limits
+  l = RbConfig::LIMITS
 
   SHRT_MIN = l["SHRT_MIN"]
   SHRT_MAX = l["SHRT_MAX"]

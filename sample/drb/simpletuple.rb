@@ -3,8 +3,6 @@
 # Copyright (c) 1999-2000 Masatoshi SEKI
 # You can redistribute it and/or modify it under the same terms as Ruby.
 
-require 'thread'
-
 class SimpleTupleSpace
   def initialize
     @hash = {}

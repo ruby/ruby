@@ -12,7 +12,7 @@ class TestFileUtils < Test::Unit::TestCase
   include Test::Unit::FileAssertions
 
   def assert_output_lines(expected, fu = self, message=nil)
-    old = fu.instance_variable_get(:@fileutils_output)
+    old = fu.instance_variables.include?(:@fileutils_output) && fu.instance_variable_get(:@fileutils_output)
     IO.pipe {|read, write|
       fu.instance_variable_set(:@fileutils_output, write)
       th = Thread.new { read.read }
@@ -233,8 +233,9 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_assert_output_lines
     assert_raise(MiniTest::Assertion) {
-      Timeout.timeout(0.1) {
+      Timeout.timeout(0.5) {
         assert_output_lines([]) {
+          Thread.current.report_on_exception = false
           raise "ok"
         }
       }
@@ -308,7 +309,8 @@ class TestFileUtils < Test::Unit::TestCase
     touch 'tmp/cptmp'
     chmod 0755, 'tmp/cptmp'
     cp 'tmp/cptmp', 'tmp/cptmp2'
-    assert_equal_filemode('tmp/cptmp', 'tmp/cptmp2', bug4507)
+
+    assert_equal_filemode('tmp/cptmp', 'tmp/cptmp2', bug4507, mask: ~File.umask)
   end
 
   def test_cp_preserve_permissions_dir
@@ -379,6 +381,16 @@ class TestFileUtils < Test::Unit::TestCase
     assert_same_file 'tmp/cpr_src/b', 'tmp/cpr_dest/b'
     assert_same_file 'tmp/cpr_src/c', 'tmp/cpr_dest/c'
     assert_directory 'tmp/cpr_dest/d'
+    assert_raise(ArgumentError) do
+      cp_r 'tmp/cpr_src', './tmp/cpr_src'
+    end
+    assert_raise(ArgumentError) do
+      cp_r './tmp/cpr_src', 'tmp/cpr_src'
+    end
+    assert_raise(ArgumentError) do
+      cp_r './tmp/cpr_src', File.expand_path('tmp/cpr_src')
+    end
+
     my_rm_rf 'tmp/cpr_src'
     my_rm_rf 'tmp/cpr_dest'
 
@@ -437,6 +449,54 @@ class TestFileUtils < Test::Unit::TestCase
       cp_r Pathname.new('tmp/cprtmp'), Pathname.new('tmp/tmpdest')
     }
   end
+
+  def test_cp_r_symlink_remove_destination
+    Dir.mkdir 'tmp/src'
+    Dir.mkdir 'tmp/dest'
+    Dir.mkdir 'tmp/src/dir'
+    File.symlink 'tmp/src/dir', 'tmp/src/a'
+    cp_r 'tmp/src', 'tmp/dest/', remove_destination: true
+    cp_r 'tmp/src', 'tmp/dest/', remove_destination: true
+  end if have_symlink?
+
+  def test_cp_lr
+    check_singleton :cp_lr
+
+    cp_lr 'data', 'tmp'
+    TARGETS.each do |fname|
+      assert_same_file fname, "tmp/#{fname}"
+    end
+
+    # a/* -> b/*
+    mkdir 'tmp/cpr_src'
+    mkdir 'tmp/cpr_dest'
+    File.open('tmp/cpr_src/a', 'w') {|f| f.puts 'a' }
+    File.open('tmp/cpr_src/b', 'w') {|f| f.puts 'b' }
+    File.open('tmp/cpr_src/c', 'w') {|f| f.puts 'c' }
+    mkdir 'tmp/cpr_src/d'
+    cp_lr 'tmp/cpr_src/.', 'tmp/cpr_dest'
+    assert_same_file 'tmp/cpr_src/a', 'tmp/cpr_dest/a'
+    assert_same_file 'tmp/cpr_src/b', 'tmp/cpr_dest/b'
+    assert_same_file 'tmp/cpr_src/c', 'tmp/cpr_dest/c'
+    assert_directory 'tmp/cpr_dest/d'
+    my_rm_rf 'tmp/cpr_src'
+    my_rm_rf 'tmp/cpr_dest'
+
+    bug3588 = '[ruby-core:31360]'
+    mkdir 'tmp2'
+    assert_nothing_raised(ArgumentError, bug3588) do
+      cp_lr 'tmp', 'tmp2'
+    end
+    assert_directory 'tmp2/tmp'
+    assert_raise(ArgumentError, bug3588) do
+      cp_lr 'tmp2', 'tmp2/new_tmp2'
+    end
+
+    bug12892 = '[ruby-core:77885] [Bug #12892]'
+    assert_raise(Errno::ENOENT, bug12892) do
+      cp_lr 'non/existent', 'tmp'
+    end
+  end if have_hardlink?
 
   def test_mv
     check_singleton :mv
@@ -690,6 +750,17 @@ class TestFileUtils < Test::Unit::TestCase
     remove_entry_secure 'tmp/tmpdir/c', true
     assert_file_not_exist 'tmp/tmpdir/a'
     assert_file_not_exist 'tmp/tmpdir/c'
+
+    unless root_in_posix?
+      File.chmod(01777, 'tmp/tmpdir')
+      if File.sticky?('tmp/tmpdir')
+        Dir.mkdir 'tmp/tmpdir/d', 0
+        assert_raise(Errno::EACCES) {remove_entry_secure 'tmp/tmpdir/d'}
+        File.chmod 0777, 'tmp/tmpdir/d'
+        Dir.rmdir 'tmp/tmpdir/d'
+      end
+    end
+
     Dir.rmdir 'tmp/tmpdir'
   end
 
@@ -784,13 +855,17 @@ class TestFileUtils < Test::Unit::TestCase
     check_singleton :ln_s
 
     TARGETS.each do |fname|
-      fname = "../#{fname}"
-      ln_s fname, 'tmp/lnsdest'
-      assert FileTest.symlink?('tmp/lnsdest'), 'not symlink'
-      assert_equal fname, File.readlink('tmp/lnsdest')
-      rm_f 'tmp/lnsdest'
+      begin
+        fname = "../#{fname}"
+        lnfname = 'tmp/lnsdest'
+        ln_s fname, lnfname
+        assert FileTest.symlink?(lnfname), 'not symlink'
+        assert_equal fname, File.readlink(lnfname)
+      ensure
+        rm_f lnfname
+      end
     end
-  end
+  end if have_symlink? and !no_broken_symlink?
 
   def test_ln_s_broken_symlink
     assert_nothing_raised {
@@ -1399,7 +1474,7 @@ class TestFileUtils < Test::Unit::TestCase
 
       def test_chown_R_without_permission
         touch 'tmp/a'
-        exception = assert_raise(Errno::EPERM) {
+        assert_raise(Errno::EPERM) {
           chown_R UID_1, nil, 'tmp/a'
           chown_R UID_2, nil, 'tmp/a'
         }
@@ -1434,6 +1509,14 @@ class TestFileUtils < Test::Unit::TestCase
     assert_not_symlink 'tmp/dirdest'
     assert_symlink 'tmp/dirdest/sym'
     assert_equal 'somewhere', File.readlink('tmp/dirdest/sym')
+  end if have_symlink?
+
+  def test_copy_entry_symlink_remove_destination
+    Dir.mkdir 'tmp/dir'
+    File.symlink 'tmp/dir', 'tmp/dest'
+    touch 'tmp/src'
+    copy_entry 'tmp/src', 'tmp/dest', false, false, true
+    assert_file_exist 'tmp/dest'
   end if have_symlink?
 
   def test_copy_file
@@ -1553,6 +1636,10 @@ class TestFileUtils < Test::Unit::TestCase
     check_singleton :cd
   end
 
+  def test_cd_result
+    assert_equal 42, cd('.') { 42 }
+  end
+
   def test_chdir
     check_singleton :chdir
   end
@@ -1610,6 +1697,21 @@ class TestFileUtils < Test::Unit::TestCase
 
     subdir = 'data/sub/dir'
     mkdir_p(subdir)
+    File.write("#{subdir}/file", '')
+    msg = "should fail to remove non-empty directory"
+    assert_raise(Errno::ENOTEMPTY, Errno::EEXIST, msg) {
+      rmdir(subdir)
+    }
+    assert_raise(Errno::ENOTEMPTY, Errno::EEXIST, msg) {
+      rmdir(subdir, parents: true)
+    }
+    File.unlink("#{subdir}/file")
+    assert_raise(Errno::ENOENT) {
+      rmdir("#{subdir}/nonexistent")
+    }
+    assert_raise(Errno::ENOENT) {
+      rmdir("#{subdir}/nonexistent", parents: true)
+    }
     assert_nothing_raised(Errno::ENOENT) {
       rmdir(subdir, parents: true)
     }

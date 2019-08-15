@@ -11,8 +11,9 @@
 
 **********************************************************************/
 
-#include "internal.h"
+#include "ruby/encoding.h"
 #include "ruby/re.h"
+#include "internal.h"
 #include "id.h"
 #include <math.h>
 #include <stdarg.h>
@@ -23,7 +24,8 @@
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 
-static void fmt_setup(char*,size_t,int,int,int,int);
+static char *fmt_setup(char*,size_t,int,int,int,int);
+static char *ruby_ultoa(unsigned long val, char *endp, int base, int octzero);
 
 static char
 sign_bits(int base, const char *p)
@@ -55,8 +57,9 @@ sign_bits(int base, const char *p)
 
 #define CHECK(l) do {\
     int cr = ENC_CODERANGE(result);\
-    while (blen + (l) >= bsiz) {\
+    while ((l) >= bsiz - blen) {\
 	bsiz*=2;\
+	if (bsiz<0) rb_raise(rb_eArgError, "too big specifier");\
     }\
     rb_str_resize(result, bsiz);\
     ENC_CODERANGE_SET(result, cr);\
@@ -74,6 +77,7 @@ sign_bits(int base, const char *p)
 } while (0)
 
 #define FILL(c, l) do { \
+    if ((l) <= 0) break;\
     CHECK(l);\
     FILL_(c, l);\
 } while (0)
@@ -199,7 +203,7 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *  any additional arguments.  Within the format string, any characters
  *  other than format sequences are copied to the result.
  *
- *  The syntax of a format sequence is follows.
+ *  The syntax of a format sequence is as follows.
  *
  *    %[flags][width][.precision]type
  *
@@ -517,6 +521,9 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	VALUE sym = Qnil;
 
 	for (t = p; t < end && *t != '%'; t++) ;
+	if (t + 1 == end) {
+	    rb_raise(rb_eArgError, "incomplete format specifier; use %%%% (double %%) instead");
+	}
 	PUSH(p, t - p);
 	if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {
 	    scanned += rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &coderange);
@@ -627,7 +634,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    }
 		    nextvalue = rb_hash_default_value(hash, sym);
 		    if (NIL_P(nextvalue)) {
-			rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
+			rb_key_err_raise(rb_enc_sprintf(enc, "key%.*s not found", len, start), hash, sym);
 		    }
 		}
 		if (term == '}') goto format_s;
@@ -642,6 +649,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    if (width < 0) {
 		flags |= FMINUS;
 		width = -width;
+		if (width < 0) rb_raise(rb_eArgError, "width too big");
 	    }
 	    p++;
 	    goto retry;
@@ -669,6 +677,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	  case '\n':
 	  case '\0':
 	    p--;
+            /* fall through */
 	  case '%':
 	    if (flags != FNONE) {
 		rb_raise(rb_eArgError, "invalid format character - %%");
@@ -757,20 +766,15 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    if ((flags&FWIDTH) && (width > slen)) {
 			width -= (int)slen;
 			if (!(flags&FMINUS)) {
-			    CHECK(width);
-			    while (width--) {
-				buf[blen++] = ' ';
-			    }
+			    FILL(' ', width);
+			    width = 0;
 			}
 			CHECK(len);
 			memcpy(&buf[blen], RSTRING_PTR(str), len);
 			RB_GC_GUARD(str);
 			blen += len;
 			if (flags&FMINUS) {
-			    CHECK(width);
-			    while (width--) {
-				buf[blen++] = ' ';
-			    }
+			    FILL(' ', width);
 			}
 			rb_enc_associate(result, enc);
 			break;
@@ -793,7 +797,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		volatile VALUE val = GETARG();
                 int valsign;
-		char nbuf[64], *s;
+		char nbuf[BIT_DIGITS(SIZEOF_LONG*CHAR_BIT)+2], *s;
 		const char *prefix = 0;
 		int sign = 0, dots = 0;
 		char sc = 0;
@@ -940,9 +944,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                         sc = ' ';
                         width--;
                     }
-                    snprintf(nbuf, sizeof(nbuf), "%ld", v);
-                    s = nbuf;
-		    len = (int)strlen(s);
+		    s = ruby_ultoa((unsigned long)v, nbuf + sizeof(nbuf), 10, 0);
+		    len = (int)(nbuf + sizeof(nbuf) - s);
 		}
 		else {
                     tmp = rb_big2str(val, 10);
@@ -1008,35 +1011,28 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    width -= prec;
 		}
 		if (!(flags&FMINUS)) {
-		    CHECK(width);
-		    while (width-- > 0) {
-			buf[blen++] = ' ';
-		    }
+		    FILL(' ', width);
+		    width = 0;
 		}
 		if (sc) PUSH(&sc, 1);
 		if (prefix) {
 		    int plen = (int)strlen(prefix);
 		    PUSH(prefix, plen);
 		}
-		CHECK(prec - len);
 		if (dots) PUSH("..", 2);
-		if (!sign && valsign < 0) {
-		    char c = sign_bits(base, p);
-		    while (len < prec--) {
-			buf[blen++] = c;
+		if (prec > len) {
+		    CHECK(prec - len);
+		    if (!sign && valsign < 0) {
+			char c = sign_bits(base, p);
+			FILL_(c, prec - len);
 		    }
-		}
-		else if ((flags & (FMINUS|FPREC)) != FMINUS) {
-		    while (len < prec--) {
-			buf[blen++] = '0';
+		    else if ((flags & (FMINUS|FPREC)) != FMINUS) {
+			FILL_('0', prec - len);
 		    }
 		}
 		PUSH(s, len);
 		RB_GC_GUARD(tmp);
-		CHECK(width);
-		while (width-- > 0) {
-		    buf[blen++] = ' ';
-		}
+		FILL(' ', width);
 	    }
 	    break;
 
@@ -1082,15 +1078,15 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if (prec >= len) len = prec + 1; /* integer part 0 */
 		if (sign || (flags&FSPACE)) ++len;
 		if (prec > 0) ++len; /* period */
-		CHECK(len > width ? len : width);
 		fill = width > len ? width - len : 0;
-		if (fill && !(flags&FMINUS) && !(flags&FZERO)) {
+		CHECK(fill + len);
+		if (fill && !(flags&(FMINUS|FZERO))) {
 		    FILL_(' ', fill);
 		}
 		if (sign || (flags&FSPACE)) {
 		    buf[blen++] = sign > 0 ? '+' : sign < 0 ? '-' : ' ';
 		}
-		if (fill && !(flags&FMINUS) && (flags&FZERO)) {
+		if (fill && (flags&(FMINUS|FZERO)) == FZERO) {
 		    FILL_('0', fill);
 		}
 		len = RSTRING_LEN(val) + zero;
@@ -1131,12 +1127,13 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		VALUE val = GETARG();
 		double fval;
-		int i, need;
-		char fbuf[32];
 
 		fval = RFLOAT_VALUE(rb_Float(val));
 		if (isnan(fval) || isinf(fval)) {
 		    const char *expr;
+		    int need;
+		    int elen;
+		    char sign = '\0';
 
 		    if (isnan(fval)) {
 			expr = "NaN";
@@ -1145,52 +1142,39 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			expr = "Inf";
 		    }
 		    need = (int)strlen(expr);
-		    if ((!isnan(fval) && fval < 0.0) || (flags & FPLUS))
-			need++;
+		    elen = need;
+		    if (!isnan(fval) && fval < 0.0)
+			sign = '-';
+		    else if (flags & (FPLUS|FSPACE))
+			sign = (flags & FPLUS) ? '+' : ' ';
+		    if (sign)
+			++need;
 		    if ((flags & FWIDTH) && need < width)
 			need = width;
 
-		    CHECK(need + 1);
-		    snprintf(&buf[blen], need + 1, "%*s", need, "");
+		    FILL(' ', need);
 		    if (flags & FMINUS) {
-			if (!isnan(fval) && fval < 0.0)
-			    buf[blen++] = '-';
-			else if (flags & FPLUS)
-			    buf[blen++] = '+';
-			else if (flags & FSPACE)
-			    blen++;
-			memcpy(&buf[blen], expr, strlen(expr));
+			if (sign)
+			    buf[blen - need--] = sign;
+			memcpy(&buf[blen - need], expr, elen);
 		    }
 		    else {
-			if (!isnan(fval) && fval < 0.0)
-			    buf[blen + need - strlen(expr) - 1] = '-';
-			else if (flags & FPLUS)
-			    buf[blen + need - strlen(expr) - 1] = '+';
-			else if ((flags & FSPACE) && need > width)
-			    blen++;
-			memcpy(&buf[blen + need - strlen(expr)], expr,
-			       strlen(expr));
+			if (sign)
+			    buf[blen - elen - 1] = sign;
+			memcpy(&buf[blen - elen], expr, elen);
 		    }
-		    blen += strlen(&buf[blen]);
 		    break;
 		}
-
-		fmt_setup(fbuf, sizeof(fbuf), *p, flags, width, prec);
-		need = 0;
-		if (*p != 'e' && *p != 'E') {
-		    i = INT_MIN;
-		    frexp(fval, &i);
-		    if (i > 0)
-			need = BIT_DIGITS(i);
+		else {
+		    int cr = ENC_CODERANGE(result);
+		    char fbuf[2*BIT_DIGITS(SIZEOF_INT*CHAR_BIT)+10];
+		    char *fmt = fmt_setup(fbuf, sizeof(fbuf), *p, flags, width, prec);
+		    rb_str_set_len(result, blen);
+		    rb_str_catf(result, fmt, fval);
+		    ENC_CODERANGE_SET(result, cr);
+		    bsiz = rb_str_capacity(result);
+		    RSTRING_GETMEM(result, buf, blen);
 		}
-		need += (flags&FPREC) ? prec : default_float_precision;
-		if ((flags&FWIDTH) && need < width)
-		    need = width;
-		need += 20;
-
-		CHECK(need);
-		snprintf(&buf[blen], need, fbuf, fval);
-		blen += strlen(&buf[blen]);
 	    }
 	    break;
 	}
@@ -1212,29 +1196,29 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     return result;
 }
 
-static void
+static char *
 fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 {
-    char *end = buf + size;
-    *buf++ = '%';
-    if (flags & FSHARP) *buf++ = '#';
-    if (flags & FPLUS)  *buf++ = '+';
-    if (flags & FMINUS) *buf++ = '-';
-    if (flags & FZERO)  *buf++ = '0';
-    if (flags & FSPACE) *buf++ = ' ';
-
-    if (flags & FWIDTH) {
-	snprintf(buf, end - buf, "%d", width);
-	buf += strlen(buf);
-    }
+    buf += size;
+    *--buf = '\0';
+    *--buf = c;
 
     if (flags & FPREC) {
-	snprintf(buf, end - buf, ".%d", prec);
-	buf += strlen(buf);
+	buf = ruby_ultoa(prec, buf, 10, 0);
+	*--buf = '.';
     }
 
-    *buf++ = c;
-    *buf = '\0';
+    if (flags & FWIDTH) {
+	buf = ruby_ultoa(width, buf, 10, 0);
+    }
+
+    if (flags & FSPACE) *--buf = ' ';
+    if (flags & FZERO)  *--buf = '0';
+    if (flags & FMINUS) *--buf = '-';
+    if (flags & FPLUS)  *--buf = '+';
+    if (flags & FSHARP) *--buf = '#';
+    *--buf = '%';
+    return buf;
 }
 
 #undef FILE
@@ -1265,24 +1249,47 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #endif
 #define lower_hexdigits (ruby_hexdigits+0)
 #define upper_hexdigits (ruby_hexdigits+16)
+#if defined RUBY_USE_SETJMPEX && RUBY_USE_SETJMPEX
+# undef MAYBE_UNUSED
+# define MAYBE_UNUSED(x) x = 0
+#endif
 #include "vsnprintf.c"
+
+static char *
+ruby_ultoa(unsigned long val, char *endp, int base, int flags)
+{
+    const char *xdigs = lower_hexdigits;
+    int octzero = flags & FSHARP;
+    return BSD__ultoa(val, endp, base, octzero, xdigs);
+}
+
+static int ruby_do_vsnprintf(char *str, size_t n, const char *fmt, va_list ap);
 
 int
 ruby_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
 {
-    int ret;
+    if (str && (ssize_t)n < 1)
+	return (EOF);
+    return ruby_do_vsnprintf(str, n, fmt, ap);
+}
+
+static int
+ruby_do_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
+{
+    ssize_t ret;
     rb_printf_buffer f;
 
-    if ((int)n < 1)
-	return (EOF);
     f._flags = __SWR | __SSTR;
     f._bf._base = f._p = (unsigned char *)str;
-    f._bf._size = f._w = n - 1;
+    f._bf._size = f._w = str ? (n - 1) : 0;
     f.vwrite = BSD__sfvwrite;
     f.vextra = 0;
-    ret = (int)BSD_vfprintf(&f, fmt, ap);
-    *f._p = 0;
-    return ret;
+    ret = BSD_vfprintf(&f, fmt, ap);
+    if (str) *f._p = 0;
+#if SIZEOF_SIZE_T > SIZEOF_INT
+    if (n > INT_MAX) return INT_MAX;
+#endif
+    return (int)ret;
 }
 
 int
@@ -1291,11 +1298,11 @@ ruby_snprintf(char *str, size_t n, char const *fmt, ...)
     int ret;
     va_list ap;
 
-    if ((int)n < 1)
+    if (str && (ssize_t)n < 1)
 	return (EOF);
 
     va_start(ap, fmt);
-    ret = ruby_vsnprintf(str, n, fmt, ap);
+    ret = ruby_do_vsnprintf(str, n, fmt, ap);
     va_end(ap);
     return ret;
 }
@@ -1311,14 +1318,19 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
     struct __siov *iov;
     VALUE result = (VALUE)fp->_bf._base;
     char *buf = (char*)fp->_p;
-    size_t len, n;
-    size_t blen = buf - RSTRING_PTR(result), bsiz = fp->_w;
+    long len, n;
+    long blen = buf - RSTRING_PTR(result), bsiz = fp->_w;
 
     if (RBASIC(result)->klass) {
 	rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
     }
-    if ((len = uio->uio_resid) == 0)
+    if (uio->uio_resid == 0)
 	return 0;
+#if SIZE_MAX > LONG_MAX
+    if (uio->uio_resid >= LONG_MAX)
+	rb_raise(rb_eRuntimeError, "too big string");
+#endif
+    len = (long)uio->uio_resid;
     CHECK(len);
     buf += blen;
     fp->_w = bsiz;
@@ -1366,6 +1378,12 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
 # undef LITERAL
 	}
 	value = rb_inspect(value);
+    }
+    else if (SYMBOL_P(value)) {
+	value = rb_sym2str(value);
+	if (sign == ' ' && !rb_str_symname_p(value)) {
+	    value = rb_str_inspect(value);
+	}
     }
     else {
 	value = rb_obj_as_string(value);

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # = ostruct.rb: OpenStruct implementation
 #
@@ -15,65 +15,64 @@
 # accomplished by using Ruby's metaprogramming to define methods on the class
 # itself.
 #
-# == Examples:
+# == Examples
 #
-#   require 'ostruct'
+#   require "ostruct"
 #
 #   person = OpenStruct.new
-#   person.name    = "John Smith"
-#   person.age     = 70
-#   person.pension = 300
+#   person.name = "John Smith"
+#   person.age  = 70
 #
-#   puts person.name     # -> "John Smith"
-#   puts person.age      # -> 70
-#   puts person.address  # -> nil
+#   person.name      # => "John Smith"
+#   person.age       # => 70
+#   person.address   # => nil
 #
-# An OpenStruct employs a Hash internally to store the methods and values and
-# can even be initialized with one:
+# An OpenStruct employs a Hash internally to store the attributes and values
+# and can even be initialized with one:
 #
-#   australia = OpenStruct.new(:country => "Australia", :population => 20_000_000)
-#   p australia   # -> <OpenStruct country="Australia" population=20000000>
+#   australia = OpenStruct.new(:country => "Australia", :capital => "Canberra")
+#     # => #<OpenStruct country="Australia", capital="Canberra">
 #
-# Hash keys with spaces or characters that would normally not be able to use for
-# method calls (e.g. ()[]*) will not be immediately available on the
-# OpenStruct object as a method for retrieval or assignment, but can be still be
-# reached through the Object#send method.
+# Hash keys with spaces or characters that could normally not be used for
+# method calls (e.g. <code>()[]*</code>) will not be immediately available
+# on the OpenStruct object as a method for retrieval or assignment, but can
+# still be reached through the Object#send method.
 #
 #   measurements = OpenStruct.new("length (in inches)" => 24)
-#   measurements.send("length (in inches)")  # -> 24
+#   measurements.send("length (in inches)")   # => 24
 #
-#   data_point = OpenStruct.new(:queued? => true)
-#   data_point.queued?                       # -> true
-#   data_point.send("queued?=",false)
-#   data_point.queued?                       # -> false
+#   message = OpenStruct.new(:queued? => true)
+#   message.queued?                           # => true
+#   message.send("queued?=", false)
+#   message.queued?                           # => false
 #
-# Removing the presence of a method requires the execution the delete_field
-# method as setting the property value to +nil+ will not remove the method.
+# Removing the presence of an attribute requires the execution of the
+# delete_field method as setting the property value to +nil+ will not
+# remove the attribute.
 #
-#   first_pet = OpenStruct.new(:name => 'Rowdy', :owner => 'John Smith')
+#   first_pet  = OpenStruct.new(:name => "Rowdy", :owner => "John Smith")
+#   second_pet = OpenStruct.new(:name => "Rowdy")
+#
 #   first_pet.owner = nil
-#   second_pet = OpenStruct.new(:name => 'Rowdy')
-#
-#   first_pet == second_pet   # -> false
+#   first_pet                 # => #<OpenStruct name="Rowdy", owner=nil>
+#   first_pet == second_pet   # => false
 #
 #   first_pet.delete_field(:owner)
-#   first_pet == second_pet   # -> true
+#   first_pet                 # => #<OpenStruct name="Rowdy">
+#   first_pet == second_pet   # => true
 #
 #
-# == Implementation:
+# == Implementation
 #
 # An OpenStruct utilizes Ruby's method lookup structure to find and define the
-# necessary methods for properties. This is accomplished through the method
-# method_missing and define_method.
+# necessary methods for properties. This is accomplished through the methods
+# method_missing and define_singleton_method.
 #
 # This should be a consideration if there is a concern about the performance of
 # the objects that are created, as there is much more overhead in the setting
 # of these properties compared to using a Hash or a Struct.
 #
 class OpenStruct
-  class << self # :nodoc:
-    alias allocate new
-  end
 
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
@@ -83,11 +82,11 @@ class OpenStruct
   # (can be a Hash, an OpenStruct or a Struct).
   # For example:
   #
-  #   require 'ostruct'
-  #   hash = { "country" => "Australia", :population => 20_000_000 }
+  #   require "ostruct"
+  #   hash = { "country" => "Australia", :capital => "Canberra" }
   #   data = OpenStruct.new(hash)
   #
-  #   p data        # -> <OpenStruct country="Australia" population=20000000>
+  #   data   # => #<OpenStruct country="Australia", capital="Canberra">
   #
   def initialize(hash=nil)
     @table = {}
@@ -99,33 +98,48 @@ class OpenStruct
     end
   end
 
-  # Duplicate an OpenStruct object members.
-  def initialize_copy(orig)
+  # Duplicates an OpenStruct object's Hash table.
+  def initialize_copy(orig) # :nodoc:
     super
     @table = @table.dup
   end
 
   #
+  # call-seq:
+  #   ostruct.to_h                        -> hash
+  #   ostruct.to_h {|name, value| block } -> hash
+  #
   # Converts the OpenStruct to a hash with keys representing
-  # each attribute (as symbols) and their corresponding values
-  # Example:
+  # each attribute (as symbols) and their corresponding values.
   #
-  #   require 'ostruct'
-  #   data = OpenStruct.new("country" => "Australia", :population => 20_000_000)
-  #   data.to_h   # => {:country => "Australia", :population => 20000000 }
+  # If a block is given, the results of the block on each pair of
+  # the receiver will be used as pairs.
   #
-  def to_h
-    @table.dup
+  #   require "ostruct"
+  #   data = OpenStruct.new("country" => "Australia", :capital => "Canberra")
+  #   data.to_h   # => {:country => "Australia", :capital => "Canberra" }
+  #   data.to_h {|name, value| [name.to_s, value.upcase] }
+  #               # => {"country" => "AUSTRALIA", "capital" => "CANBERRA" }
+  #
+  def to_h(&block)
+    if block_given?
+      @table.to_h(&block)
+    else
+      @table.dup
+    end
   end
 
   #
-  # Yields all attributes (as a symbol) along with the corresponding values
-  # or returns an enumerator if not block is given.
-  # Example:
+  # :call-seq:
+  #   ostruct.each_pair {|name, value| block }  -> ostruct
+  #   ostruct.each_pair                         -> Enumerator
   #
-  #   require 'ostruct'
-  #   data = OpenStruct.new("country" => "Australia", :population => 20_000_000)
-  #   data.each_pair.to_a  # => [[:country, "Australia"], [:population, 20000000]]
+  # Yields all attributes (as symbols) along with the corresponding values
+  # or returns an enumerator if no block is given.
+  #
+  #   require "ostruct"
+  #   data = OpenStruct.new("country" => "Australia", :capital => "Canberra")
+  #   data.each_pair.to_a   # => [[:country, "Australia"], [:capital, "Canberra"]]
   #
   def each_pair
     return to_enum(__method__) { @table.size } unless block_given?
@@ -155,15 +169,12 @@ class OpenStruct
     begin
       @modifiable = true
     rescue
-      raise RuntimeError, "can't modify frozen #{self.class}", caller(3)
+      exception_class = defined?(FrozenError) ? FrozenError : RuntimeError
+      raise exception_class, "can't modify frozen #{self.class}", caller(3)
     end
     @table
   end
   private :modifiable?
-
-  # ::Kernel.warn("#{caller(1, 1)[0]}: do not use OpenStruct#modifiable")
-  alias modifiable modifiable? # :nodoc:
-  protected :modifiable
 
   #
   # Used internally to defined properties on the
@@ -180,67 +191,88 @@ class OpenStruct
   end
   private :new_ostruct_member!
 
-  # ::Kernel.warn("#{caller(1, 1)[0]}: do not use OpenStruct#new_ostruct_member")
-  alias new_ostruct_member new_ostruct_member! # :nodoc:
-  protected :new_ostruct_member
-
   def freeze
     @table.each_key {|key| new_ostruct_member!(key)}
     super
   end
 
-  def respond_to_missing?(mid, include_private = false)
+  def respond_to_missing?(mid, include_private = false) # :nodoc:
     mname = mid.to_s.chomp("=").to_sym
-    @table.key?(mname) || super
+    defined?(@table) && @table.key?(mname) || super
   end
 
   def method_missing(mid, *args) # :nodoc:
     len = args.length
     if mname = mid[/.*(?==\z)/m]
       if len != 1
-        raise ArgumentError, "wrong number of arguments (#{len} for 1)", caller(1)
+        raise ArgumentError, "wrong number of arguments (given #{len}, expected 1)", caller(1)
       end
       modifiable?[new_ostruct_member!(mname)] = args[0]
-    elsif len == 0
+    elsif len == 0 # and /\A[a-z_]\w*\z/ =~ mid #
       if @table.key?(mid)
         new_ostruct_member!(mid) unless frozen?
         @table[mid]
       end
+    elsif @table.key?(mid)
+      raise ArgumentError, "wrong number of arguments (given #{len}, expected 0)"
     else
-      err = NoMethodError.new "undefined method `#{mid}' for #{self}", mid, args
-      err.set_backtrace caller(1)
-      raise err
+      begin
+        super
+      rescue NoMethodError => err
+        err.backtrace.shift
+        raise
+      end
     end
   end
 
-  # Returns the value of a member.
   #
-  #   person = OpenStruct.new('name' => 'John Smith', 'age' => 70)
-  #   person[:age] # => 70, same as ostruct.age
+  # :call-seq:
+  #   ostruct[name]  -> object
+  #
+  # Returns the value of an attribute.
+  #
+  #   require "ostruct"
+  #   person = OpenStruct.new("name" => "John Smith", "age" => 70)
+  #   person[:age]   # => 70, same as person.age
   #
   def [](name)
     @table[name.to_sym]
   end
 
   #
-  # Sets the value of a member.
+  # :call-seq:
+  #   ostruct[name] = obj  -> obj
   #
-  #   person = OpenStruct.new('name' => 'John Smith', 'age' => 70)
-  #   person[:age] = 42 # => equivalent to ostruct.age = 42
-  #   person.age # => 42
+  # Sets the value of an attribute.
+  #
+  #   require "ostruct"
+  #   person = OpenStruct.new("name" => "John Smith", "age" => 70)
+  #   person[:age] = 42   # equivalent to person.age = 42
+  #   person.age          # => 42
   #
   def []=(name, value)
     modifiable?[new_ostruct_member!(name)] = value
   end
 
   #
-  # Retrieves the value object corresponding to the each +name+
-  # objects repeatedly.
+  # :call-seq:
+  #   ostruct.dig(name, ...)  -> object
   #
-  #   address = OpenStruct.new('city' => "Anytown NC", 'zip' => 12345)
-  #   person = OpenStruct.new('name' => 'John Smith', 'address' => address)
-  #   person.dig(:address, 'zip') # => 12345
-  #   person.dig(:business_address, 'zip') # => nil
+  # Extracts the nested value specified by the sequence of +name+
+  # objects by calling +dig+ at each step, returning +nil+ if any
+  # intermediate step is +nil+.
+  #
+  #   require "ostruct"
+  #   address = OpenStruct.new("city" => "Anytown NC", "zip" => 12345)
+  #   person  = OpenStruct.new("name" => "John Smith", "address" => address)
+  #
+  #   person.dig(:address, "zip")            # => 12345
+  #   person.dig(:business_address, "zip")   # => nil
+  #
+  #   data = OpenStruct.new(:array => [1, [2, 3]])
+  #
+  #   data.dig(:array, 1, 0)   # => 2
+  #   data.dig(:array, 0, 0)   # TypeError: Integer does not have #dig method
   #
   def dig(name, *names)
     begin
@@ -252,19 +284,25 @@ class OpenStruct
   end
 
   #
-  # Remove the named field from the object. Returns the value that the field
+  # Removes the named field from the object. Returns the value that the field
   # contained if it was defined.
   #
-  #   require 'ostruct'
+  #   require "ostruct"
   #
-  #   person = OpenStruct.new('name' => 'John Smith', 'age' => 70)
+  #   person = OpenStruct.new(name: "John", age: 70, pension: 300)
   #
-  #   person.delete_field('name')  # => 'John Smith'
+  #   person.delete_field("age")   # => 70
+  #   person                       # => #<OpenStruct name="John", pension=300>
+  #
+  # Setting the value to +nil+ will not remove the attribute:
+  #
+  #   person.pension = nil
+  #   person                 # => #<OpenStruct name="John", pension=nil>
   #
   def delete_field(name)
     sym = name.to_sym
     begin
-      singleton_class.__send__(:remove_method, sym, "#{sym}=")
+      singleton_class.remove_method(sym, "#{sym}=")
     rescue NameError
     end
     @table.delete(sym) do
@@ -278,25 +316,20 @@ class OpenStruct
   # Returns a string containing a detailed summary of the keys and values.
   #
   def inspect
-    str = "#<#{self.class}"
-
     ids = (Thread.current[InspectKey] ||= [])
     if ids.include?(object_id)
-      return str << ' ...>'
-    end
-
-    ids << object_id
-    begin
-      first = true
-      for k,v in @table
-        str << "," unless first
-        first = false
-        str << " #{k}=#{v.inspect}"
+      detail = ' ...'
+    else
+      ids << object_id
+      begin
+        detail = @table.map do |key, value|
+          " #{key}=#{value.inspect}"
+        end.join(',')
+      ensure
+        ids.pop
       end
-      return str << '>'
-    ensure
-      ids.pop
     end
+    ['#<', self.class, detail, '>'].join
   end
   alias :to_s :inspect
 
@@ -308,6 +341,14 @@ class OpenStruct
   # Compares this object and +other+ for equality.  An OpenStruct is equal to
   # +other+ when +other+ is an OpenStruct and the two objects' Hash tables are
   # equal.
+  #
+  #   require "ostruct"
+  #   first_pet  = OpenStruct.new("name" => "Rowdy")
+  #   second_pet = OpenStruct.new(:name  => "Rowdy")
+  #   third_pet  = OpenStruct.new("name" => "Rowdy", :age => nil)
+  #
+  #   first_pet == second_pet   # => true
+  #   first_pet == third_pet    # => false
   #
   def ==(other)
     return false unless other.kind_of?(OpenStruct)
@@ -324,9 +365,11 @@ class OpenStruct
     @table.eql?(other.table!)
   end
 
-  # Compute a hash-code for this OpenStruct.
-  # Two hashes with the same content will have the same hash code
-  # (and will be eql?).
+  # Computes a hash code for this OpenStruct.
+  # Two OpenStruct objects with the same content will have the same hash code
+  # (and will compare using #eql?).
+  #
+  # See also Object#hash.
   def hash
     @table.hash
   end

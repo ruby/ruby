@@ -21,12 +21,13 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
     @name = api_data[:name]
     @version = Gem::Version.new api_data[:number]
     @platform = Gem::Platform.new api_data[:platform]
+    @original_platform = api_data[:platform]
     @dependencies = api_data[:dependencies].map do |name, ver|
       Gem::Dependency.new name, ver.split(/\s*,\s*/)
     end
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class === other and
       @set          == other.set and
       @name         == other.name and
@@ -45,7 +46,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
     Gem::Platform.match @platform
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[APISpecification', ']' do
       q.breakable
       q.text "name: #{name}"
@@ -73,7 +74,11 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
     @spec ||=
       begin
         tuple = Gem::NameTuple.new @name, @version, @platform
+        source.fetch_spec tuple
+      rescue Gem::RemoteFetcher::FetchError
+        raise if @original_platform == @platform
 
+        tuple = Gem::NameTuple.new @name, @version, @original_platform
         source.fetch_spec tuple
       end
   end
@@ -83,4 +88,3 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   end
 
 end
-

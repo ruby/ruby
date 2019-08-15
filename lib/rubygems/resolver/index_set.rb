@@ -5,11 +5,11 @@
 
 class Gem::Resolver::IndexSet < Gem::Resolver::Set
 
-  def initialize source = nil # :nodoc:
+  def initialize(source = nil) # :nodoc:
     super()
 
     @f =
-      if source then
+      if source
         sources = Gem::SourceList.from [source]
 
         Gem::SpecFetcher.new sources
@@ -36,7 +36,7 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
   # Return an array of IndexSpecification objects matching
   # DependencyRequest +req+.
 
-  def find_all req
+  def find_all(req)
     res = []
 
     return res unless @remote
@@ -44,7 +44,7 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
     name = req.dependency.name
 
     @all[name].each do |uri, n|
-      if req.match? n, @prerelease then
+      if req.match? n, @prerelease
         res << Gem::Resolver::IndexSpecification.new(
           self, n.name, n.version, uri, n.platform)
       end
@@ -53,7 +53,7 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
     res
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[IndexSet', ']' do
       q.breakable
       q.text 'sources:'
@@ -78,4 +78,3 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
   end
 
 end
-

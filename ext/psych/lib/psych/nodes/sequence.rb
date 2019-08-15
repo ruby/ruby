@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 module Psych
   module Nodes
     ###
@@ -77,6 +77,8 @@ module Psych
         @implicit = implicit
         @style    = style
       end
+
+      def sequence?; true; end
     end
   end
 end

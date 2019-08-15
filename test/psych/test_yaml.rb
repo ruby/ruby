@@ -1,5 +1,5 @@
 # -*- coding: us-ascii; mode: ruby; ruby-indent-level: 4; tab-width: 4 -*-
-# frozen_string_literal: false
+# frozen_string_literal: true
 #												vim:sw=4:ts=4
 # $Id$
 #
@@ -512,7 +512,7 @@ EOY
 
 	def test_spec_log_file
 		doc_ct = 0
-		Psych::load_documents( <<EOY
+		Psych::load_stream( <<EOY
 ---
 Time: 2001-11-23 15:01:42 -05:00
 User: ed
@@ -585,7 +585,7 @@ EOY
 
 	def test_spec_oneline_docs
 		doc_ct = 0
-		Psych::load_documents( <<EOY
+		Psych::load_stream( <<EOY
 # The following is a sequence of three documents.
 # The first contains an empty mapping, the second
 # an empty sequence, and the last an empty string.
