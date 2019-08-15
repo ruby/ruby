@@ -27,10 +27,11 @@ class TestProtocol < Test::Unit::TestCase
     end
   end
 
-  def create_mockio(capacity: 100)
+  def create_mockio(capacity: 100, max: nil)
     mockio = Object.new
     mockio.instance_variable_set(:@str, +'')
     mockio.instance_variable_set(:@capacity, capacity)
+    mockio.instance_variable_set(:@max, max)
     def mockio.string; @str; end
     def mockio.to_io; self; end
     def mockio.wait_writable(sec); sleep sec; false; end
@@ -43,10 +44,11 @@ class TestProtocol < Test::Unit::TestCase
         end
       end
       len = 0
+      max = @max ? [@capacity, @str.bytesize + @max].min : @capacity
       strs.each do |str|
         len1 = @str.bytesize
-        break if @capacity <= len1
-        @str << str.byteslice(0, @capacity - @str.bytesize)
+        break if max <= len1
+        @str << str.byteslice(0, max - @str.bytesize)
         len2 = @str.bytesize
         len += len2 - len1
       end
@@ -56,11 +58,7 @@ class TestProtocol < Test::Unit::TestCase
   end
 
   def test_write0_multibyte
-    mockio = create_mockio(capacity: 1)
-    def mockio.write_nonblock(str, *strs, **kw)
-      @str << str.byteslice(0, 1)
-      1
-    end
+    mockio = create_mockio(max: 1)
     io = Net::BufferedIO.new(mockio)
     assert_equal(3, io.write("\u3042"))
   end

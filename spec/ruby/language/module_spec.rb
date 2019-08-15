@@ -34,29 +34,29 @@ describe "The module keyword" do
   end
 
   it "raises a TypeError if the constant is a Class" do
-    lambda do
+    -> do
       module ModuleSpecs::Modules::Klass; end
     end.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the constant is a String" do
-    lambda { module ModuleSpecs::Modules::A; end }.should raise_error(TypeError)
+    -> { module ModuleSpecs::Modules::A; end }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the constant is a Fixnum" do
-    lambda { module ModuleSpecs::Modules::B; end }.should raise_error(TypeError)
+    -> { module ModuleSpecs::Modules::B; end }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the constant is nil" do
-    lambda { module ModuleSpecs::Modules::C; end }.should raise_error(TypeError)
+    -> { module ModuleSpecs::Modules::C; end }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the constant is true" do
-    lambda { module ModuleSpecs::Modules::D; end }.should raise_error(TypeError)
+    -> { module ModuleSpecs::Modules::D; end }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the constant is false" do
-    lambda { module ModuleSpecs::Modules::D; end }.should raise_error(TypeError)
+    -> { module ModuleSpecs::Modules::D; end }.should raise_error(TypeError)
   end
 end
 

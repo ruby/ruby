@@ -21,7 +21,7 @@ Usage:  irb.rb [options] [programfile] [arguments]
 		    オブジェクトの作成方法を 0 から 3 のいずれかに設定する.
   --echo	    実行結果を表示する(デフォルト).
   --noecho	    実行結果を表示しない.
-  --inspect	    結果出力にinspectを用いる(bcモード以外はデフォルト).
+  --inspect	    結果出力にinspectを用いる.
   --noinspect	    結果出力にinspectを用いない.
   --readline	    readlineライブラリを利用する.
   --noreadline	    readlineライブラリを利用しない.

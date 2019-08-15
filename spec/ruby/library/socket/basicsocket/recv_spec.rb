@@ -107,7 +107,7 @@ describe 'BasicSocket#recv' do
 
     describe 'using an unbound socket' do
       it 'blocks the caller' do
-        lambda { @server.recv(4) }.should block_caller
+        -> { @server.recv(4) }.should block_caller
       end
     end
 
@@ -118,7 +118,7 @@ describe 'BasicSocket#recv' do
 
       describe 'without any data available' do
         it 'blocks the caller' do
-          lambda { @server.recv(4) }.should block_caller
+          -> { @server.recv(4) }.should block_caller
         end
       end
 
@@ -144,7 +144,7 @@ describe 'BasicSocket#recv' do
 
           @server.recv(2).should == 'he'
 
-          lambda { @server.recv(4) }.should block_caller
+          -> { @server.recv(4) }.should block_caller
         end
 
         it 'takes a peek at the data when using the MSG_PEEK flag' do

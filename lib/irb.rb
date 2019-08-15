@@ -110,9 +110,9 @@ require "irb/version"
 #
 # === Auto indentation
 #
-# To enable auto-indent mode in irb, add the following to your +.irbrc+:
+# To disable auto-indent mode in irb, add the following to your +.irbrc+:
 #
-#     IRB.conf[:AUTO_INDENT] = true
+#     IRB.conf[:AUTO_INDENT] = false
 #
 # === Autocompletion
 #
@@ -122,13 +122,12 @@ require "irb/version"
 #
 # === History
 #
-# By default, irb disables history and will not store any commands you used.
+# By default, irb will store the last 1000 commands you used in
+# <code>~/.irb_history</code>.
 #
-# If you want to enable history, add the following to your +.irbrc+:
+# If you want to disable history, add the following to your +.irbrc+:
 #
-#     IRB.conf[:SAVE_HISTORY] = 1000
-#
-# This will now store the last 1000 commands in <code>~/.irb_history</code>.
+#     IRB.conf[:SAVE_HISTORY] = nil
 #
 # See IRB::Context#save_history= for more information.
 #
@@ -141,7 +140,7 @@ require "irb/version"
 # This example can be used in your +.irbrc+
 #
 #     IRB.conf[:PROMPT][:MY_PROMPT] = { # name of prompt mode
-#       :AUTO_INDENT => true,           # enables auto-indent mode
+#       :AUTO_INDENT => false,          # disables auto-indent mode
 #       :PROMPT_I =>  ">> ",		# simple prompt
 #       :PROMPT_S => nil,		# prompt for continuated strings
 #       :PROMPT_C => nil,		# prompt for continuated statement
@@ -464,7 +463,8 @@ module IRB
         end
         if @context.auto_indent_mode and !@context.io.respond_to?(:auto_indent)
           unless ltype
-            ind = prompt(@context.prompt_i, ltype, indent, line_no)[/.*\z/].size +
+            prompt_i = @context.prompt_i.nil? ? "" : @context.prompt_i
+            ind = prompt(prompt_i, ltype, indent, line_no)[/.*\z/].size +
               indent * 2 - p.size
             ind += 2 if continue
             @context.io.prompt = p + " " * ind if ind > 0
@@ -670,10 +670,18 @@ module IRB
         when "l"
           ltype
         when "i"
-          if $1
-            format("%" + $1 + "d", indent)
+          if indent < 0
+            if $1
+              "-".rjust($1.to_i)
+            else
+              "-"
+            end
           else
-            indent.to_s
+            if $1
+              format("%" + $1 + "d", indent)
+            else
+              indent.to_s
+            end
           end
         when "n"
           if $1
@@ -797,7 +805,7 @@ class Binding
   #
   # See IRB@IRB+Usage for more information.
   def irb
-    IRB.setup(eval("__FILE__"), argv: [])
+    IRB.setup(source_location[0], argv: [])
     workspace = IRB::WorkSpace.new(self)
     STDOUT.print(workspace.code_around_binding)
     IRB::Irb.new(workspace).run(IRB.conf)

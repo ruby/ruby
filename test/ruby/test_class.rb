@@ -329,18 +329,22 @@ class TestClass < Test::Unit::TestCase
     end;
   end
 
-  module M
-    C = 1
-
-    def self.m
-      C
-    end
+  class CloneTest
+    def foo; TEST; end
   end
 
-  def test_constant_access_from_method_in_cloned_module # [ruby-core:47834]
-    m = M.dup
-    assert_equal 1, m::C
-    assert_equal 1, m.m
+  CloneTest1 = CloneTest.clone
+  CloneTest2 = CloneTest.clone
+  class CloneTest1
+    TEST = :C1
+  end
+  class CloneTest2
+    TEST = :C2
+  end
+
+  def test_constant_access_from_method_in_cloned_class
+    assert_equal :C1, CloneTest1.new.foo, '[Bug #15877]'
+    assert_equal :C2, CloneTest2.new.foo, '[Bug #15877]'
   end
 
   def test_invalid_superclass

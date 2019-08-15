@@ -13,7 +13,7 @@ describe "Struct.new" do
     first.should == Struct::Person
 
     second = nil
-    lambda {
+    -> {
       second = Struct.new('Person', :hair, :sex)
     }.should complain(/redefining constant/)
     second.should == Struct::Person
@@ -49,35 +49,35 @@ describe "Struct.new" do
 
 
   it "fails with invalid constant name as first argument" do
-    lambda { Struct.new('animal', :name, :legs, :eyeballs) }.should raise_error(NameError)
+    -> { Struct.new('animal', :name, :legs, :eyeballs) }.should raise_error(NameError)
   end
 
   it "raises a TypeError if object doesn't respond to to_sym" do
-    lambda { Struct.new(:animal, mock('giraffe'))      }.should raise_error(TypeError)
-    lambda { Struct.new(:animal, 1.0)                  }.should raise_error(TypeError)
-    lambda { Struct.new(:animal, Time.now)             }.should raise_error(TypeError)
-    lambda { Struct.new(:animal, Class)                }.should raise_error(TypeError)
-    lambda { Struct.new(:animal, nil)                  }.should raise_error(TypeError)
-    lambda { Struct.new(:animal, true)                 }.should raise_error(TypeError)
-    lambda { Struct.new(:animal, ['chris', 'evan'])    }.should raise_error(TypeError)
+    -> { Struct.new(:animal, mock('giraffe'))      }.should raise_error(TypeError)
+    -> { Struct.new(:animal, 1.0)                  }.should raise_error(TypeError)
+    -> { Struct.new(:animal, Time.now)             }.should raise_error(TypeError)
+    -> { Struct.new(:animal, Class)                }.should raise_error(TypeError)
+    -> { Struct.new(:animal, nil)                  }.should raise_error(TypeError)
+    -> { Struct.new(:animal, true)                 }.should raise_error(TypeError)
+    -> { Struct.new(:animal, ['chris', 'evan'])    }.should raise_error(TypeError)
   end
 
   ruby_version_is ""..."2.5" do
     it "raises a TypeError if an argument is a Hash" do
-      lambda { Struct.new(:animal, { name: 'chris' }) }.should raise_error(TypeError)
+      -> { Struct.new(:animal, { name: 'chris' }) }.should raise_error(TypeError)
     end
   end
 
   ruby_version_is "2.5" do
     it "raises a ArgumentError if passed a Hash with an unknown key" do
-      lambda { Struct.new(:animal, { name: 'chris' }) }.should raise_error(ArgumentError)
+      -> { Struct.new(:animal, { name: 'chris' }) }.should raise_error(ArgumentError)
     end
   end
 
   it "raises a TypeError if object is not a Symbol" do
     obj = mock(':ruby')
     def obj.to_sym() :ruby end
-    lambda { Struct.new(:animal, obj) }.should raise_error(TypeError)
+    -> { Struct.new(:animal, obj) }.should raise_error(TypeError)
   end
 
   it "processes passed block with instance_eval" do
@@ -128,7 +128,7 @@ describe "Struct.new" do
     end
 
     it "fails with too many arguments" do
-      lambda { StructClasses::Ruby.new('2.0', 'i686', true) }.should raise_error(ArgumentError)
+      -> { StructClasses::Ruby.new('2.0', 'i686', true) }.should raise_error(ArgumentError)
     end
 
     it "passes a hash as a normal argument" do

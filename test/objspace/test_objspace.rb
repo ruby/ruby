@@ -106,7 +106,7 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_memsize_of_iseq
-    iseqw = RubyVM::InstructionSequence.compile('def a; a = :b; end')
+    iseqw = RubyVM::InstructionSequence.compile('def a; a = :b; a; end')
     base_obj_size = ObjectSpace.memsize_of(Object.new)
     assert_operator(ObjectSpace.memsize_of(iseqw), :>, base_obj_size)
   end
@@ -400,16 +400,16 @@ class TestObjSpace < Test::Unit::TestCase
         def dump_my_heap_please
           ObjectSpace.trace_object_allocations_start
           GC.start
-          str = "TEST STRING".force_encoding("UTF-8")
+          (str = "TEST STRING").force_encoding("UTF-8")
           ObjectSpace.dump_all().path
         end
 
         puts dump_my_heap_please
       end;
-      skip if /is not supported/ =~ error
-      skip error unless output
-      assert_match(entry, File.readlines(output).grep(/TEST STRING/).join("\n"))
+      assert_nil(error)
+      dump = File.readlines(output)
       File.unlink(output)
+      assert_match(entry, dump.grep(/TEST STRING/).join("\n"))
     end
 
     if defined?(JSON)

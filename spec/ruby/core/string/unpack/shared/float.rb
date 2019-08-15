@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 
 describe :string_unpack_float_le, shared: true do
   it "decodes one float for a single format character" do

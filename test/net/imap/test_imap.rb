@@ -130,12 +130,11 @@ class IMAPTest < Test::Unit::TestCase
   end
 
   def start_server
-    started = false
-    @threads << Thread.new do
-      started = true
+    th = Thread.new do
       yield
     end
-    sleep 0.1 until started
+    @threads << th
+    sleep 0.1 until th.stop?
   end
 
   def test_unexpected_eof
@@ -642,7 +641,7 @@ EOF
 
     begin
       imap = Net::IMAP.new(server_addr, :port => port)
-      resp = imap.append("INBOX", mail)
+      imap.append("INBOX", mail)
       assert_equal(1, requests.length)
       assert_equal("RUBY0001 APPEND INBOX {#{mail.size}}\r\n", requests[0])
       assert_equal(mail, received_mail)
@@ -665,7 +664,6 @@ Subject: hello
 hello world
 EOF
     requests = []
-    received_mail = nil
     start_server do
       sock = server.accept
       begin

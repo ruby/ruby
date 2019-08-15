@@ -49,10 +49,10 @@ describe "String#ljust with length, padding" do
   end
 
   it "raises a TypeError when length can't be converted to an integer" do
-    lambda { "hello".ljust("x")       }.should raise_error(TypeError)
-    lambda { "hello".ljust("x", "y")  }.should raise_error(TypeError)
-    lambda { "hello".ljust([])        }.should raise_error(TypeError)
-    lambda { "hello".ljust(mock('x')) }.should raise_error(TypeError)
+    -> { "hello".ljust("x")       }.should raise_error(TypeError)
+    -> { "hello".ljust("x", "y")  }.should raise_error(TypeError)
+    -> { "hello".ljust([])        }.should raise_error(TypeError)
+    -> { "hello".ljust(mock('x')) }.should raise_error(TypeError)
   end
 
   it "tries to convert padstr to a string using to_str" do
@@ -63,13 +63,13 @@ describe "String#ljust with length, padding" do
   end
 
   it "raises a TypeError when padstr can't be converted" do
-    lambda { "hello".ljust(20, [])        }.should raise_error(TypeError)
-    lambda { "hello".ljust(20, Object.new)}.should raise_error(TypeError)
-    lambda { "hello".ljust(20, mock('x')) }.should raise_error(TypeError)
+    -> { "hello".ljust(20, [])        }.should raise_error(TypeError)
+    -> { "hello".ljust(20, Object.new)}.should raise_error(TypeError)
+    -> { "hello".ljust(20, mock('x')) }.should raise_error(TypeError)
   end
 
   it "raises an ArgumentError when padstr is empty" do
-    lambda { "hello".ljust(10, '') }.should raise_error(ArgumentError)
+    -> { "hello".ljust(10, '') }.should raise_error(ArgumentError)
   end
 
   it "returns subclass instances when called on subclasses" do
@@ -106,7 +106,7 @@ describe "String#ljust with length, padding" do
 
     it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
       pat = "ア".encode Encoding::EUC_JP
-      lambda do
+      -> do
         "あれ".ljust 5, pat
       end.should raise_error(Encoding::CompatibilityError)
     end

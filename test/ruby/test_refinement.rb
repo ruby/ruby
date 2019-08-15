@@ -1562,6 +1562,7 @@ class TestRefinement < Test::Unit::TestCase
         undef :foo
       end
     end
+    ext
   end
 
   def test_call_refined_method_in_duplicate_module
@@ -2291,6 +2292,7 @@ class TestRefinement < Test::Unit::TestCase
       end
     end
     assert_equal("[C[A[B]]]", c.new.foo, '[ruby-dev:50390] [Bug #14232]')
+    d
   end
 
   private

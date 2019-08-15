@@ -1,0 +1,59 @@
+name: macos
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - '*'
+jobs:
+  latest:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        test_task: [ "check", "test-bundler", "test-bundled-gems" ]
+    steps:
+      - name: Disable Firewall
+        run: |
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+      - name: Install libraries
+        run: |
+          brew update
+          brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+      # Not using official actions/checkout because it's unstable and sometimes doesn't work for a fork.
+      - name: Checkout ruby/ruby
+        run: git clone --depth=50 https://github.com/ruby/ruby . && git reset --hard "$GITHUB_SHA"
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        if: github.event_name == 'push'
+      - name: Checkout a pull request
+        run: git clone --depth=50 "--branch=$GITHUB_BRANCH" "https://github.com/${GITHUB_REPO}" . && git reset --hard "$GITHUB_REV"
+        env:
+          GITHUB_REV: ${{ github.event.pull_request.head.sha }}
+          GITHUB_BRANCH: ${{ github.event.pull_request.head.ref }}
+          GITHUB_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        if: github.event_name == 'pull_request'
+      - name: Set ENV
+        run: |
+          echo '##[set-env name=JOBS]'-j$((1 + $(sysctl -n hw.activecpu)))
+      - run: autoconf
+      - name: configure
+        run: ./configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
+      - run: make $JOBS
+      - name: make check
+        run: make -s ${{ matrix.test_task }}
+        env:
+          TESTOPTS: "$JOBS -q --tty=no"
+          MSPECOPT: "-ff" # not using `-j` because sometimes `mspec -j` silently dies
+        if: matrix.test_task == 'check'
+      # test-bundler/test-bundled-gems are separated because it randomly fails and ends up cancelling `make check`.
+      # TODO: Remove `continue-on-error` once they become stable and also we have a notification for their failure.
+      - name: make test-bundler/test-bundled-gems
+        run: make -s ${{ matrix.test_task }}
+        env:
+          TESTOPTS: "$JOBS -q --tty=no"
+        continue-on-error: true
+        if: matrix.test_task != 'check'
+      - name: Leaked Globals
+        run: make -s leaked-globals

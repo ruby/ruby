@@ -30,7 +30,7 @@ testdata( File.dirname($0) + '/scandata', ARGV ).each do |file|
   begin
     ok = File.read(file)
     s = Racc::GrammarFileScanner.new( ok )
-    sym, (val, lineno) = s.scan
+    sym, (val, _lineno) = s.scan
     if printonly then
       $stderr.puts
       $stderr.puts val

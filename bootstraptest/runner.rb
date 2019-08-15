@@ -140,7 +140,7 @@ End
     # dircolors-like style
     colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
     begin
-      File.read(File.join(__dir__, "../test/colors")).scan(/(\w+)=([^:\n]*)/) do |n, c|
+      File.read(File.join(__dir__, "../tool/colors")).scan(/(\w+)=([^:\n]*)/) do |n, c|
         colors[n] ||= c
       end
     rescue
@@ -171,8 +171,8 @@ End
 end
 
 def erase(e = true)
-  if e and @columns > 0 and !@verbose
-    "\r#{" "*@columns}\r"
+  if e and @columns > 0 and @tty and !@verbose
+    "\e[1K\r"
   else
     ""
   end
@@ -265,12 +265,8 @@ end
 
 def show_limit(testsrc, opt = '', **argh)
   result = get_result_string(testsrc, opt, **argh)
-  $stderr.print '.'
-  $stderr.print @reset
-  $stderr.puts if @verbose
-
-  if @tty
-    $stderr.puts "#{erase}#{result}"
+  if @tty and @verbose
+    $stderr.puts ".{#@reset}\n#{erase}#{result}"
   else
     @errbuf.push result
   end
