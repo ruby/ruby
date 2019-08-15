@@ -1227,7 +1227,7 @@ yaml_parser_roll_indent(yaml_parser_t *parser, ptrdiff_t column,
             return 0;
         }
 
-        parser->indent = column;
+        parser->indent = (int)column;
 
         /* Create a token and insert it into the queue. */
 

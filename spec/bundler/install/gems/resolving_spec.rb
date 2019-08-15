@@ -3,7 +3,7 @@
 RSpec.describe "bundle install with install-time dependencies" do
   it "installs gems with implicit rake dependencies", :ruby_repo do
     install_gemfile <<-G
-      source "file://#{gem_repo1}"
+      source "#{file_uri_for(gem_repo1)}"
       gem "with_implicit_rake_dep"
       gem "another_implicit_rake_dep"
       gem "rake"
@@ -31,7 +31,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     end
 
     install_gemfile <<-G
-      source "file://#{gem_repo2}"
+      source "#{file_uri_for(gem_repo2)}"
       gem "actionpack", "2.3.2"
     G
 
@@ -41,7 +41,7 @@ RSpec.describe "bundle install with install-time dependencies" do
   describe "with crazy rubygem plugin stuff" do
     it "installs plugins" do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "net_b"
       G
 
@@ -50,7 +50,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
     it "installs plugins depended on by other plugins", :ruby_repo do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "net_a"
       G
 
@@ -59,7 +59,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
     it "installs multiple levels of dependencies", :ruby_repo do
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "net_c"
         gem "net_e"
       G
@@ -70,28 +70,28 @@ RSpec.describe "bundle install with install-time dependencies" do
     context "with ENV['DEBUG_RESOLVER'] set" do
       it "produces debug output" do
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "net_c"
           gem "net_e"
         G
 
         bundle :install, :env => { "DEBUG_RESOLVER" => "1" }
 
-        expect(last_command.stderr).to include("Creating possibility state for net_c")
+        expect(err).to include("Creating possibility state for net_c")
       end
     end
 
     context "with ENV['DEBUG_RESOLVER_TREE'] set" do
       it "produces debug output" do
         gemfile <<-G
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "net_c"
           gem "net_e"
         G
 
         bundle :install, :env => { "DEBUG_RESOLVER_TREE" => "1" }
 
-        expect(last_command.stderr).to include(" net_b").
+        expect(err).to include(" net_b").
           and include("Starting resolution").
           and include("Finished resolution").
           and include("Attempting to activate")
@@ -171,7 +171,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
             Ruby\0 (> 9000), which is required by gem 'require_ruby', is not available in the local ruby installation
           E
-          expect(last_command.bundler_err).to end_with(nice_error)
+          expect(err).to end_with(nice_error)
         end
       end
 
@@ -203,7 +203,7 @@ RSpec.describe "bundle install with install-time dependencies" do
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "#{file_uri_for(gem_repo2)}"
         gem 'require_rubygems'
       G
 

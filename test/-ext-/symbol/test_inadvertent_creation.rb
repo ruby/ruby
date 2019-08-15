@@ -482,5 +482,14 @@ module Test_Symbol
         foo.call(name.to_sym => 42)
       end
     end
+
+    def test_iv_get
+      obj = Object.new
+      assert_warning(/not initialized/) do
+        assert_no_immortal_symbol_created("rb_iv_get") do |name|
+          Bug::Symbol.iv_get(obj, name)
+        end
+      end
+    end
   end
 end

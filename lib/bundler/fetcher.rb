@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/vendored_persistent"
+require_relative "vendored_persistent"
 require "cgi"
 require "securerandom"
 require "zlib"
@@ -9,10 +9,10 @@ require "rubygems/request"
 module Bundler
   # Handles all the fetching with the rubygems server
   class Fetcher
-    autoload :CompactIndex, "bundler/fetcher/compact_index"
-    autoload :Downloader, "bundler/fetcher/downloader"
-    autoload :Dependency, "bundler/fetcher/dependency"
-    autoload :Index, "bundler/fetcher/index"
+    autoload :CompactIndex, File.expand_path("fetcher/compact_index", __dir__)
+    autoload :Downloader, File.expand_path("fetcher/downloader", __dir__)
+    autoload :Dependency, File.expand_path("fetcher/dependency", __dir__)
+    autoload :Index, File.expand_path("fetcher/index", __dir__)
 
     # This error is raised when it looks like the network is down
     class NetworkDownError < HTTPError; end
@@ -99,7 +99,8 @@ module Bundler
 
       uri = URI.parse("#{remote_uri}#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}.rz")
       if uri.scheme == "file"
-        Bundler.load_marshal Bundler.rubygems.inflate(Gem.read_binary(uri.path))
+        path = Bundler.rubygems.correct_for_windows_path(uri.path)
+        Bundler.load_marshal Bundler.rubygems.inflate(Gem.read_binary(path))
       elsif cached_spec_path = gemspec_cached_path(spec_file_name)
         Bundler.load_gemspec(cached_spec_path)
       else
@@ -241,7 +242,7 @@ module Bundler
           Bundler.settings[:ssl_client_cert]
         raise SSLError if needs_ssl && !defined?(OpenSSL::SSL)
 
-        con = PersistentHTTP.new "bundler", :ENV
+        con = PersistentHTTP.new :name => "bundler", :proxy => :ENV
         if gem_proxy = Bundler.rubygems.configuration[:http_proxy]
           con.proxy = URI.parse(gem_proxy) if gem_proxy != :no_proxy
         end

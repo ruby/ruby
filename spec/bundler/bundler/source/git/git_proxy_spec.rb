@@ -128,16 +128,20 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     context "when given a SHA as a revision" do
       let(:revision) { "abcd" * 10 }
+      let(:command) { "reset --hard #{revision}" }
 
       it "fails gracefully when resetting to the revision fails" do
         expect(subject).to receive(:git_retry).with(start_with("clone ")) { destination.mkpath }
         expect(subject).to receive(:git_retry).with(start_with("fetch "))
-        expect(subject).to receive(:git).with("reset --hard #{revision}").and_raise(Bundler::Source::Git::GitCommandError, "command")
+        expect(subject).to receive(:git).with(command).and_raise(Bundler::Source::Git::GitCommandError, command)
         expect(subject).not_to receive(:git)
 
         expect { subject.copy_to(destination, submodules) }.
-          to raise_error(Bundler::Source::Git::MissingGitRevisionError,
-            "Revision #{revision} does not exist in the repository #{uri}. Maybe you misspelled it?")
+          to raise_error(
+            Bundler::Source::Git::MissingGitRevisionError,
+            "Git error: command `git #{command}` in directory #{destination} has failed.\n" \
+            "Revision #{revision} does not exist in the repository #{uri}. Maybe you misspelled it?" \
+          )
       end
     end
   end

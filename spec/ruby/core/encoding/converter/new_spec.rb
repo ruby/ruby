@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: binary -*-
 require_relative '../../../spec_helper'
 
 describe "Encoding::Converter.new" do
@@ -23,7 +23,7 @@ describe "Encoding::Converter.new" do
   end
 
   it "raises an Encoding::ConverterNotFoundError if both encodings are the same" do
-    lambda do
+    -> do
       Encoding::Converter.new "utf-8", "utf-8"
     end.should raise_error(Encoding::ConverterNotFoundError)
   end
@@ -65,25 +65,25 @@ describe "Encoding::Converter.new" do
     obj = mock("encoding converter replacement")
     obj.should_receive(:to_str).and_return(1)
 
-    lambda do
+    -> do
       Encoding::Converter.new("us-ascii", "utf-8", replace: obj)
     end.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed true for the replacement object" do
-    lambda do
+    -> do
       Encoding::Converter.new("us-ascii", "utf-8", replace: true)
     end.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed false for the replacement object" do
-    lambda do
+    -> do
       Encoding::Converter.new("us-ascii", "utf-8", replace: false)
     end.should raise_error(TypeError)
   end
 
   it "raises a TypeError if passed a Fixnum for the replacement object" do
-    lambda do
+    -> do
       Encoding::Converter.new("us-ascii", "utf-8", replace: 1)
     end.should raise_error(TypeError)
   end
@@ -96,12 +96,12 @@ describe "Encoding::Converter.new" do
   describe "when passed nil for the replacement object" do
     describe "when the destination encoding is not UTF-8" do
       it "sets the replacement String to '?'" do
-        conv = Encoding::Converter.new("us-ascii", "ascii-8bit", replace: nil)
+        conv = Encoding::Converter.new("us-ascii", "binary", replace: nil)
         conv.replacement.should == "?"
       end
 
       it "sets the replacement String encoding to US-ASCII" do
-        conv = Encoding::Converter.new("us-ascii", "ascii-8bit", replace: nil)
+        conv = Encoding::Converter.new("us-ascii", "binary", replace: nil)
         conv.replacement.encoding.should == Encoding::US_ASCII
       end
 

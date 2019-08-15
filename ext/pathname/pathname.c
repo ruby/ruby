@@ -1092,10 +1092,10 @@ s_glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
 static VALUE
 path_s_glob(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE args[2];
+    VALUE args[3];
     int n;
 
-    n = rb_scan_args(argc, argv, "11", &args[0], &args[1]);
+    n = rb_scan_args(argc, argv, "12", &args[0], &args[1], &args[2]);
     if (rb_block_given_p()) {
         return rb_block_call(rb_cDir, id_glob, n, args, s_glob_i, klass);
     }

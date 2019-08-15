@@ -100,7 +100,7 @@ describe :rational_round, shared: true do
     end
 
     it "raise for a non-existent round mode" do
-      lambda { Rational(10, 4).round(half: :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode: nonsense")
+      -> { Rational(10, 4).round(half: :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode: nonsense")
     end
   end
 end

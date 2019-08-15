@@ -9,14 +9,14 @@ RSpec.describe "bundler plugin install" do
   end
 
   it "shows proper message when gem in not found in the source" do
-    bundle "plugin install no-foo --source file://#{gem_repo1}"
+    bundle "plugin install no-foo --source #{file_uri_for(gem_repo1)}"
 
     expect(err).to include("Could not find")
     plugin_should_not_be_installed("no-foo")
   end
 
   it "installs from rubygems source" do
-    bundle "plugin install foo --source file://#{gem_repo2}"
+    bundle "plugin install foo --source #{file_uri_for(gem_repo2)}"
 
     expect(out).to include("Installed plugin foo")
     plugin_should_be_installed("foo")
@@ -24,18 +24,18 @@ RSpec.describe "bundler plugin install" do
 
   context "plugin is already installed" do
     before do
-      bundle "plugin install foo --source file://#{gem_repo2}"
+      bundle "plugin install foo --source #{file_uri_for(gem_repo2)}"
     end
 
     it "doesn't install plugin again" do
-      bundle "plugin install foo --source file://#{gem_repo2}"
+      bundle "plugin install foo --source #{file_uri_for(gem_repo2)}"
       expect(out).not_to include("Installing plugin foo")
       expect(out).not_to include("Installed plugin foo")
     end
   end
 
   it "installs multiple plugins" do
-    bundle "plugin install foo kung-foo --source file://#{gem_repo2}"
+    bundle "plugin install foo kung-foo --source #{file_uri_for(gem_repo2)}"
 
     expect(out).to include("Installed plugin foo")
     expect(out).to include("Installed plugin kung-foo")
@@ -49,7 +49,7 @@ RSpec.describe "bundler plugin install" do
       build_plugin "kung-foo", "1.1"
     end
 
-    bundle "plugin install foo kung-foo --version '1.0' --source file://#{gem_repo2}"
+    bundle "plugin install foo kung-foo --version '1.0' --source #{file_uri_for(gem_repo2)}"
 
     expect(out).to include("Installing foo 1.0")
     expect(out).to include("Installing kung-foo 1.0")
@@ -73,7 +73,7 @@ RSpec.describe "bundler plugin install" do
         s.write("src/fubar.rb")
       end
     end
-    bundle "plugin install testing --source file://#{gem_repo2}"
+    bundle "plugin install testing --source #{file_uri_for(gem_repo2)}"
 
     bundle "check2", "no-color" => false
     expect(out).to eq("mate")
@@ -86,7 +86,7 @@ RSpec.describe "bundler plugin install" do
         build_plugin "kung-foo", "1.1"
       end
 
-      bundle "plugin install foo kung-foo --version '1.0' --source file://#{gem_repo2}"
+      bundle "plugin install foo kung-foo --version '1.0' --source #{file_uri_for(gem_repo2)}"
 
       expect(out).to include("Installing foo 1.0")
       expect(out).to include("Installing kung-foo 1.0")
@@ -96,7 +96,7 @@ RSpec.describe "bundler plugin install" do
         build_gem "charlie"
       end
 
-      bundle "plugin install charlie --source file://#{gem_repo2}"
+      bundle "plugin install charlie --source #{file_uri_for(gem_repo2)}"
 
       expect(err).to include("plugins.rb was not found")
 
@@ -115,7 +115,7 @@ RSpec.describe "bundler plugin install" do
         end
       end
 
-      bundle "plugin install chaplin --source file://#{gem_repo2}"
+      bundle "plugin install chaplin --source #{file_uri_for(gem_repo2)}"
 
       expect(global_plugin_gem("chaplin-1.0")).not_to be_directory
 
@@ -129,7 +129,7 @@ RSpec.describe "bundler plugin install" do
         s.write "plugins.rb"
       end
 
-      bundle "plugin install foo --git file://#{lib_path("foo-1.0")}"
+      bundle "plugin install foo --git #{file_uri_for(lib_path("foo-1.0"))}"
 
       expect(out).to include("Installed plugin foo")
       plugin_should_be_installed("foo")
@@ -157,7 +157,7 @@ RSpec.describe "bundler plugin install" do
   context "Gemfile eval" do
     it "installs plugins listed in gemfile" do
       gemfile <<-G
-        source 'file://#{gem_repo2}'
+        source '#{file_uri_for(gem_repo2)}'
         plugin 'foo'
         gem 'rack', "1.0.0"
       G
@@ -178,7 +178,7 @@ RSpec.describe "bundler plugin install" do
       end
 
       gemfile <<-G
-        source 'file://#{gem_repo2}'
+        source '#{file_uri_for(gem_repo2)}'
         plugin 'foo', "1.0"
       G
 
@@ -207,12 +207,12 @@ RSpec.describe "bundler plugin install" do
     context "in deployment mode" do
       it "installs plugins" do
         install_gemfile! <<-G
-          source 'file://#{gem_repo2}'
+          source '#{file_uri_for(gem_repo2)}'
           gem 'rack', "1.0.0"
         G
 
         install_gemfile! <<-G, forgotten_command_line_options(:deployment => true)
-          source 'file://#{gem_repo2}'
+          source '#{file_uri_for(gem_repo2)}'
           plugin 'foo'
           gem 'rack', "1.0.0"
         G
@@ -233,7 +233,7 @@ RSpec.describe "bundler plugin install" do
         require "bundler/inline"
 
         gemfile do
-          source 'file://#{gem_repo2}'
+          source '#{file_uri_for(gem_repo2)}'
           plugin 'foo'
         end
       RUBY
@@ -246,7 +246,7 @@ RSpec.describe "bundler plugin install" do
   describe "local plugin" do
     it "is installed when inside an app" do
       gemfile ""
-      bundle "plugin install foo --source file://#{gem_repo2}"
+      bundle "plugin install foo --source #{file_uri_for(gem_repo2)}"
 
       plugin_should_be_installed("foo")
       expect(local_plugin_gem("foo-1.0")).to be_directory
@@ -269,7 +269,7 @@ RSpec.describe "bundler plugin install" do
         end
 
         # inside the app
-        gemfile "source 'file://#{gem_repo2}'\nplugin 'fubar'"
+        gemfile "source '#{file_uri_for(gem_repo2)}'\nplugin 'fubar'"
         bundle "install"
 
         update_repo2 do
@@ -288,7 +288,7 @@ RSpec.describe "bundler plugin install" do
 
         # outside the app
         Dir.chdir tmp
-        bundle "plugin install fubar --source file://#{gem_repo2}"
+        bundle "plugin install fubar --source #{file_uri_for(gem_repo2)}"
       end
 
       it "inside the app takes precedence over global plugin" do
