@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "cgi"
-require "bundler/vendored_thor"
+require_relative "vendored_thor"
 
 module Bundler
   module FriendlyErrors

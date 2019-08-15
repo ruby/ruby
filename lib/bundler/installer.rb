@@ -2,10 +2,10 @@
 
 require "erb"
 require "rubygems/dependency_installer"
-require "bundler/worker"
-require "bundler/installer/parallel_installer"
-require "bundler/installer/standalone"
-require "bundler/installer/gem_installer"
+require_relative "worker"
+require_relative "installer/parallel_installer"
+require_relative "installer/standalone"
+require_relative "installer/gem_installer"
 
 module Bundler
   class Installer
@@ -296,7 +296,7 @@ module Bundler
 
     # returns whether or not a re-resolve was needed
     def resolve_if_needed(options)
-      if !@definition.unlocking? && !options["force"] && !Bundler.settings[:inline] && Bundler.default_lockfile.file?
+      if !@definition.unlocking? && !options["force"] && !options["all-platforms"] && !Bundler.settings[:inline] && Bundler.default_lockfile.file?
         return false if @definition.nothing_changed? && !@definition.missing_specs?
       end
 

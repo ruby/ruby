@@ -110,7 +110,7 @@ describe "A block yielded a single" do
       obj = mock("destructure block keyword arguments")
       obj.should_receive(:to_hash).and_return(1)
 
-      lambda { m([1, 2, 3, obj]) { |a, *b, c, **k| } }.should raise_error(TypeError)
+      -> { m([1, 2, 3, obj]) { |a, *b, c, **k| } }.should raise_error(TypeError)
     end
 
     it "raises the error raised inside #to_hash" do
@@ -118,7 +118,7 @@ describe "A block yielded a single" do
       error = RuntimeError.new("error while converting to a hash")
       obj.should_receive(:to_hash).and_raise(error)
 
-      lambda { m([1, 2, 3, obj]) { |a, *b, c, **k| } }.should raise_error(error)
+      -> { m([1, 2, 3, obj]) { |a, *b, c, **k| } }.should raise_error(error)
     end
 
     it "does not call #to_ary on the Array" do
@@ -169,7 +169,7 @@ describe "A block yielded a single" do
       obj = mock("destructure block arguments")
       obj.should_receive(:to_ary).and_return(1)
 
-      lambda { m(obj) { |a, b| } }.should raise_error(TypeError)
+      -> { m(obj) { |a, b| } }.should raise_error(TypeError)
     end
   end
 end
@@ -332,14 +332,14 @@ describe "A block" do
       obj = mock("block yield to_ary invalid")
       obj.should_receive(:to_ary).and_return(1)
 
-      lambda { @y.s(obj) { |a, b| } }.should raise_error(TypeError)
+      -> { @y.s(obj) { |a, b| } }.should raise_error(TypeError)
     end
 
     it "raises the original exception if #to_ary raises an exception" do
       obj = mock("block yield to_ary raising an exception")
       obj.should_receive(:to_ary).and_raise(ZeroDivisionError)
 
-      lambda { @y.s(obj) { |a, b| } }.should raise_error(ZeroDivisionError)
+      -> { @y.s(obj) { |a, b| } }.should raise_error(ZeroDivisionError)
     end
 
   end
@@ -396,7 +396,7 @@ describe "A block" do
       obj = mock("block yield to_ary invalid")
       obj.should_receive(:to_ary).and_return(1)
 
-      lambda { @y.s(obj) { |a, *b| } }.should raise_error(TypeError)
+      -> { @y.s(obj) { |a, *b| } }.should raise_error(TypeError)
     end
   end
 
@@ -521,7 +521,7 @@ describe "A block" do
       obj = mock("block yield to_ary invalid")
       obj.should_receive(:to_ary).and_return(1)
 
-      lambda { @y.s(obj) { |a, | } }.should raise_error(TypeError)
+      -> { @y.s(obj) { |a, | } }.should raise_error(TypeError)
     end
   end
 
@@ -563,7 +563,7 @@ describe "A block" do
       obj = mock("block yield to_ary invalid")
       obj.should_receive(:to_ary).and_return(1)
 
-      lambda { @y.s(obj) { |(a, b)| } }.should raise_error(TypeError)
+      -> { @y.s(obj) { |(a, b)| } }.should raise_error(TypeError)
     end
   end
 
@@ -604,7 +604,7 @@ describe "A block" do
       obj = mock("block yield to_ary invalid")
       obj.should_receive(:to_ary).and_return(1)
 
-      lambda { @y.s(obj) { |(a, b), c| } }.should raise_error(TypeError)
+      -> { @y.s(obj) { |(a, b), c| } }.should raise_error(TypeError)
     end
   end
 
@@ -663,9 +663,9 @@ describe "A block" do
 
   describe "taking identically-named arguments" do
     it "raises a SyntaxError for standard arguments" do
-      lambda { eval "lambda { |x,x| }" }.should raise_error(SyntaxError)
-      lambda { eval "->(x,x) {}" }.should raise_error(SyntaxError)
-      lambda { eval "Proc.new { |x,x| }" }.should raise_error(SyntaxError)
+      -> { eval "lambda { |x,x| }" }.should raise_error(SyntaxError)
+      -> { eval "->(x,x) {}" }.should raise_error(SyntaxError)
+      -> { eval "Proc.new { |x,x| }" }.should raise_error(SyntaxError)
     end
 
     it "accepts unnamed arguments" do
@@ -686,27 +686,27 @@ describe "Block-local variables" do
   end
 
   it "can not have the same name as one of the standard parameters" do
-    lambda { eval "[1].each {|foo; foo| }" }.should raise_error(SyntaxError)
-    lambda { eval "[1].each {|foo, bar; glark, bar| }" }.should raise_error(SyntaxError)
+    -> { eval "[1].each {|foo; foo| }" }.should raise_error(SyntaxError)
+    -> { eval "[1].each {|foo, bar; glark, bar| }" }.should raise_error(SyntaxError)
   end
 
   it "can not be prefixed with an asterisk" do
-    lambda { eval "[1].each {|foo; *bar| }" }.should raise_error(SyntaxError)
-    lambda do
+    -> { eval "[1].each {|foo; *bar| }" }.should raise_error(SyntaxError)
+    -> do
       eval "[1].each {|foo, bar; glark, *fnord| }"
     end.should raise_error(SyntaxError)
   end
 
   it "can not be prefixed with an ampersand" do
-    lambda { eval "[1].each {|foo; &bar| }" }.should raise_error(SyntaxError)
-    lambda do
+    -> { eval "[1].each {|foo; &bar| }" }.should raise_error(SyntaxError)
+    -> do
       eval "[1].each {|foo, bar; glark, &fnord| }"
     end.should raise_error(SyntaxError)
   end
 
   it "can not be assigned default values" do
-    lambda { eval "[1].each {|foo; bar=1| }" }.should raise_error(SyntaxError)
-    lambda do
+    -> { eval "[1].each {|foo; bar=1| }" }.should raise_error(SyntaxError)
+    -> do
       eval "[1].each {|foo, bar; glark, fnord=:fnord| }"
     end.should raise_error(SyntaxError)
   end
@@ -717,8 +717,8 @@ describe "Block-local variables" do
   end
 
   it "only allow a single semi-colon in the parameter list" do
-    lambda { eval "[1].each {|foo; bar; glark| }" }.should raise_error(SyntaxError)
-    lambda { eval "[1].each {|; bar; glark| }" }.should raise_error(SyntaxError)
+    -> { eval "[1].each {|foo; bar; glark| }" }.should raise_error(SyntaxError)
+    -> { eval "[1].each {|; bar; glark| }" }.should raise_error(SyntaxError)
   end
 
   it "override shadowed variables from the outer scope" do
@@ -781,8 +781,8 @@ describe "Post-args" do
   end
 
   it "are required" do
-    lambda {
-      lambda do |*a, b|
+    -> {
+      -> *a, b do
         [a, b]
       end.call
     }.should raise_error(ArgumentError)

@@ -5,6 +5,7 @@ parser.o: parser.c parser.h $(srcdir)/../fbuffer/fbuffer.h
 parser.o: $(RUBY_EXTCONF_H)
 parser.o: $(arch_hdrdir)/ruby/config.h
 parser.o: $(hdrdir)/ruby.h
+parser.o: $(hdrdir)/ruby/assert.h
 parser.o: $(hdrdir)/ruby/backward.h
 parser.o: $(hdrdir)/ruby/defines.h
 parser.o: $(hdrdir)/ruby/encoding.h

@@ -667,7 +667,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # Creates a comment with the correct format
 
   def new_comment comment
-    c = RDoc::Comment.new comment, @top_level
+    c = RDoc::Comment.new comment, @top_level, :ruby
     c.format = @markup
     c
   end

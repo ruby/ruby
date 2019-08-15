@@ -5,8 +5,7 @@ rescue LoadError
 end
 require 'test/unit'
 
-def ado_installed?
-  installed = false
+ado_installed =
   if defined?(WIN32OLE)
     db = nil
     begin
@@ -15,25 +14,19 @@ def ado_installed?
       db.open
       db.close
       db = nil
-      installed = true
+      true
     rescue
     end
   end
-  installed
-end
 
-def swbemsink_available?
-  available = false
+swbemsink_available =
   if defined?(WIN32OLE)
-    wmi = nil
     begin
-      wmi = WIN32OLE.new('WbemScripting.SWbemSink')
-      available = true
+      WIN32OLE.new('WbemScripting.SWbemSink')
+      true
     rescue
     end
   end
-  available
-end
 
 if defined?(WIN32OLE_EVENT)
   class TestWIN32OLE_EVENT < Test::Unit::TestCase
@@ -50,12 +43,8 @@ if defined?(WIN32OLE_EVENT)
     end
   end
 
-  class TestWIN32OLE_EVENT_SWbemSink < Test::Unit::TestCase
-    unless swbemsink_available?
-      def test_dummy_for_skip_message
-        skip "'WbemScripting.SWbemSink' is not available"
-      end
-    else
+  if swbemsink_available
+    class TestWIN32OLE_EVENT_SWbemSink < Test::Unit::TestCase
       def setup
         @wmi = WIN32OLE.connect('winmgmts://localhost/root/cimv2')
         @sws = WIN32OLE.new('WbemScripting.SWbemSink')
@@ -167,12 +156,8 @@ if defined?(WIN32OLE_EVENT)
     end
   end
 
-  class TestWIN32OLE_EVENT_ADO < Test::Unit::TestCase
-    unless ado_installed?
-      def test_dummy_for_skip_message
-        skip "ActiveX Data Object Library not found"
-      end
-    else
+  if ado_installed
+    class TestWIN32OLE_EVENT_ADO < Test::Unit::TestCase
       CONNSTR="Driver={Microsoft Text Driver (*.txt; *.csv)};DefaultDir=.;"
       module ADO
       end
@@ -422,7 +407,7 @@ if defined?(WIN32OLE_EVENT)
           $SAFE=1
           str = 'ConnectionEvents'
           str.taint
-          ev = WIN32OLE_EVENT.new(@db, str)
+          WIN32OLE_EVENT.new(@db, str)
         }
         exc = assert_raise(SecurityError) {
           th.join

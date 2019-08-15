@@ -252,7 +252,7 @@ describe "The 'case'-construct" do
   end
 
   it "raises a SyntaxError when 'else' is used when no 'when' is given" do
-    lambda {
+    -> {
       eval <<-CODE
       case 4
       else
@@ -263,7 +263,7 @@ describe "The 'case'-construct" do
   end
 
   it "raises a SyntaxError when 'else' is used before a 'when' was given" do
-    lambda {
+    -> {
       eval <<-CODE
       case 4
       else
